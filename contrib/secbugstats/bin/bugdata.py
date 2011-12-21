@@ -25,10 +25,10 @@ my_bug_fields = ["creation_time"]
 my_history_fields = ["whiteboard","resolution"]
 
 def bugurl(bug):
-    return "https://api-dev.bugzilla.mozilla.org/latest/bug/%d?%s" % (bug, auth)
+    return "https://api-dev.bugzilla.mozilla.org/latest/bug/%d?%s" % (bug, BZ_AUTH)
 
 def histurl(bug):
-    return "https://api-dev.bugzilla.mozilla.org/latest/bug/%s/history?%s" % (bug, auth)
+    return "https://api-dev.bugzilla.mozilla.org/latest/bug/%s/history?%s" % (bug, BZ_AUTH)
 
 # convert API timestamp a MySQL datetime
 # d fmt: '2010-06-22T14:56:08Z'

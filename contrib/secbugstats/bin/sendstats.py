@@ -8,7 +8,6 @@ from string import join, split
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 from email.MIMEImage import MIMEImage
-from base64 import b64decode
 from settings import *
 
 # extra debug output
@@ -302,5 +301,5 @@ elif "--html" in sys.argv:
 # send out the mail
 else:
     s = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT)
-    s.login(LDAP_USER, b64decode(LDAP_PASS))
+    s.login(LDAP_USER, LDAP_PASS)
     s.sendmail(EMAIL_FROM, EMAIL_TO, msgRoot.as_string())
