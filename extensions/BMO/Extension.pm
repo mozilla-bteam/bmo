@@ -1073,5 +1073,4 @@ sub query_database {
     }
 }
 
-
 __PACKAGE__->NAME;
