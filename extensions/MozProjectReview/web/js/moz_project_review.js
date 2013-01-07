@@ -10,19 +10,21 @@ YAHOO.namespace('MozProjectReview');
 
 var MPR = YAHOO.MozProjectReview;
 var Dom = YAHOO.util.Dom;
+var Event = YAHOO.util.Event;
 
 MPR.required_fields = {
     "initial_questions": {
         "short_desc": "Please enter a value for project or feature name in the initial questions section",
         "cc": "Please enter a value for points of contact in the initial questions section",
         "urgency": "Please enter a value for urgency in the initial questions section",
-        "release_date": "Please enter a value for release date in the initial questions section",
+        "key_initiative": "Please select a value for key initiative in the initial questions section",
         "project_status": "Please select a value for project status in the initial questions section",
         "mozilla_data": "Please select a value for mozilla data in the initial questions section",
         "new_or_change": "Please select a value for new or change to existing project in the initial questions section",
         "separate_party": "Please select a value for separate party in the initial questions section"
     },
     "finance_questions": {
+        "finance_purchase_vendor": "Please enter a value for vendor in the finance questions section",
         "finance_purchase_what": "Please enter a value for what in the finance questions section",
         "finance_purchase_why": "Please enter a value for why in the finance questions section",
         "finance_purchase_risk": "Please enter a value for risk in the finance questions section",
@@ -48,7 +50,8 @@ MPR.toggleSpecialSections = function () {
         Dom.removeClass('sec_review_questions', 'bz_default_hidden');
     }
     else {
-        Dom.addClass('legal_questions', 'bz_default_hidden');
+        if (Dom.get('separate_party').value != 'Yes')
+            Dom.addClass('legal_questions', 'bz_default_hidden');
         Dom.addClass('privacy_policy_project_questions', 'bz_default_hidden');
         Dom.addClass('data_safety_questions', 'bz_default_hidden');
         Dom.addClass('sec_review_questions', 'bz_default_hidden');
@@ -100,11 +103,9 @@ MPR.validateAndSubmit = function () {
     var alert_text = '';
     var section = '';
     for (section in MPR.required_fields) {
-        console.log("section: " + section);
         if (!Dom.hasClass(section, 'bz_default_hidden')) {
             var field = '';
             for (field in MPR.required_fields[section]) {
-                console.log("field: " + field);
                 if (!MPR.isFilledOut(field)) {
                     alert_text += MPR.required_fields[section][field] + "\n";
                 }
@@ -112,10 +113,33 @@ MPR.validateAndSubmit = function () {
         }
     }
 
+    if (Dom.get('relationship_type').value == 'Vendor/Services'
+        && Dom.get('legal_vendor_services_where').value == '')
+    {
+        alert_text += "Please select a value for vendor services where\n";
+    }
+
+    if (Dom.get('relationship_type').value == 'Vendor/Services'
+        && Dom.get('legal_vendor_services_where').value == 'A single country'
+        && Dom.get('legal_vendor_single_country').value == '')
+    {
+        alert_text += "Please select a value for vendor services where single country\n";
+    }
+
+    if (Dom.get('key_initiative').value == 'Other') {
+        if (!MPR.isFilledOut('key_initiative_other'))
+            alert_text += "Please enter a value for key initiative in the initial questions section\n";
+    }
+
     if (Dom.get('separate_party').value == 'Yes') {
         if (!MPR.isFilledOut('relationship_type')) alert_text += "Please select a value for type of relationship\n";
         if (!MPR.isFilledOut('data_access')) alert_text += "Please select a value for data access\n";
         if (!MPR.isFilledOut('vendor_cost')) alert_text += "Please select a value for vendor cost\n";
+    }
+
+    if (Dom.get('finance_purchase_inbudget').value == 'No') {
+        if (!MPR.isFilledOut('finance_purchase_notinbudget_why')) 
+            alert_text += "Please include additional description for the out of budget line item\n";
     }
 
     if (alert_text) {
@@ -147,3 +171,10 @@ MPR.isFilledOut = function (elem_id)  {
     var str = Dom.get(elem_id).value;
     return str.length > 0 ? true : false;
 }
+
+Event.addListener('legal_vendor_services_where', 'change', function(e) {
+    if (this.value == 'A single country')
+        Dom.removeClass('legal_vendor_single_country', 'bz_default_hidden');
+    else
+        Dom.addClass('legal_vendor_single_country', 'bz_default_hidden');
+});

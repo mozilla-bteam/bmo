@@ -5,11 +5,11 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#mydashboard .yui-skin-sam .yui-dt table {
-    width:100%;
+#mydashboard .yui3-skin-sam .yui3-datatable-table {
+    width: 100%;
 }
 
-#mydashboard .query_heading {
+.query_heading {
     font-size: 18px;
     font-weight: strong;
     padding-bottom: 5px;
@@ -17,16 +17,11 @@
     color: rgb(72, 72, 72);
 }
 
-#mydashboard .query_description {
+.query_description {
     font-size: 90%;
     font-style: italic;
     padding-bottom: 5px;
     color: rgb(109, 117, 129);
-}
-
-#mydashboard .bugs_found,
-#mydashboard .flags_found {
-    font-size: 80%;
 }
 
 #mydashboard_container {
@@ -43,17 +38,27 @@
     width: 40%;
 }
 
-#file_bug_container {
-    text-align: left;
+.items_found, .refresh {
+    font-size: 80%;
 }
 
 #query_list_container {
     text-align:center;
 }
 
-#file_bug_container,
-#query_list_container {
-    margin-bottom: 10px;
-    border: 1px solid rgb(116,126,147);
-    padding: 10px;
+#query_list_container, 
+#prod_comp_search_main {
+    padding: 20px !important;
+    height: 40px;
+}
+
+#last_changes_header {
+    font-size: 12px;
+    font-weight: bold;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgb(200, 200, 186);
+}
+
+#last_changes .field_label {
+    text-align: left;
 }

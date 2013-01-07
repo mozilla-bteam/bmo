@@ -31,6 +31,7 @@
   <input type="hidden" id="product" name="product" value="mozilla.org">
   <input type="hidden" id="component" name="component" value="Project Review">
   <input type="hidden" id="rep_platform" name="rep_platform" value="All">
+  <input type="hidden" id="groups" name="groups" value="mozilla-corporation-confidential">
   <input type="hidden" id="op_sys" name="op_sys" value="All">
   <input type="hidden" id="priority" name="priority" value="--">
   <input type="hidden" id="version" name="version" value="other">
@@ -103,18 +104,41 @@
       </span>
     </div>
 
-    <div id="goal_row" class="field_row">
-      <span class="field_label">Current Goal:</span>
+    <div id="key_initiative_row" class="field_row">
+      <span class="field_label required">Key Initiative:</span>
       <span class="field_data">
-        <div class="field_description">Does it support a current Mozilla goal (if so, which one)?</div>
-        <input type="text" name="goal" id="goal" size="60">
+        <div class="field_description">Which key initiative does this support?</div>
+        <select name="key_initiative" id="key_initiative"
+                onchange="MPR.toggleVisibleById(this,'Other','key_initiative_other_row');">
+          <option value="">Select One</option>
+          <option value="Firefox Desktop">Firefox Desktop</option>
+          <option value="Firefox Mobile">Firefox Mobile</option>
+          <option value="Firefox OS">Firefox OS</option>
+          <option value="Firefox Platform">Firefox Platform</option>
+          <option value="Marketplace / Apps">Marketplace / Apps</option>
+          <option value="Services: Persona">Services: Persona</option>
+          <option value="Services: WebRTC">Services: WebRTC</option>
+          <option value="Services: UP">Services: UP</option>
+          <option value="Services: Social API">Services: Social API</option>
+          <option value="Labs / Research / H3">Labs / Research / H3</option>
+          <option value="Product Support">Product Support</option>
+          <option value="Corp Support">Corp Support</option>
+          <option value="Other">Other</option>
+        </select>
+      </span>
+    </div>
+
+    <div id="key_initiative_other_row" class="field_row bz_default_hidden">
+      <span class="field_label">&nbsp;</span>
+      <span class="field_data">
+        <input type="text" name="key_initiative_other" id="key_initiative_other" size="60">
       </span>
     </div>
 
     <div id="release_date_row" class="field_row">
-      <span class="field_label required">Release Date:</span>
+      <span class="field_label">Release Date:</span>
       <span class="field_data">
-        <div class="field_description">What is your key release / launch date?</div>
+        <div class="field_description">What is your key release / launch date (if applicable)?</div>
         <input name="release_date" size="20" id="release_date" value=""
                onchange="updateCalendarFromField(this)">
         <button type="button" class="calendar_button"
@@ -200,12 +224,24 @@
     <div id="separate_party_row" class="field_row">
       <span class="field_label required">Separate Party:</span>
       <span class="field_data">
-        <div class="field_description">Does this project involve a relationship with another party (such as a third 
-          party vendor, hosted service provider, consultant or strategic partner (business deals))? 
-          This includes NDAs, click to accept, API agreements, open source licenses, renewals, 
-          additional services or goods, and any other agreements.</div>
+        <div class="field_description"> Does this project involve a
+          relationship with another party (such as a third party vendor, hosted
+          service provider, consultant or strategic partner)? This includes MSAs,
+          Consulting Agreements, NDAs, click to accept, API agreements, open
+          source licenses, renewals, additional services or goods, and any other
+          agreements.
+        </div>
         <select name="separate_party" id="separate_party"
-                onchange="MPR.toggleVisibleById(this,'Yes','initial_separate_party_questions');">
+                onchange="MPR.toggleVisibleById(this,'Yes','initial_separate_party_questions');
+                          if (this.value == 'No') {
+                            Dom.addClass('finance_questions','bz_default_hidden');
+                            if (Dom.get('mozilla_data').value != 'Yes')
+                                Dom.addClass('legal_questions', 'bz_default_hidden');
+                          }
+                          else {
+                            Dom.removeClass('legal_questions', 'bz_default_hidden');
+                            MPR.toggleVisibleById('relationship_type','Hardware Purchase','finance_questions');
+                          }">
           <option value="">Select One</option>
           <option value="Yes">Yes</option>
           <option value="No">No</option>
@@ -219,10 +255,16 @@
         <span class="field_data">
           <div class="field_description">What type of relationship?</div>
           <select name="relationship_type" id="relationship_type"
-                  onchange="MPR.toggleVisibleById(this,'Vendor/Services','legal_sow_details_row');">
+                  onchange="MPR.toggleVisibleById(this, 'Vendor/Services', 'legal_sow_details_row');
+                            MPR.toggleVisibleById(this, 'Vendor/Services', 'legal_vendor_services_where_row');
+                            MPR.toggleVisibleById(this, 'Hardware Purchase', 'finance_questions');
+                            if (this.value == 'Hardware Purchase') Dom.addClass('legal_questions', 'bz_default_hidden');
+                            else if (Dom.get('separate_party').value == 'Yes' || Dom.get('mozilla_data').value == 'Yes')
+                              Dom.removeClass('legal_questions', 'bz_default_hidden');">
             <option value="">Select One</option>
             <option value="Vendor/Services">Vendor/Services</option>
             <option value="Distribution/Bundling">Distribution/Bundling</option>
+            <option value="Hardware Purchase">Hardware Purchase</option>
             <option value="Search">Search</option>
             <option value="NDA">NDA</option>
             <option value="Other">Other</option>
@@ -469,10 +511,56 @@
         <textarea name="legal_sow_details" id="legal_sow_details" rows="10" cols="80"></textarea>
       </span>
     </div>
+
+    <div id="legal_vendor_services_where_row" class="field_row bz_default_hidden">
+      <span class="field_label required">Vendor Services Location:</span>
+      <span class="field_data">
+        <div class="field_description">Where will the services primarily be provided?</div>
+        <select name="legal_vendor_services_where" id="legal_vendor_services_where">
+          <option value="">Select One</option>
+          <option value="U.S.">U.S.</option>
+          <option value="Europe">Europe</option>
+          <option value="Canada">Canada</option>
+          <option value="Global">Global</option>
+          <option value="Another region of the world">Another region of the world</option>
+          <option value="A single country">A single country</option>
+        </select>
+        <br>
+        <input class="bz_default_hidden" type="text"
+               name="legal_vendor_single_country" id="legal_vendor_single_country" size="60">
+      </span>
+    </div>
   </div>
 
   <div id="finance_questions" class="bz_default_hidden">
     <div class="header">Finance</div>
+
+     <div id="finance_purchase_vendor_row" class="field_row">
+       <span class="field_label required">Vendor:</span>
+       <span class="field_data">
+         <input type="text" name="finance_purchase_vendor" maxsize="255" size="60" id="finance_purchase_vendor">
+       </span>
+     </div>
+
+    <div id="finance_purchase_inbudget_row" class="field_row">
+      <span class="field_label required">Is this line item in budget?:</span>
+      <span class="field_data">
+        <select name="finance_purchase_inbudget" id="finance_purchase_inbudget"
+                onchange="MPR.toggleVisibleById(this, 'No', 'finance_purchase_notinbudget_why_row');">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+
+    <div id="finance_purchase_notinbudget_why_row" class="field_row bz_default_hidden">
+      <span class="field_label required">Not In Budget Why:</span>
+      <span class="field_data">
+        <em>Please include additional description for this out of budget line item</em><br>
+        <textarea name="finance_purchase_notinbudget_why" id="finance_purchase_notinbudget_why" rows="10" cols="80"></textarea>
+      </span>
+    </div>
 
     <div id="finance_purchase_what_row" class="field_row">
       <span class="field_label required">What is the purchase for?:</span>
@@ -502,19 +590,8 @@
       </span>
     </div>
 
-    <div id="finance_purchase_inbudget_row" class="field_row">
-      <span class="field_label required">Is this line item in budget?:</span>
-      <span class="field_data">
-        <select name="finance_purchase_inbudget" id="finance_purchase_inbudget">
-          <option value="">Select One</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </span>
-    </div>
-
     <div id="finance_purchase_urgency_row" class="field_row">
-      <span class="field_label required">What is the urgency?:</span>
+      <span class="field_label required">When do the items need to be ordered by?:</span>
       <span class="field_data">
         <select name="finance_purchase_urgency" id="finance_purchase_urgency">
           <option value="within 24 hours">within 24 hours</option>
