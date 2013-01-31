@@ -209,9 +209,9 @@ use constant DEFAULT_FIELDS => (
      buglist => 1},
     {name => 'cc',           desc => 'CC',         in_new_bugmail => 1},
     {name => 'dependson',    desc => 'Depends on', in_new_bugmail => 1,
-     is_numeric => 1},
+     is_numeric => 1, buglist => 1},
     {name => 'blocked',      desc => 'Blocks',     in_new_bugmail => 1,
-     is_numeric => 1},
+     is_numeric => 1, buglist => 1},
 
     {name => 'attachments.description', desc => 'Attachment description'},
     {name => 'attachments.filename',    desc => 'Attachment filename'},
@@ -1047,7 +1047,7 @@ sub create {
         $class->check_required_create_fields(@_);
         my $field_values      = $class->run_create_validators($params);
         my $visibility_values = delete $field_values->{visibility_values};
-        my $field             = $class->insert_create_data($field_values);
+        $field                = $class->insert_create_data($field_values);
 
         $field->set_visibility_values($visibility_values);
         $field->_update_visibility_values();

@@ -57,17 +57,19 @@ sub bug_start_of_update {
     my $cgi    = Bugzilla->cgi;
     my $params = Bugzilla->input_params;
 
+    my $needinfo = delete $params->{needinfo};
+    if ($user->in_group('canconfirm') && $needinfo) {
+        # do a match if applicable
+        Bugzilla::User::match_field({
+            'needinfo_from' => { 'type' => 'single' }
+        });
+    }
+
     # Set needinfo_done param to true so as to not loop back here
     return if $params->{needinfo_done};
     $params->{needinfo_done} = 1;
     Bugzilla->input_params($params);
 
-    # do a match if applicable
-    Bugzilla::User::match_field({ 
-        'needinfo_from' => { 'type' => 'single' }
-    });
-
-    my $needinfo      = delete $params->{needinfo};
     my $needinfo_from = delete $params->{needinfo_from};
     my $needinfo_role = delete $params->{needinfo_role};
     my $is_private    = $params->{'comment_is_private'};
@@ -106,6 +108,15 @@ sub bug_start_of_update {
                 Bugzilla::User->check($needinfo_from);
                 $needinfo_flag->{requestee} = $needinfo_from;
             }
+
+            # Find out if the requestee has already been used and skip if so
+            my $requestee_found;
+            foreach my $flag (@{ $type->{flags} }) {
+                next if $flag->requestee->login ne $needinfo_flag->{requestee};
+                $requestee_found = 1;
+                last;
+            }
+            next if $requestee_found;
 
             if ($needinfo) {
                 push(@new_flags, $needinfo_flag);

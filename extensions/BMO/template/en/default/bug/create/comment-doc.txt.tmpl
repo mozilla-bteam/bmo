@@ -6,7 +6,15 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% IF in_template_var %]
-  [% vars.field_descs.cc_count = "CC Count" %]
-  [% vars.field_descs.dupe_count = "Duplicate Count" %]
-[% END %]
+[% USE Bugzilla %]
+[% cgi = Bugzilla.cgi +%]
+:: Developer Documentation Request
+
+      Request Type: [% cgi.param("type") %]
+     Gecko Version: [% cgi.param("gecko") %]
+ Technical Contact: [% cgi.param("cc") %]
+
+:: Details
+
+[%+ cgi.param("details") %]
+
