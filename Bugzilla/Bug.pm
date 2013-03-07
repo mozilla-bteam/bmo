@@ -736,7 +736,7 @@ sub create {
     # Because MySQL doesn't support transactions on the fulltext table,
     # we do this after we've committed the transaction. That way we're
     # sure we're inserting a good Bug ID.
-    $bug->_sync_fulltext('new bug');
+    $bug->_sync_fulltext( new_bug => 1 );
 
     return $bug;
 }
@@ -1031,9 +1031,10 @@ sub update {
     # in the middle of a transaction, and if that transaction is rolled
     # back, this change will *not* be rolled back. As we expect rollbacks
     # to be extremely rare, that is OK for us.
-    $self->_sync_fulltext()
-        if $self->{added_comments} || $changes->{short_desc}
-           || $self->{comment_isprivate};
+    $self->_sync_fulltext(
+        update_short_desc => $changes->{short_desc},
+        update_comments   => $self->{added_comments} || $self->{comment_isprivate}
+    );
 
     # Remove obsolete internal variables.
     delete $self->{'_old_assigned_to'};
@@ -1067,25 +1068,43 @@ sub _extract_multi_selects {
 
 # Should be called any time you update short_desc or change a comment.
 sub _sync_fulltext {
-    my ($self, $new_bug) = @_;
+    my ($self, %options) = @_;
     my $dbh = Bugzilla->dbh;
-    if ($new_bug) {
-        $dbh->do('INSERT INTO bugs_fulltext (bug_id, short_desc)
-                  SELECT bug_id, short_desc FROM bugs WHERE bug_id = ?',
-                 undef, $self->id);
+
+    my($all_comments, $public_comments);
+    if ($options{new_bug} || $options{update_comments}) {
+        my $comments = $dbh->selectall_arrayref(
+            'SELECT thetext, isprivate FROM longdescs WHERE bug_id = ?',
+            undef, $self->id);
+        $all_comments = join("\n", map { $_->[0] } @$comments);
+        my @no_private = grep { !$_->[1] } @$comments;
+        $public_comments = join("\n", map { $_->[0] } @no_private);
     }
-    else {
-        $dbh->do('UPDATE bugs_fulltext SET short_desc = ? WHERE bug_id = ?',
-                 undef, $self->short_desc, $self->id);
+
+    if ($options{new_bug}) {
+        $dbh->do('INSERT INTO bugs_fulltext (bug_id, short_desc, comments,
+                                             comments_noprivate)
+                 VALUES (?, ?, ?, ?)',
+                 undef,
+                 $self->id, $self->short_desc, $all_comments, $public_comments);
+    } else {
+        my(@names, @values);
+        if ($options{update_short_desc}) {
+            push @names, 'short_desc';
+            push @values, $self->short_desc;
+        }
+        if ($options{update_comments}) {
+            push @names, ('comments', 'comments_noprivate');
+            push @values, ($all_comments, $public_comments);
+        }
+        if (@names) {
+            $dbh->do('UPDATE bugs_fulltext SET ' .
+                     join(', ', map { "$_ = ?" } @names) .
+                     ' WHERE bug_id = ?',
+                     undef,
+                     @values, $self->id);
+        }
     }
-    my $comments = $dbh->selectall_arrayref(
-        'SELECT thetext, isprivate FROM longdescs WHERE bug_id = ?',
-        undef, $self->id);
-    my $all = join("\n", map { $_->[0] } @$comments);
-    my @no_private = grep { !$_->[1] } @$comments;
-    my $nopriv_string = join("\n", map { $_->[0] } @no_private);
-    $dbh->do('UPDATE bugs_fulltext SET comments = ?, comments_noprivate = ?
-               WHERE bug_id = ?', undef, $all, $nopriv_string, $self->id);
 }
 
 
@@ -1481,8 +1500,7 @@ sub _check_component {
     $name || ThrowUserError("require_component");
     my $product = blessed($invocant) ? $invocant->product_obj 
                                      : $params->{product};
-    my $old_comp = blessed($invocant) ? $invocant->component
-                                      : $params->{component};
+    my $old_comp = blessed($invocant) ? $invocant->component : '';
     my $object = Bugzilla::Component->check({ product => $product, name => $name });
     if ($object->name ne $old_comp && !$object->is_active) {
         ThrowUserError('value_inactive', { class => ref($object), value => $name });
@@ -1942,8 +1960,7 @@ sub _check_target_milestone {
     my ($invocant, $target, undef, $params) = @_;
     my $product = blessed($invocant) ? $invocant->product_obj 
                                      : $params->{product};
-    my $old_target = blessed($invocant) ? $invocant->target_milestone
-                                        : $params->{target_milestone};
+    my $old_target = blessed($invocant) ? $invocant->target_milestone : '';
     $target = trim($target);
     $target = $product->default_milestone if !defined $target;
     my $object = Bugzilla::Milestone->check(
@@ -1973,8 +1990,7 @@ sub _check_version {
     $version = trim($version);
     my $product = blessed($invocant) ? $invocant->product_obj 
                                      : $params->{product};
-    my $old_vers = blessed($invocant) ? $invocant->version
-                                      : $params->{version};
+    my $old_vers = blessed($invocant) ? $invocant->version : '';
     my $object = Bugzilla::Version->check({ product => $product, name => $version });
     if ($object->name ne $old_vers && !$object->is_active) {
         ThrowUserError('value_inactive', { class => ref($object), value => $version });
@@ -3708,9 +3724,13 @@ sub bug_alias_to_id {
 # Subroutines
 #####################################################################
 
-# Represents which fields from the bugs table are handled by process_bug.cgi.
+# Returns a list of currently active and editable bug fields,
+# including multi-select fields.
 sub editable_bug_fields {
     my @fields = Bugzilla->dbh->bz_table_columns('bugs');
+    # Add multi-select fields
+    push(@fields, map { $_->name } @{Bugzilla->fields({obsolete => 0,
+                                                       type => FIELD_TYPE_MULTI_SELECT})});
     # Obsolete custom fields are not editable.
     my @obsolete_fields = @{ Bugzilla->fields({obsolete => 1, custom => 1}) };
     @obsolete_fields = map { $_->name } @obsolete_fields;
@@ -3718,7 +3738,7 @@ sub editable_bug_fields {
                         "lastdiffed", @obsolete_fields) 
     {
         my $location = firstidx { $_ eq $remove } @fields;
-        # Custom multi-select fields are not stored in the bugs table.
+        # Ensure field exists before attempting to remove it.
         splice(@fields, $location, 1) if ($location > -1);
     }
     # Sorted because the old @::log_columns variable, which this replaces,
@@ -4029,8 +4049,8 @@ sub check_can_change_field {
         return 1;
     }
 
-    # Allow anyone to change comments.
-    if ($field =~ /^longdesc/) {
+    # Allow anyone to change comments, or set flags
+    if ($field =~ /^longdesc/ || $field eq 'flagtypes.name') {
         return 1;
     }
 

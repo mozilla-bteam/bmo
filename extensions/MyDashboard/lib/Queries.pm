@@ -13,12 +13,12 @@ use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::CGI;
 use Bugzilla::Search;
-use Bugzilla::Util qw(format_time);
+use Bugzilla::Util qw(format_time datetime_from);
 
 use Bugzilla::Extension::MyDashboard::Util qw(open_states quoted_open_states);
 use Bugzilla::Extension::MyDashboard::TimeAgo qw(time_ago);
 
-use Data::Dumper;
+use DateTime;
 
 use base qw(Exporter);
 our @EXPORT = qw(
@@ -36,11 +36,7 @@ use constant QUERY_ORDER => ("changeddate desc", "bug_id");
 # Share with buglist.cgi?
 use constant SELECT_COLUMNS => qw(
     bug_id
-    product
     bug_status
-    bug_severity
-    version
-    component
     short_desc
     changeddate
 );
@@ -65,7 +61,7 @@ sub QUERY_DEFS {
             heading     => 'New Reported by You',
             description => 'You reported the bug but nobody has accepted it yet.',
             params      => {
-                'bug_status'     => ['NEW'],
+                'bug_status'     => ['UNCONFIRMED', 'NEW'],
                 'emailreporter1' => 1,
                 'emailtype1'     => 'exact',
                 'email1'         => $user->login
@@ -76,7 +72,7 @@ sub QUERY_DEFS {
             heading     => "In Progress Reported by You",
             description => 'You reported the bug, the developer accepted the bug and is hopefully working on it.',
             params      => {
-                'bug_status'     => [ map { $_->name } grep($_->name ne 'NEW' && $_->name ne 'MODIFIED', open_states()) ],
+                'bug_status'     => [ map { $_->name } grep($_->name ne 'UNCONFIRMED' && $_->name ne 'NEW', open_states()) ],
                 'emailreporter1' => 1,
                 'emailtype1'     => 'exact',
                 'email1'         => $user->login
@@ -133,8 +129,9 @@ sub QUERY_DEFS {
 }
 
 sub query_bugs {
-    my $qdef = shift;
-    my $dbh  = Bugzilla->dbh;
+    my $qdef     = shift;
+    my $dbh      = Bugzilla->dbh;
+    my $date_now = DateTime->now;
 
     ## HACK to remove POST
     delete $ENV{REQUEST_METHOD};
@@ -144,21 +141,17 @@ sub query_bugs {
     my $search = new Bugzilla::Search( fields => [ SELECT_COLUMNS ],
                                        params => scalar $params->Vars,
                                        order  => [ QUERY_ORDER ]);
-
-    my $query = $search->sql();
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    my $rows = $sth->fetchall_arrayref();
+    my $data = $search->data;
 
     my @bugs;
-    foreach my $row (@$rows) {
+    foreach my $row (@$data) {
         my $bug = {};
         foreach my $column (SELECT_COLUMNS) {
             $bug->{$column} = shift @$row;
             if ($column eq 'changeddate') {
                 $bug->{$column} = format_time($bug->{$column}, '%Y-%m-%d %H:%M');
-            #   my $date_then = datetime_from($bug->{$column});
-            #   $bug->{'updated'} = time_ago($date_then, $date_now);
+                my $date_then = datetime_from($bug->{$column});
+                $bug->{'changeddate_fancy'} = time_ago($date_then, $date_now);
             }
         }
         push(@bugs, $bug);
@@ -168,9 +161,10 @@ sub query_bugs {
 }
 
 sub query_flags {
-    my $type = shift;
-    my $user = Bugzilla->user;
-    my $dbh  = Bugzilla->dbh;
+    my $type     = shift;
+    my $user     = Bugzilla->user;
+    my $dbh      = Bugzilla->dbh;
+    my $date_now = DateTime->now;
 
     ($type ne 'requestee' || $type ne 'requester')
         || ThrowCodeError('param_required', { param => 'type' });
@@ -187,11 +181,12 @@ sub query_flags {
              flagtypes.name AS type,
              flags.status AS status,
              flags.bug_id AS bug_id, 
+             bugs.bug_status AS bug_status,
              bugs.short_desc AS bug_summary,
              flags.attach_id AS attach_id, 
              attachments.description AS attach_summary,
-             requesters.realname AS requester, 
-             requestees.realname AS requestee,
+             requesters.login_name AS requester, 
+             requestees.login_name AS requestee,
              " . $dbh->sql_date_format('flags.creation_date', '%Y-%m-%d %H:%i') . " AS created
         FROM flags 
              LEFT JOIN attachments
@@ -228,21 +223,29 @@ sub query_flags {
     # Order the records (within each group).
     my $group_order_by = " GROUP BY flags.bug_id ORDER BY flags.creation_date, flagtypes.name";
 
+    my $flags = [];
     if ($type eq 'requestee') {
-        return $dbh->selectall_arrayref($query .
-                                        " AND requestees.login_name = ? " .
-                                        $group_order_by,
-                                        { Slice => {} }, $user->login);
+        $flags = $dbh->selectall_arrayref($query .
+                                          " AND requestees.login_name = ? " .
+                                          $group_order_by,
+                                          { Slice => {} }, $user->login);
     }
 
     if ($type eq 'requester') {
-        return $dbh->selectall_arrayref($query .
-                                        " AND requesters.login_name = ? " .
-                                        $group_order_by,
-                                        { Slice => {} }, $user->login);
+        $flags = $dbh->selectall_arrayref($query .
+                                          " AND requesters.login_name = ? " .
+                                          $group_order_by,
+                                          { Slice => {} }, $user->login);
     }
 
-    return undef;
+    # Format the created date specific to the user's timezone and add the fancy version
+    foreach my $flag (@$flags) {
+        $flag->{'created'} = format_time($flag->{'created'}, '%Y-%m-%d %H:%M');
+        my $date_then = datetime_from($flag->{'created'});
+        $flag->{'created_fancy'} = time_ago($date_then, $date_now);
+    }
+
+    return $flags;
 }
 
 1;

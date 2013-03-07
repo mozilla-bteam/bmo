@@ -26,8 +26,6 @@ package Bugzilla;
 
 use strict;
 
-# FIXME : Line to be removed
-
 # We want any compile errors to get to the browser, if possible.
 BEGIN {
     # This makes sure we're in a CGI.
@@ -36,6 +34,8 @@ BEGIN {
         CGI::Carp->import('fatalsToBrowser');
     }
 }
+
+# FIXME to remove later
 
 use Bugzilla::Config;
 use Bugzilla::Constants;
