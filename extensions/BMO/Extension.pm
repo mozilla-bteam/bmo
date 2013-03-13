@@ -40,7 +40,7 @@ use Bugzilla::Util;
 use Scalar::Util qw(blessed);
 use Date::Parse;
 use DateTime;
-use Encode qw(find_encoding decode_utf8);
+use Encode qw(find_encoding encode_utf8);
 use Sys::Syslog qw(:DEFAULT setlogsock);
 
 use Bugzilla::Extension::BMO::Constants;
@@ -941,7 +941,7 @@ sub _log_sent_email {
     $subject =~ s/[\[\(]Bug \d+[\]\)]\s*//;
 
     openlog('apache', 'cons,pid', 'local4');
-    syslog('notice', decode_utf8("[bugmail] $recipient ($message_type) $bug_id $subject"));
+    syslog('notice', encode_utf8("[bugmail] $recipient ($message_type) $bug_id $subject"));
     closelog();
 }
 
