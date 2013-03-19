@@ -49,7 +49,7 @@ sub post_bug_after_creation {
     });
 
     my ($do_sec_review, $do_legal, $do_finance, $do_privacy_vendor,
-        $do_data_safety, $do_privacy_tech, $do_privacy_policy);
+        $do_privacy_tech, $do_privacy_policy);
 
     # Logic section which dictates which bugs are created. This should be 
     # similar to the logic used in extensions/MozProjectReview/web/js/moz_project_review.js
@@ -63,12 +63,6 @@ sub post_bug_after_creation {
         $do_privacy_policy = 1;
         $do_privacy_tech = 1;
         $do_sec_review = 1;
-    }
-
-    if ($params->{mozilla_data} eq 'Yes'
-        && $params->{data_safety_user_data} eq 'Yes')
-    {
-        $do_data_safety = 1;
     }
 
     if ($params->{separate_party} eq 'Yes') {
@@ -101,8 +95,8 @@ sub post_bug_after_creation {
     }
 
     my ($sec_review_bug, $legal_bug, $finance_bug, $privacy_vendor_bug,
-        $data_safety_bug, $privacy_tech_bug, $privacy_policy_bug, $error, 
-        @dep_bug_comment, @dep_bug_errors);
+        $privacy_tech_bug, $privacy_policy_bug,
+        $error, @dep_bug_comment, @dep_bug_errors);
 
     if ($do_sec_review) {
         my $bug_data = {
@@ -174,25 +168,6 @@ sub post_bug_after_creation {
         };
         _file_child_bug({ parent_bug => $bug, template_vars => $vars,
                           template_suffix => 'finance', bug_data => $bug_data,
-                          dep_comment => \@dep_bug_comment, dep_errors => \@dep_bug_errors });
-    }
-
-    if ($do_data_safety) {
-        my $bug_data = {
-            short_desc   => 'Data Safety Review: ' . $bug->short_desc,
-            product      => 'Data Safety',
-            component    => 'General',
-            bug_severity => 'normal',
-            priority     => '--',
-            groups       => [ 'mozilla-corporation-confidential' ],
-            op_sys       => 'All',
-            rep_platform => 'All',
-            version      => 'unspecified',
-            blocked      => $bug->bug_id,
-        };
-
-        _file_child_bug({ parent_bug => $bug, template_vars => $vars,
-                          template_suffix => 'data-safety', bug_data => $bug_data,
                           dep_comment => \@dep_bug_comment, dep_errors => \@dep_bug_errors });
     }
 
