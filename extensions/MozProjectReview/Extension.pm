@@ -17,6 +17,16 @@ use Bugzilla::Constants;
 
 our $VERSION = '0.01';
 
+our %tracker_cc = (
+    'legal'                   => ['liz@mozilla.com'],
+    'sec-review'              => ['curtisk@mozilla.com'],
+    'finance'                 => ['waoieong@mozilla.com', 'mcristobal@mozilla.com'],
+    'privacy-vendor'          => ['smartin@mozilla.com'],
+    'privacy-project'         => ['ahua@mozilla.com'],
+    'privacy-tech'            => ['ahua@mozilla.com'],
+    'policy-business-partner' => ['smartin@mozilla.com']
+);
+
 sub post_bug_after_creation {
     my ($self, $args) = @_;
     my $vars   = $args->{vars};
@@ -272,7 +282,13 @@ sub _file_child_bug {
             || ThrowTemplateError($template->error());
         $bug_data->{comment} = $comment;
         if ($new_bug = Bugzilla::Bug->create($bug_data)) {
-            $parent_bug->set_all({ dependson => { add => [ $new_bug->bug_id ] }});
+            my $set_all = {
+                dependson => { add => [ $new_bug->bug_id ] }
+            };
+            if (exists $tracker_cc{$template_suffix}) {
+                $set_all->{cc} = { add => $tracker_cc{$template_suffix} };
+            }
+            $parent_bug->set_all($set_all);
             Bugzilla::BugMail::Send($new_bug->id, { changer => Bugzilla->user });
         }
     };
