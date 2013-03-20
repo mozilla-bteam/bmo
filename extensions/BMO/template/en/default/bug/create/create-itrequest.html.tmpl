@@ -25,7 +25,7 @@
 
   var compdesc = new Array();
   [% FOREACH comp IN product.components %]
-  compdesc['[% comp.name FILTER js %]'] = '[% comp.description FILTER js %]';
+    compdesc['[% comp.name FILTER js %]'] = '[% comp.description FILTER js %]';
   [% END %]
   compdesc['invalid'] = '';
 
@@ -33,18 +33,24 @@
                        'Request an LDAP/E-mail/etc. account<br>' +
                        'Desktop/Laptop/Printer/Phone/Tablet/License problem/order/request';
 
-  function setcompdesc(theRadio) {
-    if (theRadio.id == 'componentmvd') {
+  function setcompdesc(el) {
+    if (el.id == 'componentmvd') {
       [%# helpdesk issue/request %]
       document.getElementById('main_form').style.display = 'none';
       document.getElementById('service_now_form').style.display = '';
+      document.getElementById('webops_form').style.display = 'none';
       document.getElementById('compdescription').innerHTML = serviceNowText;
+    } else if (el.id = 'componentwcp') {
+      document.getElementById('main_form').style.display = 'none';
+      document.getElementById('service_now_form').style.display = 'none';
+      document.getElementById('webops_form').style.display = '';
+      document.getElementById('compdescription').innerHTML = '';
     } else {
       document.getElementById('main_form').style.display = '';
       document.getElementById('service_now_form').style.display = 'none';
-      var theValue = theRadio.value;
-      var compDescText = compdesc[theValue];
-      if (theRadio.id == 'componentso') {
+      document.getElementById('webops_form').style.display = 'none';
+      var compDescText = compdesc[el.value];
+      if (el.id == 'componentso') {
         compDescText = compDescText + '<br><br>' + serviceNowText;
       }
       document.getElementById('compdescription').innerHTML = compDescText;
@@ -223,6 +229,18 @@
         </td>
       </tr>
     </tbody>
+
+    <tbody id="webops_form" style="display:none">
+      <tr>
+        <td>&nbsp;</td>
+        <td>
+          <br>
+          WebOps requests should now be filed via
+          <a href="[% urlbase FILTER none %]form.webops">[% urlbase FILTER none %]form.webops</a>
+        </td>
+      </tr>
+    </tbody>
+
   </table>
 </form>
 

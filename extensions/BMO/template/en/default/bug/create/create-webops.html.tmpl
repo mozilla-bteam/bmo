@@ -1,0 +1,218 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% inline_style = BLOCK %]
+#webops_form {
+  margin-right: 2em;
+  max-width: 800px;
+}
+
+#webops_form th {
+  text-align: right;
+  padding-left: 1em;
+}
+
+#webops_form .heading {
+  text-align: left;
+  font-weight: bold;
+  border-top: 2px dotted #969696;
+}
+
+#webops_form input[type="text"], #webops_form textarea, #cc_autocomplete {
+  width: 100%;
+}
+
+#severity_desc {
+  color: red;
+}
+
+.mandatory {
+  color: red;
+}
+[% END %]
+
+[% mandatory = BLOCK %]
+<span class="mandatory" title="Required">*</span>&nbsp;
+[% END %]
+
+[% inline_javascript = BLOCK %]
+var Dom = YAHOO.util.Dom;
+
+function validateAndSubmit() {
+  var alert_text = '';
+  if (!isFilledOut('fqdn'))
+    alert_text += "Please enter the Service/Site.\n";
+  if (!isFilledOut('type'))
+    alert_text += "Please select the Type of request.\n";
+  if (!isFilledOut('short_desc'))
+    alert_text += "Please enter a Summary.\n";
+  if (!isFilledOut('request'))
+    alert_text += "Please provide a Problem/Request.\n";
+  if (!isFilledOut('actions'))
+    alert_text += "Please provide Actionable Steps.\n";
+
+  if (alert_text != '') {
+    alert(alert_text);
+    return false;
+  }
+  return true;
+}
+
+function onSeverityChange(el) {
+  if (el.value == 'blocker') {
+    Dom.get('severity_desc').innerHTML = 'This will page the on-call sysadmin if not handled within 30 minutes.';
+  } else if (el.value == 'critical') {
+    Dom.get('severity_desc').innerHTML = 'This will page the on-call sysadmin if not handled within 8 hours.';
+  } else {
+    Dom.get('severity_desc').innerHTML = '';
+  }
+}
+[% END %]
+
+[% PROCESS global/header.html.tmpl
+   title = "Mozilla IT - Create WebOps Bug"
+   style = inline_style
+   javascript = inline_javascript
+   javascript_urls = [ 'extensions/BMO/web/js/form_validate.js',
+                       'js/field.js', 'js/util.js' ]
+   yui = [ 'autocomplete' ]
+%]
+
+<h1>Mozilla WebOps</h1>
+
+<form method="post" action="post_bug.cgi" enctype="multipart/form-data"
+      onSubmit="return validateAndSubmit();">
+  <input type="hidden" name="format" value="webops">
+  <input type="hidden" name="product" value="mozilla.org">
+  <input type="hidden" name="component" value="Server Operations: Web Operations">
+  <input type="hidden" name="rep_platform" value="All">
+  <input type="hidden" name="op_sys" value="Other">
+  <input type="hidden" name="priority" value="--">
+  <input type="hidden" name="version" value="other">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+
+<table id="webops_form">
+
+<tr>
+  <th>[% mandatory FILTER none %]Service/Site affected (FQDN):</th>
+  <td colspan="3">
+    <input type="text" name="fqdn" id="fqdn" size="50">
+  </td>
+</tr>
+
+<tr>
+  <th>Datacenter, cluster name, or server hostname:</th>
+  <td colspan="3">
+    <input type="text" name="location" id="location" size="50">
+  </td>
+</tr>
+
+<tr>
+  <th>[% mandatory FILTER none %]Type of request:</th>
+  <td colspan="3">
+    <select name="type" id="type">
+      <option value="">Select One</option>
+      <option value="Service Outage">Service Outage</option>
+      <option value="Code Push / Deploy">Code Push / Deploy</option>
+      <option value="SSL Certificate">SSL Certificate</option>
+      <option value="Domain Registration / Renewal / Transfer">Domain Registration / Renewal / Transfer</option>
+      <option value="Other / General">Other / General</option>
+    </select>
+  </td>
+</tr>
+
+<tr>
+  <th>[% mandatory FILTER none %]Urgency:</th>
+  <td colspan="3">
+    <select id="bug_severity" name="bug_severity" onchange="onSeverityChange(this)">
+      <option value="blocker">All work for WebOps stops until this is done</option>
+      <option value="critical">WebOps should work on it soon as possible (urgent)</option>
+      <option value="major">WebOps should get to it within 24 hours</option>
+      <option value="normal" selected>WebOps should get to it within the next week</option>
+      <option value="minor" selected="selected">No rush, but hopefully WebOps can get to it soon</option>
+      <option value="trivial">Whenever WebOps can get around to it</option>
+    </select>
+    <div id="severity_desc"></div>
+  </td>
+</tr>
+
+<tr>
+  <th>[% mandatory FILTER none %]Summary:</th>
+  <td colspan="3">
+    <input type="text" name="short_desc" id="short_desc" size="50">
+  </td>
+</tr>
+
+<tr>
+  <th>CC:</th>
+  <td colspan="3">
+      [% INCLUDE global/userselect.html.tmpl
+        id => "cc"
+        name => "cc"
+        value => cc
+        size => 50
+        multiple => 5
+      %]
+  </td>
+</tr>
+
+<tr>
+  <th>Depends on:</th>
+  <td>
+    <input type="text" size="25" name="dependson">
+  </td>
+  <th>Blocks:</th>
+  <td>
+    <input type="text" size="25" name="blocked">
+  </td>
+</tr>
+
+<tr>
+  <th>[% mandatory FILTER none %]Problem / Request:</th>
+  <td colspan="3">
+    <textarea name="request" id="request" cols="50" rows="5"></textarea>
+  </td>
+</tr>
+
+<tr>
+  <th>[% mandatory FILTER none %]Actionable Steps:</th>
+  <td colspan="3">
+    <textarea name="actions" id="actions" cols="50" rows="5"></textarea>
+  </td>
+</tr>
+
+<tr>
+  <td>&nbsp;</td>
+  <td colspan="3">
+    <input type="checkbox" name="groups" id="groups" value="infra" checked>
+    <label for="groups">This is an internal issue which should not be publicly visible.</label>
+  </td>
+</tr>
+
+<tr>
+  <td>&nbsp;</td>
+  <td><input type="submit" id="commit" value="Submit Request"></td>
+</tr>
+
+<tr>
+  <td>&nbsp;</td>
+  <td width="50%">&nbsp;</td>
+  <td>&nbsp;</td>
+  <td width="50%">&nbsp;</td>
+</tr>
+
+</table>
+</form>
+
+<p>
+  <span class="mandatory">*</span> Required Field
+</p>
+
+[% PROCESS global/footer.html.tmpl %]
