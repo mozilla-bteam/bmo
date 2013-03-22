@@ -246,7 +246,7 @@ sub query_flags {
     # Format the updated date specific to the user's timezone and add the fancy version
     foreach my $flag (@$flags) {
         $flag->{'updated'} = format_time($flag->{'updated'}, '%Y-%m-%d %H:%M');
-        my $date_then = datetime_from($flag->{'updated'});
+        my $date_then = datetime_from($flag->{'updated'}, $user->timezone);
         $flag->{'updated_fancy'} = time_ago($date_then, $date_now);
     }
 
