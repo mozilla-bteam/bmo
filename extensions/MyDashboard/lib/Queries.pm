@@ -131,7 +131,8 @@ sub QUERY_DEFS {
 sub query_bugs {
     my $qdef     = shift;
     my $dbh      = Bugzilla->dbh;
-    my $date_now = DateTime->now;
+    my $user     = Bugzilla->user;
+    my $date_now = DateTime->now(time_zone => $user->timezone);
 
     ## HACK to remove POST
     delete $ENV{REQUEST_METHOD};
@@ -150,7 +151,7 @@ sub query_bugs {
             $bug->{$column} = shift @$row;
             if ($column eq 'changeddate') {
                 $bug->{$column} = format_time($bug->{$column}, '%Y-%m-%d %H:%M');
-                my $date_then = datetime_from($bug->{$column});
+                my $date_then = datetime_from($bug->{$column}, $user->timezone);
                 $bug->{'changeddate_fancy'} = time_ago($date_then, $date_now);
             }
         }
@@ -164,7 +165,7 @@ sub query_flags {
     my $type     = shift;
     my $user     = Bugzilla->user;
     my $dbh      = Bugzilla->dbh;
-    my $date_now = DateTime->now;
+    my $date_now = DateTime->now(time_zone => $user->timezone);
 
     ($type ne 'requestee' || $type ne 'requester')
         || ThrowCodeError('param_required', { param => 'type' });
