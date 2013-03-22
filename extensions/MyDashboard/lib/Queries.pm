@@ -150,8 +150,8 @@ sub query_bugs {
         foreach my $column (SELECT_COLUMNS) {
             $bug->{$column} = shift @$row;
             if ($column eq 'changeddate') {
-                $bug->{$column} = format_time($bug->{$column}, '%Y-%m-%d %H:%M');
-                my $date_then = datetime_from($bug->{$column}, $user->timezone);
+                $bug->{$column} = format_time($bug->{$column});
+                my $date_then = datetime_from($bug->{$column});
                 $bug->{'changeddate_fancy'} = time_ago($date_then, $date_now);
             }
         }
@@ -245,8 +245,8 @@ sub query_flags {
 
     # Format the updated date specific to the user's timezone and add the fancy version
     foreach my $flag (@$flags) {
-        $flag->{'updated'} = format_time($flag->{'updated'}, '%Y-%m-%d %H:%M');
-        my $date_then = datetime_from($flag->{'updated'}, $user->timezone);
+        $flag->{'updated'} = format_time($flag->{'updated'});
+        my $date_then = datetime_from($flag->{'updated'});
         $flag->{'updated_fancy'} = time_ago($date_then, $date_now);
     }
 
