@@ -104,7 +104,9 @@
     <div id="right">
       <div id="prod_comp_search_main">
         [% PROCESS prodcompsearch/form.html.tmpl
-           input_label = "File a $terms.Bug:" 
+           input_label = "File a $terms.Bug:"
+           script_name = "enter_bug.cgi"
+           new_tab     = 1
         %]
       </div>
 
@@ -115,6 +117,8 @@
         <span id="requestee_count_refresh" class="bz_default_hidden">
           <span class="items_found" id="requestee_flags_found">0 flags found</span>
           | <a class="refresh" href="javascript:void(0);" id="requestee_refresh">Refresh</a>
+          | <input type="checkbox" id="requestee_resolved">
+            <label for="requestee_resolved">Show resolved</label>
         </span>
         <div id="requestee_table"></div>
       </div>
@@ -126,6 +130,8 @@
         <span id="requester_count_refresh" class="bz_default_hidden">
           <span class="items_found" id="requester_flags_found">0 flags found</span>
           | <a class="refresh" href="javascript:void(0);" id="requester_refresh">Refresh</a>
+          | <input type="checkbox" id="requester_resolved">
+            <label for="requester_resolved">Show resolved</label>
         </span>
         <div id="requester_table"></div>
       </div>
