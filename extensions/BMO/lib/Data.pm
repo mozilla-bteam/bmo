@@ -180,6 +180,9 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
     qw/^cf_locale$/ => {
         "www.mozilla.org"       => [],
     },
+    qw/^cf_b2g_device$/ => {
+        "Boot2Gecko" => [],
+    },
 );
 
 # Which custom fields are acting as flags (ie. custom flags)
