@@ -32,10 +32,17 @@
       alert_text += "Please enter the expected behavior.\n";
     if (!isFilledOut('build'))
       alert_text += "Please enter a value for the build.\n";
+    if (!isFilledOut('requirements'))
+      alert_text += "Please enter a value for the requirements.\n";
     if (alert_text != '') {
       alert(alert_text);
       return false;
     }
+
+    if (document.getElementById('third_party_app').checked) {
+        document.getElementById('status_whiteboard').value = '[Apps Watch List]';
+    }
+
     return true;
   }
 [% END %]
@@ -64,6 +71,7 @@
 <input type="hidden" name="bug_severity" id="bug_severity" value="normal">
 <input type="hidden" name="comment" id="comment" value="">
 <input type="hidden" name="keywords" id="keywords" value="unagi">
+<input type="hidden" name="status_whiteboard" id="status_whiteboard" value="">
 <input type="hidden" name="token" value="[% token FILTER html %]">
 
 <table>
@@ -154,6 +162,24 @@
   </th>
   <td>
     <input type="text" name="build" id="build" value="" size="60">
+  </td>
+</tr>
+
+<tr>
+  <th>
+    <label for="requirements">What are the requirements?:</label>
+  </th>
+  <td>
+    <input type="text" name="requirements" id="requirements" value="" size="60">
+  </td>
+</tr>
+
+<tr>
+  <th>
+    <label for="requirements">Third party app content?:</label>
+  </th>
+  <td>
+    <input type="checkbox" name="third_party_app" id="third_party_app">
   </td>
 </tr>
 
