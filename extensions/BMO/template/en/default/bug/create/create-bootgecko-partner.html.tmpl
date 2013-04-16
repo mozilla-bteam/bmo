@@ -20,6 +20,8 @@
   }
   function onSubmit() {
     var alert_text = '';
+    var status_whiteboard = '';
+
     if (!isFilledOut('component'))
       alert_text += "Please select a value for component.\n";
     if (!isFilledOut('short_desc'))
@@ -34,14 +36,29 @@
       alert_text += "Please enter a value for the build.\n";
     if (!isFilledOut('requirements'))
       alert_text += "Please enter a value for the requirements.\n";
+
+    var device_values = new Array();
+    var device_select = document.getElementById("b2g_device");
+    for (var i = 0, l = device_select.options.length; i < l; i++) {
+      if (device_select.options[i].selected)
+        device_values.push(device_select.options[i].value);
+    }
+
+    if (device_values.length == 0)
+      alert_text += "Please select one or more devices.\n";
+
     if (alert_text != '') {
       alert(alert_text);
       return false;
     }
 
-    if (document.getElementById('third_party_app').checked) {
-        document.getElementById('status_whiteboard').value = '[Apps Watch List]';
-    }
+    for (var i = 0, l = device_values.length; i < l; i++)
+      status_whiteboard += '[device:' + device_values[i] + '] ';
+
+    if (document.getElementById('third_party_app').checked)
+      status_whiteboard += '[apps watch list]';
+
+    document.getElementById('status_whiteboard').value = status_whiteboard;
 
     return true;
   }
@@ -112,20 +129,27 @@
   <td id="comp_description" align="left" style="color: green; padding-left: 1em"></td>
 </tr>
 
-[% FOREACH field = Bugzilla.active_custom_fields(product=>product, type=>1) %]
-  [% NEXT UNLESS field.enter_bug %]
-  [% NEXT UNLESS field.name == 'cf_b2g_device' %]
-  [% SET value = ${field.name}.defined ? ${field.name} : "" %]
-  <tr>
-    [% INCLUDE bug/field.html.tmpl
-       bug = default
-       field = field
-       value = value
-       editable = 1,
-       value_span = 3 %]
-  </tr>
-  [% LAST %]
-[% END %]
+<tr>
+  <th>
+    <label for="b2g_device">B2G Device:</label>
+  </th>
+  <td>
+    <select name="b2g_device" id="b2g_device"
+            size="5" multiple="multiple">
+      <option name="Otoro">Otoro</option>
+      <option name="Unagi">Unagi</option>
+      <option name="Inari">Inari</option>
+      <option name="Ikura">Ikura</option>
+      <option name="Hamachi">Hamachi</option>
+      <option name="Buri">Buri</option>
+      <option name="Toro">Toro</option>
+      <option name="Leo">Leo</option>
+      <option name="Twist">Twist</option>
+      <option name="Zero">Zero</option>
+      <option name="Tara">Tara</option>
+    </select>
+  </td>
+</tr>
 
 <tr>
   <th>
