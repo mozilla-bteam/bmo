@@ -139,7 +139,7 @@ sub post_bug_after_creation {
 
         $child_params->{'bug_data'} = {
             short_desc   => $legal_summary,
-            product      => 'Legal2',
+            product      => 'Legal',
             component    => $component,
             bug_severity => 'normal',
             priority     => '--',
@@ -157,7 +157,7 @@ sub post_bug_after_creation {
     if ($do_finance) {
         $child_params->{'bug_data'} = {
             short_desc   => 'Finance Review: ' . $bug->short_desc,
-            product      => 'Finance2',
+            product      => 'Finance',
             component    => 'Purchase Request Form',
             bug_severity => 'normal',
             priority     => '--',
