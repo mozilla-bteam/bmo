@@ -55,10 +55,6 @@ sub post_bug_after_creation {
         $do_sec_review = 1;
     }
 
-    if ($params->{'new_or_change'} eq 'New') {
-        $do_legal = 1;
-    }
-
     if ($params->{'separate_party'} eq 'Yes') {
         if ($params->{'relationship_type'} ne 'Hardware Purchase') {
             $do_legal = 1;
@@ -116,13 +112,7 @@ sub post_bug_after_creation {
     }
 
     if ($do_legal) {
-        my $component;
-        if ($params->{new_or_change} eq 'New') {
-            $component = 'General';
-        }
-        elsif ($params->{new_or_change} eq 'Existing') {
-            $component = $params->{mozilla_project};
-        }
+        my $component = 'General';
 
         if ($params->{separate_party} eq 'Yes'
             && $params->{relationship_type})

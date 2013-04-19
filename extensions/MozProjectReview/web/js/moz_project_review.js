@@ -18,7 +18,6 @@ var MPR = {
             "key_initiative": "Please select a value for key initiative in the initial questions section",
             "project_status": "Please select a value for project status in the initial questions section",
             "mozilla_data": "Please select a value for mozilla data in the initial questions section",
-            "new_or_change": "Please select a value for new or change to existing project in the initial questions section",
             "separate_party": "Please select a value for separate party in the initial questions section"
         },
         "finance_questions": {
@@ -58,8 +57,6 @@ var MPR = {
         'key_initiative',
         'project_status',
         'mozilla_data',
-        'new_or_change',
-        'mozilla_project',
         'separate_party',
         'relationship_type',
         'data_access',
@@ -102,7 +99,6 @@ var MPR = {
             sec_review_questions: false,
             privacy_policy_project_questions: false,
             privacy_policy_vendor_questions: false,
-            mozilla_project_row: false,
             privacy_policy_project_link_row: false,
             privacy_policy_project_user_data_bug_row: false,
             privacy_policy_vendor_extra: false
@@ -111,13 +107,6 @@ var MPR = {
         if (Dom.get('key_initiative').value == 'Other') {
             page_sections.key_initiative_other_row = true;
         }
-
-        if (Dom.get('new_or_change').value == 'Existing') {
-            page_sections.mozilla_project_row = true;
-        }
-
-        if (Dom.get('new_or_change').value == 'New')
-            page_sections.legal_questions = true;
 
         if (Dom.get('mozilla_data').value == 'Yes') {
             page_sections.legal_questions = true;
