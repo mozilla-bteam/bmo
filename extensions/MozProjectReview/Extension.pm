@@ -46,19 +46,13 @@ sub post_bug_after_creation {
     });
 
     my ($do_sec_review, $do_legal, $do_finance, $do_privacy_vendor,
-        $do_data_safety, $do_privacy_tech, $do_privacy_policy);
+        $do_privacy_tech, $do_privacy_policy);
 
     if ($params->{'mozilla_data'} eq 'Yes') {
         $do_legal = 1;
         $do_privacy_policy = 1;
         $do_privacy_tech = 1;
         $do_sec_review = 1;
-    }
-
-    if ($params->{'mozilla_data'} eq 'Yes'
-        && $params->{'data_safety_user_data'} eq 'Yes')
-    {
-        $do_data_safety = 1;
     }
 
     if ($params->{'new_or_change'} eq 'New') {
@@ -91,8 +85,8 @@ sub post_bug_after_creation {
     }
 
     my ($sec_review_bug, $legal_bug, $finance_bug, $privacy_vendor_bug,
-        $data_safety_bug, $privacy_tech_bug, $privacy_policy_bug, $error,
-        @dep_comment, @dep_errors, @send_mail);
+        $privacy_tech_bug, $privacy_policy_bug, $error, @dep_comment,
+        @dep_errors, @send_mail);
 
     # Common parameters always passed to _file_child_bug
     # bug_data and template_suffix will be different for each bug
@@ -174,23 +168,6 @@ sub post_bug_after_creation {
             blocked      => $bug->bug_id,
         };
         $child_params->{'template_suffix'} = 'finance';
-        _file_child_bug($child_params);
-    }
-
-    if ($do_data_safety) {
-        $child_params->{'bug_data'} = {
-            short_desc   => 'Data Safety Review: ' . $bug->short_desc,
-            product      => 'Data Safety',
-            component    => 'General',
-            bug_severity => 'normal',
-            priority     => '--',
-            groups       => [ 'mozilla-corporation-confidential' ],
-            op_sys       => 'All',
-            rep_platform => 'All',
-            version      => 'unspecified',
-            blocked      => $bug->bug_id,
-        };
-        $child_params->{'template_suffix'} = 'data-safety';
         _file_child_bug($child_params);
     }
 
