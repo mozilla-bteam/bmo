@@ -26,7 +26,7 @@ YUI({
     var updateFlagTable = function (type) {
         if (!type) return;
 
-        var include_resolved = Y.one('#' + type + '_resolved').get('checked') ? 1 : 0;
+        var include_closed = Y.one('#' + type + '_closed').get('checked') ? 1 : 0;
 
         counter = counter + 1;
 
@@ -49,7 +49,7 @@ YUI({
             version: "1.1",
             method:  "MyDashboard.run_flag_query",
             id:      counter,
-            params:  { type : type, include_resolved: include_resolved }
+            params:  { type : type, include_closed: include_closed }
         };
 
         var stringified = Y.JSON.stringify(json_object);
@@ -92,12 +92,27 @@ YUI({
             : '<i>anyone</i>';
     };
 
+    var flagNameFormatter = function (o) {
+        if (o.data.attach_id && o.data.is_patch && MyDashboard.splinter_base) {
+            return '<a href="' + MyDashboard.splinter_base +
+                   (MyDashboard.splinter_base.indexOf('?') == -1 ? '?' : '&') +
+                   'bug=' + encodeURIComponent(o.data.bug_id) +
+                   '&attachment=' + encodeURIComponent(o.data.attach_id) +
+                   '" target="_blank" title="Review this patch">' +
+                   Y.Escape.html(o.value) + '</a>';
+        }
+        else {
+            return Y.Escape.html(o.value);
+        }
+    };
+
     // Requestee
     dataSource.requestee = new Y.DataSource.IO({ source: 'jsonrpc.cgi' });
     dataTable.requestee = new Y.DataTable({
         columns: [
             { key: "requester", label: "Requester", sortable: true },
-            { key: "type", label: "Flag", sortable: true },
+            { key: "type", label: "Flag", sortable: true,
+              formatter: flagNameFormatter, allowHTML: true },
             { key: "bug_id", label: "Bug", sortable: true,
               formatter: bugLinkFormatter, allowHTML: true },
             { key: "updated", label: "Updated", sortable: true,
@@ -118,8 +133,8 @@ YUI({
     dataSource.requestee.plug(Y.Plugin.DataSourceJSONSchema, {
         schema: {
             resultListLocator: "result.result.requestee",
-            resultFields: ["requester", "type", "bug_id", "bug_status",
-                           "bug_summary", "updated", "updated_fancy"]
+            resultFields: ["requester", "type", "attach_id", "is_patch", "bug_id",
+                           "bug_status", "bug_summary", "updated", "updated_fancy"]
         }
     });
 
@@ -128,7 +143,7 @@ YUI({
     Y.one('#requestee_refresh').on('click', function(e) {
         updateFlagTable('requestee');
     });
-    Y.one('#requestee_resolved').on('change', function(e) {
+    Y.one('#requestee_closed').on('change', function(e) {
         updateFlagTable('requestee');
     });
 
@@ -138,7 +153,8 @@ YUI({
         columns: [
             { key:"requestee", label:"Requestee", sortable:true,
               formatter: requesteeFormatter, allowHTML: true },
-            { key:"type", label:"Flag", sortable:true },
+            { key:"type", label:"Flag", sortable:true,
+              formatter: flagNameFormatter, allowHTML: true },
             { key:"bug_id", label:"Bug", sortable:true,
               formatter: bugLinkFormatter, allowHTML: true },
             { key: "updated", label: "Updated", sortable: true,
@@ -159,15 +175,15 @@ YUI({
     dataSource.requester.plug(Y.Plugin.DataSourceJSONSchema, {
         schema: {
             resultListLocator: "result.result.requester",
-            resultFields: ["requestee", "type", "bug_id", "bug_status",
-                           "bug_summary", "updated", "updated_fancy"]
+            resultFields: ["requestee", "type", "attach_id", "is_patch", "bug_id",
+                           "bug_status", "bug_summary", "updated", "updated_fancy"]
         }
     });
 
     Y.one('#requester_refresh').on('click', function(e) {
         updateFlagTable('requester');
     });
-    Y.one('#requester_resolved').on('change', function(e) {
+    Y.one('#requester_closed').on('change', function(e) {
         updateFlagTable('requester');
     });
 });

@@ -432,6 +432,31 @@ sub tags {
     return $self->{tags};
 }
 
+sub bugs_ignored {
+    my ($self) = @_;
+    my $dbh = Bugzilla->dbh;
+    if (!defined $self->{'bugs_ignored'}) {
+        $self->{'bugs_ignored'} = $dbh->selectall_arrayref(
+            'SELECT bugs.bug_id AS id,
+                    bugs.bug_status AS status,
+                    bugs.short_desc AS summary
+               FROM bugs
+                    INNER JOIN email_bug_ignore
+                    ON bugs.bug_id = email_bug_ignore.bug_id
+              WHERE user_id = ?',
+            { Slice => {} }, $self->id);
+        # Go ahead and load these into the visible bugs cache
+        # to speed up can_see_bug checks later
+        $self->visible_bugs([ map { $_->{'id'} } @{ $self->{'bugs_ignored'} } ]);
+    }
+    return $self->{'bugs_ignored'};
+}
+
+sub is_bug_ignored {
+    my ($self, $bug_id) = @_;
+    return (grep {$_->{'id'} == $bug_id} @{$self->bugs_ignored}) ? 1 : 0;
+}
+
 ##########################
 # Saved Recent Bug Lists #
 ##########################
@@ -2211,6 +2236,34 @@ groups.
 Returns a hashref with tag IDs as key, and a hashref with tag 'id',
 'name' and 'bug_count' as value.
 
+=item C<bugs_ignored>
+
+Returns an array of hashrefs containing information about bugs currently
+being ignored by the user.
+
+Each hashref contains the following information:
+
+=over
+
+=item C<id>
+
+C<int> The id of the bug.
+
+=item C<status>
+
+C<string> The current status of the bug.
+
+=item C<summary>
+
+C<string> The current summary of the bug.
+
+=back
+
+=item C<is_bug_ignored>
+
+Returns true if the user does not want email notifications for the
+specified bug ID, else returns false.
+
 =back
 
 =head2 Saved Recent Bug Lists
@@ -2440,7 +2493,8 @@ the database again. Used mostly by L<Bugzilla::Product>.
 
 =item C<can_enter_product($product_name, $warn)>
 
- Description: Returns 1 if the user can enter bugs into the specified product.
+ Description: Returns a product object if the user can enter bugs into the
+              specified product.
               If the user cannot enter bugs into the product, the behavior of
               this method depends on the value of $warn:
               - if $warn is false (or not given), a 'false' value is returned;
@@ -2451,7 +2505,7 @@ the database again. Used mostly by L<Bugzilla::Product>.
                               must be thrown if the user cannot enter bugs
                               into the specified product.
 
- Returns:     1 if the user can enter bugs into the product,
+ Returns:     A product object if the user can enter bugs into the product,
               0 if the user cannot enter bugs into the product and if $warn
               is false (an error is thrown if $warn is true).
 

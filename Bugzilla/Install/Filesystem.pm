@@ -159,6 +159,7 @@ sub FILESYSTEM {
         'runtests.pl'     => { perms => OWNER_EXECUTE },
         'jobqueue.pl'     => { perms => OWNER_EXECUTE },
         'migrate.pl'      => { perms => OWNER_EXECUTE },
+        'arecibo.pl'      => { perms => OWNER_EXECUTE },
         'install-module.pl' => { perms => OWNER_EXECUTE },
 
         'Bugzilla.pm'   => { perms => CGI_READ },
@@ -180,6 +181,7 @@ sub FILESYSTEM {
         "$datadir/old-params.txt"  => { perms => OWNER_WRITE },
         "$extensionsdir/create.pl" => { perms => OWNER_EXECUTE },
         "$extensionsdir/*/*.pl"    => { perms => WS_EXECUTE },
+        "$extensionsdir/*/bin/*"   => { perms => WS_EXECUTE },
     );
 
     # Directories that we want to set the perms on, but not

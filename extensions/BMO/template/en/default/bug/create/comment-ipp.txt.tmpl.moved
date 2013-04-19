@@ -8,7 +8,7 @@
 
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi +%]
-:: Internet Public Policy Issue
+:: Internet Public Policy Request
 
 Region/Country: [% cgi.param("region") %]
 

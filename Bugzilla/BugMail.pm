@@ -114,12 +114,15 @@ sub Send {
     }
 
     if ($params->{dep_only}) {
+        my $fields = Bugzilla->fields({ by_name => 1 });
         push(@diffs, { field_name => 'bug_status',
+                       field_desc => $fields->{bug_status}->description,
                        old => $params->{changes}->{bug_status}->[0],
                        new => $params->{changes}->{bug_status}->[1],
                        login_name => $changer->login,
                        blocker => $params->{blocker} },
                      { field_name => 'resolution',
+                       field_desc => $fields->{resolution}->description,
                        old => $params->{changes}->{resolution}->[0],
                        new => $params->{changes}->{resolution}->[1],
                        login_name => $changer->login,
@@ -260,6 +263,13 @@ sub Send {
         # Deleted users must be excluded.
         next unless $user;
 
+        # If email notifications are disabled for this account, or the bug
+        # is ignored, there is no need to do additional checks.
+        if ($user->email_disabled || $user->is_bug_ignored($id)) {
+            push(@excluded, $user->login);
+            next;
+        }
+
         if ($user->can_see_bug($id)) {
             # Go through each role the user has and see if they want mail in
             # that role.
@@ -276,7 +286,7 @@ sub Send {
                 }
             }
         }
-        
+
         if (scalar(%rels_which_want)) {
             # So the user exists, can see the bug, and wants mail in at least
             # one role. But do we want to send it to them?
@@ -298,8 +308,6 @@ sub Send {
                 ($user->login eq 'sync-1@bugzilla.tld' || $user->login !~ /\.tld$/))
 
             {
-                # OK, OK, if we must. Email the user.
-
                 # Don't show summaries for bugs the user can't access, and
                 # provide a hook for extensions such as SecureMail to filter
                 # this list.

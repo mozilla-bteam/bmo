@@ -7,24 +7,17 @@
   #%]
 
 [% USE Bugzilla %]
-[% cgi = Bugzilla.cgi +%]
-:: Internet Public Policy Issue
+[% cgi = Bugzilla.cgi %]
 
-Region/Country: [% cgi.param("region") %]
+What are the steps to reproduce?:
+[%+ cgi.param('steps_to_reproduce') %]
 
-:: Description
+What was the actual behavior?: 
+[%+ cgi.param('actual_behavior') %]
 
-[%+ cgi.param("desc") %]
+What was the expected behavior?:
+[%+ cgi.param('expected_behavior') %]
 
-:: Relevance
+What build were you using?: [% cgi.param('build') %]
 
-[%+ cgi.param("relevance") %]
-
-Goal: [% cgi.param("goal") %]
-When: [% cgi.param("when") %]
-
-[% IF cgi.param("additional") %]
-:: Additional Information
-
-[%+ cgi.param("additional") %]
-[% END %]
+What are the requirements?: [% cgi.param('requirements') %]

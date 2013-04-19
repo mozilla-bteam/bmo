@@ -12,7 +12,8 @@
   title = "My Dashboard"
   style_urls = [ "extensions/MyDashboard/web/styles/mydashboard.css",
                  "extensions/ProdCompSearch/web/styles/prod_comp_search.css" ]
-  javascript_urls = [ "extensions/MyDashboard/web/js/query.js",
+  javascript_urls = [ "js/yui3/yui/yui-min.js",
+                      "extensions/MyDashboard/web/js/query.js",
                       "extensions/MyDashboard/web/js/flags.js",
                       "extensions/ProdCompSearch/web/js/prod_comp_search.js" ]
 %]
@@ -67,6 +68,12 @@
   </div>
 </script>
 
+<script type="text/javascript">
+  [% IF Param('splinter_base') %]
+    MyDashboard.splinter_base = '[% Bugzilla.splinter_review_base FILTER js %]';
+  [% END %]
+</script>
+
 <div id="mydashboard">
   <div class="yui3-skin-sam">
     <div id="left">
@@ -117,8 +124,8 @@
         <span id="requestee_count_refresh" class="bz_default_hidden">
           <span class="items_found" id="requestee_flags_found">0 flags found</span>
           | <a class="refresh" href="javascript:void(0);" id="requestee_refresh">Refresh</a>
-          | <input type="checkbox" id="requestee_resolved">
-            <label for="requestee_resolved">Show resolved</label>
+          | <input type="checkbox" id="requestee_closed">
+            <label for="requestee_closed">Include Closed</label>
         </span>
         <div id="requestee_table"></div>
       </div>
@@ -130,8 +137,8 @@
         <span id="requester_count_refresh" class="bz_default_hidden">
           <span class="items_found" id="requester_flags_found">0 flags found</span>
           | <a class="refresh" href="javascript:void(0);" id="requester_refresh">Refresh</a>
-          | <input type="checkbox" id="requester_resolved">
-            <label for="requester_resolved">Show resolved</label>
+          | <input type="checkbox" id="requester_closed">
+            <label for="requester_closed">Include Closed</label>
         </span>
         <div id="requester_table"></div>
       </div>
