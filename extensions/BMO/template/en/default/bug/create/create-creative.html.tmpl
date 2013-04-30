@@ -1,0 +1,202 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% inline_style = BLOCK %]
+#creative_form th {
+  text-align: right;
+}
+#creative_form textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+.yui-calcontainer {
+  z-index: 2;
+}
+[% END %]
+
+[% inline_javascript = BLOCK %]
+function validateAndSubmit() {
+  var alert_text = '';
+  if (!isFilledOut('overview')) alert_text += 'Please enter a value for Project Overview.\n';
+  if (!isFilledOut('short_desc')) alert_text += 'Please enter a value for Request Title.\n';
+  if (!isFilledOut('specs')) alert_text += 'Please enter a value for Creative Specs.\n';
+  if (!isFilledOut('cf_due_date')) alert_text += 'Please enter a value for Launch Date.\n';
+  if (!isFilledOut('creative_due_date')) alert_text += 'Please enter enter a value Creative Due Date.\n';
+  if (!isFilledOut('goal')) alert_text += 'Please select a value for Mozilla Goal.\n';
+
+  if (YAHOO.util.Dom.get('goal').value == 'Other') {
+    if (!isFilledOut('goal_other')) alert_text += 'Please select a value for Mozilla Goal Other.\n';
+  }
+
+  if (alert_text != '') {
+    alert(alert_text);
+    return false;
+  }
+  return true;
+}
+function toggleGoalOther() {
+  if (YAHOO.util.Dom.get('goal').value == 'Other') {
+    YAHOO.util.Dom.removeClass('goal_other','bz_default_hidden');
+  }
+  else {
+    YAHOO.util.Dom.addClass('goal','bz_default_hidden');
+  }
+}
+[% END %]
+
+[% PROCESS global/header.html.tmpl
+   title = "Creative Initiation Form"
+   style = inline_style
+   javascript = inline_javascript
+   javascript_urls = [ 'extensions/BMO/web/js/form_validate.js',
+                       'js/field.js', 'js/util.js' ]
+   yui = [ "autocomplete", "calendar" ]
+%]
+
+[% USE Bugzilla %]
+[% cgi = Bugzilla.cgi %]
+
+<h2>Creative Initiation Form</h2>
+
+<p>Have a new project that requires copy, design, video or other awesomeness 
+  from your friendly neighborhood Brand Team? Great!<br>You’ve come to the right place.
+  Please use the form below to tell us about your request. It will automagically
+  create a bug that we’ll<br>review and then get back to you with next steps as soon as
+  possible. Happy form completing!</p>
+
+<form method="post" action="post_bug.cgi" enctype="multipart/form-data"
+      onSubmit="return validateAndSubmit();">
+  <input type="hidden" name="format" value="creative">
+  <input type="hidden" name="product" value="Marketing">
+  <input type="hidden" name="component" value="Design">
+  <input type="hidden" name="rep_platform" value="All">
+  <input type="hidden" name="op_sys" value="Other">
+  <input type="hidden" name="version" value="unspecified">
+  <input type="hidden" name="bug_severity" id="bug_severity" value="normal">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+
+<table id="creative_form">
+
+<tr>
+  <th class="required">Project / Request Title</th>
+  <td>
+    <em>Describe your project or request as succinctly as possible, i.e. in a few words<br>
+      or a short phrase.</em><br>
+    <input type="text" name="short_desc" id="short_desc" size="60">
+  </td>
+</tr>
+
+<tr>
+  <th class="required">Project Overview</th>
+  <td>
+    <em>What do you need help with? Briefly describe the background, goals and objectives<br>
+      for this project (feel free to add your hopes and dreams, if you like).</em><br>
+    <textarea id="overview" name="overview" cols="60" rows="5"></textarea>
+  </td>
+</tr>
+
+<tr>
+  <th class="required">Creative Specs<br>and Deliverables</th>
+  <td>
+    <em>What is the final deliverable for this project? (e.g. copy, snippet graphic, email template,<br>
+      website design, video, etc.) What format should it be delivered in? (e.g. PSD file,<br>
+      403x403 transparent PNG/JPG, etc.) Be as specific as you can. We like details.</em><br>
+    <textarea id="specs" name="specs" cols="60" rows="5"></textarea>
+  </td>
+</tr>
+
+<tr>
+  <th class="required">Launch Date</th>
+  <td>
+    <em>When will your project go forth into the world?</em><br>
+    <input name="cf_due_date" size="20" id="cf_due_date" value=""
+           onchange="updateCalendarFromField(this)">
+    <button type="button" class="calendar_button"
+            id="button_calendar_cf_due_date"
+            onclick="showCalendar('cf_due_date')">
+      <span>Calendar</span>
+    </button>
+    <div id="con_calendar_cf_due_date"></div>
+    <script type="text/javascript">
+      createCalendar('cf_due_date')
+    </script>
+  </td>
+</tr>
+
+<tr>
+  <th class="required">Creative Due Date</th>
+  <td>
+    <em>Working backwards from your desired launch/go-live date, when do you need the final<br>
+      assets in your hands?</em><br>
+    <input name="creative_due_date" size="20" id="creative_due_date" value=""
+           onchange="updateCalendarFromField(this)">
+    <button type="button" class="calendar_button"
+            id="button_calendar_creative_due_date"
+            onclick="showCalendar('creative_due_date')">
+      <span>Calendar</span>
+    </button>
+    <div id="con_calendar_creative_due_date"></div>
+    <script type="text/javascript">
+      createCalendar('creative_due_date')
+    </script>
+  </td>
+</tr>
+
+<tr>
+  <th class="required">Mozilla Goal</th>
+  <td>
+    <em>Which high-level Mozilla goal does this project support?</em><br>
+    <select id="goal" name="goal"
+            onchange="toggleGoalOther();">
+      <option value="">Please select..</option>
+      <option value="Firefox Deskop">Firefox Desktop</option>
+      <option value="Firefox OS">Firefox OS</option>
+      <option value="Firefox Android">Firefox Android</option>
+      <option value="Firefox Marketplace">Firefox Marketplace</option>
+      <option value="Corporate Support">Corporate Support</option>
+      <option value="All">All</option>
+      <option value="Other">Other</option>
+    </select><br>
+    <input type="text" name="goal_other" id="goal_other" size="40"
+           class="bz_default_hidden" value="">
+  </td>
+</tr>
+
+<tr>
+  <th>Points of Contact</th>
+  <td>
+    <em>Who should be kept in the loop and informed of updates? These folks will<br>
+      be CC'd on the bug.</em><br>
+    [% INCLUDE global/userselect.html.tmpl
+       id       => "cc"
+       name     => "cc"
+       value    => ""
+       size     => 60
+       classes  => ["bz_userfield"]
+       multiple => 5
+    %]
+  </td>
+</tr>
+
+<tr>
+  <td>&nbsp;</td>
+</tr>
+
+<tr>
+  <td>&nbsp;</td>
+  <td><input type="submit" id="commit" value="Submit"></td>
+</tr>
+
+</table>
+</form>
+
+[ <span class="required_star">*</span> <span class="required_explanation">Required Field</span> ]
+
+[% PROCESS global/footer.html.tmpl %]
