@@ -50,6 +50,8 @@ use constant CONFIG => {
     ignore => [
         qr/Software caused connection abort/,
         qr/Could not check out .*\/cvsroot/,
+        qr/Unicode character \S+ is illegal/,
+        qr/Lost connection to MySQL server during query/,
     ],
 
     # (ab)use the logger to classify error/warning types
@@ -62,7 +64,7 @@ use constant CONFIG => {
             logger => 'database_error',
         },
         {
-            match  => [ qr#/PatchReader/# ],
+            match  => [ qr/PatchReader/ ],
             logger => 'patchreader',
         },
         {
