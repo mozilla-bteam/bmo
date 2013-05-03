@@ -14,5 +14,7 @@ Project Overview:
 Creative Specs and Deliverables:
 [%+ cgi.param("specs") %]
 
+[% IF cgi.param("creative_due_date") %]
 Creative Due Date: [% cgi.param("creative_due_date") %]
+[% END %]
 Mozilla Goal: [% IF cgi.param("goal_other") %][% cgi.param("goal_other") %][% ELSE %][% cgi.param("goal") %][% END %]

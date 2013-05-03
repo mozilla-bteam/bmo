@@ -27,8 +27,6 @@ function validateAndSubmit() {
   if (!isFilledOut('overview')) alert_text += 'Please enter a value for Project Overview.\n';
   if (!isFilledOut('short_desc')) alert_text += 'Please enter a value for Request Title.\n';
   if (!isFilledOut('specs')) alert_text += 'Please enter a value for Creative Specs.\n';
-  if (!isFilledOut('cf_due_date')) alert_text += 'Please enter a value for Launch Date.\n';
-  if (!isFilledOut('creative_due_date')) alert_text += 'Please enter enter a value Creative Due Date.\n';
   if (!isFilledOut('goal')) alert_text += 'Please select a value for Mozilla Goal.\n';
 
   if (YAHOO.util.Dom.get('goal').value == 'Other') {
@@ -113,7 +111,7 @@ function toggleGoalOther() {
 </tr>
 
 <tr>
-  <th class="required">Launch Date</th>
+  <th>Launch Date</th>
   <td>
     <em>When will your project go forth into the world?</em><br>
     <input name="cf_due_date" size="20" id="cf_due_date" value=""
@@ -131,7 +129,7 @@ function toggleGoalOther() {
 </tr>
 
 <tr>
-  <th class="required">Creative Due Date</th>
+  <th>Creative Due Date</th>
   <td>
     <em>Working backwards from your desired launch/go-live date, when do you need the final<br>
       assets in your hands?</em><br>
@@ -186,12 +184,19 @@ function toggleGoalOther() {
 </tr>
 
 <tr>
-  <td>&nbsp;</td>
+  <td></td>
+  <td>
+    <br>
+    Thanks! Once you hit submit, your request will go off into the vortex of creative magic.<br>
+    What happens there is a closely guarded secret. We'd tell you, but honestly we don't know.
+  </td>
 </tr>
 
 <tr>
-  <td>&nbsp;</td>
-  <td><input type="submit" id="commit" value="Submit"></td>
+  <td></td>
+  <td>
+    <input type="submit" id="commit" value="Submit">
+  </td>
 </tr>
 
 </table>
