@@ -35,7 +35,7 @@ our @EXPORT = qw( $cf_visible_in_products
                   $status_trusted_wanters
                   $status_trusted_setters
                   $other_setters
-                  %always_fileable_group
+                  @always_fileable_groups
                   %group_auto_cc
                   %product_sec_groups
                   %create_bug_formats );
@@ -371,40 +371,42 @@ our $other_setters = {
     'cf_colo_site'  => ['infra', 'build'],
 };
 
-# Groups in which you can always file a bug, whoever you are.
-our %always_fileable_group = (
-    'addons-security'                   => 1,
-    'bugzilla-security'                 => 1,
-    'client-services-security'          => 1,
-    'consulting'                        => 1,
-    'core-security'                     => 1,
-    'finance'                           => 1,
-    'infra'                             => 1,
-    'infrasec'                          => 1,
-    'l20n-security'                     => 1,
-    'marketing-private'                 => 1,
-    'mozilla-confidential'              => 1,
-    'mozilla-corporation-confidential'  => 1,
-    'mozilla-foundation-confidential'   => 1,
-    'mozilla-engagement'                => 1,
-    'mozilla-messaging-confidential'    => 1,
-    'partner-confidential'              => 1,
-    'payments-confidential'             => 1,
-    'tamarin-security'                  => 1,
-    'websites-security'                 => 1,
-    'webtools-security'                 => 1,
-    'winqual-data'                      => 1,
+# Groups in which you can always file a bug, regardless of product or user.
+our @always_fileable_groups = qw(
+    addons-security
+    bugzilla-security
+    client-services-security
+    consulting
+    core-security
+    finance
+    infra
+    infrasec
+    l20n-security
+    marketing-private
+    mozilla-confidential
+    mozilla-corporation-confidential
+    mozilla-foundation-confidential
+    mozilla-engagement
+    mozilla-messaging-confidential
+    partner-confidential
+    payments-confidential
+    tamarin-security
+    websites-security
+    webtools-security
+    winqual-data
 );
 
 # Mapping of products to their security bits
 our %product_sec_groups = (
     "addons.mozilla.org"           => 'client-services-security',
+    "Air Mozilla"                  => 'mozilla-corporation-confidential',
     "Android Background Services"  => 'mozilla-services-security',
     "AUS"                          => 'client-services-security',
     "Bugzilla"                     => 'bugzilla-security',
     "bugzilla.mozilla.org"         => 'bugzilla-security',
     "Community Tools"              => 'websites-security',
     "Developer Documentation"      => 'websites-security',
+    "Developer Ecosystem"          => 'client-services-security',
     "Finance"                      => 'finance',
     "Firefox Health Report"        => 'mozilla-services-security',
     "Input"                        => 'websites-security',
@@ -418,7 +420,7 @@ our %product_sec_groups = (
     "Mozilla Grants"               => 'grants',
     "Mozilla Messaging"            => 'mozilla-messaging-confidential',
     "Mozilla Metrics"              => 'metrics-private',
-    "mozilla.org"                  => 'mozilla-confidential',
+    "mozilla.org"                  => 'mozilla-corporation-confidential',
     "Mozilla PR"                   => 'pr-private',
     "Mozilla QA"                   => 'mozilla-corporation-confidential',
     "Mozilla Reps"                 => 'mozilla-reps',
@@ -427,7 +429,6 @@ our %product_sec_groups = (
     "Popcorn"                      => 'websites-security',
     "Privacy"                      => 'privacy',
     "quality.mozilla.org"          => 'websites-security',
-    "Skywriter"                    => 'websites-security',
     "Socorro"                      => 'client-services-security',
     "Snippets"                     => 'websites-security',
     "support.mozilla.org"          => 'websites-security',
@@ -436,8 +437,7 @@ our %product_sec_groups = (
     "Tamarin"                      => 'tamarin-security',
     "Testopia"                     => 'bugzilla-security',
     "Web Apps"                     => 'client-services-security',
-    "webmaker.org"                 => 'websites-security',
-    "Thimble"                      => 'websites-security',
+    "Webmaker"                     => 'websites-security',
     "Websites"                     => 'websites-security',
     "Webtools"                     => 'webtools-security',
     "www.mozilla.org"              => 'websites-security',
@@ -452,9 +452,6 @@ our %group_auto_cc = (
     },
 );
 
-# Default security groups for products should always been fileable
-map { $always_fileable_group{$_} = 1 } values %product_sec_groups;
-
 # Force create-bug template by product
 # Users in 'include' group will be fored into using the form.
 our %create_bug_formats = (
@@ -464,6 +461,10 @@ our %create_bug_formats = (
     },
     'Legal' => {
         'format'  => 'legal',
+        'include' => 'everyone',
+    },
+    'Internet Public Policy' => {
+        'format'  => 'ipp',
         'include' => 'everyone',
     },
 );

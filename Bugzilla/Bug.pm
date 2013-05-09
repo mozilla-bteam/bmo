@@ -166,6 +166,9 @@ sub VALIDATORS {
         elsif ($field->type == FIELD_TYPE_DATETIME) {
             $validator = \&_check_datetime_field;
         }
+        elsif ($field->type == FIELD_TYPE_DATE) {
+            $validator = \&_check_date_field;
+        }
         elsif ($field->type == FIELD_TYPE_FREETEXT) {
             $validator = \&_check_freetext_field;
         }
@@ -248,7 +251,8 @@ use constant NUMERIC_COLUMNS => qw(
 );
 
 sub DATE_COLUMNS {
-    my @fields = @{ Bugzilla->fields({ type => FIELD_TYPE_DATETIME }) };
+    my @fields = (@{ Bugzilla->fields({ type => FIELD_TYPE_DATETIME }) },
+                  @{ Bugzilla->fields({ type => FIELD_TYPE_DATE     }) });
     return map { $_->name } @fields;
 }
 
@@ -1695,14 +1699,6 @@ sub _check_groups {
                                      : $params->{product};
     my %add_groups;
 
-    # BMO: Allow extension to add groups before the
-    # real checks are done.
-    Bugzilla::Hook::process('bug_check_groups', {
-        product     => $product,
-        group_names => $group_names, 
-        add_groups  => \%add_groups 
-    });
-
     # In email or WebServices, when the "groups" item actually 
     # isn't specified, then just add the default groups.
     if (!defined $group_names) {
@@ -1721,12 +1717,9 @@ sub _check_groups {
         foreach my $name (@$group_names) {
             my $group = Bugzilla::Group->check_no_disclose({ %args, name => $name });
 
-            # BMO: Do not check group_is_settable if the group is 
-            # already added, such as from the extension hook. group_is_settable
-            # will reject any group the user is not currently in.
-            if (!$add_groups{$group->id} 
-                && !$product->group_is_settable($group)) 
-            {
+            # BMO : allow bugs to be always placed into some groups
+            if (!$product->group_always_settable($group)
+                && !$product->group_is_settable($group)) {
                 ThrowUserError('group_restriction_not_allowed', { %args, name => $name });
             }
             $add_groups{$group->id} = $group;
@@ -2057,8 +2050,12 @@ sub _check_field_is_mandatory {
     }
 }
 
+sub _check_date_field {
+    my ($invocant, $date) = @_;
+    return $invocant->_check_datetime_field($date, undef, {date_only => 1});
+}
 sub _check_datetime_field {
-    my ($invocant, $date_time) = @_;
+    my ($invocant, $date_time, $field, $params) = @_;
 
     # Empty datetimes are empty strings or strings only containing
     # 0's, whitespace, and punctuation.
@@ -2070,6 +2067,10 @@ sub _check_datetime_field {
     my ($date, $time) = split(' ', $date_time);
     if ($date && !validate_date($date)) {
         ThrowUserError('illegal_date', { date   => $date,
+                                         format => 'YYYY-MM-DD' });
+    }
+    if ($time && $params->{date_only}) {
+        ThrowUserError('illegal_date', { date   => $date_time,
                                          format => 'YYYY-MM-DD' });
     }
     if ($time && !validate_time($time)) {

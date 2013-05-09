@@ -21,13 +21,13 @@ strong.required:before {
   height: 1px;
   visibility: hidden;
 }
-#advanced {
-  margin-top: 50px;
+#standard {
+  margin-top: 2em;
 }
-#advanced img {
+#standard img {
   vertical-align: middle;
 }
-#advanced a {
+#standard a {
   cursor: pointer;
 }
 [% END %]
@@ -252,22 +252,24 @@ strong.required:before {
     </p>
 
     <p id="detail_secure">
-      [% sec_group = sec_groups.${product.name} || sec_groups._default %]
-      <input type="checkbox" name="groups" id="groups" value="[% sec_group FILTER html %]">
-      <label for="groups"><strong>This <span id="secure_type">report</span> is about a problem 
-        that is putting users at risk. It should be kept hidden from the public until it is 
-        resolved.</strong></label>
+      <input type="checkbox" name="groups" id="groups"
+             value="[% product.default_security_group FILTER html %]">
+      <label for="groups">
+        <strong>This <span id="secure_type">report</span> is about a problem
+        that is putting users at risk. It should be kept hidden from the public
+        until it is resolved.</strong>
+      </label>
     </p>
 
     <input type="submit" id="commit" value="Submit"></td>
   </div>
 </form>
 
-<div id="advanced">
-  <a id="advanced_img" href="enter_bug.cgi?format=__standard__&product=Mozilla+Developer+Network">
+<div id="standard">
+  <a href="enter_bug.cgi?format=__standard__&product=[% product.name FILTER uri %]">
     <img src="extensions/BMO/web/images/advanced.png" width="16" height="16" border="0"></a>
-  <a id="advanced_link" href="enter_bug.cgi?format=__standard__&product=Mozilla+Developer+Network">
-    Switch to the advanced [% terms.bug %] entry form</a>
+  <a href="enter_bug.cgi?format=__standard__&product=[% product.name FILTER uri %]">
+    Switch to the standard [% terms.bug %] entry form</a>
 </div>
 
 <script>

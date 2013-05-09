@@ -235,10 +235,19 @@ div.review-patch-comment-text {
     font-weight: bold;
 }
 
+.file-label-extra {
+    font-size: 90%;
+    font-style: italic;
+}
+
+.hunk-header {
+    border: 1px solid #aaaaaa;
+}
+
 .hunk-header td {
     background: #ddccbb;
-    font-family: "DejaVu Sans Mono", monospace;
     font-size: 80%;
+    font-weight: bold;
 }
 
 .hunk-cell {

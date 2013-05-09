@@ -25,22 +25,23 @@ package Bugzilla::Extension::BMO;
 use strict;
 use base qw(Bugzilla::Extension);
 
-use Bugzilla::Field;
 use Bugzilla::Constants;
-use Bugzilla::Status;
+use Bugzilla::Error;
+use Bugzilla::Field;
+use Bugzilla::Group;
+use Bugzilla::Mailer;
 use Bugzilla::Product;
+use Bugzilla::Status;
+use Bugzilla::Token;
 use Bugzilla::User;
 use Bugzilla::User::Setting;
-use Bugzilla::Util qw(html_quote trick_taint trim datetime_from detaint_natural);
-use Bugzilla::Token;
-use Bugzilla::Error;
-use Bugzilla::Mailer;
 use Bugzilla::Util;
+use Bugzilla::Util qw(html_quote trick_taint trim datetime_from detaint_natural);
 
-use Scalar::Util qw(blessed);
 use Date::Parse;
 use DateTime;
 use Encode qw(find_encoding encode_utf8);
+use Scalar::Util qw(blessed);
 use Sys::Syslog qw(:DEFAULT setlogsock);
 
 use Bugzilla::Extension::BMO::Constants;
@@ -55,6 +56,10 @@ our $VERSION = '0.1';
 
 BEGIN {
     *Bugzilla::Bug::last_closed_date = \&_last_closed_date;
+    *Bugzilla::Product::default_security_group = \&_default_security_group;
+    *Bugzilla::Product::default_security_group_obj = \&_default_security_group_obj;
+    *Bugzilla::Product::group_always_settable = \&_group_always_settable;
+    *Bugzilla::check_default_product_security_group = \&_check_default_product_security_group;
 }
 
 sub template_before_process {
@@ -116,9 +121,6 @@ sub template_before_process {
         # Purpose: for pretty product chooser
         $vars->{'format'} = Bugzilla->cgi->param('format');
 
-        # Data needed for "this is a security bug" checkbox
-        $vars->{'sec_groups'} = \%product_sec_groups;
-
         if ($format eq 'doc.html.tmpl') {
             my $versions = Bugzilla::Product->new({ name => 'Core' })->versions;
             $vars->{'versions'} = [ reverse @$versions ];
@@ -172,8 +174,12 @@ sub page_before_template {
         require Bugzilla::Extension::BMO::Reports::ReleaseTracking;
         Bugzilla::Extension::BMO::Reports::ReleaseTracking::report($vars);
     }
+    elsif ($page eq 'product_security_report.html') {
+        require Bugzilla::Extension::BMO::Reports::ProductSecurity;
+        Bugzilla::Extension::BMO::Reports::ProductSecurity::report($vars);
+    }
     elsif ($page eq 'fields.html') {
-        # Recently global/field-descs.none.tmpl and bug/field-help.none.tmpl 
+        # Recently global/field-descs.none.tmpl and bug/field-help.none.tmpl
         # were changed for better performance and are now only loaded once.
         # I have not found an easy way to allow our hook template to check if
         # it is called from pages/fields.html.tmpl. So we set a value in request_cache
@@ -568,25 +574,6 @@ sub bug_format_comment {
     });
 }
 
-# Purpose: make it always possible to file bugs in certain groups.
-sub bug_check_groups {
-    my ($self, $args) = @_;
-    my $group_names = $args->{'group_names'};
-    my $add_groups = $args->{'add_groups'};
-
-    return unless $group_names;
-    $group_names = ref $group_names 
-                   ? $group_names 
-                   : [ map { trim($_) } split(',', $group_names) ];
-
-    foreach my $name (@$group_names) {
-        if (exists $always_fileable_group{$name}) {
-            my $group = new Bugzilla::Group({ name => $name }) or next;
-            $add_groups->{$group->id} = $group;
-        }
-    }
-}
-
 # Purpose: generically handle generating pretty blocking/status "flags" from
 # custom field names.
 sub quicksearch_map {
@@ -937,7 +924,7 @@ sub _log_sent_email {
     } else {
         $message_type = $email->header('X-Bugzilla-Watch-Reason');
     }
-    $message_type ||= '?';
+    $message_type ||= $type || '?';
 
     $subject =~ s/[\[\(]Bug \d+[\]\)]\s*//;
 
@@ -1063,8 +1050,13 @@ sub forced_format {
     my ($product) = @_;
     return undef unless defined $product;
 
+    # always work on the correct product name
+    $product = Bugzilla::Product->new({ name => $product, cache => 1 })
+        unless blessed($product);
+    return undef unless $product;
+
     # check for a forced-format entry
-    my $forced = $create_bug_formats{blessed($product) ? $product->name : $product}
+    my $forced = $create_bug_formats{$product->name}
         || return;
 
     # should this user be included?
@@ -1134,5 +1126,40 @@ sub query_database {
     }
 }
 
+# you can always file bugs into a product's default security group, as well as
+# into any of the groups in @always_fileable_groups
+sub _group_always_settable {
+    my ($self, $group) = @_;
+    return
+        $group->name eq $self->default_security_group
+        || ((grep { $_ eq $group->name } @always_fileable_groups) ? 1 : 0);
+}
+
+sub _default_security_group {
+    my ($self) = @_;
+    return exists $product_sec_groups{$self->name}
+        ? $product_sec_groups{$self->name}
+        : $product_sec_groups{_default};
+}
+
+sub _default_security_group_obj {
+    my ($self) = @_;
+    return unless my $group_name = $self->default_security_group;
+    return Bugzilla::Group->new({ name => $group_name, cache => 1 })
+}
+
+# called from the verify version, component, and group page.
+# if we're making a group invalid, stuff the default group into the cgi param
+# to make it checked by default.
+sub _check_default_product_security_group {
+    my ($self, $product, $invalid_groups, $optional_group_controls) = @_;
+    return unless my $group = $product->default_security_group_obj;
+    if (@$invalid_groups) {
+        my $cgi = Bugzilla->cgi;
+        my @groups = $cgi->param('groups');
+        push @groups, $group->name unless grep { $_ eq $group->name } @groups;
+        $cgi->param('groups', @groups);
+    }
+}
 
 __PACKAGE__->NAME;
