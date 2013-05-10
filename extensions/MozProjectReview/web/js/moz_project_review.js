@@ -15,7 +15,6 @@ var MPR = {
             "short_desc": "Please enter a value for project or feature name in the initial questions section",
             "cc": "Please enter a value for points of contact in the initial questions section",
             "key_initiative": "Please select a value for key initiative in the initial questions section",
-            "release_date": "Please enter a value for release date in the initial questions section",
             "project_status": "Please select a value for project status in the initial questions section",
             "mozilla_data": "Please select a value for mozilla data in the initial questions section",
             "separate_party": "Please select a value for separate party in the initial questions section"
@@ -219,7 +218,7 @@ var MPR = {
 
         if (MPR.fieldValue('relationship_type') == 'Vendor/Services'
             && MPR.fieldValue('legal_vendor_services_where') == 'A single country'
-            && Dom.get('legal_vendor_single_country').value == '')
+            && MPR.fieldValue('legal_vendor_single_country') == '')
         {
             alert_text += "Please select a value for vendor services where single country\n";
         }
