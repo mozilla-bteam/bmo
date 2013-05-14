@@ -46,7 +46,7 @@ sub post_bug_after_creation {
     });
 
     my ($do_sec_review, $do_legal, $do_finance, $do_privacy_vendor,
-        $do_privacy_tech, $do_privacy_policy);
+        $do_privacy_tech, $do_privacy_policy, $do_privacy_business);
 
     if ($params->{'mozilla_data'} eq 'Yes') {
         $do_legal = 1;
@@ -58,6 +58,10 @@ sub post_bug_after_creation {
     if ($params->{'separate_party'} eq 'Yes') {
         if ($params->{'relationship_type'} ne 'Hardware Purchase') {
             $do_legal = 1;
+        }
+
+        if ($params->{'relationship_type'} eq 'Business Partner') {
+            $do_privacy_business = 1;
         }
 
         if ($params->{'data_access'} eq 'Yes') {
@@ -80,8 +84,8 @@ sub post_bug_after_creation {
     }
 
     my ($sec_review_bug, $legal_bug, $finance_bug, $privacy_vendor_bug,
-        $privacy_tech_bug, $privacy_policy_bug, $error, @dep_comment,
-        @dep_errors, @send_mail);
+        $privacy_tech_bug, $privacy_policy_bug, $privacy_business_bug,
+        $error, @dep_comment, @dep_errors, @send_mail);
 
     # Common parameters always passed to _file_child_bug
     # bug_data and template_suffix will be different for each bug
@@ -116,7 +120,8 @@ sub post_bug_after_creation {
             && $params->{relationship_type})
         {
             $component = ($params->{relationship_type} eq 'Other'
-                            || $params->{relationship_type} eq 'Hardware Purchase')
+                            || $params->{relationship_type} eq 'Hardware Purchase'
+                            || $params->{relationship_type} eq 'Business Partner')
                          ? 'General'
                          : $params->{relationship_type};
         }
@@ -174,6 +179,23 @@ sub post_bug_after_creation {
             blocked      => $bug->bug_id,
         };
         $child_params->{'template_suffix'} = 'privacy-tech';
+        _file_child_bug($child_params);
+    }
+
+    if ($do_privacy_business) {
+        $child_params->{'bug_data'} = {
+            short_desc   => 'Privacy / Business Partner Review: ' . $bug->short_desc,
+            product      => 'Privacy',
+            component    => 'Partner Review',
+            bug_severity => 'normal',
+            priority     => '--',
+            groups       => [ 'mozilla-corporation-confidential' ],
+            op_sys       => 'All',
+            rep_platform => 'All',
+            version      => 'unspecified',
+            blocked      => $bug->bug_id,
+        };
+        $child_params->{'template_suffix'} = 'privacy-business-partner';
         _file_child_bug($child_params);
     }
 
