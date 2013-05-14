@@ -65,7 +65,6 @@ var MPR = {
         'relationship_type',
         'data_access',
         'vendor_cost',
-        'po_needed',
         'sec_affects_products',
         'privacy_policy_vendor_user_data',
         'privacy_policy_vendor_questionnaire',
@@ -102,7 +101,6 @@ var MPR = {
             key_initiative_other_row: false,
             initial_separate_party_questions: false,
             finance_questions: false,
-            po_needed_row: false,
             legal_questions: false,
             legal_sow_questions: false,
             legal_vendor_single_country: false,
@@ -149,15 +147,9 @@ var MPR = {
                 page_sections.privacy_policy_vendor_questions = true;
             }
 
-            if (MPR.fieldValue('vendor_cost') == '<= $25,000') {
-                page_sections.po_needed_row = true;
-            }
-
-            if (MPR.fieldValue('po_needed') == 'Yes') {
-                page_sections.finance_questions = true;
-            }
-
-            if (MPR.fieldValue('vendor_cost') == '> $25,000') {
+            if (MPR.fieldValue('vendor_cost') == '> $25,000'
+                || MPR.fieldValue('vendor_cost') == '< $25,000 - Vendor Requests PO')
+            {
                 page_sections.finance_questions = true;
             }
         }
@@ -229,12 +221,6 @@ var MPR = {
             if (!MPR.isFilledOut('vendor_cost')) {
                 alert_text += "Please select a value for vendor cost\n";
             }
-        }
-
-        if (MPR.fieldValue('vendor_cost') == '<= $25,000'
-            && MPR.fieldValue('po_needed') == '')
-        {
-            alert_text += "Please select whether a PO is needed or not\n";
         }
 
         if (alert_text) {
