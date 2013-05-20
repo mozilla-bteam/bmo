@@ -382,10 +382,13 @@ sub _handle_field_names {
 
     # Flag and requestee shortcut
     if ($or_operand =~ /^(?:flag:)?([^\?]+\?)([^\?]*)$/) {
-        addChart('flagtypes.name', 'substring', $1, $negate);
-        $chart++; $and = $or = 0; # Next chart for boolean AND
-        addChart('requestees.login_name', 'substring', $2, $negate);
-        return 1;
+        # BMO: Do not treat custom fields as flags if value is ?
+        if ($1 !~ /^cf_/) {
+            addChart('flagtypes.name', 'substring', $1, $negate);
+            $chart++; $and = $or = 0; # Next chart for boolean AND
+            addChart('requestees.login_name', 'substring', $2, $negate);
+            return 1;
+        }
     }
 
     # Generic field1,field2,field3:value1,value2 notation.

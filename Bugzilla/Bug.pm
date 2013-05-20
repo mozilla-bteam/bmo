@@ -80,7 +80,8 @@ use constant AUDIT_UPDATES => 0;
 # This is a sub because it needs to call other subroutines.
 sub DB_COLUMNS {
     my $dbh = Bugzilla->dbh;
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT}
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
+                       && $_->type != FIELD_TYPE_EXTENSION}
                       Bugzilla->active_custom_fields;
     my @custom_names = map {$_->name} @custom;
 
@@ -114,9 +115,9 @@ sub DB_COLUMNS {
     $dbh->sql_date_format('creation_ts', '%Y.%m.%d %H:%i') . ' AS creation_ts',
     $dbh->sql_date_format('deadline', '%Y-%m-%d') . ' AS deadline',
     @custom_names);
-    
+
     Bugzilla::Hook::process("bug_columns", { columns => \@columns });
-    
+
     return @columns;
 }
 
@@ -214,7 +215,8 @@ sub VALIDATOR_DEPENDENCIES {
 };
 
 sub UPDATE_COLUMNS {
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT}
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
+                       && $_->type != FIELD_TYPE_EXTENSION}
                       Bugzilla->active_custom_fields;
     my @custom_names = map {$_->name} @custom;
     my @columns = qw(
@@ -2323,7 +2325,8 @@ sub set_all {
     $self->_add_remove($params, 'see_also');
 
     # And set custom fields.
-    my @custom_fields = Bugzilla->active_custom_fields;
+    my @custom_fields = grep { $_->type != FIELD_TYPE_EXTENSION }
+                             Bugzilla->active_custom_fields;
     foreach my $field (@custom_fields) {
         my $fname = $field->name;
         if (exists $params->{$fname}) {
@@ -3767,6 +3770,9 @@ sub editable_bug_fields {
         # Ensure field exists before attempting to remove it.
         splice(@fields, $location, 1) if ($location > -1);
     }
+
+    Bugzilla::Hook::process('bug_editable_bug_fields', { fields => \@fields });
+
     # Sorted because the old @::log_columns variable, which this replaces,
     # was sorted.
     return sort(@fields);
