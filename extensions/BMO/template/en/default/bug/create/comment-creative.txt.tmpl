@@ -8,13 +8,23 @@
 
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi +%]
-Project Overview:
-[%+ cgi.param("overview") %]
+>>Project/Request Title:
+[%+ cgi.param('short_desc') %]
 
-Creative Specs and Deliverables:
+>>Project Overview:
+[%+ cgi.param('overview') %]
+
+>>Creative Specs & Deliverables:
 [%+ cgi.param("specs") %]
 
-[% IF cgi.param("creative_due_date") %]
-Creative Due Date: [% cgi.param("creative_due_date") %]
-[% END %]
-Mozilla Goal: [% IF cgi.param("goal_other") %][% cgi.param("goal_other") %][% ELSE %][% cgi.param("goal") %][% END %]
+>>Launch Date:
+[%+ cgi.param("cf_due_date") %]
+
+>>Creative Due Date:
+[%+ cgi.param("creative_due_date") %]
+
+>>Mozilla Goal:
+[%+ IF cgi.param("goal_other") %][% cgi.param("goal_other") %][% ELSE %][% cgi.param("goal") %][% END %]
+
+>>Points of Contact:
+[%+ cgi.param('cc') %]
