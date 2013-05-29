@@ -9,12 +9,23 @@
 [% PROCESS global/variables.none.tmpl %]
 
 [% inline_style = BLOCK %]
-label.required:after {
+#creative_form {
+  padding: 10px;
+}
+#creative_form .required:after {
   content: " *";
   color: red;
 }
-label.field_label {
+#creative_form .field_label {
   font-weight: bold;
+}
+#creative_form .field_desc,
+#creative_form .head_desc {
+  width: 600px;
+  word-wrap: normal;
+}
+#creative_form .head_desc {
+  padding-bottom: 12px;
 }
 #creative_form .form_section {
   margin-bottom: 10px;
@@ -70,14 +81,6 @@ function toggleGoalOther() {
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi %]
 
-<img title="Creative Initiation Form" src="extensions/BMO/web/images/creative.png">
-
-<p>Have a new project that requires copy, design, video or other awesomeness 
-  from your friendly neighborhood Brand Team? Great!<br>You’ve come to the right place.
-  Please use the form below to tell us about your request. It will automagically
-  create a bug that we’ll<br>review and then get back to you with next steps as soon as
-  possible. Happy form completing!</p>
-
 <form id="creative_form" method="post" action="post_bug.cgi" enctype="multipart/form-data"
       onSubmit="return validateAndSubmit();">
   <input type="hidden" name="format" value="creative">
@@ -89,41 +92,49 @@ function toggleGoalOther() {
   <input type="hidden" name="bug_severity" id="bug_severity" value="normal">
   <input type="hidden" name="token" value="[% token FILTER html %]">
 
-<table id="creative_form">
+<img title="Creative Initiation Form" src="extensions/BMO/web/images/creative.png">
+
+<div class="head_desc">
+  Have a new project that requires copy, design, video or other awesomeness 
+  from your friendly neighborhood Brand Team? Great! You’ve come to the right place.
+  Please use the form below to tell us about your request. It will automagically
+  create a bug that we’ll review and then get back to you with next steps as soon as
+  possible. Happy form completing!
+</div>
 
 <div class="form_section">
   <label for="short_desc" class="field_label required">Project / Request Title</label>
-  <br>
-  <em>Describe your project or request as succinctly as possible, i.e. in a few words
-    or a short phrase.</em>
-  <br>
-  <input type="text" name="short_desc" id="short_desc" size="60">
+  <div class="field_desc">
+    Describe your project or request as succinctly as possible, i.e. in a few words
+    or a short phrase.
+  </div>
+  <input type="text" name="short_desc" id="short_desc" size="80">
 </div>
 
 <div class="form_section">
   <label for="overview" class="field_label required">Project Overview</label>
-  <br>
-  <em>What do you need help with? Briefly describe the background, goals and objective for this project<br>
-    (feel free to add your hopes and dreams, if you like).</em>
-  <br>
-  <textarea id="overview" name="overview" cols="60" rows="5"></textarea>
+  <div class="field_desc">
+    What do you need help with? Briefly describe the background, goals and objective for this project
+    (feel free to add your hopes and dreams, if you like).
+  </div>
+  <textarea id="overview" name="overview" cols="80" rows="5"></textarea>
 </div>
 
 <div class="form_section">
   <label for="specs" class="field_label required">Creative Specs and Deliverables</label>
-  <br>
-  <em>What is the final deliverable for this project? (e.g. copy, snippet graphic, email template, website design,<br>
-    video, etc.) What format should it be delivered in? (e.g. PSD file, 403x403 divansparent PNG/JPG, etc.)<br>
-    Be as specific as you can. We like details.</em>
-  <br>
-  <textarea id="specs" name="specs" cols="60" rows="5"></textarea>
+  <div class="field_desc">
+    What is the final deliverable for this project? (e.g. copy, snippet graphic, email template, website design,
+    video, etc.) What format should it be delivered in? (e.g. PSD file, 403x403 transparent PNG/JPG, etc.)
+    Be as specific as you can. We like details.
+  </div>
+  <textarea id="specs" name="specs" cols="80" rows="5"></textarea>
 </div>
 
 <div class="form_section">
   <label for="cf_due_date" class="field_label">Launch Date</label>
-  <br>
-  <em>When will your project go forth into the world?</em>
-  <br>
+  <div class="field_desc">
+    When will your project go forth into the world?
+  </div>
   <input name="cf_due_date" size="20" id="cf_due_date" value=""
          onchange="updateCalendarFromField(this)">
   <button type="button" class="calendar_button"
@@ -139,10 +150,10 @@ function toggleGoalOther() {
 
 <div class="form_section">
   <label for="creative_due_date" class="field_label">Creative Due Date</label>
-  <br>
-  <em>Working backwards from your desired launch/go-live date, when do you need the final
-    assets in your hands?</em>
-  <br>
+  <div class="field_desc">
+    Working backwards from your desired launch/go-live date, when do you need the final
+    assets in your hands?
+  </div>
   <input name="creative_due_date" size="20" id="creative_due_date" value=""
          onchange="updateCalendarFromField(this)">
   <button type="button" class="calendar_button"
@@ -158,9 +169,9 @@ function toggleGoalOther() {
 
 <div class="form_section">
   <label for="goal" class="field_label required">Mozilla Goal</label>
-  <br>
-  <em>Which high-level Mozilla goal does this project support?</em>
-  <br>
+  <div class="field_desc">
+    Which high-level Mozilla goal does this project support?
+  </div>
   <select id="goal" name="goal"
           onchange="toggleGoalOther();">
     <option value="">Please select..</option>
@@ -179,31 +190,31 @@ function toggleGoalOther() {
 
 <div class="form_section">
   <label for="cc" class="field_label">Points of Contact</label>
-  <br>
-  <em>Who should be kept in the loop and informed of updates? These folks will
-    be CC'd on the bug.</em>
-  <br>
+  <div class="field_desc">
+    Who should be kept in the loop and informed of updates? These folks will
+    be CC'd on the bug.
+  </div>
   [% INCLUDE global/userselect.html.tmpl
      id       => "cc"
      name     => "cc"
      value    => ""
-     size     => 60
+     size     => 80
      classes  => ["bz_userfield"]
      multiple => 5
   %]
 </div>
 
-<p>
-  Thanks! Once you hit submit, your request will go off into the vortex of creative magic.<br>
+<div class="head_desc">
+  Thanks! Once you hit submit, your request will go off into the vortex of creative magic.
   What happens there is a closely guarded secret. We'd tell you, but honestly we don't know.
-</p>
+</div>
 
 <input type="submit" id="commit" value="Submit">
-
-</form>
 
 <p>
   [ <span class="required_star">*</span> <span class="required_explanation">Required Field</span> ]
 </p>
+
+</form>
 
 [% PROCESS global/footer.html.tmpl %]
