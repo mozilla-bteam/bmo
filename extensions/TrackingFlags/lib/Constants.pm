@@ -36,8 +36,18 @@ use constant FLAG_TYPES => [
         collapsed   => 1,
     },
     {
-        name        => 'b2g',
-        description => 'B2G Flags',
+        name        => 'b2g_partner',
+        description => 'B2G Partner Flags',
+        collapsed   => 1,
+    },
+    {
+        name        => 'b2g_status',
+        description => 'B2G Status Flags',
+        collapsed   => 1,
+    },
+    {
+        name        => 'b2g_tracking',
+        description => 'B2G Tracking Flags',
         collapsed   => 1,
     },
 ];
