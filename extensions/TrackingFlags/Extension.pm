@@ -63,7 +63,6 @@ sub template_before_process {
         });
 
         $vars->{tracking_flag_types} = FLAG_TYPES;
-        use Data::Dumper; print STDERR Dumper $vars->{'tracking_flags'};
     }
     elsif ($file eq 'bug/edit.html.tmpl'|| $file eq 'bug/show.xml.tmpl') {
         # note: bug/edit.html.tmpl doesn't support multiple bugs

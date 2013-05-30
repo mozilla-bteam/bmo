@@ -124,7 +124,7 @@ sub update {
     # Update the fielddefs entry
     $dbh->do("UPDATE fielddefs SET name = ?, description = ? WHERE name = ?",
              undef,
-             $self->id, $self->description, $old_self->name);
+             $self->name, $self->description, $old_self->name);
 
     return $changes;
 }
@@ -174,7 +174,7 @@ sub match {
         }
     }
 
-    return [ values %flag_hash ];
+    return [ sort { $a->sortkey <=> $b->sortkey } values %flag_hash ];
 }
 
 sub get_all {
