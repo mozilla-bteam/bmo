@@ -243,8 +243,10 @@ Splinter.Patch = {
         '(?=@@)',                                   // @@ line
         'mg'
     ),
-    HUNK_START1_RE: /^@@[ \t]+-(\d+),(\d+)[ \t]+\+(\d+),(\d+)[ \t]+@@(.*)\n/mg,
-    HUNK_START2_RE: /^@@[ \t]+-(\d+),(\d+)[ \t]+\+(\d+)[ \t]+@@(.*)\n/mg,
+    HUNK_START1_RE: /^@@[ \t]+-(\d+),(\d+)[ \t]+\+(\d+),(\d+)[ \t]+@@(.*)\n/mg, // -l,s +l,s
+    HUNK_START2_RE: /^@@[ \t]+-(\d+),(\d+)[ \t]+\+(\d+)[ \t]+@@(.*)\n/mg,       // -l,s +l
+    HUNK_START3_RE: /^@@[ \t]+-(\d+)[ \t]+\+(\d+),(\d+)[ \t]+@@(.*)\n/mg,       // -l +l,s
+    HUNK_START4_RE: /^@@[ \t]+-(\d+)[ \t]+\+(\d+)[ \t]+@@(.*)\n/mg,             // -l +l
     HUNK_RE       : /((?:(?!---)[ +\\-].*(?:\n|$))*)/mg,
 
     GIT_BINARY_RE : /^diff --git a\/(\S+).*\n(?:(new|deleted) file mode \d+\n)?(?:index.*\n)?GIT binary patch\n(delta )?/mg,
@@ -556,26 +558,69 @@ Splinter.Patch.Patch.prototype = {
             var hunks = [];
             var pos = Splinter.Patch.FILE_START_RE.lastIndex;
             while (true) {
+                var found = false;
+                var oldStart, oldCount, newStart, newCount, context;
+
+                // -l,s +l,s
                 var re = Splinter.Patch.HUNK_START1_RE;
                 re.lastIndex = pos;
-                var newCountIndex = 4;
-                var extraIndex = 5;
                 var m2 = re.exec(text);
-                if (m2 == null || m2.index != pos) {
-                    re = Splinter.Patch.HUNK_START2_RE;
-                    re.lastIndex = pos;
-                    newCountIndex = 0;
-                    extraIndex = 4;
-                    m2 = re.exec(text);
-                }
-                if (m2 == null || m2.index != pos) {
-                    break;
+                if (m2 != null && m2.index == pos) {
+                    oldStart = parseInt(m2[1], 10);
+                    oldCount = parseInt(m2[2], 10);
+                    newStart = parseInt(m2[3], 10);
+                    newCount = parseInt(m2[4], 10);
+                    context  = m2[5];
+                    found    = true;
                 }
 
-                var oldStart = parseInt(m2[1], 10);
-                var oldCount = parseInt(m2[2], 10);
-                var newStart = parseInt(m2[3], 10);
-                var newCount = newCountIndex == 0 ? 1 : parseInt(m2[4], 10);
+                if (!found) {
+                    // -l,s +l
+                    re = Splinter.Patch.HUNK_START2_RE;
+                    re.lastIndex = pos;
+                    m2 = re.exec(text);
+                    if (m2 != null && m2.index == pos) {
+                        oldStart = parseInt(m2[1], 10);
+                        oldCount = parseInt(m2[2], 10);
+                        newStart = parseInt(m2[3], 10);
+                        newCount = 1;
+                        context  = m2[4];
+                        found    = true;
+                    }
+                }
+
+                if (!found) {
+                    // -l +l,s
+                    re = Splinter.Patch.HUNK_START3_RE;
+                    re.lastIndex = pos;
+                    m2 = re.exec(text);
+                    if (m2 != null && m2.index == pos) {
+                        oldStart = parseInt(m2[1], 10);
+                        oldCount = 1;
+                        newStart = parseInt(m2[2], 10);
+                        newCount = parseInt(m2[3], 10);
+                        context  = m2[4];
+                        found    = true;
+                    }
+                }
+
+                if (!found) {
+                    // -l +l
+                    re = Splinter.Patch.HUNK_START4_RE;
+                    re.lastIndex = pos;
+                    m2 = re.exec(text);
+                    if (m2 != null && m2.index == pos) {
+                        oldStart = parseInt(m2[1], 10);
+                        oldCount = 1;
+                        newStart = parseInt(m2[2], 10);
+                        newCount = 1;
+                        context  = m2[3];
+                        found    = true;
+                    }
+                }
+
+                if (!found)
+                    break;
 
                 pos = re.lastIndex;
                 Splinter.Patch.HUNK_RE.lastIndex = pos;
@@ -585,7 +630,7 @@ Splinter.Patch.Patch.prototype = {
                 }
 
                 pos = Splinter.Patch.HUNK_RE.lastIndex;
-                hunks.push(new Splinter.Patch.Hunk(oldStart, oldCount, newStart, newCount, m2[extraIndex], m3[1]));
+                hunks.push(new Splinter.Patch.Hunk(oldStart, oldCount, newStart, newCount, context, m3[1]));
             }
 
             if (status === undefined) {
@@ -1343,6 +1388,10 @@ Splinter.discardReview = function () {
 };
 
 Splinter.haveDraft = function () {
+    if (Splinter.readOnly) {
+        return false;
+    }
+
     if (Splinter.theAttachment.status && Dom.get('attachmentStatus').value != Splinter.theAttachment.status) {
         return true;
     }
@@ -1921,7 +1970,7 @@ Splinter.appendPatchHunk = function (file, hunk, tableType, includeComments, cli
             }
         }
 
-        if (clickable) {
+        if (!Splinter.readOnly && clickable) {
             Splinter.domCache.data(tr).patchFile = file;
             Splinter.domCache.data(tr).patchLocation = loc;
             Event.addListener(tr, 'dblclick', Splinter.onRowDblClick);
@@ -1981,28 +2030,30 @@ Splinter.addPatchFile = function (file) {
     fileLabelStatus.appendChild(document.createTextNode(statusString));
     fileLabelStatus.appendTo(fileLabel);
 
-    var fileReviewed = new Element(document.createElement('span'));
-    Dom.addClass(fileReviewed, 'file-review');
-    Dom.setAttribute(fileReviewed, 'title', 'Indicates that a review has been completed for this file. ' +
-                                            'This is for personal tracking purposes only and has no effect ' +
-                                            'on the published review.');
-    fileReviewed.appendTo(fileLabel);
+    if (!Splinter.readOnly) {
+        var fileReviewed = new Element(document.createElement('span'));
+        Dom.addClass(fileReviewed, 'file-review');
+        Dom.setAttribute(fileReviewed, 'title', 'Indicates that a review has been completed for this file. ' +
+                                                'This is for personal tracking purposes only and has no effect ' +
+                                                'on the published review.');
+        fileReviewed.appendTo(fileLabel);
 
-    var fileReviewedInput = new Element(document.createElement('input'));
-    Dom.setAttribute(fileReviewedInput, 'type', 'checkbox');
-    Dom.setAttribute(fileReviewedInput, 'id', 'file-review-checkbox-' + encodeURIComponent(file.filename));
-    Dom.setAttribute(fileReviewedInput, 'onchange', "Splinter.toggleFileReviewed('" +
-                                                    encodeURIComponent(file.filename) + "');");
-    if (file.fileReviewed) {
-        Dom.setAttribute(fileReviewedInput, 'checked', 'true');
+        var fileReviewedInput = new Element(document.createElement('input'));
+        Dom.setAttribute(fileReviewedInput, 'type', 'checkbox');
+        Dom.setAttribute(fileReviewedInput, 'id', 'file-review-checkbox-' + encodeURIComponent(file.filename));
+        Dom.setAttribute(fileReviewedInput, 'onchange', "Splinter.toggleFileReviewed('" +
+                                                        encodeURIComponent(file.filename) + "');");
+        if (file.fileReviewed) {
+            Dom.setAttribute(fileReviewedInput, 'checked', 'true');
+        }
+        fileReviewedInput.appendTo(fileReviewed);
+
+        var fileReviewedLabel = new Element(document.createElement('label'));
+        Dom.addClass(fileReviewedLabel, 'file-review-label')
+        Dom.setAttribute(fileReviewedLabel, 'for', 'file-review-checkbox-' + encodeURIComponent(file.filename));
+        fileReviewedLabel.appendChild(document.createTextNode(' Reviewed'));
+        fileReviewedLabel.appendTo(fileReviewed);
     }
-    fileReviewedInput.appendTo(fileReviewed);
-
-    var fileReviewedLabel = new Element(document.createElement('label'));
-    Dom.addClass(fileReviewedLabel, 'file-review-label')
-    Dom.setAttribute(fileReviewedLabel, 'for', 'file-review-checkbox-' + encodeURIComponent(file.filename));
-    fileReviewedLabel.appendChild(document.createTextNode(' Reviewed'));
-    fileReviewedLabel.appendTo(fileReviewed);
 
     if (file.extra) {
         var extraContainer = new Element(document.createElement('div'));
@@ -2185,7 +2236,8 @@ Splinter.showOverview = function () {
     Dom.getElementsByClassName('file', 'div', '', function (node) { 
         Dom.setStyle(node, 'display', 'none');
     });
-    Splinter.updateMyPatchComments();
+    if (!Splinter.readOnly)
+        Splinter.updateMyPatchComments();
 };
 
 Splinter.showAllFiles = function () {
@@ -2392,27 +2444,31 @@ Splinter.start = function () {
         Dom.setStyle('emptyCommentNotice', 'display', 'none');
     }
 
-    var myComment = Dom.get('myComment');
-    myComment.value = Splinter.theReview.intro ? Splinter.theReview.intro : "";
-    Event.addListener(myComment, 'focus', function () {
-        Dom.setStyle('emptyCommentNotice', 'display', 'none');
-    });
-    Event.addListener(myComment, 'blur', function () {
-        if (myComment.value == '') {
-            Dom.setStyle('emptyCommentNotice', 'display', 'block');
-        }
-    });
-    Event.addListener(myComment, 'keydown', function () {
-        Splinter.queueSaveDraft();
+    if (!Splinter.readOnly) {
+        var myComment = Dom.get('myComment');
+        myComment.value = Splinter.theReview.intro ? Splinter.theReview.intro : "";
+        Event.addListener(myComment, 'focus', function () {
+            Dom.setStyle('emptyCommentNotice', 'display', 'none');
+        });
+        Event.addListener(myComment, 'blur', function () {
+            if (myComment.value == '') {
+                Dom.setStyle('emptyCommentNotice', 'display', 'block');
+            }
+        });
+        Event.addListener(myComment, 'keydown', function () {
+            Splinter.queueSaveDraft();
+            Splinter.queueUpdateHaveDraft();
+        });
+
+        Splinter.updateMyPatchComments();
+
         Splinter.queueUpdateHaveDraft();
-    });
 
-    Splinter.updateMyPatchComments();
-
-    Splinter.queueUpdateHaveDraft();
-
-    Event.addListener("publishButton", "click", Splinter.publishReview);
-    Event.addListener("cancelButton", "click", Splinter.discardReview);
+        Event.addListener("publishButton", "click", Splinter.publishReview);
+        Event.addListener("cancelButton", "click", Splinter.discardReview);
+    } else {
+        Dom.setStyle('haveDraftNotice', 'display', 'none');
+    }
 };
 
 Splinter.newPageUrl = function (newBugId, newAttachmentId) {
