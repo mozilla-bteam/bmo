@@ -18,13 +18,13 @@
 [%+ cgi.param("specs") %]
 
 >>Launch Date:
-[%+ cgi.param("cf_due_date") %]
+[%+ cgi.param("cf_due_date") || 'Not provided' %]
 
 >>Creative Due Date:
-[%+ cgi.param("creative_due_date") %]
+[%+ cgi.param("creative_due_date") || 'Not provided' %]
 
 >>Mozilla Goal:
 [%+ IF cgi.param("goal_other") %][% cgi.param("goal_other") %][% ELSE %][% cgi.param("goal") %][% END %]
 
 >>Points of Contact:
-[%+ cgi.param('cc') %]
+[%+ cgi.param('cc') || 'Not provided' %]
