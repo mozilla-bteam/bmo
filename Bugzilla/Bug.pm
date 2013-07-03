@@ -514,6 +514,13 @@ sub preload {
     # If we don't do this, can_see_bug will do one call per bug in
     # the dependency lists, during get_bug_link in Bugzilla::Template.
     $user->visible_bugs(\@all_dep_ids);
+
+    # We preload comments here in order to allow us to compare the time it
+    # takes to load comments from the database with the template rendering
+    # time.
+    foreach my $bug (@$bugs) {
+        $bug->comments();
+    }
 }
 
 sub possible_duplicates {
@@ -1225,15 +1232,15 @@ sub send_changes {
         changer   => $user,
     );
 
-    _send_bugmail({ id => $self->id, type => 'bug', forced => \%forced }, 
-                  $vars);
+    my $recipient_count = _send_bugmail(
+        { id => $self->id, type => 'bug', forced => \%forced }, $vars);
 
     # If the bug was marked as a duplicate, we need to notify users on the
     # other bug of any changes to that bug.
     my $new_dup_id = $changes->{'dup_id'} ? $changes->{'dup_id'}->[1] : undef;
     if ($new_dup_id) {
-        _send_bugmail({ forced => { changer => $user }, type => "dupe",
-                        id => $new_dup_id }, $vars);
+        $recipient_count += _send_bugmail(
+            { forced => { changer => $user }, type => "dupe", id => $new_dup_id }, $vars);
     }
 
     # If there were changes in dependencies, we need to notify those
@@ -1252,7 +1259,7 @@ sub send_changes {
 
             foreach my $id (@{ $self->blocked }) {
                 $params->{id} = $id;
-                _send_bugmail($params, $vars);
+                $recipient_count += _send_bugmail($params, $vars);
             }
         }
     }
@@ -1270,15 +1277,17 @@ sub send_changes {
     delete $changed_deps{''};
 
     foreach my $id (sort { $a <=> $b } (keys %changed_deps)) {
-        _send_bugmail({ forced => { changer => $user }, type => "dep",
-                         id => $id }, $vars);
+        $recipient_count += _send_bugmail(
+            { forced => { changer => $user }, type => "dep", id => $id }, $vars);
     }
 
     # Sending emails for the referenced bugs.
     foreach my $ref_bug_id (uniq @{ $self->{see_also_changes} || [] }) {
-        _send_bugmail({ forced => { changer => $user },
-                        id => $ref_bug_id }, $vars);
+        $recipient_count += _send_bugmail(
+            { forced => { changer => $user }, id => $ref_bug_id }, $vars);
     }
+
+    return $recipient_count;
 }
 
 sub _send_bugmail {
@@ -1286,7 +1295,7 @@ sub _send_bugmail {
 
     require Bugzilla::BugMail;
 
-    my $results = 
+    my $results =
         Bugzilla::BugMail::Send($params->{'id'}, $params->{'forced'}, $params);
 
     if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
@@ -1297,6 +1306,8 @@ sub _send_bugmail {
             || ThrowTemplateError($template->error());
         $vars->{'header_done'} = 1;
     }
+
+    return scalar @{ $results->{sent} };
 }
 
 #####################################################################
@@ -3435,6 +3446,8 @@ sub comments {
         }
         Bugzilla::Comment->preload($self->{'comments'});
     }
+    return unless defined wantarray;
+
     my @comments = @{ $self->{'comments'} };
 
     my $order = $params->{order} 
