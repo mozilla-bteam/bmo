@@ -53,7 +53,8 @@
   [% END %]
 [% END %]
 
-[% IF urlbase == 'https://bugzilla.mozilla.org/' %]
+[% IF urlbase == 'https://bugzilla.mozilla.org/'
+      || urlbase == 'https://bugzilla-dev.allizom.org/' %]
   <script type="text/javascript">
     var _gaq = _gaq || [];
     [% IF bug.defined && bug.groups_in.size %] 
