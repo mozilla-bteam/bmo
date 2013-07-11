@@ -24,6 +24,11 @@
 </IfModule>
 </IfModule>
 
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^rest/(.*)$ rest.cgi/$1 [NE]
+</IfModule>
+
 AddType image/x-icon .ico
 ErrorDocument 401 /errors/401.html
 ErrorDocument 403 /errors/403.html
