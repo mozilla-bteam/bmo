@@ -37,7 +37,6 @@ sub get_login_info {
     my ($self) = @_;
     my $cgi = Bugzilla->cgi;
 
-    my $ip_addr      = remote_ip();
     my $login_cookie = $cgi->cookie("Bugzilla_logincookie");
     my $user_id      = $cgi->cookie("Bugzilla_login");
 
@@ -54,7 +53,7 @@ sub get_login_info {
         $user_id = $cookie->value if $cookie;
     }
 
-    if (valid_login_cookie($user_id, $login_cookie, $ip_addr)) {
+    if (valid_login_cookie($user_id, $login_cookie)) {
         return { user_id => $user_id };
     }
 
@@ -72,6 +71,8 @@ sub valid_login_cookie {
     my $dbh = Bugzilla->dbh;
 
     my $ip_addr = remote_ip();
+
+    return undef if (!$user_id || !$login_cookie || !$ip_addr);
 
     # Anything goes for these params - they're just strings which
     # we're going to verify against the db
