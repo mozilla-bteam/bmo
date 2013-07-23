@@ -61,6 +61,7 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
         "Firefox Health Report" => [],
         "Marketplace"           => [],
         "mozilla.org"           => [],
+        "Mozilla Localizations" => [],
         "Mozilla Services"      => [],
         "NSPR"                  => [],
         "NSS"                   => [],
@@ -142,6 +143,10 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
             "Server Operations: Projects",
             "Server Operations: RelEng",
             "Server Operations: Security",
+        ],
+        "Infrastructure & Operations" => [
+            "RelOps",
+            "RelOps: Puppet"
         ],
     },
     qw/^cf_office$/ => {
