@@ -61,12 +61,65 @@ use constant AUDIT_REMOVES => 0;
 sub new {
     my $invocant = shift;
     my $class = ref($invocant) || $invocant;
-    my $self = $class->SUPER::new(@_);
-    if (!$self) {
+    my ($param) = @_;
+
+    my $self;
+    if ($param) {
+        $self = $class->SUPER::new(@_);
+        if (!$self) {
+            $self = DEFAULT_FLAG_BUG;
+            bless($self, $class);
+        }
+    }
+    else {
         $self = DEFAULT_FLAG_BUG;
         bless($self, $class);
     }
-    return $self;
+
+    return $self
+}
+
+sub match {
+    my $class = shift;
+    my $bug_flags = $class->SUPER::match(@_);
+    preload_all_the_things($bug_flags);
+    return $bug_flags;
+}
+
+sub remove_from_db {
+    my ($self) = @_;
+    $self->SUPER::remove_from_db();
+    $self->{'id'} = $self->{'tracking_flag_id'} = $self->{'bug_id'} = 0;
+    $self->{'value'} = '---';
+}
+
+sub preload_all_the_things {
+    my ($bug_flags) = @_;
+    my $cache = Bugzilla->request_cache;
+
+    # Preload tracking flag objects
+    my @tracking_flag_ids;
+    foreach my $bug_flag (@$bug_flags) {
+        if (exists $cache->{'tracking_flags'}
+            && $cache->{'tracking_flags'}->{$bug_flag->tracking_flag_id})
+        {
+            $bug_flag->{'tracking_flag'}
+                = $cache->{'tracking_flags'}->{$bug_flag->tracking_flag_id};
+            next;
+        }
+        push(@tracking_flag_ids, $bug_flag->tracking_flag_id);
+    }
+
+    return unless @tracking_flag_ids;
+
+    my $tracking_flags
+        = Bugzilla::Extension::TrackingFlags::Flag->match({ id => \@tracking_flag_ids });
+    my %tracking_flag_hash = map { $_->flag_id => $_ } @$tracking_flags;
+
+    foreach my $bug_flag (@$bug_flags) {
+        next if exists $bug_flag->{'tracking_flag'};
+        $bug_flag->{'tracking_flag'} = $tracking_flag_hash{$bug_flag->tracking_flag_id};
+    }
 }
 
 ###############################
@@ -84,7 +137,7 @@ sub _check_tracking_flag {
     if (blessed $flag) {
         return $flag->flag_id;
     }
-    $flag = Bugzilla::Extension::TrackingFlags::Flag->new($flag)
+    $flag = Bugzilla::Extension::TrackingFlags::Flag->new({ id => $flag, cache => 1 })
         || ThrowCodeError('tracking_flags_invalid_param', { name => 'flag_id', value => $flag });
     return $flag->flag_id;
 }
@@ -104,15 +157,15 @@ sub bug_id           { return $_[0]->{'bug_id'};           }
 sub value            { return $_[0]->{'value'};            }
 
 sub bug {
-    my ($self) = @_;
-    $self->{'bug'} ||= Bugzilla::Bug->new($self->bug_id);
-    return $self->{'bug'};
+    return $_[0]->{'bug'} ||= Bugzilla::Bug->new({
+        id => $_[0]->bug_id, cache => 1
+    });
 }
 
 sub tracking_flag {
-    my ($self) = @_;
-    $self->{'tracking_flag'} ||= Bugzilla::Extension::TrackingFlags::Flag->new($self->tracking_flag_id);
-    return $self->{'tracking_flag'}
+    return $_[0]->{'tracking_flag'} ||= Bugzilla::Extension::TrackingFlags::Flag->new({
+        id => $_[0]->tracking_flag_id, cache => 1
+    });
 }
 
 1;

@@ -95,7 +95,7 @@
         [% FOREACH field = old_tracking_flags %]
           [% NEXT IF NOT user.id AND field.value == "---" %]
           <tr id="row_[% field.name FILTER js %]">
-            <td class="field_label">
+            <td>
               <label for="[% field.name FILTER html %]">
                 [% field_descs.${field.name} FILTER html %]:
               </label>

@@ -9,10 +9,8 @@
     width: auto !important;
 }
 
-.tracking_flags .field_label,
-.tracking_flags .field_label a {
+.tracking_flags .field_label {
     font-weight: normal !important;
-
 }
 
 #Create .tracking_flags th {

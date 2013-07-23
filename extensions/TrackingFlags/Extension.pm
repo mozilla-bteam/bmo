@@ -62,7 +62,7 @@ sub template_before_process {
             is_active => 1,
         });
 
-        $vars->{tracking_flag_types} = FLAG_TYPES;
+        $vars->{'tracking_flag_types'} = FLAG_TYPES;
     }
     elsif ($file eq 'bug/edit.html.tmpl'|| $file eq 'bug/show.xml.tmpl') {
         # note: bug/edit.html.tmpl doesn't support multiple bugs
@@ -75,19 +75,12 @@ sub template_before_process {
             is_active   => 1,
         });
 
-        $vars->{tracking_flag_types} = FLAG_TYPES;
+        $vars->{'tracking_flag_types'} = FLAG_TYPES;
     }
     elsif ($file eq 'list/edit-multiple.html.tmpl' && $vars->{'one_product'}) {
         $vars->{'tracking_flags'} = Bugzilla::Extension::TrackingFlags::Flag->match({
             product   => $vars->{'one_product'}->name,
             is_active => 1
-        });
-    }
-    elsif ($file eq 'email/bugmail.html.tmpl'
-           || $file eq 'email/bugmail.txt.tmpl')
-    {
-        $vars->{'tracking_flags'} = Bugzilla::Extension::TrackingFlags::Flag->match({
-            bug_id => $vars->{'bug'}->id
         });
     }
 }
@@ -277,14 +270,14 @@ sub active_custom_fields {
     # Create a hash of current fields based on field names
     my %field_hash = map { $_->name => $_ } @$$fields;
 
-    my @tracking_flags;
+     my @tracking_flags;
     if ($product) {
         my $params = { product_id => $product->id };
         $params->{'component_id'} = $component->id if $component;
         @tracking_flags = @{ Bugzilla::Extension::TrackingFlags::Flag->match($params) };
     }
     else {
-        @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all();
+        @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all;
     }
 
     # Add tracking flags to fields hash replacing if already exists for our
@@ -322,25 +315,30 @@ sub buglist_column_joins {
     }
 }
 
-sub object_end_of_new {
+sub bug_create_cf_accessors {
     my ($self, $args) = @_;
-    my $object = $args->{'object'};
-    if ($object && $object->isa('Bugzilla::Bug') && !$object->{'error'}) {
-        # Create the custom accessors for the flag values
-        my $tracking_flags
-            = Bugzilla::Extension::TrackingFlags::Flag->match({ bug_id => $object->id });
-        foreach my $flag (@$tracking_flags) {
-            $object->{$flag->name} = $flag->bug_flag->value;
-            my $accessor = sub {
-                my ($self) = @_;
-                return $self->{$flag->name};
-            };
-            my $name = "Bugzilla::Bug::" . $flag->name;
-            {
-                no strict 'refs';
-                next if defined *{$name};
-                *{$name} = $accessor;
+    # Create the custom accessors for the flag values
+    my @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all;
+    foreach my $flag (@tracking_flags) {
+        my $flag_name = $flag->name;
+        my $accessor = sub {
+            my $self = shift;
+            return $self->{$flag_name} if defined $self->{$flag_name};
+            if (!exists $self->{'_tf_bug_values_preloaded'}) {
+                # preload all values currently set for this bug
+                my $bug_values
+                    = Bugzilla::Extension::TrackingFlags::Flag::Bug->match({ bug_id => $self->id });
+                foreach my $value (@$bug_values) {
+                    $self->{$value->tracking_flag->name} = $value->value;
+                }
+                $self->{'_tf_bug_values_preloaded'} = 1;
             }
+            return $self->{$flag_name} ||= '---';
+        };
+        my $name = "Bugzilla::Bug::$flag_name";
+        {
+            no strict 'refs';
+            *{$name} = $accessor;
         }
     }
 }
@@ -357,7 +355,6 @@ sub bug_editable_bug_fields {
 sub search_operator_field_override {
     my ($self, $args) = @_;
     my $operators = $args->{'operators'};
-
     my @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all;
     foreach my $flag (@tracking_flags) {
         $operators->{$flag->name} = {
@@ -442,7 +439,7 @@ sub bug_end_of_update {
     my (@flag_changes);
     foreach my $flag (@$tracking_flags) {
         my $new_value = $params->{$flag->name} || '---';
-        my $old_value = $flag->bug_flag ? $flag->bug_flag->value : '---';
+        my $old_value = $flag->bug_flag->value;
 
         next if $new_value eq $old_value;
 

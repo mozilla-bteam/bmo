@@ -61,8 +61,6 @@ sub admin_edit {
     } elsif ($input->{save}) {
         # save
 
-        use Data::Dumper; print STDERR Dumper $input;
-
         my ($flag, $values, $visibilities) = _load_from_input($input, $vars);
         _validate($flag, $values, $visibilities);
         my $flag_obj = _update_db($flag, $values, $visibilities);

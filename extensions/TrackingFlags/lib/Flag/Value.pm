@@ -64,7 +64,7 @@ sub _check_tracking_flag {
     if (blessed $flag) {
         return $flag->flag_id;
     }
-    $flag = Bugzilla::Extension::TrackingFlags::Flag->new($flag)
+    $flag = Bugzilla::Extension::TrackingFlags::Flag->new({ id => $flag, cache => 1 })
         || ThrowCodeError('tracking_flags_invalid_param', { name => 'flag_id', value => $flag });
     return $flag->flag_id;
 }
@@ -74,7 +74,7 @@ sub _check_setter_group {
     if (blessed $group) {
         return $group->id;
     }
-    $group = Bugzilla::Group->new($group)
+    $group = Bugzilla::Group->new({ id => $group, cache => 1 })
         || ThrowCodeError('tracking_flags_invalid_param', { name => 'setter_group_id', value => $group });
     return $group->id;
 }
@@ -106,17 +106,18 @@ sub sortkey          { return $_[0]->{'sortkey'};          }
 sub is_active        { return $_[0]->{'is_active'};        }
 
 sub tracking_flag {
-    my ($self) = @_;
-    $self->{'tracking_flag'} ||= Bugzilla::Extension::TrackingFlags::Flag->new($self->tracking_flag_id);
-    return $self->{'tracking_flag'};
+    return $_[0]->{'tracking_flag'} ||= Bugzilla::Extension::TrackingFlags::Flag->new({
+        id => $_[0]->tracking_flag_id, cache => 1
+    });
 }
 
 sub setter_group {
-    my ($self) = @_;
-    if ($self->setter_group_id) {
-        $self->{'setter_group'} ||= Bugzilla::Group->new($self->setter_group_id);
+    if ($_[0]->setter_group_id) {
+        $_[0]->{'setter_group'} ||= Bugzilla::Group->new({
+            id => $_[0]->setter_group_id, cache => 1
+        });
     }
-    return $self->{'setter_group'};
+    return $_[0]->{'setter_group'};
 }
 
 ########################################

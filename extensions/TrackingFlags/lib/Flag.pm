@@ -14,7 +14,7 @@ use warnings;
 
 use Bugzilla::Error;
 use Bugzilla::Constants;
-use Bugzilla::Util qw(detaint_natural);
+use Bugzilla::Util qw(detaint_natural trim);
 
 use Bugzilla::Extension::TrackingFlags::Constants;
 use Bugzilla::Extension::TrackingFlags::Flag::Bug;
@@ -68,6 +68,21 @@ use constant UPDATE_VALIDATORS => {
 ####      Methods          ####
 ###############################
 
+sub new {
+    my $class = shift;
+    my $param = shift;
+    my $cache = Bugzilla->request_cache;
+
+    if (!ref $param
+        && exists $cache->{'tracking_flags'}
+        && exists $cache->{'tracking_flags'}->{$param})
+    {
+        return $cache->{'tracking_flags'}->{$param};
+    }
+
+    return $class->SUPER::new($param);
+}
+
 sub create {
     my $class = shift;
     my $params = shift;
@@ -85,7 +100,7 @@ sub create {
     # another column to the bugs table.
     # We will create the entry as a custom field with a
     # type of FIELD_TYPE_EXTENSION so Bugzilla will skip
-    # these field types in certain parts of the core code.
+    # thesl field types in certain parts of the core code.
     $dbh->do("INSERT INTO fielddefs
              (name, description, sortkey, type, custom, obsolete, buglist)
               VALUES
@@ -126,26 +141,29 @@ sub update {
              undef,
              $self->name, $self->description, $old_self->name);
 
+    # Update request_cache
+    my $cache = Bugzilla->request_cache;
+    if (exists $cache->{'tracking_flags'}
+        && exists $cache->{'tracking_flags'}->{$self->flag_id})
+    {
+        $cache->{'tracking_flags'}->{$self->flag_id} = $self;
+    }
+
     return $changes;
 }
 
 sub match {
     my $class = shift;
     my ($params) = @_;
+    my $cache = Bugzilla->request_cache;
 
+    # Use later for preload
     my $bug_id = delete $params->{'bug_id'};
 
-    # Retrieve all existing flags for this bug if bug_id given
-    my $bug_flags = [];
-    if ($bug_id) {
-        $bug_flags = Bugzilla::Extension::TrackingFlags::Flag::Bug->match({
-            bug_id => $bug_id
-        });
-    }
-
     # Retrieve all flags relevant for the given product and component
-    if ($params->{'component'} || $params->{'component_id'}
-        || $params->{'product'} || $params->{'product_id'})
+    if (!exists $params->{'id'}
+        && ($params->{'component'} || $params->{'component_id'}
+            || $params->{'product'} || $params->{'product_id'}))
     {
         my $visible_flags
             = Bugzilla::Extension::TrackingFlags::Flag::Visibility->match(@_);
@@ -161,27 +179,21 @@ sub match {
 
     my $flags = $class->SUPER::match(@_);
 
-    my %flag_hash = map { $_->flag_id => $_ } @$flags;
+    preload_all_the_things($flags, { bug_id => $bug_id });
 
-    if (@$bug_flags) {
-        map { $flag_hash{$_->tracking_flag->flag_id} = $_->tracking_flag } @$bug_flags;
-    }
-
-    # Prepopulate bug_flag if bug_id passed
-    if ($bug_id) {
-        foreach my $flag (keys %flag_hash) {
-            $flag_hash{$flag}->bug_flag($bug_id);
-        }
-    }
-
-    return [ sort { $a->sortkey <=> $b->sortkey } values %flag_hash ];
+    return [ sort { $a->sortkey <=> $b->sortkey } @$flags ];
 }
 
 sub get_all {
     my $self = shift;
     my $cache = Bugzilla->request_cache;
-    $cache->{'tracking_flags_all'} ||= [ $self->SUPER::get_all(@_) ];
-    return @{ $cache->{'tracking_flags_all'} };
+    if (!exists $cache->{'tracking_flags'}) {
+        my @tracking_flags = $self->SUPER::get_all(@_);
+        preload_all_the_things(\@tracking_flags);
+        my %tracking_flags_hash = map { $_->flag_id => $_ } @tracking_flags;
+        $cache->{'tracking_flags'} = \%tracking_flags_hash;
+    }
+    return values %{ $cache->{'tracking_flags'} };
 }
 
 sub remove_from_db {
@@ -191,6 +203,60 @@ sub remove_from_db {
     $dbh->do('DELETE FROM fielddefs WHERE name = ?', undef, $self->name);
     $self->SUPER::remove_from_db(@_);
     $dbh->bz_commit_transaction();
+
+    # Remove from request cache
+    my $cache = Bugzilla->request_cache;
+    if (exists $cache->{'tracking_flags'}
+        && exists $cache->{'tracking_flags'}->{$self->flag_id})
+    {
+        delete $cache->{'tracking_flags'}->{$self->flag_id};
+    }
+}
+
+sub preload_all_the_things {
+    my ($flags, $params) = @_;
+
+    my %flag_hash = map { $_->flag_id => $_ } @$flags;
+    my @flag_ids = keys %flag_hash;
+    return unless @flag_ids;
+
+    # Preload values
+    my $value_objects
+        = Bugzilla::Extension::TrackingFlags::Flag::Value->match({ tracking_flag_id => \@flag_ids });
+
+    # Now populate the tracking flags with this set of value objects.
+    foreach my $obj (@$value_objects) {
+        my $flag_id = $obj->tracking_flag_id;
+
+        # Prepopulate the tracking flag object in the value object
+        $obj->{'tracking_flag'} = $flag_hash{$flag_id};
+
+        # Prepopulate the current value objects for this tracking flag
+        $flag_hash{$flag_id}->{'values'} ||= [];
+        push(@{$flag_hash{$flag_id}->{'values'}}, $obj);
+    }
+
+    # Preload bug values if a bug_id is passed
+    if ($params && exists $params->{'bug_id'} && $params->{'bug_id'}) {
+        # We don't want to use @flag_ids here as we want all flags attached to this bug
+        # even if they are inactive.
+        my $bug_objects
+            = Bugzilla::Extension::TrackingFlags::Flag::Bug->match({ bug_id => $params->{'bug_id'} });
+        # Now populate the tracking flags with this set of objects.
+        # Also we add them to the flag hash since we want them to be visible even if
+        # they are not longer applicable to this product/component.
+        foreach my $obj (@$bug_objects) {
+            my $flag_id = $obj->tracking_flag_id;
+
+            # Prepopulate the tracking flag object in the bug flag object
+            $obj->{'tracking_flag'} = $flag_hash{$flag_id};
+
+            # Prepopulate the the current bug flag object for the tracking flag
+            $flag_hash{$flag_id}->{'bug_flag'} = $obj;
+        }
+    }
+
+    @$flags = values %flag_hash;
 }
 
 ###############################
@@ -199,18 +265,21 @@ sub remove_from_db {
 
 sub _check_name {
     my ($invocant, $name) = @_;
+    $name = trim($name);
     $name || ThrowCodeError('param_required', { param => 'name' });
     return $name;
 }
 
 sub _check_description {
     my ($invocant, $description) = @_;
+    $description = trim($description);
     $description || ThrowCodeError( 'param_required', { param => 'description' } );
     return $description;
 }
 
 sub _check_type {
     my ($invocant, $type) = @_;
+    $type = trim($type);
     $type || ThrowCodeError( 'param_required', { param => 'type' } );
     grep($_->{name} eq $type, @{FLAG_TYPES()})
         || ThrowUserError('tracking_flags_invalid_flag_type', { type => $type });
@@ -246,19 +315,15 @@ sub sortkey     { return $_[0]->{'sortkey'};     }
 sub is_active   { return $_[0]->{'is_active'};   }
 
 sub values {
-    my ($self) = @_;
-    $self->{'values'} ||= Bugzilla::Extension::TrackingFlags::Flag::Value->match({
-        tracking_flag_id => $self->flag_id
+    return $_[0]->{'values'} ||= Bugzilla::Extension::TrackingFlags::Flag::Value->match({
+        tracking_flag_id => $_[0]->flag_id
     });
-    return $self->{'values'};
 }
 
 sub visibility {
-    my ($self) = @_;
-    $self->{'visibility'} ||= Bugzilla::Extension::TrackingFlags::Flag::Visibility->match({
-        tracking_flag_id => $self->flag_id
+    return $_[0]->{'visibility'} ||= Bugzilla::Extension::TrackingFlags::Flag::Visibility->match({
+        tracking_flag_id => $_[0]->flag_id
     });
-    return $self->{'visibility'};
 }
 
 sub can_set_value {
@@ -266,7 +331,10 @@ sub can_set_value {
     $user ||= Bugzilla->user;
     my $new_value_obj;
     foreach my $value (@{$self->values}) {
-        $new_value_obj = $value if $value->value eq $new_value;
+        if ($value->value eq $new_value) {
+            $new_value_obj = $value;
+            last;
+        }
     }
     return $new_value_obj && $user->in_group($new_value_obj->setter_group->name)
            ? 1
@@ -275,25 +343,33 @@ sub can_set_value {
 
 sub bug_flag {
     my ($self, $bug_id) = @_;
-    # Set to 0 if not defined so that the default empty value will be used (i.e. '---')
-    $bug_id = defined $bug_id ? $bug_id : $self->{'bug_id'} || 0;
-    $self->{'bug_id'} = $bug_id;
-    $self->{'bug_flag'}
-        ||= Bugzilla::Extension::TrackingFlags::Flag::Bug->new(
-            { condition => "tracking_flag_id = ? AND bug_id = ?",
-              values    => [ $self->flag_id, $bug_id ] });
-    return $self->{'bug_flag'};
+    # Return the current bug value object if defined unless the passed bug_id does
+    # not equal the current bug value objects id.
+    if (defined $self->{'bug_flag'}
+        && (!$bug_id || $self->{'bug_flag'}->bug->id == $bug_id))
+    {
+        return $self->{'bug_flag'};
+    }
+
+    # Flag::Bug->new will return a default bug value object if $params undefined
+    my $params = !$bug_id
+                 ? undef
+                 : { condition => "tracking_flag_id = ? AND bug_id = ?",
+                     values    => [ $self->flag_id, $bug_id ] };
+    return $self->{'bug_flag'} = Bugzilla::Extension::TrackingFlags::Flag::Bug->new($params);
 }
 
 sub has_values {
     my ($self) = @_;
+    return $self->{'has_values'} if defined $self->{'has_values'};
     my $dbh = Bugzilla->dbh;
-    return scalar $dbh->selectrow_array("
+    $self->{'has_values'} = scalar $dbh->selectrow_array("
         SELECT 1
           FROM tracking_flags_bugs
          WHERE tracking_flag_id = ? " .
                $dbh->sql_limit(1),
         undef, $self->flag_id);
+    return $self->{'has_values'};
 }
 
 ######################################

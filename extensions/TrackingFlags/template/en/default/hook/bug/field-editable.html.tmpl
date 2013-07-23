@@ -15,7 +15,7 @@
       [% dontchange FILTER html %]
     </option>
   [% END %]
-  [% FOREACH legal_value = field.legal_values %]
+  [% FOREACH legal_value = field.values %]
     [% IF legal_value.name != value %]
       [% NEXT IF !field.can_set_value(legal_value.name) %]
       [% NEXT IF !legal_value.is_active %]
