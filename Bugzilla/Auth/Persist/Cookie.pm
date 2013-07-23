@@ -30,7 +30,7 @@
 
 package Bugzilla::Auth::Persist::Cookie;
 use strict;
-use fields qw();
+use fields qw(login_cookie);
 
 use Bugzilla::Constants;
 use Bugzilla::Util;
@@ -100,6 +100,10 @@ sub persist_login {
     $cgi->send_cookie(-name => 'Bugzilla_logincookie',
                       -value => $login_cookie,
                       %cookieargs);
+
+    # Store the cookie value for later use as a login token
+    # if we are using webservices
+    $self->{'login_cookie'} = $login_cookie;
 }
 
 sub logout {
@@ -131,6 +135,14 @@ sub logout {
     }
     trick_taint($login_cookie);
 
+    # If we are a webservice causing a token instead of cookies we
+    # can grab the cookie value from the token.
+    my $token  = trim(Bugzilla->input_params->{'Bugzilla_token'});
+    if (defined $token) {
+        my ($user_id, $login_token) = split('-', $token, 2);
+        $login_cookie = $login_token if $login_token;
+    }
+
     # These queries use both the cookie ID and the user ID as keys. Even
     # though we know the userid must match, we still check it in the SQL
     # as a sanity check, since there is no locking here, and if the user
@@ -160,5 +172,7 @@ sub clear_browser_cookies {
     $cgi->remove_cookie('Bugzilla_logincookie');
     $cgi->remove_cookie('sudo');
 }
+
+sub login_cookie { return $_[0]->{'login_cookie'}; }
 
 1;

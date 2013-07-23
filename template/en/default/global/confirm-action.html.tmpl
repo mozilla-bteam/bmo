@@ -53,7 +53,7 @@
 
 <form name="check" id="check" method="post" action="[% script_name FILTER html %]">
   [% PROCESS "global/hidden-fields.html.tmpl"
-             exclude="^(Bugzilla_login|Bugzilla_password|token)$" %]
+             exclude="^(Bugzilla_login|Bugzilla_password|(Bugzilla_)?token)$" %]
   <input type="hidden" name="token" value="[% token FILTER html %]">
   <input type="submit" id="confirm" value="Yes, Confirm Changes">
 </form>

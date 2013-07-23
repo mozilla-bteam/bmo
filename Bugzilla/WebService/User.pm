@@ -49,9 +49,9 @@ sub login {
     my ($self, $params) = @_;
     my $remember = $params->{remember};
 
-    # Username and password params are required 
+    # Username and password params are required
     foreach my $param ("login", "password") {
-        defined $params->{$param} 
+        defined $params->{$param}
             || ThrowCodeError('param_required', { param => $param });
     }
 
@@ -71,14 +71,28 @@ sub login {
     $input_params->{'Bugzilla_password'} = $params->{password};
     $input_params->{'Bugzilla_remember'} = $remember;
 
-    Bugzilla->login();
-    return { id => $self->type('int', Bugzilla->user->id) };
+    my $user = Bugzilla->login();
+
+    my $result = { id => $self->type('int', $user->id) };
+
+    # When the cookie was set for persisting the login, the
+    # cookies value should have cached away as well. We will
+    # use that value combined with the user id to create a the
+    # token that can be used with future requests in the query
+    # parameters.
+    if ($user->authorizer->{'_persister'}->can('login_cookie')
+        && $user->authorizer->{'_persister'}->login_cookie)
+    {
+        $result->{'token'} = $user->id . "-" .
+                             $user->authorizer->{'_persister'}->login_cookie;
+    }
+
+    return $result;
 }
 
 sub logout {
     my $self = shift;
     Bugzilla->logout;
-    return undef;
 }
 
 #################
@@ -358,10 +372,12 @@ management of cookies across sessions.
 
 =item B<Returns>
 
-On success, a hash containing one item, C<id>, the numeric id of the
-user that was logged in.  A set of http cookies is also sent with the
-response.  These cookies must be sent along with any future requests
-to the webservice, for the duration of the session.
+On success, a hash containing two items, C<id>, the numeric id of the
+user that was logged in, and a C<Bugzilla_token> which can be passed in
+the parameters as authentication in other calls. A set of http cookies
+is also sent with the response. These cookies *or* the token can be sent
+along with any future requests to the webservice, for the duration of the
+session.
 
 =item B<Errors>
 

@@ -262,7 +262,7 @@ sub get_attachment {
         }
         my @args = map { $_ . '=' . $attachments{$_}->id } @field_names;
         my $cgi_params = $cgi->canonicalise_query(@field_names, 't',
-            'Bugzilla_login', 'Bugzilla_password');
+            'Bugzilla_login', 'Bugzilla_password', 'Bugzilla_token');
         push(@args, $cgi_params) if $cgi_params;
         my $path = 'attachment.cgi?' . join('&', @args);
 

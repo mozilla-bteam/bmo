@@ -527,7 +527,7 @@ sub SaveSavedSearches {
 my $cgi = Bugzilla->cgi;
 
 # Delete credentials before logging in in case we are in a sudo session.
-$cgi->delete('Bugzilla_login', 'Bugzilla_password') if ($cgi->cookie('sudo'));
+$cgi->delete('Bugzilla_login', 'Bugzilla_password', 'Bugzilla_token') if ($cgi->cookie('sudo'));
 $cgi->delete('GoAheadAndLogIn');
 
 # First try to get credentials from cookies.

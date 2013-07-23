@@ -17,7 +17,9 @@
 
 package Bugzilla::Auth::Login::Cookie;
 use strict;
-use base qw(Bugzilla::Auth::Login);
+
+use base qw(Bugzilla::Auth::Login Exporter);
+@Bugzilla::Auth::Login::Cookie::EXPORT_OK = qw(valid_login_cookie);
 
 use Bugzilla::Constants;
 use Bugzilla::Util;
@@ -34,7 +36,6 @@ use constant is_automatic => 1;
 sub get_login_info {
     my ($self) = @_;
     my $cgi = Bugzilla->cgi;
-    my $dbh = Bugzilla->dbh;
 
     my $ip_addr      = remote_ip();
     my $login_cookie = $cgi->cookie("Bugzilla_logincookie");
@@ -53,29 +54,8 @@ sub get_login_info {
         $user_id = $cookie->value if $cookie;
     }
 
-    if ($login_cookie && $user_id) {
-        # Anything goes for these params - they're just strings which
-        # we're going to verify against the db
-        trick_taint($ip_addr);
-        trick_taint($login_cookie);
-        detaint_natural($user_id);
-
-        my $is_valid =
-          $dbh->selectrow_array('SELECT 1
-                                   FROM logincookies
-                                  WHERE cookie = ?
-                                        AND userid = ?
-                                        AND (ipaddr = ? OR ipaddr IS NULL)',
-                                 undef, ($login_cookie, $user_id, $ip_addr));
-
-        # If the cookie is valid, return a valid username.
-        if ($is_valid) {
-            # If we logged in successfully, then update the lastused 
-            # time on the login cookie
-            $dbh->do("UPDATE logincookies SET lastused = NOW() 
-                       WHERE cookie = ?", undef, $login_cookie);
-            return { user_id => $user_id };
-        }
+    if (valid_login_cookie($user_id, $login_cookie, $ip_addr)) {
+        return { user_id => $user_id };
     }
 
     # Either the he cookie is invalid, or we got no cookie. We don't want 
@@ -83,6 +63,37 @@ sub get_login_info {
     # actually throw an error when it gets a bad cookie. It should just 
     # look like there was no cookie to begin with.
     return { failure => AUTH_NODATA };
+}
+
+# Check to see if the provided login cookie and userid
+# match what is in the database.
+sub valid_login_cookie {
+    my ($user_id, $login_cookie) = @_;
+    my $dbh = Bugzilla->dbh;
+
+    my $ip_addr = remote_ip();
+
+    # Anything goes for these params - they're just strings which
+    # we're going to verify against the db
+    trick_taint($ip_addr);
+    trick_taint($login_cookie);
+    detaint_natural($user_id);
+
+    my $is_valid = $dbh->selectrow_array('
+        SELECT 1
+          FROM logincookies
+         WHERE cookie = ?
+               AND userid = ?
+               AND (ipaddr = ? OR ipaddr IS NULL)',
+        undef, ($login_cookie, $user_id, $ip_addr));
+
+    if ($is_valid) {
+        # If we login cookie is valid, then update the lastused time
+        $dbh->do("UPDATE logincookies SET lastused = NOW()
+                   WHERE cookie = ?", undef, $login_cookie);
+    }
+
+    return $is_valid;
 }
 
 1;
