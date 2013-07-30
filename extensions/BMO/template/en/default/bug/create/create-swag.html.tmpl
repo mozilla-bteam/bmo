@@ -82,7 +82,7 @@ mozspaces = [
   {
     name     => 'San Francisco',
     address1 => 'Mozilla',
-    address2 => '2 Harrison Street, 7th Floor',
+    address2 => '2 Harrison Street, Suite 175',
     city     => 'San Francisco',
     state    => 'CA',
     country  => 'USA',
@@ -118,7 +118,7 @@ mozspaces = [
   {
     name     => 'Paris',
     address1 => 'Mozilla',
-    address2 => '28 Boulevard Poissonnière',
+    address2 => '16 bis Boulevard Montmartre',
     city     => 'Paris',
     state    => 'Paris',
     country  => 'France',
@@ -161,6 +161,7 @@ var needed = {
   '[% item.id FILTER js %]': 0[% ',' UNLESS loop.last %]
 [% END %]
 };
+var needed_freeform = [];
 
 var gear = [
 [% FOREACH item = items %]
@@ -342,6 +343,22 @@ function onShipToMozSpaceClick() {
   onRecognitionChange();
 }
 
+function onAddGearChange(focusInput) {
+  var add_gear = Dom.get('add_gear').value;
+  var isFreeform = add_gear == 'custom' || add_gear == 'other';
+  if (isFreeform) {
+    Dom.addClass('quantity', 'bz_default_hidden');
+    Dom.removeClass('freeform_quantity', 'bz_default_hidden');
+    Dom.removeClass('add_freeform', 'bz_default_hidden');
+    if (focusInput)
+      Dom.get('freeform_add').focus();
+  } else {
+    Dom.removeClass('quantity', 'bz_default_hidden');
+    Dom.addClass('freeform_quantity', 'bz_default_hidden');
+    Dom.addClass('add_freeform', 'bz_default_hidden');
+  }
+}
+
 function firstChild(parent, name) {
   var a = parent.getElementsByTagName(name);
   return a.length == 0 ? false : a[0];
@@ -356,16 +373,32 @@ function getField(id) {
 }
 
 function addGear() {
-  var quantity = parseInt(Dom.get('quantity').value, 10);
   var id = Dom.get('add_gear').value;
-  if (!quantity || !id) return;
-  needed[id] += quantity;
+  if (id == 'custom' || id == 'other') {
+    var quantity = parseInt(Dom.get('freeform_quantity').value, 10);
+    var name = Dom.get('freeform_add').value;
+    if (!quantity || !name) return;
+    needed_freeform.push({ 'type': id, 'quantity': quantity, 'name': name });
+    Dom.get('add_gear').value = '';
+    Dom.get('freeform_quantity').value = '1';
+    Dom.get('freeform_add').value = '';
+    onAddGearChange();
+  } else {
+    var quantity = parseInt(Dom.get('quantity').value, 10);
+    if (!quantity || !id) return;
+    needed[id] += quantity;
+  }
   showGear();
 }
 
 function removeGear(id) {
   if (!id) return;
   needed[id] = 0;
+  showGear();
+}
+
+function removeFreeform(index) {
+  needed_freeform.splice(index, 1);
   showGear();
 }
 
@@ -385,6 +418,16 @@ function showGear() {
             '<td><button onclick="removeGear(\'' + id + '\');return false">Remove</button></td>' +
             '</tr>';
     text += needed[id] + ' x ' + id + ' ' + item.name + "\n";
+  }
+  for (var i = 0, l = needed_freeform.length; i < l; i++) {
+    var item = needed_freeform[i];
+    count += item.quantity;
+    html += '<tr>' +
+            '<td>' + item.quantity + ' x&nbsp;</td>' +
+            '<td>(' + item.type + ') ' + YAHOO.lang.escapeHTML(item.name) + '</td>' +
+            '<td><button onclick="removeFreeform(\'' + i + '\');return false">Remove</button></td>' +
+            '</tr>';
+    text += item.quantity + ' x (' + item.type + ') ' + item.name + "\n";
   }
   if (!count)
     html += '<tr><td><i>No gear selected.</i></td></tr>';
@@ -517,7 +560,7 @@ function showGear() {
 
     <input type="text" size="2" id="quantity" value="1"
            onblur="this.value = parseInt(this.value, 10) ? Math.floor(parseInt(this.value, 10)) : 1">
-    <select id="add_gear">
+    <select id="add_gear" onChange="onAddGearChange(true)">
       <option value="">Please select..</option>
       [% first_group = 1 %]
       [% FOREACH item = items %]
@@ -530,7 +573,17 @@ function showGear() {
         [% END %]
       [% END %]
       [% "</optgroup>" UNLESS first_group %]
+      <optgroup label="otherwise">
+        <option value="custom">custom</option>
+        <option value="other">other</option>
+      </optgroup>
     </select>
+    <span id="add_freeform" class="bz_default_hidden">
+      <br>
+      <input type="text" size="2" id="freeform_quantity" value="1"
+            onblur="this.value = parseInt(this.value, 10) ? Math.floor(parseInt(this.value, 10)) : 1">
+      <input type="text" id="freeform_add" size="40">
+    </span>
     <button onclick="addGear();return false">Add</button>
     <br>
 
@@ -744,6 +797,7 @@ function showGear() {
 <script>
   initFields();
   onPurposeChange();
+  onAddGearChange();
   tagMandatoryFields();
   showGear();
 </script>
