@@ -211,7 +211,7 @@ by both "ids" and "names". Returns an arrayref of objects.
 =head2 fix_credentials
 
 Allows for certain parameters related to authentication such as Bugzilla_login,
-Bugzilla_password, and Bugzilla_token to have shorter named equivalients passed in.
+Bugzilla_password, and Bugzilla_token to have shorter named equivalents passed in.
 This function converts the shorter versions to their respective internal names.
 
 =head1 B<Methods in need of POD>

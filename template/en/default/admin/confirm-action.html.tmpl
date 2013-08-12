@@ -88,7 +88,7 @@
 
   <form name="check" id="check" method="post" action="[% script_name FILTER html %]">
     [% PROCESS "global/hidden-fields.html.tmpl"
-               exclude="^(Bugzilla_login|Bugzilla_password|Bugzilla_token)$" %]
+               exclude="^(Bugzilla_login|Bugzilla_password)$" %]
     <input type="submit" id="confirm" value="Confirm Changes">
   </form>
   <p>Or throw away these changes and go back to <a href="[% alternate_script FILTER html %]">

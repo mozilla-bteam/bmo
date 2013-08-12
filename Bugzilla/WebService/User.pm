@@ -31,6 +31,8 @@ use Bugzilla::Util qw(trim);
 use Bugzilla::WebService::Util qw(filter validate);
 use Bugzilla::Hook;
 
+use List::Util qw(first);
+
 # Don't need auth to login
 use constant LOGIN_EXEMPT => {
     login => 1,
@@ -49,9 +51,9 @@ sub login {
     my ($self, $params) = @_;
     my $remember = $params->{remember};
 
-    # Username and password params are required
+    # Username and password params are required 
     foreach my $param ("login", "password") {
-        defined $params->{$param}
+        defined $params->{$param} 
             || ThrowCodeError('param_required', { param => $param });
     }
 
@@ -75,16 +77,13 @@ sub login {
 
     my $result = { id => $self->type('int', $user->id) };
 
-    # When the cookie was set for persisting the login, the
-    # cookies value should have cached away as well. We will
-    # use that value combined with the user id to create a the
-    # token that can be used with future requests in the query
-    # parameters.
-    if ($user->authorizer->{'_persister'}->can('login_cookie')
-        && $user->authorizer->{'_persister'}->login_cookie)
-    {
-        $result->{'token'} = $user->id . "-" .
-                             $user->authorizer->{'_persister'}->login_cookie;
+    # We will use the stored cookie value combined with the user id
+    # to create a token that can be used with future requests in the
+    # query parameters
+    my $login_cookie = first { $_->name eq 'Bugzilla_logincookie' }
+                              @{ Bugzilla->cgi->{'Bugzilla_cookie_list'} };
+    if ($login_cookie) {
+        $result->{'token'} = $user->id . "-" . $login_cookie->value;
     }
 
     return $result;
@@ -373,7 +372,7 @@ management of cookies across sessions.
 =item B<Returns>
 
 On success, a hash containing two items, C<id>, the numeric id of the
-user that was logged in, and a C<Bugzilla_token> which can be passed in
+user that was logged in, and a C<token> which can be passed in
 the parameters as authentication in other calls. A set of http cookies
 is also sent with the response. These cookies *or* the token can be sent
 along with any future requests to the webservice, for the duration of the

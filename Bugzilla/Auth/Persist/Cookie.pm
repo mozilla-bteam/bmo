@@ -30,11 +30,13 @@
 
 package Bugzilla::Auth::Persist::Cookie;
 use strict;
-use fields qw(login_cookie);
+use fields qw();
 
 use Bugzilla::Constants;
 use Bugzilla::Util;
 use Bugzilla::Token;
+
+use Bugzilla::Auth::Login::Cookie qw(login_token);
 
 use List::Util qw(first);
 
@@ -100,10 +102,6 @@ sub persist_login {
     $cgi->send_cookie(-name => 'Bugzilla_logincookie',
                       -value => $login_cookie,
                       %cookieargs);
-
-    # Store the cookie value for later use as a login token
-    # if we are using webservices
-    $self->{'login_cookie'} = $login_cookie;
 }
 
 sub logout {
@@ -111,6 +109,7 @@ sub logout {
 
     my $dbh = Bugzilla->dbh;
     my $cgi = Bugzilla->cgi;
+    my $input = Bugzilla->input_params;
     $param = {} unless $param;
     my $user = $param->{user} || Bugzilla->user;
     my $type = $param->{type} || LOGOUT_ALL;
@@ -124,24 +123,23 @@ sub logout {
     # The LOGOUT_*_CURRENT options require the current login cookie.
     # If a new cookie has been issued during this run, that's the current one.
     # If not, it's the one we've received.
+    my @login_cookies;
     my $cookie = first {$_->name eq 'Bugzilla_logincookie'}
                        @{$cgi->{'Bugzilla_cookie_list'}};
-    my $login_cookie;
     if ($cookie) {
-        $login_cookie = $cookie->value;
+        push(@login_cookies, $cookie->value);
     }
     else {
-        $login_cookie = $cgi->cookie("Bugzilla_logincookie");
+        push(@login_cookies, $cgi->cookie("Bugzilla_logincookie"));
     }
-    trick_taint($login_cookie);
 
-    # If we are a webservice causing a token instead of cookies we
-    # can grab the cookie value from the token.
-    my $token  = trim(Bugzilla->input_params->{'Bugzilla_token'});
-    if (defined $token) {
-        my ($user_id, $login_token) = split('-', $token, 2);
-        $login_cookie = $login_token if $login_token;
+    # If we are a webservice using a token instead of cookie
+    # then add that as well to the login cookies to delete
+    if (my $login_token = $user->authorizer->login_token) {
+        push(@login_cookies, $login_token->{'login_token'});
     }
+
+    return if !@login_cookies;
 
     # These queries use both the cookie ID and the user ID as keys. Even
     # though we know the userid must match, we still check it in the SQL
@@ -150,12 +148,18 @@ sub logout {
     # logged in and got the same cookie, we could be logging the other
     # user out here. Yes, this is very very very unlikely, but why take
     # chances? - bbaetz
+    map { trick_taint($_) } @login_cookies;
+    @login_cookies = map { $dbh->quote($_) } @login_cookies;
     if ($type == LOGOUT_KEEP_CURRENT) {
-        $dbh->do("DELETE FROM logincookies WHERE cookie != ? AND userid = ?",
-                 undef, $login_cookie, $user->id);
+        $dbh->do("DELETE FROM logincookies WHERE " .
+                 $dbh->sql_in('cookie', \@login_cookies, 1) .
+                 " AND userid = ?",
+                 undef, $user->id);
     } elsif ($type == LOGOUT_CURRENT) {
-        $dbh->do("DELETE FROM logincookies WHERE cookie = ? AND userid = ?",
-                 undef, $login_cookie, $user->id);
+        $dbh->do("DELETE FROM logincookies WHERE " .
+                 $dbh->sql_in('cookie', \@login_cookies) .
+                 " AND userid = ?",
+                 undef, $user->id);
     } else {
         die("Invalid type $type supplied to logout()");
     }
@@ -172,7 +176,5 @@ sub clear_browser_cookies {
     $cgi->remove_cookie('Bugzilla_logincookie');
     $cgi->remove_cookie('sudo');
 }
-
-sub login_cookie { return $_[0]->{'login_cookie'}; }
 
 1;

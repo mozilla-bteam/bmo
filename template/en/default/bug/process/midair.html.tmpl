@@ -82,7 +82,7 @@ You have the following choices:
       <input type="hidden" name="delta_ts" 
              value="[% bug.delta_ts FILTER html %]">
       [% PROCESS "global/hidden-fields.html.tmpl" 
-          exclude="^Bugzilla_login|Bugzilla_password|Bugzilla_token|delta_ts$" %]
+          exclude="^Bugzilla_login|Bugzilla_password|delta_ts$" %]
       <input type="submit" id="process" value="Submit my changes anyway">
         This will cause all of the above changes to be overwritten
         [% ", except for the added comment(s)" IF comments.size > start_at %].

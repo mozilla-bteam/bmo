@@ -174,7 +174,7 @@
 
 [% IF matchsuccess == 1 %]
 
-  [% SET exclude_these = ['Bugzilla_login', 'Bugzilla_password', 'Bugzilla_token'] %]
+  [% SET exclude_these = ['Bugzilla_login', 'Bugzilla_password'] %]
   [% FOREACH key IN matches.keys %]
     [% exclude_these.push(key) IF cgi.param(key) == '' %]
   [% END %]

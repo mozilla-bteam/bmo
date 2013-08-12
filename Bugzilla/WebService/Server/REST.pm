@@ -10,7 +10,7 @@ package Bugzilla::WebService::Server::REST;
 use 5.10.1;
 use strict;
 
-use base qw(Bugzilla::WebService::Server::JSONRPC);
+use parent qw(Bugzilla::WebService::Server::JSONRPC);
 
 use Bugzilla;
 use Bugzilla::Constants;
@@ -540,7 +540,7 @@ also enable SSL support.
 =item Login token
 
 By calling GET /login?login=fred@example.com&password=ilovecheese, you get back
-a C<Bugzilla_token> value which can then be passed to each subsequent call as
+a C<token> value which can then be passed to each subsequent call as
 authentication. This is useful for third party clients that cannot use cookies
 and do not want to store a user's login and password in the client. You can also
 pass in "token" as a convenience.

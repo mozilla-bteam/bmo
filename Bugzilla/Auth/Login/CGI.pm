@@ -37,36 +37,10 @@ use Bugzilla::Constants;
 use Bugzilla::WebService::Constants;
 use Bugzilla::Util;
 use Bugzilla::Error;
-use Bugzilla::Auth::Login::Cookie qw(valid_login_cookie);
-
-sub requires_verification {
-    return exists $_[0]->{'requires_verification'} ? $_[0]->{'requires_verification'} : 1;
-}
 
 sub get_login_info {
     my ($self) = @_;
     my $params = Bugzilla->input_params;
-
-    # Check if a token was passed in via requests for WebServices
-    my $token  = trim(delete $params->{"Bugzilla_token"});
-    if (defined $token) {
-        my ($user_id, $login_token) = split('-', $token, 2);
-        if (!detaint_natural($user_id) || !$login_token) {
-            return { failure => AUTH_NODATA };
-        }
-
-        # Since the login token is basically the same as the cookies
-        # normally stored for a user session, we use the same call to
-        # verify the validity of the login token. Also if token is valid
-        # skip DB verification.
-        if (valid_login_cookie($user_id, $login_token)) {
-            $self->{'requires_verification'} = 0;
-            return { user_id => $user_id };
-        }
-        else {
-            return { failure => AUTH_LOGINFAILED };
-        }
-    }
 
     my $username = trim(delete $params->{"Bugzilla_login"});
     my $password = delete $params->{"Bugzilla_password"};
