@@ -821,7 +821,8 @@ sub create {
                 # and causes awkward things like \n's appearing in error
                 # messages in JSON-RPC.)
                 unless (Bugzilla->usage_mode == USAGE_MODE_JSON
-                        or Bugzilla->usage_mode == USAGE_MODE_XMLRPC)
+                        or Bugzilla->usage_mode == USAGE_MODE_XMLRPC
+                        or Bugzilla->usage_mode == USAGE_MODE_REST)
                 {
                     $var = wrap_comment($var, 72);
                 }

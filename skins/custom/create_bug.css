@@ -1,6 +1,6 @@
-
-.tracking_flags .field_label {
+.tracking_flags .field_label a {
     font-weight: normal !important;
+    color: #000;
 }
 
 #guided {

@@ -4350,6 +4350,7 @@ sub _create_cf_accessors {
 
     my $fields = Bugzilla->fields({ custom => 1 });
     foreach my $field (@$fields) {
+        next if $field->type == FIELD_TYPE_EXTENSION;
         my $accessor = $class->_accessor_for($field);
         my $name = "${class}::" . $field->name;
         {
@@ -4358,6 +4359,8 @@ sub _create_cf_accessors {
             *{$name} = $accessor;
         }
     }
+
+    Bugzilla::Hook::process('bug_create_cf_accessors');
 
     Bugzilla->request_cache->{"${class}_cf_accessors_created"} = 1;
 }

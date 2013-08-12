@@ -892,6 +892,14 @@ sub visible_bugs {
     if (@check_ids) {
         my $dbh = Bugzilla->dbh;
         my $user_id = $self->id;
+
+        foreach my $id (@check_ids) {
+            my $orig_id = $id;
+            detaint_natural($id)
+                || ThrowCodeError('param_must_be_numeric', { param    => $orig_id,
+                                                             function => 'Bugzilla::User->visible_bugs'});
+        }
+
         my $sth;
         # Speed up the can_see_bug case.
         if (scalar(@check_ids) == 1) {
@@ -2107,7 +2115,7 @@ sub validate_password {
     my $complexity_level = Bugzilla->params->{password_complexity};
     if ($complexity_level eq 'letters_numbers_specialchars') {
         ThrowUserError('password_not_complex')
-          if ($password !~ /\w/ || $password !~ /\d/ || $password !~ /[[:punct:]]/);
+          if ($password !~ /[[:alpha:]]/ || $password !~ /\d/ || $password !~ /[[:punct:]]/);
     } elsif ($complexity_level eq 'letters_numbers') {
         ThrowUserError('password_not_complex')
           if ($password !~ /[[:lower:]]/ || $password !~ /[[:upper:]]/ || $password !~ /\d/);

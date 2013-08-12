@@ -235,6 +235,26 @@ sub clean_search_url {
     }
 }
 
+sub check_etag {
+    my ($self, $valid_etag) = @_;
+
+    # ETag support.
+    my $if_none_match = $self->http('If-None-Match');
+    return if !$if_none_match;
+
+    my @if_none = split(/[\s,]+/, $if_none_match);
+    foreach my $possible_etag (@if_none) {
+        # remove quotes from begin and end of the string
+        $possible_etag =~ s/^\"//g;
+        $possible_etag =~ s/\"$//g;
+        if ($possible_etag eq $valid_etag or $possible_etag eq '*') {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 # Overwrite to ensure nph doesn't get set, and unset HEADERS_ONCE
 sub multipart_init {
     my $self = shift;
@@ -325,6 +345,10 @@ sub header {
     # possible clickjacking problems.
     unless ($self->url_is_attachment_base) {
         unshift(@_, '-x_frame_options' => 'SAMEORIGIN');
+    }
+
+    if ($self->{'_content_disp'}) {
+        unshift(@_, '-content_disposition' => $self->{'_content_disp'});
     }
 
     # Add X-XSS-Protection header to prevent simple XSS attacks
@@ -540,6 +564,22 @@ sub url_is_attachment_base {
     return ($self->self_url =~ $regex) ? 1 : 0;
 }
 
+sub set_dated_content_disp {
+    my ($self, $type, $prefix, $ext) = @_;
+
+    my @time = localtime(time());
+    my $date = sprintf "%04d-%02d-%02d", 1900+$time[5], $time[4]+1, $time[3];
+    my $filename = "$prefix-$date.$ext";
+
+    $filename =~ s/\s/_/g; # Remove whitespace to avoid HTTP header tampering
+    $filename =~ s/\\/_/g; # Remove backslashes as well
+    $filename =~ s/"/\\"/g; # escape quotes
+
+    my $disposition = "$type; filename=\"$filename\"";
+
+    $self->{'_content_disp'} = $disposition;
+}
+
 ##########################
 # Vars TIEHASH Interface #
 ##########################
@@ -646,6 +686,11 @@ instead of calling this directly.
 =item C<redirect_to_urlbase>
 
 Redirects from the current URL to one prefixed by the urlbase parameter.
+
+=item C<set_dated_content_disp>
+
+Sets an appropriate date-dependent value for the Content Disposition header
+for a downloadable resource.
 
 =back
 

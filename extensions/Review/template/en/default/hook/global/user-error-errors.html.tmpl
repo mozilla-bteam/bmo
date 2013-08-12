@@ -9,4 +9,10 @@
 [% IF error == "reviewer_required" %]
   [% title = "Reviewer Required" %]
   You must provide a reviewer for review requests.
+
+[% ELSIF error == "reviewer_suggestions_param_required" %]
+  [% title = "Parameter Required" %]
+  You must provide either a bug_id, or a product (and optionally a
+  component).
+
 [% END %]

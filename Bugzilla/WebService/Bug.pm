@@ -330,6 +330,12 @@ sub get {
 
     my @bugs;
     my @faults;
+
+    # Cache permissions for bugs. This highly reduces the number of calls to the DB.
+    # visible_bugs() is only able to handle bug IDs, so we have to skip aliases.
+    my @int = grep { $_ =~ /^\d+$/ } @$ids;
+    Bugzilla->user->visible_bugs(\@int);
+
     foreach my $bug_id (@$ids) {
         my $bug;
         if ($params->{permissive}) {
@@ -348,6 +354,18 @@ sub get {
             $bug = Bugzilla::Bug->check($bug_id);
         }
         push(@bugs, $self->_bug_to_hash($bug, $params));
+    }
+
+    # Set the ETag before inserting the update tokens
+    # since the tokens will always be unique even if
+    # the data has not changed.
+    $self->bz_etag(\@bugs);
+
+    if (Bugzilla->user->id) {
+        foreach my $bug (@bugs) {
+            my $token = issue_hash_token([$bug->{'id'}, $bug->{'last_change_time'}]);
+            $bug->{'update_token'} = $self->type('string', $token);
+        }
     }
 
     return { bugs => \@bugs, faults => \@faults };
@@ -1006,11 +1024,6 @@ sub _bug_to_hash {
         # already does it for us.
         $item{'deadline'} = $self->type('string', $bug->deadline);
         $item{'actual_time'} = $self->type('double', $bug->actual_time);
-    }
-
-    if (Bugzilla->user->id) {
-        my $token = issue_hash_token([$bug->id, $bug->delta_ts]);
-        $item{'update_token'} = $self->type('string', $token);
     }
 
     # The "accessible" bits go here because they have long names and it
@@ -2322,6 +2335,59 @@ The same as L</get>.
 
 =back
 
+=head2 possible_duplicates
+
+B<UNSTABLE>
+
+=over
+
+=item B<Description>
+
+Allows a user to find possible duplicate bugs based on a set of keywords
+such as a user may use as a bug summary. Optionally the search can be
+narrowed down to specific products.
+
+=item B<Params>
+
+=over
+
+=item C<summary> (string) B<Required> - A string of keywords defining
+the type of bug you are trying to report.
+
+=item C<products> (array) - One or more product names to narrow the
+duplicate search to. If omitted, all bugs are searched.
+
+=back
+
+=item B<Returns>
+
+The same as L</get>.
+
+Note that you will only be returned information about bugs that you
+can see. Bugs that you can't see will be entirely excluded from the
+results. So, if you want to see private bugs, you will have to first 
+log in and I<then> call this method.
+
+=item B<Errors>
+
+=over
+
+=item 50 (Param Required)
+
+You must specify a value for C<summary> containing a string of keywords to 
+search for duplicates.
+
+=back
+
+=item B<History>
+
+=over
+
+=item Added in Bugzilla B<4.0>.
+
+=back
+
+=back
 
 =head2 search
 

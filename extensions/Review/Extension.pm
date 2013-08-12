@@ -18,6 +18,8 @@ use Bugzilla::Error;
 use Bugzilla::User;
 use Bugzilla::Util qw(clean_text);
 
+use constant UNAVAILABLE_RE => qr/\b(?:unavailable|pto)\b/i;
+
 #
 # monkey-patched methods
 #
@@ -29,6 +31,7 @@ BEGIN {
     *Bugzilla::Component::reviewers       = \&_component_reviewers;
     *Bugzilla::Component::reviewers_objs  = \&_component_reviewers_objs;
     *Bugzilla::Bug::mentor                = \&_bug_mentor;
+    *Bugzilla::User::review_count         = \&_user_review_count;
 }
 
 #
@@ -58,7 +61,9 @@ sub _reviewers_objs {
         # so we have to reorder the list
         my $users = Bugzilla::User->new_from_list($user_ids);
         my %user_map = map { $_->id => $_ } @$users;
-        my @reviewers = map { $user_map{$_} } @$user_ids;
+        my @reviewers =
+            grep { $_->name !~ UNAVAILABLE_RE }
+            map { $user_map{$_} } @$user_ids;
         $object->{reviewers} = \@reviewers;
     }
     return $object->{reviewers};
@@ -87,6 +92,22 @@ sub _bug_mentor {
         $self->{mentor} = $mentor;
     }
     return $self->{mentor};
+}
+
+sub _user_review_count {
+    my ($self) = @_;
+    if (!exists $self->{review_count}) {
+        ($self->{review_count}) = Bugzilla->dbh->selectrow_array(
+            "SELECT COUNT(*)
+            FROM flags
+                    INNER JOIN flagtypes ON flagtypes.id = flags.type_id
+            WHERE flags.requestee_id = ?
+                    AND flagtypes.name = ?",
+            undef,
+            $self->id, 'review',
+        );
+    }
+    return $self->{review_count};
 }
 
 #
@@ -155,7 +176,7 @@ sub object_end_of_update {
 
 sub _new_reviewers_from_input {
     if (!Bugzilla->input_params->{reviewers}) {
-        return (undef, []);
+        return ('', []);
     }
     Bugzilla::User::match_field({ 'reviewers' => {'type' => 'multi'} });
     my $new = Bugzilla->input_params->{reviewers};
@@ -259,6 +280,50 @@ sub flag_end_of_update {
     {
         ThrowUserError('reviewer_required');
     }
+}
+
+#
+# web service / reports
+#
+
+sub webservice {
+    my ($self,  $args) = @_;
+    my $dispatch = $args->{dispatch};
+    $dispatch->{Review} = "Bugzilla::Extension::Review::WebService";
+}
+
+sub page_before_template {
+    my ($self, $args) = @_;
+    return unless $args->{page_id} eq 'review_suggestions.html';
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    my $products = [];
+    my @products = sort { lc($a->name) cmp lc($b->name) }
+                   @{ Bugzilla->user->get_accessible_products };
+    foreach my $product_obj (@products) {
+        my $has_reviewers = 0;
+        my $product = {
+            name       => $product_obj->name,
+            components => [],
+            reviewers  => $product_obj->reviewers_objs,
+        };
+        $has_reviewers = scalar @{ $product->{reviewers} };
+
+        foreach my $component_obj (@{ $product_obj->components }) {
+            my $component = {
+                name       => $component_obj->name,
+                reviewers  => $component_obj->reviewers_objs,
+            };
+            if (@{ $component->{reviewers} }) {
+                push @{ $product->{components} }, $component;
+                $has_reviewers = 1;
+            }
+        }
+
+        if ($has_reviewers) {
+            push @$products, $product;
+        }
+    }
+    $args->{vars}->{products} = $products;
 }
 
 #
