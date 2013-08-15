@@ -1,0 +1,68 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% USE Bugzilla %]
+[% cgi = Bugzilla.cgi %]
+
+::
+
+Name:
+[%+ cgi.param('name') %]
+
+Email Address:
+[%+ cgi.param('email') %]
+
+Role in relation to event:
+[%+ cgi.param('role') %]
+
+::
+
+Event Name:
+[%+ cgi.param('event') %]
+
+Start Date:
+[%+ cgi.param('start_date') %]
+
+End Date:
+[%+ cgi.param('end_date') %]
+
+Event Location:
+[%+ cgi.param('location') || "-" %]
+
+Weblink:
+[%+ cgi.param('link') || "-" %]
+
+Expected Attendees:
+[%+ cgi.param('attendees') || "-" %]
+
+Event Description:
+[%+ cgi.param('desc') || "-" %]
+
+Primary Audience:
+[%+ cgi.param('audience') || "-" %]
+
+::
+
+Requests:
+[% "\n* Keynote Presentation" IF cgi.param('request-keynote') %]
+[% "\n* Talk Presentation" IF cgi.param('request-talk') %]
+[% "\n* Workshop" IF cgi.param('request-workshop') %]
+[% "\n* Sponsorship" IF cgi.param('request-sponsorship') %]
+[% "\n* Other: " _ cgi.param('request-other-text') IF cgi.param('request-other') %]
+
+Already Registered Mozillians:
+[%+ cgi.param('mozillians') || "-" %]
+
+Requesting A Specific Person:
+[%+ cgi.param('specific') || "-" %]
+
+Alternative Person:
+[%+ cgi.param('fallback') || "-" %]
+
+Anything Else:
+[%+ cgi.param('else') || "-" %]
