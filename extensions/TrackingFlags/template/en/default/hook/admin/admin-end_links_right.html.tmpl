@@ -6,11 +6,13 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<ul>
-  <li>
-    <strong>
-      <a href="[% urlbase FILTER none %]page.cgi?id=review_suggestions.html">Suggested Reviewers</a>
-    </strong> - All suggestions for the "review" flag.
-  </li>
-</ul>
+[% IF user.in_group('admin') %]
+  <dt id="push">
+    <a href="page.cgi?id=tracking_flags_admin_list.html">Release Tracking Flags</a>
+  </dt>
+  <dd>
+    Tracking flags are special multi-value fields used to aid tracking releases
+    of Firefox, Firefox OS, Thunderbird, and other projects.
+  </dd>
+[% END %]
 

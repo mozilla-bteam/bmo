@@ -6,11 +6,5 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<ul>
-  <li>
-    <strong>
-      <a href="[% urlbase FILTER none %]page.cgi?id=review_suggestions.html">Suggested Reviewers</a>
-    </strong> - All suggestions for the "review" flag.
-  </li>
-</ul>
-
+[% javascript_urls.push('extensions/TrackingFlags/web/js/tracking_flags.js') %]
+[% style_urls.push('extensions/TrackingFlags/web/styles/edit_bug.css') %]
