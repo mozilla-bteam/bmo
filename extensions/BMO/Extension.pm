@@ -25,6 +25,8 @@ package Bugzilla::Extension::BMO;
 use strict;
 use base qw(Bugzilla::Extension);
 
+# dummy change to trigger bzr push
+
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Field;
