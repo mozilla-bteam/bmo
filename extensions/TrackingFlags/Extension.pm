@@ -68,12 +68,14 @@ sub template_before_process {
         # note: bug/edit.html.tmpl doesn't support multiple bugs
         my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'};
 
-        $vars->{'tracking_flags'} = Bugzilla::Extension::TrackingFlags::Flag->match({
-            product     => $bug->product,
-            component   => $bug->component,
-            bug_id      => $bug->id,
-            is_active   => 1,
-        });
+        if ($bug) {
+            $vars->{'tracking_flags'} = Bugzilla::Extension::TrackingFlags::Flag->match({
+                product     => $bug->product,
+                component   => $bug->component,
+                bug_id      => $bug->id,
+                is_active   => 1,
+            });
+        }
 
         $vars->{'tracking_flag_types'} = FLAG_TYPES;
     }
@@ -99,7 +101,8 @@ sub db_schema_abstract_schema {
                 NOTNULL => 1,
                 REFERENCES => {
                     TABLE  => 'fielddefs',
-                    COLUMN => 'id'
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE'
                 }
             },
             name => {
@@ -260,6 +263,15 @@ sub db_schema_abstract_schema {
     };
 }
 
+sub install_update_db {
+    my $dbh = Bugzilla->dbh;
+    my $fk = $dbh->bz_fk_info('tracking_flags', 'field_id');
+    if ($fk and !defined $fk->{DELETE}) {
+        $fk->{DELETE} = 'CASCADE';
+        $dbh->bz_alter_fk('tracking_flags', 'field_id', $fk);
+    }
+}
+
 sub active_custom_fields {
     my ($self, $args) = @_;
     my $fields    = $args->{'fields'};
@@ -270,7 +282,7 @@ sub active_custom_fields {
     # Create a hash of current fields based on field names
     my %field_hash = map { $_->name => $_ } @$$fields;
 
-     my @tracking_flags;
+    my @tracking_flags;
     if ($product) {
         my $params = { product_id => $product->id };
         $params->{'component_id'} = $component->id if $component;
@@ -286,7 +298,7 @@ sub active_custom_fields {
         $field_hash{$flag->name} = $flag;
     }
 
-    @$$fields = values %field_hash;
+    @$$fields = sort { $a->sortkey <=> $b->sortkey } values %field_hash;
 }
 
 sub buglist_columns {
@@ -336,7 +348,7 @@ sub bug_create_cf_accessors {
             return $self->{$flag_name} ||= '---';
         };
         my $name = "Bugzilla::Bug::$flag_name";
-        {
+        if (!Bugzilla::Bug->can($flag_name)) {
             no strict 'refs';
             *{$name} = $accessor;
         }

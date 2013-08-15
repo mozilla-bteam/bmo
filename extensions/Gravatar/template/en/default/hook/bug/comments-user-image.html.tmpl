@@ -6,5 +6,6 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% javascript_urls.push('extensions/TrackingFlags/web/js/tracking_flags.js') %]
-[% style_urls.push('extensions/TrackingFlags/web/styles/edit_bug.css') %]
+[% IF user.settings.show_gravatars.value == 'On' %]
+  <img align="middle" src="[% who.gravatar FILTER none %]" width="32" height="32">
+[% END %]
