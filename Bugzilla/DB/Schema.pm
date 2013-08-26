@@ -470,6 +470,7 @@ use constant ABSTRACT_SCHEMA => {
             attachments_creation_ts_idx => ['creation_ts'],
             attachments_modification_time_idx => ['modification_time'],
             attachments_submitter_id_idx => ['submitter_id', 'bug_id'],
+            attachments_ispatch_idx => ['ispatch'],
         ],
     },
     attach_data => {
@@ -896,6 +897,7 @@ use constant ABSTRACT_SCHEMA => {
             extern_id      => {TYPE => 'varchar(64)'},
             is_enabled     => {TYPE => 'BOOLEAN', NOTNULL => 1, 
                                DEFAULT => 'TRUE'}, 
+            last_seen_date => {TYPE => 'DATETIME'},
         ],
         INDEXES => [
             profiles_login_name_idx => {FIELDS => ['login_name'],

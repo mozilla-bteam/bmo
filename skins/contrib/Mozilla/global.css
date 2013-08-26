@@ -2,9 +2,11 @@
 
 body {
     background: #f6f4ec;
+    background-image: url(noise.png);
     background-image: url(noise.png), -moz-linear-gradient(#d7d3c8, #f6f4ec 400px);
     background-image: url(noise.png), -webkit-linear-gradient(#d7d3c8, #f6f4ec 400px);
     background-image: url(noise.png), linear-gradient(#d7d3c8, #f6f4ec 400px);
+    background-repeat: repeat, repeat-x;
     color: #404040;
 }
 
@@ -57,6 +59,7 @@ hr {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     box-sizing: border-box;
+    background: #e5e3dc;
     background: -moz-linear-gradient(#e5e3dc, #ecebe5);
     background: -webkit-linear-gradient(#e5e3dc, #ecebe5);
     background: linear-gradient(#e5e3dc, #ecebe5);
@@ -154,6 +157,7 @@ hr {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     box-sizing: border-box;
+    background: url(search.png) 5px center no-repeat, #fafafa;
     background: url(search.png) 5px center no-repeat, -moz-linear-gradient(#fafafa, #fff);
     background: url(search.png) 5px center no-repeat, -webkit-linear-gradient(#fafafa, #fff);
     background: url(search.png) 5px center no-repeat, linear-gradient(#fafafa, #fff);
@@ -393,12 +397,18 @@ table.edit_form hr {
 
 .bz_first_comment_head, .bz_comment_head {
     font-weight: normal;
-    line-height: 2;
+    font-size; 15px;
+    line-height: 32px;
     padding-bottom: 2px;
     padding-left: 0px;
     margin-left: -5px;
     white-space: nowrap;
     background-color: transparent;
+}
+
+.bz_comment_head img, .bz_first_comment_head img {
+    margin-right: 0.25em;
+    vertical-align: middle;
 }
 
 .bz_comment_user a {
@@ -451,7 +461,6 @@ table.edit_form hr {
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
     padding: 10px;
     position: relative;
-    z-index: 1;
 }
 
 .bz_comment_text {
@@ -498,7 +507,6 @@ table.edit_form hr {
     padding: 10px;
     position: relative;
     top: -1px;
-    z-index: 1;
 }
 
 .bz_collapse_expand_comments li {
@@ -540,6 +548,7 @@ table.edit_form hr {
 }
 
 button, input[type=submit], input[type=button], #commit, #commit_top, #header .btn, #header input[type=submit] {
+    background-color: #43a6e2;
     background-image: -moz-linear-gradient(#43a6e2,#277ac1);
     background-image: -webkit-linear-gradient(#43a6e2,#277ac1);
     background-image: linear-gradient(#43a6e2,#277ac1);
@@ -579,6 +588,7 @@ button:active, input[type=submit]:active, input[type=button]:active, #commit:act
 }
 
 button[disabled], input[type=submit][disabled], input[type=button][disabled], button[disabled]:hover, input[type=submit][disabled]:hover, input[type=button][disabled]:hover, button[disabled]:active, input[type=submit][disabled]:active, input[type=button][disabled]:active {
+    background-color: #bfc7cd;
     background-image: -moz-linear-gradient(#bfc7cd,#9ca3aa);
     background-image: -webkit-linear-gradient(#bfc7cd,#9ca3aa);
     background-image: linear-gradient(#bfc7cd,#9ca3aa);
@@ -643,6 +653,12 @@ table.tabs {
 .tabbody {
     background: white;
     padding: 1em 2em;
+}
+
+/* splinter */
+
+#splinter-files .new-line, #splinter-files .old-line {
+    font-size: 90%;
 }
 
 /* Smaller than standard 990 (devices and browsers) */

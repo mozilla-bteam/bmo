@@ -660,6 +660,9 @@ sub update_table_definitions {
     # 2011-10-11 miketosh - Bug 690173
     _on_delete_set_null_for_audit_log_userid();
 
+    # 2011-11-01 glob@mozilla.com - Bug 240437
+    $dbh->bz_add_column('profiles', 'last_seen_date', {TYPE => 'DATETIME'});
+
     # 2011-11-28 dkl@mozilla.com - Bug 685611
     _fix_notnull_defaults();
 
@@ -698,6 +701,9 @@ sub update_table_definitions {
 
     # 2012-04-15 Frank@Frank-Becker.de - Bug 740536
     $dbh->bz_add_index('audit_log', 'audit_log_class_idx', ['class', 'at_time']);
+
+    # 2013-08-16 glob@mozilla.com - Bug 905925
+    $dbh->bz_add_index('attachments', 'attachments_ispatch_idx', ['ispatch']);
 
     ################################################################
     # New --TABLE-- changes should go *** A B O V E *** this point #
