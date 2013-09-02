@@ -34,6 +34,9 @@ End Date:
 Event Location:
 [%+ cgi.param('location') || "-" %]
 
+Venue:
+[%+ cgi.param('venue') || "-" %]
+
 Weblink:
 [%+ cgi.param('link') || "-" %]
 
@@ -46,6 +49,16 @@ Event Description:
 Primary Audience:
 [%+ cgi.param('audience') || "-" %]
 
+Relevant Products:
+[% "\n* Firefox OS" IF cgi.param('product-fxos') %]
+[% "\n* Firefox Web Browser" IF cgi.param('product-fx') %]
+[% "\n* Webmaker" IF cgi.param('product-webmaker') %]
+[% "\n* Persona" IF cgi.param('product-persona') %]
+[% "\n* Marketplace" IF cgi.param('product-marketplace') %]
+[% "\n* Thunderbird" IF cgi.param('product-tb') %]
+[% "\n* The Free and Open Web" IF cgi.param('product-fow') %]
+[% "\n* Other: " _ cgi.param('product-other-text') IF cgi.param('product-other') %]
+
 ::
 
 Requests:
@@ -54,6 +67,9 @@ Requests:
 [% "\n* Workshop" IF cgi.param('request-workshop') %]
 [% "\n* Sponsorship" IF cgi.param('request-sponsorship') %]
 [% "\n* Other: " _ cgi.param('request-other-text') IF cgi.param('request-other') %]
+
+Suggested sponsorship amount/level:
+[%+ cgi.param('sponsorship-suggestion') || "-" %]
 
 Already Registered Mozillians:
 [%+ cgi.param('mozillians') || "-" %]

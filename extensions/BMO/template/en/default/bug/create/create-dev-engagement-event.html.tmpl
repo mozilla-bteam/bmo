@@ -53,6 +53,24 @@
       input.focus();
   }
 
+  function onRequestSponsorshipChange() {
+    var cb = document.getElementById('request-sponsorship');
+    if (cb.checked) {
+      YAHOO.util.Dom.removeClass('sponsorship-suggestion-fields', 'bz_default_hidden');
+    }
+    else {
+      YAHOO.util.Dom.addClass('sponsorship-suggestion-fields', 'bz_default_hidden');
+    }
+  }
+
+  function onProductOtherChange() {
+    var cb = document.getElementById('product-other');
+    var input = document.getElementById('product-other-text');
+    input.disabled = !cb.checked;
+    if (cb.checked)
+      input.focus();
+  }
+
   function onSubmit() {
     if (document.getElementById('request-other').checked
         && !isFilledOut('request-other-text')
@@ -81,6 +99,7 @@
     if (!isFilledOut('audience'))
       alert_text += "Please enter primary audience.\n";
 
+
     var wb = '';
     if (document.getElementById('request-keynote').checked)
       wb += '[keynote] ';
@@ -94,20 +113,38 @@
       wb += '[other] ';
     if (wb == '')
       alert_text += "Please select what you're requesting.\n";
-    document.getElementById('status_whiteboard').value = wb.replace(/ $/, '');
-
-    document.getElementById('short_desc').value = '[Developer Events Request] ' + document.getElementById('name').value;
 
     if (alert_text != '') {
       alert(alert_text);
       return false;
     }
+
+    document.getElementById('status_whiteboard').value = wb.replace(/ $/, '');
+    var summary = document.getElementById('event').value + ', ' + long_start_date();
+    var loc = document.getElementById('location').value;
+    if (loc)
+      summary = summary + ' (' + loc + ')';
+    document.getElementById('short_desc').value = summary;
+    document.getElementById('bug_file_loc').value = document.getElementById('link').value;
+    document.getElementById('cf_due_date').value = document.getElementById('start_date').value;
+
     return true;
+  }
+
+  function long_start_date() {
+    var ymd = document.getElementById('start_date').value.split('-');
+    if (ymd.length != 3)
+      return '';
+    var month = YAHOO.bugzilla.calendar_start_date.cfg.getProperty('MONTHS_LONG')[ymd[1] - 1];
+    return month + ' ' + ymd[0];
   }
 
   YAHOO.util.Event.onDOMReady(function() {
     createCalendar('start_date');
     createCalendar('end_date');
+    onRequestOtherChange();
+    onRequestSponsorshipChange();
+    onProductOtherChange();
   });
 [% END %]
 
@@ -139,6 +176,8 @@
 <input type="hidden" name="bug_severity" id="bug_severity" value="normal">
 <input type="hidden" name="comment" id="comment" value="">
 <input type="hidden" name="status_whiteboard" id="status_whiteboard" value="">
+<input type="hidden" name="bug_file_loc" id="bug_file_loc" value="">
+<input type="hidden" name="cf_due_date" id="cf_due_date" value="">
 <input type="hidden" name="groups" id="groups" value="mozilla-corporation-confidential">
 <input type="hidden" name="token" value="[% token FILTER html %]">
 
@@ -274,6 +313,21 @@
 
 <tr>
   <th>
+    Venue
+  </th>
+</tr>
+<tr>
+  <td>
+    <div class="blurb">
+      What is the name of the venue where your event will be held? Enter TBD if
+      you don't know yet.
+    </div>
+    <input type="text" name="venue" id="venue" size="40" class="wide">
+  </td>
+</tr>
+
+<tr>
+  <th>
     Weblink
   </th>
 </tr>
@@ -327,6 +381,38 @@
 </tr>
 
 <tr>
+  <th>
+    Which Mozilla products/projects are most relevant to this event? [% mandatory FILTER none %]
+  </th>
+</tr>
+<tr>
+  <td>
+    <div class="blurb">
+      Please select all that apply.
+      See <a href="https://www.mozilla.org/en-US/products/" target="_blank">mozilla.org/products</a>
+      for more information about Mozilla products.
+    </div>
+    <input type="checkbox" name="product-fxos" id="product-fxos">
+    <label for="product-fxos">Firefox OS</label><br>
+    <input type="checkbox" name="product-fx" id="product-fx">
+    <label for="product-fx">Firefox Web Browser</label><br>
+    <input type="checkbox" name="product-webmaker" id="product-webmaker">
+    <label for="product-webmaker">Webmaker</label><br>
+    <input type="checkbox" name="product-persona" id="product-persona">
+    <label for="product-persona">Persona</label><br>
+    <input type="checkbox" name="product-marketplace" id="product-marketplace">
+    <label for="product-marketplace">Marketplace</label><br>
+    <input type="checkbox" name="product-tb" id="product-tb">
+    <label for="product-tb">Thunderbird</label><br>
+    <input type="checkbox" name="product-fow" id="product-fow">
+    <label for="product-fow">The Free and Open Web</label><br>
+    <input type="checkbox" name="product-other" id="product-other" onchange="onProductOtherChange()">
+    <label for="product-other">Other:</label>
+    <input type="text" name="product-other-text" id="product-other-text" size="40" disabled>
+  </td>
+</tr>
+
+<tr>
   <th class="section-head">
     Tell us more about what you're looking for!
   </th>
@@ -348,13 +434,26 @@
     <label for="request-talk">Talk Presentation (non-keynote)</label><br>
     <input type="checkbox" name="request-workshop" id="request-workshop">
     <label for="request-workshop">Workshop</label><br>
-    <input type="checkbox" name="request-sponsorship" id="request-sponsorship">
+    <input type="checkbox" name="request-sponsorship" id="request-sponsorship" onchange="onRequestSponsorshipChange()">
     <label for="request-sponsorship">Sponsorship</label><br>
     <input type="checkbox" name="request-other" id="request-other" onchange="onRequestOtherChange()">
     <label for="request-other">Other:</label>
     <input type="text" name="request-other-text" id="request-other-text" size="40" disabled>
   </td>
 </tr>
+
+<tbody id="sponsorship-suggestion-fields">
+  <tr>
+    <th>
+      If requesting sponsorship, what amount/level do you suggest?
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <input type="text" name="sponsorship-suggestion" id="sponsorship-suggestion" size="40" class="wide">
+    </td>
+  </tr>
+</tbody>
 
 <tr>
   <th>
@@ -389,6 +488,19 @@
 <tr>
   <td>
     <input type="text" name="fallback" id="fallback" size="40" class="wide">
+  </td>
+</tr>
+
+<tr>
+  <th>
+    Please upload a Sponsorship Prospectus if you have one.
+  </th>
+</tr>
+<tr>
+  <td>
+    <input type="file" name="data" id="data" size="40">
+    <input type="hidden" name="contenttypemethod" value="autodetect">
+    <input type="hidden" id="description" name="description" value="Sponsorship Prospectus">
   </td>
 </tr>
 
