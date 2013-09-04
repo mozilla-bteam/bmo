@@ -12,6 +12,7 @@ use strict;
 use warnings;
 
 use Bugzilla::Bug;
+use Bugzilla::Bug;
 
 our $AUTOLOAD;
 
@@ -32,6 +33,43 @@ sub AUTOLOAD {
 sub check_can_change_field {
     my $self = shift;
     return Bugzilla::Bug::check_can_change_field($self, @_)
+}
+
+sub choices {
+    my $self = shift;
+    return $self->{'choices'} if exists $self->{'choices'};
+    return {} if $self->{'error'};
+    my $user = Bugzilla->user;
+
+    my @products = @{ $user->get_enterable_products };
+    # The current product is part of the popup, even if new bugs are no longer
+    # allowed for that product
+    if (!grep($_->name eq $self->product_obj->name, @products)) {
+        unshift(@products, $self->product_obj);
+    }
+
+    my @statuses = @{ Bugzilla::Status->can_change_to };
+
+    # UNCONFIRMED is only a valid status if it is enabled in this product.
+    if (!$self->product_obj->allows_unconfirmed) {
+        @statuses = grep { $_->name ne 'UNCONFIRMED' } @statuses;
+    }
+
+    my %choices = (
+        bug_status       => \@statuses,
+        product          => \@products,
+        component        => $self->product_obj->components,
+        version          => $self->product_obj->versions,
+        target_milestone => $self->product_obj->milestones,
+    );
+
+    my $resolution_field = new Bugzilla::Field({ name => 'resolution' });
+    # Don't include the empty resolution in drop-downs.
+    my @resolutions = grep($_->name, @{ $resolution_field->legal_values });
+    $choices{'resolution'} = \@resolutions;
+
+    $self->{'choices'} = \%choices;
+    return $self->{'choices'};
 }
 
 1;
