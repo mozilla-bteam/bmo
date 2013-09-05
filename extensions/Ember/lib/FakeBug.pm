@@ -12,7 +12,6 @@ use strict;
 use warnings;
 
 use Bugzilla::Bug;
-use Bugzilla::Bug;
 
 our $AUTOLOAD;
 
@@ -31,9 +30,10 @@ sub AUTOLOAD {
 }
 
 sub check_can_change_field {
-    my $self = shift;
-    return Bugzilla::Bug::check_can_change_field($self, @_)
+    return Bugzilla::Bug::check_can_change_field(@_);
 }
+
+sub product_obj { return $_[0]->{product_obj}; }
 
 sub choices {
     my $self = shift;

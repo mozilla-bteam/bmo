@@ -43,6 +43,7 @@ use constant FIELD_TYPE_MAP => {
 
 use constant NON_EDIT_FIELDS => qw(
     assignee_accessible
+    bug_group
     bug_id
     commenter
     cclist_accessible
@@ -55,6 +56,7 @@ use constant NON_EDIT_FIELDS => qw(
     reporter
     reporter_accessible
     restrict_comments
+    tag
     votes
 );
 
@@ -81,6 +83,7 @@ use constant DEFAULT_VALUE_MAP => {
 sub create {
     my ($self, $params) = @_;
 
+    Bugzilla->login(LOGIN_REQUIRED);
     Bugzilla->switch_to_shadow_db();
 
     my $product = delete $params->{product};
@@ -197,6 +200,7 @@ sub show {
 
 sub _get_fields {
     my ($self, $bug, $field_ids) = @_;
+    my $user = Bugzilla->user;
     my $new_bug = $bug->{bug_id} ? 0 : 1;
 
     # Load the field objects we need
@@ -211,8 +215,8 @@ sub _get_fields {
         @field_objs = @{ Bugzilla->fields({ custom => 0 }) };
 
         # Load custom fields
-        my $cf_params = { product => $bug->{product_obj} };
-        $cf_params->{component} = $bug->{component_obj} if $bug->{component_obj};
+        my $cf_params = { product => $bug->product_obj };
+        $cf_params->{component} = $bug->component_obj if $bug->can('component_obj');
         $cf_params->{bug_id} = $bug->{bug_id} if !$new_bug;
         push(@field_objs, Bugzilla->active_custom_fields($cf_params));
     }
@@ -221,60 +225,91 @@ sub _get_fields {
     my %api_names = reverse %{ Bugzilla::Bug::FIELD_MAP() };
 
     my @fields;
-    foreach my $field_obj (@field_objs) {
-        my $field_name = $field_obj->name;
-
+    foreach my $field (@field_objs) {
         # Skip any special fields containing . in the name such as
         # for attachments.*, etc.
-        next if $field_name =~ /\./;
+        next if $field->name =~ /\./;
 
         # Remove time tracking fields if the user is privileged
-        next if ($field_name =~ /_time$/ && !Bugzilla->user->is_timetracker);
+        next if (grep($field->name eq $_, TIMETRACKING_FIELDS)
+                 && !Bugzilla->user->is_timetracker);
 
         # These fields should never be set by the user
-        next if grep($field_name eq $_, NON_EDIT_FIELDS);
+        next if grep($field->name eq $_, NON_EDIT_FIELDS);
 
         # We already selected a product so no need to display all choices
-        next if ($new_bug && $field_name eq 'product');
+        # Might as well skip classification for new bugs as well.
+        next if ($new_bug && ($field->name eq 'product' || $field->name eq 'classification'));
+
+        # Skip assigned_to and qa_contact for new bugs if user not in
+        # editbugs group
+        next if ($new_bug
+                 && ($field->name eq 'assigned_to' || $field->name eq 'qa_contact')
+                 && !$user->in_group('editbugs', $bug->product_obj->id));
 
         # Do not display obsolete fields or fields that should be displayed for create bug form
-        next if ($new_bug && $field_obj->custom
-                 && ($field_obj->obsolete || !$field_obj->enter_bug));
+        next if ($new_bug && $field->custom
+                 && ($field->obsolete || !$field->enter_bug));
 
-        my $field_hash = $self->_field_to_hash($field_obj);
+        my $field_hash = $self->_field_to_hash($field, $bug);
 
-        $field_hash->{api_name} = $api_names{$field_name} || $field_name;
+        $field_hash->{api_name} = $api_names{$field->name} || $field->name;
 
-        if (!$new_bug) {
-            $field_hash->{can_edit} = $self->_can_change_field($field_obj, $bug);
-        }
-        else {
-            next if !$self->_can_change_field($field_obj, $bug);
-        }
+        $field_hash->{can_edit} = $self->_can_change_field($field, $bug) if !$new_bug;
 
         # FIXME 'version' and 'target_milestone' types are incorrectly set in fielddefs
-        if ($field_obj->is_select
-            || $field_obj->name eq 'version'
-            || $field_obj->name eq 'target_milestone')
-        {
-            $field_hash->{values} = [ $self->_get_field_values($field_obj, $bug) ];
+        if ($field->is_select || $field->name eq 'version' || $field->name eq 'target_milestone') {
+            $field_hash->{values} = [ $self->_get_field_values($field, $bug) ];
         }
 
         # Add default values for specific fields if new bug
-        if ($new_bug && DEFAULT_VALUE_MAP->{$field_obj->name}) {
-            my $default_value = Bugzilla->params->{DEFAULT_VALUE_MAP->{$field_obj->name}};
+        if ($new_bug && DEFAULT_VALUE_MAP->{$field->name}) {
+            my $default_value = Bugzilla->params->{DEFAULT_VALUE_MAP->{$field->name}};
             $field_hash->{default_value} = $default_value;
         }
 
         push(@fields, $field_hash);
     }
 
+    # Add group information as separate field
+    my $groups_field = {
+        api_name     => $self->type('string', 'groups'),
+        description  => $self->type('string', 'Groups'),
+        is_custom    => $self->type('boolean', 0),
+        is_mandatory => $self->type('boolean', 0),
+        name         => $self->type('string', 'groups')
+    };
+
+    # Add all groups available for the selected product
+    $groups_field->{values} = [ map { $self->_group_to_hash($_, $bug) } @{ $bug->product_obj->groups_available } ];
+
+    # Currently set groups for the bug
+    if (!$new_bug) {
+        $groups_field->{current_value} = [ map { $self->_group_to_hash($_, $bug) } @{ $bug->groups_in } ];
+    }
+
+    push(@fields, $groups_field);
 
     return @fields;
 }
 
+sub _group_to_hash {
+    my ($self, $group, $bug) = @_;
+
+    my $data = {
+        description => $self->type('string', $group->description),
+        name        => $self->type('string', $group->name)
+    };
+
+    if ($group->name eq $bug->product_obj->default_security_group) {
+        $data->{security_default} = $self->type('boolean', 1);
+    }
+
+    return $data;
+}
+
 sub _field_to_hash {
-    my ($self, $field) = @_;
+    my ($self, $field, $bug) = @_;
 
     my $data = {
         is_custom    => $self->type('boolean', $field->custom),
@@ -291,11 +326,13 @@ sub _field_to_hash {
 }
 
 sub _value_to_hash {
-    my ($self, $value) = @_;
+    my ($self, $value, $bug) = @_;
 
-    my $data = {
-        name => $self->type('string', $value->name)
-    };
+    my $data = { name=> $self->type('string', $value->name) };
+
+    if ($bug->{bug_id}) {
+        $data->{is_active} = $self->type('boolean', $value->is_active);
+    }
 
     if ($value->can('sortkey')) {
         $data->{sort_key} = $self->type('int', $value->sortkey || 0);
@@ -332,6 +369,7 @@ sub _user_to_hash {
 
 sub _get_field_values {
     my ($self, $field, $bug) = @_;
+    my $new_bug = $bug->{bug_id} ? 0 : 1;
 
     # Certain fields are special and should use $bug->choices
     # to determine editability and not $bug->check_can_change_field
@@ -340,16 +378,16 @@ sub _get_field_values {
         @values = @{ $bug->choices->{$field->name} };
     }
     else {
-        # We need to get the values from the product_obj for
+        # We need to get the values from the product for
         # component, version, and milestones.
         if ($field->name eq 'component') {
-            @values = @{ $bug->{product_obj}->components };
+            @values = @{ $bug->product_obj->components };
         }
         elsif ($field->name eq 'target_milestone') {
-            @values = @{ $bug->{product_obj}->milestones };
+            @values = @{ $bug->product_obj->milestones };
         }
         elsif ($field->name eq 'version') {
-            @values = @{ $bug->{product_obj}->versions };
+            @values = @{ $bug->product_obj->versions };
         }
         else {
             @values = @{ $field->legal_values };
@@ -358,12 +396,12 @@ sub _get_field_values {
 
     my @filtered_values;
     foreach my $value (@values) {
-        next if !$value->is_active;
-        next if !$self->_can_change_field($field, $bug, $value->{name});
+        next if $new_bug && !$value->is_active;
+        next if !$new_bug && !$self->_can_change_field($field, $bug, $value->name);
         push(@filtered_values, $value);
     }
 
-    return map { $self->_value_to_hash($_) } @filtered_values;
+    return map { $self->_value_to_hash($_, $bug) } @filtered_values;
 }
 
 sub _can_change_field {
@@ -371,18 +409,18 @@ sub _can_change_field {
     my $user = Bugzilla->user;
 
     # Cannot set resolution on bug creation
-    return $self->type('boolean', 0) if $field->{name} eq 'resolution' && !$bug->{bug_id};
+    return $self->type('boolean', 0) if ($field->name eq 'resolution' && !$bug->{bug_id});
 
     # Cannot edit an obsolete or inactive custom field
-    return $self->type('boolean', 0) if ($field->{is_custom} && $field->{is_obsolete});
+    return $self->type('boolean', 0) if ($field->custom && $field->obsolete);
 
     # If not a multi-select or single-select, value is not provided
     # and we just check if the field itself is editable by the user.
     if (!defined $value) {
-        return $self->type('boolean', $bug->check_can_change_field($field->{name}, 1, 0));
+        return $self->type('boolean', $bug->check_can_change_field($field->name, 1, 0));
     }
 
-    return $self->type('boolean', $bug->check_can_change_field($field->{name}, '', $value));
+    return $self->type('boolean', $bug->check_can_change_field($field->name, '', $value));
 }
 
 sub rest_resources {
