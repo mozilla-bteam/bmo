@@ -37,6 +37,7 @@
 #web_bounty_form textarea {
   font-family: inherit;
   font-size: inherit;
+  margin: 0 !important;
 }
 #web_bounty_form em {
   font-size: 1em;
@@ -46,9 +47,8 @@
 [% inline_javascript = BLOCK %]
 function validateAndSubmit() {
   var alert_text = '';
-  if (!isFilledOut('comment')) alert_text += 'Please enter a value for comment.\n';
   if (!isFilledOut('short_desc')) alert_text += 'Please enter a value for summary.\n';
-  if (!isFilledOut('bug_file_loc')) alert_text += 'Please select a value for url.\n';
+  if (!isFilledOut('comment')) alert_text += 'Please enter a value for comment.\n';
   if (alert_text != '') {
     alert(alert_text);
     return false;
@@ -89,29 +89,45 @@ function validateAndSubmit() {
 </div>
 
 <div class="form_section">
-  <label for="short_desc" class="field_label required">Summary / Title</label><br>
+  <label for="short_desc" class="field_label required">Summary / Title</label>
+  <div class="field_desc">
+    A short description of the issue being reported including the host name
+    for the website on which it exists (example xss in blarg.foo.mozilla.org)
+  </div>
   <input type="text" name="short_desc" id="short_desc" size="80">
 </div>
 
 <div class="form_section">
-  <label for="comment" class="field_label required">Comment</label><br>
+  <label for="comment" class="field_label required">Comment</label>
+  <div class="field_desc">
+    How was this issue discovered, include the steps, tools or other information that
+    will help reproduce and diagnose the issue. A good primer on what to include can
+    be found <a href="https://developer.mozilla.org/en-US/docs/Mozilla/QA">here</a>.
+  </div>
   <textarea id="comment" name="comment" cols="80" rows="5"></textarea>
 </div>
 
 <div class="form_section">
-  <label for="bug_file_loc" class="field_label required">URL</label><br>
+  <label for="bug_file_loc" class="field_label">URL</label>
+  <div class="field_desc">
+    The full URL (hostname/subpage) where the issue exists (if the URL is especially long
+    please just include it in the comments)
+  </div>
   <input type="text" name="bug_file_loc" id="bug_file_loc" size="80">
 </div>
 
 <div class="form_section">
-  <label for="data" class="field_label">Attachment Filename</label><br>
+  <label for="data" class="field_label">Attachment</label>
+  <div class="field_desc">
+    A file that can add context to the report, such as a screen shot or code block for
+    reproduction purposes.
+  </div>
   <input type="file" id="data" name="data" size="50">
   <input type="hidden" name="contenttypemethod" value="autodetect" />
-</div>
-
-<div class="form_section">
-  <label for="description" class="field_label">Attachment Description</label><br>
-  <input type="text" id="description" name="description" size="60" maxlength="200">
+  <div class="field_desc">
+    <label for="description">Description</label>
+  </div>
+  <input type="text" id="description" name="description" size="80">
 </div>
 
 <input type="submit" id="commit" value="Submit">
