@@ -33,6 +33,7 @@ sub check_can_change_field {
     return Bugzilla::Bug::check_can_change_field(@_);
 }
 
+sub id { return undef; }
 sub product_obj { return $_[0]->{product_obj}; }
 
 sub choices {

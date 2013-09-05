@@ -201,7 +201,6 @@ sub show {
 sub _get_fields {
     my ($self, $bug, $field_ids) = @_;
     my $user = Bugzilla->user;
-    my $new_bug = $bug->{bug_id} ? 0 : 1;
 
     # Load the field objects we need
     my @field_objs;
@@ -217,7 +216,7 @@ sub _get_fields {
         # Load custom fields
         my $cf_params = { product => $bug->product_obj };
         $cf_params->{component} = $bug->component_obj if $bug->can('component_obj');
-        $cf_params->{bug_id} = $bug->{bug_id} if !$new_bug;
+        $cf_params->{bug_id} = $bug->id if $bug->id;
         push(@field_objs, Bugzilla->active_custom_fields($cf_params));
     }
 
@@ -239,23 +238,23 @@ sub _get_fields {
 
         # We already selected a product so no need to display all choices
         # Might as well skip classification for new bugs as well.
-        next if ($new_bug && ($field->name eq 'product' || $field->name eq 'classification'));
+        next if (!$bug->id && ($field->name eq 'product' || $field->name eq 'classification'));
 
         # Skip assigned_to and qa_contact for new bugs if user not in
         # editbugs group
-        next if ($new_bug
+        next if (!$bug->id
                  && ($field->name eq 'assigned_to' || $field->name eq 'qa_contact')
                  && !$user->in_group('editbugs', $bug->product_obj->id));
 
         # Do not display obsolete fields or fields that should be displayed for create bug form
-        next if ($new_bug && $field->custom
+        next if (!$bug->id && $field->custom
                  && ($field->obsolete || !$field->enter_bug));
 
         my $field_hash = $self->_field_to_hash($field, $bug);
 
         $field_hash->{api_name} = $api_names{$field->name} || $field->name;
 
-        $field_hash->{can_edit} = $self->_can_change_field($field, $bug) if !$new_bug;
+        $field_hash->{can_edit} = $self->_can_change_field($field, $bug) if $bug->id;
 
         # FIXME 'version' and 'target_milestone' types are incorrectly set in fielddefs
         if ($field->is_select || $field->name eq 'version' || $field->name eq 'target_milestone') {
@@ -263,7 +262,7 @@ sub _get_fields {
         }
 
         # Add default values for specific fields if new bug
-        if ($new_bug && DEFAULT_VALUE_MAP->{$field->name}) {
+        if (!$bug->id && DEFAULT_VALUE_MAP->{$field->name}) {
             my $default_value = Bugzilla->params->{DEFAULT_VALUE_MAP->{$field->name}};
             $field_hash->{default_value} = $default_value;
         }
@@ -272,23 +271,15 @@ sub _get_fields {
     }
 
     # Add group information as separate field
-    my $groups_field = {
+    push(@fields, {
         api_name     => $self->type('string', 'groups'),
         description  => $self->type('string', 'Groups'),
         is_custom    => $self->type('boolean', 0),
         is_mandatory => $self->type('boolean', 0),
-        name         => $self->type('string', 'groups')
-    };
-
-    # Add all groups available for the selected product
-    $groups_field->{values} = [ map { $self->_group_to_hash($_, $bug) } @{ $bug->product_obj->groups_available } ];
-
-    # Currently set groups for the bug
-    if (!$new_bug) {
-        $groups_field->{current_value} = [ map { $self->_group_to_hash($_, $bug) } @{ $bug->groups_in } ];
-    }
-
-    push(@fields, $groups_field);
+        name         => $self->type('string', 'groups'),
+        values       => [ map { $self->_group_to_hash($_, $bug) }
+                          @{ $bug->product_obj->groups_available } ]
+    });
 
     return @fields;
 }
@@ -369,7 +360,6 @@ sub _user_to_hash {
 
 sub _get_field_values {
     my ($self, $field, $bug) = @_;
-    my $new_bug = $bug->{bug_id} ? 0 : 1;
 
     # Certain fields are special and should use $bug->choices
     # to determine editability and not $bug->check_can_change_field
@@ -396,8 +386,8 @@ sub _get_field_values {
 
     my @filtered_values;
     foreach my $value (@values) {
-        next if $new_bug && !$value->is_active;
-        next if !$new_bug && !$self->_can_change_field($field, $bug, $value->name);
+        next if !$bug->id && !$value->is_active;
+        next if $bug->id && !$self->_can_change_field($field, $bug, $value->name);
         push(@filtered_values, $value);
     }
 
