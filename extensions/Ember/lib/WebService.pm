@@ -76,6 +76,12 @@ use constant DEFAULT_VALUE_MAP => {
     bug_severity => 'defaultseverity'
 };
 
+sub API_NAMES {
+    # Internal field names converted to the API equivalents
+    my %api_names = reverse %{ Bugzilla::Bug::FIELD_MAP() };
+    return \%api_names;
+}
+
 ###############
 # API Methods #
 ###############
@@ -163,9 +169,7 @@ sub show {
 
     # Place the fields current value along with the field definition
     foreach my $field (@fields) {
-        $field->{current_value} = delete $bug_hash->{$field->{api_name}}
-                                  // delete $bug_hash->{$field->{name}}
-                                  // '';
+        $field->{current_value} = delete $bug_hash->{$field->{name}} || '';
     }
 
     # Any left over bug values will be added to the field list
@@ -175,7 +179,6 @@ sub show {
         foreach my $key (keys %$bug_hash) {
             my $field = {
                 name          => $key,
-                api_name      => $key,
                 current_value => $bug_hash->{$key}
             };
             push(@fields, $field);
@@ -220,9 +223,6 @@ sub _get_fields {
         push(@field_objs, Bugzilla->active_custom_fields($cf_params));
     }
 
-    # Internal field names converted to the API equivalents
-    my %api_names = reverse %{ Bugzilla::Bug::FIELD_MAP() };
-
     my @fields;
     foreach my $field (@field_objs) {
         # Skip any special fields containing . in the name such as
@@ -252,33 +252,36 @@ sub _get_fields {
 
         my $field_hash = $self->_field_to_hash($field, $bug);
 
-        $field_hash->{api_name} = $api_names{$field->name} || $field->name;
-
-        $field_hash->{can_edit} = $self->_can_change_field($field, $bug) if $bug->id;
-
-        # FIXME 'version' and 'target_milestone' types are incorrectly set in fielddefs
-        if ($field->is_select || $field->name eq 'version' || $field->name eq 'target_milestone') {
-            $field_hash->{values} = [ $self->_get_field_values($field, $bug) ];
-        }
-
-        # Add default values for specific fields if new bug
-        if (!$bug->id && DEFAULT_VALUE_MAP->{$field->name}) {
-            my $default_value = Bugzilla->params->{DEFAULT_VALUE_MAP->{$field->name}};
-            $field_hash->{default_value} = $default_value;
-        }
-
         push(@fields, $field_hash);
     }
 
     # Add group information as separate field
     push(@fields, {
-        api_name     => $self->type('string', 'groups'),
         description  => $self->type('string', 'Groups'),
         is_custom    => $self->type('boolean', 0),
         is_mandatory => $self->type('boolean', 0),
         name         => $self->type('string', 'groups'),
         values       => [ map { $self->_group_to_hash($_, $bug) }
                           @{ $bug->product_obj->groups_available } ]
+    });
+
+    # Add flag information as separate field
+    my $flag_params = { is_active => 1 };
+    $flag_params->{component_id} => $bug->component_obj->id if $bug->id;
+    my $flag_hash = $bug->product_obj->flag_types($flag_params);
+    my @flag_values;
+    foreach my $flag_type ('bug','attachment') {
+        foreach my $flag (@{ $flag_hash->{$flag_type} }) {
+            push(@flag_values, $self->_flagtype_to_hash($flag, $bug));
+        }
+    }
+
+    push(@fields, {
+        description  => $self->type('string', 'Flags'),
+        is_custom    => $self->type('boolean', 0),
+        is_mandatory => $self->type('boolean', 0),
+        name         => $self->type('string', 'flags'),
+        values       => \@flag_values
     });
 
     return @fields;
@@ -304,13 +307,36 @@ sub _field_to_hash {
 
     my $data = {
         is_custom    => $self->type('boolean', $field->custom),
-        name         => $self->type('string', $field->name),
         description  => $self->type('string', $field->description),
         is_mandatory => $self->type('boolean', $field->is_mandatory),
     };
 
     if ($field->custom) {
         $data->{type} = $self->type('string', FIELD_TYPE_MAP->{$field->type});
+    }
+
+    # Use the API name if one is present instead of the internal field name
+    my $field_name = $field->name;
+    if ($field_name eq 'longdesc') {
+        $field_name = $bug->id ? 'comment' : 'description';
+    }
+    $field_name = API_NAMES->{$field_name} || $field_name;
+    $data->{name} = $self->type('string', $field_name);
+
+    # Set can_edit true or false if we are editing a current bug
+    $data->{can_edit} = $self->_can_change_field($field, $bug) if $bug->id;
+
+    # description for creating a new bug, otherwise comment
+
+    # FIXME 'version' and 'target_milestone' types are incorrectly set in fielddefs
+    if ($field->is_select || $field->name eq 'version' || $field->name eq 'target_milestone') {
+        $data->{values} = [ $self->_get_field_values($field, $bug) ];
+    }
+
+    # Add default values for specific fields if new bug
+    if (!$bug->id && DEFAULT_VALUE_MAP->{$field->name}) {
+        my $default_value = Bugzilla->params->{DEFAULT_VALUE_MAP->{$field->name}};
+        $data->{default_value} = $default_value;
     }
 
     return $data;
@@ -411,6 +437,57 @@ sub _can_change_field {
     }
 
     return $self->type('boolean', $bug->check_can_change_field($field->name, '', $value));
+}
+
+sub _flag_to_hash {
+    my ($self, $flag) = @_;
+
+    my $data = {
+        id                => $self->type('int', $flag->id),
+        name              => $self->type('string', $flag->name),
+        type_id           => $self->type('int', $flag->type_id),
+        creation_date     => $self->type('dateTime', $flag->creation_date), 
+        modification_date => $self->type('dateTime', $flag->modification_date), 
+        status            => $self->type('string', $flag->status)
+    };
+
+    foreach my $field (qw(setter requestee)) {
+        my $field_id = $field . "_id";
+        $data->{$field} = $self->_user_to_hash($flag->$field) if $flag->$field_id;
+    }
+
+    $data->{type} = $flag->attach_id ? 'attachment' : 'bug';
+    $data->{attach_id} = $flag->attach_id if $flag->attach_id;
+
+    return $data;
+}
+
+sub _flagtype_to_hash {
+    my ($self, $flagtype) = @_;
+    my $user = Bugzilla->user;
+
+    my $cansetflag     = $user->can_set_flag($flagtype);
+    my $canrequestflag = $user->can_request_flag($flagtype);
+
+    my $data = {
+        id               => $self->type('int' , $flagtype->id),
+        name             => $self->type('string' , $flagtype->name),
+        description      => $self->type('string' , $flagtype->description),
+        type             => $self->type('string' , $flagtype->target_type),
+        is_requestable   => $self->type('boolean', $flagtype->is_requestable),
+        is_requesteeble  => $self->type('boolean', $flagtype->is_requesteeble),
+        is_multiplicable => $self->type('boolean', $flagtype->is_multiplicable),
+        can_set_flag     => $self->type('boolean', $cansetflag),
+        can_request_flag => $self->type('boolean', $canrequestflag)
+    };
+
+    my @values;
+    foreach my $value ('?','+','-') {
+        push(@values, $self->type('string', $value));
+    }
+    $data->{values} = \@values;
+
+    return $data;
 }
 
 sub rest_resources {
