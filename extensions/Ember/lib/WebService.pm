@@ -316,6 +316,7 @@ sub _field_to_hash {
     }
 
     # Use the API name if one is present instead of the internal field name
+    # description for creating a new bug, otherwise comment
     my $field_name = $field->name;
     if ($field_name eq 'longdesc') {
         $field_name = $bug->id ? 'comment' : 'description';
@@ -324,9 +325,7 @@ sub _field_to_hash {
     $data->{name} = $self->type('string', $field_name);
 
     # Set can_edit true or false if we are editing a current bug
-    $data->{can_edit} = $self->_can_change_field($field, $bug) if $bug->id;
-
-    # description for creating a new bug, otherwise comment
+    $data->{can_edit} = $self->type('boolean', $self->_can_change_field($field, $bug)) if $bug->id;
 
     # FIXME 'version' and 'target_milestone' types are incorrectly set in fielddefs
     if ($field->is_select || $field->name eq 'version' || $field->name eq 'target_milestone') {
@@ -336,7 +335,7 @@ sub _field_to_hash {
     # Add default values for specific fields if new bug
     if (!$bug->id && DEFAULT_VALUE_MAP->{$field->name}) {
         my $default_value = Bugzilla->params->{DEFAULT_VALUE_MAP->{$field->name}};
-        $data->{default_value} = $default_value;
+        $data->{default_value} = $self->type('string', $default_value);
     }
 
     return $data;
@@ -425,18 +424,21 @@ sub _can_change_field {
     my $user = Bugzilla->user;
 
     # Cannot set resolution on bug creation
-    return $self->type('boolean', 0) if ($field->name eq 'resolution' && !$bug->{bug_id});
+    return 0 if ($field->name eq 'resolution' && !$bug->{bug_id});
 
     # Cannot edit an obsolete or inactive custom field
-    return $self->type('boolean', 0) if ($field->custom && $field->obsolete);
+    if ($field->custom && $field->obsolete) {
+        return 0 if !$value;
+        return $value eq '---' ? 1 : 0;
+    }
 
     # If not a multi-select or single-select, value is not provided
     # and we just check if the field itself is editable by the user.
     if (!defined $value) {
-        return $self->type('boolean', $bug->check_can_change_field($field->name, 1, 0));
+        return $bug->check_can_change_field($field->name, 0, 1);
     }
 
-    return $self->type('boolean', $bug->check_can_change_field($field->name, '', $value));
+    return $bug->check_can_change_field($field->name, '', $value);
 }
 
 sub _flag_to_hash {
