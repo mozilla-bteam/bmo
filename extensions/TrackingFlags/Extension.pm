@@ -68,7 +68,7 @@ sub template_before_process {
         # note: bug/edit.html.tmpl doesn't support multiple bugs
         my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'};
 
-        if ($bug) {
+        if ($bug && !$bug->{error}) {
             $vars->{'tracking_flags'} = Bugzilla::Extension::TrackingFlags::Flag->match({
                 product     => $bug->product,
                 component   => $bug->component,
@@ -169,6 +169,11 @@ sub db_schema_abstract_schema {
                 NOTNULL => 1,
                 DEFAULT => '0',
             },
+            enter_bug => {
+                TYPE    => 'BOOLEAN',
+                NOTNULL => 1,
+                DEFAULT => 'TRUE',
+            },
             is_active => {
                 TYPE    => 'BOOLEAN',
                 NOTNULL => 1,
@@ -265,11 +270,22 @@ sub db_schema_abstract_schema {
 
 sub install_update_db {
     my $dbh = Bugzilla->dbh;
+
     my $fk = $dbh->bz_fk_info('tracking_flags', 'field_id');
     if ($fk and !defined $fk->{DELETE}) {
         $fk->{DELETE} = 'CASCADE';
         $dbh->bz_alter_fk('tracking_flags', 'field_id', $fk);
     }
+
+    $dbh->bz_add_column(
+        'tracking_flags',
+        'enter_bug',
+        {
+            TYPE    => 'BOOLEAN',
+            NOTNULL => 1,
+            DEFAULT => 'TRUE',
+        }
+    );
 }
 
 sub active_custom_fields {

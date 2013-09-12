@@ -102,6 +102,13 @@ var selected_components = [
   <td><input type="checkbox" name="flag_active" id="flag_active" value="1" [% "checked" IF flag.is_active %]></td>
 </tr>
 
+[% IF mode == 'edit' %]
+  <tr>
+    <th>[% terms.Bug %] Count</th>
+    <td>[% flag.bug_count FILTER html %]</td>
+  </tr>
+[% END %]
+
 </table>
 
 [%# values %]
@@ -167,9 +174,9 @@ var selected_components = [
 
 <div>
   <input type="submit" name="submit" id="submit" value="[% mode == 'edit' ? 'Save Changes' : 'Add' %]">
-  [% IF can_delete %]
+  [% IF !flag.bug_count %]
     <input type="hidden" name="delete" id="delete" value="">
-    <input type="submit" value="Delete"
+    <input type="submit" value="Delete Flag [% IF flag.activity_count %] and Activity[% END  %]"
           onclick="return delete_confirm('[% flag.name FILTER js FILTER html %]')">
   [% END %]
 </div>
