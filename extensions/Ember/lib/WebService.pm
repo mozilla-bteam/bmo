@@ -324,10 +324,12 @@ sub _field_to_hash {
     # Use the API name if one is present instead of the internal field name
     # description for creating a new bug, otherwise comment
     my $field_name = $field->name;
+    $field_name = API_NAMES->{$field_name} || $field_name;
+
     if ($field_name eq 'longdesc') {
         $field_name = $bug->id ? 'comment' : 'description';
     }
-    $field_name = API_NAMES->{$field_name} || $field_name;
+
     $data->{name} = $self->type('string', $field_name);
 
     # Set can_edit true or false if we are editing a current bug
