@@ -114,6 +114,12 @@ sub show {
 
     Bugzilla->switch_to_shadow_db();
 
+    # Throw error if token was provided and user is not logged
+    # in meaning token was invalid/expired.
+    if (exists $params->{token} && !Bugzilla->user->id) {
+        ThrowUserError('invalid_token');
+    }
+
     my $bug_id = delete $params->{id};
     $bug_id || ThrowCodeError('params_required',
                               { function => 'Ember.show', params => ['id'] });
@@ -325,12 +331,18 @@ sub _field_to_hash {
     $data->{name} = $self->type('string', $field_name);
 
     # Set can_edit true or false if we are editing a current bug
-    $data->{can_edit} = $self->type('boolean', $self->_can_change_field($field, $bug)) if $bug->id;
+    my $can_edit = $self->_can_change_field($field, $bug);
 
     # FIXME 'version' and 'target_milestone' types are incorrectly set in fielddefs
-    if ($field->is_select || $field->name eq 'version' || $field->name eq 'target_milestone') {
+    if ($can_edit 
+        && ($field->is_select
+            || $field->name eq 'version' 
+            || $field->name eq 'target_milestone'))
+    {
         $data->{values} = [ $self->_get_field_values($field, $bug) ];
     }
+
+    $data->{can_edit} = $self->type('boolean', $self->_can_change_field($field, $bug)) if $bug->id;
 
     # Add default values for specific fields if new bug
     if (!$bug->id && DEFAULT_VALUE_MAP->{$field->name}) {
@@ -426,19 +438,13 @@ sub _can_change_field {
     # Cannot set resolution on bug creation
     return 0 if ($field->name eq 'resolution' && !$bug->{bug_id});
 
-    # Cannot edit an obsolete or inactive custom field
-    if ($field->custom && $field->obsolete) {
-        return 0 if !$value;
-        return $value eq '---' ? 1 : 0;
-    }
-
     # If not a multi-select or single-select, value is not provided
     # and we just check if the field itself is editable by the user.
     if (!defined $value) {
         return $bug->check_can_change_field($field->name, 0, 1);
     }
 
-    return $bug->check_can_change_field($field->name, '', $value);
+    return $bug->check_can_change_field($field->name, undef, $value);
 }
 
 sub _flag_to_hash {
