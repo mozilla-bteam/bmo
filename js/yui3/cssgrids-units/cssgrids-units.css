@@ -1,10 +1,9 @@
 /*
-YUI 3.12.0 (build 8655935)
-Copyright 2013 Yahoo! Inc. All rights reserved.
+YUI 3.7.3 (build 5687)
+Copyright 2012 Yahoo! Inc. All rights reserved.
 Licensed under the BSD License.
 http://yuilibrary.com/license/
 */
-
 .yui3-u-1,
 .yui3-u-1-2,
 .yui3-u-1-3,
@@ -38,7 +37,6 @@ http://yuilibrary.com/license/
     letter-spacing: normal;
     word-spacing: normal;
     vertical-align: top;
-    text-rendering: auto;
 }
 
 .yui3-u-1 {
