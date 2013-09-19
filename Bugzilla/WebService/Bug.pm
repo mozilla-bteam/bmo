@@ -30,7 +30,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Field;
 use Bugzilla::WebService::Constants;
-use Bugzilla::WebService::Util qw(filter filter_wants validate translate);
+use Bugzilla::WebService::Util qw(extract_flags filter filter_wants validate translate);
 use Bugzilla::Bug;
 use Bugzilla::BugMail;
 use Bugzilla::Util qw(trick_taint trim);
@@ -39,6 +39,8 @@ use Bugzilla::Milestone;
 use Bugzilla::Status;
 use Bugzilla::Token qw(issue_hash_token);
 use Bugzilla::Search;
+use Bugzilla::Product;
+use Bugzilla::FlagType;
 
 use List::Util qw(max);
 use List::MoreUtils qw(uniq);
@@ -611,7 +613,9 @@ sub update {
     # have valid "set_" functions in Bugzilla::Bug, but shouldn't be
     # called using those field names.
     delete $values{dependencies};
-    delete $values{flags};
+
+    my $flags = delete $values{flags};
+    my ($old_flags, $new_flags) = extract_flags($flags) if $flags;
 
     foreach my $bug (@bugs) {
         if (!$user->can_edit_product($bug->product_obj->id) ) {
@@ -620,6 +624,7 @@ sub update {
         }
 
         $bug->set_all(\%values);
+        $bug->set_flags($old_flags, $new_flags) if $flags;
     }
 
     my %all_changes;
@@ -628,7 +633,7 @@ sub update {
         $all_changes{$bug->id} = $bug->update();
     }
     $dbh->bz_commit_transaction();
-    
+
     foreach my $bug (@bugs) {
         $bug->send_changes($all_changes{$bug->id});
     }
@@ -681,6 +686,7 @@ sub update {
 
 sub create {
     my ($self, $params) = @_;
+    my $dbh = Bugzilla->dbh;
 
     # BMO: Don't allow updating of bugs if disabled
     if (Bugzilla->params->{disable_bug_updates}) {
@@ -689,8 +695,31 @@ sub create {
     }
 
     Bugzilla->login(LOGIN_REQUIRED);
+
     $params = Bugzilla::Bug::map_fields($params);
+
+    # Some fields cannot be sent to Bugzilla::Bug->create
+    foreach my $key (qw(login password token)) {
+        delete $params->{$key};
+    }
+
+    my $flags = delete $params->{flags};
+
+    # We start a nested transaction in case flag setting fails
+    # we want the bug creation to roll back as well.
+    $dbh->bz_start_transaction();
+
     my $bug = Bugzilla::Bug->create($params);
+
+    # Set bug flags
+    if ($flags) {
+        my ($flags, $new_flags) = extract_flags($flags);
+        $bug->set_flags($flags, $new_flags);
+        $bug->update($bug->creation_ts);
+    }
+
+    $dbh->bz_commit_transaction();
+
     Bugzilla::BugMail::Send($bug->bug_id, { changer => $bug->reporter });
     return { id => $self->type('int', $bug->bug_id) };
 }
@@ -774,6 +803,9 @@ sub add_attachment {
     $dbh->bz_start_transaction();
     my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
+    my $flags = delete $params->{flags};
+    my ($old_flags, $new_flags) = extract_flags($flags) if $flags;
+
     foreach my $bug (@bugs) {
         my $attachment = Bugzilla::Attachment->create({
             bug         => $bug,
@@ -785,12 +817,15 @@ sub add_attachment {
             ispatch     => $params->{is_patch},
             isprivate   => $params->{is_private},
         });
+        $attachment->set_flags($old_flags, $new_flags) if $flags;
+        $attachment->update($timestamp);
         my $comment = $params->{comment} || '';
         $attachment->bug->add_comment($comment, 
             { isprivate  => $attachment->isprivate,
               type       => CMT_ATTACHMENT_CREATED,
               extra_data => $attachment->id });
         push(@created, $attachment);
+        $attachment->set_flags($old_flags, $new_flags) if $flags;
     }
     $_->bug->update($timestamp) foreach @created;
     $dbh->bz_commit_transaction();
@@ -1027,6 +1062,38 @@ sub attachments {
     return { bugs => \%bugs, attachments => \%attachments };
 }
 
+sub flag_types {
+    my ($self, $params) = @_;
+    my $dbh  = Bugzilla->switch_to_shadow_db();
+    my $user = Bugzilla->user;
+
+    defined $params->{product}
+        || ThrowCodeError('param_required',
+                          { function => 'Bug.flag_types',
+                            param   => 'product' });
+
+    my $product   = delete $params->{product};
+    my $component = delete $params->{component};
+
+    $product = Bugzilla::Product->check({ name => $product });
+    $component = Bugzilla::Component->check({ name => $component, product => $product })
+        if $component;
+
+    my $flag_params = { product_id => $product->id };
+    $flag_params->{component_id} = $component->id if $component;
+    my $matched_flag_types = Bugzilla::FlagType::match($flag_params);
+
+    my $flag_types = { bug => [], attachment => [] };
+    foreach my $flag_type (@$matched_flag_types) {
+        push(@{ $flag_types->{bug} }, $self->_flagtype_to_hash($flag_type))
+            if $flag_type->target_type eq 'bug';
+        push(@{ $flag_types->{attachment} }, $self->_flagtype_to_hash($flag_type))
+            if $flag_type->target_type eq 'attachment';
+    }
+
+    return $flag_types;
+}
+
 ##############################
 # Private Helper Subroutines #
 ##############################
@@ -1215,6 +1282,27 @@ sub _flag_to_hash {
         $item->{$field} = $self->type('email', $flag->$field->login)
             if $flag->$field_id;
     }
+
+    return $item;
+}
+
+sub _flagtype_to_hash {
+    my ($self, $flagtype) = @_;
+    my $user = Bugzilla->user;
+
+    my @values = ('X');
+    push(@values, '?') if ($flagtype->is_requestable && $user->can_request_flag($flagtype));
+    push(@values, '+', '-') if $user->can_set_flag($flagtype);
+
+    my $item = {
+        id          => $self->type('int'    , $flagtype->id),
+        name        => $self->type('string' , $flagtype->name),
+        description => $self->type('string' , $flagtype->description),
+        type        => $self->type('string' , $flagtype->target_type),
+        values      => \@values,
+        is_requesteeble  => $self->type('boolean', $flagtype->is_requesteeble),
+        is_multiplicable => $self->type('boolean', $flagtype->is_multiplicable)
+    };
 
     return $item;
 }
@@ -1468,6 +1556,103 @@ You specified an invalid field name or id.
 
 =back
 
+=head2 flag_types
+
+B<UNSTABLE>
+
+=over
+
+=item B<Description>
+
+Get information about valid flag types that can be set for bugs and attachments.
+
+=item B<REST>
+
+You have several options for retreiving information about flag types. The first
+part is the request method and the rest is the related path needed.
+
+To get information about all flag types for a product:
+
+GET /flag_types/<product>
+
+To get information about flag_types for a product and component:
+
+GET /flag_types/<product>/<component>
+
+The returned data format is the same as below.
+
+=item B<Params>
+
+You must pass a product name and an optional component name.
+
+=over
+
+=item C<product>   (string) - The name of a valid product.
+
+=item C<component> (string) - An optional valid component name associated with the product.
+
+=back
+
+=item B<Returns>
+
+A hash containing a two keys, C<bug> and C<attachment>. Each key value is an array of hashes,
+containing the following keys:
+
+=over
+
+=item C<id>
+
+C<int> An integer id uniquely identifying this flag type.
+
+=item C<name>
+
+C<string> The name for the flag type.
+
+=item C<type>
+
+C<string> The target of the flag type which is either C<bug> or C<attachment>.
+
+=item C<description>
+
+C<string> The description of the flag type.
+
+=item C<values>
+
+C<array> An array of string values that the user can set on the flag type.
+
+=item C<is_requesteeble>
+
+C<boolean> Users can ask specific other users to set flags of this type.
+
+=item C<is_multiplicable>
+
+C<boolean> Multiple flags of this type can be set for the same bug or attachment.
+
+=back
+
+=item B<Errors>
+
+=over
+
+=item 106 (Product Access Denied)
+
+Either the product does not exist or you don't have access to it.
+
+=item 51 (Invalid Component)
+
+The component provided does not exist in the product.
+
+=back
+
+=item B<History>
+
+=over
+
+=item Added in Bugzilla B<5.0>.
+
+=back
+
+=back
 
 =head2 legal_values
 
@@ -2855,6 +3040,28 @@ Note that only certain statuses can be set on bug creation.
 =item C<target_milestone> (string) - A valid target milestone for this
 product.
 
+=item C<flags>
+
+C<array> An array of hashes with flags to add to the bug. To create a flag,
+at least the status and type_id must be provided. An optional requestee can be passed
+if the flag type is requesteeble.
+
+=over
+
+=item C<type_id>
+
+C<int> The internal flag type id that will be created.
+
+=item C<status>
+
+C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
+
+=item C<requestee>
+
+C<string> The login of the requestee if the flag type is requesteeable.
+
+=back
+
 =back
 
 In addition to the above parameters, if your installation has any custom
@@ -2906,6 +3113,19 @@ that would cause a circular dependency between bugs.
 
 You tried to restrict the bug to a group which does not exist, or which
 you cannot use with this product.
+
+=item 124 (Flag Status Invalid)
+
+The flag status is invalid.
+
+=item 125 (Flag Modification Denied)
+
+You tried to request, grant, or deny a flag but only a user with the required
+permissions may make the change.
+
+=item 126 (Flag not Requestable from Specific Person)
+
+You can't ask a specific person for the flag.
 
 =item 504 (Invalid User)
 
@@ -3012,6 +3232,28 @@ to the "insidergroup"), False if the attachment should be public.
 
 Defaults to False if not specified.
 
+=item C<flags>
+
+C<array> An array of hashes with flags to add to the attachment. to create a flag,
+at least the status and type_id must be provided. An optional requestee can be passed
+if the flag type is requesteeble.
+
+=over
+
+=item C<type_id>
+
+C<int> The internal flag type id that will be created.
+
+=item C<status>
+
+C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
+
+=item C<requestee>
+
+C<string> The login of the requestee if the flag type is requesteeable.
+
+=back
+
 =back
 
 =item B<Returns>
@@ -3025,6 +3267,19 @@ value from L</attachments>.
 This method can throw all the same errors as L</get>, plus:
 
 =over
+
+=item 124 (Flag Status Invalid)
+
+The flag status is invalid.
+
+=item 125 (Flag Modification Denied)
+
+You tried to request, grant, or deny a flag but only a user with the required
+permissions may make the change.
+
+=item 126 (Flag not Requestable from Specific Person)
+
+You can't ask a specific person for the flag.
 
 =item 600 (Attachment Too Large)
 
@@ -3289,6 +3544,30 @@ You tried to add a private comment, but don't have the necessary rights.
 You tried to add a comment longer than the maximum allowed length
 (65,535 characters).
 
+=item C<flags>
+
+C<array> An array of hashes with changes to the flags. The following values
+can be specified. At least the status and one of type_id or id must be specified.
+
+=over
+
+=item C<type_id>
+
+C<int> The internal flag type id that will be created.
+
+=item C<status>
+
+C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
+
+=item C<requestee>
+
+C<string> The login of the requestee if the flag type is requesteeable.
+
+=item C<id>
+
+C<int> Use id to specify the flag to be updated. If C<id> is not specified,
+then the change is assumed to be a new flag and C<type_id> is required.
+
 =back
 
 =item B<History>
@@ -3315,6 +3594,7 @@ code of 32000.
 
 =back
 
+=back
 
 =head2 update
 
@@ -3455,6 +3735,32 @@ duplicate bugs.
 
 C<double> The total estimate of time required to fix the bug, in hours.
 This is the I<total> estimate, not the amount of time remaining to fix it.
+
+=item C<flags>
+
+C<array> An array of hashes with changes to the flags. The following values
+can be specified. At least the status and one of type_id or id must be specified.
+
+=over
+
+=item C<type_id>
+
+C<int> The internal flag type id that will be created.
+
+=item C<status>
+
+C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
+
+=item C<requestee>
+
+C<string> The login of the requestee if the flag type is requesteeable.
+
+=item C<id>
+
+C<int> Use id to specify the flag to be updated. If C<id> is not specified,
+then the change is assumed to be a new flag and C<type_id> is required.
+
+=back
 
 =item C<groups>
 
@@ -3773,6 +4079,19 @@ field.
 
 You tried to change from one status to another, but the status workflow
 rules don't allow that change.
+
+=item 124 (Flag Status Invalid)
+
+The flag status is invalid.
+
+=item 125 (Flag Modification Denied)
+
+You tried to request, grant, or deny a flag but only a user with the required
+permissions may make the change.
+
+=item 126 (Flag not Requestable from Specific Person)
+
+You can't ask a specific person for the flag.
 
 =back
 

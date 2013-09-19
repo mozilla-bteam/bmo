@@ -705,16 +705,27 @@
     [% admindocslinks = {'flags-overview.html#flags-admin'  => 'Administering Flags'} %]
     You must enter a description for this flag type.
 
+  [% ELSIF error == "flag_type_mismatch" %]
+    The following two values do not match the same flag type: [% mismatch FILTER html %]
+
   [% ELSIF error == "flag_type_name_invalid" %]
     [% title = "Flag Type Name Invalid" %]
     [% admindocslinks = {'flags-overview.html#flags-admin'  => 'Administering Flags'} %]
     The name <em>[% name FILTER html %]</em> must be 1-50 characters long
     and must not contain any spaces or commas.
 
+  [% ELSIF error == "flag_type_not_allowed" %]
+    The flag type you selected is not allowed on this product or component
+    or it is not the correct type (i.e. attachment or bug)
+
   [% ELSIF error == "flag_type_not_editable" %]
     [% title = "Flag Type Not Editable" %]
     You are not allowed to edit properties of the '[% flagtype.name FILTER html %]'
     flag type, because this flag type is not available for the products you can administer.
+
+  [% ELSIF error == "flag_type_not_found" %]
+    The flag type with the [% key FILTER html %] of [% value FILTER html %]
+    does not exist.
 
   [% ELSIF error == "flag_type_not_multiplicable" %]
     [% docslinks = {'flags-overview.html' => 'An overview on Flags',

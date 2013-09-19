@@ -28,13 +28,30 @@ use base qw(Exporter);
 require Test::Taint;
 
 our @EXPORT_OK = qw(
+    extract_flags
     filter
     filter_wants
     taint_data
     validate
+    translate
     params_to_objects
     fix_credentials
 );
+
+sub extract_flags {
+    my ($flags, $attachment) = @_;
+    my (@new_flags, @old_flags);
+
+    foreach my $flag (@$flags) {
+        if (exists $flag->{id}) {
+            push(@old_flags, $flag);
+            next;
+        }
+        push(@new_flags, $flag);
+    }
+
+    return (\@old_flags, \@new_flags);
+}
 
 sub filter ($$;$) {
     my ($params, $hash, $prefix) = @_;
@@ -131,6 +148,16 @@ sub validate  {
     return ($self, $params);
 }
 
+sub translate {
+    my ($params, $mapped) = @_;
+    my %changes;
+    while (my ($key,$value) = each (%$params)) {
+        my $new_field = $mapped->{$key} || $key;
+        $changes{$new_field} = $value;
+    }
+    return \%changes;
+}
+
 sub params_to_objects {
     my ($params, $class) = @_;
     my (@objects, @objects_by_ids);
@@ -223,6 +250,13 @@ by both "ids" and "names". Returns an arrayref of objects.
 Allows for certain parameters related to authentication such as Bugzilla_login,
 Bugzilla_password, and Bugzilla_token to have shorter named equivalents passed in.
 This function converts the shorter versions to their respective internal names.
+
+=head2 extract_flags
+
+Subroutine that takes a list of hashes that are potential flag changes for
+both bugs and attachments. Then breaks the list down into two separate lists
+based on if the change is to add a new flag or to update an existing flag
+based on whether C<id> is present.
 
 =head1 B<Methods in need of POD>
 
