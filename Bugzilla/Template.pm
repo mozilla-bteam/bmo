@@ -594,6 +594,10 @@ sub create {
 
         COMPILE_DIR => bz_locations()->{'template_cache'},
 
+        # Don't check for a template update until 1 hour has passed since the
+        # last check.
+        STAT_TTL    => 60 * 60,
+
         # Initialize templates (f.e. by loading plugins like Hook).
         PRE_PROCESS => ["global/initialize.none.tmpl"],
 
@@ -820,10 +824,7 @@ sub create {
                 # (Wrapping the message in the WebService is unnecessary
                 # and causes awkward things like \n's appearing in error
                 # messages in JSON-RPC.)
-                unless (Bugzilla->usage_mode == USAGE_MODE_JSON
-                        or Bugzilla->usage_mode == USAGE_MODE_XMLRPC
-                        or Bugzilla->usage_mode == USAGE_MODE_REST)
-                {
+                unless (i_am_webservice()) {
                     $var = wrap_comment($var, 72);
                 }
                 $var =~ s/\&nbsp;/ /g;

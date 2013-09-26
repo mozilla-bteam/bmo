@@ -549,10 +549,6 @@ sub search {
 
     # Search.pm won't return bugs that the user shouldn't see so no filtering is needed.
     my @bug_ids = map { $_->[0] } @$data;
-
-    # Bugzilla::Bug->new_from_list always sorts by bug id so we need to use a hash
-    # to get the bugs back in the order requested by the client before converting
-    # to bug hashes.
     my %bug_objects = map { $_->id => $_ } @{ Bugzilla::Bug->new_from_list(\@bug_ids) };
     my @bugs = map { $bug_objects{$_} } @bug_ids;
     @bugs = map { $self->_bug_to_hash($_, $params) } @bugs;
