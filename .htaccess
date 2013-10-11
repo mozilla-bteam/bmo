@@ -64,6 +64,6 @@ RewriteRule ^form[\.:]ipp$ enter_bug.cgi?product=Internet+Public+Policy&format=i
 RewriteRule ^form[\.:]creative$ enter_bug.cgi?product=Marketing&format=creative
 RewriteRule ^form[\.:]user[\.:]engagement$ enter_bug.cgi?product=Marketing&format=user-engagement
 RewriteRule ^form[\.:]dev-engagement-event$ enter_bug.cgi?product=Developer+Engagement&format=dev-engagement-event
-RewriteRule ^form[\.:]mobile[\.:]compat$ enter_bug.cgi?product=Tech+Evangelism&format=mobile-compat
+RewriteRule ^form[\.:]mobile[\.\-:]compat\??(.*) enter_bug.cgi?product=Tech+Evangelism&format=mobile-compat&$1 [QSA]
 RewriteRule ^form[\.:]web[\.:]bounty$ enter_bug.cgi?product=mozilla.org&format=web-bounty
 RewriteRule ^rest/(.*)$ rest.cgi/$1 [NE]

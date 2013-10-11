@@ -105,8 +105,12 @@ function validateAndSubmit() {
   <td>
     <select name="op_sys" id="op_sys">
       <option value="">Please select...</option>
-      <option value="Gonk (Firefox OS)">Firefox OS</option>
-      <option value="Android">Firefox for Android</option>
+      <option value="Gonk (Firefox OS)"
+              [% "selected" IF cgi.param('op_sys') == 'Firefox OS' %]>
+        Firefox OS</option>
+      <option value="Android"
+              [% "selected" IF cgi.param('op_sys') == 'Firefox for Android' %]>
+        Firefox for Android</option>
     </select>
   </td>
 </tr>
@@ -115,7 +119,8 @@ function validateAndSubmit() {
   <th class="required">Product Version</th>
   <td>
     <input type="text" name="software_version" id="software_version" size="60"
-      placeholder="Software version - see About box or Preferences">
+      placeholder="Software version - see About box or Preferences"
+      value="[% cgi.param('software_version') FILTER html %]">
   </td>
 </tr>
 
@@ -123,7 +128,8 @@ function validateAndSubmit() {
   <th class="required">Full Web Page Address</th>
   <td>
     <input type="text" name="bug_file_loc" id="bug_file_loc" size="60"
-      placeholder="e.g. http://www.example.com/page.html">
+      placeholder="e.g. http://www.example.com/page.html"
+      value="[% cgi.param('bug_file_loc') FILTER html %]">
   </td>
 </tr>
 
@@ -135,17 +141,24 @@ function validateAndSubmit() {
   <th class="required">Problem Summary</th>
   <td>
     <input type="text" name="short_desc" id="short_desc" size="60"
-      placeholder="Describe the specific problem with the page in one sentence">
+      placeholder="Describe the specific problem with the page in one sentence"
+      value="[% cgi.param('short_desc') FILTER html %]">
   </td>
 </tr>
 
 <tr>
   <th class="required">Steps To Reproduce</th>
   <td>
-    <textarea id="desc" name="desc" cols="50" rows="5">1.
+    <textarea id="desc" name="desc" cols="50" rows="5">
+[% IF cgi.param('desc') %]
+[% cgi.param('desc') FILTER html %]
+[% ELSE %]
+1.
 2.
 3.
-...</textarea>
+...
+[% END %]
+    </textarea>
   </td>
 </tr>
 
@@ -153,7 +166,8 @@ function validateAndSubmit() {
   <th class="required">Expected Result</th>
   <td>
     <input type="text" id="expected_result" name="expected_result" size="60"
-      placeholder="What were you expecting to happen?">
+      placeholder="What were you expecting to happen?"
+      value="[% cgi.param('expected_result') FILTER html %]">
   </td>
 </tr>
 
@@ -161,7 +175,8 @@ function validateAndSubmit() {
   <th class="required">Actual Result</th>
   <td>
     <input type="text" name="actual_result" id="actual_result" size="60"
-      placeholder="What happened instead?">
+      placeholder="What happened instead?"
+      value="[% cgi.param('actual_result') FILTER html %]">
   </td>
 </tr>
 
@@ -173,7 +188,8 @@ function validateAndSubmit() {
   <th>Device Information</th>
   <td>
     <input type="text" name="device" id="device" size="60"
-      placeholder="Make and model">
+      placeholder="Make and model"
+      value="[% cgi.param('device') FILTER html %]">
   </td>
 </tr>
 
