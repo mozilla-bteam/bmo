@@ -65,7 +65,9 @@ sub template_before_process {
 
         $vars->{'tracking_flag_types'} = FLAG_TYPES;
     }
-    elsif ($file eq 'bug/edit.html.tmpl'|| $file eq 'bug/show.xml.tmpl') {
+    elsif ($file eq 'bug/edit.html.tmpl'|| $file eq 'bug/show.xml.tmpl'
+           || $file eq 'email/bugmail.html.tmpl' || $file eq 'email/bugmail.txt.tmpl')
+    {
         # note: bug/edit.html.tmpl doesn't support multiple bugs
         my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'};
 
@@ -306,8 +308,9 @@ sub active_custom_fields {
 
     my @tracking_flags;
     if ($product) {
-        my $params = { product_id => $product->id };
+        $params->{'product_id'}   = $product->id;
         $params->{'component_id'} = $component->id if $component;
+        $params->{'is_active'}    = 1;
         @tracking_flags = @{ Bugzilla::Extension::TrackingFlags::Flag->match($params) };
     }
     else {
@@ -546,22 +549,32 @@ sub mailer_before_send {
     }
 }
 
-sub bug_check_can_change_field {
+# Purpose: generically handle generating pretty blocking/status "flags" from
+# custom field names.
+sub quicksearch_map {
     my ($self, $args) = @_;
-    my $field        = $args->{'field'};
-    my $old_value    = $args->{'old_value'};
-    my $new_value    = $args->{'new_value'};
-    my $priv_results = $args->{'priv_results'};
+    my $map = $args->{'map'};
 
-    my $flag = Bugzilla::Extension::TrackingFlags::Flag->new(
-        { name => $field });
-    $flag || return;
+    foreach my $name (keys %$map) {
+        if ($name =~ /^cf_(blocking|tracking|status)_([a-z]+)?(\d+)?$/) {
+            my $type = $1;
+            my $product = $2;
+            my $version = $3;
 
-    # Used by show_bug to determine if field is visible so always allow
-    return if ($old_value == 0 && $new_value == 1);
+            if ($version) {
+                $version = join('.', split(//, $version));
+            }
 
-    if (defined $new_value && !$flag->can_set_value($new_value)) {
-        push (@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+            my $pretty_name = $type;
+            if ($product) {
+                $pretty_name .= "-" . $product;
+            }
+            if ($version) {
+                $pretty_name .= $version;
+            }
+
+            $map->{$pretty_name} = $name;
+        }
     }
 }
 
