@@ -402,6 +402,23 @@ sub search_operator_field_override {
     }
 }
 
+sub search_clause_structure {
+    my ($self, $args) = @_;
+    # when searching, map "eq ---" to "isempty"
+    my $clause = $args->{clause};
+    my @tracking_flags = map { $_->name } Bugzilla::Extension::TrackingFlags::Flag->get_all;
+    $clause->walk_conditions(sub {
+        my ($clause, $condition) = @_;
+        if (grep { $condition->field eq $_ } @tracking_flags
+            and $condition->{value} eq '---')
+        {
+            $condition->{operator} = $condition->{operator} =~ /^not/
+                                     ? 'isnotempty'
+                                     : 'isempty';
+        }
+    });
+}
+
 sub _tracking_flags_search_nonchanged {
     my ($flag_id, $search, $args) = @_;
     my ($bugs_table, $chart_id, $joins, $value, $operator) =
@@ -423,7 +440,7 @@ sub _tracking_flags_search_nonchanged {
 
     push(@$joins, $bugs_join);
 
-    $args->{'full_field'} = "$bugs_alias.value";
+    $args->{'full_field'} = "COALESCE($bugs_alias.value, '---')";
 }
 
 sub bug_end_of_create {
@@ -459,13 +476,32 @@ sub bug_end_of_create {
     }
 }
 
+sub object_end_of_set_all {
+    my ($self, $args) = @_;
+    my $object = $args->{object};
+    my $params = Bugzilla->input_params;
+
+    return unless $object->isa('Bugzilla::Bug');
+
+    # Do not filter by product/component as we may be changing those
+    my $tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->match({
+        bug_id    => $object->id,
+        is_active => 1,
+    });
+
+    foreach my $flag (@$tracking_flags) {
+        my $flag_name = $flag->name;
+        if (defined $params->{$flag_name}) {
+            $object->{$flag_name} = $params->{$flag_name};
+        }
+    }
+}
+
 sub bug_end_of_update {
     my ($self, $args) = @_;
-    my $bug       = $args->{'bug'};
-    my $timestamp = $args->{'timestamp'};
-    my $changes   = $args->{'changes'};
-    my $params    = Bugzilla->input_params;
-    my $user      = Bugzilla->user;
+    my ($bug, $old_bug, $timestamp, $changes)
+        = @$args{qw(bug old_bug timestamp changes)};
+    my $user = Bugzilla->user;
 
     # Do not filter by product/component as we may be changing those
     my $tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->match({
@@ -475,8 +511,9 @@ sub bug_end_of_update {
 
     my (@flag_changes);
     foreach my $flag (@$tracking_flags) {
-        my $new_value = $params->{$flag->name} || '---';
-        my $old_value = $flag->bug_flag->value;
+        my $flag_name = $flag->name;
+        my $new_value = $bug->$flag_name;
+        my $old_value = $old_bug->$flag_name;
 
         next if $new_value eq $old_value;
 
