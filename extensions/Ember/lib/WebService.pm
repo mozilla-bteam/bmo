@@ -167,12 +167,11 @@ sub show {
     # Return all the things
     else {
         @fields = $self->_get_fields($bug);
-        $comments = $self->comments({ ids => $bug_id });
-        $comments = $comments->{bugs}->{$bug_id}->{comments} || undef;
-        $attachments = $self->attachments({ ids => $bug_id,
-                                            exclude_fields => ['data'] });
-        $attachments = $attachments->{bugs}->{$bug_id} || undef;
-
+        #$comments = $self->comments({ ids => $bug_id });
+        #$comments = $comments->{bugs}->{$bug_id}->{comments} || undef;
+        #$attachments = $self->attachments({ ids => $bug_id,
+        #                                    exclude_fields => ['data'] });
+        #$attachments = $attachments->{bugs}->{$bug_id} || undef;
     }
 
     # Place the fields current value along with the field definition
