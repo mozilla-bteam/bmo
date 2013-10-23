@@ -313,20 +313,10 @@ use constant EXTRA_REQUIRED_FIELDS => qw(creation_ts target_milestone cc qa_cont
 
 #####################################################################
 
-# This and "new" catch every single way of creating a bug, so that we
-# can call _create_cf_accessors.
-sub _do_list_select {
-    my $invocant = shift;
-    $invocant->_create_cf_accessors();
-    return $invocant->SUPER::_do_list_select(@_);
-}
-
 sub new {
     my $invocant = shift;
     my $class = ref($invocant) || $invocant;
     my $param = shift;
-
-    $class->_create_cf_accessors();
 
     # Remove leading "#" mark if we've just been passed an id.
     if (!ref $param && $param =~ /^#(\d+)$/) {
@@ -374,6 +364,10 @@ sub new {
     }
 
     return $self;
+}
+
+sub initialize {
+    $_[0]->_create_cf_accessors();
 }
 
 sub cache_key {
@@ -1002,6 +996,10 @@ sub update {
 
     $_->update foreach @{ $self->{_update_ref_bugs} || [] };
     delete $self->{_update_ref_bugs};
+
+    # BMO - allow extensions to alter what is logged into bugs_activity
+    Bugzilla::Hook::process('bug_update_before_logging',
+        { bug => $self, timestamp => $delta_ts, changes => $changes, old_bug => $old_bug });
 
     # Log bugs_activity items
     # XXX Eventually, when bugs_activity is able to track the dupe_id,

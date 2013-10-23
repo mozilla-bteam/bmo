@@ -45,7 +45,8 @@ RewriteRule ^template_cache/ - [F,L,NC]
 RewriteRule ^review(.*) page.cgi?id=splinter.html$1 [QSA]
 RewriteRule ^user_?profile(.*) page.cgi?id=user_profile.html$1 [QSA]
 RewriteRule ^favicon\.ico$ extensions/BMO/web/images/favicon.ico
-RewriteRule ^form[\.:](itrequest|mozlist|poweredby|presentation|trademark|recoverykey|webops)$ enter_bug.cgi?product=mozilla.org&format=$1
+RewriteRule ^form[\.:]itrequest$ enter_bug.cgi?product=Infrastructure+\%26+Operations&format=itrequest
+RewriteRule ^form[\.:](mozlist|poweredby|presentation|trademark|recoverykey|webops)$ enter_bug.cgi?product=mozilla.org&format=$1
 RewriteRule ^form[\.:]legal$ enter_bug.cgi?product=Legal&format=legal
 RewriteRule ^form[\.:]mozpr$ enter_bug.cgi?product=Mozilla+PR&format=mozpr
 RewriteRule ^form[\.:]reps[\.:]mentorship$ enter_bug.cgi?product=Mozilla+Reps&format=mozreps
@@ -60,7 +61,7 @@ RewriteRule ^form[\.:]moz[\.\-:]project[\.\-:]review$ enter_bug.cgi?product=mozi
 RewriteRule ^form[\.:]docs?$ enter_bug.cgi?product=Developer+Documentation&format=doc [QSA]
 RewriteRule ^form[\.:]mdn?$ enter_bug.cgi?product=Mozilla+Developer+Network&format=mdn
 RewriteRule ^form[\.:](swag|gear)$ enter_bug.cgi?product=mozilla.org&format=swag
-RewriteRule ^form[\.:](b2g|fxos)[\.:](partner|betaprogram) enter_bug.cgi?product=Boot2Gecko&format=fxos-$2 [QSA]
+RewriteRule ^form[\.:](b2g|fxos)[\.:](partner|betaprogram) enter_bug.cgi?product=Firefox+OS&format=fxos-$2 [QSA]
 RewriteRule ^form[\.:]ipp$ enter_bug.cgi?product=Internet+Public+Policy&format=ipp
 RewriteRule ^form[\.:]creative$ enter_bug.cgi?product=Marketing&format=creative
 RewriteRule ^form[\.:]user[\.:]engagement$ enter_bug.cgi?product=Marketing&format=user-engagement

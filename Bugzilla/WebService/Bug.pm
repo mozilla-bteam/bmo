@@ -2219,9 +2219,9 @@ C<string> The unique alias of this bug.
 
 C<string> The login name of the user to whom the bug is assigned.
 
-=item C<assigned_to_detail> 
+=item C<assigned_to_detail>
 
-C<hash> A hash containing detailed user information for the assigned_to. To see the 
+C<hash> A hash containing detailed user information for the assigned_to. To see the
 keys included in the user detail hash, see below.
 
 =item C<blocks>
@@ -2249,9 +2249,9 @@ C<dateTime> When the bug was created.
 
 C<string> The login name of the person who filed this bug (the reporter).
 
-=item C<creator_detail> 
+=item C<creator_detail>
 
-C<hash> A hash containing detailed user information for the creator. To see the 
+C<hash> A hash containing detailed user information for the creator. To see the
 keys included in the user detail hash, see below.
 
 =item C<deadline>
@@ -2458,7 +2458,7 @@ field types have different return values:
 
 =back 
 
-=item I<user detail hashes> 
+=item I<user detail hashes>
 
 Each user detail hash contains the following items:
 
@@ -3639,6 +3639,8 @@ then the change is assumed to be a new flag and C<type_id> is required.
 
 =back
 
+=back
+
 =item B<History>
 
 =over
@@ -3659,9 +3661,7 @@ code of 32000.
 
 =item REST API call added in Bugzilla B<5.0>.
 
-=item In Bugzilla B<5.0>, the following items were added to the bugs return value: C<assigned_to_detail>, C<creator_detail>, C<qa_contact_detail>. 
-
-=back
+=item In Bugzilla B<5.0>, the following items were added to the bugs return value: C<assigned_to_detail>, C<creator_detail>, C<qa_contact_detail>.
 
 =back
 
