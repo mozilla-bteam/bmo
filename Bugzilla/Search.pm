@@ -740,17 +740,8 @@ sub data {
     foreach my $field (@orig_fields) {
         next if $self->COLUMNS->{$field}->{name} =~ /^bugs\.\w+$/;
         $all_in_bugs_table = 0;
-        last;
-    }
-
-    # BMO - tracking flags are not on the bugs table anymore
-    $self->_display_columns();
-    if (@{ $self->{tracking_flags} }) {
-        $all_in_bugs_table = 0;
-    }
-
-    if (!$all_in_bugs_table) {
         $self->{fields} = ['bug_id'];
+        last;
     }
 
     # BMO - to avoid massive amounts of joins, if we're selecting a lot of
@@ -1732,10 +1723,6 @@ sub _params_to_data_structure {
     
     # And then process the modern "custom search" format.
     $clause->add( $self->_custom_search );
-
-    # BMO - allow post-processing of search clauses
-    Bugzilla::Hook::process('search_clause_structure',
-                            { search => $self, clause => $clause });
 
     return $clause;
 }
