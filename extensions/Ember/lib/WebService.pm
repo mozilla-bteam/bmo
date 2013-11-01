@@ -113,12 +113,13 @@ sub show {
     my ($self, $params) = @_;
     my (@fields, $attachments, $comments, $data);
     my $dbh = Bugzilla->dbh;
+    my $user = Bugzilla->user;
 
     Bugzilla->switch_to_shadow_db();
 
     # Throw error if token was provided and user is not logged
     # in meaning token was invalid/expired.
-    if (exists $params->{token} && !Bugzilla->user->id) {
+    if (exists $params->{token} && !$user->id) {
         ThrowUserError('invalid_token');
     }
 
@@ -167,16 +168,44 @@ sub show {
     # Return all the things
     else {
         @fields = $self->_get_fields($bug);
-        #$comments = $self->comments({ ids => $bug_id });
-        #$comments = $comments->{bugs}->{$bug_id}->{comments} || undef;
-        #$attachments = $self->attachments({ ids => $bug_id,
-        #                                    exclude_fields => ['data'] });
-        #$attachments = $attachments->{bugs}->{$bug_id} || undef;
+        $comments = $self->comments({ ids => $bug_id });
+        $comments = $comments->{bugs}->{$bug_id}->{comments} || undef;
+        $attachments = $self->attachments({ ids => $bug_id,
+                                            exclude_fields => ['data'] });
+        $attachments = $attachments->{bugs}->{$bug_id} || undef;
+
     }
 
     # Place the fields current value along with the field definition
     foreach my $field (@fields) {
-        $field->{current_value} = delete $bug_hash->{$field->{name}} || '';
+        if (($field->{name} eq 'depends_on'
+            || $field->{name} eq 'blocks')
+            && scalar @{ $bug_hash->{$field->{name}} })
+        {
+            my $bug_ids = $bug_hash->{$field->{name}};
+            $user->visible_bugs($bug_ids);
+            my $bug_objs = Bugzilla::Bug->new_from_list($bug_ids);
+
+            my @new_list;
+            foreach my $bug (@$bug_objs) {
+                my $data;
+                if ($user->can_see_bug($bug)) {
+                    $data = {
+                        id      => $bug->id,
+                        status  => $bug->bug_status,
+                        summary => $bug->short_desc
+                    };
+                }
+                else {
+                    $data = { id => $bug->id };
+                }
+                push(@new_list, $data);
+            }
+            $field->{current_value} = \@new_list;
+        }
+        else {
+            $field->{current_value} = delete $bug_hash->{$field->{name}} || '';
+        }
     }
 
     # Any left over bug values will be added to the field list
@@ -354,7 +383,6 @@ sub _field_to_hash {
     }
 
     # Use the API name if one is present instead of the internal field name
-    # description for creating a new bug, otherwise comment
     my $field_name = $field->name;
     $field_name = API_NAMES->{$field_name} || $field_name;
 
@@ -365,23 +393,19 @@ sub _field_to_hash {
     $data->{name} = $self->type('string', $field_name);
 
     # Set can_edit true or false if we are editing a current bug
-    my $can_edit = $self->_can_change_field($field, $bug);
+    $data->{can_edit} = $self->_can_change_field($field, $bug) if $bug->id;
+
+    # description for creating a new bug, otherwise comment
 
     # FIXME 'version' and 'target_milestone' types are incorrectly set in fielddefs
-    if ($can_edit 
-        && ($field->is_select
-            || $field->name eq 'version' 
-            || $field->name eq 'target_milestone'))
-    {
+    if ($field->is_select || $field->name eq 'version' || $field->name eq 'target_milestone') {
         $data->{values} = [ $self->_get_field_values($field, $bug) ];
     }
-
-    $data->{can_edit} = $self->type('boolean', $self->_can_change_field($field, $bug)) if $bug->id;
 
     # Add default values for specific fields if new bug
     if (!$bug->id && DEFAULT_VALUE_MAP->{$field->name}) {
         my $default_value = Bugzilla->params->{DEFAULT_VALUE_MAP->{$field->name}};
-        $data->{default_value} = $self->type('string', $default_value);
+        $data->{default_value} = $default_value;
     }
 
     return $data;
@@ -470,15 +494,18 @@ sub _can_change_field {
     my $user = Bugzilla->user;
 
     # Cannot set resolution on bug creation
-    return 0 if ($field->name eq 'resolution' && !$bug->{bug_id});
+    return $self->type('boolean', 0) if ($field->name eq 'resolution' && !$bug->{bug_id});
+
+    # Cannot edit an obsolete or inactive custom field
+    return $self->type('boolean', 0) if ($field->custom && $field->obsolete);
 
     # If not a multi-select or single-select, value is not provided
     # and we just check if the field itself is editable by the user.
     if (!defined $value) {
-        return $bug->check_can_change_field($field->name, 0, 1);
+        return $self->type('boolean', $bug->check_can_change_field($field->name, 1, 0));
     }
 
-    return $bug->check_can_change_field($field->name, undef, $value);
+    return $self->type('boolean', $bug->check_can_change_field($field->name, '', $value));
 }
 
 sub _flag_to_hash {

@@ -42,8 +42,10 @@ Redirect permanent /duplicates.html https://bugzilla.mozilla.org/duplicates.cgi
 
 RewriteEngine On
 RewriteRule ^template_cache/ - [F,L,NC]
+RewriteRule ^template_cache.deleteme/ - [F,L,NC]
 RewriteRule ^review(.*) page.cgi?id=splinter.html$1 [QSA]
 RewriteRule ^user_?profile(.*) page.cgi?id=user_profile.html$1 [QSA]
+RewriteRule ^request_defer(.*) page.cgi?id=request_defer.html$1 [QSA]
 RewriteRule ^favicon\.ico$ extensions/BMO/web/images/favicon.ico
 RewriteRule ^form[\.:]itrequest$ enter_bug.cgi?product=Infrastructure+\%26+Operations&format=itrequest
 RewriteRule ^form[\.:](mozlist|poweredby|presentation|trademark|recoverykey|webops)$ enter_bug.cgi?product=mozilla.org&format=$1

@@ -252,7 +252,9 @@
       <td id="title">
         <a href="./" title="Home">[% terms.BugzillaTitle %]</a>
       </td>
-      <td id="information"></td>
+      <td>
+        [% Hook.process("message") %]
+      </td>
       <td id="moz_login">
         [% IF user.id %]
           <ul class="links">
@@ -263,6 +265,7 @@
                   [% filtered_username = user.login FILTER uri %]
                   <li><a href="[% Param('mybugstemplate').replace('%userid%', filtered_username) %]">My [% terms.Bugs %]</a></li>
                 [% END %]
+                <li><a href="user_profile">My Profile</a></li>
                 <li><a href="userprefs.cgi">Preferences</a></li>
                 <li><a href="request.cgi?requester=[% user.login FILTER uri %]&amp;requestee=[% user.login FILTER uri %]&amp;do_union=1&amp;group=type&amp;action=queue">My Requests</a></li>
                 [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless
@@ -321,6 +324,7 @@
 <tr>
     <td id="title">
       <p>[% terms.BugzillaTitle %]
+      [% Hook.process("message") %]
       [% " &ndash; $header" IF header %]</p>
     </td>
 
