@@ -38,7 +38,6 @@ use Bugzilla::Install::Filesystem;
 use Bugzilla::User;
 use Bugzilla::User::Setting;
 use Bugzilla::Util;
-use Bugzilla::Util qw(html_quote trick_taint trim datetime_from detaint_natural);
 
 use Date::Parse;
 use DateTime;
@@ -517,10 +516,16 @@ sub quicksearch_map {
 
 sub object_end_of_create {
     my ($self, $args) = @_;
-    if ($args->{class} eq 'Bugzilla::User') {
+    my $class = $args->{class};
+
+    if ($class eq 'Bugzilla::User') {
+        my $user = $args->{object};
+
+        # Log real IP addresses for auditing
+        _syslog(sprintf('[audit] <%s> created user %s', remote_ip(), $user->login));
+
         # Add default searches to new user's footer
         my $dbh = Bugzilla->dbh;
-        my $user = $args->{object};
 
         my $sharer = Bugzilla::User->new({ name => 'nobody@mozilla.org' })
             or return;
@@ -535,6 +540,10 @@ sub object_end_of_create {
                 $namedquery_id, $user->id
             );
         }
+
+    } elsif ($class eq 'Bugzilla::Bug') {
+        # Log real IP addresses for auditing
+        _syslog(sprintf('[audit] <%s> created bug %s', remote_ip(), $args->{object}->id));
     }
 }
 
@@ -881,8 +890,13 @@ sub _log_sent_email {
 
     $subject =~ s/[\[\(]Bug \d+[\]\)]\s*//;
 
+    _syslog("[bugmail] $recipient ($message_type) $bug_id $subject");
+}
+
+sub _syslog {
+    my $message = shift;
     openlog('apache', 'cons,pid', 'local4');
-    syslog('notice', encode_utf8("[bugmail] $recipient ($message_type) $bug_id $subject"));
+    syslog('notice', encode_utf8($message));
     closelog();
 }
 
@@ -1056,10 +1070,7 @@ sub query_database {
         }
 
         # log query
-        setlogsock('unix');
-        openlog('apache', 'cons', 'pid', 'local4');
-        syslog('notice', sprintf("[db_query] %s %s", $user->login, $query));
-        closelog();
+        _syslog(sprintf("[db_query] %s %s", $user->login, $query));
 
         # connect to database and execute
         # switching to the shadow db gives us a read-only connection

@@ -55,6 +55,7 @@ use constant PRODUCT_SPECIFIC_FIELDS => qw(version target_milestone component);
 
 use constant DATE_FIELDS => {
     comments => ['new_since'],
+    history  => ['new_since'],
     search   => ['last_change_time', 'creation_time'],
 };
 
@@ -409,7 +410,7 @@ sub history {
         $bug_id = $bug->id;
         $item{id} = $self->type('int', $bug_id);
 
-        my ($activity) = Bugzilla::Bug::GetBugActivity($bug_id, undef, $params->{start_time});
+        my ($activity) = Bugzilla::Bug::GetBugActivity($bug_id, undef, $params->{new_since});
 
         my @history;
         foreach my $changeset (@$activity) {
@@ -2631,16 +2632,16 @@ An array of numbers and strings.
 If an element in the array is entirely numeric, it represents a bug_id 
 from the Bugzilla database to fetch. If it contains any non-numeric 
 characters, it is considered to be a bug alias instead, and the data bug 
-with that alias will be loaded. 
+with that alias will be loaded.
+
+item C<new_since>
+
+C<dateTime> If specified, the method will only return changes I<newer>
+than this time.
 
 Note that it's possible for aliases to be disabled in Bugzilla, in which
 case you will be told that you have specified an invalid bug_id if you
 try to specify an alias. (It will be error 100.)
-
-=item C<start_time>
-
-An optional C<datetime> string that only shows changes at and after a specific
-time.
 
 =back
 
@@ -4187,6 +4188,8 @@ You can't ask a specific person for the flag.
 =item Added in Bugzilla B<4.0>.
 
 =item REST API call added Bugzilla B<5.0>.
+
+=item Added C<new_since> parameter if Bugzilla B<5.0>.
 
 =back
 
