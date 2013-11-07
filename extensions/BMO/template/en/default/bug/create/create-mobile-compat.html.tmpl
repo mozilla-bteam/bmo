@@ -219,7 +219,9 @@ function validateAndSubmit() {
   <div class="field_label">
     <label for="description">Attachment Description</label>
   </div>
-  <input type="text" id="description" name="description">
+  <input type="text" id="description" name="description"
+         placeholder="Short description about the attachment"
+         value="[% cgi.param('description') FILTER html %]">
 </div>
 
 <input type="submit" id="commit" value="Submit Issue">
