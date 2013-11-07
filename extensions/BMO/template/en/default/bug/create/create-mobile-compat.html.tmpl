@@ -9,32 +9,56 @@
 [% PROCESS global/variables.none.tmpl %]
 
 [% inline_style = BLOCK %]
-#bug_form th {
-  text-align: right;
-  vertical-align: middle;
+#bug_form .required:after {
+  content: " *";
+  color: red;
 }
-
-#bug_form input[type="text"], #bug_form textarea {
-  width: 100%;
+#bug_form .head_desc {
+  width: 40em;
+  word-wrap: normal;
+  padding-bottom: 12px;
 }
-
+#bug_form .field_label {
+  font-weight: bold;
+  text-align: left;
+}
+#bug_form .form_section {
+  margin-bottom: 10px;
+}
 #bug_form textarea {
   font-family: inherit;
   font-size: inherit;
 }
-
+#bug_form th {
+  text-align: right;
+  vertical-align: middle;
+}
+#bug_form input[type=text],
+#bug_form textarea {
+    width: 100%;
+    max-width: 40em;
+}
 #standard_link {
   margin-top: 2em;
 }
-
 #standard_link img {
   vertical-align: middle;
 }
-
 #standard_link a {
   cursor: pointer;
 }
-
+@media screen and (max-width: 479px) {
+  #bug_form input[type=text],
+  #bug_form textarea {
+    max-width: 32em;
+  }
+}
+@media screen and (max-width: 321px) {
+  #bug_form input[type=text],
+  #bug_form textarea {
+    max-width: 22em;
+  }
+}
 [% END %]
 
 [% inline_javascript = BLOCK %]
@@ -45,8 +69,6 @@ function validateAndSubmit() {
     'bug_file_loc':     "Please give the URL of the broken page.",
     'short_desc':       "Please enter a summary of the problem.",
     'desc':             "Please tell us how to reproduce the problem.",
-    'expected_result':  "Please tell us what you expected to happen.",
-    'actual_result':    "Please tell us what actually happened.",
   };
 
   var alert_text = '';
@@ -80,7 +102,7 @@ function validateAndSubmit() {
 
 <h1>[% title FILTER none %]</h1>
 
-<form method="post" action="post_bug.cgi" enctype="multipart/form-data"
+<form id="bug_form" method="post" action="post_bug.cgi" enctype="multipart/form-data"
       onSubmit="return validateAndSubmit();">
   <input type="hidden" name="format"       value="mobile-compat">
   <input type="hidden" name="product"      value="Tech Evangelism">
@@ -91,65 +113,62 @@ function validateAndSubmit() {
   <input type="hidden" name="bug_severity" value="normal">
   <input type="hidden" name="status_whiteboard" value="[mobile-compat-form]">
   <input type="hidden" name="user_agent"   value="[% cgi.user_agent() FILTER html %]">
-
   <input type="hidden" name="token"        value="[% token FILTER html %]">
 
 [% IF NOT cgi.user_agent("Mobile") %]
-<p>If possible, it's best to file [% terms.bugs %] using your device's browser. Visit and bookmark &lt;<a href="https://bugzilla.mozilla.org/form.mobile.compat">https://bugzilla.mozilla.org/form.mobile.compat</a>&gt;.</p>
+  <div class="head_desc">
+    If possible, it's best to file [% terms.bugs %] using your device's browser. Visit and bookmark
+    &lt;<a href="https://bugzilla.mozilla.org/form.mobile.compat">https://bugzilla.mozilla.org/form.mobile.compat</a>&gt;.
+  </div>
 [% END %]
 
-<table id="bug_form">
+<div class="form_section">
+  <div class="field_label">
+    <label for="op_sys" class="required">Product</label>
+  </div>
+  <select name="op_sys" id="op_sys">
+    <option value="">Please select...</option>
+    <option value="Gonk (Firefox OS)"
+            [% "selected" IF cgi.param('op_sys') == 'Firefox OS' %]>
+      Firefox OS</option>
+    <option value="Android"
+            [% "selected" IF cgi.param('op_sys') == 'Firefox for Android' %]>
+      Firefox for Android</option>
+  </select>
+</div>
 
-<tr>
-  <th class="required">Product</th>
-  <td>
-    <select name="op_sys" id="op_sys">
-      <option value="">Please select...</option>
-      <option value="Gonk (Firefox OS)"
-              [% "selected" IF cgi.param('op_sys') == 'Firefox OS' %]>
-        Firefox OS</option>
-      <option value="Android"
-              [% "selected" IF cgi.param('op_sys') == 'Firefox for Android' %]>
-        Firefox for Android</option>
-    </select>
-  </td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="software_version" class="required">Product Version</label>
+  </div>
+  <input type="text" name="software_version" id="software_version"
+         placeholder="Software version - see About box or Preferences"
+         value="[% cgi.param('software_version') FILTER html %]">
+</div>
 
-<tr>
-  <th class="required">Product Version</th>
-  <td>
-    <input type="text" name="software_version" id="software_version" size="60"
-      placeholder="Software version - see About box or Preferences"
-      value="[% cgi.param('software_version') FILTER html %]">
-  </td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="bug_file_loc" class="required">Full Web Page Address</label>
+  </div>
+  <input type="text" name="bug_file_loc" id="bug_file_loc"
+         placeholder="e.g. http://www.example.com/page.html"
+         value="[% cgi.param('bug_file_loc') FILTER html %]">
+</div>
 
-<tr>
-  <th class="required">Full Web Page Address</th>
-  <td>
-    <input type="text" name="bug_file_loc" id="bug_file_loc" size="60"
-      placeholder="e.g. http://www.example.com/page.html"
-      value="[% cgi.param('bug_file_loc') FILTER html %]">
-  </td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="short_desc" class="required">Problem Summary</label>
+  </div>
+  <input type="text" name="short_desc" id="short_desc"
+         placeholder="Describe the specific problem with the page in one sentence"
+         value="[% cgi.param('short_desc') FILTER html %]">
+</div>
 
-<tr>
-  <td>&nbsp;</td>
-</tr>
-
-<tr>
-  <th class="required">Problem Summary</th>
-  <td>
-    <input type="text" name="short_desc" id="short_desc" size="60"
-      placeholder="Describe the specific problem with the page in one sentence"
-      value="[% cgi.param('short_desc') FILTER html %]">
-  </td>
-</tr>
-
-<tr>
-  <th class="required">Steps To Reproduce</th>
-  <td>
-    <textarea id="desc" name="desc" cols="50" rows="5">
+<div class="form_section">
+  <div class="field_label">
+    <label for="desc">Steps To Reproduce</label>
+  </div>
+  <textarea id="desc" name="desc" cols="50" rows="5">
 [% IF cgi.param('desc') %]
 [% cgi.param('desc') FILTER html %]
 [% ELSE %]
@@ -158,54 +177,56 @@ function validateAndSubmit() {
 3.
 ...
 [% END %]
-    </textarea>
-  </td>
-</tr>
+  </textarea>
+</div>
 
-<tr>
-  <th class="required">Expected Result</th>
-  <td>
-    <input type="text" id="expected_result" name="expected_result" size="60"
-      placeholder="What were you expecting to happen?"
-      value="[% cgi.param('expected_result') FILTER html %]">
-  </td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="expected_result">Expected Result</label>
+  </div>
+  <input type="text" id="expected_result" name="expected_result"
+         placeholder="What were you expecting to happen?"
+         value="[% cgi.param('expected_result') FILTER html %]">
+</div>
 
-<tr>
-  <th class="required">Actual Result</th>
-  <td>
-    <input type="text" name="actual_result" id="actual_result" size="60"
-      placeholder="What happened instead?"
-      value="[% cgi.param('actual_result') FILTER html %]">
-  </td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="actual_result">Actual Result</label>
+  </div>
+  <input type="text" name="actual_result" id="actual_result"
+         placeholder="What happened instead?"
+         value="[% cgi.param('actual_result') FILTER html %]">
+</div>
 
-<tr>
-  <td>&nbsp;</td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="device">Device Information</label>
+  </div>
+  <input type="text" name="device" id="device"
+         placeholder="Make and model"
+         value="[% cgi.param('device') FILTER html %]">
+</div>
 
-<tr>
-  <th>Device Information</th>
-  <td>
-    <input type="text" name="device" id="device" size="60"
-      placeholder="Make and model"
-      value="[% cgi.param('device') FILTER html %]">
-  </td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="data">Attach File</label>
+  </div>
+  <input type="file" id="data" name="data">
+  <input type="hidden" name="contenttypemethod" value="autodetect" />
+</div>
 
-<tr>
-  <td>&nbsp;</td>
-</tr>
+<div class="form_section">
+  <div class="field_label">
+    <label for="description">Attachment Description</label>
+  </div>
+  <input type="text" id="description" name="description">
+</div>
 
-<tr>
-  <td>&nbsp;</td>
-  <td><input type="submit" id="commit" value="Submit Issue"></td>
-</tr>
+<input type="submit" id="commit" value="Submit Issue">
 
-</table>
 </form>
 
-[ <span class="required_star">*</span> <span class="required_explanation">Required Field</span> ]
+<p>[ <span class="required_star">*</span> <span class="required_explanation">Required Field</span> ]</p>
 
 <div id="standard_link">
   <a href="enter_bug.cgi?format=__standard__&amp;product=[% product.name FILTER uri %]">
