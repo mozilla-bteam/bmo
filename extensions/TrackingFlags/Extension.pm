@@ -512,6 +512,8 @@ sub bug_check_can_change_field {
     my ($bug, $field, $old_value, $new_value, $priv_results)
         = @$args{qw(bug field old_value new_value priv_results)};
 
+    print STDERR "$field $old_value $new_value\n";
+
     return if $field !~ /^cf_/ or $old_value eq $new_value;
     return unless my $flag = Bugzilla::Extension::TrackingFlags::Flag->new({ name => $field });
 
@@ -519,10 +521,7 @@ sub bug_check_can_change_field {
         push @$priv_results, PRIVILEGES_REQUIRED_NONE;
     }
     else {
-        # we can't return PRIVILEGES_REQUIRED_EMPOWERED as that has different
-        # conditions (eg. it assumes reporters can always change fields).
-        ThrowUserError('tracking_flags_change_denied',
-                       { flag => $flag, value => $new_value });
+        push @$priv_results, PRIVILEGES_REQUIRED_EMPOWERED;
     }
 }
 
