@@ -457,6 +457,13 @@ sub bug_end_of_create {
     my $params     = Bugzilla->input_params;
     my $user       = Bugzilla->user;
 
+    # If we are submitting via CGI, we get the params from input_params.
+    # If we are coming from Bug.create, we need to pull them from the request_cache
+    my $cache = Bugzilla->request_cache->{tracking_flags_create_params};
+    if ($cache) {
+        map { $params->{$_} => $cache->{$_} } keys %$cache;
+    }
+
     my $tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->match({
         product   => $bug->product,
         component => $bug->component,
@@ -580,6 +587,19 @@ sub bug_end_of_update {
 
         # Update the name/value pair in the bug object
         $bug->{$flag->name} = $added;
+    }
+}
+
+sub bug_end_of_create_validators {
+    my ($self, $args) = @_;
+    my $params = $args->{params};
+    my @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all;
+    my $cache = Bugzilla->request_cache->{tracking_flags_create_params} ||= {};
+    foreach my $flag (@tracking_flags) {
+        my $flag_name = $flag->name;
+        if (defined $params->{$flag_name}) {
+            $cache->{$flag->name} = delete $params->{$flag_name};
+        }
     }
 }
 
