@@ -5,11 +5,17 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::ProjectHoneyPot;
+package Bugzilla::Extension::AntiSpam;
 use strict;
 
-use constant NAME => 'ProjectHoneyPot';
-use constant REQUIRED_MODULES => [ ];
-use constant OPTIONAL_MODULES => [ ];
+use constant NAME => 'AntiSpam';
+use constant REQUIRED_MODULES => [
+    {
+        package => 'Email-Address',
+        module  => 'Email::Address',
+        version => 0,
+    },
+];
+use constant OPTIONAL_MODULES => [];
 
 __PACKAGE__->NAME;

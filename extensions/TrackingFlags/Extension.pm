@@ -452,10 +452,12 @@ sub _tracking_flags_search_nonchanged {
 
 sub bug_end_of_create {
     my ($self, $args) = @_;
-    my $bug        = $args->{'bug'};
-    my $timestamp  = $args->{'timestamp'};
-    my $params     = Bugzilla->input_params;
-    my $user       = Bugzilla->user;
+    my $bug       = $args->{'bug'};
+    my $timestamp = $args->{'timestamp'};
+    my $user      = Bugzilla->user;
+
+    my $params = Bugzilla->request_cache->{tracking_flags_create_params};
+    return if !$params;
 
     # If we are submitting via CGI, we get the params from input_params.
     # If we are coming from Bug.create, we need to pull them from the request_cache
@@ -593,12 +595,15 @@ sub bug_end_of_update {
 sub bug_end_of_create_validators {
     my ($self, $args) = @_;
     my $params = $args->{params};
+
+    # We need to stash away any params that are setting/updating tracking
+    # flags early on. Otherwise set_all or insert_create_data will complain.
     my @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all;
     my $cache = Bugzilla->request_cache->{tracking_flags_create_params} ||= {};
     foreach my $flag (@tracking_flags) {
         my $flag_name = $flag->name;
         if (defined $params->{$flag_name}) {
-            $cache->{$flag->name} = delete $params->{$flag_name};
+            $cache->{$flag_name} = delete $params->{$flag_name};
         }
     }
 }
