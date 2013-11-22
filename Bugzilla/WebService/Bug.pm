@@ -620,7 +620,6 @@ sub update {
     delete $values{dependencies};
 
     my $flags = delete $values{flags};
-    my ($old_flags, $new_flags) = extract_flags($flags) if $flags;
 
     foreach my $bug (@bugs) {
         if (!$user->can_edit_product($bug->product_obj->id) ) {
@@ -629,7 +628,10 @@ sub update {
         }
 
         $bug->set_all(\%values);
-        $bug->set_flags($old_flags, $new_flags) if $flags;
+        if ($flags) {
+            my ($old_flags, $new_flags) = extract_flags($flags, $bug);
+            $bug->set_flags($old_flags, $new_flags);
+        }
     }
 
     my %all_changes;
@@ -708,11 +710,6 @@ sub create {
 
     $params = Bugzilla::Bug::map_fields($params);
 
-    # Some fields cannot be sent to Bugzilla::Bug->create
-    foreach my $key (qw(login password token)) {
-        delete $params->{$key};
-    }
-
     my $flags = delete $params->{flags};
 
     # We start a nested transaction in case flag setting fails
@@ -723,7 +720,7 @@ sub create {
 
     # Set bug flags
     if ($flags) {
-        my ($flags, $new_flags) = extract_flags($flags);
+        my ($flags, $new_flags) = extract_flags($flags, $bug);
         $bug->set_flags($flags, $new_flags);
         $bug->update($bug->creation_ts);
     }
@@ -814,7 +811,6 @@ sub add_attachment {
     my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
     my $flags = delete $params->{flags};
-    my ($old_flags, $new_flags) = extract_flags($flags) if $flags;
 
     foreach my $bug (@bugs) {
         my $attachment = Bugzilla::Attachment->create({
@@ -827,7 +823,14 @@ sub add_attachment {
             ispatch     => $params->{is_patch},
             isprivate   => $params->{is_private},
         });
-        $attachment->set_flags($old_flags, $new_flags) if $flags;
+
+        if ($flags) {
+            use Data::Dumper; print STDERR Dumper $flags;
+            my ($old_flags, $new_flags) = extract_flags($flags, $bug, $attachment);
+            print STDERR Dumper [$old_flags, $new_flags];
+            $attachment->set_flags($old_flags, $new_flags);
+        }
+
         $attachment->update($timestamp);
         my $comment = $params->{comment} || '';
         $attachment->bug->add_comment($comment, 
@@ -835,7 +838,6 @@ sub add_attachment {
               type       => CMT_ATTACHMENT_CREATED,
               extra_data => $attachment->id });
         push(@created, $attachment);
-        $attachment->set_flags($old_flags, $new_flags) if $flags;
     }
     $_->bug->update($timestamp) foreach @created;
     $dbh->bz_commit_transaction();
@@ -862,9 +864,6 @@ sub update_attachment {
         delete $params->{$key};
     }
 
-    # We can't update flags, and summary is really description
-    delete $params->{flags};
-
     $params = translate($params, ATTACHMENT_MAPPED_SETTERS);
 
     # Get all the attachments, after verifying that they exist and are editable
@@ -882,9 +881,15 @@ sub update_attachment {
         $bugs{$bug->id} = $bug;
     }
 
+    my $flags = delete $params->{flags};
+
     # Update the values
     foreach my $attachment (@attachments) {
         $attachment->set_all($params);
+        if ($flags) {
+            my ($old_flags, $new_flags) = extract_flags($flags, $attachment->bug, $attachment);
+            $attachment->set_flags($old_flags, $new_flags);
+        }
     }
 
     $dbh->bz_start_transaction();
@@ -1978,14 +1983,13 @@ C<summary>.
 =item In Bugzilla B<4.2>, the C<is_url> return value was removed
 (this attribute no longer exists for attachments).
 
-=back
-
 =item The C<flags> array was added in Bugzilla B<4.4>.
 
 =item REST API call added in Bugzilla B<5.0>.
 
 =back
 
+=back
 
 =head2 comments
 
@@ -3132,14 +3136,18 @@ product.
 =item C<flags>
 
 C<array> An array of hashes with flags to add to the bug. To create a flag,
-at least the status and type_id must be provided. An optional requestee can be passed
-if the flag type is requesteeble.
+at least the status and the type_id or name must be provided. An optional
+requestee can be passed if the flag type is requesteeble.
 
 =over
 
+=item C<name>
+
+C<string> The name of the flag type.
+
 =item C<type_id>
 
-C<int> The internal flag type id that will be created.
+C<int> The internal flag type id.
 
 =item C<status>
 
@@ -3215,6 +3223,11 @@ permissions may make the change.
 =item 126 (Flag not Requestable from Specific Person)
 
 You can't ask a specific person for the flag.
+
+=item 128 (Flag Type not Unique)
+
+The flag type specified matches several flag types. You must specify
+the type id value to update or add a flag.
 
 =item 504 (Invalid User)
 
@@ -3324,14 +3337,18 @@ Defaults to False if not specified.
 =item C<flags>
 
 C<array> An array of hashes with flags to add to the attachment. to create a flag,
-at least the status and type_id must be provided. An optional requestee can be passed
-if the flag type is requesteeble.
+at least the status and the type_id or name must be provided. An optional requestee
+can be passed if the flag type is requesteeble.
 
 =over
 
+=item C<name>
+
+C<string> The name of the flag type.
+
 =item C<type_id>
 
-C<int> The internal flag type id that will be created.
+C<int> The internal flag type id.
 
 =item C<status>
 
@@ -3369,6 +3386,11 @@ permissions may make the change.
 =item 126 (Flag not Requestable from Specific Person)
 
 You can't ask a specific person for the flag.
+
+=item 128 (Flag Type not Unique)
+
+The flag type specified matches several flag types. You must specify
+the type id value to update or add a flag.
 
 =item 600 (Attachment Too Large)
 
@@ -3467,6 +3489,43 @@ to the "insidergroup"), False if the attachment should be public.
 
 C<boolean> True if the attachment is obsolete, False otherwise.
 
+=item C<flags>
+
+C<array> An array of hashes with changes to the flags. The following values
+can be specified. At least the status and one of type_id, id, or name must
+be specified. If a type_id or name matches a single currently set flag,
+the flag will be updated unless new is specified.
+
+=over
+
+=item C<name>
+
+C<string> The name of the flag that will be created or updated.
+
+=item C<type_id>
+
+C<int> The internal flag type id that will be created or updated. You will
+need to specify the C<type_id> if more than one flag type of the same name exists.
+
+=item C<status>
+
+C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
+
+=item C<requestee>
+
+C<string> The login of the requestee if the flag type is requesteeable.
+
+=item C<id>
+
+C<int> Use id to specify the flag to be updated. You will need to specify the C<id>
+if more than one flag is set of the same name.
+
+=item C<new>
+
+C<boolean> Set to true if you specifically want a new flag to be created.
+
+=back
+
 =back
 
 =item B<Returns>
@@ -3532,6 +3591,29 @@ This method can throw all the same errors as L</get>, plus:
 
 =over
 
+=item 124 (Flag Status Invalid)
+
+The flag status is invalid.
+
+=item 125 (Flag Modification Denied)
+
+You tried to request, grant, or deny a flag but only a user with the required
+permissions may make the change.
+
+=item 126 (Flag not Requestable from Specific Person)
+
+You can't ask a specific person for the flag.
+
+=item 127 (Flag not Unique)
+
+The flag specified has been set multiple times. You must specify the id
+value to update the flag.
+
+=item 128 (Flag Type not Unique)
+
+The flag type specified matches several flag types. You must specify
+the type id value to update or add a flag.
+
 =item 601 (Invalid MIME Type)
 
 You specified a C<content_type> argument that was blank, not a valid
@@ -3556,7 +3638,6 @@ You did not specify a value for the C<summary> argument.
 =back
 
 =back
-
 
 =head2 add_comment
 
@@ -3632,32 +3713,6 @@ You tried to add a private comment, but don't have the necessary rights.
 
 You tried to add a comment longer than the maximum allowed length
 (65,535 characters).
-
-=item C<flags>
-
-C<array> An array of hashes with changes to the flags. The following values
-can be specified. At least the status and one of type_id or id must be specified.
-
-=over
-
-=item C<type_id>
-
-C<int> The internal flag type id that will be created.
-
-=item C<status>
-
-C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
-
-=item C<requestee>
-
-C<string> The login of the requestee if the flag type is requesteeable.
-
-=item C<id>
-
-C<int> Use id to specify the flag to be updated. If C<id> is not specified,
-then the change is assumed to be a new flag and C<type_id> is required.
-
-=back
 
 =back
 
@@ -3830,13 +3885,20 @@ This is the I<total> estimate, not the amount of time remaining to fix it.
 =item C<flags>
 
 C<array> An array of hashes with changes to the flags. The following values
-can be specified. At least the status and one of type_id or id must be specified.
+can be specified. At least the status and one of type_id, id, or name must
+be specified. If a type_id or name matches a single currently set flag,
+the flag will be updated unless new is specified.
 
 =over
 
+=item C<name>
+
+C<string> The name of the flag that will be created or updated.
+
 =item C<type_id>
 
-C<int> The internal flag type id that will be created.
+C<int> The internal flag type id that will be created or updated. You will
+need to specify the C<type_id> if more than one flag type of the same name exists.
 
 =item C<status>
 
@@ -3848,8 +3910,12 @@ C<string> The login of the requestee if the flag type is requesteeable.
 
 =item C<id>
 
-C<int> Use id to specify the flag to be updated. If C<id> is not specified,
-then the change is assumed to be a new flag and C<type_id> is required.
+C<int> Use id to specify the flag to be updated. You will need to specify the C<id>
+if more than one flag is set of the same name.
+
+=item C<new>
+
+C<boolean> Set to true if you specifically want a new flag to be created.
 
 =back
 
@@ -4183,6 +4249,16 @@ permissions may make the change.
 =item 126 (Flag not Requestable from Specific Person)
 
 You can't ask a specific person for the flag.
+
+=item 127 (Flag not Unique)
+
+The flag specified has been set multiple times. You must specify the id
+value to update the flag.
+
+=item 128 (Flag Type not Unique)
+
+The flag type specified matches several flag types. You must specify
+the type id value to update or add a flag.
 
 =back
 

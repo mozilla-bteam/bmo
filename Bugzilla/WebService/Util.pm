@@ -23,6 +23,10 @@ package Bugzilla::WebService::Util;
 use strict;
 use base qw(Exporter);
 
+use Bugzilla::Flag;
+use Bugzilla::FlagType;
+use Bugzilla::Error;
+
 # We have to "require", not "use" this, because otherwise it tries to
 # use features of Test::More during import().
 require Test::Taint;
@@ -39,15 +43,70 @@ our @EXPORT_OK = qw(
 );
 
 sub extract_flags {
-    my ($flags, $attachment) = @_;
+    my ($flags, $bug, $attachment) = @_;
     my (@new_flags, @old_flags);
 
+    my $flag_types    = $attachment ? $attachment->flag_types : $bug->flag_types;
+    my $current_flags = $attachment ? $attachment->flags : $bug->flags;
+
     foreach my $flag (@$flags) {
-        if (exists $flag->{id}) {
-            push(@old_flags, $flag);
-            next;
+        my $id      = $flag->{id};
+        my $type_id = $flag->{type_id};
+
+        my $new  = delete $flag->{new};
+        my $name = delete $flag->{name};
+
+        if ($id) {
+            my $flag_obj = grep($id == $_->id, @$current_flags);
+            $flag_obj || ThrowUserError('object_does_not_exist',
+                                        { class => 'Bugzilla::Flag', id => $id });
         }
-        push(@new_flags, $flag);
+        elsif ($type_id) {
+            my $type_obj = grep($type_id == $_->id, @$flag_types);
+            $type_obj || ThrowUserError('object_does_not_exist',
+                                        { class => 'Bugzilla::FlagType', id => $type_id });
+            if (!$new) {
+                my @flag_matches = grep($type_id == $_->type->id, @$current_flags);
+                @flag_matches > 1 && ThrowUserError('flag_not_unique',
+                                                     { value => $type_id });
+                if (!@flag_matches) {
+                    delete $flag->{id};
+                }
+                else {
+                    delete $flag->{type_id};
+                    $flag->{id} = $flag_matches[0]->id;
+                }
+            }
+        }
+        elsif ($name) {
+            my @type_matches = grep($name eq $_->name, @$flag_types);
+            @type_matches > 1 && ThrowUserError('flag_type_not_unique',
+                                                { value => $name });
+            @type_matches || ThrowUserError('object_does_not_exist',
+                                            { class => 'Bugzilla::FlagType', name => $name });
+            if ($new) {
+                delete $flag->{id};
+                $flag->{type_id} = $type_matches[0]->id;
+            }
+            else {
+                my @flag_matches = grep($name eq $_->type->name, @$current_flags);
+                @flag_matches > 1 && ThrowUserError('flag_not_unique', { value => $name });
+                if (@flag_matches) {
+                    $flag->{id} = $flag_matches[0]->id;
+                }
+                else {
+                    delete $flag->{id};
+                    $flag->{type_id} = $type_matches[0]->id;
+                }
+            }
+        }
+
+        if ($flag->{id}) {
+            push(@old_flags, $flag);
+        }
+        else {
+            push(@new_flags, $flag);
+        }
     }
 
     return (\@old_flags, \@new_flags);
@@ -237,6 +296,14 @@ methods. Currently it converts listed parameters into an array reference
 if the client only passed a single scalar value. It modifies the parameters
 hash in place so other parameters should be unaltered.
 
+=head2 translate
+
+WebService methods frequently take parameters with different names than
+the ones that we use internally in Bugzilla. This function takes a hashref
+that has field names for keys and returns a hashref with those keys renamed
+according to the mapping passed in with the second parameter (which is also
+a hashref).
+
 =head2 params_to_objects
 
 Creates objects of the type passed in as the second parameter, using the
@@ -255,8 +322,7 @@ This function converts the shorter versions to their respective internal names.
 
 Subroutine that takes a list of hashes that are potential flag changes for
 both bugs and attachments. Then breaks the list down into two separate lists
-based on if the change is to add a new flag or to update an existing flag
-based on whether C<id> is present.
+based on if the change is to add a new flag or to update an existing flag.
 
 =head1 B<Methods in need of POD>
 
