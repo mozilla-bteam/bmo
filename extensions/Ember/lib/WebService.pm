@@ -256,6 +256,25 @@ sub search {
     return $result;
 }
 
+sub bug {
+    my ($self, $params) = @_;
+
+    my $bug_id = delete $params->{id};
+    $bug_id || ThrowCodeError('param_required',
+                              { function => 'Ember.bug', param => 'id' });
+
+    my $bugs        = $self->get({ ids => [ $bug_id ] });
+    my $comments    = $self->comments({ ids => [ $bug_id ] });
+    my $attachments = $self->attachments({ ids => [ $bug_id ],
+                                           exclude_fields => ['data'] });
+
+    return {
+        bug         => $bugs->{bugs}->[0],
+        comments    => $comments->{bugs}->{$bug_id}->{comments},
+        attachments => $attachments->{bugs}->{$bug_id},
+    };
+}
+
 ###################
 # Private Methods #
 ###################
@@ -647,6 +666,21 @@ sub rest_resources {
                 method => 'search',
             },
         },
+        # get current bug attributes without field information - single bug id
+        qr{^/ember/bug/(\d+)$}, {
+            GET => {
+                method => 'bug',
+                params => sub {
+                    return { id => $_[0] };
+                }
+            }
+        },
+        # show bug page - one or more bug ids
+        qr{^/ember/bug$}, {
+            GET => {
+                method => 'bug'
+            }
+        },
     ];
 };
 
@@ -784,6 +818,49 @@ As per Bugzilla::WebService::Bug::search()
 =item B<History>
 
 =over
+
+=back
+
+=back
+
+=head2 get
+
+B<UNSTABLE>
+
+=over
+
+=item B<Description>
+
+This method returns just the current bug values, comments, and attachments without
+all of the field information.
+
+=item B<Params>
+
+You pass a field called C<id> that is a valid bug ids.
+
+=over
+
+=item C<id> (integer) - A valid bug id
+
+=back
+
+=item B<Returns>
+
+=over
+
+=back
+
+=item B<Errors>
+
+=over
+
+=back
+
+=item B<History>
+
+=over
+
+=item Added in BMO Bugzilla B<4.2>.
 
 =back
 
