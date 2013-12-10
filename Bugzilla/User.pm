@@ -150,7 +150,7 @@ sub new {
     my $class = ref($invocant) || $invocant;
     my ($param) = @_;
 
-    my $user = DEFAULT_USER;
+    my $user = { %{ DEFAULT_USER() } };
     bless ($user, $class);
     return $user unless $param;
 
@@ -168,7 +168,7 @@ sub super_user {
     my $class = ref($invocant) || $invocant;
     my ($param) = @_;
 
-    my $user = dclone(DEFAULT_USER);
+    my $user = { %{ DEFAULT_USER() } };
     $user->{groups} = [Bugzilla::Group->get_all];
     $user->{bless_groups} = [Bugzilla::Group->get_all];
     bless $user, $class;
@@ -1876,6 +1876,17 @@ sub is_timetracker {
     return $self->{'is_timetracker'};
 }
 
+sub can_tag_comments {
+    my $self = shift;
+
+    if (!defined $self->{'can_tag_comments'}) {
+        my $group = Bugzilla->params->{'comment_taggers_group'};
+        $self->{'can_tag_comments'} =
+            ($group && $self->in_group($group)) ? 1 : 0;
+    }
+    return $self->{'can_tag_comments'};
+}
+
 sub get_userlist {
     my $self = shift;
 
@@ -2665,6 +2676,12 @@ i.e. if the 'insidergroup' parameter is set and the user belongs to this group.
 
 Returns true if the user is a global watcher,
 i.e. if the 'globalwatchers' parameter contains the user.
+
+=item C<can_tag_comments>
+
+Returns true if the user can attach tags to comments.
+i.e. if the 'comment_taggers_group' parameter is set and the user belongs to
+this group.
 
 =back
 

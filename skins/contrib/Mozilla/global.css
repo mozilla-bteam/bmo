@@ -1,4 +1,23 @@
-@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Droid+Sans+Mono);
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(opensans.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  src: local('Open Sans Semibold'), local('OpenSans-Semibold'), url(opensans-semibold.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Open Sans Bold'), local('OpenSans-Bold'), url(opensans-bold.woff) format('woff');
+}
 
 body {
     background: #f6f4ec;
@@ -128,6 +147,12 @@ hr {
     display: block;
     height: 0;
     visibility: hidden;
+}
+
+#bugzilla_version {
+    float: right;
+    color: #888;
+    padding: 5px 20px;
 }
 
 #titles {
@@ -532,6 +557,35 @@ table.edit_form hr {
     margin-bottom: -10px !important;
     overflow: auto;
     padding: 5px !important;
+}
+
+.bz_comment_tags {
+    background: #eee;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 5px;
+}
+
+.bz_comment_tag {
+    background: #fff;
+    color: #444;
+    border: none;
+    padding: 2px 6px;
+}
+
+.bz_comment_tag a {
+    color: #0095DD;
+}
+
+#bz_ctag_error {
+    border: none;
+    background-color: #faa;
+    color: #444;
+    padding: 2px 6px;
+}
+
+#bz_ctag_error a {
+    color: #0095DD;
 }
 
 .ih_inlinehistory {
