@@ -252,25 +252,6 @@ sub search {
     return $result;
 }
 
-sub bug {
-    my ($self, $params) = @_;
-
-    my $bug_id = delete $params->{id};
-    $bug_id || ThrowCodeError('param_required',
-                              { function => 'Ember.bug', param => 'id' });
-
-    my $bugs        = $self->get({ ids => [ $bug_id ] });
-    my $comments    = $self->comments({ ids => [ $bug_id ] });
-    my $attachments = $self->_get_attachments({ ids => [ $bug_id ],
-                                                exclude_fields => ['data'] });
-
-    return {
-        bug         => $bugs->{bugs}->[0],
-        comments    => $comments->{bugs}->{$bug_id}->{comments},
-        attachments => $attachments
-    };
-}
-
 sub get_attachments {
     my ($self, $params) = @_;
     my $attachments = $self->_get_attachments($params);
@@ -717,21 +698,6 @@ sub rest_resources {
             GET  => {
                 method => 'search',
             },
-        },
-        # get current bug attributes without field information - single bug id
-        qr{^/ember/bug/(\d+)$}, {
-            GET => {
-                method => 'bug',
-                params => sub {
-                    return { id => $_[0] };
-                }
-            }
-        },
-        # show bug page - one or more bug ids
-        qr{^/ember/bug$}, {
-            GET => {
-                method => 'bug'
-            }
         },
         # attachments - wrapper around SUPER::attachments that also includes
         # can_edit attribute

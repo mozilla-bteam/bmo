@@ -197,16 +197,20 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
         "Toolkit"               => [],
     },
     qw/^cf_due_date$/ => {
-        "Developer Engagement"  => [],
-        "Marketing"             => [],
-        "mozilla.org"           => ["Security Assurance: Review Request"],
-        "Mozilla Reps"          => [],
+        "Data & BI Services Team" => [],
+        "Developer Engagement"    => [],
+        "Marketing"               => [],
+        "mozilla.org"             => ["Security Assurance: Review Request"],
+        "Mozilla Reps"            => [],
     },
     qw/^cf_locale$/ => {
         "www.mozilla.org"       => [],
     },
     qw/^cf_b2g_device$/ => {
         "Boot2Gecko" => [],
+    },
+    qw/^cf_mozilla_project$/ => {
+        "Data & BI Services Team" => [],
     },
 );
 
@@ -452,6 +456,7 @@ our %product_sec_groups = (
     "Bugzilla"                     => 'bugzilla-security',
     "bugzilla.mozilla.org"         => 'bugzilla-security',
     "Community Tools"              => 'websites-security',
+    "Data & BI Services Team"      => 'metrics-private',
     "Developer Documentation"      => 'websites-security',
     "Developer Ecosystem"          => 'client-services-security',
     "Finance"                      => 'finance',
