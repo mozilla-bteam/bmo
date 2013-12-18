@@ -144,23 +144,7 @@ sub show {
                                        WHERE bug_when > ? AND bug_id = ?',
                                      undef, ($last_updated, $bug->id));
 
-        # Find any comments created since the last_updated date
-        $comments = $self->comments({ ids => $bug_id, new_since => $last_updated });
-        $comments = $comments->{bugs}->{$bug_id}->{comments};
-
-        # Find any new attachments or modified attachments since the
-        # last_updated date
-        my $updated_attachments =
-            $dbh->selectcol_arrayref('SELECT attach_id FROM attachments
-                                       WHERE (creation_ts > ? OR modification_time > ?)
-                                             AND bug_id = ?',
-                                     undef, ($last_updated, $last_updated, $bug->id));
-        if ($updated_attachments) {
-            $attachments = $self->_get_attachments({ attachment_ids => $updated_attachments,
-                                                     exclude_fields => ['data'] });
-        }
-
-        if (@$updated_fields || @$comments || @$updated_attachments) {
+        if (@$updated_fields) {
             # Also add in the delta_ts value which is in the bugs_activity
             # entries
             push(@$updated_fields, get_field_id('delta_ts'));
@@ -170,10 +154,6 @@ sub show {
     # Return all the things
     else {
         @fields = $self->_get_fields($bug);
-        $comments = $self->comments({ ids => $bug_id });
-        $comments = $comments->{bugs}->{$bug_id}->{comments};
-        $attachments = $self->_get_attachments({ ids => $bug_id,
-                                                 exclude_fields => ['data'] });
     }
 
     # Place the fields current value along with the field definition
@@ -226,12 +206,6 @@ sub show {
     # Complete the return data
     my $data = { id => $bug->id, fields => \@fields };
 
-    # Add the comments
-    $data->{comments} = $comments;
-
-    # Add the attachments
-    $data->{attachments} = $attachments;
-
     return $data;
 }
 
@@ -278,7 +252,7 @@ sub bug {
         my %field_map = reverse %{ Bugzilla::Bug::FIELD_MAP() };
         $field_map{'flagtypes.name'} = 'flags';
 
-        my $changed_bug = { last_change_time => $bug->{last_change_time} };
+        my $changed_bug = {};
         foreach my $field (@$updated_fields) {
             my $field_name = $field_map{$field} || $field;
             if ($bug->{$field_name}) {
@@ -928,7 +902,7 @@ As per Bugzilla::WebService::Bug::search()
 
 =back
 
-=head2 get
+=head2 bug
 
 B<UNSTABLE>
 
@@ -946,6 +920,55 @@ You pass a field called C<id> that is a valid bug ids.
 =over
 
 =item C<id> (integer) - A valid bug id
+
+=item C<last_updated> - (dateTime) An optional timestamp that includes only fields,
+attachments, or comments that have been changed or added since.
+
+=back
+
+=item B<Returns>
+
+=over
+
+=back
+
+=item B<Errors>
+
+=over
+
+=back
+
+=item B<History>
+
+=over
+
+=item Added in BMO Bugzilla B<4.2>.
+
+=back
+
+=back
+
+=head2 get_attachments
+
+B<UNSTABLE>
+
+=over
+
+=item B<Description>
+
+This method returns the current attachment data and flag types for a given
+bug id or attachment id.
+
+=item B<Params>
+
+You pass a field called C<id> that is a valid bug id or an C<attachment_id> which
+is a valid attachment id.
+
+=over
+
+=item C<id> (integer) - A valid bug id.
+
+=item C<attachment_id> (integer) - A valid attachment id.
 
 =back
 
