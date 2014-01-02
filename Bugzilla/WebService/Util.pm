@@ -21,6 +21,13 @@
 
 package Bugzilla::WebService::Util;
 use strict;
+
+use Bugzilla::Flag;
+use Bugzilla::FlagType;
+use Bugzilla::Error;
+
+use Storable qw(dclone);
+
 use base qw(Exporter);
 
 use Bugzilla::Flag;
@@ -49,7 +56,11 @@ sub extract_flags {
     my $flag_types    = $attachment ? $attachment->flag_types : $bug->flag_types;
     my $current_flags = $attachment ? $attachment->flags : $bug->flags;
 
-    foreach my $flag (@$flags) {
+    # Copy the user provided $flags as we may call extract_flags more than
+    # once when editing multiple bugs or attachments.
+    my $flags_copy = dclone($flags);
+
+    foreach my $flag (@$flags_copy) {
         my $id      = $flag->{id};
         my $type_id = $flag->{type_id};
 

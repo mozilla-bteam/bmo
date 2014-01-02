@@ -837,9 +837,7 @@ sub add_attachment {
         });
 
         if ($flags) {
-            use Data::Dumper; print STDERR Dumper $flags;
             my ($old_flags, $new_flags) = extract_flags($flags, $bug, $attachment);
-            print STDERR Dumper [$old_flags, $new_flags];
             $attachment->set_flags($old_flags, $new_flags);
         }
 
@@ -1102,9 +1100,9 @@ sub flag_types {
     my $product   = delete $params->{product};
     my $component = delete $params->{component};
 
-    $product = Bugzilla::Product->check({ name => $product });
-    $component = Bugzilla::Component->check({ name => $component, product => $product })
-        if $component;
+    $product = Bugzilla::Product->check({ name => $product, cache => 1 });
+    $component = Bugzilla::Component->check(
+        { name => $component, product => $product, cache => 1 }) if $component;
 
     my $flag_params = { product_id => $product->id };
     $flag_params->{component_id} = $component->id if $component;
@@ -1112,9 +1110,9 @@ sub flag_types {
 
     my $flag_types = { bug => [], attachment => [] };
     foreach my $flag_type (@$matched_flag_types) {
-        push(@{ $flag_types->{bug} }, $self->_flagtype_to_hash($flag_type))
+        push(@{ $flag_types->{bug} }, $self->_flagtype_to_hash($flag_type, $product))
             if $flag_type->target_type eq 'bug';
-        push(@{ $flag_types->{attachment} }, $self->_flagtype_to_hash($flag_type))
+        push(@{ $flag_types->{attachment} }, $self->_flagtype_to_hash($flag_type, $product))
             if $flag_type->target_type eq 'attachment';
     }
 
@@ -1394,7 +1392,7 @@ sub _flag_to_hash {
 }
 
 sub _flagtype_to_hash {
-    my ($self, $flagtype) = @_;
+    my ($self, $flagtype, $product) = @_;
     my $user = Bugzilla->user;
 
     my @values = ('X');
@@ -1407,11 +1405,40 @@ sub _flagtype_to_hash {
         description => $self->type('string' , $flagtype->description),
         type        => $self->type('string' , $flagtype->target_type),
         values      => \@values,
+        is_active   => $self->type('boolean', $flagtype->is_active),
         is_requesteeble  => $self->type('boolean', $flagtype->is_requesteeble),
         is_multiplicable => $self->type('boolean', $flagtype->is_multiplicable)
     };
 
+    if ($product) {
+        my $inclusions = $self->_flagtype_clusions_to_hash($flagtype->inclusions, $product->id);
+        my $exclusions = $self->_flagtype_clusions_to_hash($flagtype->exclusions, $product->id);
+        # if we have both inclusions and exclusions, the exclusions are redundant
+        $exclusions = [] if @$inclusions && @$exclusions;
+        # no need to return anything if there's just "any component"
+        $item->{inclusions} = $inclusions if @$inclusions && $inclusions->[0] ne '';
+        $item->{exclusions} = $exclusions if @$exclusions && $exclusions->[0] ne '';
+    }
+
     return $item;
+}
+
+sub _flagtype_clusions_to_hash {
+    my ($self, $clusions, $product_id) = @_;
+    my $result = [];
+    foreach my $key (keys %$clusions) {
+        my ($prod_id, $comp_id) = split(/:/, $clusions->{$key}, 2);
+        if ($prod_id == 0 || $prod_id == $product_id) {
+            if ($comp_id) {
+                my $component = Bugzilla::Component->new({ id => $comp_id, cache => 1 });
+                push @$result, $component->name;
+            }
+            else {
+                return [ '' ];
+            }
+        }
+    }
+    return $result;
 }
 
 sub _add_update_tokens {
@@ -2831,7 +2858,7 @@ narrowed down to specific products.
 =item C<summary> (string) B<Required> - A string of keywords defining
 the type of bug you are trying to report.
 
-=item C<products> (array) - One or more product names to narrow the
+=item C<product> (array) - One or more product names to narrow the
 duplicate search to. If omitted, all bugs are searched.
 
 =back
@@ -3286,23 +3313,27 @@ that would cause a circular dependency between bugs.
 You tried to restrict the bug to a group which does not exist, or which
 you cannot use with this product.
 
-=item 124 (Flag Status Invalid)
+=item 129 (Flag Status Invalid)
 
 The flag status is invalid.
 
-=item 125 (Flag Modification Denied)
+=item 130 (Flag Modification Denied)
 
 You tried to request, grant, or deny a flag but only a user with the required
 permissions may make the change.
 
-=item 126 (Flag not Requestable from Specific Person)
+=item 131 (Flag not Requestable from Specific Person)
 
 You can't ask a specific person for the flag.
 
-=item 128 (Flag Type not Unique)
+=item 133 (Flag Type not Unique)
 
 The flag type specified matches several flag types. You must specify
 the type id value to update or add a flag.
+
+=item 134 (Inactive Flag Type)
+
+The flag type is inactive and cannot be used to create new flags.
 
 =item 504 (Invalid User)
 
@@ -3449,23 +3480,27 @@ This method can throw all the same errors as L</get>, plus:
 
 =over
 
-=item 124 (Flag Status Invalid)
+=item 129 (Flag Status Invalid)
 
 The flag status is invalid.
 
-=item 125 (Flag Modification Denied)
+=item 130 (Flag Modification Denied)
 
 You tried to request, grant, or deny a flag but only a user with the required
 permissions may make the change.
 
-=item 126 (Flag not Requestable from Specific Person)
+=item 131 (Flag not Requestable from Specific Person)
 
 You can't ask a specific person for the flag.
 
-=item 128 (Flag Type not Unique)
+=item 133 (Flag Type not Unique)
 
 The flag type specified matches several flag types. You must specify
 the type id value to update or add a flag.
+
+=item 134 (Inactive Flag Type)
+
+The flag type is inactive and cannot be used to create new flags.
 
 =item 600 (Attachment Too Large)
 
@@ -3601,8 +3636,6 @@ C<boolean> Set to true if you specifically want a new flag to be created.
 
 =back
 
-=back
-
 =item B<Returns>
 
 A C<hash> with a single field, "attachment". This points to an array of hashes
@@ -3666,28 +3699,32 @@ This method can throw all the same errors as L</get>, plus:
 
 =over
 
-=item 124 (Flag Status Invalid)
+=item 129 (Flag Status Invalid)
 
 The flag status is invalid.
 
-=item 125 (Flag Modification Denied)
+=item 130 (Flag Modification Denied)
 
 You tried to request, grant, or deny a flag but only a user with the required
 permissions may make the change.
 
-=item 126 (Flag not Requestable from Specific Person)
+=item 131 (Flag not Requestable from Specific Person)
 
 You can't ask a specific person for the flag.
 
-=item 127 (Flag not Unique)
+=item 132 (Flag not Unique)
 
 The flag specified has been set multiple times. You must specify the id
 value to update the flag.
 
-=item 128 (Flag Type not Unique)
+=item 133 (Flag Type not Unique)
 
 The flag type specified matches several flag types. You must specify
 the type id value to update or add a flag.
+
+=item 134 (Inactive Flag Type)
+
+The flag type is inactive and cannot be used to create new flags.
 
 =item 601 (Invalid MIME Type)
 
@@ -3709,6 +3746,8 @@ You did not specify a value for the C<summary> argument.
 =over
 
 =item Added in Bugzilla B<5.0>.
+
+=back
 
 =back
 
@@ -4312,28 +4351,32 @@ field.
 You tried to change from one status to another, but the status workflow
 rules don't allow that change.
 
-=item 124 (Flag Status Invalid)
+=item 129 (Flag Status Invalid)
 
 The flag status is invalid.
 
-=item 125 (Flag Modification Denied)
+=item 130 (Flag Modification Denied)
 
 You tried to request, grant, or deny a flag but only a user with the required
 permissions may make the change.
 
-=item 126 (Flag not Requestable from Specific Person)
+=item 131 (Flag not Requestable from Specific Person)
 
 You can't ask a specific person for the flag.
 
-=item 127 (Flag not Unique)
+=item 132 (Flag not Unique)
 
 The flag specified has been set multiple times. You must specify the id
 value to update the flag.
 
-=item 128 (Flag Type not Unique)
+=item 133 (Flag Type not Unique)
 
 The flag type specified matches several flag types. You must specify
 the type id value to update or add a flag.
+
+=item 134 (Inactive Flag Type)
+
+The flag type is inactive and cannot be used to create new flags.
 
 =back
 

@@ -135,11 +135,12 @@ use constant WS_ERROR_CODE => {
     resolution_not_allowed => 122,
     illegal_bug_status_transition => 123,
     # Flag errors
-    flag_status_invalid => 124,
-    flag_update_denied => 125,
-    flag_type_requestee_disabled => 126,
-    flag_not_unique => 127,
-    flag_type_not_unique => 128,
+    flag_status_invalid => 129,
+    flag_update_denied => 130,
+    flag_type_requestee_disabled => 131,
+    flag_not_unique => 132,
+    flag_type_not_unique => 133,
+    flag_type_inactive => 134,
 
     # Authentication errors are usually 300-400.
     invalid_username_or_password => 300,
