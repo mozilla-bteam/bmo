@@ -521,8 +521,6 @@ sub bug_check_can_change_field {
     my ($bug, $field, $old_value, $new_value, $priv_results)
         = @$args{qw(bug field old_value new_value priv_results)};
 
-    print STDERR "$field $old_value $new_value\n";
-
     return if $field !~ /^cf_/ or $old_value eq $new_value;
     return unless my $flag = Bugzilla::Extension::TrackingFlags::Flag->new({ name => $field });
 

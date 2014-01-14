@@ -222,6 +222,10 @@ our %create_bug_formats = (
         'format'  => 'ipp',
         'include' => 'everyone',
     },
+    'Data & BI Services Team' => {
+        'format'  => 'dbi',
+        'include' => 'everyone',
+    },
 );
 
 # List of named queries which will be added to new users' footer
