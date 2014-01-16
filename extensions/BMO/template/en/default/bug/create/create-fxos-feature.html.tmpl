@@ -111,9 +111,6 @@ YAHOO.util.Event.onDOMReady(showCompDesc);
   [%- END %]
   </select>
   <div id="comp_description"></div>
-</tr>
-
-
 </div>
 
 <div class="form_section">
@@ -128,9 +125,10 @@ YAHOO.util.Event.onDOMReady(showCompDesc);
 <div class="form_section">
   <label for="description" class="field_label">Description of feature or problem to be solved</label>
   <div class="field_desc">
-    Please describe the feature that you are requesting or the problem that you would like solved in detail.
+    Please describe the feature that you are requesting or the problem that you would like solved in detail
     (Example, "Today, there is no way for the user to quickly dial user-defined numbers from the dial pad.
-    Instead the user must search for an find the contact in their contact list.")
+    Instead the user must search for an find the contact in their contact list.").
+    If the described feature only applies to certain device types (eg. tablet vs. smartphone), please make note of it.
   </div>
   <textarea id="description" name="description" cols="80" rows="5"></textarea>
 </div>
@@ -161,7 +159,8 @@ YAHOO.util.Event.onDOMReady(showCompDesc);
     Is this solution required by a certain date? Why?
     (Example: "March 2014. We plan to sell phones in Iceland in June 2014 using Firefox OS 1.4.
     Completing the feature in March would allow the device to pass operator certification in time
-    for a June retail launch.")
+    for a June retail launch.")<br>
+    <strong>Note:</strong> completing this field does not imply that the feature will indeed be delivered in this timeframe.
   </div>
   <textarea id="date_required" name="date_required" cols="80" rows="5"></textarea>
 </div>
