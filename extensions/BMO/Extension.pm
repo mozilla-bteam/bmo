@@ -984,7 +984,7 @@ sub post_bug_after_creation {
         $self->_post_employee_incident_bug($args);
     }
     elsif ($format eq 'swag') {
-        $self->_post_swag_bug($args);
+        $self->_post_gear_bug($args);
     }
     elsif ($format eq 'dbi') {
         $self->_post_dbi_bug($args);
