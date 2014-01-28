@@ -983,6 +983,9 @@ sub post_bug_after_creation {
     {
         $self->_post_employee_incident_bug($args);
     }
+    elsif ($format eq 'swag') {
+        $self->_post_swag_bug($args);
+    }
     elsif ($format eq 'dbi') {
         $self->_post_dbi_bug($args);
     }
@@ -1070,49 +1073,123 @@ sub _post_employee_incident_bug {
     }
 }
 
+sub _post_gear_bug {
+    my ($self, $args) = @_;
+    my $vars = $args->{vars};
+    my $bug = $vars->{bug};
+    my $input = Bugzilla->input_params;
+
+    my ($team, $code) = $input->{teamcode} =~ /^(.+?) \((\d+)\)$/;
+    my @request = (
+        "Date Required: $input->{date_required}",
+        "$input->{firstname} $input->{lastname}",
+        $input->{email},
+        $input->{mozspace},
+        $team,
+        $code,
+        $input->{purpose},
+    );
+    my @recipient = (
+        "$input->{shiptofirstname} $input->{shiptolastname}",
+        $input->{shiptoemail},
+        $input->{shiptoaddress1},
+        $input->{shiptoaddress2},
+        $input->{shiptocity},
+        $input->{shiptostate},
+        $input->{shiptopostcode},
+        $input->{shiptocountry},
+        "Phone: $input->{shiptophone}",
+        $input->{shiptoidrut},
+    );
+
+    # the csv has 14 item fields
+    my @items = map { trim($_) } split(/\n/, $input->{items});
+    my @csv;
+    while (@items) {
+        my @batch;
+        if (scalar(@items) > 14) {
+            @batch = splice(@items, 0, 14);
+        }
+        else {
+            @batch = @items;
+            push @batch, '' for scalar(@items)..13;
+            @items = ();
+        }
+        push @csv, [ @request, @batch, @recipient ];
+    }
+
+    # csv quoting and concat
+    foreach my $line (@csv) {
+        foreach my $field (@$line) {
+            if ($field =~ s/"/""/g || $field =~ /,/) {
+                $field = qq#"$field"#;
+            }
+        }
+        $line = join(',', @$line);
+    }
+
+    $self->_add_attachment($args, {
+        data        => join("\n", @csv),
+        description => "Items (CSV)",
+        filename    => "gear_" . $bug->id . ".csv",
+        mimetype    => "text/csv",
+    });
+}
+
 sub _post_dbi_bug {
     my ($self, $args) = @_;
     my $vars = $args->{vars};
     my $bug = $vars->{bug};
     my $input = Bugzilla->input_params;
 
+    require JSON;
+
+    $input->{interface} = [ $input->{interface} ] unless ref $input->{interface};
+    my $json = {
+        objective       => $input->{short_desc},
+        audience        => $input->{audience},
+        project         => $input->{cf_mozilla_project},
+        impact_number   => $input->{impact_number},
+        due_date        => $input->{cf_due_date},
+
+        source          => $input->{source},
+        elements        => $input->{elements},
+        calculations    => $input->{calculations},
+        goal            => $input->{goal},
+        impact          => $input->{impact},
+
+        interfaces      => ( ref($input->{interface}) ? $input->{interface} : [ $input->{interface} ] ),
+        public          => $input->{public},
+        frequency       => $input->{frequency},
+    };
+    $self->_add_attachment($args, {
+        bug         => $bug,
+        creation_ts => $bug->creation_ts,
+        data        => JSON::to_json($json),
+        description => 'D&BI Request (JSON)',
+        filename    => 'dbi.json',
+        ispatch     => 0,
+        isprivate   => 0,
+        mimetype    => 'text/plain',
+    });
+}
+
+sub _add_attachment {
+    my ($self, $args, $attachment_args) = @_;
+
+    my $bug = $args->{vars}->{bug};
+    $attachment_args->{bug}         = $bug;
+    $attachment_args->{creation_ts} = $bug->creation_ts;
+    $attachment_args->{ispatch}     = 0 unless exists $attachment_args->{ispatch};
+    $attachment_args->{isprivate}   = 0 unless exists $attachment_args->{isprivate};
+
     # If the attachment cannot be successfully added to the bug,
     # we notify the user, but we don't interrupt the bug creation process.
     my $old_error_mode = Bugzilla->error_mode;
     Bugzilla->error_mode(ERROR_MODE_DIE);
-    require JSON;
-
     my $attachment;
     eval {
-        $input->{interface} = [ $input->{interface} ] unless ref $input->{interface};
-        my $json = {
-            objective       => $input->{short_desc},
-            audience        => $input->{audience},
-            project         => $input->{cf_mozilla_project},
-            impact_number   => $input->{impact_number},
-            due_date        => $input->{cf_due_date},
-
-            source          => $input->{source},
-            elements        => $input->{elements},
-            calculations    => $input->{calculations},
-            goal            => $input->{goal},
-            impact          => $input->{impact},
-
-            interfaces      => ( ref($input->{interface}) ? $input->{interface} : [ $input->{interface} ] ),
-            public          => $input->{public},
-            frequency       => $input->{frequency},
-        };
-
-        $attachment = Bugzilla::Attachment->create({
-            bug         => $bug,
-            creation_ts => $bug->creation_ts,
-            data        => JSON::to_json($json),
-            description => 'D&BI Request (JSON)',
-            filename    => 'dbi.json',
-            ispatch     => 0,
-            isprivate   => 0,
-            mimetype    => 'text/plain',
-        });
+        $attachment = Bugzilla::Attachment->create($attachment_args);
     };
     warn "$@" if $@;
     Bugzilla->error_mode($old_error_mode);
@@ -1126,7 +1203,7 @@ sub _post_dbi_bug {
         delete $bug->{attachments};
     }
     else {
-        $vars->{'message'} = 'attachment_creation_failed';
+        $args->{vars}->{'message'} = 'attachment_creation_failed';
     }
 }
 
