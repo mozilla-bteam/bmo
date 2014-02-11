@@ -53,6 +53,7 @@ function validateAndSubmit() {
   if (!isFilledOut('short_desc')) alert_text += 'Please enter a value for Request Title.\n';
   if (!isFilledOut('specs')) alert_text += 'Please enter a value for Creative Specs.\n';
   if (!isFilledOut('cta_design')) alert_text += 'Please enter a value for CTA Design.\n';
+  if (!isFilledOut('cf_due_date')) alert_text += 'Please enter a value for the creative due date.\n';
   if (!isFilledOut('goal')) alert_text += 'Please select a value for Mozilla Goal.\n';
   if (YAHOO.util.Dom.get('goal').value == 'Other') {
     if (!isFilledOut('goal_other')) alert_text += 'Please select a value for Mozilla Goal Other.\n';
@@ -154,7 +155,7 @@ function toggleTypeOther(element) {
   <input type="text" name="type_other_text" id="type_other_text"><br>
   <br>
   <div class="field_desc">
-    Specs: What is the final deliverable and what format should it be delivered in?
+    <strong class="required">Specs:</strong> What is the final deliverable and what format should it be delivered in?
     Please include information on the format, image/file size, word count, video length,
     etc. We like details here.
   </div>
@@ -162,7 +163,7 @@ function toggleTypeOther(element) {
   <br>
   <br>
   <div class="field_desc">
-    CTAs and design directions: Provide as much information as possible.
+    <strong class="required">CTAs and design directions:</strong> Provide as much information as possible.
     Make sure to include links to documents with copy, mock-ups, wireframes,
     or any other information or assets that could help with direction.
   </div>
@@ -170,7 +171,7 @@ function toggleTypeOther(element) {
 </div>
 
 <div class="form_section">
-  <label for="cf_due_date" class="field_label">Creative Due Date</label>
+  <label for="cf_due_date" class="field_label required">Creative Due Date</label>
   <div class="field_desc">
     Working backwards from your launch/go-live date, when do you need final assets?
   </div>
