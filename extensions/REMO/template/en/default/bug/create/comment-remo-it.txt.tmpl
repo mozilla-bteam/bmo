@@ -22,6 +22,20 @@ Community Name:
 [%+ cgi.param('community') %]
 
 [% FOREACH item = cgi.param('items') %]
+[% IF item == "apps_email" || item == "domain" || item == "ssl" %]
+[% IF item == "apps_email" %]
+[% domain_title = domain_title _ ":: Google Apps Emails\n" %]
+[% END %]
+[% IF item == "domain" %]
+[% domain_title = domain_title _ ":: Domain Name\n" %]
+[% END %]
+[% IF item == "ssl" %]
+[% domain_title = domain_title _ ":: SSL\n" %]
+[% END %]
+[% END %]
+[% END %]
+
+[% FOREACH item = cgi.param('items') %]
 [% IF item == "hosting" %]
 :: Hosting
 
@@ -34,12 +48,10 @@ What will run on the hosting:
 Hosting data:
 [%+ cgi.param('hosting_data') || "-" %]
 
-[% ELSIF item == "apps_email" %]
-:: Google Apps Emails
-
-[% ELSIF item == "domain" %]
-:: Domain
-
+[% ELSIF (item == "apps_email" || item == "domain" || item == "ssl")
+         && domain_title %]
+[% domain_title FILTER html %]
+[% domain_title = "" %]
 Domain Name:
 [%+ cgi.param('domain_name') %]
 
@@ -54,9 +66,6 @@ Moderators:
 
 Background Hex Code:
 [%+ cgi.param('discourse_bg') || "-" %]
-
-[% ELSIF item == "ssl" %]
-:: SSL
 
 [% ELSIF item == "other" %]
 :: Other
