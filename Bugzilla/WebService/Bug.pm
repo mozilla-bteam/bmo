@@ -325,6 +325,30 @@ sub comments {
     return { bugs => \%bugs, comments => \%comments };
 }
 
+sub render_comment {
+    my ($self, $params) = @_;
+
+    unless (defined $params->{text}) {
+        ThrowCodeError('params_required',
+                       { function => 'Bug.render_comment',
+                         params   => ['text'] });
+    }
+
+    Bugzilla->switch_to_shadow_db();
+    my $bug = $params->{id} ? Bugzilla::Bug->check($params->{id}) : undef;
+
+    my $tmpl = '[% text FILTER quoteUrls(bug) %]';
+    my $html;
+    my $template = Bugzilla->template;
+    $template->process(
+        \$tmpl,
+        { bug => $bug, text => $params->{text}},
+        \$html
+    );
+
+    return { html => $html };
+}
+
 # Helper for Bug.comments
 sub _translate_comment {
     my ($self, $comment, $filters) = @_;
@@ -1741,7 +1765,7 @@ You must pass a product name and an optional component name.
 
 =item B<Returns>
 
-A hash containing a two keys, C<bug> and C<attachment>. Each key value is an array of hashes,
+A hash containing two keys, C<bug> and C<attachment>. Each key value is an array of hashes,
 containing the following keys:
 
 =over
@@ -3239,7 +3263,7 @@ product.
 
 C<array> An array of hashes with flags to add to the bug. To create a flag,
 at least the status and the type_id or name must be provided. An optional
-requestee can be passed if the flag type is requesteeble.
+requestee can be passed if the flag type is requestable to a specific user.
 
 =over
 
@@ -3257,7 +3281,7 @@ C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
 
 =item C<requestee>
 
-C<string> The login of the requestee if the flag type is requesteeable.
+C<string> The login of the requestee if the flag type is requestable to a specific user.
 
 =back
 
@@ -3444,7 +3468,7 @@ Defaults to False if not specified.
 
 C<array> An array of hashes with flags to add to the attachment. to create a flag,
 at least the status and the type_id or name must be provided. An optional requestee
-can be passed if the flag type is requesteeble.
+can be passed if the flag type is requestable to a specific user.
 
 =over
 
@@ -3462,7 +3486,7 @@ C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
 
 =item C<requestee>
 
-C<string> The login of the requestee if the flag type is requesteeable.
+C<string> The login of the requestee if the flag type is requestable to a specific user.
 
 =back
 
@@ -3623,7 +3647,7 @@ C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
 
 =item C<requestee>
 
-C<string> The login of the requestee if the flag type is requesteeable.
+C<string> The login of the requestee if the flag type is requestable to a specific user.
 
 =item C<id>
 
@@ -4020,7 +4044,7 @@ C<string> The flags new status (i.e. "?", "+", "-" or "X" to clear a flag).
 
 =item C<requestee>
 
-C<string> The login of the requestee if the flag type is requesteeable.
+C<string> The login of the requestee if the flag type is requestable to a specific user.
 
 =item C<id>
 
@@ -4506,3 +4530,46 @@ this bug.
 =back
 
 =back
+
+=head2 render_comment
+
+B<UNSTABLE>
+
+=over
+
+=item B<Description>
+
+Returns the HTML rendering of the provided comment text.
+
+=item B<Params>
+
+=over
+
+=item C<text>
+
+B<Required> C<strings> Text comment text to render.
+
+=item C<id>
+
+C<int> The ID of the bug to render the comment against.
+
+=back
+
+=item B<Returns>
+
+C<html> containing the HTML rendering.
+
+=item B<Errors>
+
+This method can throw all of the errors that L</get> throws.
+
+=item B<History>
+
+=over
+
+=item Added in Bugzilla B<5.0>.
+
+=back
+
+=back
+

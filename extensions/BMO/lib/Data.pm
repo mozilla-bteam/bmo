@@ -136,7 +136,7 @@ our @always_fileable_groups = qw(
     l20n-security
     marketing-private
     mozilla-confidential
-    mozilla-corporation-confidential
+    mozilla-employee-confidential
     mozilla-foundation-confidential
     mozilla-engagement
     mozilla-messaging-confidential
@@ -151,8 +151,9 @@ our @always_fileable_groups = qw(
 # Mapping of products to their security bits
 our %product_sec_groups = (
     "addons.mozilla.org"           => 'client-services-security',
-    "Air Mozilla"                  => 'mozilla-corporation-confidential',
+    "Air Mozilla"                  => 'mozilla-employee-confidential',
     "Android Background Services"  => 'mozilla-services-security',
+    "Audio/Visual Infrastructure"  => 'mozilla-corporation-confidential',
     "AUS"                          => 'client-services-security',
     "Bugzilla"                     => 'bugzilla-security',
     "bugzilla.mozilla.org"         => 'bugzilla-security',
@@ -162,29 +163,29 @@ our %product_sec_groups = (
     "Developer Ecosystem"          => 'client-services-security',
     "Finance"                      => 'finance',
     "Firefox Health Report"        => 'mozilla-services-security',
-    "Infrastructure & Operations"  => 'mozilla-corporation-confidential',
+    "Infrastructure & Operations"  => 'mozilla-employee-confidential',
     "Input"                        => 'websites-security',
-    "Internet Public Policy"       => 'mozilla-corporation-confidential',
+    "Internet Public Policy"       => 'mozilla-employee-confidential',
     "L20n"                         => 'l20n-security',
     "Legal"                        => 'legal',
     "Marketing"                    => 'marketing-private',
     "Marketplace"                  => 'client-services-security',
     "Mozilla Communities"          => 'mozilla-communities-security',
-    "Mozilla Corporation"          => 'mozilla-corporation-confidential',
+    "Mozilla Corporation"          => 'mozilla-employee-confidential',
     "Mozilla Developer Network"    => 'websites-security',
     "Mozilla Grants"               => 'grants',
     "mozillaignite"                => 'websites-security',
     "Mozilla Messaging"            => 'mozilla-messaging-confidential',
     "Mozilla Metrics"              => 'metrics-private',
-    "mozilla.org"                  => 'mozilla-corporation-confidential',
+    "mozilla.org"                  => 'mozilla-employee-confidential',
     "Mozilla PR"                   => 'pr-private',
-    "Mozilla QA"                   => 'mozilla-corporation-confidential',
+    "Mozilla QA"                   => 'mozilla-employee-confidential',
     "Mozilla Reps"                 => 'mozilla-reps',
     "Mozilla Services"             => 'mozilla-services-security',
     "Popcorn"                      => 'websites-security',
     "Privacy"                      => 'privacy',
     "quality.mozilla.org"          => 'websites-security',
-    "Release Engineering"          => 'mozilla-corporation-confidential',
+    "Release Engineering"          => 'mozilla-employee-confidential',
     "Snippets"                     => 'websites-security',
     "Socorro"                      => 'client-services-security',
     "support.mozillamessaging.com" => 'websites-security',
