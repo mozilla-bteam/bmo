@@ -273,6 +273,7 @@ sub _adjust_request_count {
         undef,
         $requestee_id
     );
+    Bugzilla->memcached->clear({ table => 'profiles', id => $requestee_id });
 }
 
 sub _new_reviewers_from_input {
@@ -551,6 +552,77 @@ sub db_schema_abstract_schema {
             component_reviewers_idx => {
                 FIELDS => [ 'user_id', 'component_id' ],
                 TYPE => 'UNIQUE',
+            },
+        ],
+    };
+
+    $args->{'schema'}->{'flag_state_activity'} = {
+        FIELDS => [
+            id => {
+                TYPE       => 'MEDIUMSERIAL',
+                NOTNULL    => 1,
+                PRIMARYKEY => 1,
+            },
+
+            flag_when => {
+                TYPE    => 'DATETIME',
+                NOTNULL => 1,
+            },
+
+            type_id => {
+                TYPE       => 'INT2',
+                NOTNULL    => 1,
+                REFERENCES => {
+                    TABLE  => 'flagtypes',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE'
+                }
+            },
+
+            flag_id => {
+                TYPE    => 'INT3',
+                NOTNULL => 1,
+            },
+
+            setter_id => {
+                TYPE       => 'INT3',
+                NOTNULL    => 1,
+                REFERENCES => {
+                    TABLE  => 'profiles',
+                    COLUMN => 'userid',
+                },
+            },
+
+            requestee_id => {
+                TYPE       => 'INT3',
+                REFERENCES => {
+                    TABLE  => 'profiles',
+                    COLUMN => 'userid',
+                },
+            },
+
+            bug_id => {
+                TYPE       => 'INT3',
+                NOTNULL    => 1,
+                REFERENCES => {
+                    TABLE  => 'bugs',
+                    COLUMN => 'bug_id',
+                    DELETE => 'CASCADE'
+                }
+            },
+
+            attachment_id => {
+                TYPE       => 'INT3',
+                REFERENCES => {
+                    TABLE  => 'attachments',
+                    COLUMN => 'attach_id',
+                    DELETE => 'CASCADE'
+                }
+            },
+
+            status => {
+                TYPE    => 'CHAR(1)',
+                NOTNULL => 1,
             },
         ],
     };

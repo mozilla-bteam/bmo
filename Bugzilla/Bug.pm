@@ -76,6 +76,8 @@ use constant LIST_ORDER => ID_FIELD;
 # Bugs have their own auditing table, bugs_activity.
 use constant AUDIT_CREATES => 0;
 use constant AUDIT_UPDATES => 0;
+# This will be enabled later
+use constant USE_MEMCACHED => 0;
 
 # This is a sub because it needs to call other subroutines.
 sub DB_COLUMNS {
@@ -4084,8 +4086,9 @@ sub _join_activity_entries {
         return $current_change . $new_change;
     }
 
-    # All other fields get a space
-    if (substr($new_change, 0, 1) eq ' ') {
+    # All other fields get a space unless the first character of the second
+    # string is a comma or space
+    if (substr($new_change, 0, 1) eq ',' || substr($new_change, 0, 1) eq ' ') {
         return $current_change . $new_change;
     } else {
         return $current_change . ' ' . $new_change;
