@@ -153,13 +153,15 @@ sub query_bugs {
             $bug->{$column} = shift @$row;
             if ($column eq 'changeddate') {
                 my $datetime = datetime_from($bug->{$column});
-                $bug->{$column}
-                    = $datetime->set_time_zone($user->timezone)->strftime('%Y-%m-%d %R %Z');
+                $datetime->set_time_zone($user->timezone);
+                $bug->{$column} = $datetime->strftime('%Y-%m-%d %T %Z');
                 $bug->{'changeddate_fancy'} = time_ago($datetime, $datetime_now);
 
-                # Provide UTC version for use by webservice calls and subtract one second
-                $bug->{changeddate_utc}
-                    = $datetime->set_time_zone('UTC')->subtract({seconds => 1})->strftime();
+                # Provide a version for use by Bug.history and also for looking up last comment.
+                # We have to set to server's timezone and also subtract one second.
+                $datetime->set_time_zone(Bugzilla->local_timezone);
+                $datetime->subtract(seconds => 1);
+                $bug->{changeddate_api} = $datetime->strftime('%Y-%m-%d %T');
             }
         }
         push(@bugs, $bug);
@@ -244,7 +246,8 @@ sub query_flags {
         # Format the updated date specific to the user's timezone
         # and add the fancy human readable version
         my $datetime = datetime_from($flag->{'updated'});
-        $flag->{'updated'} = $datetime->set_time_zone($user->timezone)->strftime('%Y-%m-%d %R %Z');
+        $datetime->set_time_zone($user->timezone);
+        $flag->{'updated'} = $datetime->strftime('%Y-%m-%d %T %Z');
         $flag->{'updated_epoch'} = $datetime->epoch;
         $flag->{'updated_fancy'} = time_ago($datetime, $datetime_now);
 
