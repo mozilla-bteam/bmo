@@ -50,13 +50,8 @@ sub run_bug_query {
         # Add last changes to each bug
         foreach my $b (@$bugs) {
             my $last_changes = {};
-            # Remove one second so we get the changes made at $change_date (>=)
-            # Also specify UTC as the webservice methods expect it
-            my $changed_date = datetime_from($b->{changeddate}, 'UTC');
-            next if !$changed_date;
-            $changed_date->subtract(seconds => 1);
             my $activity = $self->history({ ids       => [ $b->{bug_id} ],
-                                            new_since => $changed_date });
+                                            new_since => $b->{changeddate_utc} });
             if (@{$activity->{bugs}[0]{history}}) {
                 my $change_set = $activity->{bugs}[0]{history}[0];
                 $last_changes->{activity} = $change_set->{changes};
@@ -69,7 +64,7 @@ sub run_bug_query {
             }
             my $last_comment_id = $dbh->selectrow_array(
                 $last_comment_sth,
-                undef, $b->{bug_id}, $changed_date);
+                undef, $b->{bug_id}, $b->{changeddate});
             if ($last_comment_id) {
                 my $comments = $self->comments({ comment_ids => [ $last_comment_id ] });
                 my $comment = $comments->{comments}{$last_comment_id};
