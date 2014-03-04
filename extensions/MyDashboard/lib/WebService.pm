@@ -51,7 +51,8 @@ sub run_bug_query {
         foreach my $b (@$bugs) {
             my $last_changes = {};
             # Remove one second so we get the changes made at $change_date (>=)
-            my $changed_date = datetime_from($b->{changeddate});
+            # Also specify UTC as the webservice methods expect it
+            my $changed_date = datetime_from($b->{changeddate}, 'UTC');
             next if !$changed_date;
             $changed_date->subtract(seconds => 1);
             my $activity = $self->history({ ids       => [ $b->{bug_id} ],
