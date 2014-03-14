@@ -1,0 +1,14 @@
+.htaccess
+/lib/*
+/template/en/custom
+/docs/bugzilla.ent
+/docs/en/xml/bugzilla.ent
+/docs/en/txt
+/docs/en/html
+/docs/en/pdf
+/graphs
+/data
+/localconfig
+/index.html
+/template_cache
+.DS_Store
