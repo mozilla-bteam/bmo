@@ -418,7 +418,7 @@ sub get {
     # Set the ETag before inserting the update tokens
     # since the tokens will always be unique even if
     # the data has not changed.
-    $self->bz_etag(\@bugs);
+    $self->bz_etag(\@hashes);
 
     $self->_add_update_tokens($params, \@bugs, \@hashes);
 
@@ -763,7 +763,8 @@ sub create {
 
     $dbh->bz_commit_transaction();
 
-    Bugzilla::BugMail::Send($bug->bug_id, { changer => $bug->reporter });
+    $bug->send_changes();
+
     return { id => $self->type('int', $bug->bug_id) };
 }
 

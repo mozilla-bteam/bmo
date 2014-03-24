@@ -546,7 +546,7 @@ input.required, select.required, span.required_explanation {
 }
 
 .bug_urls {
-    margin: 0 0 1em 0;
+    margin: 0;
     padding: 0;
     list-style-type: none;
 }
@@ -605,7 +605,7 @@ input.required, select.required, span.required_explanation {
 
 #comment_preview {
     border: 1px solid silver;
-    padding: 0px 1px;
+    padding: 1px;
     overflow: auto;
     margin: 0px;
 }
@@ -621,7 +621,6 @@ input.required, select.required, span.required_explanation {
 
 #comment {
     margin: 0px 0px 1em 0px;
-    padding: 0px;
 }
 
 /*******************/
