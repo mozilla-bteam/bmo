@@ -120,7 +120,7 @@ sub fix_bug {
     # Attachment metadata is included by default but not data
     if (filter_wants_nocache($params, 'attachments')) {
         my $attachment_params = { ids => $data->{id} };
-        if (!filter_wants_nocache($params, 'data', 'attachments')
+        if (!filter_wants_nocache($params, 'attachments.data')
             && !$params->{attachmentdata})
         {
             $attachment_params->{exclude_fields} = ['data'];
@@ -356,8 +356,7 @@ sub fix_attachment {
     if (exists $data->{flags} && @{ $data->{flags} }) {
         my @new_flags;
         foreach my $flag (@{ $data->{flags} }) {
-            $flag = fix_flag($flag);
-            push(@new_flags, filter($params, $flag, 'flags'));
+            push(@new_flags, fix_flag($flag));
         }
         $data->{flags} = \@new_flags;
     }
@@ -523,9 +522,7 @@ sub fix_include_exclude {
 sub filter_wants_nocache {
     my ($params, $field, $prefix, $use_original) = @_;
 
-    my $cache = Bugzilla->request_cache->{filter_wants};
-    my $cached_field = $prefix ? "${prefix}.${field}" : $field;
-    delete $cache->{$cached_field} if $cache;
+    delete Bugzilla->request_cache->{filter_wants};
 
     if ($use_original) {
         my $cache = Bugzilla->request_cache;
