@@ -54,11 +54,25 @@ use Storable qw(dclone);
 
 use constant PRODUCT_SPECIFIC_FIELDS => qw(version target_milestone component);
 
-use constant DATE_FIELDS => {
-    comments => ['new_since'],
-    history  => ['new_since'],
-    search   => ['last_change_time', 'creation_time'],
-};
+sub DATE_FIELDS {
+    my $fields = {
+        comments => ['new_since'],
+        create   => [],
+        history  => ['new_since'],
+        search   => ['last_change_time', 'creation_time'],
+        update   => []
+    };
+
+    # Add date related custom fields
+    foreach my $field (Bugzilla->active_custom_fields) {
+        next unless ($field->type == FIELD_TYPE_DATETIME
+                     || $field->type == FIELD_TYPE_DATE);
+        push(@{ $fields->{create} }, $field->name);
+        push(@{ $fields->{update} }, $field->name);
+    }
+
+    return $fields;
+}
 
 use constant BASE64_FIELDS => {
     add_attachment => ['data'],
@@ -75,8 +89,8 @@ use constant READ_ONLY => qw(
 );
 
 use constant ATTACHMENT_MAPPED_SETTERS => {
-    file_name => 'filename',
-    summary   => 'description',
+    file_name    => 'filename',
+    summary      => 'description',
 };
 
 use constant ATTACHMENT_MAPPED_RETURNS => {
@@ -558,7 +572,7 @@ sub search {
 
     # Backwards compatibility with old method regarding role search
     $match_params->{'reporter'} = delete $match_params->{'creator'} if $match_params->{'creator'};
-    foreach my $role (qw(assigned_to reporter qa_contact longdesc cc)) {
+    foreach my $role (qw(assigned_to reporter qa_contact commenter cc)) {
         next if !exists $match_params->{$role};
         my $value = delete $match_params->{$role};
         $match_params->{"f${last_field_id}"} = $role;
@@ -917,6 +931,7 @@ sub update_attachment {
     }
 
     my $flags = delete $params->{flags};
+    my $comment = delete $params->{comment};
 
     # Update the values
     foreach my $attachment (@attachments) {
@@ -931,8 +946,16 @@ sub update_attachment {
 
     # Do the actual update and get information to return to user
     my @result;
+    my @updated;
     foreach my $attachment (@attachments) {
         my $changes = $attachment->update();
+
+        if ($comment = trim($comment)) {
+            $attachment->bug->add_comment($comment,
+                { isprivate  => $attachment->isprivate,
+                  type       => CMT_ATTACHMENT_UPDATED,
+                  extra_data => $attachment->id });
+        }
 
         $changes = translate($changes, ATTACHMENT_MAPPED_RETURNS);
 
@@ -961,7 +984,8 @@ sub update_attachment {
 
     # Email users about the change
     foreach my $bug (values %bugs) {
-        Bugzilla::BugMail::Send($bug->id, { 'changer' => $user });
+        $bug->update();
+        $bug->send_changes();
     }
 
     # Return the information to the user

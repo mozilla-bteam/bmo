@@ -188,7 +188,7 @@ sub _delete_bad_keys {
             # However, we need to validate our argument names in some way.
             # We know that all hash keys passed in to the WebService will 
             # match \w+, so we delete any key that doesn't match that.
-            if ($key !~ /^\w+$/) {
+            if ($key !~ /^[\w\.\-]+$/) {
                 delete $item->{$key};
             }
         }

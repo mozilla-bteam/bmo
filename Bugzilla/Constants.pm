@@ -273,7 +273,7 @@ use constant AUTH_LOCKOUT => 6;
 
 # The minimum length a password must have.
 # BMO uses 8 characters.
-use constant USER_PASSWORD_MIN_LENGTH => 8;
+use constant USER_PASSWORD_MIN_LENGTH => 5;
 
 use constant LOGIN_OPTIONAL => 0;
 use constant LOGIN_NORMAL => 1;

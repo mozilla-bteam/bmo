@@ -659,7 +659,6 @@ sub _set_requestee {
 
 sub _set_setter {
     my ($self, $setter) = @_;
-
     $self->set('setter', $setter);
     $self->{setter_id} = $self->setter->id;
 }
