@@ -20,7 +20,7 @@ use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Extension::BzAPI::Constants;
 use Bugzilla::Token;
-use Bugzilla::Util qw(correct_urlbase validate_email_syntax);
+use Bugzilla::Util qw(correct_urlbase email_filter);
 use Bugzilla::WebService::Util qw(filter_wants);
 
 use base qw(Exporter);
@@ -38,6 +38,7 @@ our @EXPORT = qw(
     filter
     fix_credentials
     remove_id_field
+    filter_email
 );
 
 # Return an URL base appropriate for constructing a ref link
@@ -68,7 +69,7 @@ sub fix_bug {
         if ($field eq 'cc') {
             my @new_cc;
             foreach my $cc (@{ $bug->cc_users }) {
-                my $cc_data = { name => $rpc->type('email', $cc->email) };
+                my $cc_data = { name => filter_email($cc->email) };
                 push(@new_cc, fix_user($cc_data, $cc));
             }
             $data->{$field} = \@new_cc;
@@ -126,7 +127,6 @@ sub fix_bug {
             $attachment_params->{exclude_fields} = ['data'];
         }
         my $attachments = $rpc->attachments($attachment_params);
-
         my @new_attachments;
         foreach my $attachment (@{ $attachments->{bugs}->{$data->{id}} }) {
             $attachment = fix_attachment($attachment);
@@ -238,11 +238,14 @@ sub fix_user {
 
     if (!ref $data) {
         $data = {
-            name => $rpc->type('email', $object->login)
+            name => filter_email($object->login)
         };
         if ($user->id) {
             $data->{real_name} = $rpc->type('string', $object->name);
         }
+    }
+    else {
+        $data->{name} = filter_email($data->{name});
     }
 
     if ($user->id) {
@@ -295,7 +298,7 @@ sub fix_changeset {
 
     if ($data->{who}) {
         $data->{changer} = {
-            name => $rpc->type('email', $data->{who}),
+            name => filter_email($data->{who}),
             ref  => $rpc->type('string', ref_urlbase() . "/user/" . $data->{who})
         };
     }
@@ -583,6 +586,13 @@ sub remove_id_field {
     {
         delete $data->{id};
     }
+}
+
+# Filter email addresses by default ignoring the system
+# webservice_email_filter setting
+sub filter_email {
+    my $rpc = Bugzilla->request_cache->{bzapi_rpc};
+    return $rpc->type('string', email_filter($_[0]));
 }
 
 1;
