@@ -261,7 +261,7 @@ sub update_table_definitions {
     $dbh->bz_add_column("bugs", "cclist_accessible",
                         {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'TRUE'});
 
-    $dbh->bz_add_column("bugs_activity", "attach_id", {TYPE => 'INT3'});
+    $dbh->bz_add_column("bugs_activity", "attach_id", {TYPE => 'INT5'});
 
     _delete_logincookies_cryptpassword_and_handle_invalid_cookies();
 
@@ -686,8 +686,9 @@ sub update_table_definitions {
                         {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
 
     # 2012-07-24 dkl@mozilla.com - Bug 776972
-    $dbh->bz_alter_column('bugs_activity', 'id', 
-                          {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
+    # BMO - we change this to BIGSERIAL further down
+    #$dbh->bz_alter_column('bugs_activity', 'id',
+    #                      {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
 
 
     # 2012-07-24 dkl@mozilla.com - Bug 776982

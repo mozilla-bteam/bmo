@@ -923,7 +923,7 @@ sub update_attachment {
           || ThrowUserError("invalid_attach_id", { attach_id => $id });
         my $bug = $attachment->bug;
         $attachment->_check_bug;
-        $attachment->validate_can_edit($bug->product_id)
+        $attachment->validate_can_edit
           || ThrowUserError("illegal_attachment_edit", { attach_id => $id });
 
         push @attachments, $attachment;
@@ -3627,6 +3627,10 @@ in the UI for this attachment.
 
 C<string> A short string describing the
 attachment.
+
+=item C<comment>
+
+C<string> An optional comment to add to the attachment's bug.
 
 =item C<content_type>
 

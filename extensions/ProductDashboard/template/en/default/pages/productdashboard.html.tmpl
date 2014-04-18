@@ -143,7 +143,7 @@
     [% FOREACH c = classifications %]
       <optgroup label="[% c.name FILTER html %]">
       [% FOREACH p = c.products %]
-        <option value="[% p.name FILTER html %]" 
+        <option value="[% p.name FILTER html %]"
           [% IF p.name == product.name %]selected="selected"[% END %]>
         [% p.name FILTER html %]</option>
       [% END %]</optgroup>
