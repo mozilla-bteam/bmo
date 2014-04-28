@@ -1,0 +1,52 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% USE Bugzilla %]
+[% cgi = Bugzilla.cgi +%]
+>>Problem:
+[%+ cgi.param('short_desc') %]
+
+>>Solution
+[%+ cgi.param('desc_solution') %]
+
+>>Mozilla Top Level Goal
+[%+ cgi.param('desc_top_level_goal') %]
+
+[% IF cgi.param("existing_bug") -%]
+>>Existing Bug
+[%+ cgi.param("existing_bug") %]
+[% END -%]
+
+>>Per-Commit?
+[%+ cgi.param('per_commit') || 'No' %]
+
+>>Data other than Pass/Fail?
+[%+ cgi.param('desc_data_produce') %]
+
+>>Prototype Date:
+[%+ cgi.param("prototype_date") || 'Not provided' %]
+
+>>Production Date:
+[%+ cgi.param("production_date") || 'Not provided' %]
+
+[% IF cgi.param('most_valuable_piece') -%]
+>>Most Valuable Piece
+[%+ cgi.param('most_valuable_piece') %]
+[% END -%]
+
+>>Responsible Engineer
+[%+ cgi.param('responsible_engineer') %]
+
+>>Manager
+[%+ cgi.param('manager') %]
+
+>>Other Teams/External Dependencies
+[%+ cgi.param('other_teams') %]
+
+>>Additional Info
+[%+ cgi.param('additional_info') %]

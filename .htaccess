@@ -74,5 +74,6 @@ RewriteRule ^form[\.:]dev-engagement-event$ enter_bug.cgi?product=Developer+Enga
 RewriteRule ^form[\.:]mobile[\.\-:]compat\??(.*) enter_bug.cgi?product=Tech+Evangelism&format=mobile-compat&$1 [QSA]
 RewriteRule ^form[\.:]web[\.:]bounty$ enter_bug.cgi?product=mozilla.org&format=web-bounty
 RewriteRule ^form[\.:]dbi$ enter_bug.cgi?product=Data+\%26+BI+Services+Team&format=dbi
+RewriteRule ^form[\.:]automative enter_bug.cgi?product=Testing&format=automative
 RewriteRule ^rest/(.*)$ rest.cgi/$1 [NE]
 RewriteRule ^bzapi/(.*)$ extensions/BzAPI/bin/rest.cgi/$1 [NE]
