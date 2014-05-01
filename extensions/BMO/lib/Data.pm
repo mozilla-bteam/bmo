@@ -200,6 +200,7 @@ our %product_sec_groups = (
     "Websites"                     => 'websites-security',
     "Webtools"                     => 'webtools-security',
     "www.mozilla.org"              => 'websites-security',
+    "Mozilla Foundation Operations" => 'mofo-operations-private',
     "_default"                     => 'core-security'
 );
 
