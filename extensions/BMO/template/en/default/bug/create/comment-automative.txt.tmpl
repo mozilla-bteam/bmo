@@ -9,7 +9,7 @@
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi +%]
 >>Problem:
-[%+ cgi.param('short_desc') %]
+[%+ cgi.param('desc_problem') %]
 
 >>Solution
 [%+ cgi.param('desc_solution') %]
