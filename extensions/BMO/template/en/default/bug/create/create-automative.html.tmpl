@@ -106,164 +106,171 @@ function validateAndSubmit() {
   dburns@mozilla.com, jeads@mozilla.com, jmaher@mozilla.com,
   ctalbert@mozilla.com">
 
-
-<div class="head_desc">
-    Welcome to the Automation Request Form!
-</div>
-
-<div class="form_section">
-  <label for="short_desc" class="field_label required">Problem</label>
-  <div class="field_desc">
-    Describe the problem that you'd like automation to help solve
+  <div class="head_desc">
+      Welcome to the Automation Request Form!
   </div>
-  <input type="text" name="short_desc" id="short_desc" size="80">
-</div>
 
-<div class="form_section">
-  <label for="desc_solution" class="field_label required">Solution</label>
-  <div class="field_desc">
-    Describe how you'd like to automate a solution for this
+  <div class="form_section">
+    <label for="short_desc" class="field_label required">Summary</label>
+    <div class="field_desc">
+      One-line summary of the problem you'd like automation to help solve
+    </div>
+    <input type="text" name="short_desc" id="short_desc" size="80">
   </div>
-  <textarea id="desc_solution" name="desc_solution" cols="80" rows="5"></textarea>
-</div>
 
-<div class="form_section">
-  <label for="desc_top_level_goal" class="field_label required">Top Level
-  Goal</label>
-  <div class="field_desc">Describe the top-level project goal which this is
-  supporting</div>
-  <textarea id="desc_top_level_goal" name="desc_top_level_goal" cols="80"
-  rows="5"></textarea>
-</div>
-
-<div class="form_section">
-  <label for="existing_bug" class="field_label">Existing Bug</label>
-  <div class="field_desc"> Existing bug (if any) </div>
-  <input type="text" name="existing_bug" id="existing_bug" size="80">
-</div>
-
-<div class="form_section">
-  <label for="per_commit" class="field_label">Run per-commit?</label>
-  <div class="field_desc">
-    Does this automation need to be run per-commit and report to TBPL?  Can it
-    be run less frequently?
+  <div class="form_section">
+    <label for="desc_problem" class="field_label required">Problem</label>
+    <div class="field_desc">
+      Detailed description of the problem
+    </div>
+    <textarea id="desc_problem" name="desc_problem" cols="80" rows="5"></textarea>
   </div>
-  <input type="text" name="per_commit" id="per_commit" size="80">
-</div>
 
-<div class="form_section">
-  <label for="desc_data_produce" class="field_label">Data
-  capture?</label>
-  <div class="field_desc">If this automation will report data other than
-  pass/fail (e.g.,, some sort of performance metric), describe the data that
-  you'd like to have the automation produce.  Do we already have a method of
-  capturing this kind of data, or do we need to develop one?</div>
-  <input type="text" name="desc_data_produce" id="desc_data_produce" size="80">
-</div>
-
-<div class="form_section">
-  <label for="prototype_date" class="field_label">Prototype
-  Date</label>
-  <div class="field_desc">
-   When is a prototype needed?
+  <div class="form_section">
+    <label for="desc_solution" class="field_label required">Solution</label>
+    <div class="field_desc">
+      Detailed description of the proposed solution
+    </div>
+    <textarea id="desc_solution" name="desc_solution" cols="80" rows="5"></textarea>
   </div>
-  <input name="prototype_date" size="20" id="prototype_date" value=""
-         onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button"
-          id="button_calendar_prototype_date"
-          onclick="showCalendar('prototype_date')">
-    <span>Calendar</span>
-  </button>
-  <div id="con_calendar_prototype_date"></div>
-  <script type="text/javascript">
-    createCalendar('prototype_date')
-  </script>
-</div>
 
-<div class="form_section">
-  <label for="production_date" class="field_label">Production
-  Date</label>
-  <div class="field_desc">
-    When is a finished project running in production needed?
+  <div class="form_section">
+    <label for="desc_top_level_goal" class="field_label required">Top Level
+    Goal</label>
+    <div class="field_desc">Describe the top-level project goal which this is
+    supporting</div>
+    <textarea id="desc_top_level_goal" name="desc_top_level_goal" cols="80"
+    rows="5"></textarea>
   </div>
-  <input name="production_date" size="20" id="production_date" value=""
-         onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button"
-          id="button_calendar_production_date"
-          onclick="showCalendar('production_date')">
-    <span>Calendar</span>
-  </button>
-  <div id="con_calendar_production_date"></div>
-  <script type="text/javascript">
-    createCalendar('production_date')
-  </script>
-</div>
 
-<div class="form_section">
-  <label for="most_valuable_piece" class="field_label">Most Valuable
-  Piece?</label>
-  <div class="field_desc">If there are multiple pieces, tests, or features in
-  the proposed automation, what is the single most valuable piece?</div>
-  <input type="text" name="most_valuable_piece" id="most_valuable_piece"
-         size="80">
-</div>
-
-<div class="form_section">
-  <label for="responsible_engineer" class="field_label">Responsible
-  Engineer</label>
-  <div class="field_desc">
-  Which engineer is responsible for working with the automation engineer for
-  information, support, and troubleshooting?
+  <div class="form_section">
+    <label for="existing_bug" class="field_label">Existing Bug</label>
+    <div class="field_desc"> Existing bug (if any) </div>
+    <input type="text" name="existing_bug" id="existing_bug" size="80">
   </div>
-  [% INCLUDE global/userselect.html.tmpl
-     id       => "responsible_engineer"
-     name     => "responsible_engineer"
-     value    => ""
-     size     => 80
-     classes  => ["bz_userfield"]
-  %]
-</div>
 
-<div class="form_section">
-  <label for="manager" class="field_label">Manager</label>
-  <div class="field_desc">
-    Which manager/project manager is responsible for issues related to
-    milestones and priorities?
+  <div class="form_section">
+    <label for="per_commit" class="field_label">Run per-commit?</label>
+    <div class="field_desc">
+      Does this automation need to be run per-commit and report to TBPL?  Can it
+      be run less frequently?
+    </div>
+    <input type="text" name="per_commit" id="per_commit" size="80">
   </div>
-  [% INCLUDE global/userselect.html.tmpl
-     id       => "manager"
-     name     => "manager"
-     value    => ""
-     size     => 80
-     classes  => ["bz_userfield"]
-  %]
-</div>
 
-<div class="form_section">
-  <label for="other_teams" class="field_label">Other Teams</label>
-  <div class="field_desc">
-    What other teams are involved and are there any other external dependencies?
+  <div class="form_section">
+    <label for="desc_data_produce" class="field_label">Data
+    capture?</label>
+    <div class="field_desc">If this automation will report data other than
+    pass/fail (e.g.,, some sort of performance metric), describe the data that
+    you'd like to have the automation produce.  Do we already have a method of
+    capturing this kind of data, or do we need to develop one?</div>
+    <input type="text" name="desc_data_produce" id="desc_data_produce" size="80">
   </div>
-  <textarea id="other_teams" name="other_teams" cols="80"
-  rows="5"></textarea>
-</div>
 
-
-<div class="form_section">
-  <label for="additional_info" class="field_label">Additional Information</label>
-  <div class="field_desc">
-    Additional information
+  <div class="form_section">
+    <label for="prototype_date" class="field_label">Prototype
+    Date</label>
+    <div class="field_desc">
+    When is a prototype needed?
+    </div>
+    <input name="prototype_date" size="20" id="prototype_date" value=""
+          onchange="updateCalendarFromField(this)">
+    <button type="button" class="calendar_button"
+            id="button_calendar_prototype_date"
+            onclick="showCalendar('prototype_date')">
+      <span>Calendar</span>
+    </button>
+    <div id="con_calendar_prototype_date"></div>
+    <script type="text/javascript">
+      createCalendar('prototype_date')
+    </script>
   </div>
-  <textarea id="additional_info" name="additional_info" cols="80"
-  rows="5"></textarea>
-</div>
 
-<input type="submit" id="commit" value="Submit">
+  <div class="form_section">
+    <label for="production_date" class="field_label">Production
+    Date</label>
+    <div class="field_desc">
+      When is a finished project running in production needed?
+    </div>
+    <input name="production_date" size="20" id="production_date" value=""
+          onchange="updateCalendarFromField(this)">
+    <button type="button" class="calendar_button"
+            id="button_calendar_production_date"
+            onclick="showCalendar('production_date')">
+      <span>Calendar</span>
+    </button>
+    <div id="con_calendar_production_date"></div>
+    <script type="text/javascript">
+      createCalendar('production_date')
+    </script>
+  </div>
 
-<p>
-  [ <span class="required_star">*</span> <span class="required_explanation">
-  Required Field</span> ]
-</p>
+  <div class="form_section">
+    <label for="most_valuable_piece" class="field_label">Most Valuable
+    Piece?</label>
+    <div class="field_desc">If there are multiple pieces, tests, or features in
+    the proposed automation, what is the single most valuable piece?</div>
+    <input type="text" name="most_valuable_piece" id="most_valuable_piece"
+          size="80">
+  </div>
+
+  <div class="form_section">
+    <label for="responsible_engineer" class="field_label">Responsible
+    Engineer</label>
+    <div class="field_desc">
+    Which engineer is responsible for working with the automation engineer for
+    information, support, and troubleshooting?
+    </div>
+    [% INCLUDE global/userselect.html.tmpl
+      id       => "responsible_engineer"
+      name     => "responsible_engineer"
+      value    => ""
+      size     => 80
+      classes  => ["bz_userfield"]
+    %]
+  </div>
+
+  <div class="form_section">
+    <label for="manager" class="field_label">Manager</label>
+    <div class="field_desc">
+      Which manager/project manager is responsible for issues related to
+      milestones and priorities?
+    </div>
+    [% INCLUDE global/userselect.html.tmpl
+      id       => "manager"
+      name     => "manager"
+      value    => ""
+      size     => 80
+      classes  => ["bz_userfield"]
+    %]
+  </div>
+
+  <div class="form_section">
+    <label for="other_teams" class="field_label">Other Teams</label>
+    <div class="field_desc">
+      What other teams are involved and are there any other external dependencies?
+    </div>
+    <textarea id="other_teams" name="other_teams" cols="80"
+    rows="5"></textarea>
+  </div>
+
+
+  <div class="form_section">
+    <label for="additional_info" class="field_label">Additional Information</label>
+    <div class="field_desc">
+      Additional information
+    </div>
+    <textarea id="additional_info" name="additional_info" cols="80"
+    rows="5"></textarea>
+  </div>
+
+  <input type="submit" id="commit" value="Submit">
+
+  <p>
+    [ <span class="required_star">*</span> <span class="required_explanation">
+    Required Field</span> ]
+  </p>
 
 </form>
 
