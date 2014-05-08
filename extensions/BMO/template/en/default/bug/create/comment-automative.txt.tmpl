@@ -5,27 +5,26 @@
   # This Source Code Form is "Incompatible With Secondary Licenses", as
   # defined by the Mozilla Public License, v. 2.0.
   #%]
-
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi +%]
 >>Problem:
 [%+ cgi.param('desc_problem') %]
 
->>Solution
+>>Solution:
 [%+ cgi.param('desc_solution') %]
 
->>Mozilla Top Level Goal
+>>Mozilla Top Level Goal:
 [%+ cgi.param('desc_top_level_goal') %]
 
-[% IF cgi.param("existing_bug") -%]
->>Existing Bug
+[% IF cgi.param("existing_bug") %]
+>>Existing Bug:
 [%+ cgi.param("existing_bug") %]
-[% END -%]
+[% END %]
 
->>Per-Commit?
+>>Per-Commit:
 [%+ cgi.param('per_commit') || 'No' %]
 
->>Data other than Pass/Fail?
+>>Data other than Pass/Fail:
 [%+ cgi.param('desc_data_produce') %]
 
 >>Prototype Date:
@@ -34,19 +33,21 @@
 >>Production Date:
 [%+ cgi.param("production_date") || 'Not provided' %]
 
-[% IF cgi.param('most_valuable_piece') -%]
->>Most Valuable Piece
+[% IF cgi.param('most_valuable_piece') %]
+>>Most Valuable Piece:
 [%+ cgi.param('most_valuable_piece') %]
-[% END -%]
+[% END %]
 
->>Responsible Engineer
+>>Responsible Engineer:
 [%+ cgi.param('responsible_engineer') %]
 
->>Manager
+>>Manager:
 [%+ cgi.param('manager') %]
 
->>Other Teams/External Dependencies
+>>Other Teams/External Dependencies:
 [%+ cgi.param('other_teams') %]
 
->>Additional Info
+[% IF cgi.param('additional_info') %]
+>>Additional Info:
 [%+ cgi.param('additional_info') %]
+[% END %]
