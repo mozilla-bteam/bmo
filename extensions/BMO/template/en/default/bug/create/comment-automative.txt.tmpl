@@ -17,7 +17,7 @@
 [%+ cgi.param('desc_top_level_goal') %]
 
 [% IF cgi.param("existing_bug") %]
->>Existing Bug:
+>>Existing [% terms.Bug %]:
 [%+ cgi.param("existing_bug") %]
 [% END %]
 

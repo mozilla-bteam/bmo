@@ -47,10 +47,8 @@
 [% END %]
 
 [% inline_javascript = BLOCK %]
-(function(){
-'use strict';
-
 function validateAndSubmit() {
+  'use strict';
   var alert_text = '';
   var requiredLabels = YAHOO.util.Selector.query('label.required');
   if (requiredLabels) {
@@ -76,7 +74,6 @@ function validateAndSubmit() {
   }
   return true;
 }
-})();
 [% END %]
 
 [% PROCESS global/header.html.tmpl
@@ -144,8 +141,8 @@ function validateAndSubmit() {
   </div>
 
   <div class="form_section">
-    <label for="existing_bug" class="field_label">Existing Bug</label>
-    <div class="field_desc"> Existing bug (if any) </div>
+    <label for="existing_bug" class="field_label">Existing [% terms.Bug %] </label>
+    <div class="field_desc"> Existing [% terms.bug %] (if any) </div>
     <input type="text" name="existing_bug" id="existing_bug" size="80">
   </div>
 
