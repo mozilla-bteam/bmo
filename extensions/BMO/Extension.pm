@@ -486,7 +486,7 @@ sub bug_format_comment {
 
     # link git.mozilla.org commit messages
     push (@$regexes, {
-        match => qr#^(To\sssh://[^\@]+\@git\.mozilla\.org\/(.+?.git)\n
+        match => qr#^(To\s(?:ssh://)?(?:[^\@]+\@)?git\.mozilla\.org[:/](.+?\.git)\n
                     \s+)([0-9a-z]+\.\.([0-9a-z]+)\s+\S+\s->\s\S+)#mx,
         replace => sub {
             my $args = shift;
@@ -560,7 +560,8 @@ sub object_end_of_create {
 
     } elsif ($class eq 'Bugzilla::Bug') {
         # Log real IP addresses for auditing
-        _syslog(sprintf('[audit] <%s> created bug %s', remote_ip(), $args->{object}->id));
+        _syslog(sprintf('[audit] %s <%s> created bug %s',
+            Bugzilla->user->login, remote_ip(), $args->{object}->id));
     }
 }
 
@@ -608,7 +609,7 @@ sub bug_end_of_create {
     }
 }
 
-# detect github pull requests and set a unique content-type
+# detect github pull requests and reviewboard reviews, set the content-type
 sub attachment_process_data {
     my ($self, $args) = @_;
     my $attributes = $args->{attributes};
@@ -640,7 +641,7 @@ sub attachment_process_data {
         $attributes->{mimetype} = GITHUB_PR_CONTENT_TYPE;
         $attributes->{ispatch}  = 0;
     }
-    elsif ($url =~ m#^https://reviewboard(?:-dev)?\.allizom\.org/r/\d+/?#i) {
+    elsif ($url =~ m#^https?://reviewboard(?:-dev)?\.(?:allizom|mozilla)\.org/r/\d+/?#i) {
         $attributes->{mimetype} = RB_REQUEST_CONTENT_TYPE;
         $attributes->{ispatch}  = 0;
     }

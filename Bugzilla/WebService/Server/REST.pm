@@ -322,10 +322,10 @@ sub bz_rest_options {
 sub rest_include_exclude {
     my ($params) = @_;
 
-    if (exists $params->{'include_fields'} && !ref $params->{'include_fields'}) {
+    if ($params->{'include_fields'} && !ref $params->{'include_fields'}) {
         $params->{'include_fields'} = [ split(/[\s+,]/, $params->{'include_fields'}) ];
     }
-    if (exists $params->{'exclude_fields'} && !ref $params->{'exclude_fields'}) {
+    if ($params->{'exclude_fields'} && !ref $params->{'exclude_fields'}) {
         $params->{'exclude_fields'} = [ split(/[\s+,]/, $params->{'exclude_fields'}) ];
     }
 
