@@ -28,8 +28,13 @@ sub db_schema_abstract_schema {
     my ($self, $args) = @_;
     $args->{'schema'}->{'component_watch'} = {
         FIELDS => [
+            id => {
+                TYPE       => 'MEDIUMSERIAL',
+                NOTNULL    => 1,
+                PRIMARYKEY => 1,
+            },
             user_id => {
-                TYPE => 'INT3',
+                TYPE    => 'INT3',
                 NOTNULL => 1,
                 REFERENCES => {
                     TABLE  => 'profiles',
@@ -38,7 +43,7 @@ sub db_schema_abstract_schema {
                 }
             },
             component_id => {
-                TYPE => 'INT2',
+                TYPE    => 'INT2',
                 NOTNULL => 0,
                 REFERENCES => {
                     TABLE  => 'components',
@@ -47,13 +52,17 @@ sub db_schema_abstract_schema {
                 }
             },
             product_id => {
-                TYPE => 'INT2',
+                TYPE    => 'INT2',
                 NOTNULL => 0,
                 REFERENCES => {
                     TABLE  => 'products',
                     COLUMN => 'id',
                     DELETE => 'CASCADE',
                 }
+            },
+            component_prefix => {
+                TYPE    => 'VARCHAR(64)',
+                NOTNULL => 0,
             },
         ],
     };
@@ -71,6 +80,23 @@ sub install_update_db {
                 COLUMN => 'userid',
                 DELETE => 'SET NULL',
             }
+        }
+    );
+    $dbh->bz_add_column(
+        'component_watch',
+        'id',
+        {
+            TYPE       => 'MEDIUMSERIAL',
+            NOTNULL    => 1,
+            PRIMARYKEY => 1,
+        },
+    );
+    $dbh->bz_add_column(
+        'component_watch',
+        'component_prefix',
+        {
+            TYPE    => 'VARCHAR(64)',
+            NOTNULL => 0,
         }
     );
 }
@@ -500,6 +526,67 @@ sub _addDefaultSettings {
             "INSERT INTO email_setting(user_id,relationship,event) VALUES (?,?,?)",
             undef,
             $user->id, REL_COMPONENT_WATCHER, $event
+        );
+    }
+}
+
+sub reorg_move_component {
+    my ($self, $args) = @_;
+    my $new_product = $args->{new_product};
+    my $component   = $args->{component};
+
+    Bugzilla->dbh->do(
+        "UPDATE component_watch SET product_id=? WHERE component_id=?",
+        undef,
+        $new_product->id, $component->id,
+    );
+}
+
+sub sanitycheck_check {
+    my ($self, $args) = @_;
+    my $status = $args->{status};
+
+    $status->('component_watching_check');
+
+    my ($count) = Bugzilla->dbh->selectrow_array("
+        SELECT COUNT(*)
+          FROM component_watch
+         INNER JOIN components ON components.id = component_watch.component_id
+         WHERE component_watch.product_id <> components.product_id
+    ");
+    if ($count) {
+        $status->('component_watching_alert', undef, 'alert');
+        $status->('component_watching_repair');
+    }
+}
+
+sub sanitycheck_repair {
+    my ($self, $args) = @_;
+    return unless Bugzilla->cgi->param('component_watching_repair');
+
+    my $status = $args->{'status'};
+    my $dbh = Bugzilla->dbh;
+    $status->('component_watching_repairing');
+
+    my $rows = $dbh->selectall_arrayref("
+        SELECT DISTINCT component_watch.product_id AS bad_product_id,
+               components.product_id AS good_product_id,
+               component_watch.component_id
+          FROM component_watch
+         INNER JOIN components ON components.id = component_watch.component_id
+         WHERE component_watch.product_id <> components.product_id
+        ",
+        { Slice => {} }
+    );
+    foreach my $row (@$rows) {
+        $dbh->do("
+            UPDATE component_watch
+               SET product_id=?
+             WHERE product_id=? AND component_id=?
+            ", undef,
+            $row->{good_product_id},
+            $row->{bad_product_id},
+            $row->{component_id},
         );
     }
 }
