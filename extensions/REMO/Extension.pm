@@ -186,22 +186,22 @@ my %CSV_COLUMNS = (
     "Team"            => { pos =>  5, value => 'Community Engagement' },
     "Department Code" => { pos =>  6, value => '2300' },
     "Purpose"         => { pos =>  7, value => 'Rep event: %eventpage' },
-    "Item"            => { pos =>  8  },
-    "Item"            => { pos =>  9  },
-    "Item"            => { pos =>  10 },
-    "Item"            => { pos =>  11 },
-    "Item"            => { pos =>  12 },
-    "Item"            => { pos =>  13 },
-    "Item"            => { pos =>  14 },
-    "Item"            => { pos =>  15 },
-    "Item"            => { pos =>  16 },
-    "Item"            => { pos =>  17 },
-    "Item"            => { pos =>  18 },
-    "Item"            => { pos =>  19 },
-    "Item"            => { pos =>  20 },
-    "Item"            => { pos =>  21 },
+    "Item 1"          => { pos =>  8  },
+    "Item 2"          => { pos =>  9  },
+    "Item 3"          => { pos =>  10 },
+    "Item 4"          => { pos =>  11 },
+    "Item 5"          => { pos =>  12 },
+    "Item 6"          => { pos =>  13 },
+    "Item 7"          => { pos =>  14 },
+    "Item 8"          => { pos =>  15 },
+    "Item 9"          => { pos =>  16 },
+    "Item 10"         => { pos =>  17 },
+    "Item 11"         => { pos =>  18 },
+    "Item 12"         => { pos =>  19 },
+    "Item 13"         => { pos =>  20 },
+    "Item 14"         => { pos =>  21 },
     "Recipient Name"  => { pos =>  22, value => '%shiptofirstname %shiptolastname' },
-    "email"           => { pos =>  23, value => sub { Bugzilla->user->email } },
+    "Email 2"         => { pos =>  23, value => sub { Bugzilla->user->email } },
     "Address 1"       => { pos =>  24, value => '%shiptoaddress1' },
     "Address 2"       => { pos =>  25, value => '%shiptoaddress2' },
     "City"            => { pos =>  26, value => '%shiptocity' },
@@ -256,8 +256,9 @@ sub post_bug_after_creation {
                   mimetype      => 'text/xml',
             });
 
-            my @columns = sort { $CSV_COLUMNS{$a}{pos} <=> $CSV_COLUMNS{$b}{pos} } keys %CSV_COLUMNS;
-            my @data    = map { _expand_value( $CSV_COLUMNS{$_}{value} ) } @columns;
+            my @columns_raw = sort { $CSV_COLUMNS{$a}{pos} <=> $CSV_COLUMNS{$b}{pos} } keys %CSV_COLUMNS;
+            my @data        = map { _expand_value( $CSV_COLUMNS{$_}{value} ) } @columns_raw;
+            my @columns     = map { s/^(Item|Email) \d$/$1/g; $_ } @columns_raw;
             my $csv = join("\r\n",
                 map {
                     my $row = $_;
