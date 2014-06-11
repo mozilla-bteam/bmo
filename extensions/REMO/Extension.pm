@@ -177,6 +177,53 @@ sub _remo_form_payment {
     }
 }
 
+
+my %CSV_COLUMNS = (
+    "Date Required"   => { pos =>  1, value => '%cf_due_date' },
+    "Requester"       => { pos =>  2, value => '%firstname %lastname' },
+    "Email"           => { pos =>  3, value => sub { Bugzilla->user->email } },
+    "Mozilla Space"   => { pos =>  4, value => 'Remote' },
+    "Team"            => { pos =>  5, value => 'Community Engagement' },
+    "Department Code" => { pos =>  6, value => '2300' },
+    "Purpose"         => { pos =>  7, value => 'Rep event: %eventpage' },
+    "Item"            => { pos =>  8  },
+    "Item"            => { pos =>  9  },
+    "Item"            => { pos =>  10 },
+    "Item"            => { pos =>  11 },
+    "Item"            => { pos =>  12 },
+    "Item"            => { pos =>  13 },
+    "Item"            => { pos =>  14 },
+    "Item"            => { pos =>  15 },
+    "Item"            => { pos =>  16 },
+    "Item"            => { pos =>  17 },
+    "Item"            => { pos =>  18 },
+    "Item"            => { pos =>  19 },
+    "Item"            => { pos =>  20 },
+    "Item"            => { pos =>  21 },
+    "Recipient Name"  => { pos =>  22, value => '%shiptofirstname %shiptolastname' },
+    "email"           => { pos =>  23, value => sub { Bugzilla->user->email } },
+    "Address 1"       => { pos =>  24, value => '%shiptoaddress1' },
+    "Address 2"       => { pos =>  25, value => '%shiptoaddress2' },
+    "City"            => { pos =>  26, value => '%shiptocity' },
+    "State"           => { pos =>  27, value => '%shiptostate' },
+    "Zip"             => { pos =>  28, value => '%shiptopcode' },
+    "Country"         => { pos =>  29, value => '%shiptocountry' },
+    "Phone number"    => { pos =>  30, value => '%shiptophone' },
+    "Notes"           => { pos =>  31, value => '%shipadditional' },
+);
+
+sub _expand_value {
+    my $value = shift;
+    if (ref $value && ref $value eq 'CODE') {
+        return $value->();
+    }
+    else {
+        my $cgi = Bugzilla->cgi;
+        $value =~ s/%(\w+)/$cgi->param($1)/ge;
+        return $value;
+    }
+}
+
 sub post_bug_after_creation {
     my ($self, $args) = @_;
     my $vars = $args->{vars};
@@ -191,13 +238,14 @@ sub post_bug_after_creation {
         my $error_mode_cache = Bugzilla->error_mode;
         Bugzilla->error_mode(ERROR_MODE_DIE);
 
-        my $attachment;
+
+        my @attachments;
         eval {
             my $xml;
             $template->process("bug/create/create-remo-swag.xml.tmpl", {}, \$xml)
                 || ThrowTemplateError($template->error());
 
-            $attachment = Bugzilla::Attachment->create(
+            push @attachments, Bugzilla::Attachment->create(
                 { bug           => $bug,
                   creation_ts   => $bug->creation_ts,
                   data          => $xml,
@@ -207,16 +255,40 @@ sub post_bug_after_creation {
                   isprivate     => 0,
                   mimetype      => 'text/xml',
             });
+
+            my @columns = sort { $CSV_COLUMNS{$a}{pos} <=> $CSV_COLUMNS{$b}{pos} } keys %CSV_COLUMNS;
+            my @data    = map { _expand_value( $CSV_COLUMNS{$_}{value} ) } @columns;
+            my $csv = join("\r\n",
+                map {
+                    my $row = $_;
+                    join(", ", map { s/"/""/g; qq{"$_"} } @$row);
+                } \@columns, \@data
+            );
+
+            push @attachments, Bugzilla::Attachment->create(
+                { bug         => $bug,
+                  creation_ts => $bug->creation_ts,
+                  data        => $csv,
+                  description => 'Remo Swag Request (CSV)',
+                  filename    => 'remo-swag.csv',
+                  ispatch     => 0,
+                  isprivate   => 0,
+                  mimetype    => 'text/csv',
+              })
+
         };
         if ($@) {
             warn "$@";
         }
 
-        if ($attachment) {
+        if (@attachments) {
             # Insert comment for attachment
-            $bug->add_comment('', { isprivate  => 0,
-                                    type       => CMT_ATTACHMENT_CREATED,
-                                    extra_data => $attachment->id });
+            foreach my $attachment (@attachments) {
+                $bug->add_comment('',
+                                  {  isprivate  => 0,
+                                     type       => CMT_ATTACHMENT_CREATED,
+                                     extra_data => $attachment->id });
+            }
             $bug->update($bug->creation_ts);
         }
         else {
