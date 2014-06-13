@@ -1,0 +1,55 @@
+/* This Source Code marketplace is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code marketplace is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+#marketplace .header {
+    font-size: 1.5em;
+    color: rgb(102, 100, 88);
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    margin-top: 12px;
+}
+#marketplace {
+  padding: 10px;
+}
+#marketplace .required:after {
+  content: " *";
+  color: red;
+}
+#marketplace .field_label {
+  font-weight: bold;
+}
+#marketplace .field_desc {
+  padding-bottom: 3px;
+}
+#marketplace .field_desc,
+#marketplace .head_desc {
+  width: 600px;
+  word-wrap: normal;
+}
+#marketplace .head_desc {
+  padding-top: 5px;
+  padding-bottom: 12px;
+}
+#marketplace .form_section {
+  margin-bottom: 10px;
+}
+#marketplace textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+#marketplace em {
+  font-size: 1em;
+}
+.yui-calcontainer {
+  z-index: 2;
+}
+#marketplace .nav_button_container {
+  whitespace: nowrap;
+}
+#marketplace .nav_button {
+  margin: 0 2px 0 2px;
+}
