@@ -87,6 +87,8 @@ use Scalar::Util qw(blessed);
 ####    Initialization     ####
 ###############################
 
+use constant IS_CONFIG => 1;
+
 use constant DB_TABLE   => 'fielddefs';
 use constant LIST_ORDER => 'sortkey, name';
 
@@ -264,6 +266,8 @@ use constant DEFAULT_FIELDS => (
     {name => 'see_also',              desc => "See Also",
      type => FIELD_TYPE_BUG_URLS},
     {name => 'tag',                   desc => 'Tags'},
+    {name => 'last_visit_ts',         desc => 'Last Visit', buglist => 1,
+     type => FIELD_TYPE_DATETIME},
     {name => 'comment_tag',           desc => 'Comment Tag'},
 );
 
@@ -1056,6 +1060,7 @@ sub create {
         $field->_update_visibility_values();
 
         $dbh->bz_commit_transaction();
+        Bugzilla->memcached->clear_config();
 
         if ($field->custom) {
             my $name = $field->name;
@@ -1080,6 +1085,7 @@ sub create {
               unless $is_obsolete;
 
             Bugzilla->memcached->clear({ table => 'fielddefs', id => $field->id });
+            Bugzilla->memcached->clear_config();
         }
     };
 
@@ -1103,6 +1109,7 @@ sub update {
         $dbh->do("UPDATE " . $self->name . " SET visibility_value_id = NULL");
     }
     $self->_update_visibility_values();
+    Bugzilla->memcached->clear_config();
     return $changes;
 }
 

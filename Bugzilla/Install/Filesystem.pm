@@ -125,6 +125,7 @@ sub FILESYSTEM {
     my $localconfig   = bz_locations()->{'localconfig'};
     my $template_cache = bz_locations()->{'template_cache'};
     my $graphsdir     = bz_locations()->{'graphsdir'};
+    my $assetsdir     = bz_locations()->{'assetsdir'};
 
     # We want to set the permissions the same for all localconfig files
     # across all PROJECTs, so we do something special with $localconfig,
@@ -162,6 +163,7 @@ sub FILESYSTEM {
         'sentry.pl'       => { perms => WS_EXECUTE },
         'metrics.pl'      => { perms => WS_EXECUTE },
         'install-module.pl' => { perms => OWNER_EXECUTE },
+        'clean-bug-user-last-visit.pl' => { perms => WS_EXECUTE },
 
         'Bugzilla.pm'   => { perms => CGI_READ },
         "$localconfig*" => { perms => CGI_READ },
@@ -211,6 +213,8 @@ sub FILESYSTEM {
                                   dirs => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE },
          "$datadir/db"      => { files => CGI_WRITE,
                                   dirs => DIR_CGI_WRITE },
+         $assetsdir         => { files => WS_SERVE,
+                                  dirs => DIR_CGI_OVERWRITE | DIR_ALSO_WS_SERVE },
 
          # Readable directories
          "$datadir/mining"     => { files => CGI_READ,
@@ -273,7 +277,8 @@ sub FILESYSTEM {
     # The name of each directory that we should actually *create*,
     # pointing at its default permissions.
     my %create_dirs = (
-        # This is DIR_ALSO_WS_SERVE because it contains $webdotdir.
+        # This is DIR_ALSO_WS_SERVE because it contains $webdotdir and
+        # $assetsdir.
         $datadir                => DIR_CGI_OVERWRITE | DIR_ALSO_WS_SERVE,
         # Directories that are read-only for cgi scripts
         "$datadir/mining"       => DIR_CGI_READ,
@@ -285,6 +290,7 @@ sub FILESYSTEM {
         $template_cache         => DIR_CGI_WRITE,
         $graphsdir              => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
         $webdotdir              => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
+        $assetsdir              => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
         # Directories that contain content served directly by the web server.
         "$skinsdir/custom"      => DIR_WS_SERVE,
         "$skinsdir/contrib"     => DIR_WS_SERVE,
@@ -374,6 +380,18 @@ EOT
 Deny from all
 EOT
         },
+
+        "$assetsdir/.htaccess" => { perms => WS_SERVE, contents => <<EOT
+# Allow access to .css files
+<FilesMatch \\.css\$>
+  Allow from all
+</FilesMatch>
+
+# And no directory listings, either.
+Deny from all
+EOT
+        },
+
     );
 
     Bugzilla::Hook::process('install_filesystem', {
@@ -484,6 +502,7 @@ EOT
 
     _remove_empty_css_files();
     _convert_single_file_skins();
+    _remove_dynamic_css_files();
 }
 
 sub _remove_empty_css_files {
@@ -525,6 +544,23 @@ sub _convert_single_file_skins {
         $dir_name =~ s/\.css$//;
         mkdir $dir_name or warn "$dir_name: $!";
         _rename_file($skin_file, "$dir_name/global.css");
+    }
+}
+
+# delete all automatically generated css files to force recreation at the next
+# request.
+sub _remove_dynamic_css_files {
+    foreach my $file (glob(bz_locations()->{assetsdir} . '/*.css')) {
+        unlink($file);
+    }
+
+    # remove old skins/assets directory
+    my $old_path = bz_locations()->{skinsdir} . '/assets';
+    if (-d $old_path) {
+        foreach my $file (glob("$old_path/*.css")) {
+            unlink($file);
+        }
+        rmdir($old_path);
     }
 }
 

@@ -11,7 +11,7 @@ use strict;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Extension::BzAPI::Constants;
-use Bugzilla::Extension::BzAPI::Util qw(fix_credentials fix_include_exclude);
+use Bugzilla::Extension::BzAPI::Util qw(fix_credentials filter_wants_nocache);
 
 use Bugzilla::Error;
 use Bugzilla::Util qw(trick_taint datetime_from);
@@ -127,17 +127,6 @@ sub webservice_rest_request {
 
     # Internal websevice method being used
     $cache->{bzapi_rpc_method} = $rpc->path_info . "." . $rpc->bz_method_name;
-
-    # Original unaltered params originally passed to the webservice
-    my %orig_params = %$params;
-    $cache->{bzapi_orig_params} = \%orig_params;
-
-    fix_include_exclude();
-
-    # Remove all special auth key/values
-    foreach my $key (qw(username password)) {
-        delete $params->{$key};
-    }
 
     # Load the appropriate request handler based on path and type
     if (my $handler = _find_handler($rpc, 'request')) {

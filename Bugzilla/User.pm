@@ -51,9 +51,11 @@ use Bugzilla::Classification;
 use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Hook;
+use Bugzilla::BugUserLastVisit;
 
 use DateTime::TimeZone;
 use List::Util qw(max);
+use List::MoreUtils qw(any);
 use Scalar::Util qw(blessed);
 use Storable qw(dclone);
 use URI;
@@ -177,20 +179,25 @@ sub super_user {
 
 sub update {
     my $self = shift;
+    my $options = shift;
+
     my $changes = $self->SUPER::update(@_);
     my $dbh = Bugzilla->dbh;
 
     if (exists $changes->{login_name}) {
-        # If we changed the login, silently delete any tokens.
-        $dbh->do('DELETE FROM tokens WHERE userid = ?', undef, $self->id);
+        # Delete all the tokens related to the userid
+        $dbh->do('DELETE FROM tokens WHERE userid = ?', undef, $self->id)
+            unless $options->{keep_tokens};
         # And rederive regex groups
         $self->derive_regexp_groups();
     }
 
     # Logout the user if necessary.
-    Bugzilla->logout_user($self) 
-        if (exists $changes->{login_name} || exists $changes->{disabledtext}
-            || exists $changes->{cryptpassword});
+    Bugzilla->logout_user($self)
+        if (!$options->{keep_session}
+            && (exists $changes->{login_name}
+                || exists $changes->{disabledtext}
+                || exists $changes->{cryptpassword}));
 
     # XXX Can update profiles_activity here as soon as it understands
     #     field names like login_name.
@@ -677,54 +684,99 @@ sub groups {
     return $self->{groups} if defined $self->{groups};
     return [] unless $self->id;
 
-    my $dbh = Bugzilla->dbh;
-    my $groups_to_check = $dbh->selectcol_arrayref(
-        q{SELECT DISTINCT group_id
-            FROM user_group_map
-           WHERE user_id = ? AND isbless = 0}, undef, $self->id);
+    my $user_groups_key = "user_groups." . $self->id;
+    my $groups = Bugzilla->memcached->get_config({
+        key => $user_groups_key
+    });
 
-    my $rows = $dbh->selectall_arrayref(
-        "SELECT DISTINCT grantor_id, member_id
-           FROM group_group_map
-          WHERE grant_type = " . GROUP_MEMBERSHIP);
+    if (!$groups) {
+        my $dbh = Bugzilla->dbh;
+        my $groups_to_check = $dbh->selectcol_arrayref(
+            "SELECT DISTINCT group_id
+               FROM user_group_map
+              WHERE user_id = ? AND isbless = 0", undef, $self->id);
 
-    my %group_membership;
-    foreach my $row (@$rows) {
-        my ($grantor_id, $member_id) = @$row; 
-        push (@{ $group_membership{$member_id} }, $grantor_id);
-    }
-    
-    # Let's walk the groups hierarchy tree (using FIFO)
-    # On the first iteration it's pre-filled with direct groups 
-    # membership. Later on, each group can add its own members into the
-    # FIFO. Circular dependencies are eliminated by checking
-    # $checked_groups{$member_id} hash values.
-    # As a result, %groups will have all the groups we are the member of.
-    my %checked_groups;
-    my %groups;
-    while (scalar(@$groups_to_check) > 0) {
-        # Pop the head group from FIFO
-        my $member_id = shift @$groups_to_check;
-        
-        # Skip the group if we have already checked it
-        if (!$checked_groups{$member_id}) {
-            # Mark group as checked
-            $checked_groups{$member_id} = 1;
-            
-            # Add all its members to the FIFO check list
-            # %group_membership contains arrays of group members 
-            # for all groups. Accessible by group number.
-            my $members = $group_membership{$member_id};
-            my @new_to_check = grep(!$checked_groups{$_}, @$members);
-            push(@$groups_to_check, @new_to_check);
-
-            $groups{$member_id} = 1;
+        my $grant_type_key = 'group_grant_type_' . GROUP_MEMBERSHIP;
+        my $membership_rows = Bugzilla->memcached->get_config({
+            key => $grant_type_key,
+        });
+        if (!$membership_rows) {
+            $membership_rows = $dbh->selectall_arrayref(
+                "SELECT DISTINCT grantor_id, member_id
+                FROM group_group_map
+                WHERE grant_type = " . GROUP_MEMBERSHIP);
+            Bugzilla->memcached->set_config({
+                key  => $grant_type_key,
+                data => $membership_rows,
+            });
         }
+
+        my %group_membership;
+        foreach my $row (@$membership_rows) {
+            my ($grantor_id, $member_id) = @$row;
+            push (@{ $group_membership{$member_id} }, $grantor_id);
+        }
+
+        # Let's walk the groups hierarchy tree (using FIFO)
+        # On the first iteration it's pre-filled with direct groups
+        # membership. Later on, each group can add its own members into the
+        # FIFO. Circular dependencies are eliminated by checking
+        # $checked_groups{$member_id} hash values.
+        # As a result, %groups will have all the groups we are the member of.
+        my %checked_groups;
+        my %groups;
+        while (scalar(@$groups_to_check) > 0) {
+            # Pop the head group from FIFO
+            my $member_id = shift @$groups_to_check;
+
+            # Skip the group if we have already checked it
+            if (!$checked_groups{$member_id}) {
+                # Mark group as checked
+                $checked_groups{$member_id} = 1;
+
+                # Add all its members to the FIFO check list
+                # %group_membership contains arrays of group members
+                # for all groups. Accessible by group number.
+                my $members = $group_membership{$member_id};
+                my @new_to_check = grep(!$checked_groups{$_}, @$members);
+                push(@$groups_to_check, @new_to_check);
+
+                $groups{$member_id} = 1;
+            }
+        }
+        $groups = [ keys %groups ];
+
+        Bugzilla->memcached->set_config({
+            key  => $user_groups_key,
+            data => $groups,
+        });
     }
 
-    $self->{groups} = Bugzilla::Group->new_from_list([keys %groups]);
-
+    $self->{groups} = Bugzilla::Group->new_from_list($groups);
     return $self->{groups};
+}
+
+sub last_visited {
+    my ($self) = @_;
+
+    return Bugzilla::BugUserLastVisit->match({ user_id => $self->id });
+}
+
+sub is_involved_in_bug {
+    my ($self, $bug) = @_;
+    my $user_id    = $self->id;
+    my $user_login = $self->login;
+
+    return unless $user_id;
+    return 1 if $user_id == $bug->assigned_to->id;
+    return 1 if $user_id == $bug->reporter->id;
+
+    if (Bugzilla->params->{'useqacontact'} and $bug->qa_contact) {
+        return 1 if $user_id == $bug->qa_contact->id;
+    }
+
+    return unless $bug->cc;
+    return any { $user_login eq $_ } @{ $bug->cc };
 }
 
 # It turns out that calling ->id on objects a few hundred thousand
@@ -1333,6 +1385,8 @@ sub derive_regexp_groups {
             $group_delete->execute($id, $group, GRANT_REGEXP) if $present;
         }
     }
+
+    Bugzilla->memcached->clear_config({ key => "user_groups.$id" });
 }
 
 sub product_responsibilities {
@@ -2669,6 +2723,35 @@ i.e. if the 'globalwatchers' parameter contains the user.
 Returns true if the user can attach tags to comments.
 i.e. if the 'comment_taggers_group' parameter is set and the user belongs to
 this group.
+
+=item C<last_visited>
+
+Returns an arrayref L<Bugzilla::BugUserLastVisit> objects.
+
+=item C<is_involved_in_bug($bug)>
+
+Returns true if any of the following conditions are met, false otherwise.
+
+=over
+
+=item *
+
+User is the assignee of the bug
+
+=item *
+
+User is the reporter of the bug
+
+=item *
+
+User is the QA contact of the bug (if Bugzilla is configured to use a QA
+contact)
+
+=item *
+
+User is in the cc list for the bug.
+
+=back
 
 =back
 

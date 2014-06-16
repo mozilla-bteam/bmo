@@ -50,6 +50,7 @@ use Bugzilla::Group;
 use Bugzilla::Status;
 use Bugzilla::Comment;
 use Bugzilla::BugUrl;
+use Bugzilla::BugUserLastVisit;
 
 use List::MoreUtils qw(firstidx uniq part);
 use List::Util qw(min max first);
@@ -1061,6 +1062,11 @@ sub update {
     {
         _update_delta_ts($self->id, $delta_ts);
         $self->{delta_ts} = $delta_ts;
+    }
+
+    # Update last-visited
+    if ($user->is_involved_in_bug($self)) {
+        $self->update_user_last_visit($user, $delta_ts);
     }
 
     # Update bug ignore data if user wants to ignore mail for this bug
@@ -2915,11 +2921,11 @@ sub add_group {
     # If the bug is already in this group, then there is nothing to do.
     return if $self->in_group($group);
 
-
     # BMO : allow bugs to be always placed into some groups by the bug's
-    # reporter
-    if ($self->{reporter_id} != Bugzilla->user->id
-        || !$self->product_obj->group_always_settable($group))
+    # reporter, or by users with editbugs
+    my $user = Bugzilla->user;
+    if (!$self->product_obj->group_always_settable($group)
+        || ($self->{reporter_id} != $user->id && !$user->in_group('editbugs')))
     {
         # Make sure that bugs in this product can actually be restricted
         # to this group by the current user.
@@ -2928,7 +2934,7 @@ sub add_group {
 
         # OtherControl people can add groups only during a product change,
         # and only when the group is not NA for them.
-        if (!Bugzilla->user->in_group($group->name)) {
+        if (!$user->in_group($group->name)) {
             my $controls = $self->product_obj->group_controls->{$group->id};
             if (!$self->{_old_product_name}
                 || $controls->{othercontrol} == CONTROLMAPNA)
@@ -4111,7 +4117,8 @@ sub _join_activity_entries {
 
 # Update the bugs_activity table to reflect changes made in bugs.
 sub LogActivityEntry {
-    my ($i, $col, $removed, $added, $whoid, $timestamp, $comment_id) = @_;
+    my ($i, $col, $removed, $added, $whoid, $timestamp, $comment_id,
+        $attach_id) = @_;
     my $dbh = Bugzilla->dbh;
     # in the case of CCs, deps, and keywords, there's a possibility that someone
     # might try to add or remove a lot of them at once, which might take more
@@ -4136,10 +4143,30 @@ sub LogActivityEntry {
         trick_taint($addstr);
         trick_taint($removestr);
         my $fieldid = get_field_id($col);
-        $dbh->do("INSERT INTO bugs_activity
-                  (bug_id, who, bug_when, fieldid, removed, added, comment_id)
-                  VALUES (?, ?, ?, ?, ?, ?, ?)",
-                  undef, ($i, $whoid, $timestamp, $fieldid, $removestr, $addstr, $comment_id));
+        $dbh->do(
+            "INSERT INTO bugs_activity
+            (bug_id, who, bug_when, fieldid, removed, added, comment_id, attach_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            undef,
+            ($i, $whoid, $timestamp, $fieldid, $removestr, $addstr, $comment_id,
+                $attach_id));
+    }
+}
+
+# Update bug_user_last_visit table
+sub update_user_last_visit {
+    my ($self, $user, $last_visit_ts) = @_;
+    my $lv = Bugzilla::BugUserLastVisit->match({ bug_id  => $self->id,
+                                                 user_id => $user->id })->[0];
+
+    if ($lv) {
+        $lv->set(last_visit_ts => $last_visit_ts);
+        $lv->update;
+    }
+    else {
+        Bugzilla::BugUserLastVisit->create({ bug_id        => $self->id,
+                                             user_id       => $user->id,
+                                             last_visit_ts => $last_visit_ts });
     }
 }
 

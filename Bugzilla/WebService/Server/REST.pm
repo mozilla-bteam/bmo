@@ -27,6 +27,7 @@ use Bugzilla::WebService::Server::REST::Resources::Classification;
 use Bugzilla::WebService::Server::REST::Resources::Group;
 use Bugzilla::WebService::Server::REST::Resources::Product;
 use Bugzilla::WebService::Server::REST::Resources::User;
+use Bugzilla::WebService::Server::REST::Resources::BugUserLastVisit;
 
 use Scalar::Util qw(blessed reftype);
 use MIME::Base64 qw(decode_base64);
@@ -78,7 +79,9 @@ sub handle {
     rest_include_exclude($params);
 
     # Set callback name if content-type is 'application/javascript'
-    if ($self->content_type eq 'application/javascript') {
+    if ($params->{'callback'}
+        || $self->content_type eq 'application/javascript')
+    {
         $self->_bz_callback($params->{'callback'} || 'callback');
     }
 
@@ -322,10 +325,10 @@ sub bz_rest_options {
 sub rest_include_exclude {
     my ($params) = @_;
 
-    if ($params->{'include_fields'} && !ref $params->{'include_fields'}) {
+    if (exists $params->{'include_fields'} && !ref $params->{'include_fields'}) {
         $params->{'include_fields'} = [ split(/[\s+,]/, $params->{'include_fields'}) ];
     }
-    if ($params->{'exclude_fields'} && !ref $params->{'exclude_fields'}) {
+    if (exists $params->{'exclude_fields'} && !ref $params->{'exclude_fields'}) {
         $params->{'exclude_fields'} = [ split(/[\s+,]/, $params->{'exclude_fields'}) ];
     }
 

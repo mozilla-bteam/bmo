@@ -626,17 +626,32 @@ sub update_attachment_request {
 
 sub search_bugs_response {
     my ($result, $response) = @_;
+    my $cache  = Bugzilla->request_cache;
+    my $params = Bugzilla->input_params;
 
     return if !exists $$result->{bugs};
 
-    my @bugs;
-    foreach my $bug (@{$$result->{bugs}}) {
-        $bug = fix_bug($bug);
-        remove_id_field($bug);
-        push(@bugs, $bug);
+    my $bug_objs = $cache->{bzapi_search_bugs};
+
+    my @fixed_bugs;
+    foreach my $bug_data (@{$$result->{bugs}}) {
+        my $bug_obj = shift @$bug_objs;
+        my $fixed = fix_bug($bug_data, $bug_obj);
+
+        # CC count and Dupe count
+        if (filter_wants_nocache($params, 'cc_count')) {
+            $fixed->{cc_count} = scalar @{ $bug_obj->cc }
+              if $bug_obj->cc;
+        }
+        if (filter_wants_nocache($params, 'dupe_count')) {
+            $fixed->{dupe_count} = scalar @{ $bug_obj->duplicate_ids }
+              if $bug_obj->duplicate_ids;
+        }
+
+        push(@fixed_bugs, $fixed);
     }
 
-    $$result->{bugs} = \@bugs;
+    $$result->{bugs} = \@fixed_bugs;
 }
 
 sub create_bug_response {
@@ -652,21 +667,22 @@ sub create_bug_response {
 
 sub get_bug_response {
     my ($result) = @_;
+    my $rpc = Bugzilla->request_cache->{bzapi_rpc};
 
     return if !exists $$result->{bugs};
+    my $bug_data = $$result->{bugs}->[0];
 
-    my $bug = fix_bug($$result->{bugs}->[0]);
-    remove_id_field($bug);
+    my $bug_id = $rpc->bz_rest_params->{ids}->[0];
+    my $bug_obj = Bugzilla::Bug->check($bug_id);
+    my $fixed = fix_bug($bug_data, $bug_obj);
 
-    $$result = $bug;
+    $$result = $fixed;
 }
 
 sub update_bug_response {
     my ($result) = @_;
-
     return if !exists $$result->{bugs}
               || !scalar @{$$result->{bugs}};
-
     $$result = { ok => 1 };
 }
 
@@ -677,29 +693,37 @@ sub get_comments_response {
     my $params = Bugzilla->input_params;
 
     return if !exists $$result->{bugs};
+
     my $bug_id = $rpc->bz_rest_params->{ids}->[0];
-    my $comments = $$result->{bugs}->{$bug_id}->{comments};
+    my $bug = Bugzilla::Bug->check($bug_id);
 
-    my @new_comments;
-    foreach my $comment (@$comments) {
-        my $object = Bugzilla::Comment->new({ id => $comment->{id}, cache => 1 });
-
-        $comment = fix_comment($comment, $object);
-
-        if (exists $comment->{creator}) {
-            # /bug/<ID>/comment returns full login for creator but not for /bug/<ID>?include_fields=comments :(
-            $comment->{creator}->{name} = $rpc->type('string', $object->author->login);
-            # /bug/<ID>/comment does not return real_name for creator but returns ref
-            $comment->{creator}->{'ref'} = $rpc->type('string', ref_urlbase() . "/user/" . $object->author->login);
-            delete $comment->{creator}->{real_name};
-        }
-
-        remove_id_field($comment);
-
-        push(@new_comments, filter($params, $comment));
+    my $comment_objs = $bug->comments({ order => 'oldest_to_newest',
+                                        after => $params->{new_since} });
+    my @filtered_comment_objs;
+    foreach my $comment (@$comment_objs) {
+        next if $comment->is_private && !Bugzilla->user->is_insider;
+        push(@filtered_comment_objs, $comment);
     }
 
-    $$result = { comments => \@new_comments };
+    my $comments_data = $$result->{bugs}->{$bug_id}->{comments};
+
+    my @fixed_comments;
+    foreach my $comment_data (@$comments_data) {
+        my $comment_obj = shift @filtered_comment_objs;
+        my $fixed = fix_comment($comment_data, $comment_obj);
+
+        if (exists $fixed->{creator}) {
+            # /bug/<ID>/comment returns full login for creator but not for /bug/<ID>?include_fields=comments :(
+            $fixed->{creator}->{name} = $rpc->type('string', $comment_obj->author->login);
+            # /bug/<ID>/comment does not return real_name for creator but returns ref
+            $fixed->{creator}->{'ref'} = $rpc->type('string', ref_urlbase() . "/user/" . $comment_obj->author->login);
+            delete $fixed->{creator}->{real_name};
+        }
+
+        push(@fixed_comments, filter($params, $fixed));
+    }
+
+    $$result = { comments => \@fixed_comments };
 }
 
 # Format the return response on successful comment creation
@@ -739,25 +763,34 @@ sub get_attachments_response {
 
     return if !exists $$result->{bugs};
     my $bug_id = $rpc->bz_rest_params->{ids}->[0];
-    my $attachments = $$result->{bugs}->{$bug_id};
+    my $bug = Bugzilla::Bug->check($bug_id);
+    my $attachment_objs = $bug->attachments;
 
-    my @new_attachments;
-    foreach my $attachment (@$attachments) {
-        $attachment = fix_attachment($attachment);
+    my $attachments_data = $$result->{bugs}->{$bug_id};
 
-        # Add update_token
-        if (Bugzilla->user->id) {
-            my $attach_obj = Bugzilla::Attachment->new($attachment->{id});
-            my $token = issue_hash_token([$attach_obj->bug->id, $attach_obj->bug->delta_ts]);
-            $attachment->{update_token} = $rpc->type('string', $token);
+    my @fixed_attachments;
+    foreach my $attachment (@$attachments_data) {
+        my $attachment_obj = shift @$attachment_objs;
+        my $fixed = fix_attachment($attachment, $attachment_obj);
+
+        if ((filter_wants_nocache($params, 'data', 'extra')
+            || filter_wants_nocache($params, 'encoding', 'extra')
+            || $params->{attachmentdata}))
+        {
+            if (!$fixed->{data}) {
+                $fixed->{data} = $rpc->type('base64', $attachment_obj->data);
+                $fixed->{encoding} = $rpc->type('string', 'base64');
+            }
+        }
+        else {
+            delete $fixed->{data};
+            delete $fixed->{encoding};
         }
 
-        remove_id_field($attachment);
-
-        push(@new_attachments, filter($params, $attachment));
+        push(@fixed_attachments, filter($params, $fixed));
     }
 
-    $$result = { attachments => \@new_attachments };
+    $$result = { attachments => \@fixed_attachments };
 }
 
 # Format the return response on successful attachment creation
@@ -785,22 +818,27 @@ sub get_attachment_response {
 
     return if !exists $$result->{attachments};
     my $attach_id = $rpc->bz_rest_params->{attachment_ids}->[0];
-    my $attachment = $$result->{attachments}->{$attach_id};
+    my $attachment_data = $$result->{attachments}->{$attach_id};
+    my $attachment_obj = Bugzilla::Attachment->new($attach_id);
+    my $fixed = fix_attachment($attachment_data, $attachment_obj);
 
-    $attachment = fix_attachment($attachment);
-
-    remove_id_field($attachment);
-
-    # Add update_token
-    if ($attach_id && Bugzilla->user->id) {
-        my $attach_obj = Bugzilla::Attachment->new($attach_id);
-        my $token = issue_hash_token([$attach_obj->bug->id, $attach_obj->bug->delta_ts]);
-        $attachment->{update_token} = $rpc->type('string', $token);
+    if ((filter_wants_nocache($params, 'data', 'extra')
+        || filter_wants_nocache($params, 'encoding', 'extra')
+        || $params->{attachmentdata}))
+    {
+        if (!$fixed->{data}) {
+            $fixed->{data} = $rpc->type('base64', $attachment_obj->data);
+            $fixed->{encoding} = $rpc->type('string', 'base64');
+        }
+    }
+    else {
+        delete $fixed->{data};
+        delete $fixed->{encoding};
     }
 
-    $attachment = filter($params, $attachment);
+    $fixed = filter($params, $fixed);
 
-    $$result = $attachment;
+    $$result = $fixed;
 }
 
 # Get a list of flags for a bug

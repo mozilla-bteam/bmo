@@ -608,6 +608,9 @@ sub search {
     my @bugs = map { $bug_objects{$_} } @bug_ids;
     @bugs = map { $self->_bug_to_hash($_, $params) } @bugs;
 
+    # BzAPI
+    Bugzilla->request_cache->{bzapi_search_bugs} = [ map { $bug_objects{$_} } @bug_ids ];
+
     return { bugs => \@bugs };
 }
 
