@@ -177,11 +177,10 @@ sub _remo_form_payment {
     }
 }
 
-
 my %CSV_COLUMNS = (
     "Date Required"   => { pos =>  1, value => '%cf_due_date' },
     "Requester"       => { pos =>  2, value => '%firstname %lastname' },
-    "Email"           => { pos =>  3, value => sub { Bugzilla->user->email } },
+    "Email 1"         => { pos =>  3, value => 'kpapadea@mozilla.com' },
     "Mozilla Space"   => { pos =>  4, value => 'Remote' },
     "Team"            => { pos =>  5, value => 'Community Engagement' },
     "Department Code" => { pos =>  6, value => '2300' },
@@ -224,6 +223,20 @@ sub _expand_value {
     }
 }
 
+sub _csv_quote {
+    my $s = shift;
+    $s =~ s/"/""/g;
+    return qq{"$s"};
+}
+
+sub _csv_line {
+    return join(",", map { _csv_quote($_) } @_);
+}
+
+sub _csv_encode {
+    return join("\r\n", map { _csv_line(@$_) } @_) . "\r\n";
+}
+
 sub post_bug_after_creation {
     my ($self, $args) = @_;
     my $vars = $args->{vars};
@@ -259,12 +272,7 @@ sub post_bug_after_creation {
             my @columns_raw = sort { $CSV_COLUMNS{$a}{pos} <=> $CSV_COLUMNS{$b}{pos} } keys %CSV_COLUMNS;
             my @data        = map { _expand_value( $CSV_COLUMNS{$_}{value} ) } @columns_raw;
             my @columns     = map { s/^(Item|Email) \d$/$1/g; $_ } @columns_raw;
-            my $csv = join("\r\n",
-                map {
-                    my $row = $_;
-                    join(", ", map { s/"/""/g; qq{"$_"} } @$row);
-                } \@columns, \@data
-            );
+            my $csv         = _csv_encode(\@columns, \@data);
 
             push @attachments, Bugzilla::Attachment->create(
                 { bug         => $bug,
@@ -274,8 +282,7 @@ sub post_bug_after_creation {
                   filename    => 'remo-swag.csv',
                   ispatch     => 0,
                   isprivate   => 0,
-                  mimetype    => 'text/csv',
-              })
+                  mimetype    => 'text/csv' });
 
         };
         if ($@) {
@@ -285,10 +292,9 @@ sub post_bug_after_creation {
         if (@attachments) {
             # Insert comment for attachment
             foreach my $attachment (@attachments) {
-                $bug->add_comment('',
-                                  {  isprivate  => 0,
-                                     type       => CMT_ATTACHMENT_CREATED,
-                                     extra_data => $attachment->id });
+                $bug->add_comment('', { isprivate  => 0,
+                                        type       => CMT_ATTACHMENT_CREATED,
+                                        extra_data => $attachment->id });
             }
             $bug->update($bug->creation_ts);
         }
