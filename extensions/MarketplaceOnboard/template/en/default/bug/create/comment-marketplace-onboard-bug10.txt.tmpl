@@ -1,0 +1,73 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% USE Bugzilla %]
+[% cgi = Bugzilla.cgi %]
+
+>> Summary
+[%+ cgi.param('short_desc') %]
+
+>> Business Name
+[%+ cgi.param('business_name') %]
+
+>> Launch Region
+[%+ cgi.param('region_other') ? cgi.param('region_other') : cgi.param('region') %]
+
+>> Language
+[%+ cgi.param('language_other') ? cgi.param('language_other') : cgi.param('language') %]
+
+>> Launch Date
+[%+ cgi.param('launch_date') %]
+
+>> Legal Contact
+[%+ cgi.param('legal_contact') %]
+
+>> User Information
+[%+ cgi.param('user_info') %]
+
+>> Purchase
+[%+ cgi.param('purchases') %]
+
+>> Content Restrictions
+[%+ cgi.param('content_restrictions') %]
+
+>> Content Policy Mandatory
+[%+ cgi.param('content_policy_mandatory') %]
+
+>> Content Laws
+[%+ cgi.param('content_laws') %]
+
+>> Content Laws Information
+[%+ cgi.param('content_laws_information') %]
+
+>> Content Rating System
+[%+ cgi.param('content_rating_system') %]
+
+>> Content Rating System Information
+[%+ cgi.param('content_rating_system_info') %]
+
+>> Content Rating System Type
+[%+ cgi.param('content_rating_system_type') %]
+
+>> Age Restrictions
+[%+ cgi.param('age_restrictions') %]
+
+>> Need for Launch
+[%+ cgi.param('want_for_launch') %]
+
+>> Company Name
+[%+ cgi.param('company_name') %]
+
+>> Collection URL
+[%+ cgi.param('collection_url') %]
+
+>> Operator Logo
+[%+ cgi.param('operator_logo') %]
+
+>> Design/UX Contact
+[%+ cgi.param('design_contact') %]

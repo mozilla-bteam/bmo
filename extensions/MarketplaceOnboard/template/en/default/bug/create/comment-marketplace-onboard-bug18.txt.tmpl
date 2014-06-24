@@ -1,0 +1,28 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% USE Bugzilla %]
+[% cgi = Bugzilla.cgi %]
+
+>> Summary
+[%+ cgi.param('short_desc') %]
+
+>> Need for Launch
+[%+ cgi.param('want_for_launch') %]
+
+>> Company Name
+[%+ cgi.param('company_name') %]
+
+>> Collection URL
+[%+ cgi.param('collection_url') %]
+
+>> Operator Logo
+[%+ cgi.param('operator_logo') %]
+
+>> Design/UX Contact
+[%+ cgi.param('design_contact') %]
