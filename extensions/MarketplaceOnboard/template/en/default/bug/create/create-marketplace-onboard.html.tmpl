@@ -28,6 +28,8 @@
   <input type="hidden" id="target_milestone" name="target_milestone" value="---">
   <input type="hidden" id="format" name="format" value="marketplace-onboard">
   <input type="hidden" id="bug_severity" name="bug_severity" value="normal">
+  <input type="hidden" id="assigned_to" name="assigned_to" value="marketplace-programs@mozilla.com">
+  <input type="hidden" id="cc" name="cc" value="udevi@mozilla.com, mp-product@mozilla.com, lbrewster@mozilla.com">
   <input type="hidden" id="token" name="token" value="[% token FILTER html %]">
   <input type="hidden" id="short_desc" name="short_desc" value="[New Market] Initiate New Market in the Firefox Marketplace">
 
@@ -187,6 +189,7 @@
       <!-- Question #8 -->
       <label for="operator_billing" class="field_label">
         Do you meet the criteria for operator billing?
+        (<a href="https://mobilepartners.mozilla.org/learn/detailed-firefox-marketplace-features/payments-and-operator-billing">more info</a>)
       </label>
       <br>
       <select name="operator_billing" id="operator_billing"
@@ -197,19 +200,17 @@
       </select>
     </div>
 
-    <div id="operator_billing_extra" class="bz_default_hidden">
+    <div class="form_section">
       <!-- Question #8.1 -->
-      <div class="form_section">
-        <label for="content_restrictions" class="field_label required">
-          If yes, would you like to talk to our payments team about having operator billing for your launch?
-        </label>
-        <br>
-        <select name="provide_billing" id="provide_billing">
-          <option value="">Please select...</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </div>
+      <label for="content_restrictions" class="field_label required">
+        Are you interested in having operator billing for this launch?
+      </label>
+      <br>
+      <select name="provide_billing" id="provide_billing">
+        <option value="">Please select...</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
     </div>
 
     <div class="nav_button_container">
@@ -357,15 +358,6 @@
         <option value="Yes">Yes</option>
         <option value="No">No</option>
       </select>
-    </div>
-
-    <div class="form_section">
-      <!-- Question #16.1 -->
-      <label for="mnc_code" class="field_label">
-        What is the MNC / MCC Code for the country of launch?
-      </label>
-      <br>
-      <input type="text" name="mnc_code" id="mnc_code" size="80">
     </div>
 
     <div class="form_section">
