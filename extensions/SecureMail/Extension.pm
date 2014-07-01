@@ -552,7 +552,9 @@ sub _make_secure {
         my $new = $add_new ? ' New:' : '';
         my $product = $email->header('X-Bugzilla-Product');
         my $component = $email->header('X-Bugzilla-Component');
-        $subject =~ s/($bug_id\])\s+(.*)$/$1$new (Secure bug in $product :: $component)/;
+        # Note: the $bug_id is required within the parentheses in order to keep
+        # gmail's threading algorithm happy.
+        $subject =~ s/($bug_id\])\s+(.*)$/$1$new (Secure bug $bug_id in $product :: $component)/;
         $email->header_set('Subject', $subject);
     }
 }
