@@ -179,7 +179,7 @@ sub _remo_form_payment {
 
 my %CSV_COLUMNS = (
     "Date Required"   => { pos =>  1, value => '%cf_due_date' },
-    "Requester"       => { pos =>  2, value => '%firstname %lastname' },
+    "Requester"       => { pos =>  2, value => 'Konstantina Papadea' },
     "Email 1"         => { pos =>  3, value => 'kpapadea@mozilla.com' },
     "Mozilla Space"   => { pos =>  4, value => 'Remote' },
     "Team"            => { pos =>  5, value => 'Community Engagement' },
@@ -251,7 +251,6 @@ sub post_bug_after_creation {
         my $error_mode_cache = Bugzilla->error_mode;
         Bugzilla->error_mode(ERROR_MODE_DIE);
 
-
         my @attachments;
         eval {
             my $xml;
@@ -259,14 +258,30 @@ sub post_bug_after_creation {
                 || ThrowTemplateError($template->error());
 
             push @attachments, Bugzilla::Attachment->create(
-                { bug           => $bug,
-                  creation_ts   => $bug->creation_ts,
-                  data          => $xml,
-                  description   => 'Remo Swag Request (XML)',
-                  filename      => 'remo-swag.xml',
-                  ispatch       => 0,
-                  isprivate     => 0,
-                  mimetype      => 'text/xml',
+                { bug         => $bug,
+                  creation_ts => $bug->creation_ts,
+                  data        => $xml,
+                  description => 'Remo Swag Request (XML)',
+                  filename    => 'remo-swag.xml',
+                  ispatch     => 0,
+                  isprivate   => 0,
+                  mimetype    => 'text/xml',
+            });
+
+            my @columns_raw = sort { $CSV_COLUMNS{$a}{pos} <=> $CSV_COLUMNS{$b}{pos} } keys %CSV_COLUMNS;
+            my @data        = map { _expand_value( $CSV_COLUMNS{$_}{value} ) } @columns_raw;
+            my @columns     = map { s/^(Item|Email) \d+$/$1/g; $_ } @columns_raw;
+            my $csv         = _csv_encode(\@columns, \@data);
+
+            push @attachments, Bugzilla::Attachment->create({
+                bug         => $bug,
+                creation_ts => $bug->creation_ts,
+                data        => $csv,
+                description => 'Remo Swag Request (CSV)',
+                filename    => 'remo-swag.csv',
+                ispatch     => 0,
+                isprivate   => 0,
+                mimetype    => 'text/csv',
             });
 
             my @columns_raw = sort { $CSV_COLUMNS{$a}{pos} <=> $CSV_COLUMNS{$b}{pos} } keys %CSV_COLUMNS;
@@ -297,6 +312,7 @@ sub post_bug_after_creation {
                                         extra_data => $attachment->id });
             }
             $bug->update($bug->creation_ts);
+            delete $bug->{attachments};
         }
         else {
             $vars->{'message'} = 'attachment_creation_failed';

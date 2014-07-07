@@ -550,7 +550,11 @@ sub _make_secure {
         # 'bug' to something else. However, it could break if they change
         # the format of the subject line in another way.
         my $new = $add_new ? ' New:' : '';
-        $subject =~ s/($bug_id\])\s+(.*)$/$1$new (Secure bug $bug_id updated)/;
+        my $product = $email->header('X-Bugzilla-Product');
+        my $component = $email->header('X-Bugzilla-Component');
+        # Note: the $bug_id is required within the parentheses in order to keep
+        # gmail's threading algorithm happy.
+        $subject =~ s/($bug_id\])\s+(.*)$/$1$new (Secure bug $bug_id in $product :: $component)/;
         $email->header_set('Subject', $subject);
     }
 }
