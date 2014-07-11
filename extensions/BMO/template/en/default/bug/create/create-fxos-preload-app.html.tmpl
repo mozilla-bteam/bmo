@@ -119,19 +119,24 @@ function validateAndSubmit() {
 
 
   <div class="form_section">
-    <label for="apps_business_dev_contact" class="field_label required">Apps Business Development Contact</label>
+    <label for="apps_business_dev_contact_name" class="field_label required">Apps Business Development Contact Name</label>
+    <div class="field_desc">Please enter your Name</div>
+    <input type="text" name="apps_business_dev_contact_name" id="apps_business_dev_contact_name" size="80">
+  </div>
 
-    <div class="field_desc">
-      Please enter Name and Email of the person in your organization that is the key point of contact regarding apps.
-    </div>
-    <input type="text" name="apps_business_dev_contact" id="apps_business_dev_contact" size="80">
+  <div class="form_section">
+    <label for="apps_business_dev_contact_email" class="field_label required">Apps Business Development Contact Email</label>
+    <div class="field_desc">Please enter your Email address.</div>
+    <input type="text" name="apps_business_dev_contact_email" id="apps_business_dev_contact_email"
+    value="[% user.email FILTER html %]" size="80">
   </div>
 
   <div class="form_section">
     <label for="preload_apps" class="field_label required">Name of Firefox Marketplace apps of interest to you:</label>
     <div class="field_desc">
       Please provide the App Name and Marketplace URL for each app you wish to pre-load on your certified, branded
-      Firefox OS device.  The Marketplace URL is an important identifier because we have some apps with the same name.
+      Firefox OS device.  The Marketplace URL is an important identifier because there are many apps in Marketplace with
+      the same name.
     </div>
     <textarea id="preload_apps" name="preload_apps"
       cols="80" rows="5"></textarea>
@@ -165,6 +170,9 @@ function validateAndSubmit() {
     <textarea id="device_info" name="device_info"
       cols="80" rows="5"></textarea>
   </div>
+
+  <p>When you press submit the information you've provided will be routed to Mozilla team members for follow up.  The
+  system will also respond with a Bugzilla tracking number that you may use for follow up.</p>
 
   <input type="submit" id="commit" value="Submit">
 
