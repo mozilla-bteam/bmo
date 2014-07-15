@@ -1015,6 +1015,7 @@ sub post_bug_after_creation {
     }
     elsif ($format eq 'dbi') {
         $self->_post_dbi_bug($args);
+    }
     elsif ($format eq 'fxos-mcts-waiver') {
         $self->_post_fxos_mcts_waiver_bug($args);
     }
