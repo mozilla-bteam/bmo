@@ -234,9 +234,7 @@ sub fix_user {
         $data = {
             name => filter_email($object->login)
         };
-        if ($user->id && $object->name) {
-            $data->{real_name} = $rpc->type('string', $object->name);
-        }
+        $data->{real_name} = $rpc->type('string', $object->name);
     }
     else {
         $data->{name} = filter_email($data->{name});
@@ -245,8 +243,6 @@ sub fix_user {
     if ($user->id) {
         $data->{ref} = $rpc->type('string', ref_urlbase . "/user/" . $object->login);
     }
-
-    delete $data->{real_name} if !$data->{real_name};
 
     return $data;
 }
@@ -274,6 +270,7 @@ sub fix_comment {
 
     delete $data->{author};
     delete $data->{time};
+    delete $data->{raw_text};
 
     return $data;
 }
@@ -328,8 +325,16 @@ sub fix_attachment {
         }
     }
 
-    if ($data->{data}) {
+    if (exists $data->{data}) {
         $data->{encoding} = $rpc->type('string', 'base64');
+        if ($params->{attachmentdata}
+            || filter_wants_nocache($params, 'attachments.data'))
+        {
+            $data->{encoding} = $rpc->type('string', 'base64');
+        }
+        else {
+            delete $data->{data};
+        }
     }
 
     if (exists $data->{bug_id}) {
