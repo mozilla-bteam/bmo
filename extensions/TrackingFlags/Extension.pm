@@ -27,6 +27,14 @@ use Bugzilla::Product;
 
 our $VERSION = '1';
 
+BEGIN {
+    *Bugzilla::tracking_flag_names = \&_tracking_flag_names;
+}
+
+sub _tracking_flag_names {
+    return Bugzilla::Extension::TrackingFlags::Flag->get_all_names();
+}
+
 sub page_before_template {
     my ($self, $args) = @_;
     my $page = $args->{'page_id'};
