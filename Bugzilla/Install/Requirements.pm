@@ -172,6 +172,11 @@ sub REQUIRED_MODULES {
         module  => 'Math::Random::ISAAC',
         version => '1.0.1',
     },
+    {
+        package => 'File-Slurp',
+        module  => 'File::Slurp',
+        version => '9999.13',
+    },
     );
 
     if (ON_WINDOWS) {
