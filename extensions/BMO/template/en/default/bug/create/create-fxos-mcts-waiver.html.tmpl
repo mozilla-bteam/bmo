@@ -107,6 +107,7 @@ function validateAndSubmit() {
   <input type="hidden" name="version" value="unspecified">
   <input type="hidden" name="bug_severity" id="bug_severity" value="normal">
   <input type="hidden" name="token" value="[% token FILTER html %]">
+  <input type="hidden" name="groups" value="mozilla-employee-confidential">
   <input type="hidden" id="short_desc" name="short_desc" value="">
 
   <div class="head_desc">
@@ -190,23 +191,6 @@ function validateAndSubmit() {
       help desk/support issues, etc.)
     </div>
     <textarea id="impact" name="impact" cols="80" rows="5"></textarea>
-  </div>
-
-  <div class="form_section">
-    <label for="engineering_analysis" class="field_label">Engineering Analysis</label>
-    <div class="field_desc">
-      Please provide an assessment of the impact of granting this waiver in engineering terms including impact on
-      current and future development.
-    </div>
-    <textarea id="engineering_analysis" name="engineering_analysis" cols="80" rows="5"></textarea>
-  </div>
-
-  <div class="form_section">
-    <label for="tam_recommendation" class="field_label">TAM Recommendation</label>
-    <div class="field_desc">
-      Please provide your recommendation to either approve or reject the Waiver.
-    </div>
-    <textarea id="tam_recommendation" name="tam_recommendation" cols="80" rows="5"></textarea>
   </div>
 
   <input type="submit" id="commit" value="Submit">
