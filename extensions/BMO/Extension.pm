@@ -1016,9 +1016,6 @@ sub post_bug_after_creation {
     elsif ($format eq 'dbi') {
         $self->_post_dbi_bug($args);
     }
-    elsif ($format eq 'fxos-mcts-waiver') {
-        $self->_post_fxos_mcts_waiver_bug($args);
-    }
 }
 
 sub _post_employee_incident_bug {
@@ -1202,41 +1199,6 @@ sub _post_dbi_bug {
         isprivate   => 0,
         mimetype    => 'text/plain',
     });
-}
-
-sub _post_fxos_mcts_waiver_bug {
-    my ($self, $args) = @_;
-    my $vars     = $args->{vars};
-    my $bug      = $vars->{bug};
-    my $template = Bugzilla->template;
-    my $cgi      = Bugzilla->cgi;
-
-    # If the attachment cannot be successfully added to the bug,
-    # we notify the user, but we don't interrupt the bug creation process.
-    my $error_mode_cache = Bugzilla->error_mode;
-    Bugzilla->error_mode(ERROR_MODE_DIE);
-
-
-    my $engineering_analysis = $cgi->param('engineering_analysis');
-    my $tam_recommendation   = $cgi->param('tam_recommendation');
-
-    if ($engineering_analysis && $engineering_analysis =~ /\S/) {
-        $bug->add_comment( "Engineering Analysis:\n$engineering_analysis" );
-    } else {
-        my $needinfo_flag_type = first { $_->name eq 'needinfo' } @{ $bug->flag_types };
-        return unless $needinfo_flag_type;
-        my %flag = ( type_id => $needinfo_flag_type->id,
-                     status  => '?' );
-        $bug->set_flags($bug->flags, [\%flag])
-
-    }
-
-    if ($tam_recommendation && $tam_recommendation =~ /\S/) {
-        $bug->add_comment( "TAM Recommendation:\n$tam_recommendation");
-    }
-
-
-    $bug->update($bug->creation_ts);
 }
 
 sub _add_attachment {
