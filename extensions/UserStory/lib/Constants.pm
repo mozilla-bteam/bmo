@@ -12,30 +12,18 @@ use warnings;
 
 use base qw(Exporter);
 
-our @EXPORT = qw( USER_STORY );
+our @EXPORT = qw( USER_STORY_EXCLUDE USER_STORY_GROUP );
 
-use constant USER_STORY => {
-    # note - an empty components array means all components
-    Loop => {
-        group       => 'editbugs',
-        components  => [],
-    },
-    Tracking    => {
-        group       => 'editbugs',
-        components  => [],
-    },
-    Firefox     => {
-        group       => 'editbugs',
-        components  => [ 'Developer Tools: User Stories' ],
-    },
-    'Firefox OS' => {
-        group       => 'editbugs',
-        components  => [],
-    },
-    'support.mozilla.org' => {
-        group      => 'editbugs',
-        components => [],
-    }
-};
+# Group allowed to set/edit the user story field
+use constant USER_STORY_GROUP => 'editbugs';
+
+# Exclude showing the user story field for these products/components.
+# Examples:
+# Don't show User Story on any Firefox OS component:
+#   'Firefox OS' => [],
+# Don't show User Story on Developer Tools component, visible on all other
+# Firefox components
+#   'Firefox'    => ['Developer Tools'],
+use constant USER_STORY_EXCLUDE => { };
 
 1;
