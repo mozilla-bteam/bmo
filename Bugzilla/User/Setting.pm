@@ -25,8 +25,12 @@ use base qw(Exporter);
 
 
 # Module stuff
-@Bugzilla::User::Setting::EXPORT = qw(get_all_settings get_defaults
-     add_setting);
+@Bugzilla::User::Setting::EXPORT = qw(
+    get_all_settings
+    get_defaults
+    add_setting
+    clear_settings_cache
+);
 
 use Bugzilla::Error;
 use Bugzilla::Util qw(trick_taint get_text);
@@ -166,21 +170,23 @@ sub add_setting {
 
 sub get_all_settings {
     my ($user_id) = @_;
-    my $settings = get_defaults($user_id); # first get the defaults
+    my $settings = {};
     my $dbh = Bugzilla->dbh;
 
-    my $sth = $dbh->prepare(
-           q{SELECT name, default_value, is_enabled, setting_value, subclass
-               FROM setting
-          LEFT JOIN profile_setting
-                 ON setting.name = profile_setting.setting_name
-              WHERE profile_setting.user_id = ?
-           ORDER BY name});
+    my $cache_key = "user_settings.$user_id";
+    my $rows = Bugzilla->memcached->get_config({ key => $cache_key });
+    if (!$rows) {
+        $rows = $dbh->selectall_arrayref(
+            q{SELECT name, default_value, is_enabled, setting_value, subclass
+                FROM setting
+           LEFT JOIN profile_setting
+                     ON setting.name = profile_setting.setting_name
+                     AND profile_setting.user_id = ?}, undef, ($user_id));
+        Bugzilla->memcached->set_config({ key => $cache_key, data => $rows });
+    }
 
-    $sth->execute($user_id);
-    while (my ($name, $default_value, $is_enabled, $value, $subclass) 
-               = $sth->fetchrow_array()) 
-    {
+    foreach my $row (@$rows) {
+        my ($name, $default_value, $is_enabled, $value, $subclass) = @$row;
 
         my $is_default;
 
@@ -192,11 +198,16 @@ sub get_all_settings {
         }
 
         $settings->{$name} = new Bugzilla::User::Setting(
-           $name, $user_id, $is_enabled, 
+           $name, $user_id, $is_enabled,
            $default_value, $value, $is_default, $subclass);
     }
 
     return $settings;
+}
+
+sub clear_settings_cache {
+    my ($user_id) = @_;
+    Bugzilla->memcached->clear_config({ key => "user_settings.$user_id" });
 }
 
 sub get_defaults {
@@ -206,13 +217,11 @@ sub get_defaults {
 
     $user_id ||= 0;
 
-    my $sth = $dbh->prepare(q{SELECT name, default_value, is_enabled, subclass
-                                FROM setting
-                            ORDER BY name});
-    $sth->execute();
-    while (my ($name, $default_value, $is_enabled, $subclass) 
-           = $sth->fetchrow_array()) 
-    {
+    my $rows = $dbh->selectall_arrayref(q{SELECT name, default_value, is_enabled, subclass
+                                            FROM setting});
+
+    foreach my $row (@$rows) {
+        my ($name, $default_value, $is_enabled, $subclass) = @$row;
 
         $default_settings->{$name} = new Bugzilla::User::Setting(
             $name, $user_id, $is_enabled, $default_value, $default_value, 1,
@@ -381,6 +390,13 @@ Description: Sets the global default for a given setting. Also sets
 Params:      C<$setting_name> - string - the name of the setting
              C<$default_value> - string - the new default value for this setting
              C<$is_enabled> - boolean - if false, all users must use the global default
+Returns:     nothing
+
+=item C<clear_settings_cache($user_id)>
+
+Description: Clears cached settings data for the specified user.  Must be
+             called after updating any user's setting.
+Params:      C<$user_id> - integer - the user id.
 Returns:     nothing
 
 =begin private
