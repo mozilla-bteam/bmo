@@ -42,6 +42,7 @@ use Bugzilla::Util;
 use Date::Parse;
 use DateTime;
 use Encode qw(find_encoding encode_utf8);
+use File::MimeInfo::Magic;
 use Scalar::Util qw(blessed);
 use Sys::Syslog qw(:DEFAULT setlogsock);
 use List::Util qw(first);
@@ -1016,6 +1017,9 @@ sub post_bug_after_creation {
     elsif ($format eq 'dbi') {
         $self->_post_dbi_bug($args);
     }
+    elsif ($format eq 'mozpr') {
+        $self->_post_mozpr_bug($args);
+    }
 }
 
 sub _post_employee_incident_bug {
@@ -1161,6 +1165,30 @@ sub _post_gear_bug {
         filename    => "gear_" . $bug->id . ".csv",
         mimetype    => "text/csv",
     });
+    $bug->update($bug->creation_ts);
+}
+
+sub _post_mozpr_bug {
+    my ($self, $args) = @_;
+    my $vars = $args->{vars};
+    my $bug = $vars->{bug};
+    my $input = Bugzilla->input_params;
+
+    if ($input->{proj_mat_file}) {
+        $self->_add_attachment($args, {
+            data        => $input->{proj_mat_file_attach},
+            description => $input->{proj_mat_file_desc},
+            filename    => scalar $input->{proj_mat_file_attach},
+        });
+    }
+    if ($input->{pr_mat_file}) {
+        $self->_add_attachment($args, {
+            data        => $input->{pr_mat_file_attach},
+            description => $input->{pr_mat_file_desc},
+            filename    => scalar $input->{pr_mat_file_attach},
+        });
+    }
+    $bug->update($bug->creation_ts);
 }
 
 sub _post_dbi_bug {
@@ -1209,6 +1237,7 @@ sub _add_attachment {
     $attachment_args->{creation_ts} = $bug->creation_ts;
     $attachment_args->{ispatch}     = 0 unless exists $attachment_args->{ispatch};
     $attachment_args->{isprivate}   = 0 unless exists $attachment_args->{isprivate};
+    $attachment_args->{mimetype}    ||= $self->_detect_content_type($attachment_args->{data});
 
     # If the attachment cannot be successfully added to the bug,
     # we notify the user, but we don't interrupt the bug creation process.
@@ -1226,12 +1255,33 @@ sub _add_attachment {
         $bug->add_comment('', { isprivate  => 0,
                                 type       => CMT_ATTACHMENT_CREATED,
                                 extra_data => $attachment->id });
-        $bug->update($bug->creation_ts);
         delete $bug->{attachments};
     }
     else {
         $args->{vars}->{'message'} = 'attachment_creation_failed';
     }
+}
+
+# bugzilla's content_type detection makes assumptions about form fields, when
+# means we can't use it here.  this code is lifted from
+# Bugzilla::Attachment::get_content_type and the TypeSniffer extension.
+sub _detect_content_type {
+    my ($self, $data) = @_;
+    my $cgi = Bugzilla->cgi;
+
+    # browser provided content-type
+    my $content_type = $cgi->uploadInfo($data)->{'Content-Type'};
+    $content_type = 'image/png' if $content_type eq 'image/x-png';
+
+    if ($content_type eq 'application/octet-stream') {
+        # detect from filename
+        my $filename = scalar($data);
+        if (my $from_filename = mimetype($filename)) {
+            return $from_filename;
+        }
+    }
+
+    return $content_type || 'application/octet-stream';
 }
 
 sub buglist_columns {

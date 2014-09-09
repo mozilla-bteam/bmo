@@ -19,8 +19,13 @@ function isValidEmail(email) {
 
 //Takes a DOM element id and makes sure that it is filled out
 function isFilledOut(elem_id)  {
-    var str = document.getElementById(elem_id).value;
-    return str.length > 0 && str != "noneselected" && str != "---";
+    var el = document.getElementById(elem_id);
+    if (!el) {
+        console.error('Failed to find element: ' + elem_id);
+        return false;
+    }
+    var str = el.value;
+    return str.length > 0 && str != "noneselected";
 }
 
 function isChecked(elem_id) {
