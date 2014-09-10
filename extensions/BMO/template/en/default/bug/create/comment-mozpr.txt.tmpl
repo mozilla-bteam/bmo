@@ -15,18 +15,18 @@
 Project Description and Scope:
 [%+ cgi.param("desc") %]
 
-:: Timings
+== Timings
 
          Start Date: [% cgi.param("start_date") %]
   Announcement Date: [% cgi.param("announce_date") %]
   Internal Deadline: [% cgi.param("deadline") %]
 
-:: Owners
+== Owners
 
    Project PR Owner: [% cgi.param("pr_owner") %]
       Project Owner: [% cgi.param("owner") %]
 
-:: RASCI
+== RASCI
 
         Responsible: [% cgi.param("rasci_r") || "-" %]
            Approver: [% cgi.param("rasci_a") %]
@@ -34,7 +34,7 @@ Project Description and Scope:
          Consultant: [% cgi.param("rasci_c") || "-" %]
            Informed: [% cgi.param("rasci_i") || "-" %]
 
-:: Details
+== Details
 
                Tier: [% cgi.param("tier") %]
         PR Approach: [% cgi.param("pr_approach") %]
@@ -43,7 +43,7 @@ Product Group Focus: [% cgi.param("group_focus") %]
              Region: [% cgi.param("region") %]
 [%~ " " _ cgi.param("region_other") IF cgi.param("region") == "Other:" %]
 
-:: Goals, Audience, and Messages
+== Goals, Audience, and Messages
 
 Project Goals:
 [%+ cgi.param("project_goals") %]
@@ -55,7 +55,7 @@ Company Goal: [% cgi.param("company_goal") %]
 
 Audiences:
 [% FOREACH audience = cgi.param("audience") %]
-- [% audience %]
+  - [% audience %]
 [% " " _ cgi.param("audience_other") IF audience == "Other:" %]
 [% END %]
 
@@ -63,54 +63,66 @@ Key Messages:
 [%+ cgi.param("key_messages") %]
 [% IF cgi.param("proj_mat_online") %]
 
-:: Project Materials - Online Documentation
+== Project Materials - Online Documentation
 
         Description: [% cgi.param("proj_mat_online_desc") %]
                Link: [% cgi.param("proj_mat_online_link") %]
 [% END %]
 [% IF cgi.param("proj_mat_file") %]
 
-:: Project Materials - Attached
+== Project Materials - Attached
 
         Description: [% cgi.param("proj_mat_file_desc") %]
           File Name: [% cgi.param("proj_mat_file_attach") %]
 [% END %]
 [% IF cgi.param("pr_mat_online") %]
 
-:: PR Project Materials - Online Documentation
+== PR Project Materials - Online Documentation
 
         Description: [% cgi.param("pr_mat_online_desc") %]
                Link: [% cgi.param("pr_mat_online_link") %]
 [% END %]
 [% IF cgi.param("pr_mat_file") %]
 
-:: PR Project Materials - Attached
+== PR Project Materials - Attached
 
         Description: [% cgi.param("pr_mat_file_desc") %]
           File Name: [% cgi.param("pr_mat_file_attach") %]
 [% END %]
 
-:: Requirements
+== Requirements
 
    Metrica Coverage: [% cgi.param("metrica") %]
-Press Center Update: [% cgi.param("press_center") %]
-[%~ " " _ cgi.param("press_center_other") IF cgi.param("press_center") == "Other:" %]
-[% IF cgi.param("resources") && !cgi.param("internal_resources") %]
- Internal Resources: [% cgi.param("resources") %]
-[% ELSIF !cgi.param("resources") && cgi.param("internal_resources") %]
- Internal Resources: [% cgi.param("internal_resources") %]
-[%~ " " _ cgi.param("internal_resources_other") IF cgi.param("internal_resources") == "Other:" %]
-[% ELSIF cgi.param("resources") && cgi.param("internal_resources") %]
- Internal Resources: [% cgi.param("resources") %]
-                   : [% cgi.param("internal_resources") %]
-[%~ " " _ cgi.param("internal_resources_other") IF cgi.param("internal_resources") == "Other:" %]
+[% IF cgi.param("press_center") %]
+
+Press Center Update:
+[% FOREACH option = cgi.param("press_center") %]
+  - [% option %]
+[% " " _ cgi.param("press_center_other") IF option == "Other:" %]
 [% END %]
- External Resources: [% cgi.param("external_resources") %]
-[%~ " " _ cgi.param("external_resources_other") IF cgi.param("external_resources") == "Other:" %]
+[% END %]
+[% IF cgi.param("resources") || cgi.param("internal_resources") %]
+
+ Internal Resources:
+[% " " _ cgi.param("resources") IF cgi.param("resources") %]
+[% FOREACH option = cgi.param("internal_resources") %]
+  - [% option %]
+[% " " _ cgi.param("internal_resources_other") IF option == "Other:" %]
+[% END %]
+[% END %]
+[% IF cgi.param("resources") || cgi.param("external_resources") %]
+
+ External Resources:
+[% FOREACH option = cgi.param("external_resources") %]
+  - [% option %]
+[% " " _ cgi.param("external_resources_other") IF option == "Other:" %]
+[% END %]
+[% END %]
+
        Localization: [% cgi.param("localization") %]
 [%~ " " _ cgi.param("localization_other") IF cgi.param("localization") == "Other:" %]
 
-:: Budget
+== Budget
 
              Budget: [% cgi.param("budget") %]
 [%~ " " _ cgi.param("budget_extra") IF cgi.param("budget") == "Extra" %]

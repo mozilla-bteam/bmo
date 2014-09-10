@@ -136,22 +136,6 @@ function init_other(id) {
 }
 
 YAHOO.util.Event.onDOMReady(function() {
-  init_listener('tier', 'change', function(o) {
-    var value = o.target.value;
-    var desc  = document.getElementById('tier_desc');
-    if (value == '1') {
-      desc.innerHTML = '(tier 1 description)';
-    }
-    else if (value == '2') {
-      desc.innerHTML = '(tier 2 description)';
-    }
-    else if (value == '3') {
-      desc.innerHTML = '(tier 3 description)';
-    }
-    else {
-      desc.innerHTML = '';
-    }
-  });
   init_listener('metrica', 'change', function(o) {
     toggle_linked('metrica', 'Yes', '_extra');
   });
@@ -172,6 +156,7 @@ YAHOO.util.Event.onDOMReady(function() {
   });
 
   init_other('group_focus');
+  init_other('project_type');
   init_other('region');
   init_other('press_center');
   init_other('internal_resources');
@@ -221,6 +206,7 @@ function validate_form() {
   if (!isFilledOut('rasci_a'))        missing.push(['rasci_a', 'RASCI Approver']);
 
   if (!isFilledOut('tier'))           missing.push(['tier', 'Tier']);
+  if (!isFilledOut('project_type'))   missing.push(['project_type', 'Project Type']);
   if (!isFilledOut('pr_approach'))    missing.push(['pr_approach', 'PR Approach']);
   if (!isFilledOut('group_focus'))    missing.push(['group_focus', 'Product Group Focus']);
   if (!validate_other('group_focus')) missing.push(['group_focus', 'Product Group Focus - Other']);
@@ -230,8 +216,8 @@ function validate_form() {
   if (!isFilledOut('project_goals'))  missing.push(['project_goals', 'Project Goals']);
   if (!isFilledOut('pr_goals'))       missing.push(['pr_goals', 'PR Goals']);
   if (!isFilledOut('company_goal'))   missing.push(['company_goal', 'Company Goal']);
-  if (!hasChecked(document.forms.pr_form.audience))
-    missing.push(['audiences', 'Audiences']);
+  if (!isOneChecked(document.forms.pr_form.audience))
+    missing.push(['audience_group', 'Audiences']);
   if (!validate_other('audience'))    missing.push(['audience', 'Audience - Other']);
   if (!isFilledOut('key_messages'))   missing.push(['key_messages', 'Key Messages']);
 
@@ -263,7 +249,6 @@ function validate_form() {
   if (missing.length) {
     var missing_text = [];
     for (var i = 0, il = missing.length; i < il; i++) {
-      console.log(missing[i]);
       Dom.addClass(missing[i][0], 'missing');
       missing_text.push(missing[i][1]);
     }
@@ -384,13 +369,16 @@ function validate_form() {
   <label for="pr_owner" class="required">Project PR Owner</label>
   <select name="pr_owner" id="pr_owner">
     <option value=""></option>
-    <option value="ej@mozilla.com">Erica Jostedt</option>
-    <option value="lnapoli@mozilla.com">Laura Napoli</option>
-    <option value="tnitot@mozilla.com">Tristan Nitot</option>
-    <option value="bhueppe@mozilla.com">Barbara Hüppe</option>
-    <option value="kshaw@mozilla.com">Mike Manning</option>
-    <option value="pjarratt@mozilla.com">Paul Jarratt</option>
     <option value="ahubert@mozilla.com">Aurelien Hubert</option>
+    <option value="bhueppe@mozilla.com">Barbara Hüppe</option>
+    <option value="ej@mozilla.com">Erica Jostedt</option>
+    <option value="jokelly@mozilla.com">Justin O'Kelly</option>
+    <option value="kshaw@mozilla.com">Karolina Shaw</option>
+    <option value="kshaw@mozilla.com">Mike Manning</option>
+    <option value="lnapoli@mozilla.com">Laura Napoli</option>
+    <option value="pjarratt@mozilla.com">Paul Jarratt</option>
+    <option value="tnitot@mozilla.com">Tristan Nitot</option>
+    <option value="vponell@mozilla.com">Valerie Ponell</option>
   </select>
 </div>
 
@@ -440,7 +428,20 @@ function validate_form() {
     <option value="2">2</option>
     <option value="3">3</option>
   </select>
-  <span id="tier_desc" class="extra"></span>
+</div>
+
+<div class="field">
+  <label for="project_type" class="required">Project Type</label>
+  <select name="project_type" id="project_type">
+    <option value=""></option>
+    <option>Announcement</option>
+    <option>Speaking and Events</option>
+    <option>Planning</option>
+    <option>Messaging and Materials</option>
+    <option>Campaign</option>
+    <option>Other:</option>
+  </select>
+  <input name="project_type_other" id="project_type_other" class="bz_default_hidden">
 </div>
 
 <div class="field">
@@ -509,7 +510,7 @@ function validate_form() {
   </select>
 </div>
 
-<div class="field" id="audiences">
+<div class="field" id="audience_group">
   <label class="required">Audiences</label>
   <input type="checkbox" name="audience" id="audience_business" value="Business Press">
   <label for="audience_business" class="normal">Business Press</label><br>
@@ -607,40 +608,42 @@ function validate_form() {
   </div>
 </div>
 
-<div class="field">
-  <label for="press_center">Press Center Update</label>
-  <select name="press_center" id="press_center">
-    <option>Not required</option>
-    <option>Post on press pages</option>
-    <option>Media Library update</option>
-    <option>Other:</option>
-  </select>
-  <input name="press_center_other" id="press_center_other" class="bz_default_hidden">
+<div class="field" id="press_center_group">
+  <label>Press Center Update</label>
+  <input type="checkbox" name="press_center" id="press_center_post" value="Post on press pages">
+  <label for="press_center_post" class="normal">Post on press pages</label><br>
+  <input type="checkbox" name="press_center" id="press_center_library" value="Media Library update">
+  <label for="press_center_library" class="normal">Media Library update</label><br>
+  <input type="checkbox" name="press_center" id="press_center" value="Other:">
+  <label for="press_center" class="normal">Other:</label><br>
+  <input name="press_center_other" id="press_center_other" class="bz_default_hidden indent">
 </div>
 
-<div class="field">
-  <label for="internal_resources">Internal Resources Needed</label>
+<div class="field" id="internal_resources_group">
+  <label>Internal Resources Needed</label>
   <input type="text" name="resources" id="resources">
-  <select name="internal_resources" id="internal_resources">
-    <option></option>
-    <option>Spokesperson</option>
-    <option>Demo Staff</option>
-    <option>Creative Support</option>
-    <option>Other:</option>
-  </select>
-  <input name="internal_resources_other" id="internal_resources_other" class="bz_default_hidden">
+  <input type="checkbox" name="internal_resources" id="internal_resources_spokesperson" value="Spokesperson">
+  <label for="internal_resources_spokesperson" class="normal">Spokesperson</label><br>
+  <input type="checkbox" name="internal_resources" id="internal_resources_staff" value="Demo Staff">
+  <label for="internal_resources_staff" class="normal">Demo Staff</label><br>
+  <input type="checkbox" name="internal_resources" id="internal_resources_support" value="Creative Support">
+  <label for="internal_resources_support" class="normal">Creative Support</label><br>
+  <input type="checkbox" name="internal_resources" id="internal_resources" value="Other:">
+  <label for="internal_resources" class="normal">Other:</label><br>
+  <input name="internal_resources_other" id="internal_resources_other" class="bz_default_hidden indent">
 </div>
 
-<div class="field">
-  <label for="external_resources">External Resources Needed</label>
-  <select name="external_resources" id="external_resources">
-    <option>Not required</option>
-    <option>PR Agency Support</option>
-    <option>Design Support</option>
-    <option>Community Support</option>
-    <option>Other:</option>
-  </select>
-  <input name="external_resources_other" id="external_resources_other" class="bz_default_hidden">
+<div class="field" id="external_resources_group">
+  <label>External Resources Needed</label>
+  <input type="checkbox" name="external_resources" id="external_resources_pr" value="PR Agency Support">
+  <label for="external_resources_pr" class="normal">PR Agency Support</label><br>
+  <input type="checkbox" name="external_resources" id="external_resources_design" value="Design Support">
+  <label for="external_resources_design" class="normal">Design Support</label><br>
+  <input type="checkbox" name="external_resources" id="external_resources_community" value="Community Support">
+  <label for="external_resources_community" class="normal">Community Support</label><br>
+  <input type="checkbox" name="external_resources" id="external_resources" value="Other:">
+  <label for="external_resources" class="normal">Other:</label><br>
+  <input name="external_resources_other" id="external_resources_other" class="bz_default_hidden indent">
 </div>
 
 <div class="field">
