@@ -262,7 +262,7 @@ sub object_update_columns {
 sub _new_users_from_input {
     my ($field) = @_;
     my $input_params = Bugzilla->input_params;
-    return unless exists $input_params->{$field};
+    return undef unless exists $input_params->{$field};
     return [] unless $input_params->{$field};
     Bugzilla::User::match_field({ $field => {'type' => 'multi'} });;
     my $value = $input_params->{$field};
@@ -320,7 +320,7 @@ sub object_end_of_create {
         _adjust_request_count($object, +1);
     }
     if (_is_countable_flag($object)) {
-        $self->_log_flag_state_activity($object, $object->status);
+        $self->_log_flag_state_activity($object, $object->status, $object->modification_date);
     }
 }
 
@@ -393,25 +393,27 @@ sub object_end_of_update {
 
 sub flag_updated {
     my ($self, $args) = @_;
-    my $flag = $args->{flag};
-    my $changes = $args->{changes};
+    my $flag      = $args->{flag};
+    my $timestamp = $args->{timestamp};
+    my $changes   = $args->{changes};
 
     return unless scalar(keys %$changes);
     if (_is_countable_flag($flag)) {
-        $self->_log_flag_state_activity( $flag, $flag->status );
+        $self->_log_flag_state_activity($flag, $flag->status, $timestamp);
     }
 }
 
-sub object_before_delete {
+sub flag_deleted {
     my ($self, $args) = @_;
-    my $object = $args->{object};
+    my $flag      = $args->{flag};
+    my $timestamp = $args->{timestamp};
 
-    if (_is_countable_flag($object) && $object->requestee_id && $object->status eq '?') {
-        _adjust_request_count($object, -1);
+    if (_is_countable_flag($flag) && $flag->requestee_id && $flag->status eq '?') {
+        _adjust_request_count($flag, -1);
     }
 
-    if (_is_countable_flag($object)) {
-        $self->_log_flag_state_activity($object, 'X');
+    if (_is_countable_flag($flag)) {
+        $self->_log_flag_state_activity($flag, 'X', $timestamp, Bugzilla->user->id);
     }
 }
 
@@ -423,17 +425,19 @@ sub _is_countable_flag {
 }
 
 sub _log_flag_state_activity {
-    my ($self, $flag, $status) = @_;
+    my ($self, $flag, $status, $timestamp, $setter_id) = @_;
+
+    $setter_id //= $flag->setter_id;
 
     Bugzilla::Extension::Review::FlagStateActivity->create({
-        flag_when     => $flag->modification_date,
+        flag_when     => $timestamp,
+        setter_id     => $setter_id,
+        status        => $status,
         type_id       => $flag->type_id,
         flag_id       => $flag->id,
-        setter_id     => $flag->setter_id,
         requestee_id  => $flag->requestee_id,
         bug_id        => $flag->bug_id,
         attachment_id => $flag->attach_id,
-        status        => $status,
     });
 }
 
@@ -601,6 +605,9 @@ sub page_before_template {
     elsif ($args->{page_id} eq 'review_requests_rebuild.html') {
         $self->review_requests_rebuild($args);
     }
+    elsif ($args->{page_id} eq 'review_history.html') {
+        $self->review_history($args);
+    }
 }
 
 sub review_suggestions_report {
@@ -652,6 +659,21 @@ sub review_requests_rebuild {
         });
         $args->{vars}->{rebuild} = 1;
         $args->{vars}->{total}   = $processed_users;
+    }
+}
+
+sub review_history {
+    my ($self, $args) = @_;
+
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+
+    Bugzilla::User::match_field({ 'requestee' => { 'type' => 'single' } });
+    my $requestee = Bugzilla->input_params->{requestee};
+    if ($requestee) {
+        $args->{vars}{requestee} = Bugzilla::User->check({ name => $requestee, cache => 1 });
+    }
+    else {
+        $args->{vars}{requestee} = $user;
     }
 }
 

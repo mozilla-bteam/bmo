@@ -49,6 +49,16 @@ sub user_preferences {
                 $params->{field_name} = '~' . $input->{field_contains};
             }
             $params->{relationship} = $input->{relationship} || IS_NULL;
+            if ($input->{changer}) {
+                Bugzilla::User::match_field({ changer => { type => 'single'} });
+                $params->{changer_id} = Bugzilla::User->check({
+                    name  => $input->{changer},
+                    cache => 1,
+                })->id;
+            }
+            else {
+                $params->{changer_id} = IS_NULL;
+            }
             if (my $product_name = $input->{product}) {
                 my $product = Bugzilla::Product->check({
                     name => $product_name, cache => 1
@@ -57,7 +67,7 @@ sub user_preferences {
 
                 if (my $component_name = $input->{component}) {
                     $params->{component_id} = Bugzilla::Component->check({
-                        name => $component_name, product => $product,
+                        name  => $component_name, product => $product,
                         cache => 1
                     })->id;
                 }
@@ -268,7 +278,7 @@ sub _should_drop {
 
     # calculate relationships
 
-    my ($user, $bug, $relationship) = @$args{qw( user bug relationship )};
+    my ($user, $bug, $relationship, $changer) = @$args{qw( user bug relationship changer )};
     my ($user_id, $login) = ($user->id, $user->login);
     my $bit_direct    = Bugzilla::BugMail::BIT_DIRECT;
     my $bit_watching  = Bugzilla::BugMail::BIT_WATCHING;
@@ -306,6 +316,7 @@ sub _should_drop {
         product_id   => $bug->product_id,
         component_id => $bug->component_id,
         rel_map      => \@rel_map,
+        changer_id   => $changer->id,
     };
 
     foreach my $field (@$fields) {
@@ -416,6 +427,15 @@ sub db_schema_abstract_schema {
                     DELETE => 'CASCADE'
                 },
             },
+            changer_id => {
+                TYPE       => 'INT3',
+                NOTNULL    => 0,
+                REFERENCES => {
+                    TABLE  => 'profiles',
+                    COLUMN => 'userid',
+                    DELETE => 'CASCADE'
+                },
+            },
             relationship => {
                 TYPE       => 'INT2',
                 NOTNULL    => 0,
@@ -436,6 +456,17 @@ sub db_schema_abstract_schema {
             ],
         ],
     };
+}
+
+sub install_update_db {
+    Bugzilla->dbh->bz_add_column(
+        'bugmail_filters',
+        'changer_id',
+        {
+            TYPE    => 'INT3',
+            NOTNULL => 0,
+        }
+    );
 }
 
 sub db_sanitize {
