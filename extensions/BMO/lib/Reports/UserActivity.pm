@@ -30,7 +30,7 @@ sub report {
     $to =~ s/\N{U+2011}/-/g;
 
     if ($from eq '') {
-        my $dt = DateTime->now()->subtract('weeks' => 8);
+        my $dt = DateTime->now()->subtract('weeks' => 1);
         $from = $dt->ymd('-');
     }
     if ($to eq '') {
@@ -49,8 +49,6 @@ sub report {
 
         my $to_dt = string_to_datetime($to);
         $to = $to_dt->ymd();
-        # add one day to include all activity that happened on the 'to' date
-        $to_dt->add(days => 1);
 
         my ($activity_joins, $activity_where) = ('', '');
         my ($attachments_joins, $attachments_where) = ('', '');
@@ -102,7 +100,7 @@ sub report {
             push @params, ($from_dt, $to_dt);
         }
 
-        my $order = ($input->{'sort'} && $input->{'sort'} eq 'bug')
+        my $order = ($input->{'group'} && $input->{'group'} eq 'bug')
                     ? 'bug_id, bug_when' : 'bug_when';
 
         my $comment_filter = '';
@@ -259,7 +257,7 @@ sub report {
                     $incomplete_data = 1;
                 }
 
-                # Start a new changeset if required (depends on the sort order)
+                # Start a new changeset if required (depends on the grouping type)
                 my $is_new_changeset;
                 if ($order eq 'bug_when') {
                     $is_new_changeset =
@@ -323,7 +321,7 @@ sub report {
     $vars->{'who_count'} = scalar @who;
     $vars->{'from'} = $from;
     $vars->{'to'} = $to;
-    $vars->{'sort'} = $input->{'sort'};
+    $vars->{'group'} = $input->{'group'};
 }
 
 1;
