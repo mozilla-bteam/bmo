@@ -79,5 +79,6 @@ RewriteRule ^form[\.:]marketplace[\.:]onboard$ enter_bug.cgi?product=Tracking&fo
 RewriteRule ^form[\.:]fxos[\.\-:]preload[\.\-:]app$ enter_bug.cgi?product=Marketplace&format=fxos-preload-app
 RewriteRule ^form[\.:]fxos[\.\-:]mcts[\.\-:]waiver$ enter_bug.cgi?product=Firefox+OS&format=fxos-mcts-waiver
 RewriteRule ^form[\.:]webops[\.\-:]request$ enter_bug.cgi?product=Infrastructure+\%26+Operations&format=webops-request
+RewriteRule ^form[\.:]comm[\.:]newsletter$ enter_bug.cgi?product=Marketing&format=comm-newsletter
 RewriteRule ^rest/(.*)$ rest.cgi/$1 [NE]
 RewriteRule ^bzapi/(.*)$ extensions/BzAPI/bin/rest.cgi/$1 [NE]
