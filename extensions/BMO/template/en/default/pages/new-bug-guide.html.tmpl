@@ -6,8 +6,9 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
+[% PROCESS global/variables.none.tmpl %]
 [% PROCESS global/header.html.tmpl
-  title = "New Guided Bug Form"
+  title = "New Guided Form"
   style_urls = [ "extensions/BMO/web/styles/guided.css" ]
   javascript_urls = [ "extensions/BMO/web/js/jquery-1.11.0.min.js", "extensions/BMO/web/js/guided.js" ]
 %]
@@ -23,7 +24,7 @@
 
   <div >
     <a id="firefox_os" href="#firefox_os">
-      <img src="extensions/BMO/web/producticons/firefox_os.png">
+      <img src="extensions/BMO/web/producticons/firefox.png">
       Firefox OS
     </a>
   </div>
@@ -60,8 +61,8 @@
       <li><a href="https://support.mozilla.org" >I need help getting Firefox to work properly on my computer.</a></li>
       <li><a href="#end_user_site_compat" >A website I use doesn't work properly in Firefox, but does in another browser.</a></li>
       <li><a href="#webdev_bug" >A website I develop or maintain doesn't work properly in Firefox.</a></li>
-      <li><a disabled href="#webdev_feature" >I want to make a detailed feature request for the Web platform.</a></li>
-      <li><a disabled href="#end_user_bug" >I believe I have found another kind of bug in Firefox.</a></li>
+      <li><a class="disabled" href="#webdev_feature" >I want to make a detailed feature request for the Web platform.</a></li>
+      <li><a class="disabled" href="#end_user_bug" >I believe I have found another kind of [% terms.bug %] in Firefox.</a></li>
     </ul>
   </div>
 </div>
@@ -120,13 +121,13 @@
 
 <div id="webdev_bug_menu" class="subsubmenu">
   <h1>A website I develop or maintain doesn't work properly in Firefox.</h1>
-  <p> Are you reporting a bug with: </p>
+  <p> Are you reporting a [% terms.bug %] with: </p>
   <ul>
     <li><input type="radio" name="product"> HTML, CSS, JS, SVG, or some other web technology or combination of web technologies</li>
     <li><input type="radio" name="product"> Firefox's developer tools</li>
     <li><input type="radio" name="product"> Firefox's user interface (for example, an issue with bookmarks, tabbed browsing or the location bar)</li>
   </ul>
-  <p> [and here we would include or link to the guided bug form enter_bug.cgi?format=guided#h=dupes|PRODUCT based on the above ]</p>
+  <p> [and here we would include or link to the guided [% terms.bug %] <a class="disabled" href="enter_bug.cgi?format=guided#h=dupes|PRODUCT">form</a> based on the above ]</p>
 </div>
 
 [% PROCESS global/footer.html.tmpl %]

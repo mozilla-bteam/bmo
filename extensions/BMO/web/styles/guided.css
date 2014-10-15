@@ -21,7 +21,7 @@
     display: none;
 }
 
-a[disabled], a[disabled]:hover {
+a.disabled, a.disabled:hover {
   text-decoration: line-through;
 }
 
