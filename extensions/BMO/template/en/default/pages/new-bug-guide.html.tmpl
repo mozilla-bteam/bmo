@@ -1,0 +1,132 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/header.html.tmpl
+  title = "New Guided Bug Form"
+  style_urls = [ "extensions/BMO/web/styles/guided.css" ]
+  javascript_urls = [ "extensions/BMO/web/js/jquery-1.11.0.min.js", "extensions/BMO/web/js/guided.js" ]
+%]
+
+<h1>What are you having a problem with?</h1>
+<div id="top_menu" class="columns">
+  <div>
+    <a href="#firefox">
+      <img src="extensions/BMO/web/producticons/firefox.png">
+      Firefox
+    </a>
+  </div>
+
+  <div >
+    <a id="firefox_os" href="#firefox_os">
+      <img src="extensions/BMO/web/producticons/firefox_os.png">
+      Firefox OS
+    </a>
+  </div>
+
+  <div >
+    <a href="enter_bug.cgi?format=guided#h=dupes|Thunderbird">
+      <img src="extensions/BMO/web/producticons/thunderbird.png">
+      Thunderbird
+    </a>
+  </div>
+
+  <div >
+    <a id="other" href="#other">
+      <img src="extensions/BMO/web/producticons/other.png">
+      Other Software
+    </a>
+  </div>
+
+  <div >
+    <a id="service" href="#service">
+      <img src="extensions/BMO/web/producticons/sync.png">
+      A website or network service provided by Mozilla
+    </a>
+  </div>
+</div>
+
+<div id="firefox_menu" class="submenu">
+  <h1>Firefox (our web browser)</h1>
+  <div>
+    <p>How would you like us to help?</p>
+
+    <ul>
+      <li><a href="https://mozilla.org" >I just want to make a brief suggestion.</a></li>
+      <li><a href="https://support.mozilla.org" >I need help getting Firefox to work properly on my computer.</a></li>
+      <li><a href="#end_user_site_compat" >A website I use doesn't work properly in Firefox, but does in another browser.</a></li>
+      <li><a href="#webdev_bug" >A website I develop or maintain doesn't work properly in Firefox.</a></li>
+      <li><a disabled href="#webdev_feature" >I want to make a detailed feature request for the Web platform.</a></li>
+      <li><a disabled href="#end_user_bug" >I believe I have found another kind of bug in Firefox.</a></li>
+    </ul>
+  </div>
+</div>
+
+<div id="firefox_os_menu" class="submenu">
+  <h1>FirefoxOS (our mobile operating system)</h1>
+  <div>
+    <p>How would you like us to help?</p>
+
+    FIXME.
+  </div>
+</div>
+
+<div id="other_menu" class="submenu">
+  <h1>Other software developed by the Mozilla community</h1>
+  <div>
+    <p>Please select other software</p>
+    <dl class="columns">
+      <dt> <a href="enter_bug.cgi?format=guided#h=dupes|SeaMonkey">
+          <img src="extensions/BMO/web/producticons/seamonkey.png">Seamonkey</a></dt>
+      <dd>
+        An all-in-one internet application suite, including web browser, e-mail and newsgroup client, and HTML composer.
+      </dd>
+    </dl>
+  </div>
+</div>
+
+<div id="services_menu" class="submenu">
+  <h1>A website or network service operated by the Mozilla organization</h1>
+  <div>
+    <p>Services</p>
+    <dl class="columns">
+      <dt> <a href="enter_bug.cgi?format=guided#h=dupes|Marketplace">
+          <img src="extensions/BMO/web/producticons/marketplace.png">Marketplace</a></dt>
+      <dd>
+        Mozilla's website (marketplace.firefox.com) to bring personalized
+        discovery, worldwide distribution, and easy payments to the largest
+        platform for app development: the Web.
+      </dd>
+      <dt> <a href="enter_bug.cgi?format=guided#h=dupes|Webmaker">
+          <img src="extensions/BMO/web/producticons/webmaker.png">Webmaker</a></dt>
+      <dd>
+         The Mozilla Foundation's project to build a generation of web makers
+      </dd>
+    </dl>
+  </div>
+</div>
+
+<div id="end_user_site_compat_menu" class="subsubmenu">
+  <h1>A website I use doesn't work properly in Firefox, but does in another browser.</h1>
+  <div>
+    Where in, this bit prompts for the one line summary, the URL for the site that isn't working,
+    what browser(s) it does work in, and so on.
+  </div>
+</div>
+
+<div id="webdev_bug_menu" class="subsubmenu">
+  <h1>A website I develop or maintain doesn't work properly in Firefox.</h1>
+  <p> Are you reporting a bug with: </p>
+  <ul>
+    <li><input type="radio"> HTML, CSS, JS, SVG, or some other web technology or combination of web technologies</li>
+    <li><input type="radio"> Firefox's developer tools</li>
+    <li><input type="radio"> Firefox's user interface (for example, an issue with bookmarks, tabbed browsing or the location bar)</li>
+  </ul>
+  <p> [and here we would include or link to the guided bug form enter_bug.cgi?format=guided#h=dupes|PRODUCT based on the above ]</p>
+</div>
+
+[% PROCESS global/footer.html.tmpl %]
