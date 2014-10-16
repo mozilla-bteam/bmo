@@ -235,8 +235,9 @@ sub validateContext
 {
   my $context = $cgi->param('context') || "patch";
   if ($context ne "file" && $context ne "patch") {
-    detaint_natural($context)
-      || ThrowUserError("invalid_context", { context => $cgi->param('context') });
+      my $orig_context = $context;
+      detaint_natural($context)
+        || ThrowUserError("invalid_context", { context => $orig_context });
   }
 
   return $context;
@@ -545,25 +546,23 @@ sub insert {
     # Must be called before create() as it may alter $cgi->param('ispatch').
     my $content_type = Bugzilla::Attachment::get_content_type();
 
-    # Get the attach data
-    my $data = scalar($cgi->param('attach_text'));
-    if ($data) {
+    # Get the filehandle of the attachment.
+    my $data_fh = $cgi->upload('data');
+    my $attach_text = $cgi->param('attach_text');
+
+    if ($attach_text) {
         # Convert to unix line-endings if pasting a patch
         if (scalar($cgi->param('ispatch'))) {
-            $data =~ s/[\012\015]{1,2}/\012/g;
+            $attach_text =~ s/[\012\015]{1,2}/\012/g;
         }
-    }
-    else {
-        # Get the filehandle of the attachment.
-        $data = $cgi->upload('data');
     }
 
     my $attachment = Bugzilla::Attachment->create(
         {bug           => $bug,
          creation_ts   => $timestamp,
-         data          => $data,
+         data          => $attach_text || $data_fh,
          description   => scalar $cgi->param('description'),
-         filename      => $cgi->param('attach_text') ? "file_$bugid.txt" : scalar $cgi->upload('data'),
+         filename      => $attach_text ? "file_$bugid.txt" : $data_fh,
          ispatch       => scalar $cgi->param('ispatch'),
          isprivate     => scalar $cgi->param('isprivate'),
          mimetype      => $content_type,
@@ -582,7 +581,6 @@ sub insert {
     my ($flags, $new_flags) = Bugzilla::Flag->extract_flags_from_cgi(
                                   $bug, $attachment, $vars, SKIP_REQUESTEE_ON_ERROR);
     $attachment->set_flags($flags, $new_flags);
-    $attachment->update($timestamp);
 
     # Insert a comment about the new attachment into the database.
     my $comment = $cgi->param('comment');
@@ -610,6 +608,10 @@ sub insert {
       $bug->set_assigned_to($user);
   }
   $bug->update($timestamp);
+
+  # We have to update the attachment after updating the bug, to ensure new
+  # comments are available.
+  $attachment->update($timestamp);
 
   $dbh->bz_commit_transaction;
 
@@ -756,15 +758,17 @@ sub update {
     # Figure out when the changes were made.
     my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
+    # Commit the comment, if any.
+    # This has to happen before updating the attachment, to ensure new comments
+    # are available to $attachment->update.
+    $bug->update($timestamp);
+
     if ($can_edit) {
         my $changes = $attachment->update($timestamp);
         # If there are changes, we updated delta_ts in the DB. We have to
         # reflect this change in the bug object.
         $bug->{delta_ts} = $timestamp if scalar(keys %$changes);
     }
-
-    # Commit the comment, if any.
-    $bug->update($timestamp);
 
     # Commit the transaction now that we are finished updating the database.
     $dbh->bz_commit_transaction();
