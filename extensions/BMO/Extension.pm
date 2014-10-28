@@ -40,6 +40,7 @@ use Bugzilla::Util;
 
 use Date::Parse;
 use DateTime;
+use Email::MIME::ContentType qw(parse_content_type);
 use Encode qw(find_encoding encode_utf8);
 use File::MimeInfo::Magic;
 use List::MoreUtils qw(natatime);
@@ -197,7 +198,11 @@ sub page_before_template {
 
 sub bounty_attachment {
     my ($vars) = @_;
-    ThrowUserError('user_not_insider') unless Bugzilla->user->is_insider;
+
+    Bugzilla->user->in_group('bounty-team')
+        || ThrowUserError("auth_failure", { group  => "bounty-team",
+                                            action => "add",
+                                            object => "bounty_attachments" });
 
     my $input      = Bugzilla->input_params;
     my $dbh        = Bugzilla->dbh;
@@ -1132,9 +1137,29 @@ sub _inject_headers_into_body {
 sub _replace_placeholder_in_part {
     my ($part, $replacement) = @_;
 
-    # fix encoding
-    my $body = $part->body;
-    if (Bugzilla->params->{'utf8'}) {
+    _fix_encoding($part);
+
+    # replace
+    my $placeholder = quotemeta('@@body-headers@@');
+    my $body = $part->body_str;
+    $body =~ s/$placeholder/$replacement/;
+    $part->body_str_set($body);
+}
+
+sub _fix_encoding {
+    my $part = shift;
+
+    # don't touch the top-level part of multi-part mail
+    return if $part->parts > 1;
+
+    # nothing to do if the part already has a charset
+    my $ct = parse_content_type($part->content_type);
+    my $charset = $ct->{attributes}{charset}
+        ? $ct->{attributes}{charset}
+        : '';
+    return unless !$charset || $charset eq 'us-ascii';
+
+    if (Bugzilla->params->{utf8}) {
         $part->charset_set('UTF-8');
         my $raw = $part->body_raw;
         if (utf8::is_utf8($raw)) {
@@ -1142,13 +1167,7 @@ sub _replace_placeholder_in_part {
             $part->body_set($raw);
         }
     }
-    $part->encoding_set('quoted-printable') if !is_7bit_clean($body);
-
-    # replace
-    my $placeholder = quotemeta('@@body-headers@@');
-    $body = $part->body_str;
-    $body =~ s/$placeholder/$replacement/;
-    $part->body_str_set($body);
+    $part->encoding_set('quoted-printable');
 }
 
 sub _syslog {
