@@ -13,6 +13,7 @@ var History = YAHOO.util.History;
 
 var guided = {
   _currentStep: '',
+  _defaultStep: 'product',
   detectedPlatform: '',
   detectedOpSys: '',
   currentUser: '',
@@ -23,6 +24,9 @@ var guided = {
     // initialise new step
     this.updateStep = true;
     switch(newStep) {
+      case 'webdev':
+        webdev.onShow();
+        break;
       case 'product':
         product.onShow();
         break;
@@ -36,7 +40,7 @@ var guided = {
         bugForm.onShow();
         break;
       default:
-        guided.setStep('product');
+        guided.setStep(this._defaultStep);
         return;
     }
 
@@ -60,11 +64,14 @@ var guided = {
     }
   },
 
-  init: function() {
+  init: function(conf) {
     // init history manager
+    if (conf.webdev) {
+      this._defaultStep = 'webdev';
+      this.webdev = true;
+    }
     try {
-      History.register('h', History.getBookmarkedState('h') || 'product',
-        this._onStateChange);
+      History.register('h', History.getBookmarkedState('h') || this._defaultStep, this._onStateChange);
       History.initialize("yui-history-field", "yui-history-iframe");
       History.onReady(function () {
         guided._onStateChange(History.getCurrentState('h'), true);
@@ -74,6 +81,7 @@ var guided = {
     }
 
     // init steps
+    webdev.onInit();
     product.onInit();
     dupes.onInit();
     bugForm.onInit();
@@ -95,6 +103,16 @@ var guided = {
   }
 };
 
+// webdev step
+
+var webdev = {
+    details: false,
+
+    onInit: function () { },
+
+    onShow: function () { }
+};
+
 // product step
 
 var product = {
@@ -109,8 +127,22 @@ var product = {
     Dom.removeClass('advanced', 'hidden');
   },
 
-  select: function(productName) {
+  select: function(productName, componentName) {
+    var prod = products[productName];
+
     // called when a product is selected
+    if (componentName) {
+      this.setPreselectedComponent(componentName);
+      if (prod && prod.defaultComponent) {
+        prod.originalDefaultComponent = prod.originalDefaultComponent || prod.defaultComponent;
+        prod.defaultComponent = componentName;
+      }
+    }
+    else {
+      if (prod && prod.defaultComponent && prod.originalDefaultComponent) {
+        prod.defaultComponent = prod.originalDefaultComponent;
+      }
+    }
     this.setName(productName);
     dupes.reset();
     guided.setStep('dupes');
@@ -184,7 +216,7 @@ var product = {
     }
 
     // show/hide component selection row
-    if (products[productName] && products[productName].noComponentSelection) {
+    if (products[productName] && products[productName].noComponentSelection || guided.webdev) {
       if (!Dom.hasClass('componentTR', 'hidden')) {
         Dom.addClass('componentTR', 'hidden');
         bugForm.toggleOddEven();
@@ -469,6 +501,17 @@ var dupes = {
     // a search has happened
     Dom.addClass('advanced', 'hidden');
     Dom.addClass('dupes_continue_button_top', 'hidden');
+    var prod = product.getName();
+    if (products[prod] && products[prod].l10n) {
+      Dom.removeClass('l10n_message', 'hidden');
+      Dom.get('l10n_product').textContent = product.getName();
+      Dom.get('l10n_link').onclick = function () {
+        product.select('Mozilla Localizations');
+      };
+    }
+    else {
+      Dom.addClass('l10n_message', 'hidden');
+    }
 
     if (!this._elSearch.disabled && this.getSummary().length >= 4) {
       // do an immediate search after a page refresh if there's a query
@@ -655,13 +698,10 @@ var bugForm = {
     // build components
 
     var elComponent = Dom.get('component');
-    if (products[productName] && products[productName].noComponentSelection) {
-
+    if (products[productName] && products[productName].noComponentSelection || guided.webdev) {
       elComponent.value = products[productName].defaultComponent;
       bugForm._mandatoryFields = [ 'short_desc', 'version_select' ];
-
     } else {
-
       bugForm._mandatoryFields = [ 'short_desc', 'component_select', 'version_select' ];
 
       // check for the default component
