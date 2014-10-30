@@ -52,10 +52,8 @@ function validateAndSubmit() {
     contact: "Please enter a point of contact.",
     site_urls: "Please enter site urls for adding to whitelist.",
     notice: "Please enter a notice provided to users.",
-    share_information: "Please enter a description of information being shared.",
-    specific_content: "Please select whether specific content is transmitted.",
-    directed_content: "Please select whether user directed content is transmitted.",
-    compliance: "Please select whether the usage complies with guidelines.",
+    compliance_agreement: "Please select whether you have read and agree with the policy.",
+    compliance_usage: "Please select whether the usage complies with guidelines.",
   };
   for (var field in required_fields) {
     if (!fieldValue(field))
@@ -139,59 +137,35 @@ function fieldValue(elem_id) {
     Does the application provide users with notice and control?
   </label>
   <div class="field_desc">
-   Please paste or attach notice.
+    Please paste the privacy notice or a link to the privacy notice below.
   </div>
   <textarea name="notice" id="notice" cols="80" rows="10"></textarea>
 </div>
 
 <div class="form_section">
-  <label for="share_information" class="field_label required">
-    Does it describe to users clearly and accessibly how the screensharing
-    application handles and shares information in connection with the
-    screenshare stream?
-  </label>
-  <div class="field_desc">
-    Please paste or attach description.
-  </div>
-  <textarea name="share_information" id="share_information" cols="80" rows="10"></textarea>
-</div>
-
-<div class="form_section">
-  <label for="specific_content" class="field_label required">
-    Does it transmit only the specific content that the user directs to be
-    transmitted?
-  </label>
-  <br>
-  <select name="specific_content" id="specific_content">
-    <option value="">Select</option>
-    <option value="Yes">Yes</option>
-    <option value="No">No</option>
-  </select>
-</div>
-
-<div class="form_section">
-  <label for="directed_content" class="field_label required">
-    Does it transmit User Directed Content only to the user’s intended
-    recipients?
-  </label>
-  <br>
-  <select name="directed_content" id="directed_content">
-    <option value="">Select</option>
-    <option value="Yes">Yes</option>
-    <option value="No">No</option>
-  </select>
-</div>
-
-<div class="form_section">
-  <label for="compliance" class="field_label required">
-    Does the usage comply with all the guidelines under the Developer
-    Submission Policy regarding not harming the user or Mozilla?
+  <label for="compliance_agreement" class="field_label required">
+    Please confirm that you have seen and agree to our whitelist policy.
   </label>
   <div class="field_desc">
     More information at <a href="https://wiki.mozilla.org/Screensharing">
-    https://wiki.mozilla.org/Screensharing</a>.
+    https://wiki.mozilla.org/Screensharing</a> under <strong>Developer
+    Screen Sharing Submission Policy</strong>.
   </div>
-  <select name="compliance" id="compliance">
+  <select name="compliance_agreement" id="compliance_agreement">
+    <option value="">Select</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+  </select>
+</div>
+
+<div class="form_section">
+  <label for="compliance_usage" class="field_label required">
+    Does the usage comply with all the guidelines under the Developer
+    Screen Sharing Submission Policy regarding not harming the user or
+    Mozilla?
+  </label>
+  <br>
+  <select name="compliance_usage" id="compliance_usage">
     <option value="">Select</option>
     <option value="Yes">Yes</option>
     <option value="No">No</option>
