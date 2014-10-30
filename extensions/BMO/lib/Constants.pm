@@ -39,6 +39,7 @@ use constant DEV_ENGAGE_DISCUSS_NEEDINFO => qw(
     jswisher@mozilla.com
     rchau@mozilla.com
     stormy@mozilla.com
+    spersing@mozilla.com
 );
 
 1;

@@ -1345,6 +1345,43 @@ sub _post_dev_engagement {
 
     my $discussion_bug;
     eval {
+        # Add attachment containing tab delimited field values for
+        # spreadsheet import.
+        my @columns = qw(event start_date end_date location attendees
+                         audience desc mozilla_attending_list);
+        my @attach_values;
+        foreach my $column(@columns) {
+            my $value = $params->{$column} || "";
+            $value =~ s/"/""/g;
+            push(@attach_values, qq{"$value"});
+        }
+
+        my @requested;
+        foreach my $param (grep(/^request_/, keys %$params)) {
+            next if !$params->{$param} || $param eq 'request_other_text';
+            $param =~ s/^request_//;
+            push(@requested, ucfirst($param));
+        }
+        push(@attach_values, '"' . join(",", @requested) . '"');
+
+        my $attachment = Bugzilla::Attachment->create({
+            bug           => $parent_bug,
+            creation_ts   => $parent_bug->creation_ts,
+            data          => join("\t", @attach_values),
+            description   => 'Spreadsheet Data',
+            filename      => 'dev_engagement_submission.txt',
+            ispatch       => 0,
+            isprivate     => 0,
+            mimetype      => 'text/plain'
+        });
+
+        # Insert comment for attachment
+        $parent_bug->add_comment('', { isprivate  => 0,
+                                       type       => CMT_ATTACHMENT_CREATED,
+                                       extra_data => $attachment->id });
+        delete $parent_bug->{'attachments'}; # So the new attachment displays properly
+
+        # File discussion bug
         Bugzilla->set_user(Bugzilla::User->new({ name => 'nobody@mozilla.org' }));
         my $new_user = Bugzilla->user;
 

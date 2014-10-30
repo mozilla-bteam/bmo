@@ -79,7 +79,7 @@ var DE = {
       'event' : 'Please enter the event name.',
       'start_date' : 'Please enter the event start date.',
       'end_date' : 'Please enter the event end date.',
-      'location' : 'Please select a location for the event.',
+      'location' : 'Please enter a location description for the event.',
       'attendees' : 'Please enter number of expected attendees.',
       'desc' : 'Please enter a description of the event.',
       'audience' : 'Please enter primary audience.',
@@ -90,6 +90,7 @@ var DE = {
       'developer_event' : 'Please select if this is a developer event.',
       'mozilla_attending' : 'Please select if Mozilla is attending the event.',
       'code_of_conduct' : 'Please select if the event has a code of conduct.',
+      'event_location' : 'Please a location for the event.',
       'previous_event' : 'Please select if Mozilla has sponsored this event before.',
       'development_session' : 'Please select if this event includes a development session.',
     };
