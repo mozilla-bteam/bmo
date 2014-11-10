@@ -163,20 +163,6 @@ var DE = {
 
     // Whiteboard value
     var wb = '';
-    if (fieldValue('developer_event') == 'Yes')
-      wb += '[developer-event:true] ';
-    var mozilla_attending = fieldValue('mozilla_attending') == 'Yes' ? 'true' : 'false';
-    wb += '[mozilla-already-attending:' + mozilla_attending + '] ';
-    var vouched = fieldValue('vouched_mozillian') == 'Yes' ? 'true' : 'false';
-    wb += '[requested-by-mozillian:' + vouched + '] ';
-    if (fieldValue('code_of_conduct') == 'Yes')
-      wb += '[code-of-conduct:true] ';
-    var previous_event = fieldValue('previous_event') == 'Yes' ? 'true' : 'false';
-    wb += '[past-sponsorship:' + previous_event + '] ';
-    var needs_speaker = fieldValue('speaker_needed') == 'Yes' ? 'true' : 'false';
-    wb += '[needs-speaker:' + needs_speaker + '] ';
-    var sponsor_booth = fieldValue('sponsor_booth') == 'Yes' ? 'true' : 'false';
-    wb += '[option-to-sponsor-booth:' + sponsor_booth + '] ';
     var location_wb_map = {
       'Africa' : 'africa',
       'Asia' : 'asia',
@@ -188,16 +174,6 @@ var DE = {
       'Online only' : 'online',
     };
     wb += '[location:' + location_wb_map[fieldValue('event_location')] + '] ';
-    var dev_session_map = {
-     'Yes' : 'true',
-     'No' : 'false',
-     'To be determined' : 'tbd',
-    };
-    wb += '[open-web-session-at-event:' +
-           dev_session_map[fieldValue('development_session')] + '] ';
-    wb += '[expected-attendees:' + fieldValue('attendees') + '] ';
-    var prospectus = fieldValue('data') ? 'true' : 'false';
-    wb += '[prospectus:' + prospectus + '] ';
 
     var request_items = [];
     if (document.getElementById('request_keynote').checked)
@@ -231,7 +207,32 @@ var DE = {
       product_items.push('other');
     wb += '[products:' + product_items.join(',') + '] ';
 
+    if (fieldValue('developer_event') == 'Yes')
+      wb += '[developer-event:true] ';
+    var mozilla_attending = fieldValue('mozilla_attending') == 'Yes' ? 'true' : 'false';
+    wb += '[mozilla-already-attending:' + mozilla_attending + '] ';
+    var vouched = fieldValue('vouched_mozillian') == 'Yes' ? 'true' : 'false';
+    wb += '[requested-by-mozillian:' + vouched + '] ';
+    if (fieldValue('code_of_conduct') == 'Yes')
+      wb += '[code-of-conduct:true] ';
+    var previous_event = fieldValue('previous_event') == 'Yes' ? 'true' : 'false';
+    wb += '[past-sponsorship:' + previous_event + '] ';
+    var needs_speaker = fieldValue('speaker_needed') == 'Yes' ? 'true' : 'false';
+    wb += '[needs-speaker:' + needs_speaker + '] ';
+    var sponsor_booth = fieldValue('sponsor_booth') == 'Yes' ? 'true' : 'false';
+    wb += '[option-to-sponsor-booth:' + sponsor_booth + '] ';
+    var dev_session_map = {
+     'Yes' : 'true',
+     'No' : 'false',
+     'To be determined' : 'tbd',
+    };
+    wb += '[open-web-session-at-event:' +
+           dev_session_map[fieldValue('development_session')] + '] ';
+    wb += '[expected-attendees:' + fieldValue('attendees') + '] ';
+    var prospectus = fieldValue('data') ? 'true' : 'false';
+    wb += '[prospectus:' + prospectus + '] ';
     document.getElementById('status_whiteboard').value = wb.replace(/ $/, '');
+
     var summary = document.getElementById('event').value + ', ' + DE.long_start_date();
     var loc = document.getElementById('location').value;
     if (loc)
