@@ -151,6 +151,30 @@ This is a Bugzilla::User object of the user.
 
 =back
 
+=head2 attachment_end_of_update
+
+Called during L<Bugzilla::Attachment/update>, after changes are made
+to the database, but while still inside a transaction.
+
+Params:
+
+=over
+
+=item C<object>
+
+The attachment object that C<update> was called on.
+
+=item C<old_object>
+
+The attachment object as it was before it was updated.
+
+=item C<changes>
+
+The fields that have been changed, in the same format that
+L<Bugzilla::Attachment/update> returns.
+
+=back
+
 =head2 attachment_process_data
 
 This happens at the very beginning process of the attachment creation.
@@ -1674,6 +1698,26 @@ A reference to a hash that contains the result data.
 =item C<rpc>
 
 The current JSONRPC, XMLRPC, or REST object.
+
+=back
+
+=head2 wevservice_status_code_map
+
+This hook allows an extension to change the status codes returned by
+specific webservice errors. The valid internal error codes that Bugzilla
+generates, and the status codes they map to by default, are defined in the
+C<WS_ERROR_CODE> constant in C<Bugzilla::WebService::Constants>. When
+remapping an error, you may wish to use an existing status code constant.
+Such constants are also in C<Bugzilla::WebService::Constants> and start
+with C<STATUS_*> such as C<STATUS_BAD_REQUEST>.
+
+Params:
+
+=over
+
+=item C<status_code_map>
+
+A hash reference containing the current status code mapping.
 
 =back
 
