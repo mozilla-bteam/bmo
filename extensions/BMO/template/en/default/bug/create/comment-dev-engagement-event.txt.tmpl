@@ -76,9 +76,6 @@ Event Description:
 
 ::
 
-Primary Audience:
-[%+ cgi.param('audience') %]
-
 Relevant Products:
 [% "\n* Firefox OS" IF cgi.param('product_fxos') %]
 [% "\n* Firefox Web Browser" IF cgi.param('product_fx') %]
@@ -87,6 +84,7 @@ Relevant Products:
 [% "\n* Marketplace" IF cgi.param('product_marketplace') %]
 [% "\n* Thunderbird" IF cgi.param('product_tb') %]
 [% "\n* The Free and Open Web" IF cgi.param('product_fow') %]
+[% "\n* Developer Tools" IF cgi.param('product_devtools') %]
 [% "\n* Other: " _ cgi.param('product_other_text') IF cgi.param('product_other') %]
 
 Option to Sponsor a Booth?:

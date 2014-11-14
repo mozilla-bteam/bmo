@@ -82,7 +82,6 @@ var DE = {
       'location' : 'Please enter a location description for the event.',
       'attendees' : 'Please enter number of expected attendees.',
       'desc' : 'Please enter a description of the event.',
-      'audience' : 'Please enter primary audience.',
     };
 
     var required_selects = {
@@ -119,6 +118,7 @@ var DE = {
       'product_marketplace',
       'product_tb',
       'product_fow',
+      'product_devtools',
       'product_other',
     ];
     var found = 0;
@@ -203,6 +203,8 @@ var DE = {
       product_items.push('thunderbird');
     if (document.getElementById('product_fow').checked)
       product_items.push('open-web');
+    if (document.getElementById('product_devtools').checked)
+      product_items.push('developer-tools');
     if (document.getElementById('product_other').checked)
       product_items.push('other');
     wb += '[products:' + product_items.join(',') + '] ';
