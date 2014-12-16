@@ -365,13 +365,14 @@ sub sendMail {
     my $relRef      = $params->{rels_which_want};
     my $referenced_bugs = $params->{referenced_bugs};
     my $dep_only = $params->{dep_only};
+    my $attach_id;
 
     # Only display changes the user is allowed see.
     my @display_diffs;
 
     foreach my $diff (@diffs) {
         my $add_diff = 0;
-        
+
         if (grep { $_ eq $diff->{field_name} } TIMETRACKING_FIELDS) {
             $add_diff = 1 if $user->is_timetracker;
         }
@@ -379,6 +380,7 @@ sub sendMail {
             $add_diff = 1;
         }
         push(@display_diffs, $diff) if $add_diff;
+        $attach_id = $diff->{attach_id} if $diff->{attach_id};
     }
 
     if (!$user->is_insider) {
@@ -428,6 +430,7 @@ sub sendMail {
         date               => $date,
         to_user            => $user,
         bug                => $bug,
+        attach_id          => $attach_id,
         reasons            => \@reasons,
         reasons_watch      => \@reasons_watch,
         reasonsheader      => join(" ", @headerrel),
@@ -453,6 +456,10 @@ sub sendMail {
 
 sub enqueue {
     my ($vars) = @_;
+
+    # BMO: allow modification of the email at the time it was generated
+    Bugzilla::Hook::process('bugmail_enqueue', { vars => $vars });
+
     # we need to flatten all objects to a hash before pushing to the job queue.
     # the hashes need to be inflated in the dequeue method.
     $vars->{bug}          = _flatten_object($vars->{bug});
@@ -544,6 +551,10 @@ sub _generate_bugmail {
         $email->content_type_set('multipart/alternative');
     }
     $email->parts_set(\@parts);
+
+    # BMO: allow modification of the email given the enqueued variables
+    Bugzilla::Hook::process('bugmail_generate', { vars => $vars, email => $email });
+
     return $email;
 }
 

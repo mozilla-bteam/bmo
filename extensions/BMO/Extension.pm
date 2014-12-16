@@ -25,6 +25,7 @@ package Bugzilla::Extension::BMO;
 use strict;
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::BugMail;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Field;
@@ -199,7 +200,8 @@ sub page_before_template {
 sub bounty_attachment {
     my ($vars) = @_;
 
-    Bugzilla->user->in_group('bounty-team')
+    my $user = Bugzilla->user;
+    $user->in_group('bounty-team')
         || ThrowUserError("auth_failure", { group  => "bounty-team",
                                             action => "add",
                                             object => "bounty_attachments" });
@@ -236,6 +238,8 @@ sub bounty_attachment {
             });
         }
         $dbh->bz_commit_transaction();
+
+        Bugzilla::BugMail::Send($bug->id, { changer => $user });
 
         print Bugzilla->cgi->redirect('show_bug.cgi?id=' . $bug->id);
         exit;
@@ -274,11 +278,11 @@ sub parse_bounty_attachment_description {
     my $date = qr/\d{4}-\d{2}-\d{2}/;
     $desc =~ m!
         ^
-        (?<reporter_email> [^,]+)      \s*,\s*
-        (?<amount_paid>    [0-9]+)  ?  \s*,\s*
-        (?<reported_date>  $date)   ?  \s*,\s*
-        (?<fixed_date>     $date)   ?  \s*,\s*
-        (?<awarded_date>   $date)   ?  \s*,\s*
+        (?<reporter_email> [^,]+)          \s*,\s*
+        (?<amount_paid>    [0-9]+[-+?]?) ? \s*,\s*
+        (?<reported_date>  $date)        ? \s*,\s*
+        (?<fixed_date>     $date)        ? \s*,\s*
+        (?<awarded_date>   $date)        ? \s*,\s*
         (?<publish>        (?i: true | false )) ?
         (?: \s*,\s* (?<credits>.*) ) ?
         $
@@ -1199,6 +1203,9 @@ sub post_bug_after_creation {
     elsif ($format eq 'mozpr') {
         $self->_post_mozpr_bug($args);
     }
+    elsif ($format eq 'dev-engagement-event') {
+        $self->_post_dev_engagement($args);
+    }
 }
 
 sub _post_employee_incident_bug {
@@ -1368,6 +1375,147 @@ sub _post_mozpr_bug {
         });
     }
     $bug->update($bug->creation_ts);
+}
+
+sub _post_dev_engagement {
+    my ($self, $args) = @_;
+    my $vars       = $args->{vars};
+    my $parent_bug = $vars->{bug};
+    my $template   = Bugzilla->template;
+    my $cgi        = Bugzilla->cgi;
+    my $params     = Bugzilla->input_params;
+    my $old_user   = Bugzilla->user;
+
+    my $error_mode_cache = Bugzilla->error_mode;
+    Bugzilla->error_mode(ERROR_MODE_DIE);
+
+    my $discussion_bug;
+    eval {
+        # Add attachment containing tab delimited field values for
+        # spreadsheet import.
+        my @columns = qw(event start_date end_date location attendees
+                         audience desc mozilla_attending_list);
+        my @attach_values;
+        foreach my $column(@columns) {
+            my $value = $params->{$column} || "";
+            $value =~ s/"/""/g;
+            push(@attach_values, qq{"$value"});
+        }
+
+        my @requested;
+        foreach my $param (grep(/^request_/, keys %$params)) {
+            next if !$params->{$param} || $param eq 'request_other_text';
+            $param =~ s/^request_//;
+            push(@requested, ucfirst($param));
+        }
+        push(@attach_values, '"' . join(",", @requested) . '"');
+
+        # we wrap the data inside a textarea to allow for the delimited data to
+        # be pasted directly into google docs.
+
+        my $values = html_quote(join("\t", @attach_values));
+        my $data = <<EOF;
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Spreadsheet Data</title>
+        <style>
+            * {
+                box-sizing: border-box;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+            }
+            body {
+                overflow: hidden;
+            }
+            textarea {
+                background: none;
+                border: 0;
+                padding: 1em;
+                resize: none;
+            }
+        </style>
+    </head>
+    <body>
+        <textarea>$values</textarea>
+    </body>
+</html>
+EOF
+
+        $self->_add_attachment($args, {
+            data        => $data,
+            description => 'Spreadsheet Data',
+            filename    => 'dev_engagement_submission.html',
+            mimetype    => 'text/html',
+        });
+
+        # File discussion bug
+        Bugzilla->set_user(Bugzilla::User->new({ name => 'nobody@mozilla.org' }));
+        my $new_user = Bugzilla->user;
+
+        # HACK: User needs to be in the editbugs and primary bug's group to allow
+        # setting of dependencies.
+        $new_user->{'groups'} = [
+            Bugzilla::Group->new({ name => 'editbugs' }),
+            Bugzilla::Group->new({ name => 'mozilla-employee-confidential' })
+        ];
+
+        my $recipients = { changer => $new_user };
+        $vars->{original_reporter} = $old_user;
+
+        $discussion_bug = Bugzilla::Bug->create({
+            short_desc        => '[discussion] ' . $parent_bug->short_desc,
+            product           => 'Developer Engagement',
+            component         => 'Events Request Discussion',
+            keywords          => ['event-discussion-needs-review'],
+            bug_severity      => 'normal',
+            groups            => ['mozilla-employee-confidential'],
+            comment           => 'This is the discussion for the request ' .
+                                 'described in bug ' . $parent_bug->id . '.',
+            op_sys            => 'All',
+            rep_platform      => 'All',
+            version           => 'unspecified'
+        });
+
+        # Set the needinfo flag on the discussion bug
+        my @new_flags;
+        foreach my $type (@{ $discussion_bug->flag_types }) {
+            next if $type->name ne 'needinfo';
+            foreach my $requestee (DEV_ENGAGE_DISCUSS_NEEDINFO()) {
+                my $needinfo_flag = {
+                    type_id   => $type->id,
+                    status    => '?',
+                    requestee => $requestee,
+                };
+                push(@new_flags, $needinfo_flag);
+            }
+        }
+        $discussion_bug->set_flags(\@new_flags, []) if @new_flags;
+        $discussion_bug->update($discussion_bug->creation_ts);
+        Bugzilla::BugMail::Send($discussion_bug->id, $recipients);
+
+        # Add discussion comment to the parent bug pointing to new bug
+        # and dependency link
+        $parent_bug->set_all({ dependson => { add => [ $discussion_bug->id ] } });
+        $parent_bug->add_comment('This request is being discussed in bug ' .
+                                 $discussion_bug->id);
+    };
+    my $error = $@;
+
+    Bugzilla->set_user($old_user);
+    Bugzilla->error_mode($error_mode_cache);
+
+    # No matter what happened, ensure the parent bug gets marked as updated
+    # There's no need to send mail for parent bug
+    $parent_bug->update($parent_bug->creation_ts);
+
+    if ($error || !$discussion_bug) {
+        warn "Failed to create additional dev-engagement bug: $error\n" if $error;
+        $vars->{'message'} = 'dev_engagement_creation_failed';
+    }
 }
 
 sub _add_attachment {
