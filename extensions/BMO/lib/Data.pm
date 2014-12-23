@@ -87,6 +87,7 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
     },
     qw/^cf_due_date$/ => {
         "Data & BI Services Team" => [],
+        "Data Compliance"         => [],
         "Developer Engagement"    => [],
         "Infrastructure & Operations" => [],
         "Marketing"               => [],
