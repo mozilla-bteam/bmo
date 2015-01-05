@@ -95,7 +95,7 @@ var guided = {
   },
 
   setAdvancedLink: function() {
-    href = 'enter_bug.cgi?format=__default__' +
+    var href = 'enter_bug.cgi?format=__default__' +
       '&product=' + encodeURIComponent(product.getName()) +
       '&short_desc=' + encodeURIComponent(dupes.getSummary());
     Dom.get('advanced_img').href = href;
@@ -219,12 +219,10 @@ var product = {
     if (products[productName] && products[productName].noComponentSelection || guided.webdev) {
       if (!Dom.hasClass('componentTR', 'hidden')) {
         Dom.addClass('componentTR', 'hidden');
-        bugForm.toggleOddEven();
       }
     } else {
       if (Dom.hasClass('componentTR', 'hidden')) {
         Dom.removeClass('componentTR', 'hidden');
-        bugForm.toggleOddEven();
       }
     }
 
@@ -241,7 +239,7 @@ var product = {
       {
         success: function(res) {
           try {
-            data = YAHOO.lang.JSON.parse(res.responseText);
+            var data = YAHOO.lang.JSON.parse(res.responseText);
             if (data.error)
               throw(data.error.message);
             if (data.result.products.length == 0)
@@ -448,7 +446,7 @@ var dupes = {
       'jsonrpc.cgi',
       {
         success: function(res) {
-          data = YAHOO.lang.JSON.parse(res.responseText);
+          var data = YAHOO.lang.JSON.parse(res.responseText);
           if (data.error)
             throw(data.error.message);
           dupes._buildCcHTML(el, bugID, bugStatus, follow);
@@ -478,6 +476,7 @@ var dupes = {
     this._elList.innerHTML = '';
     this._showProductSupport();
     this._currentSearchQuery = '';
+    this._elSummary.focus();
   },
 
   _showProductSupport: function() {
@@ -623,6 +622,9 @@ var dupes = {
 var bugForm = {
   _visibleHelpPanel: null,
   _mandatoryFields: [],
+  _conditionalDetails: [
+    { check: function () { return product.getName() == 'Firefox'; }, id: 'firefox_for_android_row' }
+  ],
 
   onInit: function() {
     var user_agent = navigator.userAgent;
@@ -644,6 +646,7 @@ var bugForm = {
   onShow: function() {
     // check for a forced format
     var productName = product.getName();
+    var visibleCount = 0;
     if (products[productName] && products[productName].format) {
         Dom.addClass('advanced', 'hidden');
         document.location.href = 'enter_bug.cgi?format=' + encodeURIComponent(products[productName].format) +
@@ -661,6 +664,24 @@ var bugForm = {
     this.onFileChange();
     for (var i = 0, n = this._mandatoryFields.length; i < n; i++) {
       Dom.removeClass(this._mandatoryFields[i], 'missing');
+    }
+
+    this._conditionalDetails.forEach(function (cond) {
+      if (cond.check()) {
+        visibleCount++;
+        Dom.removeClass(cond.id, 'hidden');
+      }
+      else {
+        Dom.addClass(cond.id, 'hidden');
+      }
+    });
+    if (visibleCount > 0) {
+      Dom.removeClass('details', 'hidden');
+      Dom.removeClass('submitTR', 'even');
+    }
+    else {
+      Dom.addClass('details', 'hidden');
+      Dom.addClass('submitTR', 'even');
     }
   },
 
@@ -707,16 +728,18 @@ var bugForm = {
       // check for the default component
       var defaultRegex;
       if (product.getPreselectedComponent()) {
-        defaultRegex = new RegExp('^' + quoteMeta(product.getPreselectedComponent()) + '$', 'i')
+        defaultRegex = new RegExp('^' + quoteMeta(product.getPreselectedComponent()) + '$', 'i');
       } else if(products[productName] && products[productName].defaultComponent) {
-        defaultRegex = new RegExp('^' + quoteMeta(products[productName].defaultComponent) + '$', 'i')
+        defaultRegex = new RegExp('^' + quoteMeta(products[productName].defaultComponent) + '$', 'i');
       } else {
         defaultRegex = new RegExp('General', 'i');
       }
 
       var preselectedComponent = false;
-      for (var i = 0, n = product.details.components.length; i < n; i++) {
-        var component = product.details.components[i];
+      var i, n;
+      var component;
+      for (i = 0, n = product.details.components.length; i < n; i++) {
+        component = product.details.components[i];
         if (component.is_active == '1') {
           if (defaultRegex.test(component.name)) {
             preselectedComponent = component.name;
@@ -731,8 +754,8 @@ var bugForm = {
       }
 
       // build component select
-      for (var i = 0, n = product.details.components.length; i < n; i++) {
-        var component = product.details.components[i];
+      for (i = 0, n = product.details.components.length; i < n; i++) {
+        component = product.details.components[i];
         if (component.is_active == '1') {
           elComponents.options[elComponents.options.length] =
             new Option(component.name, component.name);
@@ -740,7 +763,7 @@ var bugForm = {
       }
 
       var validComponent = false;
-      for (var i = 0, n = elComponents.options.length; i < n && !validComponent; i++) {
+      for (i = 0, n = elComponents.options.length; i < n && !validComponent; i++) {
         if (elComponents.options[i].value == elComponent.value)
           validComponent = true;
       }
@@ -758,7 +781,7 @@ var bugForm = {
     // build versions
     var defaultVersion = '';
     var currentVersion = Dom.get('version').value;
-    for (var i = 0, n = product.details.versions.length; i < n; i++) {
+    for (i = 0, n = product.details.versions.length; i < n; i++) {
       var version = product.details.versions[i];
       if (version.is_active == '1') {
         elVersions.options[elVersions.options.length] =
@@ -773,7 +796,7 @@ var bugForm = {
       if (products[productName] && products[productName].version) {
         var detectedVersion = products[productName].version();
         var options = elVersions.options;
-        for (var i = 0, n = options.length; i < n; i++) {
+        for (i = 0, n = options.length; i < n; i++) {
           if (options[i].value == detectedVersion) {
             defaultVersion = detectedVersion;
             break;
@@ -860,18 +883,6 @@ var bugForm = {
     return false;
   },
 
-  toggleOddEven: function() {
-    var rows = Dom.get('bugForm').getElementsByTagName('TR');
-    var doToggle = false;
-    for (var i = 0, n = rows.length; i < n; i++) {
-      if (doToggle) {
-        rows[i].className = rows[i].className == 'odd' ? 'even' : 'odd';
-      } else {
-        doToggle = rows[i].id == 'componentTR';
-      }
-    }
-  },
-
   _getFilename: function() {
     var filename = Dom.get('data').value;
     if (!filename)
@@ -883,8 +894,9 @@ var bugForm = {
   _mandatoryMissing: function() {
     var result = new Array();
     for (var i = 0, n = this._mandatoryFields.length; i < n; i++ ) {
-      id = this._mandatoryFields[i];
-      el = Dom.get(id);
+      var id = this._mandatoryFields[i];
+      var el = Dom.get(id);
+      var value;
 
       if (el.type.toString() == "checkbox") {
         value = el.checked;
@@ -965,7 +977,7 @@ var bugForm = {
     el.panel.hide();
     this._visibleHelpPanel = null;
   }
-}
+};
 
 function quoteMeta(value) {
   return value.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
