@@ -171,6 +171,7 @@ our %product_sec_groups = (
     "Internet Public Policy"       => 'mozilla-employee-confidential',
     "L20n"                         => 'l20n-security',
     "Legal"                        => 'legal',
+    "Recruiting"                   => 'hr',
     "Marketing"                    => 'marketing-private',
     "Marketplace"                  => 'client-services-security',
     "Mozilla Communities"          => 'mozilla-communities-security',
@@ -224,6 +225,10 @@ our %create_bug_formats = (
     },
     'Legal' => {
         'format'  => 'legal',
+        'include' => 'everyone',
+    },
+    'Recruiting' => {
+        'format' => 'recruiting',
         'include' => 'everyone',
     },
     'Internet Public Policy' => {
