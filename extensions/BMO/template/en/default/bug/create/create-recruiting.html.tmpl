@@ -32,8 +32,8 @@
 p {
    max-width: 40%;
 }
-label.required:after {
-  content: " *";
+label.required:before {
+  content: "* ";
   color: red;
 }
 .required_star {
@@ -264,7 +264,7 @@ function jobDescToggle(what) {
           <label for="plan_impact">What part of your strategic plan does this role impact?</label>
         </th>
         <td>
-          <textarea id="plan_impact" name="plan_impact" cols="60" rows="4"></textarea>
+          <textarea required id="plan_impact" name="plan_impact" cols="60" rows="4"></textarea>
         </td>
       </tr>
 
@@ -273,7 +273,7 @@ function jobDescToggle(what) {
           <label for="critical_success">What part of your strategic plan does this role impact?</label>
         </th>
         <td>
-          <textarea id="critical_success" name="critical_success" cols="60" rows="4"></textarea>
+          <textarea required id="critical_success" name="critical_success" cols="60" rows="4"></textarea>
         </td>
       </tr>
 
