@@ -166,12 +166,13 @@ sub FILESYSTEM {
         'install-module.pl' => { perms => OWNER_EXECUTE },
         'clean-bug-user-last-visit.pl' => { perms => WS_EXECUTE },
 
-        'Bugzilla.pm'   => { perms => CGI_READ },
-        "$localconfig*" => { perms => CGI_READ },
-        'bugzilla.dtd'  => { perms => WS_SERVE },
-        'mod_perl.pl'   => { perms => WS_SERVE },
-        'robots.txt'    => { perms => WS_SERVE },
-        '.htaccess'     => { perms => WS_SERVE },
+        'Bugzilla.pm'    => { perms => CGI_READ },
+        "$localconfig*"  => { perms => CGI_READ },
+        'bugzilla.dtd'   => { perms => WS_SERVE },
+        'mod_perl.pl'    => { perms => WS_SERVE },
+        'robots.txt'     => { perms => WS_SERVE },
+        '.htaccess'      => { perms => WS_SERVE },
+        'cvs-update.log' => { perms => WS_SERVE },
 
         'contrib/README'       => { perms => OWNER_WRITE },
         'contrib/*/README'     => { perms => OWNER_WRITE },
@@ -643,7 +644,7 @@ sub _update_old_charts {
                  ($in_file =~ /\.orig$/i));
 
         rename("$in_file", "$in_file.orig") or next;
-        open(IN, "$in_file.orig") or next;
+        open(IN, "<", "$in_file.orig") or next;
         open(OUT, '>', $in_file) or next;
 
         # Fields in the header
