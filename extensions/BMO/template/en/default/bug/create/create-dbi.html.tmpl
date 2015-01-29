@@ -90,7 +90,7 @@ function onSubmit() {
 <input type="hidden" name="rep_platform" value="All">
 <input type="hidden" name="op_sys" value="All">
 <input type="hidden" name="priority" value="--">
-<input type="hidden" name="version" value="unspecified">
+<input type="hidden" name="version" value="Customer Request">
 <input type="hidden" name="bug_status" id="bug_status" value="UNCONFIRMED">
 <input type="hidden" name="bug_severity" id="bug_severity" value="normal">
 <input type="hidden" name="comment" id="comment" value="">
@@ -170,24 +170,9 @@ function onSubmit() {
     <label class="field_label required" for="goal">
       What company level goal does this request support?
     </label>
-    <select name="goal" id="goal">
-      <option value=""></option>
-      <option value="Scale Firefox OS- show up in the market share">
-        Scale Firefox OS- show up in the market share
-      </option>
-      <option value="Add services to the product line">
-        Add services to the product line
-      </option>
-      <option value="Diversification in revenue">
-        Diversification in revenue
-      </option>
-      <option value="Get Firefox on a growth trajectory">
-        Get Firefox on a growth trajectory
-      </option>
-      <option value="Request does not support a company level goal">
-        Request does not support a company level goal
-      </option>
-    </select>
+    <textarea name="goal" id="goal" rows="5">
+      [%~ %]Request does not support a company level goal.[% ~%]
+    </textarea>
   </div>
 
   <div class="field">
@@ -257,6 +242,7 @@ function onSubmit() {
     <select name="frequency" id="frequency">
       <option value=""></option>
       <option value="Never">Never. This is a one-off request</option>
+      <option value="Immediately">Immediately / Live source</option>
       <option value="Daily">Daily</option>
       <option value="Weekly">Weekly</option>
       <option value="Monthly">Monthly</option>
@@ -287,9 +273,9 @@ function onSubmit() {
     </div>
     [%
       interfaces = [
+        { value = "Tableau Dashboard", label = "Tableau Dashboard" },
         { value = "SQL Queries", label = "SQL Queries (eg. Data Warehouse)" },
         { value = "Self-Service", label = "Self-Service" },
-        { value = "Tableau Dashboard", label = "Tableau Dashboard" },
         { value = "D3 Dashboard", label = "D3 Dashboard" },
         { value = "Email Report", label = "Email Report" },
         { value = "Comma Separated Values", label = "Comma Separated Values (flat file)" },
