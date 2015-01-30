@@ -83,6 +83,5 @@ RewriteRule ^form[\.:]webops[\.\-:]request$ enter_bug.cgi?product=Infrastructure
 RewriteRule ^form[\.:]comm[\.:]newsletter$ enter_bug.cgi?product=Marketing&format=comm-newsletter
 RewriteRule ^form[\.:]screen[\.:]share[\.:]whitelist$ enter_bug.cgi?product=Firefox&format=screen-share-whitelist
 RewriteRule ^form[\.:]data[\.\-:]compliance$ enter_bug.cgi?product=Data+Compliance&format=data-compliance
-RewriteRule ^form[\.:]dbi$ enter_bug.cgi?product=Data+\%26+BI+Services+Team&format=dbi
 RewriteRule ^rest/(.*)$ rest.cgi/$1 [NE]
 RewriteRule ^bzapi/(.*)$ extensions/BzAPI/bin/rest.cgi/$1 [NE]

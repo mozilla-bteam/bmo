@@ -127,9 +127,6 @@ sub template_before_process {
             my $versions = Bugzilla::Product->new({ name => 'Core' })->versions;
             $vars->{'versions'} = [ reverse @$versions ];
         }
-        elsif ($format eq 'dbi.html.tmpl') {
-            $vars->{mozilla_project} = Bugzilla::Field->new({ name => 'cf_mozilla_project', cache => 1 });
-        }
     }
 
 
@@ -1119,9 +1116,6 @@ sub post_bug_after_creation {
     elsif ($format eq 'dev-engagement-event') {
         $self->_post_dev_engagement($args);
     }
-    elsif ($format eq 'dbi') {
-        $self->_post_dbi_bug($args);
-    }
 }
 
 sub _post_employee_incident_bug {
@@ -1291,36 +1285,6 @@ sub _post_mozpr_bug {
         });
     }
     $bug->update($bug->creation_ts);
-}
-
-sub _post_dbi_bug {
-    my ($self, $args) = @_;
-    my $input = Bugzilla->input_params;
-
-    require JSON::XS;
-    $input->{interface} = [ $input->{interface} ] unless ref $input->{interface};
-    $self->_add_attachment($args, {
-        filename    => 'dbi.json',
-        description => 'D&BI Request (JSON)',
-        mimetype    => 'text/plain',
-        data        => JSON::XS::encode_json({
-            objective       => $input->{short_desc},
-            audience        => $input->{audience},
-            project         => $input->{cf_mozilla_project},
-            impact_number   => $input->{impact_number},
-            due_date        => $input->{cf_due_date},
-
-            source          => $input->{source},
-            elements        => $input->{elements},
-            calculations    => $input->{calculations},
-            goal            => $input->{goal},
-            impact          => $input->{impact},
-
-            interfaces      => ( ref($input->{interface}) ? $input->{interface} : [ $input->{interface} ] ),
-            public          => $input->{public},
-            frequency       => $input->{frequency},
-        }),
-    });
 }
 
 sub _post_dev_engagement {
