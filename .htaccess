@@ -62,7 +62,7 @@ RewriteRule ^form[\.:]privacy[\.\-:]data$ enter_bug.cgi?product=Privacy&format=p
 RewriteRule ^form[\.:]moz[\.\-:]project[\.\-:]review$ enter_bug.cgi?product=mozilla.org&format=moz-project-review
 RewriteRule ^form[\.:]docs?$ enter_bug.cgi?product=Developer+Documentation&format=doc [QSA]
 RewriteRule ^form[\.:]mdn?$ enter_bug.cgi?product=Mozilla+Developer+Network&format=mdn
-RewriteRule ^form[\.:](swag|gear)$ enter_bug.cgi?product=mozilla.org&format=swag
+RewriteRule ^form[\.:](swag|gear|costume)$ enter_bug.cgi?product=Marketing&format=$1
 RewriteRule ^form[\.:](b2g|fxos)[\.\-:](partner|betaprogram|feature) enter_bug.cgi?product=Firefox+OS&format=fxos-$2 [QSA]
 RewriteRule ^form[\.:]ipp$ enter_bug.cgi?product=Internet+Public+Policy&format=ipp
 RewriteRule ^form[\.:]creative$ enter_bug.cgi?product=Marketing&format=creative
@@ -78,4 +78,5 @@ RewriteRule ^form[\.:]screen[\.:]share[\.:]whitelist$ enter_bug.cgi?product=Fire
 RewriteRule ^form[\.:]webops[\.\-:]request$ enter_bug.cgi?product=Infrastructure+\%26+Operations&format=webops-request
 RewriteRule ^form[\.:]data[\.\-:]compliance$ enter_bug.cgi?product=Data+Compliance&format=data-compliance
 RewriteRule ^rest/(.*)$ rest.cgi/$1 [NE]
+RewriteRule ^(?:latest|1\.2|1\.3)/(.*)$ extensions/BzAPI/bin/rest.cgi/$1 [NE]
 RewriteRule ^bzapi/(.*)$ extensions/BzAPI/bin/rest.cgi/$1 [NE]
