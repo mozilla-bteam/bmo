@@ -126,8 +126,7 @@ var MPR = {
             page_sections.initial_separate_party_questions = true;
 
             if (MPR.fieldValue('relationship_type')
-                && MPR.fieldValue('relationship_type') != 'Hardware Purchase'
-                && MPR.fieldValue('relationship_type') != 'Business Partner')
+                && MPR.fieldValue('relationship_type') != 'Hardware Purchase')
             {
                 page_sections.legal_questions = true;
             }
