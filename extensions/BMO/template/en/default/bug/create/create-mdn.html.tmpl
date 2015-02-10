@@ -38,20 +38,20 @@ strong.required:before {
   var mdn = {
     _initial_state: 'initial',
     _current_state: 'initial',
-    _current_type:  'bug',
+    _current_type:  'Bug',
     _required_fields: {
-      'bug': {
+      'Bug': {
         'bug_actions': 'Please enter some text for "What did you do?"',
         'bug_actual_results': 'Please enter some text for "What happened?"',
         'bug_expected_results': 'Please enter some text for "What should have happened?"',
       },
-      'feature': {
+      'Feature': {
         'feature_problem': 'Please enter some text for "What problem would this solve?"',
         'feature_identification': 'Please enter some text for "How do you know that the users identified above have this problem?"',
         'feature_solution': 'Please enter some text for "How are the users identified above solving this problem now?"',
         'feature_suggestions': 'Please enter some text for "Do you have any suggestions for solving the problem?"'
       },
-      'change': {
+      'Change': {
         'change_feature': 'Please enter some text for "What feature should be changed? Please provide the URL of the feature if possible"',
         'change_problem_solving': 'Please enter some text for "What problems would this solve?"',
         'change_audience': 'Please enter some text for "Who would use this?"',
@@ -62,6 +62,7 @@ strong.required:before {
     setState: function(state, request_type, no_set_history) {
       if (state == 'detail') {
         request_type = request_type || this._getRadioValueByClass('request_type');
+        request_type = request_type.toLowerCase();
         if (request_type == 'bug') {
           Dom.get('detail_header').innerHTML = '<h2>[% terms.Bug %] Report</h2>';
           Dom.get('secure_type').innerHTML = 'report';
@@ -81,7 +82,6 @@ strong.required:before {
           Dom.addClass('detail_feature_other_forms', 'bz_default_hidden');
         }
         this._current_type = request_type;
-
       }
       Dom.addClass(this._current_state + '_form', 'bz_default_hidden');
       Dom.removeClass(state + '_form', 'bz_default_hidden');
@@ -93,8 +93,8 @@ strong.required:before {
       return true;
     },
     validateAndSubmit: function() {
+      var request_type = this._getRadioValueByClass('request_type');
       var alert_text = '';
-      var request_type = this._current_type;
       if (!isFilledOut('short_desc')) alert_text += 'Please enter a "Summary".\n';
       for (require_type in this._required_fields) {
         if (require_type == request_type) {
@@ -106,7 +106,7 @@ strong.required:before {
       }
 
       // Feature audience radio input
-      if (request_type == 'feature') {
+      if (request_type == 'Feature') {
         var audience = document.getElementsByName('feature_audience');
         var found = 0;
         for(var i = 0, l = audience.length; i < l; i++) {
@@ -130,7 +130,7 @@ strong.required:before {
       }
       var whiteboard = Dom.get('status_whiteboard');
       whiteboard.value = "[specification][type:" + request_type.toLowerCase() + "]";
-      if (request_type == 'feature') {
+      if (request_type == 'Feature') {
         Dom.get('bug_severity').value = 'enhancement';
       }
       return true;
@@ -161,7 +161,6 @@ strong.required:before {
       mdn.setState(state_data[0], state_data[1], no_set_history);
     }
   };
-  Event.onDOMReady(mdn.init);
   Event.on('show_detail', 'click', function() { mdn.setState('detail'); });
 [% END %]
 
@@ -193,13 +192,13 @@ strong.required:before {
   <div id="initial_form">
     <p>
       <input type="radio" name="request_type" class="request_type"
-             id="request_type_bug" value="bug" checked="checked">
+             id="request_type_bug" value="Bug" checked="checked">
         <label for="request_type_bug">Report a [% terms.bug %]</label><br>
       <input type="radio" name="request_type" class="request_type"
-             id="request_type_feature" value="feature">
+             id="request_type_feature" value="Feature">
         <label for="request_type_feature">Request a new feature</label><br>
       <input type="radio" name="request_type" class="request_type"
-             id="request_type_change" value="change">
+             id="request_type_change" value="Change">
         <label for="request_type_change">Request a change to an existing feature</label><br>
       <br>
       <input id="show_detail" type="button" value="Next">
@@ -226,6 +225,7 @@ strong.required:before {
             <a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Developer%20Engagement&component=Events%20Request">
               Requesting sponsorship for your developer event</a>
           </li>
+          <li>Requesting MDN assistance with developer marketing</li>
         </ul>
       </p>
     </div>
@@ -356,5 +356,9 @@ strong.required:before {
   <a href="enter_bug.cgi?format=__standard__&product=[% product.name FILTER uri %]">
     Switch to the standard [% terms.bug %] entry form</a>
 </div>
+
+<script>
+  mdn.init();
+</script>
 
 [% PROCESS global/footer.html.tmpl %]
