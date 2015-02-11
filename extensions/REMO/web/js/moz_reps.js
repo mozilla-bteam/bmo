@@ -1,45 +1,73 @@
 /*global $ */
 
 $(document).ready(function() {
-  'use strict';
+    'use strict';
 
-  var first_time = $("#first_time");
-  first_time.prop("checked", true);
-  first_time.change(function(evt) {
-    if (!this.checked) {
-      $("#prior_bug").removeClass("bz_default_hidden");
-      $("#dependson").attr("required", true);
-    }
-    else {
-      $("#prior_bug").addClass("bz_default_hidden");
-      $("#dependson").removeAttr("required");
-    }
-  });
+    var first_time = $("#first_time");
+    first_time.prop("checked", true);
+    first_time.change(function(evt) {
+        if (!this.checked) {
+            $("#prior_bug").show();
+            $("#prior_bug label").addClass("required");
+        }
+        else {
+            $("#prior_bug").hide();
+            $("#prior_bug label").removeClass("required");
+        }
+    });
 
-  $("#underage").change(function(evt) {
-    if (this.checked) {
-      $('#underage_warning').removeClass('bz_default_hidden');
-      $('#submit').prop("disabled", true);
-    }
-    else {
-      $('#underage_warning').addClass('bz_default_hidden');
-      $('#submit').prop("disabled", false);
-    }
-  });
+    $("#underage").change(function(evt) {
+        if (this.checked) {
+            $('#underage_warning').show();
+            $('#submit').prop("disabled", true);
+        }
+        else {
+            $('#underage_warning').hide();
+            $('#submit').prop("disabled", false);
+        }
+    });
 
-  $('#submit').click(function () {
-    var cc = document.getElementById('cc');
-    if (cc.value) {
-      cc.setCustomValidity('');
-    }
-    else {
-      cc.setCustomValidity('Please enter at least one Mozilla contributor who can vouch your application');
-    }
+    $('#tmRequestForm').submit(function (event) {
+        var mozillian_re = /https?:\/\/mozillians.org\/([^\/]+\/)?u\/[^\/]+/i;
+        var errors = [];
+        var missing = false;
 
-    $('#short_desc').val(
-      "Application Form: " + $('#first_name').val() + ' ' + $('#last_name').val()
-    );
+        $('label.required').each(function (index) {
+            var id = $(this).attr("for");
+            var input = $("#" + id);
 
-    $("tmRequestForm").submit();
-  });
+            if (id == 'mozillian') {
+                if (!input.val().match(mozillian_re)) {
+                    input.addClass("missing");
+                    errors.push("The Mozillian Account URL is invalid");
+                    event.preventDefault();
+                }
+                else {
+                    input.removeClass("missing");
+                }
+            }
+            else {
+                if (input.val() == "") {
+                    input.addClass("missing");
+                    missing = true;
+                    event.preventDefault();
+                }
+                else {
+                    input.removeClass("missing");
+                }
+            }
+        });
+
+        if (missing) {
+            errors.push("There are missing required fields");
+        }
+
+        if (errors.length) {
+            alert(errors.join("\n"));
+        }
+
+        $('#short_desc').val(
+            "Application Form: " + $('#first_name').val() + ' ' + $('#last_name').val()
+        );
+    });
 });

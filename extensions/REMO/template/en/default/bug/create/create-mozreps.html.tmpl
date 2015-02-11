@@ -35,8 +35,7 @@
 
 <p>
   If you have questions while completing this form, please contact the
-  <a href="mailto:reps-council@lists.mozilla.org">Reps Council</a> for
-  assistance.
+  <a href="mailto:reps-council@mozilla.org">Reps Council</a> for assistance.
 </p>
 
 <form method="post" action="post_bug.cgi" id="tmRequestForm">
@@ -62,7 +61,7 @@
 
     <tr class="even">
       <th><label class="required" for="last_name">Last Name:</label></th>
-      <td><input required id="last_name" name="last_name" size="40" placeholder="Doe"></td>
+      <td><input id="last_name" name="last_name" size="40" placeholder="Doe"></td>
     </tr>
 
     <tr class="odd">
@@ -72,7 +71,7 @@
       </td>
     </tr>
 
-    <tr id="underage_warning" class="odd bz_default_hidden">
+    <tr id="underage_warning" class="odd" style="display: none">
       <td colspan="2">
         Mozilla Reps program is not currently accepting people under 18 years old.
         Sorry for the inconvenience. In the meantime please check with your local Mozilla
@@ -83,7 +82,7 @@
     <tr class="even">
       <th><label class="required" for="sex">Sex:</label></th>
       <td>
-        <select required id="sex" name="sex">
+        <select id="sex" name="sex">
           <option value="">...</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
@@ -94,12 +93,12 @@
 
     <tr class="odd">
       <th><label class="required" for="city">City:</label></th>
-      <td><input required id="city" name="city" size="40" placeholder="Your city"></td>
+      <td><input id="city" name="city" size="40" placeholder="Your city"></td>
     </tr>
 
     <tr class="even">
       <th><label class="required" for="country">Country:</label></th>
-      <td><input required id="country" name="country" size="40" placeholder="Your country"></td>
+      <td><input id="country" name="country" size="40" placeholder="Your country"></td>
     </tr>
 
     <tr class="odd">
@@ -115,14 +114,13 @@
     <tr class="odd">
       <th><label class="required" for="mozillian">Mozillians.org Account URL:</label></th>
       <td>
-        <input required type="url" pattern="https?://mozillians.org/en-US/u/[^/]+"
-               id="mozillian" name="mozillian" size="40" placeholder="https://mozillians.org/en-US/u/name">
+        <input type="url" id="mozillian" name="mozillian" size="40" placeholder="https://mozillians.org/u/name">
       </td>
     </tr>
 
     <tr class="even">
       <th colspan="2">
-        <label for="cc">
+        <label class="required" for="cc">
           Mozilla contributors who vouch your application:
         </label>
       </th>
@@ -143,7 +141,7 @@
 
     <tr class="odd">
       <th colspan="2">
-        <label for="involved">
+        <label class="required" for="involved">
           What are you currently doing at Mozilla?
         </label>
       </th>
@@ -151,7 +149,7 @@
 
     <tr class="odd">
       <td colspan="2">
-        <textarea required id="involved" name="involved" rows="4" placeholder="Add-ons,  l10n,  SUMO,  QA,  ..."></textarea>
+        <textarea id="involved" name="involved" rows="4" placeholder="Add-ons,  l10n,  SUMO,  QA,  ..."></textarea>
       </td>
     </tr>
 
@@ -161,17 +159,17 @@
           When did you first start contributing to Mozilla?
         </label>
       </th>
-      <td><input required id="firstcontribute" name="firstcontribute" size="40"></td>
+      <td><input id="firstcontribute" name="firstcontribute" size="40"></td>
     </tr>
 
     <tr class="odd">
       <th><label class="required" for="languages">Languages Spoken:</label></th>
-      <td><input required id="languages" name="languages" size="40"></td>
+      <td><input id="languages" name="languages" size="40"></td>
     </tr>
 
     <tr class="even">
       <th><label class="required" for="learn">How did you learn about Mozilla Reps?</label></th>
-      <td><input required id="learn" name="learn" size="40"></td>
+      <td><input id="learn" name="learn" size="40"></td>
     </tr>
 
     <tr class="odd">
@@ -179,7 +177,7 @@
       <td><input type="checkbox" id="first_time" name="first_time" value="1" checked></td>
     </tr>
 
-    <tr id="prior_bug" class="odd bz_default_hidden">
+    <tr id="prior_bug" class="odd" style="display: none">
       <th><label for="dependson">If you have already applied to the program in the past, please reference the [% terms.bug %] number: </label></th>
       <td><input id="dependson" name="dependson" type="text" value=""></td>
     </tr>
@@ -194,13 +192,13 @@
 
     <tr class="even">
       <td colspan="2">
-        <textarea required id="motivation" name="motivation" rows="4"
+        <textarea id="motivation" name="motivation" rows="4"
                   placeholder="[% INCLUDE motivation_placeholder FILTER html %]"></textarea>
       </td>
     </tr>
-    
+
     [% BLOCK motivation_placeholder -%]
-    Tell us your goals and what you would be able to do as a Rep that you can't do right now
+      Tell us your goals and what you would be able to do as a Rep that you can't do right now
     [%- END %]
 
     <tr class="odd">
@@ -222,7 +220,7 @@
           <a href="http://www.mozilla.com/en-US/privacy-policy" target="_blank">Mozilla Privacy Policy</a>:
         </label>
       </th>
-      <td><input required id="privacy" name="privacy" type="checkbox"></td>
+      <td><input id="privacy" name="privacy" type="checkbox"></td>
     </tr>
 
     <tr class="odd">

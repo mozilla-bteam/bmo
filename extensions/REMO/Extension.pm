@@ -247,7 +247,7 @@ sub post_bug_after_creation {
     my $format = Bugzilla->input_params->{format};
 
     return unless defined $format;
-    
+
     if ($format eq 'remo-swag') {
         # If the attachment cannot be successfully added to the bug,
         # we notify the user, but we don't interrupt the bug creation process.
@@ -307,21 +307,23 @@ sub post_bug_after_creation {
 
         Bugzilla->error_mode($error_mode_cache);
     }
+
     elsif ($format eq 'mozreps') {
         my $needinfo_type = first { $_->name eq 'needinfo' } @{$bug->flag_types};
         return unless $needinfo_type;
-
+        my %original_cc = map { $_ => 1 } split(/\s*,\s*/, Bugzilla->input_params->{cc});
         my @new_flags = map {
             { type_id   => $needinfo_type->id,
               status    => '?',
               requestee => $_->login }
-        } grep { $_->is_enabled } @{$bug->cc_users};
-        $bug->set_flags(\@new_flags, []) if @new_flags;
+        } grep { $_->is_enabled && $original_cc{$_->login}} @{$bug->cc_users};
 
+        $bug->set_flags(\@new_flags, []) if @new_flags;
         $bug->add_comment(
             "You have been added as supporter to this Reps application, please comment why do you endorse their application. Thanks!"
         );
         $bug->update($bug->creation_ts);
+        Bugzilla::BugMail::Send($bug->id, { changer => Bugzilla->user });
     }
 }
 
