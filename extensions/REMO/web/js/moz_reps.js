@@ -20,7 +20,7 @@ $(document).ready(function() {
             $("#prior_bug").hide();
             $("#prior_bug label").removeClass("required");
         }
-    });
+    }).change();
 
     $("#underage").change(function(evt) {
         if (this.checked) {
@@ -31,10 +31,10 @@ $(document).ready(function() {
             $('#underage_warning').hide();
             $('#submit').prop("disabled", false);
         }
-    });
+    }).change();
 
     $('#tmRequestForm').submit(function (event) {
-        var mozillian_re = /https?:\/\/mozillians.org\/([^\/]+\/)?u\/[^\/]+/i;
+        var mozillian_re = /^https?:\/\/mozillians.org\/([^\/]+\/)?u\/[^\/]+$/i;
         var errors = [];
         var missing = false;
 
