@@ -33,6 +33,15 @@ $(document).ready(function() {
         }
     }).change();
 
+    $("#privacy").change(function(evt) {
+        if (this.checked) {
+            $('#submit').prop("disabled", false);
+        }
+        else {
+            $('#submit').prop("disabled", true);
+        }
+    }).change();
+
     $('#tmRequestForm').submit(function (event) {
         var mozillian_re = /^https?:\/\/mozillians.org\/([^\/]+\/)?u\/[^\/]+$/i;
         var errors = [];
