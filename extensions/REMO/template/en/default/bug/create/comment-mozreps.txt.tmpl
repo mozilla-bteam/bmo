@@ -27,8 +27,8 @@ Last Name:
 Under 18 years old:
 [%+ IF cgi.param('underage') %]Yes[% ELSE %]No[% END %]
 
-Sex:
-[%+ cgi.param('sex') %]
+Gender:
+[%+ cgi.param('gender') %]
 
 City:
 [%+ cgi.param('city') %]
@@ -59,7 +59,7 @@ Mozillians.org Account URL:
 
 References:
 [% IF cgi.param('cc') %]
-[%+ cgi.param('cc') %]
+[%+ cgi.param('cc').join(", ") %]
 [% END %]
 
 What are you currently doing at Mozilla?

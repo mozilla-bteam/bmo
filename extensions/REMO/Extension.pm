@@ -311,7 +311,7 @@ sub post_bug_after_creation {
     elsif ($format eq 'mozreps') {
         my $needinfo_type = first { $_->name eq 'needinfo' } @{$bug->flag_types};
         return unless $needinfo_type;
-        my %original_cc = map { $_ => 1 } split(/\s*,\s*/, Bugzilla->input_params->{cc});
+        my %original_cc = map { $_ => 1 } Bugzilla->cgi->param('cc');
         my @cc_users    = grep { $_->is_enabled && $original_cc{$_->login}} @{$bug->cc_users};
         my @new_flags   = map {
             { type_id   => $needinfo_type->id,
@@ -321,9 +321,10 @@ sub post_bug_after_creation {
 
         $bug->set_flags(\@new_flags, []) if @new_flags;
         $bug->add_comment(
-            join(", ", map { $_->name } @cc_users) .
+            join(", ", map { $_->identity } @cc_users) .
             ": You have been added as supporter to this Reps application, please comment why do you endorse their application. Thanks!"
         );
+
         $bug->update($bug->creation_ts);
         Bugzilla::BugMail::Send($bug->id, { changer => Bugzilla->user });
     }
