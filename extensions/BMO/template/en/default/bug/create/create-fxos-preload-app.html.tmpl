@@ -82,6 +82,7 @@ function validateAndSubmit() {
 
 [% PROCESS global/header.html.tmpl
    title = "Firefox OS Pre-load App"
+   generate_api_token = 1
    style = inline_style
    javascript = inline_javascript
    javascript_urls = [ 'extensions/BMO/web/js/form_validate.js',
@@ -96,7 +97,7 @@ function validateAndSubmit() {
   enctype="multipart/form-data" onSubmit="return validateAndSubmit();">
   <input type="hidden" name="format" value="fxos-preload-app">
   <input type="hidden" name="product" value="Marketplace">
-  <input type="hidden" name="component" value="Pre-Installed Apps">
+  <input type="hidden" name="component" value="Request to Pre-Install Apps">
   <input type="hidden" name="rep_platform" value="All">
   <input type="hidden" name="op_sys" value="Other">
   <input type="hidden" name="version" value="1.0">
