@@ -124,7 +124,7 @@ a:hover, #header a:hover, #footer a:hover {
 }
 
 select[multiple], textarea, input[type=text], input[type=password],
-input[type=email], input[type=url], input:not([type]), .text_input, .yui-ac-input {
+input[type=email], input[type=url], input[type=number], input:not([type]), .text_input, .yui-ac-input {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     box-sizing: border-box;
@@ -829,94 +829,4 @@ table.tabs {
 
 #summary_field.search_field_row input {
     padding-bottom: 6px;
-}
-
-/* Smaller than standard 990 (devices and browsers) */
-@media only screen and (max-width: 989px) {
-    #header .links {
-        float: none;
-    }
-}
-
-/* Tablet Portrait size to standard 990 */
-@media only screen and (min-width: 768px) and (max-width: 989px) {
-    body {
-        min-width: 768px;
-    }
-
-    #header .wrapper, #bugzilla-body {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        min-width: 768px;
-    }
-
-    #footer > * {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        min-width: 768px;
-    }
-}
-
-/* All Mobile Sizes */
-@media only screen and (max-width: 767px) {
-    table.edit_form, table.edit_form > tbody > tr > td {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        display: block;
-        width: 100% !important;
-    }
-
-    .bz_column_spacer {
-        width: auto;
-        height: 20px;
-    }
-}
-
-
-
-/* Mobile Landscape Size to Tablet Portrait */
-@media only screen and (min-width: 480px) and (max-width: 767px) {
-    body {
-        min-width: 480px;
-    }
-
-    #header .wrapper, #bugzilla-body, #attachment_table,
-    .bz_comment, #add_comment > table, #comment {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        width: 480px !important;
-    }
-
-    #footer > * {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        width: 480px;
-    }
-}
-
-/* Mobile Portrait Size to Mobile Landscape Size */
-@media only screen and (max-width: 479px) {
-    body {
-        min-width: 100%;
-    }
-
-    #header .wrapper, #bugzilla-body, #attachment_table,
-    .bz_comment, #add_comment > table, #comment {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        width: 100% !important;
-    }
-
-    #footer > * {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        width: 100%;
-    }
 }
