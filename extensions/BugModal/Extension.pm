@@ -51,12 +51,13 @@ sub _alternative_show_bug_format {
     return $user->setting('ui_experiments') eq 'on' ? 'modal' : undef;
 }
 
-sub template_before_create {
+sub template_after_create {
     my ($self, $args) = @_;
+    my $context = $args->{template}->context;
 
     # wrapper around Time::Duration::ago()
-    $args->{config}->{FILTERS}->{time_duration} = [
-        sub {
+    $context->define_filter(
+        time_duration => sub {
             my ($context) = @_;
             return sub {
                 my ($timestamp) = @_;
@@ -64,13 +65,12 @@ sub template_before_create {
                     // return $timestamp;
                 return ago(time() - $datetime->epoch);
             };
-        },
-        1
-    ];
+        }, 1
+    );
 
     # morph a string into one which is suitable to use as an element's id
-    $args->{config}->{FILTERS}->{id} = [
-        sub {
+    $context->define_filter(
+        id => sub {
             my ($context) = @_;
             return sub {
                 my ($id) = @_;
@@ -83,9 +83,54 @@ sub template_before_create {
                 $id =~ s/[^a-z\d\-_:\.]/_/g;
                 return $id;
             };
-        },
-        1
-    ];
+        }, 1
+    );
+
+    # flatten a list of hashrefs to a list of values
+    # eg.  logins = users.pluck("login")
+    $context->define_vmethod(
+        list => pluck => sub {
+            my ($list, $field) = @_;
+            return [ map { $_->$field } @$list ];
+        }
+    );
+
+    # returns array where the value in $field does not equal $value
+    # opposite of "only"
+    # eg.  not_byron = users.skip("name", "Byron")
+    $context->define_vmethod(
+        list => skip => sub {
+            my ($list, $field, $value) = @_;
+            return [ grep { $_->$field ne $value } @$list ];
+        }
+    );
+
+    # returns array where the value in $field equals $value
+    # opposite of "skip"
+    # eg.  byrons_only = users.only("name", "Byron")
+    $context->define_vmethod(
+        list => only => sub {
+            my ($list, $field, $value) = @_;
+            return [ grep { $_->$field eq $value } @$list ];
+        }
+    );
+
+    # returns boolean indicating if the value exists in the list
+    # eg.  has_byron = user_names.exists("byron")
+    $context->define_vmethod(
+        list => exists => sub {
+            my ($list, $value) = @_;
+            return any { $_ eq $value } @$list;
+        }
+    );
+
+    # ucfirst is only available in new template::toolkit versions
+    $context->define_vmethod(
+        item => ucfirst => sub {
+            my ($text) = @_;
+            return ucfirst($text);
+        }
+    );
 }
 
 sub template_before_process {
@@ -93,9 +138,12 @@ sub template_before_process {
     my $file = $args->{file};
     my $vars = $args->{vars};
 
-    if ($file eq 'bug/process/header.html.tmpl') {
+    if ($file eq 'bug/process/header.html.tmpl'
+        || $file eq 'bug/create/created.html.tmpl')
+    {
         if (_alternative_show_bug_format()) {
             $vars->{alt_ui_header} = 'bug_modal/header.html.tmpl';
+            $vars->{alt_ui_edit}   = 'bug_modal/edit.html.tmpl';
         }
         return;
     }
@@ -188,35 +236,5 @@ sub install_before_final_checks {
     my ($self, $args) = @_;
     add_setting('ui_experiments', ['on', 'off'], 'off');
 }
-
-# flatten a list of hashrefs to a list of values
-# eg.  logins = users.pluck("login")
-$Template::Stash::LIST_OPS->{pluck} = sub {
-    my ($list, $field) = @_;
-    return [ map { $_->$field } @$list ];
-};
-
-# returns array where the value in $field does not equal $value
-# opposite of "only"
-# eg.  not_byron = users.skip("name", "Byron")
-$Template::Stash::LIST_OPS->{skip} = sub {
-    my ($list, $field, $value) = @_;
-    return [ grep { $_->$field ne $value } @$list ];
-};
-
-# returns array where the value in $field equals $value
-# opposite of "skip"
-# eg.  byrons_only = users.only("name", "Byron")
-$Template::Stash::LIST_OPS->{only} = sub {
-    my ($list, $field, $value) = @_;
-    return [ grep { $_->$field eq $value } @$list ];
-};
-
-# returns boolean indicating if the value exists in the list
-# eg.  has_byron = user_names.exists("byron")
-$Template::Stash::LIST_OPS->{exists} = sub {
-    my ($list, $value) = @_;
-    return any { $_ eq $value } @$list;
-};
 
 __PACKAGE__->NAME;

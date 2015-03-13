@@ -6,13 +6,11 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<div id="cc-list">
-  [%
-    UNLESS cc_list.size;
-      'None';
-    END;
-    FOREACH cc IN cc_list;
-      INCLUDE bug_modal/user.html.tmpl u=cc nick_only=1 no_menu=1;
-    END;
-  %]
-</div>
+[%
+  UNLESS cc_list.size;
+    'None';
+  END;
+  FOREACH cc IN cc_list;
+    INCLUDE bug_modal/user.html.tmpl u=cc nick_only=1 no_menu=1;
+  END;
+%]

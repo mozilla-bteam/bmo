@@ -18,10 +18,11 @@
   IF bugs.defined;
     bug = bugs.0;
   END;
-  title = "$bug.bug_id &ndash; ";
+  title = "$bug.bug_id - ";
   IF bug.alias;
     title = title _ "($bug.alias) ";
   END;
+  unfiltered_title = title _ bug.short_desc;
   filtered_desc = bug.short_desc FILTER html;
   title = title _ filtered_desc;
 
@@ -90,12 +91,13 @@
 
   [%# expose useful data to js %]
   BUGZILLA.bug_id = [% bug.id FILTER none %];
+  BUGZILLA.bug_title = '[% unfiltered_title FILTER js %]';
   BUGZILLA.user = {
     id: [% user.id FILTER none %],
-    login: '[% user.login FILTER js FILTER html %]',
+    login: '[% user.login FILTER js %]',
     is_insider: [% user.is_insider ? "true" : "false" %],
     settings: {
-      quote_replies: '[% user.settings.quote_replies.value FILTER js FILTER html %]',
+      quote_replies: '[% user.settings.quote_replies.value FILTER js %]',
       zoom_textareas: [% user.settings.zoom_textareas.value == "on" ? "true" : "false" %]
     }
   };

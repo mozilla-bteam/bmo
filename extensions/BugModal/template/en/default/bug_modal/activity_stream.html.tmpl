@@ -11,10 +11,10 @@
     '<div class="change-set" id="' _ change_set.id _ '">';
 
     extra_class = "";
-    IF change_set.user_id == bug.reporter.id;
-      extra_class = "reporter";
-    ELSIF change_set.user_id == bug.assigned_to.id;
+    IF change_set.user_id == bug.assigned_to.id;
       extra_class = "assignee";
+    ELSIF change_set.user_id == bug.reporter.id;
+      extra_class = "reporter";
     END;
 
     IF change_set.comment;
@@ -142,7 +142,7 @@
               name_only = 1
           %]
           [% IF extra_class %]
-            <span class="user-role">([% extra_class FILTER none %])</span>
+            <span class="user-role">([% extra_class.ucfirst FILTER none %])</span>
           [% END %]
         </td>
       </tr>

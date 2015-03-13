@@ -114,18 +114,19 @@ $(function() {
     });
 
     // product/component info
-    $('#product-latch, #component-latch')
+    $('.spin-toggle')
         .click(function(event) {
             event.preventDefault();
-            var latch = $(event.target);
+            var latch = $($(event.target).data('latch'));
+            var el_for = $($(event.target).data('for'));
 
             if (latch.data('expanded')) {
                 latch.data('expanded', false).html('&#9656;');
-                $(latch.data('for')).hide();
+                el_for.hide();
             }
             else {
                 latch.data('expanded', true).html('&#9662;');
-                $(latch.data('for')).show();
+                el_for.show();
             }
         });
 
@@ -328,7 +329,7 @@ $(function() {
     $('#cancel-btn')
         .click(function(event) {
             event.preventDefault();
-            window.location.replace('show_bug.cgi?id=' + BUGZILLA.bug_id);
+            window.location.replace($('#this-bug').val());
         });
 
     // top comment button, scroll the textarea into view
@@ -637,8 +638,21 @@ $(function() {
 
 function confirmUnsafeURL(url) {
     return confirm(
-      'This is considered an unsafe URL and could possibly be harmful.\n' +
+        'This is considered an unsafe URL and could possibly be harmful.\n' +
         'The full URL is:\n\n' + url + '\n\nContinue?');
+}
+
+// fix url after bug creation/update
+if (history && history.replaceState) {
+    var href = document.location.href;
+    if (!href.match(/show_bug\.cgi/)) {
+        history.replaceState(null, BUGZILLA.bug_title, 'show_bug.cgi?id=' + BUGZILLA.bug_id);
+        document.title = BUGZILLA.bug_title;
+    }
+    if (href.match(/show_bug\.cgi\?.*list_id=/)) {
+        href = href.replace(/[\?&]+list_id=(\d+|cookie)/, '');
+        history.replaceState(null, BUGZILLA.bug_title, href);
+    }
 }
 
 // ajax wrapper, to simplify error handling and auth

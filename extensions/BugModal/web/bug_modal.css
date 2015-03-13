@@ -72,8 +72,17 @@ select[multiple], .text_input, .yui-ac-input, input {
     font-size: 12px !important;
 }
 
-.yui-ac {
-    width: 100%;
+.spin-toggle {
+    cursor: pointer;
+}
+
+.spin-toggle:hover {
+    text-decoration: underline;
+}
+
+.spin-latch {
+    color: #999;
+    padding-right: 5px;
 }
 
 /* modules */
@@ -249,12 +258,6 @@ input[type="number"] {
     padding: 20px;
 }
 
-#product-latch, #component-latch {
-    color: #999;
-    cursor: pointer;
-    padding-right: 5px;
-}
-
 #product-info, #component-info {
     color: #484;
 }
@@ -265,6 +268,10 @@ input[type="number"] {
 
 #cc-latch, #cc-summary {
     cursor: pointer;
+}
+
+#cc-summary:hover {
+    text-decoration: underline;
 }
 
 #cc-list {
@@ -592,3 +599,8 @@ div.ui-tooltip {
     font-size: 13px;
     font-family: inherit;
 }
+
+.yui-ac {
+    width: 100%;
+}
+

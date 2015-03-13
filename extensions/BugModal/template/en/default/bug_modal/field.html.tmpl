@@ -25,6 +25,9 @@
   #%]
 
 [%
+IF field_type.defined && !field;
+  RETURN;
+END;
 IF !name.defined;
   name = field.name;
 END;
