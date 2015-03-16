@@ -6,11 +6,8 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% PROCESS global/variables.none.tmpl %]
-[% IF !header_done %]
-  [% PROCESS bug_modal/header.html.tmpl %]
-  [% PROCESS global/header.html.tmpl %]
-  [% header_done = 1 %]
-[% END %]
-[% INCLUDE bug_modal/edit.html.tmpl %]
-[% PROCESS global/footer.html.tmpl %]
+[%
+  constants.FIELD_TYPE_USER     = 20;
+  constants.FIELD_TYPE_USERS    = 21;
+  constants.FIELD_TYPE_BUG_LIST = 22;
+%]

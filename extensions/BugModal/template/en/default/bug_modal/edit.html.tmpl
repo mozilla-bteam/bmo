@@ -384,7 +384,7 @@
 
 [%
   unassigned = (bug.assigned_to.login == "nobody@mozilla.org")
-               || (bug.assigned_to.login.search("@bugzilla\.bugs$"));
+               || (bug.assigned_to.login.search("\.bugs$"));
   sub =
     "Reporter: " _ bug.reporter.moz_nick
     _ (unassigned ? ", Unassigned" : ", Assigned: " _ bug.assigned_to.moz_nick)

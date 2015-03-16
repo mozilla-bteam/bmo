@@ -9,11 +9,6 @@
 [%
   PROCESS global/variables.none.tmpl;
 
-  # these are only used by the bug_modal/* templates
-  constants.FIELD_TYPE_USER     = 20;
-  constants.FIELD_TYPE_USERS    = 21;
-  constants.FIELD_TYPE_BUG_LIST = 22;
-
   # <title>
   IF bugs.defined;
     bug = bugs.0;

@@ -289,11 +289,11 @@ input[type="number"] {
     float: right;
 }
 
-.edit-textarea-btn {
+#bottom-right-actions {
     float: right;
 }
 
-#bottom-right-actions {
+.edit-textarea-set-btn {
     float: right;
 }
 

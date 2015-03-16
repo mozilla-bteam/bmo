@@ -198,9 +198,11 @@ END;
 
         [% CASE constants.FIELD_TYPE_TEXTAREA %]
           [%# text area %]
-            <button type="button" class="in-page edit-textarea-btn" id="[% name FILTER html %]-edit">Edit</button>
+            <button type="button" class="in-page edit-textarea-btn [%= "edit-textarea-set-btn" IF value != "" %]"
+              id="[% name FILTER html %]-edit">Edit</button>
             <span class="multiline-value" id="[% name FILTER html %]-view">[% value FILTER html FILTER html_line_break %]</span>
-            <textarea id="[% name FILTER html %]" rows="10" cols="10" style="display:none">[% value FILTER html %]</textarea>
+            <textarea id="[% name FILTER html %]" name="[% name FILTER html %]"
+              rows="10" cols="10" style="display:none">[% value FILTER html %]</textarea>
 
         [% CASE constants.FIELD_TYPE_DATETIME %]
           [%# datetime %]
