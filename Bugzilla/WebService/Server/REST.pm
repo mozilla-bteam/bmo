@@ -141,16 +141,13 @@ sub response {
         { rpc => $self, result => \$result, response => $response });
 
     # Access Control
-    my @allowed_headers = qw(
-        accept
-        content-type
-        origin
-        x-bugzilla-api-key
-        x-bugzilla-login
-        x-bugzilla-password
-        x-bugzilla-token
-        x-requested-with
-    );
+    my @allowed_headers = qw(accept content-type origin x-requested-with);
+    foreach my $header (keys %{ API_AUTH_HEADERS() }) {
+        # We want to lowercase and replace _ with -
+        my $translated_header = $header;
+        $translated_header =~ tr/A-Z_/a-z\-/;
+        push(@allowed_headers, $translated_header);
+    }
     $response->header("Access-Control-Allow-Origin", "*");
     $response->header("Access-Control-Allow-Headers", join(', ', @allowed_headers));
 
