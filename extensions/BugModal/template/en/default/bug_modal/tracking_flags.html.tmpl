@@ -37,7 +37,7 @@
         [%
           NEXT UNLESS row.type == type;
           tracking_value = row.tracking.bug_flag(bug_id).value || "---";
-          status_value = row.status.bug_flag(bug_id).value;
+          status_value = row.status.bug_flag(bug_id).value || "---";
           NEXT IF tracking_value == "---" && status_value == "---";
         %]
         <tr>

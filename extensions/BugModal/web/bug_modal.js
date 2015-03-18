@@ -106,12 +106,16 @@ $(function() {
             scroll_to($('body'));
         });
 
-    // use non-native tooltips for relative times
-    $('.rel-time').tooltip({
+    // use non-native tooltips for relative times and bug summaries
+    $('.rel-time, .bz_bug_link').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
         hide: { effect: 'none' }
     });
+    // tooltips create a new ui-helper-hidden-accessible div each time a
+    // tooltip is shown.  this is never removed leading to memory leak and
+    // bloated dom.  http://bugs.jqueryui.com/ticket/10689
+    $('.ui-helper-hidden-accessible').remove();
 
     // product/component info
     $('.spin-toggle')

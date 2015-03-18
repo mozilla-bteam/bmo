@@ -595,9 +595,15 @@ td.flag-requestee {
     box-shadow: none;
 }
 
+div.ui-widget-content {
+    background: #fff;
+}
+
 div.ui-tooltip {
+    padding: 4px;
     font-size: 13px;
     font-family: inherit;
+    max-width: 500px;
 }
 
 .yui-ac {

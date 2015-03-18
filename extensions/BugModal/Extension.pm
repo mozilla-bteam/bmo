@@ -207,7 +207,7 @@ sub template_before_process {
         my $flag_type = $flag->flag_type;
         my $type = 'status';
         my $name = $flag->description;
-        if ($flag->description =~ /^(tracking|status)-(.+)/) {
+        if ($flag_type eq 'tracking' && $name =~ /^(tracking|status)-(.+)/) {
             ($type, $name) = ($1, $2);
         }
 
