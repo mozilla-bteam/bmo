@@ -265,7 +265,7 @@ END;
 [% BLOCK bug_list %]
   [% IF NOT edit %]
     [% FOREACH b IN values %]
-      [% b.id FILTER bug_link(b.id) FILTER none %]
+      [% INCLUDE bug/link.html.tmpl bug=b link_text=b.id use_alias=1  %]
       [% ", " UNLESS loop.last %]
     [% END %]
   [% ELSE %]

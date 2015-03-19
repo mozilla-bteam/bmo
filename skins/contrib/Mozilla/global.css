@@ -524,19 +524,19 @@ table.edit_form hr {
 }
 
 .bz_comment_user a {
-    -moz-transition: all 0.25s linear 0s;
-    -webkit-transition: all 0.25s linear 0s;
-    transition: all 0.25s linear 0s;
-    transition: all 0.25s linear 0s;
+    -moz-transition: all 100ms linear 0s;
+    -webkit-transition: all 100ms linear 0s;
+    transition: all 100ms linear 0s;
+    transition: all 100ms linear 0s;
     color: #0095dd;
     padding: 0px;
     margin: 0px;
 }
 
 .bz_comment_user a:hover {
-    -moz-transition: all 0.25s linear 0s;
-    -webkit-transition: all 0.25s linear 0s;
-    transition: all 0.25s linear 0s;
+    -moz-transition: all 100ms linear 0s;
+    -webkit-transition: all 100ms linear 0s;
+    transition: all 100ms linear 0s;
     background: #fff;
     border: none;
     text-decoration: none;
@@ -697,6 +697,16 @@ table.edit_form hr {
     color: #bbb;
     width: auto;
     margin-bottom: 1em;
+    margin-left: 6px;
+}
+
+#links-actions, #links-saved {
+    margin-left: -10px;
+}
+
+#footer form input {
+    padding: 1px 2px;
+    margin-top: 3px;
 }
 
 #privacy-policy {
@@ -708,9 +718,9 @@ button, input[type=submit], input[type=button], #commit, #commit_top, #header .b
     background-image: -moz-linear-gradient(#43a6e2,#277ac1);
     background-image: -webkit-linear-gradient(#43a6e2,#277ac1);
     background-image: linear-gradient(#43a6e2,#277ac1);
-    -moz-transition: all linear 0.25s;
-    -webkit-transition: all linear 0.25s;
-    transition: all linear 0.25s;
+    -moz-transition: all linear 100ms;
+    -webkit-transition: all linear 100ms;
+    transition: all linear 100ms;
     border-radius: .25em;
     border: 0px none;
     box-shadow: 0 1px 0 0 rgba(0,0,0,0.2),inset 0 -1px 0 0 rgba(0,0,0,0.3);
@@ -729,18 +739,18 @@ button:hover, input[type=submit]:hover, input[type=button]:hover, #commit:hover,
     -webkit-box-shadow: 0 1px 0 0 rgba(0,0,0,0.2),inset 0 -1px 0 0 rgba(0,0,0,0.3),inset 0 12px 24px 2px #38a9ed;
     -moz-box-shadow: 0 1px 0 0 rgba(0,0,0,0.2),inset 0 -1px 0 0 rgba(0,0,0,0.3),inset 0 12px 24px 2px #38a9ed;
     box-shadow: 0 1px 0 0 rgba(0,0,0,0.2),inset 0 -1px 0 0 rgba(0,0,0,0.3),inset 0 12px 24px 2px #38a9ed;
-    -moz-transition: all linear 0.25s;
-    -webkit-transition: all linear 0.25s;
-    transition: all linear 0.25s;
+    -moz-transition: all linear 100ms;
+    -webkit-transition: all linear 100ms;
+    transition: all linear 100ms;
 }
 
 button:active, input[type=submit]:active, input[type=button]:active, #commit:active, #commit_top:active, #header .btn:active, #header input[type=submit]:active  {
     -webkit-box-shadow: inset 0 2px 0 0 rgba(0,0,0,0.2),inset 0 12px 24px 6px rgba(0,0,0,0.2),inset 0 0 2px 2px rgba(0,0,0,0.2);
     -moz-box-shadow: inset 0 2px 0 0 rgba(0,0,0,0.2),inset 0 12px 24px 6px rgba(0,0,0,0.2),inset 0 0 2px 2px rgba(0,0,0,0.2);
     box-shadow: inset 0 2px 0 0 rgba(0,0,0,0.2),inset 0 12px 24px 6px rgba(0,0,0,0.2),inset 0 0 2px 2px rgba(0,0,0,0.2);
-    -moz-transition: all linear 0.25s;
-    -webkit-transition: all linear 0.25s;
-    transition: all linear 0.25s;
+    -moz-transition: all linear 100ms;
+    -webkit-transition: all linear 100ms;
+    transition: all linear 100ms;
 }
 
 button[disabled], input[type=submit][disabled], input[type=button][disabled], button[disabled]:hover, input[type=submit][disabled]:hover, input[type=button][disabled]:hover, button[disabled]:active, input[type=submit][disabled]:active, input[type=button][disabled]:active {

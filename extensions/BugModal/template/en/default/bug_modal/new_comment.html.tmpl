@@ -23,5 +23,7 @@
     </div>
   [% END %]
   <textarea rows="5" cols="80" name="comment" id="comment"></textarea>
-  [% Hook.process("after_comment_commit_button", 'bug/edit.html.tmpl') %]
+  <div id="after-comment-commit-button">
+    [% Hook.process("after_comment_commit_button", 'bug/edit.html.tmpl') %]
+  </div>
 </div>

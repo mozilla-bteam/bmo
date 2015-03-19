@@ -31,9 +31,23 @@ $(function() {
     $('#expand-all-btn')
         .click(function(event) {
             event.preventDefault();
-            $('.module-content:hidden').slideToggle(200, 'swing', function() {
-                $('.module-spinner').html('&#9662;');
-            });
+            var btn = $(event.target);
+            if (btn.data('expanded')) {
+                var modules = btn.data('expanded');
+                modules.slideToggle(200, 'swing', function() {
+                    $('.module-spinner').html('&#9656;');
+                });
+                btn.data('expanded', false);
+                btn.text('Expand All');
+            }
+            else {
+                var modules = $('.module-content:hidden');
+                btn.data('expanded', modules);
+                modules.slideToggle(200, 'swing', function() {
+                    $('.module-spinner').html('&#9662;');
+                });
+                btn.text('Collapse');
+            }
         });
 
     // expand/colapse module
@@ -112,6 +126,7 @@ $(function() {
         show: { effect: 'none' },
         hide: { effect: 'none' }
     });
+
     // tooltips create a new ui-helper-hidden-accessible div each time a
     // tooltip is shown.  this is never removed leading to memory leak and
     // bloated dom.  http://bugs.jqueryui.com/ticket/10689
@@ -164,9 +179,27 @@ $(function() {
             }
         });
 
+    // copy summary to clipboard
+    if ($('#copy-summary').length) {
+        var zero = new ZeroClipboard($('#copy-summary'));
+        zero.on({
+            'error': function(event) {
+                console.log(event.message);
+                zero.destroy();
+                $('#copy-summary').hide();
+
+            },
+            'copy': function(event) {
+                var clipboard = event.clipboardData;
+                clipboard.setData('text/plain', 'Bug ' + BUGZILLA.bug_id + ' - ' + $('#field-value-short_desc').text());
+            }
+        });
+    }
+
     //
     // anything after this point is only executed for logged in users
     //
+
     if (BUGZILLA.user.id === 0) return;
 
     // edit/save mode button

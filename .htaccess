@@ -24,6 +24,11 @@
 </IfModule>
 </IfModule>
 
+# Allow ZeroClipboard for access to the clipboard
+<Files "ZeroClipboard.swf">
+  allow from all
+</Files>
+
 AddType image/x-icon .ico
 AddType application/font-woff .woff
 

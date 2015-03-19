@@ -57,6 +57,29 @@
           [% END %]
           [% Hook.process('user', 'bug/comments.html.tmpl') %]
         </td>
+        <td class="comment-actions">
+          [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
+            [% IF comment.is_private %]
+              <div class="comment-private edit-hide">
+                Private
+              </div>
+            [% END %]
+            <div class="comment-private edit-show" style="display:none">
+              <input type="hidden" value="1" name="defined_isprivate_[% comment.id FILTER none %]">
+              <input type="checkbox" name="isprivate_[% comment.id FILTER none %]"
+                  id="is-private-[% comment.count FILTER none %]"
+                  class="is-private" value="1" [% " checked" IF comment.is_private %]>
+              <label for="is-private-[% comment.id FILTER none %]">Private</label>
+            </div>
+          [% END %]
+          [% IF user.id %]
+            <button class="reply-btn in-page"
+              data-reply-id="[% comment.count FILTER none %]"
+              data-reply-name="[% comment.author.name || comment.author.moz_nick FILTER html %]"
+              >Reply</button>
+          [% END %]
+          <button class="comment-spinner in-page" id="cs-[% comment.count FILTER none%]">-</button>
+        </td>
       </tr>
       <tr>
         <td colspan="2">
@@ -68,29 +91,6 @@
           &bull;
           <div class="change-time">
             [% INCLUDE bug_modal/rel_time.html.tmpl ts=comment.creation_ts %]
-          </div>
-          <div class="comment-actions">
-            [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
-              [% IF comment.is_private %]
-                <div class="comment-private edit-hide">
-                  Private
-                </div>
-              [% END %]
-              <div class="comment-private edit-show" style="display:none">
-                <input type="hidden" value="1" name="defined_isprivate_[% comment.id FILTER none %]">
-                <input type="checkbox" name="isprivate_[% comment.id FILTER none %]"
-                    id="is-private-[% comment.count FILTER none %]"
-                    class="is-private" value="1" [% " checked" IF comment.is_private %]>
-                <label for="is-private-[% comment.id FILTER none %]">Private</label>
-              </div>
-            [% END %]
-            [% IF user.id %]
-              <button class="reply-btn in-page"
-                data-reply-id="[% comment.count FILTER none %]"
-                data-reply-name="[% comment.author.name || comment.author.moz_nick FILTER html %]"
-                >Reply</button>
-            [% END %]
-            <button class="comment-spinner in-page" id="cs-[% comment.count FILTER none%]">-</button>
           </div>
         </td>
       </tr>
@@ -107,7 +107,7 @@
 
     [%# default-collapsed comment header %]
     [% IF comment.collapsed %]
-      <table class="layout-table change-head" id="cc-[% comment.count FILTER none %]">
+      <table class="layout-table change-head default-collapsed" id="cc-[% comment.count FILTER none %]">
       <tr>
         <td class="comment-collapse-reason"
             title="[% comment.author.moz_nick FILTER html %] [[% comment.creation_ts FILTER time_duration FILTER html %]]">
