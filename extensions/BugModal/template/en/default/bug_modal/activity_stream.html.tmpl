@@ -7,6 +7,8 @@
   #%]
 
 [%
+  PROCESS bug/time.html.tmpl;
+
   FOREACH change_set IN bug.activity_stream;
     '<div class="change-set" id="' _ change_set.id _ '">';
 
@@ -72,12 +74,12 @@
             </div>
           [% END %]
           [% IF user.id %]
-            <button class="reply-btn in-page"
+            <button class="reply-btn minor"
               data-reply-id="[% comment.count FILTER none %]"
               data-reply-name="[% comment.author.name || comment.author.moz_nick FILTER html %]"
               >Reply</button>
           [% END %]
-          <button class="comment-spinner in-page" id="cs-[% comment.count FILTER none%]">-</button>
+          <button class="comment-spinner minor" id="cs-[% comment.count FILTER none%]">-</button>
         </td>
       </tr>
       <tr>
@@ -113,7 +115,7 @@
             Comment hidden ([% comment.tags.join(', ') FILTER html %])
         </td>
         <td class="comment-actions">
-          <button class="comment-spinner in-page" id="ccs-[% comment.count FILTER none%]">
+          <button class="comment-spinner minor" id="ccs-[% comment.count FILTER none%]">
             [%~ comment.collapsed ? "+" : "-" ~%]
           </button>
         </td>

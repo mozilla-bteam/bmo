@@ -330,7 +330,7 @@ $(function() {
             else {
                 cc_change = { add: [ BUGZILLA.user.login ] };
                 $('#cc-btn')
-                    .text('Stop following')
+                    .text('Stop Following')
                     .data('is-cced', '1')
                     .prop('disabled', true);
             }
@@ -347,7 +347,7 @@ $(function() {
                         return;
                     if (data.bugs[0].changes.cc.added == BUGZILLA.user.login) {
                         $('#cc-btn')
-                            .text('Stop following')
+                            .text('Stop Following')
                             .data('is-cced', '1');
                     }
                     else if (data.bugs[0].changes.cc.removed == BUGZILLA.user.login) {
@@ -628,13 +628,13 @@ $(function() {
                 }
             },
             {
-                name: '&hellip; in this product',
+                name: '\u2026 in this product',
                 callback: function() {
                     window.open('enter_bug.cgi?product=' + encodeURIComponent($('#product').val()), '_blank');
                 }
             },
             {
-                name: '&hellip; in this component',
+                name: '\u2026 in this component',
                 callback: function() {
                     window.open('enter_bug.cgi?' +
                                 'product=' + encodeURIComponent($('#product').val()) +
@@ -642,7 +642,7 @@ $(function() {
                 }
             },
             {
-                name: '&hellip; that blocks this bug',
+                name: '\u2026 that blocks this bug',
                 callback: function() {
                     window.open('enter_bug.cgi?format=__default__' +
                                 '&product=' + encodeURIComponent($('#product').val()) +
@@ -650,7 +650,7 @@ $(function() {
                 }
             },
             {
-                name: '&hellip; that depends on this bug',
+                name: '\u2026 that depends on this bug',
                 callback: function() {
                     window.open('enter_bug.cgi?format=__default__' +
                                 '&product=' + encodeURIComponent($('#product').val()) +
@@ -658,7 +658,7 @@ $(function() {
                 }
             },
             {
-                name: '&hellip; as a clone of this bug',
+                name: '\u2026 as a clone of this bug',
                 callback: function() {
                     window.open('enter_bug.cgi?format=__default__' +
                                 '&product=' + encodeURIComponent($('#product').val()) +
@@ -666,7 +666,7 @@ $(function() {
                 }
             },
             {
-                name: '&hellip; as a clone, in a different product',
+                name: '\u2026 as a clone, in a different product',
                 callback: function() {
                     window.open('enter_bug.cgi?format=__default__' +
                                 '&cloned_bug_id=' + BUGZILLA.bug_id, '_blank');
