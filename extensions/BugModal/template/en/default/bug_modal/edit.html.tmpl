@@ -364,6 +364,7 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field  = bug_fields.bug_status
         field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        editable = bug.choices.bug_status.size > 1
         values = bug.choices.bug_status
         inline = 1
         no_indent = 1
@@ -372,6 +373,7 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field  = bug_fields.resolution
         field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        editable = bug.choices.resolution.size > (bug.resolution == "" ? 0 : 1)
         values = bug.choices.resolution
         inline = 1
         edit_only = 1
@@ -412,6 +414,7 @@
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.assigned_to
         field_type = constants.FIELD_TYPE_USER
+        hide_on_edit = 1
     %]
       [% IF unassigned %]
         <i>Unassigned</i>
@@ -421,6 +424,18 @@
       [% ELSE %]
         [% INCLUDE bug_modal/user.html.tmpl u=bug.assigned_to %]
       [% END %]
+    [% END %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        field = bug_fields.assigned_to
+        field_type = constants.FIELD_TYPE_USER
+        hide_on_view = 1
+        append_content = 1
+    %]
+      <div class="set-default-container" style="display:none">
+        <input type="checkbox" id="set-default-assignee" name="set_default_assignee" class="set-default"
+          value="1" data-for="assigned_to">
+        <label for="set-default-assignee">Reset Assignee to default</label>
+      </div>
     [% END %]
 
     [%# mentors %]
@@ -432,8 +447,12 @@
         hide_on_view = bug.mentors.size == 0
     %]
       [%
-        FOREACH mentor IN bug.mentors;
-          INCLUDE bug_modal/user.html.tmpl u=mentor;
+        IF bug.mentors.size;
+          FOREACH mentor IN bug.mentors;
+            INCLUDE bug_modal/user.html.tmpl u=mentor;
+          END;
+        ELSE;
+          "---";
         END;
       %]
     [% END %]
@@ -443,8 +462,21 @@
         field = bug_fields.qa_contact
         field_type = constants.FIELD_TYPE_USER
         hide_on_view = bug.qa_contact == ""
+        hide_on_edit = 1
     %]
       [% INCLUDE bug_modal/user.html.tmpl u=bug.qa_contact %]
+    [% END %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        field = bug_fields.qa_contact
+        field_type = constants.FIELD_TYPE_USER
+        hide_on_view = 1
+        append_content = 1
+    %]
+      <div class="set-default-container" style="display:none">
+        <input type="checkbox" id="set-default-qa-contact" name="set_default_qa_contact" class="set-default"
+          value="1" data-for="qa_contact">
+        <label for="set-default-qa-contact">Reset QA Contact to default</label>
+      </div>
     [% END %]
 
   [% END %]
@@ -486,6 +518,20 @@
         label = "CC"
         hide_on_view = bug.cc.size == 0
     %]
+
+      [% IF user.id %]
+        <button type="button" id="add-cc-btn" class="minor">Add</button>
+        <div id="add-cc-container" style="display:none">
+          [% INCLUDE global/userselect.html.tmpl
+              id = "add-cc"
+              name = "newcc"
+              value = ""
+              classes = [ "bz_userfield" ]
+              multiple = 5
+          %]
+        </div>
+      [% END %]
+
       [% IF bug.cc && bug.cc.size %]
         <span id="cc-latch">&#9656;</span>
         <span id="cc-summary">
@@ -573,7 +619,7 @@
         field_type = constants.FIELD_TYPE_KEYWORDS
         hide_on_view = bug.keyword_objects.size == 0
     %]
-      [% bug.keyword_objects.pluck("name").join(", ") FILTER html %]
+      [% bug.keyword_objects.pluck("name").join(", ") || "---" FILTER html %]
     [% END %]
 
     [% UNLESS cf_hidden_in_product('cf_fx_iteration', bug.product, bug.component, bug) %]
@@ -828,7 +874,11 @@
         [% END %]
       </div>
     [% END %]
-    <pre id="user-story">[% bug.cf_user_story FILTER html %]</pre>
+    [% IF bug.cf_user_story == "" %]
+      ---
+    [% ELSE %]
+      <pre id="user-story">[% bug.cf_user_story FILTER html %]</pre>
+    [% END %]
     [% IF user.id %]
       <textarea id="cf_user_story" name="cf_user_story" style="display:none" rows="10" cols="80">
         [%~ bug.cf_user_story FILTER html ~%]

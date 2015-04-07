@@ -56,6 +56,7 @@
   );
   jquery.push(
     "datetimepicker",
+    "hotkeys",
   );
   style_urls.push(
     "extensions/BugModal/web/bug_modal.css",
@@ -97,4 +98,8 @@
       zoom_textareas: [% user.settings.zoom_textareas.value == "on" ? "true" : "false" %]
     }
   };
+  [% IF user.id %]
+    BUGZILLA.default_assignee   = '[% bug.component_obj.default_assignee.login FILTER js %]';
+    BUGZILLA.default_qa_contact = '[% bug.component_obj.default_qa_contact.login FILTER js %]';
+  [% END %]
 [% END %]

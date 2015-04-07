@@ -285,7 +285,12 @@ input[type="number"] {
 
 #cc-list {
     max-height: 150px;
-    overflow-y: scroll;
+    overflow-y: auto;
+    clear: both;
+}
+
+#add-cc-btn {
+    float: right;
 }
 
 /* actions */
@@ -627,6 +632,10 @@ td.flag-requestee {
 
 .vcard a.disabled {
     color: #888;
+}
+
+input[type=text][disabled], input:not([type])[disabled] {
+    color: #888 !important;
 }
 
 .xdsoft_datetimepicker button, .xdsoft_datetimepicker button:hover {

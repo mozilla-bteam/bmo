@@ -22,6 +22,8 @@
   # short_width: (boolean) the field shouldn't take up much space at all (default: false)
   # hide_on_view: (boolean) hide field from read-only view (default: false)
   # hide_on_edit: (boolean) hide content when in edit mode (default: false)
+  # append_content: (boolean) when called as a WRAPPER, the content will be appended to the
+  #                 edit html instead of replacing it.  forces edit_only (default: false);
   #%]
 
 [%
@@ -43,6 +45,9 @@ END;
 IF !editable.defined;
   editable = bug.check_can_change_field(name, 0, 1);
 END;
+IF append_content;
+  edit_only = 1;
+END;
 IF inline && !label.defined;
   no_label = 1;
 END;
@@ -52,9 +57,22 @@ END;
 IF field_type == "";
   field_type = -1;
 END;
+# date picker fields should always be short
 IF field_type == constants.FIELD_TYPE_DATE
     || field_type == constants.FIELD_TYPE_DATETIME;
   short_width = 1;
+END;
+# determine if a field is set
+IF field_type == constants.FIELD_TYPE_BUG_URLS || field_type == constants.FIELD_TYPE_BUG_LIST;
+  has_value = values.size > 0;
+ELSIF field_type == constants.FIELD_TYPE_MULTI_SELECT || field_type == constants.FIELD_TYPE_USERS;
+  has_value = value.size > 0;
+ELSE;
+  has_value = value != "";
+END;
+# switch to view mode if edit-only and the current user cannot edit
+IF !editable && edit_only;
+  edit_only = 0;
 END;
 %]
 
@@ -78,6 +96,8 @@ END;
       [% END %]
       [% IF content.defined %]
         [% content FILTER none %]
+      [% ELSIF !editable && !has_value %]
+        ---
       [% ELSE %]
         [% SWITCH field_type %]
 
@@ -233,6 +253,10 @@ END;
           ('[% name FILTER html %]' [[% field_type FILTER html %])] not supported)
 
       [% END %]
+
+      [% IF append_content && content.defined %]
+        [% content FILTER none %]
+      [% END %]
     </div>
   [% END %]
 </div>
@@ -256,7 +280,7 @@ END;
   [% END %]
 
   [% IF edit %]
-    <button id="[% name FILTER html %]-btn" class="bug-urls-btn minor">Add</button>
+    <button type="button" id="[% name FILTER html %]-btn" class="bug-urls-btn minor">Add</button>
     <input id="[% name FILTER html %]" name="[% name FILTER html %]" style="display:none">
   [% END %]
 [% END %]
