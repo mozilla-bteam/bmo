@@ -134,7 +134,7 @@ $(function() {
         });
 
     // use non-native tooltips for relative times and bug summaries
-    $('.rel-time, .bz_bug_link').tooltip({
+    $('.rel-time, .rel-time-title, .bz_bug_link').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
         hide: { effect: 'none' }
@@ -216,6 +216,27 @@ $(function() {
                 return;
             event.preventDefault();
             lb_show(this);
+        });
+
+    // when copying the bug id and summary, reformat to remove \n and alias
+    $(document).on(
+        'copy', function(event) {
+            var selection = document.getSelection().toString().trim();
+            var match = selection.match(/^(Bug \d+)\s*\n(.+)$/)
+                || selection.match(/^(Bug \d+)\s+\([^\)]+\)\s*\n(.+)$/);
+            if (match) {
+                var content = match[1] + ' - ' + match[2].trim();
+                if (event.originalEvent.clipboardData) {
+                    event.originalEvent.clipboardData.setData('text/plain', content);
+                }
+                else if (window.clipboardData) {
+                    window.clipboardData.setData('Text', content);
+                }
+                else {
+                    return;
+                }
+                event.preventDefault();
+            }
         });
 
     //
@@ -482,8 +503,8 @@ $(function() {
     $('#take-btn')
         .click(function(event) {
             event.preventDefault();
-            $('#field-assigned_to .edit-hide').hide();
-            $('#field-assigned_to .edit-show').show();
+            $('#field-assigned_to.edit-hide').hide();
+            $('#field-assigned_to.edit-show').show();
             $('#assigned_to').val(BUGZILLA.user.login).focus().select();
             $('#top-save-btn').show();
         });
@@ -547,8 +568,6 @@ $(function() {
         .click(function(event) {
             event.preventDefault();
             $('#field-status-view').hide();
-            $('#field-status-edit .edit-hide').hide();
-            $('#field-status-edit .edit-show').show();
             $('#field-status-edit').show();
             $('#bug_status').val('RESOLVED').change();
             $('#resolution').val($(event.target).text()).change();
@@ -564,8 +583,6 @@ $(function() {
         .click(function(event) {
             event.preventDefault();
             $('#field-status-view').hide();
-            $('#field-status-edit .edit-hide').hide();
-            $('#field-status-edit .edit-show').show();
             $('#field-status-edit').show();
             $('#bug_status').val($(event.target).data('status')).change();
             $('#top-save-btn').show();
@@ -715,16 +732,17 @@ $(function() {
         .change();
 
     // hotkeys
-    $('body').hotkey('ctrl+e', function() {
-        if ($('#cancel-btn:visible').length == 0) {
-            $('#mode-btn').click();
-        }
-    } );
-    $('body').hotkey('escape', function() {
-        if ($('#cancel-btn:visible').length != 0) {
-            $('#cancel-btn').click();
-        }
-    } );
+    $(window)
+        .keydown(function(event) {
+            if (!(event.ctrlKey || event.metaKey))
+                return;
+            if (String.fromCharCode(event.which).toLowerCase() == 'e') {
+                if ($('#cancel-btn:visible').length == 0) {
+                    event.preventDefault();
+                    $('#mode-btn').click();
+                }
+            }
+        });
 
     // add cc button
     $('#add-cc-btn')

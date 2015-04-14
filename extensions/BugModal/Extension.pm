@@ -14,12 +14,13 @@ use base qw(Bugzilla::Extension);
 
 use Bugzilla::Extension::BugModal::ActivityStream;
 use Bugzilla::Extension::BugModal::MonkeyPatches;
+use Bugzilla::Extension::BugModal::Util qw(date_str_to_time);
 use Bugzilla::Constants;
 use Bugzilla::User::Setting;
 use Bugzilla::Util qw(trick_taint datetime_from html_quote);
 use List::MoreUtils qw(any);
 use Template::Stash;
-use Time::Duration;
+use Time::Duration qw(ago);
 
 our $VERSION = '1';
 
@@ -62,7 +63,7 @@ sub template_after_create {
                 my ($timestamp) = @_;
                 my $datetime = datetime_from($timestamp)
                     // return $timestamp;
-                return ago(time() - $datetime->epoch);
+                return ago(abs(time() - $datetime->epoch));
             };
         }, 1
     );
@@ -81,6 +82,17 @@ sub template_after_create {
                 $id =~ tr/ /-/;
                 $id =~ s/[^a-z\d\-_:\.]/_/g;
                 return $id;
+            };
+        }, 1
+    );
+
+    # parse date string and output epoch
+    $context->define_filter(
+        epoch => sub {
+            my ($context) = @_;
+            return sub {
+                my ($date_str) = @_;
+                return date_str_to_time($date_str);
             };
         }, 1
     );
@@ -160,6 +172,7 @@ sub template_before_process {
         && ref($vars->{bugs}) eq 'ARRAY'
         && scalar(@{ $vars->{bugs} }) == 1;
     my $bug = $vars->{bugs}->[0];
+    return if exists $bug->{error};
 
     # trigger loading of tracking flags
     Bugzilla::Extension::TrackingFlags->template_before_process({

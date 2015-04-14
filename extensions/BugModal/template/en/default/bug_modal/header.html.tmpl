@@ -49,6 +49,7 @@
 
   # assets
   javascript_urls.push(
+    "extensions/BugModal/web/time_ago.js",
     "extensions/BugModal/web/bug_modal.js",
     "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.min.js",
     "js/field.js",
@@ -56,7 +57,6 @@
   );
   jquery.push(
     "datetimepicker",
-    "hotkeys",
   );
   style_urls.push(
     "extensions/BugModal/web/bug_modal.css",
@@ -103,3 +103,5 @@
     BUGZILLA.default_qa_contact = '[% bug.component_obj.default_qa_contact.login FILTER js %]';
   [% END %]
 [% END %]
+
+[% Hook.process("end") %]
