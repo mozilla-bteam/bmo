@@ -253,6 +253,17 @@ sub bounty_attachment {
         my $form = parse_bounty_attachment_description($attachment->description);
         $vars->{form} = $form;
     }
+    else {
+        $vars->{form} = {
+            reporter_email => $user->email,
+            reported_date  => format_time($bug->creation_ts, "%Y-%m-%d"),
+            awarded_date   => format_time(DateTime->now, "%Y-%m-%d"),
+            publish        => 1
+        };
+        if ($bug->cf_last_resolved) {
+            $vars->{form}{fixed_date} = format_time($bug->cf_last_resolved, "%Y-%m-%d"),
+        }
+    }
 }
 
 sub _is_bounty_attachment {
