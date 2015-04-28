@@ -857,6 +857,7 @@
   [%
     FOREACH field IN custom_fields;
       NEXT IF field.type != constants.FIELD_TYPE_TEXTAREA;
+      Hook.process('custom_field-' _ field.name);
       NEXT IF rendered_custom_fields.exists(field.name);
       INCLUDE bug_modal/field.html.tmpl
         field = field
@@ -922,12 +923,10 @@
       subtitle = sub.join(", ")
       collapsed = active_attachments == 0
   %]
-    [% INCLUDE bug_modal/attachments.html.tmpl %]
-    [% IF obsolete_attachments %]
-      <div id="attachments-actions">
-        <button type="button" id="attachments-obsolete-btn" class="minor">Show Obsolete Attachments</button>
-      </div>
-    [% END %]
+    [% INCLUDE bug_modal/attachments.html.tmpl
+        active_attachments = active_attachments
+        obsolete_attachments = obsolete_attachments
+    %]
   [% END %]
 [% END %]
 
@@ -937,6 +936,7 @@
   <div id="top-actions">
     <button type="button" id="attachments-add-btn" class="minor">Attach File</button>
     <button type="button" class="comment-btn minor">Add Comment</button>
+    [%+ Hook.process('top_actions') %]
     <button type="submit" class="save-btn major" id="top-save-btn" style="display:none">Save Changes</button>
   </div>
 [% END %]
