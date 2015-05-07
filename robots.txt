@@ -1,3 +1,4 @@
+# don't allow robots to index bugzilla-dev.allizom.org
 User-agent: *
 Disallow: /
 
