@@ -953,8 +953,6 @@ sub update_attachment {
           || ThrowUserError("invalid_attach_id", { attach_id => $id });
         my $bug = $attachment->bug;
         $attachment->_check_bug;
-        $attachment->validate_can_edit
-          || ThrowUserError("illegal_attachment_edit", { attach_id => $id });
 
         push @attachments, $attachment;
         $bugs{$bug->id} = $bug;
@@ -965,10 +963,33 @@ sub update_attachment {
 
     # Update the values
     foreach my $attachment (@attachments) {
-        $attachment->set_all($params);
-        if ($flags) {
-            my ($old_flags, $new_flags) = extract_flags($flags, $attachment->bug, $attachment);
-            $attachment->set_flags($old_flags, $new_flags);
+        my ($update_flags, $new_flags) = $flags
+            ? extract_flags($flags, $attachment->bug, $attachment)
+            : ([], []);
+        if ($attachment->validate_can_edit) {
+            $attachment->set_all($params);
+            $attachment->set_flags($update_flags, $new_flags) if $flags;
+        }
+        elsif (scalar @$update_flags && !scalar(@$new_flags) && !scalar keys %$params) {
+            # Requestees can set flags targetted to them, even if they cannot
+            # edit the attachment. Flag setters can edit their own flags too.
+            my %flag_list = map { $_->{id} => $_ } @$update_flags;
+            my $flag_objs = Bugzilla::Flag->new_from_list([ keys %flag_list ]);
+            my @editable_flags;
+            foreach my $flag_obj (@$flag_objs) {
+                if ($flag_obj->setter_id == $user->id
+                    || ($flag_obj->requestee_id && $flag_obj->requestee_id == $user->id))
+                {
+                    push(@editable_flags, $flag_list{$flag_obj->id});
+                }
+            }
+            if (!scalar @editable_flags) {
+                ThrowUserError("illegal_attachment_edit", { attach_id => $attachment->id });
+            }
+            $attachment->set_flags(\@editable_flags, []);
+        }
+        else {
+            ThrowUserError("illegal_attachment_edit", { attach_id => $attachment->id });
         }
     }
 
@@ -1023,7 +1044,7 @@ sub update_attachment {
 
 sub add_comment {
     my ($self, $params) = @_;
-    
+
     # BMO: Don't allow updating of bugs if disabled
     if (Bugzilla->params->{disable_bug_updates}) {
         ThrowErrorPage('bug/process/updates-disabled.html.tmpl',
@@ -1032,42 +1053,46 @@ sub add_comment {
 
     #The user must login in order add a comment
     Bugzilla->login(LOGIN_REQUIRED);
-    
+
     # Check parameters
-    defined $params->{id} 
-        || ThrowCodeError('param_required', { param => 'id' }); 
-    my $comment = $params->{comment}; 
+    defined $params->{id}
+        || ThrowCodeError('param_required', { param => 'id' });
+    my $comment = $params->{comment};
     (defined $comment && trim($comment) ne '')
         || ThrowCodeError('param_required', { param => 'comment' });
-    
+
     my $bug = Bugzilla::Bug->check($params->{id});
-    
+
     Bugzilla->user->can_edit_product($bug->product_id)
         || ThrowUserError("product_edit_denied", {product => $bug->product});
-    
-    # Backwards-compatibility for versions before 3.6    
+
+    # Backwards-compatibility for versions before 3.6
     if (defined $params->{private}) {
         $params->{is_private} = delete $params->{private};
     }
     # Append comment
     $bug->add_comment($comment, { isprivate => $params->{is_private},
                                   work_time => $params->{work_time} });
-    
-    # Capture the call to bug->update (which creates the new comment) in 
+
+    # Add comment tags
+    $bug->set_all({ comment_tags => $params->{comment_tags} })
+        if defined $params->{comment_tags};
+
+    # Capture the call to bug->update (which creates the new comment) in
     # a transaction so we're sure to get the correct comment_id.
-    
+
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
-    
+
     $bug->update();
-    
+
     my $new_comment_id = $dbh->bz_last_key('longdescs', 'comment_id');
-    
+
     $dbh->bz_commit_transaction();
-    
+
     # Send mail.
     Bugzilla::BugMail::Send($bug->bug_id, { changer => Bugzilla->user });
-    
+
     return { id => $self->type('int', $new_comment_id) };
 }
 
@@ -3333,6 +3358,9 @@ don't want it to be assigned to the component owner.
 =item C<comment_is_private> (boolean) - If set to true, the description
 is private, otherwise it is assumed to be public.
 
+=item C<comment_tags> (array) - An array of strings to add as comment
+tags to the description.
+
 =item C<groups> (array) - An array of group names to put this
 bug into. You can see valid group names on the Permissions
 tab of the Preferences screen, or, if you are an administrator,
@@ -3910,6 +3938,8 @@ otherwise it is assumed to be public.
 on the bug. If you are not in the time tracking group, this value will
 be ignored.
 
+=item C<comment_tags> (array) - Array of strings to add as comment tags for
+the new comment.
 
 =back
 
@@ -4094,6 +4124,10 @@ whether that comment should become private (C<true>) or public (C<false>).
 The comment ids must be valid for the bug being updated. Thus, it is not
 practical to use this while updating multiple bugs at once, as a single
 comment id will never be valid on multiple bugs.
+
+=item C<comment_tags>
+
+C<array> An array of strings to add as comment tags for the new comment.
 
 =item C<component>
 

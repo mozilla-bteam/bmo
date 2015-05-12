@@ -706,7 +706,7 @@ sub create {
     # BMO - per-product hw/os defaults
     if (!defined $params->{rep_platform} || !defined $params->{op_sys}) {
         if (my $product = Bugzilla::Product->new({ name => $params->{product}, cache => 1 })) {
-            $params->{rep_platform} //= $product->default_product;
+            $params->{rep_platform} //= $product->default_platform;
             $params->{op_sys}       //= $product->default_op_sys;
         }
     }
@@ -726,6 +726,7 @@ sub create {
     my $keywords         = delete $params->{keywords};
     my $creation_comment = delete $params->{comment};
     my $see_also         = delete $params->{see_also};
+    my $comment_tags     = delete $params->{comment_tags};
 
     # We don't want the bug to appear in the system until it's correctly
     # protected by groups.
@@ -814,7 +815,16 @@ sub create {
 
     # Insert the comment. We always insert a comment on bug creation,
     # but sometimes it's blank.
-    Bugzilla::Comment->insert_create_data($creation_comment);
+    my $comment = Bugzilla::Comment->insert_create_data($creation_comment);
+
+    # Add comment tags
+    if (defined $comment_tags && Bugzilla->user->can_tag_comments) {
+        $comment_tags = ref $comment_tags ? $comment_tags : [ $comment_tags ];
+        foreach my $tag (@{$comment_tags}) {
+            $comment->add_tag($tag) if defined $tag;
+        }
+        $comment->update();
+    }
 
     # BMO - add the stash param from bug_start_of_create
     Bugzilla::Hook::process('bug_end_of_create', { bug => $bug,
@@ -1020,7 +1030,7 @@ sub update {
                                    join(', ', @added_names)];
     }
 
-    # Comments
+    # Comments and comment tags
     foreach my $comment (@{$self->{added_comments} || []}) {
         # Override the Comment's timestamp to be identical to the update
         # timestamp.
@@ -1030,6 +1040,10 @@ sub update {
             LogActivityEntry($self->id, "work_time", "", $comment->work_time,
                              $user->id, $delta_ts);
         }
+        foreach my $tag (@{$self->{added_comment_tags} || []}) {
+            $comment->add_tag($tag) if defined $tag;
+        }
+        $comment->update() if @{$self->{added_comment_tags} || []};
     }
 
     # Comment Privacy 
@@ -2454,6 +2468,12 @@ sub set_all {
               work_time => $params->{'work_time'} });
     }
 
+    if (defined $params->{comment_tags} && Bugzilla->user->can_tag_comments()) {
+        $self->{added_comment_tags} = ref $params->{comment_tags}
+                                      ? $params->{comment_tags}
+                                      : [ $params->{comment_tags} ];
+    }
+
     my %normal_set_all;
     foreach my $name (keys %$params) {
         # These are handled separately below.
@@ -2698,8 +2718,13 @@ sub _set_product {
 
         my $verified = $params->{product_change_confirmed};
 
-        # BMO - if everything is ok then we can skip the verfication page
-        if (!$verified && $component_ok && $version_ok && $milestone_ok) {
+        # BMO - if everything is ok then we can skip the verfication page when using bug_modal
+        if (Bugzilla->input_params->{format} // '' eq 'modal'
+            && !$verified
+            && $component_ok
+            && $version_ok
+            && $milestone_ok
+        ) {
             $invalid_groups = $self->get_invalid_groups({ bug_ids => \@idlist, product => $product });
             my $has_invalid_group = 0;
             foreach my $group (@$invalid_groups) {
