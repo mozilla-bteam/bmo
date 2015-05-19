@@ -246,6 +246,26 @@ $(function() {
 
     if (BUGZILLA.user.id === 0) return;
 
+    // dirty field tracking
+    $('#changeform select').each(function() {
+        var that = $(this);
+        var dirty = $('#' + that.attr('id') + '-dirty');
+        if (!dirty) return;
+        var isMultiple = that.attr('multiple');
+
+        // store the option that had the selected attribute when we
+        // initially loaded
+        var value = that.find('option[selected]').map(function() { return this.value; }).toArray();
+        if (value.length === 0 && !that.attr('multiple'))
+            value = that.find('option:first').map(function() { return this.value; }).toArray();
+        that.data('preselected', value);
+
+        // if the user hasn't touched a field, override the browser's choice
+        // with bugzilla's
+        if (!dirty.val())
+            that.val(value);
+    });
+
     // edit/save mode button
     $('#mode-btn')
         .click(function(event) {
@@ -742,14 +762,31 @@ $(function() {
         .keydown(function(event) {
             if (!(event.ctrlKey || event.metaKey))
                 return;
-            // don't conflict with text input shortcut
-            if (document.activeElement.nodeNode == 'INPUT' || document.activeElement.nodeName == 'TEXTAREA')
-                return;
-            if (String.fromCharCode(event.which).toLowerCase() == 'e') {
-                if ($('#cancel-btn:visible').length === 0) {
-                    event.preventDefault();
-                    $('#mode-btn').click();
-                }
+            switch(String.fromCharCode(event.which).toLowerCase()) {
+                // ctrl+e or meta+e = enter edit mode
+                case 'e':
+                    // don't conflict with text input shortcut
+                    if (document.activeElement.nodeNode == 'INPUT' || document.activeElement.nodeName == 'TEXTAREA')
+                        return;
+                    if ($('#cancel-btn:visible').length === 0) {
+                        event.preventDefault();
+                        $('#mode-btn').click();
+                    }
+                    break;
+
+                // ctrl+shift+p = toggle comment preview
+                case 'p':
+                    if (event.metaKey || !event.shiftKey)
+                        return;
+                    if (document.activeElement.id == 'comment') {
+                        event.preventDefault();
+                        $('#comment-preview-tab').click();
+                    }
+                    else if ($('#comment-preview:visible').length !== 0) {
+                        event.preventDefault();
+                        $('#comment-edit-tab').click();
+                    }
+                    break;
             }
         });
 
@@ -892,6 +929,85 @@ $(function() {
                 .prop('title', message)
                 .show();
         });
+
+    // comment preview
+    var last_comment_text = '';
+    $('#comment-tabs li').click(function() {
+        var that = $(this);
+        if (that.hasClass('current'))
+            return;
+
+        // ensure preview's height matches the comment
+        var comment = $('#comment');
+        var preview = $('#comment-preview');
+        var comment_height = comment[0].offsetHeight;
+
+        // change tabs
+        $('#comment-tabs li').removeClass('current').attr('aria-selected', false);
+        $('.comment-tab').hide();
+        that.addClass('current').attr('aria-selected', true);
+        var tab = that.attr('data-tab');
+        $('#' + tab).show();
+        var focus = that.data('focus');
+        if (focus === '') {
+            document.activeElement.blur();
+        }
+        else {
+            $('#' + focus).focus();
+        }
+
+        // update preview
+        preview.css('height', comment_height + 'px');
+        if (tab != 'comment-tab-preview' || last_comment_text == comment.val())
+            return;
+        $('#preview-throbber').show();
+        preview.html('');
+        bugzilla_ajax(
+            {
+                url: 'rest/bug/comment/render',
+                type: 'POST',
+                data: { text: comment.val() },
+                hideError: true
+            },
+            function(data) {
+                $('#preview-throbber').hide();
+                preview.html(data.html);
+            },
+            function(message) {
+                $('#preview-throbber').hide();
+                var container = $('<div/>');
+                container.addClass('preview-error');
+                container.text(message);
+                preview.html(container);
+            }
+        );
+        last_comment_text = comment.val();
+    });
+
+    // dirty field tracking
+    $('#changeform select')
+        .change(function() {
+            var that = $(this);
+            var dirty = $('#' + that.attr('id') + '-dirty');
+            if (!dirty) return;
+            if (that.attr('multiple')) {
+                var preselected = that.data('preselected');
+                var selected = that.val();
+                var isDirty = preselected.length != selected.length;
+                if (!isDirty) {
+                    for (var i = 0, l = preselected.length; i < l; i++) {
+                        if (selected[i] != preselected[i]) {
+                            isDirty = true;
+                            break;
+                        }
+                    }
+                }
+                dirty.val(isDirty ? '1' : '');
+            }
+            else {
+                dirty.val(that.val() === that.data('preselected')[0] ? '' : '1');
+            }
+        });
 });
 
 function confirmUnsafeURL(url) {
@@ -921,6 +1037,10 @@ function bugzilla_ajax(request, done_fn, error_fn) {
         'Bugzilla_api_token=' + encodeURIComponent(BUGZILLA.api_token);
     if (request.type != 'GET') {
         request.contentType = 'application/json';
+        request.processData = false;
+        if (request.data && request.data.constructor === Object) {
+            request.data = JSON.stringify(request.data);
+        }
     }
     $.ajax(request)
         .done(function(data) {
@@ -936,8 +1056,10 @@ function bugzilla_ajax(request, done_fn, error_fn) {
         })
         .error(function(data) {
             var message = data.responseJSON ? data.responseJSON.message : 'Unexpected Error'; // all errors are unexpected :)
-            $('#xhr-error').html(message);
-            $('#xhr-error').show('fast');
+            if (!request.hideError) {
+                $('#xhr-error').html(message);
+                $('#xhr-error').show('fast');
+            }
             if (error_fn)
                 error_fn(message);
         });
