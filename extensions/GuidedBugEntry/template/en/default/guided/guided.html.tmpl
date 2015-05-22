@@ -39,6 +39,7 @@ YAHOO.util.Dom.removeClass('loading', 'hidden');
 </script>
 
 <div id="steps">
+[% INCLUDE firefox_step %]
 [% INCLUDE webdev_step %]
 [% INCLUDE product_step %]
 [% INCLUDE otherProducts_step %]
@@ -58,16 +59,16 @@ guided.init({ webdev: [% webdev ? "true" : "false" %] });
 guided.currentUser = '[% user.login FILTER js %]';
 guided.openStates = [
 [% FOREACH state = open_states %]
-  '[% state FILTER js%]'
+  '[% state FILTER js %]'
   [%- "," UNLESS loop.last %]
 [% END %]
 ];
 dupes.setLabels(
   {
-    id: "[% field_descs.bug_id FILTER js %]",
-    summary: "[% field_descs.short_desc FILTER js %]",
+    id:        "[% field_descs.bug_id FILTER js %]",
+    summary:   "[% field_descs.short_desc FILTER js %]",
     component: "[% field_descs.component FILTER js %]",
-    status: "[% field_descs.bug_status FILTER js %]"
+    status:    "[% field_descs.bug_status FILTER js %]"
   }
 );
 </script>
@@ -79,9 +80,76 @@ dupes.setLabels(
 [%############################################################################%]
 
 [% BLOCK page_title %]
-  <div id="page_title">
-    <h2>Enter A [% terms.Bug %]</h2>
-  </div>
+    [% default_content = BLOCK %] Enter A [% terms.Bug %] [% END %]
+    <div id="page_title">
+      <h2>[% (content OR default_content) FILTER none %]</h2>
+    </div>
+[% END %]
+
+[%############################################################################%]
+[%# firefox step                                                             #%]
+[%############################################################################%]
+
+[% BLOCK firefox_step %]
+<div id="firefox_step" class="step hidden">
+  [% WRAPPER page_title %] Firefox [% END %]
+
+  <table class="exits">
+    <tr>
+      <td>
+        <div class="exit_img">
+          <a href="http://www.mozilla.org/support/">
+            <img src="extensions/GuidedBugEntry/web/images/support.png" width="32" height="32">
+          </a>
+        </div>
+      </td>
+      <td class="exit_text">
+        <a href="https://support.mozilla.org/en-US/kb/refresh-firefox-reset-add-ons-and-settings">
+          Firefox is slow or crashes
+        </a><br/>
+        <a href="http://www.mozilla.org/support/">
+          I have a question about a Firefox feature
+        </a><br>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <div class="exit_img">
+          <a href="http://input.mozilla.org/feedback/">
+            <img src="extensions/GuidedBugEntry/web/images/input.png" width="32" height="32">
+          </a>
+        </div>
+      </td>
+      <td class="exit_text">
+        <a href="http://input.mozilla.org/feedback"> I have a suggestion for a change in Firefox</a><br>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <div class="exit_img">
+          <a href="javascript:void(0)" onclick="product.select('Firefox')">
+            <img src="extensions/BMO/web/producticons/firefox.png" width="32" height="32"
+          </a>
+        </div>
+      </td>
+      <td class="exit_text">
+        <a href="javascript:void(0)" onclick="product.select('Firefox')">
+          [% terms.Bug %] reporting
+        </a><br>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <div class="exit_img">
+          <img src="extensions/BMO/web/producticons/devedition.png" width="32" height="32">
+        </div>
+      </td>
+      <td class="exit_text_last">
+        <a href="enter_bug.cgi?format=guided&amp;webdev=1">[% terms.Bug %] reporting for web developers</a><br>
+      </td>
+    </tr>
+  </table>
+</div>
 [% END %]
 
 [%############################################################################%]
@@ -92,6 +160,7 @@ dupes.setLabels(
 <div id="webdev_step" class="step hidden">
 
 [% INCLUDE page_title %]
+
 
 <p>Are you reporting a [% terms.bug %] with:</p>
 
@@ -117,6 +186,22 @@ tabbed browsing or the location bar)
 [% END %]
 </ul>
 </div>
+
+[% IF webdev %]
+<table class="exits">
+  <tr>
+    <td>
+      <div class="exit_img">
+        <img src="extensions/GuidedBugEntry/web/images/webbug.png" width="32" height="32"
+      </div>
+    </td>
+    <td class="exit_text_last">
+      <a href="enter_bug.cgi?format=guided&amp;webdev=0">None of the above</a><br>
+    </td>
+  </tr>
+</table>
+[% END %]
+
 [% END %]
 
 [%############################################################################%]
@@ -127,10 +212,6 @@ tabbed browsing or the location bar)
 <div id="product_step" class="step hidden">
 
 [% INCLUDE page_title %]
-
-[% INCLUDE exits
-   show = "all"
-%]
 
 <ul class="product-list">
 [% INCLUDE 'guided/products.html.tmpl' %]
@@ -194,38 +275,35 @@ Other Mozilla products which aren't listed here
 
 [% INCLUDE page_title %]
 
-[% INCLUDE exits
-   show = "all"
-%]
+[% INCLUDE exits %]
 
-<table id="other_products">
-[% FOREACH c = classifications %]
-  [% IF c.object %]
-    <tr class="classification">
-      <th align="right" valign="top">
-        [% c.object.name FILTER html %]:&nbsp;
-      </th>
-      <td>
-        [% c.object.description FILTER html_light %]
-      </td>
-    </tr>
-  [% END %]
-  [% FOREACH p = c.products %]
-    <tr>
-      <th align="right" valign="top">
-        <a href="javascript:void(0)" onclick="product.select('[% p.name FILTER js %]')">
-        [% p.name FILTER html FILTER no_break %]</a>:&nbsp;
-      </th>
+  <table id="other_products">
+    [% FOREACH c = classifications %]
+      [% IF c.object %]
+        <tr class="classification">
+          <th align="right" valign="top">
+            [% c.object.name FILTER html %]:&nbsp;
+          </th>
+          <td>
+            [% c.object.description FILTER html_light %]
+          </td>
+        </tr>
+      [% END %]
+      [% FOREACH p = c.products %]
+        <tr>
+          <th align="right" valign="top">
+            <a href="javascript:void(0)" onclick="product.select('[% p.name FILTER js %]')">
+              [% p.name FILTER html FILTER no_break %]</a>:&nbsp;
+          </th>
 
-      <td valign="top">[% p.description FILTER html_light %]</td>
-    </tr>
-  [% END %]
-  <tr>
-    <td>&nbsp;</td>
-  </tr>
-[% END %]
-</table>
-
+          <td valign="top">[% p.description FILTER html_light %]</td>
+        </tr>
+      [% END %]
+      <tr>
+        <td>&nbsp;</td>
+      </tr>
+    [% END %]
+  </table>
 </div>
 [% END %]
 
@@ -239,38 +317,35 @@ Other Mozilla products which aren't listed here
     <td>
       <div class="exit_img">
         <a href="http://www.mozilla.org/support/"
-        ><img src="extensions/GuidedBugEntry/web/images/support.png" width="32" height="32"
-        ></a>
+           ><img src="extensions/GuidedBugEntry/web/images/support.png" width="32" height="32"
+                 ></a>
       </div>
     </td>
     <td class="exit_text">
-      <a href="http://www.mozilla.org/support/">I need technical support</a><br>
-      For technical support or help getting your site to work with Mozilla.
+      <a href="http://www.mozilla.org/support/">Technical Support for Mozilla products</a><br>
     </td>
   </tr>
   <tr>
     <td>
       <div class="exit_img">
         <a href="http://input.mozilla.org/feedback/"
-        ><img src="extensions/GuidedBugEntry/web/images/input.png" width="32" height="32"
-        ></a>
+           ><img src="extensions/GuidedBugEntry/web/images/input.png" width="32" height="32"
+                 ></a>
       </div>
     </td>
     <td class="exit_text">
-      <a href="http://input.mozilla.org/feedback/#sad">Offer us ideas on how to make Firefox better</a><br>
-      <a href="http://input.mozilla.org/feedback/">Provide feedback about Firefox</a><br>
+      <a href="http://input.mozilla.org/feedback/">Offer us ideas on how to make Firefox better</a><br>
+      <a href="http://input.mozilla.org/feedback/#sad">Report an issue with a web site that I use</a><br>
     </td>
   </tr>
   <tr>
     <td>
       <div class="exit_img">
-        <img src="extensions/GuidedBugEntry/web/images/webbug.png" width="32" height="32">
+        <img src="extensions/BMO/web/producticons/devedition.png" width="32" height="32">
       </div>
     </td>
     <td class="exit_text_last">
-
-      <a onclick="product.select('Core', 'Untriaged')" href="javascript:void(0)">Report an issue with Firefox on a site that I've developed</a><br>
-      <a href="http://input.mozilla.org/feedback/#sad">Report an issue with a web site that I use</a><br>
+      <a href="enter_bug.cgi?format=guided&amp;webdev=1">[% terms.Bug %] reporting for web developers</a><br>
     </td>
   </tr>
 </table>
