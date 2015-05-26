@@ -22,6 +22,9 @@ var guided = {
     // initialise new step
     this.updateStep = true;
     switch(newStep) {
+      case 'firefox':
+        firefox.onShow();
+        break;
       case 'webdev':
         webdev.onShow();
         break;
@@ -99,6 +102,16 @@ var guided = {
     Dom.get('advanced_img').href = href;
     Dom.get('advanced_link').href = href;
   }
+};
+
+// firefox step
+
+var firefox = {
+    details: false,
+
+    onInit: function () { },
+
+    onShow: function () { }
 };
 
 // webdev step
