@@ -17,10 +17,9 @@ use Bugzilla::Extension::BugModal::MonkeyPatches;
 use Bugzilla::Extension::BugModal::Util qw(date_str_to_time);
 use Bugzilla::Constants;
 use Bugzilla::User::Setting;
-use Bugzilla::Util qw(trick_taint datetime_from html_quote);
+use Bugzilla::Util qw(trick_taint datetime_from html_quote time_ago);
 use List::MoreUtils qw(any);
 use Template::Stash;
-use Time::Duration qw(ago);
 
 our $VERSION = '1';
 
@@ -55,7 +54,7 @@ sub template_after_create {
     my ($self, $args) = @_;
     my $context = $args->{template}->context;
 
-    # wrapper around Time::Duration::ago()
+    # wrapper around time_ago()
     $context->define_filter(
         time_duration => sub {
             my ($context) = @_;
@@ -63,7 +62,7 @@ sub template_after_create {
                 my ($timestamp) = @_;
                 my $datetime = datetime_from($timestamp)
                     // return $timestamp;
-                return ago(abs(time() - $datetime->epoch));
+                return time_ago($datetime);
             };
         }, 1
     );
@@ -255,6 +254,22 @@ sub template_before_process {
         }
     }
     $vars->{tracking_flags_table} = \@tracking_table;
+}
+
+sub bug_start_of_set_all {
+    my ($self, $args) = @_;
+    my $bug = $args->{bug};
+    my $params = $args->{params};
+
+    # reset to the component defaults if not supplied
+    if (exists $params->{assigned_to} && (!defined $params->{assigned_to} || $params->{assigned_to} eq '')) {
+        $params->{assigned_to} = $bug->component_obj->default_assignee->login;
+    }
+    if (exists $params->{qa_contact} && (!defined $params->{qa_contact} || $params->{qa_contact} eq '')
+        && $bug->component_obj->default_qa_contact->id)
+    {
+        $params->{qa_contact} = $bug->component_obj->default_qa_contact->login;
+    }
 }
 
 sub webservice {

@@ -8,6 +8,17 @@
 $(function() {
     'use strict';
 
+    // update relative dates
+    window.setInterval(function() {
+        var now = Math.floor(new Date().getTime() / 1000);
+        $('.rel-time').each(function() {
+            $(this).text(timeAgo(now - $(this).data('time')));
+        });
+        $('.rel-time-title').each(function() {
+            $(this).attr('title', timeAgo(now - $(this).data('time')));
+        });
+    }, 60000);
+
     // all keywords for autocompletion (lazy-loaded on edit)
     var keywords = [];
 
@@ -28,22 +39,25 @@ $(function() {
     }
 
     // expand/collapse module
-    function slide_module(module, action) {
+    function slide_module(module, action, fast) {
+        if (!module.attr('id'))
+            return;
         var latch = module.find('.module-latch');
         var spinner = $(latch.children('.module-spinner')[0]);
         var content = $(module.children('.module-content')[0]);
+        var duration = fast ? 0 : 200;
 
         function slide_done() {
             spinner.html(content.is(':visible') ? '&#9662;' : '&#9656;');
         }
         if (action == 'show') {
-            content.slideDown(200, 'swing', slide_done);
+            content.slideDown(duration, 'swing', slide_done);
         }
         else if (action == 'hide') {
-            content.slideUp(200, 'swing', slide_done);
+            content.slideUp(duration, 'swing', slide_done);
         }
         else {
-            content.slideToggle(200, 'swing', slide_done);
+            content.slideToggle(duration, 'swing', slide_done);
         }
     }
 
@@ -278,12 +292,9 @@ $(function() {
             $('.edit-hide').hide();
             $('.edit-show').show();
 
-            // expand specific modules
-            $('#module-details .module-header').each(function() {
-                if ($(this.parentNode).find('.module-content:visible').length === 0) {
-                    $(this).click();
-                }
-            });
+            // expand specific modules during the initial edit
+            if (!$('#editing').val())
+                slide_module($('#module-details'), 'show');
 
             // if there's no current user-story, it's a better experience if it's editable by default
             if ($('#cf_user_story').val() === '') {
@@ -324,32 +335,24 @@ $(function() {
                     });
 
                     // keywords is a multi-value autocomplete
-                    // (this should probably be a simple jquery plugin)
                     keywords = data.keywords;
                     $('#keywords')
-                        .bind('keydown', function(event) {
-                            if (event.keyCode == $.ui.keyCode.TAB && $(this).autocomplete('instance').menu.active)
-                            {
-                                event.preventDefault();
-                            }
-                        })
-                        .blur(function() {
-                            $(this).val($(this).val().replace(/,\s*$/, ''));
-                        })
-                        .autocomplete({
-                            source: function(request, response) {
-                                response($.ui.autocomplete.filter(keywords, request.term.split(/,\s*/).pop()));
+                        .devbridgeAutocomplete({
+                            lookup: keywords,
+                            tabDisabled: true,
+                            delimiter: /,\s*/,
+                            minChars: 0,
+                            autoSelectFirst: true,
+                            formatResult: function(suggestion, currentValue) {
+                                // disable <b> wrapping of matched substring
+                                return suggestion.value
+                                    .replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/"/g, '&quot;');
                             },
-                            focus: function() {
-                                return false;
-                            },
-                            select: function(event, ui) {
-                                var terms = this.value.split(/,\s*/);
-                                terms.pop();
-                                terms.push(ui.item.value);
-                                terms.push('');
-                                this.value = terms.join(', ');
-                                return false;
+                            onSelect: function() {
+                                this.focus();
                             }
                         });
 
@@ -381,6 +384,15 @@ $(function() {
                 return;
             $('.save-btn').attr('disabled', true);
             this.form.submit();
+
+            // remember expanded modules
+            $('#editing').val(
+                $('.module .module-content:visible')
+                    .parent()
+                    .map(function(el) { return $(this).attr('id'); })
+                    .toArray()
+                    .join(' ')
+            );
         })
         .attr('disabled', false);
 
@@ -636,8 +648,11 @@ $(function() {
             event.preventDefault();
             $('#user-story').hide();
             $('#user-story-edit-btn').hide();
-            $('#cf_user_story').show().focus().select();
             $('#top-save-btn').show();
+            $('#cf_user_story').show();
+            // don't focus the user-story field when restoring edit mode after navigation
+            if ($('#editing').val() === '')
+                $('#cf_user_story').focus().select();
         });
     $('#user-story-reply-btn')
         .click(function(event) {
@@ -886,27 +901,20 @@ $(function() {
             $('#product-search').show();
         });
     $('#pcs')
-        .on('autocompleteselect', function(event, ui) {
-            $('#product-search-error').hide();
-            $('.pcs-form').hide();
-            $('#product-search-cancel').hide();
-            $('#product-search').show();
-            if ($('#product').val() != ui.item.product) {
-                $('#component').data('preselect', ui.item.component);
-                $('#product').val(ui.item.product).change();
-            }
-            else {
-                $('#component').val(ui.item.component);
-            }
-            $('#product').show();
-        })
-        .autocomplete('option', 'autoFocus', true)
-        .keydown(function(event) {
-            if (event.which == 13) {
-                event.preventDefault();
-                var enterKeyEvent = $.Event("keydown");
-                enterKeyEvent.keyCode = $.ui.keyCode.ENTER;
-                $('#pcs').trigger(enterKeyEvent);
+        .devbridgeAutocomplete('setOptions', {
+            onSelect: function(suggestion) {
+                $('#product-search-error').hide();
+                $('.pcs-form').hide();
+                $('#product-search-cancel').hide();
+                $('#product-search').show();
+                if ($('#product').val() != suggestion.data.product) {
+                    $('#component').data('preselect', suggestion.data.component);
+                    $('#product').val(suggestion.data.product).change();
+                }
+                else {
+                    $('#component').val(suggestion.data.component);
+                }
+                $('#product').show();
             }
         });
     $(document)
@@ -1010,6 +1018,20 @@ $(function() {
                 dirty.val(that.val() === that.data('preselected')[0] ? '' : '1');
             }
         });
+
+    // finally switch to edit mode if we navigate back to a page that was editing
+    if ($('#editing').val()) {
+        $('.module')
+            .each(function() {
+                slide_module($(this), 'hide', true);
+            });
+        $($('#editing').val().split(' '))
+            .each(function() {
+                slide_module($('#' + this), 'show', true);
+            });
+        $('#mode-btn').click();
+        $('#editing').val('');
+    }
 });
 
 function confirmUnsafeURL(url) {
