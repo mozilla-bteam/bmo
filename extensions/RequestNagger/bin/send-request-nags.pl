@@ -13,10 +13,6 @@ use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/../../..";
 
-# if there are more than this many requests that a user is waiting on, show a
-# summary and a link instead.
-use constant MAX_SETTER_COUNT => 7;
-
 use Bugzilla;
 BEGIN { Bugzilla->extensions() }
 
@@ -76,6 +72,7 @@ send_nags(
 sub send_nags {
     my (%args)   = @_;
     my $requests = {};
+    my $watching = $args{template} eq 'watching';
 
     # get requests
 
@@ -121,13 +118,15 @@ sub send_nags {
                     @{ $rh->{types}->{$report} }
                 );
 
-                # remove links to reports with too many items to display
-                my $total = 0;
-                foreach my $type (@{ $rh->{types}->{$report} }) {
-                    $total += scalar(@{ $rh->{$report}->{$type} });
-                }
-                if ($total > MAX_SETTER_COUNT) {
-                    $rh->{types}->{$report} = [];
+                if ($watching && $report eq 'setter') {
+                    # remove links to reports with too many items to display
+                    my $total = 0;
+                    foreach my $type (@{ $rh->{types}->{$report} }) {
+                        $total += scalar(@{ $rh->{$report}->{$type} });
+                    }
+                    if ($total > MAX_SETTER_COUNT) {
+                        $rh->{types}->{$report} = [];
+                    }
                 }
             }
         }
