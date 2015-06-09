@@ -172,6 +172,11 @@ select[multiple], .text_input, .yui-ac-input, input {
     color: #666;
 }
 
+.module .field .name .help {
+    color: #666;
+    cursor: help;
+}
+
 .module .field.inline .name {
     min-width: 0px;
     width: auto;
@@ -325,8 +330,7 @@ input[type="number"] {
 /* actions */
 
 #top-actions {
-    margin-top: 5px;
-    padding-bottom: 20px;
+    margin: 4px 0;
 }
 
 #top-actions .save-btn {
@@ -465,13 +469,18 @@ td.flag-requestee {
 
 /* comments and activity */
 
+#comment-actions {
+    margin-top: 4px;
+    text-align: right;
+}
+
 .change-set {
     clear: both;
     -webkit-box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
     -moz-box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
     box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
     border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-    margin-top: 20px;
+    margin-top: 8px;
     border: 1px solid #ddd;
 }
 
@@ -488,10 +497,15 @@ td.flag-requestee {
     padding-left: 8px !important;
 }
 
+.change-gravatar .vcard {
+    width: 36px;
+    text-align: center;
+}
+
 .change-author {
     width: 100%;
     vertical-align: top;
-    padding-top: 4px !important;
+    padding: 5px 0 !important;
 }
 
 .change-author .vcard {
@@ -845,4 +859,27 @@ div.ui-tooltip {
 
 #pcs {
     width: 235px;
+}
+
+/* search navigation */
+
+#search-nav {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 4px 8px;
+}
+
+#search-nav-label {
+    font-weight: bold;
+}
+
+.search-nav-link, .search-nav-disabled {
+    margin-left: 4px;
+}
+
+#search-nav-reget {
+    margin-left: 8px;
+}
+
+.search-nav-disabled {
+    color: #777;
 }

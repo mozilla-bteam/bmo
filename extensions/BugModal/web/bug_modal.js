@@ -25,19 +25,6 @@ $(function() {
     // products with descriptions (also lazy-loaded)
     var products = [];
 
-    // scroll to an element
-    function scroll_to(el, complete) {
-        var offset = el.offset();
-        $('html, body')
-            .animate({
-                    scrollTop: offset.top - 20,
-                    scrollLeft: offset.left = 20
-                },
-                200,
-                complete
-            );
-    }
-
     // expand/collapse module
     function slide_module(module, action, fast) {
         if (!module.attr('id'))
@@ -59,6 +46,23 @@ $(function() {
         else {
             content.slideToggle(duration, 'swing', slide_done);
         }
+    }
+
+    // restore edit mode after navigating back
+    function restoreEditMode() {
+        if (!$('#editing').val())
+            return;
+        $('.module')
+            .each(function() {
+                slide_module($(this), 'hide', true);
+            });
+        $($('#editing').val().split(' '))
+            .each(function() {
+                slide_module($('#' + this), 'show', true);
+            });
+        $('#mode-btn').click();
+        $('.save-btn').prop('disabled', false);
+        $('#editing').val('');
     }
 
     // expand all modules
@@ -100,23 +104,6 @@ $(function() {
             $('#attachments tr.attach-obsolete').toggle();
         });
 
-    // comment collapse/expand
-    $('.comment-spinner')
-        .click(function(event) {
-            event.preventDefault();
-            var spinner = $(event.target);
-            var id = spinner.attr('id').match(/\d+$/)[0];
-            // switch to full header for initially collapsed comments
-            if (spinner.attr('id').match(/^ccs-/)) {
-                $('#cc-' + id).hide();
-                $('#ch-' + id).show();
-            }
-            $('#ct-' + id + ', #ctag-' + id).slideToggle('fast', function() {
-                $('#c' + id).find('.activity').toggle();
-                spinner.text($('#ct-' + id + ':visible').length ? '-' : '+');
-            });
-        });
-
     // url --> unsafe warning
     $('.unsafe-url')
         .click(function(event) {
@@ -137,7 +124,7 @@ $(function() {
         .click(function(event) {
             event.preventDefault();
             var id = $('.comment:last')[0].parentNode.id;
-            scroll_to($('#' + id));
+            $.scrollTo($('#' + id));
             window.location.hash = id;
         });
 
@@ -145,7 +132,7 @@ $(function() {
     $('#top-btn')
         .click(function(event) {
             event.preventDefault();
-            scroll_to($('body'));
+            $.scrollTo($('body'));
         });
 
     // use non-native tooltips for relative times and bug summaries
@@ -338,7 +325,23 @@ $(function() {
                     keywords = data.keywords;
                     $('#keywords')
                         .devbridgeAutocomplete({
-                            lookup: keywords,
+                            lookup: function(query, done) {
+                                query = query.toLowerCase();
+                                var matchStart =
+                                    $.grep(keywords, function(keyword) {
+                                        return keyword.toLowerCase().substr(0, query.length) === query;
+                                    });
+                                var matchSub =
+                                    $.grep(keywords, function(keyword) {
+                                        return keyword.toLowerCase().indexOf(query) !== -1 &&
+                                            $.inArray(keyword, matchStart) === -1;
+                                    });
+                                var suggestions =
+                                    $.map($.merge(matchStart, matchSub), function(suggestion) {
+                                        return { value: suggestion };
+                                    });
+                                done({ suggestions: suggestions });
+                            },
                             tabDisabled: true,
                             delimiter: /,\s*/,
                             minChars: 0,
@@ -467,14 +470,14 @@ $(function() {
             event.preventDefault();
             // focus first to grow the textarea, so we scroll to the correct location
             $('#comment').focus();
-            scroll_to($('#bottom-save-btn'));
+            $.scrollTo($('#bottom-save-btn'));
         });
 
     // needinfo in people section -> scroll to near-comment ui
     $('#needinfo-scroll')
         .click(function(event) {
             event.preventDefault();
-            scroll_to($('#needinfo_role'), function() { $('#needinfo_role').focus(); });
+            $.scrollTo($('#needinfo_role'), function() { $('#needinfo_role').focus(); });
         });
 
     // knob
@@ -586,7 +589,7 @@ $(function() {
             if ($('#comment').val() != reply_text) {
                 $('#comment').val($('#comment').val() + reply_text);
             }
-            scroll_to($('#comment'), function() { $('#comment').focus(); });
+            $.scrollTo($('#comment'), function() { $('#comment').focus(); });
         });
 
     // add comment --> enlarge on focus
@@ -623,10 +626,10 @@ $(function() {
             $('#resolution').val($(event.target).text()).change();
             $('#top-save-btn').show();
             if ($(event.target).text() == "DUPLICATE") {
-                scroll_to($('body'));
+                $.scrollTo($('body'));
             }
             else {
-                scroll_to($('body'), function() { $('#resolution').focus(); });
+                $.scrollTo($('body'), function() { $('#resolution').focus(); });
             }
         });
     $('.status-btn')
@@ -636,7 +639,7 @@ $(function() {
             $('#field-status-edit').show();
             $('#bug_status').val($(event.target).data('status')).change();
             $('#top-save-btn').show();
-            scroll_to($('body'), function() { $('#bug_status').focus(); });
+            $.scrollTo($('body'), function() { $('#bug_status').focus(); });
         });
 
     // vote button
@@ -668,7 +671,7 @@ $(function() {
             if (current != text) {
                 $('#comment').val(current + text);
                 $('#comment').focus();
-                scroll_to($('#bottom-save-btn'));
+                $.scrollTo($('#bottom-save-btn'));
             }
         });
 
@@ -1026,18 +1029,8 @@ $(function() {
         });
 
     // finally switch to edit mode if we navigate back to a page that was editing
-    if ($('#editing').val()) {
-        $('.module')
-            .each(function() {
-                slide_module($(this), 'hide', true);
-            });
-        $($('#editing').val().split(' '))
-            .each(function() {
-                slide_module($('#' + this), 'show', true);
-            });
-        $('#mode-btn').click();
-        $('#editing').val('');
-    }
+    $(window).on('pageshow', restoreEditMode);
+    restoreEditMode();
 });
 
 function confirmUnsafeURL(url) {
@@ -1175,7 +1168,21 @@ function lb_close(event) {
             }
             // stick with inArray/indexOf and return -1 on no match
             return -1;
+        },
+
+        // Animated scroll to bring an element into view
+        scrollTo: function(el, complete) {
+            var offset = el.offset();
+            $('html, body')
+                .animate({
+                        scrollTop: offset.top - 20,
+                        scrollLeft: offset.left = 20
+                    },
+                    200,
+                    complete
+                );
         }
+
     });
 })(jQuery);
 
