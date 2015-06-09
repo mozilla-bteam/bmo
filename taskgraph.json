@@ -13,8 +13,8 @@
         "metadata": {
           "name": "Basic Sanity Tests"
         },
-        "provisionerId": "aws-provisioner",
-        "workerType": "gaia",
+        "provisionerId": "aws-provisioner-v1",
+        "workerType": "b2gtest",
         "payload": {
           "image": "dklawren/webtools-bmo-bugzilla",
           "command": ["/runtests.sh"],
@@ -43,8 +43,8 @@
         "metadata": {
           "name": "WebService API Tests (MySQL)"
         },
-        "provisionerId": "aws-provisioner",
-        "workerType": "gaia",
+        "provisionerId": "aws-provisioner-v1",
+        "workerType": "b2gtest",
         "payload": {
           "image": "dklawren/webtools-bmo-bugzilla",
           "command": ["/runtests.sh"],
@@ -78,8 +78,8 @@
         "metadata": {
           "name": "Selenium Tests (MySQL)"
         },
-        "provisionerId": "aws-provisioner",
-        "workerType": "gaia",
+        "provisionerId": "aws-provisioner-v1",
+        "workerType": "b2gtest",
         "payload": {
           "image": "dklawren/webtools-bmo-bugzilla",
           "command": ["/runtests.sh"],
