@@ -259,10 +259,6 @@ our %create_bug_formats = (
         'format'  => 'legal',
         'include' => 'everyone',
     },
-    'Recruiting' => {
-        'format' => 'recruiting',
-        'include' => 'everyone',
-    },
     'Internet Public Policy' => {
         'format'  => 'ipp',
         'include' => 'everyone',
