@@ -8,6 +8,19 @@
 package Bugzilla::Extension::BugModal::MonkeyPatches;
 1;
 
+package Bugzilla;
+use strict;
+use warnings;
+
+use Bugzilla::User;
+
+sub treeherder_user {
+    return Bugzilla->process_cache->{treeherder_user} //=
+        Bugzilla::User->new({ name => 'tbplbot@gmail.com', cache => 1 })
+        || Bugzilla::User->new({ name => 'treeherder@bots.tld', cache => 1 })
+        || Bugzilla::User->new();
+}
+
 package Bugzilla::Bug;
 use strict;
 use warnings;
@@ -29,10 +42,19 @@ use warnings;
 
 sub moz_nick {
     my ($self) = @_;
-    return $1 if $self->name =~ /:(.+?)\b/;
-    return $self->name if $self->name;
-    $self->login =~ /^([^\@]+)\@/;
-    return $1;
+    if (!exists $self->{moz_nick}) {
+        if ($self->name =~ /:?:(.+?)\b/) {
+            $self->{moz_nick} = $1;
+        }
+        elsif ($self->name) {
+            $self->{moz_nick} = $self->name;
+        }
+        else {
+            $self->login =~ /^([^\@]+)\@/;
+            $self->{moz_nick} = $1;
+        }
+    }
+    return $self->{moz_nick};
 }
 
 1;

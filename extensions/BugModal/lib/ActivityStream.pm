@@ -24,10 +24,12 @@ use Bugzilla::Constants;
 #       user_id => actor user-id
 #       comment => optional, comment added
 #       id      => unique identifier for this change-set
+#       cc_only => boolean
 #       activty => [
 #           {
 #               who     => user object
 #               when    => time (string)
+#               cc_only => boolean
 #               changes => [
 #                   {
 #                       fieldname   => field name :)
@@ -55,11 +57,13 @@ sub activity_stream {
         foreach my $change_set (@$stream) {
             $change_set->{id} = $change_set->{comment}
                 ? 'c' . $change_set->{comment}->count
-                : 'a' . ($change_set->{time} - $base_time) . '.' . $change_set->{user_id};
-            $change_set->{activity} = [
-                sort { $a->{fieldname} cmp $b->{fieldname} }
-                @{ $change_set->{activity} }
-            ];
+                : 'a' . ($change_set->{time} - $base_time) . '_' . $change_set->{user_id};
+            foreach my $activity (@{ $change_set->{activity} }) {
+                $activity->{changes} = [
+                    sort { $a->{fieldname} cmp $b->{fieldname} }
+                    @{ $activity->{changes} }
+                ];
+            }
         }
         my $order = Bugzilla->user->setting('comment_sort_order');
         if ($order eq 'oldest_to_newest') {
@@ -91,6 +95,7 @@ sub _add_activity_to_stream {
     my ($stream, $time, $user_id, $data) = @_;
     foreach my $entry (@$stream) {
         next unless $entry->{time} == $time && $entry->{user_id} == $user_id;
+        $entry->{cc_only} = $entry->{cc_only} && $data->{cc_only};
         push @{ $entry->{activity} }, $data;
         return;
     }
@@ -98,6 +103,7 @@ sub _add_activity_to_stream {
         time     => $time,
         user_id  => $user_id,
         comment  => undef,
+        cc_only  => $data->{cc_only},
         activity => [ $data ],
     };
 }
@@ -105,12 +111,21 @@ sub _add_activity_to_stream {
 sub _add_comments_to_stream {
     my ($bug, $stream) = @_;
     my $user = Bugzilla->user;
+    my $treeherder_id = Bugzilla->treeherder_user->id;
 
     my $raw_comments = $bug->comments();
     foreach my $comment (@$raw_comments) {
         next if $comment->type == CMT_HAS_DUPE;
-        next if $comment->is_private && !($user->is_insider || $user->id == $comment->author->id);
+        my $author_id = $comment->author->id;
+        next if $comment->is_private && !($user->is_insider || $user->id == $author_id);
         next if $comment->body eq '' && ($comment->work_time - 0) != 0 && !$user->is_timetracker;
+
+        # treeherder is so spammy we hide its comments by default
+        if ($author_id == $treeherder_id) {
+            $comment->{collapsed} = 1;
+            $comment->{collapsed_reason} = $comment->author->name;
+        }
+
         _add_comment_to_stream($stream, date_str_to_time($comment->creation_ts), $comment->author->id, $comment);
     }
 }
@@ -138,12 +153,12 @@ sub _add_activities_to_stream {
 
     # envelope, augment and tweak
     foreach my $operation (@$raw_activity) {
-        # until we can toggle their visibility, skip CC changes
-        $operation->{changes} = [ grep { $_->{fieldname} ne 'cc' } @{ $operation->{changes} } ];
-        next unless @{ $operation->{changes} };
 
         # make operation.who an object
         $operation->{who} = Bugzilla::User->new({ name => $operation->{who}, cache => 1 });
+
+        # we need to track operations which are just cc changes
+        $operation->{cc_only} = 1;
 
         for (my $i = 0; $i < scalar(@{$operation->{changes}}); $i++) {
             my $change = $operation->{changes}->[$i];
@@ -244,6 +259,11 @@ sub _add_activities_to_stream {
                     splice(@{$operation->{changes}}, $i, 0, $flag_change);
                 }
                 $i--;
+            }
+
+            # track cc-only
+            if ($change->{fieldname} ne 'cc') {
+                $operation->{cc_only} = 0;
             }
         }
 
