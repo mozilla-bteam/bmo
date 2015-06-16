@@ -22,6 +22,9 @@ var guided = {
     // initialise new step
     this.updateStep = true;
     switch(newStep) {
+      case 'sumo':
+        sumo.onShow();
+        break;
       case 'webdev':
         webdev.onShow();
         break;
@@ -79,6 +82,7 @@ var guided = {
     }
 
     // init steps
+    sumo.onInit();
     webdev.onInit();
     product.onInit();
     dupes.onInit();
@@ -98,6 +102,24 @@ var guided = {
       '&short_desc=' + encodeURIComponent(dupes.getSummary());
     Dom.get('advanced_img').href = href;
     Dom.get('advanced_link').href = href;
+  },
+
+  getStep: function() {
+    return this._currentStep;
+  }
+};
+
+// sumo step
+
+var sumo = {
+  onInit: function () {},
+
+  onShow: function () {
+    $("span.sumo_product").text(product.getName());
+    $("table.sumo_step").hide();
+
+    console.log(product.getName());
+    $("#sumo_" + product.getName().toLowerCase() ).show();
   }
 };
 
@@ -127,23 +149,28 @@ var product = {
 
   select: function(productName, componentName) {
     var prod = products[productName];
+    var nextStep = "dupes";
 
-    // called when a product is selected
-    if (componentName) {
-      this.setPreselectedComponent(componentName);
-      if (prod && prod.defaultComponent) {
-        prod.originalDefaultComponent = prod.originalDefaultComponent || prod.defaultComponent;
-        prod.defaultComponent = componentName;
+    if (prod.sumo && guided.getStep() != "sumo") {
+      nextStep = "sumo";
+    } else {
+      // called when a product is selected
+      if (componentName) {
+        this.setPreselectedComponent(componentName);
+        if (prod && prod.defaultComponent) {
+          prod.originalDefaultComponent = prod.originalDefaultComponent || prod.defaultComponent;
+          prod.defaultComponent = componentName;
+        }
       }
-    }
-    else {
-      if (prod && prod.defaultComponent && prod.originalDefaultComponent) {
-        prod.defaultComponent = prod.originalDefaultComponent;
+      else {
+        if (prod && prod.defaultComponent && prod.originalDefaultComponent) {
+          prod.defaultComponent = prod.originalDefaultComponent;
+        }
       }
     }
     this.setName(productName);
     dupes.reset();
-    guided.setStep('dupes');
+    guided.setStep(nextStep);
   },
 
   getName: function() {

@@ -44,6 +44,7 @@ var products = {
     noComponentSelection: true,
     detectPlatform: true,
     l10n: true,
+    sumo: true,
     support:
       'If you are new to Firefox or Bugzilla, please consider checking ' +
       '<a href="http://support.mozilla.org/">' +
@@ -96,6 +97,7 @@ var products = {
     related: [ "Core", "Toolkit", "MailNews Core" ],
     detectPlatform: true,
     l10n: true,
+    sumo: true,
     defaultComponent: "Untriaged",
     componentFilter : function(components) {
         var index = -1;

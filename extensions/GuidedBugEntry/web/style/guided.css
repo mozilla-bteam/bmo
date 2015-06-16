@@ -108,10 +108,14 @@ ul.product-list > li > .product-item {
 /* products and other_products step */
 
 .exits {
-    width: 600px;
+    width: 924px;
     margin-bottom: 10px;
-    border: 1px solid #aaa;
-    border-radius: 5px;
+
+    background-color: #FFF;
+    background-image: linear-gradient(0deg, #F6F4EC, #FFF);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    border-style: none;
 }
 
 .exits td {
