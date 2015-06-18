@@ -1743,6 +1743,41 @@ EOF
     $parent_bug->update($parent_bug->creation_ts);
 }
 
+sub _pre_legal_bug {
+    my ($self, $args) = @_;
+    my $params = $args->{params};
+
+    # validate users to fallback to a user instead of throwing an error
+
+    $params->{cc} //= [];
+    $params->{cc} = [ $params->{cc} ] unless ref($params->{cc});
+    foreach my $login (@{ $params->{cc} }) {
+        my $orig = $login;
+        $login = _validate_legal_user($login, 'udevi@mozilla.com', 'liz@mozilla.com');
+        if ($orig ne $login) {
+            warn "Invalid user '$orig' in Legal bug form\n";
+        }
+    }
+    $params->{cc} = [ grep { defined } @{ $params->{cc} } ];
+
+    $params->{assigned_to} = _validate_legal_user($params->{assigned_to}) // 'nobody@mozilla.org';
+}
+
+# returns the first "valid" login.
+# for legal bugs, this means the user exists, is enabled, and is a moco/mofo employee.
+sub _validate_legal_user {
+    my @logins = @_;
+    foreach my $login (@logins) {
+        my $user = Bugzilla::User->new({ name => $login, cache => 1 });
+        next unless
+            $user
+            && $user->is_enabled
+            && $user->in_group('mozilla-employee-confidential');
+        return $user->login
+    }
+    return undef;
+}
+
 sub _add_attachment {
     my ($self, $args, $attachment_args) = @_;
 
@@ -1842,6 +1877,13 @@ sub bug_before_create {
     if (exists $params->{groups}) {
         # map renamed groups
         $params->{groups} = [ _map_groups($params->{groups}) ];
+    }
+
+    # custom bug entry form - pre-processing
+    if (my $format = Bugzilla->input_params->{format}) {
+        if ($format eq 'legal') {
+            $self->_pre_legal_bug($args);
+        }
     }
 }
 

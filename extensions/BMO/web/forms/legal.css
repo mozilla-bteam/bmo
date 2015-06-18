@@ -1,0 +1,62 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+.panel {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 50px;
+}
+
+#submit {
+    margin-top: 25px;
+}
+
+.q, .label {
+    font-weight: bold;
+}
+
+.required {
+    color: darkred;
+    margin-left: 4px;
+}
+
+.return-to-start {
+    display: block;
+    margin-top: 2em;
+}
+
+.start-option {
+    margin-bottom: 1em;
+}
+
+.start-option-desc {
+    font-style: italic;
+}
+
+.panel-desc {
+    font-style: italic;
+    margin-bottom: 25px;
+}
+
+.panel h1 {
+    margin-bottom: 0;
+}
+
+.panel textarea {
+    font-family: inherit;
+    font-size: small;
+}
+
+.panel input[type=text], .panel textarea {
+    width: 100%;
+    min-width: 500px;
+}
+
+.question {
+    margin-top: 1em;
+}
