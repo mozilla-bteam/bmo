@@ -9,17 +9,12 @@
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi %]
 
->> Request Type
-[%+ cgi.param("feature_type") == "new" ? "New Feature Request" : "Existing Feature Defect" %]
-
 >> Feature Request Summary:
 [%+ cgi.param('short_desc') %]
 
 >> Description of feature, or problem to be solved
 [%+ cgi.param("description") || "-" %]
 
->> Was this discussed in a mailing list?
-[%+ cgi.param("discussion").ucfirst %]
 [% RETURN IF cgi.param("discussion") != "yes" %]
 
 >> Mailing list thread
