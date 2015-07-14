@@ -46,7 +46,7 @@ use DateTime;
 use Email::MIME::ContentType qw(parse_content_type);
 use Encode qw(find_encoding encode_utf8);
 use File::MimeInfo::Magic;
-use List::MoreUtils qw(natatime);
+use List::MoreUtils qw(natatime any);
 use List::Util qw(first);
 use Scalar::Util qw(blessed);
 use Sys::Syslog qw(:DEFAULT setlogsock);
@@ -77,6 +77,7 @@ BEGIN {
     *Bugzilla::check_default_product_security_group = \&_check_default_product_security_group;
     *Bugzilla::Attachment::is_bounty_attachment     = \&_attachment_is_bounty_attachment;
     *Bugzilla::Attachment::bounty_details           = \&_attachment_bounty_details;
+    *Bugzilla::Attachment::external_redirect        = \&_attachment_external_redirect;
 }
 
 sub template_before_process {
@@ -926,8 +927,8 @@ sub attachment_process_data {
         $url = $data;
     }
 
-    if (my $content_type = _detect_attached_url($url)) {
-        $attributes->{mimetype} = $content_type;
+    if (my $detected = _detect_attached_url($url)) {
+        $attributes->{mimetype} = $detected->{content_type};
         $attributes->{ispatch}  = 0;
     }
 }
@@ -943,11 +944,23 @@ sub _detect_attached_url {
 
     foreach my $key (keys %autodetect_attach_urls) {
         if ($url =~ $autodetect_attach_urls{$key}->{regex}) {
-            return $autodetect_attach_urls{$key}->{content_type};
+            return $autodetect_attach_urls{$key};
         }
     }
 
     return undef;
+}
+
+sub _attachment_external_redirect {
+    my ($self) = @_;
+
+    # must be our supported content-type
+    return undef unless
+        any { $self->contenttype eq $autodetect_attach_urls{$_}->{content_type} }
+        keys %autodetect_attach_urls;
+
+    # must still be a valid url
+    return _detect_attached_url($self->data)
 }
 
 # redirect automatically to github urls
@@ -959,13 +972,8 @@ sub attachment_view {
     # don't redirect if the content-type is specified explicitly
     return if defined $cgi->param('content_type');
 
-    # must be our supported content-type
-    return unless
-        grep { $attachment->contenttype eq $autodetect_attach_urls{$_}->{content_type} }
-        keys %autodetect_attach_urls;
-
-    # must still be a valid url
-    return unless _detect_attached_url($attachment->data);
+    # must be a valid redirection url
+    return unless defined $attachment->external_redirect;
 
     # redirect
     print $cgi->redirect(trim($attachment->data));
@@ -1103,6 +1111,42 @@ sub install_update_db {
             custom      => 1,
             buglist     => 0,
         });
+    }
+
+    # Add default security group id column
+    if (!$dbh->bz_column_info('products', 'security_group_id')) {
+        $dbh->bz_add_column(
+            'products',
+            'security_group_id' => {
+                TYPE    => 'INT3',
+                REFERENCES => {
+                    TABLE  => 'groups',
+                    COLUMN => 'id',
+                    DELETE => 'SET NULL',
+                },
+            }
+        );
+
+        # if there are no groups, then we're creating a database from scratch
+        # and there's nothing to migrate
+        my ($group_count) = $dbh->selectrow_array("SELECT COUNT(*) FROM groups");
+        if ($group_count) {
+            # Migrate values in Data.pm
+            # 1. Set all to core-security by default
+            my $core_sec_group = Bugzilla::Group->new({ name => 'core-security' });
+            $dbh->do("UPDATE products SET security_group_id = ?", undef, $core_sec_group->id);
+            # 2. Update the ones that have explicit security groups
+            foreach my $prod_name (keys %product_sec_groups) {
+                my $group_name = $product_sec_groups{$prod_name};
+                next if $group_name eq 'core-security'; # already done
+                my $group = Bugzilla::Group->new({ name => $group_name, cache => 1 });
+                if (!$group) {
+                    warn "Security group $group_name not found. Using core-security instead.\n";
+                    next;
+                }
+                $dbh->do("UPDATE products SET security_group_id = ? WHERE name = ?", undef, $group->id, $prod_name);
+            }
+        }
     }
 }
 
