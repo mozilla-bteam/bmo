@@ -1815,7 +1815,7 @@ sub _pre_fxos_feature {
     my $params = $args->{params};
 
     $params->{keywords} = 'foxfood';
-    $params->{keywords} .= ',feature' if $cgi->param('feature_type') // '' eq 'new';
+    $params->{keywords} .= ',feature' if ($cgi->param('feature_type') // '') eq 'new';
     $params->{bug_status} = $user->in_group('canconfirm') ? 'NEW' : 'UNCONFIRMED';
 }
 
@@ -1919,7 +1919,7 @@ sub bug_before_create {
         # map renamed groups
         $params->{groups} = [ _map_groups($params->{groups}) ];
     }
-    if (Bugzilla->cgi->param('format') // '' eq 'fxos-feature') {
+    if ((Bugzilla->cgi->param('format') // '') eq 'fxos-feature') {
         $self->_pre_fxos_feature($args);
     }
 }
