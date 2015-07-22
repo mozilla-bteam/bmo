@@ -55,6 +55,8 @@ use Bugzilla::Keyword;
 use Bugzilla::Hook;
 
 use Encode qw(encode find_encoding);
+use URI;
+use URI::QueryParam;
 
 # For most scripts we don't make $cgi and $template global variables. But
 # when preparing Bugzilla for mod_perl, this script used these
@@ -377,12 +379,14 @@ sub view {
 
     # At this point, Bugzilla->login has been called if it had to.
     my $contenttype = $attachment->contenttype;
-    my $filename = $attachment->filename;
+    my $filename    = $attachment->filename;
+    my $contenttype_override = 0;
 
     # Bug 111522: allow overriding content-type manually in the posted form
     # params.
     if (defined $cgi->param('content_type')) {
         $contenttype = $attachment->_check_content_type($cgi->param('content_type'));
+        $contenttype_override = 1;
     }
 
     # Return the appropriate HTTP response headers.
@@ -402,6 +406,18 @@ sub view {
     $filename = encode('MIME-Q', $filename);
 
     my $disposition = Bugzilla->params->{'allow_attachment_display'} ? 'inline' : 'attachment';
+
+    my $do_redirect = 0;
+    Bugzilla::Hook::process('attachment_should_redirect_login', { do_redirect => \$do_redirect });
+
+    if ($do_redirect) {
+        my $uri = URI->new(correct_urlbase() . 'attachment.cgi');
+        $uri->query_param(id => $attachment->id);
+        $uri->query_param(content_type => $contenttype) if $contenttype_override;
+
+        print $cgi->redirect('-location' => $uri);
+        exit 0;
+    }
 
     # Don't send a charset header with attachments--they might not be UTF-8.
     # However, we do allow people to explicitly specify a charset if they
@@ -833,10 +849,7 @@ sub delete_attachment {
         # Paste the reason provided by the admin into a comment.
         $bug->add_comment($msg);
 
-        # If the attachment is stored locally, remove it.
-        if (-e $attachment->_get_local_filename) {
-            unlink $attachment->_get_local_filename;
-        }
+        # Remove attachment.
         $attachment->remove_from_db();
 
         # Now delete the token.
