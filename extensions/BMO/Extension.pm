@@ -49,7 +49,7 @@ use File::MimeInfo::Magic;
 use List::MoreUtils qw(natatime any);
 use List::Util qw(first);
 use Scalar::Util qw(blessed);
-use Sys::Syslog qw(:DEFAULT setlogsock);
+use Sys::Syslog qw(:DEFAULT);
 use Text::Balanced qw( extract_bracketed extract_multiple );
 
 use Bugzilla::Extension::BMO::Constants;
@@ -741,7 +741,7 @@ sub object_end_of_create {
         my $user = $args->{object};
 
         # Log real IP addresses for auditing
-        _syslog(sprintf('[audit] <%s> created user %s', remote_ip(), $user->login));
+        Bugzilla->audit(sprintf('<%s> created user %s', remote_ip(), $user->login));
 
         # Add default searches to new user's footer
         my $dbh = Bugzilla->dbh;
@@ -762,8 +762,7 @@ sub object_end_of_create {
 
     } elsif ($class eq 'Bugzilla::Bug') {
         # Log real IP addresses for auditing
-        _syslog(sprintf('[audit] %s <%s> created bug %s',
-            Bugzilla->user->login, remote_ip(), $args->{object}->id));
+        Bugzilla->audit(sprintf('%s <%s> created bug %s', Bugzilla->user->login, remote_ip(), $args->{object}->id));
     }
 }
 
@@ -1152,7 +1151,64 @@ sub install_update_db {
         # and there's nothing to migrate
         my ($group_count) = $dbh->selectrow_array("SELECT COUNT(*) FROM groups");
         if ($group_count) {
-            # Migrate values in Data.pm
+            # Migrate old product_sec_group mappings from the time this change was made
+            my %product_sec_groups = (
+                "addons.mozilla.org"            => 'client-services-security',
+                "Air Mozilla"                   => 'mozilla-employee-confidential',
+                "Android Background Services"   => 'cloud-services-security',
+                "Audio/Visual Infrastructure"   => 'mozilla-employee-confidential',
+                "AUS"                           => 'client-services-security',
+                "Bugzilla"                      => 'bugzilla-security',
+                "bugzilla.mozilla.org"          => 'bugzilla-security',
+                "Cloud Services"                => 'cloud-services-security',
+                "Community Tools"               => 'websites-security',
+                "Data & BI Services Team"       => 'metrics-private',
+                "Developer Documentation"       => 'websites-security',
+                "Developer Ecosystem"           => 'client-services-security',
+                "Finance"                       => 'finance',
+                "Firefox Friends"               => 'mozilla-employee-confidential',
+                "Firefox Health Report"         => 'cloud-services-security',
+                "Infrastructure & Operations"   => 'mozilla-employee-confidential',
+                "Input"                         => 'websites-security',
+                "Intellego"                     => 'intellego-team',
+                "Internet Public Policy"        => 'mozilla-employee-confidential',
+                "L20n"                          => 'l20n-security',
+                "Legal"                         => 'legal',
+                "Marketing"                     => 'marketing-private',
+                "Marketplace"                   => 'client-services-security',
+                "Mozilla Communities"           => 'mozilla-communities-security',
+                "Mozilla Corporation"           => 'mozilla-employee-confidential',
+                "Mozilla Developer Network"     => 'websites-security',
+                "Mozilla Foundation"            => 'mozilla-employee-confidential',
+                "Mozilla Foundation Operations" => 'mozilla-foundation-operations',
+                "Mozilla Grants"                => 'grants',
+                "mozillaignite"                 => 'websites-security',
+                "Mozilla Messaging"             => 'mozilla-messaging-confidential',
+                "Mozilla Metrics"               => 'metrics-private',
+                "mozilla.org"                   => 'mozilla-employee-confidential',
+                "Mozilla PR"                    => 'pr-private',
+                "Mozilla QA"                    => 'mozilla-employee-confidential',
+                "Mozilla Reps"                  => 'mozilla-reps',
+                "Popcorn"                       => 'websites-security',
+                "Privacy"                       => 'privacy',
+                "quality.mozilla.org"           => 'websites-security',
+                "Recruiting"                    => 'hr',
+                "Release Engineering"           => 'mozilla-employee-confidential',
+                "Snippets"                      => 'websites-security',
+                "Socorro"                       => 'client-services-security',
+                "support.mozillamessaging.com"  => 'websites-security',
+                "support.mozilla.org"           => 'websites-security',
+                "Talkback"                      => 'talkback-private',
+                "Tamarin"                       => 'tamarin-security',
+                "Taskcluster"                   => 'taskcluster-security',
+                "Testopia"                      => 'bugzilla-security',
+                "Tree Management"               => 'mozilla-employee-confidential',
+                "Web Apps"                      => 'client-services-security',
+                "Webmaker"                      => 'websites-security',
+                "Websites"                      => 'websites-security',
+                "Webtools"                      => 'webtools-security',
+                "www.mozilla.org"               => 'websites-security',
+            );
             # 1. Set all to core-security by default
             my $core_sec_group = Bugzilla::Group->new({ name => 'core-security' });
             $dbh->do("UPDATE products SET security_group_id = ?", undef, $core_sec_group->id);
@@ -1808,6 +1864,17 @@ EOF
     $parent_bug->update($parent_bug->creation_ts);
 }
 
+sub _pre_fxos_feature {
+    my ($self, $args) = @_;
+    my $cgi = Bugzilla->cgi;
+    my $user = Bugzilla->user;
+    my $params = $args->{params};
+
+    $params->{keywords} = 'foxfood';
+    $params->{keywords} .= ',feature' if ($cgi->param('feature_type') // '') eq 'new';
+    $params->{bug_status} = $user->in_group('canconfirm') ? 'NEW' : 'UNCONFIRMED';
+}
+
 sub _add_attachment {
     my ($self, $args, $attachment_args) = @_;
 
@@ -1907,6 +1974,9 @@ sub bug_before_create {
     if (exists $params->{groups}) {
         # map renamed groups
         $params->{groups} = [ _map_groups($params->{groups}) ];
+    }
+    if ((Bugzilla->cgi->param('format') // '') eq 'fxos-feature') {
+        $self->_pre_fxos_feature($args);
     }
 }
 

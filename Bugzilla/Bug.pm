@@ -1028,6 +1028,12 @@ sub update {
         my @added_names   = map { $new_groups{$_}->name } @$added_gr;
         $changes->{'bug_group'} = [join(', ', @removed_names),
                                    join(', ', @added_names)];
+
+        # we only audit when bugs protected with a secure-mail enabled group
+        # are made public
+        if (!scalar @{ $self->groups_in } && any { $old_groups{$_}->secure_mail } @$removed_gr) {
+            Bugzilla->audit(sprintf('%s made Bug %s public (%s)', $user->login, $self->id, $self->short_desc));
+        }
     }
 
     # Comments and comment tags
@@ -1881,13 +1887,7 @@ sub _check_keywords {
         $keywords_in = trim($keywords_in);
         $keyword_array = [split(/[\s,]+/, $keywords_in)];
     }
-    
-    # On creation, only editbugs users can set keywords.
-    if (!ref $invocant) {
-        my $product = $params->{product};
-        return [] if !Bugzilla->user->in_group('editbugs', $product->id);
-    }
-    
+
     my %keywords;
     foreach my $keyword (@$keyword_array) {
         next unless $keyword;
