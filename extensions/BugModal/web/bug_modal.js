@@ -427,7 +427,7 @@ $(function() {
                             tabDisabled: true,
                             delimiter: /,\s*/,
                             minChars: 0,
-                            autoSelectFirst: true,
+                            autoSelectFirst: false,
                             triggerSelectOnValidInput: false,
                             formatResult: function(suggestion, currentValue) {
                                 // disable <b> wrapping of matched substring
@@ -864,6 +864,8 @@ $(function() {
             switch(String.fromCharCode(event.which).toLowerCase()) {
                 // ctrl+e or meta+e = enter edit mode
                 case 'e':
+                    if (event.shiftKey)
+                        return;
                     // don't conflict with text input shortcut
                     if (document.activeElement.nodeNode == 'INPUT' || document.activeElement.nodeName == 'TEXTAREA')
                         return;
