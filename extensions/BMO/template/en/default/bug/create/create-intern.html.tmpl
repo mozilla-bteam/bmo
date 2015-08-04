@@ -109,11 +109,13 @@ $(document).ready(function() {
   </p>
 
   <p>
-    Interns are charged back to your department and cost approximately 30K (USD)
-    for a 12 week period and includes salary, housing, relocation, equipment and
-    visa if needed. Costs for Interns outside of the US and Canada will be researched
-    and determined on a case by case basis as they do not follow the same conventions
-    as US and CAD.
+    Interns are charged back to your department and cost approximately 35K USD,
+    25K CAD for a 12 week period and includes salary, housing, relocation, equipment
+    and visa if needed. Approximate costs for Interns outside of the US and Canada
+    as follows:<br>
+    Berlin - 1000 Euro per month (no housing/relo)<br>
+    Paris - 1200 2 year student/1800 3 year student Euro per month (no housing/relo)<br>
+    London - 2300 Pounds per month (no housing/relo)
   </p>
 
   <p>
@@ -246,6 +248,18 @@ $(document).ready(function() {
     </div>
 
     <div class="row">
+      <label class="required" for="duration">
+        What is the duration of the internship?
+      </label>
+      <select required id="duration" name="duration">
+        <option value="">Select..</option>
+        <option value="3 months">3 months</option>
+        <option value="6 months">6 months</option>
+        <option value="> 6 months">&gt; 6 months</option>
+      </select>
+    </div>
+
+    <div class="row">
       <label class="required" for="job_description">
         Job Description
         (<a target="_blank" href="https://mana.mozilla.org/wiki/display/globalstaffing/Intern+Job+Descriptions">more info</a>)
@@ -274,13 +288,6 @@ $(document).ready(function() {
         Name:
       </label>
       <input required name="name" id="name" size="60">
-    </div>
-
-    <div class="row">
-      <label class="required" for="duration">
-        Duration:
-      </label>
-      <input required name="duration" id="duration" size="60">
     </div>
 
     <input type="submit" id="commit" value="Submit Request">
