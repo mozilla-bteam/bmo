@@ -270,6 +270,9 @@ if ($action eq 'search') {
             ? $cgi->param('password_change_reason')
             : ''
         );
+        if ($user->in_group('admin')) {
+            $otherUser->set_mfa('') if $cgi->param('mfa') eq '';
+        }
         $changes = $otherUser->update();
     }
 

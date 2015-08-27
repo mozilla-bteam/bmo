@@ -105,6 +105,16 @@ sub check_credentials {
         $user->update();
     }
 
+    if (i_am_webservice() && $user->settings->{api_key_only}->{value} eq 'on') {
+        # api-key verification happens in Auth/Login/APIKey
+        # token verification happens in Auth/Login/Cookie
+        # if we get here from an api call then we must be using user/pass
+        return {
+            failure    => AUTH_ERROR,
+            user_error => 'invalid_auth_method',
+        };
+    }
+
     return $login_data;
 }
 

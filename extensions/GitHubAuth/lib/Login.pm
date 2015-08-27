@@ -160,9 +160,13 @@ sub _get_login_info_from_email {
     }
 
     my $user = Bugzilla::User->new({name => $github_email, cache => 1});
-    return { failure    => AUTH_ERROR,
-             user_error => 'github_auth_account_too_powerful' } if $user && $user->in_group('no-github-auth');
-
+    if ($user) {
+        return { failure    => AUTH_ERROR,
+                 user_error => 'github_auth_account_too_powerful' } if $user->in_group('no-github-auth');
+        return { failure    => AUTH_ERROR,
+                 user_error => 'mfa_prevents_login',
+                 details    => { provider => 'GitHub' } } if $user->mfa;
+    }
     $cgi->remove_cookie('Bugzilla_github_token');
     return { username => $github_email, github_auth => 1 };
 }
