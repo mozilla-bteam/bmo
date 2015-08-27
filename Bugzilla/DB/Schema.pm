@@ -947,9 +947,11 @@ use constant ABSTRACT_SCHEMA => {
             mybugslink     => {TYPE => 'BOOLEAN', NOTNULL => 1,
                                DEFAULT => 'TRUE'},
             extern_id      => {TYPE => 'varchar(64)'},
-            is_enabled     => {TYPE => 'BOOLEAN', NOTNULL => 1, 
-                               DEFAULT => 'TRUE'}, 
+            is_enabled     => {TYPE => 'BOOLEAN', NOTNULL => 1,
+                               DEFAULT => 'TRUE'},
             last_seen_date => {TYPE => 'DATETIME'},
+            password_change_required => { TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE' },
+            password_change_reason   => { TYPE => 'varchar(64)' },
         ],
         INDEXES => [
             profiles_login_name_idx => {FIELDS => ['login_name'],
@@ -1138,17 +1140,19 @@ use constant ABSTRACT_SCHEMA => {
 
     logincookies => {
         FIELDS => [
-            cookie   => {TYPE => 'varchar(16)', NOTNULL => 1,
-                         PRIMARYKEY => 1},
+            cookie   => {TYPE => 'varchar(22)', NOTNULL => 1},
             userid   => {TYPE => 'INT3', NOTNULL => 1,
                          REFERENCES => {TABLE  => 'profiles',
                                         COLUMN => 'userid',
                                         DELETE => 'CASCADE'}},
             ipaddr   => {TYPE => 'varchar(40)'},
             lastused => {TYPE => 'DATETIME', NOTNULL => 1},
+            id       => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+            restrict_ipaddr => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0},
         ],
         INDEXES => [
             logincookies_lastused_idx => ['lastused'],
+            logincookies_cookie_idx => {FIELDS => ['cookie'], TYPE => 'UNIQUE'},
         ],
     },
 
@@ -1180,7 +1184,7 @@ use constant ABSTRACT_SCHEMA => {
                                                          COLUMN => 'userid',
                                                          DELETE => 'CASCADE'}},
             issuedate => {TYPE => 'DATETIME', NOTNULL => 1} ,
-            token     => {TYPE => 'varchar(16)', NOTNULL => 1,
+            token     => {TYPE => 'varchar(22)', NOTNULL => 1,
                           PRIMARYKEY => 1},
             tokentype => {TYPE => 'varchar(16)', NOTNULL => 1} ,
             eventdata => {TYPE => 'TINYTEXT'},
@@ -1764,6 +1768,7 @@ use constant ABSTRACT_SCHEMA => {
             revoked       => {TYPE => 'BOOLEAN', NOTNULL => 1,
                               DEFAULT => 'FALSE'},
             last_used     => {TYPE => 'DATETIME'},
+            last_used_ip  => {TYPE => 'varchar(40)'},
             app_id        => {TYPE => 'varchar(64)'},
         ],
         INDEXES => [

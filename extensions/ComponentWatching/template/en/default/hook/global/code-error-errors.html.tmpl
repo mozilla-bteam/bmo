@@ -6,13 +6,7 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<li>
-|
-<a href="page.cgi?id=etiquette.html">
-  [%- terms.Bugzilla %] Etiquette</a>
-</li>
-<li>
-|
-<a href="https://developer.mozilla.org/en/Bug_writing_guidelines">
-  [%- terms.Bug %] Writing Guidelines</a>
-</li>
+[% IF error == "component_watch_invalid_id" %]
+   [% title = "Invalid Component Watch ID" %]
+   The component watch id provided is invalid.
+[% END %]

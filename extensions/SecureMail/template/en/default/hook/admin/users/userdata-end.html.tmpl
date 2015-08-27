@@ -1,0 +1,50 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% RETURN UNLESS otheruser.id %]
+
+<tr>
+  <th>Has Secure Mail Key/Cert:</th>
+  <td>
+    [% otheruser.public_key ? "Yes" : "No" %]
+  </td>
+</tr>
+
+<tr>
+  <th>Member of Secure Mail Group:</th>
+  <td>
+    [%
+      securemail_member = 0;
+      FOREACH group IN otheruser.groups;
+        IF group.secure_mail;
+          securemail_member = 1;
+          LAST;
+        END;
+      END;
+      securemail_member ? "Yes" : "No";
+    %]
+  </td>
+</tr>
+
+<script type="text/javascript">
+$(function() {
+    'use strict';
+    var securemail_groups = [];
+    [% FOREACH group = groups %]
+      [% IF group.secure_mail %]
+        securemail_groups.push('[% group.id FILTER js %]');
+      [% END %]
+    [% END %]
+    $(document).ready(function() {
+        for (var i = 0, l = securemail_groups.length; i < l; i++) {
+            $("label[for='group_" + securemail_groups[i] + "']")
+                .append('(Secure Mail)');
+        }
+    });
+});
+</script>

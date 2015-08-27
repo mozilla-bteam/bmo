@@ -209,6 +209,8 @@
 
     [% IF object == "administrative_pages" %]
       administrative pages
+    [% ELSIF object == "admin_group" %]
+      the admin group
     [% ELSIF object == "attachment" %]
       [% IF attach_id %]
         attachment #[% attach_id FILTER html %]
@@ -237,6 +239,8 @@
       group access
     [% ELSIF object == "groups" %]
       groups
+    [% ELSIF object == "insider_group" %]
+      the insider group
     [% ELSIF object == "job_queue" %]
       the job queue
     [% ELSIF object == "keywords" %]
@@ -1080,6 +1084,10 @@
     [% title = "Invalid Parameter" %]
     The new value for [% name FILTER html %] is invalid: [% err FILTER html %].
 
+  [% ELSIF error == "invalid_parameters" %]
+    [% title = "Invalid Parameters" %]
+    Invalid parameters: [% err FILTER html %].
+
   [% ELSIF error == "invalid_product_name" %]
     [% title = "Invalid Product Name" %]
     The product name '[% product FILTER html %]' is invalid or does not exist.
@@ -1343,6 +1351,10 @@
   [% ELSIF error == "new_password_missing" %]
     [% title = "New Password Missing" %]
     You must enter a new password.
+
+  [% ELSIF error == "new_password_same" %]
+    [% title = "Password Unchanged" %]
+    Your new password cannot be the same as your old password.
 
   [% ELSIF error == "no_axes_defined" %]
     [% title = "No Axes Defined" %]
@@ -1804,10 +1816,11 @@
     token too recently to request another. Please wait a while and try again.
 
   [% ELSIF error == "unknown_action" %]
+    [% title = "Unknown Action" %]
     [% IF action %]
-       Unknown action [% action FILTER html %]!
+      Unknown action "[% action.truncate(20, "...") FILTER html %]"!
     [% ELSE %]
-       I could not figure out what you wanted to do.
+      I could not figure out what you wanted to do.
     [% END %]
 
   [% ELSIF error == "unknown_tab" %]

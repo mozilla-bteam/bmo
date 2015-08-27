@@ -66,7 +66,7 @@ BEGIN {
     *Bugzilla::Bug::last_closed_date                = \&_last_closed_date;
     *Bugzilla::Bug::reporters_hw_os                 = \&_bug_reporters_hw_os;
     *Bugzilla::Bug::is_unassigned                   = \&_bug_is_unassigned;
-    *Bugzilla::Bug::has_patch                       = \&_bug_has_patch;
+    *Bugzilla::Bug::has_current_patch               = \&_bug_has_current_patch;
     *Bugzilla::Product::default_security_group      = \&_default_security_group;
     *Bugzilla::Product::default_security_group_obj  = \&_default_security_group_obj;
     *Bugzilla::Product::group_always_settable       = \&_group_always_settable;
@@ -196,7 +196,7 @@ sub page_before_template {
     }
     elsif ($page eq 'group_members.html' or $page eq 'group_members.json') {
         require Bugzilla::Extension::BMO::Reports::Groups;
-        Bugzilla::Extension::BMO::Reports::Groups::members_report($vars);
+        Bugzilla::Extension::BMO::Reports::Groups::members_report($page, $vars);
     }
     elsif ($page eq 'recruiting_dashboard.html') {
         require Bugzilla::Extension::BMO::Reports::Recruiting;
@@ -226,6 +226,9 @@ sub page_before_template {
     }
     elsif ($page eq 'attachment_bounty_form.html') {
         bounty_attachment($vars);
+    }
+    elsif ($page eq 'triage_request.html') {
+        triage_request($vars);
     }
 }
 
@@ -353,6 +356,18 @@ sub parse_bounty_attachment_description {
         publish        => $map{ $+{publish} // 'false' },
         credit         => [grep { $_ } split(/\s*,\s*/, $+{credits}) ]
     };
+}
+
+sub triage_request {
+    my ($vars) = @_;
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+    if (Bugzilla->input_params->{update}) {
+        Bugzilla->set_user(Bugzilla::User->super_user);
+        $user->set_groups({ add => [ 'canconfirm' ] });
+        Bugzilla->set_user($user);
+        $user->update();
+        $vars->{updated} = 1;
+    }
 }
 
 sub _get_field_values_sort_key {
@@ -790,9 +805,10 @@ sub _bug_is_unassigned {
     return $assignee eq 'nobody@mozilla.org' || $assignee =~ /\.bugs$/;
 }
 
-sub _bug_has_patch {
+sub _bug_has_current_patch {
     my ($self) = @_;
     foreach my $attachment (@{ $self->attachments }) {
+        next if $attachment->isobsolete;
         return 1 if
             $attachment->ispatch
             || $attachment->contenttype eq 'text/x-github-pull-request'
@@ -2197,6 +2213,19 @@ sub _split_crash_signature {
         grep { /\S/ }
         extract_multiple($crash_signature, [ sub { extract_bracketed($_[0], '[]') } ])
     ];
+}
+
+sub enter_bug_entrydefaultvars {
+    my ($self, $args) = @_;
+    my $vars = $args->{vars};
+    my $cgi  = Bugzilla->cgi;
+    return unless my $format = $cgi->param('format');
+
+    if ($format eq 'fxos-feature') {
+        $vars->{feature_type} = $cgi->param('feature_type');
+        $vars->{description}  = $cgi->param('description');
+        $vars->{discussion}   = $cgi->param('discussion');
+    }
 }
 
 __PACKAGE__->NAME;

@@ -72,6 +72,12 @@
       saveable    => "1"
     },
     {
+      name        => "sessions",
+      label       => "Sessions",
+      link        => "userprefs.cgi?tab=sessions",
+      saveable    => "1",
+    },
+    {
       name        => "apikey",
       label       => "API Keys",
       link        => "userprefs.cgi?tab=apikey",
@@ -95,7 +101,7 @@
   END;
 %]
 
-[% WRAPPER global/tabs.html.tmpl
+[% WRAPPER account/prefs/tabs.html.tmpl
    tabs        = tabs
    current_tab = current_tab
 %]

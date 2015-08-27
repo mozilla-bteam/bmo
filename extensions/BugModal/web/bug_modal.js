@@ -106,6 +106,13 @@ $(function() {
             $.scrollTo($('body'));
         });
 
+    // bottom btn
+    $('#bottom-btn')
+        .click(function(event) {
+            event.preventDefault();
+            $.scrollTo($('#bottom-actions'));
+        });
+
     // use non-native tooltips for relative times and bug summaries
     $('.rel-time, .rel-time-title, .bz_bug_link, .tt').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
@@ -306,7 +313,7 @@ $(function() {
         });
 
     // add comment menuitem, scroll the textarea into view
-    $('#action-add-comment')
+    $('#action-add-comment, #add-comment-btn')
         .click(function(event) {
             event.preventDefault();
             // focus first to grow the textarea, so we scroll to the correct location
@@ -319,15 +326,21 @@ $(function() {
         .click(function(event) {
             event.preventDefault();
             var id = $('.comment:last')[0].parentNode.id;
-            $.scrollTo($('#' + id));
-            window.location.hash = id;
+            $.scrollTo(id);
         });
+
+    // use scrollTo for in-page activity links
+    $('.activity-ref')
+        .click(function(event) {
+            event.preventDefault();
+            $.scrollTo($(this).attr('href').substr(1));
+        });
+
+    if (BUGZILLA.user.id === 0) return;
 
     //
     // anything after this point is only executed for logged in users
     //
-
-    if (BUGZILLA.user.id === 0) return;
 
     // dirty field tracking
     $('#changeform select').each(function() {
@@ -427,7 +440,7 @@ $(function() {
                             tabDisabled: true,
                             delimiter: /,\s*/,
                             minChars: 0,
-                            autoSelectFirst: true,
+                            autoSelectFirst: false,
                             triggerSelectOnValidInput: false,
                             formatResult: function(suggestion, currentValue) {
                                 // disable <b> wrapping of matched substring
@@ -633,6 +646,9 @@ $(function() {
             $('#field-' + field + '.edit-show').show();
             $('#' + field).val(BUGZILLA.user.login).focus().select();
             $('#top-save-btn').show();
+            if ($('#set-default-assignee').is(':checked')) {
+                $('#set-default-assignee').click();
+            }
         });
 
     // reply button
@@ -864,6 +880,8 @@ $(function() {
             switch(String.fromCharCode(event.which).toLowerCase()) {
                 // ctrl+e or meta+e = enter edit mode
                 case 'e':
+                    if (event.shiftKey)
+                        return;
                     // don't conflict with text input shortcut
                     if (document.activeElement.nodeNode == 'INPUT' || document.activeElement.nodeName == 'TEXTAREA')
                         return;
@@ -1254,22 +1272,33 @@ function lb_close(event) {
             return -1;
         },
 
-        // Animated scroll to bring an element into view
-        scrollTo: function(el, complete) {
-            var offset = el.offset();
-            $('html, body')
-                .animate({
-                        scrollTop: offset.top - 20,
-                        scrollLeft: offset.left = 20
-                    },
-                    200,
-                    complete
-                );
+        // Bring an element into view, leaving space for the outline.
+        // If passed a string, it will be treated as an id - the page will scroll
+        // unanimated and the url will be added to the browser's history.
+        // If passed an element, an smooth scroll will take place and no entry
+        // will be added to the history.
+        scrollTo: function(target, complete) {
+            if (typeof target === 'string') {
+                var el = $('#' + target);
+                window.location.hash = target;
+                var $html = $('html');
+                if (Math.abs($html.scrollTop() - el.offset().top) <= 1) {
+                    $html.scrollTop($html.scrollTop() - 10);
+                }
+                $html.scrollLeft(0);
+            }
+            else {
+                var offset = target.offset();
+                $('html')
+                    .animate({
+                            scrollTop: offset.top - 20,
+                            scrollLeft: 0
+                        },
+                        200,
+                        complete
+                    );
+            }
         }
 
     });
 })(jQuery);
-
-// no-ops
-function initHidingOptionsForIE() {}
-function showFieldWhen() {}

@@ -35,8 +35,11 @@ use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::User;
 use Bugzilla::User::Setting qw(clear_settings_cache);
+use Bugzilla::User::Session;
 use Bugzilla::User::APIKey;
 use Bugzilla::Token;
+
+use constant SESSION_MAX => 20;
 
 my $template = Bugzilla->template;
 local our $vars = {};
@@ -539,6 +542,51 @@ sub SaveSavedSearches {
     Bugzilla->memcached->clear({ table => 'profiles', id => $user->id });
 }
 
+sub SaveSessions {
+    my $cgi = Bugzilla->cgi;
+    my $dbh = Bugzilla->dbh;
+    my $user = Bugzilla->user;
+
+    # Do it in a transaction.
+    $dbh->bz_start_transaction;
+    if ($cgi->param("session_logout_all")) {
+        my $info_getter = $user->authorizer && $user->authorizer->successful_info_getter();
+        if ($info_getter->cookie) {
+            $dbh->do("DELETE FROM logincookies WHERE userid = ? AND cookie != ?", undef,
+                     $user->id, $info_getter->cookie);
+        }
+    }
+    else {
+        my @logout_ids = $cgi->param('session_logout_id');
+        my $sessions = Bugzilla::User::Session->new_from_list(\@logout_ids);
+        foreach my $session (@$sessions) {
+            $session->remove_from_db if $session->userid == $user->id;
+        }
+    }
+
+    $dbh->bz_commit_transaction;
+}
+
+sub DoSessions {
+    my $user        = Bugzilla->user;
+    my $dbh         = Bugzilla->dbh;
+    my $sessions    = Bugzilla::User::Session->match({ userid => $user->id, LIMIT => SESSION_MAX + 1 });
+    my $info_getter = $user->authorizer && $user->authorizer->successful_info_getter();
+
+    if ($info_getter) {
+        foreach my $session (@$sessions) { 
+            $session->{current} = $info_getter->cookie eq $session->{cookie};
+        }
+    }
+    my ($count) = $dbh->selectrow_array("SELECT count(*) FROM logincookies WHERE userid = ?", undef,
+                                        $user->id);
+
+    $vars->{too_many_sessions} = @$sessions == SESSION_MAX + 1;
+    $vars->{sessions}          = $sessions;
+    $vars->{session_count}     = $count;
+    $vars->{session_max}       = SESSION_MAX;
+    pop @$sessions if $vars->{too_many_sessions};
+}
 
 sub DoApiKey {
     my $user = Bugzilla->user;
@@ -615,6 +663,7 @@ Bugzilla->login(LOGIN_REQUIRED);
 
 my $save_changes = $cgi->param('dosave');
 $vars->{'changes_saved'} = $save_changes;
+my $disable_account = $cgi->param('account_disable');
 
 my $current_tab_name = $cgi->param('tab') || "account";
 
@@ -624,7 +673,7 @@ trick_taint($current_tab_name);
 $vars->{'current_tab_name'} = $current_tab_name;
 
 my $token = $cgi->param('token');
-check_token_data($token, 'edit_user_prefs') if $save_changes;
+check_token_data($token, 'edit_user_prefs') if $save_changes || $disable_account;
 
 # Do any saving, and then display the current tab.
 SWITCH: for ($current_tab_name) {
@@ -639,7 +688,7 @@ SWITCH: for ($current_tab_name) {
     last SWITCH if $handled;
 
     /^account$/ && do {
-        DisableAccount() if $cgi->param('account_disable');
+        DisableAccount() if $disable_account;
         SaveAccount() if $save_changes;
         DoAccount();
         last SWITCH;
@@ -666,6 +715,11 @@ SWITCH: for ($current_tab_name) {
     /^apikey$/ && do {
         SaveApiKey() if $save_changes;
         DoApiKey();
+        last SWITCH;
+    };
+    /^sessions$/ && do {
+        SaveSessions() if $save_changes;
+        DoSessions();
         last SWITCH;
     };
 

@@ -164,7 +164,6 @@ sub FILESYSTEM {
         'migrate.pl'      => { perms => OWNER_EXECUTE },
         'sentry.pl'       => { perms => WS_EXECUTE },
         'metrics.pl'      => { perms => WS_EXECUTE },
-        'install-module.pl' => { perms => OWNER_EXECUTE },
         'clean-bug-user-last-visit.pl' => { perms => WS_EXECUTE },
 
         'Bugzilla.pm'    => { perms => CGI_READ },
@@ -188,6 +187,9 @@ sub FILESYSTEM {
         "$extensionsdir/create.pl" => { perms => OWNER_EXECUTE },
         "$extensionsdir/*/*.pl"    => { perms => WS_EXECUTE },
         "$extensionsdir/*/bin/*"   => { perms => WS_EXECUTE },
+
+        # google webmaster tools verification files
+        'google*.html' => { perms => WS_SERVE },
     );
 
     # Directories that we want to set the perms on, but not

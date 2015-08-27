@@ -264,6 +264,12 @@ if ($action eq 'search') {
         $otherUser->set_disable_mail($cgi->param('disable_mail'));
         $otherUser->set_extern_id($cgi->param('extern_id'))
             if defined($cgi->param('extern_id'));
+        $otherUser->set_password_change_required($cgi->param('password_change_required'));
+        $otherUser->set_password_change_reason(
+            $otherUser->password_change_required
+            ? $cgi->param('password_change_reason')
+            : ''
+        );
         $changes = $otherUser->update();
     }
 
@@ -672,20 +678,60 @@ if ($action eq 'search') {
         ($activity_userid, $activity_who) = ($activity_who, $activity_userid);
     }
 
-    $vars->{'profile_changes'} = $dbh->selectall_arrayref(
-        "SELECT profiles.login_name AS who, " .
-                $dbh->sql_date_format('profiles_activity.profiles_when') . " AS activity_when,
-                fielddefs.name AS what,
-                profiles_activity.oldvalue AS removed,
-                profiles_activity.newvalue AS added
-         FROM profiles_activity
-         INNER JOIN profiles ON $activity_who = profiles.userid
-         INNER JOIN fielddefs ON fielddefs.id = profiles_activity.fieldid
-         WHERE $activity_userid = ?
-         ORDER BY profiles_activity.profiles_when",
-        {'Slice' => {}},
-        $otherUser->id);
+    my $sql = "
+        SELECT
+            profiles.login_name AS who,
+            " . $dbh->sql_date_format('profiles_activity.profiles_when') . " AS activity_when,
+            fielddefs.name AS what,
+            profiles_activity.oldvalue AS removed,
+            profiles_activity.newvalue AS added
+        FROM
+            profiles_activity
+            INNER JOIN profiles ON $activity_who = profiles.userid
+            INNER JOIN fielddefs ON fielddefs.id = profiles_activity.fieldid
+        WHERE
+            $activity_userid = ?
+    ";
+    my @values = ($otherUser->id);
 
+    if ($action ne 'admin_activity') {
+        $sql .= "
+            UNION ALL
+
+            SELECT
+                COALESCE(profiles.login_name, '-') AS who,
+                " . $dbh->sql_date_format('audit_log.at_time') . " AS activity_when,
+                field AS what,
+                removed,
+                added
+            FROM
+                audit_log
+                LEFT JOIN profiles ON profiles.userid = audit_log.user_id
+            WHERE
+                audit_log.object_id = ?
+                AND audit_log.class = 'Bugzilla::User'
+                AND audit_log.field != 'last_activity_ts'
+        ";
+        push @values, $otherUser->id;
+    }
+
+    $sql .= " ORDER BY activity_when";
+
+    # massage some fields to improve readability
+    my $profile_changes = $dbh->selectall_arrayref($sql, { Slice => {} }, @values);
+    foreach my $change (@$profile_changes) {
+        if ($change->{what} eq 'cryptpassword') {
+            $change->{what}    = 'password';
+            $change->{removed} = '';
+            $change->{added}   = '(updated)';
+        }
+        elsif ($change->{what} eq 'public_key') {
+            $change->{removed} = '(updated)' if $change->{removed} ne '';
+            $change->{added}   = '(updated)' if $change->{added} ne '';
+        }
+    }
+
+    $vars->{'profile_changes'} = $profile_changes;
     $vars->{'otheruser'} = $otherUser;
     $vars->{'action'} = $action;
 
@@ -720,6 +766,18 @@ sub check_user {
         $vars->{'user_login'} = $otherUserLogin;
     }
     ($otherUser && $otherUser->id) || ThrowCodeError('invalid_user', $vars);
+
+    if (!$user->in_group('admin')) {
+        my $insider_group = Bugzilla->params->{insidergroup};
+        if ($otherUser->in_group('admin')
+            || ($otherUser->in_group($insider_group) && !$user->in_group($insider_group))
+        ) {
+            ThrowUserError('auth_failure', {
+                action => 'modify',
+                object => 'user'
+            });
+        }
+    }
 
     return $otherUser;
 }

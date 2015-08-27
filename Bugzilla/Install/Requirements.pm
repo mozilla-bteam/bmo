@@ -332,6 +332,20 @@ sub OPTIONAL_MODULES {
         feature => ['detect_charset'],
     },
 
+    # S3 attachments
+    {
+        package => 'Class-Accessor-Fast',
+        module  => 'Class::Accessor::Fast',
+        version => 0,
+        feature => ['s3'],
+    },
+    {
+        package => 'XML-Simple',
+        module  => 'XML::Simple',
+        version => 0,
+        feature => ['s3'],
+    },
+
     # Inbound Email
     {
         package => 'Email-MIME-Attachment-Stripper',
@@ -381,7 +395,7 @@ sub OPTIONAL_MODULES {
         package => 'URI-Escape',
         module  => 'URI::Escape',
         version => 0,
-        feature => ['memcached'],
+        feature => ['memcached', 's3'],
     },
     {
         package => 'Cache-Memcached',
@@ -770,7 +784,7 @@ sub install_command {
         $package = $module->{package};
     }
     else {
-        $command = "$^X install-module.pl \%s";
+        $command = 'cpanm %s';
         # Non-Windows installations need to use module names, because
         # CPAN doesn't understand package names.
         $package = $module->{module};
