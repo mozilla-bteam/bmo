@@ -380,7 +380,6 @@ sub set_email_enabled            { $_[0]->set('disable_mail', !$_[1]);          
 sub set_extern_id                { $_[0]->set('extern_id', $_[1]);                }
 sub set_password_change_required { $_[0]->set('password_change_required', $_[1]); }
 sub set_password_change_reason   { $_[0]->set('password_change_reason', $_[1]);   }
-sub set_mfa                      { $_[0]->set('mfa', $_[1]);                      }
 
 sub set_login {
     my ($self, $login) = @_;
@@ -407,6 +406,15 @@ sub set_disabledtext {
     $self->set('disabledtext', $text);
     $self->set('is_enabled', trim($text) eq '' ? 0 : 1);
     $self->set('disable_mail', 1) if !$self->is_enabled;
+}
+
+sub set_mfa {
+    my ($self, $value) = @_;
+    if ($value eq '' && $self->mfa) {
+        $self->mfa_provider->property_delete_all();
+    }
+    $self->set('mfa', $value);
+    delete $self->{mfa_provider};
 }
 
 sub set_groups {
@@ -580,13 +588,15 @@ sub mfa { $_[0]->{mfa} }
 sub mfa_provider {
     my ($self) = @_;
     my $mfa = $self->{mfa} || return undef;
+    return $self->{mfa_provider} if exists $self->{mfa_provider};
     if ($mfa eq 'TOTP') {
         require Bugzilla::MFA::TOTP;
-        return Bugzilla::MFA::TOTP->new($self);
+        $self->{mfa_provider} = Bugzilla::MFA::TOTP->new($self);
     }
     else {
-        return undef;
+        $self->{mfa_provider} = undef;
     }
+    return $self->{mfa_provider};
 }
 
 # Generate a string to identify the user by name + login if the user

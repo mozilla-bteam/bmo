@@ -67,7 +67,6 @@ $(function() {
                     $('#mfa-enable-totp').show();
                     $('#mfa-totp-throbber').show();
                     $('#mfa-totp-issued').hide();
-                    $('#mfa-totp-qr').attr('src', '');
                     var url = 'rest/user/mfa/totp/enroll' +
                         '?Bugzilla_api_token=' + encodeURIComponent(BUGZILLA.api_token);
                     $.ajax({
@@ -77,15 +76,15 @@ $(function() {
                     })
                     .done(function(data) {
                         $('#mfa-totp-throbber').hide();
-                        $('#mfa-totp-qr').attr('src', 'data:image/png;base64,' + data.png);
-                        $('#mfa-totp-secret').text(data.secret32);
+                        var iframe = $('#mfa-enable-totp-frame').contents();
+                        iframe.find('#qr').attr('src', 'data:image/png;base64,' + data.png);
+                        iframe.find('#secret').text(data.secret32);
                         $('#mfa-totp-issued').show();
                         $('#mfa-totp-enable-code').focus();
                         $('#update').attr('disabled', false);
                     })
                     .error(function(data) {
                         $('#mfa-totp-throbber').hide();
-                        $('#mfa-totp-secret').text('-');
                         if (data.statusText === 'abort')
                             return;
                         var message = data.responseJSON ? data.responseJSON.message : 'Unexpected Error';
@@ -125,5 +124,8 @@ $(function() {
 
     if ($('#mfa-action').length) {
         $('#update').attr('disabled', true);
+        $(window).on('pageshow', function() {
+            $('#mfa').val('').change();
+        });
     }
 });

@@ -53,6 +53,7 @@ sub check_credentials {
     }
 
     my $password = $login_data->{password};
+    return { failure => AUTH_NODATA } unless defined $login_data->{password};
     my $real_password_crypted = $user->cryptpassword;
 
     # Using the internal crypted password as the salt,

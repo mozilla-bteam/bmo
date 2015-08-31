@@ -245,8 +245,8 @@ input[disabled] {
 }
 
 #mfa-totp-throbber {
-    width: 195px;
-    height: 275px;
+    width: 300px;
+    height: 280px;
 }
 
 .mfa-totp-popup {
@@ -259,10 +259,17 @@ input[disabled] {
     padding: 0 0 0 2em;
 }
 
-#mfa-totp-secret {
-    margin: 1em 0;
-}
-
 .mfa-totp-popup-close {
     float: right;
+}
+
+#mfa-enable-totp-frame {
+    border: none;
+    width: 300px;
+    height: 220px;
+}
+
+#mfa-enroll-embedded {
+    background: none;
+    padding: 0;
 }

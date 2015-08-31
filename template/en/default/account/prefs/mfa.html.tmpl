@@ -7,14 +7,18 @@
   #%]
 
 [% IF NOT Bugzilla.feature('mfa') %]
+  <input type="hidden" name="mfa_action" id="mfa-action" value="">
   <p>
-    Two-factor Authentication is not available on your account because you are
-    using an external authentication provider.
+    Two-factor Authentication is not available.
   </p>
   [% RETURN %]
 [% END %]
 [% IF user.cryptpassword == '*' %]
-  <p>Two-factor Authentication is not available on your account.</p>
+  <input type="hidden" name="mfa_action" id="mfa-action" value="">
+  <p>
+    Two-factor Authentication is not available on your account because you are
+    using an external authentication provider.
+  </p>
   [% RETURN %]
 [% END %]
 
@@ -65,11 +69,10 @@
         </div>
 
         <div id="mfa-totp-issued" style="display:none">
-          <img id="mfa-totp-qr" width="195" height="195">
+          <iframe id="mfa-enable-totp-frame" src="userprefs.cgi?tab=mfa&frame=totp"></iframe>
           <div id="mfa-totp-blurb">
             Scan this QR code with your <a href="#" id="mfa-totp-apps">TOTP App</a>,
             then enter the six digit code the app generates.<br>
-            If you can't use a QR code, <a href="#" id="mfa-totp-text">enter this text code</a>.<br>
             <br>
             <b>Code:</b>
             <input type="text" name="mfa_enable_code" id="mfa-totp-enable-code"

@@ -418,11 +418,12 @@ sub cancel_create_account {
 sub verify_mfa {
     my $token = shift;
     my ($user_id) = Bugzilla::Token::GetTokenData($token);
-    delete_token($token);
     my $user = Bugzilla::User->check({ id => $user_id, cache => 1 });
     if (!$user->mfa) {
+        delete_token($token);
         print Bugzilla->cgi->redirect('index.cgi');
         exit;
     }
     $user->mfa_provider->check_login($user);
+    delete_token($token);
 }

@@ -38,6 +38,7 @@ use Bugzilla::User::Setting qw(clear_settings_cache);
 use Bugzilla::User::Session;
 use Bugzilla::User::APIKey;
 use Bugzilla::Token;
+use DateTime;
 
 use constant SESSION_MAX => 20;
 
@@ -576,7 +577,20 @@ sub SaveMFA {
 }
 
 sub DoMFA {
-    # no-op
+    my $cgi = Bugzilla->cgi;
+    return unless my $provider = $cgi->param('frame');
+
+    print $cgi->header(
+        -Cache_Control => 'no-cache, no-store, must-revalidate',
+        -Expires       => 'Thu, 01 Dec 1994 16:00:00 GMT',
+        -Pragma        => 'no-cache',
+    );
+    if ($provider =~ /^[a-z]+$/) {
+        trick_taint($provider);
+        $template->process("mfa/$provider/enroll.html.tmpl", $vars)
+            || ThrowTemplateError($template->error());
+    }
+    exit;
 }
 
 sub SaveSessions {

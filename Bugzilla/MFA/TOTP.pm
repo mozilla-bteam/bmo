@@ -58,7 +58,7 @@ sub prompt {
     };
 
     print Bugzilla->cgi->header();
-    $template->process('mfa/totp.html.tmpl', $vars)
+    $template->process('mfa/totp/verify.html.tmpl', $vars)
         || ThrowTemplateError($template->error());
 }
 
