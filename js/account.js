@@ -42,13 +42,20 @@ $(function() {
         $('#account_disable').val('');
     });
 
+    // forgot password
+
+    $('#forgot-password')
+        .click(function(event) {
+            event.preventDefault();
+            $('#forgot-form').submit();
+        });
+
     // mfa
 
     $('#mfa-enable')
         .click(function(event) {
             event.preventDefault();
             $('#mfa-enable-container').show();
-            $('#mfa-api-blurb').show();
             $(this).hide();
         });
 
@@ -63,6 +70,7 @@ $(function() {
             }
             else {
                 $('#mfa-confirm').show();
+                $('.mfa-api-blurb').show();
                 if (mfa === 'TOTP') {
                     $('#mfa-enable-totp').show();
                     $('#mfa-totp-throbber').show();

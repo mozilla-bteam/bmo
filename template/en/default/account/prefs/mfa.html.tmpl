@@ -58,7 +58,20 @@
     </div>
 
     <p class="mfa-api-blurb">
-      [% INCLUDE api_key_pref_blurb %]
+      [% IF user.settings.api_key_only.value == 'on' %]
+        Enabling two-factor authentication has also required systems that
+        interface with [% terms.Bugzilla %]'s API to use <a href="userprefs.cgi?tab=apikey">API keys</a>
+        for authentication.<br>
+        <br>
+        While not recommended, this limitation can be lifted by changing the
+        <a href="userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
+        preference.
+      [% ELSE %]
+        Systems that interface with [% terms.Bugzilla %]'s API are not required to use API keys.<br>
+        Change the
+        <a href="userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
+        preference to enforce API key usage.
+      [% END %]
     </p>
 
   [% ELSE %]
@@ -104,14 +117,20 @@
           </div>
         </div>
 
+        <p>
+          If you have problems enrolling, this may be due to an inaccurate time on your device.<br>
+          Please check that the time on your device is accurate by visiting <b>http://time.is/</b>.
+        </p>
+
         <div id="mfa-totp-apps-popup" class="mfa-totp-popup" style="display:none">
           Example TOTP Applications:<br>
           <ul>
             <li>Android and iOS:
-              <a href="https://support.google.com/accounts/answer/1066447" target="_blank">Google Authenticator</a>
+              <a href="https://support.google.com/accounts/answer/1066447" target="_blank">Google Authenticator</a>,
+              <a href="https://fedorahosted.org/freeotp/" target="_blank">Red Hat FreeOTP</a>
             </li>
             <li>Firefox OS:
-              <a href="https://marketplace.firefox.com/app/gauth/" target="_blank">GAuth</a>
+              <a href="https://marketplace.firefox.com/app/totp/" target="_blank">TOTP</a>
             </li>
             <li>Windows Phone:
               <a href="http://www.windowsphone.com/en-us/store/app/authenticator/021dd79f-0598-e011-986b-78e7d1fa76f8"
@@ -121,12 +140,6 @@
           <a href="https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm#Client_implementations" target="_blank">
             Other clients
           </a>
-          <button type="button" class="mfa-totp-popup-close">Close</button>
-        </div>
-
-        <div id="mfa-totp-text-popup" class="mfa-totp-popup" style="display:none">
-          Your two-factor secret:
-          <div id="mfa-totp-secret"></div>
           <button type="button" class="mfa-totp-popup-close">Close</button>
         </div>
 
@@ -143,18 +156,12 @@
     </p>
 
     <p class="mfa-api-blurb" style="display:none">
-      [% INCLUDE api_key_pref_blurb %]
+      Enabling two-factor authentication will also require systems that
+      interface with [% terms.Bugzilla %]'s API to use <a href="userprefs.cgi?tab=apikey">API keys</a>
+      for authentication.  While not recommended, this limitation can be lifted by changing the
+      <a href="userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
+      preference after 2FA is enabled.
     </p>
   </div>
 
 </div>
-
-[% BLOCK api_key_pref_blurb %]
-  Enabling two-factor authentication will also require systems that
-  interface with [% terms.Bugzilla %]'s API to use <a href="userprefs.cgi?tab=apikey">API keys</a>
-  for authentication.<br>
-  <br>
-  While not recommended, this limitation can be lifted by changing the
-  <a href="userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
-  preference after 2FA is enabled.
-[% END %]
