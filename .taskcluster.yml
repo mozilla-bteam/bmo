@@ -1,0 +1,99 @@
+version: 0
+metadata:
+  name: "BMO Task Graph"
+  description: "A suite of tests to check the quality of the BMO codebase."
+  owner: "{{ event.head.user.email }}"
+  source: "{{ event.head.repo.url }}"
+tasks:
+  - provisionerId: "{{ taskcluster.docker.provisionerId }}"
+    workerType: "{{ taskcluster.docker.workerType }}"
+    extra:
+      github:
+        env: true
+        events:
+          - push
+    payload:
+      reruns: 3
+      maxRunTime: 3600
+      image: "dklawren/webtools-bmo-bugzilla"
+      command:
+        - "TEST_SUITE=sanity /runtests.sh"
+    metadata:
+      name: "Basic Sanity Tests"
+    artifacts:
+      public/runtests_log:
+        type: "file"
+        path: "/runtests.log"
+        expires: "2016-02-17T17:33:38.806Z"
+    extra:
+      treeherder:
+        symbol: "San"
+  - provisionerId: "{{ taskcluster.docker.provisionerId }}"
+    workerType: "{{ taskcluster.docker.workerType }}"
+    extra:
+      github:
+        env: true
+        events:
+          - push
+    payload:
+      reruns: 3
+      maxRunTime: 3600
+      image: "dklawren/webtools-bmo-bugzilla"
+      command:
+        - "TEST_SUITE=docs /runtests.sh"
+    metadata:
+      name: "Documentation Build Test"
+    artifacts:
+      public/runtests_log:
+        type: "file"
+        path: "/runtests.log"
+        expires: "2016-02-17T17:33:38.806Z"
+    extra:
+      treeherder:
+        symbol: "Doc"
+  - provisionerId: "{{ taskcluster.docker.provisionerId }}"
+    workerType: "{{ taskcluster.docker.workerType }}"
+    extra:
+      github:
+        env: true
+        events:
+          - push
+    payload:
+      reruns: 3
+      maxRunTime: 3600
+      image: "dklawren/webtools-bmo-bugzilla"
+      command:
+        - "TEST_SUITE=webservices /runtests.sh"
+    metadata:
+      name: "WebService API Tests"
+    artifacts:
+      public/runtests_log:
+        type: "file"
+        path: "/runtests.log"
+        expires: "2016-02-17T17:33:38.806Z"
+    extra:
+      treeherder:
+        symbol: "API"
+  - provisionerId: "{{ taskcluster.docker.provisionerId }}"
+    workerType: "{{ taskcluster.docker.workerType }}"
+    extra:
+      github:
+        env: true
+        events:
+          - push
+    payload:
+      reruns: 3
+      maxRunTime: 3600
+      image: "dklawren/webtools-bmo-bugzilla"
+      command:
+        - "TEST_SUITE=selenium /runtests.sh"
+    metadata:
+      name: "Selenium Tests"
+    artifacts:
+      public/runtests_log:
+        type: "file"
+        path: "/runtests.log"
+        expires: "2016-02-17T17:33:38.806Z"
+    extra:
+      treeherder:
+        symbol: "Sel"
