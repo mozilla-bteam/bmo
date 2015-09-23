@@ -18,7 +18,7 @@ my ($sel, $config) = get_selenium();
 # Set the email regexp for new bugzilla accounts to end with @bugzilla.test.
 
 log_in($sel, $config, 'admin');
-set_parameters($sel, { "User Authentication" => {"createemailregexp" => {type => "text", value => '[^@]+@bugzilla\.test'}} });
+set_parameters($sel, { "User Authentication" => {"createemailregexp" => {type => "text", value => '[^@]+@bugzilla\.test$'}} });
 logout($sel);
 
 # Create a valid account. We need to randomize the login address, because a request
@@ -51,7 +51,7 @@ my $error_msg = trim($sel->get_text("error_msg"));
 ok($error_msg =~ /Please wait a while and try again/, "Too soon for this account");
 
 # These accounts do not pass the regexp.
-my @accounts = ('test@yahoo.com', 'test@bugzilla.net', 'test@bugzilla..test');
+my @accounts = ('test@yahoo.com', 'test@bugzilla.net', 'test@bugzilla.test.com');
 foreach my $account (@accounts) {
     $sel->click_ok("link=New Account");
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -81,6 +81,22 @@ foreach my $account (@accounts) {
     $sel->click_ok('//input[@value="Create Account"]');
     ok($sel->get_alert() =~ /The e-mail address doesn't pass our syntax checking for a legal email address/,
         'Invalid email address detected');
+}
+
+# These accounts are illegal but do not cause a javascript alert
+@accounts = ('test@bugzilla.org@bugzilla.test', 'test@bugzilla..test');
+# Logins larger than 127 characters must be rejected, for security reasons.
+push @accounts, 'selenium-' . random_string(110) . '@bugzilla.test';
+foreach my $account (@accounts) {
+    $sel->click_ok("link=New Account");
+    $sel->wait_for_page_to_load_ok(WAIT_TIME);
+    $sel->title_is("Create a new Bugzilla account");
+    $sel->type_ok("login", $account);
+    $sel->click_ok('//input[@value="Create Account"]');
+    $sel->wait_for_page_to_load_ok(WAIT_TIME);
+    $sel->title_is("Invalid Email Address");
+    my $error_msg = trim($sel->get_text("error_msg"));
+    ok($error_msg =~ /^The e-mail address you entered (\S+) didn't pass our syntax checking/, "Invalid email address detected");
 }
 
 # This account already exists.
