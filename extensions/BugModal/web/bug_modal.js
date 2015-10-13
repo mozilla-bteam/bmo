@@ -5,6 +5,47 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
+// expand/collapse module
+function slide_module(module, action, fast) {
+    if (!module.attr('id'))
+        return;
+    var latch = module.find('.module-latch');
+    var spinner = $(latch.children('.module-spinner')[0]);
+    var content = $(module.children('.module-content')[0]);
+    var duration = fast ? 0 : 200;
+
+    function slide_done() {
+        var is_visible = content.is(':visible');
+        spinner.html(is_visible ? '&#9662;' : '&#9656;');
+        if (BUGZILLA.user.settings.remember_collapsed)
+            localStorage.setItem(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
+    }
+
+    if (action == 'show') {
+        content.slideDown(duration, 'swing', slide_done);
+    }
+    else if (action == 'hide') {
+        content.slideUp(duration, 'swing', slide_done);
+    }
+    else {
+        content.slideToggle(duration, 'swing', slide_done);
+    }
+}
+
+function init_module_visibility() {
+    if (!BUGZILLA.user.settings.remember_collapsed)
+        return;
+    $('.module').each(function() {
+        var that = $(this);
+        var id = that.attr('id');
+        if (!id) return;
+        var stored = localStorage.getItem(id + '.visibility');
+        if (stored) {
+            slide_module(that, stored, true);
+        }
+    });
+}
+
 $(function() {
     'use strict';
 
@@ -24,29 +65,6 @@ $(function() {
 
     // products with descriptions (also lazy-loaded)
     var products = [];
-
-    // expand/collapse module
-    function slide_module(module, action, fast) {
-        if (!module.attr('id'))
-            return;
-        var latch = module.find('.module-latch');
-        var spinner = $(latch.children('.module-spinner')[0]);
-        var content = $(module.children('.module-content')[0]);
-        var duration = fast ? 0 : 200;
-
-        function slide_done() {
-            spinner.html(content.is(':visible') ? '&#9662;' : '&#9656;');
-        }
-        if (action == 'show') {
-            content.slideDown(duration, 'swing', slide_done);
-        }
-        else if (action == 'hide') {
-            content.slideUp(duration, 'swing', slide_done);
-        }
-        else {
-            content.slideToggle(duration, 'swing', slide_done);
-        }
-    }
 
     // restore edit mode after navigating back
     function restoreEditMode() {
@@ -166,6 +184,35 @@ $(function() {
                         function(data) {
                             $('#cc-list').html(data.html);
                             latch.data('fetched', true);
+                            $('#cc-list .cc-user').hover(
+                                function() {
+                                    $('#ccr-' + $(this).data('n')).css('visibility', 'visible');
+                                },
+                                function() {
+                                    $('#ccr-' + $(this).data('n')).css('visibility', 'hidden');
+                                }
+                            );
+                            $('#cc-list .cc-remove')
+                                .click(function(event) {
+                                    event.preventDefault();
+                                    $('#top-save-btn').show();
+                                    var n = $(this).data('n');
+                                    var ccu = $('#ccu-' + n);
+                                    if (ccu.hasClass('cc-removed')) {
+                                        ccu.removeClass('cc-removed');
+                                        $('#cc-' + n).remove();
+                                    }
+                                    else {
+                                        $('#removecc').val('on');
+                                        ccu.addClass('cc-removed');
+                                        $('<input>').attr({
+                                            type: 'hidden',
+                                            id: 'cc-' + n,
+                                            value: $('#ccr-' + n).data('login'),
+                                            name: 'cc'
+                                        }).appendTo('#changeform');
+                                    }
+                                });
                         }
                     );
                 }
@@ -464,7 +511,8 @@ $(function() {
                                 this.value = this.value + ', ';
                                 this.focus();
                             }
-                        });
+                        })
+                        .addClass('bz_autocomplete');
 
                     $('#cancel-btn').prop('disabled', false);
                     $('#top-save-btn').show();

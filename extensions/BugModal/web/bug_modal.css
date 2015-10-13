@@ -55,7 +55,7 @@ button.minor {
     text-shadow: none;
     -web-kit-box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
     -moz-box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
-    box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
+    box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1), inset 0 0 1px 0 rgba(0,0,0,0.1);
 }
 
 button.minor:hover {
@@ -285,6 +285,7 @@ input[type="number"] {
 #user-story {
     margin: 0;
     white-space: pre-wrap;
+    min-height: 2em;
 }
 
 #user-story-actions {
@@ -322,6 +323,23 @@ input[type="number"] {
     max-height: 150px;
     overflow-y: auto;
     clear: both;
+    white-space: nowrap;
+}
+
+#cc-list .vcard {
+    display: inline-block;
+}
+
+#cc-list button {
+    padding: 2px 4px;
+}
+
+.cc-remove {
+    font-size: 120%;
+}
+
+.cc-removed {
+    text-decoration: line-through;
 }
 
 #add-cc-btn {
