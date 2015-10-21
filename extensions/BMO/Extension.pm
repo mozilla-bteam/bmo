@@ -79,6 +79,7 @@ BEGIN {
     *Bugzilla::Attachment::is_bounty_attachment     = \&_attachment_is_bounty_attachment;
     *Bugzilla::Attachment::bounty_details           = \&_attachment_bounty_details;
     *Bugzilla::Attachment::external_redirect        = \&_attachment_external_redirect;
+    *Bugzilla::Attachment::can_review               = \&_attachment_can_review;
 }
 
 sub template_before_process {
@@ -549,8 +550,18 @@ sub bug_check_can_change_field {
     my $user = Bugzilla->user;
 
     if ($field =~ /^cf/ && !@$priv_results && $new_value ne '---') {
+        # Cannot use the standard %cf_setter mapping as we want anyone
+        # to be able to set ?, just not the other values.
+        if ($field eq 'cf_cab_review') {
+            if ($new_value ne '1'
+                && $new_value ne '?'
+                && !$user->in_group('infra', $bug->product_id))
+            {
+                push (@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+            }
+        }
         # "other" custom field setters restrictions
-        if (exists $cf_setters->{$field}) {
+        elsif (exists $cf_setters->{$field}) {
             my $in_group = 0;
             foreach my $group (@{$cf_setters->{$field}}) {
                 if ($user->in_group($group, $bug->product_id)) {
@@ -814,10 +825,7 @@ sub _bug_has_current_patch {
     my ($self) = @_;
     foreach my $attachment (@{ $self->attachments }) {
         next if $attachment->isobsolete;
-        return 1 if
-            $attachment->ispatch
-            || $attachment->contenttype eq 'text/x-github-pull-request'
-            || $attachment->contenttype eq 'text/x-review-board-request';
+        return 1 if $attachment->can_review;
     }
     return 0;
 }
@@ -1050,6 +1058,14 @@ sub _attachment_external_redirect {
 
     # must still be a valid url
     return _detect_attached_url($self->data)
+}
+
+sub _attachment_can_review {
+    my ($self) = @_;
+
+    return 1 if $self->ispatch;
+    my $external = $self->external_redirect // return;
+    return $external->{can_review};
 }
 
 # redirect automatically to github urls
