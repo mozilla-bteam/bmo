@@ -182,7 +182,7 @@ sub ThrowUserError {
 }
 
 sub ThrowCodeError {
-    my (undef, $vars) = @_;
+    my ($error, $vars) = @_;
 
     # Don't show function arguments, in case they contain
     # confidential data.
@@ -191,6 +191,7 @@ sub ThrowCodeError {
     # as coming from the caller.
     local $Carp::CarpInternal{'Bugzilla::Error'} = 1;
     $vars->{traceback} = Carp::longmess();
+    warn "CodeError[$error]: $vars->{traceback}";
 
     _throw_error("global/code-error.html.tmpl", @_);
 }
