@@ -64,6 +64,7 @@
       <td>
         <input type="hidden" name="old_login" value="[% user.login FILTER html %]">
         <input type="password" name="old_password">
+        <a href="#" id="forgot-password">I forgot my password</a>
       </td>
     </tr>
     [% IF user.authorizer.can_change_password %]
@@ -71,6 +72,7 @@
         <th align="right">New password:</th>
         <td>
           <input type="password" name="new_password1">
+          [% INCLUDE "mfa/protected.html.tmpl" %]
         </td>
       </tr>
 
@@ -108,6 +110,7 @@
           <th align="right">New email address:</th>
           <td>
             <input size="35" name="new_login_name">
+            [% INCLUDE "mfa/protected.html.tmpl" %]
           </td>
         </tr>
       [% END %]
@@ -147,3 +150,11 @@
   </tr>
 
 </table>
+
+[% tab_footer = BLOCK %]
+  <form action="token.cgi" method="post" id="forgot-form">
+    <input type="hidden" name="loginname" value="[% user.login FILTER html %]">
+    <input type="hidden" name="a" value="reqpw">
+    <input type="hidden" name="token" value="[% issue_hash_token(['reqpw']) FILTER html %]">
+  </form>
+[% END %]

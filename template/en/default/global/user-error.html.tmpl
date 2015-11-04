@@ -541,7 +541,11 @@
   [% ELSIF error == "empty_group_name" %]
     [% title = "The group name can not be empty" %]
     You must enter a name for the group.
-  
+
+  [% ELSIF error == "group_needs_owner" %]
+    [% title = "Non-System Groups Require Default Owner" %]
+    You must enter a default owner login for non-system groups.
+
   [% ELSIF error == "entry_access_denied" %]
     [% title = "Permission Denied" %]
     [% admindocslinks = {'groups.html' => 'Group Security'} %]
@@ -1014,7 +1018,7 @@
 
   [% ELSIF error == "invalid_auth_method" %]
     [% title = "Invalid Authentication Method" %]
-    API-Key authentication is required.
+    API key authentication is required.
 
   [% ELSIF error == "bug_id_does_not_exist" %]
     [% title = BLOCK %]Invalid [% terms.Bug %] ID[% END %]
@@ -1208,8 +1212,17 @@
     <br>
     Please log in using your username and password.
 
-  [% ELSIF error == "mfa_totp_bad_code" %]
+  [% ELSIF error == "mfa_bad_code" %]
     Invalid verification code.
+
+  [% ELSIF error == "mfa_totp_bad_enrolment_code" %]
+    Invalid verification code.<br>
+    <br>
+    The QR code has been deleted - please generate and scan a new code.
+
+  [% ELSIF error == "mfa_disable_denied" %]
+    [% title = "Change Denied" %]
+    You do not have permission to disable MFA for other users.
 
   [% ELSIF error == "migrate_config_created" %]
     The file <kbd>[% file FILTER html %]</kbd> contains configuration
@@ -1464,8 +1477,8 @@
     You did not enter your old password correctly.
 
   [% ELSIF error == "old_password_required" %]
-    [% title = "Old Password Required" %]
-    You must enter your old password to change your email address.
+    [% title = "Password Required" %]
+    You must enter your current password to change your email address.
 
   [% ELSIF error == "password_change_requests_not_allowed" %]
     [% title = "Password Change Requests Not Allowed" %]

@@ -149,6 +149,9 @@
 [%# === header === %]
 
 <div id="xhr-error" style="display:none"></div>
+<div id="floating-message" style="display:none">
+  <div id="floating-message-text"></div>
+</div>
 
 [% WRAPPER bug_modal/module.html.tmpl
     title = ""
@@ -284,6 +287,8 @@
           <menuitem id="action-add-comment" label="Add Comment"></menuitem>
         [% END %]
         <menuitem id="action-last-comment" label="Last Comment"></menuitem>
+        <hr>
+        <menuitem id="action-history" label="History"></menuitem>
       </menu>
 
     </div>
@@ -322,7 +327,7 @@
         help = "describecomponents.cgi"
     %]
       <span id="product-search-container">
-        [% PROCESS prodcompsearch/form.html.tmpl
+        [% INCLUDE prodcompsearch/form.html.tmpl
             id            = "pcs"
             custom_select = 1
             hidden        = 1
@@ -574,13 +579,12 @@
     [%# needinfo %]
     [% WRAPPER bug_modal/field.html.tmpl
         container = 1
-        label = "NeedInfo"
+        label = "NeedInfo From"
         hide_on_view = needinfo.size == 0
         hide_on_edit = 1
     %]
       [% INCLUDE bug_modal/flags.html.tmpl
           types = bug.flag_types.only("name", "needinfo")
-          no_label = 1
           view_only = 1
       %]
     [% END %]
@@ -615,8 +619,9 @@
       [% END %]
 
       [% IF bug.cc && bug.cc.size %]
+        <input type="hidden" name="removecc" id="removecc">
         <span id="cc-latch">&#9656;</span>
-        <span id="cc-summary">
+        <span id="cc-summary" data-count="[% bug.cc.size FILTER none %]">
           [%
             IF bug.cc.size == 1;
               is_cced ? "Just you" : "1 person";
@@ -731,6 +736,15 @@
           field = bug_fields.cf_fx_points
           field_type = bug_fields.cf_fx_points.type
           hide_on_view = bug.cf_points == ""
+      %]
+    [% END %]
+
+    [% UNLESS cf_hidden_in_product('cf_cab_review', bug.product, bug.component, bug) %]
+      [% rendered_custom_fields.push('cf_cab_review') %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.cf_cab_review
+          field_type = bug_fields.cf_cab_review.type
+          hide_on_view = bug.cf_cab_review == "---"
       %]
     [% END %]
 
@@ -975,7 +989,7 @@
         [% END %]
       </div>
     [% END %]
-    <pre id="user-story">[% bug.cf_user_story FILTER html %]</pre>
+    <pre id="user-story">[% bug.cf_user_story FILTER quoteUrls(bug) %]</pre>
     [% IF user.id %]
       <textarea id="cf_user_story" name="cf_user_story" style="display:none" rows="10" cols="80">
         [%~ bug.cf_user_story FILTER html ~%]
@@ -1011,6 +1025,12 @@
     %]
   [% END %]
 [% END %]
+
+[%# === initialise module visibility === %]
+
+<script>
+  init_module_visibility();
+</script>
 
 [%# === top (between modules and comments) actions === %]
 

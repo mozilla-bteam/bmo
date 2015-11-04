@@ -5,6 +5,47 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
+// expand/collapse module
+function slide_module(module, action, fast) {
+    if (!module.attr('id'))
+        return;
+    var latch = module.find('.module-latch');
+    var spinner = $(latch.children('.module-spinner')[0]);
+    var content = $(module.children('.module-content')[0]);
+    var duration = fast ? 0 : 200;
+
+    function slide_done() {
+        var is_visible = content.is(':visible');
+        spinner.html(is_visible ? '&#9662;' : '&#9656;');
+        if (BUGZILLA.user.settings.remember_collapsed)
+            localStorage.setItem(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
+    }
+
+    if (action == 'show') {
+        content.slideDown(duration, 'swing', slide_done);
+    }
+    else if (action == 'hide') {
+        content.slideUp(duration, 'swing', slide_done);
+    }
+    else {
+        content.slideToggle(duration, 'swing', slide_done);
+    }
+}
+
+function init_module_visibility() {
+    if (!BUGZILLA.user.settings.remember_collapsed)
+        return;
+    $('.module').each(function() {
+        var that = $(this);
+        var id = that.attr('id');
+        if (!id) return;
+        var stored = localStorage.getItem(id + '.visibility');
+        if (stored) {
+            slide_module(that, stored, true);
+        }
+    });
+}
+
 $(function() {
     'use strict';
 
@@ -24,29 +65,6 @@ $(function() {
 
     // products with descriptions (also lazy-loaded)
     var products = [];
-
-    // expand/collapse module
-    function slide_module(module, action, fast) {
-        if (!module.attr('id'))
-            return;
-        var latch = module.find('.module-latch');
-        var spinner = $(latch.children('.module-spinner')[0]);
-        var content = $(module.children('.module-content')[0]);
-        var duration = fast ? 0 : 200;
-
-        function slide_done() {
-            spinner.html(content.is(':visible') ? '&#9662;' : '&#9656;');
-        }
-        if (action == 'show') {
-            content.slideDown(duration, 'swing', slide_done);
-        }
-        else if (action == 'hide') {
-            content.slideUp(duration, 'swing', slide_done);
-        }
-        else {
-            content.slideToggle(duration, 'swing', slide_done);
-        }
-    }
 
     // restore edit mode after navigating back
     function restoreEditMode() {
@@ -113,6 +131,13 @@ $(function() {
             $.scrollTo($('#bottom-actions'));
         });
 
+    // hide floating message when clicked
+    $('#floating-message')
+        .click(function(event) {
+            event.preventDefault();
+            $(this).hide();
+        });
+
     // use non-native tooltips for relative times and bug summaries
     $('.rel-time, .rel-time-title, .bz_bug_link, .tt').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
@@ -143,6 +168,54 @@ $(function() {
         });
 
     // cc list
+
+    function ccListLoading() {
+        $('#cc-list').html(
+            '<img src="extensions/BugModal/web/throbber.gif" width="16" height="11"> Loading...'
+        );
+    }
+
+    function ccListUpdate() {
+        bugzilla_ajax(
+            {
+                url: 'rest/bug_modal/cc/' + BUGZILLA.bug_id
+            },
+            function(data) {
+                $('#cc-list').html(data.html);
+                $('#cc-latch').data('fetched', true);
+                $('#cc-list .cc-user').hover(
+                    function() {
+                        $('#ccr-' + $(this).data('n')).css('visibility', 'visible');
+                    },
+                    function() {
+                        $('#ccr-' + $(this).data('n')).css('visibility', 'hidden');
+                    }
+                );
+                $('#cc-list .cc-remove')
+                    .click(function(event) {
+                        event.preventDefault();
+                        $('#top-save-btn').show();
+                        var n = $(this).data('n');
+                        var ccu = $('#ccu-' + n);
+                        if (ccu.hasClass('cc-removed')) {
+                            ccu.removeClass('cc-removed');
+                            $('#cc-' + n).remove();
+                        }
+                        else {
+                            $('#removecc').val('on');
+                            ccu.addClass('cc-removed');
+                            $('<input>').attr({
+                                type: 'hidden',
+                                id: 'cc-' + n,
+                                value: $('#ccr-' + n).data('login'),
+                                name: 'cc'
+                            }).appendTo('#changeform');
+                        }
+                    });
+            }
+        );
+    }
+
     $('#cc-latch, #cc-summary')
         .click(function(event) {
             event.preventDefault();
@@ -156,18 +229,8 @@ $(function() {
                 latch.data('expanded', true).html('&#9662;');
                 $('#cc-list').show();
                 if (!latch.data('fetched')) {
-                    $('#cc-list').html(
-                        '<img src="extensions/BugModal/web/throbber.gif" width="16" height="11"> Loading...'
-                    );
-                    bugzilla_ajax(
-                        {
-                            url: 'rest/bug_modal/cc/' + BUGZILLA.bug_id
-                        },
-                        function(data) {
-                            $('#cc-list').html(data.html);
-                            latch.data('fetched', true);
-                        }
-                    );
+                    ccListLoading();
+                    ccListUpdate();
                 }
             }
         });
@@ -329,6 +392,13 @@ $(function() {
             $.scrollTo(id);
         });
 
+    // show bug history
+    $('#action-history')
+        .click(function(event) {
+            event.preventDefault();
+            document.location.href = 'show_activity.cgi?id=' + BUGZILLA.bug_id;
+        });
+
     // use scrollTo for in-page activity links
     $('.activity-ref')
         .click(function(event) {
@@ -457,7 +527,8 @@ $(function() {
                                 this.value = this.value + ', ';
                                 this.focus();
                             }
-                        });
+                        })
+                        .addClass('bz_autocomplete');
 
                     $('#cancel-btn').prop('disabled', false);
                     $('#top-save-btn').show();
@@ -506,8 +577,10 @@ $(function() {
             var is_cced = $(event.target).data('is-cced') == '1';
 
             var cc_change;
+            var cc_count = $('#cc-summary').data('count');
             if (is_cced) {
                 cc_change = { remove: [ BUGZILLA.user.login ] };
+                cc_count--;
                 $('#cc-btn')
                     .text('Follow')
                     .data('is-cced', '0')
@@ -515,10 +588,44 @@ $(function() {
             }
             else {
                 cc_change = { add: [ BUGZILLA.user.login ] };
+                cc_count++;
                 $('#cc-btn')
                     .text('Stop Following')
                     .data('is-cced', '1')
                     .prop('disabled', true);
+            }
+            is_cced = !is_cced;
+
+            // update visible count
+            $('#cc-summary').data('count', cc_count);
+            if (cc_count == 1) {
+                $('#cc-summary').text(is_cced ? 'Just you' : '1 person');
+            }
+            else {
+                $('#cc-summary').text(cc_count + ' people');
+            }
+
+            // clear/update user list
+            $('#cc-latch').data('fetched', false);
+            if ($('#cc-latch').data('expanded'))
+                ccListLoading();
+
+            // show message
+            $('#floating-message-text')
+                .text(is_cced ? 'You are now following this bug' : 'You are no longer following this bug');
+            $('#floating-message')
+                .fadeIn(250)
+                .delay(2500)
+                .fadeOut();
+
+            // show/hide "add me to the cc list"
+            if (is_cced) {
+                $('#add-self-cc-container').hide();
+                $('#add-self-cc').attr('disabled', true);
+            }
+            else {
+                $('#add-self-cc-container').show();
+                $('#add-self-cc').attr('disabled', false);
             }
 
             bugzilla_ajax(
@@ -541,9 +648,13 @@ $(function() {
                             .text('Follow')
                             .data('is-cced', '0');
                     }
+                    if ($('#cc-latch').data('expanded'))
+                        ccListUpdate();
                 },
                 function(message) {
                     $('#cc-btn').prop('disabled', false);
+                    if ($('#cc-latch').data('expanded'))
+                        ccListUpdate();
                 }
             );
 
@@ -1170,8 +1281,10 @@ function bugzilla_ajax(request, done_fn, error_fn) {
     return $.ajax(request)
         .done(function(data) {
             if (data.error) {
-                $('#xhr-error').html(data.message);
-                $('#xhr-error').show('fast');
+                if (!request.hideError) {
+                    $('#xhr-error').html(data.message);
+                    $('#xhr-error').show('fast');
+                }
                 if (error_fn)
                     error_fn(data.message);
             }

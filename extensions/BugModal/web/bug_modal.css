@@ -55,7 +55,7 @@ button.minor {
     text-shadow: none;
     -web-kit-box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
     -moz-box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
-    box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
+    box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1), inset 0 0 1px 0 rgba(0,0,0,0.1);
 }
 
 button.minor:hover {
@@ -285,6 +285,7 @@ input[type="number"] {
 #user-story {
     margin: 0;
     white-space: pre-wrap;
+    min-height: 2em;
 }
 
 #user-story-actions {
@@ -322,6 +323,23 @@ input[type="number"] {
     max-height: 150px;
     overflow-y: auto;
     clear: both;
+    white-space: nowrap;
+}
+
+#cc-list .vcard {
+    display: inline-block;
+}
+
+#cc-list button {
+    padding: 2px 4px;
+}
+
+.cc-remove {
+    font-size: 120%;
+}
+
+.cc-removed {
+    text-decoration: line-through;
 }
 
 #add-cc-btn {
@@ -409,7 +427,7 @@ input[type="number"] {
     text-decoration: line-through;
 }
 
-#attachments .attach-desc-td {
+#attachments .attach-patch .attach-desc-td {
     background: #ffc;
     background-image: linear-gradient(to right, #ffc, #fff);
 }
@@ -702,6 +720,23 @@ td.flag-requestee {
     border: 1px solid maroon;
     margin: 5px 0px;
     padding: 5px;
+}
+
+#floating-message {
+    position: absolute;
+    left: 50%;
+    margin: 4px;
+}
+
+#floating-message-text {
+    position: relative;
+    left: -50%;
+    cursor: default;
+    background: #fff9db;
+    color: #666458;
+    box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5), inset 0 0 1px #000;
+    border-radius: 4px;
+    padding: 4px 8px;
 }
 
 #mode-container {

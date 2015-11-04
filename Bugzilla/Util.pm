@@ -57,7 +57,7 @@ use DateTime;
 use DateTime::TimeZone;
 use Digest;
 use Email::Address;
-use List::Util qw(first);
+use List::MoreUtils qw(none);
 use Scalar::Util qw(tainted blessed);
 use Text::Wrap;
 use Encode qw(encode decode resolve_alias);
@@ -305,28 +305,23 @@ sub correct_urlbase {
     }
 }
 
+# Returns the real remote address of the client,
 sub remote_ip {
-    my $ip = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
-    my @proxies = split(/[\s,]+/, Bugzilla->params->{'inbound_proxies'});
+    my $remote_ip       = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
+    my @proxies         = split(/[\s,]+/, Bugzilla->get_param_with_override('inbound_proxies'));
+    my @x_forwarded_for = split(/[\s,]+/, $ENV{HTTP_X_FORWARDED_FOR} // '');
 
-    # If the IP address is one of our trusted proxies, then we look at
-    # the X-Forwarded-For header to determine the real remote IP address.
-    if ($ENV{'HTTP_X_FORWARDED_FOR'} && first { $_ eq $ip } @proxies) {
-        my @ips = split(/[\s,]+/, $ENV{'HTTP_X_FORWARDED_FOR'});
-        # This header can contain several IP addresses. We want the
-        # IP address of the machine which connected to our proxies as
-        # all other IP addresses may be fake or internal ones.
-        # Note that this may block a whole external proxy, but we have
-        # no way to determine if this proxy is malicious or trustable.
-        foreach my $remote_ip (reverse @ips) {
-            if (!first { $_ eq $remote_ip } @proxies) {
-                # Keep the original IP address if the remote IP is invalid.
-                $ip = validate_ip($remote_ip) || $ip;
-                last;
-            }
+    return $remote_ip unless @x_forwarded_for;
+    return $x_forwarded_for[0] if @proxies && $proxies[0] eq '*';
+    return $remote_ip if none { $_ eq $remote_ip } @proxies;
+
+    foreach my $ip (reverse @x_forwarded_for) {
+        if (none { $_ eq $ip } @proxies) {
+            # Keep the original IP address if the remote IP is invalid.
+            return validate_ip($ip) || $remote_ip;
         }
     }
-    return $ip;
+    return $remote_ip;
 }
 
 sub validate_ip {
@@ -704,12 +699,22 @@ sub generate_random_password {
 sub validate_email_syntax {
     my ($addr) = @_;
     my $match = Bugzilla->params->{'emailregexp'};
-    my $ret = ($addr =~ /$match/ && $addr !~ /[\\\(\)<>&,;:"\[\] \t\r\n\P{ASCII}]/);
-    if ($ret) {
+    my $email = $addr . Bugzilla->params->{'emailsuffix'};
+    # This regexp follows RFC 2822 section 3.4.1.
+    my $addr_spec = $Email::Address::addr_spec;
+    # RFC 2822 section 2.1 specifies that email addresses must
+    # be made of US-ASCII characters only.
+    # Email::Address::addr_spec doesn't enforce this.
+    if ($addr =~ /$match/
+        && $email !~ /\P{ASCII}/
+        && $email =~ /^$addr_spec$/
+        && length($email) <= 127)
+    {
         # We assume these checks to suffice to consider the address untainted.
         trick_taint($_[0]);
+        return 1;
     }
-    return $ret ? 1 : 0;
+    return 0;
 }
 
 sub validate_date {

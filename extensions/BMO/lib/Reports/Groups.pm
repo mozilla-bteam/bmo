@@ -13,7 +13,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
 use Bugzilla::User;
-use Bugzilla::Util qw(trim);
+use Bugzilla::Util qw(trim datetime_from);
 use JSON qw(encode_json);
 
 sub admins_report {
@@ -29,13 +29,13 @@ sub admins_report {
     my @grouplist =
                   ($user->in_group('editusers') || $user->in_group('infrasec'))
                   ? map { lc($_->name) } Bugzilla::Group->get_all
-                  : _get_public_membership_groups();
+                  : _get_permitted_membership_groups();
 
     my $groups = join(',', map { $dbh->quote($_) } @grouplist);
 
     my $query = "
-        SELECT groups.name, " .
-               $dbh->sql_group_concat('profiles.login_name', "','", 1) . "
+        SELECT groups.id, " .
+               $dbh->sql_group_concat('profiles.userid', "','", 1) . "
           FROM groups
                LEFT JOIN user_group_map
                     ON user_group_map.group_id = groups.id
@@ -48,14 +48,18 @@ sub admins_report {
       GROUP BY groups.name";
 
     my @groups;
-    foreach my $group (@{ $dbh->selectall_arrayref($query) }) {
+    foreach my $row (@{ $dbh->selectall_arrayref($query) }) {
+        my $group = Bugzilla::Group->new({ id => shift @$row, cache => 1});
         my @admins;
-        if ($group->[1]) {
-            foreach my $admin (split(/,/, $group->[1])) {
-                push(@admins, Bugzilla::User->new({ name => $admin }));
+        if (my $admin_ids = shift @$row) {
+            foreach my $uid (split(/,/, $admin_ids)) {
+                push(@admins, Bugzilla::User->new({ id => $uid, cache => 1 }));
             }
         }
-        push(@groups, { name => $group->[0], admins => \@admins });
+        push(@groups, { name        => $group->name,
+                        description => $group->description,
+                        owner       => $group->owner,
+                        admins      => \@admins });
     }
 
     $vars->{'groups'} = \@groups;
@@ -179,7 +183,7 @@ sub members_report {
 
     my @grouplist = $privileged
         ? map { lc($_->name) } Bugzilla::Group->get_all
-        : _get_public_membership_groups();
+        : _get_permitted_membership_groups();
 
     my $include_disabled = $cgi->param('include_disabled') ? 1 : 0;
     $vars->{'include_disabled'} = $include_disabled;
@@ -197,7 +201,9 @@ sub members_report {
     $group = '' unless grep { $_ eq $group } @group_names;
     return if $group eq '';
     my $group_obj = Bugzilla::Group->new({ name => $group });
-    $vars->{'group'} = $group;
+    $vars->{'group'} = $group_obj;
+
+    $vars->{'privileged'} = 1 if ($group_obj->owner && $group_obj->owner->id == $user->id);
 
     my @types;
     my $members = $group_obj->members_complete();
@@ -216,29 +222,6 @@ sub members_report {
     }
     @types = () unless $has_members;
 
-    if (@types) {
-        # add last-login
-        my $user_ids = join(',', map { map { $_->id } @{ $_->{members} } } @types);
-        my $tokens = $dbh->selectall_hashref("
-            SELECT profiles.userid,
-                (SELECT DATEDIFF(curdate(), logincookies.lastused) lastseen
-                   FROM logincookies
-                  WHERE logincookies.userid = profiles.userid
-                  ORDER BY lastused DESC
-                  LIMIT 1) lastseen
-            FROM profiles
-            WHERE userid IN ($user_ids)",
-            'userid');
-        foreach my $type (@types) {
-            foreach my $member (@{ $type->{members} }) {
-                $member->{lastseen} =
-                    defined $tokens->{$member->id}->{lastseen}
-                    ? $tokens->{$member->id}->{lastseen}
-                    : '>' . MAX_LOGINCOOKIE_AGE;
-            }
-        }
-    }
-
     if ($page eq 'group_members.json') {
         my %users;
         foreach my $rh (@types) {
@@ -256,7 +239,7 @@ sub members_report {
                     if ($privileged) {
                         $rh_user->{group}        = $rh->{name};
                         $rh_user->{groups}       = [ $rh->{name} ];
-                        $rh_user->{lastseeon}    = $member->{lastseen};
+                        $rh_user->{lastseeon}    = $member->last_seen_date;
                         $rh_user->{mfa}          = $member->mfa;
                         $rh_user->{api_key_only} = $member->settings->{api_key_only}->{value} eq 'on'
                                                    ? JSON::true : JSON::false;
@@ -282,15 +265,24 @@ sub members_report {
 sub _filter_userlist {
     my ($list, $include_disabled) = @_;
     $list = [ grep { $_->is_enabled } @$list ] unless $include_disabled;
+    my $now = DateTime->now();
+    my $never = DateTime->from_epoch( epoch => 0 );
+    foreach my $user (@$list) {
+        my $last_seen = $user->last_seen_date ? datetime_from($user->last_seen_date) : $never;
+        $user->{last_seen_days} = sprintf(
+            '%.0f',
+            $now->subtract_datetime_absolute($last_seen)->delta_seconds / (28 * 60 * 60));
+    }
     return [ sort { lc($a->identity) cmp lc($b->identity) } @$list ];
 }
 
 # Groups that any user with editbugs can see the membership or admin lists for.
 # Transparency FTW.
-sub _get_public_membership_groups {
-    my @all_groups = map { lc($_->name) } Bugzilla::Group->get_all;
+sub _get_permitted_membership_groups {
+    my $user = Bugzilla->user;
 
-    my %hardcoded_groups = map { $_ => 1 } qw(
+    # Default publicly viewable groups
+    my %default_public_groups = map { $_ => 1 } qw(
         bugzilla-approvers
         bugzilla-reviewers
         can_restrict_comments
@@ -301,9 +293,25 @@ sub _get_public_membership_groups {
         qa-approvers
     );
 
-    # We also automatically include all drivers groups - this gives us a little
-    # future-proofing
-    return grep { /-drivers$/ || exists $hardcoded_groups{$_} } @all_groups;
+    # We add the group to the permitted list if:
+    # 1. it is a drivers group - this gives us a little
+    #    future-proofing
+    # 2. it is a one of the default public groups
+    # 3. the user is the group's owner
+    # 4. or the user can bless others into the group
+    my @permitted_groups;
+    foreach my $group (Bugzilla::Group->get_all) {
+        my $name = $group->name;
+        if ($name =~ /-drivers$/
+            || exists $default_public_groups{$name}
+            || ($group->owner && $group->owner->id == $user->id)
+            || $user->can_bless($group->id))
+        {
+            push(@permitted_groups, $name);
+        }
+    }
+
+    return @permitted_groups;
 }
 
 1;

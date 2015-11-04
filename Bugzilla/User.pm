@@ -270,6 +270,9 @@ sub update {
     }
 
     if (exists $changes->{mfa} && $self->mfa eq '') {
+        if (Bugzilla->user->id != $self->id) {
+            Bugzilla->audit(sprintf('%s disabled 2FA for %s', Bugzilla->user->login, $self->login));
+        }
         $dbh->do("DELETE FROM profile_mfa WHERE user_id = ?", undef, $self->id);
     }
 
@@ -368,6 +371,17 @@ sub _check_mfa {
     my ($self, $provider) = @_;
     $provider = lc($provider // '');
     return 'TOTP' if $provider eq 'totp';
+    return 'Duo' if $provider eq 'duo';
+
+    # you must be member of the bz_can_disable_mfa group to disable mfa for
+    # other accounts.
+    if ($provider eq '') {
+        my $user = Bugzilla->user;
+        if ($user->id != $self->id && !$user->in_group('bz_can_disable_mfa')) {
+            ThrowUserError('mfa_disable_denied');
+        }
+    }
+
     return '';
 }
 
@@ -410,9 +424,6 @@ sub set_disabledtext {
 
 sub set_mfa {
     my ($self, $value) = @_;
-    if ($value eq '' && $self->mfa) {
-        $self->mfa_provider->property_delete_all();
-    }
     $self->set('mfa', $value);
     delete $self->{mfa_provider};
 }
@@ -589,13 +600,8 @@ sub mfa_provider {
     my ($self) = @_;
     my $mfa = $self->{mfa} || return undef;
     return $self->{mfa_provider} if exists $self->{mfa_provider};
-    if ($mfa eq 'TOTP') {
-        require Bugzilla::MFA::TOTP;
-        $self->{mfa_provider} = Bugzilla::MFA::TOTP->new($self);
-    }
-    else {
-        $self->{mfa_provider} = undef;
-    }
+    require Bugzilla::MFA;
+    $self->{mfa_provider} = Bugzilla::MFA->new_from($self, $mfa);
     return $self->{mfa_provider};
 }
 
@@ -1049,6 +1055,11 @@ sub groups_in_sql {
     my $ids = $self->_group_ids;
     $ids = [-1] if !scalar @$ids;
     return Bugzilla->dbh->sql_in($field, $ids);
+}
+
+sub groups_owned {
+    my $self = shift;
+    return $self->{groups_owned} //= Bugzilla::Group->match({ owner_user_id => $self->id });
 }
 
 sub bless_groups {

@@ -21,7 +21,7 @@
       <select name="group">
         [% FOREACH group_name = groups %]
           <option value="[% group_name FILTER html %]"
-                  [% "selected" IF group_name == group %]>
+                  [% "selected" IF group_name == group.name %]>
             [% group_name FILTER html %]</option>
         [% END %]
       </select>
@@ -39,7 +39,7 @@
 [% IF group != '' %]
 
   <p>
-    [% count FILTER none %] member[% count == 1 ? '' : 's' %] of the <b>[% group FILTER html %]</b> group:
+    [% count FILTER none %] member[% count == 1 ? '' : 's' %] of the <b>[% group.name FILTER html %]</b> group:
   </p>
 
   [% IF types.size > 0 %]
@@ -100,7 +100,7 @@
                       [% END %]
                     </td>
                     <td align="right" nowrap>
-                      [% member.lastseen FILTER html %]
+                      [% member.last_seen_days > 30 ? ">30" : member.last_seen_days FILTER html %]
                     </td>
                   [% END %]
                 </tr>
@@ -111,7 +111,7 @@
       [% END %]
     </table>
 
-    <a href="page.cgi?id=group_members.json&amp;group=[% group FILTER uri %]
+    <a href="page.cgi?id=group_members.json&amp;group=[% group.name FILTER uri %]
        [% IF include_disabled %]&amp;include_disabled=1[% END %]">JSON</a>
   [% ELSE %]
     <p>

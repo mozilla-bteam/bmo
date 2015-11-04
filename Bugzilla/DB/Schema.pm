@@ -952,7 +952,7 @@ use constant ABSTRACT_SCHEMA => {
             last_seen_date => {TYPE => 'DATETIME'},
             password_change_required => { TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE' },
             password_change_reason   => { TYPE => 'varchar(64)' },
-            mfa            => {TYPE => 'varchar(8)'},
+            mfa            => {TYPE => 'varchar(8)', DEFAULT => "''" },
         ],
         INDEXES => [
             profiles_login_name_idx => {FIELDS => ['login_name'],
@@ -1208,6 +1208,18 @@ use constant ABSTRACT_SCHEMA => {
         ],
     },
 
+    token_data => {
+        FIELDS => [
+            id         => { TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1 },
+            token      => { TYPE => 'varchar(22)', NOTNULL => 1,
+                            REFERENCES => { TABLE => 'tokens', COLUMN => 'token', DELETE => 'CASCADE' }},
+            extra_data => { TYPE => 'MEDIUMTEXT', NOTNULL => 1 },
+        ],
+        INDEXES => [
+            token_data_idx => { FIELDS => ['token'], TYPE => 'UNIQUE' },
+        ],
+    },
+
     # GROUPS
     # ------
 
@@ -1223,6 +1235,11 @@ use constant ABSTRACT_SCHEMA => {
             isactive     => {TYPE => 'BOOLEAN', NOTNULL => 1,
                              DEFAULT => 'TRUE'},
             icon_url     => {TYPE => 'TINYTEXT'},
+            owner_user_id => {TYPE       => 'INT3',
+                              REFERENCES => {
+                                  TABLE  => 'profiles',
+                                  COLUMN => 'userid'}},
+            idle_member_removal => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => '0'}
         ],
         INDEXES => [
             groups_name_idx => {FIELDS => ['name'], TYPE => 'UNIQUE'},
@@ -1601,6 +1618,7 @@ use constant ABSTRACT_SCHEMA => {
             is_enabled    => {TYPE => 'BOOLEAN', NOTNULL => 1,
                               DEFAULT => 'TRUE'},
             subclass      => {TYPE => 'varchar(32)'},
+            category      => {TYPE => 'varchar(64)', NOTNULL => 1, DEFAULT => "'General'"}
         ],
     },
 
@@ -1789,6 +1807,26 @@ use constant ABSTRACT_SCHEMA => {
             user_api_keys_api_key_idx => {FIELDS => ['api_key'], TYPE => 'UNIQUE'},
             user_api_keys_user_id_idx => ['user_id'],
             user_api_keys_user_id_app_id_idx  => ['user_id', 'app_id'],
+        ],
+    },
+
+    user_request_log => {
+        FIELDS => [
+            id          => {TYPE => 'INTSERIAL', NOTNULL => 1,
+                            PRIMARYKEY => 1},
+            user_id     => {TYPE => 'INT3', NOTNULL => 1 },
+            ip_address  => {TYPE => 'varchar(40)', NOTNULL => 1},
+            user_agent  => {TYPE => 'TINYTEXT', NOTNULL => 1},
+            timestamp   => {TYPE => 'DATETIME', NOTNULL => 1},
+            bug_id      => {TYPE => 'INT3', NOTNULL => 0},
+            attach_id   => {TYPE => 'INT4', NOTNULL => 0},
+            request_url => {TYPE => 'TINYTEXT', NOTNULL => 1},
+            method      => {TYPE => 'TINYTEXT', NOTNULL => 1},
+            action      => {TYPE => 'varchar(20)', NOTNULL => 1},
+            server      => {TYPE => 'varchar(7)', NOTNULL => 1},
+        ],
+        INDEXES => [
+            user_user_request_log_user_id_idx => ['user_id'],
         ],
     },
 };

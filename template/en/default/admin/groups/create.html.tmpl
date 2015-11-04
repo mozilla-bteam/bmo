@@ -29,6 +29,8 @@
   title = "Add group"
   subheader = "This page allows you to define a new user group."
   doc_section = "groups.html#create-groups"
+  generate_api_token = 1
+  javascript_urls = [ "js/field.js" ]
 %]
 
 <form method="post" action="editgroups.cgi">
@@ -47,6 +49,25 @@
     <th>Icon URL:</th>
     <td colspan="3"><input type="text" size="70" maxlength="255" id="icon_url" name="icon_url"></td>
   </tr>
+  <tr>
+    <th>Owner:</th>
+    <td colspan="3">
+      [% INCLUDE global/userselect.html.tmpl
+         name  => "owner"
+         id    => "owner"
+         size  => 30
+      %]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Idle Member Removal:</th>
+    <td colspan="3">
+      <input type="text" size="5" maxlength="5" id="idle_member_removal" name="idle_member_removal" value="0">
+      days (setting to 0 disables this feature)
+    </td>
+  </tr>
+
   [% Hook.process('field') %]
   </table>
 

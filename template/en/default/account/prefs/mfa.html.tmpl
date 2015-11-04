@@ -23,27 +23,97 @@
 [% END %]
 
 <div id="mfa-container">
-  [% IF user.mfa %]
+  [% IF mfa_recovery_token %]
+    <input type="hidden" name="mfa_action" id="mfa-action" value="">
+
+    <p>
+      Here are your recovery codes.
+    </p>
+
+    [% INCLUDE recovery_blurb %]
+    <iframe id="mfa-recovery-frame" tabindex="-1"
+            src="userprefs.cgi?tab=mfa&frame=recovery&t=[% mfa_recovery_token FILTER uri %]">
+    </iframe>
+
+  [% ELSIF user.mfa %]
     <p>
       Two-factor authentication is currently <b>enabled</b> using
       <b>[% SWITCH user.mfa %]
         [% CASE "TOTP" %]TOTP
+        [% CASE "Duo" %]Duo Security
       [% END %]</b>.
     </p>
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
-    <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
+    <div class="mfa-buttons">
+      <div>
+        <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
+        [% INCLUDE "mfa/protected.html.tmpl" %]
+      </div>
+      <div>
+        <button type="button" id="mfa-recovery">Generate Printable Recovery Codes</button>
+        [% INCLUDE "mfa/protected.html.tmpl" %]
+      </div>
+    </div>
+
+    <p class="mfa-api-blurb">
+      [% IF user.settings.api_key_only.value == 'on' %]
+        Enabling two-factor authentication has also required systems that
+        interface with [% terms.Bugzilla %]'s API to use <a href="userprefs.cgi?tab=apikey">API keys</a>
+        for authentication.<br>
+        <br>
+        While not recommended, this limitation can be lifted by changing the
+        <a href="userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
+        preference.
+      [% ELSE %]
+        Systems that interface with [% terms.Bugzilla %]'s API are not required to use API keys.<br>
+        Change the
+        <a href="userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
+        preference to enforce API key usage.
+      [% END %]
+    </p>
+
+    <div id="mfa-recovery-container" style="display:none">
+      <p>
+        Your current password and verification code is required to generate
+        recovery codes.
+      </p>
+      <ul>
+        <li><b>Generating recovery codes obsoletes previously generated ones</b></li>
+      </ul>
+      [% INCLUDE recovery_blurb %]
+    </div>
 
     <div id="mfa-disable-container" style="display:none">
+      <p>
+        Your current password and verification code is required to disable
+        two-factor authentication.
+      </p>
+    </div>
 
+    <div id="mfa-auth-container" style="display:none">
+      <p>
+        <label>Current Password:</label>
+        <input type="password" name="password" id="mfa-password" required>
+      </p>
+
+      [%# disable/recovery - totp %]
       [% IF user.mfa == "TOTP" %]
-        A verification code is required to confirm this change.<br><br>
-        <b>Code:</b>
-        <input type="text" name="mfa_disable_code" id="mfa-totp-disable-code"
-               placeholder="123456" maxlength="6" pattern="\d{6}" size="10"
-               autocomplete="off" required autofocus>
-      [% END %]
 
+        <label>Code:</label>
+        <input type="text" name="code"
+               placeholder="123456" maxlength="9" pattern="\d{6,9}" size="10"
+               autocomplete="off" required>
+
+      [%# disable/recovery - duo %]
+      [% ELSIF user.mfa == "Duo" %]
+
+        <p>
+          <img src="images/duo.png" id="duo-logo" width="32" height="32">
+          Verification with Duo Security will be performed before your account is updated.
+        </p>
+
+      [% END %]
     </div>
 
   [% ELSE %]
@@ -51,61 +121,104 @@
       Two-factor authentication is currently <b>disabled</b>.
     </p>
     <input type="hidden" name="mfa_action" id="mfa-action" value="enable">
+    <input type="hidden" name="mfa" id="mfa">
 
-    <button type="button" id="mfa-enable">Enable Two-factor Authentication</button>
+    <div id="mfa-select" class="mfa-buttons">
+      <p>
+        Select the two-factor system you want to use:
+      </p>
 
-    <div id="mfa-enable-container" style="display:none">
-      <b>System:</b>
-      <select name="mfa" id="mfa">
-        <option value="" selected></option>
-        <option value="TOTP">Time-based One-Time Password (TOTP)</option>
-      </select>
+      <button type="button" id="mfa-select-totp">Time-based One-Time Password (TOTP)</button><br>
+      <blockquote>
+        Requires a smartphone and a TOTP app (such as
+        <a href="https://support.google.com/accounts/answer/1066447" target="_blank">Google Authenticator</a>
+        or <a href="https://fedorahosted.org/freeotp/" target="_blank">Red Hat FreeOTP</a>).
+      </blockquote>
 
-      [%# TOTP %]
-      <div id="mfa-enable-totp" class="mfa-provider" style="display:none">
+      [% IF Param("duo_host") && user.in_group("mozilla-employee-confidential") %]
+        <button type="button" id="mfa-select-duo">Duo Security</button><br>
+        <blockquote>
+          Requires a smartphone and a <a href="https://www.duosecurity.com/" target="_blank">Duo Security</a>
+          account (recommended for Mozilla employees).
+        </blockquote>
+      [% END %]
+    </div>
 
-        <div id="mfa-totp-throbber">
-          Working.. <img src="skins/standard/throbber.gif" width="16" height="11">
-        </div>
+    <div id="mfa-enable-shared" style="display:none">
+      <p>
+        Your current password is required to enable two-factor authentication.
+      </p>
+      <p>
+        <label>Current Password:</label>
+        <input type="password" name="password" id="mfa-password" required>
+      </p>
+    </div>
 
-        <div id="mfa-totp-issued" style="display:none">
-          <iframe id="mfa-enable-totp-frame" src="userprefs.cgi?tab=mfa&frame=totp"></iframe>
-          <div id="mfa-totp-blurb">
-            Scan this QR code with your <a href="#" id="mfa-totp-apps">TOTP App</a>,
-            then enter the six digit code the app generates.<br>
-            <br>
-            <b>Code:</b>
-            <input type="text" name="mfa_enable_code" id="mfa-totp-enable-code"
-                   placeholder="123456" maxlength="6" pattern="\d{6}" size="10"
-                   autocomplete="off" required autofocus>
-          </div>
-        </div>
+    [%# enable - TOTP %]
+    <div id="mfa-enable-totp" style="display:none">
 
-        <div id="mfa-totp-apps-popup" class="mfa-totp-popup" style="display:none">
-          Example TOTP Applications:<br>
-          <ul>
-            <li>Android and iOS:
-              <a href="http://guide.duosecurity.com/third-party-accounts" target="_blank">Duo Mobile</a>,
-              <a href="https://support.google.com/accounts/answer/1066447" target="_blank">Google Authenticator</a>
-            </li>
-            <li>Firefox OS:
-              <a href="https://marketplace.firefox.com/app/gauth/" target="_blank">GAuth</a>
-            </li>
-            <li>Windows Phone:
-              <a href="http://www.windowsphone.com/en-us/store/app/authenticator/021dd79f-0598-e011-986b-78e7d1fa76f8"
-                 target="_blank">Authenticator</a>
-            </li>
-          </ul>
-          <button type="button" class="mfa-totp-popup-close">Close</button>
-        </div>
-
-        <div id="mfa-totp-text-popup" class="mfa-totp-popup" style="display:none">
-          Your two-factor secret:
-          <div id="mfa-totp-secret"></div>
-          <button type="button" class="mfa-totp-popup-close">Close</button>
-        </div>
-
+      <div id="mfa-totp-throbber">
+        Generating new QR code.. <img src="skins/standard/throbber.gif" width="16" height="11">
       </div>
+
+      <div id="mfa-totp-issued" style="display:none">
+        <iframe id="mfa-enable-totp-frame" src="userprefs.cgi?tab=mfa&frame=totp" tabindex="-1"></iframe>
+        <div id="mfa-totp-blurb">
+          Scan this QR code with your <a href="#" id="mfa-totp-apps">TOTP App</a>,
+          then enter the six digit code the app generates.<br>
+          <br>
+          <label>Code:</label>
+          <input type="text" name="code" id="mfa-totp-enable-code"
+                  placeholder="123456" maxlength="6" pattern="\d{6}" size="10"
+                  autocomplete="off">
+        </div>
+      </div>
+
+      <p>
+        If you have problems enrolling, this may be due to an inaccurate time on your device.<br>
+        Please check that the time on your device is accurate by visiting <b>http://time.is/</b>.
+      </p>
+
+      <div id="mfa-totp-apps-popup" class="mfa-totp-popup" style="display:none">
+        Example TOTP Applications:<br>
+        <ul>
+          <li>Android and iOS:
+            <a href="https://support.google.com/accounts/answer/1066447" target="_blank">Google Authenticator</a>,
+            <a href="https://fedorahosted.org/freeotp/" target="_blank">Red Hat FreeOTP</a>
+          </li>
+          <li>Firefox OS:
+            <a href="https://marketplace.firefox.com/app/firekey/" target="_blank">Firekey</a>
+          </li>
+          <li>Windows Phone:
+            <a href="http://www.windowsphone.com/en-us/store/app/authenticator/021dd79f-0598-e011-986b-78e7d1fa76f8"
+                target="_blank">Authenticator</a>
+          </li>
+        </ul>
+        <a href="https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm#Client_implementations" target="_blank">
+          Other clients
+        </a>
+        <button type="button" class="mfa-totp-popup-close">Close</button>
+      </div>
+
+    </div>
+
+    [%# enable - duo %]
+    <div id="mfa-enable-duo" style="display:none">
+
+      <p>
+        <label>Duo Username:</label>
+        <input type="text" name="username" id="mfa-duo-user">
+      </p>
+
+      <p>
+        <img src="images/duo.png" id="duo-logo" width="32" height="32">
+        Verification with Duo Security will be performed before your account is updated.<br>
+
+        [% IF user.in_group("mozilla-employee-confidential") %]
+          You must <a href="https://login.mozilla.com/duo_enrollments/" target="_blank">
+          sign up for Duo Security via login.mozilla.com</a> before you can use Duo 2FA.
+        [% END %]
+      </p>
 
     </div>
 
@@ -113,22 +226,26 @@
 
   <div id="mfa-confirm" style="display:none">
     <p>
-      Two-factor authentication settings will not be updated until you provide
-      your current password and <b>Submit Changes</b>.
+      Two-factor authentication settings will not be updated until you
+      <b>Submit Changes</b>.
     </p>
 
-    <p>
-      <b>Current Password:</b>
-      <input type="password" name="password" required>
-    </p>
-
-    <p id="mfa-api-blurb" style="display:none">
+    <p class="mfa-api-blurb" style="display:none">
       Enabling two-factor authentication will also require systems that
-      interface with [% terms.Bugzilla %]'s API to use <a href="userprefs.cgi?tab=apikey">API-Keys</a>
-      for authentication.<br>
-      While not recommended, this limitation can be lifted by changing the
-      <a href="userprefs.cgi?tab=settings#api_key_only">Require API-Key authentication for API requests</a>
+      interface with [% terms.Bugzilla %]'s API to use <a href="userprefs.cgi?tab=apikey">API keys</a>
+      for authentication.  While not recommended, this limitation can be lifted by changing the
+      <a href="userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
       preference after 2FA is enabled.
+    </p>
   </div>
 
 </div>
+
+[% BLOCK recovery_blurb %]
+  <ul>
+    <li>These codes can be used in case you lose your second factor</li>
+    <li>Please store them safely in a locked cabinet at home</li>
+    <li>If in doubt, generate and print new recovery codes</li>
+    <li><b>Do not store these codes electronically</b></li>
+  </ul>
+[% END %]

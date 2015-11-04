@@ -255,6 +255,11 @@ div#docslinks {
     margin: 0;
 }
 
+.mfa-protected {
+    vertical-align: middle;
+    margin: 0 4px;
+}
+
 /**************************/
 /* Bug links and statuses */
 /**************************/
@@ -406,7 +411,7 @@ table#flags td {
 }
 
 .column_header {
-    background-color: #66f;
+    background-color: #ddeef9;
 }
 
 .column_header th {
@@ -512,7 +517,7 @@ div.user_match {
 
 /* Rules specific for printing */
 @media print {
-    #header, #footer {
+    #header, #footer, #privacy-policy {
         display: none;
     }
 
@@ -523,6 +528,15 @@ div.user_match {
     body {
         background-image: none;
         background-color: #fff;
+    }
+
+    #prefnav, #prefcontent #update, #prefcontent #message {
+        display: none;
+    }
+
+    #prefcontent {
+        margin-left: 0 !important;
+        box-shadow: none !important;
     }
 }
 
@@ -709,4 +723,22 @@ input.required, select.required, span.required_explanation {
     background-image: url("throbber.gif") !important;
     background-repeat: no-repeat !important;
     background-position: right 8px center !important;
+}
+
+#login .field-login, #login .field-password {
+    line-height: 32px;
+    display: block;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+#login .field-login label, #login .field-password label {
+    clear: left;
+    width: 7em;
+    display: inline-block;
+    font-weight: bold;
+}
+
+#login .field-restrict, #login .field-remember {
+    margin-left: 7em;
 }

@@ -16,16 +16,20 @@ use Bugzilla::Util qw( template_var generate_random_password );
 use GD::Barcode::QRcode;
 use MIME::Base64 qw( encode_base64 );
 
+sub can_verify_inline {
+    return 1;
+}
+
 sub _auth {
     my ($self) = @_;
     return Auth::GoogleAuth->new({
         secret => $self->property_get('secret') // $self->property_get('secret.temp'),
         issuer => template_var('terms')->{BugzillaTitle},
-        key_id => Bugzilla->user->login,
+        key_id => $self->{user}->login,
     });
 }
 
-sub enroll {
+sub enroll_api {
     my ($self) = @_;
 
     # create a new secret for the user
@@ -48,14 +52,8 @@ sub enrolled {
 }
 
 sub prompt {
-    my ($self, $params) = @_;
+    my ($self, $vars) = @_;
     my $template = Bugzilla->template;
-
-    my $vars = {
-        user  => $params->{user},
-        token => scalar issue_session_token('mfa', $params->{user}),
-        type  => $params->{type},
-    };
 
     print Bugzilla->cgi->header();
     $template->process('mfa/totp/verify.html.tmpl', $vars)
@@ -63,17 +61,16 @@ sub prompt {
 }
 
 sub check {
-    my ($self, $code) = @_;
-    $self->_auth()->verify($code)
-        || ThrowUserError('mfa_totp_bad_code');
-}
+    my ($self, $params) = @_;
+    my $code = $params->{code};
+    return if $self->_auth()->verify($code, 1);
 
-sub check_login {
-    my ($self, $user) = @_;
-    my $cgi = Bugzilla->cgi;
-
-    $self->check($cgi->param('code') // '');
-    $user->authorizer->mfa_verified($user, $cgi->param('type'));
+    if ($params->{mfa_action} && $params->{mfa_action} eq 'enable') {
+        ThrowUserError('mfa_totp_bad_enrolment_code');
+    }
+    else {
+        ThrowUserError('mfa_bad_code');
+    }
 }
 
 1;

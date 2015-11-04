@@ -28,16 +28,19 @@ our %autodetect_attach_urls = (
         title        => 'GitHub Pull Request',
         regex        => qr#^https://github\.com/[^/]+/[^/]+/pull/\d+/?$#i,
         content_type => 'text/x-github-pull-request',
+        can_review   => 1,
     },
     reviewboard => {
         title        => 'MozReview',
         regex        => qr#^https?://reviewboard(?:-dev)?\.(?:allizom|mozilla)\.org/r/\d+/?#i,
         content_type => 'text/x-review-board-request',
+        can_review   => 1,
     },
     google_docs => {
         title        => 'Google Doc',
         regex        => qr#^https://docs\.google\.com/(?:document|spreadsheets|presentation)/d/#i,
         content_type => 'text/x-google-doc',
+        can_review   => 0,
     },
 );
 
@@ -134,6 +137,20 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
         "Cloud Services"      => [],
         "Toolkit"             => [],
     },
+    qr/^cf_has_regression_range$/ => {
+        "Core"    => [],
+        "Firefox" => [],
+        "Toolkit" => [],
+    },
+    qr/^cf_has_str$/ => {
+        "Core"    => [],
+        "Firefox" => [],
+        "Toolkit" => [],
+    },
+    qr/^cf_cab_review$/ => {
+        "Infrastructure & Operations Graveyard" => [],
+        "Infrastructure & Operations"           => [],
+    }
 );
 
 # Who to CC on particular bugmails when certain groups are added or removed.
@@ -153,7 +170,7 @@ our %group_change_notification = (
   'mail-core-security'        => ['security@mozilla.org'],
   'media-core-security'       => ['security@mozilla.org'],
   'network-core-security'     => ['security@mozilla.org'],
-  'release-core-security'     => ['security@mozilla.org'],
+  'core-security-release'     => ['security@mozilla.org'],
   'tamarin-security'          => ['tamarinsecurity@adobe.com'],
   'toolkit-core-security'     => ['security@mozilla.org'],
   'websites-security'         => ['web-security@mozilla.org'],

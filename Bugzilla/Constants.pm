@@ -173,6 +173,7 @@ use Memoize;
     ON_ACTIVESTATE
 
     MAX_TOKEN_AGE
+    MAX_SHORT_TOKEN_HOURS
     MAX_LOGINCOOKIE_AGE
     MAX_SUDO_TOKEN_AGE
     MAX_LOGIN_ATTEMPTS
@@ -225,7 +226,7 @@ use Memoize;
 # BMO: we don't map exactly to a specific bugzilla version, so override our
 # reported version with a parameter.
 sub BUGZILLA_VERSION {
-    my $bugzilla_version = '4.2+';
+    my $bugzilla_version = '4.2';
     eval { require Bugzilla } || return $bugzilla_version;
     return Bugzilla->params->{bugzilla_version} || $bugzilla_version;
 }
@@ -469,8 +470,10 @@ use constant TIMETRACKING_FIELDS =>
 
 # The maximum number of days a token will remain valid.
 use constant MAX_TOKEN_AGE => 3;
+# The maximum number of hours a short-lived token will remain valid.
+use constant MAX_SHORT_TOKEN_HOURS => 1;
 # How many days a logincookie will remain valid if not used.
-use constant MAX_LOGINCOOKIE_AGE => 30;
+use constant MAX_LOGINCOOKIE_AGE => 7;
 # How many seconds (default is 6 hours) a sudo cookie remains valid.
 use constant MAX_SUDO_TOKEN_AGE => 21600;
 
