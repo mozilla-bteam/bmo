@@ -132,8 +132,7 @@ sub get_param_list {
   {
    name => 'password_complexity',
    type => 's',
-   choices => [ 'no_constraints', 'mixed_letters', 'letters_numbers',
-                'letters_numbers_specialchars' ],
+   choices => [ 'no_constraints', 'bmo' ],
    default => 'no_constraints',
    checker => \&check_multi
   },
