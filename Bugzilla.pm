@@ -820,7 +820,7 @@ sub _cleanup {
     if ($ENV{MOD_PERL}) {
         openlog('apache', 'cons,pid', 'local4');
         my $start_time = Bugzilla->request_cache->{request_start_time};
-        my $request_uri = Bugzilla->cgi->request_uri // 'NO_URI';
+        my $request_uri = $ENV{REQUEST_URI} // $ENV{SCRIPT_NAME};
         my $message  = "$request_uri took " . ($start_time ? time() - $start_time : -1);
         syslog('notice', '[request_time] ' . encode_utf8($message));
         closelog();
