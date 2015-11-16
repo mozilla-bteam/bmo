@@ -120,6 +120,7 @@ sub init_page {
 
     if ($ENV{MOD_PERL}) {
         Bugzilla->request_cache->{request_start_time} = Time::HiRes::time();
+        Bugzilla->request_cache->{request_uri} = Bugzilla->cgi->target_uri;
     }
 
     # IIS prints out warnings to the webpage, so ignore them, or log them
@@ -821,7 +822,7 @@ sub _cleanup {
     if ($ENV{MOD_PERL}) {
         openlog('apache', 'cons,pid', 'local4');
         my $start_time = Bugzilla->request_cache->{request_start_time};
-        my $request_uri = $ENV{REQUEST_URI} // $ENV{SCRIPT_NAME};
+        my $request_uri = Bugzilla->request_cache->{request_uri};
         my $message  = "$request_uri took " . ($start_time ? Time::HiRes::time() - $start_time : -1);
         syslog('notice', '[request_time] ' . encode_utf8($message));
         closelog();
