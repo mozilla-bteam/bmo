@@ -54,6 +54,7 @@ use Bugzilla::Template;
 use Bugzilla::Token;
 use Bugzilla::User;
 use Bugzilla::Util;
+use Time::HiRes ();
 
 use Bugzilla::Metrics::Collector;
 use Bugzilla::Metrics::Template;
@@ -118,7 +119,7 @@ sub init_page {
     return if $^C;
 
     if ($ENV{MOD_PERL}) {
-        Bugzilla->request_cache->{request_start_time} = time();
+        Bugzilla->request_cache->{request_start_time} = Time::HiRes::time();
     }
 
     # IIS prints out warnings to the webpage, so ignore them, or log them
@@ -821,7 +822,7 @@ sub _cleanup {
         openlog('apache', 'cons,pid', 'local4');
         my $start_time = Bugzilla->request_cache->{request_start_time};
         my $request_uri = $ENV{REQUEST_URI} // $ENV{SCRIPT_NAME};
-        my $message  = "$request_uri took " . ($start_time ? time() - $start_time : -1);
+        my $message  = "$request_uri took " . ($start_time ? Time::HiRes::time() - $start_time : -1);
         syslog('notice', '[request_time] ' . encode_utf8($message));
         closelog();
     }
