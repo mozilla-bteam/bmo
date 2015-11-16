@@ -117,6 +117,8 @@ sub init_page {
     # 001compile.t test).
     return if $^C;
 
+    Bugzilla->request_cache->{request_start_time} = time();
+
     # IIS prints out warnings to the webpage, so ignore them, or log them
     # to a file if the file exists.
     if ($ENV{SERVER_SOFTWARE} && $ENV{SERVER_SOFTWARE} =~ /microsoft-iis/i) {
@@ -812,6 +814,13 @@ sub _cleanup {
     if (Bugzilla->metrics_enabled) {
         Bugzilla->metrics->finish();
     }
+
+    openlog('apache', 'cons,pid', 'local4');
+    my $start_time = Bugzilla->request_cache->{request_start_time};
+    my $request_uri = Bugzilla->cgi->request_uri // 'NO_URI';
+    my $message  = "$request_uri took " . ($start_time ? time() - $start_time : -1);
+    syslog('notice', '[request_time] ' . encode_utf8($message));
+    closelog();
 
     # BMO - allow "end of request" processing
     Bugzilla::Hook::process('request_cleanup');
