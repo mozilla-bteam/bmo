@@ -3,7 +3,7 @@
     "name": "BMO Task Graph",
     "description": "A suite of tests to check the quality of the BMO codebase.",
     "owner": "dlawrence@mozilla.com",
-    "source": "https://raw.githubusercontent.com/mozilla/webtools-bmo-bugzilla/master/taskgraph.json"
+    "source": "https://raw.githubusercontent.com/mozilla/webtools-bmo-bugzilla/development/taskgraph.json"
   },
   "tasks": [
     {
@@ -16,7 +16,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla",
+          "image": "dklawren/webtools-bmo-bugzilla:development",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "sanity"
@@ -46,7 +46,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla",
+          "image": "dklawren/webtools-bmo-bugzilla:development",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "docs"
@@ -76,7 +76,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla",
+          "image": "dklawren/webtools-bmo-bugzilla:development",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "webservices"
@@ -111,7 +111,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla",
+          "image": "dklawren/webtools-bmo-bugzilla:development",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "selenium"
