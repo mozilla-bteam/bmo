@@ -77,16 +77,48 @@ elsif ($action eq 'prepare-sudo') {
 }
 # begin-sudo: Confirm login and start sudo session
 elsif ($action eq 'begin-sudo') {
+    # log in the user
     my $user = Bugzilla->login(LOGIN_REQUIRED);
 
-    my $target_login = $cgi->param('target_login');
-    my $reason = $cgi->param('reason') || '';
+    my $target_login     = $cgi->param('target_login');
+    my $reason           = $cgi->param('reason') || '';
+    my $token            = $cgi->param('token');
+    my $current_password = $cgi->param('current_password');
+    my $mfa_token        = $cgi->param('mfa_token');
 
-    if ($user->authorizer->can_login) {
-        my $password = $cgi->param('password')
-          or ThrowUserError('sudo_password_required',
-                            { target_login => $target_login, reason => $reason });
-        $user->check_current_password($password);
+    # validate entered password
+    my $crypt_password = $user->cryptpassword;
+    unless (($user->mfa && $mfa_token)
+            || bz_crypt($current_password, $crypt_password) eq $crypt_password)
+    {
+        ThrowUserError('sudo_password_required',
+                       { target_login => $target_login, reason => $reason });
+    }
+
+    # Check for MFA
+    if ($user->mfa) {
+        if (!$mfa_token) {
+            # display 2fa verification
+            $user->mfa_provider->verify_prompt({
+                postback => {
+                    action => 'relogin.cgi',
+                    fields => {
+                        token        => $token,
+                        action       => $action,
+                        reason       => $reason,
+                        target_login => $target_login,
+                    },
+                },
+                reason => 'Impersonating another user',
+            });
+        }
+        else {
+            # verify mfa token and override with values stored in token data
+            my $event = $user->mfa_provider->verify_token($mfa_token);
+            $target_login = $event->{postback}->{fields}->{target_login};
+            $reason       = $event->{postback}->{fields}->{reason};
+            $token        = $event->{postback}->{fields}->{token};
+        }
     }
 
     # The user must be in the 'bz_sudoers' group
@@ -117,8 +149,7 @@ elsif ($action eq 'begin-sudo') {
 
     # Did the user actually go trough the 'sudo-prepare' action?  Do some 
     # checks on the token the action should have left.
-    my ($token_user, $token_timestamp, $token_data) =
-        Bugzilla::Token::GetTokenData($cgi->param('token'));
+    my ($token_user, $token_timestamp, $token_data) = Bugzilla::Token::GetTokenData($token);
     unless (defined($token_user)
             && defined($token_data)
             && ($token_user == $user->id)
@@ -133,7 +164,7 @@ elsif ($action eq 'begin-sudo') {
     my $time_string = time2str('%a, %d-%b-%Y %T %Z', time + MAX_SUDO_TOKEN_AGE, 'GMT');
 
     # For future sessions, store the unique ID of the target user
-    my $token = Bugzilla::Token::_create_token($user->id, 'sudo', $target_user->id);
+    $token = Bugzilla::Token::_create_token($user->id, 'sudo', $target_user->id);
 
     my %args;
     if (Bugzilla->params->{ssl_redirect}) {

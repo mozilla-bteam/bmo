@@ -29,6 +29,7 @@ use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::Persistent;
 use Bugzilla::Sender::Transport::Sendmail;
 use Sys::Hostname;
+use Bugzilla::Install::Util qw(vers_cmp);
 
 sub generate_email {
     my ($vars, $templates) = @_;
@@ -105,7 +106,23 @@ sub MessageToMTA {
 
     my $dbh = Bugzilla->dbh;
 
-    my $email = ref($msg) ? $msg : Bugzilla::MIME->new($msg);
+    my $email;
+    if (ref $msg) {
+        $email = $msg;
+    }
+    else {
+        # RFC 2822 requires us to have CRLF for our line endings and
+        # Email::MIME doesn't do this for us until 1.911. We use \015 (CR) and \012 (LF)
+        # directly because Perl translates "\n" depending on what platform
+        # you're running on. See http://perldoc.perl.org/perlport.html#Newlines
+        # We check for multiple CRs because of this Template-Toolkit bug:
+        # https://rt.cpan.org/Ticket/Display.html?id=43345
+        if (vers_cmp($Email::MIME::VERSION, 1.911) == -1) {
+            $msg =~ s/(?:\015+)?\012/\015\012/msg;
+        }
+
+        $email = new Email::MIME($msg);
+    }
 
     # If we're called from within a transaction, we don't want to send the
     # email immediately, in case the transaction is rolled back. Instead we
