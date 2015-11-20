@@ -1,20 +1,10 @@
-/* The contents of this file are subject to the Mozilla Public
-* License Version 1.1 (the "License"); you may not use this file
-* except in compliance with the License. You may obtain a copy of
-* the License at http://www.mozilla.org/MPL/
-*
-* Software distributed under the License is distributed on an "AS
-* IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-* implied. See the License for the specific language governing
-* rights and limitations under the License.
-*
-* The Original Code is the Bugzilla Bug Tracking System.
-*
-* Contributor(s): 
-*   Guy Pyrzak <guy.pyrzak@gmail.com>
-*   Max Kanat-Alexander <mkanat@bugzilla.org>
-*                 
-*/
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0.
+ */
 
 function show_mini_login_form( suffix ) {
     $('#login_link' + suffix).addClass('bz_default_hidden');
@@ -111,15 +101,14 @@ if (!String.prototype.htmlEncode) {
     })();
 }
 
-// our auto-completion disables browser native autocompletion, however this
-// excludes it from being restored by bf-cache.  trick the browser into
-// restoring by changing the autocomplete attribute when a page is hidden and
-// shown.
+// jQuery auto-completion disables browser native autocompletion, however this
+// excludes it from being restored by bfcache. Trick the browser into restoring
+// it by changing the autocomplete attribute when a page is hidden and shown.
 $().ready(function() {
-    $(window).on('pagehide', function() {
-        $('.bz_autocomplete').attr('autocomplete', 'on');
-    });
-    $(window).on('pageshow', function(event) {
-        $('.bz_autocomplete').attr('autocomplete', 'off');
-    });
+  $(window).on('pagehide', function() {
+    $('.bz_autocomplete').attr('autocomplete', 'on');
+  });
+  $(window).on('pageshow', function() {
+    $('.bz_autocomplete').attr('autocomplete', 'off');
+  });
 });

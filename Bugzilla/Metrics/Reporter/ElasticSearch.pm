@@ -7,6 +7,7 @@
 
 package Bugzilla::Metrics::Reporter::ElasticSearch;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -102,3 +103,11 @@ sub report {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item report
+
+=back

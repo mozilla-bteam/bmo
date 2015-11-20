@@ -7,6 +7,7 @@
 
 package Bugzilla::Sentry;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -360,8 +361,22 @@ sub install_sentry_handler {
 
 BEGIN {
     if ($ENV{SCRIPT_NAME} || $ENV{MOD_PERL}) {
-        install_sentry_handler();
+#        install_sentry_handler();
     }
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item sentry_generate_id
+
+=item sentry_should_notify
+
+=item sentry_handle_error
+
+=item install_sentry_handler
+
+=back

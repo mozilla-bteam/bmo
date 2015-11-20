@@ -1,24 +1,18 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Marc Schumann <wurblzap@gmail.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 # This is the base class for $self in WebService method calls. For the 
 # actual RPC server, see Bugzilla::WebService::Server and its subclasses.
 package Bugzilla::WebService;
+
+use 5.10.1;
 use strict;
+use warnings;
+
 use Bugzilla::WebService::Server;
 
 # Used by the JSON-RPC server to convert incoming date fields apprpriately.
@@ -153,7 +147,7 @@ There are two ways to authenticate yourself:
 
 =over
 
-=item C<User.login>
+=item C<Bugzilla_api_key>
 
 You can use L<Bugzilla::WebService::User/login> to log in as a Bugzilla
 user. This issues a token that you must then use in future calls.
@@ -185,21 +179,42 @@ WebService method to perform a login:
 =item C<Bugzilla_restrictlogin> (boolean) - Optional. If true,
 then your login will only be valid for your IP address.
 
-=item C<Bugzilla_rememberlogin> (boolean) - Optional. If true,
-then the cookie sent back to you with the method response will
-not expire.
+=back
+
+The C<Bugzilla_restrictlogin> option is only used when you have also
+specified C<Bugzilla_login> and C<Bugzilla_password>. This value will be
+deprecated in the release after Bugzilla 5.0 and you will be required to
+pass the Bugzilla_login and Bugzilla_password for every call.
+
+For REST, you may also use the C<login> and C<password> variable
+names instead of C<Bugzilla_login> and C<Bugzilla_password> as a
+convenience. You may also use C<token> instead of C<Bugzilla_token>.
 
 =back
 
-The C<Bugzilla_restrictlogin> and C<Bugzilla_rememberlogin> options
-are only used when you have also specified C<Bugzilla_login> and
-C<Bugzilla_password>. This value will be deprecated in the release
-after Bugzilla 5.0 and you will be required to pass the Bugzilla_login
-and Bugzilla_password for every call.
+There are also two deprecreated methods of authentications. This will be
+removed in the version after Bugzilla 5.0.
 
-Note that Bugzilla will return HTTP cookies along with the method
-response when you use these arguments (just like the C<User.login> method
-above).
+=over
+
+=item C<User.login>
+
+You can use L<Bugzilla::WebService::User/login> to log in as a Bugzilla
+user. This issues a token that you must then use in future calls.
+
+=item C<Bugzilla_token>
+
+B<Added in Bugzilla 4.4.3>
+
+You can specify C<Bugzilla_token> as argument to any WebService method,
+and you will be logged in as that user if the token is correct. This is
+the token returned when calling C<User.login> mentioned above.
+
+An error is thrown if you pass an invalid token and you will need to log
+in again to get a new token.
+
+Token support was added in Bugzilla B<5.0> and support for login cookies
+has been dropped for security reasons.
 
 For REST, you may also use the C<login> and C<password> variable
 names instead of C<Bugzilla_login> and C<Bugzilla_password> as a
@@ -340,7 +355,7 @@ hashes.
 
 Some RPC calls support specifying sub fields. If an RPC call states that
 it support sub field restrictions, you can restrict what information is
-returned within the first field. For example, if you call Products.get
+returned within the first field. For example, if you call Product.get
 with an include_fields of components.name, then only the component name
 would be returned (and nothing else). You can include the main field,
 and exclude a sub field.
@@ -403,7 +418,7 @@ objects.
 
 =back
 
-=head2 WebService Methods
+=head2 WebService Modules
 
 =over
 
@@ -411,10 +426,24 @@ objects.
 
 =item L<Bugzilla::WebService::Bugzilla>
 
+=item L<Bugzilla::WebService::Classification>
+
+=item L<Bugzilla::WebService::FlagType>
+
+=item L<Bugzilla::WebService::Component>
+
 =item L<Bugzilla::WebService::Group>
 
 =item L<Bugzilla::WebService::Product>
 
 =item L<Bugzilla::WebService::User>
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item login_exempt
 
 =back

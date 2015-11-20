@@ -9,7 +9,9 @@
 
 package Bugzilla::PatchReader::CVSClient;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 sub parse_cvsroot {
     my $cvsroot = $_[0];
@@ -45,4 +47,16 @@ sub cvs_co_rev {
     return system($cvs, "-Q", "-d$cvsroot", "co", "-r$rev", @files);
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item parse_cvsroot
+
+=item cvs_co
+
+=item cvs_co_rev
+
+=back

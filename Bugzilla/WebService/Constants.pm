@@ -1,24 +1,17 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Marc Schumann <wurblzap@gmail.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::WebService::Constants;
 
+use 5.10.1;
 use strict;
-use base qw(Exporter);
+use warnings;
+
+use parent qw(Exporter);
 
 our @EXPORT = qw(
     WS_ERROR_CODE
@@ -91,8 +84,9 @@ use constant WS_ERROR_CODE => {
     illegal_field => 104,
     freetext_too_long => 104,
     # Component errors
-    require_component       => 105,
-    component_name_too_long => 105,
+    require_component         => 105,
+    component_name_too_long   => 105,
+    product_unknown_component => 105,
     # Invalid Product
     no_products         => 106,
     entry_access_denied => 106,
@@ -109,6 +103,7 @@ use constant WS_ERROR_CODE => {
     comment_id_invalid => 111,
     comment_too_long => 114,
     comment_invalid_isprivate => 117,
+    markdown_disabled => 140,
     # Comment tagging
     comment_tag_disabled => 125,
     comment_tag_invalid => 126,
@@ -145,7 +140,7 @@ use constant WS_ERROR_CODE => {
     flag_type_inactive => 134,
 
     # Authentication errors are usually 300-400.
-    invalid_username_or_password => 300,
+    invalid_login_or_password => 300,
     account_disabled             => 301,
     auth_invalid_email           => 302,
     extern_id_conflict           => -303,
@@ -192,6 +187,7 @@ use constant WS_ERROR_CODE => {
     product_must_have_description => 703,
     product_must_have_version => 704,
     product_must_define_defaultmilestone => 705,
+    product_admin_denied                 => 706,
 
     # Group errors are 800-900
     empty_group_name => 800,
@@ -201,8 +197,27 @@ use constant WS_ERROR_CODE => {
     invalid_group_name => 804,
     group_cannot_view => 805,
 
+    # Classification errors are 900-1000
+    auth_classification_not_enabled => 900,
+
     # Search errors are 1000-1100
     buglist_parameters_required => 1000,
+
+    # Flag type errors are 1100-1200
+    flag_type_name_invalid        => 1101,
+    flag_type_description_invalid => 1102,
+    flag_type_cc_list_invalid     => 1103,
+    flag_type_sortkey_invalid     => 1104,
+    flag_type_not_editable        => 1105,
+
+    # Component errors are 1200-1300
+    component_already_exists               => 1200,
+    component_is_last                      => 1201,
+    component_has_bugs                     => 1202,
+    component_blank_name                   => 1210,
+    component_blank_description            => 1211,
+    multiple_components_update_not_allowed => 1212,
+    component_need_initialowner            => 1213,
 
     # Errors thrown by the WebService itself. The ones that are negative 
     # conform to http://xmlrpc-epi.sourceforge.net/specs/rfc.fault_codes.php
@@ -287,12 +302,14 @@ sub WS_DISPATCH {
     Bugzilla::Hook::process('webservice', { dispatch => \%hook_dispatch });
 
     my $dispatch = {
-        'Bugzilla'       => 'Bugzilla::WebService::Bugzilla',
-        'Bug'            => 'Bugzilla::WebService::Bug',
-        'Classification' => 'Bugzilla::WebService::Classification',
-        'User'           => 'Bugzilla::WebService::User',
-        'Product'        => 'Bugzilla::WebService::Product',
-        'Group'          => 'Bugzilla::WebService::Group',
+        'Bugzilla'         => 'Bugzilla::WebService::Bugzilla',
+        'Bug'              => 'Bugzilla::WebService::Bug',
+        'Classification'   => 'Bugzilla::WebService::Classification',
+        'Component'        => 'Bugzilla::WebService::Component',
+        'FlagType'         => 'Bugzilla::WebService::FlagType',
+        'Group'            => 'Bugzilla::WebService::Group',
+        'Product'          => 'Bugzilla::WebService::Product',
+        'User'             => 'Bugzilla::WebService::User',
         'BugUserLastVisit' => 'Bugzilla::WebService::BugUserLastVisit',
         %hook_dispatch
     };
@@ -310,3 +327,13 @@ use constant API_AUTH_HEADERS => {
 };
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item REST_STATUS_CODE_MAP
+
+=item WS_DISPATCH
+
+=back

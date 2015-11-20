@@ -1,32 +1,14 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Myk Melez <myk@mozilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
-############################################################################
-# Script Initialization
-############################################################################
-
-# Make it harder for us to do dangerous things in Perl.
+use 5.10.1;
 use strict;
+use warnings;
 
 use lib qw(. lib);
 
@@ -41,7 +23,6 @@ use Date::Format;
 use Date::Parse;
 use JSON qw( decode_json );
 
-my $dbh = Bugzilla->dbh;
 local our $cgi = Bugzilla->cgi;
 local our $template = Bugzilla->template;
 local our $vars = {};
@@ -51,133 +32,84 @@ my $token = $cgi->param('t');
 
 Bugzilla->login(LOGIN_OPTIONAL);
 
-################################################################################
-# Data Validation / Security Authorization
-################################################################################
-
 # Throw an error if the form does not contain an "action" field specifying
 # what the user wants to do.
 $action || ThrowUserError('unknown_action');
 
-# If a token was submitted, make sure it is a valid token that exists in the
-# database and is the correct type for the action being taken.
-if ($token) {
-  Bugzilla::Token::CleanTokenTable();
+Bugzilla::Token::CleanTokenTable();
+my ($user_id, $date, $data, $tokentype) = Bugzilla::Token::GetTokenData($token);
 
-  # It's safe to detaint the token as it's used in a placeholder.
-  trick_taint($token);
+# Requesting a new password is the single action which doesn't require a token.
+# XXX Ideally, these checks should be done inside the subroutines themselves.
+unless ($action eq 'reqpw') {
+    $tokentype || ThrowUserError("token_does_not_exist");
 
-  # Make sure the token exists in the database.
-  my ($db_token, $tokentype) = $dbh->selectrow_array('SELECT token, tokentype FROM tokens
-                                                       WHERE token = ?', undef, $token);
-  (defined $db_token && $db_token eq $token)
-    || ThrowUserError("token_does_not_exist");
-
-  # Make sure the token is the correct type for the action being taken.
-  if ( grep($action eq $_ , qw(cfmpw cxlpw chgpw)) && $tokentype ne 'password' ) {
-    Bugzilla::Token::Cancel($token, "wrong_token_for_changing_passwd");
-    ThrowUserError("wrong_token_for_changing_passwd");
-  }
-  if ( ($action eq 'cxlem')
-      && (($tokentype ne 'emailold') && ($tokentype ne 'emailnew')) ) {
-    Bugzilla::Token::Cancel($token, "wrong_token_for_cancelling_email_change");
-    ThrowUserError("wrong_token_for_cancelling_email_change");
-  }
-  if ( grep($action eq $_ , qw(cfmem chgem))
-      && ($tokentype ne 'emailnew') ) {
-    Bugzilla::Token::Cancel($token, "wrong_token_for_confirming_email_change");
-    ThrowUserError("wrong_token_for_confirming_email_change");
-  }
-  if (($action =~ /^(request|confirm|cancel)_new_account$/)
-      && ($tokentype ne 'account'))
-  {
-      Bugzilla::Token::Cancel($token, 'wrong_token_for_creating_account');
-      ThrowUserError('wrong_token_for_creating_account');
-  }
-  if (substr($action, 0, 4) eq 'mfa_' && $tokentype ne 'session.short') {
-      Bugzilla::Token::Cancel($token, 'wrong_token_for_mfa');
-      ThrowUserError('wrong_token_for_mfa');
-  }
-}
-
-
-# If the user is requesting a password change, make sure they submitted
-# their login name and it exists in the database, and that the DB module is in
-# the list of allowed verification methods.
-my $user_account;
-if ( $action eq 'reqpw' ) {
-    my $login_name = $cgi->param('loginname')
-                       || ThrowUserError("login_needed_for_password_change");
-
-    # check verification methods
-    unless (Bugzilla->user->authorizer->can_change_password) {
-        ThrowUserError("password_change_requests_not_allowed");
+    # Make sure the token is the correct type for the action being taken.
+    # The { user_error => 'wrong_token_for_*' } trick is to make 012throwables.t happy.
+    my $error = {};
+    if (grep($action eq $_ , qw(cfmpw cxlpw chgpw)) && $tokentype ne 'password') {
+        $error = { user_error => 'wrong_token_for_changing_passwd' };
+    }
+    elsif ($action eq 'cxlem'
+           && ($tokentype ne 'emailold' && $tokentype ne 'emailnew'))
+    {
+        $error = { user_error => 'wrong_token_for_cancelling_email_change' };
+    }
+    elsif (grep($action eq $_ , qw(cfmem chgem)) && $tokentype ne 'emailnew') {
+        $error = { user_error => 'wrong_token_for_confirming_email_change' };
+    }
+    elsif ($action =~ /^(request|confirm|cancel)_new_account$/
+           && $tokentype ne 'account')
+    {
+        $error = { user_error => 'wrong_token_for_creating_account' };
+    }
+    elsif (substr($action, 0, 4) eq 'mfa_' && $tokentype ne 'session.short') {
+        $error = { user_error => 'wrong_token_for_mfa' };
     }
 
-    # Check the hash token to make sure this user actually submitted
-    # the forgotten password form.
-    my $token = $cgi->param('token');
-    check_hash_token($token, ['reqpw']);
-
-    validate_email_syntax($login_name)
-        || ThrowUserError('illegal_email_address', {addr => $login_name});
-
-    $user_account = Bugzilla::User->check($login_name);
-
-    # Make sure the user account is active.
-    if (!$user_account->is_enabled) {
-        ThrowUserError('account_disabled',
-                       {disabled_reason => get_text('account_disabled', {account => $login_name})});
+    if (my $user_error = $error->{user_error}) {
+        Bugzilla::Token::Cancel($token, $user_error);
+        ThrowUserError($user_error);
     }
 }
-
-# If the user is changing their password, make sure they submitted a new
-# password and that the new password is valid.
-my $password;
-if ( $action eq 'chgpw' ) {
-    $password = $cgi->param('password');
-    defined $password
-      && defined $cgi->param('matchpassword')
-      || ThrowUserError("require_new_password");
-
-    validate_password($password, $cgi->param('matchpassword'));
-    # Make sure that these never show up in the UI under any circumstances.
-    $cgi->delete('password', 'matchpassword');
-}
-
-################################################################################
-# Main Body Execution
-################################################################################
-
-# All calls to this script should contain an "action" variable whose value
-# determines what the user wants to do.  The code below checks the value of
-# that variable and runs the appropriate code.
 
 if ($action eq 'reqpw') {
-    requestChangePassword($user_account);
-} elsif ($action eq 'cfmpw') {
+    requestChangePassword();
+}
+elsif ($action eq 'cfmpw') {
     confirmChangePassword($token);
-} elsif ($action eq 'cxlpw') {
+}
+elsif ($action eq 'cxlpw') {
     cancelChangePassword($token);
-} elsif ($action eq 'chgpw') {
-    changePassword($token, $password);
-} elsif ($action eq 'cfmem') {
+}
+elsif ($action eq 'chgpw') {
+    changePassword($user_id, $token);
+}
+elsif ($action eq 'cfmem') {
     confirmChangeEmail($token);
-} elsif ($action eq 'cxlem') {
-    cancelChangeEmail($token);
-} elsif ($action eq 'chgem') {
-    changeEmail($token);
-} elsif ($action eq 'request_new_account') {
-    request_create_account($token);
-} elsif ($action eq 'confirm_new_account') {
-    confirm_create_account($token);
-} elsif ($action eq 'cancel_new_account') {
-    cancel_create_account($token);
-} elsif ($action eq 'mfa_l') {
+}
+elsif ($action eq 'cxlem') {
+    cancelChangeEmail($user_id, $data, $tokentype, $token);
+}
+elsif ($action eq 'chgem') {
+    changeEmail($user_id, $data, $token);
+}
+elsif ($action eq 'request_new_account') {
+    request_create_account($date, $data, $token);
+}
+elsif ($action eq 'confirm_new_account') {
+    confirm_create_account($data, $token);
+}
+elsif ($action eq 'cancel_new_account') {
+    cancel_create_account($data, $token);
+}
+elsif ($action eq 'mfa_l') {
     verify_mfa_login($token);
-} elsif ($action eq 'mfa_p') {
+}
+elsif ($action eq 'mfa_p') {
     verify_mfa_password($token);
-} else { 
+}
+else {
     ThrowUserError('unknown_action', {action => $action});
 }
 
@@ -187,11 +119,35 @@ exit;
 # Functions
 ################################################################################
 
+# If the user is requesting a password change, make sure they submitted
+# their login name and it exists in the database, and that the DB module is in
+# the list of allowed verification methods.
 sub requestChangePassword {
-    my ($user) = @_;
-    Bugzilla::Token::IssuePasswordToken($user);
+    # check verification methods
+    Bugzilla->user->authorizer->can_change_password
+      || ThrowUserError("password_change_requests_not_allowed");
+
+    # Check the hash token to make sure this user actually submitted
+    # the forgotten password form.
+    my $token = $cgi->param('token');
+    check_hash_token($token, ['reqpw']);
+
+    my $login_name = $cgi->param('loginname')
+      or ThrowUserError("login_needed_for_password_change");
+
+    check_email_syntax($login_name);
+    my $user = new Bugzilla::User({ name => $login_name });
+
+    # Make sure the user account is active.
+    if ($user && !$user->is_enabled) {
+        ThrowUserError('account_disabled',
+                       {disabled_reason => get_text('account_disabled', {account => $login_name})});
+    }
+
+    Bugzilla::Token::IssuePasswordToken($user) if $user;
 
     $vars->{'message'} = "password_change_request";
+    $vars->{'login_name'} = $login_name;
 
     print $cgi->header();
     $template->process("global/message.html.tmpl", $vars)
@@ -220,11 +176,20 @@ sub cancelChangePassword {
       || ThrowTemplateError($template->error());
 }
 
+# If the user is changing their password, make sure they submitted a new
+# password and that the new password is valid.
 sub changePassword {
-    my ($token, $password) = @_;
+    my ($user_id, $token) = @_;
     my $dbh = Bugzilla->dbh;
 
-    my ($user_id) = Bugzilla::Token::GetTokenData($token);
+    my $password = $cgi->param('password');
+    (defined $password && defined $cgi->param('matchpassword'))
+      || ThrowUserError("require_new_password");
+
+    validate_password($password, $cgi->param('matchpassword'));
+    # Make sure that these never show up in the UI under any circumstances.
+    $cgi->delete('password', 'matchpassword');
+
     my $user = Bugzilla::User->check({ id => $user_id });
 
     if ($user->mfa) {
@@ -255,6 +220,7 @@ sub verify_mfa_password {
 
 sub set_user_password {
     my ($token, $user, $password) = @_;
+    my $dbh = Bugzilla->dbh;
 
     $user->set_password($password);
     $user->update();
@@ -270,6 +236,7 @@ sub set_user_password {
       || ThrowTemplateError($template->error());
 }
 
+
 sub confirmChangeEmail {
     my $token = shift;
     $vars->{'token'} = $token;
@@ -280,19 +247,19 @@ sub confirmChangeEmail {
 }
 
 sub changeEmail {
-    my $token = shift;
+    my ($userid, $eventdata, $token) = @_;
     my $dbh = Bugzilla->dbh;
-
-    # Get the user's ID from the tokens table.
-    my ($userid, $eventdata) = $dbh->selectrow_array(
-                                 q{SELECT userid, eventdata FROM tokens
-                                   WHERE token = ?}, undef, $token);
     my ($old_email, $new_email) = split(/:/,$eventdata);
 
-    # Check the user entered the correct old email address
-    if(lc($cgi->param('email')) ne lc($old_email)) {
-        ThrowUserError("email_confirmation_failed");
-    }
+    $dbh->bz_start_transaction();
+    
+    my $user = Bugzilla::User->check({ id => $userid });
+    my $cgipassword  = $cgi->param('password');
+
+    # Make sure the user who wants to change the email address
+    # is the real account owner.
+    $user->check_current_password($cgipassword);
+
     # The new email address should be available as this was 
     # confirmed initially so cancel token if it is not still available
     if (! is_available_username($new_email,$old_email)) {
@@ -301,21 +268,13 @@ sub changeEmail {
         ThrowUserError("account_exists", { email => $new_email } );
     } 
 
-    # Update the user's login name in the profiles table and delete the token
-    # from the tokens table.
-    $dbh->bz_start_transaction();
-    $dbh->do(q{UPDATE   profiles
-               SET      login_name = ?
-               WHERE    userid = ?},
-             undef, ($new_email, $userid));
+    # Update the user's login name in the profiles table.
+    $user->set_login($new_email);
+    $user->update({ keep_session => 1, keep_tokens => 1 });
     Bugzilla->memcached->clear({ table => 'profiles', id => $userid });
-    $dbh->do('DELETE FROM tokens WHERE token = ?', undef, $token);
+    delete_token($token);
     $dbh->do(q{DELETE FROM tokens WHERE userid = ?
                AND tokentype = 'emailnew'}, undef, $userid);
-
-    # The email address has been changed, so we need to rederive the groups
-    my $user = new Bugzilla::User($userid);
-    $user->derive_regexp_groups;
 
     $dbh->bz_commit_transaction();
 
@@ -323,7 +282,6 @@ sub changeEmail {
     print $cgi->header();
 
     # Let the user know their email address has been changed.
-
     $vars->{'message'} = "login_changed";
 
     $template->process("global/message.html.tmpl", $vars)
@@ -331,43 +289,26 @@ sub changeEmail {
 }
 
 sub cancelChangeEmail {
-    my $token = shift;
+    my ($userid, $eventdata, $tokentype, $token) = @_;
     my $dbh = Bugzilla->dbh;
 
     $dbh->bz_start_transaction();
 
-    # Get the user's ID from the tokens table.
-    my ($userid, $tokentype, $eventdata) = $dbh->selectrow_array(
-                              q{SELECT userid, tokentype, eventdata FROM tokens
-                                WHERE token = ?}, undef, $token);
     my ($old_email, $new_email) = split(/:/,$eventdata);
 
-    if($tokentype eq "emailold") {
+    if ($tokentype eq "emailold") {
         $vars->{'message'} = "emailold_change_canceled";
+        my $user = Bugzilla::User->check({ id => $userid });
 
-        my $actualemail = $dbh->selectrow_array(
-                            q{SELECT login_name FROM profiles
-                              WHERE userid = ?}, undef, $userid);
-        
         # check to see if it has been altered
-        if($actualemail ne $old_email) {
-            # XXX - This is NOT safe - if A has change to B, another profile
-            # could have grabbed A's username in the meantime.
-            # The DB constraint will catch this, though
-            $dbh->do(q{UPDATE   profiles
-                       SET      login_name = ?
-                       WHERE    userid = ?},
-                     undef, ($old_email, $userid));
+        if ($user->login ne $old_email) {
+            $user->set_login($old_email);
+            $user->update({ keep_tokens => 1 });
             Bugzilla->memcached->clear({ table => 'profiles', id => $userid });
 
-            # email has changed, so rederive groups
-
-            my $user = new Bugzilla::User($userid);
-            $user->derive_regexp_groups;
-
             $vars->{'message'} = "email_change_canceled_reinstated";
-        } 
-    } 
+        }
+    }
     else {
         $vars->{'message'} = 'email_change_canceled'
      }
@@ -390,10 +331,10 @@ sub cancelChangeEmail {
 }
 
 sub request_create_account {
-    my $token = shift;
+    my ($date, $login_name, $token) = @_;
 
     Bugzilla->user->check_account_creation_enabled;
-    my (undef, $date, $login_name) = Bugzilla::Token::GetTokenData($token);
+
     $vars->{'token'} = $token;
     $vars->{'email'} = $login_name . Bugzilla->params->{'emailsuffix'};
     $vars->{'expiration_ts'} = ctime(str2time($date) + MAX_TOKEN_AGE * 86400);
@@ -404,10 +345,9 @@ sub request_create_account {
 }
 
 sub confirm_create_account {
-    my $token = shift;
+    my ($login_name, $token) = @_;
 
     Bugzilla->user->check_account_creation_enabled;
-    my (undef, undef, $login_name) = Bugzilla::Token::GetTokenData($token);
 
     my $password = $cgi->param('passwd1') || '';
     validate_password($password, $cgi->param('passwd2') || '');
@@ -422,11 +362,11 @@ sub confirm_create_account {
     # Now delete this token.
     delete_token($token);
 
-    # Let the user know that his user account has been successfully created.
+    # Let the user know that their user account has been successfully created.
     $vars->{'message'} = 'account_created';
     $vars->{'otheruser'} = $otheruser;
 
-    # Log in the new user using credentials he just gave.
+    # Log in the new user using credentials they just gave.
     $cgi->param('Bugzilla_login', $otheruser->login);
     $cgi->param('Bugzilla_password', $password);
     Bugzilla->login(LOGIN_OPTIONAL);
@@ -438,9 +378,7 @@ sub confirm_create_account {
 }
 
 sub cancel_create_account {
-    my $token = shift;
-
-    my (undef, undef, $login_name) = Bugzilla::Token::GetTokenData($token);
+    my ($login_name, $token) = @_;
 
     $vars->{'message'} = 'account_creation_canceled';
     $vars->{'account'} = $login_name;

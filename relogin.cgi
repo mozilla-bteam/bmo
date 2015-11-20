@@ -1,28 +1,15 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Gervase Markham <gerv@gerv.net>
-#                 A. Karl Kornel <karl@kornel.name>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use lib qw(. lib);
 
 use Bugzilla;
@@ -90,32 +77,16 @@ elsif ($action eq 'prepare-sudo') {
 }
 # begin-sudo: Confirm login and start sudo session
 elsif ($action eq 'begin-sudo') {
-    # We must be sure that the user is authenticating by providing a login
-    # and password.
-    # We only need to do this for authentication methods that involve Bugzilla 
-    # directly obtaining a login (i.e. normal CGI login), as opposed to other 
-    # methods (like Environment vars login). 
-
-    # First, record if Bugzilla_login and Bugzilla_password were provided
-    my $credentials_provided;
-    if (defined($cgi->param('Bugzilla_login'))
-        && defined($cgi->param('Bugzilla_password')))
-    {
-        $credentials_provided = 1;
-    }
-
-    # Next, log in the user
     my $user = Bugzilla->login(LOGIN_REQUIRED);
 
     my $target_login = $cgi->param('target_login');
     my $reason = $cgi->param('reason') || '';
 
-    # At this point, the user is logged in.  However, if they used a method
-    # where they could have provided a username/password (i.e. CGI), but they 
-    # did not provide a username/password, then throw an error.
-    if ($user->authorizer->can_login && !$credentials_provided) {
-        ThrowUserError('sudo_password_required',
-                       { target_login => $target_login, reason => $reason });
+    if ($user->authorizer->can_login) {
+        my $password = $cgi->param('password')
+          or ThrowUserError('sudo_password_required',
+                            { target_login => $target_login, reason => $reason });
+        $user->check_current_password($password);
     }
 
     # The user must be in the 'bz_sudoers' group
@@ -125,10 +96,23 @@ elsif ($action eq 'begin-sudo') {
                                          object => 'sudo_session' }
         );
     }
-    
+
     # Do not try to start a new session if one is already in progress!
     if (defined(Bugzilla->sudoer)) {
         ThrowUserError('sudo_in_progress', { target => $user->login });
+    }
+
+    # Get & verify the target user (the user who we will be impersonating)
+    my $target_user = new Bugzilla::User({ name => $target_login });
+    unless (defined($target_user)
+            && $target_user->id
+            && $user->can_see_user($target_user))
+    {
+        ThrowUserError('user_match_failed', { name => $target_login });
+    }
+
+    if ($target_user->in_group('bz_sudo_protect')) {
+        ThrowUserError('sudo_protected', { login => $target_user->login });
     }
 
     # Did the user actually go trough the 'sudo-prepare' action?  Do some 
@@ -144,18 +128,6 @@ elsif ($action eq 'begin-sudo') {
                        { target_login => $target_login, reason => $reason });
     }
     delete_token($cgi->param('token'));
-
-    # Get & verify the target user (the user who we will be impersonating)
-    my $target_user = new Bugzilla::User({ name => $target_login });
-    unless (defined($target_user)
-            && $target_user->id
-            && $user->can_see_user($target_user))
-    {
-        ThrowUserError('user_match_failed', { name => $target_login });
-    }
-    if ($target_user->in_group('bz_sudo_protect')) {
-        ThrowUserError('sudo_protected', { login => $target_user->login });
-    }
 
     # Calculate the session expiry time (T + 6 hours)
     my $time_string = time2str('%a, %d-%b-%Y %T %Z', time + MAX_SUDO_TOKEN_AGE, 'GMT');

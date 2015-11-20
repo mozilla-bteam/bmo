@@ -18,8 +18,7 @@
   </div>
   <button id="bitly-close" class="notransition">Close</button>
 </div>
-<a id="bitly-shorten" href="#"
-   data-url="[% urlbase _ "buglist.cgi?" _
-                cgi.new(urlquerypart).canonicalise_query('list_id','query_format') FILTER html %]"
->Short URL</a>
-|&nbsp; [%# using nbsp because tt always trims trailing whitespace from templates %]
+<button id="bitly-shorten" type="button"
+        data-url="[% urlbase _ "buglist.cgi?" _
+                  cgi.new(urlquerypart).canonicalise_query('list_id','query_format') FILTER html %]">
+  Short URL</button>

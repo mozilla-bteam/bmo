@@ -1,37 +1,24 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Bradley Baetz <bbaetz@acm.org>
-#                 Marc Schumann <wurblzap@gmail.com>
-#                 Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Error;
 
+use 5.10.1;
 use strict;
-use base qw(Exporter);
+use warnings;
+
+use parent qw(Exporter);
 
 @Bugzilla::Error::EXPORT = qw(ThrowCodeError ThrowTemplateError ThrowUserError ThrowErrorPage);
 
 use Bugzilla::Sentry;
 use Bugzilla::Constants;
 use Bugzilla::WebService::Constants;
-use Bugzilla::Util;
+use Bugzilla::Hook;
 
 use Carp;
 use Data::Dumper;
@@ -63,12 +50,13 @@ sub _throw_error {
     my $datadir = bz_locations()->{'datadir'};
     # If a writable $datadir/errorlog exists, log error details there.
     if (-w "$datadir/errorlog") {
+        require Bugzilla::Util;
         require Data::Dumper;
         my $mesg = "";
         for (1..75) { $mesg .= "-"; };
         $mesg .= "\n[$$] " . time2str("%D %H:%M:%S ", time());
         $mesg .= "$name $error ";
-        $mesg .= remote_ip();
+        $mesg .= Bugzilla::Util::remote_ip();
         $mesg .= Bugzilla->user->login;
         $mesg .= (' actually ' . Bugzilla->sudoer->login) if Bugzilla->sudoer;
         $mesg .= "\n";
@@ -94,7 +82,6 @@ sub _throw_error {
 
     my $template = Bugzilla->template;
     my $message;
-
     # There are some tests that throw and catch a lot of errors,
     # and calling $template->process over and over for those errors
     # is too slow. So instead, we just "die" with a dump of the arguments.
@@ -105,7 +92,6 @@ sub _throw_error {
 
     # Let's call the hook first, so that extensions can override
     # or extend the default behavior, or add their own error codes.
-    require Bugzilla::Hook;
     Bugzilla::Hook::process('error_catch', { error => $error, vars => $vars,
                                              message => \$message });
 
@@ -118,7 +104,7 @@ sub _throw_error {
         }
 
         my $cgi = Bugzilla->cgi;
-        $cgi->close_standby_message('text/html', 'inline');
+        $cgi->close_standby_message('text/html', 'inline', 'error', 'html');
         $template->process($name, $vars)
           || ThrowTemplateError($template->error());
         print $cgi->multipart_final() if $cgi->{_multipart_in_progress};
@@ -150,19 +136,13 @@ sub _throw_error {
         if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
             die SOAP::Fault->faultcode($code)->faultstring($message);
         }
-        else {
+        elsif (Bugzilla->error_mode == ERROR_MODE_JSON_RPC) {
             my $server = Bugzilla->_json_server;
 
-            my $status_code = 0;
-            if (Bugzilla->error_mode == ERROR_MODE_REST) {
-                my %status_code_map = %{ REST_STATUS_CODE_MAP() };
-                $status_code = $status_code_map{$code} || $status_code_map{'_default'};
-            }
             # Technically JSON-RPC isn't allowed to have error numbers
             # higher than 999, but we do this to avoid conflicts with
             # the internal JSON::RPC error codes.
             $server->raise_error(code        => 100000 + $code,
-                                 status_code => $status_code,
                                  message     => $message,
                                  id          => $server->{_bz_request_id},
                                  version     => $server->version);
@@ -172,6 +152,13 @@ sub _throw_error {
             # it checks $@, so it returns the proper error.
             die if _in_eval();
             $server->response($server->error_response_header);
+        }
+        else {
+            my $server = Bugzilla->api_server;
+            my %status_code_map = %{ $server->constants->{REST_STATUS_CODE_MAP} };
+            my $status_code = $status_code_map{$code} || $status_code_map{'_default'};
+            $server->return_error($status_code, $message, $code);
+            $server->response;
         }
     }
     exit;
@@ -222,16 +209,19 @@ sub ThrowTemplateError {
     # Try a template first; but if this one fails too, fall back
     # on plain old print statements.
     if (!$template->process("global/code-error.html.tmpl", $vars)) {
-        my $maintainer = html_quote(Bugzilla->params->{'maintainer'});
+        require Bugzilla::Util;
+        import Bugzilla::Util qw(html_quote);
+        my $maintainer = Bugzilla->params->{'maintainer'};
         my $error = html_quote($vars->{'template_error_msg'});
         my $error2 = html_quote($template->error());
+        my $url = html_quote(Bugzilla->cgi->self_url);
+
         print <<END;
-        <tt>
           <p>
             Bugzilla has suffered an internal error:
           </p>
           <p>
-            $error
+        $error
           </p>
           <!-- template error, no real need to show this to the user
           $error2
@@ -240,7 +230,6 @@ sub ThrowTemplateError {
             The <a href="mailto:$maintainer">Bugzilla maintainers</a> have
             been notified of this error.
           </p>
-        </tt>
 END
     }
     exit;
@@ -338,6 +327,12 @@ This function should only be called if a C<template-<gt>process()> fails.
 It tries another template first, because often one template being
 broken or missing doesn't mean that they all are. But it falls back to
 a print statement as a last-ditch error.
+
+=item C<ThrowErrorPage>
+
+This function will display an error message specified by caller. One example
+of where this is used is when creating custom fields. Bug updates are blocked
+while the field is being created and the user is alerted.
 
 =back
 

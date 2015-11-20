@@ -28,6 +28,7 @@
 
 package Bugzilla::DuoWeb;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -110,6 +111,7 @@ sub _parse_vals {
 }
 
 =pod
+
     Generate a signed request for Duo authentication.
     The returned value should be passed into the Duo.init() call!
     in the rendered web page used for Duo authentication.
@@ -120,6 +122,7 @@ sub _parse_vals {
     skey      -- Duo secret key
     akey      -- Application secret key
     username  -- Primary-authenticated username
+
 =cut
 
 sub sign_request {
@@ -190,4 +193,15 @@ sub verify_response {
 
     return $auth_user;
 }
+
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item verify_response
+
+=item sign_request
+
+=back

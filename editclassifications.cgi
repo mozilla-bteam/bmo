@@ -1,26 +1,16 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil; cperl-indent-level: 4 -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Albert Ting
-#
-# Contributor(s): Albert Ting <alt@sonic.net>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use lib qw(. lib);
 
 use Bugzilla;
@@ -44,7 +34,7 @@ sub LoadTemplate {
       if ($action eq 'select');
     # There is currently only one section about classifications,
     # so all pages point to it. Let's define it here.
-    $vars->{'doc_section'} = 'classifications.html';
+    $vars->{'doc_section'} = 'administering/categorization.html#classifications';
 
     $action =~ /(\w+)/;
     $action = $1;
@@ -58,11 +48,11 @@ sub LoadTemplate {
 # Preliminary checks:
 #
 
-Bugzilla->login(LOGIN_REQUIRED);
+my $user = Bugzilla->login(LOGIN_REQUIRED);
 
 print $cgi->header();
 
-Bugzilla->user->in_group('editclassifications')
+$user->in_group('editclassifications')
   || ThrowUserError("auth_failure", {group  => "editclassifications",
                                      action => "edit",
                                      object => "classifications"});
@@ -179,9 +169,11 @@ if ($action eq 'update') {
     my $class_old_name = trim($cgi->param('classificationold') || '');
     my $classification = Bugzilla::Classification->check($class_old_name);
 
-    $classification->set_name($class_name);
-    $classification->set_description(scalar $cgi->param('description'));
-    $classification->set_sortkey(scalar $cgi->param('sortkey'));
+    $classification->set_all({
+        name        => $class_name,
+        description => scalar $cgi->param('description'),
+        sortkey     => scalar $cgi->param('sortkey'),
+    });
 
     my $changes = $classification->update;
     delete_token($token);

@@ -7,7 +7,9 @@
 
 package Bugzilla::Extension::TrackingFlags;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use base qw(Bugzilla::Extension);
 
@@ -347,7 +349,7 @@ sub db_schema_abstract_schema {
                 },
             },
             component_id => {
-                TYPE       => 'INT2',
+                TYPE       => 'INT3',
                 NOTNULL    => 0,
                 REFERENCES => {
                     TABLE  => 'components',
@@ -389,6 +391,13 @@ sub install_update_db {
         {
             TYPE    => 'TEXT',
             NOTNULL => 0,
+        },
+    );
+    $dbh->bz_alter_column(
+        'tracking_flags_visibility',
+        'component_id',
+        {
+            TYPE => 'INT3',
         },
     );
 }

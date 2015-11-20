@@ -1,30 +1,9 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Guy Pyrzak
-  # Portions created by the Initial Developer are Copyright (C) 2010 the
-  # Initial Developer. All Rights Reserved.
-  #
-  # Contributor(s): Guy Pyrzak <guy.pyrzak@gmail.com>
-  #                 Reed Loden <reed@reedloden.com>
-  #
-  #%]
-[%# INTERFACE:
-  #   field: a Bugzilla::Field object
-  #   value: the value or values that should be used to prepopulate the field
-  #   accesskey: the access key used to access the field more quickly
-  #   onchange: js to run when the change event fires on the field
-  #   type_selected: used by the free text to indicate which type of text
-  #                  search was selected for a particular field
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
   
 [% SWITCH field.type %]
@@ -44,7 +23,7 @@
     <input name="[% field.name FILTER html %]" 
            id="[% field.name FILTER html %]" size="40"
            [% IF onchange %] onchange="[% onchange FILTER html %]"[% END %]
-           value="[% value FILTER html %]">              
+           value="[% value FILTER html %]" [% 'autofocus' IF focus %]>
   [% CASE constants.FIELD_TYPE_KEYWORDS %]
     [% INCLUDE "bug/field-label.html.tmpl"
       field = field
@@ -60,14 +39,14 @@
            id="[% field.name FILTER html %]" size="40"
            class="bz_autocomplete_values"
            [% IF onchange %] onchange="[% onchange FILTER html %]"[% END %]
-           value="[% value FILTER html %]"
+           value="[% value FILTER html %]" [% 'autofocus' IF focus %]
            data-values="[% field.name FILTER html %]">
     <script type="text/javascript">
       if (typeof BUGZILLA.autocomplete_values === 'undefined')
         BUGZILLA.autocomplete_values = [];
       BUGZILLA.autocomplete_values['[% field.name FILTER js %]'] = [
-        [%- FOREACH keyword = all_keywords %]
-          [%-# %]"[% keyword.name FILTER js %]"
+        [%- FOREACH val = possible_values %]
+          [%- %]"[% val FILTER js %]"
           [%- "," IF NOT loop.last %][% END %]];
     </script>
   [% CASE [constants.FIELD_TYPE_DATETIME, constants.FIELD_TYPE_DATE] %]
@@ -76,32 +55,20 @@
       tag_name = "span"
       editable = 1
     %]
-    from <input name="[% field.name FILTER html %]from" 
-                id="[% field.name FILTER html %]" 
-                size="10" maxlength="10"
-                value="[% value.0 FILTER html %]" 
-                onchange="updateCalendarFromField(this);[% onchange FILTER html %]">
-         <button type="button" class="calendar_button"
-                        id="button_calendar_[% field.name FILTER html %]"
-                        onclick="showCalendar('[% field.name FILTER js %]')">
-           <span>Calendar</span>
-         </button>
-         <span id="con_calendar_[% field.name FILTER html %]"></span>               
-    to <input name="[% field.name FILTER html %]to" 
+    from <input name="[% field.name FILTER html %]from"
+                id="[% field.name FILTER html %]"
+                size="10" maxlength="10" value="[% value.0 FILTER html %]">
+    to <input name="[% field.name FILTER html %]to"
               id="[% field.name FILTER html %]to" size="10" maxlength="10"
-              value="[% value.1 FILTER html %]" 
-              onchange="updateCalendarFromField(this);[% onchange FILTER html %]">
-       <button type="button" class="calendar_button"
-                      id="button_calendar_[% field.name FILTER html %]to"
-                      onclick="showCalendar('[% field.name FILTER js %]to')">
-         <span>Calendar</span>
-       </button>
+              value="[% value.1 FILTER html %]">
     <small>(YYYY-MM-DD or relative dates)</small>
-    
-    <span id="con_calendar_[% field.name FILTER html %]to"></span>
+
     <script type="text/javascript">
-      createCalendar('[% field.name FILTER js %]');
-      createCalendar('[% field.name FILTER js %]to');
+      $(function() {
+        // do not check user input as relative dates are allowed
+        $("#[% field.name FILTER html FILTER js %]").datepicker({constrainInput: false});
+        $("#[% field.name FILTER html FILTER js %]to").datepicker({constrainInput: false});
+      });
     </script>
   [% CASE [ constants.FIELD_TYPE_SINGLE_SELECT, 
             constants.FIELD_TYPE_MULTI_SELECT ] %]
@@ -120,22 +87,82 @@
           [% legal_values = ${"component_"} %]
         [% END %]
         [% FOREACH current_value = legal_values %]
-          [% IF current_value.id %]
-            [%# current_value is a hash instead of a value which 
-                only applies for Resolution really, everywhere else current_value
-                is just the value %]
-            [% v = current_value.name OR '---' -%]
-            <option value="[% v FILTER html %]"
-              [% ' selected="selected"' IF value.contains( v ) %]>
-              [% display_value(field.name, current_value.name) FILTER html %]
-            </option>
-          [% ELSE %]
-            <option value="[% current_value OR '---' FILTER html %]"
-              [% ' selected="selected"' IF value.contains( current_value ) %]>
-              [% display_value(field.name, current_value) FILTER html %]
-            </option>
-          [% END %]
+          [% SET v = current_value.name OR '---' -%]
+          [% SET display = display_value(field.name, current_value.name) %]
+          <option value="[% v FILTER html %]"
+            id="v[% current_value.id FILTER html %]_[% field.name FILTER html %]"
+            [% ' selected="selected"' IF value.contains( v ) %]>
+            [%~ display FILTER html ~%]
+          </option>
         [% END %]
       </select>
     </div>
+
+    [% IF value_controllers.${field.name}.defined %]
+      <script type="text/javascript"><!--
+        [%+ FILTER collapse %]
+          [% FOREACH accessor = value_controllers.${field.name}.keys %]
+            [% PROCESS controller_js %]
+          [% END %]
+        [%~ END ~%]
+      // --></script>
+    [% END %]
+    [% IF duplicates.${field.name}.keys.size %]
+      [% SET field_dups = duplicates.${field.name} %]
+      [% SET dup_counts = duplicate_count.${field.name} %]
+      <script type="text/javascript">
+       [%+ FILTER collapse %]
+          bz_option_duplicates['[% field.name FILTER js %]'] = {
+            [% FOREACH dup = field_dups.keys %]
+              [% dup FILTER js %]:[% field_dups.$dup.id FILTER js %]
+              [%~ ',' UNLESS loop.last %]
+            [% END ~%]
+          };
+          bz_option_duplicate_count['[% field.name FILTER js %]'] = {
+            [% FOREACH dup_target = dup_counts.keys %]
+              [% dup_target FILTER js %]:[% dup_counts.$dup_target FILTER js %]
+              [%~ ',' UNLESS loop.last %]
+            [% END %]
+          };
+        [% END %]
+      </script>
+    [% END %]
+
   [% END %]
+[%# END OF SWITCH %]
+
+[% BLOCK controller_js %]
+  [%# If there are selected values already, we need to fire the
+    # "change" event once the page has loaded, so we can set all
+    # the values in all the other <select>s properly.
+    #%]
+  YAHOO.util.Event.onDOMReady(function() {
+      var field = document.getElementById('[% field.name FILTER js %]');
+      if (field.selectedIndex != -1) bz_fireEvent(field, 'change');
+  });
+
+  [% SET sub_field = value_controllers.${field.name}.$accessor %]
+  [% SET prod_per_class = {} %]
+  [% IF field.name == "classification" %]
+    [% FOREACH p = product %]
+      [% prod_per_class.${p.classification_id}.${p.id} = 1 %]
+    [% END %]
+  [% END %]
+
+  [% FOREACH legal_value = legal_values %]
+    [% SET controlled_ids = [] %]
+    [% IF field.name == "classification" %]
+      [% controlled_ids = prod_per_class.${legal_value.id}.keys %]
+    [% ELSE %]
+      [% FOREACH sub_value = legal_value.$accessor %]
+        [% controlled_ids.push(sub_value.id) %]
+      [% END %]
+    [% END %]
+    [% NEXT IF !controlled_ids.size %]
+      showValueWhen('[% sub_field.name FILTER js %]',
+                    [[% controlled_ids.join(',') FILTER js %]],
+                    '[% field.name FILTER js %]',
+                    [% legal_value.id FILTER js %],
+                    true);
+  [% END %]
+[% END %]

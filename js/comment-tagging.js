@@ -78,7 +78,7 @@ YAHOO.bugzilla.commentTagging = {
             this.ctag_add.value = '';
             tags_container.parentNode.insertBefore(this.ctag_div, tags_container);
             Dom.removeClass(this.ctag_div, 'bz_default_hidden');
-            Dom.removeClass(tags_container.parentNode, 'bz_default_hidden');
+            Dom.removeClass(tags_container, 'bz_default_hidden');
             var comment = Dom.get('comment_text_' + comment_no);
             if (Dom.hasClass(comment, 'collapsed')) {
                 var link = Dom.get('comment_link_' + comment_no);
@@ -92,17 +92,9 @@ YAHOO.bugzilla.commentTagging = {
 
     hideInput : function() {
         if (this.current_id != 0) {
-            var comment_no = this.current_no;
             this.toggle(this.current_id, this.current_no);
-            this.hideEmpty(comment_no);
         }
         this.hideError();
-    },
-
-    hideEmpty : function(comment_no) {
-        if (Dom.get('ct_' + comment_no).children.length == 0) {
-            Dom.addClass('comment_tag_' + comment_no, 'bz_default_hidden');
-        }
     },
 
     showError : function(comment_id, comment_no, error) {
@@ -131,9 +123,9 @@ YAHOO.bugzilla.commentTagging = {
             var tags = YAHOO.bugzilla.commentTagging.ctag_add.value.split(/[ ,]/);
             var comment_id = YAHOO.bugzilla.commentTagging.current_id;
             var comment_no = YAHOO.bugzilla.commentTagging.current_no;
+            YAHOO.bugzilla.commentTagging.hideInput();
             try {
                 YAHOO.bugzilla.commentTagging.add(comment_id, comment_no, tags);
-                YAHOO.bugzilla.commentTagging.hideInput();
             } catch(e) {
                 YAHOO.bugzilla.commentTagging.showError(comment_id, comment_no, e.message);
             }
@@ -201,7 +193,7 @@ YAHOO.bugzilla.commentTagging = {
                     YAHOO.util.Event.stopEvent(evt);
                 }, tag);
                 li.appendChild(document.createTextNode(' (' + this.nos_by_tag[tag].length + ')'));
-                a.innerHTML = tag;
+                a.innerHTML = YAHOO.lang.escapeHTML(tag);
             }
             while (container.hasChildNodes()) {
                 container.removeChild(container.lastChild);
@@ -228,8 +220,10 @@ YAHOO.bugzilla.commentTagging = {
 
     buildTagHtml : function(comment_id, comment_no, tag) {
         var el = document.createElement('span');
+        var c_el =Dom.get('c' + comment_no);
         Dom.setAttribute(el, 'id', 'ct_' + comment_no + '_' + tag);
         Dom.addClass(el, 'bz_comment_tag');
+        Dom.addClass(c_el, 'bz_comment_tag_' + tag);
         if (this.can_edit) {
             var a = document.createElement('a');
             Dom.setAttribute(a, 'href', '#');
@@ -277,10 +271,11 @@ YAHOO.bugzilla.commentTagging = {
 
     remove : function(comment_id, comment_no, tag) {
         var el = Dom.get('ct_' + comment_no + '_' + tag);
+        var c_el =Dom.get('c' + comment_no);
+        Dom.removeClass(c_el, 'bz_comment_tag_' + tag);
         if (el) {
             el.parentNode.removeChild(el);
             this.rpcUpdate(comment_id, comment_no, undefined, [ tag ]);
-            this.hideEmpty(comment_no);
         }
     },
 

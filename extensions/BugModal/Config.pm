@@ -6,10 +6,14 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Extension::BugModal;
+
+use 5.10.1;
 use strict;
+use warnings;
 
 use constant NAME => 'BugModal';
 use constant REQUIRED_MODULES => [ ];
 use constant OPTIONAL_MODULES => [ ];
+use constant API_VERSION_MAP  => { '1_0' => '1_0' };
 
 __PACKAGE__->NAME;

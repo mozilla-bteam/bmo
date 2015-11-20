@@ -9,6 +9,7 @@ package Bugzilla::WebService::Server::REST;
 
 use 5.10.1;
 use strict;
+use warnings;
 
 use parent qw(Bugzilla::WebService::Server::JSONRPC);
 
@@ -16,7 +17,7 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Hook;
-use Bugzilla::Util qw(correct_urlbase html_quote disable_utf8 enable_utf8);
+use Bugzilla::Util qw(correct_urlbase html_quote disable_utf8);
 use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util qw(taint_data fix_credentials);
 
@@ -121,7 +122,6 @@ sub response {
     if ($content) {
         # Content is in bytes at this point and needs to be converted
         # back to utf8 string.
-        enable_utf8();
         utf8::decode($content) if !utf8::is_utf8($content);
         $json_data = $self->json->decode($content);
     }

@@ -1,22 +1,9 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Gervase Markham <gerv@gerv.net>
-  #                 Frédéric Buclin <LpSolit@gmail.com>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [%# INTERFACE:
@@ -115,12 +102,17 @@
 
 [% IF changes_saved %]
   <div id="message">
-    The changes to your [% current_tab.label FILTER lower %] have been saved.
+    The changes to your [% current_tab.label FILTER lower FILTER html %] have been saved.
 
     [% IF email_changes_saved %]
       <p>
-        An email has been sent to both old and new email
-        addresses to confirm the change of email address.
+        In order to confirm your request, we have sent an email to your
+        new email address. As a precaution, an email has also been sent
+        to your old address allowing you to cancel this change if needed.
+        If you don't receive the email, you can
+        <a href="token.cgi?t=[% email_token FILTER uri %]&amp;a=cxlem">
+        cancel the email address change</a> from here if you wish (especially
+        if you mistyped the new email address).
       </p>
     [% END %]
   </div>
@@ -139,16 +131,10 @@
 
 [% IF current_tab.saveable %]
     <input type="hidden" name="dosave" value="1">
-
     [% UNLESS dont_show_button %]
-      <table>
-        <tr>
-          <td width="150">&nbsp;</td>
-          <td>
-            <input type="submit" id="update" value="Submit Changes">
-          </td>
-        </tr>
-      </table>
+      <p>
+        <input type="submit" id="update" value="Submit Changes">
+      </p>
     [% END %]
   </form>
 [% END %]

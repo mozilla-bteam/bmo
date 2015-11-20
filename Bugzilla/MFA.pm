@@ -6,7 +6,10 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::MFA;
+
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::RNG qw( irand );
 use Bugzilla::Token qw( issue_short_lived_session_token set_token_extra_data get_token_extra_data delete_token );
@@ -158,3 +161,39 @@ sub property_delete {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item new_from
+
+=item enroll
+
+=item enroll_api
+
+=item enrolled
+
+=item prompt
+
+=item check
+
+=item can_verify_inline
+
+=item verify_prompt
+
+=item verify_token
+
+=item verify_check
+
+=item generate_recovery_codes
+
+=item property_get
+
+=item property_set
+
+=item property_delete
+
+=back

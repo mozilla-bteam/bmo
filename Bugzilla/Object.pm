@@ -1,27 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Everything Solved.
-# Portions created by Everything Solved are Copyright (C) 2006 
-# Everything Solved. All Rights Reserved.
-#
-# Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-
-use strict;
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Object;
+
+use 5.10.1;
+use strict;
+use warnings;
 
 use Bugzilla::Constants;
 use Bugzilla::Hook;
@@ -108,7 +96,6 @@ sub new {
 
     return $object;
 }
-
 
 # Note: Because this uses sql_istrcmp, if you make a new object use
 # Bugzilla::Object, make sure that you modify bz_setup_database
@@ -222,7 +209,7 @@ sub initialize {
     # abstract
 }
 
-# Provides a mechanism for objects to be cached in the request_cahce
+# Provides a mechanism for objects to be cached in the request_cache
 
 sub object_cache_get {
     my ($class, $id) = @_;
@@ -258,7 +245,7 @@ sub _object_cache_set {
 
 sub _object_cache_remove {
     my $class = shift;
-    my ($param, $object) = @_;
+    my ($param) = @_;
     $param->{cache} = 1;
     my $cache_key = $class->object_cache_key($param)
       || return;
@@ -1235,6 +1222,13 @@ template.
 
  Returns:     A reference to an array of objects.
 
+=item C<new_from_hash($hashref)>
+
+  Description: Create an object from the given hash.
+
+  Params:      $hashref - A reference to a hash which was created by
+                          flatten_to_hash.
+
 =item C<match>
 
 =over
@@ -1472,6 +1466,17 @@ that should be passed to the C<set_> function that is called.
 
 =back
 
+=head2 Simple Methods
+
+=over
+
+=item C<flatten_to_hash>
+
+Returns a hashref suitable for serialisation and re-inflation with C<new_from_hash>.
+
+=back
+
+
 =head2 Simple Validators
 
 You can use these in your subclass L</VALIDATORS> or L</UPDATE_VALIDATORS>.
@@ -1584,3 +1589,19 @@ C<0> otherwise.
 =back
 
 =cut
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item object_cache_key
+
+=item check_time
+
+=item id
+
+=item TO_JSON
+
+=item audit_log
+
+=back

@@ -1,29 +1,17 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is James Robson.
-# Portions created by James Robson are Copyright (c) 2009 James Robson.
-# All rights reserved.
-#
-# Contributor(s): James Robson <arbingersys@gmail.com> 
-#                 Christian Legnitto <clegnitto@mozilla.com> 
-
-use strict;
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Comment;
 
-use base qw(Bugzilla::Object);
+use 5.10.1;
+use strict;
+use warnings;
+
+use parent qw(Bugzilla::Object);
 
 use Bugzilla::Attachment;
 use Bugzilla::Comment::TagWeights;
@@ -56,6 +44,7 @@ use constant DB_COLUMNS => qw(
     already_wrapped
     type
     extra_data
+    is_markdown
 );
 
 use constant UPDATE_COLUMNS => qw(
@@ -78,6 +67,7 @@ use constant VALIDATORS => {
     work_time   => \&_check_work_time,
     thetext     => \&_check_thetext,
     isprivate   => \&_check_isprivate,
+    is_markdown => \&Bugzilla::Object::check_boolean,
     extra_data  => \&_check_extra_data,
     type        => \&_check_type,
 };
@@ -166,19 +156,22 @@ sub preload {
         $comment->{author} = $user_map{$comment->{who}};
     }
     # Tags
-    my $dbh = Bugzilla->dbh;
-    my @comment_ids = map { $_->id } @$comments;
-    my %comment_map = map { $_->id => $_ } @$comments;
-    my $rows = $dbh->selectall_arrayref(
-        "SELECT comment_id, " . $dbh->sql_group_concat('tag', "','") . "
-            FROM longdescs_tags
-            WHERE " . $dbh->sql_in('comment_id', \@comment_ids) . "
-            GROUP BY comment_id");
-    foreach my $row (@$rows) {
-        $comment_map{$row->[0]}->{tags} = [ split(/,/, $row->[1]) ];
-    }
-    foreach my $comment (@$comments) {
-        $comment->{tags} //= [];
+    if (Bugzilla->params->{'comment_taggers_group'}) {
+        my $dbh = Bugzilla->dbh;
+        my @comment_ids = map { $_->id } @$comments;
+        my %comment_map = map { $_->id => $_ } @$comments;
+        my $rows = $dbh->selectall_arrayref(
+            "SELECT comment_id, " . $dbh->sql_group_concat('tag', "','") . "
+               FROM longdescs_tags
+              WHERE " . $dbh->sql_in('comment_id', \@comment_ids) . ' ' .
+              $dbh->sql_group_by('comment_id'));
+        foreach my $row (@$rows) {
+            $comment_map{$row->[0]}->{tags} = [ split(/,/, $row->[1]) ];
+        }
+        # Also sets the 'tags' attribute for comments which have no entry
+        # in the longdescs_tags table, else calling $comment->tags will
+        # trigger another SQL query again.
+        $comment_map{$_}->{tags} ||= [] foreach @comment_ids;
     }
 }
 
@@ -191,6 +184,7 @@ sub body        { return $_[0]->{'thetext'};   }
 sub bug_id      { return $_[0]->{'bug_id'};    }
 sub creation_ts { return $_[0]->{'bug_when'};  }
 sub is_private  { return $_[0]->{'isprivate'}; }
+sub is_markdown { return $_[0]->{'is_markdown'}; }
 sub work_time   {
     # Work time is returned as a string (see bug 607909)
     return 0 if $_[0]->{'work_time'} + 0 == 0;
@@ -201,7 +195,8 @@ sub extra_data  { return $_[0]->{'extra_data'} }
 
 sub tags {
     my ($self) = @_;
-    return [] unless Bugzilla->params->{'comment_taggers_group'};
+    state $comment_taggers_group = Bugzilla->params->{'comment_taggers_group'};
+    return [] unless $comment_taggers_group;
     $self->{'tags'} ||= Bugzilla->dbh->selectcol_arrayref(
         "SELECT tag
            FROM longdescs_tags
@@ -213,16 +208,20 @@ sub tags {
 
 sub collapsed {
     my ($self) = @_;
+    state $comment_taggers_group = Bugzilla->params->{'comment_taggers_group'};
+    return 0 unless $comment_taggers_group;
     return $self->{collapsed} if exists $self->{collapsed};
-    return 0 unless Bugzilla->params->{'comment_taggers_group'};
+
+    state $collapsed_comment_tags = Bugzilla->params->{'collapsed_comment_tags'};
     $self->{collapsed} = 0;
     Bugzilla->request_cache->{comment_tags_collapsed}
-            ||= [ split(/\s*,\s*/, lc(Bugzilla->params->{'collapsed_comment_tags'})) ];
+            ||= [ split(/\s*,\s*/, $collapsed_comment_tags) ];
     my @collapsed_tags = @{ Bugzilla->request_cache->{comment_tags_collapsed} };
     my @reason;
-    foreach my $my_tag (map { lc } @{ $self->tags }) {
+    foreach my $my_tag (@{ $self->tags }) {
+        $my_tag = lc($my_tag);
         foreach my $collapsed_tag (@collapsed_tags) {
-            push @reason, $my_tag if $my_tag eq $collapsed_tag;
+            push @reason, $my_tag if $my_tag eq lc($collapsed_tag);
         }
     }
     if (@reason) {
@@ -260,10 +259,11 @@ sub attachment {
     return $self->{attachment};
 }
 
-sub author { 
+sub author {
     my $self = shift;
-    return $self->{'author'}
-        ||= new Bugzilla::User({ id => $self->{'who'}, cache => 1 });
+    $self->{'author'}
+      ||= new Bugzilla::User({ id => $self->{'who'}, cache => 1 });
+    return $self->{'author'};
 }
 
 sub body_full {
@@ -293,6 +293,8 @@ sub body_full {
 sub set_is_private  { $_[0]->set('isprivate',  $_[1]); }
 sub set_type        { $_[0]->set('type',       $_[1]); }
 sub set_extra_data  { $_[0]->set('extra_data', $_[1]); }
+sub set_is_markdown { $_[0]->set('is_markdown', $_[1]); }
+
 
 sub add_tag {
     my ($self, $tag) = @_;
@@ -448,6 +450,18 @@ sub _check_thetext {
     $thetext =~ s/\s*$//s;
     $thetext =~ s/\r\n?/\n/g; # Get rid of \r.
 
+    # Characters above U+FFFF cannot be stored by MySQL older than 5.5.3 as they
+    # require the new utf8mb4 character set. Other DB servers are handling them
+    # without any problem. So we need to replace these characters if we use MySQL,
+    # else the comment is truncated.
+    # XXX - Once we use utf8mb4 for comments, this hack for MySQL can go away.
+    state $is_mysql = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 1 : 0;
+    if ($is_mysql) {
+        # Perl 5.13.8 and older complain about non-characters.
+        no warnings 'utf8';
+        $thetext =~ s/([\x{10000}-\x{10FFFF}])/"\x{FDD0}[" . uc(sprintf('U+%04x', ord($1))) . "]\x{FDD1}"/eg;
+    }
+
     ThrowUserError('comment_too_long') if length($thetext) > MAX_COMMENT_LENGTH;
     return $thetext;
 }
@@ -532,6 +546,10 @@ C<string> Time spent as related to this comment.
 =item C<is_private>
 
 C<boolean> Comment is marked as private.
+
+=item C<is_markdown>
+
+C<boolean> Whether this comment needs L<Markdown|Bugzilla::Markdown> rendering to be applied.
 
 =item C<already_wrapped>
 
@@ -627,3 +645,41 @@ A string, the full text of the comment as it would be displayed to an end-user.
 =back
 
 =cut
+
+=head2 Modifiers
+
+=over
+
+=item C<set_is_markdown>
+
+Sets whether this comment needs L<Markdown|Bugzilla::Markdown> rendering to be applied.
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item set_type
+
+=item bug
+
+=item set_extra_data
+
+=item set_is_private
+
+=item attachment
+
+=item is_about_attachment
+
+=item extra_data
+
+=item preload
+
+=item type
+
+=item update
+
+=item collapsed_reason
+
+=back

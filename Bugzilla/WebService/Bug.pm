@@ -1,30 +1,17 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Marc Schumann <wurblzap@gmail.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Mads Bondo Dydensborg <mbd@dbc.dk>
-#                 Tsahi Asher <tsahi_75@yahoo.com>
-#                 Noura Elhawary <nelhawar@redhat.com>
-#                 Frank Becker <Frank@Frank-Becker.de>
-#                 Dave Lawrence <dkl@redhat.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::WebService::Bug;
 
+use 5.10.1;
 use strict;
-use base qw(Bugzilla::WebService);
-use feature 'state';
+use warnings;
+
+use parent qw(Bugzilla::WebService);
 
 use Bugzilla::Comment;
 use Bugzilla::Comment::TagWeights;
@@ -35,7 +22,7 @@ use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util qw(extract_flags filter filter_wants validate translate);
 use Bugzilla::Bug;
 use Bugzilla::BugMail;
-use Bugzilla::Util qw(trick_taint trim detaint_natural);
+use Bugzilla::Util qw(trick_taint trim diff_arrays detaint_natural);
 use Bugzilla::Version;
 use Bugzilla::Milestone;
 use Bugzilla::Status;
@@ -122,17 +109,6 @@ use constant ATTACHMENT_MAPPED_RETURNS => {
     filename    => 'file_name',
     mimetype    => 'content_type',
 };
-
-######################################################
-# Add aliases here for old method name compatibility #
-######################################################
-
-BEGIN { 
-  # In 3.0, get was called get_bugs
-  *get_bugs = \&get;
-  # Before 3.4rc1, "history" was get_history.
-  *get_history = \&history;
-}
 
 ###########
 # Methods #
@@ -241,6 +217,7 @@ sub _legal_field_values {
                     sort_key => $self->type('int', $sortkey),
                     sortkey  => $self->type('int', $sortkey), # deprecated
                     visibility_values => [$self->type('string', $product_name)],
+                    is_active         => $self->type('boolean', $value->is_active),
                 });
             }
         }
@@ -248,6 +225,11 @@ sub _legal_field_values {
 
     elsif ($field_name eq 'bug_status') {
         my @status_all = Bugzilla::Status->get_all;
+        my $initial_status = bless({ id => 0, name => '', is_open => 1, sortkey => 0,
+                                     can_change_to => Bugzilla::Status->can_change_to },
+                                   'Bugzilla::Status');
+        unshift(@status_all, $initial_status);
+
         foreach my $status (@status_all) {
             my @can_change_to;
             foreach my $change_to (@{ $status->can_change_to }) {
@@ -373,7 +355,9 @@ sub render_comment {
     Bugzilla->switch_to_shadow_db();
     my $bug = $params->{id} ? Bugzilla::Bug->check($params->{id}) : undef;
 
-    my $tmpl = '[% text FILTER quoteUrls(bug) %]';
+    my $markdown = $params->{markdown} ? 1 : 0;
+    my $tmpl = $markdown ? '[% text FILTER markdown(bug, { is_markdown => 1 }) %]' : '[% text FILTER markdown(bug) %]';
+
     my $html;
     my $template = Bugzilla->template;
     $template->process(
@@ -392,15 +376,16 @@ sub _translate_comment {
                                                   : undef;
 
     my $comment_hash = {
-        id         => $self->type('int', $comment->id),
-        bug_id     => $self->type('int', $comment->bug_id),
-        creator    => $self->type('email', $comment->author->login),
-        author     => $self->type('email', $comment->author->login),
-        time       => $self->type('dateTime', $comment->creation_ts),
+        id            => $self->type('int', $comment->id),
+        bug_id        => $self->type('int', $comment->bug_id),
+        creator       => $self->type('email', $comment->author->login),
+        time          => $self->type('dateTime', $comment->creation_ts),
         creation_time => $self->type('dateTime', $comment->creation_ts),
-        is_private => $self->type('boolean', $comment->is_private),
-        text       => $self->type('string', $comment->body_full),
+        is_private    => $self->type('boolean', $comment->is_private),
+        is_markdown   => $self->type('boolean', $comment->is_markdown),
+        text          => $self->type('string', $comment->body_full),
         attachment_id => $self->type('int', $attach_id),
+        count         => $self->type('int', $comment->count),
     };
 
     # Don't load comment tags unless enabled
@@ -487,7 +472,7 @@ sub history {
         $bug_id = $bug->id;
         $item{id} = $self->type('int', $bug_id);
 
-        my ($activity) = Bugzilla::Bug::GetBugActivity($bug_id, undef, $params->{new_since});
+        my ($activity) = $bug->get_activity(undef, $params->{new_since});
 
         my @history;
         foreach my $changeset (@$activity) {
@@ -516,14 +501,7 @@ sub history {
         # alias is returned in case users passes a mixture of ids and aliases
         # then they get to know which bug activity relates to which value  
         # they passed
-        if (Bugzilla->params->{'usebugaliases'}) {
-            $item{alias} = $self->type('string', $bug->alias);
-        }
-        else {
-            # For API reasons, we always want the value to appear, we just
-            # don't want it to have a value if aliases are turned off.
-            $item{alias} = undef;
-        }
+        $item{alias} = [ map { $self->type('string', $_) } @{ $bug->alias } ];
 
         push(@return, \%item);
     }
@@ -599,7 +577,7 @@ sub search {
 
     # Backwards compatibility with old method regarding role search
     $match_params->{'reporter'} = delete $match_params->{'creator'} if $match_params->{'creator'};
-    foreach my $role (qw(assigned_to reporter qa_contact commenter cc)) {
+    foreach my $role (qw(assigned_to reporter qa_contact longdesc cc)) {
         next if !exists $match_params->{$role};
         my $value = delete $match_params->{$role};
         $match_params->{"f${last_field_id}"} = $role;
@@ -667,7 +645,7 @@ sub search {
 }
 
 sub possible_duplicates {
-    my ($self, $params) = validate(@_, 'product');
+    my ($self, $params) = validate(@_, 'products');
     my $user = Bugzilla->user;
 
     Bugzilla->switch_to_shadow_db();
@@ -677,7 +655,7 @@ sub possible_duplicates {
         { function => 'Bug.possible_duplicates', param => 'summary' });
 
     my @products;
-    foreach my $name (@{ $params->{'product'} || [] }) {
+    foreach my $name (@{ $params->{'products'} || [] }) {
         my $object = $user->can_enter_product($name, THROW_ERROR);
         push(@products, $object);
     }
@@ -710,8 +688,9 @@ sub update {
     my $ids = delete $params->{ids};
     defined $ids || ThrowCodeError('param_required', { param => 'ids' });
 
-    my @bugs = map { Bugzilla::Bug->check($_) } @$ids;
+    my @bugs = map { Bugzilla::Bug->check_for_edit($_) } @$ids;
 
+    my $minor_update = delete $params->{minor_update} ? 1 : 0;
     my %values = %$params;
     $values{other_bugs} = \@bugs;
 
@@ -724,14 +703,19 @@ sub update {
     # called using those field names.
     delete $values{dependencies};
 
+    # For backwards compatibility, treat alias string or array as a set action
+    if (exists $values{alias}) {
+        if (not ref $values{alias}) {
+            $values{alias} = { set => [ $values{alias} ] };
+        }
+        elsif (ref $values{alias} eq 'ARRAY') {
+            $values{alias} = { set => $values{alias} };
+        }
+    }
+
     my $flags = delete $values{flags};
 
     foreach my $bug (@bugs) {
-        if (!$user->can_edit_product($bug->product_obj->id) ) {
-            ThrowUserError("product_edit_denied",
-                          { product => $bug->product });
-        }
-
         $bug->set_all(\%values);
         if ($flags) {
             my ($old_flags, $new_flags) = extract_flags($flags, $bug);
@@ -740,14 +724,16 @@ sub update {
     }
 
     my %all_changes;
+    my %minor_updates;
     $dbh->bz_start_transaction();
     foreach my $bug (@bugs) {
+        $minor_updates{$bug->id} = $bug->has_unsent_changes ? 0 : $minor_update;
         $all_changes{$bug->id} = $bug->update();
     }
     $dbh->bz_commit_transaction();
 
     foreach my $bug (@bugs) {
-        $bug->send_changes($all_changes{$bug->id});
+        $bug->send_changes($all_changes{$bug->id}, undef, $minor_updates{$bug->id});
     }
 
     my %api_name = reverse %{ Bugzilla::Bug::FIELD_MAP() };
@@ -766,14 +752,7 @@ sub update {
         # alias is returned in case users pass a mixture of ids and aliases,
         # so that they can know which set of changes relates to which value
         # they passed.
-        if (Bugzilla->params->{'usebugaliases'}) {
-            $hash{alias} = $self->type('string', $bug->alias);
-        }
-        else {
-            # For API reasons, we always want the alias field to appear, we
-            # just don't want it to have a value if aliases are turned off.
-            $hash{alias} = $self->type('string', '');
-        }
+        $hash{alias} = [ map { $self->type('string', $_) } @{ $bug->alias } ];
 
         my %changes = %{ $all_changes{$bug->id} };
         foreach my $field (keys %changes) {
@@ -906,11 +885,8 @@ sub add_attachment {
     defined $params->{data}
         || ThrowCodeError('param_required', { param => 'data' });
 
-    my @bugs = map { Bugzilla::Bug->check($_) } @{ $params->{ids} };
-    foreach my $bug (@bugs) {
-        Bugzilla->user->can_edit_product($bug->product_id)
-          || ThrowUserError("product_edit_denied", {product => $bug->product});
-    }
+    my @bugs = map { Bugzilla::Bug->check_for_edit($_) } @{ $params->{ids} };
+    my $minor_update = delete $params->{minor_update} ? 1 : 0;
 
     my @created;
     $dbh->bz_start_transaction();
@@ -937,21 +913,38 @@ sub add_attachment {
 
         $attachment->update($timestamp);
         my $comment = $params->{comment} || '';
-        $attachment->bug->add_comment($comment, 
-            { isprivate  => $attachment->isprivate,
-              type       => CMT_ATTACHMENT_CREATED,
-              extra_data => $attachment->id });
+
+        my $is_markdown = 0;
+        if (ref $params->{comment} eq 'HASH') {
+            $is_markdown = $params->{comment}->{is_markdown};
+            $comment     = $params->{comment}->{body};
+        }
+
+        ThrowUserError('markdown_disabled')
+            if $is_markdown && !Bugzilla->user->use_markdown();
+
+        $attachment->bug->add_comment($comment,
+            { is_markdown => $is_markdown,
+              isprivate   => $attachment->isprivate,
+              type        => CMT_ATTACHMENT_CREATED,
+              extra_data  => $attachment->id });
         push(@created, $attachment);
     }
-    $_->bug->update($timestamp) foreach @created;
+    my %minor_updates;
+    foreach my $attachment (@created) {
+        my $bug = $attachment->bug;
+        $minor_updates{$bug->id} = $bug->has_unsent_changes ? 0 : $minor_update;
+        $bug->update($timestamp);
+    }
     $dbh->bz_commit_transaction();
 
-    $_->send_changes() foreach @bugs;
+    foreach my $bug (@bugs) {
+        $bug->send_changes(undef, undef, $minor_updates{$bug->id});
+    }
 
-    my %attachments = map { $_->id => $self->_attachment_to_hash($_, $params) }
-                          @created;
+    my @created_ids = map { $_->id } @created;
 
-    return { attachments => \%attachments };
+    return { ids => \@created_ids };
 }
 
 sub update_attachment {
@@ -963,6 +956,7 @@ sub update_attachment {
     my $ids = delete $params->{ids};
     defined $ids || ThrowCodeError('param_required', { param => 'ids' });
 
+    my $req_minor_update = delete $params->{minor_update} ? 1 : 0;
     # Some fields cannot be sent to set_all
     foreach my $key (qw(login password token)) {
         delete $params->{$key};
@@ -985,6 +979,15 @@ sub update_attachment {
 
     my $flags = delete $params->{flags};
     my $comment = delete $params->{comment};
+    my $is_markdown = 0;
+
+    if (ref $comment eq 'HASH') {
+        $is_markdown = $comment->{is_markdown};
+        $comment     = $comment->{body};
+    }
+
+    ThrowUserError('markdown_disabled')
+        if $is_markdown && !$user->use_markdown();
 
     # Update the values
     foreach my $attachment (@attachments) {
@@ -1027,9 +1030,10 @@ sub update_attachment {
 
         if ($comment = trim($comment)) {
             $attachment->bug->add_comment($comment,
-                { isprivate  => $attachment->isprivate,
-                  type       => CMT_ATTACHMENT_UPDATED,
-                  extra_data => $attachment->id });
+                { is_markdown => $is_markdown,
+                  isprivate   => $attachment->isprivate,
+                  type        => CMT_ATTACHMENT_UPDATED,
+                  extra_data  => $attachment->id });
         }
 
         $changes = translate($changes, ATTACHMENT_MAPPED_RETURNS);
@@ -1059,8 +1063,9 @@ sub update_attachment {
 
     # Email users about the change
     foreach my $bug (values %bugs) {
+        my $minor_update = $bug->has_unsent_changes ? 0 : $req_minor_update;
         $bug->update();
-        $bug->send_changes();
+        $bug->send_changes(undef, undef, $minor_update);
     }
 
     # Return the information to the user
@@ -1076,8 +1081,8 @@ sub add_comment {
             'Bug updates are currently disabled.');
     }
 
-    #The user must login in order add a comment
-    Bugzilla->login(LOGIN_REQUIRED);
+    # The user must login in order add a comment
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
 
     # Check parameters
     defined $params->{id}
@@ -1086,37 +1091,33 @@ sub add_comment {
     (defined $comment && trim($comment) ne '')
         || ThrowCodeError('param_required', { param => 'comment' });
 
-    my $bug = Bugzilla::Bug->check($params->{id});
-
-    Bugzilla->user->can_edit_product($bug->product_id)
-        || ThrowUserError("product_edit_denied", {product => $bug->product});
+    my $bug = Bugzilla::Bug->check_for_edit($params->{id});
+    my $minor_update = delete $params->{minor_update} ? 1 : 0;
+    $minor_update = $bug->has_unsent_changes ? 0 : $minor_update;
 
     # Backwards-compatibility for versions before 3.6
     if (defined $params->{private}) {
         $params->{is_private} = delete $params->{private};
     }
-    # Append comment
-    $bug->add_comment($comment, { isprivate => $params->{is_private},
-                                  work_time => $params->{work_time} });
 
+    ThrowUserError('markdown_disabled')
+        if $params->{is_markdown} && !$user->use_markdown();
+
+    # Append comment
+    $bug->add_comment($comment, { isprivate   => $params->{is_private},
+                                  is_markdown => $params->{is_markdown},
+                                  work_time   => $params->{work_time} });
     # Add comment tags
     $bug->set_all({ comment_tags => $params->{comment_tags} })
         if defined $params->{comment_tags};
 
-    # Capture the call to bug->update (which creates the new comment) in
-    # a transaction so we're sure to get the correct comment_id.
-
-    my $dbh = Bugzilla->dbh;
-    $dbh->bz_start_transaction();
-
     $bug->update();
 
-    my $new_comment_id = $dbh->bz_last_key('longdescs', 'comment_id');
-
-    $dbh->bz_commit_transaction();
+    my $new_comment_id = $bug->{added_comments}[0]->id;
 
     # Send mail.
-    Bugzilla::BugMail::Send($bug->bug_id, { changer => Bugzilla->user });
+    Bugzilla::BugMail::Send($bug->bug_id, { changer => $user },
+            { minor_update => $minor_update });
 
     return { id => $self->type('int', $new_comment_id) };
 }
@@ -1138,13 +1139,11 @@ sub update_see_also {
     my ($add, $remove) = @$params{qw(add remove)};
     ($add || $remove)
         or ThrowCodeError('params_required', { params => ['add', 'remove'] });
+    my $req_minor_update = delete $params->{minor_update} ? 1 : 0;
 
     my @bugs;
     foreach my $id (@{ $params->{ids} }) {
-        my $bug = Bugzilla::Bug->check($id);
-        $user->can_edit_product($bug->product_id)
-            || ThrowUserError("product_edit_denied", 
-                              { product => $bug->product });
+        my $bug = Bugzilla::Bug->check_for_edit($id);
         push(@bugs, $bug);
         if ($remove) {
             $bug->remove_see_also($_) foreach @$remove;
@@ -1156,6 +1155,7 @@ sub update_see_also {
     
     my %changes;
     foreach my $bug (@bugs) {
+        my $minor_update = $bug->has_unsent_changes ? 0 : $req_minor_update;
         my $change = $bug->update();
         if (my $see_also = $change->{see_also}) {
             $changes{$bug->id}->{see_also} = {
@@ -1168,7 +1168,8 @@ sub update_see_also {
             $changes{$bug->id}->{see_also} = { added => [], removed => [] };
         }
 
-        Bugzilla::BugMail::Send($bug->id, { changer => $user });
+        Bugzilla::BugMail::Send($bug->id, { changer => $user },
+                { minor_update => $minor_update });
     }
 
     return { changes => \%changes };
@@ -1339,7 +1340,9 @@ sub _bug_to_hash {
     # A bug attribute is "basic" if it doesn't require an additional
     # database call to get the info.
     my %item = %{ filter $params, {
-        alias            => $self->type('string', $bug->alias),
+        # No need to format $bug->deadline specially, because Bugzilla::Bug
+        # already does it for us.
+        deadline         => $self->type('string', $bug->deadline),
         id               => $self->type('int', $bug->bug_id),
         is_confirmed     => $self->type('boolean', $bug->everconfirmed),
         op_sys           => $self->type('string', $bug->op_sys),
@@ -1355,13 +1358,16 @@ sub _bug_to_hash {
         whiteboard       => $self->type('string', $bug->status_whiteboard),
     } };
 
+    # First we handle any fields that require extra work (such as date parsing
+    # or SQL calls).
+
     state $voting_enabled //= $bug->can('votes') ? 1 : 0;
     if ($voting_enabled && filter_wants $params, 'votes') {
         $item{votes} = $self->type('int', $bug->votes);
     }
-
-    # First we handle any fields that require extra work (such as date parsing
-    # or SQL calls).
+    if (filter_wants $params, 'alias') {
+        $item{alias} = [ map { $self->type('string', $_) } @{ $bug->alias } ];
+    }
     if (filter_wants $params, 'assigned_to') {
         $item{'assigned_to'} = $self->type('email', $bug->assigned_to->login);
         $item{'assigned_to_detail'} = $self->_user_to_hash($bug->assigned_to, $params, undef, 'assigned_to');
@@ -1377,7 +1383,7 @@ sub _bug_to_hash {
         $item{component} = $self->type('string', $bug->component);
     }
     if (filter_wants $params, 'cc') {
-        my @cc = map { $self->type('email', $_) } @{ $bug->cc || [] };
+        my @cc = map { $self->type('email', $_) } @{ $bug->cc };
         $item{'cc'} = \@cc;
         $item{'cc_detail'} = [ map { $self->_user_to_hash($_, $params, undef, 'cc') } @{ $bug->cc_users } ];
     }
@@ -1429,6 +1435,9 @@ sub _bug_to_hash {
     if (filter_wants $params, 'flags') {
         $item{'flags'} = [ map { $self->_flag_to_hash($_) } @{$bug->flags} ];
     }
+    if (filter_wants $params, 'tags', 'extra') {
+        $item{'tags'} = $bug->tags;
+    }
 
     # And now custom fields
     my @custom_fields = Bugzilla->active_custom_fields({
@@ -1460,11 +1469,6 @@ sub _bug_to_hash {
         }
         if (filter_wants $params, 'remaining_time') {
             $item{'remaining_time'} = $self->type('double', $bug->remaining_time);
-        }
-        if (filter_wants $params, 'deadline') {
-            # No need to format $bug->deadline specially, because Bugzilla::Bug
-            # already does it for us.
-            $item{'deadline'} = $self->type('string', $bug->deadline);
         }
         if (filter_wants $params, 'actual_time') {
             $item{'actual_time'} = $self->type('double', $bug->actual_time);
@@ -1512,14 +1516,13 @@ sub _attachment_to_hash {
         bug_id           => $self->type('int', $attach->bug_id),
         file_name        => $self->type('string', $attach->filename),
         summary          => $self->type('string', $attach->description),
-        description      => $self->type('string', $attach->description),
         content_type     => $self->type('string', $attach->contenttype),
         is_private       => $self->type('int', $attach->isprivate),
         is_obsolete      => $self->type('int', $attach->isobsolete),
         is_patch         => $self->type('int', $attach->ispatch),
     }, $types, $prefix;
 
-    # creator/attacher require an extra lookup, so we only send them if
+    # creator requires an extra lookup, so we only send them if
     # the filter wants them.
     foreach my $field (qw(creator attacher)) {
         if (filter_wants $filters, $field, $types, $prefix) {
@@ -1668,11 +1671,11 @@ part is the request method and the rest is the related path needed.
 
 To get information about all fields:
 
-GET /field/bug
+GET /rest/field/bug
 
 To get information related to a single field:
 
-GET /field/bug/<id_or_name>
+GET /rest/field/bug/<id_or_name>
 
 The returned data format is the same as below.
 
@@ -1727,6 +1730,12 @@ C<int> The number of the fieldtype. The following values are defined:
 =item C<6> Bug Id
 
 =item C<7> Bug URLs ("See Also")
+
+=item C<8> Keywords
+
+=item C<9> Date
+
+=item C<10> Integer value
 
 =back
 
@@ -1812,6 +1821,12 @@ if the C<value_field> is set to one of the values listed in this array.
 Note that for per-product fields, C<value_field> is set to C<'product'>
 and C<visibility_values> will reflect which product(s) this value appears in.
 
+=item C<is_active>
+
+C<boolean> This value is defined only for certain product specific fields
+such as version, target_milestone or component. When true, the value is active,
+otherwise the value is not active.
+
 =item C<description>
 
 C<string> The description of the value. This item is only included for the
@@ -1868,9 +1883,13 @@ You specified an invalid field name or id.
 
 =item C<sortkey> was renamed to C<sort_key> in Bugzilla B<4.2>.
 
-=back
+=item C<is_active> return key for C<values> was added in Bugzilla B<4.4>.
 
 =item REST API call added in Bugzilla B<5.0>
+
+=item REST API call added in Bugzilla B<5.0>
+
+=back
 
 =back
 
@@ -1986,11 +2005,11 @@ Tells you what values are allowed for a particular field.
 
 To get information on the values for a field based on field name:
 
-GET /field/bug/<field_name>/values
+GET /rest/field/bug/<field_name>/values
 
 To get information based on field name and a specific product:
 
-GET /field/bug/<field_name>/<product_id>/values
+GET /rest/field/bug/<field_name>/<product_id>/values
 
 The returned data format is the same as below.
 
@@ -2056,11 +2075,11 @@ insidergroup or if you are the submitter of the attachment.
 
 To get all current attachments for a bug:
 
-GET /bug/<bug_id>/attachment
+GET /rest/bug/<bug_id>/attachment
 
 To get a specific attachment based on attachment ID:
 
-GET /bug/attachment/<attachment_id>
+GET /rest/bug/attachment/<attachment_id>
 
 The returned data format is the same as below.
 
@@ -2152,10 +2171,6 @@ C<string> The file name of the attachment.
 
 C<string> A short string describing the attachment.
 
-Also returned as C<description>, for backwards-compatibility with older
-Bugzillas. (However, this backwards-compatibility will go away in Bugzilla
-5.0.)
-
 =item C<content_type>
 
 C<string> The MIME type of the attachment.
@@ -2177,9 +2192,47 @@ C<boolean> True if the attachment is a patch, False otherwise.
 
 C<string> The login name of the user that created the attachment.
 
-Also returned as C<attacher>, for backwards-compatibility with older
-Bugzillas. (However, this backwards-compatibility will go away in Bugzilla
-5.0.)
+=item C<flags>
+
+An array of hashes containing the information about flags currently set
+for each attachment. Each flag hash contains the following items:
+
+=over
+
+=item C<id> 
+
+C<int> The id of the flag.
+
+=item C<name>
+
+C<string> The name of the flag.
+
+=item C<type_id>
+
+C<int> The type id of the flag.
+
+=item C<creation_date>
+
+C<dateTime> The timestamp when this flag was originally created.
+
+=item C<modification_date>
+
+C<dateTime> The timestamp when the flag was last modified.
+
+=item C<status>
+
+C<string> The current status of the flag.
+
+=item C<setter>
+
+C<string> The login name of the user who created or last modified the flag.
+
+=item C<requestee>
+
+C<string> The login name of the user this flag has been requested to be granted or denied.
+Note, this field is only returned if a requestee is set.
+
+=back
 
 =item C<flags>
 
@@ -2257,6 +2310,12 @@ C<summary>.
 =item In Bugzilla B<4.2>, the C<is_url> return value was removed
 (this attribute no longer exists for attachments).
 
+=item The C<size> return value was added in Bugzilla B<4.4>.
+
+=item The C<flags> array was added in Bugzilla B<4.4>.
+
+=item REST API call added in Bugzilla B<5.0>.
+
 =back
 
 =item The C<flags> array was added in Bugzilla B<4.4>.
@@ -2281,11 +2340,11 @@ and/or comment ids.
 
 To get all comments for a particular bug using the bug ID or alias:
 
-GET /bug/<id_or_alias>/comment
+GET /rest/bug/<id_or_alias>/comment
 
 To get a specific comment based on the comment ID:
 
-GET /bug/comment/<comment_id>
+GET /rest/bug/comment/<comment_id>
 
 The returned data format is the same as below.
 
@@ -2363,6 +2422,11 @@ C<int> The ID of the bug that this comment is on.
 C<int> If the comment was made on an attachment, this will be the
 ID of that attachment. Otherwise it will be null.
 
+=item count
+
+C<int> The number of the comment local to the bug. The Description is 0,
+comments start with 1.
+
 =item text
 
 C<string> The actual text of the comment.
@@ -2370,10 +2434,6 @@ C<string> The actual text of the comment.
 =item creator
 
 C<string> The login name of the comment's author.
-
-Also returned as C<author>, for backwards-compatibility with older
-Bugzillas. (However, this backwards-compatibility will go away in Bugzilla
-5.0.)
 
 =item time
 
@@ -2390,6 +2450,10 @@ may be deprecated and removed in a future release.
 
 C<boolean> True if this comment is private (only visible to a certain
 group called the "insidergroup"), False otherwise.
+
+=item is_markdown
+
+C<boolean> True if this comment needs Markdown processing, false otherwise.
 
 =back
 
@@ -2425,6 +2489,12 @@ that id.
 =item In Bugzilla B<4.0>, the C<author> return value was renamed to
 C<creator>.
 
+=item C<count> was added to the return value in Bugzilla B<4.4>.
+
+=item C<creation_time> was added in Bugzilla B<4.4>.
+
+=item REST API call added in Bugzilla B<5.0>.
+
 =back
 
 =item C<creation_time> was added in Bugzilla B<4.4>.
@@ -2444,7 +2514,13 @@ B<STABLE>
 
 Gets information about particular bugs in the database.
 
-Note: Can also be called as "get_bugs" for compatibilty with Bugzilla 3.0 API.
+=item B<REST>
+
+To get information about a particular bug using its ID or alias:
+
+GET /rest/bug/<id_or_alias>
+
+The returned data format is the same as below.
 
 =item B<REST>
 
@@ -2470,10 +2546,6 @@ If an element in the array is entirely numeric, it represents a bug_id
 from the Bugzilla database to fetch. If it contains any non-numeric 
 characters, it is considered to be a bug alias instead, and the bug with 
 that alias will be loaded. 
-
-Note that it's possible for aliases to be disabled in Bugzilla, in which
-case you will be told that you have specified an invalid bug_id if you
-try to specify an alias. (It will be error 100.)
 
 =item C<permissive> B<EXPERIMENTAL>
 
@@ -2510,15 +2582,16 @@ in the return value.
 
 =item C<alias>
 
-C<string> The unique alias of this bug.
+C<array> of C<string>s The unique aliases of this bug. An empty array will be
+returned if this bug has no aliases.
 
 =item C<assigned_to>
 
 C<string> The login name of the user to whom the bug is assigned.
 
-=item C<assigned_to_detail>
+=item C<assigned_to_detail> 
 
-C<hash> A hash containing detailed user information for the assigned_to. To see the
+C<hash> A hash containing detailed user information for the assigned_to. To see the 
 keys included in the user detail hash, see below.
 
 =item C<blocks>
@@ -2551,18 +2624,15 @@ C<dateTime> When the bug was created.
 
 C<string> The login name of the person who filed this bug (the reporter).
 
-=item C<creator_detail>
+=item C<creator_detail> 
 
-C<hash> A hash containing detailed user information for the creator. To see the
+C<hash> A hash containing detailed user information for the creator. To see the 
 keys included in the user detail hash, see below.
 
 =item C<deadline>
 
 C<string> The day that this bug is due to be completed, in the format
 C<YYYY-MM-DD>.
-
-If you are not in the time-tracking group, this field will not be included
-in the return value.
 
 =item C<depends_on>
 
@@ -2649,7 +2719,7 @@ C<boolean> True if this bug is open, false if it is closed.
 =item C<is_creator_accessible>
 
 C<boolean> If true, this bug can be accessed by the creator (reporter)
-of the bug, even if he or she is not a member of the groups the bug
+of the bug, even if they are not a member of the groups the bug
 is restricted to.
 
 =item C<keywords>
@@ -2764,7 +2834,7 @@ C<include_fields>.
 
 =back 
 
-=item I<user detail hashes>
+=item I<user detail hashes> 
 
 Each user detail hash contains the following items:
 
@@ -2790,6 +2860,18 @@ C<string> The user's email address. Currently this is the same value as the name
 
 =back
 
+These fields are returned only by specifying "_extra" or the field name in "include_fields".
+
+=over
+
+=item C<tags>
+
+C<array> of C<string>s.  Each array item is a tag name.
+
+Note that tags are personal to the currently logged in user.
+
+=back
+
 =item C<faults> B<EXPERIMENTAL>
 
 An array of hashes that contains invalid bug ids with error messages
@@ -2803,13 +2885,13 @@ C<int> The numeric bug_id of this bug.
 
 =item faultString 
 
-c<string> This will only be returned for invalid bugs if the C<permissive>
+C<string> This will only be returned for invalid bugs if the C<permissive>
 argument was set when calling Bug.get, and it is an error indicating that 
 the bug id was invalid.
 
 =item faultCode
 
-c<int> This will only be returned for invalid bugs if the C<permissive>
+C<int> This will only be returned for invalid bugs if the C<permissive>
 argument was set when calling Bug.get, and it is the error code for the 
 invalid bug error.
 
@@ -2823,8 +2905,7 @@ invalid bug error.
 
 =item 100 (Invalid Bug Alias)
 
-If you specified an alias and either: (a) the Bugzilla you're querying
-doesn't support aliases or (b) there is no bug with that alias.
+If you specified an alias and there is no bug with that alias.
 
 =item 101 (Invalid Bug ID)
 
@@ -2840,7 +2921,7 @@ You do not have access to the bug_id you specified.
 
 =over
 
-=item C<permissive> argument added to this method's params in Bugzilla B<3.4>. 
+=item C<permissive> argument added to this method's params in Bugzilla B<3.4>.
 
 =item The following properties were added to this method's return values
 in Bugzilla B<3.4>:
@@ -2890,6 +2971,10 @@ and all custom fields.
 =item The C<actual_time> item was added to the C<bugs> return value
 in Bugzilla B<4.4>.
 
+=item REST API call added in Bugzilla B<5.0>.
+
+=item In Bugzilla B<5.0>, the following items were added to the bugs return value: C<assigned_to_detail>, C<creator_detail>, C<qa_contact_detail>. 
+
 =back
 
 =back
@@ -2905,6 +2990,14 @@ B<EXPERIMENTAL>
 Gets the history of changes for particular bugs in the database.
 
 =item B<REST>
+
+To get the history for a specific bug ID:
+
+GET /rest/bug/<bug_id>/history
+
+The returned data format will be the same as below.
+
+=item B<Params>
 
 To get the history for a specific bug ID:
 
@@ -2925,14 +3018,10 @@ from the Bugzilla database to fetch. If it contains any non-numeric
 characters, it is considered to be a bug alias instead, and the data bug 
 with that alias will be loaded.
 
-item C<new_since>
+=item C<new_since>
 
 C<dateTime> If specified, the method will only return changes I<newer>
 than this time.
-
-Note that it's possible for aliases to be disabled in Bugzilla, in which
-case you will be told that you have specified an invalid bug_id if you
-try to specify an alias. (It will be error 100.)
 
 =back
 
@@ -2949,8 +3038,8 @@ C<int> The numeric id of the bug.
 
 =item alias
 
-C<string> The alias of this bug. If there is no alias or aliases are 
-disabled in this Bugzilla, this will be undef.
+C<array> of C<string>s The unique aliases of this bug. An empty array will be
+returned if this bug has no aliases.
 
 =item history
 
@@ -3011,9 +3100,13 @@ The same as L</get>.
 
 =item Added in Bugzilla B<3.4>.
 
-=item Field names changed to be more consistent with other methods in Bugzilla B<4.4>.
+=item Field names returned by the C<field_name> field changed to be
+consistent with other methods. Since Bugzilla B<4.4>, they now match
+names used by L<Bug.update|/"update"> for consistency.
 
-=item As of Bugzilla B<4.4>, field names now match names used by L<Bug.update|/"update"> for consistency.
+=item REST API call added Bugzilla B<5.0>.
+
+=item Added C<new_since> parameter if Bugzilla B<5.0>.
 
 =back
 
@@ -3038,7 +3131,7 @@ narrowed down to specific products.
 =item C<summary> (string) B<Required> - A string of keywords defining
 the type of bug you are trying to report.
 
-=item C<product> (array) - One or more product names to narrow the
+=item C<products> (array) - One or more product names to narrow the
 duplicate search to. If omitted, all bugs are searched.
 
 =back
@@ -3068,6 +3161,9 @@ search for duplicates.
 =over
 
 =item Added in Bugzilla B<4.0>.
+
+=item The C<product> parameter has been renamed to C<products> in
+Bugzilla B<5.0>.
 
 =back
 
@@ -3128,9 +3224,8 @@ just reuse the query parameter portion in the REST call itself.
 
 =item C<alias>
 
-C<string> The unique alias for this bug. Note that you can search
-by alias even if the alias field is disabled in this Bugzilla, but
-it's likely that there won't be any aliases set on bugs, in that case.
+C<array> of C<string>s The unique aliases of this bug. An empty array will be
+returned if this bug has no aliases.
 
 =item C<assigned_to>
 
@@ -3218,6 +3313,13 @@ Note that unlike searching in the Bugzilla UI, substrings are not split
 on spaces. So searching for C<foo bar> will match "This is a foo bar"
 but not "This foo is a bar". C<['foo', 'bar']>, would, however, match
 the second item.
+
+=item C<tags>
+
+C<string> Searches for a bug with the specified tag.  If you specify an
+array, then any bugs that match I<any> of the tags will be returned.
+
+Note that tags are personal to the currently logged in user.
 
 =item C<target_milestone>
 
@@ -3333,7 +3435,7 @@ likely change in the future.
 
 To create a new bug in Bugzilla:
 
-POST /bug
+POST /rest/bug
 
 The params to include in the POST body as well as the returned data format,
 are the same as below.
@@ -3385,7 +3487,7 @@ in by the developer, compared to the developer's other bugs.
 
 =item C<severity> (string) B<Defaulted> - How severe the bug is.
 
-=item C<alias> (string) - A brief alias for the bug that can be used 
+=item C<alias> (array) - A brief alias for the bug that can be used
 instead of a bug number when accessing this bug. Must be unique in
 all of this Bugzilla.
 
@@ -3399,6 +3501,9 @@ is private, otherwise it is assumed to be public.
 
 =item C<comment_tags> (array) - An array of strings to add as comment
 tags to the description.
+
+=item C<is_markdown> (boolean) - If set to true, the description
+has Markdown structures, otherwise it is a normal text.
 
 =item C<groups> (array) - An array of group names to put this
 bug into. You can see valid group names on the Permissions
@@ -3414,6 +3519,11 @@ the component's default QA Contact.
 
 =item C<status> (string) - The status that this bug should start out as.
 Note that only certain statuses can be set on bug creation.
+
+=item C<resolution> (string) - If you are filing a closed bug, then
+you will have to specify a resolution. You cannot currently specify
+a resolution of C<DUPLICATE> for new bugs, though. That must be done
+with L</update>.
 
 =item C<target_milestone> (string) - A valid target milestone for this
 product.
@@ -3698,7 +3808,29 @@ MIME type, or not a MIME type that Bugzilla accepts for attachments.
 
 You did not specify a valid for the C<file_name> argument.
 
-=item 604 (Summary Required)
+=item 129 (Flag Status Invalid)
+
+The flag status is invalid.
+
+=item 130 (Flag Modification Denied)
+
+You tried to request, grant, or deny a flag but only a user with the required
+permissions may make the change.
+
+=item 131 (Flag not Requestable from Specific Person)
+
+You can't ask a specific person for the flag.
+
+=item 133 (Flag Type not Unique)
+
+The flag type specified matches several flag types. You must specify
+the type id value to update or add a flag.
+
+=item 134 (Inactive Flag Type)
+
+The flag type is inactive and cannot be used to create new flags.
+
+=item 504 (Invalid User)
 
 You did not specify a value for the C<summary> argument.
 
@@ -3716,12 +3848,18 @@ You set the "data" field to an empty string.
 
 =item The C<is_url> parameter was removed in Bugzilla B<4.2>.
 
+=item The ability to file new bugs with a C<resolution> was added in
+Bugzilla B<4.4>.
+
+=item REST API call added in Bugzilla B<5.0>.
+
+=item C<is_markdown> option added in Bugzilla B<6.0>.
+
 =back
 
 =item REST API call added in Bugzilla B<5.0>.
 
 =back
-
 
 =head2 update_attachment
 
@@ -3737,7 +3875,7 @@ This allows you to update attachment metadata in Bugzilla.
 
 To update attachment metadata on a current attachment:
 
-PUT /bug/attachment/<attach_id>
+PUT /rest/bug/attachment/<attach_id>
 
 The params to include in the POST body, as well as the returned
 data format are the same as below. The C<ids> param will be
@@ -3764,7 +3902,21 @@ attachment.
 
 =item C<comment>
 
-C<string> An optional comment to add to the attachment's bug.
+C<string> or hash: An optional comment to add to the attachment's bug. If C<comment> is
+a hash, it has the following keys:
+
+=over
+
+=item C<body>
+
+C<string> The body of the comment to be added.
+
+=item C<is_markdown>
+
+C<boolean> If set to true, the comment has Markdown structures; otherwise it is a normal
+text.
+
+=back
 
 =item C<content_type>
 
@@ -3823,9 +3975,17 @@ C<boolean> Set to true if you specifically want a new flag to be created.
 
 =back
 
+=item C<minor_update>
+
+C<boolean> If set to true, this is considered a minor update and no mail is sent
+to users who do not want minor update emails. If current user is not in the
+minor_update_group, this parameter is simply ignored.
+
+=back
+
 =item B<Returns>
 
-A C<hash> with a single field, "attachment". This points to an array of hashes
+A C<hash> with a single field, "attachments". This points to an array of hashes
 with the following fields:
 
 =over
@@ -3913,6 +4073,11 @@ the type id value to update or add a flag.
 
 The flag type is inactive and cannot be used to create new flags.
 
+=item 140 (Markdown Disabled)
+
+You tried to set the C<is_markdown> flag of the C<comment> to true but Markdown feature is
+not enabled.
+
 =item 601 (Invalid MIME Type)
 
 You specified a C<content_type> argument that was blank, not a valid
@@ -3938,8 +4103,6 @@ You did not specify a value for the C<summary> argument.
 
 =back
 
-=back
-
 =head2 add_comment
 
 B<STABLE>
@@ -3954,7 +4117,7 @@ This allows you to add a comment to a bug in Bugzilla.
 
 To create a comment on a current bug:
 
-POST /bug/<bug_id>/comment
+POST /rest/bug/<bug_id>/comment
 
 The params to include in the POST body as well as the returned data format,
 are the same as below.
@@ -3973,12 +4136,19 @@ you did not set the C<comment> parameter.
 =item C<is_private> (boolean) - If set to true, the comment is private, 
 otherwise it is assumed to be public.
 
+=item C<is_markdown> (boolean) - If set to true, the comment has Markdown
+structures, otherwise it is a normal text.
+
 =item C<work_time> (double) - Adds this many hours to the "Hours Worked"
 on the bug. If you are not in the time tracking group, this value will
 be ignored.
 
 =item C<comment_tags> (array) - Array of strings to add as comment tags for
 the new comment.
+
+=item C<minor_update> (boolean) - If set to true, this is considered a minor update
+and no mail is sent to users who do not want minor update emails. If current user
+is not in the minor_update_group, this parameter is simply ignored.
 
 =back
 
@@ -3997,8 +4167,7 @@ C<99999.99>.
 
 =item 100 (Invalid Bug Alias) 
 
-If you specified an alias and either: (a) the Bugzilla you're querying
-doesn't support aliases or (b) there is no bug with that alias.
+If you specified an alias and there is no bug with that alias.
 
 =item 101 (Invalid Bug ID)
 
@@ -4016,6 +4185,11 @@ You tried to add a private comment, but don't have the necessary rights.
 
 You tried to add a comment longer than the maximum allowed length
 (65,535 characters).
+
+=item 140 (Markdown Disabled)
+
+You tried to set the C<is_markdown> flag to true but the Markdown feature
+is not enabled.
 
 =back
 
@@ -4039,7 +4213,7 @@ code of 32000.
 
 =item REST API call added in Bugzilla B<5.0>.
 
-=item In Bugzilla B<5.0>, the following items were added to the bugs return value: C<assigned_to_detail>, C<creator_detail>, C<qa_contact_detail>.
+=item C<is_markdown> option added in Bugzilla B<6.0>.
 
 =back
 
@@ -4061,7 +4235,7 @@ out about the changes.
 
 To update the fields of a current bug:
 
-PUT /bug/<bug_id>
+PUT /rest/bug/<bug_id>
 
 The params to include in the PUT body as well as the returned data format,
 are the same as below. The C<ids> param will be overridden as it is
@@ -4076,6 +4250,12 @@ pulled from the URL path.
 Array of C<int>s or C<string>s. The ids or aliases of the bugs that
 you want to modify.
 
+=item C<minor_update>
+
+C<boolean> If set to true, this is considered a minor update and no mail is sent
+to users who do not want minor update emails. If current user is not in the
+minor_update_group, this parameter is simply ignored.
+
 =back
 
 B<Note>: All following fields specify the values you want to set on the
@@ -4085,9 +4265,29 @@ bugs you are updating.
 
 =item C<alias>
 
-(string) The alias of the bug. You can only set this if you are modifying 
-a single bug. If there is more than one bug specified in C<ids>, passing in
-a value for C<alias> will cause an error to be thrown.
+C<hash> These specify the aliases of a bug that can be used instead of a bug
+number when acessing this bug. To set these, you should pass a hash as the
+value. The hash may contain the following fields:
+
+=over
+
+=item C<add> An array of C<string>s. Aliases to add to this field.
+
+=item C<remove> An array of C<string>s. Aliases to remove from this field.
+If the aliases are not already in the field, they will be ignored.
+
+=item C<set> An array of C<string>s. An exact set of aliases to set this
+field to, overriding the current value. If you specify C<set>, then C<add>
+and  C<remove> will be ignored.
+
+=back
+
+You can only set this if you are modifying a single bug. If there is more
+than one bug specified in C<ids>, passing in a value for C<alias> will cause
+an error to be thrown.
+
+For backwards compatibility, you can also specify a single string. This will
+be treated as if you specified the set key above.
 
 =item C<assigned_to>
 
@@ -4304,7 +4504,7 @@ C<string> The full login name of the bug's QA Contact.
 =item C<is_creator_accessible>
 
 C<boolean> Whether or not the bug's reporter is allowed to access
-the bug, even if he or she isn't in a group that can normally access
+the bug, even if they aren't in a group that can normally access
 the bug.
 
 =item C<remaining_time>
@@ -4410,8 +4610,8 @@ C<int> The id of the bug that was updated.
 
 =item C<alias>
 
-C<string> The alias of the bug that was updated, if aliases are enabled and
-this bug has an alias.
+C<array> of C<string>s The aliases of the bug that was updated, if this bug
+has any alias.
 
 =item C<last_change_time>
 
@@ -4445,7 +4645,7 @@ Here's an example of what a return value might look like:
    bugs => [
      {
        id    => 123,
-       alias => 'foo',
+       alias => [ 'foo' ],
        last_change_time => '2010-01-01T12:34:56',
        changes => {
          status => {
@@ -4632,6 +4832,12 @@ If you specify a URL that is not in the See Also field of a particular bug,
 it will just be silently ignored. Invaild URLs are currently silently ignored,
 though this may change in some future version of Bugzilla.
 
+=item C<minor_update>
+
+C<boolean> If set to true, this is considered a minor update and no mail is sent
+to users who do not want minor update emails. If current user is not in the
+minor_update_group, this parameter is simply ignored.
+
 =back
 
 NOTE: If you specify the same URL in both C<add> and C<remove>, it will
@@ -4701,6 +4907,137 @@ this bug.
 
 =back
 
+=head2 search_comment_tags
+
+B<UNSTABLE>
+
+=over
+
+=item B<Description>
+
+Searches for tags which contain the provided substring.
+
+=item B<REST>
+
+To search for comment tags:
+
+GET /rest/bug/comment/tags/<query>
+
+=item B<Params>
+
+=over
+
+=item C<query>
+
+B<Required> C<string> Only tags containg this substring will be returned.
+
+=item C<limit>
+
+C<int> If provided will return no more than C<limit> tags.  Defaults to C<10>.
+
+=back
+
+=item B<Returns>
+
+An C<array of strings> of matching tags.
+
+=item B<Errors>
+
+This method can throw all of the errors that L</get> throws, plus:
+
+=over
+
+=item 125 (Comment Tagging Disabled)
+
+Comment tagging support is not available or enabled.
+
+=back
+
+=item B<History>
+
+=over
+
+=item Added in Bugzilla B<5.0>.
+
+=back
+
+=back
+
+=head2 update_comment_tags
+
+B<UNSTABLE>
+
+=over
+
+=item B<Description>
+
+Adds or removes tags from a comment.
+
+=item B<REST>
+
+To update the tags comments attached to a comment:
+
+PUT /rest/bug/comment/tags
+
+The params to include in the PUT body as well as the returned data format,
+are the same as below.
+
+=item B<Params>
+
+=over
+
+=item C<comment_id>
+
+B<Required> C<int> The ID of the comment to update.
+
+=item C<add>
+
+C<array of strings> The tags to attach to the comment.
+
+=item C<remove>
+
+C<array of strings> The tags to detach from the comment.
+
+=back
+
+=item B<Returns>
+
+An C<array of strings> containing the comment's updated tags.
+
+=item B<Errors>
+
+This method can throw all of the errors that L</get> throws, plus:
+
+=over
+
+=item 125 (Comment Tagging Disabled)
+
+Comment tagging support is not available or enabled.
+
+=item 126 (Invalid Comment Tag)
+
+The comment tag provided was not valid (eg. contains invalid characters).
+
+=item 127 (Comment Tag Too Short)
+
+The comment tag provided is shorter than the minimum length.
+
+=item 128 (Comment Tag Too Long)
+
+The comment tag provided is longer than the maximum length.
+
+=back
+
+=item B<History>
+
+=over
+
+=item Added in Bugzilla B<5.0>.
+
+=back
+
+=back
+
 =head2 render_comment
 
 B<UNSTABLE>
@@ -4742,4 +5079,3 @@ This method can throw all of the errors that L</get> throws.
 =back
 
 =back
-

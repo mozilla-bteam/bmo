@@ -1,38 +1,28 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Marc Schumann <wurblzap@gmail.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Mads Bondo Dydensborg <mbd@dbc.dk>
-#                 Noura Elhawary <nelhawar@redhat.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::WebService::User;
 
+use 5.10.1;
 use strict;
-use base qw(Bugzilla::WebService);
+use warnings;
 
-use Bugzilla;
+use parent qw(Bugzilla::WebService);
+
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
 use Bugzilla::User;
 use Bugzilla::Util qw(trim detaint_natural);
-use Bugzilla::WebService::Util qw(filter filter_wants validate
-                                  translate params_to_objects);
+use Bugzilla::WebService::Util qw(filter filter_wants validate translate params_to_objects);
+
 use Bugzilla::Hook;
 
-use List::Util qw(first);
+use List::Util qw(first min);
 
 # Don't need auth to login
 use constant LOGIN_EXEMPT => {
@@ -192,7 +182,7 @@ sub get {
     my $obj_by_ids;
     $obj_by_ids = Bugzilla::User->new_from_list($params->{ids}) if $params->{ids};
 
-    # obj_by_ids are only visible to the user if he can see 
+    # obj_by_ids are only visible to the user if they can see
     # the otheruser, for non visible otheruser throw an error
     foreach my $obj (@$obj_by_ids) {
         if (Bugzilla->user->can_see_user($obj)){
@@ -210,13 +200,15 @@ sub get {
     }
 
     # User Matching
-    my $limit;
+    my $limit = Bugzilla->params->{maxusermatches};
     if ($params->{limit}) {
         detaint_natural($params->{limit})
             || ThrowCodeError('param_must_be_numeric',
-                              { function => 'User.match', param => 'limit' });
+                              { function => 'Bugzilla::WebService::User::match',
+                                param    => 'limit' });
         $limit = $limit ? min($params->{limit}, $limit) : $params->{limit};
     }
+
     my $exclude_disabled = $params->{'include_disabled'} ? 0 : 1;
     foreach my $match_string (@{ $params->{'match'} || [] }) {
         my $matched = Bugzilla::User::match($match_string, $limit, $exclude_disabled);
@@ -247,6 +239,11 @@ sub get {
             if (filter_wants($params, 'saved_searches')) {
                 $user_info->{saved_searches} = [
                     map { $self->_query_to_hash($_) } @{ $user->queries }
+                ];
+            }
+            if (filter_wants($params, 'saved_reports')) {
+                $user_info->{saved_reports}  = [
+                    map { $self->_report_to_hash($_) } @{ $user->reports }
                 ];
             }
         }
@@ -349,20 +346,22 @@ sub _filter_users_by_group {
     return $users if (!$group_ids and !$group_names);
 
     my $user = Bugzilla->user;
+    my (@groups, %groups);
 
-    my @groups = map { Bugzilla::Group->check({ id => $_ }) } 
-                     @{ $group_ids || [] };
-
+    if ($group_ids) {
+        @groups = map { Bugzilla::Group->check({ id => $_ }) } @$group_ids;
+        $groups{$_->id} = $_ foreach @groups;
+    }
     if ($group_names) {
         foreach my $name (@$group_names) {
             my $group = Bugzilla::Group->check({ name => $name, _error => 'invalid_group_name' });
             $user->in_group($group) || ThrowUserError('invalid_group_name', { name => $name });
-            push(@groups, $group);
+            $groups{$group->id} = $group;
         }
     }
+    @groups = values %groups;
 
-    my @in_group = grep { $self->_user_in_any_group($_, \@groups) }
-                        @$users;
+    my @in_group = grep { $self->_user_in_any_group($_, \@groups) } @$users;
     return \@in_group;
 }
 
@@ -400,19 +399,28 @@ sub _group_to_hash {
 sub _query_to_hash {
     my ($self, $query) = @_;
     my $item = {
-        id   => $self->type('int', $query->id),
-        name => $self->type('string', $query->name),
-        url  => $self->type('string', $query->url),
+        id    => $self->type('int', $query->id),
+        name  => $self->type('string', $query->name),
+        query => $self->type('string', $query->url),
     };
+    return $item;
+}
 
+sub _report_to_hash {
+    my ($self, $report) = @_;
+    my $item = {
+        id    => $self->type('int', $report->id),
+        name  => $self->type('string', $report->name),
+        query => $self->type('string', $report->query),
+    };
     return $item;
 }
 
 sub _login_to_hash {
     my ($self, $user) = @_;
     my $item = { id => $self->type('int', $user->id) };
-    if (my $login_token = $user->{_login_token}) {
-        $item->{'token'} = $user->id . "-" . $login_token;
+    if ($user->{_login_token}) {
+        $item->{'token'} = $user->id . "-" . $user->{_login_token};
     }
     return $item;
 }
@@ -489,13 +497,9 @@ etc. This method logs in an user.
 
 =item C<password> (string) - The user's password.
 
-=item C<remember> (bool) B<Optional> - if the cookies returned by the
-call to login should expire with the session or not.  In order for
-this option to have effect the Bugzilla server must be configured to
-allow the user to set this option - the Bugzilla parameter
-I<rememberlogin> must be set to "defaulton" or
-"defaultoff". Addionally, the client application must implement
-management of cookies across sessions.
+=item C<restrict_login> (bool) B<Optional> - If set to a true value,
+the token returned by this method will only be valid from the IP address
+which called this method.
 
 =back
 
@@ -503,12 +507,9 @@ management of cookies across sessions.
 
 On success, a hash containing two items, C<id>, the numeric id of the
 user that was logged in, and a C<token> which can be passed in
-the parameters as authentication in other calls. A set of http cookies
-is also sent with the response. These cookies *or* the token can be sent
+the parameters as authentication in other calls. The token can be sent
 along with any future requests to the webservice, for the duration of the
-session. Note that cookies are not accepted for GET requests for JSONRPC
-and REST for security reasons. You may, however, use the token or valid
-login parameters for those requests.
+session, i.e. till L<User.logout|/logout> is called.
 
 =item B<Errors>
 
@@ -518,15 +519,15 @@ login parameters for those requests.
 
 The username does not exist, or the password is wrong.
 
-=item 301 (Account Disabled)
+=item 301 (Login Disabled)
 
-The account has been disabled.  A reason may be specified with the
-error.
+The ability to login with this account has been disabled.  A reason may be
+specified with the error.
 
 =item 305 (New Password Required)
 
 The current password is correct, but the user is asked to change
-his password.
+their password.
 
 =item 50 (Param Required)
 
@@ -537,6 +538,11 @@ A login or password parameter was not provided.
 =item B<History>
 
 =over
+
+=item C<remember> was removed in Bugzilla B<5.0> as this method no longer
+creates a login cookie.
+
+=item C<restrict_login> was added in Bugzilla B<5.0>.
 
 =item C<token> was added in Bugzilla B<4.4.3>.
 
@@ -671,7 +677,7 @@ call this function.
 
 =item B<REST>
 
-POST /user
+POST /rest/user
 
 The params to include in the POST body as well as the returned data format,
 are the same as below.
@@ -735,6 +741,14 @@ B<EXPERIMENTAL>
 
 Updates user accounts in Bugzilla.
 
+=item B<REST>
+
+PUT /rest/user/<user_id_or_name>
+
+The params to include in the PUT body as well as the returned data format,
+are the same as below. The C<ids> and C<names> params are overridden as they
+are pulled from the URL path.
+
 =item B<Params>
 
 =over
@@ -797,11 +811,11 @@ user making the change does not have bless rights will generate an error.
 
 =back
 
-=item C<set_bless_groups>
+=item C<bless_groups>
 
-C<hash> - This is the same as set_groups, but affects what groups a user
+C<hash> - This is the same as groups, but affects what groups a user
 has direct membership to bless that group. It takes the same inputs as
-set_groups.
+groups.
 
 =back
 
@@ -852,6 +866,14 @@ Logged-in users are not authorized to edit other users.
 
 =back
 
+=item B<History>
+
+=over
+
+=item REST API call added in Bugzilla B<5.0>.
+
+=back
+
 =back
 
 =head1 User Info
@@ -870,11 +892,11 @@ Gets information about user accounts in Bugzilla.
 
 To get information about a single user:
 
-GET /user/<user_id_or_name>
+GET /rest/user/<user_id_or_name>
 
 To search for users by name, group using URL params same as below:
 
-GET /user
+GET /rest/user
 
 The returned data format is the same as below.
 
@@ -910,9 +932,6 @@ Bugzilla itself. Users will be returned whose real name or login name
 contains any one of the specified strings. Users that you cannot see will
 not be included in the returned list.
 
-Some Bugzilla installations have user-matching turned off, in which
-case you will only be returned exact matches.
-
 Most installations have a limit on how many matches are returned for
 each string, which defaults to 1000 but can be changed by the Bugzilla
 administrator.
@@ -921,6 +940,13 @@ Logged-out users cannot use this argument, and an error will be thrown
 if they try. (This is to make it harder for spammers to harvest email
 addresses from Bugzilla, and also to enforce the user visibility
 restrictions that are implemented on some Bugzillas.)
+
+=item C<limit> (int)
+
+Limit the number of users matched by the C<match> parameter. If value
+is greater than the system limit, the system limit will be used. This
+parameter is only used when user matching using the C<match> parameter
+is being performed.
 
 =item C<group_ids> (array)
 
@@ -991,8 +1017,11 @@ disabled/closed.
 
 =item groups
 
-C<array> An array of group hashes the user is a member of. Each hash describes
-the group and contains the following items:
+C<array> An array of group hashes the user is a member of. If the currently
+logged in user is querying their own account or is a member of the 'editusers'
+group, the array will contain all the groups that the user is a
+member of. Otherwise, the array will only contain groups that the logged in
+user can bless. Each hash describes the group and contains the following items:
 
 =over
 
@@ -1010,8 +1039,6 @@ C<string> The description for the group
 
 =back
 
-=over
-
 =item saved_searches
 
 C<array> An array of hashes, each of which represents a user's saved search and has
@@ -1027,22 +1054,40 @@ C<int> An integer id uniquely identifying the saved search.
 
 C<string> The name of the saved search.
 
-=item url
+=item query
 
 C<string> The CGI parameters for the saved search.
 
 =back
 
-B<Note>: The elements of the returned array (i.e. hashes) are ordered by the 
-name of each saved search.
+=item saved_reports
+
+C<array> An array of hashes, each of which represents a user's saved report and has
+the following keys:
+
+=over
+
+=item id
+
+C<int> An integer id uniquely identifying the saved report.
+
+=item name
+
+C<string> The name of the saved report.
+
+=item query
+
+C<string> The CGI parameters for the saved report.
 
 =back
 
 B<Note>: If you are not logged in to Bugzilla when you call this function, you
 will only be returned the C<id>, C<name>, and C<real_name> items. If you are
 logged in and not in editusers group, you will only be returned the C<id>, C<name>, 
-C<real_name>, C<email>, and C<can_login> items. The groups returned are filtered
-based on your permission to bless each group.
+C<real_name>, C<email>, C<can_login>, and C<groups> items. The groups returned are
+filtered based on your permission to bless each group.
+The C<saved_searches> and C<saved_reports> items are only returned if you are
+querying your own account, even if you are in the editusers group.
 
 =back
 
@@ -1054,6 +1099,10 @@ based on your permission to bless each group.
 
 You passed an invalid login name in the "names" array or a bad
 group ID in the C<group_ids> argument.
+
+=item 52 (Invalid Parameter)
+
+The value used must be an integer greater than zero.
 
 =item 304 (Authorization Required)
 
@@ -1080,8 +1129,16 @@ exist or you do not belong to it.
 
 =item C<group_ids> and C<groups> were added in Bugzilla B<4.0>.
 
-=item C<include_disabled> added in Bugzilla B<4.0>. Default behavior 
-for C<match> has changed to only returning enabled accounts.
+=item C<include_disabled> was added in Bugzilla B<4.0>. Default
+behavior for C<match> was changed to only return enabled accounts.
+
+=item Error 804 has been added in Bugzilla 4.0.9 and 4.2.4. It's now
+illegal to pass a group name you don't belong to.
+
+=item C<groups>, C<saved_searches>, and C<saved_reports> were added
+in Bugzilla B<4.4>.
+
+=item REST API call added in Bugzilla B<5.0>.
 
 =item C<groups> Added in Bugzilla B<4.4>.
 
@@ -1148,5 +1205,13 @@ The current password is correct, but the user is asked to change
 his password.
 
 =back
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item mfa_enroll
 
 =back

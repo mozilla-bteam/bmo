@@ -1,27 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): C. Begle
-#                 Jesse Ruderman
-#                 Andreas Franke <afranke@mathweb.org>
-#                 Stephen Lee <slee@uk.bnsmc.com>
-#                 Marc Schumann <wurblzap@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Search::Quicksearch;
 
-# Make it harder for us to do dangerous things in Perl.
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::Error;
 use Bugzilla::Constants;
@@ -34,7 +22,7 @@ use List::Util qw(min max);
 use List::MoreUtils qw(firstidx);
 use Text::ParseWords qw(parse_line);
 
-use base qw(Exporter);
+use parent qw(Exporter);
 @Bugzilla::Search::Quicksearch::EXPORT = qw(quicksearch);
 
 # Custom mappings for some fields.
@@ -224,6 +212,7 @@ sub quicksearch {
         shift(@qswords) if $bug_status_set;
 
         my (@unknownFields, %ambiguous_fields);
+        $fulltext = Bugzilla->user->setting('quicksearch_fulltext') eq 'on' ? 1 : 0;
 
         # Loop over all main-level QuickSearch words.
         foreach my $qsword (@qswords) {
@@ -344,7 +333,7 @@ sub _handle_alias {
         my $alias = $1;
         # We use this direct SQL because we want quicksearch to be VERY fast.
         my $bug_id = Bugzilla->dbh->selectrow_array(
-            q{SELECT bug_id FROM bugs WHERE alias = ?}, undef, $alias);
+            q{SELECT bug_id FROM bugs_aliases WHERE alias = ?}, undef, $alias);
         # If the user cannot see the bug or if we are using a webservice,
         # do not resolve its alias.
         if ($bug_id && Bugzilla->user->can_see_bug($bug_id) && !i_am_webservice()) {
@@ -477,13 +466,46 @@ sub _handle_field_names {
                         $value = $2;
                         $value =~ s/\\(["'])/$1/g;
                     }
+                    # If a requestee is set, we need to handle it separately.
+                    if ($translated eq 'flagtypes.name' && $value =~ /^([^\?]+\?)([^\?]+)$/) {
+                        _handle_flags($1, $2, $negate);
+                        next;
+                    }
                     addChart($translated, $operator, $value, $negate);
                 }
             }
         }
         return 1;
     }
+
+    # Do not look inside quoted strings.
+    return 0 if ($or_operand =~ /^(["']).*\1$/);
+
+    # Flag and requestee shortcut.
+    if ($or_operand =~ /^([^\?]+\?)([^\?]*)$/) {
+        _handle_flags($1, $2, $negate);
+        return 1;
+    }
+
     return 0;
+}
+
+sub _handle_flags {
+    my ($flag, $requestee, $negate) = @_;
+
+    addChart('flagtypes.name', 'substring', $flag, $negate);
+    if ($requestee) {
+        # FIXME - Every time a requestee is involved and you use OR somewhere
+        # in your quick search, the logic will be wrong because boolean charts
+        # are unable to run queries of the form (a AND b) OR c. In our case:
+        # (flag name is foo AND requestee is bar) OR (any other criteria).
+        # But this has never been possible, so this is not a regression. If one
+        # needs to run such queries, they must use the Custom Search section of
+        # the Advanced Search page.
+        $chart++;
+        $and = $or = 0;
+        addChart('requestees.login_name', 'substring', $requestee, $negate);
+    }
 }
 
 sub _translate_field_name {
@@ -691,3 +713,21 @@ sub makeChart {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item FIELD_MAP
+
+=item quicksearch
+
+=item negateComparisonType
+
+=item makeChart
+
+=item addChart
+
+=item matchPrefixes
+
+=back

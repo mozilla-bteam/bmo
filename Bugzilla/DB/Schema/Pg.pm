@@ -1,25 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Andrew Dunstan <andrew@dunslane.net>,
-#                 Edward J. Sabol <edwardjsabol@iname.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::DB::Schema::Pg;
 
@@ -29,8 +13,11 @@ package Bugzilla::DB::Schema::Pg;
 #
 ###############################################################################
 
+use 5.10.1;
 use strict;
-use base qw(Bugzilla::DB::Schema);
+use warnings;
+
+use parent qw(Bugzilla::DB::Schema);
 use Storable qw(dclone);
 
 #------------------------------------------------------------------------------
@@ -92,12 +79,7 @@ sub _initialize {
 
 sub get_create_database_sql {
     my ($self, $name) = @_;
-    # We only create as utf8 if we have no params (meaning we're doing
-    # a new installation) or if the utf8 param is on.
-    my $create_utf8 = Bugzilla->params->{'utf8'}
-                      || !defined Bugzilla->params->{'utf8'};
-    my $charset = $create_utf8 ? "ENCODING 'UTF8' TEMPLATE template0" : '';
-    return ("CREATE DATABASE $name $charset");
+    return ("CREATE DATABASE \"$name\" ENCODING 'UTF8' TEMPLATE template0");
 }
 
 sub get_rename_column_ddl {
@@ -202,3 +184,17 @@ sub _get_alter_type_sql {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item get_rename_column_ddl
+
+=item get_rename_table_sql
+
+=item get_create_database_sql
+
+=item get_set_serial_sql
+
+=back

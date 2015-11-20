@@ -1,40 +1,17 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Gervase Markham <gerv@gerv.net>
-#                 Terry Weissman <terry@mozilla.org>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Stephan Niemz <st.n@gmx.net>
-#                 Andreas Franke <afranke@mathweb.org>
-#                 Myk Melez <myk@mozilla.org>
-#                 Michael Schindler <michael@compressconsult.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Joel Peshkin <bugreport@peshkin.net>
-#                 Lance Larsh <lance.larsh@oracle.com>
-#                 Jesse Clark <jjclark1982@gmail.com>
-#                 Rémi Zara <remi_zara@mac.com>
-#                 Reed Loden <reed@reedloden.com>
-
-use strict;
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Search;
-use base qw(Exporter);
+
+use 5.10.1;
+use strict;
+use warnings;
+
+use parent qw(Exporter);
 @Bugzilla::Search::EXPORT = qw(
     IsValidQueryType
     split_order_term
@@ -57,7 +34,7 @@ use Date::Format;
 use Date::Parse;
 use Scalar::Util qw(blessed);
 use List::MoreUtils qw(all firstidx part uniq);
-use POSIX qw(INT_MAX);
+use POSIX qw(INT_MAX floor);
 use Storable qw(dclone);
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -264,6 +241,9 @@ use constant OPERATOR_FIELD_OVERRIDE => {
     assigned_to => {
         _non_changed => \&_user_nonchanged,
     },
+    assigned_to_realname => {
+        _non_changed => \&_user_nonchanged,
+    },
     cc => {
         _non_changed => \&_user_nonchanged,
     },
@@ -271,6 +251,9 @@ use constant OPERATOR_FIELD_OVERRIDE => {
         _non_changed => \&_user_nonchanged,
     },
     reporter => {
+        _non_changed => \&_user_nonchanged,
+    },
+    reporter_realname => {
         _non_changed => \&_user_nonchanged,
     },
     'requestees.login_name' => {
@@ -282,9 +265,12 @@ use constant OPERATOR_FIELD_OVERRIDE => {
     qa_contact => {
         _non_changed => \&_user_nonchanged,
     },
-    
+    qa_contact_realname => {
+        _non_changed => \&_user_nonchanged,
+    },
+
     # General Bug Fields
-    alias        => { _non_changed => \&_nullable },
+    alias        => { _non_changed => \&_alias_nonchanged },
     # We check all attachment fields against this.
     attachments  => MULTI_SELECT_OVERRIDE,
     assignee_last_login => {
@@ -308,6 +294,14 @@ use constant OPERATOR_FIELD_OVERRIDE => {
         _default => \&_days_elapsed,
     },
     dependson        => MULTI_SELECT_OVERRIDE,
+    dupe_of          => {
+        %{ &MULTI_SELECT_OVERRIDE },
+        changedby     => \&_dupe_of_changedby,
+        changedbefore => \&_dupe_of_changedbefore_after,
+        changedafter  => \&_dupe_of_changedbefore_after,
+        changedfrom   => \&_invalid_combination,
+        changedto     => \&_invalid_combination,
+    },
     keywords         => MULTI_SELECT_OVERRIDE,
     'flagtypes.name' => {
         _non_changed => \&_flagtypes_nonchanged,
@@ -353,7 +347,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
     },
     last_visit_ts => {
         _non_changed => \&_last_visit_ts,
-        _default     => \&_invalid_operator,
+        _default     => \&_last_visit_ts_invalid_operator,
     },
     bug_interest_ts => {
         _non_changed => \&_bug_interest_ts,
@@ -377,10 +371,12 @@ sub SPECIAL_PARSING {
         # Pronoun Fields (Ones that can accept %user%, etc.)
         assigned_to => \&_contact_pronoun,
         'attachments.submitter' => \&_contact_pronoun,
-        cc          => \&_cc_pronoun,
-        commenter   => \&_commenter_pronoun,
+        cc          => \&_contact_pronoun,
+        commenter   => \&_contact_pronoun,
         qa_contact  => \&_contact_pronoun,
         reporter    => \&_contact_pronoun,
+        'setters.login_name' => \&_contact_pronoun,
+        'requestees.login_name' => \&_contact_pronoun,
 
         # Date Fields that accept the 1d, 1w, 1m, 1y, etc. format.
         creation_ts => \&_datetime_translate,
@@ -477,13 +473,18 @@ use constant COLUMN_DEPENDS => {
 # DB::Schema to figure out what needs to be joined, but for some
 # fields it needs a little help.
 sub COLUMN_JOINS {
-    my $user = Bugzilla->user;
+    my $invocant = shift;
+    my $user = blessed($invocant) ? $invocant->_user : Bugzilla->user;
 
     my $joins = {
         actual_time => {
             table => '(SELECT bug_id, SUM(work_time) AS total'
                     . ' FROM longdescs GROUP BY bug_id)',
             join  => 'INNER',
+        },
+        alias => {
+            table => 'bugs_aliases',
+            as    => 'map_alias',
         },
         assigned_to => {
             from  => 'assigned_to',
@@ -559,6 +560,17 @@ sub COLUMN_JOINS {
             table => 'longdescs',
             join  => 'INNER',
         },
+        tag => {
+            as => 'map_bug_tag',
+            table => 'bug_tag',
+            then_to => {
+                as => 'map_tag',
+                table => 'tag',
+                extra => ['map_tag.user_id = ' . $user->id],
+                from => 'map_bug_tag.tag_id',
+                to => 'id',
+            },
+        },
         last_visit_ts => {
             as    => 'bug_user_last_visit',
             table => 'bug_user_last_visit',
@@ -612,15 +624,13 @@ sub COLUMNS {
     # of short_short_desc.)
     my %columns = (
         relevance            => { title => 'Relevance'  },
-        assigned_to_realname => { title => 'Assignee'   },
-        reporter_realname    => { title => 'Reporter'   },
-        qa_contact_realname  => { title => 'QA Contact' },
     );
 
     # Next we define columns that have special SQL instead of just something
     # like "bugs.bug_id".
     my $total_time = "(map_actual_time.total + bugs.remaining_time)";
     my %special_sql = (
+        alias       => $dbh->sql_group_concat('DISTINCT map_alias.alias'),
         deadline    => $dbh->sql_date_format('bugs.deadline', '%Y-%m-%d'),
         actual_time => 'map_actual_time.total',
 
@@ -635,14 +645,16 @@ sub COLUMNS {
                 . " END)",
 
         'flagtypes.name' => $dbh->sql_group_concat('DISTINCT ' 
-            . $dbh->sql_string_concat('map_flagtypes.name', 'map_flags.status')),
+            . $dbh->sql_string_concat('map_flagtypes.name', 'map_flags.status'),
+            undef, undef, 'map_flagtypes.sortkey, map_flagtypes.name'),
 
         'keywords' => $dbh->sql_group_concat('DISTINCT map_keyworddefs.name'),
 
         blocked => $dbh->sql_group_concat('DISTINCT map_blocked.blocked'),
         dependson => $dbh->sql_group_concat('DISTINCT map_dependson.dependson'),
-        
+
         'longdescs.count' => 'COUNT(DISTINCT map_longdescs_count.comment_id)',
+        tag => $dbh->sql_group_concat('DISTINCT map_tag.name'),
         last_visit_ts => 'bug_user_last_visit.last_visit_ts',
         bug_interest_ts => 'bug_interest.modification_time',
         assignee_last_login => 'assignee.last_seen_date',
@@ -651,7 +663,7 @@ sub COLUMNS {
     # Backward-compatibility for old field names. Goes new_name => old_name.
     # These are here and not in _translate_old_column because the rest of the
     # code actually still uses the old names, while the fielddefs table uses
-    # the new names (which is not the case for the fields handled by 
+    # the new names (which is not the case for the fields handled by
     # _translate_old_column).
     my %old_names = (
         creation_ts => 'opendate',
@@ -671,7 +683,7 @@ sub COLUMNS {
              $sql = $dbh->sql_string_until($sql, $dbh->quote('@'));
         }
         $special_sql{$col} = $sql;
-        $columns{"${col}_realname"}->{name} = "map_${col}.realname";
+        $special_sql{"${col}_realname"} = "map_${col}.realname";
     }
 
     foreach my $col (@id_fields) {
@@ -716,12 +728,7 @@ sub REPORT_COLUMNS {
     # or simply don't work with the current reporting system.
     my @no_report_columns = 
         qw(bug_id alias short_short_desc opendate changeddate
-           flagtypes.name keywords relevance);
-
-    # Multi-select fields are not currently supported.
-    my @multi_selects = @{Bugzilla->fields(
-        { obsolete => 0, type => FIELD_TYPE_MULTI_SELECT })};
-    push(@no_report_columns, map { $_->name } @multi_selects);
+           flagtypes.name relevance);
 
     # If you're not a time-tracker, you can't use time-tracking
     # columns.
@@ -739,6 +746,7 @@ sub REPORT_COLUMNS {
 # is here because it *always* goes into the GROUP BY as the first item,
 # so it should be skipped when determining extra GROUP BY columns.
 use constant GROUP_BY_SKIP => qw(
+    alias
     blocked
     bug_id
     dependson
@@ -746,6 +754,7 @@ use constant GROUP_BY_SKIP => qw(
     keywords
     longdescs.count
     percentage_complete
+    tag
 );
 
 ###############
@@ -795,7 +804,7 @@ sub data {
     my @orig_fields = $self->_input_columns;
     my $all_in_bugs_table = 1;
     foreach my $field (@orig_fields) {
-        next if $self->COLUMNS->{$field}->{name} =~ /^bugs\.\w+$/;
+        next if ($self->COLUMNS->{$field}->{name} // $field) =~ /^bugs\.\w+$/;
         $self->{fields} = ['bug_id'];
         $all_in_bugs_table = 0;
         last;
@@ -979,7 +988,8 @@ sub search_description {
 
 sub boolean_charts_to_custom_search {
     my ($self, $cgi_buffer) = @_;
-    my @as_params = $self->_boolean_charts->as_params;
+    my $boolean_charts = $self->_boolean_charts;
+    my @as_params = $boolean_charts ? $boolean_charts->as_params : ();
 
     # We need to start our new ids after the last custom search "f" id.
     # We can just pick the last id in the array because they are sorted
@@ -1119,10 +1129,16 @@ sub _sql_select {
     my ($self) = @_;
     my @sql_fields;
     foreach my $column ($self->_display_columns) {
-        my $alias = $column;
-        # Aliases cannot contain dots in them. We convert them to underscores.
-        $alias =~ s/\./_/g;
-        my $sql = $self->COLUMNS->{$column}->{name} . " AS $alias";
+        my $sql = $self->COLUMNS->{$column}->{name} // '';
+        if ($sql) {
+            my $alias = $column;
+            # Aliases cannot contain dots in them. We convert them to underscores.
+            $alias =~ tr/./_/;
+            $sql .= " AS $alias";
+        }
+        else {
+            $sql = $column;
+        }
         push(@sql_fields, $sql);
     }
     return @sql_fields;
@@ -1365,9 +1381,12 @@ sub _standard_joins {
     push(@joins, $security_join);
 
     if ($user->id) {
-        $security_join->{extra} =
-            ["NOT (" . $user->groups_in_sql('security_map.group_id') . ")"];
-            
+        # See also _standard_joins for the other half of the below statement
+        if (!Bugzilla->params->{'or_groups'}) {
+            $security_join->{extra} =
+                ["NOT (" . $user->groups_in_sql('security_map.group_id') . ")"];
+        }
+
         my $security_cc_join = {
             table => 'cc',
             as    => 'security_cc',
@@ -1441,10 +1460,17 @@ sub _standard_where {
     # until their group controls are set. So if a bug has a NULL creation_ts,
     # it shouldn't show up in searches at all.
     my @where = ('bugs.creation_ts IS NOT NULL');
-    
-    my $security_term = 'security_map.group_id IS NULL';
 
     my $user = $self->_user;
+    my $security_term = '';
+    # See also _standard_joins for the other half of the below statement
+    if (Bugzilla->params->{'or_groups'}) {
+        $security_term .= " (security_map.group_id IS NULL OR security_map.group_id IN (" . $user->groups_as_string . "))";
+    }
+    else {
+        $security_term = 'security_map.group_id IS NULL';
+    }
+
     if ($user->id) {
         my $userid = $user->id;
         # This indentation makes the resulting SQL more readable.
@@ -1489,7 +1515,7 @@ sub _sql_group_by {
     my @extra_group_by;
     foreach my $column ($self->_select_columns) {
         next if $self->_skip_group_by->{$column};
-        my $sql = $self->COLUMNS->{$column}->{name};
+        my $sql = $self->COLUMNS->{$column}->{name} // $column;
         push(@extra_group_by, $sql);
     }
 
@@ -1587,7 +1613,7 @@ sub _parse_basic_fields {
         }
         $clause->add($field_name, $operator, $pass_value);
     }
-    return $clause;
+    return @{$clause->children} ? $clause : undef;
 }
 
 sub _special_parse_bug_status {
@@ -1686,14 +1712,13 @@ sub _special_parse_chfield {
     }
     $clause->add($join_clause);
 
-    return $clause;
+    return @{$clause->children} ? $clause : undef;
 }
 
 sub _special_parse_deadline {
     my ($self) = @_;
-    return if !$self->_user->is_timetracker;
     my $params = $self->_params;
-    
+
     my $clause = new Bugzilla::Search::Clause();
     if (my $from = $params->{'deadlinefrom'}) {
         $clause->add('deadline', 'greaterthaneq', $from);
@@ -1701,8 +1726,8 @@ sub _special_parse_deadline {
     if (my $to = $params->{'deadlineto'}) {
         $clause->add('deadline', 'lessthaneq', $to);
     }
-    
-    return $clause;
+
+    return @{$clause->children} ? $clause : undef;
 }
 
 sub _special_parse_email {
@@ -1732,8 +1757,8 @@ sub _special_parse_email {
         
         $clause->add($or_clause);
     }
-    
-    return $clause;
+
+    return @{$clause->children} ? $clause : undef;
 }
 
 sub _special_parse_resolution {
@@ -1803,7 +1828,7 @@ sub _params_to_data_structure {
     
     # And then process the modern "custom search" format.
     $clause->add( $self->_custom_search );
-
+    
     return $clause;
 }
 
@@ -1844,20 +1869,24 @@ sub _boolean_charts {
         }
         $clause->add($and_clause);
     }
-    
-    return $clause;
+
+    return @{$clause->children} ? $clause : undef;
 }
 
 sub _custom_search {
     my ($self) = @_;
     my $params = $self->_params;
 
+    my @field_ids = $self->_field_ids;
+    return unless scalar @field_ids;
+
     my $joiner = $params->{j_top} || '';
     my $current_clause = $joiner eq 'AND_G'
         ? new Bugzilla::Search::ClauseGroup()
         : new Bugzilla::Search::Clause($joiner);
+
     my @clause_stack;
-    foreach my $id ($self->_field_ids) {
+    foreach my $id (@field_ids) {
         my $field = $params->{"f$id"};
         if ($field eq 'OP') {
             my $joiner = $params->{"j$id"} || '';
@@ -1910,20 +1939,30 @@ sub _handle_chart {
     my ($field, $operator, $value) = $condition->fov;
     return if (!defined $field or !defined $operator or !defined $value);
     $field = FIELD_MAP->{$field} || $field;
-    
-    my $string_value;
+
+    my ($string_value, $orig_value);
+    state $is_mysql = $dbh->isa('Bugzilla::DB::Mysql') ? 1 : 0;
+
     if (ref $value eq 'ARRAY') {
         # Trim input and ignore blank values.
         @$value = map { trim($_) } @$value;
         @$value = grep { defined $_ and $_ ne '' } @$value;
         return if !@$value;
+        $orig_value = join(',', @$value);
+        if ($field eq 'longdesc' && $is_mysql) {
+            @$value = map { _convert_unicode_characters($_) } @$value;
+        }
         $string_value = join(',', @$value);
     }
     else {
         return if $value eq '';
+        $orig_value = $value;
+        if ($field eq 'longdesc' && $is_mysql) {
+            $value = _convert_unicode_characters($value);
+        }
         $string_value = $value;
     }
-    
+
     $self->_chart_fields->{$field}
         or ThrowCodeError("invalid_field_name", { field => $field });
     trick_taint($field);
@@ -1967,7 +2006,7 @@ sub _handle_chart {
     # do_search_function modified them.   
     $self->search_description({
         field => $field, type => $operator,
-        value => $string_value, term => $search_args{term},
+        value => $orig_value, term => $search_args{term},
     });
 
     foreach my $join (@{ $search_args{joins} }) {
@@ -1976,6 +2015,18 @@ sub _handle_chart {
     }
 
     $condition->translated(\%search_args);
+}
+
+# XXX - This is a hack for MySQL which doesn't understand Unicode characters
+# above U+FFFF, see Bugzilla::Comment::_check_thetext(). This hack can go away
+# once we require MySQL 5.5.3 and use utf8mb4.
+sub _convert_unicode_characters {
+    my $string = shift;
+
+    # Perl 5.13.8 and older complain about non-characters.
+    no warnings 'utf8';
+    $string =~ s/([\x{10000}-\x{10FFFF}])/"\x{FDD0}[" . uc(sprintf('U+%04x', ord($1))) . "]\x{FDD1}"/eg;
+    return $string;
 }
 
 ##################################
@@ -2122,10 +2173,17 @@ sub _quote_unless_numeric {
     my $numeric_field = $self->_chart_fields->{$field}->is_numeric;
     my $numeric_value = ($value =~ NUMBER_REGEX) ? 1 : 0;
     my $is_numeric = $numeric_operator && $numeric_field && $numeric_value;
+
+    # These operators are really numeric operators with numeric fields.
+    $numeric_operator = grep { $_ eq $operator } keys %{ SIMPLE_OPERATORS() };
+
     if ($is_numeric) {
         my $quoted = $value;
         trick_taint($quoted);
         return $quoted;
+    }
+    elsif ($numeric_field && !$numeric_value && $numeric_operator) {
+        ThrowUserError('number_not_numeric', { field => $field, num => $value });
     }
     return Bugzilla->dbh->quote($value);
 }
@@ -2177,9 +2235,7 @@ sub _substring_terms {
     # split each term on spaces and commas anyway.
     my @words = split(/[\s,]+/, $args->{value});
     @words = grep { defined $_ and $_ ne '' } @words;
-    @words = map { $dbh->quote($_) } @words;
-    my @terms = map { $dbh->sql_iposition($_, $args->{full_field}) . " > 0" }
-                    @words;
+    my @terms = map { $dbh->sql_ilike($_, $args->{full_field}) } @words;
     return @terms;
 }
 
@@ -2258,10 +2314,14 @@ sub _date_translate {
 sub SqlifyDate {
     my ($str) = @_;
     my $fmt = "%Y-%m-%d %H:%M:%S";
-    $str = "" if (!defined $str || lc($str) eq 'now');
+    $str = "" if (!defined $str);
     if ($str eq "") {
         my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime(time());
         return sprintf("%4d-%02d-%02d 00:00:00", $year+1900, $month+1, $mday);
+    }
+    if (lc($str) eq 'now') {
+        my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime(time());
+        return sprintf("%4d-%02d-%02d %02d:%02d:%02d", $year+1900, $month+1, $mday, $hour, $min, $sec);
     }
 
     if ($str =~ /^(-|\+)?(\d+)([hdwmy])(s?)$/i) {   # relative date
@@ -2293,7 +2353,8 @@ sub SqlifyDate {
         }
         elsif ($unit eq 'm') {
             $month -= $amount;
-            while ($month<0) { $year--; $month += 12; }
+            $year += floor($month/12);
+            $month %= 12;
             if ($startof) {
                 return sprintf("%4d-%02d-01 00:00:00", $year+1900, $month+1);
             }
@@ -2341,7 +2402,8 @@ sub pronoun {
     if ($noun eq "%qacontact%") {
         return "COALESCE(bugs.qa_contact,0)";
     }
-    return 0;
+
+    ThrowUserError('illegal_pronoun', { pronoun => $noun });
 }
 
 sub _contact_pronoun {
@@ -2361,11 +2423,11 @@ sub _contact_pronoun {
 
 sub _contact_exact_group {
     my ($self, $args) = @_;
-    my ($value, $operator, $field, $chart_id, $joins) =
-        @$args{qw(value operator field chart_id joins)};
+    my ($value, $operator, $field, $chart_id, $joins, $sequence) =
+        @$args{qw(value operator field chart_id joins sequence)};
     my $dbh = Bugzilla->dbh;
     my $user = $self->_user;
-    
+
     # We already know $value will match this regexp, else we wouldn't be here.
     $value =~ /\%group\.([^%]+)%/;
     my $group_name = $1;
@@ -2379,11 +2441,28 @@ sub _contact_exact_group {
     $group->check_members_are_visible();
 
     my $group_ids = Bugzilla::Group->flatten_group_membership($group->id);
+
+    if ($field eq 'cc' && $chart_id eq '') {
+        # This is for the email1, email2, email3 fields from query.cgi.
+        $chart_id = "CC$$sequence";
+        $args->{sequence}++;
+    }
+
+    my $from = $field;
+    # These fields need an additional table.
+    if ($field =~ /^(commenter|cc)$/) {
+        my $join_table = $field;
+        $join_table = 'longdescs' if $field eq 'commenter';
+        my $join_table_alias = "${field}_$chart_id";
+        push(@$joins, { table => $join_table, as => $join_table_alias });
+        $from = "$join_table_alias.who";
+    }
+
     my $table = "user_group_map_$chart_id";
     my $join = {
         table => 'user_group_map',
         as    => $table,
-        from  => $field,
+        from  => $from,
         to    => 'user_id',
         extra => [$dbh->sql_in("$table.group_id", $group_ids),
                   "$table.isbless = 0"],
@@ -2397,74 +2476,13 @@ sub _contact_exact_group {
     }
 }
 
-sub _cc_pronoun {
-    my ($self, $args) = @_;
-    my ($full_field, $value) = @$args{qw(full_field value)};
-    my $user = $self->_user;
+sub _get_user_id {
+    my ($self, $value) = @_;
 
-    if ($value =~ /\%group/) {
-        return $self->_cc_exact_group($args);
+    if ($value =~ /^%\w+%$/) {
+        return pronoun($value, $self->_user);
     }
-    elsif ($value =~ /^(%\w+%)$/) {
-        $args->{value} = pronoun($1, $user);
-        $args->{quoted} = $args->{value};
-        $args->{value_is_id} = 1;
-    }
-}
-
-sub _cc_exact_group {
-    my ($self, $args) = @_;
-    my ($chart_id, $sequence, $joins, $operator, $value) =
-        @$args{qw(chart_id sequence joins operator value)};
-    my $user = $self->_user;
-    my $dbh = Bugzilla->dbh;
-    
-    $value =~ m/%group\.([^%]+)%/;
-    my $group = Bugzilla::Group->check({ name => $1, _error => 'invalid_group_name' });
-    $group->check_members_are_visible();
-    $user->in_group($group)
-      || ThrowUserError('invalid_group_name', {name => $group->name});
-
-    my $all_groups = Bugzilla::Group->flatten_group_membership($group->id);
-
-    # This is for the email1, email2, email3 fields from query.cgi.
-    if ($chart_id eq "") {
-        $chart_id = "CC$$sequence";
-        $args->{sequence}++;
-    }
-    
-    my $cc_table = "cc_$chart_id";
-    push(@$joins, { table => 'cc', as => $cc_table });
-    my $group_table = "user_group_map_$chart_id";
-    my $group_join = {
-        table => 'user_group_map',
-        as    => $group_table,
-        from  => "$cc_table.who",
-        to    => 'user_id',
-        extra => [$dbh->sql_in("$group_table.group_id", $all_groups),
-                  "$group_table.isbless = 0"],
-    };
-    push(@$joins, $group_join);
-
-    if ($operator =~ /^not/) {
-        $args->{term} = "$group_table.group_id IS NULL";
-    }
-    else {
-        $args->{term} = "$group_table.group_id IS NOT NULL";
-    }
-}
-
-# XXX This should probably be merged with cc_pronoun.
-sub _commenter_pronoun {
-    my ($self, $args) = @_;
-    my $value = $args->{value};
-    my $user = $self->_user;
-
-    if ($value =~ /^(%\w+%)$/) {
-        $args->{value} = pronoun($1, $user);
-        $args->{quoted} = $args->{value};
-        $args->{value_is_id} = 1;
-    }
+    return login_to_id($value, THROW_ERROR);
 }
 
 #####################################################################
@@ -2513,6 +2531,20 @@ sub _user_nonchanged {
     if ($args->{value_is_id}) {
         $null_alternate = 0;
     }
+    elsif (substr($field, -9) eq '_realname') {
+        my $as = "name_${field}_$chart_id";
+        # For fields with periods in their name.
+        $as =~ s/\./_/;
+        my $join = {
+            table => 'profiles',
+            as    => $as,
+            from  => substr($args->{full_field}, 0, -9),
+            to    => 'userid',
+            join  => (!$is_in_other_table and !$is_nullable) ? 'INNER' : undef,
+        };
+        push(@$joins, $join);
+        $args->{full_field} = "$as.realname";
+    }
     else {
         my $as = "name_${field}_$chart_id";
         # For fields with periods in their name.
@@ -2527,7 +2559,7 @@ sub _user_nonchanged {
         push(@$joins, $join);
         $args->{full_field} = "$as.login_name";
     }
-    
+
     # We COALESCE fields that can be NULL, to make "not"-style operators
     # continue to work properly. For example, "qa_contact is not equal to bob"
     # should also show bugs where the qa_contact is NULL. With COALESCE,
@@ -2590,15 +2622,63 @@ sub _user_nonchanged {
     }
 }
 
+# Changes to duplicates are stored in the longdesc table
+sub _dupe_of_changedby {
+    my ($self, $args) = @_;
+    my ($chart_id, $joins, $value) = @$args{qw(chart_id joins value)};
+
+    my $table = "longdescs_$chart_id";
+    push(@$joins, { table => 'longdescs', as => $table });
+    my $user_id = $self->_get_user_id($value);
+    $args->{term} = "$table.who = $user_id AND $table.type = " . CMT_DUPE_OF;
+
+    # If the user is not part of the insiders group, they cannot see
+    # private comments
+    if (!$self->_user->is_insider) {
+        $args->{term} .= " AND $table.isprivate = 0";
+    }
+}
+
+sub _dupe_of_changedbefore_after {
+    my ($self, $args) = @_;
+    my ($chart_id, $operator, $value, $joins) =
+        @$args{qw(chart_id operator value joins)};
+    my $dbh = Bugzilla->dbh;
+
+    my $sql_operator = ($operator =~ /before/) ? '<=' : '>=';
+    my $table = "longdescs_$chart_id";
+    my $sql_date = $dbh->quote(SqlifyDate($value));
+    my $join = {
+        table => 'longdescs',
+        as    => $table,
+        extra => ["$table.bug_when $sql_operator $sql_date AND $table.type = " . CMT_DUPE_OF ],
+    };
+    push(@$joins, $join);
+    $args->{term} = "$table.bug_when IS NOT NULL";
+
+    # If the user is not part of the insiders group, they cannot see
+    # private comments
+    if (!$self->_user->is_insider) {
+        $args->{term} .= " AND $table.isprivate = 0";
+    }
+}
+
+
 # XXX This duplicates having Commenter as a search field.
 sub _long_desc_changedby {
     my ($self, $args) = @_;
     my ($chart_id, $joins, $value) = @$args{qw(chart_id joins value)};
-    
+
     my $table = "longdescs_$chart_id";
     push(@$joins, { table => 'longdescs', as => $table });
-    my $user_id = login_to_id($value, THROW_ERROR);
+    my $user_id = $self->_get_user_id($value);
     $args->{term} = "$table.who = $user_id";
+
+    # If the user is not part of the insiders group, they cannot see
+    # private comments
+    if (!$self->_user->is_insider) {
+        $args->{term} .= " AND $table.isprivate = 0";
+    }
 }
 
 sub _long_desc_changedbefore_after {
@@ -2606,7 +2686,7 @@ sub _long_desc_changedbefore_after {
     my ($chart_id, $operator, $value, $joins) =
         @$args{qw(chart_id operator value joins)};
     my $dbh = Bugzilla->dbh;
-    
+
     my $sql_operator = ($operator =~ /before/) ? '<=' : '>=';
     my $table = "longdescs_$chart_id";
     my $sql_date = $dbh->quote(SqlifyDate($value));
@@ -2735,7 +2815,7 @@ sub _work_time_changedby {
     
     my $table = "longdescs_$chart_id";
     push(@$joins, { table => 'longdescs', as => $table });
-    my $user_id = login_to_id($value, THROW_ERROR);
+    my $user_id = $self->_get_user_id($value);
     $args->{term} = "$table.who = $user_id AND $table.work_time != 0";
 }
 
@@ -2789,7 +2869,7 @@ sub _bug_interest_ts {
     $self->_add_extra_column('bug_interest_ts');
 }
 
-sub _invalid_operator {
+sub _last_visit_ts_invalid_operator {
     my ($self, $args) = @_;
 
     ThrowUserError('search_field_operator_invalid',
@@ -2860,6 +2940,15 @@ sub _product_nonchanged {
     my $term = $args->{term};
     $args->{term} = build_subselect("bugs.product_id",
         "products.id", "products", $term);
+}
+
+sub _alias_nonchanged {
+    my ($self, $args) = @_;
+
+    $args->{full_field} = "bugs_aliases.alias";
+    $self->_do_operator_function($args);
+    $args->{term} = build_subselect("bugs.bug_id",
+        "bugs_aliases.bug_id", "bugs_aliases", $args->{term});
 }
 
 sub _classification_nonchanged {
@@ -3074,6 +3163,11 @@ sub _multiselect_table {
         $args->{full_field} = $field;
         return "dependencies";
     }
+    elsif ($field eq 'dupe_of') {
+        $args->{_select_field} = 'dupe';
+        $args->{full_field} = 'dupe_of';
+        return "duplicates";
+    }
     elsif ($field eq 'longdesc') {
         $args->{_extra_where} = " AND isprivate = 0"
             if !$self->_user->is_insider;
@@ -3115,9 +3209,10 @@ sub _multiselect_table {
 sub _multiselect_term {
     my ($self, $args, $not) = @_;
     my ($operator) = $args->{operator};
+    my $value = $args->{value} || '';
     # 'empty' operators require special handling
     return $self->_multiselect_isempty($args, $not)
-        if $operator =~ /^is(not)?empty$/;
+        if ($operator =~ /^is(not)?empty$/ || $value eq '---');
     my $table = $self->_multiselect_table($args);
     $self->_do_operator_function($args);
     my $term = $args->{term};
@@ -3132,7 +3227,7 @@ sub _multiselect_isempty {
     my ($self, $args, $not) = @_;
     my ($field, $operator, $joins, $chart_id) = @$args{qw(field operator joins chart_id)};
     my $dbh = Bugzilla->dbh;
-    $operator = $self->_reverseoperator($operator) if $not;
+    $operator = $self->_reverse_operator($operator) if $not;
     $not = $operator eq 'isnotempty' ? 'NOT' : '';
 
     if ($field eq 'keywords') {
@@ -3171,6 +3266,15 @@ sub _multiselect_isempty {
             to    => $to,
         };
         return "dependencies_$chart_id.$to IS $not NULL";
+    }
+    elsif ($field eq 'dupe_of') {
+        push @$joins, {
+            table => 'duplicates',
+            as    => "duplicates_$chart_id",
+            from  => 'bug_id',
+            to    => 'dupe',
+        };
+        return "duplicates_$chart_id.dupe IS $not NULL";
     }
     elsif ($field eq 'longdesc') {
         my @extra = ( "longdescs_$chart_id.type != " . CMT_HAS_DUPE );
@@ -3218,6 +3322,15 @@ sub _multiselect_isempty {
         };
         return "tag_$chart_id.id IS $not NULL";
     }
+    elsif ($self->_multi_select_fields->{$field}) {
+        push @$joins, {
+            table => "bug_$field",
+            as => "bug_${field}_$chart_id",
+            from  => 'bug_id',
+            to    => 'bug_id',
+        };
+        return "bug_${field}_$chart_id.bug_id IS $not NULL";
+    }
 }
 
 ###############################
@@ -3234,28 +3347,26 @@ sub _simple_operator {
 
 sub _casesubstring {
     my ($self, $args) = @_;
-    my ($full_field, $quoted) = @$args{qw(full_field quoted)};
+    my ($full_field, $value) = @$args{qw(full_field value)};
     my $dbh = Bugzilla->dbh;
-    
-    $args->{term} = $dbh->sql_position($quoted, $full_field) . " > 0";
+
+    $args->{term} = $dbh->sql_like($value, $full_field);
 }
 
 sub _substring {
     my ($self, $args) = @_;
-    my ($full_field, $quoted) = @$args{qw(full_field quoted)};
+    my ($full_field, $value) = @$args{qw(full_field value)};
     my $dbh = Bugzilla->dbh;
-    
-    # XXX This should probably be changed to just use LIKE
-    $args->{term} = $dbh->sql_iposition($quoted, $full_field) . " > 0";
+
+    $args->{term} = $dbh->sql_ilike($value, $full_field);
 }
 
 sub _notsubstring {
     my ($self, $args) = @_;
-    my ($full_field, $quoted) = @$args{qw(full_field quoted)};
+    my ($full_field, $value) = @$args{qw(full_field value)};
     my $dbh = Bugzilla->dbh;
-    
-    # XXX This should probably be changed to just use NOT LIKE
-    $args->{term} = $dbh->sql_iposition($quoted, $full_field) . " = 0";
+
+    $args->{term} = $dbh->sql_not_ilike($value, $full_field);
 }
 
 sub _regexp {
@@ -3401,7 +3512,7 @@ sub _changedby {
         || ThrowCodeError("invalid_field_name", { field => $field });
     my $field_id = $field_object->id;
     my $table = "act_${field_id}_$chart_id";
-    my $user_id  = login_to_id($value, THROW_ERROR);
+    my $user_id  = $self->_get_user_id($value);
     my $join = {
         table => 'bugs_activity',
         as    => $table,
@@ -3589,7 +3700,7 @@ value for this field. At least one search criteria must be defined if the
 
 =item C<sharer>
 
-When a saved search is shared by a user, this is his user ID.
+When a saved search is shared by a user, this is their user ID.
 
 =item C<user>
 
@@ -3638,5 +3749,39 @@ the SQL query which has been executed, and C<time> contains the time spent
 to execute the SQL query, in seconds. There can be either a single hash, or
 two hashes if two SQL queries have been executed sequentially to get all the
 required data.
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item invalid_order_columns
+
+=item COLUMN_JOINS
+
+=item split_order_term
+
+=item SqlifyDate
+
+=item REPORT_COLUMNS
+
+=item pronoun
+
+=item COLUMNS
+
+=item order
+
+=item search_description
+
+=item IsValidQueryType
+
+=item build_subselect
+
+=item do_search_function
+
+=item boolean_charts_to_custom_search
+
+=item search_fields
 
 =back

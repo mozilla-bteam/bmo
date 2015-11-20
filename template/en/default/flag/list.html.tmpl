@@ -1,21 +1,9 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Myk Melez <myk@mozilla.org>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [% IF user.id && (!bug || bug.check_can_change_field('flagtypes.name', 0, 1)) %]
@@ -35,13 +23,12 @@
 <table id="[% flag_table_id FILTER html %]">
   [% UNLESS flag_no_header %]
     <tr>
-      <th colspan="3">
-        Flags:
-      </th>
+      <th colspan="3">Flags:</th>
       [% IF any_flags_requesteeble %]
-        <th>
-          Requestee:
-        </th>
+        <th>Requestee:</th>
+      [% END %]
+      [% IF edit_multiple_bugs %]
+        <th>&nbsp;</th>
       [% END %]
     </tr>
   [% END %]
@@ -69,7 +56,10 @@
       [% NEXT UNLESS type.flags && type.flags.size > 0 && type.is_multiplicable && type.is_active %]
       [% IF !separator_displayed %]
         <tbody class="bz_flag_type">
-          <tr><td colspan="3"><hr></td></tr>
+          [% sep_length = 3 + (any_flags_requesteeble ? 1 : 0) + (edit_multiple_bugs ? 1 : 0) %]
+          <tr>
+            <td colspan="[% sep_length FILTER html %]"><hr></td>
+          </tr>
         </tbody>
         [% separator_displayed = 1 %]
       [% END %]
@@ -92,7 +82,7 @@
       [% ELSE %]
         [% flag.setter.nick FILTER html %]:
       [% END %]
-      [%+ type.name FILTER html FILTER no_break %][% flag.status %]
+      <span class="nowrap">[%+ type.name FILTER html %][% flag.status %]</span>
       [% IF flag.requestee %]
         [% IF flag.requestee.name %]
           (<span title="[% flag.requestee.name FILTER html %]">[% flag.requestee.nick FILTER html %]</span>)
@@ -118,9 +108,9 @@
           [% addl_text FILTER html %]
         [% END %]
       </td>
-      <td>
+      <td class="nowrap">
         <label title="[% type.description FILTER html %]" for="[% fid FILTER html %]">
-          [%- type.name FILTER html FILTER no_break -%]</label>
+          [%- type.name FILTER html %]</label>
       </td>
       <td>
         <input type="hidden" id="[% fid FILTER html %]_dirty">
@@ -133,8 +123,11 @@
                 class="flag_select flag_type-[% type.id %]"
                 [% IF !can_edit_flag %] disabled="disabled"[% END %]>
         [%# Only display statuses the user is allowed to set. %]
+        [% IF edit_multiple_bugs && dontchange %]
+          <option value="[% dontchange FILTER html %]">[% dontchange FILTER html %]</option>
+        [% END %]
         [% IF !flag || (can_edit_flag && user.can_request_flag(type)) || flag.setter_id == user.id %]
-          <option value="X"></option>
+          <option value="X" label="X"></option>
         [% END %]
         [% IF type.is_active && can_edit_flag %]
           [% IF (type.is_requestable && user.can_request_flag(type)) || (flag && flag.status == "?") %]
@@ -152,37 +145,48 @@
         </select>
       </td>
       [% IF any_flags_requesteeble %]
-        <td>
+        <td class="bz_flags">
           [% IF (type.is_active && type.is_requestable && type.is_requesteeble) || (flag && flag.requestee) %]
-            <span style="white-space: nowrap;">
-              [% SET grant_list = [] %]
-              [% IF Param('usemenuforusers') %]
-                [% IF !can_edit_flag || (flag && !(type.is_active && type.is_requestable && type.is_requesteeble)) %]
-                  [%# We are here only because there was already a requestee. In this case,
-                      the only valid action is to remove the requestee or leave it alone;
-                      nothing else. %]
-                  [% grant_list = [flag.requestee] %]
-                [% ELSE %]
-                  [% grant_list = type.grant_list %]
-                [% END %]
+            [% SET grant_list = [] %]
+            [% IF Param('usemenuforusers') %]
+              [% IF !can_edit_flag || (flag && !(type.is_active && type.is_requestable && type.is_requesteeble)) %]
+                [%# We are here only because there was already a requestee. In this case,
+                    the only valid action is to remove the requestee or leave it alone;
+                    nothing else. %]
+                [% grant_list = [flag.requestee] %]
+              [% ELSE %]
+                [% grant_list = type.grant_list %]
               [% END %]
-              [% SET flag_name = flag ? "requestee-$flag.id" : "requestee_type-$type.id" %]
-              [% SET flag_requestee = (flag && flag.requestee) ? flag.requestee.login : '' %]
-              [% SET flag_multiple = flag ? 0 : type.is_multiplicable * 3 %]
-              [% SET flag_empty_ok = flag ? 1 : !type.is_multiplicable %]
-              [% INCLUDE global/userselect.html.tmpl
-                         name     => flag_name
-                         id       => flag_name
-                         value    => flag_requestee
-                         multiple => flag_multiple
-                         emptyok  => flag_empty_ok
-                         classes  => ["requestee"]
-                         custom_userlist => grant_list
-                         disabled => !can_edit_flag
-              %]
-              [% Hook.process("requestee", "flag/list.html.tmpl") %]
-            </span>
+            [% END %]
+            [% SET flag_name = flag ? "requestee-$flag.id" : "requestee_type-$type.id" %]
+            [% SET flag_requestee = (flag && flag.requestee) ? flag.requestee.login : '' %]
+            [% SET flag_multiple = flag ? 0 : type.is_multiplicable * 3 %]
+            [% SET flag_empty_ok = flag ? 1 : !type.is_multiplicable %]
+            [% INCLUDE global/userselect.html.tmpl
+                       name     => flag_name
+                       id       => flag_name
+                       value    => flag_requestee
+                       multiple => flag_multiple
+                       emptyok  => flag_empty_ok
+                       classes  => ["requestee"]
+                       custom_userlist => grant_list
+                       disabled => !can_edit_flag
+            %]
+            [% Hook.process("requestee", "flag/list.html.tmpl") %]
           [% END %]
+        </td>
+      [% END %]
+      [% IF edit_multiple_bugs %]
+        <td>
+        [% IF type.is_multiplicable %]
+          <input type="checkbox" name="flags_add-[% type.id %]"
+                 id="flags_add-[% type.id %]" value="1">
+          <label for="flags_add-[% type.id %]"
+                 title="If ticked, always create a new flag. Leaving it unchecked will
+                        update existing flag(s) and add a new flag if it does not exist">
+            Always add
+          </label>
+        [% END %]
         </td>
       [% END %]
     </tr>

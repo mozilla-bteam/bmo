@@ -13,7 +13,9 @@ package Bugzilla::PatchReader::Raw;
 # $parser->end_lines();
 #
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::PatchReader::Base;
 
@@ -265,4 +267,24 @@ sub iterate_string {
   $this->end_lines($id);
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item next_line
+
+=item start_lines
+
+=item end_lines
+
+=item iterate_file
+
+=item iterate_fh
+
+=item iterate_string
+
+=back

@@ -40,15 +40,6 @@ sslbase
     the :param:`sslbase` should be set
     to :paramval:`https://www.foo.com/bugzilla/`.
 
-cookiepath
-    Defines a path, relative to the web document root, that Bugzilla
-    cookies will be restricted to. For example, if the
-    :param:`urlbase` is set to
-    :file:`http://www.foo.com/bugzilla/`, the
-    :param:`cookiepath` should be set to
-    :paramval:`/bugzilla/`. Setting it to :paramval:`/` will allow all sites
-    served by this web server or virtual host to read Bugzilla cookies.
-
 .. _param-general:
 
 General
@@ -58,16 +49,6 @@ maintainer
     Email address of the person
     responsible for maintaining this Bugzilla installation.
     The address need not be that of a valid Bugzilla account.
-
-utf8
-    Use UTF-8 (Unicode) encoding for all text in Bugzilla. Installations where
-    this parameter is set to :paramval:`off` should set it to :paramval:`on` only
-    after the data has been converted from existing legacy character
-    encodings to UTF-8, using the
-    :file:`contrib/recode.pl` script.
-
-    .. note:: If you turn this parameter from :paramval:`off` to :paramval:`on`,
-              you must re-run :file:`checksetup.pl` immediately afterward.
 
 shutdownhtml
     If there is any text in this field, this Bugzilla installation will
@@ -221,6 +202,25 @@ allow_attachment_deletion
     of attachments (i.e. replace the attached file with a 0 byte file),
     leaving only the metadata.
 
+xsendfile_header
+    By default, attachments are served by Bugzilla. If you enable filesystem
+    file storage for large files using the :param:`maxlocalattachment`
+    parameter then you can have those files served directly by the webserver,
+    which avoids copying them entirely into memory, and this may result in a
+    performance improvement. To do this, configure your webserver appropriately
+    and then set the correct header, as follows:
+
+    * Apache: ``X-Sendfile`` header; see `webserver documentation
+      <https://tn123.org/mod_xsendfile/>`_ for configuration instructions
+    * nginx: ``X-Accel-Redirect`` header; see `webserver documentation
+      <http://wiki.nginx.org/X-accel>`_ for configuration instructions
+    * lighttpd: ``X-LIGHTTPD-send-file`` header; see `webserver documentation
+      <http://redmine.lighttpd.net/projects/1/wiki/X-LIGHTTPD-send-file>`_  for
+      configuration instructions
+
+    Please note that attachments stored in the database cannot be offloaded in
+    this way.
+
 maxattachmentsize
     The maximum size (in kilobytes) of attachments to be stored in the database. If a file larger than this size is attached to a bug, Bugzilla will look at the :param:`maxlocalattachment` parameter to determine if the file can be stored locally on the web server. If the file size exceeds both limits, then the attachment is rejected. Setting both parameters to 0 will prevent attaching files to bugs.
 
@@ -253,9 +253,6 @@ letsubmitterchoosepriority
 letsubmitterchoosemilestone
     If this is on, then people submitting bugs can choose the Target Milestone for that bug. If off, then all bugs initially have the default milestone for the product being filed in.
 
-musthavemilestoneonaccept
-    If you are using Target Milestone, do you want to require that the milestone be set in order for a user to set a bug's status to IN_PROGRESS?
-
 commenton*
     All these fields allow you to dictate what changes can pass
     without comment and which must have a comment from the
@@ -274,12 +271,14 @@ commenton*
        any comment as to what the fix was (or even that it was truly
        fixed!)
 
-noresolveonopenblockers
-    This option will prevent users from resolving bugs as FIXED if
-    they have unresolved dependencies. Only the FIXED resolution
-    is affected. Users will be still able to resolve bugs to
-    resolutions other than FIXED if they have unresolved dependent
-    bugs.
+resolution_forbidden_with_open_blockers
+    This option will prevent users from resolving bugs as the chosen resolution
+    if they have unresolved dependencies. If using Bugzilla's default
+    resolutions, the most common value to choose is FIXED, because if a bug
+    is fixed, either is dependencies are actually fixed (and should be marked
+    as such) or the dependency is mistaken and should be removed. Only the
+    chosen resolution is affected; users will be still able to resolve bugs to
+    other resolutions even if they have unresolved dependent bugs.
 
 .. _param-bugfields:
 
@@ -337,42 +336,6 @@ collapsed_comment_tags
     A comma-separated list of tags which, when applied to comments, will
     cause them to be collapsed by default.
 
-.. _param-dependency-graphs:
-
-Graphs
-======
-
-Bugzilla can draw graphs of bug-dependency relationships, using a tool called
-:file:`dot` (from the `GraphViz project <http://graphviz.org/>`_) or a web
-service called Web Dot. This page allows you to set the location of the binary
-or service. If no Web Dot server or binary is specified, then dependency
-graphs will be disabled.
-
-webdotbase
-    You may set this parameter to any of the following:
-
-    * A complete file path to :command:`dot` (part of GraphViz), which will
-      generate the graphs locally.
-    * A URL prefix pointing to an installation of the Web Dot package, which
-      will generate the graphs remotely.
-    * A blank value, which will disable dependency graphing.
-
-    The default value is blank. We recommend using a local install of
-    :file:`dot`. If you change this value to a web service, make certain that
-    the Web Dot server can read files from your Web Dot directory. On Apache
-    you do this by editing the :file:`.htaccess` file; for other systems the
-    needed measures may vary. You can run :command:`checksetup.pl` to
-    recreate the :file:`.htaccess` file if it has been lost.
-
-font_file
-    You can specify the full path to a TrueType font file which will be used
-    to display text (labels, legends, ...) in charts and graphical reports.
-    To support as many languages as possible, we recommend to specify a
-    TrueType font such as Unifont which supports all printable characters in
-    the Basic Multilingual Plane. If you leave this parameter empty, a default
-    font will be used, but its support is limited to English characters only
-    and so other characters will be displayed incorrectly. 
-
 .. _param-group-security:
 
 Group Security
@@ -389,14 +352,6 @@ on the :guilabel:`Groups` and :guilabel:`Product` pages of the
 The options on this page control global default behavior.
 For more information on Groups and Group Security, see
 :ref:`groups`.
-
-makeproductgroups
-    Determines whether or not to automatically create groups
-    when new products are created. If this is on, the groups will be
-    used for querying bugs.
-
-    .. todo:: This is spectacularly unclear. I have no idea what makeproductgroups
-              does - can someone explain it to me? Convert this item into a bug on checkin.
 
 chartgroup
     The name of the group of users who can use the 'New Charts' feature. Administrators should ensure that the public categories and series definitions do not divulge confidential information before enabling this for an untrusted population. If left blank, no users will be able to use New Charts.

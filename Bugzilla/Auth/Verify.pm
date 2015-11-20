@@ -1,22 +1,16 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Auth::Verify;
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use fields qw();
 
 use Bugzilla::Constants;
@@ -112,24 +106,24 @@ sub create_or_update_user {
 
     my $user = new Bugzilla::User({ id => $user_id, cache => 1 });
 
-    # Now that we have a valid User, we need to see if any data has to be
-    # updated.
-    my $user_updated = 0;
+    # Now that we have a valid User, we need to see if any data has to be updated.
+    my $changed = 0;
+
     if ($username && lc($user->login) ne lc($username)) {
         validate_email_syntax($username)
           || return { failure => AUTH_ERROR, error => 'auth_invalid_email',
                       details => {addr => $username} };
         $user->set_login($username);
-        $user_updated = 1;
+        $changed = 1;
     }
     if ($real_name && $user->name ne $real_name) {
         # $real_name is more than likely tainted, but we only use it
         # in a placeholder and we never use it after this.
         trick_taint($real_name);
         $user->set_name($real_name);
-        $user_updated = 1;
+        $changed = 1;
     }
-    $user->update() if $user_updated;
+    $user->update() if $changed;
 
     return { user => $user };
 }
@@ -244,5 +238,13 @@ used, users with editusers permission will be be allowed to
 edit the extern_id for all users.
 
 The default value is C<false>.
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item can_change_password
 
 =back

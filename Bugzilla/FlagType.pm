@@ -1,28 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Myk Melez <myk@mozilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-
-use strict;
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::FlagType;
+
+use 5.10.1;
+use strict;
+use warnings;
 
 =head1 NAME
 
@@ -54,7 +41,10 @@ use Bugzilla::Util;
 use Bugzilla::Group;
 use Bugzilla::Hook;
 
-use base qw(Bugzilla::Object);
+use Email::Address;
+use List::MoreUtils qw(uniq);
+
+use parent qw(Bugzilla::Object);
 
 ###############################
 ####    Initialization     ####
@@ -316,15 +306,11 @@ sub _check_cc_list {
       || ThrowUserError('flag_type_cc_list_invalid', { cc_list => $cc_list });
 
     my @addresses = split(/[,\s]+/, $cc_list);
-    # We do not call Util::validate_email_syntax because these
-    # addresses do not require to match 'emailregexp' and do not
-    # depend on 'emailsuffix'. So we limit ourselves to a simple
-    # sanity check:
-    # - match the syntax of a fully qualified email address;
-    # - do not contain any illegal character.
+    my $addr_spec = $Email::Address::addr_spec;
+    # We do not call check_email_syntax() because these addresses do not
+    # require to match 'emailregexp' and do not depend on 'emailsuffix'.
     foreach my $address (@addresses) {
-        ($address =~ /^[\w\.\+\-=]+@[\w\.\-]+\.[\w\-]+$/
-           && $address !~ /[\\\(\)<>&,;:"\[\] \t\r\n\P{ASCII}]/)
+        ($address !~ /\P{ASCII}/ && $address =~ /^$addr_spec$/)
           || ThrowUserError('illegal_email_address',
                             {addr => $address, default => 1});
     }
@@ -427,6 +413,22 @@ sub set_clusions {
             $clusions{"$prod_name:$comp_name"} = "$prod_id:$comp_id";
             $clusions_as_hash{$prod_id}->{$comp_id} = 1;
         }
+
+        # Check the user has the editcomponent permission on products that are changing
+        if (! $user->in_group('editcomponents')) {
+            my $current_clusions = $self->$category;
+            my ($removed, $added)
+                = diff_arrays([ values %$current_clusions ], [ values %clusions ]);
+            my @changed_product_ids
+                = uniq map { substr($_, 0, index($_, ':')) } @$removed, @$added;
+            foreach my $product_id (@changed_product_ids) {
+                $user->in_group('editcomponents', $product_id)
+                    || ThrowUserError('product_access_denied',
+                                      { name => $products{$product_id}->name });
+            }
+        }
+
+        # Set the changes
         $self->{$category} = \%clusions;
         $self->{"${category}_as_hash"} = \%clusions_as_hash;
         $self->{"_update_$category"} = 1;
@@ -652,24 +654,10 @@ sub count {
 # Private Functions
 ######################################################################
 
-=begin private
-
-=head1 PRIVATE FUNCTIONS
-
-=over
-
-=item C<sqlify_criteria($criteria, $tables)>
-
-Converts a hash of criteria into a list of SQL criteria.
-$criteria is a reference to the criteria (field => value), 
-$tables is a reference to an array of tables being accessed 
-by the query.
-
-=back
-
-=end private
-
-=cut
+# Converts a hash of criteria into a list of SQL criteria.
+# $criteria is a reference to the criteria (field => value), 
+# $tables is a reference to an array of tables being accessed 
+# by the query.
 
 sub sqlify_criteria {
     my ($criteria, $tables) = @_;
@@ -681,9 +669,19 @@ sub sqlify_criteria {
     my @criteria = ("1=1");
 
     if ($criteria->{name}) {
-        my $name = $dbh->quote($criteria->{name});
-        trick_taint($name); # Detaint data as we have quoted it.
-        push(@criteria, "flagtypes.name = $name");
+        if (ref($criteria->{name}) eq 'ARRAY') {
+            my @names = map { $dbh->quote($_) } @{$criteria->{name}};
+            # Detaint data as we have quoted it.
+            foreach my $name (@names) {
+                trick_taint($name);
+            }
+            push @criteria, $dbh->sql_in('flagtypes.name', \@names);
+        }
+        else {
+            my $name = $dbh->quote($criteria->{name});
+            trick_taint($name); # Detaint data as we have quoted it.
+            push(@criteria, "flagtypes.name = $name");
+        }
     }
     if ($criteria->{target_type}) {
         # The target type is stored in the database as a one-character string

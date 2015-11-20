@@ -9,6 +9,7 @@ package Bugzilla::User::Session;
 
 use 5.10.1;
 use strict;
+use warnings;
 
 use parent qw(Bugzilla::Object);
 
@@ -46,3 +47,21 @@ sub ipaddr          { return $_[0]->{ipaddr}          }
 sub restrict_ipaddr { return $_[0]->{restrict_ipaddr} }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item id
+
+=item userid
+
+=item cookie
+
+=item lastused
+
+=item ipaddr
+
+=item restrict_ipaddr
+
+=back

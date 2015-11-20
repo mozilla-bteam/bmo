@@ -1,4 +1,4 @@
-#!/usr/bin/perl -wT
+#!/usr/bin/perl -T
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -64,7 +64,7 @@ if ($confirmed || $skip_confirmation) {
                            { token => $token, callback => $callback });
         }
     }
-    my $app_id = sha256_hex($callback_base, $description);
+    my $app_id = sha256_hex($callback_uri, $description);
     my $keys = Bugzilla::User::APIKey->match({
         user_id => $user->id,
         app_id  => $app_id,
@@ -95,7 +95,8 @@ if ($confirmed || $skip_confirmation) {
     $ua->protocols_allowed(['http', 'https']);
     # If the URL of the proxy is given, use it, else get this information
     # from the environment variable.
-    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
+    my $proxy_url = Bugzilla->params->{'proxy_url'};
+    if ($proxy_url) {
         $ua->proxy(['http', 'https'], $proxy_url);
     }
     else {
@@ -112,9 +113,12 @@ if ($confirmed || $skip_confirmation) {
             my $data = decode_json($resp->content);
             $callback_uri->query_param(callback_result => $data->{result});
         };
-        ThrowUserError('auth_delegation_json_error', { json_text => $resp->content }) if $@;
-
-        print $cgi->redirect($callback_uri);
+        if ($@) {
+            ThrowUserError('auth_delegation_json_error', { json_text => $resp->content });
+        }
+        else {
+            print $cgi->redirect($callback_uri);
+        }
     }
     else {
         ThrowUserError('auth_delegation_post_error', { code => $resp->code });

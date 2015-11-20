@@ -1,27 +1,18 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Shane H. W. Travis <travis@sedsystems.ca>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Marc Schumann <wurblzap@gmail.com>
-#                 Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 
 package Bugzilla::User::Setting;
 
+use 5.10.1;
 use strict;
-use base qw(Exporter);
+use warnings;
+
+use parent qw(Exporter);
 
 
 # Module stuff
@@ -132,7 +123,7 @@ sub new {
 
 sub add_setting {
     my ($params) = @_;
-    my ($name, $options, $default, $subclass, $force_check, $silently, $category)
+    my ($name, $options, $default_value, $subclass, $force_check, $silently, $category)
         = @$params{qw( name options default subclass force_check silently category )};
     my $dbh = Bugzilla->dbh;
 
@@ -151,7 +142,7 @@ sub add_setting {
 
     return if ($exists && !$force_check);
 
-    ($name && $default)
+    ($name && length( $default_value // '' ))
       ||  ThrowCodeError("setting_info_invalid");
 
     if ($exists) {
@@ -171,7 +162,7 @@ sub add_setting {
     }
     $dbh->do(q{INSERT INTO setting (name, default_value, is_enabled, subclass, category)
                     VALUES (?, ?, 1, ?, ?)},
-             undef, ($name, $default, $subclass, $category));
+             undef, ($name, $default_value, $subclass, $category));
 
     my $sth = $dbh->prepare(q{INSERT INTO setting_value (name, value, sortindex)
                                     VALUES (?, ?, ?)});

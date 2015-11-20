@@ -1,22 +1,9 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Gervase Markham <gerv@gerv.net>
-  #                 Toms Baugis <toms@myrealbox.com>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [%# INTERFACE:
@@ -26,12 +13,9 @@
 [% IF !target %]
  [% target = "index.cgi" %]
 [% END %]
-  
-[% PROCESS global/variables.none.tmpl %]
 
 [% PROCESS global/header.html.tmpl
   title        = "Log in to $terms.Bugzilla",
-  onload       = "document.forms['login'].Bugzilla_login.focus()"
   allow_mobile = 1
 %]
 
@@ -47,13 +31,13 @@
     <div class="field-login">
       <label for="Bugzilla_login">Email Address:</label>
       <input id="Bugzilla_login" name="Bugzilla_login"
-             [%- ' type="email"' UNLESS Param('emailsuffix') %]>
+             [%- ' type="email"' UNLESS Param('emailsuffix') %] autofocus required>
       [% Param('emailsuffix') FILTER html %]
     </div>
 
     <div class="field-password">
       <label for="Bugzilla_password">Password:</label>
-      <input type="password" id="Bugzilla_password" name="Bugzilla_password">
+      <input type="password" id="Bugzilla_password" name="Bugzilla_password" required>
     </div>
 
     [% IF Param('rememberlogin') == 'defaulton' || 
@@ -93,31 +77,17 @@
 
 [% Hook.process('additional_methods') %]
 
-[%# Allow the user to create a new account, or request a token to change
-  # their password, assuming that our auth method allows that.
-  #%]
-
+<div class="links">
+  [% can_create_account = 0 %]
   [% IF Param("createemailregexp") && user.authorizer.user_can_create_account %]
-    <hr>
-
-    <p>
-      If you don't have a [% terms.Bugzilla %] account, you can
-      <a href="createaccount.cgi">create a new account</a>.
-    </p>
+    <span><a href="createaccount.cgi">Create a New Account</a></span>
+    [% can_create_account = 1 %]
   [% END %]
 
   [% IF user.authorizer.can_change_password %]
-    <hr>
-
-    <form id="forgot" method="get" action="token.cgi">
-      <input type="hidden" name="a" value="reqpw">
-      If you have an account, but have forgotten your password,
-      enter your email address below and submit a request
-      to change your password.<br>
-      <input name="loginname">
-      <input type="hidden" id="token" name="token" value="[% issue_hash_token(['reqpw']) FILTER html %]">
-      <input type="submit" id="request" value="Reset Password">
-    </form>
+    [% "|" IF can_create_account %]
+    <span><a href="createaccount.cgi?request_new_password=1">Forgot Password</a></span>
   [% END %]
+</div>
 
 [% PROCESS global/footer.html.tmpl %]

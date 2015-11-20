@@ -1,32 +1,14 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Myk Melez <myk@mozilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
-################################################################################
-# Script Initialization
-################################################################################
-
-# Make it harder for us to do dangerous things in Perl.
+use 5.10.1;
 use strict;
+use warnings;
 
 use lib qw(. lib);
 
@@ -53,13 +35,9 @@ my $format = $template->get_format('request/queue',
 $cgi->set_dated_content_disp("inline", "requests", $format->{extension});
 print $cgi->header($format->{'ctype'});
 
-################################################################################
-# Main Body Execution
-################################################################################
-
 my $fields;
 $fields->{'requester'}->{'type'} = 'single';
-# If the user doesn't restrict his search to requests from the wind
+# If the user doesn't restrict their search to requests from the wind
 # (requestee ne '-'), include the requestee for completion.
 unless (defined $cgi->param('requestee')
         && $cgi->param('requestee') eq '-')
@@ -89,7 +67,7 @@ else {
     $vars->{'components'} = [ sort { $a cmp $b } keys %components ];
 
     $template->process($format->{'template'}, $vars)
-        || ThrowTemplateError($template->error());
+      || ThrowTemplateError($template->error());
 }
 exit;
 
@@ -146,20 +124,27 @@ sub queue {
                   ON bugs.product_id = products.id
           INNER JOIN components
                   ON bugs.component_id = components.id
-           LEFT JOIN bug_group_map AS bgmap
-                  ON bgmap.bug_id = bugs.bug_id
-                 AND bgmap.group_id NOT IN (" .
-                     $user->groups_as_string . ")
            LEFT JOIN bug_group_map AS privs
                   ON privs.bug_id = bugs.bug_id
            LEFT JOIN cc AS ccmap
                   ON ccmap.who = $userid
                  AND ccmap.bug_id = bugs.bug_id
-    " .
+           LEFT JOIN bug_group_map AS bgmap
+                  ON bgmap.bug_id = bugs.bug_id
+    ";
+
+    if (Bugzilla->params->{or_groups}) {
+        $query .= " AND bgmap.group_id IN (" . $user->groups_as_string . ")";
+        $query .= " WHERE     (privs.group_id IS NULL OR bgmap.group_id IS NOT NULL OR";
+    }
+    else {
+        $query .= " AND bgmap.group_id NOT IN (" . $user->groups_as_string . ")";
+        $query .= " WHERE     (bgmap.group_id IS NULL OR";
+    }
 
     # Weed out bug the user does not have access to
-    " WHERE     ((bgmap.group_id IS NULL) OR
-                 (ccmap.who IS NOT NULL AND cclist_accessible = 1) OR
+    $query .=
+    "            (ccmap.who IS NOT NULL AND cclist_accessible = 1) OR
                  (bugs.reporter = $userid AND bugs.reporter_accessible = 1) OR
                  (bugs.assigned_to = $userid) " .
                  (Bugzilla->params->{'useqacontact'} ? "OR
@@ -340,7 +325,7 @@ sub queue {
 
     # Generate and return the UI (HTML page) from the appropriate template.
     $template->process($format->{'template'}, $vars)
-        || ThrowTemplateError($template->error());
+      || ThrowTemplateError($template->error());
 }
 
 ################################################################################

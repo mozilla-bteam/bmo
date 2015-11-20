@@ -14,8 +14,8 @@
     bug = bugs.0;
   END;
   title = "$bug.bug_id - ";
-  IF bug.alias;
-    title = title _ "($bug.alias) ";
+  IF bug.alias.size;
+    title = title _ "(" _ bug.alias.join(', ') _ ") ";
   END;
   unfiltered_title = title _ bug.short_desc;
   filtered_desc = bug.short_desc FILTER html;

@@ -169,3 +169,31 @@ sub report {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item end
+
+=item cancel
+
+=item finish
+
+=item name
+
+=item db_start
+
+=item template_start
+
+=item memcached_start
+
+=item memcached_end
+
+=item resume
+
+=item report
+
+=back

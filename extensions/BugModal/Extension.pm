@@ -7,6 +7,7 @@
 
 package Bugzilla::Extension::BugModal;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -278,7 +279,7 @@ sub bug_start_of_set_all {
         $params->{assigned_to} = $bug->component_obj->default_assignee->login;
     }
     if (exists $params->{qa_contact} && (!defined $params->{qa_contact} || $params->{qa_contact} eq '')
-        && $bug->component_obj->default_qa_contact->id)
+        && $bug->component_obj->default_qa_contact && $bug->component_obj->default_qa_contact->id)
     {
         $params->{qa_contact} = $bug->component_obj->default_qa_contact->login;
     }

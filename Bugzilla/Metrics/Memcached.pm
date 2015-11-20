@@ -7,6 +7,7 @@
 
 package Bugzilla::Metrics::Memcached;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -21,3 +22,5 @@ sub _get {
 }
 
 1;
+
+=head1 B<Methods in need of POD>

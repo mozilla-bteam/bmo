@@ -12,14 +12,6 @@
   [% javascript_urls.push('extensions/BMO/web/js/attachment_bounty_form.js') %]
   [% yui.push('selector') %]
 [% END %]
-[% title = "$bug.bug_id &ndash; " %]
-[% IF bug.alias != '' %]
-  [% title = title _ "($bug.alias) " %]
-[% END %]
-[% title = title _ filtered_desc %]
-[% javascript = javascript _ 
-                "document.title = document.title.replace(/^" _ terms.Bug _ " /, '');"
-%]
 [% js_bug_id = bug.bug_id FILTER js %]
 [% IF user.in_group("bounty-team") %]
   [% javascript = javascript _

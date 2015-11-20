@@ -1,24 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Mozilla Corporation.
-# Portions created by the Initial Developer are Copyright (C) 2008
-# Mozilla Corporation. All Rights Reserved.
-#
-# Contributor(s): 
-#   Mark Smith <mark@mozilla.com>
-#   Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 # XXX In order to support Windows, we have to make gd_redirect_output
 # use Log4Perl or something instead of calling "logger". We probably
@@ -26,7 +11,10 @@
 
 package Bugzilla::JobQueue::Runner;
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use Cwd qw(abs_path);
 use File::Basename;
 use File::Copy;
@@ -35,7 +23,7 @@ use Pod::Usage;
 use Bugzilla::Constants;
 use Bugzilla::JobQueue;
 use Bugzilla::Util qw(get_text);
-BEGIN { eval "use base qw(Daemon::Generic)"; }
+BEGIN { eval "use parent qw(Daemon::Generic)"; }
 
 our $VERSION = BUGZILLA_VERSION;
 
@@ -92,6 +80,7 @@ sub gd_more_opt {
     return (
         'pidfile=s' => \$self->{gd_args}{pidfile},
         'n=s'       => \$self->{gd_args}{progname},
+        'j=s@'      => \$self->{gd_args}{job_name},
     );
 }
 
@@ -145,6 +134,7 @@ sub gd_can_install {
             print $config_fh <<END;
 #!/bin/sh
 BUGZILLA="$directory"
+# This user must have write access to Bugzilla's data/ directory.
 USER=$owner
 END
             close($config_fh);
@@ -217,14 +207,15 @@ sub gd_run {
 sub _do_work {
     my ($self, $fn) = @_;
 
+    my @job_name = @{ $self->{gd_args}{job_name} // [] };
     my $jq = Bugzilla->job_queue();
     $jq->set_verbose($self->{debug});
     $jq->set_pidfile($self->{gd_pidfile});
-    foreach my $module (values %{ Bugzilla::JobQueue->job_map() }) {
+    while (my ($key, $module) = each %{ Bugzilla::JobQueue->job_map() }) {
+        next if @job_name and ! grep { $_ eq $key } @job_name;
         eval "use $module";
         $jq->can_do($module);
     }
-
     $jq->$fn;
 }
 
@@ -246,3 +237,33 @@ job queue.
 
 This is a subclass of L<Daemon::Generic> that is used by L<jobqueue>
 to run the Bugzilla job queue.
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item gd_check
+
+=item gd_run
+
+=item gd_can_install
+
+=item gd_quit_event
+
+=item gd_other_cmd
+
+=item gd_more_opt
+
+=item gd_postconfig
+
+=item gd_usage
+
+=item gd_getopt
+
+=item gd_preconfig
+
+=item gd_can_uninstall
+
+=item gd_setup_signals
+
+=back

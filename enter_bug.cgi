@@ -1,28 +1,10 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-# 
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are Copyright (C) 1998
-# Netscape Communications Corporation. All Rights Reserved.
-# 
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Dave Miller <justdave@syndicomm.com>
-#                 Joe Robins <jmrobins@tgix.com>
-#                 Gervase Markham <gerv@gerv.net>
-#                 Shane H. W. Travis <travis@sedsystems.ca>
-#                 Nitish Bezzala <nbezzala@yahoo.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 ##############################################################################
 #
@@ -34,7 +16,9 @@
 #
 ##############################################################################
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use lib qw(. lib);
 
@@ -43,15 +27,14 @@ use Bugzilla::Constants;
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::Bug;
-use Bugzilla::User;
 use Bugzilla::Hook;
-use Bugzilla::Product;
 use Bugzilla::Classification;
-use Bugzilla::Keyword;
 use Bugzilla::Token;
 use Bugzilla::Field;
 use Bugzilla::Status;
 use Bugzilla::UserAgent;
+
+use List::MoreUtils qw(none);
 
 my $user = Bugzilla->login(LOGIN_REQUIRED);
 
@@ -101,23 +84,7 @@ if ($product_name eq '') {
     my @classifications;
 
     unless ($classification && $classification ne '__all') {
-        if (Bugzilla->params->{'useclassification'}) {
-            my $class;
-            # Get all classifications with at least one enterable product.
-            foreach my $product (@enterable_products) {
-                $class->{$product->classification_id}->{'object'} ||=
-                    new Bugzilla::Classification($product->classification_id);
-                # Nice way to group products per classification, without querying
-                # the DB again.
-                push(@{$class->{$product->classification_id}->{'products'}}, $product);
-            }
-            @classifications = sort {$a->{'object'}->sortkey <=> $b->{'object'}->sortkey
-                                     || lc($a->{'object'}->name) cmp lc($b->{'object'}->name)}
-                                    (values %$class);
-        }
-        else {
-            @classifications = ({object => undef, products => \@enterable_products});
-        }
+        @classifications = @{sort_products_by_classification(\@enterable_products)};
     }
 
     unless ($classification) {
@@ -128,8 +95,6 @@ if ($product_name eq '') {
             $vars->{'classifications'} = [map {$_->{'object'}} @classifications];
 
             $vars->{'target'} = "enter_bug.cgi";
-            $vars->{'format'} = $cgi->param('format');
-            $vars->{'cloned_bug_id'} = $cgi->param('cloned_bug_id');
 
             print $cgi->header();
             $template->process("global/choose-classification.html.tmpl", $vars)
@@ -160,8 +125,6 @@ if ($product_name eq '') {
     elsif (scalar(@enterable_products) > 1) {
         $vars->{'classifications'} = \@classifications;
         $vars->{'target'} = "enter_bug.cgi";
-        $vars->{'format'} = $cgi->param('format');
-        $vars->{'cloned_bug_id'} = $cgi->param('cloned_bug_id');
 
         print $cgi->header();
         $template->process("global/choose-product.html.tmpl", $vars)
@@ -270,14 +233,19 @@ if ($cloned_bug_id) {
     $vars->{'estimated_time'}    = $cloned_bug->estimated_time;
     $vars->{'status_whiteboard'} = $cloned_bug->status_whiteboard;
 
-    if (defined $cloned_bug->cc) {
+    if (scalar @{$cloned_bug->cc}) {
         $vars->{'cc'}         = join (", ", @{$cloned_bug->cc});
     } else {
         $vars->{'cc'}         = formvalue('cc');
     }
-    
-    if ($cloned_bug->reporter->id != $user->id) {
-        $vars->{'cc'} = join (", ", $cloned_bug->reporter->login, $vars->{'cc'}); 
+
+    foreach my $role (qw(reporter assigned_to qa_contact)) {
+        if (defined($cloned_bug->$role)
+            && $cloned_bug->$role->id != $user->id
+            && none { $_ eq $cloned_bug->$role->login } @{$cloned_bug->cc})
+        {
+            $vars->{'cc'} = join (", ", $cloned_bug->$role->login, $vars->{'cc'});
+        }
     }
 
     foreach my $field (@enter_bug_fields) {
@@ -294,7 +262,7 @@ if ($cloned_bug_id) {
     $vars->{'comment'} = "";
     $vars->{'comment_is_private'} = 0;
 
-    if (!$isprivate || Bugzilla->user->is_insider) {
+    if (!$isprivate || $user->is_insider) {
         # We use "body" to avoid any format_comment text, which would be
         # pointless to clone.
         $vars->{'comment'} = $bug_desc->body;
@@ -383,26 +351,14 @@ if ( Bugzilla->params->{'usetargetmilestone'} ) {
 }
 
 # Construct the list of allowable statuses.
-my @statuses = @{ Bugzilla::Status->can_change_to() };
+my @statuses = @{ Bugzilla::Bug->new_bug_statuses($product) };
 # Exclude closed states from the UI, even if the workflow allows them.
 # The back-end code will still accept them, though.
+# XXX We should remove this when the UI accepts closed statuses and update
+# Bugzilla::Bug->default_bug_status.
 @statuses = grep { $_->is_open } @statuses;
 
-# UNCONFIRMED is illegal if allows_unconfirmed is false.
-if (!$product->allows_unconfirmed) {
-    @statuses = grep { $_->name ne 'UNCONFIRMED' } @statuses;
-}
 scalar(@statuses) || ThrowUserError('no_initial_bug_status');
-
-# If the user has no privs...
-unless ($has_editbugs || $has_canconfirm) {
-    # ... use UNCONFIRMED if available, else use the first status of the list.
-    my ($unconfirmed) = grep { $_->name eq 'UNCONFIRMED' } @statuses;
-
-    # Because of an apparent Perl bug, "$unconfirmed || $statuses[0]" doesn't
-    # work, so we're using an "?:" operator. See bug 603314 for details.
-    @statuses = ($unconfirmed ? $unconfirmed : $statuses[0]);
-}
 
 $vars->{'bug_status'} = \@statuses;
 
@@ -413,12 +369,8 @@ $vars->{'bug_status'} = \@statuses;
 my $picked_status = formvalue('bug_status');
 if ($picked_status and grep($_->name eq $picked_status, @statuses)) {
     $default{'bug_status'} = formvalue('bug_status');
-} elsif (scalar @statuses == 1) {
-    $default{'bug_status'} = $statuses[0]->name;
-}
-else {
-    $default{'bug_status'} = ($statuses[0]->name ne 'UNCONFIRMED') 
-                             ? $statuses[0]->name : $statuses[1]->name;
+} else {
+    $default{'bug_status'} = Bugzilla::Bug->default_bug_status(@statuses);
 }
 
 my @groups = $cgi->param('groups');
@@ -441,4 +393,3 @@ my $format = $template->get_format("bug/create/create",
 print $cgi->header($format->{'ctype'});
 $template->process($format->{'template'}, $vars)
   || ThrowTemplateError($template->error());          
-

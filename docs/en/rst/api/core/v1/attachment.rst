@@ -137,6 +137,7 @@ To create attachment on a current bug:
      "ids" : [ 35 ],
      "is_patch" : true,
      "comment" : "This is a new attachment comment",
+     "is_markdown" : true,
      "summary" : "Test Attachment",
      "content_type" : "text/plain",
      "data" : "(Some patch content)",
@@ -185,6 +186,8 @@ is_private        boolean  ``true`` if the attachment should be private
                            (restricted to the "insidergroup"), ``false`` if the
                            attachment should be public. Defaults to ``false`` if
                            not specified.
+is_markdown       boolean  If set to ``true``, the comment has Markdown structures;
+                           otherwise, it is normal text.
 flags             array    Flags objects to add to the attachment. The object
                            format is described in the Flag object below.
 ================  =======  ======================================================
@@ -243,6 +246,7 @@ To update attachment metadata on a current attachment:
      "ids" : [ 2796 ],
      "summary" : "Test XML file",
      "comment" : "Changed this from a patch to a XML file",
+     "is_markdown" : true,
      "content_type" : "text/xml",
      "is_patch" : 0
    }
@@ -261,6 +265,8 @@ file_name     string   The "file name" that will be displayed in the UI for this
                        attachment.
 summary       string   A short string describing the attachment.
 comment       string   An optional comment to add to the attachment's bug.
+is_markdown   boolean  If set to ``true``, the comment has Markdown structures;
+                       otherwise, it is normal text.
 content_type  string   The MIME type of the attachment, like ``text/plain``
                        or ``image/png``.
 is_patch      boolean  ``true`` if Bugzilla should treat this attachment as a

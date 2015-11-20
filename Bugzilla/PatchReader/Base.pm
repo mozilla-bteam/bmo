@@ -1,6 +1,8 @@
 package Bugzilla::PatchReader::Base;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 sub new {
   my $class = shift;
@@ -20,4 +22,14 @@ sub sends_data_to {
   }
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item sends_data_to
+
+=back

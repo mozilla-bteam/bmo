@@ -1,26 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Everything Solved, Inc.
-# Portions created by the Initial Developer are Copyright (C) 2008
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s): 
-#   Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::WebService::Util;
+
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::Flag;
 use Bugzilla::FlagType;
@@ -30,7 +19,7 @@ use Bugzilla::WebService::Constants;
 use Storable qw(dclone);
 use URI::Escape qw(uri_unescape);
 
-use base qw(Exporter);
+use parent qw(Exporter);
 
 # We have to "require", not "use" this, because otherwise it tries to
 # use features of Test::More during import().
@@ -215,7 +204,8 @@ sub _delete_bad_keys {
             # Making something a hash key always untaints it, in Perl.
             # However, we need to validate our argument names in some way.
             # We know that all hash keys passed in to the WebService will 
-            # match \w+, so we delete any key that doesn't match that.
+            # match \w+, contain '.' or '-', so we delete any key that
+            # doesn't match that.
             if ($key !~ /^[\w\.\-]+$/) {
                 delete $item->{$key};
             }
@@ -260,10 +250,10 @@ sub params_to_objects {
     my ($params, $class) = @_;
     my (@objects, @objects_by_ids);
 
-    @objects = map { $class->check($_) }
+    @objects = map { $class->check($_) } 
         @{ $params->{names} } if $params->{names};
 
-    @objects_by_ids = map { $class->check({ id => $_ }) }
+    @objects_by_ids = map { $class->check({ id => $_ }) } 
         @{ $params->{ids} } if $params->{ids};
 
     push(@objects, @objects_by_ids);
@@ -352,6 +342,14 @@ This helps in the validation of parameters passed into the WebService
 methods. Currently it converts listed parameters into an array reference
 if the client only passed a single scalar value. It modifies the parameters
 hash in place so other parameters should be unaltered.
+
+=head2 translate
+
+WebService methods frequently take parameters with different names than
+the ones that we use internally in Bugzilla. This function takes a hashref
+that has field names for keys and returns a hashref with those keys renamed
+according to the mapping passed in with the second parameter (which is also
+a hashref).
 
 =head2 params_to_objects
 

@@ -7,6 +7,7 @@
 
 package Bugzilla::Extension::Push::Serialise;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -180,7 +181,7 @@ sub _bug {
 
     my $rh = {
         id               => _integer($bug->bug_id),
-        alias            => _string($bug->alias),
+        alias            => _string(join(', ', @{ $bug->alias })),
         assigned_to      => $self->_user($bug->assigned_to),
         classification   => _string($bug->classification),
         component        => $self->_component($bug->component_obj),

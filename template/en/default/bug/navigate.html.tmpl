@@ -1,27 +1,13 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Gervase Markham <gerv@gerv.net>
-  #                 Max Kanat-Alexander <mkanat@bugzilla.org>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [% RETURN IF !bug %]
 
-[% PROCESS global/variables.none.tmpl %]
 [% IF bottom_navigator == 1 %]
   <ul class="related_actions">
     <li><a href="show_bug.cgi?format=multiple&amp;id=
@@ -49,12 +35,21 @@
 
   ([% this_bug_idx + 1 %] of [% last_bug_list.size %])
 
-  <a href="show_bug.cgi?id=
-           [%- last_bug_list.first FILTER uri %]&amp;list_id=
-           [%- my_search.id FILTER uri %]">First</a>
-  <a href="show_bug.cgi?id=
-           [%- last_bug_list.last FILTER uri %]&amp;list_id=
-           [%- my_search.id FILTER uri %]">Last</a>
+  [% IF this_bug_idx > 0 %]
+    <a href="show_bug.cgi?id=
+             [%- last_bug_list.first FILTER uri %]&amp;list_id=
+             [%- my_search.id FILTER uri %]">First</a>
+  [% ELSE %]
+    <span class="navigation_link">First</span>
+  [% END %]
+
+  [% IF this_bug_idx + 1 < last_bug_list.size %]
+    <a href="show_bug.cgi?id=
+             [%- last_bug_list.last FILTER uri %]&amp;list_id=
+             [%- my_search.id FILTER uri %]">Last</a>
+  [% ELSE %]
+    <span class="navigation_link">Last</span>
+  [% END %]
 
   [% IF this_bug_idx > 0 %]
     [% prev_bug = this_bug_idx - 1 %]
@@ -62,7 +57,7 @@
              [%- last_bug_list.$prev_bug FILTER uri %]&amp;list_id=
              [%- my_search.id FILTER uri %]">Prev</a>
   [% ELSE %]
-    <i><font color="#777777">Prev</font></i>
+    <span class="navigation_link">Prev</span>
   [% END %]
 
   [% IF this_bug_idx + 1 < last_bug_list.size %]
@@ -71,7 +66,7 @@
              [%- last_bug_list.$next_bug FILTER uri %]&amp;list_id=
              [%- my_search.id FILTER uri %]">Next</a>
   [% ELSE %]
-    <i><font color="#777777">Next</font></i>
+    <span class="navigation_link">Next</span>
   [% END %]
 
   &nbsp;&nbsp;<a href="buglist.cgi?regetlastlist=

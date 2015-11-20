@@ -9,6 +9,7 @@ package Bugzilla::BugUserLastVisit;
 
 use 5.10.1;
 use strict;
+use warnings;
 
 use parent qw(Bugzilla::Object);
 
@@ -41,7 +42,7 @@ sub last_visit_ts { return $_[0]->{last_visit_ts} }
 sub user {
     my $self = shift;
 
-    $self->{user} //= Bugzilla::User->new({id => $self->user_id, cache => 1});
+    $self->{user} //= Bugzilla::User->new({ id => $self->user_id, cache => 1 });
     return $self->{user};
 }
 

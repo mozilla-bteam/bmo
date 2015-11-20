@@ -61,7 +61,7 @@ $(function() {
             var that = $(this);
             that.devbridgeAutocomplete({
                 serviceUrl: function(query) {
-                    return 'rest/prod_comp_search/' + encodeURIComponent(query);
+                    return 'rest/ProdCompSearch/1.0/prod_comp_search/' + encodeURIComponent(query);
                 },
                 params: {
                     Bugzilla_api_token: (BUGZILLA.api_token ? BUGZILLA.api_token : ''),

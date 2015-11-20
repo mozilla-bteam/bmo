@@ -1,26 +1,10 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Gervase Markham <gerv@gerv.net>
-#                 Lance Larsh <lance.larsh@oracle.com>
-#                 Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 # Glossary:
 # series:   An individual, defined set of data plotted over time.
@@ -43,7 +27,10 @@
 # Bonus:
 # Offer subscription when you get a "series already exists" error?
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use lib qw(. lib);
 
 use Bugzilla;
@@ -53,7 +40,6 @@ use Bugzilla::Error;
 use Bugzilla::Util;
 use Bugzilla::Chart;
 use Bugzilla::Series;
-use Bugzilla::User;
 use Bugzilla::Token;
 
 # For most scripts we don't make $cgi and $template global variables. But
@@ -68,7 +54,7 @@ my $dbh = Bugzilla->dbh;
 my $user = Bugzilla->login(LOGIN_REQUIRED);
 
 if (!Bugzilla->feature('new_charts')) {
-    ThrowCodeError('feature_disabled', { feature => 'new_charts' });
+    ThrowUserError('feature_disabled', { feature => 'new_charts' });
 }
 
 # Go back to query.cgi if we are adding a boolean chart parameter.
@@ -81,7 +67,7 @@ if (grep(/^cmd-/, $cgi->param())) {
 
 my $action = $cgi->param('action');
 my $series_id = $cgi->param('series_id');
-$vars->{'doc_section'} = 'reporting.html#charts';
+$vars->{'doc_section'} = 'using/reports-and-charts.html#charts';
 
 # Because some actions are chosen by buttons, we can't encode them as the value
 # of the action param, because that value is localization-dependent. So, we
@@ -286,12 +272,12 @@ sub validateWidthAndHeight {
 
     if (defined($vars->{'width'})) {
        (detaint_natural($vars->{'width'}) && $vars->{'width'} > 0)
-         || ThrowCodeError("invalid_dimensions");
+         || ThrowUserError("invalid_dimensions");
     }
 
     if (defined($vars->{'height'})) {
        (detaint_natural($vars->{'height'}) && $vars->{'height'} > 0)
-         || ThrowCodeError("invalid_dimensions");
+         || ThrowUserError("invalid_dimensions");
     }
 
     # The equivalent of 2000 square seems like a very reasonable maximum size.
@@ -308,6 +294,7 @@ sub edit {
 
     $vars->{'category'} = Bugzilla::Chart::getVisibleSeries();
     $vars->{'default'} = $series;
+    $vars->{'message'} = 'series_updated' if $vars->{'changes_saved'};
 
     print $cgi->header();
     $template->process("reports/edit-series.html.tmpl", $vars)

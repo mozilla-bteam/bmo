@@ -1,6 +1,8 @@
 package Bugzilla::PatchReader::FilterPatch;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::PatchReader::Base;
 
@@ -40,4 +42,22 @@ sub next_section {
   $this->{TARGET}->next_section(@_) if $this->{TARGET};
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item start_patch
+
+=item end_patch
+
+=item start_file
+
+=item end_file
+
+=item next_section
+
+=back

@@ -1,6 +1,8 @@
 package Bugzilla::PatchReader::DiffPrinter::raw;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 sub new {
   my $class = shift;
@@ -58,4 +60,22 @@ sub next_section {
   }
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item start_patch
+
+=item end_patch
+
+=item start_file
+
+=item end_file
+
+=item next_section
+
+=back

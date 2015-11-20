@@ -6,6 +6,8 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Extension::BugmailFilter;
+
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -470,7 +472,7 @@ sub db_schema_abstract_schema {
                 },
             },
             component_id => {
-                TYPE       => 'INT2',
+                TYPE       => 'INT3',
                 NOTNULL    => 0,
                 REFERENCES => {
                     TABLE  => 'components',
@@ -510,7 +512,16 @@ sub db_schema_abstract_schema {
 }
 
 sub install_update_db {
-    Bugzilla->dbh->bz_add_column(
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_alter_column(
+        'bugmail_filters',
+        'component_id',
+        {
+            TYPE    => 'INT3',
+            NOTNULL => 0
+        }
+    );
+    $dbh->bz_add_column(
         'bugmail_filters',
         'changer_id',
         {

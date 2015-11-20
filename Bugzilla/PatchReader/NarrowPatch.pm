@@ -2,7 +2,9 @@ package Bugzilla::PatchReader::NarrowPatch;
 
 use Bugzilla::PatchReader::FilterPatch;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 @Bugzilla::PatchReader::NarrowPatch::ISA = qw(Bugzilla::PatchReader::FilterPatch);
 
@@ -41,4 +43,18 @@ sub next_section {
   }
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item start_file
+
+=item end_file
+
+=item next_section
+
+=back

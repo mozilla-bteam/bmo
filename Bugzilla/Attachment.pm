@@ -1,31 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Myk Melez <myk@mozilla.org>
-#                 Marc Schumann <wurblzap@gmail.com>
-#                 Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Attachment;
 
-use 5.10.0;
+use 5.10.1;
 use strict;
+use warnings;
 
 =head1 NAME
 
@@ -64,7 +48,7 @@ use File::Copy;
 use List::Util qw(max);
 use Storable qw(dclone);
 
-use base qw(Bugzilla::Object);
+use parent qw(Bugzilla::Object);
 
 ###############################
 ####    Initialization     ####
@@ -201,7 +185,7 @@ the user who attached the attachment
 
 sub attacher {
     return $_[0]->{attacher}
-        //= new Bugzilla::User({ id => $_[0]->{submitter_id}, cache => 1 });
+      //= new Bugzilla::User({ id => $_[0]->{submitter_id}, cache => 1 });
 }
 
 =over
@@ -325,7 +309,8 @@ sub is_viewable {
 
 =item C<data>
 
-the content of the attachment
+Returns the content of the attachment.
+As a side-effect, sets $self->is_on_filesystem.
 
 =back
 
@@ -338,9 +323,36 @@ sub data {
 
 =over
 
+=item C<is_on_filesystem>
+
+Returns true if the attachment is stored on disk (via maxlocalattachment
+parameter), as opposed to in the database.
+
+=back
+
+=cut
+
+# When the attachment is on the filesystem, you can let the backend
+# (nginx, apache, lighttpd) serve it for you if it supports the X-Sendfile
+# feature. This means that the attachment CGI script may have a reduced
+# footprint. e.g. bug 906010 and bug 1073241.
+
+sub is_on_filesystem {
+    my $self = shift;
+    return $self->{is_on_filesystem} if exists $self->{is_on_filesystem};
+    # In order to serve an attachment, you also send the datasize in the
+    # content-length header. Making additional queries which are exactly
+    # the same as found in the datasize code path is just wasteful.
+    my $datasize = $self->datasize;
+    return $self->{is_on_filesystem};
+}
+
+=over
+
 =item C<datasize>
 
-the length (in bytes) of the attachment content
+Returns the length (in bytes) of the attachment content.
+As a side-effect, sets $self->is_on_filesystem.
 
 =back
 
@@ -455,6 +467,51 @@ sub _check_content_type {
     }
     trick_taint($content_type);
 
+    # $ENV{HOME} must be defined when using File::MimeInfo::Magic,
+    # see https://rt.cpan.org/Public/Bug/Display.html?id=41744.
+    local $ENV{HOME} = $ENV{HOME} || File::Spec->rootdir();
+
+    # If we have autodetected application/octet-stream from the Content-Type
+    # header, let's have a better go using a sniffer if available.
+    if ((Bugzilla->input_params->{contenttypemethod} // '') eq 'autodetect'
+        && ($content_type eq 'application/octet-stream' || $content_type =~ m{text/x-})
+        && Bugzilla->feature('typesniffer'))
+    {
+        import File::MimeInfo::Magic qw(mimetype);
+        require IO::Scalar;
+
+        # data is either a filehandle, or the data itself.
+        my $fh = $params->{data};
+        if (!ref($fh)) {
+            $fh = new IO::Scalar \$fh;
+        }
+        elsif (!$fh->isa('IO::Handle')) {
+            # CGI.pm sends us an Fh that isn't actually an IO::Handle, but
+            # has a method for getting an actual handle out of it.
+            $fh = $fh->handle;
+            # ->handle returns an literal IO::Handle, even though the
+            # underlying object is a file. So we rebless it to be a proper
+            # IO::File object so that we can call ->seek on it and so on.
+            # Just in case CGI.pm fixes this some day, we check ->isa first.
+            if (!$fh->isa('IO::File')) {
+                bless $fh, 'IO::File';
+            }
+        }
+
+        my $mimetype = mimetype($fh);
+        $fh->seek(0, 0);
+        $content_type = $mimetype if $mimetype;
+    }
+
+    # Make sure patches are viewable in the browser
+    if (!ref($invocant)
+        && (Bugzilla->input_params->{contenttypemethod} // '') eq 'autodetect'
+        && $content_type =~ m{text/x-(?:diff|patch)})
+    {
+        $params->{ispatch} = 1;
+        $content_type = 'text/plain';
+    }
+
     return $content_type;
 }
 
@@ -495,7 +552,7 @@ sub _check_filename {
         else {
             ThrowUserError('file_not_specified');
         }
-   }
+    }
 
     # Remove path info (if any) from the file name.  The browser should do this
     # for us, but some are buggy.  This may not work on Mac file names and could
@@ -504,9 +561,11 @@ sub _check_filename {
     # a big deal if it munges incorrectly occasionally.
     $filename =~ s/^.*[\/\\]//;
 
-    # Truncate the filename to 100 characters, counting from the end of the
-    # string to make sure we keep the filename extension.
-    $filename = substr($filename, -100, 100);
+    # Truncate the filename to MAX_ATTACH_FILENAME_LENGTH characters, counting 
+    # from the end of the string to make sure we keep the filename extension.
+    $filename = substr($filename, 
+                       -&MAX_ATTACH_FILENAME_LENGTH, 
+                       MAX_ATTACH_FILENAME_LENGTH);
     trick_taint($filename);
 
     return $filename;
@@ -567,10 +626,12 @@ sub get_attachments_by_bug {
                                                undef, @values);
 
     my $attachments = Bugzilla::Attachment->new_from_list($attach_ids);
+    $_->{bug} = $bug foreach @$attachments;
 
-    # To avoid $attachment->flags to run SQL queries itself for each
-    # attachment listed here, we collect all the data at once and
-    # populate $attachment->{flags} ourselves.
+    # To avoid $attachment->flags and $attachment->flag_types running SQL queries
+    # themselves for each attachment listed here, we collect all the data at once and
+    # populate $attachment->{flag_types} ourselves. We also load all attachers and
+    # datasizes at once for the same reason.
     if ($vars->{preload}) {
         # Preload flag types and flags
         my $vars = { target_type  => 'attachment',
@@ -597,6 +658,7 @@ sub get_attachments_by_bug {
             $attachment->{attacher} = $user_map{$attachment->{submitter_id}};
         }
     }
+
     return $attachments;
 }
 
@@ -639,7 +701,7 @@ sub validate_can_edit {
 Description: validates if attachments the user wants to mark as obsolete
              really belong to the given bug and are not already obsolete.
              Moreover, a user cannot mark an attachment as obsolete if
-             he cannot view it (due to restrictions on it).
+             they cannot view it (due to restrictions on it).
 
 Params:      $bug - The bug object obsolete attachments should belong to.
              $attach_ids - The list of attachments to mark as obsolete.
@@ -661,7 +723,7 @@ sub validate_obsolete {
         $vars->{'attach_id'} = $attachid;
 
         detaint_natural($attachid)
-          || ThrowCodeError('invalid_attach_id_to_obsolete', $vars);
+          || ThrowUserError('invalid_attach_id', $vars);
 
         # Make sure the attachment exists in the database.
         my $attachment = new Bugzilla::Attachment($attachid)
@@ -673,7 +735,7 @@ sub validate_obsolete {
 
         if ($attachment->bug_id != $bug->bug_id) {
             $vars->{'my_bug_id'} = $bug->bug_id;
-            ThrowCodeError('mismatched_bug_ids_on_obsolete', $vars);
+            ThrowUserError('mismatched_bug_ids_on_obsolete', $vars);
         }
 
         next if $attachment->isobsolete;
@@ -752,7 +814,7 @@ sub run_create_validators {
 
     $params->{creation_ts} ||= Bugzilla->dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
     $params->{modification_time} = $params->{creation_ts};
-    $params->{submitter_id} = Bugzilla->user->id || ThrowCodeError('invalid_user');
+    $params->{submitter_id} = Bugzilla->user->id || ThrowUserError('invalid_user');
 
     return $params;
 }
@@ -843,33 +905,9 @@ sub get_content_type {
     return 'text/plain' if ($cgi->param('ispatch') || $cgi->param('attach_text'));
 
     my $content_type;
-    my $method = $cgi->param('contenttypemethod');
+    my $method = $cgi->param('contenttypemethod') || '';
 
-    if (!defined $method) {
-        ThrowUserError("missing_content_type_method");
-    }
-    elsif ($method eq 'autodetect') {
-        defined $cgi->upload('data') || ThrowUserError('file_not_specified');
-        # The user asked us to auto-detect the content type, so use the type
-        # specified in the HTTP request headers.
-        $content_type =
-            $cgi->uploadInfo($cgi->param('data'))->{'Content-Type'};
-        $content_type || ThrowUserError("missing_content_type");
-
-        # Set the ispatch flag to 1 if the content type
-        # is text/x-diff or text/x-patch
-        if ($content_type =~ m{text/x-(?:diff|patch)}) {
-            $cgi->param('ispatch', 1);
-            $content_type = 'text/plain';
-        }
-
-        # Internet Explorer sends image/x-png for PNG images,
-        # so convert that to image/png to match other browsers.
-        if ($content_type eq 'image/x-png') {
-            $content_type = 'image/png';
-        }
-    }
-    elsif ($method eq 'list') {
+    if ($method eq 'list') {
         # The user selected a content type from the list, so use their
         # selection.
         $content_type = $cgi->param('contenttypeselection');
@@ -879,7 +917,18 @@ sub get_content_type {
         $content_type = $cgi->param('contenttypeentry');
     }
     else {
-        ThrowCodeError("illegal_content_type_method", { contenttypemethod => $method });
+        defined $cgi->upload('data') || ThrowUserError('file_not_specified');
+        # The user asked us to auto-detect the content type, so use the type
+        # specified in the HTTP request headers.
+        $content_type =
+            $cgi->uploadInfo($cgi->param('data'))->{'Content-Type'};
+        $content_type || ThrowUserError("missing_content_type");
+
+        # Internet Explorer sends image/x-png for PNG images,
+        # so convert that to image/png to match other browsers.
+        if ($content_type eq 'image/x-png') {
+            $content_type = 'image/png';
+        }
     }
     return $content_type;
 }
@@ -918,3 +967,35 @@ sub get_storage_by_name {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item set_filename
+
+=item set_is_obsolete
+
+=item DB_COLUMNS
+
+=item set_is_private
+
+=item set_content_type
+
+=item set_description
+
+=item get_content_type
+
+=item set_flags
+
+=item set_is_patch
+
+=item update
+
+=item current_storage
+
+=item get_storage_by_name
+
+=item get_storage_names
+
+=back

@@ -6,7 +6,9 @@
 # defined by the Mozilla Public License, v. 2.0.
 package Bugzilla::Extension::Needinfo;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use base qw(Bugzilla::Extension);
 
@@ -34,25 +36,17 @@ sub install_update_db {
         return;
     }
 
-    print "Creating needinfo flag ... " . 
-          "enable the Needinfo feature by editing the flag's properties.\n";
+    say "Creating needinfo flag...";
 
-    # Initially populate the list of exclusions as __Any__:__Any__ to
-    # allow admin to decide which products to enable the flag for.
     my $flagtype = Bugzilla::FlagType->create({
-        name        => 'needinfo',
-        description => "Set this flag when the bug is in need of additional information",
-        target_type => 'bug',
-        cc_list     => '',
-        sortkey     => 1,
-        is_active   => 1,
+        name             => 'needinfo',
+        description      => "Set this flag when the bug is in need of additional information",
+        target_type      => 'bug',
+        sortkey          => 1,
+        is_active        => 1,
         is_requestable   => 1,
         is_requesteeble  => 1,
-        is_multiplicable => 0,
-        request_group    => '',
-        grant_group      => '',
-        inclusions       => [],
-        exclusions       => ['0:0'],
+        is_multiplicable => 1
     });
 }
 

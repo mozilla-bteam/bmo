@@ -1,25 +1,73 @@
-/* The contents of this file are subject to the Mozilla Public
- * License Version 1.1 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of
- * the License at http://www.mozilla.org/MPL/
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Software distributed under the License is distributed on an "AS
- * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * rights and limitations under the License.
- *
- * The Original Code is the Bugzilla Bug Tracking System.
- *
- * The Initial Developer of the Original Code is Netscape Communications
- * Corporation. Portions created by Netscape are
- * Copyright (C) 1998 Netscape Communications Corporation. All
- * Rights Reserved.
- *
- * Contributor(s): Frédéric Buclin <LpSolit@gmail.com>
- *                 Max Kanat-Alexander <mkanat@bugzilla.org>
- *                 Edmund Wong <ewong@pw-wspx.org>
- *                 Anthony Pipkin <a.pipkin@yahoo.com>
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0.
  */
+
+/* Adds the reply text to the 'comment' textarea */
+function replyToComment(id, real_id, replyto_header, text) {
+    var replytext = "";
+    if (replyCommentConfig.quote_replies == 'quoted_reply') {
+        /* pre id="comment_name_N" */
+        if (text == null) {
+            var text_elem = document.getElementById('comment_text_'+id);
+            text = getText(text_elem);
+        }
+        replytext = replyto_header + "\n" + wrapReplyText(text);
+    } else if (replyCommentConfig.quote_replies == 'simple_reply') {
+        replytext = replyto_header + "\n";
+    }
+
+    if (replyCommentConfig.is_insider) {
+        if (document.getElementById('isprivate_' + real_id).checked) {
+            document.getElementById('newcommentprivacy').checked = 'checked';
+            updateCommentTagControl(document.getElementById('newcommentprivacy'), 'comment');
+        }
+    }
+
+    /* <textarea id="comment"> */
+    var textarea = document.getElementById('comment');
+    if (textarea.value != replytext) {
+        textarea.value += replytext;
+    }
+
+    textarea.focus();
+}
+
+function replyToMarkdownComment(id, real_id, replyto_header) {
+    var textarea = document.getElementById('comment');
+    var comment = textarea.value;
+    textarea.value += replyCommentConfig.markdown_fetching_comment;
+    YAHOO.util.Connect.setDefaultPostHeader('application/json', true);
+    YAHOO.util.Connect.asyncRequest('POST', 'jsonrpc.cgi',
+        {
+            success: function(res) {
+                var data = YAHOO.lang.JSON.parse(res.responseText);
+                if (!data.error) {
+                    textarea.value = comment;
+                    var text = data.result.comments[real_id].text;
+                    replyToComment(id, real_id, replyto_header, text);
+                } else {
+                    replyToComment(id, real_id, replyto_header);
+                }
+            },
+            failure: function(res) {
+                /* On failure, quote the comment as plain-text */
+                replyToComment(id, real_id, replyto_header);
+            }
+        },
+        YAHOO.lang.JSON.stringify({
+            version: "1.1",
+            method: "Bug.comments",
+            params: {
+                Bugzilla_api_token: BUGZILLA.api_token,
+                comment_ids: [real_id],
+            }
+        })
+    );
+}
 
 function updateCommentPrivacy(checkbox, id) {
     var comment_elem = document.getElementById('comment_text_'+id).parentNode;
@@ -75,7 +123,7 @@ function collapse_comment(link, comment, comment_id) {
 }
 
 function expand_comment(link, comment, comment_id) {
-    link.innerHTML = "[-]";
+    link.innerHTML = "[&minus;]";
     YAHOO.util.Dom.addClass('cr' + comment_id, 'collapsed');
     YAHOO.util.Dom.removeClass('c' + comment_id, 'bz_default_collapsed');
     YAHOO.util.Dom.removeClass(comment, 'collapsed');

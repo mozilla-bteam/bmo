@@ -9,6 +9,7 @@ package Bugzilla::User::APIKey;
 
 use 5.10.1;
 use strict;
+use warnings;
 
 use parent qw(Bugzilla::Object);
 
@@ -164,5 +165,17 @@ Sets the new description
 =item C<set_revoked>
 
 Sets the revoked flag
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item app_id
+
+=item last_used
+
+=item last_used_ip 
 
 =back

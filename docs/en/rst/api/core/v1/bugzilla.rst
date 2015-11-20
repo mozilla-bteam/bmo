@@ -110,12 +110,8 @@ what timezone it's running in.
 .. code-block:: js
 
    {
-     "web_time_utc": "2014-09-26T18:01:30Z",
      "db_time": "2014-09-26T18:01:30Z",
      "web_time": "2014-09-26T18:01:30Z",
-     "tz_offset": "+0000",
-     "tz_short_name": "UTC",
-     "tz_name": "UTC"
    }
 
 =============  ======  ==========================================================
@@ -128,7 +124,7 @@ db_time        string  The current time in UTC, according to the Bugzilla
                        webserver are running in the same time zone. However,
                        if the web server and the database server aren't
                        synchronized or some reason, *this* is the time that
-                       you should rely on or doing searches and other input
+                       you should rely on for doing searches and other input
                        to the WebService.
 web_time       string  This is the current time in UTC, according to
                        Bugzilla's web server.
@@ -139,18 +135,6 @@ web_time       string  This is the current time in UTC, according to
                        some problem with this Bugzilla instance. In this
                        case you should rely  on the ``db_time``, not the
                        ``web_time``.
-web_time_utc   string  Identical to ``web_time``. (Exists only for
-                       backwards-compatibility with versions of Bugzilla
-                       before 3.6.)
-tz_name        string  The literal string ``UTC``. (Exists only for
-                       backwards-compatibility with versions of Bugzilla
-                       before 3.6.)
-tz_short_name  string  The literal string ``UTC``. (Exists only for
-                       backwards-compatibility with versions of Bugzilla
-                       before 3.6.)
-tz_offset      string  The literal string ``+0000``. (Exists only for
-                       backwards-compatibility with versions of Bugzilla
-                       before 3.6.)
 =============  ======  ==========================================================
 
 Parameters
@@ -187,7 +171,6 @@ Example response for authenticated user:
           "attachment_base" : "http://bugzilla.example.com/",
           "commentonchange_resolution" : "0",
           "commentonduplicate" : "0",
-          "cookiepath" : "/",
           "createemailregexp" : ".*",
           "defaultopsys" : "",
           "defaultplatform" : "",
@@ -202,11 +185,10 @@ Example response for authenticated user:
           "maintainer" : "admin@example.com",
           "maxattachmentsize" : "1000",
           "maxlocalattachment" : "0",
-          "musthavemilestoneonaccept" : "0",
-          "noresolveonopenblockers" : "0",
           "password_complexity" : "no_constraints",
           "rememberlogin" : "on",
           "requirelogin" : "0",
+          "resolution_forbidden_with_open_blockers" : "FIXED",
           "urlbase" : "http://bugzilla.example.com/",
           "use_see_also" : "1",
           "useclassification" : "1",
@@ -226,7 +208,6 @@ A logged-in user can access the following parameters (listed alphabetically):
 * attachment_base
 * commentonchange_resolution
 * commentonduplicate
-* cookiepath
 * defaultopsys
 * defaultplatform
 * defaultpriority
@@ -240,11 +221,10 @@ A logged-in user can access the following parameters (listed alphabetically):
 * maintainer
 * maxattachmentsize
 * maxlocalattachment
-* musthavemilestoneonaccept
-* noresolveonopenblockers
 * password_complexity
 * rememberlogin
 * requirelogin
+* resolution_forbidden_with_open_blockers
 * search_allow_no_criteria
 * urlbase
 * use_see_also

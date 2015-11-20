@@ -1,29 +1,16 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Bradley Baetz <bbaetz@acm.org>
-#                 Erik Stambaugh <erik@dasbistro.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Auth;
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use fields qw(
     _info_getter
     _verifier
@@ -61,7 +48,6 @@ sub new {
 
 sub login {
     my ($self, $type) = @_;
-    my $dbh = Bugzilla->dbh;
 
     # Get login info from the cookie, form, environment variables, etc.
     my $login_info = $self->{_info_getter}->get_login_info();
@@ -70,7 +56,7 @@ sub login {
         return $self->_handle_login_result($login_info, $type);
     }
 
-    # Now verify his username and password against the DB, LDAP, etc.
+    # Now verify their username and password against the DB, LDAP, etc.
     if ($self->{_info_getter}->{successful}->requires_verification) {
         $login_info = $self->{_verifier}->check_credentials($login_info);
         if ($login_info->{failure}) {
@@ -245,7 +231,7 @@ sub _handle_login_result {
     elsif ($fail_code == AUTH_LOGINFAILED or $fail_code == AUTH_NO_SUCH_USER) {
         my $remaining_attempts = MAX_LOGIN_ATTEMPTS 
                                  - ($result->{failure_count} || 0);
-        ThrowUserError("invalid_username_or_password", 
+        ThrowUserError("invalid_login_or_password", 
                        { remaining => $remaining_attempts });
     }
     # The account may be disabled
@@ -369,7 +355,7 @@ An incorrect username or password was given.
 The hashref may also contain a C<failure_count> element, which specifies
 how many times the account has failed to log in within the lockout
 period (see L</AUTH_LOCKOUT>). This is used to warn the user when
-he is getting close to being locked out.
+they are getting close to being locked out.
 
 =head2 C<AUTH_NO_SUCH_USER>
 
@@ -499,6 +485,13 @@ Description: If a login token was used instead of a cookie then this
 Params:      None
 Returns:     A hash containing C<login_token> and C<user_id>.
 
+=item C<successful_info_getter>
+
+Description: Returns the successful C<Bugzilla::Auth::Login> info
+             getter object.
+Params:      None
+Returns:     A C<Bugzilla::Auth::Login> object
+
 =back
 
 =head1 STRUCTURE
@@ -615,4 +608,10 @@ Note that C<Bugzilla::Auth::login> may modify this object at various points.
 
 =back
 
+=head1 B<Methods in need of POD>
 
+=over
+
+=item mfa_verified
+
+=back

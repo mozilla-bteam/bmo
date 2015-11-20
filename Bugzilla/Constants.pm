@@ -1,37 +1,17 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Dawn Endico <endico@mozilla.org>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Joe Robins <jmrobins@tgix.com>
-#                 Jake <jake@bugzilla.org>
-#                 J. Paul Reed <preed@sigkill.com>
-#                 Bradley Baetz <bbaetz@student.usyd.edu.au>
-#                 Christopher Aillon <christopher@aillon.com>
-#                 Shane H. W. Travis <travis@sedsystems.ca>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Marc Schumann <wurblzap@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Constants;
+
+use 5.10.1;
 use strict;
-use base qw(Exporter);
+use warnings;
+
+use parent qw(Exporter);
 
 # For bz_locations
 use File::Basename;
@@ -88,6 +68,9 @@ use Memoize;
     DEFAULT_QUERY_NAME
     DEFAULT_MILESTONE
 
+    QUERY_LIST
+    LIST_OF_BUGS
+
     SAVE_NUM_SEARCHES
 
     COMMENT_COLS
@@ -114,8 +97,8 @@ use Memoize;
     EVT_BUG_CREATED EVT_COMPONENT
 
     NEG_EVENTS
-    EVT_UNCONFIRMED EVT_CHANGED_BY_ME 
-        
+    EVT_UNCONFIRMED EVT_CHANGED_BY_ME EVT_MINOR_UPDATE
+
     GLOBAL_EVENTS
     EVT_FLAG_REQUESTED EVT_REQUESTED_FLAG
 
@@ -137,9 +120,8 @@ use Memoize;
     FIELD_TYPE_KEYWORDS
     FIELD_TYPE_INTEGER
     FIELD_TYPE_EXTENSION
-
     FIELD_TYPE_HIGHEST_PLUS_ONE
-    
+
     EMPTY_DATETIME_REGEX
 
     ABNORMAL_SELECTS
@@ -178,6 +160,7 @@ use Memoize;
     MAX_SUDO_TOKEN_AGE
     MAX_LOGIN_ATTEMPTS
     LOGIN_LOCKOUT_INTERVAL
+    ACCOUNT_CHANGE_INTERVAL
     MAX_STS_AGE
 
     SAFE_PROTOCOLS
@@ -193,9 +176,12 @@ use Memoize;
     MAX_MILESTONE_SIZE
     MAX_COMPONENT_SIZE
     MAX_FIELD_VALUE_SIZE
+    MAX_FIELD_LONG_DESC_LENGTH
     MAX_FREETEXT_LENGTH
     MAX_BUG_URL_LENGTH
     MAX_POSSIBLE_DUPLICATES
+    MAX_ATTACH_FILENAME_LENGTH
+    MAX_QUIP_LENGTH
     MAX_WEBDOT_BUGS
 
     PASSWORD_DIGEST_ALGORITHM
@@ -210,6 +196,10 @@ use Memoize;
 
     AUDIT_CREATE
     AUDIT_REMOVE
+
+    MOST_FREQUENT_THRESHOLD
+
+    MARKDOWN_TAB_WIDTH
 
     EMAIL_LIMIT_PER_MINUTE
     EMAIL_LIMIT_PER_HOUR
@@ -226,7 +216,7 @@ use Memoize;
 # BMO: we don't map exactly to a specific bugzilla version, so override our
 # reported version with a parameter.
 sub BUGZILLA_VERSION {
-    my $bugzilla_version = '4.2';
+    my $bugzilla_version = '5.1';
     eval { require Bugzilla } || return $bugzilla_version;
     return Bugzilla->params->{bugzilla_version} || $bugzilla_version;
 }
@@ -242,7 +232,7 @@ use constant LOCAL_FILE  => 'bugzilla-update.xml'; # Relative to datadir.
 # When true CSS and JavaScript assets will be concatanted and minified at
 # run-time, to reduce the number of requests required to render a page.
 # Setting this to a false value can help debugging.
-use constant CONCATENATE_ASSETS => 1;
+use constant CONCATENATE_ASSETS => 0;
 
 # These are unique values that are unlikely to match a string or a number,
 # to be used in criteria for match() functions and other things. They start
@@ -332,6 +322,10 @@ use constant DEFAULT_QUERY_NAME => '(Default query)';
 # The default "defaultmilestone" created for products.
 use constant DEFAULT_MILESTONE => '---';
 
+# The possible types for saved searches.
+use constant QUERY_LIST => 0;
+use constant LIST_OF_BUGS => 1;
+
 # How many of the user's most recent searches to save.
 use constant SAVE_NUM_SEARCHES => 10;
 
@@ -406,8 +400,9 @@ use constant POS_EVENTS => EVT_OTHER, EVT_ADDED_REMOVED, EVT_COMMENT,
 
 use constant EVT_UNCONFIRMED        => 50;
 use constant EVT_CHANGED_BY_ME      => 51;
+use constant EVT_MINOR_UPDATE       => 52;
 
-use constant NEG_EVENTS => EVT_UNCONFIRMED, EVT_CHANGED_BY_ME;
+use constant NEG_EVENTS => EVT_UNCONFIRMED, EVT_CHANGED_BY_ME, EVT_MINOR_UPDATE;
 
 # These are the "global" flags, which aren't tied to a particular relationship.
 # and so use REL_ANY.
@@ -465,8 +460,7 @@ use constant ABNORMAL_SELECTS => {
 # The fields from fielddefs that are blocked from non-timetracking users.
 # work_time is sometimes called actual_time.
 use constant TIMETRACKING_FIELDS =>
-    qw(estimated_time remaining_time work_time actual_time
-       percentage_complete deadline);
+    qw(estimated_time remaining_time work_time actual_time percentage_complete);
 
 # The maximum number of days a token will remain valid.
 use constant MAX_TOKEN_AGE => 3;
@@ -482,6 +476,10 @@ use constant MAX_LOGIN_ATTEMPTS => 5;
 # If the maximum login attempts occur during this many minutes, the
 # account is locked.
 use constant LOGIN_LOCKOUT_INTERVAL => 30;
+
+# The time in minutes a user must wait before they can request another email to
+# create a new account or change their password.
+use constant ACCOUNT_CHANGE_INTERVAL => 10;
 
 # The maximum number of seconds the Strict-Transport-Security header
 # will remain valid. BMO uses one year.
@@ -550,13 +548,12 @@ use constant DB_MODULE => {
                     version => '4.001',
                 },
                 name => 'MySQL'},
-    # Also see Bugzilla::DB::Pg::bz_check_server_version, which has special
-    # code to require DBD::Pg 2.17.2 for PostgreSQL 9 and above.
-    'pg'    => {db => 'Bugzilla::DB::Pg', db_version => '8.03.0000',
+    'pg'    => {db => 'Bugzilla::DB::Pg', db_version => '9.00.0000',
                 dbd => {
                     package => 'DBD-Pg',
                     module  => 'DBD::Pg',
-                    version => '1.45',
+                    # Pg 9.2 requires 2.19.3 as spclocation no longer exists.
+                    version => '2.19.3',
                 },
                 name => 'PostgreSQL'},
      'oracle'=> {db => 'Bugzilla::DB::Oracle', db_version => '10.02.0',
@@ -600,13 +597,16 @@ use constant MAX_CLASSIFICATION_SIZE => 64;
 use constant MAX_PRODUCT_SIZE => 64;
 
 # The longest milestone name allowed.
-use constant MAX_MILESTONE_SIZE => 20;
+use constant MAX_MILESTONE_SIZE => 64;
 
 # The longest component name allowed.
 use constant MAX_COMPONENT_SIZE => 64;
 
 # The maximum length for values of <select> fields.
 use constant MAX_FIELD_VALUE_SIZE => 64;
+
+# The maximum length for the long description of fields.
+use constant MAX_FIELD_LONG_DESC_LENGTH => 255;
 
 # Maximum length allowed for free text fields.
 use constant MAX_FREETEXT_LENGTH => 255;
@@ -618,24 +618,33 @@ use constant MAX_BUG_URL_LENGTH => 255;
 # will return.
 use constant MAX_POSSIBLE_DUPLICATES => 25;
 
+# Maximum length of filename stored in attachments table (longer ones will
+# be truncated to this value). Do not increase above 255 without making the
+# necessary schema changes to store longer names.
+use constant MAX_ATTACH_FILENAME_LENGTH => 255;
+
+# Maximum length of a quip.
+use constant MAX_QUIP_LENGTH => 512;
+
 # Maximum number of bugs to display in a dependency graph
 use constant MAX_WEBDOT_BUGS => 2000;
 
 # This is the name of the algorithm used to hash passwords before storing
 # them in the database. This can be any string that is valid to pass to
 # Perl's "Digest" module. Note that if you change this, it won't take
-# effect until a user changes his password.
+# effect until a user logs in or changes their password.
 use constant PASSWORD_DIGEST_ALGORITHM => 'SHA-256';
-# How long of a salt should we use? Note that if you change this, none
-# of your users will be able to log in until they reset their passwords.
+# How long of a salt should we use? Note that if you change this, it
+# won't take effect until a user logs in or changes their password.
 use constant PASSWORD_SALT_LENGTH => 8;
 
 # Certain scripts redirect to GET even if the form was submitted originally
 # via POST such as buglist.cgi. This value determines whether the redirect
 # can be safely done or not based on the web server's URI length setting.
-use constant CGI_URI_LIMIT => 8000;
+# See http://support.microsoft.com/kb/208427 for why MSIE is different
+use constant CGI_URI_LIMIT => ($ENV{'HTTP_USER_AGENT'} || '') =~ /MSIE/ ? 2083 : 8000;
 
-# If the user isn't allowed to change a field, we must tell him who can.
+# If the user isn't allowed to change a field, we must tell them who can.
 # We store the required permission set into the $PrivilegesRequired
 # variable which gets passed to the error template.
 
@@ -648,6 +657,14 @@ use constant PRIVILEGES_REQUIRED_EMPOWERED => 3;
 # "we just created this object" or "we just deleted this object".
 use constant AUDIT_CREATE => '__create__';
 use constant AUDIT_REMOVE => '__remove__';
+
+# The minimum number of duplicates a bug needs to show up
+# on the "Most frequently reported bugs" page.
+use constant MOST_FREQUENT_THRESHOLD => 2;
+
+# The number of spaces used to represent each tab character
+# by Markdown engine
+use constant MARKDOWN_TAB_WIDTH => 2;
 
 # The maximum number of emails per minute and hour a recipient can receive.
 # Email will be queued/backlogged to avoid exceeeding these limits.
@@ -686,7 +703,7 @@ sub _bz_locations {
     $libpath = $1;
 
     my ($localconfig, $datadir);
-    if ($project && $project =~ /^(\w+)$/) {
+    if ($project && $project =~ /^([\w-]+)$/) {
         $project = $1;
         $localconfig = "localconfig.$project";
         $datadir = "data/$project";
@@ -732,3 +749,15 @@ sub _bz_locations {
 BEGIN { memoize('_bz_locations') };
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item DB_MODULE
+
+=item contenttypes
+
+=item bz_locations
+
+=back

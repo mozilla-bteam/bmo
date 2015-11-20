@@ -7,7 +7,9 @@
 
 package Bugzilla::Send::Sendmail;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use base qw(Email::Send::Sendmail);
 
@@ -93,3 +95,10 @@ sub _map_exitcode {
 
 1;
 
+=head1 B<Methods in need of POD>
+
+=over
+
+=item send
+
+=back

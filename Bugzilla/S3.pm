@@ -12,6 +12,7 @@ package Bugzilla::S3;
 # - default to secure (https) connections to AWS
 #
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -421,6 +422,10 @@ only have come from you.
 
 B<DO NOT INCLUDE THIS IN SCRIPTS OR APPLICATIONS YOU
 DISTRIBUTE. YOU'LL BE SORRY.>
+
+=item bucket
+
+Returns an instance of L<Bugzilla::S3::Bucket>.
 
 =item secure
 

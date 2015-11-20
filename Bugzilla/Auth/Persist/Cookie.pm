@@ -1,35 +1,16 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Joe Robins <jmrobins@tgix.com>
-#                 Dave Miller <justdave@syndicomm.com>
-#                 Christopher Aillon <christopher@aillon.com>
-#                 Gervase Markham <gerv@gerv.net>
-#                 Christian Reis <kiko@async.com.br>
-#                 Bradley Baetz <bbaetz@acm.org>
-#                 Erik Stambaugh <erik@dasbistro.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Auth::Persist::Cookie;
+
+use 5.10.1;
 use strict;
+use warnings;
+
 use fields qw();
 
 use Bugzilla::Constants;
@@ -71,6 +52,10 @@ sub persist_login {
 
     $dbh->bz_commit_transaction();
 
+    # We do not want WebServices to generate login cookies.
+    # All we need is the login token for User.login.
+    return $login_cookie if i_am_webservice();
+
     # Prevent JavaScript from accessing login cookies.
     my %cookieargs = ('-httponly' => 1);
 
@@ -109,11 +94,13 @@ sub logout {
     my $cgi = Bugzilla->cgi;
     my $input = Bugzilla->input_params;
     $param = {} unless $param;
-    my $user = $param->{user} || Bugzilla->user;
+    my $user = $param->{user} || Bugzilla->sudoer || Bugzilla->user;
     my $type = $param->{type} || LOGOUT_ALL;
 
     if ($type == LOGOUT_ALL) {
         $dbh->do("DELETE FROM logincookies WHERE userid = ?",
+                 undef, $user->id);
+        $dbh->do("DELETE FROM tokens WHERE userid = ? AND tokentype = 'sudo'",
                  undef, $user->id);
         return;
     }
@@ -127,8 +114,8 @@ sub logout {
     if ($cookie) {
         push(@login_cookies, $cookie->value);
     }
-    else {
-        push(@login_cookies, $cgi->cookie("Bugzilla_logincookie"));
+    elsif ($cookie = $cgi->cookie('Bugzilla_logincookie')) {
+        push(@login_cookies, $cookie);
     }
 
     # If we are a webservice using a token instead of cookie
@@ -159,6 +146,8 @@ sub logout {
                  $dbh->sql_in('cookie', \@login_cookies) .
                  " AND userid = ?",
                  undef, $user->id);
+        my $token = $cgi->cookie('sudo');
+        delete_token($token);
     } else {
         die("Invalid type $type supplied to logout()");
     }

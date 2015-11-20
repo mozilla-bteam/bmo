@@ -1,35 +1,24 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Everything Solved, Inc.
-# Portions created by the Initial Developers are Copyright (C) 2009 the
-# Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Max Kanat-Alexander <mkanat@bugzilla.org>
-#   Frédéric Buclin <LpSolit@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Extension::Example;
+
+use 5.10.1;
 use strict;
-use base qw(Bugzilla::Extension);
+use warnings;
+
+use parent qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
 use Bugzilla::User;
 use Bugzilla::User::Setting;
-use Bugzilla::Util qw(diff_arrays html_quote);
+use Bugzilla::Util qw(diff_arrays html_quote remote_ip);
 use Bugzilla::Status qw(is_open_state);
 use Bugzilla::Install::Filesystem;
 use Bugzilla::WebService::Constants;
@@ -44,6 +33,18 @@ use Data::Dumper;
 use constant REL_EXAMPLE => -127;
 
 our $VERSION = '1.0';
+
+sub user_can_administer {
+    my ($self, $args) = @_;
+    my $can_administer = $args->{can_administer};
+
+    # If you add an option to the admin pages (e.g. by using the Hooks in
+    # template/en/default/admin/admin.html.tmpl), you may want to allow
+    # users in another group view admin.cgi
+    #if (Bugzilla->user->in_group('other_group')) {
+    #    $$can_administer = 1;
+    #}
+}
 
 sub admin_editusers_action {
     my ($self, $args) = @_;
@@ -303,6 +304,17 @@ sub buglist_column_joins {
     };
 }
 
+sub buglist_format {
+    my ($self, $args) = @_;
+    my $vars = $args->{'vars'};
+    my $format = $args->{'format'};
+    my $params = $args->{'params'};
+
+    if ($format->{'template'} eq "list/list-example.html.tmpl") {
+        $vars->{'example'} = $params->param('example');
+    }
+}
+
 sub search_operator_field_override {
     my ($self, $args) = @_;
     
@@ -338,8 +350,8 @@ sub bugmail_recipients {
         # were on the CC list.
         #$recipients->{$user->id}->{+REL_CC} = 1;
 
-        # And this line adds the maintainer as though he had the "REL_EXAMPLE"
-        # relationship from the bugmail_relationships hook below.
+        # And this line adds the maintainer as though they had the
+        # "REL_EXAMPLE" relationship from the bugmail_relationships hook below.
         #$recipients->{$user->id}->{+REL_EXAMPLE} = 1;
     }
 }
@@ -348,6 +360,13 @@ sub bugmail_relationships {
     my ($self, $args) = @_;
     my $relationships = $args->{relationships};
     $relationships->{+REL_EXAMPLE} = 'Example';
+}
+
+sub cgi_headers {
+    my ($self, $args) = @_;
+    my $headers = $args->{'headers'};
+
+    $headers->{'-x_test_header'} = "Test header from Example extension";
 }
 
 sub config_add_panels {
@@ -413,8 +432,8 @@ sub email_in_after_parse {
     # No other check needed if this is a valid regular user.
     return if login_to_id($reporter);
 
-    # The reporter is not a regular user. We create an account for him,
-    # but he can only comment on existing bugs.
+    # The reporter is not a regular user. We create an account for them,
+    # but they can only comment on existing bugs.
     # This is useful for people who reply by email to bugmails received
     # in mailing-lists.
     if ($args->{fields}->{bug_id}) {
@@ -849,6 +868,18 @@ sub product_end_of_create {
     }
 }
 
+sub query_format {
+    my ($self, $args) = @_;
+    my $vars = $args->{'vars'};
+    my $default = $vars->{'default'};
+    my $format = $args->{'format'};
+
+    # change some default values
+    if ($format->{'template'} eq "search/search-example.html.tmpl") {
+        $default->{'example'}[0] = $default->{'example'}[0] || "example";
+    }
+}
+
 sub quicksearch_map {
     my ($self, $args) = @_;
     my $map = $args->{'map'};
@@ -923,6 +954,26 @@ sub template_before_process {
     }
 }
 
+sub user_check_account_creation {
+    my ($self, $args) = @_;
+
+    my $login = $args->{login};
+    my $ip = remote_ip();
+
+    # Log all requests.
+    warn "USER ACCOUNT CREATION REQUEST FOR $login ($ip)";
+
+    # Reject requests based on their email address.
+    if ($login =~ /\@evil\.com$/) {
+        ThrowUserError('account_creation_restricted');
+    }
+
+    # Reject requests based on their IP address.
+    if ($ip =~ /^192\.168\./) {
+        ThrowUserError('account_creation_restricted');
+    }
+}
+
 sub user_preferences {
     my ($self, $args) = @_;
     my $tab = $args->{current_tab};
@@ -976,7 +1027,8 @@ sub webservice_before_call {
 
     # Uncomment this line to see a line in your webserver's error log whenever
     # a webservice call is made
-    #warn "RPC call $full_method made by ", Bugzilla->user->login, "\n";
+    #warn "RPC call $full_method made by ",
+    #   Bugzilla->user->login || 'an anonymous user', "\n";
 }
 
 sub webservice_fix_credentials {
@@ -1007,28 +1059,33 @@ sub webservice_rest_resources {
     my $resources = $args->{'resources'};
     # Add a new resource that allows for /rest/example/hello
     # to call Example.hello
-    $resources->{'Bugzilla::Extension::Example::WebService'} = [
-        qr{^/example/hello$}, {
-            GET => {
-                method => 'hello',
-            }
-        }
-    ];
+    #$resources->{'Bugzilla::Extension::Example::WebService'} = [
+    #    qr{^/example/hello$}, {
+    #        GET => {
+    #            method => 'hello',
+    #        }
+    #    }
+    #];
 }
 
-sub webservice_rest_response {
+sub webservice_rest_result {
     my ($self, $args) = @_;
-    my $rpc      = $args->{'rpc'};
-    my $result   = $args->{'result'};
-    my $response = $args->{'response'};
+    my $result = $args->{'result'};
     # Convert a list of bug hashes to a single bug hash if only one is
     # being returned.
     if (ref $$result eq 'HASH'
         && exists $$result->{'bugs'}
+        && ref $$result->{'bugs'} eq 'ARRAY'
         && scalar @{ $$result->{'bugs'} } == 1)
     {
         $$result = $$result->{'bugs'}->[0];
     }
+}
+
+sub webservice_rest_response {
+    my ($self, $args) = @_;
+    my $response = $args->{'response'};
+    $response->header('X-Example-Header', 'This is an example header');
 }
 
 # This must be the last line of your extension.

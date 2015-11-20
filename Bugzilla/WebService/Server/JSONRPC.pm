@@ -1,27 +1,16 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla JSON Webservices Interface.
-#
-# The Initial Developer of the Original Code is the San Jose State
-# University Foundation. Portions created by the Initial Developer
-# are Copyright (C) 2008 the Initial Developer. All Rights Reserved.
-#
-# Contributor(s): 
-#   Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::WebService::Server::JSONRPC;
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use Bugzilla::WebService::Server;
 BEGIN {
     our @ISA = qw(Bugzilla::WebService::Server);
@@ -65,7 +54,7 @@ sub create_json_coder {
     # This may seem a little backwards, but what this really means is
     # "don't convert our utf8 into byte strings, just leave it as a
     # utf8 string."
-    $json->utf8(0) if Bugzilla->params->{'utf8'};
+    $json->utf8(0);
     return $json;
 }
 
@@ -614,3 +603,25 @@ the JSON-RPC library that Bugzilla uses, not by Bugzilla.
 =head1 SEE ALSO
 
 L<Bugzilla::WebService>
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item response
+
+=item response_header
+
+=item cgi
+
+=item retrieve_json_from_get
+
+=item create_json_coder
+
+=item type
+
+=item handle_login
+
+=item datetime_format_outbound
+
+=back

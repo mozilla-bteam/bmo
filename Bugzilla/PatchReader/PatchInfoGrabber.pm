@@ -2,7 +2,9 @@ package Bugzilla::PatchReader::PatchInfoGrabber;
 
 use Bugzilla::PatchReader::FilterPatch;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 @Bugzilla::PatchReader::PatchInfoGrabber::ISA = qw(Bugzilla::PatchReader::FilterPatch);
 
@@ -42,4 +44,20 @@ sub next_section {
   $this->{TARGET}->next_section(@_) if $this->{TARGET};
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item patch_info
+
+=item start_patch
+
+=item start_file
+
+=item next_section
+
+=back

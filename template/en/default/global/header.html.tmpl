@@ -1,24 +1,9 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Gervase Markham <gerv@gerv.net>
-  #                 Vaskin Kissoyan <vkissoyan@yahoo.com>
-  #                 Vitaly Harisov <vitaly@rathedg.com>
-  #                 Svetlana Harisova <light@rathedg.com>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [%# INTERFACE:
@@ -49,6 +34,7 @@
   header_addl_info = ""
   onload = ""
   style_urls = []
+  javascript_urls = []
   yui = []
   yui_css = {}
   yui_deps = {}
@@ -60,7 +46,6 @@
 
 [% IF NOT no_yui %]
   [% SET yui_css = {
-    calendar     => 1,
     datatable    => 1,
     button       => 1,
   } %]
@@ -70,7 +55,7 @@
     # if that module is going to be specified in "yui".
     #%]
   [% SET yui_deps = {
-    datatable    => ['json', 'connection', 'datasource', 'element'],
+    datatable => ['json', 'connection', 'datasource', 'element'],
   } %]
 
   [%# When using certain YUI modules, we need to process certain
@@ -101,12 +86,16 @@
 ] %]
 [% style_urls.import(jquery_css, jq_css_urls) FILTER null %]
 
-[%# Add our required jQuery plugins %]
-[% jquery.push("cookie", "devbridgeAutocomplete") %]
-
 [% IF allow_mobile && is_mobile_browser %]
   [% style_urls.push("skins/standard/mobile.css") %]
 [% END %]
+[% FOREACH jq_name = jquery_css %]
+  [% style_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.css") %]
+[% END %]
+[% style_urls.import(jq_css_urls) FILTER null %]
+
+[%# Add our required jQuery plugins %]
+[% jquery.push("cookie", "devbridgeAutocomplete") %]
 
 [%# We should be able to set the default value of the header variable
   # to the value of the title variable using the DEFAULT directive,
@@ -117,20 +106,16 @@
   # set header's default value here only if it is undefined. %]
 [% IF !header.defined %][% header = title %][% END %]
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-                      "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html>
 <html lang="en">
   <head>
     [% Hook.process("start") %]
     <title>[% title %]</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-    [% IF Param('utf8') %]
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    [% IF NOT no_yui %]
+      [% SET yui = yui_resolve_deps(yui, yui_deps) %]
     [% END %]
-
-    [% PROCESS "global/site-navigation.html.tmpl" %]
-
-    [% PROCESS 'global/setting-descs.none.tmpl' %]
 
     [% IF NOT no_yui %]
       [% SET yui = yui_resolve_deps(yui, yui_deps) %]
@@ -172,7 +157,7 @@
     [% END %]
 
     [%# jQuery Plugins %]
-    [% FOREACH jq_name = jquery.unique %]
+    [% FOREACH jq_name = jquery %]
       [% starting_js_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.js") %]
     [% END %]
     [% starting_js_urls.push('js/global.js') %]
@@ -206,13 +191,22 @@
         } 
         $(document).ready(unhide_language_selector);
 
+        // This sets the default parameters for all calendar fields.
+        $.datepicker.setDefaults({
+            dateFormat: "yy-mm-dd", // this is the YYYY-MM-DD format
+            showButtonPanel: true,  // permits to easily select "Today"
+            // These 3 parameters are useful for localization.
+            firstDay: 0,            // 0 = Sunday, 1 = Monday, etc...
+            dayNamesMin: [ "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" ],
+            monthNames: [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ]
+        });
+
         [%# Make some Bugzilla information available to all scripts. 
           # We don't import every parameter and constant because we
           # don't want to add a lot of uncached JS to every page. 
           #%]
         var BUGZILLA = {
             param: {
-                cookiepath: '[% Param('cookiepath') FILTER js %]',
                 maxusermatches: [% Param('maxusermatches') FILTER js %]
             },
             constant: {
@@ -222,15 +216,15 @@
                 [%# Please keep these in alphabetical order. %]
 
                 attach_desc_required:
-                    'You must enter a Description for this attachment.',
+                    "You must enter a Description for this attachment.",
                 component_required:
-                    'You must select a Component for this [% terms.bug %].',
+                    "You must select a Component for this [% terms.bug %].",
                 description_required:
-                    'You must enter a Description for this [% terms.bug %].',
+                    "You must enter a Description for this [% terms.bug %].",
                 short_desc_required:
-                    'You must enter a Summary for this [% terms.bug %].',
+                    "You must enter a Summary for this [% terms.bug %].",
                 version_required:
-                    'You must select a Version for this [% terms.bug %].'
+                    "You must select a Version for this [% terms.bug %]."
             }
             [% IF generate_api_token %]
               , api_token: '[% get_api_token FILTER js FILTER html %]'
@@ -255,6 +249,16 @@
       [% PROCESS format_js_link %]
     [% END %]
 
+    [%# IE8 doesn't understand these HTML5 elements. So we have to declare them here. %]
+    <!--[if lt IE 9]>
+      <script>
+        document.createElement('header');
+        document.createElement('nav');
+        document.createElement('main');
+        document.createElement('footer');
+      </script>
+    <![endif]-->
+
     [%# this puts the live bookmark up on firefox for the Atom feed %]
     [% IF atomlink %]
        <link rel="alternate" 
@@ -271,156 +275,136 @@
     [% Hook.process("additional_header") %]
   </head>
 
-[% RETURN IF no_body %]
-
-[%# Migration note: contents of the old Param 'bodyhtml' go in the body tag,
-  # but set the onload attribute in the DEFAULT directive above.
-  #%]
-
-  <body onload="[% onload %]"
+  <body [% IF onload %] onload="[% onload %]"[% END %]
         class="[% urlbase.replace('^https?://','').replace('/$','').replace('[-~@:/.]+','-') FILTER css_class_quote %]
                skin-[% user.settings.skin.value FILTER css_class_quote %]
                [% FOREACH class = bodyclasses %]
-                 [% ' ' %][% class FILTER css_class_quote %]
+                 [%+ class FILTER css_class_quote %]
                [% END %] yui-skin-sam">
 
-[%# Migration note: the following file corresponds to the old Param
-  # 'bannerhtml'
-  #%]
-
-<div id="header">
-
 [% IF user.settings.skin.value == 'Mozilla' || user.settings.skin.value == 'Mozilla-OpenSans' %]
-  <div class="wrapper">
-    <table border="0" cellspacing="0" cellpadding="0" id="titles">
-    <tr>
-      <td id="title">
-        <a href="./" title="Home">[% terms.BugzillaTitle %]</a>
-      </td>
-      <td>
-        [% Hook.process("message") %]
-      </td>
-      <td id="moz_login">
-        [% IF user.id %]
-          <ul class="links">
-            <li class="dropdown">
-              <span class="anchor">[% user.login FILTER html %]</span>
-              <ul>
-                [% IF user.showmybugslink %]
-                  [% filtered_username = user.login FILTER uri %]
-                  <li><a href="[% Param('mybugstemplate').replace('%userid%', filtered_username) %]">My [% terms.Bugs %]</a></li>
-                [% END %]
-                <li><a href="page.cgi?id=mydashboard.html">My Dashboard</a></li>
-                <li><a href="user_profile">My Profile</a></li>
-                <li><a href="page.cgi?id=user_activity.html&amp;action=run&amp;who=[% user.login FILTER uri %]">My Activity</a></li>
-                <li><a href="request.cgi?requester=[% user.login FILTER uri %]&amp;requestee=[% user.login FILTER uri %]&amp;do_union=1&amp;group=type&amp;action=queue">My Requests</a></li>
-                <li><a href="userprefs.cgi">Preferences</a></li>
-                [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless
-                      || (Param('useclassification') && user.in_group('editclassifications'))
-                      || user.in_group('editcomponents') || user.in_group('admin') || user.in_group('creategroups')
-                      || user.in_group('editkeywords') || user.in_group('bz_canusewhines')
-                      || user.get_products_by_permission("editcomponents").size %]
-                  <li><a href="admin.cgi">Administration</a></li>
-                [% END %]
-                [% IF user.authorizer.can_logout %]
-                  <li><a href="index.cgi?logout=1">Log&nbsp;out</a></li>
-                [% END %]
-                [% IF sudoer %]
-                  <li>
-                    <a href="relogin.cgi?action=end-sudo">End sudo session impersonating [% user.login FILTER html %]</a>
-                  </li>
-                [% END %]
-              </ul>
+  <div id="header">
+    <div class="wrapper">
+      <table border="0" cellspacing="0" cellpadding="0" id="titles">
+      <tr>
+        <td id="title">
+          <a href="./" title="Home">[% terms.BugzillaTitle %]</a>
+        </td>
+        <td>
+          [% Hook.process("message") %]
+        </td>
+        <td id="moz_login">
+          [% IF user.id %]
+            <ul class="links">
+              <li class="dropdown">
+                <span class="anchor">[% user.login FILTER html %]</span>
+                <ul>
+                  [% IF user.showmybugslink %]
+                    [% filtered_username = user.login FILTER uri %]
+                    <li><a href="[% Param('mybugstemplate').replace('%userid%', filtered_username) %]">My [% terms.Bugs %]</a></li>
+                  [% END %]
+                  <li><a href="page.cgi?id=mydashboard.html">My Dashboard</a></li>
+                  <li><a href="user_profile">My Profile</a></li>
+                  <li><a href="page.cgi?id=user_activity.html&amp;action=run&amp;who=[% user.login FILTER uri %]">My Activity</a></li>
+                  <li><a href="request.cgi?requester=[% user.login FILTER uri %]&amp;requestee=[% user.login FILTER uri %]&amp;do_union=1&amp;group=type&amp;action=queue">My Requests</a></li>
+                  <li><a href="userprefs.cgi">Preferences</a></li>
+                  [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless
+                        || (Param('useclassification') && user.in_group('editclassifications'))
+                        || user.in_group('editcomponents') || user.in_group('admin') || user.in_group('creategroups')
+                        || user.in_group('editkeywords') || user.in_group('bz_canusewhines')
+                        || user.get_products_by_permission("editcomponents").size %]
+                    <li><a href="admin.cgi">Administration</a></li>
+                  [% END %]
+                  [% IF user.authorizer.can_logout %]
+                    <li><a href="index.cgi?logout=1">Log&nbsp;out</a></li>
+                  [% END %]
+                  [% IF sudoer %]
+                    <li>
+                      <a href="relogin.cgi?action=end-sudo">End sudo session impersonating [% user.login FILTER html %]</a>
+                    </li>
+                  [% END %]
+                </ul>
+              </li>
+            </ul>
+          [% ELSE %]
+            <ul class="login-links">
+              [% IF Param('createemailregexp')
+                    && user.authorizer.user_can_create_account %]
+                <li id="moz_new_account_container_top"><a href="createaccount.cgi">New&nbsp;Account</a></li>
+              [% END %]
+
+              [%# Only display one login form when we're on a LOGIN_REQUIRED page. That
+                # way, we're guaranteed that the user will use the form that has 
+                # hidden_fields in it (the center form) instead of this one. Also, it's
+                # less confusing to have one form (as opposed to  three) when you're 
+                # required to log in.
+                #%]
+              [% IF user.authorizer.can_login && !Bugzilla.page_requires_login %]
+                [% PROCESS "account/auth/login-small.html.tmpl" qs_suffix = "_top" %]
+              [% END %]
+            </ul>
+          [% END %]
+        </td>
+        <td id="moz_tab">
+          <a href="https://www.mozilla.org/" title="Mozilla - Home of the Mozilla Project">
+            <img src="skins/contrib/Mozilla/tabzilla.png" border="0" height="42" width="154"></a>
+        </td>
+      </tr>
+      </table>
+
+      [%# display the version number on the index page %]
+      [% IF title == "$terms.Bugzilla Main Page" %]
+        <div id="bugzilla_version">
+          [% header_addl_info FILTER html %]
+        </div>
+      [% END %]
+
+      [% PROCESS "global/common-links.html.tmpl" qs_suffix = "_top" %]
+
+    </div>
+  </div> [%# header %]
+
+[% ELSE %]
+  <header id="header">
+    [% INCLUDE global/banner.html.tmpl %]
+
+    <div id="titles">
+      <span id="title">[% terms.Bugzilla %][% " &ndash; $header" IF header %]</span>
+
+      [% IF subheader %]
+        <span id="subtitle" class="subheader">[% subheader %]</span>
+      [% END %]
+
+      [% IF header_addl_info %]
+        <span id="information" class="header_addl_info">[% header_addl_info %]</span>
+      [% END %]
+    </div>
+
+    [% USE Bugzilla %]
+    [% IF Bugzilla.languages.size > 1 %]
+      <div id="lang_links_container" class="bz_default_hidden">
+        <ul class="links">
+          [% FOREACH lang = Bugzilla.languages.sort %]
+            <li>
+              [% IF NOT loop.first %]<span class="separator"> | </span>[% END %]
+              [% IF lang == current_language %]
+                <span class="lang_current">[% lang FILTER html FILTER upper %]</span>
+              [% ELSE %]
+                <a href="#" onclick="set_language('[% lang FILTER none %]');">
+                   [%- lang FILTER html FILTER upper %]</a>
+              [% END %]
             </li>
-          </ul>
-        [% ELSE %]
-          <ul class="login-links">
-            [% IF Param('createemailregexp')
-                  && user.authorizer.user_can_create_account %]
-              <li id="moz_new_account_container_top"><a href="createaccount.cgi">New&nbsp;Account</a></li>
-            [% END %]
-
-            [%# Only display one login form when we're on a LOGIN_REQUIRED page. That
-              # way, we're guaranteed that the user will use the form that has 
-              # hidden_fields in it (the center form) instead of this one. Also, it's
-              # less confusing to have one form (as opposed to  three) when you're 
-              # required to log in.
-              #%]
-            [% IF user.authorizer.can_login && !Bugzilla.page_requires_login %]
-              [% PROCESS "account/auth/login-small.html.tmpl" qs_suffix = "_top" %]
-            [% END %]
-          </ul>
-        [% END %]
-      </td>
-      <td id="moz_tab">
-        <a href="https://www.mozilla.org/" title="Mozilla - Home of the Mozilla Project">
-          <img src="skins/contrib/Mozilla/tabzilla.png" border="0" height="42" width="154"></a>
-      </td>
-    </tr>
-    </table>
-
-    [%# display the version number on the index page %]
-    [% IF title == "$terms.Bugzilla Main Page" %]
-      <div id="bugzilla_version">
-        [% header_addl_info FILTER html %]
+          [% END %]
+        </ul>
       </div>
     [% END %]
 
-    [% PROCESS "global/common-links.html.tmpl" qs_suffix = "_top" %]
-
-  </div>
-
-[% ELSE %]
-
-[% INCLUDE global/banner.html.tmpl %]
-
-<table border="0" cellspacing="0" cellpadding="0" id="titles">
-<tr>
-    <td id="title">
-      <p>[% terms.BugzillaTitle %]
-      [% Hook.process("message") %]
-      [% " &ndash; $header" IF header %]</p>
-    </td>
-
-  [% IF subheader %]
-    <td id="subtitle">
-      <p class="subheader">[% subheader %]</p>
-    </td>
-  [% END %]
-
-  [% IF header_addl_info %]
-    <td id="information">
-      <p class="header_addl_info">[% header_addl_info %]</p>
-    </td>
-  [% END %]
-</tr>
-</table>
-
-<table id="lang_links_container" cellpadding="0" cellspacing="0"
-       class="bz_default_hidden"><tr><td>
-[% IF Bugzilla.languages.size > 1 %]
-  <ul class="links">
-  [% FOREACH lang = Bugzilla.languages.sort %]
-    <li>[% IF NOT loop.first %]<span class="separator"> | </span>[% END %]
-    [% IF lang == current_language %]
-      <span class="lang_current">[% lang FILTER html FILTER upper %]</span>
-    [% ELSE %]
-      <a href="#" onclick="set_language('[% lang FILTER none %]');">
-       [%- lang FILTER html FILTER upper %]</a>
-    [% END %]
-    </li>
-  [% END %]
-  </ul>
-[% END %]
-</td></tr></table>
-
-[% PROCESS "global/common-links.html.tmpl" qs_suffix = "_top" %]
+    <nav id="common_links">
+      [% PROCESS "global/common-links.html.tmpl" qs_suffix = "_top" %]
+    </nav>
+  </header>
 
 [% END %]
-
-</div> [%# header %]
-
-<div id="bugzilla-body">
 
 [%# in most cases the "header" variable provides redundant information, however
   # there are exceptions where not displaying this text is problematic. %]
@@ -431,13 +415,14 @@
   <h2>[% header FILTER none %]</h2>
 [% END %]
 
-[% IF Param('announcehtml') %]
-[% Param('announcehtml') FILTER none %]
-[% END %]
+  <main role="main" id="bugzilla-body">
+    [% IF Param('announcehtml') %]
+      [% Param('announcehtml') FILTER none %]
+    [% END %]
 
-[% IF message %]
-  <div id="message">[% message %]</div>
-[% END %]
+    [% IF message %]
+      <div id="message">[% message %]</div>
+    [% END %]
 
 [% BLOCK format_css_link %]
   <link href="[% asset_url FILTER html %]" rel="stylesheet" type="text/css">

@@ -1,31 +1,24 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Tiago Mello
-# Portions created by Tiago Mello are Copyright (C) 2010
-# Tiago Mello. All Rights Reserved.
-#
-# Contributor(s): Tiago Mello <timello@linux.vnet.ibm.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::BugUrl;
+
+use 5.10.1;
 use strict;
-use base qw(Bugzilla::Object);
+use warnings;
+
+use parent qw(Bugzilla::Object);
 
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::Constants;
+use Bugzilla::Hook;
 
+use URI;
 use URI::QueryParam;
 
 ###############################
@@ -135,16 +128,19 @@ sub should_handle {
 sub class_for {
     my ($class, $value) = @_;
 
+    my @sub_classes = $class->SUB_CLASSES;
+    Bugzilla::Hook::process("bug_url_sub_classes",
+        { sub_classes => \@sub_classes });
+
     my $uri = URI->new($value);
-    foreach my $subclass ($class->SUB_CLASSES) {
+    foreach my $subclass (@sub_classes) {
         eval "use $subclass";
         die $@ if $@;
         return wantarray ? ($subclass, $uri) : $subclass
             if $subclass->should_handle($uri);
     }
 
-    ThrowUserError('bug_url_invalid', { url    => $value,
-                                        reason => 'show_bug' });
+    ThrowUserError('bug_url_invalid', { url => $value });
 }
 
 sub _check_class {
@@ -209,3 +205,17 @@ sub _check_value {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item should_handle
+
+=item class_for
+
+=item class
+
+=item bug_id
+
+=back

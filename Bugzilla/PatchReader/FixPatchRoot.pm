@@ -1,9 +1,11 @@
 package Bugzilla::PatchReader::FixPatchRoot;
 
+use 5.10.1;
+use strict;
+use warnings;
+
 use Bugzilla::PatchReader::FilterPatch;
 use Bugzilla::PatchReader::CVSClient;
-
-use strict;
 
 @Bugzilla::PatchReader::FixPatchRoot::ISA = qw(Bugzilla::PatchReader::FilterPatch);
 
@@ -127,4 +129,24 @@ sub next_section {
   }
 }
 
-1
+1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item diff_root
+
+=item flush_delayed_commands
+
+=item end_patch
+
+=item start_file
+
+=item end_file
+
+=item next_section
+
+=back

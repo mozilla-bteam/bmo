@@ -1,31 +1,15 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 David Gardiner <david.gardiner@unisa.edu.au>
-#                 Matthias Radestock <matthias@sorted.org>
-#                 Gervase Markham <gerv@gerv.net>
-#                 Byron Jones <bugzilla@glob.com.au>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use lib qw(. lib);
 
 use Bugzilla;
@@ -37,10 +21,50 @@ use Bugzilla::User;
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::Product;
+use Bugzilla::Version;
 use Bugzilla::Keyword;
 use Bugzilla::Field;
-use Bugzilla::Install::Util qw(vers_cmp);
 use Bugzilla::Token;
+
+###############
+# Subroutines #
+###############
+
+sub get_product_values {
+    my ($products, $field, $vars) = @_;
+    my @all_values = map { @{ $_->$field } } @$products;
+
+    my (@unique, %duplicates, %duplicate_count, %seen);
+    foreach my $value (@all_values) {
+        my $lc_name = lc($value->name);
+        if ($seen{$lc_name}) {
+            $duplicate_count{$seen{$lc_name}->id}++;
+            $duplicates{$value->id} = $seen{$lc_name};
+            next;
+        }
+        push(@unique, $value);
+        $seen{$lc_name} = $value;
+    }
+
+    $field =~ s/s$//;
+    if ($field eq 'version') {
+        @unique = sort { vers_cmp(lc($a->name), lc($b->name)) } @unique;
+    }
+    else {
+        @unique = sort { lc($a->name) cmp lc($b->name) } @unique;
+    }
+
+    $field = 'target_milestone' if $field eq 'milestone';
+    $vars->{duplicates}->{$field} = \%duplicates;
+    $vars->{duplicate_count}->{$field} = \%duplicate_count;
+    # "component" is a reserved word in Template Toolkit.
+    $field = 'component_' if $field eq 'component';
+    $vars->{$field} = \@unique;
+}
+
+###############
+# Main Script #
+###############
 
 my $cgi = Bugzilla->cgi;
 my $dbh = Bugzilla->dbh;
@@ -71,7 +95,7 @@ my $userdefaultquery;
 if ($userid) {
     $userdefaultquery = $dbh->selectrow_array(
         "SELECT query FROM namedqueries " .
-         "WHERE userid = ? AND name = ?", 
+         "WHERE userid = ? AND name = ?",
          undef, ($userid, DEFAULT_QUERY_NAME));
 }
 
@@ -104,7 +128,7 @@ sub PrefillForm {
         next if grep { $_ eq $name } @skip;
         $foundone = 1;
         my @values = $buf->param($name);
-        
+
         # If the name is a single letter followed by numbers, it's part
         # of Custom Search. We store these as an array of hashes.
         if ($name =~ /^([[:lower:]])(\d+)$/) {
@@ -134,44 +158,21 @@ if (!PrefillForm($buffer)) {
     }
 }
 
-# if using groups for entry, then we don't want people to see products they 
+# if using groups for entry, then we don't want people to see products they
 # don't have access to. Remove them from the list.
-my @selectable_products = sort {lc($a->name) cmp lc($b->name)} 
+my @selectable_products = sort {lc($a->name) cmp lc($b->name)}
                                @{$user->get_selectable_products};
 Bugzilla::Product::preload(\@selectable_products);
+$vars->{'product'} = \@selectable_products;
 
 # Create the component, version and milestone lists.
-my %components;
-my %versions;
-my %milestones;
-
-# Exclude products with no components.
-@selectable_products = grep { scalar @{$_->components} } @selectable_products;
-
-foreach my $product (@selectable_products) {
-    $components{$_->name} = 1 foreach (@{$product->components});
-    $versions{$_->name}   = 1 foreach (@{$product->versions});
-    $milestones{$_->name} = 1 foreach (@{$product->milestones});
+foreach my $field (qw(components versions milestones)) {
+    get_product_values(\@selectable_products, $field, $vars);
 }
-
-my @components = sort { lc($a) cmp lc($b) } keys %components;
-my @versions = sort { vers_cmp (lc($a), lc($b)) } keys %versions;
-my @milestones = sort(keys %milestones);
-
-$vars->{'product'} = \@selectable_products;
 
 # Create data structures representing each classification
 if (Bugzilla->params->{'useclassification'}) {
     $vars->{'classification'} = $user->get_selectable_classifications;
-}
-
-# We use 'component_' because 'component' is a Template Toolkit reserved word.
-$vars->{'component_'} = \@components;
-
-$vars->{'version'} = \@versions;
-
-if (Bugzilla->params->{'usetargetmilestone'}) {
-    $vars->{'target_milestone'} = \@milestones;
 }
 
 my @chfields;
@@ -191,12 +192,12 @@ foreach my $val (editable_bug_fields()) {
     push @chfields, $val;
 }
 
-if (Bugzilla->user->is_timetracker) {
+if ($user->is_timetracker) {
     push @chfields, "work_time";
 } else {
-    @chfields = grep($_ ne "deadline", @chfields);
-    @chfields = grep($_ ne "estimated_time", @chfields);
-    @chfields = grep($_ ne "remaining_time", @chfields);
+    foreach my $tt_field (TIMETRACKING_FIELDS) {
+        @chfields = grep($_ ne $tt_field, @chfields);
+    }
 }
 @chfields = (sort(@chfields));
 $vars->{'chfield'} = \@chfields;
@@ -207,10 +208,40 @@ $vars->{'priority'} = Bugzilla::Field->new({name => 'priority'})->legal_values;
 $vars->{'bug_severity'} = Bugzilla::Field->new({name => 'bug_severity'})->legal_values;
 $vars->{'resolution'} = Bugzilla::Field->new({name => 'resolution'})->legal_values;
 
+# grab custom fields
+my @custom_fields = Bugzilla->active_custom_fields;
+$vars->{'custom_fields'} = \@custom_fields;
+foreach my $cf (@custom_fields) {
+    if ($cf->type == FIELD_TYPE_SINGLE_SELECT || $cf->type == FIELD_TYPE_MULTI_SELECT) {
+        $vars->{$cf->name} = $cf->legal_values;
+    }
+}
+
 # Boolean charts
-my @fields =
-    sort { lc($a->description) cmp lc($b->description) }
-    values %{ Bugzilla::Search::search_fields({ obsolete => 0 }) };
+my @fields = @{ Bugzilla->fields({ obsolete => 0 }) };
+
+my %exclude_fields = ();
+
+# If we're not in the time-tracking group, exclude time-tracking fields.
+if (!$user->is_timetracker) {
+    foreach my $tt_field (TIMETRACKING_FIELDS) {
+        $exclude_fields{$tt_field} = 1;
+    }
+}
+
+# Exclude fields turned off by params
+my %param_controlled_fields = ('useqacontact'        => 'qa_contact',
+                               'usetargetmilestone'  => 'target_milestone',
+                               'useclassification'   => 'classification',
+                               'usestatuswhiteboard' => 'status_whiteboard');
+
+while (my ($param, $field) = each %param_controlled_fields) {
+    $exclude_fields{$field} = 1 unless Bugzilla->params->{$param};
+}
+
+@fields = grep(!$exclude_fields{$_->name}, @fields);
+
+@fields = sort {lc($a->description) cmp lc($b->description)} @fields;
 unshift(@fields, { name => "noop", description => "---" });
 $vars->{'fields'} = \@fields;
 
@@ -275,9 +306,11 @@ if (defined($vars->{'format'}) && IsValidQueryType($vars->{'format'})) {
 # If we submit back to ourselves (for e.g. boolean charts), we need to
 # preserve format information; hence query_format taking priority over
 # format.
-my $format = $template->get_format("search/search", 
-                                   $vars->{'query_format'} || $vars->{'format'}, 
+my $format = $template->get_format("search/search",
+                                   $vars->{'query_format'} || $vars->{'format'},
                                    scalar $cgi->param('ctype'));
+
+Bugzilla::Hook::process("query_format", {'vars' => $vars, 'format' => $format});
 
 print $cgi->header($format->{'ctype'});
 

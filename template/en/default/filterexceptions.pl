@@ -1,23 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code are the Bugzilla tests.
-#
-# The Initial Developer of the Original Code is Jacob Steenhagen.
-# Portions created by Jacob Steenhagen are
-# Copyright (C) 2001 Jacob Steenhagen. All
-# Rights Reserved.
-#
-# Contributor(s): Gervase Markham <gerv@gerv.net>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 # Important! The following classes of directives are excluded in the test,
 # and so do not need to be added here. Doing so will cause warnings.
@@ -35,6 +21,7 @@
 # TT loop variables               - [% loop.count %]
 # Already-filtered stuff          - [% wibble FILTER html %]
 #   where the filter is one of html|csv|js|quoteUrls|time|uri|xml|none
+#   where the filter is one of html|csv|js|quoteUrls|time|uri|xml|markdown|none
 
 %::safe = (
 
@@ -89,12 +76,8 @@
 'reports/report-table.html.tmpl' => [
   '"&amp;$col_vals" IF col_vals', 
   '"&amp;$row_vals" IF row_vals', 
-  'classes.$row_idx.$col_idx', 
   'urlbase', 
   'data.$tbl.$col.$row', 
-  'row_total',
-  'col_totals.$col',
-  'grand_total', 
 ],
 
 'reports/report.html.tmpl' => [
@@ -103,7 +86,6 @@
   'imageurl', 
   'formaturl', 
   'other_format.name', 
-  'sizeurl', 
   'switchbase',
   'cumulate',
 ],
@@ -188,10 +170,6 @@
   'series.frequency * 2',
 ],
 
-'global/per-bug-queries.html.tmpl' => [
-  '" value=\"$bugids\"" IF bugids',
-],
-
 'global/select-menu.html.tmpl' => [
   'options', 
   'size', 
@@ -209,10 +187,6 @@
 
 'global/confirm-user-match.html.tmpl' => [
   'script',
-],
-
-'global/site-navigation.html.tmpl' => [
-  'bug.bug_id', 
 ],
 
 'bug/comments.html.tmpl' => [
@@ -286,9 +260,7 @@
 ],
 
 'bug/process/results.html.tmpl' => [
-  'title.$type', 
-  '"$terms.Bug $id" FILTER bug_link(id)',
-  '"$terms.bug $id" FILTER bug_link(id)',
+  'title.$type.ucfirst',
 ],
 
 'bug/create/create.html.tmpl' => [
@@ -296,9 +268,8 @@
 ],
 
 'bug/create/create-guided.html.tmpl' => [
-  'tablecolour',
   'sel',
-  'productstring', 
+  'productstring'
 ],
 
 'bug/activity/table.html.tmpl' => [
@@ -319,6 +290,7 @@
   'attachment.id', 
   'attachment.bug_id', 
   'editable_or_hide',
+  'use_patchviewer',
 ],
 
 'attachment/list.html.tmpl' => [
@@ -351,10 +323,8 @@
 ],
 
 'attachment/diff-file.html.tmpl' => [
-  'lxr_prefix',
   'file.minus_lines',
   'file.plus_lines',
-  'bonsai_prefix',
   'section.old_start',
   'section_num',
   'current_line_old',
@@ -366,7 +336,7 @@
 ],
 
 'admin/table.html.tmpl' => [
-  'link_uri'
+  'contentlink'
 ],
 
 'admin/custom_fields/cf-js.js.tmpl' => [

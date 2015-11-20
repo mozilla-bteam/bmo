@@ -7,6 +7,7 @@
 
 package Bugzilla::Metrics::Reporter;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -100,3 +101,19 @@ sub report {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item background
+
+=item foreground
+
+=item new
+
+=item walk_timers
+
+=item report
+
+=back

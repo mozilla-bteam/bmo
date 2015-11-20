@@ -1,28 +1,14 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Alan Raetz <al_raetz@yahoo.com>
-#                 David Miller <justdave@syndicomm.com>
-#                 Christopher Aillon <christopher@aillon.com>
-#                 Gervase Markham <gerv@gerv.net>
-#                 Vlad Dascalu <jocuri@softhome.net>
-#                 Shane H. W. Travis <travis@sedsystems.ca>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use lib qw(. lib);
 
@@ -56,11 +42,11 @@ sub DoAccount {
     my $dbh = Bugzilla->dbh;
     my $user = Bugzilla->user;
 
-    ($vars->{'realname'}) = $dbh->selectrow_array(
-        "SELECT realname FROM profiles WHERE userid = ?", undef, $user->id);
+    $vars->{'realname'} = $user->name;
 
-    if(Bugzilla->params->{'allowemailchange'} 
-       && Bugzilla->user->authorizer->can_change_email) {
+    if (Bugzilla->params->{'allowemailchange'}
+        && $user->authorizer->can_change_email)
+    {
        # First delete old tokens.
        Bugzilla::Token::CleanTokenTable();
 
@@ -92,39 +78,34 @@ sub SaveAccount {
 
     my $user = Bugzilla->user;
 
-    my $oldpassword    = $cgi->param('old_password');
-    my $pwd1           = $cgi->param('new_password1');
-    my $pwd2           = $cgi->param('new_password2');
+    my $oldpassword = $cgi->param('old_password');
+    my $verified_password;
+    my $pwd1 = $cgi->param('new_password1');
+    my $pwd2 = $cgi->param('new_password2');
     my $new_login_name = trim($cgi->param('new_login_name'));
     my @mfa_events;
 
     if ($user->authorizer->can_change_password
-        && ($oldpassword ne "" || $pwd1 ne "" || $pwd2 ne ""))
+        && ($pwd1 ne "" || $pwd2 ne ""))
     {
-        my $oldcryptedpwd = $user->cryptpassword;
-        $oldcryptedpwd || ThrowCodeError("unable_to_retrieve_password");
+        $user->check_current_password($oldpassword);
+        $verified_password = 1;
 
-        if (bz_crypt($oldpassword, $oldcryptedpwd) ne $oldcryptedpwd) {
-            ThrowUserError("old_password_incorrect");
-        }
+        $pwd1 || ThrowUserError("new_password_missing");
+        validate_password($pwd1, $pwd2);
 
-        if ($pwd1 ne "" || $pwd2 ne "") {
-            $pwd1 || ThrowUserError("new_password_missing");
-            validate_password($pwd1, $pwd2);
-
-            if ($oldpassword ne $pwd1) {
-                if ($user->mfa) {
-                    push @mfa_events, {
-                        type     => 'set_password',
-                        reason   => 'changing your password',
-                        password => $pwd1,
-                    };
-                }
-                else {
-                    $user->set_password($pwd1);
-                    # Invalidate all logins except for the current one
-                    Bugzilla->logout(LOGOUT_KEEP_CURRENT);
-                }
+        if ($oldpassword ne $pwd1) {
+            if ($user->mfa) {
+                push @mfa_events, {
+                    type     => 'set_password',
+                    reason   => 'changing your password',
+                    password => $pwd1,
+                };
+            }
+            else {
+                $user->set_password($pwd1);
+                # Invalidate all logins except for the current one
+                Bugzilla->logout(LOGOUT_KEEP_CURRENT);
             }
         }
     }
@@ -134,7 +115,7 @@ sub SaveAccount {
         && $new_login_name)
     {
         if ($user->login ne $new_login_name) {
-            $oldpassword || ThrowUserError("old_password_required");
+            $verified_password || $user->check_current_password($oldpassword);
 
             # Block multiple email changes for the same user.
             if (Bugzilla::Token::HasEmailChangeToken($user->id)) {
@@ -142,8 +123,7 @@ sub SaveAccount {
             }
 
             # Before changing an email address, confirm one does not exist.
-            validate_email_syntax($new_login_name)
-              || ThrowUserError('illegal_email_address', {addr => $new_login_name});
+            check_email_syntax($new_login_name);
             is_available_username($new_login_name)
               || ThrowUserError("account_exists", {email => $new_login_name});
 
@@ -155,8 +135,8 @@ sub SaveAccount {
                 };
             }
             else {
-                Bugzilla::Token::IssueEmailChangeToken($user, $new_login_name);
-                $vars->{email_changes_saved} = 1;
+                $vars->{'email_token'} = Bugzilla::Token::IssueEmailChangeToken($new_login_name);
+                $vars->{'email_changes_saved'} = 1;
             }
         }
     }
@@ -536,7 +516,7 @@ sub DoPermissions {
         }
     }
 
-    # If the user has product specific privileges, inform him about that.
+    # If the user has product specific privileges, inform them about that.
     foreach my $privs (PER_PRODUCT_PRIVILEGES) {
         next if $user->in_group($privs);
         $vars->{"local_$privs"} = $user->get_products_by_permission($privs);
@@ -602,7 +582,7 @@ sub SaveSavedSearches {
         }
 
         if ($group_id) {
-            # Don't allow the user to share queries with groups he's not
+            # Don't allow the user to share queries with groups they're not
             # allowed to.
             next unless grep($_ eq $group_id, @{$user->queryshare_groups});
 
@@ -777,9 +757,10 @@ sub SaveSessions {
     $dbh->bz_start_transaction;
     if ($cgi->param("session_logout_all")) {
         my $info_getter = $user->authorizer && $user->authorizer->successful_info_getter();
-        if ($info_getter->cookie) {
+        if (my $login_cookie = $info_getter->cookie) {
+            trick_taint($login_cookie);
             $dbh->do("DELETE FROM logincookies WHERE userid = ? AND cookie != ?", undef,
-                     $user->id, $info_getter->cookie);
+                     $user->id, $login_cookie);
         }
     }
     else {
@@ -957,9 +938,9 @@ $cgi->delete('Bugzilla_login', 'Bugzilla_password') if ($cgi->cookie('sudo'));
 $cgi->delete('GoAheadAndLogIn');
 
 # First try to get credentials from cookies.
-Bugzilla->login(LOGIN_OPTIONAL);
+my $user = Bugzilla->login(LOGIN_OPTIONAL);
 
-if (!Bugzilla->user->id) {
+if (!$user->id) {
     # Use credentials given in the form if login cookies are not available.
     $cgi->param('Bugzilla_login', $cgi->param('old_login'));
     $cgi->param('Bugzilla_password', $cgi->param('old_password'));

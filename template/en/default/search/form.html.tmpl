@@ -1,108 +1,19 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Chris Lahey <clahey@ximian.com> [javascript fixes]
-  #                 Christian Reis <kiko@async.com.br> [javascript rewrite]
-  #                 Gervase Markham <gerv@gerv.net>
-  #                 Guy Pyrzak <guy.pyrzak@gmail.com>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [% PROCESS "global/field-descs.none.tmpl" %]
 
+<input type="hidden" id="no_redirect" name="no_redirect" value="0">
 <script type="text/javascript">
-
-var first_load = true;         [%# is this the first time we load the page? %]
-var last_sel = new Array();    [%# caches last selection %]
-
-[% IF Param('useclassification') %]
-var useclassification = true;
-var prods = new Array();
-[% ELSE %]
-var useclassification = false;
-[% END %]
-var cpts = new Array();
-var vers = new Array();
-[% IF Param('usetargetmilestone') %]
-var tms = new Array();
-[% END %]
-
-[%# Create an array of products, indexed by the classification #%]
-
-[% nclass = 0 %]
-[% FOREACH c = classification %]
-  prods[[% nclass FILTER js %]] = [
-    [% sep = '' %]
-    [%- FOREACH item = user.get_selectable_products(c.id) -%]
-      [%- IF item.components.size -%]
-        [%- sep FILTER js %]'[% item.name FILTER js %]'
-        [%- sep = ',' -%] 
-      [%- END -%]
-    [%- END -%] ];
-  [% nclass = nclass+1 %]
-[% END %]
-
-[%# Create three arrays of components, versions and target milestones, indexed
-  # numerically according to the product they refer to. #%]
-
-[% n = 0 %]
-[% FOREACH p = product %]
-  [% NEXT IF NOT p.components.size %]
-  [% IF Param('useclassification') %]
-  prods['[% p.name FILTER js %]'] = [% n %]
-  [% END %]
-  cpts[[% n %]] = [
-    [%- FOREACH item = p.components %]'[% item.name FILTER js %]'[% ", " UNLESS loop.last %] [%- END -%] ];
-  vers[[% n %]] = [
-    [%- FOREACH item = p.versions -%]'[%  item.name FILTER js %]'[% ", " UNLESS loop.last %] [%- END -%] ];
-  [% IF Param('usetargetmilestone') %]
-  tms[[% n %]]  = [
-     [%- FOREACH item = p.milestones %]'[% item.name FILTER js %]'[% ", " UNLESS loop.last %] [%- END -%] ];
-  [% END %]
-  [% n = n+1 %]
-[% END %]
-
-/*
- * doOnSelectProduct determines which selection should get updated 
- *
- * - selectmode = 0  - init
- *   selectmode = 1  - classification selected
- *   selectmode = 2  - product selected
- *
- * globals:
- *   queryform - string holding the name of the selection form
- */
-function doOnSelectProduct(selectmode) {
-    var f = document.forms[queryform];
-    var milestone = (typeof(f.target_milestone) == "undefined" ? 
-                                               null : f.target_milestone);
-    if (selectmode == 0) {
-        // If there is no classification selected, give us a chance to fill
-        // the select fields with values from the possibly selected product.
-        if (useclassification && f.classification.selectedIndex > -1) {
-            selectClassification(f.classification, f.product, f.component, f.version, milestone);
-        } else {
-            selectProduct(f.product, f.component, f.version, milestone, null);
-        }
-    } else if (selectmode == 1) {
-        selectClassification(f.classification, f.product, f.component, f.version, milestone);
-    } else {
-        selectProduct(f.product, f.component, f.version, milestone, null);
-    }
-}
+  if (history && history.replaceState) {
+    var no_redirect = document.getElementById("no_redirect");
+    no_redirect.value = 1;
+  }
 
 // Hide the Advanced Fields by default, unless the user has a cookie
 // that specifies otherwise.
@@ -141,11 +52,8 @@ TUI_hide_default('information_query');
          value = default.short_desc.0
          type_selected = default.short_desc_type.0 
          accesskey = "s"
-         %]
-      <script type="text/javascript"> <!--
-          document.forms[queryform].short_desc.focus(); 
-      // -->
-      </script>
+         focus = 1
+      %]
 
       [% IF button_name %]
         <input type="submit" id="[% button_name FILTER css_class_quote %]_top"
@@ -154,23 +62,26 @@ TUI_hide_default('information_query');
   </div>
 
 [%# *** Classification Product Component *** %]
-  
+
+[% value_controllers = {
+    'classification' => { 'products' => bug_fields.product },
+    'product' => { 'components' => bug_fields.component,
+                   'versions'   => bug_fields.version,
+                   'milestones' => bug_fields.target_milestone },
+} %]
+
 [% Hook.process('before_selects_top') %]
 [% IF Param('useclassification') %]
-      [% fake_classfication = { name => bug_fields.classification.name,
-                                type => constants.FIELD_TYPE_SINGLE_SELECT } %]
-      [% INCLUDE "search/field.html.tmpl" 
-            field => fake_classfication
-            accesskey => "c"
-            onchange => "doOnSelectProduct(1);" 
-            value => default.classification
-      %]          
+  [% INCLUDE "search/field.html.tmpl"
+        field => bug_fields.classification
+        accesskey => "c"
+        value => default.classification
+  %]
 [% END %]
 
 [% INCLUDE "search/field.html.tmpl" 
       field => bug_fields.product
       accesskey => "p"
-      onchange => "doOnSelectProduct(2);" 
       value => default.product
 %]
 [% INCLUDE "search/field.html.tmpl" 
@@ -200,7 +111,7 @@ TUI_hide_default('information_query');
     [%+ field_descs.longdesc FILTER html %]s, [%+ field_descs.bug_file_loc FILTER html %], 
     [% IF Param('usestatuswhiteboard') %] [%+ field_descs.status_whiteboard FILTER html %], [%+ END %]
     [% IF use_keywords %] [%+ field_descs.keywords FILTER html %], [%+ END %]
-    [% IF user.is_timetracker %] [%+ field_descs.deadline FILTER html %], [%+ END %]
+    [% IF Param('timetrackinggroup') %] [%+ field_descs.deadline FILTER html %], [%+ END %]
     [% terms.Bug %] Numbers, [%+ field_descs.version FILTER html %], 
     [% IF Param('usetargetmilestone') %] [%+ field_descs.target_milestone FILTER html %], [%+ END %]
     [% field_descs.bug_severity FILTER html %], [%+ field_descs.priority FILTER html %], [%+ field_descs.rep_platform FILTER html %], 
@@ -216,6 +127,10 @@ TUI_hide_default('information_query');
     { field => bug_fields.keywords, accesskey => 'k', 
       qtypes => ['allwords', 'anywords', 'nowords', 'regexp', 'notregexp'] }   
   ] %]
+  [% FOREACH field = custom_fields %]
+    [% freetext_fields.push({ field => field }) IF field.type == constants.FIELD_TYPE_FREETEXT or field.type == constants.FIELD_TYPE_TEXTAREA %]
+  [% END %]
+
   [% Hook.process('before_freetext_fields') %]
   
   [%# loop through a bunch of free text fields and print out their text stuff %]
@@ -228,6 +143,7 @@ TUI_hide_default('information_query');
     %]
     <div class="search_field_row">
       [% type = field_container.field.name _ "_type" %]
+      [% possible_values = field_container.field.name == 'keywords' ? all_keywords : [] %]
       [% INCLUDE "search/field.html.tmpl" 
           field => field_container.field
           types => field_container.qtypes || query_types
@@ -238,8 +154,7 @@ TUI_hide_default('information_query');
     </div>
   [% END %]
 
-  [%# Deadline %]
-  [% IF user.is_timetracker %]
+  [% IF Param('timetrackinggroup') %]
     <div class="search_field_row">
         [% INCLUDE "search/field.html.tmpl" 
                     field = bug_fields.deadline 
@@ -251,16 +166,18 @@ TUI_hide_default('information_query');
 
   <div class="search_field_row">
     <span class="field_label"><label for="bug_id">[% terms.Bugs %] numbered</label></span>
-    <div id="bug_id_container" >
+    <div id="bug_id_container">
       <input type="text" name="bug_id" id="bug_id"
            value="[% default.bug_id.0 FILTER html %]" size="20">
            <div class="field_help">(comma-separated list)</div>
     </div>
-    should be 
-    <select name="bug_id_type" id="bug_id_type">
-      <option value="anyexact"[% " selected" IF default.bug_id_type.0 == "anyexact" %]>only included in</option>
-      <option value="nowords"[% " selected" IF default.bug_id_type.0 == "nowords" %]>excluded from</option>
-    </select> the results
+    <span class="field_label field_label_sup">
+      should be 
+      <select name="bug_id_type" id="bug_id_type">
+        <option value="anyexact"[% " selected" IF default.bug_id_type.0 == "anyexact" %]>only included in</option>
+        <option value="nowords"[% " selected" IF default.bug_id_type.0 == "nowords" %]>excluded from</option>
+      </select> the results
+    </span>
   </div>
 
   [% Hook.process('after_freetext_fields') %]
@@ -302,6 +219,15 @@ TUI_hide_default('information_query');
         accesskey =>"o"
         value => default.op_sys
     %]               
+    [% FOREACH field = custom_fields %]
+      [% IF field.type == constants.FIELD_TYPE_SINGLE_SELECT or
+         field.type == constants.FIELD_TYPE_MULTI_SELECT %]
+        [% INCLUDE "search/field.html.tmpl"
+           field => field
+           value => default.${field.name}
+        %]
+      [% END %]
+    [% END %]
     [% Hook.process('after_selects_bottom') %]
   </div>
 </div>
@@ -383,25 +309,18 @@ TUI_hide_default('information_query');
   <li>
     <label for="chfieldfrom">between:</label>
     <input name="chfieldfrom" id="chfieldfrom" size="10" 
-           value="[% default.chfieldfrom.0 FILTER html %]" onchange="updateCalendarFromField(this)"> 
-           <button type="button" class="calendar_button"
-                          id="button_calendar_chfieldfrom"
-                          onclick="showCalendar('chfieldfrom')"><span>Calendar</span></button>
-           and 
-           <div id="con_calendar_chfieldfrom"></div>
-          <input name="chfieldto" size="10" id="chfieldto" 
-                 value="[% default.chfieldto.0 || "Now" FILTER html %]" 
-                 onchange="updateCalendarFromField(this)">
-          <button type="button" class="calendar_button"
-                         id="button_calendar_chfieldto"
-                         onclick="showCalendar('chfieldto')"><span>Calendar</span></button>
-          <div id="con_calendar_chfieldto"></div>
+           value="[% default.chfieldfrom.0 FILTER html %]">
+    and
+    <input name="chfieldto" size="10" id="chfieldto"
+           value="[% default.chfieldto.0 || "Now" FILTER html %]">
     (YYYY-MM-DD or relative dates)
     <script type="text/javascript">
-      createCalendar('chfieldfrom');
-      createCalendar('chfieldto');
+      $(function() {
+        $("#chfieldfrom").datepicker();
+        $("#chfieldto").datepicker();
+      });
     </script>
-  </li>    
+  </li>
 </ul>
 
 [%############################################################################%]

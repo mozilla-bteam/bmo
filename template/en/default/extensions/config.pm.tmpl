@@ -12,10 +12,11 @@
 
 [% PROCESS extensions/license.txt.tmpl %]
 
-package B[% %]ugzilla::Extension::[% name %];
+package Bugzilla::Extension::[% name %];
 
 use 5.10.1;
 use strict;
+use warnings;
 
 use constant NAME => '[% name %]';
 

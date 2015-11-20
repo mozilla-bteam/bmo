@@ -1,29 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Dave Miller <davem00@aol.com>
-#                 Gayathri Swaminath <gayathrik00@aol.com>
-#                 Jeroen Ruigrok van der Werven <asmodai@wxs.nl>
-#                 Dave Lawrence <dkl@redhat.com>
-#                 Tomas Kopal <Tomas.Kopal@altap.cz>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Lance Larsh <lance.larsh@oracle.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 =head1 NAME
 
@@ -40,8 +20,12 @@ For interface details see L<Bugzilla::DB> and L<DBI>.
 =cut
 
 package Bugzilla::DB::Mysql;
+
+use 5.10.1;
 use strict;
-use base qw(Bugzilla::DB);
+use warnings;
+
+use parent qw(Bugzilla::DB);
 
 use Bugzilla::Constants;
 use Bugzilla::Install::Util qw(install_string);
@@ -70,17 +54,28 @@ sub new {
     $dsn .= ";mysql_socket=$sock" if $sock;
 
     my %attrs = (
-        mysql_enable_utf8 => Bugzilla->params->{'utf8'},
+        mysql_enable_utf8 => 1,
         # Needs to be explicitly specified for command-line processes.
         mysql_auto_reconnect => 1,
     );
     
+    # MySQL SSL options
+    my ($ssl_ca_file, $ssl_ca_path, $ssl_cert, $ssl_key) =
+        @$params{qw(db_mysql_ssl_ca_file db_mysql_ssl_ca_path
+                    db_mysql_ssl_client_cert db_mysql_ssl_client_key)};
+    if ($ssl_ca_file || $ssl_ca_path || $ssl_cert || $ssl_key) {
+        $attrs{'mysql_ssl'}             = 1;
+        $attrs{'mysql_ssl_ca_file'}     = $ssl_ca_file if $ssl_ca_file;
+        $attrs{'mysql_ssl_ca_path'}     = $ssl_ca_path if $ssl_ca_path;
+        $attrs{'mysql_ssl_client_cert'} = $ssl_cert    if $ssl_cert;
+        $attrs{'mysql_ssl_client_key'}  = $ssl_key     if $ssl_key;
+    }
+
     my $self = $class->db_new({ dsn => $dsn, user => $user, 
                                 pass => $pass, attrs => \%attrs });
 
-    # This makes sure that if the tables are encoded as UTF-8, we
-    # return their data correctly.
-    $self->do("SET NAMES utf8") if Bugzilla->params->{'utf8'};
+    # This makes sure that we return table names correctly.
+    $self->do("SET NAMES utf8");
 
     # all class local variables stored in DBI derived class needs to have
     # a prefix 'private_'. See DBI documentation.
@@ -90,17 +85,18 @@ sub new {
     $self->{private_bz_dsn} = $dsn;
 
     bless ($self, $class);
-    
-    # Bug 321645 - disable MySQL strict mode, if set
+
+    # Check for MySQL modes.
     my ($var, $sql_mode) = $self->selectrow_array(
         "SHOW VARIABLES LIKE 'sql\\_mode'");
 
+    # Disable ANSI and strict modes, else Bugzilla will crash.
     if ($sql_mode) {
         # STRICT_TRANS_TABLE or STRICT_ALL_TABLES enable MySQL strict mode,
         # causing bug 321645. TRADITIONAL sets these modes (among others) as
         # well, so it has to be stipped as well
         my $new_sql_mode =
-            join(",", grep {$_ !~ /^STRICT_(?:TRANS|ALL)_TABLES|TRADITIONAL$/}
+            join(",", grep {$_ !~ /^(?:ANSI|STRICT_(?:TRANS|ALL)_TABLES|TRADITIONAL)$/}
                             split(/,/, $sql_mode));
 
         if ($sql_mode ne $new_sql_mode) {
@@ -111,6 +107,10 @@ sub new {
     # Allow large GROUP_CONCATs (largely for inserting comments 
     # into bugs_fulltext).
     $self->do('SET SESSION group_concat_max_len = 128000000');
+
+    # MySQL 5.5.2 and older have this variable set to true, which causes
+    # trouble, see bug 870369.
+    $self->do('SET SESSION sql_auto_is_null = 0');
 
     return $self;
 }
@@ -126,10 +126,13 @@ sub bz_last_key {
 }
 
 sub sql_group_concat {
-    my ($self, $column, $separator, $sort) = @_;
+    my ($self, $column, $separator, $sort, $order_by) = @_;
     $separator = $self->quote(', ') if !defined $separator;
     $sort = 1 if !defined $sort;
-    if ($sort) {
+    if ($order_by) {
+        $column .= " ORDER BY $order_by";
+    }
+    elsif ($sort) {
         my $sort_order = $column;
         $sort_order =~ s/^DISTINCT\s+//i;
         $column = "$column ORDER BY $sort_order";
@@ -297,7 +300,6 @@ sub _bz_get_initial_schema {
 sub bz_check_server_version {
     my $self = shift;
 
-    my $lc = Bugzilla->localconfig;
     if (lc(Bugzilla->localconfig->{db_name}) eq 'mysql') {
         die "It is not safe to run Bugzilla inside a database named 'mysql'.\n"
             . " Please pick a different value for \$db_name in localconfig.\n";
@@ -543,13 +545,11 @@ sub bz_setup_database {
 
     # If there are no tables, but the DB isn't utf8 and it should be,
     # then we should alter the database to be utf8. We know it should be
-    # if the utf8 parameter is true or there are no params at all.
+    # if there are no params at all.
     # This kind of situation happens when people create the database
     # themselves, and if we don't do this they will get the big
     # scary WARNING statement about conversion to UTF8.
-    if ( !$self->bz_db_is_utf8 && !@tables 
-         && (Bugzilla->params->{'utf8'} || !scalar keys %{Bugzilla->params}) )
-    {
+    if (!$self->bz_db_is_utf8 && !@tables) {
         $self->_alter_db_charset_to_utf8();
     }
 
@@ -653,7 +653,7 @@ sub bz_setup_database {
                    MAX_ROWS=100000");
     }
 
-    # Convert the database to UTF-8 if the utf8 parameter is on.
+    # Convert the database to UTF-8.
     # We check if any table isn't utf8, because lots of crazy
     # partial-conversion situations can happen, and this handles anything
     # that could come up (including having the DB charset be utf8 but not
@@ -665,8 +665,8 @@ sub bz_setup_database {
           WHERE TABLE_SCHEMA = ? AND TABLE_COLLATION IS NOT NULL 
                 AND TABLE_COLLATION NOT LIKE 'utf8%' 
           LIMIT 1", undef, $db_name);
-    
-    if (Bugzilla->params->{'utf8'} && $non_utf8_tables) {
+
+    if ($non_utf8_tables) {
         print "\n", install_string('mysql_utf8_conversion');
 
         if (!Bugzilla->installation_answers->{NO_PAUSE}) {
@@ -681,8 +681,7 @@ sub bz_setup_database {
             }
         }
 
-        print "Converting table storage format to UTF-8. This may take a",
-              " while.\n";
+        say 'Converting table storage format to UTF-8. This may take a while.';
         foreach my $table ($self->bz_table_list_real) {
             my $info_sth = $self->prepare("SHOW FULL COLUMNS FROM $table");
             $info_sth->execute();
@@ -699,7 +698,7 @@ sub bz_setup_database {
                 {
                     my $name = $column->{Field};
 
-                    print "$table.$name needs to be converted to UTF-8...\n";
+                    say "$table.$name needs to be converted to UTF-8...";
 
                     # These will be automatically re-created at the end
                     # of checksetup.
@@ -737,7 +736,7 @@ sub bz_setup_database {
                     }
                 }
 
-                print "Converting the $table table to UTF-8...\n";
+                say "Converting the $table table to UTF-8...";
                 my $bin = "ALTER TABLE $table " . join(', ', @binary_sql);
                 my $utf = "ALTER TABLE $table " . join(', ', @utf8_sql,
                           'DEFAULT CHARACTER SET utf8');
@@ -761,11 +760,9 @@ sub bz_setup_database {
     # a mysqldump.) So we have this change outside of the above block,
     # so that it just happens silently if no actual *table* conversion
     # needs to happen.
-    if (Bugzilla->params->{'utf8'} && !$self->bz_db_is_utf8) {
-        $self->_alter_db_charset_to_utf8();
-    }
+    $self->_alter_db_charset_to_utf8() unless $self->bz_db_is_utf8;
 
-     $self->_fix_defaults();
+    $self->_fix_defaults();
 
     # Bug 451735 highlighted a bug in bz_drop_index() which didn't
     # check for FKs before trying to delete an index. Consequently,
@@ -843,7 +840,7 @@ sub _fix_defaults {
 sub _alter_db_charset_to_utf8 {
     my $self = shift;
     my $db_name = Bugzilla->localconfig->{db_name};
-    $self->do("ALTER DATABASE $db_name CHARACTER SET utf8"); 
+    $self->do("ALTER DATABASE `$db_name` CHARACTER SET utf8"); 
 }
 
 sub bz_db_is_utf8 {
@@ -1057,3 +1054,49 @@ sub _bz_build_schema_from_disk {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item sql_date_format
+
+=item bz_explain
+
+=item bz_last_key
+
+=item sql_position
+
+=item sql_fulltext_search
+
+=item sql_iposition
+
+=item bz_enum_initial_values
+
+=item sql_group_by
+
+=item sql_limit
+
+=item sql_not_regexp
+
+=item sql_string_concat
+
+=item sql_date_math
+
+=item sql_to_days
+
+=item bz_check_server_version
+
+=item sql_from_days
+
+=item sql_regexp
+
+=item sql_istring
+
+=item sql_group_concat
+
+=item bz_setup_database
+
+=item bz_db_is_utf8
+
+=back

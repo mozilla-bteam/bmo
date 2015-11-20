@@ -1,47 +1,30 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Jacob Steenhagen <jake@bugzilla.org>
-#                 Bradley Baetz <bbaetz@student.usyd.edu.au>
-#                 Christopher Aillon <christopher@aillon.com>
-#                 Tomas Kopal <Tomas.Kopal@altap.cz>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Lance Larsh <lance.larsh@oracle.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::DB;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use DBI;
 
 # Inherit the DB class from DBI::db.
-use base qw(DBI::db);
+use parent -norequire, qw(DBI::db);
 
 use Bugzilla::Constants;
+use Bugzilla::Mailer;
 use Bugzilla::Install::Requirements;
-use Bugzilla::Install::Util qw(vers_cmp install_string);
+use Bugzilla::Install::Util qw(install_string);
 use Bugzilla::Install::Localconfig;
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::DB::Schema;
+use Bugzilla::Version;
 
 use Bugzilla::Metrics::Mysql;
 
@@ -95,12 +78,6 @@ use constant FULLTEXT_OR => '';
 use constant WORD_START => '(^|[^[:alnum:]])';
 use constant WORD_END   => '($|[^[:alnum:]])';
 
-# On most databases, in order to drop an index, you have to first drop
-# the foreign keys that use that index. However, on some databases,
-# dropping the FK immediately before dropping the index causes problems
-# and doesn't need to be done anyway, so those DBs set this to 0.
-use constant INDEX_DROPS_REQUIRE_FK_DROPS => 1;
-
 #####################################################################
 # Overridden Superclass Methods 
 #####################################################################
@@ -134,7 +111,6 @@ sub connect_shadow {
 }
 
 sub connect_main {
-    my $lc = Bugzilla->localconfig;
     return _connect(Bugzilla->localconfig); 
 }
 
@@ -177,14 +153,18 @@ sub _handle_error {
     #            . "(Lost connection to MySQL server during query)";
     #}
 
-    #if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
-    #    ThrowCodeError("db_error", { err_message => $_[0] });
+
+    #if (!Bugzilla->request_cache->{in_error} && Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
+    #    Bugzilla->request_cache->{in_error} = 1;
+    #    ThrowCodeError("db_error", {err_message => $_[0]});
     #}
 
     # keep tests happy
     if (0) {
         ThrowCodeError("db_error", { err_message => $_[0] });
     }
+
+    Bugzilla->request_cache->{in_error} = undef;
 
     return 0; # Now let DBI handle raising the error
 }
@@ -282,7 +262,7 @@ sub bz_create_database {
 
     if (!$conn_success) {
         $dbh = _get_no_db_connection();
-        print "Creating database $db_name...\n";
+        say "Creating database $db_name...";
 
         # Try to create the DB, and if we fail print a friendly error.
         my $success  = eval {
@@ -406,6 +386,31 @@ sub sql_position {
     return "POSITION($fragment IN $text)";
 }
 
+sub sql_like {
+    my ($self, $fragment, $column) = @_;
+
+    my $quoted = $self->quote($fragment);
+
+    return $self->sql_position($quoted, $column) . " > 0";
+}
+
+sub sql_ilike {
+    my ($self, $fragment, $column) = @_;
+
+    my $quoted = $self->quote($fragment);
+
+    return $self->sql_iposition($quoted, $column) . " > 0";
+}
+
+sub sql_not_ilike {
+    my ($self, $fragment, $column) = @_;
+
+    my $quoted = $self->quote($fragment);
+
+    return $self->sql_iposition($quoted, $column) . " = 0";
+}
+
+
 sub sql_group_by {
     my ($self, $needed_columns, $optional_columns) = @_;
 
@@ -520,7 +525,7 @@ sub bz_setup_database {
     my @desired_tables = $self->_bz_schema->get_table_list();
     my $bugs_exists = $self->bz_table_info('bugs');
     if (!$bugs_exists) {
-        print install_string('db_table_setup'), "\n";
+        say install_string('db_table_setup');
     }
 
     foreach my $table_name (@desired_tables) {
@@ -557,7 +562,7 @@ sub bz_setup_foreign_keys {
     my $activity_fk = $self->bz_fk_info('profiles_activity', 'userid');
     my $any_fks = $activity_fk && $activity_fk->{created};
     if (!$any_fks) {
-        print get_text('install_fk_setup'), "\n";
+        say get_text('install_fk_setup');
     }
 
     my @tables = $self->bz_table_list();
@@ -751,12 +756,12 @@ sub bz_alter_column_raw {
         $table, $name, $new_def,
         defined $set_nulls_to ? $self->quote($set_nulls_to) : undef);
     my $new_ddl = $self->_bz_schema->get_type_ddl($new_def);
-    print "Updating column $name in table $table ...\n";
+    say "Updating column $name in table $table ...";
     if (defined $current_def) {
         my $old_ddl = $self->_bz_schema->get_type_ddl($current_def);
-        print "Old: $old_ddl\n";
+        say "Old: $old_ddl";
     }
-    print "New: $new_ddl\n";
+    say "New: $new_ddl";
     $self->do($_) foreach (@statements);
 }
 
@@ -850,7 +855,7 @@ sub _bz_add_table_raw {
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE
         and !$options->{silently})
     {
-        print install_string('db_table_new', { table => $name }), "\n";
+        say install_string('db_table_new', { table => $name });
     }
     $self->do($_) foreach (@statements);
 }
@@ -987,11 +992,9 @@ sub bz_drop_index {
     my $index_exists = $self->bz_index_info($table, $name);
 
     if ($index_exists) {
-        if ($self->INDEX_DROPS_REQUIRE_FK_DROPS) {
-            # We cannot delete an index used by a FK.
-            foreach my $column (@{$index_exists->{FIELDS}}) {
-                $self->bz_drop_related_fks($table, $column);
-            }
+        # We cannot delete an index used by a FK.
+        foreach my $column (@{$index_exists->{FIELDS}}) {
+            $self->bz_drop_related_fks($table, $column);
         }
         $self->bz_drop_index_raw($table, $name);
         $self->_bz_real_schema->delete_index($table, $name);
@@ -1257,12 +1260,13 @@ sub bz_start_transaction {
 
 sub bz_commit_transaction {
     my ($self) = @_;
-    
+
     if ($self->{private_bz_transaction_count} > 1) {
         $self->{private_bz_transaction_count}--;
     } elsif ($self->bz_in_transaction) {
         $self->commit();
         $self->{private_bz_transaction_count} = 0;
+        Bugzilla::Mailer->send_staged_mail();
     } else {
        ThrowCodeError('not_in_transaction');
     }
@@ -1298,11 +1302,9 @@ sub db_new {
                        ShowErrorStatement => 1,
                        HandleError => \&_handle_error,
                        TaintIn => 1,
-                       FetchHashKeyName => 'NAME',  
-                       # Note: NAME_lc causes crash on ActiveState Perl
-                       # 5.8.4 (see Bug 253696)
-                       # XXX - This will likely cause problems in DB
-                       # back ends that twiddle column case (Oracle?)
+                       # See https://rt.perl.org/rt3/Public/Bug/Display.html?id=30933
+                       # for the reason to use NAME instead of NAME_lc (bug 253696).
+                       FetchHashKeyName => 'NAME',
                      };
 
     if ($override_attrs) {
@@ -1371,7 +1373,7 @@ sub _bz_init_schema_storage {
             $self->_bz_add_table_raw('bz_schema');
         }
 
-        print install_string('db_schema_init'), "\n";
+        say install_string('db_schema_init');
         my $sth = $self->prepare("INSERT INTO bz_schema "
                                  ." (schema_data, version) VALUES (?,?)");
         $sth->bind_param(1, $store_me, $self->BLOB_TYPE);
@@ -1554,7 +1556,7 @@ __END__
 
 =head1 NAME
 
-Bugzilla::DB - Database access routines, using L<DBI>
+Bugzilla::DB - Database access routines, using L<DBI|https://metacpan.org/pod/DBI>
 
 =head1 SYNOPSIS
 
@@ -1815,7 +1817,7 @@ The constructor should create a DSN from the parameters provided and
 then call C<db_new()> method of its super class to create a new
 class instance. See L<db_new> description in this module. As per
 DBI documentation, all class variables must be prefixed with
-"private_". See L<DBI>.
+"private_". See L<DBI|https://metacpan.org/pod/DBI>.
 
 =back
 
@@ -2058,6 +2060,73 @@ Formatted SQL for substring search (scalar)
 
 Just like L</sql_position>, but case-insensitive.
 
+=item C<sql_like>
+
+=over
+
+=item B<Description>
+
+Outputs SQL to search for an instance of a string (fragment)
+in a table column (column).
+
+Note that the fragment must not be quoted. L</sql_like> will
+quote the fragment itself.
+
+This is a case sensitive search.
+
+Note: This does not necessarily generate an ANSI LIKE statement, but
+could be overridden to do so in a database subclass if required.
+
+=item B<Params>
+
+=over
+
+=item C<$fragment> - the string fragment that we are searching for (scalar)
+
+=item C<$column> - the column to search
+
+=back
+
+=item B<Returns>
+
+Formatted SQL to return results from columns that contain the fragment.
+
+=back
+
+=item C<sql_ilike>
+
+Just like L</sql_like>, but case-insensitive.
+
+=item C<sql_not_ilike>
+
+=over
+
+=item B<Description>
+
+Outputs SQL to search for columns (column) that I<do not> contain
+instances of the string (fragment).
+
+Note that the fragment must not be quoted. L</sql_not_ilike> will
+quote the fragment itself.
+
+This is a case insensitive search.
+
+=item B<Params>
+
+=over
+
+=item C<$fragment> - the string fragment that we are searching for (scalar)
+
+=item C<$column> - the column to search
+
+=back
+
+=item B<Returns>
+
+Formated sql to return results from columns that do not contain the fragment
+
+=back
+
 =item C<sql_group_by>
 
 =over
@@ -2286,7 +2355,8 @@ These methods return information about data in the database.
 Returns the last serial number, usually from a previous INSERT.
 
 Must be executed directly following the relevant INSERT.
-This base implementation uses L<DBI/last_insert_id>. If the
+This base implementation uses DBI's
+L<last_insert_id|https://metacpan.org/pod/DBI#last_insert_id>. If the
 DBD supports it, it is the preffered way to obtain the last
 serial index. If it is not supported, the DB-specific code
 needs to override this function.
@@ -2740,6 +2810,66 @@ our check for implementation of C<new> by derived class useless.
 
 =head1 SEE ALSO
 
-L<DBI>
+L<DBI|https://metacpan.org/pod/DBI>
 
 L<Bugzilla::Constants/DB_MODULE>
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item bz_add_fks
+
+=item bz_add_fk
+
+=item bz_drop_index_raw
+
+=item bz_table_info
+
+=item bz_add_index_raw
+
+=item bz_get_related_fks
+
+=item quote
+
+=item bz_drop_fk
+
+=item bz_drop_field_tables
+
+=item bz_drop_related_fks
+
+=item bz_table_columns
+
+=item bz_drop_foreign_keys
+
+=item bz_alter_column_raw
+
+=item bz_table_list_real
+
+=item bz_fk_info
+
+=item bz_setup_database
+
+=item bz_setup_foreign_keys
+
+=item bz_table_indexes
+
+=item bz_check_regexp
+
+=item bz_enum_initial_values
+
+=item bz_alter_fk
+
+=item bz_set_next_serial_value
+
+=item bz_table_list
+
+=item bz_table_columns_real
+
+=item bz_check_server_version
+
+=item bz_server_version
+
+=item bz_add_field_tables
+
+=back

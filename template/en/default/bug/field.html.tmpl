@@ -1,30 +1,15 @@
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Myk Melez <myk@mozilla.org>
-  #                 Max Kanat-Alexander <mkanat@bugzilla.org>
-  #                 Elliotte Martin <elliotte_martin@yahoo.com>
-  #                 Guy Pyrzak <guy.pyrzak@gmail.com>
-  #                 Reed Loden <reed@reedloden.com>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [%# INTERFACE:
   #   field: a Bugzilla::Field object
   #   value: The value of the field for this bug.
+  #   field_hidden (optional): boolean; if true, the field is hidden by default.
   #   override_legal_values (optional): The list of legal values, for select fields.
   #   editable: Whether the field should be displayed as an editable
   #             <input> or as just the plain text of its value.
@@ -37,14 +22,14 @@
   #                   with default field values being displayed on a page.
   #%]
 
-[% SET hidden = 0 %]
-[% IF bug AND !field.is_visible_on_bug(bug) %]
-  [% SET hidden = 1 %]
-[% END %]
-
 [% IF NOT no_tds %]
-  [% PROCESS "bug/field-label.html.tmpl" %]
-  <td class="field_value [% ' bz_hidden_field' IF hidden %]"
+  [% field_hidden = 0 %]
+  [% IF bug AND !field.is_visible_on_bug(bug) %]
+    [% field_hidden = 1 %]
+  [% END %]
+
+  [% INCLUDE "bug/field-label.html.tmpl" hidden = field_hidden %]
+  <td class="field_value [% ' bz_hidden_field' IF field_hidden %]"
       id="field_container_[% field.name FILTER html %]" 
       [% " colspan=\"$value_span\"" FILTER none IF value_span %]>
 [% END %]
@@ -57,32 +42,32 @@
                name="[% field.name FILTER html %]"
                value="[% value FILTER html %]" size="40"
                maxlength="[% constants.MAX_FREETEXT_LENGTH FILTER none %]"
-               [% IF field.type == constants.FIELD_TYPE_INTEGER %] pattern="\d+[% IF dontchange %]|[% dontchange FILTER html %][% END %]" [% END %]
-               [% ' aria-required="true"' IF field.is_mandatory %]>
+               [% IF field.type == constants.FIELD_TYPE_INTEGER %]
+                 pattern="-?\d+[% IF dontchange %]|[% dontchange FILTER html %][% END %]"
+                 title="The value must be a valid positive or negative integer"
+               [% END %]
+               [% IF field.is_mandatory %]
+                 data-required="true" [% 'aria-required="true" required' UNLESS field_hidden %]
+               [% END %]>
     [% CASE [constants.FIELD_TYPE_DATETIME, constants.FIELD_TYPE_DATE] %]
       [% size = (field.type == constants.FIELD_TYPE_DATE) ? 10 : 20 %]
       <input name="[% field.name FILTER html %]" size="[% size FILTER none %]"
-             id="[% field.name FILTER html %]"
-             value="[% value FILTER html %]"
-             [% ' aria-required="true"' IF field.is_mandatory %]
-             onchange="updateCalendarFromField(this)">
-      <button type="button" class="calendar_button"
-              id="button_calendar_[% field.name FILTER html %]"
-              onclick="showCalendar('[% field.name FILTER js %]')">
-        <span>Calendar</span>
-      </button>
-
-      <div id="con_calendar_[% field.name FILTER html %]"></div>
-
+             id="[% field.name FILTER html %]" value="[% value FILTER html %]"
+             [% IF field.is_mandatory %]
+               data-required="true" [% 'aria-required="true" required' UNLESS field_hidden %]
+             [% END %]>
       <script type="text/javascript">
-        createCalendar('[% field.name FILTER js %]')
+        $(function() {
+          $("#[% field.name FILTER html FILTER js %]").datepicker([% "{constrainInput: false}" IF field.type == constants.FIELD_TYPE_DATETIME %]);
+        });
       </script>
     [% CASE constants.FIELD_TYPE_BUG_ID %]
         <span id="[% field.name FILTER html %]_input_area">
           <input name="[% field.name FILTER html %]" id="[% field.name FILTER html %]"
                  value="[% value FILTER html %]" size="7"
-                 [% ' aria-required="true"' IF field.is_mandatory %]>
-
+                 [% IF field.is_mandatory %]
+                   data-required="true" [% 'aria-required="true" required' UNLESS field_hidden %]
+                 [% END %]>
         </span>
 
         [% IF value %]  
@@ -100,18 +85,25 @@
         </script>
     [% CASE [ constants.FIELD_TYPE_SINGLE_SELECT 
               constants.FIELD_TYPE_MULTI_SELECT ] %]
+      [%# The 'product' field needs its own template if classifications are enabled. %]
+      [% IF field.name == "product" AND Param('useclassification') %]
+        [% INCLUDE "global/product-select.html.tmpl"
+                   id = "product", name = "product", value = value
+                   products = override_legal_values %]
+      [% ELSE %]
         <input type="hidden" id="[% field.name FILTER html %]_dirty">
         <select id="[% field.name FILTER html %]" 
                 name="[% field.name FILTER html %]" 
                 [% IF field.type == constants.FIELD_TYPE_MULTI_SELECT %]
-                    [% SET field_size = 5 %]
-                    [% IF field.legal_values.size < 5 %]
-                        [% SET field_size = field.legal_values.size %]
-                    [% END %]
-                    size="[% field_size FILTER html %]" multiple="multiple"
-                    [% ' aria-required="true"' IF field.is_mandatory %]
-                [% END %]
-                >
+                  [% SET field_size = 5 %]
+                  [% IF field.legal_values.size < 5 %]
+                    [% SET field_size = field.legal_values.size %]
+                  [% END %]
+                  size="[% field_size FILTER html %]" multiple="multiple"
+                  [% IF field.is_mandatory %]
+                    data-required="true" [% 'aria-required="true" required' UNLESS field_hidden %]
+                  [% END %]
+                [% END %]>
           [% IF allow_dont_change %]
             <option value="[% dontchange FILTER html %]"
                    [% ' selected="selected"' IF value == dontchange %]>
@@ -174,14 +166,15 @@
         [% IF field.type == constants.FIELD_TYPE_MULTI_SELECT %]
           <input type="hidden" name="defined_[% field.name FILTER html %]">
         [% END %]
+      [% END %]
 
-        <script type="text/javascript">
+      <script type="text/javascript">
         <!--
           initHidingOptionsForIE('[% field.name FILTER js %]');
           [%+ INCLUDE "bug/field-events.js.tmpl"
                       field = field, product = bug.product_obj %]
         //-->
-        </script>
+      </script>
 
      [% CASE constants.FIELD_TYPE_TEXTAREA %]
        <div id="[% field.name FILTER html %]_edit_container" class="bz_default_hidden">
@@ -189,7 +182,8 @@
              (<a href="#" id="[% field.name FILTER html %]_edit_action">edit</a>)
          </div>
          [% IF value %]
-           <pre class="field_textarea_readonly">[% value FILTER html %]</pre>
+           <pre id="[% field.name FILTER html %]_readonly"
+                class="field_textarea_readonly">[% value FILTER html %]</pre>
          [% END %]
        </div>
        <div id="[% field.name FILTER html %]_input">
@@ -235,21 +229,21 @@
            </script>
          [% END %]
        [% END %]
-     [% CASE constants.FIELD_TYPE_KEYWORDS %]
-       <input type="text" id="[% field.name FILTER html %]" size="40"
-              class="text_input bz_autocomplete_values"
-              name="[% field.name FILTER html %]"
-              data-values="[% field.name FILTER html %]"
-              value="[% value FILTER html %]">
-       <script type="text/javascript">
-          if (typeof BUGZILLA.autocomplete_values === 'undefined')
-            BUGZILLA.autocomplete_values = [];
-          BUGZILLA.autocomplete_values['[% field.name FILTER js %]'] = [
-            [%- FOREACH keyword = active_keywords %]
-              [%- %]"[% keyword.name FILTER js %]"
-              [%- "," IF NOT loop.last %][% END %]];
-       </script>
-     [% CASE constants.FIELD_TYPE_EXTENSION %]
+    [% CASE constants.FIELD_TYPE_KEYWORDS %]
+      <input type="text" id="[% field.name FILTER html %]" size="40"
+             class="text_input bz_autocomplete_values"
+             name="[% field.name FILTER html %]"
+             data-values="[% field.name FILTER html %]"
+             value="[% value FILTER html %]">
+      <script type="text/javascript">
+        if (typeof BUGZILLA.autocomplete_values === 'undefined')
+          BUGZILLA.autocomplete_values = [];
+        BUGZILLA.autocomplete_values['[% field.name FILTER js %]'] = [
+          [%- FOREACH val = possible_values %]
+            [%- %]"[% val FILTER js %]"
+            [%- "," IF NOT loop.last %][% END %]];
+      </script>
+    [% CASE constants.FIELD_TYPE_EXTENSION %]
        [% Hook.process('editable') %]
   [% END %]
 [% ELSE %]

@@ -1,87 +1,125 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>,
-#                 Bryce Nesbitt <bryce-mozilla@nextbus.com>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Alan Raetz <al_raetz@yahoo.com>
-#                 Jacob Steenhagen <jake@actex.net>
-#                 Matthew Tuck <matty@chariot.net.au>
-#                 Bradley Baetz <bbaetz@student.usyd.edu.au>
-#                 J. Paul Reed <preed@sigkill.com>
-#                 Gervase Markham <gerv@gerv.net>
-#                 Byron Jones <bugzilla@glob.com.au>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Mailer;
 
+use 5.10.1;
 use strict;
+use warnings;
 
-use base qw(Exporter);
-@Bugzilla::Mailer::EXPORT = qw(MessageToMTA build_thread_marker);
+use parent qw(Exporter);
+@Bugzilla::Mailer::EXPORT = qw(MessageToMTA build_thread_marker generate_email);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Hook;
+use Bugzilla::MIME;
+use Bugzilla::User;
 use Bugzilla::Util;
 
 use Date::Format qw(time2str);
 
-use Encode qw(encode);
+use utf8 qw(decode encode);
 use Encode::MIME::Header;
-use Email::Address;
-use Email::MIME;
-# Return::Value 1.666002 pollutes the error log with warnings about this
-# deprecated module. We have to set NO_CLUCK = 1 before loading Email::Send
-# to disable these warnings.
-BEGIN {
-    $Return::Value::NO_CLUCK = 1;
-}
-use Email::Send;
+use Email::Sender::Simple qw(sendmail);
+use Email::Sender::Transport::SMTP::Persistent;
+use Bugzilla::Sender::Transport::Sendmail;
 use Sys::Hostname;
+
+sub generate_email {
+    my ($vars, $templates) = @_;
+    my ($lang, $email_format, $msg_text, $msg_html, $msg_header);
+
+    if ($vars->{to_user}) {
+        $lang = $vars->{to_user}->setting('lang');
+        $email_format = $vars->{to_user}->setting('email_format');
+    } else {
+        # If there are users in the CC list who don't have an account,
+        # use the default language for email notifications.
+        $lang = Bugzilla::User->new()->setting('lang');
+        # However we cannot fall back to the default email_format, since
+        # it may be HTML, and many of the includes used in the HTML
+        # template require a valid user object. Instead we fall back to
+        # the plaintext template.
+        $email_format = 'text_only';
+    }
+
+    my $template = Bugzilla->template_inner($lang);
+
+    $template->process($templates->{header}, $vars, \$msg_header)
+        || ThrowTemplateError($template->error());
+    $template->process($templates->{text}, $vars, \$msg_text)
+        || ThrowTemplateError($template->error());
+
+    my @parts = (
+        Bugzilla::MIME->create(
+            attributes => {
+                content_type => 'text/plain',
+                charset      => 'UTF-8',
+                encoding     => 'quoted-printable',
+            },
+            body_str => $msg_text,
+        )
+    );
+    if ($templates->{html} && $email_format eq 'html') {
+        $template->process($templates->{html}, $vars, \$msg_html)
+            || ThrowTemplateError($template->error());
+        push @parts, Bugzilla::MIME->create(
+            attributes => {
+                content_type => 'text/html',
+                charset      => 'UTF-8',
+                encoding     => 'quoted-printable',
+            },
+            body_str => $msg_html,
+        );
+    }
+
+    my $email = Bugzilla::MIME->new($msg_header);
+    if (scalar(@parts) == 1) {
+        $email->content_type_set($parts[0]->content_type);
+    } else {
+        $email->content_type_set('multipart/alternative');
+        # Some mail clients need same encoding for each part, even empty ones.
+        $email->charset_set('UTF-8');
+    }
+    $email->parts_set(\@parts);
+    return $email;
+}
 
 sub MessageToMTA {
     my ($msg, $send_now) = (@_);
     my $method = Bugzilla->params->{'mail_delivery_method'};
     return if $method eq 'None';
 
-    if (Bugzilla->params->{'use_mailer_queue'} and !$send_now) {
+    if (Bugzilla->params->{'use_mailer_queue'}
+        && ! $send_now
+        && ! Bugzilla->dbh->bz_in_transaction()
+    ) {
         Bugzilla->job_queue->insert('send_mail', { msg => $msg });
         return;
     }
 
     my $dbh = Bugzilla->dbh;
 
-    my $email;
-    if (ref $msg) {
-        $email = $msg;
-    }
-    else {
-        # RFC 2822 requires us to have CRLF for our line endings and
-        # Email::MIME doesn't do this for us. We use \015 (CR) and \012 (LF)
-        # directly because Perl translates "\n" depending on what platform
-        # you're running on. See http://perldoc.perl.org/perlport.html#Newlines
-        # We check for multiple CRs because of this Template-Toolkit bug:
-        # https://rt.cpan.org/Ticket/Display.html?id=43345
-        $msg =~ s/(?:\015+)?\012/\015\012/msg;
-        $email = new Email::MIME($msg);
+    my $email = ref($msg) ? $msg : Bugzilla::MIME->new($msg);
+
+    # If we're called from within a transaction, we don't want to send the
+    # email immediately, in case the transaction is rolled back. Instead we
+    # insert it into the mail_staging table, and bz_commit_transaction calls
+    # send_staged_mail() after the transaction is committed.
+    if (! $send_now && $dbh->bz_in_transaction()) {
+        # The e-mail string may contain tainted values.
+        my $string = $email->as_string;
+        trick_taint($string);
+
+        my $sth = $dbh->prepare("INSERT INTO mail_staging (message) VALUES (?)");
+        $sth->bind_param(1, $string, $dbh->BLOB_TYPE);
+        $sth->execute;
+        return;
     }
 
     # Ensure that we are not sending emails too quickly to recipients.
@@ -127,7 +165,7 @@ sub MessageToMTA {
     # *always* be the same for this Bugzilla, in every email,
     # even if the admin changes the "ssl_redirect" parameter some day.
     $email->header_set('X-Bugzilla-URL', Bugzilla->params->{'urlbase'});
-    
+
     # We add this header to mark the mail as "auto-generated" and
     # thus to hopefully avoid auto replies.
     $email->header_set('Auto-Submitted', 'auto-generated');
@@ -141,35 +179,20 @@ sub MessageToMTA {
         # We don't recode headers that happen multiple times.
         next if scalar(@values) > 1;
         if (my $value = $values[0]) {
-            if (Bugzilla->params->{'utf8'} && !utf8::is_utf8($value)) {
-                utf8::decode($value);
-            }
-
-            # avoid excessive line wrapping done by Encode.
-            local $Encode::Encoding{'MIME-Q'}->{'bpl'} = 998;
-
-            my $encoded = encode('MIME-Q', $value);
-            $email->header_set($header, $encoded);
+            utf8::decode($value) if !utf8::is_utf8($value);
         }
     }
 
     my $from = $email->header('From');
 
-    my ($hostname, @args);
-    my $mailer_class = $method;
+    my $hostname;
+    my $transport;
     if ($method eq "Sendmail") {
-        $mailer_class = 'Bugzilla::Send::Sendmail';
         if (ON_WINDOWS) {
-            $Email::Send::Sendmail::SENDMAIL = SENDMAIL_EXE;
+            $transport = Bugzilla::Sender::Transport::Sendmail->new({ sendmail => SENDMAIL_EXE });
         }
-        push @args, "-i";
-        # We want to make sure that we pass *only* an email address.
-        if ($from) {
-            my ($email_obj) = Email::Address->parse($from);
-            if ($email_obj) {
-                my $from_email = $email_obj->address;
-                push(@args, "-f$from_email") if $from_email;
-            }
+        else {
+            $transport = Bugzilla::Sender::Transport::Sendmail->new();
         }
     }
     else {
@@ -177,7 +200,7 @@ sub MessageToMTA {
         # address, but other mailers won't.
         my $urlbase = Bugzilla->params->{'urlbase'};
         $urlbase =~ m|//([^:/]+)[:/]?|;
-        $hostname = $1;
+        $hostname = $1 || 'localhost';
         $from .= "\@$hostname" if $from !~ /@/;
         $email->header_set('From', $from);
         
@@ -194,15 +217,21 @@ sub MessageToMTA {
     }
 
     if ($method eq "SMTP") {
-        push @args, Host  => Bugzilla->params->{"smtpserver"},
-                    username => Bugzilla->params->{"smtp_username"},
-                    password => Bugzilla->params->{"smtp_password"},
-                    Hello => $hostname, 
-                    Debug => Bugzilla->params->{'smtp_debug'};
+        my ($host, $port) = split(/:/, Bugzilla->params->{'smtpserver'}, 2);
+        $transport = Bugzilla->request_cache->{smtp} //=
+          Email::Sender::Transport::SMTP::Persistent->new({
+            host  => $host,
+            defined($port) ? (port => $port) : (),
+            sasl_username => Bugzilla->params->{'smtp_username'},
+            sasl_password => Bugzilla->params->{'smtp_password'},
+            helo => $hostname,
+            ssl => Bugzilla->params->{'smtp_ssl'},
+            debug => Bugzilla->params->{'smtp_debug'} });
     }
 
-    Bugzilla::Hook::process('mailer_before_send', 
-                            { email => $email, mailer_args => \@args });
+    Bugzilla::Hook::process('mailer_before_send', { email => $email });
+
+    return if $email->header('to') eq '';
 
     # Allow for extensions to to drop the bugmail by clearing the 'to' header
     return if $email->header('to') eq '';
@@ -232,19 +261,29 @@ sub MessageToMTA {
 
     if ($method eq "Test") {
         my $filename = bz_locations()->{'datadir'} . '/mailer.testfile';
-        open TESTFILE, '>>', $filename;
+        open TESTFILE, '>>:encoding(UTF-8)', $filename;
         # From - <date> is required to be a valid mbox file.
         print TESTFILE "\n\nFrom - " . $email->header('Date') . "\n" . $email->as_string;
         close TESTFILE;
     }
     else {
-        # This is useful for both Sendmail and Qmail, so we put it out here.
+        # This is useful for Sendmail, so we put it out here.
         local $ENV{PATH} = SENDMAIL_PATH;
-        my $mailer = Email::Send->new({ mailer => $mailer_class, 
-                                        mailer_args => \@args });
-        my $retval = $mailer->send($email);
-        ThrowCodeError('mail_send_error', { msg => $retval, mail => $email })
-            if !$retval;
+        eval { sendmail($email, { transport => $transport }) };
+        if ($@) {
+            ThrowCodeError('mail_send_error', { msg => $@->message, mail => $email });
+        }
+    }
+
+    # insert into email_rates
+    if (Bugzilla->params->{use_mailer_queue}
+        && (EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR))
+    {
+        $dbh->do(
+            "INSERT INTO email_rates(recipient, message_ts) VALUES (?, LOCALTIMESTAMP(0))",
+            undef,
+            $email->header('To')
+        );
     }
 
     # insert into email_rates
@@ -288,4 +327,51 @@ sub build_thread_marker {
     return $threadingmarker;
 }
 
+sub send_staged_mail {
+    my $dbh = Bugzilla->dbh;
+
+    my $emails = $dbh->selectall_arrayref('SELECT id, message FROM mail_staging');
+    my $sth = $dbh->prepare('DELETE FROM mail_staging WHERE id = ?');
+
+    foreach my $email (@$emails) {
+        my ($id, $message) = @$email;
+        MessageToMTA($message);
+        $sth->execute($id);
+    }
+}
+
 1;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::Mailer - Provides methods for sending email
+
+=head1 METHODS
+
+=over
+
+=item C<generate_email>
+
+Generates a multi-part email message, using the supplied list of templates.
+
+=item C<MessageToMTA>
+
+Sends the passed message to the mail transfer agent.
+
+The actual behaviour depends on a number of factors: if called from within a
+database transaction, the message will be staged and sent when the transaction
+is committed.  If email queueing is enabled, the message will be sent to
+TheSchwartz job queue where it will be processed by the jobqueue daemon, else
+the message is sent immediately.
+
+=item C<build_thread_marker>
+
+Builds header suitable for use as a threading marker in email notifications.
+
+=item C<send_staged_mail>
+
+Sends all staged messages -- called after a database transaction is committed.
+
+=back

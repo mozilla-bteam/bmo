@@ -12,6 +12,8 @@
 # serve to show the default.
 
 import sys, os, re
+import os.path
+import shutil
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -51,7 +53,7 @@ copyright = u'2015, The BMO Team'
 # built documents.
 #
 # The short X.Y version.
-version = '4.2'
+version = '5.1'
 # The full version, including alpha/beta/rc tags.
 release = ''
 
@@ -370,6 +372,48 @@ pdf_fit_background_mode = 'scale'
 # -- Options for Sphinx extensions -------------------------------------------
 
 # Temporary highlighting of TODO items
-todo_include_todos = False
+todo_include_todos = True
 
 extlinks = {'bug': ('https://bugzilla.mozilla.org/show_bug.cgi?id=%s', 'bug  ')}
+
+# -- Assemble extension documentation ------------------------------------------
+
+# os.getcwd() is docs/$lang/rst
+lang = os.path.basename(os.path.dirname(os.getcwd()))
+
+# This is technically defined in Bugzilla/Constants.pm in Perl, but it's
+# unlikely to change if we use a relative path.
+ext_dir = "../../../extensions"
+
+# Still, check just in case, so if it ever changes, we know
+if (os.path.isdir(ext_dir)):
+    # Clear out old extensions docs
+    for dir in os.listdir("extensions"):
+        # A .gitignore file is required as git doesn't like empty directories
+        if dir == ".gitignore":
+            continue
+
+        shutil.rmtree(os.path.join("extensions", dir))
+
+    # Copy in new copies
+    for ext_name in os.listdir(ext_dir):
+        ext_path = os.path.join(ext_dir, ext_name)
+        # Ignore files in the extensions/ directory (e.g. create.pl)
+        if not os.path.isdir(ext_path):
+            continue
+
+        # Ignore disabled extensions
+        if os.path.isfile(os.path.join(ext_path, "disabled")):
+            continue
+
+        src = os.path.join(ext_path, "docs", lang, "rst")
+
+        # Ignore extensions without rst docs in this language
+        if not os.path.isdir(src):
+            continue
+
+        dst = os.path.join("extensions", ext_name)
+
+        shutil.copytree(src, dst)
+else:
+    print "Warning: Bugzilla extension directory not found: " + ext_dir

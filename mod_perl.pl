@@ -1,21 +1,14 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::ModPerl;
+
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -39,6 +32,7 @@ use Apache2::Log ();
 use Apache2::ServerUtil;
 use ModPerl::RegistryLoader ();
 use File::Basename ();
+use DateTime ();
 
 # This loads most of our modules.
 use Bugzilla ();
@@ -89,8 +83,8 @@ PerlChildInitHandler "sub { Bugzilla::RNG::srand(); srand(); }"
     PerlResponseHandler Bugzilla::ModPerl::ResponseHandler
     PerlCleanupHandler  Apache2::SizeLimit Bugzilla::ModPerl::CleanupHandler
     PerlOptions +ParseHeaders
-    Options +ExecCGI +FollowSymLinks
-    AllowOverride Limit FileInfo Indexes
+    Options +ExecCGI
+    AllowOverride Limit FileInfo Indexes Options
     DirectoryIndex index.cgi index.html
 </Directory>
 EOT
@@ -124,8 +118,12 @@ foreach my $file (glob "$cgi_path/*.cgi") {
 }
 
 package Bugzilla::ModPerl::ResponseHandler;
+
+use 5.10.1;
 use strict;
-use base qw(ModPerl::Registry);
+use warnings;
+
+use parent qw(ModPerl::Registry);
 use Bugzilla;
 use Bugzilla::Constants qw(USAGE_MODE_REST);
 
@@ -151,13 +149,17 @@ sub handler : method {
     # which tells Apache not to append its error html documents to the
     # response.
     return Bugzilla->usage_mode == USAGE_MODE_REST && $result != 304
-        ? Apache2::Const::OK
-        : $result;
+           ? Apache2::Const::OK
+           : $result;
 }
 
 
 package Bugzilla::ModPerl::CleanupHandler;
+
+use 5.10.1;
 use strict;
+use warnings;
+
 use Apache2::Const -compile => qw(OK);
 
 sub handler {

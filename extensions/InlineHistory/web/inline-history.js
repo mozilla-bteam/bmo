@@ -20,7 +20,7 @@ var inline_history = {
     var comments = Dom.getElementsByClassName("bz_comment", 'div', 'comments');
     for (var i = 1, il = comments.length; i < il; i++) {
       // remove 'has been marked as a duplicate of this bug' comments
-      var textDiv = Dom.getElementsByClassName('bz_comment_text', 'pre', comments[i]);
+      var textDiv = Dom.getElementsByClassName('bz_comment_text', null, comments[i]);
       if (textDiv) {
         var match = reDuplicate.exec(textDiv[0].textContent || textDiv[0].innerText);
         if (match) {

@@ -6,6 +6,8 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Extension::Review;
+
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -843,7 +845,7 @@ sub db_schema_abstract_schema {
                 TYPE    => 'VARCHAR(64)',
             },
             component_id => {
-                TYPE    => 'INT2',
+                TYPE    => 'INT3',
                 NOTNULL => 1,
                 REFERENCES => {
                     TABLE  => 'components',
@@ -1028,6 +1030,13 @@ sub install_update_db {
         $field->set_in_new_bugmail(1);
         $field->update();
     }
+    $dbh->bz_alter_column(
+        'component_reviewers',
+        'component_id',
+        {
+            TYPE => 'INT3'
+        }
+    );
 }
 
 sub install_filesystem {

@@ -7,6 +7,7 @@
 
 package Bugzilla::Metrics::Template;
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -21,3 +22,11 @@ sub process {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item process
+
+=back

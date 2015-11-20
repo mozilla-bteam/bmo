@@ -84,6 +84,32 @@ sub prepare {
     return $sth;
 }
 
+=head1 B<Methods in need of POD>
+
+=over
+
+=item do
+
+=item selectall_arrayref
+
+=item selectall_hashref
+
+=item selectcol_arrayref
+
+=item selectrow_array
+
+=item selectrow_arrayref
+
+=item selectrow_hashref
+
+=item commit
+
+=item prepare
+
+=back
+
+=cut
+
 package Bugzilla::Metrics::st;
 
 use 5.10.1;
@@ -146,3 +172,21 @@ sub fetchall_hashref {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item execute
+
+=item fetchrow_array
+
+=item fetchrow_arrayref
+
+=item fetchrow_hashref
+
+=item fetchall_arrayref
+
+=item fetchall_hashref
+
+=back

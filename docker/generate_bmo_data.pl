@@ -45,7 +45,6 @@ my %user_prefs = (
     inline_history         => 'on',
     lang                   => 'en',
     orange_factor          => 'off',
-    per_bug_queries        => 'off',
     possible_duplicates    => 'on',
     post_bug_submit_action => 'same_bug',
     product_chooser        => 'pretty_product_chooser',

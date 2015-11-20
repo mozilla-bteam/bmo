@@ -1,28 +1,24 @@
-#!/usr/bin/perl -w
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# Contributor(s): Joel Peshkin <bugreport@peshkin.net>
-#                 Byron Jones <byron@glob.com.au>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 # testserver.pl is invoked with the baseurl of the Bugzilla installation
 # as its only argument.  It attempts to troubleshoot as many installation
 # issues as possible.
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use lib qw(. lib);
 
 use Bugzilla;
 use Bugzilla::Constants;
+use Bugzilla::Util;
 
 use Socket;
 
@@ -30,11 +26,13 @@ my $datadir = bz_locations()->{'datadir'};
 
 eval "require LWP; require LWP::UserAgent;";
 my $lwp = $@ ? 0 : 1;
+eval "require LWP::Protocol::https;";
+my $lwpssl = $@ ? 0 : 1;
 
-if ((@ARGV != 1) || ($ARGV[0] !~ /^https?:/))
+if ((@ARGV != 1) || ($ARGV[0] !~ /^https?:/i))
 {
-    print "Usage: $0 <URL to this Bugzilla installation>\n";
-    print "e.g.:  $0 http://www.mycompany.com/bugzilla\n";
+    say "Usage: $0 <URL to this Bugzilla installation>";
+    say "e.g.:  $0 http://www.mycompany.com/bugzilla";
     exit(1);
 }
 
@@ -46,7 +44,7 @@ if (!ON_WINDOWS) {
     foreach my $pscmd (@pscmds) {
         open PH, '-|', "$pscmd 2>/dev/null";
         while (my $line = <PH>) {
-            if ($line =~ /^(?:\S*\/)?(?:httpd|apache)2?\s+(\d+)$/) {
+            if ($line =~ /^(?:\S*\/)?(?:httpd|apache?)2?\s+(\d+)$/) {
                 $sgid = $1 if $1 > $sgid;
             }
         }
@@ -67,26 +65,26 @@ else {
 # Check $webservergroup against the server's GID
 if ($sgid > 0) {
     if ($webservergroup eq "") {
-        print 
+        say 
 "WARNING \$webservergroup is set to an empty string.
 That is a very insecure practice. Please refer to the
-Bugzilla documentation.\n";
+Bugzilla documentation.";
     }
     elsif ($webgroupnum == $sgid || Bugzilla->localconfig->{use_suexec}) {
-        print "TEST-OK Webserver is running under group id in \$webservergroup.\n";
+        say "TEST-OK Webserver is running under group id in \$webservergroup.";
     }
     else {
-        print 
+        say 
 "TEST-WARNING Webserver is running under group id not matching \$webservergroup.
 This if the tests below fail, this is probably the problem.
 Please refer to the web server configuration section of the Bugzilla guide. 
-If you are using virtual hosts or suexec, this warning may not apply.\n";
+If you are using virtual hosts or suexec, this warning may not apply.";
     }
 }
 elsif (!ON_WINDOWS) {
-   print
+   say
 "TEST-WARNING Failed to find the GID for the 'httpd' process, unable
-to validate webservergroup.\n";
+to validate webservergroup.";
 }
 
 
@@ -94,26 +92,26 @@ to validate webservergroup.\n";
 $ARGV[0] =~ s/\/$//;
 my $url = $ARGV[0] . "/images/padlock.png";
 if (fetch($url)) {
-    print "TEST-OK Got padlock picture.\n";
+    say "TEST-OK Got padlock picture.";
 } else {
-    print 
+    say 
 "TEST-FAILED Fetch of images/padlock.png failed
 Your web server could not fetch $url.
-Check your web server configuration and try again.\n";
+Check your web server configuration and try again.";
     exit(1);
 }
 
 # Try to execute a cgi script
-my $response = fetch($ARGV[0] . "/testagent.cgi");
+my $response = clean_text(fetch($ARGV[0] . "/testagent.cgi"));
 if ($response =~ /^OK (.*)$/) {
-    print "TEST-OK Webserver is executing CGIs via $1.\n";
+    say "TEST-OK Webserver is executing CGIs via $1.";
 } elsif ($response =~ /^#!/) {
-    print 
+    say
 "TEST-FAILED Webserver is fetching rather than executing CGI files.
-Check the AddHandler statement in your httpd.conf file.\n";
+Check the AddHandler statement in your httpd.conf file.";
     exit(1);
 } else {
-    print "TEST-FAILED Webserver is not executing CGI files.\n"; 
+    say "TEST-FAILED Webserver is not executing CGI files.";
 }
 
 # Make sure that the web server is honoring .htaccess files
@@ -122,13 +120,13 @@ $localconfig =~ s~^\./~~;
 $url = $ARGV[0] . "/$localconfig";
 $response = fetch($url);
 if ($response) {
-    print 
+    say
 "TEST-FAILED Webserver is permitting fetch of $url.
 This is a serious security problem.
-Check your web server configuration.\n";
+Check your web server configuration.";
     exit(1);
 } else {
-    print "TEST-OK Webserver is preventing fetch of $url.\n";
+    say "TEST-OK Webserver is preventing fetch of $url.";
 }
 
 # Test chart generation
@@ -142,8 +140,8 @@ if ($@ eq '') {
         my $gdlib = `gdlib-config --version 2>&1` || "";
         $gdlib =~ s/\n$//;
         if (!$gdlib) {
-            print "TEST-WARNING Failed to run gdlib-config; can't compare " .
-                  "GD versions.\n";
+            say "TEST-WARNING Failed to run gdlib-config; can't compare " .
+                  "GD versions.";
         }
         else {
             my $gd = $GD::VERSION;
@@ -154,9 +152,9 @@ if ($@ eq '') {
             $gd =~ s/^([^\.]+)\..*/$1/;
     
             if ($gdlib == $gd) {
-                print "TEST-OK $verstring; Major versions match.\n";
+                say "TEST-OK $verstring; Major versions match.";
             } else {
-                print "TEST-FAILED $verstring; Major versions do not match.\n";
+                say "TEST-FAILED $verstring; Major versions do not match.";
             }
         }
     }
@@ -177,17 +175,17 @@ if ($@ eq '') {
             create_file("$datadir/testgd-local.png", $image->png);
             check_image("$datadir/testgd-local.png", 'GD');
         } else {
-            print "TEST-FAILED GD doesn't support PNG generation.\n";
+            say "TEST-FAILED GD doesn't support PNG generation.";
         }
     };
     if ($@ ne '') {
-        print "TEST-FAILED GD returned: $@\n";
+        say "TEST-FAILED GD returned: $@";
     }
 
     # Test Chart
     eval 'use Chart::Lines';
     if ($@) {
-        print "TEST-FAILED Chart::Lines is not installed.\n";
+        say "TEST-FAILED Chart::Lines is not installed.";
     } else {
         eval {
             my $chart = Chart::Lines->new(400, 400);
@@ -199,16 +197,16 @@ if ($@ eq '') {
             check_image("$datadir/testchart-local.png", "Chart");
         };
         if ($@ ne '') {
-            print "TEST-FAILED Chart returned: $@\n";
+            say "TEST-FAILED Chart returned: $@";
         }
     }
 
     eval 'use Template::Plugin::GD::Image';
     if ($@) {
-        print "TEST-FAILED Template::Plugin::GD is not installed.\n";
+        say "TEST-FAILED Template::Plugin::GD is not installed.";
     }
     else {
-        print "TEST-OK Template::Plugin::GD is installed.\n";
+        say "TEST-OK Template::Plugin::GD is installed.";
     }
 }
 
@@ -216,12 +214,16 @@ sub fetch {
     my $url = shift;
     my $rtn;
     if ($lwp) {
-        my $req = HTTP::Request->new(GET => $url);
-        my $ua = LWP::UserAgent->new;
-        my $res = $ua->request($req);
-        $rtn = ($res->is_success ? $res->content : undef);
+        if ($url =~ /^https:/i && !$lwpssl) {
+            die("You need LWP::Protocol::https installed to use https with testserver.pl");
+        } else {
+            my $req = HTTP::Request->new(GET => $url);
+            my $ua = LWP::UserAgent->new;
+            my $res = $ua->request($req);
+            $rtn = ($res->is_success ? $res->content : undef);
+        }
     } elsif ($url =~ /^https:/i) {
-        die("You need LWP installed to use https with testserver.pl");
+        die("You need LWP (and LWP::Protocol::https, for LWP 6.02 or newer) installed to use https with testserver.pl");
     } else {
         my($host, $port, $file) = ('', 80, '');
         if ($url =~ m#^http://([^:]+):(\d+)(/.*)#i) {
@@ -262,10 +264,10 @@ sub check_image {
     my ($local_file, $library) = @_;
     my $filedata = read_file($local_file);
     if ($filedata =~ /^\x89\x50\x4E\x47\x0D\x0A\x1A\x0A/) {
-        print "TEST-OK $library library generated a good PNG image.\n";
+        say "TEST-OK $library library generated a good PNG image.";
         unlink $local_file;
     } else {
-        print "TEST-WARNING $library library did not generate a good PNG.\n";
+        say "TEST-WARNING $library library did not generate a good PNG.";
     }
 }
 
@@ -280,7 +282,7 @@ sub create_file {
 
 sub read_file {
     my ($filename) = @_;
-    open(FH, "<", $filename)
+    open(FH, '<', $filename)
         or die "Failed to open $filename: $!\n";
     binmode FH;
     my $content = <FH>;

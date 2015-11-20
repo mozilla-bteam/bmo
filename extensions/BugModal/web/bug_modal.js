@@ -167,8 +167,23 @@ $(function() {
             }
         });
 
-    // cc list
+    // aliases
+    $('#alias-latch, #alias-summary')
+        .click(function(event) {
+            event.preventDefault();
+            var latch = $('#alias-latch');
 
+            if (latch.data('expanded')) {
+                latch.data('expanded', false).html('&#9656;');
+                $('#alias-list').hide();
+            }
+            else {
+                latch.data('expanded', true).html('&#9662;');
+                $('#alias-list').show();
+            }
+        });
+
+    // cc list
     function ccListLoading() {
         $('#cc-list').html(
             '<img src="extensions/BugModal/web/throbber.gif" width="16" height="11"> Loading...'
@@ -178,7 +193,7 @@ $(function() {
     function ccListUpdate() {
         bugzilla_ajax(
             {
-                url: 'rest/bug_modal/cc/' + BUGZILLA.bug_id
+                url: 'rest/BugModal/1.0/cc/' + BUGZILLA.bug_id
             },
             function(data) {
                 $('#cc-list').html(data.html);
@@ -461,7 +476,7 @@ $(function() {
             // load the missing select data
             bugzilla_ajax(
                 {
-                    url: 'rest/bug_modal/edit/' + BUGZILLA.bug_id
+                    url: 'rest/BugModal/1.0/edit/' + BUGZILLA.bug_id
                 },
                 function(data) {
                     $('#mode-btn').hide();
@@ -630,7 +645,7 @@ $(function() {
 
             bugzilla_ajax(
                 {
-                    url: 'rest/bug/' + BUGZILLA.bug_id,
+                    url: 'rest/core/1.0/bug/' + BUGZILLA.bug_id,
                     type: 'PUT',
                     data: JSON.stringify({ cc: cc_change })
                 },
@@ -1018,6 +1033,16 @@ $(function() {
             }
         });
 
+    // add alias button
+    $('#add-alias-btn')
+        .click(function(event) {
+            event.preventDefault();
+            $('#add-alias-btn').hide();
+            $('#add-alias-container').show();
+            $('#top-save-btn').show();
+            $('#newalias').focus();
+        });
+
     // add cc button
     $('#add-cc-btn')
         .click(function(event) {
@@ -1050,7 +1075,7 @@ $(function() {
 
             bugzilla_ajax(
                 {
-                    url: 'rest/bug_modal/new_product/' + BUGZILLA.bug_id + '?product=' + encodeURIComponent($('#product').val())
+                    url: 'rest/BugModal/1.0/new_product/' + BUGZILLA.bug_id + '?product=' + encodeURIComponent($('#product').val())
                 },
                 function(data) {
                     $('#product-throbber').hide();
@@ -1196,7 +1221,7 @@ $(function() {
         preview.html('');
         bugzilla_ajax(
             {
-                url: 'rest/bug/comment/render',
+                url: 'rest/core/1.0/bug/comment/render',
                 type: 'POST',
                 data: { text: comment.val() },
                 hideError: true

@@ -1,40 +1,14 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Myk Melez <myk@mozilla.org>
-#                 Daniel Raichle <draichle@gmx.net>
-#                 Dave Miller <justdave@syndicomm.com>
-#                 Alexander J. Vincent <ajvincent@juno.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Greg Hendricks <ghendricks@novell.com>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Marc Schumann <wurblzap@gmail.com>
-#                 Byron Jones <bugzilla@glob.com.au>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
-################################################################################
-# Script Initialization
-################################################################################
-
-# Make it harder for us to do dangerous things in Perl.
+use 5.10.1;
 use strict;
+use warnings;
 
 use lib qw(. lib);
 
@@ -47,13 +21,12 @@ use Bugzilla::FlagType;
 use Bugzilla::User;
 use Bugzilla::Util;
 use Bugzilla::Bug;
-use Bugzilla::Field;
 use Bugzilla::Attachment;
 use Bugzilla::Attachment::PatchReader;
 use Bugzilla::Token;
-use Bugzilla::Keyword;
 use Bugzilla::Hook;
 
+use Cwd qw(realpath);
 use Encode qw(encode find_encoding);
 use URI;
 use URI::QueryParam;
@@ -65,10 +38,6 @@ use URI::QueryParam;
 local our $cgi = Bugzilla->cgi;
 local our $template = Bugzilla->template;
 local our $vars = {};
-
-################################################################################
-# Main Body Execution
-################################################################################
 
 # All calls to this script should contain an "action" variable whose
 # value determines what the user wants to do.  The code below checks
@@ -233,8 +202,7 @@ sub validateFormat {
 
 # Validates context of a diff/interdiff. Will throw an error if the context
 # is not number, "file" or "patch". Returns the validated, detainted context.
-sub validateContext
-{
+sub validateContext {
   my $context = $cgi->param('context') || "patch";
   if ($context ne "file" && $context ne "patch") {
       my $orig_context = $context;
@@ -407,7 +375,8 @@ sub view {
     local $Encode::Encoding{'MIME-Q'}->{'bpl'} = 10000;
     $filename = encode('MIME-Q', $filename);
 
-    my $disposition = Bugzilla->params->{'allow_attachment_display'} ? 'inline' : 'attachment';
+    my $disposition = (Bugzilla->params->{'allow_attachment_display'}
+                       && $attachment->is_viewable) ? 'inline' : 'attachment';
 
     my $do_redirect = 0;
     Bugzilla::Hook::process('attachment_should_redirect_login', { do_redirect => \$do_redirect });
@@ -435,11 +404,28 @@ sub view {
             }
         }
     }
+    my $sendfile_header = {};
+    my $sendfile_param = Bugzilla->params->{'xsendfile_header'};
+    if ($attachment->is_on_filesystem && $sendfile_param ne 'off') {
+        # attachment is on filesystem and Admin turned on feature.
+        # This means we can let webserver handle the request and stream the file
+        # for us. This is called the X-Sendfile feature. see bug 1073264.
+        my $attachment_path = realpath($attachment->_get_local_filename());
+        $sendfile_header->{$sendfile_param} = $attachment_path;
+    }
+
     Bugzilla->log_user_request($attachment->bug_id, $attachment->id, "attachment-get")
-      if Bugzilla->user->id;
+        if Bugzilla->user->id;
+
     print $cgi->header(-type=>"$contenttype; name=\"$filename\"",
                        -content_disposition=> "$disposition; filename=\"$filename\"",
-                       -content_length => $attachment->datasize);
+                       -content_length => $attachment->datasize,
+                       %$sendfile_header);
+    if ($attachment->is_on_filesystem && $sendfile_param ne 'off') {
+        # in case of X-Sendfile, we do not print the data.
+        # that is handled directly by the webserver.
+        return;
+    }
     disable_utf8();
     print $attachment->data;
 }
@@ -454,10 +440,9 @@ sub interdiff {
         $old_attachment = validateID('oldid');
         $new_attachment = validateID('newid');
     }
-    my $context = validateContext();
 
     Bugzilla::Attachment::PatchReader::process_interdiff(
-        $old_attachment, $new_attachment, $format, $context);
+        $old_attachment, $new_attachment, $format);
 }
 
 sub diff {
@@ -503,41 +488,52 @@ sub viewall {
 
 # Display a form for entering a new attachment.
 sub enter {
-  # Retrieve and validate parameters
-  my $bug = Bugzilla::Bug->check(scalar $cgi->param('bugid'));
-  my $bugid = $bug->id;
-  Bugzilla::Attachment->_check_bug($bug);
-  my $dbh = Bugzilla->dbh;
-  my $user = Bugzilla->user;
+    # Retrieve and validate parameters
+    my $bug = Bugzilla::Bug->check(scalar $cgi->param('bugid'));
+    my $bugid = $bug->id;
+    Bugzilla::Attachment->_check_bug($bug);
+    my $dbh = Bugzilla->dbh;
+    my $user = Bugzilla->user;
 
-  # Retrieve the attachments the user can edit from the database and write
-  # them into an array of hashes where each hash represents one attachment.
-  my $canEdit = "";
-  if (!$user->in_group('editbugs', $bug->product_id)) {
-      $canEdit = "AND submitter_id = " . $user->id;
-  }
-  my $attach_ids = $dbh->selectcol_arrayref("SELECT attach_id FROM attachments
-                                             WHERE bug_id = ? AND isobsolete = 0 $canEdit
-                                             ORDER BY attach_id", undef, $bugid);
+    # Retrieve the attachments the user can edit from the database and write
+    # them into an array of hashes where each hash represents one attachment.
 
-  # Define the variables and functions that will be passed to the UI template.
-  $vars->{'bug'} = $bug;
-  $vars->{'attachments'} = Bugzilla::Attachment->new_from_list($attach_ids);
+    my ($can_edit, $not_private) = ('', '');
+    if (!$user->in_group('editbugs', $bug->product_id)) {
+        $can_edit = "AND submitter_id = " . $user->id;
+    }
+    if (!$user->is_insider) {
+        $not_private = "AND isprivate = 0";
+    }
+    my $attach_ids = $dbh->selectcol_arrayref(
+        "SELECT attach_id
+           FROM attachments
+          WHERE bug_id = ?
+                AND isobsolete = 0
+                $can_edit $not_private
+       ORDER BY attach_id",
+         undef, $bugid);
 
-  my $flag_types = Bugzilla::FlagType::match({'target_type'  => 'attachment',
-                                              'product_id'   => $bug->product_id,
-                                              'component_id' => $bug->component_id, 
-                                              'is_active'    => 1});
-  $vars->{'flag_types'} = $flag_types;
-  $vars->{'any_flags_requesteeble'} =
-    grep { $_->is_requestable && $_->is_requesteeble } @$flag_types;
-  $vars->{'token'} = issue_session_token('create_attachment');
+    # Define the variables and functions that will be passed to the UI template.
+    $vars->{'bug'} = $bug;
+    $vars->{'attachments'} = Bugzilla::Attachment->new_from_list($attach_ids);
 
-  print $cgi->header();
+    my $flag_types = Bugzilla::FlagType::match({
+        'target_type'  => 'attachment',
+        'product_id'   => $bug->product_id,
+        'component_id' => $bug->component_id,
+        'is_active'    => 1
+    });
+    $vars->{'flag_types'} = $flag_types;
+    $vars->{'any_flags_requesteeble'} =
+        grep { $_->is_requestable && $_->is_requesteeble } @$flag_types;
+    $vars->{'token'} = issue_session_token('create_attachment');
 
-  # Generate and return the UI (HTML page) from the appropriate template.
-  $template->process("attachment/create.html.tmpl", $vars)
-    || ThrowTemplateError($template->error());
+    print $cgi->header();
+
+    # Generate and return the UI (HTML page) from the appropriate template.
+    $template->process("attachment/create.html.tmpl", $vars)
+      || ThrowTemplateError($template->error());
 }
 
 # Insert a new attachment into the database.
@@ -562,6 +558,9 @@ sub insert {
         my @obsolete = $cgi->param('obsolete');
         @obsolete_attachments = Bugzilla::Attachment->validate_obsolete($bug, \@obsolete);
     }
+
+    my $minor_update = $cgi->param('minor_update') ? 1 : 0;
+    $minor_update = $bug->has_unsent_changes ? 0 : $minor_update;
 
     # Must be called before create() as it may alter $cgi->param('ispatch').
     my $content_type = Bugzilla::Attachment::get_content_type();
@@ -609,47 +608,51 @@ sub insert {
                                   type => CMT_ATTACHMENT_CREATED,
                                   extra_data => $attachment->id });
 
-  # Assign the bug to the user, if they are allowed to take it
-  my $owner = "";
-  if ($cgi->param('takebug') && $user->in_group('editbugs', $bug->product_id)) {
-      # When taking a bug, we have to follow the workflow.
-      my $bug_status = $cgi->param('bug_status') || '';
-      ($bug_status) = grep {$_->name eq $bug_status} @{$bug->status->can_change_to};
+    # Assign the bug to the user, if they are allowed to take it
+    my $owner = "";
+    if ($cgi->param('takebug') && $user->in_group('editbugs', $bug->product_id)) {
+        # When taking a bug, we have to follow the workflow.
+        my $bug_status = $cgi->param('bug_status') || '';
+        ($bug_status) = grep { $_->name eq $bug_status }
+                        @{ $bug->status->can_change_to };
 
-      if ($bug_status && $bug_status->is_open
-          && ($bug_status->name ne 'UNCONFIRMED' 
-              || $bug->product_obj->allows_unconfirmed))
-      {
-          $bug->set_bug_status($bug_status->name);
-          $bug->clear_resolution();
-      }
-      # Make sure the person we are taking the bug from gets mail.
-      $owner = $bug->assigned_to->login;
-      $bug->set_assigned_to($user);
-  }
-  $bug->update($timestamp);
+        if ($bug_status && $bug_status->is_open
+            && ($bug_status->name ne 'UNCONFIRMED'
+                || $bug->product_obj->allows_unconfirmed))
+        {
+            $bug->set_bug_status($bug_status->name);
+            $bug->clear_resolution();
+        }
+        # Make sure the person we are taking the bug from gets mail.
+        $owner = $bug->assigned_to->login;
+        $bug->set_assigned_to($user);
+    }
 
-  # We have to update the attachment after updating the bug, to ensure new
-  # comments are available.
-  $attachment->update($timestamp);
+    $bug->add_cc($user) if $cgi->param('addselfcc');
+    $bug->update($timestamp);
 
-  $dbh->bz_commit_transaction;
+    # We have to update the attachment after updating the bug, to ensure new
+    # comments are available.
+    $attachment->update($timestamp);
 
-  # Define the variables and functions that will be passed to the UI template.
-  $vars->{'attachment'} = $attachment;
-  # We cannot reuse the $bug object as delta_ts has eventually been updated
-  # since the object was created.
-  $vars->{'bugs'} = [new Bugzilla::Bug($bugid)];
-  $vars->{'header_done'} = 1;
-  $vars->{'contenttypemethod'} = $cgi->param('contenttypemethod');
+    $dbh->bz_commit_transaction;
 
-  my $recipients =  { 'changer' => $user, 'owner' => $owner };
-  $vars->{'sent_bugmail'} = Bugzilla::BugMail::Send($bugid, $recipients);
+    # Define the variables and functions that will be passed to the UI template.
+    $vars->{'attachment'} = $attachment;
+    # We cannot reuse the $bug object as delta_ts has eventually been updated
+    # since the object was created.
+    $vars->{'bugs'} = [new Bugzilla::Bug($bugid)];
+    $vars->{'header_done'} = 1;
+    $vars->{'contenttypemethod'} = $cgi->param('contenttypemethod');
 
-  print $cgi->header();
-  # Generate and return the UI (HTML page) from the appropriate template.
-  $template->process("attachment/created.html.tmpl", $vars)
-    || ThrowTemplateError($template->error());
+    my $recipients = { 'changer' => $user, 'owner' => $owner };
+    my $params = { 'minor_update' => $minor_update };
+    $vars->{'sent_bugmail'} = Bugzilla::BugMail::Send($bugid, $recipients, $params);
+
+    print $cgi->header();
+    # Generate and return the UI (HTML page) from the appropriate template.
+    $template->process("attachment/created.html.tmpl", $vars)
+        || ThrowTemplateError($template->error());
 }
 
 # Displays a form for editing attachment properties.
@@ -657,27 +660,28 @@ sub insert {
 # is private and the user does not belong to the insider group.
 # Validations are done later when the user submits changes.
 sub edit {
-  my $attachment = validateID();
+    my $attachment = validateID();
 
-  my $bugattachments =
-      Bugzilla::Attachment->get_attachments_by_bug($attachment->bug);
+    my $bugattachments =
+        Bugzilla::Attachment->get_attachments_by_bug($attachment->bug);
 
-  my $any_flags_requesteeble =
-    grep { $_->is_requestable && $_->is_requesteeble } @{$attachment->flag_types};
-  # Useful in case a flagtype is no longer requestable but a requestee
-  # has been set before we turned off that bit.
-  $any_flags_requesteeble ||= grep { $_->requestee_id } @{$attachment->flags};
-  $vars->{'any_flags_requesteeble'} = $any_flags_requesteeble;
-  $vars->{'attachment'} = $attachment;
-  $vars->{'attachments'} = $bugattachments;
+    my $any_flags_requesteeble = grep { $_->is_requestable && $_->is_requesteeble }
+                                 @{ $attachment->flag_types };
+    # Useful in case a flagtype is no longer requestable but a requestee
+    # has been set before we turned off that bit.
+    $any_flags_requesteeble ||= grep { $_->requestee_id } @{ $attachment->flags };
+    $vars->{'any_flags_requesteeble'} = $any_flags_requesteeble;
+    $vars->{'attachment'} = $attachment;
+    $vars->{'attachments'} = $bugattachments;
 
-  Bugzilla->log_user_request($attachment->bug_id, $attachment->id, "attachment-get")
-    if Bugzilla->user->id;
-  print $cgi->header();
+    Bugzilla->log_user_request($attachment->bug_id, $attachment->id, "attachment-get")
+        if Bugzilla->user->id;
 
-  # Generate and return the UI (HTML page) from the appropriate template.
-  $template->process("attachment/edit.html.tmpl", $vars)
-    || ThrowTemplateError($template->error());
+    print $cgi->header();
+
+    # Generate and return the UI (HTML page) from the appropriate template.
+    $template->process("attachment/edit.html.tmpl", $vars)
+        || ThrowTemplateError($template->error());
 }
 
 # Updates an attachment record. Only users with "editbugs" privileges,
@@ -711,8 +715,7 @@ sub update {
         if ($delta_ts && $delta_ts ne $modification_time) {
             datetime_from($delta_ts)
               or ThrowCodeError('invalid_timestamp', { timestamp => $delta_ts });
-            ($vars->{'operations'}) =
-              Bugzilla::Bug::GetBugActivity($bug->id, $attachment->id, $delta_ts);
+            ($vars->{'operations'}) = $bug->get_activity($attachment->id, $delta_ts);
 
             # If the modification date changed but there is no entry in
             # the activity table, this means someone commented only.
@@ -738,6 +741,9 @@ sub update {
     my $token = $cgi->param('token');
     check_hash_token($token, [$attachment->id, $attachment->modification_time]);
 
+    my $minor_update = $cgi->param('minor_update') ? 1 : 0;
+    $minor_update = $bug->has_unsent_changes ? 0 : $minor_update;
+
     # If the user submitted a comment while editing the attachment,
     # add the comment to the bug. Do this after having validated isprivate!
     my $comment = $cgi->param('comment');
@@ -746,6 +752,8 @@ sub update {
                                       type => CMT_ATTACHMENT_UPDATED,
                                       extra_data => $attachment->id });
     }
+
+    $bug->add_cc($user) if $cgi->param('addselfcc');
 
     my ($flags, $new_flags) =
       Bugzilla::Flag->extract_flags_from_cgi($bug, $attachment, $vars);
@@ -756,17 +764,15 @@ sub update {
     # Requestees can set flags targetted to them, even if they cannot
     # edit the attachment. Flag setters can edit their own flags too.
     elsif (scalar @$flags) {
-        my @flag_ids = map { $_->{id} } @$flags;
-        my $flag_objs = Bugzilla::Flag->new_from_list(\@flag_ids);
-        my %flag_list = map { $_->id => $_ } @$flag_objs;
+        my %flag_list = map { $_->{id} => $_ } @$flags;
+        my $flag_objs = Bugzilla::Flag->new_from_list([keys %flag_list]);
 
         my @editable_flags;
-        foreach my $flag (@$flags) {
-            my $flag_obj = $flag_list{$flag->{id}};
+        foreach my $flag_obj (@$flag_objs) {
             if ($flag_obj->setter_id == $user->id
                 || ($flag_obj->requestee_id && $flag_obj->requestee_id == $user->id))
             {
-                push(@editable_flags, $flag);
+                push(@editable_flags, $flag_list{$flag_obj->id});
             }
         }
 
@@ -800,7 +806,8 @@ sub update {
     $vars->{'bugs'} = [$bug];
     $vars->{'header_done'} = 1;
     $vars->{'sent_bugmail'} = 
-        Bugzilla::BugMail::Send($bug->id, { 'changer' => $user });
+        Bugzilla::BugMail::Send($bug->id, { 'changer' => $user },
+            {'minor_update' => $minor_update });
 
     print $cgi->header();
 
@@ -855,7 +862,6 @@ sub delete_attachment {
         # Paste the reason provided by the admin into a comment.
         $bug->add_comment($msg);
 
-        # Remove attachment.
         $attachment->remove_from_db();
 
         # Now delete the token.

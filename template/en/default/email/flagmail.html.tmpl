@@ -1,0 +1,93 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% flagtype_name = flag ? flag.type.name : old_flag.type.name %]
+[% statuses = { '+' => "granted" , '-' => 'denied' , 'X' => "canceled" ,
+                '?' => "asked" } %]
+
+[% action = flag.status || 'X' %]
+
+[% pending_request = (flag && flag.status == '?') %]
+[% reassigned = (pending_request && flag.setter_id != user.id) %]
+[% was_pending_request = (old_flag && old_flag.status == '?') %]
+
+<html>
+  <head>
+    <base href="[% urlbase FILTER html %]">
+  </head>
+  <body>
+    <p>
+      [% INCLUDE global/user.html.tmpl user = to_user, who = user %] has
+      [% IF reassigned =%]
+        reassigned [% INCLUDE global/user.html.tmpl user = to_user, who = flag.setter %]'s request for
+        [% IF old_flag.requestee.defined %]
+          [%= INCLUDE global/user.html.tmpl user = to_user, who = old_flag.requestee %]'s
+        [% END %]
+        [%= flagtype_name FILTER html %]
+        [% IF flag.requestee.defined =%]
+          to [% INCLUDE global/user.html.tmpl user = to_user, who = flag.requestee %]
+        [% END %]
+      [% ELSE %]
+        [%= statuses.$action FILTER html %]
+        [% IF pending_request %]
+          [%= INCLUDE global/user.html.tmpl user = to_user, who = flag.requestee %] for
+        [% ELSIF was_pending_request %]
+          [%= INCLUDE global/user.html.tmpl user = to_user, who = old_flag.setter %]'s request for
+          [% IF old_flag.requestee.defined %]
+            [%= INCLUDE global/user.html.tmpl user = to_user, who = old_flag.requestee %]'s
+          [% END %]
+        [% END %]
+        <b>[% flagtype_name FILTER html %]</b>
+      [% END %]:
+    </p>
+
+    <p>
+      [% INCLUDE bug/link.html.tmpl bug = bug, link_text = "$terms.Bug $bug.id", full_url = 1, user = to_user %]:
+      [%= bug.short_desc FILTER html %]
+    </p>
+
+    [% IF attachment %]
+      <p>
+        <a href="[% urlbase FILTER html %]attachment.cgi?id=[% attachment.id FILTER html ~%]
+                 &action=edit">Attachment [% attachment.id FILTER html %]</a>:
+        [%= attachment.description FILTER html %]
+      </p>
+    [% END %]
+
+    [% Hook.process('after_summary') %]
+
+    <p>
+      [% comment_anchor = '' %]
+      [% FOREACH comment = new_comments.reverse %]
+        <div>
+          [% IF comment.count %]
+            [% comment_anchor = "#c$comment.count" %]
+            <b>[% "Comment # ${comment.count}" FILTER bug_link(bug,
+                {comment_num => comment.count, full_url => 1, user => to_user}) FILTER none =%]
+            on [% "$terms.bug $bug.id" FILTER bug_link(bug, { full_url => 1, user => to_user }) FILTER none =%]
+            from [% INCLUDE global/user.html.tmpl user = to_user, who = comment.author %]</b>
+          [% ELSE %]
+            <b>Description:</b>
+          [% END %]
+          [% comment_div = comment.is_markdown ? "div" : "pre" %]
+          [% wrap = comment.is_markdown ? 0 : 1 %]
+          <[% comment_div FILTER none %] class="bz_comment_text">[% comment.body_full({ wrap => wrap }) FILTER markdown(bug, comment, to_user) %]</[% comment_div FILTER none %]>
+        </div>
+      [% END %]
+    </p>
+
+    <div itemscope itemtype="http://schema.org/EmailMessage">
+      <div itemprop="action" itemscope itemtype="http://schema.org/ViewAction">
+        [%# Filtering of the URL param is not required & would break the URL when the comment anchor is set %]
+        <link itemprop="url" href="[% urlbase FILTER html %]show_bug.cgi?id=[% "$bug.id$comment_anchor" FILTER none %]">
+        <meta itemprop="name" content="View [% terms.bug %]">
+      </div>
+      <meta itemprop="description" content="[% terms.Bugzilla %] [%+ terms.bug %] update notification">
+    </div>
+  </body>
+</html>

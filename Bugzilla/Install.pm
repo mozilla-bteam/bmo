@@ -1,18 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Install;
 
@@ -24,7 +15,9 @@ package Bugzilla::Install;
 # make those assumptions, then it should go into one of the
 # packages under the Bugzilla::Install namespace.
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::Component;
 use Bugzilla::Config qw(:admin);
@@ -91,13 +84,6 @@ sub SETTINGS {
         options  => ["on", "off"],
         default  => "on",
         category => 'Bug Editing'
-    },
-    # 2005-10-21 LpSolit@gmail.com -- Bug 313020
-    {
-        name     => 'per_bug_queries',
-        options  => ['on', 'off'],
-        default  => 'off',
-        category => 'Searching'
     },
     # 2006-05-01 olav@bkor.dhs.org -- Bug 7710
     {
@@ -177,12 +163,19 @@ sub SETTINGS {
         category => 'Reviews and Needinfo'
     },
     {
-        name => 'api_key_only',
-        options => ['on', 'off'],
-        default => 'off',
+        name     => 'api_key_only',
+        options  => ['on', 'off'],
+        default  => 'off',
         category => 'API'
     },
-    ];
+    # 2014-05-24 koosha.khajeh@gmail.com -- Bug 1014164
+    {
+        name     => 'use_markdown',
+        options  => ['on', 'off'],
+        default  => 'on',
+        category => 'User Interface'
+    }
+    ],
 };
 
 use constant SYSTEM_GROUPS => (
@@ -225,11 +218,13 @@ use constant SYSTEM_GROUPS => (
     },
     {
         name         => 'bz_canusewhineatothers',
-        description  => 'Can configure whine reports for other users',
+        description  => 'Can configure queries and schedules for periodic'
+            . ' reports to be run and sent via email to other users and groups',
     },
     {
         name         => 'bz_canusewhines',
-        description  => 'User can configure whine reports for self',
+        description  => 'Can configure queries and schedules for periodic'
+            . ' reports to be run and sent via email to themselves',
         # inherited_by means that users in the groups listed below are
         # automatically members of bz_canusewhines.
         inherited_by => ['editbugs', 'bz_canusewhineatothers'],
@@ -281,13 +276,16 @@ sub update_settings {
     my $any_settings = $dbh->selectrow_array(
         'SELECT 1 FROM setting ' . $dbh->sql_limit(1));
     if (!$any_settings) {
-        print get_text('install_setting_setup'), "\n";
+        say get_text('install_setting_setup');
     }
 
     my @settings = @{SETTINGS()};
     foreach my $params (@settings) {
         add_setting($params);
     }
+
+    # Delete the obsolete 'per_bug_queries' user preference. Bug 616191.
+    $dbh->do('DELETE FROM setting WHERE name = ?', undef, 'per_bug_queries');
 }
 
 sub update_system_groups {
@@ -299,13 +297,13 @@ sub update_system_groups {
     # adding groups.
     my $editbugs_exists = new Bugzilla::Group({ name => 'editbugs' });
     if (!$editbugs_exists) {
-        print get_text('install_groups_setup'), "\n";
+        say get_text('install_groups_setup');
     }
 
     # Create most of the system groups
     foreach my $definition (SYSTEM_GROUPS) {
-        my $exists = new Bugzilla::Group({ name => $definition->{name} });
-        if (!$exists) {
+        my $group = new Bugzilla::Group({ name => $definition->{name} });
+        if (!$group) {
             $definition->{isbuggroup} = 0;
             $definition->{silently} = !$editbugs_exists;
             my $inherited_by = delete $definition->{inherited_by};
@@ -320,6 +318,10 @@ sub update_system_groups {
                              undef, $created->id, $member->id);
                 }
             }
+        }
+        elsif ($group->description ne $definition->{description}) {
+            $group->set_description($definition->{description});
+            $group->update();
         }
     }
 
@@ -370,7 +372,7 @@ sub init_workflow {
     my $has_workflow = $dbh->selectrow_array('SELECT 1 FROM status_workflow');
     return if $has_workflow;
 
-    print get_text('install_workflow_init'), "\n";
+    say get_text('install_workflow_init');
 
     my %status_ids = @{ $dbh->selectcol_arrayref(
         'SELECT value, id FROM bug_status', {Columns=>[1,2]}) };
@@ -405,16 +407,16 @@ sub create_admin {
     my $full_name = $answer{'ADMIN_REALNAME'};
 
     if (!$login || !$password || !$full_name) {
-        print "\n" . get_text('install_admin_setup') . "\n\n";
+        say "\n" . get_text('install_admin_setup') . "\n";
     }
 
     while (!$login) {
         print get_text('install_admin_get_email') . ' ';
         $login = <STDIN>;
         chomp $login;
-        eval { Bugzilla::User->check_login_name_for_creation($login); };
+        eval { Bugzilla::User->check_login_name($login); };
         if ($@) {
-            print $@ . "\n";
+            say $@;
             undef $login;
         }
     }
@@ -471,8 +473,14 @@ sub make_admin {
         write_params();
     }
 
+    # Make sure the new admin isn't disabled
+    if ($user->disabledtext) {
+        $user->set_disabledtext('');
+        $user->update();
+    }
+
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
-        print "\n", get_text('install_admin_created', { user => $user }), "\n";
+        say "\n", get_text('install_admin_created', { user => $user });
     }
 }
 
@@ -497,7 +505,7 @@ sub _prompt_for_password {
         chomp $pass2;
         eval { validate_password($password, $pass2); };
         if ($@) {
-            print "\n$@\n";
+            say "\n$@";
             undef $password;
         }
         system("stty","echo") unless ON_WINDOWS;
@@ -519,7 +527,7 @@ sub reset_password {
     my $password = _prompt_for_password($prompt);
     $user->set_password($password);
     $user->update();
-    print "\n", get_text('install_reset_password_done'), "\n";
+    say "\n", get_text('install_reset_password_done');
 }
 
 1;
@@ -577,5 +585,21 @@ Description: Creates the default product and component if
 Params:      none
 
 Returns:     nothing
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item update_system_groups
+
+=item reset_password
+
+=item make_admin
+
+=item create_admin
+
+=item init_workflow
 
 =back

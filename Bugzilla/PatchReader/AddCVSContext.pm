@@ -1,11 +1,13 @@
 package Bugzilla::PatchReader::AddCVSContext;
 
+use 5.10.1;
+use strict;
+use warnings;
+
 use Bugzilla::PatchReader::FilterPatch;
 use Bugzilla::PatchReader::CVSClient;
 use Cwd;
 use File::Temp;
-
-use strict;
 
 @Bugzilla::PatchReader::AddCVSContext::ISA = qw(Bugzilla::PatchReader::FilterPatch);
 
@@ -224,3 +226,29 @@ sub trick_taint {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item my_rmtree
+
+=item end_patch
+
+=item start_file
+
+=item end_file
+
+=item next_section
+
+=item determine_start
+
+=item flush_section
+
+=item push_context_lines
+
+=item trick_taint
+
+=back

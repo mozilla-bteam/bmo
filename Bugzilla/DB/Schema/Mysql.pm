@@ -1,25 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Andrew Dunstan <andrew@dunslane.net>,
-#                 Edward J. Sabol <edwardjsabol@iname.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::DB::Schema::Mysql;
 
@@ -29,10 +13,13 @@ package Bugzilla::DB::Schema::Mysql;
 #
 ###############################################################################
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use Bugzilla::Error;
 
-use base qw(Bugzilla::DB::Schema);
+use parent qw(Bugzilla::DB::Schema);
 
 # This is for column_info_to_column, to know when a tinyint is a 
 # boolean and when it's really a tinyint. This only has to be accurate
@@ -161,12 +148,7 @@ sub _get_create_index_ddl {
 
 sub get_create_database_sql {
     my ($self, $name) = @_;
-    # We only create as utf8 if we have no params (meaning we're doing
-    # a new installation) or if the utf8 param is on.
-    my $create_utf8 = Bugzilla->params->{'utf8'} 
-                      || !defined Bugzilla->params->{'utf8'};
-    my $charset = $create_utf8 ? "CHARACTER SET utf8" : '';
-    return ("CREATE DATABASE $name $charset");
+    return ("CREATE DATABASE `$name` CHARACTER SET utf8");
 }
 
 # MySQL has a simpler ALTER TABLE syntax than ANSI.
@@ -397,3 +379,27 @@ sub get_rename_column_ddl {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item get_rename_column_ddl
+
+=item get_create_database_sql
+
+=item get_drop_index_ddl
+
+=item get_set_serial_sql
+
+=item get_rename_indexes_ddl
+
+=item get_drop_fk_sql
+
+=item MYISAM_TABLES
+
+=item column_info_to_column
+
+=item get_alter_column_ddl
+
+=back

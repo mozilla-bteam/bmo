@@ -1,19 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Marc Schumann <wurblzap@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Install::Requirements;
 
@@ -23,32 +13,27 @@ package Bugzilla::Install::Requirements;
 # Subroutines may "require" and "import" from modules, but they
 # MUST NOT "use."
 
+use 5.10.1;
 use strict;
-use version;
+use warnings;
 
 use Bugzilla::Constants;
-use Bugzilla::Install::Util qw(vers_cmp install_string bin_loc
-                               success extension_requirement_packages);
+use Bugzilla::Install::Util qw(install_string bin_loc success
+                               extension_requirement_packages);
 use List::Util qw(max);
-use Safe;
 use Term::ANSIColor;
 
-# Return::Value 1.666002 pollutes the error log with warnings about this
-# deprecated module. We have to set NO_CLUCK = 1 before loading Email::Send
-# in have_vers() to disable these warnings.
-BEGIN {
-    $Return::Value::NO_CLUCK = 1;
-}
-
-use base qw(Exporter);
+use parent qw(Exporter);
 use autodie;
+
 our @EXPORT = qw(
     REQUIRED_MODULES
     OPTIONAL_MODULES
     FEATURE_FILES
 
     check_requirements
-    check_graphviz
+    check_webdotbase
+    check_font_file
     export_cpanfile
     have_vers
     install_command
@@ -68,6 +53,8 @@ use constant APACHE_MODULES => {
     mod_headers => 'headers_module',
     mod_env     => 'env_module',
     mod_expires => 'expires_module',
+    mod_rewrite => 'rewrite_module',
+    mod_version => 'version_module'
 };
 
 # These are all of the binaries that we could possibly use that can
@@ -99,7 +86,6 @@ use constant APACHE_PATH => [qw(
 # are 'blacklisted'--that is, even if the version is high enough, Bugzilla
 # will refuse to say that it's OK to run with that version.
 sub REQUIRED_MODULES {
-    my $perl_ver = sprintf('%vd', $^V);
     my @modules = (
     {
         package => 'CGI.pm',
@@ -113,43 +99,42 @@ sub REQUIRED_MODULES {
         module  => 'Digest::SHA',
         version => 0
     },
+    # 0.23 fixes incorrect handling of 1/2 & 3/4 timezones.
     {
         package => 'TimeDate',
         module  => 'Date::Format',
-        version => '2.21'
+        version => '2.23'
     },
-    # 0.28 fixed some important bugs in DateTime.
+    # 0.75 fixes a warning thrown with Perl 5.17 and newer.
     {
         package => 'DateTime',
         module  => 'DateTime',
-        version => '0.28'
+        version => '0.75'
     },
-    # 0.79 is required to work on Windows Vista and Windows Server 2008.
-    # As correctly detecting the flavor of Windows is not easy,
-    # we require this version for all Windows installations.
-    # 0.71 fixes a major bug affecting all platforms.
+    # 1.64 fixes a taint issue preventing the local timezone from
+    # being determined on some systems.
     {
         package => 'DateTime-TimeZone',
         module  => 'DateTime::TimeZone',
-        version => ON_WINDOWS ? '0.79' : '0.71'
+        version => '1.64'
     },
+    # 1.54 is required for Perl 5.10+. It also makes DBD::Oracle happy.
     {
         package => 'DBI',
         module  => 'DBI',
-        version => (vers_cmp($perl_ver, '5.13.3') > -1) ? '1.614' : '1.41'
+        version => ($^V >= v5.13.3) ? '1.614' : '1.54'
     },
-    # 2.22 fixes various problems related to UTF8 strings in hash keys,
-    # as well as line endings on Windows.
+    # 2.24 contains several useful text virtual methods.
     {
         package => 'Template-Toolkit',
         module  => 'Template',
-        version => '2.22'
+        version => '2.24'
     },
+    # 1.300011 has a debug mode for SMTP and automatically pass -i to sendmail.
     {
-        package => 'Email-Send',
-        module  => 'Email::Send',
-        version => ON_WINDOWS ? '2.16' : '2.00',
-        blacklist => ['^2\.196$']
+        package => 'Email-Sender',
+        module  => 'Email::Sender',
+        version => '1.300011',
     },
     {
         package => 'Email-MIME',
@@ -160,24 +145,36 @@ sub REQUIRED_MODULES {
     {
         package => 'URI',
         module  => 'URI',
-        # This version properly handles a semicolon as the delimiter
-        # in a URL query string.
-        version => '1.37',
+        # Follows RFC 3986 to escape characters in URI::Escape.
+        version => '1.55',
     },
+    # 0.32 fixes several memory leaks in the XS version of some functions.
     {
         package => 'List-MoreUtils',
         module  => 'List::MoreUtils',
-        version => 0.22,
+        version => 0.32,
     },
     {
         package => 'Math-Random-ISAAC',
         module  => 'Math::Random::ISAAC',
         version => '1.0.1',
     },
+    {
+        package => 'File-Slurp',
+        module  => 'File::Slurp',
+        version => '9999.13',
+    },
+    {
+        package => 'JSON-XS',
+        module  => 'JSON::XS',
+        # 2.0 is the first version that will work with JSON::RPC.
+        version => '2.01',
+    },
     );
 
     if (ON_WINDOWS) {
-        push(@modules, {
+        push(@modules,
+        {
             package => 'Win32',
             module  => 'Win32',
             # 0.35 fixes a memory leak in GetOSVersion, which we use.
@@ -188,7 +185,14 @@ sub REQUIRED_MODULES {
             module  => 'Win32::API',
             # 0.55 fixes a bug with char* that might affect Bugzilla::RNG.
             version => '0.55',
-        });
+        },
+        {
+            package => 'DateTime-TimeZone-Local-Win32',
+            module  => 'DateTime::TimeZone::Local::Win32',
+            # We require DateTime::TimeZone 1.64, so this version must match.
+            version => '1.64',
+        }
+        );
     }
 
     my $extra_modules = _get_extension_requirements('REQUIRED_MODULES');
@@ -197,7 +201,6 @@ sub REQUIRED_MODULES {
 };
 
 sub OPTIONAL_MODULES {
-    my $perl_ver = sprintf('%vd', $^V);
     my @modules = (
     {
         package => 'GD',
@@ -208,10 +211,9 @@ sub OPTIONAL_MODULES {
     {
         package => 'Chart',
         module  => 'Chart::Lines',
-        # Versions below 2.1 cannot be detected accurately.
-        # There is no 2.1.0 release (it was 2.1), but .0 is required to fix
-        # https://rt.cpan.org/Public/Bug/Display.html?id=28218.
-        version => '2.1.0',
+        # Versions below 2.4.10 throw deprecation warnings, and will crash in
+        # Perl 2.21 and above.
+        version => '2.4.10',
         feature => [qw(new_charts old_charts)],
     },
     {
@@ -273,16 +275,34 @@ sub OPTIONAL_MODULES {
         feature => ['smtp_auth'],
     },
     {
+        package => 'Net-SMTP-SSL',
+        module  => 'Net::SMTP::SSL',
+        version => 1.01,
+        feature => ['smtp_ssl'],
+    },
+    {
         package => 'RadiusPerl',
         module  => 'Authen::Radius',
         version => 0,
         feature => ['auth_radius'],
     },
+    # XXX - Once we require XMLRPC::Lite 0.717 or higher, we can
+    # remove SOAP::Lite from the list.
     {
         package => 'SOAP-Lite',
         module  => 'SOAP::Lite',
         # Fixes various bugs, including 542931 and 552353 + stops
         # throwing warnings with Perl 5.12.
+        version => '0.712',
+        # SOAP::Transport::HTTP 1.12 is bogus.
+        blacklist => ['^1\.12$'],
+        feature => ['xmlrpc'],
+    },
+    # Since SOAP::Lite 1.0, XMLRPC::Lite is no longer included
+    # and so it must be checked separately.
+    {
+        package => 'XMLRPC-Lite',
+        module  => 'XMLRPC::Lite',
         version => '0.712',
         feature => ['xmlrpc'],
     },
@@ -293,23 +313,41 @@ sub OPTIONAL_MODULES {
         feature => ['jsonrpc', 'rest'],
     },
     {
-        package => 'JSON-XS',
-        module  => 'JSON::XS',
-        # 2.0 is the first version that will work with JSON::RPC.
-        version => '2.0',
-        feature => ['jsonrpc_faster'],
-    },
-    {
         package => 'Test-Taint',
         module  => 'Test::Taint',
-        version => 0,
+        # 1.06 no longer throws warnings with Perl 5.10+.
+        version => 1.06,
         feature => ['jsonrpc', 'xmlrpc', 'rest'],
+    },
+    {
+        package => 'Moo',
+        module  => 'Moo',
+        version => 2,
+        feature => ['rest']
+    },
+    {
+        package => 'Module-Runtime',
+        module  => 'Module::Runtime',
+        version => 0,
+        feature => ['rest']
+    },
+    {
+        package => 'HTTP-Request',
+        module  => 'HTTP::Request',
+        version => 0,
+        feature => ['rest']
+    },
+    {
+        package => 'HTTP-Response',
+        module  => 'HTTP::Response',
+        version => 0,
+        feature => ['rest']
     },
     {
         # We need the 'utf8_mode' method of HTML::Parser, for HTML::Scrubber.
         package => 'HTML-Parser',
         module  => 'HTML::Parser',
-        version => (vers_cmp($perl_ver, '5.13.3') > -1) ? '3.67' : '3.40',
+        version => ($^V >= v5.13.3) ? '3.67' : '3.40',
         feature => ['html_desc'],
     },
     {
@@ -348,15 +386,16 @@ sub OPTIONAL_MODULES {
 
     # Inbound Email
     {
-        package => 'Email-MIME-Attachment-Stripper',
-        module  => 'Email::MIME::Attachment::Stripper',
+        package => 'Email-Reply',
+        module  => 'Email::Reply',
         version => 0,
         feature => ['inbound_email'],
     },
     {
-        package => 'Email-Reply',
-        module  => 'Email::Reply',
-        version => 0,
+        package => 'HTML-FormatText-WithLinks',
+        module  => 'HTML::FormatText::WithLinks',
+        # We need 0.13 to set the "bold" marker to "*".
+        version => '0.13',
         feature => ['inbound_email'],
     },
 
@@ -406,8 +445,8 @@ sub OPTIONAL_MODULES {
 
     # BMO - metrics
     {
-        package => 'ElasticSearch',
-        module  => 'ElasticSearch',
+        package => 'Search-Elasticsearch',
+        module  => 'Search::Elasticsearch',
         version => '0',
         feature => ['elasticsearch'],
     },
@@ -425,13 +464,44 @@ sub OPTIONAL_MODULES {
         version => '0',
         feature => ['mfa'],
     },
+
+    # typesniffer
+    {
+        package => 'File-MimeInfo',
+        module  => 'File::MimeInfo::Magic',
+        version => '0',
+        feature => ['typesniffer'],
+    },
+    {
+        package => 'IO-stringy',
+        module  => 'IO::Scalar',
+        version => '0',
+        feature => ['typesniffer'],
+    },
+
+
+    # Markdown
+    {
+        package => 'Text-MultiMarkdown',
+        module  => 'Text::MultiMarkdown',
+        # 1.0.34 supports definition lists.
+        version => '1.000034',
+        feature => ['markdown'],
+    },
+
     # Documentation
     {
         package => 'File-Copy-Recursive',
         module  => 'File::Copy::Recursive',
         version => 0,
         feature => ['documentation'],
-    }
+    },
+    {
+        package => 'File-Which',
+        module  => 'File::Which',
+        version => 0,
+        feature => ['documentation'],
+    },
     );
 
     my $extra_modules = _get_extension_requirements('OPTIONAL_MODULES');
@@ -445,17 +515,20 @@ use constant FEATURE_FILES => (
     jsonrpc       => ['Bugzilla/WebService/Server/JSONRPC.pm', 'jsonrpc.cgi'],
     xmlrpc        => ['Bugzilla/WebService/Server/XMLRPC.pm', 'xmlrpc.cgi',
                       'Bugzilla/WebService.pm', 'Bugzilla/WebService/*.pm'],
-    rest          => ['Bugzilla/WebService/Server/REST.pm', 'rest.cgi'],
+    rest          => ['Bugzilla/WebService/Server/REST.pm', 'rest.cgi',
+                      'Bugzilla/WebService/Server/REST/Resources/*.pm'],
     moving        => ['importxml.pl'],
     auth_ldap     => ['Bugzilla/Auth/Verify/LDAP.pm'],
     auth_radius   => ['Bugzilla/Auth/Verify/RADIUS.pm'],
+    documentation => ['docs/makedocs.pl'],
     inbound_email => ['email_in.pl'],
     jobqueue      => ['Bugzilla/Job/*', 'Bugzilla/JobQueue.pm',
                       'Bugzilla/JobQueue/*', 'jobqueue.pl'],
     patch_viewer  => ['Bugzilla/Attachment/PatchReader.pm'],
     updates       => ['Bugzilla/Update.pm'],
-    memcached     => ['Bugzilla/Memcache.pm'],
     mfa           => ['Bugzilla/MFA/*.pm'],
+    markdown      => ['Bugzilla/Markdown.pm'],
+    memcached     => ['Bugzilla/Memcache.pm'],
 );
 
 # This implements the REQUIRED_MODULES and OPTIONAL_MODULES stuff
@@ -538,7 +611,7 @@ sub _missing_apache_modules {
         return [];
     }
     my @missing;
-    foreach my $module (keys %$modules) {
+    foreach my $module (sort keys %$modules) {
         my $ok = _check_apache_module($module, $modules->{$module}, 
                                       $cmd_info, $output);
         push(@missing, $module) if !$ok;
@@ -674,10 +747,10 @@ sub _translate_feature {
     return join(', ', @strings);
 }
 
-sub check_graphviz {
+sub check_webdotbase {
     my ($output) = @_;
 
-    my $webdotbase = Bugzilla->params->{'webdotbase'};
+    my $webdotbase = Bugzilla->localconfig->{'webdotbase'};
     return 1 if $webdotbase =~ /^https?:/;
 
     my $return;
@@ -696,7 +769,7 @@ sub check_graphviz {
     if (-e "$webdotdir/.htaccess") {
         my $htaccess = new IO::File("$webdotdir/.htaccess", 'r') 
             || die "$webdotdir/.htaccess: " . $!;
-        if (!grep(/png/, $htaccess->getlines)) {
+        if (!grep(/ \\\.png\$/, $htaccess->getlines)) {
             print STDERR install_string('webdot_bad_htaccess',
                                         { dir => $webdotdir }), "\n";
         }
@@ -704,6 +777,31 @@ sub check_graphviz {
     }
 
     return $return;
+}
+
+sub check_font_file {
+    my ($output) = @_;
+
+    my $font_file = Bugzilla->localconfig->{'font_file'};
+
+    my $readable;
+    $readable = 1 if -r $font_file;
+
+    my $ttf;
+    $ttf = 1 if $font_file =~ /\.(ttf|otf)$/;
+
+    if ($output) {
+        _checking_for({ package => 'Font file', ok => $readable && $ttf});
+    }
+
+    if (!$readable) {
+        print install_string('bad_font_file', { file => $font_file }), "\n";
+    }
+    elsif (!$ttf) {
+        print install_string('bad_font_file_name', { file => $font_file }), "\n";
+    }
+
+    return $readable && $ttf;
 }
 
 # This was originally clipped from the libnet Makefile.PL, adapted here for
@@ -991,7 +1089,7 @@ optional modules.
 
 =back
 
-=item C<check_graphviz($output)>
+=item C<check_webdotbase($output)>
 
 Description: Checks if the graphviz binary specified in the 
   C<webdotbase> parameter is a valid binary, or a valid URL.
@@ -1000,6 +1098,28 @@ Params:      C<$output> - C<$true> if you want the function to
                  print out information about what it's doing.
 
 Returns:     C<1> if the check was successful, C<0> otherwise.
+
+=item C<check_font_file($output)>
+
+Description: Checks if the font file specified in the C<font_type> parameter
+  is a valid-looking font file.
+
+Params:      C<$output> - C<$true> if you want the function to
+                 print out information about what it's doing.
+
+Returns:     C<1> if the check was successful, C<0> otherwise.
+
+=item C<export_cpanfile>
+
+ Description: Based on C<REQUIRED_MODULES> and C<OPTIONAL_MODULES>,
+              the function outputs text useful for writing to a
+              C<cpanfile>. C<cpanfile> can be used by utilities
+              such as C<cpanm> for installing the Perl dependencies
+              needed by an application.
+
+ Params:      None
+
+ Returns:     Text output for writing to a C<cpanfile>.
 
 =item C<have_vers($module, $output)>
 
@@ -1032,5 +1152,13 @@ Returns:     C<1> if the check was successful, C<0> otherwise.
 
 Returns a hashref where file names are the keys and the value is the feature
 that must be enabled in order to compile that file.
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item print_module_instructions
 
 =back

@@ -6,6 +6,8 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Attachment::S3;
+
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -54,3 +56,19 @@ sub exists {
 }
 
 1;
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item new
+
+=item exists
+
+=item store
+
+=item retrieve
+
+=item remove
+
+=back

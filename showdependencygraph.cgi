@@ -1,27 +1,14 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Gervase Markham <gerv@gerv.net>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use lib qw(. lib);
 
@@ -35,7 +22,7 @@ use Bugzilla::Error;
 use Bugzilla::Bug;
 use Bugzilla::Status;
 
-Bugzilla->login();
+my $user = Bugzilla->login();
 
 my $cgi = Bugzilla->cgi;
 my $template = Bugzilla->template;
@@ -98,7 +85,7 @@ sub AddLink {
     }
 }
 
-ThrowCodeError("missing_bug_id") if !defined $cgi->param('id');
+ThrowUserError("missing_bug_id") unless $cgi->param('id');
 
 # The list of valid directions. Some are not proposed in the dropdrown
 # menu despite the fact that they are valid.
@@ -186,13 +173,16 @@ my $sth = $dbh->prepare(
               q{SELECT bug_status, resolution, short_desc
                   FROM bugs
                  WHERE bugs.bug_id = ?});
-foreach my $k (keys(%seen)) {
+
+my @bug_ids = keys %seen;
+$user->visible_bugs(\@bug_ids);
+foreach my $k (@bug_ids) {
     # Retrieve bug information from the database
     my ($stat, $resolution, $summary) = $dbh->selectrow_array($sth, undef, $k);
 
     # Resolution and summary are shown only if user can see the bug
-    if (!Bugzilla->user->can_see_bug($k)) {
-        $resolution = $summary = '';
+    if (!$user->can_see_bug($k)) {
+        $summary = '';
     }
 
     $vars->{'short_desc'} = $summary if ($k eq $cgi->param('id'));
@@ -201,9 +191,7 @@ foreach my $k (keys(%seen)) {
 
     if ($summary ne "" && $cgi->param('showsummary')) {
         # Wide characters cause GraphViz to die.
-        if (Bugzilla->params->{'utf8'}) {
-            utf8::encode($summary) if utf8::is_utf8($summary);
-        }
+        utf8::encode($summary) if utf8::is_utf8($summary);
         $summary = wrap_comment($summary);
         $summary =~ s/([\\\"])/\\$1/g;
         push(@params, qq{label="$k\\n$summary"});
@@ -226,7 +214,9 @@ foreach my $k (keys(%seen)) {
     # Push the bug tooltip texts into a global hash so that 
     # CreateImagemap sub (used with local dot installations) can
     # use them later on.
-    $bugtitles{$k} = trim("$stat $resolution");
+    my $stat_display       = display_value('bug_status', $stat);
+    my $resolution_display = display_value('resolution', $resolution);
+    $bugtitles{$k} = trim("$stat_display $resolution_display");
 
     # Show the bug summary in tooltips only if not shown on 
     # the graph and it is non-empty (the user can see the bug)
@@ -244,7 +234,7 @@ if ($bug_count > MAX_WEBDOT_BUGS) {
     ThrowUserError("webdot_too_large");
 }
 
-my $webdotbase = Bugzilla->params->{'webdotbase'};
+my $webdotbase = Bugzilla->localconfig->{'webdotbase'};
 
 if ($webdotbase =~ /^https?:/) {
      # Remote dot server. We don't hardcode 'urlbase' here in case
@@ -319,7 +309,7 @@ foreach my $f (@files)
     # symlinks), this can't escape to delete anything it shouldn't
     # (unless someone moves the location of $webdotdir, of course)
     trick_taint($f);
-    my $mtime = file_mod_time($f);
+    my $mtime = (stat($f))[9];
     if ($mtime && $mtime < $since) {
         unlink $f;
     }

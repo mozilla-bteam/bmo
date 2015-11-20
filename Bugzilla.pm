@@ -1,30 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Bradley Baetz <bbaetz@student.usyd.edu.au>
-#                 Erik Stambaugh <erik@dasbistro.com>
-#                 A. Karl Kornel <karl@kornel.name>
-#                 Marc Schumann <wurblzap@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 # We want any compile errors to get to the browser, if possible.
 BEGIN {
@@ -47,7 +32,7 @@ use Bugzilla::Field;
 use Bugzilla::Flag;
 use Bugzilla::Hook;
 use Bugzilla::Install::Localconfig qw(read_localconfig);
-use Bugzilla::Install::Requirements qw(OPTIONAL_MODULES);
+use Bugzilla::Install::Requirements qw(OPTIONAL_MODULES have_vers);
 use Bugzilla::Install::Util qw(init_console include_languages);
 use Bugzilla::Memcached;
 use Bugzilla::Template;
@@ -92,23 +77,39 @@ use constant SHUTDOWNHTML_RETRY_AFTER => 3600;
 # Global Code
 #####################################################################
 
-#$::SIG{__DIE__} = i_am_cgi() ? \&CGI::Carp::confess : \&Carp::confess;
+$::SIG{__DIE__} = i_am_cgi() ? \&CGI::Carp::confess : \&Carp::confess;
 
 # Note that this is a raw subroutine, not a method, so $class isn't available.
 sub init_page {
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
         init_console();
     }
-    elsif (Bugzilla->params->{'utf8'}) {
+    else {
         binmode STDOUT, ':utf8';
     }
 
     if (${^TAINT}) {
+        my $path = '';
+        if (ON_WINDOWS) {
+            # On Windows, these paths are tainted, preventing
+            # File::Spec::Win32->tmpdir from using them. But we need
+            # a place to temporary store attachments which are uploaded.
+            foreach my $temp (qw(TMPDIR TMP TEMP)) {
+                trick_taint($ENV{$temp}) if $ENV{$temp};
+            }
+            # Some DLLs used by Strawberry Perl are also in c\bin,
+            # see https://rt.cpan.org/Public/Bug/Display.html?id=99104
+            if (!ON_ACTIVESTATE) {
+                my $c_path = $path = dirname($^X);
+                $c_path =~ s/\bperl\b(?=\\bin)/c/;
+                $path .= ";$c_path";
+            }
+        }
         # Some environment variables are not taint safe
         delete @::ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
         # Some modules throw undefined errors (notably File::Spec::Win32) if
         # PATH is undefined.
-        $ENV{'PATH'} = '';
+        $ENV{'PATH'} = $path;
     }
 
     # Because this function is run live from perl "use" commands of
@@ -163,13 +164,13 @@ sub init_page {
     }
 
     # If Bugzilla is shut down, do not allow anything to run, just display a
-    # message to the user about the downtime and log out.  Scripts listed in 
+    # message to the user about the downtime and log out.  Scripts listed in
     # SHUTDOWNHTML_EXEMPT are exempt from this message.
     #
     # This code must go here. It cannot go anywhere in Bugzilla::CGI, because
     # it uses Template, and that causes various dependency loops.
-    if (Bugzilla->params->{"shutdownhtml"}
-        && !grep { $_ eq $script } SHUTDOWNHTML_EXEMPT)
+    if (!grep { $_ eq $script } SHUTDOWNHTML_EXEMPT
+        and Bugzilla->params->{'shutdownhtml'})
     {
         # Allow non-cgi scripts to exit silently (without displaying any
         # message), if desired. At this point, no DBI call has been made
@@ -209,13 +210,11 @@ sub init_page {
         if (i_am_cgi()) {
             # Set the HTTP status to 503 when Bugzilla is down to avoid pages
             # being indexed by search engines.
-            print Bugzilla->cgi->header(-status => 503, 
+            print Bugzilla->cgi->header(-status => 503,
                 -retry_after => SHUTDOWNHTML_RETRY_AFTER);
         }
-        my $t_output;
-        $template->process("global/message.$extension.tmpl", $vars, \$t_output)
+        $template->process("global/message.$extension.tmpl", $vars)
             || ThrowTemplateError($template->error);
-        print $t_output . "\n";
         exit;
     }
 }
@@ -255,11 +254,25 @@ sub extensions {
             my $extension = $package->new();
             if ($extension->enabled) {
                 push(@extensions, $extension);
-            }        
+            }
         }
         $cache->{extensions} = \@extensions;
     }
     return $cache->{extensions};
+}
+
+sub api_server {
+    my $class = shift;
+    my $cache = $class->request_cache;
+    return $cache->{api_server} if defined $cache->{api_server};
+    require Bugzilla::API::Server;
+    $cache->{api_server} = Bugzilla::API::Server->server;
+    if (my $load_error = $cache->{api_server}->load_error) {
+        my @error_params = ($load_error->{error}, $load_error->{vars});
+        ThrowCodeError(@error_params) if $load_error->{type} eq 'code';
+        ThrowUserError(@error_params) if $load_error->{type} eq 'user';
+    }
+    return $cache->{api_server};
 }
 
 sub feature {
@@ -273,7 +286,7 @@ sub feature {
         foreach my $package (@{ OPTIONAL_MODULES() }) {
             foreach my $f (@{ $package->{feature} }) {
                 $feature_map->{$f} ||= [];
-                push(@{ $feature_map->{$f} }, $package->{module});
+                push(@{ $feature_map->{$f} }, $package);
             }
         }
         $cache->{feature_map} = $feature_map;
@@ -284,13 +297,8 @@ sub feature {
     }
 
     my $success = 1;
-    foreach my $module (@{ $feature_map->{$feature} }) {
-        # We can't use a string eval and "use" here (it kills Template-Toolkit,
-        # see https://rt.cpan.org/Public/Bug/Display.html?id=47929), so we have
-        # to do a block eval.
-        $module =~ s{::}{/}g;
-        $module .= ".pm";
-        eval { require $module; 1; } or $success = 0;
+    foreach my $package (@{ $feature_map->{$feature} }) {
+        have_vers($package) or $success = 0;
     }
     $cache->{feature}->{$feature} = $success;
     return $success;
@@ -445,8 +453,8 @@ sub login {
         $class->set_user($authenticated_user);
     }
 
-    if (Bugzilla->sudoer) {
-        Bugzilla->sudoer->update_last_seen_date();
+    if ($class->sudoer) {
+        $class->sudoer->update_last_seen_date();
     } else {
         $class->user->update_last_seen_date();
     }
@@ -488,6 +496,13 @@ sub logout_request {
     # there. Don't rely on it: use Bugzilla->user->login instead!
 }
 
+sub markdown {
+    return if !Bugzilla->feature('markdown');
+
+    require Bugzilla::Markdown;
+    return $_[0]->request_cache->{markdown} ||= Bugzilla::Markdown->new();
+}
+
 sub job_queue {
     require Bugzilla::JobQueue;
     return $_[0]->request_cache->{job_queue} ||= Bugzilla::JobQueue->new();
@@ -515,8 +530,14 @@ sub error_mode {
     if (defined $newval) {
         $class->request_cache->{error_mode} = $newval;
     }
-    return $class->request_cache->{error_mode}
-        || (i_am_cgi() ? ERROR_MODE_WEBPAGE : ERROR_MODE_DIE);
+
+    # XXX - Once we require Perl 5.10.1, this test can be replaced by //.
+    if (exists $class->request_cache->{error_mode}) {
+        return $class->request_cache->{error_mode};
+    }
+    else {
+        return (i_am_cgi() ? ERROR_MODE_WEBPAGE : ERROR_MODE_DIE);
+    }
 }
 
 # This is used only by Bugzilla::Error to throw errors.
@@ -558,8 +579,14 @@ sub usage_mode {
         }
         $class->request_cache->{usage_mode} = $newval;
     }
-    return $class->request_cache->{usage_mode}
-        || (i_am_cgi()? USAGE_MODE_BROWSER : USAGE_MODE_CMDLINE);
+
+    # XXX - Once we require Perl 5.10.1, this test can be replaced by //.
+    if (exists $class->request_cache->{usage_mode}) {
+        return $class->request_cache->{usage_mode};
+    }
+    else {
+        return (i_am_cgi()? USAGE_MODE_BROWSER : USAGE_MODE_CMDLINE);
+    }
 }
 
 sub installation_mode {
@@ -826,13 +853,16 @@ sub _cleanup {
     # BMO - allow "end of request" processing
     Bugzilla::Hook::process('request_cleanup');
 
-    my $main   = Bugzilla->request_cache->{dbh_main};
-    my $shadow = Bugzilla->request_cache->{dbh_shadow};
+    my $cache = Bugzilla->request_cache;
+    my $main = $cache->{dbh_main};
+    my $shadow = $cache->{dbh_shadow};
     foreach my $dbh ($main, $shadow) {
         next if !$dbh;
         $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction;
         $dbh->disconnect;
     }
+    my $smtp = $cache->{smtp};
+    $smtp->disconnect if $smtp;
     clear_request_cache();
 
     # These are both set by CGI.pm but need to be undone so that
@@ -849,6 +879,7 @@ sub END {
 
 init_page() if !$ENV{MOD_PERL};
 
+sub main::XXX { require Data::Dumper; my $d; if (scalar(@_) == 1) { my ($value) = @_; if (!ref($value)) { $value =~ s/\n+$//; print STDERR $value, "\n"; return; } $d = Data::Dumper->new([ $value ]); $d->Terse(1); } else { my ($name, $value) = @_; $d = Data::Dumper->new([ $value ], [ $name ]); } $d->Sortkeys(1)->Quotekeys(0); print STDERR $d->Dump(); }
 1;
 
 __END__
@@ -924,7 +955,7 @@ If you ever need a L<Bugzilla::Template> object while you're already
 processing a template, use this. Also use it if you want to specify
 the language to use. If no argument is passed, it uses the last
 language set. If the argument is "" (empty string), the language is
-reset to the current one (the one used by Bugzilla->template).
+reset to the current one (the one used by C<Bugzilla-E<gt>template>).
 
 =item C<cgi>
 
@@ -975,8 +1006,8 @@ progress, returns the C<Bugzilla::User> object corresponding to the currently
 logged in user.
 
 =item C<sudo_request>
-This begins an sudo session for the current request.  It is meant to be 
-used when a session has just started.  For normal use, sudo access should 
+This begins an sudo session for the current request.  It is meant to be
+used when a session has just started.  For normal use, sudo access should
 normally be set at login time.
 
 =item C<login>
@@ -1001,7 +1032,7 @@ default), LOGOUT_ALL or LOGOUT_KEEP_CURRENT.
 
 =item C<logout_user($user)>
 
-Logs out the specified user (invalidating all his sessions), taking a
+Logs out the specified user (invalidating all their sessions), taking a
 Bugzilla::User instance.
 
 =item C<logout_by_id($id)>
@@ -1042,8 +1073,8 @@ specify this argument, all fields will be returned.
 
 =item C<error_mode>
 
-Call either C<Bugzilla->error_mode(Bugzilla::Constants::ERROR_MODE_DIE)>
-or C<Bugzilla->error_mode(Bugzilla::Constants::ERROR_MODE_DIE_SOAP_FAULT)> to
+Call either C<Bugzilla-E<gt>error_mode(Bugzilla::Constants::ERROR_MODE_DIE)>
+or C<Bugzilla-E<gt>error_mode(Bugzilla::Constants::ERROR_MODE_DIE_SOAP_FAULT)> to
 change this flag's default of C<Bugzilla::Constants::ERROR_MODE_WEBPAGE> and to
 indicate that errors should be passed to error mode specific error handlers
 rather than being sent to a browser and finished with an exit().
@@ -1052,28 +1083,28 @@ This is useful, for example, to keep C<eval> blocks from producing wild HTML
 on errors, making it easier for you to catch them.
 (Remember to reset the error mode to its previous value afterwards, though.)
 
-C<Bugzilla->error_mode> will return the current state of this flag.
+C<Bugzilla-E<gt>error_mode> will return the current state of this flag.
 
-Note that C<Bugzilla->error_mode> is being called by C<Bugzilla->usage_mode> on
+Note that C<Bugzilla-E<gt>error_mode> is being called by C<Bugzilla-E<gt>usage_mode> on
 usage mode changes.
 
 =item C<usage_mode>
 
-Call either C<Bugzilla->usage_mode(Bugzilla::Constants::USAGE_MODE_CMDLINE)>
-or C<Bugzilla->usage_mode(Bugzilla::Constants::USAGE_MODE_XMLRPC)> near the
+Call either C<Bugzilla-E<gt>usage_mode(Bugzilla::Constants::USAGE_MODE_CMDLINE)>
+or C<Bugzilla-E<gt>usage_mode(Bugzilla::Constants::USAGE_MODE_XMLRPC)> near the
 beginning of your script to change this flag's default of
 C<Bugzilla::Constants::USAGE_MODE_BROWSER> and to indicate that Bugzilla is
 being called in a non-interactive manner.
 
 This influences error handling because on usage mode changes, C<usage_mode>
-calls C<Bugzilla->error_mode> to set an error mode which makes sense for the
+calls C<Bugzilla-E<gt>error_mode> to set an error mode which makes sense for the
 usage mode.
 
-C<Bugzilla->usage_mode> will return the current state of this flag.
+C<Bugzilla-E<gt>usage_mode> will return the current state of this flag.
 
 =item C<installation_mode>
 
-Determines whether or not installation should be silent. See 
+Determines whether or not installation should be silent. See
 L<Bugzilla::Constants> for the C<INSTALLATION_MODE> constants.
 
 =item C<installation_answers>
@@ -1106,17 +1137,27 @@ Switch from using the main database to using the shadow database.
 
 Change the database object to refer to the main database.
 
+=item C<is_shadow_db>
+
+Returns true if the currently active database is the shadow database.
+Returns false if a the currently active database is the man database, or if a
+shadow database is not configured or enabled.
+
 =item C<params>
 
-The current Parameters of Bugzilla, as a hashref. If C<data/params>
-does not exist, then we return an empty hashref. If C<data/params>
-is unreadable or is not valid perl, we C<die>.
+The current Parameters of Bugzilla, as a hashref. If C<data/params.json>
+does not exist, then we return an empty hashref. If C<data/params.json>
+is unreadable or is not valid, we C<die>.
 
 =item C<local_timezone>
 
 Returns the local timezone of the Bugzilla installation,
 as a DateTime::TimeZone object. This detection is very time
 consuming, so we cache this information for future references.
+
+=item C<markdown>
+
+The current L<Markdown|Bugzilla::Markdown> object, to be used for Markdown rendering.
 
 =item C<job_queue>
 
@@ -1132,6 +1173,11 @@ of features, see C<OPTIONAL_MODULES> in C<Bugzilla::Install::Requirements>.
 =item C<audit>
 
 Feeds the provided message into our centralised auditing system.
+
+=item C<api_server>
+
+Returns a cached instance of the WebService API server object used for
+manipulating Bugzilla resources.
 
 =back
 
@@ -1210,5 +1256,33 @@ See the documentation for the C<Bugzilla::Memcached> module for more
 information.
 
 =back
+
+=back
+
+=head1 B<Methods in need of POD>
+
+=over
+
+=item init_page
+
+=item extensions
+
+=item logout_user_by_id
+
+=item localconfig
+
+=item active_custom_fields
+
+=item has_flags
+
+=item get_param_with_override
+
+=item github_secret
+
+=item metrics
+
+=item metrics_enabled
+
+=item log_user_request
 
 =back

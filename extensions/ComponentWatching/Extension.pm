@@ -6,7 +6,11 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Extension::ComponentWatching;
+
+use 5.10.1;
 use strict;
+use warnings;
+
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
@@ -31,16 +35,6 @@ sub db_schema_abstract_schema {
     my ($self, $args) = @_;
     my $dbh = Bugzilla->dbh;
 
-    # Bugzilla 5.0+, the components.id type
-    # is INT3, while earlier versions used INT2
-    my $component_id_type = 'INT2';
-    my $len = scalar @{ $args->{schema}->{components}->{FIELDS} };
-    for (my $i = 0; $i < $len - 1; $i+=2) {
-        next if $args->{schema}->{components}->{FIELDS}->[$i] ne 'id';
-        $component_id_type = 'INT3'
-            if $args->{schema}->{components}->{FIELDS}->[$i+1]->{TYPE} eq 'MEDIUMSERIAL';
-        last;
-    }
     $args->{'schema'}->{'component_watch'} = {
         FIELDS => [
             id => {
@@ -58,7 +52,7 @@ sub db_schema_abstract_schema {
                 }
             },
             component_id => {
-                TYPE    => $component_id_type,
+                TYPE    => 'INT3',
                 NOTNULL => 0,
                 REFERENCES => {
                     TABLE  => 'components',
@@ -85,6 +79,19 @@ sub db_schema_abstract_schema {
 
 sub install_update_db {
     my $dbh = Bugzilla->dbh;
+    $dbh->bz_alter_column(
+        'component_watch',
+        'component_id',
+        {
+            TYPE => 'INT3',
+            NOTNLLL => 0,
+            REFERENCES => {
+                    TABLE  => 'components',
+                    COLUMN => 'id',
+                    DELETE => 'CASCADE',
+            }
+        }
+    );
     $dbh->bz_add_column(
         'components',
         'watch_user',

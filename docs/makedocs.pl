@@ -34,7 +34,6 @@ use lib qw(.. ../lib lib);
 
 use Cwd;
 use File::Copy::Recursive qw(rcopy);
-use File::Find;
 use File::Path qw(rmtree);
 use File::Which qw(which);
 use Pod::Simple;
