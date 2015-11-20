@@ -10,10 +10,12 @@
 /graphs
 /data
 /localconfig
+/localconfig.*
 /cpanfile
 /index.html
 /error_reports
 /.DS_Store
+/template_cache
 
 /skins/contrib/Dusk/admin.css
 /skins/contrib/Dusk/bug.css
