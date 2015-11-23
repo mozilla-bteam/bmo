@@ -20,6 +20,7 @@ use Bugzilla::Hook;
 use Bugzilla::MIME;
 use Bugzilla::User;
 use Bugzilla::Util;
+use Bugzilla::Version;
 
 use Date::Format qw(time2str);
 
@@ -29,7 +30,6 @@ use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::Persistent;
 use Bugzilla::Sender::Transport::Sendmail;
 use Sys::Hostname;
-use Bugzilla::Install::Util qw(vers_cmp);
 
 sub generate_email {
     my ($vars, $templates) = @_;
