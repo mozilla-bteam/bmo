@@ -21,7 +21,7 @@ BEGIN { *esc = \&Pod::Simple::HTML::esc }
 # Note that if you leave out a category here, it will not be indexed
 # in the contents file, even though its HTML POD will still exist.
 use constant FILE_TRANSLATION => {
-    Files      => ['importxml', 'contrib', 'checksetup', 'email_in', 
+    Files      => ['importxml', 'checksetup', 'email_in',
                    'install-module', 'sanitycheck', 'jobqueue', 'migrate',
                    'collectstats'],
     Modules    => ['bugzilla'],
