@@ -25,12 +25,6 @@ fi
 echo -e "\n== Checking dependencies for changes"
 /install_deps.sh
 
-if [ "$TEST_SUITE" = "sanity" ]; then
-    cd $BUGZILLA_ROOT
-    /buildbot_step "Sanity" prove -f -v t/*.t
-    exit $?
-fi
-
 if [ "$TEST_SUITE" = "docs" ]; then
     export JADE_PUB=/usr/share/sgml
     export LDP_HOME=/usr/share/sgml/docbook/dsssl-stylesheets-1.79/dtds/decls
@@ -64,6 +58,13 @@ echo -e "\n== Running checksetup"
 cd $BUGZILLA_ROOT
 ./checksetup.pl qa/config/checksetup_answers.txt
 ./checksetup.pl qa/config/checksetup_answers.txt
+
+# Sanity tests now require database to be running and configured for schema tests
+if [ "$TEST_SUITE" = "sanity" ]; then
+    cd $BUGZILLA_ROOT
+    /buildbot_step "Sanity" prove -f -v t/*.t
+    exit $?
+fi
 
 echo -e "\n== Generating bmo data"
 perl /generate_bmo_data.pl
