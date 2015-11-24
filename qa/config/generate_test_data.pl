@@ -741,6 +741,18 @@ EOT
 my $test_user = Bugzilla::User->check($config->{QA_Selenium_TEST_user_login});
 Bugzilla->set_user($test_user);
 
+# BMO FIXME: Users must be in 'editbugs' to set the alias field
+# and also to set their own content type for attachments other
+# than text/plain or application/octet-stream
+$group = new Bugzilla::Group( { name => 'editbugs' } );
+my $sth_add_mapping = $dbh->prepare(
+    qq{INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)
+       VALUES (?, ?, ?, ?)});
+# Don't crash if the entry already exists.
+eval {
+    $sth_add_mapping->execute( Bugzilla->user->id, $group->id, 0, GRANT_DIRECT );
+};
+
 print "Creating private bug(s)...\n";
 if (Bugzilla::Bug->new('private_bug')->{error}) {
     my %priv_values = %field_values;
@@ -753,17 +765,6 @@ if (Bugzilla::Bug->new('private_bug')->{error}) {
 ######################
 # Create Attachments #
 ######################
-
-# BMO FIXME: Users must be in 'editbugs' to set their own
-# content type other than text/plain or application/octet-stream
-$group = new Bugzilla::Group( { name => 'editbugs' } );
-my $sth_add_mapping = $dbh->prepare(
-    qq{INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)
-       VALUES (?, ?, ?, ?)});
-# Don't crash if the entry already exists.
-eval {
-    $sth_add_mapping->execute( Bugzilla->user->id, $group->id, 0, GRANT_DIRECT );
-};
 
 print "creating attachments...\n";
 
