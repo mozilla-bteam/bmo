@@ -311,11 +311,7 @@ sub setup_template_patch_reader {
                                 "attachment/diff-header.$format.tmpl",
                                 "attachment/diff-file.$format.tmpl",
                                 "attachment/diff-footer.$format.tmpl",
-                                { %{$vars},
-                                  bonsai_url => Bugzilla->params->{'bonsai_url'},
-                                  lxr_url => Bugzilla->params->{'lxr_url'},
-                                  lxr_root => Bugzilla->params->{'lxr_root'},
-                                }));
+                                { %{$vars} }));
 }
 
 1;

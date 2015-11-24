@@ -90,7 +90,6 @@ foreach my $value (qw(PC)) {
 my %set_params = (
     urlbase => $urlbase,
     sslbase => $sslbase,
-    usebugaliases => 1,
     useqacontact  => 1,
     mail_delivery_method => 'Test',
     maxattachmentsize => 256,

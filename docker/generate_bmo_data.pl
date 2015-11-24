@@ -422,7 +422,6 @@ my %set_params = (
     allowbugdeletion          => 1,
     allowuserdeletion         => 0,
     allow_attachment_deletion => 1,
-    bonsai_url                => 'http://bonsai.mozilla.org',
     collapsed_comment_tags    => 'obsolete,spam,typo,me-too,advocacy,off-topic,offtopic,abuse,abusive',
     confirmuniqueusermatch    => 0,
     maxusermatches            => '100',
@@ -436,14 +435,11 @@ my %set_params = (
     edit_comments_group       => 'can_edit_comments',
     insidergroup              => 'core-security-release',
     last_visit_keep_days      => '28',
-    lxr_url                   => 'http://mxr.mozilla.org/mozilla',
-    lxr_root                  => 'mozilla/',
     mail_delivery_method      => 'Test',
     mailfrom                  => '"Bugzilla@Mozilla" <bugzilla-daemon@mozilla.org>',
     maintainer                => 'bugzilla-admin@mozilla.org',
     maxattachmentsize         => '10240',
     maxusermatches            => '100',
-    mostfreqthreshold         => '5',
     mybugstemplate            => 'buglist.cgi?bug_status=UNCONFIRMED&amp;bug_status=NEW' .
                                  '&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED' .
                                  '&amp;emailassigned_to1=1&amp;emailreporter1=1' .
@@ -463,7 +459,6 @@ my %set_params = (
     useclassification         => 1,
     usetargetmilestone        => 1,
     usestatuswhiteboard       => 1,
-    usebugaliases             => 1,
     useqacontact              => 1,
     use_mailer_queue          => 1,
     user_info_class           => 'Persona,CGI',

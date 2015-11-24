@@ -44,16 +44,6 @@ sub start_file {
 sub end_file {
   my $this = shift;
   my $file = $this->{ARGS}{file};
-  if ($file->{canonical} && $file->{old_revision} && $this->{ARGS}{bonsai_url}) {
-    $this->{ARGS}{bonsai_prefix} = "$this->{ARGS}{bonsai_url}/cvsblame.cgi?file=$file->{filename}&amp;rev=$file->{old_revision}";
-  }
-  if ($file->{canonical} && $this->{ARGS}{lxr_url}) {
-    # Cut off the lxr root, if any
-    my $filename = $file->{filename};
-    $filename = substr($filename, length($this->{ARGS}{lxr_root}));
-    $this->{ARGS}{lxr_prefix} = "$this->{ARGS}{lxr_url}/source/$filename";
-  }
-
   $this->{TEMPLATE_PROCESSOR}->process($this->{FILE_TEMPLATE}, $this->{ARGS})
       || ::ThrowTemplateError($this->{TEMPLATE_PROCESSOR}->error());
   @{$this->{ARGS}{sections}} = ();
