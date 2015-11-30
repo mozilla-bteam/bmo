@@ -775,4 +775,6 @@ L<CGI|CGI>, L<CGI::Cookie|CGI::Cookie>
 
 =item target_uri
 
+=item redirect
+
 =back
