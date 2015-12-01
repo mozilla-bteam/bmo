@@ -624,6 +624,15 @@ sub SaveSavedSearches {
 
     $user->flush_queries_cache;
 
+    # Remove obsolete bug tags if selected
+    foreach my $tag (@{ $user->tags }) {
+        if (my $forget = !!$cgi->param('forget_tag_' . $tag->{id})) {
+            $dbh->do('DELETE FROM bug_tag WHERE tag_id = ?', undef, $tag->{id});
+            $dbh->do('DELETE FROM tag WHERE id = ?', undef, $tag->{id});
+            delete $user->{tags};
+        }
+    }
+
     # Update profiles.mybugslink.
     my $showmybugslink = defined($cgi->param("showmybugslink")) ? 1 : 0;
     $dbh->do("UPDATE profiles SET mybugslink = ? WHERE userid = ?",

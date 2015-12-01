@@ -68,9 +68,6 @@ use Memoize;
     DEFAULT_QUERY_NAME
     DEFAULT_MILESTONE
 
-    QUERY_LIST
-    LIST_OF_BUGS
-
     SAVE_NUM_SEARCHES
 
     COMMENT_COLS
@@ -321,10 +318,6 @@ use constant DEFAULT_QUERY_NAME => '(Default query)';
 
 # The default "defaultmilestone" created for products.
 use constant DEFAULT_MILESTONE => '---';
-
-# The possible types for saved searches.
-use constant QUERY_LIST => 0;
-use constant LIST_OF_BUGS => 1;
 
 # How many of the user's most recent searches to save.
 use constant SAVE_NUM_SEARCHES => 10;

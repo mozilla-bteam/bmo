@@ -131,7 +131,34 @@
      a direct member of the group at the time you click Submit Changes.</p>
 [% END %]
 
+[% IF user.tags.size %]
+  <h3>Old Tags</h3>
+
+  <p>These tags are deprecated and are here to allow for retrieval.</p>
+
+  <table id="saved_search_prefs">
+  <tr class="column_header">
+    <th>Tag</th>
+    <th>Run</th>
+    <th>Forget</th>
+    <th>Count</th>
+  </tr>
+  [% FOREACH tag = user.tags %]
+    <tr>
+      <td>[% tag.name FILTER html %]</td>
+      <td><a href="buglist.cgi?tag=[% tag.name FILTER uri %]">Run</a></td>
+      <td>
+        <input type="checkbox" name="forget_tag_[% tag.id FILTER html %]" value="1">
+      </td>
+      <td>[% tag.bug_count FILTER uri %]</td>
+    </tr>
+  [% END %]
+  </table>
+[% END %]
+
 [% IF user.queries_available.size %]
+  <h3>Searches Shared With You</h3>
+
   <p>You may use these searches saved and shared by others:</p>
 
   <table id="shared_search_prefs">

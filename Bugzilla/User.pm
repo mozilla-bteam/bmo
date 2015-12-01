@@ -700,6 +700,20 @@ sub use_markdown {
            && (!defined $comment || $comment->is_markdown);
 }
 
+sub tags {
+    my $self = shift;
+    my $dbh = Bugzilla->dbh;
+    if (!defined $self->{tags}) {
+        $self->{tags} = $dbh->selectall_arrayref(
+            'SELECT name, id, COUNT(bug_id) AS bug_count
+               FROM tag
+                    LEFT JOIN bug_tag ON bug_tag.tag_id = tag.id
+              WHERE user_id = ? ' . $dbh->sql_group_by('id', 'name'),
+            {Slice=>{}}, $self->id);
+    }
+    return $self->{tags};
+}
+
 ##########################
 # Saved Recent Bug Lists #
 ##########################
@@ -2753,6 +2767,11 @@ specified bug ID, else returns false.
 Returns true if the user has set their preferences to use Markdown
 for rendering comments. If an optional C<comment> object is passed
 then it returns true if the comment has markdown enabled.
+
+=item C<tags>
+
+Returns a list of hashes for each tag. Each hash containes the following
+keys: 'id', 'name' and 'bug_count'.
 
 =back
 
