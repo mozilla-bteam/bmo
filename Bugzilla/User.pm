@@ -423,8 +423,6 @@ sub _set_groups {
     my $changes  = shift;
     my $dbh = Bugzilla->dbh;
 
-    use Data::Dumper;
-
     # The person making the change is $user, $self is the person being changed
     my $user = Bugzilla->user;
 

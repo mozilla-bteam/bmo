@@ -433,7 +433,7 @@ sub sendMail {
         diffs              => \@display_diffs,
         changedfields      => \@changedfields,
         changedfieldnames  => \@changedfieldnames,
-        referenced_bugs    => $user->visible_bugs($referenced_bugs),
+        referenced_bugs    => $user->visible_bugs([ map { $_->{bug} } @$referenced_bugs ]),
         new_comments       => \@send_comments,
         threadingmarker    => build_thread_marker($bug->id, $user->id, !$bug->lastdiffed),
         bugmailtype        => $bugmailtype,

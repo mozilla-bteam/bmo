@@ -438,13 +438,13 @@ sub invalid_values {
 
         keywords => [
             { value => { add => [random_string(20)] },
-              error => 'The legal keyword names are listed here',
+              error => 'See the list of available keywords',
               test  => 'adding invalid keyword fails' },
             { value => { remove => [random_string(20)] },
-              error => 'The legal keyword names are listed here',
+              error => 'See the list of available keywords',
               test  => 'removing invalid keyword fails' },
             { value => { set => [random_string(20)] },
-              error => 'The legal keyword names are listed here',
+              error => 'See the list of available keywords',
               test  => 'setting invalid keyword fails' },
         ],
 
