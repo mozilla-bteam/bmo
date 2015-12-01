@@ -250,11 +250,15 @@ input[type="number"] {
     padding-top: 4px;
 }
 
-#status-needinfo, #status-needinfo .vcard {
+#status-assignee, #status-assignee .vcard, #status-needinfo, #status-needinfo .vcard {
     display: inline;
 }
 
-#duplicate-container, #duplicate-actions,
+#status-assignee, #status-needinfo {
+    margin-left: 8px;
+}
+
+#duplicate-container, #duplicate-actions, #assigned-container,
 #bottom-duplicate-container, #bottom-duplicate-actions {
     display: table-cell;
     vertical-align: top;
@@ -343,7 +347,7 @@ input[type="number"] {
 }
 
 #add-cc-btn {
-    float: right;
+    margin-left: 8px;
 }
 
 #add-cc {
