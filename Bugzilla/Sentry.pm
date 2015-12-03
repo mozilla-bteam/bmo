@@ -29,7 +29,6 @@ use URI::QueryParam;
 
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
-use Bugzilla::Util;
 use Bugzilla::WebService::Constants;
 
 use constant CONFIG => {
@@ -114,6 +113,8 @@ sub sentry_handle_error {
         $level = 'error';
     }
 
+    require Bugzilla::Util;
+
     # build traceback
     my $traceback;
     {
@@ -125,14 +126,14 @@ sub sentry_handle_error {
         local $Carp::CarpInternal{'CGI::Carp'} = 1;
         local $Carp::CarpInternal{'Bugzilla::Error'} = 1;
         local $Carp::CarpInternal{'Bugzilla::Sentry'} = 1;
-        $traceback = trim(Carp::longmess());
+        $traceback = Bugzilla::Util::trim(Carp::longmess());
     }
 
     # strip timestamp
     foreach my $line (@message) {
         $line =~ s/^\[[^\]]+\] //;
     }
-    my $message = join(" ", map { trim($_) } grep { $_ ne '' } @message);
+    my $message = join(" ", map { Bugzilla::Util::trim($_) } grep { $_ ne '' } @message);
 
     # message content filtering
     foreach my $re (@{ CONFIG->{ignore} }) {
