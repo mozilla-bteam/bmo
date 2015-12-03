@@ -22,12 +22,10 @@ per bug, along with some descriptive text.
    members of the bz_canusewhineatothers group will be noted in the
    appropriate places.
 
-.. note:: For whining to work, a special Perl script must be executed at regular
-   intervals.  More information on this is available in :ref:`installation-whining`.
+.. note:: For whining to work, a special Perl script, ``whine.pl``, must
+   be executed at regular intervals.
 
 .. note:: This section does not cover the whineatnews.pl script.
-   See :ref:`installation-whining-cron` for more information on
-   The Whining Cron.
 
 .. _whining-overview:
 

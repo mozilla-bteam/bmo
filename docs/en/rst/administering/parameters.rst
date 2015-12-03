@@ -211,11 +211,11 @@ xsendfile_header
     and then set the correct header, as follows:
 
     * Apache: ``X-Sendfile`` header; see `webserver documentation
-      <https://tn123.org/mod_xsendfile/>`_ for configuration instructions
+      <https://tn123.org/mod_xsendfile/>`__ for configuration instructions
     * nginx: ``X-Accel-Redirect`` header; see `webserver documentation
-      <http://wiki.nginx.org/X-accel>`_ for configuration instructions
+      <http://wiki.nginx.org/X-accel>`__ for configuration instructions
     * lighttpd: ``X-LIGHTTPD-send-file`` header; see `webserver documentation
-      <http://redmine.lighttpd.net/projects/1/wiki/X-LIGHTTPD-send-file>`_  for
+      <http://redmine.lighttpd.net/projects/1/wiki/X-LIGHTTPD-send-file>`__ for
       configuration instructions
 
     Please note that attachments stored in the database cannot be offloaded in
@@ -587,8 +587,8 @@ whinedays
     Set this to the number of days you want to let bugs go
     in the CONFIRMED state before notifying people they have
     untouched new bugs. If you do not plan to use this feature, simply
-    do not set up the :ref:`whining cron job <installation-whining>` described
-    in the installation instructions, or set this value to "0" (never whine).
+    do not set up the whining cron job  described in the installation
+    instructions, or set this value to "0" (never whine).
 
 globalwatchers
     This allows you to define specific users who will
