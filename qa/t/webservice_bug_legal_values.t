@@ -80,7 +80,7 @@ my @extra_tests = (
       test  =>  "Passing product_id without 'field' throws an error",
     },
     { args  => { field => INVALID_FIELD_NAME },
-      error => "Can't use " . INVALID_FIELD_NAME . " as a field name",
+      error => "Can't use \"" . INVALID_FIELD_NAME . "\" as a field name",
       test  => 'Invalid field name'
     },
 );

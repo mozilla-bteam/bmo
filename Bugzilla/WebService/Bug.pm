@@ -586,6 +586,13 @@ sub search {
         $last_field_id++;
     }
 
+    # Backwards compatility with old method for searching for bugs with specific aliases set
+    if (my $value = delete $match_params->{alias}) {
+        $match_params->{"f${last_field_id}"} = 'alias';
+        $match_params->{"o${last_field_id}"} = "anywordssubstr";
+        $match_params->{"v${last_field_id}"} = ref $value ? join(" ", @{$value}) : $value;
+    }
+
     # If no other parameters have been passed other than limit and offset
     # then we throw error if system is configured to do so.
     if (!grep(!/^(limit|offset)$/, keys %$match_params)

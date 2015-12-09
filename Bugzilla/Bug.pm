@@ -1771,28 +1771,18 @@ sub _check_dependencies {
                    $opposite => $params->{$opposite} || '');
 
     foreach my $type (qw(dependson blocked)) {
-        my @bug_ids = ref($deps_in{$type}) 
-            ? @{$deps_in{$type}} 
+        my @bug_ids = ref($deps_in{$type})
+            ? @{$deps_in{$type}}
             : split(/[\s,]+/, $deps_in{$type});
         # Eliminate nulls.
         @bug_ids = grep {$_} @bug_ids;
 
         my @check_access = @bug_ids;
-        # When we're updating a bug, only added or removed bug_ids are 
+        # When we're updating a bug, only added or removed bug_ids are
         # checked for whether or not we can see/edit those bugs.
         if (ref $invocant) {
             my $old = $invocant->$type;
             my ($removed, $added) = diff_arrays($old, \@bug_ids);
-
-            # If a user has editbugs they are allowed to add dependencies on
-            # bugs that they cannot see -- only check access for bugs that are
-            # removed.
-            if ($user->in_group('editbugs')) {
-                @check_access = @$removed;
-            }
-            else {
-                @check_access = (@$added, @$removed);
-            }
 
             # Check field permissions if we've changed anything.
             if (@$added || @$removed) {
@@ -1801,6 +1791,21 @@ sub _check_dependencies {
                     ThrowUserError('illegal_change', { field => $type,
                                                        privs => $privs });
                 }
+            }
+
+            # BMO: If a user has editbugs they are allowed to add dependencies on
+            # bugs that they cannot see -- only check access for bugs that are removed.
+            if ($user->in_group('editbugs')) {
+                @check_access = @$removed;
+                # Make sure $added contains valid bug ids. $removed is checked later
+                foreach my $modified_id (@$added) {
+                    my $bug = $invocant->new({ id => $modified_id, cache => 1 });
+                    $bug->{error} && ThrowUserError("bug_id_does_not_exist",
+                                                   { bug_id => $modified_id });
+                }
+            }
+            else {
+                @check_access = (@$added, @$removed);
             }
         }
 

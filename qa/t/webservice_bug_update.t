@@ -12,7 +12,7 @@ use Data::Dumper;
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
 use Storable qw(dclone);
-use Test::More tests => 921;
+use Test::More tests => 931;
 
 use constant NONEXISTANT_BUG => 12_000_000;
 
@@ -30,6 +30,19 @@ sub get_tests {
 
     my ($public_bug, $second_bug) = $rpc->bz_create_test_bugs();
     my ($public_id, $second_id) = ($public_bug->{id}, $second_bug->{id});
+
+    # Add aliases to both bugs
+    $public_bug->{alias} = random_string(40);
+    $second_bug->{alias} = random_string(40);
+    my $alias_tests = [
+        { user => 'editbugs',
+          args => { ids => [ $public_id ], alias => $public_bug->{alias} },
+          test => 'Add alias to public bug' },
+        { user => 'editbugs',
+          args => { ids => [ $second_id ], alias => $second_bug->{alias} },
+          test => 'Add alias to second bug' },
+    ];
+    $rpc->bz_run_tests(tests => $alias_tests, method => 'Bug.update');
 
     my $comment_call = $rpc->bz_call_success(
         'Bug.comments', { ids => [$public_id, $second_id] });

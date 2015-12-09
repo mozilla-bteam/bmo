@@ -21,7 +21,7 @@ use constant INVALID_EMAIL => '@invalid_user@';
 
 my $user = $config->{unprivileged_user_login};
 my $pass = $config->{unprivileged_user_passwd};
-my $error = "The username or password you entered is not valid";
+my $error = "The login or password you entered is not valid";
 
 my @tests = (
     { user => 'unprivileged',

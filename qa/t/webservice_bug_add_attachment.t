@@ -10,7 +10,7 @@ use warnings;
 use lib qw(lib);
 use QA::Util;
 use MIME::Base64 qw(encode_base64 decode_base64);
-use Test::More tests => 187;
+use Test::More tests => 157;
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 
 use constant INVALID_BUG_ID => -1;
