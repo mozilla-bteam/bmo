@@ -20,15 +20,16 @@
 
 [% DEFAULT type="bug" %]
 
-[% link = BLOCK %][% terms.bug %] [%+ id FILTER bug_link(id) FILTER none %][% END %]
+[% Link = BLOCK %][% "$terms.Bug $id" FILTER bug_link(id) FILTER none %][% END %]
+[% link = BLOCK %][% "$terms.bug $id" FILTER bug_link(id) FILTER none %][% END %]
 
 [%
   title = {
     'bug' => "Changes submitted for $link" ,
     'dupe' => "Duplicate notation added to $link" ,
     'dep' => "Checking for dependency changes on $link" ,
-    'created' => "$link has been successfully created" ,
-    'move' => "$link has been moved to another database" ,
+    'created' => "$Link has been added to the database" ,
+    'move' => "$Link has been moved to another database" ,
   }
 %]
 
