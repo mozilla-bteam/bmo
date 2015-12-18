@@ -40,14 +40,14 @@ function update_watch_user() {
   if (Dom.get('watch_user_auto').checked) {
     Dom.addClass('watch_user', 'bz_default_hidden');
 
+    var product = Dom.get('product').value;
     var component = Dom.get('component').value;
     var watch = '';
-    if (component == '') {
+    if (product == '' || component == '') {
       watch = '(no component name)';
     }
     else {
-      watch = sanitise_name(component) +
-              '@' + sanitise_name('[% product.name FILTER js %]') + '.bugs';
+      watch = sanitise_name(component) + '@' + sanitise_name(product) + '.bugs';
     }
     Dom.get('watch_user_suggestion').innerHTML = ' : <b>' + watch + '</b>';
     Dom.get('watch_user').value = watch;
@@ -62,6 +62,7 @@ function update_watch_user() {
 
 YAHOO.util.Event.onDOMReady(function() {
   if (document.getElementById('watch_user_auto')) {
+    YAHOO.util.Event.addListener('product', 'keyup', update_watch_user);
     YAHOO.util.Event.addListener('component', 'keyup', update_watch_user);
     YAHOO.util.Event.addListener('watch_user_auto', 'click', update_watch_user);
     update_watch_user();

@@ -343,7 +343,7 @@ sub object_end_of_create {
         $self->_update_user_table({
             object      => $object,
             old_users   => [],
-            new_users   => _new_users_from_input('reviewers'),
+            new_users   => _new_users_from_input('prod_reviewers'),
             table       => 'product_reviewers',
             id_field    => 'product_id',
             has_sortkey => 1,
@@ -353,7 +353,7 @@ sub object_end_of_create {
         $self->_update_user_table({
             object      => $object,
             old_users   => [],
-            new_users   => _new_users_from_input('reviewers'),
+            new_users   => _new_users_from_input('comp_reviewers'),
             table       => 'component_reviewers',
             id_field    => 'component_id',
             has_sortkey => 1,
@@ -372,11 +372,11 @@ sub object_end_of_update {
     my ($self, $args) = @_;
     my ($object, $old_object, $changes) = @$args{qw(object old_object changes)};
 
-    if ($object->isa('Bugzilla::Product') && exists Bugzilla->input_params->{reviewers}) {
+    if ($object->isa('Bugzilla::Product') && exists Bugzilla->input_params->{prod_reviewers}) {
         my $diff = $self->_update_user_table({
             object      => $object,
             old_users   => $old_object->reviewers_objs(1),
-            new_users   => _new_users_from_input('reviewers'),
+            new_users   => _new_users_from_input('prod_reviewers'),
             table       => 'product_reviewers',
             id_field    => 'product_id',
             has_sortkey => 1,
@@ -388,7 +388,7 @@ sub object_end_of_update {
         my $diff = $self->_update_user_table({
             object      => $object,
             old_users   => $old_object->reviewers_objs(1),
-            new_users   => _new_users_from_input('reviewers'),
+            new_users   => _new_users_from_input('comp_reviewers'),
             table       => 'component_reviewers',
             id_field    => 'component_id',
             has_sortkey => 1,
