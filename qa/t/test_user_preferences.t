@@ -231,7 +231,7 @@ $sel->is_text_present_ok("1 user including you");
 $sel->click_ok("link=my_list");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: my_list");
-$sel->click_ok("link=Forget Search 'my_list'");
+$sel->click_ok("forget_search");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Search is gone");
 $text = trim($sel->get_text("message"));

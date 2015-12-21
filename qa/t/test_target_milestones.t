@@ -82,7 +82,7 @@ $sel->click_ok("link=selenium_m0");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: selenium_m0");
 $sel->is_text_present_ok("One bug found");
-$sel->click_ok("link=Forget Search 'selenium_m0'");
+$sel->click_ok("forget_search");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search is gone");
 $text = trim($sel->get_text("message"));

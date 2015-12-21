@@ -229,7 +229,7 @@ $sel->is_text_present_ok("Et de un");
 
 # Now edit custom fields in mass changes.
 
-$sel->click_ok("link=Change Several Bugs at Once");
+$sel->click_ok("mass_change");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");

@@ -317,7 +317,7 @@ $sel->click_ok("link=Selenium bugs");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_text_present_ok("Zarro Boogs found");
-$sel->click_ok("link=Forget Search 'Selenium bugs'");
+$sel->click_ok("forget_search");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Search is gone");
 $sel->is_text_present_ok("OK, the Selenium bugs search is gone.");

@@ -86,7 +86,7 @@ $sel->click_ok("link=sw-x77v");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: sw-x77v");
 $sel->is_text_present_ok("2 bugs found");
-$sel->click_ok("link=Forget Search 'sw-x77v'");
+$sel->click_ok("forget_search");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search is gone");
 $sel->is_text_present_ok("OK, the sw-x77v search is gone.");

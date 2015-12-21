@@ -106,7 +106,7 @@ $sel->title_is("Search for bugs");
 $sel->value_is("short_desc", "bilboa");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->click_ok("link=Forget Search 'SavedSearchTEST1'");
+$sel->click_ok("forget_search");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search is gone");
 $text = trim($sel->get_text("message"));
