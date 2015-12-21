@@ -30,8 +30,7 @@ set_parameters($sel, { "Bug Fields" => {"useclassification-off" => undef} });
 
 ## mktgevent
 #
-#_check_product('Marketing');
-#_check_component('Marketing', 'Event Requests');
+#_check_product('Marketing', 'Event Requests');
 #_check_component('Marketing', 'Swag Requests');
 #_check_group('mozilla-corporation-confidential');
 #
@@ -86,8 +85,7 @@ set_parameters($sel, { "Bug Fields" => {"useclassification-off" => undef} });
 
 # trademark
 
-_check_product('Marketing');
-_check_component('Marketing', 'Trademark Permissions');
+_check_product('Marketing', 'Trademark Permissions');
 _check_group('marketing-private');
 
 $sel->open_ok("/$config->{bugzilla_installation}/enter_bug.cgi?product=Marketing&format=trademark");
@@ -102,10 +100,8 @@ my $trademark_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]')
 
 # itrequest
 
-_check_product('mozilla.org');
-_check_product('Infrastructure & Operations');
-_check_component('Infrastructure & Operations', 'WebOps: Other');
-_check_version('Infrastructure & Operations', 'other');
+_check_product('mozilla.org', 'General', 'other');
+_check_product('Infrastructure & Operations', 'WebOps: Other', 'other');
 _check_group('infra');
 
 #$sel->open_ok("/$config->{bugzilla_installation}/enter_bug.cgi?product=mozilla.org&format=itrequest");
@@ -166,11 +162,8 @@ _check_group('infra');
 #$sel->is_text_present_ok('has been added to the database', 'Bug created');
 #my $presentation_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
-_check_component('mozilla.org', 'Discussion Forums');
-
 #mozlist
 
-_check_version('mozilla.org', 'other');
 _check_component('mozilla.org', 'Discussion Forums');
 
 $sel->open_ok("/$config->{bugzilla_installation}/enter_bug.cgi?product=mozilla.org&format=mozlist");
@@ -186,8 +179,7 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $mozlist_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
-_check_product('Mozilla PR');
-_check_component('Mozilla PR', 'China - AMO');
+_check_product('Mozilla PR', 'China - AMO');
 _check_group('mozilla-confidential');
 
 #mozpr
@@ -210,8 +202,7 @@ _check_group('pr-private');
 
 # legal
 
-_check_product('Legal');
-_check_component('Legal', 'Canonical');
+_check_product('Legal', 'Canonical');
 _check_component('Legal', 'Copyright');
 _check_group('mozilla-employee-confidential');
 
@@ -231,8 +222,7 @@ my $legal_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 # poweredby
 
-_check_product('Websites', 'other');
-_check_component('Websites', 'www.mozilla.org');
+_check_product('Websites', 'www.mozilla.org', 'other');
 _check_user('liz@mozilla.com');
 
 $sel->open_ok("/$config->{bugzilla_installation}/enter_bug.cgi?product=Websites&format=poweredby");
@@ -248,8 +238,17 @@ my $poweredby_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]')
 set_parameters($sel, { "Bug Fields" => {"useclassification-on" => undef} });
 logout($sel);
 
+sub _get_watch_user {
+    my ($product, $component) = @_;
+    my $watch_user = lc $component . "@" . lc $product . ".bugs";
+    $watch_user =~ s/ & /-/;
+    $watch_user =~ s/\s+/\-/g;
+    $watch_user =~ s/://g;
+    return $watch_user;
+}
+
 sub _check_product {
-    my ($product, $version) = @_;
+    my ($product, $component, $version) = @_;
 
     go_to_admin($sel);
     $sel->click_ok("link=Products");
@@ -273,11 +272,15 @@ sub _check_product {
     $sel->select_ok("security_group_id", "label=core-security");
     $sel->select_ok("default_op_sys_id", "Unspecified");
     $sel->select_ok("default_platform_id", "Unspecified");
-    $sel->click_ok('//input[@type="submit" and @value="Add"]');
+    $sel->type_ok("component", $component);
+    $sel->type_ok("comp_desc", "$component Description");
+    $sel->type_ok("initialowner", $config->{'admin_user_login'});
+    $sel->uncheck_ok("watch_user_auto");
+    $sel->type_ok("watch_user", _get_watch_user($product, $component));
+    $sel->check_ok("watch_user_auto");
+    $sel->click_ok("add-product");
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
-    $text = trim($sel->get_text("message"));
-    ok($text =~ /You will need to add at least one component before anyone can enter bugs against this product/,
-       "Display a reminder about missing components");
+    $sel->title_is("Product Created");
 
     return 1;
 }
@@ -302,12 +305,6 @@ sub _check_component {
         return 1;
     }
 
-    # Add the watch user for component watching
-    my $watch_user = lc $component . "@" . lc $product . ".bugs";
-    $watch_user =~ s/ & /-/;
-    $watch_user =~ s/\s+/\-/g;
-    $watch_user =~ s/://g;
-
     go_to_admin($sel);
     $sel->click_ok("link=components");
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -322,7 +319,7 @@ sub _check_component {
     $sel->type_ok("description", $component_description);
     $sel->type_ok("initialowner", $config->{'admin_user_login'});
     $sel->uncheck_ok("watch_user_auto");
-    $sel->type_ok("watch_user", $watch_user);
+    $sel->type_ok("watch_user", _get_watch_user($product, $component));
     $sel->check_ok("watch_user_auto");
     $sel->click_ok('//input[@type="submit" and @value="Add"]');
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -362,33 +359,6 @@ sub _check_group {
     $sel->wait_for_page_to_load(WAIT_TIME);
     $sel->title_is("New Group Created");
     my $group_id = $sel->get_value("group_id");
-
-    return 1;
-}
-
-sub _check_version {
-    my ($product, $version) = @_;
-
-    go_to_admin($sel);
-    $sel->click_ok("link=versions");
-    $sel->wait_for_page_to_load(WAIT_TIME);
-    $sel->title_is("Edit versions for which product?");
-    $sel->click_ok("link=$product");
-    $sel->wait_for_page_to_load(WAIT_TIME);
-
-    my $text = trim($sel->get_text("bugzilla-body"));
-    if ($text =~ /$version/) {
-        # Version exists already
-        return 1;
-    }
-
-    $sel->click_ok("link=Add");
-    $sel->wait_for_page_to_load(WAIT_TIME);
-    $sel->title_like(qr/^Add Version to Product/);
-    $sel->type_ok("version", $version);
-    $sel->click_ok("create");
-    $sel->wait_for_page_to_load(WAIT_TIME);
-    $sel->title_is("Version Created");
 
     return 1;
 }
