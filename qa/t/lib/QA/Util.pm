@@ -15,14 +15,6 @@ use Test::More;
 use Test::WWW::Selenium;
 use WWW::Selenium::Util qw(server_is_running);
 
-# Fixes wide character warnings
-BEGIN {
-    my $builder = Test::More->builder;
-    binmode $builder->output,         ":encoding(utf8)";
-    binmode $builder->failure_output, ":encoding(utf8)";
-    binmode $builder->todo_output,    ":encoding(utf8)";
-}
-
 use base qw(Exporter);
 @QA::Util::EXPORT = qw(
     trim
@@ -221,10 +213,15 @@ sub create_bug {
 
 sub edit_bug {
     my ($sel, $bug_id, $bug_summary, $options) = @_;
+    my $ndash = NDASH;
     my $btn_id = $options ? $options->{id} : 'commit';
+
     $sel->click_ok($btn_id);
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
-    $sel->is_text_present_ok("Changes submitted for bug $bug_id");
+    $sel->title_is("$bug_id $ndash $bug_summary", "Changes submitted to bug $bug_id");
+    # If the web browser doesn't support history.ReplaceState or has it turned off,
+    # "Bug XXX processed" is displayed instead (as in Bugzilla 4.0 and older).
+    # $sel->title_is("Bug $bug_id processed", "Changes submitted to bug $bug_id");
 }
 
 sub edit_bug_and_return {

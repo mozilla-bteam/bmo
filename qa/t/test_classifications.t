@@ -45,7 +45,7 @@ if ($sel->is_text_present("ctwo")) {
     $sel->title_is("Classification Deleted");
 }
 
-$sel->click_ok("link=Add");
++$sel->click_ok("link=Add a new classification");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Add new classification");
 $sel->type_ok("classification", "cone");
@@ -67,12 +67,10 @@ ok(scalar @products == 1 && $products[0] eq 'TestProduct', "TestProduct successf
 # Create a new bug in this product/classification.
 
 file_bug_in_product($sel, 'TestProduct', 'cone');
-$sel->type_ok("short_desc", "Bug in classification cone");
+my $bug_summary = "Bug in classification cone";
+$sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment", "Created by Selenium with classifications turned on");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-my $bug1_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-$sel->is_text_present_ok('has been added to the database', "Bug $bug1_id created");
+create_bug($sel, $bug_summary);
 
 # Rename 'cone' to 'Unclassified', which must be rejected as it already exists,
 # then to 'ctwo', which is not yet in use. Should work fine, even with products
@@ -96,11 +94,6 @@ $sel->type_ok("classification", "ctwo");
 $sel->click_ok("//input[\@value='Update']");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Classification Updated");
-
-# The classification the bug belongs to is no longer displayed since bug 452733.
-# Keeping the code here in case it comes back in a future release. :)
-# go_to_bug($sel, $bug1_id);
-# $sel->is_text_present_ok('[ctwo]');
 
 # Now try to delete the 'ctwo' classification. It should fail as there are
 # products in it.
