@@ -1097,6 +1097,36 @@ use constant ABSTRACT_SCHEMA => {
         ],
     },
 
+    tag => {
+        FIELDS => [
+            id   => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+            name => {TYPE => 'varchar(64)', NOTNULL => 1},
+            user_id  => {TYPE => 'INT3', NOTNULL => 1,
+                         REFERENCES => {TABLE  => 'profiles',
+                                        COLUMN => 'userid',
+                                        DELETE => 'CASCADE'}},
+        ],
+        INDEXES => [
+            tag_user_id_idx => {FIELDS => [qw(user_id name)], TYPE => 'UNIQUE'},
+        ],
+    },
+
+    bug_tag => {
+        FIELDS => [
+            bug_id => {TYPE => 'INT3', NOTNULL => 1,
+                       REFERENCES => {TABLE  => 'bugs',
+                                      COLUMN => 'bug_id',
+                                      DELETE => 'CASCADE'}},
+            tag_id => {TYPE => 'INT3', NOTNULL => 1,
+                       REFERENCES => {TABLE  => 'tag',
+                                      COLUMN => 'id',
+                                      DELETE => 'CASCADE'}},
+        ],
+        INDEXES => [
+            bug_tag_bug_id_idx => {FIELDS => [qw(bug_id tag_id)], TYPE => 'UNIQUE'},
+        ],
+    },
+
     reports => {
         FIELDS => [
             id      => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1,

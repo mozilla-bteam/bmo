@@ -34,18 +34,17 @@ $sel->click_ok("update");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Default Preferences");
 
-# Update own user preferences. Some of them should no longer be present.
+# Update own user preferences. Some of them are not editable.
 
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=General Preferences");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("User Preferences");
+$sel->wait_for_page_to_load(WAIT_TIME);
 ok(!$sel->is_element_present("skin"), "The 'skin' user preference is not present");
 $sel->select_ok("state_addselfcc", "label=Site Default (Never)");
 $sel->select_ok("post_bug_submit_action", "label=Site Default (Show the updated bug)");
-ok(!$sel->is_element_present("zoom_textareas"), "The 'zoom_textareas' user preference is not present");
+ok(!$sel->is_element_present("zoom_textarea"), "The 'zoom_textarea' user preference is not present");
 $sel->click_ok("update");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -54,111 +53,93 @@ $sel->title_is("User Preferences");
 
 file_bug_in_product($sel, 'TestProduct');
 $sel->value_is("cc", "");
-$sel->type_ok("short_desc", "First bug created");
+my $bug_summary = "First bug created";
+$sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment", "I'm not in the CC list.");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load(WAIT_TIME);
-my $bug1_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-$sel->is_text_present_ok('has been added to the database', "Bug $bug1_id created");
+my $bug1_id = create_bug($sel, $bug_summary);
+
 $sel->value_is("addselfcc", "off");
+$sel->type_ok("status_whiteboard", "sel-tmp");
 $sel->select_ok("bug_status", "label=IN_PROGRESS");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
-$sel->click_ok("editme_action");
-$sel->value_is("short_desc", "First bug created");
+$sel->value_is("addselfcc", "off");
+edit_bug($sel, $bug1_id, $bug_summary);
+$sel->click_ok("summary_edit_action");
+$sel->value_is("short_desc", $bug_summary);
 $sel->value_is("addselfcc", "off");
 
-# Tag the bug.
+# Create a saved search for the 'sel-tmp' whiteboard.
 
-$sel->select_ok("lob_action", "label=Add");
-$sel->type_ok("lob_newqueryname", "sel-tmp");
-$sel->type_ok("bug_ids", $bug1_id);
-$sel->click_ok("commit_list_of_bugs");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Tag Updated");
-my $text = trim($sel->get_text("message"));
-ok($text =~ /The 'sel-tmp' tag has been added to bug $bug1_id/, "Bug added to 'sel-tmp' tag");
+$sel->type_ok("quicksearch_top", "whiteboard:sel-tmp");
+$sel->click_ok("find_top");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Bug List");
+$sel->type_ok("save_newqueryname", "sel-tmp");
+$sel->click_ok("remember");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Search created");
+$sel->is_text_present_ok("OK, you have a new search named sel-tmp");
+
+# Leave this page to avoid clicking on the wrong 'sel-tmp' link.
+go_to_home($sel, $config);
 $sel->click_ok("link=sel-tmp");
 $sel->wait_for_page_to_load(WAIT_TIME);
-$sel->is_text_present_ok("Tags: sel-tmp");
+$sel->title_is("Bug List: sel-tmp");
 $sel->is_text_present_ok("One bug found");
 
 # File another bug in the 'TestProduct' product.
 
 file_bug_in_product($sel, 'TestProduct');
 $sel->value_is("cc", "");
-$sel->type_ok("short_desc", "My second bug");
+my $bug_summary2 = "My second bug";
+$sel->type_ok("short_desc", $bug_summary2);
 $sel->type_ok("comment", "Still not in the CC list");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load(WAIT_TIME);
-my $bug2_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-$sel->is_text_present_ok('has been added to the database', "Bug $bug2_id created");
+my $bug2_id = create_bug($sel, $bug_summary2);
 $sel->value_is("addselfcc", "off");
+$sel->type_ok("status_whiteboard", "sel-tmp");
+edit_bug($sel, $bug2_id, $bug_summary2);
 
-# Add another bug to the tag.
-
-$sel->select_ok("lob_action", "label=Add");
-$sel->select_ok("lob_oldqueryname", "label=sel-tmp");
-$sel->type_ok("bug_ids", $bug2_id);
-$sel->click_ok("commit_list_of_bugs");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Tag Updated");
-$text = trim($sel->get_text("message"));
-ok($text =~ /The 'sel-tmp' tag has been added to bug $bug2_id/, "Bug added to 'sel-tmp' tag");
 $sel->click_ok("link=sel-tmp");
 $sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Bug List");
-$sel->is_text_present_ok("Tags: sel-tmp");
+$sel->title_is("Bug List: sel-tmp");
 $sel->is_text_present_ok("2 bugs found");
 $sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
 $sel->type_ok("comment", "The next bug I should see is this one.");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
-
-$sel->click_ok("editme_action");
+edit_bug($sel, $bug1_id, $bug_summary);
+$sel->click_ok("summary_edit_action");
 $sel->value_is("short_desc", "First bug created");
 $sel->is_text_present_ok("The next bug I should see is this one.");
 
-# Remove the tag from all bugs.
+# Remove the saved search. The whiteboard entry itself still exists.
 
-$sel->open_ok("/$config->{bugzilla_installation}/buglist.cgi?tag=sel-tmp", undef, "List 'sel-tmp' bugs");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Bug List");
-$sel->is_text_present_ok("Tags: sel-tmp");
-$sel->click_ok("link=$bug1_id");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id /);
-$sel->select_ok("lob_action", "label=Remove");
-$sel->select_ok("lob_oldqueryname", "label=sel-tmp");
-$sel->type_ok("bug_ids", $bug1_id);
-$sel->click_ok("commit_list_of_bugs");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Tag Updated");
-$text = trim($sel->get_text("message"));
-ok($text =~ /The 'sel-tmp' tag has been removed from bug $bug1_id/, "Bug removed from 'sel-tmp' tag");
 $sel->click_ok("link=sel-tmp");
 $sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is("Bug List: sel-tmp");
+$sel->click_ok("forget_search");
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is("Search is gone");
+$sel->is_text_present_ok("OK, the sel-tmp search is gone");
+
+# Remove the whiteboard value from bugs.
+
+$sel->type_ok("quicksearch_top", "whiteboard:sel-tmp");
+$sel->click_ok("find_top");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List");
-$sel->is_text_present_ok("Tags: sel-tmp");
-$sel->click_ok("link=$bug2_id");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_like(qr/^$bug2_id /);
-$sel->select_ok("lob_action", "label=Remove");
-$sel->select_ok("lob_oldqueryname", "label=sel-tmp");
-$sel->type_ok("bug_ids", $bug2_id);
-$sel->click_ok("commit_list_of_bugs");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Tag Updated");
-$text = trim($sel->get_text("message"));
-ok($text =~ /The 'sel-tmp' tag has been removed from bug $bug2_id/, "Bug removed from 'sel-tmp' tag");
-$sel->click_ok("link=sel-tmp");
-$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->is_text_present_ok("2 bugs found");
+go_to_bug($sel, $bug1_id);
+$sel->type_ok("status_whiteboard", "");
+edit_bug($sel, $bug1_id, $bug_summary);
+
+go_to_bug($sel, $bug2_id);
+$sel->type_ok("status_whiteboard", "");
+edit_bug($sel, $bug2_id, $bug_summary2);
+
+$sel->type_ok("quicksearch_top", "whiteboard:sel-tmp");
+$sel->click_ok("find_top");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List");
-$sel->is_text_present_ok("Tags: sel-tmp");
 $sel->is_text_present_ok("Zarro Boogs found");
 logout($sel);
 
@@ -169,19 +150,14 @@ $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=General Preferences");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("User Preferences");
+$sel->wait_for_page_to_load(WAIT_TIME);
 ok(!$sel->is_element_present("skin"), "The 'skin' user preference is not present");
 $sel->select_ok("state_addselfcc", "label=Always");
 $sel->select_ok("post_bug_submit_action", "label=Show next bug in my list");
-ok(!$sel->is_element_present("zoom_textareas"), "The 'zoom_textareas' user preference is not present");
+ok(!$sel->is_element_present("zoom_textarea"), "The 'zoom_textarea' user preference is not present");
 $sel->click_ok("update");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("User Preferences");
-
-ok(!$sel->is_element_present("lob_action"), "Element 1/3 for tags is not displayed");
-ok(!$sel->is_element_present("lob_newqueryname"), "Element 2/3 for tags is not displayed");
-ok(!$sel->is_element_present("commit_list_of_bugs"), "Element 3/3 for tags is not displayed");
 
 # Create a new search named 'my_list'.
 
@@ -200,8 +176,7 @@ $sel->type_ok("save_newqueryname", "my_list");
 $sel->click_ok("remember");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Search created");
-$text = trim($sel->get_text("message"));
-ok($text =~ /OK, you have a new search named my_list./, "New saved search 'my_list' has been created");
+$sel->is_text_present_ok("OK, you have a new search named my_list");
 
 # Editing bugs should follow user preferences.
 
@@ -210,21 +185,19 @@ $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: my_list");
 $sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id .* First bug created/);
+$sel->title_like(qr/^$bug1_id /);
 $sel->value_is("addselfcc", "on");
 $sel->type_ok("comment", "I should be CC'ed and then I should see the next bug.");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+edit_bug($sel, $bug2_id, $bug_summary2);
 $sel->is_text_present_ok("The next bug in your list is bug $bug2_id");
 ok(!$sel->is_text_present("I should see the next bug"), "The updated bug is no longer displayed");
 # The user has no privs, so the short_desc field is not present.
-$sel->is_text_present_ok("My second bug");
+$sel->is_text_present("short_desc", "My second bug");
 $sel->value_is("addselfcc", "on");
-$sel->click_ok("link=bug $bug1_id");
+$sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id .* First bug created/);
-$sel->is_text_present_ok("1 user including you");
+$sel->title_like(qr/^$bug1_id /);
+$sel->is_text_present("1 user including you");
 
 # Delete the saved search and log out.
 
@@ -234,6 +207,20 @@ $sel->title_is("Bug List: my_list");
 $sel->click_ok("forget_search");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Search is gone");
-$text = trim($sel->get_text("message"));
-ok($text =~ /OK, the my_list search is gone/, "The saved search 'my_list' has been deleted");
+$sel->is_text_present_ok("OK, the my_list search is gone");
+logout($sel);
+
+# Restore default user preferences.
+
+log_in($sel, $config, 'admin');
+go_to_admin($sel);
+$sel->click_ok("link=Default Preferences");
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is("Default Preferences");
+$sel->check_ok("skin-enabled");
+$sel->uncheck_ok("post_bug_submit_action-enabled");
+$sel->select_ok("post_bug_submit_action", "label=Do Nothing");
+$sel->click_ok("update");
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is("Default Preferences");
 logout($sel);

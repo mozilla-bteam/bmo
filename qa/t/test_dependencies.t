@@ -49,5 +49,5 @@ ok(!$sel->is_text_present("secret_qa_bug_$bug1_id+1"), "The alias of the private
 $sel->select_ok("priority", "label=High");
 $sel->select_ok("bug_status", "VERIFIED");
 $sel->type_ok("comment", "Can I still edit this bug?");
-edit_bug($sel, $bug1_id);
+edit_bug($sel, $bug1_id, $bug_summary);
 logout($sel);
