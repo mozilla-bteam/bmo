@@ -410,7 +410,7 @@ $sel->is_text_present_ok("Sorry, but the 'SUSPENDED' value cannot be deleted");
 
 go_to_bug($sel, $bug2_id);
 $sel->select_ok("bug_status", "CONFIRMED");
-edit_bug($sel, $bug2_id, $bug_summary);
+edit_bug($sel, $bug2_id, $bug_summary2);
 
 go_to_bug($sel, $bug1_id);
 $sel->select_ok("bug_status", "VERIFIED");
