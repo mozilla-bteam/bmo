@@ -973,7 +973,7 @@ sub remove_from_db {
         # Check to see if bugs table has records (slow)
         my $bugs_query = "";
 
-                if ($self->type == FIELD_TYPE_MULTI_SELECT) {
+        if ($self->type == FIELD_TYPE_MULTI_SELECT) {
             $bugs_query = "SELECT COUNT(*) FROM bug_$name";
         }
         else {
