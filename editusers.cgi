@@ -690,9 +690,9 @@ exit;
 # an error if the user does not exist.
 sub check_user {
     my ($otherUserID, $otherUserLogin) = @_;
-
     my $otherUser;
     my $vars = {};
+    my $user = Bugzilla->user;
 
     if ($otherUserID) {
         $otherUser = Bugzilla::User->new($otherUserID);

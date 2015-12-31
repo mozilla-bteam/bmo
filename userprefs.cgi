@@ -734,7 +734,9 @@ sub SaveMFAcallback {
 }
 
 sub DoMFA {
-    my $cgi = Bugzilla->cgi;
+    my $cgi      = Bugzilla->cgi;
+    my $template = Bugzilla->template;
+
     return unless my $provider = $cgi->param('frame');
 
     print $cgi->header(
