@@ -100,7 +100,7 @@ $sel->is_text_present_ok("SavedSearchTEST1");
 $sel->click_ok('//a[@href="buglist.cgi?cmdtype=dorem&remaction=run&namedcmd=SavedSearchTEST1"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: SavedSearchTEST1");
-$sel->click_ok("link=Edit Search");
+$sel->click_ok("edit_search");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search for bugs");
 $sel->value_is("short_desc", "bilboa");

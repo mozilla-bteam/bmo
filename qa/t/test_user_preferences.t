@@ -34,7 +34,7 @@ $sel->click_ok("update");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Default Preferences");
 
-# Update own user preferences. Some of them are not editable.
+# Update own user preferences. Some of them should not be present.
 
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load(WAIT_TIME);

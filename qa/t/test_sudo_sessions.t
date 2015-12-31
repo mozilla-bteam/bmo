@@ -92,7 +92,7 @@ ok($error_msg =~ /^Sorry, you aren't a member of the 'editusers' group/, "Not a 
 $sel->click_ok("link=End sudo session impersonating " . $config->{unprivileged_user_login});
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Sudo session complete");
-$sel->is_text_present_ok("The sudo session has been ended");
+$sel->is_text_present_ok("Your sudo session has ended");
 
 # Try to access the sudo page directly, with no credentials.
 
