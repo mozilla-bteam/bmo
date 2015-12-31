@@ -35,7 +35,6 @@ Bugzilla->set_user(Bugzilla::User->check({ name => $admin_email }));
 ##########################################################################
 
 my %user_prefs = (
-    post_bug_submit_action => 'nothing',
     bugmail_new_prefix     => 'on',
     comment_box_position   => 'after_comments',
     comment_sort_order     => 'oldest_to_newest',

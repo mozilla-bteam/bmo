@@ -127,7 +127,6 @@ $sel->click_ok("link=General Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->select_ok("state_addselfcc", "value=never");
-$sel->select_ok("post_bug_submit_action", "value=same_bug");
 $sel->click_ok("update");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
