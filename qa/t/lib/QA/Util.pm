@@ -15,6 +15,14 @@ use Test::More;
 use Test::WWW::Selenium;
 use WWW::Selenium::Util qw(server_is_running);
 
+# Fixes wide character warnings
+BEGIN {
+    my $builder = Test::More->builder;
+    binmode $builder->output,         ":encoding(utf8)";
+    binmode $builder->failure_output, ":encoding(utf8)";
+    binmode $builder->todo_output,    ":encoding(utf8)";
+}
+
 use base qw(Exporter);
 @QA::Util::EXPORT = qw(
     trim
