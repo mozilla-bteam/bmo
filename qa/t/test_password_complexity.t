@@ -13,30 +13,16 @@ set_parameters($sel, {"Administrative Policies" => {"allowuserdeletion-on" => un
                       "User Authentication"     => {"createemailregexp" => {type => "text", value => '.*'},
                                                     "emailsuffix" => {type => "text", value => ''}} });
 
-# Set the password complexity to MIXED LETTERS.
+# Set the password complexity to BMO.
 # Password must contain at least one UPPER and one lowercase letter.
-my @invalid_mixed_letter = qw(lowercase UPPERCASE 1234567890 123lowercase
-                              123UPPERCASE !@%&^lower !@&^UPPER);
+my @invalid_bmo = qw(lowercase UPPERCASE 1234567890 123lowercase 123UPPERCASE !@%&^lower !@&^UPPER);
 
-check_passwords($sel, 'mixed_letters', \@invalid_mixed_letter, ['PaSSwOrd', '%9rT#j22S']);
-
-# Set the password complexity to LETTERS AND NUMBERS.
-# Passwords must contain at least one UPPER and one lower case letter and a number.
-my @invalid_letter_number = (@invalid_mixed_letter, qw(lowerUPPER 123!@%^$));
-
-check_passwords($sel, 'letters_numbers', \@invalid_letter_number, ['-UniCode6.3', 'UNO54sun']);
-
-# Set the password complexity to LETTERS, NUMBERS AND SPECIAL CHARACTERS.
-# Passwords must contain at least one letter, a number and a special character.
-my @invalid_letter_number_splchar = (qw(!@%^&~* lowerUPPER123), @invalid_letter_number);
-
-check_passwords($sel, 'letters_numbers_specialchars', \@invalid_letter_number_splchar, ['@gu731', 'HU%m70?']);
+check_passwords($sel, 'bmo', \@invalid_bmo, ['Longerthan12chars', '%9rT#j22S']);
 
 # Set the password complexity to No Constraints.
-check_passwords($sel, 'no_constraints', ['12xY!', 'aaaaa'], ['aaaaaaaa', '>F12Xy?']);
+check_passwords($sel, 'no_constraints', ['12xY!', 'aaaaa'], ['aaaaaaaa', '>F12Xy?#']);
 
 logout($sel);
-
 
 sub check_passwords {
     my ($sel, $param, $invalid_passwords, $valid_passwords) = @_;
@@ -65,18 +51,9 @@ sub check_passwords {
         }
 
         my $error_msg = trim($sel->get_text("error_msg"));
-        if ($param eq 'mixed_letters') {
-            ok($error_msg =~ /UPPERCASE letter.*lowercase letter/,
-               "Mixed letter password fails requirement: $password");
-        }
-        elsif ($param eq 'letters_numbers') {
-            ok($error_msg =~ /UPPERCASE letter.*lowercase letter.*digit/,
-               "Letter & Number password fails requirement: $password");
-
-        }
-        elsif ($param eq 'letters_numbers_specialchars') {
-            ok($error_msg =~ /letter.*special character.*digit/,
-               "Letter, Number & Special Character password fails requirement: $password");
+        if ($param eq 'bmo') {
+            ok($error_msg =~ /must meet three of the following requirements/,
+               "Password fails requirement: $password");
         }
         else {
             ok($error_msg =~ /The password must be at least \d+ characters long/,
