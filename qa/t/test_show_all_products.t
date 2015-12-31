@@ -51,7 +51,6 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("QA-Selenium-TEST");
 # For some unknown reason, Selenium doesn't like hyphens in links.
 # $sel->click_ok("link=QA-Selenium-TEST");
-$sel->click_ok('//div[@id="choose_product"]//a[contains(@href, "QA-Selenium-TEST")]');
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->click_ok('//table[@id="other_products"]//a[contains(text(),"QA") and contains(text(),"Selenium") and contains(text(),"TEST")]');
 $sel->is_text_present_ok("Product: QA-Selenium-TEST");
 logout($sel);
