@@ -840,13 +840,14 @@ sub _remove_votes {
 # If a user votes for a bug, or the number of votes required to
 # confirm a bug has been reduced, check if the bug is now confirmed.
 sub _confirm_if_vote_confirmed {
-    my $id = shift;
+    my ($id, $product) = @_;
     my $bug = ref $id ? $id : new Bugzilla::Bug({ id => $id, cache => 1 });
+    $product ||= $bug->product_obj;
 
     my $ret = 0;
     if (!$bug->everconfirmed
-        and $bug->product_obj->{votestoconfirm}
-        and $bug->votes >= $bug->product_obj->{votestoconfirm})
+        and $product->{votestoconfirm}
+        and $bug->votes >= $product->{votestoconfirm})
     {
         $bug->add_comment('', { type => CMT_POPULAR_VOTES });
 
