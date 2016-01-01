@@ -162,6 +162,7 @@ ok(!$sel->is_checked('//input[@type="checkbox" and @name="groups" and @value="QA
 $sel->is_element_present_ok('//input[@type="checkbox" and @name="groups" and @value="Master"]');
 $sel->is_editable_ok('//input[@type="checkbox" and @name="groups" and @value="Master"]');
 ok(!$sel->is_checked('//input[@type="checkbox" and @name="groups" and @value="Master"]'), "Master group not selected by default");
+$sel->uncheck_ok('//input[@type="checkbox" and @name="groups" and @value="core-security"]'); # Remove default security group as well
 edit_bug($sel, $bug1_id, $bug_summary, {id => "change_product"});
 logout($sel);
 
