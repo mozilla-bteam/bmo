@@ -337,7 +337,7 @@ my $attachment3_id = $1;
 
 # Display the bug and check flags are correctly set.
 
-$sel->click_ok("link=$bug1_id");
+$sel->click_ok("link=bug $bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
 $sel->is_text_present_ok("$config->{admin_user_nick}: SeleniumAttachmentFlag1Test? ($config->{admin_user_nick})");
