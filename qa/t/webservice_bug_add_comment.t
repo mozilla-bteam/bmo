@@ -92,9 +92,9 @@ my @tests = (
     # Testing the "private" parameter happens in the tests for Bug.comments
 
     # Test work_time parameter
-    # FIXME: Should be testing permissions on the work_time parameter,
-    #        but we currently have no way to verify whether or not time was
-    #        added to the bug, and there's no error thrown if you lack perms.
+    # XXX Should be testing permissions on the work_time parameter,
+    # but we currently have no way to verify whether or not time was
+    # added to the bug, and there's no error thrown if you lack perms.
     { user  => 'admin',
       args  => { id => 'public_bug', comment => TEST_COMMENT,
                  work_time => 'aaa' },
@@ -139,7 +139,7 @@ my @tests = (
                 work_time => '1.5' },
       test => 'Timetracking user can add work_time to a bug',
     },
-    # FIXME: Need to verify that the comment added actually has work_time.
+    # XXX Need to verify that the comment added actually has work_time.
 );
 
 $jsonrpc_get->bz_call_fail('Bug.add_comment',

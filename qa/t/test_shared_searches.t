@@ -66,7 +66,7 @@ $sel->click_ok("link=Shared Selenium buglist");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: Shared Selenium buglist");
 # You cannot delete other users' saved searches.
-ok(!$sel->is_text_present("Forget Search 'Shared Selenium buglist'"), "'Forget...' link not available");
+ok(!$sel->is_element_present("forget_search"), "'Forget...' button not available");
 
 # The name of the sharer must appear in the "Saved Searches" section.
 

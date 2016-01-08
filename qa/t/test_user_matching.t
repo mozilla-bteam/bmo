@@ -15,9 +15,6 @@ use QA::Util;
 
 my ($sel, $config) = get_selenium();
 
-my $test_bug_1 = $config->{test_bug_1};
-
-
 log_in($sel, $config, 'tweakparams');
 set_parameters($sel, { "User Matching"  => {"usemenuforusers-off" => undef,
                                             "maxusermatches"      => {type => 'text', value => '0'},
@@ -25,12 +22,17 @@ set_parameters($sel, { "User Matching"  => {"usemenuforusers-off" => undef,
                        "Group Security" => {"usevisibilitygroups-off" => undef}
                      });
 
-go_to_bug($sel, $test_bug_1);
-$sel->click_ok("cc_edit_area_showhide");
+file_bug_in_product($sel, "TestProduct");
+$sel->select_ok("component", "TestComponent");
+my $bug_summary = "Today is Tuesday";
+$sel->type_ok("short_desc", $bug_summary);
+$sel->type_ok("comment", "Poker Face");
+my $bug1_id = create_bug($sel, $bug_summary);
 
 # We enter an incomplete email address. process_bug.cgi must ask
 # for confirmation as confirmuniqueusermatch is turned on.
 
+$sel->click_ok("cc_edit_area_showhide");
 $sel->type_ok("newcc", $config->{unprivileged_user_login_truncated});
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -38,7 +40,7 @@ $sel->title_is("Confirm Match");
 $sel->is_text_present_ok("$config->{unprivileged_user_login_truncated} matched");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$test_bug_1/);
+$sel->title_like(qr/^$bug1_id/);
 $sel->click_ok("cc_edit_area_showhide");
 
 # We now enter a complete and valid email address, so it must be accepted.
@@ -46,14 +48,11 @@ $sel->click_ok("cc_edit_area_showhide");
 # type the complete email address.
 
 $sel->type_ok("newcc", $config->{unprivileged_user_login});
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $test_bug_1");
+edit_bug_and_return($sel, $bug1_id, $bug_summary);
 
 # Now test wildcards ("*"). Due to confirmuniqueusermatch being turned on,
 # a confirmation page must be displayed.
 
-go_to_bug($sel, $test_bug_1);
 $sel->click_ok("cc_edit_area_showhide");
 $sel->type_ok("newcc", "$config->{unprivileged_user_login_truncated}*");
 $sel->click_ok("commit");
@@ -62,7 +61,7 @@ $sel->title_is("Confirm Match");
 $sel->is_text_present_ok("<$config->{unprivileged_user_login}>");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$test_bug_1/);
+$sel->title_like(qr/^$bug1_id/);
 $sel->click_ok("cc_edit_area_showhide");
 
 # This will return more than one account.
@@ -77,7 +76,7 @@ $sel->is_text_present_ok("*$config->{common_email} matched:");
 
 set_parameters($sel, { "User Matching" => {"maxusermatches" => {type => 'text', value => '1'}} });
 
-go_to_bug($sel, $test_bug_1);
+go_to_bug($sel, $bug1_id);
 $sel->click_ok("cc_edit_area_showhide");
 
 # Several user accounts match this partial email address. Due to
@@ -90,16 +89,14 @@ $sel->title_is("Match Failed");
 $sel->is_text_present_ok("matches multiple users");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$test_bug_1/);
+$sel->title_like(qr/^$bug1_id/);
 $sel->click_ok("cc_edit_area_showhide");
 
 # We now type a complete and valid email address, so no confirmation
 # page should be displayed.
 
 $sel->type_ok("newcc", $config->{unprivileged_user_login});
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $test_bug_1");
+edit_bug($sel, $bug1_id, $bug_summary);
 
 # Now turn on group visibility. It involves important security checks.
 
@@ -130,7 +127,7 @@ if (grep {$_ eq 'tweakparams'} @groups) {
 logout($sel);
 log_in($sel, $config, 'tweakparams');
 
-go_to_bug($sel, $test_bug_1);
+go_to_bug($sel, $bug1_id);
 $sel->click_ok("cc_edit_area_showhide");
 
 # We are not in the same groups as the unprivileged user, so we cannot see him.
@@ -142,7 +139,7 @@ $sel->title_is("Match Failed");
 $sel->is_text_present_ok("$config->{unprivileged_user_login_truncated} did not match anything");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$test_bug_1/);
+$sel->title_like(qr/^$bug1_id/);
 $sel->click_ok("cc_edit_area_showhide");
 
 # This will return too many users (there are at least always three:
@@ -155,7 +152,7 @@ $sel->title_is("Confirm Match");
 $sel->is_text_present_ok("$config->{common_email} matched more than the maximum of 2 users");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$test_bug_1/);
+$sel->title_like(qr/^$bug1_id/);
 $sel->click_ok("cc_edit_area_showhide");
 
 # We can always see ourselves.
@@ -170,7 +167,7 @@ $sel->is_text_present_ok("<$config->{tweakparams_user_login}>");
 
 set_parameters($sel, { "User Matching" => {"usemenuforusers-on" => undef} });
 
-go_to_bug($sel, $test_bug_1);
+go_to_bug($sel, $bug1_id);
 $sel->click_ok("cc_edit_area_showhide");
 my @cc = $sel->get_select_options("newcc");
 ok(!grep($_ =~ /$config->{unprivileged_user_login}/, @cc), "$config->{unprivileged_user_login} is not visible");

@@ -32,7 +32,7 @@ sub test_comments {
 
     my $comment = $comments_returned->[0];
     ok($comment->{bug_id}, "bug_id exists");
-    # FIXME: At some point we should test attachment_id here.
+    # XXX At some point we should test attachment_id here.
 
     if ($t->{args}->{comment_ids}) {
         my $expected_id = $t->{args}->{comment_ids}->[0];

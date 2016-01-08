@@ -33,7 +33,7 @@ $sel->click_ok("link=Open a New Account");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create a new Bugzilla account");
 $sel->type_ok("login", $valid_account);
-$sel->click_ok('//input[@value="Create Account"]');
+$sel->click_ok("send");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Request for new user account '$valid_account' submitted");
 $sel->is_text_present_ok("A confirmation email has been sent");
@@ -47,7 +47,7 @@ $sel->click_ok("link=Open a New Account");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create a new Bugzilla account");
 $sel->type_ok("login", $valid_account);
-$sel->click_ok('//input[@value="Create Account"]');
+$sel->click_ok("send");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Too Soon For New Token");
 my $error_msg = trim($sel->get_text("error_msg"));
@@ -60,7 +60,7 @@ foreach my $account (@accounts) {
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
     $sel->title_is("Create a new Bugzilla account");
     $sel->type_ok("login", $account);
-    $sel->click_ok('//input[@value="Create Account"]');
+    $sel->click_ok("send");
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
     $sel->title_is("Account Creation Restricted");
     $sel->is_text_present_ok("User account creation has been restricted.");
@@ -81,7 +81,7 @@ foreach my $account (@accounts) {
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
     $sel->title_is("Create a new Bugzilla account");
     $sel->type_ok("login", $account);
-    $sel->click_ok('//input[@value="Create Account"]');
+    $sel->click_ok("send");
     ok($sel->get_alert() =~ /The e-mail address doesn't pass our syntax checking for a legal email address/,
         'Invalid email address detected');
 }
@@ -103,7 +103,7 @@ foreach my $account (@accounts) {
     };
     $sel->run_script($script);
     $sel->type_ok("login", $account);
-    $sel->click_ok('//input[@value="Create Account"]');
+    $sel->click_ok("send");
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
     $sel->title_is("Invalid Email Address");
     my $error_msg = trim($sel->get_text("error_msg"));
@@ -115,7 +115,7 @@ $sel->click_ok("link=New Account");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create a new Bugzilla account");
 $sel->type_ok("login", $config->{admin_user_login});
-$sel->click_ok('//input[@value="Create Account"]');
+$sel->click_ok("send");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Account Already Exists");
 $error_msg = trim($sel->get_text("error_msg"));

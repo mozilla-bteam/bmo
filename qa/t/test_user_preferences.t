@@ -194,7 +194,7 @@ ok(!$sel->is_text_present("I should see the next bug"), "The updated bug is no l
 # The user has no privs, so the short_desc field is not present.
 $sel->is_text_present("short_desc", "My second bug");
 $sel->value_is("addselfcc", "on");
-$sel->click_ok("link=bug $bug1_id");
+$sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
 $sel->is_text_present("1 user including you");

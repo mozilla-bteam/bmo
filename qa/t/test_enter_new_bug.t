@@ -21,15 +21,12 @@ my ($sel, $config) = get_selenium();
 # More elaborate tests exist in other scripts. This doesn't mean this
 # one could not be improved a bit.
 
+my $bug_summary = "Bug created by Selenium";
 foreach my $user (qw(admin unprivileged canconfirm)) {
     log_in($sel, $config, $user);
     file_bug_in_product($sel, "TestProduct");
-    $sel->type_ok("short_desc", "Bug created by Selenium",
-                  "Enter bug summary");
-    $sel->type_ok("comment", "--- Bug created by Selenium ---",
-                  "Enter bug description");
-    $sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-    $sel->wait_for_page_to_load_ok(WAIT_TIME);
-    $sel->is_text_present_ok('has been added to the database', 'Bug created');
+    $sel->type_ok("short_desc", $bug_summary, "Enter bug summary");
+    $sel->type_ok("comment", "--- Bug created by Selenium ---", "Enter bug description");
+    create_bug($sel, $bug_summary);
     logout($sel);
 }

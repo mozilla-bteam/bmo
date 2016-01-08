@@ -89,7 +89,7 @@ ok($error_msg =~ /'2009-04-as' is not a legal date/, "Illegal end date");
 go_to_bug($sel, $bug1_id);
 $sel->click_ok("//a[contains(text(),'Summarize time')]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-+$sel->title_is("Time Summary for Bug $bug1_id");
+$sel->title_is("Time Summary for Bug $bug1_id");
 $sel->check_ok("inactive");
 $sel->check_ok("owner");
 $sel->click_ok("summarize");

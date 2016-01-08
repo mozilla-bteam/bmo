@@ -68,7 +68,7 @@ edit_bug($sel, $bug1_id, $bug_summary);
 
 # Now move the bug into another product, which has a mandatory group.
 
-$sel->click_ok("link=bug $bug1_id");
+$sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
 $sel->select_ok("product", "label=QA-Selenium-TEST");
@@ -93,7 +93,7 @@ $sel->click_ok("reporter_accessible");
 $sel->select_ok("bug_status", "label=VERIFIED");
 edit_bug_and_return($sel, $bug1_id, $bug_summary);
 $sel->type_ok("comment", "I am the reporter, but I can see the bug anyway as I belong to the mandatory group");
-edit_bug_and_return($sel, $bug1_id, $bug_summary);
+edit_bug($sel, $bug1_id, $bug_summary);
 logout($sel);
 
 # The admin is not in the mandatory group, but he has been CC'ed,
@@ -180,9 +180,7 @@ ok(!$sel->is_element_present('//select[@name="rep_platform"]'), "Hardware field 
 $sel->click_ok("cc_edit_area_showhide");
 $sel->add_selection_ok("cc", "label=" . $config->{admin_user_login});
 $sel->click_ok("removecc");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+edit_bug($sel, $bug1_id, $bug_summary);
 logout($sel);
 
 # Now let's test the CANEDIT bit.
@@ -313,7 +311,7 @@ $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bugs processed");
 
-$sel->click_ok("link=bug $bug1_id");
+$sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/$bug1_id /);
 $sel->selected_label_is("resolution", "WORKSFORME");
@@ -329,50 +327,6 @@ $sel->is_text_present_ok("Severity critical blocker");
 $sel->is_text_present_ok("Whiteboard [Selenium was here] [Selenium was here][admin too]");
 $sel->is_text_present_ok("Product QA-Selenium-TEST TestProduct");
 $sel->is_text_present_ok("Status CONFIRMED RESOLVED");
-
-# Last step: move bugs to another DB, if the extension is enabled.
-
-# if ($config->{test_extensions}) {
-#     set_parameters($sel, { "Bug Moving" => {"move-to-url"     => {type => "text", value => 'http://www.foo.com/'},
-#                                             "move-to-address" => {type => "text", value => 'import@foo.com'},
-#                                             "movers"          => {type => "text", value => $config->{admin_user_login}}
-#                                            }
-#                          });
-#
-#     # Mass-move has been removed, see 581690.
-#     # Restore these tests once this bug is fixed.
-#     # $sel->click_ok("link=My bugs from QA_Selenium");
-#     # $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     # $sel->title_is("Bug List: My bugs from QA_Selenium");
-#     # $sel->is_text_present_ok("2 bugs found");
-#     # $sel->click_ok("mass_change");
-#     # $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     # $sel->title_is("Bug List");
-#     # $sel->click_ok("check_all");
-#     # $sel->type_ok("comment", "-> moved");
-#     # $sel->click_ok('oldbugmove');
-#     # $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     # $sel->title_is("Bugs processed");
-#     # $sel->is_text_present_ok("Bug $bug1_id has been moved to another database");
-#     # $sel->is_text_present_ok("Bug $bug2_id has been moved to another database");
-#     # $sel->click_ok("link=Bug $bug2_id");
-#     # $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     # $sel->title_like(qr/^$bug2_id/);
-#     # $sel->selected_label_is("resolution", "MOVED");
-#
-#     go_to_bug($sel, $bug2_id);
-#     $sel->click_ok('oldbugmove');
-#     $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     $sel->is_text_present_ok("Changes submitted for bug $bug2_id");
-#     $sel->click_ok("link=bug $bug2_id");
-#     $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     $sel->title_like(qr/$bug2_id /);
-#     $sel->selected_label_is("resolution", "MOVED");
-#     $sel->is_text_present_ok("Bug moved to http://www.foo.com/.");
-#
-#     # Disable bug moving again.
-#     set_parameters($sel, { "Bug Moving" => {"movers" => {type => "text", value => ""}} });
-# }
 
 # Make sure token checks are working correctly for single bug editing and mass change,
 # first with no token, then with an invalid token.
@@ -397,7 +351,7 @@ foreach my $params (["no_token_mass_change", ""], ["invalid_token_mass_change", 
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
     $sel->title_is("Bugs processed");
     foreach my $bug_id ($bug1_id, $bug2_id) {
-        $sel->click_ok("link=bug $bug_id");
+        $sel->click_ok("link=$bug_id");
         $sel->wait_for_page_to_load_ok(WAIT_TIME);
         $sel->title_like(qr/^$bug_id /);
         $sel->is_text_present_ok($comment);

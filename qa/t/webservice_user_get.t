@@ -147,15 +147,15 @@ sub post_success {
     }
 
     my $username = $config->{"${user}_user_login"};
-    # FIXME: We have no way to create a saved search or a saved report from
-    #        the WebService, so we cannot test that the correct data is returned
-    #        if the user is accessing his own account.
+    # XXX We have no way to create a saved search or a saved report from
+    # the WebService, so we cannot test that the correct data is returned
+    # if the user is accessing his own account.
     if ($username eq $item->{name}) {
-        ok(exists $item->{saved_searches},
+        ok(exists $item->{saved_searches} && exists $item->{saved_reports},
            'Users can get the list of saved searches and reports for their own account');
     }
     else {
-        ok(!exists $item->{saved_searches},
+        ok(!exists $item->{saved_searches} && !exists $item->{saved_reports},
            "Users cannot get the list of saved searches and reports from someone else's acccount");
     }
 

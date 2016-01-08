@@ -70,7 +70,7 @@ $sel->type_ok("watch_user", "first-comp\@kill-me.bugs");
 $sel->check_ok("watch_user_auto");
 $sel->click_ok("add-product");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-+$sel->title_is("Product Created");
+$sel->title_is("Product Created");
 
 # Try creating a second component with the same name.
 

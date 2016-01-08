@@ -156,7 +156,7 @@ edit_bug($sel, $bug1_id, $bug_summary);
 # with the bug. He can no longer see it.
 
 $sel->is_text_present_ok("(list of e-mails not available)");
-$sel->click_ok("link=bug $bug1_id");
+$sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug Access Denied");
 logout($sel);

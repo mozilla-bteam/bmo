@@ -205,7 +205,7 @@ my $bug1_id = create_bug($sel, $bug_summary);
 
 # All 3 bug flag types must be available; we are in the TestProduct product.
 
-$sel->click_ok("link=Bug $bug1_id");
+$sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id .* test flags/);
 $sel->is_text_present_ok("SeleniumBugFlag1Test");
@@ -321,7 +321,7 @@ my $attachment2_id = $1;
 
 # Create a third attachment, but we now set the MIME type manually.
 
-$sel->click_ok("//a[contains(text(),'Create\n Another Attachment to Bug $bug1_id')]");
+$sel->click_ok("link=Create Another Attachment to Bug $bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create New Attachment for Bug #$bug1_id");
 $sel->type_ok("data", $config->{attachment_file});
@@ -337,7 +337,7 @@ my $attachment3_id = $1;
 
 # Display the bug and check flags are correctly set.
 
-$sel->click_ok("link=bug $bug1_id");
+$sel->click_ok("link=$bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
 $sel->is_text_present_ok("$config->{admin_user_nick}: SeleniumAttachmentFlag1Test? ($config->{admin_user_nick})");

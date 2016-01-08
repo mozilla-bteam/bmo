@@ -173,12 +173,7 @@ $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Verify New Product Details...");
 $sel->select_ok("component", "label=c1");
-$sel->click_ok("change_product");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
-$sel->click_ok("link=bug $bug1_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id /);
+edit_bug_and_return($sel, $bug1_id, $bug_summary, {id => "change_product"});
 $sel->selected_label_is("flag-$flag1_id", "+");
 $sel->is_text_present_ok("$config->{admin_user_nick}: selenium_review-");
 
@@ -187,12 +182,7 @@ $sel->is_text_present_ok("$config->{admin_user_nick}: selenium_review-");
 
 $sel->type_ok("comment", "Moving to c2. The selenium flag will be deleted.");
 $sel->select_ok("component", "label=c2");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
-$sel->click_ok("link=bug $bug1_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id /);
+edit_bug_and_return($sel, $bug1_id, $bug_summary);
 ok(!$sel->is_element_present("flag-$flag1_id"), "The selenium bug flag didn't survive");
 ok(!$sel->is_element_present("flag_type-$flagtype1_id"), "The selenium flag type doesn't exist");
 $sel->is_text_present_ok("$config->{admin_user_nick}: selenium_review-");
@@ -261,6 +251,7 @@ my $flagtype2_id = $1;
 
 go_to_bug($sel, $bug2_id);
 $sel->select_ok("component", "label=c2");
+ok(!$sel->is_checked("set_default_assignee"), "Moving the bug into another component must not change the assignee");
 $sel->type_ok("comment", "The selenium flag should be preserved.");
 edit_bug_and_return($sel, $bug2_id, $bug_summary2);
 $sel->selected_label_is("flag-$flag2_id", '?');

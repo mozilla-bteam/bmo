@@ -125,7 +125,7 @@ $sel->title_is('Search users');
 $sel->check_ok('grouprestrict');
 $sel->select_ok('groupid', 'label=Master');
 $sel->select_ok('matchtype', 'value=substr');
-+$sel->select_ok('is_enabled', 'label=All');
+$sel->select_ok('is_enabled', 'label=All');
 $sel->click_ok('search');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('master@selenium.bugzilla.org', 'master-user in Master group');

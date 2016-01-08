@@ -99,8 +99,8 @@ my @tests = (
     },
 );
 
-# FIXME: Should be: if (classifications enabled).
-#        But there is currently now way to query the value of a parameter via WS.
+# XXX - Should be: if (classifications enabled).
+# But there is currently now way to query the value of a parameter via WS.
 if (0) {
     push(@tests,
         { user  => 'admin',

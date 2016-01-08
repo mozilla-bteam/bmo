@@ -30,7 +30,7 @@ my @pages = qw(admin attachment buglist chart colchange config createaccount
                enter_bug index long_list page post_bug process_bug query quips
                relogin report reports request sanitycheck search_plugin
                show_activity show_bug showattachment showdependencygraph
-               showdependencytree sidebar summarize_time token userprefs votes
+               showdependencytree summarize_time token userprefs votes
                xml xmlrpc);
 
 foreach my $page (@pages) {

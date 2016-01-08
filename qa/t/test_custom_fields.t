@@ -238,7 +238,7 @@ $sel->type_ok("cf_qa_freetext_$bug1_id", "thanks");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bugs processed");
-$sel->click_ok("link=bug $bug2_id");
+$sel->click_ok("link=$bug2_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug2_id/);
 $sel->value_is("cf_qa_freetext_$bug1_id", "thanks");
