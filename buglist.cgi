@@ -313,6 +313,16 @@ if ($cmdtype eq "runnamed") {
 # This will be modified, so make a copy.
 $params ||= new Bugzilla::CGI($cgi);
 
+# Generate a reasonable filename for the user agent to suggest to the user
+# when the user saves the bug list.  Uses the name of the remembered query
+# if available.  We have to do this now, even though we return HTTP headers 
+# at the end, because the fact that there is a remembered query gets 
+# forgotten in the process of retrieving it.
+my $disp_prefix = "bugs";
+if (($cmdtype eq "dorem" && $remaction =~ /^run/) || ($format->{extension} ne 'html' && defined $cgi->param('namedcmd'))) {
+    $disp_prefix = $cgi->param('namedcmd');
+}
+
 # Take appropriate action based on user's request.
 if ($cmdtype eq "dorem") {
     if ($remaction eq "run") {

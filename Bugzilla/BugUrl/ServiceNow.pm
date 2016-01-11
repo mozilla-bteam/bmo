@@ -5,40 +5,19 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::BugUrl::Aha;
-
-use 5.10.1;
+package Bugzilla::BugUrl::ServiceNow;
 use strict;
-use warnings;
-
 use base qw(Bugzilla::BugUrl);
-
-###############################
-####        Methods        ####
-###############################
 
 sub should_handle {
     my ($class, $uri) = @_;
-
-    return $uri =~ m!^https?://[^.]+\.aha\.io/features/(\w+-\d+)!;
-}
-
-sub get_feature_id {
-    my ($self) = @_;
-
-    if ($self->{value} =~ m!^https?://[^.]+\.aha\.io/features/(\w+-\d+)!) {
-        return $1;
-    }
+    return $uri =~ m#^https?://[^.]+\.service-now\.com/nav_to\.do\?#;
 }
 
 sub _check_value {
     my ($class, $uri) = @_;
-
     $uri = $class->SUPER::_check_value($uri);
-
-    # Aha HTTP URLs redirect to HTTPS, so just use the HTTPS scheme.
     $uri->scheme('https');
-
     return $uri;
 }
 

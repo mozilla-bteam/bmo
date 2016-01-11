@@ -44,4 +44,10 @@ YAHOO.util.Event.onDOMReady(function() {
     if (new_comment)
       new_comment.style.width = comment_width;
   }
+  $('#cab-review-gate-close')
+    .click(function(event) {
+      event.preventDefault();
+      $('#cab-review-gate').hide();
+      $('#cab-review-edit').show();
+    });
 });

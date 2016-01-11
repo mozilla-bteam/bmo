@@ -78,6 +78,7 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
         "Add-on SDK"                  => [],
         "addons.mozilla.org"          => [],
         "Android Background Services" => [],
+        "B2GDroid"                    => [],
         "Calendar"                    => [],
         "Camino"                      => [],
         "Composer"                    => [],
@@ -153,6 +154,7 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
     qr/^cf_cab_review$/ => {
         "Infrastructure & Operations Graveyard" => [],
         "Infrastructure & Operations"           => [],
+        "Data & BI Services Team"               => [],
     }
 );
 

@@ -228,7 +228,8 @@
         </form>
       </div>
       <div class="bz_query_links">
-        <a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;ctype=csv&amp;human=1"
+        <a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;ctype=csv&amp;human=1
+          [%~ IF searchname %]&amp;namedcmd=[% searchname FILTER uri %][% END %]"
         ><img title="CSV Format" alt="CSV" src="images/csv.png" height="24" width="24"></a>
         <a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;title=
            [%- title FILTER uri %]&amp;ctype=atom"
@@ -239,8 +240,6 @@
                 onclick="document.location='colchange.cgi?[% urlquerypart FILTER html %]&amp;query_based_on=
                          [%~ defaultsavename OR searchname FILTER uri FILTER js %]'">
             Change Columns</button>
-
-
         [% IF bugs.size > 1 && caneditbugs && !dotweak %]
           <button type="button" id="mass_change"
                   onclick="document.location='buglist.cgi?[% urlquerypart FILTER html %]
