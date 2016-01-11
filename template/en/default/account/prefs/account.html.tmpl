@@ -19,9 +19,9 @@
   <div class="flex-left">
     <table>
       <tr>
-        <th align="right" width="150">Your real name:</th>
+        <th align="right" width="150"><label for="realname">Your real name:</lable></th>
         <td>
-          <input size="35" name="realname" value="[% realname FILTER html %]"
+          <input size="35" name="realname" id="realname" value="[% realname FILTER html %]"
                  placeholder="optional, but encouraged">
         </td>
       </tr>
@@ -50,7 +50,7 @@
           </td>
         </tr>
         <tr>
-          <th align="right">Current password:</th>
+          <th align="right"><label for="old_password">Current password:</label></th>
           <td>
             <input type="hidden" name="old_login" value="[% user.login FILTER html %]">
             <input type="password" name="old_password" id="old_password">
@@ -59,14 +59,14 @@
         </tr>
         [% IF user.authorizer.can_change_password %]
           <tr>
-            <th align="right">New password:</th>
+            <th align="right"><label for="new_password1">New password:</label></th>
             <td>
               <input type="password" name="new_password1" id="new_password1">
               [% INCLUDE "mfa/protected.html.tmpl" %]
             </td>
           </tr>
           <tr>
-            <th align="right">Confirm new password:</th>
+            <th align="right"><label for="new_password2">Confirm new password:</label></th>
             <td>
               <input type="password" name="new_password2" id="new_password2">
             </td>
@@ -96,7 +96,7 @@
             [% END %]
           [% ELSE %]
             <tr>
-              <th align="right">New email address:</th>
+              <th align="right"><label for="new_login_name">New email address:</label></th>
               <td>
                 <input size="35" name="new_login_name" id="new_login_name">
                 [% INCLUDE "mfa/protected.html.tmpl" %]

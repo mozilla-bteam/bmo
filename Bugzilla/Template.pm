@@ -17,7 +17,7 @@ use Bugzilla::WebService::Constants;
 use Bugzilla::Hook;
 use Bugzilla::Install::Requirements;
 use Bugzilla::Install::Util qw(install_string template_include_path 
-                               include_languages);
+                               include_languages i_am_persistent);
 use Bugzilla::Classification;
 use Bugzilla::Keyword;
 use Bugzilla::Util;
@@ -743,7 +743,7 @@ sub create {
         # if a packager has modified bz_locations() to contain absolute
         # paths.
         ABSOLUTE => 1,
-        RELATIVE => $ENV{MOD_PERL} ? 0 : 1,
+        RELATIVE => i_am_persistent() ? 0 : 1,
 
         COMPILE_DIR => bz_locations()->{'template_cache'},
 
@@ -993,6 +993,13 @@ sub create {
                 sub {
                     my ($context, $cols) = @_;
                     return sub { wrap_comment($_[0], $cols) }
+                }, 1],
+
+            # Wrap cited text
+            wrap_cite => [
+                sub {
+                    my ($context, $cols) = @_;
+                    return sub { wrap_cite($_[0], $cols) }
                 }, 1],
 
             # We force filtering of every variable in key security-critical

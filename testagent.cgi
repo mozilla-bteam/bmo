@@ -15,5 +15,6 @@ use strict;
 use warnings;
 
 say "content-type:text/plain\n";
-say "OK " . ($::ENV{MOD_PERL} || "mod_cgi");
-exit;
+
+print 'OK ';
+say $ENV{BZ_PLACK} || $ENV{MOD_PERL} || 'mod_cgi';

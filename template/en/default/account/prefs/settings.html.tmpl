@@ -44,7 +44,9 @@
       [% default_val  = setting.default_value %]
       <tr id="[% setting_name FILTER html %]_row">
         <td class="setting_label">
-          [% setting_descs.$setting_name OR setting_name FILTER html %]
+          <label for="[% setting_name FILTER html %]">
+            [% setting_descs.$setting_name OR setting_name FILTER html %]
+          </label>
         </td>
         <td class="setting_choice">
           <select name="[% setting_name FILTER html %]" id="[% setting_name FILTER html %]">

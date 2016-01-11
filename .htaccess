@@ -1,16 +1,11 @@
 # Don't allow people to retrieve non-cgi executable files or our private data
-<FilesMatch (\.pm|\.pl|\.tmpl|\.swf|localconfig.*|cpanfile)$>
+<FilesMatch (\.pm|\.pl|\.psgi|\.tmpl|\.swf|localconfig.*|cpanfile)$>
   <IfModule mod_version.c>
     <IfVersion < 2.4>
       Deny from all
     </IfVersion>
     <IfVersion >= 2.4>
-      <IfModule mod_perl.c>
-        Deny from all
-      </IfModule>
-      <IfModule !mod_perl.c>
-        Require all denied
-      </IfModule>
+      Require all denied
     </IfVersion>
   </IfModule>
   <IfModule !mod_version.c>

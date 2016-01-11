@@ -105,6 +105,7 @@ END
     feature_mod_perl          => 'mod_perl',
     feature_moving            => 'Move Bugs Between Installations',
     feature_patch_viewer      => 'Patch Viewer',
+    feature_psgi              => 'PSGI Support',
     feature_rest              => 'REST Interface',
     feature_s3                => 'Attachment S3 Storage',
     feature_smtp_auth         => 'SMTP Authentication',

@@ -67,7 +67,7 @@ sub new {
             # else we will be redirected outside Bugzilla.
             my $script_name = $self->script_name;
             $path_info =~ s/^\Q$script_name\E//;
-            if ($path_info) {
+            if ($script_name && $path_info) {
                 print $self->redirect($self->url(-path => 0, -query => 1));
             }
         }
@@ -299,7 +299,7 @@ sub close_standby_message {
         print $self->multipart_end();
         print $self->multipart_start(-type => $contenttype);
     }
-    else {
+    elsif (!$self->{_header_done}) {
         print $self->header($contenttype);
     }
 }
@@ -394,6 +394,7 @@ sub header {
     Bugzilla::Hook::process('cgi_headers',
         { cgi => $self, headers => \%headers }
     );
+    $self->{_header_done} = 1;
 
     return $self->SUPER::header(%headers) || "";
 }

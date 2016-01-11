@@ -52,12 +52,7 @@ use constant HT_DEFAULT_DENY => <<EOT;
     Deny from all
   </IfVersion>
   <IfVersion >= 2.4>
-    <IfModule mod_perl.c>
-      Deny from all
-    </IfModule>
-    <IfModule !mod_perl.c>
-      Require all denied
-    </IfModule>
+    Require all denied
   </IfVersion>
 </IfModule>
 <IfModule !mod_version.c>
@@ -174,6 +169,7 @@ sub FILESYSTEM {
         'metrics.pl'      => { perms => WS_EXECUTE },
         'clean-bug-user-last-visit.pl' => { perms => WS_EXECUTE },
 
+        'app.psgi'      => { perms => CGI_READ },
         'Bugzilla.pm'    => { perms => CGI_READ },
         "$localconfig*"  => { perms => CGI_READ },
         'bugzilla.dtd'   => { perms => WS_SERVE },
@@ -182,6 +178,7 @@ sub FILESYSTEM {
         '.htaccess'      => { perms => WS_SERVE },
         'cvs-update.log' => { perms => WS_SERVE },
         'scripts/sendunsentbugmail.pl' => { perms => WS_EXECUTE },
+
         'docker/*'             => { perms => OWNER_WRITE },
         'docker/*.pl'          => { perms => OWNER_EXECUTE },
         'docker/*.sh'          => { perms => OWNER_EXECUTE },
@@ -381,12 +378,7 @@ EOT
       Allow from all
     </IfVersion>
     <IfVersion >= 2.4>
-      <IfModule mod_perl.c>
-        Allow from all
-      </IfModule>
-      <IfModule !mod_perl.c>
-        Require all granted
-      </IfModule>
+      Require all granted
     </IfVersion>
   </IfModule>
   <IfModule !mod_version.c>
@@ -400,12 +392,7 @@ EOT
     Deny from all
   </IfVersion>
   <IfVersion >= 2.4>
-    <IfModule mod_perl.c>
-      Deny from all
-    </IfModule>
-    <IfModule !mod_perl.c>
-      Require all denied
-    </IfModule>
+    Require all denied
   </IfVersion>
 </IfModule>
 <IfModule !mod_version.c>
@@ -425,14 +412,8 @@ EOT
 #      Deny from all
 #    </IfVersion>
 #    <IfVersion >= 2.4>
-#      <IfModule mod_perl.c>
-#        Allow from 127.0.0.1/24
-#        Deny from all
-#      </IfModule>
-#      <IfModule !mod_perl.c>
-#        Require ip 127.0.0.1/24
-#        Require all denied
-#      </IfModule>
+#      Require ip 127.0.0.1/24
+#      Require all denied
 #    </IfVersion>
 #  </IfModule>
 #  <IfModule !mod_version.c>
@@ -448,12 +429,7 @@ EOT
       Allow from all
     </IfVersion>
     <IfVersion >= 2.4>
-      <IfModule mod_perl.c>
-        Allow from all
-      </IfModule>
-      <IfModule !mod_perl.c>
-        Require all granted
-      </IfModule>
+      Require all granted
     </IfVersion>
   </IfModule>
   <IfModule !mod_version.c>
@@ -467,12 +443,7 @@ EOT
     Deny from all
   </IfVersion>
   <IfVersion >= 2.4>
-    <IfModule mod_perl.c>
-      Deny from all
-    </IfModule>
-    <IfModule !mod_perl.c>
-      Require all denied
-    </IfModule>
+    Require all denied
   </IfVersion>
 </IfModule>
 <IfModule !mod_version.c>
@@ -489,12 +460,7 @@ EOT
       Allow from all
     </IfVersion>
     <IfVersion >= 2.4>
-      <IfModule mod_perl.c>
-        Allow from all
-      </IfModule>
-      <IfModule !mod_perl.c>
-        Require all granted
-      </IfModule>
+      Require all granted
     </IfVersion>
   </IfModule>
   <IfModule !mod_version.c>
@@ -508,12 +474,7 @@ EOT
     Deny from all
   </IfVersion>
   <IfVersion >= 2.4>
-    <IfModule mod_perl.c>
-      Deny from all
-    </IfModule>
-    <IfModule !mod_perl.c>
-      Require all denied
-    </IfModule>
+    Require all denied
   </IfVersion>
 </IfModule>
 <IfModule !mod_version.c>
