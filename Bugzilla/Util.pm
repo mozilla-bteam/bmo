@@ -463,16 +463,14 @@ sub wrap_cite {
     # Don't mess with tabs.
     local $Text::Wrap::unexpand = 0;
 
-    my @lines = split(/\r\n|\r|\n/, $comment);
-    my $count = scalar @lines;
-    foreach my $line (@lines) {
-        if ($line =~ /^(>+ *)/) {
-            $wrappedcomment .= wrap('', $1, $line);
-        } else {
-            $wrappedcomment .= $line;
-        }
-        $wrappedcomment .= "\n" if --$count; # only add \n if not last line
+    foreach my $line (split(/\r\n|\r|\n/, $comment)) {
+      if ($line =~ /^(>+ *)/) {
+        $wrappedcomment .= wrap('', $1, $line) . "\n";
+      } else {
+        $wrappedcomment .= $line . "\n";
+      }
     }
+    chomp($wrappedcomment); # remove extra newline at the end
     return $wrappedcomment;
 }
 
