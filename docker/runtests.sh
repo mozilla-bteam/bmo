@@ -43,9 +43,6 @@ sleep 3
 
 echo -e "\n== Updating configuration"
 mysql -u root mysql -e "CREATE DATABASE bugs_test CHARACTER SET = 'utf8';"
-sed -e "s?%DB%?$BUGS_DB_DRIVER?g" --in-place $BUGZILLA_ROOT/qa/config/checksetup_answers.txt
-sed -e "s?%DB_NAME%?bugs_test?g" --in-place $BUGZILLA_ROOT/qa/config/checksetup_answers.txt
-sed -e "s?%USER%?$BUGZILLA_USER?g" --in-place $BUGZILLA_ROOT/qa/config/checksetup_answers.txt
 echo "\$answer{'memcached_servers'} = 'localhost:11211';" >> $BUGZILLA_ROOT/qa/config/checksetup_answers.txt
 
 if [ "$TEST_SUITE" == "checksetup" ]; then
@@ -104,6 +101,6 @@ fi
 
 if [ "$TEST_SUITE" = "webservices" ]; then
     cd $BUGZILLA_ROOT/qa/t
-    /buildbot_step "Webservices" prove -f -v -I$BUGZILLA_ROOT/lib webservice_*.t
+    /buildbot_step "Webservices" prove -f -v -I$BUGZILLA_ROOT/lib {rest,webservice}_*.t
     exit $?
 fi

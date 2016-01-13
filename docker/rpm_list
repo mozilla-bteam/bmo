@@ -22,10 +22,7 @@ mod_perl-devel
 mpfr-devel
 mysql-community-devel
 mysql-community-server
-openssh
-openssh-server
 openssl-devel
-passwd
 patch
 perl-App-cpanminus
 perl-CPAN
@@ -34,7 +31,6 @@ postfix
 python-sphinx
 sudo
 supervisor
-tar
 texlive-cmap
 texlive-cyrillic
 texlive-framed

@@ -137,7 +137,7 @@ $ boot2docker ip
 
 So would then point your browser to `http://192.168.59.103:8080/bmo`.
 
-The Administrator username is `admin@mozilla.bugs` and the password is `password`.
+The Administrator username is `admin@mozilla.test` and the password is `password`.
 You can use the Administrator account to creat other users, add products or
 components, etc.
 
