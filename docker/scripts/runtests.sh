@@ -97,6 +97,6 @@ fi
 
 if [ "$TEST_SUITE" = "webservices" ]; then
     cd $BUGZILLA_ROOT/qa/t
-    $BUILDBOT "Webservices" prove -f -v -I$BUGZILLA_ROOT/lib webservice_*.t
+    $BUILDBOT "Webservices" prove -f -v -I$BUGZILLA_ROOT/lib {rest,webservice}_*.t
     exit $?
 fi
