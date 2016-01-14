@@ -301,13 +301,7 @@ sub _write_to_error_log {
 
 # lifted from Bugzilla::Error
 sub _in_eval {
-    my $in_eval = 0;
-    for (my $stack = 1; my $sub = (caller($stack))[3]; $stack++) {
-        last if $sub =~ /^ModPerl/;
-        last if $sub =~ /^Bugzilla::Template/;
-        $in_eval = 1 if $sub =~ /^\(eval\)/;
-    }
-    return $in_eval;
+    return $^S;
 }
 
 sub _sentry_die_handler {
