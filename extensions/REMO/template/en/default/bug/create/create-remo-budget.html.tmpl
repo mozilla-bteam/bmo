@@ -42,8 +42,10 @@ function validateAndSubmit() {
   if(!isFilledOut('profilepage')) alert_text += "Please enter a Mozilla Reps profile page.\n";
   if(!isFilledOut('eventpage')) alert_text += "Please enter an event page address.\n";
   if(!isFilledOut('cf_due_date')) alert_text += "Please enter an event date.\n";
-  if(!isFilledOut('ambassador_hosted')) alert_text += "Please select whether this event is hosted by ambassadors.\n";
-  if(!isFilledOut('ambassador_audience')) alert_text += "Please select whether this event's main audience is ambassadors.\n";
+  if(!isFilledOut('functional_goals')) alert_text += "Please list functional goals the event will be supporting.\n";
+  if(!isFilledOut('event_goals')) alert_text += "Please list event goals and how it will be measured.\n";
+  if(!isFilledOut('budget_reason')) alert_text += "Please enter a reason the budget is needed.\n";
+  if(!isFilledOut('agenda_link')) alert_text += "Please enter a link to the agenda describing what you are doing.\n";
   if(!isFilledOut('mentoremail')) alert_text += "Please enter a valid [% terms.Bugzilla %] email for mentor.\n";
   if(!isFilledOut('country')) alert_text += "Please enter a valid value for country.\n";
   if(!isFilledOut('budgettotal')) alert_text += "Please enter the total budget for the event.\n";
@@ -139,27 +141,43 @@ function validateAndSubmit() {
 
 <tr class="even">
   <th class="field_label required">
-    Is this event being hosted by a<br>Firefox Student Ambassador(s)?:
+    Which functional area goals is this supporting and how?
   </th>
   <td>
-    <select id="ambassador_hosted" name="ambassador_hosted">
-      <option value="">Select One</option>
-      <option value="Yes">Yes</option>
-      <option value="No">No</option>
-    </select>
+    <textarea id="functional_goals" name="functional_goals" rows="5" cols="50"
+              placeholder="Describe what specific goals from the functional area are you supporting and how this budget is helping them be successful. Contact functional area responsible if needed."></textarea>
   </td>
 </tr>
 
 <tr class="odd">
   <th class="field_label required">
-    Is the main audience of this event<br>Firefox Student Ambassadors?:
+    What are the event/initiative goals? What's success?<br>
+    How are you going to measure it?
   </th>
   <td>
-    <select id="ambassador_audience" name="ambassador_audience">
-      <option value="">Select One</option>
-      <option value="Yes">Yes</option>
-      <option value="No">No</option>
-    </select>
+    <textarea id="event_goals" name="event_goals" rows="5" cols="50"
+              placeholder="Please, detail what are the goals for this initiative and how are you going to measure their success once the initiative/event is over."></textarea>
+  </td>
+</tr>
+
+<tr class="even">
+  <th class="field_label required">
+    Why this budget is needed for the success of the<br>initiative/event?
+  </th>
+  <td>
+    <textarea id="budget_reason" name="budget_reason" rows="5" cols="50"
+              placeholder="Explain why this specific budget is a need in order to accomplish the goals you have previously described"></textarea>
+  </td>
+</tr>
+
+<tr class="odd">
+  <th class="field_label required">
+    Link to the detailed agenda describing what are you<br>
+    doing (activities to support the goals and schedule)
+  </th>
+  <td>
+    <input type="text" id="agenda_link" name="agenda_link" size="40"
+           placeholder="https://public.etherpad.mozilla.org/p/my-event">
   </td>
 </tr>
 
