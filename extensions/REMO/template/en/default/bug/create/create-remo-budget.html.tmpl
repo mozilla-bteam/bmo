@@ -64,6 +64,9 @@ function validateAndSubmit() {
 
 <h1>Mozilla Reps - Budget Request Form</h1>
 
+<h3>IMPORTANT: Please make sure you read and comply with the Budget SOP <https://wiki.mozilla.org/ReMo/SOPs/Budget>
+  before filling this form. Requests not following the procedure will be automatically rejected.</h3>
+
 <p>
   If your request is Community IT related please file it 
   <a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Mozilla%20Reps;component=Community%20IT%20Requests">here</a>.
@@ -235,41 +238,59 @@ function validateAndSubmit() {
  </tr>
 
 <tr class="odd">
-  <th colspan="2" class="field_label">Costs per service:</th>
+  <th colspan="2" class="field_label">
+    Costs per service:</th>
+</tr>
+<tr class="odd">
+  <td colspan="2">
+    Please identify which costs are optional for the success of the event by checking <strong>Optional</strong>.
+  </td>
 </tr>
 
 <tr class="odd">
   <td colspan="2">
     <table>
     <tr>
-      <th class="field_label required">Service 1:</th>
+      <td></td>
+      <td></td>
+      <th>Service</th>
+      <th>Cost</th>
+      <th>Optional</th>
+    </tr>
+    <tr>
+      <th class="required">&nbsp;</th>
+      <th class="field_label">1:</th>
       <td><input type="text" id="service1" name="service1" size="30"></td>
-      <th class="field_label required">Cost 1:</th>
       <td><input type="text" id="cost1" name="cost1" size="30"></td>
+      <td><input type="checkbox" id="service1_optional" name="service1_optional"></td>
     </tr>
     <tr>
-      <th class="field_lable">Service 2:</th>
+      <td></td>
+      <th class="field_label">2:</th>
       <td><input type="text" id="service2" name="service2" size="30"></td>
-      <th class="field_lable">Cost 2:</th>
       <td><input type="text" id="cost2" name="cost2" size="30"></td>
+      <td><input type="checkbox" id="service2_optional" name="service2_optional"></td>
     </tr>
     <tr>
-      <th class="field_lable">Service 3:</th>
+      <td></td>
+      <th class="field_label">3:</th>
       <td><input type="text" id="service3" name="service3" size="30"></td>
-      <th class="field_lable">Cost 3:</th>
       <td><input type="text" id="cost3" name="cost3" size="30"></td>
+      <td><input type="checkbox" id="service3_optional" name="service3_optional"></td>
     </tr>
     <tr>
-      <th class="field_lable">Service 4:</th>
+      <td></td>
+      <th class="field_lable">4:</th>
       <td><input type="text" id="service4" name="service4" size="30"></td>
-      <th class="field_lable">Cost 4:</th>
       <td><input type="text" id="cost4" name="cost4" size="30"></td>
+      <td><input type="checkbox" id="service4_optional" name="service4_optional"></td>
     </tr>
     <tr>
-      <th class="field_lable">Service 5:</th>
+      <td></td>
+      <th class="field_lable">5:</th>
       <td><input type="text" id="service5" name="service5" size="30"></td>
-      <th class="field_lable">Cost 5:</th>
       <td><input type="text" id="cost5" name="cost5" size="30"></td>
+      <td><input type="checkbox" id="service5_optional" name="service5_optional"></td>
     </tr>
     </table>
   </td>
@@ -281,7 +302,9 @@ function validateAndSubmit() {
 
 <tr class="odd">
   <td colspan="2">
-    <textarea id="costadditional" name="costadditional" rows="5" cols="50"></textarea>
+    <textarea id="costadditional" name="costadditional" rows="5" cols="50"></textarea><br>
+    Use the breakdown template doc <https://docs.google.com/spreadsheets/u/1/d/12FDeW3Qd5M2Mfpr8e7edCfXcUtqHP3lh3xwSln8w4G4/edit?usp=drive_web>
+    and attach/link it from this [% terms.bug  %] in order to identify all individual costs and who is this budget covering.
   </td>
 </tr>
 
