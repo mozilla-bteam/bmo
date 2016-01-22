@@ -142,6 +142,17 @@ foreach my $field (keys %$user_match_fields) {
     $bug_params{$field} = Bugzilla->input_params->{$field} // [];
 }
 
+my $product = Bugzilla::Product->check($bug_params{'product'});
+my $component_id = Bugzilla::Component->check({
+    product => $product,
+    name => $bug_params{'component'}})->id;
+
+# Set bug flags.
+my (undef, $flag_data) = Bugzilla::Flag->extract_flags_from_cgi($vars, SKIP_REQUESTEE_ON_ERROR,{
+                                                         product_id => $product->id,
+                                                         component_id => $component_id });
+$bug_params{flags} = $flag_data;
+
 my $bug = Bugzilla::Bug->create(\%bug_params);
 
 # Get the bug ID back and delete the token used to create this bug.
@@ -198,7 +209,8 @@ if ($data_fh || $attach_text) {
         # Set attachment flags.
         Bugzilla::Hook::process('post_bug_attachment_flags', { bug => $bug, attachment => $attachment });
         my ($flags, $new_flags) = Bugzilla::Flag->extract_flags_from_cgi(
-                                      $bug, $attachment, $vars, SKIP_REQUESTEE_ON_ERROR);
+                                       $vars, SKIP_REQUESTEE_ON_ERROR,
+                                       { bug => $bug, attachment => $attachment });
         $attachment->set_flags($flags, $new_flags);
         $attachment->update($timestamp);
         my $comment = $bug->comments->[0];
@@ -210,17 +222,6 @@ if ($data_fh || $attach_text) {
         $vars->{'message'} = 'attachment_creation_failed';
     }
 }
-
-# Set bug_ignored from the hidden field
-if (scalar $cgi->param('bug_ignored')) {
-    $bug->set_bug_ignored(1);
-}
-
-# Set bug flags.
-my ($flags, $new_flags) = Bugzilla::Flag->extract_flags_from_cgi($bug, undef, $vars,
-                                                             SKIP_REQUESTEE_ON_ERROR);
-$bug->set_flags($flags, $new_flags);
-$bug->update($timestamp);
 
 $vars->{'id'} = $id;
 $vars->{'bug'} = $bug;
