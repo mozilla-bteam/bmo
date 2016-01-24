@@ -858,7 +858,7 @@ sub create {
 
     # Apply any flags.
     if (defined $flags) {
-        $bug->set_flags($flags);
+        $bug->set_flags([], $flags);
         foreach my $flag (@{$bug->flags}) {
             Bugzilla::Flag->create($flag);
         }
