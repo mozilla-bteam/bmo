@@ -27,7 +27,7 @@ my $dbh = Bugzilla->dbh;
 # set Bugzilla usage mode to USAGE_MODE_CMDLINE
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my $admin_email = shift || 'admin@mozilla.test';
+my $admin_email = shift || 'admin@mozilla.bugs';
 Bugzilla->set_user(Bugzilla::User->check({ name => $admin_email }));
 
 ##########################################################################
