@@ -121,7 +121,9 @@ sub _throw_error {
         if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
             die SOAP::Fault->faultcode($code)->faultstring($message);
         }
-        elsif (Bugzilla->error_mode == ERROR_MODE_JSON_RPC) {
+        elsif (Bugzilla->error_mode == ERROR_MODE_JSON_RPC
+               || Bugzilla->request_cache->{bzapi})
+        {
             my $server = Bugzilla->_json_server;
 
             # Technically JSON-RPC isn't allowed to have error numbers
