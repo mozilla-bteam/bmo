@@ -52,9 +52,10 @@ BEGIN { *CORE::GLOBAL::warn = \&Apache2::ServerRec::warn; }
 # Pre-compile the CGI.pm methods that we're going to use.
 Bugzilla::CGI->compile(qw(:cgi :push));
 
-# This means that every httpd child will die after processing a request if it
-# is taking up more than $apache_size_limit of RAM all by itself, not counting RAM it is
-# sharing with the other httpd processes.
+use Apache2::SizeLimit;
+# This means that every httpd child will die after processing
+# a CGI if it is taking up more than 45MB of RAM all by itself,
+# not counting RAM it is sharing with the other httpd processes.
 Apache2::SizeLimit->set_max_unshared_size(Bugzilla->localconfig->{apache_size_limit});
 
 my $cgi_path = Bugzilla::Constants::bz_locations()->{'cgi_path'};
