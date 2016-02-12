@@ -8,7 +8,7 @@ ENV BUGZILLA_ROOT $HOME/devel/htdocs/bmo
 ENV BUGZILLA_URL http://localhost/bmo
 
 ENV GITHUB_BASE_GIT https://github.com/mozilla/webtools-bmo-bugzilla
-ENV GITHUB_BASE_BRANCH master
+ENV GITHUB_BASE_BRANCH upstream-merge
 
 # Distribution package installation
 COPY rpm_list /rpm_list
