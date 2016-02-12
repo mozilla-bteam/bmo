@@ -763,11 +763,11 @@ of groups returned.
 
 =item is_system
 
+=item use_for_bugs
+
 =item grant_direct
 
 =item description
-
-=item is_active
 
 =item remove_from_db
 
@@ -784,5 +784,9 @@ of groups returned.
 =item idle_member_removal
 
 =item members_complete
+
+=item set_use_for_bugs
+
+=item set_is_system
 
 =back
