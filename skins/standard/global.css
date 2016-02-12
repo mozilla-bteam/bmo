@@ -1125,6 +1125,7 @@ table.field_value_explanation {
     overflow-x: hidden;
     overflow-y: auto;
     cursor: pointer;
+    width: auto !important;
 }
 
 .autocomplete-suggestion {
