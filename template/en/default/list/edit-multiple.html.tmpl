@@ -367,7 +367,7 @@
                value="[% group.name FILTER html %]"
                onchange="turn_off(this, 'group_[% group.id %]')">
       </td>
-      [% IF group.is_active %]
+      [% IF group.use_for_bugs %]
         <td class="center">
           <input type="checkbox" name="groups" 
                  id="group_[% group.id FILTER html %]"
@@ -380,7 +380,7 @@
       [% END %]
 
       <td>
-        [% SET inactive = !group.is_active %]
+        [% SET inactive = !group.use_for_bugs %]
         [% IF inactive %]
           <span class="bz_inactive">
         [% END %]

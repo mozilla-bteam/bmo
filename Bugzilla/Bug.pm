@@ -3974,7 +3974,7 @@ sub groups {
              " CASE WHEN bug_group_map.group_id IS NOT NULL" .
              " THEN 1 ELSE 0 END," .
              " CASE WHEN groups.id IN($grouplist) THEN 1 ELSE 0 END," .
-             " isactive, membercontrol, othercontrol" .
+             " use_for_bugs, membercontrol, othercontrol" .
              " FROM groups" . 
              " LEFT JOIN bug_group_map" .
              " ON bug_group_map.group_id = groups.id" .
@@ -3982,12 +3982,12 @@ sub groups {
              " LEFT JOIN group_control_map" .
              " ON group_control_map.group_id = groups.id" .
              " AND group_control_map.product_id = ? " .
-             " WHERE isbuggroup = 1" .
+             " WHERE is_system = 0" .
              " ORDER BY description");
     $sth->execute($self->{'bug_id'},
                   $self->{'product_id'});
 
-    while (my ($groupid, $name, $description, $ison, $ingroup, $isactive,
+    while (my ($groupid, $name, $description, $ison, $ingroup, $use_for_bugs,
             $membercontrol, $othercontrol) = $sth->fetchrow_array()) {
 
         $membercontrol ||= 0;
@@ -3997,12 +3997,12 @@ sub groups {
         # (2) The group is Shown or Default for members and
         #     the user is a member of the group.
         if ($ison ||
-            ($isactive && $ingroup
+            ($use_for_bugs && $ingroup
                        && (($membercontrol == CONTROLMAPDEFAULT)
                            || ($membercontrol == CONTROLMAPSHOWN))
             ))
         {
-            my $ismandatory = $isactive
+            my $ismandatory = $use_for_bugs
               && ($membercontrol == CONTROLMAPMANDATORY);
 
             push (@groups, { "bit" => $groupid,

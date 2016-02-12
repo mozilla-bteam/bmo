@@ -51,7 +51,7 @@ use constant BOOLEAN_MAP => {
     op_sys         => {isactive => 1},
     profiles       => {mybugslink => 1, newemailtech => 1},
     namedqueries   => {linkinfooter => 1, watchfordiffs => 1},
-    groups         => {isbuggroup => 1, isactive => 1},
+    groups         => {is_system => 0, use_for_bugs => 1},
     group_control_map => {entry => 1, membercontrol => 1, othercontrol => 1,
                           canedit => 1},
     group_group_map => {isbless => 1},

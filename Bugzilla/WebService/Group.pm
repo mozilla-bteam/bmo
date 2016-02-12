@@ -37,12 +37,12 @@ sub create {
                                             object => "group"});
     # Create group
     my $group = Bugzilla::Group->create({
-        name               => $params->{name},
-        description        => $params->{description},
-        userregexp         => $params->{user_regexp},
-        isactive           => $params->{is_active},
-        isbuggroup         => 1,
-        icon_url           => $params->{icon_url}
+        name         => $params->{name},
+        description  => $params->{description},
+        userregexp   => $params->{user_regexp},
+        use_for_bugs => (exists $params->{is_active} ? $params->{is_active} : $params->{use_for_bugs}),
+        is_system    => 0,
+        icon_url     => $params->{icon_url}
     });
     return { id => $self->type('int', $group->id) };
 }
@@ -158,8 +158,10 @@ sub _group_to_hash {
     };
 
     if ($user->in_group('creategroups')) {
-        $field_data->{is_active}    = $self->type('boolean', $group->is_active);
-        $field_data->{is_bug_group} = $self->type('boolean', $group->is_bug_group);
+        $field_data->{is_active}    = $self->type('boolean', $group->use_for_bugs);
+        $field_data->{use_for_bugs} = $self->type('boolean', $group->use_for_bugs);
+        $field_data->{is_bug_group} = $self->type('boolean', !$group->is_system);
+        $field_data->{is_system}    = $self->type('boolean', $group->is_system);
         $field_data->{user_regexp}  = $self->type('string', $group->user_regexp);
     }
 
@@ -498,7 +500,7 @@ information.
 
 If the user is not a member of the "creategroups" group, but they are in the
 "editusers" group or have bless privileges to the groups they require
-membership information for, the is_active, is_bug_group and user_regexp values
+membership information for, the use_for_bugs, is_system and user_regexp values
 are not supplied.
 
 The return value will be a hash containing group names as the keys, each group
@@ -519,7 +521,7 @@ C<string> The name of the group.
 
 C<string> The description of the group.
 
-=item is_bug_group
+=item is_system
 
 C<int> Whether this groups is to be used for bug reports or is only administrative specific.
 
@@ -527,9 +529,9 @@ C<int> Whether this groups is to be used for bug reports or is only administrati
 
 C<string> A regular expression that allows users to be added to this group if their login matches.
 
-=item is_active
+=item use_for_bugs
 
-C<int> Whether this group is currently active or not.
+C<int> Whether this group is currently used for bugs or not.
 
 =item users
 

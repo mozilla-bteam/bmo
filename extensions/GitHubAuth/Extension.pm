@@ -37,9 +37,10 @@ BEGIN {
 
 sub install_before_final_checks {
     Bugzilla::Group->create({
-        name        => 'no-github-auth',
-        description => 'Group containing groups whose members may not use GitHubAuth to log in',
-        isbuggroup  => 0,
+        name         => 'no-github-auth',
+        description  => 'Group containing groups whose members may not use GitHubAuth to log in',
+        is_system    => 0,
+        use_for_bugs => 0
     }) unless Bugzilla::Group->new({ name => 'no-github-auth' });
 }
 

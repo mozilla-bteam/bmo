@@ -402,7 +402,7 @@ if ($action eq 'updategroupcontrols') {
         }
     }
 
-    my $groups = Bugzilla::Group->match({isactive => 1, isbuggroup => 1});
+    my $groups = Bugzilla::Group->match({use_for_bugs => 1, is_system => 0});
     foreach my $group (@$groups) {
         my $group_id = $group->id;
         $product->set_group_controls($group,

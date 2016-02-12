@@ -216,10 +216,10 @@ membership  boolean  Set to 1 then a list of members of the passed groups names
              "email": "user@bugzilla.org"
            },
          ],
-         "is_active": true,
+         "use_for_bugs": true,
          "description": "Test Group",
          "user_regexp": "",
-         "is_bug_group": true,
+         "is_system": false,
          "name": "TestGroup",
          "id": 9
        }
@@ -233,7 +233,7 @@ information.
 
 If the user is not a member of the *creategroups* group, but they are in the
 "editusers" group or have bless privileges to the groups they require
-membership information for, the is_active, is_bug_group and user_regexp values
+membership information for, the use_for_bugs, is_system and user_regexp values
 are not supplied.
 
 The return value will be an object containing group names as the keys; each
@@ -247,11 +247,11 @@ id            int     The unique integer ID that Bugzilla uses to identify this
                       stay the same.
 name          string  The name of the group.
 description   string  The description of the group.
-is_bug_group  int     Whether this group is to be used for bug reports or is
+is_system     int     Whether this group is to be used for bug reports or is
                       only administrative specific.
 user_regexp   string  A regular expression that allows users to be added to
                       this group if their login matches.
-is_active     int     Whether this group is currently active or not.
+use_for_bugs  int     Whether this group is currently use for bugs or not.
 users         array   User objects that are members of this group; only
                       returned if the user sets the ``membership`` parameter to
                       1. Each user object has the items describe in the User

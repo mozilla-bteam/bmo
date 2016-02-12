@@ -45,7 +45,7 @@ sub admins_report {
                     AND user_group_map.grant_type = 0
                LEFT JOIN profiles
                     ON user_group_map.user_id = profiles.userid
-         WHERE groups.isbuggroup = 1
+         WHERE groups.is_system = 0
                AND groups.name IN ($groups)
       GROUP BY groups.name";
 

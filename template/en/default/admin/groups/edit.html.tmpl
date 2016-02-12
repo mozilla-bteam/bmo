@@ -42,7 +42,7 @@
     <tr>
       <th>Group:</th>
       <td>
-        [% IF group.is_bug_group %]
+        [% UNLESS group.is_system %]
           <input type="text" name="name" size="60" maxlength="255"
                  value="[% group.name FILTER html %]" required>
         [% ELSE %]
@@ -54,7 +54,7 @@
     <tr>
       <th>Description:</th>
       <td>
-        [% IF group.is_bug_group %]
+        [% UNLESS group.is_system %]
           <input type="text" name="desc" size="60"
                  value="[% group.description FILTER html %]" required>
         [% ELSE %]
@@ -107,12 +107,12 @@
       </td>
     </tr>
 
-    [% IF group.is_bug_group %]
+    [% UNLESS group.is_system %]
       <tr>
         <th>Use For [% terms.Bugs %]:</th>
         <td>
-          <input type="checkbox" name="isactive" 
-                 value="1" [% 'checked="checked"' IF group.is_active %]>
+          <input type="checkbox" name="use_for_bugs"
+                 value="1" [% 'checked="checked"' IF group.use_for_bugs %]>
         </td>
       </tr>
     [% END %]

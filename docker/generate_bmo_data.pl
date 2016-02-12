@@ -385,8 +385,8 @@ foreach my $group (@groups) {
     if (!Bugzilla::Group->new({ name => $name })) {
         my $new_group;
         if (exists $group->{no_admin} && $group->{no_admin}) {
-            $dbh->do('INSERT INTO groups (name, description, isbuggroup, isactive)
-                      VALUES (?, ?, 1, 1)',
+            $dbh->do('INSERT INTO groups (name, description, is_system, use_for_bugs)
+                      VALUES (?, ?, 0, 1)',
                      undef, ($group->{name}, $group->{description}));
             $new_group = Bugzilla::Group->new({ name => $group->{name} });
         }
@@ -394,7 +394,7 @@ foreach my $group (@groups) {
             $new_group
                 = Bugzilla::Group->create({ name        => $group->{name},
                                             description => $group->{description},
-                                            isbuggroup  => $group->{bug_group} });
+                                            is_system   => $group->{bug_group} });
         }
 
         if (exists $group->{all_products} && $group->{all_products}) {

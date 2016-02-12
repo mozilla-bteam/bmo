@@ -293,9 +293,10 @@ sub config_add_panels {
 sub install_before_final_checks {
     if (!Bugzilla::Group->new({ name => 'can_configure_antispam' })) {
         Bugzilla::Group->create({
-            name        => 'can_configure_antispam',
-            description => 'Can configure Anti-Spam measures',
-            isbuggroup  => 0,
+            name         => 'can_configure_antispam',
+            description  => 'Can configure Anti-Spam measures',
+            is_system    => 1,
+            use_for_bugs => 0
         });
     }
 }

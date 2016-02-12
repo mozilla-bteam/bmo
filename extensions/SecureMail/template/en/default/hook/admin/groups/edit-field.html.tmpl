@@ -16,7 +16,7 @@
   #
   # Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
   #%]
-[% IF group.is_bug_group || group.name == Param('insidergroup') %]
+[% UNLESS group.is_sysem || group.name != Param('insidergroup') %]
   <tr>
     <th>Secure Bugmail:</th>
     <td>

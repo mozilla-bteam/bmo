@@ -30,9 +30,9 @@ use constant DB_COLUMNS => qw(
     groups.id
     groups.name
     groups.description
-    groups.isbuggroup
+    groups.is_system
     groups.userregexp
-    groups.isactive
+    groups.use_for_bugs
     groups.icon_url
     groups.owner_user_id
     groups.idle_member_removal
@@ -40,15 +40,15 @@ use constant DB_COLUMNS => qw(
 
 use constant DB_TABLE => 'groups';
 
-use constant LIST_ORDER => 'isbuggroup, name';
+use constant LIST_ORDER => 'NOT is_system, name';
 
 use constant VALIDATORS => {
-    name        => \&_check_name,
-    description => \&_check_description,
-    userregexp  => \&_check_user_regexp,
-    isactive    => \&_check_is_active,
-    isbuggroup  => \&_check_is_bug_group,
-    icon_url    => \&_check_icon_url,
+    name          => \&_check_name,
+    description   => \&_check_description,
+    userregexp    => \&_check_user_regexp,
+    use_for_bugs  => \&_check_use_for_bugs,
+    is_system     => \&_check_is_system,
+    icon_url      => \&_check_icon_url,
     owner_user_id => \&_check_owner,
     idle_member_removal => \&_check_idle_member_removal
 };
@@ -57,7 +57,7 @@ use constant UPDATE_COLUMNS => qw(
     name
     description
     userregexp
-    isactive
+    use_for_bugs
     icon_url
     owner_user_id
     idle_member_removal
@@ -74,9 +74,9 @@ use constant GROUP_PARAMS => qw(
 ###############################
 
 sub description  { return $_[0]->{'description'};  }
-sub is_bug_group { return $_[0]->{'isbuggroup'};   }
+sub is_system    { return $_[0]->{'is_system'};    }
 sub user_regexp  { return $_[0]->{'userregexp'};   }
-sub is_active    { return $_[0]->{'isactive'};     }
+sub use_for_bugs { return $_[0]->{'use_for_bugs'}; }
 sub icon_url     { return $_[0]->{'icon_url'};     }
 sub idle_member_removal { return $_[0]->{'idle_member_removal'}; }
 
@@ -227,11 +227,11 @@ sub check_members_are_visible {
     }
 }
 
-sub set_description { $_[0]->set('description', $_[1]); }
-sub set_is_active   { $_[0]->set('isactive', $_[1]);    }
-sub set_name        { $_[0]->set('name', $_[1]);        }
-sub set_user_regexp { $_[0]->set('userregexp', $_[1]);  }
-sub set_icon_url    { $_[0]->set('icon_url', $_[1]);    }
+sub set_description  { $_[0]->set('description', $_[1]);  }
+sub set_use_for_bugs { $_[0]->set('use_for_bugs', $_[1]); }
+sub set_name         { $_[0]->set('name', $_[1]);         }
+sub set_user_regexp  { $_[0]->set('userregexp', $_[1]);   }
+sub set_icon_url     { $_[0]->set('icon_url', $_[1]);     }
 sub set_idle_member_removal { $_[0]->set('idle_member_removal', $_[1]); }
 
 sub set_owner {
@@ -260,8 +260,8 @@ sub update {
     }
 
     # If we've changed this group to be active, fix any Mandatory groups.
-    $self->_enforce_mandatory if (exists $changes->{isactive} 
-                                  && $changes->{isactive}->[1]);
+    $self->_enforce_mandatory if (exists $changes->{use_for_bugs}
+                                  && $changes->{use_for_bugs}->[1]);
 
     $self->_rederive_regexp() if exists $changes->{userregexp};
 
@@ -276,7 +276,7 @@ sub check_remove {
     my ($self, $params) = @_;
 
     # System groups cannot be deleted!
-    if (!$self->is_bug_group) {
+    if ($self->is_system) {
         ThrowUserError("system_group_not_deletable", { name => $self->name });
     }
 
@@ -363,7 +363,7 @@ sub _enforce_mandatory {
 
 sub is_active_bug_group {
     my $self = shift;
-    return $self->is_active && $self->is_bug_group;
+    return $self->use_for_bugs && !$self->is_system;
 }
 
 sub _rederive_regexp {
@@ -535,8 +535,8 @@ sub _check_user_regexp {
     return $regex;
 }
 
-sub _check_is_active { return $_[1] ? 1 : 0; }
-sub _check_is_bug_group {
+sub _check_use_for_bugs { return $_[1] ? 1 : 0; }
+sub _check_is_system {
     return $_[1] ? 1 : 0;
 }
 
@@ -546,7 +546,7 @@ sub _check_owner {
     my ($invocant, $owner, undef, $params) = @_;
     return Bugzilla::User->check({ name => $owner, cache => 1 })->id if $owner;
     # We require an owner if the group is a not a system group
-    if (blessed($invocant) && !$invocant->is_bug_group) {
+    if (blessed($invocant) && !$invocant->is_system) {
         return undef;
     }
     ThrowUserError('group_needs_owner');
@@ -578,7 +578,7 @@ Bugzilla::Group - Bugzilla group class.
     my $name         = $group->name;
     my $description  = $group->description;
     my $user_reg_exp = $group->user_reg_exp;
-    my $is_active    = $group->is_active;
+    my $is_system    = $group->is_system;
     my $icon_url     = $group->icon_url;
     my $is_active_bug_group = $group->is_active_bug_group;
     my $owner        = $group->owner;
@@ -757,13 +757,11 @@ of groups returned.
 
 =item set_description
 
-=item set_is_active
-
 =item user_regexp
 
 =item members_direct
 
-=item is_bug_group
+=item is_system
 
 =item grant_direct
 

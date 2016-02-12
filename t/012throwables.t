@@ -152,7 +152,7 @@ foreach my $errtype (keys %Errors) {
             # Now check for tag usage in all DEFINED languages
             foreach my $lang (keys %{$Errors{$errtype}{$errtag}{defined_in}}) {
                 if (!defined $Errors{$errtype}{$errtag}{used_in}) {
-                    DefinedIn($errtype, $errtag, $lang) unless $errtype eq 'user' and $errtag =~ /^password/;
+                    DefinedIn($errtype, $errtag, $lang);
                 }
             }
         }
@@ -203,7 +203,7 @@ sub Report {
             ok(0, "$file has ". scalar(@errors) ." error(s):\n" . join("\n", @errors));
         }
         else {
-            ok(0, "--WARNING $file has " . scalar(@errors) .
+            ok(1, "--WARNING $file has " . scalar(@errors) .
                   " unused error tag(s):\n" . join("\n", @errors));
         }
     }

@@ -548,7 +548,7 @@ my $new_group = Bugzilla::Group->new({ name => $group_name });
 if (!$new_group) {
     my $group = Bugzilla::Group->create({ name => $group_name,
                                           description => $group_desc,
-                                          isbuggroup => 1});
+                                          is_system => 0});
 
     $dbh->do('INSERT INTO group_control_map
               (group_id, product_id, entry, membercontrol, othercontrol, canedit)
@@ -562,8 +562,8 @@ if (!$new_group) {
 
 $new_group = Bugzilla::Group->new({ name => $group_name });
 if (!$new_group) {
-    $dbh->do('INSERT INTO groups (name, description, isbuggroup, isactive)
-              VALUES (?, ?, 1, 1)', undef, ($group_name, $group_desc) );
+    $dbh->do('INSERT INTO groups (name, description, is_system, use_for_bugs)
+              VALUES (?, ?, 0, 1)', undef, ( $group_name, $group_desc ) );
 }
 
 # BMO 'editbugs' is also a member of 'canconfirm'

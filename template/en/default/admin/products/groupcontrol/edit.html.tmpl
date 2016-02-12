@@ -16,7 +16,7 @@
 
 [% display_headers = 1 %]
 [% FOREACH group = product.group_controls(1).values.sort("name") %]
-  [% NEXT UNLESS group.group.isactive OR group.bug_count %]
+  [% NEXT UNLESS group.group.use_for_bugs OR group.bug_count %]
   [% IF display_headers %]
     [% display_headers = 0 %]
     <form method="post" action="editproducts.cgi">
@@ -37,7 +37,7 @@
           <th>[% terms.Bugs %]</th>
         </tr>
   [% END %]
-  [% IF !group.group.isactive %]
+  [% IF !group.group.use_for_bugs %]
     <tr class="disabled">
       <td>[% group.group.name FILTER html %]</td>
       <td class="center" colspan="7">Disabled</td>

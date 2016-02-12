@@ -201,7 +201,7 @@ sub admin {
 sub nobody {
     my $self = shift;
     $self->{nobody} ||= Bugzilla::Group->create({ name => "nobody-" . random(),
-        description => "Nobody", isbuggroup => 1 });
+        description => "Nobody", is_system => 0 });
     return $self->{nobody};
 }
 sub everybody {
@@ -314,7 +314,7 @@ sub create_group {
     my ($prefix) = @_;
     return Bugzilla::Group->create({
         name => "$prefix-group-" . random(), description => "Everybody $prefix",
-        userregexp => '.*', isbuggroup => 1 });
+        userregexp => '.*', is_system => 0 });
 }
 
 sub create_legal_value {

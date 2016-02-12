@@ -566,10 +566,10 @@ sub group_controls {
                               canedit, editcomponents, editbugs, canconfirm
                          FROM groups
                               LEFT JOIN group_control_map
-                              ON id = group_id 
+                              ON id = group_id
                 $where_or_and product_id = ?
-                $and_or_where isbuggroup = 1};
-        $self->{group_controls} = 
+                $and_or_where use_for_bugs = 1 AND is_system = 0};
+        $self->{group_controls} =
             $dbh->selectall_hashref($query, 'id', undef, $self->id);
 
         # For each group ID listed above, create and store its group object.
@@ -592,6 +592,7 @@ sub group_controls {
             $self->{group_controls}->{$data->{group_id}}->{bug_count} = $data->{bug_count};
         }
     }
+
     return $self->{group_controls};
 }
 
@@ -605,7 +606,7 @@ sub groups_available {
         "SELECT group_id, membercontrol
            FROM group_control_map
                 INNER JOIN groups ON group_control_map.group_id = groups.id
-          WHERE isbuggroup = 1 AND isactive = 1 AND product_id = ?
+          WHERE is_system = 0 AND use_for_bugs = 1 AND product_id = ?
                 AND (membercontrol = $shown OR membercontrol = $default)
                 AND " . Bugzilla->user->groups_in_sql(),
         {Columns=>[1,2]}, $self->id) };
@@ -616,7 +617,7 @@ sub groups_available {
         "SELECT group_id, othercontrol
            FROM group_control_map
                 INNER JOIN groups ON group_control_map.group_id = groups.id
-          WHERE isbuggroup = 1 AND isactive = 1 AND product_id = ?
+          WHERE is_system = 0 AND use_for_bugs = 1 AND product_id = ?
                 AND (othercontrol = $shown OR othercontrol = $default)", 
         {Columns=>[1,2]}, $self->id) };
 
@@ -650,7 +651,7 @@ sub groups_mandatory {
         "SELECT group_id 
            FROM group_control_map
                 INNER JOIN groups ON group_control_map.group_id = groups.id
-          WHERE product_id = ? AND isactive = 1
+          WHERE product_id = ? AND use_for_bugs = 1
                 AND (membercontrol = $mandatory
                      OR (othercontrol = $mandatory
                          AND group_id NOT IN ($groups)))",
@@ -664,7 +665,7 @@ sub groups_mandatory {
 sub group_is_settable {
     my ($self, $group) = @_;
 
-    return 0 unless ($group->is_active && $group->is_bug_group);
+    return 0 unless ($group->use_for_bugs && !$group->is_system);
 
     my $is_mandatory = grep { $group->id == $_->id }
                             @{ $self->groups_mandatory };
@@ -688,7 +689,7 @@ sub groups_valid {
         "SELECT DISTINCT group_id
           FROM group_control_map AS gcm
                INNER JOIN groups ON gcm.group_id = groups.id
-         WHERE product_id = ? AND isbuggroup = 1
+         WHERE product_id = ? AND is_system = 0
                AND membercontrol != " . CONTROLMAPNA,  undef, $self->id);
     $self->{groups_valid} = Bugzilla::Group->new_from_list($ids);
     return $self->{groups_valid};

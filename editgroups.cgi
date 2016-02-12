@@ -185,13 +185,13 @@ if ($action eq 'add') {
 if ($action eq 'new') {
     check_token_data($token, 'add_group');
     my $group = Bugzilla::Group->create({
-        name        => scalar $cgi->param('name'),
-        description => scalar $cgi->param('desc'),
-        userregexp  => scalar $cgi->param('regexp'),
-        isactive    => scalar $cgi->param('isactive'),
-        icon_url    => scalar $cgi->param('icon_url'),
+        name         => scalar $cgi->param('name'),
+        description  => scalar $cgi->param('desc'),
+        userregexp   => scalar $cgi->param('regexp'),
+        use_for_bugs => scalar $cgi->param('use_for_bugs'),
+        icon_url     => scalar $cgi->param('icon_url'),
+        is_system    => 0,
         idle_member_removal => scalar $cgi->param('idle_member_removal'),
-        isbuggroup  => 1,
         owner_user_id => scalar $cgi->param('owner'),
         use_in_all_products => scalar $cgi->param('insertnew'),
     });
@@ -348,16 +348,16 @@ sub doGroupChanges {
         $group->set_user_regexp($cgi->param('regexp'));
     }
 
-    if ($group->is_bug_group) {
+    if (!$group->is_system) {
         if (defined $cgi->param('name')) {
             $group->set_name($cgi->param('name'));
         }
         if (defined $cgi->param('desc')) {
             $group->set_description($cgi->param('desc'));
         }
-        # Only set isactive if we came from the right form.
+        # Only set use_for_bugs if we came from the right form.
         if (defined $cgi->param('regexp')) {
-            $group->set_is_active($cgi->param('isactive'));
+            $group->set_use_for_bugs($cgi->param('use_for_bugs'));
         }
     }
 

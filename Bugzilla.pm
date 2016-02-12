@@ -80,7 +80,7 @@ use constant SHUTDOWNHTML_RETRY_AFTER => 3600;
 # Global Code
 #####################################################################
 
-$::SIG{__DIE__} = i_am_cgi() ? \&CGI::Carp::confess : \&Carp::confess;
+#$::SIG{__DIE__} = i_am_cgi() ? \&CGI::Carp::confess : \&Carp::confess;
 
 # Note that this is a raw subroutine, not a method, so $class isn't available.
 sub init_page {
@@ -890,7 +890,6 @@ sub END {
 # Also managed in mod_perl.pl and app.psgi.
 init_page() unless i_am_persistent();
 
-sub main::XXX { require Data::Dumper; my $d; if (scalar(@_) == 1) { my ($value) = @_; if (!ref($value)) { $value =~ s/\n+$//; print STDERR $value, "\n"; return; } $d = Data::Dumper->new([ $value ]); $d->Terse(1); } else { my ($name, $value) = @_; $d = Data::Dumper->new([ $value ], [ $name ]); } $d->Sortkeys(1)->Quotekeys(0); print STDERR $d->Dump(); }
 1;
 
 __END__

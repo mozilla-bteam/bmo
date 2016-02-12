@@ -304,7 +304,7 @@ sub update_system_groups {
     foreach my $definition (SYSTEM_GROUPS) {
         my $group = new Bugzilla::Group({ name => $definition->{name} });
         if (!$group) {
-            $definition->{isbuggroup} = 0;
+            $definition->{is_system} = 1;
             $definition->{silently} = !$editbugs_exists;
             my $inherited_by = delete $definition->{inherited_by};
             my $created = Bugzilla::Group->create($definition);

@@ -219,9 +219,6 @@ sub update_table_definitions {
         $dbh->bz_add_column('profiles', 'emailflags', {TYPE => 'MEDIUMTEXT'});
     }
 
-    $dbh->bz_add_column('groups', 'isactive',
-                        {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'TRUE'});
-
     $dbh->bz_add_column('attachments', 'isobsolete',
                         {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'});
 
@@ -772,6 +769,8 @@ sub update_table_definitions {
 
     # 2015-12-16 LpSolit@gmail.com - Bug 1232578
     _sanitize_audit_log_table();
+
+    _update_groups_is_active();
 
     ################################################################
     # New --TABLE-- changes should go *** A B O V E *** this point #
@@ -2034,7 +2033,7 @@ sub _setup_usebuggroups_backward_compatibility {
         my $sth = $dbh->prepare("SELECT groups.id, products.id, groups.name,
                                         products.name 
                                   FROM groups, products
-                                 WHERE isbuggroup != 0");
+                                 WHERE is_system = 0");
         $sth->execute();
         while (my ($groupid, $productid, $groupname, $productname)
                 = $sth->fetchrow_array()) 
@@ -3959,6 +3958,20 @@ sub _sanitize_audit_log_table {
               Bugzilla::Object::_sanitize_audit_log($class, $field, [undef, $passwd]);
             $sth->execute($sanitized_passwd, $class, $field, $passwd);
         }
+    }
+}
+
+sub _update_groups_is_active {
+    my $dbh = Bugzilla->dbh;
+    if (!$dbh->bz_column_info('groups', 'is_system')) {
+        $dbh->bz_add_column('groups', 'is_system',
+                            {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'});
+        $dbh->bz_add_column('groups', 'use_for_bugs',
+                            {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'TRUE'});
+        $dbh->do("UPDATE groups SET is_system = NOT isbuggroup,
+                  use_for_bugs = CASE WHEN (isactive = 1 AND isbuggroup = 1) THEN 1 ELSE 0 END");
+        $dbh->bz_drop_column('groups', 'isbuggroup');
+        $dbh->bz_drop_column('groups', 'isactive');
     }
 }
 

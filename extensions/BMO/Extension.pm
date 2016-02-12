@@ -167,7 +167,7 @@ sub template_before_process {
 
     if ($file =~ /^admin\/products\/(create|edit)\./) {
         my $product = $vars->{product};
-        my $security_groups = Bugzilla::Group->match({ isbuggroup => 1, isactive => 1 });
+        my $security_groups = Bugzilla::Group->match({ is_system => 0, use_for_bugs => 1 });
         if ($product) {
             # If set group is not active currently, we add it into the list
             if (!grep($_->name eq $product->default_security_group, @$security_groups)) {

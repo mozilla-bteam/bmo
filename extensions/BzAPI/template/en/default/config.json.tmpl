@@ -201,8 +201,10 @@ OLDATTACH2NEW = {
     "[% group.id FILTER json %]": {
       "name": "[% group.name FILTER json %]",
       "description": "[% group.description FILTER json %]",
-      "is_accepting_bugs": [% group.is_bug_group ? 'true' : 'false' %],
-      "is_active": [% group.is_active ? 'true' : 'false' %]
+      "is_accepting_bugs": [% group.is_system ? 'false' : 'true' %],
+      "is_system": [% group.is_system ? 'true' : 'false' %],
+      "is_active": [% group.use_for_bugs ? 'true' : 'false' %]
+      "use_for_bugs": [% group.use_for_bugs ? 'true' : 'false' %]
     }[% ',' UNLESS loop.last() %]
   [% END %]
   },

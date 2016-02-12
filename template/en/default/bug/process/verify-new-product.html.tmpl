@@ -107,7 +107,7 @@
 
   [% FOREACH gid = product.group_controls.keys %]
     [% group = product.group_controls.$gid %]
-    [% NEXT UNLESS group.group.is_active %]
+    [% NEXT UNLESS group.group.use_for_bugs %]
 
     [% IF group.membercontrol == constants.CONTROLMAPMANDATORY
           || (group.othercontrol ==  constants.CONTROLMAPMANDATORY && !user.in_group(group.group.name)) %]

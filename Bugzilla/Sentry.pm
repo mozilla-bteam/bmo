@@ -367,7 +367,7 @@ sub install_sentry_handler {
 
 BEGIN {
     if ($ENV{SCRIPT_NAME} || $ENV{MOD_PERL}) {
-#        install_sentry_handler();
+        install_sentry_handler();
     }
 }
 
