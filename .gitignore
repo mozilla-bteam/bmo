@@ -1,5 +1,6 @@
 /**/.htaccess
 /lib/*
+/local/*
 /template/en/custom
 /docs/en/rst/extensions/*
 /docs/en/rst/api/extensions/*
@@ -16,6 +17,10 @@
 /error_reports
 /.DS_Store
 /template_cache
+/Makefile
+/MYMETA.*
+/pm_to_blib
+/blib
 
 /skins/contrib/Dusk/admin.css
 /skins/contrib/Dusk/bug.css

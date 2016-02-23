@@ -162,7 +162,6 @@ sub FILESYSTEM {
         'email_in.pl'     => { perms => WS_EXECUTE },
         'sanitycheck.pl'  => { perms => WS_EXECUTE },
         'checksetup.pl'   => { perms => OWNER_EXECUTE },
-        'runtests.pl'     => { perms => OWNER_EXECUTE },
         'jobqueue.pl'     => { perms => OWNER_EXECUTE },
         'migrate.pl'      => { perms => OWNER_EXECUTE },
         'sentry.pl'       => { perms => WS_EXECUTE },

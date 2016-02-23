@@ -529,42 +529,12 @@ use constant INSTALLATION_MODE_NON_INTERACTIVE => 1;
 
 # Data about what we require for different databases.
 use constant DB_MODULE => {
-    # Require MySQL 5.6.x for innodb's fulltext support
-    'mysql' => {db => 'Bugzilla::DB::Mysql', db_version => '5.6.12',
-                dbd => { 
-                    package => 'DBD-mysql',
-                    module  => 'DBD::mysql',
-                    # Disallow development versions
-                    blacklist => ['_'],
-                    # For UTF-8 support. 4.001 makes sure that blobs aren't
-                    # marked as UTF-8.
-                    version => '4.001',
-                },
-                name => 'MySQL'},
-    'pg'    => {db => 'Bugzilla::DB::Pg', db_version => '9.00.0000',
-                dbd => {
-                    package => 'DBD-Pg',
-                    module  => 'DBD::Pg',
-                    # Pg 9.2 requires 2.19.3 as spclocation no longer exists.
-                    version => '2.19.3',
-                },
-                name => 'PostgreSQL'},
-     'oracle'=> {db => 'Bugzilla::DB::Oracle', db_version => '10.02.0',
-                dbd => {
-                     package => 'DBD-Oracle',
-                     module  => 'DBD::Oracle',
-                     version => '1.19',
-                },
-                name => 'Oracle'},
-     # SQLite 3.6.22 fixes a WHERE clause problem that may affect us.
-    sqlite => {db => 'Bugzilla::DB::Sqlite', db_version => '3.6.22',
-               dbd => {
-                   package => 'DBD-SQLite',
-                   module  => 'DBD::SQLite',
-                   # 1.29 is the version that contains 3.6.22.
-                   version => '1.29',
-               },
-               name => 'SQLite'},
+   # Require MySQL 5.6.x for innodb's fulltext support
+   'mysql' => {db => 'Bugzilla::DB::Mysql', db_version => '5.6.12', name => 'MySQL'},
+   'pg'    => {db => 'Bugzilla::DB::Pg', db_version => '9.00.0000', name => 'PostgreSQL'},
+    'oracle'=> {db => 'Bugzilla::DB::Oracle', db_version => '10.02.0', name => 'Oracle'},
+    # SQLite 3.6.22 fixes a WHERE clause problem that may affect us.
+    sqlite => {db => 'Bugzilla::DB::Sqlite', db_version => '3.6.22', name => 'SQLite'},
 };
 
 # True if we're on Win32.
