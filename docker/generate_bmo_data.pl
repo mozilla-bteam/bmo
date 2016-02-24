@@ -6,7 +6,8 @@
 use strict;
 use warnings;
 
-use lib '.';
+use FindBin qw($RealBin);
+use lib ("$RealBin/..", "$RealBin/../lib", "$RealBin/../local/lib/perl5");
 
 use Bugzilla;
 use Bugzilla::User;

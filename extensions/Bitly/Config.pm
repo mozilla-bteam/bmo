@@ -14,25 +14,18 @@ use warnings;
 use constant NAME => 'Bitly';
 
 sub REQUIRED_MODULES {
-    my @required;
-    push @required, {
-        package => 'LWP',
-        module  => 'LWP',
-        version => 5,
-    };
-    # LWP 6 split https support into a separate package
-    if (Bugzilla::Install::Requirements::have_vers({
-        package => 'LWP',
-        module  => 'LWP',
-        version => 6,
-    })) {
-        push @required, {
-            package => 'LWP-Protocol-https',
-            module  => 'LWP::Protocol::https',
-            version => 0
-        };
-    }
-    return \@required;
+    return [
+        {
+            package => 'LWP',
+            module  => 'LWP',
+            version => 5,
+        },
+        {
+            package => 'LWP',
+            module  => 'LWP',
+            version => 6,
+        }
+    ];
 }
 
 use constant OPTIONAL_MODULES => [

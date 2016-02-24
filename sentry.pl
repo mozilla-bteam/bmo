@@ -17,12 +17,13 @@ use 5.10.1;
 use strict;
 use warnings;
 
+# exit early if there's nothing to send
+use FindBin qw($RealBin);
+use lib ("$RealBin/.", "$RealBin/lib", "$RealBin/local/lib/perl5");
+
 BEGIN {
     delete $ENV{SERVER_SOFTWARE};
 
-    # exit early if there's nothing to send
-    use FindBin qw($Bin);
-    use lib $Bin, "$Bin/lib";
     use Bugzilla::Constants;
     exit(0) unless glob(bz_locations()->{error_reports} . '/*.dump');
 }

@@ -110,7 +110,7 @@ my %optional_features = (
         description => 'Documentation',
     },
     xmlrpc => {
-        description => 'XML-RPC Interfaze',
+        description => 'XML-RPC Interface',
         prereqs     => {
             runtime =>
                 { requires => { 'XMLRPC::Lite' => '0.712', 'SOAP::Lite' => '0.712', 'Test::Taint' => '1.06' } }
@@ -164,6 +164,17 @@ my %optional_features = (
                 }
             }
         }
+    },
+    mfa => {
+        description => 'Multi-Factor Authentication',
+        prereqs     => {
+            runtime => {
+                requires => {
+                    'Auth::GoogleAuth' => '1.01',
+                    'GD::Barcode::QRcode' => '0',
+                },
+            }
+        },
     },
     mod_perl => {
         description => 'mod_perl support under Apache',
