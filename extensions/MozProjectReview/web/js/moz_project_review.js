@@ -138,25 +138,15 @@ var MPR = {
                 page_sections.legal_vendor_services_where_row = true;
             }
 
-            if (MPR.fieldValue('relationship_type') == 'Hardware Purchase') {
-                page_sections.finance_questions = true;
-            }
-
             if (MPR.fieldValue('data_access') == 'Yes') {
                 page_sections.legal_questions = true;
                 page_sections.sec_review_questions = true;
                 page_sections.data_compliance_questions = true;
             }
 
-            if (MPR.fieldValue('vendor_cost') == '<= $25,000') {
-                page_sections.po_needed_row = true;
-            }
-
-            if (MPR.fieldValue('po_needed') == 'Yes') {
-                page_sections.finance_questions = true;
-            }
-
-            if (MPR.fieldValue('vendor_cost') == '> $25,000') {
+            if (MPR.fieldValue('vendor_cost') == '< $25,000 PO Needed'
+                || MPR.fieldValue('vendor_cost') == '> $25,000')
+            {
                 page_sections.finance_questions = true;
             }
         }
