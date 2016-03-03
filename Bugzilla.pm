@@ -7,7 +7,7 @@
 
 package Bugzilla;
 
-use 5.10.1;
+use 5.14.0;
 use strict;
 use warnings;
 
@@ -311,7 +311,6 @@ sub has_feature {
     my ($class, $feature_name) = @_;
 
     return 0 unless _CAN_HAS_FEATURE;
-
     my $cache = $class->request_cache;
     return $cache->{feature}->{$feature_name}
         if exists $cache->{feature}->{$feature_name};
@@ -574,7 +573,6 @@ sub error_mode {
         $class->request_cache->{error_mode} = $newval;
     }
 
-    # XXX - Once we require Perl 5.10.1, this test can be replaced by //.
     if (exists $class->request_cache->{error_mode}) {
         return $class->request_cache->{error_mode};
     }
@@ -623,7 +621,6 @@ sub usage_mode {
         $class->request_cache->{usage_mode} = $newval;
     }
 
-    # XXX - Once we require Perl 5.10.1, this test can be replaced by //.
     if (exists $class->request_cache->{usage_mode}) {
         return $class->request_cache->{usage_mode};
     }
@@ -844,10 +841,10 @@ sub clear_request_cache {
 # This is a per-process cache.  Under mod_cgi it's identical to the
 # request_cache.  When using mod_perl, items in this cache live until the
 # worker process is terminated.
-our $_process_cache = {};
+my $process_cache = {};
 
 sub process_cache {
-    return $_process_cache;
+    return $process_cache;
 }
 
 # BMO - Instrumentation

@@ -42,6 +42,7 @@
   jquery = []
   jquery_css = []
   generate_api_token = 0
+  favicon_url = "images/favicon.ico"
 %]
 
 [% IF NOT no_yui %]
@@ -272,6 +273,7 @@
     [% IF allow_mobile && is_mobile_browser %]
       <meta name="viewport" content="width=device-width, initial-scale=1">
     [% END %]
+    <link rel="shortcut icon" href="[% favicon_url FILTER html %]">
     [% Hook.process("additional_header") %]
   </head>
 

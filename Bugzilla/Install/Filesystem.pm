@@ -15,7 +15,7 @@ package Bugzilla::Install::Filesystem;
 # * Files do not have the correct permissions.
 # * The database does not exist.
 
-use 5.10.1;
+use 5.14.0;
 use strict;
 use warnings;
 
@@ -166,11 +166,15 @@ sub FILESYSTEM {
         'migrate.pl'      => { perms => OWNER_EXECUTE },
         'sentry.pl'       => { perms => WS_EXECUTE },
         'metrics.pl'      => { perms => WS_EXECUTE },
+        'Makefile.PL'     => { perms => OWNER_WRITE },
+        'gen-cpanfile.pl' => { perms => OWNER_EXECUTE },
         'clean-bug-user-last-visit.pl' => { perms => WS_EXECUTE },
 
         'app.psgi'      => { perms => CGI_READ },
         'Bugzilla.pm'    => { perms => CGI_READ },
         "$localconfig*"  => { perms => CGI_READ },
+        'META.*'        => { perms => CGI_READ },
+        'MYMETA.*'      => { perms => CGI_READ },
         'bugzilla.dtd'   => { perms => WS_SERVE },
         'mod_perl.pl'    => { perms => WS_SERVE },
         'robots.txt'     => { perms => WS_SERVE },
@@ -194,6 +198,7 @@ sub FILESYSTEM {
 
         # google webmaster tools verification files
         'google*.html' => { perms => WS_SERVE },
+        'xt/config/generate_test_data.pl' => { perms => OWNER_EXECUTE },
     );
 
     # Directories that we want to set the perms on, but not

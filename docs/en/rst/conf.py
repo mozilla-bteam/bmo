@@ -46,7 +46,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'BMO'
-copyright = u'2015, The BMO Team'
+copyright = u'2016, The BMO Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -104,7 +104,7 @@ rst_prolog = """
 .. role:: field
     :class: field
 
-.. |min-perl-ver| replace:: 5.10.1
+.. |min-perl-ver| replace:: 5.14.0
 """
 
 rst_epilog = """

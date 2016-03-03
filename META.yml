@@ -196,7 +196,7 @@ requires:
   IO::Scalar: '0'
   Image::Magick: '0'
   JSON: '0'
-  JSON::XS: '2.0'
+  JSON::XS: '2.01'
   LWP: '6'
   LWP::UserAgent: '0'
   List::MoreUtils: '0.32'

@@ -7,7 +7,7 @@
 
 package Bugzilla::Error;
 
-use 5.10.1;
+use 5.14.0;
 use strict;
 use warnings;
 
@@ -26,7 +26,6 @@ use Date::Format;
 
 sub _throw_error {
     my ($name, $error, $vars) = @_;
-    my $dbh = Bugzilla->dbh;
     my $cache = Bugzilla->request_cache;
     $vars ||= {};
 
