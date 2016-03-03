@@ -2622,7 +2622,7 @@ Splinter.showChooseAttachment = function () {
         responseType: YAHOO.util.DataSource.TYPE_JSARRAY,
         responseSchema: { fields:["id","description","date", "extra"] }
     };
-
+ 
     var columnDefs = [
         { key: "id", label: "ID", formatter: attachLink },
         { key: "description", label: "Description", formatter: attachDesc },

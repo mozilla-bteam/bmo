@@ -24,6 +24,7 @@ use base qw(Bugzilla::Extension);
 
 use Bugzilla::Error;
 use Bugzilla::Hook;
+use Bugzilla::Token;
 use Bugzilla::Util qw(trick_taint);
 use JSON;
 use Storable qw(dclone);
@@ -87,6 +88,9 @@ sub page_before_template {
     my $data = $input->{table_data};
     my $edits = [];
     if ($data) {
+        check_hash_token($input->{token}, [$table_name]);
+        delete_token($input->{token});
+
         $data = from_json($data)->{data};
         $edits = dclone($data);
         eval {
@@ -171,6 +175,7 @@ sub page_before_template {
 
     $vars->{table_name} = $table_name;
     $vars->{blurb}      = $table->{blurb};
+    $vars->{token}      = issue_hash_token([$table_name]);
     $vars->{table_data} = to_json({
         fields   => \@fields,
         id_field => $id_field,
