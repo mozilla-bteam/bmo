@@ -251,7 +251,7 @@ sub quoteUrls {
     my $bug_word = template_var('terms')->{bug};
     my $bug_re = qr/\Q$bug_word\E$s*\#?$s*(\d+)/i;
     my $comment_word = template_var('terms')->{comment};
-    my $comment_re = qr/(?:\Q$comment_word\E|comment)$s*\#?$s*(\d+)/ai;
+    my $comment_re = qr/(?:\Q$comment_word\E|comment)$s*\#?$s*(\d+)/i;
     $text =~ s~\b($bug_re(?:$s*,?$s*$comment_re)?|$comment_re)
               ~ # We have several choices. $1 here is the link, and $2-4 are set
                 # depending on which part matched
