@@ -6,7 +6,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -60,11 +60,11 @@ if ($single) {
     push @bugs, Bugzilla::Bug->check({ id => $id, cache => 1 });
     if (defined $cgi->param('mark')) {
         foreach my $range (split ',', $cgi->param('mark')) {
-            if ($range =~ /^(\d+)-(\d+)$/a) {
+            if ($range =~ /^(\d+)-(\d+)$/) {
                foreach my $i ($1..$2) {
                    $marks{$i} = 1;
                }
-            } elsif ($range =~ /^(\d+)$/a) {
+            } elsif ($range =~ /^(\d+)$/) {
                $marks{$1} = 1;
             }
         }

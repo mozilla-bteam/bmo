@@ -8,7 +8,7 @@
 
 package Bugzilla::Template;
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -160,7 +160,9 @@ sub quoteUrls {
     # mailto can't contain space or #, so we don't have to bother for that
     # Do this by replacing matches with \x{FDD2}$count\x{FDD3}
     # \x{FDDx} is used because it's unlikely to occur in the text
-    # and are reserved unicode characters.
+    # and are reserved unicode characters. We disable warnings for now
+    # until we require Perl 5.13.9 or newer.
+    no warnings 'utf8';
 
     # If the comment is already wrapped, we should ignore newlines when
     # looking for matching regexps. Else we should take them into account.

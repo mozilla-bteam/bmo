@@ -21,7 +21,7 @@ For interface details see L<Bugzilla::DB> and L<DBI>.
 
 package Bugzilla::DB::Oracle;
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -721,7 +721,7 @@ sub _get_create_trigger_ddl {
 
 package Bugzilla::DB::Oracle::st;
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 

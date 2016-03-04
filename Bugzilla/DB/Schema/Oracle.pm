@@ -13,7 +13,7 @@ package Bugzilla::DB::Schema::Oracle;
 #
 ###############################################################################
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 

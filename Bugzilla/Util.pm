@@ -7,7 +7,7 @@
 
 package Bugzilla::Util;
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -50,13 +50,13 @@ sub trick_taint {
 }
 
 sub detaint_natural {
-    my $match = $_[0] =~ /^(\d+)$/a;
+    my $match = $_[0] =~ /^(\d+)$/;
     $_[0] = $match ? int($1) : undef;
     return (defined($_[0]));
 }
 
 sub detaint_signed {
-    my $match = $_[0] =~ /^([-+]?\d+)$/a;
+    my $match = $_[0] =~ /^([-+]?\d+)$/;
     # The "int()" call removes any leading plus sign.
     $_[0] = $match ? int($1) : undef;
     return (defined($_[0]));
@@ -751,8 +751,8 @@ sub validate_date {
     if ($ts) {
         $date2 = time2str("%Y-%m-%d", $ts);
 
-        $date =~ s/(\d+)-0*(\d+?)-0*(\d+?)/$1-$2-$3/a;
-        $date2 =~ s/(\d+)-0*(\d+?)-0*(\d+?)/$1-$2-$3/a;
+        $date =~ s/(\d+)-0*(\d+?)-0*(\d+?)/$1-$2-$3/; 
+        $date2 =~ s/(\d+)-0*(\d+?)-0*(\d+?)/$1-$2-$3/;
     }
     my $ret = ($ts && $date eq $date2);
     return $ret ? 1 : 0;

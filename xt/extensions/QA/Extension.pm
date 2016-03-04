@@ -7,11 +7,11 @@
 
 package Bugzilla::Extension::QA;
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 
-use parent qw(Bugzilla::Extension);
+use base qw(Bugzilla::Extension);
 
 use Bugzilla::Extension::QA::Util;
 use Bugzilla::Constants;

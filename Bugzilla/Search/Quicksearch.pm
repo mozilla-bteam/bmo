@@ -7,7 +7,7 @@
 
 package Bugzilla::Search::Quicksearch;
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -566,7 +566,7 @@ sub _special_field_syntax {
     return unless defined($word);
     
     # P1-5 Syntax
-    if ($word =~ m/^P(\d+)(?:-(\d+))?$/ai) {
+    if ($word =~ m/^P(\d+)(?:-(\d+))?$/i) {
         my ($p_start, $p_end) = ($1, $2);
         my $legal_priorities = get_legal_field_values('priority');
 

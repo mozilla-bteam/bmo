@@ -10,7 +10,7 @@
 #Bugzilla Test 6#
 ####Spelling#####
 
-use 5.14.0;
+use 5.10.1;
 use strict;
 use warnings;
 
