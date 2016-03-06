@@ -3,6 +3,7 @@ dbus-x11
 expat-devel
 firefox
 gd-devel
+gmp-devel
 httpd-devel
 java-1.7.0-openjdk
 memcached

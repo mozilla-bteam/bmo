@@ -40,7 +40,7 @@ use constant REQUIRED_MODULES => [
     {
         package => 'Crypt-SMIME',
         module  => 'Crypt::SMIME',
-        version => '0.15',
+        version => 0,
     },
     {
         package => 'HTML-Tree',

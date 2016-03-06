@@ -6,19 +6,19 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-if [ -z "$TEST_SUITE" ]; then
-    TEST_SUITE=sanity
-fi
-
 set -e
 
 # Output to log file as well as STDOUT/STDERR
 exec > >(tee /runtests.log) 2>&1
 
+if [ -z "$TEST_SUITE" ]; then
+    TEST_SUITE=sanity
+fi
+
 echo "== Retrieving Bugzilla code"
 echo "Checking out $GITHUB_BASE_GIT $GITHUB_BASE_BRANCH ..."
 mv $BUGZILLA_ROOT ${BUGZILLA_ROOT}.back
-git clone $GITHUB_BASE_GIT --single-branch --depth 1 --branch $GITHUB_BASE_BRANCH $BUGZILLA_ROOT
+git clone $GITHUB_BASE_GIT --branch $GITHUB_BASE_BRANCH $BUGZILLA_ROOT
 rsync -a ${BUGZILLA_ROOT}.back/local/ ${BUGZILLA_ROOT}/local/
 cd $BUGZILLA_ROOT
 if [ "$GITHUB_BASE_REV" != "" ]; then
@@ -28,12 +28,6 @@ fi
 
 echo -e "\n== Checking dependencies for changes"
 /docker_files/install_deps.sh
-
-if [ "$TEST_SUITE" = "sanity" ]; then
-    cd $BUGZILLA_ROOT
-    /bin/bash /docker_files/buildbot_step "Sanity" prove -f -v t/*.t
-    exit $?
-fi
 
 if [ "$TEST_SUITE" = "docs" ]; then
     cd $BUGZILLA_ROOT/docs
@@ -50,16 +44,21 @@ echo -e "\n== Starting memcached"
 sleep 3
 
 echo -e "\n== Updating configuration"
-sed -e "s?%DB%?$BUGS_DB_DRIVER?g" --in-place xt/config/checksetup_answers.txt
-echo "\$answer{'memcached_servers'} = 'localhost:11211';" >> xt/config/checksetup_answers.txt
+mysql -u root mysql -e "CREATE DATABASE bugs_test CHARACTER SET = 'utf8';"
+echo "\$answer{'memcached_servers'} = 'localhost:11211';" >> qa/config/checksetup_answers.txt
 
 echo -e "\n== Running checksetup"
-cd $BUGZILLA_ROOT
-./checksetup.pl xt/config/checksetup_answers.txt
-./checksetup.pl xt/config/checksetup_answers.txt
+./checksetup.pl qa/config/checksetup_answers.txt
+./checksetup.pl qa/config/checksetup_answers.txt
+
+if [ "$TEST_SUITE" = "sanity" ]; then
+    /bin/bash /docker_files/buildbot_step "Sanity" prove -f -v t/*.t
+    exit $?
+fi
 
 echo -e "\n== Generating test data"
-cd $BUGZILLA_ROOT/xt/config
+perl /docker_files/generate_bmo_data.pl
+cd $BUGZILLA_ROOT/qa/config
 perl generate_test_data.pl
 
 echo -e "\n== Starting web server"
@@ -87,11 +86,13 @@ if [ "$TEST_SUITE" = "selenium" ]; then
     # but no tests actually executed.
     [ $NO_TESTS ] && exit 0
 
-    /bin/bash /docker_files/buildbot_step "Selenium" prove -f -v xt/selenium/*.t
+    cd $BUGZILLA_ROOT/qa/t
+    /nin/bash /docker_files/buildbot_step "Selenium" prove -f -v -I$BUGZILLA_ROOT/lib test_*.
     exit $?
 fi
 
 if [ "$TEST_SUITE" = "webservices" ]; then
-    /bin/bash /docker_files/buildbot_step "Webservices" prove -f -v xt/{rest,webservice}/*.t
+    cd $BUGZILLA_ROOT/qa/t
+    /bin/bash /docker_files/buildbot_step "Selenium" prove -f -v -I$BUGZILLA_ROOT/lib test_*.
     exit $?
 fi

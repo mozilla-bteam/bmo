@@ -5,22 +5,20 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-FROM centos:7
+FROM centos:6
 MAINTAINER David Lawrence <dkl@mozilla.com>
 
 # Environment configuration
 ENV USER bugzilla
 ENV HOME /home/$USER
-ENV BUGS_DB_DRIVER mysql
 ENV BUGZILLA_ROOT $HOME/devel/htdocs/bugzilla
-ENV GITHUB_BASE_GIT https://github.com/bugzilla/bugzilla
-ENV GITHUB_BASE_BRANCH master
-ENV GITHUB_QA_GIT https://github.com/bugzilla/qa
+ENV GITHUB_BASE_GIT https://github.com/mozilla/webtools-bmo-bugzilla
+ENV GITHUB_BASE_BRANCH upstream-merge
 
 # Distribution package installation
 COPY docker_files /docker_files
 RUN yum -y -q update \
-    && yum -y -q install https://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm epel-release \
+    && yum -y -q install https://dev.mysql.com/get/mysql-community-release-el6-5.noarch.rpm epel-release \
     && yum -y -q groupinstall "Development Tools" \
     && yum -y -q install `cat /docker_files/rpm_list` \
     && yum clean all

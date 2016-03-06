@@ -11,6 +11,9 @@ cd $BUGZILLA_ROOT
 # Install Perl dependencies
 CPANM="cpanm -l local --quiet --skip-satisfied"
 
+# Crypt::SMIME > 0.15 fails to build properly on RHEL6
+$CPANM Crypt::SMIME@0.15
+
 $CPANM --installdeps --with-all-features \
        --without-feature oracle --without-feature sqlite --without-feature pg .
 
