@@ -257,6 +257,8 @@ sub bounty_attachment {
         ThrowUserError('bounty_attachment_missing_reporter')
             unless $input->{reporter_email};
 
+        check_hash_token($input->{token}, ['bounty', $bug->id]);
+
         my @fields = qw( reporter_email amount_paid reported_date fixed_date awarded_date publish );
         my %form =  map { $_ => $input->{$_} } @fields;
         $form{credit} = [ grep { defined } map { $input->{"credit_$_"} } 1..3 ];
@@ -301,6 +303,7 @@ sub bounty_attachment {
             $vars->{form}{fixed_date} = format_time($bug->cf_last_resolved, "%Y-%m-%d"),
         }
     }
+    $vars->{form}{token} = issue_hash_token(['bounty', $bug->id]);
 }
 
 sub _attachment_is_bounty_attachment {
@@ -309,6 +312,8 @@ sub _attachment_is_bounty_attachment {
     return 0 unless $attachment->filename eq 'bugbounty.data';
     return 0 unless $attachment->contenttype eq 'text/plain';
     return 0 unless $attachment->isprivate;
+    return 0 unless $attachment->attacher->in_group('bounty-team');
+
     return $attachment->description =~ /^(?:[^,]*,)+[^,]*$/;
 }
 
@@ -2044,7 +2049,10 @@ sub enter_bug_start {
     # format (can be overridden with a __standard__ format)
     my $cgi = Bugzilla->cgi;
     if ($cgi->param('format')) {
-        $cgi->delete('format') if $cgi->param('format') eq '__standard__';
+        if ($cgi->param('format') eq '__standard__') {
+            $cgi->delete('format');
+            $cgi->param('format_forced', 1);
+        }
     } elsif (my $format = forced_format($cgi->param('product'))) {
         $cgi->param('format', $format);
     }
@@ -2125,6 +2133,7 @@ sub query_database {
     $vars->{query} = $query;
 
     if ($query) {
+        check_hash_token($input->{token}, ['query_database']);
         trick_taint($query);
         $vars->{executed} = 1;
 

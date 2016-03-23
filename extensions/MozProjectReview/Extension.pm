@@ -93,7 +93,7 @@ sub post_bug_after_creation {
 
     if ($do_sec_review) {
         $child_params->{'bug_data'} = {
-            short_desc   => 'Rapid Risk Assessment: ' . $bug->short_desc,
+            short_desc   => 'RRA: ' . $bug->short_desc,
             product      => 'Enterprise Information Security',
             component    => 'Rapid Risk Analysis',
             bug_severity => 'normal',

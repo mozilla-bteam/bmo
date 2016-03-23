@@ -134,6 +134,11 @@
     This site does not have auth delegation enabled.
     Please contact an administrator if you require this functionality.
 
+  [% ELSIF error == "auth_delegation_illegal_protocol" %]
+    [% title = "Invalid Protocol" %]
+    The callback URI uses an illegal protocol: <em>[% protocol FILTER html %]</em>.
+    Only <em>http</em> and <em>https</em> are allowed.
+
   [% ELSIF error == "auth_delegation_missing_callback" %]
     [% title = "Auth delegation impossible without callback URI" %]
     It looks like auth delegation was attempted, but no callback URI was passed.
@@ -147,6 +152,12 @@
   [% ELSIF error == "auth_delegation_missing_token" %]
     [% title = "Auth delegation can't be confirmed" %]
     Auth delegation cannot be confirmed due to missing or invalid token.
+
+  [% ELSIF error == "auth_delegation_invalid_description" %]
+    [% title = "Auth delegation suspicious description" %]
+    It looks like auth delegation was attempted with a suspicious description!
+    Auth Delegation descriptions should consist only of words, with no other punctuation.
+    You were sent here by some other site; please contact them for support.
 
   [% ELSIF error == "auth_delegation_invalid_token" %]
     [% title = "Auth delegation can't be confirmed" %]
@@ -328,8 +339,9 @@
       <ul>
         <li><code>show_bug.cgi</code> in a [% terms.Bugzilla %]
           installation.</li>
-        <li>A b[% %]ug on launchpad.net</li>
+        <li>A b[% %]ug on launchpad.net.</li>
         <li>An issue on code.google.com.</li>
+        <li>An issue on b[% %]ugs.chromium.org.</li>
         <li>A b[% %]ug on b[% %]ugs.debian.org.</li>
         <li>An issue in a JIRA installation.</li>
         <li>A ticket in a Trac installation.</li>
@@ -337,7 +349,9 @@
         <li>A b[% %]ug on sourceforge.net.</li>
         <li>An issue/pull request on github.com.</li>
         <li>A question on support.mozilla.org.</li>
+        <li>An Aha feature on aha.io.</li>
         <li>An issue on webcompat.com.</li>
+        <li>A request on ServiceNow.</li>
       </ul>
     [% ELSIF reason == 'id' %]
       There is no valid [% terms.bug %] id in that URL.

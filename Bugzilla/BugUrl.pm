@@ -64,6 +64,7 @@ use constant SUB_CLASSES => qw(
     Bugzilla::BugUrl::Bugzilla
     Bugzilla::BugUrl::Launchpad
     Bugzilla::BugUrl::Google
+    Bugzilla::BugUrl::Chromium
     Bugzilla::BugUrl::Debian
     Bugzilla::BugUrl::JIRA
     Bugzilla::BugUrl::Trac
@@ -71,7 +72,9 @@ use constant SUB_CLASSES => qw(
     Bugzilla::BugUrl::SourceForge
     Bugzilla::BugUrl::GitHub
     Bugzilla::BugUrl::MozSupport
+    Bugzilla::BugUrl::Aha
     Bugzilla::BugUrl::WebCompat
+    Bugzilla::BugUrl::ServiceNow
 );
 
 ###############################

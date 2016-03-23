@@ -281,6 +281,15 @@ field name in ``include_fields``.
 * Multiple-Selection Fields: (array of strings)
 * Date/Time Fields: (datetime)
 
+**Errors**
+
+* 100 (Invalid Bug Alias)
+  If you specified an alias and there is no bug with that alias.
+* 101 (Invalid Bug ID)
+  The bug_id you specified doesn't exist in the database.
+* 102 (Access Denied)
+  You do not have access to the bug_id you specified.
+
 .. _rest_history:
 
 Bug History
@@ -389,6 +398,10 @@ attachment_id  int     The ID of the attachment that was changed.
                        object.
 =============  ======  ==========================================================
 
+**Errors**
+
+Same as :ref:`rest_single_bug`.
+
 .. _rest_search_bugs:
 
 Search Bugs
@@ -447,6 +460,9 @@ component         string    The name of the Component that the bug is in. Note
                             name, and you search for that name, bugs in *all*
                             those Components will be returned. If you don't want
                             this, be sure to also specify the ``product`` argument.
+count_only        boolean   If set to true, an object with a single key called
+                            "bug_count" will be returned which is the number of
+                            bugs that matched the search.
 creation_time     datetime  Searches for bugs that were created at this time or
                             later. May not be an array.
 creator           string    The login name of the user who created the bug. You
@@ -472,6 +488,7 @@ platform          string    The Platform (sometimes called "Hardware") field of
                             a bug.
 priority          string    The Priority field on a bug.
 product           string    The name of the Product that the bug is in.
+quicksearch       string    Search for bugs using quicksearch syntax.
 resolution        string    The current resolution--only set if a bug is closed.
                             You can find open bugs by searching for bugs with an
                             empty resolution.
@@ -508,12 +525,19 @@ whiteboard        string    Search the "Status Whiteboard" field on bugs for a
                             substring. Works the same as the ``summary`` field
                             described above, but searches the Status Whiteboard
                             field.
-quicksearch       string    Search for bugs using quicksearch syntax.
 ================  ========  =====================================================
 
 **Response**
 
 The same as :ref:`rest_single_bug`.
+
+**Errors**
+
+If you specify an invalid value for a particular field, you just won't
+get any results for that value.
+
+* 1000 (Parameters Required)
+  You may not search without any search terms.
 
 .. _rest_create_bug:
 
@@ -616,6 +640,9 @@ resolution          string   If you are filing a closed bug, then you will have
 target_milestone    string   A valid target milestone for this product.
 flags               array    Flags objects to add to the bug. The object format
                              is described in the Flag object below.
+keywords            array    One or more valid keywords to add to this bug.
+dependson           array    One or more valid bug ids that this bug depends on.
+blocked             array    One or more valid bug ids that this bug blocks.
 ==================  =======  ====================================================
 
 Flag object:
@@ -651,6 +678,46 @@ name  type  description
 ====  ====  ======================================
 id    int   This is the ID of the newly-filed bug.
 ====  ====  ======================================
+
+**Errors**
+
+* 51 (Invalid Object)
+  You specified a field value that is invalid. The error message will have
+  more details.
+* 103 (Invalid Alias)
+  The alias you specified is invalid for some reason. See the error message
+  for more details.
+* 104 (Invalid Field)
+  One of the drop-down fields has an invalid value, or a value entered in a
+  text field is too long. The error message will have more detail.
+* 105 (Invalid Component)
+  You didn't specify a component.
+* 106 (Invalid Product)
+  Either you didn't specify a product, this product doesn't exist, or
+  you don't have permission to enter bugs in this product.
+* 107 (Invalid Summary)
+  You didn't specify a summary for the bug.
+* 116 (Dependency Loop)
+  You specified values in the "blocks" or "depends_on" fields
+  that would cause a circular dependency between bugs.
+* 120 (Group Restriction Denied)
+  You tried to restrict the bug to a group which does not exist, or which
+  you cannot use with this product.
+* 129 (Flag Status Invalid)
+  The flag status is invalid.
+* 130 (Flag Modification Denied)
+  You tried to request, grant, or deny a flag but only a user with the required
+  permissions may make the change.
+* 131 (Flag not Requestable from Specific Person)
+  You can't ask a specific person for the flag.
+* 133 (Flag Type not Unique)
+  The flag type specified matches several flag types. You must specify
+  the type id value to update or add a flag.
+* 134 (Inactive Flag Type)
+  The flag type is inactive and cannot be used to create new flags.
+* 504 (Invalid User)
+  Either the QA Contact, Assignee, or CC lists have some invalid user
+  in them. The error message will have more details.
 
 .. _rest_update_bug:
 
@@ -698,8 +765,8 @@ name                   type     description
 =====================  =======  =================================================
 alias                  object   These specify the aliases of a bug that can be
                                 used instead of a bug number when acessing this
-                                bug. To set these, you should pass a hash as the
-                                value. The object may contain the following
+                                bug. To set these, you should pass an object as
+                                the value. The object may contain the following
                                 items:
 
                                 * ``add`` (array) Aliases to add to this field.
@@ -782,7 +849,7 @@ deadline               date     The Deadline field is a date specifying when the
 dupe_of                int      The bug that this bug is a duplicate of. If you
                                 want to mark a bug as a duplicate, the safest
                                 thing to do is to set this value and *not* set
-                                the ``status`` or ``resolutio`` fields. They will
+                                the ``status`` or ``resolution`` fields. They will
                                 automatically be set by Bugzilla to the
                                 appropriate values for duplicate bugs.
 estimated_time         double   The total estimate of time required to fix the
@@ -984,3 +1051,33 @@ Currently, some fields are not tracked in changes: ``comment``,
 ``comment_is_private``, and ``work_time``. This means that they will not
 show up in the return value even if they were successfully updated.
 This may change in a future version of Bugzilla.
+
+**Errors**
+
+This method can throw all the same errors as :ref:`rest_single_bug`, plus:
+
+* 129 (Flag Status Invalid)
+  The flag status is invalid.
+* 130 (Flag Modification Denied)
+  You tried to request, grant, or deny a flag but only a user with the required
+  permissions may make the change.
+* 131 (Flag not Requestable from Specific Person)
+  You can't ask a specific person for the flag.
+* 132 (Flag not Unique)
+  The flag specified has been set multiple times. You must specify the id
+  value to update the flag.
+* 133 (Flag Type not Unique)
+  The flag type specified matches several flag types. You must specify
+  the type id value to update or add a flag.
+* 134 (Inactive Flag Type)
+  The flag type is inactive and cannot be used to create new flags.
+* 140 (Markdown Disabled)
+  You tried to set the "is_markdown" flag of the "comment" to true but Markdown feature is
+  not enabled.
+* 601 (Invalid MIME Type)
+  You specified a "content_type" argument that was blank, not a valid
+  MIME type, or not a MIME type that Bugzilla accepts for attachments.
+* 603 (File Name Not Specified)
+  You did not specify a valid for the "file_name" argument.
+* 604 (Summary Required)
+  You did not specify a value for the "summary" argument.

@@ -39,6 +39,7 @@ function init_module_visibility() {
         var that = $(this);
         var id = that.attr('id');
         if (!id) return;
+        if (that.data('non-stick')) return;
         var stored = localStorage.getItem(id + '.visibility');
         if (stored) {
             slide_module(that, stored, true);
@@ -301,7 +302,7 @@ $(function() {
     // lightboxes
     $('.lightbox, .comment-text .lightbox + span:first-of-type a:first-of-type')
         .click(function(event) {
-            if (event.metaKey)
+            if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)
                 return;
             event.preventDefault();
             lb_show(this);
@@ -766,6 +767,11 @@ $(function() {
     $('.take-btn')
         .click(function(event) {
             event.preventDefault();
+            $('#field-status-view').hide();
+            $('#field-status-edit').show();
+            if ($('#bug_status option').filter(function() { return $(this).val() == 'ASSIGNED'; }).length) {
+                $('#assigned-container').show();
+            }
             var field = $(this).data('field');
             $('#field-' + field + '.edit-hide').hide();
             $('#field-' + field + '.edit-show').show();
@@ -774,6 +780,13 @@ $(function() {
             if ($('#set-default-assignee').is(':checked')) {
                 $('#set-default-assignee').click();
             }
+        });
+
+    // mark as assigned
+    $('#mark-as-assigned-btn')
+        .click(function(event) {
+            event.preventDefault();
+            $('#bug_status').val('ASSIGNED').change();
         });
 
     // reply button
@@ -884,6 +897,14 @@ $(function() {
                 $('#comment').focus();
                 $.scrollTo($('#bottom-save-btn'));
             }
+        });
+
+    // cab review 'gate'
+    $('#cab-review-gate-close')
+        .click(function(event) {
+            event.preventDefault();
+            $('#cab-review-gate').hide();
+            $('#cab-review-edit').show();
         });
 
     // custom textarea fields

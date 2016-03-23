@@ -73,6 +73,15 @@
       [% END %]
     </p>
 
+    [% IF user.mfa && user.in_group("mozilla-employee-confidential") %]
+      <p class="mfa-disable-blurb">
+        You will need to disable your two-factor authentication in order to change to a different method.
+        There will be a small amount of time when your account will not be as secure, so you may use the
+        <a href="userprefs.cgi?tab=sessions">sessions</a> page to log out all other sessions other
+        than the current one after setting up the new method.
+      </p>
+    [% END %]
+
     <div id="mfa-recovery-container" style="display:none">
       <p>
         Your current password and verification code is required to generate
@@ -93,15 +102,15 @@
 
     <div id="mfa-auth-container" style="display:none">
       <p>
-        <label>Current Password:</label>
+        <label for="mfa-password">Current Password:</label>
         <input type="password" name="password" id="mfa-password" required>
       </p>
 
       [%# disable/recovery - totp %]
       [% IF user.mfa == "TOTP" %]
 
-        <label>Code:</label>
-        <input type="text" name="code"
+        <label for="code">Code:</label>
+        <input type="text" name="code" id="code"
                placeholder="123456" maxlength="9" pattern="\d{6,9}" size="10"
                autocomplete="off" required>
 
@@ -138,7 +147,7 @@
       [% IF Param("duo_host") && user.in_group("mozilla-employee-confidential") %]
         <button type="button" id="mfa-select-duo">Duo Security</button><br>
         <blockquote>
-          Requires a smartphone and a <a href="https://www.duosecurity.com/" target="_blank">Duo Security</a>
+          Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank">Duo Security</a>
           account (recommended for Mozilla employees).
         </blockquote>
       [% END %]
@@ -149,7 +158,7 @@
         Your current password is required to enable two-factor authentication.
       </p>
       <p>
-        <label>Current Password:</label>
+        <label for="mfa-password">Current Password:</label>
         <input type="password" name="password" id="mfa-password" required>
       </p>
     </div>
@@ -167,7 +176,7 @@
           Scan this QR code with your <a href="#" id="mfa-totp-apps">TOTP App</a>,
           then enter the six digit code the app generates.<br>
           <br>
-          <label>Code:</label>
+          <label id="mfa-totp-enable-code">Code:</label>
           <input type="text" name="code" id="mfa-totp-enable-code"
                   placeholder="123456" maxlength="6" pattern="\d{6}" size="10"
                   autocomplete="off">
@@ -202,25 +211,25 @@
 
     </div>
 
-    [%# enable - duo %]
-    <div id="mfa-enable-duo" style="display:none">
+    [% IF Param("duo_host") && user.in_group("mozilla-employee-confidential") %]
+      [%# enable - duo %]
+      <div id="mfa-enable-duo" style="display:none">
 
-      <p>
-        <label>Duo Username:</label>
-        <input type="text" name="username" id="mfa-duo-user">
-      </p>
+        <p>
+          <label title="This is generally your Mozilla LDAP Username" id="mfa-duo-user-label" for="mfa-duo-user">Duo Username:</label>
+          <input type="text" name="username" id="mfa-duo-user">
+        </p>
 
-      <p>
-        <img src="images/duo.png" id="duo-logo" width="32" height="32">
-        Verification with Duo Security will be performed before your account is updated.<br>
+        <p>
+          <img src="images/duo.png" id="duo-logo" width="32" height="32">
+          Verification with Duo Security will be performed before your account is updated.<br>
 
-        [% IF user.in_group("mozilla-employee-confidential") %]
-          You must <a href="https://login.mozilla.com/duo_enrollments/" target="_blank">
-          sign up for Duo Security via login.mozilla.com</a> before you can use Duo 2FA.
-        [% END %]
-      </p>
+          You must be <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank">
+          enrolled with Duo Security via login.mozilla.com</a> before you can use Duo 2FA.
+        </p>
 
-    </div>
+      </div>
+    [% END %]
 
   [% END %]
 

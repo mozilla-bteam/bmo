@@ -27,7 +27,8 @@ my $dbh = Bugzilla->dbh;
 # set Bugzilla usage mode to USAGE_MODE_CMDLINE
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-Bugzilla->set_user(Bugzilla::User->new({ name => 'admin@mozilla.test' }));
+my $admin_email = shift || 'admin@mozilla.bugs';
+Bugzilla->set_user(Bugzilla::User->check({ name => $admin_email }));
 
 ##########################################################################
 #  Set Default User Preferences
@@ -327,7 +328,21 @@ for my $product (@products) {
 my @groups = (
     {
         name         => 'core-security',
-        description  => ' Security-Sensitive Core Bug',
+        description  => 'Security-Sensitive Core Bug',
+        no_admin     => 1,
+        bug_group    => 1,
+        all_products => 1,
+    },
+    {
+        name         => 'core-security-release',
+        description  => 'Release-track Client Security Bug',
+        no_admin     => 1,
+        bug_group    => 1,
+        all_products => 1,
+    },
+    {
+        name         => 'core-security-release',
+        description  => 'Release-track Client Security Bug',
         no_admin     => 1,
         bug_group    => 1,
         all_products => 1,

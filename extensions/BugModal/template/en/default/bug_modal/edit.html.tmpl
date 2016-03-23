@@ -17,8 +17,10 @@
   END;
   bugid = bug.id;
 
-  # this is used in a few places
+  # these are used in a few places
   is_cced = bug.cc.contains(user.login);
+  unassigned = (bug.assigned_to.login == "nobody@mozilla.org")
+               || (bug.assigned_to.login.search('\.bugs$'));
 
   # custom fields that have custom rendering, or should not be rendered
   rendered_custom_fields = [
@@ -165,7 +167,7 @@
     %]
       <div id="field-value-bug_id">
         <a id="this-bug" href="show_bug.cgi?id=[% bug.id FILTER none %]
-                [%~ '&amp;format=' _ cgi.param("format") IF cgi.param("format") %]"
+                [%~ '&amp;format=' _ cgi.param("format") FILTER uri IF cgi.param("format") %]"
         >
           [%~ terms.Bug _ " " _ bug.id FILTER none ~%]
         </a>
@@ -216,6 +218,17 @@
         in [% firefox_fixed_version || bug.target_milestone FILTER html %]
       [% ELSIF bug.dup_id %]
         of [% terms.bug _ " $bug.dup_id" FILTER bug_link(bug.dup_id) FILTER none %]
+      [% ELSIF bug.resolution == "" %]
+        <div id="status-assignee">
+          [%
+            IF unassigned;
+              "Unassigned";
+            ELSE;
+              "Assigned to ";
+              INCLUDE bug_modal/user.html.tmpl u=bug.assigned_to nick_only=1;
+            END;
+          %]
+        </div>
       [% END %]
       [% IF needinfo.size %]
         <div id="status-needinfo">
@@ -460,6 +473,13 @@
       inline = 1
       edit_only = 1
   %]
+  [% UNLESS prefix %]
+    <div id="assigned-container" style="display:none">
+      <button type="button" class="minor" id="mark-as-assigned-btn">
+        Mark as Assigned
+      </button>
+    </div>
+  [% END %]
   [% IF bug.choices.resolution.only("name", "DUPLICATE").size %]
     <div id="[% prefix FILTER none %]duplicate-container">
       of
@@ -477,8 +497,6 @@
 [%# === people === %]
 
 [%
-  unassigned = (bug.assigned_to.login == "nobody@mozilla.org")
-               || (bug.assigned_to.login.search('\.bugs$'));
   sub = [];
   sub.push("Reporter: " _ bug.reporter.moz_nick);
   sub.push(unassigned ? "Unassigned" : "Assigned: " _ bug.assigned_to.moz_nick);
@@ -613,7 +631,6 @@
     %]
 
       [% IF user.id %]
-        <button type="button" id="add-cc-btn" class="minor">Add</button>
         <div id="add-cc-container" style="display:none">
           [% INCLUDE global/userselect.html.tmpl
               id = "add-cc"
@@ -637,9 +654,16 @@
             END;
           %]
         </span>
-        <div id="cc-list" style="display:none"></div>
       [% ELSE %]
         <i>Nobody</i>
+      [% END %]
+
+      [% IF user.id %]
+        <button type="button" id="add-cc-btn" class="minor">Add</button>
+      [% END %]
+
+      [% IF bug.cc && bug.cc.size %]
+        <div id="cc-list" style="display:none"></div>
       [% END %]
     [% END %]
 
@@ -748,11 +772,32 @@
 
     [% UNLESS cf_hidden_in_product('cf_cab_review', bug.product, bug.component, bug) %]
       [% rendered_custom_fields.push('cf_cab_review') %]
-      [% INCLUDE bug_modal/field.html.tmpl
-          field = bug_fields.cf_cab_review
-          field_type = bug_fields.cf_cab_review.type
-          hide_on_view = bug.cf_cab_review == "---"
-      %]
+      [% IF bug.cf_cab_review == "---" %]
+        [% WRAPPER bug_modal/field.html.tmpl
+            field = bug_fields.cf_cab_review
+            field_type = bug_fields.cf_cab_review.type
+            container = 1
+            hide_on_view = 1
+        %]
+          <span id="cab-review-gate">
+            <a href="https://mozilla.service-now.com/change_request.do?sysparm_stack=change_request_list.do&amp;sys_id=-1&amp;sysparm_query=active=true" target="_blank">ServiceNow Change Request</a>
+            <button id="cab-review-gate-close" type="button" class="minor">Use Flag</button>
+          </span>
+          <span id="cab-review-edit" style="display:none">
+            [% INCLUDE bug_modal/field.html.tmpl
+                field = bug_fields.cf_cab_review
+                field_type = bug_fields.cf_cab_review.type
+                inline = 1
+                no_indent = 1
+            %]
+          </span>
+        [% END %]
+      [% ELSE %]
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.cf_cab_review
+            field_type = bug_fields.cf_cab_review.type
+        %]
+      [% END %]
     [% END %]
 
   [% END %]
@@ -985,6 +1030,7 @@
     title = "User Story"
     hide_on_view = bug.cf_user_story == ""
     collapsed = bug.cf_user_story == ""
+    no_collapse_persist = 1
   %]
     [% IF user.id %]
       <div id="user-story-actions">
@@ -1074,7 +1120,7 @@
   <div id="bottom-right-actions">
     <button type="button" id="top-btn" class="minor">Top &uarr;</button>
     [% IF user.id %]
-      <button type="button" id="new-bug-btn" class="minor">New [% terms.Bug %] &#9662;</button>
+      <button type="button" id="new-bug-btn" class="minor">New/Clone [% terms.Bug %] &#9662;</button>
     [% END %]
   </div>
 </div>

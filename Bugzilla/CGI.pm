@@ -335,16 +335,15 @@ sub multipart_start {
 }
 
 sub close_standby_message {
-    my ($self, $contenttype, $disposition) = @_;
+    my ($self, $contenttype, $disp, $disp_prefix, $extension) = @_;
+    $self->set_dated_content_disp($disp, $disp_prefix, $extension);
 
     if ($self->{_multipart_in_progress}) {
         print $self->multipart_end();
-        print $self->multipart_start(-type                => $contenttype,
-                                     -content_disposition => $disposition);
+        print $self->multipart_start(-type => $contenttype);
     }
     else {
-        print $self->header(-type                => $contenttype,
-                            -content_disposition => $disposition);
+        print $self->header($contenttype);
     }
 }
 
@@ -375,7 +374,7 @@ sub header {
     # To initiate github login, a form POSTs to github.cgi with the
     # github_secret as a parameter. It must match the github_secret cookie.
     # this prevents some types of redirection attacks.
-    unless ($user->id) {
+    unless ($user->id || $self->{bz_redirecting}) {
         $self->send_cookie(-name     => 'github_secret',
                            -value    => Bugzilla->github_secret,
                            -httponly => 1);
@@ -522,6 +521,14 @@ sub remove_cookie {
     $self->send_cookie('-name'    => $cookiename,
                        '-expires' => 'Tue, 15-Sep-1998 21:49:00 GMT',
                        '-value'   => 'X');
+}
+
+# To avoid infinite redirection recursion, track when we're within a redirect
+# request.
+sub redirect {
+    my $self = shift;
+    $self->{bz_redirecting} = 1;
+    return $self->SUPER::redirect(@_);
 }
 
 # This helps implement Bugzilla::Search::Recent, and also shortens search
