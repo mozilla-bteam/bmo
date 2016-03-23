@@ -168,81 +168,78 @@
             </b></p>
           </div>
         [% ELSIF attachment.is_viewable %]
-          <div>
-            [% INCLUDE global/textarea.html.tmpl
-              id      = 'editFrame'
-              name    = 'comment'
-              classes   = 'bz_default_hidden'
-              minrows = 10
-              cols    = 80
-              wrap    = 'soft'
-              disabled = 'disabled'
-              defaultcontent = (attachment.contenttype.match('^text\/')) ?
-                                 attachment.data.replace('(.*\n|.+)', '>$1') : undef
-            %]
-            [% IF attachment.contenttype == 'text/plain' AND is_safe_url(attachment.data) %]
-              <p>
-                <a href="[% attachment.data FILTER html %]">
-                  [% IF attachment.datasize < 120 %]
-                    [% attachment.data FILTER html %]
-                  [% ELSE %]
-                    [% attachment.data FILTER truncate(80) FILTER html %]
-                    ...
-                    [% attachment.data.match('.*(.{20})$').0 FILTER html %]
-                  [% END %]
-                </a>
-              </p>
-            [% ELSIF attachment.contenttype.match('^text/') %]
-              [%# For security reasons (clickjacking, embedded scripts), we never
-                # render HTML, XML or SVG pages directly. The source code for all
-                # text/* MIME types is displayed instead. If someone tries to abuse
-                # Bugzilla by manually editing the MIME type, it will be caught
-                # by the iframe below, thanks to its 'sandbox' attribute. %]
+          [%# to override attachment viewing, hook edit-view and set custom_attachment_viewer to 1 %]
+          [% custom_attachment_viewer = 0 %]
+          [% Hook.process('view') %]
+          [% UNLESS custom_attachment_viewer %]
+            <div>
               [% INCLUDE global/textarea.html.tmpl
-                 id      = 'viewFrame'
-                 minrows = 10
-                 cols    = 80
-                 defaultcontent = attachment.data
-                 readonly = 'readonly'
+                id      = 'editFrame'
+                name    = 'comment'
+                classes   = 'bz_default_hidden'
+                minrows = 10
+                cols    = 80
+                wrap    = 'soft'
+                disabled = 'disabled'
+                defaultcontent = (attachment.contenttype.match('^text\/')) ?
+                                  attachment.data.replace('(.*\n|.+)', '>$1') : undef
               %]
-            [% ELSE %]
-              [%# The 'sandbox' attribute causes all scripts and form submissions
-                # embedded in the attachment to be disabled, for security reasons. %]
-              <iframe id="viewFrame" src="attachment.cgi?id=[% attachment.id %]
-                [%- "&amp;content_type=text/plain" IF attachment.contenttype.match('^text/x-') %]" sandbox>
-                <b>You cannot view the attachment while viewing its details because your browser does not support IFRAMEs.
-                <a href="attachment.cgi?id=[% attachment.id %]">View the attachment on a separate page</a>.</b>
-              </iframe>
-            [% END %]
-
-            [% IF use_patchviewer %]
-              <iframe id="viewDiffFrame" class="bz_default_hidden"></iframe>
-            [% END %]
-
-            [% IF user.id %]
-              <button type="button" id="editButton" class="bz_default_hidden"
-                      onclick="editAsComment([% use_patchviewer %]);">Edit Attachment As Comment</button>
-              <button type="button" id="undoEditButton" class="bz_default_hidden"
-                      onclick="undoEditAsComment([% use_patchviewer %]);">Undo Edit As Comment</button>
-              <button type="button" id="redoEditButton" class="bz_default_hidden"
-                      onclick="redoEditAsComment([% use_patchviewer %]);">Redo Edit As Comment</button>
-            [% END %]
-
-            [% IF use_patchviewer %]
-              <button type="button" id="viewDiffButton" class="bz_default_hidden"
-                      onclick="viewDiff([% attachment.id %], [% use_patchviewer %]);">View Attachment As Diff</button>
-            [% END %]
-            <button type="button" id="viewRawButton" class="bz_default_hidden"
-                    onclick="viewRaw([% use_patchviewer %]);">View Attachment As Raw</button>
-
-            <script type="text/javascript">
-              [% IF user.id %]
-                document.getElementById('editFrame').disabled = false;
-                YAHOO.util.Dom.removeClass("editButton", "bz_default_hidden");
+              [% IF attachment.contenttype == 'text/plain' AND is_safe_url(attachment.data) %]
+                <p>
+                  <a href="[% attachment.data FILTER html %]">
+                    [% IF attachment.datasize < 120 %]
+                      [% attachment.data FILTER html %]
+                    [% ELSE %]
+                      [% attachment.data FILTER truncate(80) FILTER html %]
+                      ...
+                      [% attachment.data.match('.*(.{20})$').0 FILTER html %]
+                    [% END %]
+                  </a>
+                </p>
+              [% ELSIF attachment.contenttype == "text/html" %]
+                [%# For security reasons (clickjacking, embedded scripts), we never
+                  # render HTML pages from here. The source code is displayed instead. %]
+                [% INCLUDE global/textarea.html.tmpl
+                  id      = 'viewFrame'
+                  minrows = 10
+                  cols    = 80
+                  defaultcontent = attachment.data
+                  readonly = 'readonly'
+                %]
+              [% ELSE %]
+                <iframe id="viewFrame" src="attachment.cgi?id=[% attachment.id %]
+                  [%- "&amp;content_type=text/plain" IF attachment.contenttype.match('^text/x-') %]">
+                  <b>You cannot view the attachment while viewing its details because your browser does not support IFRAMEs.
+                  <a href="attachment.cgi?id=[% attachment.id %]">View the attachment on a separate page</a>.</b>
+                </iframe>
               [% END %]
-              YAHOO.util.Dom.removeClass("viewDiffButton", "bz_default_hidden");
-            </script>
-          </div>
+              <script type="text/javascript">
+                <!--
+                var patchviewerinstalled = 0;
+                var attachment_id = [% attachment.id %];
+                if (typeof document.getElementById == "function") {
+                  [% IF use_patchviewer %]
+                    var patchviewerinstalled = 1;
+                    document.write('<iframe id="viewDiffFrame" class="bz_default_hidden"><\/iframe>');
+                  [% END %]
+                  [% IF user.id %]
+                    document.write('<button type="button" id="editButton" onclick="editAsComment(patchviewerinstalled);">Edit Attachment As Comment<\/button>');
+                    document.write('<button type="button" id="undoEditButton" onclick="undoEditAsComment(patchviewerinstalled);" class="bz_default_hidden">Undo Edit As Comment<\/button>');
+                    document.write('<button type="button" id="redoEditButton" onclick="redoEditAsComment(patchviewerinstalled);" class="bz_default_hidden">Redo Edit As Comment<\/button>');
+                    var editFrame = document.getElementById('editFrame');
+                    if (editFrame) {
+                      editFrame.disabled = false;
+                    }
+                  [% END %]
+                  [% IF use_patchviewer %]
+                    document.write('<button type="button" id="viewDiffButton" onclick="viewDiff(attachment_id, patchviewerinstalled);">View Attachment As Diff<\/button>');
+                  [% END %]
+                  document.write('<button type="button" id="viewRawButton" onclick="viewRaw(patchviewerinstalled);" class="bz_default_hidden">View Attachment As Raw<\/button>');
+                }
+                //-->
+              </script>
+            </div>
+          [% END %]
         [% ELSE %]
           <div id="noview">
             <p><b>

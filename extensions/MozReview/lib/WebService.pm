@@ -30,6 +30,7 @@ use constant PUBLIC_METHODS => qw( attachments );
 
 BEGIN {
     *_attachment_to_hash = \&Bugzilla::WebService::Bug::_attachment_to_hash;
+    *_flag_to_hash = \&Bugzilla::WebService::Bug::_flag_to_hash;
 }
 
 sub attachments {
@@ -80,6 +81,9 @@ sub attachments {
             $attachment_obj = Bugzilla::Attachment->check({ id => $attachment_id });
             ThrowUserError("mozreview_attachment_bug_mismatch", { bug => $bug, attachment => $attachment_obj })
               if $attachment_obj->bug_id != $bug->id;
+
+            # HACK: preload same bug object.
+            $attachment_obj->{bug} = $bug;
 
             $attachment = translate($attachment, Bugzilla::WebService::Bug::ATTACHMENT_MAPPED_SETTERS);
 
@@ -155,6 +159,11 @@ sub attachments {
                 isprivate   => $attachment->{is_private},
             });
 
+            if ($flags) {
+                my ($old_flags, $new_flags) = extract_flags($flags, $bug, $attachment_obj);
+                $attachment_obj->set_flags($old_flags, $new_flags);
+            }
+
             push(@created, $attachment_obj);
 
             $attachment_obj->update($timestamp);
@@ -172,7 +181,7 @@ sub attachments {
     $bug->send_changes();
 
     my %attachments_created = map { $_->id => $self->_attachment_to_hash($_, $params) } @created;
-    my %attachments_modified = map { $_->{id}->value => $_ } @modified;
+    my %attachments_modified = map { (ref $_->{id} ? $_->{id}->value : $_->{id}) => $_ } @modified;
 
     return { attachments_created => \%attachments_created, attachments_modified => \%attachments_modified };
 }

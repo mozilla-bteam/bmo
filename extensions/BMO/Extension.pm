@@ -262,7 +262,6 @@ sub bounty_attachment {
             unless $input->{reporter_email};
 
         check_hash_token($input->{token}, ['bounty', $bug->id]);
-        delete_token($input->{token});
 
         my @fields = qw( reporter_email amount_paid reported_date fixed_date awarded_date publish );
         my %form =  map { $_ => $input->{$_} } @fields;
@@ -2138,6 +2137,7 @@ sub query_database {
     $vars->{query} = $query;
 
     if ($query) {
+        check_hash_token($input->{token}, ['query_database']);
         trick_taint($query);
         $vars->{executed} = 1;
 
