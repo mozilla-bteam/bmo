@@ -1,3 +1,10 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
+
 FROM centos:centos7
 MAINTAINER David Lawrence <dkl@mozilla.com>
 
@@ -21,9 +28,10 @@ ENV ADMIN_PASS password
 
 # Distribution package installation
 COPY rpm_list /rpm_list
-RUN yum -y -q install https://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
-    epel-release && yum clean all
-RUN yum -y -q install `cat /rpm_list` && yum clean all
+RUN yum -y -q update \
+    && yum -y -q install https://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm epel-release \
+    && yum -y -q install `cat /rpm_list` \
+    && yum clean all
 
 # User configuration
 RUN useradd -m -G wheel -u 1000 -s /bin/bash $BUGZILLA_USER \
