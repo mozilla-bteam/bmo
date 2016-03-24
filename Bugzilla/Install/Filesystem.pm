@@ -182,9 +182,9 @@ sub FILESYSTEM {
         'cvs-update.log' => { perms => WS_SERVE },
         'scripts/sendunsentbugmail.pl' => { perms => WS_EXECUTE },
 
-        'docker/*'             => { perms => OWNER_WRITE },
-        'docker/*.pl'          => { perms => OWNER_EXECUTE },
-        'docker/*.sh'          => { perms => OWNER_EXECUTE },
+        'docker_files/*'             => { perms => OWNER_WRITE },
+        'docker_files/*.pl'          => { perms => OWNER_EXECUTE },
+        'docker_files/*.sh'          => { perms => OWNER_EXECUTE },
         'docs/bugzilla.ent'    => { perms => OWNER_WRITE },
         'docs/makedocs.pl'     => { perms => OWNER_EXECUTE },
         'docs/style.css'       => { perms => WS_SERVE },
@@ -286,7 +286,7 @@ sub FILESYSTEM {
                                      dirs => DIR_OWNER_WRITE },
          'scripts'             => { files => OWNER_EXECUTE,
                                      dirs => DIR_OWNER_WRITE, },
-         'docker'              => { files => OWNER_EXECUTE,
+         'docker_files'              => { files => OWNER_EXECUTE,
                                      dirs => DIR_OWNER_WRITE, },
     );
 
@@ -363,7 +363,7 @@ EOT
                                           contents => HT_DEFAULT_DENY },
         'scripts/.htaccess'          => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
-        'docker/.htaccess'           => { perms    => WS_SERVE,
+        'docker_files/.htaccess'           => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         't/.htaccess'                => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
