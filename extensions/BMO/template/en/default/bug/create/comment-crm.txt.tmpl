@@ -15,6 +15,15 @@
 >> What will you do with these relationships?
 [%+ cgi.param("relationship_goal") %]
 
+>> In this a new email program request?
+[%+ cgi.param("new_email_request") %]
+
+[% IF cgi.param("email_cadence") %]
+>> Cadence of planned email engagement
+[%+ cgi.param("email_cadence") %]
+
+[% END -%]
+
 >> What initiative does this support?
 [%+ cgi.param("support_initiative") %]
 

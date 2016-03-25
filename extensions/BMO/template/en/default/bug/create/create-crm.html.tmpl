@@ -58,7 +58,24 @@ $(document).ready(function() {
     .click(function(event) {
       var id = $(event.target).attr('id').replace(/-img$/, '');
       $('#' + id).datetimepicker('show');
-    });
+  });
+  $('#crmForm').submit(function() {
+    $('#short_desc').val($('#short_desc').val() + ': ' + $('#program_name').val());
+  });
+  $('#new_email_request').on('change', function() {
+    if ($('#new_email_request').val() == 'Yes') {
+      $('#email_cadence_row').show();
+      $('input[name="email_cadence"]').each(function() {
+        $(this).attr('required', true);
+      });
+    }
+    else {
+      $('#email_cadence_row').hide();
+      $('input[name="email_cadence"]').each(function() {
+        $(this).removeProp('required');
+      });
+    }
+  });
 });
 [% END %]
 
@@ -89,7 +106,7 @@ $(document).ready(function() {
   </p>
 
   <form method="post" action="post_bug.cgi" id="crmForm">
-    <input type="hidden" id="short_desc" name="short_desc" value="New SFDC/SFMC Feature/Program Request">
+    <input type="hidden" id="short_desc" name="short_desc" value="New CRM/Email Marketing Request">
     <input type="hidden" name="product" value="Marketing">
     <input type="hidden" name="component" value="Email">
     <input type="hidden" name="rep_platform" value="All">
@@ -102,6 +119,15 @@ $(document).ready(function() {
     [% IF user.in_group('canconfirm') %]
       <input type="hidden" name="bug_status" value="NEW">
     [% END %]
+
+    <div class="row">
+      <div class="row_desc">
+        <label class="required" for="program_name">
+          <strong>Program Name:</strong>
+        </label>
+      </div>
+      <input type="text" required name="program_name" id="program_name" size="80">
+    </div>
 
     <div class="row">
       <div class="row_desc">
@@ -119,6 +145,35 @@ $(document).ready(function() {
         </label>
       </div>
       <textarea required name="relationship_goal" id="relationship_goal" cols="80" rows="10"></textarea>
+    </div>
+
+     <div class="row">
+      <div class="row_desc">
+        <label class="required" for="new_email_request">
+          <strong>Is this a new email program request?</strong>
+        </label>
+      </div>
+      <select reuired name="new_email_request" id="new_email_request">
+        <option value="">-- Select --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+
+    <div class="row" id="email_cadence_row" style="display:none;">
+      <div class="row_desc">
+        <label class="required" for="email_cadence">
+          <strong>Cadence of planned email engagement</strong>
+        </label>
+      </div>
+      <input type="radio" name="email_cadence" id="cadence_one_time" value="One Time">
+      <label for="cadence_one_time">One Time</label><br>
+      <input type="radio" name="email_cadence" id="cadence_weekly" value="Weekly">
+      <label for="cadence_weekly">Weekly</label><br>
+      <input type="radio" name="email_cadence" id="cadence_monthly" value="Monthly">
+      <label for="cadence_monthly">Monthly</label><br>
+      <input type="radio" name="email_cadence" id="cadence_random" value="Random">
+      <label for="cadence_random">Random</label><br>
     </div>
 
     <div class="row">
@@ -228,7 +283,7 @@ $(document).ready(function() {
     <div class="row">
       <div class="row_desc">
         <label for="cc">
-          <strong>Points of contact</strong> Who should ne cc'ed on this [% terms.bug %] and kept informed of updates?
+          <strong>Points of contact</strong> Who should be cc'ed on this [% terms.bug %] and kept informed of updates?
         </label>
       </div>
       [% INCLUDE global/userselect.html.tmpl
