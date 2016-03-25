@@ -28,6 +28,10 @@ BEGIN {
         or die "can't read configuration '$conf_file': $!$@";
 
     $conf_path = $config->{bugzilla_path};
+
+    # We don't want randomly-generated keys. We want the ones specified
+    # in the config file so that we can use them in tests scripts.
+    *Bugzilla::User::APIKey::_check_api_key = sub { return $_[1]; };
 }
 
 use lib $conf_path;
