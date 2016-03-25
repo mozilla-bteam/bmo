@@ -27,7 +27,6 @@ openssh-server
 openssl-devel
 passwd
 patch
-perl-App-cpanminus
 perl-CPAN
 perl-core
 postfix
