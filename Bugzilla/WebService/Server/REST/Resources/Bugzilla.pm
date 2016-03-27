@@ -44,11 +44,6 @@ sub _rest_resources {
                 method => 'last_audit_time'
             }
         },
-        qr{^/parameters$}, {
-            GET => {
-                method => 'parameters'
-            }
-        }
     ];
     return $rest_resources;
 }

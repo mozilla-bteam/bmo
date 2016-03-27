@@ -23,5 +23,8 @@ $CPANM Test::WWW::Selenium
 $CPANM Pod::Coverage
 $CPANM Pod::Checker
 
+# Building documentation
+scl enable python27 "pip install -q reportlab rst2pdf sphinx"
+
 # Remove CPAN build files to minimize disk usage
 rm -rf ~/.cpanm

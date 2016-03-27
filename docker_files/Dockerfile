@@ -18,7 +18,9 @@ ENV GITHUB_BASE_BRANCH development
 COPY files /files
 
 # Distribution package installation
-RUN yum -y -q install https://dev.mysql.com/get/mysql-community-release-el6-5.noarch.rpm epel-release \
+RUN yum -y -q install https://dev.mysql.com/get/mysql-community-release-el6-5.noarch.rpm epel-release centos-release-scl yum-utils \
+    && yum -y -q groupinstall "Development Tools" \
+    && yum-config-manager --enable rhel-server-rhscl-7-rpms \
     && yum -y -q install `cat /files/rpm_list` \
     && yum clean all
 

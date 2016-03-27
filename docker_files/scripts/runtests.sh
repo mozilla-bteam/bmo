@@ -32,10 +32,8 @@ if [ "$TEST_SUITE" = "sanity" ]; then
 fi
 
 if [ "$TEST_SUITE" = "docs" ]; then
-    export JADE_PUB=/usr/share/sgml
-    export LDP_HOME=/usr/share/sgml/docbook/dsssl-stylesheets-1.79/dtds/decls
     cd $BUGZILLA_ROOT/docs
-    /scripts/buildbot_step "Documentation" perl makedocs.pl --with-pdf
+    scl enable python27 "/scripts/buildbot_step "Documentation" perl makedocs.pl --with-pdf"
     exit $?
 fi
 
@@ -94,6 +92,6 @@ fi
 
 if [ "$TEST_SUITE" = "webservices" ]; then
     cd $BUGZILLA_ROOT/qa/t
-    /scripts/buildbot_step "Webservices" prove -f -v -I$BUGZILLA_ROOT/lib {rest,webservice}_*.t
+    /scripts/buildbot_step "Webservices" prove -f -v -I$BUGZILLA_ROOT/lib webservice_*.t
     exit $?
 fi
