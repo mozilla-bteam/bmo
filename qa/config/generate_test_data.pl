@@ -547,9 +547,10 @@ my ($group_name, $group_desc) = ('Master', 'Master Selenium Group <b>DO NOT EDIT
 say 'creating groups...';
 my $new_group = Bugzilla::Group->new({ name => $group_name });
 if (!$new_group) {
-    my $group = Bugzilla::Group->create({ name => $group_name,
-                                          description => $group_desc,
-                                          is_system => 0});
+    my $group = Bugzilla::Group->create({ name         => $group_name,
+                                          description  => $group_desc,
+                                          is_system    => 0,
+                                          use_for_bugs => 1});
 
     $dbh->do('INSERT INTO group_control_map
               (group_id, product_id, entry, membercontrol, othercontrol, canedit)
