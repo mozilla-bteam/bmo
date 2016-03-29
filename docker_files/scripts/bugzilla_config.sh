@@ -14,7 +14,8 @@ sleep 5
 mysql -u root mysql -e "GRANT ALL PRIVILEGES ON *.* TO bugs@localhost IDENTIFIED BY 'bugs'; FLUSH PRIVILEGES;"
 mysql -u root mysql -e "CREATE DATABASE bugs CHARACTER SET = 'utf8';"
 
-perl checksetup.pl /docker_files/checksetup_answers.txt
-perl checksetup.pl /docker_files/checksetup_answers.txt
+perl checksetup.pl /files/checksetup_answers.txt
+perl checksetup.pl /files/checksetup_answers.txt
+perl /scripts/generate_bmo_data.pl
 
 mysqladmin -u root shutdown

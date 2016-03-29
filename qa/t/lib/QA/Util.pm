@@ -14,6 +14,9 @@ use strict;
 use warnings;
 use autodie;
 
+use FindBin qw($RealBin);
+use lib "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use Data::Dumper;
 use Test::More;
 
@@ -55,7 +58,7 @@ use parent qw(Exporter);
 
 # How long we wait for pages to load.
 use constant WAIT_TIME => 60000;
-use constant CONF_FILE =>  "../config/selenium_test.conf";
+use constant CONF_FILE =>  "$RealBin/../config/selenium_test.conf";
 use constant CHROME_MODE => 1;
 use constant NDASH => chr(0x2013);
 

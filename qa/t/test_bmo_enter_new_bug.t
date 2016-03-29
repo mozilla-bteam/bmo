@@ -12,12 +12,14 @@
 # 2. The _check_* utility functions for creating objects should be moved to
 #    generate_test_data.pl at some point.
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
 
 use Test::More "no_plan";
-
 use QA::Util;
 
 my ($sel, $config) = get_selenium();

@@ -9,12 +9,17 @@
 # Test for xmlrpc call to User.login() and User.logout() #
 ##########################################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use Data::Dumper;
 use QA::Util;
 use Test::More tests => 119;
+
 my ($config, @clients) = get_rpc_clients();
 
 use constant INVALID_EMAIL => '@invalid_user@';

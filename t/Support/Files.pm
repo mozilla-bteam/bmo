@@ -33,7 +33,7 @@ foreach my $extension (@extensions) {
     find(sub { push(@files, $File::Find::name) if $_ =~ /\.pm$/;}, $extension);
 }
 
-our @test_files = glob('t/*.t xt/*/*.t');
+our @test_files = glob('t/*.t qa/t/*.t xt/*/*.t');
 
 foreach my $extension (@extensions) {
     # Skip disabled extensions

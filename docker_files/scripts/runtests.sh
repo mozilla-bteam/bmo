@@ -2,22 +2,19 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-# This Source Code Form is "Incompatible With Secondary Licenses", as
-# defined by the Mozilla Public License, v. 2.0.
+
+if [ -z "$TEST_SUITE" ]; then
+    TEST_SUITE=sanity
+fi
 
 set -e
 
 # Output to log file as well as STDOUT/STDERR
 exec > >(tee /runtests.log) 2>&1
 
-if [ -z "$TEST_SUITE" ]; then
-    TEST_SUITE=sanity
-fi
-
 echo "== Retrieving Bugzilla code"
 echo "Checking out $GITHUB_BASE_GIT $GITHUB_BASE_BRANCH ..."
-mv $BUGZILLA_ROOT ${BUGZILLA_ROOT}.back
+mv $BUGZILLA_ROOT "${BUGZILLA_ROOT}.back"
 git clone $GITHUB_BASE_GIT --branch $GITHUB_BASE_BRANCH $BUGZILLA_ROOT
 rsync -a ${BUGZILLA_ROOT}.back/local/ ${BUGZILLA_ROOT}/local/
 cd $BUGZILLA_ROOT
@@ -27,11 +24,17 @@ if [ "$GITHUB_BASE_REV" != "" ]; then
 fi
 
 echo -e "\n== Checking dependencies for changes"
-/docker_files/install_deps.sh
+/scripts/install_deps.sh
+
+if [ "$TEST_SUITE" = "sanity" ]; then
+    cd $BUGZILLA_ROOT
+    /scripts/buildbot_step "Sanity" prove -f -v t/*.t
+    exit $?
+fi
 
 if [ "$TEST_SUITE" = "docs" ]; then
     cd $BUGZILLA_ROOT/docs
-    /bin/bash /docker_files/buildbot_step "Documentation" perl makedocs.pl --with-pdf
+    scl enable python27 "/scripts/buildbot_step "Documentation" perl makedocs.pl --with-pdf"
     exit $?
 fi
 
@@ -48,16 +51,15 @@ mysql -u root mysql -e "CREATE DATABASE bugs_test CHARACTER SET = 'utf8';"
 echo "\$answer{'memcached_servers'} = 'localhost:11211';" >> qa/config/checksetup_answers.txt
 
 echo -e "\n== Running checksetup"
-./checksetup.pl qa/config/checksetup_answers.txt
-./checksetup.pl qa/config/checksetup_answers.txt
+cd $BUGZILLA_ROOT
+perl checksetup.pl qa/config/checksetup_answers.txt
+perl checksetup.pl qa/config/checksetup_answers.txt
 
-if [ "$TEST_SUITE" = "sanity" ]; then
-    /bin/bash /docker_files/buildbot_step "Sanity" prove -f -v t/*.t
-    exit $?
-fi
+echo -e "\n== Generating bmo data"
+perl /scripts/generate_bmo_data.pl
 
 echo -e "\n== Generating test data"
-perl /docker_files/generate_bmo_data.pl
+perl /scripts/generate_bmo_data.pl
 cd $BUGZILLA_ROOT/qa/config
 perl generate_test_data.pl
 
@@ -66,7 +68,6 @@ sed -e "s?^#Perl?Perl?" --in-place /etc/httpd/conf.d/bugzilla.conf
 /usr/sbin/httpd &
 sleep 3
 
-cd $BUGZILLA_ROOT
 if [ "$TEST_SUITE" = "selenium" ]; then
     export DISPLAY=:0
 
@@ -87,12 +88,12 @@ if [ "$TEST_SUITE" = "selenium" ]; then
     [ $NO_TESTS ] && exit 0
 
     cd $BUGZILLA_ROOT/qa/t
-    /nin/bash /docker_files/buildbot_step "Selenium" prove -f -v -I$BUGZILLA_ROOT/lib test_*.
+    /scripts/buildbot_step "Selenium" prove -f -v -I$BUGZILLA_ROOT/lib test_*.t
     exit $?
 fi
 
 if [ "$TEST_SUITE" = "webservices" ]; then
     cd $BUGZILLA_ROOT/qa/t
-    /bin/bash /docker_files/buildbot_step "Selenium" prove -f -v -I$BUGZILLA_ROOT/lib test_*.
+    /scripts/buildbot_step "Webservices" prove -f -v -I$BUGZILLA_ROOT/lib {rest,webservice}_*.t
     exit $?
 fi

@@ -9,13 +9,18 @@
 # Test for xmlrpc call to Bug.comments() #
 ##########################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use DateTime;
 use QA::Util;
 use QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
 use Test::More tests => 331;
+
 my ($config, @clients) = get_rpc_clients();
 
 # These gets populated when we call Bug.add_comment.

@@ -9,9 +9,13 @@
 # Test for xmlrpc call to Bug.search() #
 ########################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER);
 use DateTime;
@@ -19,6 +23,7 @@ use List::MoreUtils qw(uniq);
 use Test::More;
 
 my ($config, @clients) = get_rpc_clients();
+
 plan tests => $config->{test_extensions} ? 531 : 523;
 
 my ($public_bug, $private_bug) = $clients[0]->bz_create_test_bugs('private');

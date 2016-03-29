@@ -9,12 +9,17 @@
 # Test for xmlrpc call to Bug.update_see_also() #
 #################################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
 use Test::More tests => 117;
+
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 
 my $bug_url = 'http://landfill.bugzilla.org/bugzilla-tip/show_bug.cgi?id=100';

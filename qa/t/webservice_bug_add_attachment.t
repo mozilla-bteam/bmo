@@ -5,12 +5,17 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use QA::Util;
 use MIME::Base64 qw(encode_base64 decode_base64);
 use Test::More tests => 157;
+
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 
 use constant INVALID_BUG_ID => -1;

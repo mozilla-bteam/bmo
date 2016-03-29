@@ -5,16 +5,20 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use Data::Dumper;
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
 use Storable qw(dclone);
-use Test::More tests => 931;
+use Test::More tests => 921;
 
-use constant NONEXISTANT_BUG => 12_000_000;
+use constant NONEXISTENT_BUG => 12_000_000;
 
 ###############
 # Subroutines #
@@ -349,7 +353,7 @@ sub invalid_values {
         ],
 
         blocks => [
-            { value => { add => [NONEXISTANT_BUG] },
+            { value => { add => [NONEXISTENT_BUG] },
               error => 'does not exist',
               test  => 'Non-existent bug number fails in deps' },
             { value => { add => [$public_id] },
@@ -409,9 +413,9 @@ sub invalid_values {
             { value => undef,
               error => 'dup_id was not defined',
               test  => 'undefined dupe_of fails' },
-            { value => NONEXISTANT_BUG,
+            { value => NONEXISTENT_BUG,
               error => 'does not exist',
-              test  => 'Cannot dup to a nonexistant bug' },
+              test  => 'Cannot dup to a nonexistent bug' },
             { value => $public_id,
               error => 'as a duplicate of itself',
               test  => 'Cannot dup bug to itself' },

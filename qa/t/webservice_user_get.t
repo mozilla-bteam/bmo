@@ -9,12 +9,17 @@
 # Test for xmlrpc call to User.get() #
 ######################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER);
 use Test::More tests => 330;
+
 our ($config, @clients) = get_rpc_clients();
 
 my $get_user = $config->{'unprivileged_user_login'};
