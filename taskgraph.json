@@ -17,7 +17,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge",
+          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge-20160329",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "sanity"
@@ -48,7 +48,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge",
+          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge-20160329",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "docs"
@@ -79,7 +79,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge",
+          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge-20160329",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "webservices"
@@ -115,7 +115,7 @@
         "provisionerId": "aws-provisioner-v1",
         "workerType": "b2gtest",
         "payload": {
-          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge",
+          "image": "dklawren/webtools-bmo-bugzilla:upstream-merge-20160329",
           "command": ["/scripts/runtests.sh"],
           "env": {
             "TEST_SUITE": "selenium"

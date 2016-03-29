@@ -355,7 +355,7 @@ sub _check_group {
     $sel->type_ok("name", $group);
     $sel->type_ok("desc", $group_description);
     $sel->type_ok("owner", $config->{'admin_user_login'});
-    $sel->check_ok("isactive");
+    $sel->check_ok("use_for_bugs");
     $sel->check_ok("insertnew");
     $sel->click_ok("create");
     $sel->wait_for_page_to_load(WAIT_TIME);
