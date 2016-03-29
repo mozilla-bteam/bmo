@@ -16,7 +16,7 @@ use Data::Dumper;
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
 use Storable qw(dclone);
-use Test::More tests => 921;
+use Test::More tests => 931;
 
 use constant NONEXISTENT_BUG => 12_000_000;
 
