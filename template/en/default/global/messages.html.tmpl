@@ -375,8 +375,8 @@
             <li>The description was updated.</li>
           [% CASE 'userregexp' %]
             <li>The regular expression was updated.</li>
-          [% CASE 'isactive' %]
-            [% IF changes.isactive.1 %]
+          [% CASE 'use_for_bugs' %]
+            [% IF changes.use_for_bugs.1 %]
               <li>The group will now be used for [% terms.bugs %].</li>
             [% ELSE %]
               <li>The group will no longer be used for [% terms.bugs %].</li>
