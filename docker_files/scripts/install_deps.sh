@@ -9,19 +9,21 @@
 cd $BUGZILLA_ROOT
 
 # Install Perl dependencies
-CPANM="cpanm -l local --quiet --skip-satisfied"
+CPANM="cpanm -l local --quiet"
 
 # - Image::Magick > 6.77 fails to build properly on RHEL6
 # - Crypt::SMIME > 0.15 fails to build properly on RHEL6
 # - Test::WWW::Selenium for UI testing support
-# - Newer version of Apache2::SizeLimit that what is included in RHEL6
+# - Cache::Memcached is not picked up by normal dep check (will investigate)
 $CPANM --notest Image::Magick@6.77 \
                 Crypt::SMIME@0.15 \
                 Test::WWW::Selenium \
-                Cache::Memcached \
-                Apache2::SizeLimit
+                Cache::Memcached
 
-$CPANM --installdeps --with-all-features --without-feature elasticsearch \
+# - Newer version of Apache2::SizeLimit that what is included in RHEL6
+$CPANM --reinstall Apache2::SizeLimit
+
+$CPANM --installdeps --skip-satisfied --with-all-features --without-feature elasticsearch \
         --without-feature oracle --without-feature sqlite --without-feature pg .
 
 # Building documentation

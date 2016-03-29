@@ -26,12 +26,6 @@ fi
 echo -e "\n== Checking dependencies for changes"
 /scripts/install_deps.sh
 
-if [ "$TEST_SUITE" = "sanity" ]; then
-    cd $BUGZILLA_ROOT
-    /scripts/buildbot_step "Sanity" prove -f -v t/*.t
-    exit $?
-fi
-
 if [ "$TEST_SUITE" = "docs" ]; then
     cd $BUGZILLA_ROOT/docs
     scl enable python27 "/scripts/buildbot_step "Documentation" perl makedocs.pl --with-pdf"
@@ -62,6 +56,13 @@ echo -e "\n== Generating test data"
 perl /scripts/generate_bmo_data.pl
 cd $BUGZILLA_ROOT/qa/config
 perl generate_test_data.pl
+
+# Sanity needs to run after localconfig is created and the database is up
+if [ "$TEST_SUITE" = "sanity" ]; then
+    cd $BUGZILLA_ROOT
+    /scripts/buildbot_step "Sanity" prove -f -v t/*.t
+    exit $?
+fi
 
 echo -e "\n== Starting web server"
 sed -e "s?^#Perl?Perl?" --in-place /etc/httpd/conf.d/bugzilla.conf
