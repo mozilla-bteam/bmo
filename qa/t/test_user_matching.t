@@ -122,6 +122,7 @@ $sel->title_is("Change Group: tweakparams");
 my @groups = $sel->get_select_options("visible_from_add");
 if (grep {$_ eq 'tweakparams'} @groups) {
     $sel->add_selection_ok("visible_from_add", "label=tweakparams");
+    $sel->type_ok("owner", $config->{'admin_user_login'});
     $sel->click_ok('//input[@value="Update Group"]');
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
     $sel->title_is("Change Group: tweakparams");

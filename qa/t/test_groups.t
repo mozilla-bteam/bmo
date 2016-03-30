@@ -155,7 +155,7 @@ ok(!$sel->is_element_present("b$bug2_id"), "Bug $bug2_id NOT restricted to the b
 # Make the Selenium-test group mandatory for TestProduct.
 
 edit_product($sel, "TestProduct");
-$sel->is_text_present_ok("Selenium-test:Shown/Mandatory");
+$sel->is_text_present_ok("Selenium-test: Shown/Mandatory");
 $sel->click_ok("link=Edit Group Access Controls:");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->select_ok("membercontrol_${group_id}", "Mandatory");
@@ -263,7 +263,7 @@ $sel->is_element_present_ok("b$bug4_id", undef, "Bug $bug4_id restricted to the 
 # We just want to make sure a warning is displayed about this removal.
 
 edit_product($sel, "TestProduct");
-$sel->is_text_present_ok("Selenium-test:Mandatory/Mandatory");
+$sel->is_text_present_ok("Selenium-test: Mandatory/Mandatory");
 $sel->click_ok("link=Edit Group Access Controls:");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Edit Group Controls for TestProduct");

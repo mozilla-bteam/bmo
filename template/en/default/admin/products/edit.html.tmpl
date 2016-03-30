@@ -99,8 +99,8 @@
       <td>
         [% IF product.group_controls.size %]
           [% FOREACH g = product.group_controls.values.sort("name") %]
-            <b>[% g.group.name FILTER html %]:</b>
-            [% IF g.group.isactive %]
+            <b>[% g.group.name FILTER html %]:</b>&nbsp;
+            [% IF g.group.use_for_bugs %]
               [% group_control.${g.membercontrol} FILTER html %]/
               [% group_control.${g.othercontrol} FILTER html %]
               [% IF g.entry %], ENTRY[% END %]

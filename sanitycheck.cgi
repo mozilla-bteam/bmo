@@ -878,7 +878,7 @@ BugCheck("bugs
            AND group_control_map.group_id = bug_group_map.group_id
          WHERE group_control_map.membercontrol = " . CONTROLMAPMANDATORY . "
            AND bug_group_map.group_id IS NULL
-           AND groups.isactive != 0",
+           AND groups.use_for_bugs != 0",
          'bug_check_control_values_error_text2');
 
 ###########################################################################
