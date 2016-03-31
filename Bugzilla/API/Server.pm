@@ -274,7 +274,8 @@ sub _check_version {
 
     my $version_dir;
     if (lc($namespace) eq 'core') {
-        $version_dir = File::Spec->catdir('Bugzilla', 'API', $version);
+        $version_dir = File::Spec->catdir(bz_locations()->{cgi_path},
+                                          'Bugzilla', 'API', $version);
     }
     else {
         $version_dir = File::Spec->catdir(bz_locations()->{extensionsdir},
