@@ -178,7 +178,7 @@ sub QUERY_DEFS {
     if ($user->showmybugslink) {
         my $query = Bugzilla->params->{mybugstemplate};
         my $login = $user->login;
-        $query =~ s/%userid%/$login/;
+        $query =~ s/%userid%/$login/g;
         $query =~ s/^buglist.cgi\?//;
         push(@query_defs, {
             name        => 'mybugs',

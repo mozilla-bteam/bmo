@@ -389,7 +389,7 @@ sub SPECIAL_PARSING {
         bug_interest_ts => \&_last_visit_datetime,
 
         # BMO - Add ability to use pronoun for bug mentors field
-        bug_mentor => \&_commenter_pronoun,
+        bug_mentor => \&_contact_pronoun,
     };
     foreach my $field (Bugzilla->active_custom_fields) {
         if ($field->type == FIELD_TYPE_DATETIME) {
