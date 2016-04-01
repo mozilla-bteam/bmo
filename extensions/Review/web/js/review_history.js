@@ -24,7 +24,7 @@
 
         function format_attachment(o) {
             if (o.value) {
-                return o.value.description;
+                return o.value.summary;
             }
         }
 
@@ -216,7 +216,7 @@
             });
         }
 
-        function fetch_attachment_descriptions(flags) {
+        function fetch_attachment_summaries(flags) {
             return new Y.Promise(function (resolve, reject) {
                 var attachment_ids = Y.Array.dedupe(flags.map(function (f) {
                     return f.attachment_id;
@@ -228,7 +228,7 @@
                         method: 'Bug.attachments',
                         params: {
                             attachment_ids: attachment_ids,
-                            include_fields: ['id', 'description'],
+                            include_fields: ['id', 'summary'],
                             Bugzilla_api_token : (BUGZILLA.api_token ? BUGZILLA.api_token : '')
                         }
                     }),
@@ -362,7 +362,7 @@
             fetch_flag_ids(user)
             .then(fetch_flags)
             .then(fetch_bug_summaries)
-            .then(fetch_attachment_descriptions)
+            .then(fetch_attachment_summaries)
             .then(function (flags) {
                 return new Y.Promise(function (resolve, reject) {
                     try {
