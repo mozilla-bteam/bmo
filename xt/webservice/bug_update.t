@@ -350,9 +350,6 @@ sub invalid_values {
             { value => random_string(20),
               error => 'There is no user named',
               test  => 'changing assigned_to to invalid user fails' },
-            { value => '',
-              error => 'you must provide an address for the new assignee',
-              test  => 'empty assigned_to fails' },
             # FIXME Also check strict_isolation at some point in the future,
             # perhaps.
         ],

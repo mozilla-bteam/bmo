@@ -60,6 +60,7 @@ foreach my $field (keys %$public_bug) {
     push(@tests, $test);
 }
 
+
 push(@tests, (
     { args  => { offset => 1 },
       test  => "Offset without limit fails",
@@ -89,7 +90,7 @@ push(@tests, (
     { args => { reporter => $config->{editbugs_user_login} },
       test => 'Search by reporter',
     },
-    { args => { resolution => '' },
+    { args => { resolution => '---' },
       test => 'Search for empty resolution',
     },
     { args => { resolution => 'NO_SUCH_RESOLUTION' },
@@ -169,7 +170,6 @@ push(@tests,
 sub post_success {
     my ($call, $t) = @_;
     my $bugs = $call->result->{bugs};
-
     my $expected_count = $t->{bugs};
     $expected_count = 1 if !defined $expected_count;
     if ($expected_count) {
