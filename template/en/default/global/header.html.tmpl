@@ -279,6 +279,8 @@
     [% Hook.process("additional_header") %]
   </head>
 
+  [% RETURN IF no_body %]
+
   <body [% IF onload %] onload="[% onload %]"[% END %]
         class="[% urlbase.replace('^https?://','').replace('/$','').replace('[-~@:/.]+','-') FILTER css_class_quote %]
                skin-[% user.settings.skin.value FILTER css_class_quote %]
