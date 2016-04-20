@@ -168,6 +168,11 @@ sub REST_RESOURCES {
                 },
             },
         },
+        qr{^/bug/comment/render$}, {
+            POST => {
+                method => 'render_comment',
+            },
+        },
         qr{^/bug/([^/]+)/history$}, {
             GET => {
                 method => 'history',

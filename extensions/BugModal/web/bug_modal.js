@@ -1253,7 +1253,7 @@ $(function() {
         preview.html('');
         bugzilla_ajax(
             {
-                url: 'rest/core/1.0/bug/comment/render',
+                url: 'rest/bug/comment/render',
                 type: 'POST',
                 data: { text: comment.val() },
                 hideError: true
