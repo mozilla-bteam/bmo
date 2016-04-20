@@ -114,7 +114,8 @@ sub edit {
         my $field_name = $field->name;
         $options{$field_name} = [
             map { { name => $_->name } }
-            grep { $bug->$field_name eq $_->name || $_->is_active }
+            grep { $bug->$field_name eq $_->name
+                   || ($_->is_active && $bug->check_can_change_field($field_name, $bug->$field_name, $_->name)) }
             @{ $field->legal_values }
         ];
     }
@@ -148,8 +149,9 @@ sub cc {
     my $template = Bugzilla->template;
     my $bug = Bugzilla::Bug->check({ id => $params->{id} });
     my $vars = {
+        bug     => $bug,
         cc_list => [
-            sort { lc($a->moz_nick) cmp lc($b->moz_nick) }
+            sort { lc($a->identity) cmp lc($b->identity) }
             @{ $bug->cc_users }
         ]
     };
