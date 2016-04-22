@@ -64,51 +64,30 @@
     <ul>
       [% IF user.id %]
         <li>
-          [% title = BLOCK %]Open [% terms.bugs %] assigned to me[% END %]
           <a href="buglist.cgi?f1=assigned_to&amp;o1=equals&amp;v1=%25user%25&amp;resolution=---">
-            [% title FILTER html %]</a> ([% assignee_count FILTER html %])
-          <a href="buglist.cgi?f1=assigned_to&amp;o1=equals&amp;v1=%25user%25&amp;resolution=---&amp;ctype=atom&amp;title=[% title FILTER uri %]"
-             class="rss">&nbsp;</a>
+            Open [% terms.bugs %] assigned to me</a> ([% assignee_count FILTER html %])
         </li>
         <li>
-          [% title = BLOCK %]Open [% terms.bugs %] reported by me[% END %]
           <a href="buglist.cgi?f1=reporter&amp;o1=equals&amp;v1=%25user%25&amp;resolution=---">
-            [% title FILTER html %]</a> ([% reporter_count FILTER html %])
-          <a href="buglist.cgi?f1=reporter&amp;o1=equals&amp;v1=%25user%25&amp;resolution=---&amp;ctype=atom&amp;title=[% title FILTER uri %]"
-             class="rss">&nbsp;</a>
+            Open [% terms.bugs %] reported by me</a> ([% reporter_count FILTER html %])
         </li>
         [% IF Bugzilla.has_flags %]
           <li>
-            [% title = BLOCK %]Requests addressed to me[% END %]
             <a href="request.cgi?action=queue&amp;requestee=[% user.login FILTER uri %]&amp;group=type&amp;do_union=0">
-              [% title FILTER html %]</a> ([% requestee_count FILTER html %])
-            <a href="buglist.cgi?f1=requestees.login_name&amp;o1=equals&amp;v1=%25user%25&amp;ctype=atom&amp;title=[% title FILTER uri %]"
-               class="rss">&nbsp;</a>
+              Requests addressed to me</a> ([% requestee_count FILTER html %])
           </li>
         [% END %]
       [% END %]
 
       <li>
-        [% terms.Bugs %] reported in the
-        <a href="buglist.cgi?chfield=%5BBug%20creation%5D&amp;chfieldfrom=24h">last 24 hours</a>
-        [% title = BLOCK %][% terms.Bugs %] reported in the last 24 hours[% END %]
-        <a href="buglist.cgi?chfield=%5BBug%20creation%5D&amp;chfieldfrom=24h&amp;ctype=atom&amp;title=[% title FILTER uri %]"
-           class="rss">&nbsp;</a>
-        | <a href="buglist.cgi?chfield=%5BBug%20creation%5D&amp;chfieldfrom=7d">last 7 days</a>
-        [% title = BLOCK %][% terms.Bugs %] reported in the last 7 days[% END %]
-        <a href="buglist.cgi?chfield=%5BBug%20creation%5D&amp;chfieldfrom=7d&amp;ctype=atom&amp;title=[% title FILTER uri %]"
-           class="rss">&nbsp;</a>
+        Firefox [% terms.bugs %] reported in the
+        <a href="buglist.cgi?product=Firefox&chfield=%5BBug%20creation%5D&amp;chfieldfrom=24h">last 24 hours</a>
+        | <a href="buglist.cgi?product=Firefox&chfield=%5BBug%20creation%5D&amp;chfieldfrom=7d">last 7 days</a>
       </li>
       <li>
-        [% terms.Bugs %] changed in the
-        <a href="buglist.cgi?chfieldfrom=24h">last 24 hours</a>
-        [% title = BLOCK %][% terms.Bugs %] changed in the last 24 hours[% END %]
-        <a href="buglist.cgi?chfieldfrom=24h&amp;ctype=atom&amp;title=[% title FILTER uri %]"
-           class="rss">&nbsp;</a>
-        | <a href="buglist.cgi?chfieldfrom=7d">last 7 days</a>
-        [% title = BLOCK %][% terms.Bugs %] changed in the last 7 days[% END %]
-        <a href="buglist.cgi?chfieldfrom=7d&amp;ctype=atom&amp;title=[% title FILTER uri %]"
-           class="rss">&nbsp;</a>
+        Firefox [% terms.bugs %] changed in the
+        <a href="buglist.cgi?product=Firefox&chfieldfrom=24h">last 24 hours</a>
+        | <a href="buglist.cgi?product=Firefox&chfieldfrom=7d">last 7 days</a>
       </li>
     </ul>
   </div>
