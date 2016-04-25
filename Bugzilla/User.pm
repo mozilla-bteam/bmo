@@ -3114,6 +3114,16 @@ Returns 1 if the user can see the admin menu. Otherwise, returns 0
  Returns:     1 if the user can set flags of the given type,
               0 otherwise.
 
+=item C<can_unset_flag($flag_type, $flag_status)>
+
+Description:  Checks whether the user can unset a flag that is currently set (+/-).
+
+Params:       $flag_type - a Bugzilla::FlagType object.
+              $flag_status - The current status of a flag.
+
+Returns:      1 if the user can unset the flag or the flag is not in a set state,
+              0 otherwise.
+
 =item C<get_userlist>
 
 Returns a reference to an array of users.  The array is populated with hashrefs

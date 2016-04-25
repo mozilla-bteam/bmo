@@ -51,11 +51,6 @@
 .bz_sort_order_primary   { color: black; }
 .bz_sort_order_secondary { color: #777;  }
 
-.bz_query_buttons #xml {
-    vertical-align: middle;
-    padding: 0;
-}
-
 .bz_query_buttons button {
     border: 0px;
     background: transparent;
@@ -65,9 +60,8 @@
     display: inline;
 }
 
-.bz_query_links a img {
-    vertical-align: bottom;
-    border: 0;
+.bz_query_links {
+    padding-left: 1em;
 }
 
 .bz_query_links a {

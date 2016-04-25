@@ -18,7 +18,6 @@
   </div>
   <button id="bitly-close" class="notransition">Close</button>
 </div>
-<button id="bitly-shorten" type="button"
-        data-url="[% urlbase _ "buglist.cgi?" _
-                  cgi.new(urlquerypart).canonicalise_query('list_id','query_format') FILTER html %]">
-  Short URL</button>
+<a id="bitly-shorten" type="button"
+   data-url="[% urlbase FILTER none %]buglist.cgi?
+   [%- cgi.new(urlquerypart).canonicalise_query('list_id','query_format') FILTER html %]">Short URL</a> |

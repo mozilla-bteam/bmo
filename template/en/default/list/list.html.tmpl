@@ -223,41 +223,35 @@
             <input type="hidden" name="id" value="[% id FILTER html %]">
           [% END %]
           <input type="hidden" name="excludefield" value="attachmentdata">
-          <button type="submit" id="xml">
-            <img src="images/xml.png" width="24" height="24" alt="XML" title="XML Format">
-          </button>
+          <input type="submit" id="xml" value="XML">
         </form>
       </div>
       <div class="bz_query_links">
+        [%# Links to more things users can do with this bug list. %]
+        [% Hook.process("links") %]
+
+        <a href="rest/bug?include_fields=id,summary,status&amp;
+          [%- cgi.new(urlquerypart).canonicalise_query('list_id','query_format') FILTER html %]"
+          title="Query as a REST API request">REST</a> |
         <a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;ctype=csv&amp;human=1
-          [%~ IF searchname %]&amp;namedcmd=[% searchname FILTER uri %][% END %]"
-        ><img title="CSV Format" alt="CSV" src="images/csv.png" height="24" width="24"></a>
+          [%~ IF searchname %]&amp;namedcmd=[% searchname FILTER uri %][% END %]">CSV</a> |
         <a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;title=
-           [%- title FILTER uri %]&amp;ctype=atom"
-        ><img title="Feed Format" alt="Feed" src="images/rss.png" height="24" width="24"></a>
-        <a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;ctype=ics"
-        ><img title="iCal Format" alt="iCal" src="images/ical.png" height="24" width="24"></a>
-        <button type="button" id="change_columns"
-                onclick="document.location='colchange.cgi?[% urlquerypart FILTER html %]&amp;query_based_on=
-                         [%~ defaultsavename OR searchname FILTER uri FILTER js %]'">
-            Change Columns</button>
+          [%- title FILTER uri %]&amp;ctype=atom">Feed</a> |
+        <a href="buglist.cgi?[% urlquerypart FILTER html %]&amp;ctype=ics">iCalendar</a>
+        <br>
+        <a href="colchange.cgi?[% urlquerypart FILTER html %]&amp;query_based_on=
+          [%~ defaultsavename OR searchname FILTER uri FILTER js %]'">Change Columns</a>
         [% IF bugs.size > 1 && caneditbugs && !dotweak %]
-          <button type="button" id="mass_change"
-                  onclick="document.location='buglist.cgi?[% urlquerypart FILTER html %]
-                           [%- "&order=$qorder" FILTER html IF order %]&amp;tweak=1'">
-            Change Several [% terms.Bugs %] at Once</button>
+          | <a href="buglist.cgi?[% urlquerypart FILTER html %]
+              [%- "&order=$qorder" FILTER html IF order %]&amp;tweak=1'">
+              Change Several [% terms.Bugs %] at Once</a>
         [% END %]
 
         [% IF bugowners && user.id %]
-          <button type="button" id="email_assignees"
-                  onclick="document.location='mailto:[% bugowners FILTER html %]'">
-            Send Mail to [% terms.Bug %] Assignees</button>
+          | <a href="mailto:[% bugowners FILTER html %]'">
+              Send Mail to [% terms.Bug %] Assignees</a>
         [% END %]
-
-        [%# Links to more things users can do with this bug list. %]
-        [% Hook.process("links") %]
       </div>
-      <br>
     [% END %]
     <div class="bz_query_edit">
       <button type="button" id="edit_search"
