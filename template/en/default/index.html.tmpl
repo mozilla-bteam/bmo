@@ -6,10 +6,6 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[%# INTERFACE:
-  # release: a hash containing data about new releases, if any.
-  #%]
-
 [% PROCESS global/header.html.tmpl
    title = "$terms.Bugzilla Main Page"
    header = "Main Page"a
@@ -45,6 +41,16 @@
     </ul>
   </div>
 
+<script type="text/javascript">
+function checkQuicksearch( form ) {
+  if (form.quicksearch.value == '') {
+    alert('Please enter one or more search terms first.');
+    return false;
+    }
+  return true;
+}
+</script>
+
   <div>
     <form id="quicksearchForm" name="quicksearchForm" action="buglist.cgi">
       <input id="quicksearch_main" name="quicksearch" title="Quick Search"
@@ -56,6 +62,12 @@
 
     <ul class="additional_links">
       [% Hook.process('additional_links') %]
+      <li>
+        <a href="page.cgi?id=etiquette.html">Bugzilla Etiquette</a>
+      </li>
+      <li>
+        | <a href="https://developer.mozilla.org/en/Bug_writing_guidelines">Bug Writing Guidelines</a>
+      </li>
     </ul>
   </div>
 

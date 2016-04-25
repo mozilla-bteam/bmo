@@ -11,7 +11,7 @@
   * The Original Code is the Bugzilla Bug Tracking System.
   *
   * Contributor(s): Vitaly Harisov <vitaly@rathedg.com>
-  *                 Guy Pyrzak <guy.pyrzak@gmail.com> 
+  *                 Guy Pyrzak <guy.pyrzak@gmail.com>
   */
 
 /* index page (begin) */
@@ -78,34 +78,35 @@
     }
     #enter_bug { background: url(index/file-a-bug.png)     no-repeat; }
     #query     { background: url(index/search.png)  no-repeat; }
-    #account   { 
-      background: url(index/new-account.png) no-repeat; 
+    #account   {
+      background: url(index/new-account.png) no-repeat;
       margin-right: 0;
     }
-    
+
     #quicksearchForm
     {
         clear: both;
         text-align: center;
         margin-bottom: 2em;
     }
-    
+
+
     #quicksearchForm #quicksearch_main
     {
         width: 27em;
     }
-    
+
     #quicksearchForm
     {
         margin: 0;
         padding: 0;
     }
-    
+
     #page-index table{
         border-collapse: collapse;
         margin: auto;
     }
-    
+
     #welcome
     {
         font-size: x-large;
@@ -114,28 +115,30 @@
         margin: 0 0 0.8em 0;
         padding: 0;
     }
-    
-    ul.additional_links 
+
+    ul.additional_links
     {
         list-style: none;
         margin: 0;
         padding: 0;
+        text-align: center;
+        margin-top: 1em;
     }
-    
+
     ul#quicksearch_links{
         margin-bottom: 1em;
     }
-    
+
     ul.additional_links li
     {
         display: inline;
     }
-    
+
     ul.additional_links li.bz_default_hidden
     {
         display: none;
     }
-    
+
     input.quicksearch_help_text
     {
         color: #ccc;
