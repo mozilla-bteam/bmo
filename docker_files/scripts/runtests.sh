@@ -34,7 +34,7 @@ fi
 
 echo -e "\n== Starting database"
 /usr/bin/mysqld_safe &
-sleep 3
+sleep 5
 
 echo -e "\n== Starting memcached"
 /usr/bin/memcached -u memcached -d
