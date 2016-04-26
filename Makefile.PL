@@ -32,6 +32,10 @@ BEGIN {
     warn "Hiding META.{json,yml} from MakeMaker...\n";
     rename( 'META.json', 'META.json.hide' ) || unlink("META.json");
     rename( 'META.yml',  'META.yml.hide' )  || unlink("META.yml");
+
+    if (!eval { ExtUtils::MakeMaker->VERSION('6.57_07') }) {
+        warn "WARNING: ExtUtils::MakeMaker should be at least 6.57_07 in order to support updating META.json files\n";
+    }
 }
 
 END {
@@ -57,19 +61,34 @@ my %requires = (
     'Template'            => '2.24',
     'URI'                 => '1.55',
 );
+my %build_requires = (
+    'ExtUtils::MakeMaker' => '6.55',
+);
+my %test_requires = (
+    'Test::More'         => 0,
+    'Pod::Checker'       => 0,
+    'Pod::Coverage'      => 0,
+    'Test::Perl::Critic' => 0
+);
+my %recommends = ( Safe => '2.30' );
+my %all_features = (
+    'CPAN::Meta::Prereqs'      => '2.132830',
+    'CPAN::Meta::Requirements' => '2.121',
+    'Module::Metadata'         => '1.000019',
+    'Module::Runtime'          => 0,
+);
+
+# Windows requires some additional modules.
+if ( $^O eq 'MSWin32' ) {
+    $requires{'Win32'}                            = '0.35';
+    $requires{'Win32::API'}                       = '0.55';
+    $requires{'DateTime::TimeZone::Local::Win32'} = '1.64';
+}
 
 my %optional_features = (
     features => {
-        prereqs => {
-            runtime => {
-                requires => {
-                    'CPAN::Meta::Check' => 0,
-                    'Module::Runtime'   => 0,
-                    'CPAN::Meta'        => 0,
-                },
-            },
-        },
-        description => "Base support for Features"
+        prereqs => { runtime => { requires => \%all_features, } },
+        description => 'Modules required to enable any feature',
     },
     smtp_auth => {
         prereqs => { runtime => { requires => { 'Authen::SASL' => 0 } } },
@@ -228,7 +247,14 @@ my %optional_features = (
     },
     mod_perl => {
         description => 'mod_perl support under Apache',
-        prereqs     => { runtime => { requires => { 'mod_perl2' => '0' } } }
+        prereqs     => {
+            runtime => {
+                requires => {
+                    'mod_perl2'         => '1.999022',
+                    'Apache::SizeLimit' => '0.96',
+                }
+            }
+        }
     },
     inbound_email => {
         prereqs => {
@@ -243,7 +269,7 @@ my %optional_features = (
     },
     patch_viewer => {
         description => 'Patch Viewer',
-        prereqs => { runtime => { requires => { PatchReader => 'v0.9.6' } } }
+        prereqs => { runtime => { requires => { PatchReader => '0.9.6' } } }
     },
     rest => {
         description => 'REST Interface',
@@ -263,7 +289,7 @@ my %optional_features = (
         description => 'Mail Queueing',
         prereqs     => {
             runtime => {
-                requires => { TheSchwartz => '1.1', 'Daemon::Generic' => 0 }
+                requires => { TheSchwartz => '1.10', 'Daemon::Generic' => 0 }
             }
         }
     },
@@ -309,26 +335,27 @@ for my $file ( glob("extensions/*/Config.pm") ) {
 }
 
 WriteMakefile(
-    NAME               => 'Bugzilla',
-    AUTHOR             => q{Bugzilla Developers <developers@bugzilla.org>},
-    VERSION            => BUGZILLA_VERSION,
-    ABSTRACT           => 'Bugzilla Bug Tracking System',
-    LICENSE            => 'Mozilla_2_0',
-    MIN_PERL_VERSION   => '5.10.1',
-    CONFIGURE_REQUIRES => { 'ExtUtils::MakeMaker' => '6.55' },
-    PREREQ_PM          => \%requires,
-    TEST_REQUIRES      => {
-        'Test::More'         => 0,
-        'Pod::Checker'       => 0,
-        'Pod::Coverage'      => 0,
-        'Test::Perl::Critic' => 0
-    },
+    NAME             => 'Bugzilla',
+    AUTHOR           => q{Bugzilla Developers <developers@bugzilla.org>},
+    VERSION          => BUGZILLA_VERSION,
+    ABSTRACT         => 'Bugzilla Bug Tracking System',
+    LICENSE          => 'Mozilla_2_0',
+    MIN_PERL_VERSION => '5.14.0',
+    CONFIGURE_REQUIRES => { 'ExtUtils::MakeMaker' => $build_requires{'ExtUtils::MakeMaker'} },
+    PREREQ_PM          => { %requires },
+    BUILD_REQUIRES     => { %build_requires },
+    TEST_REQUIRES      => { %test_requires },
     META_MERGE => {
         "meta-spec" => {
             url     => "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
             version => "2"
         },
-        dynamic_config    => 1,
+        dynamic_config => 1,
+        prereqs        => {
+            build   => { requires => { %build_requires } },
+            runtime => { requires => { %requires }, recommends => { %all_features, %recommends } },
+            test    => { requires => { %test_requires } },
+        },
         optional_features => \%optional_features,
     },
 );
@@ -338,5 +365,19 @@ sub MY::postamble {
 GEN_CPANFILE_ARGS = -A -U mod_perl -U oracle
 cpanfile: MYMETA.json
 \t\$(PERLRUN) gen-cpanfile.pl \$(GEN_CPANFILE_ARGS)
+
+checksetup_lib: Makefile.PL
+\tcpanm -l .checksetup_lib CPAN::Meta Module::Metadata\@$all_features{'Module::Metadata'}
+\t-rm -fr .checksetup_lib/man
+\t-rm -fr .checksetup_lib/lib/perl5/*/.meta
+\t-rm -fr .checksetup_lib/lib/perl5/Test
+\t-rm -fr .checksetup_lib/lib/perl5/ok.pm
+\t-find .checksetup_lib '(' -name '*.pod' -or -name .packlist ')' -print0 | xargs -0 rm -f
+
+META.json: Makefile.PL
+\tmake distmeta 2>&1 /dev/null; mv */META.json .
+
+META.yml: Makefile.PL
+\tmake distmeta 2>&1 /dev/null; mv */META.yml .
 MAKE
 }

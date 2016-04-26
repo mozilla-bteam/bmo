@@ -3,14 +3,15 @@ abstract: 'Bugzilla Bug Tracking System'
 author:
   - 'Bugzilla Developers <developers@bugzilla.org>'
 build_requires:
-  ExtUtils::MakeMaker: '0'
+  ExtUtils::MakeMaker: '6.55'
+  Pod::Checker: '0'
   Pod::Coverage: '0'
   Test::More: '0'
   Test::Perl::Critic: '0'
 configure_requires:
   ExtUtils::MakeMaker: '6.55'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 7.0401, CPAN::Meta::Converter version 2.150005'
+generated_by: 'ExtUtils::MakeMaker version 7.1, CPAN::Meta::Converter version 2.150001'
 license: unknown
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -51,10 +52,11 @@ optional_features:
       Net::SFTP: '0'
       XML::Simple: '0'
   features:
-    description: 'Base support for Features'
+    description: 'Modules required to enable any feature'
     requires:
-      CPAN::Meta: '0'
-      CPAN::Meta::Check: '0'
+      CPAN::Meta::Prereqs: '2.132830'
+      CPAN::Meta::Requirements: '2.121'
+      Module::Metadata: '1.000019'
       Module::Runtime: '0'
   graphical_reports:
     description: 'Graphical Reports'
@@ -77,7 +79,7 @@ optional_features:
     description: 'Mail Queueing'
     requires:
       Daemon::Generic: '0'
-      TheSchwartz: '1.1'
+      TheSchwartz: '1.10'
   jsonrpc:
     description: 'JSON-RPC Interface'
     requires:
@@ -99,7 +101,8 @@ optional_features:
   mod_perl:
     description: 'mod_perl support under Apache'
     requires:
-      mod_perl2: '0'
+      Apache::SizeLimit: '0.96'
+      mod_perl2: '1.999022'
   moving:
     description: 'Move Bugs Between Installations'
     requires:
@@ -173,6 +176,12 @@ optional_features:
       SOAP::Lite: '0.712'
       Test::Taint: '1.06'
       XMLRPC::Lite: '0.712'
+recommends:
+  CPAN::Meta::Prereqs: '2.132830'
+  CPAN::Meta::Requirements: '2.121'
+  Module::Metadata: '1.000019'
+  Module::Runtime: '0'
+  Safe: '2.30'
 requires:
   CGI: '3.51'
   Crypt::CBC: '0'
@@ -194,9 +203,8 @@ requires:
   HTML::Tree: '0'
   IO::Compress::Gzip: '0'
   IO::Scalar: '0'
-  Image::Magick: '0'
   JSON: '0'
-  JSON::XS: '2.01'
+  JSON::XS: '2.0'
   LWP: '6'
   LWP::UserAgent: '0'
   List::MoreUtils: '0.32'
@@ -207,6 +215,5 @@ requires:
   Text::Diff: '0'
   Tie::IxHash: '0'
   URI: '1.55'
-  perl: '5.010001'
+  perl: '5.014000'
 version: '5.1'
-x_serialization_backend: 'CPAN::Meta::YAML version 0.012'
