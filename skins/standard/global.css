@@ -12,7 +12,7 @@
         color: #000;
         background: #fff url("global/body-back.gif") repeat-x;
     }
-    body, td, th, input, dt, #titles {
+    body, td, th, input {
         font-family: Verdana, sans-serif;
         font-size: small;
     }
