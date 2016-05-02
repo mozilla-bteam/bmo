@@ -35,6 +35,9 @@
             "symbol": "San",
             "machine": {
                 "platform": "linux64"
+            },
+            "build": {
+                "platform": "linux64"
             }
           }
         }
@@ -68,6 +71,9 @@
           "treeherder": {
             "symbol": "Doc",
             "machine": {
+                "platform": "linux64"
+            },
+            "build": {
                 "platform": "linux64"
             }
           }
@@ -107,6 +113,9 @@
           "treeherder": {
             "symbol": "API",
             "machine": {
+                "platform": "linux64"
+            },
+            "build": {
                 "platform": "linux64"
             }
           }
@@ -151,6 +160,9 @@
           "treeherder": {
             "symbol": "Sel",
             "machine": {
+                "platform": "linux64"
+            },
+            "build": {
                 "platform": "linux64"
             }
           }
