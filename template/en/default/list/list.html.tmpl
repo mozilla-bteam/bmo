@@ -243,7 +243,8 @@
           [%~ defaultsavename OR searchname FILTER uri FILTER js %]'">Change Columns</a>
         [% IF bugs.size > 1 && caneditbugs && !dotweak %]
           | <a href="buglist.cgi?[% urlquerypart FILTER html %]
-              [%- "&order=$qorder" FILTER html IF order %]&amp;tweak=1'">
+              [%- "&order=$qorder" FILTER html IF order %]&amp;tweak=1'"
+               id="mass_change">
               Change Several [% terms.Bugs %] at Once</a>
         [% END %]
 
