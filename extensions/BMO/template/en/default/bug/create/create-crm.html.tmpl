@@ -254,11 +254,11 @@ $(document).ready(function() {
     <div class="row">
       <div class="row_desc">
         <label class="required" for="access_amount">
-          <strong>How many people will need access to the CRM platform?</strong>
+          <strong>How many people will need access to the CRM platform?</strong><br>
           Who are they & what are their roles?
         </label>
       </div>
-      <input required type="text" name="access_amount" id="access_amount" size="80">
+      <textarea required name="access_amount" id="access_amount" cols="80" rows="10"></textarea>
     </div>
 
     <div class="row">
@@ -283,7 +283,8 @@ $(document).ready(function() {
     <div class="row">
       <div class="row_desc">
         <label for="cc">
-          <strong>Points of contact</strong> Who should be cc'ed on this [% terms.bug %] and kept informed of updates?
+          <strong>Points of Contact:</strong><br>
+          Who should be cc'ed on this [% terms.bug %] and kept informed of updates?
         </label>
       </div>
       [% INCLUDE global/userselect.html.tmpl
