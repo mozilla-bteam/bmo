@@ -186,6 +186,15 @@
       <div id="field-value-short_desc">[% bug.short_desc FILTER quoteUrls(bug) %]</div>
     [% END %]
 
+    [%# alias %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.alias
+        value = bug.alias.join(", ")
+        field_type = constants.FIELD_TYPE_FREETEXT
+        hide_on_view = 1
+        short_width = 1
+    %]
+
     [%# summary %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.short_desc
@@ -913,9 +922,6 @@
     loc_html = INCLUDE bug_url_link link_text="URL";
     sub.push({ unfiltered => loc_html });
   END;
-  IF bug.alias.size;
-    sub.push("alias");
-  END;
 %]
 [% WRAPPER bug_modal/module.html.tmpl
   title = "Details"
@@ -923,39 +929,6 @@
   subtitle = sub
 %]
   [% WRAPPER fields_lhs %]
-
-    [%# alias %]
-    [% WRAPPER bug_modal/field.html.tmpl
-        container = 1
-        label = "Alias"
-        hide_on_view = bug.alias.size == 0
-    %]
-      [% IF bug.check_can_change_field("alias", 0, 1) %]
-        <button type="button" id="add-alias-btn" class="minor">Add</button>
-        <div id="add-alias-container" style="display:none">
-          <input name="newalias" id="newalias" size="20">
-        </div>
-      [% END %]
-
-      [% IF bug.alias && bug.alias.size %]
-        <span id="alias-latch">&#9656;</span>
-        <span id="alias-summary">
-          [% bug.alias.join(', ') FILTER html %]
-        </span>
-        <div id="alias-list" style="display:none">
-          <select id="alias" name="alias" multiple="multiple" size="5">
-            [% FOREACH a = bug.alias %]
-              <option value="[% a FILTER html %]">[% a FILTER html %]</option>
-            [% END %]
-          </select>
-          <br>
-          <input type="checkbox" id="removealias" name="removealias">
-          <label for="removealias">Remove selected aliases</label>
-        </div>
-      [% ELSE %]
-        <i>None</i>
-      [% END %]
-    [% END %]
 
     [%# whiteboard %]
     [% WRAPPER bug_modal/field.html.tmpl

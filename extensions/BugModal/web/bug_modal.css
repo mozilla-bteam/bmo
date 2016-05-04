@@ -311,17 +311,15 @@ input[type="number"] {
     cursor: pointer;
 }
 
-#cc-latch, #alias-latch {
+#cc-latch {
     color: #999;
 }
 
-#cc-latch, #cc-summary,
-#alias-latch, #alias-summary {
+#cc-latch, #cc-summary {
     cursor: pointer;
 }
 
-#cc-summary:hover,
-#alias-summary:hover {
+#cc-summary:hover {
     text-decoration: underline;
 }
 
@@ -348,13 +346,12 @@ input[type="number"] {
     text-decoration: line-through;
 }
 
-#add-cc-btn,
-#add-alias-btn {
+#add-cc-btn {
     margin-left; 8px;
     float: right;
 }
 
-#add-cc, #newalias {
+#add-cc {
     width: 100%;
 }
 

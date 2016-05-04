@@ -1065,16 +1065,6 @@ $(function() {
             }
         });
 
-    // add alias button
-    $('#add-alias-btn')
-        .click(function(event) {
-            event.preventDefault();
-            $('#add-alias-btn').hide();
-            $('#add-alias-container').show();
-            $('#top-save-btn').show();
-            $('#newalias').focus();
-        });
-
     // add cc button
     $('#add-cc-btn')
         .click(function(event) {

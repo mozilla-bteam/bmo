@@ -291,6 +291,10 @@ sub bug_start_of_set_all {
     {
         $params->{qa_contact} = $bug->component_obj->default_qa_contact->login;
     }
+
+    # Update alias values from the alias text field
+    my @aliases = split(/[,\s]+/, Bugzilla->cgi->param('alias'));
+    $params->{alias} = { set => \@aliases };
 }
 
 sub webservice {
