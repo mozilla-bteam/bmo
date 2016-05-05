@@ -347,7 +347,7 @@
     <tr>
       [% INCLUDE "bug/field-label.html.tmpl"
         field     = bug_fields.status_whiteboard
-        editable  = 1
+        editable  = bug.check_can_change_field("status_whiteboard", 0, 1)
         accesskey = "w"
         desc_url  = "https://wiki.mozilla.org/BMO/Whiteboard"
       %]
@@ -594,28 +594,6 @@
       [% END %]
     </td>
   </tr>
-
-  [% IF Param('usestatuswhiteboard') %]
-    <tr id="field_tablerow_status_whiteboard">
-      [% INCLUDE "bug/field-label.html.tmpl"
-        field = bug_fields.status_whiteboard
-        editable = bug.check_can_change_field("status_whiteboard", 0, 1)
-        accesskey = "w"
-      %]
-      [% INCLUDE input inputname = "status_whiteboard" size = 40 %]
-    </tr>
-  [% END %]
-
-  [% IF use_keywords %]
-    <tr id="field_tablerow_keywords">
-        [% INCLUDE bug/field.html.tmpl
-          bug = bug, field = bug_fields.keywords, value = bug.keywords
-          editable = bug.check_can_change_field("keywords", 0, 1),
-          desc_url = "describekeywords.cgi", possible_values = active_keywords
-        %]
-    </tr>
-  [% END %]
-
 [% END %]
 
 [%############################################################################%]
