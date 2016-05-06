@@ -157,7 +157,7 @@ $sel->is_text_present_ok("2 bugs found");
 $sel->click_ok("link=$bug_summary");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
-$sel->click_ok("link=Keywords:");
+$sel->click_ok("//a[\@href='describekeywords.cgi']");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bugzilla Keyword Descriptions");
 $sel->is_text_present_ok("key-selenium-kone");
