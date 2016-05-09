@@ -51,6 +51,8 @@ use DateTime::TimeZone;
 use Encode;
 use File::Basename;
 use File::Spec::Functions;
+# Bug 1270550 - Tie::Hash::NamedCapture must be loaded before Safe.
+use Tie::Hash::NamedCapture;
 use Safe;
 use Sys::Syslog qw(:DEFAULT);
 use List::Util qw(first);
