@@ -809,29 +809,32 @@ $(function() {
         .click(function(event) {
             event.preventDefault();
             var comment_id = $(event.target).data('reply-id');
+            var comment_count = $(event.target).data('reply-count');
             var comment_author = $(event.target).data('reply-name');
+            var comment_is_markdown = $(event.target).data('reply-markdown');
 
-            var prefix = "(In reply to " + comment_author + " from comment #" + comment_id + ")\n";
-            var reply_text = "";
+            var prefix = "(In reply to " + comment_author + " from comment #" + comment_count + ")\n";
             if (BUGZILLA.user.settings.quote_replies == 'quoted_reply') {
-                var text = $('#ct-' + comment_id).text();
-                reply_text = prefix + wrapReplyText(text);
+                if (comment_is_markdown) {
+                    bugzilla_ajax(
+                        {
+                            url: 'rest/core/1.0/bug/comment/' + comment_id,
+                        },
+                        function(data) {
+                            showReplyText(comment_count, prefix + wrapReplyText(data.comments[comment_id].text));
+                        },
+                        function() {
+                            showReplyText(comment_count, prefix + wrapReplyText($('#ct-' + comment_count).text()));
+                        }
+                    );
+                }
+                else {
+                    showReplyText(comment_count, prefix + wrapReplyText($('#ct-' + comment_count).text()));
+                }
             }
             else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
-                reply_text = prefix;
+                showReplyText(comment_count, prefix);
             }
-
-            // quoting a private comment, check the 'private' cb
-            $('#add-comment-private-cb').prop('checked',
-                $('#add-comment-private-cb:checked').length || $('#is-private-' + comment_id + ':checked').length);
-
-            // remove embedded links to attachment details
-            reply_text = reply_text.replace(/(attachment\s+\d+)(\s+\[[^\[\n]+\])+/gi, '$1');
-
-            if ($('#comment').val() != reply_text) {
-                $('#comment').val($('#comment').val() + reply_text);
-            }
-            $.scrollTo($('#comment'), function() { $('#comment').focus(); });
         });
 
     // add comment --> enlarge on focus
@@ -1211,6 +1214,7 @@ $(function() {
 
     // comment preview
     var last_comment_text = '';
+    var last_markdown_selected = 0;
     $('#comment-tabs li').click(function() {
         var that = $(this);
         if (that.hasClass('current'))
@@ -1218,7 +1222,8 @@ $(function() {
 
         // ensure preview's height matches the comment
         var comment = $('#comment');
-        var preview = $('#comment-preview');
+        var preview_div = $('#comment-preview-div');
+        var preview_pre = $('#comment-preview-pre');
         var comment_height = comment[0].offsetHeight;
 
         // change tabs
@@ -1236,31 +1241,58 @@ $(function() {
         }
 
         // update preview
-        preview.css('height', comment_height + 'px');
-        if (tab != 'comment-tab-preview' || last_comment_text == comment.val())
+        preview_div.css('height', comment_height + 'px');
+        preview_pre.css('height', comment_height + 'px');
+        var markdown_selected = $('#use_markdown').is(':checked') ? 1 : 0;
+        if (tab != 'comment-tab-preview'
+            || (last_comment_text == comment.val() && last_markdown_selected == markdown_selected))
             return;
         $('#preview-throbber').show();
-        preview.html('');
+        preview_div.html('');
+        preview_pre.html('');
         bugzilla_ajax(
             {
                 url: 'rest/bug/comment/render',
                 type: 'POST',
-                data: { text: comment.val() },
+                data: { text: comment.val(),
+                        markdown: markdown_selected },
                 hideError: true
             },
             function(data) {
                 $('#preview-throbber').hide();
-                preview.html(data.html);
+                if (markdown_selected) {
+                    preview_div.html(data.html);
+                    preview_div.show();
+                    preview_pre.hide();
+                }
+                else {
+                    preview_pre.html(data.html);
+                    preview_pre.show();
+                    preview_div.hide();
+                }
             },
             function(message) {
                 $('#preview-throbber').hide();
                 var container = $('<div/>');
                 container.addClass('preview-error');
                 container.text(message);
-                preview.html(container);
+                if (markdown_selected) {
+                    preview-dev.html(container);
+                    preview_pre.hide();
+                }
+                else {
+                    preview_pre.html(container);
+                    preview_div.hide();
+                }
             }
         );
         last_comment_text = comment.val();
+        last_markdown_selected = markdown_selected;
+    });
+    // When changing use_markdown, trigger a comment preview event
+    $('#use_markdown').change(function() {
+        if ($('#comment-preview-tab').hasClass('current'))
+            $('#comment-tabs li').click();
     });
 
     // dirty field tracking
@@ -1397,6 +1429,20 @@ function lb_close(event) {
     event.preventDefault();
     $(document).unbind('keyup.lb');
     $('#lb_overlay, #lb_overlay2, #lb_close_btn, #lb_img, #lb_text').remove();
+}
+
+function showReplyText(count, text) {
+    // quoting a private comment, check the 'private' cb
+    $('#add-comment-private-cb').prop('checked',
+        $('#add-comment-private-cb:checked').length || $('#is-private-' + count + ':checked').length);
+
+    // remove embedded links to attachment details
+    text = text.replace(/(attachment\s+\d+)(\s+\[[^\[\n]+\])+/gi, '$1');
+
+    if ($('#comment').val() != text) {
+        $('#comment').val($('#comment').val() + text);
+    }
+    $.scrollTo($('#comment'), function() { $('#comment').focus(); });
 }
 
 // extensions

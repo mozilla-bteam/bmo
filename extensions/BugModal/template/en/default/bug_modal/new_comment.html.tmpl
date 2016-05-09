@@ -30,6 +30,16 @@
     </div>
   [% END %]
 
+  [% IF user.use_markdown %]
+    <div id="add-comment-markdown">
+      <input type="checkbox" name="use_markdown"
+             id="use_markdown" value="1" checked="checked"
+             onchange="refresh_markdown_preview([% bug.id FILTER none %])">
+      <label id="use_markdown_label" for="use_markdown">Use Markdown</label>
+      (<a href="page.cgi?id=markdown.html" target="_blank" title="View Markdown Syntax Guide">help</a>)
+    </div>
+  [% END %]
+
   <ul id="comment-tabs">
     <li id="comment-edit-tab" data-tab="comment-tab-add" data-focus="comment" class="current">
       Add Comment
@@ -45,7 +55,8 @@
     <textarea rows="5" cols="80" name="comment" id="comment"></textarea>
   </div>
   <div id="comment-tab-preview" class="comment-tab" style="display:none">
-    <pre id="comment-preview" class="comment-text"></pre>
+    <div id="comment-preview-div" class="comment-text"></div>
+    <pre id="comment-preview-pre" class="comment-text" style="display:none;"></pre>
   </div>
 
   <div id="after-comment-commit-button">

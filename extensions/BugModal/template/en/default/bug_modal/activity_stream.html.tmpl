@@ -120,8 +120,10 @@
               >Tag</button>
             [% END %]
             <button type="button" class="reply-btn minor"
-              data-reply-id="[% comment.count FILTER none %]"
+              data-reply-id="[% comment.id FILTER none %]"
+              data-reply-count="[% comment.count FILTER none %]"
               data-reply-name="[% comment.author.name || comment.author.moz_nick FILTER html %]"
+              data-reply-markdown="[% (user.settings.use_markdown.value == "on" && comment.is_markdown) ? 1 : 0 %]"
               >Reply</button>
           [% END %]
           <button type="button" class="change-spinner minor" id="cs-[% comment.count FILTER none %]">-</button>
@@ -212,7 +214,7 @@
 [% END %]
 
 [% BLOCK comment_body %]
-  <pre class="comment-text [%= "bz_private" IF comment.is_private %]" id="ct-[% comment.count FILTER none %]"
+  <[% user.use_markdown(comment) ? "div" : "pre" %] class="comment-text [%= "bz_private" IF comment.is_private %]" id="ct-[% comment.count FILTER none %]"
     [% IF comment.collapsed +%] style="display:none"[% END ~%]
   >[% FILTER collapse %]
     [% IF comment.is_about_attachment && comment.attachment.is_image ~%]
@@ -221,7 +223,8 @@
         class="lightbox"><img src="extensions/BugModal/web/image.png" width="16" height="16"></a>
     [% END %]
   [% END %]
-  [%~ comment.body_full FILTER quoteUrls(bug, comment) ~%]</pre>
+  [%~ comment.body_full FILTER markdown(bug, comment) ~%]
+  </[% user.use_markdown(comment) ? "div" : "pre" %]>
 [% END %]
 
 [%

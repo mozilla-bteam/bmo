@@ -571,13 +571,16 @@ td.flag-requestee {
 }
 
 .comment-text {
-    white-space: pre-wrap;
     font: 13px/1.2 "Droid Sans Mono",Menlo,Monaco,"Courier New",Courier,monospace;
     background: #fff;
     margin: 1px 0 0 0;
     overflow: auto;
     padding: 8px;
     border-top: 1px solid #ddd;
+}
+
+.comment-text pre {
+    white-space: pre-wrap;
 }
 
 .comment-text span.quote, .comment-text span.quote_wrapped {
@@ -662,7 +665,8 @@ td.flag-requestee {
     margin-top: 20px;
 }
 
-#add-comment-private {
+#add-comment-private,
+#add-comment-markdown {
     float: right;
 }
 

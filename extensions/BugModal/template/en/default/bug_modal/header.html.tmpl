@@ -110,6 +110,7 @@
     BUGZILLA.constant.min_comment_tag_length = [% constants.MIN_COMMENT_TAG_LENGTH FILTER none %];
     BUGZILLA.constant.max_comment_tag_length = [% constants.MAX_COMMENT_TAG_LENGTH FILTER none %];
   [% END %]
+  BUGZILLA.reply_text = '';
 [% END %]
 
 [% Hook.process("end") %]
