@@ -11,12 +11,10 @@ cd $BUGZILLA_ROOT
 # Install Perl dependencies
 CPANM="cpanm -l local --quiet"
 
-# - Image::Magick > 6.77 fails to build properly on RHEL6
 # - Crypt::SMIME > 0.15 fails to build properly on RHEL6
 # - Test::WWW::Selenium for UI testing support
 # - Cache::Memcached is not picked up by normal dep check (will investigate)
-$CPANM --notest Image::Magick@6.77 \
-                Crypt::SMIME@0.15 \
+$CPANM --notest Crypt::SMIME@0.15 \
                 Test::WWW::Selenium \
                 Cache::Memcached
 
