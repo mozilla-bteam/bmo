@@ -340,7 +340,7 @@ WriteMakefile(
     VERSION          => BUGZILLA_VERSION,
     ABSTRACT         => 'Bugzilla Bug Tracking System',
     LICENSE          => 'Mozilla_2_0',
-    MIN_PERL_VERSION => '5.14.0',
+    MIN_PERL_VERSION => '5.10.1',
     CONFIGURE_REQUIRES => { 'ExtUtils::MakeMaker' => $build_requires{'ExtUtils::MakeMaker'} },
     PREREQ_PM          => { %requires },
     BUILD_REQUIRES     => { %build_requires },
