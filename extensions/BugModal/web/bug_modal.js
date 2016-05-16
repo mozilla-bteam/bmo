@@ -51,7 +51,16 @@ $(function() {
     'use strict';
 
     // update relative dates
-    window.setInterval(function() {
+    var relative_timer_duration = 60000;
+    var relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
+    $(document).on('show.visibility', function() {
+        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration)
+    });
+    $(document).on('hide.visibility', function() {
+        window.clearInterval(relative_timer_id);
+    });
+
+    function relativeTimer() {
         var now = Math.floor(new Date().getTime() / 1000);
         $('.rel-time').each(function() {
             $(this).text(timeAgo(now - $(this).data('time')));
@@ -59,7 +68,7 @@ $(function() {
         $('.rel-time-title').each(function() {
             $(this).attr('title', timeAgo(now - $(this).data('time')));
         });
-    }, 60000);
+    }
 
     // all keywords for autocompletion (lazy-loaded on edit)
     var keywords = [];
@@ -1420,7 +1429,7 @@ function lb_show(el) {
         .addClass('minor')
         .text('Close')
         .appendTo(overlay2);
-    title.append(el.title);
+    title.text(el.title);
     overlay.add(overlay2).click(lb_close);
     img.add(overlay).animate({ opacity: 1 }, 200);
 }
