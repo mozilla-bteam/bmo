@@ -20,6 +20,7 @@ use Bugzilla::User::Setting;
 use Bugzilla::Util qw(trick_taint datetime_from html_quote time_ago);
 use List::MoreUtils qw(any);
 use Template::Stash;
+use JSON::XS qw(encode_json);
 
 our $VERSION = '1';
 
@@ -189,6 +190,31 @@ sub template_before_process {
         file => 'bug/edit.html.tmpl',
         vars => $vars,
     });
+
+    my @readable_bug_status_products = (
+        'Core',
+        'Toolkit',
+        'Firefox',
+        'Firefox for Android',
+        'Firefox for iOS',
+        'Bugzilla',
+        'bugzilla.mozilla.org'
+    );
+    my $use_readable_bug_status = any { $bug->product eq $_ } @readable_bug_status_products;
+    if ($use_readable_bug_status) {
+        my @flags = map { { name => $_->name, status => $_->status } } @{$bug->flags};
+        $vars->{readable_bug_status_json} = encode_json({
+            dupe_of    => $bug->dup_id,
+            id         => $bug->id,
+            keywords   => [ map { $_->name } @{$bug->keyword_objects} ],
+            priority   => $bug->priority,
+            resolution => $bug->resolution,
+            status     => $bug->bug_status,
+            flags      => \@flags,
+            target_milestone => $bug->target_milestone,
+            map { $_->name => $_->bug_flag($bug->id)->value } @{$vars->{tracking_flags}},
+        });
+    }
 
     # bug->choices loads a lot of data that we want to lazy-load
     # just load the status and resolutions and perform extra checks here
