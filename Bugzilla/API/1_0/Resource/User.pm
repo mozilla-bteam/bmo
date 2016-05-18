@@ -41,7 +41,7 @@ use constant READ_ONLY => qw(
     logout
     mfa_enroll
     valid_login
-    whomai
+    whoami
 );
 
 use constant PUBLIC_METHODS => qw(
