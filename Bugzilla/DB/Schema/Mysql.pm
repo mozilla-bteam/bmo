@@ -423,4 +423,6 @@ sub get_type_ddl {
 
 =item get_alter_column_ddl
 
+=item get_type_ddl
+
 =back
