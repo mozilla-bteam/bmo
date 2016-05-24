@@ -20,7 +20,7 @@ COPY docker_files/files /files
 # Distribution package installation
 RUN yum -y -q install https://dev.mysql.com/get/mysql-community-release-el6-5.noarch.rpm epel-release centos-release-scl yum-utils \
     && yum -y -q groupinstall "Development Tools" \
-    && yum-config-manager --enable rhel-server-rhscl-7-rpms \
+    && yum-config-manager --enable rhel-server-rhscl-6-rpms \
     && yum -y -q install `cat /files/rpm_list` \
     && yum clean all
 
@@ -48,7 +48,7 @@ RUN cp /files/sudoers /etc/sudoers \
     && chmod 440 /etc/sudoers
 
 # Clone the code repo
-RUN su $BUGZILLA_USER -c "git clone $GITHUB_BASE_GIT -b $GITHUB_BASE_BRANCH $BUGZILLA_ROOT"
+RUN su $USER -c "git clone $GITHUB_BASE_GIT -b $GITHUB_BASE_BRANCH $BUGZILLA_ROOT"
 
 # Bugzilla dependencies and setup
 COPY docker_files/scripts /scripts
