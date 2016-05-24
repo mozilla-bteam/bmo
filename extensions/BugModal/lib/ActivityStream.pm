@@ -167,12 +167,16 @@ sub _add_comments_to_stream {
         next if $comment->type == CMT_HAS_DUPE;
         my $author_id = $comment->author->id;
         next if $comment->is_private && !($user->is_insider || $user->id == $author_id);
-        next if $comment->body eq '' && ($comment->work_time - 0) != 0 && !$user->is_timetracker;
+        next if $comment->body eq '' && ($comment->work_time - 0) != 0 && $user->is_timetracker;
 
         # treeherder is so spammy we hide its comments by default
         if ($author_id == $treeherder_id) {
             $comment->{collapsed} = 1;
             $comment->{collapsed_reason} = $comment->author->name;
+        }
+        if ($comment->type != CMT_ATTACHMENT_CREATED && $comment->count == 0 && length($comment->body) == 0) {
+            $comment->{collapsed} = 1;
+            $comment->{collapsed_reason} = 'empty';
         }
 
         _add_comment_to_stream($stream, date_str_to_time($comment->creation_ts), $comment->author->id, $comment);

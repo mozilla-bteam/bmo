@@ -735,6 +735,9 @@ $(function() {
             var other = $(that.attr('id') == 'dup_id' ? '#bottom-dup_id' : '#dup_id');
             other.val(that.val());
         });
+    var rbs = $("#readable-bug-status");
+    var rbs_text = bugzillaReadableStatus.readable(rbs.data('readable-bug-status'));
+    rbs.text(rbs_text);
 
     // add see-also button
     $('.bug-urls-btn')
@@ -948,6 +951,19 @@ $(function() {
             var id = $(event.target).attr('id').replace(/-img$/, '');
             $('#' + id).datetimepicker('show');
         });
+
+    // timetracking
+    $('#work_time').change(function() {
+        // subtracts time spent from remaining time
+        // prevent negative values if work_time > fRemainingTime
+        var new_time = Math.max(BUGZILLA.remaining_time - $('#work_time').val(), 0.0);
+        // get upto 2 decimal places
+        $('#remaining_time').val(Math.round((new_time * 100)/100).toFixed(1));
+    });
+    $('#remaining_time').change(function() {
+        // if the remaining time is changed manually, update BUGZILLA.remaining_time
+        BUGZILLA.remaining_time = $('#remaining_time').val();
+    });
 
     // new bug button
     $.contextMenu({
