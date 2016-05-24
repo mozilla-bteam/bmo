@@ -250,8 +250,8 @@ my %optional_features = (
         prereqs     => {
             runtime => {
                 requires => {
-                    'mod_perl2'         => '1.999022',
-                    'Apache::SizeLimit' => '0.96',
+                    'mod_perl2'          => '1.999022',
+                    'Apache2::SizeLimit' => '0.96',
                 }
             }
         }
