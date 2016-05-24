@@ -215,5 +215,5 @@ requires:
   Text::Diff: '0'
   Tie::IxHash: '0'
   URI: '1.55'
-  perl: '5.014000'
+  perl: '5.010001'
 version: '5.1'
