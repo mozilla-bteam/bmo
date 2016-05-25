@@ -1450,9 +1450,6 @@ sub _bug_to_hash {
     if (filter_wants $params, 'flags') {
         $item{'flags'} = [ map { $self->_flag_to_hash($_) } @{$bug->flags} ];
     }
-    if (filter_wants $params, 'tags', 'extra') {
-        $item{'tags'} = $bug->tags;
-    }
 
     # And now custom fields
     my @custom_fields = Bugzilla->active_custom_fields;
@@ -2651,12 +2648,6 @@ These fields are returned only by specifying "_extra" or the field name in "incl
 
 =over
 
-=item C<tags>
-
-C<array> of C<string>s.  Each array item is a tag name.
-
-Note that tags are personal to the currently logged in user.
-
 =back
 
 =item C<faults>
@@ -3082,13 +3073,6 @@ Note that unlike searching in the Bugzilla UI, substrings are not split
 on spaces. So searching for C<foo bar> will match "This is a foo bar"
 but not "This foo is a bar". C<['foo', 'bar']>, would, however, match
 the second item.
-
-=item C<tags>
-
-C<string> Searches for a bug with the specified tag.  If you specify an
-array, then any bugs that match I<any> of the tags will be returned.
-
-Note that tags are personal to the currently logged in user.
 
 =item C<target_milestone>
 
