@@ -24,19 +24,6 @@ use constant PUBLIC_METHODS => qw(
     prod_comp_search
 );
 
-sub rest_resources {
-    return [
-        qr{^/prod_comp_search/(.*)$}, {
-            GET => {
-                method => 'prod_comp_search',
-                params => sub {
-                    return { search => $_[0] }
-                }
-            }
-        }
-    ]
-}
-
 ##################
 # Public Methods #
 ##################

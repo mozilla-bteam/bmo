@@ -5,32 +5,46 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::MozReview::WebService;
+package Bugzilla::API::1_0::Resource::MozReview;
 
 use 5.10.1;
 use strict;
 use warnings;
 
-use base qw(Bugzilla::WebService);
+use base qw(Bugzilla::API::1_0::Resource);
 
 use Bugzilla::Attachment;
 use Bugzilla::Bug;
 use Bugzilla::Comment;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::WebService::Constants;
-use Bugzilla::WebService::Util qw(extract_flags validate translate);
+use Bugzilla::API::1_0::Constants;
+use Bugzilla::API::1_0::Util qw(extract_flags validate translate);
 use Bugzilla::Util qw(trim);
 
 use List::MoreUtils qw(uniq all);
 use List::Util qw(max);
 use Storable qw(dclone);
 
+BEGIN {
+    require Bugzilla::API::1_0::Resource::Bug;
+    *_attachment_to_hash = \&Bugzilla::API::1_0::Resource::Bug::_attachment_to_hash;
+    *_flag_to_hash = \&Bugzilla::API::1_0::Resource::Bug::_flag_to_hash;
+}
+
 use constant PUBLIC_METHODS => qw( attachments );
 
-BEGIN {
-    *_attachment_to_hash = \&Bugzilla::WebService::Bug::_attachment_to_hash;
-    *_flag_to_hash = \&Bugzilla::WebService::Bug::_flag_to_hash;
+sub REST_RESOURCES {
+    return [
+        qr{^/attachments/(\d+)$}, {
+            POST => {
+                method => 'attachments',
+                params => sub {
+                    return { bug_id => $_[0] };
+                }
+            }
+        }
+    ];
 }
 
 sub attachments {
@@ -135,8 +149,8 @@ sub attachments {
             $changes = translate($changes, Bugzilla::WebService::Bug::ATTACHMENT_MAPPED_RETURNS);
 
             my %hash = (
-                id               => $self->type('int', $attachment_obj->id),
-                last_change_time => $self->type('dateTime', $attachment_obj->modification_time),
+                id               => as_int($attachment_obj->id),
+                last_change_time => as_datetime($attachment_obj->modification_time),
                 changes          => {},
             );
 
@@ -147,8 +161,8 @@ sub attachments {
                 # stays consistent for things like Deadline that can become
                 # empty.
                 $hash{changes}->{$field} = {
-                    removed => $self->type('string', $change->[0] // ''),
-                    added   => $self->type('string', $change->[1] // '')
+                    removed => as_string($change->[0] // ''),
+                    added   => as_string($change->[1] // '')
                 };
             }
 

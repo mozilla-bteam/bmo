@@ -12,5 +12,6 @@ use strict;
 use warnings;
 
 use constant NAME => 'MyDashboard';
+use constant API_VERSION_MAP  => { '1_0' => '1_0' };
 
 __PACKAGE__->NAME;

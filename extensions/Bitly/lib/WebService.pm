@@ -129,19 +129,4 @@ sub _bitly {
     return { url => $result->{data}->{url} };
 }
 
-sub rest_resources {
-    return [
-        qr{^/bitly/shorten$}, {
-            GET => {
-                method => 'shorten',
-            },
-        },
-        qr{^/bitly/list$}, {
-            GET => {
-                method => 'list',
-            },
-        },
-    ]
-}
-
 1;

@@ -5,24 +5,105 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::Review::WebService;
+package Bugzilla::API::1_0::Resource::Review;
 
 use 5.10.1;
 use strict;
 use warnings;
 
-use base qw(Bugzilla::WebService);
+use parent qw(Bugzilla::API::1_0::Resource);
 
+use Bugzilla::API::1_0::Util;
 use Bugzilla::Bug;
 use Bugzilla::Component;
 use Bugzilla::Error;
 use Bugzilla::Util qw(detaint_natural trick_taint);
-use Bugzilla::WebService::Util 'filter';
+
+#############
+# Constants #
+#############
+
+use constant READ_ONLY => qw(
+    flag_activity
+    suggestions
+);
 
 use constant PUBLIC_METHODS => qw(
     flag_activity
     suggestions
 );
+
+sub REST_RESOURCES {
+    return [
+        # bug-id
+        qr{^/suggestions/(\d+)$}, {
+            GET => {
+                method => 'suggestions',
+                params => sub {
+                    return { bug_id => $_[0] };
+                },
+            },
+        },
+        # product/component
+        qr{^/suggestions/([^/]+)/(.+)$}, {
+            GET => {
+                method => 'suggestions',
+                params => sub {
+                    return { product => $_[0], component => $_[1] };
+                },
+            },
+        },
+        # just product
+        qr{^/suggestions/([^/]+)$}, {
+            GET => {
+                method => 'suggestions',
+                params => sub {
+                    return { product => $_[0] };
+                },
+            },
+        },
+        # named parameters
+        qr{^/suggestions$}, {
+            GET => {
+                method => 'suggestions',
+            },
+        },
+        # flag activity by flag id
+        qr{^/flag_activity/(\d+)$}, {
+            GET => {
+                method => 'flag_activity',
+                params => sub {
+                    return { flag_id => $_[0] }
+                },
+            },
+        },
+        qr{^/flag_activity/type_name/(\w+)$}, {
+            GET => {
+                method => 'flag_activity',
+                params => sub {
+                    return { type_name => $_[0] }
+                },
+            },
+        },
+        # flag activity by user
+        qr{^/flag_activity/(requestee|setter|type_id)/(.*)$}, {
+            GET => {
+                method => 'flag_activity',
+                params => sub {
+                    return { $_[0] => $_[1] };
+                },
+            },
+        },
+        # flag activity with only query strings
+        qr{^/flag_activity$}, {
+            GET => { method => 'flag_activity' },
+        },
+    ];
+}
+
+###########
+# Methods #
+###########
 
 sub suggestions {
     my ($self, $params) = @_;
@@ -68,10 +149,10 @@ sub suggestions {
     my @result;
     foreach my $reviewer (@reviewers) {
         push @result, {
-            id    => $self->type('int', $reviewer->id),
-            email => $self->type('email', $reviewer->login),
-            name  => $self->type('string', $reviewer->name),
-            review_count => $self->type('int', $reviewer->review_count),
+            id    => as_int($reviewer->id),
+            email => as_email($reviewer->login),
+            name  => as_string($reviewer->name),
+            review_count => as_int($reviewer->review_count),
         };
     }
     return \@result;
@@ -167,17 +248,17 @@ sub _flag_state_activity_to_hash {
     my ($self, $fsa, $params) = @_;
 
     my %flag = (
-        id            => $self->type('int', $fsa->id),
-        creation_time => $self->type('string', $fsa->flag_when),
+        id            => as_int($fsa->id),
+        creation_time => as_string($fsa->flag_when),
         type          => $self->_flagtype_to_hash($fsa->type),
         setter        => $self->_user_to_hash($fsa->setter),
-        bug_id        => $self->type('int',    $fsa->bug_id),
-        attachment_id => $self->type('int',    $fsa->attachment_id),
-        status        => $self->type('string', $fsa->status),
+        bug_id        => as_int($fsa->bug_id),
+        attachment_id => as_int($fsa->attachment_id),
+        status        => as_string($fsa->status),
     );
 
     $flag{requestee} = $self->_user_to_hash($fsa->requestee) if $fsa->requestee;
-    $flag{flag_id}   = $self->type('int', $fsa->flag_id) unless $params->{flag_id};
+    $flag{flag_id}   = as_int($fsa->flag_id) unless $params->{flag_id};
 
     return filter($params, \%flag);
 }
@@ -187,13 +268,13 @@ sub _flagtype_to_hash {
     my $user = Bugzilla->user;
 
     return {
-        id               => $self->type('int',     $flagtype->id),
-        name             => $self->type('string',  $flagtype->name),
-        description      => $self->type('string',  $flagtype->description),
-        type             => $self->type('string',  $flagtype->target_type),
-        is_active        => $self->type('boolean', $flagtype->is_active),
-        is_requesteeble  => $self->type('boolean', $flagtype->is_requesteeble),
-        is_multiplicable => $self->type('boolean', $flagtype->is_multiplicable),
+        id               => as_int($flagtype->id),
+        name             => as_string($flagtype->name),
+        description      => as_string($flagtype->description),
+        type             => as_string($flagtype->target_type),
+        is_active        => as_boolean($flagtype->is_active),
+        is_requesteeble  => as_boolean($flagtype->is_requesteeble),
+        is_multiplicable => as_boolean($flagtype->is_multiplicable),
     };
 }
 
@@ -201,9 +282,9 @@ sub _user_to_hash {
     my ($self, $user) = @_;
 
     return {
-        id        => $self->type('int',    $user->id),
-        real_name => $self->type('string', $user->name),
-        name      => $self->type('email',  $user->login),
+        id        => as_int($user->id),
+        real_name => as_string($user->name),
+        name      => as_email($user->login),
     };
 }
 
@@ -219,6 +300,10 @@ Bugzilla::Extension::Review::WebService - Functions for the Mozilla specific
 See L<Bugzilla::WebService> for a description of how parameters are passed,
 and what B<STABLE>, B<UNSTABLE>, and B<EXPERIMENTAL> mean.
 
+Although the data input and output is the same for JSONRPC, XMLRPC and REST,
+the directions for how to access the data via REST is noted in each method
+where applicable.
+
 =head2 suggestions
 
 B<EXPERIMENTAL>
@@ -228,6 +313,20 @@ B<EXPERIMENTAL>
 =item B<Description>
 
 Returns the list of suggestions for reviewers.
+
+=item B<REST>
+
+GET /rest/review/1.0/suggestions/C<bug-id>
+
+GET /rest/review/1.0/suggestions/C<product-name>
+
+GET /rest/review/1.0/suggestions/C<product-name>/C<component-name>
+
+GET /rest/review/1.0/suggestions?product=C<product-name>
+
+GET /rest/review/1.0/suggestions?product=C<product-name>&component=C<component-name>
+
+The returned data format is the same as below.
 
 =item B<Params>
 
@@ -280,6 +379,22 @@ B<EXPERIMENTAL>
 =item B<Description>
 
 Returns the history of flag status changes based on requestee, setter, flag_id, type_id, or all.
+
+=item B<REST>
+
+GET /rest/review/1.0/flag_activity/C<flag_id>
+
+GET /rest/review/1.0/flag_activity/requestee/C<requestee>
+
+GET /rest/review/1.0/flag_activity/setter/C<setter>
+
+GET /rest/review/1.0/flag_activity/type_id/C<type_id>
+
+GET /rest/review/1.0/flag_activity/type_name/C<type_name>
+
+GET /rest/review/1.0/flag_activity
+
+The returned data format is the same as below.
 
 =item B<Params>
 
@@ -367,7 +482,7 @@ The id of the bugzilla user. A unique integer value.
 
 =item C<real_name> (string)
 
-The real name of the bugzilla user. 
+The real name of the bugzilla user.
 
 =item C<name> (string)
 

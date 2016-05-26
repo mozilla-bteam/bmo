@@ -363,12 +363,14 @@ sub _find_resource {
 
     my $resource_modules;
     if ($api_ext_namespace) {
-        $resource_modules = File::Spec->catdir(bz_locations()->{extensionsdir},
-            $api_ext_namespace, 'API', $api_ext_version, 'Resource', '*.pm');
+         $resource_modules = File::Spec->catdir(bz_locations()->{extensionsdir},
+                                               $api_ext_namespace, 'API', $api_ext_version,
+                                               'Resource', '*.pm');
     }
     else {
         $resource_modules = File::Spec->catdir(bz_locations()->{cgi_path},
-            'Bugzilla','API', $api_version, 'Resource', '*.pm');
+                                               'Bugzilla','API', $api_version,
+                                               'Resource', '*.pm');
     }
 
     # Load in the WebService modules from the appropriate version directory

@@ -152,16 +152,6 @@ sub bug_interest_unmark {
     Bugzilla->dbh->bz_commit_transaction();
 }
 
-sub rest_resources {
-    return [
-        qr{^/bug_interest_unmark$}, {
-            PUT => {
-                method => 'bug_interest_unmark'
-            }
-        }
-    ];
-}
-
 1;
 
 __END__

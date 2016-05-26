@@ -43,12 +43,12 @@ use constant PUBLIC_METHODS => qw(
 
 sub REST_RESOURCES {
     return [
-        qr{^/bitly/shorten$}, {
+        qr{^/shorten$}, {
             GET => {
                 method => 'shorten',
             },
         },
-        qr{^/bitly/list$}, {
+        qr{^/list$}, {
             GET => {
                 method => 'list',
             },

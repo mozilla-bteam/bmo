@@ -250,7 +250,7 @@ sub _check_namespace {
     foreach my $extension (@{ Bugzilla->extensions }) {
         if (lc($extension->NAME) eq lc($namespace)) {
             $found = 1;
-            $self->api_ext_namespace($namespace);
+            $self->api_ext_namespace($extension->NAME);
             last;
         }
     }
@@ -277,7 +277,8 @@ sub _check_version {
         $version_dir = File::Spec->catdir(bz_locations()->{cgi_path},
                                           'Bugzilla', 'API', $version);
     }
-    else {
+    elsif ($self->api_ext_namespace) {
+        $namespace = $self->api_ext_namespace;
         $version_dir = File::Spec->catdir(bz_locations()->{extensionsdir},
                                           $namespace, 'API', $version);
     }
@@ -292,10 +293,10 @@ sub _check_version {
 
     # If we using an extension API, we need to determing which version of
     # the Core API it was written for.
-    if (lc($namespace) ne 'core') {
+    if (lc($namespace) ne 'core' && $self->api_ext_namespace) {
         my $core_api_version;
         foreach my $extension (@{ Bugzilla->extensions }) {
-            next if lc($extension->NAME) ne lc($namespace);
+            next if lc($extension->NAME) ne lc($self->api_ext_namespace);
             if ($extension->API_VERSION_MAP
                 && $extension->API_VERSION_MAP->{$version})
             {

@@ -14,9 +14,11 @@ use warnings;
 use parent qw(Bugzilla::Extension);
 
 use Bugzilla::Attachment;
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Extension::MozReview::WebService;
 use List::MoreUtils qw( any );
+use Scalar::Util qw(blessed);
 
 our $VERSION = '0.01';
 
@@ -107,13 +109,22 @@ sub webservice {
 
 sub webservice_before_call {
     my ($self, $args) = @_;
-    my ($method, $full_method) = ($args->{method}, $args->{full_method});
     my $mozreview_app_id = Bugzilla->params->{mozreview_app_id} // '';
     my $user             = Bugzilla->user;
     my $getter           = eval { $user->authorizer->successful_info_getter() } or return;
     my $app_id           = $getter->can("app_id") ? $getter->app_id // '' : '';
 
-    $full_method =~ s/^Bugzilla::Extension::(\w+)::WebService\./$1./;
+    my $full_method;
+    if (Bugzilla->usage_mode == USAGE_MODE_REST) {
+        my $method = $args->{rpc}->method_name;
+        $full_method = blessed $args->{rpc}->controller;
+        $full_method =~ s/^Bugzilla::API::.*::Resource::(\w+)$/$1/;
+        $full_method .= ".$method";
+    }
+    else {
+        $full_method = $args->{full_method};
+        $full_method =~ s/^Bugzilla::Extension::(\w+)::WebService\./$1./;
+    }
 
     my $is_mozreview_method = $full_method =~ /^MozReview\./;
 

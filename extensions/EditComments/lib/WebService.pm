@@ -59,25 +59,6 @@ sub comments {
     return { comments => \%comments };
 }
 
-sub rest_resources {
-    return [
-        qr{^/editcomments/comment/(\d+)$}, {
-            GET => {
-                method => 'comments',
-                params => sub {
-                    return { comment_ids => $_[0] };
-                },
-            },
-        },
-        qr{^/editcomments/comment$}, {
-            GET => {
-                method => 'comments',
-            },
-        },
-    ];
-};
-
-
 1;
 
 __END__

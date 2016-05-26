@@ -708,69 +708,6 @@ sub _flagtype_clusions_to_hash {
     return $result;
 }
 
-sub rest_resources {
-    return [
-        # create page - single product name
-        qr{^/ember/create/(.*)$}, {
-            GET => {
-                method => 'create',
-                params => sub {
-                    return { product => $_[0] };
-                }
-            }
-        },
-        # create page - one or more products
-        qr{^/ember/create$}, {
-            GET => {
-                method => 'create'
-            }
-        },
-        # show bug page - single bug id
-        qr{^/ember/show/(\d+)$}, {
-            GET => {
-                method => 'show',
-                params => sub {
-                    return { id => $_[0] };
-                }
-            }
-        },
-        # search - wrapper around SUPER::search which also includes the total
-        # number of bugs when using pagination
-        qr{^/ember/search$}, {
-            GET  => {
-                method => 'search',
-            },
-        },
-        # get current bug attributes without field information - single bug id
-        qr{^/ember/bug/(\d+)$}, {
-            GET => {
-                method => 'bug',
-                params => sub {
-                    return { id => $_[0] };
-                }
-            }
-        },
-        # attachments - wrapper around SUPER::attachments that also includes
-        # can_edit attribute
-        qr{^/ember/bug/(\d+)/attachments$}, {
-            GET => {
-                method => 'get_attachments',
-                params => sub {
-                    return { ids => $_[0] };
-                }
-            }
-        },
-        qr{^/ember/bug/attachments/(\d+)$}, {
-            GET => {
-                method => 'get_attachments',
-                params => sub {
-                    return { attachment_ids => $_[0] };
-                }
-            }
-        }
-    ];
-};
-
 1;
 
 __END__
