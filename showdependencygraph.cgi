@@ -45,44 +45,50 @@ our $bug_count = 0;
 # rectangle (LEFTX,TOPY) (RIGHTX,BOTTOMY) URLBASE/show_bug.cgi?id=BUGNUM BUGNUM[\nSUMMARY]
 
 sub CreateImagemap {
-my $mapfilename = shift;
-my $map = "<map name=\"imagemap\">\n";
-my $default = "";
+    my $mapfilename = shift;
+    my $map = "<map name=\"imagemap\">\n";
+    my $default = "";
 
-open MAP, "<", $mapfilename;
-while(my $line = <MAP>) {
-    if($line =~ /^default ([^ ]*)(.*)$/) {
-        $default = qq{<area alt="" shape="default" href="$1">\n};
+    open MAP, "<", $mapfilename;
+    while(my $line = <MAP>) {
+        if($line =~ /^default ([^ ]*)(.*)$/) {
+            $default = qq{<area alt="" shape="default" href="$1">\n};
+        }
+
+        if ($line =~ /^rectangle \((\d+),(\d+)\) \((\d+),(\d+)\) (http[^ ]*) (\d+)(?:\\n.*)?$/) {
+            my ($leftx, $rightx, $topy, $bottomy, $url, $bugid) = ($1, $3, $2, $4, $5, $6);
+
+            # Pick up bugid from the mapdata label field. Getting the title from
+            # bugtitle hash instead of mapdata allows us to get the summary even
+            # when showsummary is off, and also gives us status and resolution.
+            # This text is safe; it has already been escaped.
+            my $bugtitle = $bugtitles{$bugid};
+
+            # The URL is supposed to be safe, because it's built manually.
+            # But in case someone manages to inject code, it's safer to escape it.
+            $url = html_quote($url);
+
+            $map .= qq{<area alt="bug $bugid" name="bug$bugid" shape="rect" } .
+                    qq{title="$bugtitle" href="$url" } .
+                    qq{coords="$leftx,$topy,$rightx,$bottomy">\n};
+        }
     }
+    close MAP;
 
-    if ($line =~ /^rectangle \((.*),(.*)\) \((.*),(.*)\) (http[^ ]*) (\d+)(\\n.*)?$/) {
-        my ($leftx, $rightx, $topy, $bottomy, $url, $bugid) = ($1, $3, $2, $4, $5, $6);
-
-        # Pick up bugid from the mapdata label field. Getting the title from
-        # bugtitle hash instead of mapdata allows us to get the summary even
-        # when showsummary is off, and also gives us status and resolution.
-        my $bugtitle = $bugtitles{$bugid};
-        $map .= qq{<area alt="bug $bugid" name="bug$bugid" shape="rect" } .
-                qq{title="$bugtitle" href="$url" } .
-                qq{coords="$leftx,$topy,$rightx,$bottomy">\n};
-    }
-}
-close MAP;
-
-$map .= "$default</map>";
-return $map;
+    $map .= "$default</map>";
+    return $map;
 }
 
 sub AddLink {
-my ($blocked, $dependson, $fh) = (@_);
-my $key = "$blocked,$dependson";
-if (!exists $edgesdone{$key}) {
-    $edgesdone{$key} = 1;
-    print $fh "$dependson -> $blocked\n";
-    $bug_count++;
-    $seen{$blocked} = 1;
-    $seen{$dependson} = 1;
-}
+    my ($blocked, $dependson, $fh) = (@_);
+    my $key = "$blocked,$dependson";
+    if (!exists $edgesdone{$key}) {
+        $edgesdone{$key} = 1;
+        print $fh "$dependson -> $blocked\n";
+        $bug_count++;
+        $seen{$blocked} = 1;
+        $seen{$dependson} = 1;
+    }
 }
 
 ThrowUserError("missing_bug_id") unless $cgi->param('id');
@@ -94,20 +100,20 @@ my @valid_rankdirs = ('LR', 'RL', 'TB', 'BT');
 my $rankdir = $cgi->param('rankdir') || 'TB';
 # Make sure the submitted 'rankdir' value is valid.
 if (!grep { $_ eq $rankdir } @valid_rankdirs) {
-$rankdir = 'TB';
+    $rankdir = 'TB';
 }
 
 my $display = $cgi->param('display') || 'tree';
 my $webdotdir = bz_locations()->{'webdotdir'};
 
 my ($fh, $filename) = File::Temp::tempfile("XXXXXXXXXX",
-                                       SUFFIX => '.dot',
-                                       DIR => $webdotdir,
-                                       UNLINK => 1);
+                                           SUFFIX => '.dot',
+                                           DIR => $webdotdir,
+                                           UNLINK => 1);
 
 chmod Bugzilla::Install::Filesystem::CGI_WRITE, $filename
-or warn install_string('chmod_failed', { path => $filename,
-                                         error => $! });
+    or warn install_string('chmod_failed', { path => $filename,
+                                             error => $! });
 
 my $urlbase = correct_urlbase();
 
@@ -120,8 +126,8 @@ node [URL="${urlbase}show_bug.cgi?id=\\N", style=filled, color=lightgrey]
 my %baselist;
 
 foreach my $i (split('[\s,]+', $cgi->param('id'))) {
-my $bug = Bugzilla::Bug->check($i);
-$baselist{$bug->id} = 1;
+    my $bug = Bugzilla::Bug->check($i);
+    $baselist{$bug->id} = 1;
 }
 
 my @stack = keys(%baselist);
@@ -172,24 +178,24 @@ foreach my $k (keys(%baselist)) {
 }
 
 my $sth = $dbh->prepare(
-          q{SELECT bug_status, resolution, short_desc
-              FROM bugs
-             WHERE bugs.bug_id = ?});
+              q{SELECT bug_status, resolution, short_desc
+                  FROM bugs
+                 WHERE bugs.bug_id = ?});
 
 my @bug_ids = keys %seen;
 $user->visible_bugs(\@bug_ids);
 foreach my $k (@bug_ids) {
-# Retrieve bug information from the database
-my ($stat, $resolution, $summary) = $dbh->selectrow_array($sth, undef, $k);
+    # Retrieve bug information from the database
+    my ($stat, $resolution, $summary) = $dbh->selectrow_array($sth, undef, $k);
 
     $vars->{'short_desc'} = $summary if ($k eq $cgi->param('id'));
 
-    # Resolution and summary are shown only if user can see the bug
+    # The bug summary is shown only if the user can see the bug.
     if ($user->can_see_bug($k)) {
         $summary = html_quote(clean_text($summary));
     }
     else {
-        $resolution = $summary = '';
+        $summary = '';
     }
 
     my @params;
@@ -199,6 +205,9 @@ my ($stat, $resolution, $summary) = $dbh->selectrow_array($sth, undef, $k);
         utf8::encode($summary) if utf8::is_utf8($summary);
         $summary = wrap_comment($summary);
         $summary =~ s/([\\\"])/\\$1/g;
+        # Newlines must be escaped too, to not break the .map file
+        # and to prevent code injection.
+        $summary =~ s/\n/\\n/g;
         push(@params, qq{label="$k\\n$summary"});
     }
 

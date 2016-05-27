@@ -48,7 +48,7 @@
       PROCESS activity_header activities=change_set.activity id=change_set.id;
     END;
 
-    IF change_set.comment;
+    IF change_set.comment != "";
       PROCESS comment_body comment=change_set.comment;
     END;
     FOREACH activity IN change_set.activity;
@@ -298,7 +298,11 @@
             ' &rarr; ';
           END;
         END;
-        PROCESS add_change value=change.added;
+        IF change.fieldname == 'cf_user_story';
+          %](updated)[%
+        ELSE;
+          PROCESS add_change value=change.added;
+        END;
       END;
 
       '</div>';

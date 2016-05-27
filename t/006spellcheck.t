@@ -49,8 +49,10 @@ my @evilwords = qw(
     existance
     existant
     paramater
+    recieve
     refered
     repsentation
+    retreive
     suported
     varsion
 );
