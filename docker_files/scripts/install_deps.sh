@@ -8,21 +8,40 @@
 
 cd $BUGZILLA_ROOT
 
-# Install Perl dependencies
-CPANM="cpanm -l local --quiet"
+# Perl dependencies
+CPANM="cpanm -l local --quiet --notest"
 
-# - Crypt::SMIME > 0.15 fails to build properly on RHEL6
-# - Test::WWW::Selenium for UI testing support
-# - Cache::Memcached is not picked up by normal dep check (will investigate)
-$CPANM --notest Crypt::SMIME@0.15 \
-                Test::WWW::Selenium \
-                Cache::Memcached
+# Install vendor tarball first
+if [ ! -d $BUGZILLA_ROOT/local ]; then
+  if [ ! -f /files/vendor.tar.gz ]; then
+    wget https://s3.amazonaws.com/moz-devservices-bmocartons/scl3-prod/vendor.tar.gz -O /files/vendor.tar.gz
+  fi
+  tar zxvf /files/vendor.tar.gz
+  perl vendor/bin/carton install --cached --deployment
+fi
 
-# - Newer version of Apache2::SizeLimit that what is included in RHEL6
+# Newer version of Apache2::SizeLimit that what is included in RHEL6
 $CPANM --reinstall Apache2::SizeLimit
 
-$CPANM --installdeps --skip-satisfied --with-all-features --without-feature elasticsearch \
-        --without-feature oracle --without-feature sqlite --without-feature pg .
+# Pick up any new deps since last time we built this image
+$CPANM --skip-satisfied --installdeps --with-all-features \
+    --without-feature auth_ldap \
+    --without-feature auth_radius \
+    --without-feature elasticsearch \
+    --without-feature inbound_email \
+    --without-feature moving \
+    --without-feature oracle \
+    --without-feature pg \
+    --without-feature psgi \
+    --without-feature smtp_auth \
+    --without-feature sqlite \
+    --without-feature update \
+    .
+
+# Test::WWW::Selenium for UI testing support
+# Cache::Memcached is not picked up by normal dep check (will investigate)
+# Crypt::SMIME > 0.15 fails to build properly on RHEL6
+$CPANM --skip-satisfied Test::WWW::Selenium Cache::Memcached Crypt::SMIME@0.15
 
 # Building documentation
 scl enable python27 "pip install -q reportlab rst2pdf sphinx"
