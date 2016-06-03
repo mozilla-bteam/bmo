@@ -17,6 +17,7 @@ echo "Checking out $GITHUB_BASE_GIT $GITHUB_BASE_BRANCH ..."
 mv $BUGZILLA_ROOT "${BUGZILLA_ROOT}.back"
 git clone $GITHUB_BASE_GIT --branch $GITHUB_BASE_BRANCH $BUGZILLA_ROOT
 rsync -a ${BUGZILLA_ROOT}.back/local/ ${BUGZILLA_ROOT}/local/
+cp ${BUGZILLA_ROOT}.back/cpanfile* ${BUGZILLA_ROOT}
 cd $BUGZILLA_ROOT
 if [ "$GITHUB_BASE_REV" != "" ]; then
     echo "Switching to revision $GITHUB_BASE_REV ..."
