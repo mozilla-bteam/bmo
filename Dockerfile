@@ -66,7 +66,7 @@ EXPOSE 80
 EXPOSE 5900
 
 # Testing scripts for CI\
-ADD https://selenium-release.storage.googleapis.com/2.45/selenium-server-standalone-2.45.0.jar /selenium-server.jar
+ADD https://selenium-release.storage.googleapis.com/2.53/selenium-server-standalone-2.53.0.jar /selenium-server.jar
 
 # Supervisor
 RUN cp /files/supervisord.conf /etc/supervisord.conf \
