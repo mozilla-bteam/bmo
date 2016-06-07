@@ -653,8 +653,10 @@
       [% END %]
 
       [% IF bug.cc && bug.cc.size %]
-        <input type="hidden" name="removecc" id="removecc">
-        <span id="cc-latch">&#9656;</span>
+        [% IF user.id %]
+          <input type="hidden" name="removecc" id="removecc">
+          <span id="cc-latch">&#9656;</span>
+        [% END %]
         <span id="cc-summary" data-count="[% bug.cc.size FILTER none %]">
           [%
             IF bug.cc.size == 1;
@@ -985,6 +987,7 @@
       END;
     %]
 
+    [% Hook.process('details_lhs') %]
   [% END %]
   [% WRAPPER fields_rhs %]
 
@@ -1005,6 +1008,7 @@
         hide_on_view = bug.see_also.size == 0
     %]
 
+    [% Hook.process('details_rhs') %]
   [% END %]
 
   [%# custom fields (textarea) %]
@@ -1214,6 +1218,7 @@
 <div id="bottom-actions">
   <div id="bottom-right-actions">
     <button type="button" id="top-btn" class="minor">Top &uarr;</button>
+    <button type="button" id="format-btn" class="minor">Format &#9662;</button>
     [% IF user.id %]
       <button type="button" id="new-bug-btn" class="minor">New/Clone [% terms.Bug %] &#9662;</button>
     [% END %]
