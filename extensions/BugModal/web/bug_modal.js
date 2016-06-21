@@ -54,7 +54,7 @@ $(function() {
     var relative_timer_duration = 60000;
     var relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
     $(document).on('show.visibility', function() {
-        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration)
+        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
     });
     $(document).on('hide.visibility', function() {
         window.clearInterval(relative_timer_id);
@@ -148,8 +148,8 @@ $(function() {
             $(this).hide();
         });
 
-    // use non-native tooltips for relative times and bug summaries
-    $('.rel-time, .rel-time-title, .bz_bug_link, .tt').tooltip({
+    // use non-native tooltips for relative/absolute times and bug summaries
+    $('.rel-time, .rel-time-title, .abs-time-title, .bz_bug_link, .tt').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
         hide: { effect: 'none' }
@@ -864,6 +864,7 @@ $(function() {
             event.preventDefault();
             $('#field-status-view').hide();
             $('#field-status-edit').show();
+            $('#field-status-edit .name').show();
             $('#bug_status').val('RESOLVED').change();
             $('#resolution').val($(event.target).text()).change();
             $('#top-save-btn').show();
