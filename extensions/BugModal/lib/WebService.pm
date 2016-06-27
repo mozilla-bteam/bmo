@@ -65,14 +65,20 @@ sub rest_resources {
 # that the ui requires.
 sub edit {
     my ($self, $params) = @_;
+    my $memcached = Bugzilla->memcached;
     my $user = Bugzilla->user;
-    my $bug = Bugzilla::Bug->check({ id => $params->{id} });
+    my $uid = $user->id;
+    my $bug_id = $params->{id};
+
+    my $result = $memcached && $memcached->get_config({key => "bug_modal.edit.$uid.$bug_id"});
+    return $result if $result;
+    my $bug = Bugzilla::Bug->check({ id => $params->{id}, cache => 1 });
 
     # the keys of the options hash must match the field id in the ui
     my %options;
 
     my @products = @{ $user->get_enterable_products };
-    unless (grep { $_->id == $bug->product_id } @products) {
+    unless (any { $_->id == $bug->product_id } @products) {
         unshift @products, $bug->product_obj;
     }
     $options{product} = [ map { { name => $_->name } } @products ];
@@ -103,10 +109,16 @@ sub edit {
     my @keywords = grep { $_->is_active } Bugzilla::Keyword->get_all();
 
     # results
-    return {
+    $result = {
         options     => \%options,
         keywords    => [ map { $_->name } @keywords ],
     };
+
+    if ($memcached) {
+        $memcached->set_config({key => "bug_modal.edit.$uid.$bug_id", data => $result});
+    }
+
+    return $result;
 }
 
 sub _name {
