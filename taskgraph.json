@@ -44,7 +44,7 @@
       }
     },
     {
-      "reruns": 3,
+      "reruns": 2,
       "maxRunTime": 3000,
       "task": {
         "expires": "2018-02-18T17:33:38.806Z",
