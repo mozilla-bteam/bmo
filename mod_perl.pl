@@ -114,8 +114,6 @@ foreach my $file (glob "$cgi_path/*.cgi") {
     $rl->handler($file, $file);
 }
 
-Bugzilla::init_server();
-
 package Bugzilla::ModPerl::ResponseHandler;
 use strict;
 use base qw(ModPerl::Registry);

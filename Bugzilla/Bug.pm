@@ -372,7 +372,9 @@ sub new {
     return $self;
 }
 
-sub initialize { }
+sub initialize {
+    $_[0]->_create_cf_accessors();
+}
 
 sub object_cache_key {
     my $class = shift;
@@ -4634,11 +4636,10 @@ sub ValidateDependencies {
 # Custom Field Accessors
 #####################################################################
 
-my %cf_accessors_created;
-sub create_cf_accessors {
+sub _create_cf_accessors {
     my ($invocant) = @_;
     my $class = ref($invocant) || $invocant;
-    return if $cf_accessors_created{$class};
+    return if Bugzilla->request_cache->{"${class}_cf_accessors_created"};
 
     my $fields = Bugzilla->fields({ custom => 1 });
     foreach my $field (@$fields) {
@@ -4654,7 +4655,7 @@ sub create_cf_accessors {
 
     Bugzilla::Hook::process('bug_create_cf_accessors');
 
-    $cf_accessors_created{$class} = 1;
+    Bugzilla->request_cache->{"${class}_cf_accessors_created"} = 1;
 }
 
 sub _accessor_for {

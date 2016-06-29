@@ -92,11 +92,6 @@ use constant SHUTDOWNHTML_RETRY_AFTER => 3600;
 # Global Code
 #####################################################################
 
-sub init_server {
-    require Bugzilla::Bug;
-    Bugzilla::Bug->create_cf_accessors();
-}
-
 # Note that this is a raw subroutine, not a method, so $class isn't available.
 sub init_page {
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
@@ -854,7 +849,6 @@ sub END {
     _cleanup() unless $ENV{MOD_PERL};
 }
 
-init_server() if !$ENV{MOD_PERL};
 init_page() if !$ENV{MOD_PERL};
 
 1;
