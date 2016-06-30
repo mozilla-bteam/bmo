@@ -762,7 +762,7 @@ sub request_cache {
 }
 
 sub clear_request_cache {
-    %$_request_cache = ();
+    $_request_cache = {};
     if ($ENV{MOD_PERL}) {
         require Apache2::RequestUtil;
         my $request = eval { Apache2::RequestUtil->request };
@@ -827,7 +827,6 @@ sub _cleanup {
 
     # BMO - allow "end of request" processing
     Bugzilla::Hook::process('request_cleanup');
-    Bugzilla::Bug->CLEANUP;
 
     my $main   = Bugzilla->request_cache->{dbh_main};
     my $shadow = Bugzilla->request_cache->{dbh_shadow};

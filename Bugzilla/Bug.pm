@@ -68,8 +68,6 @@ use base qw(Bugzilla::Object Exporter);
     editable_bug_fields
 );
 
-my %CLEANUP;
-
 #####################################################################
 # Constants
 #####################################################################
@@ -373,9 +371,6 @@ sub new {
         return $error_self;
     }
 
-    $CLEANUP{$self->id} = $self;
-    weaken($CLEANUP{$self->id});
-
     return $self;
 }
 
@@ -386,15 +381,6 @@ sub object_cache_key {
     my $key = $class->SUPER::object_cache_key(@_)
       || return;
     return $key . ',' . Bugzilla->user->id;
-}
-
-sub CLEANUP {
-    foreach my $bug (values %CLEANUP) {
-        next unless $bug;
-        delete $bug->{depends_on_obj};
-        delete $bug->{blocks_obj};
-    }
-    %CLEANUP = ();
 }
 
 sub check {
