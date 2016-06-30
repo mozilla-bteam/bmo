@@ -87,8 +87,9 @@ use constant USE_MEMCACHED => 0;
 # This is a sub because it needs to call other subroutines.
 sub DB_COLUMNS {
     my $dbh = Bugzilla->dbh;
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT }
-                      Bugzilla->active_custom_fields({skip_extensions => 1});
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
+                       && $_->type != FIELD_TYPE_EXTENSION}
+                      Bugzilla->active_custom_fields;
     my @custom_names = map {$_->name} @custom;
 
     my @columns = (qw(
@@ -224,8 +225,9 @@ sub VALIDATOR_DEPENDENCIES {
 };
 
 sub UPDATE_COLUMNS {
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT }
-                      Bugzilla->active_custom_fields({skip_extensions => 1});
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
+                       && $_->type != FIELD_TYPE_EXTENSION}
+                      Bugzilla->active_custom_fields;
     my @custom_names = map {$_->name} @custom;
     my @columns = qw(
         alias
