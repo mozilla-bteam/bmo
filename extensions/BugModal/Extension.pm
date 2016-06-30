@@ -24,6 +24,16 @@ use JSON::XS qw(encode_json);
 
 our $VERSION = '1';
 
+use constant READABLE_BUG_STATUS_PRODUCTS => (
+    'Core',
+    'Toolkit',
+    'Firefox',
+    'Firefox for Android',
+    'Firefox for iOS',
+    'Bugzilla',
+    'bugzilla.mozilla.org'
+);
+
 # force skin to mozilla
 sub settings_after_update {
     my ($self, $args) = @_;
@@ -191,17 +201,7 @@ sub template_before_process {
         vars => $vars,
     });
 
-    my @readable_bug_status_products = (
-        'Core',
-        'Toolkit',
-        'Firefox',
-        'Firefox for Android',
-        'Firefox for iOS',
-        'Bugzilla',
-        'bugzilla.mozilla.org'
-    );
-    my $use_readable_bug_status = any { $bug->product eq $_ } @readable_bug_status_products;
-    if ($use_readable_bug_status) {
+    if (any { $bug->product eq $_ } READABLE_BUG_STATUS_PRODUCTS) {
         my @flags = map { { name => $_->name, status => $_->status } } @{$bug->flags};
         $vars->{readable_bug_status_json} = encode_json({
             dupe_of    => $bug->dup_id,
@@ -214,6 +214,11 @@ sub template_before_process {
             target_milestone => $bug->target_milestone,
             map { $_->name => $_->bug_flag($bug->id)->value } @{$vars->{tracking_flags}},
         });
+
+        # HTML4 attributes cannot be longer than this, so just skip it in this case.
+        if (length($vars->{readable_bug_status_json}) > 65536) {
+            delete $vars->{readable_bug_status_json};
+        }
     }
 
     # bug->choices loads a lot of data that we want to lazy-load
@@ -337,6 +342,12 @@ sub install_before_final_checks {
         options  => ['on', 'off'],
         default  => 'off',
         category => 'User Interface'
+    });
+    add_setting({
+        name     => 'ui_use_absolute_time',
+        options  => ['on', 'off'],
+        default  => 'off',
+        category => 'User Interface',
     });
 
     # ensure the correct skin is being used

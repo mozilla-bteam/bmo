@@ -53,7 +53,7 @@
     "extensions/BugModal/web/bug_modal.js",
     "extensions/BugModal/web/comments.js",
     "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.min.js",
-    "js/bugzilla-readable-status.js",
+    "js/bugzilla-readable-status-min.js",
     "js/field.js",
     "js/comments.js",
     "js/util.js"
@@ -61,12 +61,13 @@
   jquery.push(
     "datetimepicker",
     "contextMenu",
+    "visibility"
   );
   style_urls.push(
     "extensions/BugModal/web/bug_modal.css",
     "skins/custom/bug_groups.css",
     "js/jquery/plugins/datetimepicker/datetimepicker.css",
-    "js/jquery/plugins/contextMenu/contextMenu.css",
+    "js/jquery/plugins/contextMenu/contextMenu.css"
   );
 
   IF user.in_group('canconfirm');
@@ -99,6 +100,7 @@
     id: [% user.id FILTER none %],
     login: '[% user.login FILTER js %]',
     is_insider: [% user.is_insider ? "true" : "false" %],
+    is_timetracker: [% user.is_timetracker ? "true" : "false" %],
     can_tag: [% user.can_tag_comments ? "true" : "false" %],
     settings: {
       quote_replies: '[% user.settings.quote_replies.value FILTER js %]',
@@ -112,6 +114,11 @@
     BUGZILLA.constant.min_comment_tag_length = [% constants.MIN_COMMENT_TAG_LENGTH FILTER none %];
     BUGZILLA.constant.max_comment_tag_length = [% constants.MAX_COMMENT_TAG_LENGTH FILTER none %];
   [% END %]
+
+  [% IF user.is_timetracker %]
+    BUGZILLA.remaining_time = [% bug.remaining_time FILTER js %]; // holds the original value
+  [% END %]
+  BUGZILLA.bug_secure = [% bug.groups_in.size ? '1' : '0' %];
 [% END %]
 
 [% Hook.process("end") %]

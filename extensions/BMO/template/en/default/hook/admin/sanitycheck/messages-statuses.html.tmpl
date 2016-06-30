@@ -6,8 +6,10 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[%
-  setting_descs.ui_experiments = "Use experimental user interface"
-  setting_descs.ui_remember_collapsed = "Remember visibility of header sections when viewing a bug"
-  setting_descs.ui_use_absolute_time = "Use absolute format instead of relative time when viewing a bug"
-%]
+[% IF san_tag == "bmo_check_cf_visible_in_products" %]
+  Checking $cf_visibile_in_products for missing product names.
+
+[% ELSIF san_tag == "bmo_check_cf_visible_in_products_missing" %]
+  ... there are custom fields for [% cf_product FILTER html %] but it does not exist!
+
+[% END %]

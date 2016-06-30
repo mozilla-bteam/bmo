@@ -48,7 +48,7 @@
       PROCESS activity_header activities=change_set.activity id=change_set.id;
     END;
 
-    IF change_set.comment;
+    IF change_set.comment != "";
       PROCESS comment_body comment=change_set.comment;
     END;
     FOREACH activity IN change_set.activity;
@@ -158,7 +158,11 @@
       <table class="layout-table change-head default-collapsed" id="cc-[% comment.count FILTER none %]">
       <tr>
         <td class="comment-collapse-reason"
+            [% IF user.setting("ui_use_absolute_time") == "on" %]
+            title="[% comment.author.moz_nick FILTER html %] [[% comment.creation_ts FILTER time("%Y-%m-%d %H:%M %Z") FILTER html %]]">
+            [% ELSE %]
             title="[% comment.author.moz_nick FILTER html %] [[% comment.creation_ts FILTER time_duration FILTER html %]]">
+            [% END %]
             Comment hidden ([% comment.collapsed_reason FILTER html %])
         </td>
         <td class="comment-actions">
@@ -254,8 +258,10 @@
       END;
 
       IF change.buglist;
-        IF change.fieldname == 'duplicate';
+        IF change.fieldname == 'has_dupe';
           label = "Duplicate of this " _ terms.bug;
+        ELSIF change.fieldname == 'dupe_of';
+          label = "Duplicate of " _ terms.bug;
         ELSE;
           label = field_descs.${change.fieldname};
         END;
@@ -295,7 +301,11 @@
             ' &rarr; ';
           END;
         END;
-        PROCESS add_change value=change.added;
+        IF change.fieldname == 'cf_user_story';
+          %](updated)[%
+        ELSE;
+          PROCESS add_change value=change.added;
+        END;
       END;
 
       '</div>';

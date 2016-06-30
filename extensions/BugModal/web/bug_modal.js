@@ -51,7 +51,16 @@ $(function() {
     'use strict';
 
     // update relative dates
-    window.setInterval(function() {
+    var relative_timer_duration = 60000;
+    var relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
+    $(document).on('show.visibility', function() {
+        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
+    });
+    $(document).on('hide.visibility', function() {
+        window.clearInterval(relative_timer_id);
+    });
+
+    function relativeTimer() {
         var now = Math.floor(new Date().getTime() / 1000);
         $('.rel-time').each(function() {
             $(this).text(timeAgo(now - $(this).data('time')));
@@ -59,7 +68,7 @@ $(function() {
         $('.rel-time-title').each(function() {
             $(this).attr('title', timeAgo(now - $(this).data('time')));
         });
-    }, 60000);
+    }
 
     // all keywords for autocompletion (lazy-loaded on edit)
     var keywords = [];
@@ -139,8 +148,8 @@ $(function() {
             $(this).hide();
         });
 
-    // use non-native tooltips for relative times and bug summaries
-    $('.rel-time, .rel-time-title, .bz_bug_link, .tt').tooltip({
+    // use non-native tooltips for relative/absolute times and bug summaries
+    $('.rel-time, .rel-time-title, .abs-time-title, .bz_bug_link, .tt').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
         hide: { effect: 'none' }
@@ -217,24 +226,27 @@ $(function() {
         );
     }
 
-    $('#cc-latch, #cc-summary')
-        .click(function(event) {
-            event.preventDefault();
-            var latch = $('#cc-latch');
+    if (BUGZILLA.user.id) {
+        $('#cc-summary').addClass('cc-loadable');
+        $('#cc-latch, #cc-summary')
+            .click(function(event) {
+                event.preventDefault();
+                var latch = $('#cc-latch');
 
-            if (latch.data('expanded')) {
-                latch.data('expanded', false).html('&#9656;');
-                $('#cc-list').hide();
-            }
-            else {
-                latch.data('expanded', true).html('&#9662;');
-                $('#cc-list').show();
-                if (!latch.data('fetched')) {
-                    ccListLoading();
-                    ccListUpdate();
+                if (latch.data('expanded')) {
+                    latch.data('expanded', false).html('&#9656;');
+                    $('#cc-list').hide();
                 }
-            }
-        });
+                else {
+                    latch.data('expanded', true).html('&#9662;');
+                    $('#cc-list').show();
+                    if (!latch.data('fetched')) {
+                        ccListLoading();
+                        ccListUpdate();
+                    }
+                }
+            });
+    }
 
     // copy summary to clipboard
 
@@ -852,6 +864,7 @@ $(function() {
             event.preventDefault();
             $('#field-status-view').hide();
             $('#field-status-edit').show();
+            $('#field-status-edit .name').show();
             $('#bug_status').val('RESOLVED').change();
             $('#resolution').val($(event.target).text()).change();
             $('#top-save-btn').show();
@@ -943,6 +956,19 @@ $(function() {
             $('#' + id).datetimepicker('show');
         });
 
+    // timetracking
+    $('#work_time').change(function() {
+        // subtracts time spent from remaining time
+        // prevent negative values if work_time > fRemainingTime
+        var new_time = Math.max(BUGZILLA.remaining_time - $('#work_time').val(), 0.0);
+        // get upto 2 decimal places
+        $('#remaining_time').val(Math.round((new_time * 100)/100).toFixed(1));
+    });
+    $('#remaining_time').change(function() {
+        // if the remaining time is changed manually, update BUGZILLA.remaining_time
+        BUGZILLA.remaining_time = $('#remaining_time').val();
+    });
+
     // new bug button
     $.contextMenu({
         selector: '#new-bug-btn',
@@ -1000,6 +1026,40 @@ $(function() {
                 }
             },
         ]
+    });
+
+    var format_items = [
+        {
+        name: 'For Printing',
+            callback: function() {
+                window.location.href = 'show_bug.cgi?format=multiple&id=' + BUGZILLA.bug_id;
+            }
+        },
+        {
+            name: 'XML',
+            callback: function() {
+                window.location.href = 'show_bug.cgi?ctype=xml&id=' + BUGZILLA.bug_id;
+            }
+        },
+        {
+            name: 'Legacy',
+            callback: function() {
+                window.location.href = 'show_bug.cgi?format=default&id=' + BUGZILLA.bug_id;
+            }
+        }
+    ];
+    if (!BUGZILLA.bug_secure) {
+        format_items.push({
+            name: 'JSON',
+            callback: function() {
+                window.location.href = 'rest/bug/' + BUGZILLA.bug_id;
+            }
+        });
+    }
+    $.contextMenu({
+        selector: '#format-btn',
+        trigger: 'left',
+        items: format_items
     });
 
     // "reset to default" checkboxes
@@ -1376,7 +1436,7 @@ function lb_show(el) {
         .addClass('minor')
         .text('Close')
         .appendTo(overlay2);
-    title.append(el.title);
+    title.text(el.title);
     overlay.add(overlay2).click(lb_close);
     img.add(overlay).animate({ opacity: 1 }, 200);
 }

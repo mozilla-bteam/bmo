@@ -126,7 +126,7 @@ sub report {
         INNER JOIN profiles
                 ON profiles.userid = bugs_activity.who
              WHERE profiles.login_name IN ($who_bits)
-                   AND CONVERT_TZ(bugs_activity.bug_when, 'UTC', 'America/Los_Angeles') >= ? 
+                   AND CONVERT_TZ(bugs_activity.bug_when, 'UTC', 'America/Los_Angeles') >= ?
                    AND CONVERT_TZ(bugs_activity.bug_when, 'UTC', 'America/Los_Angeles') <= ?
                    $activity_where
 
