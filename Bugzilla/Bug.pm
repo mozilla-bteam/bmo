@@ -31,7 +31,6 @@
 package Bugzilla::Bug;
 
 use strict;
-use feature 'state';
 
 use Bugzilla::Attachment;
 use Bugzilla::Constants;
@@ -59,7 +58,6 @@ use Storable qw(dclone);
 use URI;
 use URI::QueryParam;
 use Scalar::Util qw(blessed weaken);
-use Carp;
 
 use base qw(Bugzilla::Object Exporter);
 @Bugzilla::Bug::EXPORT = qw(
@@ -374,7 +372,9 @@ sub new {
     return $self;
 }
 
-sub initialize { }
+sub initialize {
+    $_[0]->_create_cf_accessors();
+}
 
 sub object_cache_key {
     my $class = shift;
@@ -4636,85 +4636,27 @@ sub ValidateDependencies {
 # Custom Field Accessors
 #####################################################################
 
-my %cf_accessors_created;
-sub create_cf_accessors {
-    my ($class) = @_;
+sub _create_cf_accessors {
+    my ($invocant) = @_;
+    my $class = ref($invocant) || $invocant;
+    return if Bugzilla->request_cache->{"${class}_cf_accessors_created"};
 
-    #Bugzilla::Hook::process('bug_create_cf_accessors');
-}
-
-sub _custom_fields {
-    my @fields =  Bugzilla->active_custom_fields({ custom => 1, skip_extensions => 1 });
-    return { map { $_->name => $_ } @fields };
-}
-
-our $in_bug_can;
-
-sub can {
-    my ($self, $method) = @_;
-    my $can = $self->SUPER::can($method);
-    return $can if $can;
-    unless ($in_bug_can) {
-        local $in_bug_can = 1;
-        return $self->cf_autoload(blessed($self) || $self, $method)
-    }
-}
-
-sub AUTOLOAD {
-    my ($self) = @_;
-    my $class = blessed($self) || $self;
-    my ($method) = our $AUTOLOAD =~ /::([^:]*)$/;
-
-    my $error = sub {
-        confess qq{Can't locate object method "$method" via package "$class"};
-    };
-    my $accessor = $self->cf_autoload($class, $method) // $error;
-    goto &$accessor;
-}
-
-sub cf_autoload {
-    my ($self, $class, $method) = @_;
-
-    # hack for tracking flags: set_cf_* is loaded 
-    # the first time the accessor is used...
-    if ($method =~ /^set_(cf_\w+)$/) {
-        my $name = $1;
-        my $found;
-        Bugzilla::Hook::process('bug_cf_autoload',
-            { method => $name, class => $class, accessor => \$found }
-        );
-        return undef unless $found;
-        no strict 'refs';
-        return \&{$method};
+    my $fields = Bugzilla->fields({ custom => 1 });
+    foreach my $field (@$fields) {
+        next if $field->type == FIELD_TYPE_EXTENSION;
+        my $accessor = $class->_accessor_for($field);
+        my $name = "${class}::" . $field->name;
+        {
+            no strict 'refs';
+            next if defined *{$name};
+            *{$name} = $accessor;
+        }
     }
 
-    return undef unless $method =~ /^cf_/;
+    Bugzilla::Hook::process('bug_create_cf_accessors');
 
-    state $fields = _custom_fields();
-    $fields = _custom_fields() unless $fields->{$method};
-
-    my $accessor;
-    if ($fields->{$method}) {
-        my $field = $fields->{$method};
-        $accessor = $class->_accessor_for($field);
-    }
-    else {
-        Bugzilla::Hook::process('bug_cf_autoload',
-            { method => $method, class => $class, accessor => \$accessor });
-    }
-
-    if ($accessor) {
-        no strict 'refs';
-        *{$method} = $accessor;
-    }
-
-    return $accessor;
+    Bugzilla->request_cache->{"${class}_cf_accessors_created"} = 1;
 }
-
-# for TT2
-sub defined { 1 }
-
-sub DESTROY { }
 
 sub _accessor_for {
     my ($class, $field) = @_;

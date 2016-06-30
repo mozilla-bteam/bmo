@@ -462,49 +462,41 @@ sub buglist_column_joins {
     }
 }
 
-sub _tracking_flags_hash {
-    return { map { $_->name => $_ }
-        Bugzilla::Extension::TrackingFlags::Flag->get_all };
-}
-
-
-my $_preload_tf_bug_values = sub {
-    my ($self) = @_;
-
-    unless ( $self->{'_tf_bug_values_preloaded'} ) {
-        # preload all values currently set for this bug
-        my $bug_values = Bugzilla::Extension::TrackingFlags::Flag::Bug->match( { bug_id => $self->id } );
-        foreach my $value (@$bug_values) {
-            $self->{ $value->tracking_flag->name } = $value->value;
-        }
-        $self->{'_tf_bug_values_preloaded'} = 1;
-    }
-};
-
-use feature 'state';
-sub bug_cf_autoload {
+sub bug_create_cf_accessors {
     my ($self, $args) = @_;
-    my ($class, $method, $accessor) = @$args{qw(class method accessor)};
-
-    state $tracking_flags = _tracking_flags_hash();
-    $tracking_flags = _tracking_flags_hash() unless $tracking_flags->{$method};
-
-    if ($tracking_flags->{$method}) {
-        $$accessor = sub {
-            my ($self) = @_;
-            $self->$_preload_tf_bug_values();
-            return $self->{$method} ||= '---';
-        };
-
-        my $setter = sub {
-            my ($self, $value) = @_;
-            $value = ref($value) eq 'ARRAY'
-                    ? $value->[0]
-                    : $value;
-            $self->set($method, $value);
-        };
-        no strict 'refs';
-        *{"Bugzilla::Bug::set_$method"} = $setter;
+    # Create the custom accessors for the flag values
+    my @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all;
+    foreach my $flag (@tracking_flags) {
+        my $flag_name = $flag->name;
+        if (!Bugzilla::Bug->can($flag_name)) {
+            my $accessor = sub {
+                my $self = shift;
+                return $self->{$flag_name} if defined $self->{$flag_name};
+                if (!exists $self->{'_tf_bug_values_preloaded'}) {
+                    # preload all values currently set for this bug
+                    my $bug_values
+                        = Bugzilla::Extension::TrackingFlags::Flag::Bug->match({ bug_id => $self->id });
+                    foreach my $value (@$bug_values) {
+                        $self->{$value->tracking_flag->name} = $value->value;
+                    }
+                    $self->{'_tf_bug_values_preloaded'} = 1;
+                }
+                return $self->{$flag_name} ||= '---';
+            };
+            no strict 'refs';
+            *{"Bugzilla::Bug::$flag_name"} = $accessor;
+        }
+        if (!Bugzilla::Bug->can("set_$flag_name")) {
+            my $setter = sub {
+                my ($self, $value) = @_;
+                $value = ref($value) eq 'ARRAY'
+                         ? $value->[0]
+                         : $value;
+                $self->set($flag_name, $value);
+            };
+            no strict 'refs';
+            *{"Bugzilla::Bug::set_$flag_name"} = $setter;
+        }
     }
 }
 
