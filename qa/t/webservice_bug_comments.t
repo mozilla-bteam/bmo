@@ -9,13 +9,18 @@
 # Test for xmlrpc call to Bug.comments() #
 ##########################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use DateTime;
 use QA::Util;
 use QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
 use Test::More tests => 331;
+
 my ($config, @clients) = get_rpc_clients();
 
 # These gets populated when we call Bug.add_comment.
@@ -32,7 +37,7 @@ sub test_comments {
 
     my $comment = $comments_returned->[0];
     ok($comment->{bug_id}, "bug_id exists");
-    # FIXME: At some point we should test attachment_id here.
+    # XXX At some point we should test attachment_id here.
 
     if ($t->{args}->{comment_ids}) {
         my $expected_id = $t->{args}->{comment_ids}->[0];

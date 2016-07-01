@@ -5,9 +5,13 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use QA::Util;
 use Test::More "no_plan";
 
@@ -40,13 +44,11 @@ my $bug_summary = "Update this summary with this bug ID";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment", "I'm supposed to appear in the coming buglist.");
 my $bug1_id = create_bug($sel, $bug_summary);
-$sel->click_ok("editme_action");
+$sel->click_ok("summary_edit_action");
 $bug_summary .= ": my ID is $bug1_id";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment", "Updating bug summary....");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+edit_bug($sel, $bug1_id, $bug_summary);
 
 # Test pronoun substitution.
 
@@ -58,8 +60,6 @@ $sel->select_ok("f1", "label=Commenter");
 $sel->select_ok("o1", "label=is equal to");
 $sel->type_ok("v1", "%user%");
 $sel->click_ok("add_button");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("Search for bugs");
 $sel->select_ok("f2", "label=Comment");
 $sel->select_ok("o2", "label=contains the string");
 $sel->type_ok("v2", "coming buglist");
