@@ -9,9 +9,13 @@
 # Test for xmlrpc call to Product.create() #
 ############################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use Test::More tests => 121;
 use QA::Util;
 
@@ -99,8 +103,8 @@ my @tests = (
     },
 );
 
-# FIXME: Should be: if (classifications enabled).
-#        But there is currently now way to query the value of a parameter via WS.
+# XXX - Should be: if (classifications enabled).
+# But there is currently now way to query the value of a parameter via WS.
 if (0) {
     push(@tests,
         { user  => 'admin',

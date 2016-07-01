@@ -5,37 +5,28 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
 
 use Test::More "no_plan";
-
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
-my $test_bug_1 = $config->{test_bug_1};
 
-# When being logged out, the 'Commit' button should not be displayed.
-
-$sel->open_ok("/$config->{bugzilla_installation}/index.cgi?logout=1", undef, "Log out (if required)");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("Logged Out");
-go_to_bug($sel, $test_bug_1);
-ok(!$sel->is_element_present('commit'), "Button 'Commit' not available");
-
-# Now create a new bug. As the reporter, some forms are editable to you.
+# Create a new bug. As the reporter, some forms are editable to you.
 # But as you don't have editbugs privs, you cannot edit everything.
 
 log_in($sel, $config, 'unprivileged');
 file_bug_in_product($sel, 'TestProduct');
 ok(!$sel->is_editable("assigned_to"), "The assignee field is not editable");
-$sel->type_ok("short_desc", "Greetings from a powerless user");
+my $bug_summary = "Greetings from a powerless user";
+$sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment", "File a bug with an empty CC list");
-$sel->click_ok("commit");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-my $bug1_id = $sel->get_value("//input[\@name='id' and \@type='hidden']");
-$sel->is_text_present_ok('has been added to the database', "Bug $bug1_id created");
+my $bug1_id = create_bug($sel, $bug_summary);
 logout($sel);
 
 # Some checks while being logged out.
