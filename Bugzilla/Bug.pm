@@ -66,6 +66,8 @@ use base qw(Bugzilla::Object Exporter);
     editable_bug_fields
 );
 
+my %CLEANUP;
+
 #####################################################################
 # Constants
 #####################################################################
@@ -83,9 +85,8 @@ use constant USE_MEMCACHED => 0;
 # This is a sub because it needs to call other subroutines.
 sub DB_COLUMNS {
     my $dbh = Bugzilla->dbh;
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
-                       && $_->type != FIELD_TYPE_EXTENSION}
-                      Bugzilla->active_custom_fields;
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT }
+                      Bugzilla->active_custom_fields({skip_extensions => 1});
     my @custom_names = map {$_->name} @custom;
 
     my @columns = (qw(
@@ -221,9 +222,8 @@ sub VALIDATOR_DEPENDENCIES {
 };
 
 sub UPDATE_COLUMNS {
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
-                       && $_->type != FIELD_TYPE_EXTENSION}
-                      Bugzilla->active_custom_fields;
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT }
+                      Bugzilla->active_custom_fields({skip_extensions => 1});
     my @custom_names = map {$_->name} @custom;
     my @columns = qw(
         alias
@@ -369,6 +369,9 @@ sub new {
         return $error_self;
     }
 
+    $CLEANUP{$self->id} = $self;
+    weaken($CLEANUP{$self->id});
+
     return $self;
 }
 
@@ -381,6 +384,15 @@ sub object_cache_key {
     my $key = $class->SUPER::object_cache_key(@_)
       || return;
     return $key . ',' . Bugzilla->user->id;
+}
+
+sub CLEANUP {
+    foreach my $bug (values %CLEANUP) {
+        next unless $bug;
+        delete $bug->{depends_on_obj};
+        delete $bug->{blocks_obj};
+    }
+    %CLEANUP = ();
 }
 
 sub check {
