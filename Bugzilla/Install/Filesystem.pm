@@ -487,18 +487,6 @@ EOT
 </IfModule>
 EOT
         },
-
-        "$assetsdir/.htaccess" => { perms => WS_SERVE, contents => <<EOT
-# Allow access to .css files
-<FilesMatch \\.(css|js)\$>
-  Allow from all
-</FilesMatch>
-
-# And no directory listings, either.
-Deny from all
-EOT
-        },
-
     );
 
     Bugzilla::Hook::process('install_filesystem', {
