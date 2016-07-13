@@ -147,8 +147,8 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'apache_size_limit',
-        default => 250000,
-    }
+        default => 600000,
+    },
 );
 
 

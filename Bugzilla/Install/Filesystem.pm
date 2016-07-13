@@ -199,6 +199,7 @@ sub FILESYSTEM {
         # google webmaster tools verification files
         'google*.html' => { perms => WS_SERVE },
         'xt/config/generate_test_data.pl' => { perms => OWNER_EXECUTE },
+        'contribute.json' => { perms => WS_SERVE },
     );
 
     # Directories that we want to set the perms on, but not

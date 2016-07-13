@@ -11,7 +11,6 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use Apache2::Log;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::LogEntry;
 
@@ -32,6 +31,7 @@ sub debugging {
 }
 
 sub _log_it {
+    require Apache2::Log;
     my ($self, $method, $message) = @_;
     return if $method eq 'DEBUG' && !$self->debugging;
     chomp $message;
