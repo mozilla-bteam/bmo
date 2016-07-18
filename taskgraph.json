@@ -3,7 +3,7 @@
     "name": "BMO Task Graph",
     "description": "A suite of tests to check the quality of the BMO codebase.",
     "owner": "dlawrence@mozilla.com",
-    "source": "https://raw.githubusercontent.com/mozilla/webtools-bmo-bugzilla/upstream-merge/taskgraph.json"
+    "source": "https://raw.githubusercontent.com/mozilla-bteam/bmo/upstream-merge/taskgraph.json"
   },
   "tasks": [
     {

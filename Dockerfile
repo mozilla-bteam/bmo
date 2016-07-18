@@ -11,7 +11,7 @@ MAINTAINER David Lawrence <dkl@mozilla.com>
 ENV USER bugzilla
 ENV HOME /home/bugzilla
 ENV BUGZILLA_ROOT $HOME/devel/htdocs/bmo
-ENV GITHUB_BASE_GIT https://github.com/mozilla/webtools-bmo-bugzilla
+ENV GITHUB_BASE_GIT https://github.com/mozilla-bteam/bmo
 ENV GITHUB_BASE_BRANCH upstream-merge
 
 # Copy over configuration files
