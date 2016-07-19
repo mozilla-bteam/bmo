@@ -697,7 +697,7 @@ sub bug_format_comment {
 
     # link github commit messages
     push (@$regexes, {
-        match => qr#^(To\s(?:https://)?github\.com/(.+?)\.git\n
+        match => qr#^(To\s(?:https://|git@)?github\.com[:/](.+?)\.git\n
                     \s+)([0-9a-z]+\.\.([0-9a-z]+)\s+\S+\s->\s\S+)#mx,
         replace => sub {
             my $args = shift;
@@ -1212,6 +1212,29 @@ sub db_schema_abstract_schema {
         INDEXES => [
             bug_user_agent_idx => {
                 FIELDS => [ 'bug_id' ],
+                TYPE   => 'UNIQUE',
+            },
+        ],
+    };
+    $args->{schema}->{job_last_run} = {
+        FIELDS => [
+            id => {
+                TYPE       => 'INTSERIAL',
+                NOTNULL    => 1,
+                PRIMARYKEY => 1,
+            },
+            name => {
+                TYPE => 'VARCHAR(100)',
+                NOTNULL => 1,
+            },
+            last_run => {
+                TYPE => 'DATETIME',
+                NOTNULL => 1,
+            },
+        ],
+        INDEXES => [
+            job_last_run_name_idx => {
+                FIELDS => [ 'name' ],
                 TYPE   => 'UNIQUE',
             },
         ],
