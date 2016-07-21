@@ -1193,7 +1193,7 @@
 
 [% IF user.id %]
   <div id="top-actions">
-    <button type="button" id="attachments-add-btn" class="minor">Attach File</button>
+    <a href="attachment.cgi?bugid=[% bug.bug_id FILTER uri %]&amp;action=enter"><button type="button" id="attachments-add-btn" class="minor">Attach File</button></a>
     [% IF user.settings.comment_box_position.value == 'after_comments' %]
       <button type="button" id="add-comment-btn" class="minor">Add Comment &darr;</button>
     [% ELSE %]
