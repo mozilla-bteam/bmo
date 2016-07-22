@@ -465,6 +465,7 @@ $(function() {
             $('#mode-btn-loading').show();
             $('#cancel-btn').prop('disabled', true);
             $('#mode-btn').prop('disabled', true);
+            $('#restrict-checkbox').prop('disabled', true);
 
             // load the missing select data
             bugzilla_ajax(
@@ -539,9 +540,11 @@ $(function() {
                         .addClass('bz_autocomplete');
 
                     $('#cancel-btn').prop('disabled', false);
+                    $('#restrict-checkbox').prop('disabled', false);
                     $('#top-save-btn').show();
                     $('#cancel-btn').show();
                     $('#commit-btn').show();
+                    $('#restrict-checkbox').show();
                 },
                 function() {
                     $('#mode-btn-readonly').show();
@@ -550,6 +553,7 @@ $(function() {
                     $('#mode-btn').show();
                     $('#cancel-btn').hide();
                     $('#commit-btn').hide();
+                    $('#restrict-checkbox').hide();
 
                     $('.edit-show').hide();
                     $('.edit-hide').show();
