@@ -741,10 +741,11 @@ sub bug_format_comment {
             my ($scheme, $auth, $path, $query, $frag) = uri_split($uri);
             my $mark = $uri->query_param_delete("mark");
             my $rev = $uri->query_param_delete("rev");
-            my $rev = $rev? "?rev=".$rev : '';
+            my $rev = $rev? "rev/".$rev."/" : 'source/';
             my $mark = $mark? $mark."," : '';
             my $hash = $mark || $frag? "#": '';
-            return qq{<a href="$scheme://dxr.mozilla.org$path$rev$hash$mark$frag">$text [using dxr]</a>};
+            my @path = split(/\//,$path,4)
+            return qq{<a href="$scheme://dxr.mozilla.org/$path[1]/$rev$path[3]$hash$mark$frag">$text [using dxr]</a>};
         }
     });
 }
