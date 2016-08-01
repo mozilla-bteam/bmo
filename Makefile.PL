@@ -198,11 +198,6 @@ my %optional_features = (
         prereqs => { runtime => { requires => { 'DBD::SQLite' => '1.29' } } },
         description => 'SQLite database support'
     },
-    smtp_ssl => {
-        prereqs =>
-            { runtime => { requires => { 'Net::SMTP::SSL' => '1.01' } } },
-        description => 'SSL Support for SMTP'
-    },
     mysql => {
         description => 'MySQL database support',
         prereqs => { runtime => { requires => { 'DBD::mysql' => '4.001' } } }
@@ -255,7 +250,6 @@ my %optional_features = (
                 requires => {
                     'Email::MIME::Attachment::Stripper' => 0,
                     'Email::Reply'                => 0,
-                    'HTML::FormatText::WithLinks' => '0.13'
                 }
             }
         },

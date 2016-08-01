@@ -134,8 +134,7 @@
             "runtime" : {
                "requires" : {
                   "Email::MIME::Attachment::Stripper" : "0",
-                  "Email::Reply" : "0",
-                  "HTML::FormatText::WithLinks" : "0.13"
+                  "Email::Reply" : "0"
                }
             }
          }
