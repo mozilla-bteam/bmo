@@ -46,23 +46,29 @@ END {
 
 # PREREQ_PM
 my %requires = (
-    'CGI'                 => '3.51',
-    'DBI'                 => '1.614',
-    'Date::Format'        => '2.23',
-    'DateTime'            => '0.75',
-    'DateTime::TimeZone'  => '1.64',
-    'Digest::SHA'         => 0,
-    'Email::MIME'         => '1.904',
-    'Email::Send'       => '1.911',
-    'File::Slurp'         => '9999.13',
-    'JSON::XS'            => '2.01',
-    'List::MoreUtils'     => '0.32',
-    'Math::Random::ISAAC' => '1.0.1',
-    'Template'            => '2.24',
-    'URI'                 => '1.55',
+    'CGI'                      => '3.51',
+    'DBI'                      => '1.614',
+    'Date::Format'             => '2.23',
+    'DateTime'                 => '0.75',
+    'DateTime::TimeZone'       => '1.64',
+    'Digest::SHA'              => 0,
+    'Email::MIME'              => '1.904',
+    'Email::Send'              => '1.911',
+    'File::Slurp'              => '9999.13',
+    'JSON::XS'                 => '2.01',
+    'List::MoreUtils'          => '0.32',
+    'Math::Random::ISAAC'      => '1.0.1',
+    'Template'                 => '2.24',
+    'URI'                      => '1.55',
+    'version'                  => '0.87',
+    'Parse::CPAN::Meta'        => '1.44',
+    'CPAN::Meta::Prereqs'      => '2.132830',
+    'CPAN::Meta::Requirements' => '2.121',
+    'Module::Metadata'         => '1.000033',
+    'Module::Runtime'          => 0,
 );
 my %build_requires = (
-    'ExtUtils::MakeMaker' => '6.55',
+    'ExtUtils::MakeMaker' => '6.57_07',
 );
 my %test_requires = (
     'Test::More'         => 0,
@@ -70,12 +76,6 @@ my %test_requires = (
     'Test::WWW::Selenium' => 0.
 );
 my %recommends = ( Safe => '2.30' );
-my %all_features = (
-    'CPAN::Meta::Prereqs'      => '2.132830',
-    'CPAN::Meta::Requirements' => '2.121',
-    'Module::Metadata'         => '1.000019',
-    'Module::Runtime'          => 0,
-);
 
 # Windows requires some additional modules.
 if ( $^O eq 'MSWin32' ) {
@@ -85,10 +85,6 @@ if ( $^O eq 'MSWin32' ) {
 }
 
 my %optional_features = (
-    features => {
-        prereqs => { runtime => { requires => \%all_features, } },
-        description => 'Modules required to enable any feature',
-    },
     smtp_auth => {
         prereqs => { runtime => { requires => { 'Authen::SASL' => 0 } } },
         description => 'SMTP Authentication'
@@ -326,7 +322,7 @@ WriteMakefile(
         dynamic_config => 1,
         prereqs        => {
             build   => { requires => { %build_requires } },
-            runtime => { requires => { %requires }, recommends => { %all_features, %recommends } },
+            runtime => { requires => { %requires }, recommends => { %recommends } },
             test    => { requires => { %test_requires } },
         },
         optional_features => \%optional_features,
@@ -334,13 +330,21 @@ WriteMakefile(
 );
 
 sub MY::postamble {
+    my $modules = join(' ',
+        qw(
+            CPAN::Meta
+            CPAN::Meta::Requirements
+            Parse::CPAN::Meta
+            Module::Metadata
+        )
+    );
     return <<MAKE;
 GEN_CPANFILE_ARGS = -A -U mod_perl -U oracle
 cpanfile: MYMETA.json
 \t\$(PERLRUN) gen-cpanfile.pl \$(GEN_CPANFILE_ARGS)
 
 checksetup_lib: Makefile.PL
-\tcpanm -l .checksetup_lib CPAN::Meta Module::Metadata\@$all_features{'Module::Metadata'}
+\tcpanm -l .checksetup_lib $modules
 \t-rm -fr .checksetup_lib/man
 \t-rm -fr .checksetup_lib/lib/perl5/*/.meta
 \t-rm -fr .checksetup_lib/lib/perl5/Test

@@ -3,12 +3,12 @@ abstract: 'Bugzilla Bug Tracking System'
 author:
   - 'Bugzilla Developers <developers@bugzilla.org>'
 build_requires:
-  ExtUtils::MakeMaker: '6.55'
+  ExtUtils::MakeMaker: 6.57_07
   Pod::Coverage: '0'
   Test::More: '0'
   Test::WWW::Selenium: '0'
 configure_requires:
-  ExtUtils::MakeMaker: '6.55'
+  ExtUtils::MakeMaker: 6.57_07
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 7.1, CPAN::Meta::Converter version 2.150001'
 license: unknown
@@ -50,13 +50,6 @@ optional_features:
     requires:
       Net::SFTP: '0'
       XML::Simple: '0'
-  features:
-    description: 'Modules required to enable any feature'
-    requires:
-      CPAN::Meta::Prereqs: '2.132830'
-      CPAN::Meta::Requirements: '2.121'
-      Module::Metadata: '1.000019'
-      Module::Runtime: '0'
   graphical_reports:
     description: 'Graphical Reports'
     requires:
@@ -159,13 +152,11 @@ optional_features:
       Test::Taint: '1.06'
       XMLRPC::Lite: '0.712'
 recommends:
-  CPAN::Meta::Prereqs: '2.132830'
-  CPAN::Meta::Requirements: '2.121'
-  Module::Metadata: '1.000019'
-  Module::Runtime: '0'
   Safe: '2.30'
 requires:
   CGI: '3.51'
+  CPAN::Meta::Prereqs: '2.132830'
+  CPAN::Meta::Requirements: '2.121'
   Crypt::CBC: '0'
   Crypt::DES: '0'
   Crypt::DES_EDE3: '0'
@@ -192,6 +183,9 @@ requires:
   LWP::UserAgent: '0'
   List::MoreUtils: '0.32'
   Math::Random::ISAAC: v1.0.1
+  Module::Metadata: '1.000033'
+  Module::Runtime: '0'
+  Parse::CPAN::Meta: '1.44'
   Regexp::Common: '0'
   Sys::Syslog: '0'
   Template: '2.24'
@@ -199,4 +193,5 @@ requires:
   Tie::IxHash: '0'
   URI: '1.55'
   perl: '5.010001'
+  version: '0.87'
 version: '4.2'
