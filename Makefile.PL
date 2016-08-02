@@ -303,6 +303,19 @@ for my $file ( glob("extensions/*/Config.pm") ) {
     }
 }
 
+# BMO Customization
+my @bmo_features = grep { !/pg|oracle|mod_perl|sqlite/i } keys %optional_features;
+$optional_features{bmo} = {
+    description => 'features that bmo needs',
+    prereqs => {
+        runtime => {
+            requires => {
+                map { %{$optional_features{$_}{prereqs}{runtime}{requires}} } @bmo_features
+            },
+        },
+    },
+};
+
 WriteMakefile(
     NAME             => 'Bugzilla',
     AUTHOR           => q{Bugzilla Developers <developers@bugzilla.org>},
