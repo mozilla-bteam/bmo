@@ -1255,7 +1255,9 @@
     <div id="new-comment-actions">
       <button type="submit" class="save-btn major" id="bottom-save-btn">Save Changes</button>
       <div id="resolve-as">
-        [%
+        [% IF bug.bug_status == "UNCONFIRMED";%] 
+            <button type="button" class="minor confirm-btn">Confirm [% terms.bug  %]</button> 
+        [% END;
           IF bug.resolution == "";
             seen_header = 0;
             FOREACH resolution IN ["FIXED", "INVALID", "DUPLICATE"];
