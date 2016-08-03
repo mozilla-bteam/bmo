@@ -141,15 +141,6 @@ sub check_all_cpan_features {
         };
     }
 
-    print install_string('all_optional_features_require'), "\n" if $output;
-    my $features = check_cpan_feature($meta->feature('features'), $dirs, $output);
-    print "\n" if $output;
-
-    $report{features} = {
-        description => $meta->feature('features')->description,
-        result => $features,
-    };
-
     return \%report;
 }
 

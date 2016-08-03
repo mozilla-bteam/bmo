@@ -18,7 +18,7 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 
 use ExtUtils::MakeMaker 6.55;
-use Bugzilla::Constants qw(BUGZILLA_VERSION);
+use constant BUGZILLA_VERSION => $ENV{BUGZILLA_VERSION} // 42;
 use File::Basename;
 use File::Spec;
 
