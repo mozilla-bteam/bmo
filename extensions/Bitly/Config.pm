@@ -23,7 +23,7 @@ sub REQUIRED_MODULES {
         {
             package => 'LWP-Protocol-https',
             module  => 'LWP::Protocol::https',
-            version => 0
+            version => 6.06,
         },
     ];
 }
