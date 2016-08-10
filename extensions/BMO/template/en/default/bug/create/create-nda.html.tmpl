@@ -52,112 +52,110 @@ $(function() {
 
 <div id="heading">NDA Request Form</div>
 
-<div>
+<p><b>Note:</b> Do NOT add non-employees to this [% terms.bug %]. To maintain attorney-client
+  privilege and confidentiality, legal [% terms.bugs %] are only visible to the reporter,
+  the legal team, and the cc list.</p>
+
+<form method="post" action="post_bug.cgi" id="ndaForm">
+  <input type="hidden" id="short_desc" name="short_desc" value="New NDA Request">
+  <input type="hidden" name="product" value="Legal">
+  <input type="hidden" name="component" value="NDA">
+  <input type="hidden" name="rep_platform" value="All">
+  <input type="hidden" name="op_sys" value="Other">
+  <input type="hidden" name="version" value="unspecified">
+  <input type="hidden" name="priority" value="--">
+  <input type="hidden" name="bug_severity" value="normal">
+  <input type="hidden" name="format" value="nda">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+  [% IF user.in_group('canconfirm') %]
+    <input type="hidden" name="bug_status" value="NEW">
+  [% END %]
+
+  <div class="row">
+    <div class="row_desc">
+      <label for="nda_needed">
+        <strong>Do we really need to receive confidential information from the other
+        party or provide them with ours at this stage of the relationship?</strong>
+      </label>
+    </div>
+    <select required name="nda_needed" id="nda_needed">
+      <option value="">-- Select --</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+    </select>
+  </div>
+
+  <div id="nda_needed_reason_row" class="row" style="display:none;">
+    <div class="row_desc">
+      <label for="nda_needed_reason">
+        <strong>If yes, please explain.</strong>
+      </label>
+    </div>
+    <textarea required  name="nda_needed_reason" id="nda_needed_reason" cols="80" rows="10"></textarea>
+  </div>
+
+  <div class="row">
+    <div class="row_desc">
+      <label for="nda_purpose">
+        <strong>What is the purpose of exchanging confidential information with the other party?</strong>
+      </label>
+    </div>
+    <textarea required name="nda_purpose" id="nda_purpose" cols="80" rows="10"></textarea>
+  </div>
+
+  <div class="row">
+    <div class="row_desc">
+      <label for="mozilla_sharing">
+        <strong>What confidential information will Mozilla be sharing?</strong>
+      </label>
+    </div>
+    <textarea required name="mozilla_sharing" id="mozilla_sharing" cols="80" rows="10"></textarea>
+  </div>
+
+  <div class="row">
+    <div class="row_desc">
+      <label for="other_sharing">
+        <strong>What confidential information will the other party be sharing?</strong>
+      </label>
+    </div>
+    <textarea required name="other_sharing" id="other_sharing" cols="80" rows="10"></textarea>
+  </div>
+
+  <div class="row">
+    <div class="row_desc">
+      <strong>Other Party Information</strong>
+    </div>
+    <table>
+    <tr>
+      <td>
+        <label for="party_name">Party Name</label>
+      </td>
+      <td><input type="text" name="party_name" id="party_name" size="60" required></td>
+    </tr>
+    <tr>
+      <td>
+        <label for="party_address">Business Address</label>
+      </td>
+      <td><input type="text" name="party_address" id="party_address" size="60" required></td>
+    </tr>
+    <tr>
+      <td>
+        <label for="party_contact_name">Name of Contact Person</label>
+      </td>
+      <td><input type="text" name="party_contact_name" id="party_contact_name" size="60" required></td>
+    <tr>
+      <td>
+        <label for="party_contact_email">Email of Contact Person</label>
+      </td>
+      <td><input type="text" name="party_contact_email" id="party_contact_email" size="60" required></td>
+    </tr>
+    </table>
+  </div>
+
+  <input type="submit" id="commit" value="Submit Request">
   <p>
-    Tell us more (all fields are required):
+    [ <span class="required_star">*</span> <span class="required_explanation">Required Field</span> ]
   </p>
-
-  <form method="post" action="post_bug.cgi" id="ndaForm">
-    <input type="hidden" id="short_desc" name="short_desc" value="New NDA Request">
-    <input type="hidden" name="product" value="Legal">
-    <input type="hidden" name="component" value="NDA">
-    <input type="hidden" name="rep_platform" value="All">
-    <input type="hidden" name="op_sys" value="Other">
-    <input type="hidden" name="version" value="unspecified">
-    <input type="hidden" name="priority" value="--">
-    <input type="hidden" name="bug_severity" value="normal">
-    <input type="hidden" name="format" value="nda">
-    <input type="hidden" name="token" value="[% token FILTER html %]">
-    [% IF user.in_group('canconfirm') %]
-      <input type="hidden" name="bug_status" value="NEW">
-    [% END %]
-
-    <div class="row">
-      <div class="row_desc">
-        <label for="nda_needed">
-          <strong>Do we really need to receive confidential information from the other
-          party or provide them with ours at this stage of the relationship?</strong>
-        </label>
-      </div>
-      <select required name="nda_needed" id="nda_needed">
-        <option value="">-- Select --</option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
-      </select>
-    </div>
-
-    <div id="nda_needed_reason_row" class="row" style="display:none;">
-      <div class="row_desc">
-        <label for="nda_needed_reason">
-          <strong>If yes, please explain.</strong>
-        </label>
-      </div>
-      <textarea required  name="nda_needed_reason" id="nda_needed_reason" cols="80" rows="10"></textarea>
-    </div>
-
-    <div class="row">
-      <div class="row_desc">
-        <label for="nda_purpose">
-          <strong>What is the purpose of exchanging confidential information with the other party?</strong>
-        </label>
-      </div>
-      <textarea required name="nda_purpose" id="nda_purpose" cols="80" rows="10"></textarea>
-    </div>
-
-    <div class="row">
-      <div class="row_desc">
-        <label for="mozilla_sharing">
-          <strong>What confidential information will Mozilla be sharing?</strong>
-        </label>
-      </div>
-      <textarea required name="mozilla_sharing" id="mozilla_sharing" cols="80" rows="10"></textarea>
-    </div>
-
-    <div class="row">
-      <div class="row_desc">
-        <label for="other_sharing">
-          <strong>What confidential information will the other party be sharing?</strong>
-        </label>
-      </div>
-      <textarea required name="other_sharing" id="other_sharing" cols="80" rows="10"></textarea>
-    </div>
-
-    <div class="row">
-      <div class="row_desc">
-        <strong>Other Party Information</strong>
-      </div>
-      <table>
-      <tr>
-        <td>
-          <label for="party_name">Party Name</label>
-        </td>
-        <td><input type="text" name="party_name" id="party_name" size="65" required></td>
-      </tr>
-      <tr>
-        <td>
-          <label for="party_address">Business Address</label>
-        </td>
-        <td><input type="text" name="party_address" id="party_address" size="65" required></td>
-      </tr>
-      <tr>
-        <td>
-          <label for="party_contact_name">Name of Contact Person</label>
-        </td>
-        <td><input type="text" name="party_contact_name" id="party_contact_name" size="65" required></td>
-      <tr>
-        <td>
-          <label for="party_contact_email">Email of Contact Person</label>
-        </td>
-        <td><input type="text" name="party_contact_email" id="party_contact_email" size="65" required></td>
-      </tr>
-      </table>
-    </div>
-
-    <input type="submit" id="commit" value="Submit Request">
-    <p>
-      [ <span class="required_star">*</span> <span class="required_explanation">Required Field</span> ]
-    </p>
-  </form>
-</div>
+</form>
 
 [% PROCESS global/footer.html.tmpl %]

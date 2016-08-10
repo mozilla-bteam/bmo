@@ -34,7 +34,7 @@ use Bugzilla::User;
 use Bugzilla::Util;
 
 use List::Util qw(first);
-use Scalar::Util qw(blessed);
+use Scalar::Util qw(blessed weaken isweak);
 
 ###############################
 ####    Initialization     ####
@@ -241,8 +241,9 @@ sub collapsed_reason {
 sub bug {
     my $self = shift;
     require Bugzilla::Bug;
-    $self->{bug} ||= new Bugzilla::Bug($self->bug_id);
-    return $self->{bug};
+    my $bug = $self->{bug} ||= new Bugzilla::Bug($self->bug_id);
+    weaken($self->{bug}) unless isweak($self->{bug});
+    return $bug;
 }
 
 sub is_about_attachment {

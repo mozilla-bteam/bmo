@@ -21,7 +21,7 @@ use Bugzilla::Util qw(correct_urlbase);
 
 use JSON qw(decode_json encode_json);
 use LWP::UserAgent;
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(any);
 
 sub options {
     return (
@@ -33,8 +33,8 @@ sub options {
             required => 1,
         },
         {
-            name     => 'spark_room',
-            label    => 'Spark Room Name',
+            name     => 'spark_room_id',
+            label    => 'Spark Room ID',
             type     => 'string',
             default  => 'bugzilla',
             required => 1,
@@ -62,16 +62,20 @@ sub should_send {
 
     # Send if bug has cisco-spark keyword
     my $bug = Bugzilla::Bug->new({ id => $bug_data->{id}, cache => 1 });
-    return 0 if none { $_->name eq 'cisco-spark' } @{ $bug->keyword_objects };
+    return 0 unless $bug->has_keyword('cisco-spark');
 
     if ($message->routing_key eq 'bug.create') {
         return 1;
     }
     else {
-        # send status and resolution updates
         foreach my $change (@{ $data->{event}->{changes} }) {
-            return 1 if $change->{field} eq 'bug_status'
-                || $change->{field} eq 'resolution';
+            # send status and resolution updates
+            return 1 if $change->{field} eq 'bug_status' || $change->{field} eq 'resolution';
+            # also send if the right keyword has been added to this bug
+            if ($change->{field} eq 'keywords' && $change->{added}) {
+                my @added = split(/, /, $change->{added});
+                return 1 if any { $_ eq 'cisco-spark' } @added;
+            }
         }
     }
 
@@ -105,7 +109,7 @@ sub send {
         }
         $text .= correct_urlbase() . "show_bug.cgi?id=" . $bug->id;
 
-        my $room_id = $self->_get_spark_room_id;
+        my $room_id = $self->config->{spark_room_id};
         my $message_uri = $self->_spark_uri('messages');
 
         my $json_data = { roomId => $room_id, text => $text };
@@ -164,28 +168,6 @@ sub _user_agent {
 sub _spark_uri {
     my ($self, $path) = @_;
     return URI->new($self->config->{spark_endpoint} . "/" . $path);
-}
-
-sub _get_spark_room_id {
-    my ($self) = @_;
-    my $rooms_uri = $self->_spark_uri('rooms');
-    my $resp = $self->_user_agent->get($rooms_uri);
-
-    if ($resp->code == 200) {
-        my $result = eval { decode_json($resp->content) };
-        if ($@ || !exists $result->{items}) {
-            die "Unable to parse JSON: $result";
-        }
-        foreach my $item (@{ $result->{items} }) {
-            if ($item->{title} eq $self->config->{spark_room}) {
-                return $item->{id};
-            }
-        }
-        die "Room ID not found";
-    }
-    else {
-        die "Expected HTTP 200 response, got " . $resp->code;
-    }
 }
 
 1;
