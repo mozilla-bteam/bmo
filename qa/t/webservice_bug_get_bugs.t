@@ -9,14 +9,19 @@
 # Test for xmlrpc call to Bug.get_bugs()  #
 ###########################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use Data::Dumper;
 use DateTime;
 use QA::Util;
 use QA::Tests qw(bug_tests PRIVATE_BUG_USER);
-use Test::More tests => 1012;
+use Test::More tests => 988;
+
 my ($config, @clients) = get_rpc_clients();
 
 my $xmlrpc = $clients[0];
@@ -93,8 +98,7 @@ sub post_success {
     my $bug = $call->result->{bugs}->[0];
 
     if ($t->{user} && $t->{user} eq 'admin') {
-        ok(exists $bug->{estimated_time} && exists $bug->{remaining_time}
-           && exists $bug->{deadline},
+        ok(exists $bug->{estimated_time} && exists $bug->{remaining_time},
            'Admin correctly gets time-tracking fields');
 
         is($bug->{deadline}, '2038-01-01', 'deadline is correct');
@@ -104,8 +108,7 @@ sub post_success {
                'remaining_time is correct');
     }
     else {
-        ok(!exists $bug->{estimated_time} && !exists $bug->{remaining_time}
-           && !exists $bug->{deadline},
+        ok(!exists $bug->{estimated_time} && !exists $bug->{remaining_time},
            'Time-tracking fields are not returned to non-privileged users');
     }
 

@@ -13,11 +13,16 @@
 # Product.get()                        #
 ########################################
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use Test::More tests => 134;
 use QA::Util;
+
 my ($config, @clients) = get_rpc_clients();
 
 my $products = $clients[0]->bz_get_products();

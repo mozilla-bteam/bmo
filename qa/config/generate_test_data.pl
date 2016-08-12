@@ -28,10 +28,6 @@ BEGIN {
         or die "can't read configuration '$conf_file': $!$@";
 
     $conf_path = $config->{bugzilla_path};
-
-    # We don't want randomly-generated keys. We want the ones specified
-    # in the config file so that we can use them in tests scripts.
-    *Bugzilla::User::APIKey::_check_api_key = sub { return $_[1]; };
 }
 
 use lib $conf_path;
@@ -50,7 +46,6 @@ use Bugzilla::Constants;
 use Bugzilla::Keyword;
 use Bugzilla::Config qw(:admin);
 use Bugzilla::User::Setting;
-use Bugzilla::User::APIKey;
 use Bugzilla::Util qw(generate_random_password);
 
 my $dbh = Bugzilla->dbh;
@@ -146,34 +141,37 @@ my @usernames = (
 
 print "creating user accounts...\n";
 foreach my $username (@usernames) {
-    my ($password, $login);
 
-    my $prefix = $username;
+    my $password;
+    my $login;
+    my $realname = exists $config->{"$username" . "_user_username"}
+                   ? $config->{"$username" . "_user_username"}
+                   : $username;
+
     if ($username eq 'permanent_user') {
         $password = $config->{admin_user_passwd};
         $login = $config->{$username};
     }
     elsif ($username eq 'no-privs') {
-        $prefix = 'unprivileged';
+        $password = $config->{unprivileged_user_passwd};
+        $login = $config->{unprivileged_user_login};
     }
     elsif ($username eq 'QA-Selenium-TEST') {
-        $prefix = 'QA_Selenium_TEST';
+        $password = $config->{QA_Selenium_TEST_user_passwd};
+        $login = $config->{QA_Selenium_TEST_user_login};
+    }
+    else {
+        $password = $config->{"$username" . "_user_passwd"};
+        $login = $config->{"$username" . "_user_login"};
     }
 
-    $password ||= $config->{"${prefix}_user_passwd"};
-    $login ||= $config->{"${prefix}_user_login"};
-    my $api_key = $config->{"${prefix}_user_api_key"};
-    my $realname = exists $config->{"$username" . "_user_username"}
-                   ? $config->{"$username" . "_user_username"}
-                   : $username;
-
     if ( is_available_username($login) ) {
-        my %extra_args;
-        if ($username eq 'disabled') {
-            $extra_args{disabledtext} = '!!This is the text!!';
-        }
+       my %extra_args;
+       if ($username eq 'disabled') {
+           $extra_args{disabledtext} = '!!This is the text!!';
+       }
 
-        my $user = Bugzilla::User->create(
+        Bugzilla::User->create(
             {   login_name    => $login,
                 realname      => $realname,
                 cryptpassword => $password,
@@ -181,15 +179,8 @@ foreach my $username (@usernames) {
             }
         );
 
-        if ($api_key) {
-            Bugzilla::User::APIKey->create(
-                { user_id     => $user->id,
-                  description => 'API key for QA tests',
-                  api_key     => $api_key }
-            );
-        }
+        if ( $username eq 'admin' or $username eq 'permanent_user' ) {
 
-        if ($username eq 'admin' or $username eq 'permanent_user') {
             Bugzilla::Install::make_admin($login);
         }
     }
