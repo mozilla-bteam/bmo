@@ -5,16 +5,20 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib);
+
+use FindBin qw($RealBin);
+use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+
 use Data::Dumper;
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
 use Storable qw(dclone);
-use Test::More tests => 921;
+use Test::More tests => 931;
 
-use constant NONEXISTANT_BUG => 12_000_000;
+use constant NONEXISTENT_BUG => 12_000_000;
 
 ###############
 # Subroutines #
@@ -30,6 +34,19 @@ sub get_tests {
 
     my ($public_bug, $second_bug) = $rpc->bz_create_test_bugs();
     my ($public_id, $second_id) = ($public_bug->{id}, $second_bug->{id});
+
+    # Add aliases to both bugs
+    $public_bug->{alias} = random_string(40);
+    $second_bug->{alias} = random_string(40);
+    my $alias_tests = [
+        { user => 'editbugs',
+          args => { ids => [ $public_id ], alias => $public_bug->{alias} },
+          test => 'Add alias to public bug' },
+        { user => 'editbugs',
+          args => { ids => [ $second_id ], alias => $second_bug->{alias} },
+          test => 'Add alias to second bug' },
+    ];
+    $rpc->bz_run_tests(tests => $alias_tests, method => 'Bug.update');
 
     my $comment_call = $rpc->bz_call_success(
         'Bug.comments', { ids => [$public_id, $second_id] });
@@ -336,7 +353,7 @@ sub invalid_values {
         ],
 
         blocks => [
-            { value => { add => [NONEXISTANT_BUG] },
+            { value => { add => [NONEXISTENT_BUG] },
               error => 'does not exist',
               test  => 'Non-existent bug number fails in deps' },
             { value => { add => [$public_id] },
@@ -396,9 +413,9 @@ sub invalid_values {
             { value => undef,
               error => 'dup_id was not defined',
               test  => 'undefined dupe_of fails' },
-            { value => NONEXISTANT_BUG,
+            { value => NONEXISTENT_BUG,
               error => 'does not exist',
-              test  => 'Cannot dup to a nonexistant bug' },
+              test  => 'Cannot dup to a nonexistent bug' },
             { value => $public_id,
               error => 'as a duplicate of itself',
               test  => 'Cannot dup bug to itself' },
@@ -438,13 +455,13 @@ sub invalid_values {
 
         keywords => [
             { value => { add => [random_string(20)] },
-              error => 'The legal keyword names are listed here',
+              error => 'See the list of available keywords',
               test  => 'adding invalid keyword fails' },
             { value => { remove => [random_string(20)] },
-              error => 'The legal keyword names are listed here',
+              error => 'See the list of available keywords',
               test  => 'removing invalid keyword fails' },
             { value => { set => [random_string(20)] },
-              error => 'The legal keyword names are listed here',
+              error => 'See the list of available keywords',
               test  => 'setting invalid keyword fails' },
         ],
 
