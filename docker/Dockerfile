@@ -48,7 +48,6 @@ RUN chown root.root /etc/sudoers && chmod 440 /etc/sudoers
 
 # Clone the code repo
 RUN su $BUGZILLA_USER -c "git clone $GITHUB_BASE_GIT -b $GITHUB_BASE_BRANCH $BUGZILLA_ROOT"
-RUN ln -s /opt/bmo/local $BUGZILLA_ROOT/local
 
 # Copy setup and test scripts
 COPY *.sh buildbot_step checksetup_answers.txt /
