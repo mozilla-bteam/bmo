@@ -152,10 +152,12 @@ sub bz_create_test_bugs {
     my @summary_strings = _string_array(3);
 
     my $public_bug = create_bug_fields($config);
+    $public_bug->{alias} = random_string(40);
     $public_bug->{whiteboard} = join(' ', @whiteboard_strings);
     $public_bug->{summary} = join(' ', @summary_strings);
 
     my $private_bug = dclone($public_bug);
+    $private_bug->{alias} = random_string(40);
     if ($second_private) {
         $private_bug->{product}   = 'QA-Selenium-TEST';
         $private_bug->{component} = 'QA-Selenium-TEST';

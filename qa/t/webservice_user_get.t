@@ -9,17 +9,12 @@
 # Test for xmlrpc call to User.get() #
 ######################################
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER);
 use Test::More tests => 330;
-
 our ($config, @clients) = get_rpc_clients();
 
 my $get_user = $config->{'unprivileged_user_login'};
@@ -152,15 +147,15 @@ sub post_success {
     }
 
     my $username = $config->{"${user}_user_login"};
-    # XXX We have no way to create a saved search or a saved report from
-    # the WebService, so we cannot test that the correct data is returned
-    # if the user is accessing his own account.
+    # FIXME: We have no way to create a saved search or a saved report from
+    #        the WebService, so we cannot test that the correct data is returned
+    #        if the user is accessing his own account.
     if ($username eq $item->{name}) {
-        ok(exists $item->{saved_searches} && exists $item->{saved_reports},
+        ok(exists $item->{saved_searches},
            'Users can get the list of saved searches and reports for their own account');
     }
     else {
-        ok(!exists $item->{saved_searches} && !exists $item->{saved_reports},
+        ok(!exists $item->{saved_searches},
            "Users cannot get the list of saved searches and reports from someone else's acccount");
     }
 

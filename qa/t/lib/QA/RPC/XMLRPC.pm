@@ -8,14 +8,7 @@
 # -*- Mode: perl; indent-tabs-mode: nil -*-
 
 package QA::RPC::XMLRPC;
-
-use 5.10.1;
 use strict;
-use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
 use base qw(QA::RPC XMLRPC::Lite);
 
 use constant TYPE => 'XML-RPC';

@@ -5,14 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
@@ -51,5 +49,5 @@ ok(!$sel->is_text_present("secret_qa_bug_$bug1_id+1"), "The alias of the private
 $sel->select_ok("priority", "label=High");
 $sel->select_ok("bug_status", "VERIFIED");
 $sel->type_ok("comment", "Can I still edit this bug?");
-edit_bug($sel, $bug1_id, $bug_summary);
+edit_bug($sel, $bug1_id);
 logout($sel);

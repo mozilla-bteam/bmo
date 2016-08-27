@@ -9,24 +9,19 @@
 # Test for xmlrpc call to User.login() and User.logout() #
 ##########################################################
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use Data::Dumper;
 use QA::Util;
 use Test::More tests => 119;
-
 my ($config, @clients) = get_rpc_clients();
 
 use constant INVALID_EMAIL => '@invalid_user@';
 
 my $user = $config->{unprivileged_user_login};
 my $pass = $config->{unprivileged_user_passwd};
-my $error = "The login or password you entered is not valid";
+my $error = "The username or password you entered is not valid";
 
 my @tests = (
     { user => 'unprivileged',

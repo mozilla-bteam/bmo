@@ -5,17 +5,19 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
+
+my $test_bug_1 = $config->{test_bug_1};
+
+# Enable target milestones.
 
 log_in($sel, $config, 'admin');
 set_parameters($sel, { "Bug Fields" => {"usetargetmilestone-on" => undef} });
@@ -35,17 +37,14 @@ $sel->click_ok("create");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Milestone Created");
 
-# Edit the milestone of bugs.
+# Edit the milestone of test_bug_1.
 
-file_bug_in_product($sel, "TestProduct");
-$sel->select_ok("component", "TestComponent");
-my $bug_summary = "stone and rock";
-$sel->type_ok("short_desc", $bug_summary);
-$sel->type_ok("comment", "This bug is to test milestones");
-my $bug1_id = create_bug($sel, $bug_summary);
+go_to_bug($sel, $test_bug_1);
 $sel->is_text_present_ok("Target Milestone:");
 $sel->select_ok("target_milestone", "label=TM1");
-edit_bug($sel, $bug1_id, $bug_summary);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $test_bug_1");
 
 # Query for bugs with the TM1 milestone.
 
@@ -72,10 +71,10 @@ set_parameters($sel, { "Bug Fields" => {"usetargetmilestone-off" => undef} });
 $sel->click_ok("link=Search");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search for bugs");
-ok(!$sel->is_text_present("Target Milestone:"), "The target milestone field is no longer displayed in the search page");
+ok(!$sel->is_text_present("Target Milestone:"), "The target milestone field is no longer displayed");
 
-go_to_bug($sel, $bug1_id);
-ok(!$sel->is_text_present('//label[@for="target_milestone"]'), "The milestone field is no longer displayed in the bug page");
+go_to_bug($sel, $test_bug_1);
+ok(!$sel->is_element_present('//label[@for="target_milestone"]'));
 
 # The existing query must still work despite milestones are off now.
 
@@ -83,7 +82,7 @@ $sel->click_ok("link=selenium_m0");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: selenium_m0");
 $sel->is_text_present_ok("One bug found");
-$sel->click_ok("forget_search");
+$sel->click_ok("link=Forget Search 'selenium_m0'");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search is gone");
 $text = trim($sel->get_text("message"));

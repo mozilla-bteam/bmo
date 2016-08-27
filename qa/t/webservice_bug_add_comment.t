@@ -9,16 +9,11 @@
 # Test for xmlrpc call to Bug.add_comment() #
 #############################################
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use QA::Util;
 use Test::More tests => 141;
-
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 
 use constant INVALID_BUG_ID => -1;
@@ -97,9 +92,9 @@ my @tests = (
     # Testing the "private" parameter happens in the tests for Bug.comments
 
     # Test work_time parameter
-    # XXX Should be testing permissions on the work_time parameter,
-    # but we currently have no way to verify whether or not time was
-    # added to the bug, and there's no error thrown if you lack perms.
+    # FIXME: Should be testing permissions on the work_time parameter,
+    #        but we currently have no way to verify whether or not time was
+    #        added to the bug, and there's no error thrown if you lack perms.
     { user  => 'admin',
       args  => { id => 'public_bug', comment => TEST_COMMENT,
                  work_time => 'aaa' },
@@ -144,7 +139,7 @@ my @tests = (
                 work_time => '1.5' },
       test => 'Timetracking user can add work_time to a bug',
     },
-    # XXX Need to verify that the comment added actually has work_time.
+    # FIXME: Need to verify that the comment added actually has work_time.
 );
 
 $jsonrpc_get->bz_call_fail('Bug.add_comment',

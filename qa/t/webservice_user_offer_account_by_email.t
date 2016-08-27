@@ -9,16 +9,11 @@
 # Test for xmlrpc call to User.offer_account_by_email() #
 #########################################################
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use QA::Util;
 use Test::More tests => 29;
-
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 
 # These are the characters that are actually invalid per RFC.

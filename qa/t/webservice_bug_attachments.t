@@ -5,20 +5,15 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use QA::Util;
 use QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
 use Data::Dumper;
 use List::Util qw(first);
 use MIME::Base64;
 use Test::More tests => 313;
-
 my ($config, @clients) = get_rpc_clients();
 
 ################

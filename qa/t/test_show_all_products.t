@@ -5,14 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
@@ -53,6 +51,7 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("QA-Selenium-TEST");
 # For some unknown reason, Selenium doesn't like hyphens in links.
 # $sel->click_ok("link=QA-Selenium-TEST");
-$sel->click_ok('//table[@id="other_products"]//a[contains(text(),"QA") and contains(text(),"Selenium") and contains(text(),"TEST")]');
+$sel->click_ok('//div[@id="choose_product"]//a[contains(@href, "QA-Selenium-TEST")]');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("Product: QA-Selenium-TEST");
 logout($sel);

@@ -7,10 +7,7 @@
 
 package Bugzilla::Extension::QA;
 
-use 5.10.1;
 use strict;
-use warnings;
-
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Extension::QA::Util;

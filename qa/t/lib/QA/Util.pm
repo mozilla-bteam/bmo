@@ -14,9 +14,6 @@ use strict;
 use warnings;
 use autodie;
 
-use FindBin qw($RealBin);
-use lib "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
 use Data::Dumper;
 use Test::More;
 
@@ -58,7 +55,7 @@ use parent qw(Exporter);
 
 # How long we wait for pages to load.
 use constant WAIT_TIME => 60000;
-use constant CONF_FILE =>  "$RealBin/../config/selenium_test.conf";
+use constant CONF_FILE =>  "../config/selenium_test.conf";
 use constant CHROME_MODE => 1;
 use constant NDASH => chr(0x2013);
 
@@ -231,15 +228,10 @@ sub create_bug {
 
 sub edit_bug {
     my ($sel, $bug_id, $bug_summary, $options) = @_;
-    my $ndash = NDASH;
     my $btn_id = $options ? $options->{id} : 'commit';
-
     $sel->click_ok($btn_id);
     $sel->wait_for_page_to_load_ok(WAIT_TIME);
-    $sel->title_is("$bug_id $ndash $bug_summary", "Changes submitted to bug $bug_id");
-    # If the web browser doesn't support history.ReplaceState or has it turned off,
-    # "Bug XXX processed" is displayed instead (as in Bugzilla 4.0 and older).
-    # $sel->title_is("Bug $bug_id processed", "Changes submitted to bug $bug_id");
+    $sel->is_text_present_ok("Changes submitted for bug $bug_id");
 }
 
 sub edit_bug_and_return {

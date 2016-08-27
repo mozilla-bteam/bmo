@@ -5,14 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
@@ -94,27 +92,17 @@ ok($error_msg =~ /^Sorry, you aren't a member of the 'editusers' group/, "Not a 
 $sel->click_ok("link=End sudo session impersonating " . $config->{unprivileged_user_login});
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Sudo session complete");
-$sel->is_text_present_ok("Your sudo session has ended");
+$sel->is_text_present_ok("The sudo session has been ended");
 
 # Try to access the sudo page directly, with no credentials.
 
-$sel->open_ok("/$config->{bugzilla_installation}/relogin.cgi?action=begin-sudo");
+$sel->open_ok("/$config->{bugzilla_installation}/relogin.cgi?action=begin-sudo&target_login=$config->{admin_user_login}");
 $sel->title_is("Password Required");
 
-# Now try to start a sudo session directly, with all required credentials.
+# The link should populate the target_login field correctly.
+# Note that we are trying to sudo an admin, which is not allowed.
 
-$sel->open_ok("/$config->{bugzilla_installation}/relogin.cgi?action=begin-sudo&current_password=$config->{admin_user_passwd}&target_login=$config->{admin_user_login}", undef, "Impersonate a user directly by providing all required data");
-# A direct access to the page is supposed to have no Referer header set,
-# which would trigger the "Untrusted Authentication Request" error, but
-# due to the way Selenium works, the Referer header is set and the
-# "Preparation Required" error is thrown instead. In any case, one of
-# those two errors must be thrown.
-my $title = $sel->get_title();
-ok($title eq "Untrusted Authentication Request" || $title eq "Preparation Required" || $title eq "User Protected", $title);
-
-# Now try to sudo an admin, which is not allowed.
-
-$sel->open_ok("/$config->{bugzilla_installation}/relogin.cgi?action=prepare-sudo&target_login=$config->{admin_user_login}");
+$sel->click_ok("link=go back");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Begin sudo session");
 $sel->value_is("target_login", $config->{admin_user_login});
@@ -131,13 +119,6 @@ ok($error_msg =~ /^The user $config->{admin_user_login} may not be impersonated 
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Begin sudo session");
-# Starting with 5.0, the password field is a type=password and is marked
-# "required". This means that we need to remove the required attribute from
-# the input so that it can still be checked by the backend code.
-my $script = q{
-    document.getElementById('Bugzilla_password').removeAttribute('required');
-};
-$sel->run_script($script);
 $sel->type_ok("target_login", 'foo@bar.com');
 $sel->click_ok('//input[@value="Begin Session"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);

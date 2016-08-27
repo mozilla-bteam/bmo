@@ -16,14 +16,9 @@ use QA::Util;
 my ($sel, $config) = get_selenium();
 
 # Used to test sent bugmails
-use constant RCPT_BOTH   => 1;
-use constant RCPT_ADMIN  => 2;
-use constant RCPT_NORMAL => 3;
-use constant RCPT_NONE   => 4;
 my @email_both = ($config->{admin_user_login}, $config->{editbugs_user_login});
 my @email_admin = ($config->{admin_user_login});
 my @email_normal = ($config->{editbugs_user_login});
-my @email_none = ("no one");
 
 # Test script to test email preferences.
 # For reference, following bugmail and request mails should be generated.
@@ -63,7 +58,7 @@ $sel->title_is("User Preferences");
 $sel->click_ok("link=Email Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("Email Preferences");
-$sel->click_ok("//input[\@value='Disable All Mail']");
+$sel->click_ok("//input[\@value='Disable All Bugmail']");
 $sel->click_ok("email-0-1", undef, 'Set "I\'m added to or removed from this capacity" for Assignee role');
 $sel->click_ok("email-0-5", undef, 'Set "The priority, status, severity, or milestone changes" for Assignee role');
 $sel->click_ok("email-0-2", undef, 'Set "New comments are added" for Assignee role');
@@ -141,22 +136,18 @@ go_to_admin($sel);
 $sel->click_ok("link=Default Preferences");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Default Preferences");
+$sel->check_ok("post_bug_submit_action-enabled");
 $sel->select_ok("post_bug_submit_action", "label=Show the updated bug");
 $sel->click_ok("update");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Default Preferences");
 
-# Set normal user Email Prefs
+# Set normal user Email Prefs (by directly going to Email Prefs pane)
 logout($sel);
 log_in($sel, $config, 'editbugs');
-$sel->click_ok("link=Preferences");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("User Preferences");
-$sel->click_ok("link=Email Preferences");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("User Preferences");
+$sel->open_ok("$config->{bugzilla_installation}/userprefs.cgi?tab=email");
 $sel->is_text_present_ok("Email Preferences");
-$sel->click_ok("//input[\@value='Enable All Mail']");
+$sel->click_ok("//input[\@value='Enable All Bugmail']");
 $sel->click_ok("email-3-1", undef, 'Clear "I\'m added to or removed from this capacity" for CCed role');
 $sel->click_ok("email-3-5", undef, 'Clear "The priority, status, severity, or milestone changes" for CCed role');
 $sel->click_ok("email-2-2", undef, 'Clear "New comments are added" for Reporter role');
@@ -231,14 +222,17 @@ ok($sel->create_cookie('show_bugmail_recipients=1'), 'Always show recipient list
 # Create a test bug (bugmail to both normal user and admin)
 file_bug_in_product($sel, "Another Product");
 $sel->select_ok("component", "label=c1");
-my $bug_summary = "Selenium Email Preference test bug";
-$sel->type_ok("short_desc", $bug_summary, "Enter bug summary");
-$sel->type_ok("comment", "Created by Selenium to test Email Notifications", "Enter bug description");
+$sel->type_ok("short_desc", "Selenium Email Preference test bug", "Enter bug summary");
+$sel->type_ok("comment", "Created by Selenium to test Email Preferences", "Enter bug description");
 $sel->type_ok("assigned_to", $config->{editbugs_user_login});
 $sel->type_ok("qa_contact", $config->{admin_user_login});
 $sel->type_ok("cc", $config->{admin_user_login});
-my $bug1_id = create_bug($sel, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_BOTH);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load(WAIT_TIME);
+my $bug1_id = $sel->get_value("//input[\@name='id' and \@type='hidden']");
+$sel->is_text_present_ok('has been added to the database', "Bug $bug1_id created");
+my @email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_both, "Admin and normal user got bugmail");
 
 # Make normal user changes (first pass)
 #
@@ -246,24 +240,36 @@ go_to_bug($sel, $bug1_id);
 # Severity change (bugmail to normal user but not admin)
 $sel->select_ok("bug_severity", "label=blocker");
 $sel->selected_label_is("bug_severity", "blocker");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_NORMAL);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_normal, "Normal user got bugmail");
 # Add a comment (bugmail to no one)
 $sel->type_ok("comment", "This is a Selenium generated normal user test comment 1 of 2. (No bugmail should be generated for this.)");
 $sel->value_is("comment", "This is a Selenium generated normal user test comment 1 of 2. (No bugmail should be generated for this.)");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_NONE);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+ok($email_sentto[0] eq "no one", "No bugmail sent");
 # Add normal user to CC list (bugmail to admin but not normal user)
 $sel->type_ok("newcc", $config->{editbugs_user_login});
 $sel->value_is("newcc", $config->{editbugs_user_login});
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_ADMIN);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_admin, "Admin got bugmail");
 # Request a flag from admin (bugmail to no one, request mail to no one)
 $sel->select_ok("flag_type-4", "label=?");
 $sel->type_ok("requestee_type-4", $config->{admin_user_login});
 $sel->value_is("requestee_type-4", $config->{admin_user_login});
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_NONE);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+ok($email_sentto[0] eq "no one", "No bugmail sent");
 
 # Make admin changes
 #
@@ -273,35 +279,51 @@ go_to_bug($sel, $bug1_id);
 # Severity change (bugmail to normal user but not admin)
 $sel->select_ok("bug_severity", "label=trivial");
 $sel->selected_label_is("bug_severity", "trivial");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_NORMAL);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_normal, "Normal user got bugmail");
 # Add a comment (bugmail to normal user but not admin)
 $sel->type_ok("comment", "This is a Selenium generated admin user test comment. (Only normal user should get bugmail for this.)");
 $sel->value_is("comment", "This is a Selenium generated admin user test comment. (Only normal user should get bugmail for this.)");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_NORMAL);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_normal, "Normal user got bugmail");
 # Remove normal user from CC list (bugmail to both normal user and admin)
 $sel->click_ok("removecc");
 $sel->add_selection_ok("cc", "label=$config->{editbugs_user_login}");
 $sel->value_is("removecc", "on");
 $sel->selected_label_is("cc", $config->{editbugs_user_login});
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_BOTH);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_both, "Admin and normal user got bugmail");
 # Reassign bug to admin user (bugmail to both normal user and admin)
 $sel->type_ok("assigned_to", $config->{admin_user_login});
 $sel->value_is("assigned_to", $config->{admin_user_login});
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_BOTH);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_both, "Admin and normal user got bugmail");
 # Request a flag from normal user (bugmail to admin but not normal user and request mail to admin)
 $sel->select_ok("flag_type-4", "label=?");
 $sel->type_ok("requestee_type-4", $config->{editbugs_user_login});
 $sel->value_is("requestee_type-4", $config->{editbugs_user_login});
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_ADMIN);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_admin, "Admin got bugmail");
 # Grant a normal user flag request (bugmail to admin but not normal user and request mail to no one)
 my $flag1_id = set_flag($sel, $config->{admin_user_login}, "?", "+");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_ADMIN);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_admin, "Admin got bugmail");
 
 # Make normal user changes (second pass)
 #
@@ -311,48 +333,44 @@ go_to_bug($sel, $bug1_id);
 # Severity change (bugmail to both admin and normal user)
 $sel->select_ok("bug_severity", "label=normal");
 $sel->selected_label_is("bug_severity", "normal");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_BOTH);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_both, "Admin and normal user got bugmail");
 # Add a comment (bugmail to admin but not normal user)
 $sel->type_ok("comment", "This is a Selenium generated normal user test comment 2 of 2. (Only admin should get bugmail for this.)");
 $sel->value_is("comment", "This is a Selenium generated normal user test comment 2 of 2. (Only admin should get bugmail for this.)");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_ADMIN);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_admin, "Admin got bugmail");
 # Reassign to normal user (bugmail to admin but not normal user)
 $sel->type_ok("assigned_to", $config->{editbugs_user_login});
 $sel->value_is("assigned_to", $config->{editbugs_user_login});
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_ADMIN);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+@email_sentto = get_email_sentto($sel);
+is_deeply(\@email_sentto, \@email_admin, "Admin got bugmail");
 # Deny a flag requested by admin (bugmail to no one and request mail to admin)
 my $flag2_id = set_flag($sel, $config->{editbugs_user_login}, "?", "-");
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_NONE);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+@email_sentto = get_email_sentto($sel);
+ok($email_sentto[0] eq "no one", "No bugmail sent");
 # Cancel both flags (bugmail and request mail to no one)
 set_flag($sel, undef, "+", "X", $flag1_id);
 set_flag($sel, undef, "-", "X", $flag2_id);
-edit_bug($sel, $bug1_id, $bug_summary);
-verify_bugmail_recipients($sel, RCPT_NONE);
-logout($sel);
-
-# Set "After changing a bug" default preference back to "Do Nothing".
-log_in($sel, $config, 'admin');
-go_to_admin($sel);
-$sel->click_ok("link=Default Preferences");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Default Preferences");
-$sel->select_ok("post_bug_submit_action", "label=Do Nothing");
-$sel->click_ok("update");
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is("Default Preferences");
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+@email_sentto = get_email_sentto($sel);
+ok($email_sentto[0] eq "no one", "No bugmail sent");
 logout($sel);
 
 # Help functions
-sub verify_bugmail_recipients {
-    my ($sel, $rcpt_sentto) = @_;
-    my $wanted_sentto;
-    my $err = 0;
-
-    # Verify sentto field
+sub get_email_sentto {
+    my ($sel) = @_;
     my @email_sentto;
     my $index = 1;
     while ($sel->is_element_present("//dt[text()='Email sent to:']/following-sibling::dd/code[$index]")) {
@@ -360,37 +378,8 @@ sub verify_bugmail_recipients {
              $sel->get_text("//dt[text()='Email sent to:']/following-sibling::dd/code[$index]"));
         $index++;
     }
-    @email_sentto = scalar @email_sentto ? sort @email_sentto : ("no one");
-    if ($rcpt_sentto == RCPT_BOTH) {
-      $wanted_sentto = \@email_both;
-      is_deeply(\@email_sentto, $wanted_sentto, "Bugmail sent to both")
-          or $err = 1;
-    }
-    elsif ($rcpt_sentto == RCPT_ADMIN) {
-      $wanted_sentto = \@email_admin;
-      is_deeply(\@email_sentto, $wanted_sentto, "Bugmail sent to admin")
-          or $err = 1;
-    }
-    elsif ($rcpt_sentto == RCPT_NORMAL) {
-      $wanted_sentto = \@email_normal;
-      is_deeply(\@email_sentto, $wanted_sentto, "Bugmail sent to normal user")
-          or $err = 1;
-    } else {
-      $wanted_sentto = \@email_none;
-      is_deeply(\@email_sentto, $wanted_sentto, "Bugmail sent to no one")
-          or $err = 1;
-    }
-
-    # In case of an error, retrieve and show diagnostics info
-    if ($err) {
-        diag("Sent, actual     : " . join(', ', @email_sentto));
-        diag("Sent, wanted     : " . join(', ', @$wanted_sentto));
-        diag("Changer          : " . trim($sel->get_text('//td[@id="moz_login"]/ul/li/span')));
-        diag("Reporter         : " . $sel->get_attribute('//th[contains(text(), "Reported:")]/following-sibling::td//a@title'));
-        diag("Assignee         : " . $sel->get_value('assigned_to'));
-        diag("QA contact       : " . $sel->get_value('qa_contact'));
-        diag("CC List          : " . join(', ', $sel->get_select_options('cc')));
-    }
+    return ("no one") if !@email_sentto;
+    return sort @email_sentto;
 }
 
 sub set_flag {

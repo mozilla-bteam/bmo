@@ -9,13 +9,9 @@
 # Test for xmlrpc call to Bug.create() #
 ########################################
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use Storable qw(dclone);
 use Test::More tests => 293;
 use QA::Util;
@@ -133,7 +129,7 @@ my $fields = {
     },
     alias => {
         long => {
-            faultstring => 'Bug aliases cannot be longer than 40 characters',
+            faultstring => 'Bug aliases cannot be longer than 20 characters',
             value       => 'MyyyyyyyyyyyyyyyyyyBugggggggggggggggggggggg'
         },
         existing => {
@@ -146,7 +142,7 @@ my $fields = {
         },
         commma_or_space_separated => {
             faultstring => 'contains one or more commas or spaces',
-            value       => ['Bug 12345']
+            value       => 'Bug 12345'
         },
 
     },

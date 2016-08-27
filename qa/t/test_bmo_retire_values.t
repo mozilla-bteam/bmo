@@ -5,14 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
@@ -116,7 +114,7 @@ $sel->selected_label_is("component", 'TempComponent');
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("Changes submitted for bug $bug_id");
-$sel->click_ok("link=$bug_id");
+$sel->click_ok("link=bug $bug_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 # make sure the component is still tempcomponent
 ok($sel->get_selected_labels("component"), 'TempComponent');
@@ -228,7 +226,7 @@ $sel->selected_label_is("version", 'TempVersion');
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("Changes submitted for bug $bug_id");
-$sel->click_ok("link=$bug_id");
+$sel->click_ok("link=bug $bug_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 # make sure the version is still tempversion
 $sel->selected_label_is("version", 'TempVersion');
@@ -348,7 +346,7 @@ $sel->selected_label_is("target_milestone", 'TempMilestone');
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("Changes submitted for bug $bug_id");
-$sel->click_ok("link=$bug_id");
+$sel->click_ok("link=bug $bug_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 # make sure the milestone is still tempmilestone
 $sel->selected_label_is("target_milestone", 'TempMilestone');

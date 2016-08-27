@@ -9,16 +9,11 @@
 # Test for xmlrpc call functions in Bugzilla.pm  #
 ##################################################
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use Test::More tests => 11 * 3;
 use QA::Util;
-
 my ($config, @clients) = get_rpc_clients();
 
 foreach my $rpc (@clients) {

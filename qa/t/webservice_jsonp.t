@@ -5,16 +5,11 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use Test::More tests => 85;
 use QA::Util;
-
 my $jsonrpc_get = QA::Util::get_jsonrpc_client('GET');
 
 my @chars = (0..9, 'A'..'Z', 'a'..'z', '_[].');

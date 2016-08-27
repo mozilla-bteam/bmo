@@ -5,14 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
@@ -32,7 +30,7 @@ my @pages = qw(admin attachment buglist chart colchange config createaccount
                enter_bug index long_list page post_bug process_bug query quips
                relogin report reports request sanitycheck search_plugin
                show_activity show_bug showattachment showdependencygraph
-               showdependencytree summarize_time token userprefs votes
+               showdependencytree sidebar summarize_time token userprefs votes
                xml xmlrpc);
 
 foreach my $page (@pages) {

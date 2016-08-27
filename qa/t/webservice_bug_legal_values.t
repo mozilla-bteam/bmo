@@ -9,16 +9,11 @@
 # Test for xmlrpc call to Bug.legal_values() #
 ##############################################
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
-
+use lib qw(lib);
 use Test::More tests => 269;
 use QA::Util;
-
 my ($config, @clients) = get_rpc_clients();
 
 use constant INVALID_PRODUCT_ID => -1;
@@ -85,7 +80,7 @@ my @extra_tests = (
       test  =>  "Passing product_id without 'field' throws an error",
     },
     { args  => { field => INVALID_FIELD_NAME },
-      error => "Can't use \"" . INVALID_FIELD_NAME . "\" as a field name",
+      error => "Can't use " . INVALID_FIELD_NAME . " as a field name",
       test  => 'Invalid field name'
     },
 );

@@ -5,14 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
@@ -57,7 +55,7 @@ $sel->select_ok("type", "label=Drop Down");
 $sel->type_ok("sortkey", $bug1_id);
 $sel->click_ok("enter_bug");
 $sel->value_is("enter_bug", "on");
-sleep(3); # FIXME: need small pause to allow JS to enable new_bugmail checkbox
+sleep(2); # Wait for JS to catch up
 $sel->click_ok("new_bugmail");
 $sel->value_is("new_bugmail", "on");
 $sel->value_is("obsolete", "off");
@@ -183,6 +181,7 @@ my $bug_summary2 = "Et de un";
 $sel->type_ok("short_desc", $bug_summary2);
 $sel->select_ok("bug_severity", "critical");
 $sel->type_ok("cf_qa_bugid_$bug1_id", $bug1_id);
+$sel->type_ok("comment", "hops!");
 my $bug2_id = create_bug($sel, $bug_summary2);
 
 # Both fields are editable.
@@ -190,7 +189,7 @@ my $bug2_id = create_bug($sel, $bug_summary2);
 $sel->type_ok("cf_qa_freetext_$bug1_id", "bonsai");
 $sel->selected_label_is("cf_qa_list_$bug1_id", "---");
 $sel->select_ok("bug_status", "label=SUSPENDED");
-edit_bug($sel, $bug2_id, $bug_summary2);
+edit_bug($sel, $bug2_id);
 
 go_to_bug($sel, $bug1_id);
 $sel->type_ok("cf_qa_freetext_$bug1_id", "dumbo");
@@ -210,7 +209,7 @@ $sel->is_text_present_ok("List$bug1_id: storage");
 $sel->is_text_present_ok("Status: IN_QA UPSTREAM");
 go_to_bug($sel, $bug2_id);
 $sel->select_ok("cf_qa_list_$bug1_id", "label=storage");
-edit_bug($sel, $bug2_id, $bug_summary2);
+edit_bug($sel, $bug2_id);
 
 # Test searching for bugs using the custom fields
 
@@ -231,7 +230,7 @@ $sel->is_text_present_ok("Et de un");
 
 # Now edit custom fields in mass changes.
 
-$sel->click_ok("mass_change");
+$sel->click_ok("link=Change Several Bugs at Once");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");
@@ -240,13 +239,13 @@ $sel->type_ok("cf_qa_freetext_$bug1_id", "thanks");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bugs processed");
-$sel->click_ok("link=$bug2_id");
+$sel->click_ok("link=bug $bug2_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug2_id/);
 $sel->value_is("cf_qa_freetext_$bug1_id", "thanks");
 $sel->selected_label_is("cf_qa_list_$bug1_id", "---");
 $sel->select_ok("cf_qa_list_$bug1_id", "label=storage");
-edit_bug($sel, $bug2_id, $bug_summary2);
+edit_bug($sel, $bug2_id);
 
 # Let's now test custom field visibility.
 
@@ -258,8 +257,7 @@ $sel->click_ok("link=cf_qa_list_$bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Edit the Custom Field 'cf_qa_list_$bug1_id' (List$bug1_id)");
 $sel->select_ok("visibility_field_id", "label=Severity (bug_severity)");
-$sel->add_selection_ok("visibility_values", "label=blocker");
-$sel->add_selection_ok("visibility_values", "label=critical");
+$sel->select_ok("visibility_values", "label=critical");
 $sel->click_ok("edit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Custom Field Updated");
@@ -377,7 +375,7 @@ go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("Freetext$bug1_id: thanks");
 $sel->click_ok("cc_edit_area_showhide");
 $sel->type_ok("newcc", $config->{unprivileged_user_login});
-edit_bug($sel, $bug1_id, $bug_summary);
+edit_bug($sel, $bug1_id);
 logout($sel);
 
 # Disable the remaining free text field.
@@ -412,12 +410,12 @@ $sel->is_text_present_ok("Sorry, but the 'SUSPENDED' value cannot be deleted");
 
 go_to_bug($sel, $bug2_id);
 $sel->select_ok("bug_status", "CONFIRMED");
-edit_bug($sel, $bug2_id, $bug_summary2);
+edit_bug($sel, $bug2_id);
 
 go_to_bug($sel, $bug1_id);
 $sel->select_ok("bug_status", "VERIFIED");
 $sel->select_ok("resolution", "INVALID");
-edit_bug($sel, $bug1_id, $bug_summary);
+edit_bug($sel, $bug1_id);
 
 # Unused values can be deleted.
 

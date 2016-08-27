@@ -5,14 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-use 5.10.1;
 use strict;
 use warnings;
-
-use FindBin qw($RealBin);
-use lib "$RealBin/lib", "$RealBin/../../lib", "$RealBin/../../local/lib/perl5";
+use lib qw(lib);
 
 use Test::More "no_plan";
+
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
@@ -38,25 +36,35 @@ $sel->type_ok("votestoconfirm", 3);
 $sel->select_ok("security_group_id", "label=core-security");
 $sel->select_ok("default_op_sys_id", "Unspecified");
 $sel->select_ok("default_platform_id", "Unspecified");
+$sel->click_ok('//input[@type="submit" and @value="Add"]');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Product Created");
+$sel->click_ok("link=add at least one component");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Add component to the Eureka product");
 $sel->type_ok("component", "Pegasus");
-$sel->type_ok("comp_desc", "A constellation in the north hemisphere.");
+$sel->type_ok("description", "A constellation in the north hemisphere.");
 $sel->type_ok("initialowner", $config->{permanent_user}, "Setting the default owner");
 $sel->uncheck_ok("watch_user_auto");
 $sel->type_ok("watch_user", "pegasus\@eureka.bugs");
 $sel->check_ok("watch_user_auto");
-$sel->click_ok('add-product');
+$sel->click_ok("create");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("Product Created");
+$sel->title_is("Component Created");
+my $text = trim($sel->get_text("message"));
+ok($text =~ qr/The component Pegasus has been created/, "Component 'Pegasus' created");
 
 # Create a new bug with the CONFIRMED status.
 
 file_bug_in_product($sel, 'Eureka');
 # CONFIRMED must be the default bug status for users with editbugs privs.
 $sel->selected_label_is("bug_status", "CONFIRMED");
-my $bug_summary = "Aries";
-$sel->type_ok("short_desc", $bug_summary);
+$sel->type_ok("short_desc", "Aries");
 $sel->type_ok("comment", "1st constellation");
-my $bug1_id = create_bug($sel, $bug_summary);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok('has been added to the database');
+my $bug1_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 # Now vote for this bug.
 
@@ -81,10 +89,12 @@ ok($full_text =~ /4 votes used out of 10 allowed/, "Display the number of votes 
 
 file_bug_in_product($sel, 'Eureka');
 $sel->select_ok("bug_status", "UNCONFIRMED");
-my $bug_summary2 = "Taurus";
-$sel->type_ok("short_desc", $bug_summary2);
+$sel->type_ok("short_desc", "Taurus");
 $sel->type_ok("comment", "2nd constellation");
-my $bug2_id = create_bug($sel, $bug_summary2);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok('has been added to the database');
+my $bug2_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 # Put enough votes on this bug to confirm it by popular votes.
 
@@ -102,10 +112,12 @@ $sel->is_text_present_ok("Bug $bug2_id confirmed by number of votes");
 
 file_bug_in_product($sel, 'Eureka');
 $sel->select_ok("bug_status", "UNCONFIRMED");
-my $bug_summary3 = "Gemini";
-$sel->type_ok("short_desc", $bug_summary3);
+$sel->type_ok("short_desc", "Gemini");
 $sel->type_ok("comment", "3rd constellation");
-my $bug3_id = create_bug($sel, $bug_summary3);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok('has been added to the database');
+my $bug3_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 # Vote for this bug, but remain below the threshold required
 # to confirm the bug by popular votes.
@@ -124,13 +136,13 @@ $sel->type_ok("bug_$bug2_id", 15);
 $sel->click_ok("change");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Illegal Vote");
-my $text = trim($sel->get_text("error_msg"));
+$text = trim($sel->get_text("error_msg"));
 ok($text =~ /You may only use at most 5 votes for a single bug in the Eureka product, but you are trying to use 15/,
    "Too many votes per bug");
 
-# XXX - We cannot use go_back_ok() here, because Firefox complains about
-# POST data not being stored in its cache. As a workaround, we go to
-# the bug we just visited and click the 'vote' link again.
+# FIXME: We cannot use go_back_ok() here, because Firefox complains about
+#        POST data not being stored in its cache. As a workaround, we go to
+#        the bug we just visited and click the 'vote' link again.
 
 go_to_bug($sel, $bug3_id);
 $sel->click_ok("link=vote");
@@ -151,7 +163,7 @@ ok($text =~ /You tried to use 12 votes in the Eureka product, which exceeds the 
 
 edit_product($sel, 'Eureka');
 $sel->type_ok("votestoconfirm", 2);
-$sel->click_ok("update-product");
+$sel->click_ok('//input[@type="submit" and @value="Save Changes"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Updating Product 'Eureka'");
 $full_text = trim($sel->get_body_text());
@@ -165,7 +177,7 @@ $sel->click_ok("link='Eureka'");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Edit Product 'Eureka'");
 $sel->type_ok("maxvotesperbug", 4);
-$sel->click_ok("update-product");
+$sel->click_ok('//input[@type="submit" and @value="Save Changes"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Updating Product 'Eureka'");
 $full_text = trim($sel->get_body_text());
@@ -186,7 +198,7 @@ ok($text =~ /4 votes/, "4 votes remaining");
 
 edit_product($sel, "Eureka");
 $sel->type_ok("votesperuser", 5);
-$sel->click_ok("update-product");
+$sel->click_ok('//input[@type="submit" and @value="Save Changes"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Updating Product 'Eureka'");
 $full_text = trim($sel->get_body_text());
@@ -205,7 +217,7 @@ ok($text =~ /2 votes/, "2 votes remaining");
 
 edit_product($sel, "Eureka");
 $sel->click_ok("allows_unconfirmed");
-$sel->click_ok("update-product");
+$sel->click_ok('//input[@type="submit" and @value="Save Changes"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Updating Product 'Eureka'");
 $full_text = trim($sel->get_body_text());
@@ -215,10 +227,12 @@ ok($full_text =~ /The product no longer allows the UNCONFIRMED status/, "Disable
 
 file_bug_in_product($sel, "Eureka");
 ok(!scalar(grep {$_ eq "UNCONFIRMED"} $sel->get_select_options("bug_status")), "UNCONFIRMED not listed");
-my $bug_summary4 = "Cancer";
-$sel->type_ok("short_desc", $bug_summary4);
+$sel->type_ok("short_desc", "Cancer");
 $sel->type_ok("comment", "4th constellation");
-my $bug4_id = create_bug($sel, $bug_summary4);
+$sel->click_ok("commit");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok('has been added to the database');
+my $bug4_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 # Now delete the 'Eureka' product.
 
