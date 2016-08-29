@@ -6,40 +6,27 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-var Dom = YAHOO.util.Dom;
-var Event = YAHOO.util.Event;
-
-var MPR = {
-    required_fields: {
+$(function() {
+    'use strict';
+    var required_fields = {
         "initial_questions": {
             "short_desc": "Please enter a value for project or feature name in the initial questions section",
-            "cc": "Please enter a value for points of contact in the initial questions section",
+            "description": "Please enter a value for description in the initial questions section",
             "key_initiative": "Please select a value for key initiative in the initial questions section",
-            "release_date": "Please enter a value for release date in the initial questions section",
-            "project_status": "Please select a value for project status in the initial questions section",
+            "contract_type": "Please select a value for contract type in the initial questions section",
             "mozilla_data": "Please select a value for mozilla data in the initial questions section",
-            "separate_party": "Please select a value for separate party in the initial questions section"
+            "vendor_cost": "Please select a value for vendor cost in the initial questions section"
         },
-        "finance_questions": {
-            "finance_purchase_vendor": "Please enter a value for vendor in the finance questions section",
-            "finance_purchase_what": "Please enter a value for what in the finance questions section",
-            "finance_purchase_why": "Please enter a value for why in the finance questions section",
-            "finance_purchase_risk": "Please enter a value for risk in the finance questions section",
-            "finance_purchase_alternative": "Please enter a value for alternative in the finance questions section",
-            "finance_purchase_inbudget": "Please enter a value for in budget in the finance questions section",
-            "finance_purchase_urgency": "Please select a value for urgency in the finance questions section",
-            "finance_purchase_cost": "Please enter a value for total cost in the finance questions section"
+        "key_initiative_other": {
+            "key_initiative_other": "Please enter a value for other key initiative in the initial questions section"
         },
         "legal_questions": {
             "legal_priority": "Please select a value for priority in the legal questions section",
             "legal_timeframe": "Please select a value for timeframe in the legal questions section",
-            "legal_help_from_legal": "Please describe the help needed from the Legal department"
-        },
-        "legal_sow_questions": {
-            "legal_sow_vendor_name": "Please enter a value for SOW legal vendor name",
+            "legal_other_party": "Please enter a value for vendor name in the legal questions section",
+            "legal_terminate_contract": "Please select a value for right to terminate contract in the legal questions section",
             "legal_sow_vendor_address": "Please enter a value for SOW vendor address",
             "legal_sow_vendor_email": "Please enter a value for SOW vendor email for notices",
-            "legal_sow_vendor_mozcontact": "Please enter a value for SOW Mozilla contact",
             "legal_sow_vendor_contact": "Please enter a value for SOW vendor contact and email address",
             "legal_sow_vendor_services": "Please enter a value for SOW vendor services description",
             "legal_sow_vendor_deliverables": "Please enter a value for SOW vendor deliverables description",
@@ -49,177 +36,91 @@ var MPR = {
             "legal_sow_vendor_payment_basis": "Please enter a value for SOW vendor payment basis",
             "legal_sow_vendor_payment_schedule": "Please enter a value for SOW vendor payment schedule",
             "legal_sow_vendor_total_max": "Please enter a value for SOW vendor maximum total to be paid",
-            "legal_sow_vendor_product_line": "Please enter a value for SOW vendor product line"
+            "legal_sow_vendor_product_line": "Please enter a value for SOW vendor product line",
+            "legal_vendor_services_where": "Please select a value for the vendor services location"
         },
-        "data_compliance_questions": {
-            "data_comp_request_type": "Please select a value for the data compliance request type",
-            "data_comp_area": "Please select a value for the data compliance area",
-            "data_comp_desc": "Please enter a value for the data compliance description",
-            "data_comp_handling_change": "Please select a value for the data compliance handling change",
-            "data_comp_practice_change": "Please select a value for the data compliance practice change"
-        }
-    },
+        "legal_vendor_single_country": {
+            "legal_vendor_single_country": "Please enter a value for vendor services location country"
+        },
+        "finance_questions": {
+            "finance_purchase_inbudget": "Please enter a value for in budget in the finance questions section",
+            "finance_purchase_what": "Please enter a value for what in the finance questions section",
+            "finance_purchase_why": "Please enter a value for why in the finance questions section",
+            "finance_purchase_risk": "Please enter a value for risk in the finance questions section",
+            "finance_purchase_alternative": "Please enter a value for alternative in the finance questions section",
+            "finance_purchase_urgency": "Please select a value for purchase timeframe in the finance questions section",
+            "finance_purchase_cost": "Please enter a value for total cost in the finance questions section"
+        },
+    };
 
-    select_inputs: [
+    var select_inputs = [
+        'contract_type',
         'key_initiative',
-        'project_status',
-        'mozilla_data',
-        'separate_party',
-        'relationship_type',
-        'data_access',
-        'vendor_cost',
-        'po_needed',
-        'sec_affects_products',
-        'legal_priority',
-        'legal_sow_vendor_product_line',
         'legal_vendor_services_where',
-        'finance_purchase_urgency'
-    ],
+        'vendor_cost',
+    ];
 
-    init: function () {
+    function init() {
         // Bind the updateSections function to each of the inputs desired
-        for (var i = 0, l = this.select_inputs.length; i < l; i++) {
-            Event.on(this.select_inputs[i], 'change', MPR.updateSections);
+        for (var i = 0, l = select_inputs.length; i < l; i++) {
+            $('#' + select_inputs[i]).change(updateSections);
         }
-        MPR.updateSections();
-    },
+        updateSections();
+        $('#mozProjectForm').submit(validateAndSubmit);
+    }
 
-    fieldValue: function (id) {
-        var field = Dom.get(id);
-        if (!field) return '';
-        if (field.type == 'text' 
-            || field.type == 'textarea')
+    function updateSections(e) {
+        if ($('#key_initiative').val() == 'Other') {
+            $('#key_initiative_other').show();
+            if ($(e.target).attr('id') == 'key_initiative') $('#key_initiative_other').focus();
+        } else {
+            $('#key_initiative_other').hide();
+        }
+
+        if ($('#vendor_cost').val() == '< $25,000 PO Needed'
+            || $('#vendor_cost').val() == '> $25,000')
         {
-            return field.value;
-        }
-        return field.options[field.selectedIndex].value;
-    },
-
-    updateSections: function () {
-        // Sections that will be hidden/shown based on the input values
-        // Start out as all false except for initial questions which is always visible
-        var page_sections = {
-            initial_questions: true,
-            key_initiative_other_row: false,
-            initial_separate_party_questions: false,
-            finance_questions: false,
-            po_needed_row: false,
-            legal_questions: false,
-            legal_sow_questions: false,
-            legal_vendor_single_country: false,
-            legal_vendor_services_where_row: false,
-            sec_review_questions: false,
-            data_compliance_questions: false,
-        };
-
-        if (MPR.fieldValue('key_initiative') == 'Other') {
-            page_sections.key_initiative_other_row = true;
+            $('#finance_questions').show();
+        } else {
+            $('#finance_questions').hide();
         }
 
-        if (MPR.fieldValue('mozilla_data') == 'Yes') {
-            page_sections.legal_questions = true;
-            page_sections.data_compliance_questions = true;
-            page_sections.sec_review_questions = true;
+        if ($('#legal_vendor_services_where').val() == 'A single country') {
+            $('#legal_vendor_single_country').show();
+            if ($(e.target).attr('id') == 'legal_vendor_services_where') $('#legal_vendor_single_country').focus();
+        } else {
+            $('#legal_vendor_single_country').hide();
         }
 
-        if (MPR.fieldValue('separate_party') == 'Yes') {
-            page_sections.initial_separate_party_questions = true;
+        var no_sec_review = [
+            'Independent Contractor Agreement',
+            'Hardware Purchase',
+            'Connected Devices Commercial Deal',
+            'Firefox Desktop or Mobile Distribution/Bundling Deal',
+            'Search Provider Deal',
+            'NDA'
+        ];
+        var contract_type = $('#contract_type').val();
+        if (contract_type && $.inArray(contract_type, no_sec_review) == -1) {
+            $('#sec_review_questions').show();
 
-            if (MPR.fieldValue('relationship_type')
-                && MPR.fieldValue('relationship_type') != 'Hardware Purchase')
-            {
-                page_sections.legal_questions = true;
-            }
-
-            if (MPR.fieldValue('relationship_type') == 'Vendor/Services'
-                || MPR.fieldValue('relationship_type') == 'Firefox Distribution/Bundling')
-            {
-                page_sections.legal_sow_questions = true;
-                page_sections.legal_vendor_services_where_row = true;
-            }
-
-            if (MPR.fieldValue('data_access') == 'Yes') {
-                page_sections.legal_questions = true;
-                page_sections.sec_review_questions = true;
-                page_sections.data_compliance_questions = true;
-            }
-
-            if (MPR.fieldValue('vendor_cost') == '< $25,000 PO Needed'
-                || MPR.fieldValue('vendor_cost') == '> $25,000')
-            {
-                page_sections.finance_questions = true;
-            }
+        } else {
+            $('#sec_review_questions').hide();
         }
+    }
 
-        if (MPR.fieldValue('legal_vendor_services_where') == 'A single country') {
-            page_sections.legal_vendor_single_country = true;
-        }
-
-        // Toggle the individual page_sections
-        for (section in page_sections) {
-            MPR.toggleShowSection(section, page_sections[section]);
-        }
-    },
-
-    toggleShowSection: function (section, show) {
-        if (show) {
-            Dom.removeClass(section, 'bz_default_hidden');
-        }
-        else {
-            Dom.addClass(section ,'bz_default_hidden');
-        }
-    },
-
-    validateAndSubmit: function () {
-        var alert_text = '';
-        var section = '';
-        for (section in this.required_fields) {
-            if (!Dom.hasClass(section, 'bz_default_hidden')) {
-                var field = '';
-                for (field in MPR.required_fields[section]) {
-                    if (!MPR.isFilledOut(field)) {
-                        alert_text += this.required_fields[section][field] + "\n";
+    function validateAndSubmit(e) {
+        var alert_text = '',
+            section    = '',
+            field      = '';
+        for (section in required_fields) {
+            if ($('#' + section).is(':visible')) {
+                for (field in required_fields[section]) {
+                    if (!isFilledOut(field)) {
+                        alert_text += required_fields[section][field] + "\n";
                     }
                 }
             }
-        }
-
-        // Special case checks
-        if (MPR.fieldValue('relationship_type') == 'Vendor/Services'
-            && MPR.fieldValue('legal_vendor_services_where') == '')
-        {
-            alert_text += "Please select a value for vendor services where\n";
-        }
-
-        if (MPR.fieldValue('relationship_type') == 'Vendor/Services'
-            && MPR.fieldValue('legal_vendor_services_where') == 'A single country'
-            && MPR.fieldValue('legal_vendor_single_country') == '')
-        {
-            alert_text += "Please select a value for vendor services where single country\n";
-        }
-
-        if (MPR.fieldValue('key_initiative') == 'Other') {
-            if (!MPR.isFilledOut('key_initiative_other')) {
-                alert_text += "Please enter a value for key initiative in the initial questions section\n";
-            }
-        }
-
-        if (MPR.fieldValue('separate_party') == 'Yes') {
-            if (!MPR.isFilledOut('relationship_type')) {
-                alert_text += "Please select a value for type of relationship\n";
-            }
-            if (!MPR.isFilledOut('data_access')) {
-                alert_text += "Please select a value for data access\n";
-            }
-            if (!MPR.isFilledOut('vendor_cost')) {
-                alert_text += "Please select a value for vendor cost\n";
-            }
-        }
-
-        if (MPR.fieldValue('vendor_cost') == '<= $25,000'
-            && MPR.fieldValue('po_needed') == '')
-        {
-            alert_text += "Please select whether a PO is needed or not\n";
         }
 
         if (alert_text) {
@@ -228,15 +129,30 @@ var MPR = {
         }
 
         return true;
-    },
+    }
 
     //Takes a DOM element id and makes sure that it is filled out
-    isFilledOut: function (elem_id)  {
-        var str = MPR.fieldValue(elem_id);
-        return str.length > 0 ? true : false;
+    function isFilledOut(id)  {
+        if (!id) return false;
+        var str = $('#' + id).val();
+        if (!str || str.length == 0) return false;
+        return true;
     }
-};
 
-Event.onDOMReady(function () {
-    MPR.init();
+    // date pickers
+    $('.date-field').datetimepicker({
+        format: 'Y-m-d',
+        datepicker: true,
+        timepicker: false,
+        scrollInput: false,
+        lazyInit: false,
+        closeOnDateSelect: true
+    });
+    $('.date-field-img')
+        .click(function(event) {
+            var id = $(event.target).attr('id').replace(/-img$/, '');
+            $('#' + id).datetimepicker('show');
+        })
+
+    init();
 });
