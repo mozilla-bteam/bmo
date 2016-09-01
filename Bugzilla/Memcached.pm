@@ -13,6 +13,7 @@ use warnings;
 
 use Bugzilla::Error;
 use Scalar::Util qw(blessed);
+use List::Util qw(sum);
 use Bugzilla::Util qw(trick_taint);
 use URI::Escape;
 use Encode;
@@ -155,6 +156,28 @@ sub clear {
         ThrowCodeError('params_required', { function => "Bugzilla::Memcached::clear",
                                             params   => [ 'key', 'table' ] });
     }
+}
+
+sub should_rate_limit {
+    my ($self, $key, $rate_max, $rate_seconds, $tries) = @_;
+    $tries //= 3;
+    my $memcached = $self->{memcached};
+
+    for (0 .. $tries) {
+        my $now = time;
+        my ($key, @keys) = map { "$key-" . ($now-$_) } 0 .. $rate_seconds;
+        $memcached->add($key, 0, $rate_seconds+1);
+        my $tokens = $memcached->get_multi(@keys);
+        my $cas = $memcached->gets($key);
+        $tokens->{$key} = $cas->[1];
+        if (sum(values %$tokens) >= $rate_max) {
+            return 1;
+        }
+        if ($memcached->cas($key, $cas->[0], $cas->[1]+1, $rate_seconds+1)) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 sub clear_all {
