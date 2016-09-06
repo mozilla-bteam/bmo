@@ -174,9 +174,6 @@ sub FILESYSTEM {
         '.htaccess'      => { perms => WS_SERVE },
         'cvs-update.log' => { perms => WS_SERVE },
         'scripts/sendunsentbugmail.pl' => { perms => WS_EXECUTE },
-        'docker_files/*'       => { perms => OWNER_WRITE },
-        'docker_files/*.pl'    => { perms => OWNER_EXECUTE },
-        'docker_files/*.sh'    => { perms => OWNER_EXECUTE },
         'docs/bugzilla.ent'    => { perms => OWNER_WRITE },
         'docs/makedocs.pl'     => { perms => OWNER_EXECUTE },
         'docs/style.css'       => { perms => WS_SERVE },
@@ -280,8 +277,11 @@ sub FILESYSTEM {
                                      dirs => DIR_OWNER_WRITE, },
          'scripts'             => { files => OWNER_EXECUTE,
                                      dirs => DIR_OWNER_WRITE, },
+<<<<<<< HEAD
          'docker_files'        => { files => OWNER_EXECUTE,
                                      dirs => DIR_OWNER_WRITE, },
+=======
+>>>>>>> master
     );
 
     # --- FILES TO CREATE --- #
@@ -359,8 +359,11 @@ EOT
                                           contents => HT_DEFAULT_DENY },
         'scripts/.htaccess'          => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
+<<<<<<< HEAD
         'docker_files/.htaccess'     => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
+=======
+>>>>>>> master
         't/.htaccess'                => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         'xt/.htaccess'               => { perms    => WS_SERVE,
