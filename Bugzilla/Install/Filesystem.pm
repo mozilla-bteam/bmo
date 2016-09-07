@@ -277,11 +277,6 @@ sub FILESYSTEM {
                                      dirs => DIR_OWNER_WRITE, },
          'scripts'             => { files => OWNER_EXECUTE,
                                      dirs => DIR_OWNER_WRITE, },
-<<<<<<< HEAD
-         'docker_files'        => { files => OWNER_EXECUTE,
-                                     dirs => DIR_OWNER_WRITE, },
-=======
->>>>>>> master
     );
 
     # --- FILES TO CREATE --- #
@@ -359,11 +354,6 @@ EOT
                                           contents => HT_DEFAULT_DENY },
         'scripts/.htaccess'          => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
-<<<<<<< HEAD
-        'docker_files/.htaccess'     => { perms    => WS_SERVE,
-                                          contents => HT_DEFAULT_DENY },
-=======
->>>>>>> master
         't/.htaccess'                => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         'xt/.htaccess'               => { perms    => WS_SERVE,
