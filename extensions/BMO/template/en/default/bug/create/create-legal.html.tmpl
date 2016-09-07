@@ -62,6 +62,8 @@ label.required:before {
 <p>Legal [% terms.bugs %] are only available to the reporter, the cc list, and members of the legal team.
   This is to maintain confidentiality and privilege.  Non-employees should not be included on legal [% terms.bugs %].
 
+<p>[ <span class="required_star">*</span> Required Field ]</p>
+
 <form method="post" action="post_bug.cgi" id="legalRequestForm" enctype="multipart/form-data">
   <input type="hidden" name="product" value="Legal">
   <input type="hidden" name="rep_platform" value="All">
@@ -70,6 +72,7 @@ label.required:before {
   <input type="hidden" name="priority" value="--">
   <input type="hidden" name="bug_severity" value="normal">
   <input type="hidden" name="format" value="legal">
+  <input type="hidden" name="contenttypemethod" value="autodetect" />
   <input type="hidden" name="token" value="[% token FILTER html %]">
   [% IF user.in_group('canconfirm') %]
     <input type="hidden" name="bug_status" value="NEW">
@@ -115,10 +118,34 @@ label.required:before {
 
   <tr>
     <th class="field_label">
-      <label for="short_desc" class="required">Summary of Issue:</label>
+      <label for="short_desc" class="required">Summary:</label>
     </th>
     <td>
       <input type="text" id="short_desc" name="short_desc" size="60" required="required">
+    </td>
+  </tr>
+
+  <tr>
+    <th class="field_label" valign="top">
+      <label for="comment">Description:</label>
+    </th>
+    <td>
+      <textarea id="comment" name="comment" rows="10" cols="80"></textarea>
+    </td>
+  </tr>
+
+  <tr>
+    <th class="field_label">
+      <label for="cc">Cc:</label>
+    </th>
+    <td>
+      [% INCLUDE global/userselect.html.tmpl
+         id       => "cc"
+         name     => "cc"
+         size     => 60
+         classes  => ["bz_userfield"]
+         multiple => 5
+      %]
     </td>
   </tr>
 
@@ -132,11 +159,56 @@ label.required:before {
   </tr>
 
   <tr>
-    <th class="field_label" valign="top">
-      <label for="urls">URLs:</label>
+    <th class="field_label">
+      <label for="bug_file_loc">URL:</label>
     </th>
     <td>
-      <textarea id="urls" name="urls" rows="10" cols="80"></textarea>
+      <input type="text" name="bug_file_loc" id="bug_file_loc" size="60">
+    </td>
+  </tr>
+
+  [% IF user.in_group('editbugs', product.id) %]
+    <tr>
+      <th class="field_label">
+        <label for="dependson">Depends on:</label>
+      </th>
+      <td>
+        <input type="text" id="dependson" name="dependson" size="30">
+      </td>
+    </tr>
+
+    </tr>
+      <th class="field_label">
+        <label for="blocked">Blocks:</label>
+      </th>
+      <td>
+        <input type="text" id="blocked" name="blocked" size="30">
+      </td>
+    </tr>
+  [% END %]
+
+  <tr>
+    <td></td>
+    <td>
+      Please attach any additional information needed for this request.
+    <td>
+  </tr>
+
+  <tr>
+    <th class="field_label">
+      <label for="description">Attachment Description</label>
+    </th>
+    <td>
+      <input type="text" name="description" id="description" size="60">
+    </td>
+  </tr>
+
+  <tr>
+    <th class="field_label">
+      <label for="data">Attachment Filename:</label>
+    </th>
+    <td>
+      <input type="file" id="data" name="data" size="60">
     </td>
   </tr>
 
