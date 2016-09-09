@@ -50,7 +50,6 @@ $(function() {
             "finance_purchase_why": "Please enter a value for why in the finance questions section",
             "finance_purchase_risk": "Please enter a value for risk in the finance questions section",
             "finance_purchase_alternative": "Please enter a value for alternative in the finance questions section",
-            "finance_purchase_cost": "Please enter a value for total cost in the finance questions section"
         },
     };
 
