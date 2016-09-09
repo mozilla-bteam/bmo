@@ -46,7 +46,7 @@
       <span class="field_label required">Summary:</span>
       <span class="field_data">
         <div class="field_description">
-          Briefly describe the services or products you're buying ot the partner
+          Briefly describe the services or products you're buying or the partner
           relationship you're working on, including the name of the
           vendor/contractor/partner involved.
         </div>
@@ -64,6 +64,20 @@
       </span>
     </div>
 
+    <div id="contract_cc_row" class="field_row">
+      <span class="field_label">Cc:</span>
+      <span class="field_data">
+        [% INCLUDE global/userselect.html.tmpl
+           id       => "contract_cc"
+           name     => "contract_cc"
+           value    => ""
+           size     => 60
+           classes  => ["bz_userfield"]
+           multiple => 5
+        %]
+      </span>
+    </div>
+
     <div id="key_initiative_row" class="field_row">
       <span class="field_label required">Key Initiative:</span>
       <span class="field_data">
@@ -73,17 +87,11 @@
         <select name="key_initiative" id="key_initiative">
           <option value="">Select One</option>
           <option value="Business Support">Business Support</option>
-          <option value="Content Services">Content Services</option>
-          <option value="Firefox Desktop">Firefox Desktop</option>
+          <option value="Connected Devices">Connected Devices</option>
+          <option value="Firefox">Firefox</option>
           <option value="Firefox Mobile">Firefox Mobile</option>
-          <option value="Firefox OS">Firefox OS</option>
           <option value="Firefox Platform">Firefox Platform</option>
-          <option value="Labs / Research / H3">Labs / Research / H3</option>
-          <option value="Marketplace / Apps">Marketplace / Apps</option>
-          <option value="Services: Persona">Services: Persona</option>
-          <option value="Services: Social API">Services: Social API</option>
-          <option value="Services: UP">Services: UP</option>
-          <option value="Services: WebRTC">Services: WebRTC</option>
+          <option value="Labs/Research/H3">Labs/Research/H3</option>
           <option value="Other">Other</option>
         </select>
         <br>
@@ -117,22 +125,24 @@
     </div>
 
     <div id="contract_type_row" class="field_row">
-      <span class="field_label required">Type of Contract Needed:</span>
+      <span class="field_label required">What are you doing?:</span>
       <span class="field_data">
         <div class="field_description">Select one from the list</div>
         <select name="contract_type" id="contract_type">
           <option value="">Select One</option>
-          <option value="Independent Contractor Agreement">Independent Contractor Agreement</option>
-          <option value="New SOW or Renewal with existing Vendor/Consultant/Independent Contractor">New SOW or Renewal with existing Vendor/Consultant/Independent Contractor</option>
-          <option value="Technology/Software License">Technology/Software License</option>
-          <option value="Hardware Purchase">Hardware Purchase</option>
-          <option value="Clickwrap Agreement/Terms of Service">Clickwrap Agreement/Terms of Service</option>
-          <option value="Connected Devices Commercial Deal">Connected Devices Commercial Deal</option>
-          <option value="Firefox Desktop or Mobile Distribution/Bundling Deal">Firefox Desktop or Mobile Distribution/Bundling Deal</option>
-          <option value="Search Provider Deal">Search Provider Deal</option>
-          <option value="NDA">NDA</option>
+          <option value="Engaging a new vendor company">Engaging a new vendor company</option>
+          <option value="Engaging an individual (independent contractor, temp agency worker, incorporated)">Engaging an individual (independent contractor, temp agency worker, incorporated)</option>
+          <option value="Adding a new SOW with a vendor">Adding a new SOW with a vendor</option>
+          <option value="Extending an SOW or renewing a contract">Extending an SOW or renewing a contract</option>
+          <option value="Purchasing software">Purchasing software</option>
+          <option value="Purchasing hardware">Purchasing hardware</option>
+          <option value="Signing up for an online service">Signing up for an online service</option>
+          <option value="An agreement with a partner">An agreement with a partner</option>
+          <option value="Need a partner NDA">Need a partner NDA</option>
           <option value="Other">Other</option>
         </select>
+        <br>
+        <input type="text" name="contract_type_other" id="contract_type_other" size="60" style="display:none;">
       </span>
     </div>
 
@@ -158,29 +168,13 @@
         </select>
       </span>
     </div>
-  </div>
 
-  <div id="legal_questions">
-    <div class="header">Legal</div>
-
-    <div id="legal_priority_row" class="field_row">
-      <span class="field_label required">Priority:</span>
+    <div id="timeframe_row" class="field_row">
+      <span class="field_label required">Time Frame For Completion:</span>
       <span class="field_data">
-        <div class="field_description">Priority to your team</div>
-        <select name="legal_priority" id="legal_priority">
+        <div class="field_description">What is the desired time frame to have this completed.</div>
+        <select name="timeframe" id="timeframe">
           <option value="">Select One</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-      </span>
-    </div>
-
-    <div id="legal_timeframe_row" class="field_row">
-      <span class="field_label required">Time Frame For Completion<br>of Legal Portion?:</span>
-      <span class="field_data">
-        <div class="field_description">What is the desired time frame to have the legal component/involvement completed.</div>
-        <select name="legal_timeframe" id="legal_timeframe">
           <option value="2 days">2 days</option>
           <option value="a week">a week</option>
           <option value="2-4 weeks">2-4 weeks</option>
@@ -191,37 +185,60 @@
       </span>
     </div>
 
-    <div id="legal_cc_row" class="field_row">
-      <span class="field_label">Cc:</span>
+    <div id="contract_priority_row" class="field_row">
+      <span class="field_label required">Priority:</span>
       <span class="field_data">
-        [% INCLUDE global/userselect.html.tmpl
-           id       => "legal_cc"
-           name     => "legal_cc"
-           value    => ""
-           size     => 60
-           classes  => ["bz_userfield"]
-           multiple => 5
-        %]
+        <div class="field_description">Priority to your team</div>
+        <select name="contract_priority" id="contract_priority">
+          <option value="">Select One</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
       </span>
     </div>
 
-    <div id="legal_other_party_row" class="field_row">
+    <div id="internal_org_row" class="field_row">
+      <span class="field_label required">Internal Organization:</span>
+      <span class="field_data">
+        <select id="internal_org" name="internal_org">
+          <option value="">Select One</option>
+          <option value="Platform Engineering">Platform Engineering</option>
+          <option value="Firefox">Firefox</option>
+          <option value="Innovation">Innovation</option>
+          <option value="Connected Devices">Connected Devices</option>
+          <option value="Marketing">Marketing</option>
+          <option value="BD/Legal/Policy">BD/Legal/Policy</option>
+          <option value="Finance & Accounting">Finance & Accounting</option>
+          <option value="WPR">WPR</option>
+          <option value="IT">IT</option>
+          <option value="People">People</option>
+          <option value="Other">Other</option>
+        </select>
+      </span>
+    </div>
+  </div>
+
+  <div id="contract_specific_questions">
+    <div class="header">Contract Specific Questions</div>
+
+    <div id="other_party_row" class="field_row">
       <span class="field_label required">Vendor/Contractor/Partner Name:</span>
       <span class="field_data">
         <div class="field_description">Name of other party involved</div>
-        <input type="text" name="legal_other_party" id="legal_other_party" size="60">
+        <input type="text" name="other_party" id="other_party" size="60">
       </span>
     </div>
 
-    <div id="legal_terminate_contract_row" class="field_row">
-        <span class="field_label required">Right to Terminate Contract:</span>
+    <div id="terminate_contract_row" class="field_row">
+        <span class="field_label">Right to Terminate Contract:</span>
         <span class="field_data">
             <div class="field_description">
                 If we're being asked to sign the vendor's contract or agree to
                 online terms, will Mozilla have the right to terminate the
                 contract for any or no reason upon 30 days notice?
             </div>
-            <select name="legal_terminate_contract" id="legal_terminate_contract">
+            <select name="terminate_contract" id="terminate_contract">
                 <option value="">Select One</option>
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
@@ -229,192 +246,146 @@
         </span>
     </div>
 
-    <div class=field_row">
-      <span class="field_label">SOW Details:</span>
-      <span class="field_data">
-        Please provide the following information for the SOW
-      </span>
+    <div id="sow_details" style="display:none;">
+      <div class=field_row">
+        <span class="field_label">SOW Details:</span>
+        <span class="field_data">
+          Please provide the following information for the SOW
+        </span>
+      </div>
+
+      <div id="sow_vendor_address_row" class="field_row">
+        <span class="field_label required">Vendor Address:</span>
+        <span class="field_data">
+          <textarea name="sow_vendor_address" id="sow_vendor_address" rows="10" cols="80"></textarea>
+        </span>
+      </div>
+
+      <div id="sow_vendor_email_row" class="field_row">
+        <span class="field_label required">Vendor Email for Legal Notices:</span>
+        <span class="field_data">
+          <input type="text" name="sow_vendor_email" id="sow_vendor_email" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_mozcontact_row" class="field_row">
+        <span class="field_label required">Main Mozilla Contact:</span>
+        <span class="field_data">
+          [% INCLUDE global/userselect.html.tmpl
+             id       => "sow_vendor_mozcontact"
+             name     => "sow_vendor_mozcontact"
+             value    => ""
+             size     => 60
+             classes  => ["bz_userfield"]
+             multiple => 5
+          %]
+        </span>
+      </div>
+
+      <div id="sow_vendor_contact_row" class="field_row">
+        <span class="field_label required">Main Vendor Contact and Email:</span>
+        <span class="field_data">
+          <input type="text" name="sow_vendor_contact" id="sow_vendor_contact" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_services_row" class="field_row">
+        <span class="field_label required">Vendor Services to be Provided:</span>
+        <span class="field_data">
+          <textarea name="sow_vendor_services" id="sow_vendor_services" rows="10" cols="80"></textarea>
+        </span>
+      </div>
+
+      <div id="sow_vendor_deliverables_row" class="field_row">
+        <span class="field_label required">Description of Deliverables:</span>
+        <span class="field_data">
+          <textarea name="sow_vendor_deliverables" id="sow_vendor_deliverables" rows="10" cols="80"></textarea>
+        </span>
+      </div>
+
+      <div id="sow_start_date_row" class="field_row">
+        <span class="field_label required">Start Date:</span>
+        <span class="field_data">
+          <input class="date-field" name="sow_start_date" id="sow_start_date">
+          <img class="date-field-img" id="sow_start_date-img"
+               src="extensions/BugModal/web/calendar.png" width="16" height="16">
+        </span>
+      </div>
+
+      <div id="sow_end_date_row" class="field_row">
+        <span class="field_label required">End Date:</span>
+        <span class="field_data">
+          <input class="date-field" name="sow_end_date" id="sow_end_date">
+          <img class="date-field-img" id="sow_end_date-img"
+               src="extensions/BugModal/web/calendar.png" width="16" height="16">
+        </span>
+      </div>
+
+      <div id="sow_vendor_payment_row" class="field_row">
+        <span class="field_label required">Rate of Pay:</span>
+        <span class="field_data">
+          <div class="field_description">Include currency</div>
+          <input type="text" name="sow_vendor_payment" id="sow_vendor_payment" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_payment_basis_row" class="field_row">
+        <span class="field_label required">Basis for Payment:</span>
+        <span class="field_data">
+          <div class="field_description">hourly, flat fee, per deliverable, per milestone, etc.</div>
+          <input type="text" name="sow_vendor_payment_basis" id="sow_vendor_payment_basis" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_cap_expenses_row" class="field_row">
+        <span class="field_label required">Cap on reimbursable expenses, if any:</span>
+        <span class="field_data">
+          <input type="text" name="sow_vendor_cap_expenses" id="sow_vendor_cap_expenses" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_hours_row" class="field_row">
+        <span class="field_label">Max Hours/Week (average if different):</span>
+        <span class="field_data">
+          <div class="field_description">If paid hourly</div>
+          <input type="text" name="sow_vendor_hours" id="sow_vendor_hours" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_payment_schedule_row" class="field_row">
+        <span class="field_label required">Payment Schedule:</span>
+        <span class="field_data">
+          <div class="field_description">When will we make payments? E.g. every 30 days; half due up front,
+            half on completion; following acceptance of each deliverable, etc.</div>
+          <input type="text" name="sow_vendor_payment_schedule" id="sow_vendor_payment_schedule" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_total_max_row" class="field_row">
+        <span class="field_label required">Total Not to Exceed Amount:</span>
+        <span class="field_data">
+          <input type="text" name="sow_vendor_total_max" id="sow_vendor_total_max" size="60">
+        </span>
+      </div>
+
+      <div id="sow_vendor_special_terms_row" class="field_row">
+        <span class="field_label">Any Special Terms:</span>
+        <span class="field_data">
+          <textarea name="sow_vendor_special_terms" id="sow_vendor_special_terms" rows="10" cols="80"></textarea>
+        </span>
+      </div>
     </div>
 
-    <div id="legal_sow_vendor_address_row" class="field_row">
-      <span class="field_label required">Vendor Address:</span>
+    <div id="vendor_services_where_row" class="field_row">
+      <span class="field_label required">Where will the services be provided?:</span>
       <span class="field_data">
-        <textarea name="legal_sow_vendor_address" id="legal_sow_vendor_address" rows="10" cols="80"></textarea>
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_email_row" class="field_row">
-      <span class="field_label required">Vendor Email for Legal Notices:</span>
-      <span class="field_data">
-        <input type="text" name="legal_sow_vendor_email" id="legal_sow_vendor_email" size="60">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_mozcontact_row" class="field_row">
-      <span class="field_label required">Main Mozilla Contact:</span>
-      <span class="field_data">
-        [% INCLUDE global/userselect.html.tmpl
-           id       => "legal_sow_vendor_mozcontact"
-           name     => "legal_sow_vendor_mozcontact"
-           value    => ""
-           size     => 60
-           classes  => ["bz_userfield"]
-           multiple => 5
-        %]
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_contact_row" class="field_row">
-      <span class="field_label required">Main Vendor Contact and Email:</span>
-      <span class="field_data">
-        <input type="text" name="legal_sow_vendor_contact" id="legal_sow_vendor_contact" size="60">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_services_row" class="field_row">
-      <span class="field_label required">Vendor Services to be Provided:</span>
-      <span class="field_data">
-        <textarea name="legal_sow_vendor_services" id="legal_sow_vendor_services" rows="10" cols="80"></textarea>
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_deliverables_row" class="field_row">
-      <span class="field_label required">Description of Deliverables:</span>
-      <span class="field_data">
-        <textarea name="legal_sow_vendor_deliverables" id="legal_sow_vendor_deliverables" rows="10" cols="80"></textarea>
-      </span>
-    </div>
-
-    <div id="legal_sow_start_date_row" class="field_row">
-      <span class="field_label required">Start Date:</span>
-      <span class="field_data">
-        <input class="date-field" name="legal_sow_start_date" id="legal_sow_start_date">
-        <img class="date-field-img" id="legal_sow_start_date-img"
-             src="extensions/BugModal/web/calendar.png" width="16" height="16">
-      </span>
-    </div>
-
-    <div id="legal_sow_end_date_row" class="field_row">
-      <span class="field_label required">End Date:</span>
-      <span class="field_data">
-        <input class="date-field" name="legal_sow_end_date" id="legal_sow_end_date">
-        <img class="date-field-img" id="legal_sow_end_date-img"
-             src="extensions/BugModal/web/calendar.png" width="16" height="16">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_payment_row" class="field_row">
-      <span class="field_label required">Rate of Pay:</span>
-      <span class="field_data">
-        <div class="field_description">Include currency</div>
-        <input type="text" name="legal_sow_vendor_payment" id="legal_sow_vendor_payment" size="60">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_payment_basis_row" class="field_row">
-      <span class="field_label required">Basis for Payment:</span>
-      <span class="field_data">
-        <div class="field_description">hourly, flat fee, per deliverable, etc.</div>
-        <input type="text" name="legal_sow_vendor_payment_basis" id="legal_sow_vendor_payment_basis" size="60">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_hours_row" class="field_row">
-      <span class="field_label">Average/Max Hours:</span>
-      <span class="field_data">
-        <div class="field_description">If hourly, either average or maximum hours per week/month</div>
-        <input type="text" name="legal_sow_vendor_hours" id="legal_sow_vendor_hours" size="60">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_payment_schedule_row" class="field_row">
-      <span class="field_label required">Payment Schedule:</span>
-      <span class="field_data">
-        <div class="field_description">When will we make payments? E.g. every 30 days; half due up front,
-          half on completion; following acceptance of each deliverable, etc.</div>
-        <input type="text" name="legal_sow_vendor_payment_schedule" id="legal_sow_vendor_payment_schedule" size="60">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_total_max_row" class="field_row">
-      <span class="field_label required">Total Not to Exceed Amount:</span>
-      <span class="field_data">
-        <input type="text" name="legal_sow_vendor_total_max" id="legal_sow_vendor_total_max" size="60">
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_special_terms_row" class="field_row">
-      <span class="field_label">Any Special Terms:</span>
-      <span class="field_data">
-        <textarea name="legal_sow_vendor_special_terms" id="legal_sow_vendor_special_terms" rows="10" cols="80"></textarea>
-      </span>
-    </div>
-
-    <div id="legal_sow_vendor_product_line_row" class="field_row">
-      <span class="field_label required">Product Line:</span>
-      <span class="field_data">
-        <select id="legal_sow_vendor_product_line" name="legal_sow_vendor_product_line">
-          <option value="">Select One</option>
-          <option value="Firefox OS">Firefox OS</option>
-          <option value="Firefox Desktop">Firefox Desktop</option>
-          <option value="Firefox Mobile">Firefox Mobile</option>
-          <option value="Firefox Platform">Firefox Platform</option>
-          <option value="Marketplace/Apps">Marketplace/Apps</option>
-          <option value="Lab/Research">Lab/Research</option>
-          <option value="Services">Services</option>
-          <option value="Product Support">Product Support</option>
-          <option value="Corp Support">Corp Support</option>
-        </select>
-      </span>
-    </div>
-
-    <div id="legal_vendor_services_where_row" class="field_row">
-      <span class="field_label required">Vendor Services Location:</span>
-      <span class="field_data">
-        <div class="field_description">Where will the services primarily be provided?</div>
-        <select name="legal_vendor_services_where" id="legal_vendor_services_where">
-          <option value="">Select One</option>
-          <option value="U.S.">U.S.</option>
-          <option value="Europe">Europe</option>
-          <option value="Canada">Canada</option>
-          <option value="Global">Global</option>
-          <option value="Another region of the world">Another region of the world</option>
-          <option value="A single country">A single country</option>
-        </select>
-        <br>
-        <input type="text" style="display:none;"
-               name="legal_vendor_single_country" id="legal_vendor_single_country" size="60">
+        <input type="text" name="vendor_services_where" id="vendor_services_where" size="60">
       </span>
     </div>
   </div>
 
   <div id="sec_review_questions" style="display:none">
-    <div class="header">Security Review</div>
-
-    <div id="sec_review_affects_products_row">
-      <span class="field_label">Affects Products:</span>
-      <span class="field_data">
-        <div class="field_description">Does this feature or code change affect Firefox, Thunderbird or any
-          product or service the Mozilla ships to end users?</div>
-        <select name="sec_affects_products" id="sec_affects_products">
-          <option value="">Select One</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </span>
-    </div>
-
-    <div id="sec_review_date_row" class="field_row">
-      <span class="field_label">Review Due Date:</span>
-      <span class="field_data">
-        <div class="field_description">When would you like the review to be completed?
-          (<a href="https://mail.mozilla.com/home/ckoenig@mozilla.com/Security%20Review.html"
-              target="_blank">more info</a>)</div>
-        <input class="date-field" name="sec_review_date" id="sec_review_date">
-        <img class="date-field-img" id="sec_review_date-img"
-             src="extensions/BugModal/web/calendar.png" width="16" height="16">
-      </span>
-    </div>
+    <div class="header">Vendor Security Review</div>
 
     <div id="sec_review_invitees_row" class="field_row">
       <span class="field_label">Review Invitees:</span>
@@ -427,8 +398,9 @@
     <div id="sec_review_extra_row" class="field_row">
       <span class="field_label">Extra Information:</span>
       <span class="field_data">
-        <div class="field_description">If you feel something is missing here or you would like to provide other
-          kind of feedback, feel free to do so here?</div>
+        <div class="field_description">
+          Please add any additional information related to data handling by the Vendor you think the security team should know.
+        </div>
         <textarea name="sec_review_extra" id="sec_review_extra" rows="10" cols="80"></textarea>
       </span>
     </div>
@@ -473,31 +445,11 @@
       </span>
     </div>
 
-    <div id="finance_purchase_urgency_row" class="field_row">
-      <span class="field_label required">When do the items need<br>to be purchased by?:</span>
-      <span class="field_data">
-        <select name="finance_purchase_urgency" id="finance_purchase_urgency">
-          <option value="3 to 5 days">3 to 5 days</option>
-          <option value="7 to 10 days">7 to 10 days</option>
-          <option value="two weeks">two weeks</option>
-          <option value="no rush" selected>no rush</option>
-        </select>
-      </span>
-    </div>
-
     <div id="finance_shipment_address_row" class="field_row">
       <span class="field_label">What is the shipment address<br>(if applicable)?:</span>
       <span class="field_data">
         <div class="field_description">Please enter the full address.</div>
         <textarea name="finance_shipment_address" id="finance_shipment_address" rows="10" cols="80"></textarea>
-      </span>
-    </div>
-
-    <div id="finance_purchase_cost_row" class="field_row">
-      <span class="field_label required">Total Cost:</span>
-      <span class="field_data">
-        <div class="field_description">Please include currency type (e.g. USD, EUR)</div>
-        <input type="text" name="finance_purchase_cost" id="finance_purchase_cost" size="60">
       </span>
     </div>
   </div>
@@ -506,8 +458,8 @@
 </form>
 
 <p>
-    Thanks for contacting us. Legal, Finance, and Security [% terms.bugs %] will be opened
-    so those teams can work with you on this request.
+  Thanks for contacting us. Legal, Finance, and Security [% terms.bugs %] will be opened
+  so those teams can work with you on this request.
 </p>
 
 [% PROCESS global/footer.html.tmpl %]

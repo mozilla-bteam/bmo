@@ -15,32 +15,34 @@ $(function() {
             "key_initiative": "Please select a value for key initiative in the initial questions section",
             "contract_type": "Please select a value for contract type in the initial questions section",
             "mozilla_data": "Please select a value for mozilla data in the initial questions section",
-            "vendor_cost": "Please select a value for vendor cost in the initial questions section"
+            "vendor_cost": "Please select a value for vendor cost in the initial questions section",
+            "timeframe": "Please select a value for timeframe in the initial questions section",
+            "contract_priority": "Please select a value for priority in the initial questions section",
+            "internal_org": "Please select a value for the internal organization in the initial questions section"
         },
         "key_initiative_other": {
             "key_initiative_other": "Please enter a value for other key initiative in the initial questions section"
         },
-        "legal_questions": {
-            "legal_priority": "Please select a value for priority in the legal questions section",
-            "legal_timeframe": "Please select a value for timeframe in the legal questions section",
-            "legal_other_party": "Please enter a value for vendor name in the legal questions section",
-            "legal_terminate_contract": "Please select a value for right to terminate contract in the legal questions section",
-            "legal_sow_vendor_address": "Please enter a value for SOW vendor address",
-            "legal_sow_vendor_email": "Please enter a value for SOW vendor email for notices",
-            "legal_sow_vendor_contact": "Please enter a value for SOW vendor contact and email address",
-            "legal_sow_vendor_services": "Please enter a value for SOW vendor services description",
-            "legal_sow_vendor_deliverables": "Please enter a value for SOW vendor deliverables description",
-            "legal_sow_start_date": "Please enter a value for SOW vendor start date",
-            "legal_sow_end_date": "Please enter a value for SOW vendor end date",
-            "legal_sow_vendor_payment": "Please enter a value for SOW vendor payment amount",
-            "legal_sow_vendor_payment_basis": "Please enter a value for SOW vendor payment basis",
-            "legal_sow_vendor_payment_schedule": "Please enter a value for SOW vendor payment schedule",
-            "legal_sow_vendor_total_max": "Please enter a value for SOW vendor maximum total to be paid",
-            "legal_sow_vendor_product_line": "Please enter a value for SOW vendor product line",
-            "legal_vendor_services_where": "Please select a value for the vendor services location"
+        "contract_type_other": {
+            "contract_type_other": "Please enter a value for other contract type in the initial questions section"
         },
-        "legal_vendor_single_country": {
-            "legal_vendor_single_country": "Please enter a value for vendor services location country"
+        "contract_specific_questions": {
+            "other_party": "Please enter a value for vendor name in the legal questions section",
+            "vendor_services_where": "Please enter a value for the where the services will be provided",
+        },
+        "sow_details": {
+            "sow_vendor_address": "Please enter a value for SOW vendor address",
+            "sow_vendor_email": "Please enter a value for SOW vendor email for notices",
+            "sow_vendor_contact": "Please enter a value for SOW vendor contact and email address",
+            "sow_vendor_services": "Please enter a value for SOW vendor services description",
+            "sow_vendor_deliverables": "Please enter a value for SOW vendor deliverables description",
+            "sow_start_date": "Please enter a value for SOW vendor start date",
+            "sow_end_date": "Please enter a value for SOW vendor end date",
+            "sow_vendor_payment": "Please enter a value for SOW vendor payment amount",
+            "sow_vendor_payment_basis": "Please enter a value for SOW vendor payment basis",
+            "sow_vendor_cap_expenses": "Please enter a value for SOW cap on reimbursable expenses",
+            "sow_vendor_payment_schedule": "Please enter a value for SOW vendor payment schedule",
+            "sow_vendor_total_max": "Please enter a value for SOW vendor maximum total to be paid",
         },
         "finance_questions": {
             "finance_purchase_inbudget": "Please enter a value for in budget in the finance questions section",
@@ -48,7 +50,6 @@ $(function() {
             "finance_purchase_why": "Please enter a value for why in the finance questions section",
             "finance_purchase_risk": "Please enter a value for risk in the finance questions section",
             "finance_purchase_alternative": "Please enter a value for alternative in the finance questions section",
-            "finance_purchase_urgency": "Please select a value for purchase timeframe in the finance questions section",
             "finance_purchase_cost": "Please enter a value for total cost in the finance questions section"
         },
     };
@@ -56,7 +57,6 @@ $(function() {
     var select_inputs = [
         'contract_type',
         'key_initiative',
-        'legal_vendor_services_where',
         'vendor_cost',
     ];
 
@@ -85,20 +85,14 @@ $(function() {
             $('#finance_questions').hide();
         }
 
-        if ($('#legal_vendor_services_where').val() == 'A single country') {
-            $('#legal_vendor_single_country').show();
-            if ($(e.target).attr('id') == 'legal_vendor_services_where') $('#legal_vendor_single_country').focus();
-        } else {
-            $('#legal_vendor_single_country').hide();
-        }
-
         var no_sec_review = [
-            'Independent Contractor Agreement',
-            'Hardware Purchase',
-            'Connected Devices Commercial Deal',
-            'Firefox Desktop or Mobile Distribution/Bundling Deal',
-            'Search Provider Deal',
-            'NDA'
+            'Engaging a new vendor company',
+            'Engaging an individual (independent contractor, temp agency worker, incorporated)',
+            'Adding a new SOW with a vendor',
+            'Extending an SOW or renewing a contract',
+            'Purchasing hardware',
+            'An agreement with a partner',
+            'Need a partner NDA',
         ];
         var contract_type = $('#contract_type').val();
         if (contract_type && $.inArray(contract_type, no_sec_review) == -1) {
@@ -106,6 +100,24 @@ $(function() {
 
         } else {
             $('#sec_review_questions').hide();
+        }
+
+        if (contract_type == 'Other') {
+            $('#contract_type_other').show();
+            if ($(e.target).attr('id') == 'contract_type') $('#contract_type_other').focus();
+        }
+        else {
+            $('#contract_type_other').hide();
+        }
+
+        if (contract_type == 'Engaging a new vendor company'
+            || contract_type == 'Engaging an individual'
+            || contract_type == 'Adding a new SOW with a vendor')
+        {
+            $('#sow_details').show();
+        }
+        else {
+            $('#sow_details').hide();
         }
     }
 

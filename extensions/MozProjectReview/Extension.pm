@@ -6,9 +6,7 @@
 # defined by the Mozilla Public License, v. 2.0.
 package Bugzilla::Extension::MozProjectReview;
 
-use 5.10.1;
 use strict;
-use warnings;
 
 use base qw(Bugzilla::Extension);
 
@@ -36,7 +34,8 @@ sub post_bug_after_creation {
 
     # do a match if applicable
     Bugzilla::User::match_field({
-        'legal_cc' => { 'type' => 'multi' }
+        'sow_vendor_mozcontact' => { 'type' => 'single' },
+        'contract_cc'           => { 'type' => 'multi'  }
     });
 
     my $do_sec_review;
@@ -75,6 +74,7 @@ sub post_bug_after_creation {
             rep_platform => 'All',
             version      => 'unspecified',
             blocked      => $bug->bug_id,
+            cc           => $params->{contract_cc},
         };
         $child_params->{'template_suffix'} = 'sec-review';
         _file_child_bug($child_params);
@@ -91,6 +91,7 @@ sub post_bug_after_creation {
         rep_platform => 'All',
         version      => 'unspecified',
         blocked      => $bug->bug_id,
+        cc           => $params->{contract_cc},
     };
     $child_params->{'template_suffix'} = 'finance';
     _file_child_bug($child_params);

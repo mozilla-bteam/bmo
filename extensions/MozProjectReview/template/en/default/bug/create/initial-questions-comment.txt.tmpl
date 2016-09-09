@@ -1,0 +1,41 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+>> Initial Questions
+
+Summary:
+[%+ cgi.param('short_desc') %]
+
+Description:
+[%+ cgi.param('description') %]
+
+Key Initiative:
+[%+ cgi.param('key_initiative') == 'Other' ? cgi.param('key_initiative_other') : cgi.param('key_initiative') %]
+
+Mozilla Data:
+[%+ cgi.param('mozilla_data') %]
+
+Mozilla Related:
+[%+ cgi.param('mozilla_related') %]
+
+Type of Contract:
+[%+ cgi.param('contract_type') %]
+
+Privacy Policy:
+[%+ cgi.param('privacy_policy') %]
+
+Vendor Cost:
+[%+ cgi.param('vendor_cost') %]
+
+Time Frame For Completion:
+[%+ cgi.param('timeframe') %]
+
+Priority:
+[%+ cgi.param('contract_priority') %]
+
+Internal Organization:
+[%+ cgi.param('internal_org') %]
