@@ -6,7 +6,9 @@
 # defined by the Mozilla Public License, v. 2.0.
 package Bugzilla::Extension::MozProjectReview;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use base qw(Bugzilla::Extension);
 
@@ -17,7 +19,7 @@ use Bugzilla::Group;
 use Bugzilla::Error;
 use Bugzilla::Constants;
 
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(any);
 
 sub post_bug_after_creation {
     my ($self, $args) = @_;
@@ -35,19 +37,18 @@ sub post_bug_after_creation {
     # do a match if applicable
     Bugzilla::User::match_field({
         'sow_vendor_mozcontact' => { 'type' => 'single' },
-        'contract_cc'           => { 'type' => 'multi'  }
     });
 
-    my $do_sec_review;
-    my @no_sec_review_needed = (
-        'Independent Contractor Agreement',
-        'Hardware Purchase',
-        'Connected Devices Commercial Deal',
-        'Firefox Desktop or Mobile Distribution/Bundling Deal',
-        'Search Provider Deal',
-        'NDA'
+    my $do_sec_review = 0;
+    my @sec_review_needed = (
+        'Engaging a new vendor company',
+        'Adding a new SOW with a vendor',
+        'Extending an SOW or renewing a contract',
+        'Purchasing software',
+        'Signing up for an online service',
     );
-    if (none { $_ eq $params->{contract_type} } @no_sec_review_needed) {
+    if ((any { $_ eq $params->{contract_type} } @sec_review_needed)
+        || $params->{mozilla_data} eq 'Yes') {
         $do_sec_review = 1;
     }
 
@@ -74,7 +75,7 @@ sub post_bug_after_creation {
             rep_platform => 'All',
             version      => 'unspecified',
             blocked      => $bug->bug_id,
-            cc           => $params->{contract_cc},
+            cc           => $params->{cc},
         };
         $child_params->{'template_suffix'} = 'sec-review';
         _file_child_bug($child_params);
@@ -91,7 +92,7 @@ sub post_bug_after_creation {
         rep_platform => 'All',
         version      => 'unspecified',
         blocked      => $bug->bug_id,
-        cc           => $params->{contract_cc},
+        cc           => $params->{cc},
     };
     $child_params->{'template_suffix'} = 'finance';
     _file_child_bug($child_params);

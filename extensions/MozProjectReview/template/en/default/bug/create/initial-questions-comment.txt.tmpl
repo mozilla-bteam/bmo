@@ -19,6 +19,11 @@ Key Initiative:
 Mozilla Data:
 [%+ cgi.param('mozilla_data') %]
 
+[% IF cgi.param('mozilla_data') == 'Yes' %]
+Mozilla Data Explanation:
+[%+ cgi.param('mozilla_data_explain') %]
+[% END %]
+
 Mozilla Related:
 [%+ cgi.param('mozilla_related') %]
 

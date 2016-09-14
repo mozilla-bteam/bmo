@@ -64,12 +64,12 @@
       </span>
     </div>
 
-    <div id="contract_cc_row" class="field_row">
+    <div id="cc_row" class="field_row">
       <span class="field_label">Cc:</span>
       <span class="field_data">
         [% INCLUDE global/userselect.html.tmpl
-           id       => "contract_cc"
-           name     => "contract_cc"
+           id       => "cc"
+           name     => "cc"
            size     => 60
            classes  => ["bz_userfield"]
            multiple => 5
@@ -112,6 +112,12 @@
           <option value="Yes">Yes</option>
           <option value="No">No</option>
         </select>
+        <div id="mozilla_data_explain_row" style="display:none;">
+          <div class="field_description required">
+            If yes, please explain
+          </div>
+          <textarea name="mozilla_data_explain" id="mozilla_data_explain" rows="10" cols="80"></textarea>
+        </div>
      </span>
     </div>
 
@@ -218,6 +224,134 @@
     </div>
   </div>
 
+  <div id="independent_contractor_questions" style="display:none">
+    <div class="header">Independent Contractor Questions</div>
+
+    <div id="independent_contractor_prev_work_row" class="field_row">
+      <span class="field_label required">Previous Work:</span>
+      <span class="field_data">
+        <div class="field_description">Is this someone we've worked with before?</div>
+        <select name="independent_contractor_prev_work" id="independent_contractor_prev_work">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+        <div id="independent_contractor_prev_work_bug_row" style="display:none;">
+          <div class="field_description required">
+            If yes, enter the [% terms.bug %] number for the previous work or note that this is a former employee
+          </div>
+          <input type="text" name="independent_contractor_prev_work_bug" id="independent_contractor_prev_work_bug" size="30">
+        </div>
+      </span>
+    </div>
+
+    <div id="independent_contractor_incorporated_row" class="field_row">
+      <span class="field_label required">Incorporated:</span>
+      <span class="field_data">
+        <div class="field_description">Has this person incorporated (sole proprietorship or similar form)?</div>
+        <select name="independent_contractor_incorporated" id="independent_contractor_incorporated">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+
+    <div id="independent_contractor_staff_agency_row" class="field_row">
+      <span class="field_label required">Staffing Agency:</span>
+      <span class="field_data">
+        <div class="field_description">Will the person be engaged through a staffing agency?</div>
+        <select name="independent_contractor_staff_agency" id="independent_contractor_staff_agency">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+
+    <div id="independent_contractor_other_clients_row" class="field_row">
+      <span class="field_label required">Other Clients:</span>
+      <span class="field_data">
+        <div class="field_description">Does the person have other clients?</div>
+        <select name="independent_contractor_other_clients" id="independent_contractor_other_clients">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+
+    <div id="independent_contractor_dupe_services_row" class="field_row">
+      <span class="field_label required">Duplicate Services:</span>
+      <span class="field_data">
+        <div class="field_description">Does the person provide services similar to a paid Mozilla employee?</div>
+        <select name="independent_contractor_dupe_services" id="independent_contractor_dupe_services">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+        <div id="independent_contractor_dupe_services_temp_row" style="display:none;">
+          <div class="field_description required">
+            If yes, is the person primarily being engaged due to a temporary increase in workload or as backfill for an employee on leave?
+          </div>
+          <select name="independent_contractor_dupe_services_temp" id="independent_contractor_dupe_services_temp">
+            <option value="">Select One</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+      </span>
+    </div>
+
+    <div id="independent_contractor_self_manage_row" class="field_row">
+      <span class="field_label required"a>Self Managed:</span>
+      <span class="field_data">
+        <div class="field_description">Will the person be managing his or her own time?</div>
+        <select name="independent_contractor_self_manage" id="independent_contractor_self_manage">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+
+-    <div id="independent_contractor_own_equipment_row" class="field_row">
+      <span class="field_label required">Own Equipment:</span>
+      <span class="field_data">
+        <div class="field_description">Will the person be using his or her own equipment?</div>
+        <select name="independent_contractor_own_equipment" id="independent_contractor_own_equipment">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+
+     <div id="independent_contractor_mozilla_facility_row" class="field_row">
+      <span class="field_label required">Mozilla Facility:</span>
+      <span class="field_data">
+        <div class="field_description">Will the person be regularly working at a Mozilla facility?</div>
+        <select name="independent_contractor_mozilla_facility" id="independent_contractor_mozilla_facility">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+
+    <div id="independent_contractor_supervising_row" class="field_row">
+      <span class="field_label required">Supervise Mozilla Employees:</span>
+      <span class="field_data">
+        <div class="field_description">Will the person be supervising Mozilla employees?</div>
+        <select name="independent_contractor_supervising" id="independent_contractor_supervising">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
+    </div>
+  </div>
+
   <div id="contract_specific_questions">
     <div class="header">Contract Specific Questions</div>
 
@@ -230,19 +364,19 @@
     </div>
 
     <div id="terminate_contract_row" class="field_row">
-        <span class="field_label">Right to Terminate Contract:</span>
-        <span class="field_data">
-            <div class="field_description">
-                If we're being asked to sign the vendor's contract or agree to
-                online terms, will Mozilla have the right to terminate the
-                contract for any or no reason upon 30 days notice?
-            </div>
-            <select name="terminate_contract" id="terminate_contract">
-                <option value="">Select One</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-            </select>
-        </span>
+      <span class="field_label">Right to Terminate Contract:</span>
+      <span class="field_data">
+        <div class="field_description">
+          If we're being asked to sign the vendor's contract or agree to
+          online terms, will Mozilla have the right to terminate the
+          contract for any or no reason upon 30 days notice?
+        </div>
+        <select name="terminate_contract" id="terminate_contract">
+          <option value="">Select One</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </span>
     </div>
 
     <div id="sow_details" style="display:none;">
@@ -290,6 +424,46 @@
         <span class="field_label required">Vendor Services to be Provided:</span>
         <span class="field_data">
           <textarea name="sow_vendor_services" id="sow_vendor_services" rows="10" cols="80"></textarea>
+        </span>
+      </div>
+
+      <div id="sow_vendor_mozilla_systems_row" class="field_row">
+        <span class="field_label required">Mozilla Systems:</span>
+        <span class="field_data">
+          <div class="field_description">
+            Will vendor require access to Mozilla systems (e.g. workday, email, google docs, servers)?
+          </div>
+          <select name="sow_vendor_mozilla_systems" id="sow_vendor_mozilla_systems">
+            <option value="">Select One</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+          <div id="sow_vendor_mozilla_systems_explain_row" style="display:none;">
+            <div class="field_description required">
+              If yes, please explain
+            </div>
+            <textarea name="sow_vendor_mozilla_systems_explain" id="sow_vendor_mozilla_systems_explain" rows="10" cols="80"></textarea>
+          </div>
+        </span>
+      </div>
+
+      <div id="sow_vendor_onsite_row" class="field_row">
+        <span class="field_label required">Vendor Onsite:</span>
+        <span class="field_data">
+          <div class="field_description">
+            Will vendor be physically onsite at a Mozilla office?
+          </div>
+          <select name="sow_vendor_onsite" id="sow_vendor_onsite">
+            <option value="">Select One</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+          <div id="sow_vendor_onsite_where_row" style="display:none;">
+            <div class="field_description required">
+              If yes, where and when?
+            </div>
+            <textarea name="sow_vendor_onsite_where" id="sow_vendor_onsite_where" rows="10" cols="80"></textarea>
+          </div>
         </span>
       </div>
 

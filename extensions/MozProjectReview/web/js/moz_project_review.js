@@ -10,53 +10,84 @@ $(function() {
     'use strict';
     var required_fields = {
         "initial_questions": {
-            "short_desc": "Please enter a value for project or feature name in the initial questions section",
-            "description": "Please enter a value for description in the initial questions section",
-            "key_initiative": "Please select a value for key initiative in the initial questions section",
-            "contract_type": "Please select a value for contract type in the initial questions section",
-            "mozilla_data": "Please select a value for mozilla data in the initial questions section",
-            "vendor_cost": "Please select a value for vendor cost in the initial questions section",
-            "timeframe": "Please select a value for timeframe in the initial questions section",
-            "contract_priority": "Please select a value for priority in the initial questions section",
-            "internal_org": "Please select a value for the internal organization in the initial questions section"
+            "short_desc": "Please enter a value for project or feature name in the initial questions section.",
+            "description": "Please enter a value for description in the initial questions section.",
+            "key_initiative": "Please select a value for key initiative in the initial questions section.",
+            "contract_type": "Please select a value for contract type in the initial questions section.",
+            "mozilla_data": "Please select a value for mozilla data in the initial questions section.",
+            "vendor_cost": "Please select a value for vendor cost in the initial questions section.",
+            "timeframe": "Please select a value for timeframe in the initial questions section.",
+            "contract_priority": "Please select a value for priority in the initial questions section.",
+            "internal_org": "Please select a value for the internal organization in the initial questions section."
         },
         "key_initiative_other": {
-            "key_initiative_other": "Please enter a value for other key initiative in the initial questions section"
+            "key_initiative_other": "Please enter a value for other key initiative in the initial questions section."
+        },
+        "mozilla_data_explain_row": {
+            "mozilla_data_explain": "Please enter a value for mozilla data access explanation in the initial questions section."
         },
         "contract_type_other": {
-            "contract_type_other": "Please enter a value for other contract type in the initial questions section"
+            "contract_type_other": "Please enter a value for other contract type in the initial questions section."
         },
         "contract_specific_questions": {
-            "other_party": "Please enter a value for vendor name in the legal questions section",
-            "vendor_services_where": "Please enter a value for the where the services will be provided",
+            "other_party": "Please enter a value for vendor name in the contract specific questions.",
+            "vendor_services_where": "Please enter a value for the where the services will be provided in the contract specific questions.",
+        },
+        "independent_contractor_questions": {
+            "independent_contractor_prev_work": "Please select a value for previous work in the independent contractor section.",
+            "independent_contractor_incorporated": "Please select a value for incorporated in the independent contractor section.",
+            "independent_contractor_staff_agency": "Please select a value for staffing agency in the independent contractor section.",
+            "independent_contractor_other_clients": "Please select a value for other clients in the independent contractor section.",
+            "independent_contractor_dupe_services": "Please select a value for in the independent contractor section.",
+            "independent_contractor_self_manage": "Please select a value for self management of time in the independent contractor section.",
+            "independent_contractor_own_equipment": "Please select a value for use of contractors own equipment in the independent contractor section.",
+            "independent_contractor_mozilla_facility": "Please select a value for use of Mozilla facility in the independent contractor section.",
+            "independent_contractor_supervising": "Please select a value for contractor supervising Mozilla employees in the independent contractor section.",
+        },
+        "independent_contractor_prev_work_bug_row": {
+            "independent_contractor_prev_work_bug": "Please enter a value for previous work bug id in the independent contractor section."
+        },
+        "independent_contractor_dupe_services_temp_row": {
+            "independent_contractor_dupe_services_temp": "Please select a value for temporarily need duplicate services in the independent contractor section."
         },
         "sow_details": {
-            "sow_vendor_address": "Please enter a value for SOW vendor address",
-            "sow_vendor_email": "Please enter a value for SOW vendor email for notices",
-            "sow_vendor_contact": "Please enter a value for SOW vendor contact and email address",
-            "sow_vendor_services": "Please enter a value for SOW vendor services description",
-            "sow_vendor_deliverables": "Please enter a value for SOW vendor deliverables description",
-            "sow_start_date": "Please enter a value for SOW vendor start date",
-            "sow_end_date": "Please enter a value for SOW vendor end date",
-            "sow_vendor_payment": "Please enter a value for SOW vendor payment amount",
-            "sow_vendor_payment_basis": "Please enter a value for SOW vendor payment basis",
-            "sow_vendor_cap_expenses": "Please enter a value for SOW cap on reimbursable expenses",
-            "sow_vendor_payment_schedule": "Please enter a value for SOW vendor payment schedule",
-            "sow_vendor_total_max": "Please enter a value for SOW vendor maximum total to be paid",
+            "sow_vendor_address": "Please enter a value for SOW vendor address.",
+            "sow_vendor_email": "Please enter a value for SOW vendor email for notices.",
+            "sow_vendor_contact": "Please enter a value for SOW vendor contact and email address.",
+            "sow_vendor_services": "Please enter a value for SOW vendor services description.",
+            "sow_vendor_deliverables": "Please enter a value for SOW vendor deliverables description.",
+            "sow_start_date": "Please enter a value for SOW vendor start date.",
+            "sow_end_date": "Please enter a value for SOW vendor end date.",
+            "sow_vendor_payment": "Please enter a value for SOW vendor payment amount.",
+            "sow_vendor_payment_basis": "Please enter a value for SOW vendor payment basis.",
+            "sow_vendor_cap_expenses": "Please enter a value for SOW cap on reimbursable expenses.",
+            "sow_vendor_payment_schedule": "Please enter a value for SOW vendor payment schedule.",
+            "sow_vendor_total_max": "Please enter a value for SOW vendor maximum total to be paid.",
+        },
+        "sow_vendor_mozilla_systems_explain_row": {
+            "sow_vendor_mozilla_systems_explain": "Please enter a value for SOW vendor explanation for use of mozilla systems."
+        },
+        "sow_vendor_onsite_where_row": {
+            "sow_vendor_onsite_where": "Please enter a value for SOW vendor onsite where and when."
         },
         "finance_questions": {
-            "finance_purchase_inbudget": "Please enter a value for in budget in the finance questions section",
-            "finance_purchase_what": "Please enter a value for what in the finance questions section",
-            "finance_purchase_why": "Please enter a value for why in the finance questions section",
-            "finance_purchase_risk": "Please enter a value for risk in the finance questions section",
-            "finance_purchase_alternative": "Please enter a value for alternative in the finance questions section",
+            "finance_purchase_inbudget": "Please enter a value for in budget in the finance questions section.",
+            "finance_purchase_what": "Please enter a value for what in the finance questions section.",
+            "finance_purchase_why": "Please enter a value for why in the finance questions section.",
+            "finance_purchase_risk": "Please enter a value for risk in the finance questions section.",
+            "finance_purchase_alternative": "Please enter a value for alternative in the finance questions section.",
         },
     };
 
     var select_inputs = [
         'contract_type',
+        'independent_contractor_prev_work',
+        'independent_contractor_dupe_services',
         'key_initiative',
+        'mozilla_data',
         'vendor_cost',
+        'sow_vendor_mozilla_systems',
+        'sow_vendor_onsite'
     ];
 
     function init() {
@@ -84,21 +115,30 @@ $(function() {
             $('#finance_questions').hide();
         }
 
-        var no_sec_review = [
+        var do_sec_review = [
             'Engaging a new vendor company',
-            'Engaging an individual (independent contractor, temp agency worker, incorporated)',
             'Adding a new SOW with a vendor',
             'Extending an SOW or renewing a contract',
-            'Purchasing hardware',
-            'An agreement with a partner',
-            'Need a partner NDA',
+            'Purchasing software',
+            'Signing up for an online service',
+            'Other'
         ];
         var contract_type = $('#contract_type').val();
-        if (contract_type && $.inArray(contract_type, no_sec_review) == -1) {
+        if ((contract_type && $.inArray(contract_type, do_sec_review) >= 0)
+            || $('#mozilla_data').val() == 'Yes')
+        {
             $('#sec_review_questions').show();
 
         } else {
             $('#sec_review_questions').hide();
+        }
+
+        if ($('#mozilla_data').val() == 'Yes') {
+            $('#mozilla_data_explain_row').show();
+            if ($(e.target).attr('id') == 'mozilla_data') $('#mozilla_data_explain').focus();
+
+        } else {
+            $('#mozilla_data_explain_row').hide();
         }
 
         if (contract_type == 'Other') {
@@ -117,6 +157,49 @@ $(function() {
         }
         else {
             $('#sow_details').hide();
+        }
+
+        if (contract_type == 'Engaging an individual (independent contractor, temp agency worker, incorporated)') {
+            $('#independent_contractor_questions').show();
+        }
+        else {
+           $('#independent_contractor_questions').hide();
+        }
+
+        if ($('#independent_contractor_prev_work').val() == 'Yes') {
+            $('#independent_contractor_prev_work_bug_row').show();
+            if ($(e.target).attr('id') == 'independent_contractor_prev_work')
+                $('#independent_contractor_prev_work_bug').focus();
+        }
+        else {
+            $('#independent_contractor_prev_work_bug_row').hide();
+        }
+
+        if ($('#independent_contractor_dupe_services').val() == 'Yes') {
+            $('#independent_contractor_dupe_services_temp_row').show();
+            if ($(e.target).attr('id') == 'independent_contractor_dupe_services')
+                $('#independent_contractor_dupe_services_temp').focus();
+        }
+        else {
+            $('#independent_contractor_dupe_services_temp_row').hide();
+        }
+
+        if ($('#sow_vendor_mozilla_systems').val() == 'Yes') {
+            $('#sow_vendor_mozilla_systems_explain_row').show();
+            if ($(e.target).attr('id') == 'sow_vendor_mozilla_systems')
+                $('#sow_vendor_mozilla_systems_explain').focus();
+        }
+        else {
+            $('#sow_vendor_mozilla_systems_explain_row').hide();
+        }
+
+        if ($('#sow_vendor_onsite').val() == 'Yes') {
+            $('#sow_vendor_onsite_where_row').show();
+            if ($(e.target).attr('id') == 'sow_vendor_onsite')
+                $('#sow_vendor_onsite_where').focus();
+        }
+        else {
+            $('#sow_vendor_onsite_where_row').hide();
         }
     }
 
