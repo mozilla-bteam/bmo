@@ -46,23 +46,29 @@ END {
 
 # PREREQ_PM
 my %requires = (
-    'CGI'                 => '3.51',
-    'DBI'                 => '1.614',
-    'Date::Format'        => '2.23',
-    'DateTime'            => '0.75',
-    'DateTime::TimeZone'  => '1.64',
-    'Digest::SHA'         => 0,
-    'Email::MIME'         => '1.904',
-    'Email::Sender'       => '1.300011',
-    'File::Slurp'         => '9999.13',
-    'JSON::XS'            => '2.01',
-    'List::MoreUtils'     => '0.32',
-    'Math::Random::ISAAC' => '1.0.1',
-    'Template'            => '2.24',
-    'URI'                 => '1.55',
+    'CGI'                      => '3.51',
+    'DBI'                      => '1.614',
+    'Date::Format'             => '2.23',
+    'DateTime'                 => '0.75',
+    'DateTime::TimeZone'       => '1.64',
+    'Digest::SHA'              => 0,
+    'Email::MIME'              => '1.904',
+    'Email::Sender'            => '1.300011',
+    'File::Slurp'              => '9999.13',
+    'JSON::XS'                 => '2.01',
+    'List::MoreUtils'          => '0.32',
+    'Math::Random::ISAAC'      => '1.0.1',
+    'Template'                 => '2.24',
+    'URI'                      => '1.55',
+    'version'                  => '0.87',
+    'Parse::CPAN::Meta'        => '1.44',
+    'CPAN::Meta::Prereqs'      => '2.132830',
+    'CPAN::Meta::Requirements' => '2.121',
+    'Module::Metadata'         => '1.000033',
+    'Module::Runtime'          => 0,
 );
 my %build_requires = (
-    'ExtUtils::MakeMaker' => '6.55',
+    'ExtUtils::MakeMaker' => '6.57_07',
 );
 my %test_requires = (
     'Test::More'         => 0,
@@ -71,12 +77,6 @@ my %test_requires = (
     'Test::Perl::Critic' => 0
 );
 my %recommends = ( Safe => '2.30' );
-my %all_features = (
-    'CPAN::Meta::Prereqs'      => '2.132830',
-    'CPAN::Meta::Requirements' => '2.121',
-    'Module::Metadata'         => '1.000019',
-    'Module::Runtime'          => 0,
-);
 
 # Windows requires some additional modules.
 if ( $^O eq 'MSWin32' ) {
@@ -86,10 +86,6 @@ if ( $^O eq 'MSWin32' ) {
 }
 
 my %optional_features = (
-    features => {
-        prereqs => { runtime => { requires => \%all_features, } },
-        description => 'Modules required to enable any feature',
-    },
     smtp_auth => {
         prereqs => { runtime => { requires => { 'Authen::SASL' => 0 } } },
         description => 'SMTP Authentication'
@@ -285,6 +281,14 @@ my %optional_features = (
             }
         }
     },
+    linux_pid => {
+        description => 'Linux::Pid',
+        prereqs => {
+            runtime => {
+                requires => { 'Linux::Pid' => 0 },
+            },
+        },
+    },
     jobqueue => {
         description => 'Mail Queueing',
         prereqs     => {
@@ -334,6 +338,34 @@ for my $file ( glob("extensions/*/Config.pm") ) {
     }
 }
 
+# BMO Customization
+my @bmo_features = grep {
+    !m{
+        ^
+        (?: pg
+          | oracle
+          | mod_perl
+          | sqlite
+          | auth_ldap
+          | auth_radius
+          | smtp_auth
+          | linux_pid
+          | updates)
+        $
+    }mxs;
+} keys %optional_features;
+
+$optional_features{bmo} = {
+    description => 'features that bmo needs',
+    prereqs => {
+        runtime => {
+            requires => {
+                map { %{$optional_features{$_}{prereqs}{runtime}{requires}} } @bmo_features
+            },
+        },
+    },
+};
+
 WriteMakefile(
     NAME             => 'Bugzilla',
     AUTHOR           => q{Bugzilla Developers <developers@bugzilla.org>},
@@ -353,7 +385,7 @@ WriteMakefile(
         dynamic_config => 1,
         prereqs        => {
             build   => { requires => { %build_requires } },
-            runtime => { requires => { %requires }, recommends => { %all_features, %recommends } },
+            runtime => { requires => { %requires }, recommends => { %recommends } },
             test    => { requires => { %test_requires } },
         },
         optional_features => \%optional_features,
@@ -362,17 +394,9 @@ WriteMakefile(
 
 sub MY::postamble {
     return <<MAKE;
-GEN_CPANFILE_ARGS = -A -U mod_perl -U oracle
+GEN_CPANFILE_ARGS = -D bmo
 cpanfile: MYMETA.json
 \t\$(PERLRUN) gen-cpanfile.pl \$(GEN_CPANFILE_ARGS)
-
-checksetup_lib: Makefile.PL
-\tcpanm -l .checksetup_lib CPAN::Meta Module::Metadata\@$all_features{'Module::Metadata'}
-\t-rm -fr .checksetup_lib/man
-\t-rm -fr .checksetup_lib/lib/perl5/*/.meta
-\t-rm -fr .checksetup_lib/lib/perl5/Test
-\t-rm -fr .checksetup_lib/lib/perl5/ok.pm
-\t-find .checksetup_lib '(' -name '*.pod' -or -name .packlist ')' -print0 | xargs -0 rm -f
 
 META.json: Makefile.PL
 \tmake distmeta 2>&1 /dev/null; mv */META.json .
