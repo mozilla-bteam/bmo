@@ -222,6 +222,7 @@ $sel->select_ok("component", "value=Canonical", "Select request type");
 $sel->type_ok("short_desc", "Bug created by Selenium", "Enter request summary");
 $sel->type_ok("cc", $config->{'unprivileged_user_login'}, "Enter cc address");
 $sel->type_ok("otherparty", "Other party", "Enter other party");
+$sel->capture_screenshot("/tmp/enter_other_party.png");
 $sel->type_ok("busobj", "Business objective", "Enter business objective");
 $sel->type_ok("comment", "--- Bug created by Selenium ---", "Enter request description");
 $sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
