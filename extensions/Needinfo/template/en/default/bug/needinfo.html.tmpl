@@ -39,7 +39,7 @@
   RETURN UNLESS needinfo_flagtype;
 %]
 
-<script>
+<script [% script_nonce FILTER none%]>
 [% IF needinfo_flags.size > 0 %]
 $(function() {
   [%# Displays NEEDINFO tag in bug header %]

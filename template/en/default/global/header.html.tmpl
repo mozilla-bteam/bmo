@@ -58,6 +58,10 @@
   generate_api_token = 0
 %]
 
+[% USE Bugzilla %]
+[% cgi = Bugzilla.cgi %]
+[% SET script_nonce = cgi.csp_nonce ? 'nonce="' _ cgi.csp_nonce _ '"' : '' %]
+
 [% IF NOT no_yui %]
   [% SET yui_css = {
     calendar     => 1,
@@ -181,7 +185,7 @@
       [% PROCESS format_js_link %]
     [% END %]
 
-    <script type="text/javascript">
+    <script [% script_nonce FILTER none %] type="text/javascript">
     <!--
         [% IF NOT no_yui %]
           YAHOO.namespace('bugzilla');
@@ -277,8 +281,12 @@
 [%# Migration note: contents of the old Param 'bodyhtml' go in the body tag,
   # but set the onload attribute in the DEFAULT directive above.
   #%]
-
-  <body onload="[% onload %]"
+  [% IF onload %]
+  <script [% script_nonce FILTER none %]>
+  $(function() { [% onload %] });
+  </script>
+  [% END %]
+  <body
         class="[% urlbase.replace('^https?://','').replace('/$','').replace('[-~@:/.]+','-') FILTER css_class_quote %]
                skin-[% user.settings.skin.value FILTER css_class_quote %]
                [% FOREACH class = bodyclasses %]
@@ -445,5 +453,5 @@
 [% END %]
 
 [% BLOCK format_js_link %]
-  <script type="text/javascript" src="[% asset_url FILTER mtime FILTER html %]"></script>
+  <script [% script_nonce FILTER none %] type="text/javascript" src="[% asset_url FILTER mtime FILTER html %]"></script>
 [% END %]

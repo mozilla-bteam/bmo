@@ -36,6 +36,12 @@ my $format = $template->get_format("bug/show",
                                    $format_params->{format},
                                    $format_params->{ctype});
 
+if ($format_params->{format} eq 'modal') {
+    $cgi->content_security_policy(
+        script_src  => ['self', 'nonce', 'https://login.persona.org', 'unsafe-inline', 'unsafe-eval' ],
+    );
+}
+
 # Editable, 'single' HTML bugs are treated slightly specially in a few places
 my $single = (!$format->{format} || $format->{format} ne 'multiple')
              && $format->{extension} eq 'html';
