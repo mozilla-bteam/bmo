@@ -47,6 +47,8 @@ END {
 # PREREQ_PM
 my %requires = (
     'CGI'                      => '3.51',
+    'CPAN::Meta::Prereqs'      => '2.132830',
+    'CPAN::Meta::Requirements' => '2.121',
     'DBI'                      => '1.614',
     'Date::Format'             => '2.23',
     'DateTime'                 => '0.75',
@@ -58,14 +60,13 @@ my %requires = (
     'JSON::XS'                 => '2.01',
     'List::MoreUtils'          => '0.22',
     'Math::Random::ISAAC'      => '1.0.1',
+    'Module::Metadata'         => '1.000033',
+    'Module::Runtime'          => 0,
+    'Moo'                      => 2,
+    'Parse::CPAN::Meta'        => '1.44',
     'Template'                 => '2.24',
     'URI'                      => '1.55',
     'version'                  => '0.87',
-    'Parse::CPAN::Meta'        => '1.44',
-    'CPAN::Meta::Prereqs'      => '2.132830',
-    'CPAN::Meta::Requirements' => '2.121',
-    'Module::Metadata'         => '1.000033',
-    'Module::Runtime'          => 0,
 );
 my %build_requires = (
     'ExtUtils::MakeMaker' => '6.57_07',
@@ -266,6 +267,14 @@ my %optional_features = (
             }
         }
     },
+    linux_pid => {
+        description => 'Linux::PID for MozReview',
+        prereqs => {
+            runtime => {
+                requires => { 'Linux::Pid' => 0 },
+            },
+        },
+    },
     jobqueue => {
         description => 'Mail Queueing',
         prereqs     => {
@@ -314,6 +323,7 @@ my @bmo_features = grep {
           | auth_ldap
           | auth_radius
           | smtp_auth
+          | linux_pid
           | updates)
         $
     }mxs;
@@ -357,26 +367,10 @@ WriteMakefile(
 );
 
 sub MY::postamble {
-    my $modules = join(' ',
-        qw(
-            CPAN::Meta
-            CPAN::Meta::Requirements
-            Parse::CPAN::Meta
-            Module::Metadata
-        )
-    );
     return <<MAKE;
-GEN_CPANFILE_ARGS = -A -U mod_perl -U oracle
+GEN_CPANFILE_ARGS = -D bmo
 cpanfile: MYMETA.json
 \t\$(PERLRUN) gen-cpanfile.pl \$(GEN_CPANFILE_ARGS)
-
-checksetup_lib: Makefile.PL
-\tcpanm -l .checksetup_lib $modules
-\t-rm -fr .checksetup_lib/man
-\t-rm -fr .checksetup_lib/lib/perl5/*/.meta
-\t-rm -fr .checksetup_lib/lib/perl5/Test
-\t-rm -fr .checksetup_lib/lib/perl5/ok.pm
-\t-find .checksetup_lib '(' -name '*.pod' -or -name .packlist ')' -print0 | xargs -0 rm -f
 
 META.json: Makefile.PL
 \tmake distmeta 2>&1 /dev/null; mv */META.json .
