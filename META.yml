@@ -10,7 +10,7 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: 6.57_07
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 7.22, CPAN::Meta::Converter version 2.143240'
+generated_by: 'ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.150005'
 license: unknown
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -58,6 +58,7 @@ optional_features:
       JSON::RPC: '0'
       LWP::UserAgent: '0'
       MIME::Parser: '5.406'
+      MooX::StrictConstructor: '0.008'
       Mozilla::CA: '0'
       Net::SFTP: '0'
       PatchReader: v0.9.6
@@ -65,9 +66,15 @@ optional_features:
       Template::Plugin::GD::Image: '0'
       Test::Taint: '1.06'
       TheSchwartz: '1.10'
+      Type::Tiny: '1'
       XML::Simple: '0'
       XML::Twig: '0'
       XMLRPC::Lite: '0.712'
+  csp:
+    description: 'Content-Security-Policy support'
+    requires:
+      MooX::StrictConstructor: '0.008'
+      Type::Tiny: '1'
   detect_charset:
     description: 'Automatic charset detection for text attachments'
     requires:
@@ -112,6 +119,10 @@ optional_features:
     requires:
       JSON::RPC: '0'
       Test::Taint: '1.06'
+  linux_pid:
+    description: 'Linux::PID for MozReview'
+    requires:
+      Linux::Pid: '0'
   memcached:
     description: 'Memcached Support'
     requires:
@@ -219,6 +230,7 @@ requires:
   Math::Random::ISAAC: v1.0.1
   Module::Metadata: '1.000033'
   Module::Runtime: '0'
+  Moo: '2'
   Parse::CPAN::Meta: '1.44'
   Regexp::Common: '0'
   Sys::Syslog: '0'
@@ -229,3 +241,4 @@ requires:
   perl: '5.010001'
   version: '0.87'
 version: '42'
+x_serialization_backend: 'CPAN::Meta::YAML version 0.016'

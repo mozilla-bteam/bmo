@@ -4,7 +4,7 @@
       "Bugzilla Developers <developers@bugzilla.org>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 7.22, CPAN::Meta::Converter version 2.143240",
+   "generated_by" : "ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.150005",
    "license" : [
       "unknown"
    ],
@@ -77,6 +77,7 @@
                   "JSON::RPC" : "0",
                   "LWP::UserAgent" : "0",
                   "MIME::Parser" : "5.406",
+                  "MooX::StrictConstructor" : "0.008",
                   "Mozilla::CA" : "0",
                   "Net::SFTP" : "0",
                   "PatchReader" : "v0.9.6",
@@ -84,9 +85,21 @@
                   "Template::Plugin::GD::Image" : "0",
                   "Test::Taint" : "1.06",
                   "TheSchwartz" : "1.10",
+                  "Type::Tiny" : "1",
                   "XML::Simple" : "0",
                   "XML::Twig" : "0",
                   "XMLRPC::Lite" : "0.712"
+               }
+            }
+         }
+      },
+      "csp" : {
+         "description" : "Content-Security-Policy support",
+         "prereqs" : {
+            "runtime" : {
+               "requires" : {
+                  "MooX::StrictConstructor" : "0.008",
+                  "Type::Tiny" : "1"
                }
             }
          }
@@ -185,6 +198,16 @@
                "requires" : {
                   "JSON::RPC" : "0",
                   "Test::Taint" : "1.06"
+               }
+            }
+         }
+      },
+      "linux_pid" : {
+         "description" : "Linux::PID for MozReview",
+         "prereqs" : {
+            "runtime" : {
+               "requires" : {
+                  "Linux::Pid" : "0"
                }
             }
          }
@@ -406,6 +429,7 @@
             "Math::Random::ISAAC" : "v1.0.1",
             "Module::Metadata" : "1.000033",
             "Module::Runtime" : "0",
+            "Moo" : "2",
             "Parse::CPAN::Meta" : "1.44",
             "Regexp::Common" : "0",
             "Sys::Syslog" : "0",
@@ -426,5 +450,6 @@
       }
    },
    "release_status" : "stable",
-   "version" : "42"
+   "version" : "42",
+   "x_serialization_backend" : "JSON::PP version 2.27203"
 }
