@@ -135,12 +135,11 @@ $(function() {
     $('#needinfo').change();
   }
 
-  function needinfo_from_changed() {
-    $('#needinfo').prop('checked', $('#needinfo_from').val() !== '');
-  }
-
   $(function() {
     needinfo_init();
+    $(".needinfo_form_changed").on("change", function (event) {
+        $("#needinfo").prop("checked", $("#needinfo_from").val() !== '');
+    });
   });
 [% END %]
 </script>
@@ -225,7 +224,7 @@ $(function() {
               value       => ""
               size        => 30
               multiple    => 5
-              onchange    => "needinfo_from_changed()"
+              classes     => ["needinfo_form_changed"]
               field_title => "Enter one or more comma separated users to request more information from"
           %]
         </span>
