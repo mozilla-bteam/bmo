@@ -2167,8 +2167,8 @@ sub _post_shield_studies {
     # Legal Review
     $child_params->{'bug_data'} = {
         short_desc   => '[SHIELD] Legal Review for ' . $params->{hypothesis},
-        product      => 'Shield',
-        component    => 'Shield Study',
+        product      => 'Legal',
+        component    => 'Firefox',
         bug_severity => 'normal',
         op_sys       => 'All',
         rep_platform => 'All',
