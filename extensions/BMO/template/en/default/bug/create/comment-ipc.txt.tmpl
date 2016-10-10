@@ -13,7 +13,7 @@
 [%+ cgi.param("team_name") %]
 
 >> Will your snippet need to appear in a language other than English?
-[%+ cgi.param("language").join(' , ') %]
+[%+ cgi.param("language").join(', ') %]
 
 >> Does your snippet need to be targeted to a particular country?
 [%+ cgi.param("target_country") %]
@@ -28,7 +28,7 @@
 [%+ cgi.param("complete_run") %]
 
 >> Will you be able to provide the following assets for your snippet?
-[%+ cgi.param("snippet_assets").join(' , ') %]
+[%+ cgi.param("snippet_assets").join(', ') %]
 
 >> Your name?
 [%+ cgi.param("name") %]
