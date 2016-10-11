@@ -97,10 +97,10 @@ $(document).ready(function() {
 
 <div id="heading">IPC Requests</div>
 <div>
-  <p>You’ve decided to use the snippet channel to drive attention to one of your projects, Awesome! The snippet channel drives hundreds of millions of impressions a month. It’s great tool to support your marketing efforts. Complete this form and we will follow up with you soon (maybe today, but definitely within 3 days.
+  <p>You’ve decided to use the snippet channel to drive attention to one of your projects, awesome! The snippet channel drives hundreds of millions of impressions a month. It’s great tool to support your marketing efforts. Complete this form and we will follow up with you soon (maybe today, but definitely within 3 days).
   </p>
   <p>
-    Tell us more (all fields are required):
+    Tell us more:
   </p>
 
   <form method="post" action="post_bug.cgi" id="ipcForm">
@@ -140,19 +140,19 @@ $(document).ready(function() {
       <div class="row_desc">
         <strong>Will your snippet need to appear in a language other than English? If so, please specify.</strong>
       </div>
-      <input type="radio" name="language" id="spanish" value="Spanish">
+      <input type="checkbox" name="language" id="spanish" value="Spanish">
       <label for="spanish">Spanish</label><br>
-      <input type="radio" name="language" id="italian" value="Italian">
+      <input type="checkbox" name="language" id="italian" value="Italian">
       <label for="italian">Italian</label><br>
-      <input type="radio" name="language" id="german" value="German">
+      <input type="checkbox" name="language" id="german" value="German">
       <label for="german">German</label><br>
-      <input type="radio" name="language" id="french" value="French">
+      <input type="checkbox" name="language" id="french" value="French">
       <label for="french">French</label><br>
-      <input type="radio" name="language" id="russian" value="Russian">
+      <input type="checkbox" name="language" id="russian" value="Russian">
       <label for="russian">Russian</label><br>
-      <input type="radio" name="language" id="portuguese" value="Portuguese">
+      <input type="checkbox" name="language" id="portuguese" value="Portuguese">
       <label for="portuguese">Portuguese</label><br>
-      <input type="radio" name="language" id="langothersradio">
+      <input type="checkbox" name="language" id="langothersradio">
       <label for="langothers">Others: </label>
       <input type="text" name="language" id="langothers" size="30">
     </div>
@@ -207,19 +207,16 @@ $(document).ready(function() {
       <div class="row_desc">
         <strong>Will you be able to provide the following assets for your snippet? Check all that apply.</strong><br> Feel free to look at our existing icon library:  <a href="http://bit.ly/2aWTmqT">http://bit.ly/2aWTmqT</a>
       </div>
-      <input type="radio" name="snippet_assets" id="copy" value="Copy">
+      <input type="checkbox" name="snippet_assets" id="copy" value="Copy">
       <label for="copy">Copy</label><br>
-      <input type="radio" name="snippet_assets" id="icon" value="Icon">
+      <input type="checkbox" name="snippet_assets" id="icon" value="Icon">
       <label for="icon">Icon</label><br>
-      <input type="radio" name="snippet_assets" id="special_format" value="Special Format">
+      <input type="checkbox" name="snippet_assets" id="special_format" value="Special Format">
       <label for="special_format">Special Format</label><br>
-      <input type="radio" name="snippet_assets" id="assetothersradio">
+      <input type="checkbox" name="snippet_assets" id="assetothersradio">
       <label for="assetothers">Others: </label>
       <input type="text" name="snippet_assets" id="assetothers" size="30">
     </div>
-
-    <h3><strong>Contact Info</strong></h3>
-
 
     <input type="hidden" required name="name" id="name" value="[% user.name FILTER html %]" size="80">
 
