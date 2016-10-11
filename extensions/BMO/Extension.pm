@@ -713,6 +713,18 @@ sub bug_format_comment {
         }
     });
 
+    # link github pull requests and issues
+    push (@$regexes, {
+        match => qr#\b([\S]+\/[\S]+\#[0-9]+)\b#mx,
+        replace => sub {
+            my $args = shift;
+            my $owner = html_quote($args->{matches}->[0]);
+            my $repo = html_quote($args->{matches}->[1]);
+            my $number = html_quote($args->{matches}->[2]);
+            return qq#<a href="https://github.com/$owner/$repo/issues/$number">$owner/$repo\#$number</a>#;
+        }
+    });
+
     # Update certain links to git.mozilla.org to go to github.com instead
     # https://git.mozilla.org/?p=webtools/bmo/bugzilla.git;a=blob;f=Bugzilla/WebService/Bug.pm;h=d7a1d8f9bb5fdee524f2bb342a4573a63d890f2e;hb=HEAD#l657
     push(@$regexes, {
