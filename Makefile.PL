@@ -120,7 +120,7 @@ my %optional_features = (
     memcached => {
         description => 'Memcached Support',
         prereqs     => {
-            runtime => { requires => { 'Cache::Memcached' => '0.17' } }
+            runtime => { requires => { 'Cache::Memcached::Fast' => '0.17' } }
         }
     },
     auth_delegation => {
@@ -280,6 +280,17 @@ my %optional_features = (
         prereqs     => {
             runtime => {
                 requires => { TheSchwartz => '1.10', 'Daemon::Generic' => 0 }
+            }
+        }
+    },
+    csp => {
+        description => 'Content-Security-Policy support',
+        prereqs     => {
+            runtime => {
+                requires => {
+                    'Type::Tiny' => 1,
+                    'MooX::StrictConstructor' => 0.008,
+                }
             }
         }
     },
