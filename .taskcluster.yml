@@ -9,8 +9,8 @@ tasks:
     workerType: "{{ taskcluster.docker.workerType }}"
     routes:
       - "notify.email.{{event.head.user.email}}.on-any"
-      - "notify.irc-channel.#bteam.on-failed"
-      - "notify.irc-channel.#bteam.on-exception"
+      #- "notify.irc-channel.#bteam.on-failed"
+      #- "notify.irc-channel.#bteam.on-exception"
     extra:
       github:
         env: true
