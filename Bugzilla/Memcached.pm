@@ -12,8 +12,8 @@ use strict;
 use warnings;
 
 use Bugzilla::Error;
-use Bugzilla::Util qw(trick_taint);
 use Scalar::Util qw(blessed);
+use Bugzilla::Util qw(trick_taint);
 use URI::Escape;
 use Encode;
 use Sys::Syslog qw(:DEFAULT);
@@ -30,13 +30,11 @@ sub _new {
     # disabled.
     my $servers = Bugzilla->get_param_with_override('memcached_servers');
     if (Bugzilla->feature('memcached') && $servers) {
-        require Cache::Memcached;
         $self->{namespace} = Bugzilla->get_param_with_override('memcached_namespace');
-        $self->{memcached} =
-            Cache::Memcached->new({
-                servers   => [ split(/[, ]+/, $servers) ],
-                namespace => $self->{namespace},
-            });
+        $self->{memcached} = Cache::Memcached::Fast->new({
+            servers   => [ split(/[, ]+/, $servers) ],
+            namespace => $self->{namespace},
+        });
     }
     return bless($self, $class);
 }
@@ -226,6 +224,7 @@ sub _config_prefix {
 sub _encode_key {
     my ($self, $key) = @_;
     $key = $self->_global_prefix . '.' . uri_escape_utf8($key);
+    trick_taint($key) if defined $key;
     return length($self->{namespace} . $key) > MAX_KEY_LENGTH
         ? undef
         : $key;
@@ -249,51 +248,7 @@ sub _get {
 
     $key = $self->_encode_key($key)
         or return;
-    my $value = $self->{memcached}->get($key);
-    return unless defined $value;
-
-    # detaint returned values
-    # hashes and arrays are detainted just one level deep
-    if (ref($value) eq 'HASH') {
-        _detaint_hashref($value);
-    }
-    elsif (ref($value) eq 'ARRAY') {
-        foreach my $value (@$value) {
-            next unless defined $value;
-            # arrays of hashes and arrays are common
-            if (ref($value) eq 'HASH') {
-                _detaint_hashref($value);
-            }
-            elsif (ref($value) eq 'ARRAY') {
-                _detaint_arrayref($value);
-            }
-            elsif (!ref($value)) {
-                trick_taint($value);
-            }
-        }
-    }
-    elsif (!ref($value)) {
-        trick_taint($value);
-    }
-    return $value;
-}
-
-sub _detaint_hashref {
-    my ($hashref) = @_;
-    foreach my $value (values %$hashref) {
-        if (defined($value) && !ref($value)) {
-            trick_taint($value);
-        }
-    }
-}
-
-sub _detaint_arrayref {
-    my ($arrayref) = @_;
-    foreach my $value (@$arrayref) {
-        if (defined($value) && !ref($value)) {
-            trick_taint($value);
-        }
-    }
+    return $self->{memcached}->get($key);
 }
 
 sub _delete {
@@ -346,9 +301,7 @@ L<Bugzilla::Memcached> provides an interface to a Memcached server/servers, with
 the ability to get, set, or clear entries from the cache.
 
 The stored value must be an unblessed hashref, unblessed array ref, or a
-scalar.  Currently nested data structures are supported but require manual
-de-tainting after reading from Memcached (flat data structures are automatically
-de-tainted).
+scalar. 
 
 All values are stored in the Memcached systems using the prefix configured with
 the C<memcached_namespace> parameter, as well as an additional prefix managed

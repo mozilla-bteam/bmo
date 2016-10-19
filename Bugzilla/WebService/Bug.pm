@@ -388,6 +388,7 @@ sub _translate_comment {
         is_private => $self->type('boolean', $comment->is_private),
         text       => $self->type('string', $comment->body_full),
         attachment_id => $self->type('int', $attach_id),
+        count      => $self->type('int', $comment->count),
     };
 
     # Don't load comment tags unless enabled
@@ -1473,6 +1474,10 @@ sub _bug_to_hash {
           = [ map { $self->type('email', $_->login) } @{ $bug->mentors || [] } ];
         $item{'mentors_detail'}
           = [ map { $self->_user_to_hash($_, $params, undef, 'mentors') } @{ $bug->mentors } ];
+    }
+
+    if (filter_wants $params, 'comment_count') {
+        $item{'comment_count'} = $self->type('int', $bug->comment_count);
     }
 
     return \%item;

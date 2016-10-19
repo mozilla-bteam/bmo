@@ -37,6 +37,7 @@ use constant DEFAULT_CSP => (
     child_src   => [ 'self', 'https://login.persona.org' ],
     img_src     => [ 'self', 'https://secure.gravatar.com' ],
     style_src   => [ 'self', 'unsafe-inline' ],
+    disable     => 1,
 );
 
 sub _init_bz_cgi_globals {

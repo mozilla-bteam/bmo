@@ -22,6 +22,13 @@ use constant BUGZILLA_VERSION => $ENV{BUGZILLA_VERSION} // 42;
 use File::Basename;
 use File::Spec;
 
+BEGIN {
+    if ($ENV{BZ_SILENT_MAKEFILE}) {
+        open STDOUT, '>>', File::Spec->devnull;
+        open STDERR, '>>', File::Spec->devnull;
+    }
+}
+
 # META.json and META.yml exist only for the benefit of older
 # installs where cpanm can't get the optional features out of Makefile.PL
 # Unfortunately having META.json and META.yml commited to the repo is weird
@@ -120,7 +127,7 @@ my %optional_features = (
     memcached => {
         description => 'Memcached Support',
         prereqs     => {
-            runtime => { requires => { 'Cache::Memcached' => '0.17' } }
+            runtime => { requires => { 'Cache::Memcached::Fast' => '0.17' } }
         }
     },
     auth_delegation => {
@@ -197,7 +204,7 @@ my %optional_features = (
     },
     mysql => {
         description => 'MySQL database support',
-        prereqs => { runtime => { requires => { 'DBD::mysql' => '4.001' } } }
+        prereqs => { runtime => { requires => { 'DBD::mysql' => '4.037' } } }
     },
     jsonrpc => {
         description => 'JSON-RPC Interface',
@@ -267,6 +274,14 @@ my %optional_features = (
             }
         }
     },
+    linux_pid => {
+        description => 'Linux::PID for MozReview',
+        prereqs => {
+            runtime => {
+                requires => { 'Linux::Pid' => 0 },
+            },
+        },
+    },
     jobqueue => {
         description => 'Mail Queueing',
         prereqs     => {
@@ -326,6 +341,7 @@ my @bmo_features = grep {
           | auth_ldap
           | auth_radius
           | smtp_auth
+          | linux_pid
           | updates)
         $
     }mxs;
