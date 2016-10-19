@@ -19,10 +19,13 @@ use Bugzilla::User;
 use Bugzilla::Util qw(detaint_natural);
 use Date::Parse;
 
+use JSON::XS;
+use List::MoreUtils qw(one);
+
 # set an upper limit on the *unfiltered* number of bugs to process
 use constant MAX_NUMBER_BUGS => 4000;
 
-sub report {
+sub unconfirmed {
     my ($vars, $filter) = @_;
     my $dbh = Bugzilla->dbh;
     my $input = Bugzilla->input_params;
@@ -215,6 +218,79 @@ sub report {
     }
 
     $vars->{'input'} = $input;
+}
+
+sub owners {
+    my ($vars, $filter) = @_;
+    my $dbh   = Bugzilla->dbh;
+    my $input = Bugzilla->input_params;
+    my $user  = Bugzilla->user;
+
+    if (exists $input->{'action'} && $input->{'action'} eq 'run' && $input->{'product'}) {
+        my $product = Bugzilla::Product->check({ name => $input->{'product'} });
+
+        my @component_ids;
+        if ($input->{'component'} && $input->{'component'} ne '') {
+            my $ra_components = ref($input->{'component'})
+                ? $input->{'component'} : [ $input->{'component'} ];
+            foreach my $component_name (@$ra_components) {
+                my $component = Bugzilla::Component->check({ name => $component_name, product => $product });
+                push @component_ids, $component->id;
+            }
+        }
+
+        my $sql = "SELECT name, triage_owner_id FROM components WHERE product_id = ?";
+        if (@component_ids) {
+            $sql .= " AND id IN (" . join(',', @component_ids) . ")";
+        }
+        $sql .= " ORDER BY name";
+
+        my $rows = $dbh->selectall_arrayref($sql, undef, $product->id);
+
+        my @results;
+        foreach my $row (@$rows) {
+            my ($component_name, $triage_owner_id) = @$row;
+            my $triage_owner = $triage_owner_id
+                               ? Bugzilla::User->new({ id => $triage_owner_id, cache => 1 })
+                               : "";
+            my $data = {
+                component => $component_name,
+                owner     => $triage_owner
+            };
+            push @results, $data;
+        }
+        $vars->{results} = \@results;
+
+    } else {
+        $input->{action} = '';
+    }
+
+    my $json_data = { products => [] };
+    foreach my $product (@{ $user->get_selectable_products }) {
+        my $prod_data = {
+            name       => $product->name,
+            components => []
+        };
+        foreach my $component (@{ $product->components }) {
+            my $selected = 0;
+            if ($input->{product}
+                && $input->{product} eq $product->name
+                && $input->{component})
+            {
+                $selected = 1 if (ref $input->{component} && one { $_ eq $component->name } @{ $input->{component} });
+                $selected = 1 if (!ref $input->{componet} && $input->{component} eq $component->name);
+            }
+            my $comp_data = {
+                name     => $component->name,
+                selected => $selected
+            };
+            push(@{ $prod_data->{components} }, $comp_data);
+        }
+        push(@{ $json_data->{products} }, $prod_data);
+    }
+
+    $vars->{product}   = $input->{product};
+    $vars->{json_data} = encode_json($json_data);
 }
 
 1;
