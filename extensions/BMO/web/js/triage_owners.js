@@ -9,20 +9,6 @@ $(function() {
     'use strict';
 
     var json_data = {};
-    var entityMap = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': '&quot;',
-        "'": '&#39;',
-        "/": '&#x2F;'
-    };
-
-    function escapeHtml(string) {
-        return String(string).replace(/[&<>"'\/]/g, function (s) {
-            return entityMap[s];
-        });
-    }
 
     function onSelectProduct() {
         var component = $('#component');
@@ -44,8 +30,8 @@ $(function() {
             var components = products[i].components;
             for (var j = 0, k = components.length; j < k; j++) {
                 var selected = !!components[j].selected;
-                component.append(new Option(escapeHtml(components[j].name),
-                                            escapeHtml(components[j].name),
+                component.append(new Option(components[j].name,
+                                            components[j].name,
                                             selected, selected));
             }
         }
@@ -56,10 +42,8 @@ $(function() {
     });
 
     $('#triageOwners').submit(function() {
-        if ($('#product').val() == '') {
-            alert('You must select a product.');
-            return false;
-        }
+        // do not pass json_data in the params
+        $('#json_data').remove();
         return true;
     });
 

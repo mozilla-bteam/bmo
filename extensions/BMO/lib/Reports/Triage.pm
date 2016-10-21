@@ -16,14 +16,22 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Product;
 use Bugzilla::User;
-use Bugzilla::Util qw(detaint_natural);
+use Bugzilla::Util qw(detaint_natural trim);
 use Date::Parse;
 
 use JSON::XS;
-use List::MoreUtils qw(one);
+use List::MoreUtils qw(any);
 
 # set an upper limit on the *unfiltered* number of bugs to process
 use constant MAX_NUMBER_BUGS => 4000;
+
+use constant DEFAULT_OWNER_PRODUCTS => (
+    'Core',
+    'Firefox',
+    'Firefox for Android',
+    'Firefox for iOS',
+    'Toolkit',
+);
 
 sub unconfirmed {
     my ($vars, $filter) = @_;
@@ -226,50 +234,95 @@ sub owners {
     my $input = Bugzilla->input_params;
     my $user  = Bugzilla->user;
 
-    if (exists $input->{'action'} && $input->{'action'} eq 'run' && $input->{'product'}) {
-        my $product = Bugzilla::Product->check({ name => $input->{'product'} });
+    Bugzilla::User::match_field({ 'owner' => {'type' => 'multi'}  });
 
-        my @component_ids;
-        if ($input->{'component'} && $input->{'component'} ne '') {
-            my $ra_components = ref($input->{'component'})
-                ? $input->{'component'} : [ $input->{'component'} ];
-            foreach my $component_name (@$ra_components) {
-                my $component = Bugzilla::Component->check({ name => $component_name, product => $product });
-                push @component_ids, $component->id;
-            }
-        }
-
-        my $sql = "SELECT name, triage_owner_id FROM components WHERE product_id = ?";
-        if (@component_ids) {
-            $sql .= " AND id IN (" . join(',', @component_ids) . ")";
-        }
-        $sql .= " ORDER BY name";
-
-        my $rows = $dbh->selectall_arrayref($sql, undef, $product->id);
-
-        my @results;
-        foreach my $row (@$rows) {
-            my ($component_name, $triage_owner_id) = @$row;
-            my $triage_owner = $triage_owner_id
-                               ? Bugzilla::User->new({ id => $triage_owner_id, cache => 1 })
-                               : "";
-            my $data = {
-                component => $component_name,
-                owner     => $triage_owner
-            };
-            push @results, $data;
-        }
-        $vars->{results} = \@results;
-
-    } else {
-        $input->{action} = '';
+    my @products;
+    if (!$input->{product} && $input->{owner}) {
+        @products = @{ $user->get_selectable_products };
     }
+    else {
+        my @product_names = $input->{product} ? ($input->{product}) : DEFAULT_OWNER_PRODUCTS;
+        foreach my $name (@product_names) {
+            push(@products, Bugzilla::Product->check({ name => $name }));
+        }
+    }
+
+    my @component_ids;
+    if (@products == 1 && $input->{'component'}) {
+        my $ra_components = ref($input->{'component'})
+                            ? $input->{'component'}
+                            : [ $input->{'component'} ];
+        foreach my $component_name (@$ra_components) {
+            my $component = Bugzilla::Component->check({ name => $component_name, product => $products[0] });
+            push @component_ids, $component->id;
+        }
+    }
+
+    my @owner_names = split(/[,;]+/, $input->{owner}) if $input->{owner};
+    my @owner_ids;
+    foreach my $name (@owner_names) {
+        $name = trim($name);
+        next unless $name;
+        push(@owner_ids, login_to_id($name, THROW_ERROR));
+    }
+
+    my $sql = "SELECT products.name, components.name, components.id, components.triage_owner_id
+               FROM components JOIN products ON components.product_id = products.id
+               WHERE products.id IN (" . join(',', map { $_->id } @products) . ")";
+    if (@component_ids) {
+        $sql .= " AND components.id IN (" . join(',', @component_ids) . ")";
+    }
+    if (@owner_ids) {
+        $sql .= " AND components.triage_owner_id IN (" . join(',', @owner_ids) . ")";
+    }
+    $sql .= " ORDER BY products.name, components.name";
+
+    my $rows = $dbh->selectall_arrayref($sql);
+
+    my $bug_count_sth = $dbh->prepare("
+        SELECT COUNT(bugs.bug_id)
+        FROM   bugs INNER JOIN components AS map_component ON bugs.component_id = map_component.id
+               INNER JOIN bug_status AS map_bug_status ON bugs.bug_status = map_bug_status.value
+               INNER JOIN priority AS map_priority ON bugs.priority = map_priority.value
+        WHERE  bugs.resolution IN ('')
+                AND bugs.priority IN ('--')
+                AND bugs.creation_ts >= '2016-06-01'
+                AND (NOT( EXISTS (
+                    SELECT 1
+                    FROM   bugs bugs_1
+                           LEFT JOIN attachments AS attachments_1 ON bugs_1.bug_id = attachments_1.bug_id
+                           LEFT JOIN flags AS flags_1 ON bugs_1.bug_id = flags_1.bug_id AND (flags_1.attach_id = attachments_1.attach_id OR flags_1.attach_id IS NULL)
+                           LEFT JOIN flagtypes AS flagtypes_1 ON flags_1.type_id = flagtypes_1.id
+                    WHERE  bugs_1.bug_id = bugs.bug_id AND CONCAT(flagtypes_1.name, flags_1.status) = 'needinfo?')))
+                AND bugs.component_id = ?");
+
+    my @results;
+    foreach my $row (@$rows) {
+        my ($product_name, $component_name, $component_id, $triage_owner_id) = @$row;
+        my $triage_owner = $triage_owner_id
+                           ? Bugzilla::User->new({ id => $triage_owner_id, cache => 1 })
+                           : "";
+        my $data = {
+            product     => $product_name,
+            component   => $component_name,
+            owner       => $triage_owner,
+        };
+        if ($triage_owner) {
+            $data->{buglist_url} = 'priority=--&f1=creation_ts&o3=equals&v3=' . $triage_owner->login .
+                                   '&o1=greaterthaneq&resolution=---&o2=notequals&f3=triage_owner' .
+                                   '&f2=flagtypes.name&v1=2016-06-01&v2=needinfo%3F';
+            $bug_count_sth->execute($component_id);
+            ($data->{bug_count}) = $bug_count_sth->fetchrow_array();
+        }
+        push @results, $data;
+    }
+    $vars->{results} = \@results;
 
     my $json_data = { products => [] };
     foreach my $product (@{ $user->get_selectable_products }) {
         my $prod_data = {
-            name       => $product->name,
-            components => []
+            name        => $product->name,
+            components  => [],
         };
         foreach my $component (@{ $product->components }) {
             my $selected = 0;
@@ -277,7 +330,7 @@ sub owners {
                 && $input->{product} eq $product->name
                 && $input->{component})
             {
-                $selected = 1 if (ref $input->{component} && one { $_ eq $component->name } @{ $input->{component} });
+                $selected = 1 if (ref $input->{component} && any { $_ eq $component->name } @{ $input->{component} });
                 $selected = 1 if (!ref $input->{componet} && $input->{component} eq $component->name);
             }
             my $comp_data = {
@@ -290,6 +343,7 @@ sub owners {
     }
 
     $vars->{product}   = $input->{product};
+    $vars->{owner}     = $input->{owner};
     $vars->{json_data} = encode_json($json_data);
 }
 

@@ -29,6 +29,10 @@
   background: #dddddd;
 }
 
+tr.product_header {
+  background: #dddddd;
+}
+
 #triage_owners_form th {
   text-align: right;
   vertical-align: top;
