@@ -307,13 +307,13 @@ sub owners {
             component   => $component_name,
             owner       => $triage_owner,
         };
+        $data->{buglist_url} = 'priority=--&resolution=---&f1=creation_ts&o1=greaterthaneq&v1=2016-06-01'.
+                               '&f2=flagtypes.name&o2=notequals&v2=needinfo%3F';
         if ($triage_owner) {
-            $data->{buglist_url} = 'priority=--&f1=creation_ts&o3=equals&v3=' . $triage_owner->login .
-                                   '&o1=greaterthaneq&resolution=---&o2=notequals&f3=triage_owner' .
-                                   '&f2=flagtypes.name&v1=2016-06-01&v2=needinfo%3F';
-            $bug_count_sth->execute($component_id);
-            ($data->{bug_count}) = $bug_count_sth->fetchrow_array();
+            $data->{buglist_url} .= '&f3=triage_owner&o3=equals&v3=' . $triage_owner->login;
         }
+        $bug_count_sth->execute($component_id);
+        ($data->{bug_count}) = $bug_count_sth->fetchrow_array();
         push @results, $data;
     }
     $vars->{results} = \@results;
