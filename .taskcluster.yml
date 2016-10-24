@@ -9,8 +9,8 @@ tasks:
     workerType: "{{ taskcluster.docker.workerType }}"
     routes:
       - "notify.email.{{event.head.user.email}}.on-any"
-      #- "notify.irc-channel.#bteam.on-failed"
-      #- "notify.irc-channel.#bteam.on-exception"
+      - "notify.irc-channel.#bteam.on-failed"
+      - "notify.irc-channel.#bteam.on-exception"
     extra:
       github:
         env: true
@@ -37,7 +37,6 @@ tasks:
         public/runtests_log:
           type: "file"
           path: "/var/log/runtests.log"
-          expires: "2018-02-17T17:33:38.806Z"
     metadata:
       name: "Basic Sanity Tests"
       description: "Basic Sanity Tests"
@@ -75,7 +74,6 @@ tasks:
         public/runtests_log:
           type: "file"
           path: "/var/log/runtests.log"
-          expires: "2018-02-17T17:33:38.806Z"
     metadata:
       name: "Documentation Build Test"
       description: "Documentation Build Test"
@@ -113,11 +111,9 @@ tasks:
         public/runtests_log:
           type: "file"
           path: "/var/log/runtests.log"
-          expires: "2018-02-17T17:33:38.806Z"
         public/httpd_error_log:
           type: "file"
           path: "/var/log/httpd/error_log"
-          expires: "2018-02-17T17:33:38.806Z"
     metadata:
       name: "WebService API Tests"
       description: "WebService API Tests"
@@ -155,15 +151,12 @@ tasks:
         public/runtests_log:
           type: "file"
           path: "/var/log/runtests.log"
-          expires: "2018-02-17T17:33:38.806Z"
         public/httpd_error_log:
           type: "file"
           path: "/var/log/httpd/error_log"
-          expires: "2018-02-17T17:33:38.806Z"
         public/selenium_log":
           type: "file"
           path: "/selenium.log"
-          expires: "2018-02-17T17:33:38.806Z"
     metadata:
       name: "Selenium Tests"
       description: "Selenium Tests"
