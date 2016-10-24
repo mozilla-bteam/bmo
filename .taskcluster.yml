@@ -9,6 +9,9 @@ tasks:
     workerType: "{{ taskcluster.docker.workerType }}"
     routes:
       - "notify.email.{{event.head.user.email}}.on-any"
+      - "notify.irc-channel.#bteam.on-failed"
+      - "notify.irc-channel.#bteam.on-exception"
+      - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
     extra:
       github:
         env: true
@@ -46,6 +49,7 @@ tasks:
       - "notify.email.{{event.head.user.email}}.on-any"
       - "notify.irc-channel.#bteam.on-failed"
       - "notify.irc-channel.#bteam.on-exception"
+      - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
     extra:
       github:
         env: true
@@ -83,6 +87,7 @@ tasks:
       - "notify.email.{{event.head.user.email}}.on-any"
       - "notify.irc-channel.#bteam.on-failed"
       - "notify.irc-channel.#bteam.on-exception"
+      - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
     extra:
       github:
         env: true
@@ -123,6 +128,7 @@ tasks:
       - "notify.email.{{event.head.user.email}}.on-any"
       - "notify.irc-channel.#bteam.on-failed"
       - "notify.irc-channel.#bteam.on-exception"
+      - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
     extra:
       github:
         env: true
