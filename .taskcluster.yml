@@ -28,7 +28,6 @@ tasks:
             platform: "linux64"
     payload:
       maxRunTime: 3600
-      reruns: 1
       image: "mozillabteam/bmo-ci"
       command:
         - "runtests.sh"
@@ -66,7 +65,6 @@ tasks:
             platform: "linux64"
     payload:
       maxRunTime: 3600
-      reruns: 1
       image: "mozillabteam/bmo-ci"
       command:
         - "runtests.sh"
@@ -104,7 +102,6 @@ tasks:
             platform: "linux64"
     payload:
       maxRunTime: 3600
-      reruns: 1
       image: "mozillabteam/bmo-ci"
       command:
         - "runtests.sh"
@@ -145,7 +142,6 @@ tasks:
             platform: "linux64"
     payload:
       maxRunTime: 3600
-      reruns: 1
       image: "mozillabteam/bmo-ci"
       command:
         - "runtests.sh"
