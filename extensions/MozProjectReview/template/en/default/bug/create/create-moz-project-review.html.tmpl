@@ -11,12 +11,24 @@
 [% PROCESS global/header.html.tmpl
    title = "Mozilla Project Review"
    generate_api_token = 1
-   style_urls = [ 'extensions/MozProjectReview/web/style/moz_project_review.css'
+   style_urls = [ 'skins/custom/create_bug.css',
+                  'extensions/MozProjectReview/web/style/moz_project_review.css'
                   'js/jquery/plugins/datetimepicker/datetimepicker.css' ]
    javascript_urls = [ 'js/field.js', 'js/util.js',
                        'extensions/MozProjectReview/web/js/moz_project_review.js' ]
    jquery = ["datetimepicker" ]
 %]
+
+<div id="custom_form_list">
+  <div id="custom_form_list_text">
+    Other task-specific [% terms.bug %] forms exist that should be used if appropriate:
+    <ul>
+      <li><a href="enter_bug.cgi?product=Mozilla%20Foundation%20Operations">Mozilla Foundation Vendor Request</a></li>
+      <li><a href="form.name.clearance">Name Clearance Request</a></li>
+      <li><a href="form.nda">NDA Request</a></li>
+    </ul>
+  </div>
+</div>
 
 <p>
   <strong>Please use this form for submitting a contract request, spend approval request and/or vendor review request.</strong>
@@ -37,20 +49,30 @@
   <input type="hidden" id="format" name="format" value="moz-project-review">
   <input type="hidden" id="bug_severity" name="bug_severity" value="normal">
   <input type="hidden" id="groups" name="groups" value="mozilla-employee-confidential">
+  <input type="hidden" id="short_desc" name="short_desc" value="">
   <input type="hidden" id="token" name="token" value="[% token FILTER html %]">
 
   <div id="initial_questions">
     <div class="header">Initial Questions</div>
 
-    <div id="project_feature_summary_row" class="field_row">
-      <span class="field_label required">Summary:</span>
+    <div id="contract_type_row" class="field_row">
+      <span class="field_label required">What are you doing?:</span>
       <span class="field_data">
-        <div class="field_description">
-          Briefly describe the services or products you're buying or the partner
-          relationship you're working on, including the name of the
-          vendor/contractor/partner involved.
-        </div>
-        <input type="text" name="short_desc" id="short_desc" size="60" maxsize="255">
+        <div class="field_description">Select one from the list</div>
+        <select name="contract_type" id="contract_type">
+          <option value="">Select One</option>
+          <option value="Engaging a new vendor company">Engaging a new vendor company</option>
+          <option value="Engaging an individual (independent contractor, temp agency worker, incorporated)">Engaging an individual (independent contractor, temp agency worker, incorporated)</option>
+          <option value="Adding a new SOW with a vendor">Adding a new SOW with a vendor</option>
+          <option value="Extending a SOW or renewing a contract">Extending an SOW or renewing a contract</option>
+          <option value="Purchasing software">Purchasing software</option>
+          <option value="Purchasing hardware">Purchasing hardware</option>
+          <option value="Signing up for an online service">Signing up for an online service</option>
+          <option value="An agreement with a partner">An agreement with a partner</option>
+          <option value="Other">Other</option>
+        </select>
+        <br>
+        <input type="text" name="contract_type_other" id="contract_type_other" size="60" style="display:none;">
       </span>
     </div>
 
@@ -58,9 +80,17 @@
       <span class="field_label required">Description:</span>
       <span class="field_data">
         <div class="field_description">
-          Expand on the summary, but most needed information will be requested in later questions.
+          Expand on the request, but most needed information will be requested in later questions.
         </div>
-        <textarea name="description" id="description" rows="10" cols="80"></textarea>
+        <textarea name="comment" id="comment" rows="10" cols="80"></textarea>
+      </span>
+    </div>
+
+    <div id="other_party_row" class="field_row">
+      <span class="field_label required">Vendor/Contractor/Partner Name:</span>
+      <span class="field_data">
+        <div class="field_description">Name of other party involved</div>
+        <input type="text" name="other_party" id="other_party" size="60">
       </span>
     </div>
 
@@ -109,6 +139,7 @@
         </div>
         <select name="mozilla_data" id="mozilla_data">
           <option value="">Select One</option>
+          <option value="Don't Know">Don't Know</option>
           <option value="Yes">Yes</option>
           <option value="No">No</option>
         </select>
@@ -119,44 +150,6 @@
           <textarea name="mozilla_data_explain" id="mozilla_data_explain" rows="10" cols="80"></textarea>
         </div>
      </span>
-    </div>
-
-    <div id="mozilla_related_row" class="field_row">
-      <span class="field_label">Mozilla Related:</span>
-      <span class="field_data">
-        <div class="field_description">What Mozilla products/services/projects does this relate to?</div>
-        <input type="text" name="mozilla_related" id="mozilla_related" size="60">
-      </span>
-    </div>
-
-    <div id="contract_type_row" class="field_row">
-      <span class="field_label required">What are you doing?:</span>
-      <span class="field_data">
-        <div class="field_description">Select one from the list</div>
-        <select name="contract_type" id="contract_type">
-          <option value="">Select One</option>
-          <option value="Engaging a new vendor company">Engaging a new vendor company</option>
-          <option value="Engaging an individual (independent contractor, temp agency worker, incorporated)">Engaging an individual (independent contractor, temp agency worker, incorporated)</option>
-          <option value="Adding a new SOW with a vendor">Adding a new SOW with a vendor</option>
-          <option value="Extending an SOW or renewing a contract">Extending an SOW or renewing a contract</option>
-          <option value="Purchasing software">Purchasing software</option>
-          <option value="Purchasing hardware">Purchasing hardware</option>
-          <option value="Signing up for an online service">Signing up for an online service</option>
-          <option value="An agreement with a partner">An agreement with a partner</option>
-          <option value="Need a partner NDA">Need a partner NDA</option>
-          <option value="Other">Other</option>
-        </select>
-        <br>
-        <input type="text" name="contract_type_other" id="contract_type_other" size="60" style="display:none;">
-      </span>
-    </div>
-
-    <div id="privacy_policy_row" class="field_row">
-      <span class="field_label">Privacy Policy:</span>
-      <span class="field_data">
-        <div class="field_description">What is the url for their privacy policy?</div>
-        <input type="text" name="privacy_policy" id="privacy_policy" size="60">
-      </span>
     </div>
 
     <div id="vendor_cost_row" class="field_row">
@@ -221,6 +214,29 @@
           <option value="Other">Other</option>
         </select>
       </span>
+    </div>
+
+    <div id="total_cost_row" class="field_row" style="display:none;">
+      <span class="field_label required">Total Cost:</span>
+      <span class="field_data">
+        <div class="field_description">
+          Please enter the total cost if a one time payment or the total for the entire
+          contract term if monthly or annual payments
+        </div>
+        <input type="text" name="total_cost" id="total_cost" size="60">
+      </span>
+    </div>
+
+    <div id="attachment_row" class="field_row">
+      <span class="field_label">Attachment:</span>
+      <span class="field_data">
+      <div class="field_description">
+        Upload any supporting document as draft SOW, quote, order form, etc.
+      </div>
+      <input type="file" id="attachment" name="data" size="50"><br>
+      <input type="hidden" name="contenttypemethod" value="autodetect">
+      <div class="field_description">Description</div>
+      <input type="text" name="description" id="description" size="30">
     </div>
   </div>
 
@@ -354,30 +370,6 @@
 
   <div id="contract_specific_questions">
     <div class="header">Contract Specific Questions</div>
-
-    <div id="other_party_row" class="field_row">
-      <span class="field_label required">Vendor/Contractor/Partner Name:</span>
-      <span class="field_data">
-        <div class="field_description">Name of other party involved</div>
-        <input type="text" name="other_party" id="other_party" size="60">
-      </span>
-    </div>
-
-    <div id="terminate_contract_row" class="field_row">
-      <span class="field_label">Right to Terminate Contract:</span>
-      <span class="field_data">
-        <div class="field_description">
-          If we're being asked to sign the vendor's contract or agree to
-          online terms, will Mozilla have the right to terminate the
-          contract for any or no reason upon 30 days notice?
-        </div>
-        <select name="terminate_contract" id="terminate_contract">
-          <option value="">Select One</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </span>
-    </div>
 
     <div id="sow_details" style="display:none;">
       <div class=field_row">
@@ -516,7 +508,7 @@
       </div>
 
       <div id="sow_vendor_hours_row" class="field_row">
-        <span class="field_label">Max Hours/Week (average if different):</span>
+        <span class="field_label">Max Hours/Week (and average if different):</span>
         <span class="field_data">
           <div class="field_description">If paid hourly</div>
           <input type="text" name="sow_vendor_hours" id="sow_vendor_hours" size="60">

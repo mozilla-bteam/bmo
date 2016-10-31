@@ -30,9 +30,7 @@ sub post_bug_after_creation {
     my $params    = Bugzilla->input_params;
     my $template  = Bugzilla->template;
 
-    return if !($params->{format}
-                && $params->{format} eq 'moz-project-review'
-                && $bug->component eq 'Contract Request');
+    return if !($params->{format} && $params->{format} eq 'moz-project-review');
 
     # do a match if applicable
     Bugzilla::User::match_field({
@@ -42,6 +40,7 @@ sub post_bug_after_creation {
     my $do_sec_review = 0;
     my @sec_review_needed = (
         'Engaging a new vendor company',
+        'Engaging an individual (independent contractor, temp agency worker, incorporated)',
         'Adding a new SOW with a vendor',
         'Extending an SOW or renewing a contract',
         'Purchasing software',

@@ -7,11 +7,8 @@
   #%]
 >> Initial Questions
 
-Summary:
-[%+ cgi.param('short_desc') %]
-
 Description:
-[%+ cgi.param('description') %]
+[%+ cgi.param('comment') %]
 
 Key Initiative:
 [%+ cgi.param('key_initiative') == 'Other' ? cgi.param('key_initiative_other') : cgi.param('key_initiative') %]
@@ -24,14 +21,8 @@ Mozilla Data Explanation:
 [%+ cgi.param('mozilla_data_explain') %]
 [% END %]
 
-Mozilla Related:
-[%+ cgi.param('mozilla_related') %]
-
 Type of Contract:
 [%+ cgi.param('contract_type') %]
-
-Privacy Policy:
-[%+ cgi.param('privacy_policy') %]
 
 Vendor Cost:
 [%+ cgi.param('vendor_cost') %]
@@ -44,3 +35,8 @@ Priority:
 
 Internal Organization:
 [%+ cgi.param('internal_org') %]
+
+[% IF cgi.param('total_cost') %]
+Total Cost:
+[%+ cgi.param('total_cost') %]
+[% END %]

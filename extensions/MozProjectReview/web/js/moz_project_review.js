@@ -10,7 +10,6 @@ $(function() {
     'use strict';
     var required_fields = {
         "initial_questions": {
-            "short_desc": "Please enter a value for project or feature name in the initial questions section.",
             "description": "Please enter a value for description in the initial questions section.",
             "key_initiative": "Please select a value for key initiative in the initial questions section.",
             "contract_type": "Please select a value for contract type in the initial questions section.",
@@ -77,6 +76,9 @@ $(function() {
             "finance_purchase_risk": "Please enter a value for risk in the finance questions section.",
             "finance_purchase_alternative": "Please enter a value for alternative in the finance questions section.",
         },
+        "total_cost_row": {
+            "total_cost": "Please enter a value for total cost"
+        }
     };
 
     var select_inputs = [
@@ -150,13 +152,25 @@ $(function() {
         }
 
         if (contract_type == 'Engaging a new vendor company'
-            || contract_type == 'Engaging an individual'
+            || contract_type == 'Engaging an individual (independent contractor, temp agency worker, incorporated)'
             || contract_type == 'Adding a new SOW with a vendor')
         {
             $('#sow_details').show();
         }
         else {
             $('#sow_details').hide();
+        }
+
+        if (contract_type == "Extending a SOW or renewing a contract"
+            || contract_type == "Purchasing software"
+            || contract_type == "Purchasing Hardware"
+            || contract_type == "Signing up for an online service"
+            || contract_type == "Other")
+        {
+            $('#total_cost_row').show();
+        }
+        else {
+            $('#total_cost_row').hide();
         }
 
         if (contract_type == 'Engaging an individual (independent contractor, temp agency worker, incorporated)') {
@@ -220,6 +234,28 @@ $(function() {
         if (alert_text) {
             alert(alert_text);
             return false;
+        }
+
+        $('#short_desc').val('Contract for ' +
+                             $('#contract_type').val() +
+                             ' with ' +
+                             $('#other_party').val());
+
+        var component_map = {
+            "Engaging a new vendor Company,": "Vendor/Services",
+            "Adding a new SOW with a vendor": "Vendor/Services",
+            "Extending a SOW or renewing a contract": "Vendor/Services",
+            "Purchasing hardware": "Vendor/Services",
+            "Other": "Vendor/Services",
+            "Engaging an individual (independent contractor, temp agency worker, incorporated)": "Independent Contractor Agreement",
+            "An agreement with a partner": "Firefox Distribution or Other Partner Agreement",
+            "Purchasing software": "License Review",
+            "Signing up for an online service" : "License Review"
+        }
+
+        var contract_type = $('#contract_type').val();
+        if (component_map[contract_type]) {
+            $('#component').val(component_map[contract_type]);
         }
 
         return true;
