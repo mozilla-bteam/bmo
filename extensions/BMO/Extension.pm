@@ -29,6 +29,7 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Bug;
 use Bugzilla::BugMail;
 use Bugzilla::Constants;
 use Bugzilla::Error;
@@ -189,9 +190,14 @@ sub page_before_template {
         require Bugzilla::Extension::BMO::Reports::UserActivity;
         Bugzilla::Extension::BMO::Reports::UserActivity::report($vars);
 
-    } elsif ($page eq 'triage_reports.html') {
+    }
+    elsif ($page eq 'triage_reports.html') {
         require Bugzilla::Extension::BMO::Reports::Triage;
-        Bugzilla::Extension::BMO::Reports::Triage::report($vars);
+        Bugzilla::Extension::BMO::Reports::Triage::unconfirmed($vars);
+    }
+    elsif ($page eq 'triage_owners.html') {
+        require Bugzilla::Extension::BMO::Reports::Triage;
+        Bugzilla::Extension::BMO::Reports::Triage::owners($vars);
     }
     elsif ($page eq 'group_admins.html') {
         require Bugzilla::Extension::BMO::Reports::Groups;
@@ -1852,6 +1858,9 @@ sub post_bug_after_creation {
     elsif ($format eq 'dev-engagement-event') {
         $self->_post_dev_engagement($args);
     }
+    elsif ($format eq 'shield-studies') {
+        $self->_post_shield_studies($args);
+    }
 }
 
 sub _post_employee_incident_bug {
@@ -2101,6 +2110,140 @@ EOF
     $parent_bug->update($parent_bug->creation_ts);
 }
 
+sub _post_shield_studies {
+    my ($self, $args) = @_;
+    my $vars       = $args->{vars};
+    my $parent_bug = $vars->{bug};
+    my $params     = Bugzilla->input_params;
+    my (@dep_comment, @dep_errors, @send_mail);
+
+    # Common parameters always passed to _file_child_bug
+    # bug_data and template_suffix will be different for each bug
+    my $child_params = {
+        parent_bug    => $parent_bug,
+        template_vars => $vars,
+        dep_comment   => \@dep_comment,
+        dep_errors    => \@dep_errors,
+        send_mail     => \@send_mail,
+    };
+
+    # Study Validation Review
+    $child_params->{'bug_data'} = {
+        short_desc   => '[SHIELD] Study Validation Review for ' . $params->{hypothesis},
+        product      => 'Shield',
+        component    => 'Shield Study',
+        bug_severity => 'normal',
+        op_sys       => 'All',
+        rep_platform => 'All',
+        version      => 'unspecified',
+        blocked      => $parent_bug->bug_id,
+    };
+    $child_params->{'template_suffix'} = 'validation-review';
+    _file_child_bug($child_params);
+
+    # Shipping Status
+    $child_params->{'bug_data'} = {
+        short_desc   => '[SHIELD] Shipping Status for ' . $params->{hypothesis},
+        product      => 'Shield',
+        component    => 'Shield Study',
+        bug_severity => 'normal',
+        op_sys       => 'All',
+        rep_platform => 'All',
+        version      => 'unspecified',
+        blocked      => $parent_bug->bug_id,
+    };
+    $child_params->{'template_suffix'} = 'shipping-status';
+
+    # Data Review
+    _file_child_bug($child_params);
+    $child_params->{'bug_data'} = {
+        short_desc   => '[SHIELD] Data Review for ' . $params->{hypothesis},
+        product      => 'Shield',
+        component    => 'Shield Study',
+        bug_severity => 'normal',
+        op_sys       => 'All',
+        rep_platform => 'All',
+        version      => 'unspecified',
+        blocked      => $parent_bug->bug_id,
+    };
+    $child_params->{'template_suffix'} = 'data-review';
+    _file_child_bug($child_params);
+
+    # Legal Review
+    $child_params->{'bug_data'} = {
+        short_desc   => '[SHIELD] Legal Review for ' . $params->{hypothesis},
+        product      => 'Legal',
+        component    => 'Firefox',
+        bug_severity => 'normal',
+        op_sys       => 'All',
+        rep_platform => 'All',
+        groups       => [ 'mozilla-employee-confidential' ],
+        version      => 'unspecified',
+        blocked      => $parent_bug->bug_id,
+    };
+    $child_params->{'template_suffix'} = 'legal';
+    _file_child_bug($child_params);
+
+    if (scalar @dep_errors) {
+        warn "[Bug " . $parent_bug->id . "] Failed to create additional moz-project-review bugs:\n" .
+        join("\n", @dep_errors);
+        $vars->{'message'} = 'moz_project_review_creation_failed';
+    }
+
+    if (scalar @dep_comment) {
+        my $comment = join("\n", @dep_comment);
+        if (scalar @dep_errors) {
+            $comment .= "\n\nSome errors occurred creating dependent bugs and have been recorded";
+        }
+        $parent_bug->add_comment($comment);
+        $parent_bug->update($parent_bug->creation_ts);
+    }
+
+    foreach my $bug_id (@send_mail) {
+        Bugzilla::BugMail::Send($bug_id, { changer => Bugzilla->user });
+    }
+}
+
+sub _file_child_bug {
+    my ($params) = @_;
+    my ($parent_bug, $template_vars, $template_suffix, $bug_data, $dep_comment, $dep_errors, $send_mail)
+        = @$params{qw(parent_bug template_vars template_suffix bug_data dep_comment dep_errors send_mail)};
+    my $old_error_mode = Bugzilla->error_mode;
+    Bugzilla->error_mode(ERROR_MODE_DIE);
+
+    my $new_bug;
+    eval {
+        my $comment;
+        my $full_template = "bug/create/comment-shield-studies-$template_suffix.txt.tmpl";
+        Bugzilla->template->process($full_template, $template_vars, \$comment)
+            || ThrowTemplateError(Bugzilla->template->error());
+        $bug_data->{'comment'} = $comment;
+        if ($new_bug = Bugzilla::Bug->create($bug_data)) {
+            my $set_all = {
+                dependson => { add => [ $new_bug->bug_id ] }
+            };
+            $parent_bug->set_all($set_all);
+            $parent_bug->update($parent_bug->creation_ts);
+        }
+    };
+
+    if ($@ || !($new_bug && $new_bug->{'bug_id'})) {
+        push(@$dep_comment, "Error creating $template_suffix review bug");
+        push(@$dep_errors, "$template_suffix : $@") if $@;
+        # Since we performed Bugzilla::Bug::create in an eval block, we
+        # need to manually rollback the commit as this is not done
+        # in Bugzilla::Error automatically for eval'ed code.
+        Bugzilla->dbh->bz_rollback_transaction();
+    }
+    else {
+        push(@$send_mail, $new_bug->id);
+        push(@$dep_comment, "Bug " . $new_bug->id . " - " . $new_bug->short_desc);
+    }
+
+    undef $@;
+    Bugzilla->error_mode($old_error_mode);
+}
+
 sub _pre_fxos_feature {
     my ($self, $args) = @_;
     my $cgi = Bugzilla->cgi;
@@ -2258,9 +2401,11 @@ sub forced_format {
 
 sub query_database {
     my ($vars) = @_;
+    my $cgi      = Bugzilla->cgi;
+    my $user     = Bugzilla->user;
+    my $template = Bugzilla->template;
 
     # validate group membership
-    my $user = Bugzilla->user;
     $user->in_group('query_database')
         || ThrowUserError('auth_failure', { group  => 'query_database',
                                             action => 'access',
@@ -2272,6 +2417,12 @@ sub query_database {
     $vars->{query} = $query;
 
     if ($query) {
+        # Only allow POST requests
+        if ($cgi->request_method ne 'POST') {
+            ThrowCodeError('illegal_request_method',
+                           { method => $cgi->request_method, accepted => ['POST'] });
+        }
+
         check_hash_token($input->{token}, ['query_database']);
         trick_taint($query);
         $vars->{executed} = 1;
@@ -2308,6 +2459,14 @@ sub query_database {
         # return results
         $vars->{columns} = $columns;
         $vars->{rows} = $rows;
+
+        if ($input->{csv}) {
+            print $cgi->header(-type=> 'text/csv',
+                               -content_disposition=> "attachment; filename=\"query_database.csv\"");
+            $template->process("pages/query_database.csv.tmpl", $vars)
+                || ThrowTemplateError($template->error());
+            exit;
+        }
     }
 }
 
