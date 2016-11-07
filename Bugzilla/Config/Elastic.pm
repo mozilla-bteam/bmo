@@ -18,11 +18,6 @@ our $sortkey = 1550;
 sub get_param_list {
   return (
     {
-        name    => 'use_elasticsearch',
-        type    => 'b',
-        default => 0,
-    },
-    {
         name    => 'elasticsearch_nodes',
         type    => 't',
         default => 'localhost:9200',
