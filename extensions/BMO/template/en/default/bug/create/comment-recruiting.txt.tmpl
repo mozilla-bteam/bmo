@@ -42,7 +42,7 @@ Employment Type:
 [%+ cgi.param('employment_type') %]
 
 Desired Location:
-[%+ cgi.param("desired_location") %]
+[%+ cgi.param("desired_location").join(', ') %]
 
 Job Level:
 [%+ cgi.param('job_level') %]
