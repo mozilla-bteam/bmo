@@ -73,6 +73,7 @@
                   "GD::Text" : "0",
                   "HTML::Parser" : "3.67",
                   "HTML::Scrubber" : "0",
+                  "IO::Async" : "0",
                   "IO::Scalar" : "0",
                   "JSON::RPC" : "0",
                   "LWP::UserAgent" : "0",
@@ -81,7 +82,9 @@
                   "Mozilla::CA" : "0",
                   "Net::SFTP" : "0",
                   "PatchReader" : "v0.9.6",
+                  "Role::Tiny" : "0",
                   "SOAP::Lite" : "0.712",
+                  "Search::Elasticsearch" : "0",
                   "Template::Plugin::GD::Image" : "0",
                   "Test::Taint" : "1.06",
                   "TheSchwartz" : "1.10",
@@ -122,6 +125,21 @@
                "requires" : {
                   "File::Copy::Recursive" : "0",
                   "File::Which" : "0"
+               }
+            }
+         }
+      },
+      "elasticsearch" : {
+         "description" : "Elasticsearch-powered searches",
+         "prereqs" : {
+            "runtime" : {
+               "recommends" : {
+                  "Term::ProgressBar" : "0"
+               },
+               "requires" : {
+                  "IO::Async" : "0",
+                  "Role::Tiny" : "0",
+                  "Search::Elasticsearch" : "0"
                }
             }
          }
