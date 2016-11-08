@@ -1,0 +1,67 @@
+<!-- 1.0@bugzilla.org -->
+[%# The contents of this file are subject to the Mozilla Public
+  # License Version 1.1 (the "License"); you may not use this file
+  # except in compliance with the License. You may obtain a copy of
+  # the License at http://www.mozilla.org/MPL/
+  #
+  # Software distributed under the License is distributed on an "AS
+  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+  # implied. See the License for the specific language governing
+  # rights and limitations under the License.
+  #
+  # The Original Code is the Bugzilla Bug Tracking System.
+  #
+  # The Initial Developer of the Original Code is Netscape Communications
+  # Corporation. Portions created by Netscape are
+  # Copyright (C) 1998 Netscape Communications Corporation. All
+  # Rights Reserved.
+  #
+  # Contributor(s): Emma Humphries <ech@emmah.net>
+  #%]
+
+[% PROCESS global/header.html.tmpl 
+   title = "Bugzilla Anti-Abuse Policy" 
+   style = "li { margin: 5px } .heading { font-weight: bold }" %]
+
+<p>
+It is our intention that [% terms.Bugzilla %] remain a useful tool for reporting 
+and commenting on [% terms.bugs %], feature-requests and tasks for the Mozilla community.
+</p>
+
+<p>
+In order to keep [% terms.Bugzilla %] a useful, inclusive place for this work, we have 
+<a href="https://bugzilla.mozilla.org/page.cgi?id=etiquette.html">guidelines</a> 
+for using this site which, by using this site, you agree to follow.
+</p>
+
+<p>
+If you find a bugzilla.mozilla.org user violating these guidelines in comments on bugs, 
+please <a href="https://wiki.mozilla.org/BMO/comment_tagging">tag the comments</a> in question so 
+that an administrator can review them. 
+<p>
+
+<p>If a comment is abusive or threatening use the tag <b><i>admin</i></b>. An admin will 
+receive a notification shortly and be able to follow up. Bugs with comments marked 'spam',
+and 'advocacy' will also be reviewed.
+</p>
+
+<p>
+If a [% terms.bug %]'s short-description or whiteboard tags violate our guidelines,
+please describe the issue in a comment and tag it <b><i>admin</i></b>.
+</p>
+
+<p>
+If another [% terms.Bugzilla %] user asks you to stop a behavior, stop doing it. 
+If an administrator asks you to stop engaging in a behavior, do it. Administrators 
+have the discretion to limit or suspend your account, and take further actions 
+if necessary if you violate our guidelines.
+</p>
+
+<p>
+Questions about this policy should be addressed to 
+<a href="mailto:bugzilla-admin@mozilla.org">bugzilla-admin@mozilla.org</a>. 
+If you need to contact a bugzilla community administrator immediately, 
+please admin in the #bmo channel on irc.mozilla.org.
+</p>
+
+[% INCLUDE global/footer.html.tmpl %]
