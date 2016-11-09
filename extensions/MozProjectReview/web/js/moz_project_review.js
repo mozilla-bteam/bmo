@@ -10,7 +10,7 @@ $(function() {
     'use strict';
     var required_fields = {
         "initial_questions": {
-            "description": "Please enter a value for description in the initial questions section.",
+            "comment": "Please enter a value for description in the initial questions section.",
             "key_initiative": "Please select a value for key initiative in the initial questions section.",
             "contract_type": "Please select a value for contract type in the initial questions section.",
             "mozilla_data": "Please select a value for mozilla data in the initial questions section.",

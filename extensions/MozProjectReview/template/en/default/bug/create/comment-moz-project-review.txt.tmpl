@@ -19,11 +19,8 @@ Is this someone we've worked with before?
 
 [% IF cgi.param('independent_contractor_prev_work') == 'Yes' %]
 If yes, enter the [% terms.bug %] number for the previous work or note that this is a former employee:
-[% terms.Bug +%] [%+ cgi.param('independent_contractor_prev_work_bug') %]
+[%+ terms.Bug +%] [%+ cgi.param('independent_contractor_prev_work_bug') %]
 [% END %]
-
-If yes, enter the [% terms.bug %] number for the previous work or note that this is a former employee:
-[%+ cgi.param('independent_contractor_prev_work_bug') %]
 
 Has this person incorporated (sole proprietorship or similar form)?
 [%+ cgi.param('independent_contractor_incorporated') %]
@@ -61,7 +58,7 @@ Vendor/Contractor/Partner Name:
 [%+ cgi.param('other_party') %]
 
 [% IF cgi.param('contract_type') == 'Engaging a new vendor company'
-      || cgi.param('contract_type') == 'Engaging an individual'
+      || cgi.param('contract_type') == 'Engaging an individual (independent contractor, temp agency worker, incorporated)'
       || cgi.param('contract_type') == 'Adding a new SOW with a vendor' %]
 >> SOW Details
 
