@@ -8,20 +8,40 @@
 
 <script type="text/javascript">
 <!--
-  PD.roadmap = [
-  [% FOREACH milestone = by_roadmap %]
-    {
-      name: '[% milestone.name FILTER js %]',
-      percentage: '[% milestone.percentage FILTER js %]',
-      link: '<a href="[% milestone.link_closed FILTER html %]">[% milestone.closed_bugs FILTER html %]</a> of <a href="[% milestone.link_total FILTER html %]"> [% milestone.total_bugs FILTER html %]</a> [% terms.bugs %] have been closed',
-    },
-  [% END %]
-  ];
+  $(document).ready(function(){
+    var col_headers = [
+      { title: "Name" },
+      { title: "Count" },
+      { title: "Percentage" },
+      { title: "Link" },
+    ];
+
+    var roadmap = [
+    [% FOREACH milestone = by_roadmap %]
+      [
+        '[% milestone.name FILTER js %]',
+        '[% milestone.bug_count FILTER js %]',
+        '<progress title="[% milestone.percentage FILTER js %]" value="[% milestone.percentage FILTER js %]"/>',
+        '<a href="[% milestone.link_closed FILTER html %]">[% milestone.closed_bugs FILTER html %]</a> of <a href="[% milestone.link_total FILTER html %]"> [% milestone.total_bugs FILTER html %]</a> [% terms.bugs %] have been closed',
+      ],
+    [% END %]
+    ];
+
+    $('#bug_milestones').DataTable({
+      data: roadmap,
+      columns: col_headers,
+      ordering: false,
+      paging: false,
+      bInfo: false,
+      searching: false,
+    });
+});
+
 -->
 </script>
 
 <h3>Percentage of [% terms.bug %] closure per milestone</h3>
 
-<div class="yui3-skin-sam">
-  <div id="bug_milestones"></div>
+<div>
+  <table id="bug_milestones" class="display"></table>
 </div>

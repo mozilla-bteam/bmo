@@ -6,85 +6,96 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<script>
-  PD.summary = {};
+[% table_names = ['summary', 'status', 'priority', 'severity', 'assignee' ] %]
 
+<script>
   // global counts
-  PD.summary.bug_counts = [
-    {
-      name: "Total [% terms.Bugs %]",
-      count: [% total_bugs || 0 FILTER js %],
-      percentage: [% total_bugs ? "100" : "0" %],
-      link: '<a href="[% bug_link_all FILTER js %]">Link</a>',
-    },
-    {
-      name: "Open [% terms.Bugs %]",
-      count: [% total_open_bugs || 0 FILTER js %],
-      percentage: [% open_bugs_percentage FILTER js %],
-      link: '<a href="[% bug_link_open FILTER js %]">Link</a>',
-    },
-    {
-      name: "Closed [% terms.Bugs %]",
-      count: [% total_closed_bugs || 0 FILTER js %],
-      percentage: [% closed_bugs_percentage FILTER js %],
-      link: '<a href="[% bug_link_closed FILTER js %]">Link</a>',
-    }
+  var summary_counts = [
+    [
+      '<a href="[% bug_link_all FILTER js %]">Total [% terms.Bugs %]</a>',
+      [% total_bugs || 0 FILTER js %],
+      '<progress title="[% total_bugs ? "1.0" : "0" %]" value="[% total_bugs ? "1" : "0" %]"/>'
+    ],
+    [
+      '<a href="[% bug_link_open FILTER js %]">Open [% terms.Bugs %]</a>',
+      [% total_open_bugs || 0 FILTER js %],
+      '<progress title="[% open_bugs_percentage FILTER js %]" value="[% open_bugs_percentage FILTER js %]"/>'
+    ],
+    [
+      '<a href="[% bug_link_closed FILTER js %]">Closed [% terms.Bugs %]</a>',
+      [% total_closed_bugs || 0 FILTER js %],
+      '<progress title="[% closed_bugs_percentage FILTER js %]" value="[% closed_bugs_percentage FILTER js %]"/>'
+    ]
   ];
 
   // Status counts
-  PD.summary.status_counts = [
+  var status_counts = [
     [% FOREACH col = by_status %]
       [% NEXT IF col.0 == 'CLOSED' %]
-      {
-        name: "[% col.0 FILTER js %]",
-        count: [% col.1 || 0 FILTER js %],
-        percentage: [% col.2 || 0 FILTER js %],
-        link: '<a href="[% bug_link_all FILTER js %]&amp;bug_status=[% col.0 FILTER uri FILTER js %]">Link</a>'
-      },
+      [
+        '<a href="[% bug_link_all FILTER js %]&amp;bug_status=[% col.0 FILTER uri FILTER js %]">[% col.0 FILTER js %]</a>',
+        [% col.1 || 0 FILTER js %],
+        '<progress title="[% col.2 || 0 FILTER js %]" value="[% col.2 || 0 FILTER js %]"/>',
+      ],
     [% END %]
   ];
 
   // Priority counts
-  PD.summary.priority_counts = [
+  var priority_counts = [
     [% FOREACH col = by_priority %]
-      {
-        name: "[% col.0 FILTER js %]",
-        count: [% col.1 || 0 FILTER js %],
-        percentage: [% col.2 || 0 FILTER js %],
-        link: '<a href="[% bug_link FILTER js %]&amp;priority=[% col.0 FILTER uri FILTER js %]">Link</a>'
-      },
+      [
+        '<a href="[% bug_link FILTER js %]&amp;priority=[% col.0 FILTER uri FILTER js %]">[% col.0 FILTER js %]</a>',
+        [% col.1 || 0 FILTER js %],
+        '<progress title="[% col.2 || 0 FILTER js %]" value="[% col.2 || 0 FILTER js %]"/>',
+      ],
     [% END %]
   ];
 
   // Severity counts
-  PD.summary.severity_counts = [
+  var severity_counts = [
     [% FOREACH col = by_severity %]
-      {
-        name: "[% col.0 FILTER js %]",
-        count: [% col.1 || 0 FILTER js %],
-        percentage: [% col.2 || 0 FILTER js %],
-        link: '<a href="[% bug_link FILTER js %]&amp;bug_severity=[% col.0 FILTER uri FILTER js %]">Link</a>'
-      },
+      [
+        '<a href="[% bug_link FILTER js %]&amp;bug_severity=[% col.0 FILTER uri FILTER js %]">[% col.0 FILTER js %]</a>',
+        [% col.1 || 0 FILTER js %],
+        '<progress title="[% col.2 || 0 FILTER js %]" value="[% col.2 || 0 FILTER js %]"/>',
+      ],
     [% END %]
   ];
 
   // Assignee counts
-  PD.summary.assignee_counts = [
+  var assignee_counts = [
     [% FOREACH col = by_assignee %]
-      {
-        name: "[% IF user.id %][% col.0.email FILTER js %][% ELSE %][% col.0.realname || 'No Name' FILTER js %][% END %]",
-        count: [% col.1 || 0 FILTER js %],
-        percentage: [% col.2 || 0 FILTER js %],
-        link: '[% IF user.id %]<a href="[% bug_link FILTER js %]&amp;emailassigned_to1=1&amp;emailtype1=exact&amp;email1=[% col.0.email FILTER uri FILTER js %]">Link</a>[% END %]'
-      },
+      [
+        '[% IF user.id %]<a href="[% bug_link FILTER js %]&amp;emailassigned_to1=1&amp;emailtype1=exact&amp;email1=[% col.0.email FILTER uri FILTER js %]">[% IF user.id %][% col.0.email FILTER js %][% ELSE %][% col.0.realname || "No Name" FILTER js %][% END %]</a>[% END %]',
+        [% col.1 || 0 FILTER js %],
+        '<progress title="[% col.2 || 0 FILTER js %]" value="[% col.2 || 0 FILTER js %]"/>',
+      ],
     [% END %]
   ];
+
+$(document).ready(function(){
+  var col_headers = [
+    { title: "Name" },
+    { title: "Count" },
+    { title: "Percentage" },
+  ];
+  [% FOREACH col_name IN table_names %]
+    $('#[% col_name FILTER js %]_table').DataTable({
+      data: [% col_name FILTER js %]_counts,
+      columns: col_headers,
+      ordering: false,
+      paging: false,
+      bInfo: false,
+      searching: false
+    });
+  [% END %]
+});
 </script>
 
 <h3>Summary of [% terms.bug %] counts</h3>
 
 <p>
-  <a href="#counts">Counts</a>
+  <a href="#summary">Counts</a>
   <span class="separator"> | </span>
   <a href="#status">Status</a>
   <span class="separator"> | </span>
@@ -95,28 +106,11 @@
   <a href="#assignee">Assignee</a>
 </p>
 
-<div class="yui3-skin-sam">
-  <a name="counts"></a>
-  <b>[% terms.Bug %] Counts</b>
-  <div id="bug_counts"></div>
-  <br>
-  <a name="status"></a>
-  <b>Status</b>
-  (<a href="#top">back to top</a>)
-  <div id="status_counts"></div>
-  <br>
-  <a name="priority"></a>
-  <b>Priority</b>
-  (<a href="#top">back to top</a>)
-  <div id="priority_counts"></div>
-  <br>
-  <a name="severity"></a>
-  <b>Severity</b>
-  (<a href="#top">back to top</a>)
-  <div id="severity_counts"></div>
-  <br>
-  <a name="assignee"></a>
-  <b>Assignee</b>
-  (<a href="#top">back to top</a>)
-  <div id="assignee_counts"></div>
-</div>
+
+[% FOREACH col_name IN table_names %]
+  <a name="[% col_name FILTER html %]"></a>
+  <br><br>
+  <b>[% col_name FILTER ucfirst FILTER html %]</b> (<a href="#top">back to top</a>)
+  <table id="[% col_name FILTER html %]_table" class="display"></table>
+[% END %]
+
