@@ -10,7 +10,7 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: 6.57_07
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.150005'
+generated_by: 'ExtUtils::MakeMaker version 7.22, CPAN::Meta::Converter version 2.150005'
 license: unknown
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -39,6 +39,7 @@ optional_features:
       Auth::GoogleAuth: '1.01'
       Cache::Memcached::Fast: '0.17'
       Chart::Lines: v2.4.10
+      Class::Accessor::Fast: '0'
       DBD::mysql: '4.037'
       Daemon::Generic: '0'
       Email::MIME::Attachment::Stripper: '0'
@@ -55,7 +56,7 @@ optional_features:
       HTML::Parser: '3.67'
       HTML::Scrubber: '0'
       IO::Scalar: '0'
-      JSON::RPC: '0'
+      JSON::RPC: '== 1.01'
       LWP::UserAgent: '0'
       MIME::Parser: '5.406'
       MooX::StrictConstructor: '0.008'
@@ -67,6 +68,7 @@ optional_features:
       Test::Taint: '1.06'
       TheSchwartz: '1.10'
       Type::Tiny: '1'
+      URI::Escape: '0'
       XML::Simple: '0'
       XML::Twig: '0'
       XMLRPC::Lite: '0.712'
@@ -117,7 +119,7 @@ optional_features:
   jsonrpc:
     description: 'JSON-RPC Interface'
     requires:
-      JSON::RPC: '0'
+      JSON::RPC: '== 1.01'
       Test::Taint: '1.06'
   linux_pid:
     description: 'Linux::PID for MozReview'
@@ -171,8 +173,14 @@ optional_features:
   rest:
     description: 'REST Interface'
     requires:
-      JSON::RPC: '0'
+      JSON::RPC: '== 1.01'
       Test::Taint: '1.06'
+  s3:
+    description: 'Amazon S3 Attachment Storage'
+    requires:
+      Class::Accessor::Fast: '0'
+      URI::Escape: '0'
+      XML::Simple: '0'
   smtp_auth:
     description: 'SMTP Authentication'
     requires:
@@ -200,7 +208,7 @@ optional_features:
 recommends:
   Safe: '2.30'
 requires:
-  CGI: '3.51'
+  CGI: '<= 3.63'
   CPAN::Meta::Prereqs: '2.132830'
   CPAN::Meta::Requirements: '2.121'
   Crypt::CBC: '0'
@@ -241,4 +249,4 @@ requires:
   perl: '5.010001'
   version: '0.87'
 version: '42'
-x_serialization_backend: 'CPAN::Meta::YAML version 0.016'
+x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

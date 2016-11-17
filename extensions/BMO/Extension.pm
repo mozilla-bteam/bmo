@@ -2177,6 +2177,7 @@ sub _post_shield_studies {
         bug_severity => 'normal',
         op_sys       => 'All',
         rep_platform => 'All',
+        groups       => [ 'mozilla-employee-confidential' ],
         version      => 'unspecified',
         blocked      => $parent_bug->bug_id,
     };
@@ -2400,9 +2401,11 @@ sub forced_format {
 
 sub query_database {
     my ($vars) = @_;
+    my $cgi      = Bugzilla->cgi;
+    my $user     = Bugzilla->user;
+    my $template = Bugzilla->template;
 
     # validate group membership
-    my $user = Bugzilla->user;
     $user->in_group('query_database')
         || ThrowUserError('auth_failure', { group  => 'query_database',
                                             action => 'access',
@@ -2414,6 +2417,12 @@ sub query_database {
     $vars->{query} = $query;
 
     if ($query) {
+        # Only allow POST requests
+        if ($cgi->request_method ne 'POST') {
+            ThrowCodeError('illegal_request_method',
+                           { method => $cgi->request_method, accepted => ['POST'] });
+        }
+
         check_hash_token($input->{token}, ['query_database']);
         trick_taint($query);
         $vars->{executed} = 1;
@@ -2450,6 +2459,14 @@ sub query_database {
         # return results
         $vars->{columns} = $columns;
         $vars->{rows} = $rows;
+
+        if ($input->{csv}) {
+            print $cgi->header(-type=> 'text/csv',
+                               -content_disposition=> "attachment; filename=\"query_database.csv\"");
+            $template->process("pages/query_database.csv.tmpl", $vars)
+                || ThrowTemplateError($template->error());
+            exit;
+        }
     }
 }
 
