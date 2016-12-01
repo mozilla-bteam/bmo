@@ -17,6 +17,7 @@
   #
   # Contributor(s): Gervase Markham <gerv@gerv.net>
   #                 Byron Jones <glob@mozilla.com>
+  #                 Emma Humphries <emma@mozilla.com>
   #%]
 
 [%# INTERFACE
@@ -40,6 +41,7 @@
 <script type="text/javascript">
 function onSubmit() {
   var email = document.getElementById('login').value;
+  var agreed = document.getElementById('agree').checked;
   if (email == '') {
     alert('You must enter your email address.');
     return false;
@@ -56,6 +58,13 @@ function onSubmit() {
       "email address.\n\nA legal address must contain exactly one '@', and " +
       "at least one '.' after the @.\n\nIt must also not contain any of " +
       "these special characters: \ ( ) & < > , ; : \" [ ], or any whitespace."
+    );
+    return false;
+  }
+  if (!agreed) {
+    alert(
+      "You must agree to [% terms.Bugzilla %] etiquette, Mozilla's participation " +
+      "guidlines, and the anti-abuse policy."
     );
     return false;
   }
@@ -111,11 +120,11 @@ function onSubmit() {
 
   <div id="right-blurb">
   <p>
-  Great!  There are three things to know and do:
+  Great!  There are four things to know and do:
   </p>
   <ol>
   <li>
-    Please consider reading our
+    Please read our
     <a href="https://developer.mozilla.org/en/Bug_writing_guidelines" target="_blank">[% terms.bug %]-writing guidelines</a>.
   </li>
   <li>
@@ -136,6 +145,12 @@ function onSubmit() {
     and Communications Terms of Use</a> for more information.
   </li>
   <li>
+    Your understand that your conduct on this site is subject to both <a href="/page.cgi?id=etiquette.html">[% terms.Bugzilla %] etiquette</a>, 
+    and <a href="https://www.mozilla.org/en-US/about/governance/policies/participation/">Mozilla's participation guidelines</a>, 
+    and in turn are governed by our <a href="/page.cgi?id=anti-abuse.html">anti-abuse policy</a>. By creating an account, 
+    you agree to abide by them.
+  </li>
+  <li>
     Please give us an email address you want to use.  Once we confirm that it works,
     you'll be asked to set a password and then you can start filing [% terms.bugs %] and helping fix them.
   </li>
@@ -149,11 +164,23 @@ function onSubmit() {
   <tr>
     <td class="label">Email Address:</td>
     <td>
-      <input size="35" id="login" name="login" placeholder="you@example.com">[% Param('emailsuffix') FILTER html %]</td>
+      <input size="35" id="login" name="login" placeholder="you@example.com">[% Param('emailsuffix') FILTER html %]
+    </td>
+  </tr>
+  <tr>
     <td>
-      <input type="hidden" id="token" name="token" value="[% issue_hash_token(['create_account']) FILTER html %]">
-      <input type="submit" value="Create Account">
-     </td>
+    I have read <a href="/page.cgi?id=etiquette.html">[% terms.Bugzilla %] etiquette</a>
+    and <a href="https://www.mozilla.org/en-US/about/governance/policies/participation/">Mozilla's participation guidelines</a>
+    and agree to abide by them, and 
+    I acknowledge, and have read the <a href="/page.cgi?id=anti-abuse.html">anti-abuse policy</a>.
+    <input type="checkbox" id="agree" value="agreed">
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <input type="hidden" id="token" name="token" value="[% issue_hash_token(['create_account']) FILTER html %]">
+    <input type="submit" value="Create Account">
+    </td>  
   </tr>
   </table>
   </form>
