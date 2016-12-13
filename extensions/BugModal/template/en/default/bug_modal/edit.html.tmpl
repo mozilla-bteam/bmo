@@ -137,7 +137,7 @@
 %]
 
 [% IF user.id %]
-  <form name="changeform" id="changeform" method="post" action="process_bug.cgi">
+  <form name="changeform" id="changeform" method="post" action="process_bug.cgi"[% IF bug.groups_in.size %] autocomplete="nope"[% END %]>
   <input type="hidden" name="delta_ts" value="[% bug.delta_ts FILTER html %]">
   <input type="hidden" name="longdesclength" value="[% bug.comments.size FILTER html %]">
   <input type="hidden" name="id" id="bug_id" value="[% bug.bug_id FILTER html %]">
@@ -616,6 +616,15 @@
         view_only = 1
     %]
 
+    [%# triage owner %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.triage_owner
+        field_type = constants.FIELD_TYPE_USER
+        value = bug.component_obj.triage_owner
+        view_only = 1
+    %]
+
+
     [%# needinfo %]
     [% WRAPPER bug_modal/field.html.tmpl
         container = 1
@@ -783,7 +792,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.cf_fx_points
           field_type = bug_fields.cf_fx_points.type
-          hide_on_view = bug.cf_points == ""
+          hide_on_view = bug.cf_fx_points == ""
       %]
     [% END %]
 

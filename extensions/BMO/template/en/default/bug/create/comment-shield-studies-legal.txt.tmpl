@@ -7,6 +7,10 @@
   #%]
 
 [% USE Bugzilla %]
-[% cgi = Bugzilla.cgi %]
+[% cgi = Bugzilla.cgi %]a
 
-[% PROCESS "bug/create/comment-moz-project-review.txt.tmpl" %]
+> Pleasese include a link to the consent form.
+[%+ cgi.param('consent_form') %]
+
+> Please include a link to debrief survey.
+[%+ cgi.param('debrief_survey') %]

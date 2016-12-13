@@ -115,7 +115,8 @@ name              type   description
            "email": "namachi@netscape.com"
          },
          "cf_free_text": "",
-         "blocks": []
+         "blocks": [],
+         "comment_count": 12
        }
      ]
    }
@@ -185,6 +186,7 @@ is_creator_accessible  boolean   If ``true``, this bug can be accessed by the
                                  member of the groups the bug is restricted to.
 keywords               array     Each keyword that is on this bug.
 last_change_time       datetime  When the bug was last changed.
+comment_count          int       Number of comments associated with the bug.
 op_sys                 string    The name of the operating system that the bug
                                  was filed against.
 platform               string    The name of the platform (hardware) that the bug
@@ -477,6 +479,10 @@ limit             int       Limit the number of results returned. If the limit
                             set by the administrator, then the maximum limit will
                             be used instead. If you set the limit equal to zero,
                             then all matching results will be returned instead.
+longdescs.count   int       The number of comments a bug has. The bug's description 
+                            is the first comment. For example, to find bugs which someone
+                            has commented on after they have been filed, search on 
+                            ``longdescs.count`` *greater than* 1.
 offset            int       Used in conjunction with the ``limit`` argument,
                             ``offset`` defines the starting position for the
                             search. For example, given a search that would

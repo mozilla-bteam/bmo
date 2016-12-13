@@ -1,21 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# Contributor(s): Dan Mosedale <dmose@mozilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Myk Melez <myk@mozilla.org>
-#                 Greg Hendricks <ghendricks@novell.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 =head1 NAME
 
@@ -69,7 +57,9 @@ in addition to what is documented here.
 
 package Bugzilla::Field;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use base qw(Exporter Bugzilla::Object);
 @Bugzilla::Field::EXPORT = qw(check_field get_field_id get_legal_field_values);
@@ -275,6 +265,7 @@ use constant DEFAULT_FIELDS => (
     {name => 'bug_interest_ts',       desc => 'Bug Interest', buglist => 1,
      type => FIELD_TYPE_DATETIME},
     {name => 'comment_tag',           desc => 'Comment Tag'},
+    {name => 'triage_owner',          desc => 'Triage Owner', buglist => 1},
 );
 
 ################
@@ -287,6 +278,9 @@ sub match {
     my ($params) = @_;
     if (delete $params->{is_select}) {
         $params->{type} = [FIELD_TYPE_SINGLE_SELECT, FIELD_TYPE_MULTI_SELECT];
+    }
+    if (delete $params->{skip_extensions}) {
+        $params->{WHERE}{'type != ?'} = FIELD_TYPE_EXTENSION;
     }
     return $self->SUPER::match(@_);
 }

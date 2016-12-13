@@ -9,8 +9,17 @@
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi %]
 
-[% PROCESS "bug/create/comment-moz-project-review.txt.tmpl" %]
+> Targeted locales
+[%+ cgi.param('targetted_locales') %]
 
-Privacy Policy: [% cgi.param('privacy_policy_vendor_user_data') %]
-Vendor's Privacy Policy: [% cgi.param('privacy_policy_vendor_link') %]
-Privacy Questionnaire: [% cgi.param('privacy_policy_vendor_questionnaire') %]
+> Sampling rates
+[%+ cgi.param('sampling_rates') %]
+
+> Channel(s)
+[%+ cgi.param('channels') %]
+
+> What is the sample size needed?
+[%+ cgi.param('sample_size') %]
+
+> How long will your study run?
+[%+ cgi.param('study_length') %]

@@ -1,39 +1,16 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Gervase Markham <gerv@gerv.net>
-#                 Terry Weissman <terry@mozilla.org>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Stephan Niemz <st.n@gmx.net>
-#                 Andreas Franke <afranke@mathweb.org>
-#                 Myk Melez <myk@mozilla.org>
-#                 Michael Schindler <michael@compressconsult.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Joel Peshkin <bugreport@peshkin.net>
-#                 Lance Larsh <lance.larsh@oracle.com>
-#                 Jesse Clark <jjclark1982@gmail.com>
-#                 Rémi Zara <remi_zara@mac.com>
-#                 Reed Loden <reed@reedloden.com>
-
-use strict;
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Search;
+
+use 5.10.1;
+use strict;
+use warnings;
+
 use base qw(Exporter);
 @Bugzilla::Search::EXPORT = qw(
     IsValidQueryType
@@ -359,6 +336,9 @@ use constant OPERATOR_FIELD_OVERRIDE => {
         _non_changed => \&_bug_interest_ts,
         _default     => \&_invalid_operator,
     },
+    triage_owner => {
+        _non_changed => \&_triage_owner_nonchanged,
+    },
     # Custom Fields
     FIELD_TYPE_FREETEXT, { _non_changed => \&_nullable },
     FIELD_TYPE_BUG_ID,   { _non_changed => \&_nullable_int },
@@ -394,6 +374,9 @@ sub SPECIAL_PARSING {
 
         # BMO - Add ability to use pronoun for bug mentors field
         bug_mentor => \&_commenter_pronoun,
+
+        # BMO - add ability to use pronoun for triage owners
+        triage_owner => \&_triage_owner_pronoun,
     };
     foreach my $field (Bugzilla->active_custom_fields) {
         if ($field->type == FIELD_TYPE_DATETIME) {
@@ -470,6 +453,7 @@ use constant SPECIAL_ORDER => {
 use constant COLUMN_DEPENDS => {
     classification      => ['product'],
     percentage_complete => ['actual_time', 'remaining_time'],
+    triage_owner        => ['component'],
 };
 
 # This describes tables that must be joined when you want to display
@@ -537,6 +521,13 @@ sub COLUMN_JOINS {
                 from  => 'map_flags.type_id',
                 to    => 'id',
             },
+        },
+        'triage_owner' => {
+            table => 'profiles',
+            as    => 'map_triage_owner',
+            from  => 'map_component.triage_owner_id',
+            to    => 'userid',
+            join  => 'LEFT',
         },
         keywords => {
             table => 'keywords',
@@ -647,6 +638,13 @@ sub COLUMNS {
         bug_interest_ts => 'bug_interest.modification_time',
         assignee_last_login => 'assignee.last_seen_date',
     );
+
+    if ($user->id) {
+        $special_sql{triage_owner} = 'map_triage_owner.login_name';
+    }
+    else {
+        $special_sql{triage_owner} = 'map_triage_owner.realname';
+    }
 
     # Backward-compatibility for old field names. Goes new_name => old_name.
     # These are here and not in _translate_old_column because the rest of the
@@ -2467,6 +2465,22 @@ sub _commenter_pronoun {
     }
 }
 
+# XXX only works with %user% currently
+sub _triage_owner_pronoun {
+    my ($self, $args) = @_;
+    my $value = $args->{value};
+    my $user = $self->_user;
+    if ($value eq "%user%") {
+        if ($user->id) {
+            $args->{value} = $user->id;
+            $args->{quoted} = $args->{value};
+            $args->{value_is_id} = 1;
+        } else {
+            ThrowUserError('login_required_for_pronoun');
+        }
+    }
+}
+
 #####################################################################
 # Search Functions
 #####################################################################
@@ -2876,6 +2890,16 @@ sub _classification_nonchanged {
     my $term = $args->{term};
     $args->{term} = build_subselect("map_product.classification_id",
         "classifications.id", "classifications", $term);
+}
+
+sub _triage_owner_nonchanged {
+    my ($self, $args) = @_;
+    $self->_add_extra_column('triage_owner');
+    $args->{full_field} = $args->{value_is_id} ? 'profiles.userid' : 'profiles.login_name';
+    $self->_do_operator_function($args);
+    my $term = $args->{term};
+    $args->{term} = build_subselect('bugs.component_id', 'components.id',
+        'profiles JOIN components ON components.triage_owner_id = profiles.userid', $term);
 }
 
 sub _nullable {

@@ -9,8 +9,9 @@ package Bugzilla::User::APIKey;
 
 use 5.10.1;
 use strict;
+use warnings;
 
-use parent qw(Bugzilla::Object);
+use base qw(Bugzilla::Object);
 
 use Bugzilla::User;
 use Bugzilla::Util qw(generate_random_password trim remote_ip);
@@ -87,6 +88,12 @@ sub _check_app_id {
     ThrowCodeError("invalid_app_id", { app_id => $app_id }) unless $app_id =~ /^[[:xdigit:]]+$/;
 
     return $app_id;
+}
+
+sub create_special {
+    my ($class, @args) = @_;
+    local VALIDATORS->{api_key} = sub { return $_[1] };
+    return $class->create(@args);
 }
 1;
 

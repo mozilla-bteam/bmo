@@ -1,29 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Andrew Dunstan <andrew@dunslane.net>,
-#                 Edward J. Sabol <edwardjsabol@iname.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Lance Larsh <lance.larsh@oracle.com>
-#                 Dennis Melentyev <dennis.melentyev@infopulse.com.ua>
-#                 Akamai Technologies <bugzilla-dev@akamai.com>
-#                 Elliotte Martin <emartin@everythingsolved.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::DB::Schema;
 
@@ -35,7 +15,10 @@ package Bugzilla::DB::Schema;
 #
 ###########################################################################
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use Bugzilla::Error;
 use Bugzilla::Hook;
 use Bugzilla::Util;
@@ -1311,7 +1294,7 @@ use constant ABSTRACT_SCHEMA => {
     # group, given the ability to bless another group, or given
     # visibility to another groups existence and membership
     # grant_type:
-    # if GROUP_MEMBERSHIP - member groups are made members of grantor
+   # if GROUP_MEMBERSHIP - member groups are made members of grantor
     # if GROUP_BLESS - member groups may grant membership in grantor
     # if GROUP_VISIBLE - member groups may see grantor group
     group_group_map => {
@@ -1450,8 +1433,12 @@ use constant ABSTRACT_SCHEMA => {
                                                 COLUMN => 'userid',
                                                 DELETE => 'SET NULL'}},
             description      => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
-            isactive         => {TYPE => 'BOOLEAN', NOTNULL => 1, 
+            isactive         => {TYPE => 'BOOLEAN', NOTNULL => 1,
                                  DEFAULT => 'TRUE'},
+            triage_owner_id  => {TYPE => 'INT3',
+                                 REFERENCES => {TABLE  => 'profiles',
+                                                COLUMN => 'userid',
+                                                DELETE => 'SET NULL'}},
         ],
         INDEXES => [
             components_product_id_idx => {FIELDS => [qw(product_id name)],

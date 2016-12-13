@@ -9,6 +9,7 @@ package Bugzilla::Extension::TrackingFlags::Flag;
 
 use base qw(Bugzilla::Object);
 
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -87,6 +88,16 @@ sub new {
     return $class->SUPER::new($param);
 }
 
+sub new_from_hash {
+    my $class = shift;
+    my $cache = Bugzilla->request_cache->{'tracking_flags'} //= {};
+    my $flag = $class->SUPER::new_from_hash(@_);
+    if ($flag) {
+        push @Bugzilla::Extension::TrackingFlags::FLAG_CACHE, $flag;
+    }
+    return $flag;
+}
+
 sub create {
     my $class = shift;
     my $params = shift;
@@ -131,6 +142,9 @@ sub create {
     SetParam('disable_bug_updates',  0);
     write_params();
     die $error if $error;
+
+    # fielddefs has been changed so we need to clear global config
+    Bugzilla->memcached->clear_config();
 
     return $flag;
 }

@@ -1,29 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Myk Melez <myk@mozilla.org>
-#                 Jouni Heikniemi <jouni@heikniemi.net>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-
-use strict;
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Flag;
+
+use 5.10.1;
+use strict;
+use warnings;
 
 =head1 NAME
 
@@ -531,6 +517,8 @@ sub update_flags {
             # This is a new flag.
             my $flag = $class->create($new_flag, $timestamp);
             $new_flag->{id} = $flag->id;
+            $new_flag->{creation_date} = format_time($timestamp, '%Y.%m.%d %H:%i:%s');
+            $new_flag->{modification_date} = format_time($timestamp, '%Y.%m.%d %H:%i:%s');
             $class->notify($new_flag, undef, $self, $timestamp);
         }
         else {
@@ -780,23 +768,11 @@ sub _check_setter {
     # to the new flag status.
     my $status = $self->status;
 
-    # Make sure the user is authorized to modify flags, see bug 180879:
-    # - The flag exists and is unchanged.
-    # - The flag setter can unset flag.
-    # - Users in the request_group can clear pending requests
-    # - Users in the grant_group can set/cleari/request flags, including "+" and "-".
-    unless (($status eq $self->{_old_status})
-            || ($status eq 'X' && $setter->id == Bugzilla->user->id)
-            || (($status eq 'X' || $status eq '?')
-                && $setter->can_request_flag($self->type))
-            || $setter->can_unset_flag($self->type, $self->{_old_status})
-            || $setter->can_set_flag($self->type))
-    {
-        ThrowUserError('flag_update_denied',
-                        { name       => $self->type->name,
-                          status     => $status,
-                          old_status => $self->{_old_status} });
-    }
+    ThrowUserError('flag_update_denied',
+                   { name       => $self->type->name,
+                     status     => $status,
+                     old_status => $self->{_old_status} })
+        unless $setter->can_change_flag($self->type, $self->{_old_status} || 'X', $status);
 
     # If the request is being retargetted, we don't update
     # the setter, so that the setter gets the notification.

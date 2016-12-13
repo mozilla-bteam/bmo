@@ -1,36 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Dawn Endico    <endico@mozilla.org>
-#                 Terry Weissman <terry@mozilla.org>
-#                 Chris Yeh      <cyeh@bluemartini.com>
-#                 Bradley Baetz  <bbaetz@acm.org>
-#                 Dave Miller    <justdave@bugzilla.org>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Lance Larsh <lance.larsh@oracle.com>
-#                 Elliotte Martin <elliotte_martin@yahoo.com>
-#                 Christian Legnitto <clegnitto@mozilla.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Bug;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::Attachment;
 use Bugzilla::Constants;
@@ -66,6 +45,8 @@ use base qw(Bugzilla::Object Exporter);
     editable_bug_fields
 );
 
+my %CLEANUP;
+
 #####################################################################
 # Constants
 #####################################################################
@@ -83,9 +64,8 @@ use constant USE_MEMCACHED => 0;
 # This is a sub because it needs to call other subroutines.
 sub DB_COLUMNS {
     my $dbh = Bugzilla->dbh;
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
-                       && $_->type != FIELD_TYPE_EXTENSION}
-                      Bugzilla->active_custom_fields;
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT }
+                      Bugzilla->active_custom_fields({skip_extensions => 1});
     my @custom_names = map {$_->name} @custom;
 
     my @columns = (qw(
@@ -221,9 +201,8 @@ sub VALIDATOR_DEPENDENCIES {
 };
 
 sub UPDATE_COLUMNS {
-    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT
-                       && $_->type != FIELD_TYPE_EXTENSION}
-                      Bugzilla->active_custom_fields;
+    my @custom = grep {$_->type != FIELD_TYPE_MULTI_SELECT }
+                      Bugzilla->active_custom_fields({skip_extensions => 1});
     my @custom_names = map {$_->name} @custom;
     my @columns = qw(
         alias
@@ -286,6 +265,7 @@ use constant FIELD_MAP => {
     is_cc_accessible => 'cclist_accessible',
     is_creator_accessible => 'reporter_accessible',
     last_change_time => 'delta_ts',
+    comment_count    => 'longdescs.count',
     platform         => 'rep_platform',
     severity         => 'bug_severity',
     status           => 'bug_status',
@@ -369,6 +349,9 @@ sub new {
         return $error_self;
     }
 
+    $CLEANUP{$self->id} = $self;
+    weaken($CLEANUP{$self->id});
+
     return $self;
 }
 
@@ -381,6 +364,15 @@ sub object_cache_key {
     my $key = $class->SUPER::object_cache_key(@_)
       || return;
     return $key . ',' . Bugzilla->user->id;
+}
+
+sub CLEANUP {
+    foreach my $bug (values %CLEANUP) {
+        next unless $bug;
+        delete $bug->{depends_on_obj};
+        delete $bug->{blocks_obj};
+    }
+    %CLEANUP = ();
 }
 
 sub check {
@@ -3668,6 +3660,17 @@ sub comments {
         @comments = grep { datetime_from($_->creation_ts) <= $to } @comments;
     }
     return \@comments;
+}
+
+sub comment_count {
+    my ($self) = @_;
+    return $self->{comment_count} if $self->{comment_count};
+    my $dbh = Bugzilla->dbh;
+    return $self->{comment_count} =
+        $dbh->selectrow_array('SELECT COUNT(longdescs.comment_id)
+                               FROM longdescs
+                               WHERE longdescs.bug_id = ?',
+                              undef, $self->id);
 }
 
 # This is needed by xt/search.t.

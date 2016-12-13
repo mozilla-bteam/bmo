@@ -6,12 +6,8 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% USE Bugzilla %]
-[% cgi = Bugzilla.cgi %]
-
-[% PROCESS "bug/create/comment-moz-project-review.txt.tmpl" %]
-
-Is there a privacy policy for this new feature/product?:
-[%+ cgi.param('privacy_policy_project_link') %]
-What assistance do you need from the privacy team (if any)?:
-[%+ cgi.param('privacy_policy_project_assistance') %]
+[% IF error == "illegal_request_method" %]
+  [% title = "Illegal Request Method" %]
+  The request method '[% method FILTER html %]' is not allowed.
+  Legal methods are '[% accepted.join(', ') FILTER html %]'.
+[% END %]

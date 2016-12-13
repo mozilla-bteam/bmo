@@ -6,7 +6,7 @@
 use strict;
 use warnings;
 
-use lib '.';
+use lib qw(. local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::User;

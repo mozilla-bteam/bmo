@@ -1,38 +1,16 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Dan Mosedale <dmose@mozilla.org>
-#                 Jacob Steenhagen <jake@bugzilla.org>
-#                 Bradley Baetz <bbaetz@student.usyd.edu.au>
-#                 Christopher Aillon <christopher@aillon.com>
-#                 Tobias Burnus <burnus@net-b.de>
-#                 Myk Melez <myk@mozilla.org>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Greg Hendricks <ghendricks@novell.com>
-#                 David D. Kilzer <ddkilzer@kilzer.net>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 
 package Bugzilla::Template;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 use Bugzilla::Bug;
 use Bugzilla::Constants;
@@ -863,12 +841,13 @@ sub create {
             },
 
             # In CSV, quotes are doubled, and any value containing a quote or a
-            # comma is enclosed in quotes. If a field starts with an equals
-            # sign, it is proceed by a space.
+            # comma is enclosed in quotes.
+            # If a field starts with either "=", "+", "-" or "@", it is preceded
+            # by a space to prevent stupid formula execution from Excel & co.
             csv => sub
             {
                 my ($var) = @_;
-                $var = ' ' . $var if substr($var, 0, 1) eq '=';
+                $var = ' ' . $var if $var =~ /^[+=@-]/;
                 # backslash is not special to CSV, but it can be used to confuse some browsers...
                 # so we do not allow it to happen. We only do this for logged-in users.
                 $var =~ s/\\/\x{FF3C}/g if Bugzilla->user->id;
@@ -1115,19 +1094,6 @@ sub create {
 
             # These don't work as normal constants.
             DB_MODULE        => \&Bugzilla::Constants::DB_MODULE,
-            REQUIRED_MODULES => 
-                \&Bugzilla::Install::Requirements::REQUIRED_MODULES,
-            OPTIONAL_MODULES => sub {
-                my @optional = @{OPTIONAL_MODULES()};
-                foreach my $item (@optional) {
-                    my @features;
-                    foreach my $feat_id (@{ $item->{feature} }) {
-                        push(@features, install_string("feature_$feat_id"));
-                    }
-                    $item->{feature} = \@features;
-                }
-                return \@optional;
-            },
             'default_authorizer' => sub { return Bugzilla::Auth->new() },
 
             # It is almost always better to do mobile feature detection, client side in js.

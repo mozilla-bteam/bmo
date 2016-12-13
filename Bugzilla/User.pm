@@ -1,45 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Myk Melez <myk@mozilla.org>
-#                 Erik Stambaugh <erik@dasbistro.com>
-#                 Bradley Baetz <bbaetz@acm.org>
-#                 Joel Peshkin <bugreport@peshkin.net> 
-#                 Byron Jones <bugzilla@glob.com.au>
-#                 Shane H. W. Travis <travis@sedsystems.ca>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Gervase Markham <gerv@gerv.net>
-#                 Lance Larsh <lance.larsh@oracle.com>
-#                 Justin C. De Vries <judevries@novell.com>
-#                 Dennis Melentyev <dennis.melentyev@infopulse.com.ua>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Mads Bondo Dydensborg <mbd@dbc.dk>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
-################################################################################
-# Module Initialization
-################################################################################
-
-# Make it harder for us to do dangerous things in Perl.
-use strict;
-
-# This module implements utilities for dealing with Bugzilla users.
 package Bugzilla::User;
+
+use 5.10.1;
+use strict;
+use warnings;
 
 use Bugzilla::Error;
 use Bugzilla::Util;
@@ -1007,6 +977,105 @@ sub groups {
     return $self->{groups};
 }
 
+sub force_bug_dissociation {
+    my ($self, $nobody, $groups, $timestamp) = @_;
+    my $dbh       = Bugzilla->dbh;
+    my $auto_user = Bugzilla->user;
+    $timestamp //= $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+
+    my $group_marks = join(", ", ('?') x @$groups);
+    my $user_id = $self->id;
+    my @params = ($user_id, $user_id, $user_id, $user_id,
+                  map { blessed $_ ? $_->id : $_ } @$groups);
+    my $bugs = $dbh->selectall_arrayref(qq{
+        SELECT
+            bugs.bug_id,
+            bugs.reporter_accessible,
+            bugs.reporter    = ? AS match_reporter,
+            bugs.assigned_to = ? AS match_assignee,
+            bugs.qa_contact  = ? AS match_qa_contact,
+            cc.who           = ? AS match_cc
+        FROM
+            bug_group_map
+                JOIN
+            bugs ON bug_group_map.bug_id = bugs.bug_id
+                LEFT JOIN
+            cc ON cc.bug_id = bugs.bug_id
+        WHERE
+            group_id IN ($group_marks)
+        HAVING match_reporter AND reporter_accessible
+            OR match_assignee
+            OR match_qa_contact
+            OR match_cc
+    }, { Slice => {} }, @params);
+
+    my @reporter_bugs = map { $_->{bug_id} } grep { $_->{match_reporter}   } @$bugs;
+    my @assignee_bugs = map { $_->{bug_id} } grep { $_->{match_assignee}   } @$bugs;
+    my @qa_bugs       = map { $_->{bug_id} } grep { $_->{match_qa_contact} } @$bugs;
+    my @cc_bugs       = map { $_->{bug_id} } grep { $_->{match_cc}         } @$bugs;
+
+    # Reporter - set reporter_accessible to false
+    my $reporter_accessible_field_id = get_field_id('reporter_accessible');
+    foreach my $bug_id (@reporter_bugs) {
+        $dbh->do(
+            q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
+            VALUES (?, ?, ?, ?, ?, ?)},
+            undef, $bug_id, $auto_user->id, $timestamp, $reporter_accessible_field_id, 1, 0);
+        $dbh->do(
+            q{UPDATE bugs SET reporter_accessible = 0, delta_ts = ?, lastdiffed = ?
+            WHERE bug_id = ?},
+            undef, $timestamp, $timestamp, $bug_id);
+    }
+
+    # Assignee
+    my $assigned_to_field_id = get_field_id('assigned_to');
+    foreach my $bug_id (@assignee_bugs) {
+        $dbh->do(
+            q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
+            VALUES (?, ?, ?, ?, ?, ?)},
+            undef, $bug_id, $auto_user->id, $timestamp, $assigned_to_field_id,
+                $self->login, $auto_user->login);
+        $dbh->do(
+            q{UPDATE bugs SET assigned_to = ?, delta_ts = ?, lastdiffed = ?
+            WHERE bug_id = ?},
+            undef, $nobody->id, $timestamp, $timestamp, $bug_id);
+    }
+
+    # QA Contact
+    my $qa_field_id = get_field_id('qa_contact');
+    foreach my $bug_id (@qa_bugs) {
+        $dbh->do(
+            q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
+            VALUES (?, ?, ?, ?, ?, '')},
+            undef, $bug_id, $auto_user->id, $timestamp, $qa_field_id, $self->login);
+        $dbh->do(
+            q{UPDATE bugs SET qa_contact = NULL, delta_ts = ?, lastdiffed = ?
+            WHERE bug_id = ?},
+            undef, $timestamp, $timestamp, $bug_id);
+    }
+
+    # CC list
+    my $cc_field_id = get_field_id('cc');
+    foreach my $bug_id (@cc_bugs) {
+        $dbh->do(
+            q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
+            VALUES (?, ?, ?, ?, ?, '')},
+            undef, $bug_id, $auto_user->id, $timestamp, $cc_field_id, $self->login);
+        $dbh->do(q{DELETE FROM cc WHERE bug_id = ? AND who = ?},
+                undef, $bug_id, $self->id);
+    }
+
+    if (@reporter_bugs || @assignee_bugs || @qa_bugs || @cc_bugs) {
+        $self->clear_last_statistics_ts();
+
+        # It's complex to determine which items now need to be flushed from memcached.
+        # As this is expected to be a rare event, we just flush the entire cache.
+        Bugzilla->memcached->clear_all();
+    }
+
+    return $bugs;
+}
+
 sub last_visited {
     my ($self) = @_;
 
@@ -1512,6 +1581,52 @@ sub check_can_admin_flagtype {
         $can_admin || ThrowUserError('flag_type_not_editable', { flagtype => $flagtype });
     }
     return wantarray ? ($flagtype, $can_fully_edit) : $flagtype;
+}
+
+sub can_change_flag {
+    my ($self, $flag_type, $old_status, $new_status) = @_;
+
+    # "old_status:new_status" => [OR conditions
+    state $flag_transitions = {
+        'X:-' => ['grant_group'],
+        'X:+' => ['grant_group'],
+        'X:?' => ['request_group'],
+
+        '?:X' => ['request_group', 'is_setter'],
+        '?:-' => ['grant_group'],
+        '?:+' => ['grant_group'],
+
+        '+:X' => ['grant_group'],
+        '+:-' => ['grant_group'],
+        '+:?' => ['grant_group'],
+
+        '-:X' => ['grant_group'],
+        '-:+' => ['grant_group'],
+        '-:?' => ['grant_group'],
+    };
+
+    return 1 if $new_status eq $old_status;
+
+    my $action = "$old_status:$new_status";
+    my %bool = (
+        request_group => $self->can_request_flag($flag_type),
+        grant_group   => $self->can_set_flag($flag_type),
+        is_setter     => $self->id == Bugzilla->user->id,
+    );
+
+    my $cond = $flag_transitions->{$action};
+    if ($cond) {
+        if (any { $bool{ $_ } } @$cond) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    else {
+        warn "unknown flag transition blocked: $action";
+        return 0;
+    }
 }
 
 sub can_request_flag {

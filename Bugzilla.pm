@@ -1,30 +1,15 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Bradley Baetz <bbaetz@student.usyd.edu.au>
-#                 Erik Stambaugh <erik@dasbistro.com>
-#                 A. Karl Kornel <karl@kornel.name>
-#                 Marc Schumann <wurblzap@gmail.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla;
 
+use 5.10.1;
 use strict;
+use warnings;
 
 # We want any compile errors to get to the browser, if possible.
 BEGIN {
@@ -47,8 +32,8 @@ use Bugzilla::Field;
 use Bugzilla::Flag;
 use Bugzilla::Hook;
 use Bugzilla::Install::Localconfig qw(read_localconfig);
-use Bugzilla::Install::Requirements qw(OPTIONAL_MODULES);
 use Bugzilla::Install::Util qw(init_console include_languages);
+use Bugzilla::Install::Requirements qw(load_cpan_meta check_cpan_feature);
 use Bugzilla::Memcached;
 use Bugzilla::Template;
 use Bugzilla::Token;
@@ -253,7 +238,7 @@ sub extensions {
             my $extension = $package->new();
             if ($extension->enabled) {
                 push(@extensions, $extension);
-            }        
+            }
         }
         $cache->{extensions} = \@extensions;
     }
@@ -261,37 +246,36 @@ sub extensions {
 }
 
 sub feature {
-    my ($class, $feature) = @_;
-    my $cache = $class->request_cache;
-    return $cache->{feature}->{$feature}
-        if exists $cache->{feature}->{$feature};
+    my ($class, $feature_name) = @_;
+    return 0 unless CAN_HAS_FEATURE;
+    return 0 unless $class->has_feature($feature_name);
 
-    my $feature_map = $cache->{feature_map};
-    if (!$feature_map) {
-        foreach my $package (@{ OPTIONAL_MODULES() }) {
-            foreach my $f (@{ $package->{feature} }) {
-                $feature_map->{$f} ||= [];
-                push(@{ $feature_map->{$f} }, $package->{module});
-            }
-        }
-        $cache->{feature_map} = $feature_map;
-    }
+    my $cache = $class->process_cache;
+    my $feature = $cache->{cpan_meta}->feature($feature_name);
+    # Bugzilla expects this will also load all the modules.. so we have to do that.
+    # Later we should put a deprecation warning here, and favor calling has_feature().
 
-    if (!$feature_map->{$feature}) {
-        ThrowCodeError('invalid_feature', { feature => $feature });
-    }
+    return 1 if $cache->{feature_loaded}{$feature_name};
+    my @modules = $feature->prereqs->merged_requirements->required_modules;
+    Module::Runtime::require_module($_) foreach @modules;
+    $cache->{feature_loaded}{$feature_name} = 1;
+    return 1;
+}
 
-    my $success = 1;
-    foreach my $module (@{ $feature_map->{$feature} }) {
-        # We can't use a string eval and "use" here (it kills Template-Toolkit,
-        # see https://rt.cpan.org/Public/Bug/Display.html?id=47929), so we have
-        # to do a block eval.
-        $module =~ s{::}{/}g;
-        $module .= ".pm";
-        eval { require $module; 1; } or $success = 0;
-    }
-    $cache->{feature}->{$feature} = $success;
-    return $success;
+sub has_feature {
+    my ($class, $feature_name) = @_;
+
+    return 0 unless CAN_HAS_FEATURE;
+
+    my $cache = $class->process_cache;
+    return $cache->{feature}->{$feature_name}
+        if exists $cache->{feature}->{$feature_name};
+
+    my $meta = $cache->{cpan_meta} //= load_cpan_meta();
+    my $feature = eval { $meta->feature($feature_name) }
+      or ThrowCodeError('invalid_feature', { feature => $feature_name });
+
+    return $cache->{feature}{$feature_name} = check_cpan_feature($feature)->{ok};
 }
 
 sub cgi {
@@ -710,10 +694,10 @@ sub active_custom_fields {
     if ($params) {
         $cache_id .= ($params->{product} ? '_p' . $params->{product}->id : '') .
                      ($params->{component} ? '_c' . $params->{component}->id : '');
+        $cache_id .= ':noext' if $params->{skip_extensions};
     }
     if (!exists $class->request_cache->{$cache_id}) {
-        my $fields = Bugzilla::Field->match({ custom => 1, obsolete => 0});
-        @$fields = grep($_->type ne FIELD_TYPE_EXTENSION, @$fields);
+        my $fields = Bugzilla::Field->match({ custom => 1, obsolete => 0, skip_extensions => 1 });
         Bugzilla::Hook::process('active_custom_fields',
                                 { fields => \$fields, params => $params });
         $class->request_cache->{$cache_id} = $fields;
@@ -747,30 +731,10 @@ sub audit {
 # This is identical to Install::Util::_cache so that things loaded
 # into Install::Util::_cache during installation can be read out
 # of request_cache later in installation.
-our $_request_cache = $Bugzilla::Install::Util::_cache;
-
-sub request_cache {
-    if ($ENV{MOD_PERL}) {
-        require Apache2::RequestUtil;
-        # Sometimes (for example, during mod_perl.pl), the request
-        # object isn't available, and we should use $_request_cache instead.
-        my $request = eval { Apache2::RequestUtil->request };
-        return $_request_cache if !$request;
-        return $request->pnotes();
-    }
-    return $_request_cache;
-}
+use constant request_cache => Bugzilla::Install::Util::_cache();
 
 sub clear_request_cache {
-    $_request_cache = {};
-    if ($ENV{MOD_PERL}) {
-        require Apache2::RequestUtil;
-        my $request = eval { Apache2::RequestUtil->request };
-        if ($request) {
-            my $pnotes = $request->pnotes;
-            delete @$pnotes{(keys %$pnotes)};
-        }
-    }
+    %{ request_cache() } = ();
 }
 
 # This is a per-process cache.  Under mod_cgi it's identical to the
@@ -827,6 +791,7 @@ sub _cleanup {
 
     # BMO - allow "end of request" processing
     Bugzilla::Hook::process('request_cleanup');
+    Bugzilla::Bug->CLEANUP;
 
     my $main   = Bugzilla->request_cache->{dbh_main};
     my $shadow = Bugzilla->request_cache->{dbh_shadow};

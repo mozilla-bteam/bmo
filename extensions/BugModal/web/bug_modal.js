@@ -255,14 +255,9 @@ $(function() {
     }
 
     if ($('#copy-summary').length) {
-
-        // probe for document.execCommand("copy") support
         var hasExecCopy = false;
         try {
-            // on page load nothing will be selected, so we don't smash the
-            // clipboard doing this
-            document.execCommand("copy");
-            hasExecCopy = true;
+            hasExecCopy = document.queryCommandSupported("copy");
         } catch(ex) {
             // ignore
         }
@@ -866,10 +861,11 @@ $(function() {
             $('#field-status-edit').show();
             $('#field-status-edit .name').show();
             $('#bug_status').val('RESOLVED').change();
-            $('#resolution').val($(event.target).text()).change();
+            $('#bottom-resolution').val($(event.target).text()).change();
             $('#top-save-btn').show();
             $('#resolve-as').hide();
             $('#bottom-status').show();
+            $('#bottom-dup_id').focus();
         });
     $('.status-btn')
         .click(function(event) {
@@ -1027,29 +1023,39 @@ $(function() {
             },
         ]
     });
+
+    var format_items = [
+        {
+        name: 'For Printing',
+            callback: function() {
+                window.location.href = 'show_bug.cgi?format=multiple&id=' + BUGZILLA.bug_id;
+            }
+        },
+        {
+            name: 'XML',
+            callback: function() {
+                window.location.href = 'show_bug.cgi?ctype=xml&id=' + BUGZILLA.bug_id;
+            }
+        },
+        {
+            name: 'Legacy',
+            callback: function() {
+                window.location.href = 'show_bug.cgi?format=default&id=' + BUGZILLA.bug_id;
+            }
+        }
+    ];
+    if (!BUGZILLA.bug_secure) {
+        format_items.push({
+            name: 'JSON',
+            callback: function() {
+                window.location.href = 'rest/bug/' + BUGZILLA.bug_id;
+            }
+        });
+    }
     $.contextMenu({
         selector: '#format-btn',
         trigger: 'left',
-        items: [
-            {
-                name: 'For Printing',
-                callback: function() {
-                    window.location.href = 'show_bug.cgi?format=multiple&id=' + BUGZILLA.bug_id;
-                }
-            },
-            {
-                name: 'XML',
-                callback: function() {
-                    window.location.href = 'show_bug.cgi?ctype=xml&id=' + BUGZILLA.bug_id;
-                }
-            },
-            {
-                name: 'Legacy',
-                callback: function() {
-                    window.location.href = 'show_bug.cgi?format=default&id=' + BUGZILLA.bug_id;
-                }
-            }
-        ]
+        items: format_items
     });
 
     // "reset to default" checkboxes
@@ -1167,11 +1173,15 @@ $(function() {
 
                     // update groups
                     var dirtyGroups = [];
+                    var any_groups_checked = 0;
                     $('#module-security').find('input[name=groups]').each(function() {
                         var that = $(this);
                         var defaultChecked = !!that.attr('checked');
                         if (defaultChecked !== that.is(':checked')) {
                             dirtyGroups.push({ name: that.val(), value: that.is(':checked') });
+                        }
+                        if (that.is(':checked')) {
+                            any_groups_checked = 1;
                         }
                     });
                     $('#module-security .module-content')
@@ -1180,6 +1190,16 @@ $(function() {
                     $.each(dirtyGroups, function() {
                         $('#module-security').find('input[value=' + this.name + ']').prop('checked', this.value);
                     });
+                    // clear any default groups if user was making bug public
+                    // unless the group is mandatory for the new product
+                    if (!any_groups_checked) {
+                        $('#module-security').find('input[name=groups]').each(function() {
+                            var that = $(this);
+                            if (!that.data('mandatory')) {
+                                that.prop('checked', false);
+                            }
+                        });
+                    }
                 },
                 function() {
                     $('#product-throbber').hide();

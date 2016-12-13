@@ -1,30 +1,16 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is mozilla.org code.
-#
-# The Initial Developer of the Original Code is Holger
-# Schurig. Portions created by Holger Schurig are
-# Copyright (C) 1999 Holger Schurig. All
-# Rights Reserved.
-#
-# Contributor(s): Holger Schurig <holgerschurig@nikocity.de>
-#                 Terry Weissman <terry@mozilla.org>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Akamai Technologies <bugzilla-dev@akamai.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
+use 5.10.1;
 use strict;
-use lib qw(. lib);
+use warnings;
+
+use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::Constants;
@@ -121,12 +107,14 @@ if ($action eq 'new') {
     Bugzilla::User::match_field ({
         'initialowner'     => { 'type' => 'single' },
         'initialqacontact' => { 'type' => 'single' },
+        'triage_owner'     => { 'type' => 'single' },
         'initialcc'        => { 'type' => 'multi'  },
     });
 
     my $default_assignee   = trim($cgi->param('initialowner')     || '');
     my $default_qa_contact = trim($cgi->param('initialqacontact') || '');
     my $description        = trim($cgi->param('description')      || '');
+    my $triage_owner       = trim($cgi->param('triage_owner')     || '');
     my @initial_cc         = $cgi->param('initialcc');
     my $isactive           = $cgi->param('isactive');
 
@@ -137,6 +125,7 @@ if ($action eq 'new') {
         initialowner     => $default_assignee,
         initialqacontact => $default_qa_contact,
         initial_cc       => \@initial_cc,
+        triage_owner_id  => $triage_owner,
         # XXX We should not be creating series for products that we
         # didn't create series for.
         create_series    => 1,
@@ -223,6 +212,7 @@ if ($action eq 'update') {
     Bugzilla::User::match_field ({
         'initialowner'     => { 'type' => 'single' },
         'initialqacontact' => { 'type' => 'single' },
+        'triage_owner'     => { 'type' => 'single' },
         'initialcc'        => { 'type' => 'multi'  },
     });
 
@@ -230,6 +220,7 @@ if ($action eq 'update') {
     my $default_assignee      = trim($cgi->param('initialowner')     || '');
     my $default_qa_contact    = trim($cgi->param('initialqacontact') || '');
     my $description           = trim($cgi->param('description')      || '');
+    my $triage_owner          = trim($cgi->param('triage_owner')     || '');
     my @initial_cc            = $cgi->param('initialcc');
     my $isactive              = $cgi->param('isactive');
   
@@ -240,6 +231,7 @@ if ($action eq 'update') {
     $component->set_description($description);
     $component->set_default_assignee($default_assignee);
     $component->set_default_qa_contact($default_qa_contact);
+    $component->set_triage_owner($triage_owner);
     $component->set_cc_list(\@initial_cc);
     $component->set_is_active($isactive);
     my $changes = $component->update();

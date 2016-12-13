@@ -1,42 +1,16 @@
-#!/usr/bin/perl -wT
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+#!/usr/bin/perl -T
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla Bug Tracking System.
-#
-# The Initial Developer of the Original Code is Netscape Communications
-# Corporation. Portions created by Netscape are
-# Copyright (C) 1998 Netscape Communications Corporation. All
-# Rights Reserved.
-#
-# Contributor(s): Terry Weissman <terry@mozilla.org>
-#                 Myk Melez <myk@mozilla.org>
-#                 Daniel Raichle <draichle@gmx.net>
-#                 Dave Miller <justdave@syndicomm.com>
-#                 Alexander J. Vincent <ajvincent@juno.com>
-#                 Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Greg Hendricks <ghendricks@novell.com>
-#                 Frédéric Buclin <LpSolit@gmail.com>
-#                 Marc Schumann <wurblzap@gmail.com>
-#                 Byron Jones <bugzilla@glob.com.au>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
-################################################################################
-# Script Initialization
-################################################################################
-
-# Make it harder for us to do dangerous things in Perl.
+use 5.10.1;
 use strict;
+use warnings;
 
-use lib qw(. lib);
+use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::BugMail;
@@ -54,9 +28,11 @@ use Bugzilla::Token;
 use Bugzilla::Keyword;
 use Bugzilla::Hook;
 
-use Encode qw(encode find_encoding);
+use Encode qw(encode find_encoding from_to);
 use URI;
 use URI::QueryParam;
+use URI::Escape qw(uri_escape_utf8);
+use File::Basename qw(basename);
 
 # For most scripts we don't make $cgi and $template global variables. But
 # when preparing Bugzilla for mod_perl, this script used these
@@ -381,7 +357,7 @@ sub view {
 
     # At this point, Bugzilla->login has been called if it had to.
     my $contenttype = $attachment->contenttype;
-    my $filename    = $attachment->filename;
+    my $filename    = basename($attachment->filename);
     my $contenttype_override = 0;
 
     # Bug 111522: allow overriding content-type manually in the posted form
@@ -396,18 +372,6 @@ sub view {
 
     # BMO add a hook for github url redirection
     Bugzilla::Hook::process('attachment_view', { attachment => $attachment });
-
-    $filename =~ s/^.*[\/\\]//;
-    # escape quotes and backslashes in the filename, per RFCs 2045/822
-    $filename =~ s/\\/\\\\/g; # escape backslashes
-    $filename =~ s/"/\\"/g; # escape quotes
-
-    # Avoid line wrapping done by Encode, which we don't need for HTTP
-    # headers. See discussion in bug 328628 for details.
-    local $Encode::Encoding{'MIME-Q'}->{'bpl'} = 10000;
-    $filename = encode('MIME-Q', $filename);
-
-    my $disposition = Bugzilla->params->{'allow_attachment_display'} ? 'inline' : 'attachment';
 
     my $do_redirect = 0;
     Bugzilla::Hook::process('attachment_should_redirect_login', { do_redirect => \$do_redirect });
@@ -427,7 +391,7 @@ sub view {
     if ($contenttype !~ /\bcharset=/i) {
         # In order to prevent Apache from adding a charset, we have to send a
         # charset that's a single space.
-        $cgi->charset("''");
+        $cgi->charset("");
         if (Bugzilla->feature('detect_charset') && $contenttype =~ /^text\//) {
             my $encoding = detect_encoding($attachment->data);
             if ($encoding) {
@@ -437,11 +401,26 @@ sub view {
     }
     Bugzilla->log_user_request($attachment->bug_id, $attachment->id, "attachment-get")
       if Bugzilla->user->id;
+
+    my $disposition = Bugzilla->params->{'allow_attachment_display'} ? 'inline' : 'attachment';
+
+    my $ascii_filename = $filename;
+    utf8::encode($ascii_filename);
+    from_to($ascii_filename, 'UTF-8', 'ascii');
+    $ascii_filename =~ s/(["\\])/\\$1/g;
+    my $qfilename = qq{"$filename"};
+    my $ufilename = qq{UTF-8''} . uri_escape_utf8($filename);
+
+    my $filenames = "filename=$qfilename";
+    if ($ascii_filename ne $filename) {
+        $filenames .= "; filename*=$ufilename";
+    }
+
     # IE8 and older do not support RFC 6266. So for these old browsers
     # we still pass the old 'filename' attribute. Modern browsers will
     # automatically pick the new 'filename*' attribute.
     print $cgi->header(-type=> $contenttype,
-                       -content_disposition=> "$disposition; filename=\"$filename\"; filename*=UTF-8''$filename",
+                       -content_disposition=> "$disposition; $filenames",
                        -content_length => $attachment->datasize);
     disable_utf8();
     print $attachment->data;
