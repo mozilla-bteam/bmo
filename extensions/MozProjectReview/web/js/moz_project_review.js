@@ -120,7 +120,7 @@ $(function() {
         var do_sec_review = [
             'Engaging a new vendor company',
             'Adding a new SOW with a vendor',
-            'Extending an SOW or renewing a contract',
+            'Extending a SOW or renewing a contract',
             'Purchasing software',
             'Signing up for an online service',
             'Other'
@@ -163,7 +163,7 @@ $(function() {
 
         if (contract_type == "Extending a SOW or renewing a contract"
             || contract_type == "Purchasing software"
-            || contract_type == "Purchasing Hardware"
+            || contract_type == "Purchasing hardware"
             || contract_type == "Signing up for an online service"
             || contract_type == "Other")
         {
@@ -236,13 +236,13 @@ $(function() {
             return false;
         }
 
-        $('#short_desc').val('Contract for ' +
+        $('#short_desc').val('Legal Review: Contract for ' +
                              $('#contract_type').val() +
                              ' with ' +
                              $('#other_party').val());
 
         var component_map = {
-            "Engaging a new vendor company,": "Vendor/Services",
+            "Engaging a new vendor company": "Vendor/Services",
             "Adding a new SOW with a vendor": "Vendor/Services",
             "Extending a SOW or renewing a contract": "Vendor/Services",
             "Purchasing hardware": "Vendor/Services",
