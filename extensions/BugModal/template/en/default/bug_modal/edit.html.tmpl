@@ -1046,7 +1046,7 @@
   collapsed = 1
   subtitle = bug.groups_in.size ? bug.groups_in.pluck("description").join(", ") : "public"
   hide_on_view = bug.groups_in.size == 0
-  hide_on_edit = bug.groups.size == 0
+  hide_on_edit = bug.groups.size == 0 && !bug.product_obj.default_security_group
 %]
   [% INCLUDE bug_modal/groups.html.tmpl %]
 [% END %]
