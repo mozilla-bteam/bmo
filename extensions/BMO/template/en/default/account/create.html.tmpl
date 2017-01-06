@@ -63,8 +63,8 @@ function onSubmit() {
   }
   if (!agreed) {
     alert(
-      "You must agree to [% terms.Bugzilla %] etiquette, Mozilla's participation " +
-      "guidelines, and the anti-abuse policy."
+      "You must agree to follow [% terms.Bugzilla %] Etiquette, the Mozilla Community Participation " +
+      "Guidelines, and the anti-abuse policy."
     );
     return false;
   }
@@ -145,8 +145,8 @@ function onSubmit() {
       and Communications Terms of Use</a> for more information.
     </li>
     <li>
-      You understand that your conduct on this site is subject to both <a href="page.cgi?id=etiquette.html">[% terms.Bugzilla %] etiquette</a>, 
-      and <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla's participation guidelines</a>, 
+      You understand that your conduct on this site is subject to both <a href="page.cgi?id=etiquette.html">[% terms.Bugzilla %] Etiquette</a>, 
+      and the <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla Community Participation Guidelines</a>, 
       and in turn are governed by our <a href="page.cgi?id=anti-abuse.html">anti-abuse policy</a>. By creating an account, 
       you agree to abide by them.
     </li>
@@ -169,8 +169,8 @@ function onSubmit() {
     </tr>
     <tr>
     <td>
-      I have read <a href="page.cgi?id=etiquette.html">[% terms.Bugzilla %] etiquette</a>
-      and <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla's participation guidelines</a>
+      I have read <a href="page.cgi?id=etiquette.html">[% terms.Bugzilla %] Etiquette</a>
+      and the <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla Community Participation Guidelines</a>
       and agree to abide by them, and 
       I acknowledge, and have read the <a href="page.cgi?id=anti-abuse.html">anti-abuse policy</a>.
       <input type="checkbox" id="agree" value="agreed">
@@ -212,4 +212,4 @@ function onSubmit() {
     <div>[% desc FILTER html %]</div>
   </td>
   </tr>
-[% END %]
+[% END %e]
