@@ -161,9 +161,9 @@ sub clear {
 
 sub should_rate_limit {
     my ($self, $name, $rate_max, $rate_seconds, $tries) = @_;
+    return 0 unless $self->{memcached};
     my $prefix    = RATE_LIMIT_PREFIX . $name . ':';
     my $memcached = $self->{memcached};
-
     $tries //= 3;
 
     for (0 .. $tries) {

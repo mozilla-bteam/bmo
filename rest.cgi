@@ -16,10 +16,16 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::WebService::Constants;
+use Bugzilla::Memcached;
+use Bugzilla::Util;
+
 BEGIN {
-    if (!Bugzilla->feature('rest')
-        || !Bugzilla->feature('jsonrpc'))
-    {
+    if (Bugzilla->memcached->should_rate_limit(remote_ip(),1,60)) {
+	    if (!Bugzilla->feature('rest') || !Bugzilla->feature('jsonrpc'))
+	    {
+	        ThrowUserError('feature_disabled', { feature => 'rest' });
+	    }
+    } else {
         ThrowUserError('feature_disabled', { feature => 'rest' });
     }
 }
