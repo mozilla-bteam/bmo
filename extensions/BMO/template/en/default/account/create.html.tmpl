@@ -41,7 +41,7 @@
 <script type="text/javascript">
 function onSubmit() {
   var email = document.getElementById('login').value;
-  var agreed = document.getElementById('agree').checked;
+  var agreed = document.getElementById('etiquette').checked;
   if (email == '') {
     alert('You must enter your email address.');
     return false;
@@ -171,7 +171,7 @@ function onSubmit() {
       I have read <a href="page.cgi?id=etiquette.html">[% terms.Bugzilla %] Etiquette</a>
       and the <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla Community Participation Guidelines</a>
       and agree to abide by them.
-      <input type="checkbox" id="agree" value="agreed">
+      <input type="checkbox" id="etiquette" value="agreed">
     </td>
     </tr>
     <tr>
