@@ -575,6 +575,11 @@ td.flag-requestee {
     display: inline;
 }
 
+h3.change-name {
+    font-size: small;
+    font-weight: normal;
+}
+
 .comment-actions {
     white-space: nowrap;
     vertical-align: top;
@@ -720,7 +725,7 @@ td.flag-requestee {
     border-top-right-radius: 2px;
 }
 
-#comment-tabs li.current {
+#comment-tabs li[aria-selected="true"] {
     background: #fff;
     border-bottom: 1px solid #fff;
 }
