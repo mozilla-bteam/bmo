@@ -689,11 +689,14 @@ h3.change-name {
 
 #comment {
     border: 1px solid #ccc;
+    resize: none;
+    overflow: auto;
 }
 
 #comment, #comment-preview {
     clear: both;
     width: 100%;
+    height: auto;
     box-sizing: border-box !important;
     margin: 0 0 1em;
 }
