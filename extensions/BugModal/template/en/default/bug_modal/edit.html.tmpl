@@ -959,7 +959,7 @@
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.status_whiteboard
         field_type = constants.FIELD_TYPE_FREETEXT
-        help = "https://wiki.mozilla.org/BMO/Whiteboard"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
     %]
       [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
     [% END %]
