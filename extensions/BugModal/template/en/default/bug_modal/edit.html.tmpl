@@ -64,11 +64,13 @@
     LAST;
   END;
 
-  # count set project/tracking flags
+  # count set project/tracking/blocking flags
   tracking_flags_has = 0;
   tracking_flags_set = 0;
   project_flags_has = 0;
   project_flags_set = 0;
+  blocking_flags_has = 0;
+  blocking_flags_set = 0;
   FOREACH flag IN tracking_flags;
     is_set = flag.bug_flag(bug.id).value != "---";
     IF flag.flag_type == "tracking";
@@ -81,6 +83,12 @@
       project_flags_has = 1;
       IF is_set;
         project_flags_set = 1;
+      END;
+    END;
+    IF flag.flag_type == 'blocking';
+      blocking_flags_has = 1;
+      IF is_set;
+        blocking_flags_set = 1;
       END;
     END;
   END;
@@ -338,8 +346,12 @@
         hide_on_edit = can_edit_product
         help         = "describecomponents.cgi"
     %]
-      <span class="spin-latch" id="product-latch" data-latch="#product-latch" data-for="#product-info">&#9656;</span>
-      <div class="spin-toggle" data-latch="#product-latch" data-for="#product-info">
+      <span aria-hidden="true" class="spin-latch" id="product-latch"
+            data-latch="product" data-for="product">&#9656;</span>
+      <div role="button" aria-label="show product information"
+           title="show product information" tabindex="0"
+           aria-expanded="false" class="spin-toggle" id="product-name"
+           data-latch="product" data-for="product">
         [% bug.product FILTER html %]
       </div>
       <div id="product-info" style="display:none">
@@ -376,9 +388,13 @@
         field_type = constants.FIELD_TYPE_SINGLE_SELECT
         help = "describecomponents.cgi"
     %]
-      <span class="spin-latch" id="component-latch" data-latch="#component-latch" data-for="#component-info">&#9656;</span>
-      <div class="spin-toggle" data-latch="#component-latch" data-for="#component-info">
-        [% bug.component FILTER html %]
+      <span aria-hidden="true" class="spin-latch" id="component-latch"
+            data-latch="component" data-for="component">&#9656;</span>
+      <div role="button" aria-label="show component description"
+           title="show component information" tabindex="0"
+           aria-expanded="false" class="spin-toggle" id="component-name"
+           data-latch="#component-latch" data-for="component">
+          [% bug.component FILTER html %]
       </div>
       <div id="component-info" style="display:none">
         <div>[% bug.component_obj.description FILTER html_light %]</div>
@@ -667,18 +683,21 @@
       [% END %]
 
       [% IF bug.cc && bug.cc.size %]
-        [% IF user.id %]
-          <input type="hidden" name="removecc" id="removecc">
-          <span id="cc-latch">&#9656;</span>
-        [% END %]
-        <span id="cc-summary" data-count="[% bug.cc.size FILTER none %]">
-          [%
-            IF bug.cc.size == 1;
-              is_cced ? "Just you" : "1 person";
-            ELSE;
-              bug.cc.size _ " people";
-            END;
-          %]
+        <span aria-owns="cc-latch cc-summary">
+          [% IF user.id %]
+            <input type="hidden" name="removecc" id="removecc">
+            <span role="button" aria-label="show cc list" tabindex="0" id="cc-latch">&#9656;</span>
+          [% END %]
+          <span role="button" aria-label="show cc list" tabindex="0"
+                id="cc-summary" data-count="[% bug.cc.size FILTER none %]">
+            [%
+              IF bug.cc.size == 1;
+                is_cced ? "Just you" : "1 person";
+              ELSE;
+                bug.cc.size _ " people";
+              END;
+            %]
+          </span>
         </span>
       [% ELSE %]
         <i>Nobody</i>
@@ -704,7 +723,8 @@
     && bug.target_milestone == "---"
     && !has_bug_flags
     && !project_flags_set
-    && !tracking_flags_set;
+    && !tracking_flags_set
+    && !blocking_flags_set;
   sub = [];
   open_deps = bug.depends_on_obj.only("resolution", "").size;
   IF open_deps;
@@ -893,7 +913,7 @@
   %]
     [% WRAPPER fields_lhs %]
 
-      [% UNLESS tracking_flags_set || project_flags_set %]
+      [% UNLESS tracking_flags_set || project_flags_set || blocking_flags_set %]
         <p class="edit-hide">
           This [% terms.bug %] is not currently tracked.
         </p>
@@ -914,6 +934,19 @@
 
     [% END %]
     [% WRAPPER fields_rhs %]
+
+      [% IF blocking_flags_has %]
+        [%# blocking flags %]
+        [% WRAPPER bug_modal/field.html.tmpl
+            container = 1
+            label = "Blocking Flags"
+            hide_on_view = !blocking_flags_set
+        %]
+          [% INCLUDE bug_modal/tracking_flags.html.tmpl
+              type = "blocking"
+          %]
+        [% END %]
+      [% END %]
 
       [% IF project_flags_has %]
         [%# project flags %]
@@ -1194,7 +1227,7 @@
 
 [%# === initialise module visibility === %]
 
-<script>
+<script [% script_nonce FILTER none %]>
   init_module_visibility();
 </script>
 
