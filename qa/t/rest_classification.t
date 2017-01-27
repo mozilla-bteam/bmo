@@ -12,7 +12,7 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(. lib local/lib/perl5);
+use lib qw(lib ../../lib ../../local/lib/perl5);
 
 use Test::More tests => 7;
 use QA::REST;

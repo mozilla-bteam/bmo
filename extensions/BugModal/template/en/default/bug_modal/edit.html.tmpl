@@ -64,11 +64,13 @@
     LAST;
   END;
 
-  # count set project/tracking flags
+  # count set project/tracking/blocking flags
   tracking_flags_has = 0;
   tracking_flags_set = 0;
   project_flags_has = 0;
   project_flags_set = 0;
+  blocking_flags_has = 0;
+  blocking_flags_set = 0;
   FOREACH flag IN tracking_flags;
     is_set = flag.bug_flag(bug.id).value != "---";
     IF flag.flag_type == "tracking";
@@ -81,6 +83,12 @@
       project_flags_has = 1;
       IF is_set;
         project_flags_set = 1;
+      END;
+    END;
+    IF flag.flag_type == 'blocking';
+      blocking_flags_has = 1;
+      IF is_set;
+        blocking_flags_set = 1;
       END;
     END;
   END;
@@ -186,7 +194,7 @@
         no_label = 1
         hide_on_edit = 1
     %]
-      <div id="field-value-short_desc">[% bug.short_desc FILTER quoteUrls(bug) %]</div>
+      <h1 id="field-value-short_desc">[% bug.short_desc FILTER quoteUrls(bug) %]</h1>
     [% END %]
 
     [%# alias %]
@@ -278,7 +286,7 @@
       <div>
         <button type="button" id="cancel-btn" class="minor" style="display:none">Cancel</button>
         <button type="button" id="mode-btn" class="major">
-          <span id="mode-btn-readonly">Edit</span>
+          <span id="mode-btn-readonly" title="Enable editing fields for [% terms.bug %] metadata">Edit [% terms.Bug %]</span>
           <span id="mode-btn-loading">
             <img id="edit-throbber" src="extensions/BugModal/web/throbber.gif" width="16" height="11">
             Fetching
@@ -704,7 +712,8 @@
     && bug.target_milestone == "---"
     && !has_bug_flags
     && !project_flags_set
-    && !tracking_flags_set;
+    && !tracking_flags_set
+    && !blocking_flags_set;
   sub = [];
   open_deps = bug.depends_on_obj.only("resolution", "").size;
   IF open_deps;
@@ -893,7 +902,7 @@
   %]
     [% WRAPPER fields_lhs %]
 
-      [% UNLESS tracking_flags_set || project_flags_set %]
+      [% UNLESS tracking_flags_set || project_flags_set || blocking_flags_set %]
         <p class="edit-hide">
           This [% terms.bug %] is not currently tracked.
         </p>
@@ -914,6 +923,19 @@
 
     [% END %]
     [% WRAPPER fields_rhs %]
+
+      [% IF blocking_flags_has %]
+        [%# blocking flags %]
+        [% WRAPPER bug_modal/field.html.tmpl
+            container = 1
+            label = "Blocking Flags"
+            hide_on_view = !blocking_flags_set
+        %]
+          [% INCLUDE bug_modal/tracking_flags.html.tmpl
+              type = "blocking"
+          %]
+        [% END %]
+      [% END %]
 
       [% IF project_flags_has %]
         [%# project flags %]
@@ -1046,7 +1068,7 @@
   collapsed = 1
   subtitle = bug.groups_in.size ? bug.groups_in.pluck("description").join(", ") : "public"
   hide_on_view = bug.groups_in.size == 0
-  hide_on_edit = bug.groups.size == 0
+  hide_on_edit = bug.groups.size == 0 && !bug.product_obj.default_security_group
 %]
   [% INCLUDE bug_modal/groups.html.tmpl %]
 [% END %]

@@ -189,11 +189,13 @@
     <!--
         [% IF NOT no_yui %]
           YAHOO.namespace('bugzilla');
+          [% IF 0 %]
           YAHOO.util.Event.addListener = function (el, sType, fn, obj, overrideContext) {
               if ( ("onpagehide" in window || YAHOO.env.ua.gecko) && sType === "unload") { sType = "pagehide"; };
               var capture = ((sType == "focusin" || sType == "focusout") && !YAHOO.env.ua.ie) ? true : false;
               return this._addListener(el, this._getType(sType), fn, obj, overrideContext, capture);
           };
+          [% END %]
           if ( "onpagehide" in window || YAHOO.env.ua.gecko) {
               YAHOO.util.Event._simpleRemove(window, "unload",
                                              YAHOO.util.Event._unload);

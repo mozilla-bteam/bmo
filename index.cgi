@@ -33,9 +33,7 @@ if ($cgi->param('logout')) {
     $cgi->delete('logout');
 }
 
-$cgi->content_security_policy(
-    script_src  => ['self', 'nonce', 'https://login.persona.org', 'unsafe-inline', 'unsafe-eval' ],
-);
+$cgi->content_security_policy(script_src  => ['self', 'nonce']);
 
 ###############################################################################
 # Main Body Execution
