@@ -2,13 +2,14 @@ version: 0
 metadata:
   name: "BMO CI Tests"
   description: "A suite of tests to check the quality of the BMO codebase."
-  owner: "{{ event.head.user.email }}"
+  owner: "bugzilla-admin@mozilla.org"
   source: "{{ event.head.repo.url }}"
 tasks:
   - provisionerId: "{{ taskcluster.docker.provisionerId }}"
     workerType: "{{ taskcluster.docker.workerType }}"
     routes:
-      - "notify.email.{{event.head.user.email}}.on-any"
+      - "notify.email.bugzilla-admin@mozilla.org.on-failed"
+      - "notify.email.bugzilla-admin@mozilla.org.on-exception"
       - "notify.irc-channel.#bteam.on-failed"
       - "notify.irc-channel.#bteam.on-exception"
       - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
@@ -40,12 +41,13 @@ tasks:
     metadata:
       name: "Basic Sanity Tests"
       description: "Basic Sanity Tests"
-      owner: "{{ event.head.user.email }}"
+      owner: "bugzilla-admin@mozilla.org"
       source: "{{ event.head.repo.url }}"
   - provisionerId: "{{ taskcluster.docker.provisionerId }}"
     workerType: "{{ taskcluster.docker.workerType }}"
     routes:
-      - "notify.email.{{event.head.user.email}}.on-any"
+      - "notify.email.bugzilla-admin@mozilla.org.on-failed"
+      - "notify.email.bugzilla-admin@mozilla.org.on-exception"
       - "notify.irc-channel.#bteam.on-failed"
       - "notify.irc-channel.#bteam.on-exception"
       - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
@@ -77,12 +79,13 @@ tasks:
     metadata:
       name: "Documentation Build Test"
       description: "Documentation Build Test"
-      owner: "{{ event.head.user.email }}"
+      owner: "bugzilla-admin@mozilla.org"
       source: "{{ event.head.repo.url }}"
   - provisionerId: "{{ taskcluster.docker.provisionerId }}"
     workerType: "{{ taskcluster.docker.workerType }}"
     routes:
-      - "notify.email.{{event.head.user.email}}.on-any"
+      - "notify.email.bugzilla-admin@mozilla.org.on-failed"
+      - "notify.email.bugzilla-admin@mozilla.org.on-exception"
       - "notify.irc-channel.#bteam.on-failed"
       - "notify.irc-channel.#bteam.on-exception"
       - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
@@ -117,12 +120,13 @@ tasks:
     metadata:
       name: "WebService API Tests"
       description: "WebService API Tests"
-      owner: "{{ event.head.user.email }}"
+      owner: "bugzilla-admin@mozilla.org"
       source: "{{ event.head.repo.url }}"
   - provisionerId: "{{ taskcluster.docker.provisionerId }}"
     workerType: "{{ taskcluster.docker.workerType }}"
     routes:
-      - "notify.email.{{event.head.user.email}}.on-any"
+      - "notify.email.bugzilla-admin@mozilla.org.on-failed"
+      - "notify.email.bugzilla-admin@mozilla.org.on-exception"
       - "notify.irc-channel.#bteam.on-failed"
       - "notify.irc-channel.#bteam.on-exception"
       - "tc-treeherder.v2.mozilla-bteam/bmo-development.{{ event.head.sha }}"
@@ -160,5 +164,5 @@ tasks:
     metadata:
       name: "Selenium Tests"
       description: "Selenium Tests"
-      owner: "{{ event.head.user.email }}"
+      owner: "bugzilla-admin@mozilla.org"
       source: "{{ event.head.repo.url }}"
