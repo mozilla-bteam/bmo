@@ -1,0 +1,148 @@
+<html lang="en">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=PT+Serif:400,700,400italic' rel='stylesheet' type='text/css'>
+    <link href='https://netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.css' rel='stylesheet' type='text/css'>
+    <link href='https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
+    <link href="js/metricsgraphics/metricsgraphics.css" rel="stylesheet" type="text/css" id="dark">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js" charset="utf-8"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src='js/metricsgraphics/metricsgraphics.min.js'></script>
+    
+    <style>
+        div.chart svg {
+            margin-left:-20px;
+            margin-top:-40px;
+        }
+    </style>
+</head>
+<body onload="loadGraph(window.location.search);">       
+    <div style="width:300px; height:150px;" id='chart' class='chart'></div>
+	<div style="width:300px; height:75px; margin-top:-35px; color:red; text-align:center; visibility:hidden;" id='warn'></div>
+    <script src='js/metricsgraphics/main.js'></script>
+    <script>
+        var items = [];
+        var end_date = convertDate(new Date((new Date()).valueOf() - 1000*60*60*24*1));
+        var start_date = convertDate(new Date((new Date()).valueOf() - 1000*60*60*24*180));
+        var globals = {
+            "url_base":"https://crash-stats.mozilla.com/search/?",
+			"url":[],
+            "mouseover":function(d) {
+                var next = new Date(d.date.valueOf()+1*24*60*60*1000);
+                d3.select('svg .mg-active-datapoint')
+                    .text();
+				$.each(globals.url, function(i) {
+					if (globals.url[i].indexOf("&date=>%3D") !== -1) {
+						globals.url[i] = globals.url[i].substring(0,globals.url[i].indexOf("&date=>%3D"));
+					}
+					globals.url[i] = globals.url[i] + "&date=>%3D" + convertDate(d.date) + "&date=%3C" + convertDate(next);
+					globals.url[i] = globals.url[i].replace("/?&signature", "/?signature");
+				});
+            }
+        };
+        
+        function convertDate(d) {
+            var day = (d.getDate() < 10) ? '0' + d.getDate().toString() : d.getDate().toString();
+            var month = ((d.getMonth()+1) < 10) ? '0' + (d.getMonth()+1).toString() : (d.getMonth()+1).toString();
+            var year = d.getFullYear().toString();
+            return year + '-' + month + '-' + day;
+        }
+        
+        function getSignaturesFromURL(search) {
+			var index = search.indexOf("?s=");
+            search = search.substring(index+3);
+			var signatures = [];
+			if (search.indexOf("\\") !== -1) {
+                signatures = search.split("\\");
+            } else if (search.indexOf("%5C") !== -1) {
+                signatures = search.split("%5C");
+            } else {
+				signatures = [search];
+			}
+            var result = [""];
+			
+			var j = 0;
+			$.each(signatures, function(i) {
+				if (result[j].length > 500) result[++j] = "";
+				result[j] = result[j] + "&signature=~" + signatures[i]
+			});
+			
+            return result;
+        }
+        function draw(data) {
+            items = MG.convert.date(items, 'date');
+            MG.data_graphic({
+                data: items,
+                width: 300,
+                height: 170,
+                target: document.getElementById('chart'),
+                x_accessor: 'date',
+                y_accessor: 'count',
+                yax_count: 3,
+                chart_type: "line",
+                mouseover: globals.mouseover
+            });
+            if (globals.url.length > 1) {
+                var target = document.getElementById('warn');
+                target.style.visibility = "visible";
+                target.innerHTML = "WARNING: Too Many Signatures! <br />Report will be spread across " + globals.url.length + " tabs.</p>";
+            }
+            var mouseouts = d3.selectAll('.mg-rollover-rect rect').on('mouseout');
+            d3.selectAll('.mg-rollover-rect rect').on('click', function(d) {
+                $.each(globals.url, function(i) { window.open(globals.url[i], '_blank'); });
+            });
+        }
+            
+        function loadGraph(search) {
+			// Get all signatures from the Bugzilla page
+            var signatures = getSignaturesFromURL(search);
+			// Initialize chart data
+            for (var i=0; i<180; i++) {
+                items.push({
+                    "date":convertDate(new Date((new Date()).valueOf() - 1000*60*60*24*i)),
+                     "count":0,
+                     "installs":0
+                });
+            }
+			
+			if (items.length >= 180) {
+				var processed = [0,0];
+				var processed_groups = 0;
+				$.each(signatures, function(i) {
+					var processed_data = 0;
+					// Set the report URL, this will be used to load the data report on click
+					if (!globals.url[i]) globals.url[i] = "";
+					globals.url[i] = globals.url_base + signatures[i];
+					// Iterate through the Socorro data and create the chart data object
+					var url = "https://crash-stats.mozilla.com/api/SuperSearch/?" + signatures[i] + "&date=%3E%3D" + start_date + "&date=%3C%3D" + end_date + "&_histogram.date=_cardinality.install_time&_histogram_interval=1d";
+					url = url.replace("/?&signature", "/?signature");
+					d3.json(url, function(data) {
+						$.each(data, function(key, value) {
+							if (key == "facets") {
+								var histogram_date = value.histogram_date;
+								processed[1] = processed[1] + (histogram_date.length-1);
+								$.each(histogram_date, function(key, value) {
+									for (var j=0; j<items.length; j++) {
+										if (items[j].date == value.term.substring(0,10)) {
+											items[j].count = items[j].count + value.count;
+											items[j].installs = items[j].installs + value.facets.cardinality_install_time.value;
+										}
+									}
+									processed_data = processed_data + 1;
+									if (processed_data >= histogram_date.length) processed_groups = processed_groups + 1;
+									if (processed_groups >= signatures.length) draw(items);
+								});
+							}
+						});
+                                                
+					});
+				});
+                                
+				
+			}
+		}
+    </script>
+</body>
+</html>
