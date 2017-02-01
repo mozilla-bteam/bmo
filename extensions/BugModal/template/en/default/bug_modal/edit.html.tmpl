@@ -284,6 +284,10 @@
   <div id="mode-container">
     [% IF user.id %]
       <div>
+        <div id = "restrict-checkbox" style = "display:none">
+        [%# BMO hook for adding custom group visibility %]
+        [% Hook.process('before_restrict_visibility', 'bug/edit.html.tmpl') %]
+        </div>
         <button type="button" id="cancel-btn" class="minor" style="display:none">Cancel</button>
         <button type="button" id="mode-btn" class="major">
           <span id="mode-btn-readonly" title="Enable editing fields for [% terms.bug %] metadata">Edit [% terms.Bug %]</span>
