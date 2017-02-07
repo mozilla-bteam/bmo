@@ -31,14 +31,64 @@ BEGIN {
     *AUTOLOAD = \&CGI::AUTOLOAD;
 }
 
-use constant DEFAULT_CSP => (
-    default_src => [ 'self' ],
-    script_src  => [ 'self', 'https://login.persona.org', 'unsafe-inline', 'unsafe-eval' ],
-    child_src   => [ 'self', 'https://login.persona.org' ],
-    img_src     => [ 'self', 'https://secure.gravatar.com' ],
-    style_src   => [ 'self', 'unsafe-inline' ],
-    disable     => 1,
-);
+sub DEFAULT_CSP {
+    my %policy = (
+        default_src => [ 'self' ],
+        script_src  => [ 'self', 'unsafe-inline', 'unsafe-eval' ],
+        child_src   => [ 'self', ],
+        img_src     => [ 'self', 'https://secure.gravatar.com' ],
+        style_src   => [ 'self', 'unsafe-inline' ],
+        object_src  => [ 'none' ],
+        form_action => [
+            'self',
+            # used in template/en/default/search/search-google.html.tmpl
+            'https://www.google.com/search'
+        ],
+        frame_ancestors => [ 'none' ],
+        disable         => 1,
+    );
+    if (Bugzilla->params->{github_client_id} && !Bugzilla->user->id) {
+        push @{$policy{form_action}}, 'https://github.com/login/oauth/authorize', 'https://github.com/login';
+    }
+
+    return %policy;
+}
+
+# Because show_bug code lives in many different .cgi files,
+# we needed a centralized place to define the policy.
+# normally the policy would just live in one .cgi file.
+# Additionally, correct_urlbase() cannot be called at compile time, so this can't be a constant.
+sub SHOW_BUG_MODAL_CSP {
+    my ($bug_id) = @_;
+    my %policy = (
+        script_src  => ['self', 'nonce', 'unsafe-inline', 'unsafe-eval' ],
+        object_src  => [correct_urlbase() . "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.swf"],
+        img_src     => [ 'self', 'https://secure.gravatar.com' ],
+        connect_src => [
+            'self',
+            # This is from extensions/OrangeFactor/web/js/orange_factor.js
+            'https://brasstacks.mozilla.com/orangefactor/api/count',
+        ],
+        child_src   => [
+            'self',
+            # This is for the socorro lens addon and is to be removed by Bug 1332016
+            'https://ashughes1.github.io/bugzilla-socorro-lens/chart.htm'
+        ],
+    );
+    if (use_attachbase() && $bug_id) {
+        my $attach_base = Bugzilla->params->{'attachment_base'};
+        $attach_base =~ s/\%bugid\%/$bug_id/g;
+        push @{ $policy{img_src} }, $attach_base;
+    }
+
+    # MozReview API calls
+    my $mozreview_url = Bugzilla->params->{mozreview_base_url};
+    if ($mozreview_url) {
+        push @{ $policy{connect_src} },  $mozreview_url . 'api/extensions/mozreview.extension.MozReviewExtension/summary/';
+    }
+
+    return %policy;
+}
 
 sub _init_bz_cgi_globals {
     my $invocant = shift;
@@ -143,9 +193,9 @@ sub content_security_policy {
     my ($self, %add_params) = @_;
     if (Bugzilla->has_feature('csp')) {
         require Bugzilla::CGI::ContentSecurityPolicy;
-        return $self->{Bugzilla_csp} if $self->{Bugzilla_csp};
-        my %params = DEFAULT_CSP;
-        if (%add_params) {
+        if (%add_params || !$self->{Bugzilla_csp}) {
+            my %params = DEFAULT_CSP;
+            delete $params{disable} if %add_params && !$add_params{disable};
             foreach my $key (keys %add_params) {
                 if (defined $add_params{$key}) {
                     $params{$key} = $add_params{$key};
@@ -154,8 +204,10 @@ sub content_security_policy {
                     delete $params{$key};
                 }
             }
+            $self->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
         }
-        return $self->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
+
+        return $self->{Bugzilla_csp};
     }
     return undef;
 }
@@ -455,7 +507,7 @@ sub header {
     $headers{'-x_content_type_options'} = 'nosniff';
 
     my $csp = $self->content_security_policy;
-    $csp->add_cgi_headers(\%headers) if defined $csp;
+    $csp->add_cgi_headers(\%headers) if defined $csp && !$csp->disable;
 
     Bugzilla::Hook::process('cgi_headers',
         { cgi => $self, headers => \%headers }

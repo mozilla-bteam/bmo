@@ -22,7 +22,7 @@
 
 [%# INTERFACE
   # none
-  # 
+  #
   # Param("maintainer") is used to display the maintainer's email.
   # Param("emailsuffix") is used to pre-fill the email field.
   #%]
@@ -46,7 +46,7 @@ function onSubmit() {
     alert('You must enter your email address.');
     return false;
   }
-  var isValid = 
+  var isValid =
     email.match(/@/)
     && email.match(/@.+\./)
     && !email.match(/\.$/)
@@ -120,7 +120,7 @@ function onSubmit() {
 
   <div id="right-blurb">
     <p>
-      Great!  There are four things to know and do:
+      Great!  There are a few things to know and do:
     </p>
     <ol>
     <li>
@@ -145,8 +145,8 @@ function onSubmit() {
       and Communications Terms of Use</a> for more information.
     </li>
     <li>
-      You understand that your conduct on this site is subject to both <a href="page.cgi?id=etiquette.html">[% terms.Bugzilla %] Etiquette</a>, 
-      and the <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla Community Participation Guidelines</a>. 
+      You understand that your conduct on this site is subject to both <a href="page.cgi?id=etiquette.html">[% terms.Bugzilla %] Etiquette</a>,
+      and the <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla Community Participation Guidelines</a>.
       By creating an account, you agree to abide by them.
     </li>
     <li>
@@ -178,7 +178,7 @@ function onSubmit() {
     <td>
       <input type="hidden" id="token" name="token" value="[% issue_hash_token(['create_account']) FILTER html %]">
       <input type="submit" value="Create Account">
-    </td>  
+    </td>
     </tr>
     </table>
   </form>

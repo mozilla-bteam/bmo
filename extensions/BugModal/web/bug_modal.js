@@ -678,6 +678,13 @@ $(function() {
             window.location.replace($('#this-bug').val());
         });
 
+    // Open help page
+    $('#help-btn')
+        .click(function(event) {
+            event.preventDefault();
+            window.open("https://wiki.mozilla.org/BMO/UserGuide", "_blank");
+        });
+
     // needinfo in people section -> scroll to near-comment ui
     $('#needinfo-scroll')
         .click(function(event) {
@@ -1276,7 +1283,7 @@ $(function() {
     var last_comment_text = '';
     $('#comment-tabs li').click(function() {
         var that = $(this);
-        if (that.hasClass('current'))
+        if (that.attr('aria-selected') === 'true')
             return;
 
         // ensure preview's height matches the comment
@@ -1285,22 +1292,18 @@ $(function() {
         var comment_height = comment[0].offsetHeight;
 
         // change tabs
-        $('#comment-tabs li').removeClass('current').attr('aria-selected', false);
-        $('.comment-tab').hide();
-        that.addClass('current').attr('aria-selected', true);
-        var tab = that.attr('data-tab');
-        $('#' + tab).show();
+        $('#comment-tabs li').attr({ tabindex: -1, 'aria-selected': false });
+        $('.comment-tabpanel').hide();
+        that.attr({ tabindex: 0, 'aria-selected': true });
+        var tabpanel = $('#' + that.attr('aria-controls')).show();
         var focus = that.data('focus');
-        if (focus === '') {
-            document.activeElement.blur();
-        }
-        else {
+        if (focus !== '') {
             $('#' + focus).focus();
         }
 
         // update preview
         preview.css('height', comment_height + 'px');
-        if (tab != 'comment-tab-preview' || last_comment_text == comment.val())
+        if (tabpanel.attr('id') != 'comment-preview-tabpanel' || last_comment_text == comment.val())
             return;
         $('#preview-throbber').show();
         preview.html('');
@@ -1324,6 +1327,31 @@ $(function() {
             }
         );
         last_comment_text = comment.val();
+    }).keydown(function(event) {
+        var that = $(this);
+        var tabs = $('#comment-tabs li');
+        var target;
+
+        // enable keyboard navigation on tabs
+        switch (event.keyCode) {
+            case 35: // End
+                target = tabs.last();
+                break;
+            case 36: // Home
+                target = tabs.first();
+                break;
+            case 37: // Left arrow
+                target = that.prev('[role="tab"]');
+                break;
+            case 39: // Right arrow
+                target = that.next('[role="tab"]');
+                break;
+        }
+
+        if (target && target.length) {
+            event.preventDefault();
+            target.click().focus();
+        }
     });
 
     // dirty field tracking
@@ -1402,7 +1430,7 @@ function bugzilla_ajax(request, done_fn, error_fn) {
                 done_fn(data);
             }
         })
-        .error(function(data) {
+        .fail(function(data) {
             if (data.statusText === 'abort')
                 return;
             var message = data.responseJSON ? data.responseJSON.message : 'Unexpected Error'; // all errors are unexpected :)
@@ -1461,6 +1489,13 @@ function lb_close(event) {
     $(document).unbind('keyup.lb');
     $('#lb_overlay, #lb_overlay2, #lb_close_btn, #lb_img, #lb_text').remove();
 }
+
+$(function() {
+    $("button.button-link").on("click", function (event) {
+        event.preventDefault();
+        window.location = $(this).data("href");
+    });
+});
 
 // extensions
 

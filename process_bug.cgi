@@ -419,9 +419,13 @@ my $format_params = {
     ctype  => scalar $cgi->param('ctype'),
 };
 Bugzilla::Hook::process('show_bug_format', $format_params);
+if ($format_params->{format} eq 'modal') {
+    my $bug_id = $vars->{bug} ? $vars->{bug}->id : undef;
+    $cgi->content_security_policy(Bugzilla::CGI::SHOW_BUG_MODAL_CSP($bug_id));
+}
 my $format = $template->get_format("bug/show",
-                                    $format_params->{format},
-                                    $format_params->{ctype});
+                                   $format_params->{format},
+                                   $format_params->{ctype});
 
 if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
     print $cgi->header();
@@ -466,5 +470,4 @@ if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
     $template->process("global/footer.html.tmpl", $vars)
         || ThrowTemplateError($template->error());
 }
-
 1;

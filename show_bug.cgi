@@ -19,6 +19,8 @@ use Bugzilla::User;
 use Bugzilla::Keyword;
 use Bugzilla::Bug;
 use Bugzilla::Hook;
+use Bugzilla::CGI;
+use Bugzilla::Util qw(detaint_natural);
 
 my $cgi = Bugzilla->cgi;
 my $template = Bugzilla->template;
@@ -47,6 +49,13 @@ if (!$cgi->param('id') && $single) {
       ThrowTemplateError($template->error());
     exit;
 }
+
+if ($format_params->{format} eq 'modal') {
+    my $bug_id = $cgi->param('id');
+    detaint_natural($bug_id);
+    $cgi->content_security_policy(Bugzilla::CGI::SHOW_BUG_MODAL_CSP($bug_id));
+}
+
 
 my @bugs;
 my %marks;

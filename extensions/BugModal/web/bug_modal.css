@@ -252,6 +252,7 @@ input[type="number"] {
 }
 
 #field-value-short_desc {
+    margin: 0;
     font-weight: bold;
     font-size: 120%;
 }
@@ -574,6 +575,11 @@ td.flag-requestee {
     display: inline;
 }
 
+h3.change-name {
+    font-size: small;
+    font-weight: normal;
+}
+
 .comment-actions {
     white-space: nowrap;
     vertical-align: top;
@@ -690,6 +696,7 @@ td.flag-requestee {
     width: 100%;
     box-sizing: border-box !important;
     margin: 0 0 1em;
+    max-width: 1024px;
 }
 
 #comment-preview {
@@ -719,7 +726,7 @@ td.flag-requestee {
     border-top-right-radius: 2px;
 }
 
-#comment-tabs li.current {
+#comment-tabs li[aria-selected="true"] {
     background: #fff;
     border-bottom: 1px solid #fff;
 }
@@ -962,4 +969,8 @@ div.ui-tooltip {
     height: 0px;
     z-index: 100;
     opacity: 0;
+}
+
+#user-guide {
+    padding-top: 5px;
 }
