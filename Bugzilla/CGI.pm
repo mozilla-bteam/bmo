@@ -31,21 +31,28 @@ BEGIN {
     *AUTOLOAD = \&CGI::AUTOLOAD;
 }
 
-use constant DEFAULT_CSP => (
-    default_src => [ 'self' ],
-    script_src  => [ 'self', 'unsafe-inline', 'unsafe-eval' ],
-    child_src   => [ 'self', ],
-    img_src     => [ 'self', 'https://secure.gravatar.com' ],
-    style_src   => [ 'self', 'unsafe-inline' ],
-    object_src  => [ 'none' ],
-    form_action => [
-        'self',
-        # used in template/en/default/search/search-google.html.tmpl
-        'https://www.google.com/search'
-    ],
-    frame_ancestors => [ 'none' ],
-    disable         => 1,
-);
+sub DEFAULT_CSP {
+    my %policy = (
+        default_src => [ 'self' ],
+        script_src  => [ 'self', 'unsafe-inline', 'unsafe-eval' ],
+        child_src   => [ 'self', ],
+        img_src     => [ 'self', 'https://secure.gravatar.com' ],
+        style_src   => [ 'self', 'unsafe-inline' ],
+        object_src  => [ 'none' ],
+        form_action => [
+            'self',
+            # used in template/en/default/search/search-google.html.tmpl
+            'https://www.google.com/search'
+        ],
+        frame_ancestors => [ 'none' ],
+        disable         => 1,
+    );
+    if (Bugzilla->params->{github_client_id} && !Bugzilla->user->id) {
+        push @{$policy{form_action}}, 'https://github.com/login/oauth/authorize', 'https://github.com/login';
+    }
+
+    return %policy;
+}
 
 # Because show_bug code lives in many different .cgi files,
 # we needed a centralized place to define the policy.
@@ -72,6 +79,12 @@ sub SHOW_BUG_MODAL_CSP {
         my $attach_base = Bugzilla->params->{'attachment_base'};
         $attach_base =~ s/\%bugid\%/$bug_id/g;
         push @{ $policy{img_src} }, $attach_base;
+    }
+
+    # MozReview API calls
+    my $mozreview_url = Bugzilla->params->{mozreview_base_url};
+    if ($mozreview_url) {
+        push @{ $policy{connect_src} },  $mozreview_url . 'api/extensions/mozreview.extension.MozReviewExtension/summary/';
     }
 
     return %policy;

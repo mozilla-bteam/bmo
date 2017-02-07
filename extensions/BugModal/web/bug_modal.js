@@ -703,6 +703,13 @@ $(function() {
             window.location.replace($('#this-bug').val());
         });
 
+    // Open help page
+    $('#help-btn')
+        .click(function(event) {
+            event.preventDefault();
+            window.open("https://wiki.mozilla.org/BMO/UserGuide", "_blank");
+        });
+
     // needinfo in people section -> scroll to near-comment ui
     $('#needinfo-scroll')
         .click(function(event) {
@@ -1355,7 +1362,7 @@ function bugzilla_ajax(request, done_fn, error_fn) {
                 done_fn(data);
             }
         })
-        .error(function(data) {
+        .fail(function(data) {
             if (data.statusText === 'abort')
                 return;
             var message = data.responseJSON ? data.responseJSON.message : 'Unexpected Error'; // all errors are unexpected :)
