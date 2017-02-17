@@ -7,6 +7,11 @@
   #%]
 
 <div id="comment-actions">
+  [% IF user.settings.comment_box_position.value == 'after_comments' %]
+    <button type="button" id="add-comment-btn" class="minor">Add Comment &darr;</button>
+  [% ELSE %]
+    <button type="button" id="bottom-btn" class="minor">Bottom &darr;</button>
+  [% END %]
   <div class="dropdown">
     <button type="button" role="button" id="comment-tags-btn" arai-haspopup="true" aria-label="Tags Menu"
       aria-expanded="false" aria-controls="comment-tags-menu" class="dropdown-button minor">Tags &#9662;</button>

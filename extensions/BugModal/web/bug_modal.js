@@ -10,15 +10,13 @@ function slide_module(module, action, fast) {
     if (!module.attr('id'))
         return;
     var latch = module.find('.module-latch');
+    var spinner = module.find('.module-spinner');
     var content = $(module.children('.module-content')[0]);
     var duration = fast ? 0 : 200;
 
     function slide_done() {
         var is_visible = content.is(':visible');
-        latch.attr({
-            'aria-expanded': is_visible,
-            'aria-label': is_visible ? latch.data('label-expanded') : latch.data('label-collapsed'),
-        });
+        spinner.html(is_visible ? '&#9662;' : '&#9656;');
         if (BUGZILLA.user.settings.remember_collapsed)
             localStorage.setItem(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
     }
@@ -805,13 +803,6 @@ $(function() {
     $('.tracking-flags select')
         .change(function(event) {
             tracking_flag_change(event.target);
-        });
-
-    // add attachments
-    $('#attachments-add-btn')
-        .click(function(event) {
-            event.preventDefault();
-            window.location.href = 'attachment.cgi?bugid=' + BUGZILLA.bug_id + '&action=enter';
         });
 
     // take button

@@ -30,14 +30,14 @@
 >
   [% IF title %]
     <header id="module-[% title.replace FILTER id %]-header" class="module-header">
-      <div class="module-latch" role="button" tabindex="0"
-           aria-controls="module-[% title.replace FILTER id %]-content"
-           aria-expanded="[% collapsed ? "false" : "true" %]"
-           aria-labeledby="module-[% title.replace FILTER id %]-title"
-           aria-describedby="module-[% title.replace FILTER id %]-subtitle"
+      <div class="module-latch"
            data-label-expanded="Collapse [% title FILTER html %] section"
            data-label-collapsed="Expand [% title FILTER html %] section">
-        <div class="module-spinner" role="presentation"></div>
+        <div class="module-spinner" role="button" tabindex="0"
+             aria-controls="module-[% title.replace FILTER id %]-content"
+             aria-expanded="[% collapsed ? "false" : "true" %]"
+             aria-labeledby="module-[% title.replace FILTER id %]-title"
+             aria-describedby="module-[% title.replace FILTER id %]-subtitle"></div>
         <h2 class="module-title" id="module-[% title.replace FILTER id %]-title">[% title FILTER html %]</h2>
         [% IF subtitle != "" && subtitle.size %]
           <h3 class="module-subtitle" id="module-[% title.replace FILTER id %]-subtitle">

@@ -33,6 +33,7 @@
   #   class: (string) optional button class
   #   caption: (string) button caption
   #   hidden: (boolean) don't show the button (default: false)
+  # label_for: (string) optional label for identifier
   #%]
 
 [%
@@ -108,23 +109,17 @@ END;
         <a href="[% help FILTER none %]" id="[% name FILTER html %]-help-link" class="help">
         [% aria_labelledby_id = "${name}-help-link" %]
         [% aria_labelledby_html = BLOCK %]aria-labelledby="[% aria_labelledby_id FILTER html %]"[% END %]
-      [% ELSE %]
-        [% IF label == "Importance" %]
-          <label for="priority">
-        [% ELSIF label == "Status" %]
-          <label for="bug_status">
-        [% ELSIF label == "Platform" %]
-          <label for="rep_platform">
-        [% ELSE %]
-          <label for="[% name FILTER html %]">
-        [% END %]
+      [% END %]
+      [%~ IF label_for %]
+        <label for="[% label_for FILTER html %]">
       [% END %]
       [%~ label _ ":" FILTER html IF label %]
-      [%~ IF help.defined %]
-        </a>
-      [% ELSE %]
+      [%~ IF label_for %]
         </label>
       [% END ~%]
+      [%~ IF help.defined %]
+        </a>
+      [% END %]
     </div>
   [% END %]
 

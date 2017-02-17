@@ -131,7 +131,7 @@ a.activity-ref {
     content: "\25BE";
 }
 
-.module-latch[aria-expanded="false"] .module-spinner::before {
+.module-spinner[aria-expanded="false"]::before {
     content: "\25B8";
 }
 
