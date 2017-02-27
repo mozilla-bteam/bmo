@@ -811,8 +811,13 @@ h3.change-name {
 
 /* theme */
 
+#header .wrapper {
+    min-width: 800px;
+    max-width: 1024px;
+}
+
 #bugzilla-body {
-    margin: 5px !important;
+    margin: 5px auto !important;
     max-width: 1024px !important;
     min-width: 800px !important;
     width: 100% !important;
@@ -821,6 +826,7 @@ h3.change-name {
 #footer {
     max-width: 1024px !important;
     min-width: 800px !important;
+    margin: auto auto 1em !important;
 }
 
 .vcard {
