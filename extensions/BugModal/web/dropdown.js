@@ -19,7 +19,11 @@ $(function() {
         // Escape key hides the dropdown if visible
         if (e.keyCode == 27) {
             $('.dropdown-button').each(function() {
-                toggleDropDown(e, $(this), $('#' + $(this).attr('aria-controls')), 1);
+                var $button = $(this);
+                if ($button.siblings('.dropdown-content').is(':visible')) {
+                    toggleDropDown(e, $button, $('#' + $button.attr('aria-controls')), 1);
+                    $button.focus();
+                }
             });
         }
         // allow arrow up and down keys to choose one of the dropdown items if menu visible
@@ -74,11 +78,6 @@ $(function() {
     });
 
     function toggleDropDown(e, $button, $content, hide_only) {
-        // If clicking a real link we do not want to prevent default behavior
-        if (!$(e.target).is('.dropdown-content a')) {
-            e.preventDefault();
-        }
-        e.stopPropagation();
         // clear all active links
         $content.find('a').removeClass('active');
         if ($content.is(':visible')) {

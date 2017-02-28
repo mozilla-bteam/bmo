@@ -39,9 +39,9 @@
 .dropdown-content a {
     white-space: nowrap;
     background-color: #eee;
-    color: black;
+    color: black !important;
     padding: 4px 8px;
-    text-decoration: none;
+    text-decoration: none !important;
     display: block;
 }
 

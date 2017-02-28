@@ -7,34 +7,46 @@
   #%]
 
 <div id="comment-actions">
-  [% IF user.settings.comment_box_position.value == 'after_comments' %]
+  [% IF user.id && user.settings.comment_box_position.value == 'after_comments' %]
     <button type="button" id="add-comment-btn" class="minor">Add Comment &darr;</button>
   [% ELSE %]
     <button type="button" id="bottom-btn" class="minor">Bottom &darr;</button>
   [% END %]
   <div class="dropdown">
-    <button type="button" role="button" id="comment-tags-btn" arai-haspopup="true" aria-label="Tags Menu"
+    <button type="button" id="comment-tags-btn" arai-haspopup="true" aria-label="Tags Menu"
       aria-expanded="false" aria-controls="comment-tags-menu" class="dropdown-button minor">Tags &#9662;</button>
     <ul id="comment-tags-menu" role="menu" tabindex="0" class="dropdown-content" style="display:none">
-      <li class="dropdown-separator">
+      <li class="dropdown-separator" role="presentation">
         <a role="menuitem" tabindex="-1" data-comment-tag="">Reset</a>
       </li>
     </ul>
   </div>
   <div class="dropdown">
-    <button type="button" role="button" id="view-menu-btn" arai-haspopup="true" aria-label="View Menu"
+    <button type="button" id="view-menu-btn" arai-haspopup="true" aria-label="View Menu"
       aria-expanded="false" aria-controls="view-menu" class="dropdown-button minor">View &#9662;</button>
     <ul id="view-menu" role="menu" tabindex="0" class="dropdown-content" style="display:none">
-      <li class="dropdown-separator"><a id="view-reset" role="menuitem" tabindex="-1">Reset</a></li>
-      <li><a id="view-collapse-all" role="menuitem" tabindex="-1">Collapse All</a></li>
-      <li><a id="view-expand-all" role="menuitem" tabindex="-1">Expand All</a></li>
-      <li class="dropdown-separator"><a id="view-comments-only" role="menuitem" tabindex="-1">Comments Only</a></li>
-      <li><a id="view-toggle-cc" role="menuitem" tabindex="-1">Show CC Changes</a></li>
+      <li class="dropdown-separator" role="presentation">
+        <a id="view-reset" role="menuitem" tabindex="-1">Reset</a>
+      </li>
+      <li role="presentation">
+        <a id="view-collapse-all" role="menuitem" tabindex="-1">Collapse All</a>
+      </li>
+      <li role="presentation">
+        <a id="view-expand-all" role="menuitem" tabindex="-1">Expand All</a>
+      </li>
+      <li class="dropdown-separator" role="presentation">
+        <a id="view-comments-only" role="menuitem" tabindex="-1">Comments Only</a>
+      </li>
+      <li role="presentation">
+        <a id="view-toggle-cc" role="menuitem" tabindex="-1">Show CC Changes</a>
+      </li>
       [% IF treeherder %]
-        <li><a id="view-toggle-treeherder" role="menuitem" data-userid="[% treeherder.id FILTER none %]">Hide Treeherder Comments</a></li>
+        <li role="presentation">
+          <a id="view-toggle-treeherder" role="menuitem" data-userid="[% treeherder.id FILTER none %]">Hide Treeherder Comments</a>
+        </li>
       [% END %]
     </ul>
-   </div>
+  </div>
 </div>
 
 [%

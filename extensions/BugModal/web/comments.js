@@ -221,7 +221,7 @@ $(function() {
         // add new li items
         $.each(tagNames, function(key, value) {
             $('#comment-tags-menu')
-                .append($('<li>')
+                .append($('<li role="presentation">')
                     .append($('<a role="menuitem" tabindex="-1" data-comment-tag="' + value + '">')
                         .append(value + ' (' + tags[value] + ')')));
         });
