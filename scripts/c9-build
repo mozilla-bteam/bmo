@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd ~/workspace
+if ! ps aux | grep '[m]ysql' &>/dev/null; then
+    mysql-ctl restart
+fi
+sudo apachectl stop
+perl scripts/clear-templates.pl
+perl checksetup.pl
+sudo apachectl start
