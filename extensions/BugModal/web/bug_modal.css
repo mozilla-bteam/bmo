@@ -812,9 +812,9 @@ h3.change-name {
 /* theme */
 
 #bugzilla-body {
-    max-width: 1200px;
-    min-width: 800px;
-    width: 100%;
+    max-width: 72em;
+    min-width: 60em;
+    width: 60em;
 }
 
 .vcard {
