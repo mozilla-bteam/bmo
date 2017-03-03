@@ -391,7 +391,7 @@ input[type="number"] {
     margin-bottom: 50px;
     min-width: 60em;
     max-width: 72em;
-    width: 60em; 
+    width: 100%; 
 }
 
 #bottom-right-actions {
@@ -706,7 +706,7 @@ h3.change-name {
     margin: 0 0 1em;
     min-width: 60em;
     max-width: 72em;
-    width: 60em; 
+    width: 100%; 
 }
 
 #comment-preview {
@@ -818,7 +818,7 @@ h3.change-name {
 #bugzilla-body {
     max-width: 72em;
     min-width: 60em;
-    width: 60em;
+    width: 100%;
 }
 
 .vcard {
