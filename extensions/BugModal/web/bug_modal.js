@@ -1086,9 +1086,10 @@ $(function() {
                 }
             });
 
-            bugzilla_ajax(
+            bugzilla_ajax_etag_cache(
                 {
-                    url: 'rest/bug_modal/new_product/' + BUGZILLA.bug_id + '?product=' + encodeURIComponent($('#product').val())
+                    url: 'rest/bug_modal/new_product/' + BUGZILLA.bug_id + '?product=' + encodeURIComponent($('#product').val()),
+                    prefix: "new_product." + $("#product").val()
                 },
                 function(data) {
                     $('#product-throbber').hide();
@@ -1338,6 +1339,38 @@ if (history && history.replaceState) {
     }
 }
 
+function bugzilla_ajax_etag_cache(request, done_fn, error_fn) {
+    var prefix = request.prefix;
+    var cache_item, cache;
+    var etag_item = prefix + ".etag";
+    var etag = localStorage.getItem(etag_item);
+    delete request.prefix;
+    if (etag) {
+        cache_item = prefix + ".cache." + etag;
+        cache = localStorage.getItem(cache_item);
+        if (cache) {
+            done_fn(JSON.parse(cache));
+        }
+    }
+
+    var done_wrapper_fn = function (data, status, xhr) {
+        var new_etag = xhr.getResponseHeader("ETag");
+        if (!new_etag) {
+            done_fn(data);
+            return;
+        }
+        var new_cache_item = prefix + ".cache." + new_etag;
+        if (cache_item != cache_item || !cache) {
+            localStorage.removeItem(cache_item);
+            localStorage.setItem(etag_item, new_etag);
+            localStorage.setItem(new_cache_item, JSON.stringify(data));
+            done_fn(data);
+        }
+    };
+
+    bugzilla_ajax(request, done_wrapper_fn, error_fn);
+}
+
 // ajax wrapper, to simplify error handling and auth
 function bugzilla_ajax(request, done_fn, error_fn) {
     $('#xhr-error').hide('');
@@ -1352,7 +1385,7 @@ function bugzilla_ajax(request, done_fn, error_fn) {
         }
     }
     return $.ajax(request)
-        .done(function(data) {
+        .done(function(data, status, xhr) {
             if (data.error) {
                 if (!request.hideError) {
                     $('#xhr-error').html(data.message);
@@ -1362,7 +1395,7 @@ function bugzilla_ajax(request, done_fn, error_fn) {
                     error_fn(data.message);
             }
             else if (done_fn) {
-                done_fn(data);
+                done_fn(data, status, xhr);
             }
         })
         .fail(function(data) {
