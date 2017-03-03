@@ -402,8 +402,7 @@ sub _handle_special_first_chars {
         return 1;
     }
     if ($firstChar eq '!') {
-        my $op = $baseWord =~ /,/ ? 'anywords' : 'substring';
-        addChart('keywords', $op, $baseWord, $negate);
+        addChart('keywords', 'anywords', $baseWord, $negate);
         return 1;
     }
     return 0;

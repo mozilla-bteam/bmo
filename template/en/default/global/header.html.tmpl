@@ -58,10 +58,6 @@
   generate_api_token = 0
 %]
 
-[% USE Bugzilla %]
-[% cgi = Bugzilla.cgi %]
-[% SET script_nonce = cgi.csp_nonce ? 'nonce="' _ cgi.csp_nonce _ '"' : '' %]
-
 [% IF NOT no_yui %]
   [% SET yui_css = {
     calendar     => 1,

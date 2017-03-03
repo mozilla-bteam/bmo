@@ -1,9 +1,23 @@
-[%# This Source Code Form is subject to the terms of the Mozilla Public
-  # License, v. 2.0. If a copy of the MPL was not distributed with this
-  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+[%# 1.0@bugzilla.org %]
+[%# The contents of this file are subject to the Mozilla Public
+  # License Version 1.1 (the "License"); you may not use this file
+  # except in compliance with the License. You may obtain a copy of
+  # the License at http://www.mozilla.org/MPL/
+
   #
-  # This Source Code Form is "Incompatible With Secondary Licenses", as
-  # defined by the Mozilla Public License, v. 2.0.
+  # Software distributed under the License is distributed on an "AS
+  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+  # implied. See the License for the specific language governing
+  # rights and limitations under the License.
+  #
+  # The Original Code is the Bugzilla Bug Tracking System.
+  #
+  # The Initial Developer of the Original Code is Mozilla Corporation.
+  # Portions created by Mozilla are Copyright (C) 2008 Mozilla
+  # Corporation. All Rights Reserved.
+  #
+  # Contributor(s): Mark Smith <mark@mozilla.com>
+  #                 Reed Loden <reed@mozilla.com>
   #%]
 
 [% PROCESS global/variables.none.tmpl %]
@@ -82,17 +96,7 @@ $(function() {
         <strong>Business unit requesting the search</strong>
       </label>
     </div>
-    <select name="business_unit" id="business_unit" required="true">
-      <option value="">-- Select --</option>
-      <option value="Connected Devices">Connected Devices</option>
-      <option value="Firefox">Firefox</option>
-      <option value="Foundation">Foundation</option>
-      <option value="Innovation">Innovation</option>
-      <option value="Marketing">Marketing</option>
-      <option value="Operations">Operations</option>
-      <option value="Participation">Participation</option>
-      <option value="Platform">Platform</option>
-    </select>
+    <input type="text" name="business_unit" id="business_unit" size="60" required>
   </div>
 
   <div class="row">

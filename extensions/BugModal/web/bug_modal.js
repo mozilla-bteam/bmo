@@ -16,7 +16,10 @@ function slide_module(module, action, fast) {
 
     function slide_done() {
         var is_visible = content.is(':visible');
-        spinner.html(is_visible ? '&#9662;' : '&#9656;');
+        spinner.attr({
+            'aria-expanded': is_visible,
+            'aria-label': is_visible ? latch.data('label-expanded') : latch.data('label-collapsed'),
+        });
         if (BUGZILLA.user.settings.remember_collapsed)
             localStorage.setItem(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
     }

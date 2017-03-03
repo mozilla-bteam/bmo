@@ -206,7 +206,6 @@ sub template_before_process {
             target_milestone => $bug->target_milestone,
             map { $_->name => $_->bug_flag($bug->id)->value } @{$vars->{tracking_flags}},
         });
-
         # HTML4 attributes cannot be longer than this, so just skip it in this case.
         if (length($vars->{readable_bug_status_json}) > 65536) {
             delete $vars->{readable_bug_status_json};
