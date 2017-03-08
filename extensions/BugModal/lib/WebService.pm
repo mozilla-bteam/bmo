@@ -21,7 +21,6 @@ use Bugzilla::Keyword;
 use Bugzilla::Milestone;
 use Bugzilla::Product;
 use Bugzilla::Version;
-use Digest::SHA qw(sha256_base64);
 use List::MoreUtils qw(any first_value);
 
 # these methods are much lighter than our public API calls
@@ -145,21 +144,12 @@ sub cc {
 
 sub new_product {
     my ($self, $params) = @_;
-    my $dbh       = Bugzilla->dbh;
-    my $user      = Bugzilla->user;
-    my $bug       = Bugzilla::Bug->check({ id => $params->{id} });
-    my $product   = Bugzilla::Product->check({ name => $params->{product_name}, cache => 1 });
-    my $cgi       = Bugzilla->cgi;
-    my $true      = $self->type('boolean', 1);
-    my $memcached = Bugzilla->memcached;
-    my $cache_key  = "new_product/" . $user->id . "/" . $product->id;
-    my $result     = $memcached->get_config({key => $cache_key});
-    if ($result) {
-        $self->bz_etag($result);
-        return $result;
-    }
-
-    $result = {};
+    my $dbh     = Bugzilla->dbh;
+    my $user    = Bugzilla->user;
+    my $bug     = Bugzilla::Bug->check({ id => $params->{id} });
+    my $product = Bugzilla::Product->check({ name => $params->{product_name}, cache => 1 });
+    my $true    = $self->type('boolean', 1);
+    my %result;
 
     # components
 
@@ -176,7 +166,7 @@ sub new_product {
             selected => $true,
         };
     }
-    $result->{component} = $components;
+    $result{component} = $components;
 
     # milestones
 
@@ -194,7 +184,7 @@ sub new_product {
         my $milestone = first_value { $_->{name} eq $default_milestone } @$milestones;
         $milestone->{selected} = $true;
     }
-    $result->{target_milestone} = $milestones;
+    $result{target_milestone} = $milestones;
 
     # versions
 
@@ -238,7 +228,7 @@ sub new_product {
             selected => $true,
         };
     }
-    $result->{version} = $versions;
+    $result{version} = $versions;
 
     # groups
 
@@ -330,15 +320,10 @@ sub new_product {
 
     # build group selection html
     my $template = Bugzilla->template;
-    my $groups = '';
-    $template->process('bug_modal/new_product_groups.html.tmpl', $vars, \$groups)
+    $template->process('bug_modal/new_product_groups.html.tmpl', $vars, \$result{groups})
         || ThrowTemplateError($template->error);
-    $result->{groups} = $groups;
 
-    $memcached->set_config({key => $cache_key, data => $result});
-    $self->bz_etag($result);
-
-    return $result;
+    return \%result;
 }
 
 1;
