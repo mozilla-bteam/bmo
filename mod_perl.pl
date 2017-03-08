@@ -135,6 +135,7 @@ sub handler : method {
     use warnings;
 
     Bugzilla::init_page();
+    Bugzilla::clear_request_cache();
     my $start = Time::HiRes::time();
     my $result = $class->SUPER::handler(@_);
     warn "[request_time] ", Bugzilla->cgi->request_uri, " took ", Time::HiRes::time() - $start, " seconds to execute";
