@@ -127,7 +127,7 @@ use constant COMPONENT_EXCEPTIONS => (
 );
 
 # Quicksearch-wide globals for boolean charts.
-our ($chart, $and, $or, $fulltext, $bug_status_set);
+our ($chart, $and, $or, $fulltext, $bug_status_set, $ELASTIC);
 
 sub quicksearch {
     my ($searchstring) = (@_);
@@ -349,6 +349,10 @@ sub _handle_status_and_resolution {
     my $legal_statuses = get_legal_field_values('bug_status');
     my (%states, %resolutions);
     $bug_status_set = 1;
+
+    if ($word =~ s/^(ALL|OPEN)\+$/$1/) {
+        Bugzilla->cgi->param('limit' => 0);
+    }
 
     if ($word eq 'OPEN') {
         $states{$_} = 1 foreach BUG_STATE_OPEN;
@@ -583,7 +587,8 @@ sub _default_quicksearch_word {
     addChart('alias', 'substring', $word, $negate);
     addChart('short_desc', 'substring', $word, $negate);
     addChart('status_whiteboard', 'substring', $word, $negate);
-    addChart('content', 'matches', _matches_phrase($word), $negate) if $fulltext;
+    addChart('longdesc', 'substring', $word, $negate) if $ELASTIC;
+    addChart('content', 'matches', _matches_phrase($word), $negate) if $fulltext && !$ELASTIC;
 
     # BMO Bug 664124 - Include the crash signature (sig:) field in default quicksearches
     addChart('cf_crash_signature',  'substring',  $word,  $negate);
@@ -613,6 +618,7 @@ sub _handle_urls {
 # Quote and escape a phrase appropriately for a "content matches" search.
 sub _matches_phrase {
     my ($phrase) = @_;
+    return $phrase if $ELASTIC;
     $phrase =~ s/"/\\"/g;
     return "\"$phrase\"";
 }
@@ -620,9 +626,12 @@ sub _matches_phrase {
 # Expand found prefixes to states or resolutions
 sub matchPrefixes {
     my ($hr_states, $hr_resolutions, $word, $ar_check_states) = @_;
-    return unless $word =~ /^[A-Z_]+(,[A-Z_]+)*$/;
+    return unless $word =~ /^[A-Z_]+(,[A-Z_]+)*\+?$/;
 
     my @ar_prefixes = split(/,/, $word);
+    if ($ar_prefixes[-1] =~ s/\+$//) {
+        Bugzilla->cgi->param(limit => 0);
+    }
     my $ar_check_resolutions = get_legal_field_values('resolution');
     my $foundMatch = 0;
 
