@@ -812,12 +812,11 @@ sub _cleanup {
         $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction;
         $dbh->disconnect;
     }
-    clear_request_cache();
     if (MOD_PERL) {
-        if (keys %{ request_cache() }) {
-            $s->warn("!!$$ cache was not cleared: keys = ". join(", ", keys %{ request_cache() }));
-        }
+        my $params = Bugzilla->params;
+        $s->warn("!!$$ $params");
     }
+    clear_request_cache();
 
     # These are both set by CGI.pm but need to be undone so that
     # Apache can actually shut down its children if it needs to.
