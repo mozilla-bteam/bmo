@@ -814,7 +814,7 @@ sub _cleanup {
     }
     if (MOD_PERL) {
         my $params = Bugzilla->params;
-        my $g_params = \&Bugzilla::Config::params;
+        my $g_params = \%Bugzilla::Config::params;
         $s->warn("!!$$ $params vs $g_params");
     }
     clear_request_cache();
