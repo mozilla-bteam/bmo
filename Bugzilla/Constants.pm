@@ -210,6 +210,11 @@ use Memoize;
 sub BUGZILLA_VERSION {
     my $bugzilla_version = '4.2';
     eval { require Bugzilla } || return $bugzilla_version;
+    if ($ENV{MOD_PERL}) {
+        my $s = Apache2::ServerUtil->server;
+        my ($package, $file, $line) = caller;
+        $s->warn("BUGZILLA_VERSION called from $package, $file line $line");
+    }
     return Bugzilla->params->{bugzilla_version} || $bugzilla_version;
 }
 
