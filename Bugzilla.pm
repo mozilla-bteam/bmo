@@ -792,19 +792,22 @@ sub elastic {
 
 # Per-process cleanup. Note that this is a plain subroutine, not a method,
 # so we don't have $class available.
+use constant MOD_PERL => $ENV{MOD_PERL};
 sub _cleanup {
     # BMO - finalise and report on metrics
     if (Bugzilla->metrics_enabled) {
         Bugzilla->metrics->finish();
     }
+    my $s;
+    $s = Apache2::ServerUtil->server if MOD_PERL;
 
     # BMO - allow "end of request" processing
-    warn "!!$$ request cleanup hook\n";
+    $s->warn("!!$$ request cleanup hook\n") if MOD_PERL;
     Bugzilla::Hook::process('request_cleanup');
-    warn "!!$$ Bugzilla::Bug->CLEANUP\n";
+    $s->warn("!!$$ Bugzilla::Bug->CLEANUP\n") if MOD_PERL;
     Bugzilla::Bug->CLEANUP;
 
-    warn "!!$$ db disconnection\n";
+    $s->warn("!!$$ db disconnection\n") if MOD_PERL;
     my $main   = Bugzilla->request_cache->{dbh_main};
     my $shadow = Bugzilla->request_cache->{dbh_shadow};
     foreach my $dbh ($main, $shadow) {
@@ -812,7 +815,7 @@ sub _cleanup {
         $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction;
         $dbh->disconnect;
     }
-    warn "!!$$ clear request cache\n";
+    $s->warn("!!$$ clear request cache\n") if MOD_PERL;
     clear_request_cache();
 
     # These are both set by CGI.pm but need to be undone so that
