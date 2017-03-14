@@ -306,8 +306,20 @@ sub localconfig {
     return $_[0]->process_cache->{localconfig} ||= read_localconfig();
 }
 
+use constant MOD_PERL => $ENV{MOD_PERL};
 sub params {
-    return $_[0]->request_cache->{params} ||= Bugzilla::Config::read_param_file();
+    if ($_[0]->request_cache->{params}) {
+        if (MOD_PERL) {
+            my $s = Apache2::ServerUtil->server;
+            my ($package, $filename, $line) = caller;
+            $s->warn("!!$$ loading params, called from $package, $filename line $line");
+        }
+        return $_[0]->request_cache->{params};
+    }
+    else {
+        return $_[0]->request_cache->{params} = Bugzilla::Config::read_param_file();
+    }
+
 }
 
 sub get_param_with_override {
@@ -792,14 +804,11 @@ sub elastic {
 
 # Per-process cleanup. Note that this is a plain subroutine, not a method,
 # so we don't have $class available.
-use constant MOD_PERL => $ENV{MOD_PERL};
 sub _cleanup {
     # BMO - finalise and report on metrics
     if (Bugzilla->metrics_enabled) {
         Bugzilla->metrics->finish();
     }
-    my $s;
-    $s = Apache2::ServerUtil->server if MOD_PERL;
 
     # BMO - allow "end of request" processing
     Bugzilla::Hook::process('request_cleanup');
@@ -811,11 +820,6 @@ sub _cleanup {
         next if !$dbh;
         $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction;
         $dbh->disconnect;
-    }
-    if (MOD_PERL) {
-        my $params = Bugzilla->params;
-        my $g_params = \%Bugzilla::Config::params;
-        $s->warn("!!$$ $params vs $g_params");
     }
     clear_request_cache();
 
