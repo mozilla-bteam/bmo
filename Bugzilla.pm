@@ -799,9 +799,12 @@ sub _cleanup {
     }
 
     # BMO - allow "end of request" processing
+    warn "!!$$ request cleanup hook\n";
     Bugzilla::Hook::process('request_cleanup');
+    warn "!!$$ Bugzilla::Bug->CLEANUP\n";
     Bugzilla::Bug->CLEANUP;
 
+    warn "!!$$ db disconnection\n";
     my $main   = Bugzilla->request_cache->{dbh_main};
     my $shadow = Bugzilla->request_cache->{dbh_shadow};
     foreach my $dbh ($main, $shadow) {
@@ -809,6 +812,7 @@ sub _cleanup {
         $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction;
         $dbh->disconnect;
     }
+    warn "!!$$ clear request cache\n";
     clear_request_cache();
 
     # These are both set by CGI.pm but need to be undone so that
