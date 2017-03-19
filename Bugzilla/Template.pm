@@ -221,7 +221,7 @@ sub quoteUrls {
     # attachment links
     # BMO: don't make diff view the default for patches (Bug 652332)
     $text =~ s~\b(attachment$s*\#?$s*(\d+)(?:$s+\[diff\])?(?:\s+\[details\])?)
-              ~($things[$count++] = get_attachment_link($2, $1, $user)) &&
+              ~($things[$count++] = get_attachment_link($2, $1, $user, $bug)) &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egmxi;
 
@@ -260,7 +260,7 @@ sub quoteUrls {
 
 # Creates a link to an attachment, including its title.
 sub get_attachment_link {
-    my ($attachid, $link_text, $user) = @_;
+    my ($attachid, $link_text, $user, $bug) = @_;
     my $dbh = Bugzilla->dbh;
     $user ||= Bugzilla->user;
 
@@ -287,14 +287,18 @@ sub get_attachment_link {
         # If the attachment is a patch and patch_viewer feature is
         # enabled, add link to the diff.
         my $patchlink = "";
-        if ($attachment->ispatch and Bugzilla->feature('patch_viewer')) {
+        my $patchdetails = "";
+        if ($attachment->ispatch and Bugzilla->feature('patch_viewer') and $attachment->bug_id == $bug->id) {
             $patchlink = qq| <a href="${linkval}&amp;action=diff" title="$title">[diff]</a>|;
+        }
+        if ($attachment->bug_id == $bug->id) {
+            $patchdetails = qq| <a href="${linkval}&amp;action=edit" title="$title">[details]</a>|;
         }
 
         # Whitespace matters here because these links are in <pre> tags.
         return qq|<span class="$className">|
                . qq|<a href="${linkval}" name="attach_${attachid}" title="$title">$link_text</a>|
-               . qq| <a href="${linkval}&amp;action=edit" title="$title">[details]</a>|
+               . qq|${patchdetails}|
                . qq|${patchlink}|
                . qq|</span>|;
     }
