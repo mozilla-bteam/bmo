@@ -449,6 +449,11 @@ $(function() {
             $.scrollTo($(this).attr('href').substr(1));
         });
 
+    // Update readable bug status
+    var rbs = $("#readable-bug-status");
+    var rbs_text = bugzillaReadableStatus.readable(rbs.data('readable-bug-status'));
+    rbs.text(rbs_text);
+    
     if (BUGZILLA.user.id === 0) return;
 
     //
@@ -710,7 +715,7 @@ $(function() {
     $('#cancel-btn')
         .click(function(event) {
             event.preventDefault();
-            window.location.replace($('#this-bug').val());
+            window.location.replace($('#this-bug').attr('href'));
         });
 
     // Open help page
@@ -775,9 +780,6 @@ $(function() {
             var other = $(that.attr('id') == 'dup_id' ? '#bottom-dup_id' : '#dup_id');
             other.val(that.val());
         });
-    var rbs = $("#readable-bug-status");
-    var rbs_text = bugzillaReadableStatus.readable(rbs.data('readable-bug-status'));
-    rbs.text(rbs_text);
 
     // add see-also button
     $('.bug-urls-btn')
