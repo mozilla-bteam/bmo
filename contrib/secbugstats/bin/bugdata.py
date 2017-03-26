@@ -22,7 +22,7 @@ cur = db.cursor()
 my_bug_fields = ["creation_time"]
 
 # list of history fields we care about
-my_history_fields = ["whiteboard","resolution"]
+my_history_fields = ["keywords","resolution"]
 
 def bugurl(bug):
     return "https://api-dev.bugzilla.mozilla.org/latest/bug/%d?%s" % (bug, BZ_AUTH)
@@ -36,12 +36,16 @@ def convertDate(d):
     old = time.strptime(d, "%Y-%m-%dT%H:%M:%SZ")
     return time.strftime("%Y-%m-%d %H:%M:%S", old)
 
-# parse the severity from the whiteboard text
+# parse the severity from the keywords text
 # e.g. [sg:high][OOPP]
 def getSeverity(s):
-    sevmatch = re.search("(?<=sg:)[\w-]+", s)
-    if sevmatch:
-        return sevmatch.group(0)
+    if DEBUG: print "getSeverity: ", s
+    for keyword in s:
+        if re.match("^sec-", keyword):
+            sevmatch = re.search("(?<=sec-)[\w]+", keyword)
+            if DEBUG: print "--> "+sevmatch.group(0)
+            return sevmatch.group(0)
+    if DEBUG: print "--> <none>"
     return ""
 
 # get the bug number to process
@@ -68,7 +72,7 @@ bugobj = json.loads( resp.read() )
 opendate = convertDate(bugobj["creation_time"])
 summary = bugobj["summary"]
 # last severity rating in Bugs table (could be blank)
-severity = getSeverity(bugobj["whiteboard"])
+severity = getSeverity(bugobj["keywords"])
 
 # get fields from bug history
 resp = urlopen( histurl(BUGID) )
@@ -112,16 +116,16 @@ for group in history:
         # NOTE: for items that will change one of the Bugs fields,
         # make sure to check if change_time > Bugs.updated and if so
         # update that field with the change time.  Right now, only
-        # whiteboard is doing so...
+        # keywords is doing so...
 
-        # Use most recent sg: whiteboard marking to determine severity
-        elif change["field_name"] == "whiteboard":
+        # Use most recent sec- keywords marking to determine severity
+        elif change["field_name"] == "keywords":
             # keep track of last update to Bugs table
             # e.g. last severity assigned
             #if DEBUG: print "change_time: %s, updated: %s" % (str(change_time), updated)
             if change_time > updated:
                 updated = str(change_time)
-                severity = getSeverity(change["added"])
+                severity = getSeverity([change["added"]])
 
         # default case: log the change to a field we care about
         else:
