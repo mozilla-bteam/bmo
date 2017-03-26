@@ -90,7 +90,7 @@ class DataRow():
 
 # start building email body
 body = "<html>\n<body>\n<head>\n<style type=\"text/css\">.number{text-align:center;}table{margin:0 1em;border:1px solid black;border-collapse:collapse}th{text-align:left;padding:0 .5em}td{padding:0 .5em;border-top:1px solid #000;padding-top:.2em}td.total{border-top:3px double #000}th.header{font-weight:600}th.bright,td.bright{border-right:1px solid #000;font-weight:bold}.small{font-size:70%}.medium{font-size:80%}.gray{background-color:#eee}</style>\n</head>\n"
-body += "<body>\n<p>Hello,</p><p>Here are some statistics regarding Mozilla Security Bugs for the week of %s:</p>\n<h2>Open Bugs By Severity</h2>\n<table>\n<tr><th>Category</th><th>Current</th><th>Last</th><th>Delta</th></tr>\n" % (getThisWeekDate(True))
+body += "<body>\n<p>Hello,</p><p>Here are some statistics regarding Mozilla Client Security Bugs for the week of %s:</p>\n<h2>Open Bugs By Severity</h2>\n<table>\n<tr><th>Category</th><th>Current</th><th>Last</th><th>Delta</th></tr>\n" % (getThisWeekDate(True))
 
 # keep track of totals for counts
 curTotal = 0
@@ -263,11 +263,11 @@ body += """<table class="medium">
 body += "<h2>Historic Risk Index by Team</h2><img src=\"cid:image1\"><br>\n"
 
 # finish up the email message
-body += "<p>For charts and further details regarding Mozilla Security Bug Statistics please visit:</p>\n<p><a href=\"http://bsterne.mv.mozilla.com/secbugstats\">http://bsterne.mv.mozilla.com/secbugstats</a></p>\n<p><a href=\"http://bsterne.mv.mozilla.com/secbugstats/teams/\">http://bsterne.mv.mozilla.com/secbugstats/teams/</a></p>\n</body>\n</html>"
+body += "</body>\n</html>"
 
 # set up multipart email message
 msgRoot = MIMEMultipart("related")
-msgRoot["Subject"] = "Weekly Security Bug Stats Report"
+msgRoot["Subject"] = "Weekly Client Security Bug Stats Report"
 msgRoot["From"] = EMAIL_FROM
 msgRoot["To"] = ",".join(EMAIL_TO)
 msgRoot.preamble = "This is a multi-part message in MIME format."
@@ -300,6 +300,7 @@ elif "--html" in sys.argv:
     print "\n", body
 # send out the mail
 else:
-    s = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT)
-    s.login(LDAP_USER, LDAP_PASS)
+    s = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+    # s = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT)
+    # s.login(LDAP_USER, LDAP_PASS)
     s.sendmail(EMAIL_FROM, EMAIL_TO, msgRoot.as_string())
