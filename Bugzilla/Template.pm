@@ -38,7 +38,6 @@ use File::Spec;
 use IO::Dir;
 use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
-use JSON::XS qw(encode_json);
 
 use base qw(Template);
 
@@ -976,10 +975,6 @@ sub create {
         VARIABLES => {
             # Function for retrieving global parameters.
             'Param' => sub { return Bugzilla->params->{$_[0]}; },
-
-            json_encode => sub {
-                return encode_json($_[0]);
-            },
 
             # Function to create date strings
             'time2str' => \&Date::Format::time2str,

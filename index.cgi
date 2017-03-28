@@ -16,12 +16,11 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Update;
-use Digest::MD5 qw(md5_hex);
-use List::MoreUtils qw(any);
 
 # Check whether or not the user is logged in
 my $user = Bugzilla->login(LOGIN_OPTIONAL);
 my $cgi = Bugzilla->cgi;
+my $template = Bugzilla->template;
 my $vars = {};
 
 # And log out the user if requested. We do this first so that nothing
@@ -34,36 +33,26 @@ if ($cgi->param('logout')) {
     $cgi->delete('logout');
 }
 
-my @cache_control = (
-    $user->id ? 'private' : 'public',
-    sprintf('max-age=%d', time() + MAX_TOKEN_AGE * 86400),
-);
+$cgi->content_security_policy(script_src  => ['self', 'nonce']);
 
-my $weak_etag = q{W/"} . md5_hex(Bugzilla->user->id, Bugzilla->params->{bugzilla_version}) . q{"};
+###############################################################################
+# Main Body Execution
+###############################################################################
 
-my $if_none_match = $cgi->http('If-None-Match');
-if ($if_none_match && any { $_ eq $weak_etag } split(/,\s*/, $if_none_match)) {
-    print $cgi->header(-status => '304 Not Modified', -ETag => $weak_etag);
-}
-else {
-    my $template = Bugzilla->template;
-    $cgi->content_security_policy(script_src  => ['self']);
+# Return the appropriate HTTP response headers.
+print $cgi->header();
 
-    # Return the appropriate HTTP response headers.
-    print $cgi->header(-Cache_Control => join(', ', @cache_control), -ETag => $weak_etag);
-
-    if ($user->in_group('admin')) {
-        # If 'urlbase' is not set, display the Welcome page.
-        unless (Bugzilla->params->{'urlbase'}) {
-            $template->process('welcome-admin.html.tmpl')
-            || ThrowTemplateError($template->error());
-            exit;
-        }
-        # Inform the administrator about new releases, if any.
-        $vars->{'release'} = Bugzilla::Update::get_notifications();
+if ($user->in_group('admin')) {
+    # If 'urlbase' is not set, display the Welcome page.
+    unless (Bugzilla->params->{'urlbase'}) {
+        $template->process('welcome-admin.html.tmpl')
+          || ThrowTemplateError($template->error());
+        exit;
     }
-
-    # Generate and return the UI (HTML page) from the appropriate template.
-    $template->process("index.html.tmpl", $vars)
-    || ThrowTemplateError($template->error());
+    # Inform the administrator about new releases, if any.
+    $vars->{'release'} = Bugzilla::Update::get_notifications();
 }
+
+# Generate and return the UI (HTML page) from the appropriate template.
+$template->process("index.html.tmpl", $vars)
+  || ThrowTemplateError($template->error());

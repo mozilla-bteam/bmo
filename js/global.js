@@ -16,8 +16,6 @@
 *                 
 */
 
-var BUGZILLA = $('head').data('bugzilla');
-
 $(function () {
   $('.show_mini_login_form').on("click", function (event) {
     return show_mini_login_form($(this).data('qs-suffix'));
@@ -34,19 +32,14 @@ $(function () {
   $('.check_mini_login_fields').on("click", function (event) {
     return check_mini_login_fields($(this).data('qs-suffix'));
   });
-  $('.quicksearch_check_empty').on("submit", function (event) {
+  $('form .quicksearch_check_empty').on("submit", function (event) {
       if (this.quicksearch.value == '') {
-          alert('Please enter one or more search terms first.');
-          event.preventDefault();
+        alert('Please enter one or more search terms first.');
+        return false;
       }
+      return true;
   });
-
-  unhide_language_selector();
 });
-
-function unhide_language_selector() {
-    $('#lang_links_container').removeClass('bz_default_hidden');
-}
 
 function show_mini_login_form( suffix ) {
     $('#login_link' + suffix).addClass('bz_default_hidden');
