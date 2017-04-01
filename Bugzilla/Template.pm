@@ -12,6 +12,8 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Template::Directive;
+
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
@@ -968,6 +970,7 @@ sub create {
         },
 
         PLUGIN_BASE => 'Bugzilla::Template::Plugin',
+        FACTORY     => 'Bugzilla::Template::Directive',
 
         CONSTANTS => _load_constants(),
 
