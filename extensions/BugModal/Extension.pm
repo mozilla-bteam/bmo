@@ -150,6 +150,19 @@ sub template_after_create {
     );
 }
 
+sub template_before_process_wants {
+    my %want;
+    $want{$_} = 1 for (
+        'bug/process/header.html.tmpl',
+        'bug/create/created.html.tmpl',
+        'attachment/created.html.tmpl',
+        'attachment/updated.html.tmpl',
+        'bug_modal/edit.html.tmpl',
+        'bug/show-modal.html.tmpl',
+    );
+    return \%want;
+}
+
 sub template_before_process {
     my ($self, $args) = @_;
     my $file = $args->{file};
