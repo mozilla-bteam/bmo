@@ -12,7 +12,9 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Template::Directive;
 use Bugzilla::Template::PreloadProvider;
+
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
@@ -845,6 +847,7 @@ sub create {
         },
 
         PLUGIN_BASE => 'Bugzilla::Template::Plugin',
+        FACTORY     => 'Bugzilla::Template::Directive',
 
         # We don't want this feature.
         CONSTANT_NAMESPACE => '__const',
