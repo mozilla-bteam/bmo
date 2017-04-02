@@ -26,6 +26,7 @@ use constant REQUIRE_WATCH_USER => 1;
 use constant DEFAULT_ASSIGNEE   => 'nobody@mozilla.org';
 
 use constant REL_COMPONENT_WATCHER => 15;
+BEGIN { package Bugzilla::Constants; use constant REL_COMPONENT_WATCHER => 15 }
 
 #
 # installation

@@ -24,11 +24,20 @@ use Bugzilla::Token;
 use List::Util qw(min sum);
 
 use constant VERSION => BUGZILLA_VERSION;
+
 use constant DEFAULT_VOTES_PER_BUG => 1;
 # These came from Bugzilla itself, so they maintain the old numbers
 # they had before.
 use constant CMT_POPULAR_VOTES => 3;
 use constant REL_VOTER => 4;
+
+BEGIN { package Bugzilla::Constants;
+    use constant DEFAULT_VOTES_PER_BUG => 1;
+    # These came from Bugzilla itself, so they maintain the old numbers
+    # they had before.
+    use constant CMT_POPULAR_VOTES => 3;
+    use constant REL_VOTER => 4;
+}
 
 BEGIN {
     *Bugzilla::Bug::user_votes = \&_bug_user_votes;

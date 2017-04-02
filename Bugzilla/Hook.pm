@@ -12,6 +12,7 @@ use strict;
 use warnings;
 
 use Scalar::Util qw(blessed);
+use Bugzilla::Install::Util qw(template_include_path);
 
 sub process {
     my ($name, $args, $extensions) = @_;
@@ -54,6 +55,71 @@ sub in {
     my $currently_in = Bugzilla->request_cache->{hook_stack}->[-1] || '';
     return $hook_name eq $currently_in ? 1 : 0;
 }
+
+
+sub template_process {
+    my ($context, $hook_name, $template) = @_;
+    $template ||= $context->stash->{component}->{name};
+
+    # sanity check:
+    if (!$template =~ /[\w\.\/\-_\\]+/) {
+        ThrowCodeError('template_invalid', { name => $template });
+    }
+
+    my (undef, $path, $filename) = File::Spec->splitpath($template);
+    $path ||= '';
+    $filename =~ m/(.+)\.(.+)\.tmpl$/;
+    my $template_name = $1;
+    my $type = $2;
+
+    # Hooks are named like this:
+    my $extension_template = "$path$template_name-$hook_name.$type.tmpl";
+
+    # Get the hooks out of the cache if they exist. Otherwise, read them
+    # from the disk.
+    my $cache = Bugzilla->request_cache->{template_plugin_hook_cache} ||= {};
+    my $lang = $context->{bz_language} || '';
+    $cache->{"${lang}__$extension_template"} 
+        ||= _get_hooks($context, $extension_template);
+
+    # process() accepts an arrayref of templates, so we just pass the whole
+    # arrayref.
+    $context->{bz_in_hook} = 1; # See Bugzilla::Template::Context
+    return $context->process($cache->{"${lang}__$extension_template"});
+}
+
+sub _get_hooks {
+    my ($context, $extension_template) = @_;
+
+    my $template_sets = _template_hook_include_path($context);
+    my @hooks;
+    foreach my $dir_set (@$template_sets) {
+        foreach my $template_dir (@$dir_set) {
+            my $file = "$template_dir/hook/$extension_template";
+            if (-e $file) {
+                my $template = $context->template($file);
+                push(@hooks, $template);
+                # Don't run the hook for more than one language.
+                last;
+            }
+        }
+    }
+
+    return \@hooks;
+}
+
+sub _template_hook_include_path {
+    my ($context) = @_;
+    my $cache = Bugzilla->request_cache;
+    my $language = $context->{bz_language} || '';
+    my $cache_key = "template_plugin_hook_include_path_$language";
+    $cache->{$cache_key} ||= template_include_path({
+        language => $language,
+        hook     => 1,
+    });
+    return $cache->{$cache_key};
+}
+
 
 1;
 

@@ -118,6 +118,10 @@ use Memoize;
     FIELD_TYPE_INTEGER
     FIELD_TYPE_EXTENSION
 
+    FIELD_TYPE_USER
+    FIELD_TYPE_USERS
+    FIELD_TYPE_BUG_LIST
+
     FIELD_TYPE_HIGHEST_PLUS_ONE
     
     EMPTY_DATETIME_REGEX
@@ -426,6 +430,9 @@ use constant FIELD_TYPE_BUG_URLS => 7;
 use constant FIELD_TYPE_KEYWORDS => 8;
 use constant FIELD_TYPE_DATE => 9;
 use constant FIELD_TYPE_INTEGER => 10;
+use constant FIELD_TYPE_USER     => 20;
+use constant FIELD_TYPE_USERS    => 21;
+use constant FIELD_TYPE_BUG_LIST => 22;
 use constant FIELD_TYPE_EXTENSION => 99;
 
 # Add new field types above this line, and change the below value in the

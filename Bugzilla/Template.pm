@@ -13,6 +13,7 @@ use strict;
 use warnings;
 
 use Bugzilla::Template::Directive;
+use Bugzilla::Template::Namespace;
 
 use Bugzilla::Bug;
 use Bugzilla::Constants;
@@ -676,6 +677,7 @@ sub create {
 
     # IMPORTANT - If you make any FILTER changes here, make sure to
     # make them in t/004.template.t also, if required.
+    my $ns = Bugzilla::Template::Namespace->new;
 
     my $config = {
         # Colon-separated list of directories containing templates.
@@ -971,8 +973,12 @@ sub create {
 
         PLUGIN_BASE => 'Bugzilla::Template::Plugin',
         FACTORY     => 'Bugzilla::Template::Directive',
-
-        CONSTANTS => _load_constants(),
+        NAMESPACE   => {
+            Bugzilla      => $ns,
+            Hook          => $ns,
+            constants     => $ns,
+            terms         => $ns,
+        },
 
         # Default variables for all templates
         VARIABLES => {
