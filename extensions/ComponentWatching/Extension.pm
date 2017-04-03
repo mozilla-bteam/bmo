@@ -20,13 +20,10 @@ use Bugzilla::User;
 use Bugzilla::User::Setting;
 use Bugzilla::Util qw(detaint_natural trim trick_taint);
 
+use Bugzilla::Extension::ComponentWatching::Constants;
+
 our $VERSION = '2';
 
-use constant REQUIRE_WATCH_USER => 1;
-use constant DEFAULT_ASSIGNEE   => 'nobody@mozilla.org';
-
-use constant REL_COMPONENT_WATCHER => 15;
-BEGIN { package Bugzilla::Constants; use constant REL_COMPONENT_WATCHER => 15 }
 
 #
 # installation
@@ -124,13 +121,6 @@ sub install_update_db {
 #
 # templates
 #
-
-sub template_before_create {
-    my ($self, $args) = @_;
-    my $config = $args->{config};
-    my $constants = $config->{CONSTANTS};
-    $constants->{REL_COMPONENT_WATCHER} = REL_COMPONENT_WATCHER;
-}
 
 sub template_before_process_wants {
     return {

@@ -56,21 +56,37 @@ sub ident {
     elsif ($ns eq 'constants') {
         my ($const, $const_args) = tt_parse_ident($ident);
         die "constants has args!" if $const_args;
-        $expr = "Bugzilla::Constants::$const";
-        if (my $f = Bugzilla::Constants->can($const)) {
-            my $val;
-            my $count = ($val) = $f->();
-            if ($count > 1) {
-                $expr = "[ $expr ]";
-            } 
-            elsif (ref $val && ref $val eq 'HASH') {
-                if (@$ident) {
-                    my ($key) = tt_parse_ident($ident);
-                    $expr .= "->{$key}";
-                }
+
+        my $ext_class = "Bugzilla::Extension::$const";
+
+        my $const_ref;
+        if ($const_ref = Bugzilla::Constants->can($const)) {
+            $expr = "Bugzilla::Constants::$const";
+        }
+        elsif ($ext_class->can('NAME') && @$ident) {
+            ($const, $const_args) = tt_parse_ident($ident);
+            if ($const_ref = $ext_class->can($const)) {
+                $expr = $ext_class . "::" . $const;
+            }
+            else {
+                die "Invalid constant: $const (namespace $ext_class)";
             }
         }
-        # perl will catch invalid constants for us.
+        else {
+            die "Invalid constant: $const";
+        }
+
+        my $val;
+        my $count = ($val) = $const_ref->();
+        if ($count > 1) {
+            $expr = "[ $expr ]";
+        }
+        elsif (ref $val && ref $val eq 'HASH') {
+            if (@$ident) {
+                my ($key) = tt_parse_ident($ident);
+                $expr .= "->{$key}";
+            }
+        }
     }
     elsif ($ns eq 'Bugzilla') {
         my ($method, $args) = tt_parse_ident($ident);

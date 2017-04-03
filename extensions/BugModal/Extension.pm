@@ -16,6 +16,7 @@ use base qw(Bugzilla::Extension);
 use Bugzilla::Extension::BugModal::ActivityStream;
 use Bugzilla::Extension::BugModal::MonkeyPatches;
 use Bugzilla::Extension::BugModal::Util qw(date_str_to_time);
+use Bugzilla::Extension::BugModal::Constants;
 use Bugzilla::Constants;
 use Bugzilla::User::Setting;
 use Bugzilla::Util qw(trick_taint datetime_from html_quote time_ago);
@@ -25,15 +26,6 @@ use JSON::XS qw(encode_json);
 
 our $VERSION = '1';
 
-use constant READABLE_BUG_STATUS_PRODUCTS => (
-    'Core',
-    'Toolkit',
-    'Firefox',
-    'Firefox for Android',
-    'Firefox for iOS',
-    'Bugzilla',
-    'bugzilla.mozilla.org'
-);
 
 sub show_bug_format {
     my ($self, $args) = @_;

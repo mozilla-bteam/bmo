@@ -583,7 +583,7 @@
     [%# assignee %]
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.assigned_to
-        field_type = constants.FIELD_TYPE_USER
+        field_type = constants.BugModal.FIELD_TYPE_USER
         hide_on_edit = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#assigned_to"
     %]
@@ -598,7 +598,7 @@
     [% END %]
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.assigned_to
-        field_type = constants.FIELD_TYPE_USER
+        field_type = constants.BugModal.FIELD_TYPE_USER
         hide_on_view = 1
         action = {
           class   = "take-btn"
@@ -619,7 +619,7 @@
     [%# mentors %]
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.bug_mentor
-        field_type = constants.FIELD_TYPE_USERS
+        field_type = constants.BugModal.FIELD_TYPE_USERS
         name = "bug_mentors"
         label = "Mentors"
         value = bug.mentors.pluck("login")
@@ -640,7 +640,7 @@
     [%# qa contact %]
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.qa_contact
-        field_type = constants.FIELD_TYPE_USER
+        field_type = constants.BugModal.FIELD_TYPE_USER
         hide_on_view = bug.qa_contact == ""
         hide_on_edit = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
@@ -649,7 +649,7 @@
     [% END %]
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.qa_contact
-        field_type = constants.FIELD_TYPE_USER
+        field_type = constants.BugModal.FIELD_TYPE_USER
         hide_on_view = 1
         append_content = 1
         default = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
@@ -668,7 +668,7 @@
     [%# reporter %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.reporter
-        field_type = constants.FIELD_TYPE_USER
+        field_type = constants.BugModal.FIELD_TYPE_USER
         view_only = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#reporter"
     %]
@@ -676,7 +676,7 @@
     [%# triage owner %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.triage_owner
-        field_type = constants.FIELD_TYPE_USER
+        field_type = constants.BugModal.FIELD_TYPE_USER
         value = bug.component_obj.triage_owner
         view_only = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#triage_owner"
@@ -898,7 +898,7 @@
     [%# depends on %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.dependson
-        field_type = constants.FIELD_TYPE_BUG_LIST
+        field_type = constants.BugModal.FIELD_TYPE_BUG_LIST
         values = bug.depends_on_obj
         hide_on_view = bug.dependson.size == 0
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#dependson"
@@ -907,7 +907,7 @@
     [%# blocks %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.blocked
-        field_type = constants.FIELD_TYPE_BUG_LIST
+        field_type = constants.BugModal.FIELD_TYPE_BUG_LIST
         values = bug.blocks_obj
         hide_on_view = bug.blocked.size == 0
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#blocks"
@@ -928,7 +928,7 @@
     [% IF bug.duplicates.size %]
       [% INCLUDE bug_modal/field.html.tmpl
           field = "duplicates"
-          field_type = constants.FIELD_TYPE_BUG_LIST
+          field_type = constants.BugModal.FIELD_TYPE_BUG_LIST
           label = "Duplicates"
           values = bug.duplicates
           hide_on_edit = 1
