@@ -126,6 +126,31 @@ sub get_config {
     }
 }
 
+sub set_show_bug {
+    my ($self, $args) = @_;
+    return unless $self->{memcached};
+
+    if (exists $args->{bug_id}) {
+        return $self->_set($self->_show_bug_prefix . '.' . $args->{bug_id}, $args->{data});
+    }
+    else {
+        ThrowCodeError('params_required', { function => "Bugzilla::Memcached::set_show_bug",
+                                            params   => [ 'bug_id' ] });
+    }
+}
+
+sub get_show_bug {
+    my ($self, $args) = @_;
+
+    if (exists $args->{bug_id}) {
+        return $self->_get($self->_show_bug_prefix . '.' . $args->{bug_id});
+    }
+    else {
+        ThrowCodeError('params_required', { function => "Bugzilla::Memcached::get_show_bug",
+                                            params   => [ 'bug_id' ] });
+    }
+}
+
 sub clear {
     my ($self, $args) = @_;
     return unless $self->{memcached};
@@ -196,6 +221,17 @@ sub clear_config {
     }
 }
 
+sub clear_show_bug {
+    my ($self, $args) = @_;
+    return unless $self->{memcached};
+    if ($args && exists $args->{bug_id}) {
+        $self->_delete($self->_show_bug_prefix . '.' . $args->{bug_id});
+    }
+    else {
+        $self->_inc_prefix("show_bug");
+    }
+}
+
 # in order to clear all our keys, we add a prefix to all our keys.  when we
 # need to "clear" all current keys, we increment the prefix.
 sub _prefix {
@@ -241,6 +277,10 @@ sub _global_prefix {
 
 sub _config_prefix {
     return $_[0]->_prefix("config");
+}
+
+sub _show_bug_prefix {
+    return $_[0]->_prefix("show_bug");
 }
 
 sub _encode_key {

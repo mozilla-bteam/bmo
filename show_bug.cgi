@@ -23,10 +23,12 @@ use Bugzilla::CGI;
 use Bugzilla::Util qw(detaint_natural);
 
 my $cgi = Bugzilla->cgi;
+my $memcached = Bugzilla->memcached;
 my $template = Bugzilla->template;
 my $vars = {};
 
 my $user = Bugzilla->login();
+my $can_cache = $user->id == 0;
 
 # BMO: add show_bug_format for experimental UI work
 my $format_params = {
@@ -38,10 +40,29 @@ my $format = $template->get_format("bug/show",
                                    $format_params->{format},
                                    $format_params->{ctype});
 
+if ($format->{ctype} ne 'text/html') {
+    $can_cache = 0;
+}
+
+# I don't care about the side-wide preference here.
+# If the user is logged in, they're getting bug_modal
+my $bug_id = $cgi->param('id');
+detaint_natural($bug_id);
+my $page_cache = $memcached->get_show_bug({ bug_id => $bug_id }) if $can_cache;
+if ($page_cache) {
+    # also assume it is using modal.
+    $cgi->{Bugzilla_csp} = $page_cache->{csp};
+    print $cgi->header();
+    print $page_cache->{txt};
+    exit;
+}
+
+
 # Editable, 'single' HTML bugs are treated slightly specially in a few places
 my $single = (!$format->{format} || $format->{format} ne 'multiple')
              && $format->{extension} eq 'html';
 
+$can_cache = 0 if !$single;
 # If we don't have an ID, _AND_ we're only doing a single bug, then prompt
 if (!$cgi->param('id') && $single) {
     print Bugzilla->cgi->header();
@@ -51,8 +72,6 @@ if (!$cgi->param('id') && $single) {
 }
 
 if ($format_params->{format} eq 'modal') {
-    my $bug_id = $cgi->param('id');
-    detaint_natural($bug_id);
     $cgi->content_security_policy(Bugzilla::CGI::SHOW_BUG_MODAL_CSP($bug_id));
 }
 
@@ -136,6 +155,13 @@ if ($user->id) {
     }
 }
 print $cgi->header($format->{'ctype'});
-
-$template->process($format->{'template'}, $vars)
+my $output;
+$template->process($format->{'template'}, $vars, \$output)
   || ThrowTemplateError($template->error());
+
+print $output;
+
+if ($can_cache && $format->{ctype} eq "text/html") {
+    $memcached->set_show_bug({bug_id => $bug_id, data => {txt => $output, csp => $cgi->content_security_policy}});
+}
+
