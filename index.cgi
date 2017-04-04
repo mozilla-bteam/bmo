@@ -17,7 +17,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Update;
 use Digest::MD5 qw(md5_hex);
-use List::Util qw(any);
+use List::MoreUtils qw(any);
 
 # Check whether or not the user is logged in
 my $user = Bugzilla->login(LOGIN_OPTIONAL);
