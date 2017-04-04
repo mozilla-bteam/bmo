@@ -1315,7 +1315,6 @@ sub update {
     Bugzilla::Hook::process('bug_after_update',
         { bug => $self, timestamp => $delta_ts, changes => $changes, old_bug => $old_bug });
 
-    Bugzilla->memcached->clear_show_bug({bug_id => $self->id});
     return $changes;
 }
 
