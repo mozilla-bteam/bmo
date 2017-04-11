@@ -38,6 +38,7 @@ use File::Spec;
 use IO::Dir;
 use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
+use JSON::XS qw(encode_json);
 
 use base qw(Template);
 
@@ -680,6 +681,9 @@ sub create {
         INCLUDE_PATH => $opts{'include_path'} 
                         || _include_path($opts{'language'}),
 
+        # allow PERL/RAWPERL because doing so can boost performance
+        EVAL_PERL => 1,
+
         # Remove white-space before template directives (PRE_CHOMP) and at the
         # beginning and end of templates and template blocks (TRIM) for better
         # looking, more compact content.  Use the plus sign at the beginning
@@ -975,6 +979,10 @@ sub create {
         VARIABLES => {
             # Function for retrieving global parameters.
             'Param' => sub { return Bugzilla->params->{$_[0]}; },
+
+            json_encode => sub {
+                return encode_json($_[0]);
+            },
 
             # Function to create date strings
             'time2str' => \&Date::Format::time2str,
