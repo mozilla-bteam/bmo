@@ -23,7 +23,6 @@ BEGIN {
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
 use Bugzilla::CGI;
-use Bugzilla::Elastic;
 use Bugzilla::Config;
 use Bugzilla::Constants;
 use Bugzilla::DB;
@@ -34,12 +33,12 @@ use Bugzilla::Flag;
 use Bugzilla::Hook;
 use Bugzilla::Install::Localconfig qw(read_localconfig);
 use Bugzilla::Install::Util qw(init_console include_languages);
-use Bugzilla::Install::Requirements qw(load_cpan_meta check_cpan_feature);
 use Bugzilla::Memcached;
 use Bugzilla::Template;
 use Bugzilla::Token;
 use Bugzilla::User;
 use Bugzilla::Util;
+use Bugzilla::CPAN;
 
 use Bugzilla::Metrics::Collector;
 use Bugzilla::Metrics::Template;
@@ -52,6 +51,8 @@ use File::Basename;
 use File::Spec::Functions;
 use Safe;
 use Sys::Syslog qw(:DEFAULT);
+
+use parent qw(Bugzilla::CPAN);
 
 #####################################################################
 # Constants
@@ -80,6 +81,10 @@ use constant SHUTDOWNHTML_RETRY_AFTER => 3600;
 
 # Note that this is a raw subroutine, not a method, so $class isn't available.
 sub init_page {
+    # This is probably not needed, but bugs resulting from a dirty
+    # request cache are very annoying (see bug 1347335)
+    # and this is not an expensive operation.
+    clear_request_cache();
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
         init_console();
     }
@@ -247,39 +252,6 @@ sub extensions {
         $cache->{extensions} = \@extensions;
     }
     return $cache->{extensions};
-}
-
-sub feature {
-    my ($class, $feature_name) = @_;
-    return 0 unless CAN_HAS_FEATURE;
-    return 0 unless $class->has_feature($feature_name);
-
-    my $cache = $class->process_cache;
-    my $feature = $cache->{cpan_meta}->feature($feature_name);
-    # Bugzilla expects this will also load all the modules.. so we have to do that.
-    # Later we should put a deprecation warning here, and favor calling has_feature().
-
-    return 1 if $cache->{feature_loaded}{$feature_name};
-    my @modules = $feature->prereqs->merged_requirements->required_modules;
-    Module::Runtime::require_module($_) foreach @modules;
-    $cache->{feature_loaded}{$feature_name} = 1;
-    return 1;
-}
-
-sub has_feature {
-    my ($class, $feature_name) = @_;
-
-    return 0 unless CAN_HAS_FEATURE;
-
-    my $cache = $class->process_cache;
-    return $cache->{feature}->{$feature_name}
-        if exists $cache->{feature}->{$feature_name};
-
-    my $meta = $cache->{cpan_meta} //= load_cpan_meta();
-    my $feature = eval { $meta->feature($feature_name) }
-      or ThrowCodeError('invalid_feature', { feature => $feature_name });
-
-    return $cache->{feature}{$feature_name} = check_cpan_feature($feature)->{ok};
 }
 
 sub cgi {
@@ -781,11 +753,6 @@ sub memcached {
     } else {
         return $_[0]->request_cache->{memcached} ||= Bugzilla::Memcached->_new();
     }
-}
-
-sub elastic {
-    my ($class) = @_;
-    $class->process_cache->{elastic} //= Bugzilla::Elastic->new();
 }
 
 # Private methods

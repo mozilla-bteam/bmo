@@ -38,6 +38,7 @@ use Apache2::ServerUtil;
 use Apache2::SizeLimit;
 use ModPerl::RegistryLoader ();
 use File::Basename ();
+use File::Find ();
 
 # This loads most of our modules.
 use Bugzilla ();
@@ -48,6 +49,7 @@ use Bugzilla::Extension ();
 use Bugzilla::Install::Requirements ();
 use Bugzilla::Util ();
 use Bugzilla::RNG ();
+use Bugzilla::ModPerl ();
 
 # Make warnings go to the virtual host's log and not the main
 # server log.
@@ -59,35 +61,23 @@ Bugzilla::CGI->compile(qw(:cgi :push));
 # This means that every httpd child will die after processing a request if it
 # is taking up more than $apache_size_limit of RAM all by itself, not counting RAM it is
 # sharing with the other httpd processes.
-Apache2::SizeLimit->set_max_unshared_size(Bugzilla->localconfig->{apache_size_limit});
+my $limit = Bugzilla->localconfig->{apache_size_limit};
+if ($limit < 400_000) {
+    $limit = 400_000;
+}
+Apache2::SizeLimit->set_max_unshared_size($limit);
 
 my $cgi_path = Bugzilla::Constants::bz_locations()->{'cgi_path'};
 
 # Set up the configuration for the web server
 my $server = Apache2::ServerUtil->server;
-my $conf = <<EOT;
-# Make sure each httpd child receives a different random seed (bug 476622).
-# Bugzilla::RNG has one srand that needs to be called for
-# every process, and Perl has another. (Various Perl modules still use
-# the built-in rand(), even though we never use it in Bugzilla itself,
-# so we need to srand() both of them.)
-PerlChildInitHandler "sub { Bugzilla::RNG::srand(); srand(); }"
-<Directory "$cgi_path">
-    AddHandler perl-script .cgi
-    # No need to PerlModule these because they're already defined in mod_perl.pl
-    PerlResponseHandler Bugzilla::ModPerl::ResponseHandler
-    PerlCleanupHandler  Apache2::SizeLimit Bugzilla::ModPerl::CleanupHandler
-    PerlOptions +ParseHeaders
-    Options +ExecCGI +FollowSymLinks
-    AllowOverride Limit FileInfo Indexes
-    DirectoryIndex index.cgi index.html
-</Directory>
-EOT
-
-$server->add_config([split("\n", $conf)]);
+my $conf = Bugzilla::ModPerl->apache_config($cgi_path);
+$server->add_config([ grep { length $_ } split("\n", $conf)]);
 
 # Pre-load all extensions
 $Bugzilla::extension_packages = Bugzilla::Extension->load_all();
+
+Bugzilla->preload_features();
 
 # Have ModPerl::RegistryLoader pre-compile all CGI scripts.
 my $rl = new ModPerl::RegistryLoader();
@@ -111,6 +101,11 @@ foreach my $file (glob "$cgi_path/*.cgi") {
     Bugzilla::Util::trick_taint($file);
     $rl->handler($file, $file);
 }
+
+# Some items might already be loaded into the request cache
+# best to make sure it starts out empty.
+# Because of bug 1347335 we also do this in init_page().
+Bugzilla::clear_request_cache();
 
 package Bugzilla::ModPerl::ResponseHandler;
 use strict;
@@ -156,11 +151,6 @@ sub handler {
     my $r = shift;
 
     Bugzilla::_cleanup();
-    # Sometimes mod_perl doesn't properly call DESTROY on all
-    # the objects in pnotes()
-    foreach my $key (keys %{$r->pnotes}) {
-        delete $r->pnotes->{$key};
-    }
 
     return Apache2::Const::OK;
 }

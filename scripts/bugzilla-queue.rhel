@@ -75,7 +75,7 @@ start ()
     touch $PIDFILE
     chown $USER $PIDFILE
     daemon --user=$USER \
-        "$BIN ${OPTIONS} -p '$PIDFILE' -n $NAME start > /dev/null"
+        "cd $BUGZILLA && $BIN ${OPTIONS} -p '$PIDFILE' -n $NAME start > /dev/null"
     ret=$?
     [ $ret -eq "0" ] && touch /var/lock/subsys/$NAME
     echo

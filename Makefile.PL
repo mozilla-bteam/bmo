@@ -15,7 +15,14 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(. lib local/lib/perl5);
+
+use File::Basename;
+use File::Spec;
+BEGIN {
+    require lib;
+    my $dir = File::Spec->rel2abs(dirname(__FILE__));
+    lib->import($dir, File::Spec->catdir($dir, "lib"), File::Spec->catdir($dir, qw(local lib perl5)));
+}
 
 use ExtUtils::MakeMaker 6.55;
 use constant BUGZILLA_VERSION => $ENV{BUGZILLA_VERSION} // 42;
@@ -29,28 +36,6 @@ BEGIN {
     }
 }
 
-# META.json and META.yml exist only for the benefit of older
-# installs where cpanm can't get the optional features out of Makefile.PL
-# Unfortunately having META.json and META.yml commited to the repo is weird
-# and MakeMaker always prefers their content to the internal data (unless CPAN::META
-# is not installed).
-# Since we (Bugzilla) require this cludge, we hide the files from MakeMaker.
-BEGIN {
-    warn "Hiding META.{json,yml} from MakeMaker...\n";
-    rename( 'META.json', 'META.json.hide' ) || unlink("META.json");
-    rename( 'META.yml',  'META.yml.hide' )  || unlink("META.yml");
-
-    if (!eval { ExtUtils::MakeMaker->VERSION('6.57_07') }) {
-        warn "WARNING: ExtUtils::MakeMaker should be at least 6.57_07 in order to support updating META.json files\n";
-    }
-}
-
-END {
-    warn "Unhiding META.{json,yml}...\n";
-    rename( 'META.json.hide', 'META.json' );
-    rename( 'META.yml.hide',  'META.yml' );
-}
-
 # PREREQ_PM
 my %requires = (
     'CGI'                      => '<= 3.63',
@@ -59,13 +44,13 @@ my %requires = (
     'DBI'                      => '1.614',
     'Date::Format'             => '2.23',
     'DateTime'                 => '0.75',
-    'DateTime::TimeZone'       => '1.64',
+    'DateTime::TimeZone'       => '2.11',
     'Digest::SHA'              => 0,
     'Email::MIME'              => '1.904',
     'Email::Send'              => '1.911',
     'File::Slurp'              => '9999.13',
     'JSON::XS'                 => '2.01',
-    'List::MoreUtils'          => '0.22',
+    'List::MoreUtils'          => $^V > v5.10.1 ? '0.418' : '0.22',
     'Math::Random::ISAAC'      => '1.0.1',
     'Module::Metadata'         => '1.000033',
     'Module::Runtime'          => 0,
