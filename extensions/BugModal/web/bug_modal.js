@@ -10,13 +10,16 @@ function slide_module(module, action, fast) {
     if (!module.attr('id'))
         return;
     var latch = module.find('.module-latch');
-    var spinner = $(latch.children('.module-spinner')[0]);
+    var spinner = module.find('.module-spinner');
     var content = $(module.children('.module-content')[0]);
     var duration = fast ? 0 : 200;
 
     function slide_done() {
         var is_visible = content.is(':visible');
-        spinner.html(is_visible ? '&#9662;' : '&#9656;');
+        spinner.attr({
+            'aria-expanded': is_visible,
+            'aria-label': is_visible ? latch.data('label-expanded') : latch.data('label-collapsed'),
+        });
         if (BUGZILLA.user.settings.remember_collapsed)
             localStorage.setItem(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
     }
@@ -94,10 +97,17 @@ $(function() {
     }
 
     // expand/colapse module
-    $('.module-header')
+    $('.module-latch')
         .click(function(event) {
             event.preventDefault();
             slide_module($(this).parents('.module'));
+        })
+        .keydown(function(event) {
+            // expand/colapse module with the enter or space key
+            if (event.keyCode === 13 || event.keyCode === 32) {
+                event.preventDefault();
+                slide_module($(this).parents('.module'));
+            }
         });
 
     // toggle obsolete attachments
@@ -163,19 +173,37 @@ $(function() {
     // product/component info
     $('.spin-toggle, #product-latch, #component-latch')
         .click(function(event) {
-            event.preventDefault();
-            var latch = $($(event.target).data('latch'));
-            var el_for = $($(event.target).data('for'));
-
-            if (latch.data('expanded')) {
-                latch.data('expanded', false).html('&#9656;');
-                el_for.hide();
-            }
-            else {
-                latch.data('expanded', true).html('&#9662;');
-                el_for.show();
+            spin_toggle(event);
+        }).keydown(function(event) {
+            // allow space or enter to toggle visibility
+            if (event.keyCode == 13 || event.keyCode == 32) {
+                spin_toggle(event);
             }
         });
+
+    function spin_toggle(event) {
+        event.preventDefault();
+        var type  = $(event.target).data('for');
+        var latch = $('#' + type + '-latch');
+        var name  = $('#' + type + '-name');
+        var info  = $('#' + type + '-info');
+        var label = latch.attr('aria-label');
+
+        if (latch.data('expanded')) {
+            label = label.replace(/^hide/, 'show');
+            latch.data('expanded', false).html('&#9656;');
+            latch.attr('aria-expanded', false);
+            info.hide();
+        }
+        else {
+            label = label.replace(/^show/, 'hide');
+            latch.data('expanded', true).html('&#9662;');
+            latch.attr('aria-expanded', true);
+            info.show();
+        }
+        latch.attr('aria-label', label);
+        name.attr('title', label);
+    }
 
     // cc list
 
@@ -230,22 +258,35 @@ $(function() {
         $('#cc-summary').addClass('cc-loadable');
         $('#cc-latch, #cc-summary')
             .click(function(event) {
-                event.preventDefault();
-                var latch = $('#cc-latch');
-
-                if (latch.data('expanded')) {
-                    latch.data('expanded', false).html('&#9656;');
-                    $('#cc-list').hide();
-                }
-                else {
-                    latch.data('expanded', true).html('&#9662;');
-                    $('#cc-list').show();
-                    if (!latch.data('fetched')) {
-                        ccListLoading();
-                        ccListUpdate();
-                    }
+                cc_toggle(event);
+            }).keydown(function(event) {
+                // allow space or enter to toggle visibility
+                if (event.keyCode == 13 || event.keyCode == 32) {
+                    cc_toggle(event);
                 }
             });
+    }
+
+    function cc_toggle(event) {
+        event.preventDefault();
+        var latch = $('#cc-latch');
+        var label = latch.attr('aria-label');
+        if (latch.data('expanded')) {
+            label = label.replace(/^hide/, 'show');
+            latch.data('expanded', false).html('&#9656;');
+            $('#cc-list').hide();
+        }
+        else {
+            latch.data('expanded', true).html('&#9662;');
+            label = label.replace(/^show/, 'hide');
+            $('#cc-list').show();
+            if (!latch.data('fetched')) {
+                ccListLoading();
+                ccListUpdate();
+            }
+        }
+        latch.attr('aria-label', label);
+        $('#cc-summary').attr('aria-label', label);
     }
 
     // copy summary to clipboard
@@ -336,13 +377,7 @@ $(function() {
             }
         });
 
-    // action button menu
-
-    $.contextMenu({
-        selector: '#action-menu-btn',
-        trigger: 'left',
-        items: $.contextMenu.fromMenu($('#action-menu'))
-    });
+    // action button actions
 
     // reset
     $('#action-reset')
@@ -675,7 +710,7 @@ $(function() {
     $('#cancel-btn')
         .click(function(event) {
             event.preventDefault();
-            window.location.replace($('#this-bug').val());
+            window.location.replace($('#this-bug').attr('href'));
         });
 
     // Open help page
@@ -771,13 +806,6 @@ $(function() {
     $('.tracking-flags select')
         .change(function(event) {
             tracking_flag_change(event.target);
-        });
-
-    // add attachments
-    $('#attachments-add-btn')
-        .click(function(event) {
-            event.preventDefault();
-            window.location.href = 'attachment.cgi?bugid=' + BUGZILLA.bug_id + '&action=enter';
         });
 
     // take button
@@ -970,99 +998,6 @@ $(function() {
     $('#remaining_time').change(function() {
         // if the remaining time is changed manually, update BUGZILLA.remaining_time
         BUGZILLA.remaining_time = $('#remaining_time').val();
-    });
-
-    // new bug button
-    $.contextMenu({
-        selector: '#new-bug-btn',
-        trigger: 'left',
-        items: [
-            {
-                name: 'Create a new Bug',
-                callback: function() {
-                    window.open('enter_bug.cgi', '_blank');
-                }
-            },
-            {
-                name: '\u2026 in this product',
-                callback: function() {
-                    window.open('enter_bug.cgi?product=' + encodeURIComponent($('#product').val()), '_blank');
-                }
-            },
-            {
-                name: '\u2026 in this component',
-                callback: function() {
-                    window.open('enter_bug.cgi?' +
-                                'product=' + encodeURIComponent($('#product').val()) +
-                                '&component=' + encodeURIComponent($('#component').val()), '_blank');
-                }
-            },
-            {
-                name: '\u2026 that blocks this bug',
-                callback: function() {
-                    window.open('enter_bug.cgi?format=__default__' +
-                                '&product=' + encodeURIComponent($('#product').val()) +
-                                '&blocked=' + BUGZILLA.bug_id, '_blank');
-                }
-            },
-            {
-                name: '\u2026 that depends on this bug',
-                callback: function() {
-                    window.open('enter_bug.cgi?format=__default__' +
-                                '&product=' + encodeURIComponent($('#product').val()) +
-                                '&dependson=' + BUGZILLA.bug_id, '_blank');
-                }
-            },
-            {
-                name: '\u2026 as a clone of this bug',
-                callback: function() {
-                    window.open('enter_bug.cgi?format=__default__' +
-                                '&product=' + encodeURIComponent($('#product').val()) +
-                                '&cloned_bug_id=' + BUGZILLA.bug_id, '_blank');
-                }
-            },
-            {
-                name: '\u2026 as a clone, in a different product',
-                callback: function() {
-                    window.open('enter_bug.cgi?format=__default__' +
-                                '&cloned_bug_id=' + BUGZILLA.bug_id, '_blank');
-                }
-            },
-        ]
-    });
-
-    var format_items = [
-        {
-        name: 'For Printing',
-            callback: function() {
-                window.location.href = 'show_bug.cgi?format=multiple&id=' + BUGZILLA.bug_id;
-            }
-        },
-        {
-            name: 'XML',
-            callback: function() {
-                window.location.href = 'show_bug.cgi?ctype=xml&id=' + BUGZILLA.bug_id;
-            }
-        },
-        {
-            name: 'Legacy',
-            callback: function() {
-                window.location.href = 'show_bug.cgi?format=default&id=' + BUGZILLA.bug_id;
-            }
-        }
-    ];
-    if (!BUGZILLA.bug_secure) {
-        format_items.push({
-            name: 'JSON',
-            callback: function() {
-                window.location.href = 'rest/bug/' + BUGZILLA.bug_id;
-            }
-        });
-    }
-    $.contextMenu({
-        selector: '#format-btn',
-        trigger: 'left',
-        items: format_items
     });
 
     // "reset to default" checkboxes

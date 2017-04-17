@@ -72,6 +72,8 @@ my %requires = (
     'Moo'                      => 2,
     'Parse::CPAN::Meta'        => '1.44',
     'Template'                 => '2.24',
+    'Text::CSV_XS'             => 0,
+    'Throwable'                => 0,
     'URI'                      => '1.55',
     'version'                  => '0.87',
 );
@@ -118,6 +120,12 @@ my %optional_features = (
                 requires =>
                     { 'HTML::Parser' => '3.67', 'HTML::Scrubber' => 0 }
             }
+        }
+    },
+    markdown => {
+        description => 'Markdown syntax support for comments',
+        prereqs     => {
+            runtime => { requires => { 'Text::MultiMarkdown' => '1.000034' } }
         }
     },
     pg => {
