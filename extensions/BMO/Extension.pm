@@ -57,6 +57,8 @@ use List::Util qw(first);
 use Scalar::Util qw(blessed);
 use Sys::Syslog qw(:DEFAULT);
 use Text::Balanced qw( extract_bracketed extract_multiple );
+use URI::QueryParam;
+use URI::Split qw(uri_split uri_join);
 
 use Bugzilla::Extension::BMO::Constants;
 use Bugzilla::Extension::BMO::FakeBug;
@@ -803,6 +805,24 @@ sub bug_format_comment {
             my $id   = html_quote($args->{matches}->[2]);
             $repo = 'integration/mozilla-inbound' if $repo eq 'mozilla-inbound';
             return qq{<a href="https://hg.mozilla.org/$repo/rev/$id">$text</a>};
+        }
+    });
+
+    #rewrite mxr with dxr.
+    push (@$regexes, {
+        match => qr/\b(https?:\/\/mxr\.mozilla\.org\S+)\b/,
+        replace => sub {
+            my $args = shift;
+            my $uri = URI->new($args->{matches}->[0]);
+            my $text  = html_quote($args->{matches}->[0]);
+            my ($scheme, $auth, $path, $query, $frag) = uri_split($uri);
+            my $mark = $uri->query_param_delete("mark");
+            my $rev = $uri->query_param_delete("rev");
+            my $rev = $rev? "rev/".$rev."/" : 'source/';
+            my $mark = $mark? $mark."," : '';
+            my $hash = $mark || $frag? "#": '';
+            my @path = split(/\//,$path,4)
+            return qq{<a href="$scheme://dxr.mozilla.org/$path[1]/$rev$path[3]$hash$mark$frag">$text [using dxr]</a>};
         }
     });
 }
