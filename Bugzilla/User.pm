@@ -654,7 +654,7 @@ sub mfa_provider {
 sub name_or_login {
     my $self = shift;
 
-    return $self->name // $self->login;
+    return $self->name || $self->login;
 }
 
 # Generate a string to identify the user by name + login if the user
