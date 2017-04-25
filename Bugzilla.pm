@@ -23,7 +23,6 @@ BEGIN {
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
 use Bugzilla::CGI;
-use Bugzilla::Elastic;
 use Bugzilla::Config;
 use Bugzilla::Constants;
 use Bugzilla::DB;
@@ -82,6 +81,10 @@ use constant SHUTDOWNHTML_RETRY_AFTER => 3600;
 
 # Note that this is a raw subroutine, not a method, so $class isn't available.
 sub init_page {
+    # This is probably not needed, but bugs resulting from a dirty
+    # request cache are very annoying (see bug 1347335)
+    # and this is not an expensive operation.
+    clear_request_cache();
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
         init_console();
     }
@@ -762,11 +765,6 @@ sub memcached {
     } else {
         return $_[0]->request_cache->{memcached} ||= Bugzilla::Memcached->_new();
     }
-}
-
-sub elastic {
-    my ($class) = @_;
-    $class->process_cache->{elastic} //= Bugzilla::Elastic->new();
 }
 
 # Private methods

@@ -158,7 +158,7 @@ $(function() {
           <input type="checkbox" id="needinfo_override_[% flag.id FILTER html %]"
             name="needinfo_override_[% flag.id FILTER html %]" value="1" class="needinfo-override"
             [% 'data-is-self="1"' IF flag.requestee %]
-            [% " checked" IF user.in_group("canconfirm") %]>
+            [% " checked" IF flag.requestee.id == user.id || user.in_group("canconfirm") %]>
         </td>
         <td>
           <label for="needinfo_override_[% flag.id FILTER html %]">
@@ -218,6 +218,9 @@ $(function() {
               [% available_mentors.size == 1 ? "mentor" : mentor.login FILTER html %]
             </option>
           [% END %]
+          [% IF bug.component_obj.triage_owner_id %]
+             <option value="triage_owner">triage owner</option>
+           [% END %]
         </select>
         <span id="needinfo_from_container">
           [% INCLUDE global/userselect.html.tmpl
