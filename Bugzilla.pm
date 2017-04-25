@@ -278,20 +278,8 @@ sub localconfig {
     return $_[0]->process_cache->{localconfig} ||= read_localconfig();
 }
 
-use constant MOD_PERL => $ENV{MOD_PERL};
 sub params {
-    if ($_[0]->request_cache->{params}) {
-        return $_[0]->request_cache->{params};
-    }
-    else {
-        if (MOD_PERL) {
-            my $s = Apache2::ServerUtil->server;
-            my ($package, $filename, $line) = caller;
-            $s->warn("!!$$ loading params, called from $package, $filename line $line");
-        }
-        return $_[0]->request_cache->{params} = Bugzilla::Config::read_param_file();
-    }
-
+    return $_[0]->request_cache->{params} ||= Bugzilla::Config::read_param_file();
 }
 
 sub get_param_with_override {
