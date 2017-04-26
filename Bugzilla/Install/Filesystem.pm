@@ -43,13 +43,13 @@ our @EXPORT = qw(
     fix_file_permissions
 );
 
-use constant HT_DEFAULT_DENY => q{
+use constant HT_DEFAULT_DENY => <<'EOT';
 # nothing in this directory is retrievable unless overridden by an .htaccess
 # in a subdirectory
 deny from all
-};
+EOT
 
-use constant HT_GRAPHS_DIR => q{
+use constant HT_GRAPHS_DIR => <<'EOT';
 # Allow access to .png and .gif files.
 <FilesMatch (\.gif|\.png)$>
   Allow from all
@@ -57,9 +57,9 @@ use constant HT_GRAPHS_DIR => q{
 
 # And no directory listings, either.
 Deny from all
-};
+EOT
 
-use constant HT_WEBDOT_DIR => q{
+use constant HT_WEBDOT_DIR => <<'EOT';
 # Restrict access to .dot files to the public webdot server at research.att.com
 # if research.att.com ever changes their IP, or if you use a different
 # webdot server, you'll need to edit this
@@ -75,9 +75,9 @@ use constant HT_WEBDOT_DIR => q{
 
 # And no directory listings, either.
 Deny from all
-};
+EOT
 
-use constant HT_ASSETS_DIR => q{
+use constant HT_ASSETS_DIR => <<'EOT';
 # Allow access to .css and js files
 <FilesMatch \.(css|js)$>
   Allow from all
@@ -85,9 +85,9 @@ use constant HT_ASSETS_DIR => q{
 
 # And no directory listings, either.
 Deny from all
-};
+EOT
 
-use constant INDEX_HTML => q{
+use constant INDEX_HTML => <<'EOT';
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
@@ -97,7 +97,7 @@ use constant INDEX_HTML => q{
   <h1>I think you are looking for <a href="index.cgi">index.cgi</a></h1>
 </body>
 </html>
-};
+EOT
 
 ###############
 # Permissions #
