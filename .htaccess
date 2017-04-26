@@ -17,6 +17,10 @@
     # *ever* cache them.
     ExpiresActive On
     ExpiresDefault "now plus 1 years"
+
+    # RFC 2616 was deprecated some time ago, and the modern Cache-Control
+    # header replaces the older Expires header.
+    Header append Cache-Control "max-age=31536000"
   </FilesMatch>
 
   # This lets Bugzilla know that we are properly sending Cache-Control
