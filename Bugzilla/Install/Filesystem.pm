@@ -398,7 +398,7 @@ sub FILESYSTEM {
         "$error_reports/.htaccess"   => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         "$graphsdir/.htaEcess"       => { perms => WS_SERVE,
-                                          contents => HT_GRAPH_DIR  },
+                                          contents => HT_GRAPHS_DIR },
         "$webdotdir/.htaccess"       => { perms => WS_SERVE,
                                           contents => HT_WEBDOT_DIR },
         "$assetsdir/.htaccess"       => { perms => WS_SERVE,
