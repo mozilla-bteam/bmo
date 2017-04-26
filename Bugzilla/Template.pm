@@ -12,6 +12,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Template::PreloadProvider;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
@@ -40,12 +41,14 @@ use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
 use JSON::XS qw(encode_json);
 
-use base qw(Template);
+use parent qw(Template);
 
 use constant FORMAT_TRIPLE => '%19s|%-28s|%-28s';
 use constant FORMAT_3_SIZE => [19,28,28];
 use constant FORMAT_DOUBLE => '%19s %-55s';
 use constant FORMAT_2_SIZE => [19,55];
+
+my %SHARED_PROVIDERS;
 
 # Pseudo-constant.
 sub SAFE_URL_REGEXP {
@@ -200,7 +203,7 @@ sub quoteUrls {
     my $safe_protocols = SAFE_URL_REGEXP();
     $text =~ s~\b($safe_protocols)
               ~($tmp = html_quote($1)) &&
-               ($things[$count++] = "<a href=\"$tmp\">$tmp</a>") &&
+               ($things[$count++] = "<a rel=\"nofollow\" href=\"$tmp\">$tmp</a>") &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
 
@@ -973,10 +976,12 @@ sub create {
 
         PLUGIN_BASE => 'Bugzilla::Template::Plugin',
 
-        CONSTANTS => _load_constants(),
-
         # Default variables for all templates
         VARIABLES => {
+            # Some of these are not really constants, and doing this messes up preloading.
+            # they are now fake constants.
+            constants => _load_constants(),
+
             # Function for retrieving global parameters.
             'Param' => sub { return Bugzilla->params->{$_[0]}; },
 
@@ -1115,12 +1120,18 @@ sub create {
             'is_mobile_browser' => sub { return Bugzilla->cgi->user_agent =~ /Mobi/ },
         },
     };
+
+    # under mod_perl, use a provider (template loader) that preloads all templates into memory
+    my $provider_class
+        = $ENV{MOD_PERL}
+        ? 'Bugzilla::Template::PreloadProvider'
+        : 'Template::Provider';
+
     # Use a per-process provider to cache compiled templates in memory across
     # requests.
     my $provider_key = join(':', @{ $config->{INCLUDE_PATH} });
-    my $shared_providers = Bugzilla->process_cache->{shared_providers} ||= {};
-    $shared_providers->{$provider_key} ||= Template::Provider->new($config);
-    $config->{LOAD_TEMPLATES} = [ $shared_providers->{$provider_key} ];
+    $SHARED_PROVIDERS{$provider_key} ||= $provider_class->new($config);
+    $config->{LOAD_TEMPLATES} = [ $SHARED_PROVIDERS{$provider_key} ];
 
     # BMO - use metrics subclass
     local $Template::Config::CONTEXT = Bugzilla->metrics_enabled()
@@ -1209,7 +1220,7 @@ sub precompile_templates {
     delete Bugzilla->request_cache->{template};
 
     # Clear out the cached Provider object
-    Bugzilla->process_cache->{shared_providers} = undef;
+    %SHARED_PROVIDERS = ();
 
     print install_string('done') . "\n" if $output;
 }
