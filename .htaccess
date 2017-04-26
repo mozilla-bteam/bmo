@@ -6,15 +6,17 @@
 <IfModule mod_headers.c>
 <IfModule mod_env.c>
   <FilesMatch (\.js|\.css)$>
-    ExpiresActive On
+    # These are public resources, cacheable across all users.
+    Header append Cache-Control "public"
+
     # According to RFC 2616, "1 year in the future" means "never expire".
     # We change the name of the file's URL whenever its modification date
     # changes, so browsers can cache any individual JS or CSS URL forever.
     # However, since all JS and CSS URLs involve a ? in them (for the changing
     # name) we have to explicitly set an Expires header or browsers won't
     # *ever* cache them.
+    ExpiresActive On
     ExpiresDefault "now plus 1 years"
-    Header append Cache-Control "public"
   </FilesMatch>
 
   # This lets Bugzilla know that we are properly sending Cache-Control
