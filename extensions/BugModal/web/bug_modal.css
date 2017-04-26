@@ -98,7 +98,7 @@ a.activity-ref {
     color: #000;
     border-radius: 2px;
     margin-top: 5px;
-    font-size: medium;
+    font-size: 13px;
 }
 
 .module.module-collapsed .module-content {
@@ -140,7 +140,7 @@ a.activity-ref {
 }
 
 .module-title, .module-subtitle {
-    font-size: medium;
+    font-size: 13px;
     display: table-cell;
     padding-left: 5px;
 }
@@ -413,7 +413,7 @@ input[type="number"] {
 #attachments td {
     padding: 4px 8px;
     vertical-align: top;
-    font-size: medium;
+    font-size: 13px;
     border-bottom: 1px dotted silver;
 }
 
@@ -477,7 +477,7 @@ input[type="number"] {
 /* flags */
 
 .flags td {
-    font-size: medium !important;
+    font-size: 13px !important;
 }
 
 .flag-name {
@@ -598,7 +598,7 @@ h3.change-name {
 
 .comment-text {
     white-space: pre-wrap;
-    font: medium/1.2 "Droid Sans Mono","Ubuntu Mono","Liberation Mono",Menlo,Monaco,"Fira Mono",monospace;
+    font: 13px/1.2 "Droid Sans Mono","Ubuntu Mono","Liberation Mono",Menlo,Monaco,"Fira Mono",monospace;
     background: #fff;
     color: #222;
     margin: 1px 0 0 0;
@@ -842,7 +842,7 @@ div.ui-widget-content {
 
 div.ui-tooltip {
     padding: 4px;
-    font-size: medium;
+    font-size: 13px;
     font-family: inherit;
     max-width: 500px;
 }
