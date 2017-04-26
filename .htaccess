@@ -5,7 +5,7 @@
 <IfModule mod_expires.c>
 <IfModule mod_headers.c>
 <IfModule mod_env.c>
-  <FilesMatch (\.js|\.css)$>
+  <FilesMatch (\.js|\.css|\.gif|\.ico|\.jpg|\.png|\.swf|\.woff)$>
      # These are public resources, cacheable across all users.
      Header append Cache-Control "public"
 
