@@ -43,51 +43,51 @@ our @EXPORT = qw(
     fix_file_permissions
 );
 
-use constant HT_DEFAULT_DENY => <<EOT;
+use constant HT_DEFAULT_DENY => q{
 # nothing in this directory is retrievable unless overridden by an .htaccess
 # in a subdirectory
 deny from all
-EOT
+};
 
-use constant HT_GRAPHS_DIR => <<EOT;
+use constant HT_GRAPHS_DIR => q{
 # Allow access to .png and .gif files.
-<FilesMatch (\\.gif|\\.png)\$>
+<FilesMatch (\.gif|\.png)$>
   Allow from all
 </FilesMatch>
 
 # And no directory listings, either.
 Deny from all
-EOT
+};
 
-use constant HT_WEBDOT_DIR => <<EOT;
+use constant HT_WEBDOT_DIR => q{
 # Restrict access to .dot files to the public webdot server at research.att.com
 # if research.att.com ever changes their IP, or if you use a different
 # webdot server, you'll need to edit this
-<FilesMatch \\.dot\$>
+<FilesMatch \.dot$>
   Allow from 192.20.225.0/24
   Deny from all
 </FilesMatch>
 
 # Allow access to .png files created by a local copy of 'dot'
-<FilesMatch \\.png\$>
+<FilesMatch \.png\$>
   Allow from all
 </FilesMatch>
 
 # And no directory listings, either.
 Deny from all
-EOT
+};
 
-use constant HT_ASSETS_DIR => <<EOT;
+use constant HT_ASSETS_DIR => q{
 # Allow access to .css and js files
-<FilesMatch \\.(css|js)\$>
+<FilesMatch \.(css|js)$>
   Allow from all
 </FilesMatch>
 
 # And no directory listings, either.
 Deny from all
-EOT
+};
 
-use constant INDEX_HTML => <<EOT;
+use constant INDEX_HTML => q{
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
@@ -97,7 +97,7 @@ use constant INDEX_HTML => <<EOT;
   <h1>I think you are looking for <a href="index.cgi">index.cgi</a></h1>
 </body>
 </html>
-EOT
+};
 
 ###############
 # Permissions #
@@ -484,11 +484,10 @@ sub update_filesystem {
     }
     elsif (-e 'index.html') {
         my $templatedir = bz_locations()->{'templatedir'};
-        print join("\n",
-            "*** It appears that you still have an old index.html hanging around.",
-            "Either the contents of this file should be moved into a template and ",
-            "placed in the '$templatedir/en/custom' directory, or you should delete ",
-            "the file.");
+        print "*** It appears that you still have an old index.html hanging around.\n",
+            "Either the contents of this file should be moved into a template and\n",
+            "placed in the '$templatedir/en/custom' directory, or you should delete\n",
+            "the file.\n";
     }
 
     # Delete old files that no longer need to exist
@@ -534,8 +533,8 @@ sub _remove_empty_css_files {
 sub _remove_empty_css {
     my ($file) = @_;
     my $basename = basename($file);
-    my $empty_contents = qq{/* Custom rules for $basename.\n}
-        . qq{ * The rules you put here override rules in that stylesheet.  */};
+    my $empty_contents = "/* Custom rules for $basename.\n"
+        . " * The rules you put here override rules in that stylesheet. */";
     if (length($empty_contents) == -s $file) {
         open(my $fh, '<', $file) or warn "$file: $!";
         my $file_contents;
