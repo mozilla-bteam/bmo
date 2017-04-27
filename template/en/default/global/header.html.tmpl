@@ -164,15 +164,11 @@
     [% END %]
 
     [% SET css_sets = css_files(style_urls.unique, yui, yui_css) %]
-    [% IF constants.CONCATENATE_ASSETS %]
-      [% PROCESS format_css_link asset_url = css_sets.unified_standard_skin %]
-    [% ELSE %]
-      [% FOREACH asset_url = css_sets.standard %]
+    [% FOREACH asset_url = css_sets.standard %]
         [% PROCESS format_css_link %]
-      [% END %]
-      [% FOREACH asset_url = css_sets.skin %]
+    [% END %]
+    [% FOREACH asset_url = css_sets.skin %]
         [% PROCESS format_css_link %]
-      [% END %]
     [% END %]
 
     [% IF style %]
@@ -181,14 +177,8 @@
       </style>
     [% END %]
 
-    [% IF css_sets.unified_custom %]
-      [% IF constants.CONCATENATE_ASSETS %]
-        [% PROCESS format_css_link asset_url = css_sets.unified_custom %]
-      [% ELSE %]
-        [% FOREACH asset_url = css_sets.custom %]
-          [% PROCESS format_css_link %]
-        [% END %]
-      [% END %]
+    [% FOREACH asset_url = css_sets.custom %]
+      [% PROCESS format_css_link %]
     [% END %]
 
     [% IF NOT no_yui %]
@@ -204,7 +194,7 @@
     [% END %]
     [% starting_js_urls.push('js/global.js') %]
 
-    [% FOREACH asset_url = concatenate_js(starting_js_urls) %]
+    [% FOREACH asset_url = starting_js_urls %]
       [% PROCESS format_js_link %]
     [% END %]
 
@@ -237,7 +227,7 @@
       </script>
     [% END %]
 
-    [% FOREACH asset_url = concatenate_js(javascript_urls) %]
+    [% FOREACH asset_url = javascript_urls %]
       [% PROCESS format_js_link %]
     [% END %]
 
@@ -353,7 +343,7 @@
       </td>
       <td id="moz_tab">
         <a href="https://www.mozilla.org/" title="Mozilla - Home of the Mozilla Project">
-          <img src="skins/contrib/Mozilla/tabzilla.png" border="0" height="42" width="154"></a>
+          <img src="[% asset_file('skins/contrib/Mozilla/tabzilla.png') FILTER html %]" border="0" height="42" width="154"></a>
       </td>
     </tr>
     </table>
@@ -439,9 +429,9 @@
 [% END %]
 
 [% BLOCK format_css_link %]
-  <link href="[% asset_url FILTER html %]" rel="stylesheet" type="text/css">
+  <link href="[% asset_file(asset_url) FILTER html %]" rel="stylesheet" type="text/css">
 [% END %]
 
 [% BLOCK format_js_link %]
-  <script [% script_nonce FILTER none %] type="text/javascript" src="[% asset_url FILTER mtime FILTER html %]"></script>
+  <script [% script_nonce FILTER none %] type="text/javascript" src="[% asset_file(asset_url) FILTER html %]"></script>
 [% END %]

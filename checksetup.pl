@@ -190,6 +190,9 @@ my %old_params = update_params();
 Bugzilla::Template::precompile_templates(!$silent)
     unless $switch{'no-templates'};
 
+say "Compiling assets..." unless $silent;
+Bugzilla->asset_manager->compile_all;
+
 ###########################################################################
 # Set proper rights (--CHMOD--)
 ###########################################################################
