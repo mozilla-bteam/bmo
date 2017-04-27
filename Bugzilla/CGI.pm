@@ -450,7 +450,7 @@ sub header {
     if ($self->{'_content_disp'}) {
         $headers{'-content_disposition'} = $self->{'_content_disp'};
     }
-    $headers{'-cache_control'} = 'private' unless $headers{'-cache_control'};
+    $headers{'-cache_control'} = 'no-cache, no-store, must-revalidate' unless $headers{'-cache_control'};
 
     if (!$user->id && $user->authorizer->can_login
         && !$self->cookie('Bugzilla_login_request_cookie'))
