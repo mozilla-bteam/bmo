@@ -90,6 +90,14 @@ Header set Cache-Control "public, immutable, max-age=31536000"
 Options -Indexes
 EOT
 
+# YUI3 cannot be (easily) made to use the AssetManager asset_file() stuff.
+# So aggressively cache its dir. We'll need to change the name of the dir when we upgrade
+# yui -- but we're more likely to just get rid of that code.
+use constant HT_CACHE_DIR => <<'EOT';
+FileETag None
+Header set Cache-Control "public, immutable, max-age=31536000"
+EOT
+
 use constant INDEX_HTML => <<'EOT';
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
@@ -406,6 +414,8 @@ sub FILESYSTEM {
                                           contents => HT_WEBDOT_DIR },
         "$assetsdir/.htaccess"       => { perms => WS_SERVE,
                                           contents => HT_ASSETS_DIR },
+        "js/yui3/.htaccess"          => { perms => WS_SERVE,
+                                          contents => HT_CACHE_DIR },
     );
 
     Bugzilla::Hook::process('install_filesystem', {
