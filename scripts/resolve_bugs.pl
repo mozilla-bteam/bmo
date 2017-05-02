@@ -19,7 +19,7 @@ use Bugzilla::Group;
 use Bugzilla::Search;
 use Getopt::Long;
 
-my ($product, $comment);
+my ($product, $component, $comment);
 my $resolution = 'WONTFIX';
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
@@ -27,6 +27,7 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 GetOptions(
     'product|p=s'    => \$product,
     'resolution|r=s' => \$resolution,
+    'component|c=s'  => \$component,
     'comment|m=s'    => \$comment,
 );
 
@@ -41,9 +42,12 @@ $auto_user->{groups} = [ Bugzilla::Group->get_all ];
 $auto_user->{bless_groups} = [ Bugzilla::Group->get_all ];
 Bugzilla->set_user($auto_user);
 
+my $query = { resolution => '---', product => $product };
+$query->{component} = $component if defined $component;
+
 my $search = Bugzilla::Search->new(
     fields => ['bug_id'],
-    params => { resolution => '---', product => $product },
+    params => $query,
 );
 my ($data) = $search->data;
 
