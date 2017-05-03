@@ -429,7 +429,8 @@
 [% END %]
 
 [% BLOCK format_css_link %]
-  <link href="[% asset_file(asset_url) FILTER html %]" rel="stylesheet" type="text/css">
+  <link data-file="[% asset_url FILTER html %]" href="[% asset_file(asset_url) FILTER html %]" rel="stylesheet" type="text/css">
+  <!-- -->
 [% END %]
 
 [% BLOCK format_js_link %]
