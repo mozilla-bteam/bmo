@@ -867,8 +867,12 @@ sub create {
             # Function for retrieving global parameters.
             'Param' => sub { return Bugzilla->params->{$_[0]}; },
 
-            'asset_file' => sub {
+            asset_file => sub {
                 return Bugzilla->asset_manager->asset_file($_[0]);
+            },
+
+            asset_files => sub {
+                return [Bugzilla->asset_manager->asset_files(@{ $_[0] })];
             },
 
             json_encode => sub {
