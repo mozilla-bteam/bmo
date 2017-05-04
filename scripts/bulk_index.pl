@@ -13,7 +13,7 @@ use File::Basename;
 use File::Spec;
 BEGIN {
     require lib;
-    my $dir = File::Spec->rel2abs(dirname(__FILE__));
+    my $dir = File::Spec->rel2abs(File::Spec->catdir(dirname(__FILE__), ".."));
     lib->import($dir, File::Spec->catdir($dir, "lib"), File::Spec->catdir($dir, qw(local lib perl5)));
     chdir($dir);
 }

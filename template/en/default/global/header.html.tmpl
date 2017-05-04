@@ -55,7 +55,6 @@
   yui_deps = {}
   no_yui = 0
   jquery = []
-  jquery_css = []
   generate_api_token = 0
 %]
 
@@ -100,7 +99,7 @@
   "js/jquery/ui/jquery-ui-structure-min.css",
   "js/jquery/ui/jquery-ui-theme-min.css",
 ] %]
-[% style_urls.import(jquery_css, jq_css_urls) FILTER null %]
+[% CALL style_urls.import(jq_css_urls) %]
 
 [%# Add our required jQuery plugins %]
 [% jquery.push("cookie", "devbridgeAutocomplete") %]
@@ -164,21 +163,30 @@
     [% END %]
 
     [% SET css_sets = css_files(style_urls.unique, yui, yui_css) %]
-    [% FOREACH asset_url = css_sets.standard %]
-        [% PROCESS format_css_link %]
-    [% END %]
-    [% FOREACH asset_url = css_sets.skin %]
-        [% PROCESS format_css_link %]
-    [% END %]
-
+    [%
+        SET css_standard_and_skin = css_sets.standard;
+        CALL css_standard_and_skin.import(css_sets.skin);
+    %]
     [% IF style %]
-      <style type="text/css">
-        [% style %]
-      </style>
-    [% END %]
+        [% FOREACH asset_url = asset_files(css_standard_and_skin) %]
+            [% PROCESS format_css_link %]
+        [% END %]
 
-    [% FOREACH asset_url = css_sets.custom %]
-      [% PROCESS format_css_link %]
+        <style type="text/css">
+            [% style %]
+        </style>
+
+        [% FOREACH asset_url = asset_files(css_sets.custom) %]
+            [% PROCESS format_css_link %]
+        [% END %]
+    [% ELSE %]
+        [%
+          SET css_all = [];
+          CALL css_all.import(css_standard_and_skin, css_sets.custom);
+        %]
+        [% FOREACH asset_url = asset_files(css_all) %]
+          [% PROCESS format_css_link %]
+        [% END %]
     [% END %]
 
     [% IF NOT no_yui %]
@@ -194,15 +202,6 @@
     [% END %]
     [% starting_js_urls.push('js/global.js') %]
 
-    [% FOREACH asset_url = starting_js_urls %]
-      [% PROCESS format_js_link %]
-    [% END %]
-
-    [%# Make some Bugzilla information available to all scripts. 
-      # We don't import every parameter and constant because we
-      # don't want to add a lot of uncached JS to every page. 
-      # %]
-    
     [% inline_javascript = BLOCK %]
         [% IF NOT no_yui %]
           YAHOO.namespace('bugzilla');
@@ -221,14 +220,28 @@
           [% javascript %]
         [% END %]
     [% END %]
+
     [% IF inline_javascript.search("\\S") %]
+      [% FOREACH asset_url = asset_files(starting_js_urls) %]
+        [% PROCESS format_js_link %]
+      [% END %]
+
       <script [% script_nonce FILTER none %]>
         [% inline_javascript FILTER none %]
       </script>
-    [% END %]
 
-    [% FOREACH asset_url = javascript_urls %]
-      [% PROCESS format_js_link %]
+      [% FOREACH asset_url = asset_files(javascript_urls) %]
+        [% PROCESS format_js_link %]
+      [% END %]
+    [% ELSE %]
+      [% 
+         SET js_all = [];
+         CALL js_all.import(starting_js_urls);
+         CALL js_all.import(javascript_urls);
+      %]
+      [% FOREACH asset_url = asset_files(js_all) %]
+        [% PROCESS format_js_link %]
+      [% END %]
     [% END %]
 
     [%# this puts the live bookmark up on firefox for the Atom feed %]
@@ -429,7 +442,8 @@
 [% END %]
 
 [% BLOCK format_css_link %]
-  <link href="[% asset_file(asset_url) FILTER html %]" rel="stylesheet" type="text/css">
+  <link data-file="[% asset_url FILTER html %]" href="[% asset_file(asset_url) FILTER html %]" rel="stylesheet" type="text/css">
+  <!-- -->
 [% END %]
 
 [% BLOCK format_js_link %]
