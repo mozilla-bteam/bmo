@@ -388,10 +388,9 @@ sub FILESYSTEM {
     };
 
     my $yui3_all_js = sub {
-        my $js = join("\n",
+        return join("\n",
             map { scalar read_file($_) } read_file("js/yui3.js.list", { chomp => 1 })
         );
-        return qq[\$(function() { $js; });\n];
     };
 
     # The name of each file, pointing at its default permissions and
@@ -575,6 +574,31 @@ sub update_filesystem {
 
     _remove_empty_css_files();
     _convert_single_file_skins();
+}
+
+sub _css_url_fix {
+    my ($content, $from, $to) = @_;
+    my $from_dir = dirname(File::Spec->rel2abs($from, bz_locations()->{libpath}));
+    my $to_dir = dirname(File::Spec->rel2abs($to, bz_locations()->{libpath}));
+
+    return css_url_rewrite(
+        $content,
+        sub {
+            my ($url) = @_;
+            if ( $url =~ m{^(?:/|data:)} ) {
+                return 'url(' . $url . ')';
+            }
+            else {
+                my $new_url = File::Spec->abs2rel(
+                    Cwd::realpath(
+                        File::Spec->rel2abs( $url, $from_dir )
+                    ),
+                    $to_dir
+                );
+                return sprintf "url(%s)", $new_url;
+            }
+        }
+    );
 }
 
 sub _css_url_fix {
