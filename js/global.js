@@ -16,9 +16,10 @@
 *                 
 */
 
-var BUGZILLA = $('head').data('bugzilla');
+var BUGZILLA = $("#bugzilla-global").data("bugzilla");
 
 $(function () {
+  $('body').addClass("platform-" + navigator.platform);
   $('.show_mini_login_form').on("click", function (event) {
     return show_mini_login_form($(this).data('qs-suffix'));
   });
