@@ -350,6 +350,30 @@ sub FILESYSTEM {
         "$skinsdir/contrib"     => DIR_WS_SERVE,
     );
 
+
+    # I don't want to rewrite CSS here,
+    # so the generated file must be in the same directory as the files it is made from.
+    my $yui_css_dir = "js/yui/assets/skins/sam";
+    my @yui_css_modules = qw(
+        calendar container datatable button paginator
+    );
+    my $yui_css_files = join("\n",
+        map { scalar read_file($_) }
+        map { "$yui_css_dir/$_.css" }
+        @yui_css_modules
+    );
+
+    my @yui_js_modules = qw(
+        yahoo-dom-event cookie connection json selector
+        element container calendar history button
+        datasource datatable
+    );
+    my $yui_js_files = join("\n",
+        map { scalar read_file($_) }
+        map { "js/yui/$_/$_-min.js" }
+        @yui_js_modules
+    );
+
     # The name of each file, pointing at its default permissions and
     # default contents.
     my %create_files = (
@@ -361,6 +385,12 @@ sub FILESYSTEM {
         # or something else is not running as the webserver or root.
         "$datadir/mailer.testfile" => { perms    => CGI_WRITE,
                                         contents => '' },
+        "js/yui.js"                => { perms     => CGI_READ,
+                                        overwrite => 1,
+                                        contents  => $yui_js_files },
+        "$yui_css_dir/yui.css"     => { perms => CGI_READ,
+                                        overwrite => 1,
+                                        contents  => $yui_css_files },
     );
 
     # Because checksetup controls the creation of index.html separately

@@ -1,4 +1,6 @@
 /**/.htaccess
+/js/yui/assets/skins/sam/yui.css
+/js/yui.js
 /lib/*
 /local/*
 /template/en/custom
