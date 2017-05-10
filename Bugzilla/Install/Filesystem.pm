@@ -350,6 +350,34 @@ sub FILESYSTEM {
         "$skinsdir/contrib"     => DIR_WS_SERVE,
     );
 
+
+    my $yui_css_dir = "js/yui/assets/skins/sam";
+    my $yui_css_files = sub {
+        # I don't want to rewrite CSS here,
+        # so the generated file must be in the same directory as the files it is made from.
+        my @yui_css_modules = qw(
+            calendar container datatable button paginator
+        );
+        return join("\n",
+            map { scalar read_file($_) }
+            map { "$yui_css_dir/$_.css" }
+            @yui_css_modules
+        );
+    };
+
+    my $yui_js_files = sub {
+        my @yui_js_modules = qw(
+            yahoo-dom-event cookie connection json selector
+            element container calendar history button
+            datasource datatable
+        );
+        return join("\n",
+            map { scalar read_file($_) }
+            map { "js/yui/$_/$_-min.js" }
+            @yui_js_modules
+        );
+    };
+
     # The name of each file, pointing at its default permissions and
     # default contents.
     my %create_files = (
@@ -361,6 +389,12 @@ sub FILESYSTEM {
         # or something else is not running as the webserver or root.
         "$datadir/mailer.testfile" => { perms    => CGI_WRITE,
                                         contents => '' },
+        "js/yui.js"                => { perms     => CGI_READ,
+                                        overwrite => 1,
+                                        contents  => $yui_js_files },
+        "$yui_css_dir/yui.css"     => { perms => CGI_READ,
+                                        overwrite => 1,
+                                        contents  => $yui_css_files },
     );
 
     # Because checksetup controls the creation of index.html separately
@@ -623,7 +657,13 @@ sub _create_files {
             print "Creating $file...\n";
             my $fh = IO::File->new( $file, O_WRONLY | O_CREAT, $info->{perms} )
                 or die "unable to write $file: $!";
-            print $fh $info->{contents} if exists $info->{contents};
+            my $contents = $info->{contents};
+            if (ref $contents && ref($contents) eq 'CODE') {
+                print $fh $contents->();
+            }
+            else {
+                print $fh $contents;
+            }
             $fh->close;
         }
     }

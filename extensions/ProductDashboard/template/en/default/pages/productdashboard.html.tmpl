@@ -15,8 +15,7 @@
 
 [% IF current_tab_name == 'summary' %]
   [% javascript_urls.push("extensions/ProductDashboard/web/js/summary.js") %]
-  [% ELSIF current_tab_name == 'recents' %]
-  [% yui = [ "calendar" ] %]
+[% ELSIF current_tab_name == 'recents' %]
   [% javascript_urls.push("js/field.js") %]
   [% javascript_urls.push("js/util.js") %]
   [% javascript_urls.push("extensions/ProductDashboard/web/js/recents.js") %]
@@ -47,7 +46,6 @@
   generate_api_token = 1
   javascript = js
   style_urls = [ "skins/standard/buglist.css",
-                 "js/yui/assets/skins/sam/paginator.css",
                  "extensions/ProductDashboard/web/styles/productdashboard.css" ]
 %]
 
