@@ -30,6 +30,8 @@ use File::Find;
 use File::Path;
 use File::Basename;
 use File::Copy qw(move);
+use File::Spec;
+use Cwd ();
 use File::Slurp;
 use IO::File;
 use POSIX ();
@@ -350,31 +352,33 @@ sub FILESYSTEM {
         "$skinsdir/contrib"     => DIR_WS_SERVE,
     );
 
-
-    my $yui_css_dir = "js/yui/assets/skins/sam";
-    my $yui_css_files = sub {
-        # I don't want to rewrite CSS here,
-        # so the generated file must be in the same directory as the files it is made from.
-        my @yui_css_modules = qw(
-            calendar container datatable button paginator
-        );
+    my $yui_all_css = sub {
         return join("\n",
-            map { scalar read_file($_) }
-            map { "$yui_css_dir/$_.css" }
-            @yui_css_modules
+            map {
+                my $css = read_file($_);
+                _css_url_fix($css, $_, "skins/yui.css.list")
+            } read_file("skins/yui.css.list", { chomp => 1 })
         );
     };
 
-    my $yui_js_files = sub {
-        my @yui_js_modules = qw(
-            yahoo-dom-event cookie connection json selector
-            element container calendar history button
-            datasource datatable
-        );
+    my $yui_all_js = sub {
         return join("\n",
-            map { scalar read_file($_) }
-            map { "js/yui/$_/$_-min.js" }
-            @yui_js_modules
+            map { scalar read_file($_) } read_file("js/yui.js.list", { chomp => 1 })
+        );
+    };
+
+    my $yui3_all_css = sub {
+        return join("\n",
+            map {
+                my $css = read_file($_);
+                _css_url_fix($css, $_, "skins/yui3.css.list")
+            } read_file("skins/yui3.css.list", { chomp => 1 })
+        );
+    };
+
+    my $yui3_all_js = sub {
+        return join(";\n",
+            map { scalar read_file($_) } read_file("js/yui3.js.list", { chomp => 1 })
         );
     };
 
@@ -389,12 +393,18 @@ sub FILESYSTEM {
         # or something else is not running as the webserver or root.
         "$datadir/mailer.testfile" => { perms    => CGI_WRITE,
                                         contents => '' },
-        "js/yui.js"                => { perms     => CGI_READ,
-                                        overwrite => 1,
-                                        contents  => $yui_js_files },
-        "$yui_css_dir/yui.css"     => { perms => CGI_READ,
-                                        overwrite => 1,
-                                        contents  => $yui_css_files },
+        "js/yui.js"               => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui_all_js },
+        "skins/yui.css"           => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui_all_css },
+        "js/yui3.js"              => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui3_all_js },
+        "skins/yui3.css"          => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui3_all_css },
     );
 
     # Because checksetup controls the creation of index.html separately
@@ -552,6 +562,31 @@ sub update_filesystem {
     _remove_empty_css_files();
     _convert_single_file_skins();
     _remove_dynamic_assets();
+}
+
+sub _css_url_fix {
+    my ($content, $from, $to) = @_;
+    my $from_dir = dirname(File::Spec->rel2abs($from, bz_locations()->{libpath}));
+    my $to_dir = dirname(File::Spec->rel2abs($to, bz_locations()->{libpath}));
+
+    return css_url_rewrite(
+        $content,
+        sub {
+            my ($url) = @_;
+            if ( $url =~ m{^(?:/|data:)} ) {
+                return 'url(' . $url . ')';
+            }
+            else {
+                my $new_url = File::Spec->abs2rel(
+                    Cwd::realpath(
+                        File::Spec->rel2abs( $url, $from_dir )
+                    ),
+                    $to_dir
+                );
+                return sprintf "url(%s)", $new_url;
+            }
+        }
+    );
 }
 
 sub _remove_empty_css_files {
