@@ -9,13 +9,11 @@
 
 package QA::Util;
 
-use 5.10.1;
 use strict;
-use warnings;
-use autodie;
-
 use Data::Dumper;
 use Test::More;
+use Test::WWW::Selenium;
+use WWW::Selenium::Util qw(server_is_running);
 
 # Fixes wide character warnings
 BEGIN {
@@ -25,7 +23,7 @@ BEGIN {
     binmode $builder->todo_output,    ":encoding(utf8)";
 }
 
-use parent qw(Exporter);
+use base qw(Exporter);
 @QA::Util::EXPORT = qw(
     trim
     url_quote
@@ -47,7 +45,6 @@ use parent qw(Exporter);
 
     get_selenium
     get_rpc_clients
-    get_config
 
     WAIT_TIME
     CHROME_MODE
@@ -95,17 +92,13 @@ sub get_config {
     my $conf_file = CONF_FILE;
     my $config = do($conf_file)
         or die "can't read configuration '$conf_file': $!$@";
-    return $config;
 }
 
 sub get_selenium {
     my $chrome_mode = shift;
     my $config = get_config();
 
-    require Test::WWW::Selenium;
-    require WWW::Selenium::Util;
-
-    if (!WWW::Selenium::Util::server_is_running()) {
+    if (!server_is_running) {
         die "Selenium Server isn't running!";
     }
 
@@ -125,14 +118,14 @@ sub get_xmlrpc_client {
                      $config->{bugzilla_installation} . "/xmlrpc.cgi";
 
     require QA::RPC::XMLRPC;
-    my $rpc = QA::RPC::XMLRPC->new(proxy => $xmlrpc_url);
+    my $rpc = new QA::RPC::XMLRPC(proxy => $xmlrpc_url);
     return ($rpc, $config);
 }
 
 sub get_jsonrpc_client {
     my ($get_mode) = @_;
     require QA::RPC::JSONRPC;
-    my $rpc = QA::RPC::JSONRPC->new();
+    my $rpc = new QA::RPC::JSONRPC();
     # If we don't set a long timeout, then the Bug.add_comment test
     # where we add a too-large comment fails.
     $rpc->transport->timeout(180);
