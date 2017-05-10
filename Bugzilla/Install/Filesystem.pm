@@ -388,9 +388,10 @@ sub FILESYSTEM {
     };
 
     my $yui3_all_js = sub {
-        return join("\n",
+        my $js = join("\n",
             map { scalar read_file($_) } read_file("js/yui3.js.list", { chomp => 1 })
         );
+        return qq[\$(function() { $js; });\n];
     };
 
     # The name of each file, pointing at its default permissions and
