@@ -441,12 +441,16 @@ sub header {
         %headers = ('-type' => shift(@_));
     }
     else {
-        %headers = @_;
+        # we always want headers to be in lower case, to avoid
+        # for instance -Cache_Control vs. -cache_control.
+        my %tmp = @_;
+        %headers = map { lc($_) => $tmp{$_} } keys %tmp;
     }
 
     if ($self->{'_content_disp'}) {
         $headers{'-content_disposition'} = $self->{'_content_disp'};
     }
+    $headers{'-cache_control'} = 'no-cache, no-store, must-revalidate' unless $headers{'-cache_control'};
 
     if (!$user->id && $user->authorizer->can_login
         && !$self->cookie('Bugzilla_login_request_cookie'))
