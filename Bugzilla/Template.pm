@@ -396,7 +396,7 @@ sub css_files {
     # global.css belongs on every page
     my @requested_css = ( 'skins/standard/global.css', @$style_urls );
 
-    unshift @requested_css, "js/yui/assets/skins/sam/yui.css" unless $no_yui;
+    unshift @requested_css, "skins/yui.css" unless $no_yui;
 
     my @css_sets = map { _css_link_set($_) } sort {
         my $first_a = $a =~ m!js/jquery!;
