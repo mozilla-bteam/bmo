@@ -31,6 +31,7 @@ use File::Path;
 use File::Basename;
 use File::Copy qw(move);
 use File::Spec;
+use File::stat;
 use Cwd ();
 use File::Slurp;
 use IO::File;
@@ -81,23 +82,16 @@ EOT
 
 use constant HT_ASSETS_DIR => <<'EOT';
 # Allow access to .css and js files
-<Files assets.json>
+<FilesMatch state\.json$>
     Deny from all
-</Files>
+</FilesMatch>
 
 FileETag None
 Header set Cache-Control "public, immutable, max-age=31536000"
+Header set Content-Security-Policy "default-src 'none';"
 
 # And no directory listings, either.
 Options -Indexes
-EOT
-
-# YUI3 cannot be (easily) made to use the AssetManager asset_file() stuff.
-# So aggressively cache its dir. We'll need to change the name of the dir when we upgrade
-# yui -- but we're more likely to just get rid of that code.
-use constant HT_CACHE_DIR => <<'EOT';
-FileETag None
-Header set Cache-Control "public, immutable, max-age=31536000"
 EOT
 
 use constant INDEX_HTML => <<'EOT';
@@ -457,10 +451,12 @@ sub FILESYSTEM {
         "$webdotdir/.htaccess"       => { perms => WS_SERVE,
                                           contents => HT_WEBDOT_DIR },
         "$assetsdir/.htaccess"       => { perms => WS_SERVE,
-                                          contents => HT_ASSETS_DIR },
-        "js/yui3/.htaccess"          => { perms => WS_SERVE,
-                                          contents => HT_CACHE_DIR },
+                                          contents  => HT_ASSETS_DIR },
     );
+    my $mtime = stat(__FILE__)->mtime;
+    foreach my $file (keys %htaccess) {
+        $htaccess{$file}{overwrite} = $mtime > stat($file)->mtime;
+    }
 
     Bugzilla::Hook::process('install_filesystem', {
         files            => \%files,

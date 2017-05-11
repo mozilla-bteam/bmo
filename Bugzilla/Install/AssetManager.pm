@@ -212,7 +212,7 @@ sub _build_state {
     return $state;
 }
 
-sub _build_json { JSON::XS->new->canonical->utf8->pretty }
+sub _build_json { JSON::XS->new->canonical->utf8 }
 
 sub _save_state {
     my ($self) = @_;
