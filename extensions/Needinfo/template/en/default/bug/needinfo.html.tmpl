@@ -209,9 +209,9 @@ $(function() {
                 value="user">myself</option>
           [% END %]
           [% FOREACH mentor = available_mentors %]
-            <option data-identity="[% mentor.name_or_login FILTER html %][% IF available_mentors.size > 1 %] (mentor)[% END %]"
-                [% IF available_mentors.size > 1 %]title="mentor"[% END %] value="[% mentor.login FILTER html %]">
-                [% available_mentors.size == 1 ? "mentor" : mentor.login FILTER html %]
+            <option data-identity="[% mentor.name_or_login FILTER html %][% IF available_mentors.size > 1 %][% END %]"
+                value="[% mentor.login FILTER html %]">
+                [% available_mentors.size == 1 ? "mentor" : mentor.login FILTER html %] (mentor)
             </option>
           [% END %]
           [% IF bug.component_obj.triage_owner_id %]
