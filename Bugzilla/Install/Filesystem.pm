@@ -601,31 +601,6 @@ sub _css_url_fix {
     );
 }
 
-sub _css_url_fix {
-    my ($content, $from, $to) = @_;
-    my $from_dir = dirname(File::Spec->rel2abs($from, bz_locations()->{libpath}));
-    my $to_dir = dirname(File::Spec->rel2abs($to, bz_locations()->{libpath}));
-
-    return css_url_rewrite(
-        $content,
-        sub {
-            my ($url) = @_;
-            if ( $url =~ m{^(?:/|data:)} ) {
-                return 'url(' . $url . ')';
-            }
-            else {
-                my $new_url = File::Spec->abs2rel(
-                    Cwd::realpath(
-                        File::Spec->rel2abs( $url, $from_dir )
-                    ),
-                    $to_dir
-                );
-                return sprintf "url(%s)", $new_url;
-            }
-        }
-    );
-}
-
 sub _remove_empty_css_files {
     my $skinsdir = bz_locations()->{'skinsdir'};
     foreach my $css_file (glob("$skinsdir/custom/*.css"),
