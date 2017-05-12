@@ -1,0 +1,29 @@
+---
+- name: bmo checksetup script
+  template:
+    src: bmo-checksetup.j2
+    dest: /usr/local/bin/bmo-checksetup
+    mode: 0755
+
+- name: bmo generate data script
+  template:
+    src: bmo-generate-data.j2
+    dest: /usr/local/bin/bmo-generate-data
+    mode: 0755
+
+- name: bmo checksetup answers
+  template:
+    src: checksetup_answers.j2
+    dest: /home/vagrant/checksetup_answers.txt
+    owner: vagrant
+    group: vagrant
+    mode: 0644
+
+- name: run checksetup
+  become: false
+  shell: sg apache -c '/usr/local/bin/bmo-checksetup'
+
+- name: generate data
+  become: false
+  shell: sg apache -c '/usr/local/bin/bmo-generate-data'
+

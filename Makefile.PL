@@ -50,7 +50,7 @@ my %requires = (
     'Email::Send'              => '1.911',
     'File::Slurp'              => '9999.13',
     'JSON::XS'                 => '2.01',
-    'List::MoreUtils'          => '0.22',
+    'List::MoreUtils'          => $^V > v5.10.1 ? '0.418' : '0.22',
     'Math::Random::ISAAC'      => '1.0.1',
     'Module::Metadata'         => '1.000033',
     'Module::Runtime'          => 0,
@@ -61,6 +61,7 @@ my %requires = (
     'Throwable'                => 0,
     'URI'                      => '1.55',
     'version'                  => '0.87',
+    'Taint::Util'              => 0,
 );
 my %build_requires = (
     'ExtUtils::MakeMaker' => '6.57_07',
