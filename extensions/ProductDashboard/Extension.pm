@@ -23,7 +23,7 @@ use Bugzilla::Field;
 use Bugzilla::Extension::ProductDashboard::Queries;
 use Bugzilla::Extension::ProductDashboard::Util;
 
-our $VERSION = BUGZILLA_VERSION;
+our $VERSION = '0.01';
 
 sub page_before_template {
     my ($self, $args) = @_;
@@ -106,9 +106,9 @@ sub _page_dashboard {
 
     if ($vars->{'total_bugs'}) {
         $vars->{'open_bugs_percentage'}
-            = int($vars->{'total_open_bugs'} / $vars->{'total_bugs'} * 100);
+            = $vars->{'total_open_bugs'} / $vars->{'total_bugs'};
         $vars->{'closed_bugs_percentage'}
-            = int($vars->{'total_closed_bugs'} / $vars->{'total_bugs'} * 100);
+            = $vars->{'total_closed_bugs'} / $vars->{'total_bugs'};
     }
     else {
         $vars->{'open_bugs_percentage'}   = 0;
@@ -185,7 +185,7 @@ sub _page_dashboard {
             $milestone_stats{'link_open'} = bug_milestone_link_open($product, $milestone);
             $milestone_stats{'link_closed'} = bug_milestone_link_closed($product, $milestone);
             $milestone_stats{'percentage'} = $milestone_stats{'total_bugs'}
-                                             ? int(($milestone_stats{'closed_bugs'} / $milestone_stats{'total_bugs'}) * 100)
+                                             ? $milestone_stats{'closed_bugs'} / $milestone_stats{'total_bugs'}
                                              : 0;
             push (@{$vars->{'by_roadmap'}}, \%milestone_stats);
         }

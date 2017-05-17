@@ -94,12 +94,13 @@ sub by_version {
     my ($product, $bug_status) = @_;
     my $dbh = Bugzilla->dbh;
     my $extra = '';
+    state $float_type = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 'decimal' : 'real';
 
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_open_states()) . ")" if $bug_status eq 'open';
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_closed_states()) . ")" if $bug_status eq 'closed';
 
     return $dbh->selectall_arrayref("SELECT version, COUNT(bug_id),
-                                            ROUND(((COUNT(bugs.bug_id) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra)) * 100))
+                                            (CAST(COUNT(bugs.bug_id) AS $float_type) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra))
                                        FROM bugs 
                                       WHERE product_id = ? 
                                             $extra
@@ -112,12 +113,13 @@ sub by_milestone {
     my ($product, $bug_status) = @_;
     my $dbh = Bugzilla->dbh;
     my $extra = '';
+    state $float_type = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 'decimal' : 'real';
 
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_open_states()) . ")" if $bug_status eq 'open';
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_closed_states()) . ")" if $bug_status eq 'closed';
 
     return $dbh->selectall_arrayref("SELECT target_milestone, COUNT(bug_id),
-                                            ROUND(((COUNT(bugs.bug_id) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra)) * 100))
+                                            (CAST(COUNT(bugs.bug_id) AS $float_type) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra))
                                        FROM bugs 
                                       WHERE product_id = ?
                                             $extra
@@ -130,12 +132,13 @@ sub by_priority {
     my ($product, $bug_status) = @_;
     my $dbh = Bugzilla->dbh;
     my $extra = '';
+    state $float_type = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 'decimal' : 'real';
 
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_open_states()) . ")" if $bug_status eq 'open';
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_closed_states()) . ")" if $bug_status eq 'closed';
 
     return $dbh->selectall_arrayref("SELECT priority, COUNT(bug_id),
-                                            ROUND(((COUNT(bugs.bug_id) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra)) * 100))
+                                            (CAST(COUNT(bugs.bug_id) AS $float_type) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra))
                                        FROM bugs 
                                       WHERE product_id = ?
                                             $extra
@@ -148,12 +151,13 @@ sub by_severity {
     my ($product, $bug_status) = @_;
     my $dbh = Bugzilla->dbh;
     my $extra = '';
+    state $float_type = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 'decimal' : 'real';
 
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_open_states()) . ")" if $bug_status eq 'open';
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_closed_states()) . ")" if $bug_status eq 'closed';
 
     return $dbh->selectall_arrayref("SELECT bug_severity, COUNT(bug_id),
-                                            ROUND(((COUNT(bugs.bug_id) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra)) * 100))
+                                            (CAST(COUNT(bugs.bug_id) as $float_type) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra))
                                        FROM bugs 
                                       WHERE product_id = ? 
                                             $extra
@@ -166,12 +170,13 @@ sub by_component {
     my ($product, $bug_status) = @_;
     my $dbh = Bugzilla->dbh;
     my $extra = '';
+    state $float_type = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 'decimal' : 'real';
 
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_open_states()) . ")" if $bug_status eq 'open';
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_closed_states()) . ")" if $bug_status eq 'closed';
 
     return $dbh->selectall_arrayref("SELECT components.name, COUNT(bugs.bug_id),
-                                            ROUND(((COUNT(bugs.bug_id) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra)) * 100))
+                                            (CAST(COUNT(bugs.bug_id) AS $float_type) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra))
                                        FROM bugs INNER JOIN components ON bugs.component_id = components.id 
                                       WHERE bugs.product_id = ?
                                             $extra
@@ -236,6 +241,8 @@ sub by_assignee {
     my $dbh = Bugzilla->dbh;
     my $extra = '';
 
+    state $float_type = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 'decimal' : 'real';
+
     $limit = ($limit && detaint_natural($limit)) ? $dbh->sql_limit($limit) : "";
 
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_open_states()) . ")" if $bug_status eq 'open';
@@ -243,12 +250,12 @@ sub by_assignee {
 
     my @result = map { [ Bugzilla::User->new($_->[0]), $_->[1], $_->[2] ] }
         @{$dbh->selectall_arrayref("SELECT bugs.assigned_to AS userid, COUNT(bugs.bug_id),
-                                           ROUND(((COUNT(bugs.bug_id) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra)) * 100))
+                                           (CAST(COUNT(bugs.bug_id) AS $float_type) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra))
                                       FROM bugs, profiles
                                      WHERE bugs.product_id = ?
                                            AND bugs.assigned_to = profiles.userid
                                            $extra
-                                     GROUP BY profiles.login_name
+                                     GROUP BY bugs.assigned_to
                                      ORDER BY COUNT(bugs.bug_id) DESC $limit", 
                                    undef, $product->id, $product->id)};
 
@@ -259,12 +266,13 @@ sub by_status {
     my ($product, $bug_status) = @_;
     my $dbh = Bugzilla->dbh;
     my $extra = '';
+    state $float_type = Bugzilla->dbh->isa('Bugzilla::DB::Mysql') ? 'decimal' : 'real';
 
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_open_states()) . ")" if $bug_status eq 'open';
     $extra = "AND bugs.bug_status IN (" . join(',', quoted_closed_states()) . ")" if $bug_status eq 'closed';
 
     return $dbh->selectall_arrayref("SELECT bugs.bug_status, COUNT(bugs.bug_id),
-                                            ROUND(((COUNT(bugs.bug_id) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra)) * 100))
+                                            (CAST(COUNT(bugs.bug_id) AS $float_type) / ( SELECT COUNT(*) FROM bugs WHERE bugs.product_id = ? $extra))
                                        FROM bugs
                                       WHERE bugs.product_id = ?
                                             $extra 
@@ -386,8 +394,8 @@ sub recently_opened {
         push(@values, trick_taint($date_from), trick_taint($date_to));
     }
     else {
-        $date_part = "AND bugs.creation_ts >= CURRENT_DATE() - INTERVAL ? DAY";
-        push(@values, $days);
+        my $days_esc = $dbh->quote($days);
+        $date_part = "AND bugs.creation_ts >= CURRENT_DATE - INTERVAL $days_esc DAY";
     }
 
     my $unfiltered_bugs = $dbh->selectall_arrayref("SELECT bugs.bug_id AS id,
@@ -434,8 +442,8 @@ sub recently_closed {
         push(@values, trick_taint($date_from), trick_taint($date_to));
     }
     else {
-        $date_part = "AND bugs_activity.bug_when >= CURRENT_DATE() - INTERVAL ? DAY";
-        push(@values, $days);
+        my $days_esc = $dbh->quote($days);
+        $date_part = "AND bugs_activity.bug_when >= CURRENT_DATE - INTERVAL $days_esc DAY";
     }
 
     my $unfiltered_bugs =  $dbh->selectall_arrayref("SELECT DISTINCT bugs.bug_id AS id, 
