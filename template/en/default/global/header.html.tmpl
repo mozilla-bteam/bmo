@@ -52,6 +52,7 @@
   style_urls = []
   no_yui = 0
   jquery = []
+  jquery_css = []
   generate_api_token = 0
 %]
 
@@ -72,7 +73,7 @@
   "js/jquery/ui/jquery-ui-structure-min.css",
   "js/jquery/ui/jquery-ui-theme-min.css",
 ] %]
-[% CALL style_urls.import(jq_css_urls) %]
+[% style_urls.import(jquery_css, jq_css_urls) FILTER null %]
 
 [%# Add our required jQuery plugins %]
 [% jquery.push("cookie", "devbridgeAutocomplete") %]
@@ -148,23 +149,16 @@
     [% END %]
 
     [% IF style %]
-        [% FOREACH asset_url = asset_files(css_standard_and_skin) %]
-            [% PROCESS format_css_link %]
-        [% END %]
+      <style type="text/css">
+        [% style %]
+      </style>
+    [% END %]
 
-        <style type="text/css">
-            [% style %]
-        </style>
-
-        [% FOREACH asset_url = asset_files(css_sets.custom) %]
-            [% PROCESS format_css_link %]
-        [% END %]
-    [% ELSE %]
-        [%
-          SET css_all = [];
-          CALL css_all.import(css_standard_and_skin, css_sets.custom);
-        %]
-        [% FOREACH asset_url = asset_files(css_all) %]
+    [% IF css_sets.unified_custom %]
+      [% IF constants.CONCATENATE_ASSETS %]
+        [% PROCESS format_css_link asset_url = css_sets.unified_custom %]
+      [% ELSE %]
+        [% FOREACH asset_url = css_sets.custom %]
           [% PROCESS format_css_link %]
         [% END %]
       [% END %]
@@ -194,28 +188,14 @@
           [% javascript %]
         [% END %]
     [% END %]
-
     [% IF inline_javascript.search("\\S") %]
-      [% FOREACH asset_url = asset_files(starting_js_urls) %]
-        [% PROCESS format_js_link %]
-      [% END %]
-
       <script [% script_nonce FILTER none %]>
         [% inline_javascript FILTER none %]
       </script>
+    [% END %]
 
-      [% FOREACH asset_url = asset_files(javascript_urls) %]
-        [% PROCESS format_js_link %]
-      [% END %]
-    [% ELSE %]
-      [% 
-         SET js_all = [];
-         CALL js_all.import(starting_js_urls);
-         CALL js_all.import(javascript_urls);
-      %]
-      [% FOREACH asset_url = asset_files(js_all) %]
-        [% PROCESS format_js_link %]
-      [% END %]
+    [% FOREACH asset_url = concatenate_js(javascript_urls) %]
+      [% PROCESS format_js_link %]
     [% END %]
 
     [%# this puts the live bookmark up on firefox for the Atom feed %]
@@ -330,7 +310,7 @@
       </td>
       <td id="moz_tab">
         <a href="https://www.mozilla.org/" title="Mozilla - Home of the Mozilla Project">
-          <img src="[% asset_file('skins/contrib/Mozilla/tabzilla.png') FILTER html %]" border="0" height="42" width="154"></a>
+          <img src="skins/contrib/Mozilla/tabzilla.png" border="0" height="42" width="154"></a>
       </td>
     </tr>
     </table>
@@ -416,9 +396,9 @@
 [% END %]
 
 [% BLOCK format_css_link %]
-  <link data-file="[% asset_url FILTER html %]" href="[% asset_file(asset_url) FILTER html %]" rel="stylesheet" type="text/css">
-[%+ END %]
+  <link href="[% asset_url FILTER html %]" rel="stylesheet" type="text/css">
+[% END %]
 
 [% BLOCK format_js_link %]
-  <script [% script_nonce FILTER none %] data-file="[% asset_url FILTER html %]" type="text/javascript" src="[% asset_file(asset_url) FILTER html %]"></script>
-[%+ END %]
+  <script [% script_nonce FILTER none %] type="text/javascript" src="[% asset_url FILTER mtime FILTER html %]"></script>
+[% END %]
