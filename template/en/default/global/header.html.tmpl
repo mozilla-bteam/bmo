@@ -136,10 +136,17 @@
     [% PROCESS 'global/setting-descs.none.tmpl' %]
 
     [% SET css_sets = css_files(style_urls.unique, no_yui) %]
-    [%
-        SET css_standard_and_skin = css_sets.standard;
-        CALL css_standard_and_skin.import(css_sets.skin);
-    %]
+    [% IF constants.CONCATENATE_ASSETS %]
+      [% PROCESS format_css_link asset_url = css_sets.unified_standard_skin %]
+    [% ELSE %]
+      [% FOREACH asset_url = css_sets.standard %]
+        [% PROCESS format_css_link %]
+      [% END %]
+      [% FOREACH asset_url = css_sets.skin %]
+        [% PROCESS format_css_link %]
+      [% END %]
+    [% END %]
+
     [% IF style %]
         [% FOREACH asset_url = asset_files(css_standard_and_skin) %]
             [% PROCESS format_css_link %]
@@ -160,6 +167,7 @@
         [% FOREACH asset_url = asset_files(css_all) %]
           [% PROCESS format_css_link %]
         [% END %]
+      [% END %]
     [% END %]
 
     [%# jQuery Plugins %]
@@ -167,6 +175,10 @@
       [% starting_js_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.js") %]
     [% END %]
     [% starting_js_urls.push('js/global.js') %]
+
+    [% FOREACH asset_url = concatenate_js(starting_js_urls) %]
+      [% PROCESS format_js_link %]
+    [% END %]
 
     [% inline_javascript = BLOCK %]
         [% IF NOT no_yui %]

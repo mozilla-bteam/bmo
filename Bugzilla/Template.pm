@@ -398,13 +398,7 @@ sub css_files {
 
     unshift @requested_css, "skins/yui.css" unless $no_yui;
 
-    my @css_sets = map { _css_link_set($_) } sort {
-        my $first_a = $a =~ m!js/jquery!;
-        my $first_b = $b =~ m!js/jquery!;
-        return -1 if $first_a && !$first_b;
-        return 1 if !$first_a && $first_b;
-        return 0;
-    } @requested_css;
+    my @css_sets = map { _css_link_set($_) } @requested_css;
 
     my %by_type = (standard => [], skin => [], custom => []);
     foreach my $set (@css_sets) {

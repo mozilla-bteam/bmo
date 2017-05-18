@@ -601,6 +601,31 @@ sub _css_url_fix {
     );
 }
 
+sub _css_url_fix {
+    my ($content, $from, $to) = @_;
+    my $from_dir = dirname(File::Spec->rel2abs($from, bz_locations()->{libpath}));
+    my $to_dir = dirname(File::Spec->rel2abs($to, bz_locations()->{libpath}));
+
+    return css_url_rewrite(
+        $content,
+        sub {
+            my ($url) = @_;
+            if ( $url =~ m{^(?:/|data:)} ) {
+                return sprintf 'url(%s)', $url;
+            }
+            else {
+                my $new_url = File::Spec->abs2rel(
+                    Cwd::realpath(
+                        File::Spec->rel2abs( $url, $from_dir )
+                    ),
+                    $to_dir
+                );
+                return sprintf "url(%s)", $new_url;
+            }
+        }
+    );
+}
+
 sub _remove_empty_css_files {
     my $skinsdir = bz_locations()->{'skinsdir'};
     foreach my $css_file (glob("$skinsdir/custom/*.css"),
@@ -684,10 +709,10 @@ sub _create_files {
             my $fh = IO::File->new( $file, O_WRONLY | O_CREAT, $info->{perms} )
                 or die "unable to write $file: $!";
             my $contents = $info->{contents};
-            if (ref $contents && ref($contents) eq 'CODE') {
+            if (defined $contents && ref($contents) eq 'CODE') {
                 print $fh $contents->();
             }
-            else {
+            elsif (defined $contents) {
                 print $fh $contents;
             }
             $fh->close;
