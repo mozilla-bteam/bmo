@@ -4,12 +4,13 @@
 #
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
+package Bugzilla::Elastic::Role::Search;
 
+use 5.10.1;
 use strict;
 use warnings;
-use 5.10.1;
+use Role::Tiny;
 
-%strings = (
-    feature_push_amqp => 'Push: AMQP Support',
-    feature_push_stomp => 'Push: STOMP Support',
-);
+requires qw(data search_description invalid_order_columns order);
+
+1;

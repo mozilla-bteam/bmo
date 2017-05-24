@@ -5,11 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+package Bugzilla::Extension::PhabBugz;
+
+use 5.10.1;
 use strict;
 use warnings;
-use 5.10.1;
 
-%strings = (
-    feature_push_amqp => 'Push: AMQP Support',
-    feature_push_stomp => 'Push: STOMP Support',
-);
+use constant NAME => 'PhabBugz';
+
+__PACKAGE__->NAME;

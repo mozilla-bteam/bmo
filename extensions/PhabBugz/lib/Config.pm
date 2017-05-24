@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Config::Elastic;
+package Bugzilla::Extension::PhabBugz::Config;
 
 use 5.10.1;
 use strict;
@@ -13,26 +13,31 @@ use warnings;
 
 use Bugzilla::Config::Common;
 
-our $sortkey = 1550;
+our $sortkey = 1300;
 
 sub get_param_list {
-    return (
+    my ($class) = @_;
+
+    my @params = (
         {
-            name    => 'elasticsearch',
-            type    => 'b',
-            default => 0,
+            name    => 'phabricator_base_uri',
+            type    => 't',
+            default => '',
+            checker => \&check_urlbase
         },
         {
-            name    => 'elasticsearch_nodes',
+            name    => 'phabricator_sync_groups',
             type    => 't',
-            default => 'localhost:9200',
+            default => '',
         },
         {
-            name    => 'elasticsearch_index',
-            type    => 't',
-            default => 'bugzilla',
+            name => 'phabricator_api_key',
+            type => 't',
+            default => '',
         },
     );
+
+    return @params;
 }
 
 1;

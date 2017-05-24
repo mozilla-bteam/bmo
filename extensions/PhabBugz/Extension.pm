@@ -5,11 +5,19 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+package Bugzilla::Extension::PhabBugz;
+
+use 5.10.1;
 use strict;
 use warnings;
-use 5.10.1;
+use parent qw(Bugzilla::Extension);
 
-%strings = (
-    feature_push_amqp => 'Push: AMQP Support',
-    feature_push_stomp => 'Push: STOMP Support',
-);
+our $VERSION = '0.01';
+
+sub config_add_panels {
+    my ($self, $args) = @_;
+    my $modules = $args->{panel_modules};
+    $modules->{PhabBugz} = "Bugzilla::Extension::PhabBugz::Config";
+}
+
+__PACKAGE__->NAME;
