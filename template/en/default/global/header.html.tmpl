@@ -136,30 +136,26 @@
     [% PROCESS 'global/setting-descs.none.tmpl' %]
 
     [% SET css_sets = css_files(style_urls.unique, no_yui) %]
-    [%
-        SET css_standard_and_skin = css_sets.standard;
-        CALL css_standard_and_skin.import(css_sets.skin);
-    %]
+    [% SET css_standard_and_skin = css_sets.standard %]
+    [% CALL css_standard_and_skin.import(css_sets.skin) %]
     [% IF style %]
-        [% FOREACH asset_url = asset_files(css_standard_and_skin) %]
-            [% PROCESS format_css_link %]
-        [% END %]
+      [% FOREACH asset_url = asset_files(css_standard_and_skin) %]
+        [% PROCESS format_css_link %]
+      [% END %]
 
-        <style type="text/css">
-            [% style %]
-        </style>
+      <style type="text/css">
+        [% style %]
+      </style>
 
-        [% FOREACH asset_url = asset_files(css_sets.custom) %]
-            [% PROCESS format_css_link %]
-        [% END %]
+      [% FOREACH asset_url = asset_files(css_sets.custom) %]
+        [% PROCESS format_css_link %]
+      [% END %]
     [% ELSE %]
-        [%
-          SET css_all = [];
-          CALL css_all.import(css_standard_and_skin, css_sets.custom);
-        %]
-        [% FOREACH asset_url = asset_files(css_all) %]
-          [% PROCESS format_css_link %]
-        [% END %]
+      [% SET css_all = [] %]
+      [% CALL css_all.import(css_standard_and_skin, css_sets.custom) %]
+      [% FOREACH asset_url = asset_files(css_all) %]
+        [% PROCESS format_css_link %]
+      [% END %]
     [% END %]
 
     [%# jQuery Plugins %]
@@ -196,11 +192,9 @@
         [% PROCESS format_js_link %]
       [% END %]
     [% ELSE %]
-      [% 
-         SET js_all = [];
-         CALL js_all.import(starting_js_urls);
-         CALL js_all.import(javascript_urls);
-      %]
+      [% SET js_all = [] %]
+      [% CALL js_all.import(starting_js_urls) %]
+      [% CALL js_all.import(javascript_urls) %]
       [% FOREACH asset_url = asset_files(js_all) %]
         [% PROCESS format_js_link %]
       [% END %]

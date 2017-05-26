@@ -455,7 +455,7 @@ sub FILESYSTEM {
     );
     my $mtime = stat(__FILE__)->mtime;
     foreach my $file (keys %htaccess) {
-        $htaccess{$file}{overwrite} = $mtime > stat($file)->mtime;
+        $htaccess{$file}{overwrite} = -f $file && $mtime > stat($file)->mtime;
     }
 
     Bugzilla::Hook::process('install_filesystem', {
