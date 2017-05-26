@@ -167,7 +167,7 @@ sub _build_asset_dir {
         return $version_dir;
     }
     else {
-        return undef;
+        return $dir;
     }
 }
 

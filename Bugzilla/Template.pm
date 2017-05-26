@@ -881,7 +881,7 @@ sub create {
             },
 
             asset_files => sub {
-                return [Bugzilla->asset_manager->asset_files(@{ $_[0] })];
+                return Bugzilla->asset_manager->asset_files(@{ $_[0] });
             },
 
             json_encode => sub {
