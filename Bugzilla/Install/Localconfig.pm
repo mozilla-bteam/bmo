@@ -40,10 +40,7 @@ our @EXPORT_OK = qw(
 
 sub _sensible_group {
     return '' if ON_WINDOWS;
-    my @groups     = qw( apache www-data _www );
-    my $sensible_group = first { return getgrnam($_) } @groups;
-
-    return $sensible_group // getgrgid($EGID) // '';
+    return scalar getgrgid($EGID);
 }
 
 use constant LOCALCONFIG_VARS => (
@@ -53,7 +50,7 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'webservergroup',
-        default => ON_WINDOWS ? '' : 'apache',
+        default => \&_sensible_group,
     },
     {
         name    => 'use_suexec',
