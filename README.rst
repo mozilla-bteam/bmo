@@ -156,7 +156,7 @@ BMO_shadowdbhost
 BMO_shadowdbport
    The port of the read-only database.
 
-BMO_apache_size_limit = 800000;
+BMO_apache_size_limit
   This is the max amount of unshared memory (in kb) that the apache process is
   allowed to use before Apache::SizeLimit kills it.
 
