@@ -297,7 +297,7 @@ sub update_localconfig {
         print colored(install_string('lc_new_vars', { localconfig => $filename,
                                                       new_vars => wrap_hard($newstuff, 70) }),
                       COLOR_ERROR), "\n";
-        exit;
+        exit unless $params->{use_defaults};
     }
 
     # Reset the cache for Bugzilla->localconfig so that it will be re-read
