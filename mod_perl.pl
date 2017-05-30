@@ -75,9 +75,12 @@ my $conf = Bugzilla::ModPerl->apache_config($cgi_path);
 $server->add_config([ grep { length $_ } split("\n", $conf)]);
 
 # Pre-load all extensions
-Bugzilla::Extension->load_all();
+$Bugzilla::extension_packages = Bugzilla::Extension->load_all();
 
 Bugzilla->preload_features();
+
+# Force instantiation of template so Bugzilla::Template::PreloadProvider can do its magic.
+Bugzilla->template;
 
 # Have ModPerl::RegistryLoader pre-compile all CGI scripts.
 my $rl = new ModPerl::RegistryLoader();

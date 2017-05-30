@@ -23,6 +23,7 @@ BEGIN {
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
 use Bugzilla::CGI;
+use Bugzilla::Elastic;
 use Bugzilla::Config;
 use Bugzilla::Constants;
 use Bugzilla::DB;
@@ -233,11 +234,15 @@ sub template_inner {
     return $cache->{"template_inner_$lang"} ||= Bugzilla::Template->create(language => $lang);
 }
 
+our $extension_packages;
 sub extensions {
     my ($class) = @_;
     my $cache = $class->request_cache;
     if (!$cache->{extensions}) {
-        my $extension_packages = Bugzilla::Extension->load_all();
+        # Under mod_perl, mod_perl.pl populates $extension_packages for us.
+        if (!$extension_packages) {
+            $extension_packages = Bugzilla::Extension->load_all();
+        }
         my @extensions;
         foreach my $package (@$extension_packages) {
             my $extension = $package->new();
@@ -753,6 +758,11 @@ sub memcached {
     } else {
         return $_[0]->request_cache->{memcached} ||= Bugzilla::Memcached->_new();
     }
+}
+
+sub elastic {
+    my ($class) = @_;
+    $class->process_cache->{elastic} //= Bugzilla::Elastic->new();
 }
 
 # Private methods

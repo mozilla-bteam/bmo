@@ -12,6 +12,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Template::PreloadProvider;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
@@ -46,6 +47,8 @@ use constant FORMAT_TRIPLE => '%19s|%-28s|%-28s';
 use constant FORMAT_3_SIZE => [19,28,28];
 use constant FORMAT_DOUBLE => '%19s %-55s';
 use constant FORMAT_2_SIZE => [19,55];
+
+my %SHARED_PROVIDERS;
 
 # Pseudo-constant.
 sub SAFE_URL_REGEXP {
@@ -383,28 +386,23 @@ sub mtime_filter {
 
 # Set up the skin CSS cascade:
 #
-#  1. standard/global.css
-#  2. YUI CSS
+#  1. YUI CSS
+#  2. standard/global.css
 #  3. Standard Bugzilla stylesheet set
 #  4. Third-party "skin" stylesheet set, per user prefs
 #  5. Inline css passed to global/header.html.tmpl
 #  6. Custom Bugzilla stylesheet set
 
 sub css_files {
-    my ($style_urls, $yui, $yui_css) = @_;
+    my ($style_urls, $no_yui) = @_;
 
     # global.css belongs on every page
     my @requested_css = ( 'skins/standard/global.css', @$style_urls );
 
-    my @yui_required_css;
-    foreach my $yui_name (@$yui) {
-        next if !$yui_css->{$yui_name};
-        push(@yui_required_css, "js/yui/assets/skins/sam/$yui_name.css");
-    }
-    unshift(@requested_css, @yui_required_css);
-    
+    unshift @requested_css, "skins/yui.css" unless $no_yui;
+
     my @css_sets = map { _css_link_set($_) } @requested_css;
-    
+
     my %by_type = (standard => [], skin => [], custom => []);
     foreach my $set (@css_sets) {
         foreach my $key (keys %$set) {
@@ -973,10 +971,12 @@ sub create {
 
         PLUGIN_BASE => 'Bugzilla::Template::Plugin',
 
-        CONSTANTS => _load_constants(),
-
         # Default variables for all templates
         VARIABLES => {
+            # Some of these are not really constants, and doing this messes up preloading.
+            # they are now fake constants.
+            constants => _load_constants(),
+
             # Function for retrieving global parameters.
             'Param' => sub { return Bugzilla->params->{$_[0]}; },
 
@@ -1115,12 +1115,18 @@ sub create {
             'is_mobile_browser' => sub { return Bugzilla->cgi->user_agent =~ /Mobi/ },
         },
     };
+
+    # under mod_perl, use a provider (template loader) that preloads all templates into memory
+    my $provider_class
+        = $ENV{MOD_PERL}
+        ? 'Bugzilla::Template::PreloadProvider'
+        : 'Template::Provider';
+
     # Use a per-process provider to cache compiled templates in memory across
     # requests.
     my $provider_key = join(':', @{ $config->{INCLUDE_PATH} });
-    my $shared_providers = Bugzilla->process_cache->{shared_providers} ||= {};
-    $shared_providers->{$provider_key} ||= Template::Provider->new($config);
-    $config->{LOAD_TEMPLATES} = [ $shared_providers->{$provider_key} ];
+    $SHARED_PROVIDERS{$provider_key} ||= $provider_class->new($config);
+    $config->{LOAD_TEMPLATES} = [ $SHARED_PROVIDERS{$provider_key} ];
 
     # BMO - use metrics subclass
     local $Template::Config::CONTEXT = Bugzilla->metrics_enabled()
@@ -1209,7 +1215,7 @@ sub precompile_templates {
     delete Bugzilla->request_cache->{template};
 
     # Clear out the cached Provider object
-    Bugzilla->process_cache->{shared_providers} = undef;
+    %SHARED_PROVIDERS = ();
 
     print install_string('done') . "\n" if $output;
 }
