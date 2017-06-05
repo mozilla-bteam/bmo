@@ -122,36 +122,36 @@ BMO_db_host
   The DNS name or IP address of the host that the database server runs on.
 
 BMO_db_name
-  The name of the database
+  The name of the database.
 
 BMO_db_user
   The database user to connect as.
 
 BMO_db_pass
-  The password for the user above
+  The password for the user above.
 
 BMO_site_wide_secret
   This secret key is used by your installation for the creation and
   validation of encrypted tokens. These tokens are used to implement
   security features in Bugzilla, to protect against certain types of attacks.
-  It's very important that this key
-  is kept secret. It also must be very long.
+  It's very important that this key is kept secret. 
 
 BMO_inbound_proxies
   This is a list of IP addresses that we expect proxies to come from.
   This can be '*' if only the load balancer can connect to this container.
+  Setting this to '*' means that BMO will trust the X-Forwarded-For header.
 
 BMO_memcached_namespace
-  The global namespace for the memcached server
+  The global namespace for the memcached servers.
 
 BMO_memcached_servers
-  A list of memcached servers (ip addresses or host names)
+  A list of memcached servers (ip addresses or host names). Can be empty.
  
 BMO_shadowdb
-  The database name of the read-only database
+  The database name of the read-only database.
 
 BMO_shadowdbhost
-  The hotname or ip address of the read-only database
+  The hotname or ip address of the read-only database.
 
 BMO_shadowdbport
    The port of the read-only database.
