@@ -143,44 +143,50 @@
 /* index page (end) */
 
 
-#enter_bug {
-    background: url(bugzilla-papericon.png) no-repeat;
-}
-#query {
-    background: url(bugzilla-magnifier.png) no-repeat;
-}
-#account {
-    background: url(bugzilla-person-alternate.png) no-repeat;
-    margin-right: 0;
-}
-#docs {
-    background: url(bugzilla-questionmark2.png) no-repeat !important;
-}
+    #enter_bug
+    {
+        background: url(bugzilla-papericon.png) no-repeat;
+    }
+    #query
+    {
+        background: url(bugzilla-magnifier.png) no-repeat;
+    }
+    #account
+    {
+        background: url(bugzilla-person-alternate.png) no-repeat;
+        margin-right: 0;
+    }
+    #docs
+    {
+        background: url(bugzilla-questionmark2.png) no-repeat !important;
+    }
 
 
 /* index.html.tmpl puts intro hook contents inside a div which causes
  * the icons to display over two rows when adding the Help icon.
  * So we change to inline to make it display a single row. */
-#page-index .intro { display: inline; }
+    #page-index .intro { display: inline; }
 
-#docs { background: url(../standard/index/help.png) no-repeat; }
+    #docs { background: url(../standard/index/help.png) no-repeat; }
 
-.bz_common_actions {
-    display: block;
-    height: 170px;
-    width: 145px;
-    float: left;
-    margin: 0 2ex 2em 0;
-    text-align: center;
-}
-.bz_common_actions span {
-    position: relative;
-    top: 95%;
-    font-weight: bold;
-}
-.bz_common_actions,
-.bz_common_actions:visited,
-.bz_common_actions:hover
-{
-    text-decoration: none;
-}
+    .bz_common_actions
+    {
+        display: block;
+        height: 170px;
+        width: 145px;
+        float: left;
+        margin: 0 2ex 2em 0;
+        text-align: center;
+    }
+    .bz_common_actions span
+    {
+        position: relative;
+        top: 95%;
+        font-weight: bold;
+    }
+    .bz_common_actions,
+    .bz_common_actions:visited,
+    .bz_common_actions:hover
+    {
+        text-decoration: none;
+    }
