@@ -141,12 +141,7 @@
         color: #ccc;
     }
 /* index page (end) */
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * This Source Code Form is "Incompatible With Secondary Licenses", as
- * defined by the Mozilla Public License, v. 2.0. */
+
 
 #enter_bug {
     background: url(bugzilla-papericon.png) no-repeat;
@@ -161,10 +156,7 @@
 #docs {
     background: url(bugzilla-questionmark2.png) no-repeat !important;
 }
-/*
- * Custom rules for index.css.
- * The rules you put here override rules in that stylesheet.
- */
+
 
 /* index.html.tmpl puts intro hook contents inside a div which causes
  * the icons to display over two rows when adding the Help icon.

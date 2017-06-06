@@ -41,7 +41,7 @@ body, td, th, input, select, option, optgroup, .text_input {
 }
 
 /* security group colouring */
-/* these are also defined in skins/custom/bug_groups.css */
+/* these are also defined in skins/standard/bug_groups.css */
 
 body[class*=bz_group_] {
     background-color: inherit;
