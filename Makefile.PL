@@ -130,7 +130,7 @@ my %optional_features = (
         description => 'Automatic Update Notifications',
         prereqs     => {
             runtime =>
-                { requires => { 'LWP::UserAgent' => 0, 'XML::Twig' => 0 } }
+                { requires => { 'XML::Twig' => 0 } }
         }
     },
     auth_radius => {
