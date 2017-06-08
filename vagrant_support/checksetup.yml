@@ -21,10 +21,10 @@
     group: vagrant
     mode: 0644
   when: LAZY == 0
-  
+
 - name: run checksetup
   become: false
-  shell: sg apache -c '/usr/local/bin/bmo-checksetup'
+  shell: sg apache -c '/usr/local/bin/bmo-checksetup --no-templates'
 
 - name: generate data
   become: false
