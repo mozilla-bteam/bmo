@@ -125,8 +125,14 @@
         url: http://cpanmin.us
         dest: /usr/local/bin/cpanm
         mode: '0755'
+
+    - name: fetch Apache2::SizeLimit archive
+      get_url:
+        url: http://www.cpan.org/authors/id/P/PH/PHRED/Apache-SizeLimit-0.96.tar.gz
+        dest: /Apache-SizeLimit-0.96.tar.gz
+
     - name: install more recent Apache2::SizeLimit
-      cpanm: name=Apache2::SizeLimit executable=/usr/local/bin/cpanm
+      cpanm: name=/Apache-SizeLimit-0.96.tar.gz executable=/usr/local/bin/cpanm
 
     - name: 'check /opt/bmo (failure is ok)'
       shell: test -d /opt/bmo && test -f /opt/bmo/local/lib/perl5/Plack.pm
