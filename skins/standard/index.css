@@ -19,7 +19,7 @@
     #page-index
     {
         padding: 0.2em 0.2em 0.15em 0.2em;
-        max-width: 1000px;
+        max-width: none;
     }
 
     /* By default these contain nothing, but these CSS rules make things

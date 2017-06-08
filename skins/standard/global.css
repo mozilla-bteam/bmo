@@ -1088,9 +1088,9 @@ hr {
 
 /* Home */
 
-#page-index {
+/*#page-index {
     max-width: none;
-}
+}*/
 
 #page-index td:first-child {
     text-align: center;
