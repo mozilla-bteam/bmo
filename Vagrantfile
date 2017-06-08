@@ -36,7 +36,7 @@ Vagrant.configure('2') do |config|
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
 
-  config.vm.provision 'main', type: 'ansible', run: 'always' do |ansible|
+  config.vm.provision 'main', type: 'ansible_local', run: 'always' do |ansible|
     ansible.playbook = 'vagrant_support/playbook.yml'
     ansible.extra_vars = {
       WEB_IP:            WEB_IP,
@@ -47,8 +47,10 @@ Vagrant.configure('2') do |config|
     }
   end
 
-  config.vm.provision 'update', type: 'ansible' do |update|
-    update.playbook = 'vagrant_support/update.yml'
+  if ARGV.include? '--provision-with'
+    config.vm.provision 'update', type: 'ansible_local', run: 'never' do |update|
+      update.playbook = 'vagrant_support/update.yml'
+    end
   end
 
   config.vm.define 'db' do |db|
