@@ -14,7 +14,8 @@
   [% PROCESS global/header.html.tmpl %]
   [% header_done = 1 %]
 [% END %]
-
+<p>Coming Soon!</p>
+<p>This is a demonstration of a reusable comment component</p>
 [%
     IF user.id;
       INCLUDE bug_modal/common_new_comment.html.tmpl;
@@ -28,6 +29,5 @@
     END;
   %]
 
-<p>Coming Soon!</p>
 
 [% PROCESS global/footer.html.tmpl %]
