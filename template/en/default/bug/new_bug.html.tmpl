@@ -7,12 +7,10 @@
 
 [% PROCESS global/variables.none.tmpl %]
 [% title = BLOCK %]Enter [% terms.Bug %] [% END %]
-[% IF !header_done %]
-  [% PROCESS bug_modal/common_header.html.tmpl 
+[% PROCESS bug_modal/common_header.html.tmpl 
     title = title
-  %]
-  [% PROCESS global/header.html.tmpl %]
-  [% header_done = 1 %]
+%]
+[% PROCESS global/header.html.tmpl %]
 [% END %]
 <p>Coming Soon!</p>
 <p>This is a demonstration of a reusable comment component</p>
