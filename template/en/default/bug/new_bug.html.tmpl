@@ -8,10 +8,9 @@
 [% PROCESS global/variables.none.tmpl %]
 [% title = BLOCK %]Enter [% terms.Bug %] [% END %]
 [% PROCESS bug_modal/common_header.html.tmpl 
-    title = title
+title = title
 %]
 [% PROCESS global/header.html.tmpl %]
-[% END %]
 <p>Coming Soon!</p>
 <p>This is a demonstration of a reusable comment component</p>
 [%
@@ -27,5 +26,6 @@
     END;
   %]
 
+<div style="display: none" id="xhr-error"></div>
 
 [% PROCESS global/footer.html.tmpl %]
