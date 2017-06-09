@@ -1035,7 +1035,7 @@ hr {
 }
 
 .links .dropdown .anchor {
-    background-image: url(dropdown.png);
+    background-image: url(../../images/dropdown.png);
     background-position: right center;
     background-repeat: no-repeat;
     display: inline-block;

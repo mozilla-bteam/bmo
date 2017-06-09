@@ -145,20 +145,20 @@
 
     #enter_bug
     {
-        background: url(bugzilla-papericon.png) no-repeat;
+        background: url(../../images/bugzilla-papericon.png) no-repeat;
     }
     #query
     {
-        background: url(bugzilla-magnifier.png) no-repeat;
+        background: url(../../images/bugzilla-magnifier.png) no-repeat;
     }
     #account
     {
-        background: url(bugzilla-person-alternate.png) no-repeat;
+        background: url(../../images/bugzilla-person-alternate.png) no-repeat;
         margin-right: 0;
     }
     #docs
     {
-        background: url(bugzilla-questionmark2.png) no-repeat !important;
+        background: url(../../images/bugzilla-questionmark2.png) no-repeat !important;
     }
 
 
