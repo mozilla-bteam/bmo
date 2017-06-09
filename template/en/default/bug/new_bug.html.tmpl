@@ -5,9 +5,8 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.%]
 
-[% title = BLOCK %]Enter [% terms.Bug %] [% END %]
-
 [% PROCESS global/variables.none.tmpl %]
+[% title = BLOCK %]Enter [% terms.Bug %] [% END %]
 [% IF !header_done %]
   [% PROCESS bug_modal/common_header.html.tmpl 
     title = title
