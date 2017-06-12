@@ -155,6 +155,10 @@
         background: url(../../images/bugzilla-questionmark2.png) no-repeat !important;
     }
 
+    #page-index .intro { display: inline; }
+
+    #docs { background: url(../standard/index/help.png) no-repeat; }
+
     .bz_common_actions
     {
         display: block;
