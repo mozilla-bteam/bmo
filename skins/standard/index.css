@@ -76,12 +76,6 @@
     .bz_common_actions a:hover {
         text-decoration: none;
     }
-    #enter_bug { background: url(index/file-a-bug.png)     no-repeat; }
-    #query     { background: url(index/search.png)  no-repeat; }
-    #account   {
-      background: url(index/new-account.png) no-repeat;
-      margin-right: 0;
-    }
 
     #quicksearchForm
     {
@@ -160,14 +154,6 @@
     {
         background: url(../../images/bugzilla-questionmark2.png) no-repeat !important;
     }
-
-
-/* index.html.tmpl puts intro hook contents inside a div which causes
- * the icons to display over two rows when adding the Help icon.
- * So we change to inline to make it display a single row. */
-    #page-index .intro { display: inline; }
-
-    #docs { background: url(../standard/index/help.png) no-repeat; }
 
     .bz_common_actions
     {
