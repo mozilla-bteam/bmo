@@ -39,8 +39,6 @@ sub install_update_db {
     print "Creating needinfo flag ... " . 
           "enable the Needinfo feature by editing the flag's properties.\n";
 
-    # Initially populate the list of exclusions as __Any__:__Any__ to
-    # allow admin to decide which products to enable the flag for.
     my $flagtype = Bugzilla::FlagType->create({
         name        => 'needinfo',
         description => "Set this flag when the bug is in need of additional information",
@@ -53,8 +51,8 @@ sub install_update_db {
         is_multiplicable => 0,
         request_group    => '',
         grant_group      => '',
-        inclusions       => [],
-        exclusions       => ['0:0'],
+        inclusions       => ['0:0'],
+        exclusions       => [],
     });
 }
 
