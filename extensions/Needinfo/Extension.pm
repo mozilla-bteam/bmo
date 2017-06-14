@@ -39,6 +39,8 @@ sub install_update_db {
     print "Creating needinfo flag ... " . 
           "enable the Needinfo feature by editing the flag's properties.\n";
 
+    # inclusions 0:0 maps to __ANY__ : __ANY__ in the UI,
+    # meaning needinfo is enabled for all products and components by default
     my $flagtype = Bugzilla::FlagType->create({
         name        => 'needinfo',
         description => "Set this flag when the bug is in need of additional information",
