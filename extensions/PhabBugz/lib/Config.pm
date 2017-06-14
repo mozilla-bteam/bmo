@@ -20,6 +20,11 @@ sub get_param_list {
 
     my @params = (
         {
+            name    => 'phabricator_enabled',
+            type    => 'b',
+            default => 0
+        },
+        {
             name    => 'phabricator_base_uri',
             type    => 't',
             default => '',
@@ -35,6 +40,26 @@ sub get_param_list {
             type => 't',
             default => '',
         },
+        {
+            name    => 'phabricator_auth_callback_url',
+            type    => 't',
+            default => '',
+            checker => sub {
+                my ($url) = (@_);
+                return 'must be an HTTP/HTTPS absolute URL' unless $url =~ m{^https?://};
+                return '';
+            }
+        },
+        {
+            name => 'phabricator_app_id',
+            type => 't',
+            default => '',
+            checker => sub {
+                my ($app_id) = (@_);
+                return 'must be a hex number' unless $app_id =~ /^[[:xdigit:]]+$/;
+                return '';
+            }
+        }
     );
 
     return @params;

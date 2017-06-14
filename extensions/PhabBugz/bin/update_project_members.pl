@@ -27,6 +27,10 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my ($phab_uri, $phab_api_key, $phab_sync_groups, $ua);
 
+if (!Bugzilla->params->{phabricator_enabled}) {
+    exit;
+}
+
 # Sanity checks
 unless ($phab_uri = Bugzilla->params->{phabricator_base_uri}) {
     ThrowUserError('invalid_phabricator_uri');
@@ -61,7 +65,10 @@ foreach my $group (@$sync_groups) {
     }
 
     # Get the internal user ids for the bugzilla group members
-    my $phab_user_ids = get_phab_members_by_bmo_id(\@users);
+    my $phab_user_ids = [];
+    if (@users) {
+        $phab_user_ids = get_phab_members_by_bmo_id(\@users);
+    }
 
     # Set the project members to the exact list
     set_phab_project_members($project_id, $phab_user_ids);

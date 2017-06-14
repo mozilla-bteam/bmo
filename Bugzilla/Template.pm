@@ -971,6 +971,9 @@ sub create {
 
         PLUGIN_BASE => 'Bugzilla::Template::Plugin',
 
+        # We don't want this feature.
+        CONSTANT_NAMESPACE => '__const',
+
         # Default variables for all templates
         VARIABLES => {
             # Some of these are not really constants, and doing this messes up preloading.
@@ -979,6 +982,21 @@ sub create {
 
             # Function for retrieving global parameters.
             'Param' => sub { return Bugzilla->params->{$_[0]}; },
+
+            'bugzilla_version' => sub {
+                my $version = Bugzilla->VERSION;
+                if (my @ver = $version =~ /^(\d{4})(\d{2})(\d{2})\.(\d+)$/s) {
+                    if ($ver[3] eq '1') {
+                        return join('.', @ver[0,1,2]);
+                    }
+                    else {
+                        return join('.', @ver);
+                    }
+                }
+                else {
+                    return $version;
+                }
+            },
 
             json_encode => sub {
                 return encode_json($_[0]);
