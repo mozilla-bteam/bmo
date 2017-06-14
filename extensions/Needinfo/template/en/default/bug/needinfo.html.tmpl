@@ -92,13 +92,11 @@ $(function() {
       $('#needinfo_from_container').removeClass('bz_default_hidden');
       $('#needinfo_from').prop('disabled', false);
       $('#needinfo_role_identity').text('');
-      $('needinfo_from_textfield').prop('required', true);
     } else {
       $('#needinfo_from_container').addClass('bz_default_hidden');
       $('#needinfo_from').prop('disabled', true);
       var identity = $("#needinfo_role :selected").data("identity");
       $('#needinfo_role_identity').text(identity);
-      $('needinfo_from_textfield').prop('required', false);
     }
   }
 
