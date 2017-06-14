@@ -94,10 +94,11 @@ sub products {
 sub components {
     my ($self, $params) = @_;
     my $product = Bugzilla::Product->check({ name => $params->{product_name}, cache => 1 });
-    my $components = _name($product->components);
-    my %options;
-    $options{component} = $components;
-    return \%options;
+    
+    my @components = map { { name => $_->name } } @{ $product->components };
+    return {
+        components     => \@components,
+    };
 }
 
 # everything we need for edit mode in a single call, returning just the fields
