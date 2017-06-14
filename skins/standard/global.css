@@ -721,7 +721,7 @@ input.required, select.required, span.required_explanation {
 }
 
 .autocomplete-running {
-    background-image: url("throbber.gif") !important;
+    background-image: url(../../images/throbber.gif) !important;
     background-repeat: no-repeat !important;
     background-position: right 8px center !important;
 }
