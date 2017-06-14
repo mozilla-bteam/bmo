@@ -27,6 +27,25 @@ use List::MoreUtils qw(any first_value);
 
 sub rest_resources {
     return [
+        # return all the products accessible by the user.
+        # required by new-bug
+        qr{^/bug_modal/products}, {
+            GET => {
+                method => 'products'
+            },
+        },
+
+        # return all the components pertaining to the product.
+        # required by new-bug
+        qr{^/bug_modal/components}, {
+            GET => {
+                method => 'components',
+                params => sub {
+                    return { product_name => Bugzilla->input_params->{product} }
+                },
+            },
+        },
+
         # return all the lazy-loaded data; kept in sync with the UI's
         # requirements.
         qr{^/bug_modal/edit/(\d+)$}, {
@@ -60,6 +79,25 @@ sub rest_resources {
             },
         },
     ]
+}
+
+sub products {
+    my $user = Bugzilla->user;
+    my @products = @{ $user->get_enterable_products };
+
+    @products = map { { name => $_->name } } @products;
+    return {
+        products     => \@products,
+    };
+}
+
+sub components {
+    my ($self, $params) = @_;
+    my $product = Bugzilla::Product->check({ name => $params->{product_name}, cache => 1 });
+    my $components = _name($product->components);
+    my %options;
+    $options{component} = $components;
+    return \%options;
 }
 
 # everything we need for edit mode in a single call, returning just the fields
