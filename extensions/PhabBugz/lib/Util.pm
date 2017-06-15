@@ -238,28 +238,28 @@ sub get_members_by_bmo_id {
 
 sub request {
     my ($method, $data) = @_;
+    my $request_cache = Bugzilla->request_cache;
+    my $params        = Bugzilla->params;
 
-    my $phab_api_key  = Bugzilla->params->{phabricator_api_key};
-    my $phab_base_uri = Bugzilla->params->{phabricator_base_uri};
-    ThrowUserError('invalid_phabricator_uri') unless $phab_base_uri;
-    ThrowUserError('invalid_phabricator_api_key') unless $phab_api_key;
-
-    state $ua = do {
-        my $ua = LWP::UserAgent->new(timeout => 10);
-        if (Bugzilla->params->{proxy_url}) {
-            $ua->proxy('https', Bugzilla->params->{proxy_url});
+    my $ua = $request_cache->{phabricato_ua};
+    unless ($ua) {
+        $ua = $request_cache->{phabricator_ua} = LWP::UserAgent->new(timeout => 10);
+        if ($params->{proxy_url}) {
+            $ua->proxy('https', $params->{proxy_url});
         }
         $ua->default_header('Content-Type' => 'application/x-www-form-urlencoded');
-        $ua;
-    };
+    }
+
+    my $phab_api_key  = $params->{phabricator_api_key};
+    my $phab_base_uri = $params->{phabricator_base_uri};
+    ThrowUserError('invalid_phabricator_uri') unless $phab_base_uri;
+    ThrowUserError('invalid_phabricator_api_key') unless $phab_api_key;
 
     my $full_uri = $phab_base_uri . '/api/' . $method;
 
     $data->{__conduit__} = { token => $phab_api_key };
 
-    my $response = eval {
-        $ua->post($full_uri, { params => encode_json($data) });
-    };
+    my $response = $ua->post($full_uri, { params => encode_json($data) });
 
     ThrowCodeError('phabricator_api_error', { reason => $response->message })
         if $response->is_error;
@@ -270,6 +270,7 @@ sub request {
                        { code   => $result->{error_code},
                          reason => $result->{error_info} });
     }
+
     return $result;
 }
 
