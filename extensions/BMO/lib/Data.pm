@@ -42,7 +42,11 @@ my $mozreview_url_re = qr{
     $
 }ix;
 
-my $phabricator_uri = Bugzilla->params->{phabricator_base_uri} || 'https://example.com';
+sub phabricator_uri {
+    return Bugzilla->params->{phabricator_base_uri} || 'https://example.com';
+}
+
+my $phabricator_uri = phabricator_uri();
 
 our %autodetect_attach_urls = (
     github_pr => {
@@ -59,7 +63,7 @@ our %autodetect_attach_urls = (
     },
     Phabricator => {
         title        => 'Phabricator',
-        regex        => qr#${phabricator_uri}D\d+$#i,
+        regex        => qr#^${phabricator_uri}D\d+$#i,
         content_type => 'text/x-phabricator-request',
         can_review   => 1,
     },
