@@ -93,7 +93,7 @@ sub components {
         untaint($params->{product_name});
     }
     else {
-        ThrowUserError('params_required',{ function => 'BugModal.components', params => ['product'] });
+        ThrowCodeError('params_required',{ function => 'BugModal.components', params => ['product'] });
     }
     my $product = Bugzilla::Product->check({ name => $params->{product_name}, cache => 1 });
     $product = Bugzilla->user->can_enter_product($product, 1);
