@@ -22,6 +22,7 @@ use Bugzilla::Milestone;
 use Bugzilla::Product;
 use Bugzilla::Version;
 use List::MoreUtils qw(any first_value);
+use Taint::Util qw(untaint);
 
 # these methods are much lighter than our public API calls
 
@@ -83,22 +84,20 @@ sub rest_resources {
 
 sub products {
     my $user = Bugzilla->user;
-    my @products = @{ $user->get_enterable_products };
-
-    @products = map { { name => $_->name } } @products;
-    return {
-        products     => \@products,
-    };
+    return { products => _name($user->get_enterable_products) }
 }
 
 sub components {
     my ($self, $params) = @_;
+    if (!ref $params->{product_name}) {
+        untaint($params->{product_name});
+    }
+    else {
+        ThrowUserError('params_required',{ function => 'BugModal.components', params => ['product'] });
+    }
     my $product = Bugzilla::Product->check({ name => $params->{product_name}, cache => 1 });
-    
-    my @components = map { { name => $_->name } } @{ $product->components };
-    return {
-        components     => \@components,
-    };
+    $product = Bugzilla->user->can_enter_product($product, 1);
+    return { components => _name($product->components) }
 }
 
 # everything we need for edit mode in a single call, returning just the fields
