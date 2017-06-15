@@ -40,7 +40,10 @@ our @EXPORT_OK = qw(
 
 sub _sensible_group {
     return '' if ON_WINDOWS;
-    return scalar getgrgid($EGID);
+    my @groups     = qw( apache www-data _www );
+    my $sensible_group = first { return getgrnam($_) } @groups;
+
+    return $sensible_group // getgrgid($EGID) // '';
 }
 
 use constant LOCALCONFIG_VARS => (
@@ -50,7 +53,7 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'webservergroup',
-        default => \&_sensible_group,
+        default => ON_WINDOWS ? '' : 'apache',
     },
     {
         name    => 'use_suexec',
@@ -294,7 +297,7 @@ sub update_localconfig {
         print colored(install_string('lc_new_vars', { localconfig => $filename,
                                                       new_vars => wrap_hard($newstuff, 70) }),
                       COLOR_ERROR), "\n";
-        exit unless $params->{use_defaults};
+        exit;
     }
 
     # Reset the cache for Bugzilla->localconfig so that it will be re-read
