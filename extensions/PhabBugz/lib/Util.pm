@@ -20,21 +20,81 @@ use LWP::UserAgent;
 use base qw(Exporter);
 
 our @EXPORT = qw(
+    create_revision_attachment
     create_private_revision_policy
     create_project
     edit_revision_policy
+    get_bug_role_phids
     get_members_by_bmo_id
     get_project_phid
+    get_revision_by_id
     intersect
     make_revision_public
     request
     set_project_members
 );
 
+sub get_revision_by_id {
+    my $id = shift;
+
+    my $data = {
+        queryKey => 'all',
+        constraints => {
+            ids => [ int($id) ]
+        }
+    };
+
+    my $result = request('differential.revision.search', $data);
+
+    ThrowUserError('invalid_phabricator_revision_id')
+        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
+
+    return $result->{result}{data}[0];
+}
+
+sub create_revision_attachment {
+    my ($bug, $revision_id, $revision_title) = @_;
+
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction;
+
+    my ($timestamp) = $dbh->selectrow_array("SELECT NOW()");
+
+    my $attachment = Bugzilla::Attachment->create({
+        bug           => $bug,
+        creation_ts   => $timestamp,
+        data          => 'http://phabricator.test/D' . $revision_id,
+        description   => $revision_title,
+        filename      => 'phabricator-D' . $revision_id . '-url.txt',
+        ispatch       => 0,
+        isprivate     => 0,
+        mimetype      => 'text/x-phabricator-request',
+    });
+
+    $bug->update($timestamp);
+    $attachment->update($timestamp);
+
+    $dbh->bz_commit_transaction;
+
+    return $attachment;
+}
+
 sub intersect {
     my ($list1, $list2) = @_;
     my %e = map { $_ => undef } @{$list1};
     return grep { exists( $e{$_} ) } @{$list2};
+}
+
+sub get_bug_role_phids {
+    my ($bug) = @_;
+
+    my @bug_users = ( $bug->reporter );
+    push(@bug_users, $bug->assigned_to)
+        if !$bug->assigned_to->email !~ /^nobody\@mozilla\.org$/;
+    push(@bug_users, $bug->qa_contact) if $bug->qa_contact;
+    push(@bug_users, @{ $bug->cc_users }) if @{ $bug->cc_users };
+
+    return get_members_by_bmo_id(\@bug_users);
 }
 
 sub create_private_revision_policy {
@@ -46,9 +106,7 @@ sub create_private_revision_policy {
         push(@$project_phids, $phid) if $phid;
     }
 
-    @$project_phids
-        || ThrowUserError('invalid_phabricator_sync_groups');
-    my $user_phids = []; #FIXME
+    ThrowUserError('invalid_phabricator_sync_groups') unless @$project_phids;
 
     my $data = {
         objectType => 'DREV',
@@ -59,11 +117,10 @@ sub create_private_revision_policy {
                 rule   => 'PhabricatorProjectsPolicyRule',
                 value  => $project_phids,
             },
-#            {
-#                action => 'allow',
-#                rule   => 'PhabricatorUsersPolicyRule',
-#                value  => $user_phids,
-#            }
+            {
+                action => 'allow',
+                rule   => 'PhabricatorSubscriptionsSubscribersPolicyRule',
+            }
         ]
     };
 
@@ -85,17 +142,28 @@ sub make_revision_public {
 }
 
 sub edit_revision_policy {
-    my ($revision_phid, $policy_phid) = @_;
+    my ($revision_phid, $policy_phid, $subscribers) = @_;
 
     my $data = {
         transactions => [
             {
                 type  => 'view',
                 value => $policy_phid
+            },
+            {
+                type  => 'edit',
+                value => $policy_phid
             }
         ],
         objectIdentifier => $revision_phid
     };
+
+    if (@$subscribers) {
+        push(@{ $data->{transactions} }, {
+            type  => 'subscribers.add',
+            value => $subscribers
+        });
+    }
 
     return request('differential.revision.edit', $data);
 }
@@ -104,16 +172,16 @@ sub get_project_phid {
     my $project = shift;
 
     my $data = {
-        queryKey => 'active',
+        queryKey => 'all',
         constraints => {
             name => $project
         }
     };
 
     my $result = request('project.search', $data);
-    if (!$result->{result}{data}) {
-        return undef;
-    }
+    return undef 
+        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
+
     return $result->{result}{data}[0]{phid};
 }
 
@@ -158,14 +226,13 @@ sub get_members_by_bmo_id {
     };
 
     my $result = request('bmoexternalaccount.search', $data);
-    if (!$result->{result}) {
-        return [];
-    }
+    return [] if (!$result->{result});
 
     my @phab_ids;
     foreach my $user (@{ $result->{result} }) {
         push(@phab_ids, $user->{phid});
     }
+
     return \@phab_ids;
 }
 
@@ -174,18 +241,17 @@ sub request {
 
     my $phab_api_key  = Bugzilla->params->{phabricator_api_key};
     my $phab_base_uri = Bugzilla->params->{phabricator_base_uri};
-    $phab_base_uri || ThrowUserError('invalid_phabricator_uri');
-    $phab_api_key  || ThrowUserError('invalid_phabricator_api_key');
+    ThrowUserError('invalid_phabricator_uri') unless $phab_base_uri;
+    ThrowUserError('invalid_phabricator_api_key') unless $phab_api_key;
 
-    state $ua;
-
-    if (!$ua) {
-        $ua = LWP::UserAgent->new(timeout => 10);
+    state $ua = do {
+        my $ua = LWP::UserAgent->new(timeout => 10);
         if (Bugzilla->params->{proxy_url}) {
             $ua->proxy('https', Bugzilla->params->{proxy_url});
         }
         $ua->default_header('Content-Type' => 'application/x-www-form-urlencoded');
-    }
+        $ua;
+    };
 
     my $full_uri = $phab_base_uri . '/api/' . $method;
 
@@ -195,9 +261,8 @@ sub request {
         $ua->post($full_uri, { params => encode_json($data) });
     };
 
-    $response->is_error
-        && ThrowCodeError('phabricator_api_error',
-                          { reason => $response->message });
+    ThrowCodeError('phabricator_api_error', { reason => $response->message })
+        if $response->is_error;
 
     my $result = decode_json($response->content);
     if ($result->{error_code}) {

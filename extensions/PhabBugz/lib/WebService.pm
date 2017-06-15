@@ -22,9 +22,12 @@ use Bugzilla::Util qw(correct_urlbase detaint_natural);
 use Bugzilla::WebService::Constants;
 
 use Bugzilla::Extension::PhabBugz::Util qw(
+    create_revision_attachment
     create_private_revision_policy
     edit_revision_policy
+    get_bug_role_phids
     get_project_phid
+    get_revision_by_id
     intersect
     make_revision_public
     request
@@ -39,24 +42,16 @@ use constant PUBLIC_METHODS => qw(
 sub revision {
     my ($self, $params) = @_;
 
-    (defined $params->{revision} && detaint_natural($params->{revision}))
-        || ThrowCodeError('param_required', { param => 'revision' });
+    unless (defined $params->{revision} && detaint_natural($params->{revision})) {
+        ThrowCodeError('param_required', { param => 'revision' })
+    }
 
     my $user = Bugzilla->set_user(Bugzilla::User->new({ name => 'conduit@mozilla.bugs' }));
 
     # Obtain more information about the revision from Phabricator
     my $revision_id = $params->{revision};
-    my $result = request('differential.revision.search', {
-        queryKey => 'active',
-        constraints => {
-            ids => [ int($revision_id) ]
-        }
-    });
+    my $revision = get_revision_by_id($revision_id);
 
-    (exists $result->{result}{data} && @{ $result->{result}{data} })
-        || ThrowUserError('invalid_phabricator_revision_id');
-
-    my $revision       = $result->{result}{data}[0];
     my $revision_phid  = $revision->{phid};
     my $revision_title = $revision->{fields}{title} || 'Unknown Description';
     my $bug_id         = $revision->{fields}{'bugzilla.bug-id'};
@@ -64,6 +59,7 @@ sub revision {
     my $bug = Bugzilla::Bug->check($bug_id);
 
     # If bug is public then remove privacy policy
+    my $result;
     if (!@{ $bug->groups_in }) {
         $result = make_revision_public($revision_id);
     }
@@ -84,31 +80,12 @@ sub revision {
             ThrowUserError('invalid_phabricator_sync_groups');
         }
 
-        my $view_policy_phid = create_private_revision_policy($bug, \@set_groups);
-        $result = edit_revision_policy($revision_phid, $view_policy_phid);
+        my $policy_phid = create_private_revision_policy($bug, \@set_groups);
+        my $subscribers = get_bug_role_phids($bug);
+        $result = edit_revision_policy($revision_phid, $policy_phid, $subscribers);
     }
 
-    # Create attachment
-    my $dbh = Bugzilla->dbh;
-    $dbh->bz_start_transaction;
-
-    my ($timestamp) = $dbh->selectrow_array("SELECT NOW()");
-
-    my $attachment = Bugzilla::Attachment->create({
-        bug           => $bug,
-        creation_ts   => $timestamp,
-        data          => 'http://phabricator.test/D' . $revision_id,
-        description   => $revision_title,
-        filename      => 'phabricator-D' . $revision_id . '-url.txt',
-        ispatch       => 0,
-        isprivate     => 0,
-        mimetype      => 'text/x-phabricator-request',
-    });
-
-    $bug->update($timestamp);
-    $attachment->update($timestamp);
-
-    $dbh->bz_commit_transaction;
+    my $attachment = create_revision_attachment($bug, $revision_id, $revision_title);
 
     Bugzilla::BugMail::Send($bug_id, { changer => $user });
 

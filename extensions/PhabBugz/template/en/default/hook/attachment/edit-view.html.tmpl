@@ -7,10 +7,11 @@
   #%]
 
 [%
-  RETURN UNLESS attachment.mimetype == "text/x-phabricator-request" && attachment.external_redirect;
+  IF attachment.mimetype == "text/x-phabricator-request" && attachment.external_redirect;
   custom_attachment_viewer = 1;
   url = attachment.data;
 %]
-<h3>
-  <a href="[% url FILTER html %]" title="[% url FILTER html %]">Show review on Phabricator</a><br>
-</h3>
+  <h3>
+    <a href="[% url FILTER html %]" title="[% url FILTER html %]">Show review on Phabricator</a><br>
+  </h3>
+[% END %]
