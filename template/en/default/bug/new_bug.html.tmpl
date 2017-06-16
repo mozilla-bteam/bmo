@@ -108,7 +108,20 @@ javascript_urls = ['extensions/BugModal/web/new_bug.js']
         </div>
       </span>
     [% END %]
-
+  [% END %]
+  [% WRAPPER fields_rhs %]
+  <td colspan="2" id="comp_desc_container">
+    <table>
+        <tr>
+          <td>
+            <fieldset>
+              <legend>Component Description</legend>
+              <div id="comp_desc" class="comment">Select a component to read its description.</div>
+            </fieldset>
+          </td>
+        </tr>
+      </table>
+    </td>
   [% END %]
 [% END %]
 
@@ -116,6 +129,9 @@ javascript_urls = ['extensions/BugModal/web/new_bug.js']
   <div class="fields-lhs">[% content FILTER none %]</div>
 [% END %]
 
+[% BLOCK fields_rhs %]
+  <div class="fields-rhs">[% content FILTER none %]</div>
+[% END %]
 
 [%
     IF user.id;
