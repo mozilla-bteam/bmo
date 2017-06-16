@@ -18,7 +18,7 @@ javascript_urls = ['extensions/BugModal/web/new_bug.js']
 [% WRAPPER bug_modal/module.html.tmpl
     title = ""
 %]
-  <div id="summary-container">
+    <div id="summary-container">
     [%# summary %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.short_desc
@@ -27,7 +27,13 @@ javascript_urls = ['extensions/BugModal/web/new_bug.js']
         editable = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#short_desc"
     %]
-</div>
+    
+  </div>
+  <div id="mode-container">
+    <div id="user-guide">
+      <a title="User guide for [% terms.Bugzilla %]" href="#">Get help with this page</a>
+    </div>
+  </div>
 [%END%]
 
 
