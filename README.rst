@@ -58,8 +58,8 @@ After editing files in the bmo directory, you will need to run
 
     vagrant rsync && vagrant provision --provision-with update
 
-to see the changes applied to your vagrant VM. If db is changed, do a full
-provision:
+to see the changes applied to your vagrant VM. If the above command fails 
+or db is changed, do a full provision:
 
 .. code-block:: bash
 
