@@ -56,7 +56,7 @@ After editing files in the bmo directory, you will need to run
 
 .. code-block:: bash
 
-    vagrant rsync && vagrant provision web
+    vagrant rsync && vagrant provision --provision-with update
 
 to see the changes applied to your vagrant VM.
 
