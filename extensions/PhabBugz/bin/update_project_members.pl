@@ -11,7 +11,15 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5);
+use File::Basename;
+use File::Spec;
+
+BEGIN {
+    require lib;
+    my $dir = File::Spec->rel2abs(File::Spec->catdir(dirname(__FILE__), "..", "..", ".."));
+    lib->import($dir, File::Spec->catdir($dir, "lib"), File::Spec->catdir($dir, qw(local lib perl5)));
+    chdir($dir);
+}
 
 use Bugzilla;
 BEGIN { Bugzilla->extensions() }
