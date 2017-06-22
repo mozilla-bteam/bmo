@@ -24,8 +24,7 @@
 %]
 
 [% rate_limit_rules_desc = BLOCK %]
-This parameter is a json object that allows for overriding the default rate limit.
-Each key takes an array in the form of [MAX_RATE, SECONDS] where MAX_RATE is the maximum
+This parameter is a json object. It has one or more valid keys, whose values are each of an array [MAX_RATE, SECONDS]. MAX_RATE is the maximum
 number of requests that can occur over SECONDS. The default is [75, 60] or 75 requests
 over 60 seconds. Valid keys are <code>get_b[%''%]ug</code> which covers JSONRPC, XMLRPC, REST and BZAPI single
 [% terms.bug %] access methods, and <code>show_b[%''%]ug</code> which controls show [% terms.bug %]

@@ -81,3 +81,7 @@ sub check_rate_limit_rules {
 }
 
 1;
+
+foreach my $required (qw( show_bug get_bug )) {
+    return "missing $required" unless exists $val->{$required};
+}
