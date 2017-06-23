@@ -1,4 +1,8 @@
 /**/.htaccess
+/skins/yui.css
+/skins/yui3.css
+/js/yui.js
+/js/yui3.js
 /lib/*
 /local/*
 /template/en/custom
@@ -10,6 +14,7 @@
 /skins/custom
 /graphs
 /data
+/assets
 /localconfig
 /localconfig.*
 /index.html

@@ -20,9 +20,12 @@ BEGIN {
     }
 }
 
+our $VERSION = '20170613.1';
+
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
 use Bugzilla::CGI;
+use Bugzilla::Elastic;
 use Bugzilla::Config;
 use Bugzilla::Constants;
 use Bugzilla::DB;
@@ -33,6 +36,7 @@ use Bugzilla::Flag;
 use Bugzilla::Hook;
 use Bugzilla::Install::Localconfig qw(read_localconfig);
 use Bugzilla::Install::Util qw(init_console include_languages);
+use Bugzilla::Install::AssetManager;
 use Bugzilla::Memcached;
 use Bugzilla::Template;
 use Bugzilla::Token;
@@ -252,6 +256,11 @@ sub extensions {
         $cache->{extensions} = \@extensions;
     }
     return $cache->{extensions};
+}
+
+sub asset_manager {
+    state $asset_manager = Bugzilla::Install::AssetManager->new;
+    return $asset_manager;
 }
 
 sub cgi {
@@ -710,7 +719,11 @@ sub audit {
 use constant request_cache => Bugzilla::Install::Util::_cache();
 
 sub clear_request_cache {
-    %{ request_cache() } = ();
+    my ($class, %option) = @_;
+    my $request_cache = request_cache();
+    my @except        = $option{except} ? @{ $option{except} } : ();
+
+    %{ $request_cache } = map { $_ => $request_cache->{$_} } @except;
 }
 
 # This is a per-process cache.  Under mod_cgi it's identical to the
@@ -753,6 +766,11 @@ sub memcached {
     } else {
         return $_[0]->request_cache->{memcached} ||= Bugzilla::Memcached->_new();
     }
+}
+
+sub elastic {
+    my ($class) = @_;
+    $class->process_cache->{elastic} //= Bugzilla::Elastic->new();
 }
 
 # Private methods

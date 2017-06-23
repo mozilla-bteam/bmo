@@ -2,27 +2,6 @@
 <FilesMatch (\.pm|\.pl|\.tmpl|\.swf|localconfig.*|cpanfile)$>
   deny from all
 </FilesMatch>
-<IfModule mod_expires.c>
-<IfModule mod_headers.c>
-<IfModule mod_env.c>
-  <FilesMatch (\.js|\.css)$>
-    ExpiresActive On
-    # According to RFC 2616, "1 year in the future" means "never expire".
-    # We change the name of the file's URL whenever its modification date
-    # changes, so browsers can cache any individual JS or CSS URL forever.
-    # However, since all JS and CSS URLs involve a ? in them (for the changing
-    # name) we have to explicitly set an Expires header or browsers won't
-    # *ever* cache them.
-    ExpiresDefault "now plus 1 years"
-    Header append Cache-Control "public"
-  </FilesMatch>
-
-  # This lets Bugzilla know that we are properly sending Cache-Control
-  # and Expires headers for CSS and JS files.
-  SetEnv BZ_CACHE_CONTROL 1
-</IfModule>
-</IfModule>
-</IfModule>
 
 # Allow ZeroClipboard for access to the clipboard
 <Files "ZeroClipboard.swf">
@@ -57,6 +36,9 @@ RewriteRule ^__version__$ version.json [L]
 # heartbeat.cgi returns 200 if the DB and memcached are both working, and 500 otherwise.
 RewriteRule ^__heartbeat__$ heartbeat.cgi [L]
 
+# New single page interface for filing bugs
+RewriteRule ^new[-_]bug$ new_bug.cgi [L,QSA]
+
 RewriteRule ^template_cache/ - [F,L,NC]
 RewriteRule ^template_cache.deleteme/ - [F,L,NC]
 RewriteRule ^review(.*) page.cgi?id=splinter.html$1 [QSA]
@@ -83,7 +65,6 @@ RewriteRule ^form[\.:]docs?$ enter_bug.cgi?product=Developer+Documentation&forma
 RewriteRule ^form[\.:]mdn?$ enter_bug.cgi?product=Mozilla+Developer+Network&format=mdn [QSA]
 RewriteRule ^form[\.:](swag|gear)$ enter_bug.cgi?product=Marketing&format=swag [QSA]
 RewriteRule ^form[\.:]costume$ enter_bug.cgi?product=Marketing&format=costume [QSA]
-RewriteRule ^form[\.:](b2g|fxos)[\.\-:](partner|betaprogram|feature) enter_bug.cgi?product=Firefox+OS&format=fxos-$2 [QSA]
 RewriteRule ^form[\.:]ipp$ enter_bug.cgi?product=Internet+Public+Policy&format=ipp [QSA]
 RewriteRule ^form[\.:]creative$ enter_bug.cgi?product=Marketing&format=creative [QSA]
 RewriteRule ^form[\.:]user[\.\-:]engagement$ enter_bug.cgi?product=Marketing&format=user-engagement [QSA]
@@ -92,7 +73,6 @@ RewriteRule ^form[\.:]mobile[\.\-:]compat$ enter_bug.cgi?product=Tech+Evangelism
 RewriteRule ^form[\.:]web[\.:]bounty$ enter_bug.cgi?product=mozilla.org&format=web-bounty  [QSA]
 RewriteRule ^form[\.:]automative$ enter_bug.cgi?product=Testing&format=automative [QSA]
 RewriteRule ^form[\.:]fxos[\.\-:]preload[\.\-:]app$ enter_bug.cgi?product=Marketplace&format=fxos-preload-app [QSA]
-RewriteRule ^form[\.:]fxos[\.\-:]mcts[\.\-:]waiver$ enter_bug.cgi?product=Firefox+OS&format=fxos-mcts-waiver [QSA]
 RewriteRule ^form[\.:]comm[\.:]newsletter$ enter_bug.cgi?product=Marketing&format=comm-newsletter [QSA]
 RewriteRule ^form[\.:]screen[\.:]share[\.:]whitelist$ enter_bug.cgi?product=Firefox&format=screen-share-whitelist [QSA]
 RewriteRule ^form[\.:]data[\.\-:]compliance$ enter_bug.cgi?product=Data+Compliance&format=data-compliance [QSA]

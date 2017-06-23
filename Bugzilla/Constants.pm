@@ -26,8 +26,6 @@ use Memoize;
 
     bz_locations
 
-    CONCATENATE_ASSETS
-
     IS_NULL
     NOT_NULL
 
@@ -83,19 +81,19 @@ use Memoize;
     CMT_ATTACHMENT_UPDATED
 
     THROW_ERROR
-    
+
     RELATIONSHIPS
     REL_ASSIGNEE REL_QA REL_REPORTER REL_CC REL_GLOBAL_WATCHER
     REL_ANY
-    
+
     POS_EVENTS
     EVT_OTHER EVT_ADDED_REMOVED EVT_COMMENT EVT_ATTACHMENT EVT_ATTACHMENT_DATA
     EVT_PROJ_MANAGEMENT EVT_OPENED_CLOSED EVT_KEYWORD EVT_CC EVT_DEPEND_BLOCK
     EVT_BUG_CREATED EVT_COMPONENT
 
     NEG_EVENTS
-    EVT_UNCONFIRMED EVT_CHANGED_BY_ME 
-        
+    EVT_UNCONFIRMED EVT_CHANGED_BY_ME
+
     GLOBAL_EVENTS
     EVT_FLAG_REQUESTED EVT_REQUESTED_FLAG
 
@@ -119,7 +117,7 @@ use Memoize;
     FIELD_TYPE_EXTENSION
 
     FIELD_TYPE_HIGHEST_PLUS_ONE
-    
+
     EMPTY_DATETIME_REGEX
 
     ABNORMAL_SELECTS
@@ -180,7 +178,7 @@ use Memoize;
 
     PASSWORD_DIGEST_ALGORITHM
     PASSWORD_SALT_LENGTH
-    
+
     CGI_URI_LIMIT
 
     PRIVILEGES_REQUIRED_NONE
@@ -208,7 +206,7 @@ use Memoize;
 sub BUGZILLA_VERSION {
     my $bugzilla_version = '4.2';
     eval { require Bugzilla } || return $bugzilla_version;
-    return Bugzilla->params->{bugzilla_version} || $bugzilla_version;
+    eval { Bugzilla->VERSION } || $bugzilla_version;
 }
 
 # A base link to the current REST Documentation. We place it here
@@ -218,11 +216,6 @@ use constant REST_DOC => "http://www.bugzilla.org/docs/tip/en/html/api/";
 # Location of the remote and local XML files to track new releases.
 use constant REMOTE_FILE => 'http://updates.bugzilla.org/bugzilla-update.xml';
 use constant LOCAL_FILE  => 'bugzilla-update.xml'; # Relative to datadir.
-
-# When true CSS and JavaScript assets will be concatanted and minified at
-# run-time, to reduce the number of requests required to render a page.
-# Setting this to a false value can help debugging.
-use constant CONCATENATE_ASSETS => 1;
 
 # These are unique values that are unlikely to match a string or a number,
 # to be used in criteria for match() functions and other things. They start
@@ -238,9 +231,9 @@ use constant NOT_NULL => '  __NOT_NULL__  ';
 #
 # ControlMap constants for group_control_map.
 # membercontol:othercontrol => meaning
-# Na:Na               => Bugs in this product may not be restricted to this 
+# Na:Na               => Bugs in this product may not be restricted to this
 #                        group.
-# Shown:Na            => Members of the group may restrict bugs 
+# Shown:Na            => Members of the group may restrict bugs
 #                        in this product to this group.
 # Shown:Shown         => Members of the group may restrict bugs
 #                        in this product to this group.
@@ -355,7 +348,7 @@ use constant RELATIONSHIPS => {
     REL_CC            , "CC",
     REL_GLOBAL_WATCHER, "GlobalWatcher"
 };
-                              
+
 # Used for global events like EVT_FLAG_REQUESTED
 use constant REL_ANY                => 100;
 
@@ -378,8 +371,8 @@ use constant EVT_DEPEND_BLOCK       => 9;
 use constant EVT_BUG_CREATED        => 10;
 use constant EVT_COMPONENT          => 11;
 
-use constant POS_EVENTS => EVT_OTHER, EVT_ADDED_REMOVED, EVT_COMMENT, 
-                           EVT_ATTACHMENT, EVT_ATTACHMENT_DATA, 
+use constant POS_EVENTS => EVT_OTHER, EVT_ADDED_REMOVED, EVT_COMMENT,
+                           EVT_ATTACHMENT, EVT_ATTACHMENT_DATA,
                            EVT_PROJ_MANAGEMENT, EVT_OPENED_CLOSED, EVT_KEYWORD,
                            EVT_CC, EVT_DEPEND_BLOCK, EVT_BUG_CREATED,
                            EVT_COMPONENT;
@@ -432,7 +425,7 @@ use constant FIELD_TYPE_EXTENSION => 99;
 # obvious fashion
 use constant FIELD_TYPE_HIGHEST_PLUS_ONE => 100;
 
-use constant EMPTY_DATETIME_REGEX => qr/^[0\-:\sA-Za-z]+$/; 
+use constant EMPTY_DATETIME_REGEX => qr/^[0\-:\sA-Za-z]+$/;
 
 # See the POD for Bugzilla::Field/is_abnormal to see why these are listed
 # here.
@@ -482,7 +475,7 @@ use constant contenttypes =>
    "rdf"  => "application/rdf+xml" ,
    "atom" => "application/atom+xml" ,
    "xml"  => "application/xml" ,
-   "dtd"  => "application/xml-dtd" , 
+   "dtd"  => "application/xml-dtd" ,
    "js"   => "application/x-javascript" ,
    "json" => "application/json" ,
    "csv"  => "text/csv" ,
@@ -521,7 +514,7 @@ use constant INSTALLATION_MODE_NON_INTERACTIVE => 1;
 use constant DB_MODULE => {
     # Require MySQL 5.6.x for innodb's fulltext support
     'mysql' => {db => 'Bugzilla::DB::Mysql', db_version => '5.6.12',
-                dbd => { 
+                dbd => {
                     package => 'DBD-mysql',
                     module  => 'DBD::mysql',
                     # Disallow development versions
@@ -678,7 +671,7 @@ sub _bz_locations {
     }
 
     $datadir = "$libpath/$datadir";
-    # We have to return absolute paths for mod_perl. 
+    # We have to return absolute paths for mod_perl.
     # That means that if you modify these paths, they must be absolute paths.
     return {
         'libpath'        => $libpath,
@@ -702,7 +695,7 @@ sub _bz_locations {
         # The script should really generate these graphs directly...
         'webdotdir'      => "$datadir/webdot",
         'extensionsdir'  => "$libpath/extensions",
-        'assetsdir'      => "$datadir/assets",
+        'assetsdir'      => "$libpath/assets",
         # error_reports store error/warnings destined for sentry
         'error_reports'  => "$libpath/error_reports",
     };
