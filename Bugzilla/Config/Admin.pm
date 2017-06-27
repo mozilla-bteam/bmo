@@ -77,11 +77,11 @@ sub check_rate_limit_rules {
         ref($_) eq 'ARRAY' && looks_like_number( $_->[0] ) && looks_like_number( $_->[1] )
     } values %$val;
 
+    foreach my $required (qw( show_bug get_bug )) {
+        return "missing $required" unless exists $val->{$required};
+    }
+
     return "";
 }
 
 1;
-
-foreach my $required (qw( show_bug get_bug )) {
-    return "missing $required" unless exists $val->{$required};
-}
