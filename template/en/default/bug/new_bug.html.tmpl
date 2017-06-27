@@ -9,6 +9,8 @@
 [% title = BLOCK %]Enter [% terms.Bug %] [% END %]
 [% PROCESS bug_modal/common_header.html.tmpl 
     title = title
+    jquery = [ "selectize" ]
+    jquery_css = [ "js/jquery/plugins/selectize/selectize.default.css" ]
     javascript_urls = ['extensions/BugModal/web/new_bug.js']
 %]
 [% PROCESS global/header.html.tmpl %]
