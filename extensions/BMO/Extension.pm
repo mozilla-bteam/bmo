@@ -2527,8 +2527,9 @@ sub install_filesystem {
     my $create_files = $args->{create_files};
     my $extensions_dir = bz_locations()->{extensionsdir};
     $create_files->{__lbheartbeat__} = {
-        perms    => Bugzilla::Install::Filesystem::WS_SERVE,
-        contents => 'This mission is too important for me to allow you to jeopardize it.',
+        perms     => Bugzilla::Install::Filesystem::WS_SERVE,
+        overwrite => 1, # the original value for this was wrong, overwrite it
+        contents  => 'httpd OK',
     };
 
 
