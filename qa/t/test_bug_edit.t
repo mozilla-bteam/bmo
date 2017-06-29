@@ -310,37 +310,37 @@ $sel->is_text_present_ok('has been added to the database', "Bug $bug2_id created
 # Clicking the "Back" button and resubmitting the form again should trigger a suspicous action error.
 
 my $i = 1;
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->go_back_ok();
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->title_is("Enter Bug: TestProduct");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->click_ok("commit");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->title_is("Suspicious Action");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->is_text_present_ok("you have no valid token for the create_bug action");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->click_ok('//input[@value="Confirm Changes"]');
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->type_ok("comment", "New comment not allowed");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->click_ok("commit");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->title_is("Product Edit Access Denied");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 $sel->is_text_present_ok("You are not permitted to edit bugs in product TestProduct.");
-$sel->capture_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
+$sel->capture_entire_page_screenshot(sprintf "/tmp/screenshot-%d.png", $i++ );
 logout($sel);
 
 # Reassign the newly created bug to the admin.
