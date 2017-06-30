@@ -1,6 +1,3 @@
-var products = []
-var product_info = []
-
 function load_products(query, callback) {
     bugzilla_ajax(
             {
@@ -32,10 +29,37 @@ $(document).ready(function() {
         options: [],
     });
 
+    var version_sel = $("#version").selectize({
+        valueField: 'name',
+        labelField: 'name',
+        searchField: 'name',
+        options: [],
+    });
+
     product_sel.on("change", function () {
-        component_sel.clearOptions();
-        // call component_sel.addOption(data) for each component
-        // call component_sel.refreshOptions() when done
+        bugzilla_ajax(
+                {
+                    url: 'rest/bug_modal/product_info?product=' + encodeURIComponent($('#product').val())
+                },
+                function(data) {
+                    var selectize = $("#component")[0].selectize;
+                    selectize.clear();
+                    selectize.clearOptions();
+                    selectize.load(function(callback) {
+                        callback(data.components)
+                    });
+
+                    selectize = $("#version")[0].selectize;
+                    selectize.clear();
+                    selectize.clearOptions();
+                    selectize.load(function(callback) {
+                        callback(data.versions);
+                    });
+                },
+                function() {
+                    alert("Network issues. Please refresh the page and try again");
+                }
+            );     
     });
 
     $('.create-btn')
