@@ -90,8 +90,11 @@ sub data {
         die $@;
     }
     $self->_set_query_time($result->{took} / 1000);
+    my %stupid_name = (
+        changeddate => 'delta_ts',
+    );
+    my @fields = map { $stupid_name{$_} // $_ } @{ $self->fields };
     my (@ids, %hits);
-    my $fields = $self->fields;
     foreach my $hit (@{ $result->{hits}{hits} }) {
         push @ids, $hit->{_id};
         my $source = $hit->{_source};
@@ -102,7 +105,7 @@ sub data {
         }
         trick_taint($hit->{_id});
         if ($source) {
-            $hits{$hit->{_id}} = [ @$source{@$fields} ];
+            $hits{$hit->{_id}} = [ @$source{@fields} ];
         }
         else {
            $hits{$hit->{_id}} = $hit->{_id};
