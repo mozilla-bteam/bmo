@@ -103,7 +103,7 @@ sub product_info {
             description => $_->description,
         }
     } @{ $product->components };
-    my @versions = map { { name => $_->name } } grep( $_->is_active, @{ $product->versions } );
+    my @versions = map { { name => $_->name } } grep { $_->is_active } @{ $product->versions };
     return { components => \@components, versions => \@versions };
 }
 
