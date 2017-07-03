@@ -72,6 +72,10 @@ __DATA__
 # the built-in rand(), even though we never use it in Bugzilla itself,
 # so we need to srand() both of them.)
 PerlChildInitHandler "sub { Bugzilla::RNG::srand(); srand(); }"
+
+# It is important to specify ErrorDocuments outside of all directories.
+# These used to be in .htaccess, but then things like AllowEncodedSlashes no
+# mean that urls containing %2f are unstyled.
 ErrorDocument 401 /errors/401.html
 ErrorDocument 403 /errors/403.html
 ErrorDocument 404 /errors/404.html
