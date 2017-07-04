@@ -104,34 +104,41 @@ sub _bulk_helper {
     );
 }
 
-sub _find_largest_mtime {
-    my ($self, $class) = @_;
+
+sub _find_largest {
+    my ($self, $class, $field) = @_;
 
     my $result = $self->client->search(
         index => $self->index_name,
         type  => $class->ES_TYPE,
         body  => {
-            aggs => { es_mtime => { extended_stats => { field => 'es_mtime' } } },
+            aggs => { $field => { extended_stats => { field => $field } } },
             size => 0
         }
     );
 
-    return $result->{aggregations}{es_mtime}{max};
+    my $max = $result->{aggregations}{$field}{max};
+    if (not defined $max) {
+        return 0;
+    }
+    elsif (looks_like_number($max)) {
+        return $max;
+    }
+    else {
+        die "largest value for '$field' is not a number: $max";
+    }
+}
+
+sub _find_largest_mtime {
+    my ($self, $class) = @_;
+
+    return $self->_find_largest('es_mtime');
 }
 
 sub _find_largest_id {
     my ($self, $class) = @_;
 
-    my $result = $self->client->search(
-        index => $self->index_name,
-        type  => $class->ES_TYPE,
-        body  => {
-            aggs => { $class->ID_FIELD => { extended_stats => { field => $class->ID_FIELD } } },
-            size => 0
-        }
-    );
-
-    return $result->{aggregations}{$class->ID_FIELD}{max};
+    return $self->_find_largest($class->ID_FIELD);
 }
 
 sub put_mapping {
