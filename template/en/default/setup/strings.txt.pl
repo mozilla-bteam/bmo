@@ -389,7 +389,7 @@ Delete ##dir##/.htaccess and re-run checksetup.pl.
 END
     memcached_servers => <<'END',
 If this option is set, Bugzilla will integrate with `Memcached
-<http://www.memcached.org/>`_. Specify one or more servers, separated by
+<http://www.memcached.org/>`. Specify one or more servers, separated by
 spaces, using hostname:port notation (for example:
 :paramval:`127.0.0.1:11211`).
 END
