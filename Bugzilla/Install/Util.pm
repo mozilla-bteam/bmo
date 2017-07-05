@@ -30,10 +30,6 @@ our @EXPORT_OK = qw(
     bin_loc
     get_version_and_os
     extension_code_files
-    extension_package_directory
-    extension_requirement_packages
-    extension_template_directory
-    extension_web_directory
     i_am_persistent
     indicate_progress
     install_string
@@ -136,121 +132,7 @@ sub extension_code_files {
         push(@files, \@load_files);
     }
 
-    my @additional;
-    my $datadir = bz_locations()->{'datadir'};
-    my $addl_file = "$datadir/extensions/additional";
-    if (-e $addl_file) {
-        open(my $fh, '<', $addl_file) || die "$addl_file: $!";
-        @additional = map { trim($_) } <$fh>;
-        close($fh);
-    }
-    return (\@files, \@additional);
-}
-
-# Used by _get_extension_requirements in Bugzilla::Install::Requirements.
-sub extension_requirement_packages {
-    # If we're in a .cgi script or some time that's not the requirements phase,
-    # just use Bugzilla->extensions. This avoids running the below code during
-    # a normal Bugzilla page, which is important because the below code
-    # doesn't actually function right if it runs after 
-    # Bugzilla::Extension->load_all (because stuff has already been loaded).
-    # (This matters because almost every page calls Bugzilla->feature, which
-    # calls OPTIONAL_MODULES, which calls this method.)
-    #
-    # We check if Bugzilla.pm is already loaded, instead of doing a "require",
-    # because we *do* want the code lower down to run during the Requirements
-    # phase of checksetup.pl, instead of Bugzilla->extensions, and Bugzilla.pm
-    # actually *can* be loaded during the Requirements phase if all the
-    # requirements have already been installed.
-    if ($INC{'Bugzilla.pm'}) {
-        return Bugzilla->extensions;
-    }
-    my $packages = _cache()->{extension_requirement_packages};
-    return $packages if $packages;
-    $packages = [];
-    my %package_map;
-    
-    my ($file_sets, $extra_packages) = extension_code_files('requirements only');
-    foreach my $file_set (@$file_sets) {
-        my $file = shift @$file_set;
-        my $name = require $file;
-        if ($name =~ /^\d+$/) {
-            die install_string('extension_must_return_name',
-                               { file => $file, returned => $name });
-        }
-        my $package = "Bugzilla::Extension::$name";
-        if ($package->can('package_dir')) {
-            $package->package_dir($file);
-        }
-        else {
-            extension_package_directory($package, $file);
-        }
-        $package_map{$file} = $package;
-        push(@$packages, $package);
-    }
-    foreach my $package (@$extra_packages) {
-        eval("require $package") || die $@;
-        push(@$packages, $package);
-    }
-
-    _cache()->{extension_requirement_packages} = $packages;
-    # Used by Bugzilla::Extension->load if it's called after this method
-    # (which only happens during checksetup.pl, currently).
-    _cache()->{extension_requirement_package_map} = \%package_map;
-    return $packages;
-}
-
-# Used in this file and in Bugzilla::Extension.
-sub extension_template_directory {
-    my $extension = shift;
-    my $class = ref($extension) || $extension;
-    my $base_dir = extension_package_directory($class);
-    if ($base_dir eq bz_locations->{'extensionsdir'}) {
-        return bz_locations->{'templatedir'};
-    }
-    return "$base_dir/template";
-}
-
-# Used in this file and in Bugzilla::Extension.
-sub extension_web_directory {
-    my $extension = shift;
-    my $class = ref($extension) || $extension;
-    my $base_dir = extension_package_directory($class);
-    return "$base_dir/web";
-}
-
-# For extensions that are in the extensions/ dir, this both sets and fetches
-# the name of the directory that stores an extension's "stuff". We need this
-# when determining the template directory for extensions (or other things
-# that are relative to the extension's base directory).
-sub extension_package_directory {
-    my ($invocant, $file) = @_;
-    my $class = ref($invocant) || $invocant;
-
-    # $file is set on the first invocation, store the value in the extension's
-    # package for retrieval on subsequent calls
-    my $var;
-    {
-        no warnings 'once';
-        no strict 'refs';
-        $var = \${"${class}::EXTENSION_PACKAGE_DIR"};
-    }
-    if ($file) {
-        $$var = dirname($file);
-    }
-    my $value = $$var;
-
-    # This is for extensions loaded from data/extensions/additional.
-    if (!$value) {
-        my $short_path = $class;
-        $short_path =~ s/::/\//g;
-        $short_path .= ".pm";
-        my $long_path = $INC{$short_path};
-        die "$short_path is not in \%INC" if !$long_path;
-        $value = $long_path;
-        $value =~ s/\.pm//;
-    }
-    return $value;
+    return (\@files);
 }
 
 sub indicate_progress {
@@ -278,7 +160,7 @@ sub install_string {
     my ($string_id, $vars) = @_;
     _cache()->{install_string_path} ||= template_include_path();
     my $path = _cache()->{install_string_path};
-    
+
     my $string_template;
     # Find the first template that defines this string.
     foreach my $dir (@$path) {
@@ -287,7 +169,7 @@ sub install_string {
             if !defined $string_template;
         last if defined $string_template;
     }
-    
+
     die "No language defines the string '$string_id'"
         if !defined $string_template;
 
@@ -402,7 +284,7 @@ sub include_languages {
 # Used by template_include_path
 sub _template_lang_directories {
     my ($languages, $templatedir) = @_;
-    
+
     my @add = qw(custom default);
     my $project = bz_locations->{'project'};
     unshift(@add, $project) if $project;
@@ -422,45 +304,18 @@ sub _template_lang_directories {
 
 # Used by template_include_path.
 sub _template_base_directories {
-    # First, we add extension template directories, because extension templates
-    # override standard templates. Extensions may be localized in the same way
-    # that Bugzilla templates are localized.
-    #
-    # We use extension_requirement_packages instead of Bugzilla->extensions
-    # because this fucntion is called during the requirements phase of 
-    # installation (so Bugzilla->extensions isn't available).
-    my $extensions = extension_requirement_packages();
     my @template_dirs;
-    foreach my $extension (@$extensions) {
-        my $dir;
-        # If there's a template_dir method available in the extension
-        # package, then call it. Note that this has to be defined in
-        # Config.pm for extensions that have a Config.pm, to be effective
-        # during the Requirements phase of checksetup.pl.
-        if ($extension->can('template_dir')) {
-            $dir = $extension->template_dir;
-        }
-        else {
-            $dir = extension_template_directory($extension);
-        }
-        if (-d $dir) {
-            push(@template_dirs, $dir);
-        }
-    }
 
-    # Extensions may also contain *only* templates, in which case they
-    # won't show up in extension_requirement_packages.
     foreach my $path (_extension_paths()) {
         next if !-d $path;
-        if (!-e "$path/Extension.pm" and !-e "$path/Config.pm"
-            and -d "$path/template") 
-        {
+        if ( -d "$path/template") {
             push(@template_dirs, "$path/template");
         }
     }
 
 
-    push(@template_dirs, bz_locations()->{'templatedir'});
+    state $bz_locations = bz_locations();
+    push(@template_dirs, $bz_locations->{'templatedir'});
     return \@template_dirs;
 }
 
@@ -468,11 +323,11 @@ sub template_include_path {
     my ($params) = @_;
     my @used_languages = include_languages($params);
     # Now, we add template directories in the order they will be searched:
-    my $template_dirs = _template_base_directories(); 
+    my $template_dirs = _template_base_directories();
 
     my @include_path;
     foreach my $template_dir (@$template_dirs) {
-        my @lang_dirs = _template_lang_directories(\@used_languages, 
+        my @lang_dirs = _template_lang_directories(\@used_languages,
                                                    $template_dir);
         # Hooks get each set of extension directories separately.
         if ($params->{hook}) {
@@ -682,14 +537,14 @@ sub prevent_windows_dialog_boxes {
     # during checksetup (since loading DBD::Oracle during checksetup when
     # Oracle isn't installed causes a scary popup and pauses checksetup).
     #
-    # Win32::API ships with ActiveState by default, though there could 
+    # Win32::API ships with ActiveState by default, though there could
     # theoretically be a Windows installation without it, I suppose.
     if (ON_WINDOWS and eval { require Win32::API }) {
         # Call kernel32.SetErrorMode with arguments that mean:
         # "The system does not display the critical-error-handler message box.
         # Instead, the system sends the error to the calling process." and
         # "A child process inherits the error mode of its parent process."
-        my $SetErrorMode = Win32::API->new('kernel32', 'SetErrorMode', 
+        my $SetErrorMode = Win32::API->new('kernel32', 'SetErrorMode',
                                            'I', 'I');
         my $SEM_FAILCRITICALERRORS = 0x0001;
         my $SEM_NOGPFAULTERRORBOX  = 0x0002;
@@ -892,8 +747,8 @@ in their browser, usually), and extensions are sorted alphabetically.
 
 =item C<include_languages>
 
-Used by L<Bugzilla::Template> to determine the languages' list which 
-are compiled with the browser's I<Accept-Language> and the languages 
+Used by L<Bugzilla::Template> to determine the languages' list which
+are compiled with the browser's I<Accept-Language> and the languages
 of installed templates.
 
 =item C<vers_cmp>
