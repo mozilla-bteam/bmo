@@ -43,6 +43,14 @@ sub _sensible_group {
     return scalar getgrgid($EGID);
 }
 
+sub _migrate_param {
+  my ($name, $fallback_value) = @_;
+
+  return sub {
+      return Bugzilla->params->{$name} // $fallback_value;
+  };
+}
+
 use constant LOCALCONFIG_VARS => (
     {
         name    => 'create_htaccess',
@@ -128,11 +136,11 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'memcached_servers',
-        default => '',
+        default =>  _migrate_param("memcached_servers", ""),
     },
     {
         name    => 'memcached_namespace',
-        default => 'bugzilla:',
+        default => _migrate_param("memcached_namespace", "bugzilla:"),
     },
 );
 
