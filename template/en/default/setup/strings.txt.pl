@@ -178,6 +178,15 @@ If you want to use the "Difference Between Two Patches" feature of the
 Patch Viewer, please specify the full path to the "interdiff" executable
 here.
 END
+    localconfig_memcached_servers => <<'END',
+If this option is set, Bugzilla will integrate with `Memcached
+<http://www.memcached.org/>`. Specify one or more servers, separated by
+spaces, using hostname:port notation (for example:
+:paramval:`127.0.0.1:11211`).
+END
+    localconfig_memcached_namespace => <<'END',
+Specify a string to prefix each key on Memcached.
+END
     localconfig_site_wide_secret => <<'END',
 This secret key is used by your installation for the creation and
 validation of encrypted tokens. These tokens are used to implement
@@ -386,15 +395,6 @@ END
     webdot_bad_htaccess => <<END,
 WARNING: Dependency graph images are not accessible.
 Delete ##dir##/.htaccess and re-run checksetup.pl.
-END
-    memcached_servers => <<'END',
-If this option is set, Bugzilla will integrate with `Memcached
-<http://www.memcached.org/>`. Specify one or more servers, separated by
-spaces, using hostname:port notation (for example:
-:paramval:`127.0.0.1:11211`).
-END
-    memcached_namespace => <<'END',
-Specify a string to prefix each key on Memcached.
 END
 );
 
