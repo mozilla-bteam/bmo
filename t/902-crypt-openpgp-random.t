@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use 5.10.1;
 use lib qw( . lib local/lib/perl5 );
-use Test::More tests => 1;
+use Test::More tests => 2;
 
 use Crypt::OpenPGP::Util;
 
