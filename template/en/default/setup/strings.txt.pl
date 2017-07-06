@@ -179,10 +179,9 @@ Patch Viewer, please specify the full path to the "interdiff" executable
 here.
 END
     localconfig_memcached_servers => <<'END',
-If this option is set, Bugzilla will integrate with `Memcached
-<http://www.memcached.org/>`. Specify one or more servers, separated by
-spaces, using hostname:port notation (for example:
-:paramval:`127.0.0.1:11211`).
+If this option is set, Bugzilla will integrate with Memcached.
+Specify one or more servers, separated by spaces, using hostname:port 
+notation (for example: 127.0.0.1:11211).
 END
     localconfig_memcached_namespace => <<'END',
 Specify a string to prefix each key on Memcached.
