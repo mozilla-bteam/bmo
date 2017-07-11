@@ -53,8 +53,8 @@ my $run_time = time;
 my $loop = IO::Async::Loop->new;
 my $timer = IO::Async::Timer::Periodic->new(
     first_interval => 0,
-    interval       => 20,
-    reschedule     => 'drift',
+    interval       => 15,
+    reschedule     => 'skip',
 
     on_tick => sub {
         printf "Running after %d seconds\n", time - $run_time;
