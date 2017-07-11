@@ -868,6 +868,7 @@ $(function() {
             if ($('#comment').val() != reply_text) {
                 $('#comment').val($('#comment').val() + reply_text);
             }
+            autosize.update($('#comment'));
             $.scrollTo($('#comment'), function() { $('#comment').focus(); });
         });
 
