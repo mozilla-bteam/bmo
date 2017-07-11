@@ -30,9 +30,9 @@ sub _new {
 
     # always return an object to simplify calling code when memcached is
     # disabled.
-    my $servers = Bugzilla->get_param_with_override('memcached_servers');
+    my $servers = Bugzilla->localconfig->{memcached_servers};
     if (Bugzilla->feature('memcached') && $servers) {
-        $self->{namespace} = Bugzilla->get_param_with_override('memcached_namespace');
+        $self->{namespace} = Bugzilla->localconfig->{memcached_namespace};
         $self->{memcached} = Cache::Memcached::Fast->new({
             servers   => [ split(/[, ]+/, $servers) ],
             namespace => $self->{namespace},
@@ -324,7 +324,7 @@ L<Bugzilla::Memcached> provides an interface to a Memcached server/servers, with
 the ability to get, set, or clear entries from the cache.
 
 The stored value must be an unblessed hashref, unblessed array ref, or a
-scalar. 
+scalar.
 
 All values are stored in the Memcached systems using the prefix configured with
 the C<memcached_namespace> parameter, as well as an additional prefix managed
@@ -462,4 +462,3 @@ Memcached that it then clears the cache:
  $dbh->do("UPDATE profiles SET last_activity_ts=? WHERE userid=?",
           undef, $timestamp, $user_id);
  Bugzilla->memcached->clear({ table => 'profiles', id => $user_id });
-

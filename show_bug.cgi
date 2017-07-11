@@ -20,13 +20,17 @@ use Bugzilla::Keyword;
 use Bugzilla::Bug;
 use Bugzilla::Hook;
 use Bugzilla::CGI;
-use Bugzilla::Util qw(detaint_natural);
+use Bugzilla::Util qw(detaint_natural remote_ip);
 
 my $cgi = Bugzilla->cgi;
 my $template = Bugzilla->template;
 my $vars = {};
 
 my $user = Bugzilla->login();
+
+unless ($user->id) {
+    Bugzilla->check_rate_limit("show_bug", remote_ip());
+}
 
 # BMO: add show_bug_format for experimental UI work
 my $format_params = {
@@ -106,7 +110,7 @@ $vars->{'bugids'} = join(", ", @bugids);
 
 # Work out which fields we are displaying (currently XML only.)
 # If no explicit list is defined, we show all fields. We then exclude any
-# on the exclusion list. This is so you can say e.g. "Everything except 
+# on the exclusion list. This is so you can say e.g. "Everything except
 # attachments" without listing almost all the fields.
 my @fieldlist = (Bugzilla::Bug->fields, 'flag', 'group', 'long_desc',
                  'attachment', 'attachmentdata', 'token');
@@ -125,7 +129,7 @@ foreach (@fieldlist) {
 }
 
 foreach ($cgi->param("excludefield")) {
-    $displayfields{$_} = undef;    
+    $displayfields{$_} = undef;
 }
 
 $vars->{'displayfields'} = \%displayfields;
