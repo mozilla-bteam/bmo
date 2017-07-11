@@ -871,6 +871,13 @@ $(function() {
             $.scrollTo($('#comment'), function() { $('#comment').focus(); });
         });
 
+    // auto resize the height of 'add comment'
+    $('#comment').on('input', function() {
+        // use 80% height of viewport as the max height
+        var adjustedHeight = Math.min(this.scrollHeight, $(window).height() * 0.8);
+        $(this).height('auto').height(adjustedHeight);
+    })
+
     // add comment --> enlarge on focus
     if (BUGZILLA.user.settings.zoom_textareas) {
         $('#comment')

@@ -702,11 +702,14 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
 
 #comment {
     border: 1px solid #ccc;
+    resize: none;
+    overflow: auto;
 }
 
 #comment, #comment-preview {
     clear: both;
     width: 100%;
+    height: auto;
     box-sizing: border-box !important;
     margin: 0 0 1em;
     max-width: 1024px;
