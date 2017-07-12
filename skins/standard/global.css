@@ -841,11 +841,17 @@ input[type=email], input[type=url], input[type=number], input:not([type]), .text
     background: white;
     padding: 4px 3px 5px;
     color: #404040;
-    vertical-align: top;
+}
+
+/* we need the padding and box-sizing for single selects, but the rest
+ * of the rules specified would make selects look uglier on windows and OSX */
+select {
+    box-sizing: border-box;
+    padding: 4px 3px 5px;
 }
 
 select[multiple], .text_input, .yui-ac-input, input {
-    font-size: 1em;
+    font-size: 12px;
 }
 
 select[multiple]:focus, textarea:focus, .text-input:focus, -yui-ac-input:focus, input:focus {
