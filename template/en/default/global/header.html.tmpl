@@ -238,8 +238,8 @@
 
 <div id="header">
 
-[% IF user.settings.skin.value == 'Mozilla' || user.settings.skin.value == 'Mozilla-OpenSans' %] 
-  <div class="wrapper">
+/*[% IF user.settings.skin.value == 'Mozilla' || user.settings.skin.value == 'Mozilla-OpenSans' %]*/
+  /*<div class="wrapper">
     <table border="0" cellspacing="0" cellpadding="0" id="titles">
     <tr>
       <td id="title">
@@ -247,7 +247,7 @@
       </td>
       <td>
         [% Hook.process("message") %]
-      </td>
+      </td>*/
       <td id="moz_login">
         [% IF user.id %]
           <ul class="links">
@@ -304,7 +304,7 @@
                 [% IF user.authorizer.can_login && !Bugzilla.page_requires_login %]
                   [% PROCESS "account/auth/login-small.html.tmpl" qs_suffix = "_top" %]
                 [% END %]
-            [% END %]
+            /*[% END %]*/
           </ul>
         [% END %]
       </td>
@@ -380,12 +380,12 @@
 
 [%# in most cases the "header" variable provides redundant information, however
   # there are exceptions where not displaying this text is problematic. %]
-[% IF (user.settings.skin.value == 'Mozilla' || user.settings.skin.value == 'Mozilla-OpenSans')
+/*[% IF (user.settings.skin.value == 'Mozilla' || user.settings.skin.value == 'Mozilla-OpenSans')
       && template.name.match('^attachment/')
       && !header.match('^Bug&nbsp;\d+$')
-%]
+%]*/
   <h2>[% header FILTER none %]</h2>
-[% END %]
+/*[% END %]*/
 
 [% IF Param('announcehtml') %]
 [% Param('announcehtml') FILTER none %]
