@@ -32,9 +32,9 @@
     <span class="separator">| </span>
     <form action="buglist.cgi" method="get"
       class='quicksearch_check_empty'>
-    <input class="txt" type="text" id="quicksearch[% qs_suffix FILTER html %]" name="quicksearch" 
+    <input class="txt" type="text" id="quicksearch[% qs_suffix FILTER html %]" name="quicksearch"
            title="Quick Search" value="[% quicksearch FILTER html %]">
-    <input class="btn" type="submit" value="Search" 
+    <input class="btn" type="submit" value="Search"
            id="find[% qs_suffix FILTER html %]">
     [%-# Work around FF bug: keep this on one line %]</form>
     [<a href="page.cgi?id=quicksearch.html" title="Quicksearch Help">help</a>]
@@ -58,7 +58,7 @@
 
   [% Hook.process('action-links') %]
 
-  [% IF user.settings.skin.value != 'Mozilla' && user.settings.skin.value != 'Mozilla-OpenSans' %]
+  [% IF user.settings.skin.value != 'Mozilla' && user.settings.skin.value != 'Mozilla-OpenSans' %] 
   [% IF user.login %]
     <li><span class="separator">| </span><a href="userprefs.cgi">Preferences</a></li>
     [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless
@@ -87,9 +87,9 @@
       [% END %]
     [%-# Work around FF bug: keep this on one line %]</li>
   [% ELSE %]
-  
+
     [% PROCESS link_to_documentation %]
-    
+
     [% IF Param('createemailregexp')
           && user.authorizer.user_can_create_account %]
       <li id="new_account_container[% qs_suffix FILTER html %]">
@@ -99,9 +99,9 @@
     [% END %]
 
     [%# Only display one login form when we're on a LOGIN_REQUIRED page. That
-      # way, we're guaranteed that the user will use the form that has 
+      # way, we're guaranteed that the user will use the form that has
       # hidden_fields in it (the center form) instead of this one. Also, it's
-      # less confusing to have one form (as opposed to  three) when you're 
+      # less confusing to have one form (as opposed to  three) when you're
       # required to log in.
       #%]
     [% IF user.authorizer.can_login && !Bugzilla.page_requires_login %]
