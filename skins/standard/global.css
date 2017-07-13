@@ -35,7 +35,8 @@
     }
     /* monospace is much smaller than Verdana by default, so we make it a bit bigger. */
     pre, code, kbd {
-        font-size: medium;
+        font-family: "Droid Sans Mono", Menlo, Monaco, "Courier New", Courier, monospace;
+        font-size: small;
     }
 /* global (end) */
 
@@ -234,7 +235,8 @@
     }
 
     textarea {
-        font-family: monospace;
+        font-family: "Droid Sans Mono", Menlo, Monaco, "Courier New", Courier, monospace;
+        font-size: small;
     }
 /* generic (end) */
 
@@ -304,7 +306,6 @@ div#docslinks {
 
 /* tbody.file pre is for the Diff view of attachments. */
 .bz_comment_text, .uneditable_textarea, tbody.file pre {
-     font-family: monospace;
      white-space: pre-wrap;
 }
 
@@ -608,7 +609,6 @@ input.required, select.required, span.required_explanation {
 }
 
 .field_textarea_readonly pre {
-    font-family: monospace;
     white-space: pre-wrap;
 }
 
@@ -1564,10 +1564,6 @@ body {
 #header #information {
     color: #dddddd;
     font-size: small;
-}
-
-pre {
-    font-size: medium;
 }
 
 #attachment_table {

@@ -310,6 +310,7 @@ input[type="number"] {
 
 #user-story {
     margin: 0;
+    padding: 4px;
     white-space: pre-wrap;
     min-height: 2em;
 }
