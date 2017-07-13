@@ -30,9 +30,9 @@ sub rest_resources {
     return [
         # return all the products accessible by the user.
         # required by new-bug
-        qr{^/bug_modal/initial_loader}, {
+        qr{^/bug_modal/initial_field_values}, {
             GET => {
-                method => 'initial_loader'
+                method => 'initial_field_values'
             },
         },
 
@@ -82,7 +82,7 @@ sub rest_resources {
     ]
 }
 
-sub initial_loader {
+sub initial_field_values {
     my $user = Bugzilla->user;
     my @keywords = map { { name => $_->name } } grep { $_->is_active } Bugzilla::Keyword->get_all();
     return { products => _name($user->get_enterable_products), keywords => \@keywords };
@@ -105,7 +105,6 @@ sub product_info {
         }
     } @{ $product->components };
     my @versions = map { { name => $_->name } } grep { $_->is_active } @{ $product->versions };
-    my @keywords = grep { $_->is_active } Bugzilla::Keyword->get_all();
     return { components => \@components, versions => \@versions };
 }
 

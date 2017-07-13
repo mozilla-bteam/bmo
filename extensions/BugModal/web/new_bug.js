@@ -4,7 +4,7 @@ var comp_desc = {}
 $(document).ready(function() {
     bugzilla_ajax(
             {
-                url: 'rest/bug_modal/initial_loader'
+                url: 'rest/bug_modal/initial_field_values'
             },
             function(data) {
                 initial = data
@@ -54,7 +54,6 @@ $(document).ready(function() {
     product_sel.on("change", function () {
         $('#product-throbber').show();
         $('#component').attr('disabled', true);
-        $('#version').attr('disabled', true);
         bugzilla_ajax(
                 {
                     url: 'rest/bug_modal/product_info?product=' + encodeURIComponent($('#product').val())
@@ -62,7 +61,6 @@ $(document).ready(function() {
                 function(data) {
                     $('#product-throbber').hide();
                     $('#component').attr('disabled', false);
-                    $('#version').attr('disabled', false);
                     $('#comp_desc').text('Select a component to read its description.');
                     var selectize = $("#component")[0].selectize;
                     selectize.clear();
