@@ -185,7 +185,7 @@ sub SETTINGS {
         name     => 'autosize_comments',
         options  => ['on', 'off'],
         default  => 'on',
-        category => 'Autosize Comments'
+        category => 'User Interface'
     },
     ];
 };
