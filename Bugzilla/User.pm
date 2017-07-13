@@ -176,21 +176,28 @@ sub ES_PROPERTIES {
 sub es_document {
     my ( $self, $timestamp ) = @_;
     my $doc = {
-        login          => $self->login,
-        name           => $self->name,
-        is_enabled     => $self->is_enabled,
+        login        => $self->login,
+        name         => $self->name,
+        is_enabled   => $self->is_enabled,
         suggest_user => {
             input => [ $self->login, $self->name ],
             output => $self->identity,
             payload => { name => $self->login, real_name => $self->name },
         },
     };
-    if ($self->name && $self->name =~ /:(\w+)/) {
-        my $ircnick = $1;
+    my @nicks;
+    if ($self->name) {
+        my $name = $self->name;
+        while ($name =~ /:(\w+)\b/mg) {
+            push @nicks, $1;
+        }
+    }
+
+    if (@nicks) {
         $doc->{suggest_nick} = {
-            input => [ $ircnick ],
+            input => \@nicks,
             output => $self->login,
-            payload => { name => $self->login, real_name => $self->name, ircnick => $ircnick },
+            payload => { name => $self->login, real_name => $self->name },
         };
     }
 
