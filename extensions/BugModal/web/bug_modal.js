@@ -857,6 +857,10 @@ $(function() {
             else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
                 reply_text = prefix;
             }
+            if (BUGZILLA.user.settings.autosize_comment) {
+                autosize.update($('#comment'));
+            }
+        })
 
             // quoting a private comment, check the 'private' cb
             $('#add-comment-private-cb').prop('checked',
@@ -868,11 +872,8 @@ $(function() {
             if ($('#comment').val() != reply_text) {
                 $('#comment').val($('#comment').val() + reply_text);
             }
-            
+
             // calling autosize.update or autosize
-            if (BUGZILLA.user.settings.autosize_comment) {
-                autosize.update($('#comment'));
-            }
             if (BUGZILLA.user.settings.autosize_comments) {
                 autosize($('#comment'));
             }
