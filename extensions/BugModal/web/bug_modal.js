@@ -882,8 +882,9 @@ $(function() {
                 // add comment --> enlarge on focus
                 $('#comment').focus(function(event) {
                     $(event.target).attr('rows', 25);
-                }
-            });
+                });
+            }
+
 
     // add comment --> private
     $('#add-comment-private-cb')
