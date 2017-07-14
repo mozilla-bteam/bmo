@@ -39,33 +39,35 @@ use Bugzilla::UserAgent;
 
 my $user = Bugzilla->login(LOGIN_REQUIRED);
 
-my $cgi = Bugzilla->cgi;
+my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
-my $vars = {};
+my $vars     = {};
 
-if (lc($cgi->request_method) eq 'post') {
-     my $token = $cgi->param('token');
-     check_hash_token($token, ['new_bug']);
-     my @keywords = $cgi->param('keywords');
-     my $new_bug = Bugzilla::Bug->create({
-                short_desc   => scalar($cgi->param('short_desc')),
-                product      => scalar($cgi->param('product')),
-                component    => scalar($cgi->param('component')),
-                bug_severity => 'normal',
-                groups       => [],
-                op_sys       => 'Unspecified',
-                rep_platform => 'Unspecified',
-                version      =>  scalar($cgi->param('version')),
-                keywords     => \@keywords,
-                cc           => [],
-                comment      => scalar($cgi->param('comment')),
-            });
-     delete_token($token);
-     print $cgi->redirect(correct_urlbase() . 'show_bug.cgi?id='.$new_bug->bug_id);
-} else {
- print $cgi->header();
-$template->process("bug/new_bug.html.tmpl",
-                    $vars)
-  or ThrowTemplateError($template->error());
+if ( lc( $cgi->request_method ) eq 'post' ) {
+    my $token = $cgi->param('token');
+    check_hash_token( $token, ['new_bug'] );
+    my @keywords = $cgi->param('keywords');
+    my $new_bug  = Bugzilla::Bug->create(
+        {
+            short_desc   => scalar( $cgi->param('short_desc') ),
+            product      => scalar( $cgi->param('product') ),
+            component    => scalar( $cgi->param('component') ),
+            bug_severity => 'normal',
+            groups       => [],
+            op_sys       => 'Unspecified',
+            rep_platform => 'Unspecified',
+            version      => scalar( $cgi->param('version') ),
+            keywords     => \@keywords,
+            cc           => [],
+            comment      => scalar( $cgi->param('comment') ),
+        }
+    );
+    delete_token($token);
+    print $cgi->redirect( correct_urlbase() . 'show_bug.cgi?id=' . $new_bug->bug_id );
+}
+else {
+    print $cgi->header();
+    $template->process( "bug/new_bug.html.tmpl", $vars )
+        or ThrowTemplateError( $template->error() );
 }
 
