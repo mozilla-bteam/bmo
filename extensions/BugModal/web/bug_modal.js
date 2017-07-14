@@ -871,20 +871,19 @@ $(function() {
             if (BUGZILLA.user.settings.autosize_comment) {
                 autosize.update($('#comment'));
             }
-        })
+            $.scrollTo($('#comment'), function() { $('#comment').focus(); });
+        });
 
             // calling autosize.update or autosize
             if (BUGZILLA.user.settings.autosize_comments) {
                 autosize($('#comment'));
             }
-            $.scrollTo($('#comment'), function() { $('#comment').focus(); });
-
             else if (BUGZILLA.user.settings.zoom_textareas) {
                 // add comment --> enlarge on focus
                 $('#comment').focus(function(event) {
                     $(event.target).attr('rows', 25);
-                });
-            }
+                }
+            });
 
     // add comment --> private
     $('#add-comment-private-cb')
