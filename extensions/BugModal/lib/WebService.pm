@@ -84,8 +84,10 @@ sub rest_resources {
 
 sub initial_field_values {
     my $user = Bugzilla->user;
-    my @keywords = map { { name => $_->name } } grep { $_->is_active } Bugzilla::Keyword->get_all();
-    return { products => _name($user->get_enterable_products), keywords => \@keywords };
+    return {
+        products => _name($user->get_enterable_products),
+        keywords => _name([Bugzilla::Keyword->get_all()]),
+    };
 }
 
 sub product_info {
@@ -104,8 +106,10 @@ sub product_info {
             description => $_->description,
         }
     } @{ $product->components };
-    my @versions = map { { name => $_->name } } grep { $_->is_active } @{ $product->versions };
-    return { components => \@components, versions => \@versions };
+    return {
+        components => \@components,
+        versions   => _name($product->versions),
+    };
 }
 
 # everything we need for edit mode in a single call, returning just the fields
