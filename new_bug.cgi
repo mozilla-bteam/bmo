@@ -55,7 +55,7 @@ if (lc($cgi->request_method) eq 'post') {
                 groups       => [],
                 op_sys       => 'Unspecified',
                 rep_platform => 'Unspecified',
-                version      => join(' ', split('_', scalar($cgi->param('version')))),
+                version      =>  scalar($cgi->param('version')),
                 keywords     => \@keywords,
                 cc           => [],
                 comment      => scalar($cgi->param('comment')),
