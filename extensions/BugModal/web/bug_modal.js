@@ -868,13 +868,13 @@ $(function() {
             if ($('#comment').val() != reply_text) {
                 $('#comment').val($('#comment').val() + reply_text);
             }
-            if (BUGZILLA.user.settings.autosize_comment) {
+            if (BUGZILLA.user.settings.autosize_comments) {
                 autosize.update($('#comment'));
             }
             $.scrollTo($('#comment'), function() { $('#comment').focus(); });
         });
 
-            if (BUGZILLA.user.settings.autosize_comment) {
+            if (BUGZILLA.user.settings.autosize_comments) {
                 autosize($('#comment'));
             }
             else if (BUGZILLA.user.settings.zoom_textareas) {
