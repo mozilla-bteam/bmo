@@ -41,6 +41,17 @@
         group: root
         mode: 0644
 
+    - name: copy ntp.conf
+      copy:
+        src: ntp.conf
+        dest: /etc/ntp.conf
+
+    - name: setup time server (ntpd)
+      service: name=ntpd enabled=yes
+
+    - name: start time server (ntpd)
+      service: name=ntpd state=started
+
 - hosts: db
   become: true
   tasks:
