@@ -46,10 +46,16 @@
         src: ntp.conf
         dest: /etc/ntp.conf
 
-    - name: setup time server (ntpd)
+    - name: setup time server
       service: name=ntpd enabled=yes
 
-    - name: start time server (ntpd)
+    - name: stop time server to run ntpdate
+      service: name=ntpd state=stopped
+
+    - name: run ntpdate
+      shell: ntpdate pool.ntp.org
+
+    - name: start time server
       service: name=ntpd state=started
 
 - hosts: db
