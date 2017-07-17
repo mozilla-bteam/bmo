@@ -874,7 +874,6 @@ $(function() {
             $.scrollTo($('#comment'), function() { $('#comment').focus(); });
         });
 
-            // calling autosize.update or autosize
             if (BUGZILLA.user.settings.autosize_comment) {
                 autosize($('#comment'));
             }
