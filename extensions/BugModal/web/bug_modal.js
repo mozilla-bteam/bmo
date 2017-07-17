@@ -875,7 +875,7 @@ $(function() {
         });
 
             // calling autosize.update or autosize
-            if (BUGZILLA.user.settings.autosize_comments) {
+            if (BUGZILLA.user.settings.autosize_comment) {
                 autosize($('#comment'));
             }
             else if (BUGZILLA.user.settings.zoom_textareas) {
