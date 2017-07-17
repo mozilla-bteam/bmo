@@ -185,13 +185,8 @@ sub es_document {
             payload => { name => $self->login, real_name => $self->name },
         },
     };
-    my @nicks;
-    if ($self->name) {
-        my $name = $self->name;
-        while ($name =~ /:(\w+)\b/mg) {
-            push @nicks, $1;
-        }
-    }
+    my $name = $self->name;
+    my @nicks = defined($name) ? ( $name =~ /:(\w+)\b/mg ) : ();
 
     if (@nicks) {
         $doc->{suggest_nick} = {
