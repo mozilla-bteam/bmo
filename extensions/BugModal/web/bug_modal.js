@@ -853,8 +853,7 @@ $(function() {
             if (BUGZILLA.user.settings.quote_replies == 'quoted_reply') {
                 var text = $('#ct-' + comment_id).text();
                 reply_text = prefix + wrapReplyText(text);
-            }
-            else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
+            } else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
                 reply_text = prefix;
             }
 
@@ -871,19 +870,19 @@ $(function() {
             if (BUGZILLA.user.settings.autosize_comments) {
                 autosize.update($('#comment'));
             }
-            $.scrollTo($('#comment'), function() { $('#comment').focus(); });
+            $.scrollTo($('#comment'), function() {
+                $('#comment').focus();
+            });
         });
 
-            if (BUGZILLA.user.settings.autosize_comments) {
-                autosize($('#comment'));
-            }
-            else if (BUGZILLA.user.settings.zoom_textareas) {
-                // add comment --> enlarge on focus
-                $('#comment').focus(function(event) {
-                    $(event.target).attr('rows', 25);
-                });
-            }
-
+    if (BUGZILLA.user.settings.autosize_comments) {
+        autosize($('#comment'));
+    } else if (BUGZILLA.user.settings.zoom_textareas) {
+        // add comment --> enlarge on focus
+        $('#comment').focus(function(event) {
+            $(event.target).attr('rows', 25);
+        });
+    }
 
     // add comment --> private
     $('#add-comment-private-cb')
