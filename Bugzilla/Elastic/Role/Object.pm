@@ -9,7 +9,7 @@ package Bugzilla::Elastic::Role::Object;
 use 5.10.1;
 use Role::Tiny;
 
-requires qw(ES_TYPE ES_PROPERTIES es_document);
+requires qw(ES_TYPE ES_INDEX ES_SETTINGS ES_PROPERTIES es_document);
 requires qw(ID_FIELD DB_TABLE);
 
 sub ES_OBJECTS_AT_ONCE { 100 }
@@ -45,72 +45,6 @@ around 'es_document' => sub {
     return $doc;
 };
 
-sub ES_INDEX { Bugzilla->params->{elasticsearch_index} }
-
-sub ES_ETTINGS {
-    return {
-        number_of_shards => 2,
-        analysis         => {
-            filter => {
-                asciifolding_original => {
-                    type              => "asciifolding",
-                    preserve_original => \1,
-                },
-            },
-            analyzer => {
-                autocomplete => {
-                    type      => 'custom',
-                    tokenizer => 'keyword',
-                    filter    => [ 'lowercase', 'asciifolding_original' ],
-                },
-                folding => {
-                    tokenizer => 'standard',
-                    filter    => [ 'standard', 'lowercase', 'asciifolding_original' ],
-                },
-                bz_text_analyzer => {
-                    type             => 'standard',
-                    filter           => [ 'lowercase', 'stop' ],
-                    max_token_length => '20'
-                },
-                bz_equals_analyzer => {
-                    type      => 'custom',
-                    filter    => ['lowercase'],
-                    tokenizer => 'keyword',
-                },
-                whiteboard_words => {
-                    type      => 'custom',
-                    tokenizer => 'whiteboard_words_pattern',
-                    filter    => ['stop']
-                },
-                whiteboard_shingle_words => {
-                    type      => 'custom',
-                    tokenizer => 'whiteboard_words_pattern',
-                    filter    => [ 'stop', 'shingle', 'lowercase' ]
-                },
-                whiteboard_tokens => {
-                    type      => 'custom',
-                    tokenizer => 'whiteboard_tokens_pattern',
-                    filter    => [ 'stop', 'lowercase' ]
-                },
-                whiteboard_shingle_tokens => {
-                    type      => 'custom',
-                    tokenizer => 'whiteboard_tokens_pattern',
-                    filter    => [ 'stop', 'shingle', 'lowercase' ]
-                }
-            },
-            tokenizer => {
-                whiteboard_tokens_pattern => {
-                    type    => 'pattern',
-                    pattern => '\\s*([,;]*\\[|\\][\\s\\[]*|[;,])\\s*'
-                },
-                whiteboard_words_pattern => {
-                    type    => 'pattern',
-                    pattern => '[\\[\\];,\\s]+'
-                },
-            },
-        },
-    };
-}
 
 
 1;
