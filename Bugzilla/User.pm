@@ -127,7 +127,8 @@ use constant EXTRA_REQUIRED_FIELDS => qw(is_enabled);
 with 'Bugzilla::Elastic::Role::Object';
 
 sub ES_INDEX {
-    Bugzilla->params->{elasticsearch_index} . "_user";
+    my ($class) = @_;
+    sprintf("%s_%s", Bugzilla->params->{elasticsearch_index}, $class->ES_TYPE);
 }
 
 sub ES_TYPE { 'user' }
