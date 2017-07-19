@@ -62,7 +62,9 @@ sub create_revision_attachment {
 
     my $revision_uri = $phab_base_uri . "D" . $revision_id;
 
-    # Check for previous attachment and return if one matches exact
+    # Check for previous attachment with same revision id.
+    # If one matches then return it instead. This is fine as
+    # BMO does not contain actual diff content.
     my $review_attachment = first {
         $_->contenttype eq PHAB_CONTENT_TYPE
           && trim( $_->data ) eq trim($revision_uri)
@@ -70,7 +72,10 @@ sub create_revision_attachment {
     @{ $bug->attachments };
     return $review_attachment if defined $review_attachment;
 
-    # None present, so create new one
+    # No attachment is present, so we can now create new one
+    my $is_shadow_db = Bugzilla->is_shadow_db;
+    Bugzilla->switch_to_main_db if $is_shadow_db;
+
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction;
 
@@ -93,6 +98,7 @@ sub create_revision_attachment {
     $attachment->update($timestamp);
 
     $dbh->bz_commit_transaction;
+    Bugzilla->switch_to_shadow_db if $is_shadow_db;
 
     return $attachment;
 }
@@ -269,10 +275,10 @@ sub request {
         $ua->default_header('Content-Type' => 'application/x-www-form-urlencoded');
     }
 
-    my $phab_api_key = $params->{phabricator_api_key}
-      || ThrowUserError('invalid_phabricator_api_key');
-    my $phab_base_uri = $params->{phabricator_base_uri}
-      || ThrowUserError('invalid_phabricator_uri');
+    my $phab_api_key = $params->{phabricator_api_key};
+    ThrowUserError('invalid_phabricator_api_key') unless $phab_api_key;
+    my $phab_base_uri = $params->{phabricator_base_uri};
+    ThrowUserError('invalid_phabricator_uri') unless $phab_base_uri;
 
     my $full_uri = $phab_base_uri . '/api/' . $method;
 
@@ -281,10 +287,11 @@ sub request {
     my $response = $ua->post($full_uri, { params => encode_json($data) });
 
     ThrowCodeError('phabricator_api_error', { reason => $response->message })
-        if $response->is_error;
+      if $response->is_error;
 
-    my $result = eval { decode_json( $response->content ) };
-    if ( !$result || $@ ) {
+    my $result;
+    my $result_ok = eval { $result = decode_json( $response->content); 1 };
+    if ( !$result_ok ) {
         ThrowCodeError(
             'phabricator_api_error',
             { reason => 'JSON decode failure' } );

@@ -47,7 +47,7 @@ sub revision {
     # so we exploit that function to pass in an API key as the password
     # of basic auth. BMO does not support basic auth but does support
     # use of API keys.
-    my $http_auth = delete $ENV{'HTTP_AUTHORIZATION'};
+    my $http_auth = Bugzilla->cgi->http('Authorization');
     $http_auth =~ s/^Basic\s+//;
     $http_auth = decode_base64($http_auth);
     my ($login, $api_key) = split(':', $http_auth);
