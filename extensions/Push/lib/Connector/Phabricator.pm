@@ -74,7 +74,7 @@ sub send {
         foreach my $attachment (@attachments) {
             my ($rev_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
             next if !$rev_id;
-            push(@rev_ids, $rev_id);
+            push(@rev_ids, int($rev_id));
         }
 
         if(@rev_ids) {
@@ -85,6 +85,7 @@ sub send {
             foreach my $rev_detail (@rev_details) {
                 my $rev_phid = $rev_detail->{phid};
                 $logger->info('Making revision $rev_phid public:');
+                $logger->info($rev_phid);
                 make_revision_public($rev_phid);
             }
         }

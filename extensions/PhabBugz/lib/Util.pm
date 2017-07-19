@@ -49,7 +49,7 @@ sub get_revisions_by_ids {
     ThrowUserError('invalid_phabricator_revision_id')
         unless (exists $result->{result}{data} && @{ $result->{result}{data} });
 
-    return $result->{result}{data};
+    return @{$result->{result}{data}};
 }
 
 sub create_revision_attachment {
