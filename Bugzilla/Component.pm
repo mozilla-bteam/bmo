@@ -20,6 +20,7 @@ use Bugzilla::User;
 use Bugzilla::FlagType;
 use Bugzilla::Series;
 
+use List::Util qw(first);
 use Scalar::Util qw(blessed);
 
 ###############################
@@ -403,6 +404,12 @@ sub flag_types {
           [grep { $_->target_type eq 'attachment' } @$flagtypes];
     }
     return $self->{'flag_types'};
+}
+
+sub find_first_flag_type {
+    my ($self, $target_type, $name) = @_;
+
+    return first { $_->name eq $name } @{ $self->flag_types->{$target_type} };
 }
 
 sub initial_cc {
