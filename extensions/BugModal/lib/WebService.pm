@@ -30,17 +30,17 @@ sub rest_resources {
     return [
         # return all the products accessible by the user.
         # required by new-bug
-        qr{^/bug_modal/products}, {
+        qr{^/bug_modal/initial_field_values}, {
             GET => {
-                method => 'products'
+                method => 'initial_field_values'
             },
         },
 
         # return all the components pertaining to the product.
         # required by new-bug
-        qr{^/bug_modal/components}, {
+        qr{^/bug_modal/product_info}, {
             GET => {
-                method => 'components',
+                method => 'product_info',
                 params => sub {
                     return { product_name => Bugzilla->input_params->{product} }
                 },
@@ -82,24 +82,34 @@ sub rest_resources {
     ]
 }
 
-sub products {
+sub initial_field_values {
     my $user = Bugzilla->user;
-    return { products => _name($user->get_enterable_products) };
+    return {
+        products => _name($user->get_enterable_products),
+        keywords => _name([Bugzilla::Keyword->get_all()]),
+    };
 }
 
-sub components {
+sub product_info {
     my ( $self, $params ) = @_;
     if ( !ref $params->{product_name} ) {
         untaint( $params->{product_name} );
     }
     else {
-        ThrowCodeError( 'params_required',
-            { function => 'BugModal.components', params => ['product'] } );
+        ThrowCodeError( 'params_required', { function => 'BugModal.components', params => ['product'] } );
     }
-    my $product = Bugzilla::Product->check({ name => $params->{product_name}, cache => 1 });
-    $product = Bugzilla->user->can_enter_product($product, 1);
-    my @components = map { { name => $_->name, description => Bugzilla::Component->check({ product => $product, name => $_->name })->description} } @{ $product->components };
-    return { components => \@components }
+    my $product = Bugzilla::Product->check( { name => $params->{product_name}, cache => 1 } );
+    $product = Bugzilla->user->can_enter_product( $product, 1 );
+    my @components = map {
+        {
+            name        => $_->name,
+            description => $_->description,
+        }
+    } @{ $product->components };
+    return {
+        components => \@components,
+        versions   => _name($product->versions),
+    };
 }
 
 # everything we need for edit mode in a single call, returning just the fields
