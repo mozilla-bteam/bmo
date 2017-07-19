@@ -1,5 +1,6 @@
 #bugzilla-etiquette {
-    float: left;
+    float: right;
+    display:inline-block;
 }
 #create-btn {
 	margin: 0 0 5px 0;
