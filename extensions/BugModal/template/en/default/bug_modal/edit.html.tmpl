@@ -220,6 +220,7 @@
         field_type = constants.FIELD_TYPE_FREETEXT
         hide_on_view = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#short_desc"
+        required = 1
     %]
 
     [%# status summary %]
@@ -298,7 +299,7 @@
         <button type="button" id="mode-btn" class="major">
           <span id="mode-btn-readonly" title="Enable editing fields for [% terms.bug %] metadata">Edit [% terms.Bug %]</span>
           <span id="mode-btn-loading">
-            <img id="edit-throbber" src="[% asset_file('extensions/BugModal/web/throbber.gif') FILTER html %]" width="16" height="11">
+            <img id="edit-throbber" src="extensions/BugModal/web/throbber.gif" width="16" height="11">
             Fetching
           </span>
         </button>
@@ -402,7 +403,7 @@
         %]
         <button id="product-search" type="button" class="minor">Search</button>
         <button id="product-search-cancel" type="button" class="minor" style="display:none">X</button>
-        <img id="product-throbber" src="[% asset_file('extensions/BugModal/web/throbber.gif') FILTER html %]"
+        <img id="product-throbber" src="extensions/BugModal/web/throbber.gif"
           width="16" height="11" style="display:none">
         <img id="product-search-error" class="tt" src="extensions/BugModal/web/error.png"
           width="16" height="16" style="display:none">

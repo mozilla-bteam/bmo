@@ -458,7 +458,7 @@ $(function() {
     var rbs = $("#readable-bug-status");
     var rbs_text = bugzillaReadableStatus.readable(rbs.data('readable-bug-status'));
     rbs.text(rbs_text);
-    
+
     if (BUGZILLA.user.id === 0) return;
 
     //
@@ -853,8 +853,7 @@ $(function() {
             if (BUGZILLA.user.settings.quote_replies == 'quoted_reply') {
                 var text = $('#ct-' + comment_id).text();
                 reply_text = prefix + wrapReplyText(text);
-            }
-            else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
+            } else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
                 reply_text = prefix;
             }
 
@@ -868,15 +867,21 @@ $(function() {
             if ($('#comment').val() != reply_text) {
                 $('#comment').val($('#comment').val() + reply_text);
             }
-            $.scrollTo($('#comment'), function() { $('#comment').focus(); });
+            if (BUGZILLA.user.settings.autosize_comments) {
+                autosize.update($('#comment'));
+            }
+            $.scrollTo($('#comment'), function() {
+                $('#comment').focus();
+            });
         });
 
-    // add comment --> enlarge on focus
-    if (BUGZILLA.user.settings.zoom_textareas) {
-        $('#comment')
-            .focus(function(event) {
-                $(event.target).attr('rows', 25);
-            });
+    if (BUGZILLA.user.settings.autosize_comments) {
+        autosize($('#comment'));
+    } else if (BUGZILLA.user.settings.zoom_textareas) {
+        // add comment --> enlarge on focus
+        $('#comment').focus(function(event) {
+            $(event.target).attr('rows', 25);
+        });
     }
 
     // add comment --> private

@@ -49,6 +49,7 @@
 
   # assets
   javascript_urls.push(
+    "extensions/BugModal/web/autosize.min.js",
     "extensions/ProdCompSearch/web/js/prod_comp_search.js",
     "extensions/BugModal/web/bug_modal.js",
     "extensions/BugModal/web/comments.js",
@@ -106,7 +107,8 @@
     settings: {
       quote_replies: '[% user.settings.quote_replies.value FILTER js %]',
       zoom_textareas: [% user.settings.zoom_textareas.value == "on" ? "true" : "false" %],
-      remember_collapsed: [% user.settings.ui_remember_collapsed.value == "on" ? "true" : "false" %]
+      remember_collapsed: [% user.settings.ui_remember_collapsed.value == "on" ? "true" : "false" %],
+      autosize_comments: [% user.settings.autosize_comments.value == "on" ? "true" : "false" %]
     }
   };
   [% IF user.id %]

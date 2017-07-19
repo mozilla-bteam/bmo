@@ -17,7 +17,7 @@ use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
 use Bugzilla::Install::Requirements;
-use Bugzilla::Install::Util qw(install_string template_include_path 
+use Bugzilla::Install::Util qw(install_string template_include_path
                                include_languages);
 use Bugzilla::Keyword;
 use Bugzilla::Util;
@@ -84,7 +84,7 @@ sub _load_constants {
 sub _include_path {
     my $lang = shift || '';
     my $cache = Bugzilla->request_cache;
-    $cache->{"template_include_path_$lang"} ||= 
+    $cache->{"template_include_path_$lang"} ||=
         template_include_path({ language => $lang });
     return $cache->{"template_include_path_$lang"};
 }
@@ -180,19 +180,19 @@ sub quoteUrls {
         if (ref($replace) eq 'CODE') {
             $text =~ s/$match/($things[$count++] = $replace->({matches => [
                                                                $1, $2, $3, $4,
-                                                               $5, $6, $7, $8, 
+                                                               $5, $6, $7, $8,
                                                                $9, $10]}))
                                && ("\x{FDD2}" . ($count-1) . "\x{FDD3}")/egx;
         }
         else {
-            $text =~ s/$match/($things[$count++] = $replace) 
+            $text =~ s/$match/($things[$count++] = $replace)
                               && ("\x{FDD2}" . ($count-1) . "\x{FDD3}")/egx;
         }
     }
 
     # Provide tooltips for full bug links (Bug 74355)
     my $urlbase_re = '(' . join('|',
-        map { qr/$_/ } grep($_, Bugzilla->params->{'urlbase'}, 
+        map { qr/$_/ } grep($_, Bugzilla->params->{'urlbase'},
                             Bugzilla->params->{'sslbase'})) . ')';
     $text =~ s~\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
               ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $user })) &&
@@ -327,7 +327,7 @@ sub get_bug_link {
 
     my $template = Bugzilla->template_inner;
     my $linkified;
-    $template->process('bug/link.html.tmpl', 
+    $template->process('bug/link.html.tmpl',
         { bug => $bug, link_text => $link_text, %$options }, \$linkified);
     return $linkified;
 }
@@ -401,13 +401,7 @@ sub css_files {
 
     unshift @requested_css, "skins/yui.css" unless $no_yui;
 
-    my @css_sets = map { _css_link_set($_) } sort {
-        my $first_a = $a =~ m!js/jquery!;
-        my $first_b = $b =~ m!js/jquery!;
-        return -1 if $first_a && !$first_b;
-        return 1 if !$first_a && $first_b;
-        return 0;
-    } @requested_css;
+    my @css_sets = map { _css_link_set($_) } @requested_css;
 
     my %by_type = (standard => [], skin => [], custom => []);
     foreach my $set (@css_sets) {
@@ -416,13 +410,18 @@ sub css_files {
         }
     }
 
+    # build unified
+    $by_type{unified_standard_skin} = _concatenate_css($by_type{standard},
+                                                       $by_type{skin});
+    $by_type{unified_custom} = _concatenate_css($by_type{custom});
+
     return \%by_type;
 }
 
 sub _css_link_set {
     my ($file_name) = @_;
 
-    my %set = (standard => $file_name);
+    my %set = (standard => mtime_filter($file_name));
 
     # We use (?:^|/) to allow Extensions to use the skins system if they want.
     if ($file_name !~ m{(?:^|/)skins/standard/}) {
@@ -433,23 +432,131 @@ sub _css_link_set {
     my $cgi_path = bz_locations()->{'cgi_path'};
     my $skin_file_name = $file_name;
     $skin_file_name =~ s{(?:^|/)skins/standard/}{skins/contrib/$skin/};
-    if (-f "$cgi_path/$skin_file_name") {
-        $set{skin} = $skin_file_name;
+    if (my $mtime = _mtime("$cgi_path/$skin_file_name")) {
+        $set{skin} = mtime_filter($skin_file_name, $mtime);
     }
 
     my $custom_file_name = $file_name;
     $custom_file_name =~ s{(?:^|/)skins/standard/}{skins/custom/};
-    if (-f "$cgi_path/$custom_file_name") {
-        $set{custom} = $custom_file_name;
+    if (my $custom_mtime = _mtime("$cgi_path/$custom_file_name")) {
+        $set{custom} = mtime_filter($custom_file_name, $custom_mtime);
     }
 
     return \%set;
 }
 
+sub _concatenate_css {
+    my @sources = map { @$_ } @_;
+    return unless @sources;
+
+    my %files =
+        map {
+            (my $file = $_) =~ s/(^[^\?]+)\?.+/$1/;
+            $_ => $file;
+        } @sources;
+
+    my $cgi_path   = bz_locations()->{cgi_path};
+    my $skins_path = bz_locations()->{assetsdir};
+
+    # build minified files
+    my @minified;
+    foreach my $source (@sources) {
+        next unless -e "$cgi_path/$files{$source}";
+        my $file = $skins_path . '/' . md5_hex($source) . '.css';
+        if (!-e $file) {
+            my $content = read_file("$cgi_path/$files{$source}");
+
+            # minify
+            $content =~ s{/\*.*?\*/}{}sg;   # comments
+            $content =~ s{(^\s+|\s+$)}{}mg; # leading/trailing whitespace
+            $content =~ s{\n}{}g;           # single line
+
+            # rewrite urls
+            $content =~ s{url\(([^\)]+)\)}{_css_url_rewrite($source, $1)}eig;
+
+            write_file($file, "/* $files{$source} */\n" . $content . "\n");
+        }
+        push @minified, $file;
+    }
+
+    # concat files
+    my $file = $skins_path . '/' . md5_hex(join(' ', @sources)) . '.css';
+    if (!-e $file) {
+        my $content = '';
+        foreach my $source (@minified) {
+            $content .= read_file($source);
+        }
+        write_file($file, $content);
+    }
+
+    $file =~ s/^\Q$cgi_path\E\///o;
+    return mtime_filter($file);
+}
+
+sub _css_url_rewrite {
+    my ($source, $url) = @_;
+    # rewrite relative urls as the unified stylesheet lives in a different
+    # directory from the source
+    $url =~ s/(^['"]|['"]$)//g;
+    if (substr($url, 0, 1) eq '/' || substr($url, 0, 5) eq 'data:') {
+        return 'url(' . $url . ')';
+    }
+    return 'url(../../' . dirname($source) . '/' . $url . ')';
+}
+
+sub _concatenate_js {
+    return @_ unless CONCATENATE_ASSETS;
+    my ($sources) = @_;
+    return [] unless $sources;
+    $sources = ref($sources) ? $sources : [ $sources ];
+
+    my %files =
+        map {
+            (my $file = $_) =~ s/(^[^\?]+)\?.+/$1/;
+            $_ => $file;
+        } @$sources;
+
+    my $cgi_path   = bz_locations()->{cgi_path};
+    my $skins_path = bz_locations()->{assetsdir};
+
+    # build minified files
+    my @minified;
+    foreach my $source (@$sources) {
+        next unless -e "$cgi_path/$files{$source}";
+        my $file = $skins_path . '/' . md5_hex($source) . '.js';
+        if (!-e $file) {
+            my $content = read_file("$cgi_path/$files{$source}");
+
+            # minimal minification
+            $content =~ s#/\*.*?\*/##sg;    # block comments
+            $content =~ s#(^ +| +$)##gm;    # leading/trailing spaces
+            $content =~ s#^//.+$##gm;       # single line comments
+            $content =~ s#\n{2,}#\n#g;      # blank lines
+            $content =~ s#(^\s+|\s+$)##g;   # whitespace at the start/end of file
+
+            write_file($file, "/* $files{$source} */\n" . $content . "\n");
+        }
+        push @minified, $file;
+    }
+
+    # concat files
+    my $file = $skins_path . '/' . md5_hex(join(' ', @$sources)) . '.js';
+    if (!-e $file) {
+        my $content = '';
+        foreach my $source (@minified) {
+            $content .= read_file($source);
+        }
+        write_file($file, $content);
+    }
+
+    $file =~ s/^\Q$cgi_path\E\///o;
+    return [ $file ];
+}
+
 # YUI dependency resolution
 sub yui_resolve_deps {
     my ($yui, $yui_deps) = @_;
-    
+
     my @yui_resolved;
     foreach my $yui_name (@$yui) {
         my $deps = $yui_deps->{$yui_name} || [];
@@ -477,8 +584,8 @@ use Template::Stash;
 # Allow keys to start with an underscore or a dot.
 $Template::Stash::PRIVATE = undef;
 
-# Add "contains***" methods to list variables that search for one or more 
-# items in a list and return boolean values representing whether or not 
+# Add "contains***" methods to list variables that search for one or more
+# items in a list and return boolean values representing whether or not
 # one/all/any item(s) were found.
 $Template::Stash::LIST_OPS->{ contains } =
   sub {
@@ -493,7 +600,7 @@ $Template::Stash::LIST_OPS->{ contains } =
 $Template::Stash::LIST_OPS->{ containsany } =
   sub {
       my ($list, $items) = @_;
-      foreach my $item (@$items) { 
+      foreach my $item (@$items) {
           if (ref $item && $item->isa('Bugzilla::Object')) {
               return 1 if grep($_->id == $item->id, @$list);
           } else {
@@ -512,14 +619,14 @@ $Template::Stash::LIST_OPS->{ clone } =
 
 # Allow us to still get the scalar if we use the list operation ".0" on it,
 # as we often do for defaults in query.cgi and other places.
-$Template::Stash::SCALAR_OPS->{ 0 } = 
+$Template::Stash::SCALAR_OPS->{ 0 } =
   sub {
       return $_[0];
   };
 
 # Add a "truncate" method to the Template Toolkit's "scalar" object
 # that truncates a string to a certain length.
-$Template::Stash::SCALAR_OPS->{ truncate } = 
+$Template::Stash::SCALAR_OPS->{ truncate } =
   sub {
       my ($string, $length, $ellipsis) = @_;
       return $string if !$length || length($string) <= $length;
@@ -569,7 +676,7 @@ sub create {
 
     my $config = {
         # Colon-separated list of directories containing templates.
-        INCLUDE_PATH => $opts{'include_path'} 
+        INCLUDE_PATH => $opts{'include_path'}
                         || _include_path($opts{'language'}),
 
         # allow PERL/RAWPERL because doing so can boost performance
@@ -650,7 +757,7 @@ sub create {
                 return $var;
             },
 
-            # Sadly, different to the above. See http://www.json.org/ 
+            # Sadly, different to the above. See http://www.json.org/
             # for details.
             json => sub {
                 my ($var) = @_;
@@ -661,7 +768,7 @@ sub create {
                 $var =~ s/\t/\\t/g;
                 return $var;
             },
-            
+
             # Converts data to base64
             base64 => sub {
                 my ($data) = @_;
@@ -671,14 +778,14 @@ sub create {
             # Strips out control characters excepting whitespace
             strip_control_chars => sub {
                 my ($data) = @_;
-                # Only run for utf8 to avoid issues with other multibyte encodings 
+                # Only run for utf8 to avoid issues with other multibyte encodings
                 # that may be reassigning meaning to ascii characters.
                 if (Bugzilla->params->{'utf8'}) {
                     $data =~ s/(?![\t\r\n])[[:cntrl:]]//g;
                 }
                 return $data;
             },
-            
+
             # HTML collapses newlines in element attributes to a single space,
             # so form elements which may have whitespace (ie comments) need
             # to be encoded using &#013;
@@ -766,7 +873,7 @@ sub create {
 
                 if ($data < 1024) {
                     return "$data bytes";
-                } 
+                }
                 else {
                     my $u;
                     foreach $u ('GB', 'MB', 'KB') {
@@ -793,7 +900,7 @@ sub create {
             html_light => \&Bugzilla::Util::html_light_quote,
 
             email => \&Bugzilla::Util::email_filter,
-
+            
             mtime => \&mtime_filter,
 
             # iCalendar contentline filter
@@ -812,7 +919,7 @@ sub create {
                              } else {
                                  $output = $var;
                              }
-                             
+
                              $output =~ s/(.{75,75})/$1\n /g;
 
                              return $output;
@@ -857,7 +964,7 @@ sub create {
                 }, 1],
 
             # We force filtering of every variable in key security-critical
-            # places; we have a none filter for people to use when they 
+            # places; we have a none filter for people to use when they
             # really, really don't want a variable to be changed.
             none => sub { return $_[0]; } ,
         },
@@ -889,14 +996,6 @@ sub create {
                 else {
                     return $version;
                 }
-            },
-
-            asset_file => sub {
-                return Bugzilla->asset_manager->asset_file($_[0]);
-            },
-
-            asset_files => sub {
-                return Bugzilla->asset_manager->asset_files(@{ $_[0] });
             },
 
             json_encode => sub {
@@ -940,7 +1039,7 @@ sub create {
             'urlbase' => sub { return Bugzilla::Util::correct_urlbase(); },
 
             # Allow templates to access docs url with users' preferred language
-            'docs_urlbase' => sub { 
+            'docs_urlbase' => sub {
                 my $language = Bugzilla->current_language;
                 my $docs_urlbase = Bugzilla->params->{'docs_urlbase'};
                 $docs_urlbase =~ s/\%lang\%/$language/;
@@ -992,6 +1091,7 @@ sub create {
 
             'css_files' => \&css_files,
             yui_resolve_deps => \&yui_resolve_deps,
+            concatenate_js => \&_concatenate_js,
 
             # Whether or not keywords are enabled, in this Bugzilla.
             'use_keywords' => sub { return Bugzilla::Keyword->any_exist; },
@@ -1052,7 +1152,7 @@ sub create {
         : 'Bugzilla::Template::Context';
 
     Bugzilla::Hook::process('template_before_create', { config => $config });
-    my $template = $class->new($config) 
+    my $template = $class->new($config)
         || die("Template creation failed: " . $class->error());
 
     # BMO - hook for defining new vmethods, etc
@@ -1084,10 +1184,10 @@ sub precompile_templates {
         # into data/deleteme/.
         if (-e $cache_dir) {
             my $deleteme = "$datadir/deleteme";
-            
+
             print STDERR "\n\n",
-                install_string('template_removal_failed', 
-                               { deleteme => $deleteme, 
+                install_string('template_removal_failed',
+                               { deleteme => $deleteme,
                                  template_cache => $cache_dir }), "\n\n";
             mkpath($deleteme);
             my $random = generate_random_password();
@@ -1118,7 +1218,7 @@ sub precompile_templates {
     }
 
     # Under mod_perl, we look for templates using the absolute path of the
-    # template directory, which causes Template Toolkit to look for their 
+    # template directory, which causes Template Toolkit to look for their
     # *compiled* versions using the full absolute path under the data/template
     # directory. (Like data/template/var/www/html/bugzilla/.) To avoid
     # re-compiling templates under mod_perl, we symlink to the
@@ -1167,8 +1267,8 @@ sub _do_template_symlink {
     # Check if the directory exists, because if there are no extensions,
     # there won't be an "data/template/extensions" directory to link to.
     if (-d $target) {
-        # We use abs2rel so that the symlink will look like 
-        # "../../../../template" which works, while just 
+        # We use abs2rel so that the symlink will look like
+        # "../../../../template" which works, while just
         # "data/template/template/" doesn't work.
         my $relative_target = File::Spec->abs2rel($target, $container);
 
