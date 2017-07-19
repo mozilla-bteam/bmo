@@ -5,3 +5,7 @@
 	margin: 0 0 5px 0;
 	float: right;
 }
+.by_three {
+	width: 33.3%;
+	display: inline-block;
+}

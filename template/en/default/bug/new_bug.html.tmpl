@@ -42,15 +42,50 @@
       <a title="User guide for [% terms.Bugzilla %]" href="#">Get help with this page</a>
     </div>
   </div>
-[%END%]
+<br>
+[% WRAPPER fields_lhs %]
+  [%# keywords %]
+  [% INCLUDE bug_modal/field.html.tmpl
+      field = bug_fields.keywords
+      field_type = constants.FIELD_TYPE_MULTI_SELECT
+      edit_only = 1
+      editable = 1
+      help = "describekeywords.cgi"
+  %]
+[% END %]
+[% WRAPPER fields_rhs %]
+  [%# whiteboard %]
+  [% WRAPPER bug_modal/field.html.tmpl
+      field = bug_fields.status_whiteboard
+      field_type = constants.FIELD_TYPE_FREETEXT
+      help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
+      edit_only = 1
+      editable = 1
+  %]
+    [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
+  [% END %]
+[% END %]
+[% END %]
 
+[%
+    IF user.id;
+      INCLUDE bug_modal/common_new_comment.html.tmpl;
+    ELSE;
+      %]
+        <div id="new-comment-notice">
+          You need to <a href="new-bug&amp;GoAheadAndLogIn=1">log in</a>
+          before you can file a [% terms.bug %].
+        </div>
+      [%
+    END;
+  %]
+<br>
 
 [%# === status === %]
-
 [% WRAPPER bug_modal/module.html.tmpl
-    title = "Status"
+    title = ""
 %]
-  [% WRAPPER fields_lhs %]
+  [% WRAPPER by_three %]
 
     [%# product %]
     [% can_edit_product   = bug.check_can_change_field("product", 0, 1) %]
@@ -98,7 +133,8 @@
           width="16" height="16" style="display:none">
       </span>
     [% END %]
-
+  [% END %]
+  [% WRAPPER by_three %]
     [%# component %]
     [% WRAPPER bug_modal/field.html.tmpl
         field      = bug_fields.component
@@ -123,8 +159,18 @@
       </span>
     [% END %]
   [% END %]
-  [% WRAPPER fields_rhs %]
-  <td colspan="2" id="comp_desc_container">
+  [% WRAPPER by_three %]
+  [%# version %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.version
+        field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#version"
+        edit_only = 1
+        editable = 1
+    %]
+  [% END %]
+<br>
+  <td id="comp_desc_container">
     <table>
         <tr>
           <td>
@@ -136,35 +182,12 @@
         </tr>
       </table>
     </td>
-  [% END %]
-[% END %]
+  
+<br>
 
 [%# === tracking === %]
-
-[% WRAPPER bug_modal/module.html.tmpl
-  title = "Tracking"
-  subtitle = sub
-  collapsed = col
-%]
-  [% WRAPPER fields_lhs %]
-
-    [%# version %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.version
-        field_type = constants.FIELD_TYPE_SINGLE_SELECT
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#version"
-        edit_only = 1
-        editable = 1
-    %]
-    [%# keywords %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.keywords
-        field_type = constants.FIELD_TYPE_MULTI_SELECT
-        edit_only = 1
-        editable = 1
-        help = "describekeywords.cgi"
-    %]
- [% END %]
+ <div style="display: none" id="xhr-error"></div>
+<button type="submit" id="create-btn" class="create-btn major">Create New [% terms.Bug %]</button>
 [% END %]
 
 [% BLOCK fields_lhs %]
@@ -175,20 +198,9 @@
   <div class="fields-rhs">[% content FILTER none %]</div>
 [% END %]
 
-[%
-    IF user.id;
-      INCLUDE bug_modal/common_new_comment.html.tmpl;
-    ELSE;
-      %]
-        <div id="new-comment-notice">
-          You need to <a href="new-bug&amp;GoAheadAndLogIn=1">log in</a>
-          before you can file a [% terms.bug %].
-        </div>
-      [%
-    END;
-  %]
+[% BLOCK by_three %]
+  <div class="by_three">[% content FILTER none %]</div>
+[% END %]
 
-<div style="display: none" id="xhr-error"></div>
-<button type="submit" id="create-btn" class="create-btn major">Create New [% terms.Bug %]</button>
 </form>
 [% PROCESS global/footer.html.tmpl %]
