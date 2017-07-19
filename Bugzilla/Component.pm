@@ -619,7 +619,8 @@ Component.pm represents a Product Component object.
 
 =item C<find_first_flag_type($target_type, $name).
 
- Description: Changes the description of the component.
+ Description: Find the first named bug or attachment flag with a given
+              name on this component.
 
  Params:      $target_type - 'bug' or 'attachment'
               $name        - the name of the flag
