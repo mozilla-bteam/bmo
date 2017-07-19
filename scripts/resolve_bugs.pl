@@ -58,8 +58,7 @@ if ($bug_count == 0) {
 }
 
 # if running from commmand line
-if (-t STDIN) 
-{
+if (-t STDIN) {
     print STDERR <<EOF;
 About to resolve $bug_count bugs as $resolution
 
