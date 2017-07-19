@@ -616,6 +616,16 @@ Component.pm represents a Product Component object.
 
  Returns:     Nothing.
 
+
+=item C<find_first_flag_type($target_type, $name).
+
+ Description: Changes the description of the component.
+
+ Params:      $target_type - 'bug' or 'attachment'
+              $name        - the name of the flag
+
+ Returns:     a new Bugzilla::FlagType object or undef
+
 =item C<set_description($new_desc)>
 
  Description: Changes the description of the component.
