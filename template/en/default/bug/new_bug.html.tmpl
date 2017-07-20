@@ -10,7 +10,7 @@
 [% PROCESS bug_modal/common_header.html.tmpl 
     title = title
     jquery = [ "selectize" ]
-    jquery_css = [ "js/jquery/plugins/selectize/selectize.default.css" ]
+    jquery_css = [ "js/jquery/plugins/selectize/selectize.bootstrap3.css" ]
     javascript_urls = ['extensions/BugModal/web/new_bug.js']
     style_urls = ['extensions/BugModal/web/new_bug.css']
 %]
@@ -19,20 +19,33 @@
 <form name="newbugform" id="newbugform" method="post" action="new_bug.cgi">
 
 <input type="hidden" value="[% issue_hash_token(['new_bug']) FILTER html %]" name="token">
-
+<div class="two_by_three">
+<td id="comp_desc_container">
+    <table>
+        <tr>
+          <td>
+            <fieldset>
+              <legend>Component Description</legend>
+              <div id="comp_desc" class="comment">Select a component to read its description.</div>
+            </fieldset>
+          </td>
+        </tr>
+      </table>
+    </td>
+    <br>
 [% WRAPPER bug_modal/module.html.tmpl
     title = ""
 %]
-    <div id="summary-container">
-    [%# summary %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.short_desc
-        field_type = constants.FIELD_TYPE_FREETEXT
-        edit_only = 1
-        editable = 1
-        required = 1
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#short_desc"
-    %]
+<div id="summary-container">
+[%# summary %]
+[% INCLUDE bug_modal/field.html.tmpl
+    field = bug_fields.short_desc
+    field_type = constants.FIELD_TYPE_FREETEXT
+    edit_only = 1
+    editable = 1
+    required = 1
+    help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#short_desc"
+%]
     
   </div>
   <div id="mode-container">
@@ -41,29 +54,6 @@
     </div>
   </div>
 <br>
-[% WRAPPER fields_lhs %]
-  [%# keywords %]
-  [% INCLUDE bug_modal/field.html.tmpl
-      field = bug_fields.keywords
-      field_type = constants.FIELD_TYPE_MULTI_SELECT
-      edit_only = 1
-      editable = 1
-      help = "describekeywords.cgi"
-  %]
-[% END %]
-[% WRAPPER fields_rhs %]
-  [%# whiteboard %]
-  [% WRAPPER bug_modal/field.html.tmpl
-      field = bug_fields.status_whiteboard
-      field_type = constants.FIELD_TYPE_FREETEXT
-      help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
-      edit_only = 1
-      editable = 1
-  %]
-    [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
-  [% END %]
-[% END %]
-[% END %]
 
 [%
     IF user.id;
@@ -77,13 +67,39 @@
       [%
     END;
   %]
-<br>
+[% END %]
+</div>
+
+<div class="by_three">
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Labels"
+%]
+  [%# keywords %]
+  [% INCLUDE bug_modal/field.html.tmpl
+      field = bug_fields.keywords
+      field_type = constants.FIELD_TYPE_MULTI_SELECT
+      edit_only = 1
+      editable = 1
+      help = "describekeywords.cgi"
+  %]
+
+  [%# whiteboard %]
+  [% WRAPPER bug_modal/field.html.tmpl
+      field = bug_fields.status_whiteboard
+      field_type = constants.FIELD_TYPE_FREETEXT
+      help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
+      edit_only = 1
+      editable = 1
+  %]
+    [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
+  [% END %]
+  <br>
+[% END %]
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Status"
+%]
 
 [%# === status === %]
-[% WRAPPER bug_modal/module.html.tmpl
-    title = ""
-%]
-  [% WRAPPER by_three %]
 
     [%# product %]
     [% can_edit_product   = bug.check_can_change_field("product", 0, 1) %]
@@ -131,8 +147,7 @@
           width="16" height="16" style="display:none">
       </span>
     [% END %]
-  [% END %]
-  [% WRAPPER by_three %]
+
     [%# component %]
     [% WRAPPER bug_modal/field.html.tmpl
         field      = bug_fields.component
@@ -156,8 +171,7 @@
         </div>
       </span>
     [% END %]
-  [% END %]
-  [% WRAPPER by_three %]
+
   [%# version %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.version
@@ -166,27 +180,13 @@
         edit_only = 1
         editable = 1
     %]
-  [% END %]
 <br>
-  <td id="comp_desc_container">
-    <table>
-        <tr>
-          <td>
-            <fieldset>
-              <legend>Component Description</legend>
-              <div id="comp_desc" class="comment">Select a component to read its description.</div>
-            </fieldset>
-          </td>
-        </tr>
-      </table>
-    </td>
-  
-<br>
+[% END %]
+</div>
 
 [%# === tracking === %]
  <div style="display: none" id="xhr-error"></div>
 <button type="submit" id="create-btn" class="create-btn major">Create New [% terms.Bug %]</button>
-[% END %]
 
 [% BLOCK fields_lhs %]
   <div class="fields-lhs">[% content FILTER none %]</div>
@@ -194,10 +194,6 @@
 
 [% BLOCK fields_rhs %]
   <div class="fields-rhs">[% content FILTER none %]</div>
-[% END %]
-
-[% BLOCK by_three %]
-  <div class="by_three">[% content FILTER none %]</div>
 [% END %]
 
 </form>

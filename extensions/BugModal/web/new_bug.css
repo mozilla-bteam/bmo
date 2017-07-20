@@ -7,6 +7,11 @@
 	float: right;
 }
 .by_three {
-	width: 33.3%;
+	width: 30%;
 	display: inline-block;
 }
+.two_by_three {
+	width: 65%;
+	display: inline-block;
+}
+
