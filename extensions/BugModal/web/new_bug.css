@@ -1,17 +1,13 @@
-#bugzilla-etiquette {
-    float: right;
-    display:inline-block;
-}
 #create-btn {
-	margin: 0 0 5px 0;
-	float: right;
-}
-.by_three {
-	width: 30%;
-	display: inline-block;
-}
-.two_by_three {
-	width: 65%;
-	display: inline-block;
+    margin: 0 0 5px 0;
+    float: right;
 }
 
+.new-bug {
+    display: flex;
+}
+
+.new-bug-split {
+    min-height: 700px;
+    flex-grow: 1;
+}
