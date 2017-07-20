@@ -141,6 +141,8 @@
       [% PROCESS format_css_link asset_url = css_sets.unified_standard_skin %]
     [% ELSE %]
       [% FOREACH asset_url = css_sets.standard %]
+        [% PROCESS format_css_link %]
+      [% END %]
       [% FOREACH asset_url = css_sets.skin %]
         [% PROCESS format_css_link %]
       [% END %]
