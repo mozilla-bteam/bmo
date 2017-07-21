@@ -117,9 +117,9 @@ It loads Bugzilla.pm and you can call Bugzilla internal API methods from it, an 
 
    Firefox
 
-It supports tab completion for file names, method names and so on. For more information see DevelRepl_.
+It supports tab completion for file names, method names and so on. For more information see `Devel::REPL`_.
 
-You can use the 'p' command (provided by DataPrinter_) to inspect variables as well.
+You can use the 'p' command (provided by `Data::Printer`_) to inspect variables as well.
 
 .. code-block:: plain
 
@@ -142,8 +142,8 @@ You can use the 'p' command (provided by DataPrinter_) to inspect variables as w
       [14] sub { ... }
   ]
 
-.. _DevelRepl: https://metacpan.org/pod/Devel::REPL
-.. _DataPrinter: https://metacpan.org/pod/Data::Printer
+.. _`Devel::REPL`: https://metacpan.org/pod/Devel::REPL
+.. _`Data::Printer`: https://metacpan.org/pod/Data::Printer
 
 Docker Container
 ================
