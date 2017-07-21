@@ -105,6 +105,7 @@ re.pl an interactive perl shell (somtimes called a REPL (short for Read-Eval-Pri
 It loads Bugzilla.pm and you can call Bugzilla internal API methods from it, an example session is reproduced below:
 
 .. code-block:: plain
+
    re.pl
    $ my $product = Bugzilla::Product->new({name => "Firefox"});
    Took 0.0262260437011719 seconds.
@@ -121,6 +122,7 @@ It supports tab completion for file names, method names and so on. For more info
 You can use the 'p' command (provided by DataPrinter_) to inspect variables as well.
 
 .. code-block:: plain
+
   $ p @INC
   [
       [0]  ".",
