@@ -7,6 +7,7 @@
 #create-btn {
     margin: 5px 0 5px 0;
     float: right;
+    padding: 8px;
 }
 
 .new-bug-container {
@@ -39,4 +40,7 @@
 .new-bug-title {
     flex: 6 1 30px;
     margin:5px;
+}
+input, label {
+    display: block; !important
 }

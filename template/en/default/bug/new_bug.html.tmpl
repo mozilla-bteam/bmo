@@ -25,7 +25,7 @@
         <div class="new-bug-pad">
         </div>
         <div class="new-bug-title">
-          <h3>Create New [% terms.Bug %]</h3>
+          <h2>Create New [% terms.Bug %]</h2>
           <p>Before reporting a bug, make sure you've read our
             <a href="https://developer.mozilla.org/en/Bug_writing_guidelines">bug writing guidelines</a> and double checked that your bug hasn't already
             been reported. Consult our list of <a href="https://bugzilla.mozilla.org/duplicates.cgi">
@@ -59,27 +59,6 @@
           <button type="submit" id="create-btn" class="create-btn major">Submit</button>
         </div>
         <div class="new-bug-split-1">
-          [% WRAPPER bug_modal/module.html.tmpl title = "Labels" %]
-            [%# keywords %]
-            [% INCLUDE bug_modal/field.html.tmpl
-                field = bug_fields.keywords
-                field_type = constants.FIELD_TYPE_MULTI_SELECT
-                edit_only = 1
-                editable = 1
-                help = "describekeywords.cgi"
-            %]
-
-            [% WRAPPER bug_modal/field.html.tmpl
-                field = bug_fields.status_whiteboard
-                field_type = constants.FIELD_TYPE_FREETEXT
-                help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
-                edit_only = 1
-                editable = 1
-            %]
-              [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
-            [% END %]
-          [% END %]
-
           [% WRAPPER bug_modal/module.html.tmpl title = "Status" %]
             [% can_edit_product   = bug.check_can_change_field("product", 0, 1) %]
             [% filtered_product   = bug.product_obj.name FILTER uri %]
@@ -160,6 +139,26 @@
               edit_only = 1
               editable = 1
             %]
+          [% END %]
+          [% WRAPPER bug_modal/module.html.tmpl title = "Labels" %]
+            [%# keywords %]
+            [% INCLUDE bug_modal/field.html.tmpl
+                field = bug_fields.keywords
+                field_type = constants.FIELD_TYPE_MULTI_SELECT
+                edit_only = 1
+                editable = 1
+                help = "describekeywords.cgi"
+            %]
+
+            [% WRAPPER bug_modal/field.html.tmpl
+                field = bug_fields.status_whiteboard
+                field_type = constants.FIELD_TYPE_FREETEXT
+                help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
+                edit_only = 1
+                editable = 1
+            %]
+              [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
+            [% END %]
           [% END %]
         </div>
         <div class="new-bug-pad">
