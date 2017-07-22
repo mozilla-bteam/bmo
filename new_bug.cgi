@@ -37,7 +37,6 @@ use Bugzilla::Field;
 use Bugzilla::Status;
 use Bugzilla::UserAgent;
 use Bugzilla::BugMail;
-use Data::Dumper;
 
 use List::MoreUtils qw(uniq);
 
