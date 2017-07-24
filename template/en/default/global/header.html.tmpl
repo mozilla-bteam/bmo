@@ -94,6 +94,7 @@
                       "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
   <head>
+    [% IF use_base %] <base href="[% urlbase FILTER html %]"> [% END %]
     [%- js_BUGZILLA = {
             param => {
                 cookiepath => Param('cookiepath'),

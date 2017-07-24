@@ -37,6 +37,8 @@ use Bugzilla::Field;
 use Bugzilla::Status;
 use Bugzilla::UserAgent;
 use Bugzilla::BugMail;
+use Data::Dumper;
+
 
 use List::MoreUtils qw(uniq);
 
@@ -52,6 +54,8 @@ unless ($user->in_group('new-bug-testers')) {
     print $cgi->redirect(correct_urlbase());
     exit;
 }
+
+warn Dumper($cgi->path_info);
 
 if (lc($cgi->request_method) eq 'post') {
      my $token = $cgi->param('token');

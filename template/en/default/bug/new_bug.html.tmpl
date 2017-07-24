@@ -14,7 +14,9 @@
     javascript_urls = ['extensions/BugModal/web/new_bug.js']
     style_urls = ['extensions/BugModal/web/new_bug.css']
 %]
-[% PROCESS global/header.html.tmpl %]
+[% PROCESS global/header.html.tmpl
+    use_base = 1
+%]
 
 [% IF user.id %]
   <div style="display: none" id="xhr-error"></div>
