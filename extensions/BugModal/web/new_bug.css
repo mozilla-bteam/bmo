@@ -45,9 +45,6 @@
     flex: 6 1 30px;
     margin:5px;
 }
-input, label {
-    display: block; !important
-}
 
 .file-container {
     padding: 8px;

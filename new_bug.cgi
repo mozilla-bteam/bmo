@@ -45,7 +45,7 @@ my $user = Bugzilla->login(LOGIN_REQUIRED);
 my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
 my $vars     = {};
-my $dbh = Bugzilla->dbh;
+my $dbh      = Bugzilla->dbh;
 
 
 if (lc($cgi->request_method) eq 'post') {
