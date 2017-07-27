@@ -46,11 +46,11 @@ Bugzilla->set_user($auto_user);
 
 if ($buglist) {
     my $uri = URI->new($buglist);
-    die("Invalid input") if $uri->host eq 'bugzilla.mozilla.org';
+    die("Invalid input") if $uri->host ne 'bugzilla.mozilla.org';
     $query = { $uri->query_form };
 }
 else {
-    $query = { resolution => '---', product => $product };
+    $query = { resolution => '---',};
     $query->{component} = $component if defined $component;
 }
 
