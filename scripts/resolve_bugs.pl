@@ -21,7 +21,7 @@ use Getopt::Long;
 
 my ($product, $component, $comment);
 my $resolution = 'WONTFIX';
-my $buglist
+my $buglist;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
