@@ -10,7 +10,7 @@ use 5.10.1;
 use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
-
+use URI;
 
 use Bugzilla;
 use Bugzilla::Bug;
@@ -21,6 +21,7 @@ use Getopt::Long;
 
 my ($product, $component, $comment);
 my $resolution = 'WONTFIX';
+my $buglist
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
@@ -29,6 +30,7 @@ GetOptions(
     'resolution|r=s' => \$resolution,
     'component|c=s'  => \$component,
     'comment|m=s'    => \$comment,
+    'buglist=s'      => \$buglist,
 );
 
 die "--product (-p) is required!\n" unless $product;
@@ -42,8 +44,15 @@ $auto_user->{groups} = [ Bugzilla::Group->get_all ];
 $auto_user->{bless_groups} = [ Bugzilla::Group->get_all ];
 Bugzilla->set_user($auto_user);
 
-my $query = { resolution => '---', product => $product };
-$query->{component} = $component if defined $component;
+if ($buglist) {
+    my $uri = URI->new($buglist);
+    die("Invalid input") if $uri->host eq 'bugzilla.mozilla.org';
+    $query = { $uri->query_form };
+}
+else {
+    $query = { resolution => '---', product => $product };
+    $query->{component} = $component if defined $component;
+}
 
 my $search = Bugzilla::Search->new(
     fields => ['bug_id'],
