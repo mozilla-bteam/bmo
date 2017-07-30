@@ -204,7 +204,7 @@
   <th>[% terms.Bugs %] filed</th>
   <td class="numeric">
     [% IF user.id %]
-      <a href="buglist.cgi?query_format=advanced&amp;emailtype1=exact&amp;emailreporter1=1&amp;email1=[% target.login FILTER uri %]"
+      <a href="buglist.cgi?query_format=advanced&amp;emailtype1=exact&amp;emailreporter1=1&amp;email1=[% target.login FILTER uri %];&chfield=[Bug creation]&chfieldfrom=-30d"
         target="_blank">
     [% END %]
     [% stats.bugs_filed || 0 FILTER html %]
