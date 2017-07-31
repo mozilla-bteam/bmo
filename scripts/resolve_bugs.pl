@@ -11,6 +11,7 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 use URI;
+use Test::URI;
 
 use Bugzilla;
 use Bugzilla::Bug;
@@ -22,6 +23,9 @@ use Getopt::Long;
 my ($product, $component, $comment);
 my $resolution = 'WONTFIX';
 my $buglist;
+
+uri_protocol_ok( $uri, 'https');
+uri_path_ok( $uri, 'bugzilla.mozilla.org');
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
