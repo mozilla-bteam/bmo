@@ -1,0 +1,100 @@
+[%# 1.0@bugzilla.org %]
+[%# The contents of this file are subject to the Mozilla Public
+  # License Version 1.1 (the "License"); you may not use this file
+  # except in compliance with the License. You may obtain a copy of
+  # the License at http://www.mozilla.org/MPL/
+
+  #
+  # Software distributed under the License is distributed on an "AS
+  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+  # implied. See the License for the specific language governing
+  # rights and limitations under the License.
+  #
+  # The Original Code is the Bugzilla Bug Tracking System.
+  #
+  # The Initial Developer of the Original Code is Mozilla Corporation.
+  # Portions created by Mozilla are Copyright (C) 2008 Mozilla
+  # Corporation. All Rights Reserved.
+  # Contributor(s): Mark Smith <mark@mozilla.com>
+  #                 Reed Loden <reed@mozilla.com>
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% inline_style = BLOCK %]
+#heading {
+  text-align:  center;
+  width:       98%;
+  font-size:   2em;
+  font-weight: bold;
+  margin:      10px;
+}
+p {
+   max-width: 40%;
+}
+label.required:before {
+  content: "* ";
+  color: red;
+}
+.required_star {
+  color: red;
+}
+[% END %]
+
+[% PROCESS global/header.html.tmpl
+   title              = "Firefox Security Bug"
+   generate_api_token = 1
+   style_urls         = [ 'skins/standard/attachment.css' ]
+   style              = inline_style
+   html5              = 1
+%]
+
+<div id="heading">Security Bug Form</div>
+
+<p>
+    For more information, visit the <a href=https://www.mozilla.org/en-US/security/client-bug-bounty/>Mozilla Client Bug Bounty program</a> page
+</p>
+
+<form id="firefox_security_bug_form" method="post" action="post_bug.cgi" enctype="multipart/form-data">
+  <input type="hidden" name="product" value="Firefox">
+  <input type="hidden" name="component" value="Security">
+  <input type="hidden" name="group" value="core-security">
+  <input type="hidden" name="priority" value="--">
+  <input type="hidden" name="bug_severity" value="normal">
+  <input type="hidden" name="format" value="firefox-security">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+  <input type="hidden" name="flag_type-[% component.find_first_flag_type('bug', 'sec-bounty').id FILTER html %]" value="?">
+
+  <table>
+      <tr>
+          <th align="right" valign="top" width="170">
+              <label class="required" for="short_desc">Summary:</label>
+          </th>
+          <td>
+              <input required name="short_desc" id="short_desc" size="60" value="[% short_desc FILTER html %]" >
+              <div> Please write a clear, descriptive summary. </div>
+          </td>
+      </tr>
+
+
+      <tr>
+          <th align="right" valign="top" width="170">
+              <label class="required" for="short_desc">Comment:</label>
+          </th>
+          <td>
+              <textarea required name="short_desc" id="short_desc" size="60" value="[% short_desc FILTER html %]"></textarea>
+          </td>
+      </tr>
+  </table>
+
+  <br>
+
+  <input type="submit" id="commit" value="Submit Request">
+
+  <p>
+    [ <span class="required_star">*</span> <span class="required_explanation">
+    Required Field</span> ]
+  </p>
+</form>
+
+[% PROCESS global/footer.html.tmpl %]
