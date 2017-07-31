@@ -9,7 +9,7 @@ package Bugzilla::Elastic::Role::Object;
 use 5.10.1;
 use Role::Tiny;
 
-requires qw(ES_TYPE ES_PROPERTIES es_document);
+requires qw(ES_TYPE ES_INDEX ES_SETTINGS ES_PROPERTIES es_document);
 requires qw(ID_FIELD DB_TABLE);
 
 sub ES_OBJECTS_AT_ONCE { 100 }
@@ -24,6 +24,11 @@ sub ES_SELECT_ALL_SQL {
 }
 
 requires qw(ES_SELECT_UPDATED_SQL);
+
+sub es_id {
+    my ($self) = @_;
+    return join('_', $self->ES_TYPE, $self->id);
+}
 
 around 'ES_PROPERTIES' => sub {
     my $orig = shift;
@@ -41,8 +46,11 @@ around 'es_document' => sub {
 
     $doc->{es_mtime} = $mtime;
     $doc->{$self->ID_FIELD} = $self->id;
+    $doc->{_id} = $self->es_id;
 
     return $doc;
 };
+
+
 
 1;

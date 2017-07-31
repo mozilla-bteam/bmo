@@ -18,6 +18,8 @@ use Bugzilla::Bug;
 use Bugzilla::BugMail;
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Extension::Push::Util qw(is_public);
+use Bugzilla::User;
 use Bugzilla::Util qw(correct_urlbase detaint_natural);
 use Bugzilla::WebService::Constants;
 
@@ -73,7 +75,13 @@ sub revision {
 
     # If bug is public then remove privacy policy
     my $result;
+<<<<<<< HEAD
     unless ( @{ $bug->groups_in } ) {
+||||||| merged common ancestors
+    if (!@{ $bug->groups_in }) {
+=======
+    if (is_public($bug)) {
+>>>>>>> origin/master
         $result = make_revision_public($revision_id);
     }
     # else bug is private
