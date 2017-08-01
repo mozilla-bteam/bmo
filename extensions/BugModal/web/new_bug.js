@@ -1,32 +1,34 @@
+var initial = {}
 var comp_desc = {}
 
-function load_products(query, callback) {
+$(document).ready(function() {
     bugzilla_ajax(
             {
-                url: 'rest/bug_modal/products'
+                url: 'rest/bug_modal/initial_field_values'
             },
             function(data) {
-                callback(data.products);
+                initial = data
             },
             function() {
-                callback();
+                alert("Network issues. Please refresh the page and try again");
             }
         );
-}
-
-$(document).ready(function() {
     var product_sel = $("#product").selectize({
         valueField: 'name',
         labelField: 'name',
+        placeholder: 'Product',
         searchField: 'name',
         options: [],
         preload: true,
         create: false,
-        load: load_products
+        load: function(query, callback) {
+            callback(initial.products);
+        }
     });
     var component_sel = $("#component").selectize({
         valueField: 'name',
         labelField: 'name',
+        placeholder: 'Component',
         searchField: 'name',
         options: [],
     });
@@ -34,8 +36,23 @@ $(document).ready(function() {
     var version_sel = $("#version").selectize({
         valueField: 'name',
         labelField: 'name',
+        placeholder: 'Version',
         searchField: 'name',
         options: [],
+    });
+
+    var keywords_sel = $("#keywords").selectize({
+        delimiter: ', ',
+        valueField: 'name',
+        labelField: 'name',
+        placeholder: 'Keywords',
+        searchField: 'name',
+        options: [],
+        preload: true,
+        create: false,
+        load: function(query, callback) {
+            callback(initial.keywords);
+        }
     });
 
     product_sel.on("change", function () {
@@ -46,7 +63,6 @@ $(document).ready(function() {
                     url: 'rest/bug_modal/product_info?product=' + encodeURIComponent($('#product').val())
                 },
                 function(data) {
-                    product_info = data;
                     $('#product-throbber').hide();
                     $('#component').attr('disabled', false);
                     $('#comp_desc').text('Select a component to read its description.');
@@ -81,9 +97,29 @@ $(document).ready(function() {
     $('.create-btn')
         .click(function(event) {
             event.preventDefault();
-            if (document.newbugform.checkValidity && !document.newbugform.checkValidity())
+            if (document.newbugform.checkValidity && !document.newbugform.checkValidity()) {
+                alert("Required fields are empty");
                 return;
-            this.form.submit()
+            }
+            else {
+                this.form.submit()
+            }
+        });
+
+    $('#data').on("change", function () {
+        if (!$('#data').val()) {
+            return
+        } else {
+            document.getElementById('reset').style.display = "inline-block";
+            $("#description").prop('required',true);
+        }
+    });
+    $('#reset')
+        .click(function(event) {
+            event.preventDefault();
+            document.getElementById('data').value = "";
+            document.getElementById('reset').style.display = "none";
+            $("#description").prop('required',false);
         });
     
 });

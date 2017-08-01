@@ -17,6 +17,7 @@ use Bugzilla::Attachment;
 use Bugzilla::Bug;
 use Bugzilla::BugMail;
 use Bugzilla::Error;
+use Bugzilla::Extension::Push::Util qw(is_public);
 use Bugzilla::User;
 use Bugzilla::Util qw(correct_urlbase detaint_natural);
 use Bugzilla::WebService::Constants;
@@ -27,7 +28,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     edit_revision_policy
     get_bug_role_phids
     get_project_phid
-    get_revision_by_id
+    get_revisions_by_ids
     intersect
     make_revision_public
     request
@@ -50,7 +51,8 @@ sub revision {
 
     # Obtain more information about the revision from Phabricator
     my $revision_id = $params->{revision};
-    my $revision = get_revision_by_id($revision_id);
+    my @revisions = get_revisions_by_ids([$revision_id]);
+    my $revision = $revisions[0];
 
     my $revision_phid  = $revision->{phid};
     my $revision_title = $revision->{fields}{title} || 'Unknown Description';
@@ -60,7 +62,7 @@ sub revision {
 
     # If bug is public then remove privacy policy
     my $result;
-    if (!@{ $bug->groups_in }) {
+    if (is_public($bug)) {
         $result = make_revision_public($revision_id);
     }
     # Else bug is private

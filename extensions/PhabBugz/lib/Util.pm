@@ -20,6 +20,7 @@ use LWP::UserAgent;
 use base qw(Exporter);
 
 our @EXPORT = qw(
+    add_comment_to_revision
     create_revision_attachment
     create_private_revision_policy
     create_project
@@ -27,20 +28,21 @@ our @EXPORT = qw(
     get_bug_role_phids
     get_members_by_bmo_id
     get_project_phid
-    get_revision_by_id
+    get_revisions_by_ids
     intersect
+    make_revision_private
     make_revision_public
     request
     set_project_members
 );
 
-sub get_revision_by_id {
-    my $id = shift;
+sub get_revisions_by_ids {
+    my ($ids) = @_;
 
     my $data = {
         queryKey => 'all',
         constraints => {
-            ids => [ int($id) ]
+            ids => $ids
         }
     };
 
@@ -49,7 +51,7 @@ sub get_revision_by_id {
     ThrowUserError('invalid_phabricator_revision_id')
         unless (exists $result->{result}{data} && @{ $result->{result}{data} });
 
-    return $result->{result}{data}[0];
+    return @{$result->{result}{data}};
 }
 
 sub create_revision_attachment {
@@ -133,8 +135,25 @@ sub make_revision_public {
     return request('differential.revision.edit', {
         transactions => [
             {
+                type  => 'view',
+                value => 'public'
+            }
+        ],
+        objectIdentifier => $revision_phid
+    });
+}
+
+sub make_revision_private {
+    my ($revision_phid) = @_;
+    return request('differential.revision.edit', {
+        transactions => [
+            {
                 type  => "view",
-                value => "users"
+                value => "admin"
+            },
+            {
+                type  => "edit",
+                value => "admin"
             }
         ],
         objectIdentifier => $revision_phid
@@ -165,6 +184,21 @@ sub edit_revision_policy {
         });
     }
 
+    return request('differential.revision.edit', $data);
+}
+
+sub add_comment_to_revision {
+    my ($revision_phid, $comment) = @_;
+
+    my $data = {
+        transactions => [
+            {
+                type  => 'comment',
+                value => $comment
+            }
+        ],
+        objectIdentifier => $revision_phid
+    };
     return request('differential.revision.edit', $data);
 }
 

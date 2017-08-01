@@ -42,13 +42,21 @@ use List::MoreUtils qw(uniq);
 
 my $user = Bugzilla->login(LOGIN_REQUIRED);
 
-my $cgi = Bugzilla->cgi;
+my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
-my $vars = {};
+my $vars     = {};
+my $dbh      = Bugzilla->dbh;
+
+
+unless ($user->in_group('new-bug-testers')) {
+    print $cgi->redirect(correct_urlbase());
+    exit;
+}
 
 if (lc($cgi->request_method) eq 'post') {
      my $token = $cgi->param('token');
      check_hash_token($token, ['new_bug']);
+     my @keywords = $cgi->param('keywords');
      my $new_bug = Bugzilla::Bug->create({
                 short_desc   => scalar($cgi->param('short_desc')),
                 product      => scalar($cgi->param('product')),
@@ -57,11 +65,40 @@ if (lc($cgi->request_method) eq 'post') {
                 groups       => [],
                 op_sys       => 'Unspecified',
                 rep_platform => 'Unspecified',
-                version      => join(' ', split('_', scalar($cgi->param('version')))),
+                version      => scalar( $cgi->param('version')),
+                keywords     => \@keywords,
                 cc           => [],
                 comment      => scalar($cgi->param('comment')),
             });
      delete_token($token);
+
+     my $data_fh = $cgi->upload('data');
+
+     if ($data_fh) {
+         my $content_type = Bugzilla::Attachment::get_content_type();
+         my $attachment;
+
+         my $error_mode_cache = Bugzilla->error_mode;
+         Bugzilla->error_mode(ERROR_MODE_DIE);
+         my $timestamp = $dbh->selectrow_array(
+             'SELECT creation_ts FROM bugs WHERE bug_id = ?', undef, $new_bug->bug_id);
+         eval {
+             $attachment = Bugzilla::Attachment->create(
+                 {bug           => $new_bug,
+                  creation_ts   => $timestamp,
+                  data          => $data_fh,
+                  description   => scalar $cgi->param('description'),
+                  filename      => $data_fh,
+                  ispatch       => 0,
+                  isprivate     => 0,
+                  mimetype      => $content_type,
+                 });
+         };
+         Bugzilla->error_mode($error_mode_cache);
+         unless ($attachment) {
+            $vars->{'message'} = 'attachment_creation_failed';
+         }
+     }
 
      my $recipients = { changer => $user };
      my $bug_sent = Bugzilla::BugMail::Send($new_bug->bug_id, $recipients);

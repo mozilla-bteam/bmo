@@ -80,8 +80,8 @@ use constant VALIDATOR_DEPENDENCIES => {
 
 with 'Bugzilla::Elastic::Role::ChildObject';
 
-use constant ES_TYPE        => 'comment';
-use constant ES_PARENT_TYPE => 'bug';
+use constant ES_TYPE         => 'comment';
+use constant ES_PARENT_CLASS => 'Bugzilla::Bug';
 
 sub ES_OBJECTS_AT_ONCE { 50 }
 
@@ -119,7 +119,7 @@ sub ES_SELECT_UPDATED_SQL {
 sub es_parent_id {
     my ($self) = @_;
 
-    return $self->bug_id,
+    return $self->ES_PARENT_CLASS->ES_TYPE . '_' . $self->bug_id,
 }
 
 sub es_document {
