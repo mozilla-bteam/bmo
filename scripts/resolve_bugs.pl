@@ -11,7 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 use URI;
-use Test::URI;
 
 use Bugzilla;
 use Bugzilla::Bug;
@@ -23,9 +22,6 @@ use Getopt::Long;
 my ($product, $component, $comment);
 my $resolution = 'WONTFIX';
 my $buglist;
-
-uri_protocol_ok( $uri, 'https');
-uri_path_ok( $uri, 'bugzilla.mozilla.org');
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
@@ -51,6 +47,8 @@ Bugzilla->set_user($auto_user);
 if ($buglist) {
     my $uri = URI->new($buglist);
     die("The buglist url must match bugzilla.mozilla.org") if $uri->host ne 'bugzilla.mozilla.org';
+    die("Path must point to /buglist.cgi") if $uri->path ne '/buglist.cgi';
+    die("Protocol must match https") if $uri->protocol ne 'https';
     $query = { $uri->query_form };
 }
 else {
