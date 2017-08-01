@@ -46,9 +46,9 @@ Bugzilla->set_user($auto_user);
 
 if ($buglist) {
     my $uri = URI->new($buglist);
-    die("The buglist url must match bugzilla.mozilla.org") if $uri->host ne 'bugzilla.mozilla.org';
-    die("Path must point to /buglist.cgi") if $uri->path ne '/buglist.cgi';
-    die("Protocol must match https") if $uri->protocol ne 'https';
+    die "The buglist url must match bugzilla.mozilla.org" if $uri->host ne 'bugzilla.mozilla.org';
+    die "Path must point to /buglist.cgi" if $uri->path ne '/buglist.cgi';
+    die "Protocol must match https" if $uri->protocol ne 'https';
     $query = { $uri->query_form };
 }
 else {
