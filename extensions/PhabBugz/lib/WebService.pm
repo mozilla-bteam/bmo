@@ -75,13 +75,7 @@ sub revision {
 
     # If bug is public then remove privacy policy
     my $result;
-<<<<<<< HEAD
-    unless ( @{ $bug->groups_in } ) {
-||||||| merged common ancestors
-    if (!@{ $bug->groups_in }) {
-=======
     if (is_public($bug)) {
->>>>>>> origin/master
         $result = make_revision_public($revision_id);
     }
     # else bug is private
