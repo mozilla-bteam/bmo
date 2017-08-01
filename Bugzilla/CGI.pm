@@ -127,7 +127,7 @@ sub new {
     # the rendering of pages.
     my $script = basename($0);
     if (my $path = $self->path_info) {
-        my @whitelist = ("rest.cgi");
+        my @whitelist = ("rest.cgi", "new_bug.cgi");
         Bugzilla::Hook::process('path_info_whitelist', { whitelist => \@whitelist });
         if (!grep($_ eq $script, @whitelist)) {
             # apache collapses // to / in $ENV{PATH_INFO} but not in $self->path_info.

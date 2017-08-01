@@ -37,7 +37,6 @@ use Bugzilla::Field;
 use Bugzilla::Status;
 use Bugzilla::UserAgent;
 use Bugzilla::BugMail;
-use Data::Dumper;
 
 
 use List::MoreUtils qw(uniq);
@@ -55,7 +54,12 @@ unless ($user->in_group('new-bug-testers')) {
     exit;
 }
 
-warn Dumper($cgi->path_info);
+# my $path_product = $cgi->path_info;
+# $path_product =~ s/[\$#@~!&*()\[\];.,:?^ `\\\/]+//g;
+# my @products = @{ $user->get_enterable_products };
+# unless(grep { $_->name eq $path_product } @products) {
+#     warn Dumper("Hello");
+# }
 
 if (lc($cgi->request_method) eq 'post') {
      my $token = $cgi->param('token');

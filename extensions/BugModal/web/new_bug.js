@@ -1,19 +1,11 @@
 var initial = {}
 var comp_desc = {}
+var product_name = '';
 
 $(document).ready(function() {
-    bugzilla_ajax(
-            {
-                url: 'rest/bug_modal/initial_field_values'
-            },
-            function(data) {
-                initial = data
-            },
-            function() {
-                alert("Network issues. Please refresh the page and try again");
-            }
-        );
-    var product_sel = $("#product").selectize({
+    var current_url = window.location.href.split(/[/]+/);
+
+    var $product_sel = $("#product").selectize({
         valueField: 'name',
         labelField: 'name',
         placeholder: 'Product',
@@ -25,6 +17,32 @@ $(document).ready(function() {
             callback(initial.products);
         }
     });
+
+    bugzilla_ajax(
+            {
+                url: 'rest/bug_modal/initial_field_values'
+            },
+            function(data) {
+                initial = data
+                if (current_url.length == 4) {
+                    for (product in initial.products) {
+                        if (initial.products[product].name === current_url[current_url.length - 1]) {
+                            product_name = current_url[current_url.length - 1];
+                            $product_sel[0].selectize.setValue('1', false);
+                            $product_sel[0].selectize.disable();
+                        }
+                    }
+                    if (product_name == '') {
+                        current_url.pop();
+                        window.location.href = current_url.join('/');
+                    }
+                }
+            },
+            function() {
+                alert("Network issues. Please refresh the page and try again");
+            }
+        );
+
     var component_sel = $("#component").selectize({
         valueField: 'name',
         labelField: 'name',
@@ -55,7 +73,7 @@ $(document).ready(function() {
         }
     });
 
-    product_sel.on("change", function () {
+    $product_sel.on("change", function () {
         $('#product-throbber').show();
         $('#component').attr('disabled', true);
         bugzilla_ajax(
