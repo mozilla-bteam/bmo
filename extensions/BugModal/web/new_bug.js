@@ -68,10 +68,10 @@ $(document).ready(function() {
                         options: [],
                         preload: true,
                         create: false,
+                        load: function(query, callback) {       
+                            callback(initial.products);       
+                        }
                     });
-                    $product_sel[0].selectize.load(function(callback) {
-                                callback(initial.products);
-                            });
                 }
             },
             function() {
@@ -108,11 +108,10 @@ $(document).ready(function() {
             callback(initial.keywords);
         }
     });
-    if ( typeof $product_sel !== 'undefined') {
-        $product_sel.on("change", function () {
-            component_load($("product").val());
-        });
-    }
+    
+    $("#product").on("change", function () {
+        component_load($("#product").val());
+    });
 
     component_sel.on("change", function () {
         var selectize = $("#component")[0].selectize;
