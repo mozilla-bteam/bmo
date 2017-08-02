@@ -2,22 +2,42 @@ var initial = {}
 var comp_desc = {}
 var product_name = '';
 
+var component_load = function(product) {
+    $('#product-throbber').show();
+    $('#component').attr('disabled', true);
+    bugzilla_ajax(
+        {
+            url: 'rest/bug_modal/product_info?product=' + encodeURIComponent(product)
+        },
+        function(data) {
+            $('#product-throbber').hide();
+            $('#component').attr('disabled', false);
+            $('#comp_desc').text('Select a component to read its description.');
+            var selectize = $("#component")[0].selectize;
+            selectize.clear();
+            selectize.clearOptions();
+            selectize.load(function(callback) {
+                callback(data.components)
+            });
+
+            for (var i in data.components)
+                comp_desc[data.components[i]["name"]] = data.components[i]["description"];
+
+            selectize = $("#version")[0].selectize;
+            selectize.clear();
+            selectize.clearOptions();
+            selectize.load(function(callback) {
+                callback(data.versions);
+            });
+        },
+        function() {
+            alert("Network issues. Please refresh the page and try again");
+        }
+    );  
+}
+
 $(document).ready(function() {
     var current_url = window.location.href.split(/[/]+/);
-
-    var $product_sel = $("#product").selectize({
-        valueField: 'name',
-        labelField: 'name',
-        placeholder: 'Product',
-        searchField: 'name',
-        options: [],
-        preload: true,
-        create: false,
-        load: function(query, callback) {
-            callback(initial.products);
-        }
-    });
-
     bugzilla_ajax(
             {
                 url: 'rest/bug_modal/initial_field_values'
@@ -28,14 +48,30 @@ $(document).ready(function() {
                     for (product in initial.products) {
                         if (initial.products[product].name === current_url[current_url.length - 1]) {
                             product_name = current_url[current_url.length - 1];
-                            $product_sel[0].selectize.setValue('1', false);
-                            $product_sel[0].selectize.disable();
+                            var product_node = document.createElement("input");
+                            $("#product_wrap").html('<input name="product" type="hidden" id="product" value="' + product_name + '"><h3 style="padding-left:20px;">'+ product_name +'</h3>');
+                            component_load(product_name);
                         }
                     }
                     if (product_name == '') {
                         current_url.pop();
                         window.location.href = current_url.join('/');
                     }
+                } else if (current_url.length != 3){
+                    window.location.href = current_url.slice(0,3).join('/');
+                } else {
+                    var $product_sel = $("#product").selectize({
+                        valueField: 'name',
+                        labelField: 'name',
+                        placeholder: 'Product',
+                        searchField: 'name',
+                        options: [],
+                        preload: true,
+                        create: false,
+                    });
+                    $product_sel[0].selectize.load(function(callback) {
+                                callback(initial.products);
+                            });
                 }
             },
             function() {
@@ -72,40 +108,11 @@ $(document).ready(function() {
             callback(initial.keywords);
         }
     });
-
-    $product_sel.on("change", function () {
-        $('#product-throbber').show();
-        $('#component').attr('disabled', true);
-        bugzilla_ajax(
-                {
-                    url: 'rest/bug_modal/product_info?product=' + encodeURIComponent($('#product').val())
-                },
-                function(data) {
-                    $('#product-throbber').hide();
-                    $('#component').attr('disabled', false);
-                    $('#comp_desc').text('Select a component to read its description.');
-                    var selectize = $("#component")[0].selectize;
-                    selectize.clear();
-                    selectize.clearOptions();
-                    selectize.load(function(callback) {
-                        callback(data.components)
-                    });
-
-                    for (var i in data.components)
-                        comp_desc[data.components[i]["name"]] = data.components[i]["description"];
-
-                    selectize = $("#version")[0].selectize;
-                    selectize.clear();
-                    selectize.clearOptions();
-                    selectize.load(function(callback) {
-                        callback(data.versions);
-                    });
-                },
-                function() {
-                    alert("Network issues. Please refresh the page and try again");
-                }
-            );     
-    });
+    if ( typeof $product_sel !== 'undefined') {
+        $product_sel.on("change", function () {
+            component_load($("product").val());
+        });
+    }
 
     component_sel.on("change", function () {
         var selectize = $("#component")[0].selectize;
