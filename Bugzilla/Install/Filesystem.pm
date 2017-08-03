@@ -404,7 +404,7 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
-        "robots.txt"              => { perms     => $CGI_READ,
+        "robots.txt"              => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => \&robots_txt},
     );
@@ -952,7 +952,7 @@ sub _check_web_server_group {
 
 sub robots_txt {
     my $output = '';
-    Bugzilla->template->process("global/robots.txt.html", {}, \$output);
+    Bugzilla->template->process("global/robots.txt.tmpl", {}, \$output) or die Bugzilla->template->error;
     return $output;
 }
 
