@@ -409,12 +409,6 @@ sub FILESYSTEM {
                                        contents  => \&robots_txt},
     );
 
-    sub robots_txt {
-    my $output = '';
-    Bugzilla->template->process("global/robots.txt.html", {}, \$output);
-    return $output;
-}
-
     # Because checksetup controls the creation of index.html separately
     # from all other files, it gets its very own hash.
     my %index_html = (
@@ -955,6 +949,13 @@ sub _check_web_server_group {
 
     return $group_id;
 }
+
+sub robots_txt {
+    my $output = '';
+    Bugzilla->template->process("global/robots.txt.html", {}, \$output);
+    return $output;
+}
+
 
 1;
 
