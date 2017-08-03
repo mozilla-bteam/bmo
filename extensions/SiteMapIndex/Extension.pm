@@ -90,9 +90,6 @@ sub install_before_final_checks {
     }
 
     return if (correct_urlbase() ne 'https://bugzilla.mozilla.org/');
-
-
-    $self->_fix_robots_txt();
 }
 
 sub install_filesystem {

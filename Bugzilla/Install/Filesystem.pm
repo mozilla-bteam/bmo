@@ -214,11 +214,10 @@ sub FILESYSTEM {
 
         'Bugzilla.pm'    => { perms => CGI_READ },
         "$localconfig*"  => { perms => CGI_READ },
-        'META.*'        => { perms => CGI_READ },
-        'MYMETA.*'      => { perms => CGI_READ },
+        'META.*'         => { perms => CGI_READ },
+        'MYMETA.*'       => { perms => CGI_READ },
         'bugzilla.dtd'   => { perms => WS_SERVE },
         'mod_perl.pl'    => { perms => WS_SERVE },
-        'robots.txt'     => { perms => WS_SERVE },
         '.htaccess'      => { perms => WS_SERVE },
         'cvs-update.log' => { perms => WS_SERVE },
         'scripts/sendunsentbugmail.pl' => { perms => WS_EXECUTE },
@@ -405,7 +404,16 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
+        "robots.txt"              => { perms     => $CGI_READ,
+                                       overwrite => 1,
+                                       contents  => \&robots_txt},
     );
+
+    sub robots_txt {
+    my $output = '';
+    Bugzilla->template->process("global/robots.txt.html", {}, \$output);
+    return $output;
+}
 
     # Because checksetup controls the creation of index.html separately
     # from all other files, it gets its very own hash.
