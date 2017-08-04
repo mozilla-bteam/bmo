@@ -69,7 +69,7 @@ sub create_revision_attachment {
     # If one matches then return it instead. This is fine as
     # BMO does not contain actual diff content.
     my @review_attachments = grep { is_attachment_phab_revision($_) } @{ $bug->attachments };
-    my $review_attachmet = first { trim($_->data) eq $revision_uri } @review_attachments;
+    my $review_attachment = first { trim($_->data) eq $revision_uri } @review_attachments;
     return $review_attachment if defined $review_attachment;
 
     # No attachment is present, so we can now create new one
@@ -296,7 +296,7 @@ sub get_members_by_bmo_id {
 sub is_attachment_phab_revision {
     my ($attachment, $include_obsolete) = @_;
     return ($attachment->contenttype eq PHAB_CONTENT_TYPE
-            && ($include_obsolete || !$attachment->isobsolete) ? 1 : 0)
+            && ($include_obsolete || !$attachment->isobsolete)
             && $attachment->attacher->login eq 'phab-bot@bmo.tld') ? 1 : 0;
 }
 
