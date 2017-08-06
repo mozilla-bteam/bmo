@@ -53,7 +53,7 @@ RewriteRule ^__version__$ version.json [L]
 RewriteRule ^__heartbeat__$ heartbeat.cgi [L]
 
 # New single page interface for filing bugs
-RewriteRule ^new[-_]bug($|/.+) new_bug.cgi$1 [L,QSA]
+RewriteRule ^new[-_]bug$ new_bug.cgi [L,QSA]
 
 RewriteRule ^template_cache/ - [F,L,NC]
 RewriteRule ^template_cache.deleteme/ - [F,L,NC]

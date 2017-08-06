@@ -37,42 +37,36 @@ var component_load = function(product) {
 }
 
 $(document).ready(function() {
-    var current_url = window.location.href.split(/[/]+/);
+    var current_hash = window.location.hash;
     bugzilla_ajax(
             {
                 url: 'rest/bug_modal/initial_field_values'
             },
             function(data) {
                 initial = data
-                if (current_url.length == 4) {
+                if (current_hash) {
                     for (product in initial.products) {
-                        if (initial.products[product].name === current_url[current_url.length - 1]) {
-                            product_name = current_url[current_url.length - 1];
+                        if (initial.products[product].name === current_hash.substr(1)) {
+                            product_name = current_hash.substr(1);
                             var product_node = document.createElement("input");
                             $("#product_wrap").html('<input name="product" type="hidden" id="product" value="' + product_name + '"><h3 style="padding-left:20px;">'+ product_name +'</h3>');
                             component_load(product_name);
+                            return;
                         }
                     }
-                    if (product_name == '') {
-                        current_url.pop();
-                        window.location.href = current_url.join('/');
-                    }
-                } else if (current_url.length != 3){
-                    window.location.href = current_url.slice(0,3).join('/');
-                } else {
-                    var $product_sel = $("#product").selectize({
-                        valueField: 'name',
-                        labelField: 'name',
-                        placeholder: 'Product',
-                        searchField: 'name',
-                        options: [],
-                        preload: true,
-                        create: false,
-                        load: function(query, callback) {       
-                            callback(initial.products);       
-                        }
-                    });
                 }
+                var $product_sel = $("#product").selectize({
+                    valueField: 'name',
+                    labelField: 'name',
+                    placeholder: 'Product',
+                    searchField: 'name',
+                    options: [],
+                    preload: true,
+                    create: false,
+                    load: function(query, callback) {       
+                        callback(initial.products);       
+                    }
+                });
             },
             function() {
                 alert("Network issues. Please refresh the page and try again");

@@ -38,7 +38,6 @@ use Bugzilla::Status;
 use Bugzilla::UserAgent;
 use Bugzilla::BugMail;
 
-
 use List::MoreUtils qw(uniq);
 
 my $user = Bugzilla->login(LOGIN_REQUIRED);
@@ -53,13 +52,6 @@ unless ($user->in_group('new-bug-testers')) {
     print $cgi->redirect(correct_urlbase());
     exit;
 }
-
-# my $path_product = $cgi->path_info;
-# $path_product =~ s/[\$#@~!&*()\[\];.,:?^ `\\\/]+//g;
-# my @products = @{ $user->get_enterable_products };
-# unless(grep { $_->name eq $path_product } @products) {
-#     warn Dumper("Hello");
-# }
 
 if (lc($cgi->request_method) eq 'post') {
      my $token = $cgi->param('token');
