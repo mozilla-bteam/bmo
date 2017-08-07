@@ -124,16 +124,6 @@ EOT
     };
 }
 
-sub _fix_robots_txt {
-    my ($self) = @_;
-    my $cgi_path = bz_locations()->{'cgi_path'};
-    my $robots_file = "$cgi_path/robots.txt";
-    my $current_fh = new IO::File("$cgi_path/robots.txt", 'r');
-    if (!$current_fh) {
-        warn "$robots_file: $!";
-        return;
-    }
-
     my $current_contents;
     { local $/; $current_contents = <$current_fh> }
     $current_fh->close();

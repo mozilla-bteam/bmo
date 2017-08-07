@@ -952,7 +952,7 @@ sub _check_web_server_group {
 
 sub robots_txt {
     my $output = '';
-    Bugzilla->template->process("global/robots.txt.tmpl", {}, \$output) or die Bugzilla->template->error;
+    Bugzilla->template->process("global/robots.txt.tmpl", {SITEMAP_URL => correct_urlbase().SITEMAP_URL}, \$output) or die Bugzilla->template->error;
     return $output;
 }
 
