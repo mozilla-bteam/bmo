@@ -52,7 +52,7 @@ if ($buglist) {
     $query = { $uri->query_form };
 }
 else {
-    $query = { resolution => '---',};
+    $query = { resolution => '---', product => $product};
     $query->{component} = $component if defined $component;
 }
 
