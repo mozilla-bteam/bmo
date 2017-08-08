@@ -950,11 +950,10 @@ sub _check_web_server_group {
     return $group_id;
 }
 
-sub robots_txt {
-    my $output = '';
-    Bugzilla->template->process("global/robots.txt.tmpl", {SITEMAP_URL => correct_urlbase().SITEMAP_URL}, \$output) or die Bugzilla->template->error;
-    return $output;
-}
+my %vars;
+Bugzilla::Hook::process("before_robots_txt", { vars => \%vars });
+Bugzilla->template->process("robots.txt.tmpl", \%vars, \$output)
+    or die Bugzilla->template->error;
 
 
 1;
