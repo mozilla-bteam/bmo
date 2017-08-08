@@ -37,20 +37,20 @@ var component_load = function(product) {
 }
 
 $(document).ready(function() {
-    var current_hash = window.location.hash;
+    var product_name = window.location.hash? window.location.hash.substr(1) : null;
     bugzilla_ajax(
             {
                 url: 'rest/bug_modal/initial_field_values'
             },
             function(data) {
                 initial = data
-                if (current_hash) {
+                if (product_name) {
                     for (product in initial.products) {
-                        if (initial.products[product].name === current_hash.substr(1)) {
-                            product_name = current_hash.substr(1);
-                            var product_node = document.createElement("input");
-                            $("#product_wrap").html('<input name="product" type="hidden" id="product" value="' + product_name + '"><h3 style="padding-left:20px;">'+ product_name +'</h3>');
-                            component_load(product_name);
+                        if (initial.products[product].name.toLowerCase() === product_name.toLowerCase()) {
+                            $("#product_wrap").html('<input name="product" type="hidden" id="product"><h3 style="padding-left:20px;" id="product_name_heading">Hello</h3>')
+                            $("#product").val(initial.products[product].name);
+                            $("#product_name_heading").text(initial.products[product].name);
+                            component_load(initial.products[product].name);
                             return;
                         }
                     }
