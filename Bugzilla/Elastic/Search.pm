@@ -102,7 +102,9 @@ sub data {
     my @fields = map { $REMAP_NAME{$_} // $_ } @{ $self->fields };
     my (@ids, %hits);
     foreach my $hit (@{ $result->{hits}{hits} }) {
-        push @ids, $hit->{_id};
+        my ($id) = $hit->{_id} =~ /^bug_([0-9]+)/;
+        die "invalid bug id: $hit->{_id}" unless $id;
+        push @ids, $id;
         my $source = $hit->{_source};
         $source->{relevance} = $hit->{_score};
         foreach my $val (values %$source) {
