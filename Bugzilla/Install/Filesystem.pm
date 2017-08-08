@@ -956,6 +956,7 @@ sub robots_txt {
     Bugzilla::Hook::process("before_robots_txt", { vars => \%vars });
     Bugzilla->template->process("robots.txt.tmpl", \%vars, \$output)
     or die Bugzilla->template->error;
+    return $output;
 }
 
 
