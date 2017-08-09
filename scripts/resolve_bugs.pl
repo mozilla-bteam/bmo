@@ -52,6 +52,7 @@ if ($buglist) {
     $query = { $uri->query_form };
 }
 else {
+    my $query;
     $query = { resolution => '---', product => $product};
     $query->{component} = $component if defined $component;
 }
