@@ -54,6 +54,7 @@
           %]
 
           [% INCLUDE bug_modal/common_new_comment.html.tmpl disable_cols=1 %]
+          <input name="groups" value="core-security" id="group_core-security" type="checkbox">
           [% END %]
           [% WRAPPER bug_modal/module.html.tmpl title = "Attach a File" collapsed = 1 %]
           <div class="file-container">
