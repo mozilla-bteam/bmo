@@ -32,8 +32,8 @@ our @EXPORT = qw(
     get_project_phid
     get_revisions_by_ids
     intersect
-    make_revision_private
     is_attachment_phab_revision
+    make_revision_private
     make_revision_public
     request
     set_project_members
