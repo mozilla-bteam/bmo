@@ -13,9 +13,9 @@ use warnings;
 
 use base qw(Exporter);
 our @EXPORT = qw(
-  PHAB_AUTOMATION_USER
-  PHAB_ATTACHMENT_PATTERN
-  PHAB_CONTENT_TYPE
+    PHAB_AUTOMATION_USER
+    PHAB_ATTACHMENT_PATTERN
+    PHAB_CONTENT_TYPE
 );
 
 use constant PHAB_ATTACHMENT_PATTERN => qr/^phabricator-D(\d+)/;

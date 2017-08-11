@@ -36,7 +36,6 @@ use Bugzilla::Extension::PhabBugz::Util qw(
 );
 
 use MIME::Base64 qw(decode_base64);
-use Data::Dumper;
 
 use constant PUBLIC_METHODS => qw(
     revision
