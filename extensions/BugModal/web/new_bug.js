@@ -72,7 +72,6 @@ $(document).ready(function() {
                 alert("Network issues. Please refresh the page and try again");
             }
         );
-
     var component_sel = $("#component").selectize({
         valueField: 'name',
         labelField: 'name',
@@ -139,6 +138,7 @@ $(document).ready(function() {
             document.getElementById('reset').style.display = "none";
             $("#description").prop('required',false);
         });
+<<<<<<< HEAD
     $('#comment-edit-tab')
         .click(function() {
             $('#comment-preview-tab').css("background-color", "#fff");
@@ -150,4 +150,9 @@ $(document).ready(function() {
             $(this).css("background-color", "#eee");
         });
     $('#comment-edit-tab').click();
+=======
+    window.onhashchange = function() {
+        location.reload();
+    }    
+>>>>>>> Hash reload page
 });
