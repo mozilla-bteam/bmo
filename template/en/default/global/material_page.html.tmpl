@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+<title>Bootstrap Page</title>
+</head>
+<style>
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 60px;
+  text-align: center;
+  line-height:45px;
+  height:45px;
+}
+</style>
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand href="/" class="Header-branding" data-nc-element="branding" data-content-field="site-title">
+      <img src="//static1.squarespace.com/static/58879499725e2572b9c4e0ec/t/588d2571197aeae36a5e0d60/1499830757644/?format=100w" alt="Mozilla Design Language" class="Header-branding-logo">
+      </a>
+  </div>
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">New</a></li>
+        <li><a href="#">Browse</a></li>
+        <li><a href="#">Search</a></li>
+      </ul>
+      <form class="navbar-form navbar-left">
+        <div class="form-group">
+          <input type="text" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-default">Search</button>
+        [<a href="page.cgi?id=quicksearch.html" title="Quicksearch Help">help</a>]
+      </form>
+      <ul class="nav navbar-nav navbar-left">
+      <li><a href="#">Reports</a></li>
+      <li><a href="#">My Dashboard</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+  <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">[% user.login FILTER html %] <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+            <li><a href="#">My Dashboard</a></li>
+            <li><a href="#">My Profile</a></li>
+            <li><a href="#">My Activity</a></li>
+            <li><a href="#">My Requests</a></li>
+            <li><a href="#">Preferences</a></li>
+            <li><a href="#">Administration</a></li>
+          </ul>
+        </li>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+<body>
+
+    [% content %]
+    <footer class="footer">
+      <div class="container">
+        <p>Privacy Notice | Legal Terms</p>
+      </div>
+    </footer>
+</body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</html>
