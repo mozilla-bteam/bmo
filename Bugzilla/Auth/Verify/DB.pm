@@ -62,12 +62,12 @@ sub check_credentials {
     if (Bugzilla->usage_mode == USAGE_MODE_BROWSER &&
         Bugzilla->params->{password_check_on_login})
     {
-        my $check = validate_password_check($password);
-        if ($check) {
+        my $pwqc = Bugzilla->passwdqc;
+        unless ($pwqc->validate_password($password)) {
             return {
                 failure => AUTH_ERROR,
-                user_error => $check,
-                details => { locked_user => $user }
+                user_error => 'password_insecure',
+                details => { locked_user => $user, reason => $pwqc->reason }
             }
         }
     }

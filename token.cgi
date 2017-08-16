@@ -118,11 +118,17 @@ if ( $action eq 'reqpw' ) {
 my $password;
 if ( $action eq 'chgpw' ) {
     $password = $cgi->param('password');
-    defined $password
-      && defined $cgi->param('matchpassword')
-      || ThrowUserError("require_new_password");
+    my $matchpassword = $cgi->param('matchpassword');
+    ThrowUserError("require_new_password")
+        unless defined $password && defined $matchpassword;
 
-    validate_password($password, $cgi->param('matchpassword'));
+    my $pwqc = Bugzilla->passwdqc;
+    if (not $pwqc->validate_password($password)) {
+        ThrowUserError("password_insecure", { reason => $pwqc->reason });
+    }
+    elsif ($password ne $matchpassword ) {
+        ThrowUserError("password_mismatch");
+    }
     # Make sure that these never show up in the UI under any circumstances.
     $cgi->delete('password', 'matchpassword');
 }
@@ -391,15 +397,22 @@ sub confirm_create_account {
     Bugzilla->user->check_account_creation_enabled;
     my (undef, undef, $login_name) = Bugzilla::Token::GetTokenData($token);
 
-    my $password = $cgi->param('passwd1') || '';
-    validate_password($password, $cgi->param('passwd2') || '');
+    my $password1 = $cgi->param('passwd1');
+    my $password2 = $cgi->param('passwd2');
     # Make sure that these never show up anywhere in the UI.
     $cgi->delete('passwd1', 'passwd2');
+    my $pwqc = Bugzilla->passwdqc;
+    if (not $pwqc->validate_password($password1)) {
+        ThrowUserError('password_insecure', { reason => $pwqc->reason });
+    }
+    elsif ($password1 ne $password2) {
+        ThrowUserError("password_mismatch");
+    }
 
     my $otheruser = Bugzilla::User->create({
         login_name => $login_name,
         realname   => scalar $cgi->param('realname'),
-        cryptpassword => $password});
+        cryptpassword => $password1});
 
     # Now delete this token.
     delete_token($token);
@@ -410,7 +423,7 @@ sub confirm_create_account {
 
     # Log in the new user using credentials he just gave.
     $cgi->param('Bugzilla_login', $otheruser->login);
-    $cgi->param('Bugzilla_password', $password);
+    $cgi->param('Bugzilla_password', $password1);
     Bugzilla->login(LOGIN_OPTIONAL);
 
     print $cgi->header();

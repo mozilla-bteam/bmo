@@ -17,7 +17,6 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Token;
-use Bugzilla::User qw( validate_password );
 use Bugzilla::Util qw( bz_crypt );
 
 my $cgi = Bugzilla->cgi;
@@ -49,7 +48,14 @@ if ($cgi->param('do_save')) {
     if ($old_password eq $password_1) {
         ThrowUserError('new_password_same');
     }
-    validate_password($password_1, $password_2);
+
+    my $pwqc = Bugzilla->passwdqc;
+    if (not $pwqc->validate_password($password_1)) {
+        ThrowUserError("password_insecure", { reason => $pwqc->reason });
+    }
+    elsif ($password_1 ne $password_2) {
+        ThrowUserError("password_mismatch");
+    }
 
     # update
     $dbh->bz_start_transaction;

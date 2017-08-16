@@ -321,6 +321,27 @@ sub github_secret {
     return $cache->{github_secret};
 }
 
+sub passwdqc {
+    my ($class) = @_;
+    require Data::Password::passwdqc;
+
+    my $cache  = $class->request_cache;
+    my $params = $class->params;
+
+    return $cache->{passwdqc} if $cache->{passwdqc};
+
+    my @min = map { $_ eq 'undef' ? undef : $_ }
+        split( /\s*,\s*/, $params->{passwdqc_min} );
+
+    return $cache->{passwdqc} = Data::Password::passwdqc->new(
+        min              => \@min,
+        max              => $params->{passwdqc_max},
+        passphrase_words => $params->{passwdqc_passphrase_words},
+        match_length     => $params->{passwdqc_match_length},
+        random_bits      => $params->{passwdqc_random_bits},
+    );
+}
+
 sub login {
     my ($class, $type) = @_;
 
