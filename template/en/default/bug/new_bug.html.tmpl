@@ -14,7 +14,7 @@
     javascript_urls = ['extensions/BugModal/web/new_bug.js']
     style_urls = ['extensions/BugModal/web/new_bug.css']
 %]
-[% PROCESS global/header.html.tmpl %]
+[% WRAPPER "global/bootstrap_page.html.tmpl" %]
 
 [% IF user.id %]
   <div style="display: none" id="xhr-error"></div>
@@ -183,7 +183,7 @@
   </div>
 [% END %]
 
-[% PROCESS global/footer.html.tmpl %]
+[% END %]
 
 [% BLOCK fields_lhs %]
     <div class="fields-lhs">[% content FILTER none %]</div>
