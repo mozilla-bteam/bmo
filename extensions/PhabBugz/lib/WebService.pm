@@ -16,12 +16,14 @@ use base qw(Bugzilla::WebService);
 use Bugzilla::Attachment;
 use Bugzilla::Bug;
 use Bugzilla::BugMail;
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Extension::Push::Util qw(is_public);
 use Bugzilla::User;
 use Bugzilla::Util qw(correct_urlbase detaint_natural);
 use Bugzilla::WebService::Constants;
 
+use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Util qw(
     create_revision_attachment
     create_private_revision_policy
@@ -34,20 +36,32 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     request
 );
 
-use Data::Dumper;
+use MIME::Base64 qw(decode_base64);
 
 use constant PUBLIC_METHODS => qw(
     revision
 );
 
+
 sub revision {
     my ($self, $params) = @_;
+
+    # Phabricator only supports sending credentials via HTTP Basic Auth
+    # so we exploit that function to pass in an API key as the password
+    # of basic auth. BMO does not support basic auth but does support
+    # use of API keys.
+    my $http_auth = Bugzilla->cgi->http('Authorization');
+    $http_auth =~ s/^Basic\s+//;
+    $http_auth = decode_base64($http_auth);
+    my ($login, $api_key) = split(':', $http_auth);
+    $params->{'Bugzilla_login'} = $login;
+    $params->{'Bugzilla_api_key'} = $api_key;
+
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
 
     unless (defined $params->{revision} && detaint_natural($params->{revision})) {
         ThrowCodeError('param_required', { param => 'revision' })
     }
-
-    my $user = Bugzilla->set_user(Bugzilla::User->new({ name => 'conduit@mozilla.bugs' }));
 
     # Obtain more information about the revision from Phabricator
     my $revision_id = $params->{revision};
@@ -65,7 +79,7 @@ sub revision {
     if (is_public($bug)) {
         $result = make_revision_public($revision_id);
     }
-    # Else bug is private
+    # else bug is private
     else {
         my $phab_sync_groups = Bugzilla->params->{phabricator_sync_groups}
             || ThrowUserError('invalid_phabricator_sync_groups');
@@ -98,13 +112,49 @@ sub revision {
     };
 }
 
+sub check_user_permission_for_bug {
+    my ($self, $params) = @_;
+
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+
+    # Ensure PhabBugz is on
+    ThrowUserError('phabricator_not_enabled')
+        unless Bugzilla->params->{phabricator_enabled};
+
+    # Validate that the requesting user's email matches phab-bot
+    ThrowUserError('phabricator_unauthorized_user')
+        unless $user->login eq PHAB_AUTOMATION_USER;
+
+    # Validate that a bug id and user id are provided
+    ThrowUserError('phabricator_invalid_request_params')
+        unless ($params->{bug_id} && $params->{user_id});
+
+    # Validate that the user and bug exist
+    my $target_user = Bugzilla::User->check({ id => $params->{user_id}, cache => 1 });
+
+    # Send back an object which says { "result": 1|0 }
+    return {
+        result => $target_user->can_see_bug($params->{bug_id})
+    };
+}
+
 sub rest_resources {
     return [
+        # Revision creation
         qr{^/phabbugz/revision/([^/]+)$}, {
             POST => {
                 method => 'revision',
                 params => sub {
                     return { revision => $_[0] };
+                }
+            }
+        },
+        # Bug permission checks
+        qr{^/phabbugz/check_bug/(\d+)/(\d+)$}, {
+            GET => {
+                method => 'check_user_permission_for_bug',
+                params => sub {
+                    return { bug_id => $_[0], user_id => $_[1] };
                 }
             }
         }
