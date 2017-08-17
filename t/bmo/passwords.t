@@ -121,6 +121,30 @@ eval {
         $ENV{BZ_TEST_NEWBIE_PASS}
     );
     $sel->title_is("User Preferences");
+
+    logout_ok($sel);
+    open my $fh, '>', '/app/data/mailer.testfile';
+    close $fh;
+
+    $sel->get('/createaccount.cgi');
+    $sel->title_is('Create a new Bugzilla account');
+    click_and_type($sel, 'login', $ENV{BZ_TEST_NEWBIE2});
+    $sel->find_element('//input[@id="etiquette"]', 'xpath')->click();
+    submit($sel, '//input[@value="Create Account"]');
+    $sel->title_is("Request for new user account '$ENV{BZ_TEST_NEWBIE2}' submitted");
+    my ($create_token) = search_mailer_testfile(
+        qr{/token\.cgi\?t=([^&]+)&a=request_new_account}xs
+    );
+    $sel->get("/token.cgi?t=$create_token&a=request_new_account");
+    click_and_type($sel, 'passwd1', $ENV{BZ_TEST_NEWBIE2_PASS});
+    click_and_type($sel, 'passwd2', $ENV{BZ_TEST_NEWBIE2_PASS});
+    submit($sel, '//input[@value="Create"]');
+
+    $sel->title_is('Bugzilla Main Page');
+    $sel->body_text_contains(
+        ["The user account $ENV{BZ_TEST_NEWBIE2} has been created",
+         "successfully"]
+    );
 };
 if ($@) {
     fail("got exception $@");
@@ -146,6 +170,28 @@ sub get_token {
         close $fh;
     } until $token || $count > 60;
     return $token;
+}
+
+sub search_mailer_testfile {
+    my ($regexp) = @_;
+    my $content = "";
+    my @result;
+    my $count = 0;
+    do {
+        sleep 1 if $count++;
+        open my $fh, '<', '/app/data/mailer.testfile';
+        $content .= do {
+            local $/ = undef;
+            <$fh>;
+        };
+        close $fh;
+        my $decoded = $content;
+        $decoded =~ s/\r\n/\n/gs;
+        $decoded =~ s/=\n//gs;
+        $decoded =~ s/=([[:xdigit:]]{2})/chr(hex($1))/ges;
+        @result = $decoded =~ $regexp;
+    } until @result || $count > 60;
+    return @result;
 }
 
 sub click_and_type {

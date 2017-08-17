@@ -133,6 +133,9 @@ sub cmd_test_bmo {
     $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';
     create_user($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS}, realname => "Newbie User");
 
+    $ENV{BZ_TEST_NEWBIE2} = 'newbie2@mozilla.example';
+    $ENV{BZ_TEST_NEWBIE2_PASS} = 'captain.space.pants.time.lord';
+
     prove_with_httpd(
         httpd_url => $ENV{BZ_BASE_URL},
         httpd_cmd => [ '/usr/sbin/httpd', '-f', '/app/httpd/httpd.conf',  '-DFOREGROUND' ],
