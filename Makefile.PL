@@ -41,6 +41,7 @@ my %requires = (
     'CPAN::Meta::Prereqs'      => '2.132830',
     'CPAN::Meta::Requirements' => '2.121',
     'DBI'                      => '1.614',
+    'Data::Password::passwdqc' => '0.08',
     'Date::Format'             => '2.23',
     'DateTime'                 => '0.75',
     'DateTime::TimeZone'       => '2.11',
@@ -71,7 +72,7 @@ my %build_requires = (
 my %test_requires = (
     'Test::More'         => 0,
     'Pod::Coverage'      => 0,
-    'Test::WWW::Selenium' => 0.
+    'Test::WWW::Selenium' => 0,
 );
 my %recommends = ( Safe => '2.30' );
 

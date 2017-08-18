@@ -16,16 +16,16 @@ use base 'Bugzilla::Extension::Push::Connector::Base';
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Extension::PhabBugz::Util qw(add_comment_to_revision
-  create_private_revision_policy edit_revision_policy get_bug_role_phids
-  get_revisions_by_ids intersect make_revision_public make_revision_private);
+use Bugzilla::User;
+
+use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::Util qw(
+  add_comment_to_revision create_private_revision_policy
+  edit_revision_policy get_bug_role_phids get_revisions_by_ids
+  intersect is_attachment_phab_revision make_revision_public
+  make_revision_private);
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util qw(is_public);
-use Bugzilla::User;
-use List::Util qw(any);
-
-use constant PHAB_CONTENT_TYPE       => 'text/x-phabricator-request';
-use constant PHAB_ATTACHMENT_PATTERN => qr/^phabricator-D(\d+)/;
 
 sub options {
     return (
@@ -90,10 +90,13 @@ sub send {
             : 'One revision was' )
           . ' made private due to unknown Bugzilla groups.';
 
-        my $user =
-          Bugzilla->set_user(
-            Bugzilla::User->new( { name => 'conduit@mozilla.bugs' } ) );
+        my $user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
+        $user->{groups} = [ Bugzilla::Group->get_all ];
+        $user->{bless_groups} = [ Bugzilla::Group->get_all ];
+        Bugzilla->set_user($user);
+
         $bug->add_comment( $bmo_error_message, { isprivate => 0 } );
+
         my $bug_changes = $bug->update();
         $bug->send_changes($bug_changes);
 
@@ -127,11 +130,8 @@ sub _get_attachment_revisions() {
 
     my @revisions;
 
-    my @attachments = grep {
-             $_->isobsolete == 0
-          && $_->contenttype eq PHAB_CONTENT_TYPE
-          && $_->attacher->login ne 'phab-bot@bmo.tld'
-    } @{ $bug->attachments() };
+    my @attachments =
+      grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
 
     if (@attachments) {
         my @revision_ids;
