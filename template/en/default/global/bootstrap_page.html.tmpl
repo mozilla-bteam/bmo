@@ -93,13 +93,15 @@ IF !header.defined; header = title; END;
         height: 60px;
         background-color: #f5f5f5;
       }
+      .Header-branding-logo {
+        margin-top: -5px;
+        margin-bottom: 10px;
+      }
     </style>
   </head>
 
-  [% IF onload %]
-  <script [% script_nonce FILTER none %]>
-  $(function() { [% onload %] });
-  </script>
+  [% FOREACH js_url IN javascript_urls %]
+  <script src="[% js_url FILTER html %]"></script>
   [% END %]
   <body
         class="[% urlbase.replace('^https?://','').replace('/$','').replace('[-~@:/.]+','-') FILTER css_class_quote %]
