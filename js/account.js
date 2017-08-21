@@ -6,13 +6,6 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 $(function() {
-
-    if (page == "account") {
-        $("#new_password1, #new_password2, #new_login_name").change(function() {
-            $("#old_password").attr("required", true);
-        });
-    }
-
     // account disabling
     $('#account-disable-toggle')
         .click(function(event) {
