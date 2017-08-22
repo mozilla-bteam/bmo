@@ -158,6 +158,7 @@ use constant WS_ERROR_CODE => {
     auth_cant_create_account    => 501,
     account_creation_disabled   => 501,
     account_creation_restricted => 501,
+    # Error 502 password_too_short no longer exists.
     # Error 503 password_too_long no longer exists.
     invalid_username      => 504,
     # This is from strict_isolation, but it also basically means
