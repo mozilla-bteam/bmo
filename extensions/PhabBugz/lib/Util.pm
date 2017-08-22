@@ -314,7 +314,14 @@ sub request {
         $ua->default_header('Content-Type' => 'application/x-www-form-urlencoded');
     }
 
+    my $phab_api_key = $params->{phabricator_api_key};
+    ThrowUserError('invalid_phabricator_api_key') unless $phab_api_key;
+    my $phab_base_uri = $params->{phabricator_base_uri};
+    ThrowUserError('invalid_phabricator_uri') unless $phab_base_uri;
+
     my $full_uri = $phab_base_uri . '/api/' . $method;
+
+    $data->{__conduit__} = { token => $phab_api_key };
 
     my $response = $ua->post($full_uri, { params => encode_json($data) });
 
