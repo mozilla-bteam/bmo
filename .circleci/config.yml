@@ -4,13 +4,56 @@
 #
 
 version: 2
+
+defaults:
+  bmo_slim_image: &bmo_slim_image
+    image: mozillabteam/bmo-slim:20170818.1
+    user: app
+
+  mysql_image: &mysql_image
+    image: mozillabteam/bmo-mysql:5.6
+
+  bmo_env: &bmo_env
+    PORT: 8000
+    BMO_db_user: bugs
+    BMO_db_host: 127.0.0.1
+    BMO_db_pass: bugs
+    BMO_db_name: bugs
+    BMO_memcached_servers: localhost:11211
+    BMO_memcached_namespace: "bugzilla:"
+
+  mysql_env: &mysql_env
+    MYSQL_DATABASE: bugs
+    MYSQL_USER: bugs
+    MYSQL_PASSWORD: bugs
+    MYSQL_ALLOW_EMPTY_PASSWORD: 1
+
+  docker_oldtests: &docker_oldtests
+    - <<: *bmo_slim_image
+      environment:
+        <<: *bmo_env
+        BZ_QA_CONF_FILE: /app/.circleci/selenium_test.conf
+        BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.legacy.txt
+        BZ_QA_LEGACY_MODE: 1
+    - <<: *mysql_image
+      environment: *mysql_env
+    - image: selenium/standalone-firefox:2.53.1
+    - image: memcached:latest
+
+  default_qa_setup: &default_qa_setup
+    run:
+      command: |
+        mv /opt/bmo/local /app/local
+        perl -MSys::Hostname -i -pE 's/<<HOSTNAME>>/hostname()/ges' $BZ_QA_CONF_FILE
+        perl -MSys::Hostname -i -pE 's/<<HOSTNAME>>/hostname()/ges' $BZ_QA_ANSWERS_FILE
+        perl checksetup.pl --no-database --default-localconfig
+        mkdir artifacts
+
 jobs:
   build:
     working_directory: /app
     docker:
       - image: docker:17.06.1-ce
-        environment:
-          BMO_IMAGE_NAME: mozillabteam/bmo
     steps:
       - setup_remote_docker
       - run:
@@ -18,8 +61,109 @@ jobs:
           command: apk update && apk add git openssh-client
       - checkout
       - run: |
-          docker build -t $BMO_IMAGE_NAME:$CIRCLE_BRANCH .
-          if [[ -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
-            docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
-            docker push $BMO_IMAGE_NAME:$CIRCLE_BRANCH
+          docker build -t bmo .
+          if [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
+            TAG="$CIRCLE_BRANCH"
+            if [[ $TAG == "master" ]]; then
+              docker tag bmo $DOCKERHUB_REPO:latest
+              docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+              docker push $DOCKERHUB_REPO:latest
+            fi
           fi
+
+  test_sanity:
+    parallelism: 4
+    working_directory: /app
+    docker:
+      - *bmo_slim_image
+    steps:
+      - checkout
+      - *default_qa_setup
+      - run:
+          name: run sanity tests
+          command: |
+            prove -qf $(circleci tests glob 't/*.t' | circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
+      - store_artifacts:
+          path: /app/artifacts
+
+  test_webservices:
+    parallelism: 1
+    working_directory: /app
+    docker: *docker_oldtests
+    steps:
+      - checkout
+      - *default_qa_setup
+      - run: |
+          rm -f /app/localconfig
+          /app/scripts/entrypoint.pl load_test_data
+      - run:
+          command: |
+            rm -f /app/localconfig
+            /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
+      - store_artifacts:
+          path: /app/artifacts
+
+  test_selenium:
+    parallelism: 1
+    working_directory: /app
+    docker: *docker_oldtests
+    steps:
+      - checkout
+      - *default_qa_setup
+      - run: |
+          rm -f /app/localconfig
+          /app/scripts/entrypoint.pl load_test_data --legacy
+      - run:
+          command: |
+            rm -f /app/localconfig
+            /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
+      - store_artifacts:
+          path: /app/artifacts
+
+  test_bmo:
+    parallelism: 4
+    working_directory: /app
+    docker:
+      - <<: *bmo_slim_image
+        environment:
+          <<: *bmo_env
+          BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.txt
+          TWD_HOST: localhost
+          TWD_PORT: 4444
+          TWD_BROWSER: firefox
+      - <<: *mysql_image
+        environment: *mysql_env
+      - image: memcached:latest
+      - image: selenium/standalone-firefox:2.53.1
+    steps:
+      - checkout
+      - run: |
+          mv /opt/bmo/local /app/local
+          perl checksetup.pl --no-database --default-localconfig
+          perl -MSys::Hostname -i -pE 's/<<HOSTNAME>>/hostname()/ges' $BZ_QA_ANSWERS_FILE
+          rm -f /app/localconfig
+          /app/scripts/entrypoint.pl load_test_data
+          mkdir artifacts
+      - run: |
+          BZ_BASE_URL="http://$(hostname):$PORT"
+          export BZ_BASE_URL
+          rm -f /app/localconfig
+          /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
+
+
+
+workflows:
+  version: 2
+  tests:
+    jobs:
+      - test_bmo
+      - test_sanity
+      - test_webservices
+      - test_selenium:
+          requires:
+            - test_bmo
+      - build:
+          requires:
+            - test_sanity
+            - test_webservices
+            - test_selenium
