@@ -29,8 +29,6 @@ var component_load = function(product) {
             selectize.load(function(callback) {
                 callback(data.versions);
             });
-            $("#group_security_desc").show();
-            $("#group_security").val(data.default_security_group);
         },
         function() {
             alert("Network issues. Please refresh the page and try again");
