@@ -41,8 +41,6 @@
 [% generate_api_token = 1 %]
 [% header = "$terms.Bug&nbsp;$bug.bug_id" %]
 [% header_addl_info = "Last modified: $filtered_timestamp" %]
-[% yui = ['calendar', 'connection', 'json'] %]
-[% yui.push('container') IF user.can_tag_comments %]
 [% javascript_urls = [ "js/util.js", "js/field.js" ] %]
 [% javascript_urls.push("js/bug.js") IF user.id  %]
 [% javascript_urls.push('js/comment-tagging.js')
@@ -78,8 +76,8 @@
     [% javascript FILTER none %]
   [% END %]
 [% END %]
-[% style_urls = [ "skins/standard/show_bug.css", 
-                  "skins/custom/bug_groups.css" ] %]
+[% style_urls = [ "skins/standard/show_bug.css",
+                  "skins/standard/bug_groups.css" ] %]
 [% doc_section = "bug_page.html" %]
 [% bodyclasses = ['bz_bug',
                   "bz_status_$bug.bug_status",

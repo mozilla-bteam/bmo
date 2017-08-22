@@ -50,37 +50,11 @@
   header_addl_info = ""
   onload = ""
   style_urls = []
-  yui = []
-  yui_css = {}
-  yui_deps = {}
   no_yui = 0
   jquery = []
   jquery_css = []
   generate_api_token = 0
 %]
-
-[% IF NOT no_yui %]
-  [% SET yui_css = {
-    calendar     => 1,
-    datatable    => 1,
-    button       => 1,
-  } %]
-
-  [%# Note: This is simple dependency resolution--you can't have dependencies
-    # that depend on each other. You have to specify all of a module's deps,
-    # if that module is going to be specified in "yui".
-    #%]
-  [% SET yui_deps = {
-    datatable    => ['json', 'connection', 'datasource', 'element'],
-  } %]
-
-  [%# When using certain YUI modules, we need to process certain
-    # extra JS templates.
-    #%]
-  [% SET yui_templates = {
-    datatable => ['global/value-descs.js.tmpl'],
-  } %]
-[% END %]
 
 [%# These are JS URLs that are *always* on the page and come before
   # every other JS URL.
@@ -91,8 +65,7 @@
 ] %]
 
 [% IF NOT no_yui %]
-  [% starting_js_urls.push("js/yui/yahoo-dom-event/yahoo-dom-event.js",
-                           "js/yui/cookie/cookie-min.js") %]
+  [% starting_js_urls.push("js/yui.js") %]
 [% END %]
 
 [% SET jq_css_urls = [
@@ -117,38 +90,42 @@
   # value of title anyway.  To get around that problem we explicitly
   # set header's default value here only if it is undefined. %]
 [% IF !header.defined %][% header = title %][% END %]
-[%- js_BUGZILLA = {
-        param => {
-            cookiepath => Param('cookiepath'),
-            maxusermatches => Param('maxusermatches'),
-        },
-        constant => {
-            COMMENT_COLS => constants.COMMENT_COLS,
-        },
-        string => {
-            # Please keep these in alphabetical order.
-
-            attach_desc_required =>
-                'You must enter a Description for this attachment.',
-            component_required => 
-                "You must select a Component for this $terms.bug",
-            description_required => 
-                "You must enter a Description for this $terms.bug",
-            short_desc_required =>
-                "You must enter a Summary for this $terms.bug",
-            version_required =>
-                "You must select a Version for this $terms.bug"
-        }
-    };
-    IF generate_api_token;
-        js_BUGZILLA.api_token = get_api_token();
-    END; 
-%]
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
                       "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
-  <head data-bugzilla='[% json_encode(js_BUGZILLA) FILTER html %]'>
+  <head>
+    [%- js_BUGZILLA = {
+            param => {
+                cookiepath => Param('cookiepath'),
+                maxusermatches => Param('maxusermatches'),
+            },
+            constant => {
+                COMMENT_COLS => constants.COMMENT_COLS,
+            },
+            string => {
+                # Please keep these in alphabetical order.
+                attach_desc_required =>
+                    'You must enter a Description for this attachment.',
+                component_required =>
+                    "You must select a Component for this $terms.bug",
+                description_required =>
+                    "You must enter a Description for this $terms.bug",
+                short_desc_required =>
+                    "You must enter a Summary for this $terms.bug",
+                version_required =>
+                    "You must select a Version for this $terms.bug"
+            }
+        };
+    %]
     [% Hook.process("start") %]
+    [%
+       IF generate_api_token;
+        js_BUGZILLA.api_token = get_api_token();
+       END;
+    %]
+
+    <meta name="bugzilla-global" content="dummy"
+        id="bugzilla-global" data-bugzilla="[% json_encode(js_BUGZILLA) FILTER html %]">
     <title>[% title %]</title>
 
     [% IF Param('utf8') %]
@@ -159,11 +136,7 @@
 
     [% PROCESS 'global/setting-descs.none.tmpl' %]
 
-    [% IF NOT no_yui %]
-      [% SET yui = yui_resolve_deps(yui, yui_deps) %]
-    [% END %]
-
-    [% SET css_sets = css_files(style_urls.unique, yui, yui_css) %]
+    [% SET css_sets = css_files(style_urls.unique, no_yui) %]
     [% IF constants.CONCATENATE_ASSETS %]
       [% PROCESS format_css_link asset_url = css_sets.unified_standard_skin %]
     [% ELSE %]
@@ -191,13 +164,6 @@
       [% END %]
     [% END %]
 
-    [% IF NOT no_yui %]
-      [%# YUI Scripts %]
-      [% FOREACH yui_name = yui %]
-        [% starting_js_urls.push("js/yui/$yui_name/${yui_name}-min.js") %]
-      [% END %]
-    [% END %]
-
     [%# jQuery Plugins %]
     [% FOREACH jq_name = jquery.unique %]
       [% starting_js_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.js") %]
@@ -208,11 +174,6 @@
       [% PROCESS format_js_link %]
     [% END %]
 
-    [%# Make some Bugzilla information available to all scripts. 
-      # We don't import every parameter and constant because we
-      # don't want to add a lot of uncached JS to every page. 
-      # %]
-    
     [% inline_javascript = BLOCK %]
         [% IF NOT no_yui %]
           YAHOO.namespace('bugzilla');
@@ -220,11 +181,7 @@
               YAHOO.util.Event._simpleRemove(window, "unload",
                                              YAHOO.util.Event._unload);
           }
-          [% FOREACH yui_name = yui %]
-            [% FOREACH yui_template = yui_templates.$yui_name %]
-              [% INCLUDE $yui_template %]
-            [% END %]
-          [% END %]
+          [% INCLUDE 'global/value-descs.js.tmpl' %]
         [% END %]
 
         [% IF javascript %]
@@ -243,8 +200,8 @@
 
     [%# this puts the live bookmark up on firefox for the Atom feed %]
     [% IF atomlink %]
-       <link rel="alternate" 
-             type="application/atom+xml" title="Atom feed" 
+       <link rel="alternate"
+             type="application/atom+xml" title="Atom feed"
              href="[% atomlink FILTER html %]">
     [% END %]
 
@@ -281,7 +238,6 @@
 
 <div id="header">
 
-[% IF user.settings.skin.value == 'Mozilla' || user.settings.skin.value == 'Mozilla-OpenSans' %]
   <div class="wrapper">
     <table border="0" cellspacing="0" cellpadding="0" id="titles">
     <tr>
@@ -339,9 +295,9 @@
               </li>
             [% ELSE %]
                 [%# Only display one login form when we're on a LOGIN_REQUIRED page. That
-                # way, we're guaranteed that the user will use the form that has 
+                # way, we're guaranteed that the user will use the form that has
                 # hidden_fields in it (the center form) instead of this one. Also, it's
-                # less confusing to have one form (as opposed to  three) when you're 
+                # less confusing to have one form (as opposed to  three) when you're
                 # required to log in.
                 #%]
                 [% IF user.authorizer.can_login && !Bugzilla.page_requires_login %]
@@ -353,7 +309,7 @@
       </td>
       <td id="moz_tab">
         <a href="https://www.mozilla.org/" title="Mozilla - Home of the Mozilla Project">
-          <img src="skins/contrib/Mozilla/tabzilla.png" border="0" height="42" width="154"></a>
+          <img src="images/tabzilla.png" border="0" height="42" width="154"></a>
       </td>
     </tr>
     </table>
@@ -368,65 +324,14 @@
     [% PROCESS "global/common-links.html.tmpl" qs_suffix = "_top" %]
 
   </div>
-
-[% ELSE %]
-
-[% INCLUDE global/banner.html.tmpl %]
-
-<table border="0" cellspacing="0" cellpadding="0" id="titles">
-<tr>
-    <td id="title">
-      <p>[% terms.BugzillaTitle %]
-      [% Hook.process("message") %]
-      [% " &ndash; $header" IF header %]</p>
-    </td>
-
-  [% IF subheader %]
-    <td id="subtitle">
-      <p class="subheader">[% subheader %]</p>
-    </td>
-  [% END %]
-
-  [% IF header_addl_info %]
-    <td id="information">
-      <p class="header_addl_info">[% header_addl_info %]</p>
-    </td>
-  [% END %]
-</tr>
-</table>
-
-<table id="lang_links_container" cellpadding="0" cellspacing="0"
-       class="bz_default_hidden"><tr><td>
-[% IF Bugzilla.languages.size > 1 %]
-  <ul class="links">
-  [% FOREACH lang = Bugzilla.languages.sort %]
-    <li>[% IF NOT loop.first %]<span class="separator"> | </span>[% END %]
-    [% IF lang == current_language %]
-      <span class="lang_current">[% lang FILTER html FILTER upper %]</span>
-    [% ELSE %]
-      <a href="#" onclick="set_language('[% lang FILTER none %]');">
-       [%- lang FILTER html FILTER upper %]</a>
-    [% END %]
-    </li>
-  [% END %]
-  </ul>
-[% END %]
-</td></tr></table>
-
-[% PROCESS "global/common-links.html.tmpl" qs_suffix = "_top" %]
-
-[% END %]
-
 </div> [%# header %]
 
 <div id="bugzilla-body">
 
 [%# in most cases the "header" variable provides redundant information, however
   # there are exceptions where not displaying this text is problematic. %]
-[% IF (user.settings.skin.value == 'Mozilla' || user.settings.skin.value == 'Mozilla-OpenSans')
-      && template.name.match('^attachment/')
-      && !header.match('^Bug&nbsp;\d+$')
-%]
+[% IF template.name.match('^attachment/')
+      && !header.match('^Bug&nbsp;\d+$') %]
   <h2>[% header FILTER none %]</h2>
 [% END %]
 

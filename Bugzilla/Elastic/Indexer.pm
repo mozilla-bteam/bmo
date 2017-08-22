@@ -10,20 +10,16 @@ use 5.10.1;
 use Moo;
 use List::MoreUtils qw(natatime);
 use Storable qw(dclone);
+use Scalar::Util qw(looks_like_number);
+use Time::HiRes;
 use namespace::clean;
 
 with 'Bugzilla::Elastic::Role::HasClient';
-with 'Bugzilla::Elastic::Role::HasIndexName';
-
-has 'mtime' => (
-    is      => 'lazy',
-    clearer => 'clear_mtime',
-);
 
 has 'shadow_dbh' => ( is => 'lazy' );
 
 has 'debug_sql' => (
-    is => 'ro',
+    is      => 'ro',
     default => 0,
 );
 
@@ -32,119 +28,66 @@ has 'progress_bar' => (
     predicate => 'has_progress_bar',
 );
 
-sub create_index {
-    my ($self) = @_;
-    my $indices = $self->client->indices;
 
-    $indices->create(
-        index => $self->index_name,
-        body => {
-            settings => {
-                number_of_shards => 1,
-                analysis => {
-                    analyzer => {
-                        folding => {
-                            type      => 'standard',
-                            tokenizer => 'standard',
-                            filter    => [ 'lowercase', 'asciifolding' ]
-                        },
-                        bz_text_analyzer => {
-                            type             => 'standard',
-                            filter           => ['lowercase', 'stop'],
-                            max_token_length => '20'
-                        },
-                        bz_substring_analyzer => {
-                            type      => 'custom',
-                            filter    => ['lowercase'],
-                            tokenizer => 'bz_ngram_tokenizer',
-                        },
-                        bz_equals_analyzer => {
-                            type   => 'custom',
-                            filter => ['lowercase'],
-                            tokenizer => 'keyword',
-                        },
-                        whiteboard_words => {
-                            type => 'custom',
-                            tokenizer => 'whiteboard_words_pattern',
-                            filter => ['stop']
-                        },
-                        whiteboard_shingle_words => {
-                            type => 'custom',
-                            tokenizer => 'whiteboard_words_pattern',
-                            filter => ['stop', 'shingle']
-                        },
-                        whiteboard_tokens => {
-                            type => 'custom',
-                            tokenizer => 'whiteboard_tokens_pattern',
-                            filter => ['stop']
-                        },
-                        whiteboard_shingle_tokens => {
-                            type => 'custom',
-                            tokenizer => 'whiteboard_tokens_pattern',
-                            filter => ['stop', 'shingle']
-                        }
-                    },
-                    tokenizer => {
-                        bz_ngram_tokenizer => {
-                            type => 'nGram',
-                            min_ngram => 2,
-                            max_ngram => 25,
-                        },
-                        whiteboard_tokens_pattern => {
-                            type => 'pattern',
-                            pattern => '\\s*([,;]*\\[|\\][\\s\\[]*|[;,])\\s*'
-                        },
-                        whiteboard_words_pattern => {
-                            type => 'pattern',
-                            pattern => '[\\[\\];,\\s]+'
-                        },
-                    },
-                },
-            },
-        }
-    ) unless $indices->exists(index => $self->index_name);
+sub _create_index {
+    my ($self, $class) = @_;
+    my $indices    = $self->client->indices;
+    my $index_name = $class->ES_INDEX;
+
+    unless ($indices->exists(index => $index_name)) {
+        $indices->create(
+            index => $index_name,
+            body  => { settings => $class->ES_SETTINGS },
+        );
+    }
 }
 
 sub _bulk_helper {
     my ($self, $class) = @_;
 
     return $self->client->bulk_helper(
-        index => $self->index_name,
+        index => $class->ES_INDEX,
         type  => $class->ES_TYPE,
     );
 }
 
-sub find_largest_mtime {
-    my ($self, $class) = @_;
+sub _find_largest {
+    my ($self, $class, $field) = @_;
 
     my $result = $self->client->search(
-        index => $self->index_name,
+        index => $class->ES_INDEX,
         type  => $class->ES_TYPE,
         body  => {
-            aggs => { es_mtime => { extended_stats => { field => 'es_mtime' } } },
+            aggs => { $field => { extended_stats => { field => $field } } },
             size => 0
         }
     );
 
-    return $result->{aggregations}{es_mtime}{max};
+    my $max = $result->{aggregations}{$field}{max};
+    if (not defined $max) {
+        return 0;
+    }
+    elsif (looks_like_number($max)) {
+        return $max;
+    }
+    else {
+        die "largest value for '$field' is not a number: $max";
+    }
 }
 
-sub find_largest_id {
+sub _find_largest_mtime {
     my ($self, $class) = @_;
 
-    my $result = $self->client->search(
-        index => $self->index_name,
-        type  => $class->ES_TYPE,
-        body  => {
-            aggs => { $class->ID_FIELD => { extended_stats => { field => $class->ID_FIELD } } },
-            size => 0
-        }
-    );
-
-    return $result->{aggregations}{$class->ID_FIELD}{max};
+    return $self->_find_largest($class, 'es_mtime');
 }
 
-sub put_mapping {
+sub _find_largest_id {
+    my ($self, $class) = @_;
+
+    return $self->_find_largest($class, $class->ID_FIELD);
+}
+
+sub _put_mapping {
     my ($self, $class) = @_;
 
     my %body = ( properties => scalar $class->ES_PROPERTIES );
@@ -153,7 +96,7 @@ sub put_mapping {
     }
 
     $self->client->indices->put_mapping(
-        index => $self->index_name,
+        index => $class->ES_INDEX,
         type => $class->ES_TYPE,
         body => \%body,
     );
@@ -175,46 +118,45 @@ sub _debug_sql {
 sub bulk_load {
     my ( $self, $class ) = @_;
 
-    $self->put_mapping($class);
-    my $bulk = $self->_bulk_helper($class);
-    my $ids  = $self->_select_all_ids($class);
-    $self->clear_mtime;
-    $self->_bulk_load_ids($bulk, $class, $ids) if @$ids;
-    undef $ids; # free up some memory
+    $self->_create_index($class);
 
-    my $updated_ids = $self->_select_updated_ids($class);
-    if ($updated_ids) {
-        $self->_bulk_load_ids($bulk, $class, $updated_ids) if @$updated_ids;
-    }
+    my $bulk        = $self->_bulk_helper($class);
+    my $last_mtime  = $self->_find_largest_mtime($class);
+    my $last_id     = $self->_find_largest_id($class);
+    my $new_ids     = $self->_select_all_ids($class, $last_id);
+    my $updated_ids = $self->_select_updated_ids($class, $last_mtime);
+
+    $self->_put_mapping($class);
+    $self->_bulk_load_ids($bulk, $class, $new_ids) if @$new_ids;
+    $self->_bulk_load_ids($bulk, $class, $updated_ids) if @$updated_ids;
+
+    return {
+        new     => scalar @$new_ids,
+        updated => scalar @$updated_ids,
+    };
 }
 
 sub _select_all_ids {
-    my ($self, $class) = @_;
+    my ($self, $class, $last_id) = @_;
 
-    my $dbh     = Bugzilla->dbh;
-    my $last_id = $self->find_largest_id($class);
+    my $dbh = Bugzilla->dbh;
     my ($sql, $params) = $self->_debug_sql($class->ES_SELECT_ALL_SQL($last_id));
     return $dbh->selectcol_arrayref($sql, undef, @$params);
 }
 
 sub _select_updated_ids {
-    my ($self, $class) = @_;
+    my ($self, $class, $last_mtime) = @_;
 
-    my $dbh   = Bugzilla->dbh;
-    my $mtime = $self->find_largest_mtime($class);
-    if ($mtime && $mtime != $self->mtime) {
-        my ($updated_sql, $updated_params) = $self->_debug_sql($class->ES_SELECT_UPDATED_SQL($mtime));
-        return $dbh->selectcol_arrayref($updated_sql, undef, @$updated_params);
-    } else {
-        return undef;
-    }
+    my $dbh = Bugzilla->dbh;
+    my ($updated_sql, $updated_params) = $self->_debug_sql($class->ES_SELECT_UPDATED_SQL($last_mtime));
+    return $dbh->selectcol_arrayref($updated_sql, undef, @$updated_params);
 }
 
 sub bulk_load_ids {
     my ($self, $class, $ids) = @_;
 
-    $self->put_mapping($class);
-    $self->clear_mtime;
+    $self->_create_index($class);
+    $self->_put_mapping($class);
     $self->_bulk_load_ids($self->_bulk_helper($class), $class, $ids);
 }
 
@@ -222,7 +164,7 @@ sub _bulk_load_ids {
     my ($self, $bulk, $class, $all_ids) = @_;
 
     my $iter  = natatime $class->ES_OBJECTS_AT_ONCE, @$all_ids;
-    my $mtime = $self->mtime;
+    my $mtime = $self->_current_mtime;
     my $progress_bar;
     my $next_update;
 
@@ -239,7 +181,6 @@ sub _bulk_load_ids {
     }
 
     my $total = 0;
-    use Time::HiRes;
     my $start = time;
     while (my @ids = $iter->()) {
         if ($progress_bar) {
@@ -253,7 +194,7 @@ sub _bulk_load_ids {
         my $objects = $class->new_from_list(\@ids);
         foreach my $object (@$objects) {
             my %doc = (
-                id     => $object->id,
+                id     => $object->es_id,
                 source => scalar $object->es_document($mtime),
             );
 
@@ -271,7 +212,7 @@ sub _bulk_load_ids {
 
 sub _build_shadow_dbh { Bugzilla->switch_to_shadow_db }
 
-sub _build_mtime {
+sub _current_mtime {
     my ($self) = @_;
     my ($mtime) = $self->shadow_dbh->selectrow_array("SELECT UNIX_TIMESTAMP(NOW())");
     return $mtime;

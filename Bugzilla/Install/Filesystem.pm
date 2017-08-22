@@ -30,6 +30,8 @@ use File::Find;
 use File::Path;
 use File::Basename;
 use File::Copy qw(move);
+use File::Spec;
+use Cwd ();
 use File::Slurp;
 use IO::File;
 use POSIX ();
@@ -140,7 +142,7 @@ sub DIR_CGI_WRITE { _group() ? 0770 : 01777 };
 # scripts need to overwrite files created by other users.
 sub DIR_CGI_OVERWRITE { _group() ? 0770 : 0777 };
 
-# This can be combined (using "|") with other permissions for 
+# This can be combined (using "|") with other permissions for
 # directories that, in addition to their normal permissions (such
 # as DIR_CGI_WRITE) also have content served directly from them
 # (or their subdirectories) to the user, via the webserver.
@@ -149,7 +151,7 @@ sub DIR_ALSO_WS_SERVE { _suexec() ? 0001 : 0 };
 # This looks like a constant because it effectively is, but
 # it has to call other subroutines and read the current filesystem,
 # so it's defined as a sub. This is not exported, so it doesn't have
-# a perldoc. However, look at the various hashes defined inside this 
+# a perldoc. However, look at the various hashes defined inside this
 # function to understand what it returns. (There are comments throughout.)
 #
 # The rationale for the file permissions is that there is a group the
@@ -212,11 +214,10 @@ sub FILESYSTEM {
 
         'Bugzilla.pm'    => { perms => CGI_READ },
         "$localconfig*"  => { perms => CGI_READ },
-        'META.*'        => { perms => CGI_READ },
-        'MYMETA.*'      => { perms => CGI_READ },
+        'META.*'         => { perms => CGI_READ },
+        'MYMETA.*'       => { perms => CGI_READ },
         'bugzilla.dtd'   => { perms => WS_SERVE },
         'mod_perl.pl'    => { perms => WS_SERVE },
-        'robots.txt'     => { perms => WS_SERVE },
         '.htaccess'      => { perms => WS_SERVE },
         'cvs-update.log' => { perms => WS_SERVE },
         'scripts/sendunsentbugmail.pl' => { perms => WS_EXECUTE },
@@ -246,9 +247,9 @@ sub FILESYSTEM {
         docs => DIR_WS_SERVE,
     );
 
-    # This sets the permissions for each item inside each of these 
-    # directories, including the directory itself. 
-    # 'CVS' directories are special, though, and are never readable by 
+    # This sets the permissions for each item inside each of these
+    # directories, including the directory itself.
+    # 'CVS' directories are special, though, and are never readable by
     # the webserver.
     my %recurse_dirs = (
         # Writeable directories
@@ -350,10 +351,40 @@ sub FILESYSTEM {
         "$skinsdir/contrib"     => DIR_WS_SERVE,
     );
 
+    my $yui_all_css = sub {
+        return join("\n",
+            map {
+                my $css = read_file($_);
+                _css_url_fix($css, $_, "skins/yui.css.list")
+            } read_file("skins/yui.css.list", { chomp => 1 })
+        );
+    };
+
+    my $yui_all_js = sub {
+        return join("\n",
+            map { scalar read_file($_) } read_file("js/yui.js.list", { chomp => 1 })
+        );
+    };
+
+    my $yui3_all_css = sub {
+        return join("\n",
+            map {
+                my $css = read_file($_);
+                _css_url_fix($css, $_, "skins/yui3.css.list")
+            } read_file("skins/yui3.css.list", { chomp => 1 })
+        );
+    };
+
+    my $yui3_all_js = sub {
+        return join("\n",
+            map { scalar read_file($_) } read_file("js/yui3.js.list", { chomp => 1 })
+        );
+    };
+
     # The name of each file, pointing at its default permissions and
     # default contents.
     my %create_files = (
-        "$datadir/extensions/additional" => { perms    => CGI_READ, 
+        "$datadir/extensions/additional" => { perms    => CGI_READ,
                                               contents => '' },
         # We create this file so that it always has the right owner
         # and permissions. Otherwise, the webserver creates it as
@@ -361,6 +392,21 @@ sub FILESYSTEM {
         # or something else is not running as the webserver or root.
         "$datadir/mailer.testfile" => { perms    => CGI_WRITE,
                                         contents => '' },
+        "js/yui.js"               => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui_all_js },
+        "skins/yui.css"           => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui_all_css },
+        "js/yui3.js"              => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui3_all_js },
+        "skins/yui3.css"          => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => $yui3_all_css },
+        "robots.txt"              => { perms     => CGI_READ,
+                                       overwrite => 1,
+                                       contents  => \&robots_txt},
     );
 
     # Because checksetup controls the creation of index.html separately
@@ -393,11 +439,15 @@ sub FILESYSTEM {
                                           contents => HT_DEFAULT_DENY },
         'xt/.htaccess'               => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
+        '.circleci/.htaccess'        => { perms    => WS_SERVE,
+                                          contents => HT_DEFAULT_DENY },
+        'httpd/.htaccess'            => { perms    => WS_SERVE,
+                                          contents => HT_DEFAULT_DENY },
         "$datadir/.htaccess"         => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         "$error_reports/.htaccess"   => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
-        "$graphsdir/.htaEcess"       => { perms => WS_SERVE,
+        "$graphsdir/.htaccess"       => { perms => WS_SERVE,
                                           contents => HT_GRAPHS_DIR },
         "$webdotdir/.htaccess"       => { perms => WS_SERVE,
                                           contents => HT_WEBDOT_DIR },
@@ -439,7 +489,7 @@ sub update_filesystem {
     my $graphsdir = bz_locations->{'graphsdir'};
     my $assetsdir = bz_locations->{'assetsdir'};
     # If the graphs/ directory doesn't exist, we're upgrading from
-    # a version old enough that we need to update the $datadir/mining 
+    # a version old enough that we need to update the $datadir/mining
     # format.
     if (-d "$datadir/mining" && !-d $graphsdir) {
         _update_old_charts($datadir);
@@ -518,6 +568,31 @@ sub update_filesystem {
     _remove_empty_css_files();
     _convert_single_file_skins();
     _remove_dynamic_assets();
+}
+
+sub _css_url_fix {
+    my ($content, $from, $to) = @_;
+    my $from_dir = dirname(File::Spec->rel2abs($from, bz_locations()->{libpath}));
+    my $to_dir = dirname(File::Spec->rel2abs($to, bz_locations()->{libpath}));
+
+    return css_url_rewrite(
+        $content,
+        sub {
+            my ($url) = @_;
+            if ( $url =~ m{^(?:/|data:)} ) {
+                return sprintf 'url(%s)', $url;
+            }
+            else {
+                my $new_url = File::Spec->abs2rel(
+                    Cwd::realpath(
+                        File::Spec->rel2abs( $url, $from_dir )
+                    ),
+                    $to_dir
+                );
+                return sprintf "url(%s)", $new_url;
+            }
+        }
+    );
 }
 
 sub _remove_empty_css_files {
@@ -621,9 +696,15 @@ sub _create_files {
         my $info = $files{$file};
         if ($info->{overwrite} or not -f $file) {
             print "Creating $file...\n";
-            my $fh = IO::File->new( $file, O_WRONLY | O_CREAT, $info->{perms} )
+            my $fh = IO::File->new( $file, O_WRONLY | O_CREAT | O_TRUNC, $info->{perms} )
                 or die "unable to write $file: $!";
-            print $fh $info->{contents} if exists $info->{contents};
+            my $contents = $info->{contents};
+            if (defined $contents && ref($contents) eq 'CODE') {
+                print $fh $contents->();
+            }
+            elsif (defined $contents) {
+                print $fh $contents;
+            }
             $fh->close;
         }
     }
@@ -631,7 +712,7 @@ sub _create_files {
 
 # If you ran a REALLY old version of Bugzilla, your chart files are in the
 # wrong format. This code is a little messy, because it's very old, and
-# when moving it into this module, I couldn't test it so I left it almost 
+# when moving it into this module, I couldn't test it so I left it almost
 # completely alone.
 sub _update_old_charts {
     my ($datadir) = @_;
@@ -693,7 +774,7 @@ sub _update_old_charts {
                           " You may want to check your data files.\n";
                 }
 
-                print OUT join('|', 
+                print OUT join('|',
                     map { defined ($data{$_}) ? ($data{$_}) : "" } @out_fields),
                     "\n";
             }
@@ -704,7 +785,7 @@ sub _update_old_charts {
 
         close(IN);
         close(OUT);
-    } 
+    }
 }
 
 sub fix_dir_permissions {
@@ -770,7 +851,7 @@ sub fix_all_file_permissions {
         foreach my $filename (glob $file) {
             # Don't touch directories.
             next if -d $filename || !-e $filename;
-            _fix_perms($filename, $owner_id, $group_id, 
+            _fix_perms($filename, $owner_id, $group_id,
                        $files{$file}->{perms});
         }
     }
@@ -795,7 +876,7 @@ sub _fix_cvs_dirs {
     find({ no_chdir => 1, wanted => sub {
         my $name = $File::Find::name;
         if ($File::Find::dir =~ /\/CVS/ || $_ eq '.cvsignore'
-            || (-d $name && $_ =~ /CVS$/)) 
+            || (-d $name && $_ =~ /CVS$/))
         {
             my $perms = 0600;
             if (-d $name) {
@@ -813,11 +894,11 @@ sub _fix_perms {
     # The webserver should never try to chown files.
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
         chown $owner, $group, $name
-            or warn install_string('chown_failed', { path => $name, 
+            or warn install_string('chown_failed', { path => $name,
                                                      error => $! }) . "\n";
     }
     chmod $perms, $name
-        or warn install_string('chmod_failed', { path => $name, 
+        or warn install_string('chmod_failed', { path => $name,
                                                  error => $! }) . "\n";
 }
 
@@ -860,7 +941,7 @@ sub _check_web_server_group {
     # the webservergroup.
     elsif (!ON_WINDOWS && $group) {
         $group_id = getgrnam($group);
-        ThrowCodeError('invalid_webservergroup', { group => $group }) 
+        ThrowCodeError('invalid_webservergroup', { group => $group })
             unless defined $group_id;
 
         # If on unix, see if we need to print a warning about a webservergroup
@@ -873,6 +954,16 @@ sub _check_web_server_group {
     return $group_id;
 }
 
+sub robots_txt {
+    my $output = '';
+    my %vars;
+    Bugzilla::Hook::process("before_robots_txt", { vars => \%vars });
+    Bugzilla->template->process("robots.txt.tmpl", \%vars, \$output)
+    or die Bugzilla->template->error;
+    return $output;
+}
+
+
 1;
 
 __END__
@@ -884,7 +975,7 @@ Bugzilla::Install::Filesystem - Fix up the filesystem during
 
 =head1 DESCRIPTION
 
-This module is used primarily by L<checksetup.pl> to modify the 
+This module is used primarily by L<checksetup.pl> to modify the
 filesystem during installation, including creating the data/ directory.
 
 =head1 SUBROUTINES

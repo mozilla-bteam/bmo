@@ -40,10 +40,20 @@ our @EXPORT_OK = qw(
 
 sub _sensible_group {
     return '' if ON_WINDOWS;
-    my @groups     = qw( apache www-data _www );
-    my $sensible_group = first { return getgrnam($_) } @groups;
+    return scalar getgrgid($EGID);
+}
 
-    return $sensible_group // getgrgid($EGID) // '';
+sub _migrate_param {
+    my ( $name, $fallback_value ) = @_;
+
+    return sub {
+        if ( Bugzilla->can('params') ) {
+            return Bugzilla->params->{$name} // $fallback_value;
+        }
+        else {
+            return $fallback_value;
+        }
+    };
 }
 
 use constant LOCALCONFIG_VARS => (
@@ -53,7 +63,7 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'webservergroup',
-        default => ON_WINDOWS ? '' : 'apache',
+        default => \&_sensible_group,
     },
     {
         name    => 'use_suexec',
@@ -65,7 +75,7 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'db_host',
-        default => 'localhost',           
+        default => 'localhost',
     },
     {
         name    => 'db_name',
@@ -129,6 +139,14 @@ use constant LOCALCONFIG_VARS => (
         name    => 'apache_size_limit',
         default => 600000,
     },
+    {
+        name    => 'memcached_servers',
+        default =>  _migrate_param("memcached_servers", ""),
+    },
+    {
+        name    => 'memcached_namespace',
+        default => _migrate_param("memcached_namespace", "bugzilla:"),
+    },
 );
 
 sub read_localconfig {
@@ -174,9 +192,9 @@ sub read_localconfig {
             # We can only get the glob itself. So we figure out its type this
             # way, by trying first a scalar, then an array, then a hash.
             #
-            # The interesting thing is that this converts all deprecated 
-            # array or hash vars into hashrefs or arrayrefs, but that's 
-            # fine since as I write this all modern localconfig vars are 
+            # The interesting thing is that this converts all deprecated
+            # array or hash vars into hashrefs or arrayrefs, but that's
+            # fine since as I write this all modern localconfig vars are
             # actually scalars.
             if (defined $$glob) {
                 $localconfig{$var} = $$glob;
@@ -234,7 +252,7 @@ sub update_localconfig {
         # a 256-character string for site_wide_secret.
         $value = undef if ($name eq 'site_wide_secret' and defined $value
                            and length($value) == 256);
-        
+
         if (!defined $value) {
             push(@new_vars, $name);
             $var->{default} = &{$var->{default}} if ref($var->{default}) eq 'CODE';
@@ -264,11 +282,11 @@ sub update_localconfig {
     # Move any custom or old variables into a separate file.
     if (scalar @old_vars) {
         my $filename_old = "$filename.old";
-        open(my $old_file, ">>:utf8", $filename_old) 
+        open(my $old_file, ">>:utf8", $filename_old)
             or die "$filename_old: $!";
         local $Data::Dumper::Purity = 1;
         foreach my $var (@old_vars) {
-            print $old_file Data::Dumper->Dump([$localconfig->{$var}], 
+            print $old_file Data::Dumper->Dump([$localconfig->{$var}],
                                                ["*$var"]) . "\n\n";
         }
         close $old_file;
@@ -297,7 +315,7 @@ sub update_localconfig {
         print colored(install_string('lc_new_vars', { localconfig => $filename,
                                                       new_vars => wrap_hard($newstuff, 70) }),
                       COLOR_ERROR), "\n";
-        exit;
+        exit unless $params->{use_defaults};
     }
 
     # Reset the cache for Bugzilla->localconfig so that it will be re-read
@@ -365,11 +383,11 @@ Reads the localconfig file and returns all valid values in a hashref.
 
 =over
 
-=item C<$include_deprecated> 
+=item C<$include_deprecated>
 
 C<true> if you want the returned hashref to include *any* variable
-currently defined in localconfig, even if it doesn't exist in 
-C<LOCALCONFIG_VARS>. Generally this is is only for use 
+currently defined in localconfig, even if it doesn't exist in
+C<LOCALCONFIG_VARS>. Generally this is is only for use
 by L</update_localconfig>.
 
 =back

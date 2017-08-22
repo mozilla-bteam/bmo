@@ -24,8 +24,7 @@ BEGIN {
     lib->import($dir, File::Spec->catdir($dir, "lib"), File::Spec->catdir($dir, qw(local lib perl5)));
 }
 
-use ExtUtils::MakeMaker 6.55;
-use constant BUGZILLA_VERSION => $ENV{BUGZILLA_VERSION} // 42;
+use ExtUtils::MakeMaker 7.22;
 use File::Basename;
 use File::Spec;
 
@@ -42,6 +41,7 @@ my %requires = (
     'CPAN::Meta::Prereqs'      => '2.132830',
     'CPAN::Meta::Requirements' => '2.121',
     'DBI'                      => '1.614',
+    'Data::Password::passwdqc' => '0.08',
     'Date::Format'             => '2.23',
     'DateTime'                 => '0.75',
     'DateTime::TimeZone'       => '2.11',
@@ -50,11 +50,14 @@ my %requires = (
     'Email::Send'              => '1.911',
     'File::Slurp'              => '9999.13',
     'JSON::XS'                 => '2.01',
+    'LWP::Protocol::https'     => '6.07',
+    'LWP::UserAgent'           => '6.26',
     'List::MoreUtils'          => $^V > v5.10.1 ? '0.418' : '0.22',
     'Math::Random::ISAAC'      => '1.0.1',
     'Module::Metadata'         => '1.000033',
     'Module::Runtime'          => 0,
     'Moo'                      => 2,
+    'Mozilla::CA'              => 0,
     'Parse::CPAN::Meta'        => '1.44',
     'Template'                 => '2.24',
     'Text::CSV_XS'             => 0,
@@ -64,12 +67,12 @@ my %requires = (
     'Taint::Util'              => 0,
 );
 my %build_requires = (
-    'ExtUtils::MakeMaker' => '6.57_07',
+    'ExtUtils::MakeMaker' => '7.22',
 );
 my %test_requires = (
     'Test::More'         => 0,
     'Pod::Coverage'      => 0,
-    'Test::WWW::Selenium' => 0.
+    'Test::WWW::Selenium' => 0,
 );
 my %recommends = ( Safe => '2.30' );
 
@@ -124,15 +127,11 @@ my %optional_features = (
             runtime => { requires => { 'Cache::Memcached::Fast' => '0.17' } }
         }
     },
-    auth_delegation => {
-        description => 'Auth Delegation',
-        prereqs => { runtime => { requires => { 'LWP::UserAgent' => 0 } } }
-    },
     updates => {
         description => 'Automatic Update Notifications',
         prereqs     => {
             runtime =>
-                { requires => { 'LWP::UserAgent' => 0, 'XML::Twig' => 0 } }
+                { requires => { 'XML::Twig' => 0 } }
         }
     },
     auth_radius => {
@@ -382,7 +381,7 @@ $optional_features{bmo} = {
 WriteMakefile(
     NAME             => 'Bugzilla',
     AUTHOR           => q{Bugzilla Developers <developers@bugzilla.org>},
-    VERSION          => BUGZILLA_VERSION,
+    VERSION_FROM     => 'Bugzilla.pm',
     ABSTRACT         => 'Bugzilla Bug Tracking System',
     LICENSE          => 'Mozilla_2_0',
     MIN_PERL_VERSION => '5.10.1',

@@ -324,25 +324,30 @@ $(function() {
                 hasFlash = localStorage.getItem('hasFlash');
             }
             if (hasFlash) {
-                ZeroClipboard.config({ flashLoadTimeout: 5000 });
-                var zero = new ZeroClipboard($('#copy-summary'));
-                zero.on({
-                    'ready': function(event) {
-                        $('#copy-summary').show();
-                        localStorage.setItem('hasFlash', true);
-                    },
-                    'error': function(event) {
-                        console.log(event.message);
-                        zero.destroy();
-                        $('#global-zeroclipboard-html-bridge').remove();
-                        $('#copy-summary').hide();
-                        localStorage.removeItem('hasFlash');
-                    },
-                    'copy': function(event) {
-                        var clipboard = event.clipboardData;
-                        clipboard.setData('text/plain', clipboardSummary());
-                    }
-                });
+                var s = document.createElement("script");
+                s.onload = function () {
+                  ZeroClipboard.config({ flashLoadTimeout: 5000 });
+                  var zero = new ZeroClipboard($('#copy-summary'));
+                  zero.on({
+                      'ready': function(event) {
+                          $('#copy-summary').show();
+                          localStorage.setItem('hasFlash', true);
+                      },
+                      'error': function(event) {
+                          console.log(event.message);
+                          zero.destroy();
+                          $('#global-zeroclipboard-html-bridge').remove();
+                          $('#copy-summary').hide();
+                          localStorage.removeItem('hasFlash');
+                      },
+                      'copy': function(event) {
+                          var clipboard = event.clipboardData;
+                          clipboard.setData('text/plain', clipboardSummary());
+                      }
+                  });
+                };
+                s.src = "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.min.js";
+                document.getElementsByTagName('head')[0].appendChild(s);
             }
         }
     }
@@ -453,7 +458,7 @@ $(function() {
     var rbs = $("#readable-bug-status");
     var rbs_text = bugzillaReadableStatus.readable(rbs.data('readable-bug-status'));
     rbs.text(rbs_text);
-    
+
     if (BUGZILLA.user.id === 0) return;
 
     //
@@ -848,8 +853,7 @@ $(function() {
             if (BUGZILLA.user.settings.quote_replies == 'quoted_reply') {
                 var text = $('#ct-' + comment_id).text();
                 reply_text = prefix + wrapReplyText(text);
-            }
-            else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
+            } else if (BUGZILLA.user.settings.quote_replies == 'simply_reply') {
                 reply_text = prefix;
             }
 
@@ -863,15 +867,22 @@ $(function() {
             if ($('#comment').val() != reply_text) {
                 $('#comment').val($('#comment').val() + reply_text);
             }
-            $.scrollTo($('#comment'), function() { $('#comment').focus(); });
+            if (BUGZILLA.user.settings.autosize_comments) {
+                autosize.update($('#comment'));
+            }
+            $.scrollTo($('#comment'), function() {
+                $('#comment').focus();
+            });
         });
 
-    // add comment --> enlarge on focus
-    if (BUGZILLA.user.settings.zoom_textareas) {
-        $('#comment')
-            .focus(function(event) {
-                $(event.target).attr('rows', 25);
-            });
+    if (BUGZILLA.user.settings.autosize_comments) {
+        $('#comment').addClass('autosized-comment');
+        autosize($('#comment'));
+    } else if (BUGZILLA.user.settings.zoom_textareas) {
+        // add comment --> enlarge on focus
+        $('#comment').focus(function(event) {
+            $(event.target).attr('rows', 25);
+        });
     }
 
     // add comment --> private

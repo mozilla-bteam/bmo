@@ -20,9 +20,12 @@ BEGIN {
     }
 }
 
+our $VERSION = '20170801.1';
+
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
 use Bugzilla::CGI;
+use Bugzilla::Elastic;
 use Bugzilla::Config;
 use Bugzilla::Constants;
 use Bugzilla::DB;
@@ -51,6 +54,7 @@ use File::Basename;
 use File::Spec::Functions;
 use Safe;
 use Sys::Syslog qw(:DEFAULT);
+use JSON::XS qw(decode_json);
 
 use parent qw(Bugzilla::CPAN);
 
@@ -152,7 +156,7 @@ sub init_page {
     }
 
     # If Bugzilla is shut down, do not allow anything to run, just display a
-    # message to the user about the downtime and log out.  Scripts listed in 
+    # message to the user about the downtime and log out.  Scripts listed in
     # SHUTDOWNHTML_EXEMPT are exempt from this message.
     #
     # This code must go here. It cannot go anywhere in Bugzilla::CGI, because
@@ -198,7 +202,7 @@ sub init_page {
         if (i_am_cgi()) {
             # Set the HTTP status to 503 when Bugzilla is down to avoid pages
             # being indexed by search engines.
-            print Bugzilla->cgi->header(-status => 503, 
+            print Bugzilla->cgi->header(-status => 503,
                 -retry_after => SHUTDOWNHTML_RETRY_AFTER);
         }
         my $t_output;
@@ -233,15 +237,11 @@ sub template_inner {
     return $cache->{"template_inner_$lang"} ||= Bugzilla::Template->create(language => $lang);
 }
 
-our $extension_packages;
 sub extensions {
     my ($class) = @_;
     my $cache = $class->request_cache;
     if (!$cache->{extensions}) {
-        # Under mod_perl, mod_perl.pl populates $extension_packages for us.
-        if (!$extension_packages) {
-            $extension_packages = Bugzilla::Extension->load_all();
-        }
+        my $extension_packages = Bugzilla::Extension->load_all();
         my @extensions;
         foreach my $package (@$extension_packages) {
             my $extension = $package->new();
@@ -710,7 +710,11 @@ sub audit {
 use constant request_cache => Bugzilla::Install::Util::_cache();
 
 sub clear_request_cache {
-    %{ request_cache() } = ();
+    my ($class, %option) = @_;
+    my $request_cache = request_cache();
+    my @except        = $option{except} ? @{ $option{except} } : ();
+
+    %{ $request_cache } = map { $_ => $request_cache->{$_} } @except;
 }
 
 # This is a per-process cache.  Under mod_cgi it's identical to the
@@ -752,6 +756,28 @@ sub memcached {
         return $_[0]->request_cache->{memcached} ||= Bugzilla::Metrics::Memcached->_new();
     } else {
         return $_[0]->request_cache->{memcached} ||= Bugzilla::Memcached->_new();
+    }
+}
+
+sub elastic {
+    my ($class) = @_;
+    $class->process_cache->{elastic} //= Bugzilla::Elastic->new();
+}
+
+sub check_rate_limit {
+    my ($class, $name, $id) = @_;
+    my $params = Bugzilla->params;
+    if ($params->{rate_limit_active}) {
+        my $rules = decode_json($params->{rate_limit_rules});
+        my $limit = $rules->{$name};
+        unless ($limit) {
+             warn "no rules for $name!";
+             return 0;
+        }
+        if (Bugzilla->memcached->should_rate_limit("$name:$id", @$limit)) {
+            Bugzilla->audit("[rate_limit] $id exceeds rate limit $name: " . join("/", @$limit));
+            ThrowUserError("rate_limit");
+        }
     }
 }
 
@@ -918,8 +944,8 @@ progress, returns the C<Bugzilla::User> object corresponding to the currently
 logged in user.
 
 =item C<sudo_request>
-This begins an sudo session for the current request.  It is meant to be 
-used when a session has just started.  For normal use, sudo access should 
+This begins an sudo session for the current request.  It is meant to be
+used when a session has just started.  For normal use, sudo access should
 normally be set at login time.
 
 =item C<login>
@@ -1016,7 +1042,7 @@ C<Bugzilla->usage_mode> will return the current state of this flag.
 
 =item C<installation_mode>
 
-Determines whether or not installation should be silent. See 
+Determines whether or not installation should be silent. See
 L<Bugzilla::Constants> for the C<INSTALLATION_MODE> constants.
 
 =item C<installation_answers>

@@ -20,6 +20,7 @@ use Bugzilla::User;
 use Bugzilla::FlagType;
 use Bugzilla::Series;
 
+use List::Util qw(first);
 use Scalar::Util qw(blessed);
 
 ###############################
@@ -229,7 +230,7 @@ sub _check_initialqacontact {
 
 sub _check_product {
     my ($invocant, $product) = @_;
-    $product || ThrowCodeError('param_required', 
+    $product || ThrowCodeError('param_required',
                     { function => "$invocant->create", param => 'product' });
     return Bugzilla->user->check_can_admin_product($product->name);
 }
@@ -393,7 +394,7 @@ sub flag_types {
 
     if (!defined $self->{'flag_types'}) {
         my $flagtypes = Bugzilla::FlagType::match({ product_id   => $self->product_id,
-                                                    component_id => $self->id, 
+                                                    component_id => $self->id,
                                                     %$params });
 
         $self->{'flag_types'} = {};
@@ -403,6 +404,12 @@ sub flag_types {
           [grep { $_->target_type eq 'attachment' } @$flagtypes];
     }
     return $self->{'flag_types'};
+}
+
+sub find_first_flag_type {
+    my ($self, $target_type, $name) = @_;
+
+    return first { $_->name eq $name } @{ $self->flag_types->{$target_type} };
 }
 
 sub initial_cc {
@@ -608,6 +615,17 @@ Component.pm represents a Product Component object.
                           must be unique within the product.
 
  Returns:     Nothing.
+
+
+=item C<find_first_flag_type($target_type, $name)>
+
+ Description: Find the first named bug or attachment flag with a given
+              name on this component.
+
+ Params:      $target_type - 'bug' or 'attachment'
+              $name        - the name of the flag
+
+ Returns:     a new Bugzilla::FlagType object or undef
 
 =item C<set_description($new_desc)>
 

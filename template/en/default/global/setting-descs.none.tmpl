@@ -18,7 +18,7 @@
 
 [% PROCESS global/variables.none.tmpl %]
 
-[% setting_descs = { 
+[% setting_descs = {
    "comment_sort_order"               => "When viewing $terms.abug, show comments in this order",
    "csv_colsepchar"                   => "Field separator character for CSV files",
    "display_quips"                    => "Show a quip at the top of each $terms.bug list",
@@ -43,6 +43,7 @@
    "quote_replies"                    => "Quote the associated comment when you click on its reply link",
    "quoted_reply"                     => "Quote the full comment",
    "simple_reply"                     => "Reference the comment number only",
+   "autosize_comments"                => "Expand the comment box dynamically",
    "comment_box_position"             => "Position of the Additional Comments box",
    "before_comments"                  => "Before other comments",
    "after_comments"                   => "After other comments",
@@ -56,6 +57,7 @@
    "possible_duplicates"              => "Display possible duplicates when reporting a new $terms.bug",
    "requestee_cc"                     => "Automatically add me to the CC list of $terms.bugs I am requested to review",
    "api_key_only"                     => "Require API key authentication for API requests",
+   "use_elasticsearch"                => "Use elasticsearch for $terms.bug searches when possible",
                    }
 %]
 

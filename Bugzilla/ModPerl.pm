@@ -50,6 +50,15 @@ sub apache_config {
         cgi_path       => $cgi_path,
     );
     $template->process(\*DATA, \%vars, \$conf);
+    my $apache_version = Apache2::ServerUtil::get_server_version();
+    if ($apache_version =~ m!Apache/(\d+)\.(\d+)\.(\d+)!) {
+        my ($major, $minor, $patch) = ($1, $2, $3);
+        if ($major > 2 || $major == 2 && $minor >= 4) {
+            $conf =~ s{^\s+deny\s+from\s+all.*$}{Require all denied}gmi;
+            $conf =~ s{^\s+allow\s+from\s+all.*$}{Require all granted}gmi;
+            $conf =~ s{^\s+allow\s+from\s+(\S+).*$}{Require host $1}gmi;
+        }
+    }
 
     return $conf;
 }
@@ -63,6 +72,14 @@ __DATA__
 # the built-in rand(), even though we never use it in Bugzilla itself,
 # so we need to srand() both of them.)
 PerlChildInitHandler "sub { Bugzilla::RNG::srand(); srand(); }"
+
+# It is important to specify ErrorDocuments outside of all directories.
+# These used to be in .htaccess, but then things like "AllowEncodedSlashes no"
+# mean that urls containing %2f are unstyled.
+ErrorDocument 401 /errors/401.html
+ErrorDocument 403 /errors/403.html
+ErrorDocument 404 /errors/404.html
+ErrorDocument 500 /errors/500.html
 
 <Directory "[% cgi_path %]">
     AddHandler perl-script .cgi

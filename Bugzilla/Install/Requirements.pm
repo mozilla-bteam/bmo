@@ -18,8 +18,7 @@ use strict;
 use warnings;
 
 use Bugzilla::Constants;
-use Bugzilla::Install::Util qw(install_string bin_loc success
-                               extension_requirement_packages);
+use Bugzilla::Install::Util qw(install_string bin_loc success);
 use List::Util qw(max);
 use Term::ANSIColor;
 use CPAN::Meta;
@@ -99,7 +98,6 @@ use constant FEATURE_FILES => (
     mfa           => ['Bugzilla/MFA/*.pm'],
     markdown      => ['Bugzilla/Markdown.pm'],
     memcached     => ['Bugzilla/Memcache.pm'],
-    auth_delegation => ['auth.cgi'],
     s3            => ['Bugzilla/S3.pm', 'Bugzilla/S3/Bucket.pm', 'Bugzilla/Attachment/S3.pm']
 );
 

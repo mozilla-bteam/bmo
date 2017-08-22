@@ -675,7 +675,7 @@
   [% ELSIF error == "fieldvalue_name_too_long" %]
     [% title = "Field Value Is Too Long" %]
     The value of a field is limited to 
-    [%+ constants.FIELD_VALUE_MAX_SIZE FILTER none %] characters. 
+    [%+ constants.MAX_FIELD_VALUE_SIZE FILTER none %] characters.
     '[% value FILTER html %]' is too long ([% value.length %] characters).
 
   [% ELSIF error == "fieldvalue_not_editable" %]
@@ -1811,6 +1811,10 @@
     [% title = "Token Does Not Exist" %]
     The token you submitted does not exist, has expired, or has
     been canceled.
+
+  [% ELSIF error == "rate_limit" %]
+    [% title = "Rate Limit Exceeded" %]
+    You have exceeded the rate limit.
 
   [% ELSIF error == "too_soon_for_new_token" %]
     [% title = "Too Soon For New Token" %]
