@@ -109,6 +109,7 @@ sub product_info {
     return {
         components => \@components,
         versions   => _name($product->versions),
+        default_security_group => $product->default_security_group,
     };
 }
 
