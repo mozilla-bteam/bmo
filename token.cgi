@@ -122,13 +122,9 @@ if ( $action eq 'chgpw' ) {
     ThrowUserError("require_new_password")
         unless defined $password && defined $matchpassword;
 
-    my $pwqc = Bugzilla->passwdqc;
-    if (not $pwqc->validate_password($password)) {
-        ThrowUserError("password_insecure", { reason => $pwqc->reason });
-    }
-    elsif ($password ne $matchpassword ) {
-        ThrowUserError("password_mismatch");
-    }
+    Bugzilla->assert_password_is_secure($password);
+    Bugzilla->assert_passwords_match($password, $matchpassword);
+
     # Make sure that these never show up in the UI under any circumstances.
     $cgi->delete('password', 'matchpassword');
 }
@@ -401,13 +397,8 @@ sub confirm_create_account {
     my $password2 = $cgi->param('passwd2');
     # Make sure that these never show up anywhere in the UI.
     $cgi->delete('passwd1', 'passwd2');
-    my $pwqc = Bugzilla->passwdqc;
-    if (not $pwqc->validate_password($password1)) {
-        ThrowUserError('password_insecure', { reason => $pwqc->reason });
-    }
-    elsif ($password1 ne $password2) {
-        ThrowUserError("password_mismatch");
-    }
+    Bugzilla->assert_password_is_secure($password1);
+    Bugzilla->assert_passwords_match($password1, $password2);
 
     my $otheruser = Bugzilla::User->create({
         login_name => $login_name,

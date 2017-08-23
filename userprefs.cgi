@@ -96,13 +96,8 @@ sub SaveAccount {
 
         if ($pwd1 ne "" || $pwd2 ne "") {
             ThrowUserError("new_password_missing") unless $pwd1;
-            my $pwqc = Bugzilla->passwdqc;
-            if (not $pwqc->validate_password($pwd1)) {
-                ThrowUserError('password_insecure', { reason => $pwqc->reason });
-            }
-            elsif ($pwd1 ne $pwd2) {
-                ThrowUserError('password_mismatch');
-            }
+            Bugzilla->assert_password_is_secure($pwd1);
+            Bugzilla->assert_passwords_match($pwd1, $pwd2);
 
             if ($oldpassword ne $pwd1) {
                 if ($user->mfa) {

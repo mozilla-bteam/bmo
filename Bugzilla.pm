@@ -342,6 +342,20 @@ sub passwdqc {
     );
 }
 
+sub assert_password_is_secure {
+    my ( $class, $password1 ) = @_;
+
+    my $pwqc = $class->passwdqc;
+    ThrowUserError( 'password_insecure', { reason => $pwqc->reason } )
+        unless $pwqc->validate_password($password1);
+}
+
+sub assert_passwords_match {
+    my ( $class, $password1, $password2 ) = @_;
+
+    ThrowUserError('password_mismatch') if $password1 ne $password2;
+}
+
 sub login {
     my ($class, $type) = @_;
 

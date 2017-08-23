@@ -417,10 +417,7 @@ sub _check_password {
     # authentication.
     return $pass if $pass eq '*';
 
-    my $pwqc = Bugzilla->passwdqc;
-    unless ($pwqc->validate_password($pass)) {
-        ThrowUserError("password_insecure", { reason => $pwqc->reason });
-    }
+    Bugzilla->assert_password_is_secure($pass);
     my $cryptpassword = bz_crypt($pass);
     return $cryptpassword;
 }

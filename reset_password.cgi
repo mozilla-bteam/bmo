@@ -49,13 +49,8 @@ if ($cgi->param('do_save')) {
         ThrowUserError('new_password_same');
     }
 
-    my $pwqc = Bugzilla->passwdqc;
-    if (not $pwqc->validate_password($password_1)) {
-        ThrowUserError("password_insecure", { reason => $pwqc->reason });
-    }
-    elsif ($password_1 ne $password_2) {
-        ThrowUserError("password_mismatch");
-    }
+    Bugzilla->assert_password_is_secure($password_1);
+    Bugzilla->assert_passwords_match($password_1, $password_2);
 
     # update
     $dbh->bz_start_transaction;
