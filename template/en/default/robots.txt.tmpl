@@ -1,7 +1,7 @@
-[% IF urlbase.matches("bugzilla-dev") %]
-
 User-agent: *
 Disallow: /
+
+[% IF NOT urlbase.matches("bugzilla-dev") %]
 
 Allow: /$
 Allow: /index.cgi
@@ -19,3 +19,5 @@ Allow: /describecomponents.cgi
 Allow: /describekeywords.cgi
 
 [% Hook.process("end") %]
+
+[% END %]
