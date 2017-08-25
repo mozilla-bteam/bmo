@@ -10,10 +10,14 @@ use Apache2::Const -compile => qw(DONE OK);
 sub handler {
     my $r = shift;
     my $ip = $r->headers_in->{'X-Forwarded-For'} // $r->connection->remote_ip;
-    warn "IP: $ip\n";
 
-    return $ip eq '96.58.158.18'
-        ? DONE : OK;
+    if ($ip eq '96.58.158.18') {
+        $r->status_line("429 Too Many Requests");
+       return Apache2::Const::DONE; 
+    }
+    else {
+        return Apache2::Const::OK;
+    }
 }
 
 1;
