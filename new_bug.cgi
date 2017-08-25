@@ -74,7 +74,7 @@ if (lc($cgi->request_method) eq 'post') {
                 comment      => scalar($cgi->param('comment')),
                 dependson    => scalar($cgi->param('dependson')),
                 blocked      => scalar($cgi->param('blocked')),
-                assigned_to  => $cgi->param('assigned_to'),
+                assigned_to  => scalar($cgi->param('assigned_to')),
                 bug_mentors  => \@bug_mentor,
             });
      delete_token($token);
