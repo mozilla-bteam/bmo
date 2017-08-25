@@ -19,6 +19,8 @@ use Carp ();
 # (and there might be side-effects, since this code is loaded very early in the httpd startup)
 use Template ();
 
+use Bugzilla::ModPerl::BlockIP;
+
 sub apache_config {
     my ($class, $cgi_path) = @_;
 
