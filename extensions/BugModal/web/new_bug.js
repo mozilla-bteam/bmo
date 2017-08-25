@@ -40,7 +40,7 @@ $(document).ready(function() {
     var product_name = window.location.hash? window.location.hash.substr(1) : null;
     bugzilla_ajax(
             {
-                url: 'rest/bug_modal/initial_field_values'
+                url: 'rest/bug_modal/initial_field_values',
             },
             function(data) {
                 initial = data
@@ -152,4 +152,39 @@ $(document).ready(function() {
     window.onhashchange = function() {
         location.reload();
     }
+    $("#short_desc").keyup(function () {
+        var checked_input = "";
+        if($('#short_desc').val().length > 3 && $('#short_desc').val() != checked_input){  
+            checked_input = $('#short_desc').val();
+            var params = {
+                Bugzilla_api_token: BUGZILLA.api_token,
+                product: $("#product").val(),
+                summary: $('#short_desc').val(),
+                limit: 7,
+                include_fields: ["id","summary","status","resolution","update_token"]
+            };
+            var formValues = {
+                version: "1.1",
+                method: "Bug.possible_duplicates",
+                id: 2,
+                params: params,
+            };
+            // console.log(formValues);
+            // {"version":"1.1","method":"Bug.possible_duplicates","id":2,"params":{"Bugzilla_api_token":"hXiH792OdvZ3tZKLYMQhgR","product":"Firefox","summary":"cheese","limit":7,"include_fields":["id","summary","status","resolution","update_token"]}}
+
+            bugzilla_ajax(
+            {
+                url: '/jsonrpc.cgi',
+                type: 'GET',
+                data: JSON.stringify(formValues)
+            },
+            function(data) {
+                alert(data)
+            },
+            function() {
+                alert("Network issues. Please refresh the page and try again");
+            }
+        );
+        }
+    });
 });
