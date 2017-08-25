@@ -256,7 +256,7 @@ development environments"
 
 =item 1
 
-user password hashes are cleared.
+user password hashes are cleared (unless --keep-passwords is given)
 
 =item 2
 
@@ -303,23 +303,23 @@ Without this option, no changes will be made.
 
 =head2 --keep-attachments
 
-Disables the removal of attachment content
+Disables removal of attachment content (unless --keep-attachments is given)
 
 =head2 --keep-passwords
 
-Disables resetting passwords
+Disable resetting passwords (unless --keep-passwords is given)
 
 =head2 --keep-insider
 
-Disables removal of insider comments and attachments
+Disable removal of insider comments and attachments (unless --keep-insider is given)
 
 =head2 --keep-group-bugs
 
-Disables removal of the specified groups and associated bugs
+Disable removal of the specified groups and associated bugs (unless --keep-group-bugs is given)
 
 =head2 --keep-groups
 
-Disables removal of group definitions
+Disable removal of group definitions (unless --keep-groups is given)
 
 =head2 --enable-email
 
