@@ -49,3 +49,34 @@
 .file-container {
     padding: 8px;
 }
+
+#possible_suggestions{
+    display: none;
+}
+
+#possible_suggestions table{
+    width: 100%;
+    border: 2px solid #ddd;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #ddd;
+}
+
+th {
+    background-color:#ddd;
+}
+
+td {
+    padding: 7px;
+    text-align:center;
+}
+
+tr:nth-child(even) {
+    background-color: #eaf3ff
+}
+
+.cc_btn {
+}
+
