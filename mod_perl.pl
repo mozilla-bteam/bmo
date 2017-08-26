@@ -74,8 +74,6 @@ my $server = Apache2::ServerUtil->server;
 my $conf = Bugzilla::ModPerl->apache_config($cgi_path);
 $server->add_config([ grep { length $_ } split("\n", $conf)]);
 
-Bugzilla::ModPerl::BlockIP->configure_memcached(Bugzilla->memcached->{memcached});
-
 # Pre-load all extensions
 Bugzilla::Extension->load_all();
 

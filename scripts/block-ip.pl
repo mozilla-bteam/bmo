@@ -14,6 +14,7 @@ use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::Constants;
+use Bugzilla::ModPerl::BlockIP;
 use Getopt::Long;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
@@ -21,6 +22,9 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 my $unblock;
 GetOptions('unblock' => \$unblock);
 
-if (Bugzilla->memcached->{memcached}) {
-    Bugzilla->memcached->{memcached}->set("block:$_" => !$unblock) for @ARGV;
+if ($unblock) {
+    Bugzilla::ModPerl::BlockIP->unblock_ip($_) for @ARGV;
+} else {
+    Bugzilla::ModPerl::BlockIP->block_ip($_) for @ARGV;
 }
+
