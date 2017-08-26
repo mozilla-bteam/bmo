@@ -32,6 +32,7 @@ sub _filename {
 
 sub populate {
     my ($class, $name, $items) = @_;
+    my $memcached = Bugzilla->memcached;
 
     my $filter = _new_bloom_filter(@$items + 0);
     foreach my $item (@$items) {
@@ -43,25 +44,24 @@ sub populate {
     print $fh $filter->serialize;
     close $fh;
     rename($filename, _filename($name)) or die "failed to rename $filename: $!";
+    $memcached->clear_bloomfilter({name => $name});
 }
 
-sub load {
+sub lookup {
     my ($class, $name) = @_;
+    my $memcached   = Bugzilla->memcached;
+    my $filename    = _filename($name);
+    my $filter_data = $memcached->get_bloomfilter( { name => $name } );
 
-    my $filename = _filename($name);
-
-    if (-f $filename) {
+    if (!$filter_data && -f $filename) {
         open my $fh, '<:bytes', $filename;
         local $/ = undef;
-        my $s = <$fh>;
+        $filter_data = <$fh>;
         close $fh;
+        $memcached->set_bloomfilter({ name => $name, filter => $filter_data });
+    }
 
-        my $filter = Algorithm::BloomFilter->deserialize($s);
-        return $filter;
-    }
-    else {
-        return Algorithm::BloomFilter->new(8, 2);
-    }
+    return Algorithm::BloomFilter->deserialize($filter_data);
 }
 
 1;

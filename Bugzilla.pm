@@ -777,8 +777,8 @@ sub check_rate_limit {
         }
         if (Bugzilla->memcached->should_rate_limit("$name:$ip", @$limit)) {
             my $action = 'block';
-            my $filter = Bugzilla::Bloomfilter->load("rate_limit_whitelist");
-            if ($filter->test($ip)) {
+            my $filter = Bugzilla::Bloomfilter->lookup("rate_limit_whitelist");
+            if ($filter && $filter->test($ip)) {
                 $action = 'ignore';
             }
             my $limit = join("/", @$limit);
