@@ -39,6 +39,7 @@
   # no_body: if true the body element will not be generated
   # allow_mobile: allow special CSS and viewport for detected mobile useragents
   # use_login_page: display a link to the full login page, rather than an inline login.
+  # no_index: Disable search engine from adding page into search index. 
   #%]
 
 [% IF message %]
@@ -54,7 +55,7 @@
   jquery = []
   jquery_css = []
   generate_api_token = 0
-  no_index = 1 
+  no_index = 1
 %]
 
 [%# These are JS URLs that are *always* on the page and come before
