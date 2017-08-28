@@ -45,6 +45,9 @@ sub handler {
     if ($MEMCACHED && $MEMCACHED->get("block_ip:$ip")) {
         __PACKAGE__->block_ip($ip);
         $r->status_line("429 Too Many Requests");
+        # 500 is used here because apache 2.2 doesn't understand 429.
+        # the above line and the return value together mean we produce 429.
+        # Any other variation doesn't work.
         $r->custom_response(500, "Too Many Requests");
         return 429;
     }
