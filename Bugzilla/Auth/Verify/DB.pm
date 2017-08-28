@@ -64,11 +64,11 @@ sub check_credentials {
     {
         my $pwqc = Bugzilla->passwdqc;
         unless ($pwqc->validate_password($password)) {
-            return {
-                failure => AUTH_ERROR,
-                user_error => 'password_insecure',
-                details => { locked_user => $user, reason => $pwqc->reason }
-            }
+            $user->set_password_change_required(1);
+            $user->set_password_change_reason(
+                "You must change your password for the following reason: " . $pwqc->reason
+            );
+            $user->update();
         }
     }
 
