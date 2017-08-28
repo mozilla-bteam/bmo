@@ -1,4 +1,5 @@
 package Bugzilla::ModPerl::BlockIP;
+use 5.10.1;
 use strict;
 use warnings;
 
