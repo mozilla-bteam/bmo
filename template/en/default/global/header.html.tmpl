@@ -54,6 +54,7 @@
   jquery = []
   jquery_css = []
   generate_api_token = 0
+  no_index = 1 
 %]
 
 [%# These are JS URLs that are *always* on the page and come before
@@ -131,7 +132,7 @@
     [% IF Param('utf8') %]
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     [% END %]
-    
+
     [% IF no_index %]
       <meta name="robots" content="noindex" />
     [% END %]
