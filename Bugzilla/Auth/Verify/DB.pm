@@ -64,9 +64,11 @@ sub check_credentials {
     {
         my $pwqc = Bugzilla->passwdqc;
         unless ($pwqc->validate_password($password)) {
+            my $reason = $pwqc->reason;
+            Bugzilla->audit(sprintf "%s logged in with a weak password (reason: %s)", $user->login, $reason);
             $user->set_password_change_required(1);
             $user->set_password_change_reason(
-                "You must change your password for the following reason: " . $pwqc->reason
+                "You must change your password for the following reason: $reason"
             );
             $user->update();
         }
