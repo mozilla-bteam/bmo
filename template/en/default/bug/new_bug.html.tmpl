@@ -14,7 +14,7 @@
     javascript_urls = ['extensions/BugModal/web/new_bug.js']
     style_urls = ['extensions/BugModal/web/new_bug.css']
 %]
-[% PROCESS global/header.html.tmpl %]
+[% WRAPPER "global/bootstrap_page.html.tmpl" %]
 
 <div style="display: none" id="xhr-error"></div>
 <form name="newbugform" id="newbugform" method="post" action="new_bug.cgi" enctype="multipart/form-data">
@@ -163,7 +163,7 @@
   </div>
 </form>
 
-[% PROCESS global/footer.html.tmpl %]
+[% END %]
 
 [% BLOCK fields_lhs %]
     <div class="fields-lhs">[% content FILTER none %]</div>
