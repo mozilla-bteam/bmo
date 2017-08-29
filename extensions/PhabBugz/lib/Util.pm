@@ -298,7 +298,7 @@ sub is_attachment_phab_revision {
     my ($attachment, $include_obsolete) = @_;
     return ($attachment->contenttype eq PHAB_CONTENT_TYPE
             && ($include_obsolete || !$attachment->isobsolete)
-            && $attachment->attacher->login eq 'phab-bot@bmo.tld') ? 1 : 0;
+            && $attachment->attacher->login eq PHAB_AUTOMATION_USER) ? 1 : 0;
 }
 
 sub get_attachment_revisions {
