@@ -5,21 +5,28 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::PhabBugz::Constants;
+package Bugzilla::Test::Util;
 
 use 5.10.1;
 use strict;
 use warnings;
 
 use base qw(Exporter);
-our @EXPORT = qw(
-    PHAB_AUTOMATION_USER
-    PHAB_ATTACHMENT_PATTERN
-    PHAB_CONTENT_TYPE
-);
+our @EXPORT = qw(create_user);
 
-use constant PHAB_ATTACHMENT_PATTERN => qr/^phabricator-D(\d+)/;
-use constant PHAB_AUTOMATION_USER    => 'phab-bot@bmo.tld';
-use constant PHAB_CONTENT_TYPE       => 'text/x-phabricator-request';
+use Bugzilla::User;
+
+sub create_user {
+    my ($login, $password, %extra) = @_;
+    require Bugzilla;
+    return Bugzilla::User->create({
+        login_name    => $login,
+        cryptpassword => $password,
+        disabledtext  => "",
+        disable_mail  => 0,
+        extern_id     => 0,
+        %extra,
+    });
+}
 
 1;

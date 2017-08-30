@@ -57,18 +57,25 @@ if (lc($cgi->request_method) eq 'post') {
      my $token = $cgi->param('token');
      check_hash_token($token, ['new_bug']);
      my @keywords = $cgi->param('keywords');
+     my @groups = $cgi->param('groups');
+     my @cc = split /, /, $cgi->param('cc');
+     my @bug_mentor = split /, /, $cgi->param('bug_mentor');
      my $new_bug = Bugzilla::Bug->create({
                 short_desc   => scalar($cgi->param('short_desc')),
                 product      => scalar($cgi->param('product')),
                 component    => scalar($cgi->param('component')),
                 bug_severity => 'normal',
-                groups       => [],
+                groups       => \@groups,
                 op_sys       => 'Unspecified',
                 rep_platform => 'Unspecified',
                 version      => scalar( $cgi->param('version')),
                 keywords     => \@keywords,
-                cc           => [],
+                cc           => \@cc,
                 comment      => scalar($cgi->param('comment')),
+                dependson    => scalar($cgi->param('dependson')),
+                blocked      => scalar($cgi->param('blocked')),
+                assigned_to  => scalar($cgi->param('assigned_to')),
+                bug_mentors  => \@bug_mentor,
             });
      delete_token($token);
 

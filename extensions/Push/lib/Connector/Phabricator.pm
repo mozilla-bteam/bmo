@@ -16,17 +16,16 @@ use base 'Bugzilla::Extension::Push::Connector::Base';
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Extension::PhabBugz::Util qw(add_comment_to_revision
-  create_private_revision_policy edit_revision_policy get_bug_role_phids
-  get_revisions_by_ids intersect make_revision_public make_revision_private);
+use Bugzilla::User;
+
+use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::Util qw(
+  add_comment_to_revision create_private_revision_policy
+  edit_revision_policy get_attachment_revisions get_bug_role_phids 
+  get_revisions_by_ids intersect is_attachment_phab_revision 
+  make_revision_public make_revision_private);
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util qw(is_public);
-use Bugzilla::User;
-use List::Util qw(any);
-
-use constant PHAB_CONTENT_TYPE       => 'text/x-phabricator-request';
-use constant PHAB_ATTACHMENT_PATTERN => qr/^phabricator-D(\d+)/;
-use constant PHAB_BMO_USER_EMAIL     => 'phab-bot@bmo.tld';
 
 sub options {
     return (
@@ -78,7 +77,7 @@ sub send {
         my $phab_error_message =
           'Revision is being made private due to unknown Bugzilla groups.';
 
-        my @revisions = $self->_get_attachment_revisions($bug);
+        my @revisions = get_attachment_revisions($bug);
         foreach my $revision (@revisions) {
             add_comment_to_revision( $revision->{phid}, $phab_error_message );
             make_revision_private( $revision->{phid} );
@@ -91,7 +90,7 @@ sub send {
             : 'One revision was' )
           . ' made private due to unknown Bugzilla groups.';
 
-        my $user = Bugzilla::User->new( { name => PHAB_BMO_USER_EMAIL } );
+        my $user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
         $user->{groups} = [ Bugzilla::Group->get_all ];
         $user->{bless_groups} = [ Bugzilla::Group->get_all ];
         Bugzilla->set_user($user);
@@ -111,7 +110,7 @@ sub send {
         $subscribers = get_bug_role_phids($bug);
     }
 
-    my @revisions = $self->_get_attachment_revisions($bug);
+    my @revisions = get_attachment_revisions($bug);
     foreach my $revision (@revisions) {
         my $revision_phid = $revision->{phid};
 
@@ -124,34 +123,6 @@ sub send {
     }
 
     return PUSH_RESULT_OK;
-}
-
-sub _get_attachment_revisions() {
-    my ( $self, $bug ) = @_;
-
-    my @revisions;
-
-    my @attachments = grep {
-             $_->isobsolete == 0
-          && $_->contenttype eq PHAB_CONTENT_TYPE
-          && $_->attacher->login eq PHAB_BMO_USER_EMAIL
-    } @{ $bug->attachments() };
-
-    if (@attachments) {
-        my @revision_ids;
-        foreach my $attachment (@attachments) {
-            my ($revision_id) =
-              ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
-            next if !$revision_id;
-            push( @revision_ids, int($revision_id) );
-        }
-
-        if (@revision_ids) {
-            @revisions = get_revisions_by_ids( \@revision_ids );
-        }
-    }
-
-    return @revisions;
 }
 
 sub _get_bug_by_data {

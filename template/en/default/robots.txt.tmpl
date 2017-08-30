@@ -1,0 +1,24 @@
+User-agent: *
+Disallow: /
+Crawl-delay: 30
+
+[% IF NOT urlbase.matches("bugzilla-dev") %]
+
+Allow: /$
+Allow: /index.cgi
+
+Allow: /page.cgi
+Disallow: /page.cgi*id=voting*
+Disallow: /page.cgi*id=productdashboard*
+Disallow: /page.cgi*id=user_activity*
+
+Allow: /show_bug.cgi
+Disallow: /show_bug.cgi*ctype=*
+Disallow: /show_bug.cgi*format=multiple*
+
+Allow: /describecomponents.cgi
+Allow: /describekeywords.cgi
+
+[% Hook.process("end") %]
+
+[% END %]
