@@ -202,7 +202,7 @@ sub edit_revision_policy {
 
     if (@$subscribers) {
         push(@{ $data->{transactions} }, {
-            type  => 'subscribers.add',
+            type  => 'subscribers.set',
             value => $subscribers
         });
     }

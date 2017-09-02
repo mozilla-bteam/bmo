@@ -21,8 +21,8 @@ use Bugzilla::User;
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Util qw(
   add_comment_to_revision create_private_revision_policy
-  edit_revision_policy get_attachment_revisions get_bug_role_phids 
-  get_revisions_by_ids intersect is_attachment_phab_revision 
+  edit_revision_policy get_attachment_revisions get_bug_role_phids
+  get_revisions_by_ids intersect is_attachment_phab_revision
   make_revision_public make_revision_private);
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util qw(is_public);
@@ -44,9 +44,10 @@ sub should_send {
 
     return 0 unless Bugzilla->params->{phabricator_enabled};
 
+    # We are only interested currently in bug group, assignee, qa-contact, or cc changes.
     return 0
       unless $message->routing_key =~
-      /^(?:attachment|bug)\.modify:.*\bbug_group\b/;
+      /^(?:attachment|bug)\.modify:.*\b(bug_group|assigned_to|qa_contact|cc)\b/;
 
     my $bug = $self->_get_bug_by_data( $message->payload_decoded ) || return 0;
 
@@ -73,11 +74,12 @@ sub send {
 
     my @set_groups = intersect( $bug_group_names, $sync_group_names );
 
+    my @revisions = get_attachment_revisions($bug);
+
     if ( !$is_public && !@set_groups ) {
         my $phab_error_message =
           'Revision is being made private due to unknown Bugzilla groups.';
 
-        my @revisions = get_attachment_revisions($bug);
         foreach my $revision (@revisions) {
             add_comment_to_revision( $revision->{phid}, $phab_error_message );
             make_revision_private( $revision->{phid} );
@@ -110,7 +112,6 @@ sub send {
         $subscribers = get_bug_role_phids($bug);
     }
 
-    my @revisions = get_attachment_revisions($bug);
     foreach my $revision (@revisions) {
         my $revision_phid = $revision->{phid};
 
