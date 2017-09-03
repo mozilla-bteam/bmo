@@ -23,7 +23,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
   add_comment_to_revision create_private_revision_policy
   edit_revision_policy get_attachment_revisions get_bug_role_phids
   get_revisions_by_ids intersect is_attachment_phab_revision
-  make_revision_public make_revision_private);
+  make_revision_public make_revision_private set_revision_subscribers);
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util qw(is_public);
 
@@ -60,6 +60,7 @@ sub send {
     my $logger = Bugzilla->push_ext->logger;
 
     my $data = $message->payload_decoded;
+
     my $bug = $self->_get_bug_by_data($data) || return PUSH_RESULT_OK;
 
     my $is_public = is_public($bug);
@@ -111,17 +112,20 @@ sub send {
         return PUSH_RESULT_OK;
     }
 
-    my $policy_phid;
+    my $group_change =
+      ($message->routing_key =~ /^(?:attachment|bug)\.modify:.*\bbug_group\b/)
+      ? 1
+      : 0;
+
     my $subscribers;
     if ( !$is_public ) {
-        $policy_phid = create_private_revision_policy( $bug, \@set_groups );
         $subscribers = get_bug_role_phids($bug);
     }
 
     foreach my $revision (@revisions) {
         my $revision_phid = $revision->{phid};
 
-        if ($is_public) {
+        if ( $is_public && $group_change ) {
             Bugzilla->audit(sprintf(
               'Making revision %s public for bug %s',
               $revision->{id},
@@ -129,13 +133,22 @@ sub send {
             ));
             make_revision_public($revision_phid);
         }
-        else {
+        elsif ( !$is_public && $group_change ) {
             Bugzilla->audit(sprintf(
               'Giving revision %s a custom policy for bug %s',
               $revision->{id},
               $bug->id
             ));
+            my $policy_phid = create_private_revision_policy( $bug, \@set_groups );
             edit_revision_policy( $revision_phid, $policy_phid, $subscribers );
+        }
+        elsif ( !$is_public && !$group_change ) {
+            Bugzilla->audit(sprintf(
+              'Updating subscribers for %s for bug %s',
+              $revision->{id},
+              $bug->id
+            ));
+            set_revision_subscribers( $revision_phid, $subscribers );
         }
     }
 
