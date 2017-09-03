@@ -38,6 +38,7 @@ our @EXPORT = qw(
     make_revision_public
     request
     set_project_members
+    set_revision_subscribers
 );
 
 sub get_revisions_by_ids {
@@ -206,6 +207,22 @@ sub edit_revision_policy {
             value => $subscribers
         });
     }
+
+    return request('differential.revision.edit', $data);
+}
+
+sub set_revision_subscribers {
+    my ($revision_phid, $subscribers) = @_;
+
+    my $data = {
+        transactions => [
+            {
+                type  => 'subscribers.set',
+                value => $subscribers
+            }
+        ],
+        objectIdentifier => $revision_phid
+    };
 
     return request('differential.revision.edit', $data);
 }
