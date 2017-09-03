@@ -206,9 +206,6 @@ sub update_reviewer_statuses {
             push(@new_flags, { type_id => $flag_type->id, setter => $user, status => '+' });
         }
 
-        $attachment->set_flags(\@old_flags, \@new_flags);
-        $attachment->update($timestamp);
-
         # Also add comment to for attachment update showing the user's name
         # that changed the revision.
         my $comment;
@@ -220,14 +217,17 @@ sub update_reviewer_statuses {
         }
 
         if ($comment) {
-            $comment .= "\n" . Bugzilla->params->{phabricator_uri} .
-                        "/D" . $revision_id;
-            $attachment->bug->add_comment($comment, {
+            $comment .= "\n" . Bugzilla->params->{phabricator_base_uri} . "D" . $revision_id;
+            $bug->add_comment($comment, {
                 isprivate  => $attachment->isprivate,
                 type       => CMT_ATTACHMENT_UPDATED,
                 extra_data => $attachment->id
             });
         }
+
+        $attachment->set_flags(\@old_flags, \@new_flags);
+        $attachment->update($timestamp);
+        $bug->update($timestamp) if $comment;
 
         push(@updated_attach_ids, $attachment->id);
     }
