@@ -349,7 +349,7 @@ sub check_comment_taggers_group {
 sub get_all_group_names {
     return [
         '',
-        map { $_->name } Bugzilla::Group->get_all;
+        map { $_->name } Bugzilla::Group->get_all,
     ];
 }
 
