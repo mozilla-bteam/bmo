@@ -39,10 +39,6 @@ sub compile_file {
         skip "$file: extensions not tested",  1;
         return;
     }
-    if ($file =~ /ModPerl/) {
-       skip "$file: ModPerl stuff not tested", 1;
-       return;
-    }
 
     if ($file =~ s/\.pm$//) {
         $file =~ s{/}{::}g;
