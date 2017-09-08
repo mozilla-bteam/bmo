@@ -24,7 +24,7 @@ my $STATIC_URI = qr{
        | js
        | errors
      )
-}xs;
+}xms;
 
 sub block_ip {
     my ($class, $ip) = @_;
@@ -40,7 +40,13 @@ sub handler {
     my $r = shift;
     return Apache2::Const::OK if $r->uri =~ $STATIC_URI;
 
-    my $ip = $r->headers_in->{'X-Forwarded-For'} // $r->connection->remote_ip;
+    my $ip = $r->headers_in->{'X-Forwarded-For'};
+    if ($ip) {
+        $ip = (split(/\s*,\s*/ms, $ip))[-1];
+    }
+    else {
+        $ip = $r->connection->remote_ip;
+    }
 
     if ($MEMCACHED && $MEMCACHED->get("block_ip:$ip")) {
         __PACKAGE__->block_ip($ip);
