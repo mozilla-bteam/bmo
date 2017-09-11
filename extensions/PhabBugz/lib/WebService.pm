@@ -210,10 +210,10 @@ sub update_reviewer_statuses {
         # that changed the revision.
         my $comment;
         foreach my $flag_data (@new_flags) {
-            $comment .= $flag_data->{setter}->name . " accepted the revision\n";
+            $comment .= $flag_data->{setter}->name . " has approved the revision.\n";
         }
         foreach my $flag_data (@old_flags) {
-            $comment .= $flag_data->{setter}->name . " denied the revision\n";
+            $comment .= $flag_data->{setter}->name . " has requested changes to the revision.\n";
         }
 
         if ($comment) {
