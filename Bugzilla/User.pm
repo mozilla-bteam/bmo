@@ -2246,6 +2246,7 @@ sub wants_bug_mail {
     my $self = shift;
     my ($bug, $relationship, $fieldDiffs, $comments, $dep_mail, $changer) = @_;
 
+    # is_silent_user is true if the username is mentioned in the param `silent_users`
     return 0 if $changer && $changer->is_silent_user;
 
     # Make a list of the events which have happened during this bug change,
@@ -2420,8 +2421,8 @@ sub is_silent_user {
     my $self = shift;
 
     if (!exists $self->{'is_silent_user'}) {
-        my @helpers = split(/\s*,\s*/, Bugzilla->params->{'silent_users'});
-        $self->{'is_silent_user'} = (any { $self->login eq $_ } @helpers) ? 1 : 0;
+        my @users = split(/\s*,\s*/, Bugzilla->params->{'silent_users'});
+        $self->{'is_silent_user'} = (any { $self->login eq $_ } @users) ? 1 : 0;
     }
 
     return  $self->{'is_silent_user'};
