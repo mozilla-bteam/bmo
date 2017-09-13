@@ -11,7 +11,10 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Bug;
+use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::User;
 use Bugzilla::Util qw(trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 
@@ -23,6 +26,7 @@ use base qw(Exporter);
 
 our @EXPORT = qw(
     add_comment_to_revision
+    add_security_sync_comments
     create_revision_attachment
     create_private_revision_policy
     create_project
@@ -32,6 +36,7 @@ our @EXPORT = qw(
     get_members_by_bmo_id
     get_project_phid
     get_revisions_by_ids
+    get_security_sync_groups
     intersect
     is_attachment_phab_revision
     make_revision_private
@@ -380,6 +385,48 @@ sub request {
     }
 
     return $result;
+}
+
+sub get_security_sync_groups {
+    my $bug = shift;
+
+    my $phab_sync_groups = Bugzilla->params->{phabricator_sync_groups}
+        || ThrowUserError('invalid_phabricator_sync_groups');
+    my $sync_group_names = [ split('[,\s]+', $phab_sync_groups) ];
+
+    my $bug_groups = $bug->groups_in;
+    my $bug_group_names = [ map { $_->name } @$bug_groups ];
+
+    my @set_groups = intersect($bug_group_names, $sync_group_names);
+
+    return @set_groups;
+}
+
+sub add_security_sync_comments {
+    my ($revisions, $bug) = @_;
+
+    my $phab_error_message = 'Revision is being made private due to unknown Bugzilla groups.';
+
+    foreach my $revision (@$revisions) {
+        add_comment_to_revision( $revision->{phid}, $phab_error_message );
+    }
+
+    my $num_revisions = 0 + @$revisions;
+    my $bmo_error_message =
+    ( $num_revisions > 1
+    ? $num_revisions.' revisions were'
+    : 'One revision was' )
+    . ' made private due to unknown Bugzilla groups.';
+
+    my $user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
+    $user->{groups} = [ Bugzilla::Group->get_all ];
+    $user->{bless_groups} = [ Bugzilla::Group->get_all ];
+    Bugzilla->set_user($user);
+
+    $bug->add_comment( $bmo_error_message, { isprivate => 0 } );
+
+    my $bug_changes = $bug->update();
+    $bug->send_changes($bug_changes);
 }
 
 1;
