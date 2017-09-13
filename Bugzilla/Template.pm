@@ -199,6 +199,13 @@ sub quoteUrls {
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
 
+    my $urlbase = Bugzilla->params->{'urlbase'};
+    $text =~ s~\bhttps?\Q://bugzil.la/\E([0-9]+)(\#c([0-9]+))?\b
+              ~($things[$count++] = $bug_link_func->($1, "${urlbase}show_bug.cgi?id=$1$2",
+                                               { comment_num => $3, user => $user })) &&
+               ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
+              ~egox;
+
     # non-mailto protocols
     my $safe_protocols = SAFE_URL_REGEXP();
     $text =~ s~\b($safe_protocols)
@@ -900,7 +907,7 @@ sub create {
             html_light => \&Bugzilla::Util::html_light_quote,
 
             email => \&Bugzilla::Util::email_filter,
-            
+
             mtime => \&mtime_filter,
 
             # iCalendar contentline filter
