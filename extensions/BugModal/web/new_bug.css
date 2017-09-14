@@ -80,3 +80,7 @@ tr:nth-child(even) {
 .cc_btn {
 }
 
+#close_suggest {
+    cursor: pointer;
+}
+

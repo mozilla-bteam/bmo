@@ -37,6 +37,7 @@ var component_load = function(product) {
 }
 
 $(document).ready(function() {
+    var close_suggest = false;
     var product_name = window.location.hash? window.location.hash.substr(1) : null;
     bugzilla_ajax(
             {
@@ -152,58 +153,68 @@ $(document).ready(function() {
     window.onhashchange = function() {
         location.reload();
     }
-    $("#short_desc").keyup(function () {
-        var checked_input = "";
-        $("#possible_suggestions").css("display", "block")
-        if($('#short_desc').val().length > 3 && $('#short_desc').val() != checked_input){  
-            if ($("#product").val() != "") {
-                var jsonObject = {
-                    version: "2.0",
-                    method: "Bug.possible_duplicates",
-                    id: 5,
-                    params: {
-                        Bugzilla_api_token: BUGZILLA.api_token,
-                        product: $("#product").val(),
-                        summary: $('#short_desc').val(),
-                        limit: 7,
-                        include_fields: ["id","summary","status","resolution","update_token"]
-                    }
-                };
-                console.log(jsonObject);
-                // {"version":"1.1","method":"Bug.possible_duplicates","id":2,"params":{"Bugzilla_api_token":"hXiH792OdvZ3tZKLYMQhgR","product":"Firefox","summary":"cheese","limit":7,"include_fields":["id","summary","status","resolution","update_token"]}}
 
-                bugzilla_ajax(
-                    {
-                        url: '/jsonrpc.cgi',
-                        type: 'POST',
-                        data: JSON.stringify(jsonObject)
-                    },
-                    function(data) {
-                        console.log(data);
-                        var bugs = data.result.bugs;
-                        $("#possible_suggestions tbody").html('');
-                        if (bugs.length == 0) {
-                            $("#possible_suggestions tbody").append(`<td colspan="3">No bugs found.</td>`);
+    $('#close_suggest').click( function() {
+        $("#possible_suggestions").css("display", "none")
+        close_suggest = true;
+    });
+
+    
+    $("#short_desc").keyup(function () {
+        if(!close_suggest) {
+            var checked_input = "";
+            $("#possible_suggestions").css("display", "block")
+            if($('#short_desc').val().length > 3 && $('#short_desc').val() != checked_input){  
+                if ($("#product").val() != "") {
+                    var jsonObject = {
+                        version: "2.0",
+                        method: "Bug.possible_duplicates",
+                        id: 5,
+                        params: {
+                            Bugzilla_api_token: BUGZILLA.api_token,
+                            product: $("#product").val(),
+                            summary: $('#short_desc').val(),
+                            limit: 7,
+                            include_fields: ["id","summary","status","resolution","update_token"]
                         }
-                        for (var i = bugs.length - 1; i >= 0; i--) {
-                                var el = `<tr>
-                                            <td><a href="show_bug.cgi?id=${bugs[i].id}">${bugs[i].id}</a></td>
-                                            <td>${bugs[i].summary}</td>
-                                            <td>${bugs[i].status} ${bugs[i].resolution} </td>
-                                            <td><a class="cc_btn" href="process_bug.cgi?id=${bugs[i].id}&addselfcc=1&token=${bugs[i].update_token}">Add me to the CC List</a></td>
-                                          </tr>`;
-                                $("#possible_suggestions tbody").append(el);
+                    };
+                    console.log(jsonObject);
+                    // {"version":"1.1","method":"Bug.possible_duplicates","id":2,"params":{"Bugzilla_api_token":"hXiH792OdvZ3tZKLYMQhgR","product":"Firefox","summary":"cheese","limit":7,"include_fields":["id","summary","status","resolution","update_token"]}}
+
+                    bugzilla_ajax(
+                        {
+                            url: '/jsonrpc.cgi',
+                            type: 'POST',
+                            data: JSON.stringify(jsonObject)
+                        },
+                        function(data) {
+                            console.log(data);
+                            var bugs = data.result.bugs;
+                            $("#possible_suggestions tbody").html('');
+                            if (bugs.length == 0) {
+                                $("#possible_suggestions tbody").append(`<td colspan="3">No bugs found.</td>`);
+                            }
+                            for (var i = bugs.length - 1; i >= 0; i--) {
+                                    var el = `<tr>
+                                                <td><a href="show_bug.cgi?id=${bugs[i].id}">${bugs[i].id}</a></td>
+                                                <td>${bugs[i].summary}</td>
+                                                <td>${bugs[i].status} ${bugs[i].resolution} </td>
+                                                <td><a class="cc_btn" href="process_bug.cgi?id=${bugs[i].id}&addselfcc=1&token=${bugs[i].update_token}">Add me to the CC List</a></td>
+                                              </tr>`;
+                                    $("#possible_suggestions tbody").append(el);
+                            }
+                        },
+                        function() {
+                            alert("Network issues. Please refresh the page and try again");
                         }
-                    },
-                    function() {
-                        alert("Network issues. Please refresh the page and try again");
-                    }
-                );
-            } else {
-                $("#possible_suggestions tbody").html('');
-                $("#possible_suggestions").css("display", "block");
-                $("#possible_suggestions tbody").append(`<td colspan="4">Please fill product to get suggestions</td>`)
+                    );
+                } else {
+                    $("#possible_suggestions tbody").html('');
+                    $("#possible_suggestions").css("display", "block");
+                    $("#possible_suggestions tbody").append(`<td colspan="4">Please fill product to get suggestions</td>`)
+                }
             }
         }
     });
+    
 });
