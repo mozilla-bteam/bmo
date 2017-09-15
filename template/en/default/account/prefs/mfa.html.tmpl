@@ -6,10 +6,7 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[%
-  SET MFA_HOWTO = "https://wiki.mozilla.org/BMO/UserGuide/Two-Factor_Authentication"
-      MFA_VIDEO = "#todo"
-%]
+[% SET MFA_HOWTO = "https://wiki.mozilla.org/BMO/UserGuide/Two-Factor_Authentication" %]
 
 [% IF NOT Bugzilla.feature('mfa') %]
   <input type="hidden" name="mfa_action" id="mfa-action" value="">
@@ -143,8 +140,7 @@
       </p>
       <p>
         <b>Need help setting ip 2FA?</b>
-        You may <a href="[% MFA_HOWTO FILTER html %]">read comprensive instructions</a>
-        or <a href="[% MFA_VIDEO FILTER html %]">watch a short video</a>.
+        You may want to <a href="[% MFA_HOWTO FILTER html %]">read these comprensive instructions</a>.
       </p>
     [% ELSE %]
       <p>
