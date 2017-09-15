@@ -95,8 +95,9 @@ sub SaveAccount {
         }
 
         if ($pwd1 ne "" || $pwd2 ne "") {
-            $pwd1 || ThrowUserError("new_password_missing");
-            validate_password($pwd1, $pwd2);
+            ThrowUserError("new_password_missing") unless $pwd1;
+            Bugzilla->assert_password_is_secure($pwd1);
+            Bugzilla->assert_passwords_match($pwd1, $pwd2);
 
             if ($oldpassword ne $pwd1) {
                 if ($user->mfa) {
@@ -655,7 +656,7 @@ sub SaveMFA {
     my $reason;
     if ($action eq 'enable') {
         $provider->enroll(Bugzilla->input_params);
-        $reason = 'Two-factor enrolment';
+        $reason = 'Two-factor enrollment';
     }
     elsif ($action eq 'recovery') {
         $reason = 'Recovery code generation';

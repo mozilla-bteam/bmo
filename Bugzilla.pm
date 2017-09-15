@@ -20,7 +20,7 @@ BEGIN {
     }
 }
 
-our $VERSION = '20170831.1';
+our $VERSION = '20170913.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -320,6 +320,41 @@ sub github_secret {
     $cache->{github_secret} //= $cgi->cookie('github_secret') // generate_random_password(16);
 
     return $cache->{github_secret};
+}
+
+sub passwdqc {
+    my ($class) = @_;
+    require Data::Password::passwdqc;
+
+    my $cache  = $class->request_cache;
+    my $params = $class->params;
+
+    return $cache->{passwdqc} if $cache->{passwdqc};
+
+    my @min = map { $_ eq 'undef' ? undef : $_ }
+        split( /\s*,\s*/, $params->{passwdqc_min} );
+
+    return $cache->{passwdqc} = Data::Password::passwdqc->new(
+        min              => \@min,
+        max              => $params->{passwdqc_max},
+        passphrase_words => $params->{passwdqc_passphrase_words},
+        match_length     => $params->{passwdqc_match_length},
+        random_bits      => $params->{passwdqc_random_bits},
+    );
+}
+
+sub assert_password_is_secure {
+    my ( $class, $password1 ) = @_;
+
+    my $pwqc = $class->passwdqc;
+    ThrowUserError( 'password_insecure', { reason => $pwqc->reason } )
+        unless $pwqc->validate_password($password1);
+}
+
+sub assert_passwords_match {
+    my ( $class, $password1, $password2 ) = @_;
+
+    ThrowUserError('password_mismatch') if $password1 ne $password2;
 }
 
 sub login {

@@ -34,7 +34,7 @@ use Role::Tiny::With;
 
 use base qw(Bugzilla::Object Exporter);
 @Bugzilla::User::EXPORT = qw(is_available_username
-    login_to_id user_id_to_login validate_password validate_password_check
+    login_to_id user_id_to_login 
     USER_MATCH_MULTIPLE USER_MATCH_FAILED USER_MATCH_SUCCESS
     MATCH_SKIP_CONFIRM
 );
@@ -419,7 +419,7 @@ sub _check_password {
     # authentication.
     return $pass if $pass eq '*';
 
-    validate_password($pass);
+    Bugzilla->assert_password_is_secure($pass);
     my $cryptpassword = bz_crypt($pass);
     return $cryptpassword;
 }
@@ -2268,6 +2268,9 @@ sub wants_bug_mail {
     my $self = shift;
     my ($bug, $relationship, $fieldDiffs, $comments, $dep_mail, $changer) = @_;
 
+    # is_silent_user is true if the username is mentioned in the param `silent_users`
+    return 0 if $changer && $changer->is_silent_user;
+
     # Make a list of the events which have happened during this bug change,
     # from the point of view of this user.
     my %events;
@@ -2429,11 +2432,22 @@ sub is_insider {
 sub is_global_watcher {
     my $self = shift;
 
-    if (!defined $self->{'is_global_watcher'}) {
-        my @watchers = split(/[,;]+/, Bugzilla->params->{'globalwatchers'});
-        $self->{'is_global_watcher'} = scalar(grep { $_ eq $self->login } @watchers) ? 1 : 0;
+    if (!exists $self->{'is_global_watcher'}) {
+        my @watchers = split(/\s*,\s*/, Bugzilla->params->{'globalwatchers'});
+        $self->{'is_global_watcher'} = (any { $_ eq $self->login } @watchers) ? 1 : 0;
     }
     return  $self->{'is_global_watcher'};
+}
+
+sub is_silent_user {
+    my $self = shift;
+
+    if (!exists $self->{'is_silent_user'}) {
+        my @users = split(/\s*,\s*/, Bugzilla->params->{'silent_users'});
+        $self->{'is_silent_user'} = (any { $self->login eq $_ } @users) ? 1 : 0;
+    }
+
+    return  $self->{'is_silent_user'};
 }
 
 sub is_timetracker {
@@ -2719,40 +2733,6 @@ sub user_id_to_login {
                                        WHERE userid = ?', undef, $user_id);
     return $login || '';
 }
-
-sub validate_password {
-    my $check = validate_password_check(@_);
-    ThrowUserError($check) if $check;
-    return 1;
-}
-
-sub validate_password_check {
-    my ($password, $matchpassword) = @_;
-
-    if (length($password) < USER_PASSWORD_MIN_LENGTH) {
-        return 'password_too_short';
-    } elsif ((defined $matchpassword) && ($password ne $matchpassword)) {
-        return 'passwords_dont_match';
-    }
-
-    my $complexity_level = Bugzilla->params->{password_complexity};
-    if ($complexity_level eq 'bmo') {
-        my $features = 0;
-
-        $features++ if $password =~ /[a-z]/;
-        $features++ if $password =~ /[A-Z]/;
-        $features++ if $password =~ /[0-9]/;
-        $features++ if $password =~ /[^A-Za-z0-9]/;
-        $features++ if length($password) > 12;
-
-        return 'password_not_complex' if $features < 3;
-    }
-
-    # Having done these checks makes us consider the password untainted.
-    trick_taint($_[0]);
-    return;
-}
-
 
 1;
 
@@ -3376,26 +3356,6 @@ if you need more information about the user than just their ID.
 Returns the login name of the user account for the given user ID. If no
 valid user ID is given or the user has no entry in the profiles table,
 we return an empty string.
-
-=item C<validate_password($passwd1, $passwd2)>
-
-Returns true if a password is valid (i.e. meets Bugzilla's
-requirements for length and content), else throws an error.
-Untaints C<$passwd1> if successful.
-
-If a second password is passed in, this function also verifies that
-the two passwords match.
-
-=item C<validate_password_check($passwd1, $passwd2)>
-
-This sub routine is similair to C<validate_password>, except that it allows
-the calling code to handle its own errors.
-
-Returns undef and untaints C<$passwd1> if a password is valid (i.e. meets
-Bugzilla's requirements for length and content), else returns the error.
-
-If a second password is passed in, this function also verifies that
-the two passwords match.
 
 =item C<match_field($data, $fields, $behavior)>
 
