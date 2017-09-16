@@ -7,6 +7,13 @@
   #%]
 
 [% SET MFA_HOWTO = "https://wiki.mozilla.org/BMO/UserGuide/Two-Factor_Authentication" %]
+[% tab_footer = BLOCK %]
+  <form action="token.cgi" method="post" id="forgot-form">
+    <input type="hidden" name="loginname" value="[% user.login FILTER html %]">
+    <input type="hidden" name="a" value="reqpw">
+    <input type="hidden" name="token" value="[% issue_hash_token(['reqpw']) FILTER html %]">
+  </form>
+[% END %]
 
 [% IF NOT Bugzilla.feature('mfa') %]
   <input type="hidden" name="mfa_action" id="mfa-action" value="">
@@ -16,10 +23,14 @@
   [% RETURN %]
 [% END %]
 [% IF user.cryptpassword == '*' %]
-  <input type="hidden" name="mfa_action" id="mfa-action" value="">
+  <input type="hidden" name="mfa_action" id="mfa-action" value="" data-nopassword="true">
   <p>
     Two-factor Authentication is not available on your account because you are
     using an external authentication provider.
+  </p>
+  <p>
+    Clicking "Reset Password" will cause [% terms.Bugzilla %] to send you an
+    email which will allow you to create a password.
   </p>
   [% RETURN %]
 [% END %]
