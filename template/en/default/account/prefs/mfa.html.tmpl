@@ -25,12 +25,15 @@
 [% IF user.cryptpassword == '*' %]
   <input type="hidden" name="mfa_action" id="mfa-action" value="" data-nopassword="true">
   <p>
-    Two-factor Authentication is not available on your account because you are
-    using an external authentication provider.
+    Your account requires MFA to be configured before you can use Bugzilla.
   </p>
+
   <p>
-    Clicking "Reset Password" will cause [% terms.Bugzilla %] to send you an
-    email which will allow you to create a password.
+    As part of this transition you will no longer be able to use GitHub to log in to Bugzilla; instead you will need to set a password for your existing account on Bugzilla and use that to login in future.
+  </p>
+
+  <p>
+    To set a password on your account please click on "Reset Password"; this will email you instructions to complete this process.
   </p>
   [% RETURN %]
 [% END %]
