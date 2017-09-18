@@ -34,7 +34,7 @@ use Role::Tiny::With;
 
 use base qw(Bugzilla::Object Exporter);
 @Bugzilla::User::EXPORT = qw(is_available_username
-    login_to_id user_id_to_login validate_password validate_password_check
+    login_to_id user_id_to_login 
     USER_MATCH_MULTIPLE USER_MATCH_FAILED USER_MATCH_SUCCESS
     MATCH_SKIP_CONFIRM
 );
@@ -80,6 +80,7 @@ sub DB_COLUMNS {
         'profiles.password_change_required',
         'profiles.password_change_reason',
         'profiles.mfa',
+        'profiles.mfa_required_date'
     ),
 }
 
@@ -112,6 +113,7 @@ sub UPDATE_COLUMNS {
         password_change_required
         password_change_reason
         mfa
+        mfa_required_date
     );
     push(@cols, 'cryptpassword') if exists $self->{cryptpassword};
     return @cols;
@@ -417,7 +419,7 @@ sub _check_password {
     # authentication.
     return $pass if $pass eq '*';
 
-    validate_password($pass);
+    Bugzilla->assert_password_is_secure($pass);
     my $cryptpassword = bz_crypt($pass);
     return $cryptpassword;
 }
@@ -500,6 +502,11 @@ sub set_mfa {
     my ($self, $value) = @_;
     $self->set('mfa', $value);
     delete $self->{mfa_provider};
+}
+
+sub set_mfa_required_date {
+    my ($self, $value) = @_;
+    $self->set('mfa_required_date', $value);
 }
 
 sub set_groups {
@@ -670,6 +677,12 @@ sub authorizer {
 }
 
 sub mfa { $_[0]->{mfa} }
+
+sub mfa_required_date {
+    my $self = shift;
+    return $self->{mfa_required_date} ? datetime_from($self->{mfa_required_date}, @_) : undef;
+}
+
 sub mfa_provider {
     my ($self) = @_;
     my $mfa = $self->{mfa} || return undef;
@@ -677,6 +690,15 @@ sub mfa_provider {
     require Bugzilla::MFA;
     $self->{mfa_provider} = Bugzilla::MFA->new_from($self, $mfa);
     return $self->{mfa_provider};
+}
+
+
+sub in_mfa_group {
+    my $self = shift;
+    return $self->{in_mfa_group} if exists $self->{in_mfa_group};
+
+    my $mfa_group = Bugzilla->params->{mfa_group};
+    return $self->{in_mfa_group} = ($mfa_group && $self->in_group($mfa_group));
 }
 
 sub name_or_login {
@@ -2712,40 +2734,6 @@ sub user_id_to_login {
     return $login || '';
 }
 
-sub validate_password {
-    my $check = validate_password_check(@_);
-    ThrowUserError($check) if $check;
-    return 1;
-}
-
-sub validate_password_check {
-    my ($password, $matchpassword) = @_;
-
-    if (length($password) < USER_PASSWORD_MIN_LENGTH) {
-        return 'password_too_short';
-    } elsif ((defined $matchpassword) && ($password ne $matchpassword)) {
-        return 'passwords_dont_match';
-    }
-
-    my $complexity_level = Bugzilla->params->{password_complexity};
-    if ($complexity_level eq 'bmo') {
-        my $features = 0;
-
-        $features++ if $password =~ /[a-z]/;
-        $features++ if $password =~ /[A-Z]/;
-        $features++ if $password =~ /[0-9]/;
-        $features++ if $password =~ /[^A-Za-z0-9]/;
-        $features++ if length($password) > 12;
-
-        return 'password_not_complex' if $features < 3;
-    }
-
-    # Having done these checks makes us consider the password untainted.
-    trick_taint($_[0]);
-    return;
-}
-
-
 1;
 
 __END__
@@ -3368,26 +3356,6 @@ if you need more information about the user than just their ID.
 Returns the login name of the user account for the given user ID. If no
 valid user ID is given or the user has no entry in the profiles table,
 we return an empty string.
-
-=item C<validate_password($passwd1, $passwd2)>
-
-Returns true if a password is valid (i.e. meets Bugzilla's
-requirements for length and content), else throws an error.
-Untaints C<$passwd1> if successful.
-
-If a second password is passed in, this function also verifies that
-the two passwords match.
-
-=item C<validate_password_check($passwd1, $passwd2)>
-
-This sub routine is similair to C<validate_password>, except that it allows
-the calling code to handle its own errors.
-
-Returns undef and untaints C<$passwd1> if a password is valid (i.e. meets
-Bugzilla's requirements for length and content), else returns the error.
-
-If a second password is passed in, this function also verifies that
-the two passwords match.
 
 =item C<match_field($data, $fields, $behavior)>
 
