@@ -25,11 +25,11 @@
 [% IF user.cryptpassword == '*' %]
   <input type="hidden" name="mfa_action" id="mfa-action" value="" data-nopassword="true">
   <p>
-    Your account requires MFA to be configured before you can use Bugzilla.
+    Your account requires MFA to be configured before you can use [% terms.Bugzilla %]
   </p>
-
   <p>
-    As part of this transition you will no longer be able to use GitHub to log in to Bugzilla; instead you will need to set a password for your existing account on Bugzilla and use that to login in future.
+    As part of this transition you will no longer be able to use GitHub to log in to [% terms.Bugzilla %];
+    instead you will need to set a password for your existing account on Bugzilla and use that to login in future.
   </p>
 
   <p>
