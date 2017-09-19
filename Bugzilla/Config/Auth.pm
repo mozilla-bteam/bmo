@@ -17,14 +17,6 @@ use Types::Common::Numeric qw(PositiveInt);
 
 our $sortkey = 300;
 
-use constant PASSWDQC_DESC => <<'DESC';
-Password containing only one class of characters is not allowed.<br>
-Password containing two classes of characters must be 24 characters or longer<br>
-Password that is a passphrase must be 11 characters or longer, and at least 3 words.<br>
-Password containing three classes of characters must be 8 characters or longer.<br>
-Password containing four classes of characters must be 7 characters or longer.
-DESC
-
 sub get_param_list {
     my $class      = shift;
     my @param_list = (
@@ -168,7 +160,7 @@ sub get_param_list {
         {
             name => 'passwdqc_desc',
             type => 'l',
-            default => PASSWDQC_DESC,
+            default => 'The password must be complex.',
         },
 
         {
