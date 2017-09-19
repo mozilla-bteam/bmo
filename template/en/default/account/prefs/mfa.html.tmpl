@@ -24,16 +24,18 @@
 [% END %]
 [% IF user.cryptpassword == '*' %]
   <input type="hidden" name="mfa_action" id="mfa-action" value="" data-nopassword="true">
+  [% IF Bugzilla.request_cache.mfa_warning %]
+    <p>
+      Your account requires Two-Factor authentication to be configured before you can use [% terms.Bugzilla %]
+    </p>
+  [% END %]
   <p>
-    Your account requires MFA to be configured before you can use [% terms.Bugzilla %]
+    Before you can enable two-factor authentication you must set a password on your account.
+    To do this on your account please click on "Reset Password";
+    this will email you instructions to start the password reset process.
   </p>
   <p>
-    As part of this transition you will no longer be able to use GitHub to log in to [% terms.Bugzilla %];
-    instead you will need to set a password for your existing account on Bugzilla and use that to login in future.
-  </p>
-
-  <p>
-    To set a password on your account please click on "Reset Password"; this will email you instructions to complete this process.
+    As part of this transition you will no longer be able to use GitHub to log in to [% terms.Bugzilla %].
   </p>
   [% RETURN %]
 [% END %]
