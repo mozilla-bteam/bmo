@@ -82,7 +82,7 @@ sub revision {
     my $revision_title = $revision->{fields}{title} || 'Unknown Description';
     my $bug_id         = $revision->{fields}{'bugzilla.bug-id'};
 
-    my $bug = Bugzilla::Bug->check($bug_id);
+    my $bug = Bugzilla::Bug->new($bug_id);
 
     # If bug is public then remove privacy policy
     my $result;
