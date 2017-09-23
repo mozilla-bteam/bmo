@@ -1,4 +1,4 @@
-theme = freenode || core || certrec || certrule || performance
+theme = freenode || core || certrec || certrule || performance || security
 severity = 1
 
 [-BuiltinFunctions::ProhibitUselessTopic]
@@ -19,7 +19,6 @@ severity = 1
 [-ValuesAndExpressions::ProhibitVersionStrings]
 [-Variables::ProhibitLocalVars]
 [-Variables::ProhibitPackageVars]
-[-Subroutines::ProhibitExplicitReturnUndef]
 
 # this policy is broken currently
 [-Freenode::PackageMatchesFilename]
@@ -28,6 +27,10 @@ severity = 1
 # Non-explicit return is often easier to read.
 # think of javascript arrow functions.
 [-Subroutines::RequireFinalReturn]
+
+# I don't agree with this policy because
+# a bare return can actually cause more problems.
+[-Subroutines::ProhibitExplicitReturnUndef]
 
 [Variables::RequireLocalizedPunctuationVars]
 allow = @ARGV $ARGV %ENV %SIG
