@@ -223,24 +223,24 @@ sub issue_short_lived_session_token {
 }
 
 sub issue_hash_sig {
-    my ($data, $salt) = @_;
+    my ($type, $data, $salt) = @_;
     $data //= "";
     $salt //= generate_random_password(16);
 
     my $hmac = hmac_sha256_base64(
         $salt,
-        Bugzilla->user->id,
+        $type,
         $data,
         Bugzilla->localconfig->{site_wide_secret}
     );
-    return "$salt-$hmac";
+    return sprintf("%s|%s|%x", $salt, $hmac, length($data));
 }
 
 sub check_hash_sig {
-    my ($sig, $data) = @_;
+    my ($type, $sig, $data) = @_;
     return 0 unless defined $sig && defined $data;
-    my ($salt, $hash) = split(/-/, $sig, 2);
-    return $sig eq issue_hash_sig($data, $salt);
+    my ($salt, undef, $len) = split(/\|/, $sig, 3);
+    return length($data) == hex($len) && $sig eq issue_hash_sig($type, $data, $salt);
 }
 
 sub issue_hash_token {
