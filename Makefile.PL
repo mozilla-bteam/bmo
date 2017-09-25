@@ -74,8 +74,9 @@ my %test_requires = (
     'Test::More'                      => 0,
     'Pod::Coverage'                   => 0,
     'Test::WWW::Selenium'             => 0,
+    'Test::Selenium::Firefox'         => 0,
     'Test::Perl::Critic::Progressive' => 0,
-    'Perl::Critic::Freenode'  => 0,
+    'Perl::Critic::Freenode'          => 0,
 );
 my %recommends = ( Safe => '2.30' );
 
