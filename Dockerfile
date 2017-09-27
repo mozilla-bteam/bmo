@@ -1,6 +1,5 @@
 FROM mozillabteam/bmo-slim:20170927.1
 
-ENV BUNDLE=https://s3.amazonaws.com/moz-devservices-bmocartons/bmo/vendor.tar.gz
 ENV PORT=8000
 
 WORKDIR /app
