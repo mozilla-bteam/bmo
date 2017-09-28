@@ -24,12 +24,6 @@ sub get_param_list {
             default => 0
         },
         {
-            name    => 'attachment_base',
-            type    => 't',
-            default => '',
-            checker => \&check_urlbase
-        },
-        {
             name    => 'allow_attachment_deletion',
             type    => 'b',
             default => 0
