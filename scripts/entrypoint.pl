@@ -41,6 +41,7 @@ check_env(qw(
     BMO_db_pass
     BMO_memcached_namespace
     BMO_memcached_servers
+    BMO_urlbase
 )) unless $cmd eq 'shell';
 
 $func->($opts->());
@@ -64,7 +65,14 @@ sub cmd_demo {
 sub cmd_httpd  {
     check_data_dir();
     wait_for_db();
-    run( '/usr/sbin/httpd', '-DFOREGROUND', '-f', '/app/httpd/httpd.conf' );
+    my @httpd_args = (
+        '-DFOREGROUND',
+        '-f' => '/app/httpd/httpd.conf',
+    );
+    if ($ENV{BMO_inbound_proxies} eq '*' && $ENV{BMO_urlbase} =~ /^https/sm) {
+        unshift @httpd_args, '-DHTTPS';
+    }
+    run( '/usr/sbin/httpd', @httpd_args );
 }
 
 sub cmd_load_test_data {

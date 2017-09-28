@@ -176,6 +176,11 @@ PORT
 BUGZILLA_UNSAFE_AUTH_DELEGATION
   This should never be set in production. It allows auth delegation over http.
 
+BMO_urlbase
+  The public url for this instance. Note that if this begins with https://
+  abd BMO_inbound_proxies is set to '*' Bugzilla will believe the connection to it
+  is using SSL.
+
 BMO_db_driver
   What SQL database to use. Default is mysql. List of supported databases can be
   obtained by listing Bugzilla/DB directory - every module corresponds to one
