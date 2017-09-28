@@ -31,8 +31,13 @@ use Tie::Hash::NamedCapture;
 use Safe;
 use Term::ANSIColor;
 use Taint::Util qw(untaint);
+use Sys::Hostname qw(hostname);
 
 use parent qw(Exporter);
+
+use constant DEFAULT_URLBASE => $ENV{PORT}
+  ? sprintf( "http://%s:%d", hostname(), $ENV{PORT} )
+  : 'http://' . hostname();
 
 our @EXPORT_OK = qw(
     read_localconfig
@@ -154,6 +159,14 @@ use constant LOCALCONFIG_VARS => (
         name    => 'memcached_namespace',
         default => _migrate_param("memcached_namespace", "bugzilla:"),
     },
+    {
+        name => 'urlbase',
+        default => _migrate_param("urlbase", DEFAULT_URLBASE),
+    },
+    {
+        name => 'attachment_base',
+        default => _migrate_param("attachment_base", ''),
+    }
 );
 
 use constant ENV_KEYS => (
