@@ -1,5 +1,13 @@
 FROM mozillabteam/bmo-slim:20170927.1
 
+ARG CI
+ARG CIRCLE_SHA1
+ARG CIRCLE_BUILD_NUM
+
+ENV CI=${CI}
+ENV CIRCLE_BUILD_NUM=${CIRCLE_BUILD_NUM}
+ENV CIRCLE_SHA1=${CIRCLE_SHA1}
+
 ENV BUNDLE=https://s3.amazonaws.com/moz-devservices-bmocartons/bmo/vendor.tar.gz
 ENV PORT=8000
 
