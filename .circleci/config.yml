@@ -5,9 +5,19 @@
 
 version: 2
 
+build_filters: &build_filters
+  branches:
+    only:
+      - master
+      - development
+      - /build-[0-9]{6}\.[0-9]+/
+  tags:
+    only:
+      - /release-[0-9]{6}\.[0-9]+/
+
 defaults:
   bmo_slim_image: &bmo_slim_image
-    image: mozillabteam/bmo-slim:20170824.1
+    image: mozillabteam/bmo-slim:20170927.1
     user: app
 
   mysql_image: &mysql_image
@@ -60,16 +70,19 @@ jobs:
           name: install git and ssh
           command: apk update && apk add git openssh-client
       - checkout
-      - run: |
-          docker build -t bmo .
-          if [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
-            TAG="$CIRCLE_BRANCH"
-            if [[ $TAG == "master" ]]; then
-              docker tag bmo $DOCKERHUB_REPO:latest
-              docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
-              docker push $DOCKERHUB_REPO:latest
+      - run: docker build -t bmo .
+      - deploy:
+          command: |
+            docker build -t bmo .
+            if [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
+                TAG="${CIRCLE_TAG:-$CIRCLE_BRANCH}"
+                if [[ $TAG == "master" ]]; then
+                  TAG=latest
+                fi
+                docker tag bmo $DOCKERHUB_REPO:$TAG
+                docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+                docker push $DOCKERHUB_REPO:$TAG
             fi
-          fi
 
   test_sanity:
     parallelism: 4
@@ -123,7 +136,7 @@ jobs:
           path: /app/artifacts
 
   test_bmo:
-    parallelism: 4
+    parallelism: 1
     working_directory: /app
     docker:
       - <<: *bmo_slim_image
@@ -156,15 +169,21 @@ jobs:
 
 workflows:
   version: 2
-  tests:
+  main:
     jobs:
       - test_sanity
-      - test_bmo
-      - test_webservices
-      - test_selenium
-      - build:
+      - test_bmo:
           requires:
             - test_sanity
-            - test_webservices
-            - test_selenium
+      - test_webservices:
+          requires:
+            - test_sanity
+      - test_selenium:
+          requires:
+            - test_sanity
+      - build:
+          filters: *build_filters
+          requires:
+            - test_sanity
             - test_bmo
+            - test_webservices
