@@ -37,7 +37,7 @@ $func->(@ARGV);
 sub cmd_httpd  {
     check_data_dir();
     wait_for_db();
-    my @define = (
+    my @httpd_args = (
         '-DFOREGROUND',
         '-f' => '/app/httpd/httpd.conf',
     );
