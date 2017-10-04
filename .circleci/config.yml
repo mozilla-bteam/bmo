@@ -112,6 +112,8 @@ jobs:
       - checkout
       - *default_qa_setup
       - run: |
+          BMO_urlbase='http://$(hostname)/bmo/'
+          export BMO_urlbase
           /app/scripts/entrypoint.pl load_test_data
       - run:
           command: |
@@ -131,6 +133,8 @@ jobs:
       - checkout
       - *default_qa_setup
       - run: |
+          BMO_urlbase="http://$(hostname):$PORT/bmo/"
+          export BMO_urlbase
           /app/scripts/entrypoint.pl load_test_data --legacy
       - run:
           command: |
@@ -162,6 +166,8 @@ jobs:
       - run: |
           mv /opt/bmo/local /app/local
           perl checksetup.pl --no-database
+          BMO_urlbase="http://$(hostname):$PORT"
+          export BMO_urlbase
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
       - run: |
