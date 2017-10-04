@@ -98,6 +98,8 @@ jobs:
       - run:
           name: run sanity tests
           command: |
+            BMO_urlbase='http://$(hostname)/bmo/'
+            export BMO_urlbase
             /app/scripts/entrypoint.pl prove -qf $(circleci tests glob 't/*.t' | circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
