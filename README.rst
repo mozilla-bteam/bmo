@@ -73,7 +73,7 @@ After editing files in the bmo directory, you will need to run
 
     vagrant rsync && vagrant provision --provision-with update
 
-to see the changes applied to your vagrant VM. If the above command fails 
+to see the changes applied to your vagrant VM. If the above command fails
 or db is changed, do a full provision:
 
 .. code-block:: bash
@@ -172,6 +172,12 @@ PORT
   This must be a value >= 1024. The httpd will listen on this port for incoming
   plain-text HTTP connections.
 
+
+BMO_urlbase
+  The public url for this instance. Note that if this begins with https://
+  abd BMO_inbound_proxies is set to '*' Bugzilla will believe the connection to it
+  is using SSL.
+
 BMO_db_driver
   What SQL database to use. Default is mysql. List of supported databases can be
   obtained by listing Bugzilla/DB directory - every module corresponds to one
@@ -194,7 +200,7 @@ BMO_site_wide_secret
   This secret key is used by your installation for the creation and
   validation of encrypted tokens. These tokens are used to implement
   security features in Bugzilla, to protect against certain types of attacks.
-  It's very important that this key is kept secret. 
+  It's very important that this key is kept secret.
 
 BMO_inbound_proxies
   This is a list of IP addresses that we expect proxies to come from.
@@ -206,7 +212,7 @@ BMO_memcached_namespace
 
 BMO_memcached_servers
   A list of memcached servers (ip addresses or host names). Can be empty.
- 
+
 BMO_shadowdb
   The database name of the read-only database.
 
