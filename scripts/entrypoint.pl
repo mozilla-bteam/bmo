@@ -42,7 +42,7 @@ sub cmd_httpd  {
         '-f' => '/app/httpd/httpd.conf',
     );
     if ($ENV{BMO_inbound_proxies} eq '*' && $ENV{BMO_urlbase} =~ /^https/sm) {
-        unshift @define, '-DHTTPS';
+        unshift @httpd_args, '-DHTTPS';
     }
     run( '/usr/sbin/httpd', @httpd_args );
 }
