@@ -73,7 +73,7 @@ jobs:
           command: apk update && apk add git openssh-client
       - checkout
       - run: |
-          env | egrep "^(CI|CIRCLE_)"" > /tmp/build.env
+          env | egrep "^(CI|CIRCLE_)" > /tmp/build.env
           docker build --env-file=/tmp/build.env -t bmo .
       - deploy:
           command: |
