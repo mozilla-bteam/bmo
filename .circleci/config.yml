@@ -72,10 +72,11 @@ jobs:
           name: install git and ssh
           command: apk update && apk add git openssh-client
       - checkout
-      - run: docker build -t bmo .
+      - run: |
+          env | egrep "^(CI|CIRCLE_)"" > /tmp/build.env
+          docker build --env-file=/tmp/build.env -t bmo .
       - deploy:
           command: |
-            docker build -t bmo .
             if [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
                 TAG="${CIRCLE_TAG:-$CIRCLE_BRANCH}"
                 if [[ $TAG == "master" ]]; then
