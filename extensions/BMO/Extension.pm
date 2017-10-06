@@ -1532,8 +1532,8 @@ sub field_end_of_create {
 
     # Create an IT bug so Mozilla's DBAs so they can update the grants for metrics
 
-    if (Bugzilla->params->{'urlbase'} ne 'https://bugzilla.mozilla.org/'
-        && Bugzilla->params->{'urlbase'} ne 'https://bugzilla.allizom.org/')
+    if (Bugzilla->localconfig->{'urlbase'} ne 'https://bugzilla.mozilla.org/'
+        && Bugzilla->localconfig->{'urlbase'} ne 'https://bugzilla.allizom.org/')
     {
         return;
     }
@@ -2554,11 +2554,15 @@ sub install_filesystem {
         die "Missing or invalid contribute.json file";
     }
 
+    for my $required_env (qw(CIRCLE_SHA1 CIRCLE_BUILD_NUM)) {
+        die "missing env: $required_env\n" unless $ENV{$required_env};
+    }
+
     my $version_obj = {
         source  => $contribute->{repository}{url},
         version => BUGZILLA_VERSION,
-        commit  => $commit // "unknown",
-        build   => $ENV{CIRCLE_BUILD_NUM} // "unknown",
+        commit  => $ENV{CIRCLE_SHA1},
+        build   => $ENV{CIRCLE_BUILD_NUM},
     };
 
     $create_files->{'version.json'} = {
