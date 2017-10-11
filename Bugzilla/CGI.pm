@@ -594,11 +594,12 @@ sub send_cookie {
     }
 
     # Add the default path and the domain in.
-    my $uri = URI->new(Bugzilla->localconfig->{urlbase});
-    $paramhash{'-path'} = $uri->path;
+    state $uri = URI->new( Bugzilla->localconfig->{urlbase} );
+    $paramhash{'-path'}   = $uri->path;
     $paramhash{'-domain'} = $uri->host;
     $paramhash{'-secure'} = 1
-        if lc($uri->scheme) eq 'https';
+      if lc( $uri->scheme ) eq 'https';
+
 
     # Move the param list back into an array for the call to cookie().
     foreach (keys(%paramhash)) {

@@ -41,7 +41,10 @@ sub cmd_httpd  {
         '-DFOREGROUND',
         '-f' => '/app/httpd/httpd.conf',
     );
-    if ($ENV{BMO_inbound_proxies} eq '*' && $ENV{BMO_urlbase} =~ /^https/sm) {
+
+    # If we're behind a proxy and the urlbase says https, we must be using https.
+    # * basically means "I trust the load balancer" anyway.
+    if ($ENV{BMO_inbound_proxies} eq '*' && $ENV{BMO_urlbase} =~ /^https/) {
         unshift @httpd_args, '-DHTTPS';
     }
     run( '/usr/sbin/httpd', @httpd_args );

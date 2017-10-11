@@ -263,7 +263,7 @@ sub do_ssl_redirect_if_required {
     return if $uri->scheme ne 'https';
 
     # If we're already running under SSL, never redirect.
-    return if uc($ENV{HTTPS} || '') eq 'ON';
+    return if $ENV{HTTPS} && $ENV{HTTPS} eq 'on';
     Bugzilla->cgi->redirect_to_https();
 }
 
