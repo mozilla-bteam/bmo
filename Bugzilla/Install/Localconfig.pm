@@ -35,10 +35,6 @@ use Sys::Hostname qw(hostname);
 
 use parent qw(Exporter);
 
-use constant DEFAULT_URLBASE => $ENV{PORT}
-  ? sprintf( "http://%s:%d", hostname(), $ENV{PORT} )
-  : 'http://' . hostname();
-
 our @EXPORT_OK = qw(
     read_localconfig
     update_localconfig
@@ -127,10 +123,11 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'diffpath',
-        default => sub { dirname(bin_loc('diff')) },
+        default => sub { dirname( bin_loc('diff') ) },
     },
     {
-        name    => 'site_wide_secret',
+        name => 'site_wide_secret',
+
         # 64 characters is roughly the equivalent of a 384-bit key, which
         # is larger than anybody would ever be able to brute-force.
         default => sub { generate_random_password(64) },
@@ -153,21 +150,22 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'memcached_servers',
-        default =>  _migrate_param("memcached_servers", ""),
+        default => _migrate_param( "memcached_servers", "" ),
     },
     {
         name    => 'memcached_namespace',
-        default => _migrate_param("memcached_namespace", "bugzilla:"),
+        default => _migrate_param( "memcached_namespace", "bugzilla:" ),
     },
     {
-        name => 'urlbase',
-        default => _migrate_param("urlbase", DEFAULT_URLBASE),
+        name    => 'urlbase',
+        default => _migrate_param( "urlbase", "" ),
     },
     {
-        name => 'attachment_base',
-        default => _migrate_param("attachment_base", ''),
+        name    => 'attachment_base',
+        default => _migrate_param( "attachment_base", '' ),
     }
 );
+
 
 use constant ENV_KEYS => (
     (map { ENV_PREFIX . $_->{name} } LOCALCONFIG_VARS),

@@ -2544,11 +2544,6 @@ sub install_filesystem {
     my $contribute = eval {
         $json->decode(scalar read_file(bz_locations()->{cgi_path} . "/contribute.json"));
     };
-    my $commit = $ENV{CIRCLE_SHA1};
-    unless ($commit) {
-        $commit = `git rev-parse HEAD`;
-        chomp $commit;
-    }
 
     if (!$contribute) {
         die "Missing or invalid contribute.json file";
