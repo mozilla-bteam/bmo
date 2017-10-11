@@ -1,4 +1,5 @@
 /**/.htaccess
+!/todos/.htaccess
 /skins/yui.css
 /skins/yui3.css
 /js/yui.js
