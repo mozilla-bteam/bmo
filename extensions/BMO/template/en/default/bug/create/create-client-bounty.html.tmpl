@@ -16,12 +16,12 @@
   }
 }
 
-#firefox_security_form input[type="text"],
-#firefox_security_form textarea {
+#client_bounty_form input[type="text"],
+#client_bounty_form textarea {
   width: 100%;
 }
 
-#firefox_security_form input[type="submit"] {
+#client_bounty_form input[type="submit"] {
   float: right;
 }
 
@@ -56,29 +56,29 @@
   padding-top: 0px;
 }
 
-#firefox_security_form {
+#client_bounty_form {
   padding: 10px;
 }
 
-#firefox_security_form .required:after {
+#client_bounty_form .required:after {
   content: " *";
   color: red;
 }
-#firefox_security_form .field_label {
+#client_bounty_form .field_label {
   font-weight: bold;
 }
-#firefox_security_form .field_desc {
+#client_bounty_form .field_desc {
   padding-bottom: 3px;
 }
-#firefox_security_form .field_desc,
-#firefox_security_form .head_desc {
+#client_bounty_form .field_desc,
+#client_bounty_form .head_desc {
   word-wrap: normal;
 }
-#firefox_security_form .head_desc {
+#client_bounty_form .head_desc {
   padding-top: 5px;
   padding-bottom: 12px;
 }
-#firefox_security_form .form_section {
+#client_bounty_form .form_section {
   margin-bottom: 10px;
 }
 #useful-links {
@@ -100,7 +100,7 @@ function validateAndSubmit() {
 [% END %]
 
 [% PROCESS global/header.html.tmpl
-   title = "Firefox Security Form"
+   title = "Client Bounty Form"
    generate_api_token = 1
    style = inline_style
    javascript = inline_javascript
@@ -112,9 +112,9 @@ function validateAndSubmit() {
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi %]
 
-<h1>Firefox Security Form</h1>
+<h1>Client [% terms.Bug %] Bounty Form</h1>
 
-<form id="firefox_security_form" method="post" action="post_bug.cgi" enctype="multipart/form-data"
+<form id="client_bounty_form" method="post" action="post_bug.cgi" enctype="multipart/form-data"
       onSubmit="return validateAndSubmit();">
   <input type="hidden" name="product" value="Firefox">
   <input type="hidden" name="component" value="Security">
@@ -125,14 +125,14 @@ function validateAndSubmit() {
   <input type="hidden" name="priority" id="priority" value="--">
   <input type="hidden" name="target_milestone" id="target_milestone" value="---">
   <input type="hidden" name="status_whiteboard" id="status_whiteboard"
-         value="[reporter-external] [web-bounty-form] [verif?]">
+         value="[reporter-external] [client-bounty-form] [verif?]">
   <input type="hidden" name="bug_severity" id="bug_severity" value="normal">
   <input type="hidden" name="groups" value="firefox-core-security">
   <input type="hidden" name="flag_type-803" id="flag_type-803" value="?">
   <input type="hidden" name="token" value="[% token FILTER html %]">
 
 <div class="head_desc">
-  <a href="https://developer.mozilla.org/en-US/docs/Mozilla/QA/Bug_writing_guidelines?redirectlocale=en-US&redirectslug=Bug_writing_guidelines">
+  <a href=" https://www.mozilla.org/en-US/security/client-bug-bounty/">
     [% terms.Bug %] writing guidelines</a>
 </div>
 
@@ -144,18 +144,19 @@ function validateAndSubmit() {
 <div class="form_section">
   <label for="short_desc" class="field_label required">Summary</label>
   <div class="field_desc">
-    A short description of the issue being reported including the version of
-    Firefox and operating system used.
+    A short description of the issue being reported.
   </div>
-  <input required type="text" name="short_desc" id="short_desc" size="80">
+  <input
+  required type="text" name="short_desc" id="short_desc" size="80">
 </div>
 
 <div class="form_section">
   <label for="comment" class="field_label required">Description</label>
   <div class="field_desc">
-    How was this issue discovered, include the steps, tools or other information that
-    will help reproduce and diagnose the issue. A good primer on what to include can
-    be found <a href="https://developer.mozilla.org/en-US/docs/Mozilla/QA">here</a>.
+    How was this issue discovered, include the steps, tools, Firefox version,
+    operating system version, or other information that will help reproduce and
+    diagnose the issue. A good primer on what to include can be found
+    <a href="https://developer.mozilla.org/en-US/docs/Mozilla/QA">here</a>.
   </div>
   <textarea required id="comment" name="comment" cols="80" rows="5"></textarea>
 </div>
