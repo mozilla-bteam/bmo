@@ -22,6 +22,8 @@ BEGIN {
     lib->import($dir, File::Spec->catdir($dir, "lib"), File::Spec->catdir($dir, qw(local lib perl5)));
 }
 
+use Bugzilla::ModPerl::StartupFix;
+
 use Bugzilla::Constants ();
 
 # If you have an Apache2::Status handler in your Apache configuration,
@@ -73,6 +75,12 @@ my $cgi_path = Bugzilla::Constants::bz_locations()->{'cgi_path'};
 my $server = Apache2::ServerUtil->server;
 my $conf = Bugzilla::ModPerl->apache_config($cgi_path);
 $server->add_config([ grep { length $_ } split("\n", $conf)]);
+
+# Pre-load localconfig. It might already be loaded, but we need to make sure.
+Bugzilla->localconfig;
+if ($ENV{LOCALCONFIG_ENV}) {
+    delete @ENV{ (Bugzilla::Install::Localconfig::ENV_KEYS) };
+}
 
 # Pre-load all extensions
 Bugzilla::Extension->load_all();

@@ -5,15 +5,14 @@
 
 version: 2
 
-build_filters: &build_filters
+main_filters: &main_filters
   branches:
-    only:
-      - master
-      - development
-      - /build-[0-9]{6}\.[0-9]+/
+    ignore:
+      - /^(?:release|test)-20\d\d\d\d\d\d\.\d+/
+      - /\//
+      - production
   tags:
-    only:
-      - /release-[0-9]{6}\.[0-9]+/
+    only: /^(?:release|test)-20\d\d\d\d\d\d\.\d+/
 
 defaults:
   bmo_slim_image: &bmo_slim_image
@@ -25,6 +24,7 @@ defaults:
 
   bmo_env: &bmo_env
     PORT: 8000
+    LOCALCONFIG_ENV: 1
     BMO_db_user: bugs
     BMO_db_host: 127.0.0.1
     BMO_db_pass: bugs
@@ -70,7 +70,12 @@ jobs:
           name: install git and ssh
           command: apk update && apk add git openssh-client
       - checkout
-      - run: docker build -t bmo .
+      - run: |
+          docker build \
+            --build-arg CI="$CI" \
+            --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
+            --build-arg CIRCLE_BUILD_NUM="$CIRCLE_BUILD_NUM" \
+            -t bmo .
       - deploy:
           command: |
             docker build -t bmo .
@@ -96,7 +101,6 @@ jobs:
       - run:
           name: run sanity tests
           command: |
-            rm /app/localconfig
             /app/scripts/entrypoint.pl prove -qf $(circleci tests glob 't/*.t' | circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
@@ -109,14 +113,14 @@ jobs:
       - checkout
       - *default_qa_setup
       - run: |
-          rm -f /app/localconfig
           /app/scripts/entrypoint.pl load_test_data
       - run:
           command: |
-            rm -f /app/localconfig
             /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
+      - store_artifacts:
+          path: /app/logs
 
   test_selenium:
     parallelism: 1
@@ -126,14 +130,14 @@ jobs:
       - checkout
       - *default_qa_setup
       - run: |
-          rm -f /app/localconfig
           /app/scripts/entrypoint.pl load_test_data --legacy
       - run:
           command: |
-            rm -f /app/localconfig
             /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
+      - store_artifacts:
+          path: /app/logs
 
   test_bmo:
     parallelism: 1
@@ -154,35 +158,37 @@ jobs:
       - checkout
       - run: |
           mv /opt/bmo/local /app/local
-          perl checksetup.pl --no-database --default-localconfig
+          perl checksetup.pl --no-database
           perl -MSys::Hostname -i -pE 's/<<HOSTNAME>>/hostname()/ges' $BZ_QA_ANSWERS_FILE
-          rm -f /app/localconfig
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
       - run: |
           BZ_BASE_URL="http://$(hostname):$PORT"
           export BZ_BASE_URL
-          rm -f /app/localconfig
           /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
-
-
+      - store_artifacts:
+          path: /app/logs
 
 workflows:
   version: 2
   main:
     jobs:
-      - test_sanity
+      - test_sanity:
+          filters: *main_filters
       - test_bmo:
+          filters: *main_filters
           requires:
             - test_sanity
       - test_webservices:
+          filters: *main_filters
           requires:
             - test_sanity
       - test_selenium:
+          filters: *main_filters
           requires:
             - test_sanity
       - build:
-          filters: *build_filters
+          filters: *main_filters
           requires:
             - test_sanity
             - test_bmo
