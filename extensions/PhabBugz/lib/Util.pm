@@ -33,9 +33,11 @@ our @EXPORT = qw(
     edit_revision_policy
     get_attachment_revisions
     get_bug_role_phids
+    get_feed_transactions
     get_members_by_bmo_id
     get_project_phid
     get_revisions_by_ids
+    get_revisions_by_phids
     get_security_sync_groups
     intersect
     is_attachment_phab_revision
@@ -53,6 +55,24 @@ sub get_revisions_by_ids {
         queryKey => 'all',
         constraints => {
             ids => $ids
+        }
+    };
+
+    my $result = request('differential.revision.search', $data);
+
+    ThrowUserError('invalid_phabricator_revision_id')
+        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
+
+    return @{$result->{result}{data}};
+}
+
+sub get_revisions_by_phids {
+    my ($phids) = @_;
+
+    my $data = {
+        queryKey => 'all',
+        constraints => {
+            phids => $phids
         }
     };
 
@@ -455,6 +475,17 @@ sub add_security_sync_comments {
     $bug->send_changes($bug_changes);
 
     Bugzilla->set_user($old_user);
+}
+
+sub get_feed_transactions {
+    my ($epoch) = @_;
+    my $data = { view => 'text' };
+    $data->{epochStart} = $epoch if $epoch;
+    my $result = request('feed.query_epoch', $data);
+    # Stupid conduit. If the feed results are empty it returns
+    # an empty list ([]). If there is data it returns it in a
+    # hash ({}) so we have adjust to be consistent.
+    return ref $result->{result} eq 'HASH' ? $result->{result} : {};
 }
 
 1;
