@@ -8,37 +8,17 @@
 package Bugzilla::Extension::PhabBugz::Feed;
 
 use 5.10.1;
-use strict;
-use warnings;
+use Moo;
 
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Util;
 
-sub new {
-    my ($class) = @_;
-    my $self = {};
-    bless($self, $class);
-    $self->{is_daemon} = 0;
-    return $self;
-}
-
-sub is_daemon {
-    my ($self, $value) = @_;
-    if (defined $value) {
-        $self->{is_daemon} = $value ? 1 : 0;
-    }
-    return $self->{is_daemon};
-}
-
-sub logger {
-    my ($self, $value) = @_;
-    $self->{logger} = $value if $value;
-    return $self->{logger};
-}
+has 'is_daemon' => (is => 'rw', default => 0);
+has 'logger'    => (is => 'rw');
 
 sub start {
     my ($self) = @_;
-    while(1) {
+    while (1) {
         if ($self->_dbh_check()) {
             $self->feed_query();
         }
@@ -91,14 +71,11 @@ sub feed_query {
 
 sub _dbh_check {
     my ($self) = @_;
-    eval {
+
+    my $ok = eval {
         Bugzilla->dbh->selectrow_array("SELECT 1 FROM phabbugz");
     };
-    if ($@) {
-        return 0;
-    } else {
-        return 1;
-    }
+    return defined $ok;
 }
 
 1;
