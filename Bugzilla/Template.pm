@@ -1133,9 +1133,14 @@ sub create {
             'is_mobile_browser' => sub { return Bugzilla->cgi->user_agent =~ /Mobi/ },
 
             'socorro_lens_url' => sub {
-                my ($querystring) = @_;
+                my ($sigs) = @_;
+
+                # strip [@ ] from sigs
+                my @sigs = map { /^\[\@\s*(.+?)\s*\]$/ } @$sigs;
+
+                # use a URI object to encode the query string part.
                 my $uri = URI->new(correct_urlbase() . 'static/metricsgraphics/socorro-lens.html');
-                $uri->query_form('s' => join("\\", @$querystring));
+                $uri->query_form('s' => join("\\", @sigs));
                 return $uri;
             },
         },
