@@ -15,7 +15,6 @@
 %]
   [%
     IF split_cf_crash_signature.size;
-      querystring = "";
       FOREACH sig IN split_cf_crash_signature;
         "<div>";
         IF sig.match('^\[\@\s*') && sig.match('\s*\]$');
@@ -25,20 +24,13 @@
             [@ [% sig FILTER html %] ]
           </a>
           [%
-          IF querystring == "";
-            querystring = sig;
-          ELSE;
-            querystring = "$querystring\\\$sig";
-          END;
         ELSE;
           sig FILTER html;
         END;
         "</div>";
-      END;
-      "<iframe src='static/metricsgraphics/chart.htm?s=$querystring' style='border:0; width:300px; height:200px; max-width:600px; max-height:300px; float:left;' id='chart' scrolling='no'></iframe>";
-      %]
-
-      
+      END %]
+      [%# socorro_lens_url() is defined in Bugzilla/Template.pm %]
+      <iframe src='[% socorro_lens_url(split_cf_crash_signature) FILTER html %]' style='border:0; width:300px; height:200px; max-width:600px; max-height:300px; float:left;' id='chart' scrolling='no'></iframe>
       [%
     ELSIF value;
       %]
