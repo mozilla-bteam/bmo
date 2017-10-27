@@ -858,6 +858,9 @@ sub check_rate_limit {
                 Bugzilla::ModPerl::BlockIP->block_ip($ip) if $ENV{MOD_PERL};
                 ThrowUserError("rate_limit");
             }
+            elsif ($action eq 'ignore') {
+                Bugzilla::ModPerl::BlockIP->unblock_ip($ip) if $ENV{MOD_PERL};
+            }
         }
     }
 }
