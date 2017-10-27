@@ -155,6 +155,12 @@ unless ($ENV{LOCALCONFIG_ENV}) {
 }
 my $lc_hash = Bugzilla->localconfig;
 
+die "urlbase is not set\n" unless $lc_hash->{urlbase};
+die "urlbase must end with slash\n" unless $lc_hash->{urlbase} =~ m{/$}ms;
+if ($lc_hash->{attachment_base}) {
+    die "attachment_base must end with slash\n" unless $lc_hash->{attachment_base} =~ m{/$}ms;
+}
+
 ###########################################################################
 # Check --DATABASE-- setup
 ###########################################################################
