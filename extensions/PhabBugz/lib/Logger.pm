@@ -8,36 +8,27 @@
 package Bugzilla::Extension::PhabBugz::Logger;
 
 use 5.10.1;
-use strict;
-use warnings;
+
+use Moo;
 
 use Bugzilla::Extension::PhabBugz::Constants;
 
-sub new {
-    my ($class) = @_;
-    my $self = {};
-    bless($self, $class);
-    return $self;
-}
+has 'debugging' => ( is => 'ro' );
 
 sub info  { shift->_log_it('INFO', @_) }
 sub error { shift->_log_it('ERROR', @_) }
 sub debug { shift->_log_it('DEBUG', @_) }
 
-sub debugging {
-    my ($self) = @_;
-    return $self->{debug};
-}
-
 sub _log_it {
-    require Apache2::Log;
     my ($self, $method, $message) = @_;
+
     return if $method eq 'DEBUG' && !$self->debugging;
     chomp $message;
     if ($ENV{MOD_PERL}) {
-        Apache2::ServerRec::warn("Push $method: $message");
+        require Apache2::Log;
+        Apache2::ServerRec::warn("FEED $method: $message");
     } elsif ($ENV{SCRIPT_FILENAME}) {
-        print STDERR "Push $method: $message\n";
+        print STDERR "FEED $method: $message\n";
     } else {
         print STDERR '[' . localtime(time) ."] $method: $message\n";
     }

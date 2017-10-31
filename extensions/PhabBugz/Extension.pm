@@ -10,6 +10,7 @@ package Bugzilla::Extension::PhabBugz;
 use 5.10.1;
 use strict;
 use warnings;
+
 use parent qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
@@ -19,17 +20,8 @@ use Bugzilla::Extension::PhabBugz::Logger;
 our $VERSION = '0.01';
 
 BEGIN {
-    *Bugzilla::phabbugz_ext = \&_get_instance;
-}
-
-sub _get_instance {
-    my $cache = Bugzilla->request_cache;
-    if (!$cache->{'phabbugz.instance'}) {
-        my $instance = Bugzilla::Extension::PhabBugz::Feed->new();
-        $cache->{'phabbugz.instance'} = $instance;
-        $instance->logger(Bugzilla::Extension::PhabBugz::Logger->new());
-    }
-    return $cache->{'phabbugz.instance'};
+    *Bugzilla::User::phab_phid = sub { return $_[0]->{phab_phid}; };
+    *Bugzilla::User::phab_review_status = sub { return $_[0]->{phab_review_status}; };
 }
 
 sub config_add_panels {

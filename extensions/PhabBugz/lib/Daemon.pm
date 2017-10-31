@@ -12,9 +12,13 @@ use strict;
 use warnings;
 
 use Bugzilla::Constants;
+use Bugzilla::Extension::PhabBugz::Feed;
+use Bugzilla::Extension::PhabBugz::Logger;
+
 use Carp qw(confess);
 use Daemon::Generic;
 use File::Basename;
+use File::Spec;
 use Pod::Usage;
 
 sub start {
@@ -29,7 +33,7 @@ sub gd_preconfig {
     my $self = shift;
     my $pidfile = $self->{gd_args}{pidfile};
     if (!$pidfile) {
-        $pidfile = bz_locations()->{datadir} . '/' . $self->{gd_progname} . ".pid";
+        $pidfile = File::Spec->catfile(bz_locations()->{datadir}, $self->{gd_progname} . ".pid");
     }
     return (pidfile => $pidfile);
 }
@@ -67,7 +71,7 @@ sub gd_usage {
 sub gd_redirect_output {
     my $self = shift;
 
-    my $filename = bz_locations()->{datadir} . '/' . $self->{gd_progname} . ".log";
+    my $filename = File::Spec->catfile(bz_locations()->{datadir}, $self->{gd_progname} . ".log");
     open(STDERR, ">>", $filename) or (print "could not open stderr: $!" && exit(1));
     close(STDOUT);
     open(STDOUT, ">&", STDERR) or die "redirect STDOUT -> STDERR: $!";
@@ -86,9 +90,10 @@ sub gd_setup_signals {
 sub gd_run {
     my $self = shift;
     $::SIG{__DIE__} = \&Carp::confess if $self->{debug};
-    my $phabbugz = Bugzilla->phabbugz_ext;
+    my $phabbugz = Bugzilla::Extension::PhabBugz::Feed->new();
     $phabbugz->is_daemon(1);
-    $phabbugz->logger->{debug} = $self->{debug};
+    $phabbugz->logger(
+        Bugzilla::Extension::PhabBugz::Logger->new(debugging => $self->{debug}));
     $phabbugz->start();
 }
 

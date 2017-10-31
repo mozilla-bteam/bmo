@@ -33,8 +33,8 @@ our @EXPORT = qw(
     edit_revision_policy
     get_attachment_revisions
     get_bug_role_phids
-    get_feed_transactions
     get_members_by_bmo_id
+    get_members_by_phid
     get_project_phid
     get_revisions_by_ids
     get_revisions_by_phids
@@ -81,7 +81,7 @@ sub get_revisions_by_phids {
     ThrowUserError('invalid_phabricator_revision_id')
         unless (exists $result->{result}{data} && @{ $result->{result}{data} });
 
-    return @{$result->{result}{data}};
+    return $result->{result}{data};
 }
 
 sub create_revision_attachment {
@@ -358,6 +358,22 @@ sub get_members_by_bmo_id {
     return \@phab_ids;
 }
 
+sub get_members_by_phid {
+    my $phids = shift;
+
+    my $data = { phids => $phids };
+
+    my $result = request('bugzilla.account.search', $data);
+
+    my @bmo_ids;
+    foreach my $user (@{ $result->{result} }) {
+        push(@bmo_ids, $user->{id})
+          if ($user->{phid} && $user->{phid} =~ /^PHID-USER/);
+    }
+
+    return \@bmo_ids;
+}
+
 sub is_attachment_phab_revision {
     my ($attachment, $include_obsolete) = @_;
     return ($attachment->contenttype eq PHAB_CONTENT_TYPE
@@ -475,17 +491,6 @@ sub add_security_sync_comments {
     $bug->send_changes($bug_changes);
 
     Bugzilla->set_user($old_user);
-}
-
-sub get_feed_transactions {
-    my ($epoch) = @_;
-    my $data = { view => 'text' };
-    $data->{epochStart} = $epoch if $epoch;
-    my $result = request('feed.query_epoch', $data);
-    # Stupid conduit. If the feed results are empty it returns
-    # an empty list ([]). If there is data it returns it in a
-    # hash ({}) so we have adjust to be consistent.
-    return ref $result->{result} eq 'HASH' ? $result->{result} : {};
 }
 
 1;
