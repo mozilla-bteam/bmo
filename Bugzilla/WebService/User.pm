@@ -423,13 +423,17 @@ sub mfa_enroll {
 }
 
 sub whoami {
-    my ($self, $params) = @_;
+    my ( $self, $params ) = @_;
     my $user = Bugzilla->login(LOGIN_REQUIRED);
-    return filter $params, {
-        id        => $self->type('int', $user->id),
-        real_name => $self->type('string', $user->name),
-        name      => $self->type('email', $user->login),
-    };
+    return filter(
+        $params,
+        {
+            id         => $self->type( 'int',     $user->id ),
+            real_name  => $self->type( 'string',  $user->name ),
+            name       => $self->type( 'email',   $user->login ),
+            mfa_status => $self->type( 'boolean', !!$user->mfa ),
+        }
+    );
 }
 
 1;
