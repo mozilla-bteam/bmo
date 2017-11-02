@@ -66,7 +66,6 @@ sub get_revisions_by_ids {
     return @{$result->{result}{data}};
 }
 
-<<<<<<< HEAD
 sub get_revisions_by_phids {
     my ($phids) = @_;
 
@@ -85,27 +84,6 @@ sub get_revisions_by_phids {
     return $result->{result}{data};
 }
 
-||||||| merged common ancestors
-=======
-sub get_revisions_by_phids {
-    my ($phids) = @_;
-
-    my $data = {
-        queryKey => 'all',
-        constraints => {
-            phids => $phids
-        }
-    };
-
-    my $result = request('differential.revision.search', $data);
-
-    ThrowUserError('invalid_phabricator_revision_id')
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-    return @{$result->{result}{data}};
-}
-
->>>>>>> e969e034646a97750d13e66210f50c842ede4b8c
 sub create_revision_attachment {
     my ( $bug, $revision_id, $revision_title ) = @_;
 
