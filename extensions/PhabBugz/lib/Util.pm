@@ -35,6 +35,7 @@ our @EXPORT = qw(
     get_bug_role_phids
     get_members_by_bmo_id
     get_members_by_phid
+    get_phab_bmo_ids
     get_project_phid
     get_revisions_by_ids
     get_revisions_by_phids
@@ -44,6 +45,7 @@ our @EXPORT = qw(
     make_revision_private
     make_revision_public
     request
+    set_phab_user
     set_project_members
     set_revision_subscribers
 );
@@ -66,7 +68,6 @@ sub get_revisions_by_ids {
     return @{$result->{result}{data}};
 }
 
-<<<<<<< HEAD
 sub get_revisions_by_phids {
     my ($phids) = @_;
 
@@ -85,27 +86,6 @@ sub get_revisions_by_phids {
     return $result->{result}{data};
 }
 
-||||||| merged common ancestors
-=======
-sub get_revisions_by_phids {
-    my ($phids) = @_;
-
-    my $data = {
-        queryKey => 'all',
-        constraints => {
-            phids => $phids
-        }
-    };
-
-    my $result = request('differential.revision.search', $data);
-
-    ThrowUserError('invalid_phabricator_revision_id')
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-    return @{$result->{result}{data}};
-}
-
->>>>>>> e969e034646a97750d13e66210f50c842ede4b8c
 sub create_revision_attachment {
     my ( $bug, $revision_id, $revision_title ) = @_;
 
@@ -126,7 +106,7 @@ sub create_revision_attachment {
     Bugzilla->switch_to_main_db if $is_shadow_db;
 
     my $old_user = Bugzilla->user;
-    _set_phab_user();
+    set_phab_user();
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction;
@@ -396,6 +376,28 @@ sub get_members_by_phid {
     return \@bmo_ids;
 }
 
+sub get_phab_bmo_ids {
+    my ($self, $params) = @_;
+
+    my $data = {
+        queryKey => 'all'
+    };
+
+    if ($params->{ids}) {
+        $data->{constraints} = {
+            ids => $params->{ids}
+        };
+    }
+    elsif ($params->{phids}) {
+        $data->{constraints} = {
+            phids => $params->{phids}
+        };
+    }
+
+    my $result = request('bugzilla.account.search', $data);
+    return $result->{result}->{data};
+}
+
 sub is_attachment_phab_revision {
     my ($attachment, $include_obsolete) = @_;
     return ($attachment->contenttype eq PHAB_CONTENT_TYPE
@@ -482,10 +484,12 @@ sub get_security_sync_groups {
     return @set_groups;
 }
 
-sub _set_phab_user {
+sub set_phab_user {
+    my $old_user = Bugzilla->user;
     my $user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
     $user->{groups} = [ Bugzilla::Group->get_all ];
     Bugzilla->set_user($user);
+    return $old_user;
 }
 
 sub add_security_sync_comments {
@@ -504,8 +508,7 @@ sub add_security_sync_comments {
     : 'One revision was' )
     . ' made private due to unknown Bugzilla groups.';
 
-    my $old_user = Bugzilla->user;
-    _set_phab_user();
+    my $old_user = set_phab_user();
 
     $bug->add_comment( $bmo_error_message, { isprivate => 0 } );
 

@@ -1,4 +1,4 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
+# This Source Code Form is hasject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
@@ -15,19 +15,13 @@ use Bugzilla::Bug;
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
 use Bugzilla::Extension::PhabBugz::Util qw(
+    get_phab_bmo_ids
     request
-    get_members_by_phid
 );
-
-use parent qw(Bugzilla::Object);
 
 #########################
 #    Initialization     #
 #########################
-
-# This is an external object so we do not want any auditing.
-use constant AUDIT_CREATES => 0;
-use constant AUDIT_UPDATES => 0;
 
 sub new {
     my ($class, $params) = @_;
@@ -59,15 +53,15 @@ sub _load {
         };
     }
     else {
-        ThrowUserError('invalid_phabricator_revision_id');
+        return {};
     }
 
     my $result = request('differential.revision.search', $data);
+    if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
+        return $result->{result}->{data}->[0];
+    }
 
-    ThrowUserError('invalid_phabricator_revision_id')
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-    return $result->{result}->{data}->[0];
+    return {};
 }
 
 # {
@@ -134,65 +128,69 @@ sub _load {
 sub update {
     my ($self) = @_;
 
+    my $data = {
+        objectIdentifier => $self->phid,
+        transactions     => []
+    };
+
     if ($self->{added_comments}) {
         foreach my $comment (@{ $self->{added_comments} }) {
-            my $data = {
-                transactions => [
-                    {
-                        type  => 'comment',
-                        value => $comment
-                    }
-                ],
-                objectIdentifier => $self->phid
-            };
-            my $result = request('differential.revision.edit', $data);
+            push(@{ $data->{transactions} }, {
+                type  => 'comment',
+                value => $comment
+            });
         }
     }
 
     if ($self->{set_subscribers}) {
-        my $data = {
-            transactions => [
-                {
-                    type  => 'subscribers.set',
-                    value => $self->{set_subscribers}
-                }
-            ],
-            objectIdentifier => $self->phid
-        };
-
-        my $result = request('differential.revision.edit', $data);
+        push(@{ $data->{transactions} }, {
+            type  => 'subscribers.set',
+            value => $self->{set_subscribers}
+        });
     }
+
+    if ($self->{set_policy}) {
+        foreach my $name ("view", "edit") {
+            next unless $self->{set_policy}->{$name};
+            push(@{ $data->{transactions} }, {
+                type  => $name,
+                value => $self->{set_policy}->{$name}
+            });
+        }
+    }
+
+    request('differential.revision.edit', $data);
 }
 
 #########################
 #      Accessors        #
 #########################
 
-sub id              { return $_[0]->{id};                          }
-sub phid            { return $_[0]->{phid};                        }
-sub title           { return $_[0]->{fields}->{title};             }
-sub creation_ts     { return $_[0]->{fields}->{dateCreated};       }
-sub modification_ts { return $_[0]->{fields}->{dateModified};      }
-sub author_phid     { return $_[0]->{fields}->{authorPHID};        }
-sub bug_id          { return $_[0]->{fields}->{'bugzilla.bug-id'}; }
+sub id              { $_[0]->{id};                          }
+sub phid            { $_[0]->{phid};                        }
+sub title           { $_[0]->{fields}->{title};             }
+sub creation_ts     { $_[0]->{fields}->{dateCreated};       }
+sub modification_ts { $_[0]->{fields}->{dateModified};      }
+sub author_phid     { $_[0]->{fields}->{authorPHID};        }
+sub bug_id          { $_[0]->{fields}->{'bugzilla.bug-id'}; }
 
-sub view_policy { return $_[0]->{fields}->{policy}->{view}; }
-sub edit_policy { return $_[0]->{fields}->{policy}->{edit}; }
+sub view_policy { $_[0]->{fields}->{policy}->{view}; }
+sub edit_policy { $_[0]->{fields}->{policy}->{edit}; }
 
-sub reviewers_raw    { return $_[0]->{atachments}->{reviewers}->{reviewers};          }
-sub subscribers_raw  { return $_[0]->{attachments}->{subscribers};                    }
-sub projects_raw     { return $_[0]->{attachments}->{projects};                       }
-sub subscriber_count { return $_[0]->{attachments}->{subscribers}->{subscriberCount}; }
+sub reviewers_raw    { $_[0]->{atachments}->{reviewers}->{reviewers};          }
+sub subscribers_raw  { $_[0]->{attachments}->{subscribers};                    }
+sub projects_raw     { $_[0]->{attachments}->{projects};                       }
+sub subscriber_count { $_[0]->{attachments}->{subscribers}->{subscriberCount}; }
 
 sub bug {
-    my $self = shift;
+    my ($self) = @_;
     my $bug = $self->{bug} ||= new Bugzilla::Bug($self->bug_id);
     weaken($self->{bug}) unless isweak($self->{bug});
     return $bug;
 }
 
 sub author {
-    my $self = shift;
+    my ($self) = @_;
     return $self->{author} if $self->{author};
     my $userids = get_members_by_phid([$self->author_phid]);
     $self->{'author'} = new Bugzilla::User({ id => $userids->[0], cache => 1 });
@@ -208,16 +206,19 @@ sub reviewers {
         push(@phids, $reviewer->{reviewerPHID});
     }
 
-    my $userids = get_members_by_phid(\@phids);
+    my $users = get_phab_bmo_ids({ phids => \@phids });
 
     my @reviewers;
-    my $i = 0;
-    foreach my $userid (@$userids) {
-        my $reviewer = Bugzilla::User->new({ id => $userid, cache => 1});
-        $reviewer->{phab_review_status} = $self->reviewers_raw->[$i]->{status};
-        $reviewer->{phab_phid} = $self->reviewers_raw->[$i]->{reviewerPHID};
+    foreach my $user (@$users) {
+        my $reviewer = Bugzilla::User->new({ id => $user->{id}, cache => 1});
+        $reviewer->{phab_phid} = $user->{phid};
+        foreach my $reviewer_data ($self->reviews_raw) {
+            if ($reviewer_data->{reviewerPHID} eq $user->{phid}) {
+                $reviewer->{phab_review_status} = $reviewer_data->{status};
+                last;
+            }
+        }
         push(@reviewers, $reviewer);
-        $i++;
     }
 
     return \@reviewers;
@@ -232,19 +233,16 @@ sub subscribers {
         push(@phids, $phid);
     }
 
-    my $userids = get_members_by_phid(\@phids);
+    my $users = get_phab_bmo_ids({ phids => \@phids });
 
     my @subscribers;
-    my $i = 0;
-    foreach my $userid (@$userids) {
-        my $subscriber = Bugzilla::User->new({ id => $userid, cache => 1});
-        $subscriber->{phab_phid} = $self->subscribers_raw->{subscriberPHIDs}->[$i];
+    foreach my $user (@$users) {
+        my $subscriber = Bugzilla::User->new({ id => $user->{id}, cache => 1});
+        $subscriber->{phab_phid} = $user->{phid};
         push(@subscribers, $subscriber);
-        $i++;
     }
 
     return \@subscribers;
-
 }
 
 #########################
@@ -261,6 +259,12 @@ sub add_comment {
 sub set_subscribers {
     my ($self, $subscribers) = @_;
     $self->{set_subscribers} = $subscribers;
+}
+
+sub set_policy {
+    my ($self, $name, $policy) = @_;
+    $self->{set_policy} ||= {};
+    $self->{set_policy}->{$name} = $policy;
 }
 
 1;

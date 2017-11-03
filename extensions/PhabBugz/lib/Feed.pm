@@ -15,14 +15,15 @@ use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Revision;
 use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
-    create_revision_attachment
     create_private_revision_policy
+    create_revision_attachment
     edit_revision_policy
     get_bug_role_phids
     get_members_by_phid
+    get_security_sync_groups
     make_revision_public
     request
-    get_security_sync_groups
+    set_phab_user
 );
 
 has 'is_daemon' => ( is => 'rw', default => 0 );
@@ -80,6 +81,7 @@ sub feed_query {
 
         # Skip changes done by phab-bot user
         my $userids = get_members_by_phid([$story_data->{authorPHID}]);
+
         if (@$userids) {
             my $user = Bugzilla::User->new({ id => $userids->[0], cache => 1 });
             $skip = 1 if $user->login eq PHAB_AUTOMATION_USER;
@@ -88,6 +90,9 @@ sub feed_query {
         if (!$skip) {
             my $revision = Bugzilla::Extension::PhabBugz::Revision->new({ phids => [$object_phid] });
             $self->process_revision_change($revision, $story_data->{text});
+        }
+        else {
+            $self->logger->info('SKIPPING');
         }
 
         # Store the largest last epoch so we can start from there in the next session
@@ -100,21 +105,23 @@ sub feed_query {
 sub process_revision_change {
     my ($self, $revision, $story_text) = @_;
 
-    Bugzilla->set_user(Bugzilla::User->new({ name => PHAB_AUTOMATION_USER }));
+    my $old_user = set_phab_user();
 
-    my $revision_id    = $revision->id;
-    my $revision_phid  = $revision->phid;
-    my $revision_title = $revision->title || 'Unknown Description';
-    my $bug_id         = $revision->bug_id;
+    my $log_message = sprintf(
+        "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s",
+        $revision->id,
+        $revision->title,
+        $revision->bug_id,
+        $story_text);
+    $self->logger->info($log_message);
 
-    $self->logger->info("REVISION CHANGE FOUND: D$revision_id: $revision_title | bug: $bug_id | $story_text");
-
-    my $bug = Bugzilla::Bug->new($bug_id);
+    my $bug = Bugzilla::Bug->new($revision->bug_id);
 
     # If bug is public then remove privacy policy
     my $result;
     if (!@{ $bug->groups_in }) {
-        $result = make_revision_public($revision_id);
+        $revision->set_policy('view', 'public');
+        $revision->set_policy('edit', 'users');
     }
     # else bug is private
     else {
@@ -123,17 +130,24 @@ sub process_revision_change {
         # If bug privacy groups do not have any matching synchronized groups,
         # then leave revision private and it will have be dealt with manually.
         if (!@set_groups) {
-            add_security_sync_comments([$revision], $bug);
+            add_security_sync_comments($revision, $bug);
         }
 
         my $policy_phid = create_private_revision_policy($bug, \@set_groups);
         my $subscribers = get_bug_role_phids($bug);
-        $result = edit_revision_policy($revision_phid, $policy_phid, $subscribers);
+
+        $revision->set_policy('view', $policy_phid);
+        $revision->set_policy('edit', $policy_phid);
+        $revision->set_subscribers($subscribers);
     }
 
-    my $attachment = create_revision_attachment($bug, $revision_id, $revision_title);
+    $revision->update();
 
-    Bugzilla::BugMail::Send($bug_id, { changer => Bugzilla->user });
+    my $attachment = create_revision_attachment($bug, $revision->id, $revision->title);
+
+    Bugzilla::BugMail::Send($revision->bug_id, { changer => Bugzilla->user });
+
+    Bugzilla->set_user($old_user);
 
     $self->logger->info("SUCCESS");
 }
