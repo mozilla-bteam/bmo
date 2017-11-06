@@ -551,8 +551,6 @@ sub _delete_key {
     my $login = $user->login;
     my $key_path = key_path($login);
 
-#    unlink $key_path if(-f $key_path);
- Bugzilla->logger->info("\n\nexists $key_path") if(-f $key_path);
     my ($gpg, $handles) = get_gpg();
     $gpg->options->meta_interactive( 0 );
 
@@ -610,8 +608,6 @@ sub _add_key {
     my @out = <$out>;
     my @err = <$err>;
     my @sta = <$status>;
-
-    Bugzilla->logger->debug(join("\n", (@out, @err, @sta))) if(@err);
 
     close_handles($handles);
 
@@ -695,7 +691,6 @@ sub _make_secure {
 
         }
         else {
-            Bugzilla->logger->error($@);
             $email->body_set( 'Error during Encryption: ' . $@ );
         }
 
