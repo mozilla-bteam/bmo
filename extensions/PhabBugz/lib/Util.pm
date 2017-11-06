@@ -355,7 +355,7 @@ sub get_members_by_phid {
 
     my $data = { phids => $phids };
 
-    my $result = request('bugzilla.account.search', $data);
+        my $result = request('bugzilla.account.search', $data);
 
     my @bmo_ids;
     foreach my $user (@{ $result->{result} }) {
@@ -367,25 +367,9 @@ sub get_members_by_phid {
 }
 
 sub get_phab_bmo_ids {
-    my ($self, $params) = @_;
-
-    my $data = {
-        queryKey => 'all'
-    };
-
-    if ($params->{ids}) {
-        $data->{constraints} = {
-            ids => $params->{ids}
-        };
-    }
-    elsif ($params->{phids}) {
-        $data->{constraints} = {
-            phids => $params->{phids}
-        };
-    }
-
-    my $result = request('bugzilla.account.search', $data);
-    return $result->{result}->{data};
+    my ($params) = @_;
+    my $result = request('bugzilla.account.search', $params);
+    return $result->{result};
 }
 
 sub is_attachment_phab_revision {

@@ -19,7 +19,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     create_revision_attachment
     edit_revision_policy
     get_bug_role_phids
-    get_members_by_phid
+    get_phab_bmo_ids
     get_security_sync_groups
     is_attachment_phab_revision
     make_revision_public
@@ -87,10 +87,9 @@ sub feed_query {
         }
 
         # Skip changes done by phab-bot user
-        my $userids = get_members_by_phid([$author_phid]);
-
-        if (@$userids) {
-            my $user = Bugzilla::User->new({ id => $userids->[0], cache => 1 });
+        my $phab_users = get_phab_bmo_ids({ phids => [$author_phid] });
+        if (@$phab_users) {
+            my $user = Bugzilla::User->new({ id => $phab_users->[0]->{id}, cache => 1 });
             $skip = 1 if $user->login eq PHAB_AUTOMATION_USER;
         }
 
