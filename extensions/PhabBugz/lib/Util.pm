@@ -87,7 +87,7 @@ sub get_revisions_by_phids {
 }
 
 sub create_revision_attachment {
-    my ( $bug, $revision_id, $revision_title ) = @_;
+    my ( $bug, $revision_id, $revision_title, $timestamp ) = @_;
 
     my $phab_base_uri = Bugzilla->params->{phabricator_base_uri};
     ThrowUserError('invalid_phabricator_uri') unless $phab_base_uri;
@@ -102,16 +102,10 @@ sub create_revision_attachment {
     return $review_attachment if defined $review_attachment;
 
     # No attachment is present, so we can now create new one
-    my $is_shadow_db = Bugzilla->is_shadow_db;
-    Bugzilla->switch_to_main_db if $is_shadow_db;
 
-    my $old_user = Bugzilla->user;
-    set_phab_user();
-
-    my $dbh = Bugzilla->dbh;
-    $dbh->bz_start_transaction;
-
-    my ($timestamp) = $dbh->selectrow_array("SELECT NOW()");
+    if (!$timestamp) {
+        ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+    }
 
     my $attachment = Bugzilla::Attachment->create(
         {
@@ -126,13 +120,9 @@ sub create_revision_attachment {
         }
     );
 
-    $bug->update($timestamp);
-    $attachment->update($timestamp);
-
-    $dbh->bz_commit_transaction;
-    Bugzilla->switch_to_shadow_db if $is_shadow_db;
-
-    Bugzilla->set_user($old_user);
+    # Insert a comment about the new attachment into the database.
+    $bug->add_comment('', { type => CMT_ATTACHMENT_CREATED,
+                            extra_data => $attachment->id });
 
     return $attachment;
 }
@@ -399,9 +389,8 @@ sub get_phab_bmo_ids {
 }
 
 sub is_attachment_phab_revision {
-    my ($attachment, $include_obsolete) = @_;
+    my ($attachment) = @_;
     return ($attachment->contenttype eq PHAB_CONTENT_TYPE
-            && ($include_obsolete || !$attachment->isobsolete)
             && $attachment->attacher->login eq PHAB_AUTOMATION_USER) ? 1 : 0;
 }
 
@@ -511,9 +500,6 @@ sub add_security_sync_comments {
     my $old_user = set_phab_user();
 
     $bug->add_comment( $bmo_error_message, { isprivate => 0 } );
-
-    my $bug_changes = $bug->update();
-    $bug->send_changes($bug_changes);
 
     Bugzilla->set_user($old_user);
 }

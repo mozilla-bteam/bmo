@@ -1,4 +1,4 @@
-# This Source Code Form is hasject to the terms of the Mozilla Public
+ # This Source Code Form is hasject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
@@ -169,6 +169,7 @@ sub update {
 sub id              { $_[0]->{id};                          }
 sub phid            { $_[0]->{phid};                        }
 sub title           { $_[0]->{fields}->{title};             }
+sub status          { $_[0]->{fields}->{status}->{value};   }
 sub creation_ts     { $_[0]->{fields}->{dateCreated};       }
 sub modification_ts { $_[0]->{fields}->{dateModified};      }
 sub author_phid     { $_[0]->{fields}->{authorPHID};        }

@@ -21,6 +21,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     get_bug_role_phids
     get_members_by_phid
     get_security_sync_groups
+    is_attachment_phab_revision
     make_revision_public
     request
     set_phab_user
@@ -59,7 +60,7 @@ sub feed_query {
 
     # Check for new transctions (stories)
     my $transactions = $self->feed_transactions($last_ts);
-    if (!$transactions) {
+    if (!%$transactions) {
         $self->logger->info("FEED: No new transactions");
         return;
     }
@@ -67,11 +68,17 @@ sub feed_query {
     # Process each story
     foreach my $story (keys %$transactions) {
         my $skip = 0;
-
-        $self->logger->debug("STORY: $story");
-        my $story_data = $transactions->{$story};
+        my $story_data  = $transactions->{$story};
+        my $author_phid = $story_data->{authorPHID};
         my $object_phid = $story_data->{objectPHID};
-        $self->logger->debug("OBJECT: $object_phid");
+        my $story_text  = $story_data->{text};
+        my $story_epoch = $story_data->{epoch};
+
+        $self->logger->debug("STORY PHID: $story");
+        $self->logger->debug("STORY_EPOCH: $story_epoch");
+        $self->logger->debug("AUTHOR PHID: $author_phid");
+        $self->logger->debug("OBJECT PHID: $object_phid");
+        $self->logger->debug("STORY TEXT: $story_text");
 
         # Only interested in changes to revisions for now.
         if ($object_phid !~ /^PHID-DREV/) {
@@ -80,7 +87,7 @@ sub feed_query {
         }
 
         # Skip changes done by phab-bot user
-        my $userids = get_members_by_phid([$story_data->{authorPHID}]);
+        my $userids = get_members_by_phid([$author_phid]);
 
         if (@$userids) {
             my $user = Bugzilla::User->new({ id => $userids->[0], cache => 1 });
@@ -89,23 +96,33 @@ sub feed_query {
 
         if (!$skip) {
             my $revision = Bugzilla::Extension::PhabBugz::Revision->new({ phids => [$object_phid] });
-            $self->process_revision_change($revision, $story_data->{text});
+            $self->process_revision_change($revision, $story_text);
         }
         else {
             $self->logger->info('SKIPPING');
         }
 
-        # Store the largest last epoch so we can start from there in the next session
-        $self->logger->debug("UPDATING LAST_TS: $last_ts");
+        # Store the largest last epoch + 1 so we can start from there in the next session
+        $story_epoch++;
+        $self->logger->debug("UPDATING LAST_TS: $story_epoch");
         $dbh->do("REPLACE INTO phabbugz (name, value) VALUES ('feed_last_ts', ?)",
-                 undef, $story_data->{epoch}+1);
+                 undef, $story_epoch);
     }
 }
 
 sub process_revision_change {
     my ($self, $revision, $story_text) = @_;
 
+    # Pre setup before making changes
     my $old_user = set_phab_user();
+
+    my $is_shadow_db = Bugzilla->is_shadow_db;
+    Bugzilla->switch_to_main_db if $is_shadow_db;
+
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction;
+
+    my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
 
     my $log_message = sprintf(
         "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s",
@@ -116,6 +133,8 @@ sub process_revision_change {
     $self->logger->info($log_message);
 
     my $bug = Bugzilla::Bug->new($revision->bug_id);
+
+    # REVISION SECURITY POLICY
 
     # If bug is public then remove privacy policy
     my $result;
@@ -130,7 +149,7 @@ sub process_revision_change {
         # If bug privacy groups do not have any matching synchronized groups,
         # then leave revision private and it will have be dealt with manually.
         if (!@set_groups) {
-            add_security_sync_comments($revision, $bug);
+            add_security_sync_comments([$revision], $bug);
         }
 
         my $policy_phid = create_private_revision_policy($bug, \@set_groups);
@@ -141,11 +160,50 @@ sub process_revision_change {
         $revision->set_subscribers($subscribers);
     }
 
+    my $attachment = create_revision_attachment($bug, $revision->id, $revision->title, $timestamp);
+
+    # ATTACHMENT OBSOLETES
+
+    # fixup attachments on current bug
+    my @attachments =
+      grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
+
+    foreach my $attachment (@attachments) {
+        my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+        next if $attach_revision_id != $revision->id;
+
+        my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
+        $attachment->set_is_obsolete($make_obsolete);
+
+        if ($revision->id == $attach_revision_id
+            && $revision->title ne $attachment->description) {
+            $attachment->set_description($revision->title);
+        }
+
+        $attachment->update($timestamp);
+        last;
+    }
+
+    # fixup attachments with same revision id but on different bugs
+    my $other_attachments = Bugzilla::Attachment->match({
+        mimetype => PHAB_CONTENT_TYPE,
+        filename => 'phabricator-D' . $revision->id . '-url.txt',
+        WHERE    => { 'bug_id != ? AND NOT isobsolete' => $bug->id }
+    });
+    foreach my $attachment (@$other_attachments) {
+        $attachment->set_is_obsolete(1);
+        $attachment->update($timestamp);
+    }
+
+    # FINISH UP
+
+    $bug->update($timestamp);
     $revision->update();
 
-    my $attachment = create_revision_attachment($bug, $revision->id, $revision->title);
-
     Bugzilla::BugMail::Send($revision->bug_id, { changer => Bugzilla->user });
+
+    $dbh->bz_commit_transaction;
+    Bugzilla->switch_to_shadow_db if $is_shadow_db;
 
     Bugzilla->set_user($old_user);
 
