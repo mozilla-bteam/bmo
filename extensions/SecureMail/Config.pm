@@ -20,10 +20,9 @@
 #                 Gervase Markham <gerv@gerv.net>
 
 package Bugzilla::Extension::SecureMail;
-
-use 5.10.1;
 use strict;
 use warnings;
+use 5.10.1;
 
 use constant NAME => 'SecureMail';
 
@@ -46,7 +45,17 @@ use constant REQUIRED_MODULES => [
         package => 'HTML-Tree',
         module  => 'HTML::Tree',
         version => 0,
-    }
+    },
+    {
+        package => 'Mail-GPG',
+        module  => 'Mail::GPG',
+        version => 0,
+    },
+    {
+        package => 'GnuPG-Interface',
+        module  => 'GnuPG::Interface',
+        version => 0,
+    },
 ];
 
 __PACKAGE__->NAME;

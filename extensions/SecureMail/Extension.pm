@@ -1,4 +1,3 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
 #
 # The contents of this file are subject to the Mozilla Public
 # License Version 1.1 (the "License"); you may not use this file
@@ -20,11 +19,9 @@
 #                 Gervase Markham <gerv@gerv.net>
 
 package Bugzilla::Extension::SecureMail;
-
-use 5.10.1;
 use strict;
 use warnings;
-
+use 5.10.1;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Attachment;
@@ -37,12 +34,17 @@ use Bugzilla::Error;
 use Bugzilla::Mailer;
 
 use Crypt::OpenPGP::Armour;
-use Crypt::OpenPGP::KeyRing;
-use Crypt::OpenPGP;
 use Crypt::SMIME;
 use Email::MIME::ContentType qw(parse_content_type);
 use Encode;
 use HTML::Tree;
+use List::MoreUtils qw(any none);
+use Mail::GPG;
+use MIME::Parser;
+use GnuPG::Interface;
+use Path::Class;
+use File::Path qw(mkpath);
+use File::Spec::Functions qw(catdir catfile);
 
 our $VERSION = '0.5';
 
@@ -53,7 +55,7 @@ use constant SECURE_ALL  => 2;
 ##############################################################################
 # Creating new columns
 #
-# secure_mail boolean in the 'gselect id from groups where secure_mailroups' table - whether to send secure mail
+# secure_mail boolean in the 'groups' table - whether to send secure mail
 # public_key text in the 'profiles' table - stores public key
 ##############################################################################
 sub install_update_db {
@@ -63,6 +65,10 @@ sub install_update_db {
     $dbh->bz_add_column('groups', 'secure_mail',
                         {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0});
     $dbh->bz_add_column('profiles', 'public_key', { TYPE => 'LONGTEXT' });
+    $dbh->bz_add_column( 'profiles', 'override_test',
+                        {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0} );
+
+    return;
 }
 
 ##############################################################################
@@ -70,16 +76,23 @@ sub install_update_db {
 ##############################################################################
 
 BEGIN {
-    *Bugzilla::Group::secure_mail = \&_group_secure_mail;
-    *Bugzilla::User::public_key   = \&_user_public_key;
-    *Bugzilla::securemail_groups = \&_securemail_groups;
+    *Bugzilla::Group::secure_mail  = \&_group_secure_mail;
+    *Bugzilla::User::public_key    = \&_user_public_key;
+    *Bugzilla::User::override_test = \&_user_override_test;
+    *Bugzilla::User::delete_key    = \&_delete_key;
+    *Bugzilla::User::add_key       = \&_add_key;
+}
+
+
+sub config_add_panels {
+    my($self, $args) = @_;
+    my $modules = $args->{panel_modules};
+    $modules->{SecureMail} = "Bugzilla::Extension::SecureMail::Params";
+
+    return;
 }
 
 sub _group_secure_mail { return $_[0]->{'secure_mail'}; }
-
-sub _securemail_groups {
-    return Bugzilla->dbh->selectcol_arrayref("SELECT name FROM groups WHERE secure_mail = 1") // [];
-}
 
 # We want to lazy-load the public_key.
 sub _user_public_key {
@@ -94,6 +107,18 @@ sub _user_public_key {
     return $self->{public_key};
 }
 
+# We want to lazy-load override_test.
+sub _user_override_test {
+    my $self = shift;
+    if (!exists $self->{override_test}) {
+        ($self->{override_test}) = Bugzilla->dbh->selectrow_array(
+            "SELECT override_test FROM profiles WHERE userid = ?",
+            undef,
+            $self->id
+        );
+    }
+    return $self->{override_test};
+}
 # Make sure generic functions know about the additional fields in the user
 # and group objects.
 sub object_columns {
@@ -104,6 +129,8 @@ sub object_columns {
     if ($class->isa('Bugzilla::Group')) {
         push(@$columns, 'secure_mail');
     }
+
+    return;
 }
 
 # Plug appropriate validators so we can check the validity of the two
@@ -152,7 +179,14 @@ sub object_validators {
 
             return $value;
         };
+        $validators->{'override_test'} = sub {
+            my ($self, $value) = @_;
+            $value = $value ? 1 : 0;
+            return $value;
+        };
     }
+
+    return;
 }
 
 # When creating a 'group' object, set up the secure_mail field appropriately.
@@ -164,6 +198,8 @@ sub object_before_create {
     if ($class->isa('Bugzilla::Group')) {
         $params->{secure_mail} = Bugzilla->cgi->param('secure_mail');
     }
+
+    return;
 }
 
 # On update, make sure the updating process knows about our new columns.
@@ -180,7 +216,10 @@ sub object_update_columns {
     }
     elsif ($object->isa('Bugzilla::User')) {
         push(@$columns, 'public_key');
+        push(@$columns, 'override_test');
     }
+
+    return;
 }
 
 # Handle the setting and changing of the public key.
@@ -200,20 +239,25 @@ sub user_preferences {
 
     if ($save) {
         $user->set('public_key', $params->{'public_key'});
+        $user->set('override_test', $params->{'override_test'});
         $user->update();
-
+        $user->delete_key();
         # Send user a test email
         if ($user->public_key) {
+            $user->add_key($user);
             _send_test_email($user);
             $vars->{'test_email_sent'} = 1;
         }
     }
 
     $vars->{'public_key'} = $user->public_key;
+    $vars->{'override_test'} = $user->override_test;
 
     # Set the 'handled' scalar reference to true so that the caller
     # knows the panel name is valid and that an extension took care of it.
     $$handled = 1;
+
+    return;
 }
 
 sub template_before_process {
@@ -232,11 +276,13 @@ sub template_before_process {
     if (defined $vars->{diffs}) {
         foreach my $change (@{ $vars->{diffs} }) {
             next if !defined $change->{blocker};
-            if (grep($_->secure_mail, @{ $change->{blocker}->groups_in })) {
+            if (any {$_->secure_mail == 1} @{ $change->{blocker}->groups_in }) {
                 $change->{blocker}->{short_desc} = "(Secure bug)";
             }
         }
     }
+
+    return;
 }
 
 sub _send_test_email {
@@ -252,45 +298,33 @@ sub _send_test_email {
         || ThrowTemplateError($template->error());
 
     MessageToMTA($msg);
+
+    return;
 }
 
 ##############################################################################
 # Encrypting the email
 ##############################################################################
-
-# determine if the bug should be encrypted at the time it is generated
-sub bugmail_enqueue {
-    my ($self, $args) = @_;
-    my $vars = $args->{vars};
-    if (_should_secure_bug($vars->{bug})) {
-        $vars->{bugzilla_encrypt} = 1;
-    }
-}
-
-sub bugmail_generate {
-    my ($self, $args) = @_;
-    my $vars = $args->{vars};
-    my $email = $args->{email};
-    if ($vars->{bugzilla_encrypt}) {
-        $email->header_set('X-Bugzilla-Encrypt', 1);
-    }
-}
-
 sub mailer_before_send {
     my ($self, $args) = @_;
 
     my $email = $args->{'email'};
     my $body  = $email->body;
 
+    # REDHAT EXTENSION 1284377 BEGIN
+    my $has_status = defined($email->header('X-Bugzilla-Status'));
+    my $has_type = defined($email->header('X-Bugzilla-Type'));
+
     # Decide whether to make secure.
     # This is a bit of a hack; it would be nice if it were more clear
     # what sort a particular email is.
-    my $is_bugmail      = $email->header('X-Bugzilla-Status') ||
-                          $email->header('X-Bugzilla-Type') eq 'request';
+    my $is_bugmail      = ($has_status && $email->header('X-Bugzilla-Status'))
+                           || ($has_type && ($email->header('X-Bugzilla-Type') eq 'request'));
     my $is_passwordmail = !$is_bugmail && ($body =~ /cfmpw.*cxlpw/s);
-    my $is_test_email   = $email->header('X-Bugzilla-Type') =~ /securemail-test/ ? 1 : 0;
-    my $is_whine_email  = $email->header('X-Bugzilla-Type') eq 'whine' ? 1 : 0;
+    my $is_test_email   = $has_type && ($email->header('X-Bugzilla-Type') =~ /securemail-test/ ? 1 : 0);
+    my $is_whine_email  = $has_type && ($email->header('X-Bugzilla-Type') eq 'whine' ? 1 : 0);
     my $encrypt_header  = $email->header('X-Bugzilla-Encrypt') ? 1 : 0;
+    # REDHAT EXTENSION 1284377 END
 
     if ($is_bugmail
         || $is_passwordmail
@@ -320,20 +354,13 @@ sub mailer_before_send {
             # If the insider group has securemail enabled..
             my $insider_group = Bugzilla::Group->new({ name => Bugzilla->params->{'insidergroup'} });
             if ($insider_group
-                && $insider_group->secure_mail
+                && $insider_group->secure_mail == 1
                 && $make_secure == SECURE_NONE)
             {
                 my $comment_is_private = Bugzilla->dbh->selectcol_arrayref(
                     "SELECT isprivate FROM longdescs WHERE bug_id=? ORDER BY bug_when",
                     undef, $bug_id);
                 # Encrypt if there are private comments on an otherwise public bug
-                if (scalar $email->parts > 1) {
-                    $email->walk_parts(sub {
-                        my $part = shift;
-                        my $content_type = $part->content_type;
-                        $body = $part->body if $content_type && $content_type =~ /^text\/plain/;
-                    });
-                }
                 while ($body =~ /[\r\n]--- Comment #(\d+)/g) {
                     my $comment_number = $1;
                     if ($comment_number && $comment_is_private->[$comment_number]) {
@@ -343,9 +370,9 @@ sub mailer_before_send {
                 }
                 # Encrypt if updating a private attachment without a comment
                 if ($email->header('X-Bugzilla-Changed-Fields')
-                    && $email->header('X-Bugzilla-Attach-ID'))
+                    && $email->header('X-Bugzilla-Changed-Fields') =~ /Attachment #(\d+)/)
                 {
-                    my $attachment = Bugzilla::Attachment->new($email->header('X-Bugzilla-Attach-ID'));
+                    my $attachment = Bugzilla::Attachment->new($1);
                     if ($attachment && $attachment->isprivate) {
                         $make_secure = SECURE_BODY;
                     }
@@ -360,7 +387,7 @@ sub mailer_before_send {
             # we default to secure).
             if ($user &&
                 !$user->public_key &&
-                !grep($_->secure_mail, @{ $user->groups }))
+                none {$_->secure_mail == 1} @{ $user->groups })
             {
                 $make_secure = SECURE_NONE;
             }
@@ -389,7 +416,7 @@ sub mailer_before_send {
 
         if ($make_secure == SECURE_NONE) {
             # Filter the bug_links in HTML email in case the bugs the links
-            # point are "secured" bugs and the user may not be able to see
+            # point are "secured" bugs and the user may not be able to see 
             # the summaries.
             _filter_bug_links($email);
         }
@@ -397,6 +424,8 @@ sub mailer_before_send {
             _make_secure($email, $public_key, $is_bugmail && $make_secure == SECURE_ALL, $add_new);
         }
     }
+
+    return;
 }
 
 # Custom hook for bugzilla.mozilla.org (see bug 752400)
@@ -408,10 +437,12 @@ sub bugmail_referenced_bugs {
     return if _should_secure_bug($args->{'updated_bug'});
     # Replace the subject if required
     foreach my $ref (@$referenced_bugs) {
-        if (grep($_->secure_mail, @{ $ref->{'bug'}->groups_in })) {
+        if (any {$_->secure_mail == 1} @{ $ref->{'bug'}->groups_in }) {
             $ref->{'short_desc'} = "(Secure bug)";
         }
     }
+
+    return;
 }
 
 sub _should_secure_bug {
@@ -421,7 +452,7 @@ sub _should_secure_bug {
     return
         !$bug
         || $bug->{'error'}
-        || grep($_->secure_mail, @{ $bug->groups_in });
+        || any {$_->secure_mail == 1} @{ $bug->groups_in };
 }
 
 sub _should_secure_whine {
@@ -446,6 +477,148 @@ sub _should_secure_whine {
     return $should_secure ? 1 : 0;
 }
 
+=head2 key_dir
+
+Returns the full path to the directory the Pubic keys are kept in.
+
+=cut
+
+sub key_dir {
+    return catdir(Bugzilla->params->{gpg_home_dir},"keys");
+}
+
+=head2 key_path
+
+Returns the full path to the supplied mail addresses Public key file.
+
+=cut
+
+sub key_path {
+    my $login = shift;
+    return catfile(key_dir(), "$login.asc");
+}
+
+=head2 get_gpg
+
+Returns refs to a GnuPG::Interface object and a GnuPG::Handles object.
+
+=cut
+
+sub get_gpg {
+    my $gpg = GnuPG::Interface->new();
+    $gpg->options->hash_init(
+        armor   => 1,
+        homedir => Bugzilla->params->{gpg_home_dir},
+        verbose => 1,
+    );
+    $gpg->hash_init(
+        call    => Bugzilla->params->{gpg_cmd},
+    );
+
+    my $handles = GnuPG::Handles->new(
+        stdin  => IO::Handle->new(),
+        stdout => IO::Handle->new(),
+        stderr => IO::Handle->new(),
+        status => IO::Handle->new(),
+    );
+
+    return($gpg, $handles);
+}
+
+=head2 close_handles
+
+Closes all IOs for the supplied GnuPG::Handles object.
+
+=cut
+
+sub close_handles {
+    my $handles = shift;
+
+    my $out = $handles->{'stdout'};
+    my $err = $handles->{'stderr'};
+    my $status = $handles->{'status'};
+    my $in = $handles->{'stdin'};
+
+    close $in     if($in);
+    close $out    if($out);
+    close $status if($status);
+    close $err    if($err);
+
+    return;
+}
+
+sub _delete_key {
+    my $user = shift;
+    my $login = $user->login;
+    my $key_path = key_path($login);
+
+#    unlink $key_path if(-f $key_path);
+ Bugzilla->logger->info("\n\nexists $key_path") if(-f $key_path);
+    my ($gpg, $handles) = get_gpg();
+    $gpg->options->meta_interactive( 0 );
+
+    $gpg->wrap_call(commands => ['--delete-keys', '--yes'], handles => $handles, command_args => [$login] );
+
+    my $out = $handles->{'stdout'};
+    my $err = $handles->{'stderr'};
+    my $status = $handles->{'status'};
+    my $in = $handles->{'stdin'};
+    my @out = <$out>;
+    my @err = <$err>;
+    my @sta = <$status>;
+    if(@err) {
+        my $errstr = join("\n", (@out, @err, @sta));
+        if($errstr !~ /not found/ig &&
+           $errstr !~ /no such file or directory/ig &&
+           $errstr !~ /^gpg: WARNING: unsafe ownership on homedir/ &&
+           $errstr !~ /^gpg: using PGP trust model/) {
+            ThrowCodeError('securemail_cant_open_keyfile', {filename => $key_path, errstr => $errstr});
+        }
+    }
+    close_handles($handles);
+
+    unlink $key_path if(-f $key_path);
+
+    return;
+}
+
+sub _add_key {
+    my $user = shift;
+
+    my $key = $user->public_key;
+    my $login = $user->login;
+
+    my $key_path = key_path($login);
+    unless(-e key_dir()) {
+        eval {
+            mkpath(key_dir());
+        };
+        ThrowCodeError('securemail_cant_create_dir', {dirname => key_dir(), errstr => $@}) if($@);
+    }
+
+    my $OUT;
+    open($OUT, ">", $key_path) || ThrowCodeError('securemail_cant_open_keyfile', {filename => $key_path, errstr => $!});
+    print $OUT $key;
+    close $OUT;
+
+    my ($gpg, $handles) = get_gpg();
+    $gpg->options->meta_interactive( 0 );
+    $gpg->import_keys(handles => $handles, command_args => [$key_path] );
+
+    my $out = $handles->{'stdout'};
+    my $err = $handles->{'stderr'};
+    my $status = $handles->{'status'};
+    my @out = <$out>;
+    my @err = <$err>;
+    my @sta = <$status>;
+
+    Bugzilla->logger->debug(join("\n", (@out, @err, @sta))) if(@err);
+
+    close_handles($handles);
+
+    return;
+}
+
 sub _make_secure {
     my ($email, $key, $sanitise_subject, $add_new) = @_;
 
@@ -463,70 +636,70 @@ sub _make_secure {
         $key_type = 'S/MIME';
     }
 
-    if ($key_type eq 'PGP') {
+    if( $key_type eq 'PGP' ) {
         ##################
         # PGP Encryption #
         ##################
+        my $to     = $email->header('To');
 
-        my $pubring = new Crypt::OpenPGP::KeyRing(Data => $key);
-        my $pgp = new Crypt::OpenPGP(PubRing => $pubring);
+        my ($gpg, $handles) = get_gpg();
+        $gpg->options->meta_interactive(0);
+        my @res = $gpg->get_public_keys();
+        my $key_path = key_path($to);
+        close_handles($handles);
 
-        if (scalar $email->parts > 1) {
-            my $old_boundary = $email->{ct}{attributes}{boundary};
-            my $to_encrypt = "Content-Type: " . $email->content_type . "\n\n";
+        unless( -f $key_path ) {
+            my $user = new Bugzilla::User( { name => $to } );
+            $user->add_key();
+        }
 
-            # We need to do some fix up of each part for proper encoding and then
-            # stringify all parts for encrypting. We have to retain the old
-            # boundaries as well so that the email client can reconstruct the
-            # original message properly.
-            $email->walk_parts(\&_fix_encoding);
+        my $mg = Mail::GPG->new(
+            gpg_call        => Bugzilla->params->{gpg_cmd},
+            gnupg_hash_init => {
+                always_trust => 1,
+                homedir      => Bugzilla->params->{gpg_home_dir},
+            },
+        );
+        my $txt    = $email->as_string();
+        my $entity = Mail::GPG->parse( mail_sref => \$txt );
 
-            $email->walk_parts(sub {
-                my ($part) = @_;
-                if ($sanitise_subject) {
-                    _insert_subject($part, $subject);
-                }
-                return if $part->parts > 1; # Top-level
-                $to_encrypt .= "--$old_boundary\n" . $part->as_string . "\n";
-            });
-            $to_encrypt .= "--$old_boundary--";
+        $email->parts_set( [] );
 
-            # Now create the new properly formatted PGP parts containing the
-            # encrypted original message
-            my @new_parts = (
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'application/pgp-encrypted',
-                        encoding     => '7bit',
-                    },
-                    body => "Version: 1\n",
-                ),
-                Email::MIME->create(
-                    attributes => {
-                        content_type => 'application/octet-stream',
-                        filename     => 'encrypted.asc',
-                        disposition  => 'inline',
-                        encoding     => '7bit',
-                    },
-                    body => _pgp_encrypt($pgp, $to_encrypt, $bug_id)
-                ),
+        my $encrypted_entity;
+        eval {
+            $encrypted_entity = $mg->mime_encrypt(
+                entity     => $entity,
+                recipients => [$to],
             );
-            $email->parts_set(\@new_parts);
-            my $new_boundary = $email->{ct}{attributes}{boundary};
-            # Redo the old content type header with the new boundaries
-            # and other information needed for PGP
-            $email->header_set("Content-Type",
-                               "multipart/encrypted; " .
-                               "protocol=\"application/pgp-encrypted\"; " .
-                               "boundary=\"$new_boundary\"");
+        };
+
+        if (!$@) {
+            $email->charset_set(undef);
+            $email->encoding_set(undef);
+            my @parts;
+            foreach my $part ( $encrypted_entity->parts ) {
+                my $bh       = $part->bodyhandle;
+                my $head     = $part->head;
+                my $new_part = Email::MIME->create(
+                    attributes => {
+                        content_type => $head->mime_type,
+                        disposition => 'inline',
+                    },
+                    body => $bh->as_string,
+                );
+                push( @parts, $new_part );
+            }
+
+            $email->parts_set( \@parts );
+            $email->header_str_set('Content-Type', $encrypted_entity->head->get('content-type'));
+            $email->boundary_set( $encrypted_entity->head->multipart_boundary());
+
         }
         else {
-            _fix_encoding($email);
-            if ($sanitise_subject) {
-                _insert_subject($email, $subject);
-            }
-            $email->body_set(_pgp_encrypt($pgp, $email->body, $bug_id));
+            Bugzilla->logger->error($@);
+            $email->body_set( 'Error during Encryption: ' . $@ );
         }
+
     }
 
     elsif ($key_type eq 'S/MIME') {
@@ -547,7 +720,6 @@ sub _make_secure {
             $smime->setPublicKey([$key]);
             $encrypted = $smime->encrypt($email->as_string());
         };
-
         if (!$@) {
             # We can't replace the Email::MIME object, so we have to swap
             # out its component parts.
@@ -561,17 +733,16 @@ sub _make_secure {
         else {
             $email->body_set('Error during Encryption: ' . $@);
         }
+
     }
     else {
         # No encryption key provided; send a generic, safe email.
         my $template = Bugzilla->template;
         my $message;
-        my $email_type = $email->header('X-Bugzilla-Type');
         my $vars = {
           'urlbase'    => Bugzilla->localconfig->{urlbase},
           'bug_id'     => $bug_id,
-          'maintainer' => Bugzilla->params->{'maintainer'},
-          'email_type' => $email_type
+          'maintainer' => Bugzilla->params->{'maintainer'}
         };
 
         $template->process('account/email/encryption-required.txt.tmpl',
@@ -593,61 +764,51 @@ sub _make_secure {
         # Note: the $bug_id is required within the parentheses in order to keep
         # gmail's threading algorithm happy.
         $subject =~ s/($bug_id\])\s+(.*)$/$1$new (Secure bug $bug_id in $product :: $component)/;
-        {
-            # avoid excessive line wrapping done by Encode.
-            local $Encode::Encoding{'MIME-Q'}->{'bpl'} = 998;
-            $email->header_set('Subject', encode('MIME-Q', $subject));
-        }
+        $email->header_set('Subject', $subject);
     }
+
+    return;
 }
 
 sub _pgp_encrypt {
-    my ($pgp, $text, $bug_id) = @_;
+    my ($pgp, $text) = @_;
     # "@" matches every key in the public key ring, which is fine,
     # because there's only one key in our keyring.
     #
     # We use the CAST5 cipher because the Rijndael (AES) module doesn't
     # like us for some reason I don't have time to debug fully.
     # ("key must be an untainted string scalar")
-    my $encrypted = $pgp->encrypt(
-        Data       => $text,
-        Recipients => "@",
-        Cipher     => 'CAST5',
-        Armour     => 0
-    );
+    my $encrypted = $pgp->encrypt(Data       => $text,
+                                  Recipients => "@",
+                                  Cipher     => 'CAST5',
+                                  Armour     => 1);
     if (!defined $encrypted) {
         return 'Error during Encryption: ' . $pgp->errstr;
     }
-    $encrypted = Crypt::OpenPGP::Armour->armour(
-        Data => $encrypted,
-        Object => 'MESSAGE',
-        Headers => {
-            Comment => Bugzilla->localconfig->{urlbase} . ($bug_id ? 'show_bug.cgi?id=' . $bug_id : ''),
-        },
-    );
-    # until Crypt::OpenPGP makes the Version header optional we have to strip
-    # it out manually (bug 1181406).
-    $encrypted =~ s/\nVersion:[^\n]+//;
     return $encrypted;
 }
 
 # Insert the subject into the part's body, as the subject of the message will
 # be sanitised.
 # XXX this incorrectly assumes all parts of the message are the body
-# we should only alter parts whose parent is multipart/alternative
+# we should only alter parts who's parent is multipart/alternative
 sub _insert_subject {
     my ($part, $subject) = @_;
     my $content_type = $part->content_type or return;
     if ($content_type =~ /^text\/plain/) {
+        if (!is_7bit_clean($subject)) {
+            $part->encoding_set('quoted-printable');
+        }
         $part->body_str_set("Subject: $subject\015\012\015\012" . $part->body_str);
     }
     elsif ($content_type =~ /^text\/html/) {
         my $tree = HTML::Tree->new->parse_content($part->body_str);
         my $body = $tree->look_down(qw(_tag body));
-        $body->unshift_content(['strong', "Subject: $subject"], ['br']);
-        $part->body_str_set($tree->as_HTML);
-        $tree->delete;
+        $body->unshift_content(['div', "Subject: $subject"], ['br']);
+        _set_body_from_tree($part, $tree);
     }
+
+    return;
 }
 
 sub _fix_encoding {
@@ -672,6 +833,8 @@ sub _fix_encoding {
         }
     }
     $part->encoding_set('quoted-printable');
+
+    return;
 }
 
 sub _filter_bug_links {
@@ -695,10 +858,22 @@ sub _filter_bug_links {
             }
         }
         if ($updated) {
-            $part->body_str_set($tree->as_HTML);
+            _set_body_from_tree($part, $tree);
         }
-        $tree->delete;
+
+        return;
     });
+
+    return;
+}
+
+sub _set_body_from_tree {
+    my ($part, $tree) = @_;
+    $part->body_set($tree->as_HTML);
+    $part->charset_set('UTF-8') if Bugzilla->params->{'utf8'};
+    $part->encoding_set('quoted-printable');
+
+    return;
 }
 
 __PACKAGE__->NAME;

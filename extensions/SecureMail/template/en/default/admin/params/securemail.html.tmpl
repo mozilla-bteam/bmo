@@ -1,0 +1,13 @@
+[%
+    title = "SecureMail"
+    desc = "Configure SecureMail settings"
+%]
+
+[% 
+    param_descs = {
+        gpg_home_dir => 'The path to the directory to be used for storing PGP public keys',
+        gpg_cmd      => 'The full path to the GPG command',
+        mail_delivery_override => 'The mail delivery method to use if the default mail method is Test and the User has override_test enabled. If this is unset then users will not be able to override the Test method.',
+    }
+%]
+
