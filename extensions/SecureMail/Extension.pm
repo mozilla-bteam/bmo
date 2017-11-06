@@ -42,7 +42,6 @@ use List::MoreUtils qw(any none);
 use Mail::GPG;
 use MIME::Parser;
 use GnuPG::Interface;
-use Path::Class;
 use File::Path qw(mkpath);
 use File::Spec::Functions qw(catdir catfile);
 
