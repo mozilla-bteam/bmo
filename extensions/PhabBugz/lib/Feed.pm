@@ -9,8 +9,11 @@ package Bugzilla::Extension::PhabBugz::Feed;
 
 use 5.10.1;
 
+use List::Util qw(first);
+use List::MoreUtils qw(any);
 use Moo;
 
+use Bugzilla::Constants;
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Revision;
 use Bugzilla::Extension::PhabBugz::Util qw(
@@ -56,7 +59,7 @@ sub feed_query {
     my $last_ts = $dbh->selectrow_array("
         SELECT value FROM phabbugz WHERE name = 'feed_last_ts'");
     $last_ts ||= 0;
-    $self->logger->debug("LAST_TS: $last_ts");
+    $self->logger->debug("QUERY LAST_TS: $last_ts");
 
     # Check for new transctions (stories)
     my $transactions = $self->feed_transactions($last_ts);
@@ -88,7 +91,7 @@ sub feed_query {
 
         # Skip changes done by phab-bot user
         my $phab_users = get_phab_bmo_ids({ phids => [$author_phid] });
-        if (@$phab_users) {
+        if (!$skip && @$phab_users) {
             my $user = Bugzilla::User->new({ id => $phab_users->[0]->{id}, cache => 1 });
             $skip = 1 if $user->login eq PHAB_AUTOMATION_USER;
         }
@@ -135,28 +138,33 @@ sub process_revision_change {
 
     # REVISION SECURITY POLICY
 
-    # If bug is public then remove privacy policy
-    my $result;
-    if (!@{ $bug->groups_in }) {
-        $revision->set_policy('view', 'public');
-        $revision->set_policy('edit', 'users');
-    }
-    # else bug is private
-    else {
-        my @set_groups = get_security_sync_groups($bug);
+    # Do not set policy if a custom policy has already been set
+    # This keeps from setting new custom policy everytime a change
+    # is made.
+    unless ($revision->view_policy =~ /^PHID-PLCY/) {
 
-        # If bug privacy groups do not have any matching synchronized groups,
-        # then leave revision private and it will have be dealt with manually.
-        if (!@set_groups) {
-            add_security_sync_comments([$revision], $bug);
+        # If bug is public then remove privacy policy
+        if (!@{ $bug->groups_in }) {
+            $revision->set_policy('view', 'public');
+            $revision->set_policy('edit', 'users');
         }
+        # else bug is private
+        else {
+            my @set_groups = get_security_sync_groups($bug);
 
-        my $policy_phid = create_private_revision_policy($bug, \@set_groups);
-        my $subscribers = get_bug_role_phids($bug);
+            # If bug privacy groups do not have any matching synchronized groups,
+            # then leave revision private and it will have be dealt with manually.
+            if (!@set_groups) {
+                add_security_sync_comments([$revision], $bug);
+            }
 
-        $revision->set_policy('view', $policy_phid);
-        $revision->set_policy('edit', $policy_phid);
-        $revision->set_subscribers($subscribers);
+            my $policy_phid = create_private_revision_policy($bug, \@set_groups);
+            my $subscribers = get_bug_role_phids($bug);
+
+            $revision->set_policy('view', $policy_phid);
+            $revision->set_policy('edit', $policy_phid);
+            $revision->set_subscribers($subscribers);
+        }
     }
 
     my $attachment = create_revision_attachment($bug, $revision->id, $revision->title, $timestamp);
@@ -191,6 +199,77 @@ sub process_revision_change {
     });
     foreach my $attachment (@$other_attachments) {
         $attachment->set_is_obsolete(1);
+        $attachment->update($timestamp);
+    }
+
+    # REVIEWER STATUSES
+
+    my (@accepted_phids, @denied_phids, @accepted_user_ids, @denied_user_ids);
+    foreach my $reviewer (@{ $revision->reviewers }) {
+        push(@accepted_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'accepted';
+        push(@denied_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'rejected';
+    }
+
+    my $phab_users = get_phab_bmo_ids({ phids => \@accepted_phids });
+    @accepted_user_ids = map { $_->{id} } @$phab_users;
+    $phab_users = get_phab_bmo_ids({ phids => \@denied_phids });
+    @denied_user_ids = map { $_->{id} } @$phab_users;
+
+    foreach my $attachment (@attachments) {
+        my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+        next if $revision->id != $attach_revision_id;
+
+        # Clear old flags if no longer accepted
+        my (@denied_flags, @new_flags, @removed_flags, %accepted_done, $flag_type);
+        foreach my $flag (@{ $attachment->flags }) {
+            next if $flag->type->name ne 'review';
+            $flag_type = $flag->type;
+            if (any { $flag->setter->id == $_ } @denied_user_ids) {
+                push(@denied_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
+            }
+            if (any { $flag->setter->id == $_ } @accepted_user_ids) {
+                $accepted_done{$flag->setter->id}++;
+            }
+            if ($flag->status eq '+'
+                && !any { $flag->setter->id == $_ } (@accepted_user_ids, @denied_user_ids)) {
+                push(@removed_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
+            }
+        }
+
+        $flag_type ||= first { $_->name eq 'review' } @{ $attachment->flag_types };
+
+        # Create new flags
+        foreach my $user_id (@accepted_user_ids) {
+            next if $accepted_done{$user_id};
+            my $user = Bugzilla::User->check({ id => $user_id, cache => 1 });
+            push(@new_flags, { type_id => $flag_type->id, setter => $user, status => '+' });
+        }
+
+        # Also add comment to for attachment update showing the user's name
+        # that changed the revision.
+        my $comment;
+        foreach my $flag_data (@new_flags) {
+            $comment .= $flag_data->{setter}->name . " has approved the revision.\n";
+        }
+        foreach my $flag_data (@denied_flags) {
+            $comment .= $flag_data->{setter}->name . " has requested changes to the revision.\n";
+        }
+        foreach my $flag_data (@removed_flags) {
+            $comment .= $flag_data->{setter}->name . " has been removed from the revision.\n";
+        }
+
+        if ($comment) {
+            $comment .= "\n" . Bugzilla->params->{phabricator_base_uri} . "D" . $revision->id;
+            # Add transaction_id as anchor if one present
+            # $comment .= "#" . $params->{transaction_id} if $params->{transaction_id};
+            $bug->add_comment($comment, {
+                isprivate  => $attachment->isprivate,
+                type       => CMT_ATTACHMENT_UPDATED,
+                extra_data => $attachment->id
+            });
+        }
+
+        $attachment->set_flags([ @denied_flags, @removed_flags ], \@new_flags);
         $attachment->update($timestamp);
     }
 

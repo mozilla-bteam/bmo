@@ -42,6 +42,11 @@ sub _load {
         }
     };
 
+    # If proper ids and phids constraints were
+    # provided, we return an empty data structure
+    # instead of failing outright. This allows for
+    # silently checking for the existence of a
+    # revision.
     if ($params->{ids}) {
         $data->{constraints} = {
             ids => $params->{ids}
@@ -178,7 +183,7 @@ sub bug_id          { $_[0]->{fields}->{'bugzilla.bug-id'}; }
 sub view_policy { $_[0]->{fields}->{policy}->{view}; }
 sub edit_policy { $_[0]->{fields}->{policy}->{edit}; }
 
-sub reviewers_raw    { $_[0]->{atachments}->{reviewers}->{reviewers};          }
+sub reviewers_raw    { $_[0]->{attachments}->{reviewers}->{reviewers};          }
 sub subscribers_raw  { $_[0]->{attachments}->{subscribers};                    }
 sub projects_raw     { $_[0]->{attachments}->{projects};                       }
 sub subscriber_count { $_[0]->{attachments}->{subscribers}->{subscriberCount}; }
@@ -207,13 +212,15 @@ sub reviewers {
         push(@phids, $reviewer->{reviewerPHID});
     }
 
+    return [] if !@phids;
+
     my $users = get_phab_bmo_ids({ phids => \@phids });
 
     my @reviewers;
     foreach my $user (@$users) {
         my $reviewer = Bugzilla::User->new({ id => $user->{id}, cache => 1});
         $reviewer->{phab_phid} = $user->{phid};
-        foreach my $reviewer_data ($self->reviews_raw) {
+        foreach my $reviewer_data (@{ $self->reviewers_raw }) {
             if ($reviewer_data->{reviewerPHID} eq $user->{phid}) {
                 $reviewer->{phab_review_status} = $reviewer_data->{status};
                 last;
@@ -235,6 +242,8 @@ sub subscribers {
     }
 
     my $users = get_phab_bmo_ids({ phids => \@phids });
+
+    return [] if !@phids;
 
     my @subscribers;
     foreach my $user (@$users) {
