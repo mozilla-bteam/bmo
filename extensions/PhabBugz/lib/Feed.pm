@@ -36,11 +36,15 @@ has 'logger'    => ( is => 'rw' );
 sub start {
     my ($self) = @_;
     while (1) {
-        if (Bugzilla->params->{phabricator_enabled}) {
-            $self->feed_query();
-        }
+        my $ok = eval {
+            if (Bugzilla->params->{phabricator_enabled}) {
+                $self->feed_query();
+                Bugzilla->_cleanup();
+            }
+            1;
+        };
+        $self->logger->error( $@ // "unknown exception" ) unless $ok;
         sleep(PHAB_POLL_SECONDS);
-        Bugzilla->_cleanup();
     }
 }
 
