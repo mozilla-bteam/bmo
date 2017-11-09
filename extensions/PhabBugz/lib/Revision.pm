@@ -8,8 +8,8 @@
 package Bugzilla::Extension::PhabBugz::Revision;
 
 use 5.10.1;
-
-use Moo;
+use strict;
+use warnings;
 
 use Bugzilla::Bug;
 use Bugzilla::Error;
@@ -39,34 +39,16 @@ sub _load {
             projects    => 1,
             reviewers   => 1,
             subscribers => 1
-        }
+        },
+        constraints => $params
     };
-
-    # If proper ids and phids constraints were
-    # provided, we return an empty data structure
-    # instead of failing outright. This allows for
-    # silently checking for the existence of a
-    # revision.
-    if ($params->{ids}) {
-        $data->{constraints} = {
-            ids => $params->{ids}
-        };
-    }
-    elsif ($params->{phids}) {
-        $data->{constraints} = {
-            phids => $params->{phids}
-        };
-    }
-    else {
-        return {};
-    }
 
     my $result = request('differential.revision.search', $data);
     if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
         return $result->{result}->{data}->[0];
     }
 
-    return {};
+    return $result;
 }
 
 # {
@@ -154,6 +136,41 @@ sub update {
         });
     }
 
+    if ($self->{add_subscribers}) {
+        push(@{ $data->{transactions} }, {
+            type  => 'subscribers.add',
+            value => $self->{add_subscribers}
+        });
+    }
+
+    if ($self->{remove_subscribers}) {
+        push(@{ $data->{transactions} }, {
+            type  => 'subscribers.remove',
+            value => $self->{remove_subscribers}
+        });
+    }
+
+    if ($self->{set_reviewers}) {
+        push(@{ $data->{transactions} }, {
+            type  => 'reviewers.set',
+            value => $self->{set_reviewers}
+        });
+    }
+
+    if ($self->{add_reviewers}) {
+        push(@{ $data->{transactions} }, {
+            type  => 'reviewers.add',
+            value => $self->{add_reviewers}
+        });
+    }
+
+    if ($self->{remove_reviewers}) {
+        push(@{ $data->{transactions} }, {
+            type  => 'reviewers.remove',
+            value => $self->{remove_reviewers}
+        });
+    }
+
     if ($self->{set_policy}) {
         foreach my $name ("view", "edit") {
             next unless $self->{set_policy}->{$name};
@@ -164,7 +181,14 @@ sub update {
         }
     }
 
-    request('differential.revision.edit', $data);
+    my $result = request('differential.revision.edit', $data);
+
+    if ($result->{error_code}) {
+        ThrowCodeError('phabricator_api_error',
+            { code => $result->{error_code}, reason => $result->{error_info} });
+    }
+
+    return $result;
 }
 
 #########################
@@ -183,24 +207,26 @@ sub bug_id          { $_[0]->{fields}->{'bugzilla.bug-id'}; }
 sub view_policy { $_[0]->{fields}->{policy}->{view}; }
 sub edit_policy { $_[0]->{fields}->{policy}->{edit}; }
 
-sub reviewers_raw    { $_[0]->{attachments}->{reviewers}->{reviewers};          }
+sub reviewers_raw    { $_[0]->{attachments}->{reviewers}->{reviewers};         }
 sub subscribers_raw  { $_[0]->{attachments}->{subscribers};                    }
 sub projects_raw     { $_[0]->{attachments}->{projects};                       }
 sub subscriber_count { $_[0]->{attachments}->{subscribers}->{subscriberCount}; }
 
 sub bug {
     my ($self) = @_;
-    my $bug = $self->{bug} ||= new Bugzilla::Bug($self->bug_id);
-    weaken($self->{bug}) unless isweak($self->{bug});
-    return $bug;
+    return $self->{bug} ||= Bugzilla::Bug->new({ id => $self->bug_id, cache => 1 });
 }
 
 sub author {
     my ($self) = @_;
     return $self->{author} if $self->{author};
-    my $userids = get_members_by_phid([$self->author_phid]);
-    $self->{'author'} = new Bugzilla::User({ id => $userids->[0], cache => 1 });
-    return $self->{'author'};
+    my $users = get_phab_bmo_ids({ phids => [$self->author_phid] });
+    if (@$users) {
+        $self->{author} = new Bugzilla::User({ id => $users->[0]->{id}, cache => 1 });
+        $self->{author}->{phab_phid} = $self->author_phid;
+        return $self->{author};
+    }
+    return undef;
 }
 
 sub reviewers {
@@ -264,6 +290,39 @@ sub add_comment {
     $comment = trim($comment);
     $self->{added_comments} ||= [];
     push(@{ $self->{added_comments} }, $comment);
+}
+
+sub add_reviewer {
+    my ($self, $reviewer) = @_;
+    $self->{add_reviewers} ||= [];
+    my $reviewer_phid = blessed $reviewer ? $reviewer->phab_phid : $reviewer;
+    push(@{ $self->{add_reviewers} }, $reviewer_phid);
+}
+
+sub remove_reviewer {
+    my ($self, $reviewer) = @_;
+    $self->{remove_reviewers} ||= [];
+    my $reviewer_phid = blessed $reviewer ? $reviewer->phab_phid : $reviewer;
+    push(@{ $self->{remove_reviewers} }, $reviewer_phid);
+}
+
+sub set_reviewers {
+    my ($self, $reviewers) = @_;
+    $self->{set_reviewers} = [ map { $_->phab_phid } @$reviewers ];
+}
+
+sub add_subscriber {
+    my ($self, $subscriber) = @_;
+    $self->{add_subscribers} ||= [];
+    my $subscriber_phid = blessed $subscriber ? $subscriber->phab_phid : $subscriber;
+    push(@{ $self->{add_subscribers} }, $subscriber_phid);
+}
+
+sub remove_subscriber {
+    my ($self, $subscriber) = @_;
+    $self->{remove_subscribers} ||= [];
+    my $subscriber_phid = blessed $subscriber ? $subscriber->phab_phid : $subscriber;
+    push(@{ $self->{remove_subscribers} }, $subscriber_phid);
 }
 
 sub set_subscribers {

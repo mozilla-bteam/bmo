@@ -67,21 +67,21 @@ sub feed_query {
 
     # Check for new transctions (stories)
     my $transactions = $self->feed_transactions($last_ts);
-    if (!%$transactions) {
+    if (!@$transactions) {
         $self->logger->info("FEED: No new transactions");
         return;
     }
 
     # Process each story
-    foreach my $story (keys %$transactions) {
+    foreach my $story_data (@$transactions) {
         my $skip = 0;
-        my $story_data  = $transactions->{$story};
+        my $story_phid  = $story_data->{storyPHID};
         my $author_phid = $story_data->{authorPHID};
         my $object_phid = $story_data->{objectPHID};
         my $story_text  = $story_data->{text};
         my $story_epoch = $story_data->{epoch};
 
-        $self->logger->debug("STORY PHID: $story");
+        $self->logger->debug("STORY PHID: $story_phid");
         $self->logger->debug("STORY_EPOCH: $story_epoch");
         $self->logger->debug("AUTHOR PHID: $author_phid");
         $self->logger->debug("OBJECT PHID: $object_phid");
@@ -138,7 +138,7 @@ sub process_revision_change {
         $story_text);
     $self->logger->info($log_message);
 
-    my $bug = Bugzilla::Bug->new($revision->bug_id);
+    my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
 
     # REVISION SECURITY POLICY
 
@@ -297,10 +297,23 @@ sub feed_transactions {
     my $data = { view => 'text' };
     $data->{epochStart} = $epoch if $epoch;
     my $result = request('feed.query_epoch', $data);
-    # Stupid conduit. If the feed results are empty it returns
+
+    # Stupid Conduit. If the feed results are empty it returns
     # an empty list ([]). If there is data it returns it in a
     # hash ({}) so we have adjust to be consistent.
-    return ref $result->{result} eq 'HASH' ? $result->{result} : {};
+    my $stories = ref $result->{result} eq 'HASH' ? $result->{result} : {};
+
+    # PHP array retain key order but Perl does not. So we will
+    # loop over the data and place the stories into a list instead
+    # of a hash. We will then sort the list by ascending epoch.
+    my @story_list;
+    foreach my $story_phid (keys %$stories) {
+        my $story_data = $stories->{$story_phid};
+        $story_data->{storyPHID} = $story_phid;
+        push(@story_list, $story_data);
+    }
+
+    return [ sort { $a->{epoch} <=> $b->{epoch} } @story_list ];
 }
 
 1;

@@ -8,8 +8,8 @@
 package Bugzilla::Extension::PhabBugz::Project;
 
 use 5.10.1;
-
-use Moo;
+use strict;
+use warnings;
 
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
@@ -38,29 +38,16 @@ sub _load {
             projects    => 1,
             reviewers   => 1,
             subscribers => 1
-        }
+        },
+        constraints => $params
     };
-
-    if ($params->{ids}) {
-        $data->{constraints} = {
-            ids => $params->{ids}
-        };
-    }
-    elsif ($params->{phids}) {
-        $data->{constraints} = {
-            phids => $params->{phids}
-        };
-    }
-    else {
-        return {};
-    }
 
     my $result = request('project.search', $data);
     if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
         return $result->{result}->{data}->[0];
     }
 
-    return {};
+    return $result;
 }
 
 # {
@@ -155,6 +142,12 @@ sub create {
     };
 
     my $result = request('project.edit', $data);
+
+    if ($result->{error_code}) {
+        ThrowCodeError('phabricator_api_error',
+            { code => $result->{error_code}, reason => $result->{error_info} });
+    }
+
     return $class->new({ phids => $result->{result}{object}{phid} });
 }
 
@@ -180,18 +173,26 @@ sub update {
         });
     }
 
-    if ($self->{added_members}) {
+    if ($self->{set_members}) {
         push(@{ $data->{transactions} }, {
-            type  => 'members.add',
-            value => $self->{added_members}
+            type  => 'members.set',
+            value => $self->{set_members}
         });
     }
+    else {
+        if ($self->{add_members}) {
+            push(@{ $data->{transactions} }, {
+                type  => 'members.add',
+                value => $self->{add_members}
+            });
+        }
 
-    if ($self->{removed_members}) {
-        push(@{ $data->{transactions} }, {
-            type  => 'members.remove',
-            value => $self->{removed_members}
-        });
+        if ($self->{remove_members}) {
+            push(@{ $data->{transactions} }, {
+                type  => 'members.remove',
+                value => $self->{remove_members}
+            });
+        }
     }
 
     if ($self->{set_policy}) {
@@ -204,7 +205,14 @@ sub update {
         }
     }
 
-    request('differential.project.edit', $data);
+    my $result = request('project.edit', $data);
+
+    if ($result->{error_code}) {
+        ThrowCodeError('phabricator_api_error',
+            { code => $result->{error_code}, reason => $result->{error_info} });
+    }
+
+    return $result;
 }
 
 #########################
@@ -264,14 +272,21 @@ sub set_description {
 
 sub add_member {
     my ($self, $member) = @_;
-    $self->{added_members} ||= [];
-    push(@{ $self->{added_members} }, $member->phab_phid);
+    $self->{add_members} ||= [];
+    my $member_phid = blessed $member ? $member->phab_phid : $member;
+    push(@{ $self->{add_members} }, $member_phid);
 }
 
 sub remove_member {
     my ($self, $member) = @_;
-    $self->{removed_members} ||= [];
-    push(@{ $self->{removed_members} }, $member->phab_phid);
+    $self->{remove_members} ||= [];
+    my $member_phid = blessed $member ? $member->phab_phid : $member;
+    push(@{ $self->{remove_members} }, $member_phid);
+}
+
+sub set_members {
+    my ($self, $members) = @_;
+    $self->{set_members} = [ map { $_->phab_phid } @$members ];
 }
 
 sub set_policy {

@@ -59,12 +59,12 @@ sub db_schema_abstract_schema {
     $args->{'schema'}->{'phabbugz'} = {
         FIELDS => [
             id => {
-                TYPE       => 'MEDIUMSERIAL',
+                TYPE       => 'INTSERIAL',
                 NOTNULL    => 1,
                 PRIMARYKEY => 1,
             },
             name => {
-                TYPE    => 'VARCHAR(64)',
+                TYPE    => 'VARCHAR(255)',
                 NOTNULL => 1,
             },
             value => {
