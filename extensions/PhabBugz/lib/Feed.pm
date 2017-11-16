@@ -60,13 +60,13 @@ sub feed_query {
 
     $self->logger->info("FEED: Fetching new transactions");
 
-    my $last_ts = $dbh->selectrow_array("
-        SELECT value FROM phabbugz WHERE name = 'feed_last_ts'");
-    $last_ts ||= 0;
-    $self->logger->debug("QUERY LAST_TS: $last_ts");
+    my $last_id = $dbh->selectrow_array("
+        SELECT value FROM phabbugz WHERE name = 'feed_last_id'");
+    $last_id ||= 0;
+    $self->logger->debug("QUERY LAST_ID: $last_id");
 
     # Check for new transctions (stories)
-    my $transactions = $self->feed_transactions($last_ts);
+    my $transactions = $self->feed_transactions($last_id);
     if (!@$transactions) {
         $self->logger->info("FEED: No new transactions");
         return;
@@ -75,14 +75,14 @@ sub feed_query {
     # Process each story
     foreach my $story_data (@$transactions) {
         my $skip = 0;
+        my $story_id    = $story_data->{id};
         my $story_phid  = $story_data->{storyPHID};
         my $author_phid = $story_data->{authorPHID};
         my $object_phid = $story_data->{objectPHID};
         my $story_text  = $story_data->{text};
-        my $story_epoch = $story_data->{epoch};
 
+        $self->logger->debug("STORY ID: $story_id");
         $self->logger->debug("STORY PHID: $story_phid");
-        $self->logger->debug("STORY_EPOCH: $story_epoch");
         $self->logger->debug("AUTHOR PHID: $author_phid");
         $self->logger->debug("OBJECT PHID: $object_phid");
         $self->logger->debug("STORY TEXT: $story_text");
@@ -108,11 +108,10 @@ sub feed_query {
             $self->logger->info('SKIPPING');
         }
 
-        # Store the largest last epoch + 1 so we can start from there in the next session
-        $story_epoch++;
-        $self->logger->debug("UPDATING LAST_TS: $story_epoch");
-        $dbh->do("REPLACE INTO phabbugz (name, value) VALUES ('feed_last_ts', ?)",
-                 undef, $story_epoch);
+        # Store the largest last key so we can start from there in the next session
+        $self->logger->debug("UPDATING FEED_LAST_ID: $story_id");
+        $dbh->do("REPLACE INTO phabbugz (name, value) VALUES ('feed_last_id', ?)",
+                 undef, $story_id);
     }
 }
 
@@ -293,19 +292,21 @@ sub process_revision_change {
 }
 
 sub feed_transactions {
-    my ($self, $epoch) = @_;
+    my ($self, $after) = @_;
     my $data = { view => 'text' };
-    $data->{epochStart} = $epoch if $epoch;
-    my $result = request('feed.query_epoch', $data);
+    $data->{after} = $after if $after;
+    my $result = request('feed.query_id', $data);
 
     # Stupid Conduit. If the feed results are empty it returns
     # an empty list ([]). If there is data it returns it in a
     # hash ({}) so we have adjust to be consistent.
-    my $stories = ref $result->{result} eq 'HASH' ? $result->{result} : {};
+    my $stories = ref $result->{result}{data} eq 'HASH'
+                  ? $result->{result}{data}
+                  : {};
 
     # PHP array retain key order but Perl does not. So we will
     # loop over the data and place the stories into a list instead
-    # of a hash. We will then sort the list by ascending epoch.
+    # of a hash. We will then sort the list by id.
     my @story_list;
     foreach my $story_phid (keys %$stories) {
         my $story_data = $stories->{$story_phid};
@@ -313,7 +314,7 @@ sub feed_transactions {
         push(@story_list, $story_data);
     }
 
-    return [ sort { $a->{epoch} <=> $b->{epoch} } @story_list ];
+    return [ sort { $a->{id} <=> $b->{id} } @story_list ];
 }
 
 1;

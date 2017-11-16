@@ -143,11 +143,6 @@ sub create {
 
     my $result = request('project.edit', $data);
 
-    if ($result->{error_code}) {
-        ThrowCodeError('phabricator_api_error',
-            { code => $result->{error_code}, reason => $result->{error_info} });
-    }
-
     return $class->new({ phids => $result->{result}{object}{phid} });
 }
 
@@ -207,11 +202,6 @@ sub update {
 
     my $result = request('project.edit', $data);
 
-    if ($result->{error_code}) {
-        ThrowCodeError('phabricator_api_error',
-            { code => $result->{error_code}, reason => $result->{error_info} });
-    }
-
     return $result;
 }
 
@@ -231,7 +221,7 @@ sub view_policy { return $_[0]->{fields}->{policy}->{view}; }
 sub edit_policy { return $_[0]->{fields}->{policy}->{edit}; }
 sub join_policy { return $_[0]->{fields}->{policy}->{join}; }
 
-sub members_raw { return $_[0]->{atachments}->{members}->{members}; }
+sub members_raw { return $_[0]->{attachments}->{members}->{members}; }
 
 sub members {
     my ($self) = @_;
@@ -241,6 +231,8 @@ sub members {
     foreach my $member (@{ $self->members_raw }) {
         push(@phids, $member->{phid});
     }
+
+    return [] if !@phids;
 
     my $users = get_phab_bmo_ids({ phids => \@phids });
 

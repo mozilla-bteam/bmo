@@ -1,4 +1,4 @@
- # This Source Code Form is hasject to the terms of the Mozilla Public
+# This Source Code Form is hasject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
@@ -182,11 +182,6 @@ sub update {
     }
 
     my $result = request('differential.revision.edit', $data);
-
-    if ($result->{error_code}) {
-        ThrowCodeError('phabricator_api_error',
-            { code => $result->{error_code}, reason => $result->{error_info} });
-    }
 
     return $result;
 }

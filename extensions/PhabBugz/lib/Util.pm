@@ -52,30 +52,20 @@ our @EXPORT = qw(
 
 sub get_revisions_by_ids {
     my ($ids) = @_;
-
-    my $data = {
-        queryKey => 'all',
-        constraints => {
-            ids => $ids
-        }
-    };
-
-    my $result = request('differential.revision.search', $data);
-
-    ThrowUserError('invalid_phabricator_revision_id')
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-    return @{$result->{result}{data}};
+    return _get_revisions({ ids => $ids });
 }
 
 sub get_revisions_by_phids {
     my ($phids) = @_;
+    return _get_revisions({ phids => $phids });
+}
+
+sub _get_revisions {
+    my ($constraints) = @_;
 
     my $data = {
-        queryKey => 'all',
-        constraints => {
-            phids => $phids
-        }
+        queryKey    => 'all',
+        constraints => $constraints
     };
 
     my $result = request('differential.revision.search', $data);
@@ -334,12 +324,7 @@ sub set_project_members {
 sub get_members_by_bmo_id {
     my $users = shift;
 
-    my $data = {
-        accountids => [ map { $_->id } @$users ]
-    };
-
-    my $result = request('bmoexternalaccount.search', $data);
-    return [] if (!$result->{result});
+    my $result = get_phab_bmo_ids({ ids => [ map { $_->id } @$users ] });
 
     my @phab_ids;
     foreach my $user (@{ $result->{result} }) {
@@ -353,9 +338,7 @@ sub get_members_by_bmo_id {
 sub get_members_by_phid {
     my $phids = shift;
 
-    my $data = { phids => $phids };
-
-        my $result = request('bugzilla.account.search', $data);
+    my $result = get_phab_bmo_ids({ phids => $phids });
 
     my @bmo_ids;
     foreach my $user (@{ $result->{result} }) {
@@ -368,8 +351,52 @@ sub get_members_by_phid {
 
 sub get_phab_bmo_ids {
     my ($params) = @_;
+    my $memcache = Bugzilla->memcached;
+
+    # Try to find the values in memcache first
+    my @results;
+    if ($params->{ids}) {
+        my @bmo_ids = @{ $params->{ids} };
+        for (my $i = 0; $i < @bmo_ids; $i++) {
+            my $phid = $memcache->get({ key => "phab_user_bmo_id_" . $bmo_ids[$i] });
+            if ($phid) {
+                push(@results, {
+                    id   => $bmo_ids[$i],
+                    phid => $phid
+                });
+                splice(@bmo_ids, $i, 1);
+            }
+        }
+        $params->{ids} = \@bmo_ids;
+    }
+
+    if ($params->{phids}) {
+        my @phids = @{ $params->{phids} };
+        for (my $i = 0; $i < @phids; $i++) {
+            my $bmo_id = $memcache->get({ key => "phab_user_phid_" . $phids[$i] });
+            if ($bmo_id) {
+                push(@results, {
+                    id   => $bmo_id,
+                    phid => $phids[$i]
+                });
+                splice(@phids, $i, 1);
+            }
+        }
+        $params->{phids} = \@phids;
+    }
+
     my $result = request('bugzilla.account.search', $params);
-    return $result->{result};
+
+    # Store new values in memcache for later retrieval
+    foreach my $user (@{ $result->{result} }) {
+        $memcache->set({ key   => "phab_user_bmo_id_" . $user->{id},
+                         value => $user->{phid} });
+        $memcache->set({ key   => "phab_user_phid_" . $user->{phid},
+                         value => $user->{id} });
+        push(@results, $user);
+    }
+
+    return \@results;
 }
 
 sub is_attachment_phab_revision {
@@ -433,10 +460,12 @@ sub request {
 
     my $result;
     my $result_ok = eval { $result = decode_json( $response->content); 1 };
-    if ( !$result_ok ) {
-        ThrowCodeError(
-            'phabricator_api_error',
-            { reason => 'JSON decode failure' } );
+    if (!$result_ok || $result->{error_code}) {
+        ThrowCodeError('phabricator_api_error',
+            { reason => 'JSON decode failure' }) if !$result_ok;
+        ThrowCodeError('phabricator_api_error',
+            { code   => $result->{error_code},
+              reason => $result->{error_info} }) if $result->{error_code};
     }
 
     return $result;
