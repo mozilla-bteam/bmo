@@ -19,15 +19,53 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     request
 );
 
+use Types::Standard -all;
+
+my $SearchResult = Dict[
+    id     => Int,
+    type   => Str,
+    phid   => Str,
+    fields => Dict[
+        title             => Str,
+        authorPHID        => Str,
+        dateCreated       => Int,
+        dateModified      => Int,
+        policy            => Dict[ view => Str, edit => Str ],
+        "bugzilla.bug-id" => Int,
+    ],
+    attachments => Dict[
+        reviewers => Dict[
+            reviewers => ArrayRef[
+                Dict[
+                    reviewerPHID => Str,
+                    status       => Str,
+                    isBlocking   => Bool,
+                    actorPHID    => Maybe[Str],
+                ],
+            ],
+        ],
+        subscribers => Dict[
+            subscriberPHIDs => ArrayRef[Str],
+            subscriberCount => Int,
+            viewerIsSubscribed => Bool,
+        ],
+        projects => Dict[ projectPHIDs => ArrayRef[Str] ],
+    ],
+];
+
+my $NewParams    = Dict[ phids => ArrayRef[Str] ];
+
 #########################
 #    Initialization     #
 #########################
 
 sub new {
     my ($class, $params) = @_;
-    my $self = $params ? _load($params) : {};
-    bless($self, $class);
-    return $self;
+    $NewParams->assert_valid($params);
+    my $self = _load($params);
+    $SearchResult->assert_valid($self);
+
+    return bless($self, $class);
 }
 
 sub _load {
