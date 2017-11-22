@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -24,7 +24,7 @@ my $dbh = Bugzilla->dbh;
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my $admin_email = shift || 'admin@mozilla.bugs';
-Bugzilla->set_user(Bugzilla::User->check({ name => $admin_email }));
+Bugzilla->set_user( Bugzilla::User->check( { name => $admin_email } ) );
 
 ##########################################################################
 # Create Conduit Test User
@@ -35,13 +35,13 @@ my $conduit_password = $ENV{CONDUIT_PASSWORD} || 'password123456789!';
 my $conduit_api_key  = $ENV{CONDUIT_API_KEY}  || '';
 
 print "creating conduit user account...\n";
-if (!Bugzilla::User->new({ name => $conduit_login })) {
+if ( !Bugzilla::User->new( { name => $conduit_login } ) ) {
     my $new_user = Bugzilla::User->create(
         {
             login_name    => $conduit_login,
             realname      => 'Conduit Test User',
             cryptpassword => $conduit_password
-    },
+        },
     );
 
     if ($conduit_api_key) {
@@ -63,7 +63,7 @@ my $phab_password = $ENV{PHABRICATOR_PASSWORD} || 'password123456789!';
 my $phab_api_key  = $ENV{PHABRICATOR_API_KEY}  || '';
 
 print "creating phabricator automation account...\n";
-if (!Bugzilla::User->new({ name => $phab_login })) {
+if ( !Bugzilla::User->new( { name => $phab_login } ) ) {
     my $new_user = Bugzilla::User->create(
         {
             login_name    => $phab_login,
@@ -88,27 +88,31 @@ if (!Bugzilla::User->new({ name => $phab_login })) {
 my @users_groups = (
     { user => 'conduit@mozilla.bugs', group => 'editbugs' },
     { user => 'conduit@mozilla.bugs', group => 'core-security' },
-    { user => 'phab-bot@bmo.tld', 	  group => 'editbugs' },
-    { user => 'phab-bot@bmo.tld', 	  group => 'core-security' },
+    { user => 'phab-bot@bmo.tld',     group => 'editbugs' },
+    { user => 'phab-bot@bmo.tld',     group => 'core-security' },
 );
 print "adding users to groups...\n";
 foreach my $user_group (@users_groups) {
-	my $group = new Bugzilla::Group( { name => $user_group->{group} } );
-	my $user = new Bugzilla::User( { name => $user_group->{user} } );
-	my $sth_add_mapping = $dbh->prepare(
-		qq{INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)
-		   VALUES (?, ?, ?, ?)});
-	# Don't crash if the entry already exists.
-	eval {
-		$sth_add_mapping->execute( $user->id, $group->id, 0, GRANT_DIRECT );
-	};
+    my $group = Bugzilla::Group->new( { name => $user_group->{group} } );
+    my $user = Bugzilla::User->new( { name => $user_group->{user} } );
+    my $sth_add_mapping = $dbh->prepare(
+        'INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)'
+        . ' VALUES (?, ?, ?, ?)'
+    );
+
+    # Don't crash if the entry already exists.
+    my $ok = eval {
+        $sth_add_mapping->execute( $user->id, $group->id, 0, GRANT_DIRECT );
+        1;
+    };
+    warn $@ unless $ok;
 }
 
 ##########################################################################
 # Create Conduit Test Bug
 ##########################################################################
 print "creating conduit test bug...\n";
-Bugzilla->set_user(Bugzilla::User->check({ name => 'conduit@mozilla.bugs' }));
+Bugzilla->set_user( Bugzilla::User->check( { name => 'conduit@mozilla.bugs' } ) );
 Bugzilla::Bug->create(
     {
         product      => 'Firefox',
@@ -129,15 +133,13 @@ Bugzilla::Bug->create(
 # Set Parameters
 ##########################################################################
 print "setting custom parameters...\n";
-my %set_params = (
-    password_check_on_login => 0,
-);
+my %set_params = ( password_check_on_login => 0, );
 
 my $params_modified;
-foreach my $param (keys %set_params) {
+foreach my $param ( keys %set_params ) {
     my $value = $set_params{$param};
-    next unless defined $value && Bugzilla->params->{$param} ne $value;
-    SetParam($param, $value);
+    next if !$value || Bugzilla->params->{$param} eq $value;
+    SetParam( $param, $value );
     $params_modified = 1;
 }
 
@@ -147,12 +149,14 @@ write_params() if $params_modified;
 # Set Phabricator Push Connector Values
 ##########################################################################
 print "setting push connector options...\n";
-my ($phab_is_configured) = $dbh->selectrow_array(
-    "SELECT COUNT(*) FROM push_options WHERE connector = 'Phabricator'");
+my ($phab_is_configured) = $dbh->selectrow_array('SELECT COUNT(*) FROM push_options WHERE connector = 'Phabricator'');
 unless ($phab_is_configured) {
-    $dbh->do("INSERT INTO push_options (connector, option_name, option_value) VALUES ('global','enabled','Enabled')");
-    $dbh->do("INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','enabled','Enabled')");
-    $dbh->do("INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','phabricator_url','http://phabricator.test')");
+    $dbh->do('INSERT INTO push_options (connector, option_name, option_value) VALUES ('global','enabled','Enabled')');
+    $dbh->do(
+        'INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','enabled','Enabled')');
+    $dbh->do(
+        'INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','phabricator_url','http://phabricator.test')'
+    );
 }
 
 print "installation and configuration complete!\n";
