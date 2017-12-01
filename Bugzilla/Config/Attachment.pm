@@ -62,7 +62,7 @@ sub get_param_list {
 
 sub check_params {
     my ( $class, $params ) = @_;
-    return unless $params->{attachment_storage} eq 's3';
+    return '' unless $params->{attachment_storage} eq 's3';
 
     if (   $params->{s3_bucket} eq ''
         || $params->{aws_access_key_id} eq ''
