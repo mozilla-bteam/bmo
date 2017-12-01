@@ -77,6 +77,7 @@ sub cmd_demo {
 sub cmd_httpd  {
     check_data_dir();
     wait_for_db();
+    check_httpd_env();
     my @httpd_args = (
         '-DFOREGROUND',
         '-f' => '/app/httpd/httpd.conf',
@@ -198,6 +199,8 @@ sub cmd_test_bmo {
 
 sub prove_with_httpd {
     my (%param) = @_;
+
+    check_httpd_env();
 
     unless (-d '/app/logs') {
         mkdir '/app/logs' or die "unable to mkdir(/app/logs): $!\n";
@@ -355,6 +358,16 @@ sub check_env {
     if (@missing_env) {
         die 'Missing required environmental variables: ', join(', ', @missing_env), "\n";
     }
+}
+sub check_httpd_env {
+    check_env(qw(
+        HTTPD_StartServers
+        HTTPD_MinSpareServers
+        HTTPD_MaxSpareServers
+        HTTPD_ServerLimit
+        HTTPD_MaxClients
+        HTTPD_MaxRequestsPerChild
+    ))
 }
 
 sub fix_path {
