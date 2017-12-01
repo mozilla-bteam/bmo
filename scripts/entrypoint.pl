@@ -187,6 +187,8 @@ sub prove_with_httpd {
         mkdir("/app/logs") or die "unable to mkdir(/app/logs): $!\n";
     }
 
+    warn "running prove_with_httpd()\n";
+
     my $httpd_cmd = $param{httpd_cmd};
     my $prove_cmd = $param{prove_cmd};
 
