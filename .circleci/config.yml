@@ -31,6 +31,7 @@ defaults:
     BMO_db_name: bugs
     BMO_memcached_servers: localhost:11211
     BMO_memcached_namespace: "bugzilla:"
+    BMO_urlbase: AUTOMATIC
 
   mysql_env: &mysql_env
     MYSQL_DATABASE: bugs
@@ -56,8 +57,6 @@ defaults:
       command: |
         mv /opt/bmo/local /app/local
         perl -MSys::Hostname -i -pE 's/bmo.test/hostname()/ges' $BZ_QA_CONF_FILE
-        BMO_urlbase='http://$(hostname)/bmo/'
-        export BMO_urlbase
         perl checksetup.pl --no-database --default-localconfig
         mkdir artifacts
 
@@ -102,8 +101,6 @@ jobs:
       - run:
           name: run sanity tests
           command: |
-            BMO_urlbase='http://$(hostname)/bmo/'
-            export BMO_urlbase
             /app/scripts/entrypoint.pl prove -qf $(circleci tests glob 't/*.t' | circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
@@ -116,13 +113,9 @@ jobs:
       - checkout
       - *default_qa_setup
       - run: |
-          BMO_urlbase='http://$(hostname)/bmo/'
-          export BMO_urlbase
           /app/scripts/entrypoint.pl load_test_data
       - run:
           command: |
-            BMO_urlbase="http://$(hostname):$PORT/bmo/"
-            export BMO_urlbase
             /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
@@ -137,13 +130,9 @@ jobs:
       - checkout
       - *default_qa_setup
       - run: |
-          BMO_urlbase="http://$(hostname):$PORT/bmo/"
-          export BMO_urlbase
           /app/scripts/entrypoint.pl load_test_data --legacy
       - run:
           command: |
-            BMO_urlbase="http://$(hostname):$PORT/bmo/"
-            export BMO_urlbase
             /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
@@ -170,15 +159,9 @@ jobs:
       - run: |
           mv /opt/bmo/local /app/local
           perl checksetup.pl --no-database
-          BMO_urlbase="http://$(hostname):$PORT"
-          export BMO_urlbase
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
-      - run: |
-          BZ_BASE_URL="http://$(hostname):$PORT"
-          BMO_urlbase="$BZ_BASE_URL/"
-          export BZ_BASE_URL BMO_urlbase
-          /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
+      - run: /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
       - store_artifacts:
           path: /app/logs
 

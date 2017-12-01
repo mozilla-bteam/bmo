@@ -7,19 +7,20 @@ use lib qw(/app /app/local/lib/perl5);
 use Bugzilla::Install::Localconfig ();
 use Bugzilla::Install::Util qw(install_string);
 use Bugzilla::Test::Util qw(create_user);
+
 use DBI;
 use Data::Dumper;
 use English qw($EUID);
 use File::Copy::Recursive qw(dircopy);
 use Getopt::Long qw(:config gnu_getopt);
-use LWP::Simple qw(get);
-use POSIX qw(WEXITSTATUS setsid);
-use User::pwent;
-
 use IO::Async::Loop;
 use IO::Async::Process;
-use IO::Async::Timer::Periodic;
 use IO::Async::Signal;
+use IO::Async::Timer::Periodic;
+use LWP::Simple qw(get);
+use POSIX qw(WEXITSTATUS setsid);
+use Sys::Hostname;
+use User::pwent;
 
 use constant CI => $ENV{CI};
 
@@ -42,7 +43,12 @@ check_env(qw(
     BMO_memcached_namespace
     BMO_memcached_servers
     BMO_urlbase
-)) unless $cmd eq 'shell';
+));
+
+if ( $ENV{BMO_urlbase} eq 'AUTOMATIC' ) {
+    $ENV{BMO_urlbase} = sprintf "http://%s:%d/%s", hostname(), $ENV{PORT}, $ENV{BZ_QA_LEGACY_MODE} ? "bmo/" : "";
+    $ENV{BZ_BASE_URL} = sprintf "http://%s:%d", hostname(), $ENV{PORT};
+}
 
 $func->($opts->());
 
