@@ -571,15 +571,9 @@ sub bz_setup_database {
     #
     # TABLE_COLLATION IS NOT NULL prevents us from trying to convert views.
     my $non_utf8_tables = $self->selectrow_array(
-<<<<<<< HEAD
         "SELECT 1 FROM information_schema.TABLES
           WHERE TABLE_SCHEMA = ? AND TABLE_COLLATION IS NOT NULL
-                AND TABLE_COLLATION NOT LIKE 'utf8%'
-=======
-        "SELECT 1 FROM information_schema.TABLES 
-          WHERE TABLE_SCHEMA = ? AND TABLE_COLLATION IS NOT NULL 
-                AND TABLE_COLLATION NOT LIKE 'utf8mb4%' 
->>>>>>> c711541ff... Bug 1253535 - Convert to utf8mb4 everywhere (Comments containing non-BMP unicode characters are truncated)
+                AND TABLE_COLLATION NOT LIKE 'utf8mb4%'
           LIMIT 1", undef, $db_name);
 
     if (Bugzilla->params->{'utf8'} && $non_utf8_tables) {
@@ -610,13 +604,8 @@ sub bz_setup_database {
 
                 # If this particular column isn't stored in utf-8
                 if ($column->{Collation}
-<<<<<<< HEAD
                     && $column->{Collation} ne 'NULL'
-                    && $column->{Collation} !~ /utf8/)
-=======
-                    && $column->{Collation} ne 'NULL' 
-                    && $column->{Collation} !~ /utf8mb4/) 
->>>>>>> c711541ff... Bug 1253535 - Convert to utf8mb4 everywhere (Comments containing non-BMP unicode characters are truncated)
+                    && $column->{Collation} !~ /utf8mb4/)
                 {
                     my $name = $column->{Field};
 
@@ -764,11 +753,7 @@ sub _fix_defaults {
 sub _alter_db_charset_to_utf8 {
     my $self = shift;
     my $db_name = Bugzilla->localconfig->{db_name};
-<<<<<<< HEAD
-    $self->do("ALTER DATABASE $db_name CHARACTER SET utf8");
-=======
-    $self->do("ALTER DATABASE $db_name CHARACTER SET utf8mb4"); 
->>>>>>> c711541ff... Bug 1253535 - Convert to utf8mb4 everywhere (Comments containing non-BMP unicode characters are truncated)
+    $self->do("ALTER DATABASE $db_name CHARACTER SET utf8mb4");
 }
 
 sub bz_db_is_utf8 {
