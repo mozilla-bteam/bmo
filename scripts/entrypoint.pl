@@ -10,7 +10,7 @@ use Bugzilla::Test::Util qw(create_user);
 
 use DBI;
 use Data::Dumper;
-use English qw($EUID $OUTPUT_AUTOFLUSH);
+use English qw(-no_match_vars $EUID);
 use File::Copy::Recursive qw(dircopy);
 use Getopt::Long qw(:config gnu_getopt);
 use IO::Async::Loop;
@@ -22,7 +22,10 @@ use POSIX qw(WEXITSTATUS setsid);
 use Sys::Hostname;
 use User::pwent;
 
-BEGIN { $OUTPUT_AUTOFLUSH = 1 }
+BEGIN {
+    STDOUT->autoflush(1);
+    STDERR->autoflush(1);
+}
 
 use constant CI => $ENV{CI};
 
