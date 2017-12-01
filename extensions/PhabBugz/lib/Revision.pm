@@ -33,7 +33,7 @@ my $SearchResult = Dict[
         diffPHID          => Str,
         policy            => Dict[ view => Str, edit => Str ],
         repositoryPHID    => Maybe[Str],
-        status            => Dict,
+        status            => HashRef,
         summary           => Str,
         "bugzilla.bug-id" => Int,
     ],
