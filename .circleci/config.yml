@@ -32,6 +32,12 @@ defaults:
     BMO_memcached_servers: localhost:11211
     BMO_memcached_namespace: "bugzilla:"
     BMO_urlbase: AUTOMATIC
+    HTTPD_StartServers: 1
+    HTTPD_MinSpareServers: 1
+    HTTPD_MaxSpareServers: 1
+    HTTPD_ServerLimit: 1
+    HTTPD_MaxClients: 1
+    HTTPD_MaxRequestsPerChild: 4000
 
   mysql_env: &mysql_env
     MYSQL_DATABASE: bugs
@@ -56,7 +62,7 @@ defaults:
       name: default qa setup
       command: |
         mv /opt/bmo/local /app/local
-        perl -MSys::Hostname -i -pE 's/bmo.test/hostname()/ges' $BZ_QA_CONF_FILE
+        perl -MSys::Hostname -i -pE 's/bmo.test/hostname() . ":$ENV{PORT}"/ges' $BZ_QA_CONF_FILE
         perl checksetup.pl --no-database --default-localconfig
         mkdir artifacts
 

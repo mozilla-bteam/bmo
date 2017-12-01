@@ -10,7 +10,7 @@ use Bugzilla::Test::Util qw(create_user);
 
 use DBI;
 use Data::Dumper;
-use English qw($EUID);
+use English qw($EUID $OUTPUT_AUTOFLUSH);
 use File::Copy::Recursive qw(dircopy);
 use Getopt::Long qw(:config gnu_getopt);
 use IO::Async::Loop;
@@ -21,6 +21,8 @@ use LWP::Simple qw(get);
 use POSIX qw(WEXITSTATUS setsid);
 use Sys::Hostname;
 use User::pwent;
+
+BEGIN { $OUTPUT_AUTOFLUSH = 1 }
 
 use constant CI => $ENV{CI};
 
@@ -193,15 +195,13 @@ sub prove_with_httpd {
         mkdir("/app/logs") or die "unable to mkdir(/app/logs): $!\n";
     }
 
-    warn "running prove_with_httpd()\n";
-
     my $httpd_cmd = $param{httpd_cmd};
     my $prove_cmd = $param{prove_cmd};
 
     my $loop = IO::Async::Loop->new;
 
     my $httpd_exit_f = $loop->new_future;
-    warn "starting httpd\n";
+    say "starting httpd";
     my $httpd = IO::Async::Process->new(
         code => sub {
             setsid();
