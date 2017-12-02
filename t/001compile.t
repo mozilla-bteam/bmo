@@ -17,6 +17,11 @@ use warnings;
 use lib qw(. lib local/lib/perl5 t);
 use Config;
 use Support::Files;
+BEGIN {
+    plan skip_all => 'T::P::C::Progressive required for this test' if $ENV{CI};
+    exit;
+}
+
 use Test::More tests => scalar(@Support::Files::testitems)
                         + scalar(@Support::Files::test_files);
 
