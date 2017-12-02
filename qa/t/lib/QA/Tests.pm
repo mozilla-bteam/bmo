@@ -33,12 +33,12 @@ use constant CREATE_BUG => {
 
     # It's necessary to assign the bug to somebody who isn't in the
     # timetracking group, for the Bug.update tests.
-    'assigned_to'    => PRIVATE_BUG_USER,
-    'summary'        => 'WebService Test Bug',
-    'product'        => 'Another Product',
-    'op_sys'         => 'Linux',
-    'severity'       => 'normal',
-    'qa_contact'     => 'canconfirm',
+    assigned_to      => PRIVATE_BUG_USER,
+    summary          => 'WebService Test Bug',
+    product          => 'Another Product',
+    op_sys           => 'Linux',
+    severity         => 'normal',
+    qa_contact       => 'canconfirm',
     version          => 'Another1',
     url              => 'http://www.bugzilla.org/',
     target_milestone => 'AnotherMS1',

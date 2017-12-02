@@ -28,7 +28,6 @@
 [% PROCESS global/header.html.tmpl
    title = "$terms.Bugzilla Main Page"
    header = "Main Page" 
-   header_addl_info = "version " _ bugzilla_version
    style_urls = [ 'skins/standard/index.css' ]
    no_yui = 1
 %]
@@ -76,7 +75,7 @@
                 <a href="page.cgi?id=etiquette.html">[%- terms.Bugzilla %] Etiquette</a>
               </li>
               <li>
-                | <a href="https://developer.mozilla.org/en/Bug_writing_guidelines">[%- terms.Bug %] Writing Guidelines</a>
+                | <a href="https://developer.mozilla.org/docs/Mozilla/QA/Bug_writing_guidelines">[%- terms.Bug %] Writing Guidelines</a>
               </li>
               [% Hook.process('additional_links') %]
             </ul>
