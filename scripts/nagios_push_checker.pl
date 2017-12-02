@@ -11,9 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
-
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Product;
@@ -46,39 +43,39 @@ EXAMPLES
   nagios_push_checker.pl --connector TCL --warn 25 --alarm 50
 EOF
 
-die($usage) unless GetOptions(
+die($usage)
+    unless GetOptions(
     'connector=s' => \$config->{connector},
     'warn=i'      => \$config->{warn},
     'alarm=i'     => \$config->{alarm},
     'help|?'      => \$config->{help},
-);
+    );
 die $usage if $config->{help} || !$config->{connector};
 
 #
 
-use constant NAGIOS_OK          => 0;
-use constant NAGIOS_WARNING     => 1;
-use constant NAGIOS_CRITICAL    => 2;
-use constant NAGIOS_NAMES       => [qw( OK WARNING CRITICAL )];
+use constant NAGIOS_OK       => 0;
+use constant NAGIOS_WARNING  => 1;
+use constant NAGIOS_CRITICAL => 2;
+use constant NAGIOS_NAMES    => [qw( OK WARNING CRITICAL )];
 
 my $dbh = Bugzilla->switch_to_shadow_db;
 
-my ($count) = $dbh->selectrow_array(
-    "SELECT COUNT(*) FROM push_backlog WHERE connector=?",
-    undef,
-    $config->{connector},
-);
+my ($count)
+    = $dbh->selectrow_array( "SELECT COUNT(*) FROM push_backlog WHERE connector=?", undef, $config->{connector}, );
 
 my $state;
-if ($count >= $config->{alarm}) {
+if ( $count >= $config->{alarm} ) {
     $state = NAGIOS_CRITICAL;
-} elsif ($count >= $config->{warn}) {
+}
+elsif ( $count >= $config->{warn} ) {
     $state = NAGIOS_WARNING;
-} else {
+}
+else {
     $state = NAGIOS_OK;
 }
 
 print "push ", NAGIOS_NAMES->[$state], ": ", $count, " ",
-      "push.", $config->{connector}, " message",
-      ($count == 1 ? '' : 's'), " in backlog\n";
+    "push.", $config->{connector}, " message",
+    ( $count == 1 ? '' : 's' ), " in backlog\n";
 exit $state;

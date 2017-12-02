@@ -69,21 +69,26 @@ use constant APACHE => qw(apachectl httpd apache2 apache);
 
 # If we don't find any of the above binaries in the normal PATH,
 # these are extra places we look.
-use constant APACHE_PATH => [qw(
-    /usr/sbin
-    /usr/local/sbin
-    /usr/libexec
-    /usr/local/libexec
-)];
+use constant APACHE_PATH => [
+    qw(
+        /usr/sbin
+        /usr/local/sbin
+        /usr/libexec
+        /usr/local/libexec
+        )
+];
 
 # This maps features to the files that require that feature in order
 # to compile. It is used by t/001compile.t and mod_perl.pl.
 use constant FEATURE_FILES => (
-    jsonrpc       => ['Bugzilla/WebService/Server/JSONRPC.pm', 'jsonrpc.cgi'],
-    xmlrpc        => ['Bugzilla/WebService/Server/XMLRPC.pm', 'xmlrpc.cgi',
-                      'Bugzilla/WebService.pm', 'Bugzilla/WebService/*.pm'],
-    rest          => ['Bugzilla/API/Server.pm', 'rest.cgi', 'Bugzilla/API/*/*.pm',
-                      'Bugzilla/API/*/Server.pm', 'Bugzilla/API/*/Resource/*.pm'],
+    jsonrpc => [ 'Bugzilla/WebService/Server/JSONRPC.pm', 'jsonrpc.cgi' ],
+    xmlrpc =>
+        [ 'Bugzilla/WebService/Server/XMLRPC.pm', 'xmlrpc.cgi', 'Bugzilla/WebService.pm', 'Bugzilla/WebService/*.pm' ],
+    rest => [
+        'Bugzilla/API/Server.pm', 'rest.cgi',
+        'Bugzilla/API/*/*.pm',    'Bugzilla/API/*/Server.pm',
+        'Bugzilla/API/*/Resource/*.pm'
+    ],
     csp           => ['Bugzilla/CGI/ContentSecurityPolicy.pm'],
     psgi          => ['app.psgi'],
     moving        => ['importxml.pl'],
@@ -91,18 +96,17 @@ use constant FEATURE_FILES => (
     auth_radius   => ['Bugzilla/Auth/Verify/RADIUS.pm'],
     documentation => ['docs/makedocs.pl'],
     inbound_email => ['email_in.pl'],
-    jobqueue      => ['Bugzilla/Job/*', 'Bugzilla/JobQueue.pm',
-                      'Bugzilla/JobQueue/*', 'jobqueue.pl'],
+    jobqueue      => [ 'Bugzilla/Job/*', 'Bugzilla/JobQueue.pm', 'Bugzilla/JobQueue/*', 'jobqueue.pl' ],
     patch_viewer  => ['Bugzilla/Attachment/PatchReader.pm'],
     updates       => ['Bugzilla/Update.pm'],
     mfa           => ['Bugzilla/MFA/*.pm'],
     markdown      => ['Bugzilla/Markdown.pm'],
     memcached     => ['Bugzilla/Memcache.pm'],
-    s3            => ['Bugzilla/S3.pm', 'Bugzilla/S3/Bucket.pm', 'Bugzilla/Attachment/S3.pm']
+    s3 => [ 'Bugzilla/S3.pm', 'Bugzilla/S3/Bucket.pm', 'Bugzilla/Attachment/S3.pm' ]
 );
 
 sub check_all_cpan_features {
-    my ($meta, $dirs, $output) = @_;
+    my ( $meta, $dirs, $output ) = @_;
     my %report;
 
     local $checking_for_indent = 2;
@@ -112,12 +116,12 @@ sub check_all_cpan_features {
     foreach my $feature (@features) {
         next if $feature->identifier eq 'features';
         printf "Feature '%s': %s\n", $feature->identifier, $feature->description if $output;
-        my $result = check_cpan_feature($feature, $dirs, $output);
+        my $result = check_cpan_feature( $feature, $dirs, $output );
         print "\n" if $output;
 
-        $report{$feature->identifier} = {
+        $report{ $feature->identifier } = {
             description => $feature->description,
-            result => $result,
+            result      => $result,
         };
     }
 
@@ -125,28 +129,28 @@ sub check_all_cpan_features {
 }
 
 sub check_cpan_feature {
-    my ($feature, $dirs, $output) = @_;
+    my ( $feature, $dirs, $output ) = @_;
 
-    return _check_prereqs($feature->prereqs, $dirs, $output);
+    return _check_prereqs( $feature->prereqs, $dirs, $output );
 }
 
 sub check_cpan_requirements {
-    my ($meta, $dirs, $output) = @_;
+    my ( $meta, $dirs, $output ) = @_;
 
-    my $result = _check_prereqs($meta->effective_prereqs, $dirs, $output);
-    print colored(install_string('installation_failed'), COLOR_ERROR), "\n" if !$result->{ok} && $output;
+    my $result = _check_prereqs( $meta->effective_prereqs, $dirs, $output );
+    print colored( install_string('installation_failed'), COLOR_ERROR ), "\n" if !$result->{ok} && $output;
     return $result;
 }
 
 sub _check_prereqs {
-    my ($prereqs, $dirs, $output) = @_;
+    my ( $prereqs, $dirs, $output ) = @_;
     $dirs //= \@INC;
     my $reqs = Bugzilla::CPAN->cpan_requirements($prereqs);
     my @found;
     my @missing;
 
-    foreach my $module (sort $reqs->required_modules) {
-        my $ok = _check_module($reqs, $module, $dirs, $output);
+    foreach my $module ( sort $reqs->required_modules ) {
+        my $ok = _check_module( $reqs, $module, $dirs, $output );
         if ($ok) {
             push @found, $module;
         }
@@ -155,36 +159,39 @@ sub _check_prereqs {
         }
     }
 
-    return { ok => (@missing == 0), found => \@found, missing => \@missing };
+    return { ok => ( @missing == 0 ), found => \@found, missing => \@missing };
 }
 
 sub _check_module {
-    my ($reqs, $module, $dirs, $output) = @_;
+    my ( $reqs, $module, $dirs, $output ) = @_;
     my $required_version = $reqs->requirements_for_module($module);
 
-    if ($module eq 'perl') {
-        my $ok = $reqs->accepts_module($module, $]);
-        _checking_for({package => "perl", found => $], wanted => $required_version, ok => $ok}) if $output;
+    if ( $module eq 'perl' ) {
+        my $ok = $reqs->accepts_module( $module, $] );
+        _checking_for( { package => "perl", found => $], wanted => $required_version, ok => $ok } ) if $output;
         return $ok;
-    } else {
-        my $metadata = Module::Metadata->new_from_module($module, inc => $dirs);
+    }
+    else {
+        my $metadata = Module::Metadata->new_from_module( $module, inc => $dirs );
         my $version = eval { $metadata->version };
-        my $ok = $metadata && $version && $reqs->accepts_module($module, $version || 0);
-        _checking_for({package => $module, $version ? ( found => $version ) : (), wanted => $required_version, ok => $ok}) if $output;
+        my $ok = $metadata && $version && $reqs->accepts_module( $module, $version || 0 );
+        _checking_for(
+            { package => $module, $version ? ( found => $version ) : (), wanted => $required_version, ok => $ok } )
+            if $output;
 
         return $ok;
     }
 }
-
 
 sub _get_apachectl {
     foreach my $bin_name (APACHE) {
         my $bin = bin_loc($bin_name);
         return $bin if $bin;
     }
+
     # Try again with a possibly different path.
     foreach my $bin_name (APACHE) {
-        my $bin = bin_loc($bin_name, APACHE_PATH);
+        my $bin = bin_loc( $bin_name, APACHE_PATH );
         return $bin if $bin;
     }
     return undef;
@@ -200,21 +207,21 @@ sub check_webdotbase {
     $return = 1 if -x $webdotbase;
 
     if ($output) {
-        _checking_for({ package => 'GraphViz', ok => $return });
+        _checking_for( { package => 'GraphViz', ok => $return } );
     }
 
-    if (!$return) {
-        print install_string('bad_executable', { bin => $webdotbase }), "\n";
+    if ( !$return ) {
+        print install_string( 'bad_executable', { bin => $webdotbase } ), "\n";
     }
 
     my $webdotdir = bz_locations()->{'webdotdir'};
+
     # Check .htaccess allows access to generated images
-    if (-e "$webdotdir/.htaccess") {
-        my $htaccess = new IO::File("$webdotdir/.htaccess", 'r')
+    if ( -e "$webdotdir/.htaccess" ) {
+        my $htaccess = new IO::File( "$webdotdir/.htaccess", 'r' )
             || die "$webdotdir/.htaccess: " . $!;
-        if (!grep(/ \\\.png\$/, $htaccess->getlines)) {
-            print STDERR install_string('webdot_bad_htaccess',
-                                        { dir => $webdotdir }), "\n";
+        if ( !grep( / \\\.png\$/, $htaccess->getlines ) ) {
+            print STDERR install_string( 'webdot_bad_htaccess', { dir => $webdotdir } ), "\n";
         }
         $htaccess->close;
     }
@@ -234,14 +241,14 @@ sub check_font_file {
     $ttf = 1 if $font_file =~ /\.(ttf|otf)$/;
 
     if ($output) {
-        _checking_for({ package => 'Font file', ok => $readable && $ttf});
+        _checking_for( { package => 'Font file', ok => $readable && $ttf } );
     }
 
-    if (!$readable) {
-        print install_string('bad_font_file', { file => $font_file }), "\n";
+    if ( !$readable ) {
+        print install_string( 'bad_font_file', { file => $font_file } ), "\n";
     }
-    elsif (!$ttf) {
-        print install_string('bad_font_file_name', { file => $font_file }), "\n";
+    elsif ( !$ttf ) {
+        print install_string( 'bad_font_file_name', { file => $font_file } ), "\n";
     }
 
     return $readable && $ttf;
@@ -249,8 +256,7 @@ sub check_font_file {
 
 sub _checking_for {
     my ($params) = @_;
-    my ($package, $ok, $wanted, $blacklisted, $found) =
-        @$params{qw(package ok wanted blacklisted found)};
+    my ( $package, $ok, $wanted, $blacklisted, $found ) = @$params{qw(package ok wanted blacklisted found)};
 
     my $ok_string = $ok ? install_string('module_ok') : '';
 
@@ -258,42 +264,43 @@ sub _checking_for {
     # we have some rather complex logic to determine what we want to
     # show. If we're not checking versions (like for GraphViz) we just
     # show "ok" or "not found".
-    if (exists $params->{found}) {
+    if ( exists $params->{found} ) {
         my $found_string;
+
         # We do a string compare in case it's non-numeric. We make sure
         # it's not a version object as negative versions are forbidden.
-        if ($found && !ref($found) && $found eq '-1') {
+        if ( $found && !ref($found) && $found eq '-1' ) {
             $found_string = install_string('module_not_found');
         }
         elsif ($found) {
-            $found_string = install_string('module_found', { ver => $found });
+            $found_string = install_string( 'module_found', { ver => $found } );
         }
         else {
             $found_string = install_string('module_unknown_version');
         }
         $ok_string = $ok ? "$ok_string: $found_string" : $found_string;
     }
-    elsif (!$ok) {
+    elsif ( !$ok ) {
         $ok_string = install_string('module_not_found');
     }
 
     my $black_string = $blacklisted ? install_string('blacklisted') : '';
-    my $want_string  = $wanted ? "$wanted" : install_string('any');
+    my $want_string = $wanted ? "$wanted" : install_string('any');
 
     my $str = sprintf "%s %20s %-11s $ok_string $black_string\n",
-      ( ' ' x $checking_for_indent ) . install_string('checking_for'),
-      $package, "($want_string)";
-    print $ok ? $str : colored($str, COLOR_ERROR);
+        ( ' ' x $checking_for_indent ) . install_string('checking_for'),
+        $package, "($want_string)";
+    print $ok ? $str : colored( $str, COLOR_ERROR );
 }
 
 # This does a reverse mapping for FEATURE_FILES.
 sub map_files_to_features {
     my %features = FEATURE_FILES;
     my %files;
-    foreach my $feature (keys %features) {
+    foreach my $feature ( keys %features ) {
         my @my_files = @{ $features{$feature} };
         foreach my $pattern (@my_files) {
-            foreach my $file (glob $pattern) {
+            foreach my $file ( glob $pattern ) {
                 $files{$file} = $feature;
             }
         }

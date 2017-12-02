@@ -25,7 +25,7 @@ use Bugzilla::Util;
 # initialisation
 #
 
-use constant DB_TABLE => 'push_backoff';
+use constant DB_TABLE   => 'push_backoff';
 use constant DB_COLUMNS => qw(
     id
     connector
@@ -37,9 +37,9 @@ use constant UPDATE_COLUMNS => qw(
     attempts
 );
 use constant VALIDATORS => {
-    connector        => \&_check_connector,
-    next_attempt_ts  => \&_check_next_attempt_ts,
-    attempts         => \&_check_attempts,
+    connector       => \&_check_connector,
+    next_attempt_ts => \&_check_next_attempt_ts,
+    attempts        => \&_check_attempts,
 };
 use constant LIST_ORDER => 'next_attempt_ts';
 
@@ -47,14 +47,14 @@ use constant LIST_ORDER => 'next_attempt_ts';
 # accessors
 #
 
-sub connector       { return $_[0]->{'connector'};       }
+sub connector       { return $_[0]->{'connector'}; }
 sub next_attempt_ts { return $_[0]->{'next_attempt_ts'}; }
-sub attempts        { return $_[0]->{'attempts'};        }
+sub attempts        { return $_[0]->{'attempts'}; }
 
 sub next_attempt_time {
     my ($self) = @_;
-    if (!exists $self->{'next_attempt_time'}) {
-        $self->{'next_attempt_time'} = datetime_from($self->next_attempt_ts)->epoch;
+    if ( !exists $self->{'next_attempt_time'} ) {
+        $self->{'next_attempt_time'} = datetime_from( $self->next_attempt_ts )->epoch;
     }
     return $self->{'next_attempt_time'};
 }
@@ -66,10 +66,8 @@ sub next_attempt_time {
 sub reset {
     my ($self) = @_;
     $self->{next_attempt_ts} = Bugzilla->dbh->selectrow_array('SELECT NOW()');
-    $self->{attempts} = 0;
-    Bugzilla->push_ext->logger->debug(
-        sprintf("resetting backoff for %s", $self->connector)
-    );
+    $self->{attempts}        = 0;
+    Bugzilla->push_ext->logger->debug( sprintf( "resetting backoff for %s", $self->connector ) );
 }
 
 sub inc {
@@ -77,14 +75,13 @@ sub inc {
     my $dbh = Bugzilla->dbh;
 
     my $attempts = $self->attempts + 1;
-    my $seconds = $attempts <= 4 ? 5 ** $attempts : 15 * 60;
-    my ($date) = $dbh->selectrow_array("SELECT " . $dbh->sql_date_math('NOW()', '+', $seconds, 'SECOND'));
+    my $seconds = $attempts <= 4 ? 5**$attempts : 15 * 60;
+    my ($date) = $dbh->selectrow_array( "SELECT " . $dbh->sql_date_math( 'NOW()', '+', $seconds, 'SECOND' ) );
 
     $self->{next_attempt_ts} = $date;
-    $self->{attempts} = $attempts;
+    $self->{attempts}        = $attempts;
     Bugzilla->push_ext->logger->debug(
-        sprintf("setting next attempt for %s to %s (attempt %s)", $self->connector, $date, $attempts)
-    );
+        sprintf( "setting next attempt for %s to %s (attempt %s)", $self->connector, $date, $attempts ) );
 }
 
 #
@@ -92,18 +89,18 @@ sub inc {
 #
 
 sub _check_connector {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     Bugzilla->push_ext->connectors->exists($value) || ThrowCodeError('push_invalid_connector');
     return $value;
 }
 
 sub _check_next_attempt_ts {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     return $value || Bugzilla->dbh->selectrow_array('SELECT NOW()');
 }
 
 sub _check_attempts {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     return $value || 0;
 }
 

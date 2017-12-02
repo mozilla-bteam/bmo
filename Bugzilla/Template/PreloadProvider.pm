@@ -15,7 +15,7 @@ use warnings;
 use base qw(Template::Provider);
 
 use File::Find ();
-use Cwd ();
+use Cwd        ();
 use File::Spec;
 use Template::Constants qw( STATUS_ERROR );
 use Template::Document;
@@ -34,11 +34,11 @@ sub _init {
     foreach my $template_dir (@$path) {
         $template_dir = Cwd::realpath($template_dir);
         my $wanted = sub {
-            my ( $name, $dir ) = ($File::Find::name, $File::Find::dir);
+            my ( $name, $dir ) = ( $File::Find::name, $File::Find::dir );
             if ( $name =~ /\.tmpl$/ ) {
                 my $key = $name;
                 $key =~ s/^\Q$template_dir\///;
-                unless ($search->{$key}) {
+                unless ( $search->{$key} ) {
                     $search->{$key} = $name;
                 }
                 trick_taint($name);
@@ -47,11 +47,11 @@ sub _init {
                     text => do {
                         open my $fh, '<:utf8', $name or die "cannot open $name";
                         local $/ = undef;
-                        scalar <$fh>; # $fh is closed it goes out of scope
+                        scalar <$fh>;    # $fh is closed it goes out of scope
                     },
-                    time => (stat($name))[9],
+                    time => ( stat($name) )[9],
                 };
-                trick_taint($data->{text}) if $data->{text};
+                trick_taint( $data->{text} ) if $data->{text};
                 $cache->{$name} = $self->_bz_compile($data) or die "compile error: $name";
             }
         };
@@ -62,32 +62,32 @@ sub _init {
 }
 
 sub fetch {
-    my ($self, $name, $prefix) = @_;
+    my ( $self, $name, $prefix ) = @_;
     my $file;
-    if (File::Spec->file_name_is_absolute($name)) {
+    if ( File::Spec->file_name_is_absolute($name) ) {
         $file = $name;
     }
-    elsif ($name =~ m#^\./#) {
+    elsif ( $name =~ m#^\./# ) {
         $file = File::Spec->rel2abs($name);
     }
     else {
         $file = $self->{_BZ_SEARCH}{$name};
     }
 
-    if (not $file) {
-        return ("cannot find file - $name ($file)", STATUS_ERROR);
+    if ( not $file ) {
+        return ( "cannot find file - $name ($file)", STATUS_ERROR );
     }
 
-    if ($self->{_BZ_CACHE}{$file}) {
-        return ($self->{_BZ_CACHE}{$file}, undef);
+    if ( $self->{_BZ_CACHE}{$file} ) {
+        return ( $self->{_BZ_CACHE}{$file}, undef );
     }
     else {
-        return ("unknown file - $file", STATUS_ERROR);
+        return ( "unknown file - $file", STATUS_ERROR );
     }
 }
 
 sub _bz_compile {
-    my ($self, $data) = @_;
+    my ( $self, $data ) = @_;
 
     my $parser = $self->{PARSER} ||= Template::Config->parser( $self->{PARAMS} )
         || return ( Template::Config->error(), STATUS_ERROR );
@@ -96,9 +96,9 @@ sub _bz_compile {
     my $text = delete $data->{text};
 
     # call parser to compile template into Perl code
-    if (my $parsedoc = $parser->parse($text, $data)) {
+    if ( my $parsedoc = $parser->parse( $text, $data ) ) {
         $parsedoc->{METADATA} = {
-            'name' => $data->{name},
+            'name'    => $data->{name},
             'modtime' => $data->{time},
             %{ $parsedoc->{METADATA} },
         };

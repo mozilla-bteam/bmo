@@ -34,7 +34,7 @@ $user_ids = $dbh->selectcol_arrayref(
 
 if (@$user_ids) {
     print "recalculating last_user_activity\n";
-    my ($count, $total) = (0, scalar(@$user_ids));
+    my ( $count, $total ) = ( 0, scalar(@$user_ids) );
     foreach my $user_id (@$user_ids) {
         if ($verbose) {
             $count++;
@@ -50,11 +50,9 @@ if (@$user_ids) {
             last_user_activity($user_id),
             $user_id
         );
-        Bugzilla->memcached->clear({ table => 'profiles', id => $user_id });
+        Bugzilla->memcached->clear( { table => 'profiles', id => $user_id } );
     }
-    $dbh->do(
-        "DELETE FROM profiles_statistics_recalc WHERE " . $dbh->sql_in('user_id', $user_ids)
-    );
+    $dbh->do( "DELETE FROM profiles_statistics_recalc WHERE " . $dbh->sql_in( 'user_id', $user_ids ) );
 }
 
 $user_ids = $dbh->selectcol_arrayref(
@@ -69,7 +67,7 @@ $user_ids = $dbh->selectcol_arrayref(
 
 if (@$user_ids) {
     $verbose && print "updating statistics\n";
-    my ($count, $total) = (0, scalar(@$user_ids));
+    my ( $count, $total ) = ( 0, scalar(@$user_ids) );
     foreach my $user_id (@$user_ids) {
         if ($verbose) {
             $count++;

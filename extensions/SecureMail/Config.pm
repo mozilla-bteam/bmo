@@ -31,9 +31,11 @@ use constant REQUIRED_MODULES => [
     {
         package => 'Crypt-OpenPGP',
         module  => 'Crypt::OpenPGP',
+
         # 1.02 added the ability for new() to take KeyRing objects for the
         # PubRing argument.
         version => '1.02',
+
         # 1.04 hangs - https://rt.cpan.org/Public/Bug/Display.html?id=68018
         # blacklist => [ '1.04' ],
     },

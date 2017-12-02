@@ -18,15 +18,17 @@ use warnings;
 
 use File::Basename;
 use File::Spec;
+
 BEGIN {
     require lib;
-    my $dir = File::Spec->rel2abs(dirname(__FILE__));
-    lib->import($dir, File::Spec->catdir($dir, "lib"), File::Spec->catdir($dir, qw(local lib perl5)));
+    my $dir = File::Spec->rel2abs( dirname(__FILE__) );
+    lib->import( $dir, File::Spec->catdir( $dir, "lib" ), File::Spec->catdir( $dir, qw(local lib perl5) ) );
     chdir($dir);
 }
 
 use Getopt::Long qw(:config bundling);
 use Pod::Usage;
+
 # Bug 1270550 - Tie::Hash::NamedCapture must be loaded before Safe.
 use Tie::Hash::NamedCapture;
 use Safe;
@@ -34,7 +36,7 @@ use Safe;
 use Bugzilla::Constants;
 use Bugzilla::Install::Requirements;
 use Bugzilla::Install::Util qw(install_string get_version_and_os
-                               init_console success);
+    init_console success);
 
 ######################################################################
 # Live Code
@@ -48,38 +50,37 @@ Bugzilla::Install::Util::no_checksetup_from_cgi() if $ENV{'SERVER_SOFTWARE'};
 init_console();
 
 my %switch;
-GetOptions(\%switch, 'help|h|?',
-                     'no-templates|t', 'verbose|v|no-silent',
-                     'cpanm:s', 'check-modules',
-                     'make-admin=s', 'reset-password=s', 'version|V',
-                     'default-localconfig',
-                     'no-database', 'no-permissions|p');
+GetOptions(
+    \%switch,    'help|h|?',            'no-templates|t', 'verbose|v|no-silent',
+    'cpanm:s',   'check-modules',       'make-admin=s',   'reset-password=s',
+    'version|V', 'default-localconfig', 'no-database',    'no-permissions|p'
+);
 
 # Print the help message if that switch was selected.
-pod2usage({-verbose => 1, -exitval => 1}) if $switch{'help'};
+pod2usage( { -verbose => 1, -exitval => 1 } ) if $switch{'help'};
 
 # Read in the "answers" file if it exists, for running in
 # non-interactive mode.
 my $answers_file = $ARGV[0];
 my $silent = $answers_file && !$switch{'verbose'};
-print(install_string('header', get_version_and_os()) . "\n") unless $silent;
+print( install_string( 'header', get_version_and_os() ) . "\n" ) unless $silent;
 exit 0 if $switch{'version'};
 
-if (defined $switch{cpanm}) {
+if ( defined $switch{cpanm} ) {
     my $default = 'all notest -oracle -mysql -pg -mod_perl -old_charts -new_charts -graphical_reports -detect_charset';
-    my @features = split(/\s+/, $switch{cpanm} || $default);
-    my @cpanm_args = ('-l', 'local', '--installdeps');
-    while (my $feature = shift @features) {
-        if ($feature eq 'all') {
+    my @features = split( /\s+/, $switch{cpanm} || $default );
+    my @cpanm_args = ( '-l', 'local', '--installdeps' );
+    while ( my $feature = shift @features ) {
+        if ( $feature eq 'all' ) {
             push @cpanm_args, '--with-all-features';
         }
-        elsif ($feature eq 'default') {
-            unshift @features, split(/\s+/, $default);
+        elsif ( $feature eq 'default' ) {
+            unshift @features, split( /\s+/, $default );
         }
-        elsif ($feature eq 'notest' || $feature eq 'skip-satisfied' || $feature eq 'quiet') {
+        elsif ( $feature eq 'notest' || $feature eq 'skip-satisfied' || $feature eq 'quiet' ) {
             push @cpanm_args, "--$feature";
         }
-        elsif ($feature =~ /^-(.+)$/) {
+        elsif ( $feature =~ /^-(.+)$/ ) {
             push @cpanm_args, "--without-feature=$1";
         }
         else {
@@ -87,29 +88,28 @@ if (defined $switch{cpanm}) {
         }
     }
     print "cpanm @cpanm_args \".\"\n" if !$silent;
-    my $rv = system('cpanm', @cpanm_args, '.');
+    my $rv = system( 'cpanm', @cpanm_args, '.' );
     exit 1 if $rv != 0;
 }
 
 $ENV{PERL_MM_USE_DEFAULT} = 1;
 $ENV{BZ_SILENT_MAKEFILE}  = 1;
-system($^X, "Makefile.PL");
+system( $^X, "Makefile.PL" );
 
-if (! -f "MYMETA.json") {
-    die "Makefile.PL failed to generate a MYMETA.json file.",
-        "Try upgrading ExtUtils::MakeMaker";
+if ( !-f "MYMETA.json" ) {
+    die "Makefile.PL failed to generate a MYMETA.json file.", "Try upgrading ExtUtils::MakeMaker";
 }
 require Bugzilla::CPAN;
 
 my $meta = Bugzilla::CPAN->cpan_meta;
-if (keys %{$meta->{optional_features}} < 1) {
+if ( keys %{ $meta->{optional_features} } < 1 ) {
     die "Your version of ExtUtils::MakeMaker is too old or broken\n";
 }
-my $requirements = check_cpan_requirements($meta, [@INC], !$silent);
+my $requirements = check_cpan_requirements( $meta, [@INC], !$silent );
 
 exit 1 unless $requirements->{ok};
 
-check_all_cpan_features($meta, [@INC], !$silent);
+check_all_cpan_features( $meta, [@INC], !$silent );
 
 exit 0 if $switch{'check-modules'};
 ###########################################################################
@@ -135,7 +135,7 @@ import Bugzilla::Install::Localconfig qw(update_localconfig);
 
 require Bugzilla::Install::Filesystem;
 import Bugzilla::Install::Filesystem qw(update_filesystem create_htaccess
-                                        fix_all_file_permissions);
+    fix_all_file_permissions);
 require Bugzilla::Install::DB;
 require Bugzilla::DB;
 require Bugzilla::Template;
@@ -149,9 +149,9 @@ Bugzilla->installation_answers($answers_file);
 # Check and update --LOCAL-- configuration
 ###########################################################################
 
-unless ($ENV{LOCALCONFIG_ENV}) {
-    print "Reading " .  bz_locations()->{'localconfig'} . "...\n" unless $silent;
-    update_localconfig({ output => !$silent, use_defaults => $switch{'default-localconfig'} });
+unless ( $ENV{LOCALCONFIG_ENV} ) {
+    print "Reading " . bz_locations()->{'localconfig'} . "...\n" unless $silent;
+    update_localconfig( { output => !$silent, use_defaults => $switch{'default-localconfig'} } );
 }
 my $lc_hash = Bugzilla->localconfig;
 
@@ -163,16 +163,19 @@ my $lc_hash = Bugzilla->localconfig;
 # everything we need to create the DB. We have to create it early,
 # because some data required to populate data/params.json is stored in the DB.
 
-unless ($switch{'no-database'}) {
-    Bugzilla::DB::bz_check_requirements(!$silent);
+unless ( $switch{'no-database'} ) {
+    Bugzilla::DB::bz_check_requirements( !$silent );
     Bugzilla::DB::bz_create_database() if $lc_hash->{'db_check'};
 
     # now get a handle to the database:
     my $dbh = Bugzilla->dbh;
+
     # Clear all keys from Memcached to ensure we see the correct schema.
     Bugzilla->memcached->clear_all();
+
     # Create the tables, and do any database-specific schema changes.
     $dbh->bz_setup_database();
+
     # Populate the tables that hold the values for the <select> fields.
     $dbh->bz_populate_enum_tables();
 }
@@ -181,7 +184,7 @@ unless ($switch{'no-database'}) {
 # Check --DATA-- directory
 ###########################################################################
 
-update_filesystem({ index_html => $lc_hash->{'index_html'} });
+update_filesystem( { index_html => $lc_hash->{'index_html'} } );
 create_htaccess() if $lc_hash->{'create_htaccess'};
 
 # Remove parameters from the params file that no longer exist in Bugzilla,
@@ -192,14 +195,14 @@ my %old_params = $switch{'no-database'} ? () : update_params();
 # Pre-compile --TEMPLATE-- code
 ###########################################################################
 
-Bugzilla::Template::precompile_templates(!$silent)
+Bugzilla::Template::precompile_templates( !$silent )
     unless $switch{'no-templates'};
 
 ###########################################################################
 # Set proper rights (--CHMOD--)
 ###########################################################################
 
-fix_all_file_permissions(!$silent) unless $switch{'no-permissions'};
+fix_all_file_permissions( !$silent ) unless $switch{'no-permissions'};
 
 ###########################################################################
 # Check GraphViz setup
@@ -207,7 +210,7 @@ fix_all_file_permissions(!$silent) unless $switch{'no-permissions'};
 
 # If we are using a local 'dot' binary, verify the specified binary exists
 # and that the generated images are accessible.
-check_webdotbase(!$silent) if $lc_hash->{'webdotbase'};
+check_webdotbase( !$silent ) if $lc_hash->{'webdotbase'};
 
 ###########################################################################
 # Check font file setup
@@ -215,13 +218,14 @@ check_webdotbase(!$silent) if $lc_hash->{'webdotbase'};
 
 # If we are using a local font file, verify the specified file exists and
 # that it has the correct extension.
-check_font_file(!$silent) if $lc_hash->{'font_file'};
+check_font_file( !$silent ) if $lc_hash->{'font_file'};
 
 ###########################################################################
 # Changes to the fielddefs --TABLE--
 ###########################################################################
 
-unless ($switch{'no-database'}) {
+unless ( $switch{'no-database'} ) {
+
     # Using Bugzilla::Field's create() or update() depends on the
     # fielddefs table having a modern definition. So, we have to make
     # these particular schema changes before we make any other schema changes.
@@ -233,7 +237,7 @@ unless ($switch{'no-database'}) {
     # Update the tables to the current definition --TABLE--
     ###########################################################################
 
-    Bugzilla::Install::DB::update_table_definitions(\%old_params);
+    Bugzilla::Install::DB::update_table_definitions( \%old_params );
     Bugzilla::Install::init_workflow();
 
     ###########################################################################
@@ -243,7 +247,7 @@ unless ($switch{'no-database'}) {
     Bugzilla::Install::update_system_groups();
 
     # "Log In" as the fake superuser who can do everything.
-    Bugzilla->set_user(Bugzilla::User->super_user);
+    Bugzilla->set_user( Bugzilla::User->super_user );
 
     ###########################################################################
     # Create --SETTINGS-- users can adjust
@@ -255,10 +259,10 @@ unless ($switch{'no-database'}) {
     # Create Administrator  --ADMIN--
     ###########################################################################
 
-    Bugzilla::Install::make_admin($switch{'make-admin'}) if $switch{'make-admin'};
+    Bugzilla::Install::make_admin( $switch{'make-admin'} ) if $switch{'make-admin'};
     Bugzilla::Install::create_admin();
 
-    Bugzilla::Install::reset_password($switch{'reset-password'})
+    Bugzilla::Install::reset_password( $switch{'reset-password'} )
         if $switch{'reset-password'};
 
     ###########################################################################
@@ -267,7 +271,7 @@ unless ($switch{'no-database'}) {
 
     Bugzilla::Install::create_default_product();
 
-    Bugzilla::Hook::process('install_before_final_checks', { silent => $silent });
+    Bugzilla::Hook::process( 'install_before_final_checks', { silent => $silent } );
 
     ###########################################################################
     # Final checks
@@ -277,16 +281,16 @@ unless ($switch{'no-database'}) {
     Bugzilla->memcached->clear_all();
 
     # Reset the mod_perl pre-load list
-    unlink(Bugzilla::Constants::bz_locations()->{datadir} . '/mod_perl_preload');
+    unlink( Bugzilla::Constants::bz_locations()->{datadir} . '/mod_perl_preload' );
 
     # Check if the default parameter for urlbase is still set, and if so, give
     # notification that they should go and visit editparams.cgi
-    if (Bugzilla->params->{'urlbase'} eq '') {
+    if ( Bugzilla->params->{'urlbase'} eq '' ) {
         print "\n" . get_text('install_urlbase_default') . "\n"
             unless $silent;
     }
-    if (!$silent) {
-        success(get_text('install_success'));
+    if ( !$silent ) {
+        success( get_text('install_success') );
     }
 }
 

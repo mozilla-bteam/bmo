@@ -20,22 +20,25 @@ use Getopt::Long;
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my $config = {
+
     # filter by assignee, product or component
-    assignee        => '',
-    product         => '',
-    component       => '',
-    unassigned      => 'nobody@mozilla.org',
+    assignee   => '',
+    product    => '',
+    component  => '',
+    unassigned => 'nobody@mozilla.org',
+
     # severities
-    severity        => 'major,critical,blocker',
+    severity => 'major,critical,blocker',
+
     # time in hours to wait before paging/warning
-    major_alarm     => 24,
-    major_warn      => 20,
-    critical_alarm  => 8,
-    critical_warn   => 5,
-    blocker_alarm   => 0,
-    blocker_warn    => 0,
-    any_alarm       => 24,
-    any_warn        => 20,
+    major_alarm    => 24,
+    major_warn     => 20,
+    critical_alarm => 8,
+    critical_warn  => 5,
+    blocker_alarm  => 0,
+    blocker_warn   => 0,
+    any_alarm      => 24,
+    any_warn       => 20,
 };
 
 my $usage = <<EOF;
@@ -86,60 +89,62 @@ EXAMPLES
     --severity any --any_warn 24 --any_alarm 24
 EOF
 
-die($usage) unless GetOptions(
-    'assignee=s'        => \$config->{assignee},
-    'product=s'         => \$config->{product},
-    'component=s'       => \$config->{component},
-    'severity=s'        => \$config->{severity},
-    'major_alarm=i'     => \$config->{major_alarm},
-    'major_warn=i'      => \$config->{major_warn},
-    'critical_alarm=i'  => \$config->{critical_alarm},
-    'critical_warn=i'   => \$config->{critical_warn},
-    'blocker_alarm=i'   => \$config->{blocker_alarm},
-    'blocker_warn=i'    => \$config->{blocker_warn},
-    'any_alarm=i'       => \$config->{any_alarm},
-    'any_warn=i'        => \$config->{any_warn},
-    'help|?'            => \$config->{help},
-);
+die($usage)
+    unless GetOptions(
+    'assignee=s'       => \$config->{assignee},
+    'product=s'        => \$config->{product},
+    'component=s'      => \$config->{component},
+    'severity=s'       => \$config->{severity},
+    'major_alarm=i'    => \$config->{major_alarm},
+    'major_warn=i'     => \$config->{major_warn},
+    'critical_alarm=i' => \$config->{critical_alarm},
+    'critical_warn=i'  => \$config->{critical_warn},
+    'blocker_alarm=i'  => \$config->{blocker_alarm},
+    'blocker_warn=i'   => \$config->{blocker_warn},
+    'any_alarm=i'      => \$config->{any_alarm},
+    'any_warn=i'       => \$config->{any_warn},
+    'help|?'           => \$config->{help},
+    );
 $config->{assignee} = $ARGV[0] if !$config->{assignee} && @ARGV;
-die $usage if
-    $config->{help}
-    || !($config->{assignee} || $config->{product})
-    || ($config->{assignee} && $config->{product})
-    || ($config->{component} && !$config->{product})
+die $usage
+    if $config->{help}
+    || !( $config->{assignee} || $config->{product} )
+    || ( $config->{assignee}  && $config->{product} )
+    || ( $config->{component} && !$config->{product} )
     || !$config->{severity};
 
 #
 
-use constant NAGIOS_OK          => 0;
-use constant NAGIOS_WARNING     => 1;
-use constant NAGIOS_CRITICAL    => 2;
-use constant NAGIOS_NAMES       => [qw( OK WARNING CRITICAL )];
+use constant NAGIOS_OK       => 0;
+use constant NAGIOS_WARNING  => 1;
+use constant NAGIOS_CRITICAL => 2;
+use constant NAGIOS_NAMES    => [qw( OK WARNING CRITICAL )];
 
-my $dbh = Bugzilla->switch_to_shadow_db;
+my $dbh          = Bugzilla->switch_to_shadow_db;
 my $any_severity = $config->{severity} eq 'any';
-my ($where, @values);
+my ( $where, @values );
 
-if ($config->{assignee}) {
+if ( $config->{assignee} ) {
     $where = 'bugs.assigned_to = ?';
-    push @values, Bugzilla::User->check({ name => $config->{assignee} })->id;
+    push @values, Bugzilla::User->check( { name => $config->{assignee} } )->id;
 
-} elsif ($config->{component}) {
+}
+elsif ( $config->{component} ) {
     $where = 'bugs.product_id = ? AND bugs.component_id = ? AND bugs.assigned_to = ?';
-    my $product = Bugzilla::Product->check({ name => $config->{product} });
+    my $product = Bugzilla::Product->check( { name => $config->{product} } );
     push @values, $product->id;
-    push @values, Bugzilla::Component->check({ product => $product, name => $config->{component} })->id;
-    push @values, Bugzilla::User->check({ name => $config->{unassigned} })->id;
+    push @values, Bugzilla::Component->check( { product => $product, name => $config->{component} } )->id;
+    push @values, Bugzilla::User->check( { name => $config->{unassigned} } )->id;
 
-} else {
+}
+else {
     $where = 'bugs.product_id = ? AND bugs.assigned_to = ?';
-    push @values, Bugzilla::Product->check({ name => $config->{product} })->id;
-    push @values, Bugzilla::User->check({ name => $config->{unassigned} })->id;
+    push @values, Bugzilla::Product->check( { name => $config->{product} } )->id;
+    push @values, Bugzilla::User->check( { name => $config->{unassigned} } )->id;
 }
 
-if (!$any_severity) {
-    $where .= ' AND bug_severity IN (' .
-        join(',', map { $dbh->quote($_) } split(/,/, $config->{severity})) . ')';
+if ( !$any_severity ) {
+    $where .= ' AND bug_severity IN (' . join( ',', map { $dbh->quote($_) } split( /,/, $config->{severity} ) ) . ')';
 }
 
 my $sql = <<EOF;
@@ -150,47 +155,49 @@ my $sql = <<EOF;
 EOF
 
 my $bugs = {
-    'major'     => [],
-    'critical'  => [],
-    'blocker'   => [],
-    'any'       => [],
+    'major'    => [],
+    'critical' => [],
+    'blocker'  => [],
+    'any'      => [],
 };
 my $current_state = NAGIOS_OK;
-my $current_time = time;
+my $current_time  = time;
 
-foreach my $bug (@{ $dbh->selectall_arrayref($sql, { Slice => {} }, @values) }) {
+foreach my $bug ( @{ $dbh->selectall_arrayref( $sql, { Slice => {} }, @values ) } ) {
     my $severity = $any_severity ? 'any' : $bug->{bug_severity};
-    my $age = ($current_time - $bug->{ts}) / 3600;
+    my $age = ( $current_time - $bug->{ts} ) / 3600;
 
-    if ($age > $config->{"${severity}_alarm"}) {
+    if ( $age > $config->{"${severity}_alarm"} ) {
         $current_state = NAGIOS_CRITICAL;
-        push @{$bugs->{$severity}}, $bug->{bug_id};
+        push @{ $bugs->{$severity} }, $bug->{bug_id};
 
-    } elsif ($age > $config->{"${severity}_warn"}) {
-        if ($current_state < NAGIOS_WARNING) {
+    }
+    elsif ( $age > $config->{"${severity}_warn"} ) {
+        if ( $current_state < NAGIOS_WARNING ) {
             $current_state = NAGIOS_WARNING;
         }
-        push @{$bugs->{$severity}}, $bug->{bug_id};
+        push @{ $bugs->{$severity} }, $bug->{bug_id};
 
     }
 }
 
 print "bugs " . NAGIOS_NAMES->[$current_state] . ": ";
-if ($current_state == NAGIOS_OK) {
-    if ($config->{severity} eq 'any') {
+if ( $current_state == NAGIOS_OK ) {
+    if ( $config->{severity} eq 'any' ) {
         print "No unassigned bugs found.";
-    } else {
-        print "No $config->{severity} bugs found."
+    }
+    else {
+        print "No $config->{severity} bugs found.";
     }
 }
 foreach my $severity (qw( blocker critical major any )) {
     my $list = $bugs->{$severity};
     if (@$list) {
         printf
-            "%s %s %s found https://bugzil.la/" . join(',', @$list) . " ",
+            "%s %s %s found https://bugzil.la/" . join( ',', @$list ) . " ",
             scalar(@$list),
-            ($any_severity ? 'unassigned' : $severity),
-            (scalar(@$list) == 1 ? 'bug' : 'bugs');
+            ( $any_severity       ? 'unassigned' : $severity ),
+            ( scalar(@$list) == 1 ? 'bug'        : 'bugs' );
     }
 }
 print "\n";

@@ -32,13 +32,10 @@ my $user_ids = $dbh->selectcol_arrayref(
       ORDER BY userid"
 );
 
-my ($current, $total) = (1, scalar(@$user_ids));
+my ( $current, $total ) = ( 1, scalar(@$user_ids) );
 foreach my $user_id (@$user_ids) {
-    indicate_progress({ current => $current++, total => $total, every => 25 });
+    indicate_progress( { current => $current++, total => $total, every => 25 } );
     my $ts = last_user_activity($user_id);
     next unless $ts;
-    $dbh->do(
-        "UPDATE profiles SET last_activity_ts = ? WHERE userid = ?",
-        undef,
-        $ts, $user_id);
+    $dbh->do( "UPDATE profiles SET last_activity_ts = ? WHERE userid = ?", undef, $ts, $user_id );
 }

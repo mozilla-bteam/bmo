@@ -11,17 +11,15 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
-
 use Bugzilla;
 use Bugzilla::Constants;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-if (Bugzilla->memcached->{memcached}) {
+if ( Bugzilla->memcached->{memcached} ) {
     Bugzilla->memcached->clear_all();
     print "memcached cleared\n";
-} else {
+}
+else {
     print "memcached is not enabled\n";
 }

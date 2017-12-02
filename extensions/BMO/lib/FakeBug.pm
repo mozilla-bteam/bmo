@@ -13,7 +13,7 @@ our $AUTOLOAD;
 
 sub new {
     my $class = shift;
-    my $self = shift;
+    my $self  = shift;
     bless $self, $class;
     return $self;
 }
@@ -27,17 +27,17 @@ sub AUTOLOAD {
 
 sub check_can_change_field {
     my $self = shift;
-    return Bugzilla::Bug::check_can_change_field($self, @_)
+    return Bugzilla::Bug::check_can_change_field( $self, @_ );
 }
 
 sub _changes_everconfirmed {
     my $self = shift;
-    return Bugzilla::Bug::_changes_everconfirmed($self, @_)
+    return Bugzilla::Bug::_changes_everconfirmed( $self, @_ );
 }
 
 sub everconfirmed {
     my $self = shift;
-    return ($self->{'status'} == 'UNCONFIRMED') ? 0 : 1;
+    return ( $self->{'status'} == 'UNCONFIRMED' ) ? 0 : 1;
 }
 
 1;

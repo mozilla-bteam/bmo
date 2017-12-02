@@ -14,11 +14,12 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::WebService::Constants;
+
 BEGIN {
-    if (!Bugzilla->feature('rest')
-        || !Bugzilla->feature('jsonrpc'))
+    if (   !Bugzilla->feature('rest')
+        || !Bugzilla->feature('jsonrpc') )
     {
-        ThrowUserError('feature_disabled', { feature => 'rest' });
+        ThrowUserError( 'feature_disabled', { feature => 'rest' } );
     }
 }
 
@@ -29,15 +30,16 @@ Bugzilla->request_cache->{bzapi} = 1;
 # Strip trailing slash before attempting match
 # otherwise native REST will complain
 my $path_info = Bugzilla->cgi->path_info;
-if ($path_info =~ s'/$'') {
+if ( $path_info =~ s'/$'' ) {
+
     # Remove first slash as cgi->path_info expects it to
     # not be there when setting a new path.
-    Bugzilla->cgi->path_info(substr($path_info, 1));
+    Bugzilla->cgi->path_info( substr( $path_info, 1 ) );
 }
 
 use Bugzilla::WebService::Server::REST;
 Bugzilla->usage_mode(USAGE_MODE_REST);
-local @INC = (bz_locations()->{extensionsdir}, @INC);
+local @INC = ( bz_locations()->{extensionsdir}, @INC );
 my $server = new Bugzilla::WebService::Server::REST;
 $server->version('1.1');
 $server->handle();

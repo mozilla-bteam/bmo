@@ -26,7 +26,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
@@ -42,8 +41,9 @@ my $dbh = Bugzilla->dbh;
 # doesn't contain any information that can't be viewed from a web browser by
 # a user who is not logged in.
 
-my ($dry_run, $from_cron, $keep_attachments, $keep_group_bugs, $keep_groups, $execute,
-    $keep_passwords, $keep_insider, $trace, $enable_email) = (0, 0, 0, '', 0, 0, 0, 0, 0, 0);
+my ($dry_run, $from_cron,      $keep_attachments, $keep_group_bugs, $keep_groups,
+    $execute, $keep_passwords, $keep_insider,     $trace,           $enable_email
+) = ( 0, 0, 0, '', 0, 0, 0, 0, 0, 0 );
 my $keep_group_bugs_sql = '';
 
 my $syntax = <<EOF;
@@ -60,33 +60,34 @@ options:
 --trace            output sql statements
 EOF
 GetOptions(
-    "execute" => \$execute,
-    "dry-run" => \$dry_run,
-    "from-cron" => \$from_cron,
-    "keep-attachments" => \$keep_attachments,
-    "keep-passwords" => \$keep_passwords,
-    "keep-insider" => \$keep_insider,
+    "execute"           => \$execute,
+    "dry-run"           => \$dry_run,
+    "from-cron"         => \$from_cron,
+    "keep-attachments"  => \$keep_attachments,
+    "keep-passwords"    => \$keep_passwords,
+    "keep-insider"      => \$keep_insider,
     "keep-group-bugs:s" => \$keep_group_bugs,
-    "keep-groups" => \$keep_groups,
-    "trace" => \$trace,
-    "enable-email" => \$enable_email,
+    "keep-groups"       => \$keep_groups,
+    "trace"             => \$trace,
+    "enable-email"      => \$enable_email,
 ) or die $syntax;
 die "--execute switch required to perform database sanitization.\n\n$syntax"
     unless $execute or $dry_run;
 
-if ($keep_group_bugs ne '') {
+if ( $keep_group_bugs ne '' ) {
     my @groups;
-    foreach my $group_id (split(/\s*,\s*/, $keep_group_bugs)) {
+    foreach my $group_id ( split( /\s*,\s*/, $keep_group_bugs ) ) {
         my $group;
-        if ($group_id =~ /\D/) {
-            $group = Bugzilla::Group->new({ name => $group_id });
-        } else {
+        if ( $group_id =~ /\D/ ) {
+            $group = Bugzilla::Group->new( { name => $group_id } );
+        }
+        else {
             $group = Bugzilla::Group->new($group_id);
         }
         die "Invalid group '$group_id'\n" unless $group;
         push @groups, $group->id;
     }
-    $keep_group_bugs_sql = "NOT IN (" . join(",", @groups) . ")";
+    $keep_group_bugs_sql = "NOT IN (" . join( ",", @groups ) . ")";
 }
 
 $dbh->{TraceLevel} = 1 if $trace;
@@ -100,7 +101,7 @@ eval {
     delete_secure_bugs();
     delete_deleted_comments();
     delete_insider_comments() unless $keep_insider;
-    delete_security_groups() unless $keep_groups;
+    delete_security_groups()  unless $keep_groups;
     delete_sensitive_user_data();
     delete_attachment_data() unless $keep_attachments;
     delete_bug_user_last_visit();
@@ -116,15 +117,20 @@ if ($@) {
 }
 
 sub delete_non_public_products {
+
     # Delete all non-public products, and all data associated with them
-    my @products = Bugzilla::Product->get_all();
+    my @products  = Bugzilla::Product->get_all();
     my $mandatory = CONTROLMAPMANDATORY;
     foreach my $product (@products) {
+
         # if there are any mandatory groups on the product, nuke it and
         # everything associated with it (including the bugs)
-        Bugzilla->params->{'allowbugdeletion'} = 1; # override this in memory for now
-        my $mandatorygroups = $dbh->selectcol_arrayref("SELECT group_id FROM group_control_map WHERE product_id = ? AND (membercontrol = $mandatory)", undef, $product->id);
-        if (0 < scalar(@$mandatorygroups)) {
+        Bugzilla->params->{'allowbugdeletion'} = 1;    # override this in memory for now
+        my $mandatorygroups
+            = $dbh->selectcol_arrayref(
+            "SELECT group_id FROM group_control_map WHERE product_id = ? AND (membercontrol = $mandatory)",
+            undef, $product->id );
+        if ( 0 < scalar(@$mandatorygroups) ) {
             print "Deleting product '" . $product->name . "'...\n";
             $product->remove_from_db();
         }
@@ -132,6 +138,7 @@ sub delete_non_public_products {
 }
 
 sub delete_secure_bugs {
+
     # Delete all data for bugs in security groups.
     my $buglist = $dbh->selectall_arrayref(
         $keep_group_bugs
@@ -139,8 +146,8 @@ sub delete_secure_bugs {
         : "SELECT DISTINCT bug_id FROM bug_group_map"
     );
     my $numbugs = scalar(@$buglist);
-    my $bugnum = 0;
-    print "Deleting $numbugs bugs in " . ($keep_group_bugs ? 'non-' : '') . "security groups...\n";
+    my $bugnum  = 0;
+    print "Deleting $numbugs bugs in " . ( $keep_group_bugs ? 'non-' : '' ) . "security groups...\n";
     foreach my $row (@$buglist) {
         my $bug_id = $row->[0];
         $bugnum++;
@@ -152,44 +159,63 @@ sub delete_secure_bugs {
 }
 
 sub delete_deleted_comments {
+
     # Delete all comments tagged as 'deleted'
     my $comment_ids = $dbh->selectcol_arrayref("SELECT comment_id FROM longdescs_tags WHERE tag='deleted'");
     return unless @$comment_ids;
     print "Deleting 'deleted' comments...\n";
     my @bug_ids = uniq @{
-        $dbh->selectcol_arrayref("SELECT bug_id FROM longdescs WHERE comment_id IN (" . join(',', @$comment_ids) . ")")
+        $dbh->selectcol_arrayref(
+            "SELECT bug_id FROM longdescs WHERE comment_id IN (" . join( ',', @$comment_ids ) . ")"
+        )
     };
-    $dbh->do("DELETE FROM longdescs WHERE comment_id IN (" . join(',', @$comment_ids) . ")");
+    $dbh->do( "DELETE FROM longdescs WHERE comment_id IN (" . join( ',', @$comment_ids ) . ")" );
     foreach my $bug_id (@bug_ids) {
-        Bugzilla::Bug->new($bug_id)->_sync_fulltext(update_comments => 1);
+        Bugzilla::Bug->new($bug_id)->_sync_fulltext( update_comments => 1 );
     }
 }
 
 sub delete_insider_comments {
+
     # Delete all 'insidergroup' comments and attachments
     print "Deleting 'insidergroup' comments and attachments...\n";
     $dbh->do("DELETE FROM longdescs WHERE isprivate = 1");
-    $dbh->do("DELETE attach_data FROM attachments JOIN attach_data ON attachments.attach_id = attach_data.id WHERE attachments.isprivate = 1");
+    $dbh->do(
+        "DELETE attach_data FROM attachments JOIN attach_data ON attachments.attach_id = attach_data.id WHERE attachments.isprivate = 1"
+    );
     $dbh->do("DELETE FROM attachments WHERE isprivate = 1");
     $dbh->do("UPDATE bugs_fulltext SET comments = comments_noprivate");
 }
 
 sub delete_security_groups {
+
     # Delete all security groups.
-    print "Deleting " . ($keep_group_bugs ? 'non-' : '') . "security groups...\n";
-    $dbh->do("DELETE user_group_map FROM groups JOIN user_group_map ON groups.id = user_group_map.group_id WHERE groups.isbuggroup = 1");
-    $dbh->do("DELETE group_group_map FROM groups JOIN group_group_map ON (groups.id = group_group_map.member_id OR groups.id = group_group_map.grantor_id) WHERE groups.isbuggroup = 1");
-    $dbh->do("DELETE group_control_map FROM groups JOIN group_control_map ON groups.id = group_control_map.group_id WHERE groups.isbuggroup = 1");
-    $dbh->do("UPDATE flagtypes LEFT JOIN groups ON flagtypes.grant_group_id = groups.id SET grant_group_id = NULL WHERE groups.isbuggroup = 1");
-    $dbh->do("UPDATE flagtypes LEFT JOIN groups ON flagtypes.request_group_id = groups.id SET request_group_id = NULL WHERE groups.isbuggroup = 1");
+    print "Deleting " . ( $keep_group_bugs ? 'non-' : '' ) . "security groups...\n";
+    $dbh->do(
+        "DELETE user_group_map FROM groups JOIN user_group_map ON groups.id = user_group_map.group_id WHERE groups.isbuggroup = 1"
+    );
+    $dbh->do(
+        "DELETE group_group_map FROM groups JOIN group_group_map ON (groups.id = group_group_map.member_id OR groups.id = group_group_map.grantor_id) WHERE groups.isbuggroup = 1"
+    );
+    $dbh->do(
+        "DELETE group_control_map FROM groups JOIN group_control_map ON groups.id = group_control_map.group_id WHERE groups.isbuggroup = 1"
+    );
+    $dbh->do(
+        "UPDATE flagtypes LEFT JOIN groups ON flagtypes.grant_group_id = groups.id SET grant_group_id = NULL WHERE groups.isbuggroup = 1"
+    );
+    $dbh->do(
+        "UPDATE flagtypes LEFT JOIN groups ON flagtypes.request_group_id = groups.id SET request_group_id = NULL WHERE groups.isbuggroup = 1"
+    );
     if ($keep_group_bugs) {
         $dbh->do("DELETE FROM groups WHERE isbuggroup = 1 AND id $keep_group_bugs_sql");
-    } else {
+    }
+    else {
         $dbh->do("DELETE FROM groups WHERE isbuggroup = 1");
     }
 }
 
 sub delete_sensitive_user_data {
+
     # Remove sensitive user account data.
     print "Deleting sensitive user account data...\n";
     $dbh->do("UPDATE profiles SET cryptpassword = 'deleted'") unless $keep_passwords;
@@ -202,6 +228,7 @@ sub delete_sensitive_user_data {
     $dbh->do("DELETE FROM logincookies");
     $dbh->do("DELETE FROM login_failure");
     $dbh->do("DELETE FROM audit_log");
+
     # queued bugmail
     $dbh->do("DELETE FROM ts_error");
     $dbh->do("DELETE FROM ts_exitstatus");
@@ -211,6 +238,7 @@ sub delete_sensitive_user_data {
 }
 
 sub delete_attachment_data {
+
     # Delete unnecessary attachment data.
     print "Removing attachment data...\n";
     $dbh->do("UPDATE attach_data SET thedata = ''");
@@ -228,6 +256,7 @@ sub delete_user_request_log {
 }
 
 sub disable_email_delivery {
+
     # turn off email delivery for all users.
     print "Turning off email delivery...\n";
     $dbh->do("UPDATE profiles SET disable_mail = 1");

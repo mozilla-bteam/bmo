@@ -10,14 +10,13 @@ use 5.10.1;
 use Moo::Role;
 use Search::Elasticsearch;
 
-
-has 'client' => (is => 'lazy');
+has 'client' => ( is => 'lazy' );
 
 sub _build_client {
     my ($self) = @_;
 
     return Search::Elasticsearch->new(
-        nodes => [ split(/\s+/, Bugzilla->params->{elasticsearch_nodes}) ],
+        nodes    => [ split( /\s+/, Bugzilla->params->{elasticsearch_nodes} ) ],
         cxn_pool => 'Sniff',
     );
 }

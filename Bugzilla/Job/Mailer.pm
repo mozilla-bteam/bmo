@@ -17,25 +17,27 @@ BEGIN { eval "use base qw(TheSchwartz::Worker)"; }
 
 # The longest we expect a job to possibly take, in seconds.
 use constant grab_for => 300;
+
 # We don't want email to fail permanently very easily. Retry for 30 days.
 use constant max_retries => 725;
 
 # The first few retries happen quickly, but after that we wait an hour for
 # each retry.
 sub retry_delay {
-    my ($class, $num_retries) = @_;
-    if ($num_retries < 5) {
-        return (10, 30, 60, 300, 600)[$num_retries];
+    my ( $class, $num_retries ) = @_;
+    if ( $num_retries < 5 ) {
+        return ( 10, 30, 60, 300, 600 )[$num_retries];
     }
+
     # One hour
-    return 60*60;
+    return 60 * 60;
 }
 
 sub work {
-    my ($class, $job) = @_;
-    eval { $class->process_job($job->arg) };
-    if (my $error = $@) {
-        if ($error eq EMAIL_LIMIT_EXCEPTION) {
+    my ( $class, $job ) = @_;
+    eval { $class->process_job( $job->arg ) };
+    if ( my $error = $@ ) {
+        if ( $error eq EMAIL_LIMIT_EXCEPTION ) {
             $job->declined();
         }
         else {
@@ -49,8 +51,8 @@ sub work {
 }
 
 sub process_job {
-    my ($class, $arg) = @_;
-    MessageToMTA($arg->{msg}, 1);
+    my ( $class, $arg ) = @_;
+    MessageToMTA( $arg->{msg}, 1 );
 }
 
 1;

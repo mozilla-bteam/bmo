@@ -22,38 +22,42 @@ use constant PUBLIC_METHODS => qw(
 );
 
 sub comments {
-    my ($self, $params) = validate(@_, 'comment_ids');
+    my ( $self, $params ) = validate( @_, 'comment_ids' );
     my $dbh  = Bugzilla->switch_to_shadow_db();
     my $user = Bugzilla->user;
 
-    if (!defined $params->{comment_ids}) {
-        ThrowCodeError('param_required',
-                       { function => 'Bug.comments',
-                         param    => 'comment_ids' });
+    if ( !defined $params->{comment_ids} ) {
+        ThrowCodeError(
+            'param_required',
+            {
+                function => 'Bug.comments',
+                param    => 'comment_ids'
+            }
+        );
     }
 
     my @ids = map { trim($_) } @{ $params->{comment_ids} || [] };
-    my $comment_data = Bugzilla::Comment->new_from_list(\@ids);
+    my $comment_data = Bugzilla::Comment->new_from_list( \@ids );
 
     # See if we were passed any invalid comment ids.
     my %got_ids = map { $_->id => 1 } @$comment_data;
     foreach my $comment_id (@ids) {
-        if (!$got_ids{$comment_id}) {
-            ThrowUserError('comment_id_invalid', { id => $comment_id });
+        if ( !$got_ids{$comment_id} ) {
+            ThrowUserError( 'comment_id_invalid', { id => $comment_id } );
         }
     }
 
     # Now make sure that we can see all the associated bugs.
     my %got_bug_ids = map { $_->bug_id => 1 } @$comment_data;
-    $user->visible_bugs([ keys %got_bug_ids ]); # preload cache for visibility check
-    Bugzilla::Bug->check($_) foreach (keys %got_bug_ids);
+    $user->visible_bugs( [ keys %got_bug_ids ] );    # preload cache for visibility check
+    Bugzilla::Bug->check($_) foreach ( keys %got_bug_ids );
 
     my %comments;
     foreach my $comment (@$comment_data) {
-        if ($comment->is_private && !$user->is_insider) {
-            ThrowUserError('comment_is_private', { id => $comment->id });
+        if ( $comment->is_private && !$user->is_insider ) {
+            ThrowUserError( 'comment_is_private', { id => $comment->id } );
         }
-        $comments{$comment->id} = $comment->body;
+        $comments{ $comment->id } = $comment->body;
     }
 
     return { comments => \%comments };
@@ -61,7 +65,8 @@ sub comments {
 
 sub rest_resources {
     return [
-        qr{^/editcomments/comment/(\d+)$}, {
+        qr{^/editcomments/comment/(\d+)$},
+        {
             GET => {
                 method => 'comments',
                 params => sub {
@@ -69,14 +74,14 @@ sub rest_resources {
                 },
             },
         },
-        qr{^/editcomments/comment$}, {
+        qr{^/editcomments/comment$},
+        {
             GET => {
                 method => 'comments',
             },
         },
     ];
-};
-
+}
 
 1;
 

@@ -42,6 +42,7 @@ use constant REQUIRED_MODULES => [
 ];
 
 use constant OPTIONAL_MODULES => [
+
     # connectors need the ability to extend this
     {
         package => 'Net-SFTP',

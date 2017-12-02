@@ -62,61 +62,59 @@ use constant IGNORE_FIELDS => qw(
 
 # override the description of some fields
 
-use constant FIELD_DESCRIPTION_OVERRIDE => {
-    bug_id => 'Bug Created',
-};
+use constant FIELD_DESCRIPTION_OVERRIDE => { bug_id => 'Bug Created', };
 
 # relationship / int mappings
 # _should_drop() also needs updating when this const is changed
 
 use constant FILTER_RELATIONSHIPS => [
     {
-        name    => 'Assignee',
-        value   => 1,
+        name  => 'Assignee',
+        value => 1,
     },
     {
-        name    => 'Not Assignee',
-        value   => 2,
+        name  => 'Not Assignee',
+        value => 2,
     },
     {
-        name    => 'Reporter',
-        value   => 3,
+        name  => 'Reporter',
+        value => 3,
     },
     {
-        name    => 'Not Reporter',
-        value   => 4,
+        name  => 'Not Reporter',
+        value => 4,
     },
     {
-        name    => 'QA Contact',
-        value   => 5,
+        name  => 'QA Contact',
+        value => 5,
     },
     {
-        name    => 'Not QA Contact',
-        value   => 6,
+        name  => 'Not QA Contact',
+        value => 6,
     },
     {
-        name    => "CC'ed",
-        value   => 7,
+        name  => "CC'ed",
+        value => 7,
     },
     {
-        name    => "Not CC'ed",
-        value   => 8,
+        name  => "Not CC'ed",
+        value => 8,
     },
     {
-        name    => 'Watching',
-        value   => 9,
+        name  => 'Watching',
+        value => 9,
     },
     {
-        name    => 'Not Watching',
-        value   => 10,
+        name  => 'Not Watching',
+        value => 10,
     },
     {
-        name    => 'Mentoring',
-        value   => 11,
+        name  => 'Mentoring',
+        value => 11,
     },
     {
-        name    => 'Not Mentoring',
-        value   => 12,
+        name  => 'Not Mentoring',
+        value => 12,
     },
 ];
 

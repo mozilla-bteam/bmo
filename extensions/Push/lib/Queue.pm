@@ -17,7 +17,7 @@ use Bugzilla::Extension::Push::Message;
 sub new {
     my ($class) = @_;
     my $self = {};
-    bless($self, $class);
+    bless( $self, $class );
     return $self;
 }
 
@@ -29,43 +29,43 @@ sub count {
 
 sub oldest {
     my ($self) = @_;
-    my @messages = $self->list(limit => 1);
+    my @messages = $self->list( limit => 1 );
     return scalar(@messages) ? $messages[0] : undef;
 }
 
 sub by_id {
-    my ($self, $id) = @_;
+    my ( $self, $id ) = @_;
     my @messages = $self->list(
-        limit => 1,
+        limit  => 1,
         filter => "AND (push.id = $id)",
     );
     return scalar(@messages) ? $messages[0] : undef;
 }
 
 sub list {
-    my ($self, %args) = @_;
-    $args{limit} ||= 10;
+    my ( $self, %args ) = @_;
+    $args{limit}  ||= 10;
     $args{filter} ||= '';
     my @result;
     my $dbh = Bugzilla->dbh;
 
-    my $sth = $dbh->prepare("
+    my $sth = $dbh->prepare( "
         SELECT id, push_ts, payload, change_set, routing_key
           FROM push
-         WHERE (1 = 1) " .
-               $args{filter} . "
-         ORDER BY push_ts " .
-         $dbh->sql_limit($args{limit})
-    );
+         WHERE (1 = 1) " . $args{filter} . "
+         ORDER BY push_ts " . $dbh->sql_limit( $args{limit} ) );
     $sth->execute();
-    while (my $row = $sth->fetchrow_hashref()) {
-        push @result, Bugzilla::Extension::Push::Message->new({
-            id          => $row->{id},
-            push_ts     => $row->{push_ts},
-            payload     => $row->{payload},
-            change_set  => $row->{change_set},
-            routing_key => $row->{routing_key},
-        });
+    while ( my $row = $sth->fetchrow_hashref() ) {
+        push @result,
+            Bugzilla::Extension::Push::Message->new(
+            {
+                id          => $row->{id},
+                push_ts     => $row->{push_ts},
+                payload     => $row->{payload},
+                change_set  => $row->{change_set},
+                routing_key => $row->{routing_key},
+            }
+            );
     }
     return @result;
 }

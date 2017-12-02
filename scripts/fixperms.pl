@@ -23,8 +23,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
 use Bugzilla;
 use Bugzilla::Install::Filesystem qw(fix_all_file_permissions);
 fix_all_file_permissions(1);

@@ -36,8 +36,8 @@ sub get_param_list {
             default => '',
         },
         {
-            name => 'phabricator_api_key',
-            type => 't',
+            name    => 'phabricator_api_key',
+            type    => 't',
             default => '',
         },
         {
@@ -51,8 +51,8 @@ sub get_param_list {
             }
         },
         {
-            name => 'phabricator_app_id',
-            type => 't',
+            name    => 'phabricator_app_id',
+            type    => 't',
             default => '',
             checker => sub {
                 my ($app_id) = (@_);

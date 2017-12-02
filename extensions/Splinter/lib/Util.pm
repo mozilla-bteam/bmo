@@ -51,17 +51,17 @@ use base qw(Exporter);
 # Returns an attachment object.
 # Based on code from attachment.cgi
 sub attachment_id_is_valid {
-    my ($attach_id, $dont_validate_access) = @_;
+    my ( $attach_id, $dont_validate_access ) = @_;
 
     # Validate the specified attachment id.
     detaint_natural($attach_id) || return 0;
 
     # Make sure the attachment exists in the database.
-    my $attachment = new Bugzilla::Attachment({ id => $attach_id, cache => 1 })
-      || return 0;
+    my $attachment = new Bugzilla::Attachment( { id => $attach_id, cache => 1 } )
+        || return 0;
 
     return $attachment
-        if ($dont_validate_access || attachment_is_visible($attachment));
+        if ( $dont_validate_access || attachment_is_visible($attachment) );
 }
 
 # Checks if the current user can see an attachment
@@ -71,18 +71,20 @@ sub attachment_is_visible {
 
     $attachment->isa('Bugzilla::Attachment') || return 0;
 
-    return (Bugzilla->user->can_see_bug($attachment->bug->id)
-            && (!$attachment->isprivate
-                || Bugzilla->user->id == $attachment->attacher->id
-                || Bugzilla->user->is_insider));
+    return (
+        Bugzilla->user->can_see_bug( $attachment->bug->id ) && ( !$attachment->isprivate
+            || Bugzilla->user->id == $attachment->attacher->id
+            || Bugzilla->user->is_insider )
+    );
 }
 
 sub attachment_id_is_patch {
-    my $attach_id = shift;
+    my $attach_id  = shift;
     my $attachment = attachment_id_is_valid($attach_id);
-    return ($attachment
-            && ($attachment->ispatch
-                || ($attachment->contenttype eq "text/x-github-pull-request" && $attachment->external_redirect)));
+    return (
+        $attachment && ( $attachment->ispatch
+            || ( $attachment->contenttype eq "text/x-github-pull-request" && $attachment->external_redirect ) )
+    );
 }
 
 sub get_review_base {
@@ -95,20 +97,19 @@ sub get_review_base {
 }
 
 sub get_review_url {
-    my ($bug, $attach_id) = @_;
-    my $base = get_review_base();
+    my ( $bug, $attach_id ) = @_;
+    my $base   = get_review_base();
     my $bug_id = $bug->id;
-    return $base . ($base =~ /\?/ ? '&' : '?') . "bug=$bug_id&attachment=$attach_id";
+    return $base . ( $base =~ /\?/ ? '&' : '?' ) . "bug=$bug_id&attachment=$attach_id";
 }
 
 sub get_review_link {
-    my ($attach_id, $link_text) = @_;
+    my ( $attach_id, $link_text ) = @_;
 
     my $attachment = attachment_id_is_valid($attach_id);
 
-    if (attachment_id_is_patch($attach_id)) {
-        return "<a href='" . html_quote(get_review_url($attachment->bug, $attach_id)) .
-               "'>$link_text</a>";
+    if ( attachment_id_is_patch($attach_id) ) {
+        return "<a href='" . html_quote( get_review_url( $attachment->bug, $attach_id ) ) . "'>$link_text</a>";
     }
     else {
         return $link_text;
@@ -116,12 +117,14 @@ sub get_review_link {
 }
 
 sub munge_create_attachment {
-    my ($bug, $intro_text, $attach_id, $view_link) = @_;
+    my ( $bug, $intro_text, $attach_id, $view_link ) = @_;
 
-    if (attachment_id_is_patch($attach_id)) {
-        return ("$intro_text" .
-                " View: $view_link\015\012" .
-                " Review: " . get_review_url($bug, $attach_id, 1) . "\015\012");
+    if ( attachment_id_is_patch($attach_id) ) {
+        return (  "$intro_text"
+                . " View: $view_link\015\012"
+                . " Review: "
+                . get_review_url( $bug, $attach_id, 1 )
+                . "\015\012" );
     }
     else {
         return ("$intro_text --> ($view_link)");
@@ -143,22 +146,22 @@ sub add_review_links_to_email {
     my $new_body = 0;
     my $bug;
 
-    if ($email->header('Subject') =~ /^\[Bug\s+(\d+)\]/
-        && Bugzilla->user->can_see_bug($1))
+    if ( $email->header('Subject') =~ /^\[Bug\s+(\d+)\]/
+        && Bugzilla->user->can_see_bug($1) )
     {
-        $bug = Bugzilla::Bug->new({ id => $1, cache => 1 });
+        $bug = Bugzilla::Bug->new( { id => $1, cache => 1 } );
     }
 
     return unless defined $bug;
 
-    if ($body =~ /Review\s+of\s+attachment\s+\d+\s*:/) {
+    if ( $body =~ /Review\s+of\s+attachment\s+\d+\s*:/ ) {
         $body =~ s~(Review\s+of\s+attachment\s+(\d+)\s*:)
                   ~"$1\015\012 --> (" . get_review_url($bug, $2, 1) . ")"
                   ~egx;
         $new_body = 1;
     }
 
-    if ($body =~ /Created attachment \d+\015\012 --> /) {
+    if ( $body =~ /Created attachment \d+\015\012 --> / ) {
         $body =~ s~(Created\ attachment\ (\d+)\015\012)
                    \ -->\ \(([^\015\012]*)\)[^\015\012]*
                   ~munge_create_attachment($bug, $1, $2, $3)
@@ -176,16 +179,17 @@ sub _fix_encoding {
     return if $part->parts > 1;
 
     # nothing to do if the part already has a charset
-    my $ct = parse_content_type($part->content_type);
-    my $charset = $ct->{attributes}{charset}
+    my $ct = parse_content_type( $part->content_type );
+    my $charset
+        = $ct->{attributes}{charset}
         ? $ct->{attributes}{charset}
         : '';
     return unless !$charset || $charset eq 'us-ascii';
 
-    if (Bugzilla->params->{utf8}) {
+    if ( Bugzilla->params->{utf8} ) {
         $part->charset_set('UTF-8');
         my $raw = $part->body_raw;
-        if (utf8::is_utf8($raw)) {
+        if ( utf8::is_utf8($raw) ) {
             utf8::encode($raw);
             $part->body_set($raw);
         }

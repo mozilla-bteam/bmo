@@ -17,7 +17,7 @@ use Type::Utils;
 
 use Bugzilla::Util qw(generate_random_password);
 
-my $SRC_KEYWORD = enum['none', 'self', 'unsafe-inline', 'unsafe-eval', 'nonce'];
+my $SRC_KEYWORD = enum [ 'none', 'self', 'unsafe-inline', 'unsafe-eval', 'nonce' ];
 my $SRC_URI = declare as Str, where {
     $_ =~ m{
         ^(?: https?:// )?  # optional http:// or https://
@@ -25,33 +25,35 @@ my $SRC_URI = declare as Str, where {
         (?: :[0-9]+ )?     # optional port
     }x;
 };
-my $SRC      = $SRC_KEYWORD | $SRC_URI;
-my $SOURCE_LIST = ArrayRef[$SRC];
-my $REFERRER_KEYWORD = enum [qw(
-    no-referrer no-referrer-when-downgrade
-    origin      origin-when-cross-origin unsafe-url
-)];
+my $SRC              = $SRC_KEYWORD | $SRC_URI;
+my $SOURCE_LIST      = ArrayRef [$SRC];
+my $REFERRER_KEYWORD = enum [
+    qw(
+        no-referrer no-referrer-when-downgrade
+        origin      origin-when-cross-origin unsafe-url
+        )
+];
 
 my @ALL_BOOL = qw( sandbox upgrade_insecure_requests );
-my @ALL_SRC = qw(
+my @ALL_SRC  = qw(
     default_src child_src  connect_src
     font_src    img_src    media_src
     object_src  script_src style_src
     frame_ancestors form_action
 );
 
-has \@ALL_SRC     => ( is => 'ro', isa => $SOURCE_LIST, predicate => 1 );
-has \@ALL_BOOL    => ( is => 'ro', isa => Bool, default => 0 );
-has 'report_uri'  => ( is => 'ro', isa => Str, predicate => 1 );
-has 'base_uri'    => ( is => 'ro', isa => Str, predicate => 1 );
+has \@ALL_SRC => ( is => 'ro', isa => $SOURCE_LIST, predicate => 1 );
+has \@ALL_BOOL   => ( is => 'ro', isa => Bool, default   => 0 );
+has 'report_uri' => ( is => 'ro', isa => Str,  predicate => 1 );
+has 'base_uri'   => ( is => 'ro', isa => Str,  predicate => 1 );
 has 'report_only' => ( is => 'ro', isa => Bool );
-has 'referrer'    => ( is => 'ro', isa => $REFERRER_KEYWORD, predicate => 1 );
-has 'value'       => ( is => 'lazy' );
-has 'nonce'       => ( is => 'lazy', init_arg => undef, predicate => 1 );
-has 'disable'     => ( is => 'ro', isa => Bool, default => 0 );
+has 'referrer' => ( is => 'ro', isa => $REFERRER_KEYWORD, predicate => 1 );
+has 'value'   => ( is => 'lazy' );
+has 'nonce'   => ( is => 'lazy', init_arg => undef, predicate => 1 );
+has 'disable' => ( is => 'ro', isa => Bool, default => 0 );
 
 sub _has_directive {
-    my ($self, $directive) = @_;
+    my ( $self, $directive ) = @_;
     my $method = 'has_' . $directive;
     return $self->$method;
 }
@@ -59,7 +61,7 @@ sub _has_directive {
 sub header_names {
     my ($self) = @_;
     my @names = ('Content-Security-Policy');
-    if ($self->report_only) {
+    if ( $self->report_only ) {
         return map { $_ . '-Report-Only' } @names;
     }
     else {
@@ -68,9 +70,9 @@ sub header_names {
 }
 
 sub add_cgi_headers {
-    my ($self, $headers) = @_;
+    my ( $self, $headers ) = @_;
     return if $self->disable;
-    foreach my $name ($self->header_names) {
+    foreach my $name ( $self->header_names ) {
         $headers->{"-$name"} = $self->value;
     }
 }
@@ -79,7 +81,7 @@ sub _build_value {
     my $self = shift;
     my @result;
 
-    my @list_directives = (@ALL_SRC);
+    my @list_directives    = (@ALL_SRC);
     my @boolean_directives = (@ALL_BOOL);
     my @single_directives  = qw(report_uri base_uri);
 
@@ -87,25 +89,25 @@ sub _build_value {
         next unless $self->_has_directive($directive);
         my @values = map { $self->_quote($_) } @{ $self->$directive };
         if (@values) {
-            push @result, join(' ', _name($directive), @values);
+            push @result, join( ' ', _name($directive), @values );
         }
     }
 
     foreach my $directive (@single_directives) {
         next unless $self->_has_directive($directive);
         my $value = $self->$directive;
-        if (defined $value) {
+        if ( defined $value ) {
             push @result, _name($directive) . ' ' . $value;
         }
     }
 
     foreach my $directive (@boolean_directives) {
-        if ($self->$directive) {
+        if ( $self->$directive ) {
             push @result, _name($directive);
         }
     }
 
-    return join('; ', @result);
+    return join( '; ', @result );
 }
 
 sub _build_nonce {
@@ -119,20 +121,18 @@ sub _name {
 }
 
 sub _quote {
-    my ($self, $val) = @_;
+    my ( $self, $val ) = @_;
 
-    if ($val eq 'nonce') {
+    if ( $val eq 'nonce' ) {
         return q{'nonce-} . $self->nonce . q{'};
     }
-    elsif ($SRC_KEYWORD->check($val)) {
+    elsif ( $SRC_KEYWORD->check($val) ) {
         return qq{'$val'};
     }
     else {
         return $val;
     }
 }
-
-
 
 1;
 

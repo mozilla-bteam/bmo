@@ -11,7 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 BEGIN { Bugzilla->extensions() }
 
@@ -29,7 +28,7 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 my $dbh = Bugzilla->dbh;
 
 # Record any changes as made by the automation user
-my $auto_user = Bugzilla::User->check({ name => 'automation@bmo.tld' });
+my $auto_user = Bugzilla::User->check( { name => 'automation@bmo.tld' } );
 
 my $expired = $dbh->selectall_arrayref(
     "SELECT DISTINCT profiles.userid AS user_id,
@@ -48,27 +47,27 @@ exit(0) if !@$expired;
 
 my %remove_data = ();
 foreach my $data (@$expired) {
-    $remove_data{$data->{group_id}} ||= [];
-    push(@{ $remove_data{$data->{group_id}} }, $data->{user_id});
+    $remove_data{ $data->{group_id} } ||= [];
+    push( @{ $remove_data{ $data->{group_id} } }, $data->{user_id} );
 }
 
 # 1. Remove users from the group
 # 2. $user->update will add audit log and profile_activity entries
 # 3. Send email to group owner showing users removed
-foreach my $group_id (keys %remove_data) {
-    my $group = Bugzilla::Group->new({ id => $group_id, cache => 1 });
+foreach my $group_id ( keys %remove_data ) {
+    my $group = Bugzilla::Group->new( { id => $group_id, cache => 1 } );
 
     $dbh->bz_start_transaction();
 
     my @users_removed = ();
-    foreach my $user_id (@{ $remove_data{$group->id} }) {
-        my $user = Bugzilla::User->new({ id => $user_id, cache => 1 });
-        Bugzilla->set_user(Bugzilla::User->super_user);
-        $user->set_groups({ remove => [ $group->name ] });
-        $user->set_bless_groups({ remove => [ $group->name ] });
+    foreach my $user_id ( @{ $remove_data{ $group->id } } ) {
+        my $user = Bugzilla::User->new( { id => $user_id, cache => 1 } );
+        Bugzilla->set_user( Bugzilla::User->super_user );
+        $user->set_groups( { remove => [ $group->name ] } );
+        $user->set_bless_groups( { remove => [ $group->name ] } );
         Bugzilla->set_user($auto_user);
         $user->update();
-        push(@users_removed, $user);
+        push( @users_removed, $user );
     }
 
     $dbh->bz_commit_transaction();
@@ -76,21 +75,21 @@ foreach my $group_id (keys %remove_data) {
     # nobody@mozilla.org cannot recieve email
     next if $group->owner->login eq 'nobody@mozilla.org';
 
-    _send_email($group, \@users_removed);
+    _send_email( $group, \@users_removed );
 }
 
 sub _send_email {
-    my ($group, $users) = @_;
+    my ( $group, $users ) = @_;
 
-    my $template = Bugzilla->template_inner($group->owner->setting('lang'));
+    my $template = Bugzilla->template_inner( $group->owner->setting('lang') );
     my $vars = { group => $group, users => $users };
 
-    my ($header, $text);
-    $template->process("admin/groups/email/idle-member-removal-header.txt.tmpl", $vars, \$header)
-        || ThrowTemplateError($template->error());
+    my ( $header, $text );
+    $template->process( "admin/groups/email/idle-member-removal-header.txt.tmpl", $vars, \$header )
+        || ThrowTemplateError( $template->error() );
     $header .= "\n";
-    $template->process("admin/groups/email/idle-member-removal.txt.tmpl", $vars, \$text)
-        || ThrowTemplateError($template->error());
+    $template->process( "admin/groups/email/idle-member-removal.txt.tmpl", $vars, \$text )
+        || ThrowTemplateError( $template->error() );
 
     my @parts = (
         Email::MIME->create(
@@ -103,29 +102,30 @@ sub _send_email {
         )
     );
 
-    if ($group->owner->setting('email_format') eq 'html') {
+    if ( $group->owner->setting('email_format') eq 'html' ) {
         my $html;
-        $template->process("admin/groups/email/idle-member-removal.html.tmpl", $vars, \$html)
-            || ThrowTemplateError($template->error());
-        push @parts, Email::MIME->create(
+        $template->process( "admin/groups/email/idle-member-removal.html.tmpl", $vars, \$html )
+            || ThrowTemplateError( $template->error() );
+        push @parts,
+            Email::MIME->create(
             attributes => {
                 content_type => 'text/html',
                 charset      => 'UTF-8',
                 encoding     => 'quoted-printable',
             },
             body_str => $html,
-        );
+            );
     }
 
     my $email = Email::MIME->new($header);
-    $email->header_set('X-Generated-By' => hostname());
-    if (scalar(@parts) == 1) {
-        $email->content_type_set($parts[0]->content_type);
+    $email->header_set( 'X-Generated-By' => hostname() );
+    if ( scalar(@parts) == 1 ) {
+        $email->content_type_set( $parts[0]->content_type );
     }
     else {
         $email->content_type_set('multipart/alternative');
     }
-    $email->parts_set(\@parts);
+    $email->parts_set( \@parts );
 
     MessageToMTA($email);
 }

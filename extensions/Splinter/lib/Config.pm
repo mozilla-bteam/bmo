@@ -35,8 +35,8 @@ sub get_param_list {
 
     my @param_list = (
         {
-            name => 'splinter_base',
-            type => 't',
+            name    => 'splinter_base',
+            type    => 't',
             default => 'page.cgi?id=splinter.html',
         },
     );

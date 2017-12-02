@@ -27,7 +27,7 @@ use Encode;
 # initialisation
 #
 
-use constant DB_TABLE => 'push';
+use constant DB_TABLE   => 'push';
 use constant DB_COLUMNS => qw(
     id
     push_ts
@@ -48,7 +48,7 @@ sub new_transient {
     my $invocant = shift;
     my $class    = ref($invocant) || $invocant;
     my $object   = shift;
-    bless($object, $class) if $object;
+    bless( $object, $class ) if $object;
     return $object;
 }
 
@@ -62,15 +62,15 @@ sub create_from_transient {
 # accessors
 #
 
-sub push_ts     { return $_[0]->{'push_ts'};     }
-sub payload     { return $_[0]->{'payload'};     }
-sub change_set  { return $_[0]->{'change_set'};  }
+sub push_ts     { return $_[0]->{'push_ts'}; }
+sub payload     { return $_[0]->{'payload'}; }
+sub change_set  { return $_[0]->{'change_set'}; }
 sub routing_key { return $_[0]->{'routing_key'}; }
-sub message_id  { return $_[0]->id;              }
+sub message_id  { return $_[0]->id; }
 
 sub payload_decoded {
     my ($self) = @_;
-    return from_json($self->{'payload'});
+    return from_json( $self->{'payload'} );
 }
 
 #
@@ -78,26 +78,26 @@ sub payload_decoded {
 #
 
 sub _check_push_ts {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     $value ||= Bugzilla->dbh->selectrow_array('SELECT NOW()');
     return $value;
 }
 
 sub _check_payload {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     length($value) || ThrowCodeError('push_invalid_payload');
     return $value;
 }
 
 sub _check_change_set {
-    my ($invocant, $value) = @_;
-    (defined($value) && length($value)) || ThrowCodeError('push_invalid_change_set');
+    my ( $invocant, $value ) = @_;
+    ( defined($value) && length($value) ) || ThrowCodeError('push_invalid_change_set');
     return $value;
 }
 
 sub _check_routing_key {
-    my ($invocant, $value) = @_;
-    (defined($value) && length($value)) || ThrowCodeError('push_invalid_routing_key');
+    my ( $invocant, $value ) = @_;
+    ( defined($value) && length($value) ) || ThrowCodeError('push_invalid_routing_key');
     return $value;
 }
 

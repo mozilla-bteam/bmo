@@ -37,17 +37,16 @@ use constant PUBLIC_METHODS => qw(
 );
 
 sub getBugsConfirmer {
-    my ($self, $params) = validate(@_, 'names');
+    my ( $self, $params ) = validate( @_, 'names' );
     my $dbh = Bugzilla->dbh;
 
-    defined($params->{names})
-        || ThrowCodeError('params_required',
-               { function => 'BMO.getBugsConfirmer', params => ['names'] });
+    defined( $params->{names} )
+        || ThrowCodeError( 'params_required', { function => 'BMO.getBugsConfirmer', params => ['names'] } );
 
     my @user_objects = map { Bugzilla::User->check($_) } @{ $params->{names} };
 
     # start filtering to remove duplicate user ids
-    @user_objects = values %{{ map { $_->id => $_ } @user_objects }};
+    @user_objects = values %{ { map { $_->id => $_ } @user_objects } };
 
     my $fieldid = get_field_id('bug_status');
 
@@ -64,25 +63,24 @@ sub getBugsConfirmer {
 
     my %users;
     foreach my $user (@user_objects) {
-        my $bugs = $dbh->selectcol_arrayref($query, undef, $fieldid, $user->id);
-        $users{$user->login} = $bugs;
+        my $bugs = $dbh->selectcol_arrayref( $query, undef, $fieldid, $user->id );
+        $users{ $user->login } = $bugs;
     }
 
     return \%users;
 }
 
 sub getBugsVerifier {
-    my ($self, $params) = validate(@_, 'names');
+    my ( $self, $params ) = validate( @_, 'names' );
     my $dbh = Bugzilla->dbh;
 
-    defined($params->{names})
-        || ThrowCodeError('params_required',
-               { function => 'BMO.getBugsVerifier', params => ['names'] });
+    defined( $params->{names} )
+        || ThrowCodeError( 'params_required', { function => 'BMO.getBugsVerifier', params => ['names'] } );
 
     my @user_objects = map { Bugzilla::User->check($_) } @{ $params->{names} };
 
     # start filtering to remove duplicate user ids
-    @user_objects = values %{{ map { $_->id => $_ } @user_objects }};
+    @user_objects = values %{ { map { $_->id => $_ } @user_objects } };
 
     my $fieldid = get_field_id('bug_status');
 
@@ -99,8 +97,8 @@ sub getBugsVerifier {
 
     my %users;
     foreach my $user (@user_objects) {
-        my $bugs = $dbh->selectcol_arrayref($query, undef, $fieldid, $user->id);
-        $users{$user->login} = $bugs;
+        my $bugs = $dbh->selectcol_arrayref( $query, undef, $fieldid, $user->id );
+        $users{ $user->login } = $bugs;
     }
 
     return \%users;

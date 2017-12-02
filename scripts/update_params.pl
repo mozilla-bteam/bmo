@@ -20,14 +20,15 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my $params = Bugzilla->params;
 
-my ($param_name, $param_value) = @ARGV;
+my ( $param_name, $param_value ) = @ARGV;
 die "Syntax: $0 param_name param_value\n" unless defined($param_value);
-die "Invalid param name: $param_name\n" unless exists $params->{$param_name};
+die "Invalid param name: $param_name\n"   unless exists $params->{$param_name};
 
-if ($params->{$param_name} ne $param_value) {
-    SetParam($param_name, $param_value);
+if ( $params->{$param_name} ne $param_value ) {
+    SetParam( $param_name, $param_value );
     write_params();
     say "'$param_name' set to '$param_value'";
-} else {
+}
+else {
     say "'$param_name' is already '$param_value'";
 }

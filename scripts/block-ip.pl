@@ -19,13 +19,14 @@ use Getopt::Long;
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my $unblock;
-GetOptions('unblock' => \$unblock);
+GetOptions( 'unblock' => \$unblock );
 
 pod2usage("No IPs given") unless @ARGV;
 
 if ($unblock) {
     Bugzilla::ModPerl::BlockIP->unblock_ip($_) for @ARGV;
-} else {
+}
+else {
     Bugzilla::ModPerl::BlockIP->block_ip($_) for @ARGV;
 }
 

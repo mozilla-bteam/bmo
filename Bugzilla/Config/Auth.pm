@@ -158,8 +158,8 @@ sub get_param_list {
         },
 
         {
-            name => 'passwdqc_desc',
-            type => 'l',
+            name    => 'passwdqc_desc',
+            type    => 'l',
             default => 'The password must be complex.',
         },
 
@@ -191,16 +191,16 @@ sub get_param_list {
         },
 
         {
-            name => 'mfa_group',
-            type => 's',
+            name    => 'mfa_group',
+            type    => 's',
             choices => \&get_all_group_names,
             default => '',
             checker => \&check_group,
         },
 
         {
-            name => 'mfa_group_grace_period',
-            type => 't',
+            name    => 'mfa_group_grace_period',
+            type    => 't',
             default => '7',
             checker => \&check_numeric,
         }
@@ -208,13 +208,8 @@ sub get_param_list {
     return @param_list;
 }
 
-my $passwdqc_min = Tuple[
-    Maybe[PositiveInt],
-    Maybe[PositiveInt],
-    Maybe[PositiveInt],
-    Maybe[PositiveInt],
-    Maybe[PositiveInt],
-];
+my $passwdqc_min = Tuple [ Maybe [PositiveInt], Maybe [PositiveInt], Maybe [PositiveInt], Maybe [PositiveInt],
+    Maybe [PositiveInt], ];
 
 sub _check_passwdqc_min {
     my ($value) = @_;
@@ -244,7 +239,7 @@ sub _check_passwdqc_min {
 sub _check_passwdqc_max {
     my ($value) = @_;
     return "must be a positive integer" unless PositiveInt->check($value);
-    return "must be greater than 8"     unless $value > 8;
+    return "must be greater than 8" unless $value > 8;
     return "";
 }
 

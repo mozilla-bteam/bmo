@@ -48,12 +48,13 @@ use Pod::Simple::HTML::Bugzilla;
 ###############################################################################
 
 my $error_found = 0;
+
 sub MakeDocs {
-    my ($name, $cmdline) = @_;
+    my ( $name, $cmdline ) = @_;
 
     say "Creating $name documentation ..." if defined $name;
     say "make $cmdline\n";
-    system('make', $cmdline) == 0
+    system( 'make', $cmdline ) == 0
         or $error_found = 1;
     print "\n";
 }
@@ -62,6 +63,7 @@ sub make_pod {
     say "Creating API documentation...";
 
     my $converter = Pod::Simple::HTMLBatch::Bugzilla->new;
+
     # Don't output progress information.
     $converter->verbose(0);
     $converter->html_render_class('Pod::Simple::HTML::Bugzilla');
@@ -88,7 +90,7 @@ END_HTML
     $converter->css_flurry(0);
     mkdir("html");
     mkdir("html/api");
-    $converter->batch_convert(['../../'], 'html/api/');
+    $converter->batch_convert( ['../../'], 'html/api/' );
 
     print "\n";
 }
@@ -98,12 +100,13 @@ END_HTML
 ###############################################################################
 
 my @langs;
+
 # search for sub directories which have a 'rst' sub-directory
-opendir(LANGS, './');
-foreach my $dir (readdir(LANGS)) {
-    next if (($dir eq '.') || ($dir eq '..') || (! -d $dir));
-    if (-d "$dir/rst") {
-        push(@langs, $dir);
+opendir( LANGS, './' );
+foreach my $dir ( readdir(LANGS) ) {
+    next if ( ( $dir eq '.' ) || ( $dir eq '..' ) || ( !-d $dir ) );
+    if ( -d "$dir/rst" ) {
+        push( @langs, $dir );
     }
 }
 closedir(LANGS);
@@ -120,45 +123,44 @@ foreach my $lang (@langs) {
 
     # Generate extension documentation, both normal and API
     my $ext_dir = bz_locations()->{'extensionsdir'};
-    my @ext_paths = grep { $_ !~ /\/create\.pl$/ && ! -e "$_/disabled" }
-                    glob("$ext_dir/*");
+    my @ext_paths = grep { $_ !~ /\/create\.pl$/ && !-e "$_/disabled" } glob("$ext_dir/*");
     my %extensions;
     foreach my $item (@ext_paths) {
         my $basename = basename($item);
-        if (-d "$item/docs/$lang/rst") {
+        if ( -d "$item/docs/$lang/rst" ) {
             $extensions{$basename} = "$item/docs/$lang/rst";
         }
     }
 
     # Collect up local extension documentation into the extensions/ dir.
-    rmtree("$lang/rst/extensions", 0, 1);
+    rmtree( "$lang/rst/extensions", 0, 1 );
 
-    foreach my $ext_name (keys %extensions) {
+    foreach my $ext_name ( keys %extensions ) {
         my $src = $extensions{$ext_name} . "/*";
         my $dst = "$docparent/$lang/rst/extensions/$ext_name";
         mkdir($dst) unless -d $dst;
-        rcopy($src, $dst);
+        rcopy( $src, $dst );
     }
 
     chdir "$docparent/$lang";
 
-    MakeDocs('HTML', 'html');
-    MakeDocs('TXT', 'text');
+    MakeDocs( 'HTML', 'html' );
+    MakeDocs( 'TXT',  'text' );
 
-    if (grep { $_ eq '--with-pdf' } @ARGV) {
-        if (which('pdflatex')) {
-            MakeDocs('PDF', 'latexpdf');
+    if ( grep { $_ eq '--with-pdf' } @ARGV ) {
+        if ( which('pdflatex') ) {
+            MakeDocs( 'PDF', 'latexpdf' );
         }
-        elsif (which('rst2pdf')) {
-            rmtree('pdf', 0, 1);
-            MakeDocs('PDF', 'pdf');
+        elsif ( which('rst2pdf') ) {
+            rmtree( 'pdf', 0, 1 );
+            MakeDocs( 'PDF', 'pdf' );
         }
         else {
             say 'pdflatex or rst2pdf not found. Skipping PDF file creation';
         }
     }
 
-    rmtree('doctrees', 0, 1);
+    rmtree( 'doctrees', 0, 1 );
 }
 
 die "Error occurred building the documentation\n" if $error_found;

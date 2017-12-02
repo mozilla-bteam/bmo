@@ -18,6 +18,7 @@ use Bugzilla::Error;
 use Bugzilla::Update;
 
 my $ok = eval {
+
     # Ensure that any Throw*Error calls just use die, rather than trying to return html...
     Bugzilla->error_mode(ERROR_MODE_DIE);
     my $memcached    = Bugzilla->memcached;
@@ -35,11 +36,12 @@ my $ok = eval {
 warn "heartbeat error: $@" if !$ok && $@;
 
 my $cgi = Bugzilla->cgi;
-print $cgi->header(-type => 'text/plain', -status => $ok ? '200 OK' : '500 Internal Server Error');
+print $cgi->header( -type => 'text/plain', -status => $ok ? '200 OK' : '500 Internal Server Error' );
 print $ok ? "Bugzilla OK\n" : "Bugzilla NOT OK\n";
 
-if ($ENV{MOD_PERL}) {
+if ( $ENV{MOD_PERL} ) {
     my $r = $cgi->r;
+
     # doing this supresses the error document, but does not change the http response code.
     $r->rflush;
     $r->status(200);

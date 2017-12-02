@@ -11,7 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Constants;
 
@@ -24,7 +23,7 @@ use Getopt::Long;
 $| = 1;
 my $trace = 0;
 
-GetOptions("trace" => \$trace) || exit;
+GetOptions( "trace" => \$trace ) || exit;
 
 my $dbh = Bugzilla->dbh;
 
@@ -54,7 +53,7 @@ delete_from_table('bug_group_map');
 delete_from_table('bugs');
 delete_from_table('longdescs');
 
-$dbh->do($dbh->_bz_real_schema->get_set_serial_sql('bugs', 'bug_id', 1));
+$dbh->do( $dbh->_bz_real_schema->get_set_serial_sql( 'bugs', 'bug_id', 1 ) );
 
 $dbh->bz_commit_transaction();
 

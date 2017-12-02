@@ -20,46 +20,51 @@ sub report {
 
     # build path array and flatten
     my @timers;
-    $self->walk_timers(sub {
-        my ($timer, $parent) = @_;
-        $timer->{id} = scalar(@timers);
-        if ($parent) {
-            if (exists $timer->{children}) {
-                if ($timer->{type} eq 'tmpl') {
-                    $timer->{node} = 'tmpl: ' . $timer->{file};
+    $self->walk_timers(
+        sub {
+            my ( $timer, $parent ) = @_;
+            $timer->{id} = scalar(@timers);
+            if ($parent) {
+                if ( exists $timer->{children} ) {
+                    if ( $timer->{type} eq 'tmpl' ) {
+                        $timer->{node} = 'tmpl: ' . $timer->{file};
+                    }
+                    elsif ( $timer->{type} eq 'db' ) {
+                        $timer->{node} = 'db';
+                    }
+                    else {
+                        $timer->{node} = '?';
+                    }
                 }
-                elsif ($timer->{type} eq 'db') {
-                    $timer->{node} = 'db';
-                }
-                else {
-                    $timer->{node} = '?';
-                }
+                $timer->{path} = [ @{ $parent->{path} }, $parent->{node} ];
+                $timer->{parent} = $parent->{id};
             }
-            $timer->{path} = [ @{ $parent->{path} }, $parent->{node} ];
-            $timer->{parent} = $parent->{id};
+            else {
+                $timer->{path} = [];
+                $timer->{node} = $timer->{name};
+            }
+            push @timers, $timer;
         }
-        else {
-            $timer->{path} = [ ];
-            $timer->{node} = $timer->{name};
-        }
-        push @timers, $timer;
-    });
+    );
 
     # calculate timer-only durations
-    $self->walk_timers(sub {
-        my ($timer) = @_;
-        my $child_duration = 0;
-        if (exists $timer->{children}) {
-            foreach my $child (@{ $timer->{children} }) {
-                $child_duration += $child->{duration};
+    $self->walk_timers(
+        sub {
+            my ($timer) = @_;
+            my $child_duration = 0;
+            if ( exists $timer->{children} ) {
+                foreach my $child ( @{ $timer->{children} } ) {
+                    $child_duration += $child->{duration};
+                }
             }
+            $timer->{this_duration} = $timer->{duration} - $child_duration;
         }
-        $timer->{this_duration} = $timer->{duration} - $child_duration;
-    });
+    );
 
     # massage each timer
     my $start_time = $self->{times}->{start_time};
     foreach my $timer (@timers) {
+
         # remove node name and children
         delete $timer->{node};
         delete $timer->{children};
@@ -70,7 +75,7 @@ sub report {
 
         # show times in ms instead of fractional seconds
         foreach my $field (qw( start_time duration this_duration )) {
-            $timer->{$field} = sprintf('%.4f', $timer->{$field} * 1000) * 1;
+            $timer->{$field} = sprintf( '%.4f', $timer->{$field} * 1000 ) * 1;
         }
     }
 
@@ -81,23 +86,25 @@ sub report {
     # throw at ES
     require ElasticSearch;
     my $es = ElasticSearch->new(
-        servers     => Bugzilla->params->{metrics_elasticsearch_server},
-        transport   => 'http',
+        servers   => Bugzilla->params->{metrics_elasticsearch_server},
+        transport => 'http',
     );
+
     # the ElasticSearch module queries the server for a list of nodes and
     # connects directly to a random node. that bypasses our load balancer so we
     # disable that by setting the server list directly.
-    $es->transport->servers(Bugzilla->params->{metrics_elasticsearch_server});
+    $es->transport->servers( Bugzilla->params->{metrics_elasticsearch_server} );
+
     # as the discovered node list is lazy-loaded, increase _refresh_in so it
     # won't call ->refresh_servers()
     $es->transport->{_refresh_in} = 1;
     $es->index(
-        index   => Bugzilla->params->{metrics_elasticsearch_index},
-        type    => Bugzilla->params->{metrics_elasticsearch_type},
-        ttl     => Bugzilla->params->{metrics_elasticsearch_ttl},
-        data    => {
-            env     => $self->{env},
-            times   => \@timers,
+        index => Bugzilla->params->{metrics_elasticsearch_index},
+        type  => Bugzilla->params->{metrics_elasticsearch_type},
+        ttl   => Bugzilla->params->{metrics_elasticsearch_ttl},
+        data  => {
+            env   => $self->{env},
+            times => \@timers,
         },
     );
 }

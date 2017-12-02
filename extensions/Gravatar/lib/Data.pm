@@ -16,8 +16,6 @@ our @EXPORT_OK = qw(
     %gravatar_user_map
 );
 
-our %gravatar_user_map = (
-    'orangefactor@bots.tld' => 'tbplbot@gmail.com',
-);
+our %gravatar_user_map = ( 'orangefactor@bots.tld' => 'tbplbot@gmail.com', );
 
 1;

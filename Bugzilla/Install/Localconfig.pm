@@ -122,10 +122,11 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'diffpath',
-        default => sub { dirname(bin_loc('diff')) },
+        default => sub { dirname( bin_loc('diff') ) },
     },
     {
-        name    => 'site_wide_secret',
+        name => 'site_wide_secret',
+
         # 64 characters is roughly the equivalent of a 384-bit key, which
         # is larger than anybody would ever be able to brute-force.
         default => sub { generate_random_password(64) },
@@ -148,35 +149,33 @@ use constant LOCALCONFIG_VARS => (
     },
     {
         name    => 'memcached_servers',
-        default =>  _migrate_param("memcached_servers", ""),
+        default => _migrate_param( "memcached_servers", "" ),
     },
     {
         name    => 'memcached_namespace',
-        default => _migrate_param("memcached_namespace", "bugzilla:"),
+        default => _migrate_param( "memcached_namespace", "bugzilla:" ),
     },
 );
 
-use constant ENV_KEYS => (
-    (map { ENV_PREFIX . $_->{name} } LOCALCONFIG_VARS),
-    (map { ENV_PREFIX . $_ } PARAM_OVERRIDE),
-);
+use constant ENV_KEYS =>
+    ( ( map { ENV_PREFIX . $_->{name} } LOCALCONFIG_VARS ), ( map { ENV_PREFIX . $_ } PARAM_OVERRIDE ), );
 
 sub _read_localconfig_from_env {
     my %localconfig;
 
-    foreach my $var ( LOCALCONFIG_VARS ) {
+    foreach my $var (LOCALCONFIG_VARS) {
         my $name = $var->{name};
         my $key  = ENV_PREFIX . $name;
-        if ($name eq 'param_override') {
+        if ( $name eq 'param_override' ) {
             foreach my $override (PARAM_OVERRIDE) {
                 my $o_key = ENV_PREFIX . $override;
                 $localconfig{param_override}{$override} = $ENV{$o_key};
-                untaint($localconfig{param_override}{$override});
+                untaint( $localconfig{param_override}{$override} );
             }
         }
-        elsif (exists $ENV{$key}) {
+        elsif ( exists $ENV{$key} ) {
             $localconfig{$name} = $ENV{$key};
-            untaint($localconfig{$name});
+            untaint( $localconfig{$name} );
         }
         else {
             my $default = $var->{default};
@@ -192,24 +191,26 @@ sub _read_localconfig_from_file {
     my $filename = bz_locations()->{'localconfig'};
 
     my %localconfig;
-    if (-e $filename) {
+    if ( -e $filename ) {
         my $s = new Safe;
+
         # Some people like to store their database password in another file.
         $s->permit('dofile');
 
         $s->rdo($filename);
-        if ($@ || $!) {
+        if ( $@ || $! ) {
             my $err_msg = $@ ? $@ : $!;
-            die install_string('error_localconfig_read',
-                    { error => $err_msg, localconfig => $filename }), "\n";
+            die install_string( 'error_localconfig_read', { error => $err_msg, localconfig => $filename } ), "\n";
         }
 
         my @read_symbols;
         if ($include_deprecated) {
+
             # First we have to get the whole symbol table
             my $safe_root = $s->root;
             my %safe_package;
-            { no strict 'refs'; %safe_package = %{$safe_root . "::"}; }
+            { no strict 'refs'; %safe_package = %{ $safe_root . "::" }; }
+
             # And now we read the contents of every var in the symbol table.
             # However:
             # * We only include symbols that start with an alphanumeric
@@ -218,14 +219,14 @@ sub _read_localconfig_from_file {
             # * We ignore the INC symbol, which exists in every package.
             # * Perl 5.10 imports a lot of random symbols that all
             #   contain "::", and we want to ignore those.
-            @read_symbols = grep { /^[A-Za-z0-1]/ and !/^INC$/ and !/::/ }
-                                 (keys %safe_package);
+            @read_symbols = grep { /^[A-Za-z0-1]/ and !/^INC$/ and !/::/ } ( keys %safe_package );
         }
         else {
-            @read_symbols = map($_->{name}, LOCALCONFIG_VARS);
+            @read_symbols = map( $_->{name}, LOCALCONFIG_VARS );
         }
         foreach my $var (@read_symbols) {
             my $glob = $s->varglob($var);
+
             # We can't get the type of a variable out of a Safe automatically.
             # We can only get the glob itself. So we figure out its type this
             # way, by trying first a scalar, then an array, then a hash.
@@ -234,7 +235,7 @@ sub _read_localconfig_from_file {
             # array or hash vars into hashrefs or arrayrefs, but that's
             # fine since as I write this all modern localconfig vars are
             # actually scalars.
-            if (defined $$glob) {
+            if ( defined $$glob ) {
                 $localconfig{$var} = $$glob;
             }
             elsif (@$glob) {
@@ -252,7 +253,7 @@ sub _read_localconfig_from_file {
 sub read_localconfig {
     my ($include_deprecated) = @_;
 
-    if ($ENV{LOCALCONFIG_ENV}) {
+    if ( $ENV{LOCALCONFIG_ENV} ) {
         return _read_localconfig_from_env();
     }
     else {
@@ -287,7 +288,7 @@ sub read_localconfig {
 sub update_localconfig {
     my ($params) = @_;
 
-    if ($ENV{LOCALCONFIG_ENV}) {
+    if ( $ENV{LOCALCONFIG_ENV} ) {
         require Carp;
         Carp::croak("update_localconfig() called with LOCALCONFIG_ENV enabled");
     }
@@ -298,18 +299,20 @@ sub update_localconfig {
 
     my @new_vars;
     foreach my $var (LOCALCONFIG_VARS) {
-        my $name = $var->{name};
+        my $name  = $var->{name};
         my $value = $localconfig->{$name};
+
         # Regenerate site_wide_secret if it was made by our old, weak
         # generate_random_password. Previously we used to generate
         # a 256-character string for site_wide_secret.
-        $value = undef if ($name eq 'site_wide_secret' and defined $value
-                           and length($value) == 256);
+        $value = undef if ( $name eq 'site_wide_secret'
+            and defined $value
+            and length($value) == 256 );
 
-        if (!defined $value) {
-            push(@new_vars, $name);
-            $var->{default} = &{$var->{default}} if ref($var->{default}) eq 'CODE';
-            if (exists $answer->{$name}) {
+        if ( !defined $value ) {
+            push( @new_vars, $name );
+            $var->{default} = &{ $var->{default} } if ref( $var->{default} ) eq 'CODE';
+            if ( exists $answer->{$name} ) {
                 $localconfig->{$name} = $answer->{$name};
             }
             else {
@@ -318,13 +321,13 @@ sub update_localconfig {
         }
     }
 
-    if (!$localconfig->{'interdiffbin'} && $output) {
+    if ( !$localconfig->{'interdiffbin'} && $output ) {
         print "\n", install_string('patchutils_missing'), "\n";
     }
 
     my @old_vars;
-    foreach my $var (keys %$localconfig) {
-        push(@old_vars, $var) if !grep($_->{name} eq $var, LOCALCONFIG_VARS);
+    foreach my $var ( keys %$localconfig ) {
+        push( @old_vars, $var ) if !grep( $_->{name} eq $var, LOCALCONFIG_VARS );
     }
 
     my $filename = bz_locations->{'localconfig'};
@@ -333,41 +336,53 @@ sub update_localconfig {
     local $Data::Dumper::Sortkeys = 1;
 
     # Move any custom or old variables into a separate file.
-    if (scalar @old_vars) {
+    if ( scalar @old_vars ) {
         my $filename_old = "$filename.old";
-        open(my $old_file, ">>:utf8", $filename_old)
+        open( my $old_file, ">>:utf8", $filename_old )
             or die "$filename_old: $!";
         local $Data::Dumper::Purity = 1;
         foreach my $var (@old_vars) {
-            print $old_file Data::Dumper->Dump([$localconfig->{$var}],
-                                               ["*$var"]) . "\n\n";
+            print $old_file Data::Dumper->Dump( [ $localconfig->{$var} ], ["*$var"] ) . "\n\n";
         }
         close $old_file;
-        my $oldstuff = join(', ', @old_vars);
-        print install_string('lc_old_vars',
-            { localconfig => $filename, old_file => $filename_old,
-              vars => $oldstuff }), "\n";
+        my $oldstuff = join( ', ', @old_vars );
+        print install_string(
+            'lc_old_vars',
+            {
+                localconfig => $filename,
+                old_file    => $filename_old,
+                vars        => $oldstuff
+            }
+            ),
+            "\n";
     }
 
     # Re-write localconfig
-    open(my $fh, ">:utf8", $filename) or die "$filename: $!";
+    open( my $fh, ">:utf8", $filename ) or die "$filename: $!";
     foreach my $var (LOCALCONFIG_VARS) {
         my $name = $var->{name};
-        my $desc = install_string("localconfig_$name", { root => ROOT_USER });
+        my $desc = install_string( "localconfig_$name", { root => ROOT_USER } );
         chomp($desc);
+
         # Make the description into a comment.
         $desc =~ s/^/# /mg;
-        print $fh $desc, "\n",
-                  Data::Dumper->Dump([$localconfig->{$name}],
-                                     ["*$name"]), "\n";
-   }
+        print $fh $desc, "\n", Data::Dumper->Dump( [ $localconfig->{$name} ], ["*$name"] ), "\n";
+    }
 
     if (@new_vars) {
-        my $newstuff = join(', ', @new_vars);
+        my $newstuff = join( ', ', @new_vars );
         print "\n";
-        print colored(install_string('lc_new_vars', { localconfig => $filename,
-                                                      new_vars => wrap_hard($newstuff, 70) }),
-                      COLOR_ERROR), "\n";
+        print colored(
+            install_string(
+                'lc_new_vars',
+                {
+                    localconfig => $filename,
+                    new_vars    => wrap_hard( $newstuff, 70 )
+                }
+            ),
+            COLOR_ERROR
+            ),
+            "\n";
         exit unless $params->{use_defaults};
     }
 

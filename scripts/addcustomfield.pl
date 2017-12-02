@@ -21,7 +21,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Field;
@@ -29,37 +28,40 @@ use Bugzilla::Field;
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my %types = (
-  'freetext' => FIELD_TYPE_FREETEXT,
-  'single_select' => FIELD_TYPE_SINGLE_SELECT,
-  'multi_select' => FIELD_TYPE_MULTI_SELECT,
-  'textarea' => FIELD_TYPE_TEXTAREA,
-  'datetime' => FIELD_TYPE_DATETIME,
-  'date' => FIELD_TYPE_DATE,
-  'bug_id' => FIELD_TYPE_BUG_ID,
-  'bug_urls' => FIELD_TYPE_BUG_URLS,
-  'keywords' => FIELD_TYPE_KEYWORDS,
+    'freetext'      => FIELD_TYPE_FREETEXT,
+    'single_select' => FIELD_TYPE_SINGLE_SELECT,
+    'multi_select'  => FIELD_TYPE_MULTI_SELECT,
+    'textarea'      => FIELD_TYPE_TEXTAREA,
+    'datetime'      => FIELD_TYPE_DATETIME,
+    'date'          => FIELD_TYPE_DATE,
+    'bug_id'        => FIELD_TYPE_BUG_ID,
+    'bug_urls'      => FIELD_TYPE_BUG_URLS,
+    'keywords'      => FIELD_TYPE_KEYWORDS,
 );
 
-my $syntax =
-    "syntax: addcustomfield.pl <field name> [field type]\n\n" .
-    "valid field types:\n  " . join("\n  ", sort keys %types) . "\n\n" .
-    "the default field type is single_select\n";
+my $syntax
+    = "syntax: addcustomfield.pl <field name> [field type]\n\n"
+    . "valid field types:\n  "
+    . join( "\n  ", sort keys %types ) . "\n\n"
+    . "the default field type is single_select\n";
 
 my $name = shift || die $syntax;
-my $type = lc(shift || 'single_select');
+my $type = lc( shift || 'single_select' );
 exists $types{$type} || die "Invalid field type '$type'.\n\n$syntax";
 $type = $types{$type};
 
-Bugzilla::Field->create({
-    name        => $name,
-    description => 'Please give me a description!',
-    type        => $type,
-    mailhead    => 0,
-    enter_bug   => 0,
-    obsolete    => 1,
-    custom      => 1,
-    buglist     => 1,
-});
+Bugzilla::Field->create(
+    {
+        name        => $name,
+        description => 'Please give me a description!',
+        type        => $type,
+        mailhead    => 0,
+        enter_bug   => 0,
+        obsolete    => 1,
+        custom      => 1,
+        buglist     => 1,
+    }
+);
 print "Done!\n";
 
 my $urlbase = Bugzilla->params->{urlbase};

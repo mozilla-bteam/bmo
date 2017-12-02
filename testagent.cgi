@@ -21,6 +21,6 @@ use 5.10.1;
 use strict;
 use warnings;
 print "content-type:text/plain\n\n";
-print "OK " . ($::ENV{MOD_PERL} || "mod_cgi") . "\n";
+print "OK " . ( $::ENV{MOD_PERL} || "mod_cgi" ) . "\n";
 exit;
 

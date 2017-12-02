@@ -41,25 +41,25 @@ our @EXPORT = qw(
 sub admin_list {
     my ($vars) = @_;
     $vars->{show_bug_counts} = Bugzilla->input_params->{show_bug_counts};
-    $vars->{flags} = [ Bugzilla::Extension::TrackingFlags::Flag->get_all() ];
+    $vars->{flags}           = [ Bugzilla::Extension::TrackingFlags::Flag->get_all() ];
 }
 
 sub admin_edit {
-    my ($vars, $page) = @_;
+    my ( $vars, $page ) = @_;
     my $input = Bugzilla->input_params;
 
-    $vars->{groups}  = _groups_to_json();
-    $vars->{mode}    = $input->{mode} || 'new';
-    $vars->{flag_id} = $input->{flag_id} || 0;
+    $vars->{groups}              = _groups_to_json();
+    $vars->{mode}                = $input->{mode} || 'new';
+    $vars->{flag_id}             = $input->{flag_id} || 0;
     $vars->{tracking_flag_types} = FLAG_TYPES;
 
-    if ($input->{delete}) {
+    if ( $input->{delete} ) {
         my $token = $input->{token};
-        check_hash_token($token, ['tracking_flags_edit']);
+        check_hash_token( $token, ['tracking_flags_edit'] );
         delete_token($token);
 
-        my $flag = Bugzilla::Extension::TrackingFlags::Flag->new($vars->{flag_id})
-            || ThrowCodeError('tracking_flags_invalid_item_id', { item => 'flag', id => $vars->{flag_id} });
+        my $flag = Bugzilla::Extension::TrackingFlags::Flag->new( $vars->{flag_id} )
+            || ThrowCodeError( 'tracking_flags_invalid_item_id', { item => 'flag', id => $vars->{flag_id} } );
         $flag->remove_from_db();
 
         $vars->{message} = 'tracking_flag_deleted';
@@ -68,92 +68,101 @@ sub admin_edit {
 
         print Bugzilla->cgi->header;
         my $template = Bugzilla->template;
-        $template->process('pages/tracking_flags_admin_list.html.tmpl', $vars)
-            || ThrowTemplateError($template->error());
+        $template->process( 'pages/tracking_flags_admin_list.html.tmpl', $vars )
+            || ThrowTemplateError( $template->error() );
         exit;
 
-    } elsif ($input->{save}) {
+    }
+    elsif ( $input->{save} ) {
         my $token = $input->{token};
-        check_hash_token($token, ['tracking_flags_edit']);
+        check_hash_token( $token, ['tracking_flags_edit'] );
         delete_token($token);
 
-        my ($flag, $values, $visibilities) = _load_from_input($input, $vars);
-        _validate($flag, $values, $visibilities);
-        my $flag_obj = _update_db($flag, $values, $visibilities);
+        my ( $flag, $values, $visibilities ) = _load_from_input( $input, $vars );
+        _validate( $flag, $values, $visibilities );
+        my $flag_obj = _update_db( $flag, $values, $visibilities );
 
         $vars->{flag}       = $flag_obj;
         $vars->{values}     = _flag_values_to_json($values);
         $vars->{visibility} = _flag_visibility_to_json($visibilities);
 
-        if ($vars->{mode} eq 'new') {
+        if ( $vars->{mode} eq 'new' ) {
             $vars->{message} = 'tracking_flag_created';
-        } else {
+        }
+        else {
             $vars->{message} = 'tracking_flag_updated';
         }
         $vars->{mode} = 'edit';
 
-    } else {
+    }
+    else {
         # initial load
 
-        if ($vars->{mode} eq 'edit') {
+        if ( $vars->{mode} eq 'edit' ) {
+
             # edit - straight load
-            my $flag = Bugzilla::Extension::TrackingFlags::Flag->new($vars->{flag_id})
-                || ThrowCodeError('tracking_flags_invalid_item_id', { item => 'flag', id => $vars->{flag_id} });
+            my $flag = Bugzilla::Extension::TrackingFlags::Flag->new( $vars->{flag_id} )
+                || ThrowCodeError( 'tracking_flags_invalid_item_id', { item => 'flag', id => $vars->{flag_id} } );
             $vars->{flag}       = $flag;
-            $vars->{values}     = _flag_values_to_json($flag->values);
-            $vars->{visibility} = _flag_visibility_to_json($flag->visibility);
+            $vars->{values}     = _flag_values_to_json( $flag->values );
+            $vars->{visibility} = _flag_visibility_to_json( $flag->visibility );
             $vars->{can_delete} = !$flag->bug_count;
 
-        } elsif ($vars->{mode} eq 'copy') {
+        }
+        elsif ( $vars->{mode} eq 'copy' ) {
+
             # copy - load the source flag
             $vars->{mode} = 'new';
-            my $flag = Bugzilla::Extension::TrackingFlags::Flag->new($input->{copy_from})
-                || ThrowCodeError('tracking_flags_invalid_item_id', { item => 'flag', id => $vars->{copy_from} });
+            my $flag = Bugzilla::Extension::TrackingFlags::Flag->new( $input->{copy_from} )
+                || ThrowCodeError( 'tracking_flags_invalid_item_id', { item => 'flag', id => $vars->{copy_from} } );
 
             # increment the number at the end of the name and description
-            if ($flag->name =~ /^(\D+)(\d+)$/) {
-                $flag->set_name("$1" . ($2 + 1));
+            if ( $flag->name =~ /^(\D+)(\d+)$/ ) {
+                $flag->set_name( "$1" . ( $2 + 1 ) );
             }
-            if ($flag->description =~ /^(\D+)([\d\.]+)$/) {
+            if ( $flag->description =~ /^(\D+)([\d\.]+)$/ ) {
                 my $description = $1;
-                my $version = $2;
-                if ($version =~ /\./) {
-                    my ($major, $minor) = split(/\./, $version);
+                my $version     = $2;
+                if ( $version =~ /\./ ) {
+                    my ( $major, $minor ) = split( /\./, $version );
                     $minor++;
                     $version = "$major.$minor";
                 }
                 else {
                     $version++;
                 }
-                $flag->set_description($description . $version);
+                $flag->set_description( $description . $version );
             }
-            $flag->set_sortkey(_next_unique_sortkey($flag->sortkey));
-            $flag->set_type($flag->flag_type);
-            $flag->set_enter_bug($flag->enter_bug);
+            $flag->set_sortkey( _next_unique_sortkey( $flag->sortkey ) );
+            $flag->set_type( $flag->flag_type );
+            $flag->set_enter_bug( $flag->enter_bug );
+
             # always default new flags as active, even when copying an inactive one
             $flag->set_is_active(1);
 
             $vars->{flag}       = $flag;
-            $vars->{values}     = _flag_values_to_json($flag->values, 1);
-            $vars->{visibility} = _flag_visibility_to_json($flag->visibility, 1);
+            $vars->{values}     = _flag_values_to_json( $flag->values, 1 );
+            $vars->{visibility} = _flag_visibility_to_json( $flag->visibility, 1 );
             $vars->{can_delete} = 0;
 
-        } else {
+        }
+        else {
             $vars->{mode} = 'new';
             $vars->{flag} = {
-                sortkey    => 0,
-                enter_bug  => 1,
-                is_active  => 1,
+                sortkey   => 0,
+                enter_bug => 1,
+                is_active => 1,
             };
-            $vars->{values} = _flag_values_to_json([
-                {
-                    id              => 0,
-                    value           => '---',
-                    setter_group_id => '',
-                    is_active       => 1,
-                    comment         => '',
-                },
-            ]);
+            $vars->{values} = _flag_values_to_json(
+                [   {
+                        id              => 0,
+                        value           => '---',
+                        setter_group_id => '',
+                        is_active       => 1,
+                        comment         => '',
+                    },
+                ]
+            );
             $vars->{visibility} = '';
             $vars->{can_delete} = 0;
         }
@@ -161,50 +170,50 @@ sub admin_edit {
 }
 
 sub _load_from_input {
-    my ($input, $vars) = @_;
+    my ( $input, $vars ) = @_;
 
     # flag
 
     my $flag = {
-        id          => ($input->{mode} eq 'edit' ? $input->{flag_id} : 0),
-        name        => trim($input->{flag_name} || ''),
-        description => trim($input->{flag_desc} || ''),
-        sortkey     => $input->{flag_sort} || 0,
-        type        => trim($input->{flag_type} || ''),
-        enter_bug   => $input->{flag_enter_bug} ? 1 : 0,
-        is_active   => $input->{flag_active} ? 1 : 0,
+        id => ( $input->{mode} eq 'edit' ? $input->{flag_id} : 0 ),
+        name        => trim( $input->{flag_name} || '' ),
+        description => trim( $input->{flag_desc} || '' ),
+        sortkey => $input->{flag_sort} || 0,
+        type => trim( $input->{flag_type} || '' ),
+        enter_bug => $input->{flag_enter_bug} ? 1 : 0,
+        is_active => $input->{flag_active}    ? 1 : 0,
     };
-    detaint_natural($flag->{id});
-    detaint_natural($flag->{sortkey});
-    detaint_natural($flag->{enter_bug});
-    detaint_natural($flag->{is_active});
+    detaint_natural( $flag->{id} );
+    detaint_natural( $flag->{sortkey} );
+    detaint_natural( $flag->{enter_bug} );
+    detaint_natural( $flag->{is_active} );
 
     # values
 
-    my $values = decode_json($input->{values} || '[]');
+    my $values = decode_json( $input->{values} || '[]' );
     foreach my $value (@$values) {
-        $value->{value}           = '' unless exists $value->{value} && defined $value->{value};
+        $value->{value} = '' unless exists $value->{value} && defined $value->{value};
         $value->{setter_group_id} = '' unless $value->{setter_group_id};
-        $value->{is_active}       = $value->{is_active} ? 1 : 0;
+        $value->{is_active} = $value->{is_active} ? 1 : 0;
     }
 
     # vibility
 
-    my $visibilities = decode_json($input->{visibility} || '[]');
+    my $visibilities = decode_json( $input->{visibility} || '[]' );
     foreach my $visibility (@$visibilities) {
-        $visibility->{product}   = '' unless exists $visibility->{product} && defined $visibility->{product};
+        $visibility->{product}   = '' unless exists $visibility->{product}   && defined $visibility->{product};
         $visibility->{component} = '' unless exists $visibility->{component} && defined $visibility->{component};
     }
 
-    return ($flag, $values, $visibilities);
+    return ( $flag, $values, $visibilities );
 }
 
 sub _next_unique_sortkey {
     my ($sortkey) = @_;
 
     my %current;
-    foreach my $flag (Bugzilla::Extension::TrackingFlags::Flag->get_all()) {
-        $current{$flag->sortkey} = 1;
+    foreach my $flag ( Bugzilla::Extension::TrackingFlags::Flag->get_all() ) {
+        $current{ $flag->sortkey } = 1;
     }
 
     $sortkey += 5;
@@ -217,7 +226,7 @@ sub _next_unique_sortkey {
 #
 
 sub _validate {
-    my ($flag, $values, $visibilities) = @_;
+    my ( $flag, $values, $visibilities ) = @_;
 
     # flag
 
@@ -226,21 +235,22 @@ sub _validate {
     push @missing, 'Field Description' if $flag->{description} eq '';
     push @missing, 'Field Sort Key'    if $flag->{sortkey} eq '';
     scalar(@missing)
-        && ThrowUserError('tracking_flags_missing_mandatory', { fields => \@missing });
+        && ThrowUserError( 'tracking_flags_missing_mandatory', { fields => \@missing } );
 
     $flag->{name} =~ /^cf_/
         || ThrowUserError('tracking_flags_cf_prefix');
 
-    if ($flag->{id}) {
-        my $old_flag = Bugzilla::Extension::TrackingFlags::Flag->new($flag->{id})
-            || ThrowCodeError('tracking_flags_invalid_item_id', { item => 'flag', id => $flag->{id} });
-        if ($flag->{name} ne $old_flag->name) {
-            Bugzilla::Field->new({ name => $flag->{name} })
-                && ThrowUserError('field_already_exists', { field => { name => $flag->{name} }});
+    if ( $flag->{id} ) {
+        my $old_flag = Bugzilla::Extension::TrackingFlags::Flag->new( $flag->{id} )
+            || ThrowCodeError( 'tracking_flags_invalid_item_id', { item => 'flag', id => $flag->{id} } );
+        if ( $flag->{name} ne $old_flag->name ) {
+            Bugzilla::Field->new( { name => $flag->{name} } )
+                && ThrowUserError( 'field_already_exists', { field => { name => $flag->{name} } } );
         }
-    } else {
-        Bugzilla::Field->new({ name => $flag->{name} })
-            && ThrowUserError('field_already_exists', { field => { name => $flag->{name} }});
+    }
+    else {
+        Bugzilla::Field->new( { name => $flag->{name} } )
+            && ThrowUserError( 'field_already_exists', { field => { name => $flag->{name} } } );
     }
 
     # values
@@ -256,13 +266,13 @@ sub _validate {
             && ThrowUserError('tracking_flags_missing_value');
 
         exists $seen{$v}
-            && ThrowUserError('tracking_flags_duplicate_value', { value => $v });
+            && ThrowUserError( 'tracking_flags_duplicate_value', { value => $v } );
         $seen{$v} = 1;
 
         push @missing, "Setter for $v" if !$value->{setter_group_id};
     }
     scalar(@missing)
-        && ThrowUserError('tracking_flags_missing_mandatory', { fields => \@missing });
+        && ThrowUserError( 'tracking_flags_missing_mandatory', { fields => \@missing } );
 
     # visibility
 
@@ -274,18 +284,25 @@ sub _validate {
         my $name = $visibility->{product} . ':' . $visibility->{component};
 
         exists $seen{$name}
-            && ThrowUserError('tracking_flags_duplicate_visibility', { name => $name });
+            && ThrowUserError( 'tracking_flags_duplicate_visibility', { name => $name } );
 
-        $visibility->{product_obj} = Bugzilla::Product->new({ name => $visibility->{product} })
-            || ThrowCodeError('tracking_flags_invalid_product', { product => $visibility->{product} });
+        $visibility->{product_obj} = Bugzilla::Product->new( { name => $visibility->{product} } )
+            || ThrowCodeError( 'tracking_flags_invalid_product', { product => $visibility->{product} } );
 
-        if ($visibility->{component} ne '') {
-            $visibility->{component_obj} = Bugzilla::Component->new({ product => $visibility->{product_obj},
-                                                                      name    => $visibility->{component} })
-                || ThrowCodeError('tracking_flags_invalid_component', {
+        if ( $visibility->{component} ne '' ) {
+            $visibility->{component_obj} = Bugzilla::Component->new(
+                {
+                    product => $visibility->{product_obj},
+                    name    => $visibility->{component}
+                }
+                )
+                || ThrowCodeError(
+                'tracking_flags_invalid_component',
+                {
                     product        => $visibility->{product},
                     component_name => $visibility->{component},
-                });
+                }
+                );
         }
     }
 
@@ -296,13 +313,13 @@ sub _validate {
 #
 
 sub _update_db {
-    my ($flag, $values, $visibilities) = @_;
+    my ( $flag, $values, $visibilities ) = @_;
     my $dbh = Bugzilla->dbh;
 
     $dbh->bz_start_transaction();
     my $flag_obj = _update_db_flag($flag);
-    _update_db_values($flag_obj, $flag, $values);
-    _update_db_visibility($flag_obj, $flag, $visibilities);
+    _update_db_values( $flag_obj, $flag, $values );
+    _update_db_visibility( $flag_obj, $flag, $visibilities );
     $dbh->bz_commit_transaction();
 
     return $flag_obj;
@@ -321,14 +338,16 @@ sub _update_db_flag {
     };
 
     my $flag_obj;
-    if ($flag->{id}) {
+    if ( $flag->{id} ) {
+
         # update existing flag
-        $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->new($flag->{id})
-            || ThrowCodeError('tracking_flags_invalid_item_id', { item => 'flag', id => $flag->{id} });
+        $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->new( $flag->{id} )
+            || ThrowCodeError( 'tracking_flags_invalid_item_id', { item => 'flag', id => $flag->{id} } );
         $flag_obj->set_all($object_set);
         $flag_obj->update();
 
-    } else {
+    }
+    else {
         # create new flag
         $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->create($object_set);
     }
@@ -337,18 +356,18 @@ sub _update_db_flag {
 }
 
 sub _update_db_values {
-    my ($flag_obj, $flag, $values) = @_;
+    my ( $flag_obj, $flag, $values ) = @_;
 
     # delete
-    foreach my $current_value (@{ $flag_obj->values }) {
-        if (!grep { $_->{id} == $current_value->id } @$values) {
+    foreach my $current_value ( @{ $flag_obj->values } ) {
+        if ( !grep { $_->{id} == $current_value->id } @$values ) {
             $current_value->remove_from_db();
         }
     }
 
     # add/update
     my $sortkey = 0;
-    foreach my $value (@{ $values }) {
+    foreach my $value ( @{$values} ) {
         $sortkey += 10;
 
         my $object_set = {
@@ -359,18 +378,21 @@ sub _update_db_values {
             comment         => $value->{comment},
         };
 
-        if ($value->{id}) {
-            my $value_obj = Bugzilla::Extension::TrackingFlags::Flag::Value->new($value->{id})
-                || ThrowCodeError('tracking_flags_invalid_item_id', { item => 'flag value', id => $flag->{id} });
+        if ( $value->{id} ) {
+            my $value_obj = Bugzilla::Extension::TrackingFlags::Flag::Value->new( $value->{id} )
+                || ThrowCodeError( 'tracking_flags_invalid_item_id', { item => 'flag value', id => $flag->{id} } );
             my $old_value = $value_obj->value;
             $value_obj->set_all($object_set);
             $value_obj->update();
-            Bugzilla::Extension::TrackingFlags::Flag::Bug->update_all_values({
-                value_obj => $value_obj,
-                old_value => $old_value,
-                new_value => $value_obj->value,
-            });
-        } else {
+            Bugzilla::Extension::TrackingFlags::Flag::Bug->update_all_values(
+                {
+                    value_obj => $value_obj,
+                    old_value => $old_value,
+                    new_value => $value_obj->value,
+                }
+            );
+        }
+        else {
             $object_set->{tracking_flag_id} = $flag_obj->flag_id;
             Bugzilla::Extension::TrackingFlags::Flag::Value->create($object_set);
         }
@@ -378,23 +400,25 @@ sub _update_db_values {
 }
 
 sub _update_db_visibility {
-    my ($flag_obj, $flag, $visibilities) = @_;
+    my ( $flag_obj, $flag, $visibilities ) = @_;
 
     # delete
-    foreach my $current_visibility (@{ $flag_obj->visibility }) {
-        if (!grep { $_->{id} == $current_visibility->id } @$visibilities) {
+    foreach my $current_visibility ( @{ $flag_obj->visibility } ) {
+        if ( !grep { $_->{id} == $current_visibility->id } @$visibilities ) {
             $current_visibility->remove_from_db();
         }
     }
 
     # add
-    foreach my $visibility (@{ $visibilities }) {
+    foreach my $visibility ( @{$visibilities} ) {
         next if $visibility->{id};
-        Bugzilla::Extension::TrackingFlags::Flag::Visibility->create({
-            tracking_flag_id => $flag_obj->flag_id,
-            product_id       => $visibility->{product_obj}->id,
-            component_id     => $visibility->{component} ? $visibility->{component_obj}->id : undef,
-        });
+        Bugzilla::Extension::TrackingFlags::Flag::Visibility->create(
+            {
+                tracking_flag_id => $flag_obj->flag_id,
+                product_id       => $visibility->{product_obj}->id,
+                component_id     => $visibility->{component} ? $visibility->{component_obj}->id : undef,
+            }
+        );
     }
 }
 
@@ -404,61 +428,67 @@ sub _update_db_visibility {
 
 sub _groups_to_json {
     my @data;
-    foreach my $group (sort { $a->name cmp $b->name } Bugzilla::Group->get_all()) {
-        push @data, {
+    foreach my $group ( sort { $a->name cmp $b->name } Bugzilla::Group->get_all() ) {
+        push @data,
+            {
             id   => $group->id,
             name => $group->name,
-        };
+            };
     }
-    return encode_json(\@data);
+    return encode_json( \@data );
 }
 
 sub _flag_values_to_json {
-    my ($values, $is_copy) = @_;
+    my ( $values, $is_copy ) = @_;
+
     # setting is_copy will set the id's to zero, to force new values rather
     # than editing existing ones
     my @data;
     foreach my $value (@$values) {
-        push @data, {
-            id              => $is_copy ? 0 : $value->{id},
+        push @data,
+            {
+            id => $is_copy ? 0 : $value->{id},
             value           => $value->{value},
             setter_group_id => $value->{setter_group_id},
             is_active       => $value->{is_active} ? JSON::true : JSON::false,
-            comment         => $value->{comment} // '',
-        };
+            comment => $value->{comment} // '',
+            };
     }
-    return encode_json(\@data);
+    return encode_json( \@data );
 }
 
 sub _flag_visibility_to_json {
-    my ($visibilities, $is_copy) = @_;
+    my ( $visibilities, $is_copy ) = @_;
+
     # setting is_copy will set the id's to zero, to force new visibilites
     # rather than editing existing ones
     my @data;
 
     foreach my $visibility (@$visibilities) {
-        my $product = exists $visibility->{product_id}
+        my $product
+            = exists $visibility->{product_id}
             ? $visibility->product->name
             : $visibility->{product};
         my $component;
-        if (exists $visibility->{component_id} && $visibility->{component_id}) {
+        if ( exists $visibility->{component_id} && $visibility->{component_id} ) {
             $component = $visibility->component->name;
-        } elsif (exists $visibility->{component}) {
+        }
+        elsif ( exists $visibility->{component} ) {
             $component = $visibility->{component};
-        } else {
+        }
+        else {
             $component = undef;
         }
-        push @data, {
-            id        => $is_copy ? 0 : $visibility->{id},
+        push @data,
+            {
+            id => $is_copy ? 0 : $visibility->{id},
             product   => $product,
             component => $component,
-        };
+            };
     }
-    @data = sort {
-                lc($a->{product}) cmp lc($b->{product})
-                || lc($a->{component}) cmp lc($b->{component})
-            } @data;
-    return encode_json(\@data);
+    @data
+        = sort { lc( $a->{product} ) cmp lc( $b->{product} ) || lc( $a->{component} ) cmp lc( $b->{component} ) } @data;
+    return encode_json( \@data );
 }
 
 1;

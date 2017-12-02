@@ -11,7 +11,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use constant NAME => 'UserStory';
+use constant NAME             => 'UserStory';
 use constant REQUIRED_MODULES => [
     {
         package => 'Text-Diff',

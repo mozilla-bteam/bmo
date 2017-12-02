@@ -17,11 +17,11 @@ sub process {
     my $self = shift;
 
     # we only want to measure files not template blocks
-    if (ref($_[0]) || substr($_[0], -5) ne '.tmpl') {
+    if ( ref( $_[0] ) || substr( $_[0], -5 ) ne '.tmpl' ) {
         return $self->SUPER::process(@_);
     }
 
-    Bugzilla->metrics->template_start($_[0]);
+    Bugzilla->metrics->template_start( $_[0] );
     my $result = $self->SUPER::process(@_);
     Bugzilla->metrics->end();
     return $result;

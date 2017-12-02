@@ -24,7 +24,7 @@ CODE
 
 sub import {
     my ($class) = @_;
-    my ($ref)  = {};
+    my ($ref)   = {};
     filter_add( bless $ref, $class );
 }
 
@@ -34,9 +34,9 @@ sub import {
 sub filter {
     my ($self) = @_;
     my ($status);
-    if ($status = filter_read() > 0) {
-        if (Apache2::ServerUtil::restart_count() < 2) {
-            if (!$self->{did_it}) {
+    if ( $status = filter_read() > 0 ) {
+        if ( Apache2::ServerUtil::restart_count() < 2 ) {
+            if ( !$self->{did_it} ) {
                 $self->{did_it} = 1;
                 $_ = $FIRST_STARTUP;
             }

@@ -28,20 +28,21 @@ sub start {
 #
 
 sub gd_preconfig {
-    my $self = shift;
+    my $self    = shift;
     my $pidfile = $self->{gd_args}{pidfile};
-    if (!$pidfile) {
+    if ( !$pidfile ) {
         $pidfile = bz_locations()->{datadir} . '/' . $self->{gd_progname} . ".pid";
     }
-    return (pidfile => $pidfile);
+    return ( pidfile => $pidfile );
 }
 
 sub gd_getopt {
     my $self = shift;
     $self->SUPER::gd_getopt();
-    if ($self->{gd_args}{progname}) {
+    if ( $self->{gd_args}{progname} ) {
         $self->{gd_progname} = $self->{gd_args}{progname};
-    } else {
+    }
+    else {
         $self->{gd_progname} = basename($0);
     }
     $self->{_original_zero} = $0;
@@ -62,20 +63,20 @@ sub gd_more_opt {
 }
 
 sub gd_usage {
-    pod2usage({ -verbose => 0, -exitval => 'NOEXIT' });
+    pod2usage( { -verbose => 0, -exitval => 'NOEXIT' } );
     return 0;
-};
+}
 
 sub gd_redirect_output {
     my $self = shift;
 
     my $filename = bz_locations()->{datadir} . '/' . $self->{gd_progname} . ".log";
-    open(STDERR, ">>", $filename) or (print "could not open stderr: $!" && exit(1));
+    open( STDERR, ">>", $filename ) or ( print "could not open stderr: $!" && exit(1) );
     close(STDOUT);
-    open(STDOUT, ">&", STDERR) or die "redirect STDOUT -> STDERR: $!";
+    open( STDOUT, ">&", STDERR ) or die "redirect STDOUT -> STDERR: $!";
     $SIG{HUP} = sub {
         close(STDERR);
-        open(STDERR, ">>", $filename) or (print "could not open stderr: $!" && exit(1));
+        open( STDERR, ">>", $filename ) or ( print "could not open stderr: $!" && exit(1) );
     };
 }
 

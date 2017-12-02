@@ -19,53 +19,55 @@ use DateTime;
 use base qw(Exporter);
 
 our @EXPORT = qw( string_to_datetime
-                  time_to_datetime
-                  parse_date
-                  is_active_status_field );
+    time_to_datetime
+    parse_date
+    is_active_status_field );
 
 sub string_to_datetime {
     my $input = shift;
-    my $time = parse_date($input)
-        or ThrowUserError('report_invalid_date', { date => $input });
+    my $time  = parse_date($input)
+        or ThrowUserError( 'report_invalid_date', { date => $input } );
     return time_to_datetime($time);
 }
 
 sub time_to_datetime {
     my $time = shift;
-    return DateTime->from_epoch(epoch => $time)
-                   ->set_time_zone('local')
-                   ->truncate(to => 'day');
+    return DateTime->from_epoch( epoch => $time )->set_time_zone('local')->truncate( to => 'day' );
 }
 
 sub parse_date {
     my ($str) = @_;
-    if ($str =~ /^(-|\+)?(\d+)([hHdDwWmMyY])$/) {
+    if ( $str =~ /^(-|\+)?(\d+)([hHdDwWmMyY])$/ ) {
+
         # relative date
-        my ($sign, $amount, $unit, $date) = ($1, $2, lc $3, time);
-        my ($sec, $min, $hour, $mday, $month, $year, $wday)  = localtime($date);
+        my ( $sign, $amount, $unit, $date ) = ( $1, $2, lc $3, time );
+        my ( $sec, $min, $hour, $mday, $month, $year, $wday ) = localtime($date);
         $amount = -$amount if $sign && $sign eq '+';
-        if ($unit eq 'w') {
+        if ( $unit eq 'w' ) {
+
             # convert weeks to days
             $amount = 7 * $amount + $wday;
-            $unit = 'd';
+            $unit   = 'd';
         }
-        if ($unit eq 'd') {
+        if ( $unit eq 'd' ) {
             $date -= $sec + 60 * $min + 3600 * $hour + 24 * 3600 * $amount;
             return $date;
         }
-        elsif ($unit eq 'y') {
-            return str2time(sprintf("%4d-01-01 00:00:00", $year + 1900 - $amount));
+        elsif ( $unit eq 'y' ) {
+            return str2time( sprintf( "%4d-01-01 00:00:00", $year + 1900 - $amount ) );
         }
-        elsif ($unit eq 'm') {
+        elsif ( $unit eq 'm' ) {
             $month -= $amount;
-            while ($month < 0) { $year--; $month += 12; }
-            return str2time(sprintf("%4d-%02d-01 00:00:00", $year + 1900, $month + 1));
+            while ( $month < 0 ) { $year--; $month += 12; }
+            return str2time( sprintf( "%4d-%02d-01 00:00:00", $year + 1900, $month + 1 ) );
         }
-        elsif ($unit eq 'h') {
+        elsif ( $unit eq 'h' ) {
+
             # Special case 0h for 'beginning of this hour'
-            if ($amount == 0) {
+            if ( $amount == 0 ) {
                 $date -= $sec + 60 * $min;
-            } else {
+            }
+            else {
                 $date -= 3600 * $amount;
             }
             return $date;
@@ -78,11 +80,11 @@ sub parse_date {
 sub is_active_status_field {
     my ($field) = @_;
 
-    if ($field->type == FIELD_TYPE_EXTENSION
+    if (   $field->type == FIELD_TYPE_EXTENSION
         && $field->isa('Bugzilla::Extension::TrackingFlags::Flag')
         && $field->flag_type eq 'tracking'
-        && $field->name =~ /_status_/
-    ) {
+        && $field->name =~ /_status_/ )
+    {
         return $field->is_active;
     }
 

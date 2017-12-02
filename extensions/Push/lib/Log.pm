@@ -17,7 +17,7 @@ use Bugzilla::Extension::Push::Message;
 sub new {
     my ($class) = @_;
     my $self = {};
-    bless($self, $class);
+    bless( $self, $class );
     return $self;
 }
 
@@ -28,18 +28,16 @@ sub count {
 }
 
 sub list {
-    my ($self, %args) = @_;
-    $args{limit} ||= 10;
+    my ( $self, %args ) = @_;
+    $args{limit}  ||= 10;
     $args{filter} ||= '';
     my @result;
     my $dbh = Bugzilla->dbh;
 
-    my $ids = $dbh->selectcol_arrayref("
+    my $ids = $dbh->selectcol_arrayref( "
         SELECT id
           FROM push_log
-         ORDER BY processed_ts DESC " .
-         $dbh->sql_limit(100)
-    );
+         ORDER BY processed_ts DESC " . $dbh->sql_limit(100) );
     return Bugzilla::Extension::Push::LogEntry->new_from_list($ids);
 }
 

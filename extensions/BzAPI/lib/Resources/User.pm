@@ -15,12 +15,14 @@ use Bugzilla::Extension::BzAPI::Util;
 
 sub rest_handlers {
     my $rest_handlers = [
-        qr{/user$}, {
-            GET  => {
+        qr{/user$},
+        {
+            GET => {
                 response => \&get_users,
             },
         },
-        qr{/user/([^/]+)$}, {
+        qr{/user/([^/]+)$},
+        {
             GET => {
                 response => \&get_user,
             },
@@ -31,25 +33,24 @@ sub rest_handlers {
 
 sub get_users {
     my ($result) = @_;
-    my $rpc    = Bugzilla->request_cache->{bzapi_rpc};
-    my $params = Bugzilla->input_params;
+    my $rpc      = Bugzilla->request_cache->{bzapi_rpc};
+    my $params   = Bugzilla->input_params;
 
     return if !exists $$result->{users};
 
     my @users;
-    foreach my $user (@{$$result->{users}}) {
-        my $object = Bugzilla::User->new(
-            { id => $user->{id}, cache => 1 });
+    foreach my $user ( @{ $$result->{users} } ) {
+        my $object = Bugzilla::User->new( { id => $user->{id}, cache => 1 } );
 
-        $user = fix_user($user, $object);
+        $user = fix_user( $user, $object );
 
         # Use userid instead of email for 'ref' for /user calls
-        $user->{'ref'} = $rpc->type('string', ref_urlbase . "/user/" . $object->id);
+        $user->{'ref'} = $rpc->type( 'string', ref_urlbase . "/user/" . $object->id );
 
         # Emails are not filtered even if user is not logged in
-        $user->{name} = $rpc->type('string', $object->login);
+        $user->{name} = $rpc->type( 'string', $object->login );
 
-        push(@users, filter($params, $user));
+        push( @users, filter( $params, $user ) );
     }
 
     $$result->{users} = \@users;
@@ -57,22 +58,22 @@ sub get_users {
 
 sub get_user {
     my ($result) = @_;
-    my $rpc    = Bugzilla->request_cache->{bzapi_rpc};
-    my $params = Bugzilla->input_params;
+    my $rpc      = Bugzilla->request_cache->{bzapi_rpc};
+    my $params   = Bugzilla->input_params;
 
     return if !exists $$result->{users};
     my $user = $$result->{users}->[0] || return;
-    my $object = Bugzilla::User->new({ id => $user->{id}, cache => 1 });
+    my $object = Bugzilla::User->new( { id => $user->{id}, cache => 1 } );
 
-    $user = fix_user($user, $object);
+    $user = fix_user( $user, $object );
 
     # Use userid instead of email for 'ref' for /user calls
-    $user->{'ref'} = $rpc->type('string', ref_urlbase . "/user/" . $object->id);
+    $user->{'ref'} = $rpc->type( 'string', ref_urlbase . "/user/" . $object->id );
 
     # Emails are not filtered even if user is not logged in
-    $user->{name} = $rpc->type('string', $object->login);
+    $user->{name} = $rpc->type( 'string', $object->login );
 
-    $user = filter($params, $user);
+    $user = filter( $params, $user );
 
     $$result = $user;
 }

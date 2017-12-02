@@ -19,21 +19,21 @@ use File::Basename;
 sub new {
     my ($class) = @_;
     my $self = {};
-    bless($self, $class);
+    bless( $self, $class );
 
-    $self->{names} = [];
+    $self->{names}   = [];
     $self->{objects} = {};
-    $self->{path} = bz_locations->{'extensionsdir'} . '/Push/lib/Connector';
+    $self->{path}    = bz_locations->{'extensionsdir'} . '/Push/lib/Connector';
 
     my $logger = Bugzilla->push_ext->logger;
-    foreach my $file (glob($self->{path} . '/*.pm')) {
+    foreach my $file ( glob( $self->{path} . '/*.pm' ) ) {
         my $name = basename($file);
         $name =~ s/\.pm$//;
         next if $name eq 'Base';
-        if (length($name) > 32) {
+        if ( length($name) > 32 ) {
             $logger->info("Ignoring connector '$name': Name longer than 32 characters");
         }
-        push @{$self->{names}}, $name;
+        push @{ $self->{names} }, $name;
         $logger->debug("Found connector '$name'");
     }
 
@@ -42,10 +42,10 @@ sub new {
 
 sub _load {
     my ($self) = @_;
-    return if scalar keys %{$self->{objects}};
+    return if scalar keys %{ $self->{objects} };
 
     my $logger = Bugzilla->push_ext->logger;
-    foreach my $name (@{$self->{names}}) {
+    foreach my $name ( @{ $self->{names} } ) {
         next if exists $self->{objects}->{$name};
         my $file = $self->{path} . "/$name.pm";
         trick_taint($file);
@@ -61,7 +61,7 @@ sub _load {
             $self->{objects}->{$name} = $connector;
         };
         if ($@) {
-            $logger->error("Connector '$name' failed to load: " . clean_error($@));
+            $logger->error( "Connector '$name' failed to load: " . clean_error($@) );
         }
         Bugzilla->error_mode($old_error_mode);
     }
@@ -70,15 +70,13 @@ sub _load {
 sub stop {
     my ($self) = @_;
     my $logger = Bugzilla->push_ext->logger;
-    foreach my $connector ($self->list) {
+    foreach my $connector ( $self->list ) {
         next unless $connector->enabled;
-        $logger->debug("Stopping '" . $connector->name . "'");
-        eval {
-            $connector->stop();
-        };
+        $logger->debug( "Stopping '" . $connector->name . "'" );
+        eval { $connector->stop(); };
         if ($@) {
-            $logger->error("Connector '" . $connector->name . "' failed to stop: " . clean_error($@));
-            $logger->debug("Connector '" . $connector->name . "' failed to stop: $@");
+            $logger->error( "Connector '" . $connector->name . "' failed to stop: " . clean_error($@) );
+            $logger->debug( "Connector '" . $connector->name . "' failed to stop: $@" );
         }
     }
 }
@@ -92,22 +90,22 @@ sub reload {
 
 sub names {
     my ($self) = @_;
-    return @{$self->{names}};
+    return @{ $self->{names} };
 }
 
 sub list {
     my ($self) = @_;
     $self->_load();
-    return sort { $a->name cmp $b->name } values %{$self->{objects}};
+    return sort { $a->name cmp $b->name } values %{ $self->{objects} };
 }
 
 sub exists {
-    my ($self, $name) = @_;
+    my ( $self, $name ) = @_;
     $self->by_name($name) ? 1 : 0;
 }
 
 sub by_name {
-    my ($self, $name) = @_;
+    my ( $self, $name ) = @_;
     $self->_load();
     return unless exists $self->{objects}->{$name};
     return $self->{objects}->{$name};

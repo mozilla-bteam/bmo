@@ -11,9 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
-
 use Bugzilla;
 use Bugzilla::User;
 use Bugzilla::Constants;
@@ -26,7 +23,7 @@ BEGIN { Bugzilla->extensions(); }
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my ($from, $to);
+my ( $from, $to );
 GetOptions(
     "from|f=s" => \$from,
     "to|t=s"   => \$to,
@@ -37,18 +34,20 @@ pod2usage(1) unless defined $from && defined $to;
 my $dbh = Bugzilla->dbh;
 
 my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
-my $field     = Bugzilla::Field->check({ name => 'assigned_to', cache => 1 });
-my $from_user = Bugzilla::User->check({ name => $from, cache => 1 });
-my $to_user   = Bugzilla::User->check({ name => $to, cache => 1 });
+my $field     = Bugzilla::Field->check( { name => 'assigned_to', cache => 1 } );
+my $from_user = Bugzilla::User->check( { name => $from, cache => 1 } );
+my $to_user   = Bugzilla::User->check( { name => $to, cache => 1 } );
 
-my $bugs = $dbh->selectcol_arrayref(q{SELECT bug_id
+my $bugs = $dbh->selectcol_arrayref(
+    q{SELECT bug_id
                                       FROM bugs
                                       LEFT JOIN bug_status
                                              ON bug_status.value = bugs.bug_status
                                       WHERE bug_status.is_open = 1
-                                        AND bugs.assigned_to = ?}, undef, $from_user->id);
+                                        AND bugs.assigned_to = ?}, undef, $from_user->id
+);
 my $bug_count = @$bugs;
-if ($bug_count == 0) {
+if ( $bug_count == 0 ) {
     warn "There are no bugs to move.\n";
     exit 1;
 }
@@ -63,11 +62,13 @@ getc();
 $dbh->bz_start_transaction;
 foreach my $bug_id (@$bugs) {
     warn "Updating bug $bug_id\n";
-    $dbh->do(q{INSERT INTO bugs_activity(bug_id, who, bug_when, fieldid, removed, added)
+    $dbh->do(
+        q{INSERT INTO bugs_activity(bug_id, who, bug_when, fieldid, removed, added)
                VALUES (?, ?, ?, ?, ?, ?)},
-                undef, $bug_id, $to_user->id, $timestamp, $field->id, $from_user->login, $to_user->login);
-    $dbh->do(q{UPDATE bugs SET assigned_to = ?, delta_ts = ?, lastdiffed = ? WHERE bug_id = ?},
-        undef, $to_user->id, $timestamp, $timestamp, $bug_id);
+        undef, $bug_id, $to_user->id, $timestamp, $field->id, $from_user->login, $to_user->login
+    );
+    $dbh->do( q{UPDATE bugs SET assigned_to = ?, delta_ts = ?, lastdiffed = ? WHERE bug_id = ?},
+        undef, $to_user->id, $timestamp, $timestamp, $bug_id );
 }
 $from_user->clear_last_statistics_ts();
 $to_user->clear_last_statistics_ts();

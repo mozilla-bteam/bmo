@@ -37,8 +37,8 @@ sub get_param_list {
             }
         },
         {
-            name => 'mozreview_app_id',
-            type => 't',
+            name    => 'mozreview_app_id',
+            type    => 't',
             default => '',
             checker => sub {
                 my ($app_id) = (@_);

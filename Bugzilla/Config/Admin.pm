@@ -76,7 +76,8 @@ sub check_rate_limit_rules {
     return "value is not HASH"    unless ref $val && ref($val) eq 'HASH';
     return "rules are invalid"    unless all {
         ref($_) eq 'ARRAY' && looks_like_number( $_->[0] ) && looks_like_number( $_->[1] )
-    } values %$val;
+    }
+    values %$val;
 
     foreach my $required (qw( show_bug get_bug )) {
         return "missing $required" unless exists $val->{$required};
