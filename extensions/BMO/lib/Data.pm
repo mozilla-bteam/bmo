@@ -15,13 +15,13 @@ use base qw(Exporter);
 use Tie::IxHash;
 
 our @EXPORT = qw( $cf_visible_in_products
-                  %group_change_notification
-                  $cf_setters
-                  @always_fileable_groups
-                  %group_auto_cc
-                  %create_bug_formats
-                  @default_named_queries
-                  %autodetect_attach_urls );
+    %group_change_notification
+    $cf_setters
+    @always_fileable_groups
+    %group_auto_cc
+    %create_bug_formats
+    @default_named_queries
+    %autodetect_attach_urls );
 
 # Creating an attachment whose contents is a URL matching one of these regexes
 # will result in the user being redirected to that URL when viewing the
@@ -83,7 +83,8 @@ our %autodetect_attach_urls = (
 #
 # IxHash keeps them in insertion order, and so we get regexp priorities right.
 our $cf_visible_in_products;
-tie(%$cf_visible_in_products, "Tie::IxHash",
+tie(%$cf_visible_in_products,
+    "Tie::IxHash",
     qr/^cf_colo_site$/ => {
         "mozilla.org" => [
             "Server Operations",
@@ -92,47 +93,43 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
             "Server Operations: RelEng",
             "Server Operations: Security",
         ],
-        "Infrastructure & Operations" => [
-            "RelOps",
-            "RelOps: Puppet",
-            "DCOps",
-        ],
+        "Infrastructure & Operations" => [ "RelOps", "RelOps: Puppet", "DCOps", ],
     },
     qr/^cf_office$/ => {
         "mozilla.org" => ["Server Operations: Desktop Issues"],
     },
     qr/^cf_crash_signature$/ => {
-        "Add-on SDK"                  => [],
-        "addons.mozilla.org"          => [],
-        "Android Background Services" => [],
-        "B2GDroid"                    => [],
-        "Calendar"                    => [],
-        "Composer"                    => [],
-        "Core"                        => [],
-        "Directory"                   => [],
+        "Add-on SDK"                          => [],
+        "addons.mozilla.org"                  => [],
+        "Android Background Services"         => [],
+        "B2GDroid"                            => [],
+        "Calendar"                            => [],
+        "Composer"                            => [],
+        "Core"                                => [],
+        "Directory"                           => [],
         "External Software Affecting Firefox" => [],
-        "Firefox"                     => [],
-        "Firefox for Android"         => [],
-        "Firefox for Metro"           => [],
-        "Firefox OS"                  => [],
-        "JSS"                         => [],
-        "MailNews Core"               => [],
-        "Mozilla Labs"                => [],
-        "Mozilla Localizations"       => [],
-        "mozilla.org"                 => [],
-        "Cloud Services"              => [],
-        "NSPR"                        => [],
-        "NSS"                         => [],
-        "Other Applications"          => [],
-        "Penelope"                    => [],
-        "Release Engineering"         => [],
-        "Rhino"                       => [],
-        "SeaMonkey"                   => [],
-        "Tamarin"                     => [],
-        "Tech Evangelism"             => [],
-        "Testing"                     => [],
-        "Thunderbird"                 => [],
-        "Toolkit"                     => [],
+        "Firefox"                             => [],
+        "Firefox for Android"                 => [],
+        "Firefox for Metro"                   => [],
+        "Firefox OS"                          => [],
+        "JSS"                                 => [],
+        "MailNews Core"                       => [],
+        "Mozilla Labs"                        => [],
+        "Mozilla Localizations"               => [],
+        "mozilla.org"                         => [],
+        "Cloud Services"                      => [],
+        "NSPR"                                => [],
+        "NSS"                                 => [],
+        "Other Applications"                  => [],
+        "Penelope"                            => [],
+        "Release Engineering"                 => [],
+        "Rhino"                               => [],
+        "SeaMonkey"                           => [],
+        "Tamarin"                             => [],
+        "Tech Evangelism"                     => [],
+        "Testing"                             => [],
+        "Thunderbird"                         => [],
+        "Toolkit"                             => [],
     },
     qr/^cf_due_date$/ => {
         "bugzilla.mozilla.org"        => [],
@@ -168,18 +165,18 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
         "Toolkit"             => [],
     },
     qr/^cf_has_regression_range$/ => {
-        "Core"    => [],
+        "Core"                => [],
         "Firefox for Android" => [],
         "Firefox for iOS"     => [],
-        "Firefox" => [],
-        "Toolkit" => [],
+        "Firefox"             => [],
+        "Toolkit"             => [],
     },
     qr/^cf_has_str$/ => {
-        "Core"    => [],
+        "Core"                => [],
         "Firefox for Android" => [],
         "Firefox for iOS"     => [],
-        "Firefox" => [],
-        "Toolkit" => [],
+        "Firefox"             => [],
+        "Toolkit"             => [],
     },
     qr/^cf_cab_review$/ => {
         "Infrastructure & Operations Graveyard" => [],
@@ -190,32 +187,32 @@ tie(%$cf_visible_in_products, "Tie::IxHash",
 
 # Who to CC on particular bugmails when certain groups are added or removed.
 our %group_change_notification = (
-  'addons-security'           => ['amo-editors@mozilla.org'],
-  'b2g-core-security'         => ['security@mozilla.org'],
-  'bugzilla-security'         => ['security@bugzilla.org'],
-  'client-services-security'  => ['amo-admins@mozilla.org', 'web-security@mozilla.org'],
-  'cloud-services-security'   => ['web-security@mozilla.org'],
-  'core-security'             => ['security@mozilla.org'],
-  'crypto-core-security'      => ['security@mozilla.org'],
-  'dom-core-security'         => ['security@mozilla.org'],
-  'firefox-core-security'     => ['security@mozilla.org'],
-  'gfx-core-security'         => ['security@mozilla.org'],
-  'javascript-core-security'  => ['security@mozilla.org'],
-  'layout-core-security'      => ['security@mozilla.org'],
-  'mail-core-security'        => ['security@mozilla.org'],
-  'media-core-security'       => ['security@mozilla.org'],
-  'network-core-security'     => ['security@mozilla.org'],
-  'core-security-release'     => ['security@mozilla.org'],
-  'tamarin-security'          => ['tamarinsecurity@adobe.com'],
-  'toolkit-core-security'     => ['security@mozilla.org'],
-  'websites-security'         => ['web-security@mozilla.org'],
-  'webtools-security'         => ['web-security@mozilla.org'],
+    'addons-security'          => ['amo-editors@mozilla.org'],
+    'b2g-core-security'        => ['security@mozilla.org'],
+    'bugzilla-security'        => ['security@bugzilla.org'],
+    'client-services-security' => [ 'amo-admins@mozilla.org', 'web-security@mozilla.org' ],
+    'cloud-services-security'  => ['web-security@mozilla.org'],
+    'core-security'            => ['security@mozilla.org'],
+    'crypto-core-security'     => ['security@mozilla.org'],
+    'dom-core-security'        => ['security@mozilla.org'],
+    'firefox-core-security'    => ['security@mozilla.org'],
+    'gfx-core-security'        => ['security@mozilla.org'],
+    'javascript-core-security' => ['security@mozilla.org'],
+    'layout-core-security'     => ['security@mozilla.org'],
+    'mail-core-security'       => ['security@mozilla.org'],
+    'media-core-security'      => ['security@mozilla.org'],
+    'network-core-security'    => ['security@mozilla.org'],
+    'core-security-release'    => ['security@mozilla.org'],
+    'tamarin-security'         => ['tamarinsecurity@adobe.com'],
+    'toolkit-core-security'    => ['security@mozilla.org'],
+    'websites-security'        => ['web-security@mozilla.org'],
+    'webtools-security'        => ['web-security@mozilla.org'],
 );
 
 # Who can set custom flags (use full field names only, not regex's)
 our $cf_setters = {
-    'cf_colo_site'  => [ 'infra', 'build' ],
-    'cf_rank'       => [ 'rank-setters' ],
+    'cf_colo_site' => [ 'infra', 'build' ],
+    'cf_rank'      => ['rank-setters'],
 };
 
 # Groups in which you can always file a bug, regardless of product or user.
@@ -266,7 +263,7 @@ our %create_bug_formats = (
         'include' => 'everyone',
     },
     'Recruiting' => {
-        'format' => 'recruiting',
+        'format'  => 'recruiting',
         'include' => 'everyone',
     },
     'Internet Public Policy' => {

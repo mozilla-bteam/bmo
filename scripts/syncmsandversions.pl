@@ -26,7 +26,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Constants;
 
@@ -50,33 +49,31 @@ USAGE
 # This is a pure command line script.
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-if (scalar @ARGV < 2) {
+if ( scalar @ARGV < 2 ) {
     usage();
     exit();
 }
 
-my ($srcproduct, $tgtproduct) = @ARGV;
+my ( $srcproduct, $tgtproduct ) = @ARGV;
 
 my $dbh = Bugzilla->dbh;
 
 # Find product IDs
-my $srcprodid = $dbh->selectrow_array("SELECT id FROM products WHERE name = ?",
-                                      undef, $srcproduct);
-if (!$srcprodid) {
+my $srcprodid = $dbh->selectrow_array( "SELECT id FROM products WHERE name = ?", undef, $srcproduct );
+if ( !$srcprodid ) {
     print "Can't find product ID for '$srcproduct'.\n";
     exit(1);
 }
 
-my $tgtprodid = $dbh->selectrow_array("SELECT id FROM products WHERE name = ?",
-                                      undef, $tgtproduct);
-if (!$tgtprodid) {
+my $tgtprodid = $dbh->selectrow_array( "SELECT id FROM products WHERE name = ?", undef, $tgtproduct );
+if ( !$tgtprodid ) {
     print "Can't find product ID for '$tgtproduct'.\n";
     exit(1);
 }
 
 $dbh->bz_start_transaction();
 
-$dbh->do("
+$dbh->do( "
     INSERT INTO milestones(value, sortkey, isactive, product_id)
         SELECT m1.value, m1.sortkey, m1.isactive, ?
           FROM milestones m1
@@ -86,9 +83,9 @@ $dbh->do("
                AND m2.value IS NULL
     ",
     undef,
-    $tgtprodid, $tgtprodid, $srcprodid);
+    $tgtprodid, $tgtprodid, $srcprodid );
 
-$dbh->do("
+$dbh->do( "
     INSERT INTO versions(value, isactive, product_id)
         SELECT v1.value, v1.isactive, ?
           FROM versions v1
@@ -98,9 +95,9 @@ $dbh->do("
                AND v2.value IS NULL
     ",
     undef,
-    $tgtprodid, $tgtprodid, $srcprodid);
+    $tgtprodid, $tgtprodid, $srcprodid );
 
-$dbh->do("
+$dbh->do( "
     INSERT INTO group_control_map (group_id, product_id, entry, membercontrol,
                                    othercontrol, canedit, editcomponents,
                                    editbugs, canconfirm)
@@ -114,7 +111,7 @@ $dbh->do("
                AND g2.group_id IS NULL
     ",
     undef,
-    $tgtprodid, $srcprodid, $tgtprodid, $srcprodid);
+    $tgtprodid, $srcprodid, $tgtprodid, $srcprodid );
 
 $dbh->bz_commit_transaction();
 

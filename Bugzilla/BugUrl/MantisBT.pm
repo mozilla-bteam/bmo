@@ -20,8 +20,8 @@ use Bugzilla::Util;
 ###############################
 
 sub should_handle {
-    my ($class, $uri) = @_;
-    return ($uri->path_query =~ m|view\.php\?id=\d+$|) ? 1 : 0;
+    my ( $class, $uri ) = @_;
+    return ( $uri->path_query =~ m|view\.php\?id=\d+$| ) ? 1 : 0;
 }
 
 sub _check_value {

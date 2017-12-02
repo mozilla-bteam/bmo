@@ -5,7 +5,6 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-
 package Support::Files;
 
 use 5.10.1;
@@ -22,24 +21,23 @@ use constant IGNORE => qw(
 );
 
 our @files = glob('*');
-find(sub { push(@files, $File::Find::name) if $_ =~ /\.pm$/;}, qw(Bugzilla docs));
-push(@files, 'extensions/create.pl', 'docs/makedocs.pl', 'cpanfile');
+find( sub { push( @files, $File::Find::name ) if $_ =~ /\.pm$/; }, qw(Bugzilla docs) );
+push( @files, 'extensions/create.pl', 'docs/makedocs.pl', 'cpanfile' );
 
-our @extensions =
-    grep { $_ ne 'extensions/create.pl' && ! -e "$_/disabled" }
-    glob('extensions/*');
+our @extensions = grep { $_ ne 'extensions/create.pl' && !-e "$_/disabled" } glob('extensions/*');
 
 foreach my $extension (@extensions) {
-    find(sub { push(@files, $File::Find::name) if $_ =~ /\.pm$|\.pl$/;}, $extension);
+    find( sub { push( @files, $File::Find::name ) if $_ =~ /\.pm$|\.pl$/; }, $extension );
 }
 
 our @test_files = glob('t/*.t xt/*/*.t');
 
 foreach my $extension (@extensions) {
+
     # Skip disabled extensions
     next if -e "$extension/disabled";
 
-    find(sub { push(@files, $File::Find::name) if $_ =~ /\.pm$/;}, $extension);
+    find( sub { push( @files, $File::Find::name ) if $_ =~ /\.pm$/; }, $extension );
 }
 
 sub isTestingFile {
@@ -50,23 +48,23 @@ sub isTestingFile {
         return undef if $ignore eq $file;
     }
 
-    if ($file =~ /\.psgi$|\.cgi$|\.pl$|\.pm$/) {
+    if ( $file =~ /\.psgi$|\.cgi$|\.pl$|\.pm$/ ) {
         return 1;
     }
     my $additional;
     foreach $additional (@additional_files) {
-        if ($file eq $additional) { return 1; }
+        if ( $file eq $additional ) { return 1; }
     }
     return undef;
 }
 
-our (@testitems, @module_files);
+our ( @testitems, @module_files );
 
 foreach my $currentfile (@files) {
-    if (isTestingFile($currentfile)) {
-        push(@testitems, $currentfile);
+    if ( isTestingFile($currentfile) ) {
+        push( @testitems, $currentfile );
     }
-    push(@module_files, $currentfile) if $currentfile =~ /\.pm$/;
+    push( @module_files, $currentfile ) if $currentfile =~ /\.pm$/;
 }
 
 1;

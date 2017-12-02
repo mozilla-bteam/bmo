@@ -18,16 +18,17 @@ use base qw(Bugzilla::BugUrl);
 ###############################
 
 sub should_handle {
-    my ($class, $uri) = @_;
+    my ( $class, $uri ) = @_;
 
     # Mozilla support questions normally have the form:
     # https://support.mozilla.org/<language>/questions/<id>
-    return ($uri->authority =~ /^support.mozilla.org$/i
-            and $uri->path =~ m|^(/[^/]+)?/questions/\d+$|) ? 1 : 0;
+    return ( $uri->authority =~ /^support.mozilla.org$/i and $uri->path =~ m|^(/[^/]+)?/questions/\d+$| )
+        ? 1
+        : 0;
 }
 
 sub _check_value {
-    my ($class, $uri) = @_;
+    my ( $class, $uri ) = @_;
 
     $uri = $class->SUPER::_check_value($uri);
 

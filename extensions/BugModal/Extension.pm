@@ -25,40 +25,33 @@ use JSON::XS qw(encode_json);
 
 our $VERSION = '1';
 
-use constant READABLE_BUG_STATUS_PRODUCTS => (
-    'Core',
-    'Toolkit',
-    'Firefox',
-    'Firefox for Android',
-    'Firefox for iOS',
-    'Bugzilla',
-    'bugzilla.mozilla.org'
-);
+use constant READABLE_BUG_STATUS_PRODUCTS =>
+    ( 'Core', 'Toolkit', 'Firefox', 'Firefox for Android', 'Firefox for iOS', 'Bugzilla', 'bugzilla.mozilla.org' );
 
 sub show_bug_format {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     $args->{format} = _alternative_show_bug_format();
 }
 
 sub edit_bug_format {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     $args->{format} = _alternative_show_bug_format();
 }
 
 sub _alternative_show_bug_format {
-    my $cgi = Bugzilla->cgi;
+    my $cgi  = Bugzilla->cgi;
     my $user = Bugzilla->user;
-    if (my $ctype = $cgi->param('ctype')) {
+    if ( my $ctype = $cgi->param('ctype') ) {
         return '' if $ctype ne 'html';
     }
-    if (my $format = $cgi->param('format')) {
-        return ($format eq '__default__' || $format eq 'default') ? '' : $format;
+    if ( my $format = $cgi->param('format') ) {
+        return ( $format eq '__default__' || $format eq 'default' ) ? '' : $format;
     }
     return $user->setting('ui_experiments') eq 'on' ? 'modal' : '';
 }
 
 sub template_after_create {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $context = $args->{template}->context;
 
     # wrapper around time_ago()
@@ -67,11 +60,11 @@ sub template_after_create {
             my ($context) = @_;
             return sub {
                 my ($timestamp) = @_;
-                my $datetime = datetime_from($timestamp)
-                    // return $timestamp;
+                my $datetime = datetime_from($timestamp) // return $timestamp;
                 return time_ago($datetime);
             };
-        }, 1
+        },
+        1
     );
 
     # morph a string into one which is suitable to use as an element's id
@@ -82,14 +75,15 @@ sub template_after_create {
                 my ($id) = @_;
                 $id //= '';
                 $id = lc($id);
-                while ($id ne '' && $id !~ /^[a-z]/) {
-                    $id = substr($id, 1);
+                while ( $id ne '' && $id !~ /^[a-z]/ ) {
+                    $id = substr( $id, 1 );
                 }
                 $id =~ tr/ /-/;
                 $id =~ s/[^a-z\d\-_:\.]/_/g;
                 return $id;
             };
-        }, 1
+        },
+        1
     );
 
     # parse date string and output epoch
@@ -100,14 +94,15 @@ sub template_after_create {
                 my ($date_str) = @_;
                 return date_str_to_time($date_str);
             };
-        }, 1
+        },
+        1
     );
 
     # flatten a list of hashrefs to a list of values
     # eg.  logins = users.pluck("login")
     $context->define_vmethod(
         list => pluck => sub {
-            my ($list, $field) = @_;
+            my ( $list, $field ) = @_;
             return [ map { $_->$field } @$list ];
         }
     );
@@ -117,7 +112,7 @@ sub template_after_create {
     # eg.  not_byron = users.skip("name", "Byron")
     $context->define_vmethod(
         list => skip => sub {
-            my ($list, $field, $value) = @_;
+            my ( $list, $field, $value ) = @_;
             return [ grep { $_->$field ne $value } @$list ];
         }
     );
@@ -127,7 +122,7 @@ sub template_after_create {
     # eg.  byrons_only = users.only("name", "Byron")
     $context->define_vmethod(
         list => only => sub {
-            my ($list, $field, $value) = @_;
+            my ( $list, $field, $value ) = @_;
             return [ grep { $_->$field eq $value } @$list ];
         }
     );
@@ -136,7 +131,7 @@ sub template_after_create {
     # eg.  has_byron = user_names.exists("byron")
     $context->define_vmethod(
         list => exists => sub {
-            my ($list, $value) = @_;
+            my ( $list, $value ) = @_;
             return any { $_ eq $value } @$list;
         }
     );
@@ -151,16 +146,16 @@ sub template_after_create {
 }
 
 sub template_before_process {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $file = $args->{file};
     my $vars = $args->{vars};
 
-    if ($file eq 'bug/process/header.html.tmpl'
+    if (   $file eq 'bug/process/header.html.tmpl'
         || $file eq 'bug/create/created.html.tmpl'
         || $file eq 'attachment/created.html.tmpl'
-        || $file eq 'attachment/updated.html.tmpl')
+        || $file eq 'attachment/updated.html.tmpl' )
     {
-        if (_alternative_show_bug_format() eq 'modal') {
+        if ( _alternative_show_bug_format() eq 'modal' ) {
             $vars->{alt_ui_header} = 'bug_modal/header.html.tmpl';
             $vars->{alt_ui_show}   = 'bug/show-modal.html.tmpl';
             $vars->{alt_ui_edit}   = 'bug_modal/edit.html.tmpl';
@@ -168,46 +163,51 @@ sub template_before_process {
         return;
     }
 
-    if ($file =~ m#^bug/show-([^\.]+)\.html\.tmpl$#) {
+    if ( $file =~ m#^bug/show-([^\.]+)\.html\.tmpl$# ) {
         my $format = $1;
         return unless _alternative_show_bug_format() eq $format;
     }
-    elsif ($file ne 'bug_modal/edit.html.tmpl') {
+    elsif ( $file ne 'bug_modal/edit.html.tmpl' ) {
         return;
     }
 
-    if ($vars->{bug} && !$vars->{bugs}) {
-        $vars->{bugs} = [$vars->{bug}];
+    if ( $vars->{bug} && !$vars->{bugs} ) {
+        $vars->{bugs} = [ $vars->{bug} ];
     }
 
-    return unless
-        $vars->{bugs}
-        && ref($vars->{bugs}) eq 'ARRAY'
-        && scalar(@{ $vars->{bugs} }) == 1;
+    return
+           unless $vars->{bugs}
+        && ref( $vars->{bugs} ) eq 'ARRAY'
+        && scalar( @{ $vars->{bugs} } ) == 1;
     my $bug = $vars->{bugs}->[0];
     return if exists $bug->{error};
 
     # trigger loading of tracking flags
-    Bugzilla::Extension::TrackingFlags->template_before_process({
-        file => 'bug/edit.html.tmpl',
-        vars => $vars,
-    });
+    Bugzilla::Extension::TrackingFlags->template_before_process(
+        {
+            file => 'bug/edit.html.tmpl',
+            vars => $vars,
+        }
+    );
 
-    if (any { $bug->product eq $_ } READABLE_BUG_STATUS_PRODUCTS) {
-        my @flags = map { { name => $_->name, status => $_->status } } @{$bug->flags};
-        $vars->{readable_bug_status_json} = encode_json({
-            dupe_of    => $bug->dup_id,
-            id         => $bug->id,
-            keywords   => [ map { $_->name } @{$bug->keyword_objects} ],
-            priority   => $bug->priority,
-            resolution => $bug->resolution,
-            status     => $bug->bug_status,
-            flags      => \@flags,
-            target_milestone => $bug->target_milestone,
-            map { $_->name => $_->bug_flag($bug->id)->value } @{$vars->{tracking_flags}},
-        });
+    if ( any { $bug->product eq $_ } READABLE_BUG_STATUS_PRODUCTS ) {
+        my @flags = map { { name => $_->name, status => $_->status } } @{ $bug->flags };
+        $vars->{readable_bug_status_json} = encode_json(
+            {
+                dupe_of          => $bug->dup_id,
+                id               => $bug->id,
+                keywords         => [ map { $_->name } @{ $bug->keyword_objects } ],
+                priority         => $bug->priority,
+                resolution       => $bug->resolution,
+                status           => $bug->bug_status,
+                flags            => \@flags,
+                target_milestone => $bug->target_milestone,
+                map { $_->name => $_->bug_flag( $bug->id )->value } @{ $vars->{tracking_flags} },
+            }
+        );
+
         # HTML4 attributes cannot be longer than this, so just skip it in this case.
-        if (length($vars->{readable_bug_status_json}) > 65536) {
+        if ( length( $vars->{readable_bug_status_json} ) > 65536 ) {
             delete $vars->{readable_bug_status_json};
         }
     }
@@ -217,12 +217,12 @@ sub template_before_process {
     # upstream does these checks in the bug/fields template
     my $perms = $bug->user;
     my @resolutions;
-    foreach my $r (@{ Bugzilla::Field->new({ name => 'resolution', cache => 1 })->legal_values }) {
+    foreach my $r ( @{ Bugzilla::Field->new( { name => 'resolution', cache => 1 } )->legal_values } ) {
         my $resolution = $r->name;
         next unless $resolution;
 
         # always allow the current value
-        if ($resolution eq $bug->resolution) {
+        if ( $resolution eq $bug->resolution ) {
             push @resolutions, $r;
             next;
         }
@@ -231,21 +231,21 @@ sub template_before_process {
         next unless $r->is_active;
 
         # ensure the user has basic rights to change this field
-        next unless $bug->check_can_change_field('resolution', '---', $resolution);
+        next unless $bug->check_can_change_field( 'resolution', '---', $resolution );
 
         # canconfirm users can only set the resolution to WFM, INCOMPLETE or DUPE
-        if ($perms->{canconfirm}
-            && !($perms->{canedit} || $perms->{isreporter}))
+        if ( $perms->{canconfirm}
+            && !( $perms->{canedit} || $perms->{isreporter} ) )
         {
-            next if
-                $resolution ne 'WORKSFORME'
+            next
+                if $resolution ne 'WORKSFORME'
                 && $resolution ne 'INCOMPLETE'
                 && $resolution ne 'DUPLICATE';
         }
 
         # reporters can set it to anything, except INCOMPLETE
-        if ($perms->{isreporter}
-            && !($perms->{canconfirm} || $perms->{canedit}))
+        if ( $perms->{isreporter}
+            && !( $perms->{canconfirm} || $perms->{canedit} ) )
         {
             next if $resolution eq 'INCOMPLETE';
         }
@@ -256,10 +256,7 @@ sub template_before_process {
         push @resolutions, $r;
     }
     $bug->{choices} = {
-        bug_status => [
-            grep { $_->is_active || $_->name eq $bug->bug_status }
-            @{ $bug->statuses_available }
-        ],
+        bug_status => [ grep { $_->is_active || $_->name eq $bug->bug_status } @{ $bug->statuses_available } ],
         resolution => \@resolutions,
     };
 
@@ -268,10 +265,10 @@ sub template_before_process {
     my $tracking_flags = $vars->{tracking_flags};
     foreach my $flag (@$tracking_flags) {
         my $flag_type = $flag->flag_type;
-        my $type = 'status';
-        my $name = $flag->description;
-        if ($flag_type eq 'tracking' && $name =~ /^(tracking|status)-(.+)/) {
-            ($type, $name) = ($1, $2);
+        my $type      = 'status';
+        my $name      = $flag->description;
+        if ( $flag_type eq 'tracking' && $name =~ /^(tracking|status)-(.+)/ ) {
+            ( $type, $name ) = ( $1, $2 );
         }
 
         my ($existing) = grep { $_->{type} eq $flag_type && $_->{name} eq $name } @tracking_table;
@@ -279,19 +276,20 @@ sub template_before_process {
             $existing->{$type} = $flag;
         }
         else {
-            push @tracking_table, {
-                $type   => $flag,
-                name    => $name,
-                type    => $flag_type,
-            };
+            push @tracking_table,
+                {
+                $type => $flag,
+                name  => $name,
+                type  => $flag_type,
+                };
         }
     }
     $vars->{tracking_flags_table} = \@tracking_table;
 
     # for the "view -> hide treeherder comments" menu item
     my $treeherder_id = Bugzilla->treeherder_user->id;
-    foreach my $change_set (@{ $bug->activity_stream }) {
-        if ($change_set->{comment} && $change_set->{comment}->author->id == $treeherder_id) {
+    foreach my $change_set ( @{ $bug->activity_stream } ) {
+        if ( $change_set->{comment} && $change_set->{comment}->author->id == $treeherder_id ) {
             $vars->{treeherder} = Bugzilla->treeherder_user;
             last;
         }
@@ -299,47 +297,54 @@ sub template_before_process {
 }
 
 sub bug_start_of_set_all {
-    my ($self, $args) = @_;
-    my $bug = $args->{bug};
+    my ( $self, $args ) = @_;
+    my $bug    = $args->{bug};
     my $params = $args->{params};
 
     # reset to the component defaults if not supplied
-    if (exists $params->{assigned_to} && (!defined $params->{assigned_to} || $params->{assigned_to} eq '')) {
+    if ( exists $params->{assigned_to} && ( !defined $params->{assigned_to} || $params->{assigned_to} eq '' ) ) {
         $params->{assigned_to} = $bug->component_obj->default_assignee->login;
     }
-    if (exists $params->{qa_contact} && (!defined $params->{qa_contact} || $params->{qa_contact} eq '')
-        && $bug->component_obj->default_qa_contact->id)
+    if (   exists $params->{qa_contact}
+        && ( !defined $params->{qa_contact} || $params->{qa_contact} eq '' )
+        && $bug->component_obj->default_qa_contact->id )
     {
         $params->{qa_contact} = $bug->component_obj->default_qa_contact->login;
     }
 }
 
 sub webservice {
-    my ($self,  $args) = @_;
+    my ( $self, $args ) = @_;
     my $dispatch = $args->{dispatch};
     $dispatch->{bug_modal} = 'Bugzilla::Extension::BugModal::WebService';
 }
 
 sub install_before_final_checks {
-    my ($self, $args) = @_;
-    add_setting({
-        name     => 'ui_experiments',
-        options  => ['on', 'off'],
-        default  => 'on',
-        category => 'User Interface'
-    });
-    add_setting({
-        name     => 'ui_remember_collapsed',
-        options  => ['on', 'off'],
-        default  => 'off',
-        category => 'User Interface'
-    });
-    add_setting({
-        name     => 'ui_use_absolute_time',
-        options  => ['on', 'off'],
-        default  => 'off',
-        category => 'User Interface',
-    });
+    my ( $self, $args ) = @_;
+    add_setting(
+        {
+            name     => 'ui_experiments',
+            options  => [ 'on', 'off' ],
+            default  => 'on',
+            category => 'User Interface'
+        }
+    );
+    add_setting(
+        {
+            name     => 'ui_remember_collapsed',
+            options  => [ 'on', 'off' ],
+            default  => 'off',
+            category => 'User Interface'
+        }
+    );
+    add_setting(
+        {
+            name     => 'ui_use_absolute_time',
+            options  => [ 'on', 'off' ],
+            default  => 'off',
+            category => 'User Interface',
+        }
+    );
 }
 
 __PACKAGE__->NAME;

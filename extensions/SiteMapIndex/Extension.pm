@@ -46,16 +46,16 @@ use POSIX;
 #########
 
 sub template_before_process {
-    my ($self, $args) = @_;
-    my ($vars, $file) = @$args{qw(vars file)};
+    my ( $self, $args ) = @_;
+    my ( $vars, $file ) = @$args{qw(vars file)};
 
     return if $file ne 'global/header.html.tmpl';
-    return unless (exists $vars->{bug} || exists $vars->{bugs});
-    my $bugs = exists $vars->{bugs} ? $vars->{bugs} : [$vars->{bug}];
+    return unless ( exists $vars->{bug} || exists $vars->{bugs} );
+    my $bugs = exists $vars->{bugs} ? $vars->{bugs} : [ $vars->{bug} ];
     return if ref $bugs ne 'ARRAY';
 
     foreach my $bug (@$bugs) {
-        if (!bug_is_ok_to_index($bug)) {
+        if ( !bug_is_ok_to_index($bug) ) {
             $vars->{sitemap_noindex} = 1;
             last;
         }
@@ -63,11 +63,11 @@ sub template_before_process {
 }
 
 sub page_before_template {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $page = $args->{page_id};
 
-    if ($page =~ m{^sitemap/sitemap\.}) {
-        my $map = generate_sitemap(__PACKAGE__->NAME);
+    if ( $page =~ m{^sitemap/sitemap\.} ) {
+        my $map = generate_sitemap( __PACKAGE__->NAME );
         print Bugzilla->cgi->header('text/xml');
         print $map;
         exit;
@@ -80,20 +80,20 @@ sub page_before_template {
 
 sub install_before_final_checks {
     my ($self) = @_;
-    if (!correct_urlbase()) {
+    if ( !correct_urlbase() ) {
         print STDERR get_text('sitemap_no_urlbase'), "\n";
         return;
     }
-    if (Bugzilla->params->{'requirelogin'}) {
+    if ( Bugzilla->params->{'requirelogin'} ) {
         print STDERR get_text('sitemap_requirelogin'), "\n";
         return;
     }
 
-    return if (correct_urlbase() ne 'https://bugzilla.mozilla.org/');
+    return if ( correct_urlbase() ne 'https://bugzilla.mozilla.org/' );
 }
 
 sub install_filesystem {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $create_dirs  = $args->{'create_dirs'};
     my $recurse_dirs = $args->{'recurse_dirs'};
     my $htaccess     = $args->{'htaccess'};
@@ -101,14 +101,12 @@ sub install_filesystem {
     # Create the sitemap directory to store the index and sitemap files
     my $sitemap_path = bz_locations->{'datadir'} . "/" . __PACKAGE__->NAME;
 
-    $create_dirs->{$sitemap_path} = Bugzilla::Install::Filesystem::DIR_CGI_WRITE
-                                    | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE;
+    $create_dirs->{$sitemap_path}
+        = Bugzilla::Install::Filesystem::DIR_CGI_WRITE | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE;
 
     $recurse_dirs->{$sitemap_path} = {
-        files => Bugzilla::Install::Filesystem::CGI_WRITE
-                 | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE,
-        dirs  => Bugzilla::Install::Filesystem::DIR_CGI_WRITE
-                 | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE
+        files => Bugzilla::Install::Filesystem::CGI_WRITE | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE,
+        dirs  => Bugzilla::Install::Filesystem::DIR_CGI_WRITE | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE
     };
 
     # Create a htaccess file that allows the sitemap files to be served out
@@ -125,7 +123,7 @@ EOT
 }
 
 sub before_robots_txt {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     $args->{vars}{SITEMAP_URL} = correct_urlbase() . SITEMAP_URL;
 }
 

@@ -9,7 +9,7 @@ use 5.10.1;
 use Moo;
 use namespace::clean;
 
-has 'params' => (is => 'ro', default => sub { {} });
+has 'params' => ( is => 'ro', default => sub { {} } );
 
 # we pretend to be Bugzilla::CGI at times.
 sub canonicalise_query {
@@ -17,26 +17,29 @@ sub canonicalise_query {
 }
 
 sub delete {
-    my ($self, $key) = @_;
+    my ( $self, $key ) = @_;
     delete $self->params->{$key};
 }
 
 sub redirect {
-    my ($self, @args) = @_;
+    my ( $self, @args ) = @_;
 
-    Bugzilla::Elastic::Search::Redirect->throw(redirect_args => \@args);
+    Bugzilla::Elastic::Search::Redirect->throw( redirect_args => \@args );
 }
 
 sub param {
-    my ($self, $key, $val, @rest) = @_;
-    if (@_ > 3) {
-        $self->params->{$key} = [$val, @rest];
-    } elsif (@_ == 3) {
+    my ( $self, $key, $val, @rest ) = @_;
+    if ( @_ > 3 ) {
+        $self->params->{$key} = [ $val, @rest ];
+    }
+    elsif ( @_ == 3 ) {
         $self->params->{$key} = $val;
-    } elsif (@_ == 2) {
+    }
+    elsif ( @_ == 2 ) {
         return $self->params->{$key};
-    } else {
-        return $self->params
+    }
+    else {
+        return $self->params;
     }
 }
 

@@ -19,7 +19,7 @@ use Text::CSV_XS;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my $auto_user = Bugzilla::User->check({ name => 'automation@bmo.tld' });
+my $auto_user = Bugzilla::User->check( { name => 'automation@bmo.tld' } );
 Bugzilla->set_user($auto_user);
 
 my $dbh = Bugzilla->dbh;
@@ -27,21 +27,22 @@ my $dbh = Bugzilla->dbh;
 my $filename = shift;
 $filename || die "No CSV file provided.\n";
 
-open(CSV, $filename) || die "Could not open CSV file: $!\n";
+open( CSV, $filename ) || die "Could not open CSV file: $!\n";
 
 $dbh->bz_start_transaction;
 
 my $csv = Text::CSV_XS->new();
-while (my $line = <CSV>) {
+while ( my $line = <CSV> ) {
     $csv->parse($line);
     my @values = $csv->fields();
     next if !@values;
-    my ($bug_id, $comment_id) = @values;
+    my ( $bug_id, $comment_id ) = @values;
     next if $bug_id !~ /^\d+$/;
     print "Deleting comment '$comment_id' from bug '$bug_id' ";
-    my $bug = Bugzilla::Bug->check({ id => $bug_id });
+    my $bug = Bugzilla::Bug->check( { id => $bug_id } );
     my $comment = Bugzilla::Comment->new($comment_id);
-    if (!$comment || $comment->bug_id ne $bug_id) {
+
+    if ( !$comment || $comment->bug_id ne $bug_id ) {
         print "... commment '$comment_id' does not exist ... skipping.\n";
         next;
     }

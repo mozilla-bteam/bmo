@@ -11,8 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Install::Filesystem qw(fix_dir_permissions);
@@ -24,13 +22,13 @@ $| = 1;
 # rename the current directory and create a new empty one
 # the templates will lazy-compile on demand
 
-my $path = bz_locations()->{'template_cache'};
+my $path        = bz_locations()->{'template_cache'};
 my $delete_path = "$path.deleteme";
 
 print "clearing $path\n";
 
 rmtree("$delete_path") if -e "$delete_path";
-rename($path, $delete_path)
+rename( $path, $delete_path )
     or die "renaming '$path' to '$delete_path' failed: $!\n";
 
 mkpath($path)

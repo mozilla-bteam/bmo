@@ -16,12 +16,13 @@ use Bugzilla::WebService::Elastic;
 
 BEGIN {
     *Bugzilla::WebService::Elastic::rest_resources = \&_rest_resources;
-};
+}
 
 sub _rest_resources {
     my $rest_resources = [
-        qr{^/elastic/suggest_users$}, {
-            GET  => { method => 'suggest_users' },
+        qr{^/elastic/suggest_users$},
+        {
+            GET => { method => 'suggest_users' },
         },
     ];
     return $rest_resources;

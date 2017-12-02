@@ -30,22 +30,22 @@ use constant {
 };
 
 sub new {
-    my ($class, %init) = @_;
+    my ( $class, %init ) = @_;
     my $self = $class->fields::new();
 
     return $self;
 }
 
 sub login_uri {
-    my ($class, $target_uri) = @_;
+    my ( $class, $target_uri ) = @_;
 
-    my $uri = URI->new(correct_urlbase() . "github.cgi");
-    $uri->query_form(target_uri => $target_uri);
+    my $uri = URI->new( correct_urlbase() . "github.cgi" );
+    $uri->query_form( target_uri => $target_uri );
     return $uri;
 }
 
 sub authorize_uri {
-    my ($class, $state) = @_;
+    my ( $class, $state ) = @_;
 
     my $uri = URI->new(GH_AUTHORIZE_URI);
     $uri->query_form(
@@ -59,40 +59,40 @@ sub authorize_uri {
 }
 
 sub get_email_key {
-    my ($class, $email) = @_;
+    my ( $class, $email ) = @_;
 
     my $cgi    = Bugzilla->cgi;
     my $digest = Digest->new(DIGEST_HASH);
     $digest->add($email);
-    $digest->add(remote_ip());
-    $digest->add($cgi->cookie('Bugzilla_github_token') // Bugzilla->request_cache->{github_token} // '');
-    $digest->add(Bugzilla->localconfig->{site_wide_secret});
+    $digest->add( remote_ip() );
+    $digest->add( $cgi->cookie('Bugzilla_github_token') // Bugzilla->request_cache->{github_token} // '' );
+    $digest->add( Bugzilla->localconfig->{site_wide_secret} );
     return $digest->hexdigest;
 }
 
 sub _handle_response {
-    my ($self, $response) = @_;
-    my $data = eval {
-        decode_json($response->content);
-    };
+    my ( $self, $response ) = @_;
+    my $data = eval { decode_json( $response->content ); };
     if ($@) {
-        ThrowCodeError("github_bad_response", { message => "Unable to parse json response" });
+        ThrowCodeError( "github_bad_response", { message => "Unable to parse json response" } );
     }
 
-    unless ($response->is_success) {
-        ThrowCodeError("github_error", { response => $response });
+    unless ( $response->is_success ) {
+        ThrowCodeError( "github_error", { response => $response } );
     }
     return $data;
 }
 
 sub get_access_token {
-    my ($self, $code) = @_;
+    my ( $self, $code ) = @_;
 
     my $response = $self->user_agent->post(
         GH_ACCESS_TOKEN_URI,
-        { client_id     => Bugzilla->params->{github_client_id},
-          client_secret => Bugzilla->params->{github_client_secret},
-          code          => $code },
+        {
+            client_id     => Bugzilla->params->{github_client_id},
+            client_secret => Bugzilla->params->{github_client_secret},
+            code          => $code
+        },
         Accept => 'application/json',
     );
     my $data = $self->_handle_response($response);
@@ -100,11 +100,11 @@ sub get_access_token {
 }
 
 sub get_user_emails {
-    my ($self, $access_token) = @_;
+    my ( $self, $access_token ) = @_;
     my $uri = URI->new(GH_USER_EMAILS_URI);
-    $uri->query_form(access_token => $access_token);
+    $uri->query_form( access_token => $access_token );
 
-    my $response = $self->user_agent->get($uri, Accept => 'application/json');
+    my $response = $self->user_agent->get( $uri, Accept => 'application/json' );
 
     return $self->_handle_response($response);
 }
@@ -120,8 +120,8 @@ sub _build_user_agent {
     my ($self) = @_;
     my $ua = LWP::UserAgent->new( timeout => 10 );
 
-    if (Bugzilla->params->{proxy_url}) {
-        $ua->proxy('https', Bugzilla->params->{proxy_url});
+    if ( Bugzilla->params->{proxy_url} ) {
+        $ua->proxy( 'https', Bugzilla->params->{proxy_url} );
     }
 
     return $ua;

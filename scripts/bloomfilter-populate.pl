@@ -17,5 +17,5 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 my $name = shift @ARGV or die "usage: $0 \$name < list\n";
 my @lines = <STDIN>;
 chomp @lines;
-Bugzilla::Bloomfilter->populate($name, \@lines);
+Bugzilla::Bloomfilter->populate( $name, \@lines );
 

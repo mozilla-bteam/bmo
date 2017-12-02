@@ -11,14 +11,13 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Status;
 use Bugzilla::Util;
 
 sub usage() {
-  print <<USAGE;
+    print <<USAGE;
 Usage: fix_all_open_status_queries.pl <new_open_status>
 
 E.g.: fix_all_open_status_queries.pl READY
@@ -30,8 +29,8 @@ USAGE
 }
 
 sub do_namedqueries {
-    my ($new_status) = @_;
-    my $dbh = Bugzilla->dbh;
+    my ($new_status)  = @_;
+    my $dbh           = Bugzilla->dbh;
     my $replace_count = 0;
 
     my $query = $dbh->selectall_arrayref("SELECT id, query FROM namedqueries");
@@ -42,11 +41,11 @@ sub do_namedqueries {
         my $sth = $dbh->prepare("UPDATE namedqueries SET query = ? WHERE id = ?");
 
         foreach my $row (@$query) {
-            my ($id, $old_query) = @$row;
-            my $new_query = all_open_states($new_status, $old_query);
+            my ( $id, $old_query ) = @$row;
+            my $new_query = all_open_states( $new_status, $old_query );
             if ($new_query) {
                 trick_taint($new_query);
-                $sth->execute($new_query, $id);
+                $sth->execute( $new_query, $id );
                 $replace_count++;
             }
         }
@@ -59,8 +58,8 @@ sub do_namedqueries {
 
 # series
 sub do_series {
-    my ($new_status) = @_;
-    my $dbh = Bugzilla->dbh;
+    my ($new_status)  = @_;
+    my $dbh           = Bugzilla->dbh;
     my $replace_count = 0;
 
     my $query = $dbh->selectall_arrayref("SELECT series_id, query FROM series");
@@ -71,11 +70,11 @@ sub do_series {
         my $sth = $dbh->prepare("UPDATE series SET query = ? WHERE series_id = ?");
 
         foreach my $row (@$query) {
-            my ($series_id, $old_query) = @$row;
-            my $new_query = all_open_states($new_status, $old_query);
+            my ( $series_id, $old_query ) = @$row;
+            my $new_query = all_open_states( $new_status, $old_query );
             if ($new_query) {
                 trick_taint($new_query);
-                $sth->execute($new_query, $series_id);
+                $sth->execute( $new_query, $series_id );
                 $replace_count++;
             }
         }
@@ -87,17 +86,17 @@ sub do_series {
 }
 
 sub all_open_states {
-    my ($new_status, $query) = @_;
+    my ( $new_status, $query ) = @_;
 
-    my @open_states = Bugzilla::Status::BUG_STATE_OPEN();
-    my $cgi = Bugzilla::CGI->new($query);
+    my @open_states  = Bugzilla::Status::BUG_STATE_OPEN();
+    my $cgi          = Bugzilla::CGI->new($query);
     my @query_states = $cgi->param('bug_status');
 
-    my ($removed, $added) = diff_arrays(\@query_states, \@open_states);
+    my ( $removed, $added ) = diff_arrays( \@query_states, \@open_states );
 
-    if (scalar @$added == 1 && $added->[0] eq $new_status) {
-        push(@query_states, $new_status);
-        $cgi->param('bug_status', @query_states);
+    if ( scalar @$added == 1 && $added->[0] eq $new_status ) {
+        push( @query_states, $new_status );
+        $cgi->param( 'bug_status', @query_states );
         return $cgi->canonicalise_query();
     }
 
@@ -106,10 +105,12 @@ sub all_open_states {
 
 sub validate_status {
     my ($status) = @_;
-    my $dbh = Bugzilla->dbh;
-    my $exists = $dbh->selectrow_array("SELECT 1 FROM bug_status
+    my $dbh      = Bugzilla->dbh;
+    my $exists   = $dbh->selectrow_array(
+        "SELECT 1 FROM bug_status
                                         WHERE value = ?",
-                                       undef, $status);
+        undef, $status
+    );
     return $exists ? 1 : 0;
 }
 
@@ -119,7 +120,7 @@ sub validate_status {
 # This is a pure command line script.
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-if (scalar @ARGV < 1) {
+if ( scalar @ARGV < 1 ) {
     usage();
     exit(1);
 }
@@ -128,7 +129,7 @@ my ($new_status) = @ARGV;
 
 $new_status = uc($new_status);
 
-if (!validate_status($new_status)) {
+if ( !validate_status($new_status) ) {
     print "Invalid status: $new_status\n\n";
     usage();
     exit(1);

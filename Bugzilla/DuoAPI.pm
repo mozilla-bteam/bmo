@@ -68,71 +68,63 @@ use MIME::Base64 qw(encode_base64);
 use POSIX qw(strftime);
 
 sub new {
-    my($proto, $ikey, $skey, $host) = @_;
+    my ( $proto, $ikey, $skey, $host ) = @_;
     my $class = ref($proto) || $proto;
     my $self = {
         'ikey' => $ikey,
         'skey' => $skey,
         'host' => $host,
     };
-    bless($self, $class);
+    bless( $self, $class );
     return $self;
 }
 
 sub canonicalize_params {
-    my ($self, $params) = @_;
+    my ( $self, $params ) = @_;
 
     my @ret;
-    while (my ($k, $v) = each(%{$params})) {
-        push(@ret, join('=', CGI::escape($k), CGI::escape($v)));
+    while ( my ( $k, $v ) = each( %{$params} ) ) {
+        push( @ret, join( '=', CGI::escape($k), CGI::escape($v) ) );
     }
-    return join('&', sort(@ret));
+    return join( '&', sort(@ret) );
 }
 
 sub sign {
-    my ($self, $method, $path, $canon_params, $date) = @_;
-    my $canon = join("\n",
-                     $date,
-                     uc($method),
-                     lc($self->{'host'}),
-                     $path,
-                     $canon_params);
-    my $sig = hmac_sha1_hex($canon, $self->{'skey'});
-    my $auth = join(':',
-                    $self->{'ikey'},
-                    $sig);
-    $auth = 'Basic ' . encode_base64($auth, '');
+    my ( $self, $method, $path, $canon_params, $date ) = @_;
+    my $canon = join( "\n", $date, uc($method), lc( $self->{'host'} ), $path, $canon_params );
+    my $sig = hmac_sha1_hex( $canon, $self->{'skey'} );
+    my $auth = join( ':', $self->{'ikey'}, $sig );
+    $auth = 'Basic ' . encode_base64( $auth, '' );
     return $auth;
 }
 
 sub api_call {
-    my ($self, $method, $path, $params) = @_;
+    my ( $self, $method, $path, $params ) = @_;
     $params ||= {};
 
     my $canon_params = $self->canonicalize_params($params);
-    my $date = strftime('%a, %d %b %Y %H:%M:%S -0000',
-                        gmtime(time()));
-    my $auth = $self->sign($method, $path, $canon_params, $date);
+    my $date         = strftime( '%a, %d %b %Y %H:%M:%S -0000', gmtime( time() ) );
+    my $auth         = $self->sign( $method, $path, $canon_params, $date );
 
-    my $ua = LWP::UserAgent->new();
+    my $ua  = LWP::UserAgent->new();
     my $req = HTTP::Request->new();
     $req->method($method);
     $req->protocol('HTTP/1.1');
-    $req->header('If-SSL-Cert-Subject' => qr{CN=[^=]+\.duosecurity.com$});
-    $req->header('Authorization' => $auth);
-    $req->header('Date' => $date);
-    $req->header('Host' => $self->{'host'});
+    $req->header( 'If-SSL-Cert-Subject' => qr{CN=[^=]+\.duosecurity.com$} );
+    $req->header( 'Authorization'       => $auth );
+    $req->header( 'Date'                => $date );
+    $req->header( 'Host'                => $self->{'host'} );
 
-    if (grep(/^$method$/, qw(POST PUT))) {
-        $req->header('Content-type' => 'application/x-www-form-urlencoded');
+    if ( grep( /^$method$/, qw(POST PUT) ) ) {
+        $req->header( 'Content-type' => 'application/x-www-form-urlencoded' );
         $req->content($canon_params);
     }
     else {
         $path .= '?' . $canon_params;
     }
 
-    $req->uri('https://' . $self->{'host'} . $path);
-    if ($ENV{'DEBUG'}) {
+    $req->uri( 'https://' . $self->{'host'} . $path );
+    if ( $ENV{'DEBUG'} ) {
         print STDERR $req->as_string();
     }
     my $res = $ua->request($req);
@@ -141,16 +133,15 @@ sub api_call {
 
 sub json_api_call {
     my $self = shift;
-    my $res = $self->api_call(@_);
+    my $res  = $self->api_call(@_);
     my $json = $res->content();
-    if ($json !~ /^{/) {
+    if ( $json !~ /^{/ ) {
         croak($json);
     }
     my $ret = decode_json($json);
-    if (($ret->{'stat'} || '') ne 'OK') {
-        my $msg = join('',
-                       'Error ', $ret->{'code'}, ': ', $ret->{'message'});
-        if (defined($ret->{'message_detail'})) {
+    if ( ( $ret->{'stat'} || '' ) ne 'OK' ) {
+        my $msg = join( '', 'Error ', $ret->{'code'}, ': ', $ret->{'message'} );
+        if ( defined( $ret->{'message_detail'} ) ) {
             $msg .= ' (' . $ret->{'message_detail'} . ')';
         }
         croak($msg);

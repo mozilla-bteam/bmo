@@ -31,7 +31,7 @@ use base qw(Template::Plugin);
 use Bugzilla::User;
 
 sub new {
-    my ($class, $context) = @_;
+    my ( $class, $context ) = @_;
 
     return bless {}, $class;
 }

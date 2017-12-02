@@ -24,6 +24,7 @@ use URI;
 
 BEGIN {
     if (ON_WINDOWS) {
+
         # Help CGI find the correct temp directory as the default list
         # isn't Windows friendly (Bug 248988)
         $ENV{'TMPDIR'} = $ENV{'TEMP'} || $ENV{'TMP'} || "$ENV{'WINDIR'}\\TEMP";
@@ -33,22 +34,23 @@ BEGIN {
 
 sub DEFAULT_CSP {
     my %policy = (
-        default_src => [ 'self' ],
+        default_src => ['self'],
         script_src  => [ 'self', 'unsafe-inline', 'unsafe-eval', 'https://www.google-analytics.com' ],
         child_src   => [ 'self', ],
         img_src     => [ 'self', 'https://secure.gravatar.com', 'https://www.google-analytics.com' ],
         style_src   => [ 'self', 'unsafe-inline' ],
-        object_src  => [ 'none' ],
+        object_src  => ['none'],
         form_action => [
             'self',
+
             # used in template/en/default/search/search-google.html.tmpl
             'https://www.google.com/search'
         ],
-        frame_ancestors => [ 'none' ],
+        frame_ancestors => ['none'],
         disable         => 1,
     );
-    if (Bugzilla->params->{github_client_id} && !Bugzilla->user->id) {
-        push @{$policy{form_action}}, 'https://github.com/login/oauth/authorize', 'https://github.com/login';
+    if ( Bugzilla->params->{github_client_id} && !Bugzilla->user->id ) {
+        push @{ $policy{form_action} }, 'https://github.com/login/oauth/authorize', 'https://github.com/login';
     }
 
     return %policy;
@@ -61,21 +63,23 @@ sub DEFAULT_CSP {
 sub SHOW_BUG_MODAL_CSP {
     my ($bug_id) = @_;
     my %policy = (
-        script_src  => ['self', 'nonce', 'unsafe-inline', 'unsafe-eval', 'https://www.google-analytics.com' ],
-        object_src  => [correct_urlbase() . "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.swf"],
+        script_src => [ 'self', 'nonce', 'unsafe-inline', 'unsafe-eval', 'https://www.google-analytics.com' ],
+        object_src  => [ correct_urlbase() . "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.swf" ],
         img_src     => [ 'self', 'https://secure.gravatar.com', 'https://www.google-analytics.com' ],
         connect_src => [
             'self',
+
             # This is from extensions/OrangeFactor/web/js/orange_factor.js
             'https://brasstacks.mozilla.com/orangefactor/api/count',
         ],
-        child_src   => [
+        child_src => [
             'self',
+
             # This is for the socorro lens addon and is to be removed by Bug 1332016
             'https://ashughes1.github.io/bugzilla-socorro-lens/chart.htm'
         ],
     );
-    if (use_attachbase() && $bug_id) {
+    if ( use_attachbase() && $bug_id ) {
         my $attach_base = Bugzilla->params->{'attachment_base'};
         $attach_base =~ s/\%bugid\%/$bug_id/g;
         push @{ $policy{img_src} }, $attach_base;
@@ -84,7 +88,8 @@ sub SHOW_BUG_MODAL_CSP {
     # MozReview API calls
     my $mozreview_url = Bugzilla->params->{mozreview_base_url};
     if ($mozreview_url) {
-        push @{ $policy{connect_src} },  $mozreview_url . 'api/extensions/mozreview.extension.MozReviewExtension/summary/';
+        push @{ $policy{connect_src} },
+            $mozreview_url . 'api/extensions/mozreview.extension.MozReviewExtension/summary/';
     }
 
     return %policy;
@@ -92,6 +97,7 @@ sub SHOW_BUG_MODAL_CSP {
 
 sub _init_bz_cgi_globals {
     my $invocant = shift;
+
     # We need to disable output buffering - see bug 179174
     $| = 1;
 
@@ -103,14 +109,16 @@ sub _init_bz_cgi_globals {
 
     # We don't precompile any functions here, that's done specially in
     # mod_perl code.
-    $invocant->_setup_symbols(qw(:no_xhtml :oldstyle_urls :private_tempfiles
-                                 :unique_headers));
+    $invocant->_setup_symbols(
+        qw(:no_xhtml :oldstyle_urls :private_tempfiles
+            :unique_headers)
+    );
 }
 
 BEGIN { __PACKAGE__->_init_bz_cgi_globals() if i_am_cgi(); }
 
 sub new {
-    my ($invocant, @args) = @_;
+    my ( $invocant, @args ) = @_;
     my $class = ref($invocant) || $invocant;
 
     # Under mod_perl, CGI's global variables get reset on each request,
@@ -126,23 +134,24 @@ sub new {
     # Moreover, it causes unexpected behaviors, such as totally breaking
     # the rendering of pages.
     my $script = basename($0);
-    if (my $path = $self->path_info) {
+    if ( my $path = $self->path_info ) {
         my @whitelist = ("rest.cgi");
-        Bugzilla::Hook::process('path_info_whitelist', { whitelist => \@whitelist });
-        if (!grep($_ eq $script, @whitelist)) {
+        Bugzilla::Hook::process( 'path_info_whitelist', { whitelist => \@whitelist } );
+        if ( !grep( $_ eq $script, @whitelist ) ) {
+
             # apache collapses // to / in $ENV{PATH_INFO} but not in $self->path_info.
             # url() requires the full path in ENV in order to generate the correct url.
             $ENV{PATH_INFO} = $path;
-            print $self->redirect($self->url(-path => 0, -query => 1));
+            print $self->redirect( $self->url( -path => 0, -query => 1 ) );
             exit;
         }
     }
 
     # Send appropriate charset
-    $self->charset(Bugzilla->params->{'utf8'} ? 'UTF-8' : '');
+    $self->charset( Bugzilla->params->{'utf8'} ? 'UTF-8' : '' );
 
     # Redirect to urlbase/sslbase if we are not viewing an attachment.
-    if ($self->url_is_attachment_base and $script ne 'attachment.cgi') {
+    if ( $self->url_is_attachment_base and $script ne 'attachment.cgi' ) {
         $self->redirect_to_urlbase();
     }
 
@@ -153,11 +162,12 @@ sub new {
     my $err = $self->cgi_error;
 
     if ($err) {
+
         # Note that this error block is only triggered by CGI.pm for malformed
         # multipart requests, and so should never happen unless there is a
         # browser bug.
 
-        print $self->header(-status => $err);
+        print $self->header( -status => $err );
 
         # ThrowCodeError wants to print the header, so it grabs Bugzilla->cgi
         # which creates a new Bugzilla::CGI object, which fails again, which
@@ -178,26 +188,26 @@ sub target_uri {
     my ($self) = @_;
 
     my $base = correct_urlbase();
-    if (my $request_uri = $self->request_uri) {
+    if ( my $request_uri = $self->request_uri ) {
         my $base_uri = URI->new($base);
         $base_uri->path('');
         $base_uri->query(undef);
         return $base_uri . $request_uri;
     }
     else {
-        return $base . ($self->url(-relative => 1, -query => 1) || 'index.cgi');
+        return $base . ( $self->url( -relative => 1, -query => 1 ) || 'index.cgi' );
     }
 }
 
 sub content_security_policy {
-    my ($self, %add_params) = @_;
-    if (Bugzilla->has_feature('csp')) {
+    my ( $self, %add_params ) = @_;
+    if ( Bugzilla->has_feature('csp') ) {
         require Bugzilla::CGI::ContentSecurityPolicy;
-        if (%add_params || !$self->{Bugzilla_csp}) {
+        if ( %add_params || !$self->{Bugzilla_csp} ) {
             my %params = DEFAULT_CSP;
             delete $params{disable} if %add_params && !$add_params{disable};
-            foreach my $key (keys %add_params) {
-                if (defined $add_params{$key}) {
+            foreach my $key ( keys %add_params ) {
+                if ( defined $add_params{$key} ) {
                     $params{$key} = $add_params{$key};
                 }
                 else {
@@ -215,7 +225,7 @@ sub content_security_policy {
 sub csp_nonce {
     my ($self) = @_;
 
-    if (Bugzilla->has_feature('csp')) {
+    if ( Bugzilla->has_feature('csp') ) {
         my $csp = $self->content_security_policy;
         return $csp->nonce if $csp->has_nonce;
     }
@@ -225,11 +235,12 @@ sub csp_nonce {
 
 # We want this sorted plus the ability to exclude certain params
 sub canonicalise_query {
-    my ($self, @exclude) = @_;
+    my ( $self, @exclude ) = @_;
 
     # Reconstruct the URL by concatenating the sorted param=value pairs
     my @parameters;
-    foreach my $key (sort($self->param())) {
+    foreach my $key ( sort( $self->param() ) ) {
+
         # Leave this key out if it's in the exclude list
         next if grep { $_ eq $key } @exclude;
 
@@ -239,63 +250,69 @@ sub canonicalise_query {
 
         my $esc_key = url_quote($key);
 
-        foreach my $value ($self->param($key)) {
+        foreach my $value ( $self->param($key) ) {
+
             # Omit params with an empty value
-            if (defined($value) && $value ne '') {
+            if ( defined($value) && $value ne '' ) {
                 my $esc_value = url_quote($value);
 
-                push(@parameters, "$esc_key=$esc_value");
+                push( @parameters, "$esc_key=$esc_value" );
             }
         }
     }
 
-    return join("&", @parameters);
+    return join( "&", @parameters );
 }
 
 sub clean_search_url {
     my $self = shift;
+
     # Delete any empty URL parameter.
     my @cgi_params = $self->param;
 
     foreach my $param (@cgi_params) {
-        if (defined $self->param($param) && $self->param($param) eq '') {
+        if ( defined $self->param($param) && $self->param($param) eq '' ) {
             $self->delete($param);
             $self->delete("${param}_type");
         }
 
         # Custom Search stuff is empty if it's "noop". We also keep around
         # the old Boolean Chart syntax for backwards-compatibility.
-        if (($param =~ /\d-\d-\d/ || $param =~ /^[[:alpha:]]\d+$/)
-            && defined $self->param($param) && $self->param($param) eq 'noop')
+        if (   ( $param =~ /\d-\d-\d/ || $param =~ /^[[:alpha:]]\d+$/ )
+            && defined $self->param($param)
+            && $self->param($param) eq 'noop' )
         {
             $self->delete($param);
         }
 
         # Any "join" for custom search that's an AND can be removed, because
         # that's the default.
-        if (($param =~ /^j\d+$/ || $param eq 'j_top')
-            && $self->param($param) eq 'AND')
+        if ( ( $param =~ /^j\d+$/ || $param eq 'j_top' )
+            && $self->param($param) eq 'AND' )
         {
             $self->delete($param);
         }
     }
 
     # Delete leftovers from the login form
-    $self->delete('Bugzilla_remember', 'GoAheadAndLogIn');
+    $self->delete( 'Bugzilla_remember', 'GoAheadAndLogIn' );
 
     # Delete the token if we're not performing an action which needs it
-    unless ((defined $self->param('remtype')
-             && ($self->param('remtype') eq 'asdefault'
-                 || $self->param('remtype') eq 'asnamed'))
-            || (defined $self->param('remaction')
-                && $self->param('remaction') eq 'forget'))
+    unless (
+        (   defined $self->param('remtype') && ( $self->param('remtype') eq 'asdefault'
+                || $self->param('remtype') eq 'asnamed' )
+        )
+        || ( defined $self->param('remaction')
+            && $self->param('remaction') eq 'forget' )
+        )
     {
         $self->delete("token");
     }
 
-    foreach my $num (1,2,3) {
+    foreach my $num ( 1, 2, 3 ) {
+
         # If there's no value in the email field, delete the related fields.
-        if (!$self->param("email$num")) {
+        if ( !$self->param("email$num") ) {
             foreach my $field (qw(type assigned_to reporter qa_contact cc longdesc)) {
                 $self->delete("email$field$num");
             }
@@ -304,25 +321,28 @@ sub clean_search_url {
 
     # chfieldto is set to "Now" by default in query.cgi. But if none
     # of the other chfield parameters are set, it's meaningless.
-    if (!defined $self->param('chfieldfrom') && !$self->param('chfield')
-        && !defined $self->param('chfieldvalue') && $self->param('chfieldto')
-        && lc($self->param('chfieldto')) eq 'now')
+    if (   !defined $self->param('chfieldfrom')
+        && !$self->param('chfield')
+        && !defined $self->param('chfieldvalue')
+        && $self->param('chfieldto')
+        && lc( $self->param('chfieldto') ) eq 'now' )
     {
         $self->delete('chfieldto');
     }
 
     # cmdtype "doit" is the default from query.cgi, but it's only meaningful
     # if there's a remtype parameter.
-    if (defined $self->param('cmdtype') && $self->param('cmdtype') eq 'doit'
-        && !defined $self->param('remtype'))
+    if (   defined $self->param('cmdtype')
+        && $self->param('cmdtype') eq 'doit'
+        && !defined $self->param('remtype') )
     {
         $self->delete('cmdtype');
     }
 
     # "Reuse same sort as last time" is actually the default, so we don't
     # need it in the URL.
-    if ($self->param('order')
-        && $self->param('order') eq 'Reuse same sort as last time')
+    if (   $self->param('order')
+        && $self->param('order') eq 'Reuse same sort as last time' )
     {
         $self->delete('order');
     }
@@ -333,24 +353,25 @@ sub clean_search_url {
 
     # And now finally, if query_format is our only parameter, that
     # really means we have no parameters, so we should delete query_format.
-    if ($self->param('query_format') && scalar($self->param()) == 1) {
+    if ( $self->param('query_format') && scalar( $self->param() ) == 1 ) {
         $self->delete('query_format');
     }
 }
 
 sub check_etag {
-    my ($self, $valid_etag) = @_;
+    my ( $self, $valid_etag ) = @_;
 
     # ETag support.
     my $if_none_match = $self->http('If-None-Match');
     return if !$if_none_match;
 
-    my @if_none = split(/[\s,]+/, $if_none_match);
+    my @if_none = split( /[\s,]+/, $if_none_match );
     foreach my $possible_etag (@if_none) {
+
         # remove quotes from begin and end of the string
         $possible_etag =~ s/^\"//g;
         $possible_etag =~ s/\"$//g;
-        if ($possible_etag eq $valid_etag or $possible_etag eq '*') {
+        if ( $possible_etag eq $valid_etag or $possible_etag eq '*' ) {
             return 1;
         }
     }
@@ -365,26 +386,27 @@ sub multipart_init {
     # Keys are case-insensitive, map to lowercase
     my %args = @_;
     my %param;
-    foreach my $key (keys %args) {
-        $param{lc $key} = $args{$key};
+    foreach my $key ( keys %args ) {
+        $param{ lc $key } = $args{$key};
     }
 
     # Set the MIME boundary and content-type
     my $boundary = $param{'-boundary'}
         || '------- =_' . generate_random_password(16);
     delete $param{'-boundary'};
-    $self->{'separator'} = "\r\n--$boundary\r\n";
+    $self->{'separator'}       = "\r\n--$boundary\r\n";
     $self->{'final_separator'} = "\r\n--$boundary--\r\n";
-    $param{'-type'} = SERVER_PUSH($boundary);
+    $param{'-type'}            = SERVER_PUSH($boundary);
 
     # Note: CGI.pm::multipart_init up to v3.04 explicitly set nph to 0
     # CGI.pm::multipart_init v3.05 explicitly sets nph to 1
     # CGI.pm's header() sets nph according to a param or $CGI::NPH, which
     # is the desired behaviour.
 
-    return $self->header(
-        %param,
-    ) . "WARNING: YOUR BROWSER DOESN'T SUPPORT THIS SERVER-PUSH TECHNOLOGY." . $self->multipart_end;
+    return
+          $self->header( %param, )
+        . "WARNING: YOUR BROWSER DOESN'T SUPPORT THIS SERVER-PUSH TECHNOLOGY."
+        . $self->multipart_end;
 }
 
 # Have to add the cookies in.
@@ -395,20 +417,24 @@ sub multipart_start {
 
     # CGI.pm::multipart_start doesn't honour its own charset information, so
     # we do it ourselves here
-    if (defined $self->charset() && defined $args{-type}) {
+    if ( defined $self->charset() && defined $args{-type} ) {
+
         # Remove any existing charset specifier
         $args{-type} =~ s/;.*$//;
+
         # and add the specified one
         $args{-type} .= '; charset=' . $self->charset();
     }
 
     my $headers = $self->SUPER::multipart_start(%args);
+
     # Eliminate the one extra CRLF at the end.
     $headers =~ s/$CGI::CRLF$//;
+
     # Add the cookies. We have to do it this way instead of
     # passing them to multpart_start, because CGI.pm's multipart_start
     # doesn't understand a '-cookie' argument pointing to an arrayref.
-    foreach my $cookie (@{$self->{Bugzilla_cookie_list}}) {
+    foreach my $cookie ( @{ $self->{Bugzilla_cookie_list} } ) {
         $headers .= "Set-Cookie: ${cookie}${CGI::CRLF}";
     }
     $headers .= $CGI::CRLF;
@@ -417,12 +443,12 @@ sub multipart_start {
 }
 
 sub close_standby_message {
-    my ($self, $contenttype, $disp, $disp_prefix, $extension) = @_;
-    $self->set_dated_content_disp($disp, $disp_prefix, $extension);
+    my ( $self, $contenttype, $disp, $disp_prefix, $extension ) = @_;
+    $self->set_dated_content_disp( $disp, $disp_prefix, $extension );
 
-    if ($self->{_multipart_in_progress}) {
+    if ( $self->{_multipart_in_progress} ) {
         print $self->multipart_end();
-        print $self->multipart_start(-type => $contenttype);
+        print $self->multipart_start( -type => $contenttype );
     }
     else {
         print $self->header($contenttype);
@@ -437,52 +463,57 @@ sub header {
     my $user = Bugzilla->user;
 
     # If there's only one parameter, then it's a Content-Type.
-    if (scalar(@_) == 1) {
-        %headers = ('-type' => shift(@_));
+    if ( scalar(@_) == 1 ) {
+        %headers = ( '-type' => shift(@_) );
     }
     else {
         %headers = @_;
     }
 
-    if ($self->{'_content_disp'}) {
+    if ( $self->{'_content_disp'} ) {
         $headers{'-content_disposition'} = $self->{'_content_disp'};
     }
 
-    if (!$user->id && $user->authorizer->can_login
-        && !$self->cookie('Bugzilla_login_request_cookie'))
+    if (  !$user->id
+        && $user->authorizer->can_login
+        && !$self->cookie('Bugzilla_login_request_cookie') )
     {
         my %args;
         $args{'-secure'} = 1 if Bugzilla->params->{ssl_redirect};
 
-        $self->send_cookie(-name => 'Bugzilla_login_request_cookie',
-                           -value => generate_random_password(),
-                           -httponly => 1,
-                           %args);
+        $self->send_cookie(
+            -name     => 'Bugzilla_login_request_cookie',
+            -value    => generate_random_password(),
+            -httponly => 1,
+            %args
+        );
     }
 
     # We generate a cookie and store it in the request cache
     # To initiate github login, a form POSTs to github.cgi with the
     # github_secret as a parameter. It must match the github_secret cookie.
     # this prevents some types of redirection attacks.
-    unless ($user->id || $self->{bz_redirecting}) {
-        $self->send_cookie(-name     => 'github_secret',
-                           -value    => Bugzilla->github_secret,
-                           -httponly => 1);
+    unless ( $user->id || $self->{bz_redirecting} ) {
+        $self->send_cookie(
+            -name     => 'github_secret',
+            -value    => Bugzilla->github_secret,
+            -httponly => 1
+        );
     }
+
     # Add the cookies in if we have any
-    if (scalar(@{$self->{Bugzilla_cookie_list}})) {
+    if ( scalar( @{ $self->{Bugzilla_cookie_list} } ) ) {
         $headers{'-cookie'} = $self->{Bugzilla_cookie_list};
     }
 
     # Add Strict-Transport-Security (STS) header if this response
     # is over SSL and the strict_transport_security param is turned on.
-    if ($self->https && !$self->url_is_attachment_base
-        && Bugzilla->params->{'strict_transport_security'} ne 'off')
+    if (   $self->https
+        && !$self->url_is_attachment_base
+        && Bugzilla->params->{'strict_transport_security'} ne 'off' )
     {
         my $sts_opts = 'max-age=' . MAX_STS_AGE;
-        if (Bugzilla->params->{'strict_transport_security'}
-            eq 'include_subdomains')
-        {
+        if ( Bugzilla->params->{'strict_transport_security'} eq 'include_subdomains' ) {
             $sts_opts .= '; includeSubDomains';
         }
         $headers{'-strict_transport_security'} = $sts_opts;
@@ -490,11 +521,11 @@ sub header {
 
     # Add X-Frame-Options header to prevent framing and subsequent
     # possible clickjacking problems.
-    unless ($self->url_is_attachment_base) {
+    unless ( $self->url_is_attachment_base ) {
         $headers{'-x_frame_options'} = 'SAMEORIGIN';
     }
 
-    if ($self->{'_content_disp'}) {
+    if ( $self->{'_content_disp'} ) {
         $headers{'-content_disposition'} = $self->{'_content_disp'};
     }
 
@@ -507,11 +538,9 @@ sub header {
     $headers{'-x_content_type_options'} = 'nosniff';
 
     my $csp = $self->content_security_policy;
-    $csp->add_cgi_headers(\%headers) if defined $csp && !$csp->disable;
+    $csp->add_cgi_headers( \%headers ) if defined $csp && !$csp->disable;
 
-    Bugzilla::Hook::process('cgi_headers',
-        { cgi => $self, headers => \%headers }
-    );
+    Bugzilla::Hook::process( 'cgi_headers', { cgi => $self, headers => \%headers } );
     $self->{_header_done} = 1;
 
     return $self->SUPER::header(%headers) || "";
@@ -521,14 +550,15 @@ sub param {
     my $self = shift;
 
     # When we are just requesting the value of a parameter...
-    if (scalar(@_) == 1) {
+    if ( scalar(@_) == 1 ) {
         my @result = $self->SUPER::param(@_);
 
         # Also look at the URL parameters, after we look at the POST
         # parameters. This is to allow things like login-form submissions
         # with URL parameters in the form's "target" attribute.
-        if (!scalar(@result)
-            && $self->request_method && $self->request_method eq 'POST')
+        if (   !scalar(@result)
+            && $self->request_method
+            && $self->request_method eq 'POST' )
         {
             # Some servers fail to set the QUERY_STRING parameter, which
             # causes undef issues
@@ -537,21 +567,23 @@ sub param {
         }
 
         # Fix UTF-8-ness of input parameters.
-        if (Bugzilla->params->{'utf8'}) {
+        if ( Bugzilla->params->{'utf8'} ) {
             @result = map { _fix_utf8($_) } @result;
         }
 
         return wantarray ? @result : $result[0];
     }
+
     # And for various other functions in CGI.pm, we need to correctly
     # return the URL parameters in addition to the POST parameters when
     # asked for the list of parameters.
-    elsif (!scalar(@_) && $self->request_method
-           && $self->request_method eq 'POST')
+    elsif (!scalar(@_)
+        && $self->request_method
+        && $self->request_method eq 'POST' )
     {
         my @post_params = $self->SUPER::param;
         my @url_params  = $self->url_param;
-        my %params = map { $_ => 1 } (@post_params, @url_params);
+        my %params      = map { $_ => 1 } ( @post_params, @url_params );
         return keys %params;
     }
 
@@ -560,16 +592,15 @@ sub param {
 
 sub _fix_utf8 {
     my $input = shift;
+
     # The is_utf8 is here in case CGI gets smart about utf8 someday.
     utf8::decode($input) if defined $input && !ref $input && !utf8::is_utf8($input);
     return $input;
 }
 
 sub should_set {
-    my ($self, $param) = @_;
-    my $set = (defined $self->param($param)
-               or defined $self->param("defined_$param"))
-              ? 1 : 0;
+    my ( $self, $param ) = @_;
+    my $set = ( defined $self->param($param) or defined $self->param("defined_$param") ) ? 1 : 0;
     return $set;
 }
 
@@ -582,30 +613,30 @@ sub send_cookie {
     # Move the param list into a hash for easier handling.
     my %paramhash;
     my @paramlist;
-    my ($key, $value);
-    while ($key = shift) {
+    my ( $key, $value );
+    while ( $key = shift ) {
         $value = shift;
         $paramhash{$key} = $value;
     }
 
     # Complain if -value is not given or empty (bug 268146).
-    if (!exists($paramhash{'-value'}) || !$paramhash{'-value'}) {
+    if ( !exists( $paramhash{'-value'} ) || !$paramhash{'-value'} ) {
         ThrowCodeError('cookies_need_value');
     }
 
     # Add the default path and the domain in.
-    $paramhash{'-path'} = Bugzilla->params->{'cookiepath'};
+    $paramhash{'-path'}   = Bugzilla->params->{'cookiepath'};
     $paramhash{'-domain'} = Bugzilla->params->{'cookiedomain'}
         if Bugzilla->params->{'cookiedomain'};
     $paramhash{'-secure'} = 1
         if Bugzilla->params->{'ssl_redirect'};
 
     # Move the param list back into an array for the call to cookie().
-    foreach (keys(%paramhash)) {
-        unshift(@paramlist, $_ => $paramhash{$_});
+    foreach ( keys(%paramhash) ) {
+        unshift( @paramlist, $_ => $paramhash{$_} );
     }
 
-    push(@{$self->{'Bugzilla_cookie_list'}}, $self->cookie(@paramlist));
+    push( @{ $self->{'Bugzilla_cookie_list'} }, $self->cookie(@paramlist) );
 }
 
 # Cookies are removed by setting an expiry date in the past.
@@ -615,9 +646,11 @@ sub remove_cookie {
     my ($cookiename) = (@_);
 
     # Expire the cookie, giving a non-empty dummy value (bug 268146).
-    $self->send_cookie('-name'    => $cookiename,
-                       '-expires' => 'Tue, 15-Sep-1998 21:49:00 GMT',
-                       '-value'   => 'X');
+    $self->send_cookie(
+        '-name'    => $cookiename,
+        '-expires' => 'Tue, 15-Sep-1998 21:49:00 GMT',
+        '-value'   => 'X'
+    );
 }
 
 # To avoid infinite redirection recursion, track when we're within a redirect
@@ -642,18 +675,20 @@ sub redirect_search_url {
 
     my $user = Bugzilla->user;
 
-    if ($user->id) {
+    if ( $user->id ) {
+
         # There are two conditions that could happen here--we could get a URL
         # with no list id, and we could get a URL with a list_id that isn't
         # ours.
         my $list_id = $self->param('list_id');
         if ($list_id) {
+
             # If we have a valid list_id, no need to redirect or clean.
-            return if Bugzilla::Search::Recent->check_quietly(
-                { id => $list_id });
+            return if Bugzilla::Search::Recent->check_quietly( { id => $list_id } );
         }
     }
-    elsif ($self->request_method ne 'POST') {
+    elsif ( $self->request_method ne 'POST' ) {
+
         # Logged-out users who do a GET don't get a list_id, don't get
         # their URLs cleaned, and don't get redirected.
         return;
@@ -663,40 +698,46 @@ sub redirect_search_url {
 
     # Make sure we still have params still after cleaning otherwise we
     # do not want to store a list_id for an empty search.
-    if ($user->id && $self->param) {
+    if ( $user->id && $self->param ) {
+
         # Insert a placeholder Bugzilla::Search::Recent, so that we know what
         # the id of the resulting search will be. This is then pulled out
         # of the Referer header when viewing show_bug.cgi to know what
         # bug list we came from.
         my $recent_search = Bugzilla::Search::Recent->create_placeholder;
-        $self->param('list_id', $recent_search->id);
+        $self->param( 'list_id', $recent_search->id );
     }
 
     # GET requests that lacked a list_id are always redirected. POST requests
     # are only redirected if they're under the CGI_URI_LIMIT though.
     my $self_url = $self->self_url();
-    if ($self->request_method() ne 'POST' or length($self_url) < CGI_URI_LIMIT) {
-        print $self->redirect(-url => $self_url);
+    if ( $self->request_method() ne 'POST' or length($self_url) < CGI_URI_LIMIT ) {
+        print $self->redirect( -url => $self_url );
         exit;
     }
 }
 
 sub redirect_to_https {
-    my $self = shift;
+    my $self    = shift;
     my $sslbase = Bugzilla->params->{'sslbase'};
+
     # If this is a POST, we don't want ?POSTDATA in the query string.
     # We expect the client to re-POST, which may be a violation of
     # the HTTP spec, but the only time we're expecting it often is
     # in the WebService, and WebService clients usually handle this
     # correctly.
     $self->delete('POSTDATA');
-    my $url = $sslbase . $self->url('-path_info' => 1, '-query' => 1,
-                                    '-relative' => 1);
+    my $url = $sslbase
+        . $self->url(
+        '-path_info' => 1,
+        '-query'     => 1,
+        '-relative'  => 1
+        );
 
     # XML-RPC clients (SOAP::Lite at least) require a 301 to redirect properly
     # and do not work with 302. Our redirect really is permanent anyhow, so
     # it doesn't hurt to make it a 301.
-    print $self->redirect(-location => $url, -status => 301);
+    print $self->redirect( -location => $url, -status => 301 );
 
     # When using XML-RPC with mod_perl, we need the headers sent immediately.
     $self->r->rflush if $ENV{MOD_PERL};
@@ -706,15 +747,16 @@ sub redirect_to_https {
 # Redirect to the urlbase version of the current URL.
 sub redirect_to_urlbase {
     my $self = shift;
-    my $path = $self->url('-path_info' => 1, '-query' => 1, '-relative' => 1);
-    print $self->redirect('-location' => correct_urlbase() . $path);
+    my $path = $self->url( '-path_info' => 1, '-query' => 1, '-relative' => 1 );
+    print $self->redirect( '-location' => correct_urlbase() . $path );
     exit;
 }
 
 sub url_is_attachment_base {
-    my ($self, $id) = @_;
+    my ( $self, $id ) = @_;
     return 0 if !use_attachbase() or !i_am_cgi();
     my $attach_base = Bugzilla->params->{'attachment_base'};
+
     # If we're passed an id, we only want one specific attachment base
     # for a particular bug. If we're not passed an ID, we just want to
     # know if our current URL matches the attachment_base *pattern*.
@@ -730,19 +772,19 @@ sub url_is_attachment_base {
         $regex =~ s/\\\%bugid\\\%/\\d+/;
     }
     $regex = "^$regex";
-    return ($self->url =~ $regex) ? 1 : 0;
+    return ( $self->url =~ $regex ) ? 1 : 0;
 }
 
 sub set_dated_content_disp {
-    my ($self, $type, $prefix, $ext) = @_;
+    my ( $self, $type, $prefix, $ext ) = @_;
 
-    my @time = localtime(time());
-    my $date = sprintf "%04d-%02d-%02d", 1900+$time[5], $time[4]+1, $time[3];
+    my @time     = localtime( time() );
+    my $date     = sprintf "%04d-%02d-%02d", 1900 + $time[5], $time[4] + 1, $time[3];
     my $filename = "$prefix-$date.$ext";
 
-    $filename =~ s/\s/_/g; # Remove whitespace to avoid HTTP header tampering
-    $filename =~ s/\\/_/g; # Remove backslashes as well
-    $filename =~ s/"/\\"/g; # escape quotes
+    $filename =~ s/\s/_/g;     # Remove whitespace to avoid HTTP header tampering
+    $filename =~ s/\\/_/g;     # Remove backslashes as well
+    $filename =~ s/"/\\"/g;    # escape quotes
 
     my $disposition = "$type; filename=\"$filename\"";
 
@@ -757,16 +799,16 @@ sub set_dated_content_disp {
 # arrayrefs.
 sub STORE {
     my $self = shift;
-    my ($param, $value) = @_;
-    if (defined $value and ref $value eq 'ARRAY') {
-        return $self->param(-name => $param, -value => $value);
+    my ( $param, $value ) = @_;
+    if ( defined $value and ref $value eq 'ARRAY' ) {
+        return $self->param( -name => $param, -value => $value );
     }
     return $self->SUPER::STORE(@_);
 }
 
 sub FETCH {
-    my ($self, $param) = @_;
-    return $self if $param eq 'CGI'; # CGI.pm did this, so we do too.
+    my ( $self, $param ) = @_;
+    return $self if $param eq 'CGI';    # CGI.pm did this, so we do too.
     my @result = $self->param($param);
     return undef if !scalar(@result);
     return $result[0] if scalar(@result) == 1;
@@ -776,7 +818,7 @@ sub FETCH {
 # For the Vars TIEHASH interface: the normal CGI.pm DELETE doesn't return
 # the value deleted, but Perl's "delete" expects that value.
 sub DELETE {
-    my ($self, $param) = @_;
+    my ( $self, $param ) = @_;
     my $value = $self->FETCH($param);
     $self->delete($param);
     return $value;

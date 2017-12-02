@@ -17,16 +17,18 @@ our @EXPORT = qw(create_user);
 use Bugzilla::User;
 
 sub create_user {
-    my ($login, $password, %extra) = @_;
+    my ( $login, $password, %extra ) = @_;
     require Bugzilla;
-    return Bugzilla::User->create({
-        login_name    => $login,
-        cryptpassword => $password,
-        disabledtext  => "",
-        disable_mail  => 0,
-        extern_id     => 0,
-        %extra,
-    });
+    return Bugzilla::User->create(
+        {
+            login_name    => $login,
+            cryptpassword => $password,
+            disabledtext  => "",
+            disable_mail  => 0,
+            extern_id     => 0,
+            %extra,
+        }
+    );
 }
 
 1;

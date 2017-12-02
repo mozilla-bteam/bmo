@@ -29,31 +29,31 @@ use constant MAX_SETTER_COUNT => 7;
 
 # ignore any request older than this many days in the requestee emails
 # massively overdue requests will still be included in the 'watching' emails
-use constant MAX_REQUEST_AGE => 90; # about three months
+use constant MAX_REQUEST_AGE => 90;    # about three months
 
 # the order of this array determines the order used in email
 use constant FLAG_TYPES => (
     {
-        type    => 'review',    # flag_type.name
-        group   => 'everyone',  # the user must be a member of this group to receive reminders
+        type  => 'review',             # flag_type.name
+        group => 'everyone',           # the user must be a member of this group to receive reminders
     },
     {
-        type    => 'superview',
-        group   => 'everyone',
+        type  => 'superview',
+        group => 'everyone',
     },
     {
-        type    => 'feedback',
-        group   => 'everyone',
+        type  => 'feedback',
+        group => 'everyone',
     },
     {
-        type    => 'needinfo',
-        group   => 'editbugs',
+        type  => 'needinfo',
+        group => 'editbugs',
     },
 );
 
 sub REQUESTEE_NAG_SQL {
     my $dbh = Bugzilla->dbh;
-    my @flag_types_sql = map { $dbh->quote($_->{type}) } FLAG_TYPES;
+    my @flag_types_sql = map { $dbh->quote( $_->{type} ) } FLAG_TYPES;
 
     return "
     SELECT
@@ -80,7 +80,7 @@ sub REQUESTEE_NAG_SQL {
                   AND profile_setting.user_id = flags.requestee_id
         LEFT JOIN nag_defer ON nag_defer.flag_id = flags.id
     WHERE
-        " . $dbh->sql_in('flagtypes.name', \@flag_types_sql) . "
+        " . $dbh->sql_in( 'flagtypes.name', \@flag_types_sql ) . "
         AND flags.status = '?'
         AND products.nag_interval != 0
         AND TIMESTAMPDIFF(HOUR, flags.modification_date, CURRENT_DATE()) >= products.nag_interval
@@ -97,7 +97,7 @@ sub REQUESTEE_NAG_SQL {
 
 sub SETTER_NAG_SQL {
     my $dbh = Bugzilla->dbh;
-    my @flag_types_sql = map { $dbh->quote($_->{type}) } FLAG_TYPES;
+    my @flag_types_sql = map { $dbh->quote( $_->{type} ) } FLAG_TYPES;
 
     return "
     SELECT
@@ -124,7 +124,7 @@ sub SETTER_NAG_SQL {
                   AND profile_setting.user_id = flags.setter_id
         LEFT JOIN nag_defer ON nag_defer.flag_id = flags.id
     WHERE
-        " . $dbh->sql_in('flagtypes.name', \@flag_types_sql) . "
+        " . $dbh->sql_in( 'flagtypes.name', \@flag_types_sql ) . "
         AND flags.status = '?'
         AND products.nag_interval != 0
         AND TIMESTAMPDIFF(HOUR, flags.modification_date, CURRENT_DATE()) >= products.nag_interval
@@ -141,7 +141,7 @@ sub SETTER_NAG_SQL {
 
 sub WATCHING_REQUESTEE_NAG_SQL {
     my $dbh = Bugzilla->dbh;
-    my @flag_types_sql = map { $dbh->quote($_->{type}) } FLAG_TYPES;
+    my @flag_types_sql = map { $dbh->quote( $_->{type} ) } FLAG_TYPES;
 
     return "
     SELECT
@@ -178,7 +178,7 @@ sub WATCHING_REQUESTEE_NAG_SQL {
         AND watcher.disable_mail = 0
         AND CASE WHEN COALESCE(reviews_only.setting_value, 0) = 1
             THEN flagtypes.name = 'review'
-            ELSE " . $dbh->sql_in('flagtypes.name', \@flag_types_sql) . "
+            ELSE " . $dbh->sql_in( 'flagtypes.name', \@flag_types_sql ) . "
         END
         AND CASE WHEN COALESCE(extended_period.setting_value, 0) = 1
             THEN TIMESTAMPDIFF(HOUR, flags.modification_date, CURRENT_DATE()) >= products.nag_interval + 24
@@ -193,7 +193,7 @@ sub WATCHING_REQUESTEE_NAG_SQL {
 
 sub WATCHING_SETTER_NAG_SQL {
     my $dbh = Bugzilla->dbh;
-    my @flag_types_sql = map { $dbh->quote($_->{type}) } FLAG_TYPES;
+    my @flag_types_sql = map { $dbh->quote( $_->{type} ) } FLAG_TYPES;
 
     return "
     SELECT
@@ -230,7 +230,7 @@ sub WATCHING_SETTER_NAG_SQL {
         AND watcher.disable_mail = 0
         AND CASE WHEN COALESCE(reviews_only.setting_value, 0) = 1
             THEN flagtypes.name = 'review'
-            ELSE " . $dbh->sql_in('flagtypes.name', \@flag_types_sql) . "
+            ELSE " . $dbh->sql_in( 'flagtypes.name', \@flag_types_sql ) . "
         END
         AND CASE WHEN COALESCE(extended_period.setting_value, 0) = 1
             THEN TIMESTAMPDIFF(HOUR, flags.modification_date, CURRENT_DATE()) >= products.nag_interval + 24

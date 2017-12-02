@@ -27,7 +27,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Constants;
 
@@ -51,39 +50,39 @@ USAGE
 # This is a pure command line script.
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-if (scalar @ARGV < 2) {
+if ( scalar @ARGV < 2 ) {
     usage();
     exit();
 }
 
-my ($srcproduct, $tgtproduct) = @ARGV;
+my ( $srcproduct, $tgtproduct ) = @ARGV;
 
 my $dbh = Bugzilla->dbh;
 
 # Find product IDs
-my $srcprodid = $dbh->selectrow_array("SELECT id FROM products WHERE name = ?",
-                                      undef, $srcproduct);
-if (!$srcprodid) {
+my $srcprodid = $dbh->selectrow_array( "SELECT id FROM products WHERE name = ?", undef, $srcproduct );
+if ( !$srcprodid ) {
     print "Can't find product ID for '$srcproduct'.\n";
     exit(1);
 }
 
-my $tgtprodid = $dbh->selectrow_array("SELECT id FROM products WHERE name = ?",
-                                      undef, $tgtproduct);
-if (!$tgtprodid) {
+my $tgtprodid = $dbh->selectrow_array( "SELECT id FROM products WHERE name = ?", undef, $tgtproduct );
+if ( !$tgtprodid ) {
     print "Can't find product ID for '$tgtproduct'.\n";
     exit(1);
 }
 
-$dbh->do("INSERT INTO flaginclusions(component_id, type_id, product_id)
+$dbh->do(
+    "INSERT INTO flaginclusions(component_id, type_id, product_id)
                SELECT fi1.component_id, fi1.type_id, ? FROM flaginclusions fi1
             LEFT JOIN flaginclusions fi2
                       ON fi1.type_id = fi2.type_id
                       AND fi2.product_id = ?
                 WHERE fi1.product_id = ?
                       AND fi2.type_id IS NULL",
-        undef,
-        $tgtprodid, $tgtprodid, $srcprodid);
+    undef,
+    $tgtprodid, $tgtprodid, $srcprodid
+);
 
 # It's complex to determine which items now need to be flushed from memcached.
 # As this is expected to be a rare event, we just flush the entire cache.

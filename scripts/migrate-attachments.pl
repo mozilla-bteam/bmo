@@ -12,9 +12,6 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 $| = 1;
 
-
-
-
 use Bugzilla;
 use Bugzilla::Attachment;
 use Bugzilla::Install::Util qw(indicate_progress);
@@ -23,8 +20,8 @@ use Getopt::Long qw(GetOptions);
 my @storage_names = Bugzilla::Attachment->get_storage_names();
 
 my %options;
-GetOptions(\%options, 'mirror=s@{2}', 'copy=s@{2}', 'delete=s') or exit(1);
-unless ($options{mirror} || $options{copy} || $options{delete}) {
+GetOptions( \%options, 'mirror=s@{2}', 'copy=s@{2}', 'delete=s' ) or exit(1);
+unless ( $options{mirror} || $options{copy} || $options{delete} ) {
     die <<EOF;
 Syntax:
     migrate-attachments.pl --mirror source destination
@@ -61,31 +58,31 @@ EOF
 
 my $dbh = Bugzilla->dbh;
 
-if ($options{mirror}) {
-    if ($options{mirror}->[0] eq $options{mirror}->[1]) {
+if ( $options{mirror} ) {
+    if ( $options{mirror}->[0] eq $options{mirror}->[1] ) {
         die "Source and destination must be different\n";
     }
-    my ($source, $dest) = map { storage($_) } @{ $options{mirror} };
+    my ( $source, $dest ) = map { storage($_) } @{ $options{mirror} };
 
     my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments");
-    confirm(sprintf('Mirror %s attachments from %s to %s?', $total, @{ $options{mirror} }));
+    confirm( sprintf( 'Mirror %s attachments from %s to %s?', $total, @{ $options{mirror} } ) );
 
     my $sth = $dbh->prepare("SELECT attach_id, attach_size FROM attachments ORDER BY attach_id DESC");
     $sth->execute();
-    my ($count, $deleted, $stored) = (0, 0, 0);
-    while (my ($attach_id, $attach_size) = $sth->fetchrow_array()) {
-        indicate_progress({ total => $total, current => ++$count });
+    my ( $count, $deleted, $stored ) = ( 0, 0, 0 );
+    while ( my ( $attach_id, $attach_size ) = $sth->fetchrow_array() ) {
+        indicate_progress( { total => $total, current => ++$count } );
 
         # remove deleted attachments
-        if ($attach_size == 0 && $dest->exists($attach_id)) {
+        if ( $attach_size == 0 && $dest->exists($attach_id) ) {
             $dest->remove($attach_id);
             $deleted++;
         }
 
         # store attachments that don't already exist
-        elsif ($attach_size != 0 && !$dest->exists($attach_id)) {
-            if (my $data = $source->retrieve($attach_id)) {
-                $dest->store($attach_id, $data);
+        elsif ( $attach_size != 0 && !$dest->exists($attach_id) ) {
+            if ( my $data = $source->retrieve($attach_id) ) {
+                $dest->store( $attach_id, $data );
                 $stored++;
             }
         }
@@ -95,25 +92,26 @@ if ($options{mirror}) {
     print "Attachments deleted: $deleted\n" if $deleted;
 }
 
-elsif ($options{copy}) {
-    if ($options{copy}->[0] eq $options{copy}->[1]) {
+elsif ( $options{copy} ) {
+    if ( $options{copy}->[0] eq $options{copy}->[1] ) {
         die "Source and destination must be different\n";
     }
-    my ($source, $dest) = map { storage($_) } @{ $options{copy} };
+    my ( $source, $dest ) = map { storage($_) } @{ $options{copy} };
 
     my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments WHERE attach_size != 0");
-    confirm(sprintf('Copy %s attachments from %s to %s?', $total, @{ $options{copy} }));
+    confirm( sprintf( 'Copy %s attachments from %s to %s?', $total, @{ $options{copy} } ) );
 
-    my $sth = $dbh->prepare("SELECT attach_id, attach_size FROM attachments WHERE attach_size != 0 ORDER BY attach_id DESC");
+    my $sth = $dbh->prepare(
+        "SELECT attach_id, attach_size FROM attachments WHERE attach_size != 0 ORDER BY attach_id DESC");
     $sth->execute();
-    my ($count, $stored) = (0, 0);
-    while (my ($attach_id, $attach_size) = $sth->fetchrow_array()) {
-        indicate_progress({ total => $total, current => ++$count });
+    my ( $count, $stored ) = ( 0, 0 );
+    while ( my ( $attach_id, $attach_size ) = $sth->fetchrow_array() ) {
+        indicate_progress( { total => $total, current => ++$count } );
 
         # store attachments that don't already exist
-        if (!$dest->exists($attach_id)) {
-            if (my $data = $source->retrieve($attach_id)) {
-                $dest->store($attach_id, $data);
+        if ( !$dest->exists($attach_id) ) {
+            if ( my $data = $source->retrieve($attach_id) ) {
+                $dest->store( $attach_id, $data );
                 $stored++;
             }
         }
@@ -122,17 +120,17 @@ elsif ($options{copy}) {
     print "Attachments stored: $stored\n";
 }
 
-elsif ($options{delete}) {
-    my $storage = storage($options{delete});
+elsif ( $options{delete} ) {
+    my $storage = storage( $options{delete} );
     my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments WHERE attach_size != 0");
-    confirm(sprintf('DELETE %s attachments from %s?', $total, $options{delete}));
+    confirm( sprintf( 'DELETE %s attachments from %s?', $total, $options{delete} ) );
 
     my $sth = $dbh->prepare("SELECT attach_id FROM attachments WHERE attach_size != 0 ORDER BY attach_id DESC");
     $sth->execute();
-    my ($count, $deleted) = (0, 0);
-    while (my ($attach_id) = $sth->fetchrow_array()) {
-        indicate_progress({ total => $total, current => ++$count });
-        if ($storage->exists($attach_id)) {
+    my ( $count, $deleted ) = ( 0, 0 );
+    while ( my ($attach_id) = $sth->fetchrow_array() ) {
+        indicate_progress( { total => $total, current => ++$count } );
+        if ( $storage->exists($attach_id) ) {
             $storage->remove($attach_id);
             $deleted++;
         }

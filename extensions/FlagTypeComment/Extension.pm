@@ -39,12 +39,12 @@ our $VERSION = '1';
 ################
 
 sub db_schema_abstract_schema {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     $args->{'schema'}->{'flagtype_comments'} = {
         FIELDS => [
             type_id => {
-                TYPE => 'SMALLINT(6)',
-                NOTNULL => 1,
+                TYPE       => 'SMALLINT(6)',
+                NOTNULL    => 1,
                 REFERENCES => {
                     TABLE  => 'flagtypes',
                     COLUMN => 'id',
@@ -52,17 +52,15 @@ sub db_schema_abstract_schema {
                 }
             },
             on_status => {
-                TYPE => 'CHAR(1)',
+                TYPE    => 'CHAR(1)',
                 NOTNULL => 1
             },
             comment => {
-                TYPE => 'MEDIUMTEXT',
+                TYPE    => 'MEDIUMTEXT',
                 NOTNULL => 1
             },
         ],
-        INDEXES => [
-            flagtype_comments_idx => ['type_id'],
-        ],
+        INDEXES => [ flagtype_comments_idx => ['type_id'], ],
     };
 }
 
@@ -71,34 +69,37 @@ sub db_schema_abstract_schema {
 #############
 
 sub template_before_process {
-    my ($self, $args) = @_;
-    my ($vars, $file) = @$args{qw(vars file)};
+    my ( $self, $args ) = @_;
+    my ( $vars, $file ) = @$args{qw(vars file)};
 
     return unless Bugzilla->user->id;
-    if (grep { $_ eq $file } FLAGTYPE_COMMENT_TEMPLATES) {
-        _set_ftc_states($file, $vars);
+    if ( grep { $_ eq $file } FLAGTYPE_COMMENT_TEMPLATES ) {
+        _set_ftc_states( $file, $vars );
     }
 }
 
 sub _set_ftc_states {
-    my ($file, $vars) = @_;
+    my ( $file, $vars ) = @_;
     my $dbh = Bugzilla->dbh;
 
     my $ftc_flags;
     my $db_result;
-    if ($file =~ /^admin\//) {
+    if ( $file =~ /^admin\// ) {
+
         # admin
         my $type = $vars->{'type'} || return;
-        my ($target_type, $id);
-        if (blessed($type)) {
-            ($target_type, $id) = ($type->target_type, $type->id);
-        } else {
-            ($target_type, $id) = ($type->{target_type}, $type->{id});
+        my ( $target_type, $id );
+        if ( blessed($type) ) {
+            ( $target_type, $id ) = ( $type->target_type, $type->id );
+        }
+        else {
+            ( $target_type, $id ) = ( $type->{target_type}, $type->{id} );
             trick_taint($id) if $id;
         }
-        if ($target_type eq 'bug') {
+        if ( $target_type eq 'bug' ) {
             return unless FLAGTYPE_COMMENT_BUG_FLAGS;
-        } else {
+        }
+        else {
             return unless FLAGTYPE_COMMENT_ATTACHMENT_FLAGS;
         }
         if ($id) {
@@ -106,42 +107,49 @@ sub _set_ftc_states {
                 "SELECT type_id AS flagtype, on_status AS state, comment AS text
                    FROM flagtype_comments
                   WHERE type_id = ?",
-                { Slice => {} }, $id);
+                { Slice => {} }, $id
+            );
         }
-    } else {
+    }
+    else {
         # creating/editing attachment / viewing bug
         my $bug;
-        if (exists $vars->{'bug'}) {
+        if ( exists $vars->{'bug'} ) {
             $bug = $vars->{'bug'};
-        } elsif (exists $vars->{'attachment'}) {
+        }
+        elsif ( exists $vars->{'attachment'} ) {
             $bug = $vars->{'attachment'}->{bug};
-        } else {
+        }
+        else {
             return;
         }
 
-        my $flag_types = Bugzilla::FlagType::match({
-            'target_type'  => ($file =~ /^bug/ ? 'bug' : 'attachment'),
-            'product_id'   => $bug->product_id,
-            'component_id' => $bug->component_id,
-            'bug_id'       => $bug->id,
-            'active_or_has_flags' => $bug->id,
-        });
+        my $flag_types = Bugzilla::FlagType::match(
+            {
+                'target_type' => ( $file =~ /^bug/ ? 'bug' : 'attachment' ),
+                'product_id' => $bug->product_id,
+                'component_id'        => $bug->component_id,
+                'bug_id'              => $bug->id,
+                'active_or_has_flags' => $bug->id,
+            }
+        );
 
-        my $types = join(',', map { $_->id } @$flag_types);
-        my $states = "'" . join("','", FLAGTYPE_COMMENT_STATES) . "'";
+        my $types = join( ',', map { $_->id } @$flag_types );
+        my $states = "'" . join( "','", FLAGTYPE_COMMENT_STATES ) . "'";
         $db_result = $dbh->selectall_arrayref(
             "SELECT type_id AS flagtype, on_status AS state, comment AS text
                FROM flagtype_comments
               WHERE type_id IN ($types) AND on_status IN ($states)",
-            { Slice => {} });
+            { Slice => {} }
+        );
     }
 
     foreach my $row (@$db_result) {
-        $ftc_flags->{$row->{'flagtype'}} ||= {};
-        $ftc_flags->{$row->{'flagtype'}}{$row->{'state'}} = $row->{text};
+        $ftc_flags->{ $row->{'flagtype'} } ||= {};
+        $ftc_flags->{ $row->{'flagtype'} }{ $row->{'state'} } = $row->{text};
     }
 
-    $vars->{'ftc_states'} = [ FLAGTYPE_COMMENT_STATES ];
+    $vars->{'ftc_states'} = [FLAGTYPE_COMMENT_STATES];
     $vars->{'ftc_flags'}  = $ftc_flags;
 }
 
@@ -150,53 +158,55 @@ sub _set_ftc_states {
 #########
 
 sub flagtype_end_of_create {
-    my ($self, $args) = @_;
-    _set_flagtypes($args->{type});
+    my ( $self, $args ) = @_;
+    _set_flagtypes( $args->{type} );
 }
 
 sub flagtype_end_of_update {
-    my ($self, $args) = @_;
-    _set_flagtypes($args->{type});
+    my ( $self, $args ) = @_;
+    _set_flagtypes( $args->{type} );
 }
 
 sub _set_flagtypes {
-    my $flag_type = shift;
+    my $flag_type   = shift;
     my $flagtype_id = $flag_type->id;
-    my $input = Bugzilla->input_params;
-    my $dbh = Bugzilla->dbh;
+    my $input       = Bugzilla->input_params;
+    my $dbh         = Bugzilla->dbh;
 
     foreach my $state (FLAGTYPE_COMMENT_STATES) {
-        next if (!defined $input->{"ftc_${flagtype_id}_$state"}
-                 && !defined $input->{"ftc_new_$state"});
+        next if ( !defined $input->{"ftc_${flagtype_id}_$state"}
+            && !defined $input->{"ftc_new_$state"} );
 
         my $text = $input->{"ftc_${flagtype_id}_$state"} || $input->{"ftc_new_$state"} || '';
         $text =~ s/\r\n/\n/g;
         trick_taint($text);
 
-        if ($text ne '') {
+        if ( $text ne '' ) {
             if ($dbh->selectrow_array(
-                "SELECT 1 FROM flagtype_comments WHERE type_id=? AND on_status=?",
-                undef,
-                $flagtype_id, $state)
-            ) {
+                    "SELECT 1 FROM flagtype_comments WHERE type_id=? AND on_status=?",
+                    undef, $flagtype_id, $state
+                )
+                )
+            {
                 $dbh->do(
                     "UPDATE flagtype_comments SET comment=?
                       WHERE type_id=? AND on_status=?",
                     undef,
-                    $text, $flagtype_id, $state);
-            } else {
+                    $text, $flagtype_id, $state
+                );
+            }
+            else {
                 $dbh->do(
                     "INSERT INTO flagtype_comments(type_id, on_status, comment)
                      VALUES (?, ?, ?)",
                     undef,
-                    $flagtype_id, $state, $text);
+                    $flagtype_id, $state, $text
+                );
             }
 
-        } else {
-            $dbh->do(
-                "DELETE FROM flagtype_comments WHERE type_id=?  AND on_status=?",
-                undef,
-                $flagtype_id, $state);
+        }
+        else {
+            $dbh->do( "DELETE FROM flagtype_comments WHERE type_id=?  AND on_status=?", undef, $flagtype_id, $state );
         }
     }
 }

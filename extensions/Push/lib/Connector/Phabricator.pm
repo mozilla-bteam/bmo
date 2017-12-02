@@ -20,11 +20,11 @@ use Bugzilla::User;
 
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Util qw(
-  add_comment_to_revision create_private_revision_policy
-  edit_revision_policy get_attachment_revisions get_bug_role_phids
-  get_revisions_by_ids intersect make_revision_public
-  make_revision_private set_revision_subscribers
-  get_security_sync_groups add_security_sync_comments);
+    add_comment_to_revision create_private_revision_policy
+    edit_revision_policy get_attachment_revisions get_bug_role_phids
+    get_revisions_by_ids intersect make_revision_public
+    make_revision_private set_revision_subscribers
+    get_security_sync_groups add_security_sync_comments);
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util qw(is_public);
 
@@ -47,8 +47,7 @@ sub should_send {
 
     # We are only interested currently in bug group, assignee, qa-contact, or cc changes.
     return 0
-      unless $message->routing_key =~
-      /^(?:attachment|bug)\.modify:.*\b(bug_group|assigned_to|qa_contact|cc)\b/;
+        unless $message->routing_key =~ /^(?:attachment|bug)\.modify:.*\b(bug_group|assigned_to|qa_contact|cc)\b/;
 
     my $bug = $self->_get_bug_by_data( $message->payload_decoded ) || return 0;
 
@@ -70,26 +69,26 @@ sub send {
 
     my @revisions = get_attachment_revisions($bug);
 
-    if (!$is_public && !@set_groups) {
+    if ( !$is_public && !@set_groups ) {
         foreach my $revision (@revisions) {
-            Bugzilla->audit(sprintf(
-              'Making revision %s for bug %s private due to unkown Bugzilla groups: %s',
-              $revision->{id},
-              $bug->id,
-              join(', ', @set_groups)
-            ));
+            Bugzilla->audit(
+                sprintf(
+                    'Making revision %s for bug %s private due to unkown Bugzilla groups: %s',
+                    $revision->{id}, $bug->id, join( ', ', @set_groups )
+                )
+            );
             make_revision_private( $revision->{phid} );
         }
 
-        add_security_sync_comments(\@revisions, $bug);
+        add_security_sync_comments( \@revisions, $bug );
 
         return PUSH_RESULT_OK;
     }
 
-    my $group_change =
-      ($message->routing_key =~ /^(?:attachment|bug)\.modify:.*\bbug_group\b/)
-      ? 1
-      : 0;
+    my $group_change
+        = ( $message->routing_key =~ /^(?:attachment|bug)\.modify:.*\bbug_group\b/ )
+        ? 1
+        : 0;
 
     my $subscribers;
     if ( !$is_public ) {
@@ -100,28 +99,16 @@ sub send {
         my $revision_phid = $revision->{phid};
 
         if ( $is_public && $group_change ) {
-            Bugzilla->audit(sprintf(
-              'Making revision %s public for bug %s',
-              $revision->{id},
-              $bug->id
-            ));
+            Bugzilla->audit( sprintf( 'Making revision %s public for bug %s', $revision->{id}, $bug->id ) );
             make_revision_public($revision_phid);
         }
         elsif ( !$is_public && $group_change ) {
-            Bugzilla->audit(sprintf(
-              'Giving revision %s a custom policy for bug %s',
-              $revision->{id},
-              $bug->id
-            ));
+            Bugzilla->audit( sprintf( 'Giving revision %s a custom policy for bug %s', $revision->{id}, $bug->id ) );
             my $policy_phid = create_private_revision_policy( $bug, \@set_groups );
             edit_revision_policy( $revision_phid, $policy_phid, $subscribers );
         }
         elsif ( !$is_public && !$group_change ) {
-            Bugzilla->audit(sprintf(
-              'Updating subscribers for %s for bug %s',
-              $revision->{id},
-              $bug->id
-            ));
+            Bugzilla->audit( sprintf( 'Updating subscribers for %s for bug %s', $revision->{id}, $bug->id ) );
             set_revision_subscribers( $revision_phid, $subscribers );
         }
     }

@@ -24,19 +24,19 @@ nice(19);
 
 # grab reporter class and filename
 exit(1) unless my $reporter_class = shift;
-exit(1) unless my $filename = shift;
+exit(1) unless my $filename       = shift;
 
 # create reporter object and report
 eval "use $reporter_class";
 
 # detach
-if ($reporter_class->DETACH) {
-    open(STDIN, '<', '/dev/null');
-    open(STDOUT, '>', '/dev/null');
-    open(STDERR, '>', '/dev/null');
+if ( $reporter_class->DETACH ) {
+    open( STDIN,  '<', '/dev/null' );
+    open( STDOUT, '>', '/dev/null' );
+    open( STDERR, '>', '/dev/null' );
     setsid();
 }
 
 # report
-exit(1) unless my $reporter = $reporter_class->new({ json_filename => $filename });
+exit(1) unless my $reporter = $reporter_class->new( { json_filename => $filename } );
 $reporter->report();

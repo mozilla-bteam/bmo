@@ -16,35 +16,40 @@ use Bugzilla::WebService::User;
 
 BEGIN {
     *Bugzilla::WebService::User::rest_resources = \&_rest_resources;
-};
+}
 
 sub _rest_resources {
     my $rest_resources = [
-        qr{^/valid_login$}, {
+        qr{^/valid_login$},
+        {
             GET => {
                 method => 'valid_login'
             }
         },
-        qr{^/login$}, {
+        qr{^/login$},
+        {
             GET => {
                 method => 'login'
             }
         },
-        qr{^/logout$}, {
+        qr{^/logout$},
+        {
             GET => {
                 method => 'logout'
             }
         },
-        qr{^/user$}, {
-            GET  => {
+        qr{^/user$},
+        {
+            GET => {
                 method => 'get'
             },
             POST => {
-                method => 'create',
+                method       => 'create',
                 success_code => STATUS_CREATED
             }
         },
-        qr{^/user/([^/]+)$}, {
+        qr{^/user/([^/]+)$},
+        {
             GET => {
                 method => 'get',
                 params => sub {
@@ -60,7 +65,8 @@ sub _rest_resources {
                 }
             }
         },
-        qr{^/user/mfa/([^/]+)/enroll$}, {
+        qr{^/user/mfa/([^/]+)/enroll$},
+        {
             GET => {
                 method => 'mfa_enroll',
                 params => sub {
@@ -68,7 +74,8 @@ sub _rest_resources {
                 }
             },
         },
-        qr{^/whoami$}, {
+        qr{^/whoami$},
+        {
             GET => {
                 method => 'whoami'
             }

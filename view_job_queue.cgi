@@ -20,23 +20,28 @@ use Scalar::Util qw(blessed);
 use Storable qw(read_magic thaw);
 
 my $user = Bugzilla->login(LOGIN_REQUIRED);
-($user->in_group("admin") || $user->in_group('infra'))
-    || ThrowUserError("auth_failure", { group  => "admin",
-                                        action => "access",
-                                        object => "job_queue" });
+( $user->in_group("admin") || $user->in_group('infra') )
+    || ThrowUserError(
+    "auth_failure",
+    {
+        group  => "admin",
+        action => "access",
+        object => "job_queue"
+    }
+    );
 
 my $vars = {};
 generate_report($vars);
 
 print Bugzilla->cgi->header();
 my $template = Bugzilla->template;
-$template->process('admin/reports/job_queue.html.tmpl', $vars)
-    || ThrowTemplateError($template->error());
+$template->process( 'admin/reports/job_queue.html.tmpl', $vars )
+    || ThrowTemplateError( $template->error() );
 
 sub generate_report {
     my ($vars) = @_;
-    my $dbh = Bugzilla->dbh;
-    my $user = Bugzilla->user;
+    my $dbh    = Bugzilla->dbh;
+    my $user   = Bugzilla->user;
 
     my $query = "
         SELECT
@@ -64,37 +69,37 @@ sub generate_report {
                 ON (e.error_time  = t.error_time) AND (e.jobid = t.jobid)
         ORDER BY
             j.run_after, j.grabbed_until, j.insert_time, j.jobid
-        " . $dbh->sql_limit(JOB_QUEUE_VIEW_MAX_JOBS + 1);
+        " . $dbh->sql_limit( JOB_QUEUE_VIEW_MAX_JOBS + 1 );
 
-    $vars->{jobs} = $dbh->selectall_arrayref($query, { Slice => {} });
-    if (@{ $vars->{jobs} } == JOB_QUEUE_VIEW_MAX_JOBS + 1) {
+    $vars->{jobs} = $dbh->selectall_arrayref( $query, { Slice => {} } );
+    if ( @{ $vars->{jobs} } == JOB_QUEUE_VIEW_MAX_JOBS + 1 ) {
         pop @{ $vars->{jobs} };
-        $vars->{job_count} = $dbh->selectrow_array("SELECT COUNT(*) FROM ts_job");
+        $vars->{job_count}     = $dbh->selectrow_array("SELECT COUNT(*) FROM ts_job");
         $vars->{too_many_jobs} = 1;
     }
 
     my $bug_word = template_var('terms')->{bug};
-    foreach my $job (@{ $vars->{jobs} }) {
-        my ($recipient, $description);
+    foreach my $job ( @{ $vars->{jobs} } ) {
+        my ( $recipient, $description );
         eval {
-            if ($job->{func} eq 'Bugzilla::Job::BugMail') {
-                my $arg = _cond_thaw(delete $job->{arg});
+            if ( $job->{func} eq 'Bugzilla::Job::BugMail' ) {
+                my $arg = _cond_thaw( delete $job->{arg} );
                 next unless $arg;
                 my $vars = $arg->{vars};
-                $recipient = $vars->{to_user}->{login_name};
-                $description = "[$bug_word " . $vars->{bug}->{bug_id} . '] '
-                               . $vars->{bug}->{short_desc};
+                $recipient   = $vars->{to_user}->{login_name};
+                $description = "[$bug_word " . $vars->{bug}->{bug_id} . '] ' . $vars->{bug}->{short_desc};
             }
 
-            elsif ($job->{func} eq 'Bugzilla::Job::Mailer') {
-                my $arg = _cond_thaw(delete $job->{arg});
+            elsif ( $job->{func} eq 'Bugzilla::Job::Mailer' ) {
+                my $arg = _cond_thaw( delete $job->{arg} );
                 next unless $arg;
                 my $msg = $arg->{msg};
-                if (ref($msg) && blessed($msg) eq 'Email::MIME') {
-                    $recipient = $msg->header('to');
+                if ( ref($msg) && blessed($msg) eq 'Email::MIME' ) {
+                    $recipient   = $msg->header('to');
                     $description = $msg->header('subject');
-                } else {
-                    ($recipient) = $msg =~ /\nTo: ([^\n]+)/i;
+                }
+                else {
+                    ($recipient)   = $msg =~ /\nTo: ([^\n]+)/i;
                     ($description) = $msg =~ /\nSubject: ([^\n]+)/i;
                 }
             }
@@ -108,14 +113,16 @@ sub generate_report {
 sub _cond_thaw {
     my $data = shift;
     my $magic = eval { read_magic($data); };
-    if ($magic && $magic->{major} && $magic->{major} >= 2 && $magic->{major} <= 5) {
+    if ( $magic && $magic->{major} && $magic->{major} >= 2 && $magic->{major} <= 5 ) {
         my $thawed = eval { thaw($data) };
         if ($@) {
+
             # false alarm... looked like a Storable, but wasn't
             return undef;
         }
         return $thawed;
-    } else {
+    }
+    else {
         return undef;
     }
 }

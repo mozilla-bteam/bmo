@@ -20,19 +20,18 @@ use lib qw(. lib local/lib/perl5);
 
 use Getopt::Long qw(:config gnu_getopt);
 
-if (-f "MYMETA.json") {
+if ( -f "MYMETA.json" ) {
     eval {
         require CPAN::Meta;
         require Module::CPANfile;
 
-        my (@with_feature, @without_feature);
+        my ( @with_feature, @without_feature );
         my $with_all_features = 0;
         GetOptions(
             'with-all-features|A!' => \$with_all_features,
             'with-feature|D=s@'    => \@with_feature,
             'without-feature|U=s@' => \@without_feature
         );
-
 
         my $meta = CPAN::Meta->load_file("MYMETA.json");
 
@@ -41,17 +40,17 @@ if (-f "MYMETA.json") {
 
         my %features;
         if ($with_all_features) {
-            $features{$_->identifier} = 1 foreach ($meta->features);
+            $features{ $_->identifier } = 1 foreach ( $meta->features );
         }
         $features{$_} = 1 foreach @with_feature;
         $features{$_} = 0 foreach @without_feature;
         my @features = grep { $features{$_} } keys %features;
 
-        my $prereqs = $meta->effective_prereqs(\@features)->as_string_hash;
+        my $prereqs  = $meta->effective_prereqs( \@features )->as_string_hash;
         my $filtered = {};
 
-        while (my($phase, $types) = each %$prereqs) {
-            while (my($type, $reqs) = each %$types) {
+        while ( my ( $phase, $types ) = each %$prereqs ) {
+            while ( my ( $type, $reqs ) = each %$types ) {
                 $filtered->{$phase}{$type} = $reqs;
             }
         }

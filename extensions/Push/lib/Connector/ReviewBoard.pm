@@ -36,7 +36,7 @@ sub options {
             default  => 'Developer Services',
             required => 1,
             validate => sub {
-                Bugzilla::Product->new({ name => $_[0] })
+                Bugzilla::Product->new( { name => $_[0] } )
                     || die "Invalid Product ($_[0])\n";
             },
         },
@@ -47,11 +47,11 @@ sub options {
             default  => 'MozReview',
             required => 1,
             validate => sub {
-                my ($component, $config) = @_;
-                    my $product = Bugzilla::Product->new({ name => $config->{product} })
-                        || die "Invalid Product (" . $config->{product} . ")\n";
-                    Bugzilla::Component->new({ product => $product, name => $component })
-                        || die "Invalid Component ($component)\n";
+                my ( $component, $config ) = @_;
+                my $product = Bugzilla::Product->new( { name => $config->{product} } )
+                    || die "Invalid Product (" . $config->{product} . ")\n";
+                Bugzilla::Component->new( { product => $product, name => $component } )
+                    || die "Invalid Component ($component)\n";
             },
         },
         {
@@ -61,11 +61,11 @@ sub options {
             default  => 'Production',
             required => 1,
             validate => sub {
-                my ($version, $config) = @_;
-                    my $product = Bugzilla::Product->new({ name => $config->{product} })
-                        || die "Invalid Product (" . $config->{product} . ")\n";
-                    Bugzilla::Version->new({ product => $product, name => $version })
-                        || die "Invalid Version ($version)\n";
+                my ( $version, $config ) = @_;
+                my $product = Bugzilla::Product->new( { name => $config->{product} } )
+                    || die "Invalid Product (" . $config->{product} . ")\n";
+                Bugzilla::Version->new( { product => $product, name => $version } )
+                    || die "Invalid Version ($version)\n";
             },
         },
         {
@@ -75,7 +75,7 @@ sub options {
             default  => 'mozilla-employee-confidential',
             required => 1,
             validate => sub {
-                Bugzilla::Group->new({ name => $_[0] })
+                Bugzilla::Group->new( { name => $_[0] } )
                     || die "Invalid Group ($_[0])\n";
             },
         },
@@ -86,8 +86,8 @@ sub options {
             default  => '',
             required => 1,
             validate => sub {
-                foreach my $login (map { trim($_) } split(',', $_[0])) {
-                    Bugzilla::User->new({ name => $login })
+                foreach my $login ( map { trim($_) } split( ',', $_[0] ) ) {
+                    Bugzilla::User->new( { name => $login } )
                         || die "Invalid User ($login)\n";
                 }
             },
@@ -96,13 +96,13 @@ sub options {
 }
 
 sub should_send {
-    my ($self, $message) = @_;
+    my ( $self, $message ) = @_;
 
-    if ($message->routing_key =~ /^(?:attachment|bug)\.modify:.*\bis_private\b/) {
+    if ( $message->routing_key =~ /^(?:attachment|bug)\.modify:.*\bis_private\b/ ) {
         my $payload = $message->payload_decoded();
         my $target  = $payload->{event}->{target};
 
-        if ($target ne 'bug' && exists $payload->{$target}->{bug}) {
+        if ( $target ne 'bug' && exists $payload->{$target}->{bug} ) {
             return 0 if $payload->{$target}->{bug}->{is_private};
             return 0 if $payload->{$target}->{content_type} ne RB_CONTENT_TYPE;
         }
@@ -116,7 +116,7 @@ sub should_send {
 }
 
 sub send {
-    my ($self, $message) = @_;
+    my ( $self, $message ) = @_;
     my $logger = Bugzilla->push_ext->logger;
     my $config = $self->config;
 
@@ -125,10 +125,10 @@ sub send {
         my $target  = $payload->{event}->{target};
 
         # load attachments
-        my $bug_id = $target eq 'bug' ? $payload->{bug}->{id} : $payload->{attachment}->{bug}->{id};
+        my $bug_id    = $target eq 'bug'        ? $payload->{bug}->{id}        : $payload->{attachment}->{bug}->{id};
         my $attach_id = $target eq 'attachment' ? $payload->{attachment}->{id} : undef;
-        Bugzilla->set_user(Bugzilla::User->super_user);
-        my $bug = Bugzilla::Bug->new({ id => $bug_id, cache => 1 });
+        Bugzilla->set_user( Bugzilla::User->super_user );
+        my $bug = Bugzilla::Bug->new( { id => $bug_id, cache => 1 } );
         Bugzilla->logout;
 
         # create a bug if there are any mozreview attachments
@@ -136,7 +136,8 @@ sub send {
         if (@reviews) {
 
             # build comment
-            my $comment = $target eq 'bug'
+            my $comment
+                = $target eq 'bug'
                 ? "Bug $bug_id has MozReview reviews and is no longer public."
                 : "MozReview attachment $attach_id on Bug $bug_id is no longer public.";
             $comment .= "\n\n";
@@ -145,31 +146,33 @@ sub send {
             }
 
             # create bug
-            my $user = Bugzilla::User->new({ name => AUTOMATION_USER, cache => 1 });
+            my $user = Bugzilla::User->new( { name => AUTOMATION_USER, cache => 1 } );
             die "Invalid User: " . AUTOMATION_USER . "\n" unless $user;
             Bugzilla->set_user($user);
-            my $new_bug = Bugzilla::Bug->create({
-                short_desc   => "[SECURITY] Bug $bug_id is no longer public",
-                product      => $config->{product},
-                component    => $config->{component},
-                bug_severity => 'normal',
-                groups       => [ map { trim($_) } split(',', $config->{group}) ],
-                op_sys       => 'Unspecified',
-                rep_platform => 'Unspecified',
-                version      => $config->{version},
-                cc           => [ map { trim($_) } split(',', $config->{cc}) ],
-                comment      => $comment,
-            });
-            Bugzilla::BugMail::Send($new_bug->id, { changer => Bugzilla->user });
+            my $new_bug = Bugzilla::Bug->create(
+                {
+                    short_desc   => "[SECURITY] Bug $bug_id is no longer public",
+                    product      => $config->{product},
+                    component    => $config->{component},
+                    bug_severity => 'normal',
+                    groups       => [ map { trim($_) } split( ',', $config->{group} ) ],
+                    op_sys       => 'Unspecified',
+                    rep_platform => 'Unspecified',
+                    version      => $config->{version},
+                    cc           => [ map { trim($_) } split( ',', $config->{cc} ) ],
+                    comment      => $comment,
+                }
+            );
+            Bugzilla::BugMail::Send( $new_bug->id, { changer => Bugzilla->user } );
             Bugzilla->logout;
 
-            $logger->info("Created bug " . $new_bug->id);
+            $logger->info( "Created bug " . $new_bug->id );
         }
     };
     my $error = $@;
     Bugzilla->logout;
     if ($error) {
-        return (PUSH_RESULT_TRANSIENT, clean_error($error));
+        return ( PUSH_RESULT_TRANSIENT, clean_error($error) );
     }
 
     return PUSH_RESULT_OK;

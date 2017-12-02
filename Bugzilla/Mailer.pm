@@ -25,6 +25,7 @@ use Encode qw(encode);
 use Encode::MIME::Header;
 use Email::Address;
 use Email::MIME;
+
 # Return::Value 1.666002 pollutes the error log with warnings about this
 # deprecated module. We have to set NO_CLUCK = 1 before loading Email::Send
 # to disable these warnings.
@@ -36,19 +37,19 @@ use Sys::Hostname;
 use Bugzilla::Version qw(vers_cmp);
 
 sub MessageToMTA {
-    my ($msg, $send_now) = (@_);
+    my ( $msg, $send_now ) = (@_);
     my $method = Bugzilla->params->{'mail_delivery_method'};
     return if $method eq 'None';
 
-    if (Bugzilla->params->{'use_mailer_queue'} and !$send_now) {
-        Bugzilla->job_queue->insert('send_mail', { msg => $msg });
+    if ( Bugzilla->params->{'use_mailer_queue'} and !$send_now ) {
+        Bugzilla->job_queue->insert( 'send_mail', { msg => $msg } );
         return;
     }
 
     my $dbh = Bugzilla->dbh;
 
     my $email;
-    if (ref $msg) {
+    if ( ref $msg ) {
         $email = $msg;
     }
     else {
@@ -58,7 +59,7 @@ sub MessageToMTA {
         # you're running on. See http://perldoc.perl.org/perlport.html#Newlines
         # We check for multiple CRs because of this Template-Toolkit bug:
         # https://rt.cpan.org/Ticket/Display.html?id=43345
-        if (vers_cmp($Email::MIME::VERSION, 1.911) == -1) {
+        if ( vers_cmp( $Email::MIME::VERSION, 1.911 ) == -1 ) {
             $msg =~ s/(?:\015+)?\012/\015\012/msg;
         }
 
@@ -66,12 +67,11 @@ sub MessageToMTA {
     }
 
     # Ensure that we are not sending emails too quickly to recipients.
-    if (Bugzilla->params->{use_mailer_queue}
-        && (EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR))
+    if ( Bugzilla->params->{use_mailer_queue}
+        && ( EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR ) )
     {
-        $dbh->do(
-            "DELETE FROM email_rates WHERE message_ts < "
-            . $dbh->sql_date_math('LOCALTIMESTAMP(0)', '-', '1', 'HOUR'));
+        $dbh->do( "DELETE FROM email_rates WHERE message_ts < "
+                . $dbh->sql_date_math( 'LOCALTIMESTAMP(0)', '-', '1', 'HOUR' ) );
 
         my $recipient = $email->header('To');
 
@@ -80,10 +80,11 @@ sub MessageToMTA {
                 "SELECT COUNT(*)
                    FROM email_rates
                   WHERE recipient = ?  AND message_ts >= "
-                        . $dbh->sql_date_math('LOCALTIMESTAMP(0)', '-', '1', 'MINUTE'),
+                    . $dbh->sql_date_math( 'LOCALTIMESTAMP(0)', '-', '1', 'MINUTE' ),
                 undef,
-                $recipient);
-            if ($minute_rate >= EMAIL_LIMIT_PER_MINUTE) {
+                $recipient
+            );
+            if ( $minute_rate >= EMAIL_LIMIT_PER_MINUTE ) {
                 die EMAIL_LIMIT_EXCEPTION;
             }
         }
@@ -92,10 +93,11 @@ sub MessageToMTA {
                 "SELECT COUNT(*)
                    FROM email_rates
                   WHERE recipient = ?  AND message_ts >= "
-                        . $dbh->sql_date_math('LOCALTIMESTAMP(0)', '-', '1', 'HOUR'),
+                    . $dbh->sql_date_math( 'LOCALTIMESTAMP(0)', '-', '1', 'HOUR' ),
                 undef,
-                $recipient);
-            if ($hour_rate >= EMAIL_LIMIT_PER_HOUR) {
+                $recipient
+            );
+            if ( $hour_rate >= EMAIL_LIMIT_PER_HOUR ) {
                 die EMAIL_LIMIT_EXCEPTION;
             }
         }
@@ -107,49 +109,51 @@ sub MessageToMTA {
     # We don't use correct_urlbase, because we want this URL to
     # *always* be the same for this Bugzilla, in every email,
     # even if the admin changes the "ssl_redirect" parameter some day.
-    $email->header_set('X-Bugzilla-URL', Bugzilla->params->{'urlbase'});
+    $email->header_set( 'X-Bugzilla-URL', Bugzilla->params->{'urlbase'} );
 
     # We add this header to mark the mail as "auto-generated" and
     # thus to hopefully avoid auto replies.
-    $email->header_set('Auto-Submitted', 'auto-generated');
+    $email->header_set( 'Auto-Submitted', 'auto-generated' );
 
     # MIME-Version must be set otherwise some mailsystems ignore the charset
-    $email->header_set('MIME-Version', '1.0') if !$email->header('MIME-Version');
+    $email->header_set( 'MIME-Version', '1.0' ) if !$email->header('MIME-Version');
 
     # Encode the headers correctly in quoted-printable
-    foreach my $header ($email->header_names) {
+    foreach my $header ( $email->header_names ) {
         my @values = $email->header($header);
+
         # We don't recode headers that happen multiple times.
         next if scalar(@values) > 1;
-        if (my $value = $values[0]) {
-            if (Bugzilla->params->{'utf8'} && !utf8::is_utf8($value)) {
+        if ( my $value = $values[0] ) {
+            if ( Bugzilla->params->{'utf8'} && !utf8::is_utf8($value) ) {
                 utf8::decode($value);
             }
 
             # avoid excessive line wrapping done by Encode.
             local $Encode::Encoding{'MIME-Q'}->{'bpl'} = 998;
 
-            my $encoded = encode('MIME-Q', $value);
-            $email->header_set($header, $encoded);
+            my $encoded = encode( 'MIME-Q', $value );
+            $email->header_set( $header, $encoded );
         }
     }
 
     my $from = $email->header('From');
 
-    my ($hostname, @args);
+    my ( $hostname, @args );
     my $mailer_class = $method;
-    if ($method eq "Sendmail") {
+    if ( $method eq "Sendmail" ) {
         $mailer_class = 'Bugzilla::Send::Sendmail';
         if (ON_WINDOWS) {
             $Email::Send::Sendmail::SENDMAIL = SENDMAIL_EXE;
         }
         push @args, "-i";
+
         # We want to make sure that we pass *only* an email address.
         if ($from) {
             my ($email_obj) = Email::Address->parse($from);
             if ($email_obj) {
                 my $from_email = $email_obj->address;
-                push(@args, "-f$from_email") if $from_email;
+                push( @args, "-f$from_email" ) if $from_email;
             }
         }
     }
@@ -160,60 +164,65 @@ sub MessageToMTA {
         $urlbase =~ m|//([^:/]+)[:/]?|;
         $hostname = $1;
         $from .= "\@$hostname" if $from !~ /@/;
-        $email->header_set('From', $from);
+        $email->header_set( 'From', $from );
 
         # Sendmail adds a Date: header also, but others may not.
-        if (!defined $email->header('Date')) {
-            $email->header_set('Date', time2str("%a, %d %b %Y %T %z", time()));
+        if ( !defined $email->header('Date') ) {
+            $email->header_set( 'Date', time2str( "%a, %d %b %Y %T %z", time() ) );
         }
     }
 
     # For tracking/diagnostic purposes, add our hostname
     my $generated_by = $email->header('X-Generated-By') || '';
-    if ($generated_by =~ tr/\/// < 3) {
-        $email->header_set('X-Generated-By' => $generated_by . '/' . hostname() . "($$)");
+    if ( $generated_by =~ tr/\/// < 3 ) {
+        $email->header_set( 'X-Generated-By' => $generated_by . '/' . hostname() . "($$)" );
     }
 
-    if ($method eq "SMTP") {
-        push @args, Host  => Bugzilla->params->{"smtpserver"},
-                    username => Bugzilla->params->{"smtp_username"},
-                    password => Bugzilla->params->{"smtp_password"},
-                    Hello => $hostname,
-                    Debug => Bugzilla->params->{'smtp_debug'};
+    if ( $method eq "SMTP" ) {
+        push @args,
+            Host     => Bugzilla->params->{"smtpserver"},
+            username => Bugzilla->params->{"smtp_username"},
+            password => Bugzilla->params->{"smtp_password"},
+            Hello    => $hostname,
+            Debug    => Bugzilla->params->{'smtp_debug'};
     }
 
-    Bugzilla::Hook::process('mailer_before_send',
-                            { email => $email, mailer_args => \@args });
+    Bugzilla::Hook::process( 'mailer_before_send', { email => $email, mailer_args => \@args } );
 
     # Allow for extensions to to drop the bugmail by clearing the 'to' header
     return if $email->header('to') eq '';
 
-    $email->walk_parts(sub {
-        my ($part) = @_;
-        return if $part->parts > 1; # Top-level
-        my $content_type = $part->content_type || '';
-        $content_type =~ /charset=['"](.+)['"]/;
-        # If no charset is defined or is the default us-ascii,
-        # then we encode the email to UTF-8 if Bugzilla has utf8 enabled.
-        # XXX - This is a hack to workaround bug 723944.
-        if (!$1 || $1 eq 'us-ascii') {
-            my $body = $part->body;
-            if (Bugzilla->params->{'utf8'}) {
-                $part->charset_set('UTF-8');
-                # encoding_set works only with bytes, not with utf8 strings.
-                my $raw = $part->body_raw;
-                if (utf8::is_utf8($raw)) {
-                    utf8::encode($raw);
-                    $part->body_set($raw);
-                }
-            }
-            $part->encoding_set('quoted-printable') if !is_7bit_clean($body);
-        }
-    });
+    $email->walk_parts(
+        sub {
+            my ($part) = @_;
+            return if $part->parts > 1;    # Top-level
+            my $content_type = $part->content_type || '';
+            $content_type =~ /charset=['"](.+)['"]/;
 
-    if ($method eq "Test") {
+            # If no charset is defined or is the default us-ascii,
+            # then we encode the email to UTF-8 if Bugzilla has utf8 enabled.
+            # XXX - This is a hack to workaround bug 723944.
+            if ( !$1 || $1 eq 'us-ascii' ) {
+                my $body = $part->body;
+                if ( Bugzilla->params->{'utf8'} ) {
+                    $part->charset_set('UTF-8');
+
+                    # encoding_set works only with bytes, not with utf8 strings.
+                    my $raw = $part->body_raw;
+                    if ( utf8::is_utf8($raw) ) {
+                        utf8::encode($raw);
+                        $part->body_set($raw);
+                    }
+                }
+                $part->encoding_set('quoted-printable') if !is_7bit_clean($body);
+            }
+        }
+    );
+
+    if ( $method eq "Test" ) {
         my $filename = bz_locations()->{'datadir'} . '/mailer.testfile';
         open TESTFILE, '>>', $filename;
+
         # From - <date> is required to be a valid mbox file.
         print TESTFILE "\n\nFrom - " . $email->header('Date') . "\n" . $email->as_string;
         close TESTFILE;
@@ -221,38 +230,39 @@ sub MessageToMTA {
     else {
         # This is useful for both Sendmail and Qmail, so we put it out here.
         local $ENV{PATH} = SENDMAIL_PATH;
-        my $mailer = Email::Send->new({ mailer => $mailer_class,
-                                        mailer_args => \@args });
+        my $mailer = Email::Send->new(
+            {
+                mailer      => $mailer_class,
+                mailer_args => \@args
+            }
+        );
         my $retval = $mailer->send($email);
-        ThrowCodeError('mail_send_error', { msg => $retval, mail => $email })
+        ThrowCodeError( 'mail_send_error', { msg => $retval, mail => $email } )
             if !$retval;
     }
 
     # insert into email_rates
-    if (Bugzilla->params->{use_mailer_queue}
-        && (EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR))
+    if ( Bugzilla->params->{use_mailer_queue}
+        && ( EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR ) )
     {
-        $dbh->do(
-            "INSERT INTO email_rates(recipient, message_ts) VALUES (?, LOCALTIMESTAMP(0))",
-            undef,
-            $email->header('To')
-        );
+        $dbh->do( "INSERT INTO email_rates(recipient, message_ts) VALUES (?, LOCALTIMESTAMP(0))",
+            undef, $email->header('To') );
     }
 }
 
 # Builds header suitable for use as a threading marker in email notifications
 sub build_thread_marker {
-    my ($bug_id, $user_id, $is_new) = @_;
+    my ( $bug_id, $user_id, $is_new ) = @_;
 
-    if (!defined $user_id) {
+    if ( !defined $user_id ) {
         $user_id = Bugzilla->user->id;
     }
 
     my $sitespec = '@' . Bugzilla->params->{'urlbase'};
-    $sitespec =~ s/:\/\//\./; # Make the protocol look like part of the domain
-    $sitespec =~ s/^([^:\/]+):(\d+)/$1/; # Remove a port number, to relocate
+    $sitespec =~ s/:\/\//\./;               # Make the protocol look like part of the domain
+    $sitespec =~ s/^([^:\/]+):(\d+)/$1/;    # Remove a port number, to relocate
     if ($2) {
-        $sitespec = "-$2$sitespec"; # Put the port number back in, before the '@'
+        $sitespec = "-$2$sitespec";         # Put the port number back in, before the '@'
     }
 
     my $threadingmarker;
@@ -261,9 +271,10 @@ sub build_thread_marker {
     }
     else {
         my $rand_bits = generate_random_password(10);
-        $threadingmarker = "Message-ID: <bug-$bug_id-$user_id-$rand_bits$sitespec>" .
-                           "\nIn-Reply-To: <bug-$bug_id-$user_id$sitespec>" .
-                           "\nReferences: <bug-$bug_id-$user_id$sitespec>";
+        $threadingmarker
+            = "Message-ID: <bug-$bug_id-$user_id-$rand_bits$sitespec>"
+            . "\nIn-Reply-To: <bug-$bug_id-$user_id$sitespec>"
+            . "\nReferences: <bug-$bug_id-$user_id$sitespec>";
     }
 
     return $threadingmarker;

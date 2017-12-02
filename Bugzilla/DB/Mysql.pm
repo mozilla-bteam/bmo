@@ -44,23 +44,29 @@ use constant MAX_COMMENTS => 50;
 use constant FULLTEXT_OR => '|';
 
 sub new {
-    my ($class, $params) = @_;
-    my ($user, $pass, $host, $dbname, $port, $sock) =
-        @$params{qw(db_user db_pass db_host db_name db_port db_sock)};
+    my ( $class, $params ) = @_;
+    my ( $user, $pass, $host, $dbname, $port, $sock ) = @$params{qw(db_user db_pass db_host db_name db_port db_sock)};
 
     # construct the DSN from the parameters we got
     my $dsn = "dbi:mysql:host=$host;database=$dbname";
-    $dsn .= ";port=$port" if $port;
+    $dsn .= ";port=$port"         if $port;
     $dsn .= ";mysql_socket=$sock" if $sock;
 
     my %attrs = (
         mysql_enable_utf8 => Bugzilla->params->{'utf8'},
+
         # Needs to be explicitly specified for command-line processes.
         mysql_auto_reconnect => 1,
     );
 
-    my $self = $class->db_new({ dsn => $dsn, user => $user,
-                                pass => $pass, attrs => \%attrs });
+    my $self = $class->db_new(
+        {
+            dsn   => $dsn,
+            user  => $user,
+            pass  => $pass,
+            attrs => \%attrs
+        }
+    );
 
     # This makes sure that if the tables are encoded as UTF-8, we
     # return their data correctly.
@@ -73,22 +79,23 @@ sub new {
     # Needed by TheSchwartz
     $self->{private_bz_dsn} = $dsn;
 
-    bless ($self, $class);
+    bless( $self, $class );
 
     # Bug 321645 - disable MySQL strict mode, if set
-    my ($var, $sql_mode) = $self->selectrow_array(
-        "SHOW VARIABLES LIKE 'sql\\_mode'");
+    my ( $var, $sql_mode ) = $self->selectrow_array("SHOW VARIABLES LIKE 'sql\\_mode'");
 
     if ($sql_mode) {
+
         # STRICT_TRANS_TABLE or STRICT_ALL_TABLES enable MySQL strict mode,
         # causing bug 321645. TRADITIONAL sets these modes (among others) as
         # well, so it has to be stipped as well
-        my $new_sql_mode =
-            join(",", grep {$_ !~ /^STRICT_(?:TRANS|ALL)_TABLES|TRADITIONAL$/}
-                            split(/,/, $sql_mode));
+        my $new_sql_mode = join(
+            ",", grep { $_ !~ /^STRICT_(?:TRANS|ALL)_TABLES|TRADITIONAL$/ }
+                split( /,/, $sql_mode )
+        );
 
-        if ($sql_mode ne $new_sql_mode) {
-            $self->do("SET SESSION sql_mode = ?", undef, $new_sql_mode);
+        if ( $sql_mode ne $new_sql_mode ) {
+            $self->do( "SET SESSION sql_mode = ?", undef, $new_sql_mode );
         }
     }
 
@@ -110,7 +117,7 @@ sub bz_last_key {
 }
 
 sub sql_group_concat {
-    my ($self, $column, $separator, $sort) = @_;
+    my ( $self, $column, $separator, $sort ) = @_;
     $separator = $self->quote(', ') if !defined $separator;
     $sort = 1 if !defined $sort;
     if ($sort) {
@@ -122,7 +129,7 @@ sub sql_group_concat {
 }
 
 sub sql_regexp {
-    my ($self, $expr, $pattern, $nocheck, $real_pattern) = @_;
+    my ( $self, $expr, $pattern, $nocheck, $real_pattern ) = @_;
     $real_pattern ||= $pattern;
 
     $self->bz_check_regexp($real_pattern) if !$nocheck;
@@ -131,7 +138,7 @@ sub sql_regexp {
 }
 
 sub sql_not_regexp {
-    my ($self, $expr, $pattern, $nocheck, $real_pattern) = @_;
+    my ( $self, $expr, $pattern, $nocheck, $real_pattern ) = @_;
     $real_pattern ||= $pattern;
 
     $self->bz_check_regexp($real_pattern) if !$nocheck;
@@ -140,46 +147,51 @@ sub sql_not_regexp {
 }
 
 sub sql_limit {
-    my ($self, $limit, $offset) = @_;
+    my ( $self, $limit, $offset ) = @_;
 
-    if (defined($offset)) {
+    if ( defined($offset) ) {
         return "LIMIT $offset, $limit";
-    } else {
+    }
+    else {
         return "LIMIT $limit";
     }
 }
 
 sub sql_string_concat {
-    my ($self, @params) = @_;
+    my ( $self, @params ) = @_;
 
-    return 'CONCAT(' . join(', ', @params) . ')';
+    return 'CONCAT(' . join( ', ', @params ) . ')';
 }
 
 sub sql_fulltext_search {
-    my ($self, $column, $text) = @_;
+    my ( $self, $column, $text ) = @_;
 
     # Add the boolean mode modifier if the search string contains
     # boolean operators at the start or end of a word.
     my $mode = '';
-    if ($text =~ /(?:^|\W)[+\-<>~"()]/ || $text =~ /[()"*](?:$|\W)/) {
+    if ( $text =~ /(?:^|\W)[+\-<>~"()]/ || $text =~ /[()"*](?:$|\W)/ ) {
         $mode = 'IN BOOLEAN MODE';
 
-        my @terms = split(quotemeta(FULLTEXT_OR), $text);
+        my @terms = split( quotemeta(FULLTEXT_OR), $text );
         foreach my $term (@terms) {
+
             # quote un-quoted compound words
-            my @words = grep { defined } quotewords('[\s()]+', 'delimiters', $term);
+            my @words = grep {defined} quotewords( '[\s()]+', 'delimiters', $term );
             foreach my $word (@words) {
+
                 # match words that have non-word chars in the middle of them
-                if ($word =~ /\w\W+\w/ && $word !~ m/"/) {
+                if ( $word =~ /\w\W+\w/ && $word !~ m/"/ ) {
                     $word = '"' . $word . '"';
-                # match words that contain only boolean operators
-                } elsif ($word =~ /^[\+\-\<\>\~\*]+$/) {
+
+                    # match words that contain only boolean operators
+                }
+                elsif ( $word =~ /^[\+\-\<\>\~\*]+$/ ) {
                     $word = '"' . $word . '"';
                 }
             }
-            $term = join('', @words);
+            $term = join( '', @words );
         }
-        $text = join(FULLTEXT_OR, @terms);
+        $text = join( FULLTEXT_OR, @terms );
     }
 
     # quote the text for use in the MATCH AGAINST expression
@@ -192,25 +204,25 @@ sub sql_fulltext_search {
 }
 
 sub sql_istring {
-    my ($self, $string) = @_;
+    my ( $self, $string ) = @_;
 
     return $string;
 }
 
 sub sql_from_days {
-    my ($self, $days) = @_;
+    my ( $self, $days ) = @_;
 
     return "FROM_DAYS($days)";
 }
 
 sub sql_to_days {
-    my ($self, $date) = @_;
+    my ( $self, $date ) = @_;
 
     return "TO_DAYS($date)";
 }
 
 sub sql_date_format {
-    my ($self, $date, $format) = @_;
+    my ( $self, $date, $format ) = @_;
 
     $format = "%Y.%m.%d %H:%i:%s" if !$format;
 
@@ -218,24 +230,24 @@ sub sql_date_format {
 }
 
 sub sql_date_math {
-    my ($self, $date, $operator, $interval, $units) = @_;
+    my ( $self, $date, $operator, $interval, $units ) = @_;
 
     return "$date $operator INTERVAL $interval $units";
 }
 
 sub sql_iposition {
-    my ($self, $fragment, $text) = @_;
+    my ( $self, $fragment, $text ) = @_;
     return "INSTR($text, $fragment)";
 }
 
 sub sql_position {
-    my ($self, $fragment, $text) = @_;
+    my ( $self, $fragment, $text ) = @_;
 
     return "INSTR(CAST($text AS BINARY), CAST($fragment AS BINARY))";
 }
 
 sub sql_group_by {
-    my ($self, $needed_columns, $optional_columns) = @_;
+    my ( $self, $needed_columns, $optional_columns ) = @_;
 
     # MySQL allows you to specify the minimal subset of columns to get
     # a unique result. While it does allow specifying all columns as
@@ -245,28 +257,29 @@ sub sql_group_by {
 }
 
 sub bz_explain {
-    my ($self, $sql) = @_;
-    my $sth  = $self->prepare("EXPLAIN $sql");
+    my ( $self, $sql ) = @_;
+    my $sth = $self->prepare("EXPLAIN $sql");
     $sth->execute();
-    my $columns = $sth->{'NAME'};
-    my $lengths = $sth->{'mysql_max_length'};
+    my $columns       = $sth->{'NAME'};
+    my $lengths       = $sth->{'mysql_max_length'};
     my $format_string = '|';
-    my $i = 0;
+    my $i             = 0;
     foreach my $column (@$columns) {
+
         # Sometimes the column name is longer than the contents.
-        my $length = max($lengths->[$i], length($column));
+        my $length = max( $lengths->[$i], length($column) );
         $format_string .= ' %-' . $length . 's |';
         $i++;
     }
 
-    my $first_row = sprintf($format_string, @$columns);
-    my @explain_rows = ($first_row, '-' x length($first_row));
-    while (my $row = $sth->fetchrow_arrayref) {
+    my $first_row = sprintf( $format_string, @$columns );
+    my @explain_rows = ( $first_row, '-' x length($first_row) );
+    while ( my $row = $sth->fetchrow_arrayref ) {
         my @fixed = map { defined $_ ? $_ : 'NULL' } @$row;
-        push(@explain_rows, sprintf($format_string, @fixed));
+        push( @explain_rows, sprintf( $format_string, @fixed ) );
     }
 
-    return join("\n", @explain_rows);
+    return join( "\n", @explain_rows );
 }
 
 sub _bz_get_initial_schema {
@@ -282,7 +295,7 @@ sub bz_check_server_version {
     my $self = shift;
 
     my $lc = Bugzilla->localconfig;
-    if (lc(Bugzilla->localconfig->{db_name}) eq 'mysql') {
+    if ( lc( Bugzilla->localconfig->{db_name} ) eq 'mysql' ) {
         die "It is not safe to run Bugzilla inside a database named 'mysql'.\n"
             . " Please pick a different value for \$db_name in localconfig.\n";
     }
@@ -298,17 +311,21 @@ sub bz_setup_database {
     # a max_allowed_packet smaller than our max_attachment_size. So, we
     # warn the user here if max_allowed_packet is too small.
     my $min_max_allowed = MAX_COMMENTS * MAX_COMMENT_LENGTH;
-    my (undef, $current_max_allowed) = $self->selectrow_array(
-        q{SHOW VARIABLES LIKE 'max\_allowed\_packet'});
+    my ( undef, $current_max_allowed ) = $self->selectrow_array(q{SHOW VARIABLES LIKE 'max\_allowed\_packet'});
+
     # This parameter is not yet defined when the DB is being built for
     # the very first time. The code below still works properly, however,
     # because the default maxattachmentsize is smaller than $min_max_allowed.
-    my $max_attachment = (Bugzilla->params->{'maxattachmentsize'} || 0) * 1024;
-    my $needed_max_allowed = max($min_max_allowed, $max_attachment);
-    if ($current_max_allowed < $needed_max_allowed) {
-        warn install_string('max_allowed_packet',
-                            { current => $current_max_allowed,
-                              needed  => $needed_max_allowed }) . "\n";
+    my $max_attachment = ( Bugzilla->params->{'maxattachmentsize'} || 0 ) * 1024;
+    my $needed_max_allowed = max( $min_max_allowed, $max_attachment );
+    if ( $current_max_allowed < $needed_max_allowed ) {
+        warn install_string(
+            'max_allowed_packet',
+            {
+                current => $current_max_allowed,
+                needed  => $needed_max_allowed
+            }
+        ) . "\n";
     }
 
     # Make sure the installation has InnoDB turned on, or we're going to be
@@ -316,53 +333,54 @@ sub bz_setup_database {
     # hard to fix later. We do this up here because none of the code below
     # works if InnoDB is off. (Particularly if we've already converted the
     # tables to InnoDB.)
-    my %engines = @{$self->selectcol_arrayref('SHOW ENGINES', {Columns => [1,2]})};
-    if (!$engines{InnoDB} || $engines{InnoDB} !~ /^(YES|DEFAULT)$/) {
+    my %engines = @{ $self->selectcol_arrayref( 'SHOW ENGINES', { Columns => [ 1, 2 ] } ) };
+    if ( !$engines{InnoDB} || $engines{InnoDB} !~ /^(YES|DEFAULT)$/ ) {
         die install_string('mysql_innodb_disabled');
     }
 
-
-    my ($sd_index_deleted, $longdescs_index_deleted);
+    my ( $sd_index_deleted, $longdescs_index_deleted );
     my @tables = $self->bz_table_list_real();
+
     # We want to convert tables to InnoDB, but it's possible that they have
     # fulltext indexes on them, and conversion will fail unless we remove
     # the indexes.
-    if (grep($_ eq 'bugs', @tables)
-        and !grep($_ eq 'bugs_fulltext', @tables))
+    if ( grep( $_ eq 'bugs', @tables )
+        and !grep( $_ eq 'bugs_fulltext', @tables ) )
     {
-        if ($self->bz_index_info_real('bugs', 'short_desc')) {
-            $self->bz_drop_index_raw('bugs', 'short_desc');
+        if ( $self->bz_index_info_real( 'bugs', 'short_desc' ) ) {
+            $self->bz_drop_index_raw( 'bugs', 'short_desc' );
         }
-        if ($self->bz_index_info_real('bugs', 'bugs_short_desc_idx')) {
-            $self->bz_drop_index_raw('bugs', 'bugs_short_desc_idx');
-            $sd_index_deleted = 1; # Used for later schema cleanup.
+        if ( $self->bz_index_info_real( 'bugs', 'bugs_short_desc_idx' ) ) {
+            $self->bz_drop_index_raw( 'bugs', 'bugs_short_desc_idx' );
+            $sd_index_deleted = 1;    # Used for later schema cleanup.
         }
     }
-    if (grep($_ eq 'longdescs', @tables)
-        and !grep($_ eq 'bugs_fulltext', @tables))
+    if ( grep( $_ eq 'longdescs', @tables )
+        and !grep( $_ eq 'bugs_fulltext', @tables ) )
     {
-        if ($self->bz_index_info_real('longdescs', 'thetext')) {
-            $self->bz_drop_index_raw('longdescs', 'thetext');
+        if ( $self->bz_index_info_real( 'longdescs', 'thetext' ) ) {
+            $self->bz_drop_index_raw( 'longdescs', 'thetext' );
         }
-        if ($self->bz_index_info_real('longdescs', 'longdescs_thetext_idx')) {
-            $self->bz_drop_index_raw('longdescs', 'longdescs_thetext_idx');
-            $longdescs_index_deleted = 1; # For later schema cleanup.
+        if ( $self->bz_index_info_real( 'longdescs', 'longdescs_thetext_idx' ) ) {
+            $self->bz_drop_index_raw( 'longdescs', 'longdescs_thetext_idx' );
+            $longdescs_index_deleted = 1;    # For later schema cleanup.
         }
     }
 
     # Upgrade tables from MyISAM to InnoDB
-    my $db_name = Bugzilla->localconfig->{db_name};
+    my $db_name       = Bugzilla->localconfig->{db_name};
     my $myisam_tables = $self->selectcol_arrayref(
         'SELECT TABLE_NAME FROM information_schema.TABLES
           WHERE TABLE_SCHEMA = ? AND ENGINE = ?',
-        undef, $db_name, 'MyISAM');
+        undef, $db_name, 'MyISAM'
+    );
     foreach my $should_be_myisam (Bugzilla::DB::Schema::Mysql::MYISAM_TABLES) {
         @$myisam_tables = grep { $_ ne $should_be_myisam } @$myisam_tables;
     }
 
-    if (scalar @$myisam_tables) {
+    if ( scalar @$myisam_tables ) {
         print "Bugzilla now uses the InnoDB storage engine in MySQL for",
-              " most tables.\nConverting tables to InnoDB:\n";
+            " most tables.\nConverting tables to InnoDB:\n";
         foreach my $table (@$myisam_tables) {
             print "Converting table $table... ";
             $self->do("ALTER TABLE $table ENGINE = InnoDB");
@@ -385,9 +403,10 @@ sub bz_setup_database {
     # has existed at least since Bugzilla 2.8, and probably earlier.
     # For fixing the inconsistent naming of Schema indexes,
     # we also check for one of those inconsistently-named indexes.
-    if (grep($_ eq 'bugs', @tables)
-        && ($self->bz_index_info_real('bugs', 'assigned_to')
-            || $self->bz_index_info_real('flags', 'flags_bidattid_idx')) )
+    if (grep( $_ eq 'bugs', @tables )
+        && (   $self->bz_index_info_real( 'bugs', 'assigned_to' )
+            || $self->bz_index_info_real( 'flags', 'flags_bidattid_idx' ) )
+        )
     {
 
         # This is a check unrelated to the indexes, to see if people are
@@ -396,23 +415,25 @@ sub bz_setup_database {
         # a database without doing a DROP DATABASE first.
         # We just do the check here since this check is a reliable way
         # of telling that we are upgrading from a version pre-2.20.
-        if (grep($_ eq 'bz_schema', $self->bz_table_list_real())) {
+        if ( grep( $_ eq 'bz_schema', $self->bz_table_list_real() ) ) {
             die install_string('bz_schema_exists_before_220');
         }
 
         my $bug_count = $self->selectrow_array("SELECT COUNT(*) FROM bugs");
+
         # We estimate one minute for each 3000 bugs, plus 3 minutes just
         # to handle basic MySQL stuff.
-        my $rename_time = int($bug_count / 3000) + 3;
+        my $rename_time = int( $bug_count / 3000 ) + 3;
+
         # And 45 minutes for every 15,000 attachments, per some experiments.
-        my ($attachment_count) =
-            $self->selectrow_array("SELECT COUNT(*) FROM attachments");
-        $rename_time += int(($attachment_count * 45) / 15000);
+        my ($attachment_count) = $self->selectrow_array("SELECT COUNT(*) FROM attachments");
+        $rename_time += int( ( $attachment_count * 45 ) / 15000 );
+
         # If we're going to take longer than 5 minutes, we let the user know
         # and allow them to abort.
-        if ($rename_time > 5) {
-            print "\n", install_string('mysql_index_renaming',
-                                       { minutes => $rename_time });
+        if ( $rename_time > 5 ) {
+            print "\n", install_string( 'mysql_index_renaming', { minutes => $rename_time } );
+
             # Wait 45 seconds for them to respond.
             sleep(45) unless Bugzilla->installation_answers->{NO_PAUSE};
         }
@@ -430,100 +451,104 @@ sub bz_setup_database {
         # Also, sometimes an old mysqldump would incorrectly rename
         # unique indexes to "PRIMARY", so we address that here, also.
         my $bad_names = {
+
             # 'when' is a possible leftover from Bugzillas before 2.8
-            bugs_activity => ['when', 'bugs_activity_bugid_idx',
-                'bugs_activity_bugwhen_idx'],
-            cc => ['PRIMARY'],
-            longdescs => ['longdescs_bugid_idx',
-               'longdescs_bugwhen_idx'],
-            flags => ['flags_bidattid_idx'],
-            flaginclusions => ['flaginclusions_tpcid_idx'],
-            flagexclusions => ['flagexclusions_tpc_id_idx'],
-            keywords => ['PRIMARY'],
-            milestones => ['PRIMARY'],
-            profiles_activity => ['profiles_activity_when_idx'],
-            group_control_map => ['group_control_map_gid_idx', 'PRIMARY'],
-            user_group_map => ['PRIMARY'],
-            group_group_map => ['PRIMARY'],
-            email_setting => ['PRIMARY'],
-            bug_group_map => ['PRIMARY'],
+            bugs_activity => [ 'when', 'bugs_activity_bugid_idx', 'bugs_activity_bugwhen_idx' ],
+            cc            => ['PRIMARY'],
+            longdescs          => [ 'longdescs_bugid_idx',       'longdescs_bugwhen_idx' ],
+            flags              => ['flags_bidattid_idx'],
+            flaginclusions     => ['flaginclusions_tpcid_idx'],
+            flagexclusions     => ['flagexclusions_tpc_id_idx'],
+            keywords           => ['PRIMARY'],
+            milestones         => ['PRIMARY'],
+            profiles_activity  => ['profiles_activity_when_idx'],
+            group_control_map  => [ 'group_control_map_gid_idx', 'PRIMARY' ],
+            user_group_map     => ['PRIMARY'],
+            group_group_map    => ['PRIMARY'],
+            email_setting      => ['PRIMARY'],
+            bug_group_map      => ['PRIMARY'],
             category_group_map => ['PRIMARY'],
-            watch => ['PRIMARY'],
-            namedqueries => ['PRIMARY'],
-            series_data => ['PRIMARY'],
+            watch              => ['PRIMARY'],
+            namedqueries       => ['PRIMARY'],
+            series_data        => ['PRIMARY'],
+
             # series_categories is dealt with below, not here.
         };
 
         # The series table is broken and needs to have one index
         # dropped before we begin the renaming, because it had a
         # useless index on it that would cause a naming conflict here.
-        if (grep($_ eq 'series', @tables)) {
+        if ( grep( $_ eq 'series', @tables ) ) {
             my $dropname;
+
             # This is what the bad index was called before Schema.
-            if ($self->bz_index_info_real('series', 'creator_2')) {
+            if ( $self->bz_index_info_real( 'series', 'creator_2' ) ) {
                 $dropname = 'creator_2';
             }
+
             # This is what the bad index is called in Schema.
-            elsif ($self->bz_index_info_real('series', 'series_creator_idx')) {
-                    $dropname = 'series_creator_idx';
+            elsif ( $self->bz_index_info_real( 'series', 'series_creator_idx' ) ) {
+                $dropname = 'series_creator_idx';
             }
-            $self->bz_drop_index_raw('series', $dropname) if $dropname;
+            $self->bz_drop_index_raw( 'series', $dropname ) if $dropname;
         }
 
         # The email_setting table also had the same problem.
-        if( grep($_ eq 'email_setting', @tables)
-            && $self->bz_index_info_real('email_setting',
-                                         'email_settings_user_id_idx') )
+        if ( grep( $_ eq 'email_setting', @tables )
+            && $self->bz_index_info_real( 'email_setting', 'email_settings_user_id_idx' ) )
         {
-            $self->bz_drop_index_raw('email_setting',
-                                     'email_settings_user_id_idx');
+            $self->bz_drop_index_raw( 'email_setting', 'email_settings_user_id_idx' );
         }
 
         # Go through all the tables.
         foreach my $table (@tables) {
+
             # Will contain the names of old indexes as keys, and the
             # definition of the new indexes as a value. The values
             # include an extra hash key, NAME, with the new name of
             # the index.
             my %rename_indexes;
+
             # And go through all the columns on each table.
             my @columns = $self->bz_table_columns_real($table);
 
             # We also want to fix the silly naming of unique indexes
             # that happened when we first checked-in Bugzilla::DB::Schema.
-            if ($table eq 'series_categories') {
+            if ( $table eq 'series_categories' ) {
+
                 # The series_categories index had a nonstandard name.
-                push(@columns, 'series_cats_unique_idx');
+                push( @columns, 'series_cats_unique_idx' );
             }
-            elsif ($table eq 'email_setting') {
+            elsif ( $table eq 'email_setting' ) {
+
                 # The email_setting table had a similar problem.
-                push(@columns, 'email_settings_unique_idx');
+                push( @columns, 'email_settings_unique_idx' );
             }
             else {
-                push(@columns, "${table}_unique_idx");
+                push( @columns, "${table}_unique_idx" );
             }
+
             # And this is how we fix the other inconsistent Schema naming.
-            push(@columns, @{$bad_names->{$table}})
-                if (exists $bad_names->{$table});
+            push( @columns, @{ $bad_names->{$table} } )
+                if ( exists $bad_names->{$table} );
             foreach my $column (@columns) {
+
                 # If we have an index named after this column, it's an
                 # old-style-name index.
-                if (my $index = $self->bz_index_info_real($table, $column)) {
-                    # Fix the name to fit in with the new naming scheme.
-                    $index->{NAME} = $table . "_" .
-                                     $index->{FIELDS}->[0] . "_idx";
-                    print "Renaming index $column to "
-                          . $index->{NAME} . "...\n";
-                    $rename_indexes{$column} = $index;
-                } # if
-            } # foreach column
+                if ( my $index = $self->bz_index_info_real( $table, $column ) ) {
 
-            my @rename_sql = $self->_bz_schema->get_rename_indexes_ddl(
-                $table, %rename_indexes);
+                    # Fix the name to fit in with the new naming scheme.
+                    $index->{NAME} = $table . "_" . $index->{FIELDS}->[0] . "_idx";
+                    print "Renaming index $column to " . $index->{NAME} . "...\n";
+                    $rename_indexes{$column} = $index;
+                }    # if
+            }    # foreach column
+
+            my @rename_sql = $self->_bz_schema->get_rename_indexes_ddl( $table, %rename_indexes );
             $self->do($_) foreach (@rename_sql);
 
-        } # foreach table
-    } # if old-name indexes
+        }    # foreach table
+    }    # if old-name indexes
 
     # If there are no tables, but the DB isn't utf8 and it should be,
     # then we should alter the database to be utf8. We know it should be
@@ -531,8 +556,9 @@ sub bz_setup_database {
     # This kind of situation happens when people create the database
     # themselves, and if we don't do this they will get the big
     # scary WARNING statement about conversion to UTF8.
-    if ( !$self->bz_db_is_utf8 && !@tables
-         && (Bugzilla->params->{'utf8'} || !scalar keys %{Bugzilla->params}) )
+    if (   !$self->bz_db_is_utf8
+        && !@tables
+        && ( Bugzilla->params->{'utf8'} || !scalar keys %{ Bugzilla->params } ) )
     {
         $self->_alter_db_charset_to_utf8();
     }
@@ -541,12 +567,11 @@ sub bz_setup_database {
     $self->SUPER::bz_setup_database();
 
     if ($sd_index_deleted) {
-        $self->_bz_real_schema->delete_index('bugs', 'bugs_short_desc_idx');
+        $self->_bz_real_schema->delete_index( 'bugs', 'bugs_short_desc_idx' );
         $self->_bz_store_real_schema;
     }
     if ($longdescs_index_deleted) {
-        $self->_bz_real_schema->delete_index('longdescs',
-                                             'longdescs_thetext_idx');
+        $self->_bz_real_schema->delete_index( 'longdescs', 'longdescs_thetext_idx' );
         $self->_bz_store_real_schema;
     }
 
@@ -555,12 +580,15 @@ sub bz_setup_database {
     my $attach_data_create = $self->selectrow_array(
         'SELECT CREATE_OPTIONS FROM information_schema.TABLES
           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
-        undef, $db_name, 'attach_data');
-    if ($attach_data_create !~ /MAX_ROWS/i) {
+        undef, $db_name, 'attach_data'
+    );
+    if ( $attach_data_create !~ /MAX_ROWS/i ) {
         print "Converting attach_data maximum size to 100G...\n";
-        $self->do("ALTER TABLE attach_data
+        $self->do(
+            "ALTER TABLE attach_data
                    AVG_ROW_LENGTH=1000000,
-                   MAX_ROWS=100000");
+                   MAX_ROWS=100000"
+        );
     }
 
     # Convert the database to UTF-8 if the utf8 parameter is on.
@@ -574,15 +602,14 @@ sub bz_setup_database {
         "SELECT 1 FROM information_schema.TABLES
           WHERE TABLE_SCHEMA = ? AND TABLE_COLLATION IS NOT NULL
                 AND TABLE_COLLATION NOT LIKE 'utf8%'
-          LIMIT 1", undef, $db_name);
+          LIMIT 1", undef, $db_name
+    );
 
-    if (Bugzilla->params->{'utf8'} && $non_utf8_tables) {
+    if ( Bugzilla->params->{'utf8'} && $non_utf8_tables ) {
         print "\n", install_string('mysql_utf8_conversion');
 
-        if (!Bugzilla->installation_answers->{NO_PAUSE}) {
-            if (Bugzilla->installation_mode ==
-                INSTALLATION_MODE_NON_INTERACTIVE)
-            {
+        if ( !Bugzilla->installation_answers->{NO_PAUSE} ) {
+            if ( Bugzilla->installation_mode == INSTALLATION_MODE_NON_INTERACTIVE ) {
                 die install_string('continue_without_answers'), "\n";
             }
             else {
@@ -591,21 +618,21 @@ sub bz_setup_database {
             }
         }
 
-        print "Converting table storage format to UTF-8. This may take a",
-              " while.\n";
-        foreach my $table ($self->bz_table_list_real) {
+        print "Converting table storage format to UTF-8. This may take a", " while.\n";
+        foreach my $table ( $self->bz_table_list_real ) {
             my $info_sth = $self->prepare("SHOW FULL COLUMNS FROM $table");
             $info_sth->execute();
-            my (@binary_sql, @utf8_sql);
-            while (my $column = $info_sth->fetchrow_hashref) {
+            my ( @binary_sql, @utf8_sql );
+            while ( my $column = $info_sth->fetchrow_hashref ) {
+
                 # Our conversion code doesn't work on enum fields, but they
                 # all go away later in checksetup anyway.
                 next if $column->{Type} =~ /enum/i;
 
                 # If this particular column isn't stored in utf-8
-                if ($column->{Collation}
+                if (   $column->{Collation}
                     && $column->{Collation} ne 'NULL'
-                    && $column->{Collation} !~ /utf8/)
+                    && $column->{Collation} !~ /utf8/ )
                 {
                     my $name = $column->{Field};
 
@@ -613,34 +640,35 @@ sub bz_setup_database {
 
                     # These will be automatically re-created at the end
                     # of checksetup.
-                    $self->bz_drop_related_fks($table, $name);
+                    $self->bz_drop_related_fks( $table, $name );
 
-                    my $col_info =
-                        $self->bz_column_info_real($table, $name);
+                    my $col_info = $self->bz_column_info_real( $table, $name );
+
                     # CHANGE COLUMN doesn't take PRIMARY KEY
                     delete $col_info->{PRIMARYKEY};
                     my $sql_def = $self->_bz_schema->get_type_ddl($col_info);
+
                     # We don't want MySQL to actually try to *convert*
                     # from our current charset to UTF-8, we just want to
                     # transfer the bytes directly. This is how we do that.
 
                     # The CHARACTER SET part of the definition has to come
                     # right after the type, which will always come first.
-                    my ($binary, $utf8) = ($sql_def, $sql_def);
-                    my $type = $self->_bz_schema->convert_type($col_info->{TYPE});
+                    my ( $binary, $utf8 ) = ( $sql_def, $sql_def );
+                    my $type = $self->_bz_schema->convert_type( $col_info->{TYPE} );
                     $binary =~ s/(\Q$type\E)/$1 CHARACTER SET binary/;
-                    $utf8   =~ s/(\Q$type\E)/$1 CHARACTER SET utf8/;
-                    push(@binary_sql, "MODIFY COLUMN $name $binary");
-                    push(@utf8_sql, "MODIFY COLUMN $name $utf8");
+                    $utf8 =~ s/(\Q$type\E)/$1 CHARACTER SET utf8/;
+                    push( @binary_sql, "MODIFY COLUMN $name $binary" );
+                    push( @utf8_sql,   "MODIFY COLUMN $name $utf8" );
                 }
-            } # foreach column
+            }    # foreach column
 
             if (@binary_sql) {
                 my %indexes = %{ $self->bz_table_indexes($table) };
-                foreach my $index_name (keys %indexes) {
+                foreach my $index_name ( keys %indexes ) {
                     my $index = $indexes{$index_name};
-                    if ($index->{TYPE} and $index->{TYPE} eq 'FULLTEXT') {
-                        $self->bz_drop_index($table, $index_name);
+                    if ( $index->{TYPE} and $index->{TYPE} eq 'FULLTEXT' ) {
+                        $self->bz_drop_index( $table, $index_name );
                     }
                     else {
                         delete $indexes{$index_name};
@@ -648,22 +676,21 @@ sub bz_setup_database {
                 }
 
                 print "Converting the $table table to UTF-8...\n";
-                my $bin = "ALTER TABLE $table " . join(', ', @binary_sql);
-                my $utf = "ALTER TABLE $table " . join(', ', @utf8_sql,
-                          'DEFAULT CHARACTER SET utf8');
+                my $bin = "ALTER TABLE $table " . join( ', ', @binary_sql );
+                my $utf = "ALTER TABLE $table " . join( ', ', @utf8_sql, 'DEFAULT CHARACTER SET utf8' );
                 $self->do($bin);
                 $self->do($utf);
 
                 # Re-add any removed FULLTEXT indexes.
-                foreach my $index (keys %indexes) {
-                    $self->bz_add_index($table, $index, $indexes{$index});
+                foreach my $index ( keys %indexes ) {
+                    $self->bz_add_index( $table, $index, $indexes{$index} );
                 }
             }
             else {
                 $self->do("ALTER TABLE $table DEFAULT CHARACTER SET utf8");
             }
 
-        } # foreach my $table (@tables)
+        }    # foreach my $table (@tables)
     }
 
     # Sometimes you can have a situation where all the tables are utf8,
@@ -671,25 +698,25 @@ sub bz_setup_database {
     # a mysqldump.) So we have this change outside of the above block,
     # so that it just happens silently if no actual *table* conversion
     # needs to happen.
-    if (Bugzilla->params->{'utf8'} && !$self->bz_db_is_utf8) {
+    if ( Bugzilla->params->{'utf8'} && !$self->bz_db_is_utf8 ) {
         $self->_alter_db_charset_to_utf8();
     }
 
-     $self->_fix_defaults();
+    $self->_fix_defaults();
 
     # Bug 451735 highlighted a bug in bz_drop_index() which didn't
     # check for FKs before trying to delete an index. Consequently,
     # the series_creator_idx index was considered to be deleted
     # despite it was still present in the DB. That's why we have to
     # force the deletion, bypassing the DB schema.
-    if (!$self->bz_index_info('series', 'series_category_idx')) {
-        if (!$self->bz_index_info('series', 'series_creator_idx')
-            && $self->bz_index_info_real('series', 'series_creator_idx'))
+    if ( !$self->bz_index_info( 'series', 'series_category_idx' ) ) {
+        if (  !$self->bz_index_info( 'series', 'series_creator_idx' )
+            && $self->bz_index_info_real( 'series', 'series_creator_idx' ) )
         {
             foreach my $column (qw(creator category subcategory name)) {
-                $self->bz_drop_related_fks('series', $column);
+                $self->bz_drop_related_fks( 'series', $column );
             }
-            $self->bz_drop_index_raw('series', 'series_creator_idx');
+            $self->bz_drop_index_raw( 'series', 'series_creator_idx' );
         }
     }
 }
@@ -702,31 +729,35 @@ sub bz_setup_database {
 # to have them
 sub _fix_defaults {
     my $self = shift;
-    my $maj_version = substr($self->bz_server_version, 0, 1);
+    my $maj_version = substr( $self->bz_server_version, 0, 1 );
     return if $maj_version < 5;
 
     # The oldest column that could have this problem is bugs.assigned_to,
     # so if it doesn't have the problem, we just skip doing this entirely.
-    my $assi_def = $self->_bz_raw_column_info('bugs', 'assigned_to');
+    my $assi_def = $self->_bz_raw_column_info( 'bugs', 'assigned_to' );
     my $assi_default = $assi_def->{COLUMN_DEF};
+
     # This "ne ''" thing is necessary because _raw_column_info seems to
     # return COLUMN_DEF as an empty string for columns that don't have
     # a default.
-    return unless (defined $assi_default && $assi_default ne '');
+    return unless ( defined $assi_default && $assi_default ne '' );
 
     my %fix_columns;
-    foreach my $table ($self->_bz_real_schema->get_table_list()) {
-        foreach my $column ($self->bz_table_columns($table)) {
-            my $abs_def = $self->bz_column_info($table, $column);
+    foreach my $table ( $self->_bz_real_schema->get_table_list() ) {
+        foreach my $column ( $self->bz_table_columns($table) ) {
+            my $abs_def = $self->bz_column_info( $table, $column );
+
             # BLOB/TEXT columns never have defaults
             next if $abs_def->{TYPE} =~ /BLOB|TEXT/i;
-            if (!defined $abs_def->{DEFAULT}) {
+            if ( !defined $abs_def->{DEFAULT} ) {
+
                 # Get the exact default from the database without any
                 # "fixing" by bz_column_info_real.
-                my $raw_info = $self->_bz_raw_column_info($table, $column);
+                my $raw_info = $self->_bz_raw_column_info( $table, $column );
                 my $raw_default = $raw_info->{COLUMN_DEF};
-                if (defined $raw_default) {
-                    if ($raw_default eq '') {
+                if ( defined $raw_default ) {
+                    if ( $raw_default eq '' ) {
+
                         # Only (var)char columns can have empty strings as
                         # defaults, so if we got an empty string for some
                         # other default type, then it's bogus.
@@ -734,40 +765,39 @@ sub _fix_defaults {
                         $raw_default = "''";
                     }
                     $fix_columns{$table} ||= [];
-                    push(@{ $fix_columns{$table} }, $column);
+                    push( @{ $fix_columns{$table} }, $column );
                     print "$table.$column has incorrect DB default: $raw_default\n";
                 }
             }
-        } # foreach $column
-    } # foreach $table
+        }    # foreach $column
+    }    # foreach $table
 
     print "Fixing defaults...\n";
-    foreach my $table (reverse sort keys %fix_columns) {
-        my @alters = map("ALTER COLUMN $_ DROP DEFAULT",
-                         @{ $fix_columns{$table} });
-        my $sql = "ALTER TABLE $table " . join(',', @alters);
+    foreach my $table ( reverse sort keys %fix_columns ) {
+        my @alters = map( "ALTER COLUMN $_ DROP DEFAULT", @{ $fix_columns{$table} } );
+        my $sql = "ALTER TABLE $table " . join( ',', @alters );
         $self->do($sql);
     }
 }
 
 sub _alter_db_charset_to_utf8 {
-    my $self = shift;
+    my $self    = shift;
     my $db_name = Bugzilla->localconfig->{db_name};
     $self->do("ALTER DATABASE $db_name CHARACTER SET utf8");
 }
 
 sub bz_db_is_utf8 {
-    my $self = shift;
-    my $db_collation = $self->selectrow_arrayref(
-        "SHOW VARIABLES LIKE 'character_set_database'");
+    my $self         = shift;
+    my $db_collation = $self->selectrow_arrayref("SHOW VARIABLES LIKE 'character_set_database'");
+
     # First column holds the variable name, second column holds the value.
     return $db_collation->[1] =~ /utf8/ ? 1 : 0;
 }
 
-
 sub bz_enum_initial_values {
     my ($self) = @_;
-    my %enum_values = %{$self->ENUM_DEFAULTS};
+    my %enum_values = %{ $self->ENUM_DEFAULTS };
+
     # Get a complete description of the 'bugs' table; with DBD::MySQL
     # there isn't a column-by-column way of doing this.  Could use
     # $dbh->column_info, but it would go slower and we would have to
@@ -775,19 +805,23 @@ sub bz_enum_initial_values {
     # of each row.
     my $sth = $self->prepare("DESCRIBE bugs");
     $sth->execute();
+
     # Look for the particular columns we are interested in.
-    while (my ($thiscol, $thistype) = $sth->fetchrow_array()) {
-        if (defined $enum_values{$thiscol}) {
+    while ( my ( $thiscol, $thistype ) = $sth->fetchrow_array() ) {
+        if ( defined $enum_values{$thiscol} ) {
+
             # this is a column of interest.
             my @value_list;
-            if ($thistype and ($thistype =~ /^enum\(/)) {
+            if ( $thistype and ( $thistype =~ /^enum\(/ ) ) {
+
                 # it has an enum type; get the set of values.
-                while ($thistype =~ /'([^']*)'(.*)/) {
-                    push(@value_list, $1);
+                while ( $thistype =~ /'([^']*)'(.*)/ ) {
+                    push( @value_list, $1 );
                     $thistype = $2;
                 }
             }
             if (@value_list) {
+
                 # record the enum values found.
                 $enum_values{$thiscol} = \@value_list;
             }
@@ -825,26 +859,26 @@ backwards-compatibility anyway, for versions of Bugzilla before 2.20.
 =cut
 
 sub bz_column_info_real {
-    my ($self, $table, $column) = @_;
-    my $col_data = $self->_bz_raw_column_info($table, $column);
+    my ( $self, $table, $column ) = @_;
+    my $col_data = $self->_bz_raw_column_info( $table, $column );
     return $self->_bz_schema->column_info_to_column($col_data);
 }
 
 sub _bz_raw_column_info {
-    my ($self, $table, $column) = @_;
+    my ( $self, $table, $column ) = @_;
 
     # DBD::mysql does not support selecting a specific column,
     # so we have to get all the columns on the table and find
     # the one we want.
-    my $info_sth = $self->column_info(undef, undef, $table, '%');
+    my $info_sth = $self->column_info( undef, undef, $table, '%' );
 
     # Don't use fetchall_hashref as there's a Win32 DBI bug (292821)
     my $col_data;
-    while ($col_data = $info_sth->fetchrow_hashref) {
+    while ( $col_data = $info_sth->fetchrow_hashref ) {
         last if $col_data->{'COLUMN_NAME'} eq $column;
     }
 
-    if (!defined $col_data) {
+    if ( !defined $col_data ) {
         return undef;
     }
     return $col_data;
@@ -861,13 +895,14 @@ sub _bz_raw_column_info {
 =cut
 
 sub bz_index_info_real {
-    my ($self, $table, $index) = @_;
+    my ( $self, $table, $index ) = @_;
 
     my $sth = $self->prepare("SHOW INDEX FROM $table");
     $sth->execute;
 
     my @fields;
     my $index_type;
+
     # $raw_def will be an arrayref containing the following information:
     # 0 = name of the table that the index is on
     # 1 = 0 if unique, 1 if not unique
@@ -881,20 +916,20 @@ sub bz_index_info_real {
     # 9 = Null. Sometimes undef, sometimes 'YES'.
     # 10 = Index_type. The type of the index. Usually either 'BTREE' or 'FULLTEXT'
     # 11 = 'Comment.' Usually undef.
-    while (my $raw_def = $sth->fetchrow_arrayref) {
-        if ($raw_def->[2] eq $index) {
-            push(@fields, $raw_def->[4]);
+    while ( my $raw_def = $sth->fetchrow_arrayref ) {
+        if ( $raw_def->[2] eq $index ) {
+            push( @fields, $raw_def->[4] );
+
             # No index can be both UNIQUE and FULLTEXT, that's why
             # this is written this way.
             $index_type = $raw_def->[1] ? '' : 'UNIQUE';
-            $index_type = $raw_def->[10] eq 'FULLTEXT'
-                ? 'FULLTEXT' : $index_type;
+            $index_type = $raw_def->[10] eq 'FULLTEXT' ? 'FULLTEXT' : $index_type;
         }
     }
 
     my $retval;
-    if (scalar(@fields)) {
-        $retval = {FIELDS => \@fields, TYPE => $index_type};
+    if ( scalar(@fields) ) {
+        $retval = { FIELDS => \@fields, TYPE => $index_type };
     }
     return $retval;
 }
@@ -909,10 +944,11 @@ sub bz_index_info_real {
 =cut
 
 sub bz_index_list_real {
-    my ($self, $table) = @_;
+    my ( $self, $table ) = @_;
     my $sth = $self->prepare("SHOW INDEX FROM $table");
+
     # Column 3 of a SHOW INDEX statement contains the name of the index.
-    return @{ $self->selectcol_arrayref($sth, {Columns => [3]}) };
+    return @{ $self->selectcol_arrayref( $sth, { Columns => [3] } ) };
 }
 
 #####################################################################
@@ -948,17 +984,17 @@ sub _bz_build_schema_from_disk {
         $schema->add_table($table);
         my @columns = $self->bz_table_columns_real($table);
         foreach my $column (@columns) {
-            my $type_info = $self->bz_column_info_real($table, $column);
-            $schema->set_column($table, $column, $type_info);
+            my $type_info = $self->bz_column_info_real( $table, $column );
+            $schema->set_column( $table, $column, $type_info );
         }
 
         my @indexes = $self->bz_index_list_real($table);
         foreach my $index (@indexes) {
-            unless ($index eq 'PRIMARY') {
-                my $index_info = $self->bz_index_info_real($table, $index);
-                ($index_info = $index_info->{FIELDS})
-                    if (!$index_info->{TYPE});
-                $schema->set_index($table, $index, $index_info);
+            unless ( $index eq 'PRIMARY' ) {
+                my $index_info = $self->bz_index_info_real( $table, $index );
+                ( $index_info = $index_info->{FIELDS} )
+                    if ( !$index_info->{TYPE} );
+                $schema->set_index( $table, $index, $index_info );
             }
         }
     }

@@ -29,19 +29,19 @@ our $VERSION = '0.1';
 
 BEGIN {
     *Bugzilla::splinter_review_base = \&get_review_base;
-    *Bugzilla::splinter_review_url = \&_get_review_url;
+    *Bugzilla::splinter_review_url  = \&_get_review_url;
 }
 
 sub _get_review_url {
-    my ($class, $bug_id, $attach_id) = @_;
-    return get_review_url(Bugzilla::Bug->check({ id => $bug_id, cache => 1 }), $attach_id);
+    my ( $class, $bug_id, $attach_id ) = @_;
+    return get_review_url( Bugzilla::Bug->check( { id => $bug_id, cache => 1 } ), $attach_id );
 }
 
 sub page_before_template {
-    my ($self, $args) = @_;
-    my ($vars, $page) = @$args{qw(vars page_id)};
+    my ( $self, $args ) = @_;
+    my ( $vars, $page ) = @$args{qw(vars page_id)};
 
-    if ($page eq 'splinter.html') {
+    if ( $page eq 'splinter.html' ) {
         my $user = Bugzilla->user;
 
         # We can either provide just a bug id to see a list
@@ -51,40 +51,45 @@ sub page_before_template {
         # sure they are connected.
 
         my $input = Bugzilla->input_params;
-        if ($input->{'bug'}) {
-            $vars->{'bug_id'} = $input->{'bug'};
+        if ( $input->{'bug'} ) {
+            $vars->{'bug_id'}    = $input->{'bug'};
             $vars->{'attach_id'} = $input->{'attachment'};
-            $vars->{'bug'} = Bugzilla::Bug->check({ id => $input->{'bug'}, cache => 1 });
+            $vars->{'bug'}       = Bugzilla::Bug->check( { id => $input->{'bug'}, cache => 1 } );
         }
 
-        if ($input->{'attachment'}) {
-            my $attachment = Bugzilla::Attachment->check({ id => $input->{'attachment'} });
+        if ( $input->{'attachment'} ) {
+            my $attachment = Bugzilla::Attachment->check( { id => $input->{'attachment'} } );
 
             # Check to see if the user can see the bug this attachment is connected to.
-            Bugzilla::Bug->check($attachment->bug_id);
-            if ($attachment->isprivate
+            Bugzilla::Bug->check( $attachment->bug_id );
+            if (   $attachment->isprivate
                 && $user->id != $attachment->attacher->id
-                && !$user->is_insider)
+                && !$user->is_insider )
             {
-                ThrowUserError('auth_failure', {action => 'access',
-                                                object => 'attachment'});
+                ThrowUserError(
+                    'auth_failure',
+                    {
+                        action => 'access',
+                        object => 'attachment'
+                    }
+                );
             }
 
             # If the user provided both a bug id and an attachment id, they must
             # be connected to each other
-            if ($input->{'bug'} && $input->{'bug'} != $attachment->bug_id) {
+            if ( $input->{'bug'} && $input->{'bug'} != $attachment->bug_id ) {
                 ThrowUserError('bug_attach_id_mismatch');
             }
 
             # The patch is going to be displayed in a HTML page and if the utf8
             # param is enabled, we have to encode attachment data as utf8.
-            if (Bugzilla->params->{'utf8'}) {
-                $attachment->data;  # load data
-                utf8::decode($attachment->{data});
+            if ( Bugzilla->params->{'utf8'} ) {
+                $attachment->data;    # load data
+                utf8::decode( $attachment->{data} );
             }
 
             $vars->{'attach_id'} = $attachment->id;
-            if ($user->id && $attachment->contenttype eq "text/x-github-pull-request" && $attachment->can_review) {
+            if ( $user->id && $attachment->contenttype eq "text/x-github-pull-request" && $attachment->can_review ) {
                 $vars->{'attach_data'} = $attachment->fetch_github_pr_diff;
             }
             else {
@@ -93,24 +98,24 @@ sub page_before_template {
             $vars->{'attach_is_crlf'} = $vars->{'attach_data'} =~ /\012\015/ ? 1 : 0;
         }
 
-        my $field_object = new Bugzilla::Field({ name => 'attachments.status' });
+        my $field_object = new Bugzilla::Field( { name => 'attachments.status' } );
         my $statuses;
         if ($field_object) {
-            $statuses = [map { $_->name } @{ $field_object->legal_values }];
-        } else {
+            $statuses = [ map { $_->name } @{ $field_object->legal_values } ];
+        }
+        else {
             $statuses = [];
         }
         $vars->{'attachment_statuses'} = $statuses;
     }
 }
 
-
 sub bug_format_comment {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
 
-    my $bug = $args->{'bug'};
+    my $bug     = $args->{'bug'};
     my $regexes = $args->{'regexes'};
-    my $text = $args->{'text'};
+    my $text    = $args->{'text'};
 
     # Add [review] link to the end of "Created attachment" comments
     #
@@ -131,32 +136,37 @@ sub bug_format_comment {
     # get the same link.
     my $REVIEW_RE = qr/Review\s+of\s+attachment\s+(\d+)\s*:/;
 
-    if ($$text =~ $REVIEW_RE) {
-        my $attach_id = $1;
-        my $review_link = get_review_link($attach_id, "Review");
-        my $attach_link = Bugzilla::Template::get_attachment_link($attach_id, "attachment $attach_id");
+    if ( $$text =~ $REVIEW_RE ) {
+        my $attach_id   = $1;
+        my $review_link = get_review_link( $attach_id, "Review" );
+        my $attach_link = Bugzilla::Template::get_attachment_link( $attach_id, "attachment $attach_id" );
 
-        push(@$regexes, { match => $REVIEW_RE,
-                          replace => "$review_link of $attach_link:"});
+        push(
+            @$regexes,
+            {
+                match   => $REVIEW_RE,
+                replace => "$review_link of $attach_link:"
+            }
+        );
     }
 }
 
 sub config_add_panels {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
 
     my $modules = $args->{panel_modules};
     $modules->{Splinter} = "Bugzilla::Extension::Splinter::Config";
 }
 
 sub mailer_before_send {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
 
     # Post-process bug mail to add review links to bug mail.
     # It would be nice to be able to hook in earlier in the
     # process when the email body is being formatted in the
     # style of the bug-format_comment link for HTML but this
     # is the only hook available as of Bugzilla-3.4.
-    add_review_links_to_email($args->{'email'});
+    add_review_links_to_email( $args->{'email'} );
 }
 
 __PACKAGE__->NAME;

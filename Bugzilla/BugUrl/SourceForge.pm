@@ -20,9 +20,10 @@ use Bugzilla::Util;
 ###############################
 
 sub should_handle {
-    my ($class, $uri) = @_;
-    return ($uri->authority =~ /^sourceforge.net$/i
-            and $uri->path =~ m|/tracker/|) ? 1 : 0;
+    my ( $class, $uri ) = @_;
+    return ( $uri->authority =~ /^sourceforge.net$/i and $uri->path =~ m|/tracker/| )
+        ? 1
+        : 0;
 }
 
 sub _check_value {
@@ -32,8 +33,10 @@ sub _check_value {
 
     # SourceForge tracker URLs have only one form:
     #  http://sourceforge.net/tracker/?func=detail&aid=111&group_id=111&atid=111
-    if ($uri->query_param('func') eq 'detail' and $uri->query_param('aid')
-        and $uri->query_param('group_id') and $uri->query_param('atid'))
+    if (    $uri->query_param('func') eq 'detail'
+        and $uri->query_param('aid')
+        and $uri->query_param('group_id')
+        and $uri->query_param('atid') )
     {
         # Remove any # part if there is one.
         $uri->fragment(undef);
@@ -41,7 +44,7 @@ sub _check_value {
     }
     else {
         my $value = $uri->as_string;
-        ThrowUserError('bug_url_invalid', { url => $value });
+        ThrowUserError( 'bug_url_invalid', { url => $value } );
     }
 }
 

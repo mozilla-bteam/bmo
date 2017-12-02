@@ -185,9 +185,9 @@ use constant DATE_RANGES => [
 
 sub report {
     my ($vars) = @_;
-    my $dbh = Bugzilla->dbh;
-    my $input = Bugzilla->input_params;
-    my $user = Bugzilla->user;
+    my $dbh    = Bugzilla->dbh;
+    my $input  = Bugzilla->input_params;
+    my $user   = Bugzilla->user;
 
     my @flag_names = qw(
         approval-mozilla-release
@@ -218,11 +218,12 @@ sub report {
 
     my @invalid_flag_names;
     foreach my $flag_name (@flag_names) {
+
         # grab all matching flag_types
-        my @flag_types = @{Bugzilla::FlagType::match({ name => $flag_name, is_active => 1 })};
+        my @flag_types = @{ Bugzilla::FlagType::match( { name => $flag_name, is_active => 1 } ) };
 
         # remove invalid flags
-        if (!@flag_types) {
+        if ( !@flag_types ) {
             push @invalid_flag_names, $flag_name;
             next;
         }
@@ -231,22 +232,24 @@ sub report {
         my @products;
         my %flag_types;
         foreach my $flag_type (@flag_types) {
-            $flag_types{$flag_type->name} = $flag_type->id;
+            $flag_types{ $flag_type->name } = $flag_type->id;
             my $has_all = 0;
             my @exclusion_ids;
             my @inclusion_ids;
             foreach my $flag_type (@flag_types) {
-                if (scalar keys %{$flag_type->inclusions}) {
+                if ( scalar keys %{ $flag_type->inclusions } ) {
                     my $inclusions = $flag_type->inclusions;
-                    foreach my $key (keys %$inclusions) {
-                        push @inclusion_ids, ($inclusions->{$key} =~ /^(\d+)/);
+                    foreach my $key ( keys %$inclusions ) {
+                        push @inclusion_ids, ( $inclusions->{$key} =~ /^(\d+)/ );
                     }
-                } elsif (scalar keys %{$flag_type->exclusions}) {
+                }
+                elsif ( scalar keys %{ $flag_type->exclusions } ) {
                     my $exclusions = $flag_type->exclusions;
-                    foreach my $key (keys %$exclusions) {
-                        push @exclusion_ids, ($exclusions->{$key} =~ /^(\d+)/);
+                    foreach my $key ( keys %$exclusions ) {
+                        push @exclusion_ids, ( $exclusions->{$key} =~ /^(\d+)/ );
                     }
-                } else {
+                }
+                else {
                     $has_all = 1;
                     last;
                 }
@@ -254,27 +257,30 @@ sub report {
 
             if ($has_all) {
                 push @products, @$all_products;
-            } elsif (scalar @exclusion_ids) {
+            }
+            elsif ( scalar @exclusion_ids ) {
                 push @products, @$all_products;
-                foreach my $exclude_id (uniq @exclusion_ids) {
+                foreach my $exclude_id ( uniq @exclusion_ids ) {
                     @products = grep { $_->id != $exclude_id } @products;
                 }
-            } else {
-                foreach my $include_id (uniq @inclusion_ids) {
+            }
+            else {
+                foreach my $include_id ( uniq @inclusion_ids ) {
                     push @products, grep { $_->id == $include_id } @$all_products;
                 }
             }
         }
         @products = uniq @products;
         push @usable_products, @products;
-        my @product_ids = map { $_->id } sort { lc($a->name) cmp lc($b->name) } @products;
+        my @product_ids = map { $_->id } sort { lc( $a->name ) cmp lc( $b->name ) } @products;
 
-        push @flags_json, {
-            name => $flag_name,
-            id => $flag_types{$flag_name} || 0,
+        push @flags_json,
+            {
+            name     => $flag_name,
+            id       => $flag_types{$flag_name} || 0,
             products => \@product_ids,
-            fields => [],
-        };
+            fields   => [],
+            };
     }
     foreach my $flag_name (@invalid_flag_names) {
         @flag_names = grep { $_ ne $flag_name } @flag_names;
@@ -286,27 +292,26 @@ sub report {
 
     my @unlink_products;
     foreach my $product (@usable_products) {
-        my @fields =
-            sort { $a->sortkey <=> $b->sortkey }
-            grep { is_active_status_field($_) }
-            Bugzilla->active_custom_fields({ product => $product });
+        my @fields = sort { $a->sortkey <=> $b->sortkey }
+            grep { is_active_status_field($_) } Bugzilla->active_custom_fields( { product => $product } );
         my @field_ids = map { $_->id } @fields;
-        if (!scalar @fields) {
+        if ( !scalar @fields ) {
             push @unlink_products, $product;
             next;
         }
 
         # product
-        push @products_json, {
-            name => $product->name,
-            id => $product->id,
+        push @products_json,
+            {
+            name   => $product->name,
+            id     => $product->id,
             fields => \@field_ids,
-        };
+            };
 
         # add fields to flags
         foreach my $rh (@flags_json) {
-            if (grep { $_ eq $product->id } @{$rh->{products}}) {
-                push @{$rh->{fields}}, @field_ids;
+            if ( grep { $_ eq $product->id } @{ $rh->{products} } ) {
+                push @{ $rh->{fields} }, @field_ids;
             }
         }
 
@@ -314,22 +319,23 @@ sub report {
         foreach my $field (@fields) {
             my $existing = 0;
             foreach my $rh (@fields_json) {
-                if ($rh->{id} == $field->id) {
+                if ( $rh->{id} == $field->id ) {
                     $existing = 1;
                     last;
                 }
             }
-            if (!$existing) {
-                push @fields_json, {
+            if ( !$existing ) {
+                push @fields_json,
+                    {
                     name => $field->name,
                     desc => $field->description,
-                    id => $field->id,
-                };
+                    id   => $field->id,
+                    };
             }
         }
     }
     foreach my $rh (@flags_json) {
-        my @fields = uniq @{$rh->{fields}};
+        my @fields = uniq @{ $rh->{fields} };
         $rh->{fields} = \@fields;
     }
 
@@ -337,8 +343,8 @@ sub report {
 
     foreach my $rh (@flags_json) {
         my @product_ids;
-        foreach my $id (@{$rh->{products}}) {
-            unless (grep { $_->id == $id } @unlink_products) {
+        foreach my $id ( @{ $rh->{products} } ) {
+            unless ( grep { $_->id == $id } @unlink_products ) {
                 push @product_ids, $id;
             }
             $rh->{products} = \@product_ids;
@@ -349,8 +355,8 @@ sub report {
     # run report
     #
 
-    if ($input->{q} && !$input->{edit}) {
-        my $q = _parse_query($input->{q});
+    if ( $input->{q} && !$input->{edit} ) {
+        my $q = _parse_query( $input->{q} );
 
         my @where;
         my @params;
@@ -359,46 +365,42 @@ sub report {
               FROM bugs b
                    INNER JOIN flags f ON f.bug_id = b.bug_id\n";
 
-        if ($q->{start_date}) {
+        if ( $q->{start_date} ) {
             $query .= "INNER JOIN bugs_activity a ON a.bug_id = b.bug_id\n";
         }
 
         $query .= "WHERE ";
 
-        if ($q->{start_date}) {
-            push @where, "(a.fieldid = ?)";
+        if ( $q->{start_date} ) {
+            push @where,  "(a.fieldid = ?)";
             push @params, $q->{field_id};
 
-            push @where, "(CONVERT_TZ(a.bug_when, 'UTC', 'America/Los_Angeles') >= ?)";
+            push @where,  "(CONVERT_TZ(a.bug_when, 'UTC', 'America/Los_Angeles') >= ?)";
             push @params, $q->{start_date} . ' 00:00:00';
-            push @where, "(CONVERT_TZ(a.bug_when, 'UTC', 'America/Los_Angeles') <= ?)";
+            push @where,  "(CONVERT_TZ(a.bug_when, 'UTC', 'America/Los_Angeles') <= ?)";
             push @params, $q->{end_date} . ' 23:59:59';
 
-            push @where, "(a.added LIKE ?)";
+            push @where,  "(a.added LIKE ?)";
             push @params, '%' . $q->{flag_name} . $q->{flag_status} . '%';
         }
 
-        my ($type_id) = $dbh->selectrow_array(
-            "SELECT id FROM flagtypes WHERE name = ?",
-            undef,
-            $q->{flag_name}
-        );
-        push @where, "(f.type_id = ?)";
+        my ($type_id) = $dbh->selectrow_array( "SELECT id FROM flagtypes WHERE name = ?", undef, $q->{flag_name} );
+        push @where,  "(f.type_id = ?)";
         push @params, $type_id;
 
-        push @where, "(f.status = ?)";
+        push @where,  "(f.status = ?)";
         push @params, $q->{flag_status};
 
-        if ($q->{product_id}) {
-            push @where, "(b.product_id = ?)";
+        if ( $q->{product_id} ) {
+            push @where,  "(b.product_id = ?)";
             push @params, $q->{product_id};
         }
 
-        if (scalar @{$q->{fields}}) {
+        if ( scalar @{ $q->{fields} } ) {
             my @fields;
-            foreach my $field (@{$q->{fields}}) {
+            foreach my $field ( @{ $q->{fields} } ) {
                 my $field_sql = "(";
-                if ($field->{type} == FIELD_TYPE_EXTENSION) {
+                if ( $field->{type} == FIELD_TYPE_EXTENSION ) {
                     $field_sql .= "
                         COALESCE(
                             (SELECT tracking_flags_bugs.value
@@ -406,22 +408,22 @@ sub report {
                                     LEFT JOIN tracking_flags
                                          ON tracking_flags.id = tracking_flags_bugs.tracking_flag_id
                               WHERE tracking_flags_bugs.bug_id = b.bug_id
-                                    AND tracking_flags.name = " . $dbh->quote($field->{name}) . ")
+                                    AND tracking_flags.name = " . $dbh->quote( $field->{name} ) . ")
                         , '') ";
                 }
                 else {
                     $field_sql .= "b." . $field->{name};
                 }
-                $field_sql .= " " . ($field->{value} eq '+' ? '' : 'NOT ') . "IN ('fixed','verified'))";
-                push(@fields, $field_sql);
+                $field_sql .= " " . ( $field->{value} eq '+' ? '' : 'NOT ' ) . "IN ('fixed','verified'))";
+                push( @fields, $field_sql );
             }
             my $join = uc $q->{join};
-            push @where, '(' . join(" $join ", @fields) . ')';
+            push @where, '(' . join( " $join ", @fields ) . ')';
         }
 
-        $query .= join("\nAND ", @where);
+        $query .= join( "\nAND ", @where );
 
-        if ($input->{debug}) {
+        if ( $input->{debug} ) {
             print "Content-Type: text/plain\n\n";
             $query =~ s/\?/\000/g;
             foreach my $param (@params) {
@@ -431,14 +433,12 @@ sub report {
             exit;
         }
 
-        my $bugs = $dbh->selectcol_arrayref($query, undef, @params);
+        my $bugs = $dbh->selectcol_arrayref( $query, undef, @params );
         push @$bugs, 0 unless @$bugs;
 
         my $urlbase = correct_urlbase();
-        my $cgi = Bugzilla->cgi;
-        print $cgi->redirect(
-            -url => "${urlbase}buglist.cgi?bug_id=" . join(',', @$bugs)
-        );
+        my $cgi     = Bugzilla->cgi;
+        print $cgi->redirect( -url => "${urlbase}buglist.cgi?bug_id=" . join( ',', @$bugs ) );
         exit;
     }
 
@@ -447,13 +447,13 @@ sub report {
     #
 
     my $json = JSON->new()->shrink(1);
-    $vars->{flags_json} = $json->encode(\@flags_json);
-    $vars->{products_json} = $json->encode(\@products_json);
-    $vars->{fields_json} = $json->encode(\@fields_json);
-    $vars->{flag_names} = \@flag_names;
-    $vars->{ranges} = DATE_RANGES;
+    $vars->{flags_json}    = $json->encode( \@flags_json );
+    $vars->{products_json} = $json->encode( \@products_json );
+    $vars->{fields_json}   = $json->encode( \@fields_json );
+    $vars->{flag_names}    = \@flag_names;
+    $vars->{ranges}        = DATE_RANGES;
     $vars->{default_query} = $input->{q};
-    $vars->{is_custom} = $input->{is_custom};
+    $vars->{is_custom}     = $input->{is_custom};
     foreach my $field (qw(product flags range)) {
         $vars->{$field} = $input->{$field};
     }
@@ -461,7 +461,7 @@ sub report {
 
 sub _parse_query {
     my $q = shift;
-    my @query = split(/:/, $q);
+    my @query = split( /:/, $q );
     my $query;
 
     # field_id for flag changes
@@ -469,54 +469,69 @@ sub _parse_query {
 
     # flag_name
     my $flag_name = shift @query;
-    @{Bugzilla::FlagType::match({ name => $flag_name, is_active => 1 })}
-        or ThrowUserError('report_invalid_parameter', { name => 'flag_name' });
+    @{ Bugzilla::FlagType::match( { name => $flag_name, is_active => 1 } ) }
+        or ThrowUserError( 'report_invalid_parameter', { name => 'flag_name' } );
     trick_taint($flag_name);
     $query->{flag_name} = $flag_name;
 
     # flag_status
     my $flag_status = shift @query;
     $flag_status =~ /^([\?\-\+])$/
-        or ThrowUserError('report_invalid_parameter', { name => 'flag_status' });
+        or ThrowUserError( 'report_invalid_parameter', { name => 'flag_status' } );
     $query->{flag_status} = $1;
 
     # date_range -> from_ymd to_ymd
     my $date_range = shift @query;
-    if ($date_range ne '*') {
+    if ( $date_range ne '*' ) {
         $date_range =~ /^(\d\d\d\d)(\d\d)(\d\d)-(\d\d\d\d)(\d\d)(\d\d)$/
-            or ThrowUserError('report_invalid_parameter', { name => 'date_range' });
+            or ThrowUserError( 'report_invalid_parameter', { name => 'date_range' } );
         $query->{start_date} = "$1-$2-$3";
-        $query->{end_date} = "$4-$5-$6";
-        validate_date($query->{start_date})
-          || ThrowUserError('illegal_date', { date   => $query->{start_date},
-                                              format => 'YYYY-MM-DD' });
-        validate_date($query->{end_date})
-          || ThrowUserError('illegal_date', { date   => $query->{end_date},
-                                              format => 'YYYY-MM-DD' });
+        $query->{end_date}   = "$4-$5-$6";
+        validate_date( $query->{start_date} )
+            || ThrowUserError(
+            'illegal_date',
+            {
+                date   => $query->{start_date},
+                format => 'YYYY-MM-DD'
+            }
+            );
+        validate_date( $query->{end_date} )
+            || ThrowUserError(
+            'illegal_date',
+            {
+                date   => $query->{end_date},
+                format => 'YYYY-MM-DD'
+            }
+            );
     }
 
     # product_id
     my $product_id = shift @query;
     $product_id =~ /^(\d+)$/
-        or ThrowUserError('report_invalid_parameter', { name => 'product_id' });
+        or ThrowUserError( 'report_invalid_parameter', { name => 'product_id' } );
     $query->{product_id} = $1;
 
     # join
     my $join = shift @query;
     $join =~ /^(and|or)$/
-        or ThrowUserError('report_invalid_parameter', { name => 'join' });
+        or ThrowUserError( 'report_invalid_parameter', { name => 'join' } );
     $query->{join} = $1;
 
     # fields
     my @fields;
     foreach my $field (@query) {
         $field =~ /^(\d+)([\-\+])$/
-            or ThrowUserError('report_invalid_parameter', { name => 'fields' });
-        my ($id, $value) = ($1, $2);
+            or ThrowUserError( 'report_invalid_parameter', { name => 'fields' } );
+        my ( $id, $value ) = ( $1, $2 );
         my $field_obj = Bugzilla::Field->new($id)
-            or ThrowUserError('report_invalid_parameter', { name => 'field_id' });
-        push @fields, { id => $id, value => $value,
-                        name => $field_obj->name, type => $field_obj->type };
+            or ThrowUserError( 'report_invalid_parameter', { name => 'field_id' } );
+        push @fields,
+            {
+            id    => $id,
+            value => $value,
+            name  => $field_obj->name,
+            type  => $field_obj->type
+            };
     }
     $query->{fields} = \@fields;
 

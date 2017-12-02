@@ -11,9 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
-
 use Bugzilla;
 use Bugzilla::Field;
 use Bugzilla::Constants;
@@ -23,14 +20,13 @@ use Pod::Usage;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my ($from_os, $to_os);
-GetOptions('from=s' => \$from_os, 'to=s' => \$to_os);
+my ( $from_os, $to_os );
+GetOptions( 'from=s' => \$from_os, 'to=s' => \$to_os );
 
 pod2usage(1) unless defined $from_os && defined $to_os;
 
-
-my $check_from_os = Bugzilla::Field::Choice->type('op_sys')->match({ value => $from_os });
-my $check_to_os   = Bugzilla::Field::Choice->type('op_sys')->match({ value => $to_os });
+my $check_from_os = Bugzilla::Field::Choice->type('op_sys')->match( { value => $from_os } );
+my $check_to_os   = Bugzilla::Field::Choice->type('op_sys')->match( { value => $to_os } );
 die "Cannot move $from_os because it does not exist\n"
     unless @$check_from_os == 1;
 die "Cannot move $from_os because $to_os doesn't exist.\n"
@@ -38,12 +34,12 @@ die "Cannot move $from_os because $to_os doesn't exist.\n"
 
 my $dbh       = Bugzilla->dbh;
 my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
-my $bug_ids   = $dbh->selectcol_arrayref(q{SELECT bug_id FROM bugs WHERE bugs.op_sys = ?}, undef, $from_os);
-my $field     = Bugzilla::Field->check({ name => 'op_sys', cache => 1 });
-my $nobody    = Bugzilla::User->check({ name => 'nobody@mozilla.org', cache => 1 });
+my $bug_ids   = $dbh->selectcol_arrayref( q{SELECT bug_id FROM bugs WHERE bugs.op_sys = ?}, undef, $from_os );
+my $field     = Bugzilla::Field->check( { name => 'op_sys', cache => 1 } );
+my $nobody    = Bugzilla::User->check( { name => 'nobody@mozilla.org', cache => 1 } );
 
 my $bug_count = @$bug_ids;
-if ($bug_count == 0) {
+if ( $bug_count == 0 ) {
     warn "There are no bugs to move.\n";
     exit 1;
 }
@@ -59,11 +55,13 @@ $dbh->bz_start_transaction;
 foreach my $bug_id (@$bug_ids) {
     warn "Moving $bug_id...\n";
 
-    $dbh->do(q{INSERT INTO bugs_activity(bug_id, who, bug_when, fieldid, removed, added)
+    $dbh->do(
+        q{INSERT INTO bugs_activity(bug_id, who, bug_when, fieldid, removed, added)
                VALUES (?, ?, ?, ?, ?, ?)},
-                undef, $bug_id, $nobody->id, $timestamp, $field->id, $from_os, $to_os);
-    $dbh->do(q{UPDATE bugs SET op_sys = ?, delta_ts = ?, lastdiffed = ? WHERE bug_id = ?},
-        undef, $to_os, $timestamp, $timestamp, $bug_id);
+        undef, $bug_id, $nobody->id, $timestamp, $field->id, $from_os, $to_os
+    );
+    $dbh->do( q{UPDATE bugs SET op_sys = ?, delta_ts = ?, lastdiffed = ? WHERE bug_id = ?},
+        undef, $to_os, $timestamp, $timestamp, $bug_id );
 }
 $dbh->bz_commit_transaction;
 

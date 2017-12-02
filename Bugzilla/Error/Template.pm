@@ -22,5 +22,4 @@ has 'vars' => (
     default => sub { {} },
 );
 
-
 1;

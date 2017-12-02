@@ -20,8 +20,8 @@ use Bugzilla::Util;
 ###############################
 
 sub should_handle {
-    my ($class, $uri) = @_;
-    return ($uri->authority =~ /^bugs.debian.org$/i) ? 1 : 0;
+    my ( $class, $uri ) = @_;
+    return ( $uri->authority =~ /^bugs.debian.org$/i ) ? 1 : 0;
 }
 
 sub _check_value {
@@ -33,20 +33,20 @@ sub _check_value {
     #   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
     #   http://bugs.debian.org/1234
     my $bug_id;
-    if ($uri->path =~ m|^/(\d+)$|) {
+    if ( $uri->path =~ m|^/(\d+)$| ) {
         $bug_id = $1;
     }
-    elsif ($uri->path =~ /bugreport\.cgi$/) {
+    elsif ( $uri->path =~ /bugreport\.cgi$/ ) {
         $bug_id = $uri->query_param('bug');
         detaint_natural($bug_id);
     }
-    if (!$bug_id) {
-        ThrowUserError('bug_url_invalid',
-                       { url => $uri->path, reason => 'id' });
+    if ( !$bug_id ) {
+        ThrowUserError( 'bug_url_invalid', { url => $uri->path, reason => 'id' } );
     }
+
     # This is the shortest standard URL form for Debian BTS URLs,
     # and so we reduce all URLs to this.
-    return new URI("http://bugs.debian.org/" . $bug_id);
+    return new URI( "http://bugs.debian.org/" . $bug_id );
 }
 
 1;

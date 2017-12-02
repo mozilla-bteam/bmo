@@ -26,25 +26,23 @@ use DateTime;
 my $base_dir = bz_locations()->{'extensionsdir'};
 
 my $name = $ARGV[0] or ThrowUserError('extension_create_no_name');
-if ($name !~ /^[A-Z]/) {
-    ThrowUserError('extension_first_letter_caps', { name => $name });
+if ( $name !~ /^[A-Z]/ ) {
+    ThrowUserError( 'extension_first_letter_caps', { name => $name } );
 }
 
 my $extension_dir = "$base_dir/$name";
 mkpath($extension_dir)
-  || die "$extension_dir already exists or cannot be created.\n";
+    || die "$extension_dir already exists or cannot be created.\n";
 
 my $lcname = lc($name);
-foreach my $path (qw(lib web template/en/default/hook),
-                  "template/en/default/$lcname")
-{
+foreach my $path ( qw(lib web template/en/default/hook), "template/en/default/$lcname" ) {
     mkpath("$extension_dir/$path") || die "$extension_dir/$path: $!";
 }
 
 my $year = DateTime->now()->year;
 
-my $template = Bugzilla->template;
-my $vars = { year => $year, name => $name, path => $extension_dir };
+my $template     = Bugzilla->template;
+my $vars         = { year => $year, name => $name, path => $extension_dir };
 my %create_files = (
     'config.pm.tmpl'       => 'Config.pm',
     'extension.pm.tmpl'    => 'Extension.pm',
@@ -54,17 +52,17 @@ my %create_files = (
     'name-readme.txt.tmpl' => "template/en/default/$lcname/README",
 );
 
-foreach my $template_file (keys %create_files) {
+foreach my $template_file ( keys %create_files ) {
     my $target = $create_files{$template_file};
     my $output;
-    $template->process("extensions/$template_file", $vars, \$output)
-      or ThrowTemplateError($template->error());
-   open(my $fh, '>', "$extension_dir/$target");
-   print $fh $output;
-   close($fh);
+    $template->process( "extensions/$template_file", $vars, \$output )
+        or ThrowTemplateError( $template->error() );
+    open( my $fh, '>', "$extension_dir/$target" );
+    print $fh $output;
+    close($fh);
 }
 
-print get_text('extension_created', $vars), "\n";
+print get_text( 'extension_created', $vars ), "\n";
 
 __END__
 

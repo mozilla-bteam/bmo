@@ -347,10 +347,7 @@ sub check_comment_taggers_group {
 }
 
 sub get_all_group_names {
-    return [
-        '',
-        map { $_->name } Bugzilla::Group->get_all,
-    ];
+    return [ '', map { $_->name } Bugzilla::Group->get_all, ];
 }
 
 # OK, here are the parameter definitions themselves.

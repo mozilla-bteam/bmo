@@ -20,8 +20,8 @@ use Bugzilla::Util;
 ###############################
 
 sub should_handle {
-    my ($class, $uri) = @_;
-    return ($uri->path =~ m|/browse/[A-Z][A-Z]+-\d+$|) ? 1 : 0;
+    my ( $class, $uri ) = @_;
+    return ( $uri->path =~ m|/browse/[A-Z][A-Z]+-\d+$| ) ? 1 : 0;
 }
 
 sub _check_value {
@@ -35,6 +35,7 @@ sub _check_value {
 
     # Make sure there are no query parameters.
     $uri->query(undef);
+
     # And remove any # part if there is one.
     $uri->fragment(undef);
 

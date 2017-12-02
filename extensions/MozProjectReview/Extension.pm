@@ -22,7 +22,7 @@ use Bugzilla::Constants;
 use List::MoreUtils qw(any);
 
 sub post_bug_after_creation {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $vars      = $args->{'vars'};
     my $bug       = $vars->{'bug'};
     my $timestamp = $args->{'timestamp'};
@@ -30,14 +30,16 @@ sub post_bug_after_creation {
     my $params    = Bugzilla->input_params;
     my $template  = Bugzilla->template;
 
-    return if !($params->{format} && $params->{format} eq 'moz-project-review');
+    return if !( $params->{format} && $params->{format} eq 'moz-project-review' );
 
     # do a match if applicable
-    Bugzilla::User::match_field({
-        'sow_vendor_mozcontact' => { 'type' => 'single' },
-    });
+    Bugzilla::User::match_field(
+        {
+            'sow_vendor_mozcontact' => { 'type' => 'single' },
+        }
+    );
 
-    my $do_sec_review = 0;
+    my $do_sec_review     = 0;
     my @sec_review_needed = (
         'Engaging a new vendor company',
         'Adding a new SOW with a vendor',
@@ -46,12 +48,13 @@ sub post_bug_after_creation {
         'Signing up for an online service',
         'Other'
     );
-    if ((any { $_ eq $params->{contract_type} } @sec_review_needed)
-        || $params->{mozilla_data} eq 'Yes') {
+    if ( ( any { $_ eq $params->{contract_type} } @sec_review_needed )
+        || $params->{mozilla_data} eq 'Yes' )
+    {
         $do_sec_review = 1;
     }
 
-    my ($sec_review_bug, $finance_bug, $error, @dep_comment, @dep_errors, @send_mail);
+    my ( $sec_review_bug, $finance_bug, $error, @dep_comment, @dep_errors, @send_mail );
 
     # Common parameters always passed to _file_child_bug
     # bug_data and template_suffix will be different for each bug
@@ -69,7 +72,7 @@ sub post_bug_after_creation {
             product      => 'Enterprise Information Security',
             component    => 'Rapid Risk Analysis',
             bug_severity => 'normal',
-            groups       => [ 'mozilla-employee-confidential' ],
+            groups       => ['mozilla-employee-confidential'],
             op_sys       => 'All',
             rep_platform => 'All',
             version      => 'unspecified',
@@ -86,7 +89,7 @@ sub post_bug_after_creation {
         component    => 'Purchase Request Form',
         bug_severity => 'normal',
         priority     => '--',
-        groups       => [ 'finance' ],
+        groups       => ['finance'],
         op_sys       => 'All',
         rep_platform => 'All',
         version      => 'unspecified',
@@ -96,29 +99,31 @@ sub post_bug_after_creation {
     $child_params->{'template_suffix'} = 'finance';
     _file_child_bug($child_params);
 
-    if (scalar @dep_errors) {
-        warn "[Bug " . $bug->id . "] Failed to create additional moz-project-review bugs:\n" .
-             join("\n", @dep_errors);
+    if ( scalar @dep_errors ) {
+        warn "[Bug "
+            . $bug->id
+            . "] Failed to create additional moz-project-review bugs:\n"
+            . join( "\n", @dep_errors );
         $vars->{'message'} = 'moz_project_review_creation_failed';
     }
 
-    if (scalar @dep_comment) {
-        my $comment = join("\n", @dep_comment);
-        if (scalar @dep_errors) {
+    if ( scalar @dep_comment ) {
+        my $comment = join( "\n", @dep_comment );
+        if ( scalar @dep_errors ) {
             $comment .= "\n\nSome errors occurred creating dependent bugs and have been recorded";
         }
         $bug->add_comment($comment);
-        $bug->update($bug->creation_ts);
+        $bug->update( $bug->creation_ts );
     }
 
     foreach my $bug_id (@send_mail) {
-        Bugzilla::BugMail::Send($bug_id, { changer => Bugzilla->user });
+        Bugzilla::BugMail::Send( $bug_id, { changer => Bugzilla->user } );
     }
 }
 
 sub _file_child_bug {
     my ($params) = @_;
-    my ($parent_bug, $template_vars, $template_suffix, $bug_data, $dep_comment, $dep_errors, $send_mail)
+    my ( $parent_bug, $template_vars, $template_suffix, $bug_data, $dep_comment, $dep_errors, $send_mail )
         = @$params{qw(parent_bug template_vars template_suffix bug_data dep_comment dep_errors send_mail)};
 
     my $old_error_mode = Bugzilla->error_mode;
@@ -128,29 +133,28 @@ sub _file_child_bug {
     eval {
         my $comment;
         my $full_template = "bug/create/comment-moz-project-review-$template_suffix.txt.tmpl";
-        Bugzilla->template->process($full_template, $template_vars, \$comment)
-            || ThrowTemplateError(Bugzilla->template->error());
+        Bugzilla->template->process( $full_template, $template_vars, \$comment )
+            || ThrowTemplateError( Bugzilla->template->error() );
         $bug_data->{'comment'} = $comment;
-        if ($new_bug = Bugzilla::Bug->create($bug_data)) {
-            my $set_all = {
-                dependson => { add => [ $new_bug->bug_id ] }
-            };
+        if ( $new_bug = Bugzilla::Bug->create($bug_data) ) {
+            my $set_all = { dependson => { add => [ $new_bug->bug_id ] } };
             $parent_bug->set_all($set_all);
-            $parent_bug->update($parent_bug->creation_ts);
+            $parent_bug->update( $parent_bug->creation_ts );
         }
     };
 
-    if ($@ || !($new_bug && $new_bug->{'bug_id'})) {
-        push(@$dep_comment, "Error creating $template_suffix review bug");
-        push(@$dep_errors, "$template_suffix : $@") if $@;
+    if ( $@ || !( $new_bug && $new_bug->{'bug_id'} ) ) {
+        push( @$dep_comment, "Error creating $template_suffix review bug" );
+        push( @$dep_errors, "$template_suffix : $@" ) if $@;
+
         # Since we performed Bugzilla::Bug::create in an eval block, we
         # need to manually rollback the commit as this is not done
         # in Bugzilla::Error automatically for eval'ed code.
         Bugzilla->dbh->bz_rollback_transaction();
     }
     else {
-        push(@$send_mail, $new_bug->id);
-        push(@$dep_comment, "Bug " . $new_bug->id . " - " . $new_bug->short_desc);
+        push( @$send_mail,   $new_bug->id );
+        push( @$dep_comment, "Bug " . $new_bug->id . " - " . $new_bug->short_desc );
     }
 
     undef $@;

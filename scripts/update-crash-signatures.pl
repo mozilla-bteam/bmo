@@ -12,9 +12,6 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 $| = 1;
 
-
-
-
 use constant BATCH_SIZE => 100;
 
 use Bugzilla;
@@ -26,8 +23,8 @@ use Text::Balanced qw( extract_bracketed extract_multiple );
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my $user = Bugzilla::User->check({ name => 'automation@bmo.tld' });
-$user->{groups} = [ Bugzilla::Group->get_all ];
+my $user = Bugzilla::User->check( { name => 'automation@bmo.tld' } );
+$user->{groups}       = [ Bugzilla::Group->get_all ];
 $user->{bless_groups} = [ Bugzilla::Group->get_all ];
 Bugzilla->set_user($user);
 
@@ -35,10 +32,10 @@ my $dbh = Bugzilla->dbh;
 
 # find the bugs
 
-my $bugs = $dbh->selectall_arrayref(
+my $bugs
+    = $dbh->selectall_arrayref(
     "SELECT bug_id,cf_crash_signature FROM bugs WHERE resolution = '' AND cf_crash_signature != ''",
-    { Slice => {} }
-);
+    { Slice => {} } );
 my $count = scalar @$bugs;
 
 # update
@@ -54,7 +51,7 @@ foreach my $rh_bug (@$bugs) {
 
     # check for updated signature
     my $collapsed = collapse($signature);
-    next if is_same($signature, $collapsed);
+    next if is_same( $signature, $collapsed );
 
     # ignore signatures malformed in a way that would result in updating on each pass
     next if $collapsed ne collapse($collapsed);
@@ -63,9 +60,9 @@ foreach my $rh_bug (@$bugs) {
     print "$bug_id\n";
     $dbh->bz_start_transaction;
     my $bug = Bugzilla::Bug->check($bug_id);
-    $bug->set_all({ cf_crash_signature => $collapsed });
+    $bug->set_all( { cf_crash_signature => $collapsed } );
     $bug->update();
-    $dbh->do("UPDATE bugs SET lastdiffed = delta_ts WHERE bug_id = ?", undef, $bug_id);
+    $dbh->do( "UPDATE bugs SET lastdiffed = delta_ts WHERE bug_id = ?", undef, $bug_id );
     $dbh->bz_commit_transaction;
 
     # object caching causes us to consume a lot of memory
@@ -75,7 +72,7 @@ foreach my $rh_bug (@$bugs) {
 print "Updated $updated bugs(s)\n";
 
 sub is_same {
-    my ($old, $new) = @_;
+    my ( $old, $new ) = @_;
     $old =~ s/[\015\012]+/ /g;
     $new =~ s/[\015\012]+/ /g;
     return trim($old) eq trim($new);
@@ -88,33 +85,36 @@ sub collapse {
     return $crash_signature unless $crash_signature =~ /\[/ && $crash_signature =~ /\]/;
 
     # split
-    my @signatures =
-        grep { /\S/ }
-        extract_multiple($crash_signature, [ sub { extract_bracketed($_[0], '[]') } ]);
+    my @signatures = grep {/\S/} extract_multiple( $crash_signature, [ sub { extract_bracketed( $_[0], '[]' ) } ] );
     my @unbracketed = map { unbracketed($_) } @signatures;
 
     foreach my $signature (@signatures) {
+
         # ignore invalid signatures
         next unless $signature =~ /^\s*\[/;
         next if unbracketed($signature) =~ /\.\.\.$/;
 
         # collpase
-        my $collapsed = collapse_crash_sig({
-            signature         => $signature,
-            open              => '<',
-            replacement_open  => '<',
-            close             => '>',
-            replacement_close => 'T>',
-            exceptions        => [],
-        });
-        $collapsed = collapse_crash_sig({
-            signature         => $collapsed,
-            open              => '(',
-            replacement_open  => '',
-            close             => ')',
-            replacement_close => '',
-            exceptions        => ['anonymous namespace', 'operator'],
-        });
+        my $collapsed = collapse_crash_sig(
+            {
+                signature         => $signature,
+                open              => '<',
+                replacement_open  => '<',
+                close             => '>',
+                replacement_close => 'T>',
+                exceptions        => [],
+            }
+        );
+        $collapsed = collapse_crash_sig(
+            {
+                signature         => $collapsed,
+                open              => '(',
+                replacement_open  => '',
+                close             => ')',
+                replacement_close => '',
+                exceptions        => [ 'anonymous namespace', 'operator' ],
+            }
+        );
         $collapsed =~ s/\s+/ /g;
 
         # ignore sigs that collapse down to nothing
@@ -124,11 +124,11 @@ sub collapse {
         my $unbracketed = unbracketed($collapsed);
         next if any { $unbracketed eq $_ } @unbracketed;
 
-        push @signatures, $collapsed;
+        push @signatures,  $collapsed;
         push @unbracketed, $unbracketed;
     }
 
-    return join("\015\012", map { trim($_) } @signatures);
+    return join( "\015\012", map { trim($_) } @signatures );
 }
 
 sub unbracketed {
@@ -140,22 +140,22 @@ sub unbracketed {
 # collapsing code lifted from socorro:
 # https://github.com/mozilla/socorro/blob/master/socorro/processor/signature_utilities.py#L110
 
-my ($target_counter, $exception_mode, @collapsed);
+my ( $target_counter, $exception_mode, @collapsed );
 
 sub append_if_not_in_collapse_mode {
     my ($character) = @_;
-    if (!$target_counter) {
+    if ( !$target_counter ) {
         push @collapsed, $character;
     }
 }
 
 sub is_exception {
-    my ($exceptions, $remaining_original_line, $line_up_to_current_position) = @_;
+    my ( $exceptions, $remaining_original_line, $line_up_to_current_position ) = @_;
     foreach my $exception (@$exceptions) {
-        if (substr($remaining_original_line, 0, length($exception)) eq $exception) {
+        if ( substr( $remaining_original_line, 0, length($exception) ) eq $exception ) {
             return 1;
         }
-        if (substr($line_up_to_current_position, -length($exception)) eq $exception) {
+        if ( substr( $line_up_to_current_position, -length($exception) ) eq $exception ) {
             return 1;
         }
     }
@@ -170,25 +170,25 @@ sub collapse_crash_sig {
     $exception_mode = 0;
     my $signature = $params->{signature};
 
-    for (my $i = 0; $i < length($signature); $i++) {
-        my $character = substr($signature, $i, 1);
-        if ($character eq $params->{open}) {
-            if (is_exception($params->{exceptions}, substr($signature, $i + 1), substr($signature, 0, $i))) {
+    for ( my $i = 0; $i < length($signature); $i++ ) {
+        my $character = substr( $signature, $i, 1 );
+        if ( $character eq $params->{open} ) {
+            if ( is_exception( $params->{exceptions}, substr( $signature, $i + 1 ), substr( $signature, 0, $i ) ) ) {
                 $exception_mode = 1;
                 append_if_not_in_collapse_mode($character);
                 next;
             }
-            append_if_not_in_collapse_mode($params->{replacement_open});
+            append_if_not_in_collapse_mode( $params->{replacement_open} );
             $target_counter++;
         }
-        elsif ($character eq $params->{close}) {
+        elsif ( $character eq $params->{close} ) {
             if ($exception_mode) {
                 append_if_not_in_collapse_mode($character);
                 $exception_mode = 0;
             }
             else {
                 $target_counter--;
-                append_if_not_in_collapse_mode($params->{replacement_close});
+                append_if_not_in_collapse_mode( $params->{replacement_close} );
             }
         }
         else {

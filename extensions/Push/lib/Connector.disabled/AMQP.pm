@@ -21,12 +21,13 @@ use DateTime;
 
 sub init {
     my ($self) = @_;
-    $self->{mq} = 0;
+    $self->{mq}      = 0;
     $self->{channel} = 1;
 
-    if ($self->config->{queue}) {
+    if ( $self->config->{queue} ) {
         $self->{queue_name} = $self->config->{queue};
-    } else {
+    }
+    else {
         my $queue_name = Bugzilla->params->{'urlbase'};
         $queue_name =~ s#^https?://##;
         $queue_name =~ s#/$#|#;
@@ -83,16 +84,16 @@ sub options {
             required => 1,
         },
         {
-            name     => 'queue',
-            label    => 'Queue',
-            type     => 'string',
+            name  => 'queue',
+            label => 'Queue',
+            type  => 'string',
         },
     );
 }
 
 sub stop {
     my ($self) = @_;
-    if ($self->{mq}) {
+    if ( $self->{mq} ) {
         Bugzilla->push_ext->logger->debug('AMQP: disconnecting');
         $self->{mq}->disconnect();
         $self->{mq} = 0;
@@ -106,23 +107,23 @@ sub _connect {
 
     $self->stop();
 
-    $logger->debug('AMQP: Connecting to RabbitMQ ' . $config->{host} . ':' . $config->{port});
+    $logger->debug( 'AMQP: Connecting to RabbitMQ ' . $config->{host} . ':' . $config->{port} );
     require Net::RabbitMQ;
     my $mq = Net::RabbitMQ->new();
     $mq->connect(
         $config->{host},
         {
-            port => $config->{port},
-            user => $config->{username},
+            port     => $config->{port},
+            user     => $config->{username},
             password => $config->{password},
         }
     );
     $self->{mq} = $mq;
 
-    $logger->debug('AMQP: Opening channel ' . $self->{channel});
-    $self->{mq}->channel_open($self->{channel});
+    $logger->debug( 'AMQP: Opening channel ' . $self->{channel} );
+    $self->{mq}->channel_open( $self->{channel} );
 
-    $logger->debug('AMQP: Declaring queue ' . $self->{queue_name});
+    $logger->debug( 'AMQP: Declaring queue ' . $self->{queue_name} );
     $self->{mq}->queue_declare(
         $self->{channel},
         $self->{queue_name},
@@ -136,23 +137,20 @@ sub _connect {
 }
 
 sub _bind {
-    my ($self, $message) = @_;
+    my ( $self, $message ) = @_;
     my $logger = Bugzilla->push_ext->logger;
     my $config = $self->config;
 
     # bind to queue (also acts to verify the connection is still valid)
-    if ($self->{mq}) {
+    if ( $self->{mq} ) {
         eval {
-            $logger->debug('AMQP: binding queue(' . $self->{queue_name} . ') with exchange(' . $config->{exchange} . ')');
-            $self->{mq}->queue_bind(
-                $self->{channel},
-                $self->{queue_name},
-                $config->{exchange},
-                $message->routing_key,
-            );
+            $logger->debug(
+                'AMQP: binding queue(' . $self->{queue_name} . ') with exchange(' . $config->{exchange} . ')' );
+            $self->{mq}
+                ->queue_bind( $self->{channel}, $self->{queue_name}, $config->{exchange}, $message->routing_key, );
         };
         if ($@) {
-            $logger->debug('AMQP: ' . clean_error($@));
+            $logger->debug( 'AMQP: ' . clean_error($@) );
             $self->{mq} = 0;
         }
     }
@@ -160,20 +158,21 @@ sub _bind {
 }
 
 sub should_send {
-    my ($self, $message) = @_;
+    my ( $self, $message ) = @_;
     my $logger = Bugzilla->push_ext->logger;
 
-    my $payload = $message->payload_decoded();
-    my $target = $payload->{event}->{target};
+    my $payload    = $message->payload_decoded();
+    my $target     = $payload->{event}->{target};
     my $is_private = $payload->{$target}->{is_private} ? 1 : 0;
-    if (!$is_private && exists $payload->{$target}->{bug}) {
+    if ( !$is_private && exists $payload->{$target}->{bug} ) {
         $is_private = $payload->{$target}->{bug}->{is_private} ? 1 : 0;
     }
 
     if ($is_private) {
+
         # we only want to push the is_private message from the change_set, as
         # this is guaranteed to contain public information only
-        if ($message->routing_key !~ /\.modify:is_private$/) {
+        if ( $message->routing_key !~ /\.modify:is_private$/ ) {
             $logger->debug('AMQP: Ignoring private message');
             return 0;
         }
@@ -183,12 +182,12 @@ sub should_send {
 }
 
 sub send {
-    my ($self, $message) = @_;
+    my ( $self, $message ) = @_;
     my $logger = Bugzilla->push_ext->logger;
     my $config = $self->config;
 
     # don't push comments to pulse
-    if ($message->routing_key =~ /^comment\./) {
+    if ( $message->routing_key =~ /^comment\./ ) {
         $logger->debug('AMQP: Ignoring comment');
         return PUSH_RESULT_IGNORED;
     }
@@ -201,7 +200,7 @@ sub send {
 
     eval {
         # reconnect if required
-        if (!$self->{mq}) {
+        if ( !$self->{mq} ) {
             $self->_connect();
         }
 
@@ -215,13 +214,13 @@ sub send {
                 exchange => $config->{exchange},
             },
             {
-                content_type => 'text/plain',
+                content_type     => 'text/plain',
                 content_encoding => '8bit',
             },
         );
     };
     if ($@) {
-        return (PUSH_RESULT_TRANSIENT, clean_error($@));
+        return ( PUSH_RESULT_TRANSIENT, clean_error($@) );
     }
 
     return PUSH_RESULT_OK;

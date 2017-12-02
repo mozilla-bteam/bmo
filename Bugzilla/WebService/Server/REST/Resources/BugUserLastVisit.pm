@@ -18,7 +18,8 @@ BEGIN {
 sub _rest_resources {
     return [
         # bug-id
-        qr{^/bug_user_last_visit/(\d+)$}, {
+        qr{^/bug_user_last_visit/(\d+)$},
+        {
             GET => {
                 method => 'get',
                 params => sub {

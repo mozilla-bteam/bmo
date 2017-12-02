@@ -20,8 +20,8 @@ use Bugzilla::Extension::Push::Backoff;
 sub new {
     my ($class) = @_;
     my $self = {};
-    bless($self, $class);
-    ($self->{name}) = $class =~ /^.+:(.+)$/;
+    bless( $self, $class );
+    ( $self->{name} ) = $class =~ /^.+:(.+)$/;
     $self->init();
     return $self;
 }
@@ -33,6 +33,7 @@ sub name {
 
 sub init {
     my ($self) = @_;
+
     # abstract
     # perform any initialisation here
     # will be run when created by the web pages or by the daemon
@@ -41,12 +42,14 @@ sub init {
 
 sub stop {
     my ($self) = @_;
+
     # abstract
     # run from the daemon only; disconnect from remote hosts, etc
 }
 
 sub should_send {
-    my ($self, $message) = @_;
+    my ( $self, $message ) = @_;
+
     # abstract
     # return boolean indicating if the connector will be sending the message.
     # this will be called each message, and should be a very quick simple test.
@@ -55,20 +58,23 @@ sub should_send {
 }
 
 sub send {
-    my ($self, $message) = @_;
+    my ( $self, $message ) = @_;
+
     # abstract
     # deliver the message, daemon only
 }
 
 sub options {
     my ($self) = @_;
+
     # abstract
     # return an array of configuration variables
     return ();
 }
 
 sub options_validate {
-    my ($class, $config) = @_;
+    my ( $class, $config ) = @_;
+
     # abstract, static
     # die if a combination of options in $config is invalid
 }
@@ -79,7 +85,7 @@ sub options_validate {
 
 sub config {
     my ($self) = @_;
-    if (!$self->{config}) {
+    if ( !$self->{config} ) {
         $self->load_config();
     }
     return $self->{config};
@@ -87,7 +93,7 @@ sub config {
 
 sub load_config {
     my ($self) = @_;
-    my $config = Bugzilla::Extension::Push::Config->new($self->name, $self->options);
+    my $config = Bugzilla::Extension::Push::Config->new( $self->name, $self->options );
     $config->load();
     $self->{config} = $config;
 }
@@ -99,7 +105,7 @@ sub enabled {
 
 sub backlog {
     my ($self) = @_;
-    $self->{backlog} ||= Bugzilla::Extension::Push::BacklogQueue->new($self->name);
+    $self->{backlog} ||= Bugzilla::Extension::Push::BacklogQueue->new( $self->name );
     return $self->{backlog};
 }
 

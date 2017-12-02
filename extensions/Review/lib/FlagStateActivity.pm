@@ -35,36 +35,40 @@ use constant DB_COLUMNS => qw(
     status
 );
 
-
 sub _check_param_required {
     my ($param) = @_;
 
     return sub {
-        my ($invocant, $value) = @_;
+        my ( $invocant, $value ) = @_;
         $value = trim($value)
-            or ThrowCodeError('param_required', {param => $param});
+            or ThrowCodeError( 'param_required', { param => $param } );
         return $value;
-    },
+    },;
 }
 
 sub _check_date {
-    my ($invocant, $date) = @_;
+    my ( $invocant, $date ) = @_;
 
     $date = trim($date);
     datetime_from($date)
-        or ThrowUserError('illegal_date', { date   => $date,
-                                            format => 'YYYY-MM-DD HH24:MI:SS' });
+        or ThrowUserError(
+        'illegal_date',
+        {
+            date   => $date,
+            format => 'YYYY-MM-DD HH24:MI:SS'
+        }
+        );
     return $date;
 }
 
 sub _check_status {
-    my ($self, $status) = @_;
+    my ( $self, $status ) = @_;
 
     # - Make sure the status is valid.
     # - Make sure the user didn't request the flag unless it's requestable.
     #   If the flag existed and was requested before it became unrequestable,
     #   leave it as is.
-    if (none { $status eq $_ } qw( X + - ? )) {
+    if ( none { $status eq $_ } qw( X + - ? ) ) {
         ThrowUserError(
             'flag_status_invalid',
             {
@@ -96,29 +100,28 @@ sub status        { return $_[0]->{status} }
 
 sub type {
     my ($self) = @_;
-    return $self->{type} //= Bugzilla::FlagType->new({ id => $self->type_id, cache => 1 });
+    return $self->{type} //= Bugzilla::FlagType->new( { id => $self->type_id, cache => 1 } );
 }
 
 sub setter {
     my ($self) = @_;
-    return $self->{setter} //= Bugzilla::User->new({ id => $self->setter_id, cache => 1 });
+    return $self->{setter} //= Bugzilla::User->new( { id => $self->setter_id, cache => 1 } );
 }
 
 sub requestee {
     my ($self) = @_;
     return undef unless defined $self->requestee_id;
-    return $self->{requestee} //= Bugzilla::User->new({ id => $self->requestee_id, cache => 1 });
+    return $self->{requestee} //= Bugzilla::User->new( { id => $self->requestee_id, cache => 1 } );
 }
 
 sub bug {
     my ($self) = @_;
-    return $self->{bug} //= Bugzilla::Bug->new({ id => $self->bug_id, cache => 1 });
+    return $self->{bug} //= Bugzilla::Bug->new( { id => $self->bug_id, cache => 1 } );
 }
 
 sub attachment {
     my ($self) = @_;
-    return $self->{attachment} //=
-        Bugzilla::Attachment->new({ id => $self->attachment_id, cache => 1 });
+    return $self->{attachment} //= Bugzilla::Attachment->new( { id => $self->attachment_id, cache => 1 } );
 }
 
 1;

@@ -30,7 +30,7 @@ use Bugzilla::Constants;
 use Bugzilla::Util;
 
 sub usage() {
-  print <<USAGE;
+    print <<USAGE;
 Usage: fixgroupqueries.pl <oldvalue> <newvalue>
 
 E.g.: fixgroupqueries.pl w-security webtools-security
@@ -42,24 +42,27 @@ USAGE
 }
 
 sub do_namedqueries($$) {
-    my ($old, $new) = @_;
+    my ( $old, $new ) = @_;
     $old = url_quote($old);
     $new = url_quote($new);
 
     my $dbh = Bugzilla->dbh;
 
     my $replace_count = 0;
-    my $query = $dbh->selectall_arrayref("SELECT id, query FROM namedqueries");
+    my $query         = $dbh->selectall_arrayref("SELECT id, query FROM namedqueries");
     if ($query) {
-        my $sth = $dbh->prepare("UPDATE namedqueries SET query = ?
-                                                     WHERE id = ?");
+        my $sth = $dbh->prepare(
+            "UPDATE namedqueries SET query = ?
+                                                     WHERE id = ?"
+        );
 
         foreach my $row (@$query) {
-            my ($id, $query) = @$row;
-            if (($query =~ /field\d+-\d+-\d+=bug_group/) &&
-                ($query =~ /(?:^|&|;)value\d+-\d+-\d+=$old(?:;|&|$)/)) {
+            my ( $id, $query ) = @$row;
+            if (   ( $query =~ /field\d+-\d+-\d+=bug_group/ )
+                && ( $query =~ /(?:^|&|;)value\d+-\d+-\d+=$old(?:;|&|$)/ ) )
+            {
                 $query =~ s/((?:^|&|;)value\d+-\d+-\d+=)$old(;|&|$)/$1$new$2/;
-                $sth->execute($query, $id);
+                $sth->execute( $query, $id );
                 $replace_count++;
             }
         }
@@ -70,26 +73,32 @@ sub do_namedqueries($$) {
 
 # series
 sub do_series($$) {
-    my ($old, $new) = @_;
+    my ( $old, $new ) = @_;
     $old = url_quote($old);
     $new = url_quote($new);
 
     my $dbh = Bugzilla->dbh;
+
     #$dbh->bz_start_transaction();
 
     my $replace_count = 0;
-    my $query = $dbh->selectall_arrayref("SELECT series_id, query
-                                          FROM series");
+    my $query         = $dbh->selectall_arrayref(
+        "SELECT series_id, query
+                                          FROM series"
+    );
     if ($query) {
-        my $sth = $dbh->prepare("UPDATE series SET query = ?
-                                               WHERE series_id = ?");
+        my $sth = $dbh->prepare(
+            "UPDATE series SET query = ?
+                                               WHERE series_id = ?"
+        );
         foreach my $row (@$query) {
-            my ($series_id, $query) = @$row;
+            my ( $series_id, $query ) = @$row;
 
-            if (($query =~ /field\d+-\d+-\d+=bug_group/) &&
-                ($query =~ /(?:^|&|;)value\d+-\d+-\d+=$old(?:;|&|$)/)) {
+            if (   ( $query =~ /field\d+-\d+-\d+=bug_group/ )
+                && ( $query =~ /(?:^|&|;)value\d+-\d+-\d+=$old(?:;|&|$)/ ) )
+            {
                 $query =~ s/((?:^|&|;)value\d+-\d+-\d+=)$old(;|&|$)/$1$new$2/;
-                $sth->execute($query, $series_id);
+                $sth->execute( $query, $series_id );
                 $replace_count++;
             }
         }
@@ -105,17 +114,17 @@ sub do_series($$) {
 # This is a pure command line script.
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-if (scalar @ARGV < 2) {
+if ( scalar @ARGV < 2 ) {
     usage();
     exit();
 }
 
-my ($old, $new) = @ARGV;
+my ( $old, $new ) = @ARGV;
 
 print "Changing all instances of '$old' to '$new'.\n\n";
 
 #do_namedqueries($old, $new);
-do_series($old, $new);
+do_series( $old, $new );
 
 # It's complex to determine which items now need to be flushed from memcached.
 # As this is expected to be a rare event, we just flush the entire cache.

@@ -11,9 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
-
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Field;
@@ -26,7 +23,7 @@ BEGIN { Bugzilla->extensions(); }
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-if (scalar @ARGV < 1) {
+if ( scalar @ARGV < 1 ) {
     die <<USAGE;
 Usage: security_remove.pl <user>
 
@@ -49,13 +46,13 @@ USAGE
 my ($login_name) = @ARGV;
 
 # Load nobody user and set as current
-my $auto_user = Bugzilla::User->check({ name => 'automation@bmo.tld' });
+my $auto_user = Bugzilla::User->check( { name => 'automation@bmo.tld' } );
 Bugzilla->set_user($auto_user);
 
 # Check target user
-my $target_user = Bugzilla::User->check({ name => $login_name });
+my $target_user = Bugzilla::User->check( { name => $login_name } );
 
-my $dbh = Bugzilla->dbh;
+my $dbh       = Bugzilla->dbh;
 my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
 # Gather bug ids
@@ -65,38 +62,42 @@ my $reporter_bugs = $dbh->selectcol_arrayref(
        WHERE bugs.bug_id = bug_group_map.bug_id
              AND bugs.reporter_accessible = 1
              AND bugs.reporter = ?},
-    undef, $target_user->id) || [];
+    undef, $target_user->id
+) || [];
 
 my $assignee_bugs = $dbh->selectcol_arrayref(
     q{SELECT DISTINCT bugs.bug_id
         FROM bugs, bug_group_map
        WHERE bugs.bug_id = bug_group_map.bug_id
              AND bugs.assigned_to = ?},
-    undef, $target_user->id) || [];
+    undef, $target_user->id
+) || [];
 
 my $qa_bugs = $dbh->selectcol_arrayref(
     q{SELECT DISTINCT bugs.bug_id
         FROM bugs, bug_group_map
        WHERE bugs.bug_id = bug_group_map.bug_id
              AND bugs.qa_contact = ?},
-    undef, $target_user->id) || [];
+    undef, $target_user->id
+) || [];
 
 my $cc_bugs = $dbh->selectcol_arrayref(
     q{SELECT DISTINCT cc.bug_id
         FROM cc, bug_group_map
        WHERE cc.bug_id = bug_group_map.bug_id
              AND cc.who = ?},
-    undef, $target_user->id) || [];
+    undef, $target_user->id
+) || [];
 
 my $reporter_count = scalar @$reporter_bugs;
 my $assignee_count = scalar @$assignee_bugs;
 my $qa_count       = scalar @$qa_bugs;
 my $cc_count       = scalar @$cc_bugs;
 
-if (!$reporter_count
+if (   !$reporter_count
     && !$assignee_count
     && !$qa_count
-    && !$cc_count)
+    && !$cc_count )
 {
     warn "There are no bugs to update.\n";
     exit 1;
@@ -123,11 +124,13 @@ foreach my $bug_id (@$reporter_bugs) {
     $dbh->do(
         q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
          VALUES (?, ?, ?, ?, ?, ?)},
-        undef, $bug_id, $auto_user->id, $timestamp, $field_id, 1, 0);
+        undef, $bug_id, $auto_user->id, $timestamp, $field_id, 1, 0
+    );
     $dbh->do(
         q{UPDATE bugs SET reporter_accessible = 0, delta_ts = ?, lastdiffed = ?
            WHERE bug_id = ?},
-        undef, $timestamp, $timestamp, $bug_id);
+        undef, $timestamp, $timestamp, $bug_id
+    );
 }
 
 # Assignee
@@ -137,12 +140,14 @@ foreach my $bug_id (@$assignee_bugs) {
     $dbh->do(
         q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
           VALUES (?, ?, ?, ?, ?, ?)},
-        undef, $bug_id, $auto_user->id, $timestamp, $field_id,
-               $target_user->login, $auto_user->login);
+        undef,               $bug_id, $auto_user->id, $timestamp, $field_id,
+        $target_user->login, $auto_user->login
+    );
     $dbh->do(
         q{UPDATE bugs SET assigned_to = ?, delta_ts = ?, lastdiffed = ?
            WHERE bug_id = ?},
-        undef, $auto_user->id, $timestamp, $timestamp, $bug_id);
+        undef, $auto_user->id, $timestamp, $timestamp, $bug_id
+    );
 }
 
 # QA Contact
@@ -152,11 +157,13 @@ foreach my $bug_id (@$qa_bugs) {
     $dbh->do(
         q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
           VALUES (?, ?, ?, ?, ?, '')},
-        undef, $bug_id, $auto_user->id, $timestamp, $field_id, $target_user->login);
+        undef, $bug_id, $auto_user->id, $timestamp, $field_id, $target_user->login
+    );
     $dbh->do(
         q{UPDATE bugs SET qa_contact = NULL, delta_ts = ?, lastdiffed = ?
            WHERE bug_id = ?},
-        undef, $timestamp, $timestamp, $bug_id);
+        undef, $timestamp, $timestamp, $bug_id
+    );
 }
 
 # CC list
@@ -166,9 +173,9 @@ foreach my $bug_id (@$cc_bugs) {
     $dbh->do(
         q{INSERT INTO bugs_activity (bug_id, who, bug_when, fieldid, removed, added)
           VALUES (?, ?, ?, ?, ?, '')},
-        undef, $bug_id, $auto_user->id, $timestamp, $field_id, $target_user->login);
-    $dbh->do(q{DELETE FROM cc WHERE bug_id = ? AND who = ?},
-             undef, $bug_id, $target_user->id);
+        undef, $bug_id, $auto_user->id, $timestamp, $field_id, $target_user->login
+    );
+    $dbh->do( q{DELETE FROM cc WHERE bug_id = ? AND who = ?}, undef, $bug_id, $target_user->id );
 }
 
 $target_user->clear_last_statistics_ts();

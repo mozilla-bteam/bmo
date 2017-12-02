@@ -17,14 +17,14 @@
 
 %strings = (
     all_optional_features_require => 'All optional features above require the following modules to be found:',
-    any  => 'any',
-    apachectl_failed => <<END,
+    any                           => 'any',
+    apachectl_failed              => <<END,
 WARNING: We could not check the configuration of Apache. This sometimes
 happens when you are not running checksetup.pl as ##root##. To see the
 problem we ran into, run: ##command##
 END
-    bad_executable => 'not a valid executable: ##bin##',
-    blacklisted => '(blacklisted)',
+    bad_executable              => 'not a valid executable: ##bin##',
+    blacklisted                 => '(blacklisted)',
     bz_schema_exists_before_220 => <<'END',
 You are upgrading from a version before 2.20, but the bz_schema table
 already exists. This means that you restored a mysqldump into the Bugzilla
@@ -38,9 +38,9 @@ can connect to your MySQL database and drop the bz_schema table, as a last
 resort.
 END
     checking_for => 'Checking for',
-    chmod_failed      => '##path##: Failed to change permissions: ##error##',
-    chown_failed      => '##path##: Failed to change ownership: ##error##',
-    commands_dbd      => <<EOT,
+    chmod_failed => '##path##: Failed to change permissions: ##error##',
+    chown_failed => '##path##: Failed to change ownership: ##error##',
+    commands_dbd => <<EOT,
 YOU MUST RUN ONE OF THE FOLLOWING COMMANDS (depending on which database
 you use):
 EOT
@@ -53,15 +53,14 @@ EOT
 Re-run checksetup.pl in interactive mode (without an 'answers' file)
 to continue.
 END
-    cpanfile_created => "##file## created",
-    cpan_bugzilla_home =>
-        "WARNING: Using the Bugzilla directory as the CPAN home.",
-    db_enum_setup  => "Setting up choices for standard drop-down fields:",
-    db_schema_init => "Initializing bz_schema...",
-    db_table_new   => "Adding new table ##table##...",
-    db_table_setup => "Creating tables...",
-    done => 'done.',
-    enter_or_ctrl_c => "Press Enter to continue or Ctrl-C to exit...",
+    cpanfile_created       => "##file## created",
+    cpan_bugzilla_home     => "WARNING: Using the Bugzilla directory as the CPAN home.",
+    db_enum_setup          => "Setting up choices for standard drop-down fields:",
+    db_schema_init         => "Initializing bz_schema...",
+    db_table_new           => "Adding new table ##table##...",
+    db_table_setup         => "Creating tables...",
+    done                   => 'done.',
+    enter_or_ctrl_c        => "Press Enter to continue or Ctrl-C to exit...",
     error_localconfig_read => <<'END',
 An error has occurred while reading the ##localconfig## file.  The text of
 the error message is:
@@ -82,9 +81,8 @@ the documentation of Bugzilla::Extension for details.
 END
     file_remove => 'Removing ##name##...',
     file_rename => 'Renaming ##from## to ##to##...',
-    header => "* This is Bugzilla ##bz_ver## on perl ##perl_ver##\n"
-            . "* Running on ##os_name## ##os_ver##",
-    installation_failed => '*** Installation aborted. Read the messages above. ***',
+    header      => "* This is Bugzilla ##bz_ver## on perl ##perl_ver##\n" . "* Running on ##os_name## ##os_ver##",
+    installation_failed   => '*** Installation aborted. Read the messages above. ***',
     install_data_too_long => <<EOT,
 WARNING: Some of the data in the ##table##.##column## column is longer than
 its new length limit of ##max_length## characters. The data that needs to be
@@ -157,7 +155,7 @@ MySQL Only: Enter a path to the unix socket for MySQL. If this is
 blank, then MySQL's compiled-in default will be used. You probably
 want that.
 END
-    localconfig_db_user => "Who we connect to the database as.",
+    localconfig_db_user  => "Who we connect to the database as.",
     localconfig_diffpath => <<'END',
 For the "Difference Between Two Patches" feature to work, we need to know
 what directory the "diff" bin is in. (You only need to set this if you
@@ -245,9 +243,9 @@ configuration file.
 EOT
     min_version_required => "Minimum version required: ",
 
-# Note: When translating these "modules" messages, don't change the formatting
-# if possible, because there is hardcoded formatting in
-# Bugzilla::Install::Requirements to match the box formatting.
+    # Note: When translating these "modules" messages, don't change the formatting
+    # if possible, because there is hardcoded formatting in
+    # Bugzilla::Install::Requirements to match the box formatting.
     modules_message_apache => <<END,
 ***********************************************************************
 * APACHE MODULES                                                      *
@@ -293,12 +291,12 @@ EOT
 * See below for commands to install these modules.                    *
 EOT
 
-    module_found => "found v##ver##",
-    module_not_found => "not found",
-    module_ok => 'ok',
+    module_found           => "found v##ver##",
+    module_not_found       => "not found",
+    module_ok              => 'ok',
     module_unknown_version => "found unknown version",
-    no_such_module => "There is no Perl module on CPAN named ##module##.",
-    mysql_innodb_disabled => <<'END',
+    no_such_module         => "There is no Perl module on CPAN named ##module##.",
+    mysql_innodb_disabled  => <<'END',
 InnoDB is disabled in your MySQL installation.
 Bugzilla requires InnoDB to be enabled.
 Please enable it and then re-run checksetup.pl.
@@ -356,16 +354,15 @@ as well), you should install patchutils from:
 
     http://cyberelk.net/tim/patchutils/
 END
-    template_precompile   => "Precompiling templates...",
+    template_precompile     => "Precompiling templates...",
     template_removal_failed => <<END,
 WARNING: The directory '##template_cache##' could not be removed.
          It has been moved into '##deleteme##', which should be
          deleted manually to conserve disk space.
 END
-    template_removing_dir => "Removing existing compiled templates...",
-    update_cf_invalid_name =>
-        "Removing custom field '##field##', because it has an invalid name...",
-    update_flags_bad_name => <<'END',
+    template_removing_dir  => "Removing existing compiled templates...",
+    update_cf_invalid_name => "Removing custom field '##field##', because it has an invalid name...",
+    update_flags_bad_name  => <<'END',
 "##flag##" is not a valid name for a flag. Rename it to not have any spaces
 or commas.
 END
@@ -374,8 +371,7 @@ WARNING: The following users were listed in ##data##/nomail, but do
 not have an account here. The unmatched entries have been moved to
 ##data##/nomail.bad:
 END
-    update_summary_truncate_comment =>
-        "The original value of the Summary field was longer than 255"
+    update_summary_truncate_comment => "The original value of the Summary field was longer than 255"
         . " characters, and so it was truncated during an upgrade."
         . " The original summary was:\n\n##summary##",
     update_summary_truncated => <<'END',
@@ -391,7 +387,7 @@ You may delete the renamed file once you have confirmed that all your
 quips were moved successfully.
 END
     update_queries_to_tags => "Populating the new 'tag' table:",
-    webdot_bad_htaccess => <<END,
+    webdot_bad_htaccess    => <<END,
 WARNING: Dependency graph images are not accessible.
 Delete ##dir##/.htaccess and re-run checksetup.pl.
 END

@@ -26,11 +26,13 @@ sub can_verify_inline {
 
 sub _auth {
     my ($self) = @_;
-    return Auth::GoogleAuth->new({
-        secret => $self->property_get('secret') // $self->property_get('secret.temp'),
-        issuer => template_var('terms')->{BugzillaTitle},
-        key_id => $self->{user}->login,
-    });
+    return Auth::GoogleAuth->new(
+        {
+            secret => $self->property_get('secret') // $self->property_get('secret.temp'),
+            issuer => template_var('terms')->{BugzillaTitle},
+            key_id => $self->{user}->login,
+        }
+    );
 }
 
 sub enroll_api {
@@ -38,12 +40,12 @@ sub enroll_api {
 
     # create a new secret for the user
     # store it in secret.temp to avoid overwriting a valid secret
-    $self->property_set('secret.temp', generate_random_password(16));
+    $self->property_set( 'secret.temp', generate_random_password(16) );
 
     # build the qr code
-    my $auth = $self->_auth();
-    my $otpauth = $auth->qr_code(undef, undef, undef, 1);
-    my $png = GD::Barcode::QRcode->new($otpauth, { Version => 10, ModuleSize => 3 })->plot()->png();
+    my $auth    = $self->_auth();
+    my $otpauth = $auth->qr_code( undef, undef, undef, 1 );
+    my $png     = GD::Barcode::QRcode->new( $otpauth, { Version => 10, ModuleSize => 3 } )->plot()->png();
     return { png => encode_base64($png), secret32 => $auth->secret32 };
 }
 
@@ -51,25 +53,25 @@ sub enrolled {
     my ($self) = @_;
 
     # make the temporary secret permanent
-    $self->property_set('secret', $self->property_get('secret.temp'));
+    $self->property_set( 'secret', $self->property_get('secret.temp') );
     $self->property_delete('secret.temp');
 }
 
 sub prompt {
-    my ($self, $vars) = @_;
+    my ( $self, $vars ) = @_;
     my $template = Bugzilla->template;
 
     print Bugzilla->cgi->header();
-    $template->process('mfa/totp/verify.html.tmpl', $vars)
-        || ThrowTemplateError($template->error());
+    $template->process( 'mfa/totp/verify.html.tmpl', $vars )
+        || ThrowTemplateError( $template->error() );
 }
 
 sub check {
-    my ($self, $params) = @_;
+    my ( $self, $params ) = @_;
     my $code = $params->{code};
-    return if $self->_auth()->verify($code, 1);
+    return if $self->_auth()->verify( $code, 1 );
 
-    if ($params->{mfa_action} && $params->{mfa_action} eq 'enable') {
+    if ( $params->{mfa_action} && $params->{mfa_action} eq 'enable' ) {
         ThrowUserError('mfa_totp_bad_enrollment_code');
     }
     else {

@@ -21,7 +21,7 @@ use Bugzilla::Util;
 # initialisation
 #
 
-use constant DB_TABLE => 'push_options';
+use constant DB_TABLE   => 'push_options';
 use constant DB_COLUMNS => qw(
     id
     connector
@@ -31,17 +31,15 @@ use constant DB_COLUMNS => qw(
 use constant UPDATE_COLUMNS => qw(
     option_value
 );
-use constant VALIDATORS => {
-    connector => \&_check_connector,
-};
+use constant VALIDATORS => { connector => \&_check_connector, };
 use constant LIST_ORDER => 'connector';
 
 #
 # accessors
 #
 
-sub connector { return $_[0]->{'connector'};    }
-sub name      { return $_[0]->{'option_name'};  }
+sub connector { return $_[0]->{'connector'}; }
+sub name      { return $_[0]->{'option_name'}; }
 sub value     { return $_[0]->{'option_value'}; }
 
 #
@@ -55,8 +53,8 @@ sub set_value { $_[0]->{'option_value'} = $_[1]; }
 #
 
 sub _check_connector {
-    my ($invocant, $value) = @_;
-    $value eq '*'
+    my ( $invocant, $value ) = @_;
+           $value eq '*'
         || $value eq 'global'
         || Bugzilla->push_ext->connectors->exists($value)
         || ThrowCodeError('push_invalid_connector');

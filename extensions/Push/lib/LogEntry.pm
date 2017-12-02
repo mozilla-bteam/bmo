@@ -26,7 +26,7 @@ use Bugzilla::Extension::Push::Constants;
 # initialisation
 #
 
-use constant DB_TABLE => 'push_log';
+use constant DB_TABLE   => 'push_log';
 use constant DB_COLUMNS => qw(
     id
     message_id
@@ -38,9 +38,7 @@ use constant DB_COLUMNS => qw(
     result
     data
 );
-use constant VALIDATORS => {
-    data => \&_check_data,
-};
+use constant VALIDATORS => { data => \&_check_data, };
 use constant NAME_FIELD => '';
 use constant LIST_ORDER => 'processed_ts DESC';
 
@@ -48,23 +46,23 @@ use constant LIST_ORDER => 'processed_ts DESC';
 # accessors
 #
 
-sub message_id   { return $_[0]->{'message_id'};   }
-sub change_set   { return $_[0]->{'change_set'};   }
-sub routing_key  { return $_[0]->{'routing_key'};  }
-sub connector    { return $_[0]->{'connector'};    }
-sub push_ts      { return $_[0]->{'push_ts'};      }
+sub message_id   { return $_[0]->{'message_id'}; }
+sub change_set   { return $_[0]->{'change_set'}; }
+sub routing_key  { return $_[0]->{'routing_key'}; }
+sub connector    { return $_[0]->{'connector'}; }
+sub push_ts      { return $_[0]->{'push_ts'}; }
 sub processed_ts { return $_[0]->{'processed_ts'}; }
-sub result       { return $_[0]->{'result'};       }
-sub data         { return $_[0]->{'data'};         }
+sub result       { return $_[0]->{'result'}; }
+sub data         { return $_[0]->{'data'}; }
 
-sub result_string { return push_result_to_string($_[0]->result) }
+sub result_string { return push_result_to_string( $_[0]->result ) }
 
 #
 # validators
 #
 
 sub _check_data {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     return $value eq '' ? undef : $value;
 }
 

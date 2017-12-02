@@ -30,9 +30,9 @@ use constant NAME => 'SiteMapIndex';
 
 use constant REQUIRED_MODULES => [
     {
-      package => 'IO-Compress-Gzip',
-      module  => 'IO::Compress::Gzip',
-      version => 0,
+        package => 'IO-Compress-Gzip',
+        module  => 'IO::Compress::Gzip',
+        version => 0,
     }
 ];
 

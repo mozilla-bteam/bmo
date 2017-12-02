@@ -28,7 +28,7 @@ use Encode;
 # initialisation
 #
 
-use constant DB_TABLE => 'push_backlog';
+use constant DB_TABLE   => 'push_backlog';
 use constant DB_COLUMNS => qw(
     id
     message_id
@@ -60,18 +60,20 @@ use constant VALIDATORS => {
 #
 
 sub create_from_message {
-    my ($class, $message, $connector) = @_;
-    my $self = $class->create({
-        message_id => $message->id,
-        push_ts => $message->push_ts,
-        payload => $message->payload,
-        change_set => $message->change_set,
-        routing_key => $message->routing_key,
-        connector => $connector->name,
-        attempt_ts => undef,
-        attempts => 0,
-        last_error => undef,
-    });
+    my ( $class, $message, $connector ) = @_;
+    my $self = $class->create(
+        {
+            message_id  => $message->id,
+            push_ts     => $message->push_ts,
+            payload     => $message->payload,
+            change_set  => $message->change_set,
+            routing_key => $message->routing_key,
+            connector   => $connector->name,
+            attempt_ts  => undef,
+            attempts    => 0,
+            last_error  => undef,
+        }
+    );
     return $self;
 }
 
@@ -79,25 +81,25 @@ sub create_from_message {
 # accessors
 #
 
-sub message_id  { return $_[0]->{'message_id'}   }
-sub push_ts     { return $_[0]->{'push_ts'};     }
-sub payload     { return $_[0]->{'payload'};     }
-sub change_set  { return $_[0]->{'change_set'};  }
+sub message_id  { return $_[0]->{'message_id'} }
+sub push_ts     { return $_[0]->{'push_ts'}; }
+sub payload     { return $_[0]->{'payload'}; }
+sub change_set  { return $_[0]->{'change_set'}; }
 sub routing_key { return $_[0]->{'routing_key'}; }
-sub connector   { return $_[0]->{'connector'};   }
-sub attempt_ts  { return $_[0]->{'attempt_ts'};  }
-sub attempts    { return $_[0]->{'attempts'};    }
-sub last_error  { return $_[0]->{'last_error'};  }
+sub connector   { return $_[0]->{'connector'}; }
+sub attempt_ts  { return $_[0]->{'attempt_ts'}; }
+sub attempts    { return $_[0]->{'attempts'}; }
+sub last_error  { return $_[0]->{'last_error'}; }
 
 sub payload_decoded {
     my ($self) = @_;
-    return from_json($self->{'payload'});
+    return from_json( $self->{'payload'} );
 }
 
 sub attempt_time {
     my ($self) = @_;
-    if (!exists $self->{'attempt_time'}) {
-        $self->{'attempt_time'} = datetime_from($self->attempt_ts)->epoch;
+    if ( !exists $self->{'attempt_time'} ) {
+        $self->{'attempt_time'} = datetime_from( $self->attempt_ts )->epoch;
     }
     return $self->{'attempt_time'};
 }
@@ -107,9 +109,9 @@ sub attempt_time {
 #
 
 sub inc_attempts {
-    my ($self, $error) = @_;
+    my ( $self, $error ) = @_;
     $self->{attempt_ts} = Bugzilla->dbh->selectrow_array('SELECT NOW()');
-    $self->{attempts} = $self->{attempts} + 1;
+    $self->{attempts}   = $self->{attempts} + 1;
     $self->{last_error} = $error;
     $self->update;
 }
@@ -119,31 +121,31 @@ sub inc_attempts {
 #
 
 sub _check_payload {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     length($value) || ThrowCodeError('push_invalid_payload');
     return $value;
 }
 
 sub _check_change_set {
-    my ($invocant, $value) = @_;
-    (defined($value) && length($value)) || ThrowCodeError('push_invalid_change_set');
+    my ( $invocant, $value ) = @_;
+    ( defined($value) && length($value) ) || ThrowCodeError('push_invalid_change_set');
     return $value;
 }
 
 sub _check_routing_key {
-    my ($invocant, $value) = @_;
-    (defined($value) && length($value)) || ThrowCodeError('push_invalid_routing_key');
+    my ( $invocant, $value ) = @_;
+    ( defined($value) && length($value) ) || ThrowCodeError('push_invalid_routing_key');
     return $value;
 }
 
 sub _check_connector {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     Bugzilla->push_ext->connectors->exists($value) || ThrowCodeError('push_invalid_connector');
     return $value;
 }
 
 sub _check_attempts {
-    my ($invocant, $value) = @_;
+    my ( $invocant, $value ) = @_;
     return $value || 0;
 }
 

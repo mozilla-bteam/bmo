@@ -24,33 +24,37 @@ BEGIN {
 }
 
 sub _user_gravatar {
-    my ($self, $size) = @_;
-    if ($self->setting('show_my_gravatar') eq 'Off') {
+    my ( $self, $size ) = @_;
+    if ( $self->setting('show_my_gravatar') eq 'Off' ) {
         return DEFAULT_URL;
     }
-    if (!$self->{gravatar}) {
+    if ( !$self->{gravatar} ) {
         my $email = $self->email;
-        $email = $gravatar_user_map{$self->email} if exists $gravatar_user_map{$self->email};
-        $self->{gravatar} = 'https://secure.gravatar.com/avatar/' .  md5_hex(lc($email)) . '?d=mm';
+        $email = $gravatar_user_map{ $self->email } if exists $gravatar_user_map{ $self->email };
+        $self->{gravatar} = 'https://secure.gravatar.com/avatar/' . md5_hex( lc($email) ) . '?d=mm';
     }
     $size ||= 64;
     return $self->{gravatar} . '&amp;size=' . $size;
 }
 
 sub install_before_final_checks {
-    my ($self, $args) = @_;
-    add_setting({
-        name     => 'show_gravatars',
-        options  => ['On', 'Off'],
-        default  => 'Off',
-        category => 'Bug Editing'
-    });
-    add_setting({
-        name     => 'show_my_gravatar',
-        options  => ['On', 'Off'],
-        default  => 'On',
-        category => 'Bug Editing'
-    });
+    my ( $self, $args ) = @_;
+    add_setting(
+        {
+            name     => 'show_gravatars',
+            options  => [ 'On', 'Off' ],
+            default  => 'Off',
+            category => 'Bug Editing'
+        }
+    );
+    add_setting(
+        {
+            name     => 'show_my_gravatar',
+            options  => [ 'On', 'Off' ],
+            default  => 'On',
+            category => 'Bug Editing'
+        }
+    );
 }
 
 __PACKAGE__->NAME;

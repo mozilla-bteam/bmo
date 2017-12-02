@@ -32,8 +32,8 @@ our @EXPORT = qw(
     FLAGTYPE_COMMENT_ATTACHMENT_FLAGS
 );
 
-use constant FLAGTYPE_COMMENT_STATES => ("?", "+", "-");
-use constant FLAGTYPE_COMMENT_BUG_FLAGS => 0;
+use constant FLAGTYPE_COMMENT_STATES => ( "?", "+", "-" );
+use constant FLAGTYPE_COMMENT_BUG_FLAGS        => 0;
 use constant FLAGTYPE_COMMENT_ATTACHMENT_FLAGS => 1;
 
 sub FLAGTYPE_COMMENT_TEMPLATES {
@@ -42,10 +42,7 @@ sub FLAGTYPE_COMMENT_TEMPLATES {
         push @result, ("bug/comments.html.tmpl");
     }
     if (FLAGTYPE_COMMENT_ATTACHMENT_FLAGS) {
-        push @result, (
-            "attachment/edit.html.tmpl",
-            "attachment/createformcontents.html.tmpl",
-        );
+        push @result, ( "attachment/edit.html.tmpl", "attachment/createformcontents.html.tmpl", );
     }
     return @result;
 }

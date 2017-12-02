@@ -37,21 +37,23 @@ use constant _CAN_HAS_FEATURE => eval {
     1;
 };
 
-my (%FEATURE, %FEATURE_LOADED);
+my ( %FEATURE, %FEATURE_LOADED );
 
 sub cpan_meta {
     my ($class) = @_;
-    my $dir  = bz_locations()->{libpath};
-    my $file = File::Spec->catfile($dir, 'MYMETA.json');
+    my $dir = bz_locations()->{libpath};
+    my $file = File::Spec->catfile( $dir, 'MYMETA.json' );
     state $CPAN_META;
 
     return $CPAN_META if $CPAN_META;
 
-    if (-f $file) {
+    if ( -f $file ) {
         open my $meta_fh, '<', $file or die "unable to open $file: $!";
         my $str = do { local $/ = undef; scalar <$meta_fh> };
+
         # detaint
-        $str =~ /^(.+)$/s; $str = $1;
+        $str =~ /^(.+)$/s;
+        $str = $1;
         close $meta_fh;
 
         return $CPAN_META = CPAN::Meta->load_json_string($str);
@@ -63,46 +65,45 @@ sub cpan_meta {
 }
 
 sub cpan_requirements {
-    my ($class, $prereqs) = @_;
-    if ($prereqs->can('merged_requirements')) {
+    my ( $class, $prereqs ) = @_;
+    if ( $prereqs->can('merged_requirements') ) {
         return $prereqs->merged_requirements( [ 'configure', 'runtime' ], ['requires'] );
     }
     else {
         my $req = CPAN::Meta::Requirements->new;
-        $req->add_requirements( $prereqs->requirements_for('configure', 'requires') );
-        $req->add_requirements( $prereqs->requirements_for('runtime', 'requires') );
+        $req->add_requirements( $prereqs->requirements_for( 'configure', 'requires' ) );
+        $req->add_requirements( $prereqs->requirements_for( 'runtime',   'requires' ) );
         return $req;
     }
 }
 
 sub has_feature {
-    my ($class, $feature_name) = @_;
+    my ( $class, $feature_name ) = @_;
 
     return 0 unless _CAN_HAS_FEATURE;
-    return $FEATURE{$feature_name} if exists $FEATURE{ $feature_name };
+    return $FEATURE{$feature_name} if exists $FEATURE{$feature_name};
 
     my $meta = $class->cpan_meta;
     my $feature = eval { $meta->feature($feature_name) };
     unless ($feature) {
         require Bugzilla::Error;
-        Bugzilla::Error::ThrowCodeError('invalid_feature', { feature => $feature_name });
+        Bugzilla::Error::ThrowCodeError( 'invalid_feature', { feature => $feature_name } );
     }
 
     return $FEATURE{$feature_name} = check_cpan_feature($feature)->{ok};
 }
 
-
 # Bugzilla expects this will also load all the modules.. so we have to do that.
 # Later we should put a deprecation warning here, and favor calling has_feature().
 sub feature {
-    my ($class, $feature_name) = @_;
+    my ( $class, $feature_name ) = @_;
     return 0 unless _CAN_HAS_FEATURE;
     return 1 if $FEATURE_LOADED{$feature_name};
     return 0 unless $class->has_feature($feature_name);
 
-    my $meta = $class->cpan_meta;
+    my $meta    = $class->cpan_meta;
     my $feature = $meta->feature($feature_name);
-    my @modules = $feature->prereqs->merged_requirements(['runtime'], ['requires'])->required_modules;
+    my @modules = $feature->prereqs->merged_requirements( ['runtime'], ['requires'] )->required_modules;
     Module::Runtime::require_module($_) foreach @modules;
     return $FEATURE_LOADED{$feature_name} = 1;
 }
@@ -112,9 +113,9 @@ sub preload_features {
     return 0 unless _CAN_HAS_FEATURE;
     my $meta = $class->cpan_meta;
 
-    foreach my $feature ($meta->features) {
+    foreach my $feature ( $meta->features ) {
         next if $feature->identifier eq 'mod_perl';
-        $class->feature($feature->identifier);
+        $class->feature( $feature->identifier );
     }
 }
 

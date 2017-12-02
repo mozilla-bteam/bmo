@@ -11,7 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
@@ -19,7 +18,7 @@ use Bugzilla::Group;
 use Bugzilla::Search;
 use Getopt::Long;
 
-my ($product, $component, $comment);
+my ( $product, $component, $comment );
 my $resolution = 'WONTFIX';
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
@@ -37,8 +36,8 @@ die "--comment (-m) is required!\n" unless $comment;
 my $dbh = Bugzilla->dbh;
 
 # Make all changes as the automation user
-my $auto_user = Bugzilla::User->check({ name => 'automation@bmo.tld' });
-$auto_user->{groups} = [ Bugzilla::Group->get_all ];
+my $auto_user = Bugzilla::User->check( { name => 'automation@bmo.tld' } );
+$auto_user->{groups}       = [ Bugzilla::Group->get_all ];
 $auto_user->{bless_groups} = [ Bugzilla::Group->get_all ];
 Bugzilla->set_user($auto_user);
 
@@ -52,13 +51,13 @@ my $search = Bugzilla::Search->new(
 my ($data) = $search->data;
 
 my $bug_count = @$data;
-if ($bug_count == 0) {
+if ( $bug_count == 0 ) {
     warn "There are no bugs to close.\n";
     exit 1;
 }
 
 # if running from commmand line
-if (-t STDIN) {
+if ( -t STDIN ) {
     print STDERR <<EOF;
 About to resolve $bug_count bugs as $resolution
 
@@ -75,15 +74,15 @@ foreach my $row (@$data) {
 
     $dbh->bz_start_transaction;
     my $bug = Bugzilla::Bug->new($bug_id);
-    $bug->set_bug_status('RESOLVED', { resolution => $resolution });
+    $bug->set_bug_status( 'RESOLVED', { resolution => $resolution } );
     $bug->add_comment($comment);
     $bug->update($timestamp);
-    $dbh->do("UPDATE bugs SET lastdiffed = ? WHERE bug_id = ?",
-             undef, $timestamp, $bug_id);
+    $dbh->do( "UPDATE bugs SET lastdiffed = ? WHERE bug_id = ?", undef, $timestamp, $bug_id );
+
     # make sure memory is cleaned up.
     Bugzilla::Hook::process('request_cleanup');
     Bugzilla::Bug->CLEANUP;
-    Bugzilla->clear_request_cache(except => [qw(user dbh dbh_main dbh_shadow memcached)]);
+    Bugzilla->clear_request_cache( except => [qw(user dbh dbh_main dbh_shadow memcached)] );
 
     $dbh->bz_commit_transaction;
 }

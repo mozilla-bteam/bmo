@@ -23,10 +23,10 @@ use Bugzilla::Util;
 use constant IS_CONFIG => 1;
 
 use constant DB_COLUMNS => qw(
-   keyworddefs.id
-   keyworddefs.name
-   keyworddefs.description
-   keyworddefs.is_active
+    keyworddefs.id
+    keyworddefs.name
+    keyworddefs.description
+    keyworddefs.is_active
 );
 
 use constant DB_TABLE => 'keyworddefs';
@@ -47,15 +47,13 @@ use constant UPDATE_COLUMNS => qw(
 ####      Accessors      ######
 ###############################
 
-sub description       { return $_[0]->{'description'}; }
+sub description { return $_[0]->{'description'}; }
 
 sub bug_count {
     my ($self) = @_;
     return $self->{'bug_count'} if defined $self->{'bug_count'};
-    ($self->{'bug_count'}) =
-      Bugzilla->dbh->selectrow_array(
-          'SELECT COUNT(*) FROM keywords WHERE keywordid = ?',
-          undef, $self->id);
+    ( $self->{'bug_count'} )
+        = Bugzilla->dbh->selectrow_array( 'SELECT COUNT(*) FROM keywords WHERE keywordid = ?', undef, $self->id );
     return $self->{'bug_count'};
 }
 
@@ -63,34 +61,37 @@ sub bug_count {
 ####       Mutators       #####
 ###############################
 
-sub set_name        { $_[0]->set('name', $_[1]); }
-sub set_description { $_[0]->set('description', $_[1]); }
-sub set_is_active   { $_[0]->set('is_active', $_[1]); }
+sub set_name        { $_[0]->set( 'name',        $_[1] ); }
+sub set_description { $_[0]->set( 'description', $_[1] ); }
+sub set_is_active   { $_[0]->set( 'is_active',   $_[1] ); }
 
 ###############################
 ####      Subroutines    ######
 ###############################
 
 sub get_all_with_bug_count {
-    my $class = shift;
-    my $dbh = Bugzilla->dbh;
-    my $keywords =
-      $dbh->selectall_arrayref('SELECT '
-                                      . join(', ', $class->_get_db_columns) . ',
+    my $class    = shift;
+    my $dbh      = Bugzilla->dbh;
+    my $keywords = $dbh->selectall_arrayref(
+        'SELECT ' . join( ', ', $class->_get_db_columns ) . ',
                                        COUNT(keywords.bug_id) AS bug_count
                                   FROM keyworddefs
                              LEFT JOIN keywords
-                                    ON keyworddefs.id = keywords.keywordid ' .
-                                  $dbh->sql_group_by('keyworddefs.id',
-                                                     'keyworddefs.name,
-                                                      keyworddefs.description') . '
-                                 ORDER BY keyworddefs.name', {'Slice' => {}});
-    if (!$keywords) {
+                                    ON keyworddefs.id = keywords.keywordid ' . $dbh->sql_group_by(
+            'keyworddefs.id',
+            'keyworddefs.name,
+                                                      keyworddefs.description'
+            )
+            . '
+                                 ORDER BY keyworddefs.name',
+        { 'Slice' => {} }
+    );
+    if ( !$keywords ) {
         return [];
     }
 
     foreach my $keyword (@$keywords) {
-        bless($keyword, $class);
+        bless( $keyword, $class );
     }
     return $keywords;
 }
@@ -100,30 +101,30 @@ sub get_all_with_bug_count {
 ###############################
 
 sub _check_name {
-    my ($self, $name) = @_;
+    my ( $self, $name ) = @_;
 
     $name = trim($name);
-    if (!defined $name or $name eq "") {
+    if ( !defined $name or $name eq "" ) {
         ThrowUserError("keyword_blank_name");
     }
-    if ($name =~ /[\s,]/) {
+    if ( $name =~ /[\s,]/ ) {
         ThrowUserError("keyword_invalid_name");
     }
 
     # We only want to validate the non-existence of the name if
     # we're creating a new Keyword or actually renaming the keyword.
-    if (!ref($self) || $self->name ne $name) {
-        my $keyword = new Bugzilla::Keyword({ name => $name });
-        ThrowUserError("keyword_already_exists", { name => $name }) if $keyword;
+    if ( !ref($self) || $self->name ne $name ) {
+        my $keyword = new Bugzilla::Keyword( { name => $name } );
+        ThrowUserError( "keyword_already_exists", { name => $name } ) if $keyword;
     }
 
     return $name;
 }
 
 sub _check_description {
-    my ($self, $desc) = @_;
+    my ( $self, $desc ) = @_;
     $desc = trim($desc);
-    if (!defined $desc or $desc eq '') {
+    if ( !defined $desc or $desc eq '' ) {
         ThrowUserError("keyword_blank_description");
     }
     return $desc;

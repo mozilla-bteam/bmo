@@ -11,9 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
-
-
 use Bugzilla;
 use Bugzilla::Component;
 use Bugzilla::Constants;
@@ -24,7 +21,7 @@ use Text::CSV_XS;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my $auto_user = Bugzilla::User->check({ name => 'automation@bmo.tld' });
+my $auto_user = Bugzilla::User->check( { name => 'automation@bmo.tld' } );
 Bugzilla->set_user($auto_user);
 
 my $dbh = Bugzilla->dbh;
@@ -32,36 +29,37 @@ my $dbh = Bugzilla->dbh;
 my $filename = shift;
 $filename || die "No CSV file provided.\n";
 
-open(CSV, $filename) || die "Could not open CSV file: $!\n";
+open( CSV, $filename ) || die "Could not open CSV file: $!\n";
 
 # Original Email,LDAP,Bugmail,Product,Component
 my $csv = Text::CSV_XS->new();
-while (my $line = <CSV>) {
+while ( my $line = <CSV> ) {
     $csv->parse($line);
     my @values = $csv->fields();
     next if !@values;
-    my ($email, $product_name, $component_name) = @values[2..4];
+    my ( $email, $product_name, $component_name ) = @values[ 2 .. 4 ];
     print "Updating triage owner for '$product_name :: $component_name' ";
-    my $product = Bugzilla::Product->new({ name => $product_name, cache => 1 });
-    if (!$product) {
+    my $product = Bugzilla::Product->new( { name => $product_name, cache => 1 } );
+    if ( !$product ) {
         print "product '$product_name' does not exist ... skipping.\n";
         next;
     }
-    my $component = Bugzilla::Component->new({ name => $component_name, product => $product, cache => 1 });
-    if (!$component) {
+    my $component = Bugzilla::Component->new( { name => $component_name, product => $product, cache => 1 } );
+    if ( !$component ) {
         print "component '$component_name' does not exist ... skipping.\n";
         next;
     }
-    if (!$email) {
+    if ( !$email ) {
         print "... no email ... skipped.\n";
         next;
     }
-    my $user = Bugzilla::User->new({ name => $email, cached => 1 });
-    if (!$user) {
+    my $user = Bugzilla::User->new( { name => $email, cached => 1 } );
+    if ( !$user ) {
         print "... email '$email' does not exist ... skipping.\n";
         next;
     }
     print "to '$email' ... ";
+
     # HACK: See extensions/ComponentWatching/Extension.pm line 175
     Bugzilla->input_params->{watch_user} = $component->watch_user->login;
     $component->set_triage_owner($email);

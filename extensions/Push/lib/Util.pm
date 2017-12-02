@@ -40,21 +40,24 @@ sub is_public {
 
     my $default_user = Bugzilla::User->new();
 
-    if ($object->isa('Bugzilla::Bug')) {
-        return unless $default_user->can_see_bug($object->bug_id);
+    if ( $object->isa('Bugzilla::Bug') ) {
+        return unless $default_user->can_see_bug( $object->bug_id );
         return 1;
 
-    } elsif ($object->isa('Bugzilla::Comment')) {
+    }
+    elsif ( $object->isa('Bugzilla::Comment') ) {
         return if $object->is_private;
-        return unless $default_user->can_see_bug($object->bug_id);
+        return unless $default_user->can_see_bug( $object->bug_id );
         return 1;
 
-    } elsif ($object->isa('Bugzilla::Attachment')) {
+    }
+    elsif ( $object->isa('Bugzilla::Attachment') ) {
         return if $object->isprivate;
-        return unless $default_user->can_see_bug($object->bug_id);
+        return unless $default_user->can_see_bug( $object->bug_id );
         return 1;
 
-    } else {
+    }
+    else {
         warn "Unsupported class " . blessed($object) . " passed to is_public()\n";
     }
 
@@ -63,7 +66,7 @@ sub is_public {
 
 # return the first existing value from the hashref for the given list of keys
 sub get_first_value {
-    my ($rh, @keys) = @_;
+    my ( $rh, @keys ) = @_;
     foreach my $field (@keys) {
         return $rh->{$field} if exists $rh->{$field};
     }
@@ -72,27 +75,27 @@ sub get_first_value {
 
 # wrapper for map that works on array references
 sub mapr(&$) {
-    my ($filter, $ra) = @_;
-    my @result = map(&$filter, @$ra);
+    my ( $filter, $ra ) = @_;
+    my @result = map( &$filter, @$ra );
     return \@result;
 }
-
 
 # convert datetime string (from db) to a UTC json friendly datetime
 sub datetime_to_timestamp {
     my ($datetime_string) = @_;
     return '' unless $datetime_string;
-    return datetime_from($datetime_string, 'UTC')->datetime();
+    return datetime_from( $datetime_string, 'UTC' )->datetime();
 }
 
 # replaces all undef values in a hashref with an empty string (deep)
 sub hash_undef_to_empty {
     my ($rh) = @_;
-    foreach my $key (keys %$rh) {
+    foreach my $key ( keys %$rh ) {
         my $value = $rh->{$key};
-        if (!defined($value)) {
+        if ( !defined($value) ) {
             $rh->{$key} = '';
-        } elsif (ref($value) eq 'HASH') {
+        }
+        elsif ( ref($value) eq 'HASH' ) {
             hash_undef_to_empty($value);
         }
     }
@@ -112,7 +115,7 @@ sub clean_error {
     my ($error) = @_;
     my $path = bz_locations->{'extensionsdir'};
     $error = $1 if $error =~ /^(.+?) at \Q$path/s;
-    $path = '/loader/0x';
+    $path  = '/loader/0x';
     $error = $1 if $error =~ /^(.+?) at \Q$path/s;
     $error =~ s/(^\s+|\s+$)//g;
     return $error;
@@ -144,18 +147,19 @@ sub canon_email {
 
 # json helpers
 sub to_json {
-    my ($object, $pretty) = @_;
+    my ( $object, $pretty ) = @_;
     if ($pretty) {
-        return decode('utf8', JSON->new->utf8(1)->pretty(1)->encode($object));
-    } else {
+        return decode( 'utf8', JSON->new->utf8(1)->pretty(1)->encode($object) );
+    }
+    else {
         return JSON->new->ascii(1)->shrink(1)->encode($object);
     }
 }
 
 sub from_json {
     my ($json) = @_;
-    if (utf8::is_utf8($json)) {
-        $json = encode('utf8', $json);
+    if ( utf8::is_utf8($json) ) {
+        $json = encode( 'utf8', $json );
     }
     return JSON->new->utf8(1)->decode($json);
 }

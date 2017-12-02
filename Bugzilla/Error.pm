@@ -29,7 +29,7 @@ use Scalar::Util qw(blessed);
 # already eval'uates everything, so $^S = 1 in all cases under mod_perl!
 sub _in_eval {
     my $in_eval = 0;
-    for (my $stack = 1; my $sub = (caller($stack))[3]; $stack++) {
+    for ( my $stack = 1; my $sub = ( caller($stack) )[3]; $stack++ ) {
         last if $sub =~ /^ModPerl/;
         $in_eval = 1 if $sub =~ /^\(eval\)/;
     }
@@ -37,7 +37,7 @@ sub _in_eval {
 }
 
 sub _throw_error {
-    my ($name, $error, $vars) = @_;
+    my ( $name, $error, $vars ) = @_;
     my $dbh = Bugzilla->dbh;
     $vars ||= {};
 
@@ -46,36 +46,40 @@ sub _throw_error {
     # Make sure any transaction is rolled back (if supported).
     # If we are within an eval(), do not roll back transactions as we are
     # eval'uating some test on purpose.
-    $dbh->bz_rollback_transaction() if ($dbh->bz_in_transaction() && !_in_eval());
+    $dbh->bz_rollback_transaction() if ( $dbh->bz_in_transaction() && !_in_eval() );
 
     my $datadir = bz_locations()->{'datadir'};
+
     # If a writable $datadir/errorlog exists, log error details there.
-    if (-w "$datadir/errorlog") {
+    if ( -w "$datadir/errorlog" ) {
         require Data::Dumper;
         my $mesg = "";
-        for (1..75) { $mesg .= "-"; };
-        $mesg .= "\n[$$] " . time2str("%D %H:%M:%S ", time());
+        for ( 1 .. 75 ) { $mesg .= "-"; }
+        $mesg .= "\n[$$] " . time2str( "%D %H:%M:%S ", time() );
         $mesg .= "$name $error ";
         $mesg .= remote_ip();
         $mesg .= Bugzilla->user->login;
-        $mesg .= (' actually ' . Bugzilla->sudoer->login) if Bugzilla->sudoer;
+        $mesg .= ( ' actually ' . Bugzilla->sudoer->login ) if Bugzilla->sudoer;
         $mesg .= "\n";
         my %params = Bugzilla->cgi->Vars;
         $Data::Dumper::Useqq = 1;
-        for my $param (sort keys %params) {
+
+        for my $param ( sort keys %params ) {
             my $val = $params{$param};
+
             # obscure passwords
             $val = "*****" if $param =~ /password/i;
+
             # limit line length
             $val =~ s/^(.{512}).*$/$1\[CHOP\]/;
-            $mesg .= "[$$] " . Data::Dumper->Dump([$val],["param($param)"]);
+            $mesg .= "[$$] " . Data::Dumper->Dump( [$val], ["param($param)"] );
         }
-        for my $var (sort keys %ENV) {
+        for my $var ( sort keys %ENV ) {
             my $val = $ENV{$var};
             $val = "*****" if $val =~ /password|http_pass/i;
-            $mesg .= "[$$] " . Data::Dumper->Dump([$val],["env($var)"]);
+            $mesg .= "[$$] " . Data::Dumper->Dump( [$val], ["env($var)"] );
         }
-        open(ERRORLOGFID, ">>", "$datadir/errorlog");
+        open( ERRORLOGFID, ">>", "$datadir/errorlog" );
         print ERRORLOGFID "$mesg\n";
         close ERRORLOGFID;
     }
@@ -86,107 +90,119 @@ sub _throw_error {
     # There are some tests that throw and catch a lot of errors,
     # and calling $template->process over and over for those errors
     # is too slow. So instead, we just "die" with a dump of the arguments.
-    if (Bugzilla->error_mode != ERROR_MODE_TEST && !$Bugzilla::Template::is_processing) {
-        $template->process($name, $vars, \$message)
-          || ThrowTemplateError($template->error());
+    if ( Bugzilla->error_mode != ERROR_MODE_TEST && !$Bugzilla::Template::is_processing ) {
+        $template->process( $name, $vars, \$message )
+            || ThrowTemplateError( $template->error() );
     }
 
     # Let's call the hook first, so that extensions can override
     # or extend the default behavior, or add their own error codes.
     require Bugzilla::Hook;
-    Bugzilla::Hook::process('error_catch', { error => $error, vars => $vars,
-                                             message => \$message });
+    Bugzilla::Hook::process(
+        'error_catch',
+        {
+            error   => $error,
+            vars    => $vars,
+            message => \$message
+        }
+    );
 
     if ($Bugzilla::Template::is_processing) {
         $name =~ /^global\/(user|code)-error/;
         my $type = $1 // 'unknown';
-        die Template::Exception->new("bugzilla.$type.$error", $vars);
+        die Template::Exception->new( "bugzilla.$type.$error", $vars );
     }
 
-    if (Bugzilla->error_mode == ERROR_MODE_WEBPAGE) {
-        if (sentry_should_notify($vars->{error})) {
+    if ( Bugzilla->error_mode == ERROR_MODE_WEBPAGE ) {
+        if ( sentry_should_notify( $vars->{error} ) ) {
             $vars->{maintainers_notified} = 1;
-            $vars->{processed} = {};
-        } else {
+            $vars->{processed}            = {};
+        }
+        else {
             $vars->{maintainers_notified} = 0;
         }
 
         my $cgi = Bugzilla->cgi;
-        $cgi->close_standby_message('text/html', 'inline', 'error', 'html');
-        $template->process($name, $vars)
-          || ThrowTemplateError($template->error());
+        $cgi->close_standby_message( 'text/html', 'inline', 'error', 'html' );
+        $template->process( $name, $vars )
+            || ThrowTemplateError( $template->error() );
         print $cgi->multipart_final() if $cgi->{_multipart_in_progress};
 
-        if ($vars->{maintainers_notified}) {
-            sentry_handle_error($vars->{error}, $vars->{processed}->{error_message});
+        if ( $vars->{maintainers_notified} ) {
+            sentry_handle_error( $vars->{error}, $vars->{processed}->{error_message} );
         }
     }
-    elsif (Bugzilla->error_mode == ERROR_MODE_TEST) {
+    elsif ( Bugzilla->error_mode == ERROR_MODE_TEST ) {
         die Dumper($vars);
     }
-    elsif (Bugzilla->error_mode == ERROR_MODE_DIE) {
+    elsif ( Bugzilla->error_mode == ERROR_MODE_DIE ) {
         die("$message\n");
     }
     elsif (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT
-           || Bugzilla->error_mode == ERROR_MODE_JSON_RPC
-           || Bugzilla->error_mode == ERROR_MODE_REST)
+        || Bugzilla->error_mode == ERROR_MODE_JSON_RPC
+        || Bugzilla->error_mode == ERROR_MODE_REST )
     {
         # Clone the hash so we aren't modifying the constant.
         my %error_map = %{ WS_ERROR_CODE() };
-        Bugzilla::Hook::process('webservice_error_codes',
-                                { error_map => \%error_map });
+        Bugzilla::Hook::process( 'webservice_error_codes', { error_map => \%error_map } );
         my $code = $error_map{$error};
-        if (!$code) {
-            $code = ERROR_UNKNOWN_FATAL if $name =~ /code/i;
+        if ( !$code ) {
+            $code = ERROR_UNKNOWN_FATAL     if $name =~ /code/i;
             $code = ERROR_UNKNOWN_TRANSIENT if $name =~ /user/i;
         }
 
-        if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
+        if ( Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT ) {
             die SOAP::Fault->faultcode($code)->faultstring($message);
         }
         else {
             my $server = Bugzilla->_json_server;
 
             my $status_code = 0;
-            if (Bugzilla->error_mode == ERROR_MODE_REST) {
+            if ( Bugzilla->error_mode == ERROR_MODE_REST ) {
                 my %status_code_map = %{ REST_STATUS_CODE_MAP() };
                 $status_code = $status_code_map{$code} || $status_code_map{'_default'};
             }
+
             # Technically JSON-RPC isn't allowed to have error numbers
             # higher than 999, but we do this to avoid conflicts with
             # the internal JSON::RPC error codes.
-            $server->raise_error(code        => 100000 + $code,
-                                 status_code => $status_code,
-                                 message     => $message,
-                                 id          => $server->{_bz_request_id},
-                                 version     => $server->version);
+            $server->raise_error(
+                code        => 100000 + $code,
+                status_code => $status_code,
+                message     => $message,
+                id          => $server->{_bz_request_id},
+                version     => $server->version
+            );
+
             # Most JSON-RPC Throw*Error calls happen within an eval inside
             # of JSON::RPC. So, in that circumstance, instead of exiting,
             # we die with no message. JSON::RPC checks raise_error before
             # it checks $@, so it returns the proper error.
             die if _in_eval();
-            $server->response($server->error_response_header);
+            $server->response( $server->error_response_header );
         }
     }
 
     exit;
 }
+
 sub ThrowUserError {
-    _throw_error("global/user-error.html.tmpl", @_);
+    _throw_error( "global/user-error.html.tmpl", @_ );
 }
 
 sub ThrowCodeError {
-    my (undef, $vars) = @_;
+    my ( undef, $vars ) = @_;
 
     # Don't show function arguments, in case they contain
     # confidential data.
     local $Carp::MaxArgNums = -1;
+
     # Don't show the error as coming from Bugzilla::Error, show it
     # as coming from the caller.
     local $Carp::CarpInternal{'Bugzilla::Error'} = 1;
     $vars->{traceback} //= Carp::longmess();
 
-    _throw_error("global/code-error.html.tmpl", @_);
+    _throw_error( "global/code-error.html.tmpl", @_ );
 }
 
 sub ThrowTemplateError {
@@ -196,16 +212,16 @@ sub ThrowTemplateError {
     # Make sure the transaction is rolled back (if supported).
     $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction();
 
-    if (blessed($template_err) && $template_err->isa('Template::Exception')) {
+    if ( blessed($template_err) && $template_err->isa('Template::Exception') ) {
         my $type = $template_err->type;
-        if ($type =~ /^bugzilla\.(code|user)\.(.+)/) {
-            _throw_error("global/$1-error.html.tmpl", $2, $template_err->info);
+        if ( $type =~ /^bugzilla\.(code|user)\.(.+)/ ) {
+            _throw_error( "global/$1-error.html.tmpl", $2, $template_err->info );
             return;
         }
     }
 
     my $vars = {};
-    if (Bugzilla->error_mode == ERROR_MODE_DIE) {
+    if ( Bugzilla->error_mode == ERROR_MODE_DIE ) {
         die("error: template error: $template_err");
     }
 
@@ -214,19 +230,19 @@ sub ThrowTemplateError {
     exit if $template_err =~ /\bModPerl::Util::exit\b/;
 
     $vars->{'template_error_msg'} = $template_err;
-    $vars->{'error'} = "template_error";
+    $vars->{'error'}              = "template_error";
 
-    sentry_handle_error('error', $template_err);
+    sentry_handle_error( 'error', $template_err );
     $vars->{'template_error_msg'} =~ s/ at \S+ line \d+\.\s*$//;
 
     my $template = Bugzilla->template;
 
     # Try a template first; but if this one fails too, fall back
     # on plain old print statements.
-    if (!$template->process("global/code-error.html.tmpl", $vars)) {
-        my $maintainer = html_quote(Bugzilla->params->{'maintainer'});
-        my $error = html_quote($vars->{'template_error_msg'});
-        my $error2 = html_quote($template->error());
+    if ( !$template->process( "global/code-error.html.tmpl", $vars ) ) {
+        my $maintainer = html_quote( Bugzilla->params->{'maintainer'} );
+        my $error      = html_quote( $vars->{'template_error_msg'} );
+        my $error2     = html_quote( $template->error() );
         print <<END;
         <tt>
           <p>
@@ -249,39 +265,44 @@ END
 }
 
 sub ThrowErrorPage {
+
     # BMO customisation for bug 659231
-    my ($template_name, $message) = @_;
+    my ( $template_name, $message ) = @_;
 
     my $dbh = Bugzilla->dbh;
     $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction();
 
-    if (Bugzilla->error_mode == ERROR_MODE_DIE) {
+    if ( Bugzilla->error_mode == ERROR_MODE_DIE ) {
         die("error: $message");
     }
 
-    if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT
-           || Bugzilla->error_mode == ERROR_MODE_JSON_RPC)
+    if (   Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT
+        || Bugzilla->error_mode == ERROR_MODE_JSON_RPC )
     {
         my $code = ERROR_UNKNOWN_TRANSIENT;
-        if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
+        if ( Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT ) {
             die SOAP::Fault->faultcode($code)->faultstring($message);
-        } else {
-            my $server = Bugzilla->_json_server;
-            $server->raise_error(code    => 100000 + $code,
-                                 message => $message,
-                                 id      => $server->{_bz_request_id},
-                                 version => $server->version);
-            die if _in_eval();
-            $server->response($server->error_response_header);
         }
-    } else {
-        my $cgi = Bugzilla->cgi;
+        else {
+            my $server = Bugzilla->_json_server;
+            $server->raise_error(
+                code    => 100000 + $code,
+                message => $message,
+                id      => $server->{_bz_request_id},
+                version => $server->version
+            );
+            die if _in_eval();
+            $server->response( $server->error_response_header );
+        }
+    }
+    else {
+        my $cgi      = Bugzilla->cgi;
         my $template = Bugzilla->template;
-        my $vars = {};
+        my $vars     = {};
         $vars->{message} = $message;
         print $cgi->header();
-        $template->process($template_name, $vars)
-          || ThrowTemplateError($template->error());
+        $template->process( $template_name, $vars )
+            || ThrowTemplateError( $template->error() );
         exit;
     }
 }

@@ -21,10 +21,10 @@ use Digest::SHA qw(sha256_hex);
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my ($callback, $description) = @ARGV;
+my ( $callback, $description ) = @ARGV;
 
-if (!$callback || !$description) {
+if ( !$callback || !$description ) {
     die "Usage: scripts/create_app_key.pl <callback_url> <description>\n";
 }
 
-print sha256_hex($callback, $description);
+print sha256_hex( $callback, $description );

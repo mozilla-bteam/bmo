@@ -51,7 +51,7 @@ use constant PUBLIC_METHODS => qw(
 );
 
 sub revision {
-    my ($self, $params) = @_;
+    my ( $self, $params ) = @_;
 
     # Phabricator only supports sending credentials via HTTP Basic Auth
     # so we exploit that function to pass in an API key as the password
@@ -60,8 +60,8 @@ sub revision {
     my $http_auth = Bugzilla->cgi->http('Authorization');
     $http_auth =~ s/^Basic\s+//;
     $http_auth = decode_base64($http_auth);
-    my ($login, $api_key) = split(':', $http_auth);
-    $params->{'Bugzilla_login'} = $login;
+    my ( $login, $api_key ) = split( ':', $http_auth );
+    $params->{'Bugzilla_login'}   = $login;
     $params->{'Bugzilla_api_key'} = $api_key;
 
     my $user = Bugzilla->login(LOGIN_REQUIRED);
@@ -69,14 +69,14 @@ sub revision {
     # Prechecks
     _phabricator_precheck($user);
 
-    unless (defined $params->{revision} && detaint_natural($params->{revision})) {
-        ThrowCodeError('param_required', { param => 'revision' })
+    unless ( defined $params->{revision} && detaint_natural( $params->{revision} ) ) {
+        ThrowCodeError( 'param_required', { param => 'revision' } );
     }
 
     # Obtain more information about the revision from Phabricator
     my $revision_id = $params->{revision};
-    my @revisions = get_revisions_by_ids([$revision_id]);
-    my $revision = $revisions[0];
+    my @revisions   = get_revisions_by_ids( [$revision_id] );
+    my $revision    = $revisions[0];
 
     my $revision_phid  = $revision->{phid};
     my $revision_title = $revision->{fields}{title} || 'Unknown Description';
@@ -86,27 +86,28 @@ sub revision {
 
     # If bug is public then remove privacy policy
     my $result;
-    if (is_public($bug)) {
+    if ( is_public($bug) ) {
         $result = make_revision_public($revision_id);
     }
+
     # else bug is private
     else {
         my @set_groups = get_security_sync_groups($bug);
 
         # If bug privacy groups do not have any matching synchronized groups,
         # then leave revision private and it will have be dealt with manually.
-        if (!@set_groups) {
-            add_security_sync_comments(\@revisions, $bug);
+        if ( !@set_groups ) {
+            add_security_sync_comments( \@revisions, $bug );
         }
 
-        my $policy_phid = create_private_revision_policy($bug, \@set_groups);
+        my $policy_phid = create_private_revision_policy( $bug, \@set_groups );
         my $subscribers = get_bug_role_phids($bug);
-        $result = edit_revision_policy($revision_phid, $policy_phid, $subscribers);
+        $result = edit_revision_policy( $revision_phid, $policy_phid, $subscribers );
     }
 
-    my $attachment = create_revision_attachment($bug, $revision_id, $revision_title);
+    my $attachment = create_revision_attachment( $bug, $revision_id, $revision_title );
 
-    Bugzilla::BugMail::Send($bug_id, { changer => $user });
+    Bugzilla::BugMail::Send( $bug_id, { changer => $user } );
 
     return {
         result          => $result,
@@ -116,7 +117,7 @@ sub revision {
 }
 
 sub check_user_permission_for_bug {
-    my ($self, $params) = @_;
+    my ( $self, $params ) = @_;
 
     my $user = Bugzilla->login(LOGIN_REQUIRED);
 
@@ -125,19 +126,17 @@ sub check_user_permission_for_bug {
 
     # Validate that a bug id and user id are provided
     ThrowUserError('phabricator_invalid_request_params')
-        unless ($params->{bug_id} && $params->{user_id});
+        unless ( $params->{bug_id} && $params->{user_id} );
 
     # Validate that the user and bug exist
-    my $target_user = Bugzilla::User->check({ id => $params->{user_id}, cache => 1 });
+    my $target_user = Bugzilla::User->check( { id => $params->{user_id}, cache => 1 } );
 
     # Send back an object which says { "result": 1|0 }
-    return {
-        result => $target_user->can_see_bug($params->{bug_id})
-    };
+    return { result => $target_user->can_see_bug( $params->{bug_id} ) };
 }
 
 sub update_reviewer_statuses {
-    my ($self, $params) = @_;
+    my ( $self, $params ) = @_;
 
     my $user = Bugzilla->login(LOGIN_REQUIRED);
 
@@ -145,29 +144,28 @@ sub update_reviewer_statuses {
     _phabricator_precheck($user);
 
     my $revision_id = $params->{revision_id};
-    unless (defined $revision_id && detaint_natural($revision_id)) {
-        ThrowCodeError('param_required', { param => 'revision_id' })
+    unless ( defined $revision_id && detaint_natural($revision_id) ) {
+        ThrowCodeError( 'param_required', { param => 'revision_id' } );
     }
 
     my $bug_id = $params->{bug_id};
-    unless (defined $bug_id && detaint_natural($bug_id)) {
-        ThrowCodeError('param_required', { param => 'bug_id' })
+    unless ( defined $bug_id && detaint_natural($bug_id) ) {
+        ThrowCodeError( 'param_required', { param => 'bug_id' } );
     }
 
     my $accepted_user_ids = $params->{accepted_users};
     defined $accepted_user_ids
-      || ThrowCodeError('param_required', { param => 'accepted_users' });
-    $accepted_user_ids = [ split(':', $accepted_user_ids) ];
+        || ThrowCodeError( 'param_required', { param => 'accepted_users' } );
+    $accepted_user_ids = [ split( ':', $accepted_user_ids ) ];
 
     my $denied_user_ids = $params->{denied_users};
     defined $denied_user_ids
-      || ThrowCodeError('param_required', { param => 'denied_users' });
-    $denied_user_ids = [ split(':', $denied_user_ids) ];
+        || ThrowCodeError( 'param_required', { param => 'denied_users' } );
+    $denied_user_ids = [ split( ':', $denied_user_ids ) ];
 
     my $bug = Bugzilla::Bug->check($bug_id);
 
-    my @attachments =
-      grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
+    my @attachments = grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
 
     return { result => [] } if !@attachments;
 
@@ -176,23 +174,24 @@ sub update_reviewer_statuses {
 
     my @updated_attach_ids;
     foreach my $attachment (@attachments) {
-        my ($curr_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+        my ($curr_revision_id) = ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
         next if $revision_id != $curr_revision_id;
 
         # Clear old flags if no longer accepted
-        my (@denied_flags, @new_flags, @removed_flags, %accepted_done, $flag_type);
-        foreach my $flag (@{ $attachment->flags }) {
+        my ( @denied_flags, @new_flags, @removed_flags, %accepted_done, $flag_type );
+        foreach my $flag ( @{ $attachment->flags } ) {
             next if $flag->type->name ne 'review';
             $flag_type = $flag->type;
-            if (any { $flag->setter->id == $_ } @$denied_user_ids) {
-                push(@denied_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
+            if ( any { $flag->setter->id == $_ } @$denied_user_ids ) {
+                push( @denied_flags, { id => $flag->id, setter => $flag->setter, status => 'X' } );
             }
-            if (any { $flag->setter->id == $_ } @$accepted_user_ids) {
-                $accepted_done{$flag->setter->id}++;
+            if ( any { $flag->setter->id == $_ } @$accepted_user_ids ) {
+                $accepted_done{ $flag->setter->id }++;
             }
-            if ($flag->status eq '+'
-                && !any { $flag->setter->id == $_ } (@$accepted_user_ids, @$denied_user_ids)) {
-                push(@removed_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
+            if ( $flag->status eq '+'
+                && !any { $flag->setter->id == $_ } ( @$accepted_user_ids, @$denied_user_ids ) )
+            {
+                push( @removed_flags, { id => $flag->id, setter => $flag->setter, status => 'X' } );
             }
         }
 
@@ -201,8 +200,8 @@ sub update_reviewer_statuses {
         # Create new flags
         foreach my $user_id (@$accepted_user_ids) {
             next if $accepted_done{$user_id};
-            my $user = Bugzilla::User->check({ id => $user_id, cache => 1 });
-            push(@new_flags, { type_id => $flag_type->id, setter => $user, status => '+' });
+            my $user = Bugzilla::User->check( { id => $user_id, cache => 1 } );
+            push( @new_flags, { type_id => $flag_type->id, setter => $user, status => '+' } );
         }
 
         # Also add comment to for attachment update showing the user's name
@@ -220,29 +219,33 @@ sub update_reviewer_statuses {
 
         if ($comment) {
             $comment .= "\n" . Bugzilla->params->{phabricator_base_uri} . "D" . $revision_id;
+
             # Add transaction_id as anchor if one present
             $comment .= "#" . $params->{transaction_id} if $params->{transaction_id};
-            $bug->add_comment($comment, {
-                isprivate  => $attachment->isprivate,
-                type       => CMT_ATTACHMENT_UPDATED,
-                extra_data => $attachment->id
-            });
+            $bug->add_comment(
+                $comment,
+                {
+                    isprivate  => $attachment->isprivate,
+                    type       => CMT_ATTACHMENT_UPDATED,
+                    extra_data => $attachment->id
+                }
+            );
         }
 
-        $attachment->set_flags([ @denied_flags, @removed_flags ], \@new_flags);
+        $attachment->set_flags( [ @denied_flags, @removed_flags ], \@new_flags );
         $attachment->update($timestamp);
         $bug->update($timestamp) if $comment;
 
-        push(@updated_attach_ids, $attachment->id);
+        push( @updated_attach_ids, $attachment->id );
     }
 
-    Bugzilla::BugMail::Send($bug_id, { changer => $user }) if @updated_attach_ids;
+    Bugzilla::BugMail::Send( $bug_id, { changer => $user } ) if @updated_attach_ids;
 
     return { result => \@updated_attach_ids };
 }
 
 sub obsolete_attachments {
-    my ($self, $params) = @_;
+    my ( $self, $params ) = @_;
 
     my $user = Bugzilla->login(LOGIN_REQUIRED);
 
@@ -250,25 +253,24 @@ sub obsolete_attachments {
     _phabricator_precheck($user);
 
     my $revision_id = $params->{revision_id};
-    unless (defined $revision_id && detaint_natural($revision_id)) {
-        ThrowCodeError('param_required', { param => 'revision' })
+    unless ( defined $revision_id && detaint_natural($revision_id) ) {
+        ThrowCodeError( 'param_required', { param => 'revision' } );
     }
 
-    my $bug_id= $params->{bug_id};
-    unless (defined $bug_id && detaint_natural($bug_id)) {
-        ThrowCodeError('param_required', { param => 'bug_id' })
+    my $bug_id = $params->{bug_id};
+    unless ( defined $bug_id && detaint_natural($bug_id) ) {
+        ThrowCodeError( 'param_required', { param => 'bug_id' } );
     }
 
     my $make_obsolete = $params->{make_obsolete};
-    unless (defined $make_obsolete) {
-        ThrowCodeError('param_required', { param => 'make_obsolete' })
+    unless ( defined $make_obsolete ) {
+        ThrowCodeError( 'param_required', { param => 'make_obsolete' } );
     }
     $make_obsolete = $make_obsolete ? 1 : 0;
 
     my $bug = Bugzilla::Bug->check($bug_id);
 
-    my @attachments =
-      grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
+    my @attachments = grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
 
     return { result => [] } if !@attachments;
 
@@ -277,16 +279,16 @@ sub obsolete_attachments {
 
     my @updated_attach_ids;
     foreach my $attachment (@attachments) {
-        my ($curr_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+        my ($curr_revision_id) = ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
         next if $revision_id != $curr_revision_id;
 
         $attachment->set_is_obsolete($make_obsolete);
         $attachment->update($timestamp);
 
-        push(@updated_attach_ids, $attachment->id);
+        push( @updated_attach_ids, $attachment->id );
     }
 
-    Bugzilla::BugMail::Send($bug_id, { changer => $user }) if @updated_attach_ids;
+    Bugzilla::BugMail::Send( $bug_id, { changer => $user } ) if @updated_attach_ids;
 
     return { result => \@updated_attach_ids };
 }
@@ -306,7 +308,8 @@ sub _phabricator_precheck {
 sub rest_resources {
     return [
         # Revision creation
-        qr{^/phabbugz/revision/([^/]+)$}, {
+        qr{^/phabbugz/revision/([^/]+)$},
+        {
             POST => {
                 method => 'revision',
                 params => sub {
@@ -314,8 +317,10 @@ sub rest_resources {
                 }
             }
         },
+
         # Bug permission checks
-        qr{^/phabbugz/check_bug/(\d+)/(\d+)$}, {
+        qr{^/phabbugz/check_bug/(\d+)/(\d+)$},
+        {
             GET => {
                 method => 'check_user_permission_for_bug',
                 params => sub {
@@ -323,14 +328,18 @@ sub rest_resources {
                 }
             }
         },
+
         # Update reviewer statuses
-        qr{^/phabbugz/update_reviewer_statuses$}, {
+        qr{^/phabbugz/update_reviewer_statuses$},
+        {
             PUT => {
                 method => 'update_reviewer_statuses',
             }
         },
+
         # Obsolete attachments
-        qr{^/phabbugz/obsolete$}, {
+        qr{^/phabbugz/obsolete$},
+        {
             PUT => {
                 method => 'obsolete_attachments',
             }
