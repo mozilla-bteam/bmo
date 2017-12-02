@@ -124,11 +124,12 @@ sub _get_create_table_ddl {
     # Returns a "create table" SQL statement.
 
     my($self, $table) = @_;
-
-    my $charset = Bugzilla->dbh->bz_db_is_utf8 ? "CHARACTER SET utf8" : '';
+    my $mode = Bugzilla::DB::Mysql->utf8_mode;
+    my $row_format = $mode eq 'utf8mb4' ? "ROW_FORMAT=" . Bugzilla::DB::Mysql->DEFAULT_ROW_FORMAT : '';
+    my $charset = "CHARACTER SET $mode";
     my $type    = grep($_ eq $table, MYISAM_TABLES) ? 'MYISAM' : 'InnoDB';
     return($self->SUPER::_get_create_table_ddl($table)
-           . " ENGINE = $type $charset");
+           . " ENGINE = $type $charset $row_format");
 
 } #eosub--_get_create_table_ddl
 #------------------------------------------------------------------------------
@@ -153,9 +154,8 @@ sub get_create_database_sql {
     my ($self, $name) = @_;
     # We only create as utf8 if we have no params (meaning we're doing
     # a new installation) or if the utf8 param is on.
-    my $create_utf8 = Bugzilla->params->{'utf8'}
-                      || !defined Bugzilla->params->{'utf8'};
-    my $charset = $create_utf8 ? "CHARACTER SET utf8" : '';
+    my $mode = Bugzilla::DB::Mysql->utf8_mode;
+    my $charset = "CHARACTER SET $mode";
     return ("CREATE DATABASE $name $charset");
 }
 
