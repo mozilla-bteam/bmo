@@ -875,7 +875,7 @@ body {
     color: #404040;
 }
 
-body, td, th, input, select, option, optgroup, .text_input {
+body, td, th, input, select, option, optgroup, button, .text_input {
     font-family: "Fira Sans", "Open Sans", "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
 
@@ -978,12 +978,6 @@ body.mfa-warning #mfa-select button {
     display: block;
     height: 0;
     visibility: hidden;
-}
-
-#header #bugzilla_version {
-    float: right;
-    color: #888;
-    padding: 5px 20px;
 }
 
 #titles {
