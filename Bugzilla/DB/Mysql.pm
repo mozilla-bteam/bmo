@@ -64,7 +64,7 @@ sub new {
 
     # This makes sure that if the tables are encoded as UTF-8, we
     # return their data correctly.
-    $self->do("SET NAMES utf8") if Bugzilla->params->{'utf8'};
+    $self->do("SET NAMES utf8mb4") if Bugzilla->params->{'utf8'};
 
     # all class local variables stored in DBI derived class needs to have
     # a prefix 'private_'. See DBI documentation.
@@ -573,7 +573,7 @@ sub bz_setup_database {
     my $non_utf8_tables = $self->selectrow_array(
         "SELECT 1 FROM information_schema.TABLES
           WHERE TABLE_SCHEMA = ? AND TABLE_COLLATION IS NOT NULL
-                AND TABLE_COLLATION NOT LIKE 'utf8%'
+                AND TABLE_COLLATION NOT LIKE 'utf8mb4%'
           LIMIT 1", undef, $db_name);
 
     if (Bugzilla->params->{'utf8'} && $non_utf8_tables) {
@@ -605,7 +605,7 @@ sub bz_setup_database {
                 # If this particular column isn't stored in utf-8
                 if ($column->{Collation}
                     && $column->{Collation} ne 'NULL'
-                    && $column->{Collation} !~ /utf8/)
+                    && $column->{Collation} !~ /utf8mb4/)
                 {
                     my $name = $column->{Field};
 
@@ -629,7 +629,7 @@ sub bz_setup_database {
                     my ($binary, $utf8) = ($sql_def, $sql_def);
                     my $type = $self->_bz_schema->convert_type($col_info->{TYPE});
                     $binary =~ s/(\Q$type\E)/$1 CHARACTER SET binary/;
-                    $utf8   =~ s/(\Q$type\E)/$1 CHARACTER SET utf8/;
+                    $utf8   =~ s/(\Q$type\E)/$1 CHARACTER SET utf8mb4/;
                     push(@binary_sql, "MODIFY COLUMN $name $binary");
                     push(@utf8_sql, "MODIFY COLUMN $name $utf8");
                 }
@@ -650,7 +650,7 @@ sub bz_setup_database {
                 print "Converting the $table table to UTF-8...\n";
                 my $bin = "ALTER TABLE $table " . join(', ', @binary_sql);
                 my $utf = "ALTER TABLE $table " . join(', ', @utf8_sql,
-                          'DEFAULT CHARACTER SET utf8');
+                          'DEFAULT CHARACTER SET utf8mb4');
                 $self->do($bin);
                 $self->do($utf);
 
@@ -660,7 +660,7 @@ sub bz_setup_database {
                 }
             }
             else {
-                $self->do("ALTER TABLE $table DEFAULT CHARACTER SET utf8");
+                $self->do("ALTER TABLE $table DEFAULT CHARACTER SET utf8mb4");
             }
 
         } # foreach my $table (@tables)
@@ -753,7 +753,7 @@ sub _fix_defaults {
 sub _alter_db_charset_to_utf8 {
     my $self = shift;
     my $db_name = Bugzilla->localconfig->{db_name};
-    $self->do("ALTER DATABASE $db_name CHARACTER SET utf8");
+    $self->do("ALTER DATABASE $db_name CHARACTER SET utf8mb4");
 }
 
 sub bz_db_is_utf8 {
@@ -761,7 +761,7 @@ sub bz_db_is_utf8 {
     my $db_collation = $self->selectrow_arrayref(
         "SHOW VARIABLES LIKE 'character_set_database'");
     # First column holds the variable name, second column holds the value.
-    return $db_collation->[1] =~ /utf8/ ? 1 : 0;
+    return $db_collation->[1] =~ /utf8mb4/ ? 1 : 0;
 }
 
 
