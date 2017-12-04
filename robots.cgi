@@ -20,11 +20,12 @@ use Digest::MD5 qw(md5_hex);
 use List::MoreUtils qw(any);
 
 # Check whether or not the user is logged in
-my $user = Bugzilla->login(LOGIN_OPTIONAL);
-my $cgi = Bugzilla->cgi;
+my $user     = Bugzilla->login(LOGIN_OPTIONAL);
+my $cgi      = Bugzilla->cgi;
+my $template = Bugzilla->template;
 
 my %vars;
 print $cgi->header('text/plain');
-Bugzilla::Hook::process("before_robots_txt", { vars => \%vars });
-Bugzilla->template->process("robots.txt.tmpl", \%vars)
-    or ThrowTemplateError($template->error());
+Bugzilla::Hook::process( "before_robots_txt", { vars => \%vars } );
+$template->process( "robots.txt.tmpl", \%vars )
+    or ThrowTemplateError( $template->error() );
