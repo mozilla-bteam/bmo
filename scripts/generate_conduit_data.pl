@@ -129,48 +129,49 @@ Bugzilla::Bug->create(
     }
 );
 
-##########################################################################
-# Set Parameters
-##########################################################################
-print "setting custom parameters...\n";
-my %set_params = (
+set_params(
     password_check_on_login => 0,
     phabricator_base_uri    => 'http://phabricator.test/',
     phabricator_enabled     => 1,
     phabricator_sync_groups => 'core-security',
 );
-
-if ($ENV{PHABRICATOR_API_KEY}) {
-    $set_params{phabricator_api_key} = $ENV{PHABRICATOR_API_KEY};
-}
-
-if ($ENV{PHABRICATOR_APP_ID} && $ENV{PHABRICATOR_AUTH_CALLBACK_URL}) {
-    $set_params{phabricator_app_id}            = $ENV{PHABRICATOR_APP_ID};
-    $set_params{phabricator_auth_callback_url} = $ENV{PHABRICATOR_AUTH_CALLBACK_URL};
-}
-
-my $params_modified;
-foreach my $param ( keys %set_params ) {
-    my $value = $set_params{$param};
-    next if !$value || Bugzilla->params->{$param} eq $value;
-    SetParam( $param, $value );
-    $params_modified = 1;
-}
-
-write_params() if $params_modified;
-
-##########################################################################
-# Set Phabricator Push Connector Values
-##########################################################################
-print "setting push connector options...\n";
-my ($phab_is_configured) = $dbh->selectrow_array(q{SELECT COUNT(*) FROM push_options WHERE connector = 'Phabricator'});
-unless ($phab_is_configured) {
-    $dbh->do(q{INSERT INTO push_options (connector, option_name, option_value) VALUES ('global','enabled','Enabled')});
-    $dbh->do(
-        q{INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','enabled','Enabled')});
-    $dbh->do(
-        q{INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','phabricator_url','http://phabricator.test')}
-    );
-}
+set_push_connector_options();
 
 print "installation and configuration complete!\n";
+
+sub set_push_connector_options {
+    print "setting push connector options...\n";
+    my ($phab_is_configured) = $dbh->selectrow_array(q{SELECT COUNT(*) FROM push_options WHERE connector = 'Phabricator'});
+    unless ($phab_is_configured) {
+        $dbh->do(q{INSERT INTO push_options (connector, option_name, option_value) VALUES ('global','enabled','Enabled')});
+        $dbh->do(
+            q{INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','enabled','Enabled')});
+        $dbh->do(
+            q{INSERT INTO push_options (connector, option_name, option_value) VALUES ('Phabricator','phabricator_url','http://phabricator.test')}
+        );
+    }
+}
+
+sub set_params {
+    my (%set_params) = @_;
+    print "setting custom parameters...\n";
+    if ($ENV{PHABRICATOR_API_KEY}) {
+        $set_params{phabricator_api_key} = $ENV{PHABRICATOR_API_KEY};
+    }
+
+    if ($ENV{PHABRICATOR_APP_ID} && $ENV{PHABRICATOR_AUTH_CALLBACK_URL}) {
+        $set_params{phabricator_app_id}            = $ENV{PHABRICATOR_APP_ID};
+        $set_params{phabricator_auth_callback_url} = $ENV{PHABRICATOR_AUTH_CALLBACK_URL};
+    }
+
+    my $params_modified;
+    foreach my $param ( keys %set_params ) {
+        my $value = $set_params{$param};
+        next if !$value || Bugzilla->params->{$param} eq $value;
+        SetParam( $param, $value );
+        $params_modified = 1;
+    }
+
+    write_params() if $params_modified;
+}
+
