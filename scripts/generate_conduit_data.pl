@@ -30,9 +30,9 @@ Bugzilla->set_user( Bugzilla::User->check( { name => $admin_email } ) );
 # Create Conduit Test User
 ##########################################################################
 
-my $conduit_login    = $ENV{CONDUIT_LOGIN}    || 'conduit@mozilla.bugs';
-my $conduit_password = $ENV{CONDUIT_PASSWORD} || 'password123456789!';
-my $conduit_api_key  = $ENV{CONDUIT_API_KEY}  || '';
+my $conduit_login    = $ENV{CONDUIT_USER_LOGIN}    || 'conduit@mozilla.bugs';
+my $conduit_password = $ENV{CONDUIT_USER_PASSWORD} || 'password123456789!';
+my $conduit_api_key  = $ENV{CONDUIT_USER_API_KEY}  || '';
 
 print "creating conduit user account...\n";
 if ( !Bugzilla::User->new( { name => $conduit_login } ) ) {
@@ -58,9 +58,9 @@ if ( !Bugzilla::User->new( { name => $conduit_login } ) ) {
 # Create Phabricator Automation Bot
 ##########################################################################
 
-my $phab_login    = $ENV{PHABRICATOR_LOGIN}    || 'phab-bot@bmo.tld';
-my $phab_password = $ENV{PHABRICATOR_PASSWORD} || 'password123456789!';
-my $phab_api_key  = $ENV{PHABRICATOR_API_KEY}  || '';
+my $phab_login    = $ENV{PHABRICATOR_BOT_LOGIN}    || 'phab-bot@bmo.tld';
+my $phab_password = $ENV{PHABRICATOR_BOT_PASSWORD} || 'password123456789!';
+my $phab_api_key  = $ENV{PHABRICATOR_BOT_API_KEY}  || '';
 
 print "creating phabricator automation account...\n";
 if ( !Bugzilla::User->new( { name => $phab_login } ) ) {
