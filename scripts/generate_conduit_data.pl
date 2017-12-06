@@ -133,7 +133,21 @@ Bugzilla::Bug->create(
 # Set Parameters
 ##########################################################################
 print "setting custom parameters...\n";
-my %set_params = ( password_check_on_login => 0, );
+my %set_params = (
+    password_check_on_login => 0,
+    phabricator_base_uri    => 'http://phabricator.test/',
+    phabricator_enabled     => 1,
+    phabricator_sync_groups => 'core-security',
+);
+
+if ($ENV{PHABRICATOR_API_KEY}) {
+    $set_params{phabricator_api_key} = $ENV{PHABRICATOR_API_KEY};
+}
+
+if ($ENV{PHABRICATOR_APP_ID} && $ENV{PHABRICATOR_AUTH_CALLBACK_URL}) {
+    $set_params{phabricator_app_id}            = $ENV{PHABRICATOR_APP_ID};
+    $set_params{phabricator_auth_callback_url} = $ENV{PHABRICATOR_AUTH_CALLBACK_URL};
+}
 
 my $params_modified;
 foreach my $param ( keys %set_params ) {
