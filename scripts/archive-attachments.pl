@@ -22,11 +22,17 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Attachment;
 use Digest::SHA qw(sha256);
+use Getopt::Long;
+use Pod::Usage;
 
 BEGIN { Bugzilla->extensions }
 
 # set Bugzilla usage mode to USAGE_MODE_CMDLINE
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
+
+my $help;
+GetOptions("help|h" => \$help);
+pod2usage(1) if $help || -t STDOUT;
 
 binmode STDOUT, ':bytes';
 
@@ -42,3 +48,17 @@ while ( my $attach_id = <> ) {
     my $bug_id = $attachment->bug_id;
     print pack 'NNNa32a*', $bug_id, $attach_id, length($data), sha256($data), $data;
 }
+
+__DATA__
+
+=head1 NAME
+
+archive-attachments.pl - save attachments to a dump file
+
+=head1 SYNOPSIS
+
+    ./scripts/archive-attachments.pl < list-of-attachment-ids.txt > attachments-dump-file
+
+=head1 SEE ALSO
+
+L<./scripts/restore-attachments.pl>

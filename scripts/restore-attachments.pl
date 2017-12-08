@@ -22,11 +22,17 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Attachment;
 use Digest::SHA qw(sha256 sha256_hex);
+use Getopt::Long;
+use Pod::Usage;
 
 BEGIN { Bugzilla->extensions }
 
 # set Bugzilla usage mode to USAGE_MODE_CMDLINE
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
+
+my $help;
+GetOptions("help|h" => \$help);
+pod2usage(1) if $help;
 
 binmode STDIN, ':bytes';
 
@@ -87,4 +93,19 @@ sub read_data {
 
     return $data;
 }
+
+__DATA__
+
+=head1 NAME
+
+restore-attachments.pl - load attachments from a dump file
+
+=head1 SYNOPSIS
+
+    ./scripts/restore-attachments.pl < attachments-dump-file
+
+=head1 SEE ALSO
+
+L<./scripts/archive-attachments.pl>
+
 
