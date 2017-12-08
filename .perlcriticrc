@@ -5,7 +5,7 @@ severity = 1
 #perltidyrc = .perltidyrc
 [InputOutput::RequireCheckedSyscalls]
 functions = :builtins
-exclude_functions = print
+exclude_functions = print say binmode
 
 [-BuiltinFunctions::ProhibitUselessTopic]
 [-ControlStructures::ProhibitCascadingIfElse]
