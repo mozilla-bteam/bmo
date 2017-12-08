@@ -9,12 +9,12 @@ package Bugzilla::Attachment::Archive;
 
 use 5.10.1;
 use Moo;
-use Digest::SHA qw(sha256);
+use Digest::SHA qw(sha256_hex);
 use Carp;
 use IO::File;
 
 use constant HEADER_SIZE   => 45;
-use constant HEADER_FORMAT => 'ANNNA32';
+use constant HEADER_FORMAT => 'ANNNH64';
 
 has 'file'      => ( is => 'ro',   required  => 1 );
 has 'input_fh'  => ( is => 'lazy', predicate => 'has_input_fh' );
@@ -37,7 +37,7 @@ sub read_member {
         };
     }
     elsif ($type eq 'C') {
-        die "bad overall checksum\n" unless $hash eq $self->checksum->digest;
+        die "bad overall checksum\n" unless $hash eq $self->checksum->hexdigest;
         $self->reset_checksum;
         return undef;
     }
@@ -51,7 +51,7 @@ sub write_attachment {
     my $data      = $attachment->data;
     my $bug_id    = $attachment->bug_id;
     my $attach_id = $attachment->id;
-    my $header    = pack HEADER_FORMAT, 'D', $bug_id, $attach_id, length($data), sha256($data);
+    my $header    = pack HEADER_FORMAT, 'D', $bug_id, $attach_id, length($data), sha256_hex($data);
 
     $self->checksum->add($header);
     $self->output_fh->print($header, $data);
@@ -59,9 +59,10 @@ sub write_attachment {
 
 sub write_checksum {
     my ($self) = @_;
-    my $header = pack HEADER_FORMAT, 'C', 0, 0, 0, $self->checksum->digest;
+    my $header = pack HEADER_FORMAT, 'C', 0, 0, 0, $self->checksum->hexdigest;
     $self->output_fh->print($header);
     $self->reset_checksum;
+    $self->output_fh->flush;
 }
 
 sub _build_checksum {
@@ -74,7 +75,8 @@ sub _build_input_fh {
     if ($self->has_output_fh) {
         croak "I will not read and write a file at the same time";
     }
-    return IO::File->new($self->file, '<:bytes');
+    my $file = $self->file;
+    return IO::File->new( $self->file, '<:bytes' ) or die "cannot read $file: $!";
 }
 
 sub _build_output_fh {
@@ -82,11 +84,11 @@ sub _build_output_fh {
     if ($self->has_input_fh) {
         croak "I will not read and write a file at the same time";
     }
-    if (-e $self->file) {
-        my $f = $self->file;
-        croak "I will not overwrite a file (file $f already exists)";
+    my $file = $self->file;
+    if (-e $file) {
+        croak "I will not overwrite a file (file $file already exists)";
     }
-    return IO::File->new($self->file, '>:bytes');
+    return IO::File->new( $file, '>:bytes' ) or die "cannot write $file: $!";
 }
 
 sub _read_header {
@@ -105,12 +107,12 @@ sub _read_data {
     my $data = '' x $data_len;
     my $read_data_len = $self->input_fh->read($data, $data_len);
 
-    unless ( $hash eq sha256($data) ) {
-        die "bad checksum\n";
-    }
-
     unless ( $read_data_len == $data_len ) {
         die "bad data\n";
+    }
+
+    unless ( $hash eq sha256_hex($data) ) {
+        die "bad checksum:\n\t$hash\n\t" . sha226_hex($data) . "\n";
     }
 
     return $data;

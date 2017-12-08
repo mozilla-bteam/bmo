@@ -62,6 +62,12 @@ elsif ($cmd eq 'import') {
         Bugzilla::Attachment::current_storage()->store( $attachment->id, $mem->{data} );
     }
 }
+elsif ($cmd eq 'check') {
+    while ( my $mem = $archive->read_member() ) {
+        my $attachment = Bugzilla::Attachment->new($mem->{attach_id});
+        die "bad attachment\n" unless check_attachment($attachment, $mem->{bug_id}, $mem->{data_len});
+    }
+}
 elsif ($cmd eq 'remove') {
     my %remove_ok;
     while ( my $mem = $archive->read_member ) {
