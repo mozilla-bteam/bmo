@@ -103,7 +103,7 @@ sub check_attachment {
 
     unless ($attachment) {
         warn "No attachment found. Skipping record.\n";
-        next;
+        return 0;
     }
     unless ( $attachment->bug_id == $bug_id ) {
         warn 'Wrong bug id (should be ' . $attachment->bug_id . ")\n";
