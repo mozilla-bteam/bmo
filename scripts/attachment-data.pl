@@ -41,7 +41,6 @@ my $archive = Bugzilla::Attachment::Archive->new(file => $file);
 my $cmd = shift @ARGV;
 
 if ($cmd eq 'export') {
-    my ($size, $count) = (0, 0);
     while ( my $attach_id = <ARGV> ) {
         chomp $attach_id;
         my $attachment = Bugzilla::Attachment->new($attach_id);
@@ -49,22 +48,17 @@ if ($cmd eq 'export') {
             warn "No attachment: $attach_id\n";
             next;
         }
-        $size += Bugzilla::Attachment::Archive::HEADER_SIZE;
-        $size += $attachment->datasize;
-        $count++;
         warn "writing $attach_id\n";
         $archive->write_attachment($attachment);
     }
     $archive->write_checksum;
-    $size += Bugzilla::Attachment::Archive::HEADER_SIZE;
-    warn "archive should be ", $size, " bytes\n";
-
 }
 elsif ($cmd eq 'import') {
     while ( my $mem = $archive->read_member ) {
         warn "read $mem->{attach_id}\n";
 
         my $attachment = Bugzilla::Attachment->new($mem->{attach_id});
+        next unless $mem->{data_len};
         next unless check_attachment($attachment, $mem->{bug_id}, $mem->{data_len});
 
         Bugzilla::Attachment::current_storage()->store( $attachment->id, $mem->{data} );
@@ -74,6 +68,7 @@ elsif ($cmd eq 'check') {
     while ( my $mem = $archive->read_member() ) {
         warn "checking $mem->{attach_id}\n";
         my $attachment = Bugzilla::Attachment->new($mem->{attach_id});
+        next unless $mem->{data_len};
         die "bad attachment\n" unless check_attachment($attachment, $mem->{bug_id}, $mem->{data_len});
     }
 }

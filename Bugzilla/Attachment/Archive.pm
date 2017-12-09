@@ -51,10 +51,12 @@ sub write_attachment {
     my $data      = $attachment->data;
     my $bug_id    = $attachment->bug_id;
     my $attach_id = $attachment->id;
-    my $header    = pack HEADER_FORMAT, 'D', $bug_id, $attach_id, length($data), sha256_hex($data);
 
-    $self->checksum->add($header);
-    $self->output_fh->print($header, $data);
+    if (defined $data && length($data) == $attachment->datasize) {
+        my $header = pack HEADER_FORMAT, 'D', $bug_id, $attach_id, length($data), sha256_hex($data);
+        $self->checksum->add($header);
+        $self->output_fh->print($header, $data);
+    }
 }
 
 sub write_checksum {
