@@ -27,19 +27,5 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-use Test::Harness qw(&runtests $verbose);
 
-$verbose = 0;
-my $onlytest = "";
-
-foreach (@ARGV) {
-    if (/^(?:-v|--verbose)$/) {
-        $verbose = 1;
-    }
-    else {
-        $onlytest = sprintf("%0.3d",$_);
-    }
-}
-
-runtests(glob("t/$onlytest*.t"));
-
+warn "runtests.pl is deprecated. ignoring.\n";
