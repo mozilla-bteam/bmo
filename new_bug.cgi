@@ -52,8 +52,8 @@ if (lc($cgi->request_method) eq 'post') {
      check_hash_token($token, ['new_bug']);
      my @keywords = $cgi->param('keywords');
      my @groups = $cgi->param('groups');
-     my @cc = split /, /, $cgi->param('cc');
-     my @bug_mentor = split /, /, $cgi->param('bug_mentor');
+     my @cc = defined $cgi->param('cc')? split /, /, $cgi->param('cc') : ();
+     my @bug_mentor = defined $cgi->param('bug_mentor')? split /, /, $cgi->param('bug_mentor') : ();
      my $new_bug = Bugzilla::Bug->create({
                 short_desc   => scalar($cgi->param('short_desc')),
                 product      => scalar($cgi->param('product')),
