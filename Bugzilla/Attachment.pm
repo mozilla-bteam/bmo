@@ -827,6 +827,7 @@ sub remove_from_db {
 
 # Extract the content type from the attachment form.
 sub get_content_type {
+    my ($data) = @_;
     my $cgi = Bugzilla->cgi;
 
     return 'text/plain' if ($cgi->param('ispatch') || $cgi->param('attach_text'));
@@ -838,11 +839,11 @@ sub get_content_type {
         ThrowUserError("missing_content_type_method");
     }
     elsif ($method eq 'autodetect') {
-        defined $cgi->upload('data') || ThrowUserError('file_not_specified');
+        defined $data || ThrowUserError('file_not_specified');
         # The user asked us to auto-detect the content type, so use the type
         # specified in the HTTP request headers.
         $content_type =
-            $cgi->uploadInfo($cgi->param('data'))->{'Content-Type'};
+            $cgi->uploadInfo($data)->{'Content-Type'};
         $content_type || ThrowUserError("missing_content_type");
 
         # Set the ispatch flag to 1 if the content type

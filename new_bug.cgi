@@ -73,10 +73,8 @@ if (lc($cgi->request_method) eq 'post') {
             });
      delete_token($token);
 
-     my $data_fh = $cgi->upload('data');
-
-     if ($data_fh) {
-         my $content_type = Bugzilla::Attachment::get_content_type();
+     foreach my $data_fh ($cgi->upload('data')) {
+         my $content_type = Bugzilla::Attachment::get_content_type($data_fh);
          my $attachment;
 
          my $error_mode_cache = Bugzilla->error_mode;
