@@ -52,6 +52,10 @@ function init_module_visibility() {
 
 $(function() {
     'use strict';
+    $.urlParam = function (name) {
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        return results[1] || 0;
+    }
 
     // update relative dates
     var relative_timer_duration = 60000;
@@ -94,6 +98,10 @@ $(function() {
         $('#mode-btn').click();
         $('.save-btn').prop('disabled', false);
         $('#editing').val('');
+    }
+
+    if (parseInt($.urlParam('edit'))) {
+        restoreEditMode();
     }
 
     // expand/colapse module
