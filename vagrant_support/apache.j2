@@ -1,4 +1,7 @@
 PerlSwitches -wT
+PerlSetEnv BUGZILLA_DEVELOPER_MODE 1
+PerlSetEnv BUGZILLA_UNSAFE_AUTH_DELEGATION 1
+
 PerlConfigRequire /vagrant/mod_perl.pl
 
 <IfModule mpm_prefork_module>

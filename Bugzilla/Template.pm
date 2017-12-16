@@ -1148,10 +1148,14 @@ sub create {
     };
 
     # under mod_perl, use a provider (template loader) that preloads all templates into memory
+    my $can_preload = $ENV{MOD_PERL} && !$ENV{BUGZILLA_DEVELOPER_MODE};
     my $provider_class
-        = $ENV{MOD_PERL}
-        ? 'Bugzilla::Template::PreloadProvider'
-        : 'Template::Provider';
+      = $can_preload
+      ? 'Bugzilla::Template::PreloadProvider'
+      : 'Template::Provider';
+
+    # we don't want to cache templates at all in dev mode
+    delete $config->{COMPILE_DIR} if $ENV{BUGZILLA_DEVELOPER_MODE};
 
     # Use a per-process provider to cache compiled templates in memory across
     # requests.
