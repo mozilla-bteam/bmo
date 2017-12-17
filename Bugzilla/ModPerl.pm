@@ -14,12 +14,93 @@ use File::Find ();
 use Cwd ();
 use Carp ();
 
-# We don't need (or want) to use Bugzilla's template subclass.
-# it is easier to reason with the code without all the extra things Bugzilla::Template adds
-# (and there might be side-effects, since this code is loaded very early in the httpd startup)
-use Template ();
-
 use Bugzilla::ModPerl::BlockIP;
+use Bugzilla::ModPerl::ResponseHandler;
+use Bugzilla::ModPerl::CleanupHandler;
+use Bugzilla::Constants ();
+
+use Apache2::Log ();
+use Apache2::ServerUtil;
+use Apache2::SizeLimit;
+use ModPerl::RegistryLoader ();
+use File::Basename ();
+use File::Find ();
+
+use Bugzilla ();
+use Bugzilla::BugMail ();
+use Bugzilla::CGI ();
+use Bugzilla::Extension ();
+use Bugzilla::Install::Requirements ();
+use Bugzilla::Util ();
+use Bugzilla::RNG ();
+
+# Make warnings go to the virtual host's log and not the main
+# server log.
+BEGIN { *CORE::GLOBAL::warn = \&Apache2::ServerRec::warn; }
+
+sub startup {
+    # Pre-compile the CGI.pm methods that we're going to use.
+    Bugzilla::CGI->compile(qw(:cgi :push));
+
+    # Pre-load localconfig. It might already be loaded, but we need to make sure.
+    Bugzilla->localconfig;
+    if ( $ENV{LOCALCONFIG_ENV} ) {
+        delete @ENV{ (Bugzilla::Install::Localconfig::ENV_KEYS) };
+    }
+
+    # This means that every httpd child will die after processing a request if it
+    # is taking up more than $apache_size_limit of RAM all by itself, not counting RAM it is
+    # sharing with the other httpd processes.
+    my $limit = Bugzilla->localconfig->{apache_size_limit};
+    if ( $limit < 400_000 ) {
+        $limit = 400_000;
+    }
+    Apache2::SizeLimit->set_max_unshared_size($limit);
+
+    my $cgi_path = Bugzilla::Constants::bz_locations()->{'cgi_path'};
+
+    # Set up the configuration for the web server
+    my $server = Apache2::ServerUtil->server;
+    my $conf   = Bugzilla::ModPerl->apache_config($cgi_path);
+    $server->add_config( [ grep { length $_ } split( "\n", $conf ) ] );
+
+
+    # Pre-load all extensions
+    Bugzilla::Extension->load_all();
+
+    Bugzilla->preload_features();
+
+    # Force instantiation of template so Bugzilla::Template::PreloadProvider can do its magic.
+    Bugzilla->template;
+
+    Bugzilla::ModPerl::BlockIP->set_memcached( Bugzilla::Memcached->_new()->{memcached} );
+
+    # Have ModPerl::RegistryLoader pre-compile all CGI scripts.
+    my $rl = ModPerl::RegistryLoader->new( package => 'Bugzilla::ModPerl::ResponseHandler' );
+
+    my $feature_files = Bugzilla::Install::Requirements::map_files_to_features();
+
+    # Prevent "use lib" from doing anything when the .cgi files are compiled.
+    # This is important to prevent the current directory from getting into
+    # @INC and messing things up. (See bug 630750.)
+    no warnings 'redefine';
+    local *lib::import = sub { };
+    use warnings;
+
+    foreach my $file ( glob "$cgi_path/*.cgi" ) {
+        my $base_filename = File::Basename::basename($file);
+        if ( my $feature = $feature_files->{$base_filename} ) {
+            next if !Bugzilla->feature($feature);
+        }
+        Bugzilla::Util::trick_taint($file);
+        $rl->handler( $file, $file );
+    }
+
+    # Some items might already be loaded into the request cache
+    # best to make sure it starts out empty.
+    # Because of bug 1347335 we also do this in init_page().
+    Bugzilla::clear_request_cache();
+}
 
 sub apache_config {
     my ($class, $cgi_path) = @_;
