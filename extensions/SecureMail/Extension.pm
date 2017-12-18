@@ -764,24 +764,6 @@ sub _make_secure {
     return;
 }
 
-sub _pgp_encrypt {
-    my ($pgp, $text) = @_;
-    # "@" matches every key in the public key ring, which is fine,
-    # because there's only one key in our keyring.
-    #
-    # We use the CAST5 cipher because the Rijndael (AES) module doesn't
-    # like us for some reason I don't have time to debug fully.
-    # ("key must be an untainted string scalar")
-    my $encrypted = $pgp->encrypt(Data       => $text,
-                                  Recipients => "@",
-                                  Cipher     => 'CAST5',
-                                  Armour     => 1);
-    if (!defined $encrypted) {
-        return 'Error during Encryption: ' . $pgp->errstr;
-    }
-    return $encrypted;
-}
-
 # Insert the subject into the part's body, as the subject of the message will
 # be sanitised.
 # XXX this incorrectly assumes all parts of the message are the body
