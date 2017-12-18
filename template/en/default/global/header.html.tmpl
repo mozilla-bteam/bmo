@@ -123,6 +123,7 @@
        END;
     %]
 
+    <meta name="viewport" content="width=1024">
     <meta name="generator" content="[% terms.Bugzilla _ " " _ constants.BUGZILLA_VERSION FILTER html %]">
     <meta name="bugzilla-global" content="dummy"
         id="bugzilla-global" data-bugzilla="[% json_encode(js_BUGZILLA) FILTER html %]">
@@ -320,11 +321,11 @@
     </nav>
     [% Hook.process("badge") %]
     [% IF user.id %]
-      <div id="header-accunt" class="dropdown">
+      <div id="header-account" class="dropdown">
         <button type="button" id="header-account-menu-button" class="dropdown-button minor" title="Account"
                 aria-label="Account" aria-expanded="false" aria-haspopup="true" aria-controls="header-account-menu">
           [% IF user.gravatar %]
-            <img src="[% user.gravatar FILTER none %]" width="32" height="32" alt="">
+            <img src="[% user.gravatar FILTER html %]" width="32" height="32" alt="">
           [% ELSE %]
             <span class="icon" aria-hidden="true"></span>
           [% END %]

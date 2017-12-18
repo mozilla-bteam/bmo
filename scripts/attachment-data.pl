@@ -45,27 +45,37 @@ if ($cmd eq 'export') {
         chomp $attach_id;
         my $attachment = Bugzilla::Attachment->new($attach_id);
         unless ($attachment) {
-            warn "No attachment: $attachment\n";
+            warn "No attachment: $attach_id\n";
             next;
         }
+        warn "writing $attach_id\n";
         $archive->write_attachment($attachment);
     }
     $archive->write_checksum;
 }
 elsif ($cmd eq 'import') {
     while ( my $mem = $archive->read_member ) {
-        warn "bug $mem->{bug_id}, attachment $mem->{attach_id}, size $mem->{data_len}.\n";
+        warn "read $mem->{attach_id}\n";
 
         my $attachment = Bugzilla::Attachment->new($mem->{attach_id});
+        next unless $mem->{data_len};
         next unless check_attachment($attachment, $mem->{bug_id}, $mem->{data_len});
 
         Bugzilla::Attachment::current_storage()->store( $attachment->id, $mem->{data} );
     }
 }
+elsif ($cmd eq 'check') {
+    while ( my $mem = $archive->read_member() ) {
+        warn "checking $mem->{attach_id}\n";
+        my $attachment = Bugzilla::Attachment->new($mem->{attach_id});
+        next unless $mem->{data_len};
+        die "bad attachment\n" unless check_attachment($attachment, $mem->{bug_id}, $mem->{data_len});
+    }
+}
 elsif ($cmd eq 'remove') {
     my %remove_ok;
     while ( my $mem = $archive->read_member ) {
-        warn "preparing to remove $mem->{bug_id}, attachment $mem->{attach_id}, size $mem->{data_len}.\n";
+        warn "checking $mem->{attach_id}\n";
 
         my $attachment = Bugzilla::Attachment->new($mem->{attach_id});
         die "bad attachment\n" unless check_attachment($attachment, $mem->{bug_id}, $mem->{data_len});
@@ -74,7 +84,7 @@ elsif ($cmd eq 'remove') {
     while ( my $attach_id = <ARGV> ) {
         chomp $attach_id;
         if ($remove_ok{$attach_id}) {
-            warn "removing attachment\n";
+            warn "removing $attach_id\n";
             Bugzilla::Attachment::current_storage()->remove( $attach_id );
         }
         else {
@@ -88,7 +98,7 @@ sub check_attachment {
 
     unless ($attachment) {
         warn "No attachment found. Skipping record.\n";
-        next;
+        return 0;
     }
     unless ( $attachment->bug_id == $bug_id ) {
         warn 'Wrong bug id (should be ' . $attachment->bug_id . ")\n";

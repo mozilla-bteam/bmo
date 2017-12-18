@@ -39,6 +39,7 @@
         font-family: sans-serif;
         color: #000;
         background: #fff url("global/body-back.gif") repeat-x;
+        scroll-behavior: smooth;
     }
     body, td, th, input {
         font-family: Verdana, sans-serif;
@@ -52,7 +53,7 @@
 
 /* header (begin) */
     #header {
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         z-index: 1000;
@@ -61,6 +62,12 @@
         box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
         color: #555;
         background-color: #FFF;
+    }
+
+    @media only screen and (min-device-width: 1024px) {
+        #header {
+            position: fixed; /* Make the header fixed on desktop */
+        }
     }
 
     #header a,
