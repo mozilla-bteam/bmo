@@ -1,27 +1,13 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla SecureMail Extension
-#
-# The Initial Developer of the Original Code is the Mozilla Foundation.
-# Portions created by Mozilla are Copyright (C) 2008 Mozilla Foundation.
-# All Rights Reserved.
-#
-# Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Gervase Markham <gerv@gerv.net>
-
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 package Bugzilla::Extension::SecureMail;
+use 5.10.1;
 use strict;
 use warnings;
-use 5.10.1;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Attachment;
@@ -45,7 +31,7 @@ use GnuPG::Interface;
 use File::Path qw(mkpath);
 use File::Spec::Functions qw(catdir catfile);
 
-our $VERSION = '0.5';
+our $VERSION = '1.0';
 
 use constant SECURE_NONE => 0;
 use constant SECURE_BODY => 1;
@@ -58,15 +44,11 @@ use constant SECURE_ALL  => 2;
 # public_key text in the 'profiles' table - stores public key
 ##############################################################################
 sub install_update_db {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
 
     my $dbh = Bugzilla->dbh;
-    $dbh->bz_add_column('groups', 'secure_mail',
-                        {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0});
-    $dbh->bz_add_column('profiles', 'public_key', { TYPE => 'LONGTEXT' });
-    $dbh->bz_add_column( 'profiles', 'override_test',
-                        {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0} );
-
+    $dbh->bz_add_column( 'groups', 'secure_mail', { TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0 } );
+    $dbh->bz_add_column( 'profiles', 'public_key', { TYPE => 'LONGTEXT' } );
     return;
 }
 
@@ -77,21 +59,18 @@ sub install_update_db {
 BEGIN {
     *Bugzilla::Group::secure_mail  = \&_group_secure_mail;
     *Bugzilla::User::public_key    = \&_user_public_key;
-    *Bugzilla::User::override_test = \&_user_override_test;
     *Bugzilla::User::delete_key    = \&_delete_key;
     *Bugzilla::User::add_key       = \&_add_key;
 }
 
-
 sub config_add_panels {
-    my($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $modules = $args->{panel_modules};
     $modules->{SecureMail} = "Bugzilla::Extension::SecureMail::Params";
-
     return;
 }
 
-sub _group_secure_mail { return $_[0]->{'secure_mail'}; }
+sub _group_secure_mail { return $_[0]->{secure_mail}; }
 
 # We want to lazy-load the public_key.
 sub _user_public_key {
@@ -106,18 +85,6 @@ sub _user_public_key {
     return $self->{public_key};
 }
 
-# We want to lazy-load override_test.
-sub _user_override_test {
-    my $self = shift;
-    if (!exists $self->{override_test}) {
-        ($self->{override_test}) = Bugzilla->dbh->selectrow_array(
-            "SELECT override_test FROM profiles WHERE userid = ?",
-            undef,
-            $self->id
-        );
-    }
-    return $self->{override_test};
-}
 # Make sure generic functions know about the additional fields in the user
 # and group objects.
 sub object_columns {
@@ -178,11 +145,6 @@ sub object_validators {
 
             return $value;
         };
-        $validators->{'override_test'} = sub {
-            my ($self, $value) = @_;
-            $value = $value ? 1 : 0;
-            return $value;
-        };
     }
 
     return;
@@ -215,7 +177,6 @@ sub object_update_columns {
     }
     elsif ($object->isa('Bugzilla::User')) {
         push(@$columns, 'public_key');
-        push(@$columns, 'override_test');
     }
 
     return;
@@ -238,7 +199,6 @@ sub user_preferences {
 
     if ($save) {
         $user->set('public_key', $params->{'public_key'});
-        $user->set('override_test', $params->{'override_test'});
         $user->update();
         $user->delete_key();
         # Send user a test email
@@ -250,7 +210,6 @@ sub user_preferences {
     }
 
     $vars->{'public_key'} = $user->public_key;
-    $vars->{'override_test'} = $user->override_test;
 
     # Set the 'handled' scalar reference to true so that the caller
     # knows the panel name is valid and that an extension took care of it.
@@ -415,7 +374,7 @@ sub mailer_before_send {
 
         if ($make_secure == SECURE_NONE) {
             # Filter the bug_links in HTML email in case the bugs the links
-            # point are "secured" bugs and the user may not be able to see 
+            # point are "secured" bugs and the user may not be able to see
             # the summaries.
             _filter_bug_links($email);
         }
@@ -533,17 +492,16 @@ Closes all IOs for the supplied GnuPG::Handles object.
 sub close_handles {
     my $handles = shift;
 
-    my $out = $handles->{'stdout'};
-    my $err = $handles->{'stderr'};
-    my $status = $handles->{'status'};
-    my $in = $handles->{'stdin'};
+    my @handles_to_close = (
+        $handles->stdout,
+        $handles->stderr,
+        $handles->status,
+        $handles->stdin,
+    );
 
-    close $in     if($in);
-    close $out    if($out);
-    close $status if($status);
-    close $err    if($err);
-
-    return;
+    foreach my $handle (@handles_to_close) {
+        $handle->close if $handle;
+    }
 }
 
 sub _delete_key {
@@ -556,22 +514,25 @@ sub _delete_key {
 
     $gpg->wrap_call(commands => ['--delete-keys', '--yes'], handles => $handles, command_args => [$login] );
 
-    my $out = $handles->{'stdout'};
-    my $err = $handles->{'stderr'};
-    my $status = $handles->{'status'};
-    my $in = $handles->{'stdin'};
-    my @out = <$out>;
-    my @err = <$err>;
-    my @sta = <$status>;
-    if(@err) {
-        my $errstr = join("\n", (@out, @err, @sta));
-        if($errstr !~ /not found/ig &&
-           $errstr !~ /no such file or directory/ig &&
-           $errstr !~ /^gpg: WARNING: unsafe ownership on homedir/ &&
-           $errstr !~ /^gpg: using PGP trust model/) {
-            ThrowCodeError('securemail_cant_open_keyfile', {filename => $key_path, errstr => $errstr});
+    my $out    = $handles->stdout;
+    my $err    = $handles->stderr;
+    my $status = $handles->status;
+    my $in     = $handles->stdin;
+    my @out    = <$out>;
+    my @err    = <$err>;
+    my @sta    = <$status>;
+
+    if (@err) {
+        my $errstr = join( "\n", ( @out, @err, @sta ) );
+        if (   $errstr !~ /not found/ig
+            && $errstr !~ /no such file or directory/ig
+            && $errstr !~ /^gpg: WARNING: unsafe ownership on homedir/
+            && $errstr !~ /^gpg: using PGP trust model/ )
+        {
+            ThrowCodeError( 'securemail_cant_open_keyfile', { filename => $key_path, errstr => $errstr } );
         }
     }
+
     close_handles($handles);
 
     unlink $key_path if(-f $key_path);
@@ -582,19 +543,18 @@ sub _delete_key {
 sub _add_key {
     my $user = shift;
 
-    my $key = $user->public_key;
+    my $key   = $user->public_key;
     my $login = $user->login;
 
     my $key_path = key_path($login);
-    unless(-e key_dir()) {
-        eval {
-            mkpath(key_dir());
-        };
-        ThrowCodeError('securemail_cant_create_dir', {dirname => key_dir(), errstr => $@}) if($@);
+    unless ( -e key_dir() ) {
+        eval { mkpath( key_dir() ); 1 }
+          or ThrowCodeError( 'securemail_cant_create_dir', { dirname => key_dir(), errstr => $@ } );
     }
 
     my $OUT;
-    open($OUT, ">", $key_path) || ThrowCodeError('securemail_cant_open_keyfile', {filename => $key_path, errstr => $!});
+    open $OUT, ">", $key_path
+      or ThrowCodeError( 'securemail_cant_open_keyfile', { filename => $key_path, errstr => $! } );
     print $OUT $key;
     close $OUT;
 
@@ -602,9 +562,9 @@ sub _add_key {
     $gpg->options->meta_interactive( 0 );
     $gpg->import_keys(handles => $handles, command_args => [$key_path] );
 
-    my $out = $handles->{'stdout'};
-    my $err = $handles->{'stderr'};
-    my $status = $handles->{'status'};
+    my $out = $handles->{stdout};
+    my $err = $handles->{stderr};
+    my $status = $handles->{status};
     my @out = <$out>;
     my @err = <$err>;
     my @sta = <$status>;
