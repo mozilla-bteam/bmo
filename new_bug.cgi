@@ -73,6 +73,7 @@ if (lc($cgi->request_method) eq 'post') {
             });
      delete_token($token);
 
+     my $attach_number = 0;
      foreach my $data_fh ($cgi->upload('data')) {
          my $content_type = Bugzilla::Attachment::get_content_type($data_fh);
          my $attachment;
@@ -86,7 +87,7 @@ if (lc($cgi->request_method) eq 'post') {
                  {bug           => $new_bug,
                   creation_ts   => $timestamp,
                   data          => $data_fh,
-                  description   => scalar $cgi->param('description'),
+                  description   => scalar $cgi->param('description'.$attach_number),
                   filename      => $data_fh,
                   ispatch       => 0,
                   isprivate     => 0,
@@ -97,6 +98,7 @@ if (lc($cgi->request_method) eq 'post') {
          unless ($attachment) {
             $vars->{'message'} = 'attachment_creation_failed';
          }
+         $attach_number++;
      }
 
      my $recipients = { changer => $user };
