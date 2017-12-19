@@ -368,10 +368,9 @@ The CGI parameters for the search, as a string.
 
 =item C<link_in_footer>
 
-Whether or not this search should be displayed in the Search Bar for the
+Whether or not this search should be displayed in the footer for the
 I<current user> (not the owner of the search, but the person actually
-using Bugzilla right now). It says "footer" for historical reasons as the link
-was previously displayed on the global footer.
+using Bugzilla right now).
 
 =item C<type>
 

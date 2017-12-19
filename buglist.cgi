@@ -213,8 +213,7 @@ sub LookupNamedQuery {
 # query - The query part of the buglist.cgi URL, unencoded. Must not be
 #         empty, or we will throw a UserError.
 # link_in_footer (optional) - 1 if the Named Query should be
-# displayed in the user's Search Bar, 0 otherwise. It says "footer" for
-# historical reasons as the link was previously displayed on the global footer.
+# displayed in the user's footer, 0 otherwise.
 #
 # All parameters are validated before passing them into the database.
 #

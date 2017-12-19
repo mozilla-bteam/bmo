@@ -27,9 +27,8 @@ my $vars = {};
 # Yes, I really want to avoid two calls to the id method.
 my $user_id = $user->id;
 
-# Disable content caching by browser because there will be different items on the global navigation
-# before and after signed in.
-my $can_cache = 0;
+# We only cache unauthenticated requests now, because invalidating is harder for logged in users.
+my $can_cache = $user_id == 0;
 
 # And log out the user if requested. We do this first so that nothing
 # else accidentally relies on the current login.
@@ -75,7 +74,7 @@ else {
 
     if ($user_id && $user->in_group('admin')) {
         # If 'urlbase' is not set, display the Welcome page.
-        unless (Bugzilla->localconfig->{'urlbase'}) {
+        unless (Bugzilla->params->{'urlbase'}) {
             $template->process('welcome-admin.html.tmpl')
                 or ThrowTemplateError($template->error());
             exit;

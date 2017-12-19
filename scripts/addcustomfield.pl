@@ -62,5 +62,5 @@ Bugzilla::Field->create({
 });
 print "Done!\n";
 
-my $urlbase = Bugzilla->localconfig->{urlbase};
+my $urlbase = Bugzilla->params->{urlbase};
 print "Please visit ${urlbase}editfields.cgi?action=edit&name=$name to finish setting up this field.\n";

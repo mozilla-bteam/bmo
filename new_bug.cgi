@@ -47,13 +47,19 @@ my $template = Bugzilla->template;
 my $vars     = {};
 my $dbh      = Bugzilla->dbh;
 
+
+unless ($user->in_group('new-bug-testers')) {
+    print $cgi->redirect(correct_urlbase());
+    exit;
+}
+
 if (lc($cgi->request_method) eq 'post') {
      my $token = $cgi->param('token');
      check_hash_token($token, ['new_bug']);
      my @keywords = $cgi->param('keywords');
      my @groups = $cgi->param('groups');
-     my @cc = split  /\s*,\s*/, $cgi->param('cc');
-     my @bug_mentor = split  /\s*,\s*/, $cgi->param('bug_mentor');
+     my @cc = split /, /, $cgi->param('cc');
+     my @bug_mentor = split /, /, $cgi->param('bug_mentor');
      my $new_bug = Bugzilla::Bug->create({
                 short_desc   => scalar($cgi->param('short_desc')),
                 product      => scalar($cgi->param('product')),
@@ -121,7 +127,7 @@ if (lc($cgi->request_method) eq 'post') {
          push(@all_mail_results, $ref_sent);
      }
 
-     print $cgi->redirect(Bugzilla->localconfig->{urlbase} . 'show_bug.cgi?id='.$new_bug->bug_id);
+     print $cgi->redirect(correct_urlbase() . 'show_bug.cgi?id='.$new_bug->bug_id);
 } else {
  print $cgi->header();
 $template->process("bug/new_bug.html.tmpl",

@@ -203,7 +203,7 @@ sub file_bug_in_product {
     my $config = get_config();
 
     $classification ||= "Unclassified";
-    $sel->click_ok('//*[@class="link-file"]//a', undef, "Go create a new bug");
+    $sel->click_ok("link=New", undef, "Go create a new bug");
     $sel->wait_for_page_to_load(WAIT_TIME);
     my $title = $sel->get_title();
     if ($sel->is_text_present("Select Classification")) {
@@ -328,7 +328,7 @@ sub add_product {
 sub open_advanced_search_page {
     my $sel = shift;
 
-    $sel->click_ok('//*[@class="link-search"]//a');
+    $sel->click_ok("link=Search");
     $sel->wait_for_page_to_load(WAIT_TIME);
     my $title = $sel->get_title();
     if ($title eq "Simple Search") {
@@ -357,8 +357,8 @@ sub set_parameters {
     go_to_admin($sel);
     $sel->click_ok("link=Parameters", undef, "Go to the Config Parameters page");
     $sel->wait_for_page_to_load(WAIT_TIME);
-    $sel->title_is("Configuration: General");
-    my $last_section = "General";
+    $sel->title_is("Configuration: Required Settings");
+    my $last_section = "Required Settings";
 
     foreach my $section (keys %$params) {
         if ($section ne $last_section) {

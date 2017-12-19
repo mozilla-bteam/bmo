@@ -149,7 +149,7 @@ sub retrieve_json_from_get {
     # order to throw proper errors. We use the installation's urlbase as
     # the id, in this case.
     else {
-        $id = Bugzilla->localconfig->{urlbase};
+        $id = correct_urlbase();
     }
     # Setting _bz_request_id here is required in case we throw errors early,
     # before _handle.
