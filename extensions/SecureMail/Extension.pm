@@ -64,6 +64,8 @@ sub install_update_db {
 BEGIN {
     *Bugzilla::Group::secure_mail = \&_group_secure_mail;
     *Bugzilla::User::public_key   = \&_user_public_key;
+    *Bugzilla::User::gpg_homedir  = \&_user_gpg_homedir;
+    *Bugzilla::User::gpg_interface = \&_user_gpg_interface;
     *Bugzilla::securemail_groups = \&_securemail_groups;
 }
 
@@ -386,7 +388,7 @@ sub mailer_before_send {
             _filter_bug_links($email);
         }
         else {
-            _make_secure($email, $public_key, $is_bugmail && $make_secure == SECURE_ALL, $add_new);
+            _make_secure($email, $user, $is_bugmail && $make_secure == SECURE_ALL, $add_new);
         }
     }
 }
@@ -439,7 +441,8 @@ sub _should_secure_whine {
 }
 
 sub _make_secure {
-    my ($email, $key, $sanitise_subject, $add_new) = @_;
+    my ($email, $user, $sanitise_subject, $add_new) = @_;
+    my $key = $user->public_key;
 
     # Add header showing this email has been secured
     $email->header_set('X-Bugzilla-Secure-Email', 'Yes');
@@ -459,9 +462,6 @@ sub _make_secure {
         ##################
         # PGP Encryption #
         ##################
-
-        my $pubring = new Crypt::OpenPGP::KeyRing(Data => $key);
-        my $pgp = new Crypt::OpenPGP(PubRing => $pubring);
 
         if (scalar $email->parts > 1) {
             my $old_boundary = $email->{ct}{attributes}{boundary};
@@ -500,7 +500,7 @@ sub _make_secure {
                         disposition  => 'inline',
                         encoding     => '7bit',
                     },
-                    body => _pgp_encrypt($pgp, $to_encrypt, $bug_id)
+                    body => _pgp_encrypt($user, $to_encrypt, $bug_id)
                 ),
             );
             $email->parts_set(\@new_parts);
@@ -517,7 +517,7 @@ sub _make_secure {
             if ($sanitise_subject) {
                 _insert_subject($email, $subject);
             }
-            $email->body_set(_pgp_encrypt($pgp, $email->body, $bug_id));
+            $email->body_set(_pgp_encrypt($user, $email->body, $bug_id));
         }
     }
 
@@ -594,32 +594,29 @@ sub _make_secure {
 }
 
 sub _pgp_encrypt {
-    my ($pgp, $text, $bug_id) = @_;
-    # "@" matches every key in the public key ring, which is fine,
-    # because there's only one key in our keyring.
-    #
-    # We use the CAST5 cipher because the Rijndael (AES) module doesn't
-    # like us for some reason I don't have time to debug fully.
-    # ("key must be an untainted string scalar")
-    my $encrypted = $pgp->encrypt(
-        Data       => $text,
-        Recipients => "@",
-        Cipher     => 'CAST5',
-        Armour     => 0
+    my ($user, $text, $bug_id) = @_;
+    my $gpg = $user->gpg_interface;
+    my $handles = GnuPG::Handles->new(
+        stdin => IO::Handle->new(),
+        stdout => IO::Handle->new(),
+        status => IO::Handle->new(),
+        stderr => IO::Handle->new(),
     );
-    if (!defined $encrypted) {
-        return 'Error during Encryption: ' . $pgp->errstr;
+
+    $gpg->options->hash_init(
+        comment => Bugzilla->localconfig->{urlbase} . ($bug_id ? 'show_bug.cgi?id=' . $bug_id : ''),
+    );
+
+    my $pid = $gpg->encrypt( handles => $handles );
+    $handles->stdin->print($text);
+    $handles->stdin->close;
+    my $encrypted = join("", $handles->stdout->getlines);
+    my $errstr = join("", $handles->stderr->getlines);
+    waitpid $pid, 0;
+    if (!$encrypted || $CHILD_ERROR != 0) {
+        return 'Error during Encryption: ' . $errstr;
     }
-    $encrypted = Crypt::OpenPGP::Armour->armour(
-        Data => $encrypted,
-        Object => 'MESSAGE',
-        Headers => {
-            Comment => Bugzilla->localconfig->{urlbase} . ($bug_id ? 'show_bug.cgi?id=' . $bug_id : ''),
-        },
-    );
-    # until Crypt::OpenPGP makes the Version header optional we have to strip
-    # it out manually (bug 1181406).
-    $encrypted =~ s/\nVersion:[^\n]+//;
+
     return $encrypted;
 }
 
@@ -693,7 +690,24 @@ sub _filter_bug_links {
     });
 }
 
-sub _gpg_homedir {
+sub _user_gpg_interface {
+    my ($user, $homedir) = @_;
+    my $gpg = GnuPG::Interface->new(
+        call => Bugzilla->params->{gpg_cmd},
+    );
+
+    $gpg->options->hash_init(
+        always_trust     => 1,
+        armor            => 1,
+        homedir          => $homedir // $user->gpg_homedir,
+        meta_interactive => 0,
+        recipients       => [ $user->email ],
+        verbose          => 0,
+    );
+    return $gpg;
+}
+
+sub _user_gpg_homedir {
     my ($user) = @_;
     my $hash     = sha256_hex( $user->public_key );
     my $home_dir = catdir( Bugzilla->params->{gpg_base_dir}, $user->id, $hash );
@@ -707,10 +721,7 @@ sub _gpg_homedir {
 
     unless (-d $home_dir && -f $stamp_file) {
         mkpath($home_dir, 0, 0700);
-        my $gpg = GnuPG::Interface->new();
-        $gpg->options->hash_init( armor => 1, homedir => $home_dir, verbose => 1 );
-        $gpg->hash_init( call => Bugzilla->params->{gpg_cmd} );
-        $gpg->options->meta_interactive( 0 );
+        my $gpg = $user->gpg_interface($home_dir);
         my $pid = $gpg->import_keys(handles => $handles);
         $handles->stdin->print($user->public_key);
         $handles->stdin->close;
