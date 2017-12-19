@@ -27,7 +27,6 @@ use Encode;
 use English qw(-no_match_vars);
 use HTML::Tree;
 use List::MoreUtils qw(any none);
-use Mail::GPG;
 use MIME::Parser;
 use DateTime;
 use Digest::SHA qw(sha256_hex);
