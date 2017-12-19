@@ -5,7 +5,7 @@ severity = 1
 #perltidyrc = .perltidyrc
 [InputOutput::RequireCheckedSyscalls]
 functions = :builtins
-exclude_functions = print
+exclude_functions = print say sleep binmode
 
 [-BuiltinFunctions::ProhibitUselessTopic]
 [-ControlStructures::ProhibitCascadingIfElse]
@@ -17,15 +17,18 @@ exclude_functions = print
 [-Modules::RequireVersionVar]
 [-References::ProhibitDoubleSigils]
 [-RegularExpressions::ProhibitComplexRegexes]
+[-RegularExpressions::RequireDotMatchAnything]
+[-RegularExpressions::RequireLineBoundaryMatching]
 [-RegularExpressions::RequireExtendedFormatting]
 [-Subroutines::ProhibitExcessComplexity]
 [-ValuesAndExpressions::ProhibitConstantPragma]
 [-ValuesAndExpressions::ProhibitEmptyQuotes]
 [-ValuesAndExpressions::ProhibitMagicNumbers]
+[-ValuesAndExpressions::ProhibitNoisyQuotes]
+[-ValuesAndExpressions::ProhibitNoisyQuotes]
 [-ValuesAndExpressions::ProhibitVersionStrings]
 [-Variables::ProhibitLocalVars]
 [-Variables::ProhibitPackageVars]
-[-ValuesAndExpressions::ProhibitNoisyQuotes]
 
 # this policy is broken currently
 [-Freenode::PackageMatchesFilename]
@@ -34,6 +37,16 @@ exclude_functions = print
 # Non-explicit return is often easier to read.
 # think of javascript arrow functions.
 [-Subroutines::RequireFinalReturn]
+
+# This test is technically correct but I do not care.
+[-InputOutput::ProhibitInteractiveTest]
+
+# I believe in the opposite of this test.
+[-InputOutput::ProhibitExplicitStdin]
+
+# _build_* are allowed
+[Subroutines::ProhibitUnusedPrivateSubroutines]
+ private_name_regex = _(?!_|build_)\w+
 
 # I don't agree with this policy because
 # a bare return can actually cause more problems.
