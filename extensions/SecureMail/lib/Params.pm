@@ -7,23 +7,20 @@ use 5.10.1;
 use Bugzilla::Config::Common;
 
 sub get_param_list {
-    my($class) = @_;
+    my ($class) = @_;
 
-    return(
-        {   name    => 'gpg_home_dir',
-            desc    => 'The path to the directory to be used for storing PGP public keys',
+    return (
+        {
+            name    => 'gpg_base_dir',
+            desc    => 'Ephemeral directory which will hold user gpg keys',
             type    => 't',
-            default => './data/gpg',
+            default => '/tmp',
         },
-        {   name    => 'gpg_cmd',
+        {
+            name    => 'gpg_cmd',
             desc    => 'The full path to the GPG command',
             type    => 't',
             default => '/usr/bin/gpg2',
-        },
-        {   name    => 'mail_delivery_override',
-            desc    => 'The mail delivery method to use if the default mail method is Test and the User has override_test enabled. If this is unset then users will not be able to override the Test method.',
-            type    => 't',
-            default => '',
         },
     );
 }
@@ -40,7 +37,7 @@ Bugzilla::Extension::SecureMail::Params - A module for specifying parameters to 
 
 =over 4
 
-=item gpg_home_dir
+=item gpg_base_dir
 
 The path to the directory to be used for storing PGP public keys.
 

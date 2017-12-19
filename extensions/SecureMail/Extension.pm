@@ -23,13 +23,17 @@ use Crypt::OpenPGP::Armour;
 use Crypt::SMIME;
 use Email::MIME::ContentType qw(parse_content_type);
 use Encode;
+use English qw(-no_match_vars);
 use HTML::Tree;
 use List::MoreUtils qw(any none);
 use Mail::GPG;
 use MIME::Parser;
-use GnuPG::Interface;
+use DateTime;
+use Digest::SHA qw(sha256_hex);
 use File::Path qw(mkpath);
 use File::Spec::Functions qw(catdir catfile);
+use GnuPG::Interface;
+use GnuPG::Handles;
 
 our $VERSION = '1.0';
 
@@ -59,8 +63,7 @@ sub install_update_db {
 BEGIN {
     *Bugzilla::Group::secure_mail  = \&_group_secure_mail;
     *Bugzilla::User::public_key    = \&_user_public_key;
-    *Bugzilla::User::delete_key    = \&_delete_key;
-    *Bugzilla::User::add_key       = \&_add_key;
+    *Bugzilla::User::gpg_homedir = \&_gpg_homedir;
 }
 
 sub config_add_panels {
@@ -200,10 +203,8 @@ sub user_preferences {
     if ($save) {
         $user->set('public_key', $params->{'public_key'});
         $user->update();
-        $user->delete_key();
         # Send user a test email
         if ($user->public_key) {
-            $user->add_key($user);
             _send_test_email($user);
             $vars->{'test_email_sent'} = 1;
         }
@@ -435,145 +436,6 @@ sub _should_secure_whine {
     return $should_secure ? 1 : 0;
 }
 
-=head2 key_dir
-
-Returns the full path to the directory the Pubic keys are kept in.
-
-=cut
-
-sub key_dir {
-    return catdir(Bugzilla->params->{gpg_home_dir},"keys");
-}
-
-=head2 key_path
-
-Returns the full path to the supplied mail addresses Public key file.
-
-=cut
-
-sub key_path {
-    my $login = shift;
-    return catfile(key_dir(), "$login.asc");
-}
-
-=head2 get_gpg
-
-Returns refs to a GnuPG::Interface object and a GnuPG::Handles object.
-
-=cut
-
-sub get_gpg {
-    my $gpg = GnuPG::Interface->new();
-    $gpg->options->hash_init(
-        armor   => 1,
-        homedir => Bugzilla->params->{gpg_home_dir},
-        verbose => 1,
-    );
-    $gpg->hash_init(
-        call    => Bugzilla->params->{gpg_cmd},
-    );
-
-    my $handles = GnuPG::Handles->new(
-        stdin  => IO::Handle->new(),
-        stdout => IO::Handle->new(),
-        stderr => IO::Handle->new(),
-        status => IO::Handle->new(),
-    );
-
-    return($gpg, $handles);
-}
-
-=head2 close_handles
-
-Closes all IOs for the supplied GnuPG::Handles object.
-
-=cut
-
-sub close_handles {
-    my $handles = shift;
-
-    my @handles_to_close = (
-        $handles->stdout,
-        $handles->stderr,
-        $handles->status,
-        $handles->stdin,
-    );
-
-    foreach my $handle (@handles_to_close) {
-        $handle->close if $handle;
-    }
-}
-
-sub _delete_key {
-    my $user = shift;
-    my $login = $user->login;
-    my $key_path = key_path($login);
-
-    my ($gpg, $handles) = get_gpg();
-    $gpg->options->meta_interactive( 0 );
-
-    $gpg->wrap_call(commands => ['--delete-keys', '--yes'], handles => $handles, command_args => [$login] );
-
-    my $out    = $handles->stdout;
-    my $err    = $handles->stderr;
-    my $status = $handles->status;
-    my $in     = $handles->stdin;
-    my @out    = <$out>;
-    my @err    = <$err>;
-    my @sta    = <$status>;
-
-    if (@err) {
-        my $errstr = join( "\n", ( @out, @err, @sta ) );
-        if (   $errstr !~ /not found/ig
-            && $errstr !~ /no such file or directory/ig
-            && $errstr !~ /^gpg: WARNING: unsafe ownership on homedir/
-            && $errstr !~ /^gpg: using PGP trust model/ )
-        {
-            ThrowCodeError( 'securemail_cant_open_keyfile', { filename => $key_path, errstr => $errstr } );
-        }
-    }
-
-    close_handles($handles);
-
-    unlink $key_path if(-f $key_path);
-
-    return;
-}
-
-sub _add_key {
-    my $user = shift;
-
-    my $key   = $user->public_key;
-    my $login = $user->login;
-
-    my $key_path = key_path($login);
-    unless ( -e key_dir() ) {
-        eval { mkpath( key_dir() ); 1 }
-          or ThrowCodeError( 'securemail_cant_create_dir', { dirname => key_dir(), errstr => $@ } );
-    }
-
-    my $OUT;
-    open $OUT, ">", $key_path
-      or ThrowCodeError( 'securemail_cant_open_keyfile', { filename => $key_path, errstr => $! } );
-    print $OUT $key;
-    close $OUT;
-
-    my ($gpg, $handles) = get_gpg();
-    $gpg->options->meta_interactive( 0 );
-    $gpg->import_keys(handles => $handles, command_args => [$key_path] );
-
-    my $out = $handles->{stdout};
-    my $err = $handles->{stderr};
-    my $status = $handles->{status};
-    my @out = <$out>;
-    my @err = <$err>;
-    my @sta = <$status>;
-
-    close_handles($handles);
-
-    return;
-}
-
 sub _make_secure {
     my ($email, $key, $sanitise_subject, $add_new) = @_;
 
@@ -591,28 +453,18 @@ sub _make_secure {
         $key_type = 'S/MIME';
     }
 
-    if( $key_type eq 'PGP' ) {
+    if ( $key_type eq 'PGP' ) {
         ##################
         # PGP Encryption #
         ##################
-        my $to     = $email->header('To');
-
-        my ($gpg, $handles) = get_gpg();
-        $gpg->options->meta_interactive(0);
-        my @res = $gpg->get_public_keys();
-        my $key_path = key_path($to);
-        close_handles($handles);
-
-        unless( -f $key_path ) {
-            my $user = new Bugzilla::User( { name => $to } );
-            $user->add_key();
-        }
+        my $to   = $email->header('To');
+        my $user = Bugzilla::User->new( { name => $to } );
 
         my $mg = Mail::GPG->new(
             gpg_call        => Bugzilla->params->{gpg_cmd},
             gnupg_hash_init => {
                 always_trust => 1,
-                homedir      => Bugzilla->params->{gpg_home_dir},
+                homedir      => $user->gpg_homedir,
             },
         );
         my $txt    = $email->as_string();
@@ -638,7 +490,7 @@ sub _make_secure {
                 my $new_part = Email::MIME->create(
                     attributes => {
                         content_type => $head->mime_type,
-                        disposition => 'inline',
+                        disposition  => 'inline',
                     },
                     body => $bh->as_string,
                 );
@@ -811,5 +663,71 @@ sub _set_body_from_tree {
 
     return;
 }
+
+sub _gpg_homedir {
+    my ($user) = @_;
+    my $hash     = sha256_hex( $user->public_key );
+    my $home_dir = catdir( Bugzilla->params->{gpg_base_dir}, $user->id, $hash );
+    my $handles      = GnuPG::Handles->new(
+        stdin      => IO::Handle->new,
+        stdout     => IO::Handle->new,
+        stderr     => IO::Handle->new,
+        status     => IO::Handle->new,
+    );
+    my $stamp_file = catfile($home_dir, "stamp.txt");
+
+    unless (-d $home_dir && -f $stamp_file) {
+        mkpath($home_dir, 0, 0700);
+        my $gpg = GnuPG::Interface->new();
+        $gpg->options->hash_init( armor => 1, homedir => $home_dir, verbose => 1 );
+        $gpg->hash_init( call => Bugzilla->params->{gpg_cmd} );
+        $gpg->options->meta_interactive( 0 );
+        my $pid = $gpg->import_keys(handles => $handles);
+        $handles->stdin->print($user->public_key);
+        $handles->stdin->close;
+
+        my @out = $handles->stdout->getlines;
+        my @err = $handles->stderr->getlines;
+        my @status = $handles->status->getlines;
+
+        foreach my $err (@err) {
+            chomp $err;
+            next unless $err;
+            if ($err =~ /^gpg: WARNING: unsafe permissions on homedir/) {
+                die "gpg: WARNING: unsafe permissions on homedir";
+            }
+        }
+        foreach my $status (@status) {
+            chomp $status;
+            unless ( $status =~ s/^\Q[GNUPG:]\E\s+// ) {
+                die "bad status: $status";
+            }
+            if ($status =~ /^NODATA\s+([0-9]+)/) {
+                state $NODATA = {
+                    1 => "No armored data.",
+                    2 => "Expected a packet but did not found one.",
+                    3 => "Invalid packet found, this may indicate a non OpenPGP message.",
+                    4 => "Signature expected but not found",
+                };
+                die $NODATA->{$1} // "Unknown NODATA error: $1";
+            }
+            else {
+                my $ignore = $status =~ /^IMPORT_RES/
+                    || $status =~ /^KEY_CONSIDERED [[:xdigit:]]+ [0-9]/
+                    || $status =~ /^IMPORT_OK [01] [[:xdigit:]]+/
+                    || $status =~ /^IMPORTED [[:xdigit:]]+/;
+                die "unknown status message: $status" unless $ignore;
+            }
+        }
+
+        waitpid $pid, 0;
+        die "gpg returned error: $CHILD_ERROR" unless $CHILD_ERROR == 0;
+        open my $stamp_fh, '>', $stamp_file;
+        print $stamp_fh DateTime->now->datetime;
+        close $stamp_fh;
+        return $home_dir;
+    }
+}
+
 
 __PACKAGE__->NAME;
