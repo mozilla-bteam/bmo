@@ -179,7 +179,7 @@ if ($data_fh || $attach_text) {
     $cgi->param('isprivate', $cgi->param('comment_is_private'));
 
     # Must be called before create() as it may alter $cgi->param('ispatch').
-    my $content_type = Bugzilla::Attachment::get_content_type();
+    my $content_type = Bugzilla::Attachment::get_content_type($data_fh);
     my $attachment;
 
     # If the attachment cannot be successfully added to the bug,

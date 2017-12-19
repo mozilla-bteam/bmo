@@ -545,12 +545,12 @@ sub insert {
         @obsolete_attachments = Bugzilla::Attachment->validate_obsolete($bug, \@obsolete);
     }
 
-    # Must be called before create() as it may alter $cgi->param('ispatch').
-    my $content_type = Bugzilla::Attachment::get_content_type();
-
     # Get the filehandle of the attachment.
     my $data_fh = $cgi->upload('data');
     my $attach_text = $cgi->param('attach_text');
+
+    # Must be called before create() as it may alter $cgi->param('ispatch').
+    my $content_type = Bugzilla::Attachment::get_content_type($data_fh);
 
     if ($attach_text) {
         # Convert to unix line-endings if pasting a patch
