@@ -38,9 +38,3 @@ SMIME certificate here to receive full update emails for such [% terms.bugs %].<
   [%- public_key FILTER html %]</textarea>
 
 <p>Submitting valid changes will automatically send an encrypted test email to your address.</p>
-[% IF Param('mail_delivery_override') != '' %]
-<p class="warning">
-  <input type="checkbox" name="override_test" id="override_test" [% " checked" IF override_test %]>
-  <b>DANGER:</b> Checking this will allow you to recieve mail from this [% terms.Bugzilla %] instance via [%  Param('mail_delivery_override') FILTER html %] even though it is  configured to not send mail. You will recieve all mail you are configured to receive including those from whines and batch updates!
-</p>
-[% END %]
