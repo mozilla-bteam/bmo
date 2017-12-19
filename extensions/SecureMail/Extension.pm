@@ -8,6 +8,7 @@ package Bugzilla::Extension::SecureMail;
 use 5.10.1;
 use strict;
 use warnings;
+use autodie;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Attachment;
@@ -725,8 +726,8 @@ sub _gpg_homedir {
         open my $stamp_fh, '>', $stamp_file;
         print $stamp_fh DateTime->now->datetime;
         close $stamp_fh;
-        return $home_dir;
     }
+    return $home_dir;
 }
 
 
