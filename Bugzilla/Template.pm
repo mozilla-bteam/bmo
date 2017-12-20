@@ -366,7 +366,7 @@ sub multiline_sprintf {
 
 sub version_filter {
     my ($file_url) = @_;
-    return "$file_url?" . Bugzilla->VERSION;
+    return "static/v" . Bugzilla->VERSION . "/$file_url";
 }
 
 # Set up the skin CSS cascade:
