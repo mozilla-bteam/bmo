@@ -2,7 +2,7 @@
 <FilesMatch (\.pm|\.pl|\.tmpl|\.swf|localconfig.*|cpanfile)$>
   deny from all
 </FilesMatch>
-<FilesMatch (\.js|\.css|\.woff)$>
+<FilesMatch \.(js|css|woff|png|jpe?g|gif)$>
     ExpiresActive On
     # According to RFC 2616, "1 year in the future" means "never expire".
     # We change the name of the file's URL whenever its modification date
@@ -13,7 +13,7 @@
     ExpiresDefault "now plus 1 years"
     Header append Cache-Control "public"
 </FilesMatch>
-  
+
 # Allow ZeroClipboard for access to the clipboard
 <Files "ZeroClipboard.swf">
   allow from all

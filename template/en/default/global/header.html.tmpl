@@ -395,8 +395,10 @@
 
 [% BLOCK format_css_link %]
   <link href="[% asset_url FILTER html %]" rel="stylesheet" type="text/css">
+  [% "\n" %]
 [% END %]
 
 [% BLOCK format_js_link %]
   <script [% script_nonce FILTER none %] type="text/javascript" src="[% asset_url FILTER version FILTER html %]"></script>
+  [% "\n" %]
 [% END %]
