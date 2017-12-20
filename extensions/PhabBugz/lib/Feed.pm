@@ -90,7 +90,7 @@ sub feed_query {
         # Only interested in changes to revisions for now.
         if ($object_phid !~ /^PHID-DREV/) {
             $self->logger->debug("SKIPPING: Not a revision change");
-            save_feed_last_id($story_id);
+            $self->save_feed_last_id($story_id);
             next;
         }
 
@@ -100,7 +100,7 @@ sub feed_query {
             my $user = Bugzilla::User->new({ id => $phab_users->[0]->{id}, cache => 1 });
             if ($user->login eq PHAB_AUTOMATION_USER) {
                 $self->logger->debug("SKIPPING: Change made by phabricator user");
-                save_feed_last_id($story_id);
+                $self->save_feed_last_id($story_id);
                 next;
             }
         }
@@ -109,20 +109,21 @@ sub feed_query {
 
         if (!$revision->bug_id) {
             $self->logger->debug("SKIPPING: No bug associated with revision");
-            save_feed_last_id($story_id);
+            $self->save_feed_last_id($story_id);
             next;
         }
 
         $self->process_revision_change($revision, $story_text);
-        save_feed_last_id($story_id);
+        $self->save_feed_last_id($story_id);
     }
 }
 
-sub save_feed_last_id($story_id) {
+sub save_feed_last_id {
+    my ($self, $story_id) = @_;
     # Store the largest last key so we can start from there in the next session
     $self->logger->debug("UPDATING FEED_LAST_ID: $story_id");
-    $dbh->do("REPLACE INTO phabbugz (name, value) VALUES ('feed_last_id', ?)",
-             undef, $story_id);
+    Bugzilla->dbh->do("REPLACE INTO phabbugz (name, value) VALUES ('feed_last_id', ?)",
+                      undef, $story_id);
 }
 
 sub process_revision_change {
