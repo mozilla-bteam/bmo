@@ -65,7 +65,7 @@ Bugzilla::Template::quoteUrls(
     $bug_2->comments->[0]->body, undef, undef, undef,
     sub {
         my $bug_id = $_[0];
-        is($bug_id, $bug_1_id, "found $bug_1_id on $bug_2_id");
+        is($bug_id, $bug_1_id, "found Bug $bug_1_id on Bug $bug_2_id");
     }
 );
 
