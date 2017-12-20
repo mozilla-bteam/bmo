@@ -35,7 +35,7 @@ my $SearchResult = Dict[
         repositoryPHID    => Maybe[Str],
         status            => HashRef,
         summary           => Str,
-        "bugzilla.bug-id" => Int,
+        "bugzilla.bug-id" => Maybe[Int],
     ],
     attachments => Dict[
         reviewers => Dict[
