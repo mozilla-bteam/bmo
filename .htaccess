@@ -2,7 +2,7 @@
 <FilesMatch (\.pm|\.pl|\.tmpl|\.swf|localconfig.*|cpanfile)$>
   deny from all
 </FilesMatch>
-<FilesMatch \.(js|css|woff|png|jpe?g|gif)$>
+<FilesMatch \.(js|css|woff2?|png|jpe?g|gif)$>
     ExpiresActive On
     # According to RFC 2616, "1 year in the future" means "never expire".
     # We change the name of the file's URL whenever its modification date
@@ -21,6 +21,7 @@
 
 AddType image/x-icon .ico
 AddType application/font-woff .woff
+AddType application/font-woff2 .woff2
 
 Redirect permanent /queryhelp.cgi https://bugzilla.mozilla.org/query.cgi?format=advanced&help=1
 Redirect permanent /bug_status.html https://bugzilla.mozilla.org/page.cgi?id=fields.html
