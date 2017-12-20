@@ -366,10 +366,6 @@ sub multiline_sprintf {
 
 sub version_filter {
     my ($file_url) = @_;
-    # This environment var is set in the .htaccess if we have mod_headers
-    # and mod_expires installed, to make sure that JS and CSS with "?"
-    # after them will still be cached by clients.
-    return $file_url if !$ENV{BZ_CACHE_CONTROL};
     return "$file_url?" . Bugzilla->VERSION;
 }
 
