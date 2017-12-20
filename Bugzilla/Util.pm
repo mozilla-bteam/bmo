@@ -259,12 +259,32 @@ sub i_am_webservice {
 # (doing so can mess up XML-RPC).
 sub do_ssl_redirect_if_required {
     return if !i_am_cgi();
-    my $uri = URI->new(Bugzilla->localconfig->{'urlbase'});
-    return if $uri->scheme ne 'https';
+    return if !Bugzilla->params->{'ssl_redirect'};
+
+    my $sslbase = Bugzilla->params->{'sslbase'};
 
     # If we're already running under SSL, never redirect.
-    return if $ENV{HTTPS} && $ENV{HTTPS} eq 'on';
+    return if uc($ENV{HTTPS} || '') eq 'ON';
+    # Never redirect if there isn't an sslbase.
+    return if !$sslbase;
     Bugzilla->cgi->redirect_to_https();
+}
+
+sub correct_urlbase {
+    my $ssl = Bugzilla->params->{'ssl_redirect'};
+    my $urlbase = Bugzilla->params->{'urlbase'};
+    my $sslbase = Bugzilla->params->{'sslbase'};
+
+    if (!$sslbase) {
+        return $urlbase;
+    }
+    elsif ($ssl) {
+        return $sslbase;
+    }
+    else {
+        # Return what the user currently uses.
+        return (uc($ENV{HTTPS} || '') eq 'ON') ? $sslbase : $urlbase;
+    }
 }
 
 # Returns the real remote address of the client,
@@ -363,9 +383,10 @@ sub is_ipv6 {
 }
 
 sub use_attachbase {
-    my $attachbase = Bugzilla->localconfig->{'attachment_base'};
-    my $urlbase    = Bugzilla->localconfig->{'urlbase'};
-    return ($attachbase ne '' && $attachbase ne $urlbase);
+    my $attachbase = Bugzilla->params->{'attachment_base'};
+    return ($attachbase ne ''
+            && $attachbase ne Bugzilla->params->{'urlbase'}
+            && $attachbase ne Bugzilla->params->{'sslbase'}) ? 1 : 0;
 }
 
 sub diff_arrays {
@@ -911,7 +932,7 @@ Bugzilla::Util - Generic utility functions for bugzilla
   # Functions that tell you about your environment
   my $is_cgi   = i_am_cgi();
   my $is_webservice = i_am_webservice();
-  my $urlbase  = Bugzilla->localconfig->{urlbase};
+  my $urlbase  = correct_urlbase();
 
   # Data manipulation
   ($removed, $added) = diff_arrays(\@old, \@new);
@@ -1044,6 +1065,11 @@ in a command-line script.
 
 Tells you whether or not the current usage mode is WebServices related
 such as JSONRPC or XMLRPC.
+
+=item C<correct_urlbase()>
+
+Returns either the C<sslbase> or C<urlbase> parameter, depending on the
+current setting for the C<ssl_redirect> parameter.
 
 =item C<remote_ip()>
 
