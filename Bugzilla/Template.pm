@@ -192,7 +192,6 @@ sub quoteUrls {
 
     # Provide tooltips for full bug links (Bug 74355)
     my $urlbase_re = '(' . quotemeta(Bugzilla->localconfig->{urlbase}) . ')';
-    $urlbase_re = qr/$urlbase_re/;
     $text =~ s~\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
               ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $user })) &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
