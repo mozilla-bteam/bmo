@@ -105,7 +105,7 @@ sub feed_query {
             }
         }
 
-        my $revision = $revision = Bugzilla::Extension::PhabBugz::Revision->new({ phids => [$object_phid] });
+        my $revision = Bugzilla::Extension::PhabBugz::Revision->new({ phids => [$object_phid] });
 
         if (!$revision->bug_id) {
             $self->logger->debug("SKIPPING: No bug associated with revision");
