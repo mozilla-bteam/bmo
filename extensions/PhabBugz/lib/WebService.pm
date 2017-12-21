@@ -96,7 +96,7 @@ sub revision {
         # If bug privacy groups do not have any matching synchronized groups,
         # then leave revision private and it will have be dealt with manually.
         if (!@set_groups) {
-            add_security_sync_comments(\@revisions, $bug);
+            add_security_sync_comments($revisions, $bug);
         }
 
         my $policy_phid = create_private_revision_policy($bug, \@set_groups);
