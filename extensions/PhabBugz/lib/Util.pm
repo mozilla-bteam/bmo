@@ -423,11 +423,11 @@ sub get_attachment_revisions {
         }
 
         if (@revision_ids) {
-            @revisions = get_revisions_by_ids( \@revision_ids );
+            $revisions = get_revisions_by_ids( \@revision_ids );
         }
     }
 
-    return @revisions;
+    return @$revisions;
 }
 
 sub request {

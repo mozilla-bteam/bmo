@@ -74,7 +74,6 @@ sub feed_query {
 
     # Process each story
     foreach my $story_data (@$transactions) {
-        my $skip = 0;
         my $story_id    = $story_data->{id};
         my $story_phid  = $story_data->{phid};
         my $author_phid = $story_data->{authorPHID};
@@ -96,7 +95,7 @@ sub feed_query {
 
         # Skip changes done by phab-bot user
         my $phab_users = get_phab_bmo_ids({ phids => [$author_phid] });
-        if (!$skip && @$phab_users) {
+        if (@$phab_users) {
             my $user = Bugzilla::User->new({ id => $phab_users->[0]->{id}, cache => 1 });
             if ($user->login eq PHAB_AUTOMATION_USER) {
                 $self->logger->debug("SKIPPING: Change made by phabricator user");
