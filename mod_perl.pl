@@ -23,11 +23,11 @@ BEGIN {
 }
 
 use Bugzilla::ModPerl::StartupFix;
-use English qw(-no_match_vars $EUID);
+
 use constant USE_NYTPROF => !! $ENV{USE_NYTPROF};
 BEGIN {
     if (USE_NYTPROF) {
-        $ENV{NYTPROF} = "savesrc=0:start=no:addpid=0";
+        $ENV{NYTPROF} = "savesrc=0:start=no:addpid=1";
     }
 }
 use if USE_NYTPROF, 'Devel::NYTProf::Apache';
