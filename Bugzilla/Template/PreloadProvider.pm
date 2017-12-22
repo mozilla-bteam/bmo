@@ -43,7 +43,7 @@ sub _init {
                 }
                 trick_taint($name);
                 my $data = {
-                    name => $key,
+                    name => $name,
                     text => do {
                         open my $fh, '<:utf8', $name or die "cannot open $name";
                         local $/ = undef;
