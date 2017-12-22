@@ -152,7 +152,7 @@ sub handler : method {
         state $count = {};
         my $script = File::Basename::basename($ENV{SCRIPT_FILENAME});
         $script =~ s/\.cgi$//;
-        my $file = bz_locations()->{datadir} . "/nytprof.$script." . ++$count{$$};
+        my $file = bz_locations()->{datadir} . "/nytprof.$script." . ++$count->{$$};
         DB::enable_profile($file);
     }
     Bugzilla::init_page();
