@@ -66,6 +66,7 @@ my %requires = (
     'URI'                      => '1.55',
     'version'                  => '0.87',
     'Taint::Util'              => 0,
+    'Devel::NYTProf'           => 0,
     'Class::XSAccessor'        => '1.18',
     'HTML::Escape'             => '1.10',
     'URI::Escape::XS'          => '0.14',
