@@ -96,7 +96,6 @@
   <head>
     [%- js_BUGZILLA = {
             param => {
-                cookiepath => Param('cookiepath'),
                 maxusermatches => Param('maxusermatches'),
             },
             constant => {
@@ -143,15 +142,11 @@
     [% PROCESS 'global/setting-descs.none.tmpl' %]
 
     [% SET css_sets = css_files(style_urls.unique, no_yui) %]
-    [% IF constants.CONCATENATE_ASSETS %]
-      [% PROCESS format_css_link asset_url = css_sets.unified_standard_skin %]
-    [% ELSE %]
-      [% FOREACH asset_url = css_sets.standard %]
-        [% PROCESS format_css_link %]
-      [% END %]
-      [% FOREACH asset_url = css_sets.skin %]
-        [% PROCESS format_css_link %]
-      [% END %]
+    [% FOREACH asset_url = css_sets.standard %]
+      [% PROCESS format_css_link %]
+    [% END %]
+    [% FOREACH asset_url = css_sets.skin %]
+      [% PROCESS format_css_link %]
     [% END %]
 
     [% IF style %]
@@ -160,14 +155,8 @@
       </style>
     [% END %]
 
-    [% IF css_sets.unified_custom %]
-      [% IF constants.CONCATENATE_ASSETS %]
-        [% PROCESS format_css_link asset_url = css_sets.unified_custom %]
-      [% ELSE %]
-        [% FOREACH asset_url = css_sets.custom %]
-          [% PROCESS format_css_link %]
-        [% END %]
-      [% END %]
+    [% FOREACH asset_url = css_sets.custom %]
+      [% PROCESS format_css_link %]
     [% END %]
 
     [%# jQuery Plugins %]
@@ -176,7 +165,7 @@
     [% END %]
     [% starting_js_urls.push('js/global.js', 'js/dropdown.js') %]
 
-    [% FOREACH asset_url = concatenate_js(starting_js_urls) %]
+    [% FOREACH asset_url = starting_js_urls %]
       [% PROCESS format_js_link %]
     [% END %]
 
@@ -200,7 +189,7 @@
       </script>
     [% END %]
 
-    [% FOREACH asset_url = concatenate_js(javascript_urls) %]
+    [% FOREACH asset_url = javascript_urls %]
       [% PROCESS format_js_link %]
     [% END %]
 
@@ -247,16 +236,20 @@
 
 <header id="header" role="banner">
   <div class="inner">
-    <h1 id="header-title" class="title"><a href="./" title="Go to home page">[% terms.BugzillaTitle %]</a></h1>
-    <form role="search" id="header-search" class="quicksearch quicksearch_check_empty" action="buglist.cgi">
-      <div class="searchbox-outer">
-        <input role="searchbox" id="quicksearch_top" name="quicksearch"
+    <h1 id="header-title" class="title"><a href="./" title="Go to home page">[% terms.Bugzilla %]</a></h1>
+    <form role="search" id="header-search" class="quicksearch" action="buglist.cgi">
+      <section class="searchbox-outer dropdown" role="combobox" aria-expanded="false" aria-haspopup="listbox"
+               aria-owns="header-search-dropdown">
+        <h2>Quick Search</h2>
+        <input role="searchbox" id="quicksearch_top" class="dropdown-button" name="quicksearch" autocomplete="off"
                value="[% quicksearch FILTER html %]" placeholder="Search [% terms.Bugs %]"
-               title="Search [% terms.bugs %] by keywords">
+               title="Enter a [% terms.bug %] number or some search terms" aria-controls="header-search-dropdown"
+               aria-label="Quick Search">
         <button type="submit" id="find_top" aria-label="Submit">
           <span class="icon" aria-hidden="true"></span>
         </button>
-      </div>
+        [% PROCESS "global/header-search-dropdown.html.tmpl" %]
+      </section>
     </form>
     <nav id="header-nav">
       <ul class="links">
@@ -287,13 +280,7 @@
                 aria-label="More tools…" aria-expanded="false" aria-haspopup="true" aria-controls="header-tools-menu">
           <span class="icon" aria-hidden="true"></span>
         </button>
-        <ul class="dropdown-content" id="header-tools-menu" role="menu" style="display:none;">
-          [% IF user.showmybugslink %]
-            [% filtered_username = user.login FILTER uri %]
-            <li role="presentation">
-              <a href="[% Param('mybugstemplate').replace('%userid%', filtered_username) %]" role="menuitem" tabindex="-1">My [% terms.Bugs %]</a>
-            </li>
-          [% END %]
+        <ul class="dropdown-content left" id="header-tools-menu" role="menu" style="display:none;">
           [% IF user.id %]
             <li role="presentation">
               <a href="request.cgi?requester=[% user.login FILTER uri %]&amp;requestee=[% user.login FILTER uri %]&amp;do_union=1&amp;group=type&amp;action=queue" role="menuitem" tabindex="-1">My Requests</a>
@@ -331,7 +318,7 @@
             <span class="icon" aria-hidden="true"></span>
           [% END %]
         </button>
-        <ul class="dropdown-content" id="header-account-menu" role="menu" style="display:none;">
+        <ul class="dropdown-content left" id="header-account-menu" role="menu" style="display:none;">
           <li role="presentation">
             <div href="user_profile" class="account-label">
               <div class="name">[% user.name FILTER html %]</div>
@@ -372,6 +359,7 @@
         [% END %]
       </ul>
     [% END %]
+    [% Hook.process('external-links') %]
   </div>
 </header> [%# header %]
 
@@ -407,8 +395,10 @@
 
 [% BLOCK format_css_link %]
   <link href="[% asset_url FILTER html %]" rel="stylesheet" type="text/css">
+  [% "\n" %]
 [% END %]
 
 [% BLOCK format_js_link %]
-  <script [% script_nonce FILTER none %] type="text/javascript" src="[% asset_url FILTER mtime FILTER html %]"></script>
+  <script [% script_nonce FILTER none %] type="text/javascript" src="[% asset_url FILTER version FILTER html %]"></script>
+  [% "\n" %]
 [% END %]

@@ -416,9 +416,6 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
-        "robots.txt"              => { perms     => CGI_READ,
-                                       overwrite => 1,
-                                       contents  => \&robots_txt},
         "httpd/env.conf"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => \&HTTPD_ENV_CONF },
@@ -582,7 +579,6 @@ sub update_filesystem {
 
     _remove_empty_css_files();
     _convert_single_file_skins();
-    _remove_dynamic_assets();
 }
 
 sub _css_url_fix {
@@ -645,27 +641,6 @@ sub _convert_single_file_skins {
         $dir_name =~ s/\.css$//;
         mkdir $dir_name or warn "$dir_name: $!";
         _rename_file($skin_file, "$dir_name/global.css");
-    }
-}
-
-# delete all automatically generated css/js files to force recreation at the
-# next request.
-sub _remove_dynamic_assets {
-    my @files = (
-        glob(bz_locations()->{assetsdir} . '/*.css'),
-        glob(bz_locations()->{assetsdir} . '/*.js'),
-    );
-    foreach my $file (@files) {
-        unlink($file);
-    }
-
-    # remove old skins/assets directory
-    my $old_path = bz_locations()->{skinsdir} . '/assets';
-    if (-d $old_path) {
-        foreach my $file (glob("$old_path/*.css")) {
-            unlink($file);
-        }
-        rmdir($old_path);
     }
 }
 
@@ -967,15 +942,6 @@ sub _check_web_server_group {
     }
 
     return $group_id;
-}
-
-sub robots_txt {
-    my $output = '';
-    my %vars;
-    Bugzilla::Hook::process("before_robots_txt", { vars => \%vars });
-    Bugzilla->template->process("robots.txt.tmpl", \%vars, \$output)
-    or die Bugzilla->template->error;
-    return $output;
 }
 
 

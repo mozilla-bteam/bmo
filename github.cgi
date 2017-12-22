@@ -13,7 +13,7 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
-use Bugzilla::Util qw( correct_urlbase );
+use Bugzilla::Util ();
 use Bugzilla::Error;
 use Bugzilla::Constants;
 use Bugzilla::Token qw( issue_short_lived_session_token
@@ -26,7 +26,7 @@ BEGIN { Bugzilla->extensions }
 use Bugzilla::Extension::GitHubAuth::Client;
 
 my $cgi     = Bugzilla->cgi;
-my $urlbase = correct_urlbase();
+my $urlbase = Bugzilla->localconfig->{urlbase};
 
 if (lc($cgi->request_method) eq 'post') {
     # POST requests come from Bugzilla itself and begin the GitHub login process
@@ -44,7 +44,7 @@ if (lc($cgi->request_method) eq 'post') {
       unless $target_uri =~ /^\Q$urlbase\E/;
 
     ThrowCodeError("github_insecure_referer", { target_uri => $target_uri })
-      if $cgi->referer && $cgi->referer =~ /(reset_password\.cgi|token\.cgi|t=|token=|api_key=)/;
+      if $cgi->referer && $cgi->referer =~ /(?:reset_password\.cgi|token\.cgi|\bt=|token=|api_key=)/;
 
     if ($user->id) {
         print $cgi->redirect($target_uri);
