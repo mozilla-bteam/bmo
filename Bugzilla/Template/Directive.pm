@@ -14,10 +14,15 @@ use warnings;
 
 use base qw(Template::Directive);
 
-sub filter {
-    package Template::Directive;
-    our ($PRETTY, $OUTPUT);
+my $HTML_FILTER = 'Bugzilla::Util::html_quote';
+my $URI_FILTER  = 'Template::Filters::url_filter';
 
+our ($PRETTY, $OUTPUT);
+*OUTPUT = \$Template::Directive::OUTPUT;
+*PRETTY = \$Template::Directive::PRETTY;
+*args   = \&Template::Directive::args;
+
+sub filter {
     my ($self, $lnameargs, $block) = @_;
     my ($name, $args, $alias) = @$lnameargs;
     $name = shift @$name;
@@ -38,13 +43,23 @@ $block
 };
 EOF
     }
+    elsif ($name eq "'uri'") {
+        return <<EOF;
+# HTML filter
+$OUTPUT do {
+    my \$output = '';
+$block
+    $URI_FILTER(\$output);
+};
+EOF
+    }
     elsif ($name eq "'html'") {
         return <<EOF;
 # HTML filter
 $OUTPUT do {
     my \$output = '';
 $block
-    Bugzilla::Util::html_quote(\$output);
+    $HTML_FILTER(\$output);
 };
 EOF
     } else {
@@ -60,7 +75,7 @@ $OUTPUT do {
               || \$context->throw(\$context->error);
 
 $block
-    
+
     &\$_tt_filter(\$output);
 };
 EOF
