@@ -69,7 +69,6 @@ my %requires = (
     'Class::XSAccessor'        => '1.18',
     'HTML::Escape'             => '1.10',
     'URI::Escape::XS'          => '0.14',
-    'CommonMark'               => '0.280301',
 );
 my %build_requires = (
     'ExtUtils::MakeMaker' => '7.22',
