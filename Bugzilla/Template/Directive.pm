@@ -22,7 +22,7 @@ our ($PRETTY, $OUTPUT);
 *PRETTY = \$Template::Directive::PRETTY;
 *args   = \&Template::Directive::args;
 
-sub filter {
+sub filter_ignore {
     my ($self, $lnameargs, $block) = @_;
     my ($name, $args, $alias) = @$lnameargs;
     $name = shift @$name;
