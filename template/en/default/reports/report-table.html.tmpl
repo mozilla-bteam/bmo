@@ -128,7 +128,7 @@ YAHOO.util.Event.addListener(window, "load", function() {
 
     // Do not use <\/a>$. For some reason, IE6 doesn't understand it.
     // We use [^\d]+$ instead.
-    var res = str.match(/>(\d+)[^\d]+$/m);
+    var res = str.match(>(\d+)[^\d]+$/m);
     if (res && res[1])
       return parseFloat(res[1]);
   };
