@@ -58,7 +58,7 @@
     <input type="checkbox" id="ispatch" name="ispatch" value="1">
     <label for="ispatch">patch</label><br><br>
     [%# Reset this whenever the page loads so that the JS state is up to date %]
-    <script type="text/javascript" [% csp_nonce FILTER none %]>
+    <script  [% csp_nonce FILTER none %]>
       $(function() {
         $("#file").on("change", function() {
           DataFieldHandler();

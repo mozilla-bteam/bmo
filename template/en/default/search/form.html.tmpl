@@ -23,7 +23,7 @@
 
 [% PROCESS "global/field-descs.none.tmpl" %]
 
-<script type="text/javascript">
+<script >
 
 var first_load = true;         [%# is this the first time we load the page? %]
 var last_sel = new Array();    [%# caches last selection %]
@@ -142,7 +142,7 @@ TUI_hide_default('information_query');
          type_selected = default.short_desc_type.0 
          accesskey = "s"
          %]
-      <script type="text/javascript"> <!--
+      <script > <!--
           document.forms[queryform].short_desc.focus(); 
       // -->
       </script>
@@ -397,7 +397,7 @@ TUI_hide_default('information_query');
                          onclick="showCalendar('chfieldto')"><span>Calendar</span></button>
           <div id="con_calendar_chfieldto"></div>
     (YYYY-MM-DD or relative dates)
-    <script type="text/javascript">
+    <script >
       createCalendar('chfieldfrom');
       createCalendar('chfieldto');
     </script>
