@@ -40,7 +40,6 @@ use IO::Dir;
 use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
 use JSON::XS qw(encode_json);
-use URI::Escape::XS ();
 
 use parent qw(Template);
 
@@ -585,7 +584,6 @@ sub create {
         # IMPORTANT!  When adding a filter here that does not override a
         # built-in filter, please also add a stub filter to t/004template.t.
         FILTERS => {
-            uri => \&URI::Escape::XS::uri_escape,
 
             # Render text in required style.
 
