@@ -35,6 +35,9 @@ use Storable qw(dclone freeze thaw);
 # New SCHEMA_VERSIONs (2+) use this
 use Data::Dumper;
 
+# New New Schema (4+) use this
+use Sereal qw(encode_sereal decode_sereal);
+
 # Whether or not this database can safely create FKs when doing a
 # CREATE TABLE statement. This is false for most DBs, because they
 # prevent you from creating FKs on tables and columns that don't
@@ -197,7 +200,7 @@ update this column in this table."
 
 =cut
 
-use constant SCHEMA_VERSION  => 3;
+use constant SCHEMA_VERSION  => 4;
 use constant ADD_COLUMN      => 'ADD COLUMN';
 # Multiple FKs can be added using ALTER TABLE ADD CONSTRAINT in one
 # SQL statement. This isn't true for all databases.
@@ -2996,16 +2999,7 @@ sub columns_equal {
 sub serialize_abstract {
     my ($self) = @_;
 
-    # Make it ok to eval
-    local $Data::Dumper::Purity = 1;
-
-    # Avoid cross-refs
-    local $Data::Dumper::Deepcopy = 1;
-
-    # Always sort keys to allow textual compare
-    local $Data::Dumper::Sortkeys = 1;
-
-    return Dumper($self->{abstract_schema});
+    return encode_sereal($self->{abstract_schema});
 }
 
 =item C<deserialize_abstract($serialized, $version)>
@@ -3030,11 +3024,14 @@ sub deserialize_abstract {
     if ($version < 2) {
         $thawed_hash = thaw($serialized);
     }
-    else {
+    elsif ($version > 1 && $version < 4) {
         my $cpt = new Safe;
         $cpt->reval($serialized) ||
             die "Unable to restore cached schema: " . $@;
         $thawed_hash = ${$cpt->varglob('VAR1')};
+    }
+    else {
+        $thawed_hash = decode_sereal($serialized);
     }
 
     # Version 2 didn't have the "created" key for REFERENCES items.
