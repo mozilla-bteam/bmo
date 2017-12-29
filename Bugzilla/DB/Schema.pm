@@ -3079,7 +3079,7 @@ object.
 
 sub get_empty_schema {
     my ($class) = @_;
-    return $class->deserialize_abstract(Dumper({}), SCHEMA_VERSION);
+    return $class->deserialize_abstract(encode_sereal({}), SCHEMA_VERSION);
 }
 
 1;
