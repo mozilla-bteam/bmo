@@ -44,6 +44,7 @@ use Encode qw(encode decode resolve_alias);
 use Encode::Guess;
 use POSIX qw(floor ceil);
 use Taint::Util qw(untaint);
+use HTML::Escape qw(escape_html);
 
 sub trick_taint {
     untaint($_[0]);
@@ -64,53 +65,7 @@ sub detaint_signed {
     return (defined($_[0]));
 }
 
-my %html_quote = (
-    q{&} => '&amp;',
-    q{<} => '&lt;',
-    q{>} => '&gt;',
-    q{"} => '&quot;',
-    q{@} => '&#64;', # Obscure '@'.
-);
-
-# Bug 120030: Override html filter to obscure the '@' in user
-#             visible strings.
-# Bug 319331: Handle BiDi disruptions.
-sub html_quote {
-    my $var = shift;
-    $var =~ s/([&<>"@])/$html_quote{$1}/g;
-
-    state $use_utf8 = Bugzilla->params->{'utf8'};
-
-    if ($use_utf8) {
-        # Remove control characters if the encoding is utf8.
-        # Other multibyte encodings may be using this range; so ignore if not utf8.
-        $var =~ s/(?![\t\r\n])[[:cntrl:]]//g;
-
-        # Remove the following characters because they're
-        # influencing BiDi:
-        # --------------------------------------------------------
-        # |Code  |Name                      |UTF-8 representation|
-        # |------|--------------------------|--------------------|
-        # |U+202a|Left-To-Right Embedding   |0xe2 0x80 0xaa      |
-        # |U+202b|Right-To-Left Embedding   |0xe2 0x80 0xab      |
-        # |U+202c|Pop Directional Formatting|0xe2 0x80 0xac      |
-        # |U+202d|Left-To-Right Override    |0xe2 0x80 0xad      |
-        # |U+202e|Right-To-Left Override    |0xe2 0x80 0xae      |
-        # --------------------------------------------------------
-        #
-        # The following are characters influencing BiDi, too, but
-        # they can be spared from filtering because they don't
-        # influence more than one character right or left:
-        # --------------------------------------------------------
-        # |Code  |Name                      |UTF-8 representation|
-        # |------|--------------------------|--------------------|
-        # |U+200e|Left-To-Right Mark        |0xe2 0x80 0x8e      |
-        # |U+200f|Right-To-Left Mark        |0xe2 0x80 0x8f      |
-        # --------------------------------------------------------
-        $var =~ tr/\x{202a}-\x{202e}//d;
-    }
-    return $var;
-}
+*html_quote = \&escape_html;
 
 sub html_light_quote {
     my ($text) = @_;
