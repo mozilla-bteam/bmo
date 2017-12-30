@@ -21,52 +21,19 @@ our ($PRETTY, $OUTPUT);
 *OUTPUT = \$Template::Directive::OUTPUT;
 *PRETTY = \$Template::Directive::PRETTY;
 *args   = \&Template::Directive::args;
+*pad    = \&Template::Directive::pad;
 
-sub filter_ignore {
+sub filter {
     my ($self, $lnameargs, $block) = @_;
     my ($name, $args, $alias) = @$lnameargs;
     $name = shift @$name;
-    $args = &args($self, $args);
+    $args = args($self, $args);
     $args = $args ? "$args, $alias" : ", undef, $alias"
         if $alias;
+    $name .= ", $args" if $args;
+    $block = pad($block, 1) if $PRETTY;
 
-    if ($name eq "'none'") {
-        return "# NO FILTER\n\n$block";
-    }
-    elsif ($name eq "'null'") {
-        return <<EOF;
-# null filter
-$OUTPUT do {
-    my \$output = '';
-$block
-    '';
-};
-EOF
-    }
-    elsif ($name eq "'uri'") {
-        return <<EOF;
-# HTML filter
-$OUTPUT do {
-    my \$output = '';
-$block
-    $URI_FILTER(\$output);
-};
-EOF
-    }
-    elsif ($name eq "'html'") {
-        return <<EOF;
-# HTML filter
-$OUTPUT do {
-    my \$output = '';
-$block
-    $HTML_FILTER(\$output);
-};
-EOF
-    } else {
-        $name .= ", $args" if $args;
-        $block = pad($block, 1) if $PRETTY;
-
-        return <<EOF;
+    return <<"EOF";
 
 # FILTER
 $OUTPUT do {
@@ -79,7 +46,6 @@ $block
     &\$_tt_filter(\$output);
 };
 EOF
-    }
 }
 
 1;
