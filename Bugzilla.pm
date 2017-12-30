@@ -241,7 +241,7 @@ sub template {
 }
 
 sub template_inner {
-    my ($class, $lang) = @_;
+    my (undef, $lang) = @_;
     my $cache = request_cache;
     my $current_lang = $cache->{template_current_lang}->[0];
     $lang ||= $current_lang || '';
@@ -249,7 +249,6 @@ sub template_inner {
 }
 
 sub extensions {
-    my ($class) = @_;
     my $cache = request_cache;
     if (!$cache->{extensions}) {
         my $extension_packages = Bugzilla::Extension->load_all();
@@ -303,7 +302,7 @@ sub user {
 }
 
 sub set_user {
-    my ($class, $user) = @_;
+    my (undef, $user) = @_;
     request_cache->{user} = $user;
 }
 
@@ -312,7 +311,7 @@ sub sudoer {
 }
 
 sub sudo_request {
-    my ($class, $new_user, $new_sudoer) = @_;
+    my (undef, $new_user, $new_sudoer) = @_;
     request_cache->{user}   = $new_user;
     request_cache->{sudoer} = $new_sudoer;
     # NOTE: If you want to log the start of an sudo session, do it here.
@@ -541,8 +540,9 @@ sub job_queue {
 }
 
 sub dbh {
+    my ($class) = @_;
     # If we're not connected, then we must want the main db
-    return request_cache->{dbh} ||= $_[0]->dbh_main;
+    return request_cache->{dbh} ||= $class->dbh_main;
 }
 
 sub dbh_main {
@@ -558,7 +558,7 @@ sub current_language {
 }
 
 sub error_mode {
-    my ($class, $newval) = @_;
+    my (undef, $newval) = @_;
     if (defined $newval) {
         request_cache->{error_mode} = $newval;
     }
@@ -568,7 +568,7 @@ sub error_mode {
 
 # This is used only by Bugzilla::Error to throw errors.
 sub _json_server {
-    my ($class, $newval) = @_;
+    my (undef, $newval) = @_;
     if (defined $newval) {
         request_cache->{_json_server} = $newval;
     }
@@ -610,14 +610,14 @@ sub usage_mode {
 }
 
 sub installation_mode {
-    my ($class, $newval) = @_;
+    my (undef, $newval) = @_;
     (request_cache->{installation_mode} = $newval) if defined $newval;
     return request_cache->{installation_mode}
         || INSTALLATION_MODE_INTERACTIVE;
 }
 
 sub installation_answers {
-    my ($class, $filename) = @_;
+    my (undef, $filename) = @_;
     if ($filename) {
         my $s = new Safe;
         $s->rdo($filename);
@@ -702,7 +702,7 @@ sub is_shadow_db {
 }
 
 sub fields {
-    my ($class, $criteria) = @_;
+    my (undef, $criteria) = @_;
     $criteria ||= {};
     my $cache = request_cache;
 
@@ -751,7 +751,7 @@ sub fields {
 }
 
 sub active_custom_fields {
-    my ($class, $params) = @_;
+    my (undef, $params) = @_;
     my $cache_id = 'active_custom_fields';
     if ($params) {
         $cache_id .= ($params->{product} ? '_p' . $params->{product}->id : '') .
@@ -768,7 +768,6 @@ sub active_custom_fields {
 }
 
 sub has_flags {
-    my $class = shift;
 
     if (!defined request_cache->{has_flags}) {
         request_cache->{has_flags} = Bugzilla::Flag->any_exist;
@@ -783,13 +782,13 @@ sub local_timezone {
 
 # Send messages to syslog for the auditing systems (eg. mozdef) to pick up.
 sub audit {
-    my ($class, $message) = @_;
+    my (undef, $message) = @_;
     state $logger = Log::Log4perl->get_logger("audit");
     $logger->notice(encode_utf8($message));
 }
 
 sub clear_request_cache {
-    my ($class, %option) = @_;
+    my (undef, %option) = @_;
     my $request_cache = request_cache();
     my @except        = $option{except} ? @{ $option{except} } : ();
 
