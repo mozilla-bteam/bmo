@@ -93,7 +93,6 @@
 [% IF !header.defined %][% header = title %][% END %]
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8">
   <head>
     [%- js_BUGZILLA = {
             param => {
@@ -131,7 +130,7 @@
     <title>[% title %]</title>
 
     [% IF Param('utf8') %]
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <meta charset="UTF-8">
     [% END %]
 
     [% IF no_index %]
