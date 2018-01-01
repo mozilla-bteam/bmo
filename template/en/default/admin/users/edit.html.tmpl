@@ -99,7 +99,7 @@ $(function() {
                   [% %]<input type="checkbox"
                               name="bless_[% group.id %]"
                               value="1"
-                              [% ' checked="checked"' IF perms.directbless %] >
+                              [% ' checked="checked"' IF perms.directbless %]>
                   [% ']' IF perms.indirectbless %]</td>
               [% END %]
               <td class="checkbox">
@@ -109,7 +109,7 @@ $(function() {
                            id="group_[% group.id %]"
                            name="group_[% group.id %]"
                            value="1"
-                           [% ' checked="checked"' IF perms.directmember %] >
+                           [% ' checked="checked"' IF perms.directmember %]>
                 [% '*' IF perms.regexpmember %]
                 [% ']' IF perms.derivedmember %]</td>
               <td class="groupname">
