@@ -150,7 +150,7 @@
     [% END %]
 
     [% IF style %]
-      <style type="text/css">
+      <style>
         [% style %]
       </style>
     [% END %]
@@ -394,7 +394,7 @@
 [% END %]
 
 [% BLOCK format_css_link %]
-  <link href="[% asset_url FILTER html %]" rel="stylesheet" type="text/css">
+  <link href="[% asset_url FILTER html %]" rel="stylesheet">
   [% "\n" %]
 [% END %]
 
