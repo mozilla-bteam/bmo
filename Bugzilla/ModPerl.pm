@@ -17,7 +17,7 @@ use Carp ();
 use Bugzilla::ModPerl::BlockIP;
 use Bugzilla::ModPerl::ResponseHandler;
 use Bugzilla::ModPerl::CleanupHandler;
-use Bugzilla::Constants ();
+use Bugzilla::Constants qw(USE_NYTPROF);
 
 use Apache2::Log ();
 use Apache2::ServerUtil;
@@ -34,11 +34,19 @@ use Bugzilla::Install::Requirements ();
 use Bugzilla::Util ();
 use Bugzilla::RNG ();
 
+BEGIN {
+    if (USE_NYTPROF) {
+        $ENV{NYTPROF} = "savesrc=0:start=no:addpid=1";
+    }
+}
+use if USE_NYTPROF, 'Devel::NYTProf::Apache';
+
 # Make warnings go to the virtual host's log and not the main
 # server log.
 BEGIN { *CORE::GLOBAL::warn = \&Apache2::ServerRec::warn; }
 
 sub startup {
+
     # Pre-compile the CGI.pm methods that we're going to use.
     Bugzilla::CGI->compile(qw(:cgi :push));
 

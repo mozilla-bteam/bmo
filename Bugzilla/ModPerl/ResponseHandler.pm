@@ -10,7 +10,7 @@ use strict;
 use warnings;
 use base qw(ModPerl::Registry);
 
-use Bugzilla::Constants qw(USAGE_MODE_REST);
+use Bugzilla::Constants qw(USAGE_MODE_REST USE_NYTPROF);
 use Time::HiRes;
 
 sub handler {
@@ -28,10 +28,22 @@ sub handler {
     local *lib::import = sub {};
     use warnings;
 
+
+    if (USE_NYTPROF) {
+        state $count = {};
+        my $script = File::Basename::basename($ENV{SCRIPT_FILENAME});
+        $script =~ s/\.cgi$//;
+        my $file = bz_locations()->{datadir} . "/nytprof.$script." . ++$count->{$$};
+        DB::enable_profile($file);
+    }
     Bugzilla::init_page();
     my $start = Time::HiRes::time();
     my $result = $class->SUPER::handler(@_);
     warn "[request_time] ", Bugzilla->cgi->request_uri, " took ", Time::HiRes::time() - $start, " seconds to execute";
+    if (USE_NYTPROF) {
+        DB::disable_profile();
+        DB::finish_profile();
+    }
 
     # When returning data from the REST api we must only return 200 or 304,
     # which tells Apache not to append its error html documents to the

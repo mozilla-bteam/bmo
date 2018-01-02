@@ -20,13 +20,12 @@ use Memoize;
 @Bugzilla::Constants::EXPORT = qw(
     BUGZILLA_VERSION
     REST_DOC
+    USE_NYTPROF
 
     REMOTE_FILE
     LOCAL_FILE
 
     bz_locations
-
-    CONCATENATE_ASSETS
 
     IS_NULL
     NOT_NULL
@@ -218,11 +217,6 @@ use constant REST_DOC => "https://bugzilla.readthedocs.io/en/latest/api/";
 # Location of the remote and local XML files to track new releases.
 use constant REMOTE_FILE => 'http://updates.bugzilla.org/bugzilla-update.xml';
 use constant LOCAL_FILE  => 'bugzilla-update.xml'; # Relative to datadir.
-
-# When true CSS and JavaScript assets will be concatanted and minified at
-# run-time, to reduce the number of requests required to render a page.
-# Setting this to a false value can help debugging.
-use constant CONCATENATE_ASSETS => 1;
 
 # These are unique values that are unlikely to match a string or a number,
 # to be used in criteria for match() functions and other things. They start
@@ -641,6 +635,8 @@ use constant EMAIL_LIMIT_EXCEPTION  => "email_limit_exceeded\n";
 # The maximum number of jobs to show when viewing the job queue
 # (view_job_queue.cgi).
 use constant JOB_QUEUE_VIEW_MAX_JOBS => 2500;
+
+use constant USE_NYTPROF => !! $ENV{USE_NYTPROF};
 
 sub bz_locations {
     # Force memoize() to re-compute data per project, to avoid
