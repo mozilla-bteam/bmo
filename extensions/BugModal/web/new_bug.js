@@ -36,6 +36,18 @@ var component_load = function(product) {
     );  
 }
 
+function changedesc(element) {
+    if (element.checked) {
+        $('#file-desc' + $(element).attr('data-no')).css('display', 'none');
+        $('#file-desc-edit' + $(element).attr('data-no')).css('display', 'inline-block');
+    }
+    else {
+        $('#file-desc' + $(element).attr('data-no')).css('display', 'inline-block');
+        $('#file-desc-edit' + $(element).attr('data-no')).css('display', 'none');
+        $('input[name="description' + $(element).attr('data-no') + '"]').val($('#file-desc' + $(element).attr('data-no')).text());
+    }
+}
+
 $(document).ready(function() {
     var product_name = window.location.hash? window.location.hash.substr(1) : null;
     bugzilla_ajax(
@@ -137,6 +149,7 @@ $(document).ready(function() {
             document.getElementById('data').value = "";
             document.getElementById('reset').style.display = "none";
             $("#description").prop('required',false);
+            $('#file-desc').html('')
         });
     $('#comment-edit-tab')
         .click(function() {
@@ -152,4 +165,12 @@ $(document).ready(function() {
     window.onhashchange = function() {
         location.reload();
     }
+
+    $('#data').change(function (event) {
+        $('#file-desc').html('<hr>');
+        for (var i = 0; i < $(this)[0].files.length; i++) {
+            $('#file-desc').append('<span id="file-desc' + i + '">' + $(this)[0].files[i].name + '</span><span style="display:none" id="file-desc-edit' + i + '"><input type= "text" id= "description' + i + '" name= "description' + i + '" size= "60" maxlength= "200" value="' + $(this)[0].files[i].name + '"></span>');
+            $('#file-desc').append('<input style="display:inline-block" type="checkbox" data-no="' + i + '" onchange="changedesc(this)" id="file-check' + i + '">Edit desc.<hr>');
+        }
+    });
 });
