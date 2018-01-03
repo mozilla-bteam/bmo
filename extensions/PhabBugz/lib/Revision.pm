@@ -20,7 +20,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
 );
 
 use Types::Standard -all;
-use Type::Util;
+use Type::Utils;
 
 my $EmptyStr = declare "EmptyStr",
     as Str,
