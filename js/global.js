@@ -192,22 +192,44 @@ $().ready(function() {
 });
 
 /**
+ * Focus the main content when the page is loaded and there is no autofocus
+ * element, so the user can immediately scroll down the page using keyboard.
+ */
+const focus_main_content = () => {
+    if (!document.querySelector('[autofocus]')) {
+        document.querySelector('main').focus();
+    }
+}
+
+/**
+ * Check if Gravatar images on the page are successfully loaded, and if blocked
+ * (by any content blocker), replace them with the default/fallback image.
+ */
+const detect_blocked_gravatars = () => {
+    document.querySelectorAll('img[src^="https://secure.gravatar.com/avatar/"]').forEach($img => {
+        if (!$img.complete || !$img.naturalHeight) {
+            $img.src = 'extensions/Gravatar/web/default.jpg';
+        }
+    });
+}
+
+/**
  * If the URL contains a hash like #c10, scroll down the page to show the
  * element below the fixed global header. This workaround is required for
  * comments on show_bug.cgi, components on describecomponents.cgi, etc.
  */
 const scroll_element_into_view = () => {
     if (location.hash) {
-        const $header = document.querySelector('#header');
-        const $comment = document.querySelector(location.hash);
+        const $main = document.querySelector('main');
+        const $target = document.querySelector(location.hash);
 
-        if ($comment) {
-            window.setTimeout(() => {
-                window.scrollTo(0, $comment.offsetTop - $header.offsetHeight - 20);
-            }, 250);
+        if ($target) {
+            window.setTimeout(() => $main.scrollTop = $target.offsetTop - 20, 50);
         }
     }
 }
 
+window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
+window.addEventListener('load', detect_blocked_gravatars, { once: true });
 window.addEventListener('load', scroll_element_into_view, { once: true });
 window.addEventListener('hashchange', scroll_element_into_view);

@@ -83,7 +83,7 @@ label.required:before {
   <input type="hidden" name="priority" value="--">
   <input type="hidden" name="bug_severity" value="normal">
   <input type="hidden" name="format" value="legal">
-  <input type="hidden" name="contenttypemethod" value="autodetect" />
+  <input type="hidden" name="contenttypemethod" value="autodetect">
   <input type="hidden" name="token" value="[% token FILTER html %]">
   [% IF user.in_group('canconfirm') %]
     <input type="hidden" name="bug_status" value="NEW">
@@ -125,6 +125,7 @@ label.required:before {
         <option value="Innovation">Innovation</option>
         <option value="Marketing">Marketing</option>
         <option value="Participation">Participation</option>
+        <option value="Pocket">Pocket</option>
         <option value="Strategic Operations">Strategic Operations</option>
         <option value="Other">Other</option>
       </select>
