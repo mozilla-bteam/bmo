@@ -178,7 +178,7 @@ BUGZILLA_UNSAFE_AUTH_DELEGATION
 
 BMO_urlbase
   The public url for this instance. Note that if this begins with https://
-  and BMO_inbound_proxies is set to '*' Bugzilla will believe the connection to it
+  abd BMO_inbound_proxies is set to '*' Bugzilla will believe the connection to it
   is using SSL.
 
 BMO_attachment_base

@@ -95,13 +95,6 @@ sub _load {
     my $result = request('differential.revision.search', $data);
     if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
         $result = $result->{result}->{data}->[0];
-<<<<<<< HEAD
-        # FIXME: If bugzilla.bug-id is not set for a revision in Phabricator
-        # it sends it as an empty string instead of NULL. Maybe[Int] in
-        # assert_valid() treats empty string as defined and we do not want that.
-        $result->{fields}->{"bugzilla.bug-id"} = undef if !$result->{fields}->{"bugzilla.bug-id"};
-=======
->>>>>>> master
     }
 
     return $result;
