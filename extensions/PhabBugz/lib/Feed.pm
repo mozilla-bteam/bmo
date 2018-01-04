@@ -84,7 +84,7 @@ sub feed_query {
         $self->logger->debug("STORY PHID: $story_phid");
         $self->logger->debug("AUTHOR PHID: $author_phid");
         $self->logger->debug("OBJECT PHID: $object_phid");
-        $self->logger->debug("STORY TEXT: $story_text");
+        $self->logger->info("STORY TEXT: $story_text");
 
         # Only interested in changes to revisions for now.
         if ($object_phid !~ /^PHID-DREV/) {
