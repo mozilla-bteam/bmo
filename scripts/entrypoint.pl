@@ -178,7 +178,7 @@ sub cmd_prove   {
 }
 sub cmd_version { run( 'cat',   '/app/version.json' ); }
 
-sub cmd_test_bmo {
+sub cmd_test_new {
     my (@prove_args) = @_;
     check_data_dir();
     wait_for_db();
