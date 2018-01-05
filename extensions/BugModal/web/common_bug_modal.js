@@ -700,7 +700,7 @@ $(function() {
     $('#needinfo-scroll')
         .click(function(event) {
             event.preventDefault();
-            $.scrollTo($('#needinfo_role'), function() { $('#needinfo_role').focus(); });
+            $.scrollTo($('#needinfo_container'), function() { $('#needinfo_role').focus(); });
         });
 
     // knob
