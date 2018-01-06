@@ -204,6 +204,20 @@
     [% "</a>" IF user.id %]
   </td>
 </tr>
+
+<tr>
+  <td>&nbsp;</td>
+  <th>[% terms.Bugs %] filed last 30 days</th>
+  <td class="numeric">
+    [% IF user.id %]
+      <a href="buglist.cgi?query_format=advanced&amp;emailtype1=exact&amp;emailreporter1=1&amp;email1=[% target.login FILTER uri %]&amp;chfield=[Bug creation]&amp;chfieldfrom=-30d"
+        target="_blank">
+    [% END %]
+    [% stats.bugs_filed || 0 FILTER html %]
+    [% "</a>" IF user.id %]
+  </td>
+</tr>
+
 <tr>
   <td>&nbsp;</td>
   <th>Comments made</th>
