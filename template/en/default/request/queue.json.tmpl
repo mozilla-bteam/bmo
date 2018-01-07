@@ -1,0 +1,30 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0. #%]
+
+[%~ display_columns = ["requester", "requestee", "type", "status", "bug_id", "bug_summary",
+                       "attach_id", "attach_summary", "ispatch", "created", "category"] ~%]
+[
+  [%~ FOREACH request = requests ~%]
+    {
+      [%~ FOREACH column = display_columns ~%]
+        "[%~ column FILTER json ~%]":
+        [%~ IF column == 'created' ~%]
+          "[%~ request.$column FILTER time("%Y-%m-%dT%H:%M:%SZ", "UTC") FILTER json ~%]"
+        [%~ ELSIF column.match('^requeste') ~%]
+          "[%~ request.$column FILTER email FILTER json ~%]"
+        [%~ ELSIF column.match('_id$') ~%]
+          [%~ IF request.$column ~%][%~ request.$column FILTER json ~%][%~ ELSE ~%]null[%~ END ~%]
+        [%~ ELSIF column.match('^is') ~%]
+          [%~ IF request.$column ~%]true[%~ ELSE ~%]false[%~ END ~%]
+        [%~ ELSE ~%]
+          "[%~ request.$column FILTER json ~%]"
+        [%~ END ~%]
+        [%~ ',' IF NOT loop.last() ~%]
+      [%~ END ~%]
+    }[%~ ',' IF NOT loop.last() ~%]
+  [%~ END ~%]
+]
