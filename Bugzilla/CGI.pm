@@ -521,7 +521,7 @@ sub header {
         "skins/standard/fonts/FiraSans-SemiBold.woff2?v=4.203",
         "skins/standard/fonts/MaterialIcons-Regular.woff2",
     );
-    $headers{'-link'} = join(", ", map { sprintf('</static/v%s/%s>; rel="preload"; as="font";', BUGZILLA->VERSION, $_) } @fonts);
+    $headers{'-link'} = join(", ", map { sprintf('</static/v%s/%s>; rel="preload"; as="font"', Bugzilla->VERSION, $_) } @fonts);
 
     return $self->SUPER::header(%headers) || "";
 }
