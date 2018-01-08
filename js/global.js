@@ -232,8 +232,10 @@ const adjust_scroll_onload = () => {
  * native `Element.scrollIntoView()` function, this adds some extra room above
  * the target element. Smooth scroll can be done using CSS.
  * @param {Element} $target - An element to be brought.
+ * @param {Function} [complete] - An optional callback function to be executed
+ *  once the scroll is complete.
  */
-const scroll_element_into_view = ($target) => {
+const scroll_element_into_view = ($target, complete) => {
     let top = 0;
     let $element = $target;
 
@@ -243,6 +245,28 @@ const scroll_element_into_view = ($target) => {
         top += ($element.offsetTop || 0);
         $element = $element.offsetParent;
     } while ($element && !$element.matches('main, [role="feed"]'))
+
+    if (!$element) {
+        return;
+    }
+
+    if (typeof complete === 'function') {
+        const callback = () => {
+            $element.removeEventListener('scroll', listener);
+            complete();
+        };
+
+        // Emulate the `scrollend` event
+        const listener = () => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(callback, 100);
+        };
+
+        // Make sure the callback is always fired even if no scroll happened
+        let timer = window.setTimeout(callback, 100);
+
+        $element.addEventListener('scroll', listener);
+    }
 
     $element.scrollTop = top - 20;
 }
