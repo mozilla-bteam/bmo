@@ -6,8 +6,8 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% request_count = user.review_request_count + user.feedback_request_count + user.needinfo_request_count %]
 [% IF user.id %]
+  [% request_count = user.review_request_count + user.feedback_request_count + user.needinfo_request_count %]
   <div id="header-requests" class="dropdown">
     <button type="button" id="header-requests-menu-button" class="dropdown-button minor"
             title="Requests for you[%- IF request_count -%]:
