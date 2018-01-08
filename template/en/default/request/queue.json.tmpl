@@ -5,26 +5,38 @@
   # This Source Code Form is "Incompatible With Secondary Licenses", as
   # defined by the Mozilla Public License, v. 2.0. #%]
 
-[%~ display_columns = ["requester", "requestee", "type", "status", "bug_id", "bug_summary",
-                       "attach_id", "attach_summary", "ispatch", "created", "category"] ~%]
-[
-  [%~ FOREACH request = requests ~%]
-    {
-      [%~ FOREACH column = display_columns ~%]
-        "[%~ column FILTER json ~%]":
-        [%~ IF column == 'created' ~%]
-          "[%~ request.$column FILTER time("%Y-%m-%dT%H:%M:%SZ", "UTC") FILTER json ~%]"
-        [%~ ELSIF column.match('^requeste') ~%]
-          "[%~ request.$column FILTER email FILTER json ~%]"
-        [%~ ELSIF column.match('_id$') ~%]
-          [%~ IF request.$column ~%][%~ request.$column FILTER json ~%][%~ ELSE ~%]null[%~ END ~%]
-        [%~ ELSIF column.match('^is') ~%]
-          [%~ IF request.$column ~%]true[%~ ELSE ~%]false[%~ END ~%]
-        [%~ ELSE ~%]
-          "[%~ request.$column FILTER json ~%]"
-        [%~ END ~%]
-        [%~ ',' IF NOT loop.last() ~%]
-      [%~ END ~%]
-    }[%~ ',' IF NOT loop.last() ~%]
-  [%~ END ~%]
-]
+[% RAWPERL %]
+my @display_columns = (
+    "requester", "requestee",      "type",    "status",  "bug_id", "bug_summary",
+    "attach_id", "attach_summary", "ispatch", "created", "category"
+);
+my $requests    = $stash->get('requests');
+my $time_filter = $context->filter('time', [ '%Y-%m-%dT%H:%M:%SZ', 'UTC' ]);
+my $mail_filter = $context->filter('email');
+
+my @results;
+foreach my $request (@$requests) {
+    my %item = ();
+    foreach my $column (@display_columns) {
+        my $val;
+        if ( $column eq 'created' ) {
+            $val = $time_filter->( $request->{$column} );
+        }
+        elsif ( $column =~ /^requeste/ ) {
+            $val = $mail_filter->( $request->{$column} );
+        }
+        elsif ( $column =~ /_id$/ ) {
+            $val = $request->{$column} ? 0 + $request->{$column} : undef;
+        }
+        elsif ( $column =~ /^is/ ) {
+            $val = $request->{$column} ? \1 : \0;
+        }
+        else {
+            $val = $request->{$column};
+        }
+        $item{$column} = $val;
+    }
+    push @results, \%item;
+}
+$output .= JSON::XS::encode_json( \@results );
+[% END %]
