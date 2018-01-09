@@ -71,6 +71,9 @@
         box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
         color: #555;
         background-color: #FFF;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        user-select: none;
     }
 
     #header a,
@@ -121,6 +124,7 @@
         font-family: 'Material Icons';
         vertical-align: middle;
         color: #777;
+        pointer-events: none;
     }
 
     #header .title {
@@ -165,19 +169,18 @@
         height: 32px;
     }
 
-    #header .searchbox-outer button {
+    #header .searchbox-outer .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         position: absolute;
         top: 4px;
         left: 4px;
-        border: 0;
-        padding: 0;
         width: 24px;
         height: 24px;
-        background: transparent;
-        box-shadow: none;
     }
 
-    #header .searchbox-outer button .icon::before {
+    #header .searchbox-outer .icon::before {
         content: '\E8B6';
     }
 
@@ -240,10 +243,12 @@
 
     #header .dropdown-button {
         display: block;
+        border-radius: 0; /* Override Safari's default */
         padding: 0;
         color: inherit;
         background: transparent;
         box-shadow: none;
+        transition: none;
     }
 
     #header .dropdown-content {
@@ -279,12 +284,12 @@
 
     #header .dropdown-content.right::before,
     #header .dropdown-content.right::after {
-        left: 10px;
+        left: 11px;
     }
 
     #header .dropdown-content.left::before,
     #header .dropdown-content.left::after {
-        right: 10px;
+        right: 11px;
     }
 
     #header .dropdown-content::before {
@@ -306,6 +311,94 @@
         background-color: transparent;
     }
 
+    #header .dropdown-panel {
+        padding: 0 !important;
+        width: 400px;
+        max-width: none !important;
+    }
+
+    #header .dropdown-panel header {
+        border-bottom: 1px solid #CCC;
+    }
+
+    #header .dropdown-panel h2 {
+        margin: 0;
+        padding: 8px 12px;
+        font-size: 14px;
+        line-height: 100%;
+        font-weight: normal;
+    }
+
+    #header .dropdown-panel ul {
+        overflow-y: auto;
+        margin: 0;
+        padding: 0;
+        max-height: 480px;
+        list-style-type: none;
+    }
+
+    #header .dropdown-panel li:not(:last-child) {
+        border-bottom: 1px solid #CCC;
+    }
+
+    #header .dropdown-panel li a {
+        padding: 12px !important;
+    }
+
+    #header .dropdown-panel li a:hover {
+        background-color: rgba(0, 0, 0, .05) !important;
+    }
+
+    #header .dropdown-panel li a * {
+        pointer-events: none;
+    }
+
+    #header .dropdown-panel .notifications img {
+        float: left;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+    }
+
+    #header .dropdown-panel .notifications img ~ * {
+        display: block;
+        margin-left: 52px;
+    }
+
+    #header .dropdown-panel .notifications label {
+        overflow: hidden;
+        max-height: 40px;
+    }
+
+    #header .dropdown-panel .notifications strong {
+        font-weight: 600;
+    }
+
+    #header .dropdown-panel .notifications time {
+        font-size: 12px;
+        color: #999;
+    }
+
+    #header .dropdown-panel .loading,
+    #header .dropdown-panel .empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 240px;
+        line-height: 150%;
+        text-align: center;
+    }
+
+    #header .dropdown-panel footer {
+        border-top: 1px solid #CCC;
+        text-align: center;
+    }
+
+    #header .dropdown-panel footer a {
+        padding: 8px 16px !important;
+        line-height: 100% !important;
+    }
+
     #header-search h2 {
         position: absolute;
         left: -99999px;
@@ -323,16 +416,36 @@
         max-height: 400px;
     }
 
-    #header-search-dropdown h3 {
+    #header-search-dropdown header {
+        display: flex;
         position: sticky;
         top: -4px;
         left: 0;
-        margin: -4px 8px 0;
+        margin: -4px 12px 0;
         padding: 8px 0 4px;
         color: #999;
         background: #FFF;
         font-size: 12px;
+    }
+
+    #header-search-dropdown header h3 {
+        flex: auto;
+        margin: 0;
+        font-size: inherit;
+        line-height: 1.5;
         font-weight: normal;
+    }
+
+    #header-search-dropdown header a {
+        flex: none;
+        padding: 0 !important;
+        font-size: inherit;
+    }
+
+    #header-search-dropdown.dropdown-content header a:hover,
+    #header-search-dropdown.dropdown-content header a:focus,
+    #header-search-dropdown.dropdown-content header a.active {
+        background-color: transparent !important;
     }
 
     #header-search-dropdown ul {
@@ -350,7 +463,7 @@
     #header-tools-menu-button {
         width: 32px;
         height: 32px;
-        border-radius: 4px;
+        border-radius: 4px !important;
     }
 
     #header-tools-menu-button .icon {
@@ -1143,8 +1256,7 @@ hr {
     position: relative;
     outline: none;
     padding: 0 15px;
-    overflow-x: hidden;
-    overflow-y: scroll;
+    overflow: auto;
     scroll-behavior: smooth;
 }
 
