@@ -54,15 +54,29 @@
     }
 /* global (end) */
 
+/* wrapper (begin) */
+    #wrapper {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+    }
+/* wrapper (end) */
+
 /* fixed global header (begin) */
-#wrapper {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-}
+    @media screen and (min-width: 1024px) {
+        #wrapper {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        #bugzilla-body {
+            overflow-x: auto;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS */
+            scroll-behavior: smooth;
+        }
+    }
 /* fixed global header (end) */
 
 /* header (begin) */
@@ -1270,10 +1284,6 @@ hr {
     position: relative;
     outline: none;
     padding: 0 15px;
-    overflow-x: auto;
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch; /* Enable lazy scrolling on iOS */
-    scroll-behavior: smooth;
 }
 
 #main-inner {
