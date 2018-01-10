@@ -59,10 +59,18 @@
         display: flex;
         flex-direction: column;
         position: absolute;
-        width: 100%;
-        height: 100%;
     }
 /* wrapper (end) */
+
+/* fixed global header (begin) */
+    @media screen and (min-width: 1024px) {
+        #wrapper {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+    }
+/* fixed global header (end) */
 
 /* header (begin) */
     #header {
@@ -353,6 +361,10 @@
         pointer-events: none;
     }
 
+    #header .dropdown-panel .notifications a {
+        overflow: hidden;
+    }
+
     #header .dropdown-panel .notifications img {
         float: left;
         border-radius: 50%;
@@ -377,6 +389,16 @@
     #header .dropdown-panel .notifications time {
         font-size: 12px;
         color: #999;
+    }
+
+    #header .dropdown-panel .notifications .secure .icon {
+        display: inline;
+        font-size: 16px;
+        vertical-align: text-bottom;
+    }
+
+    #header .dropdown-panel .notifications .secure .icon::before {
+        content: '\E88D';
     }
 
     #header .dropdown-panel .loading,
@@ -1180,7 +1202,6 @@ input.required, select.required, span.required_explanation {
 }
 
 body {
-    min-height: 400px;
     background: #f6f4ec;
     background-image: url(../../images/noise.png);
     background-image: url(../../images/noise.png), -moz-linear-gradient(#d7d3c8, #f6f4ec 400px);
@@ -1256,7 +1277,9 @@ hr {
     position: relative;
     outline: none;
     padding: 0 15px;
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch; /* Enable lazy scrolling on iOS */
     scroll-behavior: smooth;
 }
 
