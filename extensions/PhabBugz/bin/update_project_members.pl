@@ -58,7 +58,7 @@ foreach my $group (@$sync_groups) {
     my $project = Bugzilla::Extension::PhabBugz::Project->new({
         name => $phab_project_name
     });
-    if (!$project->id) {
+    if (!$project) {
         $project = Bugzilla::Extension::PhabBugz::Project->create({
             name        => $phab_project_name,
             description => 'BMO Security Group for ' . $group->name

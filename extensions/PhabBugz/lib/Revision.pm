@@ -58,46 +58,6 @@ my $SearchResult = Dict[
     ],
 ];
 
-my $NewParams    = Dict[ phids => ArrayRef[Str] ];
-
-#########################
-#    Initialization     #
-#########################
-
-sub new {
-    my ($class, $params) = @_;
-    $NewParams->assert_valid($params);
-    my $self = _load($params);
-    $SearchResult->assert_valid($self);
-
-    return bless($self, $class);
-}
-
-sub _load {
-    my ($params) = @_;
-
-    my $data = {
-        queryKey    => 'all',
-        attachments => {
-            projects    => 1,
-            reviewers   => 1,
-            subscribers => 1
-        },
-        constraints => $params
-    };
-
-    my $result = request('differential.revision.search', $data);
-    if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
-        $result = $result->{result}->{data}->[0];
-    }
-
-    # Some values in Phabricator for bug ids may have been saved
-    # white whitespace so we remove any here just in case.
-    $result->{fields}->{'bugzilla.bug-id'} = trim($result->{fields}->{'bugzilla.bug-id'});
-
-    return $result;
-}
-
 # {
 #   "data": [
 #     {
@@ -154,6 +114,46 @@ sub _load {
 #     "order": null
 #   }
 # }
+
+#########################
+#    Initialization     #
+#########################
+
+sub new {
+    my ($class, $params) = @_;
+    my $results = $class->match($params);
+    return $results->[0];
+}
+
+sub match {
+    my ($invocant, $constraints) = @_;
+    my $class = ref($invocant) || $invocant;
+
+    my $data = {
+        queryKey    => 'all',
+        attachments => {
+            projects    => 1,
+            reviewers   => 1,
+            subscribers => 1
+        },
+        constraints => $constraints
+    };
+
+    my $result = request('differential.revision.search', $data);
+    my $revisions;
+    if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
+        $revisions = $result->{result}->{data};
+    }
+
+    # Some values in Phabricator for bug ids may have been saved
+    # white whitespace so we remove any here just in case.
+    foreach my $revision (@$revisions) {
+        $revision->{fields}->{'bugzilla.bug-id'} = trim($revision->{fields}->{'bugzilla.bug-id'});
+        $SearchResult->assert_valid($revision);
+    }
+
+    return [ map { bless($_, $class) } @$revisions ];
+}
 
 #########################
 #     Modification      #

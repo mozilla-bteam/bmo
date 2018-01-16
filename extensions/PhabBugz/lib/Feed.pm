@@ -21,14 +21,11 @@ use Bugzilla::Extension::PhabBugz::Policy;
 use Bugzilla::Extension::PhabBugz::Revision;
 use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
-    create_private_revision_policy
     create_revision_attachment
-    edit_revision_policy
     get_bug_role_phids
     get_phab_bmo_ids
     get_security_sync_groups
     is_attachment_phab_revision
-    make_revision_public
     request
     set_phab_user
 );
@@ -173,18 +170,18 @@ sub process_revision_change {
     }
     # else bug is private.
     else {
-        my @set_groups = get_security_sync_groups($bug);
+        my $set_groups = get_security_sync_groups($bug);
 
         # If bug privacy groups do not have any matching synchronized groups,
         # then leave revision private and it will have be dealt with manually.
-        if (!@set_groups) {
+        if (!@$set_groups) {
             $self->logger->debug('No matching groups. Adding comments to bug and revision');
             add_security_sync_comments([$revision], $bug);
         }
         # Otherwise, we create a new custom policy containing the project
         # groups that are mapped to bugzilla groups.
         else {
-            my @set_projects = map { "bmo-" . $_ } @set_groups;
+            my $set_projects = [ map { "bmo-" . $_ } @$set_groups ];
 
             # If current policy projects matches what we want to set, then
             # we leave the current policy alone.
@@ -195,7 +192,7 @@ sub process_revision_change {
                     = Bugzilla::Extension::PhabBugz::Policy->new({ phids => [ $revision->view_policy ]});
                 my $current_projects = $current_policy->get_rule_projects;
                 $self->logger->debug("Current policy projects: " . join(", ", @$current_projects));
-                my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
+                my ($added, $removed) = diff_arrays($current_projects, $set_projects);
                 if (@$added || @$removed) {
                     $self->logger->debug('Project groups do not match. Need new custom policy');
                     $current_policy= undef;
@@ -206,8 +203,8 @@ sub process_revision_change {
             }
 
             if (!$current_policy) {
-                $self->logger->debug("Creating new custom policy: " . join(", ", @set_projects));
-                my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create(\@set_projects);
+                $self->logger->debug("Creating new custom policy: " . join(", ", @$set_projects));
+                my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create($set_projects);
                 $revision->set_policy('view', $new_policy->phid);
                 $revision->set_policy('edit', $new_policy->phid);
             }

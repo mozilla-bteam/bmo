@@ -19,12 +19,14 @@ use Bugzilla::Error;
 use Bugzilla::User;
 
 use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::Revision;
+use Bugzilla::Extension::PhabBugz::Policy;
+
 use Bugzilla::Extension::PhabBugz::Util qw(
-  add_comment_to_revision create_private_revision_policy
-  edit_revision_policy get_attachment_revisions get_bug_role_phids
-  intersect make_revision_public
-  make_revision_private set_revision_subscribers
-  get_security_sync_groups add_security_sync_comments);
+  get_attachment_revisions
+  get_bug_role_phids
+  get_security_sync_groups
+  add_security_sync_comments);
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util qw(is_public);
 
@@ -66,22 +68,24 @@ sub send {
 
     my $is_public = is_public($bug);
 
-    my @set_groups = get_security_sync_groups($bug);
+    my $set_groups = get_security_sync_groups($bug);
 
-    my @revisions = get_attachment_revisions($bug);
+    my $revisions = get_attachment_revisions($bug);
 
-    if (!$is_public && !@set_groups) {
-        foreach my $revision (@revisions) {
+    if (!$is_public && !@$set_groups) {
+        foreach my $revision (@$revisions) {
             Bugzilla->audit(sprintf(
               'Making revision %s for bug %s private due to unkown Bugzilla groups: %s',
-              $revision->{id},
+              $revision->id,
               $bug->id,
-              join(', ', @set_groups)
+              join(', ', @$set_groups)
             ));
-            make_revision_private( $revision->{phid} );
+            $revision->set_policy('view', 'admin');
+            $revision->set_policy('edit', 'admin');
+            $revision->update();
         }
 
-        add_security_sync_comments(\@revisions, $bug);
+        add_security_sync_comments($revisions, $bug);
 
         return PUSH_RESULT_OK;
     }
@@ -96,25 +100,43 @@ sub send {
         $subscribers = get_bug_role_phids($bug);
     }
 
-    foreach my $revision (@revisions) {
-        my $revision_phid = $revision->{phid};
-
+    foreach my $revision (@$revisions) {
         if ( $is_public && $group_change ) {
             Bugzilla->audit(sprintf(
               'Making revision %s public for bug %s',
-              $revision->{id},
+              $revision->id,
               $bug->id
             ));
-            make_revision_public($revision_phid);
+            $revision->set_policy('view', 'public');
+            $revision->set_policy('edit', 'users');
         }
         elsif ( !$is_public && $group_change ) {
             Bugzilla->audit(sprintf(
               'Giving revision %s a custom policy for bug %s',
-              $revision->{id},
+              $revision->id,
               $bug->id
             ));
-            my $policy_phid = create_private_revision_policy( $bug, \@set_groups );
-            edit_revision_policy( $revision_phid, $policy_phid, $subscribers );
+
+            my $set_projects = [ map { "bmo-" . $_ } @$set_groups ];
+
+            # If current policy projects matches what we want to set, then
+            # we leave the current policy alone.
+            my $current_policy;
+            if ($revision->view_policy =~ /^PHID-PLCY/) {
+                $current_policy
+                    = Bugzilla::Extension::PhabBugz::Policy->new({ phids => [ $revision->view_policy ]});
+                my $current_projects = $current_policy->get_rule_projects;
+                my ($added, $removed) = diff_arrays($current_projects, $set_projects);
+                if (@$added || @$removed) {
+                    $current_policy= undef;
+                }
+            }
+            if (!$current_policy) {
+                my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create($set_projects);
+                $revision->set_policy('view', $new_policy->phid);
+                $revision->set_policy('edit', $new_policy->phid);
+                $revision->set_subscribers($subscribers);
+            }
         }
         elsif ( !$is_public && !$group_change ) {
             Bugzilla->audit(sprintf(
@@ -122,8 +144,10 @@ sub send {
               $revision->{id},
               $bug->id
             ));
-            set_revision_subscribers( $revision_phid, $subscribers );
+            $revision->set_subscribers($subscribers);
         }
+
+        $revision->update();
     }
 
     return PUSH_RESULT_OK;

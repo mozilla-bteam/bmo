@@ -113,28 +113,33 @@ my $SearchResult = Dict[
 
 sub new {
     my ($class, $params) = @_;
-    my $self = $params ? _load($params) : {};
-    $SearchResult->assert_valid($self);
-    return bless($self, $class);
+    my $results = $class->match($params);
+    return $results->[0];
 }
 
-sub _load {
-    my ($params) = @_;
+sub match {
+    my ($invocant, $constraints) = @_;
+    my $class = ref($invocant) || $invocant;
 
     my $data = {
         queryKey    => 'all',
         attachments => {
             members => 1
         },
-        constraints => $params
+        constraints => $constraints
     };
 
+    my $projects;
     my $result = request('project.search', $data);
     if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
-        return $result->{result}->{data}->[0];
+        $projects = $result->{result}{data};
     }
 
-    return $result;
+    foreach my $project (@$projects) {
+        $SearchResult->assert_valid($project);
+    }
+
+    return [ map { bless($_, $class) } @$projects ];
 }
 
 #########################

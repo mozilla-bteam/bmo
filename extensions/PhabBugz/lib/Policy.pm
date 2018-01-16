@@ -81,18 +81,25 @@ my $SearchResult = Dict[
 
 sub new {
     my ($class, $params) = @_;
-    my $self = $params ? _load($params) : {};
-    $SearchResult->assert_valid($self);
-    return bless($self, $class);
+    my $results = $class->match($params);
+    return $results->[0];
 }
 
-sub _load {
-    my ($params) = @_;
-    my $result = request('policy.query', $params);
+sub match {
+    my ($invocant, $constraints) = @_;
+    my $class = ref($invocant) || $invocant;
+
+    my $policies;
+    my $result = request('policy.query', $constraints);
     if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
-        return $result->{result}->{data}->[0];
+        $policies = $result->{result}{data};
     }
-    return $result;
+
+    foreach my $policy (@$policies) {
+        $SearchResult->assert_valid($policy);
+    }
+
+    return [ map { bless($_, $class) } @$policies ];
 }
 
 #########################

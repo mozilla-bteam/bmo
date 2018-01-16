@@ -25,56 +25,18 @@ use LWP::UserAgent;
 use base qw(Exporter);
 
 our @EXPORT = qw(
-    add_comment_to_revision
     add_security_sync_comments
     create_revision_attachment
-    create_private_revision_policy
-    create_project
-    edit_revision_policy
     get_attachment_revisions
     get_bug_role_phids
     get_members_by_bmo_id
-    get_members_by_phid
     get_phab_bmo_ids
-    get_project_phid
-    get_revisions_by_ids
-    get_revisions_by_phids
     get_security_sync_groups
     intersect
     is_attachment_phab_revision
-    make_revision_private
-    make_revision_public
     request
     set_phab_user
-    set_project_members
-    set_revision_subscribers
 );
-
-sub get_revisions_by_ids {
-    my ($ids) = @_;
-    return _get_revisions({ ids => $ids });
-}
-
-sub get_revisions_by_phids {
-    my ($phids) = @_;
-    return _get_revisions({ phids => $phids });
-}
-
-sub _get_revisions {
-    my ($constraints) = @_;
-
-    my $data = {
-        queryKey    => 'all',
-        constraints => $constraints
-    };
-
-    my $result = request('differential.revision.search', $data);
-
-    ThrowUserError('invalid_phabricator_revision_id')
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-    return $result->{result}{data};
-}
 
 sub create_revision_attachment {
     my ( $bug, $revision_id, $revision_title, $timestamp ) = @_;
@@ -120,7 +82,7 @@ sub create_revision_attachment {
 sub intersect {
     my ($list1, $list2) = @_;
     my %e = map { $_ => undef } @{$list1};
-    return grep { exists( $e{$_} ) } @{$list2};
+    return [ grep { exists( $e{$_} ) } @{$list2} ];
 }
 
 sub get_bug_role_phids {
@@ -135,192 +97,6 @@ sub get_bug_role_phids {
     return get_members_by_bmo_id(\@bug_users);
 }
 
-sub create_private_revision_policy {
-    my ($bug, $groups) = @_;
-
-    my $data = {
-        objectType => 'DREV',
-        default    => 'deny',
-        policy     => [
-            {
-                action => 'allow',
-                rule   => 'PhabricatorSubscriptionsSubscribersPolicyRule',
-            }
-        ]
-    };
-
-    if(scalar @$groups gt 0) {
-        my $project_phids = [];
-        foreach my $group (@$groups) {
-            my $phid = get_project_phid('bmo-' . $group);
-            push(@$project_phids, $phid) if $phid;
-        }
-
-        ThrowUserError('invalid_phabricator_sync_groups') unless @$project_phids;
-
-        push(@{ $data->{policy} },
-            {
-                action => 'allow',
-                rule   => 'PhabricatorProjectsPolicyRule',
-                value  => $project_phids,
-            }
-        );
-    }
-    else {
-        push(@{ $data->{policy} },
-            {
-                action => 'allow',
-                value  => 'admin',
-            }
-        );
-    }
-
-    my $result = request('policy.create', $data);
-    return $result->{result}{phid};
-}
-
-sub make_revision_public {
-    my ($revision_phid) = @_;
-    return request('differential.revision.edit', {
-        transactions => [
-            {
-                type  => 'view',
-                value => 'public'
-            },
-            {
-                type  => 'edit',
-                value => 'users'
-            }
-        ],
-        objectIdentifier => $revision_phid
-    });
-}
-
-sub make_revision_private {
-    my ($revision_phid) = @_;
-    return request('differential.revision.edit', {
-        transactions => [
-            {
-                type  => "view",
-                value => "admin"
-            },
-            {
-                type  => "edit",
-                value => "admin"
-            }
-        ],
-        objectIdentifier => $revision_phid
-    });
-}
-
-sub edit_revision_policy {
-    my ($revision_phid, $policy_phid, $subscribers) = @_;
-
-    my $data = {
-        transactions => [
-            {
-                type  => 'view',
-                value => $policy_phid
-            },
-            {
-                type  => 'edit',
-                value => $policy_phid
-            }
-        ],
-        objectIdentifier => $revision_phid
-    };
-
-    if (@$subscribers) {
-        push(@{ $data->{transactions} }, {
-            type  => 'subscribers.set',
-            value => $subscribers
-        });
-    }
-
-    return request('differential.revision.edit', $data);
-}
-
-sub set_revision_subscribers {
-    my ($revision_phid, $subscribers) = @_;
-
-    my $data = {
-        transactions => [
-            {
-                type  => 'subscribers.set',
-                value => $subscribers
-            }
-        ],
-        objectIdentifier => $revision_phid
-    };
-
-    return request('differential.revision.edit', $data);
-}
-
-sub add_comment_to_revision {
-    my ($revision_phid, $comment) = @_;
-
-    my $data = {
-        transactions => [
-            {
-                type  => 'comment',
-                value => $comment
-            }
-        ],
-        objectIdentifier => $revision_phid
-    };
-    return request('differential.revision.edit', $data);
-}
-
-sub get_project_phid {
-    my $project = shift;
-
-    my $data = {
-        queryKey => 'all',
-        constraints => {
-            name => $project
-        }
-    };
-
-    my $result = request('project.search', $data);
-    return undef
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-    return $result->{result}{data}[0]{phid};
-}
-
-sub create_project {
-    my ($project, $description, $members) = @_;
-
-    my $data = {
-        transactions => [
-            { type => 'name',  value => $project           },
-            { type => 'description', value => $description },
-            { type => 'edit',  value => 'admin'            },
-            { type => 'join',  value => 'admin'            },
-            { type => 'view',  value => 'admin'            },
-            { type => 'icon',  value => 'group'            },
-            { type => 'color', value => 'red'              }
-        ]
-    };
-
-    my $result = request('project.edit', $data);
-    return $result->{result}{object}{phid};
-}
-
-sub set_project_members {
-    my ($project_id, $phab_user_ids) = @_;
-
-    my $data = {
-        objectIdentifier => $project_id,
-        transactions => [
-            { type => 'members.set',  value => $phab_user_ids }
-        ]
-    };
-
-    my $result = request('project.edit', $data);
-    return $result->{result}{object}{phid};
-}
-
 sub get_members_by_bmo_id {
     my $users = shift;
 
@@ -333,20 +109,6 @@ sub get_members_by_bmo_id {
     }
 
     return \@phab_ids;
-}
-
-sub get_members_by_phid {
-    my $phids = shift;
-
-    my $result = get_phab_bmo_ids({ phids => $phids });
-
-    my @bmo_ids;
-    foreach my $user (@$result) {
-        push(@bmo_ids, $user->{id})
-          if ($user->{phid} && $user->{phid} =~ /^PHID-USER/);
-    }
-
-    return \@bmo_ids;
 }
 
 sub get_phab_bmo_ids {
@@ -423,11 +185,11 @@ sub get_attachment_revisions {
         }
 
         if (@revision_ids) {
-            $revisions = get_revisions_by_ids( \@revision_ids );
+            $revisions = Bugzilla::Extension::PhabBugz::Revision->match({ ids => \@revision_ids });
         }
     }
 
-    return @$revisions;
+    return $revisions;
 }
 
 sub request {
@@ -481,9 +243,7 @@ sub get_security_sync_groups {
     my $bug_groups = $bug->groups_in;
     my $bug_group_names = [ map { $_->name } @$bug_groups ];
 
-    my @set_groups = intersect($bug_group_names, $sync_group_names);
-
-    return @set_groups;
+    return intersect($bug_group_names, $sync_group_names);
 }
 
 sub set_phab_user {
@@ -500,7 +260,8 @@ sub add_security_sync_comments {
     my $phab_error_message = 'Revision is being made private due to unknown Bugzilla groups.';
 
     foreach my $revision (@$revisions) {
-        add_comment_to_revision( $revision->{phid}, $phab_error_message );
+        $revision->add_comment($phab_error_message);
+        $revision->update();
     }
 
     my $num_revisions = scalar @$revisions;
@@ -513,6 +274,7 @@ sub add_security_sync_comments {
     my $old_user = set_phab_user();
 
     $bug->add_comment( $bmo_error_message, { isprivate => 0 } );
+    $bug->update();
 
     Bugzilla->set_user($old_user);
 }
