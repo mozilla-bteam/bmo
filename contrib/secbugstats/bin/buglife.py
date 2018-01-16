@@ -40,7 +40,7 @@ print "{"
 
 for sev in severities:
     print "  '%s': [" % (cleanCat(sev))
-    sql = "SELECT * from Bugs WHERE severity='%s' order by opendate;" % (sev)
+    sql = "SELECT * from secbugs_Bugs WHERE severity='%s' order by opendate;" % (sev)
     cur.execute(sql)
     row = cur.fetchone()
     while row is not None:

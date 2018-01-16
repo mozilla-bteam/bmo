@@ -69,7 +69,7 @@ for key, url in tocheck.items():
         results = simplejson.loads(json)
         count = len(results["bugs"])
         attempt += 1
-    sql = "INSERT INTO Stats(category, count, date) VALUES('%s', %s, '%s');" % \
+    sql = "INSERT INTO secbugs_Stats(category, count, date) VALUES('%s', %s, '%s');" % \
           (key, count, timestamp_db)
     if DEBUG: print sql
     else: c.execute(sql)

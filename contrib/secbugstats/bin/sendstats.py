@@ -24,7 +24,7 @@ except:
 
 # return the most recent date from our data set
 def getThisWeekDate(slashed=False):
-    sql = "select distinct date from Details order by date desc limit 1;"
+    sql = "select distinct date from secbugs_Details order by date desc limit 1;"
     c.execute(sql)
     row = c.fetchone()
     if slashed:
@@ -34,7 +34,7 @@ def getThisWeekDate(slashed=False):
 
 # return the second-most recent date from our data set
 def getLastWeekDate(slashed=False):
-    sql = "select distinct date from Details order by date desc limit 1,1;"
+    sql = "select distinct date from secbugs_Details order by date desc limit 1,1;"
     c.execute(sql)
     row = c.fetchone()
     if slashed:
@@ -102,7 +102,7 @@ i = 0
 # bug counts
 for cat in [("sg_critical", "Critical"), ("sg_high", "High"), ("sg_moderate", "Moderate"), ("sg_low", "Low")]:
     # get the stats from this week
-    sql = "select d.count, d.bug_list from Details d, Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getThisWeekDate())
+    sql = "select d.count, d.bug_list from secbugs_Details d, secbugs_Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getThisWeekDate())
     c.execute(sql)
     thisWkCount = 0
     thisWkList = ""
@@ -112,7 +112,7 @@ for cat in [("sg_critical", "Critical"), ("sg_high", "High"), ("sg_moderate", "M
         thisWkList += row["bug_list"] if not len(thisWkList) else ","+row["bug_list"]
         row = c.fetchone()
     # get the stats from last week
-    sql = "select d.count, d.bug_list from Details d, Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getLastWeekDate())
+    sql = "select d.count, d.bug_list from secbugs_Details d, secbugs_Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getLastWeekDate())
     c.execute(sql)
     lastWkCount = 0
     lastWkList = ""
@@ -173,7 +173,7 @@ weights = { "sg_critical": 5,
 # Figure out how many open bugs (and cummulative risk index) each team has
 for team in TEAMS:
     teamName = team[0]
-    sql = "SELECT Stats.category, Details.date, GROUP_CONCAT(Details.bug_list) AS bugs FROM Details INNER JOIN Stats ON Details.sid=Stats.sid WHERE Details.date LIKE '%s%%' AND Stats.category IN ('sg_critical','sg_high','sg_moderate','sg_low') AND (%s) GROUP BY category;" % (curDate, team[1])
+    sql = "SELECT secbugs_Stats.category, secbugs_Details.date, GROUP_CONCAT(secbugs_Details.bug_list) AS bugs FROM secbugs_Details INNER JOIN secbugs_Stats ON secbugs_Details.sid=secbugs_Stats.sid WHERE secbugs_Details.date LIKE '%s%%' AND secbugs_Stats.category IN ('sg_critical','sg_high','sg_moderate','sg_low') AND (%s) GROUP BY category;" % (curDate, team[1])
     c.execute(sql)
     rows = c.fetchall()
 
@@ -267,7 +267,7 @@ body += "</body>\n</html>"
 
 # set up multipart email message
 msgRoot = MIMEMultipart("related")
-msgRoot["Subject"] = "Weekly Client Security Bug Stats Report"
+msgRoot["Subject"] = "Weekly Client Security Bug secbugs_Stats Report"
 msgRoot["From"] = EMAIL_FROM
 msgRoot["To"] = ",".join(EMAIL_TO)
 msgRoot.preamble = "This is a multi-part message in MIME format."

@@ -80,7 +80,7 @@ histobj = json.loads( resp.read() )
 
 history = histobj["history"]
 # last change to Bugs table
-sql = "SELECT updated from Bugs where bugid=%s;" % (BUGID)
+sql = "SELECT updated from secbugs_Bugs where bugid=%s;" % (BUGID)
 if DEBUG: print sql
 cur.execute(sql)
 row = cur.fetchone()
@@ -114,7 +114,7 @@ for group in history:
                 closedate = ""
 
         # NOTE: for items that will change one of the Bugs fields,
-        # make sure to check if change_time > Bugs.updated and if so
+        # make sure to check if change_time > secbugs_Bugs.updated and if so
         # update that field with the change time.  Right now, only
         # keywords is doing so...
 
@@ -129,7 +129,7 @@ for group in history:
 
         # default case: log the change to a field we care about
         else:
-            sql = "INSERT INTO BugHistory VALUES (%s, '%s', '%s', '%s', '%s');" % (BUGID, change_time, db.escape_string(change["field_name"]), db.escape_string(change["added"]), db.escape_string(change["removed"]))
+            sql = "INSERT INTO secbugs_BugHistory VALUES (%s, '%s', '%s', '%s', '%s');" % (BUGID, change_time, db.escape_string(change["field_name"]), db.escape_string(change["added"]), db.escape_string(change["removed"]))
             if DEBUG: print sql
             else: cur.execute(sql)
 
@@ -138,6 +138,6 @@ for group in history:
 if not len(closedate):
     closedate = "0000-00-00 00:00:00"
 
-sql = "INSERT INTO Bugs VALUES (%s, '%s', '%s', '%s', '%s', '%s') ON DUPLICATE KEY UPDATE opendate='%s', closedate='%s', severity='%s', summary='%s', updated='%s';" % (BUGID, opendate, closedate, db.escape_string(severity), db.escape_string(summary), updated, opendate, closedate, db.escape_string(severity), db.escape_string(summary), updated)
+sql = "INSERT INTO secbugs_Bugs VALUES (%s, '%s', '%s', '%s', '%s', '%s') ON DUPLICATE KEY UPDATE opendate='%s', closedate='%s', severity='%s', summary='%s', updated='%s';" % (BUGID, opendate, closedate, db.escape_string(severity), db.escape_string(summary), updated, opendate, closedate, db.escape_string(severity), db.escape_string(summary), updated)
 if DEBUG: print sql
 else: cur.execute(sql)
