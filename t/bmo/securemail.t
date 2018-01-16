@@ -3,7 +3,7 @@ use 5.10.1;
 use strict;
 use warnings;
 use autodie qw(:all);
-use lib qw(local/lib/perl5);
+use lib qw(. lib local/lib/perl5);
 
 use Try::Tiny;
 use MIME::QuotedPrint qw(decode_qp);
@@ -18,7 +18,7 @@ BEGIN {
 
 use ok DRIVER;
 
-my $ADMIN_USER = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
+my $ADMIN_USER = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.test';
 my $ADMIN_PASS = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
 
 my @require_env = qw(
@@ -41,7 +41,12 @@ try {
     test_securemail(
         $sel,
         sub { set_securemail($sel, PUBKEY()) },
-        INTRO_MSG(),
+        sub {
+            my $msg = shift;
+            my $expected_msg = INTRO_MSG();
+            is(length($msg), length($expected_msg), 'check message length');
+            is($msg, $expected_msg, 'check message content');
+        },
     );
 
     logout_ok($sel);
@@ -51,13 +56,12 @@ try {
     test_securemail(
         $sel,
         sub { make_secure_bug($sel) },
-        "BATMAN"
-    );
-
-    test_securemail(
-        $sel,
-        sub { set_securemail($sel, PUBKEY()) },
-        INTRO_MSG(),
+        sub {
+            my $msg = shift;
+            like($msg, qr/Subject:\s+\[Bug \d+\]\s+New:\s+Some Bug/, "check subject");
+            like($msg, qr/Group:\s+core-security/, "check that it is in core-security");
+            like($msg, qr/I like pie/, "check that pie is appreciated");
+        },
     );
 } catch {
     fail("got exception $_");
@@ -80,10 +84,11 @@ sub make_secure_bug {
     submit($sel, '//input[@value="Submit Bug"]');
     $sel->title_like(qr/Some Bug/, "submitted some bug");
     sleep 10;
+
 }
 
 sub test_securemail {
-    my ($sel, $code, $expected_msg) = @_;
+    my ($sel, $code, $test) = @_;
     truncate '/app/data/mailer.testfile', 0;
     $code->();
     local $_ = undef;
@@ -106,8 +111,7 @@ sub test_securemail {
         system 'gpg --decrypt < /tmp/gpg-message.gpg 2>/dev/null > /tmp/gpg-message.txt';
         ok(-f '/tmp/gpg-message.txt', 'message file exists');
         my $msg = slurp('/tmp/gpg-message.txt');
-        is(length($msg), length($expected_msg), 'check message length');
-        is($msg, $expected_msg, 'check message content');
+        $test->($msg);
     }
     else {
         diag @junk;
