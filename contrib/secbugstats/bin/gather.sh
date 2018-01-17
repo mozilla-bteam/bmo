@@ -5,9 +5,10 @@
 # script should be redirected to a log file for debugging.
 
 # scripts location (where does this config file live?)
-SCRIPTS_DIR="$(dirname "$(readlink /proc/$$/fd/255)")"
 # local settings
-source $SCRIPTS_DIR/settings.cfg
+eval "$(python contrib/secbugstats/bin/settings.py)"
+
+echo $JSON_CUR
 
 # Move last week's data files to the archive
 mv $JSON_CUR/* $JSON_OLD/
