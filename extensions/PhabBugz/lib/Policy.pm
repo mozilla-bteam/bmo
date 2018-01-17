@@ -18,6 +18,62 @@ use Bugzilla::Extension::PhabBugz::Project;
 
 use List::Util qw(first);
 
+use Types::Standard -all;
+use Type::Utils;
+
+my $SearchResult = Dict[
+    phid      => Str,
+    type      => Str,
+    name      => Str,
+    shortName => Str,
+    fullName  => Str,
+    href      => Maybe[Str],
+    workflow  => Maybe[Str],
+    icon      => Str,
+    default   => Str,
+    rules     => ArrayRef[
+        Dict[
+            action => Str,
+            rule   => Str,
+            value  => Maybe[ArrayRef[Str]]
+        ]
+    ]
+];
+
+# {
+#   "data": [
+#     {
+#       "phid": "PHID-PLCY-l2mt4yeq4byqgcot7x4j",
+#       "type": "custom",
+#       "name": "Custom Policy",
+#       "shortName": "Custom Policy",
+#       "fullName": "Custom Policy",
+#       "href": null,
+#       "workflow": null,
+#       "icon": "fa-certificate",
+#       "default": "deny",
+#       "rules": [
+#         {
+#           "action": "allow",
+#           "rule": "PhabricatorSubscriptionsSubscribersPolicyRule",
+#           "value": null
+#         },
+#         {
+#           "action": "allow",
+#           "rule": "PhabricatorProjectsPolicyRule",
+#           "value": [
+#             "PHID-PROJ-cvurjiwfvh756mv2vhvi"
+#           ]
+#         }
+#       ]
+#     }
+#   ],
+#   "cursor": {
+#     "limit": 100,
+#     "after": null,
+#     "before": null
+#   }
+# }
 
 #########################
 #    Initialization     #
@@ -26,8 +82,8 @@ use List::Util qw(first);
 sub new {
     my ($class, $params) = @_;
     my $self = $params ? _load($params) : {};
-    bless($self, $class);
-    return $self;
+    $SearchResult->assert_valid($self);
+    return bless($self, $class);
 }
 
 sub _load {
@@ -86,41 +142,6 @@ sub create {
     my $result = request('policy.create', $data);
     return $class->new({ phids => [ $result->{result}{phid} ] });
 }
-
-# {
-#   "data": [
-#     {
-#       "phid": "PHID-PLCY-l2mt4yeq4byqgcot7x4j",
-#       "type": "custom",
-#       "name": "Custom Policy",
-#       "shortName": "Custom Policy",
-#       "fullName": "Custom Policy",
-#       "href": null,
-#       "workflow": null,
-#       "icon": "fa-certificate",
-#       "default": "deny",
-#       "rules": [
-#         {
-#           "action": "allow",
-#           "rule": "PhabricatorSubscriptionsSubscribersPolicyRule",
-#           "value": null
-#         },
-#         {
-#           "action": "allow",
-#           "rule": "PhabricatorProjectsPolicyRule",
-#           "value": [
-#             "PHID-PROJ-cvurjiwfvh756mv2vhvi"
-#           ]
-#         }
-#       ]
-#     }
-#   ],
-#   "cursor": {
-#     "limit": 100,
-#     "after": null,
-#     "before": null
-#   }
-# }
 
 #########################
 #      Accessors        #
