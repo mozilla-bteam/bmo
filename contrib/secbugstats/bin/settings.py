@@ -37,22 +37,26 @@ SMTP_HOST = "smtp.mozilla.org"
 SMTP_PORT = 25 # 465
 
 # Bugzilla account settings
-BZ_APIKEY = ""
+BZ_APIKEY = ''
+try:
+    BZ_APIKEY = os.environ['SECBUGSTATS_APIKEY']
+except KeyError:
+    pass
 BZ_AUTH = urllib.urlencode({'api_key': BZ_APIKEY, 'restriclogin': "true"})
 
 # where to store the JSON files that curlbug.py downloads
-JSONLOCATION = "%s/secbugstats/current" % (DATA_DIR)
+JSONLOCATION = "%s/secbugstats/json/current" % (DATA_DIR)
 
 # where to store the most recent curlbug.py output
 JSON_CUR = JSONLOCATION
 # where to store the old curlbug.py output
-JSON_OLD = "%s/secbugstats/" % (DATA_DIR)
+JSON_OLD = "%s/secbugstats/json" % (DATA_DIR)
 
 # teams chart location
-TEAMS_CHART_LOC = "/home/dveditz/secbugstats/www/teams"
+TEAMS_CHART_LOC = "%s/secbugstats/teams" % (DATA_DIR)
 
 # bug lifespan chart location
-BUGLIFE_CHART_LOC = "/home/dveditz/secbugstats/www/buglife"
+BUGLIFE_CHART_LOC = "%s/secbugstats/buglife" % (DATA_DIR)
 
 # Selection criteria for various teams based on bug product and component
 TEAMS = [["Layout",

@@ -8,7 +8,9 @@
 # local settings
 eval "$(python contrib/secbugstats/bin/settings.py)"
 
-echo $JSON_CUR
+mkdir -p $JSON_CUR
+mkdir -p $TEAMS_CHART_LOC
+mkdir -p $BUGLIFE_CHART_LOC
 
 # Move last week's data files to the archive
 mv $JSON_CUR/* $JSON_OLD/
@@ -49,7 +51,7 @@ echo "[teamgraph.py `date +%Y-%m-%d\ %T`]"
 $SCRIPTS_DIR/teamgraph.py
 echo "[end graph.py]"
 
-# Email the report
-echo "[sendstats.py `date +%Y-%m-%d\ %T`]"
-$SCRIPTS_DIR/sendstats.py
-echo "[end sendstats.py]"
+# # Email the report
+# echo "[sendstats.py `date +%Y-%m-%d\ %T`]"
+# $SCRIPTS_DIR/sendstats.py
+# echo "[end sendstats.py]"
