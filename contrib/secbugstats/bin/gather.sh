@@ -24,7 +24,9 @@ echo "[end curlbug.py]"
 # the product, component, bug numbers, bug ages, etc. for each category
 echo "[morestats.py `date +%Y-%m-%d\ %T`]"
 for i in `ls $JSON_CUR/*sg_{low,moderate,high,critical,needstriage,unconfirmed,opened,closed,total,untouched,investigate,needinfo,vector}.json`;
-do $SCRIPTS_DIR/morestats.py $i;
+do
+echo $i
+$SCRIPTS_DIR/morestats.py $i;
 done
 echo "[end morestats.py]"
 

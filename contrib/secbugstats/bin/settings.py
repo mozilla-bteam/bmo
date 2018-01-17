@@ -18,6 +18,10 @@ def read_localconfig():
 
 localconfig = read_localconfig()
 
+URLBASE = localconfig['urlbase']
+if URLBASE.endswith('/'):
+    URLBASE = URLBASE[0:-1]
+
 # database settings
 DB_HOST = localconfig['db_host']
 DB_USER = localconfig['db_user']
