@@ -159,39 +159,43 @@
       [% PROCESS format_css_link %]
     [% END %]
 
-    [%# jQuery Plugins %]
-    [% FOREACH jq_name = jquery.unique %]
-      [% starting_js_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.js") %]
-    [% END %]
-    [% starting_js_urls.push('js/global.js', 'js/dropdown.js') %]
+    [% BLOCK all_scripts %]
+      [%# jQuery Plugins %]
+      [% FOREACH jq_name = jquery.unique %]
+        [% starting_js_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.js") %]
+      [% END %]
+      [% starting_js_urls.push('js/global.js', 'js/dropdown.js') %]
 
-    [% FOREACH asset_url = starting_js_urls %]
-      [% PROCESS format_js_link %]
-    [% END %]
+      [% FOREACH asset_url = starting_js_urls %]
+        [% PROCESS format_js_link %]
+      [% END %]
 
-    [% inline_javascript = BLOCK %]
-        [% IF NOT no_yui %]
-          YAHOO.namespace('bugzilla');
-          if ( "onpagehide" in window || YAHOO.env.ua.gecko) {
-              YAHOO.util.Event._simpleRemove(window, "unload",
-                                             YAHOO.util.Event._unload);
-          }
-          [% INCLUDE 'global/value-descs.js.tmpl' %]
-        [% END %]
+      [% inline_javascript = BLOCK %]
+          [% IF NOT no_yui %]
+            YAHOO.namespace('bugzilla');
+            if ( "onpagehide" in window || YAHOO.env.ua.gecko) {
+                YAHOO.util.Event._simpleRemove(window, "unload",
+                                               YAHOO.util.Event._unload);
+            }
+            [% INCLUDE 'global/value-descs.js.tmpl' %]
+          [% END %]
 
-        [% IF javascript %]
-          [% javascript %]
-        [% END %]
-    [% END %]
-    [% IF inline_javascript.search("\\S") %]
-      <script [% script_nonce FILTER none %]>
-        [% inline_javascript FILTER none %]
-      </script>
-    [% END %]
+          [% IF javascript %]
+            [% javascript %]
+          [% END %]
+      [% END %]
+      [% IF inline_javascript.search("\\S") %]
+        <script [% script_nonce FILTER none %]>
+          [% inline_javascript FILTER none %]
+        </script>
+      [% END %]
 
-    [% FOREACH asset_url = javascript_urls %]
-      [% PROCESS format_js_link %]
+      [% FOREACH asset_url = javascript_urls %]
+        [% PROCESS format_js_link %]
+      [% END %]
     [% END %]
+    [% UNLESS scripts_at_end; PROCESS all_scripts; END %]
+
 
     [%# this puts the live bookmark up on firefox for the Atom feed %]
     [% IF atomlink %]

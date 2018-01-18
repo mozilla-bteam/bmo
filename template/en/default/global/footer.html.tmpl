@@ -25,6 +25,8 @@
 
 [% Hook.process("end") %]
 
+[% IF scripts_at_end; PROCESS all_scripts; END %]
+
 </body>
 </html>
 
