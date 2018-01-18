@@ -25,7 +25,6 @@ echo "[end curlbug.py]"
 echo "[morestats.py `date +%Y-%m-%d\ %T`]"
 for i in `ls $JSON_CUR/*sg_{low,moderate,high,critical,needstriage,unconfirmed,opened,closed,total,untouched,investigate,needinfo,vector}.json`;
 do
-echo $i
 $SCRIPTS_DIR/morestats.py $i;
 done
 echo "[end morestats.py]"
@@ -54,6 +53,6 @@ $SCRIPTS_DIR/teamgraph.py
 echo "[end graph.py]"
 
 # # Email the report
-# echo "[sendstats.py `date +%Y-%m-%d\ %T`]"
-# $SCRIPTS_DIR/sendstats.py
-# echo "[end sendstats.py]"
+echo "[sendstats.py `date +%Y-%m-%d\ %T`]"
+$SCRIPTS_DIR/sendstats.py
+echo "[end sendstats.py]"

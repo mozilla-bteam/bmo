@@ -102,3 +102,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+else:
+    import logging
+    from logging.config import fileConfig
+    fileConfig(SCRIPTS_DIR + '/../logging.ini')

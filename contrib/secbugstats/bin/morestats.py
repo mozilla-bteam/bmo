@@ -30,6 +30,7 @@ else: DEBUG = False
 
 # set up database connection
 db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+db.autocommit(True)
 c = db.cursor()
 
 # foreign key to relate these details to the higher-level stat bucket

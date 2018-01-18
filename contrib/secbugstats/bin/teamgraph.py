@@ -17,6 +17,7 @@ else: DEBUG = False
 # set up database connection
 try:
     db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+    db.autocommit(True)
     c = db.cursor(MySQLdb.cursors.DictCursor)
 except:
     print "teamgraph.py: can't connect to database\n"

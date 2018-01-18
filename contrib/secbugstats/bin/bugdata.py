@@ -16,6 +16,7 @@ else:
 
 # set up database connection
 db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+db.autocommit(True)
 cur = db.cursor()
 
 # list of bug fields we care about
