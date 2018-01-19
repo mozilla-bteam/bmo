@@ -3,52 +3,98 @@ use 5.10.1;
 use strict;
 use warnings;
 use lib qw(/app /app/local/lib/perl5);
+use autodie qw(:all);
 
 use Bugzilla::Install::Localconfig ();
 use Bugzilla::Install::Util qw(install_string);
 use Bugzilla::Test::Util qw(create_user);
+
 use DBI;
 use Data::Dumper;
-use English qw($EUID);
+use English qw(-no_match_vars $EUID);
 use File::Copy::Recursive qw(dircopy);
 use Getopt::Long qw(:config gnu_getopt);
-use LWP::Simple qw(get);
-use POSIX qw(WEXITSTATUS setsid);
-use User::pwent;
-
 use IO::Async::Loop;
 use IO::Async::Process;
-use IO::Async::Timer::Periodic;
 use IO::Async::Signal;
+use IO::Async::Timer::Periodic;
+use LWP::Simple qw(get);
+use POSIX qw(WEXITSTATUS setsid);
+use Sys::Hostname;
+use User::pwent;
+
+BEGIN {
+    STDOUT->autoflush(1);
+    STDERR->autoflush(1);
+}
 
 use constant CI => $ENV{CI};
 
-my $cmd = shift @ARGV;
-my $func = __PACKAGE__->can("cmd_$cmd")
-    or die "unknown command: $cmd\n";
+my $cmd  = shift @ARGV;
 my $opts = __PACKAGE__->can("opt_$cmd") // sub { @ARGV };
+my $func = __PACKAGE__->can("cmd_$cmd") // sub {
+    check_data_dir();
+    wait_for_db();
+    run(@_);
+};
 
 fix_path();
 check_user();
-check_env() unless $cmd eq 'shell';
+check_env(qw(
+    LOCALCONFIG_ENV
+    BMO_db_host
+    BMO_db_name
+    BMO_db_user
+    BMO_db_pass
+    BMO_memcached_namespace
+    BMO_memcached_servers
+    BMO_urlbase
+));
 
-$func->(@ARGV);
+if ( $ENV{BMO_urlbase} eq 'AUTOMATIC' ) {
+    $ENV{BMO_urlbase} = sprintf 'http://%s:%d/%s', hostname(), $ENV{PORT}, $ENV{BZ_QA_LEGACY_MODE} ? 'bmo/' : '';
+    $ENV{BZ_BASE_URL} = sprintf 'http://%s:%d', hostname(), $ENV{PORT};
+}
+
+$func->($opts->());
 
 sub cmd_demo {
-    cmd_load_test_data() unless -f "/app/data/params";
+    unless (-f '/app/data/params') {
+        cmd_load_test_data();
+        check_env(qw(
+            PHABRICATOR_BOT_LOGIN
+            PHABRICATOR_BOT_PASSWORD
+            PHABRICATOR_BOT_API_KEY
+            CONDUIT_USER_LOGIN
+            CONDUIT_USER_PASSWORD
+            CONDUIT_USER_API_KEY
+        ));
+        run( 'perl', 'scripts/generate_conduit_data.pl' );
+    }
     cmd_httpd();
 }
 
 sub cmd_httpd  {
     check_data_dir();
     wait_for_db();
-    run( '/usr/sbin/httpd', '-DFOREGROUND', '-f', '/app/httpd/httpd.conf' );
+    check_httpd_env();
+    my @httpd_args = (
+        '-DFOREGROUND',
+        '-f' => '/app/httpd/httpd.conf',
+    );
+
+    # If we're behind a proxy and the urlbase says https, we must be using https.
+    # * basically means "I trust the load balancer" anyway.
+    if ($ENV{BMO_inbound_proxies} eq '*' && $ENV{BMO_urlbase} =~ /^https/) {
+        unshift @httpd_args, '-DHTTPS';
+    }
+    run( '/usr/sbin/httpd', @httpd_args );
 }
 
 sub cmd_load_test_data {
     wait_for_db();
 
-    die "BZ_QA_ANSWERS_FILE is not set" unless $ENV{BZ_QA_ANSWERS_FILE};
+    die 'BZ_QA_ANSWERS_FILE is not set' unless $ENV{BZ_QA_ANSWERS_FILE};
     run( 'perl', 'checksetup.pl', '--no-template', $ENV{BZ_QA_ANSWERS_FILE} );
 
     if ($ENV{BZ_QA_LEGACY_MODE}) {
@@ -96,7 +142,7 @@ sub cmd_test_webservices {
         prove_cmd => [
             'prove', '-qf', '-I/app',
             '-I/app/local/lib/perl5',
-            sub { glob('webservice_*.t') },
+            sub { glob 'webservice_*.t' },
         ],
         prove_dir => '/app/qa/t',
     );
@@ -119,23 +165,27 @@ sub cmd_test_selenium {
         prove_cmd => [
             'prove', '-qf', '-Ilib', '-I/app',
             '-I/app/local/lib/perl5',
-            sub { glob('test_*.t') }
+            sub { glob 'test_*.t' }
         ],
         prove_dir => '/app/qa/t',
     );
 }
 
 sub cmd_shell   { run( 'bash',  '-l' ); }
-sub cmd_prove   { run( "prove", "-I/app", "-I/app/local/lib/perl5", @_ ); }
+sub cmd_prove   {
+    my (@args) = @_;
+    run( 'prove', '-I/app', '-I/app/local/lib/perl5', @args );
+}
 sub cmd_version { run( 'cat',   '/app/version.json' ); }
 
 sub cmd_test_bmo {
+    my (@prove_args) = @_;
     check_data_dir();
     wait_for_db();
 
     $ENV{BZ_TEST_NEWBIE} = 'newbie@mozilla.example';
     $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';
-    create_user($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS}, realname => "Newbie User");
+    create_user($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS}, realname => 'Newbie User');
 
     $ENV{BZ_TEST_NEWBIE2} = 'newbie2@mozilla.example';
     $ENV{BZ_TEST_NEWBIE2_PASS} = 'captain.space.pants.time.lord';
@@ -143,15 +193,17 @@ sub cmd_test_bmo {
     prove_with_httpd(
         httpd_url => $ENV{BZ_BASE_URL},
         httpd_cmd => [ '/usr/sbin/httpd', '-f', '/app/httpd/httpd.conf',  '-DFOREGROUND' ],
-        prove_cmd => [ "prove", "-I/app", "-I/app/local/lib/perl5", @_ ],
+        prove_cmd => [ 'prove', '-I/app', '-I/app/local/lib/perl5', @prove_args ],
     );
 }
 
 sub prove_with_httpd {
     my (%param) = @_;
 
-    unless (-d "/app/logs") {
-        mkdir("/app/logs") or die "unable to mkdir(/app/logs): $!\n";
+    check_httpd_env();
+
+    unless (-d '/app/logs') {
+        mkdir '/app/logs' or die "unable to mkdir(/app/logs): $!\n";
     }
 
     my $httpd_cmd = $param{httpd_cmd};
@@ -160,15 +212,15 @@ sub prove_with_httpd {
     my $loop = IO::Async::Loop->new;
 
     my $httpd_exit_f = $loop->new_future;
-    warn "starting httpd\n";
+    say 'starting httpd';
     my $httpd = IO::Async::Process->new(
         code => sub {
             setsid();
-            exec(@$httpd_cmd);
+            exec @$httpd_cmd;
         },
         setup => [
-             stdout => ["open", ">", "/app/logs/access.log"],
-             stderr => ["open", ">", "/app/logs/error.log"],
+             stdout => ['open', '>', '/app/logs/access.log'],
+             stderr => ['open', '>', '/app/logs/error.log'],
         ],
         on_finish => on_finish($httpd_exit_f),
         on_exception => on_exception('httpd', $httpd_exit_f),
@@ -181,10 +233,10 @@ sub prove_with_httpd {
     my $prove_exit_f = $loop->new_future;
     my $prove = IO::Async::Process->new(
         code => sub {
-            chdir($param{prove_dir}) if $param{prove_dir};
+            chdir $param{prove_dir} if $param{prove_dir};
             my @cmd = (map { ref $_ eq 'CODE' ? $_->() : $_ } @$prove_cmd);
             warn "run @cmd\n";
-            exec(@cmd);
+            exec @cmd;
         },
         on_finish    => on_finish($prove_exit_f),
         on_exception => on_exception('prove', $prove_exit_f),
@@ -214,7 +266,7 @@ sub wait_for_httpd {
             my ($timer) = @_;
             if ( $process->is_running ) {
                 my $resp = get("$url/__lbheartbeat__");
-                if ($resp && $resp =~ /^httpd OK$/) {
+                if ($resp && $resp =~ /^httpd OK/) {
                     $timer->stop;
                     $is_running_f->done($resp);
                 }
@@ -222,7 +274,7 @@ sub wait_for_httpd {
             }
             elsif ( $process->is_exited ) {
                 $timer->stop;
-                $is_running_f->fail("httpd process exited early");
+                $is_running_f->fail('httpd process exited early');
             }
             elsif ( $ticks++ > 60 ) {
                 $timer->stop;
@@ -236,7 +288,7 @@ sub wait_for_httpd {
 }
 
 sub copy_qa_extension {
-    say "copying the QA extension...";
+    say 'copying the QA extension...';
     dircopy('/app/qa/extensions/QA', '/app/extensions/QA');
 }
 
@@ -249,7 +301,7 @@ sub wait_for_db {
     my $dsn = "dbi:mysql:database=$c->{db_name};host=$c->{db_host}";
     my $dbh;
     foreach (1..12) {
-        say "checking database..." if $_ > 1;
+        say 'checking database...' if $_ > 1;
         $dbh = DBI->connect(
             $dsn,
             $c->{db_user},
@@ -258,7 +310,7 @@ sub wait_for_db {
         );
         last if $dbh;
         say "database $dsn not available, waiting...";
-        sleep(10);
+        sleep 10;
     }
     die "unable to connect to $dsn as $c->{db_user}\n" unless $dbh;
 }
@@ -284,35 +336,38 @@ sub on_finish {
     my ($f) = @_;
     return sub {
         my ($self, $exitcode) = @_;
+        say "exit code: $exitcode";
         $f->done(WEXITSTATUS($exitcode));
     };
 }
 
 sub check_user {
-    die "Effective UID must be 10001!" unless $EUID == 10001;
+    die 'Effective UID must be 10001!' unless $EUID == 10_001;
     my $user = getpwuid($EUID)->name;
     die "Name of EUID must be app, not $user" unless $user eq 'app';
 }
 
 sub check_data_dir {
-    die "/app/data must be writable by user 'app' (id: $EUID)" unless -w "/app/data";
-    die "/app/data/params must exist" unless -f "/app/data/params";
+    die "/app/data must be writable by user 'app' (id: $EUID)" unless -w '/app/data';
+    die '/app/data/params must exist' unless -f '/app/data/params';
 }
 
 sub check_env {
-    my @require_env = qw(
-        LOCALCONFIG_ENV
-        BMO_db_host
-        BMO_db_name
-        BMO_db_user
-        BMO_db_pass
-        BMO_memcached_namespace
-        BMO_memcached_servers
-    );
+    my (@require_env) = @_;
     my @missing_env = grep { not exists $ENV{$_} } @require_env;
     if (@missing_env) {
-        die "Missing required environmental variables: ", join(", ", @missing_env), "\n";
+        die 'Missing required environmental variables: ', join(', ', @missing_env), "\n";
     }
+}
+sub check_httpd_env {
+    check_env(qw(
+        HTTPD_StartServers
+        HTTPD_MinSpareServers
+        HTTPD_MaxSpareServers
+        HTTPD_ServerLimit
+        HTTPD_MaxClients
+        HTTPD_MaxRequestsPerChild
+    ))
 }
 
 sub fix_path {
@@ -322,7 +377,7 @@ sub fix_path {
 sub run {
     my (@cmd) = @_;
     say "+ @cmd";
-    my $rv = system(@cmd);
+    my $rv = system @cmd;
     if ($rv != 0) {
         exit 1;
     }

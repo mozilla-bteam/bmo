@@ -5,12 +5,41 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#badge {
-    background-color: #c00;
-    font-size: small;
+#header-requests {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 4px !important;
+    width: 32px;
+    height: 32px;
+}
+
+#header-requests-menu-button .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #BBB;
+    color: #FFF;
+    border-radius: 50%;
+}
+
+#header-requests-menu-button .icon::before {
+    font-size: 16px;
+    content: '\E7F4';
+}
+
+#header-requests-menu-button .badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    padding: 4px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 14px;
     font-weight: bold;
-    padding: 0 5px;
-    border-radius: 10px;
-    margin: 0 5px;
-    color: #fff !important;
+    color: #FFF !important;
+    background-color: #C00;
 }

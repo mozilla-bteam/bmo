@@ -20,7 +20,7 @@ BEGIN {
     }
 }
 
-our $VERSION = '20171121.1';
+our $VERSION = '20180110.2';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -317,7 +317,7 @@ sub github_secret {
     my $cache = $class->request_cache;
     my $cgi   = $class->cgi;
 
-    $cache->{github_secret} //= $cgi->cookie('github_secret') // generate_random_password(16);
+    $cache->{github_secret} //= $cgi->cookie('github_secret') // generate_random_password(256);
 
     return $cache->{github_secret};
 }
@@ -401,7 +401,7 @@ sub login {
             my $self_url     = trim($cgi->self_url);
             my $sig_type     = 'prev_url:' . $authenticated_user->id;
             my $self_url_sig = issue_hash_sig($sig_type, $self_url);
-            my $redir_url    = URI->new( correct_urlbase() . "reset_password.cgi" );
+            my $redir_url    = URI->new( Bugzilla->localconfig->{urlbase} . "reset_password.cgi" );
             $redir_url->query_form(prev_url => $self_url, prev_url_sig => $self_url_sig);
             print $cgi->redirect($redir_url);
             exit;
@@ -853,7 +853,7 @@ sub check_rate_limit {
                 $action = 'ignore';
             }
             my $limit_str = join("/", @$limit);
-            Bugzilla->audit("[rate_limit] action=$action, ip=$ip, limit=$limit_str");
+            Bugzilla->audit("[rate_limit] action=$action, ip=$ip, limit=$limit_str, name=$name");
             if ($action eq 'block') {
                 Bugzilla::ModPerl::BlockIP->block_ip($ip) if $ENV{MOD_PERL};
                 ThrowUserError("rate_limit");

@@ -27,8 +27,9 @@ my $vars = {};
 # Yes, I really want to avoid two calls to the id method.
 my $user_id = $user->id;
 
-# We only cache unauthenticated requests now, because invalidating is harder for logged in users.
-my $can_cache = $user_id == 0;
+# Disable content caching by browser because there will be different items on the global navigation
+# before and after signed in.
+my $can_cache = 0;
 
 # And log out the user if requested. We do this first so that nothing
 # else accidentally relies on the current login.
@@ -64,7 +65,7 @@ if ($can_cache && $if_none_match && any { $_ eq $weak_etag } split(/,\s*/, $if_n
 }
 else {
     my $template = Bugzilla->template;
-    $cgi->content_security_policy(script_src  => ['self']);
+    $cgi->content_security_policy(script_src  => ['self', 'https://www.google-analytics.com']);
 
     # Return the appropriate HTTP response headers.
     print $cgi->header(
@@ -74,7 +75,7 @@ else {
 
     if ($user_id && $user->in_group('admin')) {
         # If 'urlbase' is not set, display the Welcome page.
-        unless (Bugzilla->params->{'urlbase'}) {
+        unless (Bugzilla->localconfig->{'urlbase'}) {
             $template->process('welcome-admin.html.tmpl')
                 or ThrowTemplateError($template->error());
             exit;

@@ -1045,8 +1045,12 @@
     [% title = BLOCK %]
       [% IF bug_id %]Invalid [% ELSE %]Missing [% END %] [% terms.Bug %] ID
     [% END %]
+    [% UNLESS bug_id.match("^\\d+$") %]
+        [% bug_id = bug_id.truncate(40).upper().replace("\\W+", "", "g") %]
+    [% END %]
     [% IF bug_id %]
-      '[% bug_id FILTER html %]' is not a valid [% terms.bug %] number
+      Sorry, I can't find "<em>[% bug_id FILTER html %]</em>".
+      It does not seem like [% terms.bug %] number
       [% IF Param("usebugaliases") %]
         nor an alias to [% terms.abug %]
       [% END %].
@@ -1988,13 +1992,15 @@
 [% END %]
 
 [% UNLESS header_done %]
-  [% PROCESS global/header.html.tmpl no_index=1 %]
+  [% PROCESS global/header.html.tmpl robots = 'noindex' %]
 [% END %]
 
 [% PROCESS global/docslinks.html.tmpl
    docslinks      = docslinks
    admindocslinks = admindocslinks
 %]
+
+<h1>[% title FILTER html %]</h1>
 
 <table cellpadding="20">
   <tr>

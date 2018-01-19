@@ -12,16 +12,11 @@ use strict;
 use warnings;
 
 use Bugzilla::Config::Common;
+use Bugzilla::Util qw(validate_ip);
 
 our $sortkey = 1700;
 
 use constant get_param_list => (
-    {
-        name    => 'cookiedomain',
-        type    => 't',
-        default => ''
-    },
-
     {
         name    => 'inbound_proxies',
         type    => 't',

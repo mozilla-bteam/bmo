@@ -45,6 +45,7 @@ use constant CONFIG => {
         mail_send_error
         template_error
         token_generation_error
+        param_must_be_numeric
     )],
 
     # any error/warning messages matching these regex's will not be logged or
@@ -357,9 +358,8 @@ sub _sentry_die_handler {
 }
 
 sub install_sentry_handler {
-    require CGI::Carp;
-    CGI::Carp::set_die_handler(\&_sentry_die_handler);
-    $main::SIG{__WARN__} = sub {
+    $SIG{__DIE__}  = \&sentry_die_handler;
+    $SIG{__WARN__} = sub {
         return if _in_eval();
         sentry_handle_error('warning', shift);
     };

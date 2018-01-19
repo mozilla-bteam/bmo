@@ -10,10 +10,10 @@
 *
 * The Original Code is the Bugzilla Bug Tracking System.
 *
-* Contributor(s): 
+* Contributor(s):
 *   Guy Pyrzak <guy.pyrzak@gmail.com>
 *   Max Kanat-Alexander <mkanat@bugzilla.org>
-*                 
+*
 */
 
 var BUGZILLA = $("#bugzilla-global").data("bugzilla");
@@ -85,30 +85,27 @@ function manage_old_lists() {
 
 
 function show_mini_login_form( suffix ) {
-    $('#login_link' + suffix).addClass('bz_default_hidden');
-    $('#mini_login' + suffix).removeClass('bz_default_hidden');
-    $('.mini_login' + suffix).removeClass('bz_default_hidden');
+    hide_forgot_form(suffix);
+    $('#mini_login' + suffix).removeClass('bz_default_hidden').find('input[required]:first').focus();
     $('#new_account_container' + suffix).addClass('bz_default_hidden');
     return false;
 }
 
 function hide_mini_login_form( suffix ) {
-    $('#login_link' + suffix).removeClass('bz_default_hidden');
     $('#mini_login' + suffix).addClass('bz_default_hidden');
     $('#new_account_container' + suffix).removeClass('bz_default_hidden');
     return false;
 }
 
 function show_forgot_form( suffix ) {
-    $('#forgot_link' + suffix).addClass('bz_default_hidden');
-    $('#forgot_form' + suffix).removeClass('bz_default_hidden');
+    hide_mini_login_form(suffix);
+    $('#forgot_form' + suffix).removeClass('bz_default_hidden').find('input[required]:first').focus();
     $('#login_container' + suffix).addClass('bz_default_hidden');
     return false;
 }
 
 
 function hide_forgot_form( suffix ) {
-    $('#forgot_link' + suffix).removeClass('bz_default_hidden');
     $('#forgot_form' + suffix).addClass('bz_default_hidden');
     $('#login_container' + suffix).removeClass('bz_default_hidden');
     return false;
@@ -193,3 +190,117 @@ $().ready(function() {
         $('.bz_autocomplete').attr('autocomplete', 'off');
     });
 });
+
+/**
+ * Emulate the `scrollend` event on an HTML element that will be fired once a
+ * certain amount of scroll is complete.
+ * @param {Element} $target - An element to be observed.
+ */
+const emulate_scrollend_event = $target => {
+    if ('onscrollend' in $target) {
+        return;
+    }
+
+    let timer;
+
+    $target.addEventListener('scroll', () => {
+        window.requestAnimationFrame(() => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(() => $target.dispatchEvent(new UIEvent('scrollend')), 100);
+        });
+    });
+
+    $target.onscrollend = null;
+}
+
+/**
+ * Focus the main content when the page is loaded and there is no autofocus
+ * element, so the user can immediately scroll down the page using keyboard.
+ * Also, remember the scroll position on `<main>` so it can be restored when
+ * `location.hash` is changed.
+ * @see adjust_scroll_onload
+ */
+const focus_main_content = () => {
+    const $main = document.querySelector('main');
+
+    if (!document.querySelector('[autofocus]')) {
+        $main.focus();
+    }
+
+    emulate_scrollend_event($main);
+
+    $main.addEventListener('scrollend', () => {
+        history.replaceState(Object.assign(history.state || {}, { main_scroll_top: $main.scrollTop }),
+            document.title, location.href);
+    });
+}
+
+/**
+ * Check if Gravatar images on the page are successfully loaded, and if blocked
+ * (by any content blocker), replace them with the default/fallback image.
+ */
+const detect_blocked_gravatars = () => {
+    document.querySelectorAll('img[src^="https://secure.gravatar.com/avatar/"]').forEach($img => {
+        if (!$img.complete || !$img.naturalHeight) {
+            $img.src = 'extensions/Gravatar/web/default.jpg';
+        }
+    });
+}
+
+/**
+ * If the current URL contains a hash like `#c10`, adjust the scroll position to
+ * make some room above the focused element. Or, restore the scroll position on
+ * `<main>` if remembered.
+ * @see focus_main_content
+ */
+const adjust_scroll_onload = () => {
+    if (location.hash) {
+        const $target = document.querySelector(location.hash);
+
+        if ($target) {
+            window.setTimeout(() => scroll_element_into_view($target), 50);
+        }
+    } else if (history.state) {
+        const main_scroll_top = history.state.main_scroll_top;
+
+        if (typeof main_scroll_top === "number") {
+            document.querySelector('main').scrollTop = main_scroll_top;
+        }
+    }
+}
+
+/**
+ * Bring an element into the visible area of the browser window. Unlike the
+ * native `Element.scrollIntoView()` function, this adds some extra room above
+ * the target element. Smooth scroll can be done using CSS.
+ * @param {Element} $target - An element to be brought.
+ * @param {Function} [complete] - An optional callback function to be executed
+ *  once the scroll is complete.
+ */
+const scroll_element_into_view = ($target, complete) => {
+    let top = 0;
+    let $element = $target;
+
+    // Traverse up in the DOM tree to the scroll container of the
+    // focused element, either `<main>` or `<div role="feed">`.
+    do {
+        top += ($element.offsetTop || 0);
+        $element = $element.offsetParent;
+    } while ($element && !$element.matches('main, [role="feed"]'))
+
+    if (!$element) {
+        return;
+    }
+
+    if (typeof complete === 'function') {
+        emulate_scrollend_event($element);
+        $element.addEventListener('scrollend', () => complete(), true);
+    }
+
+    $element.scrollTop = top - 20;
+}
+
+window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
+window.addEventListener('load', detect_blocked_gravatars, { once: true });
+window.addEventListener('load', adjust_scroll_onload, { once: true });
+window.addEventListener('hashchange', adjust_scroll_onload);

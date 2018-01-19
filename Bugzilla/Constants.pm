@@ -26,8 +26,6 @@ use Memoize;
 
     bz_locations
 
-    CONCATENATE_ASSETS
-
     IS_NULL
     NOT_NULL
 
@@ -213,16 +211,11 @@ sub BUGZILLA_VERSION {
 
 # A base link to the current REST Documentation. We place it here
 # as it will need to be updated to whatever the current release is.
-use constant REST_DOC => "http://www.bugzilla.org/docs/tip/en/html/api/";
+use constant REST_DOC => "https://bugzilla.readthedocs.io/en/latest/api/";
 
 # Location of the remote and local XML files to track new releases.
 use constant REMOTE_FILE => 'http://updates.bugzilla.org/bugzilla-update.xml';
 use constant LOCAL_FILE  => 'bugzilla-update.xml'; # Relative to datadir.
-
-# When true CSS and JavaScript assets will be concatanted and minified at
-# run-time, to reduce the number of requests required to render a page.
-# Setting this to a false value can help debugging.
-use constant CONCATENATE_ASSETS => 1;
 
 # These are unique values that are unlikely to match a string or a number,
 # to be used in criteria for match() functions and other things. They start

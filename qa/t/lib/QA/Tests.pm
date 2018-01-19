@@ -39,7 +39,7 @@ use constant CREATE_BUG => {
     'severity'     => 'normal',
     'qa_contact'   => 'canconfirm',
      version       => 'Another1',
-     url           => 'http://www.bugzilla.org/',
+     url           => 'https://www.bugzilla.org/',
      target_milestone => 'AnotherMS1',
 };
 
@@ -65,7 +65,7 @@ sub bug_tests {
       test => 'Logged-out user can access a public bug.',
     },
     { args  => { ids => [INVALID_BUG_ID] },
-      error => "not a valid bug number",
+      error => "It does not seem like bug number",
       test  => 'Passing invalid bug id returns error "Invalid Bug ID"',
     },
     { args  => { ids => [undef] },

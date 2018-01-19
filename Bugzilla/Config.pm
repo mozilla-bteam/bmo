@@ -193,6 +193,20 @@ sub update_params {
                 $param->{$name} = $item->{'default'};
             }
         }
+        else {
+            my $checker = $item->{'checker'};
+            my $updater = $item->{'updater'};
+            if ($checker) {
+                my $error = $checker->($param->{$name}, $item);
+                if ($error && $updater) {
+                    my $new_val = $updater->( $param->{$name} );
+                    $param->{$name} = $new_val unless $checker->($new_val, $item);
+                }
+                elsif ($error) {
+                    warn "Invalid parameter: $name\n";
+                }
+            }
+        }
     }
 
     # Generate unique Duo integration secret key
@@ -203,39 +217,7 @@ sub update_params {
 
     $param->{'utf8'} = 1 if $new_install;
 
-    # --- REMOVE OLD PARAMS ---
-
     my %oldparams;
-    # Remove any old params
-    foreach my $item (keys %$param) {
-        if (!exists $params{$item}) {
-            $oldparams{$item} = delete $param->{$item};
-        }
-    }
-
-    # Write any old parameters to old-params.txt
-    my $datadir = bz_locations()->{'datadir'};
-    my $old_param_file = "$datadir/old-params.txt";
-    if (scalar(keys %oldparams)) {
-        my $op_file = new IO::File($old_param_file, '>>', 0600)
-          || die "Couldn't create $old_param_file: $!";
-
-        print "The following parameters are no longer used in Bugzilla,",
-              " and so have been\nmoved from your parameters file into",
-              " $old_param_file:\n";
-
-        local $Data::Dumper::Terse  = 1;
-        local $Data::Dumper::Indent = 0;
-
-        my $comma = "";
-        foreach my $item (keys %oldparams) {
-            print $op_file "\n\n$item:\n" . Data::Dumper->Dump([$oldparams{$item}]) . "\n";
-            print "${comma}$item";
-            $comma = ", ";
-        }
-        print "\n";
-        $op_file->close;
-    }
 
     if (ON_WINDOWS && !-e SENDMAIL_EXE
         && $param->{'mail_delivery_method'} eq 'Sendmail')
@@ -277,7 +259,9 @@ sub write_params {
     my ($fh, $tmpname) = File::Temp::tempfile('params.XXXXX',
                                               DIR => $datadir );
 
-    print $fh (Data::Dumper->Dump([$param_data], ['*param']))
+    my %params = %$param_data;
+    $params{urlbase} = Bugzilla->localconfig->{urlbase};
+    print $fh (Data::Dumper->Dump([\%params], ['*param']))
       || die "Can't write param file: $!";
 
     close $fh;
