@@ -4,7 +4,18 @@
 # here because Bash and Python read configs differently.
 
 import urllib, sys, pipes, os.path
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError as error:
+    if __name__ == '__main__':
+        msg = """
+            echo 'error in %s:'
+            echo '%s' >&2
+            exit 1
+        """
+        print msg % (__file__, pipes.quote(str(error)))
+        sys.exit(1)
+
 
 # scripts location (where does this config file live?)
 SCRIPTS_DIR  = os.path.dirname(os.path.abspath(__file__))
