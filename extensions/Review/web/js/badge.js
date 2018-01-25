@@ -26,12 +26,14 @@ Bugzilla.Review.Badge = class Badge {
      * @returns {Badge} New Badge instance.
      */
     constructor() {
+        this.initialized = false;
         this.$button = document.querySelector('#header-requests-menu-button');
         this.$panel = document.querySelector('#header-requests .dropdown-panel');
         this.$loading = document.querySelector('#header-requests .dropdown-panel .loading');
 
         if (this.$loading) {
-            this.$button.addEventListener('click', () => this.init(), { once: true });
+            this.$button.addEventListener('mouseover', () => this.init(), { once: true });
+            this.$button.addEventListener('focus', () => this.init(), { once: true });
         }
     }
 
@@ -39,7 +41,13 @@ Bugzilla.Review.Badge = class Badge {
      * Initialize the Reviews dropdown menu.
      */
     async init() {
-        const url = this.$panel.querySelector('footer a').href + '&ctype=json';
+        if (this.initialized) {
+            return;
+        }
+
+        this.initialized = true;
+
+        const url = this.$panel.querySelector('footer a').href.replace(/type$/, 'requestee') + '&ctype=json';
         const response = await fetch(url, { credentials: 'same-origin' });
         const _requests = response.ok ? await response.json() : [];
 
@@ -84,7 +92,7 @@ Bugzilla.Review.Badge = class Badge {
             $li.setAttribute('role', 'none');
             $li.innerHTML = `<a href="${link}" role="menuitem" tabindex="-1" `
                 + `class="${(req.restricted ? 'secure' : '')}" data-type="${req.type}">`
-                + `<img src="https://secure.gravatar.com/avatar/${md5(email)}?d=mm&amp;size=64" alt="">`
+                + `<img src="https://secure.gravatar.com/avatar/${md5(email.toLowerCase())}?d=mm&amp;size=64" alt="">`
                 + `<label><strong>${pretty_name.htmlEncode()}</strong> asked for your `
                 + (req.type === 'needinfo' ? 'info' : req.type) + (req.attach_id ? ' on ' : '')
                 + (req.attach_id && req.ispatch ? (req.dup_count > 1 ? `${req.dup_count} patches` : 'a patch') : '')
