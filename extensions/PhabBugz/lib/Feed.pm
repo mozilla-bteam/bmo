@@ -192,8 +192,8 @@ sub process_revision_change {
             if ($revision->view_policy =~ /^PHID-PLCY/) {
                 $self->logger->debug("Loading current policy: " . $revision->view_policy);
                 $current_policy
-                    = Bugzilla::Extension::PhabBugz::Policy->new({ phids => [ $revision->view_policy ]});
-                my $current_projects = $current_policy->get_rule_projects;
+                    = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_policy ]});
+                my $current_projects = $current_policy->rule_projects;
                 $self->logger->debug("Current policy projects: " . join(", ", @$current_projects));
                 my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
                 if (@$added || @$removed) {

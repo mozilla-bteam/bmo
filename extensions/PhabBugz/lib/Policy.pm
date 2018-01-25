@@ -8,11 +8,9 @@
 package Bugzilla::Extension::PhabBugz::Policy;
 
 use 5.10.1;
-use strict;
-use warnings;
+use Moo;
 
 use Bugzilla::Error;
-use Bugzilla::Util qw(trim);
 use Bugzilla::Extension::PhabBugz::Util qw(request);
 use Bugzilla::Extension::PhabBugz::Project;
 
@@ -21,24 +19,30 @@ use List::Util qw(first);
 use Types::Standard -all;
 use Type::Utils;
 
-my $SearchResult = Dict[
-    phid      => Str,
-    type      => Str,
-    name      => Str,
-    shortName => Str,
-    fullName  => Str,
-    href      => Maybe[Str],
-    workflow  => Maybe[Str],
-    icon      => Str,
-    default   => Str,
-    rules     => ArrayRef[
+has 'phid'      => ( is => 'ro', isa => Str );
+has 'type'      => ( is => 'ro', isa => Str );
+has 'name'      => ( is => 'ro', isa => Str );
+has 'shortName' => ( is => 'ro', isa => Str );
+has 'fullName'  => ( is => 'ro', isa => Str );
+has 'href'      => ( is => 'ro', isa => Maybe[Str] );
+has 'workflow'  => ( is => 'ro', isa => Maybe[Str] );
+has 'icon'      => ( is => 'ro', isa => Str );
+has 'default'   => ( is => 'ro', isa => Str );
+has 'rules' => (
+    is  => 'ro',
+    isa => ArrayRef[
         Dict[
             action => Str,
             rule   => Str,
             value  => Maybe[ArrayRef[Str]]
         ]
     ]
-];
+);
+
+has 'rule_projects' => (
+    is => 'lazy',
+    isa => ArrayRef[Str],
+);
 
 # {
 #   "data": [
@@ -75,32 +79,17 @@ my $SearchResult = Dict[
 #   }
 # }
 
-#########################
-#    Initialization     #
-#########################
-
-sub new {
+sub new_from_query {
     my ($class, $params) = @_;
-    my $self = $params ? _load($params) : {};
-    $SearchResult->assert_valid($self);
-    return bless($self, $class);
-}
-
-sub _load {
-    my ($params) = @_;
     my $result = request('policy.query', $params);
     if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
         return $result->{result}->{data}->[0];
     }
-    return $result;
+    return $class->new($result);
 }
 
-#########################
-#     Modification      #
-#########################
-
 sub create {
-    my ($class, $projects) = @_;
+    my ($class, $project_names) = @_;
 
     my $data = {
         objectType => 'DREV',
@@ -113,62 +102,41 @@ sub create {
         ]
     };
 
-    if(scalar @$projects gt 0) {
+    if (@$project_names) {
         my $project_phids = [];
-        foreach my $project_name (@$projects) {
+        foreach my $project_name (@$project_names) {
             my $project = Bugzilla::Extension::PhabBugz::Project->new({ name => $project_name });
-            push(@$project_phids, $project->phid) if $project;
+            push @$project_phids, $project->phid if $project;
         }
 
         ThrowUserError('invalid_phabricator_sync_groups') unless @$project_phids;
 
-        push(@{ $data->{policy} },
-            {
-                action => 'allow',
-                rule   => 'PhabricatorProjectsPolicyRule',
-                value  => $project_phids,
-            }
-        );
+        push @{ $data->{policy} }, {
+            action => 'allow',
+            rule   => 'PhabricatorProjectsPolicyRule',
+            value  => $project_phids,
+        };
     }
     else {
-        push(@{ $data->{policy} },
-            {
-                action => 'allow',
-                value  => 'admin',
-            }
-        );
+        push @{ $data->{policy} }, { action => 'allow', value  => 'admin' };
     }
 
     my $result = request('policy.create', $data);
-    return $class->new({ phids => [ $result->{result}{phid} ] });
+    return $class->new_from_query({ phids => [ $result->{result}{phid} ] });
 }
 
-#########################
-#      Accessors        #
-#########################
-
-sub phid    { return $_[0]->{phid};    }
-sub type    { return $_[0]->{type};    }
-sub name    { return $_[0]->{name};    }
-sub icon    { return $_[0]->{icon};    }
-sub default { return $_[0]->{default}; }
-sub rules   { return $_[0]->{rules};   }
-
-sub get_rule_projects {
+sub _build_rule_projects {
     my ($self) = @_;
-    return $self->{rule_projects} if $self->{rule_projects};
-    $self->{rule_projects} ||= [];
-    if ($self->rules) {
-        if (my $rule = first { $_->{rule} eq 'PhabricatorProjectsPolicyRule'} @{ $self->rules }) {
-            foreach my $phid (@{ $rule->{value} }) {
-                my $project = Bugzilla::Extension::PhabBugz::Project->new({ phids => [ $phid ] });
-                if ($project) {
-                    push(@{ $self->{rule_projects} }, $project->name);
-                }
-            }
-        }
-    }
-    return $self->{rule_projects};
+
+    return [] unless $self->rules;
+    my $rule = first { $_->{rule} eq 'PhabricatorProjectsPolicyRule'} @{ $self->rules };
+    return [] unless $rule;
+    return [
+        map  { $_->name }
+        grep { $_ }
+        map  { Bugzilla::Extension::PhabBugz::Project->new( { phids => [$_] } ) }
+        @{ $rule->{value} }
+    ];
 }
 
 1;
