@@ -104,7 +104,7 @@ sub feed_query {
             }
         }
 
-        my $revision = Bugzilla::Extension::PhabBugz::Revision->new({ phids => [$object_phid] });
+        my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [$object_phid] });
 
         if (!$revision->bug_id) {
             if ($story_text =~ /\s+created\s+D\d+/) {
