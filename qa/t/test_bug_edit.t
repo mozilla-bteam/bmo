@@ -342,6 +342,7 @@ $sel->is_text_present_ok("Changes submitted for bug $bug2_id");
 $sel->click_ok("link=My bugs from QA_Selenium");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: My bugs from QA_Selenium");
+screenshot_page($sel, "/app/artifacts/2_bugs_found.png");
 $sel->is_text_present_ok("2 bugs found");
 $sel->click_ok("link=Change Several Bugs at Once");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
