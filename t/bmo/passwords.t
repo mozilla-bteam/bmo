@@ -11,7 +11,7 @@ BEGIN { plan skip_all => "these tests only run in CI" unless $ENV{CI} && $ENV{CI
 
 use ok DRIVER;
 
-my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
+my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@example.test';
 my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
 my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // 'she7Ka8t';
 

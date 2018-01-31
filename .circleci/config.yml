@@ -159,17 +159,17 @@ jobs:
       - <<: *mysql_image
         environment: *mysql_env
       - image: memcached:latest
-      - image: selenium/standalone-firefox:2.53.1
+      - image: selenium/standalone-firefox:2.53.1-americium
     steps:
       - checkout
+      - run: |
+          gpg --import < t/bmo/admin-private-key
       - run: |
           mv /opt/bmo/local /app/local
           perl checksetup.pl --no-database
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
-      - run: /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
-      - store_artifacts:
-          path: /app/logs
+      - run: /app/scripts/entrypoint.pl test_bmo --verbose -f t/bmo/*.t
 
 workflows:
   version: 2
