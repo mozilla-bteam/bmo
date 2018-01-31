@@ -30,7 +30,7 @@ perl scripts/update_localconfig.pl webservergroup 'ubuntu'
 
 
 cat > ~/checksetup_answers.txt <<'ANSWERS'
-$answer{'ADMIN_EMAIL'}          = 'admin@mozilla.test';
+$answer{'ADMIN_EMAIL'}          = 'admin@mozilla.bugs';
 $answer{'ADMIN_OK'}             = 'Y';
 $answer{'ADMIN_PASSWORD'}       = 'bmo4c9rocks';
 $answer{'ADMIN_REALNAME'}       = 'BMO Admin';

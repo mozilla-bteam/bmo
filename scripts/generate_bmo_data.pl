@@ -65,7 +65,7 @@ my %user_prefs = (
 my %opt_param;
 GetOptions('user-pref=s%' => \%user_prefs, 'param=s' => \%opt_param);
 
-my $admin_email = shift || 'admin@mozilla.test';
+my $admin_email = shift || 'admin@mozilla.bugs';
 Bugzilla->set_user(Bugzilla::User->check({ name => $admin_email }));
 
 foreach my $pref (keys %user_prefs) {
@@ -367,7 +367,6 @@ my @groups = (
         no_admin     => 1,
         bug_group    => 1,
         all_products => 1,
-        secure_mail  => 1,
     },
     {
         name         => 'core-security-release',
@@ -375,7 +374,20 @@ my @groups = (
         no_admin     => 1,
         bug_group    => 1,
         all_products => 1,
-        secure_mail  => 1,
+    },
+    {
+        name         => 'core-security-release',
+        description  => 'Release-track Client Security Bug',
+        no_admin     => 1,
+        bug_group    => 1,
+        all_products => 1,
+    },
+    {
+        name         => 'core-security-release',
+        description  => 'Release-track Client Security Bug',
+        no_admin     => 1,
+        bug_group    => 1,
+        all_products => 1,
     },
     {
         name         => 'can_edit_comments',
@@ -404,7 +416,6 @@ my @groups = (
         no_admin     => 1,
         all_products => 0,
         bug_group    => 1,
-        secure_mail  => 1,
     },
     {
         name         => 'partner-confidential-visible',
@@ -425,17 +436,16 @@ foreach my $group (@groups) {
     if (!Bugzilla::Group->new({ name => $name })) {
         my $new_group;
         if (exists $group->{no_admin} && $group->{no_admin}) {
-            $dbh->do('INSERT INTO groups (name, description, isbuggroup, isactive, secure_mail)
-                      VALUES (?, ?, 1, 1, ?)',
-                     undef, ($group->{name}, $group->{description}, !!$group->{secure_mail}));
+            $dbh->do('INSERT INTO groups (name, description, isbuggroup, isactive)
+                      VALUES (?, ?, 1, 1)',
+                     undef, ($group->{name}, $group->{description}));
             $new_group = Bugzilla::Group->new({ name => $group->{name} });
         }
         else {
             $new_group
                 = Bugzilla::Group->create({ name        => $group->{name},
                                             description => $group->{description},
-                                            isbuggroup  => $group->{bug_group},
-                                            secure_mail => !!$group->{secure_mail} });
+                                            isbuggroup  => $group->{bug_group} });
         }
 
         if (exists $group->{all_products} && $group->{all_products}) {
