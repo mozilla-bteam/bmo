@@ -7,6 +7,7 @@
 
 package Bugzilla::Extension::PhabBugz::Project;
 
+use 5.10.1;
 use Moo;
 use Types::Standard -all;
 use Type::Utils;
