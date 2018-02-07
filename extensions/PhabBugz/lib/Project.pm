@@ -109,12 +109,6 @@ sub BUILDARGS {
 #               "phid": "PHID-USER-uif2miph2poiehjeqn5q"
 #             }
 #           ]
-#         },
-#         "ancestors": {
-#           "ancestors": []
-#         },
-#         "watchers": {
-#           "watchers": []
 #         }
 #       }
 #     }
