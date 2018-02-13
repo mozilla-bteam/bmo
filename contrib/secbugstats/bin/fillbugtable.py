@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Fill the secbug.Bugs table
+# Fill the secbugs_Bugs table
 # Should not be run regularly as it runs bugdata.py (API script) on every
 # bug_id we have stored in the DB.
 import sys, MySQLdb, os
@@ -12,12 +12,13 @@ else:
 
 # set up database connection
 db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+db.autocommit(True)
 cur = db.cursor()
 
 severities = ["sg_critical","sg_high","sg_moderate","sg_low"]
 
 for sev in severities:
-    sql = "SELECT d.bug_list FROM Details d WHERE d.sid IN (SELECT s.sid FROM Stats s WHERE category='%s' and date > '2008-07-01');" % (sev)
+    sql = "SELECT d.bug_list FROM secbugs_Details d WHERE d.sid IN (SELECT s.sid FROM secbugs_Stats s WHERE category='%s' and date > '2008-07-01');" % (sev)
     # complete list of bugs for this severity level
     complete = []
     # print "#", sql

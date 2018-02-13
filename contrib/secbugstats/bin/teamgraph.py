@@ -17,6 +17,7 @@ else: DEBUG = False
 # set up database connection
 try:
     db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+    db.autocommit(True)
     c = db.cursor(MySQLdb.cursors.DictCursor)
 except:
     print "teamgraph.py: can't connect to database\n"
@@ -33,7 +34,7 @@ weights = { "sg_critical": 5,
 
 # Gather the risk index for each team at each point in time starting in
 # September 2009 (fairly arbitrary choice)
-sql = "SELECT DISTINCT date from Details WHERE date > '2009-09-01' ORDER BY date;"
+sql = "SELECT DISTINCT date from secbugs_Details WHERE date > '2009-09-01' ORDER BY date;"
 c.execute(sql)
 rows = c.fetchall()
 for row in rows:
@@ -44,7 +45,7 @@ for row in rows:
         # (date, riskScore) tuples
         if teamName not in teamStats.keys():
             teamStats[teamName] = []
-        sql2 = "SELECT Stats.category, Details.date, SUM(Details.count) AS total FROM Details INNER JOIN Stats ON Details.sid=Stats.sid WHERE Details.date LIKE '%s%%' AND Stats.category IN ('sg_critical','sg_high','sg_moderate','sg_low') AND (%s) GROUP BY date, category;" % (date, team[1])
+        sql2 = "SELECT secbugs_Stats.category, secbugs_Details.date, SUM(secbugs_Details.count) AS total FROM secbugs_Details INNER JOIN secbugs_Stats ON secbugs_Details.sid=secbugs_Stats.sid WHERE secbugs_Details.date LIKE '%s%%' AND secbugs_Stats.category IN ('sg_critical','sg_high','sg_moderate','sg_low') AND (%s) GROUP BY date, category;" % (date, team[1])
         # if DEBUG: print sql2
         # | category    | date                | total |
         # | sg_critical | 2011-08-28 12:00:00 |     3 |

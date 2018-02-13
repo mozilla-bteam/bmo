@@ -10,6 +10,7 @@ else: DEBUG = False
 
 # set up database connection
 db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+db.autocommit(True)
 c = db.cursor()
 
 def getCleared(curBugs, lastBugs):
@@ -48,7 +49,7 @@ for sev in severities:
         last = { "Critical": "", "High": "", "Moderate": "", "Low": "" }
 
         # only select from one severity at a time
-        sql = "SELECT Details.date, sum(Details.count), GROUP_CONCAT(Details.bug_list), Stats.category, round(sum(Details.avg_age_days*Details.count)/(sum(Details.count))) as avg_age_days FROM Details INNER JOIN Stats ON Details.sid=Stats.sid WHERE (%s) AND Stats.category='%s' GROUP BY date, category ORDER BY date, category;" % (t[1], sev)
+        sql = "SELECT secbugs_Details.date, sum(secbugs_Details.count), GROUP_CONCAT(secbugs_Details.bug_list), secbugs_Stats.category, round(sum(secbugs_Details.avg_age_days*secbugs_Details.count)/(sum(secbugs_Details.count))) as avg_age_days FROM secbugs_Details INNER JOIN secbugs_Stats ON secbugs_Details.sid=secbugs_Stats.sid WHERE (%s) AND secbugs_Stats.category='%s' GROUP BY date, category ORDER BY date, category;" % (t[1], sev)
         if DEBUG: print "sql:", sql
         c.execute(sql)
         row = c.fetchone()

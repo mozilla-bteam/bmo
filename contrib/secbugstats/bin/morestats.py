@@ -30,6 +30,7 @@ else: DEBUG = False
 
 # set up database connection
 db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+db.autocommit(True)
 c = db.cursor()
 
 # foreign key to relate these details to the higher-level stat bucket
@@ -45,7 +46,7 @@ date = "%s-%s-%s %s:%s:00" % (FILE_NAME[0:4],FILE_NAME[4:6],FILE_NAME[6:8],
                               FILE_NAME[8:10],FILE_NAME[10:12])
 
 # bail out if we weren't able to determine which stat bucket to associate with
-sql = "SELECT sid FROM Stats WHERE category='%s' AND date='%s';" % (category,date)
+sql = "SELECT sid FROM secbugs_Stats WHERE category='%s' AND date='%s';" % (category,date)
 if DEBUG: print sql
 c.execute(sql)
 row = c.fetchone()
@@ -92,14 +93,14 @@ for bug in buglist["bugs"]:
 for pc in details.keys():
     # print pc, len(details[pc]), details[pc]
     # see if we are inserting new details or if we are updating existing details
-    sql = "SELECT did FROM Details where product='%s' AND component='%s' AND sid=%s AND date='%s';" % (pc[0], pc[1], SID, date)
+    sql = "SELECT did FROM secbugs_Details where product='%s' AND component='%s' AND sid=%s AND date='%s';" % (pc[0], pc[1], SID, date)
     c.execute(sql)
     row = c.fetchone()
     # update row
     if row:
-        sql = "UPDATE Details SET sid=%s, product='%s', component='%s', count=%s, bug_list='%s', date='%s', avg_age_days=%s, med_age_days=%s WHERE did=%s;" % (SID, pc[0], pc[1], len(details[pc][0]), ",".join([str(i) for i in details[pc][0]]), date, int(round(average(details[pc][1]))), int(round(median(details[pc][1]))), row[0])
+        sql = "UPDATE secbugs_Details SET sid=%s, product='%s', component='%s', count=%s, bug_list='%s', date='%s', avg_age_days=%s, med_age_days=%s WHERE did=%s;" % (SID, pc[0], pc[1], len(details[pc][0]), ",".join([str(i) for i in details[pc][0]]), date, int(round(average(details[pc][1]))), int(round(median(details[pc][1]))), row[0])
     # insert new row
     else:
-        sql = "INSERT INTO Details(sid, product, component, count, bug_list, date, avg_age_days, med_age_days) VALUES(%s, '%s', '%s', %s, '%s', '%s', %s, %s);" % (SID, pc[0], pc[1], len(details[pc][0]), ",".join([str(i) for i in details[pc][0]]), date, int(round(average(details[pc][1]))), int(round(median(details[pc][1]))))
+        sql = "INSERT INTO secbugs_Details(sid, product, component, count, bug_list, date, avg_age_days, med_age_days) VALUES(%s, '%s', '%s', %s, '%s', '%s', %s, %s);" % (SID, pc[0], pc[1], len(details[pc][0]), ",".join([str(i) for i in details[pc][0]]), date, int(round(average(details[pc][1]))), int(round(median(details[pc][1]))))
     if DEBUG: print sql
     else: c.execute(sql)

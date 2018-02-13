@@ -13,6 +13,7 @@ else: DEBUG = False
 
 # set up database connection
 db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+db.autocommit(True)
 cur = db.cursor()
 
 # Bugs sample
@@ -40,7 +41,7 @@ print "{"
 
 for sev in severities:
     print "  '%s': [" % (cleanCat(sev))
-    sql = "SELECT * from Bugs WHERE severity='%s' order by opendate;" % (sev)
+    sql = "SELECT * from secbugs_Bugs WHERE severity='%s' order by opendate;" % (sev)
     cur.execute(sql)
     row = cur.fetchone()
     while row is not None:

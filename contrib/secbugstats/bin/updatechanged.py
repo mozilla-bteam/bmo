@@ -18,13 +18,14 @@ else: DEBUG = False
 # set up database connection
 try:
     db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+    db.autocommit(True)
     c = db.cursor(MySQLdb.cursors.DictCursor)
 except:
     print "updatechanged.py: can't connect to database\n"
     sys.exit()
 
 def getThisWeekDate(slashed=False):
-    sql = "select distinct date from Details order by date desc limit 1;"
+    sql = "select distinct date from secbugs_Details order by date desc limit 1;"
     c.execute(sql)
     row = c.fetchone()
     if slashed:
@@ -33,7 +34,7 @@ def getThisWeekDate(slashed=False):
         return row["date"].strftime("%Y-%m-%d")
 
 def getLastWeekDate(slashed=False):
-    sql = "select distinct date from Details order by date desc limit 1,1;"
+    sql = "select distinct date from secbugs_Details order by date desc limit 1,1;"
     c.execute(sql)
     row = c.fetchone()
     if slashed:
@@ -88,7 +89,7 @@ class DataRow():
 for cat in [("sg_critical", "Critical"), ("sg_high", "High"), ("sg_moderate", "Moderate"), ("sg_low", "Low")]:
     print cat[1]
     # get the stats from this week
-    sql = "select d.bug_list from Details d, Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getThisWeekDate())
+    sql = "select d.bug_list from secbugs_Details d, secbugs_Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getThisWeekDate())
     c.execute(sql)
     thisWkList = ""
     row = c.fetchone()
@@ -96,7 +97,7 @@ for cat in [("sg_critical", "Critical"), ("sg_high", "High"), ("sg_moderate", "M
         thisWkList += row["bug_list"] if not len(thisWkList) else ","+row["bug_list"]
         row = c.fetchone()
     # get the stats from last week
-    sql = "select d.bug_list from Details d, Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getLastWeekDate())
+    sql = "select d.bug_list from secbugs_Details d, secbugs_Stats s where d.sid=s.sid and s.category='%s' and d.date like '%s%%';" % (cat[0], getLastWeekDate())
     c.execute(sql)
     lastWkList = ""
     row = c.fetchone()

@@ -7,9 +7,12 @@ import httplib, urllib, urllib2, cookielib, string, time, re, sys, os, MySQLdb, 
     simplejson
 from base64 import b64decode
 from settings import *
+import logging
+logger = logging.getLogger()
 
 # set up database connection
 db = MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASS, db=DB_NAME)
+db.autocommit(True)
 c = db.cursor()
 
 if "--debug" in sys.argv:
@@ -69,7 +72,7 @@ for key, url in tocheck.items():
         results = simplejson.loads(json)
         count = len(results["bugs"])
         attempt += 1
-    sql = "INSERT INTO Stats(category, count, date) VALUES('%s', %s, '%s');" % \
+    sql = "INSERT INTO secbugs_Stats(category, count, date) VALUES('%s', %s, '%s');" % \
           (key, count, timestamp_db)
-    if DEBUG: print sql
-    else: c.execute(sql)
+    c.execute(sql)
+    logger.debug("sql: %s", sql)

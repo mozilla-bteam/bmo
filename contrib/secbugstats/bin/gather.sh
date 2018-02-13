@@ -5,9 +5,12 @@
 # script should be redirected to a log file for debugging.
 
 # scripts location (where does this config file live?)
-SCRIPTS_DIR="$(dirname "$(readlink /proc/$$/fd/255)")"
 # local settings
-source $SCRIPTS_DIR/settings.cfg
+eval "$(python contrib/secbugstats/bin/settings.py)"
+
+mkdir -p $JSON_CUR
+mkdir -p $TEAMS_CHART_LOC
+mkdir -p $BUGLIFE_CHART_LOC
 
 # Move last week's data files to the archive
 mv $JSON_CUR/* $JSON_OLD/
@@ -21,7 +24,8 @@ echo "[end curlbug.py]"
 # the product, component, bug numbers, bug ages, etc. for each category
 echo "[morestats.py `date +%Y-%m-%d\ %T`]"
 for i in `ls $JSON_CUR/*sg_{low,moderate,high,critical,needstriage,unconfirmed,opened,closed,total,untouched,investigate,needinfo,vector}.json`;
-do $SCRIPTS_DIR/morestats.py $i;
+do
+$SCRIPTS_DIR/morestats.py $i;
 done
 echo "[end morestats.py]"
 
@@ -48,7 +52,7 @@ echo "[teamgraph.py `date +%Y-%m-%d\ %T`]"
 $SCRIPTS_DIR/teamgraph.py
 echo "[end graph.py]"
 
-# Email the report
+# # Email the report
 echo "[sendstats.py `date +%Y-%m-%d\ %T`]"
 $SCRIPTS_DIR/sendstats.py
 echo "[end sendstats.py]"
