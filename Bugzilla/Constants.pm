@@ -20,7 +20,6 @@ use Memoize;
 @Bugzilla::Constants::EXPORT = qw(
     BUGZILLA_VERSION
     REST_DOC
-    USE_NYTPROF
 
     REMOTE_FILE
     LOCAL_FILE
@@ -635,8 +634,6 @@ use constant EMAIL_LIMIT_EXCEPTION  => "email_limit_exceeded\n";
 # The maximum number of jobs to show when viewing the job queue
 # (view_job_queue.cgi).
 use constant JOB_QUEUE_VIEW_MAX_JOBS => 2500;
-
-use constant USE_NYTPROF => !! $ENV{USE_NYTPROF};
 
 sub bz_locations {
     # Force memoize() to re-compute data per project, to avoid

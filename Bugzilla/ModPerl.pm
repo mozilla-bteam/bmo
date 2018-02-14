@@ -10,30 +10,33 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use File::Find ();
-use Cwd ();
-use Carp ();
-
-use Bugzilla::ModPerl::BlockIP;
-use Bugzilla::ModPerl::ResponseHandler;
-use Bugzilla::ModPerl::CleanupHandler;
-use Bugzilla::Constants qw(USE_NYTPROF);
-
 use Apache2::Log ();
 use Apache2::ServerUtil;
 use Apache2::SizeLimit;
-use ModPerl::RegistryLoader ();
+use Carp ();
+use Cwd ();
 use File::Basename ();
 use File::Find ();
+use File::Find ();
+use ModPerl::RegistryLoader ();
 
 use Bugzilla ();
 use Bugzilla::BugMail ();
 use Bugzilla::CGI ();
+use Bugzilla::Constants ();
 use Bugzilla::Extension ();
 use Bugzilla::Install::Requirements ();
-use Bugzilla::Util ();
+use Bugzilla::ModPerl::BlockIP;
+use Bugzilla::ModPerl::CleanupHandler;
+use Bugzilla::ModPerl::ResponseHandler;
 use Bugzilla::RNG ();
+use Bugzilla::Util ();
 
+# Make warnings go to the virtual host's log and not the main
+# server log.
+BEGIN { *CORE::GLOBAL::warn = \&Apache2::ServerRec::warn; }
+
+use constant USE_NYTPROF => !! $ENV{USE_NYTPROF};
 BEGIN {
     if (USE_NYTPROF) {
         $ENV{NYTPROF} = "savesrc=0:start=no:addpid=1";
@@ -41,12 +44,7 @@ BEGIN {
 }
 use if USE_NYTPROF, 'Devel::NYTProf::Apache';
 
-# Make warnings go to the virtual host's log and not the main
-# server log.
-BEGIN { *CORE::GLOBAL::warn = \&Apache2::ServerRec::warn; }
-
 sub startup {
-
     # Pre-compile the CGI.pm methods that we're going to use.
     Bugzilla::CGI->compile(qw(:cgi :push));
 
@@ -72,20 +70,17 @@ sub startup {
     my $conf   = Bugzilla::ModPerl->apache_config($cgi_path);
     $server->add_config( [ grep { length $_ } split( "\n", $conf ) ] );
 
-
     # Pre-load all extensions
     Bugzilla::Extension->load_all();
-
     Bugzilla->preload_features();
 
     # Force instantiation of template so Bugzilla::Template::PreloadProvider can do its magic.
     Bugzilla->template;
 
-    Bugzilla::ModPerl::BlockIP->set_memcached( Bugzilla::Memcached->_new()->{memcached} );
+    Bugzilla::ModPerl::BlockIP->set_memcached( Bugzilla::Memcached->new()->{memcached} );
 
     # Have ModPerl::RegistryLoader pre-compile all CGI scripts.
     my $rl = ModPerl::RegistryLoader->new( package => 'Bugzilla::ModPerl::ResponseHandler' );
-
     my $feature_files = Bugzilla::Install::Requirements::map_files_to_features();
 
     # Prevent "use lib" from doing anything when the .cgi files are compiled.

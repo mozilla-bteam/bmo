@@ -825,9 +825,9 @@ sub metrics {
 sub memcached {
     # BMO - use metrics subclass if required
     if (Bugzilla->metrics_enabled) {
-        return $_[0]->request_cache->{memcached} ||= Bugzilla::Metrics::Memcached->_new();
+        return $_[0]->request_cache->{memcached} ||= Bugzilla::Metrics::Memcached->new();
     } else {
-        return $_[0]->request_cache->{memcached} ||= Bugzilla::Memcached->_new();
+        return $_[0]->request_cache->{memcached} ||= Bugzilla::Memcached->new();
     }
 }
 
