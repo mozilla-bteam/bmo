@@ -284,13 +284,13 @@ HTTPD_MaxRequestsPerChild
 
 USE_NYTPROF
   Write `Devel::NYTProf`_ profiles out for each requests.
-  By default these will be named /app/data/nytprof.$script.$N.$PID, where N is an ever-increasing integer,
-  $PID is the process id of the apache worker, and $script is the name of the script being executed,
-  such as index or show_bug.
+  These will be named /app/data/nytprof.$host.$script.$n.$pid, where $host is
+  the hostname of the container, script is the name of the script (without
+  extension), $n is a number starting from 1 and incrementing for each
+  request to the worker process, and $pid is the worker process id.
 
 NYTPROF_DIR
   Alternative location to store profiles from the above option.
-  Recommended if there are multiple instances apache running.
 
 .. _`Devel::NYTProf`: https://metacpan.org/pod/Devel::NYTProf
 

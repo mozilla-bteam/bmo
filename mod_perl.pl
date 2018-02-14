@@ -138,6 +138,7 @@ use base qw(ModPerl::Registry);
 use Bugzilla;
 use Bugzilla::Constants qw(USAGE_MODE_REST bz_locations);
 use Time::HiRes;
+use Sys::Hostname;
 
 sub handler : method {
     my $class = shift;
@@ -157,9 +158,10 @@ sub handler : method {
     if (Bugzilla::ModPerl::USE_NYTPROF) {
         state $count = {};
         state $dir  = Bugzilla::ModPerl::NYTPROF_DIR // bz_locations()->{datadir};
+        state $host = (split(/\./, hostname()))[0];
         my $script = File::Basename::basename($ENV{SCRIPT_FILENAME});
         $script =~ s/\.cgi$//;
-        my $file = $dir . "/nytprof.$script." . ++$count->{$$};
+        my $file = $dir . "/nytprof.$host.$script." . ++$count->{$$};
         DB::enable_profile($file);
     }
     Bugzilla::init_page();
