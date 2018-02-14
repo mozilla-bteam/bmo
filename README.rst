@@ -282,6 +282,18 @@ HTTPD_MaxRequestsPerChild
   will die. If MaxRequestsPerChild is 0, then the process will never expire.
   Default: 4000
 
+USE_NYTPROF
+  Write `Devel::NYTProf`_ profiles out for each requests.
+  By default these will be named /app/data/nytprof.$script.$N.$PID, where N is an ever-increasing integer,
+  $PID is the process id of the apache worker, and $script is the name of the script being executed,
+  such as index or show_bug.
+
+NYTPROF_DIR
+  Alternative location to store profiles from the above option.
+  Recommended if there are multiple instances apache running.
+
+.. _`Devel::NYTProf`: https://metacpan.org/pod/Devel::NYTProf
+
 Persistent Data Volume
 ----------------------
 
