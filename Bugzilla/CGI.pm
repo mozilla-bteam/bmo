@@ -62,7 +62,6 @@ sub SHOW_BUG_MODAL_CSP {
     my ($bug_id) = @_;
     my %policy = (
         script_src  => ['self', 'nonce', 'unsafe-inline', 'unsafe-eval', 'https://www.google-analytics.com' ],
-        object_src  => [Bugzilla->localconfig->{urlbase} . "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.swf"],
         img_src     => [ 'self', 'https://secure.gravatar.com', 'https://www.google-analytics.com' ],
         connect_src => [
             'self',
@@ -513,6 +512,18 @@ sub header {
         { cgi => $self, headers => \%headers }
     );
     $self->{_header_done} = 1;
+
+    if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
+        my @fonts = (
+            "skins/standard/fonts/FiraMono-Regular.woff2?v=3.202",
+            "skins/standard/fonts/FiraSans-Bold.woff2?v=4.203",
+            "skins/standard/fonts/FiraSans-Italic.woff2?v=4.203",
+            "skins/standard/fonts/FiraSans-Regular.woff2?v=4.203",
+            "skins/standard/fonts/FiraSans-SemiBold.woff2?v=4.203",
+            "skins/standard/fonts/MaterialIcons-Regular.woff2",
+        );
+        $headers{'-link'} = join(", ", map { sprintf('</static/v%s/%s>; rel="preload"; as="font"', Bugzilla->VERSION, $_) } @fonts);
+    }
 
     return $self->SUPER::header(%headers) || "";
 }

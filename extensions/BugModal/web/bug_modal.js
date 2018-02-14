@@ -141,7 +141,7 @@ $(function() {
     $('#top-btn')
         .click(function(event) {
             event.preventDefault();
-            $.scrollTo($('body'));
+            $.scrollTo($('#main-inner'));
         });
 
     // bottom btn
@@ -314,41 +314,7 @@ $(function() {
                 });
         }
         else {
-            // we don't know if flash is enabled without waiting for load to timeout
-            // remember the flash enabled state between pages
-            var hasFlash = true;
-            if (localStorage.getItem('hasFlash') === null) {
-                $('#copy-summary').hide();
-            }
-            else {
-                hasFlash = localStorage.getItem('hasFlash');
-            }
-            if (hasFlash) {
-                var s = document.createElement("script");
-                s.onload = function () {
-                  ZeroClipboard.config({ flashLoadTimeout: 5000 });
-                  var zero = new ZeroClipboard($('#copy-summary'));
-                  zero.on({
-                      'ready': function(event) {
-                          $('#copy-summary').show();
-                          localStorage.setItem('hasFlash', true);
-                      },
-                      'error': function(event) {
-                          console.log(event.message);
-                          zero.destroy();
-                          $('#global-zeroclipboard-html-bridge').remove();
-                          $('#copy-summary').hide();
-                          localStorage.removeItem('hasFlash');
-                      },
-                      'copy': function(event) {
-                          var clipboard = event.clipboardData;
-                          clipboard.setData('text/plain', clipboardSummary());
-                      }
-                  });
-                };
-                s.src = "extensions/BugModal/web/ZeroClipboard/ZeroClipboard.min.js";
-                document.getElementsByTagName('head')[0].appendChild(s);
-            }
+            $('#copy-summary').hide();
         }
     }
 
@@ -734,7 +700,7 @@ $(function() {
     $('#needinfo-scroll')
         .click(function(event) {
             event.preventDefault();
-            $.scrollTo($('#needinfo_role'), function() { $('#needinfo_role').focus(); });
+            $.scrollTo($('#needinfo_container'), function() { $('#needinfo_role').focus(); });
         });
 
     // knob
@@ -864,13 +830,15 @@ $(function() {
             // remove embedded links to attachment details
             reply_text = reply_text.replace(/(attachment\s+\d+)(\s+\[[^\[\n]+\])+/gi, '$1');
 
-            if ($('#comment').val() != reply_text) {
-                $('#comment').val($('#comment').val() + reply_text);
-            }
-            if (BUGZILLA.user.settings.autosize_comments) {
-                autosize.update($('#comment'));
-            }
             $.scrollTo($('#comment'), function() {
+                if ($('#comment').val() != reply_text) {
+                    $('#comment').val($('#comment').val() + reply_text);
+                }
+
+                if (BUGZILLA.user.settings.autosize_comments) {
+                    autosize.update($('#comment'));
+                }
+
                 $('#comment').focus();
             });
         });
@@ -976,7 +944,7 @@ $(function() {
             $('#' + id + '-view').hide();
             $('#' + id).show().focus().select();
         });
-        
+
     // timetracking
     $('#work_time').change(function() {
         // subtracts time spent from remaining time
@@ -1455,31 +1423,23 @@ $(function() {
             return -1;
         },
 
-        // Bring an element into view, leaving space for the outline.
-        // If passed a string, it will be treated as an id - the page will scroll
-        // unanimated and the url will be added to the browser's history.
-        // If passed an element, an smooth scroll will take place and no entry
-        // will be added to the history.
+        // Bring an element into view, leaving space for the outline. If passed
+        // a string, it will be treated as an id - the page will scroll and the
+        // url will be added to the browser's history. If passed an element, no
+        // entry will be added to the history.
         scrollTo: function(target, complete) {
+            let $target;
+
             if (typeof target === 'string') {
-                var el = $('#' + target);
+                $target = document.getElementById(target);
                 window.location.hash = target;
-                var $html = $('html');
-                if (Math.abs($html.scrollTop() - el.offset().top) <= 1) {
-                    $html.scrollTop($html.scrollTop() - 10);
-                }
-                $html.scrollLeft(0);
+            } else {
+                // Use raw DOM node instead of jQuery
+                $target = target.get(0);
             }
-            else {
-                var offset = target.offset();
-                $('html')
-                    .animate({
-                            scrollTop: offset.top - 20,
-                            scrollLeft: 0
-                        },
-                        200,
-                        complete
-                    );
+
+            if ($target) {
+                scroll_element_into_view($target, complete);
             }
         }
 

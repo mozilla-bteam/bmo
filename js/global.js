@@ -192,22 +192,86 @@ $().ready(function() {
 });
 
 /**
- * If the URL contains a hash like #c10, scroll down the page to show the
- * element below the fixed global header. This workaround is required for
- * comments on show_bug.cgi, components on describecomponents.cgi, etc.
+ * Focus the main content when the page is loaded and there is no autofocus
+ * element, so the user can immediately scroll down the page using keyboard.
  */
-const scroll_element_into_view = () => {
-    if (location.hash) {
-        const $header = document.querySelector('#header');
-        const $comment = document.querySelector(location.hash);
+const focus_main_content = () => {
+    if (!document.querySelector('[autofocus]')) {
+        document.querySelector('main').focus();
+    }
+}
 
-        if ($comment) {
-            window.setTimeout(() => {
-                window.scrollTo(0, $comment.offsetTop - $header.offsetHeight - 20);
-            }, 250);
+/**
+ * Check if Gravatar images on the page are successfully loaded, and if blocked
+ * (by any content blocker), replace them with the default/fallback image.
+ */
+const detect_blocked_gravatars = () => {
+    document.querySelectorAll('img[src^="https://secure.gravatar.com/avatar/"]').forEach($img => {
+        if (!$img.complete || !$img.naturalHeight) {
+            $img.src = 'extensions/Gravatar/web/default.jpg';
+        }
+    });
+}
+
+/**
+ * If the current URL contains a hash like `#c10`, adjust the scroll position to
+ * make some room above the focused element.
+ */
+const adjust_scroll_onload = () => {
+    if (location.hash) {
+        const $target = document.querySelector(location.hash);
+
+        if ($target) {
+            window.setTimeout(() => scroll_element_into_view($target), 50);
         }
     }
 }
 
-window.addEventListener('load', scroll_element_into_view, { once: true });
-window.addEventListener('hashchange', scroll_element_into_view);
+/**
+ * Bring an element into the visible area of the browser window. Unlike the
+ * native `Element.scrollIntoView()` function, this adds some extra room above
+ * the target element. Smooth scroll can be done using CSS.
+ * @param {Element} $target - An element to be brought.
+ * @param {Function} [complete] - An optional callback function to be executed
+ *  once the scroll is complete.
+ */
+const scroll_element_into_view = ($target, complete) => {
+    let top = 0;
+    let $element = $target;
+
+    // Traverse up in the DOM tree to the scroll container of the
+    // focused element, either `<main>` or `<div role="feed">`.
+    do {
+        top += ($element.offsetTop || 0);
+        $element = $element.offsetParent;
+    } while ($element && !$element.matches('main, [role="feed"]'))
+
+    if (!$element) {
+        return;
+    }
+
+    if (typeof complete === 'function') {
+        const callback = () => {
+            $element.removeEventListener('scroll', listener);
+            complete();
+        };
+
+        // Emulate the `scrollend` event
+        const listener = () => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(callback, 100);
+        };
+
+        // Make sure the callback is always fired even if no scroll happened
+        let timer = window.setTimeout(callback, 100);
+
+        $element.addEventListener('scroll', listener);
+    }
+
+    $element.scrollTop = top - 20;
+}
+
+window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
+window.addEventListener('load', detect_blocked_gravatars, { once: true });
+window.addEventListener('load', adjust_scroll_onload, { once: true });
+window.addEventListener('hashchange', adjust_scroll_onload);
