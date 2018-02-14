@@ -23,8 +23,14 @@ BEGIN {
 }
 
 use Bugzilla::ModPerl::StartupFix;
+use Taint::Util qw(untaint);
 
 use constant USE_NYTPROF => !! $ENV{USE_NYTPROF};
+use constant NYTPROF_DIR => do {
+    my $dir = $ENV{NYTPROF_DIR};
+    untaint($dir);
+    $dir;
+};
 BEGIN {
     if (USE_NYTPROF) {
         $ENV{NYTPROF} = "savesrc=0:start=no:addpid=1";
@@ -150,9 +156,10 @@ sub handler : method {
 
     if (Bugzilla::ModPerl::USE_NYTPROF) {
         state $count = {};
+        state $dir  = Bugzilla::ModPerl::NYTPROF_DIR // bz_locations()->{datadir};
         my $script = File::Basename::basename($ENV{SCRIPT_FILENAME});
         $script =~ s/\.cgi$//;
-        my $file = bz_locations()->{datadir} . "/nytprof.$script." . ++$count->{$$};
+        my $file = $dir . "/nytprof.$script." . ++$count->{$$};
         DB::enable_profile($file);
     }
     Bugzilla::init_page();

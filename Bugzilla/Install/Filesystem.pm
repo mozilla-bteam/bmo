@@ -102,14 +102,16 @@ use constant INDEX_HTML => <<'EOT';
 </html>
 EOT
 
-sub HTTPD_ENV_CONF {
+use constant HTTPD_ENV = qw(
+    LOCALCONFIG_ENV
+    BUGZILLA_UNSAFE_AUTH_DELEGATION
+    USE_NYTPROF
+    NYTPROF_DIR
+);
 
-    return join( "\n",
-      "PerlPassEnv LOCALCONFIG_ENV",
-      "PerlPassEnv BUGZILLA_UNSAFE_AUTH_DELEGATION",
-      "PerlPassEnv USE_NYTPROF"
-      map { "PerlPassEnv " . $_ } ENV_KEYS
-    ) . "\n";
+sub HTTPD_ENV_CONF {
+    my @env = (ENV_KEYS, HTTPD_ENV);
+    return join( "\n", map { "PerlPassEnv " . $_ } @env ) . "\n";
 }
 
 ###############
