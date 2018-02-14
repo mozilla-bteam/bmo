@@ -1,3 +1,9 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 package Bugzilla::ModPerl::BlockIP;
 use 5.10.1;
 use strict;
@@ -11,7 +17,7 @@ use Cache::Memcached::Fast;
 
 use constant BLOCK_TIMEOUT => 60*60;
 
-my $MEMCACHED = Bugzilla::Memcached->_new()->{memcached};
+my $MEMCACHED;
 my $STATIC_URI = qr{
     ^/
      (?: extensions/[^/]+/web
@@ -25,6 +31,11 @@ my $STATIC_URI = qr{
        | errors
      )
 }xms;
+
+sub set_memcached {
+    my ($class, $memcached) = @_;
+    $MEMCACHED = $memcached;
+}
 
 sub block_ip {
     my ($class, $ip) = @_;
