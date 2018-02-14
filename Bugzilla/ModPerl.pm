@@ -113,9 +113,7 @@ sub apache_config {
     my %htaccess;
     $cgi_path = Cwd::realpath($cgi_path);
     my $wanted = sub {
-        package File::Find;
-        our ($name, $dir);
-
+        my ($name, $dir) = ($File::Find::name, $File::Find::dir);
         if ($name =~ m#/\.htaccess$#) {
             open my $fh, '<', $name or die "cannot open $name $!";
             my $contents = do {
@@ -128,6 +126,8 @@ sub apache_config {
     };
 
     File::Find::find( { wanted => $wanted, no_chdir => 1 }, $cgi_path );
+    # We don't want anything that Bugzilla::Template offers here.
+    # this is just for producing the apache config file content.
     my $template = Template->new;
     my $conf;
     my %vars = (
