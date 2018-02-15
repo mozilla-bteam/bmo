@@ -173,7 +173,7 @@ sub bug_start_of_update {
                     _check_requestee($requestee);
                     $needinfo_flag->{requestee} = $requestee;
                     my $requestee_obj = Bugzilla::User->check($requestee);
-                    if ($requestee_obj && !$requestee_obj->can_see_bug($bug->id)) {
+                    if (!$requestee_obj->can_see_bug($bug->id)) {
                         $bug->add_cc($requestee_obj);
                     }
                 }
