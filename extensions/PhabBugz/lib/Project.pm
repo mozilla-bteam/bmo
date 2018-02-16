@@ -128,36 +128,6 @@ sub BUILDARGS {
 # }
 
 #########################
-#    Initialization     #
-#########################
-
-sub new {
-    my ($class, $params) = @_;
-    my $self = $params ? _load($params) : {};
-    $SearchResult->assert_valid($self);
-    return bless($self, $class);
-}
-
-sub _load {
-    my ($params) = @_;
-
-    my $data = {
-        queryKey    => 'all',
-        attachments => {
-            members => 1
-        },
-        constraints => $params
-    };
-
-    my $result = request('project.search', $data);
-    if (exists $result->{result}{data} && @{ $result->{result}{data} }) {
-        return $result->{result}->{data}->[0];
-    }
-
-    return $result;
-}
-
-#########################
 #     Modification      #
 #########################
 
