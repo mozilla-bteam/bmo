@@ -28,7 +28,7 @@ my $ok = eval {
 
     die "database not available"            unless $database_ok;
     die "memcached server(s) not available" unless $memcached_ok;
-    die "mod_perl not configured?"          unless $ENV{MOD_PERL};
+    die "mod_perl/psgi not configured?"     unless BZ_PERSISTENT;
     die "missing bmo feature dependencies"  unless Bugzilla->has_feature('bmo');
     1;
 };

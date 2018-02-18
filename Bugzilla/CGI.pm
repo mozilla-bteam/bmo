@@ -113,7 +113,7 @@ sub new {
 
     # Under mod_perl, CGI's global variables get reset on each request,
     # so we need to set them up again every time.
-    $class->_init_bz_cgi_globals() if $ENV{MOD_PERL};
+    $class->_init_bz_cgi_globals() if BZ_PERSISTENT;
 
     my $self = $class->SUPER::new(@args);
 
@@ -596,6 +596,8 @@ sub header {
 
 sub param {
     my $self = shift;
+
+    local $CGI::LIST_CONTEXT_WARN = 0;
 
     # When we are just requesting the value of a parameter...
     if (scalar(@_) == 1) {
