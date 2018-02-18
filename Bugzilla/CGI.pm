@@ -114,7 +114,7 @@ sub new {
 
     # Under mod_perl, CGI's global variables get reset on each request,
     # so we need to set them up again every time.
-    $class->_init_bz_cgi_globals() if $ENV{MOD_PERL};
+    $class->_init_bz_cgi_globals() if BZ_PERSISTENT;
 
     my $self = $class->SUPER::new(@args);
 

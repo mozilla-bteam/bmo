@@ -31,11 +31,11 @@ sub debugging {
 }
 
 sub _log_it {
-    require Apache2::Log;
     my ($self, $method, $message) = @_;
     return if $method eq 'DEBUG' && !$self->debugging;
     chomp $message;
     if ($ENV{MOD_PERL}) {
+        require Apache2::Log;
         Apache2::ServerRec::warn("Push $method: $message");
     } elsif ($ENV{SCRIPT_FILENAME}) {
         print STDERR "Push $method: $message\n";
