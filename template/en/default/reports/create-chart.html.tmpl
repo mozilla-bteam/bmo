@@ -33,7 +33,7 @@
   donames = 1 
 %]
 
-<script>
+<script [% script_nonce FILTER none %]>
 [%# This function takes necessary action on selection of a subcategory %]
 function subcatSelected() {
   var cat = document.chartform.category.value;
