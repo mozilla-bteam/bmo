@@ -14,6 +14,7 @@ use Bugzilla::User;
 
 use Bugzilla::Extension::PhabBugz::Util qw(request);
 
+use List::Util qw(first);
 use Types::Standard -all;
 use Type::Utils;
 
@@ -32,6 +33,7 @@ has 'roles'           => ( is => 'ro', isa => ArrayRef [Str] );
 has 'view_policy'     => ( is => 'ro', isa => Str );
 has 'edit_policy'     => ( is => 'ro', isa => Str );
 has 'bugzilla_id'     => ( is => 'ro', isa => Maybe [Int] );
+has 'bugzilla_user'   => ( is => 'lazy' );
 
 sub BUILDARGS {
     my ( $class, $params ) = @_;
@@ -46,14 +48,11 @@ sub BUILDARGS {
 
     delete $params->{fields};
 
-    if ( my $external_accounts =
-        $params->{attachments}{'external-accounts'}{'external-accounts'} )
-    {
-        foreach my $account (@$external_accounts) {
-            next if $account->{type} ne 'bmo';
-            $params->{bug_user_id} = $account->{id};
-            last;
-        }
+    my $external_accounts =
+      $params->{attachments}{'external-accounts'}{'external-accounts'};
+    if ($external_accounts) {
+        my $bug_user = first { $_->{type} ne 'bmo' } @$external_accounts;
+        $params->{bugzilla_id} = $bug_user->{id};
     }
 
     delete $params->{attachments};
@@ -124,7 +123,7 @@ sub match {
         $params->{phids} = [ map { $_->{phid} } @$bugzilla_data ];
     }
 
-    return [] if !@{ $params->{phids} };
+    return [] if !$params->{phids};
 
     # Look for BMO external user id in external-accounts attachment
     my $data = {
@@ -148,11 +147,10 @@ sub match {
 #   Accessors   #
 #################
 
-sub bugzilla_user {
+sub _build_bugzilla_user {
     my ($self) = @_;
-    return undef if !$self->bugzilla_id;
-    return $self->{bugzilla_user} ||=
-      Bugzilla::User->new( { id => $self->bugzilla_id, cache => 1 } );
+    return undef unless $self->bugzilla_id;
+    return Bugzilla::User->new( { id => $self->bugzilla_id, cache => 1 } );
 }
 
 sub get_phab_bugzilla_ids {
@@ -162,25 +160,18 @@ sub get_phab_bugzilla_ids {
 
     # Try to find the values in memcache first
     my @results;
-    my @bugzilla_ids = @{ $params->{ids} };
-    for ( my $i = 0 ; $i < @bugzilla_ids ; $i++ ) {
+    my %bugzilla_ids = map { $_ => 1 } @{ $params->{ids} };
+    foreach my $bugzilla_id ( keys %bugzilla_ids ) {
         my $phid =
-          $memcache->get(
-            { key => "phab_user_bugzilla_id_" . $bugzilla_ids[$i] } );
+          $memcache->get( { key => "phab_user_bugzilla_id_" . $bugzilla_id } );
         if ($phid) {
-            push(
-                @results,
-                {
-                    id   => $bugzilla_ids[$i],
-                    phid => $phid
-                }
-            );
-            splice( @bugzilla_ids, $i, 1 );
+            push @results, { id => $bugzilla_id, phid => $phid };
+            delete $bugzilla_ids{$bugzilla_id};
         }
     }
 
-    if (@bugzilla_ids) {
-        $params->{ids} = \@bugzilla_ids;
+    if (%bugzilla_ids) {
+        $params->{ids} = [ keys %bugzilla_ids ];
 
         my $result = request( 'bugzilla.account.search', $params );
 
@@ -192,7 +183,7 @@ sub get_phab_bugzilla_ids {
                     value => $user->{phid}
                 }
             );
-            push( @results, $user );
+            push @results, $user;
         }
     }
 
