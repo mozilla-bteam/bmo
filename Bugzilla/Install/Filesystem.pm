@@ -460,8 +460,6 @@ sub FILESYSTEM {
                                           contents => HT_DEFAULT_DENY },
         '.circleci/.htaccess'        => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
-        'httpd/.htaccess'            => { perms    => WS_SERVE,
-                                          contents => HT_DEFAULT_DENY },
         "$confdir/.htaccess"         => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         "$datadir/.htaccess"         => { perms    => WS_SERVE,
