@@ -80,6 +80,9 @@ sub cmd_httpd  {
     wait_for_db();
     check_httpd_env();
     httpd();
+    my ($what, $code) = $httpd_f->get;
+    $httpd_f->cancel;
+    exit ($what eq 'signal') ? 1 : $code;
 }
 
 sub httpd {
@@ -116,7 +119,7 @@ sub cmd_dev_httpd {
     my ($what, $code) = $httpd_f->get;
     $httpd_f->cancel;
     say "exit triggered by $what ($code)";
-    exit;
+    exit ($what eq 'signal') ? 1 : $code;
 }
 
 sub cmd_load_test_data {
