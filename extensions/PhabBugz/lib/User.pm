@@ -108,8 +108,8 @@ sub BUILDARGS {
 
 sub new_from_query {
     my ( $class, $params ) = @_;
-    my ($user) = $class->match($params);
-    return $user;
+    my $matches = $class->match($params);
+    return $matches->[0];
 }
 
 sub match {
