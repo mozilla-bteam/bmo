@@ -8,6 +8,7 @@ use autodie qw(:all);
 use Bugzilla::Install::Localconfig ();
 use Bugzilla::Install::Util qw(install_string);
 use Bugzilla::Test::Util qw(create_user);
+use Bugzilla::ProcessManager;
 
 use DBI;
 use Data::Dumper;
@@ -82,17 +83,25 @@ sub cmd_httpd  {
 }
 
 sub httpd {
-    my @httpd_args = (
-        '-DFOREGROUND',
-        '-f' => '/app/httpd/httpd.conf',
-    );
+    my @httpd_args = ();
 
     # If we're behind a proxy and the urlbase says https, we must be using https.
     # * basically means "I trust the load balancer" anyway.
     if ($ENV{BMO_inbound_proxies} eq '*' && $ENV{BMO_urlbase} =~ /^https/) {
         unshift @httpd_args, '-DHTTPS';
     }
-    run( '/usr/sbin/httpd', @httpd_args );
+    my $gollum_exit_f = Bugzilla::ProcessManager->start_gollum()->get();
+    my $httpd_exit_f  = Bugzilla::ProcessManager->start_httpd(@httpd_args);
+    my $signal_f      = Bugzilla::ProcessManager->catch_signal("TERM");
+    my @futures = ($gollum_exit_f, $httpd_exit_f, $signal_f);
+
+    my $f = Future->wait_any(@futures);
+    $f->on_cancel(
+        sub {
+            $_->cancel foreach @futures;
+        }
+    );
+    return $f;
 }
 
 sub cmd_dev_httpd {
@@ -102,7 +111,12 @@ sub cmd_dev_httpd {
     if ( not $have_params ) {
         run( 'perl', 'scripts/generate_bmo_data.pl', '--param' => 'use_mailer_queue=0', 'vagrant@bmo-web.vm' );
     }
-    httpd();
+
+    my $httpd_f = httpd();
+    my ($what, $code) = $httpd_f->get;
+    $httpd_f->cancel;
+    say "exit triggered by $what ($code)";
+    exit;
 }
 
 sub cmd_load_test_data {
