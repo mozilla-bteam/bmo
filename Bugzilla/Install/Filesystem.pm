@@ -419,7 +419,7 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
-        "docker_support/env.conf" => { perms     => CGI_READ,
+        "conf/env.conf"           => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => \&HTTPD_ENV_CONF },
     );
@@ -456,7 +456,7 @@ sub FILESYSTEM {
                                           contents => HT_DEFAULT_DENY },
         '.circleci/.htaccess'        => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
-        'docker_support/.htaccess'   => { perms    => WS_SERVE,
+        'conf/.htaccess'             => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         "$datadir/.htaccess"         => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },

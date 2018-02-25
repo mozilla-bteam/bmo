@@ -31,10 +31,9 @@ our %EXPORT_TAGS = (
     utils => [qw(catch_signal on_exception on_finish)],
 );
 
-use constant DOCKER_SUPPORT_DIR => realpath(catdir(dirname(__FILE__), '..', 'docker_support'));
-
+use constant CONF_DIR => realpath(catdir(dirname(__FILE__), '..', 'conf'));
 use constant HTTPD_BIN     => '/usr/sbin/httpd';
-use constant HTTPD_CONFIG  => catfile( DOCKER_SUPPORT_DIR, 'httpd.conf' );
+use constant HTTPD_CONFIG  => catfile( CONF_DIR, 'httpd.conf' );
 
 sub catch_signal {
     my ($name, @done)   = @_;
