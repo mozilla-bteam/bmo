@@ -84,27 +84,23 @@ sub cmd_httpd  {
     wait_for_db();
     check_httpd_env();
 
-    my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
-    exit assert_httpd()->then(
-        sub {
-            $httpd_exit_f;
-        }
-    )->get;
+    my $httpd_exit_f = run_cereal_and_httpd();
+    assert_httpd()->get();
+    exit $httpd_exit_f->get();
 }
 
 sub cmd_dev_httpd {
     my $have_params = -f "/app/data/params";
+    assert_database->get();
+
     run( 'perl', 'checksetup.pl', '--no-template', $ENV{BZ_ANSWERS_FILE} );
     if ( not $have_params ) {
         run( 'perl', 'scripts/generate_bmo_data.pl', '--param' => 'use_mailer_queue=0', 'vagrant@bmo-web.vm' );
     }
 
     my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
-    exit assert_httpd()->then(
-        sub {
-            $httpd_exit_f;
-        }
-    )->get;
+    assert_httpd()->get;
+    exit $httpd_exit_f->get;
 }
 
 sub cmd_load_test_data {
