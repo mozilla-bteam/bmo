@@ -4,18 +4,18 @@ use strict;
 use warnings;
 
 use Cwd qw(realpath);
-use File::Basename qw(dirname);
-use File::Spec::Functions qw(catdir catfile);
 use English qw(-no_match_vars $PROGRAM_NAME);
-use Future;
+use File::Spec::Functions qw(catfile);
 use Future::Utils qw(repeat try_repeat);
+use Future;
 use IO::Async::Loop;
 use IO::Async::Process;
-use IO::Async::Signal;
 use IO::Async::Protocol::LineStream;
+use IO::Async::Signal;
 use LWP::Simple qw(get);
 use POSIX qw(setsid WEXITSTATUS);
 use WWW::Selenium::Util qw(server_is_running);
+use Bugzilla::Constants qw(bz_locations);
 
 use base qw(Exporter);
 
@@ -31,9 +31,8 @@ our %EXPORT_TAGS = (
     utils => [qw(catch_signal on_exception on_finish)],
 );
 
-use constant CONF_DIR => realpath(catdir(dirname(__FILE__), '..', 'conf'));
 use constant HTTPD_BIN     => '/usr/sbin/httpd';
-use constant HTTPD_CONFIG  => catfile( CONF_DIR, 'httpd.conf' );
+use constant HTTPD_CONFIG  => realpath(catfile( bz_locations->{confdir}, 'httpd.conf' ));
 
 sub catch_signal {
     my ($name, @done)   = @_;
