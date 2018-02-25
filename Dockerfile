@@ -1,4 +1,4 @@
-FROM mozillabteam/bmo-slim:20171228.1
+FROM mozillabteam/bmo-slim:20180225.1
 
 ARG CI
 ARG CIRCLE_SHA1
@@ -15,13 +15,6 @@ ENV HTTPD_ServerLimit=256
 ENV HTTPD_MaxClients=256
 ENV HTTPD_MaxRequestsPerChild=4000
 ENV PORT=8000
-
-RUN yum install -y unzip nc
-RUN curl -L https://github.com/trivago/gollum/releases/download/v0.5.1/gollum-0.5.1-Linux_x64.zip -o gollum.zip && \
-    unzip -o gollum.zip && \
-    rm gollum.zip && \
-    chmod 0755 gollum && \
-    mv gollum /usr/local/bin
 
 WORKDIR /app
 COPY . .

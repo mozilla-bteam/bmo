@@ -6,6 +6,7 @@ use warnings;
 use Cwd qw(realpath);
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(catdir catfile);
+use English qw(-no_match_vars $PROGRAM_NAME);
 use Future;
 use Future::Utils qw(repeat try_repeat);
 use IO::Async::Loop;
@@ -14,37 +15,35 @@ use IO::Async::Signal;
 use IO::Async::Protocol::LineStream;
 use LWP::Simple qw(get);
 use POSIX qw(setsid WEXITSTATUS);
+use WWW::Selenium::Util qw(server_is_running);
 
 use base qw(Exporter);
 
 our @EXPORT_OK = qw(
-    run_httpd run_gollum run_gollum_and_httpd
+    run_httpd run_cereal run_cereal_and_httpd
     catch_signal on_finish on_exception
-    assert_httpd assert_gollum assert_database
+    assert_httpd assert_database assert_selenium
 );
 
 our %EXPORT_TAGS = (
     all => \@EXPORT_OK,
-    start => [grep /^run_/, @EXPORT_OK],
+    run => [grep { /^run_/ } @EXPORT_OK],
     utils => [qw(catch_signal on_exception on_finish)],
 );
-
 
 use constant DOCKER_SUPPORT_DIR => realpath(catdir(dirname(__FILE__), '..', 'docker_support'));
 
 use constant HTTPD_BIN     => '/usr/sbin/httpd';
 use constant HTTPD_CONFIG  => catfile( DOCKER_SUPPORT_DIR, 'httpd.conf' );
-use constant GOLLUM_BIN    => '/usr/local/bin/gollum';
-use constant GOLLUM_CONFIG => catfile( DOCKER_SUPPORT_DIR, 'gollum.conf' );
 
 sub catch_signal {
-    my ($name, $rc)   = @_;
+    my ($name, @done)   = @_;
     my $loop     = IO::Async::Loop->new;
     my $signal_f = $loop->new_future;
     my $signal   = IO::Async::Signal->new(
         name       => $name,
         on_receipt => sub {
-            $signal_f->done($rc);
+            $signal_f->done(@done);
         }
     );
     $signal_f->on_cancel(
@@ -59,23 +58,41 @@ sub catch_signal {
     return $signal_f;
 }
 
-sub run_gollum {
+sub cereal {
+    $PROGRAM_NAME = "cereal";
+    my $loop = IO::Async::Loop->new;
+    $loop->listen(
+        host => '127.0.0.1',
+        service => '5880',
+        socktype => 'stream',
+        on_stream => sub {
+            my ($stream) = @_;
+            my $protocol = IO::Async::Protocol::LineStream->new(
+                transport => $stream,
+                on_read_line => sub {
+                    my ($self, $line) = @_;
+                    say $line;
+                },
+            );
+            $loop->add($protocol);
+        },
+    )->get;
+    kill 'USR1', getppid();
+
+    exit catch_signal('TERM', 0)->get;
+}
+
+sub run_cereal {
     my $loop   = IO::Async::Loop->new;
     my $exit_f = $loop->new_future;
-    my $gollum = IO::Async::Process->new(
-        command   => [
-            GOLLUM_BIN,
-            '-n' => 1,
-            '-p' => '/tmp/gollum.pid',
-            '-lc' => 'never',
-            '-ll' => 0,
-             '-c' => GOLLUM_CONFIG
-        ],
-        on_finish => on_finish($exit_f),
-        on_exception => on_exception( "gollum", $exit_f ),
+    my $cereal = IO::Async::Process->new(
+        code         => \&cereal,
+        on_finish    => on_finish($exit_f),
+        on_exception => on_exception( "cereal", $exit_f ),
     );
-    $loop->add($gollum);
-    $exit_f->on_cancel( sub { $gollum->kill('TERM') } );
+    $exit_f->on_cancel( sub { $cereal->kill('TERM') } );
+    $loop->add($cereal);
+    catch_signal('USR1')->get;
 
     return $exit_f;
 }
@@ -101,64 +118,18 @@ sub run_httpd {
     return $exit_f;
 }
 
-sub run_gollum_and_httpd {
+sub run_cereal_and_httpd {
     my @httpd_args = @_;
 
-    # If we're behind a proxy and the urlbase says https, we must be using https.
-    # * basically means "I trust the load balancer" anyway.
     my $lc = Bugzilla::Install::Localconfig::read_localconfig();
     if ( ($lc->{inbound_proxies} // '') eq '*' && $lc->{urlbase} =~ /^https/) {
         push @httpd_args, '-DHTTPS';
     }
-    push @httpd_args, '-DGOLLUM';
-    my $gollum_exit_f = run_gollum();
+    push @httpd_args, '-DNETCAT_LOGS';
+    my $cereal_exit_f = run_cereal();
     my $signal_f      = catch_signal("TERM", 0);
-    return assert_gollum()->then(
-        sub {
-            warn "start httpd";
-            my $httpd_exit_f = run_httpd(@httpd_args);
-            Future->wait_any($gollum_exit_f, $httpd_exit_f, $signal_f);
-        }
-    );
-}
-
-# our gollum listens 5880 tcp/udp, and 5881 tcp.
-# 5881 sends an ACK message back to faciliate this "is running" check
-# which hopefully ensures it is running before starting apache.
-sub assert_gollum {
-    my $loop = IO::Async::Loop->new;
-    my $repeat = repeat {
-        my $gollum_status_f = $loop->new_future;
-        my $stream = IO::Async::Protocol::LineStream->new(
-            on_read_line => sub {
-                my ($self, $line) = @_;
-                warn "check\n";
-                $gollum_status_f->done( $line =~ /^gollum OK/ );
-            }
-        );
-        $loop->add($stream);
-        my $socket_f = $stream->connect(
-            socktype  => 'stream',
-            host    => '127.0.0.1',
-            service => 5881,
-        );
-        return $socket_f->then(
-            sub {
-                $stream->write(__PACKAGE__ . "\n")->then(
-                    sub {
-                        Future->wait_any(
-                            $gollum_status_f,
-                            delay_future_value(after => 1, value => 0)
-                        );
-                    }
-                );
-            }
-        )->else(sub {
-            delay_future_value(after => 1, value => 0);
-        });
-    } until => sub { shift->get };
-    my $timeout = $loop->timeout_future(after => 20);
-    return Future->wait_any($repeat, $timeout);
+    my $httpd_exit_f  = run_httpd(@httpd_args);
+    Future->wait_any($cereal_exit_f, $httpd_exit_f, $signal_f);
 }
 
 sub delay_future_value {
@@ -181,7 +152,23 @@ sub assert_httpd {
         my $f = shift;
         ( $f->get =~ /^httpd OK/ );
     };
-    my $timeout = $loop->timeout_future(after => 20);
+    my $timeout = $loop->timeout_future(after => 20)->else_fail("assert_httpd timeout");
+    return Future->wait_any($repeat, $timeout);
+}
+
+sub assert_selenium {
+    my $loop = IO::Async::Loop->new;
+    my $port  = $ENV{PORT} // 8000;
+    my $repeat = repeat {
+        $loop->delay_future(after => 1)->then(
+            sub {
+                my $ok = server_is_running() ? 1 : 0;
+                warn "no selenium\n" unless $ok;
+                Future->wrap($ok)
+            },
+        );
+    } until => sub { shift->get };
+    my $timeout = $loop->timeout_future(after => 60)->else_fail("assert_selenium timeout");
     return Future->wait_any($repeat, $timeout);
 }
 
@@ -208,7 +195,7 @@ sub assert_database {
         );
     }
     until => sub { defined shift->get };
-    my $timeout = $loop->timeout_future( after => 20 );
+    my $timeout = $loop->timeout_future( after => 20 )->else_fail("assert_database timeout");
     my $any_f = Future->needs_any( $repeat, $timeout );
     return $any_f->transform(
         done => sub { return },

@@ -9,8 +9,8 @@ use Bugzilla::Install::Localconfig ();
 use Bugzilla::Install::Util qw(install_string);
 use Bugzilla::Test::Util qw(create_user);
 use Bugzilla::DaemonControl qw(
-    run_gollum_and_httpd
-    assert_httpd assert_database
+    run_cereal_and_httpd
+    assert_httpd assert_database assert_selenium
     on_finish on_exception
 );
 
@@ -84,7 +84,7 @@ sub cmd_httpd  {
     wait_for_db();
     check_httpd_env();
 
-    my $httpd_exit_f = run_gollum_and_httpd('-DACCESS_LOGS');
+    my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
     exit assert_httpd()->then(
         sub {
             $httpd_exit_f;
@@ -99,7 +99,7 @@ sub cmd_dev_httpd {
         run( 'perl', 'scripts/generate_bmo_data.pl', '--param' => 'use_mailer_queue=0', 'vagrant@bmo-web.vm' );
     }
 
-    my $httpd_exit_f = run_gollum_and_httpd('-DACCESS_LOGS');
+    my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
     exit assert_httpd()->then(
         sub {
             $httpd_exit_f;
@@ -128,25 +128,20 @@ sub cmd_load_test_data {
 sub cmd_test_webservices {
     my $conf = require $ENV{BZ_QA_CONF_FILE};
 
-    warn 'browser url: ', $conf->{browser_url};
     check_data_dir();
     copy_qa_extension();
-    exit assert_database()->then(
-        sub {
-            my $httpd_exit_f = run_gollum_and_httpd('-DHTTP_IN_SUBDIR', '-DACCESS_LOGS');
-
-            run_prove(
-                httpd_url => $conf->{browser_url},
-                httpd_exit_f => $httpd_exit_f,
-                prove_cmd => [
-                    'prove', '-qf', '-I/app',
-                    '-I/app/local/lib/perl5',
-                    sub { glob 'webservice_*.t' },
-                ],
-                prove_dir => '/app/qa/t',
-            );
-        },
-    )->get;
+    assert_database()->get;
+    my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
+    my $prove_exit_f = run_prove(
+        httpd_url => $conf->{browser_url},
+        prove_cmd => [
+            'prove', '-qf', '-I/app',
+            '-I/app/local/lib/perl5',
+            sub { glob 'webservice_*.t' },
+        ],
+        prove_dir => '/app/qa/t',
+    );
+    exit Future->needs_any($prove_exit_f, $httpd_exit_f)->get;
 }
 
 sub cmd_test_selenium {
@@ -155,22 +150,19 @@ sub cmd_test_selenium {
     check_data_dir();
     copy_qa_extension();
 
-    exit assert_database()->then(
-        sub {
-            my $httpd_exit_f = run_gollum_and_httpd('-DHTTPD_IN_SUBDIR');
-
-            run_prove(
-                httpd_url    => $conf->{browser_url},
-                httpd_exit_f => $httpd_exit_f,
-                prove_cmd => [
-                    'prove', '-qf', '-Ilib', '-I/app',
-                    '-I/app/local/lib/perl5',
-                    sub { glob 'test_*.t' }
-                ],
-                prove_dir => '/app/qa/t',
-            );
-        },
-    )->get;
+    assert_database()->get;
+    assert_selenium()->get;
+    my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR');
+    my $prove_exit_f = run_prove(
+        httpd_url => $conf->{browser_url},
+        prove_dir => '/app/qa/t',
+        prove_cmd => [
+            'prove', '-qf', '-Ilib', '-I/app',
+            '-I/app/local/lib/perl5',
+            sub { glob 'test_*.t' }
+        ],
+    );
+    exit Future->needs_any($prove_exit_f, $httpd_exit_f)->get;
 }
 
 sub cmd_shell   { run( 'bash',  '-l' ); }
@@ -184,23 +176,22 @@ sub cmd_test_bmo {
     my (@prove_args) = @_;
     check_data_dir();
 
-    exit assert_database()->then(
-        sub {
-            $ENV{BZ_TEST_NEWBIE}      = 'newbie@mozilla.example';
-            $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';
-            create_user($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS}, realname => 'Newbie User');
+    assert_database()->get;
+    assert_selenium()->get;
+    $ENV{BZ_TEST_NEWBIE}      = 'newbie@mozilla.example';
+    $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';
+    create_user($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS}, realname => 'Newbie User');
 
-            $ENV{BZ_TEST_NEWBIE2}      = 'newbie2@mozilla.example';
-            $ENV{BZ_TEST_NEWBIE2_PASS} = 'captain.space.pants.time.lord';
+    $ENV{BZ_TEST_NEWBIE2}      = 'newbie2@mozilla.example';
+    $ENV{BZ_TEST_NEWBIE2_PASS} = 'captain.space.pants.time.lord';
 
-            my $httpd_exit_f = run_gollum_and_httpd('-DACCESS_LOGS');
-            run_prove(
-                httpd_url    => $ENV{BZ_BASE_URL},
-                httpd_exit_f => $httpd_exit_f,
-                prove_cmd    => [ 'prove', '-I/app', '-I/app/local/lib/perl5', @prove_args ],
-            );
-        }
-    )->get;
+    my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
+    my $prove_exit_f = run_prove(
+        httpd_url  => $ENV{BZ_BASE_URL},
+        prove_cmd  => [ 'prove', '-I/app', '-I/app/local/lib/perl5', @prove_args ],
+    );
+
+    exit Future->needs_any($prove_exit_f, $httpd_exit_f)->get;
 }
 
 sub run_prove {
@@ -208,34 +199,35 @@ sub run_prove {
 
     check_httpd_env();
 
-    my $loop         = IO::Async::Loop->new;
     my $prove_cmd    = $param{prove_cmd};
     my $prove_dir    = $param{prove_dir};
-    my $httpd_exit_f = $param{httpd_exit_f};
     assert_httpd()->then(sub {
-        # my $loop->connect(
-        #     socktype => 'stream',
-        #     host     => 'localhost',
-        #     service  => 5880,
-        # )
-        my $prove_exit_f = $loop->new_future;
-        my $prove        = IO::Async::Process->new(
-            code => sub {
-                my @cmd = (map { ref $_ eq 'CODE' ? $_->() : $_ } @$prove_cmd);
-                warn "run @cmd\n";
-                exec @cmd;
-            },
-            $prove_dir ? (chdir => $prove_dir) : (),
-            # setup => [
-            #     stdin  => ['close'],
-            #     stdout => [ 'dup', $socket ],
-            # ],
-            on_finish    => on_finish($prove_exit_f),
-            on_exception => on_exception('prove', $prove_exit_f),
-        );
-        $prove_exit_f->on_cancel(sub { $prove->kill('TERM') });
-        $loop->add($prove);
-        return Future->needs_any($prove_exit_f, $httpd_exit_f);
+        my $loop = IO::Async::Loop->new;
+        $loop->connect(
+            socktype => 'stream',
+            host     => 'localhost',
+            service  => 5880,
+        )->then(sub {
+            my $socket       = shift;
+            my $prove_exit_f = $loop->new_future;
+            my $prove        = IO::Async::Process->new(
+                code => sub {
+                    chdir $prove_dir if $prove_dir;
+                    my @cmd = (map { ref $_ eq 'CODE' ? $_->() : $_ } @$prove_cmd);
+                    warn "run @cmd\n";
+                    exec @cmd;
+                },
+                setup => [
+                    stdin  => ['close'],
+                    stdout => [ 'dup', $socket ],
+                ],
+                on_finish    => on_finish($prove_exit_f),
+                on_exception => on_exception('prove', $prove_exit_f),
+            );
+            $prove_exit_f->on_cancel(sub { $prove->kill('TERM') });
+            $loop->add($prove);
+            return $prove_exit_f;
+        });
     });
 }
 
