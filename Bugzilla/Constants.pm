@@ -673,7 +673,7 @@ sub _bz_locations {
     }
 
     $datadir = "$libpath/$datadir";
-    $confdir  = "$libpath/$confdir";
+    $confdir = "$libpath/$confdir";
     # We have to return absolute paths for mod_perl.
     # That means that if you modify these paths, they must be absolute paths.
     return {
