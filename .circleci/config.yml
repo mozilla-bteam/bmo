@@ -145,7 +145,7 @@ jobs:
       - store_artifacts:
           path: /app/logs
 
-  test_bmo:
+  test_new:
     parallelism: 1
     working_directory: /app
     docker:
@@ -167,7 +167,7 @@ jobs:
           perl checksetup.pl --no-database
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
-      - run: /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
+      - run: /app/scripts/entrypoint.pl test_new -q -f t/bmo/*.t
       - store_artifacts:
           path: /app/logs
 
@@ -177,7 +177,7 @@ workflows:
     jobs:
       - test_sanity:
           filters: *main_filters
-      - test_bmo:
+      - test_new:
           filters: *main_filters
           requires:
             - test_sanity
@@ -193,5 +193,5 @@ workflows:
           filters: *main_filters
           requires:
             - test_sanity
-            - test_bmo
+            - test_new
             - test_webservices
