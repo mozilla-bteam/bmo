@@ -1,3 +1,10 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
+
 package Bugzilla::DaemonControl;
 use 5.10.1;
 use strict;
@@ -221,3 +228,93 @@ sub on_exception {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::DaemonControl - Utility functions for controlling daemons
+
+=head1 SYNOPSIS
+
+    my $httpd_exit_code_f = run_httpd(@httpd_args);
+    my $signal_f = catch_signal("TERM");
+
+=head1 DESCRIPTION
+
+This module exports functions that either start daemons (L<run_httpd()>, L<run_cereal()>),
+check for running services (L<assert_httpd()>, L<assert_database()>, L<assert_selenium()>),
+or help build more functions like the above (L<on_exception()>, L<on_finish()>).
+
+The C<run_> and C<assert_> functions return Futures, see L<Future> for details
+on that. But if you've used Promises in the javascript, Futures are the same concept.
+
+
+=head1 FUNCTIONS
+
+Nothing is exported by default, but you can request C<:all> for that.
+You can also just get the run_* functions with C<:run>.
+
+=head2 run_httpd()
+
+This returns a future that is B<done> when the httpd exits.
+The return value will be the exit code of the process.
+
+Thus the following program would exit with whatever value httpd exits with:
+
+    exit run_httpd()->get;
+
+It may also B<fail> in unlikely situations, such as a L<fork()> failing.
+
+Canceling the future will send C<SIGTERM> to httpd.
+
+=head2 run_cereal()
+
+This runs a builtin process that listens on localhost:5880 for TCP
+connections. Each connection may send lines of text, and those lines of text
+will be written to B<STDOUT>. Once you start this, you should limit or stop
+entirely printing to B<STDOUT> to ensure that output is well-ordered.
+
+This returns a future similar to L<run_httpd()>.
+Canceling the future will terminate the cereal daemon.
+
+=head2 run_cereal_and_httpd()
+
+This will start up cereal and the httpd. It will return a future
+that is B<done> when either httpd or cereal exits.
+The future will also be B<done> if C<SIGTERM> is sent to the process that calls
+this function.
+
+Because of how futures work, when one of these processes is done (or when we get the signal)
+the other futures are canceled.
+
+This means that if cereal exits, httpd will exit.
+And if httpd exits, cereal will exit.
+
+
+=head2 assert_database()
+
+This provides a simple way to wait on the database being up.
+It will either be B<done> with no usable return value, or fail with a timeout error.
+
+    # wait until we have a database
+    assert_database()->get;
+
+
+=head2 assert_seleniuim()
+
+This returns a future that is complete when we can reach selenium,
+or it fails with a timeout.
+
+=head2 assert_httpd()
+
+This returns a future that is complete when we can reach the __lbheartbeat__
+endpoint, or it fails with a timeout.
+
+=head2 on_finish($f)
+
+This returns a callback that will complete a future. It is to be used with L<IO::Async::Process>.
+
+=head2 on_exception($f)
+
+This returns a callback that will fail a future. It is to be used with L<IO::Async::Process>.
