@@ -127,7 +127,8 @@ sub run_cereal_and_httpd {
     my $cereal_exit_f = run_cereal();
     my $signal_f      = catch_signal("TERM", 0);
     my $httpd_exit_f  = run_httpd(@httpd_args);
-    Future->wait_any($cereal_exit_f, $httpd_exit_f, $signal_f);
+
+    return Future->wait_any($cereal_exit_f, $httpd_exit_f, $signal_f);
 }
 
 sub assert_httpd {
@@ -184,8 +185,8 @@ sub assert_database {
                 Future->wrap($dbh);
             }
         );
-    }
-    until => sub { defined shift->get };
+    } until => sub { defined shift->get };
+
     my $timeout = $loop->timeout_future( after => 20 )->else_fail("assert_database timeout");
     my $any_f = Future->needs_any( $repeat, $timeout );
     return $any_f->transform(
