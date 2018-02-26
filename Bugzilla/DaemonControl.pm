@@ -64,7 +64,7 @@ sub catch_signal {
 }
 
 sub cereal {
-    $PROGRAM_NAME = "cereal";
+    local $PROGRAM_NAME = "cereal";
     my $loop = IO::Async::Loop->new;
     $loop->listen(
         host => '127.0.0.1',
@@ -249,7 +249,6 @@ or help build more functions like the above (L<on_exception()>, L<on_finish()>).
 The C<run_> and C<assert_> functions return Futures, see L<Future> for details
 on that. But if you've used Promises in the javascript, Futures are the same concept.
 
-
 =head1 FUNCTIONS
 
 Nothing is exported by default, but you can request C<:all> for that.
@@ -291,7 +290,6 @@ the other futures are canceled.
 This means that if cereal exits, httpd will exit.
 And if httpd exits, cereal will exit.
 
-
 =head2 assert_database()
 
 This provides a simple way to wait on the database being up.
@@ -299,7 +297,6 @@ It will either be B<done> with no usable return value, or fail with a timeout er
 
     # wait until we have a database
     assert_database()->get;
-
 
 =head2 assert_seleniuim()
 
