@@ -130,13 +130,6 @@ sub run_cereal_and_httpd {
     Future->wait_any($cereal_exit_f, $httpd_exit_f, $signal_f);
 }
 
-sub delay_future_value {
-    my (%param) = @_;
-    my $loop = IO::Async::Loop->new;
-    my $value = delete $param{value};
-    return $loop->delay_future(%param)->then(sub { $loop->new_future->done($value) });
-}
-
 sub assert_httpd {
     my $loop = IO::Async::Loop->new;
     my $port  = $ENV{PORT} // 8000;
