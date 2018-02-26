@@ -51,6 +51,7 @@ my %requires = (
     'Email::Send'              => '1.911',
     'File::Slurp'              => '9999.13',
     'JSON::XS'                 => '2.01',
+    'JSON::MaybeXS'            => '1.003008',
     'LWP::Protocol::https'     => '6.07',
     'LWP::UserAgent'           => '6.26',
     'List::MoreUtils'          => '0.418',

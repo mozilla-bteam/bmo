@@ -1,4 +1,4 @@
-FROM mozillabteam/bmo-slim:20171228.1
+FROM mozillabteam/bmo-slim:20180225.1
 
 ARG CI
 ARG CIRCLE_SHA1
@@ -23,6 +23,7 @@ RUN mv /opt/bmo/local /app && \
     chown -R app:app /app && \
     perl -c /app/scripts/entrypoint.pl && \
     setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd
+
 
 USER app
 
