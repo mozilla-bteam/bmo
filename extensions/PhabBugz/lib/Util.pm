@@ -273,19 +273,26 @@ sub add_comment_to_revision {
 
 sub get_project_phid {
     my $project = shift;
+    my $memcache = Bugzilla->memcached;
 
-    my $data = {
-        queryKey => 'all',
-        constraints => {
-            name => $project
-        }
-    };
+    # Check memcache
+    my $project_phid = $memcache->get({ key => "phab_project_phid_" . $project });
+    if (not length $project_phid) {
+        my $data = {
+            queryKey => 'all',
+            constraints => {
+                name => $project
+            }
+        };
 
-    my $result = request('project.search', $data);
-    return undef
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
+        my $result = request('project.search', $data);
+        return undef
+            unless (exists $result->{result}{data} && @{ $result->{result}{data} });
 
-    return $result->{result}{data}[0]{phid};
+        $project_phid = $result->{result}{data}[0]{phid};
+        $memcache->set({ key => "phab_project_phid_" . $project, value => $project_phid });
+    }
+    return $project_phid;
 }
 
 sub create_project {

@@ -232,6 +232,20 @@ sub update {
         }
     }
 
+    if ($self->{add_projects}) {
+        push(@{ $data->{transactions} }, {
+            type => 'projects.add',
+            value => $self->{add_projects}
+        });
+    }
+
+    if ($self->{remove_projects}) {
+        push(@{ $data->{transactions} }, {
+            type => 'projects.remove',
+            value => $self->{remove_projects}
+        });
+    }
+
     my $result = request( 'project.edit', $data );
 
     return $result;
@@ -265,6 +279,24 @@ sub remove_member {
     $self->{remove_members} ||= [];
     my $member_phid = blessed $member ? $member->phab_phid : $member;
     push( @{ $self->{remove_members} }, $member_phid );
+}
+
+sub add_project {
+    my ($self, $project) = @_;
+    $self->{add_projects} ||= [];
+    my $project_phid = blessed $project ? $project->phid : $project;
+    $project_phid = get_project_phid($project);
+    return undef unless $project_phid;
+    push(@{ $self->{add_projects} }, $project_phid);
+}
+
+sub remove_project {
+    my ($self, $project) = @_;
+    $self->{add_projects} ||= [];
+    my $project_phid = blessed $project ? $project->phid : $project;
+    $project_phid = get_project_phid($project);
+    return undef unless $project_phid;
+    push(@{ $self->{remove_projects} }, $project_phid);
 }
 
 sub set_members {
