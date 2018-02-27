@@ -106,6 +106,11 @@ sub send {
               $bug->id
             ));
             make_revision_public($revision_phid);
+            # remove "secure-revision" tag
+            my $rev_obj = Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_id ] });
+            my $secure_project_phid = get_project_phid('secure-revision');
+            $revision->remove_project($secure_project_phid);
+            $rev_obj->update();
         }
         elsif ( !$is_public && $group_change ) {
             Bugzilla->audit(sprintf(
@@ -115,6 +120,11 @@ sub send {
             ));
             my $policy_phid = create_private_revision_policy( $bug, \@set_groups );
             edit_revision_policy( $revision_phid, $policy_phid, $subscribers );
+            # add "secure-revision" tag
+            my $rev_obj = Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_id ] });
+            my $secure_project_phid = get_project_phid('secure-revision');
+            $revision->add_project($secure_project_phid);
+            $rev_obj->update();
         }
         elsif ( !$is_public && !$group_change ) {
             Bugzilla->audit(sprintf(

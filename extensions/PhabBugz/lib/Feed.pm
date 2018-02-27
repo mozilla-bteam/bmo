@@ -21,7 +21,6 @@ use Bugzilla::Extension::PhabBugz::Policy;
 use Bugzilla::Extension::PhabBugz::Revision;
 use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
-    create_private_revision_policy
     create_revision_attachment
     edit_revision_policy
     get_bug_role_phids
