@@ -34,7 +34,14 @@ use constant { AUDIT_CREATES => 0,
 # Provide accessors for our columns
 #####################################################################
 
-sub id                { return $_[0]->{id}                }
+use constant ID_FIELD   => 'id';
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub bug_id            { return $_[0]->{bug_id}            }
 sub user_id           { return $_[0]->{user_id}           }
 sub modification_time { return $_[0]->{modification_time} }
