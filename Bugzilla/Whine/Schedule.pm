@@ -41,10 +41,18 @@ use constant UPDATE_COLUMNS => qw(
 );
 use constant NAME_FIELD => 'id';
 use constant LIST_ORDER => 'id';
+use constant ID_FIELD   => 'id';
 
 ####################
 # Simple Accessors #
 ####################
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub eventid         { return $_[0]->{'eventid'};     }
 sub run_day         { return $_[0]->{'run_day'};     }
 sub run_time        { return $_[0]->{'run_time'};    }

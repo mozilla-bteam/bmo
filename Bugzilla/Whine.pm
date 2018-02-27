@@ -39,6 +39,17 @@ use constant LIST_ORDER => 'id';
 ####################
 # Simple Accessors #
 ####################
+
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub subject         { return $_[0]->{'subject'};      }
 sub body            { return $_[0]->{'body'};         }
 sub mail_if_no_bugs { return $_[0]->{'mailifnobugs'}; }
