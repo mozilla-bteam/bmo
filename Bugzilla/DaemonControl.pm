@@ -10,6 +10,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Constants qw(bz_locations);
 use Cwd qw(realpath);
 use English qw(-no_match_vars $PROGRAM_NAME);
 use File::Spec::Functions qw(catfile);
@@ -19,10 +20,9 @@ use IO::Async::Loop;
 use IO::Async::Process;
 use IO::Async::Protocol::LineStream;
 use IO::Async::Signal;
+use IO::Socket;
 use LWP::Simple qw(get);
 use POSIX qw(setsid WEXITSTATUS);
-use WWW::Selenium::Util qw(server_is_running);
-use Bugzilla::Constants qw(bz_locations);
 
 use base qw(Exporter);
 
@@ -161,9 +161,10 @@ sub assert_selenium {
     my $repeat = repeat {
         $loop->delay_future(after => 1)->then(
             sub {
-                my $ok = server_is_running() ? 1 : 0;
-                warn "no selenium\n" unless $ok;
-                Future->wrap($ok)
+                my $host = $ENV{SRC_HOST} // 'localhost';
+                my $port = $ENV{SRC_PORT} // 4444;
+                my $sock = IO::Socket::INET->new( PeerAddr => $host, PeerPort => $port );
+                Future->wrap($sock ? 1 : 0);
             },
         );
     } until => sub { shift->get };
