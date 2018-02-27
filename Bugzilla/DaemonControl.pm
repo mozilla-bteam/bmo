@@ -38,6 +38,8 @@ our %EXPORT_TAGS = (
     utils => [qw(catch_signal on_exception on_finish)],
 );
 
+our $LOGGING_PORT = $ENV{LOGGING_PORT} // 5880;
+
 use constant HTTPD_BIN     => '/usr/sbin/httpd';
 use constant HTTPD_CONFIG  => realpath(catfile( bz_locations->{confdir}, 'httpd.conf' ));
 
@@ -66,21 +68,22 @@ sub catch_signal {
 sub cereal {
     local $PROGRAM_NAME = "cereal";
     my $loop = IO::Async::Loop->new;
+    my $on_stream = sub {
+        my ($stream) = @_;
+        my $protocol = IO::Async::Protocol::LineStream->new(
+            transport    => $stream,
+            on_read_line => sub {
+                my ( $self, $line ) = @_;
+                say $line;
+            },
+        );
+        $loop->add($protocol);
+    };
     $loop->listen(
-        host => '127.0.0.1',
-        service => '5880',
-        socktype => 'stream',
-        on_stream => sub {
-            my ($stream) = @_;
-            my $protocol = IO::Async::Protocol::LineStream->new(
-                transport => $stream,
-                on_read_line => sub {
-                    my ($self, $line) = @_;
-                    say $line;
-                },
-            );
-            $loop->add($protocol);
-        },
+        host      => '127.0.0.1',
+        service   => $LOGGING_PORT,
+        socktype  => 'stream',
+        on_stream => $on_stream,
     )->get;
     kill 'USR1', getppid();
 
@@ -96,8 +99,9 @@ sub run_cereal {
         on_exception => on_exception( "cereal", $exit_f ),
     );
     $exit_f->on_cancel( sub { $cereal->kill('TERM') } );
+    my $signal_f = catch_signal('USR1');
     $loop->add($cereal);
-    catch_signal('USR1')->get;
+    $signal_f->get;
 
     return $exit_f;
 }
