@@ -55,6 +55,16 @@ use constant USE_MEMCACHED => 0;
 
 # getters
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub user {
     my ($self) = @_;
     return Bugzilla::User->new({ id => $self->{user_id}, cache => 1 });
