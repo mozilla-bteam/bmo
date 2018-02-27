@@ -50,6 +50,20 @@ use constant SECURE_NONE => 0;
 use constant SECURE_BODY => 1;
 use constant SECURE_ALL  => 2;
 
+###############################
+####      Accessors      ######
+###############################
+
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 ##############################################################################
 # Creating new columns
 #
