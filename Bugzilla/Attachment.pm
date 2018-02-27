@@ -56,6 +56,7 @@ use base qw(Bugzilla::Object);
 ###############################
 
 use constant DB_TABLE   => 'attachments';
+use constant NAME_FIELD => 'name';
 use constant ID_FIELD   => 'attach_id';
 use constant LIST_ORDER => ID_FIELD;
 # Attachments are tracked in bugs_activity.
@@ -112,6 +113,13 @@ use constant UPDATE_VALIDATORS => {
 ###############################
 ####      Accessors      ######
 ###############################
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 
 =pod
 
