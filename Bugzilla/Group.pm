@@ -67,9 +67,19 @@ use constant UPDATE_COLUMNS => qw(
 use constant GROUP_PARAMS => qw(chartgroup insidergroup timetrackinggroup
                                 querysharegroup);
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
 ###############################
 ####      Accessors      ######
 ###############################
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 
 sub description  { return $_[0]->{'description'};  }
 sub is_bug_group { return $_[0]->{'isbuggroup'};   }

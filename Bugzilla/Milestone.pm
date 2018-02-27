@@ -223,11 +223,20 @@ sub bug_count {
     return $self->{'bug_count'};
 }
 
+use constant NAME_FIELD => 'value';
+use constant ID_FIELD   => 'id';
+
 ################################
 #####      Accessors      ######
 ################################
 
-sub name       { return $_[0]->{'value'};      }
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub product_id { return $_[0]->{'product_id'}; }
 sub sortkey    { return $_[0]->{'sortkey'};    }
 sub is_active  { return $_[0]->{'isactive'};   }

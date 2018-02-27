@@ -47,6 +47,16 @@ use constant UPDATE_COLUMNS => qw(
 ####      Accessors      ######
 ###############################
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub description       { return $_[0]->{'description'}; }
 
 sub bug_count {

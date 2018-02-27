@@ -827,9 +827,19 @@ sub classification {
     return $self->{'classification'};
 }
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
 ###############################
 ####      Accessors      ######
 ###############################
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 
 sub allows_unconfirmed { return $_[0]->{'allows_unconfirmed'}; }
 sub description       { return $_[0]->{'description'};       }
