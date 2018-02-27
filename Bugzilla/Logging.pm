@@ -19,6 +19,7 @@ BEGIN {
     my $file = $ENV{LOG4PERL_CONFIG_FILE} // "log4perl-syslog.conf";
     Log::Log4perl::Logger::create_custom_level('NOTICE', 'WARN', 5, 2);
     Log::Log4perl->init(rel2abs($file, bz_locations->{confdir}));
+    Log::Log4perl->get_logger(__PACKAGE__)->debug("logging enabled in $0");
 }
 
 1;
