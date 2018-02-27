@@ -206,9 +206,19 @@ sub update {
     return $changes;
 }
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
 ###############################
 ####      Accessors      ######
 ###############################
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 
 =head2 METHODS
 
@@ -262,8 +272,6 @@ Returns the sortkey of the flagtype.
 
 =cut
 
-sub id               { return $_[0]->{'id'};               }
-sub name             { return $_[0]->{'name'};             }
 sub description      { return $_[0]->{'description'};      }
 sub cc_list          { return $_[0]->{'cc_list'};          }
 sub target_type      { return $_[0]->{'target_type'} eq 'b' ? 'bug' : 'attachment'; }
