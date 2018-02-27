@@ -107,6 +107,7 @@ jobs:
         environment: *bmo_env
     steps:
       - checkout
+      - run: perl -I/app -I/opt/bmo/local/lib/perl5 -MBugzilla -E 'Bugzilla->extensions'
       - *default_qa_setup
       - run:
           name: run sanity tests
