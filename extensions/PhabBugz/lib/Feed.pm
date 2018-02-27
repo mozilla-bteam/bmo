@@ -115,7 +115,7 @@ sub feed_query {
 
     my $user_last_id = $self->get_last_id('user');
 
-    # Check for new transctions (stories)
+    # Check for new users
     my $new_users = $self->new_users($user_last_id);
     $self->logger->info("FEED: No new users") unless @$new_users;
 
@@ -131,7 +131,7 @@ sub feed_query {
         $self->logger->debug("USER REALNAME: $user_realname");
         $self->logger->debug("OBJECT PHID: $object_phid");
 
-        $self->process_new_user($object_phid);
+        $self->process_new_user($user_data);
         $self->save_last_id($user_id, 'user');
     }
 }
@@ -364,9 +364,10 @@ sub process_revision_change {
 }
 
 sub process_new_user {
-    my ( $self, $object_phid ) = @_;
+    my ( $self, $user_data ) = @_;
 
-    my $phab_user = Bugzilla::Extension::PhabBugz::User->new_from_query( { phids => [ $object_phid ] } );
+    # Load the user data into a proper object
+    my $phab_user = Bugzilla::Extension::PhabBugz::User->new($user_data);
 
     if (!$phab_user->bugzilla_id) {
         $self->logger->debug("SKIPPING: No bugzilla id associated with user");
@@ -471,7 +472,12 @@ sub new_stories {
 
 sub new_users {
     my ( $self, $after ) = @_;
-    my $data = { order => ["id"] };
+    my $data = {
+        order       => [ "id" ],
+        attachments => {
+            'external-accounts' => 1
+        }
+    };
     $data->{before} = $after if $after;
     my $result = request( 'user.search', $data );
     unless ( ref $result->{result}{data} eq 'ARRAY'
