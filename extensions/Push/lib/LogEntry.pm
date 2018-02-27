@@ -48,6 +48,14 @@ use constant LIST_ORDER => 'processed_ts DESC';
 # accessors
 #
 
+use constant ID_FIELD   => 'id';
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub message_id   { return $_[0]->{'message_id'};   }
 sub change_set   { return $_[0]->{'change_set'};   }
 sub routing_key  { return $_[0]->{'routing_key'};  }

@@ -79,6 +79,16 @@ sub create_from_message {
 # accessors
 #
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub message_id  { return $_[0]->{'message_id'}   }
 sub push_ts     { return $_[0]->{'push_ts'};     }
 sub payload     { return $_[0]->{'payload'};     }

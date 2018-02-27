@@ -35,13 +35,20 @@ use constant VALIDATORS => {
     connector => \&_check_connector,
 };
 use constant LIST_ORDER => 'connector';
-
+use constant NAME_FIELD => 'option_name';
 #
 # accessors
 #
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 
 sub connector { return $_[0]->{'connector'};    }
-sub name      { return $_[0]->{'option_name'};  }
 sub value     { return $_[0]->{'option_value'}; }
 
 #

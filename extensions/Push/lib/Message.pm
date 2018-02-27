@@ -61,6 +61,15 @@ sub create_from_transient {
 #
 # accessors
 #
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 
 sub push_ts     { return $_[0]->{'push_ts'};     }
 sub payload     { return $_[0]->{'payload'};     }
