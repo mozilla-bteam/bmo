@@ -423,7 +423,7 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
-        "httpd/env.conf"          => { perms     => CGI_READ,
+        "$confdir/env.conf"       => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => \&HTTPD_ENV_CONF },
     );
