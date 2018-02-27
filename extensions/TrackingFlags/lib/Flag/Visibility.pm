@@ -147,6 +147,16 @@ sub _check_component {
 ####      Accessors        ####
 ###############################
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub tracking_flag_id { return $_[0]->{'tracking_flag_id'}; }
 sub product_id       { return $_[0]->{'product_id'};       }
 sub component_id     { return $_[0]->{'component_id'};     }

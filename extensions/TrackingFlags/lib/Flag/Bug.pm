@@ -169,6 +169,16 @@ sub set_value { $_[0]->set('value', $_[1]); }
 ####      Accessors        ####
 ###############################
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub tracking_flag_id { return $_[0]->{'tracking_flag_id'}; }
 sub bug_id           { return $_[0]->{'bug_id'};           }
 sub value            { return $_[0]->{'value'};            }
