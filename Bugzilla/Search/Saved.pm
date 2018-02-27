@@ -287,6 +287,16 @@ sub shared_with_users {
 # Simple Accessors #
 ####################
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub url  { return $_[0]->{'query'}; }
 
 sub user {

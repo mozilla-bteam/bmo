@@ -27,6 +27,9 @@ use constant LIST_ORDER => 'id DESC';
 use constant AUDIT_CREATES => 0;
 use constant AUDIT_UPDATES => 0;
 use constant AUDIT_REMOVES => 0;
+use constant USER_ID_FIELD => 'user_id';
+use constant NAME_FIELD    => 'name';
+use constant ID_FIELD      => 'id';
 
 use constant DB_COLUMNS => qw(
     id
@@ -115,9 +118,16 @@ sub new_from_cookie {
 # Simple Accessors #
 ####################
 
+use Class::XSAccessor {
+    accessors => {
+        user_id => USER_ID_FIELD,
+        id      => ID_FIELD,
+        name    => NAME_FIELD,
+    },
+};
+
 sub bug_list   { return [split(',', $_[0]->{'bug_list'})]; }
 sub list_order { return $_[0]->{'list_order'}; }
-sub user_id    { return $_[0]->{'user_id'}; }
 
 ############
 # Mutators #
