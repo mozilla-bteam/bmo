@@ -205,7 +205,7 @@ sub process_revision_change {
             if ($revision->view_policy =~ /^PHID-PLCY/) {
                 $self->logger->debug("Loading current policy: " . $revision->view_policy);
                 $current_policy
-                    = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_pouser_licy ]});
+                    = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_policy ]});
                 my $current_projects = $current_policy->rule_projects;
                 $self->logger->debug("Current policy projects: " . join(", ", @$current_projects));
                 my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
@@ -368,9 +368,6 @@ sub process_new_user {
 
     my $phab_user = Bugzilla::Extension::PhabBugz::User->new_from_query( { phids => [ $object_phid ] } );
 
-    use Data::Dumper;
-    print STDERR Dumper $phab_user;
-
     if (!$phab_user->bugzilla_id) {
         $self->logger->debug("SKIPPING: No bugzilla id associated with user");
         return;
@@ -436,7 +433,10 @@ sub process_new_user {
 
         foreach my $attachment (@attachments) {
             my ($revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
-            my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query( { ids => [ $revision_id ] });
+            $self->logger->debug("Processing revision D$revision_id");
+
+            my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+                { ids => [ int($revision_id) ] });
 
             $revision->add_subscriber($phab_user->phid);
             $revision->update();
