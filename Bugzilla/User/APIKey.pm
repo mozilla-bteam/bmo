@@ -42,6 +42,7 @@ use constant VALIDATORS     => {
 };
 use constant LIST_ORDER     => 'id';
 use constant NAME_FIELD     => 'api_key';
+use constant ID_FIELD   => 'id';
 
 # turn off auditing and exclude these objects from memcached
 use constant { AUDIT_CREATES => 0,
@@ -50,7 +51,17 @@ use constant { AUDIT_CREATES => 0,
                USE_MEMCACHED => 0 };
 
 # Accessors
-sub id            { return $_[0]->{id}          }
+###############################
+####      Accessors      ######
+###############################
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub user_id       { return $_[0]->{user_id}     }
 sub api_key       { return $_[0]->{api_key}     }
 sub app_id        { return $_[0]->{app_id}      }
