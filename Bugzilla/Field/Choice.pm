@@ -43,6 +43,7 @@ use constant UPDATE_COLUMNS => qw(
 );
 
 use constant NAME_FIELD => 'value';
+use constant ID_FIELD   => 'id';
 use constant LIST_ORDER => 'sortkey, value';
 
 use constant VALIDATORS => {
@@ -119,6 +120,16 @@ sub new {
     $class->SUPER::new(@_);
 }
 
+###############################
+####      Accessors      ######
+###############################
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 #########################
 # Database Manipulation #
 #########################
