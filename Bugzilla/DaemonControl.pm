@@ -33,12 +33,10 @@ our @EXPORT_OK = qw(
 );
 
 our %EXPORT_TAGS = (
-    all => \@EXPORT_OK,
-    run => [grep { /^run_/ } @EXPORT_OK],
+    all   => \@EXPORT_OK,
+    run   => [grep { /^run_/ } @EXPORT_OK],
     utils => [qw(catch_signal on_exception on_finish)],
 );
-
-our $LOGGING_PORT = $ENV{LOGGING_PORT} // 5880;
 
 use constant HTTPD_BIN     => '/usr/sbin/httpd';
 use constant HTTPD_CONFIG  => realpath(catfile( bz_locations->{confdir}, 'httpd.conf' ));
@@ -67,6 +65,8 @@ sub catch_signal {
 
 sub cereal {
     local $PROGRAM_NAME = "cereal";
+    $ENV{LOGGING_PORT} //= 5880;
+
     my $loop = IO::Async::Loop->new;
     my $on_stream = sub {
         my ($stream) = @_;
@@ -81,7 +81,7 @@ sub cereal {
     };
     $loop->listen(
         host      => '127.0.0.1',
-        service   => $LOGGING_PORT,
+        service   => $ENV{LOGGING_PORT},
         socktype  => 'stream',
         on_stream => $on_stream,
     )->get;
@@ -160,13 +160,13 @@ sub assert_httpd {
 }
 
 sub assert_selenium {
+    my ($host, $port) = @_;
+    $host //= 'localhost';
+    $port //= 4444;
     my $loop = IO::Async::Loop->new;
-    my $port  = $ENV{PORT} // 8000;
     my $repeat = repeat {
         $loop->delay_future(after => 1)->then(
             sub {
-                my $host = $ENV{SRC_HOST} // 'localhost';
-                my $port = $ENV{SRC_PORT} // 4444;
                 my $sock = IO::Socket::INET->new( PeerAddr => $host, PeerPort => $port );
                 Future->wrap($sock ? 1 : 0);
             },
@@ -209,6 +209,7 @@ sub assert_database {
 
 sub on_finish {
     my ($f) = @_;
+
     return sub {
         my ($self, $exitcode) = @_;
         $f->done(WEXITSTATUS($exitcode));
@@ -217,11 +218,12 @@ sub on_finish {
 
 sub on_exception {
     my ( $name, $f ) = @_;
+
     return sub {
         my ( $self, $exception, $errno, $exitcode ) = @_;
 
         if ( length $exception ) {
-            $f->fail( "$name died with the exception $exception " . "(errno was $errno)\n" );
+            $f->fail( "$name died with the exception $exception (errno was $errno)\n" );
         }
         elsif ( ( my $status = WEXITSTATUS($exitcode) ) == 255 ) {
             $f->fail("$name failed to exec() - $errno\n");
@@ -261,23 +263,26 @@ You can also just get the run_* functions with C<:run>.
 
 =head2 run_httpd()
 
-This returns a future that is B<done> when the httpd exits.
+This function starts an httpd and returns a future that is B<done> when the httpd exits.
 The return value will be the exit code of the process.
 
 Thus the following program would exit with whatever value httpd exits with:
 
     exit run_httpd()->get;
 
-It may also B<fail> in unlikely situations, such as a L<fork()> failing.
+It may also B<fail> in unlikely situations, such as a L<fork()> failing, httpd not being found, etc.
 
 Canceling the future will send C<SIGTERM> to httpd.
 
 =head2 run_cereal()
 
-This runs a builtin process that listens on localhost:5880 for TCP
+This runs a builtin process that listens on C<localhost:5880> for TCP
 connections. Each connection may send lines of text, and those lines of text
 will be written to B<STDOUT>. Once you start this, you should limit or stop
 entirely printing to B<STDOUT> to ensure that output is well-ordered.
+
+If you need to listen on a different port, set the environmental variable
+C<LOGGING_PORT>.
 
 This returns a future similar to L<run_httpd()>.
 Canceling the future will terminate the cereal daemon.
