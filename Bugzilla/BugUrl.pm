@@ -24,6 +24,7 @@ use URI::QueryParam;
 ###############################
 
 use constant DB_TABLE   => 'bug_see_also';
+use constant ID_FIELD   => 'id';
 use constant NAME_FIELD => 'value';
 use constant LIST_ORDER => 'id';
 # See Also is tracked in bugs_activity.
@@ -73,6 +74,13 @@ use constant SUB_CLASSES => qw(
 ###############################
 ####      Accessors      ######
 ###############################
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
 
 sub class  { return $_[0]->{class}  }
 sub bug_id { return $_[0]->{bug_id} }

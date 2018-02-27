@@ -30,6 +30,16 @@ use Storable qw(dclone);
 use constant BIT_DIRECT    => 1;
 use constant BIT_WATCHING  => 2;
 
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 sub relationships {
     my $ref = RELATIONSHIPS;
     # Clone it so that we don't modify the constant;
