@@ -277,7 +277,7 @@ sub get_project_phid {
 
     # Check memcache
     my $project_phid = $memcache->get({ key => "phab_project_phid_" . $project });
-    if (not length $project_phid) {
+    if (!$project_phid) {
         my $data = {
             queryKey => 'all',
             constraints => {

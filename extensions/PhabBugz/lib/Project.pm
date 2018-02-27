@@ -281,24 +281,6 @@ sub remove_member {
     push( @{ $self->{remove_members} }, $member_phid );
 }
 
-sub add_project {
-    my ($self, $project) = @_;
-    $self->{add_projects} ||= [];
-    my $project_phid = blessed $project ? $project->phid : $project;
-    $project_phid = get_project_phid($project);
-    return undef unless $project_phid;
-    push(@{ $self->{add_projects} }, $project_phid);
-}
-
-sub remove_project {
-    my ($self, $project) = @_;
-    $self->{add_projects} ||= [];
-    my $project_phid = blessed $project ? $project->phid : $project;
-    $project_phid = get_project_phid($project);
-    return undef unless $project_phid;
-    push(@{ $self->{remove_projects} }, $project_phid);
-}
-
 sub set_members {
     my ( $self, $members ) = @_;
     $self->{set_members} = [ map { $_->phab_phid } @$members ];
