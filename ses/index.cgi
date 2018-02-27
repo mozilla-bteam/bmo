@@ -13,14 +13,21 @@ use warnings;
 use lib qw(.. ../lib ../local/lib/perl5);
 
 use Bugzilla ();
+use Bugzilla::Constants qw( ERROR_MODE_DIE );
 use Bugzilla::Mailer qw( MessageToMTA );
 use Bugzilla::User ();
-use Bugzilla::Util qw( remote_ip );
+use Bugzilla::Util qw( html_quote remote_ip );
 use JSON::XS qw( decode_json encode_json );
 use LWP::UserAgent ();
 use Try::Tiny qw( try catch );
 
-main();
+Bugzilla->error_mode(ERROR_MODE_DIE);
+try {
+    main();
+} catch {
+    warn "SES: Fatal error: $_\n";
+    respond(500 => 'Internal Server Error');
+};
 
 sub main {
     my $message = decode_json_wrapper(Bugzilla->cgi->param('POSTDATA')) // return;
@@ -153,20 +160,27 @@ sub process_complaint {
             || die $template->error();
         MessageToMTA($message);
     }
+
+    respond(200 => 'OK');
 }
 
 sub respond {
     my ($code, $message) = @_;
     print Bugzilla->cgi->header(
-        -type   => 'text/plain',
         -status => "$code $message",
     );
-    say $message;
+    # apache will generate non-200 response pages for us
+    say html_quote($message) if $code == 200;
 }
 
 sub decode_json_wrapper {
     my ($json) = @_;
     my $result;
+    if (!defined $json) {
+        warn 'SES: Missing JSON from ' . remote_ip() . "\n";
+        respond(400 => 'Bad Request');
+        return undef;
+    }
     my $ok = try {
         $result = decode_json($json);
     }

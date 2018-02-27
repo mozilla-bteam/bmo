@@ -23,7 +23,7 @@ X-Bugzilla-Type: admin
 SES Complaint received for [% email %]: [% reason %]
 
 [% IF user %]
-[% Param('urlbase') %]/editusers.cgi?action=edit&userid=[% user.id %]
+[% urlbase %]/editusers.cgi?action=edit&userid=[% user.id %]
 [% ELSE %]
 Failed to find corresponding user in Bugzilla.
 [% END %]
