@@ -30,6 +30,19 @@ use List::MoreUtils qw(uniq);
 use URI;
 use URI::QueryParam;
 
+###############################
+####      Accessors      ######
+###############################
+use constant NAME_FIELD => 'name';
+use constant ID_FIELD   => 'id';
+
+use Class::XSAccessor {
+    accessors => {
+        id   => ID_FIELD,
+        name => NAME_FIELD,
+    },
+};
+
 # NOTE: This is NOT the function for general table updates. See
 # update_table_definitions for that. This is only for the fielddefs table.
 sub update_fielddefs_definition {
