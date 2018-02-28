@@ -150,8 +150,8 @@ sub remove_from_db {
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
