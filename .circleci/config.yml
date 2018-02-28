@@ -24,6 +24,7 @@ defaults:
 
   bmo_env: &bmo_env
     PORT: 8000
+    LOGGING_PORT: 5880
     LOCALCONFIG_ENV: 1
     BMO_db_user: bugs
     BMO_db_host: 127.0.0.1
