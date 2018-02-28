@@ -376,13 +376,12 @@ sub set_is_active   { $_[0]->set('is_active', $_[1]);   }
 ####      Accessors        ####
 ###############################
 
-use constant NAME_FIELD => 'name';
 use constant ID_FIELD   => 'field_id';
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
