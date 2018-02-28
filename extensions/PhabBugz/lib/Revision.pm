@@ -9,7 +9,8 @@ package Bugzilla::Extension::PhabBugz::Revision;
 
 use 5.10.1;
 use Moo;
-use Scalar::Util 'blessed';
+
+use Scalar::Util qw(blessed);
 use Types::Standard -all;
 use Type::Utils;
 
