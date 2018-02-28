@@ -200,7 +200,7 @@ sub assert_database {
     } until => sub { defined shift->get };
 
     my $timeout = $loop->timeout_future( after => 20 )->else_fail("assert_database timeout");
-    my $any_f = Future->needs_any( $repeat, $timeout );
+    my $any_f = Future->wait_any( $repeat, $timeout );
     return $any_f->transform(
         done => sub { return },
         fail => sub { "unable to connect to $dsn as $lc->{db_user}" },

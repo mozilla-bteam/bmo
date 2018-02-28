@@ -143,7 +143,7 @@ sub cmd_test_webservices {
         ],
         prove_dir => '/app/qa/t',
     );
-    exit Future->needs_any($prove_exit_f, $httpd_exit_f)->get;
+    exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
 }
 
 sub cmd_test_selenium {
@@ -164,7 +164,7 @@ sub cmd_test_selenium {
             sub { glob 'test_*.t' }
         ],
     );
-    exit Future->needs_any($prove_exit_f, $httpd_exit_f)->get;
+    exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
 }
 
 sub cmd_shell   { run( 'bash',  '-l' ); }
@@ -193,7 +193,7 @@ sub cmd_test_bmo {
         prove_cmd  => [ 'prove', '-I/app', '-I/app/local/lib/perl5', @prove_args ],
     );
 
-    exit Future->needs_any($prove_exit_f, $httpd_exit_f)->get;
+    exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
 }
 
 sub run_prove {
