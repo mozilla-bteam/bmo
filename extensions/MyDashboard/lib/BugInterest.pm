@@ -34,11 +34,10 @@ use constant { AUDIT_CREATES => 0,
 # Provide accessors for our columns
 #####################################################################
 
-use constant ID_FIELD   => 'id';
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
