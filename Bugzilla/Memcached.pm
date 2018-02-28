@@ -23,20 +23,6 @@ use Sys::Syslog qw(:DEFAULT);
 use constant MAX_KEY_LENGTH => 250;
 use constant RATE_LIMIT_PREFIX => "rate:";
 
-###############################
-####      Accessors      ######
-###############################
-
-use constant NAME_FIELD => 'name';
-use constant ID_FIELD   => 'id';
-
-use Class::XSAccessor {
-    accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
-    },
-};
-
 sub _new {
     my $invocant = shift;
     my $class = ref($invocant) || $invocant;
