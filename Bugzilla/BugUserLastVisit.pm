@@ -30,10 +30,10 @@ use constant { AUDIT_CREATES => 0,
                AUDIT_REMOVES => 0,
                USE_MEMCACHED => 0 };
 
-use constant ID_FIELD   => 'id';
 use Class::XSAccessor {
     accessors => {
-        id   => __PACKAGE__->NAME_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
     },
 };
 
