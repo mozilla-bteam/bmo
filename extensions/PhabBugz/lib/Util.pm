@@ -276,7 +276,7 @@ sub get_project_phid {
     my $memcache = Bugzilla->memcached;
 
     # Check memcache
-    my $project_phid = $memcache->get({ key => "phab_project_phid_" . $project });
+    my $project_phid = $memcache->get_config({ key => "phab_project_phid_" . $project });
     if (!$project_phid) {
         my $data = {
             queryKey => 'all',
@@ -290,7 +290,7 @@ sub get_project_phid {
             unless (exists $result->{result}{data} && @{ $result->{result}{data} });
 
         $project_phid = $result->{result}{data}[0]{phid};
-        $memcache->set({ key => "phab_project_phid_" . $project, value => $project_phid });
+        $memcache->set_config({ key => "phab_project_phid_" . $project, data => $project_phid });
     }
     return $project_phid;
 }
