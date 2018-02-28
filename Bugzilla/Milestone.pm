@@ -223,17 +223,14 @@ sub bug_count {
     return $self->{'bug_count'};
 }
 
-use constant NAME_FIELD => 'value';
-use constant ID_FIELD   => 'id';
-
 ################################
 #####      Accessors      ######
 ################################
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
