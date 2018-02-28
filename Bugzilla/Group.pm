@@ -67,17 +67,14 @@ use constant UPDATE_COLUMNS => qw(
 use constant GROUP_PARAMS => qw(chartgroup insidergroup timetrackinggroup
                                 querysharegroup);
 
-use constant NAME_FIELD => 'name';
-use constant ID_FIELD   => 'id';
-
 ###############################
 ####      Accessors      ######
 ###############################
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
