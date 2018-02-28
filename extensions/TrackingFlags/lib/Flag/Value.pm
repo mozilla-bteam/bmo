@@ -36,7 +36,6 @@ use constant DB_COLUMNS => qw(
 
 use constant LIST_ORDER => 'sortkey';
 use constant NAME_FIELD => 'value';
-use constant ID_FIELD   => 'id';
 
 use constant UPDATE_COLUMNS => qw(
     setter_group_id
@@ -115,8 +114,8 @@ sub set_comment         { $_[0]->set('comment', $_[1]);         }
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
