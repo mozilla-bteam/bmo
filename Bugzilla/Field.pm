@@ -142,9 +142,6 @@ use constant UPDATE_COLUMNS => qw(
     type
 );
 
-use constant NAME_FIELD => 'name';
-use constant ID_FIELD   => 'id';
-
 # How various field types translate into SQL data definitions.
 use constant SQL_DEFINITIONS => {
     # Using commas because these are constants and they shouldn't
@@ -441,8 +438,8 @@ sub _check_is_mandatory { return $_[1] ? 1 : 0; }
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
