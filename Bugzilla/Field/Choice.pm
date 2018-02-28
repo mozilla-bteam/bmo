@@ -43,7 +43,6 @@ use constant UPDATE_COLUMNS => qw(
 );
 
 use constant NAME_FIELD => 'value';
-use constant ID_FIELD   => 'id';
 use constant LIST_ORDER => 'sortkey, value';
 
 use constant VALIDATORS => {
@@ -126,8 +125,8 @@ sub new {
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 #########################
