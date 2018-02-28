@@ -47,13 +47,9 @@ use constant LIST_ORDER => 'next_attempt_ts';
 # accessors
 #
 
-use constant NAME_FIELD => 'name';
-use constant ID_FIELD   => 'id';
-
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
     },
 };
 
