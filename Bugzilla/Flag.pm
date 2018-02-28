@@ -103,11 +103,10 @@ use constant UPDATE_VALIDATORS => {
 ###############################
 ####      Accessors      ######
 ###############################
-use constant ID_FIELD   => 'id';
 
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
     },
 };
 
