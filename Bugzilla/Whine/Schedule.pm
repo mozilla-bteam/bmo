@@ -41,15 +41,13 @@ use constant UPDATE_COLUMNS => qw(
 );
 use constant NAME_FIELD => 'id';
 use constant LIST_ORDER => 'id';
-use constant ID_FIELD   => 'id';
 
 ####################
 # Simple Accessors #
 ####################
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
     },
 };
 
