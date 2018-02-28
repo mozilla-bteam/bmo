@@ -28,7 +28,6 @@ use constant AUDIT_CREATES => 0;
 use constant AUDIT_UPDATES => 0;
 use constant AUDIT_REMOVES => 0;
 use constant USER_ID_FIELD => 'user_id';
-use constant NAME_FIELD    => 'name';
 use constant ID_FIELD      => 'id';
 
 use constant DB_COLUMNS => qw(
@@ -120,9 +119,8 @@ sub new_from_cookie {
 
 use Class::XSAccessor {
     accessors => {
-        user_id => USER_ID_FIELD,
-        id      => ID_FIELD,
-        name    => NAME_FIELD,
+        user_id => __PACKAGE__->USER_ID_FIELD,
+        id      => __PACKAGE__->ID_FIELD,
     },
 };
 
