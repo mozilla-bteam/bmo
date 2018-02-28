@@ -33,16 +33,15 @@ use constant DB_COLUMNS => qw(
 
 use constant NAME_FIELD => 'id';
 use constant LIST_ORDER => 'sortkey';
-use constant ID_FIELD   => 'id';
-
 use constant QUERY_NAME_FIELD   => 'query_name';
+
 ####################
 # Simple Accessors #
 ####################
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => QUERY_NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->QUERY_NAME_FIELD,
     },
 };
 
