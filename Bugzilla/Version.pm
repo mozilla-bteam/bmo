@@ -28,7 +28,6 @@ use constant DEFAULT_VERSION => 'unspecified';
 
 use constant DB_TABLE => 'versions';
 use constant NAME_FIELD => 'value';
-use constant ID_FIELD   => 'id';
 
 # This is "id" because it has to be filled in and id is probably the fastest.
 # We do a custom sort in new_from_list below.
