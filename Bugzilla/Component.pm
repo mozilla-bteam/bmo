@@ -447,13 +447,10 @@ sub is_active   { return $_[0]->{'isactive'};    }
 
 sub triage_owner_id { return $_[0]->{'triage_owner_id'} }
 
-use constant NAME_FIELD => 'name';
-use constant ID_FIELD   => 'id';
-
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
