@@ -33,8 +33,7 @@ use constant { AUDIT_CREATES => 0,
 use constant ID_FIELD   => 'id';
 use Class::XSAccessor {
     accessors => {
-        id   => ID_FIELD,
-        name => NAME_FIELD,
+        id   => __PACKAGE__->NAME_FIELD,
     },
 };
 
