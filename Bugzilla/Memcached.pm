@@ -35,11 +35,15 @@ sub _new {
     my $servers = Bugzilla->localconfig->{memcached_servers};
     if (Bugzilla->feature('memcached') && $servers) {
         $self->{namespace} = Bugzilla->localconfig->{memcached_namespace};
+        TRACE("connecting  servers: $servers, namespace: $self->{namespace}");
         $self->{memcached} = Cache::Memcached::Fast->new({
             servers   => [ split(/[, ]+/, $servers) ],
             namespace => $self->{namespace},
             max_size  => 1024 * 1024 * 4,
         });
+    }
+    else {
+        TRACE("memcached feature is not enabled");
     }
     return bless($self, $class);
 }
