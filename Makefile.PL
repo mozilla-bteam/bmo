@@ -33,7 +33,7 @@ BEGIN {
 # PREREQ_PM
 my %requires = (
     'Algorithm::BloomFilter'   => '0.02',
-    'CGI'                      => '3.63',
+    'CGI'                      => '3.51',
     'CPAN::Meta::Prereqs'      => '2.132830',
     'CPAN::Meta::Requirements' => '2.121',
     'Class::XSAccessor'        => '1.18',
@@ -47,7 +47,7 @@ my %requires = (
     'Email::MIME'              => '1.904',
     'Email::Send'              => '1.911',
     'File::Slurp'              => '9999.13',
-    'Future'                   => '0.35',
+    'Future'                   => '0.34',
     'HTML::Escape'             => '1.10',
     'IO::Async'                => '0.71',
     'JSON::MaybeXS'            => '1.003008',
@@ -108,10 +108,12 @@ if ( $^O eq 'linux' && -f '/etc/debian_version' ) {
 
 my %optional_features = (
     smtp_auth => {
-        description => 'SMTP Authentication' prereqs => { runtime => { requires => { 'Authen::SASL' => 0 } } },
+        description => 'SMTP Authentication',
+        prereqs     => { runtime => { requires => { 'Authen::SASL' => 0 } } },
     },
     detect_charset => {
-        description => 'Automatic charset detection for text attachments' prereqs => {
+        description => 'Automatic charset detection for text attachments',
+        prereqs     => {
             runtime => { requires => { 'Encode::Detect' => 0, Encode => '2.21' } }
         },
     },
@@ -179,10 +181,12 @@ my %optional_features = (
         }
     },
     auth_ldap => {
-        description => 'LDAP Authentication' prereqs => { runtime => { requires => { 'Net::LDAP' => 0 } } },
+        description => 'LDAP Authentication',
+        prereqs     => { runtime => { requires => { 'Net::LDAP' => 0 } } },
     },
     old_charts => {
-        description => 'Old Charts' prereqs => {
+        description => 'Old Charts',
+        prereqs     => {
             runtime => {
                 requires => { GD => '1.20', 'Chart::Lines' => 'v2.4.10' }
             },
@@ -273,7 +277,8 @@ my %optional_features = (
         }
     },
     inbound_email => {
-        description => 'Inbound Email' prereqs => {
+        description => 'Inbound Email',
+        prereqs     => {
             runtime => {
                 requires => {
                     'Email::MIME::Attachment::Stripper' => 0,
