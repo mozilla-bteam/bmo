@@ -94,10 +94,11 @@ sub insert {
 # Clear the request cache at the start of each run.
 sub work_once {
     my $self = shift;
+    my $val = $self->SUPER::work_once(@_);
     Bugzilla::Hook::process('request_cleanup');
     Bugzilla::Bug->CLEANUP;
     Bugzilla->clear_request_cache();
-    return $self->SUPER::work_once(@_);
+    return $val;
 }
 
 # Never process more than MAX_MESSAGES in one batch, to avoid memory
