@@ -231,6 +231,7 @@ sub preload {
 use Class::XSAccessor {
     accessors => {
         id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 

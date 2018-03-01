@@ -77,6 +77,7 @@ use constant SUB_CLASSES => qw(
 use Class::XSAccessor {
     accessors => {
         name => __PACKAGE__->NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
     },
 };
 
