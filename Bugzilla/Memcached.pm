@@ -35,7 +35,7 @@ sub _new {
     my $servers = Bugzilla->localconfig->{memcached_servers};
     if (Bugzilla->feature('memcached') && $servers) {
         $self->{namespace} = Bugzilla->localconfig->{memcached_namespace};
-        TRACE("connecting  servers: $servers, namespace: $self->{namespace}");
+        TRACE("connecting servers: $servers, namespace: $self->{namespace}");
         $self->{memcached} = Cache::Memcached::Fast->new({
             servers   => [ split(/[, ]+/, $servers) ],
             namespace => $self->{namespace},
@@ -272,9 +272,7 @@ sub _inc_prefix {
     delete Bugzilla->request_cache->{"memcached_prefix_$name"};
 
     # BMO - log that we've wiped the cache
-    openlog('apache', 'cons,pid', 'local4');
-    syslog('notice', encode_utf8("[memcached] $name cache cleared"));
-    closelog();
+    NOTICE("$name cache cleared"));
 }
 
 sub _global_prefix {
