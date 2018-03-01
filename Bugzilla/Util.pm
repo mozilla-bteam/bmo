@@ -257,8 +257,27 @@ sub i_am_webservice {
 }
 
 sub is_webserver_group {
-    state $web_server_gid = getgrnam(Bugzilla->localconfig->{webservergroup});
-    return any { $web_server_gid == $_ } split(/ /, $EGID);
+    my @effective_gids = split(/ /, $EGID);
+
+    state $web_server_gid;
+    if (!defined $web_server_gid) {
+        my $web_server_group = Bugzilla->localconfig->{webservergroup};
+
+        if ($web_server_group eq '' || ON_WINDOWS) {
+            $web_server_gid = $effective_gids[0];
+        }
+
+        elsif ($web_server_group =~ /^\d+$/) {
+            $web_server_gid = $web_server_group;
+        }
+
+        else {
+            $web_server_gid = eval { getgrnam($web_server_group) };
+            $web_server_gid //= 0;
+        }
+    }
+
+    return any { $web_server_gid == $_ } @effective_gids;
 }
 
 # This exists as a separate function from Bugzilla::CGI::redirect_to_https
