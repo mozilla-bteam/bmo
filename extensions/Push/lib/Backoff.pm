@@ -50,6 +50,7 @@ use constant LIST_ORDER => 'next_attempt_ts';
 use Class::XSAccessor {
     accessors => {
         id   => __PACKAGE__->ID_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
