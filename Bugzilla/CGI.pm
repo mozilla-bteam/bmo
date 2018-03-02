@@ -14,6 +14,7 @@ use warnings;
 use CGI;
 use base qw(CGI);
 
+use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Util;
@@ -675,6 +676,11 @@ sub send_cookie {
     # Complain if -value is not given or empty (bug 268146).
     if (!exists($paramhash{'-value'}) || !$paramhash{'-value'}) {
         ThrowCodeError('cookies_need_value');
+    }
+
+    unless ($paramhash{'-httponly'}) {
+        my ($pkg, $file, $line) = caller(1);
+        WARN("$paramhash{'-name'} set without -httponly, called in package $pkg, file $file, line $line");
     }
 
     # Add the default path and the domain in.
