@@ -82,7 +82,6 @@ sub create_from_message {
 use Class::XSAccessor {
     accessors => {
         id   => __PACKAGE__->ID_FIELD,
-        name => __PACKAGE__->NAME_FIELD,
     },
 };
 

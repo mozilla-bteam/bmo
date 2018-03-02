@@ -172,7 +172,6 @@ sub set_value { $_[0]->set('value', $_[1]); }
 use Class::XSAccessor {
     accessors => {
         id   => __PACKAGE__->ID_FIELD,
-        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
