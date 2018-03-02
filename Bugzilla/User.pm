@@ -86,12 +86,13 @@ sub DB_COLUMNS {
 
 use constant NAME_FIELD => 'login_name';
 use constant ID_FIELD   => 'userid';
+use constant REAL_NAME_FIELD => 'realname';
 use constant LIST_ORDER => NAME_FIELD;
 
 use Class::XSAccessor {
     accessors => {
         id   => __PACKAGE__->ID_FIELD,
-        name => __PACKAGE__->NAME_FIELD,
+        name => __PACKAGE__->REAL_NAME_FIELD,
     },
 };
 
