@@ -679,7 +679,7 @@ sub send_cookie {
     }
 
     unless ($paramhash{'-httponly'}) {
-        my ($pkg, $file, $line) = caller(2);
+        my ($pkg, $file, $line) = caller(1);
         WARN("$paramhash{'-name'} set without -httponly, called in package $pkg, file $file, line $line");
     }
 
