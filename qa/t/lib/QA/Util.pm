@@ -56,7 +56,7 @@ use base qw(Exporter);
 );
 
 # How long we wait for pages to load.
-use constant WAIT_TIME => 120000;
+use constant WAIT_TIME => 60000;
 use constant CONF_FILE =>  $ENV{BZ_QA_CONF_FILE} // "../config/selenium_test.conf";
 use constant CHROME_MODE => 1;
 use constant NDASH => chr(0x2013);
