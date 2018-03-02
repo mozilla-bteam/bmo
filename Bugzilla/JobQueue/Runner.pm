@@ -20,6 +20,7 @@ use File::Basename;
 use File::Copy;
 use Pod::Usage;
 
+use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::DaemonControl qw(:utils);
 use Bugzilla::JobQueue;
@@ -220,9 +221,11 @@ sub run_worker {
     my $worker_exit_f = $loop->new_future;
     my $worker = IO::Async::Process->new(
         code => sub {
+            DEBUG("starting worker");
             my $jq = Bugzilla->job_queue();
             $jq->set_verbose($self->{debug});
             foreach my $module (values %{ Bugzilla::JobQueue->job_map() }) {
+                DEBUG("JobQueue can do $module");
                 require_module($module);
                 $jq->can_do($module);
             }
