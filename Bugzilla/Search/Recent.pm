@@ -121,6 +121,7 @@ use Class::XSAccessor {
     accessors => {
         user_id => __PACKAGE__->USER_ID_FIELD,
         id      => __PACKAGE__->ID_FIELD,
+        name    => __PACKAGE__->NAME_FIELD,
     },
 };
 
