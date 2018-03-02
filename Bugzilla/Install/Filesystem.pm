@@ -105,6 +105,7 @@ EOT
 use constant HTTPD_ENV => qw(
     LOCALCONFIG_ENV
     BUGZILLA_UNSAFE_AUTH_DELEGATION
+    LOG4PERL_CONFIG_FILE
     USE_NYTPROF
     NYTPROF_DIR
 );
@@ -423,7 +424,7 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
-        "httpd/env.conf"          => { perms     => CGI_READ,
+        "$confdir/env.conf"       => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => \&HTTPD_ENV_CONF },
     );
@@ -459,8 +460,6 @@ sub FILESYSTEM {
         'xt/.htaccess'               => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         '.circleci/.htaccess'        => { perms    => WS_SERVE,
-                                          contents => HT_DEFAULT_DENY },
-        'httpd/.htaccess'            => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         "$confdir/.htaccess"         => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },

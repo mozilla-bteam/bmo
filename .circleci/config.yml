@@ -16,7 +16,7 @@ main_filters: &main_filters
 
 defaults:
   bmo_slim_image: &bmo_slim_image
-    image: mozillabteam/bmo-slim:20171228.1
+    image: mozillabteam/bmo-slim:20180225.1
     user: app
 
   mysql_image: &mysql_image
@@ -24,7 +24,9 @@ defaults:
 
   bmo_env: &bmo_env
     PORT: 8000
+    LOGGING_PORT: 5880
     LOCALCONFIG_ENV: 1
+    LOG4PERL_CONFIG_FILE: log4perl-test.conf
     BMO_db_user: bugs
     BMO_db_host: 127.0.0.1
     BMO_db_pass: bugs
@@ -107,7 +109,10 @@ jobs:
         environment: *bmo_env
     steps:
       - checkout
-      - *default_qa_setup
+      - run: |
+          mv /opt/bmo/local /app/local
+          mkdir artifacts
+      - run: perl Makefile.PL
       - run:
           name: run sanity tests
           command: |
@@ -129,8 +134,6 @@ jobs:
             /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
-      - store_artifacts:
-          path: /app/logs
 
   test_selenium:
     parallelism: 1
@@ -146,8 +149,6 @@ jobs:
             /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
-      - store_artifacts:
-          path: /app/logs
 
   test_bmo:
     parallelism: 1
@@ -172,8 +173,6 @@ jobs:
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
       - run: /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
-      - store_artifacts:
-          path: /app/logs
 
 workflows:
   version: 2
