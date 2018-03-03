@@ -116,6 +116,7 @@ my $bugzilla_app = builder {
         };
     };
 
+    mount '/robots.txt' => $mount{'robots.cgi'};
     mount '/rest' => $mount{'rest.cgi'};
 
 };
