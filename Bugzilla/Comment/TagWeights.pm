@@ -45,8 +45,9 @@ use constant USE_MEMCACHED => 0;
 
 use Class::XSAccessor {
     accessors => {
-        id  => __PACKAGE__->ID_FIELD,
-        tag => __PACKAGE__->NAME_FIELD,
+        id   => __PACKAGE__->ID_FIELD,
+        tag  => __PACKAGE__->NAME_FIELD,
+        name => __PACKAGE__->NAME_FIELD,
     },
 };
 
