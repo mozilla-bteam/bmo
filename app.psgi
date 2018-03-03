@@ -64,6 +64,21 @@ Bugzilla->preload_features();
 # Force instantiation of template so Bugzilla::Template::PreloadProvider can do its magic.
 Bugzilla->template;
 
+my $ses_index = builder {
+    my $auth_user = Bugzilla->localconfig->{ses_username};
+    my $auth_pass = Bugzilla->localconfig->{ses_password};
+    enable "Auth::Basic", authenticator => sub {
+        my ($username, $password, $env) = @_;
+        return (   $auth_user
+                && $auth_pass
+                && $username
+                && $password
+                && $username eq $auth_user
+                && $password eq $auth_pass );
+    };
+    compile_cgi("ses/index.cgi");
+};
+
 my $bugzilla_app = builder {
     my $static_paths = join( '|', STATIC );
 
@@ -81,6 +96,8 @@ my $bugzilla_app = builder {
         my $name = basename($script);
         $mount{$name} = compile_cgi($script);
     }
+
+    $mount{'ses/index.cgi'} = $ses_index;
 
     Bugzilla::Hook::process('psgi_builder', { mount => \%mount });
 
