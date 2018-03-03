@@ -10,8 +10,15 @@ use strict;
 use warnings;
 use autodie;
 use lib qw(. lib local/lib/perl5);
-use Bugzilla;
-BEGIN { Bugzilla->extensions }
+use constant HAVE_DATABASE => 0;
+
+use if HAVE_DATABASE, 'Bugzilla';
+BEGIN {
+    if (HAVE_DATABASE) {
+        Bugzilla->extensions
+    }
+}
+use Bugzilla::DB::Schema;
 use Module::Runtime qw(require_module);
 use Test::More;
 
@@ -83,9 +90,12 @@ my %skip = (
 # this is kind of evil, but I want a copy
 # of the schema without accessing a real DB.
 my $schema = Bugzilla::DB::Schema::ABSTRACT_SCHEMA;
-Bugzilla::Hook::process( 'db_schema_abstract_schema', { schema => $schema } );
+if (HAVE_DATABASE) {
+    Bugzilla::Hook::process( 'db_schema_abstract_schema', { schema => $schema } );
+}
 
 foreach my $package (@packages) {
+    next if $package =~ /^Bugzilla::Extension::/ && !HAVE_DATABASE;
     require_module($package);
     isa_ok($package, 'Bugzilla::Object');
     can_ok($package, qw( id name ID_FIELD NAME_FIELD));
