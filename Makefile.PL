@@ -325,6 +325,32 @@ my %optional_features = (
             }
         }
     },
+<<<<<<< HEAD
+=======
+    psgi => {
+        description => "PSGI Support",
+        prereqs => {
+            runtime => {
+                requires => {
+                    'Plack'                    => '1.0031',
+                    'CGI::Compile'             => 0,
+                    'CGI::Emulate::PSGI'       => 0,
+                },
+            },
+        },
+    },
+    csp => {
+        description => 'Content-Security-Policy support',
+        prereqs     => {
+            runtime => {
+                requires => {
+                    'Type::Tiny' => 1,
+                    'MooX::StrictConstructor' => 0.008,
+                }
+            }
+        }
+    },
+>>>>>>> 741eeec31... psgi optionalize until can rebuild vendor bundle
     elasticsearch => {
         description => 'Elasticsearch-powered searches',
         prereqs     => {
@@ -370,6 +396,7 @@ my @bmo_features = grep {
         (?: pg
           | oracle
           | mod_perl
+          | psgi
           | sqlite
           | auth_ldap
           | auth_radius

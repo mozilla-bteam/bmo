@@ -13,13 +13,13 @@ use warnings;
 use base qw(Exporter);
 
 use Bugzilla::Logging;
-use CGI::Compile;
-use CGI::Emulate::PSGI;
-
 our @EXPORT_OK = qw(compile_cgi);
 
 sub compile_cgi {
     my ($script) = @_;
+    require CGI::Compile;
+    require CGI::Emulate::PSGI;
+
     my $cgi = CGI::Compile->compile($script);
     my $app = CGI::Emulate::PSGI->handler(
         sub {
