@@ -105,6 +105,7 @@ EOT
 use constant HTTPD_ENV => qw(
     LOCALCONFIG_ENV
     BUGZILLA_UNSAFE_AUTH_DELEGATION
+    LOG4PERL_CONFIG_FILE
     USE_NYTPROF
     NYTPROF_DIR
 );
@@ -173,6 +174,7 @@ sub DIR_ALSO_WS_SERVE { _suexec() ? 0001 : 0 };
 # when exploiting some security flaw somewhere (not necessarily in Bugzilla!)
 sub FILESYSTEM {
     my $datadir        = bz_locations()->{'datadir'};
+    my $confdir        = bz_locations()->{'confdir'};
     my $attachdir      = bz_locations()->{'attachdir'};
     my $extensionsdir  = bz_locations()->{'extensionsdir'};
     my $webdotdir      = bz_locations()->{'webdotdir'};
@@ -320,6 +322,8 @@ sub FILESYSTEM {
                                      dirs => DIR_WS_SERVE },
          "$extensionsdir/*/web" => { files => WS_SERVE,
                                      dirs => DIR_WS_SERVE },
+         $confdir               => { files => WS_SERVE,
+                                     dirs => DIR_WS_SERVE, },
 
          # Purpose: allow webserver to read .bzr so we execute bzr commands
          # in backticks and look at the result over the web. Used to show
@@ -364,6 +368,7 @@ sub FILESYSTEM {
         # Directories that contain content served directly by the web server.
         "$skinsdir/custom"      => DIR_WS_SERVE,
         "$skinsdir/contrib"     => DIR_WS_SERVE,
+        $confdir                => DIR_CGI_READ,
     );
 
     my $yui_all_css = sub {
@@ -419,7 +424,7 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
-        "httpd/env.conf"          => { perms     => CGI_READ,
+        "$confdir/env.conf"       => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => \&HTTPD_ENV_CONF },
     );
@@ -456,7 +461,7 @@ sub FILESYSTEM {
                                           contents => HT_DEFAULT_DENY },
         '.circleci/.htaccess'        => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
-        'httpd/.htaccess'            => { perms    => WS_SERVE,
+        "$confdir/.htaccess"         => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
         "$datadir/.htaccess"         => { perms    => WS_SERVE,
                                           contents => HT_DEFAULT_DENY },
