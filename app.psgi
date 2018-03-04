@@ -30,12 +30,12 @@ BEGIN {
 }
 
 # This loads most of our modules.
+use Bugzilla::PSGI qw(compile_cgi);
 use Bugzilla::Logging;
 use Bugzilla ();
 use Bugzilla::Constants ();
 use Bugzilla::BugMail ();
 use Bugzilla::CGI ();
-use Bugzilla::PSGI qw(compile_cgi);
 use Bugzilla::Extension ();
 use Bugzilla::Install::Requirements ();
 use Bugzilla::Util ();
