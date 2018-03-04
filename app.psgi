@@ -47,40 +47,24 @@ use Plack::App::URLMap;
 use Plack::App::WrapCGI;
 use Plack::Response;
 
-use constant STATIC => qw(
-    data/webdot
-    docs
-    extensions/[^/]+/web
-    graphs
-    images
-    js
-    skins
-);
+# Pre-load all extensions and find their static dirs.
+my @extensions = map { $_->NAME } @{ Bugzilla::Extension->load_all() };
+my @static_dirs = qw( data/webdot docs graphs images js skins static );
+foreach my $name (@extensions) {
+    my $dir = File::Spec->catfile('extensions', $name, 'web');
+    push @static_dirs, $dir if -d $dir;
+}
 
-# Pre-load all extensions
-Bugzilla::Extension->load_all();
 Bugzilla->preload_features();
 
 # Force instantiation of template so Bugzilla::Template::PreloadProvider can do its magic.
 Bugzilla->template;
 
-my $ses_index = builder {
-    my $auth_user = Bugzilla->localconfig->{ses_username};
-    my $auth_pass = Bugzilla->localconfig->{ses_password};
-    enable "Auth::Basic", authenticator => sub {
-        my ($username, $password, $env) = @_;
-        return (   $auth_user
-                && $auth_pass
-                && $username
-                && $password
-                && $username eq $auth_user
-                && $password eq $auth_pass );
-    };
-    compile_cgi("ses/index.cgi");
-};
+use Bugzilla::Sentry;
+
 
 my $bugzilla_app = builder {
-    my $static_paths = join( '|', STATIC );
+    my $static_paths = join '|', map quotemeta, sort {length $b <=> length $a || $a cmp $b } @static_dirs;
 
     enable 'Log4perl', category => 'Plack';
 
@@ -96,8 +80,6 @@ my $bugzilla_app = builder {
         my $name = basename($script);
         $mount{$name} = compile_cgi($script);
     }
-
-    $mount{'ses/index.cgi'} = $ses_index;
 
     Bugzilla::Hook::process('psgi_builder', { mount => \%mount });
 
