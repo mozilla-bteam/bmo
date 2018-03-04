@@ -29,7 +29,8 @@ BEGIN {
     *lib::import = sub { };
 }
 
-# This loads most of our modules.
+# it is very important for CGI::Compile to be loaded first.
+use CGI::Compile;
 use Bugzilla::PSGI qw(compile_cgi);
 use Bugzilla::Logging;
 use Bugzilla ();
