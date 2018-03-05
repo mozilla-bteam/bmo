@@ -11,6 +11,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Logging;
 use CGI;
 use base qw(CGI);
 
@@ -597,7 +598,18 @@ sub header {
 sub param {
     my $self = shift;
 
+    # We don't let CGI.pm warn about list context, but we do it ourselves.
     local $CGI::LIST_CONTEXT_WARN = 0;
+    state $has_warned = 0;
+
+    ## no critic (Freenode::Wantarray)
+    if ( wantarray && !$has_warned) {
+        my ( $package, $filename, $line ) = caller;
+        if ( $package ne 'CGI' ) {
+            $has_warned = 1;
+            WARN("Bugzilla::CGI::param called in list context from $package $filename:$line");
+        }
+    }
 
     # When we are just requesting the value of a parameter...
     if (scalar(@_) == 1) {
