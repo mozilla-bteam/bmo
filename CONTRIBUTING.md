@@ -45,10 +45,11 @@ For specific git instructions, see [GitHub workflow 101](https://github.com/serv
 
 In all Bugzilla-related forums, we follow the
 [Mozilla Community Participation Guidelines](https://www.mozilla.org/en-US/about/governance/policies/participation/).
- For escalation or moderation issues, please contact FIXME instead of inclusion@mozilla.com.
+ For escalation or moderation issues, please contact inclusion@bugzilla.org instead of inclusion@mozilla.com.
+ We will respond within 24 hours.
 
 ## Communication
 
 Bugzilla contributors frequent the `#bugzilla` channel on [`irc.mozilla.org`](https://wiki.mozilla.org/IRC).
 
-You can also join the [`bugzilla-dev` mailing list](FIXME).
+You can also join the [`bugzilla-dev` mailing list](developers@bugzilla.org).
