@@ -18,7 +18,7 @@ use English qw(-no_match_vars $PROGRAM_NAME);
 
 sub is_interactive {
     state $is_tty = -t STDOUT || -t STDIN;
-    return $is_tty || $ENV{"Bugzilla.pm"} && Bugzilla->usage_mode == Bugzilla::Constants::USAGE_MODE_CMDLINE;
+    return $is_tty || $INC{"Bugzilla.pm"} && Bugzilla->usage_mode == Bugzilla::Constants::USAGE_MODE_CMDLINE;
 }
 
 BEGIN {
