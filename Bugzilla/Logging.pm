@@ -17,8 +17,7 @@ use Bugzilla::Constants qw(bz_locations);
 use English qw(-no_match_vars $PROGRAM_NAME);
 
 sub is_interactive {
-    state $is_tty = -t STDOUT || -t STDIN;
-    return $is_tty || $INC{"Bugzilla.pm"} && Bugzilla->usage_mode == Bugzilla::Constants::USAGE_MODE_CMDLINE;
+    return exists $ENV{'SERVER_SOFTWARE'} ? 1 : 0;
 }
 
 BEGIN {
