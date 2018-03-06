@@ -15,7 +15,7 @@ use Moo;
 
 use Bugzilla::Constants;
 use Bugzilla::Search;
-use Bugzilla::Util qw(diff_arrays with_writable_database);
+use Bugzilla::Util qw(diff_arrays with_writable_database with_readonly_database);
 
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Policy;
@@ -105,7 +105,9 @@ sub feed_query {
             }
         }
 
-        $self->process_revision_change($object_phid, $story_text);
+        with_writable_database {
+            $self->process_revision_change($object_phid, $story_text);
+        };
         $self->save_last_id($story_id, 'feed');
     }
 
@@ -131,7 +133,9 @@ sub feed_query {
         $self->logger->debug("USER REALNAME: $user_realname");
         $self->logger->debug("OBJECT PHID: $object_phid");
 
-        $self->process_new_user($user_data);
+        with_readonly_database {
+            $self->process_new_user($user_data);
+        };
         $self->save_last_id($user_id, 'user');
     }
 }
@@ -170,193 +174,191 @@ sub process_revision_change {
 
     # Pre setup before making changes
     my $old_user = set_phab_user();
-    with_writable_database {
-        my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
+    my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
 
-        # REVISION SECURITY POLICY
+    # REVISION SECURITY POLICY
 
-        # If bug is public then remove privacy policy
-        if (!@{ $bug->groups_in }) {
-            $self->logger->debug('Bug is public so setting view/edit public');
-            $revision->set_policy('view', 'public');
-            $revision->set_policy('edit', 'users');
-            my $secure_project_phid = get_project_phid('secure-revision');
-            $revision->remove_project($secure_project_phid);
+    # If bug is public then remove privacy policy
+    if (!@{ $bug->groups_in }) {
+        $self->logger->debug('Bug is public so setting view/edit public');
+        $revision->set_policy('view', 'public');
+        $revision->set_policy('edit', 'users');
+        my $secure_project_phid = get_project_phid('secure-revision');
+        $revision->remove_project($secure_project_phid);
+    }
+    # else bug is private.
+    else {
+        my @set_groups = get_security_sync_groups($bug);
+
+        # If bug privacy groups do not have any matching synchronized groups,
+        # then leave revision private and it will have be dealt with manually.
+        if (!@set_groups) {
+            $self->logger->debug('No matching groups. Adding comments to bug and revision');
+            add_security_sync_comments([$revision], $bug);
         }
-        # else bug is private.
+        # Otherwise, we create a new custom policy containing the project
+        # groups that are mapped to bugzilla groups.
         else {
-            my @set_groups = get_security_sync_groups($bug);
+            my @set_projects = map { "bmo-" . $_ } @set_groups;
 
-            # If bug privacy groups do not have any matching synchronized groups,
-            # then leave revision private and it will have be dealt with manually.
-            if (!@set_groups) {
-                $self->logger->debug('No matching groups. Adding comments to bug and revision');
-                add_security_sync_comments([$revision], $bug);
-            }
-            # Otherwise, we create a new custom policy containing the project
-            # groups that are mapped to bugzilla groups.
-            else {
-                my @set_projects = map { "bmo-" . $_ } @set_groups;
-
-                # If current policy projects matches what we want to set, then
-                # we leave the current policy alone.
-                my $current_policy;
-                if ($revision->view_policy =~ /^PHID-PLCY/) {
-                    $self->logger->debug("Loading current policy: " . $revision->view_policy);
-                    $current_policy
-                        = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_policy ]});
-                    my $current_projects = $current_policy->rule_projects;
-                    $self->logger->debug("Current policy projects: " . join(", ", @$current_projects));
-                    my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
-                    if (@$added || @$removed) {
-                        $self->logger->debug('Project groups do not match. Need new custom policy');
-                        $current_policy= undef;
-                    }
-                    else {
-                        $self->logger->debug('Project groups match. Leaving current policy as-is');
-                    }
+            # If current policy projects matches what we want to set, then
+            # we leave the current policy alone.
+            my $current_policy;
+            if ($revision->view_policy =~ /^PHID-PLCY/) {
+                $self->logger->debug("Loading current policy: " . $revision->view_policy);
+                $current_policy
+                    = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_policy ]});
+                my $current_projects = $current_policy->rule_projects;
+                $self->logger->debug("Current policy projects: " . join(", ", @$current_projects));
+                my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
+                if (@$added || @$removed) {
+                    $self->logger->debug('Project groups do not match. Need new custom policy');
+                    $current_policy= undef;
                 }
-
-                if (!$current_policy) {
-                    $self->logger->debug("Creating new custom policy: " . join(", ", @set_projects));
-                    my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create(\@set_projects);
-                    $revision->set_policy('view', $new_policy->phid);
-                    $revision->set_policy('edit', $new_policy->phid);
-                }
-
-                my $secure_project_phid = get_project_phid('secure-revision');
-                $revision->add_project($secure_project_phid);
-
-                my $subscribers = get_bug_role_phids($bug);
-                $revision->set_subscribers($subscribers);
-            }
-        }
-
-        my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
-
-        my $attachment = create_revision_attachment($bug, $revision->id, $revision->title, $timestamp);
-
-        # ATTACHMENT OBSOLETES
-
-        # fixup attachments on current bug
-        my @attachments =
-        grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
-
-        foreach my $attachment (@attachments) {
-            my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
-            next if $attach_revision_id != $revision->id;
-
-            my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
-            $self->logger->debug('Updating obsolete status on attachmment ' . $attachment->id);
-            $attachment->set_is_obsolete($make_obsolete);
-
-            if ($revision->title ne $attachment->description) {
-                $self->logger->debug('Updating description on attachment ' . $attachment->id);
-                $attachment->set_description($revision->title);
-            }
-
-            $attachment->update($timestamp);
-        }
-
-        # fixup attachments with same revision id but on different bugs
-        my %other_bugs;
-        my $other_attachments = Bugzilla::Attachment->match({
-            mimetype => PHAB_CONTENT_TYPE,
-            filename => 'phabricator-D' . $revision->id . '-url.txt',
-            WHERE    => { 'bug_id != ? AND NOT isobsolete' => $bug->id }
-        });
-        foreach my $attachment (@$other_attachments) {
-            $other_bugs{$attachment->bug_id}++;
-            $self->logger->debug('Updating obsolete status on attachment ' .
-                                $attachment->id . " for bug " . $attachment->bug_id);
-            $attachment->set_is_obsolete(1);
-            $attachment->update($timestamp);
-        }
-
-        # REVIEWER STATUSES
-
-        my (@accepted_phids, @denied_phids, @accepted_user_ids, @denied_user_ids);
-        unless ($revision->status eq 'changes-planned' || $revision->status eq 'needs-review') {
-            foreach my $reviewer (@{ $revision->reviewers }) {
-                push(@accepted_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'accepted';
-                push(@denied_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'rejected';
-            }
-        }
-
-        my $phab_users = get_phab_bmo_ids({ phids => \@accepted_phids });
-        @accepted_user_ids = map { $_->{id} } @$phab_users;
-        $phab_users = get_phab_bmo_ids({ phids => \@denied_phids });
-        @denied_user_ids = map { $_->{id} } @$phab_users;
-
-        foreach my $attachment (@attachments) {
-            my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
-            next if $revision->id != $attach_revision_id;
-
-            # Clear old flags if no longer accepted
-            my (@denied_flags, @new_flags, @removed_flags, %accepted_done, $flag_type);
-            foreach my $flag (@{ $attachment->flags }) {
-                next if $flag->type->name ne 'review';
-                $flag_type = $flag->type if $flag->type->is_active;
-                if (any { $flag->setter->id == $_ } @denied_user_ids) {
-                    push(@denied_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
-                }
-                if (any { $flag->setter->id == $_ } @accepted_user_ids) {
-                    $accepted_done{$flag->setter->id}++;
-                }
-                if ($flag->status eq '+'
-                    && !any { $flag->setter->id == $_ } (@accepted_user_ids, @denied_user_ids)) {
-                    push(@removed_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
+                else {
+                    $self->logger->debug('Project groups match. Leaving current policy as-is');
                 }
             }
 
-            $flag_type ||= first { $_->name eq 'review' && $_->is_active } @{ $attachment->flag_types };
-
-            # Create new flags
-            foreach my $user_id (@accepted_user_ids) {
-                next if $accepted_done{$user_id};
-                my $user = Bugzilla::User->check({ id => $user_id, cache => 1 });
-                push(@new_flags, { type_id => $flag_type->id, setter => $user, status => '+' });
+            if (!$current_policy) {
+                $self->logger->debug("Creating new custom policy: " . join(", ", @set_projects));
+                my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create(\@set_projects);
+                $revision->set_policy('view', $new_policy->phid);
+                $revision->set_policy('edit', $new_policy->phid);
             }
 
-            # Also add comment to for attachment update showing the user's name
-            # that changed the revision.
-            my $comment;
-            foreach my $flag_data (@new_flags) {
-                $comment .= $flag_data->{setter}->name . " has approved the revision.\n";
-            }
-            foreach my $flag_data (@denied_flags) {
-                $comment .= $flag_data->{setter}->name . " has requested changes to the revision.\n";
-            }
-            foreach my $flag_data (@removed_flags) {
-                $comment .= $flag_data->{setter}->name . " has been removed from the revision.\n";
-            }
+            my $secure_project_phid = get_project_phid('secure-revision');
+            $revision->add_project($secure_project_phid);
 
-            if ($comment) {
-                $comment .= "\n" . Bugzilla->params->{phabricator_base_uri} . "D" . $revision->id;
-                # Add transaction_id as anchor if one present
-                # $comment .= "#" . $params->{transaction_id} if $params->{transaction_id};
-                $bug->add_comment($comment, {
-                    isprivate  => $attachment->isprivate,
-                    type       => CMT_ATTACHMENT_UPDATED,
-                    extra_data => $attachment->id
-                });
-            }
+            my $subscribers = get_bug_role_phids($bug);
+            $revision->set_subscribers($subscribers);
+        }
+    }
 
-            $attachment->set_flags([ @denied_flags, @removed_flags ], \@new_flags);
-            $attachment->update($timestamp);
+    my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+
+    my $attachment = create_revision_attachment($bug, $revision->id, $revision->title, $timestamp);
+
+    # ATTACHMENT OBSOLETES
+
+    # fixup attachments on current bug
+    my @attachments =
+    grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
+
+    foreach my $attachment (@attachments) {
+        my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+        next if $attach_revision_id != $revision->id;
+
+        my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
+        $self->logger->debug('Updating obsolete status on attachmment ' . $attachment->id);
+        $attachment->set_is_obsolete($make_obsolete);
+
+        if ($revision->title ne $attachment->description) {
+            $self->logger->debug('Updating description on attachment ' . $attachment->id);
+            $attachment->set_description($revision->title);
         }
 
-        # FINISH UP
+        $attachment->update($timestamp);
+    }
 
-        $bug->update($timestamp);
-        $revision->update();
+    # fixup attachments with same revision id but on different bugs
+    my %other_bugs;
+    my $other_attachments = Bugzilla::Attachment->match({
+        mimetype => PHAB_CONTENT_TYPE,
+        filename => 'phabricator-D' . $revision->id . '-url.txt',
+        WHERE    => { 'bug_id != ? AND NOT isobsolete' => $bug->id }
+    });
+    foreach my $attachment (@$other_attachments) {
+        $other_bugs{$attachment->bug_id}++;
+        $self->logger->debug('Updating obsolete status on attachment ' .
+                            $attachment->id . " for bug " . $attachment->bug_id);
+        $attachment->set_is_obsolete(1);
+        $attachment->update($timestamp);
+    }
 
-        # Email changes for this revisions bug and also for any other
-        # bugs that previously had these revision attachments
-        foreach my $bug_id ($revision->bug_id, keys %other_bugs) {
-            Bugzilla::BugMail::Send($bug_id, { changer => Bugzilla->user });
+    # REVIEWER STATUSES
+
+    my (@accepted_phids, @denied_phids, @accepted_user_ids, @denied_user_ids);
+    unless ($revision->status eq 'changes-planned' || $revision->status eq 'needs-review') {
+        foreach my $reviewer (@{ $revision->reviewers }) {
+            push(@accepted_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'accepted';
+            push(@denied_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'rejected';
         }
-    };
+    }
+
+    my $phab_users = get_phab_bmo_ids({ phids => \@accepted_phids });
+    @accepted_user_ids = map { $_->{id} } @$phab_users;
+    $phab_users = get_phab_bmo_ids({ phids => \@denied_phids });
+    @denied_user_ids = map { $_->{id} } @$phab_users;
+
+    foreach my $attachment (@attachments) {
+        my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+        next if $revision->id != $attach_revision_id;
+
+        # Clear old flags if no longer accepted
+        my (@denied_flags, @new_flags, @removed_flags, %accepted_done, $flag_type);
+        foreach my $flag (@{ $attachment->flags }) {
+            next if $flag->type->name ne 'review';
+            $flag_type = $flag->type if $flag->type->is_active;
+            if (any { $flag->setter->id == $_ } @denied_user_ids) {
+                push(@denied_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
+            }
+            if (any { $flag->setter->id == $_ } @accepted_user_ids) {
+                $accepted_done{$flag->setter->id}++;
+            }
+            if ($flag->status eq '+'
+                && !any { $flag->setter->id == $_ } (@accepted_user_ids, @denied_user_ids)) {
+                push(@removed_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
+            }
+        }
+
+        $flag_type ||= first { $_->name eq 'review' && $_->is_active } @{ $attachment->flag_types };
+
+        # Create new flags
+        foreach my $user_id (@accepted_user_ids) {
+            next if $accepted_done{$user_id};
+            my $user = Bugzilla::User->check({ id => $user_id, cache => 1 });
+            push(@new_flags, { type_id => $flag_type->id, setter => $user, status => '+' });
+        }
+
+        # Also add comment to for attachment update showing the user's name
+        # that changed the revision.
+        my $comment;
+        foreach my $flag_data (@new_flags) {
+            $comment .= $flag_data->{setter}->name . " has approved the revision.\n";
+        }
+        foreach my $flag_data (@denied_flags) {
+            $comment .= $flag_data->{setter}->name . " has requested changes to the revision.\n";
+        }
+        foreach my $flag_data (@removed_flags) {
+            $comment .= $flag_data->{setter}->name . " has been removed from the revision.\n";
+        }
+
+        if ($comment) {
+            $comment .= "\n" . Bugzilla->params->{phabricator_base_uri} . "D" . $revision->id;
+            # Add transaction_id as anchor if one present
+            # $comment .= "#" . $params->{transaction_id} if $params->{transaction_id};
+            $bug->add_comment($comment, {
+                isprivate  => $attachment->isprivate,
+                type       => CMT_ATTACHMENT_UPDATED,
+                extra_data => $attachment->id
+            });
+        }
+
+        $attachment->set_flags([ @denied_flags, @removed_flags ], \@new_flags);
+        $attachment->update($timestamp);
+    }
+
+    # FINISH UP
+
+    $bug->update($timestamp);
+    $revision->update();
+
+    # Email changes for this revisions bug and also for any other
+    # bugs that previously had these revision attachments
+    foreach my $bug_id ($revision->bug_id, keys %other_bugs) {
+        Bugzilla::BugMail::Send($bug_id, { changer => Bugzilla->user });
+    }
 
     Bugzilla->set_user($old_user);
 
@@ -378,8 +380,6 @@ sub process_new_user {
 
     # Pre setup before querying DB
     my $old_user = set_phab_user();
-
-    Bugzilla->switch_to_shadow_db();
 
     my $params = {
         f3  => 'OP',
