@@ -167,10 +167,13 @@ sub create_private_revision_policy {
         );
     }
     else {
+        my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+            name => 'secure-revision'
+        });
         push(@{ $data->{policy} },
             {
                 action => 'allow',
-                value  => 'admin',
+                value  => $secure_revision->phid,
             }
         );
     }
@@ -198,15 +201,20 @@ sub make_revision_public {
 
 sub make_revision_private {
     my ($revision_phid) = @_;
+
+    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+        name => 'secure-revision'
+    });
+
     return request('differential.revision.edit', {
         transactions => [
             {
                 type  => "view",
-                value => "admin"
+                value => $secure_revision->phid
             },
             {
                 type  => "edit",
-                value => "admin"
+                value => $secure_revision->phid
             }
         ],
         objectIdentifier => $revision_phid
@@ -273,33 +281,44 @@ sub add_comment_to_revision {
 
 sub get_project_phid {
     my $project = shift;
+    my $memcache = Bugzilla->memcached;
 
-    my $data = {
-        queryKey => 'all',
-        constraints => {
-            name => $project
-        }
-    };
+    # Check memcache
+    my $project_phid = $memcache->get_config({ key => "phab_project_phid_" . $project });
+    if (!$project_phid) {
+        my $data = {
+            queryKey => 'all',
+            constraints => {
+                name => $project
+            }
+        };
 
-    my $result = request('project.search', $data);
-    return undef
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
+        my $result = request('project.search', $data);
+        return undef
+            unless (exists $result->{result}{data} && @{ $result->{result}{data} });
 
-    return $result->{result}{data}[0]{phid};
+        $project_phid = $result->{result}{data}[0]{phid};
+        $memcache->set_config({ key => "phab_project_phid_" . $project, data => $project_phid });
+    }
+    return $project_phid;
 }
 
 sub create_project {
     my ($project, $description, $members) = @_;
 
+    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+        name => 'secure-revision'
+    });
+
     my $data = {
         transactions => [
-            { type => 'name',  value => $project           },
-            { type => 'description', value => $description },
-            { type => 'edit',  value => 'admin'            },
-            { type => 'join',  value => 'admin'            },
-            { type => 'view',  value => 'admin'            },
-            { type => 'icon',  value => 'group'            },
-            { type => 'color', value => 'red'              }
+            { type => 'name',  value => $project               },
+            { type => 'description', value => $description     },
+            { type => 'edit',  value => $secure_revision->phid }.
+            { type => 'join',  value => $secure_revision->phid },
+            { type => 'view',  value => $secure_revision->phid },
+            { type => 'icon',  value => 'group'                },
+            { type => 'color', value => 'red'                  }
         ]
     };
 

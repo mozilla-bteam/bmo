@@ -43,7 +43,7 @@ our @EXPORT_OK = qw(
 
 # might want to change this for upstream
 use constant ENV_PREFIX     => 'BMO_';
-use constant PARAM_OVERRIDE => qw( inbound_proxies shadowdb shadowdbhost shadowdbport shadowdbsock );
+use constant PARAM_OVERRIDE => qw( shadowdb shadowdbhost shadowdbport shadowdbsock );
 
 sub _sensible_group {
     return '' if ON_WINDOWS;
@@ -135,7 +135,6 @@ use constant LOCALCONFIG_VARS => (
     {
         name    => 'param_override',
         default => {
-            inbound_proxies     => undef,
             memcached_servers   => undef,
             memcached_namespace => undef,
             shadowdb            => undef,
@@ -163,7 +162,19 @@ use constant LOCALCONFIG_VARS => (
     {
         name    => 'attachment_base',
         default => _migrate_param( "attachment_base", '' ),
-    }
+    },
+    {
+        name    => 'ses_username',
+        default => '',
+    },
+    {
+        name    => 'ses_password',
+        default => '',
+    },
+    {
+        name => 'inbound_proxies',
+        default => _migrate_param( 'inbound_proxies', '' ),
+    },
 );
 
 
