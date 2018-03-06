@@ -68,9 +68,10 @@ $(function() {
 <form method="post" action="editusers.cgi">
 <table class="main">
   [% PROCESS admin/users/userdata.html.tmpl
-    editform  = 1
-    editusers = editusers
-    otheruser = otheruser
+    editform     = 1
+    editusers    = editusers
+    disableusers = disableusers
+    otheruser    = otheruser
   %]
   [% IF groups.size %]
     <tr>
