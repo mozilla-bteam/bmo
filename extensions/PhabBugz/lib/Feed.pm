@@ -243,7 +243,7 @@ sub process_revision_change {
 
     # fixup attachments on current bug
     my @attachments =
-    grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
+      grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
 
     foreach my $attachment (@attachments) {
         my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
@@ -271,7 +271,7 @@ sub process_revision_change {
     foreach my $attachment (@$other_attachments) {
         $other_bugs{$attachment->bug_id}++;
         $self->logger->debug('Updating obsolete status on attachment ' .
-                            $attachment->id . " for bug " . $attachment->bug_id);
+                             $attachment->id . " for bug " . $attachment->bug_id);
         $attachment->set_is_obsolete(1);
         $attachment->update($timestamp);
     }
