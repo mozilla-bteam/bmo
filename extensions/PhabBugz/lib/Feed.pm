@@ -446,6 +446,7 @@ sub process_new_user {
         }
     }
 
+    Bugzilla->switch_to_main_db();
     Bugzilla->set_user($old_user);
 
     $self->logger->info('SUCCESS: User ' . $phab_user->id . ' processed');
