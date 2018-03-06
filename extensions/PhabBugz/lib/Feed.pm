@@ -15,7 +15,7 @@ use Moo;
 
 use Bugzilla::Constants;
 use Bugzilla::Search;
-use Bugzilla::Util qw(diff_arrays with_main_dbh);
+use Bugzilla::Util qw(diff_arrays with_writable_database);
 
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Policy;
@@ -170,7 +170,7 @@ sub process_revision_change {
 
     # Pre setup before making changes
     my $old_user = set_phab_user();
-    with_main_dbh {
+    with_writable_database {
         my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
 
         # REVISION SECURITY POLICY

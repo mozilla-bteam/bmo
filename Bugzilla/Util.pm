@@ -13,7 +13,7 @@ use warnings;
 
 use base qw(Exporter);
 @Bugzilla::Util::EXPORT = qw(trick_taint detaint_natural
-                             detaint_signed with_main_dbh
+                             detaint_signed with_writable_database
                              html_quote url_quote xml_quote
                              css_class_quote html_light_quote
                              i_am_cgi i_am_webservice correct_urlbase remote_ip
@@ -46,7 +46,7 @@ use POSIX qw(floor ceil);
 use Taint::Util qw(untaint);
 use Try::Tiny;
 
-sub with_main_dbh(&) {
+sub with_writable_database(&) {
     my ($code) = @_;
     my $dbh = Bugzilla->dbh_main;
     local Bugzilla->request_cache->{dbh} = $dbh;
