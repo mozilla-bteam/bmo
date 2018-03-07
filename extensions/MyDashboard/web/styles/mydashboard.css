@@ -83,4 +83,5 @@
 
 #saved_searches_container li {
     margin: 5px 0;
+    display: inline;
 }
