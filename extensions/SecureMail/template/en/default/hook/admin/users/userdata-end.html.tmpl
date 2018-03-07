@@ -6,8 +6,15 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% RETURN UNLESS otheruser.id %]
+[% RETURN UNLESS otheruser.id && user.in_group('edituswer') %]
 
+<tr>
+  <th>Has Secure Mail Key/Cert:</th>
+  <td>
+    [% otheruser.public_key ? "Yes" : "No" %]
+  </td>
+</tr>
+ 
 <tr>
   <th>Has Secure Mail Key/Cert:</th>
   <td>
