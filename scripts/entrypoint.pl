@@ -196,6 +196,20 @@ sub cmd_test_bmo {
     exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
 }
 
+sub cmd_prove_with_httpd {
+    my (@prove_args) = @_;
+    check_data_dir();
+
+    assert_database()->get;
+    my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
+    my $prove_exit_f = run_prove(
+        httpd_url  => $ENV{BZ_BASE_URL},
+        prove_cmd  => [ 'prove', '-I/app', '-I/app/local/lib/perl5', @prove_args ],
+    );
+
+    exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
+}
+
 sub run_prove {
     my (%param) = @_;
 

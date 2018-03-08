@@ -69,6 +69,11 @@ sub confirm_subscription {
         return;
     }
 
+    if ($subscribe_url eq '<FAKE-TEST>') {
+        respond(200 => 'OK');
+        return;
+    }
+
     my $ua = ua();
     my $res = $ua->get($message->{SubscribeURL});
     if (!$res->is_success) {
