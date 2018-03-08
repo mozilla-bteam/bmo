@@ -210,7 +210,9 @@ sub gd_other_cmd {
 sub gd_run {
     my $self = shift;
 
-    exit $self->run_worker("work")->get;
+    my $code = $self->run_worker("work")->get;
+    unlink($self->{gd_pidfile})
+    exit $code;
 }
 
 sub run_worker {

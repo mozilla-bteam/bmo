@@ -17,6 +17,7 @@ use Bugzilla::Install::Util qw(install_string);
 use Bugzilla::DaemonControl qw(catch_signal);
 use IO::Async::Timer::Periodic;
 use IO::Async::Loop;
+use Future;
 use base qw(TheSchwartz);
 
 # This maps job names for Bugzilla::JobQueue to the appropriate modules.
