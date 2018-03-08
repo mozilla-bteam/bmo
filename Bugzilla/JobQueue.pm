@@ -103,12 +103,7 @@ sub work {
         first_interval => 0,
         interval       => $delay,
         reschedule     => 'drift',
-        on_tick => sub {
-            my $i = 0;
-            while ($i++ < 100) {
-                $self->work_once or last;
-            }
-        }
+        on_tick        => sub { $self->work_once }
     );
     $loop->add($timer);
     $timer->start;
