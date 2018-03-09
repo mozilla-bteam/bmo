@@ -15,22 +15,26 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use Cwd qw(abs_path);
-use File::Basename;
-use File::Copy;
-use Pod::Usage;
 
 use Bugzilla::Constants;
 use Bugzilla::DaemonControl qw(:utils);
+use Bugzilla::JobQueue::Worker;
 use Bugzilla::JobQueue;
 use Bugzilla::Util qw(get_text);
-use Module::Runtime qw(require_module);
+use Cwd qw(abs_path);
+use English qw(-no_match_vars $PROGRAM_NAME $EXECUTABLE_NAME);
+use File::Basename;
+use File::Copy;
+use File::Spec::Functions qw(catfile);
+use Future;
 use IO::Async::Loop;
-use IO::Async::Signal;
 use IO::Async::Process;
-BEGIN { eval "use base qw(Daemon::Generic)"; }
+use IO::Async::Signal;
+use Pod::Usage;
 
-our $VERSION = BUGZILLA_VERSION;
+use parent qw(Daemon::Generic);
+
+our $VERSION = 2;
 
 # Info we need to install/uninstall the daemon.
 our $chkconfig = "/sbin/chkconfig";
@@ -63,20 +67,23 @@ sub gd_getopt {
         $self->{gd_progname} = $self->{gd_args}{progname};
     }
     else {
-        $self->{gd_progname} = basename($0);
+        $self->{gd_progname} = basename($PROGRAM_NAME);
     }
 
-    # There are places that Daemon Generic's new() uses $0 instead of
+    # There are places that Daemon Generic's new() uses $PROGRAM_NAME instead of
     # gd_progname, which it really shouldn't, but this hack fixes it.
-    $self->{_original_zero} = $0;
-    $0 = $self->{gd_progname};
+    $self->{_original_program_name} = $PROGRAM_NAME;
+
+    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    $PROGRAM_NAME = $self->{gd_progname};
 }
 
 sub gd_postconfig {
     my $self = shift;
     # See the hack above in gd_getopt. This just reverses it
     # in case anything else needs the accurate $0.
-    $0 = delete $self->{_original_zero};
+    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    $PROGRAM_NAME = delete $self->{_original_program_name};
 }
 
 sub gd_more_opt {
@@ -131,8 +138,8 @@ sub gd_can_install {
 
             open(my $config_fh, ">", $config_file)
                 or die "Could not write to $config_file: $!";
-            my $directory = abs_path(dirname($self->{_original_zero}));
-            my $owner_id = (stat $self->{_original_zero})[4];
+            my $directory = abs_path(dirname($self->{_original_program_name}));
+            my $owner_id = (stat $self->{_original_program_name})[4];
             my $owner = getpwuid($owner_id);
             print $config_fh <<END;
 #!/bin/sh
@@ -180,64 +187,68 @@ sub gd_check {
 
 # override this to use IO::Async.
 sub gd_setup_signals {
-    my $self    = shift;
-    my %signals = (
-        # Daemon::Generic by default handles these,
-        INT  => sub { $self->gd_quit_event() },
-        HUP  => sub { $self->gd_reconfig_event() },
+    my $self = shift;
+    my @signals = (
+        # Daemon::Generic by default handled these, though it had special treatment for HUP.
+        'INT',
+        'HUP',
         # Bugzilla adds this
-        TERM => sub { $self->gd_quit_event() },
+        'TERM'
     );
-    my $loop = IO::Async::Loop->new;
-    foreach my $name (keys %signals) {
-        my $signal = IO::Async::Signal->new(
-            name       => $name,
-            on_receipt => $signals{$name},
-        );
-        $loop->add($signal);
-    }
+    $self->{_signal_future} = Future->wait_any( map { catch_signal( $_, $_ ) } @signals );
 }
 
 sub gd_other_cmd {
     my ($self) = shift;
     if ($ARGV[0] eq "once") {
-        exit $self->run_worker("work_once")->get;
+        Bugzilla::JobQueue::Worker->run("work_once");
+        exit;
     }
 
     $self->SUPER::gd_other_cmd();
 }
 
+sub gd_quit_event { FATAL("gd_quit_event() should never be called") }
+sub gd_reconfig_event { FATAL("gd_reconfig_event() should never be called") }
+
 sub gd_run {
     my $self = shift;
 
+    # This is so the process shows up in (h)top in a useful way.
+    local $PROGRAM_NAME = "$self->{gd_progname} [supervisor]";
     my $code = $self->run_worker("work")->get;
-    unlink($self->{gd_pidfile})
+    unlink($self->{gd_pidfile});
     exit $code;
 }
 
+# This executes the script "jobqueue-worker.pl"
+# $EXECUTABLE_NAME is the name of the perl interpreter.
 sub run_worker {
     my ($self, $fn) = @_;
 
-    my $loop = IO::Async::Loop->new;
-    my $worker_exit_f = $loop->new_future;
-    my $worker = IO::Async::Process->new(
-        code => sub {
-            my $jq = Bugzilla->job_queue();
-            $jq->set_verbose($self->{debug});
-            foreach my $module (values %{ Bugzilla::JobQueue->job_map() }) {
-                require_module($module);
-                $jq->can_do($module);
-            }
+    my $script = catfile( bz_locations->{cgi_path}, "jobqueue-worker.pl" );
+    my @command = ( $EXECUTABLE_NAME, $script, '--function' => $fn );
+    if ($self->{gd_args}{progname}) {
+        push @command, '--name' => "$self->{gd_args}{progname} [worker]";
+    }
 
-            $jq->$fn;
-        },
-        on_finish    => on_finish($worker_exit_f),
-        on_exception => on_exception( "jobqueue worker", $worker_exit_f )
+    my $loop   = IO::Async::Loop->new;
+    my $exit_f = $loop->new_future;
+    my $worker = IO::Async::Process->new(
+        command      => \@command,
+        on_finish    => on_finish($exit_f),
+        on_exception => on_exception( "jobqueue worker", $exit_f )
     );
-    $worker_exit_f->on_cancel(sub { $worker->kill('TERM') });
+    $exit_f->on_cancel(
+        sub {
+            DEBUG("terminate worker");
+            $worker->kill('TERM');
+        }
+    );
     $loop->add($worker);
-    return $worker_exit_f;
+    return $exit_f;
 }
+
 
 1;
 
