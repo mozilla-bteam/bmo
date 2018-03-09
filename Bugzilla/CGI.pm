@@ -14,6 +14,7 @@ use warnings;
 use CGI;
 use base qw(CGI);
 
+use Bugzilla::CGI::ContentSecurityPolicy;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Util;
@@ -188,36 +189,28 @@ sub target_uri {
 
 sub content_security_policy {
     my ($self, %add_params) = @_;
-    if (Bugzilla->has_feature('csp')) {
-        require Bugzilla::CGI::ContentSecurityPolicy;
-        if (%add_params || !$self->{Bugzilla_csp}) {
-            my %params = DEFAULT_CSP;
-            delete $params{report_only} if %add_params && !$add_params{report_only};
-            foreach my $key (keys %add_params) {
-                if (defined $add_params{$key}) {
-                    $params{$key} = $add_params{$key};
-                }
-                else {
-                    delete $params{$key};
-                }
+    if (%add_params || !$self->{Bugzilla_csp}) {
+        my %params = DEFAULT_CSP;
+        delete $params{report_only} if %add_params && !$add_params{report_only};
+        foreach my $key (keys %add_params) {
+            if (defined $add_params{$key}) {
+                $params{$key} = $add_params{$key};
             }
-            $self->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
+            else {
+                delete $params{$key};
+            }
         }
-
-        return $self->{Bugzilla_csp};
+        $self->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
     }
-    return undef;
+
+    return $self->{Bugzilla_csp};
 }
 
 sub csp_nonce {
     my ($self) = @_;
 
-    if (Bugzilla->has_feature('csp')) {
-        my $csp = $self->content_security_policy;
-        return $csp->nonce if $csp->has_nonce;
-    }
-
-    return '';
+    my $csp = $self->content_security_policy;
+    return $csp->has_nonce ? $csp->nonce : '';
 }
 
 # We want this sorted plus the ability to exclude certain params
@@ -372,7 +365,7 @@ sub multipart_init {
     delete $param{'-boundary'};
     $self->{'separator'} = "\r\n--$boundary\r\n";
     $self->{'final_separator'} = "\r\n--$boundary--\r\n";
-    $param{'-type'} = SERVER_PUSH($boundary);
+    $param{'-type'} = CGI::SERVER_PUSH($boundary);
 
     # Note: CGI.pm::multipart_init up to v3.04 explicitly set nph to 0
     # CGI.pm::multipart_init v3.05 explicitly sets nph to 1
@@ -661,16 +654,7 @@ sub should_set {
 # pass them around to all of the callers. Instead, store them locally here,
 # and then output as required from |header|.
 sub send_cookie {
-    my $self = shift;
-
-    # Move the param list into a hash for easier handling.
-    my %paramhash;
-    my @paramlist;
-    my ($key, $value);
-    while ($key = shift) {
-        $value = shift;
-        $paramhash{$key} = $value;
-    }
+    my ($self, %paramhash) = @_;
 
     # Complain if -value is not given or empty (bug 268146).
     if (!exists($paramhash{'-value'}) || !$paramhash{'-value'}) {
@@ -684,13 +668,7 @@ sub send_cookie {
     $paramhash{'-secure'} = 1
       if lc( $uri->scheme ) eq 'https';
 
-
-    # Move the param list back into an array for the call to cookie().
-    foreach (keys(%paramhash)) {
-        unshift(@paramlist, $_ => $paramhash{$_});
-    }
-
-    push(@{$self->{'Bugzilla_cookie_list'}}, $self->cookie(@paramlist));
+    push(@{$self->{'Bugzilla_cookie_list'}}, $self->cookie(%paramhash));
 }
 
 # Cookies are removed by setting an expiry date in the past.

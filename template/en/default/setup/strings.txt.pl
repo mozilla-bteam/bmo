@@ -181,6 +181,11 @@ For the "Difference Between Two Patches" feature to work, we need to know
 what directory the "diff" bin is in. (You only need to set this if you
 are using that feature of the Patch Viewer.)
 END
+    localconfig_inbound_proxies => <<'END',
+This is a list of IP addresses that we expect proxies to come from.
+This can be '*' if only the load balancer can connect.
+Setting this to '*' means that we can trust the X-Forwarded-For header.
+END
     localconfig_index_html => <<'END',
 Most web servers will allow you to use index.cgi as a directory
 index, and many come preconfigured that way, but if yours doesn't
@@ -203,6 +208,12 @@ notation (for example: 127.0.0.1:11211).
 END
     localconfig_memcached_namespace => <<'END',
 Specify a string to prefix each key on Memcached.
+END
+    localconfig_ses_username => <<'END',
+Username for HTTP Basic Authentication in front of the SES bounce handler.
+END
+    localconfig_ses_password => <<'END',
+Password for HTTP Basic Authentication in front of the SES bounce handler.
 END
     localconfig_site_wide_secret => <<'END',
 This secret key is used by your installation for the creation and

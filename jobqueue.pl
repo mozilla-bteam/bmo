@@ -10,15 +10,15 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use Cwd qw(abs_path);
 use File::Basename;
+use File::Spec;
 BEGIN {
-    # Untaint the abs_path.
-    my ($a) = abs_path($0) =~ /^(.*)$/;
-    chdir dirname($a);
+    require lib;
+    my $dir = File::Spec->rel2abs(dirname(__FILE__));
+    lib->import($dir, File::Spec->catdir($dir, 'lib'), File::Spec->catdir($dir, qw(local lib perl5)));
+    chdir $dir or die "chdir $dir failed: $!";
 }
 
-use lib qw(. lib local/lib/perl5);
 use Bugzilla;
 use Bugzilla::JobQueue::Runner;
 
@@ -46,8 +46,7 @@ jobqueue.pl - Runs jobs in the background for Bugzilla.
    restart   Stops a running jobqueue if one is running, and then
              starts a new one.
    once      Checks the job queue once, executes the first item found (if
-             any, up to a limit of 1000 items) and then exits
-   onepass   Checks the job queue, executes all items found, and then exits
+             any) and then exits
    check     Report the current status of the daemon.
    install   On some *nix systems, this automatically installs and
              configures jobqueue.pl as a system service so that it will

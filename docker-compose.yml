@@ -17,6 +17,7 @@ services:
       - /run
     environment: &bmo_env
       - LOCALCONFIG_ENV=1
+      - LOG4PERL_CONFIG_FILE=log4perl-test.conf
       - BUGZILLA_UNSAFE_AUTH_DELEGATION=1
       - PORT=80
       - BMO_db_host=bmo-db.vm
@@ -27,7 +28,7 @@ services:
       - BMO_memcached_namespace=bugzilla
       - BMO_memcached_servers=memcached:11211
       - 'BMO_inbound_proxies=*'
-      - BZ_ANSWERS_FILE=/app/docker_support/checksetup_answers.txt
+      - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
     depends_on:
       - bmo-db.vm
       - memcached
