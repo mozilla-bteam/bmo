@@ -77,14 +77,6 @@ BEGIN {
     *Bugzilla::Bug::is_unassigned                   = \&_bug_is_unassigned;
     *Bugzilla::Bug::has_current_patch               = \&_bug_has_current_patch;
     *Bugzilla::Bug::missing_sec_approval            = \&_bug_missing_sec_approval;
-    *Bugzilla::Product::default_security_group      = \&_default_security_group;
-    *Bugzilla::Product::default_security_group_obj  = \&_default_security_group_obj;
-    *Bugzilla::Product::group_always_settable       = \&_group_always_settable;
-    *Bugzilla::Product::default_platform_id         = \&_product_default_platform_id;
-    *Bugzilla::Product::default_op_sys_id           = \&_product_default_op_sys_id;
-    *Bugzilla::Product::default_platform            = \&_product_default_platform;
-    *Bugzilla::Product::default_op_sys              = \&_product_default_op_sys;
-    *Bugzilla::check_default_product_security_group = \&_check_default_product_security_group;
     *Bugzilla::Attachment::is_bounty_attachment     = \&_attachment_is_bounty_attachment;
     *Bugzilla::Attachment::bounty_details           = \&_attachment_bounty_details;
     *Bugzilla::Attachment::external_redirect        = \&_attachment_external_redirect;
@@ -821,26 +813,6 @@ sub quicksearch_map {
     }
 }
 
-sub object_columns {
-    my ($self, $args) = @_;
-    return unless $args->{class}->isa('Bugzilla::Product');
-    push @{ $args->{columns} }, qw(
-        default_platform_id
-        default_op_sys_id
-        security_group_id
-    );
-}
-
-sub object_update_columns {
-    my ($self, $args) = @_;
-    return unless $args->{object}->isa('Bugzilla::Product');
-    push @{ $args->{columns} }, qw(
-        default_platform_id
-        default_op_sys_id
-        security_group_id
-    );
-}
-
 sub object_before_create {
     my ($self, $args) = @_;
     return unless $args->{class}->isa('Bugzilla::Product');
@@ -980,33 +952,6 @@ sub _bug_missing_sec_approval {
     return $set == 0;
 }
 
-sub _product_default_platform_id { $_[0]->{default_platform_id} }
-sub _product_default_op_sys_id   { $_[0]->{default_op_sys_id}   }
-
-sub _product_default_platform {
-    my ($self) = @_;
-    if (!exists $self->{default_platform}) {
-        $self->{default_platform} = $self->default_platform_id
-            ? Bugzilla::Field::Choice
-                ->type('rep_platform')
-                ->new($_[0]->{default_platform_id})
-                ->name
-            : undef;
-    }
-    return $self->{default_platform};
-}
-sub _product_default_op_sys {
-    my ($self) = @_;
-    if (!exists $self->{default_op_sys}) {
-        $self->{default_op_sys} = $self->default_op_sys_id
-            ? Bugzilla::Field::Choice
-                ->type('op_sys')
-                ->new($_[0]->{default_op_sys_id})
-                ->name
-            : undef;
-    }
-    return $self->{default_op_sys};
-}
 
 sub _get_named_query {
     my ($sharer_id, $group_id, $definition) = @_;
@@ -1386,34 +1331,6 @@ sub db_schema_abstract_schema {
 sub install_update_db {
     my $dbh = Bugzilla->dbh;
 
-    # per-product hw/os defaults
-    my $op_sys_default = _field_value('op_sys', 'Unspecified', 50);
-    $dbh->bz_add_column(
-        'products',
-        'default_op_sys_id' => {
-            TYPE       => 'INT2',
-            DEFAULT    => $op_sys_default->id,
-            REFERENCES => {
-                TABLE  => 'op_sys',
-                COLUMN => 'id',
-                DELETE => 'SET NULL',
-            },
-        }
-    );
-    my $platform_default = _field_value('rep_platform', 'Unspecified', 50);
-    $dbh->bz_add_column(
-        'products',
-        'default_platform_id' => {
-            TYPE       => 'INT2',
-            DEFAULT    => $platform_default->id,
-            REFERENCES => {
-                TABLE  => 'rep_platform',
-                COLUMN => 'id',
-                DELETE => 'SET NULL',
-            },
-        }
-    );
-
     # Migrate old is_active stuff to new patch (is in core in 4.2), The old
     # column name was 'is_active', the new one is 'isactive' (no underscore).
     if ($dbh->bz_column_info('milestones', 'is_active')) {
@@ -1450,99 +1367,6 @@ sub install_update_db {
             buglist     => 0,
         });
     }
-
-    # Add default security group id column
-    if (!$dbh->bz_column_info('products', 'security_group_id')) {
-        $dbh->bz_add_column(
-            'products',
-            'security_group_id' => {
-                TYPE    => 'INT3',
-                REFERENCES => {
-                    TABLE  => 'groups',
-                    COLUMN => 'id',
-                    DELETE => 'SET NULL',
-                },
-            }
-        );
-
-        # if there are no groups, then we're creating a database from scratch
-        # and there's nothing to migrate
-        my ($group_count) = $dbh->selectrow_array("SELECT COUNT(*) FROM groups");
-        if ($group_count) {
-            # Migrate old product_sec_group mappings from the time this change was made
-            my %product_sec_groups = (
-                "addons.mozilla.org"            => 'client-services-security',
-                "Air Mozilla"                   => 'mozilla-employee-confidential',
-                "Android Background Services"   => 'cloud-services-security',
-                "Audio/Visual Infrastructure"   => 'mozilla-employee-confidential',
-                "AUS"                           => 'client-services-security',
-                "Bugzilla"                      => 'bugzilla-security',
-                "bugzilla.mozilla.org"          => 'bugzilla-security',
-                "Cloud Services"                => 'cloud-services-security',
-                "Community Tools"               => 'websites-security',
-                "Data & BI Services Team"       => 'metrics-private',
-                "Developer Documentation"       => 'websites-security',
-                "Developer Ecosystem"           => 'client-services-security',
-                "Finance"                       => 'finance',
-                "Firefox Friends"               => 'mozilla-employee-confidential',
-                "Firefox Health Report"         => 'cloud-services-security',
-                "Infrastructure & Operations"   => 'mozilla-employee-confidential',
-                "Input"                         => 'websites-security',
-                "Intellego"                     => 'intellego-team',
-                "Internet Public Policy"        => 'mozilla-employee-confidential',
-                "L20n"                          => 'l20n-security',
-                "Legal"                         => 'legal',
-                "Marketing"                     => 'marketing-private',
-                "Marketplace"                   => 'client-services-security',
-                "Mozilla Communities"           => 'mozilla-communities-security',
-                "Mozilla Corporation"           => 'mozilla-employee-confidential',
-                "Mozilla Developer Network"     => 'websites-security',
-                "Mozilla Foundation"            => 'mozilla-employee-confidential',
-                "Mozilla Foundation Operations" => 'mozilla-foundation-operations',
-                "Mozilla Grants"                => 'grants',
-                "mozillaignite"                 => 'websites-security',
-                "Mozilla Messaging"             => 'mozilla-messaging-confidential',
-                "Mozilla Metrics"               => 'metrics-private',
-                "mozilla.org"                   => 'mozilla-employee-confidential',
-                "Mozilla PR"                    => 'pr-private',
-                "Mozilla QA"                    => 'mozilla-employee-confidential',
-                "Mozilla Reps"                  => 'mozilla-reps',
-                "Popcorn"                       => 'websites-security',
-                "Privacy"                       => 'privacy',
-                "quality.mozilla.org"           => 'websites-security',
-                "Recruiting"                    => 'hr',
-                "Release Engineering"           => 'mozilla-employee-confidential',
-                "Snippets"                      => 'websites-security',
-                "Socorro"                       => 'client-services-security',
-                "support.mozillamessaging.com"  => 'websites-security',
-                "support.mozilla.org"           => 'websites-security',
-                "Talkback"                      => 'talkback-private',
-                "Tamarin"                       => 'tamarin-security',
-                "Taskcluster"                   => 'taskcluster-security',
-                "Testopia"                      => 'bugzilla-security',
-                "Tree Management"               => 'mozilla-employee-confidential',
-                "Web Apps"                      => 'client-services-security',
-                "Webmaker"                      => 'websites-security',
-                "Websites"                      => 'websites-security',
-                "Webtools"                      => 'webtools-security',
-                "www.mozilla.org"               => 'websites-security',
-            );
-            # 1. Set all to core-security by default
-            my $core_sec_group = Bugzilla::Group->new({ name => 'core-security' });
-            $dbh->do("UPDATE products SET security_group_id = ?", undef, $core_sec_group->id);
-            # 2. Update the ones that have explicit security groups
-            foreach my $prod_name (keys %product_sec_groups) {
-                my $group_name = $product_sec_groups{$prod_name};
-                next if $group_name eq 'core-security'; # already done
-                my $group = Bugzilla::Group->new({ name => $group_name, cache => 1 });
-                if (!$group) {
-                    warn "Security group $group_name not found. Using core-security instead.\n";
-                    next;
-                }
-                $dbh->do("UPDATE products SET security_group_id = ? WHERE name = ?", undef, $group->id, $prod_name);
-            }
-        }
-    }
 }
 
 # return the Bugzilla::Field::Choice object for the specified field and value.
@@ -1558,7 +1382,6 @@ sub _field_value {
         isactive => 1,
     });
 }
-
 sub _last_closed_date {
     my ($self) = @_;
     my $dbh = Bugzilla->dbh;
@@ -2564,41 +2387,6 @@ sub query_database {
                 || ThrowTemplateError($template->error());
             exit;
         }
-    }
-}
-
-# you can always file bugs into a product's default security group, as well as
-# into any of the groups in @always_fileable_groups
-sub _group_always_settable {
-    my ($self, $group) = @_;
-    return
-        $group->name eq $self->default_security_group
-        || ((grep { $_ eq $group->name } @always_fileable_groups) ? 1 : 0);
-}
-
-sub _default_security_group {
-    return $_[0]->default_security_group_obj->name;
-}
-
-sub _default_security_group_obj {
-    my $group_id = $_[0]->{security_group_id};
-    if (!$group_id) {
-        return Bugzilla::Group->new({ name => Bugzilla->params->{insidergroup}, cache => 1 });
-    }
-    return Bugzilla::Group->new({ id => $group_id, cache => 1 });
-}
-
-# called from the verify version, component, and group page.
-# if we're making a group invalid, stuff the default group into the cgi param
-# to make it checked by default.
-sub _check_default_product_security_group {
-    my ($self, $product, $invalid_groups, $optional_group_controls) = @_;
-    return unless my $group = $product->default_security_group_obj;
-    if (@$invalid_groups) {
-        my $cgi = Bugzilla->cgi;
-        my @groups = $cgi->param('groups');
-        push @groups, $group->name unless grep { $_ eq $group->name } @groups;
-        $cgi->param('groups', @groups);
     }
 }
 

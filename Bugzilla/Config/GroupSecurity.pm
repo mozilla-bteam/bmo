@@ -84,6 +84,32 @@ sub get_param_list {
             name    => 'strict_isolation',
             type    => 'b',
             default => 0
+        },
+        {
+            name    => 'always_filleable_groups',
+            type    => 'l',
+            default => join(", ", qw(
+                addons-security
+                bugzilla-security
+                client-services-security
+                consulting
+                core-security
+                finance
+                infra
+                infrasec
+                l20n-security
+                marketing-private
+                mozilla-confidential
+                mozilla-employee-confidential
+                mozilla-foundation-confidential
+                mozilla-engagement
+                mozilla-messaging-confidential
+                partner-confidential
+                payments-confidential
+                tamarin-security
+                websites-security
+                webtools-security
+            )),
         }
     );
     return @param_list;
