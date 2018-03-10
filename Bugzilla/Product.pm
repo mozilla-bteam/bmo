@@ -47,6 +47,9 @@ use constant DB_COLUMNS => qw(
    isactive
    defaultmilestone
    allows_unconfirmed
+   default_platform_id
+   default_op_sys_id
+   security_group_id
 );
 
 use constant UPDATE_COLUMNS => qw(
@@ -55,6 +58,9 @@ use constant UPDATE_COLUMNS => qw(
     defaultmilestone
     isactive
     allows_unconfirmed
+    default_platform_id
+    default_op_sys_id
+    security_group_id
 );
 
 use constant VALIDATORS => {
@@ -836,6 +842,60 @@ sub description       { return $_[0]->{'description'};       }
 sub is_active         { return $_[0]->{'isactive'};       }
 sub default_milestone { return $_[0]->{'defaultmilestone'};  }
 sub classification_id { return $_[0]->{'classification_id'}; }
+
+sub default_security_group {
+    my ($self) = @_;
+    return $self->default_security_group_obj->name;
+}
+
+sub default_security_group_obj {
+    my ($self) = @_;
+    my $group_id = $self->{security_group_id};
+    if (!$group_id) {
+        return Bugzilla::Group->new({ name => Bugzilla->params->{insidergroup}, cache => 1 });
+    }
+    return Bugzilla::Group->new({ id => $group_id, cache => 1 });
+}
+
+sub default_platform_id { shift->{default_platform_id} }
+sub default_op_sys_id   { shift->{default_op_sys_id}   }
+
+# you can always file bugs into a product's default security group, as well as
+# into any of the groups in @always_fileable_groups
+sub group_always_settable {
+    my ( $self, $group ) = @_;
+    my @always_fileable_groups = split(/\s*,\s*/, Bugzilla->params->{always_fileable_groups});
+    return $group->name eq $self->default_security_group
+      || ( ( any { $_ eq $group->name } @always_fileable_groups ) ? 1 : 0 );
+}
+
+
+sub default_platform {
+    my ($self) = @_;
+    if (!exists $self->{default_platform}) {
+        $self->{default_platform} = $self->default_platform_id
+            ? Bugzilla::Field::Choice
+                ->type('rep_platform')
+                ->new($self->{default_platform_id})
+                ->name
+            : undef;
+    }
+    return $self->{default_platform};
+}
+
+sub default_op_sys {
+    my ($self) = @_;
+    if (!exists $self->{default_op_sys}) {
+        $self->{default_op_sys} = $self->default_op_sys_id
+            ? Bugzilla::Field::Choice
+                ->type('op_sys')
+                ->new($self->{default_op_sys_id})
+                ->name
+            : undef;
+    }
+    return $self->{default_op_sys};
+}
+
 
 ###############################
 ####      Subroutines    ######
