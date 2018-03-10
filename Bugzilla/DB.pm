@@ -49,14 +49,12 @@ use constant ISOLATION_LEVEL => 'REPEATABLE READ';
 # Bugzilla with enums. After that, they are either controlled through
 # the Bugzilla UI or through the DB.
 use constant ENUM_DEFAULTS => {
-    bug_severity  => ['blocker', 'critical', 'major', 'normal',
-                      'minor', 'trivial', 'enhancement'],
-    priority     => ["Highest", "High", "Normal", "Low", "Lowest", "---"],
-    op_sys       => ["All","Windows","Mac OS","Linux","Other"],
-    rep_platform => ["All","PC","Macintosh","Other"],
-    bug_status   => ["UNCONFIRMED","CONFIRMED","IN_PROGRESS","RESOLVED",
-                     "VERIFIED"],
-    resolution   => ["","FIXED","INVALID","WONTFIX", "DUPLICATE","WORKSFORME"],
+    bug_severity => [qw(blocker critical major normal minor  trivial enhancement  )],
+    priority     => [qw(-- P1 P2 P3 P4 P5)],
+    op_sys       => [ "Unspecified", "All", "Windows", "Mac OS", "Linux", "Other" ],
+    rep_platform => [ "Unspecified", "All", "PC", "Macintosh", "Other" ],
+    bug_status   => [qw(UNCONFIRMED NEW ASSIGNED REOPENED RESOLVED VERIFIED CLOSED)],
+    resolution   => [ "", qw(FIXED INVALID WONTFIX DUPLICATE WORKSFORME INCOMPLETE) ],
 };
 
 # The character that means "OR" in a boolean fulltext search. If empty,
