@@ -283,6 +283,12 @@ use constant DEFAULT_PRODUCT => {
     defaultmilestone => DEFAULT_MILESTONE,
 };
 
+use constant DEFAULT_PRODUCT_GROUP => {
+    name => 'test-product-security',
+    description => "Security Sensitive TestProduct Bug",
+    isbuggroup => 1,
+};
+
 use constant DEFAULT_COMPONENT => {
     name => 'TestComponent',
     description => 'This is a test component in the test product database.'
@@ -361,7 +367,8 @@ sub create_default_product {
         print get_text('install_default_product',
                        { name => DEFAULT_PRODUCT->{name} }) . "\n";
 
-        my $product = Bugzilla::Product->create(DEFAULT_PRODUCT);
+        my $group   = Bugzilla::Group->create(DEFAULT_PRODUCT_GROUP);
+        my $product = Bugzilla::Product->create({ %{DEFAULT_PRODUCT()}, security_group_id => $group->id });
 
         # Get the user who will be the owner of the Component.
         # We pick the admin with the lowest id, which is probably the
