@@ -10,6 +10,14 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use File::Basename;
+use File::Spec;
+BEGIN {
+    require lib;
+    my $dir = File::Spec->rel2abs(dirname(__FILE__));
+    lib->import($dir, File::Spec->catdir($dir, 'lib'), File::Spec->catdir($dir, qw(local lib perl5)));
+}
+
 use Bugzilla::DaemonControl qw(catch_signal);
 use Future;
 use IO::Async::Loop;
