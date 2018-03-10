@@ -57,6 +57,7 @@ use File::Basename;
 use File::Spec::Functions;
 use Safe;
 use Sys::Syslog qw(:DEFAULT);
+use List::Util qw(any);
 use JSON::XS qw(decode_json);
 use URI;
 
@@ -859,6 +860,20 @@ sub check_rate_limit {
             Bugzilla->audit("[rate_limit] action=$action, ip=$ip, limit=$limit, name=$name");
             ThrowUserError("rate_limit") if $action eq 'block';
         }
+    }
+}
+
+# called from the verify version, component, and group page.
+# if we're making a group invalid, stuff the default group into the cgi param
+# to make it checked by default.
+sub check_default_product_security_group {
+    my ($class, $product, $invalid_groups, $optional_group_controls) = @_;
+    return unless my $group = $product->default_security_group_obj;
+    if (@$invalid_groups) {
+        my $cgi = $class->cgi;
+        my @groups = $cgi->param('groups');
+        push @groups, $group->name unless any { $_ eq $group->name } @groups;
+        $cgi->param('groups', @groups);
     }
 }
 
