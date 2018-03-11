@@ -271,6 +271,10 @@ $(function() {
             }
             YAHOO.bugzilla.bugUserLastVisit.update(bug_ids);
             YAHOO.bugzilla.bugInterest.unmark(bug_ids);
+            var query_select = Y.one('#query');
+            var index = query_select.get('selectedIndex');
+            var selected_value = query_select.get("options").item(index).getAttribute('value');
+            updateQueryTable(selected_value);
         });
 
         Y.one('#query_buglist').on('click', function(e) {
