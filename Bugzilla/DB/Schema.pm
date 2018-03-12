@@ -1419,9 +1419,9 @@ use constant ABSTRACT_SCHEMA => {
                                                    COLUMN => 'id',
                                                    DELETE => 'SET NULL'}},
             security_group_id => {TYPE    => 'INT3',
+                                  NOTNULL => 1,
                                   REFERENCES => {TABLE  => 'groups',
-                                                 COLUMN => 'id',
-                                                 DELETE => 'SET NULL'}},
+                                                 COLUMN => 'id'}},
         ],
         INDEXES => [
             products_name_idx   => {FIELDS => ['name'],
