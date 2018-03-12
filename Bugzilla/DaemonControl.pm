@@ -28,7 +28,8 @@ use POSIX qw(setsid WEXITSTATUS);
 use base qw(Exporter);
 
 our @EXPORT_OK = qw(
-    run_httpd run_cereal run_cereal_and_httpd
+    run_httpd run_cereal run_jobqueue
+    run_cereal_and_httpd run_cereal_and_jobqueue
     catch_signal on_finish on_exception
     assert_httpd assert_database assert_selenium
 );
@@ -39,10 +40,12 @@ our %EXPORT_TAGS = (
     utils => [qw(catch_signal on_exception on_finish)],
 );
 
-use constant CEREAL_BIN    => realpath(catfile( bz_locations->{cgi_path}, 'scripts', 'cereal.pl'));
+use constant JOBQUEUE_BIN => realpath( catfile( bz_locations->{cgi_path}, 'jobqueue.pl' ) );
 
-use constant HTTPD_BIN     => '/usr/sbin/httpd';
-use constant HTTPD_CONFIG  => realpath(catfile( bz_locations->{confdir}, 'httpd.conf' ));
+use constant CEREAL_BIN => realpath( catfile( bz_locations->{cgi_path}, 'scripts', 'cereal.pl' ) );
+
+use constant HTTPD_BIN => '/usr/sbin/httpd';
+use constant HTTPD_CONFIG => realpath( catfile( bz_locations->{confdir}, 'httpd.conf' ) );
 
 sub catch_signal {
     my ($name, @done)   = @_;
@@ -102,6 +105,36 @@ sub run_httpd {
     $loop->add($httpd);
 
     return $exit_f;
+}
+
+sub run_jobqueue {
+    my (@args) = @_;
+
+    my $loop = IO::Async::Loop->new;
+
+    my $exit_f   = $loop->new_future;
+    my $jobqueue = IO::Async::Process->new(
+        command      => [JOBQUEUE_BIN, 'start', '-f', '-d', @args],
+        on_finish    => on_finish($exit_f),
+        on_exception => on_exception( 'httpd', $exit_f ),
+    );
+    $exit_f->on_cancel( sub { $jobqueue->kill('TERM') } );
+    $loop->add($jobqueue);
+
+    return $exit_f;
+}
+
+sub run_cereal_and_jobqueue {
+    my (@jobqueue_args) = @_;
+
+    my $signal_f      = catch_signal("TERM", 0);
+    my $cereal_exit_f = run_cereal();
+    return assert_cereal()->then(
+        sub {
+            my $jobqueue_exit_f = run_jobqueue(@jobqueue_args);
+            return Future->wait_any($cereal_exit_f, $jobqueue_exit_f, $signal_f);
+        }
+    );
 }
 
 sub run_cereal_and_httpd {
