@@ -98,9 +98,16 @@
       <meta charset="UTF-8">
     [% END %]
 
+    [% IF Bugzilla.cgi.should_block_referrer %]
+      <meta name="referrer" content="origin">
+    [% ELSE %]
+      <meta name="referrer" content="origin-when-crossorigin">
+    [% END %]
+
     [%- js_BUGZILLA = {
             param => {
                 maxusermatches => Param('maxusermatches'),
+                splinter_base => Param('splinter_base'),
             },
             constant => {
                 COMMENT_COLS => constants.COMMENT_COLS,
@@ -206,7 +213,6 @@
     [% IF allow_mobile && is_mobile_browser %]
       <meta name="viewport" content="width=device-width, initial-scale=1">
     [% END %]
-    <meta name="referrer" content="origin-when-crossorigin">
     [% Hook.process("additional_header") %]
   </head>
 

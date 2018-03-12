@@ -14,16 +14,14 @@ BMO is Mozilla's highly customized version of Bugzilla.
       1.2  Making Changes and Seeing them
       1.3  Technical Details
       1.4  Perl Shell (re.pl, repl)
-    2  Docker Container
-      2.1  Container Arguments
-      2.2  Environmental Variables
-      2.3  Persistent Data Volume
-
-If you are looking to run Bugzilla, you should see
-https://github.com/bugzilla/bugzilla.
+    2  Using Docker Compose (For Development)
+    3  Docker Container
+      3.1  Container Arguments
+      3.2  Environmental Variables
+      3.3  Persistent Data Volume
 
 If you want to contribute to BMO, you can fork this repo and get a local copy
-of BMO running in a few minutes using Vagrant.
+of BMO running in a few minutes using Vagrant or Docker.
 
 Using Vagrant (For Development)
 ===============================
@@ -36,7 +34,7 @@ Doing this on OSX can be accomplished with homebrew:
 
 .. code-block:: bash
 
-    brew install vagrant
+    brew cask install vagrant
 
 For Ubuntu 16.04, download the vagrant .dpkg directly from
 https://vagrantup.com.  The one that ships with Ubuntu is too old.
@@ -147,6 +145,58 @@ You can use the 'p' command (provided by `Data::Printer`_) to inspect variables 
 
 .. _`Devel::REPL`: https://metacpan.org/pod/Devel::REPL
 .. _`Data::Printer`: https://metacpan.org/pod/Data::Printer
+
+
+Using Docker (For Development)
+==============================
+
+While not yet as featureful or complete as the vagrant setup, this repository now contains a
+docker-compose file that will create a local bugzilla for testing.
+
+To use docker-compose, ensure you have the latest Docker install for your environemnt
+(Linux, Windows, or Mac OS). If you are using Ubuntu, then you can read the next section
+to ensure that you have the correct docker setup.
+
+.. code-block:: bash
+
+    docker-compose up --build
+
+
+Then, you must configure your browser to use http://localhost:1091 as an HTTP proxy.
+For setting a proxy in Firefox, see `Firefox Connection Settings`_.
+The procecure should be similar for other browsers.
+
+.. _`Firefox Connection Settings`: https://support.mozilla.org/en-US/kb/connection-settings-firefox
+
+After that, you should be able to visit http://bmo-web.vm/ from your browser.
+You can login as vagrant@bmo-web.vm with the password "vagrant01!" (without
+quotes).
+
+Ensuring your Docker setup on Ubuntu 16.04
+==========================================
+
+On Ubuntu, Docker can be installed using apt-get. After installing, you need to do run these
+commands to ensure that it has installed fine:
+
+.. code-block:: bash
+
+    sudo groupadd docker # add a new group called "docker"
+    sudo gpasswd -a <your username> docker # add yourself to "docker" group
+
+Log in & log out of your system, so that changes in the above commands will  & do this:
+
+.. code-block:: bash
+
+    sudo service docker restart
+    docker run hello-world
+
+If the output of last command looks like this. then congrats you have installed
+docker successfully:
+
+.. code-block:: bash
+
+    Hello from Docker!
+    This message shows that your installation appears to be working correctly.
 
 Docker Container
 ================
@@ -290,6 +340,24 @@ HTTPD_MaxRequestsPerChild
   process will handle. After MaxRequestsPerChild requests, the child process
   will die. If MaxRequestsPerChild is 0, then the process will never expire.
   Default: 4000
+
+USE_NYTPROF
+  Write `Devel::NYTProf`_ profiles out for each requests.
+  These will be named /app/data/nytprof.$host.$script.$n.$pid, where $host is
+  the hostname of the container, script is the name of the script (without
+  extension), $n is a number starting from 1 and incrementing for each
+  request to the worker process, and $pid is the worker process id.
+
+NYTPROF_DIR
+  Alternative location to store profiles from the above option.
+
+LOG4PERL_CONFIG_FILE
+  Filename of `Log::Log4perl`_ config file.
+  It defaults to log4perl-syslog.conf.
+  If the file is given as a relative path, it will belative to the /app/conf/ directory.
+
+.. _`Devel::NYTProf`: https://metacpan.org/pod/Devel::NYTProf
+.. _`Log::Log4perl`: https://metacpan.org/pod/Log::Log4perl
 
 Persistent Data Volume
 ----------------------
