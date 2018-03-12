@@ -16,7 +16,7 @@ use Log::Log4perl qw(:easy);
 use Bugzilla::Error;
 use Scalar::Util qw(blessed);
 use List::Util qw(sum);
-use Bugzilla::Util qw(trick_taint);
+use Bugzilla::Util qw(trick_taint trim);
 use URI::Escape;
 use Encode;
 use Sys::Syslog qw(:DEFAULT);
@@ -50,7 +50,7 @@ sub _new {
 
 sub _parse_memcached_server_list {
     my ($server_list) = @_;
-    my @servers = split(/[, ]+/, $server_list);
+    my @servers = split(/[, ]+/, trim($server_list));
 
     return map { /:[0-9]+$/s ? $_ : "$_:11211" } @servers;
 }
