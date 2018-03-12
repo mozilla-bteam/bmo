@@ -813,31 +813,6 @@ sub quicksearch_map {
     }
 }
 
-sub object_before_create {
-    my ($self, $args) = @_;
-    return unless $args->{class}->isa('Bugzilla::Product');
-
-    my $cgi = Bugzilla->cgi;
-    my $params = $args->{params};
-    foreach my $field (qw( default_platform_id default_op_sys_id security_group_id )) {
-        $params->{$field} = $cgi->param($field);
-    }
-}
-
-sub object_end_of_set_all {
-    my ($self, $args) = @_;
-    my $object = $args->{object};
-    return unless $object->isa('Bugzilla::Product');
-
-    my $cgi = Bugzilla->cgi;
-    my $params = $args->{params};
-    foreach my $field (qw( default_platform_id default_op_sys_id security_group_id )) {
-        my $value = $cgi->param($field);
-        detaint_natural($value);
-        $object->set($field, $value);
-    }
-}
-
 sub object_end_of_create {
     my ($self, $args) = @_;
     my $class = $args->{class};

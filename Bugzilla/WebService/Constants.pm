@@ -184,6 +184,7 @@ use constant WS_ERROR_CODE => {
     product_must_have_description => 703,
     product_must_have_version => 704,
     product_must_define_defaultmilestone => 705,
+    product_must_have_security_group => 706,
 
     # Group errors are 800-900
     empty_group_name => 800,

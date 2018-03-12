@@ -70,6 +70,7 @@ use constant VALIDATORS => {
     description      => \&_check_description,
     version          => \&_check_version,
     defaultmilestone => \&_check_default_milestone,
+    security_group_id => \&_check_security_group_id,
     isactive         => \&Bugzilla::Object::check_boolean,
     create_series    => \&Bugzilla::Object::check_boolean
 };
@@ -393,6 +394,16 @@ sub _check_version {
     $version || ThrowUserError('product_must_have_version');
     # We will check the version length when Bugzilla::Version->create will do it.
     return $version;
+}
+
+sub _check_security_group_id {
+    my ($invocant, $id) = @_;
+
+    $id = trim($id);
+
+    ThrowUserError('product_must_have_security_group') unless $id;
+
+    return $id;
 }
 
 sub _check_default_milestone {

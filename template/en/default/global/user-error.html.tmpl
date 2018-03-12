@@ -1605,6 +1605,11 @@
     [% admindocslinks = {'products.html' => 'Administering products'} %]
     You must enter a description for this product.
 
+  [% ELSIF error == "product_must_have_security_group" %]
+    [% title = "Product needs Security Group" %]
+    [% admindocslinks = {'products.html' => 'Administering products'} %]
+    You must enter a default security group for this product.
+
   [% ELSIF error == "product_must_have_version" %]
     [% title = "Product needs Version" %]
     [% admindocslinks = {'products.html' => 'Administering products',
