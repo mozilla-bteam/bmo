@@ -10,23 +10,24 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use File::Basename;
-use File::Spec;
+use File::Basename qw(basename dirname);
+use File::Spec::Functions qw(catdir rel2abs);
+
 BEGIN {
     require lib;
-    my $dir = File::Spec->rel2abs(dirname(__FILE__));
-    lib->import($dir, File::Spec->catdir($dir, 'lib'), File::Spec->catdir($dir, qw(local lib perl5)));
+    my $dir = rel2abs( dirname(__FILE__) );
+    lib->import( $dir, catdir( $dir, 'lib' ), catdir( $dir, qw(local lib perl5) ) );
     chdir $dir or die "chdir $dir failed: $!";
+
 }
 
 use Bugzilla::JobQueue::Worker;
 use Bugzilla::JobQueue;
 use Bugzilla;
 use English qw(-no_match_vars $PROGRAM_NAME);
-use File::Basename qw(basename);
 use Getopt::Long qw(:config gnu_getopt);
 
-BEGIN { Bugzilla->extensions };
+BEGIN { Bugzilla->extensions }
 my $name = basename(__FILE__);
 
 GetOptions( 'name=s' => \$name );

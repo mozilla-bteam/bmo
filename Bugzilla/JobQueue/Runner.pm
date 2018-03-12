@@ -14,7 +14,7 @@ package Bugzilla::JobQueue::Runner;
 use 5.10.1;
 use strict;
 use warnings;
-
+use autodie qw(open close unlink system);
 
 use Bugzilla::Constants;
 use Bugzilla::DaemonControl qw(:utils);
@@ -37,9 +37,9 @@ use parent qw(Daemon::Generic);
 our $VERSION = 2;
 
 # Info we need to install/uninstall the daemon.
-our $chkconfig = "/sbin/chkconfig";
-our $initd = "/etc/init.d";
-our $initscript = "bugzilla-queue";
+our $chkconfig  = '/sbin/chkconfig';
+our $initd      = '/etc/init.d';
+our $initscript = 'bugzilla-queue';
 
 # The Daemon::Generic docs say that it uses all sorts of
 # things from gd_preconfig, but in fact it does not. The
@@ -49,11 +49,10 @@ sub gd_preconfig {
     my $self = shift;
 
     my $pidfile = $self->{gd_args}{pidfile};
-    if (!$pidfile) {
-        $pidfile = bz_locations()->{datadir} . '/' . $self->{gd_progname}
-                   . ".pid";
+    if ( !$pidfile ) {
+        $pidfile = bz_locations()->{datadir} . '/' . $self->{gd_progname} . '.pid';
     }
-    return (pidfile => $pidfile);
+    return ( pidfile => $pidfile );
 }
 
 # All config other than the pidfile has to be done in gd_getopt
@@ -63,7 +62,7 @@ sub gd_getopt {
 
     $self->SUPER::gd_getopt();
 
-    if ($self->{gd_args}{progname}) {
+    if ( $self->{gd_args}{progname} ) {
         $self->{gd_progname} = $self->{gd_args}{progname};
     }
     else {
@@ -76,14 +75,17 @@ sub gd_getopt {
 
     ## no critic (Variables::RequireLocalizedPunctuationVars)
     $PROGRAM_NAME = $self->{gd_progname};
+    ## use critic
 }
 
 sub gd_postconfig {
     my $self = shift;
+
     # See the hack above in gd_getopt. This just reverses it
     # in case anything else needs the accurate $0.
     ## no critic (Variables::RequireLocalizedPunctuationVars)
     $PROGRAM_NAME = delete $self->{_original_program_name};
+    ## use critic
 }
 
 sub gd_more_opt {
@@ -95,8 +97,8 @@ sub gd_more_opt {
 }
 
 sub gd_usage {
-    pod2usage({ -verbose => 0, -exitval => 'NOEXIT' });
-    return 0
+    pod2usage( { -verbose => 0, -exitval => 'NOEXIT' } );
+    return 0;
 }
 
 sub gd_can_install {
@@ -107,66 +109,63 @@ sub gd_can_install {
     my $sysconfig   = '/etc/sysconfig';
     my $config_file = "$sysconfig/$initscript";
 
-    if (!-x $chkconfig  or !-d $initd) {
+    if ( !-x $chkconfig || !-d $initd ) {
         return $self->SUPER::gd_can_install(@_);
     }
 
     return sub {
-        if (!-w $initd) {
+        if ( !-w $initd ) {
             print "You must run the 'install' command as root.\n";
             return;
         }
-        if (-e $dest_file) {
+        if ( -e $dest_file ) {
             print "$initscript already in $initd.\n";
         }
         else {
-            copy($source_file, $dest_file)
+            copy( $source_file, $dest_file )
                 or die "Could not copy $source_file to $dest_file: $!";
-            chmod(0755, $dest_file)
+            chmod 0755, $dest_file
                 or die "Could not change permissions on $dest_file: $!";
         }
 
-        system($chkconfig, '--add', $initscript);
-        print "$initscript installed.",
-              " To start the daemon, do \"$dest_file start\" as root.\n";
+        system $chkconfig, '--add', $initscript;
+        print "$initscript installed.", " To start the daemon, do \"$dest_file start\" as root.\n";
 
-        if (-d $sysconfig and -w $sysconfig) {
-            if (-e $config_file) {
+        if ( -d $sysconfig and -w $sysconfig ) {
+            if ( -e $config_file ) {
                 print "$config_file already exists.\n";
                 return;
             }
 
-            open(my $config_fh, ">", $config_file)
-                or die "Could not write to $config_file: $!";
-            my $directory = abs_path(dirname($self->{_original_program_name}));
-            my $owner_id = (stat $self->{_original_program_name})[4];
-            my $owner = getpwuid($owner_id);
-            print $config_fh <<END;
+            open my $config_fh, '>', $config_file;
+            my $directory = abs_path( dirname( $self->{_original_program_name} ) );
+            my $owner_id  = ( stat $self->{_original_program_name} )[4];
+            my $owner     = getpwuid $owner_id;
+            print $config_fh <<"END";
 #!/bin/sh
 BUGZILLA="$directory"
 USER=$owner
 END
-            close($config_fh);
+            close $config_fh;
         }
         else {
             print "Please edit $dest_file to configure the daemon.\n";
         }
-    }
+        }
 }
 
 sub gd_can_uninstall {
     my $self = shift;
 
-    if (-x $chkconfig and -d $initd) {
+    if ( -x $chkconfig and -d $initd ) {
         return sub {
-            if (!-e "$initd/$initscript") {
+            if ( !-e "$initd/$initscript" ) {
                 print "$initscript not installed.\n";
                 return;
             }
-            system($chkconfig, '--del', $initscript);
-            print "$initscript disabled.",
-                  " To stop it, run: $initd/$initscript stop\n";
-        }
+            system $chkconfig, '--del', $initscript;
+            print "$initscript disabled.", " To stop it, run: $initd/$initscript stop\n";
+            }
     }
 
     return $self->SUPER::gd_can_install(@_);
@@ -176,59 +175,53 @@ sub gd_check {
     my $self = shift;
 
     # Get a count of all the jobs currently in the queue.
-    my $jq = Bugzilla->job_queue();
-    my @dbs = $jq->bz_databases();
+    my $jq    = Bugzilla->job_queue();
+    my @dbs   = $jq->bz_databases();
     my $count = 0;
     foreach my $driver (@dbs) {
-        $count += $driver->select_one('SELECT COUNT(*) FROM ts_job', []);
+        $count += $driver->select_one( 'SELECT COUNT(*) FROM ts_job', [] );
     }
-    print get_text('job_queue_depth', { count => $count }) . "\n";
+    print get_text( 'job_queue_depth', { count => $count } ) . "\n";
 }
 
 # override this to use IO::Async.
 sub gd_setup_signals {
-    my $self = shift;
-    my @signals = (
-        # Daemon::Generic by default handled these, though it had special treatment for HUP.
-        'INT',
-        'HUP',
-        # Bugzilla adds this
-        'TERM'
-    );
+    my $self    = shift;
+    my @signals = qw( INT HUP TERM );
     $self->{_signal_future} = Future->wait_any( map { catch_signal( $_, $_ ) } @signals );
 }
 
 sub gd_other_cmd {
     my ($self) = shift;
-    if ($ARGV[0] eq "once") {
-        Bugzilla::JobQueue::Worker->run("work_once");
+    if ( $ARGV[0] eq 'once' ) {
+        Bugzilla::JobQueue::Worker->run('work_once');
         exit;
     }
 
     $self->SUPER::gd_other_cmd();
 }
 
-sub gd_quit_event { FATAL("gd_quit_event() should never be called") }
-sub gd_reconfig_event { FATAL("gd_reconfig_event() should never be called") }
+sub gd_quit_event     { FATAL('gd_quit_event() should never be called') }
+sub gd_reconfig_event { FATAL('gd_reconfig_event() should never be called') }
 
 sub gd_run {
     my $self = shift;
 
     # This is so the process shows up in (h)top in a useful way.
     local $PROGRAM_NAME = "$self->{gd_progname} [supervisor]";
-    my $code = $self->run_worker("work")->get;
-    unlink($self->{gd_pidfile});
+    my $code = $self->run_worker('work')->get;
+    unlink $self->{gd_pidfile};
     exit $code;
 }
 
 # This executes the script "jobqueue-worker.pl"
 # $EXECUTABLE_NAME is the name of the perl interpreter.
 sub run_worker {
-    my ($self, $fn) = @_;
+    my ( $self, $fn ) = @_;
 
-    my $script = catfile( bz_locations->{cgi_path}, "jobqueue-worker.pl" );
+    my $script = catfile( bz_locations->{cgi_path}, 'jobqueue-worker.pl' );
     my @command = ( $EXECUTABLE_NAME, $script, '--function' => $fn );
-    if ($self->{gd_args}{progname}) {
+    if ( $self->{gd_args}{progname} ) {
         push @command, '--name' => "$self->{gd_args}{progname} [worker]";
     }
 
@@ -237,18 +230,17 @@ sub run_worker {
     my $worker = IO::Async::Process->new(
         command      => \@command,
         on_finish    => on_finish($exit_f),
-        on_exception => on_exception( "jobqueue worker", $exit_f )
+        on_exception => on_exception( 'jobqueue worker', $exit_f )
     );
     $exit_f->on_cancel(
         sub {
-            DEBUG("terminate worker");
+            DEBUG('terminate worker');
             $worker->kill('TERM');
         }
     );
     $loop->add($worker);
     return $exit_f;
 }
-
 
 1;
 

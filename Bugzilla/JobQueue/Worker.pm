@@ -14,12 +14,12 @@ use Bugzilla::Logging;
 use Module::Runtime qw(require_module);
 
 sub run {
-    my ($class, $fn) = @_;
+    my ( $class, $fn ) = @_;
     DEBUG("Starting up for $fn");
     my $jq = Bugzilla->job_queue();
 
-    DEBUG("Loading jobqueue modules");
-    foreach my $module (values %{ Bugzilla::JobQueue->job_map() }) {
+    DEBUG('Loading jobqueue modules');
+    foreach my $module ( values %{ Bugzilla::JobQueue->job_map() } ) {
         DEBUG("JobQueue can do $module");
         require_module($module);
         $jq->can_do($module);
