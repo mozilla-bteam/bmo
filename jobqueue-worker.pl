@@ -35,5 +35,6 @@ GetOptions( 'name=s' => \$name );
 if ($name) {
     ## no critic (Variables::RequireLocalizedPunctuationVars)
     $PROGRAM_NAME = $name;
+    ## use critic
 }
 Bugzilla::JobQueue::Worker->run('work');

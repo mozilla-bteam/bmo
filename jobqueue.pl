@@ -10,7 +10,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use File::Basename qw(basename dirname);
+use File::Basename qw(dirname);
 use File::Spec::Functions qw(catdir rel2abs);
 
 BEGIN {
