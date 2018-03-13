@@ -10,12 +10,13 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use File::Basename;
-use File::Spec;
+use File::Basename qw(dirname);
+use File::Spec::Functions qw(catdir rel2abs);
+
 BEGIN {
     require lib;
-    my $dir = File::Spec->rel2abs(dirname(__FILE__));
-    lib->import($dir, File::Spec->catdir($dir, 'lib'), File::Spec->catdir($dir, qw(local lib perl5)));
+    my $dir = rel2abs( dirname(__FILE__) );
+    lib->import( $dir, catdir( $dir, 'lib' ), catdir( $dir, qw(local lib perl5) ) );
     chdir $dir or die "chdir $dir failed: $!";
 }
 
@@ -39,6 +40,8 @@ jobqueue.pl - Runs jobs in the background for Bugzilla.
              process id. Defaults to F<data/jobqueue.pl.pid>.
    -n name   What should this process call itself in the system log?
              Defaults to the full path you used to invoke the script.
+   -j jobs   How many child processes should be run?
+             Defaults to 1.
 
    COMMANDS:
    start     Starts a new jobqueue daemon if there isn't one running already
@@ -46,8 +49,7 @@ jobqueue.pl - Runs jobs in the background for Bugzilla.
    restart   Stops a running jobqueue if one is running, and then
              starts a new one.
    once      Checks the job queue once, executes the first item found (if
-             any, up to a limit of 1000 items) and then exits
-   onepass   Checks the job queue, executes all items found, and then exits
+             any) and then exits
    check     Report the current status of the daemon.
    install   On some *nix systems, this automatically installs and
              configures jobqueue.pl as a system service so that it will
