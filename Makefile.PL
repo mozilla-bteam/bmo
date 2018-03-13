@@ -95,9 +95,12 @@ if ( $OSNAME eq 'MSWin32' ) {
     $requires{'DateTime::TimeZone::Local::Win32'} = '1.64';
 }
 
-# for some reason, we need these on ubuntu.
 if ( $OSNAME eq 'linux' ) {
+    # This isn't strictly needed, but it is nice to have.
+    # we use it to make sure jobqueue-workers exit when their parent exits.
     my @extra = qw(Linux::Pdeathsig);
+
+    # for some reason, we need these on ubuntu.
     push @extra, qw(
         Linux::Pid
         Test::Pod::Coverage
