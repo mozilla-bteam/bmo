@@ -143,12 +143,13 @@ sub run_cereal_and_jobqueue {
 sub run_cereal_and_httpd {
     my @httpd_args = @_;
 
-    push @httpd_args, '-DNETCAT_LOGS';
     my $signal_f      = catch_signal('TERM', 0);
     my $cereal_exit_f = run_cereal();
 
     return assert_cereal()->then(
         sub {
+            push @httpd_args, '-DNETCAT_LOGS';
+
             my $lc = Bugzilla::Install::Localconfig::read_localconfig();
             if ( ($lc->{inbound_proxies} // '') eq '*' && $lc->{urlbase} =~ /^https/) {
                 push @httpd_args, '-DHTTPS';
