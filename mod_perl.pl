@@ -78,8 +78,9 @@ Bugzilla::CGI->compile(qw(:cgi :push));
 # is taking up more than $apache_size_limit of RAM all by itself, not counting RAM it is
 # sharing with the other httpd processes.
 my $limit = Bugzilla->localconfig->{apache_size_limit};
-if ($limit < 400_000) {
-    $limit = 400_000;
+if ($OSNAME eq 'linux' && ! eval { require Linux::Smaps }) {
+    warn "SizeLimit requires Linux::Smaps on linux. size limit set to 800MB";
+    $limit = 800_000;
 }
 Apache2::SizeLimit->set_max_unshared_size($limit);
 

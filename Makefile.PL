@@ -99,6 +99,7 @@ if ( $OSNAME eq 'linux' ) {
     # This isn't strictly needed, but it is nice to have.
     # we use it to make sure jobqueue-workers exit when their parent exits.
     my @extra = qw(Linux::Pdeathsig);
+    $recommends{'Linux::Smaps'} = 1;
 
     # for some reason, we need these on ubuntu.
     push @extra, qw(
