@@ -313,7 +313,7 @@ my %optional_features = (
         description => 'Linux::Smaps for limiting memory usage',
         prereqs => {
             runtime => {
-                requires => { 'Linux::Smaps' => '0.13' },
+                requires => { 'Linux::Smaps' => '0' },
             }
         },
     },
