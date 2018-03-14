@@ -55,6 +55,7 @@ use Apache2::SizeLimit;
 use ModPerl::RegistryLoader ();
 use File::Basename ();
 use File::Find ();
+use English qw(-no_match_vars $OSNAME);
 
 # This loads most of our modules.
 use Bugzilla ();
