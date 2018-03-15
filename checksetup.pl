@@ -30,6 +30,7 @@ use Pod::Usage;
 # Bug 1270550 - Tie::Hash::NamedCapture must be loaded before Safe.
 use Tie::Hash::NamedCapture;
 use Safe;
+use English qw(-no_match_vars $EUID $EGID);
 
 use Bugzilla::Constants;
 use Bugzilla::Install::Requirements;
@@ -154,6 +155,14 @@ unless ($ENV{LOCALCONFIG_ENV}) {
     update_localconfig({ output => !$silent, use_defaults => $switch{'default-localconfig'} });
 }
 my $lc_hash = Bugzilla->localconfig;
+
+# when not on windows, if we're root, and 
+unless (ON_WINDOWS) {
+    if ($EUID == 0 && $lc_hash->{webservergroup}) {
+        $EGID = getgrnam($lc_hash->{webservergroup});
+        umask 002;
+    }
+}
 
 unless ($switch{'no-database'}) {
     die "urlbase is not set\n" unless $lc_hash->{urlbase};
