@@ -600,13 +600,12 @@ sub param {
 
     # We don't let CGI.pm warn about list context, but we do it ourselves.
     local $CGI::LIST_CONTEXT_WARN = 0;
-    state $has_warned = 0;
+    state $has_warned = {};
 
     ## no critic (Freenode::Wantarray)
-    if ( wantarray && !$has_warned) {
+    if ( wantarray ) {
         my ( $package, $filename, $line ) = caller;
-        if ( $package ne 'CGI' ) {
-            $has_warned = 1;
+        if ( $package ne 'CGI' && ! $has_warned->{"$filename:$line"}++) {
             WARN("Bugzilla::CGI::param called in list context from $package $filename:$line");
         }
     }
