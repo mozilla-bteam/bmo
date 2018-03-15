@@ -603,12 +603,13 @@ sub param {
     state $has_warned = {};
 
     ## no critic (Freenode::Wantarray)
-    if ( wantarray ) {
+    if ( wantarray && @_ ) {
         my ( $package, $filename, $line ) = caller;
         if ( $package ne 'CGI' && ! $has_warned->{"$filename:$line"}++) {
             WARN("Bugzilla::CGI::param called in list context from $package $filename:$line");
         }
     }
+    ## use critic
 
     # When we are just requesting the value of a parameter...
     if (scalar(@_) == 1) {
