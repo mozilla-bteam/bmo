@@ -156,12 +156,14 @@ unless ($ENV{LOCALCONFIG_ENV}) {
 }
 my $lc_hash = Bugzilla->localconfig;
 
-# when not on windows, if we're root, and 
-unless (ON_WINDOWS) {
-    if ($EUID == 0 && $lc_hash->{webservergroup}) {
-        $EGID = getgrnam($lc_hash->{webservergroup});
-        umask 002;
-    }
+if ( $EUID == 0 && $lc_hash->{webservergroup} && !ON_WINDOWS ) {
+    # So checksetup was run as root, and we have a webserver group set.
+    # Let's assume the user wants us to make files that are writable
+    # by the webserver group.
+
+    $EGID = getgrnam $lc_hash->{webservergroup}; ## no critic (Variables::RequireLocalizedPunctuationVars)
+    umask 002
+        or die "failed to set umask 002: $!";
 }
 
 unless ($switch{'no-database'}) {
