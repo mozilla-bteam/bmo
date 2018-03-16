@@ -15,14 +15,24 @@ use Log::Log4perl;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::LogEntry;
 
-has 'logger' => (
-    is      => 'lazy',
-    handles => [qw[error debug info]],
-);
-
 # If Log4perl then finds that it's being called from a registered wrapper, it
 # will automatically step up to the next call frame.
 Log::Log4perl->wrapper_register(__PACKAGE__);
+
+sub info {
+    my ($this, $message) = @_;
+    INFO($message);
+}
+
+sub error {
+    my ($this, $message) = @_;
+    ERROR($message);
+}
+
+sub debug {
+    my ($this, $message) = @_;
+    DEBUG($message);
+}
 
 sub result {
     my ($self, $connector, $message, $result, $data) = @_;
