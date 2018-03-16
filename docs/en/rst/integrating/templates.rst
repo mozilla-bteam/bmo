@@ -262,7 +262,7 @@ customizing for your installation.
     It needs a couple of lines of boilerplate at the top like this::
 
         [% USE Bugzilla %]
-        [% cgi = Bugzilla.cgi %
+        [% cgi = Bugzilla.cgi %]
 
     Then, this template can reference the form fields you have created using
     the syntax ``[% cgi.param("field_name") %]``. When a bug report is
