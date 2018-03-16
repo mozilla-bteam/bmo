@@ -11,6 +11,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Logging;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::LogEntry;
 
@@ -21,27 +22,16 @@ sub new {
     return $self;
 }
 
-sub info  { shift->_log_it('INFO', @_) }
-sub error { shift->_log_it('ERROR', @_) }
-sub debug { shift->_log_it('DEBUG', @_) }
-
-sub debugging {
-    my ($self) = @_;
-    return $self->{debug};
-}
+sub info  { shift->_log_it('info', @_) }
+sub error { shift->_log_it('error', @_) }
+sub debug { shift->_log_it('debug', @_) }
 
 sub _log_it {
-    require Apache2::Log;
     my ($self, $method, $message) = @_;
-    return if $method eq 'DEBUG' && !$self->debugging;
-    chomp $message;
-    if ($ENV{MOD_PERL}) {
-        Apache2::ServerRec::warn("Push $method: $message");
-    } elsif ($ENV{SCRIPT_FILENAME}) {
-        print STDERR "Push $method: $message\n";
-    } else {
-        print STDERR '[' . localtime(time) ."] $method: $message\n";
-    }
+    my $caller_pkg = caller;
+    local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 2;
+    my $logger = Log::Log4perl->get_logger($caller_pkg);
+    $logger->$method(@args);
 }
 
 sub result {
