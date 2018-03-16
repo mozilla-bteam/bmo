@@ -8,43 +8,33 @@
 package Bugzilla::Extension::Push::Logger;
 
 use 5.10.1;
-use strict;
-use warnings;
+use Moo;
 
 use Bugzilla::Logging;
+use Log::Log4perl;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::LogEntry;
 
-sub new {
-    my ($class) = @_;
-    my $self = {};
-    bless($self, $class);
-    return $self;
-}
+has 'logger' => (
+    is      => 'lazy',
+    handles => [qw[error debug info]],
+);
 
-sub info  { shift->_log_it('info', @_) }
-sub error { shift->_log_it('error', @_) }
-sub debug { shift->_log_it('debug', @_) }
-
-sub _log_it {
-    my ($self, $method, $message) = @_;
-    my $caller_pkg = caller;
-    local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 2;
-    my $logger = Log::Log4perl->get_logger($caller_pkg);
-    $logger->$method(@args);
-}
+# If Log4perl then finds that it's being called from a registered wrapper, it
+# will automatically step up to the next call frame.
+Log::Log4perl->wrapper_register(__PACKAGE__);
 
 sub result {
     my ($self, $connector, $message, $result, $data) = @_;
     $data ||= '';
 
-    $self->info(sprintf(
-        "%s: Message #%s: %s %s",
+    my $log_msg = sprintf
+        '%s: Message #%s: %s %s',
         $connector->name,
         $message->message_id,
         push_result_to_string($result),
-        $data
-    ));
+        $data;
+    $self->info($log_msg);
 
     Bugzilla::Extension::Push::LogEntry->create({
         message_id   => $message->message_id,
@@ -57,5 +47,7 @@ sub result {
         data         => $data,
     });
 }
+
+sub _build_logger { Log::Log4perl->get_logger(__PACKAGE__); }
 
 1;
