@@ -925,7 +925,7 @@ sub create {
             'sudoer' => sub { return Bugzilla->sudoer; },
 
             # Allow templates to access the "corect" URLBase value
-            'urlbase' => sub { return Bugzilla->localconfig->{urlbase}; },
+            'urlbase' => sub { Bugzilla->urlbase },
 
             # Allow templates to access docs url with users' preferred language
             'docs_urlbase' => sub {
