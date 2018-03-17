@@ -140,7 +140,7 @@ sub cmd_test_webservices {
     check_data_dir();
     copy_qa_extension();
     assert_database()->get;
-    my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
+    my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR');
     my $prove_exit_f = run_prove(
         httpd_url => $conf->{browser_url},
         prove_cmd => [
