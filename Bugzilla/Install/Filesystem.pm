@@ -475,6 +475,7 @@ sub FILESYSTEM {
     );
 
     # Create static error pages.
+    $create_dirs{"errors"} = DIR_CGI_READ;
     $create_files{"errors/401.html"} = {
         perms     => CGI_READ,
         overwrite => 1,
