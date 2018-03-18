@@ -16,7 +16,7 @@ main_filters: &main_filters
 
 defaults:
   bmo_slim_image: &bmo_slim_image
-    image: mozillabteam/bmo-slim:20180225.1
+    image: bugzilla/harmony-slim:20180318.1
     user: app
 
   mysql_image: &mysql_image
@@ -93,6 +93,8 @@ jobs:
                   TAG="$CIRCLE_TAG"
                 elif [[ "$CIRCLE_BRANCH" == "master" ]]; then
                   TAG=latest
+                elif [[ "$CIRCLE_BRANCH" == "unstable" ]]; then
+                  TAG=unstable
                 fi
                 if [[ -n "$TAG" ]]; then
                   docker tag bmo "$DOCKERHUB_REPO:$TAG"

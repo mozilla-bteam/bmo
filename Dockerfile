@@ -1,5 +1,4 @@
-FROM mozillabteam/bmo-slim:20180225.1
-
+FROM bugzilla/harmony-slim:20180318.1 
 
 ARG CI
 ARG CIRCLE_SHA1

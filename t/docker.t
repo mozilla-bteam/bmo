@@ -28,7 +28,7 @@ while (my $line = readline $dockerfile_fh) {
 close $dockerfile_fh;
 
 my ($image, $version) = split(/:/ms, $base, 2);
-is($image, 'mozillabteam/bmo-slim', "base image is mozillabteam/bmo-slim");
+is($image, 'bugzilla/harmony-slim', "base image is bugzilla/harmony-slim");
 like($version, qr/\d{4}\d{2}\d{2}\.\d+/ms, "version is YYYYMMDD.x");
 
 my $regex = qr{
