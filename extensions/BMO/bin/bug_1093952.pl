@@ -52,7 +52,7 @@ printf "About to fix %s bugs\n", scalar(@$bugs);
 print "Press <Ctrl-C> to stop or <Enter> to continue...\n";
 getc();
 
-my $nobody = Bugzilla::User->check({ name => 'nobody@mozilla.org' });
+my $nobody = Bugzilla::User->check({ name => Bugzilla->params->{'nobody_user'} });
 my $field  = Bugzilla::Field->check({ name => 'status_whiteboard' });
 my $when   = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 

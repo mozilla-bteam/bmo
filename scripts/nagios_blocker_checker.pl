@@ -28,7 +28,7 @@ my $config = {
     assignee        => '',
     product         => '',
     component       => '',
-    unassigned      => 'nobody@mozilla.org',
+    unassigned      => Bugzilla->params->{'nobody_user'},
     # severities
     severity        => 'major,critical,blocker',
     # time in hours to wait before paging/warning

@@ -110,7 +110,7 @@ if (!$config->{update_db}) {
 
 # update bugs
 
-my $nobody = Bugzilla::User->check({ name => 'nobody@mozilla.org' });
+my $nobody = Bugzilla::User->check({ name => Bugzilla->params->{'nobody_user'} });
 # put our nobody user into all groups to avoid permissions issues
 $nobody->{groups} = [Bugzilla::Group->get_all];
 Bugzilla->set_user($nobody);

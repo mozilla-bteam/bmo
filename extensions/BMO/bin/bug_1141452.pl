@@ -50,7 +50,7 @@ printf "About to fix %s bugs\n", scalar(@$flags);
 print "Press <Ctrl-C> to stop or <Enter> to continue...\n";
 getc();
 
-my $nobody = Bugzilla::User->check({ name => 'nobody@mozilla.org' });
+my $nobody = Bugzilla::User->check({ name => Bugzilla->params->{'nobody_user'} });
 my $when   = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
 $dbh->bz_start_transaction();

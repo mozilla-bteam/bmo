@@ -128,7 +128,7 @@ sub get_bug_role_phids {
 
     my @bug_users = ( $bug->reporter );
     push(@bug_users, $bug->assigned_to)
-        if $bug->assigned_to->email !~ /^nobody\@mozilla\.org$/;
+        if $bug->assigned_to->email != Bugzilla->params->{'nobody_user'};
     push(@bug_users, $bug->qa_contact) if $bug->qa_contact;
     push(@bug_users, @{ $bug->cc_users }) if @{ $bug->cc_users };
 
