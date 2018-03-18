@@ -194,6 +194,8 @@ use Memoize;
     EMAIL_LIMIT_EXCEPTION
 
     JOB_QUEUE_VIEW_MAX_JOBS
+
+    BZ_PERSISTENT
 );
 
 @Bugzilla::Constants::EXPORT_OK = qw(contenttypes);
@@ -704,6 +706,8 @@ sub _bz_locations {
         'confdir'        => $confdir,
     };
 }
+
+use constant BZ_PERSISTENT => $main::BUGZILLA_PERSISTENT;
 
 # This makes us not re-compute all the bz_locations data every time it's
 # called.

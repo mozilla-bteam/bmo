@@ -6,11 +6,14 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+
 package Bugzilla::ModPerl;
 
 use 5.10.1;
 use strict;
 use warnings;
+
+BEGIN { $main::BUGZILLA_PERSISTENT = 1 }
 
 # This sets up our libpath without having to specify it in the mod_perl
 # configuration.

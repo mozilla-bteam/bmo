@@ -571,7 +571,7 @@ sub create {
         # if a packager has modified bz_locations() to contain absolute
         # paths.
         ABSOLUTE => 1,
-        RELATIVE => $ENV{MOD_PERL} ? 0 : 1,
+        RELATIVE => 1,
 
         # Only use an on-disk template cache if we're running as the web
         # server.  This ensures the permissions of the cache remain correct.
@@ -1040,7 +1040,7 @@ sub create {
 
     # under mod_perl, use a provider (template loader) that preloads all templates into memory
     my $provider_class
-        = $ENV{MOD_PERL}
+        = BZ_PERSISTENT
         ? 'Bugzilla::Template::PreloadProvider'
         : 'Template::Provider';
 
