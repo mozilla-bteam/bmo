@@ -34,6 +34,7 @@ use Date::Format;
 use Date::Parse;
 use Scalar::Util qw(blessed);
 use List::MoreUtils qw(all firstidx part uniq);
+use List::Util qw(any);
 use POSIX qw(INT_MAX);
 use Storable qw(dclone);
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -802,18 +803,21 @@ sub data {
     # BMO - to avoid massive amounts of joins, if we're selecting a lot of
     # tracking flags, replace them with placeholders. the values will be
     # retrieved later and injected into the result.
-    my %tf_map = map { $_ => 1 } Bugzilla::Extension::TrackingFlags::Flag->get_all_names();
-    my @tf_selected = grep { exists $tf_map{$_} } @orig_fields;
-    # mysql has a limit of 61 joins, and we want to avoid massive amounts of joins
-    # 30 ensures we won't hit the limit, nor generate too many joins
-    if (scalar @tf_selected > 30) {
-        foreach my $column (@tf_selected) {
-            $self->COLUMNS->{$column}->{name} = "'---'";
+    state $have_tracking_flags = any { $_->NAME eq 'TrackingFlags' } @{ Bugzilla->extensions };
+    if ($have_tracking_flags) {
+        my %tf_map = map { $_ => 1 } Bugzilla::Extension::TrackingFlags::Flag->get_all_names();
+        my @tf_selected = grep { exists $tf_map{$_} } @orig_fields;
+        # mysql has a limit of 61 joins, and we want to avoid massive amounts of joins
+        # 30 ensures we won't hit the limit, nor generate too many joins
+        if (scalar @tf_selected > 30) {
+            foreach my $column (@tf_selected) {
+                $self->COLUMNS->{$column}->{name} = "'---'";
+            }
+            $self->{tracking_flags} = \@tf_selected;
         }
-        $self->{tracking_flags} = \@tf_selected;
-    }
-    else {
-        $self->{tracking_flags} = [];
+        else {
+            $self->{tracking_flags} = [];
+        }
     }
 
     my $start_time = [gettimeofday()];
@@ -863,7 +867,7 @@ sub data {
     $self->{data} = [map { $data{$_} } @$bug_ids];
 
     # BMO - get tracking flags values, and insert into result
-    if (@{ $self->{tracking_flags} }) {
+    if ($have_tracking_flags && @{ $self->{tracking_flags} }) {
         # read values
         my $values;
         $sql = "
