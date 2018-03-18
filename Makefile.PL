@@ -22,6 +22,7 @@ BEGIN {
 use ExtUtils::MakeMaker 7.22;
 use File::Basename;
 use File::Spec;
+use English qw(-no_match_vars $OSNAME);
 
 BEGIN {
     if ( $ENV{BZ_SILENT_MAKEFILE} ) {
@@ -53,14 +54,11 @@ my %requires = (
     'HTML::Escape'             => '1.10',
     'IO::Async'                => '0.71',
     'JSON::MaybeXS'            => '1.003008',
-    'JSON::MaybeXS'            => '1.003008',
     'JSON::XS'                 => '2.01',
     'LWP::Protocol::https'     => '6.07',
     'LWP::UserAgent'           => '6.26',
     'List::MoreUtils'          => '0.418',
     'Log::Dispatch'            => '2.67',
-    'Log::Dispatch'            => '2.67',
-    'Log::Log4perl'            => '1.49',
     'Log::Log4perl'            => '1.49',
     'Math::Random::ISAAC'      => '1.0.1',
     'Module::Metadata'         => '1.000033',
@@ -69,9 +67,7 @@ my %requires = (
     'MooX::StrictConstructor'  => '0.008',
     'Mozilla::CA'              => '20160104',
     'Parse::CPAN::Meta'        => '1.44',
-    'Plack'                    => '1.0031',
     'Role::Tiny'               => '2.000003',
-    'Sereal'                   => '4.004',
     'Sereal'                   => '4.004',
     'Taint::Util'              => '0.08',
     'Template'                 => '2.24',
@@ -95,16 +91,14 @@ my %test_requires = (
 my %recommends = ( Safe => '2.30' );
 
 # Windows requires some additional modules.
-if ( $^O eq 'MSWin32' ) {
+if ( $OSNAME eq 'MSWin32' ) {
     $requires{'Win32'}                            = '0.35';
     $requires{'Win32::API'}                       = '0.55';
     $requires{'DateTime::TimeZone::Local::Win32'} = '1.64';
 }
 
-# for some reason, we need these on ubuntu.
-if ( $^O eq 'linux' && -f '/etc/debian_version' ) {
+if ( $OSNAME eq 'linux' && -f '/etc/debian_version' ) {
     my @extra = qw(
-        Linux::Pid
         Test::Pod::Coverage
         Pod::Coverage::TrustPod
         Test::CPAN::Meta
@@ -317,6 +311,22 @@ my %optional_features = (
             },
         },
     },
+    linux_smaps => {
+        description => 'Linux::Smaps for limiting memory usage',
+        prereqs => {
+            runtime => {
+                requires => { 'Linux::Smaps' => '0' },
+            }
+        },
+    },
+    linux_pdeath => {
+        description => 'Linux::Pdeathsig for a good parent/child relationships',
+        prereqs => {
+            runtime => {
+                requires => { 'Linux::Pdeathsig' => 0 },
+            },
+        },
+    },
     jobqueue => {
         description => 'Mail Queueing',
         prereqs     => {
@@ -325,32 +335,6 @@ my %optional_features = (
             }
         }
     },
-<<<<<<< HEAD
-=======
-    psgi => {
-        description => "PSGI Support",
-        prereqs => {
-            runtime => {
-                requires => {
-                    'Plack'                    => '1.0031',
-                    'CGI::Compile'             => 0,
-                    'CGI::Emulate::PSGI'       => 0,
-                },
-            },
-        },
-    },
-    csp => {
-        description => 'Content-Security-Policy support',
-        prereqs     => {
-            runtime => {
-                requires => {
-                    'Type::Tiny' => 1,
-                    'MooX::StrictConstructor' => 0.008,
-                }
-            }
-        }
-    },
->>>>>>> 741eeec31... psgi optionalize until can rebuild vendor bundle
     elasticsearch => {
         description => 'Elasticsearch-powered searches',
         prereqs     => {
@@ -390,22 +374,7 @@ for my $file ( glob 'extensions/*/Config.pm' ) {
 }
 
 # BMO Customization
-my @bmo_features = grep {
-    !m{
-        ^
-        (?: pg
-          | oracle
-          | mod_perl
-          | psgi
-          | sqlite
-          | auth_ldap
-          | auth_radius
-          | smtp_auth
-          | linux_pid
-          | updates)
-        $
-    }mxs;
-} keys %optional_features;
+my @bmo_features = grep { is_bmo_feature($_) } keys %optional_features;
 
 $optional_features{bmo} = {
     description => 'features that bmo needs',
@@ -456,3 +425,19 @@ META.yml: Makefile.PL
 MAKE
 }
 
+sub is_bmo_feature {
+    local $_ = shift;
+    return 1 if $OSNAME eq 'linux' && /^linux/;
+    return !m{
+        ^
+        (?: pg
+          | oracle
+          | mod_perl
+          | sqlite
+          | auth_ldap
+          | auth_radius
+          | smtp_auth
+          | updates)
+        $
+    }mxs;
+}
