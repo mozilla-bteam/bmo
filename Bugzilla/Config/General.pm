@@ -25,6 +25,14 @@ use constant get_param_list => (
     },
 
     {
+        name     => 'nobody_user',
+        type     => 't',
+        no_reset => '1',
+        default  => 'nobody@mozilla.org',
+        checker  => \&check_email
+    },
+
+    {
         name    => 'docs_urlbase',
         type    => 't',
         default => 'docs/%lang%/html/',

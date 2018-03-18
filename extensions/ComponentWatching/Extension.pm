@@ -23,7 +23,7 @@ use Bugzilla::Util qw(detaint_natural trim trick_taint);
 our $VERSION = '2';
 
 use constant REQUIRE_WATCH_USER => 1;
-use constant DEFAULT_ASSIGNEE   => 'nobody@mozilla.org';
+use constant DEFAULT_ASSIGNEE   => Bugzilla->params->{'nobody_user'};
 
 use constant REL_COMPONENT_WATCHER => 15;
 
