@@ -11,9 +11,11 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Logging;
 use CGI;
 use base qw(CGI);
 
+use Bugzilla::CGI::ContentSecurityPolicy;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Util;
@@ -188,36 +190,28 @@ sub target_uri {
 
 sub content_security_policy {
     my ($self, %add_params) = @_;
-    if (Bugzilla->has_feature('csp')) {
-        require Bugzilla::CGI::ContentSecurityPolicy;
-        if (%add_params || !$self->{Bugzilla_csp}) {
-            my %params = DEFAULT_CSP;
-            delete $params{report_only} if %add_params && !$add_params{report_only};
-            foreach my $key (keys %add_params) {
-                if (defined $add_params{$key}) {
-                    $params{$key} = $add_params{$key};
-                }
-                else {
-                    delete $params{$key};
-                }
+    if (%add_params || !$self->{Bugzilla_csp}) {
+        my %params = DEFAULT_CSP;
+        delete $params{report_only} if %add_params && !$add_params{report_only};
+        foreach my $key (keys %add_params) {
+            if (defined $add_params{$key}) {
+                $params{$key} = $add_params{$key};
             }
-            $self->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
+            else {
+                delete $params{$key};
+            }
         }
-
-        return $self->{Bugzilla_csp};
+        $self->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
     }
-    return undef;
+
+    return $self->{Bugzilla_csp};
 }
 
 sub csp_nonce {
     my ($self) = @_;
 
-    if (Bugzilla->has_feature('csp')) {
-        my $csp = $self->content_security_policy;
-        return $csp->nonce if $csp->has_nonce;
-    }
-
-    return '';
+    my $csp = $self->content_security_policy;
+    return $csp->has_nonce ? $csp->nonce : '';
 }
 
 # We want this sorted plus the ability to exclude certain params
@@ -603,6 +597,19 @@ sub header {
 
 sub param {
     my $self = shift;
+
+    # We don't let CGI.pm warn about list context, but we do it ourselves.
+    local $CGI::LIST_CONTEXT_WARN = 0;
+    state $has_warned = {};
+
+    ## no critic (Freenode::Wantarray)
+    if ( wantarray && @_ ) {
+        my ( $package, $filename, $line ) = caller;
+        if ( $package ne 'CGI' && ! $has_warned->{"$filename:$line"}++) {
+            WARN("Bugzilla::CGI::param called in list context from $package $filename:$line");
+        }
+    }
+    ## use critic
 
     # When we are just requesting the value of a parameter...
     if (scalar(@_) == 1) {

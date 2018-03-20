@@ -16,7 +16,7 @@ use Log::Log4perl qw(:easy);
 use Bugzilla::Error;
 use Scalar::Util qw(blessed);
 use List::Util qw(sum);
-use Bugzilla::Util qw(trick_taint);
+use Bugzilla::Util qw(trick_taint trim);
 use URI::Escape;
 use Encode;
 use Sys::Syslog qw(:DEFAULT);
@@ -37,7 +37,7 @@ sub _new {
         $self->{namespace} = Bugzilla->localconfig->{memcached_namespace};
         TRACE("connecting servers: $servers, namespace: $self->{namespace}");
         $self->{memcached} = Cache::Memcached::Fast->new({
-            servers   => [ split(/[, ]+/, $servers) ],
+            servers   => [ _parse_memcached_server_list($servers) ],
             namespace => $self->{namespace},
             max_size  => 1024 * 1024 * 4,
         });
@@ -46,6 +46,13 @@ sub _new {
         TRACE("memcached feature is not enabled");
     }
     return bless($self, $class);
+}
+
+sub _parse_memcached_server_list {
+    my ($server_list) = @_;
+    my @servers = split(/[, ]+/, trim($server_list));
+
+    return map { /:[0-9]+$/s ? $_ : "$_:11211" } @servers;
 }
 
 sub enabled {
@@ -206,6 +213,8 @@ sub should_rate_limit {
     my $prefix    = RATE_LIMIT_PREFIX . $name . ':';
     my $memcached = $self->{memcached};
 
+    return 0 unless $memcached;
+
     $tries //= 3;
 
     for (0 .. $tries) {
@@ -272,7 +281,7 @@ sub _inc_prefix {
     delete Bugzilla->request_cache->{"memcached_prefix_$name"};
 
     # BMO - log that we've wiped the cache
-    INFO("$name cache cleared");
+    TRACE("$name cache cleared");
 }
 
 sub _global_prefix {
@@ -315,7 +324,7 @@ sub _get {
 
     my $enc_key = $self->_encode_key($key)
         or return;
-    my $val = $self->{memcached}->get($key);
+    my $val = $self->{memcached}->get($enc_key);
     TRACE("get $enc_key: " . (defined $val ? "HIT" : "MISS"));
     return $val;
 }

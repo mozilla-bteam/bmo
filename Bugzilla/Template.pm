@@ -284,7 +284,8 @@ sub get_attachment_link {
 
         $link_text =~ s/ \[details\]$//;
         $link_text =~ s/ \[diff\]$//;
-        my $linkval = "attachment.cgi?id=$attachid";
+        state $urlbase = Bugzilla->localconfig->{urlbase};
+        my $linkval = "${urlbase}attachment.cgi?id=$attachid";
 
         # If the attachment is a patch and patch_viewer feature is
         # enabled, add link to the diff.
@@ -572,7 +573,9 @@ sub create {
         ABSOLUTE => 1,
         RELATIVE => $ENV{MOD_PERL} ? 0 : 1,
 
-        COMPILE_DIR => bz_locations()->{'template_cache'},
+        # Only use an on-disk template cache if we're running as the web
+        # server.  This ensures the permissions of the cache remain correct.
+        COMPILE_DIR => is_webserver_group() ? bz_locations()->{'template_cache'} : undef,
 
         # Don't check for a template update until 1 hour has passed since the
         # last check.
@@ -1070,6 +1073,8 @@ sub create {
 our %_templates_to_precompile;
 sub precompile_templates {
     my ($output) = @_;
+
+    return unless is_webserver_group();
 
     # Remove the compiled templates.
     my $cache_dir = bz_locations()->{'template_cache'};
