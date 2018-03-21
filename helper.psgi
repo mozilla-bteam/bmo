@@ -33,7 +33,7 @@ my $app = sub {
         $res->redirect( $urlbase . "show_bug.cgi?id=$1", 301 );
     }
     else {
-        $res->body("not found: $path");
+        $res->body("not found");
     }
     return $res->finalize;
 };

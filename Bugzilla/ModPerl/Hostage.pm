@@ -19,7 +19,7 @@ sub handler {
     state $urlbase_host_regex = qr/^bug(\d+)\.\Q$urlbase_host\E$/;
     state $attachment_base = Bugzilla->localconfig->{attachment_base};
     state $attachment_root = do {
-        if ($attachment_base && $attachment_base =~ m{https?://bug\%bug_id\%\.(.+)$}) {
+        if ($attachment_base && $attachment_base =~ m{^https?://(?:bug)?\%bugid\%\.([a-zA-Z\.-]+)}) {
             $1;
         }
     };
@@ -32,20 +32,19 @@ sub handler {
     };
 
     my $hostname  = $r->hostname;
-    my $path      = $r->uri;
-
     return OK if $hostname eq $urlbase_host;
 
-    if ($hostname eq $attachment_root) {
-        if ($path eq '/hstsping') {
-            return OK;
-        }
-        else {
-            $r->headers_out->set(Location => $urlbase);
-            return REDIRECT;
-        }
+    my $path = $r->uri;
+    $r->log_error("$path");
+    if ($path eq '/helper/hstsping' || $path eq '/hstsping') {
+        return OK;
     }
-    elsif ($hostname =~ $attachment_regex && ! $path =~ m{^/attachment\.cgi}s) {
+
+    if ($attachment_base && $hostname eq $attachment_root) {
+        $r->headers_out->set(Location => $urlbase);
+        return REDIRECT;
+    }
+    elsif ($attachment_base && $hostname =~ $attachment_regex && ! $path =~ m{^/attachment\.cgi}s) {
         my $new_uri = URI->new($r->unparsed_uri);
         $new_uri->scheme($urlbase_uri->scheme);
         $new_uri->host($urlbase_host);
@@ -58,8 +57,10 @@ sub handler {
         $r->headers_out->set(Location => $new_uri);
         return REDIRECT;
     }
-
-    return NOT_FOUND;
+    else {
+        $r->headers_out->set(Location => $urlbase);
+        return REDIRECT;
+    }
 }
 
 1;
