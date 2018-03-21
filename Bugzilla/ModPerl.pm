@@ -79,10 +79,17 @@ PerlAccessHandler Bugzilla::ModPerl::BlockIP
 # It is important to specify ErrorDocuments outside of all directories.
 # These used to be in .htaccess, but then things like "AllowEncodedSlashes no"
 # mean that urls containing %2f are unstyled.
+ErrorDocument 200 "OK"
 ErrorDocument 401 /errors/401.html
 ErrorDocument 403 /errors/403.html
 ErrorDocument 404 /errors/404.html
 ErrorDocument 500 /errors/500.html
+
+<Location /helper>
+    SetHandler perl-script
+    PerlResponseHandler Plack::Handler::Apache2
+    PerlSetVar psgi_app [% cgi_path %]/helper.psgi
+</Location>
 
 <Directory "[% cgi_path %]">
     AddHandler perl-script .cgi
