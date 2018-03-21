@@ -20,6 +20,7 @@ use Carp ();
 use Template ();
 
 use Bugzilla::ModPerl::BlockIP;
+use Bugzilla::ModPerl::Hostage;
 
 sub apache_config {
     my ($class, $cgi_path) = @_;
@@ -75,6 +76,7 @@ __DATA__
 # so we need to srand() both of them.)
 PerlChildInitHandler "sub { Bugzilla::RNG::srand(); srand(); }"
 PerlAccessHandler Bugzilla::ModPerl::BlockIP
+PerlInitHandler Bugzilla::ModPerl::Hostage
 
 # It is important to specify ErrorDocuments outside of all directories.
 # These used to be in .htaccess, but then things like "AllowEncodedSlashes no"
