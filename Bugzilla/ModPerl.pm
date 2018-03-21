@@ -79,7 +79,6 @@ PerlAccessHandler Bugzilla::ModPerl::BlockIP
 # It is important to specify ErrorDocuments outside of all directories.
 # These used to be in .htaccess, but then things like "AllowEncodedSlashes no"
 # mean that urls containing %2f are unstyled.
-ErrorDocument 200 "OK"
 ErrorDocument 401 /errors/401.html
 ErrorDocument 403 /errors/403.html
 ErrorDocument 404 /errors/404.html
