@@ -140,7 +140,7 @@
         </div>
       [% END %]
 
-      [% ## no-qa
+      [% ## no-008filter
         # requires PhabBugz extension
         IF Param('phabricator_enabled');
             PROCESS requests_table name='reviews' title='Reviews Requested of You';

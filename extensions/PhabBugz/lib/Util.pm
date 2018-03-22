@@ -566,11 +566,9 @@ sub get_needs_review {
     my @result;
     foreach my $diff (@{ $diffs->{result}{data} }) {
         my $attachments = delete $diff->{attachments};
-        foreach my $review (@{ $attachments->{reviewers}{reviewers} }) {
-            next unless $review->{reviewerPHID} eq $phid_user;
-            $diff->{fields}{review_status} = $review->{status};
-            last;
-        }
+        my $reviewers   = $attachments->{reviewers}{reviewers};
+        my $review      = first { $_->{reviewerPHID} eq $phid_user } @$reviewers;
+        $diff->{fields}{review_status} = $review->{status};
         push @result, $diff;
     }
     return \@result;

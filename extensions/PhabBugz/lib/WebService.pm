@@ -314,31 +314,29 @@ sub needs_review {
             uniq
             grep { defined }
             map { $_->{fields}{authorPHID} }
-            @{$reviews}
+            @$reviews
         ]
     });
-    my %author_phab_to_id = map { $_->{phid} => $_->{id} } @{$author_id_map};
-    my %author_id_to_user =
-        map { $_->id => $_ }
-        @{ Bugzilla::User->new_from_list([ map { $_->{id} } @{$author_id_map} ]) };
+    my %author_phab_to_id = map { $_->{phid} => $_->{id} } @$author_id_map;
+    my $author_users      = Bugzilla::User->new_from_list([ map { $_->{id} } @$author_id_map ]);
+    my %author_id_to_user = map { $_->id => $_ } @$author_users;
 
     # bug data
     my $visible_bugs = $user->visible_bugs([
         uniq
         grep { $_ }
         map { $_->{fields}{'bugzilla.bug-id'} }
-        @{$reviews}
+        @$reviews
     ]);
 
     # get all bug statuses and summaries in a single query to avoid creation of
     # many bug objects
     my %bugs;
-    if (@{$visible_bugs}) {
-        %bugs =
-            map { $_->{bug_id} => $_ }
-            @{ $dbh->selectall_arrayref(
-                "SELECT bug_id, bug_status, short_desc FROM bugs WHERE " . $dbh->sql_in('bug_id', $visible_bugs),
-                { Slice => {} }) };
+    if (@$visible_bugs) {
+        my $rows = $dbh->selectall_arrayref(
+            "SELECT bug_id, bug_status, short_desc FROM bugs WHERE " . $dbh->sql_in('bug_id', $visible_bugs),
+            { Slice => {} });
+        %bugs = map { $_->{bug_id} => $_ } @$rows;
     }
 
     # build result
