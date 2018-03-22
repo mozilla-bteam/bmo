@@ -33,5 +33,3 @@ my $app = sub {
     }
     return $res->finalize;
 };
-
-$app;
