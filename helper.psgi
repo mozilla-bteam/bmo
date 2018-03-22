@@ -13,17 +13,13 @@ use Plack::Request;
 use Plack::Response;
 
 my $app = sub {
-    my $env = shift;
-    my $req = Plack::Request->new($env);
-    my $res = Plack::Response->new(404);
-
+    my $env     = shift;
+    my $req     = Plack::Request->new($env);
+    my $res     = Plack::Response->new(404);
     my $urlbase = Bugzilla->localconfig->{urlbase};
-    my $path = $req->path;
-    if ( $path eq '/hstsping' ) {
-        $res->header( 'Strict-Transport-Security' => 'max-age=31536000; includeSubdomains; preload' );
-        $res->status(200);
-    }
-    elsif ( $path eq '/quicksearch.html' ) {
+    my $path    = $req->path;
+
+    if ( $path eq '/quicksearch.html' ) {
         $res->redirect( $urlbase . 'page.cgi?id=quicksearch.html', 301 );
     }
     elsif ( $path eq '/bugwritinghelp.html') {
@@ -33,7 +29,7 @@ my $app = sub {
         $res->redirect( $urlbase . "show_bug.cgi?id=$1", 301 );
     }
     else {
-        $res->body("not found");
+        $res->body('not found');
     }
     return $res->finalize;
 };
