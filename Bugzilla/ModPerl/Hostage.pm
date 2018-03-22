@@ -38,6 +38,8 @@ sub handler {
     return OK if $hostname eq $urlbase_host;
 
     my $path = $r->uri;
+    return OK if $path eq '/__lbheartbeat__';
+
     if ($attachment_base && $hostname eq $attachment_root) {
         $r->headers_out->set(Location => $urlbase);
         return REDIRECT;
@@ -55,7 +57,8 @@ sub handler {
     }
     elsif (my ($id) = $hostname =~ $urlbase_host_regex) {
         my $new_uri = $urlbase_uri->clone;
-        $new_uri->path("/show_bug.cgi?id=$id");
+        $new_uri->path('/show_bug.cgi');
+        $new_uri->query_form(id => $id);
         $r->headers_out->set(Location => $new_uri);
         return REDIRECT;
     }
