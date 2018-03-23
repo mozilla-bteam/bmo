@@ -813,7 +813,10 @@ sub delete_attachment {
     my $user = Bugzilla->login(LOGIN_REQUIRED);
     my $dbh = Bugzilla->dbh;
 
-    my $group = Bugzilla->params->{'delete_attachments_group'};
+    # the // 'admin' is to ensure the code continues to work if the BMO
+    # extension is not loaded.
+    # This should be made a core feature.
+    my $group = Bugzilla->params->{'delete_attachments_group'} // 'admin';
     $user->in_group($group)
       || ThrowUserError('auth_failure', {group  => $group,
                                          action => 'delete',
