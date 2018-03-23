@@ -2624,14 +2624,25 @@ sub install_filesystem {
 # "deleted" comment tag
 
 sub config_modify_panels {
-    my ($self, $args) = @_;
-    push @{ $args->{panels}->{groupsecurity}->{params} }, {
-        name    => 'delete_comments_group',
-        type    => 's',
-        choices => \&get_all_group_names,
-        default => 'admin',
-        checker => \&check_group
-    };
+    my ( $self, $args ) = @_;
+    my $params = $args->{panels}->{groupsecurity}->{params};
+    my @new    = (
+        {
+            name    => 'delete_comments_group',
+            type    => 's',
+            choices => \&get_all_group_names,
+            default => 'admin',
+            checker => \&check_group
+        },
+        {
+            name    => 'delete_attachments_group',
+            type    => 's',
+            choices => \&get_all_group_names,
+            default => 'admin',
+            checker => \&check_group
+        },
+    );
+    push @$params, @new;
 }
 
 sub comment_after_add_tag {
