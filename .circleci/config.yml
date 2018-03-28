@@ -87,14 +87,14 @@ jobs:
           command: |
             tag="$(cat build_info/tag.txt)"
             git fetch --tags
-            if [[ $CIRCLE_BRANCH == "master" ]]; then
-              if git tag | fgrep -q "$tag"; then
-                echo "tag $tag exists!"
+            if git tag | fgrep -q "$tag"; then
+              echo "tag $tag exists!"
+              if [[ $CIRCLE_BRANCH == "master" ]]; then
                 exit 1
-              else
-                echo "tag $tag does not exist"
-                echo yes > build_info/publish.txt
               fi
+            else
+              echo "tag $tag does not exist"
+              echo yes > build_info/publish.txt
             fi
       - persist_to_workspace:
           root: /app/build_info
