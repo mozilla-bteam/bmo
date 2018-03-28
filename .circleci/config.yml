@@ -86,8 +86,15 @@ jobs:
           name: only publish if tag exists
           command: |
             tag="$(cat build_info/tag.txt)"
-            if git tag | fgrep -qv "$tag"; then
-              echo yes > build_info/publish.txt
+            git fetch --tags
+            if [[ $CIRCLE_BRANCH == "master" ]]; then
+              if git tag | fgrep -q "$tag"; then
+                echo "tag $tag exists!"
+                exit 1
+              else
+                echo "tag $tag does not exist"
+                echo yes > build_info/publish.txt
+              fi
             fi
       - persist_to_workspace:
           root: /app/build_info
