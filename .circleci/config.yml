@@ -127,18 +127,18 @@ jobs:
       - deploy:
           command: |
             TAG="$(cat /app/build_info/tag.txt)"
-            if [[ -f /app/build_info/publish.txt && -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]]; then
-                if [[ "$CIRCLE_BRANCH" == "master"  && -n "$TAG" ]]; then
-                  docker tag bmo "$DOCKERHUB_REPO:$TAG"
-                  docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
-                  docker push "$DOCKERHUB_REPO:$TAG"
-                  git config credential.helper cache
-                  git config user.email "$GITHUB_EMAIL"
-                  git config user.name "$GITHUB_NAME"
-                  git tag $TAG
-                  git push https://${GITHUB_PERSONAL_TOKEN}:x-oauth-basic@github.com/$GITHUB_REPO.git $TAG
-                fi
-            fi
+            [[ "$CIRCLE_BRANCH" == "master"  && -n "$TAG" ]] || exit 0
+            [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
+            [[ -n "$GITHUB_PERSONAL_TOKEN" ]] || exit 0
+            [[ -f build_info/publish.txt ]] || exit 0
+            git config credential.helper cache
+            git config user.email "$GITHUB_EMAIL"
+            git config user.name "$GITHUB_NAME"
+            git tag $TAG
+            git push https://${GITHUB_PERSONAL_TOKEN}:x-oauth-basic@github.com/$GITHUB_REPO.git $TAG
+            docker tag bmo "$DOCKERHUB_REPO:$TAG"
+            docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+            docker push "$DOCKERHUB_REPO:$TAG"
 
   test_sanity:
     parallelism: 2
