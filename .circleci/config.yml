@@ -93,6 +93,15 @@ jobs:
               echo "tag $tag does not exist"
               echo yes > build_info/publish.txt
             fi
+      - run:
+          name: check if only version changed
+          command: |
+            if git diff 'HEAD~..HEAD' --name-only | grep -qv '^Bugzilla.pm'; then
+              exit 0
+            if git diff 'HEAD~..HEAD' |grep '^[+-][^+-]' | grep -qv '^[+-]our $VERSION'; then
+              exit 0
+            fi
+            echo yes > build_info/new_version.txt
       - persist_to_workspace:
           root: /app/build_info
           paths: ["*.txt"]
