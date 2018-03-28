@@ -132,6 +132,11 @@ jobs:
                   docker tag bmo "$DOCKERHUB_REPO:$TAG"
                   docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
                   docker push "$DOCKERHUB_REPO:$TAG"
+                  git config credential.helper cache
+                  git config user.email "$GITHUB_EMAIL"
+                  git config user.name "$GITHUB_NAME"
+                  git tag $TAG
+                  git push https://${GITHUB_PERSONAL_TOKEN}:x-oauth-basic@github.com/$GITHUB_REPO.git $TAG
                 fi
             fi
 
