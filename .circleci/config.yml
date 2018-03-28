@@ -224,16 +224,17 @@ workflows:
             - test_selenium
       - test_sanity:
           filters: *main_filters
+          requires:
+            - build_info
       - test_bmo:
           filters: *main_filters
           requires:
-            - test_sanity
+            - build_info
       - test_webservices:
           filters: *main_filters
           requires:
-            - test_sanity
+            - build_info
       - test_selenium:
-          filters:
-            branches:
-              only:
-                - master
+          filters: *main_filters
+          requires:
+            - build_info
