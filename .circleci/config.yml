@@ -61,6 +61,7 @@ defaults:
     run:
       name: default qa setup
       command: |
+        [[ -f build_info/only_version_changed.txt ]] || exit 0
         mv /opt/bmo/local /app/local
         perl -MSys::Hostname -i -pE 's/bmo.test/hostname() . ":$ENV{PORT}"/ges' $BZ_QA_CONF_FILE
         perl checksetup.pl --no-database --default-localconfig
@@ -102,7 +103,7 @@ jobs:
             if git diff 'HEAD~..HEAD' |grep '^[+-][^+-]' | grep -qv '^[+-]our $VERSION'; then
               exit 0
             fi
-            echo yes > build_info/new_version.txt
+            echo yes > build_info/only_version_changed.txt
       - persist_to_workspace:
           root: /app/build_info
           paths: ["*.txt"]
@@ -155,13 +156,19 @@ jobs:
         environment: *bmo_env
     steps:
       - checkout
+      - attach_workspace:
+          at: /app/build_info
       - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
           mv /opt/bmo/local /app/local
           mkdir artifacts
-      - run: perl Makefile.PL
+      - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
+          perl Makefile.PL
       - run:
           name: run sanity tests
           command: |
+            [[ -f build_info/only_version_changed.txt ]] || exit 0
             /app/scripts/entrypoint.pl prove -qf $(circleci tests glob 't/*.t' | circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
@@ -172,12 +179,15 @@ jobs:
     docker: *docker_oldtests
     steps:
       - checkout
+      - attach_workspace:
+          at: /app/build_info
       - *default_qa_setup
       - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
           /app/scripts/entrypoint.pl load_test_data
-      - run:
-          command: |
-            /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
+      - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
+          /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
 
@@ -187,12 +197,15 @@ jobs:
     docker: *docker_oldtests
     steps:
       - checkout
+      - attach_workspace:
+          at: /app/build_info
       - *default_qa_setup
       - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
           /app/scripts/entrypoint.pl load_test_data --legacy
-      - run:
-          command: |
-            /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
+      - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
+          /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
 
@@ -213,12 +226,17 @@ jobs:
       - image: selenium/standalone-firefox:2.53.1
     steps:
       - checkout
+      - attach_workspace:
+          at: /app/build_info
       - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
           mv /opt/bmo/local /app/local
           perl checksetup.pl --no-database
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
-      - run: /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
+      - run: |
+          [[ -f build_info/only_version_changed.txt ]] || exit 0
+          /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
 
 workflows:
   version: 2
