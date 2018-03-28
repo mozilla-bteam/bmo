@@ -293,7 +293,7 @@ sub process_revision_change {
     $phab_users = get_phab_bmo_ids({ phids => \@denied_phids });
     @denied_user_ids = map { $_->{id} } @$phab_users;
 
-    my %reviewers_hash =  map {$_->name => 1} (@{ $revision->reviewers });
+    my %reviewers_hash =  map {$_->name => 1} @{ $revision->reviewers };
 
     foreach my $attachment (@attachments) {
         my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
