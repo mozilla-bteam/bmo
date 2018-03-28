@@ -98,6 +98,7 @@ jobs:
           command: |
             if git diff 'HEAD~..HEAD' --name-only | grep -qv '^Bugzilla.pm'; then
               exit 0
+            fi
             if git diff 'HEAD~..HEAD' |grep '^[+-][^+-]' | grep -qv '^[+-]our $VERSION'; then
               exit 0
             fi
