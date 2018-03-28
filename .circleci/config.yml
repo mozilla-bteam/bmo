@@ -226,4 +226,7 @@ workflows:
           requires:
             - test_sanity
       - test_selenium:
-          filters: *main_filters
+          filters:
+            branches:
+              only:
+                - master
