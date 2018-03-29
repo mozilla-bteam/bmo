@@ -247,6 +247,31 @@ jobs:
           [[ -f build_info/only_version_changed.txt ]] && exit 0
           /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
 
+  test_misc:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - <<: *bmo_slim_image
+        environment:
+          <<: *bmo_env
+          BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.txt
+          TWD_HOST: localhost
+          TWD_PORT: 4444
+          TWD_BROWSER: firefox
+          BMO_ses_username: ses
+          BMO_ses_password: secret
+      - <<: *mysql_image
+        environment: *mysql_env
+      - image: memcached:latest
+    steps:
+      - checkout
+      - run: |
+          mv /opt/bmo/local /app/local
+          perl checksetup.pl --no-database
+          /app/scripts/entrypoint.pl load_test_data
+          mkdir artifacts
+      - run: /app/scripts/entrypoint.pl prove_with_httpd -q -f t/misc/*.t
+
 workflows:
   version: 2
   main:
