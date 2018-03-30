@@ -102,7 +102,7 @@ sub debug {
     local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 1;
     my $logger = Log::Log4perl->get_logger($caller_pkg);
     if ($args[0] && $args[0] =~ /found no jobs/) {
-        $logger->debug(@args);
+        $logger->trace(@args);
     }
     else {
         $logger->info(@args);
