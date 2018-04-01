@@ -57,11 +57,6 @@ check_env(qw(
     BMO_urlbase
 ));
 
-if ( $ENV{BMO_urlbase} eq 'AUTOMATIC' ) {
-    $ENV{BMO_urlbase} = sprintf 'http://%s:%d/%s', hostname(), $ENV{PORT}, $ENV{BZ_QA_LEGACY_MODE} ? 'bmo/' : '';
-    $ENV{BZ_BASE_URL} = sprintf 'http://%s:%d', hostname(), $ENV{PORT};
-}
-
 $func->($opts->());
 
 sub cmd_demo {
