@@ -13,7 +13,7 @@ use warnings;
 use lib qw(.. ../lib ../local/lib/perl5);
 
 use Bugzilla ();
-use Bugzilla::Logging;
+use Bugzilla::Logging qw( FATAL WARN );
 use Bugzilla::Constants qw( ERROR_MODE_DIE );
 use Bugzilla::Mailer qw( MessageToMTA );
 use Bugzilla::User ();
@@ -42,12 +42,13 @@ sub main {
     elsif ( $message_type eq 'Notification' ) {
         my $notification = decode_json_wrapper( $message->{Message} ) // return;
 
-        my $notification_type = $notification->{notificationType} // '';
+        my $notification_type = $notification->{eventType} // $notification->{notificationType} // '';
         if ( $notification_type eq '' ) {
             my $keys = join ', ', keys %$notification;
-            WARN("No notificationType in notification (keys: $keys)");
+            WARN("No notification type in message (keys: $keys)");
+            respond( 200 => 'OK' );
         }
-        if ( $notification_type eq 'Bounce' ) {
+        elsif ( $notification_type eq 'Bounce' ) {
             process_bounce($notification);
         }
         elsif ( $notification_type eq 'Complaint' ) {
