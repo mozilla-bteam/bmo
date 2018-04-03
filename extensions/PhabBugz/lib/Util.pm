@@ -543,7 +543,7 @@ sub get_needs_review {
     return unless $user->id;
 
     my $ids = get_members_by_bmo_id([$user]);
-    return [] unless @{$ids};
+    return [] unless @$ids;
     my $phid_user = $ids->[0];
 
     my $diffs = request(

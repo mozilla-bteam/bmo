@@ -333,10 +333,16 @@ sub needs_review {
     # many bug objects
     my %bugs;
     if (@$visible_bugs) {
-        my $rows = $dbh->selectall_arrayref(
-            "SELECT bug_id, bug_status, short_desc FROM bugs WHERE " . $dbh->sql_in('bug_id', $visible_bugs),
-            { Slice => {} });
-        %bugs = map { $_->{bug_id} => $_ } @$rows;
+        #<<<
+        my $bug_rows =$dbh->selectall_arrayref(
+            'SELECT bug_id, bug_status, short_desc ' .
+            '  FROM bugs ' .
+            ' WHERE bug_id IN (' . join(',', ('?') x @$visible_bugs) . ')',
+            { Slice => {} },
+            @$visible_bugs
+        );
+        #>>>
+        %bugs = map { $_->{bug_id} => $_ } @$bug_rows;
     }
 
     # build result
