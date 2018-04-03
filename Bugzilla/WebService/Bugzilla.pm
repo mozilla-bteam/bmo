@@ -14,6 +14,7 @@ use warnings;
 use base qw(Bugzilla::WebService);
 use Bugzilla::Constants;
 use Bugzilla::Util qw(datetime_from);
+use Try::Tiny qw( try catch );
 
 use DateTime;
 
@@ -28,6 +29,7 @@ use constant READ_ONLY => qw(
     timezone
     time
     version
+    jobqueue_status
 );
 
 use constant PUBLIC_METHODS => qw(
@@ -35,6 +37,7 @@ use constant PUBLIC_METHODS => qw(
     time
     timezone
     version
+    jobqueue_status
 );
 
 sub version {
@@ -78,6 +81,36 @@ sub time {
         tz_offset     => $self->type('string', '+0000'),
         tz_short_name => $self->type('string', 'UTC'),
     };
+}
+
+sub jobqueue_status {
+    my ( $self, $params ) = @_;
+    
+    Bugzilla->login(LOGIN_REQUIRED);
+
+    my $dbh = Bugzilla->dbh;
+    my $query = qq{
+        SELECT
+            COUNT(*) AS total,
+            COALESCE(
+                (SELECT COUNT(*)
+                    FROM ts_error
+                    WHERE ts_error.jobid = j.jobid
+                ) 
+            , 0) AS errors
+        FROM ts_job j
+            INNER JOIN ts_funcmap f
+                ON f.funcid = j.funcid;
+    };
+
+    my $status = {};
+    try {
+        $status = $dbh->selectall_arrayref($query, { Slice => {} });
+    } catch {
+        ThrowCodeError( "jobqueue_status_failed", { message => "Unable to report job queue status at this time." } );
+    }
+
+    return $status;
 }
 
 1;
