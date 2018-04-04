@@ -29,11 +29,6 @@ BEGIN {
     Log::Log4perl::Logger::create_custom_level('NOTICE', 'WARN', 5, 2);
     Log::Log4perl->init(rel2abs($file, bz_locations->{confdir}));
     TRACE("logging enabled in $PROGRAM_NAME");
-
-    $SIG{__WARN__} = sub {
-        local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 1;
-        WARN(@_);
-    };
 }
 
 # this is copied from Log::Log4perl's :easy handling,
