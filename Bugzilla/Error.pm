@@ -149,8 +149,13 @@ sub _make_logfunc {
     my ($type) = @_;
     my $logger = Log::Log4perl->get_logger("Bugzilla.Error.$type");
     return sub {
-        local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 2;
-        $logger->error(@_);
+        local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 3;
+        if ($type eq 'User') {
+            $logger->warn(@_);
+        }
+        else {
+            $logger->error(@_);
+        }
     };
 }
 
