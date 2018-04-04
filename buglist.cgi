@@ -41,6 +41,8 @@ my $vars = {};
 my $user = Bugzilla->login();
 
 $cgi->redirect_search_url();
+use Bugzilla::Logging;
+DEBUG("After the redirect.");
 
 my $buffer = $cgi->query_string();
 if (length($buffer) == 0) {
@@ -114,15 +116,15 @@ my $format = $template->get_format("list/list", scalar $cgi->param('format'),
 # Safari (WebKit) does not support it, despite a UA that says otherwise (bug 188712)
 # MSIE 5+ supports it on Mac (but not on Windows) (bug 190370)
 #
-my $serverpush =
-  $format->{'extension'} eq "html"
-    && exists $ENV{'HTTP_USER_AGENT'}
-      && $ENV{'HTTP_USER_AGENT'} =~ /Mozilla.[3-9]/
-        && (($ENV{'HTTP_USER_AGENT'} !~ /[Cc]ompatible/) || ($ENV{'HTTP_USER_AGENT'} =~ /MSIE 5.*Mac_PowerPC/))
-          && $ENV{'HTTP_USER_AGENT'} !~ /(?:WebKit|Trident|KHTML)/
-            && !$agent
-              && !defined($cgi->param('serverpush'))
-                || $cgi->param('serverpush');
+my $serverpush = 0;
+  # $format->{'extension'} eq "html"
+  #   && exists $ENV{'HTTP_USER_AGENT'}
+  #     && $ENV{'HTTP_USER_AGENT'} =~ /Mozilla.[3-9]/
+  #       && (($ENV{'HTTP_USER_AGENT'} !~ /[Cc]ompatible/) || ($ENV{'HTTP_USER_AGENT'} =~ /MSIE 5.*Mac_PowerPC/))
+  #         && $ENV{'HTTP_USER_AGENT'} !~ /(?:WebKit|Trident|KHTML)/
+  #           && !$agent
+  #             && !defined($cgi->param('serverpush'))
+  #               || $cgi->param('serverpush');
 
 my $order = $cgi->param('order') || "";
 
@@ -751,12 +753,6 @@ if ($serverpush) {
     # Generate and return the UI (HTML page) from the appropriate template.
     $template->process("list/server-push.html.tmpl", $vars)
       || ThrowTemplateError($template->error());
-
-    # Under mod_perl, flush stdout so that the page actually shows up.
-    if ($ENV{MOD_PERL}) {
-        require Apache2::RequestUtil;
-        Apache2::RequestUtil->request->rflush();
-    }
 
     # Don't do multipart_end() until we're ready to display the replacement
     # page, otherwise any errors that happen before then (like SQL errors)

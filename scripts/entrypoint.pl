@@ -156,6 +156,7 @@ sub cmd_test_webservices {
 
 sub cmd_test_selenium {
     my $conf = require $ENV{BZ_QA_CONF_FILE};
+    $ENV{HTTP_BACKEND} = 'simple';
 
     check_data_dir();
     copy_qa_extension();

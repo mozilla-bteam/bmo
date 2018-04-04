@@ -117,7 +117,7 @@ sub new {
 
     # Under mod_perl, CGI's global variables get reset on each request,
     # so we need to set them up again every time.
-    $class->_init_bz_cgi_globals() if $ENV{MOD_PERL};
+    $class->_init_bz_cgi_globals();
 
     my $self = $class->SUPER::new(@args);
 
@@ -475,11 +475,6 @@ sub _prevent_unsafe_response {
             print $self->SUPER::header(-type => 'text/html',  -status => '403 Forbidden');
             if ($content_type ne 'text/html') {
                 print "Untrusted Referer Header\n";
-                if ($ENV{MOD_PERL}) {
-                    my $r = $self->r;
-                    $r->rflush;
-                    $r->status(200);
-                }
             }
             exit;
         }
@@ -597,8 +592,25 @@ sub header {
             $headers{'-link'} .= ', <https://www.google-analytics.com>; rel="preconnect"; crossorigin';
         }
     }
-
-    return $self->SUPER::header(%headers) || "";
+    my $headers = $self->SUPER::header(%headers) || '';
+    if ($self->server_software eq 'Bugzilla::Quantum::CGI') {
+        my $c = $Bugzilla::Quantum::CGI::C;
+        $c->res->headers->parse($headers);
+        my $status = $c->res->headers->status;
+        if ($status && $status =~ /^([0-9]+)/) {
+            $c->res->code($1);
+        }
+        elsif ($c->res->headers->location) {
+            $c->res->code(302);
+        }
+        else {
+            $c->res->code(200);
+        }
+        return '';
+    }
+    else {
+        LOGDIE("Bugzilla::CGI->header() should only be called from inside Bugzilla::Quantum::CGI!");
+    }
 }
 
 sub param {
@@ -715,6 +727,7 @@ sub redirect {
     return $self->SUPER::redirect(@_);
 }
 
+use Bugzilla::Logging;
 # This helps implement Bugzilla::Search::Recent, and also shortens search
 # URLs that get POSTed to buglist.cgi.
 sub redirect_search_url {
@@ -785,9 +798,6 @@ sub redirect_to_https {
     # and do not work with 302. Our redirect really is permanent anyhow, so
     # it doesn't hurt to make it a 301.
     print $self->redirect(-location => $url, -status => 301);
-
-    # When using XML-RPC with mod_perl, we need the headers sent immediately.
-    $self->r->rflush if $ENV{MOD_PERL};
     exit;
 }
 

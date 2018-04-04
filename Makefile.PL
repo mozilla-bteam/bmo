@@ -69,6 +69,7 @@ my %requires = (
     'Module::Metadata'         => '1.000033',
     'Module::Runtime'          => '0.014',
     'Mojolicious'              => '7.71',
+    'MojoX::Log::Log4perl::Tiny' => '0.01',
     'Moo'                      => '2.002004',
     'MooX::StrictConstructor'  => '0.008',
     'Mozilla::CA'              => '20160104',
@@ -80,6 +81,7 @@ my %requires = (
     'Template'                 => '2.24',
     'Text::CSV_XS'             => '1.26',
     'Throwable'                => '0.200013',
+    'Sub::Quote'               => '2.005000',
     'Type::Tiny'               => '1.000005',
     'URI'                      => '1.55',
     'URI::Escape::XS'          => '0.14',
@@ -284,18 +286,6 @@ my %optional_features = (
             }
         },
     },
-    mod_perl => {
-        description => 'mod_perl support under Apache',
-        prereqs     => {
-            runtime => {
-                requires => {
-                    'mod_perl2'          => '1.999022',
-                    'Apache2::SizeLimit' => '0.96',
-                    'Plack::Handler::Apache2' => 0,
-                }
-            }
-        }
-    },
     inbound_email => {
         description => 'Inbound Email',
         prereqs     => {
@@ -467,7 +457,6 @@ sub is_bmo_feature {
         ^
         (?: pg
           | oracle
-          | mod_perl
           | sqlite
           | auth_ldap
           | auth_radius
