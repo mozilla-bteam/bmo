@@ -94,7 +94,9 @@ sub flag_end_of_update {
             # Only interested in review flags set to +
             next unless $name =~ /^review/ && $value eq '+';
 
-            _send_mail($attachment, $timestamp);
+            if ($attachment->attacher->email_enabled) {
+                _send_mail($attachment, $timestamp);
+            }
 
             Bugzilla->dbh->do("UPDATE profiles SET first_patch_reviewed_id = ? WHERE userid = ?",
                               undef, $attachment->id, $attachment->attacher->id);

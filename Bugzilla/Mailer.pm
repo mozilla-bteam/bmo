@@ -12,7 +12,9 @@ use strict;
 use warnings;
 
 use base qw(Exporter);
-@Bugzilla::Mailer::EXPORT = qw(MessageToMTA build_thread_marker);
+## no critic (Modules::ProhibitAutomaticExportation)
+our @EXPORT = qw(MessageToMTA build_thread_marker);
+## use critic
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
@@ -36,11 +38,11 @@ use Sys::Hostname;
 use Bugzilla::Version qw(vers_cmp);
 
 sub MessageToMTA {
-    my ($msg, $send_now) = (@_);
+    my ($msg, $send_now) = @_;
     my $method = Bugzilla->get_param_with_override('mail_delivery_method');
     return if $method eq 'None';
 
-    if (Bugzilla->get_param_with_override('use_mailer_queue') and !$send_now) {
+    if (Bugzilla->get_param_with_override('use_mailer_queue') && !$send_now) {
         Bugzilla->job_queue->insert('send_mail', { msg => $msg });
         return;
     }
@@ -62,7 +64,16 @@ sub MessageToMTA {
             $msg =~ s/(?:\015+)?\012/\015\012/msg;
         }
 
-        $email = new Email::MIME($msg);
+        $email = Email::MIME->new($msg);
+    }
+
+    my ($target) = Email::Address->parse($email->header("To"));
+    if ($target) {
+        my $user = Bugzilla::User->new({ name => $target->address, cache => 1 });
+        if ($user->email_disabled) {
+            local Bugzilla::Logging->fields->{subject} = $email->header('Subject');
+            WARN("sending email to target with disabled email: $target");
+        }
     }
 
     # Ensure that we are not sending emails too quickly to recipients.

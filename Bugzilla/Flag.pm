@@ -1045,6 +1045,8 @@ sub notify {
         my $comments = $recipients{$to} && $recipients{$to}->is_insider
             ? $all_comments : $public_comments;
 
+        next if $recipients{$to} && $recipients{$to}->email_disabled;
+
         my $vars = {
             flag            => $flag,
             old_flag        => $old_flag,
