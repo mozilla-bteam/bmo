@@ -13,8 +13,10 @@ use warnings;
 
 use base qw(Bugzilla::WebService);
 use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Logging;
 use Bugzilla::Util qw(datetime_from);
-use Try::Tiny qw( try catch );
+use Try::Tiny;
 
 use DateTime;
 
@@ -89,7 +91,7 @@ sub jobqueue_status {
     Bugzilla->login(LOGIN_REQUIRED);
 
     my $dbh = Bugzilla->dbh;
-    my $query = qq{
+    my $query = q{
         SELECT
             COUNT(*) AS total,
             COALESCE(
@@ -103,12 +105,13 @@ sub jobqueue_status {
                 ON f.funcid = j.funcid;
     };
 
-    my $status = {};
+    my $status;
     try {
-        $status = $dbh->selectall_arrayref($query, { Slice => {} });
+        $status = $dbh->selectrow_hashref($query);
     } catch {
-        ThrowCodeError( "jobqueue_status_failed", { message => "Unable to report job queue status at this time." } );
-    }
+        ERROR($_);
+        ThrowCodeError('jobqueue_status_error');
+    };
 
     return $status;
 }
