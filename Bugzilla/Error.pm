@@ -77,14 +77,13 @@ sub _throw_error {
         $template->process($name, $vars)
           || ThrowTemplateError($template->error());
         print $cgi->multipart_final() if $cgi->{_multipart_in_progress};
-        local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 2;
         $logfunc->("webpage error: $error");
     }
     elsif (Bugzilla->error_mode == ERROR_MODE_TEST) {
         die Dumper($vars);
     }
     elsif (Bugzilla->error_mode == ERROR_MODE_DIE) {
-        die("$message\n");
+        die "$message\n";
     }
     elsif (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT
            || Bugzilla->error_mode == ERROR_MODE_JSON_RPC
