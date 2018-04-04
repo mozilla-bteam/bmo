@@ -38,7 +38,7 @@ sub _in_eval {
 }
 
 sub _throw_error {
-    my ($name, $error, $vars, $logger) = @_;
+    my ($name, $error, $vars, $logfunc) = @_;
     $vars ||= {};
     $vars->{error} = $error;
 
@@ -78,7 +78,7 @@ sub _throw_error {
           || ThrowTemplateError($template->error());
         print $cgi->multipart_final() if $cgi->{_multipart_in_progress};
         local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 2;
-        $logger->error("webpage error: $error");
+        $logfunc->("webpage error: $error");
     }
     elsif (Bugzilla->error_mode == ERROR_MODE_TEST) {
         die Dumper($vars);
@@ -101,7 +101,7 @@ sub _throw_error {
         }
 
         if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
-            $logger->error("XMLRPC error: $error ($code)");
+            $logfunc->("XMLRPC error: $error ($code)");
             die SOAP::Fault->faultcode($code)->faultstring($message);
         }
         else {
@@ -111,11 +111,11 @@ sub _throw_error {
             if (Bugzilla->error_mode == ERROR_MODE_REST) {
                 my %status_code_map = %{ REST_STATUS_CODE_MAP() };
                 $status_code = $status_code_map{$code} || $status_code_map{'_default'};
-                $logger->error("REST error: $error (HTTP $status_code, internal code $code)");
+                $logfunc->("REST error: $error (HTTP $status_code, internal code $code)");
             }
             else {
                 my $fake_code = 100000 + $code;
-                $logger->error("JSONRPC error: $error ($fake_code)");
+                $logfunc->("JSONRPC error: $error ($fake_code)");
             }
             # Technically JSON-RPC isn't allowed to have error numbers
             # higher than 999, but we do this to avoid conflicts with
@@ -136,20 +136,39 @@ sub _throw_error {
 
     exit;
 }
+
+sub _add_vars_to_logging_fields {
+    my ($vars) = @_;
+
+    foreach my $key (keys %$vars) {
+        Bugzilla::Logging->fields->{"var_$key"} = $vars->{$key};
+    }
+}
+
+sub _make_logfunc {
+    my ($type) = @_;
+    my $logger = Log::Log4perl->get_logger("Bugzilla.Error.$type");
+    return sub {
+        local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 2;
+        $logger->error(@_);
+    };
+}
+
+
 sub ThrowUserError {
     my ($error, $vars) = @_;
-    my $logger = Log::Log4perl->get_logger( __PACKAGE__ . '::User' );
-    Log::Log4perl::MDC->put(vars => $vars);
+    my $logfunc = _make_logfunc('User');
+    _add_vars_to_logging_fields($vars);
 
-    _throw_error( 'global/user-error.html.tmpl', $error, $vars, $logger );
+    _throw_error( 'global/user-error.html.tmpl', $error, $vars, $logfunc);
 }
 
 sub ThrowCodeError {
     my ($error, $vars) = @_;
-    my $logger = Log::Log4perl->get_logger( __PACKAGE__ . '::Code' );
-    Log::Log4perl::MDC->put(vars => $vars);
+    my $logfunc = _make_logfunc('User');
+    _add_vars_to_logging_fields($vars);
 
-    _throw_error( 'global/code-error.html.tmpl', $error, $vars, $logger );
+    _throw_error( 'global/code-error.html.tmpl', $error, $vars, $logfunc );
 }
 
 sub ThrowTemplateError {
