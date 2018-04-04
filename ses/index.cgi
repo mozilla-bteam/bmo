@@ -13,7 +13,7 @@ use warnings;
 use lib qw(.. ../lib ../local/lib/perl5);
 
 use Bugzilla ();
-use Bugzilla::Logging qw( FATAL WARN );
+use Bugzilla::Logging;
 use Bugzilla::Constants qw( ERROR_MODE_DIE );
 use Bugzilla::Mailer qw( MessageToMTA );
 use Bugzilla::User ();
@@ -41,22 +41,14 @@ sub main {
 
     elsif ( $message_type eq 'Notification' ) {
         my $notification = decode_json_wrapper( $message->{Message} ) // return;
-
-        my $notification_type = $notification->{eventType} // $notification->{notificationType} // '';
-        if ( $notification_type eq '' ) {
-            my $keys = join ', ', keys %$notification;
-            WARN("No notification type in message (keys: $keys)");
-            respond( 200 => 'OK' );
-        }
-        elsif ( $notification_type eq 'Bounce' ) {
-            process_bounce($notification);
-        }
-        elsif ( $notification_type eq 'Complaint' ) {
-            process_complaint($notification);
-        }
-        else {
-            WARN("Unsupported notification-type: $notification_type");
-            respond( 200 => 'OK' );
+        unless (
+            # https://docs.aws.amazon.com/ses/latest/DeveloperGuide/event-publishing-retrieving-sns-contents.html
+            handle_notification($notification, 'eventType')
+            # https://docs.aws.amazon.com/ses/latest/DeveloperGuide/notification-contents.html
+            || handle_notification($notification, 'notificationType')
+        ) {
+            WARN("Failed to find notification type");
+            respond( 400 => 'Bad Request' );
         }
     }
 
@@ -85,6 +77,27 @@ sub confirm_subscription {
     }
 
     respond( 200 => 'OK' );
+}
+
+sub handle_notification {
+    my ($notification, $type_field) = @_;
+
+    if ( !exists $notification->{$type_field} ) {
+        return;
+    }
+    my $type = $notification->{$type_field};
+
+    if ( $type eq 'Bounce' ) {
+        process_bounce($notification);
+    }
+    elsif ( $type eq 'Complaint' ) {
+        process_complaint($notification);
+    }
+    else {
+        WARN("Unsupported notification-type: $type");
+        respond( 200 => 'OK' );
+    }
+    return 1;
 }
 
 sub process_bounce {
