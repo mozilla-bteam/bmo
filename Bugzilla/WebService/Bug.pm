@@ -656,9 +656,19 @@ sub possible_duplicates {
 
     Bugzilla->switch_to_shadow_db();
 
-    # Undo the array-ification that validate() does, for "summary".
-    $params->{summary} || ThrowCodeError('param_required',
-        { function => 'Bug.possible_duplicates', param => 'summary' });
+    my $summary;
+    if ($params->{id}) {
+        my $bug = Bugzilla::Bug->check($params->{id});
+        $bug || ThrowCodeError('bug_id_does_not_exist');
+        $summary = $bug->short_desc;
+    } 
+    elsif ($params->{summary}) {
+        $summary = $params->{summary};
+    } 
+    else {
+        ThrowCodeError('param_required',
+        { function => 'Bug.possible_duplicates', param => 'id or summary' });
+    }
 
     my @products;
     foreach my $name (@{ $params->{'product'} || [] }) {
@@ -667,12 +677,29 @@ sub possible_duplicates {
     }
 
     my $possible_dupes = Bugzilla::Bug->possible_duplicates(
-        { summary => $params->{summary}, products => \@products,
-          limit   => $params->{limit} });
+        {
+            summary  => $summary,
+            products => \@products,
+            limit    => $params->{limit}
+        }
+    );
+
+    # If a bug id was used, remove the bug with the same id from the list.
+    if ($possible_dupes && $params->{id}) {
+        my $remove_index;
+        for my $i (0 .. $#$possible_dupes) {
+            if (@$possible_dupes[$i]->id == $params->{id}) {
+                $remove_index = $i;
+            }
+        }
+        splice(@$possible_dupes, $remove_index, 1) if defined($remove_index);
+    }
+    
     my @hashes = map { $self->_bug_to_hash($_, $params) } @$possible_dupes;
     $self->_add_update_tokens($params, $possible_dupes, \@hashes);
     return { bugs => \@hashes };
 }
+
 
 sub update {
     my ($self, $params) = validate(@_, 'ids');
