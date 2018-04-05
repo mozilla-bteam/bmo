@@ -13,14 +13,14 @@ use warnings;
 use lib qw(.. ../lib ../local/lib/perl5);
 
 use Bugzilla ();
+use Bugzilla::Constants qw(ERROR_MODE_DIE);
 use Bugzilla::Logging;
-use Bugzilla::Constants qw( ERROR_MODE_DIE );
-use Bugzilla::Mailer qw( MessageToMTA );
+use Bugzilla::Mailer qw(MessageToMTA);
 use Bugzilla::User ();
-use Bugzilla::Util qw( html_quote remote_ip );
-use JSON::MaybeXS qw( decode_json encode_json );
+use Bugzilla::Util qw(html_quote remote_ip);
+use JSON::MaybeXS qw(decode_json);
 use LWP::UserAgent ();
-use Try::Tiny qw( try catch );
+use Try::Tiny qw(catch try);
 
 Bugzilla->error_mode(ERROR_MODE_DIE);
 try {
@@ -43,11 +43,13 @@ sub main {
         my $notification = decode_json_wrapper( $message->{Message} ) // return;
         unless (
             # https://docs.aws.amazon.com/ses/latest/DeveloperGuide/event-publishing-retrieving-sns-contents.html
-            handle_notification($notification, 'eventType')
+            handle_notification( $notification, 'eventType' )
+
             # https://docs.aws.amazon.com/ses/latest/DeveloperGuide/notification-contents.html
-            || handle_notification($notification, 'notificationType')
-        ) {
-            WARN("Failed to find notification type");
+            || handle_notification( $notification, 'notificationType' )
+            )
+        {
+            WARN('Failed to find notification type');
             respond( 400 => 'Bad Request' );
         }
     }
@@ -80,10 +82,10 @@ sub confirm_subscription {
 }
 
 sub handle_notification {
-    my ($notification, $type_field) = @_;
+    my ( $notification, $type_field ) = @_;
 
     if ( !exists $notification->{$type_field} ) {
-        return;
+        return 0;
     }
     my $type = $notification->{$type_field};
 
@@ -118,8 +120,7 @@ sub process_bounce {
         # disable each account that is permanently bouncing
         foreach my $recipient ( @{ $notification->{bounce}->{bouncedRecipients} } ) {
             my $address = $recipient->{emailAddress};
-            my $reason
-                = sprintf( '(%s) %s', $recipient->{action} // 'error', $recipient->{diagnosticCode} // 'unknown' );
+            my $reason = sprintf '(%s) %s', $recipient->{action} // 'error', $recipient->{diagnosticCode} // 'unknown';
 
             my $user = Bugzilla::User->new( { name => $address, cache => 1 } );
             if ($user) {
@@ -142,8 +143,7 @@ sub process_bounce {
                     $user->set_disabledtext($disable_text);
                     $user->set_disable_mail(1);
                     $user->update();
-                    Bugzilla->audit(
-                        "permanent bounce for <$address> disabled userid-" . $user->id . ": $reason" );
+                    Bugzilla->audit( "permanent bounce for <$address> disabled userid-" . $user->id . ": $reason" );
                 }
             }
 
