@@ -659,7 +659,7 @@ sub possible_duplicates {
     my $summary;
     if ($params->{id}) {
         my $bug = Bugzilla::Bug->check($params->{id});
-        $bug || ThrowCodeError('bug_id_does_not_exist');
+        $bug || ThrowUserError('bug_id_does_not_exist');
         $summary = $bug->short_desc;
     } 
     elsif ($params->{summary}) {
@@ -699,7 +699,6 @@ sub possible_duplicates {
     $self->_add_update_tokens($params, $possible_dupes, \@hashes);
     return { bugs => \@hashes };
 }
-
 
 sub update {
     my ($self, $params) = validate(@_, 'ids');
