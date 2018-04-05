@@ -108,6 +108,8 @@ sub jobqueue_status {
     my $status;
     try {
         $status = $dbh->selectrow_hashref($query);
+        $status->{errors} = 0 + $status->{errors};
+        $status->{total}  = 0 + $status->{total};
     } catch {
         ERROR($_);
         ThrowCodeError('jobqueue_status_error');
