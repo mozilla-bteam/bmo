@@ -55,7 +55,7 @@ sub get_param_list {
                 "This account has been automatically disabled as a result of " .
                 "a high number of comments tagged as abusive.<br>\n<br>\n" .
                 "All interactions on Bugzilla should follow our " .
-                "<a href=\"https://bugzilla.mozilla.org/page.cgi?id=etiquette.html\">" .
+                "<a href=\"" . Bugzilla->localconfig->{'urlbase'} . "page.cgi?id=etiquette.html\">" .
                 "etiquette guidelines</a>.<br>\n<br>\n" .
                 "Please contact the address at the end of this message if you " .
                 "believe this to be an error, or if you would like your account " .

@@ -78,7 +78,7 @@ foreach my $group_id (keys %remove_data) {
     $dbh->bz_commit_transaction();
 
     # nobody@mozilla.org cannot recieve email
-    next if $group->owner->login eq 'nobody@mozilla.org';
+    next if $group->owner->login eq Bugzilla->params->{'nobody_user'};
 
     _send_email($group, \@users_removed);
 }

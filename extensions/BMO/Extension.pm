@@ -878,7 +878,7 @@ sub object_end_of_create {
         # Add default searches to new user's footer
         my $dbh = Bugzilla->dbh;
 
-        my $sharer = Bugzilla::User->new({ name => 'nobody@mozilla.org' })
+        my $sharer = Bugzilla::User->new({ name => Bugzilla->params->{'nobody_user'} })
             or return;
         my $group = Bugzilla::Group->new({ name => 'everyone' })
             or return;
@@ -919,7 +919,7 @@ sub _bug_reporters_hw_os {
 sub _bug_is_unassigned {
     my ($self) = @_;
     my $assignee = $self->assigned_to->login;
-    return $assignee eq 'nobody@mozilla.org' || $assignee =~ /\.bugs$/;
+    return $assignee eq Bugzilla->params->{'nobody_user'} || $assignee =~ /\.bugs$/;
 }
 
 sub _bug_has_current_patch {
@@ -1100,7 +1100,7 @@ sub object_start_of_update {
 
     # and the assignee isn't a real person
     return unless
-        $new_bug->assigned_to->login eq 'nobody@mozilla.org'
+        $new_bug->assigned_to->login eq Bugzilla->params->{'nobody_user'}
         || $new_bug->assigned_to->login =~ /\.bugs$/;
 
     # and the user can set the status to NEW
@@ -1595,7 +1595,7 @@ sub field_end_of_create {
     my $name = $field->name;
 
     if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
-        Bugzilla->set_user(Bugzilla::User->check({ name => 'nobody@mozilla.org' }));
+        Bugzilla->set_user(Bugzilla::User->check({ name => Bugzilla->params->{'nobody_user'} }));
         print "Creating IT permission grant bug for new field '$name'...";
     }
 
@@ -1951,7 +1951,7 @@ sub _post_employee_incident_bug {
     my ($investigate_bug, $ssh_key_bug);
     my $old_user = Bugzilla->user;
     eval {
-        Bugzilla->set_user(Bugzilla::User->new({ name => 'nobody@mozilla.org' }));
+        Bugzilla->set_user(Bugzilla::User->new({ name => Bugzilla->params->{'nobody_user'} }));
         my $new_user = Bugzilla->user;
 
         # HACK: User needs to be in the editbugs and primary bug's group to allow

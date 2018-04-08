@@ -158,7 +158,7 @@ $group->update();
 
 my @users = (
     {
-        login    => 'nobody@mozilla.org',
+        login    => Bugzilla->params->{'nobody_user'},
         realname => 'Nobody; OK to take it and work on it',
         password => '*'
     },
@@ -267,7 +267,7 @@ my @products = (
                 name           => 'General',
                 description    => 'For bugs in Firefox which do not fit into ' .
                                   'other more specific Firefox components',
-                initialowner   => 'nobody@mozilla.org',
+                initialowner   => Bugzilla->params->{'nobody_user'},
                 initialqaowner => '',
                 initial_cc     => [],
                 watch_user     => 'general@firefox.bugs'
@@ -287,7 +287,7 @@ my @products = (
                 name           => 'General',
                 description    => 'This is the component for issues specific to bugzilla.mozilla.org '
                                .  'that do not belong in other components.',
-                initialowner   => 'nobody@mozilla.org',
+                initialowner   => Bugzilla->params->{'nobody_user'},
                 initialqaowner => '',
                 initial_cc     => [],
                 watch_user     => 'general@bugzilla.bugs'

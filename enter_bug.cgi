@@ -37,6 +37,8 @@ use Bugzilla::Field;
 use Bugzilla::Status;
 use Bugzilla::UserAgent;
 
+use List::Util qw(any);
+
 my $user = Bugzilla->login(LOGIN_REQUIRED);
 
 my $cloned_bug;
@@ -299,8 +301,13 @@ else {
     $default{'bug_severity'}  = formvalue('bug_severity', Bugzilla->params->{'defaultseverity'});
 
     # BMO - use per-product default hw/os
-    $default{'rep_platform'}  = formvalue('rep_platform', $product->default_platform // detect_platform());
-    $default{'op_sys'}        = formvalue('op_sys', $product->default_op_sys // detect_op_sys());
+    if (any { $_->NAME eq 'BMO' } @{ Bugzilla->extensions }) {
+        $default{'rep_platform'}  = formvalue('rep_platform', $product->default_platform // detect_platform());
+        $default{'op_sys'}        = formvalue('op_sys', $product->default_op_sys // detect_op_sys());
+    } else {
+        $default{'rep_platform'}  = formvalue('rep_platform', detect_platform());
+        $default{'op_sys'}        = formvalue('op_sys', detect_op_sys());
+    }
     $vars->{'rep_platform'}   = detect_platform();
     $vars->{'rep_op_sys'}     = detect_op_sys();
 

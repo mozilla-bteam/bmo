@@ -283,7 +283,12 @@ sub read_localconfig {
     my ($include_deprecated) = @_;
 
     if ($ENV{LOCALCONFIG_ENV}) {
-        return _read_localconfig_from_env();
+        my $lc = _read_localconfig_from_env();
+        if ( $lc->{urlbase} eq 'AUTOMATIC' ) {
+            $lc->{urlbase} = sprintf 'http://%s:%d/%s', hostname(), $ENV{PORT}, $ENV{BZ_QA_LEGACY_MODE} ? 'bmo/' : '';
+            $ENV{BZ_BASE_URL} = sprintf 'http://%s:%d', hostname(), $ENV{PORT};
+        }
+        return $lc;
     }
     else {
         return _read_localconfig_from_file($include_deprecated);
