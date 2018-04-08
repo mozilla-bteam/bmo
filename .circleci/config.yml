@@ -69,7 +69,7 @@ defaults:
         [[ -f build_info/only_version_changed.txt ]] && exit 0
         mv /opt/bmo/local /app/local
         perl -MSys::Hostname -i -pE 's/bmo.test/hostname() . ":$ENV{PORT}"/ges' $BZ_QA_CONF_FILE
-        perl checksetup.pl --no-database --default-localconfig
+        /app/scripts/entrypoint.pl checksetup_gen_files --default-localconfig
         mkdir artifacts
 
 jobs:
