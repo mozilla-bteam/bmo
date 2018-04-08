@@ -117,7 +117,6 @@ sub HTTPD_ENV_CONF {
 
 sub _error_page {
     my ($code, $title, $description) = @_;
-    my $host = Bugzilla->urlbase->host;
 
     return <<EOT;
 <!DOCTYPE HTML>
@@ -153,7 +152,7 @@ sub _error_page {
             <h1>$title</h1>
             <p>$description</p>
             <h3>Error $code</h3>
-            <p><a href="/">$host</a></p>
+            <p><a href="/">this site</a></p>
         </div>
     </body>
 </html>
