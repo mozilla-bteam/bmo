@@ -781,7 +781,7 @@ Bugzilla::Extension::Ember::Webservice - The BMO Ember WebServices API
 
 =head1 DESCRIPTION
 
-This module contains API methods that are useful to user's of the Bugzilla Ember
+This module contains API methods that are useful to users of the Bugzilla Ember
 based UI.
 
 =head1 METHODS

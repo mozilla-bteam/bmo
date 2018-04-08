@@ -73,10 +73,12 @@ my $component_field_id = $dbh->selectrow_array(
 $component_field_id
     or die "Can't find field ID for 'component' field\n";
 
+my $nobody = Bugzilla->params->{'nobody_user'};
 my $user_id = $dbh->selectrow_array(
-    "SELECT userid FROM profiles WHERE login_name='nobody\@mozilla.org'");
+    "SELECT userid FROM profiles WHERE login_name=?",
+    undef, $nobody);
 $user_id
-    or die "Can't find user ID for 'nobody\@mozilla.org'\n";
+    or die "Can't find user ID for '$nobody'\n";
 
 $dbh->bz_start_transaction();
 

@@ -111,6 +111,11 @@ sub cmd_dev_httpd {
     exit $httpd_exit_f->get;
 }
 
+sub cmd_checksetup_gen_files {
+    my (@args) = @_;
+    run( 'perl', 'checksetup.pl', '--no-database', @args);
+}
+
 sub cmd_checksetup {
     check_data_dir();
     wait_for_db();
@@ -141,7 +146,7 @@ sub cmd_test_webservices {
     check_data_dir();
     copy_qa_extension();
     assert_database()->get;
-    my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
+    my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR');
     my $prove_exit_f = run_prove(
         httpd_url => $conf->{browser_url},
         prove_cmd => [
@@ -195,7 +200,7 @@ sub cmd_test_bmo {
     $ENV{BZ_TEST_NEWBIE2}      = 'newbie2@mozilla.example';
     $ENV{BZ_TEST_NEWBIE2_PASS} = 'captain.space.pants.time.lord';
 
-    my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
+    my $httpd_exit_f = run_cereal_and_httpd();
     my $prove_exit_f = run_prove(
         httpd_url  => $ENV{BZ_BASE_URL},
         prove_cmd  => [ 'prove', '-I/app', '-I/app/local/lib/perl5', @prove_args ],

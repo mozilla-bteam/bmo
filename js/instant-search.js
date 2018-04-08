@@ -138,7 +138,7 @@ YAHOO.bugzilla.instantSearch = {
 
       YAHOO.bugzilla.instantSearch.dataTable.showTableMessage(
         'Searching...&nbsp;&nbsp;&nbsp;' +
-        '<img src="extensions/GuidedBugEntry/web/images/throbber.gif"' + 
+        '<img src="images/throbber.gif"' +
         ' width="16" height="11">',
         YAHOO.widget.DataTable.CLASS_LOADING
       );
@@ -191,7 +191,7 @@ YAHOO.bugzilla.instantSearch = {
     var result = [];
     var name = Dom.get('product').value;
     result.push(name);
-    if (products[name] && products[name].related) {
+    if (typeof products !== 'undefined' && products[name] && products[name].related) {
       for (var i = 0, n = products[name].related.length; i < n; i++) {
         result.push(products[name].related[i]);
       }

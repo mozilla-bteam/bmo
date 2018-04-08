@@ -115,6 +115,51 @@ sub HTTPD_ENV_CONF {
     return join( "\n", map { "PerlPassEnv " . $_ } @env ) . "\n";
 }
 
+sub _error_page {
+    my ($code, $title, $description) = @_;
+    my $host = Bugzilla->urlbase->host;
+
+    return <<EOT;
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>$title</title>
+        <style>
+            body {
+                margin: 1em 2em;
+                background-color: #455372;
+                color: #ddd;
+                font-family: sans-serif;
+            }
+            h1, h3 {
+                color: #fff;
+            }
+            a {
+                color: #fff;
+                text-decoration: none;
+            }
+            #buggie {
+                float: left;
+            }
+            #content {
+                margin-left: 100px;
+                padding-top: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <img src="/images/buggie.png" id="buggie" alt="buggie" width="78" height="215">
+        <div id="content">
+            <h1>$title</h1>
+            <p>$description</p>
+            <h3>Error $code</h3>
+            <p><a href="/">$host</a></p>
+        </div>
+    </body>
+</html>
+EOT
+}
+
 ###############
 # Permissions #
 ###############
@@ -430,6 +475,40 @@ sub FILESYSTEM {
                                        contents  => \&HTTPD_ENV_CONF },
     );
 
+    # Create static error pages.
+    $create_dirs{"errors"} = DIR_CGI_READ;
+    $create_files{"errors/401.html"} = {
+        perms     => CGI_READ,
+        overwrite => 1,
+        contents  => _error_page(
+            401, 'Authentication Required',
+            "This server could not verify that you are authorized to access
+            that url. you either supplied the wrong credentials (e.g., bad
+            password), or your browser doesn't understand how to supply the
+            credentials required.")
+    };
+    $create_files{"errors/403.html"} = {
+        perms     => CGI_READ,
+        overwrite => 1,
+        contents  => _error_page(
+            403, 'Access Denied',
+            "Access to the requested resource has been denied.")
+    };
+    $create_files{"errors/404.html"} = {
+        perms     => CGI_READ,
+        overwrite => 1,
+        contents  => _error_page(
+            404, 'Object Not Found',
+            "The requested URL was not found on this server.")
+    };
+    $create_files{"errors/500.html"} = {
+        perms     => CGI_READ,
+        overwrite => 1,
+        contents  => _error_page(
+            500, 'Internal Server Error',
+            "The server encountered an internal error and was unable to complete your request.")
+    };
+
     # Because checksetup controls the creation of index.html separately
     # from all other files, it gets its very own hash.
     my %index_html = (
@@ -564,7 +643,7 @@ sub update_filesystem {
     # Delete old files that no longer need to exist
 
     # 2001-04-29 jake@bugzilla.org - Remove oldemailtech
-    #   http://bugzilla.mozilla.org/show_bugs.cgi?id=71552
+    #   http://bugzilla.mozilla.org/show_bug.cgi?id=71552
     if (-d 'shadow') {
         print "Removing shadow directory...\n";
         rmtree("shadow");

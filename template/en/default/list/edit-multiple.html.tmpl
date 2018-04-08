@@ -437,7 +437,6 @@
     [% FOREACH r = resolutions %]
       [% NEXT IF !r %]
       [% NEXT IF r == "DUPLICATE" || r == "MOVED" %]
-      [% NEXT IF r == "EXPIRED" AND user.login != "gerv@mozilla.org" %]
       <option value="[% r FILTER html %]">[% display_value("resolution", r) FILTER html %]</option>
     [% END %]
   </select>

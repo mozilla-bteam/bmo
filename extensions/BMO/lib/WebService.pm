@@ -116,7 +116,7 @@ Bugzilla::Extension::BMO::Webservice - The BMO WebServices API
 
 =head1 DESCRIPTION
 
-This module contains API methods that are useful to user's of bugzilla.mozilla.org.
+This module contains API methods that are useful to users of bugzilla.mozilla.org.
 
 =head1 METHODS
 

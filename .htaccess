@@ -7,11 +7,11 @@ AddType image/x-icon .ico
 AddType application/font-woff .woff
 AddType application/font-woff2 .woff2
 
-Redirect permanent /queryhelp.cgi https://bugzilla.mozilla.org/query.cgi?format=advanced&help=1
-Redirect permanent /bug_status.html https://bugzilla.mozilla.org/page.cgi?id=fields.html
-Redirect permanent /bugwritinghelp.html https://bugzilla.mozilla.org/page.cgi?id=bug-writing.html
-Redirect permanent /etiquette.html https://bugzilla.mozilla.org/page.cgi?id=etiquette.html
-Redirect permanent /duplicates.html https://bugzilla.mozilla.org/duplicates.cgi
+Redirect permanent /queryhelp.cgi /query.cgi?format=advanced&help=1
+Redirect permanent /bug_status.html /page.cgi?id=fields.html
+Redirect permanent /bugwritinghelp.html /page.cgi?id=bug-writing.html
+Redirect permanent /etiquette.html /page.cgi?id=etiquette.html
+Redirect permanent /duplicates.html /duplicates.cgi
 
 RewriteEngine On
 # This rewrite rule skips over the rest, which is good because the load balancers

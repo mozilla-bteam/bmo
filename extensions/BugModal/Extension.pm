@@ -188,10 +188,12 @@ sub template_before_process {
     return if exists $bug->{error};
 
     # trigger loading of tracking flags
-    Bugzilla::Extension::TrackingFlags->template_before_process({
-        file => 'bug/edit.html.tmpl',
-        vars => $vars,
-    });
+    if (Bugzilla->has_extension('TrackingFlags')) {
+        Bugzilla::Extension::TrackingFlags->template_before_process({
+            file => 'bug/edit.html.tmpl',
+            vars => $vars,
+        });
+    }
 
     if (any { $bug->product eq $_ } READABLE_BUG_STATUS_PRODUCTS) {
         my @flags = map { { name => $_->name, status => $_->status } } @{$bug->flags};

@@ -24,14 +24,13 @@ use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Token;
 
-my $user = Bugzilla->login(LOGIN_REQUIRED);
-
+local our $user = Bugzilla->login(LOGIN_REQUIRED);
 my $cgi       = Bugzilla->cgi;
 my $template  = Bugzilla->template;
 my $dbh       = Bugzilla->dbh;
 my $userid    = $user->id;
 my $editusers = $user->in_group('editusers');
-local our $vars     = {};
+local our $vars = {};
 
 # Reject access if there is no sense in continuing.
 $editusers

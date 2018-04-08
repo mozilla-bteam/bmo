@@ -51,7 +51,7 @@ sub suggestions {
         # we always need to be authentiated to perform user matching
         my $user = Bugzilla->user;
         if (!$user->id) {
-            Bugzilla->set_user(Bugzilla::User->check({ name => 'nobody@mozilla.org' }));
+            Bugzilla->set_user(Bugzilla::User->check({ name => Bugzilla->params->{'nobody_user'} }));
             push @reviewers, @{ $bug->mentors };
             Bugzilla->set_user($user);
         } else {

@@ -997,6 +997,8 @@ sub create {
 
             'feature_enabled' => sub { return Bugzilla->feature(@_); },
 
+            'has_extension' => sub { return Bugzilla->has_extension(@_); },
+
             # field_descs can be somewhat slow to generate, so we generate
             # it only once per-language no matter how many times
             # $template->process() is called.
