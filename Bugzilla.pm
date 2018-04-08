@@ -305,6 +305,13 @@ sub localconfig {
     return $_[0]->process_cache->{localconfig} ||= read_localconfig();
 }
 
+sub urlbase {
+    my ($class) = @_;
+
+    # Since this could be modified, we have to return a new one every time.
+    return URI->new($class->localconfig->{urlbase});
+}
+
 sub params {
     return $_[0]->request_cache->{params} ||= Bugzilla::Config::read_param_file();
 }
