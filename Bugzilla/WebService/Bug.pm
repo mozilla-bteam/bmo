@@ -35,6 +35,8 @@ use Bugzilla::Search::Quicksearch;
 use List::Util qw(max);
 use List::MoreUtils qw(uniq);
 use Storable qw(dclone);
+use Types::Standard -all;
+use Type::Utils;
 
 #############
 # Constants #
@@ -656,10 +658,17 @@ sub possible_duplicates {
 
     Bugzilla->switch_to_shadow_db();
 
+    state $params_type = Dict[
+        id      => Optional[Int],
+        product => Optional[ ArrayRef[Str] ],
+        limit   => Optional[Int],
+        summary => Optional[Str],
+    ];
+    $params_type->validate($params);
+
     my $summary;
     if ($params->{id}) {
-        my $bug = Bugzilla::Bug->check($params->{id});
-        $bug || ThrowUserError('bug_id_does_not_exist');
+        my $bug = Bugzilla::Bug->check({ id => $params->{id}, cache => 1 });
         $summary = $bug->short_desc;
     } 
     elsif ($params->{summary}) {
@@ -685,14 +694,8 @@ sub possible_duplicates {
     );
 
     # If a bug id was used, remove the bug with the same id from the list.
-    if ($possible_dupes && $params->{id}) {
-        my $remove_index;
-        for my $i (0 .. $#$possible_dupes) {
-            if (@$possible_dupes[$i]->id == $params->{id}) {
-                $remove_index = $i;
-            }
-        }
-        splice(@$possible_dupes, $remove_index, 1) if defined($remove_index);
+    if ($params->{id}) {
+        @$possible_dupes = grep { $_->id != $params->{id} } @$possible_dupes;
     }
     
     my @hashes = map { $self->_bug_to_hash($_, $params) } @$possible_dupes;
