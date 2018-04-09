@@ -664,7 +664,8 @@ sub possible_duplicates {
         limit   => Optional[Int],
         summary => Optional[Str],
     ];
-    $params_type->validate($params);
+    ThrowCodeError( 'param_invalid', { function => 'Bug.possible_duplicates', param => 'A param' } )
+        if !$params_type->check($params);
 
     my $summary;
     if ($params->{id}) {
