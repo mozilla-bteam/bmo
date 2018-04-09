@@ -198,6 +198,9 @@ sub ThrowTemplateError {
     # we never want to display this to the user
     exit if $template_err =~ /\bModPerl::Util::exit\b/;
 
+    state $logger = Log::Log4perl->get_logger('Bugzilla.Error.Template');
+    $logger->error($template_err);
+
     $vars->{'template_error_msg'} = $template_err;
     $vars->{'error'} = "template_error";
 
