@@ -191,7 +191,7 @@ sub MessageToMTA {
         die qq{Unable to parse "To:" address - $to} unless @recipients;
         die qq{Did not expect more than one "To:" address in $to} if @recipients > 1;
         my $badhosts = Bugzilla::Bloomfilter->lookup("badhosts") or die "No badhosts bloomfilter";
-        if ($badhosts->test($to_address->host)) {
+        if ($badhosts->test($recipients[0]->host)) {
             WARN("Attempted to send email to address in badhosts: $to");
             $email->header_set(to => '');
         }
