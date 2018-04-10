@@ -21,6 +21,7 @@ use Bugzilla::Extension::PhabBugz::Constants;
 use JSON::XS qw(encode_json decode_json);
 use List::Util qw(first);
 use LWP::UserAgent;
+use Taint::Util qw(untaint);
 
 use base qw(Exporter);
 
@@ -479,7 +480,12 @@ sub request {
       if $response->is_error;
 
     my $result;
-    my $result_ok = eval { $result = decode_json( $response->content); 1 };
+    my $result_ok = eval {
+        my $content = $response->content;
+        untaint($content);
+        $result = decode_json( $content );
+        1;
+    };
     if (!$result_ok || $result->{error_code}) {
         ThrowCodeError('phabricator_api_error',
             { reason => 'JSON decode failure' }) if !$result_ok;
