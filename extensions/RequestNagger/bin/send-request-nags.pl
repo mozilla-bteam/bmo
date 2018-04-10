@@ -160,6 +160,8 @@ sub _include_request {
 
     my $recipient = Bugzilla::User->new({ id => $request->{recipient_id}, cache => 1 });
 
+    return 0 unless $recipient->email_enabled;
+
     if ($report eq 'requestee') {
         # check recipient group membership
         my $group;
