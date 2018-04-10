@@ -19,6 +19,8 @@ BMO is Mozilla's highly customized version of Bugzilla.
       3.1  Container Arguments
       3.2  Environmental Variables
       3.3  Persistent Data Volume
+    4. Development Tips
+      4.1  Testing Emails
 
 If you want to contribute to BMO, you can fork this repo and get a local copy
 of BMO running in a few minutes using Vagrant or Docker.
@@ -77,6 +79,22 @@ or db is changed, do a full provision:
 .. code-block:: bash
 
     vagrant rsync && vagrant provision
+
+Testing Auth delegation
+-----------------------
+
+For testing auth-delegation there is included an `scripts/auth-test-app`
+script that runs a webserver and implements the auth delegation protocol.
+
+Provided you have `Mojolicious`_ installed:
+
+.. code-block:: bash
+  perl auth-test-app daemon
+
+Then just browse to `localhost:3000`_ to test creating API keys.
+
+.. _`Mojolicious`: https://metacpan.org/pod/Mojolicious
+.. _`localhost:3000`: http://localhost:3000
 
 Technical Details
 -----------------
@@ -297,6 +315,15 @@ BMO_apache_size_limit
   This is the max amount of unshared memory (in kb) that the apache process is
   allowed to use before Apache::SizeLimit kills it.
 
+BMO_mail_delivery_method
+  Usually configured on the MTA section of admin interface, but may be set here for testing purposes.
+  Valid values are None, Test, Sendmail, or SMTP.
+  If set to Test, email will be appended to the /app/data/mailer.testfile.
+
+BMO_use_mailer_queue
+  Usually configured on the MTA section of the admin interface, you may change this here for testing purposes.
+  Should be 1 or 0. If 1, the job queue will be used. For testing, only set to 0 if the BMO_mail_delivery_method is None or Test.
+
 HTTPD_StartServers
   Sets the number of child server processes created on startup.
   As the number of processes is dynamically controlled depending on the load,
@@ -356,3 +383,48 @@ Persistent Data Volume
 This container expects /app/data to be a persistent, shared, writable directory
 owned by uid 10001. This must be a shared (NFS/EFS/etc) volume between all
 nodes.
+
+Development Tips
+================
+
+Testing Emails
+--------------
+
+With vagrant have two options to test emails sent by a local bugzilla instance. You can configure
+which setting you want to use by going to http://bmo-web.vm/editparams.cgi?section=mta and
+changing the mail_delivery_method to either 'Test' or 'Sendmail'. Afterwards restart bmo with
+``vagrant reload``. With docker, only the default 'Test' option is supported.
+
+'Test' option (Default for Docker)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+With this option, all mail will be appended to a ``mailer.testfile``.
+
+- Using docker, run ``docker-compose run bmo-web.vm cat /app/data/mailer.testfile``.
+- Using vagrant, run ``vagrant ssh web`` and then naviage to ``/vagrant/data/mailer.testfile``.
+
+'Sendmail' option (Default for Vagrant)
+~~~~~~~~~~~~~~~~~
+
+This option is useful if you want to preview email using a real mail client.
+An imap server is running on bmo-web.vm on port 143 and you can connect to it with
+the following settings:
+
+- host: bmo-web.vm
+- port: 143
+- encryption: No SSL, Plaintext password
+- username: vagrant
+- password: anything
+
+All email that bmo sends will go to the vagrant user, so there is no need to login with
+multiple imap accounts.
+
+`Thunderbird's`_ wizard to add a new "Existing Mail Account" doesn't work with bmo-web. It
+fails because it wants to create a mail account with both incoming mail (IMAP) and outgoing
+mail (SMTP, which bmo-web.vm doesn't provide). To work around this, using a regular email
+account to first setup, then modify the settings of that account: Right Click the account in
+the left side bar > Settings > Server Settings. Update the server settings to match those
+listed above. Afterwards, you may update the account name to be vagrant@bmo-web.vm. Thunderbird
+will now pull email from bmo. You can try it out by commenting on a bug.
+
+.. _`Thunderbird's`: https://www.mozilla.org/en-US/thunderbird/

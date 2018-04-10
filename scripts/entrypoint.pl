@@ -10,6 +10,7 @@ use Bugzilla::Install::Util qw(install_string);
 use Bugzilla::Test::Util qw(create_user);
 use Bugzilla::DaemonControl qw(
     run_cereal_and_httpd
+    run_cereal_and_jobqueue
     assert_httpd assert_database assert_selenium
     on_finish on_exception
 );
@@ -87,6 +88,13 @@ sub cmd_httpd  {
     my $httpd_exit_f = run_cereal_and_httpd();
     assert_httpd()->get();
     exit $httpd_exit_f->get();
+}
+
+sub cmd_jobqueue {
+    my (@args) = @_;
+    check_data_dir();
+    wait_for_db();
+    exit run_cereal_and_jobqueue(@args)->get;
 }
 
 sub cmd_dev_httpd {

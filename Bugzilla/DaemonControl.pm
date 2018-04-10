@@ -28,7 +28,8 @@ use POSIX qw(setsid WEXITSTATUS);
 use base qw(Exporter);
 
 our @EXPORT_OK = qw(
-    run_httpd run_cereal run_cereal_and_httpd
+    run_httpd run_cereal run_jobqueue
+    run_cereal_and_httpd run_cereal_and_jobqueue
     catch_signal on_finish on_exception
     assert_httpd assert_database assert_selenium
 );
@@ -39,8 +40,12 @@ our %EXPORT_TAGS = (
     utils => [qw(catch_signal on_exception on_finish)],
 );
 
-use constant HTTPD_BIN     => '/usr/sbin/httpd';
-use constant HTTPD_CONFIG  => realpath(catfile( bz_locations->{confdir}, 'httpd.conf' ));
+use constant {
+    JOBQUEUE_BIN => realpath( catfile( bz_locations->{cgi_path}, 'jobqueue.pl' ) ),
+    CEREAL_BIN   => realpath( catfile( bz_locations->{cgi_path}, 'scripts', 'cereal.pl' ) ),
+    HTTPD_BIN    => '/usr/sbin/httpd',
+    HTTPD_CONFIG => realpath( catfile( bz_locations->{confdir}, 'httpd.conf' ) ),
+};
 
 sub catch_signal {
     my ($name, @done)   = @_;
@@ -49,7 +54,10 @@ sub catch_signal {
     my $signal   = IO::Async::Signal->new(
         name       => $name,
         on_receipt => sub {
+            my ($self) = @_;
+            my $l = IO::Async::Loop->new;
             $signal_f->done(@done);
+            $l->remove($self);
         }
     );
     $signal_f->on_cancel(
@@ -64,43 +72,13 @@ sub catch_signal {
     return $signal_f;
 }
 
-sub cereal {
-    local $PROGRAM_NAME = "cereal";
-    $ENV{LOGGING_PORT} //= 5880;
-
-    my $loop = IO::Async::Loop->new;
-    my $on_stream = sub {
-        my ($stream) = @_;
-        my $protocol = IO::Async::Protocol::LineStream->new(
-            transport    => $stream,
-            on_read_line => sub {
-                my ( $self, $line ) = @_;
-                say $line;
-            },
-        );
-        $loop->add($protocol);
-    };
-    my @signals = (
-        catch_signal('TERM', 0),
-        catch_signal('INT', 0 ),
-        catch_signal('KILL', 0 ),
-    );
-    $loop->listen(
-        host      => '127.0.0.1',
-        service   => $ENV{LOGGING_PORT},
-        socktype  => 'stream',
-        on_stream => $on_stream,
-    )->get;
-    exit Future->wait_any(@signals)->get;
-}
-
 sub run_cereal {
     my $loop   = IO::Async::Loop->new;
     my $exit_f = $loop->new_future;
     my $cereal = IO::Async::Process->new(
-        code         => \&cereal,
+        command      => [CEREAL_BIN],
         on_finish    => on_finish($exit_f),
-        on_exception => on_exception( "cereal", $exit_f ),
+        on_exception => on_exception( 'cereal', $exit_f ),
     );
     $exit_f->on_cancel( sub { $cereal->kill('TERM') } );
     $loop->add($cereal);
@@ -110,15 +88,18 @@ sub run_cereal {
 
 sub run_httpd {
     my (@args) = @_;
-    my $loop = IO::Async::Loop->new;
 
+    my $loop   = IO::Async::Loop->new;
     my $exit_f = $loop->new_future;
     my $httpd  = IO::Async::Process->new(
         code => sub {
+
             # we have to setsid() to make a new process group
             # or else apache will kill its parent.
             setsid();
-            exec HTTPD_BIN, '-DFOREGROUND', '-f' => HTTPD_CONFIG, @args;
+            my @command = ( HTTPD_BIN, '-DFOREGROUND', '-f' => HTTPD_CONFIG, @args );
+            exec @command
+              or die "failed to exec $command[0] $!";
         },
         on_finish    => on_finish($exit_f),
         on_exception => on_exception( 'httpd', $exit_f ),
@@ -129,21 +110,52 @@ sub run_httpd {
     return $exit_f;
 }
 
-sub run_cereal_and_httpd {
-    my @httpd_args = @_;
+sub run_jobqueue {
+    my (@args) = @_;
 
-    push @httpd_args, '-DNETCAT_LOGS';
-    my $signal_f      = catch_signal("TERM", 0);
+    my $loop     = IO::Async::Loop->new;
+    my $exit_f   = $loop->new_future;
+    my $jobqueue = IO::Async::Process->new(
+        command   => [ JOBQUEUE_BIN, 'start', '-f', '-d', @args ],
+        on_finish => on_finish($exit_f),
+        on_exception => on_exception( 'httpd', $exit_f ),
+    );
+    $exit_f->on_cancel( sub { $jobqueue->kill('TERM') } );
+    $loop->add($jobqueue);
+
+    return $exit_f;
+}
+
+sub run_cereal_and_jobqueue {
+    my (@jobqueue_args) = @_;
+
+    my $signal_f      = catch_signal('TERM', 0);
     my $cereal_exit_f = run_cereal();
 
     return assert_cereal()->then(
         sub {
+            my $jobqueue_exit_f = run_jobqueue(@jobqueue_args);
+            return Future->wait_any($cereal_exit_f, $jobqueue_exit_f, $signal_f);
+        }
+    );
+}
+
+sub run_cereal_and_httpd {
+    my @httpd_args = @_;
+
+    my $signal_f      = catch_signal('TERM', 0);
+    my $cereal_exit_f = run_cereal();
+
+    return assert_cereal()->then(
+        sub {
+            push @httpd_args, '-DNETCAT_LOGS';
+
             my $lc = Bugzilla::Install::Localconfig::read_localconfig();
             if ( ($lc->{inbound_proxies} // '') eq '*' && $lc->{urlbase} =~ /^https/) {
                 push @httpd_args, '-DHTTPS';
             }
-            elsif (not $lc->{urlbase} =~ /^https/) {
-                WARN("HTTPS urlbase but inbound_proxies is not '*'");
+            elsif ($lc->{urlbase} =~ /^https/) {
+                WARN('HTTPS urlbase but inbound_proxies is not "*"');
             }
             my $httpd_exit_f  = run_httpd(@httpd_args);
 
@@ -165,24 +177,23 @@ sub assert_httpd {
         my $f = shift;
         ( $f->get =~ /^httpd OK/ );
     };
-    my $timeout = $loop->timeout_future(after => 20)->else_fail("assert_httpd timeout");
+    my $timeout = $loop->timeout_future(after => 20)->else_fail('assert_httpd timeout');
     return Future->wait_any($repeat, $timeout);
 }
-
 
 sub assert_selenium {
     my ($host, $port) = @_;
     $host //= 'localhost';
     $port //= 4444;
 
-    return assert_connect($host, $port, "assert_selenium");
+    return assert_connect($host, $port, 'assert_selenium');
 }
 
 sub assert_cereal {
     return assert_connect(
         'localhost',
         $ENV{LOGGING_PORT} // 5880,
-        "assert_cereal"
+        'assert_cereal'
     );
 }
 
@@ -224,7 +235,7 @@ sub assert_database {
         );
     } until => sub { defined shift->get };
 
-    my $timeout = $loop->timeout_future( after => 20 )->else_fail("assert_database timeout");
+    my $timeout = $loop->timeout_future( after => 20 )->else_fail('assert_database timeout');
     my $any_f = Future->wait_any( $repeat, $timeout );
     return $any_f->transform(
         done => sub { return },

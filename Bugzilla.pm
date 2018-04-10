@@ -22,7 +22,7 @@ BEGIN {
     }
 }
 
-our $VERSION = '20180223.1';
+our $VERSION = '20180330.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -100,7 +100,7 @@ sub init_page {
     }
 
     if (i_am_cgi()) {
-        Log::Log4perl::MDC->put(remote_ip => remote_ip());
+        Bugzilla::Logging->fields->{remote_ip} = remote_ip();
     }
 
     if (${^TAINT}) {
@@ -386,8 +386,8 @@ sub login {
 
     my $authenticated_user = $authorizer->login($type);
 
-    if (i_am_cgi()) {
-        Log::Log4perl::MDC->put(user_id => $authenticated_user->id);
+    if (i_am_cgi() && $authenticated_user->id) {
+        Bugzilla::Logging->fields->{user_id} = $authenticated_user->id;
     }
 
     # At this point, we now know if a real person is logged in.
@@ -631,7 +631,7 @@ sub switch_to_shadow_db {
     my $class = shift;
 
     if (!$class->request_cache->{dbh_shadow}) {
-        if ($class->params->{'shadowdb'}) {
+        if ($class->get_param_with_override('shadowdb')) {
             $class->request_cache->{dbh_shadow} = Bugzilla::DB::connect_shadow();
         } else {
             $class->request_cache->{dbh_shadow} = $class->dbh_main;
