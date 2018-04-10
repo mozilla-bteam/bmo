@@ -60,14 +60,10 @@ my @cache_control = (
     sprintf('max-age=%d', 60 * 5),
 );
 
-use Bugzilla::Logging;
-
 if ($can_cache && $if_none_match && any { $_ eq $weak_etag } split(/,\s*/, $if_none_match)) {
-    DEBUG("Sending 304 Not Modified");
     print $cgi->header(-status => '304 Not Modified', -ETag => $weak_etag);
 }
 else {
-    DEBUG("Generating response");
     my $template = Bugzilla->template;
     $cgi->content_security_policy(script_src  => ['self', 'https://www.google-analytics.com']);
 
