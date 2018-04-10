@@ -663,6 +663,8 @@ sub possible_duplicates {
         product => Optional[ ArrayRef[Str] ],
         limit   => Optional[Int],
         summary => Optional[Str],
+        include_fields => Optional[ ArrayRef[Str] ],
+        Bugzilla_api_token => Optional[Str]
     ];
     ThrowCodeError( 'param_invalid', { function => 'Bug.possible_duplicates', param => 'A param' } )
         if !$params_type->check($params);
