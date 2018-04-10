@@ -187,11 +187,14 @@ sub MessageToMTA {
 
     try {
         my $to         = $email->header('to') or die 'Unable to find "To:" address';
-        my $to_address = Email::Address->parse($to) or die qq{Unable to parse "To:" address - $to};
-        my $badhosts   = Bugzilla::Bloomfilter->lookup("badhosts") or die "No badhosts bloomfilter";
-        if ($badhosts->test($to_address->host)) {
-            WARN("Attempted to send email to address in badhosts: $to");
-            $email->header_set(to => '');
+        my @recipients = Email::Address->parse($to);
+        die qq{Unable to parse "To:" address - $to} unless @recipients;
+        foreach my $to_address (@recipients) {
+            my $badhosts   = Bugzilla::Bloomfilter->lookup("badhosts") or die "No badhosts bloomfilter";
+            if ($badhosts->test($to_address->host)) {
+                WARN("Attempted to send email to address in badhosts: $to");
+                $email->header_set(to => '');
+            }
         }
     } catch {
         ERROR($_);
