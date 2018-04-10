@@ -658,14 +658,15 @@ sub possible_duplicates {
 
     Bugzilla->switch_to_shadow_db();
 
-    state $params_type = Dict[
-        id      => Optional[Int],
-        product => Optional[ ArrayRef[Str] ],
-        limit   => Optional[Int],
-        summary => Optional[Str],
-        include_fields => Optional[ ArrayRef[Str] ],
-        Bugzilla_api_token => Optional[Str]
+    state $params_type = Dict [
+        id                 => Optional [Int],
+        product            => Optional [ ArrayRef [Str] ],
+        limit              => Optional [Int],
+        summary            => Optional [Str],
+        include_fields     => Optional [ ArrayRef [Str] ],
+        Bugzilla_api_token => Optional [Str]
     ];
+    
     ThrowCodeError( 'param_invalid', { function => 'Bug.possible_duplicates', param => 'A param' } )
         if !$params_type->check($params);
 
