@@ -108,6 +108,16 @@ if ( $OSNAME eq 'linux' && -f '/etc/debian_version' ) {
 }
 
 my %optional_features = (
+    argon2 => {
+        description => 'Support hashing passwords with Argon2',
+        prereqs => {
+            runtime => {
+                requires => {
+                    'Crypt::Argon2' => '0.004',
+                },
+            },
+        },
+    },
     smtp_auth => {
         description => 'SMTP Authentication',
         prereqs     => { runtime => { requires => { 'Authen::SASL' => 0 } } },

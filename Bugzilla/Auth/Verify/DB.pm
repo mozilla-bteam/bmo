@@ -82,8 +82,15 @@ sub check_credentials {
     # If their old password was using crypt() or some different hash
     # than we're using now, convert the stored password to using
     # whatever hashing system we're using now.
-    my $current_algorithm = PASSWORD_DIGEST_ALGORITHM;
-    if ($real_password_crypted !~ /{\Q$current_algorithm\E}$/) {
+    my $update_password = 0;
+    if (Bugzilla->has_feature('argon2')) {
+        $update_password = $real_password_crypted !~ /\$argon2id\$/
+    }
+    else {
+        my $current_algorithm = PASSWORD_DIGEST_ALGORITHM;
+        $update_password = $real_password_crypted !~ /{\Q$current_algorithm\E}$/
+    }
+    if ($update_password) {
         # We can't call $user->set_password because we don't want the password
         # complexity rules to apply here.
         $user->{cryptpassword} = bz_crypt($password);
