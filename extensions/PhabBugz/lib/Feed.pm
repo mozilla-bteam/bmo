@@ -49,7 +49,7 @@ sub start {
         first_interval => 0,
         interval       => PHAB_FEED_POLL_SECONDS,
         reschedule     => 'drift',
-        on_tick        => sub { 
+        on_tick        => sub {
             try{
                 $self->feed_query();
             }
@@ -65,7 +65,7 @@ sub start {
         first_interval => 0,
         interval       => PHAB_USER_POLL_SECONDS,
         reschedule     => 'drift',
-        on_tick        => sub { 
+        on_tick        => sub {
             try{
                 $self->user_query();
             }
@@ -81,7 +81,7 @@ sub start {
         first_interval => 0,
         interval       => PHAB_GROUP_POLL_SECONDS,
         reschedule     => 'drift',
-        on_tick        => sub { 
+        on_tick        => sub {
             try{
                 $self->group_query();
             }
@@ -107,7 +107,7 @@ sub feed_query {
 
     # Ensure Phabricator syncing is enabled
     if (!Bugzilla->params->{phabricator_enabled}) {
-        INFO("PHABRICATOR SYNC DISABLED");
+        WARN("PHABRICATOR SYNC DISABLED");
         return;
     }
 
@@ -165,7 +165,7 @@ sub user_query {
 
     # Ensure Phabricator syncing is enabled
     if (!Bugzilla->params->{phabricator_enabled}) {
-        INFO("PHABRICATOR SYNC DISABLED");
+        WARN("PHABRICATOR SYNC DISABLED");
         return;
     }
 
@@ -199,17 +199,17 @@ sub user_query {
 }
 
 sub group_query {
-    my ( $self ) = @_;
+    my ($self) = @_;
 
     # Ensure Phabricator syncing is enabled
-    if (!Bugzilla->params->{phabricator_enabled}) {
-        INFO("PHABRICATOR SYNC DISABLED");
+    if ( !Bugzilla->params->{phabricator_enabled} ) {
+        WARN("PHABRICATOR SYNC DISABLED");
         return;
     }
-    
+
     my $phab_sync_groups = Bugzilla->params->{phabricator_sync_groups};
-    if (!$phab_sync_groups) {
-        INFO('A comma delimited list of security groups was not provided.');
+    if ( !$phab_sync_groups ) {
+        WARN('A comma delimited list of security groups was not provided.');
         return;
     }
 
@@ -225,29 +225,40 @@ sub group_query {
     # 4. Set project members to exact list
     # 5. Profit
 
-    my $sync_groups = Bugzilla::Group->match({ name => [ split('[,\s]+', $phab_sync_groups) ] });
+    my $sync_groups = Bugzilla::Group->match(
+        { name => [ split( '[,\s]+', $phab_sync_groups ) ] } );
 
     foreach my $group (@$sync_groups) {
+
         # Create group project if one does not yet exist
         my $phab_project_name = 'bmo-' . $group->name;
-        my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-            name => $phab_project_name
-        });
-        if (!$project) {
-            my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-                name => 'secure-revision'
-            });
-            $project = Bugzilla::Extension::PhabBugz::Project->create({
-                name        => $phab_project_name,
-                description => 'BMO Security Group for ' . $group->name,
-                view_policy => $secure_revision->phid,
-                edit_policy => $secure_revision->phid,
-                join_policy => $secure_revision->phid
-            });
+        my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query(
+            {
+                name => $phab_project_name
+            }
+        );
+        if ( !$project ) {
+            INFO("Project $project not found. Creating.");
+            my $secure_revision =
+              Bugzilla::Extension::PhabBugz::Project->new_from_query(
+                {
+                    name => 'secure-revision'
+                }
+              );
+            $project = Bugzilla::Extension::PhabBugz::Project->create(
+                {
+                    name        => $phab_project_name,
+                    description => 'BMO Security Group for ' . $group->name,
+                    view_policy => $secure_revision->phid,
+                    edit_policy => $secure_revision->phid,
+                    join_policy => $secure_revision->phid
+                }
+            );
         }
 
-        if (my @group_members = get_group_members($group)) {
-            $project->set_members(\@group_members);
+        if ( my @group_members = get_group_members($group) ) {
+            INFO("Setting group members.");
+            $project->set_members( \@group_members );
             $project->update();
         }
     }
@@ -633,19 +644,20 @@ sub save_last_id {
 
 sub get_group_members {
     my ($group) = @_;
-    my $group_obj = ref $group ? $group : Bugzilla::Group->check({ name => $group });
+    my $group_obj =
+      ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
     my $members_all = $group_obj->members_complete();
     my %users;
-    foreach my $name (keys %$members_all) {
-        foreach my $user (@{ $members_all->{$name} }) {
-            $users{$user->id} = $user;
+    foreach my $name ( keys %$members_all ) {
+        foreach my $user ( @{ $members_all->{$name} } ) {
+            $users{ $user->id } = $user;
         }
     }
 
     # Look up the phab ids for these users
-    my $phab_users = get_phab_bmo_ids({ ids => [ keys %users ] });
-    foreach my $phab_user (@{ $phab_users }) {
-        $users{$phab_user->{id}}->{phab_phid} = $phab_user->{phid};
+    my $phab_users = get_phab_bmo_ids( { ids => [ keys %users ] } );
+    foreach my $phab_user ( @{$phab_users} ) {
+        $users{ $phab_user->{id} }->{phab_phid} = $phab_user->{phid};
     }
 
     # We only need users who have accounts in phabricator
