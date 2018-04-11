@@ -76,11 +76,29 @@ sub start {
         },
     );
 
+    # Update project membership in Phabricator based on Bugzilla groups
+    my $group_timer = IO::Async::Timer::Periodic->new(
+        first_interval => 0,
+        interval       => PHAB_GROUP_POLL_SECONDS,
+        reschedule     => 'drift',
+        on_tick        => sub { 
+            try{
+                $self->group_query();
+            }
+            catch {
+                FATAL($_);
+            };
+            Bugzilla->_cleanup();
+        },
+    );
+
     my $loop = IO::Async::Loop->new;
     $loop->add($feed_timer);
     $loop->add($user_timer);
+    $loop->add($group_timer);
     $feed_timer->start;
     $user_timer->start;
+    $group_timer->start;
     $loop->run;
 }
 
@@ -177,6 +195,61 @@ sub user_query {
             $self->process_new_user($user_data);
         };
         $self->save_last_id($user_id, 'user');
+    }
+}
+
+sub group_query {
+    my ( $self ) = @_;
+
+    # Ensure Phabricator syncing is enabled
+    if (!Bugzilla->params->{phabricator_enabled}) {
+        INFO("PHABRICATOR SYNC DISABLED");
+        return;
+    }
+    
+    my $phab_sync_groups = Bugzilla->params->{phabricator_sync_groups};
+    if (!$phab_sync_groups) {
+        INFO('A comma delimited list of security groups was not provided.');
+        return;
+    }
+
+    # PROCESS SECURITY GROUPS
+
+    INFO("GROUPS: Updating group memberships");
+
+    # Loop through each group and perform the following:
+    #
+    # 1. Load flattened list of group members
+    # 2. Check to see if Phab project exists for 'bmo-<group_name>'
+    # 3. Create if does not exist with locked down policy.
+    # 4. Set project members to exact list
+    # 5. Profit
+
+    my $sync_groups = Bugzilla::Group->match({ name => [ split('[,\s]+', $phab_sync_groups) ] });
+
+    foreach my $group (@$sync_groups) {
+        # Create group project if one does not yet exist
+        my $phab_project_name = 'bmo-' . $group->name;
+        my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+            name => $phab_project_name
+        });
+        if (!$project) {
+            my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+                name => 'secure-revision'
+            });
+            $project = Bugzilla::Extension::PhabBugz::Project->create({
+                name        => $phab_project_name,
+                description => 'BMO Security Group for ' . $group->name,
+                view_policy => $secure_revision->phid,
+                edit_policy => $secure_revision->phid,
+                join_policy => $secure_revision->phid
+            });
+        }
+
+        if (my @group_members = get_group_members($group)) {
+            $project->set_members(\@group_members);
+            $project->update();
+        }
     }
 }
 
@@ -556,6 +629,27 @@ sub save_last_id {
     DEBUG( "UPDATING " . uc($type_full) . ": $last_id" );
     Bugzilla->dbh->do( "REPLACE INTO phabbugz (name, value) VALUES (?, ?)",
         undef, $type_full, $last_id );
+}
+
+sub get_group_members {
+    my ($group) = @_;
+    my $group_obj = ref $group ? $group : Bugzilla::Group->check({ name => $group });
+    my $members_all = $group_obj->members_complete();
+    my %users;
+    foreach my $name (keys %$members_all) {
+        foreach my $user (@{ $members_all->{$name} }) {
+            $users{$user->id} = $user;
+        }
+    }
+
+    # Look up the phab ids for these users
+    my $phab_users = get_phab_bmo_ids({ ids => [ keys %users ] });
+    foreach my $phab_user (@{ $phab_users }) {
+        $users{$phab_user->{id}}->{phab_phid} = $phab_user->{phid};
+    }
+
+    # We only need users who have accounts in phabricator
+    return grep { $_->phab_phid } values %users;
 }
 
 1;
