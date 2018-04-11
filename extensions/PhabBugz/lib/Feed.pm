@@ -245,11 +245,11 @@ sub process_revision_change {
             # we leave the current policy alone.
             my $current_policy;
             if ($revision->view_policy =~ /^PHID-PLCY/) {
-                TRACE("Loading current policy: " . $revision->view_policy);
+                INFO("Loading current policy: " . $revision->view_policy);
                 $current_policy
                     = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_policy ]});
                 my $current_projects = $current_policy->rule_projects;
-                TRACE("Current policy projects: " . join(", ", @$current_projects));
+                INFO("Current policy projects: " . join(", ", @$current_projects));
                 my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
                 if (@$added || @$removed) {
                     INFO('Project groups do not match. Need new custom policy');
@@ -261,7 +261,7 @@ sub process_revision_change {
             }
 
             if (!$current_policy) {
-                TRACE("Creating new custom policy: " . join(", ", @set_projects));
+                INFO("Creating new custom policy: " . join(", ", @set_projects));
                 my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create(\@set_projects);
                 $revision->set_policy('view', $new_policy->phid);
                 $revision->set_policy('edit', $new_policy->phid);
@@ -508,13 +508,7 @@ sub new_stories {
     my $data = { view => 'text' };
     $data->{after} = $after if $after;
 
-    my $result;
-    try {
-        $result = request( 'feed.query_id', $data );
-    }
-    catch {
-        FATAL($_);
-    };
+    my $result = request( 'feed.query_id', $data );
 
     unless ( ref $result->{result}{data} eq 'ARRAY'
         && @{ $result->{result}{data} } )
@@ -536,13 +530,7 @@ sub new_users {
     };
     $data->{before} = $after if $after;
 
-    my $result;
-    try {
-        $result = request( 'user.search', $data );
-    }
-    catch {
-        FATAL($_);
-    };
+    my $result = request( 'user.search', $data );
 
     unless ( ref $result->{result}{data} eq 'ARRAY'
         && @{ $result->{result}{data} } )
