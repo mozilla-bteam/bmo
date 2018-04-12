@@ -12,7 +12,7 @@ use Digest;
 
 with 'Bugzilla::Password';
 
-our $DISABLE = 0;
+our $ALLOW_INSECURE_PASSWORD_HASHES = 0;
 
 has 'password' => (
     is       => 'ro',
@@ -37,8 +37,12 @@ sub to_string {
 sub equals {
     my ($self, $other) = @_;
 
-    return '' if $DISABLE;
-    return $self->encoded_password eq "$other";
+    if ($ALLOW_INSECURE_PASSWORD_HASHES) {
+        return $self->encoded_password eq "$other";
+    }
+    else {
+        return ''; # perl equality operators return '' for false always.
+    }
 }
 
 sub _build_encoded_password {
