@@ -518,6 +518,28 @@ sub process_new_user {
     # Pre setup before querying DB
     my $old_user = set_phab_user();
 
+    # CHECK AND WARN FOR POSSIBLE USERNAME SQUATTING
+    INFO("USERS: Checking for username squatters");
+    my $dbh = Bugzilla->dbh;
+    my $regexp = $dbh->quote(":?:" . $phab_user->name . "[[:>:]]");
+    my $results = $dbh->selectall_arrayref("
+        SELECT userid, login_name
+          FROM profiles
+         WHERE userid != ? AND " . $dbh->sql_regexp('realname', $regexp),
+        undef,
+        $bug_user->id
+    );
+    if (@$results) {
+        foreach my $row ( @$results ) {
+            WARN("USERS: Possible username squatter -" .
+                 " phab user: " . $phab_user->name .
+                 " bugzilla user id: " . $row->[0] .
+                 " bugzilla login: " . $row->[1]);
+        }
+    }
+
+    # ADD SUBSCRIBERS TO REVSISIONS FOR CURRENT PRIVATE BUGS
+
     my $params = {
         f3  => 'OP',
         j3  => 'OR',
@@ -561,6 +583,8 @@ sub process_new_user {
     # the first value of each row should be the bug id
     my @bug_ids = map { shift @$_ } @$data;
 
+    INFO("USERS: Updating subscriber values for old private bugs");
+
     foreach my $bug_id (@bug_ids) {
         INFO("Processing bug $bug_id");
 
@@ -585,7 +609,7 @@ sub process_new_user {
 
     Bugzilla->set_user($old_user);
 
-    INFO('SUCCESS: User ' . $phab_user->id . ' processed');
+    INFO('USERS: SUCCESS - User ' . $phab_user->id . ' processed');
 }
 
 ##################
