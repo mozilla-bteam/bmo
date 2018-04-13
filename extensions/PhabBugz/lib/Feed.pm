@@ -420,7 +420,7 @@ sub process_new_user {
     my $phab_user = Bugzilla::Extension::PhabBugz::User->new($user_data);
 
     if (!$phab_user->bugzilla_id) {
-        DEBUG("SKIPPING: No bugzilla id associated with user");
+        DEBUG("USERS: SKIPPING - No bugzilla id associated with user");
         return;
     }
 
@@ -428,6 +428,28 @@ sub process_new_user {
 
     # Pre setup before querying DB
     my $old_user = set_phab_user();
+
+    # CHECK AND WARN FOR POSSIBLE USERNAME SQUATTING
+    INFO("USERS: Checking for username squatters");
+    my $dbh = Bugzilla->dbh;
+    my $regexp = $dbh->quote(":?:" . $phab_user->name . "[[:>:]]");
+    my $results = $dbh->selectall_arrayref("
+        SELECT userid, login_name
+          FROM profiles
+         WHERE userid != ? AND " . $dbh->sql_regexp('realname', $regexp),
+        undef,
+        $bug_user->id
+    );
+    if (@$results) {
+        foreach my $row ( @$results ) {
+            WARN("USERS: Possible username squatter -" .
+                 " phab user: " . $phab_user->name .
+                 " bugzilla user id: " . $row->[0] .
+                 " bugzilla login: " . $row->[1]);
+        }
+    }
+
+    # ADD SUBSCRIBERS TO REVSISIONS FOR CURRENT PRIVATE BUGS
 
     my $params = {
         f3  => 'OP',
@@ -472,8 +494,10 @@ sub process_new_user {
     # the first value of each row should be the bug id
     my @bug_ids = map { shift @$_ } @$data;
 
+    INFO("USERS: Updating subscriber values for old private bugs");
+
     foreach my $bug_id (@bug_ids) {
-        DEBUG("Processing bug $bug_id");
+        INFO("USERS: Processing bug $bug_id");
 
         my $bug = Bugzilla::Bug->new({ id => $bug_id, cache => 1 });
 
@@ -482,7 +506,7 @@ sub process_new_user {
 
         foreach my $attachment (@attachments) {
             my ($revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
-            DEBUG("Processing revision D$revision_id");
+            INFO("USERS: Processing revision D$revision_id");
 
             my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
                 { ids => [ int($revision_id) ] });
@@ -490,13 +514,13 @@ sub process_new_user {
             $revision->add_subscriber($phab_user->phid);
             $revision->update();
 
-            DEBUG("Revision $revision_id updated");
+            INFO("USERS: Revision $revision_id updated");
         }
     }
 
     Bugzilla->set_user($old_user);
 
-    INFO('SUCCESS: User ' . $phab_user->id . ' processed');
+    INFO('USERS: SUCCESS - User ' . $phab_user->id . ' processed');
 }
 
 ##################
