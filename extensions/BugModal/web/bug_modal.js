@@ -883,6 +883,18 @@ $(function() {
             $('#bottom-status').show();
             $('#bottom-dup_id').focus();
         });
+    $('.confirm-btn')
+        .click(function(event) {
+            event.preventDefault();
+            $('#field-status-view').hide();
+            $('#field-status-edit').show();
+            $('#field-status-edit .name').show();
+            $('#bug_status').val('NEW').change();
+            $('#resolution').val($(event.target).text()).change();
+            $('#top-save-btn').show();
+            $('#resolve-as').hide();
+            $('#bottom-status').show();
+        });
     $('.status-btn')
         .click(function(event) {
             event.preventDefault();
