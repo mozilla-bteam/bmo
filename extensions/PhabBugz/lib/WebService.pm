@@ -150,18 +150,6 @@ sub needs_review {
     return { result => \@result };
 }
 
-sub _phabricator_precheck {
-    my ($user) = @_;
-
-    # Ensure PhabBugz is on
-    ThrowUserError('phabricator_not_enabled')
-        unless Bugzilla->params->{phabricator_enabled};
-
-    # Validate that the requesting user's email matches phab-bot
-    ThrowUserError('phabricator_unauthorized_user')
-        unless $user->login eq PHAB_AUTOMATION_USER;
-}
-
 sub rest_resources {
     return [
         # Bug permission checks

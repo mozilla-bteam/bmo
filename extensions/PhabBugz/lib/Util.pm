@@ -30,6 +30,7 @@ our @EXPORT = qw(
     create_revision_attachment
     get_attachment_revisions
     get_bug_role_phids
+    get_needs_review
     get_security_sync_groups
     intersect
     is_attachment_phab_revision
@@ -93,13 +94,14 @@ sub get_bug_role_phids {
     push(@bug_users, $bug->qa_contact) if $bug->qa_contact;
     push(@bug_users, @{ $bug->cc_users }) if @{ $bug->cc_users };
 
-    my $phab_users = Bugzilla::Extension::PhabBugz::User->match(
-      {
-        ids => [ map { $_->id } @bug_users ]
-      }
+    my $phab_users =
+      Bugzilla::Extension::PhabBugz::User->match(
+        { 
+          ids => [ map { $_->id } @bug_users ]
+        }
     );
 
-    return [ map { $_->phid } @$phab_users ];
+    return [ map { $_->phid } @{ $phab_users } ];
 }
 
 sub is_attachment_phab_revision {
