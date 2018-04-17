@@ -30,10 +30,8 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     create_revision_attachment
     get_bug_role_phids
     get_phab_bmo_ids
-    get_project_phid
     get_security_sync_groups
     is_attachment_phab_revision
-    make_revision_public
     request
     set_phab_user
 );
@@ -305,13 +303,16 @@ sub process_revision_change {
 
     # REVISION SECURITY POLICY
 
+    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+        name => 'secure-revision'
+    });
+
     # If bug is public then remove privacy policy
     if (!@{ $bug->groups_in }) {
         INFO('Bug is public so setting view/edit public');
         $revision->set_policy('view', 'public');
         $revision->set_policy('edit', 'users');
-        my $secure_project_phid = get_project_phid('secure-revision');
-        $revision->remove_project($secure_project_phid);
+        $revision->remove_project($secure_revision->phid);
     }
     # else bug is private.
     else {
@@ -355,8 +356,7 @@ sub process_revision_change {
                 $revision->set_policy('edit', $new_policy->phid);
             }
 
-            my $secure_project_phid = get_project_phid('secure-revision');
-            $revision->add_project($secure_project_phid);
+            $revision->add_project($secure_revision->phid);
         }
 
         # Subscriber list of the private revision should always match

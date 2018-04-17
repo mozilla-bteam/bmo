@@ -25,58 +25,20 @@ use Taint::Util qw(untaint);
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(
-    add_comment_to_revision
+our @EXPORT = qw(
     add_security_sync_comments
-    create_private_revision_policy
-    create_project
     create_revision_attachment
-    edit_revision_policy
     get_attachment_revisions
     get_bug_role_phids
     get_members_by_bmo_id
-    get_members_by_phid
     get_needs_review
     get_phab_bmo_ids
-    get_project_phid
-    get_revisions_by_ids
-    get_revisions_by_phids
     get_security_sync_groups
     intersect
     is_attachment_phab_revision
-    make_revision_private
-    make_revision_public
     request
     set_phab_user
-    set_project_members
-    set_revision_subscribers
 );
-
-sub get_revisions_by_ids {
-    my ($ids) = @_;
-    return _get_revisions({ ids => $ids });
-}
-
-sub get_revisions_by_phids {
-    my ($phids) = @_;
-    return _get_revisions({ phids => $phids });
-}
-
-sub _get_revisions {
-    my ($constraints) = @_;
-
-    my $data = {
-        queryKey    => 'all',
-        constraints => $constraints
-    };
-
-    my $result = request('differential.revision.search', $data);
-
-    ThrowUserError('invalid_phabricator_revision_id')
-        unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-    return $result->{result}{data};
-}
 
 sub create_revision_attachment {
     my ( $bug, $revision, $timestamp ) = @_;
@@ -137,223 +99,6 @@ sub get_bug_role_phids {
     return get_members_by_bmo_id(\@bug_users);
 }
 
-sub create_private_revision_policy {
-    my ( $groups ) = @_;
-
-    my $data = {
-        objectType => 'DREV',
-        default    => 'deny',
-        policy     => [
-            {
-                action => 'allow',
-                rule   => 'PhabricatorSubscriptionsSubscribersPolicyRule'
-            },
-            {
-                action => 'allow',
-                rule   => 'PhabricatorDifferentialReviewersPolicyRule'
-            }
-        ]
-    };
-
-    if(scalar @$groups gt 0) {
-        my $project_phids = [];
-        foreach my $group (@$groups) {
-            my $phid = get_project_phid('bmo-' . $group);
-            push(@$project_phids, $phid) if $phid;
-        }
-
-        ThrowUserError('invalid_phabricator_sync_groups') unless @$project_phids;
-
-        push(@{ $data->{policy} },
-            {
-                action => 'allow',
-                rule   => 'PhabricatorProjectsPolicyRule',
-                value  => $project_phids,
-            }
-        );
-    }
-    else {
-        my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-            name => 'secure-revision'
-        });
-        push(@{ $data->{policy} },
-            {
-                action => 'allow',
-                value  => $secure_revision->phid,
-            }
-        );
-    }
-
-    my $result = request('policy.create', $data);
-    return $result->{result}{phid};
-}
-
-sub make_revision_public {
-    my ($revision_phid) = @_;
-    return request('differential.revision.edit', {
-        transactions => [
-            {
-                type  => 'view',
-                value => 'public'
-            },
-            {
-                type  => 'edit',
-                value => 'users'
-            }
-        ],
-        objectIdentifier => $revision_phid
-    });
-
-}
-
-sub make_revision_private {
-    my ($revision_phid) = @_;
-
-    # When creating a private policy with no args it
-    # creates one with the secure-revision project.
-    my $private_policy = create_private_revision_policy();
-
-    return request('differential.revision.edit', {
-        transactions => [
-            {
-                type  => "view",
-                value => $private_policy->phid
-            },
-            {
-                type  => "edit",
-                value => $private_policy->phid
-            }
-        ],
-        objectIdentifier => $revision_phid
-    });
-}
-
-sub edit_revision_policy {
-    my ($revision_phid, $policy_phid, $subscribers) = @_;
-
-    my $data = {
-        transactions => [
-            {
-                type  => 'view',
-                value => $policy_phid
-            },
-            {
-                type  => 'edit',
-                value => $policy_phid
-            }
-        ],
-        objectIdentifier => $revision_phid
-    };
-
-    if (@$subscribers) {
-        push(@{ $data->{transactions} }, {
-            type  => 'subscribers.set',
-            value => $subscribers
-        });
-    }
-
-    return request('differential.revision.edit', $data);
-}
-
-sub set_revision_subscribers {
-    my ($revision_phid, $subscribers) = @_;
-
-    my $data = {
-        transactions => [
-            {
-                type  => 'subscribers.set',
-                value => $subscribers
-            }
-        ],
-        objectIdentifier => $revision_phid
-    };
-
-    return request('differential.revision.edit', $data);
-}
-
-sub add_comment_to_revision {
-    my ($revision_phid, $comment) = @_;
-
-    my $data = {
-        transactions => [
-            {
-                type  => 'comment',
-                value => $comment
-            }
-        ],
-        objectIdentifier => $revision_phid
-    };
-    return request('differential.revision.edit', $data);
-}
-
-sub get_project_phid {
-    my $project = shift;
-    my $memcache = Bugzilla->memcached;
-
-    # Check memcache
-    my $project_phid = $memcache->get_config({ key => "phab_project_phid_" . $project });
-    if (!$project_phid) {
-        my $data = {
-            queryKey => 'all',
-            constraints => {
-                name => $project
-            }
-        };
-
-        my $result = request('project.search', $data);
-        return undef
-            unless (exists $result->{result}{data} && @{ $result->{result}{data} });
-
-        # If name is used as a query param, we need to loop through and look
-        # for exact match as Conduit will tokenize the name instead of doing
-        # exact string match :(
-        foreach my $item ( @{ $result->{result}{data} } ) {
-            next if $item->{fields}{name} ne $project;
-            $project_phid = $item->{phid};
-        }
-
-        $memcache->set_config({ key => "phab_project_phid_" . $project, data => $project_phid });
-    }
-    return $project_phid;
-}
-
-sub create_project {
-    my ($project, $description, $members) = @_;
-
-    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-        name => 'secure-revision'
-    });
-
-    my $data = {
-        transactions => [
-            { type => 'name',  value => $project               },
-            { type => 'description', value => $description     },
-            { type => 'edit',  value => $secure_revision->phid }.
-            { type => 'join',  value => $secure_revision->phid },
-            { type => 'view',  value => $secure_revision->phid },
-            { type => 'icon',  value => 'group'                },
-            { type => 'color', value => 'red'                  }
-        ]
-    };
-
-    my $result = request('project.edit', $data);
-    return $result->{result}{object}{phid};
-}
-
-sub set_project_members {
-    my ($project_id, $phab_user_ids) = @_;
-
-    my $data = {
-        objectIdentifier => $project_id,
-        transactions => [
-            { type => 'members.set',  value => $phab_user_ids }
-        ]
-    };
-
-    my $result = request('project.edit', $data);
-    return $result->{result}{object}{phid};
-}
-
 sub get_members_by_bmo_id {
     my $users = shift;
 
@@ -368,20 +113,6 @@ sub get_members_by_bmo_id {
     return \@phab_ids;
 }
 
-sub get_members_by_phid {
-    my $phids = shift;
-
-    my $result = get_phab_bmo_ids({ phids => $phids });
-
-    my @bmo_ids;
-    foreach my $user (@$result) {
-        push(@bmo_ids, $user->{id})
-          if ($user->{phid} && $user->{phid} =~ /^PHID-USER/);
-    }
-
-    return \@bmo_ids;
-}
-
 sub get_phab_bmo_ids {
     my ($params) = @_;
     my $memcache = Bugzilla->memcached;
@@ -389,44 +120,49 @@ sub get_phab_bmo_ids {
     # Try to find the values in memcache first
     my @results;
     if ($params->{ids}) {
-        my @bmo_ids = @{ $params->{ids} };
-        for (my $i = 0; $i < @bmo_ids; $i++) {
-            my $phid = $memcache->get({ key => "phab_user_bmo_id_" . $bmo_ids[$i] });
+        my @new_bmo_ids;
+        foreach my $bmo_id ( @{ $params->{ids} } ) {
+            my $phid = $memcache->get({ key => "phab_user_bmo_id_$bmo_id" });
             if ($phid) {
-                push(@results, {
-                    id   => $bmo_ids[$i],
+                push @results, {
+                    id   => $bmo_id,
                     phid => $phid
-                });
-                splice(@bmo_ids, $i, 1);
+                };
+                next;
             }
+            push @new_bmo_ids, $bmo_id;
         }
-        $params->{ids} = \@bmo_ids;
+        $params->{ids} = \@new_bmo_ids;
     }
 
     if ($params->{phids}) {
-        my @phids = @{ $params->{phids} };
-        for (my $i = 0; $i < @phids; $i++) {
-            my $bmo_id = $memcache->get({ key => "phab_user_phid_" . $phids[$i] });
+        my @new_phids;
+        foreach my $phid ( @{ $params->{phids} } ) {
+            my $bmo_id = $memcache->get({ key => "phab_user_phid_$phid" });
             if ($bmo_id) {
-                push(@results, {
+                push @results, {
                     id   => $bmo_id,
-                    phid => $phids[$i]
-                });
-                splice(@phids, $i, 1);
+                    phid => $phid
+                };
+                next;
             }
+            push @new_phids, $phid;
         }
-        $params->{phids} = \@phids;
+        $params->{phids} = \@new_phids;
     }
 
-    my $result = request('bugzilla.account.search', $params);
+    if ( $params->{ids} || $params->{phids} ) {
+        my $result = request('bugzilla.account.search', $params);
 
-    # Store new values in memcache for later retrieval
-    foreach my $user (@{ $result->{result} }) {
-        $memcache->set({ key   => "phab_user_bmo_id_" . $user->{id},
-                         value => $user->{phid} });
-        $memcache->set({ key   => "phab_user_phid_" . $user->{phid},
-                         value => $user->{id} });
-        push(@results, $user);
+        # Store new values in memcache for later retrieval
+        foreach my $user (@{ $result->{result} }) {
+            next unless $user->{phid} && $user->{id};
+            $memcache->set({ key   => "phab_user_bmo_id_" . $user->{id},
+                             value => $user->{phid} });
+            $memcache->set({ key   => "phab_user_phid_" . $user->{phid},
+                             value => $user->{id} });
+            push(@results, $user);
+        }
     }
 
     return \@results;
@@ -441,26 +177,29 @@ sub is_attachment_phab_revision {
 sub get_attachment_revisions {
     my $bug = shift;
 
-    my $revisions;
-
     my @attachments =
       grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
 
-    if (@attachments) {
-        my @revision_ids;
-        foreach my $attachment (@attachments) {
-            my ($revision_id) =
-              ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
-            next if !$revision_id;
-            push( @revision_ids, int($revision_id) );
-        }
+    return unless @attachments;
 
-        if (@revision_ids) {
-            $revisions = get_revisions_by_ids( \@revision_ids );
-        }
+    my @revision_ids;
+    foreach my $attachment (@attachments) {
+        my ($revision_id) =
+          ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
+        next if !$revision_id;
+        push( @revision_ids, int($revision_id) );
     }
 
-    return @$revisions;
+    return unless @revision_ids;
+
+    my @revisions;
+    foreach my $revision_id (@revision_ids) {
+        push @revisions, Bugzilla::Extension::PhabBugz::Revision->new_from_query({
+            ids => [ $revision_id ]
+        });
+    }
+
+    return \@revisions;
 }
 
 sub request {
@@ -538,7 +277,7 @@ sub add_security_sync_comments {
     my $phab_error_message = 'Revision is being made private due to unknown Bugzilla groups.';
 
     foreach my $revision (@$revisions) {
-        add_comment_to_revision( $revision->{phid}, $phab_error_message );
+        $revision->add_comment($phab_error_message);
     }
 
     my $num_revisions = scalar @$revisions;
