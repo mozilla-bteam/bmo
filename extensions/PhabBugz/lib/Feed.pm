@@ -32,10 +32,8 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
     create_revision_attachment
     get_bug_role_phids
-    get_project_phid
     get_security_sync_groups
     is_attachment_phab_revision
-    make_revision_public
     request
     set_phab_user
 );
@@ -334,6 +332,10 @@ sub process_revision_change {
     my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
 
     # REVISION SECURITY POLICY
+
+    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+        name => 'secure-revision'
+    });
 
     # If bug is public then remove privacy policy
     if (!@{ $bug->groups_in }) {
