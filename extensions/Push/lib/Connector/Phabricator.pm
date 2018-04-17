@@ -101,6 +101,7 @@ sub send {
             ));
             $revision->set_policy('view', $secure_revision->phid);
             $revision->set_policy('edit', $secure_revision->phid);
+            $revision->add_project($secure_revision->phid);
             add_security_sync_comments([$revision], $bug);
         }
         elsif ( !$is_public && $group_change ) {
