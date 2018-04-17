@@ -97,8 +97,8 @@ $(function() {
     }
 
     function saveBugComment(text) {
-        if(text.length < 1) return clearSavedBugComment();
-        if(text.length >  65535) return;
+        if (text.length < 1) return clearSavedBugComment();
+        if (text.length >  65535) return;
         let key = `bug-modal-saved-comment-${BUGZILLA.bug_id}`;
         let value = {
             text: text,
@@ -116,7 +116,7 @@ $(function() {
         expireSavedComments();
         let key = `bug-modal-saved-comment-${BUGZILLA.bug_id}`;
         let value = JSON.parse(localStorage.getItem(key));
-        if(value){
+        if (value){
             let commentBox = document.querySelector("textarea#comment");
             commentBox.value = value['text'];
             if (BUGZILLA.user.settings.autosize_comments) {
@@ -128,13 +128,13 @@ $(function() {
     function expireSavedComments() {
         const AGE_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds.
         let expiredKeys = [];
-        for(let i = 0; i < localStorage.length; i++) {
+        for (let i = 0; i < localStorage.length; i++) {
             let key = localStorage.key(i);
-            if(key.match(/^bug-modal-saved-comment-/)) {
+            if (key.match(/^bug-modal-saved-comment-/)) {
                 let value = JSON.parse(localStorage.getItem(key));
                 let savedAt = value['savedAt'] || 0;
                 let age = Date.now() - savedAt;
-                if(age < 0 || age > AGE_THRESHOLD) {
+                if (age < 0 || age > AGE_THRESHOLD) {
                     expiredKeys.push(key);
                 }
             }
