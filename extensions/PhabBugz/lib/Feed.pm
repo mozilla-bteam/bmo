@@ -31,10 +31,8 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
     create_revision_attachment
     get_bug_role_phids
-    get_project_phid
     get_security_sync_groups
     is_attachment_phab_revision
-    make_revision_public
     request
     set_phab_user
 );
