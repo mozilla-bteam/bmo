@@ -28,6 +28,4 @@ use constant PHAB_FEED_POLL_SECONDS  => $ENV{PHAB_FEED_POLL} // 5;
 use constant PHAB_USER_POLL_SECONDS  => $ENV{PHAB_USER_POLL} // 60;
 use constant PHAB_GROUP_POLL_SECONDS => $ENV{PHAB_GROUP_POLL} // 300;
 
-@dklawren
-
 1;
