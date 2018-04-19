@@ -103,7 +103,7 @@ sub feed_query {
 
     # Check for new transctions (stories)
     my $new_stories = $self->new_stories($story_last_id);
-    INFO("FEED: No new stories") unless @$new_stories;
+    INFO("No new stories") unless @$new_stories;
 
     # Process each story
     foreach my $story_data (@$new_stories) {
