@@ -21,18 +21,13 @@ use Bugzilla::WebService::Constants;
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
-    create_private_revision_policy
     create_revision_attachment
-    edit_revision_policy
     get_bug_role_phids
     get_phab_bmo_ids
     get_needs_review
-    get_project_phid
-    get_revisions_by_ids
     get_security_sync_groups
     intersect
     is_attachment_phab_revision
-    make_revision_public
     request
 );
 
