@@ -860,9 +860,15 @@ sub check_rate_limit {
             if ($filter && $filter->test($ip)) {
                 $action = 'ignore';
             }
-            my $limit = join("/", @$limit);
-            Bugzilla->audit("[rate_limit] action=$action, ip=$ip, limit=$limit, name=$name");
-            ThrowUserError("rate_limit") if $action eq 'block';
+            my $limit_str = join("/", @$limit);
+            Bugzilla->audit("[rate_limit] action=$action, ip=$ip, limit=$limit_str, name=$name");
+            if ($action eq 'block') {
+                Bugzilla::ModPerl::BlockIP->block_ip($ip) if $ENV{MOD_PERL};
+                ThrowUserError("rate_limit");
+            }
+            elsif ($action eq 'ignore') {
+                Bugzilla::ModPerl::BlockIP->unblock_ip($ip) if $ENV{MOD_PERL};
+            }
         }
     }
 }
