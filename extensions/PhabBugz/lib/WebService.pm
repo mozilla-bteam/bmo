@@ -19,6 +19,16 @@ use Bugzilla::Util qw(datetime_from time_ago);
 use Bugzilla::WebService::Constants;
 
 use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::Util qw(
+    add_security_sync_comments
+    create_revision_attachment
+    get_bug_role_phids
+    get_needs_review
+    get_security_sync_groups
+    intersect
+    is_attachment_phab_revision
+    request
+);
 
 use DateTime ();
 use List::Util qw(first uniq);
