@@ -42,9 +42,7 @@ use constant READ_ONLY => qw(
 
 use constant PUBLIC_METHODS => qw(
     check_user_permission_for_bug
-    obsolete_attachments
-    revision
-    update_reviewer_statuses
+
     needs_review
 );
 
