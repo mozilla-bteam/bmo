@@ -367,7 +367,7 @@ sub needs_review {
 
         # review requester
         if (my $author = $author_id_to_user{$author_phab_to_id{ $review->{fields}{authorPHID} }}) {
-            $review_flat->{author_name}  = $author->realname;
+            $review_flat->{author_name}  = $author->name;
             $review_flat->{author_email} = $author->email;
         }
         else {
