@@ -11,6 +11,7 @@ use warnings;
 use autodie;
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Constants qw(bz_locations);
 use Bugzilla::Attachment;
 use Bugzilla::Comment;
 use Bugzilla::Group;
@@ -26,7 +27,7 @@ use Email::MIME::ContentType qw(parse_content_type);
 use Encode;
 use English qw(-no_match_vars);
 use HTML::Tree;
-use List::MoreUtils qw(any none);
+use List::Util qw(any none);
 use MIME::Parser;
 use DateTime;
 use Digest::SHA qw(sha256_hex);
@@ -709,17 +710,17 @@ sub _user_gpg_interface {
 sub _user_gpg_homedir {
     my ($user) = @_;
     my $hash     = sha256_hex( $user->public_key );
-    my $home_dir = catdir( Bugzilla->params->{gpg_base_dir}, $user->id, $hash );
+    my $home_dir = catdir( bz_locations->{cgi_path}, 'gpg', $user->id, $hash );
     my $handles      = GnuPG::Handles->new(
         stdin      => IO::Handle->new,
         stdout     => IO::Handle->new,
         stderr     => IO::Handle->new,
         status     => IO::Handle->new,
     );
-    my $stamp_file = catfile($home_dir, "stamp.txt");
+    my $stamp_file = catfile($home_dir, 'stamp.txt');
 
     unless (-d $home_dir && -f $stamp_file) {
-        mkpath($home_dir, 0, 0700);
+        mkpath($home_dir, 0, oct 700);
         my $gpg = $user->gpg_interface($home_dir);
         my $pid = $gpg->import_keys(handles => $handles);
         $handles->stdin->print($user->public_key);
