@@ -19,6 +19,7 @@ use constant AUDIT_REMOVES => 0;
 use constant USE_MEMCACHED => 0;
 
 use Bugzilla;
+use Bugzilla::Logging;
 use Bugzilla::Util;
 
 #
