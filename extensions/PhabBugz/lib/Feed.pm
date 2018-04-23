@@ -615,7 +615,7 @@ sub process_new_user {
     # the first value of each row should be the bug id
     my @bug_ids = map { shift @$_ } @$data;
 
-    INFO("USERS: Updating subscriber values for old private bugs");
+    INFO("Updating subscriber values for old private bugs");
 
     foreach my $bug_id (@bug_ids) {
         INFO("Processing bug $bug_id");
@@ -627,6 +627,7 @@ sub process_new_user {
 
         foreach my $attachment (@attachments) {
             my ($revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+
             INFO("Processing revision D$revision_id");
 
             my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
