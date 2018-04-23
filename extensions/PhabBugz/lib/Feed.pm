@@ -21,7 +21,7 @@ use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::Mailer;
 use Bugzilla::Search;
-use Bugzilla::Util qw(diff_arrays with_writable_database with_readonly_database);
+use Bugzilla::Util qw(diff_arrays format_time with_writable_database with_readonly_database);
 
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Policy;
@@ -523,7 +523,7 @@ sub process_new_user {
     # CHECK AND WARN FOR POSSIBLE USERNAME SQUATTING
     INFO("Checking for username squatters");
     my $dbh     = Bugzilla->dbh;
-    my $regexp  = $dbh->quote( ":?:" . $phab_user->name . "[[:>:]]" );
+    my $regexp  = $dbh->quote( ":?:\Q" . $phab_user->name . "\E[[:>:]]" );
     my $results = $dbh->selectall_arrayref( "
         SELECT userid, login_name, realname
           FROM profiles
@@ -553,9 +553,12 @@ sub process_new_user {
                 date               => $timestamp,
                 phab_user_login    => $phab_user->name,
                 phab_user_realname => $phab_user->realname,
-                bugzilla_userid    => $row->{userid},
-                bugzilla_login     => $row->{login_name},
-                bugzilla_realname  => $row->{realname}
+                bugzilla_userid    => $phab_user->bugzilla_user->id,
+                bugzilla_login     => $phab_user->bugzilla_user->login,
+                bugzilla_realname  => $phab_user->bugzilla_user->name,
+                squat_userid       => $row->{userid},
+                squat_login        => $row->{login_name},
+                squat_realname     => $row->{realname}
             };
 
             my $message;

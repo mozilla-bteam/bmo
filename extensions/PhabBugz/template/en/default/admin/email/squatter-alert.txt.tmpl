@@ -16,9 +16,19 @@ X-Bugzilla-Type: squatter-alert
 
 Possible username squatter:
 
-phabricator user login: [% phab_user_login %]
-phabricator user realname: [% phab_user_realname %]
+Phabricator Account
 
-bugzilla user id: [% bugzilla_userid %]
-bugzilla login: [% bugzilla_login_name %]
-bugzilla realname: [% bugzilla_realname %]
+login: [% phab_user_login %]
+realname: [% phab_user_realname %]
+
+Bugzilla Account Matching Phabricator Account
+
+user id: [% bugzilla_userid %]
+login: [% bugzilla_login %]
+realname: [% bugzilla_realname %]
+
+Possible Bugzilla Account Squatting On
+
+user id: [% squat_userid %]
+login: [% squat_login %]
+realname: [% squat_realname %]
