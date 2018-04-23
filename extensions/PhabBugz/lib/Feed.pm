@@ -16,8 +16,10 @@ use List::MoreUtils qw(any);
 use Moo;
 use Try::Tiny;
 
-use Bugzilla::Logging;
 use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Logging;
+use Bugzilla::Mailer;
 use Bugzilla::Search;
 use Bugzilla::Util qw(diff_arrays with_writable_database with_readonly_database);
 
@@ -519,22 +521,49 @@ sub process_new_user {
     my $old_user = set_phab_user();
 
     # CHECK AND WARN FOR POSSIBLE USERNAME SQUATTING
-    INFO("USERS: Checking for username squatters");
-    my $dbh = Bugzilla->dbh;
-    my $regexp = $dbh->quote(":?:" . $phab_user->name . "[[:>:]]");
-    my $results = $dbh->selectall_arrayref("
-        SELECT userid, login_name
+    INFO("Checking for username squatters");
+    my $dbh     = Bugzilla->dbh;
+    my $regexp  = $dbh->quote( ":?:" . $phab_user->name . "[[:>:]]" );
+    my $results = $dbh->selectall_arrayref( "
+        SELECT userid, login_name, realname
           FROM profiles
-         WHERE userid != ? AND " . $dbh->sql_regexp('realname', $regexp),
-        undef,
-        $bug_user->id
-    );
+         WHERE userid != ? AND " . $dbh->sql_regexp( 'realname', $regexp ),
+        { Slice => {} },
+        $bug_user->id );
     if (@$results) {
-        foreach my $row ( @$results ) {
-            WARN("USERS: Possible username squatter -" .
-                 " phab user: " . $phab_user->name .
-                 " bugzilla user id: " . $row->[0] .
-                 " bugzilla login: " . $row->[1]);
+        # The email client will display the Date: header in the desired timezone,
+        # so we can always use UTC here.
+        my $timestamp = Bugzilla->dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+        $timestamp = format_time($timestamp, '%a, %d %b %Y %T %z', 'UTC');
+
+        foreach my $row (@$results) {
+            WARN( "Possible username squatter: "
+                  . "phab user login: "
+                  . $phab_user->name
+                  . " phab user realname: "
+                  . $phab_user->realname
+                  . " bugzilla user id: "
+                  . $row->{userid}
+                  . " bugzilla login: "
+                  . $row->{login_name}
+                  . " bugzilla realname: "
+                  . $row->{realname} );
+
+            my $vars = {
+                date               => $timestamp,
+                phab_user_login    => $phab_user->name,
+                phab_user_realname => $phab_user->realname,
+                bugzilla_userid    => $row->{userid},
+                bugzilla_login     => $row->{login_name},
+                bugzilla_realname  => $row->{realname}
+            };
+
+            my $message;
+            my $template = Bugzilla->template;
+            $template->process("admin/email/squatter-alert.txt.tmpl", $vars, \$message)
+                || ThrowTemplateError($template->error());
+
+            MessageToMTA($message);
         }
     }
 
@@ -609,7 +638,7 @@ sub process_new_user {
 
     Bugzilla->set_user($old_user);
 
-    INFO('USERS: SUCCESS - User ' . $phab_user->id . ' processed');
+    INFO('SUCCESS: User ' . $phab_user->id . ' processed');
 }
 
 ##################
