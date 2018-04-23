@@ -11,10 +11,12 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Logging;
+use Log::Log4perl qw(:easy);
 use Bugzilla::Error;
 use Scalar::Util qw(blessed);
 use List::Util qw(sum);
-use Bugzilla::Util qw(trick_taint);
+use Bugzilla::Util qw(trick_taint trim);
 use URI::Escape;
 use Encode;
 use Sys::Syslog qw(:DEFAULT);
@@ -33,13 +35,38 @@ sub _new {
     my $servers = Bugzilla->localconfig->{memcached_servers};
     if (Bugzilla->feature('memcached') && $servers) {
         $self->{namespace} = Bugzilla->localconfig->{memcached_namespace};
-        $self->{memcached} = Cache::Memcached::Fast->new({
-            servers   => [ split(/[, ]+/, $servers) ],
-            namespace => $self->{namespace},
-            max_size  => 1024 * 1024 * 4,
-        });
+        TRACE("connecting servers: $servers, namespace: $self->{namespace}");
+        $self->{memcached} = Cache::Memcached::Fast->new(
+            {
+                servers         => [ _parse_memcached_server_list($servers) ],
+                namespace       => $self->{namespace},
+                max_size        => 1024 * 1024 * 4,
+                max_failures    => 1,
+                failure_timeout => 60,
+                io_timeout      => 0.2,
+                connect_timeout => 0.2,
+            }
+        );
+        my $versions = $self->{memcached}->server_versions;
+        if (keys %$versions) {
+            # this is needed to ensure forked processes don't start out with a connected memcached socket.
+            $self->{memcached}->disconnect_all;
+        }
+        else {
+            WARN("No memcached servers");
+        }
+    }
+    else {
+        TRACE("memcached feature is not enabled");
     }
     return bless($self, $class);
+}
+
+sub _parse_memcached_server_list {
+    my ($server_list) = @_;
+    my @servers = split(/[, ]+/, trim($server_list));
+
+    return map { /:[0-9]+$/s ? $_ : "$_:11211" } @servers;
 }
 
 sub enabled {
@@ -200,6 +227,8 @@ sub should_rate_limit {
     my $prefix    = RATE_LIMIT_PREFIX . $name . ':';
     my $memcached = $self->{memcached};
 
+    return 0 unless $memcached;
+
     $tries //= 3;
 
     for (0 .. $tries) {
@@ -266,9 +295,7 @@ sub _inc_prefix {
     delete Bugzilla->request_cache->{"memcached_prefix_$name"};
 
     # BMO - log that we've wiped the cache
-    openlog('apache', 'cons,pid', 'local4');
-    syslog('notice', encode_utf8("[memcached] $name cache cleared"));
-    closelog();
+    TRACE("$name cache cleared");
 }
 
 sub _global_prefix {
@@ -300,17 +327,20 @@ sub _set {
                                           param    => "value" });
     }
 
-    $key = $self->_encode_key($key)
+    my $enc_key = $self->_encode_key($key)
         or return;
-    return $self->{memcached}->set($key, $value);
+    TRACE("set $enc_key");
+    return $self->{memcached}->set($enc_key, $value);
 }
 
 sub _get {
     my ($self, $key) = @_;
 
-    $key = $self->_encode_key($key)
+    my $enc_key = $self->_encode_key($key)
         or return;
-    return $self->{memcached}->get($key);
+    my $val = $self->{memcached}->get($enc_key);
+    TRACE("get $enc_key: " . (defined $val ? "HIT" : "MISS"));
+    return $val;
 }
 
 sub _delete {

@@ -284,7 +284,8 @@ sub get_attachment_link {
 
         $link_text =~ s/ \[details\]$//;
         $link_text =~ s/ \[diff\]$//;
-        my $linkval = "attachment.cgi?id=$attachid";
+        state $urlbase = Bugzilla->localconfig->{urlbase};
+        my $linkval = "${urlbase}attachment.cgi?id=$attachid";
 
         # If the attachment is a patch and patch_viewer feature is
         # enabled, add link to the diff.
@@ -572,7 +573,9 @@ sub create {
         ABSOLUTE => 1,
         RELATIVE => $ENV{MOD_PERL} ? 0 : 1,
 
-        COMPILE_DIR => bz_locations()->{'template_cache'},
+        # Only use an on-disk template cache if we're running as the web
+        # server.  This ensures the permissions of the cache remain correct.
+        COMPILE_DIR => is_webserver_group() ? bz_locations()->{'template_cache'} : undef,
 
         # Don't check for a template update until 1 hour has passed since the
         # last check.
@@ -680,6 +683,20 @@ sub create {
                 my ($var) = @_;
                 $var =~ s/ /\&nbsp;/g;
                 $var =~ s/-/\&#8209;/g;
+                return $var;
+            },
+
+            # Insert `<wbr>` HTML tags to camel and snake case words as well as
+            # words containing dots in the given string so a long bug summary,
+            # for example, will be wrapped in a preferred manner rather than
+            # overflowing or expanding the parent element. This conversion
+            # should exclude existing HTML tags such as links. Examples:
+            # * `test<wbr>_switch<wbr>_window<wbr>_content<wbr>.py`
+            # * `Test<wbr>Switch<wbr>To<wbr>Window<wbr>Content`
+            # * `<a href="https://www.mozilla.org/">mozilla<wbr>.org</a>`
+            wbr => sub {
+                my ($var) = @_;
+                $var =~ s/([a-z])([A-Z\._])(?![^<]*>)/$1<wbr>$2/g;
                 return $var;
             },
 
@@ -1056,6 +1073,8 @@ sub create {
 our %_templates_to_precompile;
 sub precompile_templates {
     my ($output) = @_;
+
+    return unless is_webserver_group();
 
     # Remove the compiled templates.
     my $cache_dir = bz_locations()->{'template_cache'};

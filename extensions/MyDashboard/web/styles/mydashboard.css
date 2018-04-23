@@ -18,11 +18,13 @@
     white-space: nowrap;
 }
 
+#mydashboard .requests {
+    margin-bottom: 2em;
+}
+
 .query_heading {
     font-size: 18px;
-    font-weight: strong;
-    padding-bottom: 5px;
-    padding-top: 5px;
+    font-weight: 600;
     color: rgb(72, 72, 72);
 }
 
@@ -70,4 +72,19 @@
 
 #last_changes .field_label {
     text-align: left;
+}
+
+#saved_searches_container > header {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+#saved_searches_container > header h2 {
+    margin: 0 10px 0 0;
+}
+
+#saved_searches_container li {
+    margin: 5px;
+    display: inline;
 }

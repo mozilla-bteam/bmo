@@ -19,7 +19,6 @@ use Memoize;
 
 @Bugzilla::Constants::EXPORT = qw(
     BUGZILLA_VERSION
-    REST_DOC
 
     REMOTE_FILE
     LOCAL_FILE
@@ -208,10 +207,6 @@ sub BUGZILLA_VERSION {
     eval { require Bugzilla } || return $bugzilla_version;
     eval { Bugzilla->VERSION } || $bugzilla_version;
 }
-
-# A base link to the current REST Documentation. We place it here
-# as it will need to be updated to whatever the current release is.
-use constant REST_DOC => "https://bugzilla.readthedocs.io/en/latest/api/";
 
 # Location of the remote and local XML files to track new releases.
 use constant REMOTE_FILE => 'http://updates.bugzilla.org/bugzilla-update.xml';
@@ -659,18 +654,21 @@ sub _bz_locations {
     $libpath =~ /(.*)/;
     $libpath = $1;
 
-    my ($localconfig, $datadir);
+    my ($localconfig, $datadir, $confdir);
     if ($project && $project =~ /^(\w+)$/) {
         $project = $1;
         $localconfig = "localconfig.$project";
         $datadir = "data/$project";
+        $confdir = "conf/$project";
     } else {
         $project = undef;
         $localconfig = "localconfig";
         $datadir = "data";
+        $confdir = "conf";
     }
 
     $datadir = "$libpath/$datadir";
+    $confdir = "$libpath/$confdir";
     # We have to return absolute paths for mod_perl.
     # That means that if you modify these paths, they must be absolute paths.
     return {
@@ -695,9 +693,9 @@ sub _bz_locations {
         # The script should really generate these graphs directly...
         'webdotdir'      => "$datadir/webdot",
         'extensionsdir'  => "$libpath/extensions",
+        'logsdir'        => "$libpath/logs",
         'assetsdir'      => "$datadir/assets",
-        # error_reports store error/warnings destined for sentry
-        'error_reports'  => "$libpath/error_reports",
+        'confdir'        => $confdir,
     };
 }
 

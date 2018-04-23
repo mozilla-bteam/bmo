@@ -98,9 +98,16 @@
       <meta charset="UTF-8">
     [% END %]
 
+    [% IF Bugzilla.cgi.should_block_referrer %]
+      <meta name="referrer" content="origin">
+    [% ELSE %]
+      <meta name="referrer" content="origin-when-crossorigin">
+    [% END %]
+
     [%- js_BUGZILLA = {
             param => {
                 maxusermatches => Param('maxusermatches'),
+                splinter_base => Param('splinter_base'),
             },
             constant => {
                 COMMENT_COLS => constants.COMMENT_COLS,
@@ -206,7 +213,6 @@
     [% IF allow_mobile && is_mobile_browser %]
       <meta name="viewport" content="width=device-width, initial-scale=1">
     [% END %]
-    <meta name="referrer" content="origin-when-crossorigin">
     [% Hook.process("additional_header") %]
   </head>
 
@@ -238,7 +244,7 @@
 <header id="header" role="banner">
   <div class="inner">
     <h1 id="header-title" class="title"><a href="./" title="Go to home page">[% terms.Bugzilla %]</a></h1>
-    <form role="search" id="header-search" class="quicksearch" action="buglist.cgi">
+    <form role="search" id="header-search" class="quicksearch" action="buglist.cgi" data-no-csrf>
       <section class="searchbox-outer dropdown" role="combobox" aria-expanded="false" aria-haspopup="listbox"
                aria-owns="header-search-dropdown">
         <h2>Quick Search</h2>
@@ -288,7 +294,7 @@
           <li role="presentation">
             <a href="report.cgi" role="menuitem" tabindex="-1">Reports</a>
           </li>
-          [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless
+          [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless || user.in_group('disableusers')
                 || (Param('useclassification') && user.in_group('editclassifications'))
                 || user.in_group('editcomponents') || user.in_group('admin') || user.in_group('creategroups')
                 || user.in_group('editkeywords') || user.in_group('bz_canusewhines')

@@ -10,7 +10,7 @@
 [%# this div exists to allow bugzilla-tweaks to detect when we're active %]
 <div id="inline-history-ext"></div>
 
-<script>
+<script [% script_nonce FILTER none %]>
   var ih_activity = new Array();
   var ih_activity_flags = new Array();
   var ih_activity_sort_order = '[% user.settings.comment_sort_order.value FILTER js %]';
@@ -155,6 +155,7 @@
            change.fieldname == 'reporter' ||
            change.fieldname == 'qa_contact' ||
            change.fieldname == 'cc' ||
+           change.fieldname == 'bug_mentor' ||
            change.fieldname == 'flagtypes.name' %]
     [% value FILTER email FILTER js %]
   [% ELSIF change.fieldtype == constants.FIELD_TYPE_DATETIME %]

@@ -9,13 +9,22 @@
     - name: install common packages
       yum: name={{item}} state=present
       with_items:
-        - libselinux-python
-        - policycoreutils-python
-        - python-urllib3
-        - python-pyasn1
-        - python2-ndg_httpsclient
-        - pyOpenSSL
         - htop
+        - libselinux-python
+        - ntp
+        - policycoreutils-python
+        - pyOpenSSL
+        - python-pyasn1
+        - python-sphinx10
+        - python-urllib3
+        - python2-ndg_httpsclient
+
+    - name: link sphinx
+      command: ln -s /usr/bin/sphinx-1.0-{{ item }} /usr/bin/sphinx-{{ item }} creates=/usr/bin/sphinx-{{ item }}
+      with_items:
+        - autogen
+        - build
+        - quickstart
 
     - name: permissive selinux
       selinux: state=permissive policy=targeted
@@ -37,6 +46,15 @@
         dest: /etc/hosts
         regexp: '{{DB_HOSTNAME}}'
         line: '{{DB_IP}} {{DB_HOSTNAME}}'
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: 'add LOG4PERL_CONFIG_FILE'
+      lineinfile:
+        dest: /etc/environment
+        regexp: 'LOG4PERL_CONFIG_FILE='
+        line: 'LOG4PERL_CONFIG_FILE=log4perl-vagrant.conf'
         owner: root
         group: root
         mode: 0644

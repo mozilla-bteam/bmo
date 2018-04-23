@@ -23,8 +23,14 @@ BEGIN {
 }
 
 use Bugzilla::ModPerl::StartupFix;
+use Taint::Util qw(untaint);
 
 use constant USE_NYTPROF => !! $ENV{USE_NYTPROF};
+use constant NYTPROF_DIR => do {
+    my $dir = $ENV{NYTPROF_DIR};
+    untaint($dir);
+    $dir;
+};
 BEGIN {
     if (USE_NYTPROF) {
         $ENV{NYTPROF} = "savesrc=0:start=no:addpid=1";
@@ -49,6 +55,7 @@ use Apache2::SizeLimit;
 use ModPerl::RegistryLoader ();
 use File::Basename ();
 use File::Find ();
+use English qw(-no_match_vars $OSNAME);
 
 # This loads most of our modules.
 use Bugzilla ();
@@ -72,8 +79,9 @@ Bugzilla::CGI->compile(qw(:cgi :push));
 # is taking up more than $apache_size_limit of RAM all by itself, not counting RAM it is
 # sharing with the other httpd processes.
 my $limit = Bugzilla->localconfig->{apache_size_limit};
-if ($limit < 400_000) {
-    $limit = 400_000;
+if ($OSNAME eq 'linux' && ! eval { require Linux::Smaps }) {
+    WARN('SizeLimit requires Linux::Smaps on linux. size limit set to 800MB');
+    $limit = 800_000;
 }
 Apache2::SizeLimit->set_max_unshared_size($limit);
 
@@ -132,6 +140,7 @@ use base qw(ModPerl::Registry);
 use Bugzilla;
 use Bugzilla::Constants qw(USAGE_MODE_REST bz_locations);
 use Time::HiRes;
+use Sys::Hostname;
 
 sub handler : method {
     my $class = shift;
@@ -150,19 +159,19 @@ sub handler : method {
 
     if (Bugzilla::ModPerl::USE_NYTPROF) {
         state $count = {};
+        state $dir  = Bugzilla::ModPerl::NYTPROF_DIR // bz_locations()->{datadir};
+        state $host = (split(/\./, hostname()))[0];
         my $script = File::Basename::basename($ENV{SCRIPT_FILENAME});
         $script =~ s/\.cgi$//;
-        my $file = bz_locations()->{datadir} . "/nytprof.$script." . ++$count->{$$};
+        my $file = $dir . "/nytprof.$host.$script." . ++$count->{$$};
         DB::enable_profile($file);
     }
     Bugzilla::init_page();
-    my $start = Time::HiRes::time();
     my $result = $class->SUPER::handler(@_);
     if (Bugzilla::ModPerl::USE_NYTPROF) {
         DB::disable_profile();
         DB::finish_profile();
     }
-    warn "[request_time] ", Bugzilla->cgi->request_uri, " took ", Time::HiRes::time() - $start, " seconds to execute";
 
     # When returning data from the REST api we must only return 200 or 304,
     # which tells Apache not to append its error html documents to the

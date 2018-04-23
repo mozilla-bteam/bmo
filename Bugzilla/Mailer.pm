@@ -12,8 +12,9 @@ use strict;
 use warnings;
 
 use base qw(Exporter);
-@Bugzilla::Mailer::EXPORT = qw(MessageToMTA build_thread_marker);
+our @EXPORT = qw(MessageToMTA build_thread_marker); ## no critic (Modules::ProhibitAutomaticExportation)
 
+use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Hook;
@@ -25,6 +26,8 @@ use Encode qw(encode);
 use Encode::MIME::Header;
 use Email::Address;
 use Email::MIME;
+use Try::Tiny;
+
 # Return::Value 1.666002 pollutes the error log with warnings about this
 # deprecated module. We have to set NO_CLUCK = 1 before loading Email::Send
 # to disable these warnings.
@@ -37,10 +40,10 @@ use Bugzilla::Version qw(vers_cmp);
 
 sub MessageToMTA {
     my ($msg, $send_now) = (@_);
-    my $method = Bugzilla->params->{'mail_delivery_method'};
+    my $method = Bugzilla->get_param_with_override('mail_delivery_method');
     return if $method eq 'None';
 
-    if (Bugzilla->params->{'use_mailer_queue'} and !$send_now) {
+    if (Bugzilla->get_param_with_override('use_mailer_queue') and !$send_now) {
         Bugzilla->job_queue->insert('send_mail', { msg => $msg });
         return;
     }
@@ -62,11 +65,11 @@ sub MessageToMTA {
             $msg =~ s/(?:\015+)?\012/\015\012/msg;
         }
 
-        $email = new Email::MIME($msg);
+        $email = Email::MIME->new($msg);
     }
 
     # Ensure that we are not sending emails too quickly to recipients.
-    if (Bugzilla->params->{use_mailer_queue}
+    if (Bugzilla->get_param_with_override('use_mailer_queue')
         && (EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR))
     {
         $dbh->do(
@@ -182,6 +185,20 @@ sub MessageToMTA {
     Bugzilla::Hook::process('mailer_before_send',
                             { email => $email, mailer_args => \@args });
 
+    try {
+        my $to         = $email->header('to') or die qq{Unable to find "To:" address\n};
+        my @recipients = Email::Address->parse($to);
+        die qq{Unable to parse "To:" address - $to\n} unless @recipients;
+        die qq{Did not expect more than one "To:" address in $to\n} if @recipients > 1;
+        my $badhosts = Bugzilla::Bloomfilter->lookup("badhosts") or die "No badhosts bloomfilter\n";
+        if ($badhosts->test($recipients[0]->host)) {
+            WARN("Attempted to send email to address in badhosts: $to");
+            $email->header_set(to => '');
+        }
+    } catch {
+        ERROR($_);
+    };
+
     # Allow for extensions to to drop the bugmail by clearing the 'to' header
     return if $email->header('to') eq '';
 
@@ -226,7 +243,7 @@ sub MessageToMTA {
     }
 
     # insert into email_rates
-    if (Bugzilla->params->{use_mailer_queue}
+    if (Bugzilla->get_param_with_override('use_mailer_queue')
         && (EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR))
     {
         $dbh->do(
@@ -252,15 +269,14 @@ sub build_thread_marker {
         $sitespec = "-$2$sitespec"; # Put the port number back in, before the '@'
     }
 
-    my $threadingmarker;
+    my $threadingmarker = "References: <bug-$bug_id-$user_id$sitespec>";
     if ($is_new) {
-        $threadingmarker = "Message-ID: <bug-$bug_id-$user_id$sitespec>";
+        $threadingmarker .= "\nMessage-ID: <bug-$bug_id-$user_id$sitespec>";
     }
     else {
         my $rand_bits = generate_random_password(10);
-        $threadingmarker = "Message-ID: <bug-$bug_id-$user_id-$rand_bits$sitespec>" .
-                           "\nIn-Reply-To: <bug-$bug_id-$user_id$sitespec>" .
-                           "\nReferences: <bug-$bug_id-$user_id$sitespec>";
+        $threadingmarker .= "\nMessage-ID: <bug-$bug_id-$user_id-$rand_bits$sitespec>" .
+                            "\nIn-Reply-To: <bug-$bug_id-$user_id$sitespec>";
     }
 
     return $threadingmarker;

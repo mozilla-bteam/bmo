@@ -14,9 +14,11 @@ use warnings;
 use base qw(Exporter);
 @Bugzilla::Util::EXPORT = qw(trick_taint detaint_natural
                              detaint_signed
+                             with_writable_database with_readonly_database
                              html_quote url_quote xml_quote
                              css_class_quote html_light_quote
-                             i_am_cgi i_am_webservice correct_urlbase remote_ip
+                             i_am_cgi i_am_webservice is_webserver_group
+                             correct_urlbase remote_ip
                              validate_ip do_ssl_redirect_if_required use_attachbase
                              diff_arrays on_main_db css_url_rewrite
                              trim wrap_hard wrap_comment find_wrap_point
@@ -31,19 +33,45 @@ use base qw(Exporter);
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
 
-use Date::Parse;
 use Date::Format;
-use DateTime;
+use Date::Parse;
 use DateTime::TimeZone;
+use DateTime;
 use Digest;
 use Email::Address;
-use List::MoreUtils qw(none);
-use Scalar::Util qw(tainted blessed);
-use Text::Wrap;
 use Encode qw(encode decode resolve_alias);
 use Encode::Guess;
+use English qw(-no_match_vars $EGID);
+use List::MoreUtils qw(any none);
 use POSIX qw(floor ceil);
+use Scalar::Util qw(tainted blessed);
 use Taint::Util qw(untaint);
+use Text::Wrap;
+use Try::Tiny;
+
+sub with_writable_database(&) {
+    my ($code) = @_;
+    my $dbh = Bugzilla->dbh_main;
+    local Bugzilla->request_cache->{dbh} = $dbh;
+    local Bugzilla->request_cache->{error_mode} = ERROR_MODE_DIE;
+    try {
+        $dbh->bz_start_transaction;
+        $code->();
+        $dbh->bz_commit_transaction;
+    } catch {
+        $dbh->bz_rollback_transaction;
+        # re-throw
+        die $_;
+    };
+}
+
+sub with_readonly_database(&) {
+    my ($code) = @_;
+    local Bugzilla->request_cache->{dbh} = undef;
+    local Bugzilla->request_cache->{error_mode} = ERROR_MODE_DIE;
+    Bugzilla->switch_to_shadow_db();
+    $code->();
+}
 
 sub trick_taint {
     untaint($_[0]);
@@ -254,6 +282,30 @@ sub i_am_webservice {
            || $usage_mode == USAGE_MODE_REST;
 }
 
+sub is_webserver_group {
+    my @effective_gids = split(/ /, $EGID);
+
+    state $web_server_gid;
+    if (!defined $web_server_gid) {
+        my $web_server_group = Bugzilla->localconfig->{webservergroup};
+
+        if ($web_server_group eq '' || ON_WINDOWS) {
+            $web_server_gid = $effective_gids[0];
+        }
+
+        elsif ($web_server_group =~ /^\d+$/) {
+            $web_server_gid = $web_server_group;
+        }
+
+        else {
+            $web_server_gid = eval { getgrnam($web_server_group) };
+            $web_server_gid //= 0;
+        }
+    }
+
+    return any { $web_server_gid == $_ } @effective_gids;
+}
+
 # This exists as a separate function from Bugzilla::CGI::redirect_to_https
 # because we don't want to create a CGI object during XML-RPC calls
 # (doing so can mess up XML-RPC).
@@ -270,7 +322,7 @@ sub do_ssl_redirect_if_required {
 # Returns the real remote address of the client,
 sub remote_ip {
     my $remote_ip       = $ENV{'REMOTE_ADDR'} || '127.0.0.1';
-    my @proxies         = split(/[\s,]+/, Bugzilla->get_param_with_override('inbound_proxies'));
+    my @proxies         = split(/[\s,]+/, Bugzilla->localconfig->{inbound_proxies});
     my @x_forwarded_for = split(/[\s,]+/, $ENV{HTTP_X_FORWARDED_FOR} // '');
 
     return $remote_ip unless @x_forwarded_for;
@@ -1044,6 +1096,11 @@ in a command-line script.
 
 Tells you whether or not the current usage mode is WebServices related
 such as JSONRPC or XMLRPC.
+
+=item C<is_webserver_group()>
+
+Tells you whether or not the current process's group matches that
+configured as webservergroup.
 
 =item C<remote_ip()>
 

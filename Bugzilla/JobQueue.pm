@@ -11,12 +11,15 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Install::Util qw(install_string);
-use File::Slurp;
+use Bugzilla::DaemonControl qw(catch_signal);
+use IO::Async::Timer::Periodic;
+use IO::Async::Loop;
+use Future;
 use base qw(TheSchwartz);
-use fields qw(_worker_pidfile);
 
 # This maps job names for Bugzilla::JobQueue to the appropriate modules.
 # If you add new types of jobs, you should add a mapping here.
@@ -93,64 +96,45 @@ sub insert {
     return $retval;
 }
 
-# To avoid memory leaks/fragmentation which tends to happen for long running
-# perl processes; check for jobs, and spawn a new process to empty the queue.
-sub subprocess_worker {
-    my $self = shift;
-
-    my $command = "$0 -p '" . $self->{_worker_pidfile} . "' onepass";
-
-    while (1) {
-        my $time = (time);
-        my @jobs = $self->list_jobs({
-            funcname      => $self->{all_abilities},
-            run_after     => $time,
-            grabbed_until => $time,
-            limit         => 1,
-        });
-        if (@jobs) {
-            $self->debug("Spawning queue worker process");
-            # Run the worker as a daemon
-            system $command;
-            # And poll the PID to detect when the working has finished.
-            # We do this instead of system() to allow for the INT signal to
-            # interrup us and trigger kill_worker().
-            my $pid = read_file($self->{_worker_pidfile}, err_mode => 'quiet');
-            if ($pid) {
-                sleep(3) while(kill(0, $pid));
-            }
-            $self->debug("Queue worker process completed");
-        } else {
-            $self->debug("No jobs found");
-        }
-        sleep(5);
+sub debug {
+    my ($self, @args) = @_;
+    my $caller_pkg = caller;
+    local $Log::Log4perl::caller_depth = $Log::Log4perl::caller_depth + 1;
+    my $logger = Log::Log4perl->get_logger($caller_pkg);
+    if ($args[0] && $args[0] eq "TheSchwartz::work_once found no jobs") {
+        $logger->trace(@args);
+    }
+    else {
+        $logger->info(@args);
     }
 }
 
-sub kill_worker {
-    my $self = Bugzilla->job_queue();
-    if ($self->{_worker_pidfile} && -e $self->{_worker_pidfile}) {
-        my $worker_pid = read_file($self->{_worker_pidfile});
-        if ($worker_pid && kill(0, $worker_pid)) {
-            $self->debug("Stopping worker process");
-            system "$0 -f -p '" . $self->{_worker_pidfile} . "' stop";
-        }
-    }
-}
-
-sub set_pidfile {
-    my ($self, $pidfile) = @_;
-    $pidfile =~ s/^(.+)(\..+)$/$1.worker$2/;
-    $self->{_worker_pidfile} = $pidfile;
+sub work {
+    my ($self, $delay) = @_;
+    $delay ||= 1;
+    my $loop  = IO::Async::Loop->new;
+    my $timer = IO::Async::Timer::Periodic->new(
+        first_interval => 0,
+        interval       => $delay,
+        reschedule     => 'drift',
+        on_tick        => sub { $self->work_once }
+    );
+    DEBUG("working every $delay seconds");
+    $loop->add($timer);
+    $timer->start;
+    Future->wait_any(map { catch_signal($_) } qw( INT TERM HUP ))->get;
+    $timer->stop;
+    $loop->remove($timer);
 }
 
 # Clear the request cache at the start of each run.
 sub work_once {
     my $self = shift;
+    my $val = $self->SUPER::work_once(@_);
     Bugzilla::Hook::process('request_cleanup');
     Bugzilla::Bug->CLEANUP;
     Bugzilla->clear_request_cache();
-    return $self->SUPER::work_once(@_);
+    return $val;
 }
 
 # Never process more than MAX_MESSAGES in one batch, to avoid memory

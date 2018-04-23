@@ -1,20 +1,25 @@
-FROM mozillabteam/bmo-slim:20171228.1
+FROM mozillabteam/bmo-slim:20180410.1
 
 ARG CI
 ARG CIRCLE_SHA1
-ARG CIRCLE_BUILD_NUM
+ARG CIRCLE_BUILD_URL
 
 ENV CI=${CI}
-ENV CIRCLE_BUILD_NUM=${CIRCLE_BUILD_NUM}
+ENV CIRCLE_BUILD_URL=${CIRCLE_BUILD_URL}
 ENV CIRCLE_SHA1=${CIRCLE_SHA1}
 
+ENV LOG4PERL_CONFIG_FILE=log4perl-json.conf
 ENV HTTPD_StartServers=8
 ENV HTTPD_MinSpareServers=5
 ENV HTTPD_MaxSpareServers=20
 ENV HTTPD_ServerLimit=256
 ENV HTTPD_MaxClients=256
 ENV HTTPD_MaxRequestsPerChild=4000
+
 ENV PORT=8000
+
+# we run a loopback logging server on this TCP port.
+ENV LOGGING_PORT=5880
 
 WORKDIR /app
 COPY . .

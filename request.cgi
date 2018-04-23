@@ -102,6 +102,7 @@ sub queue {
                 requesters.realname, requesters.login_name,
                 requestees.realname, requestees.login_name, COUNT(privs.group_id),
     " . $dbh->sql_date_format('flags.modification_date', '%Y.%m.%d %H:%i') . ",
+                attachments.mimetype,
                 attachments.ispatch,
                 bugs.bug_status,
                 bugs.priority,
@@ -248,7 +249,7 @@ sub queue {
                 requesters.login_name, requestees.realname,
                 requestees.login_name, flags.modification_date, attachments.ispatch
                 cclist_accessible, bugs.reporter, bugs.reporter_accessible,
-                bugs.assigned_to, attachments.ispatch');
+                bugs.assigned_to, attachments.mimetype');
 
     # Group the records, in other words order them by the group column
     # so the loop in the display template can break them up into separate
@@ -277,25 +278,25 @@ sub queue {
 
     my $results = $dbh->selectall_arrayref($query);
     my @requests = ();
-    foreach my $result (@$results) {
-        my @data = @$result;
+    foreach my $data (@$results) {
         my $request = {
-          'id'              => $data[0] ,
-          'type'            => $data[1] ,
-          'status'          => $data[2] ,
-          'bug_id'          => $data[3] ,
-          'bug_summary'     => $data[4] ,
-          'category'        => "$data[5]: $data[6]" ,
-          'attach_id'       => $data[7] ,
-          'attach_summary'  => $data[8] ,
-          'requester'       => ($data[9] ? "$data[9] <$data[10]>" : $data[10]) ,
-          'requestee'       => ($data[11] ? "$data[11] <$data[12]>" : $data[12]) ,
-          'restricted'      => $data[13] ? 1 : 0,
-          'created'         => $data[14],
-          'ispatch'         => $data[15],
-          'bug_status'      => $data[16],
-          'priority'        => $data[17],
-          'bug_severity'    => $data[18],
+          'id'              => $data->[0] ,
+          'type'            => $data->[1] ,
+          'status'          => $data->[2] ,
+          'bug_id'          => $data->[3] ,
+          'bug_summary'     => $data->[4] ,
+          'category'        => "$data->[5]: $data->[6]" ,
+          'attach_id'       => $data->[7] ,
+          'attach_summary'  => $data->[8] ,
+          'requester'       => ($data->[9] ? "$data->[9] <$data->[10]>" : $data->[10]) ,
+          'requestee'       => ($data->[11] ? "$data->[11] <$data->[12]>" : $data->[12]) ,
+          'restricted'      => $data->[13] ? 1 : 0,
+          'created'         => $data->[14],
+          'attach_mimetype' => $data->[15],
+          'attach_ispatch'  => $data->[16],
+          'bug_status'      => $data->[17],
+          'priority'        => $data->[18],
+          'bug_severity'    => $data->[19],
         };
         push(@requests, $request);
     }

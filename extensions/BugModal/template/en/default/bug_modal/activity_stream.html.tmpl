@@ -89,7 +89,7 @@
     <input id="ctag-add" size="10" placeholder="add tag"
       maxlength="[% constants.MAX_COMMENT_TAG_LENGTH FILTER html %]">
     <button type="button" id="ctag-close" class="minor">X</button>
-    <a href="https://wiki.mozilla.org/BMO/comment_tagging" target="_blank" title="About Comment Tagging">Help</a>
+    <a href="https://wiki.mozilla.org/BMO/comment_tagging" target="_blank" rel="noopener noreferrer" title="About Comment Tagging">Help</a>
   </div>
   <div id="ctag-error" style="display:none">
     <a href="#" class="close-btn" data-for="ctag-error">x</a>
@@ -365,7 +365,7 @@
           ", " UNLESS loop.last;
         END;
 
-      CASE [ 'assigned_to', 'reporter', 'qa_contact', 'cc', 'flagtypes.name' ];
+      CASE [ 'assigned_to', 'reporter', 'qa_contact', 'cc', 'bug_mentor', 'flagtypes.name' ];
         value FILTER email;
 
       CASE 'reporter_accessible';

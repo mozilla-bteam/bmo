@@ -156,7 +156,7 @@ function validateAndSubmit() {
      %]
      <br>
      <a href="https://developer.mozilla.org/docs/Project:Subject-matter_experts"
-        target="_blank" id="common_topic_experts">
+        target="_blank" rel="noopener noreferrer" id="common_topic_experts">
        List of common topic experts</a>
   </td>
 </tr>
@@ -187,23 +187,6 @@ function validateAndSubmit() {
   <td>
     <input type="text" id="blocked" name="blocked" size="10">
     <i>Corresponding development [% terms.bug %].</i>
-  </td>
-</tr>
-
-<tr>
-  <th class="required">Urgency</th>
-  <td>
-    <select name="priority" id="priority">
-      <option value="P1">Immediately</option>
-      <option value="P2">Before Release</option>
-      <option value="P3">Before Aurora</option>
-      <option value="P4">Before Beta</option>
-      <option value="P5" selected>No Rush</option>
-    </select>
-    <br>
-    Due to the volume of requests, the documentation team can't commit to
-    meeting specific deadlines for given documentation requests, but we will do
-    our best.
   </td>
 </tr>
 
