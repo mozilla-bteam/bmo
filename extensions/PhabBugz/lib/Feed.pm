@@ -28,7 +28,6 @@ use Bugzilla::Extension::PhabBugz::User;
 use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
     create_revision_attachment
-    edit_revision_policy
     get_bug_role_phids
     get_phab_bmo_ids
     get_project_phid
@@ -49,7 +48,7 @@ sub start {
         first_interval => 0,
         interval       => PHAB_FEED_POLL_SECONDS,
         reschedule     => 'drift',
-        on_tick        => sub { 
+        on_tick        => sub {
             try{
                 $self->feed_query();
             }
@@ -65,9 +64,25 @@ sub start {
         first_interval => 0,
         interval       => PHAB_USER_POLL_SECONDS,
         reschedule     => 'drift',
-        on_tick        => sub { 
+        on_tick        => sub {
             try{
                 $self->user_query();
+            }
+            catch {
+                FATAL($_);
+            };
+            Bugzilla->_cleanup();
+        },
+    );
+
+    # Update project membership in Phabricator based on Bugzilla groups
+    my $group_timer = IO::Async::Timer::Periodic->new(
+        first_interval => 0,
+        interval       => PHAB_GROUP_POLL_SECONDS,
+        reschedule     => 'drift',
+        on_tick        => sub {
+            try{
+                $self->group_query();
             }
             catch {
                 FATAL($_);
@@ -79,29 +94,33 @@ sub start {
     my $loop = IO::Async::Loop->new;
     $loop->add($feed_timer);
     $loop->add($user_timer);
+    $loop->add($group_timer);
     $feed_timer->start;
     $user_timer->start;
+    $group_timer->start;
     $loop->run;
 }
 
 sub feed_query {
     my ($self) = @_;
 
+    Bugzilla::Logging->fields->{type} = 'FEED';
+
     # Ensure Phabricator syncing is enabled
     if (!Bugzilla->params->{phabricator_enabled}) {
-        INFO("PHABRICATOR SYNC DISABLED");
+        WARN("PHABRICATOR SYNC DISABLED");
         return;
     }
 
     # PROCESS NEW FEED TRANSACTIONS
 
-    INFO("FEED: Fetching new transactions");
+    INFO("Fetching new transactions");
 
     my $story_last_id = $self->get_last_id('feed');
 
     # Check for new transctions (stories)
     my $new_stories = $self->new_stories($story_last_id);
-    INFO("FEED: No new stories") unless @$new_stories;
+    INFO("No new stories") unless @$new_stories;
 
     # Process each story
     foreach my $story_data (@$new_stories) {
@@ -111,15 +130,15 @@ sub feed_query {
         my $object_phid = $story_data->{objectPHID};
         my $story_text  = $story_data->{text};
 
-        DEBUG("STORY ID: $story_id");
-        DEBUG("STORY PHID: $story_phid");
-        DEBUG("AUTHOR PHID: $author_phid");
-        DEBUG("OBJECT PHID: $object_phid");
+        TRACE("STORY ID: $story_id");
+        TRACE("STORY PHID: $story_phid");
+        TRACE("AUTHOR PHID: $author_phid");
+        TRACE("OBJECT PHID: $object_phid");
         INFO("STORY TEXT: $story_text");
 
         # Only interested in changes to revisions for now.
         if ($object_phid !~ /^PHID-DREV/) {
-            DEBUG("SKIPPING: Not a revision change");
+            INFO("SKIPPING: Not a revision change");
             $self->save_last_id($story_id, 'feed');
             next;
         }
@@ -129,7 +148,7 @@ sub feed_query {
         if (@$phab_users) {
             my $user = Bugzilla::User->new({ id => $phab_users->[0]->{id}, cache => 1 });
             if ($user->login eq PHAB_AUTOMATION_USER) {
-                DEBUG("SKIPPING: Change made by phabricator user");
+                INFO("SKIPPING: Change made by phabricator user");
                 $self->save_last_id($story_id, 'feed');
                 next;
             }
@@ -145,21 +164,23 @@ sub feed_query {
 sub user_query {
     my ( $self ) = @_;
 
+    Bugzilla::Logging->fields->{type} = 'USERS';
+
     # Ensure Phabricator syncing is enabled
     if (!Bugzilla->params->{phabricator_enabled}) {
-        INFO("PHABRICATOR SYNC DISABLED");
+        WARN("PHABRICATOR SYNC DISABLED");
         return;
     }
 
     # PROCESS NEW USERS
 
-    INFO("USERS: Fetching new users");
+    INFO("Fetching new users");
 
     my $user_last_id = $self->get_last_id('user');
 
     # Check for new users
     my $new_users = $self->new_users($user_last_id);
-    INFO("FEED: No new users") unless @$new_users;
+    INFO("No new users") unless @$new_users;
 
     # Process each new user
     foreach my $user_data (@$new_users) {
@@ -168,15 +189,81 @@ sub user_query {
         my $user_realname = $user_data->{fields}{realName};
         my $object_phid   = $user_data->{phid};
 
-        DEBUG("USER ID: $user_id");
-        DEBUG("USER LOGIN: $user_login");
-        DEBUG("USER REALNAME: $user_realname");
-        DEBUG("OBJECT PHID: $object_phid");
+        TRACE("ID: $user_id");
+        TRACE("LOGIN: $user_login");
+        TRACE("REALNAME: $user_realname");
+        TRACE("OBJECT PHID: $object_phid");
 
         with_readonly_database {
             $self->process_new_user($user_data);
         };
         $self->save_last_id($user_id, 'user');
+    }
+}
+
+sub group_query {
+    my ($self) = @_;
+
+    # Ensure Phabricator syncing is enabled
+    if ( !Bugzilla->params->{phabricator_enabled} ) {
+        WARN("PHABRICATOR SYNC DISABLED");
+        return;
+    }
+
+    my $phab_sync_groups = Bugzilla->params->{phabricator_sync_groups};
+    if ( !$phab_sync_groups ) {
+        WARN('A comma delimited list of security groups was not provided.');
+        return;
+    }
+
+    # PROCESS SECURITY GROUPS
+
+    INFO("GROUPS: Updating group memberships");
+
+    # Loop through each group and perform the following:
+    #
+    # 1. Load flattened list of group members
+    # 2. Check to see if Phab project exists for 'bmo-<group_name>'
+    # 3. Create if does not exist with locked down policy.
+    # 4. Set project members to exact list
+    # 5. Profit
+
+    my $sync_groups = Bugzilla::Group->match(
+        { name => [ split( '[,\s]+', $phab_sync_groups ) ] } );
+
+    foreach my $group (@$sync_groups) {
+
+        # Create group project if one does not yet exist
+        my $phab_project_name = 'bmo-' . $group->name;
+        my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query(
+            {
+                name => $phab_project_name
+            }
+        );
+        if ( !$project ) {
+            INFO("Project $project not found. Creating.");
+            my $secure_revision =
+              Bugzilla::Extension::PhabBugz::Project->new_from_query(
+                {
+                    name => 'secure-revision'
+                }
+              );
+            $project = Bugzilla::Extension::PhabBugz::Project->create(
+                {
+                    name        => $phab_project_name,
+                    description => 'BMO Security Group for ' . $group->name,
+                    view_policy => $secure_revision->phid,
+                    edit_policy => $secure_revision->phid,
+                    join_policy => $secure_revision->phid
+                }
+            );
+        }
+
+        if ( my @group_members = get_group_members($group) ) {
+            INFO("Setting group members for " . $project->name);
+            $project->set_members( \@group_members );
+            $project->update();
+        }
     }
 }
 
@@ -191,7 +278,7 @@ sub process_revision_change {
     if (!$revision->bug_id) {
         if ($story_text =~ /\s+created\s+D\d+/) {
             # If new revision and bug id was omitted, make revision public
-            DEBUG("No bug associated with new revision. Marking public.");
+            INFO("No bug associated with new revision. Marking public.");
             $revision->set_policy('view', 'public');
             $revision->set_policy('edit', 'users');
             $revision->update();
@@ -199,7 +286,7 @@ sub process_revision_change {
             return;
         }
         else {
-            DEBUG("SKIPPING: No bug associated with revision change");
+            INFO("SKIPPING: No bug associated with revision change");
             return;
         }
     }
@@ -220,7 +307,7 @@ sub process_revision_change {
 
     # If bug is public then remove privacy policy
     if (!@{ $bug->groups_in }) {
-        DEBUG('Bug is public so setting view/edit public');
+        INFO('Bug is public so setting view/edit public');
         $revision->set_policy('view', 'public');
         $revision->set_policy('edit', 'users');
         my $secure_project_phid = get_project_phid('secure-revision');
@@ -233,7 +320,7 @@ sub process_revision_change {
         # If bug privacy groups do not have any matching synchronized groups,
         # then leave revision private and it will have be dealt with manually.
         if (!@set_groups) {
-            DEBUG('No matching groups. Adding comments to bug and revision');
+            INFO('No matching groups. Adding comments to bug and revision');
             add_security_sync_comments([$revision], $bug);
         }
         # Otherwise, we create a new custom policy containing the project
@@ -245,23 +332,24 @@ sub process_revision_change {
             # we leave the current policy alone.
             my $current_policy;
             if ($revision->view_policy =~ /^PHID-PLCY/) {
-                DEBUG("Loading current policy: " . $revision->view_policy);
+                INFO("Loading current policy: " . $revision->view_policy);
                 $current_policy
                     = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_policy ]});
                 my $current_projects = $current_policy->rule_projects;
-                DEBUG("Current policy projects: " . join(", ", @$current_projects));
+                INFO("Current policy projects: " . join(", ", @$current_projects));
                 my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
                 if (@$added || @$removed) {
-                    DEBUG('Project groups do not match. Need new custom policy');
-                    $current_policy= undef;
+                    INFO('Project groups do not match. Need new custom policy');
+                    $current_policy = undef;
+
                 }
                 else {
-                    DEBUG('Project groups match. Leaving current policy as-is');
+                    INFO('Project groups match. Leaving current policy as-is');
                 }
             }
 
             if (!$current_policy) {
-                DEBUG("Creating new custom policy: " . join(", ", @set_projects));
+                INFO("Creating new custom policy: " . join(", ", @set_projects));
                 my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create(\@set_projects);
                 $revision->set_policy('view', $new_policy->phid);
                 $revision->set_policy('edit', $new_policy->phid);
@@ -292,11 +380,11 @@ sub process_revision_change {
         next if $attach_revision_id != $revision->id;
 
         my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
-        DEBUG('Updating obsolete status on attachmment ' . $attachment->id);
+        INFO('Updating obsolete status on attachmment ' . $attachment->id);
         $attachment->set_is_obsolete($make_obsolete);
 
         if ($revision->title ne $attachment->description) {
-            DEBUG('Updating description on attachment ' . $attachment->id);
+            INFO('Updating description on attachment ' . $attachment->id);
             $attachment->set_description($revision->title);
         }
 
@@ -312,8 +400,8 @@ sub process_revision_change {
     });
     foreach my $attachment (@$other_attachments) {
         $other_bugs{$attachment->bug_id}++;
-        DEBUG('Updating obsolete status on attachment ' .
-                             $attachment->id . " for bug " . $attachment->bug_id);
+        INFO('Updating obsolete status on attachment ' .
+             $attachment->id . " for bug " . $attachment->bug_id);
         $attachment->set_is_obsolete(1);
         $attachment->update($timestamp);
     }
@@ -384,6 +472,7 @@ sub process_revision_change {
 
         if ($comment) {
             $comment .= "\n" . Bugzilla->params->{phabricator_base_uri} . "D" . $revision->id;
+            INFO("Flag comment: $comment");
             # Add transaction_id as anchor if one present
             # $comment .= "#" . $params->{transaction_id} if $params->{transaction_id};
             $bug->add_comment($comment, {
@@ -420,7 +509,7 @@ sub process_new_user {
     my $phab_user = Bugzilla::Extension::PhabBugz::User->new($user_data);
 
     if (!$phab_user->bugzilla_id) {
-        DEBUG("USERS: SKIPPING - No bugzilla id associated with user");
+        WARN("SKIPPING: No bugzilla id associated with user");
         return;
     }
 
@@ -497,7 +586,7 @@ sub process_new_user {
     INFO("USERS: Updating subscriber values for old private bugs");
 
     foreach my $bug_id (@bug_ids) {
-        INFO("USERS: Processing bug $bug_id");
+        INFO("Processing bug $bug_id");
 
         my $bug = Bugzilla::Bug->new({ id => $bug_id, cache => 1 });
 
@@ -506,7 +595,8 @@ sub process_new_user {
 
         foreach my $attachment (@attachments) {
             my ($revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
-            INFO("USERS: Processing revision D$revision_id");
+
+            INFO("Processing revision D$revision_id");
 
             my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
                 { ids => [ int($revision_id) ] });
@@ -514,7 +604,7 @@ sub process_new_user {
             $revision->add_subscriber($phab_user->phid);
             $revision->update();
 
-            INFO("USERS: Revision $revision_id updated");
+            INFO("Revision $revision_id updated");
         }
     }
 
@@ -531,7 +621,9 @@ sub new_stories {
     my ( $self, $after ) = @_;
     my $data = { view => 'text' };
     $data->{after} = $after if $after;
+
     my $result = request( 'feed.query_id', $data );
+
     unless ( ref $result->{result}{data} eq 'ARRAY'
         && @{ $result->{result}{data} } )
     {
@@ -551,7 +643,9 @@ sub new_users {
         }
     };
     $data->{before} = $after if $after;
+
     my $result = request( 'user.search', $data );
+
     unless ( ref $result->{result}{data} eq 'ARRAY'
         && @{ $result->{result}{data} } )
     {
@@ -568,7 +662,7 @@ sub get_last_id {
     my $last_id   = Bugzilla->dbh->selectrow_array( "
         SELECT value FROM phabbugz WHERE name = ?", undef, $type_full );
     $last_id ||= 0;
-    DEBUG( "QUERY " . uc($type_full) . ": $last_id" );
+    TRACE(uc($type_full) . ": $last_id" );
     return $last_id;
 }
 
@@ -577,9 +671,31 @@ sub save_last_id {
 
     # Store the largest last key so we can start from there in the next session
     my $type_full = $type . "_last_id";
-    DEBUG( "UPDATING " . uc($type_full) . ": $last_id" );
+    TRACE("UPDATING " . uc($type_full) . ": $last_id" );
     Bugzilla->dbh->do( "REPLACE INTO phabbugz (name, value) VALUES (?, ?)",
         undef, $type_full, $last_id );
+}
+
+sub get_group_members {
+    my ($group) = @_;
+    my $group_obj =
+      ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
+    my $members_all = $group_obj->members_complete();
+    my %users;
+    foreach my $name ( keys %$members_all ) {
+        foreach my $user ( @{ $members_all->{$name} } ) {
+            $users{ $user->id } = $user;
+        }
+    }
+
+    # Look up the phab ids for these users
+    my $phab_users = get_phab_bmo_ids( { ids => [ keys %users ] } );
+    foreach my $phab_user ( @{$phab_users} ) {
+        $users{ $phab_user->{id} }->{phab_phid} = $phab_user->{phid};
+    }
+
+    # We only need users who have accounts in phabricator
+    return grep { $_->phab_phid } values %users;
 }
 
 1;
