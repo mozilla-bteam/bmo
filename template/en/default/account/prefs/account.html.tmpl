@@ -38,6 +38,30 @@
         </td>
       </tr>
 
+[%# 
+  # note for reviewers
+  # there is no code here to check whether
+  # the user profile extension is installed.
+  # should it be made conditional on that somehow?
+  #%]
+      <tr>
+        <th align="right" width="150">Links info:</th>
+        <td>
+<textarea id="linksinfo" name="linksinfo" cols="32" rows="4">
+[% user.getlinksinfo FILTER html %]</textarea>
+        </td>
+      </tr>
+
+      <tr>
+        <th align="right" width="150"></th>
+        <td>
+format for links info field. the first line is the name
+of the first link. the second line is the link. the third
+line is the name of the second link and so forth. quotes
+' and " are not permitted
+        </td>
+      </tr>
+
       [%# BMO - moved field hook from end of file to here to group with other account fields %]
       [% Hook.process('field') %]
 
