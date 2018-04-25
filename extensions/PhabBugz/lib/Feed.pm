@@ -105,7 +105,7 @@ sub start {
 sub feed_query {
     my ($self) = @_;
 
-    Bugzilla::Logging->fields->{type} = 'FEED';
+    local Bugzilla::Logging->fields->{type} = 'FEED';
 
     # Ensure Phabricator syncing is enabled
     if (!Bugzilla->params->{phabricator_enabled}) {
@@ -165,7 +165,7 @@ sub feed_query {
 sub user_query {
     my ( $self ) = @_;
 
-    Bugzilla::Logging->fields->{type} = 'USERS';
+    local Bugzilla::Logging->fields->{type} = 'USERS';
 
     # Ensure Phabricator syncing is enabled
     if (!Bugzilla->params->{phabricator_enabled}) {
@@ -205,7 +205,7 @@ sub user_query {
 sub group_query {
     my ($self) = @_;
 
-    Bugzilla::Logging->fields->{type} = 'GROUPS';
+    local Bugzilla::Logging->fields->{type} = 'GROUPS';
 
     # Ensure Phabricator syncing is enabled
     if ( !Bugzilla->params->{phabricator_enabled} ) {
