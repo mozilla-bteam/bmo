@@ -38,6 +38,11 @@ use constant REQUIRED_MODULES => [
         # blacklist => [ '1.04' ],
     },
     {
+        package => 'GnuPG-Interface',
+        module  => 'GnuPG::Interface',
+        version => 0,
+    },
+    {
         package => 'Crypt-SMIME',
         module  => 'Crypt::SMIME',
         version => 0,

@@ -1,32 +1,17 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Bugzilla SecureMail Extension
-#
-# The Initial Developer of the Original Code is the Mozilla Foundation.
-# Portions created by Mozilla are Copyright (C) 2008 Mozilla Foundation.
-# All Rights Reserved.
-#
-# Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
-#                 Gervase Markham <gerv@gerv.net>
-
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 package Bugzilla::Extension::SecureMail;
-
 use 5.10.1;
 use strict;
 use warnings;
-
+use autodie;
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Constants qw(bz_locations);
 use Bugzilla::Attachment;
 use Bugzilla::Comment;
 use Bugzilla::Group;
@@ -37,14 +22,21 @@ use Bugzilla::Error;
 use Bugzilla::Mailer;
 
 use Crypt::OpenPGP::Armour;
-use Crypt::OpenPGP::KeyRing;
-use Crypt::OpenPGP;
 use Crypt::SMIME;
 use Email::MIME::ContentType qw(parse_content_type);
 use Encode;
+use English qw(-no_match_vars);
 use HTML::Tree;
+use List::Util qw(any none);
+use MIME::Parser;
+use DateTime;
+use Digest::SHA qw(sha256_hex);
+use File::Path qw(mkpath);
+use File::Spec::Functions qw(catdir catfile);
+use GnuPG::Interface;
+use GnuPG::Handles;
 
-our $VERSION = '0.5';
+our $VERSION = '1.0';
 
 use constant SECURE_NONE => 0;
 use constant SECURE_BODY => 1;
@@ -72,6 +64,8 @@ sub install_update_db {
 BEGIN {
     *Bugzilla::Group::secure_mail = \&_group_secure_mail;
     *Bugzilla::User::public_key   = \&_user_public_key;
+    *Bugzilla::User::gpg_homedir  = \&_user_gpg_homedir;
+    *Bugzilla::User::gpg_interface = \&_user_gpg_interface;
     *Bugzilla::securemail_groups = \&_securemail_groups;
 }
 
@@ -394,7 +388,7 @@ sub mailer_before_send {
             _filter_bug_links($email);
         }
         else {
-            _make_secure($email, $public_key, $is_bugmail && $make_secure == SECURE_ALL, $add_new);
+            _make_secure($email, $user, $is_bugmail && $make_secure == SECURE_ALL, $add_new);
         }
     }
 }
@@ -447,7 +441,8 @@ sub _should_secure_whine {
 }
 
 sub _make_secure {
-    my ($email, $key, $sanitise_subject, $add_new) = @_;
+    my ($email, $user, $sanitise_subject, $add_new) = @_;
+    my $key = $user->public_key;
 
     # Add header showing this email has been secured
     $email->header_set('X-Bugzilla-Secure-Email', 'Yes');
@@ -467,9 +462,6 @@ sub _make_secure {
         ##################
         # PGP Encryption #
         ##################
-
-        my $pubring = new Crypt::OpenPGP::KeyRing(Data => $key);
-        my $pgp = new Crypt::OpenPGP(PubRing => $pubring);
 
         if (scalar $email->parts > 1) {
             my $old_boundary = $email->{ct}{attributes}{boundary};
@@ -508,7 +500,7 @@ sub _make_secure {
                         disposition  => 'inline',
                         encoding     => '7bit',
                     },
-                    body => _pgp_encrypt($pgp, $to_encrypt, $bug_id)
+                    body => _pgp_encrypt($user, $to_encrypt, $bug_id)
                 ),
             );
             $email->parts_set(\@new_parts);
@@ -525,7 +517,7 @@ sub _make_secure {
             if ($sanitise_subject) {
                 _insert_subject($email, $subject);
             }
-            $email->body_set(_pgp_encrypt($pgp, $email->body, $bug_id));
+            $email->body_set(_pgp_encrypt($user, $email->body, $bug_id));
         }
     }
 
@@ -602,32 +594,29 @@ sub _make_secure {
 }
 
 sub _pgp_encrypt {
-    my ($pgp, $text, $bug_id) = @_;
-    # "@" matches every key in the public key ring, which is fine,
-    # because there's only one key in our keyring.
-    #
-    # We use the CAST5 cipher because the Rijndael (AES) module doesn't
-    # like us for some reason I don't have time to debug fully.
-    # ("key must be an untainted string scalar")
-    my $encrypted = $pgp->encrypt(
-        Data       => $text,
-        Recipients => "@",
-        Cipher     => 'CAST5',
-        Armour     => 0
+    my ($user, $text, $bug_id) = @_;
+    my $gpg = $user->gpg_interface;
+    my $handles = GnuPG::Handles->new(
+        stdin => IO::Handle->new(),
+        stdout => IO::Handle->new(),
+        status => IO::Handle->new(),
+        stderr => IO::Handle->new(),
     );
-    if (!defined $encrypted) {
-        return 'Error during Encryption: ' . $pgp->errstr;
+
+    $gpg->options->hash_init(
+        comment => Bugzilla->localconfig->{urlbase} . ($bug_id ? 'show_bug.cgi?id=' . $bug_id : ''),
+    );
+
+    my $pid = $gpg->encrypt( handles => $handles );
+    $handles->stdin->print($text);
+    $handles->stdin->close;
+    my $encrypted = join("", $handles->stdout->getlines);
+    my $errstr = join("", $handles->stderr->getlines);
+    waitpid $pid, 0;
+    if (!$encrypted || $CHILD_ERROR != 0) {
+        return 'Error during Encryption: ' . $errstr;
     }
-    $encrypted = Crypt::OpenPGP::Armour->armour(
-        Data => $encrypted,
-        Object => 'MESSAGE',
-        Headers => {
-            Comment => Bugzilla->localconfig->{urlbase} . ($bug_id ? 'show_bug.cgi?id=' . $bug_id : ''),
-        },
-    );
-    # until Crypt::OpenPGP makes the Version header optional we have to strip
-    # it out manually (bug 1181406).
-    $encrypted =~ s/\nVersion:[^\n]+//;
+
     return $encrypted;
 }
 
@@ -700,5 +689,85 @@ sub _filter_bug_links {
         $tree->delete;
     });
 }
+
+sub _user_gpg_interface {
+    my ($user, $homedir) = @_;
+    my $gpg = GnuPG::Interface->new(
+        call => Bugzilla->params->{gpg_cmd},
+    );
+
+    $gpg->options->hash_init(
+        always_trust     => 1,
+        armor            => 1,
+        homedir          => $homedir // $user->gpg_homedir,
+        meta_interactive => 0,
+        recipients       => [ $user->email ],
+        verbose          => 0,
+    );
+    return $gpg;
+}
+
+sub _user_gpg_homedir {
+    my ($user) = @_;
+    my $hash     = sha256_hex( $user->public_key );
+    my $home_dir = catdir( bz_locations->{cgi_path}, 'gpg', $user->id, $hash );
+    my $handles      = GnuPG::Handles->new(
+        stdin      => IO::Handle->new,
+        stdout     => IO::Handle->new,
+        stderr     => IO::Handle->new,
+        status     => IO::Handle->new,
+    );
+    my $stamp_file = catfile($home_dir, 'stamp.txt');
+
+    unless (-d $home_dir && -f $stamp_file) {
+        mkpath($home_dir, 0, oct 700);
+        my $gpg = $user->gpg_interface($home_dir);
+        my $pid = $gpg->import_keys(handles => $handles);
+        $handles->stdin->print($user->public_key);
+        $handles->stdin->close;
+
+        my @out = $handles->stdout->getlines;
+        my @err = $handles->stderr->getlines;
+        my @status = $handles->status->getlines;
+
+        foreach my $err (@err) {
+            chomp $err;
+            next unless $err;
+            if ($err =~ /^gpg: WARNING: unsafe permissions on homedir/) {
+                die "gpg: WARNING: unsafe permissions on homedir";
+            }
+        }
+        foreach my $status (@status) {
+            chomp $status;
+            unless ( $status =~ s/^\Q[GNUPG:]\E\s+// ) {
+                die "bad status: $status";
+            }
+            if ($status =~ /^NODATA\s+([0-9]+)/) {
+                state $NODATA = {
+                    1 => "No armored data.",
+                    2 => "Expected a packet but did not found one.",
+                    3 => "Invalid packet found, this may indicate a non OpenPGP message.",
+                    4 => "Signature expected but not found",
+                };
+                die $NODATA->{$1} // "Unknown NODATA error: $1";
+            }
+            else {
+                my $ignore = $status =~ /^IMPORT_RES/
+                    || $status =~ /^KEY_CONSIDERED [[:xdigit:]]+ [0-9]/
+                    || $status =~ /^IMPORT_OK [01] [[:xdigit:]]+/
+                    || $status =~ /^IMPORTED [[:xdigit:]]+/;
+                die "unknown status message: $status" unless $ignore;
+            }
+        }
+
+        waitpid $pid, 0;
+        die "gpg returned error: $CHILD_ERROR" unless $CHILD_ERROR == 0;
+        open my $stamp_fh, '>', $stamp_file;
+        print $stamp_fh DateTime->now->datetime;
+        close $stamp_fh;
+    }
+    return $home_dir;
+}
+
 
 __PACKAGE__->NAME;
