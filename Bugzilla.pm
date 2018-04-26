@@ -22,7 +22,7 @@ BEGIN {
     }
 }
 
-our $VERSION = '20180412.2';
+our $VERSION = '20180426.4';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -870,6 +870,8 @@ sub check_rate_limit {
 # Per-process cleanup. Note that this is a plain subroutine, not a method,
 # so we don't have $class available.
 sub _cleanup {
+    return if $^C;
+
     # BMO - finalise and report on metrics
     if (Bugzilla->metrics_enabled) {
         Bugzilla->metrics->finish();

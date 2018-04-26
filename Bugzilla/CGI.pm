@@ -590,6 +590,9 @@ sub header {
             "skins/standard/fonts/MaterialIcons-Regular.woff2",
         );
         $headers{'-link'} = join(", ", map { sprintf('</static/v%s/%s>; rel="preload"; as="font"', Bugzilla->VERSION, $_) } @fonts);
+        if (Bugzilla->params->{google_analytics_tracking_id}) {
+            $headers{'-link'} .= ', <https://www.google-analytics.com>; rel="preconnect"; crossorigin';
+        }
     }
 
     return $self->SUPER::header(%headers) || "";
@@ -683,6 +686,8 @@ sub send_cookie {
     # we don't set the domain.
     $paramhash{'-secure'} = 1
       if lc( $uri->scheme ) eq 'https';
+
+    $paramhash{'-samesite'} = 'Lax';
 
     push(@{$self->{'Bugzilla_cookie_list'}}, $self->cookie(%paramhash));
 }
