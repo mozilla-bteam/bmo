@@ -5,6 +5,7 @@ MYMETA.*
 Makefile
 blib
 local
+build_info
 data
 localconfig
 pm_to_blib
