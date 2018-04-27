@@ -683,6 +683,8 @@ sub get_group_members {
         }
     }
 
+    return if !@userids;
+    
     # Look up the phab ids for these users
     my $phab_users = Bugzilla::Extension::PhabBugz::User->match(
       {
