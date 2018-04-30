@@ -258,11 +258,10 @@ sub group_query {
             );
         }
 
-        if ( my @group_members = get_group_members($group) ) {
-            INFO("Setting group members for " . $project->name);
-            $project->set_members( \@group_members );
-            $project->update();
-        }
+        INFO("Setting group members for " . $project->name);
+        my @group_members = get_group_members($group);
+        $project->set_members( \@group_members );
+        $project->update();
     }
 }
 

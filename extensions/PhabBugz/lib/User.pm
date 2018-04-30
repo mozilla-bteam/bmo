@@ -123,7 +123,7 @@ sub match {
         $params->{phids} = [ map { $_->{phid} } @$bugzilla_data ];
     }
 
-    return [] if !$params->{phids};
+    return [] if !@{ $params->{phids} };
 
     # Look for BMO external user id in external-accounts attachment
     my $data = {
