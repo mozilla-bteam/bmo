@@ -538,12 +538,14 @@ sub process_new_user {
         $timestamp = format_time($timestamp, '%a, %d %b %Y %T %z', 'UTC');
 
         foreach my $row (@$results) {
-            WARN( "Possible username squatter: "
-                  . "phab user login: " . $phab_user->name
-                  . " phab user realname: " . $phab_user->realname
-                  . " bugzilla user id: " . $row->{userid}
-                  . " bugzilla login: " . $row->{login_name}
-                  . " bugzilla realname: " . $row->{realname} );
+            WARN(
+                'Possible username squatter: ',
+                'phab user login: ' . $phab_user->name,
+                ' phab user realname: ' . $phab_user->realname,
+                ' bugzilla user id: ' . $row->{userid},
+                ' bugzilla login: ' . $row->{login_name},
+                ' bugzilla realname: ' . $row->{realname}
+            );
 
             my $vars = {
                 date               => $timestamp,
