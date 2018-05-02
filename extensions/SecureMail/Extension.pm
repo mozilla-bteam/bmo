@@ -27,6 +27,7 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Logging;
 use Bugzilla::Attachment;
 use Bugzilla::Comment;
 use Bugzilla::Group;
@@ -606,10 +607,17 @@ sub _tct_encrypt {
     my ($tct, $text, $bug_id) = @_;
 
     my $comment = Bugzilla->localconfig->{urlbase} . ( $bug_id ? 'show_bug.cgi?id=' . $bug_id : '' );
-    my $encrypted = eval { $tct->encrypt( $text, $comment )->get };
-    unless ($encrypted) {
-        $encrypted = "Bug: $comment\nOpenPGP Encryption failed. Check if your key is expired.";
+    my $encrypted;
+    my $ok = eval { $encrypted = $tct->encrypt( $text, $comment )->get; 1 };
+    if (!$ok) {
+        WARN("Error: $@");
+        $encrypted = "$comment\nOpenPGP Encryption failed. Check if your key is expired.";
     }
+    elsif (!$encrypted) {
+        WARN('message empty!');
+        $encrypted = "$comment\nOpenPGP Encryption failed for unknown reason.";
+    }
+
     return $encrypted;
 }
 

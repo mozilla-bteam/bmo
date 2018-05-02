@@ -15,6 +15,8 @@ use Future::Utils qw(call);
 use Future;
 use IO::Async::Process;
 
+use constant TCT_BIN => '/usr/local/bin/tct';
+
 has 'public_key' => (
     is       => 'ro',
     required => 1,
@@ -43,7 +45,7 @@ sub _build_is_valid {
     my $exit_f = $loop->new_future;
     my ($stderr, $stdout);
     my $process = IO::Async::Process->new(
-        command => ['tct', 'check', '-k', $self->public_key_file ],
+        command => [TCT_BIN, 'check', '-k', $self->public_key_file ],
         stderr => {
             into => \$stderr,
         },
@@ -51,7 +53,7 @@ sub _build_is_valid {
             into => \$stdout,
         },
         on_finish => on_finish($exit_f),
-        on_exception => on_exception('tct', $exit_f),
+        on_exception => on_exception(TCT_BIN, $exit_f),
     );
     $loop->add($process);
 
