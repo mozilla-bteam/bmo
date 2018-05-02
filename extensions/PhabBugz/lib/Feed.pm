@@ -239,7 +239,7 @@ sub group_query {
             }
         );
         if ( !$project ) {
-            INFO("Project $project not found. Creating.");
+            INFO("Project $phab_project_name not found. Creating.");
             my $secure_revision =
               Bugzilla::Extension::PhabBugz::Project->new_from_query(
                 {
