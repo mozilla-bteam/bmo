@@ -159,7 +159,7 @@
 
     - name: fetch tct
       unarchive:
-        src: https://github.com/dylanwh/tocotrienol/releases/download/1.0.5/tct-centos6.tar.xz
+        src: https://github.com/dylanwh/tocotrienol/releases/download/1.0.6/tct-centos6.tar.xz
         dest: /usr/local/bin
         remote_src: yes
         mode: '0755'
