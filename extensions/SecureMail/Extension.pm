@@ -606,7 +606,7 @@ sub _tct_encrypt {
     my ($tct, $text, $bug_id) = @_;
 
     my $comment = Bugzilla->localconfig->{urlbase} . ( $bug_id ? 'show_bug.cgi?id=' . $bug_id : '' );
-    my $encrypted = $tct->encrypt( $text, $comment );
+    my $encrypted = $tct->encrypt( $text, $comment )->get;
     return $encrypted;
 }
 
