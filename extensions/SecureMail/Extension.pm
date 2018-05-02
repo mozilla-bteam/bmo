@@ -128,9 +128,9 @@ sub object_validators {
                 # PGP keys must be ASCII-armoured.
                 my $tct = Bugzilla::TCT->new(public_key => $value);
                 unless ($tct->is_valid->get) {
-                    ThrowUserError('securemail_invalid_key',
-                                   { errstr => Crypt::OpenPGP::Armour->errstr });
+                    ThrowUserError( 'securemail_invalid_key', { errstr => 'key is invalid or expired' } );
                 }
+
             }
             elsif ($value =~ /BEGIN CERTIFICATE/) {
                 # S/MIME Keys must be in PEM format (Base64-encoded X.509)
@@ -606,7 +606,10 @@ sub _tct_encrypt {
     my ($tct, $text, $bug_id) = @_;
 
     my $comment = Bugzilla->localconfig->{urlbase} . ( $bug_id ? 'show_bug.cgi?id=' . $bug_id : '' );
-    my $encrypted = $tct->encrypt( $text, $comment )->get;
+    my $encrypted = eval { $tct->encrypt( $text, $comment )->get };
+    unless ($encrypted) {
+        $encrypted = "Bug: $comment\nOpenPGP Encryption failed. Check if your key is expired.";
+    }
     return $encrypted;
 }
 
