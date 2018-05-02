@@ -220,9 +220,6 @@ sub group_query {
 
     INFO("Updating group memberships");
 
-    # Pre setup before making changes
-    my $old_user = set_phab_user();
-
     # Loop through each group and perform the following:
     #
     # 1. Load flattened list of group members
@@ -234,9 +231,13 @@ sub group_query {
     my $sync_groups = Bugzilla::Group->match( { isactive => 1, isbuggroup => 1 } );
 
     # Load phab-bot Phabricator user to add as a member of each project group later
-    my $phab_ids = get_phab_bmo_ids( { ids => [ Bugzilla->user->id ] } );
-    my $phab_user = Bugzilla::User->new( { id => $phab_ids->[0]->{id}, cache => 1 } );
-    $phab_user->{phab_phid} = $phab_ids->[0]->{phid};
+    my $bmo_user = Bugzilla::User->new({ name => PHAB_AUTOMATION_USER, cache => 1 });
+    my $phab_user =
+      Bugzilla::Extension::PhabBugz::User->new_from_query(
+        {
+          ids => [ $bmo_user->id ]
+        }
+    );
 
     # secure-revision project that will be used for bmo group projects
     my $secure_revision =
@@ -283,8 +284,6 @@ sub group_query {
         $project->set_members( [ ($phab_user, @group_members) ] );
         $project->update();
     }
-
-    Bugzilla->set_user($old_user);
 }
 
 sub process_revision_change {
