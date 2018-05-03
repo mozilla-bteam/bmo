@@ -18,6 +18,7 @@ use Try::Tiny;
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Field;
 use Bugzilla::Logging;
 use Bugzilla::Mailer;
 use Bugzilla::Search;
@@ -218,6 +219,9 @@ sub group_query {
 
     INFO("Updating group memberships");
 
+    # Pre setup before making changes
+    my $old_user = set_phab_user();
+
     # Loop through each group and perform the following:
     #
     # 1. Load flattened list of group members
@@ -229,7 +233,6 @@ sub group_query {
     my $sync_groups = Bugzilla::Group->match( { isactive => 1, isbuggroup => 1 } );
 
     foreach my $group (@$sync_groups) {
-
         # Create group project if one does not yet exist
         my $phab_project_name = 'bmo-' . $group->name;
         my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query(
@@ -237,14 +240,16 @@ sub group_query {
                 name => $phab_project_name
             }
         );
+
+        my $secure_revision =
+          Bugzilla::Extension::PhabBugz::Project->new_from_query(
+            {
+              name => 'secure-revision'
+            }
+        );
+
         if ( !$project ) {
-            INFO("Project $project not found. Creating.");
-            my $secure_revision =
-              Bugzilla::Extension::PhabBugz::Project->new_from_query(
-                {
-                    name => 'secure-revision'
-                }
-              );
+            INFO("Project $phab_project_name not found. Creating.");
             $project = Bugzilla::Extension::PhabBugz::Project->create(
                 {
                     name        => $phab_project_name,
@@ -255,13 +260,26 @@ sub group_query {
                 }
             );
         }
-
-        if ( my @group_members = get_group_members($group) ) {
-            INFO("Setting group members for " . $project->name);
-            $project->set_members( \@group_members );
-            $project->update();
+        else {
+            # Make sure that the group project permissions are set properly
+            INFO("Updating permissions on $phab_project_name");
+            $project->set_policy( 'view', $secure_revision->phid );
+            $project->set_policy( 'edit', $secure_revision->phid );
+            $project->set_policy( 'join', $secure_revision->phid );
         }
+
+        # Make sure phab-bot is member of the bmo group so that it can
+        # make changes such as adding attachments, etc.
+        my $phab_user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
+        $self->add_user_to_group( $group, $phab_user );
+
+        INFO("Setting group members for " . $project->name);
+        my @group_members = $self->get_group_members( $group );
+        $project->set_members( \@group_members );
+        $project->update();
     }
+
+    Bugzilla->set_user($old_user);
 }
 
 sub process_revision_change {
@@ -707,7 +725,7 @@ sub save_last_id {
 }
 
 sub get_group_members {
-    my ($group) = @_;
+    my ( $self, $group ) = @_;
     my $group_obj =
       ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
     my $members_all = $group_obj->members_complete();
@@ -726,6 +744,36 @@ sub get_group_members {
 
     # We only need users who have accounts in phabricator
     return grep { $_->phab_phid } values %users;
+}
+
+sub add_user_to_group {
+    my ( $self, $group, $user ) = @_;
+    
+    return if $user->in_group( $group->name );
+
+    my $dbh = Bugzilla->dbh;
+
+    $dbh->do(
+        "INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)
+         VALUES (?, ?, 0, ?)",
+        undef,
+        ($user->id,
+         $group->id,
+         GRANT_DIRECT)
+    );
+
+    $dbh->do(
+        "INSERT INTO profiles_activity (
+         userid, who, profiles_when, fieldid, oldvalue, newvalue)
+         VALUES (?, ?, now(), ?, '', ?)",
+        undef,
+        ($user->id,
+         Bugzilla->user->id,
+         get_field_id('bug_group'),
+         $group->name)
+    );
+    
+    Bugzilla->memcached->clear_config({ key => "user_groups." . $user->id });
 }
 
 1;
