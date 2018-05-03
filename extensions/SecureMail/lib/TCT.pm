@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::TCT;
+package Bugzilla::Extension::SecureMail::TCT;
 use 5.10.1;
 use Moo;
 
@@ -15,20 +15,10 @@ use Future::Utils qw(call);
 use Future;
 use IO::Async::Process;
 
-use constant TCT_BIN => '/usr/local/bin/tct';
-
-has 'public_key' => (
-    is       => 'ro',
-    required => 1,
-);
-
-has 'public_key_file' => (
-    is => 'lazy',
-);
-
-has 'is_valid' => (
-    is => 'lazy',
-);
+has 'public_key'      => ( is => 'ro', required => 1 );
+has 'public_key_file' => ( is => 'lazy' );
+has 'is_valid'        => ( is => 'lazy' );
+has 'command'         => ( is => 'ro', default  => 'tct' );
 
 sub _build_public_key_file {
     my ($self) = @_;
@@ -45,7 +35,7 @@ sub _build_is_valid {
     my $exit_f = $loop->new_future;
     my ($stderr, $stdout);
     my $process = IO::Async::Process->new(
-        command => [TCT_BIN, 'check', '-k', $self->public_key_file ],
+        command => [$self->command, 'check', '-k', $self->public_key_file ],
         stderr => {
             into => \$stderr,
         },
@@ -53,7 +43,7 @@ sub _build_is_valid {
             into => \$stdout,
         },
         on_finish => on_finish($exit_f),
-        on_exception => on_exception(TCT_BIN, $exit_f),
+        on_exception => on_exception($self->command, $exit_f),
     );
     $loop->add($process);
 
@@ -76,7 +66,7 @@ sub encrypt {
                 my $output;
                 my $loop = IO::Async::Loop->new;
                 my $exit_f = $loop->new_future;
-                my @command = ( 'tct', 'encrypt', '-k', $self->public_key_file );
+                my @command = ( $self->command, 'encrypt', '-k', $self->public_key_file );
                 push @command, '--comment', $comment if $comment;
                 my $process = IO::Async::Process->new(
                     command => \@command,
@@ -87,7 +77,7 @@ sub encrypt {
                         into => \$output,
                     },
                     on_finish => on_finish($exit_f),
-                    on_exception => on_exception('tct', $exit_f),
+                    on_exception => on_exception($self->command, $exit_f),
                 );
                 $loop->add($process);
 
@@ -98,3 +88,25 @@ sub encrypt {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::Extension::SecureMail::TCT - An interface to the tct program
+
+=head1 SYNOPSIS
+
+    my $key = <<'PUBLIC_KEY';
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+    mQINBFakJSsBEACbDwHztgZaVhIb6f4PN0KbXv5BEciqKNbdVLgWQJyqgEMIwTF7
+    ...
+    o858gRM=
+    =t9lA
+    -----END PGP PUBLIC KEY BLOCK-----
+    PUBLIC_KEY
+
+    my $tct = Bugzilla::Extension::SecureMail::TCT->new(public_key => $key);
+    my $encrypted = $tct->encrypt("message", "comment goes here")->get;
+

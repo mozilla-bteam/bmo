@@ -36,7 +36,7 @@ use Bugzilla::User;
 use Bugzilla::Util qw(trim trick_taint is_7bit_clean);
 use Bugzilla::Error;
 use Bugzilla::Mailer;
-use Bugzilla::TCT;
+use Bugzilla::Extension::SecureMail::TCT;
 
 use Crypt::OpenPGP::Armour;
 use Crypt::OpenPGP::KeyRing;
@@ -127,11 +127,13 @@ sub object_validators {
 
             if ($value =~ /PUBLIC KEY/) {
                 # PGP keys must be ASCII-armoured.
-                my $tct = Bugzilla::TCT->new(public_key => $value);
+                my $tct = Bugzilla::Extension::SecureMail::TCT->new(
+                    public_key => $value,
+                    command    => Bugzilla->localconfig->{tct_bin},
+                );
                 unless ($tct->is_valid->get) {
                     ThrowUserError( 'securemail_invalid_key', { errstr => 'key is invalid or expired' } );
                 }
-
             }
             elsif ($value =~ /BEGIN CERTIFICATE/) {
                 # S/MIME Keys must be in PEM format (Base64-encoded X.509)
@@ -471,7 +473,10 @@ sub _make_secure {
         # PGP Encryption #
         ##################
 
-        my $tct = Bugzilla::TCT->new(public_key => $key);
+        my $tct = Bugzilla::Extension::SecureMail::TCT->new(
+            public_key => $key,
+            command    => Bugzilla->localconfig->{tct_bin},
+        );
 
         if (scalar $email->parts > 1) {
             my $old_boundary = $email->{ct}{attributes}{boundary};
