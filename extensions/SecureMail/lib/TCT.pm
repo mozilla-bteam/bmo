@@ -14,6 +14,7 @@ use File::Temp;
 use Future::Utils qw(call);
 use Future;
 use IO::Async::Process;
+use Taint::Util qw(tainted);
 
 has 'public_key'      => ( is => 'ro', required => 1 );
 has 'public_key_file' => ( is => 'lazy' );
@@ -34,8 +35,16 @@ sub _build_is_valid {
     my $loop = IO::Async::Loop->new;
     my $exit_f = $loop->new_future;
     my ($stderr, $stdout);
+    my @command = ( $self->command, 'check', '-k', $self->public_key_file );
+    my $i = 0;
+    foreach my $arg (@command) {
+        if (tainted($arg)) {
+            die "$arg (index $i) is tainted\n";
+        }
+        $i++;
+    }
     my $process = IO::Async::Process->new(
-        command => [$self->command, 'check', '-k', $self->public_key_file ],
+        command => \@command,
         stderr => {
             into => \$stderr,
         },
@@ -68,6 +77,13 @@ sub encrypt {
                 my $exit_f = $loop->new_future;
                 my @command = ( $self->command, 'encrypt', '-k', $self->public_key_file );
                 push @command, '--comment', $comment if $comment;
+                my $i = 0;
+                foreach my $arg (@command) {
+                    if (tainted($arg)) {
+                        die "$arg (index $i) is tainted\n";
+                    }
+                    $i++;
+                }
                 my $process = IO::Async::Process->new(
                     command => \@command,
                     stdin => {
