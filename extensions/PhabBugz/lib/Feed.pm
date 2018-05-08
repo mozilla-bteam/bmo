@@ -227,37 +227,44 @@ sub group_query {
     # 1. Load flattened list of group members
     # 2. Check to see if Phab project exists for 'bmo-<group_name>'
     # 3. Create if does not exist with locked down policy.
-    # 4. Set project members to exact list
+    # 4. Set project members to exact list including phab-bot user
     # 5. Profit
 
     my $sync_groups = Bugzilla::Group->match( { isactive => 1, isbuggroup => 1 } );
 
+    # Load phab-bot Phabricator user to add as a member of each project group later
+    my $phab_ids = get_phab_bmo_ids( { ids => [ Bugzilla->user->id ] } );
+    my $phab_user = Bugzilla::User->new( { id => $phab_ids->[0]->{id}, cache => 1 } );
+    $phab_user->{phab_phid} = $phab_ids->[0]->{phid};
+
+    # secure-revision project that will be used for bmo group projects
+    my $secure_revision =
+      Bugzilla::Extension::PhabBugz::Project->new_from_query(
+        {
+          name => 'secure-revision'
+        }
+    );
+
     foreach my $group (@$sync_groups) {
         # Create group project if one does not yet exist
         my $phab_project_name = 'bmo-' . $group->name;
-        my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query(
-            {
-                name => $phab_project_name
-            }
-        );
-
-        my $secure_revision =
+        my $project =
           Bugzilla::Extension::PhabBugz::Project->new_from_query(
             {
-              name => 'secure-revision'
+              name => $phab_project_name
             }
         );
 
         if ( !$project ) {
             INFO("Project $phab_project_name not found. Creating.");
             $project = Bugzilla::Extension::PhabBugz::Project->create(
-                {
-                    name        => $phab_project_name,
-                    description => 'BMO Security Group for ' . $group->name,
-                    view_policy => $secure_revision->phid,
-                    edit_policy => $secure_revision->phid,
-                    join_policy => $secure_revision->phid
-                }
+              {
+                name        => $phab_project_name,
+                description => 'BMO Security Group for ' . $group->name,
+                view_policy => $secure_revision->phid,
+                edit_policy => $secure_revision->phid,
+                join_policy => $secure_revision->phid
+              }
             );
         }
         else {
@@ -268,14 +275,11 @@ sub group_query {
             $project->set_policy( 'join', $secure_revision->phid );
         }
 
-        # Make sure phab-bot is member of the bmo group so that it can
-        # make changes such as adding attachments, etc.
-        my $phab_user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
-        $self->add_user_to_group( $group, $phab_user );
-
+        # Make sure phab-bot also a member of the new project group so that it can
+        # make policy changes to the private revisions
         INFO("Setting group members for " . $project->name);
         my @group_members = $self->get_group_members( $group );
-        $project->set_members( \@group_members );
+        $project->set_members( [ ($phab_user, @group_members) ] );
         $project->update();
     }
 
@@ -744,36 +748,6 @@ sub get_group_members {
 
     # We only need users who have accounts in phabricator
     return grep { $_->phab_phid } values %users;
-}
-
-sub add_user_to_group {
-    my ( $self, $group, $user ) = @_;
-    
-    return if $user->in_group( $group->name );
-
-    my $dbh = Bugzilla->dbh;
-
-    $dbh->do(
-        "INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)
-         VALUES (?, ?, 0, ?)",
-        undef,
-        ($user->id,
-         $group->id,
-         GRANT_DIRECT)
-    );
-
-    $dbh->do(
-        "INSERT INTO profiles_activity (
-         userid, who, profiles_when, fieldid, oldvalue, newvalue)
-         VALUES (?, ?, now(), ?, '', ?)",
-        undef,
-        ($user->id,
-         Bugzilla->user->id,
-         get_field_id('bug_group'),
-         $group->name)
-    );
-    
-    Bugzilla->memcached->clear_config({ key => "user_groups." . $user->id });
 }
 
 1;
