@@ -33,6 +33,7 @@ BEGIN {
 
 # PREREQ_PM
 my %requires = (
+    'Alien::libcmark_gfm'      => 0,
     'Algorithm::BloomFilter'   => '0.02',
     'CGI'                      => '4.31',
     'CGI::Compile'             => 0,
@@ -49,6 +50,7 @@ my %requires = (
     'Digest::SHA'              => '5.47',
     'Email::MIME'              => '1.904',
     'Email::Send'              => '1.911',
+    'FFI::Platypus'            => 0,
     'File::Slurp'              => '9999.13',
     'File::Slurper'            => '0.012',
     'Future'                   => '0.34',
