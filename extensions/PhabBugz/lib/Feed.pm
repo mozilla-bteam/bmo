@@ -414,11 +414,9 @@ sub process_revision_change {
     # REVIEWER STATUSES
 
     my (@accepted_phids, @denied_phids, @accepted_user_ids, @denied_user_ids);
-    unless ($revision->status eq 'changes-planned' || $revision->status eq 'needs-review') {
-        foreach my $reviewer (@{ $revision->reviewers }) {
-            push(@accepted_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'accepted';
-            push(@denied_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'rejected';
-        }
+    foreach my $reviewer (@{ $revision->reviewers }) {
+        push(@accepted_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'accepted';
+        push(@denied_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'rejected';
     }
 
     if ( @accepted_phids ) {
