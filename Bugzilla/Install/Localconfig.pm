@@ -126,6 +126,10 @@ use constant LOCALCONFIG_VARS => (
         default => sub { dirname( bin_loc('diff') ) },
     },
     {
+        name => 'tct_bin',
+        default => sub { bin_loc('tct') },
+    },
+    {
         name => 'site_wide_secret',
 
         # 64 characters is roughly the equivalent of a 384-bit key, which
@@ -211,6 +215,7 @@ sub _read_localconfig_from_env {
         else {
             my $default = $var->{default};
             $localconfig{$name} = ref($default) eq 'CODE' ? $default->() : $default;
+            untaint($localconfig{$name});
         }
     }
 

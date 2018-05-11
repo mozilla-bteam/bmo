@@ -32,7 +32,6 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
     create_revision_attachment
     get_bug_role_phids
-    get_phab_bmo_ids
     get_project_phid
     get_security_sync_groups
     is_attachment_phab_revision
@@ -147,10 +146,14 @@ sub feed_query {
         }
 
         # Skip changes done by phab-bot user
-        my $phab_users = get_phab_bmo_ids({ phids => [$author_phid] });
-        if (@$phab_users) {
-            my $user = Bugzilla::User->new({ id => $phab_users->[0]->{id}, cache => 1 });
-            if ($user->login eq PHAB_AUTOMATION_USER) {
+        my $phab_user = Bugzilla::Extension::PhabBugz::User->new_from_query(
+          {
+            phids => [ $author_phid ]
+          }
+        );
+
+        if ($phab_user && $phab_user->bugzilla_id) {
+            if ($phab_user->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
                 INFO("SKIPPING: Change made by phabricator user");
                 $self->save_last_id($story_id, 'feed');
                 next;
@@ -434,17 +437,28 @@ sub process_revision_change {
     # REVIEWER STATUSES
 
     my (@accepted_phids, @denied_phids, @accepted_user_ids, @denied_user_ids);
-    unless ($revision->status eq 'changes-planned' || $revision->status eq 'needs-review') {
-        foreach my $reviewer (@{ $revision->reviewers }) {
-            push(@accepted_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'accepted';
-            push(@denied_phids, $reviewer->phab_phid) if $reviewer->phab_review_status eq 'rejected';
-        }
+    foreach my $reviewer (@{ $revision->reviewers }) {
+        push(@accepted_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'accepted';
+        push(@denied_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'rejected';
     }
 
-    my $phab_users = get_phab_bmo_ids({ phids => \@accepted_phids });
-    @accepted_user_ids = map { $_->{id} } @$phab_users;
-    $phab_users = get_phab_bmo_ids({ phids => \@denied_phids });
-    @denied_user_ids = map { $_->{id} } @$phab_users;
+    if ( @accepted_phids ) {
+        my $phab_users = Bugzilla::Extension::PhabBugz::User->match(
+          {
+            phids => \@accepted_phids
+          }
+        );
+        @accepted_user_ids = map { $_->bugzilla_user->id } @$phab_users;
+    }
+
+    if ( @denied_phids ) {
+        my $phab_users = Bugzilla::Extension::PhabBugz::User->match(
+          {
+            phids => \@denied_phids
+          }
+        );
+        @denied_user_ids = map { $_->bugzilla_user->id } @$phab_users;
+    }
 
     my %reviewers_hash =  map { $_->name => 1 } @{ $revision->reviewers };
 
@@ -452,19 +466,22 @@ sub process_revision_change {
         my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
         next if $revision->id != $attach_revision_id;
 
-        # Clear old flags if no longer accepted
+        # Clear old accepted review flags if no longer accepted
         my (@denied_flags, @new_flags, @removed_flags, %accepted_done, $flag_type);
         foreach my $flag (@{ $attachment->flags }) {
             next if $flag->type->name ne 'review';
             $flag_type = $flag->type if $flag->type->is_active;
+            next if $flag->status ne '+';
             if (any { $flag->setter->id == $_ } @denied_user_ids) {
+                INFO('Denying review flag set by ' . $flag->setter->name);
                 push(@denied_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
             }
             if (any { $flag->setter->id == $_ } @accepted_user_ids) {
+                INFO('Skipping as review+ already set by ' . $flag->setter->name);
                 $accepted_done{$flag->setter->id}++;
             }
-            if ($flag->status eq '+'
-                && !any { $flag->setter->id == $_ } (@accepted_user_ids, @denied_user_ids)) {
+            if (!any { $flag->setter->id == $_ } (@accepted_user_ids, @denied_user_ids)) {
+                INFO('Clearing review+ flag set by ' . $flag->setter->name);
                 push(@removed_flags, { id => $flag->id, setter => $flag->setter, status => 'X' });
             }
         }
@@ -475,6 +492,7 @@ sub process_revision_change {
         foreach my $user_id (@accepted_user_ids) {
             next if $accepted_done{$user_id};
             my $user = Bugzilla::User->check({ id => $user_id, cache => 1 });
+            INFO('Setting new review+ flag for ' . $user->name);
             push(@new_flags, { type_id => $flag_type->id, setter => $user, status => '+' });
         }
 
@@ -730,24 +748,28 @@ sub save_last_id {
 
 sub get_group_members {
     my ( $self, $group ) = @_;
+
     my $group_obj =
       ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
     my $members_all = $group_obj->members_complete();
-    my %users;
+
+    my @userids;
     foreach my $name ( keys %$members_all ) {
         foreach my $user ( @{ $members_all->{$name} } ) {
-            $users{ $user->id } = $user;
+            push @userids, $user->id;
         }
     }
 
+    return if !@userids;
+    
     # Look up the phab ids for these users
-    my $phab_users = get_phab_bmo_ids( { ids => [ keys %users ] } );
-    foreach my $phab_user ( @{$phab_users} ) {
-        $users{ $phab_user->{id} }->{phab_phid} = $phab_user->{phid};
-    }
+    my $phab_users = Bugzilla::Extension::PhabBugz::User->match(
+      {
+        ids => \@userids
+      }
+    );
 
-    # We only need users who have accounts in phabricator
-    return grep { $_->phab_phid } values %users;
+    return map { $_->phid } @$phab_users;
 }
 
 1;
