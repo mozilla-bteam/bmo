@@ -332,6 +332,10 @@ sub process_revision_change {
 
     # REVISION SECURITY POLICY
 
+    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+        name => 'secure-revision'
+    });
+
     # If bug is public then remove privacy policy
     if (!@{ $bug->groups_in }) {
         INFO('Bug is public so setting view/edit public');
