@@ -23,7 +23,6 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
     create_revision_attachment
     get_bug_role_phids
-    get_phab_bmo_ids
     get_needs_review
     get_security_sync_groups
     intersect
@@ -81,8 +80,7 @@ sub needs_review {
 
     my $reviews = get_needs_review();
 
-    # map author phids to bugzilla users
-    my $author_id_map = get_phab_bmo_ids({
+    my $authors = Bugzilla::Extension::PhabBugz::User->match({
         phids => [
             uniq
             grep { defined }
@@ -90,9 +88,9 @@ sub needs_review {
             @$reviews
         ]
     });
-    my %author_phab_to_id = map { $_->{phid} => $_->{id} } @$author_id_map;
-    my $author_users      = Bugzilla::User->new_from_list([ map { $_->{id} } @$author_id_map ]);
-    my %author_id_to_user = map { $_->id => $_ } @$author_users;
+
+    my %author_phab_to_id = map { $_->phid => $_->bugzilla_user->id } @$authors;
+    my %author_id_to_user = map { $_->bugzilla_user->id => $_->bugzilla_user } @$authors;
 
     # bug data
     my $visible_bugs = $user->visible_bugs([
