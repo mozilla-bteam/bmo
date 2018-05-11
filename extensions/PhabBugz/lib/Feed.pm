@@ -114,7 +114,7 @@ sub feed_query {
 
     # PROCESS NEW FEED TRANSACTIONS
 
-    INFO("Fetching new transactions");
+    INFO("Fetching new stories");
 
     my $story_last_id = $self->get_last_id('feed');
 
@@ -331,10 +331,6 @@ sub process_revision_change {
     my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
 
     # REVISION SECURITY POLICY
-
-    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-        name => 'secure-revision'
-    });
 
     # If bug is public then remove privacy policy
     if (!@{ $bug->groups_in }) {
