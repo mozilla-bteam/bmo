@@ -38,6 +38,28 @@
         </td>
       </tr>
 
+[%# 
+  # note for reviewers
+  # there is no code here to check whether
+  # the user profile extension is installed.
+  # should it be made conditional on that somehow?
+  #%]
+      <tr>
+        <th align="right" width="150">Mozillians:</th>
+        <td>
+
+          <input size="35" name="mozillians_url" value="[% user.get_mozillians_url FILTER html %]">
+
+        </td>
+      </tr>
+
+      <tr>
+        <th align="right" width="150"></th>
+        <td>
+a sample value: "https://mozillians.org/en-US/u/dylan/"
+        </td>
+      </tr>
+
       [%# BMO - moved field hook from end of file to here to group with other account fields %]
       [% Hook.process('field') %]
 

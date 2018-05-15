@@ -91,6 +91,10 @@
     aliases from each other in lists.  Please choose an alias
     that does not contain commas and spaces.
 
+  [% ELSIF error == "mozillians_url_invalid" %]
+    [% title = "Mozillians URL invalid" %]
+    The url needs to conform with the specified format.
+
   [% ELSIF error == "alias_in_use" %]
     [% title = "Alias In Use" %]
     [% terms.Bug %] [%+ bug_id FILTER bug_link(bug_id) FILTER none %]

@@ -13,6 +13,7 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Error;
 use Bugzilla::Constants;
 use Bugzilla::Extension::UserProfile::Util;
 use Bugzilla::Install::Filesystem;
@@ -34,6 +35,67 @@ BEGIN {
     *Bugzilla::User::last_statistics_ts       = \&_user_last_statistics_ts;
     *Bugzilla::User::clear_last_statistics_ts = \&_user_clear_last_statistics_ts;
     *Bugzilla::User::address                  = \&_user_address;
+    *Bugzilla::User::get_mozillians_url_info             = \&_get_mozillians_url_info;
+    *Bugzilla::User::get_mozillians_url        = \&_get_mozillians_url;
+}
+
+
+sub _get_mozillians_url {
+    my $self = shift;
+    my $value = Bugzilla->dbh->selectrow_array(
+            "SELECT mozillians_url FROM profiles WHERE userid = ?",
+            undef,
+            $self->id
+        );
+    return $value;
+}
+
+sub _get_mozillians_url_info {
+    my $self = shift;
+    my $value = $self->get_mozillians_url();
+
+    my $hash;
+
+    $hash = {};
+    $hash->{dolink} = 0;
+
+    if (!(defined($value))) {
+        $value = "";
+    }
+
+    if (length($value) > 0) {
+        $hash->{dolink} = 1;
+        $hash->{url} = $value;
+    }
+
+
+    return $hash;
+}
+
+
+sub object_validators {
+    my ($self, $args) = @_;
+    my %args = %{ $args };
+    my ($invocant, $validators) = @args{qw(class validators)};
+
+    if ($invocant->isa('Bugzilla::User')) {
+
+        $validators->{'mozillians_url'} = sub {
+            my ($self, $value) = @_;
+
+
+            if ($value =~ m{\A(https://mozillians.org/[^/]+/u/[^/]+/)\z}) {
+                return $1;
+            }
+
+            if ($value =~ m{\A\z}) {
+                return "";
+            }
+
+            ThrowUserError('mozillians_url_invalid', { errstr => "xx" });
+        };
+    }
+
 }
 
 sub _user_last_activity_ts         { $_[0]->{last_activity_ts}                }
@@ -394,6 +456,9 @@ sub object_update_columns {
     my ($object, $columns) = @$args{qw(object columns)};
     if ($object->isa('Bugzilla::User')) {
         push(@$columns, qw(last_activity_ts last_statistics_ts));
+
+        $object->set('mozillians_url', Bugzilla->cgi->param('mozillians_url'));
+        push(@$columns, 'mozillians_url');
     }
 }
 
@@ -543,6 +608,7 @@ sub install_update_db {
     my $dbh = Bugzilla->dbh;
     $dbh->bz_add_column('profiles', 'last_activity_ts', { TYPE => 'DATETIME' });
     $dbh->bz_add_column('profiles', 'last_statistics_ts', { TYPE => 'DATETIME' });
+    $dbh->bz_add_column('profiles', 'mozillians_url', { TYPE => 'VARCHAR(600)' });
 }
 
 sub install_filesystem {

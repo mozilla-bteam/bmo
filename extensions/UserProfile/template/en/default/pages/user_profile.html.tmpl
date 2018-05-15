@@ -110,6 +110,20 @@
   </tr>
 [% END %]
 
+  <tr>
+    <th>Mozillians</th>
+    <td colspan="2">
+    [% minfo = target.get_mozillians_url_info %]
+    [% IF minfo.dolink %]
+      <a href="[% minfo.url FILTER html %]">link</a>
+      <br>
+    [% END %]
+    </td>
+  </tr>
+
+
+
+
 <tr>
   <td>&nbsp;</td>
 </tr>
