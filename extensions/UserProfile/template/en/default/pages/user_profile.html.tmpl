@@ -45,9 +45,17 @@
   </tr>
 [% END %]
 
+[%# 
+  # note for reviewers
+  # I am moving the Name, Email and so forth
+  # under the avatar image as I found that
+  # if the user has a number of links, some
+  # might have a different indentation
+  #%]
+
 <tr>
   [% offset = user.id == target.id ? 2 : 0 %]
-  <td rowspan="[% user.id ? 6 + offset : 5 + offset %]" id="gravatar-container">
+  <td rowspan="1" id="gravatar-container">
     [% IF user.gravatar %]
       <img id="gravatar" src="[% target.gravatar(256) FILTER none %]" width="128" height="128"><br>
       [% IF target.id == user.id %]
@@ -57,6 +65,11 @@
       &nbsp;
     [% END %]
   </td>
+
+</tr>
+
+<tr>
+
   <th>Name</th>
   <td colspan="2">
     [% target.name || target.address.user FILTER html %]
@@ -109,6 +122,22 @@
     </td>
   </tr>
 [% END %]
+
+  <tr>
+    <th>Links</th>
+    <td colspan="2">
+[% FOREACH page IN target.getlinks %]
+<a href="[% page.url %]">
+[% page.name FILTER html %]
+</a>
+<br>
+
+[%  END %]
+    </td>
+  </tr>
+
+
+
 
 <tr>
   <td>&nbsp;</td>

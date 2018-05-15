@@ -13,6 +13,7 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Error;
 use Bugzilla::Constants;
 use Bugzilla::Extension::UserProfile::Util;
 use Bugzilla::Install::Filesystem;
@@ -34,6 +35,65 @@ BEGIN {
     *Bugzilla::User::last_statistics_ts       = \&_user_last_statistics_ts;
     *Bugzilla::User::clear_last_statistics_ts = \&_user_clear_last_statistics_ts;
     *Bugzilla::User::address                  = \&_user_address;
+    *Bugzilla::User::getlinks                  = \&_getlinks;
+    *Bugzilla::User::getlinksinfo                  = \&_getlinksinfo;
+}
+
+
+sub _getlinksinfo {
+    my $self = shift;
+    my $value = Bugzilla->dbh->selectrow_array(
+            "SELECT linksinfo FROM profiles WHERE userid = ?",
+            undef,
+            $self->id
+        );
+    return $value;
+}
+
+sub _getlinks {
+    my $self = shift;
+    my $value = $self->getlinksinfo();
+
+    my $state = 1;
+
+    my $hash;
+    my $arr = [ ];
+
+    for my $elem (split (/\n/, $value)) {
+        if ($state == 1) {
+            $hash = {};
+            $hash->{name} = $elem;
+            $state = 2;
+        }
+        else {
+            $hash->{url} = $elem;
+            push (@$arr, $hash);
+            $state = 1;
+         }
+    }
+
+    return $arr;
+}
+
+
+sub object_validators {
+    my ($self, $args) = @_;
+    my %args = %{ $args };
+    my ($invocant, $validators) = @args{qw(class validators)};
+
+    if ($invocant->isa('Bugzilla::User')) {
+
+        $validators->{'linksinfo'} = sub {
+            my ($self, $value) = @_;
+
+            if ($value =~ m/\A([^'"]*)\z/) {
+                return $1;
+            }
+
+            ThrowUserError('linksinfo_has_invalid_character', { errstr => "xx" });
+        };
+    }
+
 }
 
 sub _user_last_activity_ts         { $_[0]->{last_activity_ts}                }
@@ -394,6 +454,9 @@ sub object_update_columns {
     my ($object, $columns) = @$args{qw(object columns)};
     if ($object->isa('Bugzilla::User')) {
         push(@$columns, qw(last_activity_ts last_statistics_ts));
+
+        $object->set('linksinfo', Bugzilla->cgi->param('linksinfo'));
+        push(@$columns, 'linksinfo');
     }
 }
 
@@ -543,6 +606,7 @@ sub install_update_db {
     my $dbh = Bugzilla->dbh;
     $dbh->bz_add_column('profiles', 'last_activity_ts', { TYPE => 'DATETIME' });
     $dbh->bz_add_column('profiles', 'last_statistics_ts', { TYPE => 'DATETIME' });
+    $dbh->bz_add_column('profiles', 'linksinfo', { TYPE => 'VARCHAR(600)' });
 }
 
 sub install_filesystem {

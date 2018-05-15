@@ -91,6 +91,10 @@
     aliases from each other in lists.  Please choose an alias
     that does not contain commas and spaces.
 
+  [% ELSIF error == "linksinfo_has_invalid_character" %]
+    [% title = "Invalid Characters In Linksinfo" %]
+    The linksinfo contains an invalid character.
+
   [% ELSIF error == "alias_in_use" %]
     [% title = "Alias In Use" %]
     [% terms.Bug %] [%+ bug_id FILTER bug_link(bug_id) FILTER none %]
