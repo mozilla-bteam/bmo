@@ -20,7 +20,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Extension::Push::Util qw(is_public);
 use Bugzilla::User;
-use Bugzilla::Util qw(detaint_natural datetime_from time_ago);
+use Bugzilla::Util qw(detaint_natural datetime_from time_ago trick_taint);
 use Bugzilla::WebService::Constants;
 
 use Bugzilla::Extension::PhabBugz::Constants;
@@ -54,6 +54,7 @@ use constant PUBLIC_METHODS => qw(
     revision
     update_reviewer_statuses
     needs_review
+    set_build_target
 );
 
 sub revision {
@@ -398,8 +399,55 @@ sub _phabricator_precheck {
         unless $user->login eq PHAB_AUTOMATION_USER;
 }
 
+sub set_build_target {
+    my ( $self, $params ) = @_;
+
+    #my $user = Bugzilla->login(LOGIN_REQUIRED);
+    my $dbh  = Bugzilla->dbh;
+
+    # Ensure PhabBugz is on
+    ThrowUserError('phabricator_not_enabled')
+        unless Bugzilla->params->{phabricator_enabled};
+    
+    # Validate that the requesting user's email matches phab-bot
+    #ThrowUserError('phabricator_unauthorized_user')
+    #    unless $user->login eq PHAB_AUTOMATION_USER;
+
+    my $revision_id  = $params->{revision_id};
+    my $build_target = $params->{build_target};
+
+    detaint_natural($revision_id)
+        || ThrowUserError('invalid_phabricator_revision_id');
+
+    unless ($build_target =~ /^PHID-HMBT-.*$/) {
+        ThrowUserError('invalid_phabricator_revision_id');
+    }
+    trick_taint($build_target);
+
+    $dbh->do(
+        "INSERT INTO phabbugz (name, value) VALUES (?, ?)",
+        undef,
+        'build_target_' . $revision_id,
+        $build_target
+    );
+
+    return { result => 1 };
+}
+
 sub rest_resources {
     return [
+        # Set build target in Phabricator
+        qr{^/phabbugz/build_target/(\d+)/(PHID-HMBT-.*)$}, {
+            POST => {
+                method => 'set_build_target',
+                params => sub {
+                    return { 
+                        revision_id  => $_[0],
+                        build_target => $_[1]
+                    };
+                }
+            }
+        },        
         # Revision creation
         qr{^/phabbugz/revision/([^/]+)$}, {
             POST => {
