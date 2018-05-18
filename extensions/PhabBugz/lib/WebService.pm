@@ -402,29 +402,38 @@ sub _phabricator_precheck {
 sub set_build_target {
     my ( $self, $params ) = @_;
 
-    #my $user = Bugzilla->login(LOGIN_REQUIRED);
-    my $dbh  = Bugzilla->dbh;
+    # Phabricator only supports sending credentials via HTTP Basic Auth
+    # so we exploit that function to pass in an API key as the password
+    # of basic auth. BMO does not support basic auth but does support
+    # use of API keys.
+    my $http_auth = Bugzilla->cgi->http('Authorization');
+    $http_auth =~ s/^Basic\s+//;
+    $http_auth = decode_base64($http_auth);
+    my ($login, $api_key) = split(':', $http_auth);
+    $params->{'Bugzilla_login'}   = $login;
+    $params->{'Bugzilla_api_key'} = $api_key;
+
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
 
     # Ensure PhabBugz is on
     ThrowUserError('phabricator_not_enabled')
-        unless Bugzilla->params->{phabricator_enabled};
+      unless Bugzilla->params->{phabricator_enabled};
     
     # Validate that the requesting user's email matches phab-bot
-    #ThrowUserError('phabricator_unauthorized_user')
-    #    unless $user->login eq PHAB_AUTOMATION_USER;
+    ThrowUserError('phabricator_unauthorized_user')
+      unless $user->login eq PHAB_AUTOMATION_USER;
 
     my $revision_id  = $params->{revision_id};
     my $build_target = $params->{build_target};
 
-    detaint_natural($revision_id)
-        || ThrowUserError('invalid_phabricator_revision_id');
+    ThrowUserError('invalid_phabricator_revision_id')
+      unless detaint_natural($revision_id);
 
-    unless ($build_target =~ /^PHID-HMBT-.*$/) {
-        ThrowUserError('invalid_phabricator_revision_id');
-    }
+    ThrowUserError('invalid_phabricator_build_target')
+      unless $build_target =~ /^PHID-HMBT-[a-zA-Z0-9]+$/;
     trick_taint($build_target);
 
-    $dbh->do(
+    Bugzilla->dbh->do(
         "INSERT INTO phabbugz (name, value) VALUES (?, ?)",
         undef,
         'build_target_' . $revision_id,
