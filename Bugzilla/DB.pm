@@ -277,6 +277,7 @@ sub _get_no_db_connection {
     my $dbh;
     my %connect_params = %{ Bugzilla->localconfig };
     $connect_params{db_name} = '';
+    local %Connector = ();
     my $conn_success = eval {
         $dbh = _connect(\%connect_params);
     };
@@ -1253,7 +1254,7 @@ sub bz_rollback_transaction {
 # Subclass Helpers
 #####################################################################
 
-my %Cache;
+our %Connector;
 
 sub _build_dbh {
     my ($self) = @_;
@@ -1287,7 +1288,7 @@ sub _build_dbh {
         }
     }
 
-    my $connector = $Cache{"$user.$dsn"} //= DBIx::Connector->new($dsn, $user, $pass, $attributes);
+    my $connector = $Connector{"$user.$dsn"} //= DBIx::Connector->new($dsn, $user, $pass, $attributes);
 
     return $connector->dbh;
 }
