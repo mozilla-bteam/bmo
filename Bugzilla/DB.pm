@@ -12,6 +12,7 @@ use Moo;
 
 use DBI;
 use DBIx::Connector;
+our %Connector;
 
 has 'dbh' => (
     is      => 'lazy',
@@ -1253,8 +1254,6 @@ sub bz_rollback_transaction {
 #####################################################################
 # Subclass Helpers
 #####################################################################
-
-our %Connector;
 
 sub _build_dbh {
     my ($self) = @_;
