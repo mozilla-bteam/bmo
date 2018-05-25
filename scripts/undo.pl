@@ -25,22 +25,26 @@ BEGIN { Bugzilla->extensions };
 use Try::Tiny;
 
 # TODO: we'll have many calls to undo() here, per instructions from Erin & Dave Camp.
-my $bug_id = 6798;
-undo(
-    changes => [
-        q{ resolution = 'INACTIVE' AND bug_id = ? },
-        $bug_id,
-    ],
-    comments => [
-        q{ resolution = 'INACTIVE' AND bug_id = ? },
-        $bug_id,
-    ]
-);
+my $bug_id = 344674;
+
+
+# not involved with kmag
+my $query = q{
+    resolution = 'INACTIVE'
+    AND NOT ( NOT ( triage_owner.userid = ? )
+    AND NOT ( assigned_to = ?)
+    AND NOT ( reporter = ?)
+    AND NOT (qa_contact IS NOT NULL AND qa_contact = ?)
+    AND NOT (
+        triage_owner.login_name = ?
+        AND bugs.priority IN ('P4', 'P5')
+    ))
+};
+undo($query, (106098) x 4, 'mak77@bonardo.net');
 
 sub undo {
-    my %param = @_;
-    my $changes = get_changes(@{ $param{changes} });
-    my $comments = get_comments(@{ $param{comments} });
+    my $changes = get_changes(@_);
+    my $comments = get_comments(@_);
 
     my %action;
     while ($_ = $changes->()) {
@@ -107,6 +111,7 @@ sub undo {
             $dbh->bz_rollback_transaction;
         };
     }
+    say "Done.";
 }
 
 sub get_changes {
