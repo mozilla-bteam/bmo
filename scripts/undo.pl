@@ -67,6 +67,7 @@ sub undo {
                 'SELECT delta_ts, lastdiffed FROM bugs where bug_id = ?',
                 undef,
                 $bug_id);
+            # TODO: Find previous value for delta_ts and lastdiffed.
             my $action = delete $action{$bug_id}{$delta_ts};
             if (keys %{ $action{$bug_id}{$delta_ts}}) {
                 die "skipping because more than one change\n";
