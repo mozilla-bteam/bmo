@@ -24,23 +24,24 @@ BEGIN { Bugzilla->extensions };
 
 use Try::Tiny;
 
-# TODO: we'll have many calls to undo() here, per instructions from Erin & Dave Camp.
-my $bug_id = 344674;
-
-
 # not involved with kmag
 my $query = q{
     resolution = 'INACTIVE'
-    AND NOT ( NOT ( triage_owner.userid = ? )
-    AND NOT ( assigned_to = ?)
-    AND NOT ( reporter = ?)
-    AND NOT (qa_contact IS NOT NULL AND qa_contact = ?)
     AND NOT (
-        triage_owner.login_name = ?
+        triage_owner.login_name = 'mak77@bonardo.net'
         AND bugs.priority IN ('P4', 'P5')
-    ))
+    )
+    AND NOT (
+        product.name = 'Toolkit' AND component.name = 'Add-ons Manager'
+    )
+    AND NOT (
+        product.name = 'Toolkit' AND component.name LIKE 'WebExtensions%'
+    )
+    AND NOT (
+        product.name = 'Core' AND component.name = 'XPConnect'
+    )
 };
-undo($query, (106098) x 4, 'mak77@bonardo.net');
+undo($query);
 
 sub undo {
     my $changes = get_changes(@_);
@@ -62,6 +63,7 @@ sub undo {
     }
 
     my $dbh = Bugzilla->dbh;
+    say "Found ", 0 + keys %action, " bugs";
     foreach my $bug_id (keys %action) {
         $dbh->bz_start_transaction;
         say "working on $bug_id";
@@ -71,8 +73,9 @@ sub undo {
                 undef,
                 $bug_id);
             my ($previous_last_ts) = $dbh->selectrow_array(
-                'SELECT bug_when FROM bugs_activity WHERE bug_when < ? ORDER BY bug_when DESC LIMIT 1',
+                'SELECT bug_when FROM bugs_activity WHERE bug_id = ? AND bug_when < ? ORDER BY bug_when DESC LIMIT 1',
                 undef,
+                $bug_id,
                 $delta_ts
             );
             die "cannot find previous last updated time" unless $previous_last_ts;
@@ -121,7 +124,7 @@ sub get_changes {
         SELECT
             BA.id AS change_id,
             BA.bug_id,
-            FD.name field_name,
+            FD.name AS field_name,
             BA.removed,
             BA.added,
             BA.bug_when
