@@ -24,20 +24,18 @@ BEGIN { Bugzilla->extensions };
 
 use Try::Tiny;
 
-my @triage_owners = ('MattN+bmo@mozilla.com');
-
-foreach my $triage_owner (@triage_owners) {
-    undo(
-        changes => [
-            q{ resolution = 'INACTIVE' AND triage_owner.login_name = ? },
-            $triage_owner,
-        ],
-        comments => [
-            q{ resolution = 'INACTIVE' AND triage_owner.login_name = ? },
-            $triage_owner,
-        ]
-    );
-}
+# TODO: we'll have many calls to undo() here, per instructions from Erin & Dave Camp.
+my $bug_id = 6798;
+undo(
+    changes => [
+        q{ resolution = 'INACTIVE' AND bug_id = ? },
+        $bug_id,
+    ],
+    comments => [
+        q{ resolution = 'INACTIVE' AND bug_id = ? },
+        $bug_id,
+    ]
+);
 
 sub undo {
     my %param = @_;
@@ -62,12 +60,18 @@ sub undo {
     my $dbh = Bugzilla->dbh;
     foreach my $bug_id (keys %action) {
         $dbh->bz_start_transaction;
+        say "working on $bug_id";
         try {
             my ($delta_ts, $lastdiffed) = $dbh->selectrow_array(
-                'SELECT delta_ts, lastdiffed FROM bugs where bug_id = ?',
+                'SELECT delta_ts, lastdiffed FROM bugs WHERE bug_id = ?',
                 undef,
                 $bug_id);
-            # TODO: Find previous value for delta_ts and lastdiffed.
+            my ($previous_last_ts) = $dbh->selectrow_array(
+                'SELECT bug_when FROM bugs_activity WHERE bug_when < ? ORDER BY bug_when DESC LIMIT 1',
+                undef,
+                $delta_ts
+            );
+            die "cannot find previous last updated time" unless $previous_last_ts;
             my $action = delete $action{$bug_id}{$delta_ts};
             if (keys %{ $action{$bug_id}{$delta_ts}}) {
                 die "skipping because more than one change\n";
@@ -75,12 +79,28 @@ sub undo {
             elsif (!$action) {
                 die "skipping because most recent change newer than automation change\n";
             }
+            $action->{change}{delta_ts} = { replace => $delta_ts, with => $previous_last_ts };
+            $action->{change}{lastdiffed} = { replace => $delta_ts, with => $previous_last_ts };
             foreach my $field (keys %{ $action->{change} }) {
                 my $change = $action->{change}{$field};
-                $dbh->do("UPDATE bugs SET $field = ? WHERE bug_id = ? AND $field = ?",
-                    undef, $change->{with}, $bug_id, $change->{replace})
-                    or die "Failed to set $field to $change->{with}";
+                if ($field eq 'cf_last_resolved' && !$change->{with}) {
+                    $change->{with} = undef;
+                }
+                my $did = $dbh->do(
+                    "UPDATE bugs SET $field = ? WHERE bug_id = ? AND $field = ?",
+                    undef, $change->{with}, $bug_id, $change->{replace},
+                );
+                die "Failed to set $field to $change->{with}" unless $did;
             }
+            my $del_comments = $dbh->prepare('DELETE FROM longdescs WHERE comment_id = ?');
+            my $del_activity = $dbh->prepare('DELETE FROM bugs_activity WHERE id = ?');
+            foreach my $c (@{ $action->{remove_comments}}) {
+                $del_comments->execute($c->{id}) or die "failed to delete comment $c->{id}";
+            }
+            foreach my $a (@{ $action->{remove_activities}}) {
+                $del_activity->execute($a->{id}) or die "failed to delete comment $a->{id}";
+            }
+
             $dbh->bz_commit_transaction;
         } catch {
             warn "Error updating $bug_id: $_";
@@ -119,7 +139,7 @@ sub get_changes {
             ) target_bugs ON BA.bug_id = target_bugs.bug_id
         WHERE
             changer.login_name = 'automation\@bmo.tld'
-                AND BA.bug_when BETWEEN '2018-05-22' AND '2018-05-24'
+                AND BA.bug_when BETWEEN '2018-05-22' AND '2018-05-26'
     };
     my $sth = Bugzilla->dbh->prepare($sql);
     $sth->execute(@bind);
@@ -152,7 +172,7 @@ sub get_comments {
             ) target_bugs ON C.bug_id = target_bugs.bug_id
         WHERE
             commenter.login_name = 'automation\@bmo.tld'
-                AND C.bug_when BETWEEN '2018-05-22' AND '2018-05-24'
+                AND C.bug_when BETWEEN '2018-05-22' AND '2018-05-26'
     };
     my $sth = Bugzilla->dbh->prepare($sql);
     $sth->execute(@bind);
