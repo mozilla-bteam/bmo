@@ -173,7 +173,7 @@ sub quoteUrls {
     my @hook_regexes;
     Bugzilla::Hook::process('bug_format_comment',
         { text => \$text, bug => $bug, regexes => \@hook_regexes,
-          comment => $comment, user => $user });
+          comment => $comment, user => undef });
 
     foreach my $re (@hook_regexes) {
         my ($match, $replace) = @$re{qw(match replace)};
@@ -250,6 +250,129 @@ sub quoteUrls {
                (\d+)
                (?=\ \*\*\*\Z)
               ~$bug_link_func->($1, $1, { user => $user })
+              ~egmx;
+
+    # Now remove the encoding hacks in reverse order
+    for (my $i = $#things; $i >= 0; $i--) {
+        $text =~ s/\x{FDD2}($i)\x{FDD3}/$things[$i]/eg;
+    }
+
+    return $text;
+}
+
+sub quoteUrls2 {
+    my ($text, $bug, $comment) = @_;
+    return $text unless $text;
+    my $anon_user = new Bugzilla::User;
+
+    # We use /g for speed, but uris can have other things inside them
+    # (http://foo/bug#3 for example). Filtering that out filters valid
+    # bug refs out, so we have to do replacements.
+    # mailto can't contain space or #, so we don't have to bother for that
+    # Do this by replacing matches with \x{FDD2}$count\x{FDD3}
+    # \x{FDDx} is used because it's unlikely to occur in the text
+    # and are reserved unicode characters. We disable warnings for now
+    # until we require Perl 5.13.9 or newer.
+    no warnings 'utf8';
+
+    # If the comment is already wrapped, we should ignore newlines when
+    # looking for matching regexps. Else we should take them into account.
+    my $s = ($comment && $comment->already_wrapped) ? qr/\s/ : qr/\h/;
+
+    # However, note that adding the title (for buglinks) can affect things
+    # In particular, attachment matches go before bug titles, so that titles
+    # with 'attachment 1' don't double match.
+    # Dupe checks go afterwards, because that uses ^ and \Z, which won't occur
+    # if it was substituted as a bug title (since that always involve leading
+    # and trailing text)
+
+    # Because of entities, it's easier (and quicker) to do this before escaping
+
+    my @things;
+    my $count = 0;
+    my $tmp;
+
+    my @hook_regexes;
+    Bugzilla::Hook::process('bug_format_comment',
+        { text => \$text, bug => $bug, regexes => \@hook_regexes,
+          comment => $comment, user => undef });
+
+    foreach my $re (@hook_regexes) {
+        my ($match, $replace) = @$re{qw(match replace)};
+        if (ref($replace) eq 'CODE') {
+            $text =~ s/$match/($things[$count++] = $replace->({matches => [
+                                                               $1, $2, $3, $4,
+                                                               $5, $6, $7, $8,
+                                                               $9, $10]}))
+                               && ("\x{FDD2}" . ($count-1) . "\x{FDD3}")/egx;
+        }
+        else {
+            $text =~ s/$match/($things[$count++] = $replace)
+                              && ("\x{FDD2}" . ($count-1) . "\x{FDD3}")/egx;
+        }
+    }
+
+    # Provide tooltips for full bug links (Bug 74355)
+    my $urlbase_re = '(' . quotemeta(Bugzilla->localconfig->{urlbase}) . ')';
+    $text =~ s~\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
+              ~($things[$count++] = get_bug_link->($3, $1, { comment_num => $5, user => $anon_user })) &&
+               ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
+              ~egox;
+
+    # In the future we want to disable this in favor of Markdown's autolink.
+    # non-mailto protocols
+    my $safe_protocols = SAFE_URL_REGEXP();
+    $text =~ s~\b($safe_protocols)
+              ~($tmp = html_quote($1)) &&
+               ($things[$count++] = "<a rel=\"nofollow\" href=\"$tmp\">$tmp</a>") &&
+               ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
+              ~egox;
+
+    # We have to quote now, otherwise the html itself is escaped
+    # THIS MEANS THAT A LITERAL ", <, >, ' MUST BE ESCAPED FOR A MATCH
+
+    $text = html_quote($text);
+
+    # Color quoted text
+    $text =~ s~^(&gt;.+)$~<span class="quote">$1</span >~mg;
+    $text =~ s~</span >\n<span class="quote">~\n~g;
+
+    # mailto:
+    # Use |<nothing> so that $1 is defined regardless
+    # &#64; is the encoded '@' character.
+    $text =~ s~\b(mailto:|)?([\w\.\-\+\=]+&\#64;[\w\-]+(?:\.[\w\-]+)+)\b
+              ~<a href=\"mailto:$2\">$1$2</a>~igx;
+
+    # attachment links
+    # BMO: don't make diff view the default for patches (Bug 652332)
+    $text =~ s~\b(attachment$s*\#?$s*(\d+)(?:$s+\[diff\])?(?:\s+\[details\])?)
+              ~($things[$count++] = get_attachment_link($2, $1, $anon_user)) &&
+               ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
+              ~egmxi;
+
+    # Current bug ID this comment belongs to
+    my $current_bugurl = $bug ? ("show_bug.cgi?id=" . $bug->id) : "";
+
+    # This handles bug a, comment b type stuff. Because we're using /g
+    # we have to do this in one pattern, and so this is semi-messy.
+    # Also, we can't use $bug_re?$comment_re? because that will match the
+    # empty string
+    my $bug_word = template_var('terms')->{bug};
+    my $bug_re = qr/\Q$bug_word\E$s*\#?$s*(\d+)/i;
+    my $comment_re = qr/comment$s*\#?$s*(\d+)/i;
+    $text =~ s~\b($bug_re(?:$s*,?$s*$comment_re)?|$comment_re)
+              ~ # We have several choices. $1 here is the link, and $2-4 are set
+                # depending on which part matched
+               (defined($2) ? get_bug_link($2, $1, { comment_num => $3, user => $anon_user }) :
+                              "<a href=\"$current_bugurl#c$4\">$1</a>")
+              ~egx;
+
+    # Old duplicate markers. These don't use $bug_word because they are old
+    # and were never customizable.
+    $text =~ s~(?<=^\*\*\*\ This\ bug\ has\ been\ marked\ as\ a\ duplicate\ of\ )
+               (\d+)
+               (?=\ \*\*\*\Z)
+              ~get_bug_link($1, $1, { user => $anon_user })
               ~egmx;
 
     # Now remove the encoding hacks in reverse order
@@ -714,6 +837,16 @@ sub create {
                                return sub {
                                    my $text = shift;
                                    return quoteUrls($text, $bug, $comment, $user);
+                               };
+                           },
+                           1
+                         ],
+
+            quoteUrls2 => [ sub {
+                               my ($context, $bug, $comment, $user) = @_;
+                               return sub {
+                                   my $text = shift;
+                                   return quoteUrls2($text, $bug, $comment, $user);
                                };
                            },
                            1
