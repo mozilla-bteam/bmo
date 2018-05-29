@@ -69,7 +69,7 @@ sub undo {
     say 'Found ', 0 + @bug_ids, ' bugs';
     foreach my $bug_id (@bug_ids) {
         $dbh->bz_start_transaction;
-        say "working on $bug_id";
+        say "Fix $bug_id";
         try {
             my ($delta_ts) = $dbh->selectrow_array(
                 'SELECT delta_ts FROM bugs WHERE bug_id = ?',
@@ -122,7 +122,8 @@ sub undo {
             tag_for_recount_from_bug($bug_id);
             $dbh->bz_commit_transaction;
         } catch {
-            warn "Error updating $bug_id: $_";
+            chomp $_;
+            say "Error updating $bug_id: $_";
             $dbh->bz_rollback_transaction;
         };
     }
