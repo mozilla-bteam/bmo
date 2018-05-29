@@ -438,6 +438,8 @@ Sometimes this is C<undef>, meaning that we are parsing text that is
 not a bug comment (but could still be some other part of a bug, like
 the summary line).
 
+=back
+
 =head2 bug_start_of_update
 
 This happens near the beginning of L<Bugzilla::Bug/update>, after L<Bugzilla::Object/update>
