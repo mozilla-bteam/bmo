@@ -121,6 +121,7 @@ sub undo {
             }
             tag_for_recount_from_bug($bug_id);
             $dbh->bz_commit_transaction;
+            sleep 1;
         } catch {
             chomp $_;
             say "Error updating $bug_id: $_";
