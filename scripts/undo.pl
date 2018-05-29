@@ -30,7 +30,7 @@ my $query = q{
     resolution = 'INACTIVE'
     AND NOT (
         triage_owner.login_name = 'mak77@bonardo.net'
-        AND bugs.priority IN ('P4', 'P5')
+        AND bugs.priority IN ('P4', 'P5', '--')
     )
     AND NOT (
         product.name = 'Toolkit' AND component.name = 'Add-ons Manager'
