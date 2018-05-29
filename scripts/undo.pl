@@ -81,10 +81,14 @@ sub undo {
                         SELECT bug_when FROM bugs_activity WHERE bug_id = ? AND bug_when < ?
                         UNION
                         SELECT bug_when FROM longdescs WHERE bug_id = ? AND bug_when < ?
+                        UNION
+                        SELECT creation_ts AS bug_when FROM bugs WHERE bug_id = ?
                     ) as changes ORDER BY bug_when DESC
                 },
                 undef,
-                ($bug_id, $delta_ts) x 2
+                $bug_id, $delta_ts,
+                $bug_id, $delta_ts,
+                $bug_id,
             );
             die 'cannot find previous last updated time' unless $previous_last_ts;
             my $action = delete $action{$bug_id}{$delta_ts};
@@ -117,7 +121,6 @@ sub undo {
             }
             tag_for_recount_from_bug($bug_id);
             $dbh->bz_commit_transaction;
-            exit;
         } catch {
             warn "Error updating $bug_id: $_";
             $dbh->bz_rollback_transaction;
