@@ -1471,7 +1471,6 @@ $(function() {
             })
             .catch(e => console.log(e));
         };
-
         enhanceBugLinks();
         enhanceAttachmentLinks();
     }
