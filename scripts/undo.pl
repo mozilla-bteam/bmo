@@ -21,6 +21,7 @@ BEGIN {
 
 use Bugzilla;
 BEGIN { Bugzilla->extensions };
+use Bugzilla::Extension::UserProfile::Util qw(tag_for_recount_from_bug);
 
 use Try::Tiny;
 
@@ -44,8 +45,9 @@ my $query = q{
 undo($query);
 
 sub undo {
-    my $changes = get_changes(@_);
-    my $comments = get_comments(@_);
+    my @args = @_;
+    my $changes = get_changes(@args);
+    my $comments = get_comments(@args);
 
     my %action;
     while ($_ = $changes->()) {
@@ -63,22 +65,28 @@ sub undo {
     }
 
     my $dbh = Bugzilla->dbh;
-    say "Found ", 0 + keys %action, " bugs";
-    foreach my $bug_id (keys %action) {
+    my @bug_ids = sort { $b <=> $a } keys %action;
+    say 'Found ', 0 + @bug_ids, ' bugs';
+    foreach my $bug_id (@bug_ids) {
         $dbh->bz_start_transaction;
         say "working on $bug_id";
         try {
-            my ($delta_ts, $lastdiffed) = $dbh->selectrow_array(
-                'SELECT delta_ts, lastdiffed FROM bugs WHERE bug_id = ?',
+            my ($delta_ts) = $dbh->selectrow_array(
+                'SELECT delta_ts FROM bugs WHERE bug_id = ?',
                 undef,
                 $bug_id);
             my ($previous_last_ts) = $dbh->selectrow_array(
-                'SELECT bug_when FROM bugs_activity WHERE bug_id = ? AND bug_when < ? ORDER BY bug_when DESC LIMIT 1',
+                q{
+                    SELECT MAX(bug_when) FROM (
+                        SELECT bug_when FROM bugs_activity WHERE bug_id = ? AND bug_when < ?
+                        UNION
+                        SELECT bug_when FROM longdescs WHERE bug_id = ? AND bug_when < ?
+                    ) as changes ORDER BY bug_when DESC
+                },
                 undef,
-                $bug_id,
-                $delta_ts
+                ($bug_id, $delta_ts) x 2
             );
-            die "cannot find previous last updated time" unless $previous_last_ts;
+            die 'cannot find previous last updated time' unless $previous_last_ts;
             my $action = delete $action{$bug_id}{$delta_ts};
             if (keys %{ $action{$bug_id}{$delta_ts}}) {
                 die "skipping because more than one change\n";
@@ -86,8 +94,6 @@ sub undo {
             elsif (!$action) {
                 die "skipping because most recent change newer than automation change\n";
             }
-            $action->{change}{delta_ts} = { replace => $delta_ts, with => $previous_last_ts };
-            $action->{change}{lastdiffed} = { replace => $delta_ts, with => $previous_last_ts };
             foreach my $field (keys %{ $action->{change} }) {
                 my $change = $action->{change}{$field};
                 if ($field eq 'cf_last_resolved' && !$change->{with}) {
@@ -99,6 +105,8 @@ sub undo {
                 );
                 die "Failed to set $field to $change->{with}" unless $did;
             }
+            $dbh->do('UPDATE bugs SET delta_ts = ?, lastdiffed = ? WHERE bug_id = ?', undef,
+                $previous_last_ts, $previous_last_ts, $bug_id );
             my $del_comments = $dbh->prepare('DELETE FROM longdescs WHERE comment_id = ?');
             my $del_activity = $dbh->prepare('DELETE FROM bugs_activity WHERE id = ?');
             foreach my $c (@{ $action->{remove_comments}}) {
@@ -107,14 +115,15 @@ sub undo {
             foreach my $a (@{ $action->{remove_activities}}) {
                 $del_activity->execute($a->{id}) or die "failed to delete comment $a->{id}";
             }
-
+            tag_for_recount_from_bug($bug_id);
             $dbh->bz_commit_transaction;
+            exit;
         } catch {
             warn "Error updating $bug_id: $_";
             $dbh->bz_rollback_transaction;
         };
     }
-    say "Done.";
+    say 'Done.';
 }
 
 sub get_changes {
