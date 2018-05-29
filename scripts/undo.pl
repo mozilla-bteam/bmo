@@ -65,7 +65,7 @@ sub undo {
     }
 
     my $dbh = Bugzilla->dbh;
-    my @bug_ids = sort { $b <=> $a } keys %action;
+    my @bug_ids = reverse sort { $a <=> $b } keys %action;
     say 'Found ', 0 + @bug_ids, ' bugs';
     foreach my $bug_id (@bug_ids) {
         $dbh->bz_start_transaction;
