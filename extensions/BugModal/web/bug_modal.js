@@ -1331,6 +1331,7 @@ $(function() {
     function smartLinkPreviews() {
         const getHrefIdParam = anchor => (new URL(anchor.href)).searchParams.get("id");
         const filterUnique = (value, index, array) => value && array.indexOf(value) === index;
+        const reduceListToMap = (all, one) => { all[one['id']] = one; return all; };
 
         const findLinkElements = pathname => {
             return (
@@ -1371,7 +1372,7 @@ $(function() {
                 throw new Error(`/rest/bug?ids=${bugIds} response not ok`);
             })
             .then(responseJson => {
-                return responseJson.bugs.reduce((all, one) => all[one['id']] = one, {});
+                return responseJson.bugs.reduce(reduceListToMap, {});
             })
             .then(bugs => {
                 bugLinks.forEach(bugLink => {
@@ -1446,11 +1447,7 @@ $(function() {
             })
             .then(attachments => {
                 // Remove undefined attachments and convert from list to dictonary mapped by id. 
-                return (
-                    attachments
-                    .filter(filterUnique)
-                    .reduce((all, one) => { all[one['id']] = one; return all; }, {})
-                );
+                return attachments.filter(filterUnique).reduce(reduceListToMap, {});
             })
             .then(attachments => {
                 // Now we have all attachment data the user is able to see.
