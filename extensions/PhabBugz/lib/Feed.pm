@@ -14,6 +14,7 @@ use IO::Async::Loop;
 use List::Util qw(first);
 use List::MoreUtils qw(any);
 use Moo;
+use Scalar::Util qw(blessed);
 use Try::Tiny;
 
 use Bugzilla::Constants;
@@ -32,10 +33,8 @@ use Bugzilla::Extension::PhabBugz::Util qw(
     add_security_sync_comments
     create_revision_attachment
     get_bug_role_phids
-    get_project_phid
     get_security_sync_groups
     is_attachment_phab_revision
-    make_revision_public
     request
     set_phab_user
 );
@@ -116,7 +115,7 @@ sub feed_query {
 
     # PROCESS NEW FEED TRANSACTIONS
 
-    INFO("Fetching new transactions");
+    INFO("Fetching new stories");
 
     my $story_last_id = $self->get_last_id('feed');
 
@@ -165,6 +164,48 @@ sub feed_query {
         };
         $self->save_last_id($story_id, 'feed');
     }
+
+    # Process any build targets as well.
+    my $dbh = Bugzilla->dbh;
+
+    INFO("Checking for revisions in draft mode");
+    my $build_targets = $dbh->selectall_arrayref(
+        "SELECT name, value FROM phabbugz WHERE name LIKE 'build_target_%'",
+        { Slice => {} }
+    );
+
+    my $delete_build_target = $dbh->prepare(
+        "DELETE FROM phabbugz WHERE name = ? AND VALUE = ?"
+    );
+
+    foreach my $target (@$build_targets) {
+        my ($revision_id) = ($target->{name} =~ /^build_target_(\d+)$/);
+        my $build_target  = $target->{value};
+
+        next unless $revision_id && $build_target;
+
+        INFO("Processing revision $revision_id with build target $build_target");
+
+        my $revision =
+          Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+            { 
+              ids => [ int($revision_id) ]
+            }
+        );
+
+        with_writable_database {
+            $self->process_revision_change($revision, " created D" . $revision->id);
+        };
+
+        # Set the build target to a passing status to
+        # allow the revision to exit draft state
+        request( 'harbormaster.sendmessage', {
+            buildTargetPHID => $build_target,
+            type            => 'pass'
+        } );
+
+        $delete_build_target->execute($target->{name}, $target->{value});
+     }
 }
 
 sub user_query {
@@ -222,9 +263,6 @@ sub group_query {
 
     INFO("Updating group memberships");
 
-    # Pre setup before making changes
-    my $old_user = set_phab_user();
-
     # Loop through each group and perform the following:
     #
     # 1. Load flattened list of group members
@@ -236,9 +274,13 @@ sub group_query {
     my $sync_groups = Bugzilla::Group->match( { isactive => 1, isbuggroup => 1 } );
 
     # Load phab-bot Phabricator user to add as a member of each project group later
-    my $phab_ids = get_phab_bmo_ids( { ids => [ Bugzilla->user->id ] } );
-    my $phab_user = Bugzilla::User->new( { id => $phab_ids->[0]->{id}, cache => 1 } );
-    $phab_user->{phab_phid} = $phab_ids->[0]->{phid};
+    my $phab_bmo_user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER, cache => 1 } );
+    my $phab_user =
+      Bugzilla::Extension::PhabBugz::User->new_from_query(
+        {
+            ids => [ $phab_bmo_user->id ]
+        }
+    );
 
     # secure-revision project that will be used for bmo group projects
     my $secure_revision =
@@ -285,15 +327,16 @@ sub group_query {
         $project->set_members( [ ($phab_user, @group_members) ] );
         $project->update();
     }
-
-    Bugzilla->set_user($old_user);
 }
 
 sub process_revision_change {
     my ($self, $revision_phid, $story_text) = @_;
 
     # Load the revision from Phabricator
-    my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_phid ] });
+    my $revision =
+        blessed $revision_phid
+        ? $revision_phid
+        : Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_phid ] });
     
     my $secure_revision =
       Bugzilla::Extension::PhabBugz::Project->new_from_query(
@@ -334,6 +377,10 @@ sub process_revision_change {
     my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
 
     # REVISION SECURITY POLICY
+
+    my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+        name => 'secure-revision'
+    });
 
     # If bug is public then remove privacy policy
     if (!@{ $bug->groups_in }) {
