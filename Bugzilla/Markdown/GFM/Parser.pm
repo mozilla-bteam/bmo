@@ -1,4 +1,6 @@
 package Bugzilla::Markdown::GFM::Parser;
+
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -81,3 +83,5 @@ sub SETUP {
 }
 
 1;
+
+__END__

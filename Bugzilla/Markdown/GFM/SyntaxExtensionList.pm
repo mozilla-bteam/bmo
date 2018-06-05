@@ -1,8 +1,8 @@
 package Bugzilla::Markdown::GFM::SyntaxExtensionList;
+
+use 5.10.1;
 use strict;
 use warnings;
-
-use Data::Printer;
 
 sub SETUP {
     my ($class, $FFI) = @_;
@@ -19,3 +19,5 @@ sub SETUP {
 }
 
 1;
+
+__END__

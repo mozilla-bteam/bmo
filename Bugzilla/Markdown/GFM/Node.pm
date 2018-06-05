@@ -1,4 +1,6 @@
 package Bugzilla::Markdown::GFM::Node;
+
+use 5.10.1;
 use strict;
 use warnings;
 
@@ -27,3 +29,5 @@ sub SETUP {
 }
 
 1;
+
+__END__
