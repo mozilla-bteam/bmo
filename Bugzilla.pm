@@ -1199,12 +1199,6 @@ Feeds the provided message into our centralised auditing system.
 
 =back
 
-=item C<audit>
-
-Feeds the provided message into our centralised auditing system.
-
-=back
-
 =item C<markdown_parser>
 
 Returns a L<Bugzilla::Markdown::GFM::Parser> with the default extensions
