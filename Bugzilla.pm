@@ -1197,8 +1197,6 @@ of features, see C<OPTIONAL_MODULES> in C<Bugzilla::Install::Requirements>.
 
 Feeds the provided message into our centralised auditing system.
 
-=back
-
 =item C<markdown_parser>
 
 Returns a L<Bugzilla::Markdown::GFM::Parser> with the default extensions
