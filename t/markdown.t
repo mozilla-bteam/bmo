@@ -15,31 +15,31 @@ my $parser = Bugzilla->markdown_parser;
 
 is(
     $parser->render_html('# header'), 
-    "<h1>header</h1>\n",
+    "<h1>header</h1>$/",
     'Simple header'
 );
 
 is(
     $parser->render_html('`code snippet`'), 
-    "<p><code>code snippet</code></p>\n",
+    "<p><code>code snippet</code></p>$/",
     'Simple code snippet'
 );
 
 is(
     $parser->render_html('http://bmo-web.vm'), 
-    "<p><a href=\"http://bmo-web.vm\">http://bmo-web.vm</a></p>\n",
+    "<p><a href=\"http://bmo-web.vm\">http://bmo-web.vm</a></p>$/",
     'Autolink extension'
 );
 
 is(
     $parser->render_html('<script>hijack()</script>'), 
-    "&lt;script>hijack()&lt;/script>\n",
+    "&lt;script>hijack()&lt;/script>$/",
     'Tagfilter extension'
 );
 
 is(
     $parser->render_html('~~strikethrough~~'), 
-    "<p><del>strikethrough</del></p>\n",
+    "<p><del>strikethrough</del></p>$/",
     'Strikethrough extension'
 );
 
