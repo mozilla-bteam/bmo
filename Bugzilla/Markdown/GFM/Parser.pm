@@ -85,3 +85,25 @@ sub SETUP {
 1;
 
 __END__
+
+=head1 NAME
+
+Bugzilla::Markdown::GFM::Parser - Transforms markdown into HTML via libcmark_gfm.
+
+=head1 SYNOPSIS
+
+    use Bugzilla::Markdown::GFM;
+    use Bugzilla::Markdown::GFM::Parser;
+
+    my $parser = Bugzilla::Markdown::GFM::Parser->new({
+        extensions => [qw( autolink tagfilter table strikethrough )]
+    });
+
+    say $parser->render_html(<<'MARKDOWN');
+    # My header
+
+    This is **markdown**!
+
+    - list item 1
+    - list item 2
+    MARKDOWN
