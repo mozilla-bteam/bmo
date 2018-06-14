@@ -580,6 +580,10 @@ C<string> Time spent as related to this comment.
 
 C<boolean> Comment is marked as private.
 
+=item C<is_markdown>
+
+C<boolean> Whether this comment needs Markdown rendering to be applied.
+
 =item C<already_wrapped>
 
 If this comment is stored in the database word-wrapped, this will be C<1>.
