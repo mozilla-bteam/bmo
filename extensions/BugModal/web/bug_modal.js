@@ -1351,6 +1351,9 @@ if (history && history.replaceState) {
     if (!url.pathname.match(/^bug\/[0-9]+/)) {
         url.searchParams.delete("id");
         let new_url = url.search ? `/bug/${bug_slug}${url.search}` : `/bug/${bug_slug}`;
+        if (url.hash) {
+            new_url += url.hash;
+        }
         history.replaceState(null, BUGZILLA.bug_title, new_url);
         document.title = BUGZILLA.bug_title;
     }
