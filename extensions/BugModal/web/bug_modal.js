@@ -1344,12 +1344,11 @@ function confirmUnsafeURL(url) {
 
 // fix url after bug creation/update
 if (history && history.replaceState) {
-    let bug_id = BUGZILLA.bug_id;
+    let bug_id    = BUGZILLA.bug_id;
     let bug_alias = BUGZILLA.bug_alias;
-    let bug_slug = bug_alias || bug_id;
-    let url = new URL(document.location.href);
+    let bug_slug  = bug_alias || bug_id;
+    let url       = new URL(document.location.href);
     if (!url.pathname.match(/^bug\/[0-9]+/)) {
-        // can I parse url.search and remove id first?
         url.searchParams.delete("id");
         let new_url = url.search ? `/bug/${bug_slug}${url.search}` : `/bug/${bug_slug}`;
         history.replaceState(null, BUGZILLA.bug_title, new_url);
