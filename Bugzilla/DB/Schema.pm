@@ -924,6 +924,8 @@ use constant ABSTRACT_SCHEMA => {
             cryptpassword  => {TYPE => 'varchar(128)'},
             realname       => {TYPE => 'varchar(255)', NOTNULL => 1,
                                DEFAULT => "''"},
+            nickname       => {TYPE => 'varchar(255)', NOTNULL => 1,
+                               DEFAULT => "''"},
             disabledtext   => {TYPE => 'MEDIUMTEXT', NOTNULL => 1,
                                DEFAULT => "''"},
             disable_mail   => {TYPE => 'BOOLEAN', NOTNULL => 1,
