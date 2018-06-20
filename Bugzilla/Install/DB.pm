@@ -771,6 +771,9 @@ sub update_table_definitions {
                         {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "''"});
     $dbh->bz_add_index('profiles', 'profiles_nickname_idx', [qw(nickname)]);
 
+    $dbh->bz_add_index('profiles', 'profiles_realname_ft_idx',
+                       {TYPE => 'FULLTEXT', FIELDS => ['realname']});
+
     ################################################################
     # New --TABLE-- changes should go *** A B O V E *** this point #
     ################################################################

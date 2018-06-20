@@ -947,6 +947,8 @@ use constant ABSTRACT_SCHEMA => {
             profiles_extern_id_idx => {FIELDS => ['extern_id'],
                                        TYPE   => 'UNIQUE'},
             profiles_nickname_idx  => ['nickname'],
+            profiles_realname_ft_idx => {FIELDS => ['realname'],
+                                         TYPE => 'FULLTEXT'},
         ],
     },
 
