@@ -350,6 +350,11 @@ sub import {
     $Exporter::ExportLevel-- if $is_exporter;
 }
 
+sub sql_prefix_match {
+    my ($self, $column, $str) = @_;
+    return "$column LIKE " . $self->quote("$str%");
+}
+
 sub sql_istrcmp {
     my ($self, $left, $right, $op) = @_;
     $op ||= "=";
