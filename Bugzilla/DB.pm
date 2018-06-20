@@ -12,7 +12,6 @@ use Moo;
 
 use DBI;
 
-# This is here to make the diff make more sense
 has 'dbh' => (
     is      => 'lazy',
     handles => [
