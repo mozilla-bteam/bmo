@@ -22,6 +22,7 @@ use JSON::XS qw(encode_json decode_json);
 use List::Util qw(first);
 use LWP::UserAgent;
 use Taint::Util qw(untaint);
+use Try::Tiny;
 
 use base qw(Exporter);
 
@@ -60,31 +61,37 @@ sub create_revision_attachment {
     }
 
     # If submitter, then switch to that user when creating attachment
-    my $old_user;
-    if ($submitter) {
-        $old_user = Bugzilla->user;
-        $submitter->{groups} = [ Bugzilla::Group->get_all ]; # We need to always be able to add attachment
-        Bugzilla->set_user($submitter);
-    }
-
-    my $attachment = Bugzilla::Attachment->create(
-        {
-            bug         => $bug,
-            creation_ts => $timestamp,
-            data        => $revision_uri,
-            description => $revision->title,
-            filename    => 'phabricator-D' . $revision->id . '-url.txt',
-            ispatch     => 0,
-            isprivate   => 0,
-            mimetype    => PHAB_CONTENT_TYPE,
+    my ($old_user, $attachment);
+    try {
+        if ($submitter) {
+            $old_user = Bugzilla->user;
+            $submitter->{groups} = [ Bugzilla::Group->get_all ]; # We need to always be able to add attachment
+            Bugzilla->set_user($submitter);
         }
-    );
 
-    # Insert a comment about the new attachment into the database.
-    $bug->add_comment($revision->summary, { type       => CMT_ATTACHMENT_CREATED,
-                                            extra_data => $attachment->id });
+        $attachment = Bugzilla::Attachment->create(
+            {
+                bug         => $bug,
+                creation_ts => $timestamp,
+                data        => $revision_uri,
+                description => $revision->title,
+                filename    => 'phabricator-D' . $revision->id . '-url.txt',
+                ispatch     => 0,
+                isprivate   => 0,
+                mimetype    => PHAB_CONTENT_TYPE,
+            }
+        );
 
-    Bugzilla->set_user($old_user) if $old_user;
+        # Insert a comment about the new attachment into the database.
+        $bug->add_comment($revision->summary, { type       => CMT_ATTACHMENT_CREATED,
+                                                extra_data => $attachment->id });
+    }
+    catch {
+        die $_;
+    }
+    finally {
+        Bugzilla->set_user($old_user) if $old_user;
+    };
 
     return $attachment;
 }

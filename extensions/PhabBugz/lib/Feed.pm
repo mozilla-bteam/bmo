@@ -445,8 +445,10 @@ sub process_revision_change {
 
     my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
 
+    INFO('Checking for revision attachment');
     my $attachment = create_revision_attachment($bug, $revision, $timestamp, $revision->author->bugzilla_user);
-
+    INFO('Attachment ' . $attachment->id . ' created or already exists.');
+    
     # ATTACHMENT OBSOLETES
 
     # fixup attachments on current bug
