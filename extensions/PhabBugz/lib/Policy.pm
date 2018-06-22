@@ -135,7 +135,7 @@ sub _build_rule_projects {
     my ($self) = @_;
 
     return [] unless $self->rules;
-    my $rule = first { $_->{rule} =~ /PhabricatorProjects(All)?PolicyRule/ } @{ $self->rules };
+    my $rule = first { $_->{rule} =~ /PhabricatorProjects(?:All)?PolicyRule/ } @{ $self->rules };
     return [] unless $rule;
     return [
         map  { $_->name }
