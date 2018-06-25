@@ -660,7 +660,8 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
     font-family: "Fira Mono", monospace;
 }
 
-.comment-text span.quote, .comment-text span.quote_wrapped {
+.comment-text span.quote, .comment-text span.quote_wrapped,
+div.comment-text pre {
     background: #eee !important;
     color: #444 !important;
     display: block !important;
@@ -672,6 +673,31 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
 .comment-text.bz_private {
     color: darkred;
     border: 1px dashed darkred;
+}
+
+/* Markdown comments */
+div.comment-text {
+    white-space: normal;
+    line-height: 1.05;
+    padding: 0 8px 0 8px;
+}
+
+div.comment-text code {
+    color: #444;
+    background-color: #eee;
+}
+
+div.comment-text table {
+    border-collapse: collapse;
+}
+
+div.comment-text th, div.comment-text td {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+}
+
+div.comment-text hr {
+    display: block !important;
 }
 
 .comment-tags {
