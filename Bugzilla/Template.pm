@@ -130,17 +130,19 @@ sub get_format {
     };
 }
 
-# This routine quoteUrls contains inspirations from the HTML::FromText CPAN
+# This routine renderComment contains inspirations from the HTML::FromText CPAN
 # module by Gareth Rees <garethr@cre.canon.co.uk>.  It has been heavily hacked,
 # all that is really recognizable from the original is bits of the regular
 # expressions.
 # This has been rewritten to be faster, mainly by substituting 'as we go'.
 # If you want to modify this routine, read the comments carefully
+# Renamed from 'quoteUrls' to 'renderComment' after markdown support was added.
 
-sub quoteUrls {
-    my ($text, $bug, $comment, $user, $bug_link_func) = @_;
+sub renderComment {
+    my ($text, $bug, $comment, $skip_markdown, $bug_link_func) = @_;
     return $text unless $text;
-    $user ||= Bugzilla->user;
+    my $anon_user = Bugzilla::User->new;
+    $skip_markdown ||= 0;
     $bug_link_func ||= \&get_bug_link;
 
     # We use /g for speed, but uris can have other things inside them
@@ -173,7 +175,7 @@ sub quoteUrls {
     my @hook_regexes;
     Bugzilla::Hook::process('bug_format_comment',
         { text => \$text, bug => $bug, regexes => \@hook_regexes,
-          comment => $comment, user => $user });
+          comment => $comment, user => undef });
 
     foreach my $re (@hook_regexes) {
         my ($match, $replace) = @$re{qw(match replace)};
@@ -193,17 +195,21 @@ sub quoteUrls {
     # Provide tooltips for full bug links (Bug 74355)
     my $urlbase_re = '(' . quotemeta(Bugzilla->localconfig->{urlbase}) . ')';
     $text =~ s~\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
-              ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $user })) &&
+              ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $anon_user })) &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
 
-    # non-mailto protocols
-    my $safe_protocols = SAFE_URL_REGEXP();
-    $text =~ s~\b($safe_protocols)
+    # We do this only for saved comments that aren't markdown. All other comments
+    # and text which isn't yet saved (like comment previews) are rendered as markdown.
+    if ($skip_markdown || ($comment && !$comment->is_markdown)) {
+        # non-mailto protocols
+        my $safe_protocols = SAFE_URL_REGEXP();
+        $text =~ s~\b($safe_protocols)
               ~($tmp = html_quote($1)) &&
                ($things[$count++] = "<a rel=\"nofollow\" href=\"$tmp\">$tmp</a>") &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
+    }
 
     # We have to quote now, otherwise the html itself is escaped
     # THIS MEANS THAT A LITERAL ", <, >, ' MUST BE ESCAPED FOR A MATCH
@@ -223,7 +229,7 @@ sub quoteUrls {
     # attachment links
     # BMO: don't make diff view the default for patches (Bug 652332)
     $text =~ s~\b(attachment$s*\#?$s*(\d+)(?:$s+\[diff\])?(?:\s+\[details\])?)
-              ~($things[$count++] = get_attachment_link($2, $1, $user)) &&
+              ~($things[$count++] = get_attachment_link($2, $1, $anon_user)) &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egmxi;
 
@@ -240,7 +246,7 @@ sub quoteUrls {
     $text =~ s~\b($bug_re(?:$s*,?$s*$comment_re)?|$comment_re)
               ~ # We have several choices. $1 here is the link, and $2-4 are set
                 # depending on which part matched
-               (defined($2) ? $bug_link_func->($2, $1, { comment_num => $3, user => $user }) :
+               (defined($2) ? $bug_link_func->($2, $1, { comment_num => $3, user => $anon_user }) :
                               "<a href=\"$current_bugurl#c$4\">$1</a>")
               ~egx;
 
@@ -249,7 +255,7 @@ sub quoteUrls {
     $text =~ s~(?<=^\*\*\*\ This\ bug\ has\ been\ marked\ as\ a\ duplicate\ of\ )
                (\d+)
                (?=\ \*\*\*\Z)
-              ~$bug_link_func->($1, $1, { user => $user })
+              ~$bug_link_func->($1, $1, { user => $anon_user })
               ~egmx;
 
     # Now remove the encoding hacks in reverse order
@@ -257,7 +263,12 @@ sub quoteUrls {
         $text =~ s/\x{FDD2}($i)\x{FDD3}/$things[$i]/eg;
     }
 
-    return $text;
+    if ($skip_markdown || ($comment && !$comment->is_markdown)) {
+        return $text;
+    }
+    else {
+        return Bugzilla->markdown_parser->render_html($text);
+    }
 }
 
 # Creates a link to an attachment, including its title.
@@ -709,11 +720,11 @@ sub create {
             # Removes control characters and trims extra whitespace.
             clean_text => \&Bugzilla::Util::clean_text ,
 
-            quoteUrls => [ sub {
-                               my ($context, $bug, $comment, $user) = @_;
+            renderComment => [ sub {
+                               my ($context, $bug, $comment, $skip_markdown) = @_;
                                return sub {
                                    my $text = shift;
-                                   return quoteUrls($text, $bug, $comment, $user);
+                                   return renderComment($text, $bug, $comment, $skip_markdown);
                                };
                            },
                            1
