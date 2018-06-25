@@ -732,7 +732,7 @@ sub _preload_referenced_bugs {
         }
         else {
             # bugs referenced in comments
-            Bugzilla::Template::quoteUrls($comment->body, undef, undef, undef,
+            Bugzilla::Template::renderComment($comment->body, undef, undef, 1,
                 sub {
                     my $bug_id = $_[0];
                     push @referenced_bug_ids, $bug_id
