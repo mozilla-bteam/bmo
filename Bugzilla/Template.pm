@@ -282,11 +282,17 @@ sub get_attachment_link {
     if ($attachment) {
         my $title = "";
         my $className = "";
+        my $linkClass = "";
+
         if ($user->can_see_bug($attachment->bug_id)
             && (!$attachment->isprivate || $user->is_insider))
         {
             $title = $attachment->description;
         }
+        else{
+            $linkClass = "bz_private_link";
+        }
+
         if ($attachment->isobsolete) {
             $className = "bz_obsolete";
         }
@@ -307,7 +313,7 @@ sub get_attachment_link {
 
         # Whitespace matters here because these links are in <pre> tags.
         return qq|<span class="$className">|
-               . qq|<a href="${linkval}" name="attach_${attachid}" title="$title">$link_text</a>|
+               . qq|<a href="${linkval}" class="$linkClass" name="attach_${attachid}" title="$title">$link_text</a>|
                . qq| <a href="${linkval}&amp;action=edit" title="$title">[details]</a>|
                . qq|${patchlink}|
                . qq|</span>|;
