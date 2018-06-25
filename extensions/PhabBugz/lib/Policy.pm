@@ -108,7 +108,7 @@ sub create {
     if (@$projects) {
         push @{ $data->{policy} }, {
             action => 'allow',
-            rule   => 'PhabricatorProjectsPolicyRule',
+            rule   => 'PhabricatorProjectsAllPolicyRule',
             value  => [ map { $_->phid } @$projects ],
         };
     }
@@ -127,7 +127,7 @@ sub _build_rule_projects {
     my ($self) = @_;
 
     return [] unless $self->rules;
-    my $rule = first { $_->{rule} eq 'PhabricatorProjectsPolicyRule'} @{ $self->rules };
+    my $rule = first { $_->{rule} =~ /PhabricatorProjects(?:All)?PolicyRule/ } @{ $self->rules };
     return [] unless $rule;
     return [
         map  { Bugzilla::Extension::PhabBugz::Project->new_from_query( { phids => [$_] } ) }
