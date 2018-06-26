@@ -329,6 +329,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$textarea.addEventListener('input', () => this.textarea_oninput());
     this.$textarea.addEventListener('paste', event => this.textarea_onpaste(event));
     this.$remove_button.addEventListener('click', () => this.remove_button_onclick());
+    this.$description.addEventListener('input', () => this.description_oninput());
     this.$description.addEventListener('change', () => this.description_onchange());
     this.$ispatch.addEventListener("change", () => this.ispatch_onchange());
     this.$type_select.addEventListener('change', () => this.type_select_onchange());
@@ -362,7 +363,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   reset_fields() {
     this.description_override = false;
     this.$file.value = this.$data.value = this.$filename.value = this.$type_input.value = this.$description.value = '';
-    this.$type_auto.checked = true;
+    this.$type_auto.checked = this.$type_select.options[0].selected = true;
 
     if (this.$isprivate) {
       this.$isprivate.checked = this.$isprivate.disabled = false;
@@ -401,33 +402,48 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Read the content of a user-selected file and update the Description, Content Type, etc.
+   * Process a user-selected file for upload. Read the content if it's been transferred with a paste or drag operation.
+   * Update the Description, Content Type, etc.
    * @param {File} file  A file to be read.
+   * @param {Boolean} [transferred]  Whether the source is `DataTransfer`.
    */
-  read_file(file) {
-    const is_patch = (file.name.match(/\.(?:diff|patch)$/) || file.type.match(/^text\/x-(?:diff|patch)$/));
-    const type = is_patch ? 'text/plain' : (file.type || 'application/octet-stream');
-    const index = [...this.$type_select.options].findIndex($option => $option.value === type);
+  process_file(file, transferred = true) {
+    const is_patch = file.name.match(/\.(?:diff|patch)$/) || file.type.match(/^text\/x-(?:diff|patch)$/);
 
     if (this.check_file_size(file.size)) {
-      this.reader.readAsDataURL(file);
-      this.$filename.value = file.name.replace(/\s/g, '-');
+      this.$data.required = transferred;
+
+      if (transferred) {
+        this.reader.readAsDataURL(file);
+        this.$file.value = '';
+        this.$filename.value = file.name.replace(/\s/g, '-');
+      } else {
+        this.$data.value = this.$filename.value = '';
+      }
     } else {
+      this.$data.required = true;
       this.$file.value = this.$data.value = this.$filename.value = '';
-      this.update_validation();
     }
 
+    this.update_validation();
     this.show_preview(file);
     this.update_text();
     this.update_ispatch(is_patch);
 
-    if (index > -1) {
-      this.$type_list.checked = true;
-      this.$type_input.value = '';
-      this.$type_select.options[index].selected = true;
-    } else {
-      this.$type_manual.checked = true;
-      this.$type_input.value = type;
+    if (transferred) {
+      const type = is_patch ? 'text/plain' : (file.type || 'application/octet-stream');
+      const index = [...this.$type_select.options].findIndex($option => $option.value === type);
+
+      if (index > -1) {
+        this.$type_list.checked = true;
+        this.$type_input.value = '';
+        this.$type_select.options[index].selected = true;
+      } else {
+        this.$type_manual.checked = true;
+        this.$type_input.value = type;
+      }
+
+      this.$type_auto.disabled = true;
     }
 
     if (!this.description_override) {
@@ -463,19 +479,18 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Called whenever a file is read by `FileReader`. Clear the file input, and embed the Base64-encoded content instead.
+   * Called whenever a file is read by `FileReader`. Embed the Base64-encoded content.
    */
   reader_onload() {
-    this.$file.value = '';
     this.$data.value = this.reader.result.split(',')[1];
     this.update_validation();
   }
 
   /**
-   * Called whenever a file is selected by the user by using the file picker. Read the content for upload.
+   * Called whenever a file is selected by the user by using the file picker. Prepare for upload.
    */
   file_onchange() {
-    this.read_file(this.$file.files[0]);
+    this.process_file(this.$file.files[0], false);
   }
 
   /**
@@ -518,7 +533,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     const text = event.dataTransfer.getData('text');
 
     if (files.length > 0) {
-      this.read_file(files[0]);
+      this.process_file(files[0]);
     } else if (text) {
       this.clear_preview();
       this.clear_error();
@@ -560,7 +575,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
       this.$description.value = is_patch ? 'patch' : is_ghpr ? 'GitHub Pull Request' : '';
     }
 
-    this.$data.required = !has_text;
+    this.$data.required = !has_text && !this.$file.value;
     this.update_validation();
     this.$type_input.value = is_ghpr ? 'text/x-github-pull-request' : '';
     this.update_ispatch(is_patch);
@@ -576,7 +591,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     const image = [...event.clipboardData.items].find(item => item.type.match(/^image\/(?!vnd)/));
 
     if (image) {
-      this.read_file(image.getAsFile());
+      this.process_file(image.getAsFile());
       this.update_ispatch(false, true);
     }
   }
@@ -623,6 +638,15 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
+   * Called whenever the Description is updated. Update the Patch checkbox when needed.
+   */
+  description_oninput() {
+    if (this.$description.value.match(/\bpatch\b/i) && !this.$ispatch.checked) {
+      this.update_ispatch(true);
+    }
+  }
+
+  /**
    * Called whenever the Description is changed manually. Set the override flag so the user-defined Description will be
    * retained later on.
    */
@@ -649,6 +673,11 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     const is_ghpr = this.$type_input.value === 'text/x-github-pull-request';
 
     this.$type_outer.querySelectorAll('[name]').forEach($input => $input.disabled = is_patch);
+
+    if (is_patch) {
+      this.$type_list.checked = true;
+      this.$type_select.options[0].selected = true;
+    }
 
     // Reassign the bug to the user if the attachment is a patch or GitHub Pull Request
     if (this.$takebug && this.$takebug.clientHeight > 0 && this.$takebug.dataset.takeIfPatch) {
