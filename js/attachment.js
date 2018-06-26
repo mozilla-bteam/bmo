@@ -272,6 +272,8 @@ function handleWantsAttachment(wants_attachment) {
         hideElementById('attachment_true');
         bz_attachment_form.reset_fields();
     }
+
+    bz_attachment_form.update_requirements(wants_attachment);
 }
 
 /**
@@ -372,8 +374,30 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
     this.clear_preview();
     this.clear_error();
+    this.update_requirements();
     this.update_text();
     this.update_ispatch();
+  }
+
+  /**
+   * Update the `required` property on the Base64 data and Description fields.
+   * @param {Boolean} [required]  Whether these fields are required.
+   */
+  update_requirements(required = true) {
+    this.$data.required = this.$description.required = required;
+    this.update_validation();
+  }
+
+  /**
+   * Update the custom validation message on the Base64 data field depending on the requirement and value.
+   */
+  update_validation() {
+    this.$data.setCustomValidity(this.$data.required && !this.$data.value ? 'Please select a file or enter text.' : '');
+
+    // In Firefox, the message won't be displayed once the field becomes valid then becomes invalid again. This is a
+    // workaround for the issue.
+    this.$data.hidden = false;
+    this.$data.hidden = true;
   }
 
   /**
@@ -390,6 +414,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
       this.$filename.value = file.name.replace(/\s/g, '-');
     } else {
       this.$file.value = this.$data.value = this.$filename.value = '';
+      this.update_validation();
     }
 
     this.show_preview(file);
@@ -443,6 +468,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   reader_onload() {
     this.$file.value = '';
     this.$data.value = this.reader.result.split(',')[1];
+    this.update_validation();
   }
 
   /**
@@ -535,7 +561,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     }
 
     this.$data.required = !has_text;
-    this.$textarea.required = has_text;
+    this.update_validation();
     this.$type_input.value = is_ghpr ? 'text/x-github-pull-request' : '';
     this.update_ispatch(is_patch);
     this.$type_outer.querySelectorAll('[name]').forEach($input => $input.disabled = has_text);

@@ -26,8 +26,6 @@
   <th class="required"><label for="att-file">File</label>:</th>
   <td>
     <input hidden id="att-file" type="file" name="data" size="50">
-    <textarea hidden id="att-data" name="data_base64" required
-              aria-errormessage="data-error" aria-invalid="false"></textarea>
     <input id="att-filename" type="hidden" name="filename">
     <section id="att-dropbox">
       <header>
@@ -36,6 +34,8 @@
           drag &amp; drop it, or paste text/link/image below.</span>
       </header>
       <div>
+        <textarea hidden id="att-data" name="data_base64" required
+                  aria-errormessage="data-error" aria-invalid="false"></textarea>
         <textarea id="att-textarea" name="attach_text" cols="80" rows="10"
                   aria-label="Paste the text, link or image to be added as an attachment"></textarea>
         <div hidden id="att-preview" itemscope itemtype="http://schema.org/MediaObject">

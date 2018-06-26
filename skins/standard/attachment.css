@@ -336,6 +336,25 @@ div#update_container {
   min-height: 120px;
 }
 
+#att-data {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  outline: 0;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: none;
+  resize: none;
+}
+
+#att-data:invalid {
+  display: block; /* To display the validation message */
+}
+
 #att-textarea {
   margin: 0;
   border: 0;
