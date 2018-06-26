@@ -20,16 +20,8 @@
  *                 Erik Stambaugh <erik@dasbistro.com>
  *                 Marc Schumann <wurblzap@gmail.com>
  *                 Guy Pyrzak <guy.pyrzak@gmail.com>
+ *                 Kohei Yoshino <kohei.yoshino@gmail.com>
  */
-
-function validateAttachmentForm(theform) {
-    var desc_value = YAHOO.lang.trim(theform.description.value);
-    if (desc_value == '') {
-        alert(BUGZILLA.string.attach_desc_required);
-        return false;
-    }
-    return true;
-}
 
 function updateCommentPrivacy(checkbox) {
     var text_elem = document.getElementById('comment');
@@ -38,96 +30,6 @@ function updateCommentPrivacy(checkbox) {
     } else {
         text_elem.className='';
     }
-}
-
-function setContentTypeDisabledState(form) {
-    var isdisabled = false;
-    if (form.ispatch.checked)
-        isdisabled = true;
-
-    for (var i = 0; i < form.contenttypemethod.length; i++)
-        form.contenttypemethod[i].disabled = isdisabled;
-
-    form.contenttypeselection.disabled = isdisabled;
-    form.contenttypeentry.disabled = isdisabled;
-}
-
-function TextFieldHandler() {
-    var field_text = document.getElementById("attach_text");
-    var greyfields = new Array("data", "autodetect", "list", "manual",
-                               "contenttypeselection", "contenttypeentry");
-    var i, thisfield;
-    if (field_text.value.match(/^\s*$/)) {
-        for (i = 0; i < greyfields.length; i++) {
-            thisfield = document.getElementById(greyfields[i]);
-            if (thisfield) {
-                thisfield.removeAttribute("disabled");
-            }
-        }
-    } else {
-        for (i = 0; i < greyfields.length; i++) {
-            thisfield = document.getElementById(greyfields[i]);
-            if (thisfield) {
-                thisfield.setAttribute("disabled", "disabled");
-            }
-        }
-    }
-}
-
-function DataFieldHandler() {
-    var field_data = document.getElementById("data");
-    var greyfields = new Array("attach_text");
-    var i, thisfield;
-    if (field_data.value.match(/^\s*$/)) {
-        for (i = 0; i < greyfields.length; i++) {
-            thisfield = document.getElementById(greyfields[i]);
-            if (thisfield) {
-                thisfield.removeAttribute("disabled");
-            }
-        }
-    } else {
-        for (i = 0; i < greyfields.length; i++) {
-            thisfield = document.getElementById(greyfields[i]);
-            if (thisfield) {
-                thisfield.setAttribute("disabled", "disabled");
-            }
-        }
-    }
-
-    // Check the current file size (in KB)
-    const file_size = field_data.files[0].size / 1024;
-    const max_size = BUGZILLA.param.maxattachmentsize;
-    const invalid = file_size > max_size;
-    const message = invalid ? `This file (<strong>${(file_size / 1024).toFixed(1)} MB</strong>) is larger than the ` +
-      `maximum allowed size (<strong>${(max_size / 1024).toFixed(1)} MB</strong>).<br>Please consider uploading it ` +
-      `to an online file storage and sharing the link in a bug comment instead.` : '';
-    const message_short = invalid ? 'File too large' : '';
-    const $error = document.querySelector('#data-error');
-
-    // Show an error message if the file is too large
-    $error.innerHTML = message;
-    field_data.setCustomValidity(message_short);
-    field_data.setAttribute('aria-invalid', invalid);
-}
-
-function clearAttachmentFields() {
-    var element;
-
-    document.getElementById('data').value = '';
-    DataFieldHandler();
-    if ((element = document.getElementById('attach_text'))) {
-        element.value = '';
-        TextFieldHandler();
-    }
-    document.getElementById('description').value = '';
-    /* Fire onchange so that the disabled state of the content-type
-     * radio buttons are also reset 
-     */
-    element = document.getElementById('ispatch');
-    element.checked = '';
-    bz_fireEvent(element, 'change');
-    if ((element = document.getElementById('isprivate')))
-        element.checked = '';
 }
 
 /* Functions used when viewing patches in Diff mode. */
@@ -296,13 +198,13 @@ function switchToMode(mode, patchviewerinstalled)
       showElementById('undoEditButton');
     } else if (mode == 'raw') {
       showElementById('viewFrame');
-      if (patchviewerinstalled) 
+      if (patchviewerinstalled)
           showElementById('viewDiffButton');
 
       showElementById(has_edited ? 'redoEditButton' : 'editButton');
       showElementById('smallCommentFrame');
     } else if (mode == 'diff') {
-      if (patchviewerinstalled) 
+      if (patchviewerinstalled)
         showElementById('viewDiffFrame');
 
       showElementById('viewRawButton');
@@ -347,7 +249,7 @@ function normalizeComments()
   }
 }
 
-function toggle_attachment_details_visibility ( ) 
+function toggle_attachment_details_visibility ( )
 {
     // show hide classes
     var container = document.getElementById('attachment_info');
@@ -368,6 +270,384 @@ function handleWantsAttachment(wants_attachment) {
     else {
         showElementById('attachment_false');
         hideElementById('attachment_true');
-        clearAttachmentFields();
+        bz_attachment_form.reset_fields();
     }
 }
+
+/**
+ * Expose an `AttachmentForm` instance on global.
+ */
+var bz_attachment_form;
+
+/**
+ * Reference or define the Bugzilla app namespace.
+ * @namespace
+ */
+var Bugzilla = Bugzilla || {};
+
+/**
+ * Implement the attachment selector functionality.
+ */
+Bugzilla.AttachmentForm = class AttachmentForm {
+  /**
+   * Get a new `AttachmentForm` instance.
+   * @returns {AttachmentForm} New `AttachmentForm` instance.
+   */
+  constructor() {
+    this.$file = document.querySelector('#att-file');
+    this.$data = document.querySelector('#att-data');
+    this.$filename = document.querySelector('#att-filename');
+    this.$dropbox = document.querySelector('#att-dropbox');
+    this.$browse_label = document.querySelector('#att-browse-label');
+    this.$textarea = document.querySelector('#att-textarea');
+    this.$preview = document.querySelector('#att-preview');
+    this.$preview_name = this.$preview.querySelector('[itemprop="name"]');
+    this.$preview_type = this.$preview.querySelector('[itemprop="encodingFormat"]');
+    this.$preview_image = this.$preview.querySelector('[itemprop="image"]');
+    this.$remove_button = document.querySelector('#att-remove-button');
+    this.$description = document.querySelector('#att-description');
+    this.$error_message = document.querySelector('#att-error-message');
+    this.$ispatch = document.querySelector('#att-ispatch');
+    this.$type_outer = document.querySelector('#att-type-outer');
+    this.$type_auto = document.querySelector('#att-type-auto')
+    this.$type_list = document.querySelector('#att-type-list');
+    this.$type_manual = document.querySelector('#att-type-manual');
+    this.$type_select = document.querySelector('#att-type-select');
+    this.$type_input = document.querySelector('#att-type-input');
+    this.$isprivate = document.querySelector('#isprivate');
+    this.$takebug = document.querySelector('#takebug');
+
+    // Add event listeners
+    this.$file.addEventListener('change', () => this.file_onchange());
+    this.$dropbox.addEventListener('dragover', event => this.dropbox_ondragover(event));
+    this.$dropbox.addEventListener('dragleave', () => this.dropbox_ondragleave());
+    this.$dropbox.addEventListener('dragend', () => this.dropbox_ondragend());
+    this.$dropbox.addEventListener('drop', event => this.dropbox_ondrop(event));
+    this.$browse_label.addEventListener('click', () => this.$file.click());
+    this.$textarea.addEventListener('input', () => this.textarea_oninput());
+    this.$textarea.addEventListener('paste', event => this.textarea_onpaste(event));
+    this.$remove_button.addEventListener('click', () => this.remove_button_onclick());
+    this.$description.addEventListener('change', () => this.description_onchange());
+    this.$ispatch.addEventListener("change", () => this.ispatch_onchange());
+    this.$type_select.addEventListener('change', () => this.type_select_onchange());
+    this.$type_input.addEventListener('change', () => this.type_input_onchange());
+
+    // Prepare the file reader
+    this.reader = new FileReader();
+    this.reader.addEventListener('load', () => this.reader_onload());
+
+    // Initialize the view
+    this.enable_keyboard_access();
+    this.reset_fields();
+  }
+
+  /**
+   * Enable keyboard access on the buttons. Treat the Enter key as a click.
+   */
+  enable_keyboard_access() {
+    document.querySelectorAll('#att-selector [role="button"]').forEach($button => {
+      $button.addEventListener('keypress', event => {
+        if (!event.isComposing && event.key === 'Enter') {
+          event.target.click();
+        }
+      });
+    });
+  }
+
+  /**
+   * Reset all the fields to the initial state.
+   */
+  reset_fields() {
+    this.description_override = false;
+    this.$file.value = this.$data.value = this.$filename.value = this.$type_input.value = this.$description.value = '';
+    this.$type_auto.checked = true;
+
+    if (this.$isprivate) {
+      this.$isprivate.checked = this.$isprivate.disabled = false;
+    }
+
+    if (this.$takebug) {
+      this.$takebug.checked = this.$takebug.disabled = false;
+    }
+
+    this.clear_preview();
+    this.clear_error();
+    this.update_text();
+    this.update_ispatch();
+  }
+
+  /**
+   * Read the content of a user-selected file and update the Description, Content Type, etc.
+   * @param {File} file  A file to be read.
+   */
+  read_file(file) {
+    const is_patch = (file.name.match(/\.(?:diff|patch)$/) || file.type.match(/^text\/x-(?:diff|patch)$/));
+    const type = is_patch ? 'text/plain' : (file.type || 'application/octet-stream');
+    const index = [...this.$type_select.options].findIndex($option => $option.value === type);
+
+    if (this.check_file_size(file.size)) {
+      this.reader.readAsDataURL(file);
+      this.$filename.value = file.name.replace(/\s/g, '-');
+    } else {
+      this.$file.value = this.$data.value = this.$filename.value = '';
+    }
+
+    this.show_preview(file);
+    this.update_text();
+    this.update_ispatch(is_patch);
+
+    if (index > -1) {
+      this.$type_list.checked = true;
+      this.$type_input.value = '';
+      this.$type_select.options[index].selected = true;
+    } else {
+      this.$type_manual.checked = true;
+      this.$type_input.value = type;
+    }
+
+    if (!this.description_override) {
+      this.$description.value = file.name;
+    }
+
+    this.$textarea.hidden = true;
+    this.$description.select();
+    this.$description.focus();
+  }
+
+  /**
+   * Check the current file size and show an error message if it exceeds the application-defined limit.
+   * @param {Number} size  A file size in bytes.
+   * @returns {Boolean} Whether the file is less than the maximum allowed size.
+   */
+  check_file_size(size) {
+    const file_size = size / 1024; // Convert to KB
+    const max_size = BUGZILLA.param.maxattachmentsize; // Defined in KB
+    const invalid = file_size > max_size;
+    const message = invalid ?
+      `This file (<strong>${(file_size / 1024).toFixed(1)} MB</strong>) is larger than the maximum allowed size ` +
+      `(<strong>${(max_size / 1024).toFixed(1)} MB</strong>). Please consider uploading it to an online file storage ` +
+      `and sharing the link in a bug comment instead.` : '';
+    const message_short = invalid ? 'File too large' : '';
+
+    this.$error_message.innerHTML = message;
+    this.$data.setCustomValidity(message_short);
+    this.$data.setAttribute('aria-invalid', invalid);
+    this.$dropbox.classList.toggle('invalid', invalid);
+
+    return !invalid;
+  }
+
+  /**
+   * Called whenever a file is read by `FileReader`. Clear the file input, and embed the Base64-encoded content instead.
+   */
+  reader_onload() {
+    this.$file.value = '';
+    this.$data.value = this.reader.result.split(',')[1];
+  }
+
+  /**
+   * Called whenever a file is selected by the user by using the file picker. Read the content for upload.
+   */
+  file_onchange() {
+    this.read_file(this.$file.files[0]);
+  }
+
+  /**
+   * Called whenever a file is being dragged on the drop target. Allow the `copy` drop effect, and set a class name on
+   * the drop target for styling.
+   * @param {DragEvent} event  A `dragover` event.
+   */
+  dropbox_ondragover(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed = "copy";
+
+    if (!this.$dropbox.classList.contains('dragover')) {
+      this.$dropbox.classList.add('dragover');
+    }
+  }
+
+  /**
+   * Called whenever a dragged file leaves the drop target. Clean up the state.
+   */
+  dropbox_ondragleave() {
+    this.$dropbox.classList.remove('dragover');
+  }
+
+  /**
+   * Called whenever a drag operation is being ended. Clean up the state.
+   */
+  dropbox_ondragend() {
+    this.$dropbox.classList.remove('dragover');
+  }
+
+  /**
+   * Called whenever a file is dropped on the drop target. If it's a file, read the content. If it's plain text, fill in
+   * the textarea.
+   * @param {DragEvent} event  A `drop` event.
+   */
+  dropbox_ondrop(event) {
+    event.preventDefault();
+
+    const files = event.dataTransfer.files;
+    const text = event.dataTransfer.getData('text');
+
+    if (files.length > 0) {
+      this.read_file(files[0]);
+    } else if (text) {
+      this.clear_preview();
+      this.clear_error();
+      this.update_text(text);
+    }
+
+    this.$dropbox.classList.remove('dragover');
+  }
+
+  /**
+   * Insert text to the textarea.
+   * @param {String} [text]  Text to be inserted.
+   */
+  update_text(text = '') {
+    this.$textarea.value = text;
+    this.textarea_oninput();
+
+    if (text) {
+      this.$textarea.hidden = false;
+    }
+  }
+
+  /**
+   * Called whenever the content of the textarea is updated. Update the Content Type, `required` property, etc.
+   */
+  textarea_oninput() {
+    const text = this.$textarea.value.trim();
+    const has_text = !!text;
+    const is_patch = !!text.match(/^(?:diff|---)\s/);
+    const is_ghpr = !!text.match(/^https:\/\/github\.com\/[\w\-]+\/[\w\-]+\/pull\/\d+\/?$/);
+
+    if (has_text) {
+      this.$file.value = this.$data.value = this.$filename.value = '';
+      this.$type_auto.checked = true;
+      this.$type_select.value = 'text/plain';
+    }
+
+    if (!this.description_override) {
+      this.$description.value = is_patch ? 'patch' : is_ghpr ? 'GitHub Pull Request' : '';
+    }
+
+    this.$data.required = !has_text;
+    this.$textarea.required = has_text;
+    this.$type_input.value = is_ghpr ? 'text/x-github-pull-request' : '';
+    this.update_ispatch(is_patch);
+    this.$type_outer.querySelectorAll('[name]').forEach($input => $input.disabled = has_text);
+  }
+
+  /**
+   * Called whenever a string or data is pasted from clipboard to the textarea. If it contains a regular image, read the
+   * content for upload.
+   * @param {ClipboardEvent} event  A `paste` event.
+   */
+  textarea_onpaste(event) {
+    const image = [...event.clipboardData.items].find(item => item.type.match(/^image\/(?!vnd)/));
+
+    if (image) {
+      this.read_file(image.getAsFile());
+      this.update_ispatch(false, true);
+    }
+  }
+
+  /**
+   * Show the preview of a user-selected file. Display a thumbnail if it's a regular image (PNG, GIF, JPEG, etc.)
+   * @param {File} file  A file to be previewed.
+   */
+  show_preview(file) {
+    this.$preview_name.textContent = file.name;
+    this.$preview_type.content = file.type;
+    this.$preview_image.src = file.type.match(/^image\/(?!vnd)/) ? URL.createObjectURL(file) : '';
+    this.$preview.hidden = false;
+  }
+
+  /**
+   * Remove the preview.
+   */
+  clear_preview() {
+    URL.revokeObjectURL(this.$preview_image.src);
+
+    this.$preview_name.textContent = '';
+    this.$preview_type.content = '';
+    this.$preview_image.src = '';
+    this.$preview.hidden = true;
+  }
+
+  /**
+   * Called whenever the Remove buttons is clicked by the user. Reset all the fields and focus the textarea for further
+   * input.
+   */
+  remove_button_onclick() {
+    this.reset_fields();
+
+    this.$textarea.hidden = false;
+    this.$textarea.focus();
+  }
+
+  /**
+   * Remove the error message if any.
+   */
+  clear_error() {
+    this.check_file_size(0);
+  }
+
+  /**
+   * Called whenever the Description is changed manually. Set the override flag so the user-defined Description will be
+   * retained later on.
+   */
+  description_onchange() {
+    this.description_override = true;
+  }
+
+  /**
+   * Update the Patch checkbox state.
+   * @param {Boolean} [checked]  The `checked` property of the checkbox.
+   * @param {Boolean} [disabled]  The `disabled` property of the checkbox.
+   */
+  update_ispatch(checked = false, disabled = false) {
+    this.$ispatch.checked = checked;
+    this.$ispatch.disabled = disabled;
+    this.ispatch_onchange();
+  }
+
+  /**
+   * Called whenever the Patch checkbox is checked or unchecked. Disable or enable the Content Type fields accordingly.
+   */
+  ispatch_onchange() {
+    const is_patch = this.$ispatch.checked;
+    const is_ghpr = this.$type_input.value === 'text/x-github-pull-request';
+
+    this.$type_outer.querySelectorAll('[name]').forEach($input => $input.disabled = is_patch);
+
+    // Reassign the bug to the user if the attachment is a patch or GitHub Pull Request
+    if (this.$takebug && this.$takebug.clientHeight > 0 && this.$takebug.dataset.takeIfPatch) {
+      this.$takebug.checked = is_patch || is_ghpr;
+    }
+  }
+
+  /**
+   * Called whenever an option is selected from the Content Type list. Select the "select from list" radio button.
+   */
+  type_select_onchange() {
+    this.$type_list.checked = true;
+  }
+
+  /**
+   * Called whenever the used manually specified the Content Type. Select the "enter manually" or "auto-detect" radio
+   * button depending on the value.
+   */
+  type_input_onchange() {
+    if (this.$type_input.value) {
+      this.$type_manual.checked = true;
+    } else {
+      this.$type_auto.checked = true;
+    }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => bz_attachment_form = new Bugzilla.AttachmentForm(), { once: true });
