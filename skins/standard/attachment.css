@@ -382,82 +382,25 @@ div#update_container {
   pointer-events: none;
 }
 
-#att-preview > span {
+#att-preview figure {
   display: flex;
-  position: absolute;
-}
-
-#att-preview .thumbnail {
   align-items: center;
   justify-content: center;
+  position: absolute;
   top: 0;
   right: 0;
   overflow: hidden;
+  margin: 0;
   width: 100%;
   height: 100%;
   background-color: #EEE;
 }
 
-#att-preview [itemprop="image"] {
-  max-width: 100%;
-}
-
-#att-preview [itemprop="image"][src=""],
-#att-preview [itemprop="image"]:not([src=""]) ~ .icon {
-  display: none;
-}
-
-#att-preview [itemprop="image"] ~ .icon::before {
-  font-size: 80px;
-  color: #999;
-  content: "\F15B";
-}
-
-#att-preview [itemprop="encodingFormat"][content="application/pdf"] ~ .thumbnail .icon::before {
-  content: "\F1C1";
-}
-
-#att-preview [itemprop="encodingFormat"][content="application/msword"] ~ .thumbnail .icon::before,
-#att-preview [itemprop="encodingFormat"][content*="wordprocessingml"] ~ .thumbnail .icon::before {
-  content: "\F1C2";
-}
-
-#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-excel"] ~ .thumbnail .icon::before,
-#att-preview [itemprop="encodingFormat"][content*="spreadsheetml"] ~ .thumbnail .icon::before {
-  content: "\F1C3";
-}
-
-#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-powerpoint"] ~ .thumbnail .icon::before,
-#att-preview [itemprop="encodingFormat"][content*="presentationml"] ~ .thumbnail .icon::before {
-  content: "\F1C4";
-}
-
-#att-preview [itemprop="encodingFormat"][content^="image/"] ~ .thumbnail .icon::before {
-  content: "\F1C5";
-}
-
-#att-preview [itemprop="encodingFormat"][content="application/zip"] ~ .thumbnail .icon::before,
-#att-preview [itemprop="encodingFormat"][content="application/x-bzip2"] ~ .thumbnail .icon::before,
-#att-preview [itemprop="encodingFormat"][content="application/x-gtar"] ~ .thumbnail .icon::before,
-#att-preview [itemprop="encodingFormat"][content="application/x-rar-compressed"] ~ .thumbnail .icon::before {
-  content: "\F1C6";
-}
-
-#att-preview [itemprop="encodingFormat"][content^="audio/"] ~ .thumbnail .icon::before {
-  content: "\F1C7";
-}
-
-#att-preview [itemprop="encodingFormat"][content^="video/"] ~ .thumbnail .icon::before {
-  content: "\F1C8";
-}
-
-#att-preview [itemprop="encodingFormat"][content^="text/"] ~ .thumbnail .icon::before {
-  content: "\F15C";
-}
-
 #att-preview [itemprop="name"] {
+  display: flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
   top: 0;
   right: 0;
   overflow: hidden;
@@ -470,9 +413,84 @@ div#update_container {
   background-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .5));
 }
 
+#att-preview [itemprop="text"] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px;
+  width: 100%;
+  height: 100%;
+  font: 13px/1.2 "Droid Sans Mono", Menlo, Monaco, "Courier New", Courier, monospace;
+  color: #333;
+}
+
+#att-preview [itemprop="image"] {
+  max-width: 100%;
+}
+
+#att-preview [itemprop="text"]:empty,
+#att-preview [itemprop="text"]:not(:empty) ~ .icon,
+#att-preview [itemprop="image"][src=""],
+#att-preview [itemprop="image"]:not([src=""]) ~ .icon {
+  display: none;
+}
+
+#att-preview [itemprop="image"] ~ .icon::before {
+  font-size: 80px;
+  color: #999;
+  content: "\F15B";
+}
+
+#att-preview [itemprop="encodingFormat"][content="application/pdf"] ~ figure .icon::before {
+  content: "\F1C1";
+}
+
+#att-preview [itemprop="encodingFormat"][content="application/msword"] ~ figure .icon::before,
+#att-preview [itemprop="encodingFormat"][content*="wordprocessingml"] ~ figure .icon::before {
+  content: "\F1C2";
+}
+
+#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-excel"] ~ figure .icon::before,
+#att-preview [itemprop="encodingFormat"][content*="spreadsheetml"] ~ figure .icon::before {
+  content: "\F1C3";
+}
+
+#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-powerpoint"] ~ figure .icon::before,
+#att-preview [itemprop="encodingFormat"][content*="presentationml"] ~ figure .icon::before {
+  content: "\F1C4";
+}
+
+#att-preview [itemprop="encodingFormat"][content^="image/"] ~ figure .icon::before {
+  content: "\F1C5";
+}
+
+#att-preview [itemprop="encodingFormat"][content="application/zip"] ~ figure .icon::before,
+#att-preview [itemprop="encodingFormat"][content="application/x-bzip2"] ~ figure .icon::before,
+#att-preview [itemprop="encodingFormat"][content="application/x-gtar"] ~ figure .icon::before,
+#att-preview [itemprop="encodingFormat"][content="application/x-rar-compressed"] ~ figure .icon::before {
+  content: "\F1C6";
+}
+
+#att-preview [itemprop="encodingFormat"][content^="audio/"] ~ figure .icon::before {
+  content: "\F1C7";
+}
+
+#att-preview [itemprop="encodingFormat"][content^="video/"] ~ figure .icon::before {
+  content: "\F1C8";
+}
+
+#att-preview [itemprop="encodingFormat"][content^="text/"] ~ figure .icon::before {
+  content: "\F15C";
+}
+
 #att-remove-button {
+  display: flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
   top: 4px;
   right: 4px;
   padding: 4px;

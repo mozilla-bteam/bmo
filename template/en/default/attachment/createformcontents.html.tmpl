@@ -40,11 +40,12 @@
                   aria-label="Paste the text, link or image to be added as an attachment"></textarea>
         <div hidden id="att-preview" itemscope itemtype="http://schema.org/MediaObject">
           <meta itemprop="encodingFormat">
-          <span class="thumbnail">
+          <figure role="img" aria-labelledby="att-preview-name">
+            <pre itemprop="text"></pre>
             <img src="" alt="" itemprop="image">
+            <figcaption id="att-preview-name" itemprop="name"></figcaption>
             <span class="icon" aria-hidden="true"></span>
-          </span>
-          <span itemprop="name"></span>
+          </figure>
           <span id="att-remove-button" tabindex="0" role="button" aria-label="Remove attachment">
             <span class="icon" aria-hidden="true"></span>
           </span>

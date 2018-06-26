@@ -305,6 +305,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$preview = document.querySelector('#att-preview');
     this.$preview_name = this.$preview.querySelector('[itemprop="name"]');
     this.$preview_type = this.$preview.querySelector('[itemprop="encodingFormat"]');
+    this.$preview_text = this.$preview.querySelector('[itemprop="text"]');
     this.$preview_image = this.$preview.querySelector('[itemprop="image"]');
     this.$remove_button = document.querySelector('#att-remove-button');
     this.$description = document.querySelector('#att-description');
@@ -336,8 +337,10 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$type_input.addEventListener('change', () => this.type_input_onchange());
 
     // Prepare the file reader
-    this.reader = new FileReader();
-    this.reader.addEventListener('load', () => this.reader_onload());
+    this.data_reader = new FileReader();
+    this.text_reader = new FileReader();
+    this.data_reader.addEventListener('load', () => this.data_reader_onload());
+    this.text_reader.addEventListener('load', () => this.text_reader_onload());
 
     // Initialize the view
     this.enable_keyboard_access();
@@ -414,7 +417,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
       this.$data.required = transferred;
 
       if (transferred) {
-        this.reader.readAsDataURL(file);
+        this.data_reader.readAsDataURL(file);
         this.$file.value = '';
         this.$filename.value = file.name.replace(/\s/g, '-');
       } else {
@@ -426,7 +429,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     }
 
     this.update_validation();
-    this.show_preview(file);
+    this.show_preview(file, is_patch);
     this.update_text();
     this.update_ispatch(is_patch);
 
@@ -479,11 +482,18 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Called whenever a file is read by `FileReader`. Embed the Base64-encoded content.
+   * Called whenever a file's data URL is read by `FileReader`. Embed the Base64-encoded content.
    */
-  reader_onload() {
-    this.$data.value = this.reader.result.split(',')[1];
+  data_reader_onload() {
+    this.$data.value = this.data_reader.result.split(',')[1];
     this.update_validation();
+  }
+
+  /**
+   * Called whenever a file's text content is read by `FileReader`. Show the preview.
+   */
+  text_reader_onload() {
+    this.$preview_text.textContent = this.text_reader.result.split(/\r\n|\r|\n/, 10).join('\n');
   }
 
   /**
@@ -597,14 +607,21 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Show the preview of a user-selected file. Display a thumbnail if it's a regular image (PNG, GIF, JPEG, etc.)
+   * Show the preview of a user-selected file. Display a thumbnail if it's a regular image (PNG, GIF, JPEG, etc.) or
+   * small plaintext file.
    * @param {File} file  A file to be previewed.
+   * @param {Boolean} [is_patch]  Whether the file is a patch.
    */
-  show_preview(file) {
+  show_preview(file, is_patch = false) {
     this.$preview_name.textContent = file.name;
     this.$preview_type.content = file.type;
+    this.$preview_text.textContent = '';
     this.$preview_image.src = file.type.match(/^image\/(?!vnd)/) ? URL.createObjectURL(file) : '';
     this.$preview.hidden = false;
+
+    if ((file.type.startsWith('text/') || is_patch) && file.size < 500000) {
+      this.text_reader.readAsText(file);
+    }
   }
 
   /**
@@ -613,9 +630,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   clear_preview() {
     URL.revokeObjectURL(this.$preview_image.src);
 
-    this.$preview_name.textContent = '';
-    this.$preview_type.content = '';
-    this.$preview_image.src = '';
+    this.$preview_name.textContent = this.$preview_type.content = '';
+    this.$preview_text.textContent = this.$preview_image.src = '';
     this.$preview.hidden = true;
   }
 
