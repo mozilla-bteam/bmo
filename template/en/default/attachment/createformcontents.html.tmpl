@@ -34,7 +34,7 @@
           drag &amp; drop it, or paste text/link/image below.</span>
       </header>
       <div>
-        <textarea hidden id="att-data" name="data_base64" required
+        <textarea hidden id="att-data" name="data_base64"
                   aria-errormessage="data-error" aria-invalid="false"></textarea>
         <textarea id="att-textarea" name="attach_text" cols="80" rows="10"
                   aria-label="Paste the text, link or image to be added as an attachment"></textarea>
@@ -58,7 +58,7 @@
   <th class="required"><label for="att-description">Description</label>:</th>
   <td>
     <em>Describe the attachment briefly.</em><br>
-    <input id="att-description" class="required" type="text" name="description" size="60" maxlength="200" required>
+    <input id="att-description" class="required" type="text" name="description" size="60" maxlength="200">
   </td>
 </tr>
 <tr[% ' class="expert_fields"' UNLESS bug.id %]>
