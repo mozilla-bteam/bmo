@@ -4,6 +4,20 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Start local server",
+      "type": "shell",
+      "command": "vagrant up",
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Suspend local server",
+      "type": "shell",
+      "command": "vagrant suspend",
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
       "label": "Update local server",
       "type": "shell",
       "command": "vagrant rsync && vagrant provision --provision-with update",
