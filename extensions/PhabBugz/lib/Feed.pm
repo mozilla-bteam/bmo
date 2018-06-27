@@ -498,10 +498,7 @@ sub process_revision_change {
             phids => \@accepted_phids
           }
         );
-
-        foreach my $user (@$phab_users) {
-            push @accepted_user_ids, $user->bugzilla_user->id if $user->bugzilla_user;
-        }
+        @accepted_user_ids = map { $_->bugzilla_user->id } grep { defined $_->bugzilla_user } @$phab_users;
     }
 
     if ( @denied_phids ) {
@@ -510,10 +507,7 @@ sub process_revision_change {
             phids => \@denied_phids
           }
         );
-
-        foreach my $user (@$phab_users) {
-            push @denied_user_ids, $user->bugzilla_user->id if $user->bugzilla_user;
-        }
+        @denied_user_ids = map { $_->bugzilla_user->id } grep { defined $_->bugzilla_user } @$phab_users;
     }
 
     my %reviewers_hash =  map { $_->name => 1 } @{ $revision->reviewers };
