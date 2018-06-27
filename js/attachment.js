@@ -293,7 +293,6 @@ var Bugzilla = Bugzilla || {};
 Bugzilla.AttachmentForm = class AttachmentForm {
   /**
    * Get a new `AttachmentForm` instance.
-   * @returns {AttachmentForm} New `AttachmentForm` instance.
    */
   constructor() {
     this.$file = document.querySelector('#att-file');
@@ -331,7 +330,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$remove_button.addEventListener('click', () => this.remove_button_onclick());
     this.$description.addEventListener('input', () => this.description_oninput());
     this.$description.addEventListener('change', () => this.description_onchange());
-    this.$ispatch.addEventListener("change", () => this.ispatch_onchange());
+    this.$ispatch.addEventListener('change', () => this.ispatch_onchange());
     this.$type_select.addEventListener('change', () => this.type_select_onchange());
     this.$type_input.addEventListener('change', () => this.type_input_onchange());
 
@@ -456,7 +455,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     const message = invalid ?
       `This file (<strong>${(file_size / 1024).toFixed(1)} MB</strong>) is larger than the maximum allowed size ` +
       `(<strong>${(max_size / 1024).toFixed(1)} MB</strong>). Please consider uploading it to an online file storage ` +
-      `and sharing the link in a bug comment instead.` : '';
+      'and sharing the link in a bug comment instead.' : '';
     const message_short = invalid ? 'File too large' : '';
 
     this.$error_message.innerHTML = message;
@@ -496,7 +495,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    */
   dropbox_ondragover(event) {
     event.preventDefault();
-    event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed = 'copy';
 
     if (!this.$dropbox.classList.contains('dragover')) {
       this.$dropbox.classList.add('dragover');
@@ -718,6 +717,6 @@ Bugzilla.AttachmentForm = class AttachmentForm {
       this.$type_list.checked = this.$type_select.options[0].selected = true;
     }
   }
-}
+};
 
 window.addEventListener('DOMContentLoaded', () => bz_attachment_form = new Bugzilla.AttachmentForm(), { once: true });
