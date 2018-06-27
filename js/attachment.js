@@ -288,11 +288,13 @@ var bz_attachment_form;
 var Bugzilla = Bugzilla || {};
 
 /**
- * Implement the attachment selector functionality.
+ * Implement the attachment selector functionality that can be used standalone or on the New Bug page. This supports 3
+ * input methods: traditional `<input type="file">` field, drag & dropping of a file or text, as well as copy & pasting
+ * an image or text.
  */
 Bugzilla.AttachmentForm = class AttachmentForm {
   /**
-   * Get a new `AttachmentForm` instance.
+   * Initialize a new `AttachmentForm` instance.
    */
   constructor() {
     this.$file = document.querySelector('#att-file');
@@ -346,7 +348,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Enable keyboard access on the buttons. Treat the Enter key as a click.
+   * Enable keyboard access on the buttons. Treat the Enter keypress as a click.
    */
   enable_keyboard_access() {
     document.querySelectorAll('#att-selector [role="button"]').forEach($button => {
@@ -359,7 +361,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Reset all the fields to the initial state.
+   * Reset all the input fields to the initial state, and remove the preview and message.
    */
   reset_fields() {
     this.description_override = false;
@@ -383,7 +385,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
   /**
    * Update the `required` property on the Base64 data and Description fields.
-   * @param {Boolean} [required]  Whether these fields are required.
+   * @param {Boolean} [required=true] `true` if these fields are required, `false` otherwise.
    */
   update_requirements(required = true) {
     this.$data.required = this.$description.required = required;
@@ -404,9 +406,10 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
   /**
    * Process a user-selected file for upload. Read the content if it's been transferred with a paste or drag operation.
-   * Update the Description, Content Type, etc.
-   * @param {File} file  A file to be read.
-   * @param {Boolean} [transferred]  Whether the source is `DataTransfer`.
+   * Update the Description, Content Type, etc. and show the preview.
+   * @param {File} file A file to be read.
+   * @param {Boolean} [transferred=true] `true` if the source is `DataTransfer`, `false` if it's been selected via
+   * `<input type="file">`.
    */
   process_file(file, transferred = true) {
     // Check for patches which should have the `text/plain` MIME type
@@ -448,8 +451,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
   /**
    * Check the current file size and show an error message if it exceeds the application-defined limit.
-   * @param {Number} size  A file size in bytes.
-   * @returns {Boolean} Whether the file is less than the maximum allowed size.
+   * @param {Number} size A file size in bytes.
+   * @returns {Boolean} `true` if the file is less than the maximum allowed size, `false` otherwise.
    */
   check_file_size(size) {
     const file_size = size / 1024; // Convert to KB
@@ -470,7 +473,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Called whenever a file's data URL is read by `FileReader`. Embed the Base64-encoded content.
+   * Called whenever a file's data URL is read by `FileReader`. Embed the Base64-encoded content for upload.
    */
   data_reader_onload() {
     this.$data.value = this.data_reader.result.split(',')[1];
@@ -478,7 +481,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Called whenever a file's text content is read by `FileReader`. Show the preview.
+   * Called whenever a file's text content is read by `FileReader`. Show the preview of the first 10 lines.
    */
   text_reader_onload() {
     this.$preview_text.textContent = this.text_reader.result.split(/\r\n|\r|\n/, 10).join('\n');
@@ -494,7 +497,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   /**
    * Called whenever a file is being dragged on the drop target. Allow the `copy` drop effect, and set a class name on
    * the drop target for styling.
-   * @param {DragEvent} event  A `dragover` event.
+   * @param {DragEvent} event A `dragover` event.
    */
   dropbox_ondragover(event) {
     event.preventDefault();
@@ -506,23 +509,23 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Called whenever a dragged file leaves the drop target. Clean up the state.
+   * Called whenever a dragged file leaves the drop target. Reset the styling.
    */
   dropbox_ondragleave() {
     this.$dropbox.classList.remove('dragover');
   }
 
   /**
-   * Called whenever a drag operation is being ended. Clean up the state.
+   * Called whenever a drag operation is being ended. Reset the styling.
    */
   dropbox_ondragend() {
     this.$dropbox.classList.remove('dragover');
   }
 
   /**
-   * Called whenever a file is dropped on the drop target. If it's a file, read the content. If it's plain text, fill in
-   * the textarea.
-   * @param {DragEvent} event  A `drop` event.
+   * Called whenever a file or text is dropped on the drop target. If it's a file, read the content. If it's plaintext,
+   * fill in the textarea.
+   * @param {DragEvent} event A `drop` event.
    */
   dropbox_ondrop(event) {
     event.preventDefault();
@@ -542,8 +545,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Insert text to the textarea.
-   * @param {String} [text]  Text to be inserted.
+   * Insert text to the textarea, and show it if it's not empty.
+   * @param {String} [text=''] Text to be inserted.
    */
   update_text(text = '') {
     this.$textarea.value = text;
@@ -582,7 +585,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   /**
    * Called whenever a string or data is pasted from clipboard to the textarea. If it contains a regular image, read the
    * content for upload.
-   * @param {ClipboardEvent} event  A `paste` event.
+   * @param {ClipboardEvent} event A `paste` event.
    */
   textarea_onpaste(event) {
     const image = [...event.clipboardData.items].find(item => item.type.match(/^image\/(?!vnd)/));
@@ -596,8 +599,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   /**
    * Show the preview of a user-selected file. Display a thumbnail if it's a regular image (PNG, GIF, JPEG, etc.) or
    * small plaintext file.
-   * @param {File} file  A file to be previewed.
-   * @param {Boolean} [is_text]  Whether the file is a plaintext file.
+   * @param {File} file A file to be previewed.
+   * @param {Boolean} [is_text=false] `true` if the file is a plaintext file, `false` otherwise.
    */
   show_preview(file, is_text = false) {
     this.$preview_name.textContent = file.name;
@@ -659,7 +662,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
   /**
    * Select a Content Type from the list or fill in the "enter manually" field if the option is not available.
-   * @param {String} type  A detected MIME type.
+   * @param {String} type A detected MIME type.
    */
   update_content_type(type) {
     if ([...this.$type_select.options].find($option => $option.value === type)) {
@@ -674,8 +677,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
   /**
    * Update the Patch checkbox state.
-   * @param {Boolean} [checked]  The `checked` property of the checkbox.
-   * @param {Boolean} [disabled]  The `disabled` property of the checkbox.
+   * @param {Boolean} [checked=false] The `checked` property of the checkbox.
+   * @param {Boolean} [disabled=false] The `disabled` property of the checkbox.
    */
   update_ispatch(checked = false, disabled = false) {
     this.$ispatch.checked = checked;
