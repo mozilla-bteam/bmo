@@ -72,11 +72,7 @@
     <div id="att-type-outer">
       <em>Otherwise, choose a method for determining the content type.</em>
       <div>
-        <input id="att-type-auto" type="radio" name="contenttypemethod" value="autodetect" checked>
-        <label for="att-type-auto">auto-detect</label>
-      </div>
-      <div>
-        <input id="att-type-list" type="radio" name="contenttypemethod" value="list">
+        <input id="att-type-list" type="radio" name="contenttypemethod" value="list" checked>
         <label for="att-type-list">select from list</label>:
         <select id="att-type-select" name="contenttypeselection">[% PROCESS content_types %]</select>
       </div>

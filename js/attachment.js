@@ -312,7 +312,6 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$error_message = document.querySelector('#att-error-message');
     this.$ispatch = document.querySelector('#att-ispatch');
     this.$type_outer = document.querySelector('#att-type-outer');
-    this.$type_auto = document.querySelector('#att-type-auto')
     this.$type_list = document.querySelector('#att-type-list');
     this.$type_manual = document.querySelector('#att-type-manual');
     this.$type_select = document.querySelector('#att-type-select');
@@ -366,7 +365,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   reset_fields() {
     this.description_override = false;
     this.$file.value = this.$data.value = this.$filename.value = this.$type_input.value = this.$description.value = '';
-    this.$type_auto.checked = this.$type_select.options[0].selected = true;
+    this.$type_list.checked = this.$type_select.options[0].selected = true;
 
     if (this.$isprivate) {
       this.$isprivate.checked = this.$isprivate.disabled = false;
@@ -412,6 +411,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    */
   process_file(file, transferred = true) {
     const is_patch = file.name.match(/\.(?:diff|patch)$/) || file.type.match(/^text\/x-(?:diff|patch)$/);
+    const is_text = file.name.match(/\.(?:md|markdown|rst)$/); // Some text files come with no MIME type
+    const type = is_patch || (is_text && !file.type) ? 'text/plain' : (file.type || 'application/octet-stream');
 
     if (this.check_file_size(file.size)) {
       this.$data.required = transferred;
@@ -431,23 +432,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.update_validation();
     this.show_preview(file, is_patch);
     this.update_text();
+    this.update_content_type(type);
     this.update_ispatch(is_patch);
-
-    if (transferred) {
-      const type = is_patch ? 'text/plain' : (file.type || 'application/octet-stream');
-      const index = [...this.$type_select.options].findIndex($option => $option.value === type);
-
-      if (index > -1) {
-        this.$type_list.checked = true;
-        this.$type_input.value = '';
-        this.$type_select.options[index].selected = true;
-      } else {
-        this.$type_manual.checked = true;
-        this.$type_input.value = type;
-      }
-
-      this.$type_auto.disabled = true;
-    }
 
     if (!this.description_override) {
       this.$description.value = file.name;
@@ -577,8 +563,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
     if (has_text) {
       this.$file.value = this.$data.value = this.$filename.value = '';
-      this.$type_auto.checked = true;
-      this.$type_select.value = 'text/plain';
+      this.update_content_type('text/plain');
     }
 
     if (!this.description_override) {
@@ -671,6 +656,21 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
+   * Select a Content Type from the list or fill in the "enter manually" field if the option is not available.
+   * @param {String} type  A detected MIME type.
+   */
+  update_content_type(type) {
+    if ([...this.$type_select.options].find($option => $option.value === type)) {
+      this.$type_list.checked = true;
+      this.$type_select.value = type;
+      this.$type_input.value = '';
+    } else {
+      this.$type_manual.checked = true;
+      this.$type_input.value = type;
+    }
+  }
+
+  /**
    * Update the Patch checkbox state.
    * @param {Boolean} [checked]  The `checked` property of the checkbox.
    * @param {Boolean} [disabled]  The `disabled` property of the checkbox.
@@ -691,8 +691,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$type_outer.querySelectorAll('[name]').forEach($input => $input.disabled = is_patch);
 
     if (is_patch) {
-      this.$type_list.checked = true;
-      this.$type_select.options[0].selected = true;
+      this.update_content_type('text/plain');
     }
 
     // Reassign the bug to the user if the attachment is a patch or GitHub Pull Request
@@ -709,14 +708,14 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Called whenever the used manually specified the Content Type. Select the "enter manually" or "auto-detect" radio
-   * button depending on the value.
+   * Called whenever the used manually specified the Content Type. Select the "select from list" or "enter manually"
+   * radio button depending on the value.
    */
   type_input_onchange() {
     if (this.$type_input.value) {
       this.$type_manual.checked = true;
     } else {
-      this.$type_auto.checked = true;
+      this.$type_list.checked = this.$type_select.options[0].selected = true;
     }
   }
 }
