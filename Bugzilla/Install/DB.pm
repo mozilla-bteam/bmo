@@ -769,6 +769,8 @@ sub update_table_definitions {
     $dbh->bz_add_index('profiles', 'profiles_realname_ft_idx',
                        {TYPE => 'FULLTEXT', FIELDS => ['realname']});
 
+    $dbh->bz_drop_column('longdescs', 'is_markdown');
+
     ################################################################
     # New --TABLE-- changes should go *** A B O V E *** this point #
     ################################################################
