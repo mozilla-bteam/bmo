@@ -1,0 +1,31 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Update local server",
+      "type": "shell",
+      "command": "vagrant rsync && vagrant provision --provision-with update",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Update local server (force)",
+      "type": "shell",
+      "command": "vagrant rsync && vagrant provision",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Update Perl dependencies",
+      "type": "shell",
+      "command": "vagrant ssh web -c bmo-refresh-bundle",
+      "group": "none",
+      "problemMatcher": []
+    }
+  ]
+}
