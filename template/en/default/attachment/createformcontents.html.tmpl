@@ -38,9 +38,9 @@
                   aria-errormessage="data-error" aria-invalid="false"></textarea>
         <textarea id="att-textarea" name="attach_text" cols="80" rows="10"
                   aria-label="Paste the text, link or image to be added as an attachment"></textarea>
-        <div hidden id="att-preview" itemscope itemtype="http://schema.org/MediaObject">
-          <meta itemprop="encodingFormat">
-          <figure role="img" aria-labelledby="att-preview-name">
+        <div hidden id="att-preview">
+          <figure role="img" aria-labelledby="att-preview-name" itemscope itemtype="http://schema.org/MediaObject">
+            <meta itemprop="encodingFormat">
             <pre itemprop="text"></pre>
             <img src="" alt="" itemprop="image">
             <figcaption id="att-preview-name" itemprop="name"></figcaption>

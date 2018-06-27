@@ -258,6 +258,7 @@ div#update_container {
   border-bottom: 1px solid #277AC1;
   color: #277AC1;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 #att-selector .icon::before {
@@ -308,12 +309,13 @@ div#update_container {
   font-size: 14px;
   font-style: italic;
   background-color: #F3F3F3;
+  pointer-events: none;
   transition: all .2s;
 }
 
 #att-dropbox header .icon {
   display: inline-block;
-  margin: 0 8px 0 0;
+  margin: 2px 8px 0 0;
   color: #999;
   transition: all .2s;
 }
@@ -333,7 +335,7 @@ div#update_container {
 
 #att-dropbox > div {
   position: relative;
-  min-height: 120px;
+  min-height: 160px;
 }
 
 #att-data {
@@ -361,9 +363,10 @@ div#update_container {
   border-radius: 0 0 4px 4px;
   padding: 8px;
   width: 100%;
-  height: 120px;
-  min-height: 120px;
+  height: 160px;
+  min-height: 160px;
   font: 13px/1.2 "Droid Sans Mono", Menlo, Monaco, "Courier New", Courier, monospace;
+  white-space: pre;
   resize: vertical;
   transition: all .2s;
 }
@@ -405,12 +408,14 @@ div#update_container {
   right: 0;
   overflow: hidden;
   box-sizing: border-box;
-  padding: 8px;
+  padding: 40px;
   width: 100%;
   height: 100%;
+  font-size: 14px;
+  text-align: center;
   text-shadow: 0 0 4px #000;
   color: #FFF;
-  background-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .5));
+  background-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .4));
 }
 
 #att-preview [itemprop="text"] {
@@ -439,50 +444,50 @@ div#update_container {
 }
 
 #att-preview [itemprop="image"] ~ .icon::before {
-  font-size: 80px;
+  font-size: 100px;
   color: #999;
   content: "\F15B";
 }
 
-#att-preview [itemprop="encodingFormat"][content="application/pdf"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content="application/pdf"] ~ .icon::before {
   content: "\F1C1";
 }
 
-#att-preview [itemprop="encodingFormat"][content="application/msword"] ~ figure .icon::before,
-#att-preview [itemprop="encodingFormat"][content*="wordprocessingml"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content="application/msword"] ~ .icon::before,
+#att-preview [itemprop="encodingFormat"][content*="wordprocessingml"] ~ .icon::before {
   content: "\F1C2";
 }
 
-#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-excel"] ~ figure .icon::before,
-#att-preview [itemprop="encodingFormat"][content*="spreadsheetml"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-excel"] ~ .icon::before,
+#att-preview [itemprop="encodingFormat"][content*="spreadsheetml"] ~ .icon::before {
   content: "\F1C3";
 }
 
-#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-powerpoint"] ~ figure .icon::before,
-#att-preview [itemprop="encodingFormat"][content*="presentationml"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content="application/vnd.ms-powerpoint"] ~ .icon::before,
+#att-preview [itemprop="encodingFormat"][content*="presentationml"] ~ .icon::before {
   content: "\F1C4";
 }
 
-#att-preview [itemprop="encodingFormat"][content^="image/"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content^="image/"] ~ .icon::before {
   content: "\F1C5";
 }
 
-#att-preview [itemprop="encodingFormat"][content="application/zip"] ~ figure .icon::before,
-#att-preview [itemprop="encodingFormat"][content="application/x-bzip2"] ~ figure .icon::before,
-#att-preview [itemprop="encodingFormat"][content="application/x-gtar"] ~ figure .icon::before,
-#att-preview [itemprop="encodingFormat"][content="application/x-rar-compressed"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content="application/zip"] ~ .icon::before,
+#att-preview [itemprop="encodingFormat"][content="application/x-bzip2"] ~ .icon::before,
+#att-preview [itemprop="encodingFormat"][content="application/x-gtar"] ~ .icon::before,
+#att-preview [itemprop="encodingFormat"][content="application/x-rar-compressed"] ~ .icon::before {
   content: "\F1C6";
 }
 
-#att-preview [itemprop="encodingFormat"][content^="audio/"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content^="audio/"] ~ .icon::before {
   content: "\F1C7";
 }
 
-#att-preview [itemprop="encodingFormat"][content^="video/"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content^="video/"] ~ .icon::before {
   content: "\F1C8";
 }
 
-#att-preview [itemprop="encodingFormat"][content^="text/"] ~ figure .icon::before {
+#att-preview [itemprop="encodingFormat"][content^="text/"] ~ .icon::before {
   content: "\F15C";
 }
 
