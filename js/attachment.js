@@ -409,8 +409,11 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    * @param {Boolean} [transferred]  Whether the source is `DataTransfer`.
    */
   process_file(file, transferred = true) {
-    const is_patch = file.name.match(/\.(?:diff|patch)$/) || file.type.match(/^text\/x-(?:diff|patch)$/);
-    const is_text = file.name.match(/\.(?:md|markdown|rst)$/); // Some text files come with no MIME type
+    // Check for patches which should have the `text/plain` MIME type
+    const is_patch = !!file.name.match(/\.(?:diff|patch)$/) || !!file.type.match(/^text\/x-(?:diff|patch)$/);
+    // Check for text files which may have no MIME type or `application/*` MIME type
+    const is_text = !!file.name.match(/\.(?:cpp|es|h|js|json|markdown|md|rs|rst|sh|toml|ts|tsx|xml|yaml|yml)$/);
+    // Reassign the MIME type
     const type = is_patch || (is_text && !file.type) ? 'text/plain' : (file.type || 'application/octet-stream');
 
     if (this.check_file_size(file.size)) {
@@ -429,7 +432,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     }
 
     this.update_validation();
-    this.show_preview(file, is_patch);
+    this.show_preview(file, file.type.startsWith('text/') || is_patch || is_text);
     this.update_text();
     this.update_content_type(type);
     this.update_ispatch(is_patch);
@@ -594,16 +597,16 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    * Show the preview of a user-selected file. Display a thumbnail if it's a regular image (PNG, GIF, JPEG, etc.) or
    * small plaintext file.
    * @param {File} file  A file to be previewed.
-   * @param {Boolean} [is_patch]  Whether the file is a patch.
+   * @param {Boolean} [is_text]  Whether the file is a plaintext file.
    */
-  show_preview(file, is_patch = false) {
+  show_preview(file, is_text = false) {
     this.$preview_name.textContent = file.name;
     this.$preview_type.content = file.type;
     this.$preview_text.textContent = '';
     this.$preview_image.src = file.type.match(/^image\/(?!vnd)/) ? URL.createObjectURL(file) : '';
     this.$preview.hidden = false;
 
-    if ((file.type.startsWith('text/') || is_patch) && file.size < 500000) {
+    if (is_text && file.size < 500000) {
       this.text_reader.readAsText(file);
     }
   }
