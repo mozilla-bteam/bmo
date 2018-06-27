@@ -418,6 +418,8 @@ sub view {
         $filenames .= "; filename*=$ufilename";
     }
 
+    $cgi->content_security_policy(Bugzilla::CGI::ATTACHMENT_FILE_CSP());
+
     # IE8 and older do not support RFC 6266. So for these old browsers
     # we still pass the old 'filename' attribute. Modern browsers will
     # automatically pick the new 'filename*' attribute.
@@ -477,6 +479,8 @@ sub viewall {
     # Define the variables and functions that will be passed to the UI template.
     $vars->{'bug'} = $bug;
     $vars->{'attachments'} = $attachments;
+
+    $cgi->content_security_policy(Bugzilla::CGI::ATTACHMENT_VIEW_CSP($bug->id));
 
     print $cgi->header();
 
@@ -675,6 +679,9 @@ sub edit {
 
   Bugzilla->log_user_request($attachment->bug_id, $attachment->id, "attachment-get")
     if Bugzilla->user->id;
+
+  $cgi->content_security_policy(Bugzilla::CGI::ATTACHMENT_VIEW_CSP($attachment->bug_id));
+
   print $cgi->header();
 
   # Generate and return the UI (HTML page) from the appropriate template.
