@@ -4,21 +4,21 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Start local server",
+      "label": "Vagrant: Start Local Server",
       "type": "shell",
       "command": "vagrant up",
       "group": "none",
       "problemMatcher": []
     },
     {
-      "label": "Suspend local server",
+      "label": "Vagrant: Suspend Local Server",
       "type": "shell",
       "command": "vagrant suspend",
       "group": "none",
       "problemMatcher": []
     },
     {
-      "label": "Update local server",
+      "label": "Vagrant: Update Local Server",
       "type": "shell",
       "command": "vagrant rsync && vagrant provision --provision-with update",
       "group": {
@@ -28,14 +28,14 @@
       "problemMatcher": []
     },
     {
-      "label": "Update local server (force)",
+      "label": "Vagrant: Force Update Local Server",
       "type": "shell",
       "command": "vagrant rsync && vagrant provision",
       "group": "build",
       "problemMatcher": []
     },
     {
-      "label": "Update Perl dependencies",
+      "label": "Vagrant: Update Perl Dependencies",
       "type": "shell",
       "command": "vagrant ssh web -c bmo-refresh-bundle",
       "group": "none",
