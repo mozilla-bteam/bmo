@@ -153,6 +153,12 @@ a.activity-ref {
     font-weight: normal;
     padding-right: 5px;
     color: #666;
+    opacity: 1;
+    transition: all .2s;
+}
+
+.module-spinner[aria-expanded="true"] ~ .module-subtitle {
+    opacity: 0;
 }
 
 .module .fields-lhs {
@@ -530,6 +536,43 @@ td.flag-requestee {
 #comment-actions {
     margin-top: 4px;
     text-align: right;
+}
+
+.new-changes-link {
+    margin: 8px 0;
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 12px;
+    text-align: center;
+    color: #FFF;
+    background: #277AC1;
+    cursor: pointer;
+}
+
+.new-changes-separator {
+    position: relative;
+    margin: 16px -8px;
+    height: 0;
+    border-top: 1px solid #C00;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.new-changes-separator span {
+    display: inline-block;
+    position: absolute;
+    top: -10px;
+    right: 16px;
+    border: 1px solid #CCC;
+    border-radius: 4px;
+    padding: 0 4px;
+    height: 16px;
+    font-size: 10px;
+    line-height: 16px;
+    text-transform: uppercase;
+    color: #C00;
+    background-color: #FFF;
 }
 
 .change-set {

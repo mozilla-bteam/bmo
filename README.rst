@@ -80,6 +80,12 @@ or db is changed, do a full provision:
 
     vagrant rsync && vagrant provision
 
+If you are using Visual Studio Code, these tasks are available from the editor's
+`Tasks menu`_. The update command can be run by simply hitting `Ctrl+Shift+B` on
+Windows/Linux or `Command+Shift+B` on macOS.
+
+.. _`Tasks menu`: https://code.visualstudio.com/docs/editor/tasks
+
 Testing Auth delegation
 -----------------------
 
@@ -246,11 +252,8 @@ BUGZILLA_UNSAFE_AUTH_DELEGATION
 
 BMO_urlbase
   The public url for this instance. Note that if this begins with https://
-  and BMO_inbound_proxies is set to '*' Bugzilla will believe the connection to it
+  abd BMO_inbound_proxies is set to '*' Bugzilla will believe the connection to it
   is using SSL.
-
-BMO_canonical_urlbase
-  The public url for the production instance, if different from urlbase above.
 
 BMO_attachment_base
   This is the url for attachments.

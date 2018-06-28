@@ -78,19 +78,13 @@ sub send {
       : 0;
 
     foreach my $revision (@$revisions) {
-        my $secure_revision = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-            name => 'secure-revision'
-        });
-
         if ( $is_public && $group_change ) {
             Bugzilla->audit(sprintf(
               'Making revision %s public for bug %s',
               $revision->id,
               $bug->id
             ));
-            $revision->set_policy('view', 'public');
-            $revision->set_policy('edit', 'users');
-            $revision->remove_project($secure_revision->phid);
+            $revision->make_public();
         }
         elsif ( !$is_public && !@set_groups ) {
             Bugzilla->audit(sprintf(
@@ -99,9 +93,7 @@ sub send {
               $bug->id,
               join(', ', @set_groups)
             ));
-            $revision->set_policy('view', $secure_revision->phid);
-            $revision->set_policy('edit', $secure_revision->phid);
-            $revision->add_project($secure_revision->phid);
+            $revision->make_private(['secure-revision']);
             add_security_sync_comments([$revision], $bug);
         }
         elsif ( !$is_public && $group_change ) {
@@ -110,22 +102,21 @@ sub send {
               $revision->id,
               $bug->id
             ));
-            my @set_projects = map { "bmo-" . $_ } @set_groups;
-            my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create(\@set_projects);
-            $revision->set_policy('view', $new_policy->phid);
-            $revision->set_policy('edit', $new_policy->phid);
-            $revision->add_project($secure_revision->phid);
+            my @set_project_names = map { "bmo-" . $_ } @set_groups;
+            $revision->make_private(\@set_project_names);
         }
 
         # Subscriber list of the private revision should always match
         # the bug roles such as assignee, qa contact, and cc members.
-        Bugzilla->audit(sprintf(
-          'Updating subscribers for %s for bug %s',
-          $revision->id,
-          $bug->id
-        ));
-        my $subscribers = get_bug_role_phids($bug);
-        $revision->set_subscribers($subscribers) if $subscribers;
+        if (!$is_public) {
+            Bugzilla->audit(sprintf(
+              'Updating subscribers for %s for bug %s',
+              $revision->id,
+              $bug->id
+            ));
+            my $subscribers = get_bug_role_phids($bug);
+            $revision->set_subscribers($subscribers) if $subscribers;
+        }
 
         $revision->update();
     }

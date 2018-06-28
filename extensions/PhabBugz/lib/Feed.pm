@@ -337,20 +337,6 @@ sub process_revision_change {
         blessed $revision_phid
         ? $revision_phid
         : Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_phid ] });
-  
-    # Project tags/groups that will be used later for policies, etc.
-    my $secure_revision =
-      Bugzilla::Extension::PhabBugz::Project->new_from_query(
-        {
-          name => 'secure-revision'
-        }
-      );
-    my $edit_bugs = 
-        Bugzilla::Extension::PhabBugz::Project->new_from_query(
-        {
-          name => 'bmo-editbugs-team'
-        }
-      );
 
     # NO BUG ID
 
@@ -358,9 +344,7 @@ sub process_revision_change {
         if ($story_text =~ /\s+created\s+D\d+/) {
             # If new revision and bug id was omitted, make revision public
             INFO("No bug associated with new revision. Marking public.");
-            $revision->set_policy('view', 'public');
-            $revision->set_policy('edit', ($edit_bugs ? $edit_bugs->phid : 'users'));
-            $revision->remove_project($secure_revision->phid);
+            $revision->make_public();
             $revision->update();
             INFO("SUCCESS");
             return;
@@ -388,9 +372,7 @@ sub process_revision_change {
     # If bug is public then remove privacy policy
     if (!@{ $bug->groups_in }) {
         INFO('Bug is public so setting view/edit public');
-        $revision->set_policy('view', 'public');
-        $revision->set_policy('edit', ($edit_bugs ? $edit_bugs->phid : 'users'));
-        $revision->remove_project($secure_revision->phid);
+        $revision->make_public();
     }
     # else bug is private.
     else {
@@ -405,7 +387,7 @@ sub process_revision_change {
         # Otherwise, we create a new custom policy containing the project
         # groups that are mapped to bugzilla groups.
         else {
-            my @set_projects = map { "bmo-" . $_ } @set_groups;
+            my $set_project_names = [ map { "bmo-" . $_ } @set_groups ];
 
             # If current policy projects matches what we want to set, then
             # we leave the current policy alone.
@@ -414,13 +396,12 @@ sub process_revision_change {
                 INFO("Loading current policy: " . $revision->view_policy);
                 $current_policy
                     = Bugzilla::Extension::PhabBugz::Policy->new_from_query({ phids => [ $revision->view_policy ]});
-                my $current_projects = $current_policy->rule_projects;
-                INFO("Current policy projects: " . join(", ", @$current_projects));
-                my ($added, $removed) = diff_arrays($current_projects, \@set_projects);
+                my $current_project_names = [ map { $_->name } @{ $current_policy->rule_projects } ];
+                INFO("Current policy projects: " . join(", ", @$current_project_names));
+                my ($added, $removed) = diff_arrays($current_project_names, $set_project_names);
                 if (@$added || @$removed) {
                     INFO('Project groups do not match. Need new custom policy');
                     $current_policy = undef;
-
                 }
                 else {
                     INFO('Project groups match. Leaving current policy as-is');
@@ -428,25 +409,23 @@ sub process_revision_change {
             }
 
             if (!$current_policy) {
-                INFO("Creating new custom policy: " . join(", ", @set_projects));
-                my $new_policy = Bugzilla::Extension::PhabBugz::Policy->create(\@set_projects);
-                $revision->set_policy('view', $new_policy->phid);
-                $revision->set_policy('edit', $new_policy->phid);
+                INFO("Creating new custom policy: " . join(", ", @$set_project_names));
+                $revision->make_private($set_project_names);
             }
 
-            $revision->add_project($secure_revision->phid);
+            # Subscriber list of the private revision should always match
+            # the bug roles such as assignee, qa contact, and cc members.
+            my $subscribers = get_bug_role_phids($bug);
+            $revision->set_subscribers($subscribers);
         }
-
-        # Subscriber list of the private revision should always match
-        # the bug roles such as assignee, qa contact, and cc members.
-        my $subscribers = get_bug_role_phids($bug);
-        $revision->set_subscribers($subscribers);
     }
 
     my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
 
-    my $attachment = create_revision_attachment($bug, $revision, $timestamp);
-
+    INFO('Checking for revision attachment');
+    my $attachment = create_revision_attachment($bug, $revision, $timestamp, $revision->author->bugzilla_user);
+    INFO('Attachment ' . $attachment->id . ' created or already exists.');
+    
     # ATTACHMENT OBSOLETES
 
     # fixup attachments on current bug
@@ -641,9 +620,9 @@ sub process_new_user {
                 date               => $timestamp,
                 phab_user_login    => $phab_user->name,
                 phab_user_realname => $phab_user->realname,
-                bugzilla_userid    => $phab_user->bugzilla_user->id,
-                bugzilla_login     => $phab_user->bugzilla_user->login,
-                bugzilla_realname  => $phab_user->bugzilla_user->name,
+                bugzilla_userid    => $bug_user->id,
+                bugzilla_login     => $bug_user->login,
+                bugzilla_realname  => $bug_user->name,
                 squat_userid       => $row->{userid},
                 squat_login        => $row->{login_name},
                 squat_realname     => $row->{realname}
