@@ -484,7 +484,6 @@ sub set_login {
 sub set_name {
     my ($self, $name) = @_;
     $self->set('realname', $name);
-    return if $self->login =~ /\.(?:bugs|tld)$/;
     delete $self->{identity};
     my ($nick) = extract_nicks($name);
     if (!$nick) {
