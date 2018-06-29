@@ -88,8 +88,13 @@ select[multiple], .text_input, .yui-ac-input, input {
     box-shadow: 0 0 2px 2px #f88;
 }
 
-input:invalid {
+input:invalid, textarea:invalid {
     box-shadow: 0 0 2px 2px #f88 !important;
+}
+
+/* text area is big, so let's make sure people notice. */
+textarea:invalid {
+    color: #690202;
 }
 
 a.activity-ref {

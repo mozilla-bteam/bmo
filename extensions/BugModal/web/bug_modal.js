@@ -621,6 +621,18 @@ $(function() {
         });
     $('#mode-btn').prop('disabled', false);
 
+
+    let re = /[\uD800-\uDFFF]/;
+    let checker = function (event) {
+        if (re.test(this.value)) {
+            this.setCustomValidity("Field contains emoji");
+        }
+        else {
+            this.setCustomValidity('');
+        }
+    };
+    $("#short_desc, #comment").change(checker).change();
+
     // disable the save buttons while posting
     $('.save-btn')
         .click(function(event) {
