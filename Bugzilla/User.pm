@@ -22,6 +22,7 @@ use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Hook;
 use Bugzilla::BugUserLastVisit;
+use Bugzilla::Logging;
 
 use DateTime::TimeZone;
 use List::Util qw(max);
@@ -739,7 +740,16 @@ sub nick {
     my $self = shift;
 
     return "" unless $self->id;
-    return $self->{nickname};
+
+    if (!defined $self->{nick}) {
+        $self->{nick} = (split(/@/, $self->login, 2))[0];
+    }
+
+    if ($self->{nick} ne $self->{nickname}) {
+        DEBUG(sprintf "%s has old-style nick %s, and new-style nick %s (realname: %s)", $self->login, $self->{nick}, $self->{nickname}, $self->name);
+    }
+
+    return $self->{nick};
 }
 
 sub queries {
