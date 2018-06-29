@@ -482,15 +482,20 @@ sub set_login {
     delete $self->{nick};
 }
 
+sub _generate_nickname {
+    my ($name, $login) = @_;
+    my ($nick) = extract_nicks($name);
+    if (!$nick) {
+        $nick = (split(/@/, $login, 2))[0];
+    }
+    return $nick;
+}
+
 sub set_name {
     my ($self, $name) = @_;
     $self->set('realname', $name);
     delete $self->{identity};
-    my ($nick) = extract_nicks($name);
-    if (!$nick) {
-        $nick = (split(/@/, $self->login, 2))[0];
-    }
-    $self->set('nickname', $nick);
+    $self->set('nickname', _generate_nickname($name, $self->login));
 }
 
 sub set_nick {
@@ -740,16 +745,11 @@ sub nick {
     my $self = shift;
 
     return "" unless $self->id;
+    return $self->{nickname} if $self->{nickname};
 
-    if (!defined $self->{nick}) {
-        $self->{nick} = (split(/@/, $self->login, 2))[0];
-    }
-
-    if ($self->{nick} ne $self->{nickname}) {
-        DEBUG(sprintf "%s has old-style nick %s, and new-style nick %s (realname: %s)", $self->login, $self->{nick}, $self->{nickname}, $self->name);
-    }
-
-    return $self->{nick};
+    my $nick = (split(/@/, $self->login, 2))[0];
+    WARN("Falling back to old-style nickname ($nick) because nickname field not populated");
+    return $nick;
 }
 
 sub queries {
@@ -2532,13 +2532,12 @@ sub get_userlist {
 }
 
 sub create {
-    my $invocant = shift;
-    my $class = ref($invocant) || $invocant;
+    my ($class, $params) = @_;
     my $dbh = Bugzilla->dbh;
 
     $dbh->bz_start_transaction();
-
-    my $user = $class->SUPER::create(@_);
+    $params->{nickname} = _generate_nickname($params->{realname}, $params->{login_name});
+    my $user = $class->SUPER::create($params);
 
     # Turn on all email for the new user
     require Bugzilla::BugMail;
