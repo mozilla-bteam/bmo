@@ -59,6 +59,7 @@ use File::Basename;
 use File::Spec::Functions;
 use Safe;
 use JSON::XS qw(decode_json);
+use URI;
 
 use parent qw(Bugzilla::CPAN);
 
@@ -288,6 +289,13 @@ sub input_params {
 
 sub localconfig {
     return $_[0]->process_cache->{localconfig} ||= read_localconfig();
+}
+
+sub urlbase {
+    my ($class) = @_;
+
+    # Since this could be modified, we have to return a new one every time.
+    return URI->new($class->localconfig->{urlbase});
 }
 
 sub params {
