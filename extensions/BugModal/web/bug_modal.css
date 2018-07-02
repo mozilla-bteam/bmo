@@ -700,6 +700,13 @@ div.comment-text hr {
     display: block !important;
 }
 
+div.comment-text blockquote {
+    background: #fcfcfc;
+    border-left: 5px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+}
+
 .comment-tags {
     padding: 0 8px 2px 8px !important;
 }
