@@ -142,7 +142,8 @@ sub renderComment {
     my ($text, $bug, $comment, $skip_markdown, $bug_link_func) = @_;
     return $text unless $text;
     my $anon_user = Bugzilla::User->new;
-    $skip_markdown ||= 0;
+    # We choose to render markdown by default, unless the comment explicitly isn't.
+    $skip_markdown ||= $comment && !$comment->is_markdown;
     $bug_link_func ||= \&get_bug_link;
 
     # We use /g for speed, but uris can have other things inside them
@@ -199,9 +200,8 @@ sub renderComment {
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
 
-    # We do this only for saved comments that aren't markdown. All other comments
-    # and text which isn't yet saved (like comment previews) are rendered as markdown.
-    if ($skip_markdown || ($comment && !$comment->is_markdown)) {
+
+    if ($skip_markdown) {
         # non-mailto protocols
         my $safe_protocols = SAFE_URL_REGEXP();
         $text =~ s~\b($safe_protocols)
@@ -209,22 +209,29 @@ sub renderComment {
                ($things[$count++] = "<a rel=\"nofollow\" href=\"$tmp\">$tmp</a>") &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
+
+        # We have to quote now, otherwise the html itself is escaped
+        # THIS MEANS THAT A LITERAL ", <, >, ' MUST BE ESCAPED FOR A MATCH
+        $text = html_quote($text);
+
+        # Color quoted text
+        $text =~ s~^(&gt;.+)$~<span class="quote">$1</span >~mg;
+        $text =~ s~</span >\n<span class="quote">~\n~g;
+
+        # mailto:
+        # Use |<nothing> so that $1 is defined regardless
+        # &#64; is the encoded '@' character.
+        $text =~ s~\b(mailto:|)?([\w\.\-\+\=]+&\#64;[\w\-]+(?:\.[\w\-]+)+)\b
+                 ~<a href=\"mailto:$2\">$1$2</a>~igx;
     }
+    else {
+        # We intentionally disable all html tags. Users should use markdown syntax.
+        # This prevents things like inline styles on anchor tags, which otherwise would be valid.
+        $text =~ s/([<])/&lt;/g;
 
-    # We have to quote now, otherwise the html itself is escaped
-    # THIS MEANS THAT A LITERAL ", <, >, ' MUST BE ESCAPED FOR A MATCH
-
-    $text = html_quote($text);
-
-    # Color quoted text
-    $text =~ s~^(&gt;.+)$~<span class="quote">$1</span >~mg;
-    $text =~ s~</span >\n<span class="quote">~\n~g;
-
-    # mailto:
-    # Use |<nothing> so that $1 is defined regardless
-    # &#64; is the encoded '@' character.
-    $text =~ s~\b(mailto:|)?([\w\.\-\+\=]+&\#64;[\w\-]+(?:\.[\w\-]+)+)\b
-              ~<a href=\"mailto:$2\">$1$2</a>~igx;
+        # As a preference, we opt into all new line breaks being rendered as a new line.
+        $text =~ s/(\r?\n)/  $1/g;
+    }
 
     # attachment links
     # BMO: don't make diff view the default for patches (Bug 652332)
@@ -263,7 +270,7 @@ sub renderComment {
         $text =~ s/\x{FDD2}($i)\x{FDD3}/$things[$i]/eg;
     }
 
-    if ($skip_markdown || ($comment && !$comment->is_markdown)) {
+    if ($skip_markdown) {
         return $text;
     }
     else {
