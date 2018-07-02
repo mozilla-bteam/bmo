@@ -316,7 +316,6 @@ input[type="number"] {
 
 #user-story {
     margin: 0;
-    white-space: pre-wrap;
     min-height: 2em;
 }
 
