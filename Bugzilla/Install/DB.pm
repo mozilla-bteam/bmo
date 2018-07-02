@@ -3914,7 +3914,7 @@ sub _migrate_group_owners {
 
 sub _migrate_nicknames {
     my $dbh = Bugzilla->dbh;
-    my $sth = $dbh->prepare('SELECT userid FROM profiles WHERE is_enabled = 1 AND NOT nickname');
+    my $sth = $dbh->prepare('SELECT userid FROM profiles WHERE realname LIKE "%:%" AND is_enabled = 1 AND NOT nickname');
     $sth->execute();
     while (my ($user_id) = $sth->fetchrow_array) {
         my $user = Bugzilla::User->new($user_id);

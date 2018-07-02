@@ -486,7 +486,7 @@ sub _generate_nickname {
     my ($name, $login) = @_;
     my ($nick) = extract_nicks($name);
     if (!$nick) {
-        $nick = (split(/@/, $login, 2))[0];
+        $nick = "";
     }
     return $nick;
 }
@@ -746,10 +746,7 @@ sub nick {
 
     return "" unless $self->id;
     return $self->{nickname} if $self->{nickname};
-
-    my $nick = (split(/@/, $self->login, 2))[0];
-    WARN("Falling back to old-style nickname ($nick) because nickname field not populated");
-    return $nick;
+    return $self->{nick} //= (split(/@/, $self->login, 2))[0];
 }
 
 sub queries {

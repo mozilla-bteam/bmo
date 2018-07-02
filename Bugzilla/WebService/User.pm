@@ -24,6 +24,7 @@ use Bugzilla::WebService::Util qw(filter filter_wants validate
 use Bugzilla::Hook;
 
 use List::Util qw(first);
+use Taint::Util qw(untaint);
 
 # Don't need auth to login
 use constant LOGIN_EXEMPT => {
@@ -147,7 +148,7 @@ sub suggest {
     ThrowUserError('user_access_by_match_denied')
       unless Bugzilla->user->id;
 
-    trick_taint($params->{s});
+    untaint($params->{s});
     my $s = $params->{s};
     trim($s);
 
