@@ -1079,7 +1079,12 @@ input.required, select.required, span.required_explanation {
 }
 
 #comment {
-    margin: 0px 0px 1em 0px;
+    margin: 0px 0px 0.5em 0px;
+}
+
+#comment-markdown-tip {
+    display: flex;
+    align-items: center;
 }
 
 /*******************/

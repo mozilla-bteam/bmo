@@ -779,9 +779,14 @@ div.comment-text blockquote {
     margin-top: 20px;
 }
 
-#add-comment-private,
-#bugzilla-etiquette {
+#add-comment-private {
     float: right;
+}
+
+#add-comment-tips {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1em;
 }
 
 #comment {
@@ -792,7 +797,7 @@ div.comment-text blockquote {
     clear: both;
     width: 100%;
     box-sizing: border-box !important;
-    margin: 0 0 1em;
+    margin: 0 0 0.5em;
     max-width: 1024px;
 }
 
