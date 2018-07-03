@@ -142,14 +142,14 @@ sub suggest {
 
     Bugzilla->switch_to_shadow_db();
 
-    ThrowCodeError('params_required', { function => 'User.suggest_users', params => ['s'] })
-      unless defined $params->{s};
+    ThrowCodeError('params_required', { function => 'User.suggest_users', params => ['match'] })
+      unless defined $params->{match};
 
     ThrowUserError('user_access_by_match_denied')
       unless Bugzilla->user->id;
 
-    untaint($params->{s});
-    my $s = $params->{s};
+    untaint($params->{match});
+    my $s = $params->{match};
     trim($s);
 
     my $dbh = Bugzilla->dbh;

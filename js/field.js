@@ -719,7 +719,7 @@ $(function() {
         params: {
             Bugzilla_api_token: BUGZILLA.api_token,
         },
-        paramName: 's',
+        paramName: 'match',
         deferRequestBy: 250,
         minChars: 2,
         noCache: true,
