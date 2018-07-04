@@ -22,7 +22,7 @@ use Bugzilla::User;
 
 sub rest_resources {
     return [
-        qr{^/component_watching$}, {
+        qr{^/component-watching$}, {
             GET => {
                 method => 'list',
             },
@@ -30,7 +30,7 @@ sub rest_resources {
                 method => 'add',
             },
         },
-        qr{^/component_watching/(\d+)$}, {
+        qr{^/component-watching/(\d+)$}, {
             GET => {
                 method => 'get',
                 params => sub {

@@ -20,7 +20,7 @@ Bugzilla.ComponentWatching = class ComponentWatching {
    * Initialize a new ComponentWatching instance.
    */
   constructor() {
-    this.api_endpoint = '/rest/component_watching';
+    this.api_endpoint = '/rest/component-watching';
     this.tracking_category = 'Component Watching';
   }
 
