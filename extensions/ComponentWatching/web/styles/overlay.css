@@ -5,30 +5,34 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#field-product .name,
-#field-component .name {
+/**
+ * BugModalOverlay
+ */
+
+#changeform #field-product .name,
+#changeform #field-component .name {
   padding-top: 5px;
 }
 
-#field-value-product,
-#field-value-component {
+#changeform #field-value-product,
+#changeform #field-value-component {
   display: flex;
   align-items: center;
 }
 
-#field-value-product .name-info-outer,
-#field-value-component .name-info-outer {
+#changeform #field-value-product .name-info-outer,
+#changeform #field-value-component .name-info-outer {
   display: block;
   padding: 5px 0;
 }
 
-#field-value-product button,
-#field-value-component button {
+#changeform #field-value-product button,
+#changeform #field-value-component button {
   margin-left: 20px;
 }
 
-#field-value-product button[disabled],
-#field-value-component button[disabled] {
+#changeform #field-value-product button[disabled],
+#changeform #field-value-component button[disabled] {
   color: #999;
   opacity: .8;
   pointer-events: none;

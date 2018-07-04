@@ -1595,3 +1595,6 @@ $(function() {
 
     });
 })(jQuery);
+
+// Activate one-click Component Watching
+window.addEventListener('DOMContentLoaded', () => new Bugzilla.ComponentWatching.BugModalOverlay(), { once: true });

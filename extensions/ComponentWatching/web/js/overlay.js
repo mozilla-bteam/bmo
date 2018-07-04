@@ -12,60 +12,88 @@
 var Bugzilla = Bugzilla || {};
 
 /**
- * Reference or define the ComponentWatching namespace.
- * @namespace
+ * Implement the basic One-Click Component Watching functionality.
+ * @abstract
  */
-Bugzilla.ComponentWatching = Bugzilla.ComponentWatching || {};
-
-/**
- * Implement the one-click Component Watching buttons on the modal-style bug page. One button is for watching all
- * components in the current product, and another one is for watching just the current product.
- */
-Bugzilla.ComponentWatching.BugModalOverlay = class {
+Bugzilla.ComponentWatching = class ComponentWatching {
   /**
-   * Initialize a new BugModalOverlay instance.
+   * Initialize a new ComponentWatching instance.
    */
   constructor() {
-    this.$product_select = document.querySelector('#product');
-    this.$product_watch = document.querySelector('#product-watch-btn');
-    this.$component_select = document.querySelector('#component');
-    this.$component_watch = document.querySelector('#component-watch-btn');
-
     this.api_endpoint = '/rest/component_watching';
-    this.product = this.$product_select.value;
-    this.component = this.$component_select.value;
-    this.watching_product = this.watching_component = false;
-    this.watching_id = undefined;
-
-    this.init();
+    this.tracking_category = 'Component Watching';
   }
 
   /**
    * Send a REST API request, and return the results in a Promise.
-   * @param {Object} [request] Request data.
+   * @param {Object} [request] Request data. If omitted, the current watch list will be returned.
    * @returns {Promise<Object|String>} Response data or error message.
    */
   async fetch(request = {}) {
-    request.url = this.api_endpoint + (request.url || '');
+    request.url = this.api_endpoint + (request.path || '');
+    delete request.path;
 
     return new Promise((resolve, reject) => bugzilla_ajax(request, data => resolve(data), error => reject(error)));
   }
 
   /**
    * Start watching the current product or component.
+   * @param {String} product Product name.
    * @param {String} [component] Component name. If omitted, all components in the product will be watched.
    * @returns {Promise<Object|String>} Response data or error message.
    */
-  async watch(component = '') {
-    return this.fetch({ type: 'POST', data: { product: this.product, component } });
+  async watch(product, component = '') {
+    return this.fetch({ type: 'POST', data: { product, component } });
   }
 
   /**
    * Stop watching the current product or component.
+   * @param {Number} id Watching ID.
    * @returns {Promise<Object|String>} Response data or error message.
    */
-  async unwatch() {
-    return this.fetch({ type: 'DELETE', url: `/${this.watching_id}` });
+  async unwatch(id) {
+    return this.fetch({ type: 'DELETE', path: `/${id}` });
+  }
+
+  /**
+   * Log an event with Google Analytics if possible. For privacy reasons, we don't send any specific product or
+   * component name.
+   * @param {String} action `watch` or `unwatch`.
+   * @param {String} type `product` or `component`.
+   * @param {Number} code `0` for a successful change, `1` otherwise.
+   * @see https://developers.google.com/analytics/devguides/collection/analyticsjs/events
+   */
+  track_event(action, type, code) {
+    if ('ga' in window) {
+      ga('send', 'event', this.tracking_category, action, type, code);
+    }
+  }
+};
+
+/**
+ * Implement the One-Click Component Watching buttons on the modal-style bug page. One button is for watching all
+ * components in the current product, and another one is for watching just the current product.
+ */
+Bugzilla.ComponentWatching.BugModalOverlay = class BugModalOverlay extends Bugzilla.ComponentWatching {
+  /**
+   * Initialize a new BugModalOverlay instance.
+   */
+  constructor() {
+    super();
+
+    this.tracking_category = 'BugModal: Component Watching';
+
+    this.$product_select = document.querySelector('#product');
+    this.$product_watch = document.querySelector('#product-watch-btn');
+    this.$component_select = document.querySelector('#component');
+    this.$component_watch = document.querySelector('#component-watch-btn');
+
+    this.product = this.$product_select.value;
+    this.component = this.$component_select.value;
+    this.watching_product = this.watching_component = false;
+    this.watching_id = undefined;
+
+    this.init();
   }
 
   /**
@@ -94,20 +122,6 @@ Bugzilla.ComponentWatching.BugModalOverlay = class {
     this.$component_watch.title = this.watching_component ?
       `Stop watching the ${this.component} component` :
       `Start watching the ${this.component} component`;
-  }
-
-  /**
-   * Log an event with Google Analytics if possible. For privacy reasons, we don't send any specific product or
-   * component name.
-   * @param {String} action `watch` or `unwatch`.
-   * @param {String} type `product` or `component`.
-   * @param {Number} code `0` for a successful change, `1` otherwise.
-   * @see https://developers.google.com/analytics/devguides/collection/analyticsjs/events
-   */
-  track_event(action, type, code) {
-    if ('ga' in window) {
-      ga('send', 'event', 'BugModal: Component Watching', action, type, code);
-    }
   }
 
   /**
@@ -162,13 +176,13 @@ Bugzilla.ComponentWatching.BugModalOverlay = class {
 
     try {
       if (to_watch) {
-        await this.watch(is_product ? '' : this.component).then(watch => this.watching_id = watch.id);
+        await this.watch(this.product, is_product ? '' : this.component).then(watch => this.watching_id = watch.id);
 
         message = is_product ?
           `You are now watching all components in the ${this.product} product` :
           `You are now watching the ${this.component} component`;
       } else {
-        await this.unwatch().then(() => this.watching_id = undefined);
+        await this.unwatch(this.watching_id).then(() => this.watching_id = undefined);
 
         message = is_product ?
           `You are no longer watching all components in the ${this.product} product` :
@@ -187,5 +201,3 @@ Bugzilla.ComponentWatching.BugModalOverlay = class {
     this.track_event(action, type, code);
   }
 };
-
-window.addEventListener('DOMContentLoaded', () => new Bugzilla.ComponentWatching.BugModalOverlay(), { once: true });
