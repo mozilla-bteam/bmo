@@ -1,0 +1,35 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+#field-product .name,
+#field-component .name {
+  padding-top: 5px;
+}
+
+#field-value-product,
+#field-value-component {
+  display: flex;
+  align-items: center;
+}
+
+#field-value-product .name-info-outer,
+#field-value-component .name-info-outer {
+  display: block;
+  padding: 5px 0;
+}
+
+#field-value-product button,
+#field-value-component button {
+  margin-left: 20px;
+}
+
+#field-value-product button[disabled],
+#field-value-component button[disabled] {
+  color: #999;
+  opacity: .8;
+  pointer-events: none;
+}
