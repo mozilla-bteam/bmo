@@ -173,15 +173,12 @@ sub suggest {
             $where = $match;
         }
         else {
-            $where = join(' OR ',
-                $dbh->sql_prefix_match(nickname => $s),
-                $dbh->sql_prefix_match(login_name => $s),
-            );
+            $where = join ' OR ', $dbh->sql_prefix_match( nickname => $s ), $dbh->sql_prefix_match( login_name => $s );
         }
     }
     $where = "($where) AND is_enabled = 1";
 
-    my $sql = "SELECT " . join(", ", @select) . " FROM profiles WHERE $where ORDER BY $order LIMIT 25";
+    my $sql = 'SELECT ' . join(', ', @select) . " FROM profiles WHERE $where ORDER BY $order LIMIT 25";
     my $results = $dbh->selectall_arrayref($sql, { Slice => {} });
 
     my @users = map {
