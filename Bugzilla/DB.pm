@@ -353,7 +353,7 @@ sub import {
 sub sql_prefix_match {
     my ($self, $column, $str) = @_;
     my $must_escape = $str =~ s/([_%!])/!$1/g;
-    my $escape      = $must_escape ? q/ESCAPE '!'/ : '');
+    my $escape      = $must_escape ? q/ESCAPE '!'/ : '';
     my $quoted_str  = $self->quote("$str%");
     return "$column LIKE $quoted_str $escape";
 }
