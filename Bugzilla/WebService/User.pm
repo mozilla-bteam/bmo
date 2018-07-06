@@ -170,7 +170,7 @@ sub suggest {
             my $match = sprintf 'MATCH(realname) AGAINST (%s) ', $dbh->quote($s);
             push @select, "$match AS relevance";
             $order = 'relevance DESC';
-            $where = "$match";
+            $where = $match;
         }
         else {
             $where = join(' OR ',
