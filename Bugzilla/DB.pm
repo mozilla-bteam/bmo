@@ -352,7 +352,8 @@ sub import {
 
 sub sql_prefix_match {
     my ($self, $column, $str) = @_;
-    return "$column LIKE " . $self->quote("$str%");
+    my $escape = $str =~ s/([_%!])/!$1/gs;
+    return "$column LIKE " . $self->quote("$str%") . ( $escape ? " ESCAPE '!'" : '');
 }
 
 sub sql_istrcmp {

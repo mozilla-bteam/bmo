@@ -22,7 +22,6 @@ use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Hook;
 use Bugzilla::BugUserLastVisit;
-use Bugzilla::Logging;
 
 use DateTime::TimeZone;
 use List::Util qw(max);
