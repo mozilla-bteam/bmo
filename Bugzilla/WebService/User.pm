@@ -172,6 +172,13 @@ sub suggest {
             $order = 'relevance DESC';
             $where = $match;
         }
+        elsif ($have_mysql && $s =~ /^[[:upper:]]/) {
+            my $match = sprintf 'MATCH(realname) AGAINST (%s) ', $dbh->quote($s);
+            $where = join ' OR ',
+                $match,
+                $dbh->sql_prefix_match( nickname => $s ),
+                $dbh->sql_prefix_match( login_name => $s );
+        }
         else {
             $where = join ' OR ', $dbh->sql_prefix_match( nickname => $s ), $dbh->sql_prefix_match( login_name => $s );
         }
