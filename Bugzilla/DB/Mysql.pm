@@ -43,8 +43,6 @@ use constant MAX_COMMENTS => 50;
 
 use constant FULLTEXT_OR => '|';
 
-use constant SUITABLE_ROW_FORMATS => qw( dynamic compressed );
-
 sub BUILDARGS {
     my ($class, $params) = @_;
     my ($user, $pass, $host, $dbname, $port, $sock) =
@@ -325,9 +323,9 @@ sub bz_setup_database {
         my $tables = $self->selectall_arrayref('SHOW TABLE STATUS');
         foreach my $table (@$tables) {
             my ($table, undef, undef, $row_format) = @$table;
-            my $is_suitable_row_format = any { lc($_) eq lc($row_format) } SUITABLE_ROW_FORMATS;
-            unless ($is_suitable_row_format) {
-                my $new_row_format = $self->default_row_format($table);
+            my $new_row_format = $self->default_row_format($table);
+            next if $new_row_format =~ /compact/i;
+            if (lc($new_row_format) ne lc($row_format)) {
                 print install_string('mysql_row_format_conversion', { table => $table, format => $new_row_format }), "\n";
                 $self->do(sprintf 'ALTER TABLE %s ROW_FORMAT=%s', $table, $new_row_format);
             }
@@ -783,6 +781,20 @@ sub default_row_format {
         return 'Compact';
     }
     elsif ($charset eq 'utf8mb4') {
+        my @compress = qw(
+            attach_data
+            attachments
+            bugs
+            bugs_activity
+            bugs_fulltext
+            components
+            groups
+            longdescs
+            products
+            profiles
+        );
+
+        return 'Compressed' if any { $table eq $_ } @compress;
         return 'Dynamic';
     }
     else {
