@@ -34,6 +34,7 @@ use Bugzilla::DB::Schema::Mysql;
 
 use List::Util qw(max any);
 use Text::ParseWords;
+use Carp;
 
 # This is how many comments of MAX_COMMENT_LENGTH we expect on a single bug.
 # In reality, you could have a LOT more comments than this, because
@@ -601,7 +602,7 @@ sub bz_setup_database {
             }
         }
 
-        print "Converting table storage format to $mode. This may take a while.\n";
+        print "Converting table storage format to $charset (collation $collation). This may take a while.\n";
         foreach my $table ($self->bz_table_list_real) {
             my $info_sth = $self->prepare("SHOW FULL COLUMNS FROM $table");
             $info_sth->execute();
@@ -760,14 +761,14 @@ sub _fix_defaults {
 }
 
 sub utf8_charset {
-    return 'utf8' unless bugzilla->params->{'utf8'};
-    return bugzilla->params->{'utf8'} eq 'utf8mb4' ? 'utf8mb4' : 'utf8';
+    return 'utf8' unless Bugzilla->params->{'utf8'};
+    return Bugzilla->params->{'utf8'} eq 'utf8mb4' ? 'utf8mb4' : 'utf8';
 }
 
 sub utf8_collation {
     my $charset = utf8_charset();
     if ($charset eq 'utf8') {
-        return 'utf8_unicode_ci';
+        return 'utf8_general_ci';
     }
     elsif ($charset eq 'utf8mb4') {
         return 'utf8mb4_unicode_520_ci';
