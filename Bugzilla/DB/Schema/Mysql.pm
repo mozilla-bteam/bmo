@@ -76,8 +76,6 @@ use constant REVERSE_MAPPING => {
     # as in their db-specific version, so no reverse mapping is needed.
 };
 
-use constant MYISAM_TABLES => qw();
-
 #------------------------------------------------------------------------------
 sub _initialize {
 
@@ -120,17 +118,18 @@ sub _initialize {
 } #eosub--_initialize
 #------------------------------------------------------------------------------
 sub _get_create_table_ddl {
-    # Extend superclass method to specify the MYISAM storage engine.
     # Returns a "create table" SQL statement.
-
     my($self, $table) = @_;
-    my $mode = Bugzilla::DB::Mysql->utf8_mode;
-    my $row_format = $mode eq 'utf8mb4' ? "ROW_FORMAT=" . Bugzilla::DB::Mysql->DEFAULT_ROW_FORMAT : '';
-    my $charset = "CHARACTER SET $mode";
-    my $type    = grep($_ eq $table, MYISAM_TABLES) ? 'MYISAM' : 'InnoDB';
-    return($self->SUPER::_get_create_table_ddl($table)
-           . " ENGINE = $type $charset $row_format");
-
+    my $charset    = Bugzilla::DB::Mysql->utf8_charset;
+    my $collation  = Bugzilla::DB::Mysql->utf8_collation;
+    my $row_format = Bugzilla::DB::Mysql->default_row_format($table);
+    my @parts = (
+        $self->SUPER::_get_create_table_ddl($table),
+        'ENGINE = InnoDB',
+        "CHARACTER SET $charset COLLATION $collation",
+        "ROW_FORMAT=$row_format",
+    );
+    return join(' ', @parts);
 } #eosub--_get_create_table_ddl
 #------------------------------------------------------------------------------
 sub _get_create_index_ddl {
@@ -154,9 +153,9 @@ sub get_create_database_sql {
     my ($self, $name) = @_;
     # We only create as utf8 if we have no params (meaning we're doing
     # a new installation) or if the utf8 param is on.
-    my $mode = Bugzilla::DB::Mysql->utf8_mode;
-    my $charset = "CHARACTER SET $mode";
-    return ("CREATE DATABASE $name $charset");
+    my $charset = Bugzilla::DB::Mysql->utf8_charset;
+    my $collation = Bugzilla::DB::Mysql->utf8_collation;
+    return ("CREATE DATABASE $name CHARACTER SET $charset COLLATION $collation");
 }
 
 # MySQL has a simpler ALTER TABLE syntax than ANSI.
