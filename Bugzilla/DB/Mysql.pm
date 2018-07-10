@@ -66,8 +66,8 @@ sub on_dbi_connected {
     # This makes sure that if the tables are encoded as UTF-8, we
     # return their data correctly.
     my $charset = $class->utf8_charset;
-    my $collation = $class->utf8_collation;
-    $dbh->do("SET NAMES $charset COLLATION $collation");
+    my $collate = $class->utf8_collate;
+    $dbh->do("SET NAMES $charset COLLATE $collate");
 
     # Bug 321645 - disable MySQL strict mode, if set
     my ($var, $sql_mode) = $dbh->selectrow_array(
@@ -579,13 +579,13 @@ sub bz_setup_database {
     # the table charsets.
     #
     # TABLE_COLLATION IS NOT NULL prevents us from trying to convert views.
-    my $charset   = $self->utf8_charset;
-    my $collation = $self->utf8_collation;
+    my $charset = $self->utf8_charset;
+    my $collate = $self->utf8_collate;
     my $non_utf8_tables = $self->selectrow_array(
         "SELECT 1 FROM information_schema.TABLES
           WHERE TABLE_SCHEMA = ? AND TABLE_COLLATION IS NOT NULL
                 AND TABLE_COLLATION != ?
-          LIMIT 1", undef, $db_name, $collation);
+          LIMIT 1", undef, $db_name, $collate);
 
     if (Bugzilla->params->{'utf8'} && $non_utf8_tables) {
         print "\n", install_string('mysql_utf8_conversion');
@@ -602,7 +602,7 @@ sub bz_setup_database {
             }
         }
 
-        print "Converting table storage format to $charset (collation $collation). This may take a while.\n";
+        print "Converting table storage format to $charset (collate $collate). This may take a while.\n";
         foreach my $table ($self->bz_table_list_real) {
             my $info_sth = $self->prepare("SHOW FULL COLUMNS FROM $table");
             $info_sth->execute();
@@ -615,11 +615,11 @@ sub bz_setup_database {
                 # If this particular column isn't stored in utf-8
                 if ($column->{Collation}
                     && $column->{Collation} ne 'NULL'
-                    && $column->{Collation} ne $collation)
+                    && $column->{Collation} ne $collate)
                 {
                     my $name = $column->{Field};
 
-                    print "$table.$name needs to be converted to $charset (collation $collation)...\n";
+                    print "$table.$name needs to be converted to $charset (collate $collate)...\n";
 
                     # These will be automatically re-created at the end
                     # of checksetup.
@@ -639,7 +639,7 @@ sub bz_setup_database {
                     my ($binary, $utf8) = ($sql_def, $sql_def);
                     my $type = $self->_bz_schema->convert_type($col_info->{TYPE});
                     $binary =~ s/(\Q$type\E)/$1 CHARACTER SET binary/;
-                    $utf8   =~ s/(\Q$type\E)/$1 CHARACTER SET $charset COLLATION $collation/;
+                    $utf8   =~ s/(\Q$type\E)/$1 CHARACTER SET $charset COLLATE $collate/;
                     push(@binary_sql, "MODIFY COLUMN $name $binary");
                     push(@utf8_sql, "MODIFY COLUMN $name $utf8");
                 }
@@ -660,7 +660,7 @@ sub bz_setup_database {
                 print "Converting the $table table to UTF-8...\n";
                 my $bin = "ALTER TABLE $table " . join(', ', @binary_sql);
                 my $utf = "ALTER TABLE $table " . join(', ', @utf8_sql,
-                          "DEFAULT CHARACTER SET $charset COLLATION $collation");
+                          "DEFAULT CHARACTER SET $charset COLLATE $collate");
                 $self->do($bin);
                 $self->do($utf);
 
@@ -670,7 +670,7 @@ sub bz_setup_database {
                 }
             }
             else {
-                $self->do("ALTER TABLE $table DEFAULT CHARACTER SET $charset COLLATION $collation");
+                $self->do("ALTER TABLE $table DEFAULT CHARACTER SET $charset COLLATE $collate");
             }
 
         } # foreach my $table (@tables)
@@ -765,7 +765,7 @@ sub utf8_charset {
     return Bugzilla->params->{'utf8'} eq 'utf8mb4' ? 'utf8mb4' : 'utf8';
 }
 
-sub utf8_collation {
+sub utf8_collate {
     my $charset = utf8_charset();
     if ($charset eq 'utf8') {
         return 'utf8_general_ci';
@@ -794,10 +794,10 @@ sub default_row_format {
 
 sub _alter_db_charset_to_utf8 {
     my $self = shift;
-    my $db_name   = Bugzilla->localconfig->{db_name};
-    my $charset   = $self->utf8_charset;
-    my $collation = $self->utf8_collation;
-    $self->do("ALTER DATABASE $db_name CHARACTER SET $charset COLLATION $collation");
+    my $db_name = Bugzilla->localconfig->{db_name};
+    my $charset = $self->utf8_charset;
+    my $collate = $self->utf8_collate;
+    $self->do("ALTER DATABASE $db_name CHARACTER SET $charset COLLATE $collate");
 }
 
 sub bz_db_is_utf8 {

@@ -121,12 +121,12 @@ sub _get_create_table_ddl {
     # Returns a "create table" SQL statement.
     my($self, $table) = @_;
     my $charset    = Bugzilla::DB::Mysql->utf8_charset;
-    my $collation  = Bugzilla::DB::Mysql->utf8_collation;
+    my $collate    = Bugzilla::DB::Mysql->utf8_collate;
     my $row_format = Bugzilla::DB::Mysql->default_row_format($table);
     my @parts = (
         $self->SUPER::_get_create_table_ddl($table),
         'ENGINE = InnoDB',
-        "CHARACTER SET $charset COLLATION $collation",
+        "CHARACTER SET $charset COLLATE $collate",
         "ROW_FORMAT=$row_format",
     );
     return join(' ', @parts);
@@ -154,8 +154,8 @@ sub get_create_database_sql {
     # We only create as utf8 if we have no params (meaning we're doing
     # a new installation) or if the utf8 param is on.
     my $charset = Bugzilla::DB::Mysql->utf8_charset;
-    my $collation = Bugzilla::DB::Mysql->utf8_collation;
-    return ("CREATE DATABASE $name CHARACTER SET $charset COLLATION $collation");
+    my $collate = Bugzilla::DB::Mysql->utf8_collate;
+    return ("CREATE DATABASE $name CHARACTER SET $charset COLLATE $collate");
 }
 
 # MySQL has a simpler ALTER TABLE syntax than ANSI.
