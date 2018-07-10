@@ -540,9 +540,7 @@ sub bz_setup_database {
     # This kind of situation happens when people create the database
     # themselves, and if we don't do this they will get the big
     # scary WARNING statement about conversion to UTF8.
-    if ( !$self->bz_db_is_utf8 && !@tables
-         && (Bugzilla->params->{'utf8'} || !scalar keys %{Bugzilla->params}) )
-    {
+    unless ( $self->bz_db_is_utf8 ) {
         $self->_alter_db_charset_to_utf8();
     }
 
@@ -681,7 +679,7 @@ sub bz_setup_database {
     # a mysqldump.) So we have this change outside of the above block,
     # so that it just happens silently if no actual *table* conversion
     # needs to happen.
-    if (Bugzilla->params->{'utf8'} && !$self->bz_db_is_utf8) {
+    unless ($self->bz_db_is_utf8) {
         $self->_alter_db_charset_to_utf8();
     }
 
@@ -802,11 +800,11 @@ sub _alter_db_charset_to_utf8 {
 
 sub bz_db_is_utf8 {
     my $self = shift;
-    my $db_collation = $self->selectrow_arrayref(
+    my $db_charset = $self->selectrow_arrayref(
         "SHOW VARIABLES LIKE 'character_set_database'");
     # First column holds the variable name, second column holds the value.
     my $charset = $self->utf8_charset;
-    return $db_collation->[1] =~ /^$charset/ ? 1 : 0;
+    return $db_charset->[1] eq $charset ? 1 : 0;
 }
 
 
