@@ -781,21 +781,23 @@ sub default_row_format {
         return 'Compact';
     }
     elsif ($charset eq 'utf8mb4') {
-        my @compress = qw(
-            attach_data
-            attachments
-            bugs
-            bugs_activity
-            bugs_fulltext
-            components
-            groups
-            longdescs
-            products
-            profiles
+        my @no_compress = qw(
+            bug_user_last_visit
+            cc
+            email_rates
+            logincookies
+            token_data
+            tokens
+            ts_error
+            ts_exitstatus
+            ts_funcmap
+            ts_job
+            ts_note
+            user_request_log
+            votes
         );
-
-        return 'Compressed' if any { $table eq $_ } @compress;
-        return 'Dynamic';
+        return 'Dynamic' if any { $table eq $_ } @no_compress;
+        return 'Compressed';
     }
     else {
         croak "invalid charset: $charset";
