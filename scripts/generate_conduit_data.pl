@@ -114,7 +114,7 @@ if ( !Bugzilla::User->new( { name => $phab_login } ) ) {
 my @users_groups = (
     { user => 'conduit@mozilla.bugs', group => 'editbugs' },
     { user => 'conduit@mozilla.bugs', group => 'core-security' },
-    { user => 'conduit-reviewer@mozilla.bugs', group => 'core-security' },
+    { user => 'conduit-reviewer@mozilla.bugs', group => 'editbugs' },
     { user => 'phab-bot@bmo.tld',     group => 'editbugs' },
     { user => 'phab-bot@bmo.tld',     group => 'core-security' },
 );
