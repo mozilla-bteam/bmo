@@ -13,15 +13,6 @@ use warnings;
 
 use Bugzilla::Logging;
 
-# We want any compile errors to get to the browser, if possible.
-BEGIN {
-    # This makes sure we're in a CGI.
-    if ($ENV{SERVER_SOFTWARE} && !$ENV{MOD_PERL}) {
-        require CGI::Carp;
-        CGI::Carp->import('fatalsToBrowser');
-    }
-}
-
 our $VERSION = '20180717.2';
 
 use Bugzilla::Auth;
