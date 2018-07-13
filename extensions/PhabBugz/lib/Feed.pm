@@ -334,9 +334,8 @@ sub group_query {
         $project->remove_member( $_  ) foreach @$removed;
 
         my $result = $project->update();
-        Bugzilla::Logging->fields->{api_result} = $result;
+        local Bugzilla::Logging->fields->{api_result} = $result;
         INFO("Project " . $project->name . " updated");
-        delete Bugzilla::Logging->fields->{api_result};
     }
 }
 
