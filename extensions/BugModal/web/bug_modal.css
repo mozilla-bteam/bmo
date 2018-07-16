@@ -684,6 +684,8 @@ div.comment-text {
 div.comment-text code {
     color: #444;
     background-color: #eee;
+    font-size: 13px;
+    font-family: "Fira Mono","Droid Sans Mono",Menlo,Monaco,"Courier New",monospace;
 }
 
 div.comment-text table {

@@ -1607,6 +1607,8 @@ div.bz_comment_text {
 div.bz_comment_text code {
     color: #444;
     background-color: #eee;
+    font-size: 13px;
+    font-family: "Fira Mono","Droid Sans Mono",Menlo,Monaco,"Courier New",monospace;
 }
 
 div.bz_comment_text table {
