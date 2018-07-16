@@ -61,7 +61,8 @@ elsif ($cmd eq 'import') {
         next unless $mem->{data_len};
         next unless check_attachment($attachment, $mem->{bug_id}, $mem->{data_len});
 
-        Bugzilla::Attachment::current_storage()->store( $attachment->id, $mem->{data} );
+        my $storage = Bugzilla::Attachment::current_storage();
+        $storage->store( $attachment->id, $mem->{data} ) unless $storage->exists($attachment->id);
     }
 }
 elsif ($cmd eq 'check') {
