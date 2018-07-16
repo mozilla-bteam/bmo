@@ -470,7 +470,7 @@ sub _getWatches {
     my ($user, $watch_id) = @_;
     my $dbh = Bugzilla->dbh;
 
-    $watch_id = ($watch_id =~ /^(\d+)$/) ? $1 : undef;
+    $watch_id = (defined $watch_id && $watch_id =~ /^(\d+)$/) ? $1 : undef;
 
     my $sth = $dbh->prepare("
         SELECT id, product_id, component_id, component_prefix
@@ -502,7 +502,7 @@ sub _getWatches {
     }
 
     if ($watch_id) {
-        return @watches->[0] || {};
+        return $watches[0] || {};
     }
 
     @watches = sort {
