@@ -1600,8 +1600,8 @@ div.bz_comment_text pre {
 /* Markdown comments */
 div.bz_comment_text {
     white-space: normal;
-    line-height: 1.05;
     padding: 0 8px 0 8px;
+    font-family: inherit !important;
 }
 
 div.bz_comment_text code {

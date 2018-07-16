@@ -677,8 +677,8 @@ div.comment-text pre {
 /* Markdown comments */
 div.comment-text {
     white-space: normal;
-    line-height: 1.05;
     padding: 0 8px 0 8px;
+    font-family: inherit !important;
 }
 
 div.comment-text code {
