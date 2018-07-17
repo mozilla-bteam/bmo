@@ -814,7 +814,7 @@ sub delete_attachment {
     my $dbh = Bugzilla->dbh;
 
     $user->in_group('admin')
-      || ThrowUserError('auth_failure', {group  => 'admin',
+      || ThrowUserError('auth_failure', {group  => 'can_delete_attachments',
                                          action => 'delete',
                                          object => 'attachment'});
 
