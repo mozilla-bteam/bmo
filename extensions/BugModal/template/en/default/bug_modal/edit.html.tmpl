@@ -386,7 +386,8 @@
         </div>
       </span>
       <div class="watch-actions">
-        <button type="button" class="minor" id="product-watch-btn" disabled>Watch</button>
+        <button disabled type="button" class="minor component-watching" data-product="[% bug.product FILTER html %]"
+                data-source="BugModal">Watch</button>
       </div>
     [% END %]
     [% WRAPPER bug_modal/field.html.tmpl
@@ -435,7 +436,8 @@
         </div>
       </span>
       <div class="watch-actions">
-        <button type="button" class="minor" id="component-watch-btn" disabled>Watch</button>
+        <button disabled type="button" class="minor component-watching" data-product="[% bug.product FILTER html %]"
+                data-component="[% bug.component FILTER html %]" data-source="BugModal">Watch</button>
       </div>
     [% END %]
 

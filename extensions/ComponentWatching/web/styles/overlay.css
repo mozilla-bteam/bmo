@@ -6,7 +6,7 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 /**
- * BugModalOverlay
+ * BugModal
  */
 
 #changeform #field-product .name,
@@ -29,11 +29,4 @@
 #changeform #field-value-product button,
 #changeform #field-value-component button {
   margin-left: 20px;
-}
-
-#changeform #field-value-product button[disabled],
-#changeform #field-value-component button[disabled] {
-  color: #999;
-  opacity: .8;
-  pointer-events: none;
 }

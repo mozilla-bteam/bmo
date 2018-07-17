@@ -44,26 +44,6 @@ button.major {
     padding: 4px 12px;
 }
 
-button.minor {
-    background-color: #eee;
-    background-image: linear-gradient(#fcfcfc, #eee);
-    color: #000;
-    font-size: inherit;
-    font-weight: 500;
-    padding: 4px 8px;
-    margin-bottom: 1px;
-    text-shadow: none;
-    -web-kit-box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
-    -moz-box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1);
-    box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1), inset 0 0 1px 0 rgba(0,0,0,0.1);
-}
-
-button.minor:hover {
-    -webkit-box-shadow: 0 1px 0 0 rgba(0,0,0,0.2), inset 0 -1px 0 0 rgba(0,0,0,0.3), inset 0 12px 24px 2px #ddd;
-    -moz-box-shadow: 0 1px 0 0 rgba(0,0,0,0.2), inset 0 -1px 0 0 rgba(0,0,0,0.3), inset 0 12px 24px 2px #ddd;
-    box-shadow: 0 1px 0 0 rgba(0,0,0,0.1), inset 0 -1px 0 0 rgba(0,0,0,0.1), inset 0 12px 24px 2px #ddd;
-}
-
 select[multiple], .text_input, .yui-ac-input, input {
     font-size: 12px !important;
 }
