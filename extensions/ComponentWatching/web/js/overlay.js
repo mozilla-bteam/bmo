@@ -115,14 +115,14 @@ Bugzilla.ComponentWatching = class ComponentWatching {
 
     if (watchId) {
       $button.dataset.watchId = watchId;
-      $button.textContent = 'Unwatch';
+      $button.textContent = $button.getAttribute('data-label-unwatch') || 'Unwatch';
       $button.title = component ?
         `Stop watching the ${component} component` :
         `Stop watching all components in the ${product} product`;
     } else {
       delete $button.dataset.watchId;
 
-      $button.textContent = 'Watch';
+      $button.textContent = $button.getAttribute('data-label-watch') || 'Watch';
       $button.title = component ?
         `Start watching the ${component} component` :
         `Start watching all components in the ${product} product`;

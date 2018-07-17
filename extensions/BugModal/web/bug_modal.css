@@ -309,16 +309,6 @@ input[type="number"] {
     margin-bottom: 50px;
 }
 
-#product-info, #component-info {
-    color: #484;
-    white-space: normal;
-}
-
-#product-latch, #component-latch {
-    padding-right: 0;
-    cursor: pointer;
-}
-
 #cc-latch {
     color: #999;
 }
@@ -946,6 +936,28 @@ div.ui-tooltip {
     position: fixed;
     top: 8px;
     right: 8px;
+}
+
+/* product/component popup */
+
+.name-info-popup {
+  width: 320px;
+}
+
+.name-info-popup header {
+  margin: 8px 16px;
+}
+
+.name-info-popup header .title {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.name-info-popup header .description {
+  font-size: 12px;
+  line-height: 150%;
+  white-space: normal;
+  color: #666;
 }
 
 /* product search */
