@@ -645,9 +645,6 @@ sub _bz_locations {
     # directory under both mod_cgi and mod_perl. We call dirname twice
     # to get the name of the directory above the "Bugzilla/" directory.
     #
-    # Calling dirname twice like that won't work on VMS or AmigaOS
-    # but I doubt anybody runs Bugzilla on those.
-    #
     # Always use an absolute path, based on the location of this file.
     my $libpath = realpath(dirname(dirname(__FILE__)));
     # We have to detaint $libpath, but we can't use Bugzilla::Util here.
