@@ -327,19 +327,19 @@
           <li role="presentation">
             <a id="action-expand-all" role="menuitem" tabindex="-1">Expand All Sections</a>
           </li>
-          <li role="separator" class="dropdown-separator"></li>
           <li role="presentation">
             <a id="action-collapse-all" role="menuitem" tabindex="-1">Collapse All Sections</a>
           </li>
+          <li role="separator"></li>
           [% IF user.id %]
             <li role="presentation">
               <a id="action-add-comment" role="menuitem" tabindex="-1">Add Comment</a>
             </li>
           [% END %]
-          <li role="separator" class="dropdown-separator"></li>
           <li role="presentation">
             <a id="action-last-comment" role="menuitem" tabindex="-1">Last Comment</a>
           </li>
+          <li role="separator"></li>
           <li role="presentation">
             <a id="action-history" role="menuitem" tabindex="-1">History</a>
           </li>
@@ -388,7 +388,7 @@
             <div class="title">[%~ bug.product FILTER html ~%]</div>
             <div class="description">[% bug.product_obj.description FILTER html_light %]</div>
           </header>
-          <li role="separator" class="dropdown-separator"></li>
+          <li role="separator"></li>
           <div class="actions">
             <div><a href="buglist.cgi?product=[% bug.product FILTER uri %]&amp;bug_status=__open__"
                     target="_blank" role="menuitem" tabindex="-1">See Other [% terms.Bugs %]</a></div>
@@ -443,7 +443,7 @@
             <div class="title">[%~ bug.product _ " :: " _ bug.component FILTER html ~%]</div>
             <div class="description">[% bug.component_obj.description FILTER html_light %]</div>
           </header>
-          <li role="separator" class="dropdown-separator"></li>
+          <li role="separator"></li>
           <div class="actions">
             <div><a href="buglist.cgi?product=[% bug.product FILTER uri %]&amp;
                           [%~ %]component=[% bug.component FILTER uri %]&amp;bug_status=__open__"
@@ -1379,20 +1379,20 @@
             <a href="enter_bug.cgi?product=[% bug.product FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; in this product</a>
           </li>
-          <li role="separator" class="dropdown-separator"></li>
           <li role="presentation">
             <a href="enter_bug.cgi?product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; in this component</a>
           </li>
+          <li role="separator"></li>
           <li role="presentation">
             <a href="enter_bug.cgi?format=__default__&amp;product=[% bug.product FILTER uri %]&amp;blocked=[% bug.id FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; that blocks this [% terms.bug %]</a>
           </li>
-          <li role="separator" class="dropdown-separator"></li>
           <li role="presentation">
             <a href="enter_bug.cgi?format=__default__&amp;product=[% bug.product FILTER uri %]&amp;dependson=[% bug.id FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; that depends on this [% terms.bug %]</a>
           </li>
+          <li role="separator"></li>
           <li role="presentation">
             <a href="enter_bug.cgi?format=__default__&amp;product=[% bug.product FILTER uri %]&amp;cloned_bug_id=[% bug.id FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone of this [% terms.bug %]</a>
