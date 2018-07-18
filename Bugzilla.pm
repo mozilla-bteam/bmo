@@ -193,8 +193,17 @@ sub init_page {
 # Subroutines and Methods
 #####################################################################
 
+my $preload_templates = 0;
+sub preload_templates {
+    $preload_templates = 1;
+
+    delete request_cache->{template};
+    template();
+    return 1;
+}
+
 sub template {
-    request_cache->{template} ||= Bugzilla::Template->create();
+    request_cache->{template} //= Bugzilla::Template->create(preload => $preload_templates);
     request_cache->{template}->{_is_main} = 1;
 
     return request_cache->{template};
@@ -205,7 +214,8 @@ sub template_inner {
     my $cache = request_cache;
     my $current_lang = $cache->{template_current_lang}->[0];
     $lang ||= $current_lang || '';
-    return $cache->{"template_inner_$lang"} ||= Bugzilla::Template->create(language => $lang);
+    my %options = (language => $lang, preload => $preload_templates);
+    return $cache->{"template_inner_$lang"} ||= Bugzilla::Template->create(%options);
 }
 
 sub extensions {
@@ -225,7 +235,7 @@ sub extensions {
 }
 
 sub cgi {
-    return request_cache->{cgi} ||= new Bugzilla::CGI();
+    return request_cache->{cgi} ||= Bugzilla::CGI->new;
 }
 
 sub input_params {
@@ -330,9 +340,6 @@ sub login {
     my ($class, $type) = @_;
 
     return $class->user if $class->user->id;
-
-    # Load all extensions here if not running under mod_perl
-    $class->extensions unless $ENV{MOD_PERL};
 
     my $authorizer = new Bugzilla::Auth();
     $type = LOGIN_REQUIRED if $class->cgi->param('GoAheadAndLogIn');
