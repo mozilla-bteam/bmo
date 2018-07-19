@@ -52,7 +52,7 @@ sub startup {
 
     $r->any('/')->to('CGI#index_cgi');
     $r->any('/rest')->to('CGI#rest_cgi');
-    $r->any('/rest.cgi/*PATH_INFP')->to('CGI#rest_cgi' => { PATH_INFO => '' });
+    $r->any('/rest.cgi/*PATH_INFO')->to('CGI#rest_cgi' => { PATH_INFO => '' });
     $r->any('/rest/*PATH_INFO')->to( 'CGI#rest_cgi' => { PATH_INFO => '' });
     $r->any('/bug/:id')->to('CGI#show_bug_cgi');
     $r->any('/extensions/BzAPI/bin/rest.cgi/*PATH_INFO')->to('CGI#bzapi_cgi');

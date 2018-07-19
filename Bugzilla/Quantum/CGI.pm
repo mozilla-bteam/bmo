@@ -52,7 +52,6 @@ sub load_one {
     my $wrapper = sub {
         my ($c) = @_;
         my $stdin  = $c->_STDIN;
-        my $stdout = '';
         local $C = $c;
         local %ENV = $c->_ENV($file);
         local *STDIN;  ## no critic (local)
@@ -102,7 +101,7 @@ sub _ENV {
         $remote_user = $authenticate =~ /Basic\s+(.*)/ ? b64_decode $1 : '';
         $remote_user = $remote_user =~ /([^:]+)/       ? $1            : '';
     }
-    my $path_info = $c->param('PATH_INFO');
+    my $path_info = $c->stash->{'mojo.captures'}{'PATH_INFO'};
     my %captures = %{ $c->stash->{'mojo.captures'} // {} };
     foreach my $key (keys %captures) {
         if ($key eq 'controller' || $key eq 'action' || $key eq 'PATH_INFO' || $key =~ /^REWRITE_/) {
