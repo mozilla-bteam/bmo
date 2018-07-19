@@ -90,12 +90,12 @@ sub _ENV {
 
     for my $name ( @{ $headers->names } ) {
         my $key = uc "http_$name";
-        $key =~ s!\W!_!g;
+        $key =~ s/\W/_/g;
         $env_headers{$key} = $headers->header($name);
     }
 
     my $remote_user;
-    if ( my $userinfo = $c->req->url->to_abs->userinfo ) {
+    if ( my $userinfo = $req->url->to_abs->userinfo ) {
         $remote_user = $userinfo =~ /([^:]+)/ ? $1 : '';
     }
     elsif ( my $authenticate = $headers->authorization ) {
