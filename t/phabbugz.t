@@ -18,11 +18,12 @@ use Test2::Tools::Mock;
 use Data::Dumper;
 use JSON::MaybeXS;
 use Carp;
+use Try::Tiny;
 
 use ok 'Bugzilla::Extension::PhabBugz::Feed';
+use ok 'Bugzilla::Extension::PhabBugz::Util', qw( get_attachment_revisions );
 can_ok('Bugzilla::Extension::PhabBugz::Feed', 'group_query');
 
-our $check_post;
 our @group_members;
 our @project_members;
 
@@ -53,16 +54,6 @@ my $Project = mock 'Bugzilla::Extension::PhabBugz::Project' => (
             return [ map { Bugzilla::Extension::PhabBugz::User->fake_new(%$_) } @project_members ];
         }
     ]
-);
-
-my $UserAgent = mock 'LWP::UserAgent' => (
-    override => [
-        'post' => sub {
-            my ($self, $url, $params) = @_;
-            $check_post->(decode_json($params->{params}), $url);
-            return mock({is_error => 0, content => '{}'});
-        },
-    ],
 );
 
 local Bugzilla->params->{phabricator_enabled} = 1;
@@ -106,10 +97,16 @@ my $feed = Bugzilla::Extension::PhabBugz::Feed->new;
 
 # Same members in both
 do {
-    local $check_post = sub {
-        my $data = shift;
-        is_deeply($data->{transactions}, [], 'no-op');
-    };
+    my $UserAgent = mock 'LWP::UserAgent' => (
+        override => [
+            'post' => sub {
+                my ($self, $url, $params) = @_;
+                my $data = decode_json($params->{params});
+                is_deeply($data->{transactions}, [], 'no-op');
+                return mock({is_error => 0, content => '{}'});
+            },
+        ],
+    );
     local @group_members = (
         { phid => 'foo' },
     );
@@ -121,16 +118,17 @@ do {
 
 # Project has members not in group
 do {
-    local $check_post = sub {
-        my $data = shift;
-        my $expected = [
-            {
-                type => 'members.remove',
-                value => ['foo'],
-            }
-        ];
-        is_deeply($data->{transactions}, $expected, 'remove foo');
-    };
+    my $UserAgent = mock 'LWP::UserAgent' => (
+        override => [
+            'post' => sub {
+                my ($self, $url, $params) = @_;
+                my $data = decode_json($params->{params});
+                my $expected = [ { type => 'members.remove', value => ['foo'] } ];
+                is_deeply($data->{transactions}, $expected, 'remove foo');
+                return mock({is_error => 0, content => '{}'});
+            },
+        ]
+    );
     local @group_members = ();
     local @project_members = (
         { phid => 'foo' },
@@ -140,22 +138,60 @@ do {
 
 # Group has members not in project
 do {
-    local $check_post = sub {
-        my $data = shift;
-        my $expected = [
-            {
-                type => 'members.add',
-                value => ['foo'],
-            }
-        ];
-        is_deeply($data->{transactions}, $expected, 'add foo');
-    };
+    my $UserAgent = mock 'LWP::UserAgent' => (
+        override => [
+            'post' => sub {
+                my ($self, $url, $params) = @_;
+                my $data = decode_json($params->{params});
+                my $expected = [ { type => 'members.add', value => ['foo'] } ];
+                is_deeply($data->{transactions}, $expected, 'add foo');
+                return mock({is_error => 0, content => '{}'});
+            },
+        ]
+    );
     local @group_members = (
         { phid => 'foo' },
     );
     local @project_members = (
     );
     $feed->group_query;
+};
+
+do {
+    my $Revision  = mock 'Bugzilla::Extension::PhabBugz::Revision' => (
+        override => [
+            'update' => sub { 1 },
+        ],
+    );
+    my $UserAgent = mock 'LWP::UserAgent' => (
+        override => [
+            'post' => sub {
+                my ($self, $url, $params) = @_;
+                if ($url =~ /differential\.revision\.search/) {
+                    my $data = decode_json($params->{params});
+                    my $content = '{"error_info":null,"error_code":null,"result":{"cursor":{"after":null,"order":null,"limit":100,"before":null},"query":{"queryKey":"all"},"maps":{},"data":[]}}';
+                    return mock { is_error => 0, content => $content};
+                }
+                else {
+                    return mock { is_error => 1, message => "bad request" };
+                }
+            },
+        ],
+    );
+    my $bug = mock {
+        bug_id => 23,
+        attachments => [
+            mock {
+                contenttype => 'text/x-phabricator-request',
+                filename => 'phabricator-D9999',
+            },
+        ]
+    };
+    my $revisions = get_attachment_revisions($bug);
+    is(ref($revisions), 'ARRAY', 'it is an array ref');
+    isa_ok($revisions->[0], 'Bugzilla::Extension::PhabBugz::Revision');
+    ok( try { $revisions->[0]->update }, 'update revision');
+
 };
 
 done_testing;
