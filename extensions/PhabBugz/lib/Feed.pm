@@ -44,6 +44,20 @@ has 'is_daemon' => ( is => 'rw', default => 0 );
 sub start {
     my ($self) = @_;
 
+    my $loop = IO::Async::Loop->new;
+    if ( Bugzilla->datadog ) {
+        my $dog_timer = IO::Async::Timer::Periodic->new(
+            interval   => 600,       # ten minutes, FIXME.
+            reschedule => 'drift',
+            on_tick    => sub {
+                # FIXME. Do something with Bugzilla->datadog
+            },
+        );
+        $loop->add($dog_timer);
+        $dog_timer->start;
+    }
+
+
     # Query for new revisions or changes
     my $feed_timer = IO::Async::Timer::Periodic->new(
         first_interval => 0,
@@ -92,7 +106,6 @@ sub start {
         },
     );
 
-    my $loop = IO::Async::Loop->new;
     $loop->add($feed_timer);
     $loop->add($user_timer);
     $loop->add($group_timer);

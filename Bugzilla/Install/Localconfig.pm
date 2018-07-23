@@ -186,9 +186,19 @@ use constant LOCALCONFIG_VARS => (
     {
         name => 'shadowdb_pass',
         default => '',
-    }
+    },
+    {
+        name => 'datadog_host',
+        default => '',
+    },
+        name => 'datadog_port',
+        default => 8125,
+    },
+    {
+        name => 'datadog_namespace',
+        default => 'bugzilla.',
+    },
 );
-
 
 use constant ENV_KEYS => (
     (map { ENV_PREFIX . $_->{name} } LOCALCONFIG_VARS),

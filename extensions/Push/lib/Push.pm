@@ -50,13 +50,32 @@ sub start {
         $connector->backlog->reset_backoff();
     }
 
-    while(1) {
-        if ($self->_dbh_check()) {
-            $self->_reload();
-            $self->push();
-        }
-        sleep(POLL_INTERVAL_SECONDS);
+    my $pushd_loop = IO::Async::Loop->new;
+    my $main_timer = IO::Async::Timer::Periodic->new(
+        first_interval => 0,
+        interval       => POLL_INTERVAL_SECONDS,
+        reschedule     => 'drift',
+        on_tick        => sub {
+            if ( $self->_dbh_check() ) {
+                $self->_reload();
+                $self->push();
+            }
+        },
+    );
+    if ( Bugzilla->datadog ) {
+        my $dog_timer = IO::Async::Timer::Periodic->new(
+            interval   => POLL_INTERVAL_SECONDS * 10,    # FIXME
+            reschedule => 'drift',
+            on_tick    => sub {
+                # do something here.
+            },
+        );
+        $pushd_loop->add($dog_timer);
+        $dog_timer->start;
     }
+
+    $pushd_loop->add($main_timer);
+    $pushd_loop->run;
 }
 
 sub push {
