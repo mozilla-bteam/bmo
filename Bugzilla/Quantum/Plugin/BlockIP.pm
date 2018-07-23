@@ -34,8 +34,8 @@ sub _before_routes {
     if ( $MEMCACHED && $MEMCACHED->get("block_ip:$ip") ) {
         $c->block_ip($ip);
         $c->res->code(429);
-        $c->res->message("Too Many Requests");
-        $c->res->body("Too Many Requests");
+        $c->res->message('Too Many Requests');
+        $c->res->body('Too Many Requests');
         $c->finish;
     }
 }

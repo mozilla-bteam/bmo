@@ -48,7 +48,7 @@ sub register {
         sub {
             Bugzilla::RNG::srand();
             srand();
-            eval { Bugzilla->dbh->ping };
+            try { Bugzilla->dbh->ping };
         }
     );
 
@@ -69,9 +69,9 @@ sub register {
     Bugzilla::Extension->load_all();
     if ( $app->mode ne 'development' ) {
         Bugzilla->preload_features();
-        DEBUG("preloading templates");
+        DEBUG('preloading templates');
         Bugzilla->preload_templates();
-        DEBUG("done preloading templates");
+        DEBUG('done preloading templates');
     }
     $app->secrets( [ Bugzilla->localconfig->{side_wide_secret} ] );
 

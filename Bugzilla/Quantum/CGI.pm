@@ -9,17 +9,17 @@ package Bugzilla::Quantum::CGI;
 use Mojo::Base 'Mojolicious::Controller';
 
 use CGI::Compile;
-use Bugzilla::Constants qw(bz_locations);
-use Bugzilla::Quantum::Stdout;
-use File::Slurper qw(read_text);
-use File::Spec::Functions qw(catfile);
-use Sub::Name;
-use Sub::Quote 2.005000;
 use Try::Tiny;
 use Taint::Util qw(untaint);
-use Socket qw(AF_INET inet_aton);
 use Sys::Hostname;
+use Sub::Quote 2.005000;
+use Sub::Name;
+use Socket qw(AF_INET inet_aton);
+use File::Spec::Functions qw(catfile);
+use File::Slurper qw(read_text);
 use English qw(-no_match_vars);
+use Bugzilla::Quantum::Stdout;
+use Bugzilla::Constants qw(bz_locations);
 
 our $C;
 my %SEEN;
