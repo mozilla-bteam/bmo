@@ -75,6 +75,7 @@ sub start {
     }
 
     $pushd_loop->add($main_timer);
+    $main_timer->start;
     $pushd_loop->run;
 }
 
