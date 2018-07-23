@@ -21,7 +21,6 @@ use Bugzilla::Logging;
 use Bugzilla::Quantum::CGI;
 use Bugzilla::Quantum::SES;
 use Bugzilla::Quantum::Static;
-use Bugzilla::Quantum::Template;
 use Bugzilla::Util ();
 use Cwd qw(realpath);
 use MojoX::Log::Log4perl::Tiny;

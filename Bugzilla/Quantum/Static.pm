@@ -16,9 +16,9 @@ my $LEGACY_RE = qr{
 }xs;
 
 sub file {
-    my ($self, $rel) = @_;
+    my ( $self, $rel ) = @_;
 
-    if (my ($legacy_rel) = $rel =~ $LEGACY_RE) {
+    if ( my ($legacy_rel) = $rel =~ $LEGACY_RE ) {
         local $self->{paths} = [ bz_locations->{cgi_path} ];
         return $self->SUPER::file($legacy_rel);
     }
