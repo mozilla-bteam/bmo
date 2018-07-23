@@ -8,8 +8,7 @@
 package Bugzilla::Extension::Push::Push;
 
 use 5.10.1;
-use strict;
-use warnings;
+use Moo;
 
 use Bugzilla::Logging;
 use Bugzilla::Extension::Push::BacklogMessage;
@@ -24,21 +23,10 @@ use Bugzilla::Extension::Push::Queue;
 use Bugzilla::Extension::Push::Util;
 use DateTime;
 
-sub new {
-    my ($class) = @_;
-    my $self = {};
-    bless($self, $class);
-    $self->{is_daemon} = 0;
-    return $self;
-}
-
-sub is_daemon {
-    my ($self, $value) = @_;
-    if (defined $value) {
-        $self->{is_daemon} = $value ? 1 : 0;
-    }
-    return $self->{is_daemon};
-}
+has 'is_daemon' => (
+    is      => 'rw',
+    default => 0,
+);
 
 sub start {
     my ($self) = @_;
@@ -64,11 +52,9 @@ sub start {
     );
     if ( Bugzilla->datadog ) {
         my $dog_timer = IO::Async::Timer::Periodic->new(
-            interval   => POLL_INTERVAL_SECONDS * 10,    # FIXME
+            interval   => 60 * 5,
             reschedule => 'drift',
-            on_tick    => sub {
-                # do something here.
-            },
+            on_tick    => sub { $self->heartbeat },
         );
         $pushd_loop->add($dog_timer);
         $dog_timer->start;
@@ -77,6 +63,25 @@ sub start {
     $pushd_loop->add($main_timer);
     $main_timer->start;
     $pushd_loop->run;
+}
+
+sub heartbeat {
+    my ($self) = @_;
+    my $dd = Bugzilla->datadog('pushd');
+
+    $dd->gauge('total', $self->_sql_count('SELECT COUNT(*) FROM push'));
+
+    foreach my $connector ($connectors->list) {
+        if ($connector->enabled) {
+            $dd->gauge("${name}_backlog", $self->_sql_count('SELECT COUNT(*) FROM push_backlog WHERE connector = ?', $name);
+        }
+    }
+}
+
+sub _sql_count {
+    my ($self, $sql, @bind) = @_;
+    my ($count) = Bugzilla->dbh->selectrow_array($sql, undef, @bind);
+    return $count;
 }
 
 sub push {

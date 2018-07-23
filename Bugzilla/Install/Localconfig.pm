@@ -194,10 +194,6 @@ use constant LOCALCONFIG_VARS => (
         name => 'datadog_port',
         default => 8125,
     },
-    {
-        name => 'datadog_namespace',
-        default => 'bugzilla.',
-    },
 );
 
 use constant ENV_KEYS => (

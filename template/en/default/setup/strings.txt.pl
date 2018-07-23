@@ -140,7 +140,6 @@ the full path to the "cvs" executable here.
 END
     localconfig_datadog_host => 'hostname of datadog stats daemon',
     localconfig_datadog_port => 'port of datadog stats daemon, defaults to 8125',
-    localconfig_datadog_namespace => 'namespace to be used. Must end with period. defaults to "bugzilla."',
     localconfig_db_check => <<'END',
 Should checksetup.pl try to verify that your database setup is correct?
 With some combinations of database servers/Perl modules/moonphase this

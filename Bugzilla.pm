@@ -778,17 +778,18 @@ sub memcached {
 }
 
 sub datadog {
-    my ($class) = @_;
+    my ($class, $namespace) = @_;
     my $host      = $class->localconfig->{datadog_host};
     my $port      = $class->localconfig->{datadog_port};
-    my $namespace = $class->localconfig->{datadog_namespace};
+
+    $namespace //= '';
+
     if ($class->has_feature('datadog') && $host) {
         require DataDog::DogStatsd;
-        return request_cache->{datadog} //= DataDog::DogStatsd->new(
+        return request_cache->{datadog}{$namespace} //= DataDog::DogStatsd->new(
             host      => $host,
             port      => $port,
-            namespace => $namespace,
-
+            namespace => $namespace ? "$namespace." : '',
         );
     }
     else {
