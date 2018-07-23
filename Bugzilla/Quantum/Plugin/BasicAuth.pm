@@ -16,15 +16,15 @@ sub register {
 
     $app->renderer->add_helper(
         basic_auth => sub {
-            my ($c, $realm, $auth_user, $auth_pass) = @_;
+            my ( $c, $realm, $auth_user, $auth_pass ) = @_;
             my $req = $c->req;
-            my ($user, $password) = $req->url->to_abs->userinfo =~ /^([^:]+):(.*)/;
+            my ( $user, $password ) = $req->url->to_abs->userinfo =~ /^([^:]+):(.*)/;
 
-            unless ($realm && $auth_user && $auth_pass) {
+            unless ( $realm && $auth_user && $auth_pass ) {
                 croak 'basic_auth() called with missing parameters.';
             }
 
-            unless ($user eq $auth_user && $password eq $auth_pass) {
+            unless ( $user eq $auth_user && $password eq $auth_pass ) {
                 WARN('username and password do not match');
                 $c->res->headers->www_authenticate("Basic realm=\"$realm\"");
                 $c->res->code(401);
