@@ -25,40 +25,39 @@ our $C;
 my %SEEN;
 
 sub load_all {
-    my ($class, $r) = @_;
+    my ( $class, $r ) = @_;
 
-    foreach my $file (glob '*.cgi') {
-        my $name   = _file_to_method($file);
-        $class->load_one($name, $file);
+    foreach my $file ( glob '*.cgi' ) {
+        my $name = _file_to_method($file);
+        $class->load_one( $name, $file );
         $r->any("/$file")->to("CGI#$name");
     }
 }
 
 sub load_one {
-    my ($class, $name, $file) = @_;
-    my $package    = __PACKAGE__ . "::$name",
-    my $inner_name = "_$name";
-    my $content    = read_text( catfile( bz_locations->{cgi_path}, $file ) );
+    my ( $class, $name, $file ) = @_;
+    my $package = __PACKAGE__ . "::$name", my $inner_name = "_$name";
+    my $content = read_text( catfile( bz_locations->{cgi_path}, $file ) );
     $content = "package $package; $content";
     untaint($content);
     my %options = (
-        package => $package,
-        file    => $file,
-        line    => 1,
+        package  => $package,
+        file     => $file,
+        line     => 1,
         no_defer => 1,
     );
     die "Tried to load $file more than once" if $SEEN{$file}++;
     my $inner = quote_sub $inner_name, $content, {}, \%options;
     my $wrapper = sub {
         my ($c) = @_;
-        my $stdin  = $c->_STDIN;
-        local $C = $c;
-        local %ENV = $c->_ENV($file);
-        local *STDIN;  ## no critic (local)
+        my $stdin = $c->_STDIN;
+        local $C                           = $c;
+        local %ENV                         = $c->_ENV($file);
         local $CGI::Compile::USE_REAL_EXIT = 0;
-        local $PROGRAM_NAME = $file;
+        local $PROGRAM_NAME                = $file;
+        local *STDIN;    ## no critic (local)
         open STDIN, '<', $stdin->path or die "STDIN @{[$stdin->path]}: $!" if -s $stdin->path;
-        tie *STDOUT, 'Bugzilla::Quantum::Stdout', controller => $c; ## no critic (tie)
+        tie *STDOUT, 'Bugzilla::Quantum::Stdout', controller => $c;    ## no critic (tie)
         try {
             Bugzilla->init_page();
             $inner->();
@@ -69,23 +68,24 @@ sub load_one {
         finally {
             untie *STDOUT;
             $c->finish;
-            Bugzilla->_cleanup;    ## no critic (private)
+            Bugzilla->cleanup;
             CGI::initialize_globals();
         };
     };
 
-    no strict 'refs'; ## no critic (strict)
-    *{$name} = subname($name, $wrapper);
+    no strict 'refs';    ## no critic (strict)
+    *{$name} = subname( $name, $wrapper );
     return 1;
 }
 
+
 sub _ENV {
-    my ($c, $script_name) = @_;
-    my $tx      = $c->tx;
-    my $req     = $tx->req;
-    my $headers = $req->headers;
+    my ( $c, $script_name ) = @_;
+    my $tx             = $c->tx;
+    my $req            = $tx->req;
+    my $headers        = $req->headers;
     my $content_length = $req->content->is_multipart ? $req->body_size : $headers->content_length;
-    my %env_headers = ( HTTP_COOKIE => '', HTTP_REFERER => '' );
+    my %env_headers    = ( HTTP_COOKIE => '', HTTP_REFERER => '' );
 
     for my $name ( @{ $headers->names } ) {
         my $key = uc "http_$name";
@@ -103,13 +103,13 @@ sub _ENV {
     }
     my $path_info = $c->stash->{'mojo.captures'}{'PATH_INFO'};
     my %captures = %{ $c->stash->{'mojo.captures'} // {} };
-    foreach my $key (keys %captures) {
-        if ($key eq 'controller' || $key eq 'action' || $key eq 'PATH_INFO' || $key =~ /^REWRITE_/) {
+    foreach my $key ( keys %captures ) {
+        if ( $key eq 'controller' || $key eq 'action' || $key eq 'PATH_INFO' || $key =~ /^REWRITE_/ ) {
             delete $captures{$key};
         }
     }
     my $cgi_query = Mojo::Parameters->new(%captures);
-    $cgi_query->append($req->url->query);
+    $cgi_query->append( $req->url->query );
     my $prefix = $c->stash->{bmo_prefix} ? '/bmo/' : '/';
 
     return (
@@ -119,17 +119,17 @@ sub _ENV {
         GATEWAY_INTERFACE => 'CGI/1.1',
         HTTPS             => $req->is_secure ? 'YES' : 'NO',
         %env_headers,
-        QUERY_STRING => $cgi_query->to_string,
-        PATH_INFO   => $path_info ? "/$path_info" : '',
-        REMOTE_ADDR => $tx->original_remote_address,
-        REMOTE_HOST => $tx->original_remote_address,
-        REMOTE_PORT => $tx->remote_port,
-        REMOTE_USER => $remote_user || '',
+        QUERY_STRING    => $cgi_query->to_string,
+        PATH_INFO       => $path_info ? "/$path_info" : '',
+        REMOTE_ADDR     => $tx->original_remote_address,
+        REMOTE_HOST     => $tx->original_remote_address,
+        REMOTE_PORT     => $tx->remote_port,
+        REMOTE_USER     => $remote_user || '',
         REQUEST_METHOD  => $req->method,
         SCRIPT_NAME     => "$prefix$script_name",
         SERVER_NAME     => hostname,
         SERVER_PORT     => $tx->local_port,
-        SERVER_PROTOCOL => $req->is_secure ? 'HTTPS' : 'HTTP', # TODO: Version is missing
+        SERVER_PROTOCOL => $req->is_secure ? 'HTTPS' : 'HTTP',    # TODO: Version is missing
         SERVER_SOFTWARE => __PACKAGE__,
     );
 }
@@ -156,6 +156,5 @@ sub _file_to_method {
     $name =~ s/\W+/_/gs;
     return $name;
 }
-
 
 1;
