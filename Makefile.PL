@@ -362,6 +362,14 @@ my %optional_features = (
             },
         },
     },
+    datadog => {
+        description => 'Data Dog support',
+        prereqs => {
+            runtime => {
+                requires => { 'DataDog::DogStatsd' => 0.05 },
+            },
+        },
+    },
 );
 
 for my $file ( glob 'extensions/*/Config.pm' ) {
