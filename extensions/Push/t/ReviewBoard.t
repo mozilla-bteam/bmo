@@ -7,7 +7,7 @@
 # defined by the Mozilla Public License, v. 2.0.
 use strict;
 use warnings;
-use lib qw( . lib );
+use lib qw( . lib local/lib/perl5 );
 
 use Test::More;
 use Bugzilla;
