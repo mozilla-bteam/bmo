@@ -666,7 +666,7 @@ sub possible_duplicates {
         include_fields     => Optional [ ArrayRef [Str] ],
         Bugzilla_api_token => Optional [Str]
     ];
-    
+
     ThrowCodeError( 'param_invalid', { function => 'Bug.possible_duplicates', param => 'A param' } )
         if !$params_type->check($params);
 
@@ -674,10 +674,10 @@ sub possible_duplicates {
     if ($params->{id}) {
         my $bug = Bugzilla::Bug->check({ id => $params->{id}, cache => 1 });
         $summary = $bug->short_desc;
-    } 
+    }
     elsif ($params->{summary}) {
         $summary = $params->{summary};
-    } 
+    }
     else {
         ThrowCodeError('param_required',
         { function => 'Bug.possible_duplicates', param => 'id or summary' });
@@ -701,7 +701,7 @@ sub possible_duplicates {
     if ($params->{id}) {
         @$possible_dupes = grep { $_->id != $params->{id} } @$possible_dupes;
     }
-    
+
     my @hashes = map { $self->_bug_to_hash($_, $params) } @$possible_dupes;
     $self->_add_update_tokens($params, $possible_dupes, \@hashes);
     return { bugs => \@hashes };
@@ -1375,6 +1375,21 @@ sub _bug_to_hash {
     state $voting_enabled //= $bug->can('votes') ? 1 : 0;
     if ($voting_enabled && filter_wants $params, 'votes') {
         $item{votes} = $self->type('int', $bug->votes);
+    }
+
+    if ($params->{include_description}) {
+        my $comment = Bugzilla::Comment->match({bug_id => $bug->id, LIMIT => 1})->[0];
+        if ($comment) {
+            if ($comment->is_private && !Bugzilla->user->is_insider) {
+                ThrowUserError('comment_is_private', { id => $comment->id });
+            }
+
+            # I don't want raw_text, and filtering is broken, so
+            # just avoid the thing EditComments adds.
+            my $method = $self->can('_super_translate_comment') // $self->can('_translate_comment');
+
+            $item{description} = $self->$method($comment, $params, undef, 'description');
+        }
     }
 
     # First we handle any fields that require extra work (such as date parsing
