@@ -40,18 +40,28 @@ use constant PUBLIC_METHODS => qw(
     set_build_target
 );
 
+sub _check_phabricator {
+    # Ensure PhabBugz is on
+    ThrowUserError('phabricator_not_enabled')
+        unless Bugzilla->params->{phabricator_enabled};
+}
+
+sub _validate_phab_user {
+    my ($self, $user) = @_;
+
+    $self->_check_phabricator();
+
+    # Validate that the requesting user's email matches phab-bot
+    ThrowUserError('phabricator_unauthorized_user')
+        unless $user->login eq PHAB_AUTOMATION_USER;
+}
+
 sub check_user_permission_for_bug {
     my ($self, $params) = @_;
 
     my $user = Bugzilla->login(LOGIN_REQUIRED);
 
-    # Ensure PhabBugz is on
-    ThrowUserError('phabricator_not_enabled')
-        unless Bugzilla->params->{phabricator_enabled};
-
-    # Validate that the requesting user's email matches phab-bot
-    ThrowUserError('phabricator_unauthorized_user')
-        unless $user->login eq PHAB_AUTOMATION_USER;
+    $self->_validate_phab_user($user);
 
     # Validate that a bug id and user id are provided
     ThrowUserError('phabricator_invalid_request_params')
@@ -68,8 +78,9 @@ sub check_user_permission_for_bug {
 
 sub needs_review {
     my ($self, $params) = @_;
-    ThrowUserError('phabricator_not_enabled')
-        unless Bugzilla->params->{phabricator_enabled};
+
+    $self->_check_phabricator();
+
     my $user = Bugzilla->login(LOGIN_REQUIRED);
     my $dbh  = Bugzilla->dbh;
 
@@ -170,13 +181,7 @@ sub set_build_target {
 
     my $user = Bugzilla->login(LOGIN_REQUIRED);
 
-    # Ensure PhabBugz is on
-    ThrowUserError('phabricator_not_enabled')
-      unless Bugzilla->params->{phabricator_enabled};
-    
-    # Validate that the requesting user's email matches phab-bot
-    ThrowUserError('phabricator_unauthorized_user')
-      unless $user->login eq PHAB_AUTOMATION_USER;
+    $self->_validate_phab_user($user);
 
     my $revision_id  = $params->{revision_id};
     my $build_target = $params->{build_target};
