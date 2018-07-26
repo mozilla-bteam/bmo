@@ -133,16 +133,16 @@ sub match {
 
     # We can only fetch 100 users at a time so we need to do this in lumps
     my $phab_users = [];
-    while (1) {
-        my $result = request( 'user.search', $data );
+    my $result;
+    do {
+        $result = request( 'user.search', $data );
         if ( exists $result->{result}{data} && @{ $result->{result}{data} } ) {
             foreach my $user ( @{ $result->{result}{data} } ) {
                 push @$phab_users, $class->new($user);
             }
         }
-        last if !$result->{cursur}->{after};
-        $data->{after} = $result->{cursur}->{after};
-    }
+        $data->{after} = $result->{cursor}->{after};
+    } while ($result->{cursor}->{after});
 
     return $phab_users;
 }
