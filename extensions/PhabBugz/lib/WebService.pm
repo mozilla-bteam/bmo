@@ -30,11 +30,13 @@ use List::MoreUtils qw(any);
 use MIME::Base64 qw(decode_base64);
 
 use constant READ_ONLY => qw(
+    check_user_enter_bug_permission
     check_user_permission_for_bug
     needs_review
 );
 
 use constant PUBLIC_METHODS => qw(
+    check_user_enter_bug_permission
     check_user_permission_for_bug
     needs_review
     set_build_target
@@ -73,6 +75,27 @@ sub check_user_permission_for_bug {
     # Send back an object which says { "result": 1|0 }
     return {
         result => $target_user->can_see_bug($params->{bug_id})
+    };
+}
+
+sub check_user_enter_bug_permission {
+    my ($self, $params) = @_;
+
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+
+    $self->_validate_phab_user($user);
+
+    # Validate that a product name and user id are provided
+    ThrowUserError('phabricator_invalid_request_params')
+        unless ($params->{product} && $params->{user_id});
+
+    # Validate that the user exists
+    my $target_user = Bugzilla::User->check({ id => $params->{user_id}, cache => 1 });
+
+    # Send back an object with the attribute "result" set to 1 if the user
+    # can enter bugs into the given product, or 0 if not.
+    return {
+        result => $target_user->can_enter_product($params->{product}) ? 1 : 0
     };
 }
 
@@ -225,6 +248,14 @@ sub rest_resources {
                     return { bug_id => $_[0], user_id => $_[1] };
                 }
             }
+        },
+        qr{^/phabbugz/check_enter_bug/([^/]+)/(\d+)$}, {
+            GET => {
+                method => 'check_user_enter_bug_permission',
+                params => sub {
+                    return { product => $_[0], user_id => $_[1] };
+                },
+            },
         },
         # Review requests
         qw{^/phabbugz/needs_review$}, {
