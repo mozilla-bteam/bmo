@@ -27,7 +27,6 @@ use Bugzilla::User::Setting;
 use Bugzilla::Util qw(clean_text datetime_from diff_arrays);
 use Bugzilla::WebService::Util qw(filter_wants);
 use Scalar::Util qw(blessed);
-use JSON::MaybeXS;
 
 use constant UNAVAILABLE_RE => qr/\b(?:unavailable|pto|away)\b/i;
 use constant MENTOR_LIMIT   => 10;
@@ -1093,22 +1092,25 @@ sub webservice_user_get {
 
         $user->{requests} = {
             review   => {
-                blocked =>  $user_obj->reviews_blocked ? JSON->true : JSON->false,
-                pending => int($user_obj->{review_request_count}),
+                blocked => $webservice->type('boolean', $user_obj->reviews_blocked),
+                pending => $webservice->type('int', $user_obj->{review_request_count}),
             },
             feedback => {
                 # reviews_blocked includes feedback as well
-                blocked => $user_obj->reviews_blocked ? JSON::->true : JSON->false,
-                pending => int($user_obj->{feedback_request_count}),
+                blocked => $webservice->type('boolean', $user_obj->reviews_blocked),
+                pending => $webservice->type('int', $user_obj->{feedback_request_count}),
             },
             needinfo => {
-                blocked => $user_obj->needinfo_blocked ? JSON->true : JSON->false,
-                pending => int($user_obj->{needinfo_request_count}),
+                blocked => $webservice->type('boolean', $user_obj->needinfo_blocked),
+                pending => $webservice->type('int', $user_obj->{needinfo_request_count}),
             },
         };
     }
 }
 
-*webservice_user_suggest = \&webservice_user_get;
+sub webservice_user_suggest {
+    my ($self, $args) = @_;
+    $self->webservice_user_get($args);
+}
 
 __PACKAGE__->NAME;
