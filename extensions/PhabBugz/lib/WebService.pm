@@ -67,7 +67,7 @@ sub check_user_permission_for_bug {
     ThrowUserError('phabricator_invalid_request_params')
         unless ($params->{bug_id} && $params->{user_id});
 
-    # Validate that the user and bug exist
+    # Validate that the user exists
     my $target_user = Bugzilla::User->check({ id => $params->{user_id}, cache => 1 });
 
     # Send back an object which says { "result": 1|0 }
@@ -210,13 +210,13 @@ sub rest_resources {
             POST => {
                 method => 'set_build_target',
                 params => sub {
-                    return { 
+                    return {
                         revision_id  => $_[0],
                         build_target => $_[1]
                     };
                 }
             }
-        },        
+        },
         # Bug permission checks
         qr{^/phabbugz/check_bug/(\d+)/(\d+)$}, {
             GET => {
