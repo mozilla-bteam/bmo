@@ -364,7 +364,7 @@ sub process_revision_change {
             return;
         }
     }
-
+    
     my $log_message = sprintf(
         "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s",
         $revision->id,
@@ -376,6 +376,26 @@ sub process_revision_change {
     # Pre setup before making changes
     my $old_user = set_phab_user();
     my $bug = Bugzilla::Bug->new({ id => $revision->bug_id, cache => 1 });
+
+    # Check to make sure bug id is valid and author can see it
+    if ($bug->{error}
+        ||!$revision->author->bugzilla_user->can_see_bug($revision->bug_id))
+    {
+        if ($story_text =~ /\s+created\s+D\d+/) {
+            INFO('Invalid bug ID or author does not have access to the bug. ' .
+                 'Waiting til next revision update to notify author.');
+            return;
+        }
+
+        INFO('Invalid bug ID or author does not have access to the bug');
+        my $phab_error_message = 'Revision is being kept private due to invalid bug ID ' .
+                                 'or author does not have access to the bug. Either remove ' .
+                                 'the bug ID, automatically making the revision public, or ' .
+                                 'enter the correct bug ID for this revision.';
+        $revision->add_comment($phab_error_message);
+        $revision->update();
+        return;
+    }
 
     # REVISION SECURITY POLICY
 
