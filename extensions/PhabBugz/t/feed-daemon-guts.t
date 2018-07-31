@@ -86,7 +86,6 @@ foreach my $bad_response (@bad_response) {
     $UserAgent->reset('post');
 }
 
-
 my $feed      = Bugzilla::Extension::PhabBugz::Feed->new;
 my $json      = JSON::MaybeXS->new( canonical => 1, pretty => 1 );
 my $dylan     = create_user( 'dylan@mozilla.com', '*', realname => 'Dylan Hardison :dylan' );
@@ -94,130 +93,6 @@ my $evildylan = create_user( 'dylan@gmail.com', '*', realname => 'Evil Dylan :dy
 my $myk       = create_user( 'myk@mozilla.com', '*', realname => 'Myk Melez :myk' );
 
 my $phab_bot_phid = next_phid('PHID-USER');
-
-my %POST = (
-    'bugzilla.account.search' => sub {
-        my ($params) = @_;
-        if ($params->{ids}->[0] == $phab_bot->id) {
-            return {
-                result => [
-                    {
-                        id => $phab_bot->id,
-                        phid => $phab_bot_phid,
-                    }
-                ]
-            }
-        }
-    },
-    'user.search' => sub {
-        my ($params) = @_;
-        if ( Bugzilla::Logging->fields->{type} eq 'USERS') {
-            if ( $params->{before} ) {
-                user_search(
-                    users => [
-                        {
-                            realname => 'Fake Dude',
-                            username => 'fake',
-                            phab_id => 404,
-                            bmo_id => 9999,
-                        }
-                    ]
-                );
-            }
-            else {
-                return user_search(
-                    users => [
-                        {
-                            realname => $dylan->name,
-                            username => $dylan->nick,
-                            phab_id  => 101,
-                            bmo_id   => $dylan->id,
-                        },
-                        {
-                            realname => $evildylan->name,
-                            username => $evildylan->nick,
-                            phab_id  => 202,
-                            bmo_id   => $evildylan->id,
-                        },
-                        {
-                            realname => $myk->name,
-                            username => $myk->nick,
-                            phab_id  => 303,
-                            bmo_id   => $myk->id,
-                        },
-                    ]
-                );
-            }
-        }
-        elsif ( Bugzilla::Logging->fields->{type} eq 'GROUPS') {
-            if ($params->{constraints}{phids}[0] eq $phab_bot_phid) {
-                return user_search(users => []);
-            }
-        }
-        elsif ( Bugzilla::Logging->fields->{type} eq 'FEED') {
-
-        }
-        else {
-            diag "what";
-            die "Unknown condition for user.search";
-        }
-    },
-);
-
-$UserAgent->override(
-    post => sub {
-        my ( $self, $url, $params ) = @_;
-        my $path = basename(URI->new($url)->path);
-        try {
-            my $args = $json->decode($params->{params});
-            my $handler = $POST{$path} // sub { die "POST $path - nothing configured: ", $json->encode($args) };
-            mock { is_error => 0, content => $json->encode($handler->($args)) };
-        }
-        catch {
-            mock { is_error => 1, message => $_ };
-        };
-    }
-);
-
-my $dbh = Bugzilla->dbh;
-try {
-    $feed->user_query;
-    my $user_last_id = $dbh->selectrow_array( 'SELECT value FROM phabbugz WHERE name = ?', undef, 'user_last_id' );
-    is($user_last_id, 303, 'user_last_id is 303');
-}
-catch {
-    fail('user_last_id is 303');
-};
-
-$dbh->do('DELETE FROM phabbugz');
-
-try {
-    $feed->user_query;
-    my $user_last_id = $dbh->selectrow_array( 'SELECT value FROM phabbugz WHERE name = ?', undef, 'user_last_id' );
-    is( $user_last_id, 303, 'user_last_id is 303' );
-}
-catch {
-    fail('user_last_id is 303');
-};
-
-try {
-    $feed->user_query;
-    my $user_last_id = $dbh->selectrow_array( 'SELECT value FROM phabbugz WHERE name = ?', undef, 'user_last_id' );
-    is($user_last_id, 303, 'user_last_id is 303');
-}
-catch {
-    diag 'Error: ', $_;
-    fail('user_last_id is 404');
-};
-
-try {
-    diag "testing group query";
-    $feed->group_query;
-}
-catch {
-    diag $_;
-    fail('group_last_id is 101');
-};
 
 done_testing;
 
