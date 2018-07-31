@@ -388,7 +388,7 @@ sub process_revision_change {
         INFO('Invalid bug ID or author does not have access to the bug');
         my $phab_error_message = "";
         Bugzilla->template->process('revision/comments.html.tmpl',
-                                    { error => 'invalid_bug_id' },
+                                    { message => 'invalid_bug_id' },
                                     \$phab_error_message);
         $revision->add_comment($phab_error_message);
         $revision->update();
