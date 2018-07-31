@@ -14,7 +14,6 @@ use Bugzilla;
 use Bugzilla::Extension;
 use Bugzilla::Attachment;
 use Scalar::Util 'blessed';
-use YAML;
 
 BEGIN {
     eval {
