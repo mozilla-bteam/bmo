@@ -34,6 +34,7 @@ sub register {
     # hypnotoad is weird and doesn't look for MOJO_LISTEN itself.
     $app->config(
         hypnotoad => {
+            proxy => 1,
             listen => [ $ENV{MOJO_LISTEN} ],
         },
     );
