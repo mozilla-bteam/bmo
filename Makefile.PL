@@ -98,7 +98,7 @@ my %test_requires = (
     'Perl::Critic::Freenode'          => 0,
     'Capture::Tiny'                   => 0,
 );
-my %recommends = ( Safe => '2.30' );
+my %recommends = ( Safe => '2.30', EV => 4.0 );
 
 # Windows requires some additional modules.
 if ( $OSNAME eq 'MSWin32' ) {
