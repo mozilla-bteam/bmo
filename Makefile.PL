@@ -86,6 +86,7 @@ my %requires = (
     'URI'                      => '1.55',
     'URI::Escape::XS'          => '0.14',
     'version'                  => '0.87',
+    'EV'                       => 4.0 
 );
 
 my %build_requires = ( 'ExtUtils::MakeMaker' => '7.22', );
@@ -98,7 +99,7 @@ my %test_requires = (
     'Perl::Critic::Freenode'          => 0,
     'Capture::Tiny'                   => 0,
 );
-my %recommends = ( Safe => '2.30', EV => 4.0 );
+my %recommends = ( Safe => '2.30',);
 
 # Windows requires some additional modules.
 if ( $OSNAME eq 'MSWin32' ) {
