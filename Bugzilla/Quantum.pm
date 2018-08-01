@@ -21,6 +21,8 @@ use Bugzilla::Logging;
 use Bugzilla::Quantum::CGI;
 use Bugzilla::Quantum::SES;
 use Bugzilla::Quantum::Static;
+use Mojo::Loader qw( find_modules );
+use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
 use Cwd qw(realpath);
 use MojoX::Log::Log4perl::Tiny;
@@ -36,7 +38,14 @@ sub startup {
     $self->plugin('Bugzilla::Quantum::Plugin::BlockIP');
     $self->plugin('Bugzilla::Quantum::Plugin::BasicAuth');
 
+    Bugzilla::Extension->load_all();
     if ( $self->mode ne 'development' ) {
+        Bugzilla->preload_features();
+        DEBUG('preloading templates');
+        Bugzilla->preload_templates();
+        DEBUG('done preloading templates');
+        require_module($_) for find_modules('Bugzilla::User::Setting');
+
         $self->hook(
             after_static => sub {
                 my ($c) = @_;
@@ -48,6 +57,8 @@ sub startup {
     my $r = $self->routes;
     Bugzilla::Quantum::CGI->load_all($r);
     Bugzilla::Quantum::CGI->load_one( 'bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi' );
+
+    Bugzilla::WebService::Server::REST->preload;
 
     $r->any('/')->to('CGI#index_cgi');
     $r->any('/rest')->to('CGI#rest_cgi');

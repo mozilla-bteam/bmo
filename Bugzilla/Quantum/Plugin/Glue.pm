@@ -67,13 +67,7 @@ sub register {
         }
     );
 
-    Bugzilla::Extension->load_all();
-    if ( $app->mode ne 'development' ) {
-        Bugzilla->preload_features();
-        DEBUG('preloading templates');
-        Bugzilla->preload_templates();
-        DEBUG('done preloading templates');
-    }
+
     $app->secrets( [ Bugzilla->localconfig->{side_wide_secret} ] );
 
     $app->renderer->add_handler(
