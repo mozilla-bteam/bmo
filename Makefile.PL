@@ -374,7 +374,7 @@ my %optional_features = (
         description => 'Data Dog support',
         prereqs => {
             runtime => {
-                requires => { 'DataDog::DogStatsd' => 0.05 },
+                requires => { 'DataDog::DogStatsd' => '0.05' },
             },
         },
     },
