@@ -135,6 +135,7 @@ sub new {
             # apache collapses // to / in $ENV{PATH_INFO} but not in $self->path_info.
             # url() requires the full path in ENV in order to generate the correct url.
             $ENV{PATH_INFO} = $path;
+            DEBUG("redirecting because we see PATH_INFO and don't like it");
             print $self->redirect($self->url(-path => 0, -query => 1));
             exit;
         }
@@ -145,6 +146,7 @@ sub new {
 
     # Redirect to urlbase if we are not viewing an attachment.
     if ($self->url_is_attachment_base and $script ne 'attachment.cgi') {
+        DEBUG("Redirecting to urlbase because the url is in the attachment base and not attachment.cgi");
         $self->redirect_to_urlbase();
     }
 
@@ -776,6 +778,7 @@ sub redirect_search_url {
     # are only redirected if they're under the CGI_URI_LIMIT though.
     my $self_url = $self->self_url();
     if ($self->request_method() ne 'POST' or length($self_url) < CGI_URI_LIMIT) {
+        DEBUG("Redirecting search url");
         print $self->redirect(-url => $self_url);
         exit;
     }
@@ -797,6 +800,7 @@ sub redirect_to_https {
     # XML-RPC clients (SOAP::Lite at least) require a 301 to redirect properly
     # and do not work with 302. Our redirect really is permanent anyhow, so
     # it doesn't hurt to make it a 301.
+    DEBUG("Redirecting to https");
     print $self->redirect(-location => $url, -status => 301);
     exit;
 }

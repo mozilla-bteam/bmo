@@ -1,6 +1,7 @@
 package Bugzilla::Quantum::Plugin::Hostage;
 use 5.10.1;
 use Mojo::Base 'Mojolicious::Plugin';
+use Bugzilla::Logging;
 
 sub _attachment_root {
     my ($base) = @_;
@@ -50,6 +51,7 @@ sub _before_routes {
     return if $path eq '/__lbheartbeat__';
 
     if ( $attachment_base && $hostname eq $attachment_root ) {
+        DEBUG("redirecting to $urlbase because $hostname is $attachment_root");
         $c->redirect_to($urlbase);
         return;
     }
@@ -61,6 +63,7 @@ sub _before_routes {
             my $new_uri = $url->clone;
             $new_uri->scheme( $urlbase_uri->scheme );
             $new_uri->host($urlbase_host);
+            DEBUG("redirecting to $new_uri because $hostname matches attachment regex");
             $c->redirect_to($new_uri);
             return;
         }
@@ -69,10 +72,12 @@ sub _before_routes {
         my $new_uri = $urlbase_uri->clone;
         $new_uri->path('/show_bug.cgi');
         $new_uri->query_form( id => $id );
+        DEBUG("redirecting to $new_uri because $hostname includes bug id");
         $c->redirect_to($new_uri);
         return;
     }
     else {
+        DEBUG("redirecting to $urlbase because $hostname doesn't make sense");
         $c->redirect_to($urlbase);
         return;
     }

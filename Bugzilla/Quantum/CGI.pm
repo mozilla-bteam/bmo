@@ -117,7 +117,7 @@ sub _ENV {
         CONTENT_LENGTH => $content_length        || 0,
         CONTENT_TYPE   => $headers->content_type || '',
         GATEWAY_INTERFACE => 'CGI/1.1',
-        HTTPS             => $req->is_secure ? 'YES' : 'NO',
+        HTTPS             => $req->is_secure ? 'on' : 'off',
         %env_headers,
         QUERY_STRING    => $cgi_query->to_string,
         PATH_INFO       => $path_info ? "/$path_info" : '',
