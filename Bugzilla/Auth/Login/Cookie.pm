@@ -33,6 +33,7 @@ sub get_login_info {
     my ($self) = @_;
     my $cgi = Bugzilla->cgi;
     my $dbh = Bugzilla->dbh;
+    my $input = Bugzilla->input_params;
     my ($user_id, $login_cookie, $is_internal);
 
     if (!Bugzilla->request_cache->{auth_no_automatic_login}) {
@@ -57,8 +58,14 @@ sub get_login_info {
         # If the call is for a web service, and an api token is provided, check
         # it is valid.
         if (i_am_webservice()) {
-            if (exists Bugzilla->input_params->{Bugzilla_api_token}) {
-                my $api_token = Bugzilla->input_params->{Bugzilla_api_token};
+            # API token can be passed as an HTTP request header or URL query
+            # param. For backward compatibility, we support 3 param names.
+            my $api_token = $cgi->http('X-Bugzilla-Token')
+                || $input->{'token'}
+                || $input->{'Bugzilla_token'}
+                || $input->{'Bugzilla_api_token'}
+                || '';
+            if ($api_token) {
                 my ($token_user_id, undef, undef, $token_type)
                     = Bugzilla::Token::GetTokenData($api_token);
                 if (!defined $token_type
