@@ -366,7 +366,7 @@ my %optional_features = (
         description => 'Sentry Support',
         prereqs => {
             runtime => {
-                requires => [ 'Log::Log4perl::Appender::Raven' => '0.006' ],
+                requires => { 'Log::Log4perl::Appender::Raven' => '0.006' },
             },
         },
     },
