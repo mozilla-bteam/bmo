@@ -63,6 +63,20 @@ sub startup {
         },
     );
 
+    $r->get(
+        '/__version__' => sub {
+            my $c = shift;
+            $c->reply->file( $c->app->home->child('version.json') );
+        },
+    );
+
+    $r->get(
+        '/version.json' => sub {
+            my $c = shift;
+            $c->reply->file( $c->app->home->child('version.json') );
+        },
+    );
+
     $r->get('/__heartbeat__')->to('CGI#heartbeat_cgi');
     $r->get('/robots.txt')->to('CGI#robots_cgi');
 

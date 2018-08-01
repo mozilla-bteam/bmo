@@ -41,7 +41,7 @@ sub PRINT {        ## no critic (unpack)
     if ( $self->_encoding ) {
         $bytes = encode( $self->_encoding, $bytes );
     }
-    $c->write($bytes);
+    $c->write($bytes.$\);
 }
 
 sub BINMODE {
