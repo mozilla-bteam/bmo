@@ -277,16 +277,14 @@ sub get_needs_review {
 
     my @revisions;
     foreach my $revision ( @{ $diffs->{result}{data} } ) {
-        my $needs_review_found = 0;
         foreach my $reviewer ( @{ $revision->{attachments}->{reviewers}->{reviewers} } ) {
             if (   $reviewer->{reviewerPHID} eq $phab_user->phid
-                && $reviewer->{status} =~ /^(added|blocking)$/ )
+                && $reviewer->{status} =~ /^(?:added|blocking)$/ )
             {
-                $needs_review_found = 1;
+                push @revisions, $revision;
                 last;
             }
         }
-        push @revisions, $revision if $needs_review_found;
     }
 
     return \@revisions;
