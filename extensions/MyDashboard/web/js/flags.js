@@ -143,24 +143,10 @@ $(function () {
                 Y.Escape.html(o.data.author_name) + '</span>';
         };
 
-        var phabRowFormatter = function(o) {
-            var row = o.cell.ancestor();
-
-            // space in the 'flags' tables is tight
-            // render requests as two rows - diff title on first row, columns
-            // on second
-
-            row.insert(
-                '<tr class="' + row.getAttribute('class') + '">' +
-                '<td class="yui3-datatable-cell" colspan="4">' +
-                '<a href="' + o.data.url + '" target="_blank">' +
-                Y.Escape.html('D' + o.data.id + ' - ' + o.data.title) +
-                '</a></td></tr>',
-                'before');
-
-            o.cell.set('text', o.data.status == 'added' ? 'pending' : o.data.status);
-
-            return false;
+        var phabRevisionFormatter = function(o) {
+            return '<a href="' + o.data.url + '" target="_blank" ' +
+                'title="' + Y.Escape.html(o.data.title) + '">D' +
+                o.data.id + '</a>';
         };
 
         // Reviews
@@ -180,6 +166,8 @@ $(function () {
                 columns: [
                     { key: 'author_email', label: 'Requester', sortable: true,
                         formattter: phabAuthorFormatter, allowHTML: true },
+                    { key: 'id', label: 'Revision', sortable: true,
+                        formatter: phabRevisionFormatter, allowHTML: true },
                     { key: 'bug_id', label: 'Bug', sortable: true,
                         formatter: bugLinkFormatter, allowHTML: true },
                     { key: 'updated', label: 'Updated', sortable: true,
