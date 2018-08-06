@@ -143,10 +143,23 @@ $(function () {
                 Y.Escape.html(o.data.author_name) + '</span>';
         };
 
-        var phabRevisionFormatter = function(o) {
-            return '<a href="' + o.data.url + '" target="_blank" ' +
-                'title="' + Y.Escape.html(o.data.title) + '">D' +
-                o.data.id + '</a>';
+        var phabRowFormatter = function(o) {
+            var row = o.cell.ancestor();
+
+            // space in the 'flags' tables is tight
+            // render requests as two rows - diff title on first row, columns
+            // on second
+
+            row.insert(
+                '<tr class="' + row.getAttribute('class') + '">' +
+                '<td class="yui3-datatable-cell" colspan="4">' +
+                '<a href="' + o.data.url + '" target="_blank">' +
+                Y.Escape.html(o.data.title) + '</a></td></tr>',
+                'after');
+
+            o.cell.setHTML('<a href="' + o.data.url + '">D' + o.data.id + '</a>');
+
+            return false;
         };
 
         // Reviews
@@ -165,9 +178,9 @@ $(function () {
             dataTable.reviews = new Y.DataTable({
                 columns: [
                     { key: 'author_email', label: 'Requester', sortable: true,
-                        formattter: phabAuthorFormatter, allowHTML: true },
+                        formatter: phabAuthorFormatter, allowHTML: true },
                     { key: 'id', label: 'Revision', sortable: true,
-                        formatter: phabRevisionFormatter, allowHTML: true },
+                        nodeFormatter: phabRowFormatter, allowHTML: true },
                     { key: 'bug_id', label: 'Bug', sortable: true,
                         formatter: bugLinkFormatter, allowHTML: true },
                     { key: 'updated', label: 'Updated', sortable: true,
