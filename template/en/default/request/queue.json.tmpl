@@ -22,7 +22,11 @@ foreach my $request (@$requests) {
             $val = $time_filter->( $request->{$column} );
         }
         elsif ( $column =~ /^requeste/ ) {
-            $val = $mail_filter->( $request->{$column} );
+            $val = {
+                name => $request->{$column}->name,
+                nick => $request->{$column}->nick,
+                email => $request->{$column}->email,
+            };
         }
         elsif ( $column =~ /_id$/ ) {
             $val = $request->{$column} ? 0 + $request->{$column} : undef;
