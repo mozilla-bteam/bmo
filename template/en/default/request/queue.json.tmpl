@@ -25,7 +25,7 @@ foreach my $request (@$requests) {
             $val = {
                 name => $request->{$column}->name,
                 nick => $request->{$column}->nick,
-                email => $request->{$column}->email,
+                email => $mail_filter->($request->{$column}->email),
                 gravatar => $request->{$column}->gravatar,
             };
         }
