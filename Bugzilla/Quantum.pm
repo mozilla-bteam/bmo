@@ -62,7 +62,7 @@ sub startup {
 
     $r->any('/')->to('CGI#index_cgi');
     $r->any('/bug/:id')->to('CGI#show_bug_cgi');
-    $r->any('/:bug_id' => { bug_id => qr/^[0-9]+$/ });
+    $r->any('/:bug_id' => { bug_id => qr/^[0-9]+$/ })->to('CGI#show_bug_cgi');
 
     $r->any('/rest')->to('CGI#rest_cgi');
     $r->any('/rest.cgi/*PATH_INFO')->to( 'CGI#rest_cgi' => { PATH_INFO => '' } );
