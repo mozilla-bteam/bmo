@@ -23,9 +23,7 @@ foreach my $request (@$requests) {
         }
         elsif ( $column =~ /^requeste/ ) {
             $val = {
-                name => $request->{$column}->name,
                 nick => $request->{$column}->nick,
-                email => $mail_filter->($request->{$column}->email),
                 gravatar => $request->{$column}->gravatar,
             };
         }
