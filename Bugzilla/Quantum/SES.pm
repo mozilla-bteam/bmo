@@ -133,10 +133,7 @@ sub _process_bounce {
 }
 
 sub _process_complaint {
-    my ($self) = @_;
-
-    # email notification to bugzilla admin
-    my ($notification) = @_;
+    my ($self, $notification) = @_;
     my $template       = Bugzilla->template_inner();
     my $json           = JSON::MaybeXS->new(
         pretty    => 1,
