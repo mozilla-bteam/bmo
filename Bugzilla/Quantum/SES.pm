@@ -125,12 +125,16 @@ my $BouncedRecipients = ArrayRef[
        slurpy Any,
     ],
 ];
-my $BounceNotification = Dict[
-    bounce => Dict[
+my $BounceNotification = Dict [
+    bounce => Dict [
         bouncedRecipients => $BouncedRecipients,
-        reportingMTA => Str,
+        reportingMTA      => Str,
+        bounceSubType     => Str,
+        bounceType        => Str,
+        slurpy Any,
     ],
 ];
+
 sub _process_bounce {
     state $check = compile($Invocant, $BounceNotification);
     my ($self, $notification) = $check->(@_);
