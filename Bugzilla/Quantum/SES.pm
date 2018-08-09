@@ -31,7 +31,7 @@ sub main {
     }
     catch {
         FATAL("Error in SES Handler: ", $_);
-        die $_;
+        $self->_respond( 400 => 'Bad Request' );
     };
 }
 
@@ -67,7 +67,8 @@ sub _main {
 }
 
 sub _confirm_subscription {
-    my ($self, $message) = @_;
+    state $check = compile($Invocant, Dict[SubscribeURL => Str, slurpy Any]);
+    my ($self, $message) = $check->(@_);
 
     my $subscribe_url = $message->{SubscribeURL};
     if ( !$subscribe_url ) {
@@ -223,13 +224,9 @@ sub _respond {
 }
 
 sub _decode_json_wrapper {
-    my ($self, $json) = @_;
+    state $check = compile($Invocant, Str);
+    my ($self, $json) = $check->(@_);
     my $result;
-    if ( !defined $json ) {
-        WARN( 'Missing JSON from ' . $self->tx->remote_address );
-        $self->_respond( 400 => 'Bad Request' );
-        return undef;
-    }
     my $ok = try {
         $result = decode_json($json);
     }
