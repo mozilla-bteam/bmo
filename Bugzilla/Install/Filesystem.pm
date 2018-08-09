@@ -67,11 +67,6 @@ use constant HTTPD_ENV => qw(
     NYTPROF_DIR
 );
 
-sub HTTPD_ENV_CONF {
-    my @env = (ENV_KEYS, HTTPD_ENV);
-    return join( "\n", map { "PerlPassEnv " . $_ } @env ) . "\n";
-}
-
 ###############
 # Permissions #
 ###############
@@ -382,9 +377,6 @@ sub FILESYSTEM {
         "skins/yui3.css"          => { perms     => CGI_READ,
                                        overwrite => 1,
                                        contents  => $yui3_all_css },
-        "$confdir/env.conf"       => { perms     => CGI_READ,
-                                       overwrite => 1,
-                                       contents  => \&HTTPD_ENV_CONF },
     );
 
     # Because checksetup controls the creation of index.html separately
