@@ -121,7 +121,7 @@ my $BouncedRecipients = ArrayRef[
     Dict[
        emailAddress   => Str,
        action         => Str,
-       diagnosticCode => Int,
+       diagnosticCode => Str,
        slurpy Any,
     ],
 ];
