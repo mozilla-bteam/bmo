@@ -30,7 +30,7 @@ sub main {
         $self->_main;
     }
     catch {
-        FATAL($_);
+        FATAL("Error in SES Handler: ", $_);
         die $_;
     };
 }
