@@ -82,11 +82,11 @@ my %requires = (
     'Text::CSV_XS'             => '1.26',
     'Throwable'                => '0.200013',
     'Sub::Quote'               => '2.005000',
-    'Type::Tiny'               => '1.000005',
+    'Type::Tiny'               => '1.004002',
     'URI'                      => '1.55',
     'URI::Escape::XS'          => '0.14',
     'version'                  => '0.87',
-    'EV'                       => 4.0 
+    'EV'                       => '4.0',
 );
 
 my %build_requires = ( 'ExtUtils::MakeMaker' => '7.22', );
