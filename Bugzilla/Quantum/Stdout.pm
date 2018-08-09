@@ -11,6 +11,7 @@ use Moo;
 
 use Bugzilla::Logging;
 use Encode;
+use English qw(-no_match_vars);
 
 has 'controller' => (
     is       => 'ro',
@@ -41,7 +42,7 @@ sub PRINT {        ## no critic (unpack)
     if ( $self->_encoding ) {
         $bytes = encode( $self->_encoding, $bytes );
     }
-    $c->write($bytes.$\);
+    $c->write($bytes . ( $OUTPUT_RECORD_SEPARATOR // '' ) );
 }
 
 sub BINMODE {
