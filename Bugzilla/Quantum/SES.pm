@@ -133,6 +133,7 @@ my $BounceNotification = Dict [
         bounceType        => Str,
         slurpy Any,
     ],
+    slurpy Any,
 ];
 
 sub _process_bounce {
