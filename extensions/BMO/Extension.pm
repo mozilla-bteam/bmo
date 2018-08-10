@@ -2724,6 +2724,15 @@ sub app_startup {
     my $app = $args->{app};
     my $r = $app->routes;
 
+    $r->get(
+        '/favicon.ico' => sub {
+            my $c = shift;
+            $c->reply->file(
+                $c->app->home->child('extensions/BMO/web/images/favicon.ico')
+            );
+        }
+    );
+
     $r->any( '/:REWRITE_itrequest' => [ REWRITE_itrequest => qr{form[\.:]itrequest} ] )
       ->to( 'CGI#enter_bug_cgi' => { 'product' => 'Infrastructure & Operations', 'format' => 'itrequest' } );
     $r->any( '/:REWRITE_mozlist' => [ REWRITE_mozlist => qr{form[\.:]mozlist} ] )
