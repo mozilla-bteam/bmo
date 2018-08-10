@@ -272,7 +272,7 @@ sub renderComment {
     }
 
     unless ($skip_markdown) {
-        $text = Bugzilla->markdown_parser->render_html($text);
+        $text = decode('UTF-8', Bugzilla->markdown_parser->render_html($text));
     }
 
     my $dom = Mojo::DOM->new($text);
