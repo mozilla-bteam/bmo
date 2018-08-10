@@ -80,6 +80,9 @@ sub create_revision_attachment {
             }
         );
 
+        # Cause a reload next time $bug->attachments is called.
+        delete $bug->{attachments};
+
         # Insert a comment about the new attachment into the database.
         $bug->add_comment($revision->summary, { type       => CMT_ATTACHMENT_CREATED,
                                                 extra_data => $attachment->id });

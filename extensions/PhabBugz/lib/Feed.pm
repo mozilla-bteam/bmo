@@ -123,15 +123,15 @@ sub feed_query {
 
     # Process each story
     foreach my $story_data (@$new_stories) {
-        my $story_id    = $story_data->{id};
-        my $story_phid  = $story_data->{phid};
-        my $author_phid = $story_data->{authorPHID};
-        my $object_phid = $story_data->{objectPHID};
-        my $story_text  = $story_data->{text};
+        my $story_id     = $story_data->{id};
+        my $story_phid   = $story_data->{phid};
+        my $changer_phid = $story_data->{authorPHID};
+        my $object_phid  = $story_data->{objectPHID};
+        my $story_text   = $story_data->{text};
 
         TRACE("STORY ID: $story_id");
         TRACE("STORY PHID: $story_phid");
-        TRACE("AUTHOR PHID: $author_phid");
+        TRACE("CHANGER PHID: $changer_phid");
         TRACE("OBJECT PHID: $object_phid");
         INFO("STORY TEXT: $story_text");
 
@@ -143,22 +143,34 @@ sub feed_query {
         }
 
         # Skip changes done by phab-bot user
-        my $phab_user = Bugzilla::Extension::PhabBugz::User->new_from_query(
+        # If changer does not exist in bugzilla database
+        # we use the phab-bot account as the changer
+        my $changer = Bugzilla::Extension::PhabBugz::User->new_from_query(
           {
-            phids => [ $author_phid ]
+            phids => [ $changer_phid ]
           }
         );
 
-        if ($phab_user && $phab_user->bugzilla_id) {
-            if ($phab_user->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
+        if (   $changer
+            && $changer->bugzilla_id )
+        {
+            if ( $changer->bugzilla_user->login eq PHAB_AUTOMATION_USER ) {
                 INFO("SKIPPING: Change made by phabricator user");
-                $self->save_last_id($story_id, 'feed');
+                $self->save_last_id( $story_id, 'feed' );
                 next;
             }
         }
+        else {
+            my $phab_user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
+            $changer = Bugzilla::Extension::PhabBugz::User->new_from_query(
+                {
+                    ids => [ $phab_user->id ]
+                }
+            );
+        }
 
         with_writable_database {
-            $self->process_revision_change($object_phid, $story_text);
+            $self->process_revision_change($object_phid, $changer, $story_text);
         };
         $self->save_last_id($story_id, 'feed');
     }
@@ -192,7 +204,7 @@ sub feed_query {
         );
 
         with_writable_database {
-            $self->process_revision_change($revision, " created D" . $revision->id);
+            $self->process_revision_change( $revision, $revision->author, " created D" . $revision->id );
         };
 
         # Set the build target to a passing status to
@@ -345,7 +357,7 @@ sub group_query {
 }
 
 sub process_revision_change {
-    my ($self, $revision_phid, $story_text) = @_;
+    my ($self, $revision_phid, $changer, $story_text) = @_;
 
     # Load the revision from Phabricator
     my $revision =
@@ -371,10 +383,11 @@ sub process_revision_change {
     }
     
     my $log_message = sprintf(
-        "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s",
+        "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s | %s",
         $revision->id,
         $revision->title,
         $revision->bug_id,
+        $changer->name,
         $story_text);
     INFO($log_message);
 
@@ -451,41 +464,25 @@ sub process_revision_change {
     my $rev_attachment = create_revision_attachment($bug, $revision, $timestamp, $revision->author->bugzilla_user);
     INFO('Attachment ' . $rev_attachment->id . ' created or already exists.');
 
-    # ATTACHMENT OBSOLETES
+    # ATTACHMENT UPDATES
 
     # fixup attachments on current bug
     my @attachments =
       grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
 
+    my $other_bugs;
     foreach my $attachment (@attachments) {
-        my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
+        my ($attach_revision_id) = ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
         next if $attach_revision_id != $revision->id;
-
-        my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
-        INFO('Updating obsolete status on attachmment ' . $attachment->id);
-        $attachment->set_is_obsolete($make_obsolete);
-
-        if ($revision->title ne $attachment->description) {
-            INFO('Updating description on attachment ' . $attachment->id);
-            $attachment->set_description($revision->title);
-        }
-
-        $attachment->update($timestamp);
-    }
-
-    # fixup attachments with same revision id but on different bugs
-    my %other_bugs;
-    my $other_attachments = Bugzilla::Attachment->match({
-        mimetype => PHAB_CONTENT_TYPE,
-        filename => 'phabricator-D' . $revision->id . '-url.txt',
-        WHERE    => { 'bug_id != ? AND NOT isobsolete' => $bug->id }
-    });
-    foreach my $attachment (@$other_attachments) {
-        $other_bugs{$attachment->bug_id}++;
-        INFO('Updating obsolete status on attachment ' .
-             $attachment->id . " for bug " . $attachment->bug_id);
-        $attachment->set_is_obsolete(1);
-        $attachment->update($timestamp);
+        $other_bugs = $self->update_attachment(
+            {
+                revision   => $revision,
+                bug        => $bug,
+                attachment => $attachment,
+                timestamp  => $timestamp,
+                changer    => $changer->bugzilla_user
+            }
+        );
     }
 
     # REVIEWER STATUSES
@@ -608,8 +605,8 @@ sub process_revision_change {
 
     # Email changes for this revisions bug and also for any other
     # bugs that previously had these revision attachments
-    foreach my $bug_id ($revision->bug_id, keys %other_bugs) {
-        Bugzilla::BugMail::Send($bug_id, { changer => $rev_attachment->attacher });
+    foreach my $bug_id ( $revision->bug_id, keys %{$other_bugs} ) {
+        Bugzilla::BugMail::Send( $bug_id, { changer => $changer->bugzilla_user } );
     }
 
     Bugzilla->set_user($old_user);
@@ -869,5 +866,52 @@ sub add_flag_comment {
 
     Bugzilla->set_user($old_user) if $old_user;
 }
+
+sub update_attachment {
+    my ( $self, $params ) = @_;
+    my ( $revision, $bug, $attachment, $timestamp, $changer ) = @$params{qw(revision bug attachment timestamp changer)};
+
+    my $old_user;
+    if ($changer) {
+        $old_user = Bugzilla->user;
+        Bugzilla->set_user($changer);
+    }
+
+    my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
+    INFO( 'Updating obsolete status on attachmment ' . $attachment->id );
+    $attachment->set_is_obsolete($make_obsolete);
+
+    if ( $revision->title ne $attachment->description ) {
+        INFO( 'Updating description on attachment ' . $attachment->id );
+        $attachment->set_description( $revision->title );
+    }
+
+    # obsolete attachments with same revision id but on different bugs
+    my $other_attachments = Bugzilla::Attachment->match(
+        {
+            mimetype => PHAB_CONTENT_TYPE,
+            filename => 'phabricator-D' . $revision->id . '-url.txt',
+            WHERE    => { 'bug_id != ? AND NOT isobsolete' => $bug->id }
+        }
+    );
+
+    my $other_bugs;
+    foreach my $other_attachment (@$other_attachments) {
+        $other_bugs->{ $other_attachment->bug_id }++;
+        INFO(     'Updating obsolete status on attachment '
+                . $other_attachment->id
+                . " for bug "
+                . $other_attachment->bug_id );
+        $other_attachment->set_is_obsolete(1);
+        $other_attachment->update($timestamp);
+    }
+
+    $attachment->update($timestamp);
+
+    Bugzilla->set_user($old_user) if $old_user;
+
+    return $other_bugs;
+}
+
 
 1;
