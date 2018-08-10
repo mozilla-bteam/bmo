@@ -40,6 +40,8 @@ use IO::Dir;
 use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
 use JSON::XS qw(encode_json);
+use Mojo::DOM;
+use Encode;
 
 use parent qw(Template);
 
@@ -206,7 +208,7 @@ sub renderComment {
         my $safe_protocols = SAFE_URL_REGEXP();
         $text =~ s~\b($safe_protocols)
               ~($tmp = html_quote($1)) &&
-               ($things[$count++] = "<a rel=\"nofollow\" href=\"$tmp\">$tmp</a>") &&
+               ($things[$count++] = "<a href=\"$tmp\">$tmp</a>") &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
 
@@ -270,12 +272,14 @@ sub renderComment {
         $text =~ s/\x{FDD2}($i)\x{FDD3}/$things[$i]/eg;
     }
 
-    if ($skip_markdown) {
-        return $text;
+    unless ($skip_markdown) {
+        $text = decode('UTF-8', Bugzilla->markdown_parser->render_html($text));
     }
-    else {
-        return Bugzilla->markdown_parser->render_html($text);
-    }
+
+    my $dom = Mojo::DOM->new($text);
+    my $urlbase = Bugzilla->localconfig->{urlbase};
+    $dom->find("a[href]:not([href^=$urlbase])")->map(attr => rel => 'nofollow');
+    return $dom->to_string;
 }
 
 # Creates a link to an attachment, including its title.
