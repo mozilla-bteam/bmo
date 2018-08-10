@@ -41,6 +41,7 @@ use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
 use JSON::XS qw(encode_json);
 use Mojo::DOM;
+use Encode;
 
 use parent qw(Template);
 
