@@ -40,6 +40,8 @@ use IO::Dir;
 use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
 use JSON::XS qw(encode_json);
+use Mojo::DOM;
+use Encode;
 
 use parent qw(Template);
 
@@ -130,20 +132,17 @@ sub get_format {
     };
 }
 
-# This routine renderComment contains inspirations from the HTML::FromText CPAN
+# This routine quoteUrls contains inspirations from the HTML::FromText CPAN
 # module by Gareth Rees <garethr@cre.canon.co.uk>.  It has been heavily hacked,
 # all that is really recognizable from the original is bits of the regular
 # expressions.
 # This has been rewritten to be faster, mainly by substituting 'as we go'.
 # If you want to modify this routine, read the comments carefully
-# Renamed from 'quoteUrls' to 'renderComment' after markdown support was added.
 
-sub renderComment {
-    my ($text, $bug, $comment, $skip_markdown, $bug_link_func) = @_;
+sub quoteUrls {
+    my ($text, $bug, $comment, $user, $bug_link_func) = @_;
     return $text unless $text;
-    my $anon_user = Bugzilla::User->new;
-    # We choose to render markdown by default, unless the comment explicitly isn't.
-    $skip_markdown ||= $comment && !$comment->is_markdown;
+    $user ||= Bugzilla->user;
     $bug_link_func ||= \&get_bug_link;
 
     # We use /g for speed, but uris can have other things inside them
@@ -176,7 +175,7 @@ sub renderComment {
     my @hook_regexes;
     Bugzilla::Hook::process('bug_format_comment',
         { text => \$text, bug => $bug, regexes => \@hook_regexes,
-          comment => $comment, user => undef });
+          comment => $comment, user => $user });
 
     foreach my $re (@hook_regexes) {
         my ($match, $replace) = @$re{qw(match replace)};
@@ -196,47 +195,37 @@ sub renderComment {
     # Provide tooltips for full bug links (Bug 74355)
     my $urlbase_re = '(' . quotemeta(Bugzilla->localconfig->{urlbase}) . ')';
     $text =~ s~\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
-              ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $anon_user })) &&
+              ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $user })) &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
 
-
-    if ($skip_markdown) {
-        # non-mailto protocols
-        my $safe_protocols = SAFE_URL_REGEXP();
-        $text =~ s~\b($safe_protocols)
+    # non-mailto protocols
+    my $safe_protocols = SAFE_URL_REGEXP();
+    $text =~ s~\b($safe_protocols)
               ~($tmp = html_quote($1)) &&
                ($things[$count++] = "<a rel=\"nofollow\" href=\"$tmp\">$tmp</a>") &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
 
-        # We have to quote now, otherwise the html itself is escaped
-        # THIS MEANS THAT A LITERAL ", <, >, ' MUST BE ESCAPED FOR A MATCH
-        $text = html_quote($text);
+    # We have to quote now, otherwise the html itself is escaped
+    # THIS MEANS THAT A LITERAL ", <, >, ' MUST BE ESCAPED FOR A MATCH
 
-        # Color quoted text
-        $text =~ s~^(&gt;.+)$~<span class="quote">$1</span >~mg;
-        $text =~ s~</span >\n<span class="quote">~\n~g;
+    $text = html_quote($text);
 
-        # mailto:
-        # Use |<nothing> so that $1 is defined regardless
-        # &#64; is the encoded '@' character.
-        $text =~ s~\b(mailto:|)?([\w\.\-\+\=]+&\#64;[\w\-]+(?:\.[\w\-]+)+)\b
-                 ~<a href=\"mailto:$2\">$1$2</a>~igx;
-    }
-    else {
-        # We intentionally disable all html tags. Users should use markdown syntax.
-        # This prevents things like inline styles on anchor tags, which otherwise would be valid.
-        $text =~ s/([<])/&lt;/g;
+    # Color quoted text
+    $text =~ s~^(&gt;.+)$~<span class="quote">$1</span >~mg;
+    $text =~ s~</span >\n<span class="quote">~\n~g;
 
-        # As a preference, we opt into all new line breaks being rendered as a new line.
-        $text =~ s/(\r?\n)/  $1/g;
-    }
+    # mailto:
+    # Use |<nothing> so that $1 is defined regardless
+    # &#64; is the encoded '@' character.
+    $text =~ s~\b(mailto:|)?([\w\.\-\+\=]+&\#64;[\w\-]+(?:\.[\w\-]+)+)\b
+              ~<a href=\"mailto:$2\">$1$2</a>~igx;
 
     # attachment links
     # BMO: don't make diff view the default for patches (Bug 652332)
     $text =~ s~\b(attachment$s*\#?$s*(\d+)(?:$s+\[diff\])?(?:\s+\[details\])?)
-              ~($things[$count++] = get_attachment_link($2, $1, $anon_user)) &&
+              ~($things[$count++] = get_attachment_link($2, $1, $user)) &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egmxi;
 
@@ -253,7 +242,7 @@ sub renderComment {
     $text =~ s~\b($bug_re(?:$s*,?$s*$comment_re)?|$comment_re)
               ~ # We have several choices. $1 here is the link, and $2-4 are set
                 # depending on which part matched
-               (defined($2) ? $bug_link_func->($2, $1, { comment_num => $3, user => $anon_user }) :
+               (defined($2) ? $bug_link_func->($2, $1, { comment_num => $3, user => $user }) :
                               "<a href=\"$current_bugurl#c$4\">$1</a>")
               ~egx;
 
@@ -262,7 +251,7 @@ sub renderComment {
     $text =~ s~(?<=^\*\*\*\ This\ bug\ has\ been\ marked\ as\ a\ duplicate\ of\ )
                (\d+)
                (?=\ \*\*\*\Z)
-              ~$bug_link_func->($1, $1, { user => $anon_user })
+              ~$bug_link_func->($1, $1, { user => $user })
               ~egmx;
 
     # Now remove the encoding hacks in reverse order
@@ -270,12 +259,70 @@ sub renderComment {
         $text =~ s/\x{FDD2}($i)\x{FDD3}/$things[$i]/eg;
     }
 
+    return $text;
+}
+
+sub is_safe_url {
+    my $url = shift;
+    return '' unless $url;
+
+    state $safe_url_regexp = SAFE_URL_REGEXP();
+    return 1 if $url =~ /^$safe_url_regexp$/;
+    # Pointing to a local file with no colon in its name is fine.
+    return 1 if $url =~ /^[^\s<>\":]+[\w\/]$/i;
+    # If we come here, then we cannot guarantee it's safe.
+    return '';
+}
+
+sub renderComment {
+    my ($text, $bug, $comment, $skip_markdown, $bug_link_func) = @_;
+    return $text unless $text;
+    my $anon_user = Bugzilla::User->new;
+
+    # We choose to render markdown by default, unless the comment explicitly isn't.
+    $skip_markdown ||= $comment && !$comment->is_markdown;
+
+    my $html;
     if ($skip_markdown) {
-        return $text;
+        $html = quoteUrls($text, $bug, $comment, $anon_user, $bug_link_func);
+    } else {
+        $html = decode('UTF-8', Bugzilla->markdown_parser->render_html($text));
     }
-    else {
-        return Bugzilla->markdown_parser->render_html($text);
+
+    my $dom = Mojo::DOM->new($html);
+    unless ($skip_markdown) {
+        $dom->find('p')->each(
+            sub {
+                $_->child_nodes->each(
+                    sub {
+                        if ( $_->type eq 'text' ) {
+                            my $text = "$_";
+                            $_->replace(quoteUrls($text, $bug, $comment, $anon_user, $bug_link_func));
+                        }
+                    }
+                );
+            }
+        );
     }
+
+    state $urlbase    = Bugzilla->localconfig->{urlbase};
+    state $urlbase_re = quotemeta($urlbase) . '?';
+
+    $dom->find("*[style]")->each(sub { delete $_->attr->{style} });
+    $dom->find("a[href]")->each(
+        sub {
+            my $href = trim($_->attr('href'));
+            if (is_safe_url($href)) {
+                unless ($href =~ /^$urlbase_re/ || $href !~ /:/) {
+                    $_->attr(rel => 'nofollow');
+                }
+            } else {
+                $_->replace($_->all_text);
+                return;
+            }
+        }
+    );
+    return $dom->to_string;
 }
 
 # Creates a link to an attachment, including its title.
@@ -960,17 +1007,7 @@ sub create {
             },
 
             # Check whether the URL is safe.
-            'is_safe_url' => sub {
-                my $url = shift;
-                return 0 unless $url;
-
-                my $safe_url_regexp = SAFE_URL_REGEXP();
-                return 1 if $url =~ /^$safe_url_regexp$/;
-                # Pointing to a local file with no colon in its name is fine.
-                return 1 if $url =~ /^[^\s<>\":]+[\w\/]$/i;
-                # If we come here, then we cannot guarantee it's safe.
-                return 0;
-            },
+            'is_safe_url' => \&is_safe_url,
 
             # Allow templates to generate a token themselves.
             'issue_hash_token' => \&Bugzilla::Token::issue_hash_token,

@@ -812,8 +812,12 @@ sub check_rate_limit {
 }
 
 sub markdown_parser {
-    return request_cache->{markdown_parser}
-        ||= Bugzilla::Markdown::GFM::Parser->new( {extensions => [qw( autolink tagfilter table strikethrough)] } );
+    return request_cache->{markdown_parser} ||= Bugzilla::Markdown::GFM::Parser->new(
+        {
+            validate_utf8 => 1,
+            extensions    => [qw( autolink tagfilter table strikethrough)]
+        }
+    );
 }
 
 # Private methods
