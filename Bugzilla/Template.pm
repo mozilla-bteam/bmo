@@ -40,6 +40,7 @@ use IO::Dir;
 use List::MoreUtils qw(firstidx);
 use Scalar::Util qw(blessed);
 use JSON::XS qw(encode_json);
+use Encode;
 
 use parent qw(Template);
 
@@ -195,11 +196,10 @@ sub renderComment {
 
     # Provide tooltips for full bug links (Bug 74355)
     my $urlbase_re = '(' . quotemeta(Bugzilla->localconfig->{urlbase}) . ')';
-    $text =~ s~\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
+    $text =~ s~(?<!\]\()\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
               ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $anon_user })) &&
                ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
               ~egox;
-
 
     if ($skip_markdown) {
         # non-mailto protocols
@@ -227,10 +227,20 @@ sub renderComment {
     else {
         # We intentionally disable all html tags. Users should use markdown syntax.
         # This prevents things like inline styles on anchor tags, which otherwise would be valid.
+        # Note that this does not affect the html regex replacements that happens before this
+        # if block. See the comment about encoding hacks near the beginning of the function.
         $text =~ s/([<])/&lt;/g;
 
         # As a preference, we opt into all new line breaks being rendered as a new line.
         $text =~ s/(\r?\n)/  $1/g;
+
+        # Render text as markdown
+        $text = decode('UTF-8', Bugzilla->markdown_parser->render_html($text));
+
+        # At this point all links are plain links created by markdown, i.e. they have no additional
+        # html attributes and so our regex should match. Here we nofollow any non-bmo link.
+        my $urlbase = Bugzilla->localconfig->{urlbase};
+        $text =~ s/<a href="(?!$urlbase)/<a rel="nofollow" href="/g;
     }
 
     # attachment links
@@ -270,12 +280,7 @@ sub renderComment {
         $text =~ s/\x{FDD2}($i)\x{FDD3}/$things[$i]/eg;
     }
 
-    if ($skip_markdown) {
-        return $text;
-    }
-    else {
-        return Bugzilla->markdown_parser->render_html($text);
-    }
+    return $text;
 }
 
 # Creates a link to an attachment, including its title.
