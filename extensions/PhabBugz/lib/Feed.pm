@@ -8,14 +8,17 @@
 package Bugzilla::Extension::PhabBugz::Feed;
 
 use 5.10.1;
-
-use IO::Async::Timer::Periodic;
-use IO::Async::Loop;
-use List::Util qw(first);
-use List::MoreUtils qw(any uniq);
 use Moo;
+
+use IO::Async::Loop;
+use IO::Async::Timer::Periodic;
+use List::MoreUtils qw(any uniq);
+use List::Util qw(first);
 use Scalar::Util qw(blessed);
 use Try::Tiny;
+use Type::Params qw( compile );
+use Type::Utils;
+use Types::Standard qw( :types );
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
@@ -24,7 +27,8 @@ use Bugzilla::Logging;
 use Bugzilla::Mailer;
 use Bugzilla::Search;
 use Bugzilla::Util qw(diff_arrays format_time with_writable_database with_readonly_database);
-
+use Bugzilla::Types qw(:types);
+use Bugzilla::Extension::PhabBugz::Types qw(:types);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Policy;
 use Bugzilla::Extension::PhabBugz::Revision;
@@ -38,6 +42,8 @@ use Bugzilla::Extension::PhabBugz::Util qw(
 );
 
 has 'is_daemon' => ( is => 'rw', default => 0 );
+
+my $Invocant = class_type { class => __PACKAGE__ };
 
 sub start {
     my ($self) = @_;
@@ -291,12 +297,12 @@ sub group_query {
     foreach my $group (@$sync_groups) {
         # Create group project if one does not yet exist
         my $phab_project_name = 'bmo-' . $group->name;
-        my $project =
-          Bugzilla::Extension::PhabBugz::Project->new_from_query(
+        my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query(
             {
-              name => $phab_project_name
+                name => $phab_project_name
             }
         );
+
 
         if ( !$project ) {
             INFO("Project $phab_project_name not found. Creating.");
@@ -345,18 +351,20 @@ sub group_query {
 }
 
 sub process_revision_change {
-    my ($self, $revision_phid, $story_text) = @_;
+    state $check = compile($Invocant, Revision | Str, Str);
+    my ($self, $revision_phid, $changer, $story_text) = $check->(@_);
 
     # Load the revision from Phabricator
-    my $revision =
-        blessed $revision_phid
-        ? $revision_phid
-        : Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_phid ] });
+    my $revision
+      = blessed $revision_phid
+      ? $revision_phid
+      : Bugzilla::Extension::PhabBugz::Revision->new_from_query( { phids => [$revision_phid] } );
 
     # NO BUG ID
 
-    if (!$revision->bug_id) {
-        if ($story_text =~ /\s+created\s+D\d+/) {
+    if ( !$revision->bug_id ) {
+        if ( $story_text =~ /\s+created\s+D\d+/ ) {
+
             # If new revision and bug id was omitted, make revision public
             INFO("No bug associated with new revision. Marking public.");
             $revision->make_public();
@@ -369,7 +377,8 @@ sub process_revision_change {
             return;
         }
     }
-    
+
+
     my $log_message = sprintf(
         "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s",
         $revision->id,
@@ -618,7 +627,8 @@ sub process_revision_change {
 }
 
 sub process_new_user {
-    my ( $self, $user_data ) = @_;
+    state $check = compile($Invocant, HashRef);
+    my ( $self, $user_data ) = $check->(@_);
 
     # Load the user data into a proper object
     my $phab_user = Bugzilla::Extension::PhabBugz::User->new($user_data);
@@ -636,13 +646,12 @@ sub process_new_user {
     # CHECK AND WARN FOR POSSIBLE USERNAME SQUATTING
     INFO("Checking for username squatters");
     my $dbh     = Bugzilla->dbh;
-    my $regexp  = $dbh->quote( ":?:" . quotemeta($phab_user->name) . "[[:>:]]" );
     my $results = $dbh->selectall_arrayref( "
         SELECT userid, login_name, realname
           FROM profiles
-         WHERE userid != ? AND " . $dbh->sql_regexp( 'realname', $regexp ),
+         WHERE userid != ? AND nickname = ?",
         { Slice => {} },
-        $bug_user->id );
+        $bug_user->id, $phab_user->name );
     if (@$results) {
         # The email client will display the Date: header in the desired timezone,
         # so we can always use UTC here.
@@ -819,40 +828,49 @@ sub save_last_id {
 }
 
 sub get_group_members {
-    my ( $self, $group ) = @_;
+    state $check = compile( $Invocant, Group | Str );
+    my ( $self, $group ) = $check->(@_);
 
-    my $group_obj =
-      ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
-
-    my $flat_list = join(',',
-      @{ Bugzilla::Group->flatten_group_membership( $group_obj->id ) } );
+    my $dbh       = Bugzilla->dbh;
+    my $group_obj = ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
+    my $flat_list = Bugzilla::Group->flatten_group_membership( $group_obj->id );
 
     my $user_query = "
       SELECT DISTINCT profiles.userid
         FROM profiles, user_group_map AS ugm
        WHERE ugm.user_id = profiles.userid
              AND ugm.isbless = 0
-             AND ugm.group_id IN($flat_list)";
-    my $user_ids = Bugzilla->dbh->selectcol_arrayref($user_query);
+             AND @{[ $dbh->sql_in('ugm.group_id', $flat_list) ]}
+    ";
+    my $user_ids = $dbh->selectcol_arrayref($user_query);
 
     # Return matching users in Phabricator
     return Bugzilla::Extension::PhabBugz::User->match(
-      {
-        ids => $user_ids
-      }
+        {
+            ids => $user_ids
+        }
     );
 }
 
 sub add_flag_comment {
-    my ( $self, $params ) = @_;
+    state $check = compile(
+        $Invocant,
+        Dict [
+            bug        => Bug,
+            attachment => Attachment,
+            comment    => Str,
+            user       => User,
+            old_flags  => ArrayRef,
+            new_flags  => ArrayRef,
+            timestamp  => Str,
+        ],
+    );
+    my ( $self, $params ) = $check->(@_);
     my ( $bug, $attachment, $comment, $user, $old_flags, $new_flags, $timestamp )
         = @$params{qw(bug attachment comment user old_flags new_flags timestamp)};
 
-    my $old_user;
-    if ($user) {
-        $old_user = Bugzilla->user;
-        Bugzilla->set_user($user);
-    }
+    my $old_user = Bugzilla->user;
+    Bugzilla->set_user($user);
 
     INFO("Flag comment: $comment");
     $bug->add_comment(
