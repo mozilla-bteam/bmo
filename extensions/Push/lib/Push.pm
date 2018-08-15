@@ -22,6 +22,7 @@ use Bugzilla::Extension::Push::Option;
 use Bugzilla::Extension::Push::Queue;
 use Bugzilla::Extension::Push::Util;
 use DateTime;
+use Try::Tiny;
 
 has 'is_daemon' => (
     is      => 'rw',
@@ -46,7 +47,12 @@ sub start {
         on_tick        => sub {
             if ( $self->_dbh_check() ) {
                 $self->_reload();
-                $self->push();
+                try {
+                    $self->push();
+                }
+                catch {
+                    FATAL($_);
+                };
             }
         },
     );
