@@ -275,8 +275,20 @@ sub user {
 }
 
 sub set_user {
-    my (undef, $user) = @_;
-    request_cache->{user} = $user;
+    my (undef, $new_user, %option) = @_;
+
+    if ($option{scope_guard}) {
+        my $old_user = request_cache->{user};
+        request_cache->{user} = $user;
+        return Scope::Guard->new(
+            sub {
+                request_cache->{user} = $old_user;
+            }
+        )
+    }
+    else {
+        request_cache->{user} = $user;
+    }
 }
 
 sub sudoer {
