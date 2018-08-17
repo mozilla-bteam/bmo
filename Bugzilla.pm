@@ -280,7 +280,7 @@ sub set_user {
 
     if ($option{scope_guard}) {
         my $old_user = request_cache->{user};
-        request_cache->{user} = $user;
+        request_cache->{user} = $new_user;
         return Scope::Guard->new(
             sub {
                 request_cache->{user} = $old_user;
@@ -288,7 +288,7 @@ sub set_user {
         )
     }
     else {
-        request_cache->{user} = $user;
+        request_cache->{user} = $new_user;
     }
 }
 
