@@ -60,12 +60,18 @@ sub create_revision_attachment {
 
     # No attachment is present, so we can now create new one
 
+    if (!$timestamp) {
+        ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+    }
+
     # If submitter, then switch to that user when creating attachment
     my ($old_user, $attachment);
     try {
-        $old_user = Bugzilla->user;
-        local $submitter->{groups} = [ Bugzilla::Group->get_all ]; # We need to always be able to add attachment
-        Bugzilla->set_user($submitter);
+        if ($submitter) {
+            $old_user = Bugzilla->user;
+            $submitter->{groups} = [ Bugzilla::Group->get_all ]; # We need to always be able to add attachment
+            Bugzilla->set_user($submitter);
+        }
 
         $attachment = Bugzilla::Attachment->create(
             {

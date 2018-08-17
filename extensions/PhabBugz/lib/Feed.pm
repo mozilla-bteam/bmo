@@ -351,8 +351,7 @@ sub group_query {
 }
 
 sub process_revision_change {
-    state $check = compile($Invocant, Revision | Str, Str);
-    my ($self, $revision_phid, $changer, $story_text) = $check->(@_);
+    my ($self, $revision_phid, $story_text) = @_;
 
     # Load the revision from Phabricator
     my $revision
@@ -646,12 +645,13 @@ sub process_new_user {
     # CHECK AND WARN FOR POSSIBLE USERNAME SQUATTING
     INFO("Checking for username squatters");
     my $dbh     = Bugzilla->dbh;
+    my $regexp  = $dbh->quote( ":?:" . quotemeta($phab_user->name) . "[[:>:]]" );
     my $results = $dbh->selectall_arrayref( "
         SELECT userid, login_name, realname
           FROM profiles
-         WHERE userid != ? AND nickname = ?",
+         WHERE userid != ? AND " . $dbh->sql_regexp( 'realname', $regexp ),
         { Slice => {} },
-        $bug_user->id, $phab_user->name );
+        $bug_user->id );
     if (@$results) {
         # The email client will display the Date: header in the desired timezone,
         # so we can always use UTC here.
@@ -830,25 +830,25 @@ sub save_last_id {
 sub get_group_members {
     state $check = compile( $Invocant, Group | Str );
     my ( $self, $group ) = $check->(@_);
+    my $group_obj =
+      ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
 
-    my $dbh       = Bugzilla->dbh;
-    my $group_obj = ref $group ? $group : Bugzilla::Group->check( { name => $group, cache => 1 } );
-    my $flat_list = Bugzilla::Group->flatten_group_membership( $group_obj->id );
+    my $flat_list = join(',',
+      @{ Bugzilla::Group->flatten_group_membership( $group_obj->id ) } );
 
     my $user_query = "
       SELECT DISTINCT profiles.userid
         FROM profiles, user_group_map AS ugm
        WHERE ugm.user_id = profiles.userid
              AND ugm.isbless = 0
-             AND @{[ $dbh->sql_in('ugm.group_id', $flat_list) ]}
-    ";
-    my $user_ids = $dbh->selectcol_arrayref($user_query);
+             AND ugm.group_id IN($flat_list)";
+    my $user_ids = Bugzilla->dbh->selectcol_arrayref($user_query);
 
     # Return matching users in Phabricator
     return Bugzilla::Extension::PhabBugz::User->match(
-        {
-            ids => $user_ids
-        }
+      {
+        ids => $user_ids
+      }
     );
 }
 
@@ -869,8 +869,11 @@ sub add_flag_comment {
     my ( $bug, $attachment, $comment, $user, $old_flags, $new_flags, $timestamp )
         = @$params{qw(bug attachment comment user old_flags new_flags timestamp)};
 
-    my $old_user = Bugzilla->user;
-    Bugzilla->set_user($user);
+    my $old_user;
+    if ($user) {
+        $old_user = Bugzilla->user;
+        Bugzilla->set_user($user);
+    }
 
     INFO("Flag comment: $comment");
     $bug->add_comment(
