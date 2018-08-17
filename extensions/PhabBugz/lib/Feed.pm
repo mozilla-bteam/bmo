@@ -129,15 +129,15 @@ sub feed_query {
 
     # Process each story
     foreach my $story_data (@$new_stories) {
-        my $story_id     = $story_data->{id};
-        my $story_phid   = $story_data->{phid};
-        my $author_phid  = $story_data->{authorPHID};
-        my $object_phid  = $story_data->{objectPHID};
-        my $story_text   = $story_data->{text};
+        my $story_id    = $story_data->{id};
+        my $story_phid  = $story_data->{phid};
+        my $author_phid = $story_data->{authorPHID};
+        my $object_phid = $story_data->{objectPHID};
+        my $story_text  = $story_data->{text};
 
         TRACE("STORY ID: $story_id");
         TRACE("STORY PHID: $story_phid");
-        TRACE("AUTHOR PHID: $author_phid" );
+        TRACE("AUTHOR PHID: $author_phid");
         TRACE("OBJECT PHID: $object_phid");
         INFO("STORY TEXT: $story_text");
 
