@@ -234,7 +234,7 @@ JSON
         attachments => [
             Bugzilla::Attachment->fake_new(
                 mimetype => 'text/x-phabricator-request',
-                filename    => 'phabricator-D9999-url.txt',
+                filename => 'phabricator-D9999-url.txt',
             ),
         ]
     );
