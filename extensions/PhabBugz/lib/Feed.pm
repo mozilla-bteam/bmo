@@ -155,10 +155,8 @@ sub feed_query {
           { phids => [ $author_phid  ] }
         );
 
-        if (   $author
-            && $author->bugzilla_id )
-        {
-            if ( $author->bugzilla_user->login eq PHAB_AUTOMATION_USER ) {
+        if ($author && $author->bugzilla_id) {
+            if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
                 INFO("SKIPPING: Change made by phabricator user");
                 $self->save_last_id( $story_id, 'feed' );
                 next;
