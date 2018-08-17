@@ -384,7 +384,8 @@ sub process_revision_change {
             return;
         }
     }
-    
+
+
     my $log_message = sprintf(
         "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s | %s",
         $revision->id,
