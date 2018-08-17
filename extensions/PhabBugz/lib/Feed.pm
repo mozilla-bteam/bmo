@@ -873,8 +873,6 @@ sub add_flag_comment {
 
     $attachment->set_flags( $old_flags, $new_flags );
     $attachment->update($timestamp);
-
-    Bugzilla->set_user($old_user) if $old_user;
 }
 
 1;
