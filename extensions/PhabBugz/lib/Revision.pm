@@ -286,11 +286,13 @@ sub update {
 
 sub _build_bug {
     my ($self) = @_;
-    return Bugzilla::Bug->new( { id => $self->bug_id, cache => 1 } );
+    return $self->{bug} ||=
+      Bugzilla::Bug->new( { id => $self->bug_id, cache => 1 } );
 }
 
 sub _build_author {
     my ($self) = @_;
+    return $self->{author} if $self->{author};
     my $phab_user = Bugzilla::Extension::PhabBugz::User->new_from_query(
       {
         phids => [ $self->author_phid ]
@@ -304,6 +306,7 @@ sub _build_author {
 sub _build_reviewers {
     my ($self) = @_;
 
+    return $self->{reviewers} if $self->{reviewers};
     return [] unless $self->reviewers_raw;
 
     my @phids;
@@ -328,12 +331,13 @@ sub _build_reviewers {
         }
     }
 
-    return $users;
+    return $self->{reviewers} = $users;
 }
 
 sub _build_subscribers {
     my ($self) = @_;
 
+    return $self->{subscribers} if $self->{subscribers};
     return [] unless $self->subscribers_raw->{subscriberPHIDs};
 
     my @phids;
@@ -347,7 +351,7 @@ sub _build_subscribers {
       }
     );
 
-    return $users;
+    return $self->{subscribers} = $users;
 }
 
 sub _build_projects {
@@ -365,7 +369,7 @@ sub _build_projects {
         );
     }
 
-    return \@projects;
+    return $self->{projects} = \@projects;
 }
 
 #########################
