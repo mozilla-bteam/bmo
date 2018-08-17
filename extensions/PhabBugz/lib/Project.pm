@@ -158,7 +158,7 @@ sub create {
     );
     my ( $class, $params ) = $check->(@_);
 
-    my $name        = $params->{name};
+    my $name        = trim($params->{name});
     my $description = $params->{description};
     my $view_policy = $params->{view_policy};
     my $edit_policy = $params->{edit_policy};
