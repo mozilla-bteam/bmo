@@ -158,13 +158,13 @@ sub feed_query {
         if ($author && $author->bugzilla_id) {
             if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
                 INFO("SKIPPING: Change made by phabricator user");
-                $self->save_last_id( $story_id, 'feed' );
+                $self->save_last_id($story_id, 'feed');
                 next;
             }
         }
         else {
             my $phab_user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
-            $changer = Bugzilla::Extension::PhabBugz::User->new_from_query(
+            $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
                 {
                     ids => [ $phab_user->id ]
                 }
@@ -172,7 +172,7 @@ sub feed_query {
         }
 
         with_writable_database {
-            $self->process_revision_change($object_phid, $changer, $story_text);
+            $self->process_revision_change($object_phid, $author, $story_text);
         };
         $self->save_last_id($story_id, 'feed');
     }
@@ -359,7 +359,8 @@ sub group_query {
 }
 
 sub process_revision_change {
-    my ($self, $revision_phid, $changer, $story_text) = @_;
+    state $check = compile($invocant, Revision | Str, PhabUser, Str);
+    my ($self, $revision_phid, $changer, $story_text) = $check->(@_);
 
     # Load the revision from Phabricator
     my $revision =
