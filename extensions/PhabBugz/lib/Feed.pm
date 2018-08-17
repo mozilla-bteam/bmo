@@ -8,12 +8,12 @@
 package Bugzilla::Extension::PhabBugz::Feed;
 
 use 5.10.1;
-use Moo;
 
-use IO::Async::Loop;
 use IO::Async::Timer::Periodic;
-use List::MoreUtils qw(any uniq);
+use IO::Async::Loop;
 use List::Util qw(first);
+use List::MoreUtils qw(any uniq);
+use Moo;
 use Scalar::Util qw(blessed);
 use Try::Tiny;
 use Type::Params qw( compile );
@@ -297,12 +297,12 @@ sub group_query {
     foreach my $group (@$sync_groups) {
         # Create group project if one does not yet exist
         my $phab_project_name = 'bmo-' . $group->name;
-        my $project = Bugzilla::Extension::PhabBugz::Project->new_from_query(
+        my $project =
+          Bugzilla::Extension::PhabBugz::Project->new_from_query(
             {
-                name => $phab_project_name
+              name => $phab_project_name
             }
         );
-
 
         if ( !$project ) {
             INFO("Project $phab_project_name not found. Creating.");
@@ -354,16 +354,15 @@ sub process_revision_change {
     my ($self, $revision_phid, $story_text) = @_;
 
     # Load the revision from Phabricator
-    my $revision
-      = blessed $revision_phid
-      ? $revision_phid
-      : Bugzilla::Extension::PhabBugz::Revision->new_from_query( { phids => [$revision_phid] } );
+    my $revision =
+        blessed $revision_phid
+        ? $revision_phid
+        : Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_phid ] });
 
     # NO BUG ID
 
-    if ( !$revision->bug_id ) {
-        if ( $story_text =~ /\s+created\s+D\d+/ ) {
-
+    if (!$revision->bug_id) {
+        if ($story_text =~ /\s+created\s+D\d+/) {
             # If new revision and bug id was omitted, make revision public
             INFO("No bug associated with new revision. Marking public.");
             $revision->make_public();
