@@ -131,13 +131,13 @@ sub feed_query {
     foreach my $story_data (@$new_stories) {
         my $story_id     = $story_data->{id};
         my $story_phid   = $story_data->{phid};
-        my $changer_phid = $story_data->{authorPHID};
+        my $author_phid  = $story_data->{authorPHID};
         my $object_phid  = $story_data->{objectPHID};
         my $story_text   = $story_data->{text};
 
         TRACE("STORY ID: $story_id");
         TRACE("STORY PHID: $story_phid");
-        TRACE("CHANGER PHID: $changer_phid");
+        TRACE("AUTHOR PHID: $author_phid" );
         TRACE("OBJECT PHID: $object_phid");
         INFO("STORY TEXT: $story_text");
 
@@ -151,16 +151,14 @@ sub feed_query {
         # Skip changes done by phab-bot user
         # If changer does not exist in bugzilla database
         # we use the phab-bot account as the changer
-        my $changer = Bugzilla::Extension::PhabBugz::User->new_from_query(
-          {
-            phids => [ $changer_phid ]
-          }
+        my $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
+          { phids => [ $author_phid  ] }
         );
 
-        if (   $changer
-            && $changer->bugzilla_id )
+        if (   $author
+            && $author->bugzilla_id )
         {
-            if ( $changer->bugzilla_user->login eq PHAB_AUTOMATION_USER ) {
+            if ( $author->bugzilla_user->login eq PHAB_AUTOMATION_USER ) {
                 INFO("SKIPPING: Change made by phabricator user");
                 $self->save_last_id( $story_id, 'feed' );
                 next;
