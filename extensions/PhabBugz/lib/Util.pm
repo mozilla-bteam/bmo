@@ -20,7 +20,7 @@ use Bugzilla::Util qw(trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
-use JSON::MaybeXS qw(encode_json decode_json);
+use JSON::XS qw(encode_json decode_json);
 use List::Util qw(first);
 use LWP::UserAgent;
 use Taint::Util qw(untaint);
@@ -211,14 +211,15 @@ sub request {
 
 sub set_phab_user {
     my $old_user = Bugzilla->user;
-    my $user = Bugzilla::User->check( { name => PHAB_AUTOMATION_USER } );
+    my $user = Bugzilla::User->new( { name => PHAB_AUTOMATION_USER } );
     $user->{groups} = [ Bugzilla::Group->get_all ];
     Bugzilla->set_user($user);
     return $old_user;
 }
 
 sub get_needs_review {
-    my $user = Bugzilla->user;
+    my ($user) = @_;
+    $user //= Bugzilla->user;
     return unless $user->id;
 
     my $phab_user = Bugzilla::Extension::PhabBugz::User->new_from_query(
