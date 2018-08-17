@@ -46,6 +46,7 @@ use File::Basename;
 use File::Spec::Functions;
 use Safe;
 use JSON::XS qw(decode_json);
+use Scope::Guard;
 
 use parent qw(Bugzilla::CPAN);
 
