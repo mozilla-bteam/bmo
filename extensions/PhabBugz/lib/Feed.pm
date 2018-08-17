@@ -359,7 +359,7 @@ sub group_query {
 }
 
 sub process_revision_change {
-    state $check = compile($invocant, Revision | Str, PhabUser, Str);
+    state $check = compile($Invocant, Revision | Str, PhabUser, Str);
     my ($self, $revision_phid, $changer, $story_text) = $check->(@_);
 
     # Load the revision from Phabricator
