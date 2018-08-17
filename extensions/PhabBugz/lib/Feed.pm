@@ -384,8 +384,7 @@ sub process_revision_change {
             return;
         }
     }
-
-
+    
     my $log_message = sprintf(
         "REVISION CHANGE FOUND: D%d: %s | bug: %d | %s | %s",
         $revision->id,
@@ -468,25 +467,41 @@ sub process_revision_change {
     my $rev_attachment = create_revision_attachment($bug, $revision, $timestamp, $revision->author->bugzilla_user);
     INFO('Attachment ' . $rev_attachment->id . ' created or already exists.');
 
-    # ATTACHMENT UPDATES
+    # ATTACHMENT OBSOLETES
 
     # fixup attachments on current bug
     my @attachments =
       grep { is_attachment_phab_revision($_) } @{ $bug->attachments() };
 
-    my $other_bugs;
     foreach my $attachment (@attachments) {
-        my ($attach_revision_id) = ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
+        my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
         next if $attach_revision_id != $revision->id;
-        $other_bugs = $self->update_attachment(
-            {
-                revision   => $revision,
-                bug        => $bug,
-                attachment => $attachment,
-                timestamp  => $timestamp,
-                changer    => $changer->bugzilla_user
-            }
-        );
+
+        my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
+        INFO('Updating obsolete status on attachmment ' . $attachment->id);
+        $attachment->set_is_obsolete($make_obsolete);
+
+        if ($revision->title ne $attachment->description) {
+            INFO('Updating description on attachment ' . $attachment->id);
+            $attachment->set_description($revision->title);
+        }
+
+        $attachment->update($timestamp);
+    }
+
+    # fixup attachments with same revision id but on different bugs
+    my %other_bugs;
+    my $other_attachments = Bugzilla::Attachment->match({
+        mimetype => PHAB_CONTENT_TYPE,
+        filename => 'phabricator-D' . $revision->id . '-url.txt',
+        WHERE    => { 'bug_id != ? AND NOT isobsolete' => $bug->id }
+    });
+    foreach my $attachment (@$other_attachments) {
+        $other_bugs{$attachment->bug_id}++;
+        INFO('Updating obsolete status on attachment ' .
+             $attachment->id . " for bug " . $attachment->bug_id);
+        $attachment->set_is_obsolete(1);
+        $attachment->update($timestamp);
     }
 
     # REVIEWER STATUSES
@@ -593,7 +608,7 @@ sub process_revision_change {
 
     # Email changes for this revisions bug and also for any other
     # bugs that previously had these revision attachments
-    foreach my $bug_id ( $revision->bug_id, keys %{$other_bugs} ) {
+    foreach my $bug_id ($revision->bug_id, keys %other_bugs) {
         Bugzilla::BugMail::Send( $bug_id, { changer => $changer->bugzilla_user } );
     }
 
@@ -857,53 +872,8 @@ sub add_flag_comment {
 
     $attachment->set_flags( $old_flags, $new_flags );
     $attachment->update($timestamp);
-}
-
-sub update_attachment {
-    my ( $self, $params ) = @_;
-    my ( $revision, $bug, $attachment, $timestamp, $changer ) = @$params{qw(revision bug attachment timestamp changer)};
-
-    my $old_user;
-    if ($changer) {
-        $old_user = Bugzilla->user;
-        Bugzilla->set_user($changer);
-    }
-
-    my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
-    INFO( 'Updating obsolete status on attachmment ' . $attachment->id );
-    $attachment->set_is_obsolete($make_obsolete);
-
-    if ( $revision->title ne $attachment->description ) {
-        INFO( 'Updating description on attachment ' . $attachment->id );
-        $attachment->set_description( $revision->title );
-    }
-
-    # obsolete attachments with same revision id but on different bugs
-    my $other_attachments = Bugzilla::Attachment->match(
-        {
-            mimetype => PHAB_CONTENT_TYPE,
-            filename => 'phabricator-D' . $revision->id . '-url.txt',
-            WHERE    => { 'bug_id != ? AND NOT isobsolete' => $bug->id }
-        }
-    );
-
-    my $other_bugs;
-    foreach my $other_attachment (@$other_attachments) {
-        $other_bugs->{ $other_attachment->bug_id }++;
-        INFO(     'Updating obsolete status on attachment '
-                . $other_attachment->id
-                . " for bug "
-                . $other_attachment->bug_id );
-        $other_attachment->set_is_obsolete(1);
-        $other_attachment->update($timestamp);
-    }
-
-    $attachment->update($timestamp);
 
     Bugzilla->set_user($old_user) if $old_user;
-
-    return $other_bugs;
 }
-
 
 1;
