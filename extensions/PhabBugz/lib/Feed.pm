@@ -610,7 +610,7 @@ sub process_revision_change {
     # Email changes for this revisions bug and also for any other
     # bugs that previously had these revision attachments
     foreach my $bug_id ($revision->bug_id, keys %other_bugs) {
-        Bugzilla::BugMail::Send( $bug_id, { changer => $changer->bugzilla_user } );
+        Bugzilla::BugMail::Send($bug_id, { changer => $changer->bugzilla_user });
     }
 
     INFO('SUCCESS: Revision D' . $revision->id . ' processed');
