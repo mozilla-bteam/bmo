@@ -362,7 +362,7 @@ sub group_query {
 }
 
 sub process_revision_change {
-    state $check = compile($Invocant, Revision, PhabUser, Str);
+    state $check = compile($Invocant, Revision, LinkedPhabUser, Str);
     my ($self, $revision, $changer, $story_text) = $check->(@_);
 
     # NO BUG ID
