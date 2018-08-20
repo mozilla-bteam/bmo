@@ -315,12 +315,12 @@ sub _build_reviews {
 
     return [
         map {
-            +{
+            {
                 user => $_,
                 status => $by_phid{ $_->phid }{status},
             }
-        }
-    ]
+        } @$users
+    ];
 }
 
 sub _build_subscribers {
