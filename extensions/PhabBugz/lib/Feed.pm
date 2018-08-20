@@ -54,8 +54,10 @@ sub start {
         interval       => PHAB_FEED_POLL_SECONDS,
         reschedule     => 'drift',
         on_tick        => sub {
-            try{
-                $self->feed_query();
+            try {
+                with_writable_database {
+                    $self->feed_query();
+                };
             }
             catch {
                 FATAL($_);
@@ -70,8 +72,10 @@ sub start {
         interval       => PHAB_USER_POLL_SECONDS,
         reschedule     => 'drift',
         on_tick        => sub {
-            try{
-                $self->user_query();
+            try {
+                with_writable_database {
+                    $self->user_query();
+                };
             }
             catch {
                 FATAL($_);
@@ -86,8 +90,10 @@ sub start {
         interval       => PHAB_GROUP_POLL_SECONDS,
         reschedule     => 'drift',
         on_tick        => sub {
-            try{
-                $self->group_query();
+            try {
+                with_writable_database {
+                    $self->group_query();
+                };
             }
             catch {
                 FATAL($_);
@@ -170,10 +176,9 @@ sub feed_query {
                 }
             );
         }
-
-        with_writable_database {
-            $self->process_revision_change($object_phid, $author, $story_text);
-        };
+        # Load the revision from Phabricator
+        my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $object_phid ] });
+        $self->process_revision_change($revision, $author, $story_text);
         $self->save_last_id($story_id, 'feed');
     }
 
@@ -205,9 +210,7 @@ sub feed_query {
             }
         );
 
-        with_writable_database {
-            $self->process_revision_change( $revision, $revision->author, " created D" . $revision->id );
-        };
+        $self->process_revision_change( $revision, $revision->author, " created D" . $revision->id );
 
         # Set the build target to a passing status to
         # allow the revision to exit draft state
@@ -359,17 +362,10 @@ sub group_query {
 }
 
 sub process_revision_change {
-    state $check = compile($Invocant, Revision | Str, PhabUser, Str);
-    my ($self, $revision_phid, $changer, $story_text) = $check->(@_);
-
-    # Load the revision from Phabricator
-    my $revision =
-        blessed $revision_phid
-        ? $revision_phid
-        : Bugzilla::Extension::PhabBugz::Revision->new_from_query({ phids => [ $revision_phid ] });
+    state $check = compile($Invocant, Revision, PhabUser, Str);
+    my ($self, $revision, $changer, $story_text) = $check->(@_);
 
     # NO BUG ID
-
     if (!$revision->bug_id) {
         if ($story_text =~ /\s+created\s+D\d+/) {
             # If new revision and bug id was omitted, make revision public
