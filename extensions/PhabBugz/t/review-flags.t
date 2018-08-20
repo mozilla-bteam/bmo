@@ -9,7 +9,7 @@ use strict;
 use warnings;
 use 5.10.1;
 use lib qw( . lib local/lib/perl5 );
-#BEGIN { $ENV{LOG4PERL_CONFIG_FILE} = 'log4perl-t.conf' }
+BEGIN { $ENV{LOG4PERL_CONFIG_FILE} = 'log4perl-t.conf' }
 use Test2::V0;
 
 our @EMAILS;
@@ -43,7 +43,11 @@ SetParam(mailfrom => 'bugzilla-daemon');
 Bugzilla->error_mode(ERROR_MODE_TEST);
 my $nobody = create_user('nobody@mozilla.org', '*');
 my $phab_bot = create_user(PHAB_AUTOMATION_USER, '*');
+
+# Steve Rogers is the revision author
 my $steve = create_user('steverogers@avengers.org', '*', realname => 'Steve Rogers :steve');
+
+# Bucky Barns is the reviewer
 my $bucky = create_user('bucky@avengers.org', '*', realname => 'Bucky Barns :bucky');
 
 my $firefox = Bugzilla::Product->create(
@@ -103,14 +107,20 @@ my $revision = Bugzilla::Extension::PhabBugz::Revision->new(
         attachments => {
             projects => { projectPHIDs => [] },
             reviewers => {
-                reviewers => [],
+                reviewers => [ ],
             },
             subscribers => {
                 subscriberPHIDs => [],
                 subscriberCount => 1,
                 viewerIsSubscribed => 1,
             }
-        }
+        },
+        reviews => [
+            {
+                user => new_phab_user($bucky),
+                status => 'accepted',
+            }
+        ]
     }
 );
 my $PhabRevisionMock = mock 'Bugzilla::Extension::PhabBugz::Revision' => (
@@ -141,16 +151,25 @@ $feed->process_revision_change(
     $revision, $changer, "story text"
 );
 
+# The first comment, and the comment made when the attachment is attached
+# are made by Steve.
+# The review comment is made by Bucky.
+
 my $sth = Bugzilla->dbh->prepare("select profiles.login_name, thetext from longdescs join profiles on who = userid");
 $sth->execute;
 while (my $row = $sth->fetchrow_hashref) {
-    if ($row->{thetext} =~ /irst post/) {
+    if ($row->{thetext} =~ /first post/i) {
         is($row->{login_name}, $steve->login, 'first post author');
     }
-    elsif ($row->{thetext} =~ /the summary of the revision/) {
+    elsif ($row->{thetext} =~ /the summary of the revision/i) {
         is($row->{login_name}, $steve->login, 'the first attachment comment');
     }
+    elsif ($row->{thetext} =~ /has approved the revision/i) {
+        is($row->{login_name}, $bucky->login);
+    }
 }
+
+diag Dumper(\@EMAILS);
 
 done_testing;
 

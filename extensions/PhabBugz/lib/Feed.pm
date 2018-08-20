@@ -539,6 +539,8 @@ sub process_revision_change {
 
         $flag_type ||= first { $_->name eq 'review' && $_->is_active } @{ $attachment->flag_types };
 
+        die "Unable to find review flag!" unless $flag_type;
+
         # Create new flags
         foreach my $user_id (@accepted_user_ids) {
             next if $accepted_done{$user_id};
