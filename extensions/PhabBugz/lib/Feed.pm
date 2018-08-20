@@ -498,9 +498,9 @@ sub process_revision_change {
     # REVIEWER STATUSES
 
     my (@accepted_phids, @denied_phids, @accepted_user_ids, @denied_user_ids);
-    foreach my $reviewer (@{ $revision->reviewers }) {
-        push(@accepted_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'accepted';
-        push(@denied_phids, $reviewer->phid) if $reviewer->{phab_review_status} eq 'rejected';
+    foreach my $review (@{ $revision->reviews }) {
+        push @accepted_phids, $review->{user}->phid if $review->{status} eq 'accepted';
+        push @denied_phids,   $review->{user}->phid if $review->{status} eq 'rejected';
     }
 
     if ( @accepted_phids ) {
@@ -521,7 +521,7 @@ sub process_revision_change {
         @denied_user_ids = map { $_->bugzilla_user->id } grep { defined $_->bugzilla_user } @$phab_users;
     }
 
-    my %reviewers_hash =  map { $_->name => 1 } @{ $revision->reviewers };
+    my %reviewers_hash =  map { $_->{user}->name => 1 } @{ $revision->reviews };
 
     foreach my $attachment (@attachments) {
         my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
