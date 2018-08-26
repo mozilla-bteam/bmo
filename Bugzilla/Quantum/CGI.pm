@@ -66,8 +66,9 @@ sub load_one {
             die $_ unless ref $_ eq 'ARRAY' && $_->[0] eq "EXIT\n";
         }
         finally {
+            my $error = shift;
             untie *STDOUT;
-            $c->finish;
+            $c->finish unless $error;
             Bugzilla->cleanup;
             CGI::initialize_globals();
         };
