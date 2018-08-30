@@ -77,7 +77,6 @@ $(function() {
         var bugQueryCallback = {
             success: function(e) {
                 if (e.response) {
-                    Y.one('#query_loading').addClass('bz_default_hidden');
                     Y.one('#query_count_refresh').removeClass('bz_default_hidden');
                     Y.one("#query_container .query_description").setHTML(e.response.meta.description);
                     Y.one("#query_container .query_heading").setHTML(e.response.meta.heading);
@@ -101,8 +100,6 @@ $(function() {
                 }
             },
             failure: function(o) {
-                Y.one('#query_loading').addClass('bz_default_hidden');
-                Y.one('#query_count_refresh').removeClass('bz_default_hidden');
                 if (o.error) {
                     alert("Failed to load bug list from Bugzilla:\n\n" + o.error.message);
                 } else {
@@ -117,7 +114,6 @@ $(function() {
             counter = counter + 1;
             lastChangesCache = {};
 
-            Y.one('#query_loading').removeClass('bz_default_hidden');
             Y.one('#query_count_refresh').addClass('bz_default_hidden');
             bugQueryTable.set('data', []);
             bugQueryTable.render("#query_table");
@@ -177,9 +173,6 @@ $(function() {
                 { key: "bug_status", label: "Status", sortable: true },
                 { key: "short_desc", label: "Summary", sortable: true },
             ],
-            strings: {
-                emptyMessage: 'Zarro Boogs found'
-            }
         });
 
         var last_changes_source   = Y.one('#last-changes-template').getHTML(),
