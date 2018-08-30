@@ -154,10 +154,11 @@ $(function () {
                 '<tr class="' + row.getAttribute('class') + '">' +
                 '<td class="yui3-datatable-cell" colspan="4">' +
                 '<a href="' + o.data.url + '" target="_blank">' +
-                Y.Escape.html(o.data.title) + '</a></td></tr>',
-                'after');
+                Y.Escape.html('D' + o.data.id + ' - ' + o.data.title) +
+                '</a></td></tr>',
+                'before');
 
-            o.cell.setHTML('<a href="' + o.data.url + '">D' + o.data.id + '</a>');
+            o.cell.set('text', o.data.status == 'added' ? 'pending' : o.data.status);
 
             return false;
         };
@@ -178,9 +179,7 @@ $(function () {
             dataTable.reviews = new Y.DataTable({
                 columns: [
                     { key: 'author_email', label: 'Requester', sortable: true,
-                        formatter: phabAuthorFormatter, allowHTML: true },
-                    { key: 'id', label: 'Revision', sortable: true,
-                        nodeFormatter: phabRowFormatter, allowHTML: true },
+                        formattter: phabAuthorFormatter, allowHTML: true },
                     { key: 'bug_id', label: 'Bug', sortable: true,
                         formatter: bugLinkFormatter, allowHTML: true },
                     { key: 'updated', label: 'Updated', sortable: true,
