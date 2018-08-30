@@ -235,19 +235,16 @@ sub get_needs_review {
     ThrowCodeError('phabricator_api_error', { reason => 'Malformed Response' })
         unless exists $diffs->{result}{data};
 
-    my @revisions;
-    foreach my $revision ( @{ $diffs->{result}{data} } ) {
-        foreach my $reviewer ( @{ $revision->{attachments}->{reviewers}->{reviewers} } ) {
-            if (   $reviewer->{reviewerPHID} eq $phab_user->phid
-                && $reviewer->{status} =~ /^(?:added|blocking)$/ )
-            {
-                push @revisions, $revision;
-                last;
-            }
-        }
+    # extract this reviewer's status from 'attachments'
+    my @result;
+    foreach my $diff (@{ $diffs->{result}{data} }) {
+        my $attachments = delete $diff->{attachments};
+        my $reviewers   = $attachments->{reviewers}{reviewers};
+        my $review      = first { $_->{reviewerPHID} eq $phab_user->phid } @$reviewers;
+        $diff->{fields}{review_status} = $review->{status};
+        push @result, $diff;
     }
-
-    return \@revisions;
+    return \@result;
 }
 
 1;
