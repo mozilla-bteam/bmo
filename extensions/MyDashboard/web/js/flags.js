@@ -32,17 +32,22 @@ $(function () {
             var callback = {
                 success: function(e) {
                     if (e.response) {
+                        Y.one('#' + type + '_loading').addClass('bz_default_hidden');
                         Y.one('#' + type + '_count_refresh').removeClass('bz_default_hidden');
                         Y.one("#" + type + "_flags_found").setHTML(
-                            e.response.results.length + ' flags found');
+                            e.response.results.length +
+                            ' request' + (e.response.results.length == 1 ? '' : 's') +
+                            ' found');
                         dataTable[type].set('data', e.response.results);
                     }
                 },
                 failure: function(o) {
-                    if (o.error) {
-                        alert("Failed to load flag list from Bugzilla:\n\n" + o.error.message);
+                    Y.one('#' + type + '_loading').addClass('bz_default_hidden');
+                    Y.one('#' + type + '_count_refresh').removeClass('bz_default_hidden');
+                    if (o.error && o.error.message) {
+                        alert("Failed to load requests:\n\n" + o.error.message);
                     } else {
-                        alert("Failed to load flag list from Bugzilla.");
+                        alert("Failed to load requests");
                     }
                 }
             };
@@ -51,13 +56,15 @@ $(function () {
                 version: "1.1",
                 method:  "MyDashboard.run_flag_query",
                 id:      counter,
-                params:  { type : type,
-                        Bugzilla_api_token : (BUGZILLA.api_token ? BUGZILLA.api_token : '')
+                params:  {
+                    type : type,
+                    Bugzilla_api_token : (BUGZILLA.api_token ? BUGZILLA.api_token : '')
                 }
             };
 
             var stringified = Y.JSON.stringify(json_object);
 
+            Y.one('#' + type + '_loading').removeClass('bz_default_hidden');
             Y.one('#' + type + '_count_refresh').addClass('bz_default_hidden');
 
             dataTable[type].set('data', []);
@@ -86,14 +93,17 @@ $(function () {
         };
 
         var bugLinkFormatter = function(o) {
+            if (!o.data.bug_id) {
+                return '-';
+            }
             var bug_closed = "";
             if (o.data.bug_status == 'RESOLVED' || o.data.bug_status == 'VERIFIED') {
                 bug_closed = "bz_closed";
             }
-            return '<a href="show_bug.cgi?id=' + encodeURIComponent(o.value) +
+            return '<a href="show_bug.cgi?id=' + encodeURIComponent(o.data.bug_id) +
                 '" target="_blank" ' + 'title="' + Y.Escape.html(o.data.bug_status) + ' - ' +
-                Y.Escape.html(o.data.bug_summary) + '" class="' + Y.Escape.html(bug_closed) +
-                '">' + o.value + '</a>';
+                Y.Escape.html(o.data.bug_summary) + '" class="' + bug_closed +
+                '">' + o.data.bug_id + '</a>';
         };
 
         var updatedFormatter = function(o) {
@@ -146,7 +156,7 @@ $(function () {
                 formatter: updatedFormatter, allowHTML: true }
             ],
             strings: {
-                emptyMessage: 'No flag data found.',
+                emptyMessage: 'No flags requested of you.',
             }
         });
 
@@ -196,7 +206,7 @@ $(function () {
                 formatter: updatedFormatter, allowHTML: true }
             ],
             strings: {
-                emptyMessage: 'No flag data found.',
+                emptyMessage: 'No requested flags found.',
             }
         });
 
@@ -214,6 +224,13 @@ $(function () {
             }
         });
 
+        Y.one('#requester_refresh').on('click', function(e) {
+            updateFlagTable('requester');
+        });
+        Y.one('#requester_buglist').on('click', function(e) {
+            loadBugList('requester');
+        });
+
         // Initial load
         Y.on("contentready", function (e) {
             updateFlagTable("requestee");
@@ -221,12 +238,5 @@ $(function () {
         Y.on("contentready", function (e) {
             updateFlagTable("requester");
         }, "#requester_table");
-
-        Y.one('#requester_refresh').on('click', function(e) {
-            updateFlagTable('requester');
-        });
-        Y.one('#requester_buglist').on('click', function(e) {
-            loadBugList('requester');
-        });
     });
 });

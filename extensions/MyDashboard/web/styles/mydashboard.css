@@ -18,7 +18,7 @@
     white-space: nowrap;
 }
 
-#requestee_container, #requester_container {
+#mydashboard .requests {
     margin-bottom: 2em;
 }
 
