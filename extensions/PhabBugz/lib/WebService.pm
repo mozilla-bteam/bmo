@@ -13,6 +13,7 @@ use warnings;
 
 use base qw(Bugzilla::WebService);
 
+use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::User;
@@ -20,17 +21,19 @@ use Bugzilla::Util qw(detaint_natural trick_taint);
 use Bugzilla::WebService::Constants;
 
 use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::Revision;
+use Bugzilla::Extension::PhabBugz::Util qw(request);
 
-use List::Util qw(first);
-use List::MoreUtils qw(any);
 use MIME::Base64 qw(decode_base64);
 
 use constant READ_ONLY => qw(
+    bug_revisions
     check_user_enter_bug_permission
     check_user_permission_for_bug
 );
 
 use constant PUBLIC_METHODS => qw(
+    bug_revisions
     check_user_enter_bug_permission
     check_user_permission_for_bug
     set_build_target
@@ -131,6 +134,77 @@ sub set_build_target {
     return { result => 1 };
 }
 
+sub bug_revisions {
+    my ( $self, $params ) = @_;
+
+    $self->_check_phabricator();
+
+    my $user = Bugzilla->login(LOGIN_REQUIRED);
+
+    # Validate that a bug id and user id are provided
+    ThrowUserError('phabricator_invalid_request_params')
+        unless $params->{bug_id};
+
+    # Validate that the user can see the bug itself
+    my $bug = Bugzilla::Bug->check( { id => $params->{bug_id}, cache => 1 } );
+
+    my @revision_ids;
+    foreach my $attachment ( @{ $bug->attachments } ) {
+        next if $attachment->contenttype ne PHAB_CONTENT_TYPE;
+        my ($revision_id) = ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
+        next if !$revision_id;
+        push @revision_ids, int($revision_id);
+    }
+
+    my $response = request(
+        'differential.revision.search',
+        {
+            attachments => {
+                projects    => 1,
+                reviewers   => 1,
+                subscribers => 1,
+            },
+            constraints => {
+                ids => \@revision_ids,
+            },
+            order => 'newest',
+        }
+    );
+
+    ThrowCodeError( 'phabricator_api_error', { reason => 'Malformed Response' } )
+        unless exists $response->{result}{data};
+
+    my @revisions;
+    foreach my $revision ( @{ $response->{result}{data} } ) {
+        my $revision_obj  = Bugzilla::Extension::PhabBugz::Revision->new($revision);
+        my $revision_data = {
+            id     => 'D' . $revision_obj->id,
+            author => $revision_obj->author->name,
+            status => $revision_obj->status,
+        };
+
+        my @reviews;
+        foreach my $review ( @{ $revision_obj->reviews } ) {
+            push @reviews, {
+                user   => $review->{user}->name,
+                status => $review->{status}
+            };
+        }
+        $revision_data->{reviews} = \@reviews;
+
+        if ( $revision_obj->view_policy ne 'public' ) {
+            $revision_data->{title} = '(secured)';
+        }
+        else {
+            $revision_data = $revision->title;
+        }
+
+        push @revisions, $revision_data;
+    }
+
+    return { revisions => \@revisions };
+}
+
 sub rest_resources {
     return [
         # Set build target in Phabricator
@@ -159,6 +233,14 @@ sub rest_resources {
                 method => 'check_user_enter_bug_permission',
                 params => sub {
                     return { product => $_[0], user_id => $_[1] };
+                },
+            },
+        },
+        qr{^/phabbugz/bug_revisions/(\d+)$}, {
+            GET => {
+                method => 'bug_revisions',
+                params => sub {
+                    return { bug_id => $_[0] };
                 },
             },
         },

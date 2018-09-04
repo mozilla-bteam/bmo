@@ -1,0 +1,79 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+.phabricator-table {
+    background: #fff;
+    border: none;
+    border-collapse: collapse;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.phabricator-table th {
+    text-align: left;
+    padding: 4px;
+}
+
+.phabricator-table td {
+    vertical-align: middle !important;
+    padding: 4px !important;
+}
+
+.phabricator-table thead, .phabricator-table tfoot {
+    background-color: #eee;
+    color: #404040;
+}
+
+.phabricator-revisions {
+    background: #fff;
+    border: none;
+    border-collapse: collapse;
+}
+
+.phabricator-revisions th {
+    padding: 2px;
+}
+
+.phabricator-revisions td {
+    padding: 2px;
+}
+
+.phabricator-revisions .phabricator-title {
+    text-align: left;
+}
+
+.phabricator-revisions .phabricator-open-issues {
+    text-align: center;
+}
+
+.phabricator-revisions .phabricator-diffstat {
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* bug-modal specific */
+
+#module-phabricator-revisions .module-content {
+    padding: 0;
+}
+
+.bug_modal .phabricator-table {
+    width: 100%;
+}
+
+.bug_modal .phabricator-revision td {
+    padding-left: 8px;
+}
+
+.bug_modal .phabricator-revisions th {
+    text-align: left;
+    padding-left: 8px;
+}
+
+.bug_modal .phabricator-hide-discarded-row {
+    padding: 4px;
+}
