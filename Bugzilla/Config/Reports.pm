@@ -31,7 +31,7 @@ sub get_param_list {
         {
             name    => 'report_secbugs_products',
             type    => 'l',
-            default => ''
+            default => '[]'
         },
      );
 }

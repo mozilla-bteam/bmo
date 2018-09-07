@@ -33,32 +33,29 @@ exit 0 unless Bugzilla->params->{report_secbugs_active};
 exit 0 unless defined $ARGV[0] && defined $ARGV[1] && defined $ARGV[2];
 
 my $html;
-my $template = Bugzilla->template();
-my $end_date = DateTime->new(year => $ARGV[0], month => $ARGV[1], day => $ARGV[2]);
-my $start_date = $end_date->clone()->subtract(months => 6);
-my $report_week = $end_date->ymd('-');
-my $products = decode_json(Bugzilla->params->{report_secbugs_products});
-my $sec_keywords = [
-    'sec-critical',
-    'sec-high'
-];
-my $report = Bugzilla::Report::SecurityRisk->new(
-    start_date => $start_date,
-    end_date => $end_date,
-    products => $products,
+my $template     = Bugzilla->template();
+my $end_date     = DateTime->new( year => $ARGV[0], month => $ARGV[1], day => $ARGV[2] );
+my $start_date   = $end_date->clone()->subtract( months => 6 );
+my $report_week  = $end_date->ymd('-');
+my $products     = decode_json( Bugzilla->params->{report_secbugs_products} );
+my $sec_keywords = [ 'sec-critical', 'sec-high' ];
+my $report       = Bugzilla::Report::SecurityRisk->new(
+    start_date   => $start_date,
+    end_date     => $end_date,
+    products     => $products,
     sec_keywords => $sec_keywords
 );
 my $vars = {
-    urlbase => Bugzilla->localconfig->{urlbase},
-    report_week => $report_week,
-    products => $products,
-    sec_keywords => $sec_keywords,
-    results => $report->results,
+    urlbase         => Bugzilla->localconfig->{urlbase},
+    report_week     => $report_week,
+    products        => $products,
+    sec_keywords    => $sec_keywords,
+    results         => $report->results,
     build_bugs_link => \&build_bugs_link,
 };
 
-$template->process('reports/email/security-risk.html.tmpl', $vars, \$html)
-            || ThrowTemplateError($template->error());
+$template->process( 'reports/email/security-risk.html.tmpl', $vars, \$html )
+    or ThrowTemplateError( $template->error() );
 
 # For now, only send HTML email.
 my $email = Email::MIME->create(
@@ -78,9 +75,9 @@ my $email = Email::MIME->create(
 MessageToMTA($email);
 
 sub build_bugs_link {
-    my ($arr, $product) = @_;
-    my $uri = URI->new(Bugzilla->localconfig->{urlbase} . 'buglist.cgi');
-    $uri->query_param(bug_id => (join ',', @$arr));
-    $uri->query_param(product => $product) if $product;
+    my ( $arr, $product ) = @_;
+    my $uri = URI->new( Bugzilla->localconfig->{urlbase} . 'buglist.cgi' );
+    $uri->query_param( bug_id => ( join ',', @$arr ) );
+    $uri->query_param( product => $product ) if $product;
     return $uri->as_string;
 }
