@@ -20,14 +20,10 @@ use Try::Tiny;
 use ok 'Bugzilla::Report::SecurityRisk';
 can_ok('Bugzilla::Report::SecurityRisk', qw(new results));
 
-my $status_mock = mock 'Bugzilla::Status' => (
-    override => [
-        is_open_state => sub {
-            my ($state) = @_;
-            return grep { /^$state$/ } qw(UNCOMFIRMED NEW ASSIGNED REOPENED);
-        },
-    ],
-);
+sub check_open_state_mock {
+    my ($state) = @_;
+    return grep { /^$state$/ } qw(UNCOMFIRMED NEW ASSIGNED REOPENED);
+}
 
 try {
     use Bugzilla::Report::SecurityRisk;
@@ -36,6 +32,7 @@ try {
         end_date        => DateTime->new( year => 2000, month => 1, day => 16 ),
         products        => [ 'Firefox', 'Core' ],
         sec_keywords    => [ 'sec-critical', 'sec-high' ],
+        check_open_state  => \&check_open_state_mock,
         initial_bug_ids => [ 1, 2, 3, 4 ],
         initial_bugs    => {
             1 => {

@@ -19,7 +19,7 @@ use List::Util qw(any first sum);
 use Moo;
 use MooX::StrictConstructor;
 use POSIX qw(ceil);
-use Types::Standard qw(Num Int Bool Str HashRef ArrayRef Map Dict Enum);
+use Types::Standard qw(Num Int Bool Str HashRef ArrayRef CodeRef Map Dict Enum);
 use Type::Utils;
 
 my $DateTime = class_type { class => 'DateTime' };
@@ -64,6 +64,12 @@ has 'initial_bugs' => (
             created_at => $DateTime,
         ],
     ],
+);
+
+has 'check_open_state' => (
+    is => 'ro',
+    isa => CodeRef,
+    default => sub { return \&is_open_state; },
 );
 
 has 'events' => (
@@ -144,7 +150,7 @@ sub _build_initial_bugs {
                 }
                 @{ $bug->keyword_objects }
             )->name,
-            is_open    => is_open_state( $bug->status->name ),
+            is_open    => $self->check_open_state->( $bug->status->name ),
             created_at => datetime_from( $bug->creation_ts ),
         };
     }
@@ -204,7 +210,7 @@ sub _build_results {
 
             # Undo bug status changes
             if ( $event->{field_name} eq 'bug_status' ) {
-                $bug->{is_open} = is_open_state( $event->{removed} );
+                $bug->{is_open} = $self->check_open_state->( $event->{removed} );
             }
 
             # Undo keyword changes
