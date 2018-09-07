@@ -139,7 +139,6 @@ try {
         },
     ];
 
-
     is_deeply($actual_results, $expected_results, 'Report results are accurate');
 
 }
