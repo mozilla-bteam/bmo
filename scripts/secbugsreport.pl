@@ -6,6 +6,8 @@
 #
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
+#
+# Usage secbugsreport.pl YYYY MM DD, e.g. secbugsreport.pl $(date +'%Y %m %d')
 
 use 5.10.1;
 use strict;
@@ -22,37 +24,20 @@ use Bugzilla::Report::SecurityRisk;
 
 use DateTime;
 use URI;
+use JSON::MaybeXS;
 
 BEGIN { Bugzilla->extensions }
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
+exit 0 unless Bugzilla->params->{report_secbugs_active};
+exit 0 unless defined $ARGV[0] && defined $ARGV[1] && defined $ARGV[2];
+
 my $html;
 my $template = Bugzilla->template();
-my $start_date = DateTime->today()->subtract(years => 3);
-my $end_date = DateTime->today()->subtract(years => 2, months => 6);
+my $end_date = DateTime->new(year => $ARGV[0], month => $ARGV[1], day => $ARGV[2]);
+my $start_date = $end_date->clone()->subtract(months => 6);
 my $report_week = $end_date->ymd('-');
-my $products = [
-    # Frontend
-    'Firefox',
-    'DevTools',
-    'Toolkit',
-    'WebExtensions',
-    # Platform
-    'Core',
-    'Firefox Build System',
-    'NSPR',
-    'NSS',
-    # Mobile
-    'Firefox for Android',
-    'Firefox for iOS',
-    'Focus',
-    'Focus-iOS',
-    'Emerging Markets',
-    # Others
-    'External Software Affecting Firefox',
-    'Cloud Services',
-    'Pocket',
-];
+my $products = decode_json(Bugzilla->params->{report_secbugs_products});
 my $sec_keywords = [
     'sec-critical',
     'sec-high'
@@ -69,13 +54,7 @@ my $vars = {
     products => $products,
     sec_keywords => $sec_keywords,
     results => $report->results,
-    build_bugs_link => sub {
-        my ($arr, $product) = @_;
-        my $uri = URI->new(Bugzilla->localconfig->{urlbase} . 'buglist.cgi');
-        $uri->query_param(bug_id => (join ',', @$arr));
-        $uri->query_param(product => $product) if $product;
-        return $uri->as_string;
-    }
+    build_bugs_link => \&build_bugs_link,
 };
 
 $template->process('reports/email/security-risk.html.tmpl', $vars, \$html)
@@ -84,8 +63,8 @@ $template->process('reports/email/security-risk.html.tmpl', $vars, \$html)
 # For now, only send HTML email.
 my $email = Email::MIME->create(
     header_str => [
-        From => Bugzilla->params->{'mailfrom'},
-        To => 'vagrant@bmo-web.vm',
+        From    => Bugzilla->params->{'mailfrom'},
+        To      => Bugzilla->params->{report_secbugs_emails},
         Subject => "Security Bugs Report for $report_week"
     ],
     attributes => {
@@ -97,3 +76,11 @@ my $email = Email::MIME->create(
 );
 
 MessageToMTA($email);
+
+sub build_bugs_link {
+    my ($arr, $product) = @_;
+    my $uri = URI->new(Bugzilla->localconfig->{urlbase} . 'buglist.cgi');
+    $uri->query_param(bug_id => (join ',', @$arr));
+    $uri->query_param(product => $product) if $product;
+    return $uri->as_string;
+}

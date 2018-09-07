@@ -20,29 +20,35 @@ use Try::Tiny;
 use ok 'Bugzilla::Report::SecurityRisk';
 can_ok('Bugzilla::Report::SecurityRisk', qw(new results));
 
-my $bug1 = mock { id => 1 };
-
 try {
-    1;
-    # my $report = Bugzilla::Report::SecurityRisk->new(
-    #     start_date => DateTime->new( year => 2018, month => 7, day => 8 ),
-    #     end_date => DateTime->new( year => 2018, month => 7, day => 8 ),
-    #     products =>
-    #     sec_keywords =>
-    #     initial_bug_ids =>
-    #     initial_bugs =>
-    #     events =>
-    # );
+    use Bugzilla::Report::SecurityRisk;
+    my $report = Bugzilla::Report::SecurityRisk->new(
+        start_date => DateTime->new( year => 2000, month => 1, day => 2 ),
+        end_date => DateTime->new( year => 2000, month => 1, day => 30 ),
+        products => ['Firefox', 'Core'],
+        sec_keywords => ['sec-critical', 'sec-high'],
+        initial_bug_ids => [1, 2, 3],
+        initial_bugs => 1,
+        events => 1,
+    );
+    my $results = $report->results;
 
-    # my $results = $report->results;
+    # Test dates
+    my @expected_dates = (
+        DateTime->new( year => 2000, month => 1, day => 2 ),
+        DateTime->new( year => 2000, month => 1, day => 9 ),
+        DateTime->new( year => 2000, month => 1, day => 16 ),
+        DateTime->new( year => 2000, month => 1, day => 23 ),
+        DateTime->new( year => 2000, month => 1, day => 30 ),
+    );
+    my @actual_dates = map { $_->{date} } @$results;
+    is(@actual_dates, @expected_dates, 'Report Week Dates Are Correct');
 
-    # is_deeply($results->critical, { current => 0, previous => 2 },
-    #     'two critical bugs became resolved (or non-critical)');
+    # Test bugs
 }
 catch {
     fail('got an exception during main part of test');
     diag($_);
 };
-
 
 done_testing;
