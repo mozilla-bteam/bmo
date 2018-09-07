@@ -20,6 +20,15 @@ use Try::Tiny;
 use ok 'Bugzilla::Report::SecurityRisk';
 can_ok('Bugzilla::Report::SecurityRisk', qw(new results));
 
+my $status_mock = mock 'Bugzilla::Status' => (
+    override => [
+        is_open_state => sub {
+            my ($state) = @_;
+            return grep { /^$state$/ } qw(UNCOMFIRMED NEW ASSIGNED REOPENED);
+        },
+    ],
+);
+
 try {
     use Bugzilla::Report::SecurityRisk;
     my $report = Bugzilla::Report::SecurityRisk->new(
