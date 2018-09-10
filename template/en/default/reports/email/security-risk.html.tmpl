@@ -22,74 +22,74 @@ This will filter only the open [% terms.bugs %] counted in the report (as long a
 
 <h3>[% terms.Bugs %] By Severity</h3>
 <table style="border: 1px solid grey">
-<tr>
+  <tr>
     <th style="border: 1px solid grey"></th>
     [% FOREACH keyword IN sec_keywords %]
-        <th style="border: 1px solid grey; text-align: center" colspan="2"><b>[% keyword FILTER html %]</b></th>
+      <th style="border: 1px solid grey; text-align: center" colspan="2"><b>[% keyword FILTER html %]</b></th>
     [% END %]
-</tr>
-<tr>
+  </tr>
+  <tr>
     <td style="border: 1px solid grey"></td>
     [% FOREACH keyword IN sec_keywords %]
-        <td style="border: 1px solid grey; text-align: right">Open Count</td>
-        <td style="border: 1px solid grey; text-align: right">Median Days Open</td>
+      <td style="border: 1px solid grey; text-align: right">Open Count</td>
+      <td style="border: 1px solid grey; text-align: right">Median Days Open</td>
     [% END %]
-</tr>
-[% FOREACH result IN results.reverse %]
-<tr>
+  </tr>
+  [% FOREACH result IN results.reverse %]
+  <tr>
     <td style="border: 1px solid grey">[% result.date.ymd('-') FILTER html %]</td>
     [% FOREACH keyword IN sec_keywords %]
-        <td style="border: 1px solid grey; text-align: right">
-            [% IF result.bugs_by_sec_keyword.$keyword.open.size %]
-                <a href="[% build_bugs_link(result.bugs_by_sec_keyword.$keyword.open) FILTER html %]">
-                    [% result.bugs_by_sec_keyword.$keyword.open.size FILTER html %]
-                </a>
-            [% ELSE %]
-                [% result.bugs_by_sec_keyword.$keyword.open.size FILTER html %]
-            [% END %]
-        </td>
-        <td style="border: 1px solid grey; text-align: right">
-            [% result.bugs_by_sec_keyword.$keyword.median_age_open FILTER format("%.2f") FILTER html %]
-        </td>
+      <td style="border: 1px solid grey; text-align: right">
+        [% IF result.bugs_by_sec_keyword.$keyword.open.size %]
+          <a href="[% build_bugs_link(result.bugs_by_sec_keyword.$keyword.open) FILTER html %]">
+            [% result.bugs_by_sec_keyword.$keyword.open.size FILTER html %]
+          </a>
+        [% ELSE %]
+          [% result.bugs_by_sec_keyword.$keyword.open.size FILTER html %]
+        [% END %]
+      </td>
+      <td style="border: 1px solid grey; text-align: right">
+        [% result.bugs_by_sec_keyword.$keyword.median_age_open FILTER format("%.2f") FILTER html %]
+      </td>
     [% END %]
-</tr>
-[% END %]
+  </tr>
+  [% END %]
 </table>
 
 <h3>Sec-Critical + Sec-High [% terms.Bugs %] by Product</h3>
 <table style="border: 1px solid grey">
-<tr>
+  <tr>
     <th style="border: 1px solid grey"></th>
     [% FOREACH product IN products %]
-        <th style="border: 1px solid grey; text-align: center" colspan="2"><b>[% product FILTER html %]</b></th>
+      <th style="border: 1px solid grey; text-align: center" colspan="2"><b>[% product FILTER html %]</b></th>
     [% END %]
-</tr>
-<tr>
+  </tr>
+  <tr>
     <td style="border: 1px solid grey"></td>
     [% FOREACH product IN products %]
-        <td style="border: 1px solid grey; text-align: right">Open Count</td>
-        <td style="border: 1px solid grey; text-align: right">Median Days Open</td>
+      <td style="border: 1px solid grey; text-align: right">Open Count</td>
+      <td style="border: 1px solid grey; text-align: right">Median Days Open</td>
     [% END %]
-</tr>
-[% FOREACH result IN results.reverse %]
-<tr>
+  </tr>
+  [% FOREACH result IN results.reverse %]
+  <tr>
     <td style="border: 1px solid grey">[% result.date.ymd('-') FILTER html %]</td>
     [% FOREACH product IN products %]
-        <td style="border: 1px solid grey; text-align: right">
-            [% IF result.bugs_by_product.$product.open.size %]
-                <a href="[% build_bugs_link(result.bugs_by_product.$product.open, product) FILTER html %]">
-                    [% result.bugs_by_product.$product.open.size FILTER html %]
-                </a>
-            [% ELSE %]
-                [% result.bugs_by_product.$product.open.size FILTER html %]
-            [% END %]
-        </td>
-        <td style="border: 1px solid grey; text-align: right">
-            [% result.bugs_by_product.$product.median_age_open FILTER format("%.2f") FILTER html %]
-        </td>
+      <td style="border: 1px solid grey; text-align: right">
+        [% IF result.bugs_by_product.$product.open.size %]
+          <a href="[% build_bugs_link(result.bugs_by_product.$product.open, product) FILTER html %]">
+            [% result.bugs_by_product.$product.open.size FILTER html %]
+          </a>
+        [% ELSE %]
+          [% result.bugs_by_product.$product.open.size FILTER html %]
+        [% END %]
+      </td>
+      <td style="border: 1px solid grey; text-align: right">
+        [% result.bugs_by_product.$product.median_age_open FILTER format("%.2f") FILTER html %]
+      </td>
     [% END %]
-</tr>
-[% END %]
+  </tr>
+  [% END %]
 </table>
 </body>
 </html>

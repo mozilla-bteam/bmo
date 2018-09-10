@@ -135,9 +135,8 @@ sub _build_initial_bug_ids {
 sub _build_initial_bugs {
     my ($self)    = @_;
     my $bugs      = {};
-    my $bugs_list = Bugzilla::Bug->new_from_list( $self->initial_bug_ids );
+    my $bugs_list = Bugzilla::Bug->new_from_list( $self->initial_bug_ids || [] );
     for my $bug (@$bugs_list) {
-        my $cf_last_resolved = $bug->cf_last_resolved;
         $bugs->{ $bug->id } = {
             id        => $bug->id,
             product   => $bug->product,
