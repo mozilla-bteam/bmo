@@ -71,7 +71,8 @@
     [% PROCESS "bug/field-label.html.tmpl" hidden=0 %]
     <td class="field_value" id="field_container_[% field.name FILTER html %]" colspan="2">
       <span id="cab-review-gate">
-        <a href="https://mozilla.service-now.com/change_request.do?sysparm_stack=change_request_list.do&amp;sys_id=-1&amp;sysparm_query=active=true" target="_blank">ServiceNow Change Request</a>
+        <a href="https://mozilla.service-now.com/nav_to.do?uri=%2Fcom.glideapp.servicecatalog_cat_item_view.do%3Fv%3D1%26sysparm_id%3De2ce23cf135e93007b5450782244b008"
+           target="_blank">ServiceNow Change Request</a>
         (<a href="#" id="cab-review-gate-close">use flag</a>)
       </span>
       <span id="cab-review-edit" style="display:none">
