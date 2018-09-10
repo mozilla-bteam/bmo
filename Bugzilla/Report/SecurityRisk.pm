@@ -135,7 +135,7 @@ sub _build_initial_bug_ids {
 sub _build_initial_bugs {
     my ($self)    = @_;
     my $bugs      = {};
-    my $bugs_list = Bugzilla::Bug->new_from_list( $self->initial_bug_ids || [] );
+    my $bugs_list = Bugzilla::Bug->new_from_list( $self->initial_bug_ids );
     for my $bug (@$bugs_list) {
         $bugs->{ $bug->id } = {
             id        => $bug->id,
@@ -158,6 +158,7 @@ sub _build_initial_bugs {
 
 sub _build_events {
     my ($self) = @_;
+    return [] if !(@{$self->initial_bug_ids});
     my $bug_ids    = join ', ', @{ $self->initial_bug_ids };
     my $start_date = $self->start_date->ymd('-');
     my $query      = qq{
