@@ -21,7 +21,10 @@ use Bugzilla::Extension::Push::Message;
 use Bugzilla::Extension::Push::Option;
 use Bugzilla::Extension::Push::Queue;
 use Bugzilla::Extension::Push::Util;
+
 use DateTime;
+use IO::Async::Loop;
+use IO::Async::Timer::Periodic;
 use Try::Tiny;
 
 has 'is_daemon' => (
