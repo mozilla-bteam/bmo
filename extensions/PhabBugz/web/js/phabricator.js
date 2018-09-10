@@ -8,112 +8,77 @@
 
 var Phabricator = {};
 
-Phabricator.getReviewRequest = function() {
-    var hostUrl = $('.mozreview-requests').data('mozreviewUrl');
-    var tr = $('<tr/>');
-    var td = $('<td/>');
-    var link = $('<a/>');
+Phabricator.getBugRevisions = function() {
+    var phabUrl = $('.phabricator-revisions').data('phabricator-base-uri');
+    var tr      = $('<tr/>');
+    var td      = $('<td/>');
+    var link    = $('<a/>');
+    var table   = $('<table/>');
 
-    var rrSummaryApiUrl = hostUrl +
-        'api/extensions/mozreview.extension.PhabricatorExtension/summary/?bug=' +
-        BUGZILLA.bug_id;
-    var rrUiBaseUrl = hostUrl + 'r/';
+    function revisionRow(revision) {
+        var trRevision   = tr.clone();
+        var tdId         = td.clone();
+        var tdAuthor     = td.clone();
+        var tdTitle      = td.clone();
+        var tdStatus     = td.clone();
+        var tdReviewers  = td.clone();
+        var tableReviews = table.clone();
 
-    function rrUrl(rrId) {
-        return rrUiBaseUrl + rrId + '/';
-    }
+        var revLink = link.clone();
+        revLink.attr('href', phabUrl + '/' + revision.id);
+        revLink.text(revision.id);
+        tdId.append(revLink);
 
-    function rrDiffUrl(rrId) {
-        return rrUrl(rrId) + 'diff/#index_header';
-    }
+        tdAuthor.text(revision.author);
+        tdStatus.text(revision.status);
 
-    function humanizedInt(i) {
-        if (i > 1000) {
-            return (i / 1000).toFixed(1) + 'k';
-        } else {
-            return '' + i;
+        tdTitle.text(revision.title);
+        tdTitle.addClass('phabricator-title');
+
+        var i = 0, l = revision.reviews.length;
+        for (; i < l; i++) {
+            var trReview       = tr.clone();
+            var tdReviewStatus = td.clone();
+            var tdReviewer     = td.clone();
+            tdReviewStatus.text(revision.reviews[i].status);
+            tdReviewer.text(revision.reviews[i].user);
+            trReview.append(tdReviewStatus, tdReviewer);
+            tableReviews.append(trReview);
         }
-    }
+        tdReviewers.append(tableReviews);
 
-    function rrCommitRow(rr, firstCommit) {
-        var trCommit = tr.clone();
-        var tdSubmitter = td.clone();
-        var tdSummary = td.clone();
-        var diffLink = link.clone();
-        var diffStat = '';
-
-        if (firstCommit) {
-            tdSubmitter.text(rr.submitter);
-        }
-
-        tdSummary.addClass('mozreview-summary');
-        diffLink.attr('href', rrDiffUrl(rr.id));
-        diffLink.text(rr.summary);
-        tdSummary.append(diffLink);
-
-        if (rr.diff.insert > 0) {
-            diffStat = '+' + humanizedInt(rr.diff.insert);
-        }
-
-        if (rr.diff.delete > 0) {
-            if (diffStat.length > 0) {
-                diffStat += ' / ';
-            }
-            diffStat += '-' + humanizedInt(rr.diff.delete);
-        }
-
-        trCommit.append(
-            tdSubmitter,
-            tdSummary,
-            td.clone().text(diffStat)
-                      .addClass('mozreview-diffstat'),
-            td.clone().text(rr.issue_open_count)
-                      .addClass('mozreview-open-issues'),
-            td.clone().text(timeAgo(new Date(rr.last_updated)))
+        trRevision.append(
+            tdId,
+            tdTitle,
+            tdAuthor,
+            tdStatus,
+            tdReviewers
         );
 
-        if (rr.status == "discarded") {
-            $('.mozreview-hide-discarded-row').removeClass('bz_default_hidden');
-            trCommit.addClass('bz_default_hidden mozreview-discarded-request');
-        }
-
-        return trCommit;
+        return trRevision;
     }
 
-    $('.mozreview-hide-discarded-link').click(function(event) {
-        event.preventDefault();
-        if ($('.bz_default_hidden.mozreview-discarded-request').length) {
-            $('.mozreview-discarded-request').removeClass('bz_default_hidden');
-            $('.mozreview-discarded-action').text('Hide');
-        } else {
-            $('.mozreview-discarded-request').addClass('bz_default_hidden');
-            $('.mozreview-discarded-action').text('Show');
-        }
-    });
-
-    var tbody = $('tbody.mozreview-request');
+    var tbody = $('tbody.phabricator-revision');
 
     function displayLoadError(errStr) {
-        var errRow = tbody.find('.mozreview-loading-error-row');
-        errRow.find('.mozreview-load-error-string').text(errStr);
+        var errRow = tbody.find('.phabricator-loading-error-row');
+        errRow.find('.phabricator-load-error-string').text(errStr);
         errRow.removeClass('bz_default_hidden');
     }
 
-    $.getJSON(rrSummaryApiUrl, function(data) {
-        var family, parent, i, j;
+    var $getUrl = '/rest/phabbugz/bug_revisions/' + BUGZILLA.bug_id +
+                  '?Bugzilla_api_token=' + BUGZILLA.api_token;
 
-        if (data.review_request_summaries.length === 0) {
+    $.getJSON($getUrl, function(data) {
+        if (data.revisions.length === 0) {
             displayLoadError('none returned from server');
         } else {
-            for (i = 0; i < data.review_request_summaries.length; i++) {
-                family = data.review_request_summaries[i];
-                for (j = 0; j < family.children.length; j++) {
-                    tbody.append(rrCommitRow(family.children[j], j == 0));
-                }
+            var i = 0;
+            for (; i < data.revisions.length; i++) {
+                tbody.append(revisionRow(data.revisions[i]));
             }
         }
-
-        tbody.find('.mozreview-loading-row').addClass('bz_default_hidden');
+        tbody.find('.phabricator-loading-row').addClass('bz_default_hidden');
     }).fail(function(jqXHR, textStatus, errorThrown) {
         var errStr;
         if (jqXHR.responseJSON && jqXHR.responseJSON.err &&
@@ -125,10 +90,10 @@ Phabricator.getReviewRequest = function() {
             errStr = 'unknown';
         }
         displayLoadError(errStr);
-        tbody.find('.mozreview-loading-row').addClass('bz_default_hidden');
+        tbody.find('.phabricator-loading-row').addClass('bz_default_hidden');
     });
 };
 
 $().ready(function() {
-    Phabricator.getReviewRequest();
+    Phabricator.getBugRevisions();
 });

@@ -14,22 +14,27 @@ use warnings;
 use parent qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
-use Bugzilla::Extension::PhabBugz::Feed;
-use Bugzilla::Extension::PhabBugz::Util qw(get_attachment_revisions);
+use Bugzilla::Extension::PhabBugz::Constants;
 
 our $VERSION = '0.01';
 
 sub template_before_process {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $file = $args->{'file'};
     my $vars = $args->{'vars'};
 
-    return unless (($file =~ /bug\/(show-header|edit).html.tmpl$/ ||
-                    $file =~ /bug_modal\/(header|edit).html.tmpl$/) &&
-                   Bugzilla->params->{phabricator_base_uri});
+    return
+        unless ( ( $file =~ /bug\/(show-header|edit).html.tmpl$/ || $file =~ /bug_modal\/(header|edit).html.tmpl$/ )
+        && Bugzilla->params->{phabricator_base_uri} );
 
-    if (my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'}) {
-        $vars->{phabricator_revisions} = get_attachment_revisions($bug);
+    if ( my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'} ) {
+        my $has_revisions = 0;
+        foreach my $attachment ( @{ $bug->attachments } ) {
+            next if $attachment->contenttype ne PHAB_CONTENT_TYPE;
+            $has_revisions = 1;
+            last;
+        }
+        $vars->{phabricator_revisions} = $has_revisions;
     }
 }
 

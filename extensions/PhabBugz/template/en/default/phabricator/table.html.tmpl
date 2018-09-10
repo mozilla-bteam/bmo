@@ -6,14 +6,15 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<table class="phabricator-revisions" data-phabricator-url="[% Bugzilla.params.phabricator_base_uri FILTER html %]">
+<table class="phabricator-revisions"
+       data-phabricator-base-uri="[% Param('phabricator_base_uri') FILTER html %]">
   <thead>
     <tr>
-      <th>Submitter</th>
-      <th>Diff</th>
-      <th>Changes</th>
-      <th>Open Issues</th>
-      <th>Last Updated</th>
+      <th>ID</th>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Status</th>
+      <th>Reviewers</th>
     </tr>
   </thead>
   <tbody class="phabricator-revision">
