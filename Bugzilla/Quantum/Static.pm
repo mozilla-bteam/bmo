@@ -11,7 +11,7 @@ use Bugzilla::Constants qw(bz_locations);
 
 my $LEGACY_RE = qr{
     ^ (?:static/v[0-9]+\.[0-9]+/) ?
-    ( (?:extensions/[^/]+/web|(?:image|skin|j)s)/.+)
+    ( (?:extensions/[^/]+/web|(?:image|skin|j|graph)s)/.+)
     $
 }xs;
 
