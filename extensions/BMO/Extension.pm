@@ -2632,6 +2632,11 @@ sub config_modify_panels {
         default => 'admin',
         checker => \&check_group
     };
+    push @{ $args->{panels}->{advanced}->{params} }, {
+        name    => 'change_request_url',
+        type    => 't',
+        default => '',
+    };
 }
 
 sub comment_after_add_tag {
