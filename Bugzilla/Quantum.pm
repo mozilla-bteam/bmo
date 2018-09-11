@@ -68,6 +68,7 @@ sub startup {
     $r->any('/rest.cgi/*PATH_INFO')->to( 'CGI#rest_cgi' => { PATH_INFO => '' } );
     $r->any('/rest/*PATH_INFO')->to( 'CGI#rest_cgi' => { PATH_INFO => '' } );
     $r->any('/extensions/BzAPI/bin/rest.cgi/*PATH_INFO')->to('CGI#bzapi_cgi');
+    $r->any('/bzapi/*PATH_INFO')->to('CGI#bzapi_cgi');
 
     $r->get(
         '/__lbheartbeat__' => sub {
