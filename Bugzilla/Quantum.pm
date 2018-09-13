@@ -21,6 +21,7 @@ use Bugzilla::Extension             ();
 use Bugzilla::Install::Requirements ();
 use Bugzilla::Logging;
 use Bugzilla::Quantum::CGI;
+use Bugzilla::Quantum::OAuth2 qw(oauth2);
 use Bugzilla::Quantum::SES;
 use Bugzilla::Quantum::Home;
 use Bugzilla::Quantum::Static;
@@ -44,6 +45,9 @@ sub startup {
     unless $ENV{BUGZILLA_DISABLE_SIZELIMIT};
   $self->plugin('Bugzilla::Quantum::Plugin::BlockIP');
   $self->plugin('Bugzilla::Quantum::Plugin::Helpers');
+
+  # OAuth2 Support
+  oauth2($self);
 
   # hypnotoad is weird and doesn't look for MOJO_LISTEN itself.
   $self->config(
