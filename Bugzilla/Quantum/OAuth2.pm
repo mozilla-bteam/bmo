@@ -8,7 +8,8 @@
 package Bugzilla::Quantum::OAuth2;
 
 use 5.10.1;
-use Moo;
+use strict;
+use warnings;
 
 use Bugzilla;
 use Bugzilla::Constants;
