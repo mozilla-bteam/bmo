@@ -70,6 +70,7 @@ my %requires = (
     'Module::Runtime'          => '0.014',
     'Mojolicious'              => '7.71',
     'MojoX::Log::Log4perl::Tiny' => '0.01',
+    'Mojolicious::Plugin::OAuth2::Server' => '0.42',
     'Moo'                      => '2.002004',
     'MooX::StrictConstructor'  => '0.008',
     'Mozilla::CA'              => '20160104',
