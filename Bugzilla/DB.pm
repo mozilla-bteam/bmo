@@ -157,6 +157,7 @@ sub connect_shadow {
 
 sub connect_main {
     state $main_dbh = _connect(Bugzilla->localconfig);
+    return $main_dbh;
 }
 
 sub _connect {
