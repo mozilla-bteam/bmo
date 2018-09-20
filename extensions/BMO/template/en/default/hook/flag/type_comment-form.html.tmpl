@@ -11,8 +11,8 @@
     <legend>Beta/Release Uplift Approval Request</legend>
     <table>
       <tr>
-        <th>Feature/Bug causing the regression</th>
-        <td><input type="text" placeholder="Bug ID" data-type="bug"></td>
+        <th>Feature/[% terms.Bug %] causing the regression</th>
+        <td><input type="text" placeholder="[% terms.Bug %] ID" data-type="b[% %]ug"></td>
       </tr>
       <tr>
         <th>User impact if declined</th>
@@ -54,7 +54,7 @@
       </tr>
       <tr>
         <th>List of other uplifts needed for the feature/fix</th>
-        <td><input type="text" placeholder="Bug IDs" data-type="bugs"></td>
+        <td><input type="text" placeholder="[% terms.Bug %] IDs" data-type="b[% %]ugs"></td>
       </tr>
       <tr>
         <th>Is the change risky?</th>
@@ -83,7 +83,7 @@
     <legend>ESR Uplift Approval Request</legend>
     <table>
       <tr>
-        <th>If this is not a sec:{high,crit} bug, please state case for ESR consideration</th>
+        <th>If this is not a sec:{high,crit} [% terms.bug %], please state case for ESR consideration</th>
         <td><textarea></textarea></td>
       </tr>
       <tr>
@@ -112,7 +112,7 @@
     <legend>GeckoView Uplift Approval Request</legend>
     <table>
       <tr>
-        <th>If this is not a sec:{high,crit} bug, please state case for consideration</th>
+        <th>If this is not a sec:{high,crit} [% terms.bug %], please state case for consideration</th>
         <td><textarea></textarea></td>
       </tr>
       <tr>
@@ -159,8 +159,8 @@
         <td><input type="text"></td>
       </tr>
       <tr>
-        <th>If not all supported branches, which bug introduced the flaw?</th>
-        <td><input type="text" placeholder="Bug ID" data-type="bug"></td>
+        <th>If not all supported branches, which [% terms.bug %] introduced the flaw?</th>
+        <td><input type="text" placeholder="[% terms.Bug %] ID" data-type="b[% %]ug"></td>
       </tr>
       <tr>
         <th>Do you have backports for the affected branches?</th>
