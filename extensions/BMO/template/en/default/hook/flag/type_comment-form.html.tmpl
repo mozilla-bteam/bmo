@@ -1,0 +1,185 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+<template class="approval-request" data-flags="approval‑mozilla‑beta approval‑mozilla‑release">
+  <fieldset>
+    <legend>Beta/Release Uplift Approval Request</legend>
+    <table>
+      <tr>
+        <th>Feature/Bug causing the regression</th>
+        <td><input type="text" placeholder="Bug ID" data-type="bug"></td>
+      </tr>
+      <tr>
+        <th>User impact if declined</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>Is this code covered by automated tests?</th>
+        <td>
+          <div role="radiogroup">
+            <label><input type="radio" name="_ar_beta_radio_1" value="Yes"><span>Yes</span></label>
+            <label><input type="radio" name="_ar_beta_radio_1" value="No"><span>No</span></label>
+            <label><input type="radio" name="_ar_beta_radio_1" value="Dunno"><span>Dunno</span></label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>Has the fix been verified in Nightly?</th>
+        <td>
+          <div role="radiogroup">
+            <label><input type="radio" name="_ar_beta_radio_2" value="Yes"><span>Yes</span></label>
+            <label><input type="radio" name="_ar_beta_radio_2" value="No"><span>No</span></label>
+            <label><input type="radio" name="_ar_beta_radio_2" value="Dunno"><span>Dunno</span></label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>Needs manual test from QE?</th>
+        <td>
+          <div role="radiogroup">
+            <label><input type="radio" name="_ar_beta_radio_3" value="Yes"><span>Yes</span></label>
+            <label><input type="radio" name="_ar_beta_radio_3" value="No"><span>No</span></label>
+            <label><input type="radio" name="_ar_beta_radio_3" value="Dunno"><span>Dunno</span></label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>If yes, steps to reproduce</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>List of other uplifts needed for the feature/fix</th>
+        <td><input type="text" placeholder="Bug IDs" data-type="bugs"></td>
+      </tr>
+      <tr>
+        <th>Is the change risky?</th>
+        <td>
+          <div role="radiogroup">
+            <label><input type="radio" name="_ar_beta_radio_4" value="Yes"><span>Yes</span></label>
+            <label><input type="radio" name="_ar_beta_radio_4" value="No"><span>No</span></label>
+            <label><input type="radio" name="_ar_beta_radio_4" value="Dunno"><span>Dunno</span></label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>Why is the change risky/not risky?</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>String changes made/needed</th>
+        <td><textarea></textarea></td>
+      </tr>
+    </table>
+  </fieldset>
+</template>
+
+<template class="approval-request" data-flags="approval‑mozilla‑esr*">
+  <fieldset>
+    <legend>ESR Uplift Approval Request</legend>
+    <table>
+      <tr>
+        <th>If this is not a sec:{high,crit} bug, please state case for ESR consideration</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>User impact if declined</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>Fix Landed on Version</th>
+        <td><input type="text"></td>
+      </tr>
+      <tr>
+        <th>Risk to taking this patch (and alternatives if risky)</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>String or UUID changes made by this patch</th>
+        <td><textarea></textarea></td>
+      </tr>
+    </table>
+    <p>See <a href="https://wiki.mozilla.org/Release_Management/ESR_Landing_Process" target="_blank">ESR Landing Process</a> for more info.</p>
+  </fieldset>
+</template>
+
+<template class="approval-request" data-flags="approval‑mozilla‑geckoview*">
+  <fieldset>
+    <legend>GeckoView Uplift Approval Request</legend>
+    <table>
+      <tr>
+        <th>If this is not a sec:{high,crit} bug, please state case for consideration</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>User impact if declined</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>Fix Landed on Version</th>
+        <td><input type="text"></td>
+      </tr>
+      <tr>
+        <th>Risk to taking this patch (and alternatives if risky)</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>String or UUID changes made by this patch</th>
+        <td><textarea></textarea></td>
+      </tr>
+    </table>
+    <p>See <a href="https://wiki.mozilla.org/Release_Management/Uplift_rules" target="_blank">Patch uplifting rules</a> for more info.</p>
+  </fieldset>
+</template>
+
+<template class="approval-request" data-flags="sec‑approval">
+  <fieldset>
+    <legend>Security Approval Request</legend>
+    <table>
+      <tr>
+        <th>How easily could an exploit be constructed based on the patch?</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>Do comments in the patch, the check-in comment, or tests included in the patch paint a bulls-eye on the security problem?</th>
+        <td>
+          <div role="radiogroup">
+            <label><input type="radio" name="_ar_sec_radio_1" value="Yes"><span>Yes</span></label>
+            <label><input type="radio" name="_ar_sec_radio_1" value="No"><span>No</span></label>
+            <label><input type="radio" name="_ar_sec_radio_1" value="Dunno"><span>Dunno</span></label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>Which older supported branches are affected by this flaw?</th>
+        <td><input type="text"></td>
+      </tr>
+      <tr>
+        <th>If not all supported branches, which bug introduced the flaw?</th>
+        <td><input type="text" placeholder="Bug ID" data-type="bug"></td>
+      </tr>
+      <tr>
+        <th>Do you have backports for the affected branches?</th>
+        <td>
+          <div role="radiogroup">
+            <label><input type="radio" name="_ar_sec_radio_2" value="Yes"><span>Yes</span></label>
+            <label><input type="radio" name="_ar_sec_radio_2" value="No"><span>No</span></label>
+            <label><input type="radio" name="_ar_sec_radio_2" value="Dunno"><span>Dunno</span></label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>If not, how different, hard to create, and risky will they be?</th>
+        <td><textarea></textarea></td>
+      </tr>
+      <tr>
+        <th>How likely is this patch to cause regressions; how much testing does it need?</th>
+        <td><textarea></textarea></td>
+      </tr>
+    </table>
+  </fieldset>
+</template>

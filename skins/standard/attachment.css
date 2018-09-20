@@ -133,10 +133,6 @@ table.attachment_info td {
     display: block;
 }
 
-#smallCommentFrame, #attachment_flags {
-    float: left;
-}
-
 #smallCommentFrame {
     margin-right: 1.5em;
 }
@@ -244,6 +240,88 @@ div#update_container {
    width: 75%;
    margin: 0  auto;
    font-weight: bold
+}
+
+fieldset.approval-request {
+  margin: 1em 0;
+}
+
+fieldset.approval-request legend {
+  font-weight: bold;
+}
+
+fieldset.approval-request th {
+  padding: .4em;
+  width: 20em;
+  line-height: 1.2;
+  font-weight: normal;
+  text-align: right;
+  white-space: normal !important;
+}
+
+fieldset.approval-request label {
+  font-weight: normal !important;
+}
+
+fieldset.approval-request input[type="text"] {
+  width: 20em;
+}
+
+fieldset.approval-request textarea {
+  width: 40em;
+  height: 5em;
+  font-size: inherit;
+  line-height: inherit;
+  font-family: inherit;
+  resize: vertical;
+}
+
+fieldset.approval-request [role="radiogroup"] {
+  display: inline-flex;
+  padding: 0 !important;
+}
+
+fieldset.approval-request [role="radiogroup"] label {
+  display: inline-block;
+}
+
+fieldset.approval-request [role="radiogroup"] input {
+  position: absolute;
+  left: -99999px;
+}
+
+fieldset.approval-request [role="radiogroup"] span {
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+  border: 1px solid #B2B2B2;
+  padding: .2em .8em;
+  background-color: #FFF;
+  box-shadow: inset .1em .1em .1em rgba(0, 0, 0, .1);
+}
+
+fieldset.approval-request [role="radiogroup"] label:first-child span {
+  border-radius: .4em 0 0 .4em;
+}
+
+fieldset.approval-request [role="radiogroup"] label:last-child span {
+  border-radius: 0 .4em .4em 0;
+}
+
+fieldset.approval-request [role="radiogroup"] label:not(:first-child) span {
+  margin-left: -1px;
+}
+
+fieldset.approval-request [role="radiogroup"] input:checked + span {
+  color: #111;
+  background-color: #DDD;
+  box-shadow: inset .1em .1em .2em rgba(0, 0, 0, .2);
+}
+
+fieldset.approval-request [role="radiogroup"] input:focus + span {
+  z-index: 2;
+  border-color: #42A4E0;
+  box-shadow: inset .1em .1em .2em rgba(0, 0, 0, .2), 0 0 0 2px rgba(73, 173, 227, .4);
 }
 
 /**
