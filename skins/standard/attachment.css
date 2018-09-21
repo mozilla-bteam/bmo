@@ -256,6 +256,7 @@ fieldset.approval-request th {
   line-height: 1.2;
   font-weight: normal;
   text-align: right;
+  vertical-align: top;
   white-space: normal !important;
 }
 
