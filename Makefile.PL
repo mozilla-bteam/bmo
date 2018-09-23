@@ -33,7 +33,7 @@ BEGIN {
 
 # PREREQ_PM
 my %requires = (
-    'Alien::libcmark_gfm'      => 0,
+    'Alien::libcmark_gfm'      => '3',
     'Algorithm::BloomFilter'   => '0.02',
     'CGI'                      => '4.31',
     'CGI::Compile'             => 0,
@@ -69,9 +69,11 @@ my %requires = (
     'Module::Metadata'         => '1.000033',
     'Module::Runtime'          => '0.014',
     'Mojolicious'              => '7.71',
+    'MojoX::Log::Log4perl::Tiny' => '0.01',
     'Moo'                      => '2.002004',
     'MooX::StrictConstructor'  => '0.008',
     'Mozilla::CA'              => '20160104',
+    'Package::Stash'           => '0.37',
     'Parse::CPAN::Meta'        => '1.44',
     'Role::Tiny'               => '2.000003',
     'Scope::Guard'             => '0.21',
@@ -80,10 +82,12 @@ my %requires = (
     'Template'                 => '2.24',
     'Text::CSV_XS'             => '1.26',
     'Throwable'                => '0.200013',
-    'Type::Tiny'               => '1.000005',
+    'Sub::Quote'               => '2.005000',
+    'Type::Tiny'               => '1.004002',
     'URI'                      => '1.55',
     'URI::Escape::XS'          => '0.14',
     'version'                  => '0.87',
+    'EV'                       => '4.0',
 );
 
 my %build_requires = ( 'ExtUtils::MakeMaker' => '7.22', );
@@ -96,7 +100,7 @@ my %test_requires = (
     'Perl::Critic::Freenode'          => 0,
     'Capture::Tiny'                   => 0,
 );
-my %recommends = ( Safe => '2.30' );
+my %recommends = ( Safe => '2.30',);
 
 # Windows requires some additional modules.
 if ( $OSNAME eq 'MSWin32' ) {
@@ -284,18 +288,6 @@ my %optional_features = (
             }
         },
     },
-    mod_perl => {
-        description => 'mod_perl support under Apache',
-        prereqs     => {
-            runtime => {
-                requires => {
-                    'mod_perl2'          => '1.999022',
-                    'Apache2::SizeLimit' => '0.96',
-                    'Plack::Handler::Apache2' => 0,
-                }
-            }
-        }
-    },
     inbound_email => {
         description => 'Inbound Email',
         prereqs     => {
@@ -467,7 +459,6 @@ sub is_bmo_feature {
         ^
         (?: pg
           | oracle
-          | mod_perl
           | sqlite
           | auth_ldap
           | auth_radius
