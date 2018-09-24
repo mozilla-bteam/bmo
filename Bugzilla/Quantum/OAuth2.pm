@@ -11,8 +11,13 @@ use 5.10.1;
 use Moo;
 
 use Bugzilla;
+<<<<<<< HEAD
 use Bugzilla::Constants;
 use Bugzilla::Error;
+||||||| merged common ancestors
+=======
+use Bugzilla::Constants;
+>>>>>>> More fixes
 use Bugzilla::Logging;
 use Bugzilla::Util;
 use Bugzilla::Token;
