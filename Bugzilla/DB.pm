@@ -133,6 +133,10 @@ sub quote {
 
 sub connect_shadow {
     state $shadow_dbh;
+    if ($shadow_dbh && $shadow_dbh->bz_in_transaction) {
+        FATAL("Somehow in a transaction at connection time");
+        $shadow_dbh->bz_rollback_transaction();
+    }
     return $shadow_dbh if $shadow_dbh;
     my $params = Bugzilla->params;
     die "Tried to connect to non-existent shadowdb"
@@ -151,12 +155,15 @@ sub connect_shadow {
         $connect_params->{db_user} = Bugzilla->localconfig->{'shadowdb_user'};
         $connect_params->{db_pass} = Bugzilla->localconfig->{'shadowdb_pass'};
     }
-
     return $shadow_dbh = _connect($connect_params);
 }
 
 sub connect_main {
     state $main_dbh = _connect(Bugzilla->localconfig);
+    if ($main_dbh->bz_in_transaction) {
+        FATAL("Somehow in a transaction at connection time");
+        $main_dbh->bz_rollback_transaction();
+    }
     return $main_dbh;
 }
 
