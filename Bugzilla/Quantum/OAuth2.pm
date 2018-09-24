@@ -12,8 +12,13 @@ use strict;
 use warnings;
 
 use Bugzilla;
+<<<<<<< HEAD
 use Bugzilla::Constants;
 use Bugzilla::Error;
+||||||| merged common ancestors
+=======
+use Bugzilla::Constants;
+>>>>>>> More fixes
 use Bugzilla::Logging;
 use Bugzilla::Util;
 use Bugzilla::Token;
@@ -230,7 +235,6 @@ sub _verify_auth_code {
           'DELETE FROM oauth2_access_token WHERE client_id = ? AND user_id = ?',
           undef, $client_id, $auth_code_data->{user_id}
         );
-
       }
     }
 
@@ -381,7 +385,6 @@ sub _verify_access_token {
     }
 
     return $refresh_token_data->{client_id};
-
   }
   elsif (
     my $access_token_data = $dbh->selectrow_hashref(
@@ -415,13 +418,11 @@ sub _verify_access_token {
       client_id => $access_token_data->{client_id},
       user_id   => $access_token_data->{user_id},
     };
-
   }
   else {
     INFO('Access token does not exist');
     return (0, 'invalid_grant');
   }
-
 }
 
 1;
