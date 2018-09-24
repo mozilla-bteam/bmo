@@ -4,6 +4,7 @@ use 5.10.1;
 use Moo;
 
 use Bugzilla;
+use Bugzilla::Constants;
 use Bugzilla::Logging;
 
 use DateTime;
@@ -30,10 +31,12 @@ sub oauth2 {
 }
 
 sub _resource_owner_logged_in {
-    my ($c) = @_;
+    my ( %args ) = @_;
+    my $c = $args{mojo_controller};
+
+    Bugzilla->login(LOGIN_REQUIRED);
 
     if ( !Bugzilla->user->id ) {
-
         # we need to redirect back to the /oauth/authorize route after
         # login (with the original params)
         my $uri = join( '?', $c->url_for('current'), $c->url_with->query );
@@ -46,7 +49,7 @@ sub _resource_owner_logged_in {
 }
 
 sub _resource_owner_confirm_scopes {
-    my ( $self, %args ) = @_;
+    my ( %args ) = @_;
     my ( $c, $client_id, $scopes_ref ) = @args{qw/ mojo_controller client_id scopes /};
 
     my $is_allowed = $c->flash("oauth_${client_id}");
@@ -66,12 +69,12 @@ sub _resource_owner_confirm_scopes {
 }
 
 sub _verify_client {
-    my ( $self, %args ) = @_;
+    my ( %args ) = @_;
     my ( $c, $client_id, $scopes_ref ) = @args{qw/ mojo_controller client_id scopes /};
     my $dbh = Bugzilla->dbh;
 
     if ( my $client_data
-        = $dbh->selectrow_hashref( "SELECT * FROM oauth2_client WHERE client_id = ?", undef, $client_id ) )
+        = $dbh->selectrow_hashref( "SELECT * FROM oauth2_client WHERE id = ?", undef, $client_id ) )
     {
         if ( !$client_data->{active} ) {
             INFO("Client ($client_id) is not active");
@@ -105,7 +108,7 @@ sub _verify_client {
 }
 
 sub _store_auth_code {
-    my ( $self, %args ) = @_;
+    my ( %args ) = @_;
     my ( $c, $auth_code, $client_id, $expires_in, $uri, @scopes )
         = @args{qw/ mojo_controller auth_code client_id expires_in redirect_uri scopes /};
     my $dbh = Bugzilla->dbh;
@@ -129,7 +132,7 @@ sub _store_auth_code {
 }
 
 sub _verify_auth_code {
-    my ( $self, %args ) = @_;
+    my ( %args ) = @_;
     my ( $c, $client_id, $client_secret, $auth_code, $uri )
         = @args{qw/ mojo_controller client_id client_secret auth_code redirect_uri /};
     my $dbh = Bugzilla->dbh;
@@ -205,7 +208,7 @@ sub _check_password {
 }
 
 sub _store_access_token {
-    my ( $self, %args ) = @_;
+    my ( %args ) = @_;
     my ( $c, $client, $auth_code, $access_token, $refresh_token, $expires_in, $scope, $old_refresh_token )
         = @args{qw/ mojo_controller client_id auth_code access_token refresh_token expires_in scope old_refresh_token /
         };
@@ -278,7 +281,7 @@ sub _store_access_token {
 }
 
 sub _verify_access_token {
-    my ( $self, %args ) = @_;
+    my ( %args ) = @_;
     my ( $c, $access_token, $scopes_ref ) = @args{qw/ mojo_controller access_token scope /};
     my $dbh = Bugzilla->dbh;
 
