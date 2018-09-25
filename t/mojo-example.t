@@ -57,11 +57,14 @@ $t->get_ok('/bzapi/configuration')->status_is(200)->json_like( '/announcement' =
 # for web requests, you use text_like (or text_is) with CSS selectors.
 $t->get_ok('/')->status_is(200)->text_like( '#announcement' => qr/Mojo::Test is awesome/ );
 
+# Chaining is not magical, you can break up longer lines
+# by calling methods on $t, as below.
 $t->get_ok('/rest/whoami' => { 'X-Bugzilla-API-Key' => $api_key });
 $t->status_is(200);
 $t->json_is('/name' => $api_user->login);
 $t->json_is('/id' => $api_user->id);
 
+# Each time you call $t->get_ok, post_ok, etc the previous request is cleared.
 $t->get_ok('/rest/whoami');
 $t->status_is(200);
 $t->json_is('/name' => '');
