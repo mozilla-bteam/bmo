@@ -44,6 +44,9 @@ my $api_key  = issue_api_key('api@mozilla.org')->api_key;
 # testing requests without having to run a server.
 my $t = Test::Mojo->new('Bugzilla::Quantum');
 
+# we ensure this file exists so the /__lbhearbeat__ test passes.
+$t->app->home->child('__lbheartbeat__')->spurt('httpd OK');
+
 # Method chaining is used extensively.
 $t->get_ok('/__lbheartbeat__')->status_is(200)->content_is('httpd OK');
 
