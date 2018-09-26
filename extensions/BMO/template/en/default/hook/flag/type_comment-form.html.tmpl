@@ -34,7 +34,6 @@
           <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_beta_i4_label">
             <div class="item"><input id="_ar_beta_i4_r1" type="radio" name="_ar_beta_i4_radio" value="Yes"><label for="_ar_beta_i4_r1">Yes</label></div>
             <div class="item"><input id="_ar_beta_i4_r2" type="radio" name="_ar_beta_i4_radio" value="No"><label for="_ar_beta_i4_r2">No</label></div>
-            <div class="item"><input id="_ar_beta_i4_r3" type="radio" name="_ar_beta_i4_radio" value="Dunno"><label for="_ar_beta_i4_r3">Dunno</label></div>
           </div>
         </td>
       </tr>
@@ -44,7 +43,6 @@
           <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_beta_i5_label">
             <div class="item"><input id="_ar_beta_i5_r1" type="radio" name="_ar_beta_i5_radio" value="Yes"><label for="_ar_beta_i5_r1">Yes</label></div>
             <div class="item"><input id="_ar_beta_i5_r2" type="radio" name="_ar_beta_i5_radio" value="No"><label for="_ar_beta_i5_r2">No</label></div>
-            <div class="item"><input id="_ar_beta_i5_r3" type="radio" name="_ar_beta_i5_radio" value="Dunno"><label for="_ar_beta_i5_r3">Dunno</label></div>
           </div>
         </td>
       </tr>
@@ -53,26 +51,22 @@
         <td><textarea aria-labelledby="_ar_beta_i6_label"></textarea></td>
       </tr>
       <tr>
-        <th id="_ar_beta_i7_label">List of other uplifts needed for the feature/fix</th>
-        <td><input type="text" placeholder="[% terms.Bug %] IDs" aria-labelledby="_ar_beta_i7_label" data-type="b[% %]ugs"></td>
-      </tr>
-      <tr>
-        <th id="_ar_beta_i8_label">Is the change risky?</th>
+        <th id="_ar_beta_i7_label">Risk to taking this patch</th>
         <td>
-          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_beta_i8_label">
-            <div class="item"><input id="_ar_beta_i8_r1" type="radio" name="_ar_beta_i8_radio" value="Yes"><label for="_ar_beta_i8_r1">Yes</label></div>
-            <div class="item"><input id="_ar_beta_i8_r2" type="radio" name="_ar_beta_i8_radio" value="No"><label for="_ar_beta_i8_r2">No</label></div>
-            <div class="item"><input id="_ar_beta_i8_r3" type="radio" name="_ar_beta_i8_radio" value="Dunno"><label for="_ar_beta_i8_r3">Dunno</label></div>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_beta_i7_label">
+            <div class="item"><input id="_ar_beta_i7_r1" type="radio" name="_ar_beta_i7_radio" value="Low"><label for="_ar_beta_i7_r1">Low</label></div>
+            <div class="item"><input id="_ar_beta_i7_r2" type="radio" name="_ar_beta_i7_radio" value="Medium"><label for="_ar_beta_i7_r2">Medium</label></div>
+            <div class="item"><input id="_ar_beta_i7_r3" type="radio" name="_ar_beta_i7_radio" value="High"><label for="_ar_beta_i7_r3">High</label></div>
           </div>
         </td>
       </tr>
       <tr>
-        <th id="_ar_beta_i9_label">Why is the change risky/not risky?</th>
-        <td><textarea aria-labelledby="_ar_beta_i9_label"></textarea></td>
+        <th id="_ar_beta_i8_label">Why is the change risky/not risky?<br>(and alternatives if risky)</th>
+        <td><textarea aria-labelledby="_ar_beta_i8_label"></textarea></td>
       </tr>
       <tr>
-        <th id="_ar_beta_i10_label">String changes made/needed</th>
-        <td><textarea aria-labelledby="_ar_beta_i10_label"></textarea></td>
+        <th id="_ar_beta_i9_label">String changes made/needed</th>
+        <td><input type="text" class="long" aria-labelledby="_ar_beta_i9_label"></td>
       </tr>
     </table>
   </fieldset>
@@ -95,12 +89,22 @@
         <td><input type="text" aria-labelledby="_ar_esr_i3_label"></td>
       </tr>
       <tr>
-        <th id="_ar_esr_i4_label">Risk to taking this patch (and alternatives if risky)</th>
-        <td><textarea aria-labelledby="_ar_esr_i4_label"></textarea></td>
+        <th id="_ar_esr_i4_label">Risk to taking this patch</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_esr_i4_label">
+            <div class="item"><input id="_ar_esr_i4_r1" type="radio" name="_ar_esr_i4_radio" value="Low"><label for="_ar_esr_i4_r1">Low</label></div>
+            <div class="item"><input id="_ar_esr_i4_r2" type="radio" name="_ar_esr_i4_radio" value="Medium"><label for="_ar_esr_i4_r2">Medium</label></div>
+            <div class="item"><input id="_ar_esr_i4_r3" type="radio" name="_ar_esr_i4_radio" value="High"><label for="_ar_esr_i4_r3">High</label></div>
+          </div>
+        </td>
       </tr>
       <tr>
-        <th id="_ar_esr_i5_label">String or UUID changes made by this patch</th>
+        <th id="_ar_esr_i5_label">Why is the change risky/not risky?<br>(and alternatives if risky)</th>
         <td><textarea aria-labelledby="_ar_esr_i5_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_esr_i6_label">String or UUID changes made by this patch</th>
+        <td><input type="text" class="long" aria-labelledby="_ar_esr_i6_label"></td>
       </tr>
     </table>
     <p>See <a href="https://wiki.mozilla.org/Release_Management/ESR_Landing_Process" target="_blank">ESR Landing Process</a> for more info.</p>
@@ -124,12 +128,22 @@
         <td><input type="text" aria-labelledby="_ar_gkv_i3_label"></td>
       </tr>
       <tr>
-        <th id="_ar_gkv_i4_label">Risk to taking this patch (and alternatives if risky)</th>
-        <td><textarea aria-labelledby="_ar_gkv_i4_label"></textarea></td>
+        <th id="_ar_gkv_i4_label">Risk to taking this patch</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_gkv_i4_label">
+            <div class="item"><input id="_ar_gkv_i4_r1" type="radio" name="_ar_gkv_i4_radio" value="Low"><label for="_ar_gkv_i4_r1">Low</label></div>
+            <div class="item"><input id="_ar_gkv_i4_r2" type="radio" name="_ar_gkv_i4_radio" value="Medium"><label for="_ar_gkv_i4_r2">Medium</label></div>
+            <div class="item"><input id="_ar_gkv_i4_r3" type="radio" name="_ar_gkv_i4_radio" value="High"><label for="_ar_gkv_i4_r3">High</label></div>
+          </div>
+        </td>
       </tr>
       <tr>
-        <th id="_ar_gkv_i5_label">String or UUID changes made by this patch</th>
+        <th id="_ar_gkv_i5_label">Why is the change risky/not risky?<br>(and alternatives if risky)</th>
         <td><textarea aria-labelledby="_ar_gkv_i5_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_gkv_i6_label">String or UUID changes made by this patch</th>
+        <td><input type="text" class="long" aria-labelledby="_ar_gkv_i6_label"></td>
       </tr>
     </table>
     <p>See <a href="https://wiki.mozilla.org/Release_Management/Uplift_rules" target="_blank">Patch uplifting rules</a> for more info.</p>
@@ -168,7 +182,6 @@
           <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_sec_i5_label">
             <div class="item"><input id="_ar_sec_i5_r1" type="radio" name="_ar_sec_i5_radio" value="Yes"><label for="_ar_sec_i5_r1">Yes</label></div>
             <div class="item"><input id="_ar_sec_i5_r2" type="radio" name="_ar_sec_i5_radio" value="No"><label for="_ar_sec_i5_r2">No</label></div>
-            <div class="item"><input id="_ar_sec_i5_r3" type="radio" name="_ar_sec_i5_radio" value="Dunno"><label for="_ar_sec_i5_r3">Dunno</label></div>
           </div>
         </td>
       </tr>

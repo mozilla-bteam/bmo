@@ -142,12 +142,12 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
   form_onsubmit() {
     for (const $fieldset of this.inserted_fieldsets) {
       const text = [
-        `[${$fieldset.querySelector('legend').textContent}]`,
+        `[${$fieldset.querySelector('legend').innerText}]`,
         ...[...$fieldset.querySelectorAll('tr')].map($tr => {
           const checkboxes = [...$tr.querySelectorAll('input[type="checkbox"]:checked')];
           const $radio = $tr.querySelector('input[type="radio"]:checked');
           const $input = $tr.querySelector('textarea,select,input');
-          const label = $tr.querySelector('th').textContent;
+          const label = $tr.querySelector('th').innerText.replace(/\n/g, ' ');
           let value = '';
 
           if (checkboxes.length) {

@@ -16,11 +16,15 @@ fieldset.approval-request legend {
 fieldset.approval-request th {
   padding: .4em;
   width: 20em;
-  line-height: 1.2;
+  line-height: 1.25;
   font-weight: normal;
   text-align: right;
   vertical-align: top;
   white-space: normal !important;
+}
+
+fieldset.approval-request td {
+  vertical-align: middle;
 }
 
 fieldset.approval-request label {
@@ -28,12 +32,16 @@ fieldset.approval-request label {
 }
 
 fieldset.approval-request input[type="text"] {
-  width: 20em;
+  width: 10em;
+}
+
+fieldset.approval-request input.long[type="text"] {
+  width: 40em;
 }
 
 fieldset.approval-request textarea {
   width: 40em;
-  height: 5em;
+  min-height: 5em;
   font-size: inherit;
   line-height: inherit;
   font-family: inherit;
@@ -42,4 +50,9 @@ fieldset.approval-request textarea {
 
 fieldset.approval-request div {
   padding: 0 !important;
+}
+
+fieldset.approval-request table ~ p:last-child {
+  margin: .4em;
+  text-align: right;
 }
