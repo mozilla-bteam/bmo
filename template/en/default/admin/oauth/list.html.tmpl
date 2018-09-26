@@ -1,0 +1,38 @@
+[% PROCESS global/header.html.tmpl
+  title = "Select Oauth2 Client"
+%]
+
+[% edit_contentlink = BLOCK %]editoauthclients.cgi?action=edit&amp;id=%%id%%[% END %]
+[% delete_contentlink = BLOCK %]editoauthclients.cgi?action=del&amp;id=%%id%%[% END %]
+
+[% columns = [
+     {
+       name => "id"
+       heading => "Edit client..."
+       contentlink => edit_contentlink
+     },
+     {
+       name => "active"
+       heading => "Active"
+       yesno_field => 1
+     }
+     {
+       name => "action"
+       heading => "Action"
+       content => "Delete"
+       contentlink => delete_contentlink
+     }
+   ]
+%]
+
+[% Hook.process('before_table') %]
+
+[% PROCESS admin/table.html.tmpl
+     columns = columns
+     data = clients
+     overrides = overrides
+%]
+
+<a title="Add a client" href="editoauthclients.cgi?action=add">Add</a> a client.
+
+[% PROCESS global/footer.html.tmpl %]
