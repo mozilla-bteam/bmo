@@ -12,13 +12,8 @@ use strict;
 use warnings;
 
 use Bugzilla;
-<<<<<<< HEAD
 use Bugzilla::Constants;
 use Bugzilla::Error;
-||||||| merged common ancestors
-=======
-use Bugzilla::Constants;
->>>>>>> More fixes
 use Bugzilla::Logging;
 use Bugzilla::Util;
 use Bugzilla::Token;
