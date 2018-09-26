@@ -27,12 +27,17 @@ my $SRC_URI = declare as Str, where {
 };
 my $SRC      = $SRC_KEYWORD | $SRC_URI;
 my $SOURCE_LIST = ArrayRef[$SRC];
-my $REFERRER_KEYWORD = enum [qw(
-    no-referrer no-referrer-when-downgrade
-    origin      origin-when-cross-origin unsafe-url
-)];
-
-my @ALL_BOOL = qw( sandbox upgrade_insecure_requests );
+my $REFERRER_KEYWORD = ArrayRef[enum[(
+    'no-referrer', 'no-referrer-when-downgrade', 'origin',
+    'origin-when-cross-origin', 'unsafe-url'
+)]];
+my $SANDBOX_KEYWORD = ArrayRef[enum[(
+    'allow-forms', 'allow-modals', 'allow-orientation-lock',
+    'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox',
+    'allow-presentation', 'allow-same-origin', 'allow-scripts',
+    'allow-top-navigation', 'allow-top-navigation-by-user-activation', ''
+)]];
+my @ALL_BOOL = qw( upgrade_insecure_requests );
 my @ALL_SRC = qw(
     default_src worker_src  connect_src
     font_src    img_src    media_src
@@ -46,6 +51,7 @@ has 'report_uri'  => ( is => 'ro', isa => Str, predicate => 1 );
 has 'base_uri'    => ( is => 'ro', isa => Str, predicate => 1 );
 has 'report_only' => ( is => 'ro', isa => Bool );
 has 'referrer'    => ( is => 'ro', isa => $REFERRER_KEYWORD, predicate => 1 );
+has 'sandbox'     => ( is => 'ro', isa => $SANDBOX_KEYWORD, predicate => 1 );
 has 'value'       => ( is => 'lazy' );
 has 'nonce'       => ( is => 'lazy', init_arg => undef, predicate => 1 );
 has 'disable'     => ( is => 'ro', isa => Bool, default => 0 );
@@ -79,7 +85,7 @@ sub _build_value {
     my $self = shift;
     my @result;
 
-    my @list_directives = (@ALL_SRC);
+    my @list_directives = (@ALL_SRC, ('referrer', 'sandbox'));
     my @boolean_directives = (@ALL_BOOL);
     my @single_directives  = qw(report_uri base_uri);
 
@@ -277,7 +283,11 @@ sent via an HTTP POST request to the specified URI.
 
 The sandbox directive applies restrictions to a page's actions including
 preventing popups, preventing the execution of plugins and scripts, and
-enforcing a same-origin policy.
+enforcing a same-origin policy. Valid values are C<allow-forms>,
+C<allow-modals>, C<allow-orientation-lock>, C<allow-pointer-lock>,
+C<allow-popups>, C<allow-popups-to-escape-sandbox>, C<allow-presentation>,
+C<allow-same-origin>, C<allow-scripts>, C<allow-top-navigation>, and
+C<allow-top-navigation-by-user-activation>, as well as an empty string.
 
 =head2 script_src
 
@@ -343,6 +353,8 @@ style_src or script_src.
 =item has_img_src
 
 =item has_referrer
+
+=item has_sandbox
 
 =item has_style_src
 

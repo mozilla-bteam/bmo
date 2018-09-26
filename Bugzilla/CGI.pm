@@ -92,6 +92,33 @@ sub SHOW_BUG_MODAL_CSP {
     return %policy;
 }
 
+# The Edit Attachment and View All Attachment pages have iframe(s) showing a viewable attachment like plaintext, image
+# or PDF file. The file could be served from a different host from the main Bugzilla instance.
+sub ATTACHMENT_VIEW_CSP {
+    my ($bug_id) = @_;
+    my %policy = (
+        frame_src => [ 'self' ],
+        sandbox   => [ '' ],
+    );
+    if (use_attachbase() && $bug_id) {
+        my $attach_base = Bugzilla->localconfig->{'attachment_base'};
+        $attach_base =~ s/\%bugid\%/$bug_id/g;
+        push @{ $policy{frame_src} }, $attach_base;
+    }
+
+    return %policy;
+}
+
+# An attachment file should allow itself to be included in an iframe on the Edit Attachment and View All Attachment
+# pages, which again could be a different host.
+sub ATTACHMENT_FILE_CSP {
+    my %policy = (
+        frame_ancestors => [ Bugzilla->localconfig->{'urlbase'} ],
+    );
+
+    return %policy;
+}
+
 sub _init_bz_cgi_globals {
     my $invocant = shift;
     # We need to disable output buffering - see bug 179174
