@@ -168,9 +168,9 @@ sub _verify_auth_code {
                 INFO( "Auth code already used to get access token, " . "revoking all associated access tokens" );
                 $dbh->do( "DELETE FROM oauth2_auth_code WHERE auth_code = ?", undef, $auth_code );
 
-                if (my $access_tokens = $dbh->selectall_hashref(
+                if (my $access_tokens = $dbh->selectall_arrayref(
                         "SELECT * FROM oauth2_access_token WHERE client_id = ? AND user_id = ?",
-                        undef, $client_id, $auth_code_data->{user_id}
+                        { Slice => {} }, $client_id, $auth_code_data->{user_id}
                     )
                     )
                 {
