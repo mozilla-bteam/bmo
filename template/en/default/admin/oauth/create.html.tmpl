@@ -1,0 +1,24 @@
+[% PROCESS global/header.html.tmpl
+  title = "Add Oauth2 Client"
+  onload = "document.forms['f'].client_id.focus()"
+%]
+
+<form name="f" method="post" action="editoauthclients.cgi">
+  <table border="0" cellpadding="4" cellspacing="0">
+    <tr>
+      <th align="right"><label for="id">Client ID:</label></th>
+      <td><input id="id" size="20" maxlength="20" name="id"
+                 value=""></td>
+    </tr>
+    <tr>
+      <th align="right"><label for="secret">Client Secret:</label></th>
+      <td><input id="secret" size="40" maxlength="40" name="secret"
+                 value=""></td>
+    </tr>
+  </table>
+  <input type="submit" id="create" value="Add">
+  <input type="hidden" name="action" value="new">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+</form>
+
+[% PROCESS global/footer.html.tmpl %]
