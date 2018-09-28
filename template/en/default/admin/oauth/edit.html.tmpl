@@ -1,9 +1,9 @@
 [% PROCESS global/header.html.tmpl
-  title = "Edit Oauth2 Client"
+  title = "Edit OAuth2 Client"
   onload = "document.forms['f'].client_id.select()"
 %]
 
-<form name="f" method="post" action="editoauthclients.cgi">
+<form name="f" method="post" action="/admin/oauth/edit">
   <table border="0" cellpadding="4" cellspacing="0">
 
     <tr>
@@ -24,7 +24,6 @@
   </table>
 
   <input type="hidden" name="id_old" value="[% client.id FILTER html %]">
-  <input type="hidden" name="action" value="update">
   <input type="submit" id="update" value="Save Changes">
   <input type="hidden" name="token" value="[% token FILTER html %]">
 </form>

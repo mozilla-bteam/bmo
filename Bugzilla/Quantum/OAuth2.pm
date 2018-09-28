@@ -5,7 +5,9 @@ use Moo;
 
 use Bugzilla;
 use Bugzilla::Constants;
+use Bugzilla::Error;
 use Bugzilla::Logging;
+use Bugzilla::Util;
 
 use DateTime;
 
@@ -13,7 +15,7 @@ use base qw(Exporter);
 our @EXPORT_OK = qw(oauth2);
 
 sub oauth2 {
-    my ($self) = @_;
+    my ( $self ) = @_;
 
     $self->plugin(
         'OAuth2::Server' => {
@@ -27,6 +29,13 @@ sub oauth2 {
         }
     );
 
+    # Manage the client list
+    my $r = $self->routes;
+    $r->any('/admin/oauth/list')->to( controller => 'OAuth2::Clients', action => 'list' )->name('list_clients');
+    $r->any('/admin/oauth/create')->to( controller => 'OAuth2::Clients', action => 'create' )->name('create_client');
+    $r->any('/admin/oauth/delete')->to( controller => 'OAuth2::Clients', action => 'delete' )->name('delete_client');
+    $r->any('/admin/oauth/edit')->to( controller => 'OAuth2::Clients', action => 'edit' )->name('edit_client');
+
     return 1;
 }
 
@@ -37,6 +46,7 @@ sub _resource_owner_logged_in {
     Bugzilla->login(LOGIN_REQUIRED);
 
     if ( !Bugzilla->user->id ) {
+
         # we need to redirect back to the /oauth/authorize route after
         # login (with the original params)
         my $uri = join( '?', $c->url_for('current'), $c->url_with->query );
@@ -73,9 +83,7 @@ sub _verify_client {
     my ( $c, $client_id, $scopes_ref ) = @args{qw/ mojo_controller client_id scopes /};
     my $dbh = Bugzilla->dbh;
 
-    if ( my $client_data
-        = $dbh->selectrow_hashref( "SELECT * FROM oauth2_client WHERE id = ?", undef, $client_id ) )
-    {
+    if ( my $client_data = $dbh->selectrow_hashref( "SELECT * FROM oauth2_client WHERE id = ?", undef, $client_id ) ) {
         if ( !$client_data->{active} ) {
             INFO("Client ($client_id) is not active");
             return ( 0, 'unauthorized_client' );
@@ -170,7 +178,8 @@ sub _verify_auth_code {
 
                 if (my $access_tokens = $dbh->selectall_arrayref(
                         "SELECT * FROM oauth2_access_token WHERE client_id = ? AND user_id = ?",
-                        { Slice => {} }, $client_id, $auth_code_data->{user_id}
+                        { Slice => {} },
+                        $client_id, $auth_code_data->{user_id}
                     )
                     )
                 {
