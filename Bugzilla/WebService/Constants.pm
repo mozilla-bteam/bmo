@@ -145,7 +145,6 @@ use constant WS_ERROR_CODE => {
     auth_failure                 => 304,
     password_insecure            => 305,
     api_key_not_valid            => 306,
-    api_key_revoked              => 306,
     auth_invalid_token           => 307,
     invalid_cookies_or_token     => 307,
 

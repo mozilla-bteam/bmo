@@ -47,19 +47,10 @@ sub get_login_info {
         return { failure => AUTH_NODATA };
     }
 
-    my $api_key = Bugzilla::User::APIKey->new({ name => $api_key_text });
+    my $api_key = Bugzilla::User::APIKey->authenticate($api_key_text);
+    ThrowUserError("api_key_not_valid") unless defined $api_key;
 
-    if (!$api_key or $api_key->api_key ne $api_key_text) {
-        # The second part checks the correct capitalisation. Silly MySQL
-        ThrowUserError("api_key_not_valid");
-    }
-    elsif ($api_key->revoked) {
-        ThrowUserError('api_key_revoked');
-    }
-
-    $api_key->update_last_used();
     $self->set_app_id($api_key->app_id);
-
     return { user_id => $api_key->user_id };
 }
 

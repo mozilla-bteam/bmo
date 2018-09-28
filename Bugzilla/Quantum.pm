@@ -23,6 +23,7 @@ use Bugzilla::Logging;
 use Bugzilla::Quantum::CGI;
 use Bugzilla::Quantum::SES;
 use Bugzilla::Quantum::Static;
+use Bugzilla::Quantum::Product;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
@@ -145,6 +146,24 @@ sub startup {
         }
     );
     $ses_auth->any('/index.cgi')->to('SES#main');
+
+    my $api_routes = $r->under('/api' => sub {
+        my ($c) = @_;
+        my $api_key_text = $c->req->headers->header('X-Bugzilla-API-Key');
+        return 1 unless defined $api_key_text;
+
+        my $api_key = Bugzilla::User::APIKey->authenticate($api_key_text);
+        if ($api_key) {
+            Bugzilla->set_user(Bugzilla::User->check({id => $api_key->user_id}));
+            return 1;
+        }
+        $c->render(
+            code => 400,
+            json => { "error" => 'invalid api key' },
+        );
+        return undef;
+    });
+    $api_routes->get('/products/:type' => [ type => [qw( accessible enterable selectable )]])->to('Product#list');
 
     Bugzilla::Hook::process( 'app_startup', { app => $self } );
 }

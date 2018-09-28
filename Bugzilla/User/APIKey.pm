@@ -14,7 +14,7 @@ use warnings;
 use base qw(Bugzilla::Object);
 
 use Bugzilla::User;
-use Bugzilla::Util qw(generate_random_password trim remote_ip);
+use Bugzilla::Util qw(generate_random_password trim remote_ip with_writable_database);
 use Bugzilla::Error;
 
 #####################################################################
@@ -95,6 +95,24 @@ sub create_special {
     local VALIDATORS->{api_key} = sub { return $_[1] };
     return $class->create(@args);
 }
+
+sub authenticate {
+    my ($class, $api_key_text) = @_;
+
+    return undef if !$api_key_text;
+
+    my $api_key = Bugzilla::User::APIKey->new({ name => $api_key_text });
+
+    return undef if !$api_key || $api_key->api_key ne $api_key_text;
+    return undef if $api_key->revoked;
+
+    with_writable_database {
+        $api_key->update_last_used();
+    };
+
+    return $api_key;
+}
+
 1;
 
 __END__

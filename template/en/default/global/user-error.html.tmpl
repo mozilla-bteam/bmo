@@ -111,12 +111,8 @@
 
   [% ELSIF error == "api_key_not_valid" %]
     [% title = "Invalid API key" %]
-    The API key you specified is invalid. Please check that you typed it
+    The API key you specified is invalid or revoked. Please check that you typed it
     correctly.
-
-  [% ELSIF error == "api_key_revoked" %]
-    [% title = "Invalid API key" %]
-    The API key you specified has been revoked by the user that created it.
 
   [% ELSIF error == "attachment_bug_id_mismatch" %]
     [% title = "Invalid Attachments" %]
