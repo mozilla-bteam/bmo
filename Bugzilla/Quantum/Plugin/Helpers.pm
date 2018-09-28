@@ -52,7 +52,6 @@ sub register {
     $app->routes->add_shortcut(
         page => sub {
             my ($r, $page, $id) = @_;
-            $real_file //= $file;
 
             return $r->any($page)->to('CGI#page_cgi' => { id => $id });
         }
