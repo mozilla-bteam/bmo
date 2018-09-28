@@ -43,7 +43,7 @@ sub register {
                 $real_file =~ s!^/!!;
             }
 
-            return $r->get($file => sub {
+            return $r->get($path => sub {
                 my ($c) = @_;
                 $c->reply->file( $c->app->home->child($real_file) );
             })
@@ -51,9 +51,9 @@ sub register {
     );
     $app->routes->add_shortcut(
         page => sub {
-            my ($r, $page, $id) = @_;
+            my ($r, $path, $id) = @_;
 
-            return $r->any($page)->to('CGI#page_cgi' => { id => $id });
+            return $r->any($path)->to('CGI#page_cgi' => { id => $id });
         }
     );
 }
