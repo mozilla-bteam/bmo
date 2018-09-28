@@ -14,6 +14,7 @@ use Bugzilla::Constants;
 use Bugzilla::Logging;
 use Bugzilla::RNG ();
 use JSON::MaybeXS qw(decode_json);
+use Scope::Guard;
 
 sub register {
     my ( $self, $app, $conf ) = @_;
