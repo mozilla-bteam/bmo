@@ -28,6 +28,7 @@ use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
 use Cwd qw(realpath);
 use MojoX::Log::Log4perl::Tiny;
+use Bugzilla::WebService::Server::REST;
 
 has 'static' => sub { Bugzilla::Quantum::Static->new };
 
