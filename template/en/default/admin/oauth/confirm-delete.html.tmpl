@@ -1,5 +1,5 @@
 [% PROCESS global/header.html.tmpl
-  title = "Delete Oauth2 Client"
+  title = "Delete OAuth2 Client"
 %]
 
 <table border="1" cellpadding="4" cellspacing="0">
@@ -17,10 +17,10 @@
 
 <p>Do you really want to delete this client?<p>
 
-<form method="post" action="editoauthclients.cgi">
+<form method="post" action="/admin/oauth/delete">
   <input type="submit" id="delete" value="Yes, delete">
-  <input type="hidden" name="action" value="delete">
   <input type="hidden" name="id" value="[% client.id FILTER html %]">
+  <input type="hidden" name="deleteme" value="delete">
   <input type="hidden" name="token" value="[% token FILTER html %]">
 </form>
 

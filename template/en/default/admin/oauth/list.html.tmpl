@@ -1,9 +1,9 @@
 [% PROCESS global/header.html.tmpl
-  title = "Select Oauth2 Client"
+  title = "Select OAuth2 Client"
 %]
 
-[% edit_contentlink = BLOCK %]editoauthclients.cgi?action=edit&amp;id=%%id%%[% END %]
-[% delete_contentlink = BLOCK %]editoauthclients.cgi?action=del&amp;id=%%id%%[% END %]
+[% edit_contentlink = BLOCK %]/admin/oauth/edit?id=%%id%%[% END %]
+[% delete_contentlink = BLOCK %]/admin/oauth/delete?id=%%id%%[% END %]
 
 [% columns = [
      {
@@ -33,6 +33,6 @@
      overrides = overrides
 %]
 
-<a title="Add a client" href="editoauthclients.cgi?action=add">Add</a> a client.
+<a title="Add a client" href="/admin/oauth/create">Add</a> a client.
 
 [% PROCESS global/footer.html.tmpl %]
