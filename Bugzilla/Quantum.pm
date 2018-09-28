@@ -10,6 +10,8 @@ use Mojo::Base 'Mojolicious';
 
 # Needed for its exit() overload, must happen early in execution.
 use CGI::Compile;
+use utf8;
+use Encode;
 
 use Bugzilla          ();
 use Bugzilla::BugMail ();
@@ -62,7 +64,7 @@ sub startup {
         sub {
             Bugzilla::RNG::srand();
             srand();
-            try { Bugzilla->dbh->ping };
+            eval { Bugzilla->dbh->ping };
         }
     );
 

@@ -80,14 +80,6 @@ sub init_page {
         Bugzilla::Logging->fields->{remote_ip} = remote_ip();
     }
 
-    if (${^TAINT}) {
-        # Some environment variables are not taint safe
-        delete @::ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
-        # Some modules throw undefined errors (notably File::Spec::Win32) if
-        # PATH is undefined.
-        $ENV{'PATH'} = '';
-    }
-
     # Because this function is run live from perl "use" commands of
     # other scripts, we're skipping the rest of this function if we get here
     # during a perl syntax check (perl -c, like we do during the
@@ -778,12 +770,6 @@ sub _cleanup {
         $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction;
     }
     clear_request_cache();
-
-    # These are both set by CGI.pm but need to be undone so that
-    # Apache can actually shut down its children if it needs to.
-    foreach my $signal (qw(TERM PIPE)) {
-        $SIG{$signal} = 'DEFAULT' if $SIG{$signal} && $SIG{$signal} eq 'IGNORE';
-    }
 
     Log::Log4perl::MDC->remove();
 }
