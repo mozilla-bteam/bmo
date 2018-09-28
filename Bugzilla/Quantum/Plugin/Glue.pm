@@ -42,6 +42,7 @@ sub register {
                 }
             }
             Log::Log4perl::MDC->put( request_id => $c->req->request_id );
+            $c->stash->{cleanup_guard} = Scope::Guard->new( \&Bugzilla::cleanup );
         }
     );
 
@@ -72,7 +73,6 @@ sub register {
               or die $template->error;
         }
     );
-    $app->renderer->default_handler('bugzilla');
 
     $app->log( MojoX::Log::Log4perl::Tiny->new( logger => Log::Log4perl->get_logger( ref $app ) ) );
 }
