@@ -4,7 +4,7 @@
 #
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
-package Bugzilla::Quantum::Plugin::BasicAuth;
+package Bugzilla::Quantum::Plugin::Helpers;
 use 5.10.1;
 use Mojo::Base qw(Mojolicious::Plugin);
 
@@ -14,7 +14,7 @@ use Carp;
 sub register {
     my ( $self, $app, $conf ) = @_;
 
-    $app->renderer->add_helper(
+    $app->helper(
         basic_auth => sub {
             my ( $c, $realm, $auth_user, $auth_pass ) = @_;
             my $req = $c->req;
@@ -33,6 +33,27 @@ sub register {
             }
 
             return 1;
+        }
+    );
+    $app->routes->add_shortcut(
+        static_file => sub {
+            my ($r, $path, $real_file) = @_;
+            unless ($real_file) {
+                $real_file = $path;
+                $real_file =~ s!^/!!;
+            }
+
+            return $r->get($path => sub {
+                my ($c) = @_;
+                $c->reply->file( $c->app->home->child($real_file) );
+            })
+        }
+    );
+    $app->routes->add_shortcut(
+        page => sub {
+            my ($r, $path, $id) = @_;
+
+            return $r->any($path)->to('CGI#page_cgi' => { id => $id });
         }
     );
 }
