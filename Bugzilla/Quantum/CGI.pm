@@ -66,12 +66,12 @@ sub load_one {
             $inner->();
         }
         catch {
-            die $_ unless ref $_ eq 'ARRAY' && $_->[0] eq "EXIT\n";
+            die $_ unless _is_exit($_);
         }
         finally {
             my $error = shift;
             untie *STDOUT;
-            $c->finish unless $error;
+            $c->finish if !$error || _is_exit($error);
             Bugzilla->cleanup;
             CGI::initialize_globals();
         };
@@ -159,6 +159,11 @@ sub _file_to_method {
     $name =~ s/\./_/s;
     $name =~ s/\W+/_/gs;
     return $name;
+}
+
+sub _is_exit {
+    my ($error) = @_;
+    return ref $error eq 'ARRAY' && $error->[0] eq "EXIT\n";
 }
 
 1;
