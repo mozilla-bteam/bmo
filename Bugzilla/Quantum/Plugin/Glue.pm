@@ -48,7 +48,6 @@ sub register {
         }
     );
 
-
     $app->secrets( [ Bugzilla->localconfig->{side_wide_secret} ] );
 
     $app->renderer->add_handler(
@@ -72,14 +71,14 @@ sub register {
             }
             my $template = Bugzilla->template;
             $template->process( $name, $vars, $output )
-              or die $template->error;
+                or die $template->error;
         }
-    )
+    );
     $app->helper(
         login_redirect_if_required => sub {
-            my ($c, $type) = @_;
+            my ( $c, $type ) = @_;
 
-            if ($type == LOGIN_REQUIRED) {
+            if ( $type == LOGIN_REQUIRED ) {
                 $c->redirect_to('/login');
                 return undef;
             }
@@ -87,10 +86,10 @@ sub register {
                 return Bugzilla->user;
             }
         }
-    )
+    );
     $app->helper(
         login => sub {
-            my ($c, $type) = @_;
+            my ( $c, $type ) = @_;
             $type //= LOGIN_NORMAL;
 
             return Bugzilla->user if Bugzilla->user->id;
@@ -99,7 +98,7 @@ sub register {
 
             # Allow templates to know that we're in a page that always requires
             # login.
-            if ($type == LOGIN_REQUIRED) {
+            if ( $type == LOGIN_REQUIRED ) {
                 Bugzilla->request_cache->{page_requires_login} = 1;
             }
 
@@ -107,7 +106,7 @@ sub register {
             my $user_id      = $c->cookie("Bugzilla_login");
             my $ip_addr      = $c->req->tx->remote_ip;
 
-            return $c->login_redirect_if_required($type) unless ($login_cookie && $user_id);
+            return $c->login_redirect_if_required($type) unless ( $login_cookie && $user_id );
 
             my $db_cookie = $dbh->selectrow_array(
                 q{
@@ -118,18 +117,15 @@ sub register {
                            AND (restrict_ipaddr = 0 OR ipaddr = ?)
                 },
                 undef,
-                ($login_cookie, $user_id, $ip_addr)
+                ( $login_cookie, $user_id, $ip_addr )
             );
 
-            if (defined $db_cookie && secure_compare($login_cookie, $db_cookie)) {
-                my $user = Bugzilla::User->check({ id => $user_id, cache => 1 });
+            if ( defined $db_cookie && secure_compare( $login_cookie, $db_cookie ) ) {
+                my $user = Bugzilla::User->check( { id => $user_id, cache => 1 } );
+
                 # If we logged in successfully, then update the lastused
                 # time on the login cookie
-                $dbh->do(
-                    q{ UPDATE logincookies SET lastused = NOW() WHERE cookie = ? },
-                    undef,
-                    $login_cookie
-                );
+                $dbh->do( q{ UPDATE logincookies SET lastused = NOW() WHERE cookie = ? }, undef, $login_cookie );
                 Bugzilla->set_user($user);
                 return $user;
             }
