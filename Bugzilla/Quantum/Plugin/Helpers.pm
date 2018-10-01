@@ -37,15 +37,18 @@ sub register {
     );
     $app->routes->add_shortcut(
         static_file => sub {
-            my ($r, $path, $real_file) = @_;
-            unless ($real_file) {
-                $real_file = $path;
-                $real_file =~ s!^/!!;
+            my ($r, $path, $option) = @_;
+            my $file = $option->{file};
+            my $content_type = $option->{content_type} // 'text/plain';
+            unless ($file) {
+                $file = $path;
+                $file =~ s!^/!!;
             }
 
             return $r->get($path => sub {
                 my ($c) = @_;
-                $c->reply->file( $c->app->home->child($real_file) );
+                $c->res->headers->content_type($content_type);
+                $c->reply->file( $c->app->home->child($file) );
             })
         }
     );
