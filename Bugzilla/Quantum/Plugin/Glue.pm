@@ -105,7 +105,7 @@ sub register {
 
             my $login_cookie = $c->cookie("Bugzilla_logincookie");
             my $user_id      = $c->cookie("Bugzilla_login");
-            my $ip_addr      = $c->req->tx->remote_ip;
+            my $ip_addr      = $c->tx->remote_address;
 
             return $c->login_redirect_if_required($type) unless ( $login_cookie && $user_id );
 
