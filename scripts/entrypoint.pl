@@ -167,9 +167,10 @@ sub cmd_test_selenium {
         httpd_url => $conf->{browser_url},
         prove_dir => '/app/qa/t',
         prove_cmd => [
-            'prove', '-qf', '-Ilib', '-I/app',
-            '-I/app/local/lib/perl5',
-            sub { glob 'test_*.t' }
+            'sleep 10',
+            # 'prove', '-qf', '-Ilib', '-I/app',
+            # '-I/app/local/lib/perl5',
+            # sub { glob 'test_*.t' }
         ],
     );
     exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
