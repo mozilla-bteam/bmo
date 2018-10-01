@@ -13,6 +13,7 @@ use Try::Tiny;
 use Bugzilla::Constants;
 use Bugzilla::Logging;
 use Bugzilla::RNG ();
+use Bugzilla::Util qw(with_writable_database);
 use Mojo::Util qw(secure_compare);
 use Mojo::JSON qw(decode_json);
 use Scope::Guard;
@@ -108,7 +109,7 @@ sub register {
 
             return $c->login_redirect_if_required($type) unless ( $login_cookie && $user_id );
 
-            my $db_cookie = $dbh->selectrow_array(
+            my $db_cookie = Bugzilla->dbh->selectrow_array(
                 q{
                     SELECT cookie
                       FROM logincookies
@@ -125,7 +126,9 @@ sub register {
 
                 # If we logged in successfully, then update the lastused
                 # time on the login cookie
-                $dbh->do( q{ UPDATE logincookies SET lastused = NOW() WHERE cookie = ? }, undef, $login_cookie );
+                with_writable_database {
+                    Bugzilla->dbh->do( q{ UPDATE logincookies SET lastused = NOW() WHERE cookie = ? }, undef, $login_cookie );
+                };
                 Bugzilla->set_user($user);
                 return $user;
             }
