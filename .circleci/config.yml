@@ -226,7 +226,8 @@ jobs:
           /app/scripts/entrypoint.pl load_test_data --legacy
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
+          #/app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
+          true
       - store_artifacts:
           path: /app/artifacts
       - *store_log
