@@ -5,7 +5,7 @@ root = true
 end_of_line = lf
 insert_final_newline = true
 
-# 4 space indentation for Perl files
+# 2 space indentation for Perl files
 [*.{pl,PL,pm,cgi,t}]
 indent_style = space
 indent_size = 2
