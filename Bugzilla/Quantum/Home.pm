@@ -17,7 +17,7 @@ sub index {
     $c->bugzilla->login(LOGIN_REQUIRED) or return;
     try {
         ThrowUserError('invalid_username', { login => 'batman' }) if $c->param('error');
-        $c->render(template => 'index');
+        $c->render(handler => 'bugzilla', template => 'index');
     } catch {
         $c->bugzilla->error_page($_);
     };
