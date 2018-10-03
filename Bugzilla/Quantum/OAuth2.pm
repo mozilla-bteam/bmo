@@ -31,10 +31,19 @@ sub oauth2 {
 
     # Manage the client list
     my $r = $self->routes;
-    $r->any('/admin/oauth/list')->to( controller => 'OAuth2::Clients', action => 'list' )->name('list_clients');
-    $r->any('/admin/oauth/create')->to( controller => 'OAuth2::Clients', action => 'create' )->name('create_client');
-    $r->any('/admin/oauth/delete')->to( controller => 'OAuth2::Clients', action => 'delete' )->name('delete_client');
-    $r->any('/admin/oauth/edit')->to( controller => 'OAuth2::Clients', action => 'edit' )->name('edit_client');
+    my $client_route = $r->under('/admin/oauth' => sub {
+        my ($c) = @_;
+        my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
+        $user->in_group('admin')
+            || ThrowUserError("auth_failure", {group  => "admin",
+                                               action => "edit",
+                                               object => "oauth_clients"});
+        return 1;
+    });
+    $client_route->any('/list')->to( 'OAuth2::Clients#list' )->name('list_clients');
+    $client_route->any('/create')->to( 'OAuth2::Clients#create' )->name('create_client');
+    $client_route->any('/delete')->to( 'OAuth2::Clients#delete' )->name('delete_client');
+    $client_route->any('/edit')->to( 'OAuth2::Clients#edit' )->name('edit_client');
 
     return 1;
 }
@@ -43,15 +52,14 @@ sub _resource_owner_logged_in {
     my ( %args ) = @_;
     my $c = $args{mojo_controller};
 
-    Bugzilla->login(LOGIN_REQUIRED);
+    my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
 
-    if ( !Bugzilla->user->id ) {
-
+    if ( !$user->user->id ) {
         # we need to redirect back to the /oauth/authorize route after
         # login (with the original params)
         my $uri = join( '?', $c->url_for('current'), $c->url_with->query );
         $c->flash( 'redirect_after_login' => $uri );
-        $c->redirect_to('/oauth/login');
+        $c->redirect_to('/login');
         return 0;
     }
 

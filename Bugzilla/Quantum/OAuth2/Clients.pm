@@ -19,7 +19,7 @@ use Bugzilla::Token;
 sub list {
     my ( $self ) = @_;
     my $clients = Bugzilla->dbh->selectall_arrayref( "SELECT * FROM oauth2_client", { Slice => {} } );
-    $self->stash(vars => { clients => $clients });
+    $self->stash(clients => $clients);
     return $self->render( template => 'admin/oauth/list', handler => 'bugzilla' );
 }
 
@@ -29,11 +29,9 @@ sub create {
     my $dbh = Bugzilla->dbh;
     my $vars = {};
 
-    Bugzilla->set_user(Bugzilla::User->new({ name => 'admin@mozilla.bugs' }));
-
     if ($self->req->method ne 'POST') {
         $vars->{token} = issue_session_token('create_oauth_client');
-        $self->stash(vars => $vars);
+        $self->stash(%$vars);
         return $self->render( template => 'admin/oauth/create', handler => 'bugzilla' );
     }
 
@@ -54,7 +52,7 @@ sub create {
     $vars->{'message'} = 'oauth_client_created';
     $vars->{'client'}  = { id => $id };
     $vars->{'clients'} = $clients;
-    $self->stash(vars => $vars);
+    $self->stash(%$vars);
     return $self->render( template => 'admin/oauth/list', handler => 'bugzilla' );
 }
 
@@ -64,15 +62,13 @@ sub delete {
     my $dbh  = Bugzilla->dbh;
     my $vars = {};
 
-    Bugzilla->set_user(Bugzilla::User->new({ name => 'admin@mozilla.bugs' }));
-
     my $id     = $self->param('id');
     my $client = $dbh->selectrow_hashref( "SELECT * FROM oauth2_client WHERE id = ?", undef, $id );
 
     if (!$self->param('deleteme')) {
         $vars->{'client'} = $client;
         $vars->{'token'}  = issue_session_token('delete_oauth_client');
-        $self->stash(vars => $vars);
+        $self->stash(%$vars);
         return $self->render( template => 'admin/oauth/confirm-delete', handler => 'bugzilla' );
     }
 
@@ -88,7 +84,7 @@ sub delete {
     $vars->{'message'} = 'oauth_client_deleted';
     $vars->{'client'}  = { id => $id };
     $vars->{'clients'} = $clients;
-    $self->stash(vars => $vars);
+    $self->stash(%$vars);
     return $self->render( template => 'admin/oauth/list', handler => 'bugzilla' );
 }
 
@@ -98,15 +94,13 @@ sub edit {
     my $dbh  = Bugzilla->dbh;
     my $vars = {};
 
-    Bugzilla->set_user(Bugzilla::User->new({ name => 'admin@mozilla.bugs' }));
-
     my $id = $self->param('id');
     my $client = $dbh->selectrow_hashref( "SELECT * FROM oauth2_client WHERE id = ?", undef, $id );
 
     if ($self->req->method ne 'POST') {
         $vars->{'client'} = $client;
         $vars->{'token'}  = issue_session_token('edit_oauth_client');
-        $self->stash(vars => $vars);
+        $self->stash(%$vars);
         return $self->render( template => 'admin/oauth/edit', handler => 'bugzilla' );
     }
 
@@ -134,7 +128,7 @@ sub edit {
     $vars->{'message'} = 'oauth_client_updated';
     $vars->{'client'}  = { id => $id };
     $vars->{'clients'} = $clients;
-    $self->stash(vars => $vars);
+    $self->stash(%$vars);
     return $self->render( template => 'admin/oauth/list', handler => 'bugzilla' );
 }
 
