@@ -122,13 +122,13 @@ has 'deltas' => (
     isa => Dict [
         by_sec_keyword => HashRef [
             Dict [
-                added => ArrayRef [Int],
+                added  => ArrayRef [Int],
                 closed => ArrayRef [Int],
             ],
         ],
         by_product => HashRef [
             Dict [
-                added => ArrayRef [Int],
+                added  => ArrayRef [Int],
                 closed => ArrayRef [Int],
             ],
         ],
@@ -139,9 +139,9 @@ has 'graphs' => (
     is => 'lazy',
     isa => Dict [
         bugs_by_sec_keyword_count => Object,
-        bugs_by_sec_keyword_age => Object,
-        bugs_by_product_count => Object,
-        bugs_by_product_age => Object,
+        bugs_by_sec_keyword_age   => Object,
+        bugs_by_product_count     => Object,
+        bugs_by_product_age       => Object,
     ],
 );
 
@@ -187,7 +187,7 @@ sub _build_initial_bugs {
                 }
                 @{ $bug->keyword_objects }
             )->name,
-            status => $bug->status->name,
+            status     => $bug->status->name,
             is_stalled => scalar $is_stalled,
             is_open    => $self->_is_bug_open($bug->status->name, scalar $is_stalled),
             created_at => datetime_from( $bug->creation_ts ),
@@ -311,68 +311,68 @@ sub _build_graphs {
     my $graphs = {};
     my $data = [
         {
-            id => 'bugs_by_sec_keyword_count',
-            title => sprintf('Open security bugs by severity (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
+            id          => 'bugs_by_sec_keyword_count',
+            title       => sprintf('Open security bugs by severity (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
             range_label => 'Open Bugs Count',
-            datasets => [
+            datasets    => [
                 map {
                     my $keyword = $_;
                     {
-                        name => $_,
-                        keys => [ map { $_->{date}->epoch } @{$self->results} ],
+                        name   => $_,
+                        keys   => [ map { $_->{date}->epoch } @{$self->results} ],
                         values => [ map { scalar @{$_->{bugs_by_sec_keyword}->{$keyword}->{open}} } @{$self->results} ],
                     }
                 } @{$self->sec_keywords}
             ],
-            image_file => tempfile(SUFFIX => '.png'),
+            image_file  => tempfile(SUFFIX => '.png'),
         },
         {
-            id => 'bugs_by_sec_keyword_age',
-            title => sprintf('Median age of open security bugs by severity (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
+            id          => 'bugs_by_sec_keyword_age',
+            title       => sprintf('Median age of open security bugs by severity (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
             range_label => 'Median Age (days)',
-            datasets => [
+            datasets    => [
                 map {
                     my $keyword = $_;
                     {
-                        name => $_,
-                        keys => [ map { $_->{date}->epoch } @{$self->results} ],
+                        name   => $_,
+                        keys   => [ map { $_->{date}->epoch } @{$self->results} ],
                         values => [ map { $_->{bugs_by_sec_keyword}->{$keyword}->{median_age_open} } @{$self->results} ],
                     }
                 } @{$self->sec_keywords}
             ],
-            image_file => tempfile(SUFFIX => '.png'),
+            image_file  => tempfile(SUFFIX => '.png'),
         },
         {
-            id => 'bugs_by_product_count',
-            title => sprintf('Open security bugs by product (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
+            id          => 'bugs_by_product_count',
+            title       => sprintf('Open security bugs by product (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
             range_label => 'Open Bugs Count',
-            datasets => [
+            datasets    => [
                 map {
                     my $product = $_;
                     {
-                        name => $_,
-                        keys => [ map { $_->{date}->epoch } @{$self->results} ],
+                        name   => $_,
+                        keys   => [ map { $_->{date}->epoch } @{$self->results} ],
                         values => [ map { scalar @{$_->{bugs_by_product}->{$product}->{open}} } @{$self->results} ],
                     }
                 } @{$self->products}
             ],
-            image_file => tempfile(SUFFIX => '.png'),
+            image_file  => tempfile(SUFFIX => '.png'),
         },
         {
-            id => 'bugs_by_product_age',
-            title => sprintf('Median age of open security bugs by product (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
+            id          => 'bugs_by_product_age',
+            title       => sprintf('Median age of open security bugs by product (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
             range_label => 'Median Age (days)',
-            datasets => [
+            datasets    => [
                 map {
                     my $product = $_;
                     {
-                        name => $_,
-                        keys => [ map { $_->{date}->epoch } @{$self->results} ],
+                        name   => $_,
+                        keys   => [ map { $_->{date}->epoch } @{$self->results} ],
                         values => [ map { $_->{bugs_by_product}->{$product}->{median_age_open} } @{$self->results} ],
                     }
                 } @{$self->products}
             ],
-            image_file => tempfile(SUFFIX => '.png'),
+            image_file  => tempfile(SUFFIX => '.png'),
         },
     ];
 
@@ -395,9 +395,9 @@ sub _build_graphs {
         $ctx->range_axis->label($datum->{range_label});
         $ctx->domain_axis(
             Chart::Clicker::Axis::DateTime->new(
-                position => 'bottom',
+                position    => 'bottom',
                 orientation => 'horizontal',
-                format => "%m/%d",
+                format      => "%m/%d",
             )
         );
         $cc->write_output($datum->{image_file});
@@ -412,14 +412,14 @@ sub _build_deltas {
     my $deltas = { by_product => {}, by_sec_keyword => {}};
     my $data = [
         {
-            domain => $self->products,
+            domain      => $self->products,
             results_key => 'bugs_by_product',
-            deltas_key => 'by_product',
+            deltas_key  => 'by_product',
         },
         {
-            domain => $self->sec_keywords,
+            domain      => $self->sec_keywords,
             results_key => 'bugs_by_sec_keyword',
-            deltas_key => 'by_sec_keyword',
+            deltas_key  => 'by_sec_keyword',
         }
     ];
 

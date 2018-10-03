@@ -68,7 +68,7 @@ my @parts = (
             charset      => 'UTF-8',
             encoding     => 'quoted-printable',
         },
-        body_str => $html,
+        body_str   => $html,
     ),
     map {
         Email::MIME->create(
@@ -81,7 +81,7 @@ my @parts = (
                 name         => "$_.png",
                 encoding     => 'base64',
             },
-            body => $report->graphs->{$_}->slurp,
+            body       => $report->graphs->{$_}->slurp,
         )
     } sort { $a cmp $b } keys %{$report->graphs}
 );
@@ -93,7 +93,7 @@ my $email = Email::MIME->create(
         Subject => "Security Bugs Report for $report_week",
         'X-Bugzilla-Type' => 'admin',
     ],
-    parts => [ @parts ],
+    parts      => [ @parts ],
 );
 
 MessageToMTA($email);
