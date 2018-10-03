@@ -20,12 +20,12 @@
 <table style="border-spacing: 0">
   <tr>
     <th style="padding: 0px 15px 10px 0px;">Product</th>
-    <th style="padding: 0px 15px 10px 0px; text-align: right;">#Closed<br />Last Week</th>
-    <th style="padding: 0px 15px 10px 0px; text-align: right;">#Added<br />Last Week</th>
+    <th style="padding: 0px 15px 10px 0px; text-align: right;">Closed<br />Last Week</th>
+    <th style="padding: 0px 15px 10px 0px; text-align: right;">Added<br />Last Week</th>
     [% FOREACH result IN results.reverse %]
       [% LAST IF loop.count > 4 %]
       <th style="padding: 0px 15px 10px [% IF loop.count == 2 %] 10px [% ELSE %] 0px [% END %]; text-align: right; [% IF loop.count == 1 %] border-right: 1px solid grey; [% END %]">
-        #Open<br>[% result.date FILTER time('%m/%d') %]
+        Open<br>[% result.date FILTER time('%m/%d') %]
       </th>
     [% END %]
   </tr>
@@ -71,13 +71,13 @@
 <table style="border-spacing: 0">
   <tr>
     <th style="padding: 0px 15px 10px 0px;">Category</th>
-    <th style="padding: 0px 15px 10px 0px; text-align: right;">#Closed<br />Last Week</th>
-    <th style="padding: 0px 15px 10px 0px; text-align: right;">#Added<br />Last Week</th>
+    <th style="padding: 0px 15px 10px 0px; text-align: right;">Closed<br />Last Week</th>
+    <th style="padding: 0px 15px 10px 0px; text-align: right;">Added<br />Last Week</th>
     <th style="padding: 0px 15px 10px 0px; text-align: right;">Median Age<br/>of Open [% terms.Bugs %]<br></th>
     [% FOREACH result IN results.reverse %]
       [% LAST IF loop.count > 4 %]
       <th style="padding: 0px 15px 10px [% IF loop.count == 2 %] 10px [% ELSE %] 0px [% END %]; text-align: right;  [% IF loop.count == 1 %] border-right: 1px solid grey; [% END %]">
-        #Open<br>[% result.date FILTER time('%m/%d') %]
+        Open<br>[% result.date FILTER time('%m/%d') %]
       </th>
     [% END %]
   </tr>
