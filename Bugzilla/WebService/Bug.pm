@@ -37,7 +37,7 @@ use List::MoreUtils qw(uniq);
 use Storable qw(dclone);
 use Types::Standard -all;
 use Type::Utils;
-use Type::Param qw(compile);
+use Type::Params qw(compile);
 
 #############
 # Constants #
