@@ -133,7 +133,7 @@ sub fields {
         Object,
         Dict[
             ids   => Optional[ArrayRef[Int]],
-            names => Optional[ArrayRef[Str]]
+            names => Optional[ArrayRef[Str]],
             slurpy Any,
         ]
     );
@@ -305,10 +305,10 @@ sub comments {
         Dict [
             ids         => Optional [ ArrayRef [Int] ],
             comment_ids => Optional [ ArrayRef [Int] ],
-            slurpy All
+            slurpy Any
         ]
     );
-    my ($eslf, $params) = $check->(@_);
+    my ($self, $params) = $check->(@_);
 
     if (!(defined $params->{ids} || defined $params->{comment_ids})) {
         ThrowCodeError('params_required',
@@ -367,7 +367,7 @@ sub comments {
 }
 
 sub render_comment {
-    state $check = compile(Object, Dict[text => Str, id => Optional[Int], slurpy All]);
+    state $check = compile(Object, Dict[text => Str, id => Optional[Int], slurpy Any]);
     my ($self, $params) = $check->(@_);
 
     unless (defined $params->{text}) {
@@ -415,7 +415,7 @@ sub _translate_comment {
 }
 
 sub get {
-    state $check = compile(Object, Dict[ids => ArrayRef[Int | Str], slurpy All]);
+    state $check = compile(Object, Dict[ids => ArrayRef[Int | Str], slurpy Any]);
     my ($self, $params) = $check->(@_);
 
     unless (Bugzilla->user->id) {
@@ -478,7 +478,7 @@ sub history {
         Dict [
             ids       => ArrayRef [ Int | Str ],
             new_since => Optional [Str],
-            slurpy All
+            slurpy Any
         ]
     );
     my ($self, $params) = $check->(@_);
@@ -685,8 +685,8 @@ sub possible_duplicates {
             product            => Optional [ ArrayRef [Str] ],
             limit              => Optional [Int],
             summary            => Optional [Str],
-            Bugzilla_api_token => Optional [Str]
-            slurpy All,
+            Bugzilla_api_token => Optional [Str],
+            slurpy Any,
         ]
     );
     my ($self, $params) = $check->(@_);
@@ -951,7 +951,7 @@ sub add_attachment {
             is_private => Optional[Str],
             flags => Optional[ArrayRef[HashRef]],
             slurpy Any,
-        ];
+        ],
     );
     my ($self, $params) = $check->(@_);
     my $dbh = Bugzilla->dbh;
