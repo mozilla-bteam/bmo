@@ -18,6 +18,24 @@ use Bugzilla::Extension::PhabBugz::Feed;
 
 our $VERSION = '0.01';
 
+sub mojo_after_dispatch {
+    my ($c) = @_;
+    my $stash = $c->stash;
+    return unless $stash->{controller} eq 'CGI' && $stash->{action} eq 'rest_cgi';
+    return unless $stash->{PATH_INFO} =~ m{^phabbugz/build_target};
+    my $datadog = Bugzilla->datadog('bugzilla.phabbugz') or return;
+
+    if ($res->code == 200) {
+        $datadog->increment('build_target_ok');
+    }
+}
+
+sub app_startup {
+    my ($self, $args) = @_;
+    my $app = $args->{app};
+    $app->hook(after_dispatch => \&mojo_after_dispatch);
+}
+
 sub config_add_panels {
     my ($self, $args) = @_;
     my $modules = $args->{panel_modules};
