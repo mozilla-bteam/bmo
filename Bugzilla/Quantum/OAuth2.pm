@@ -51,18 +51,7 @@ sub oauth2 {
 sub _resource_owner_logged_in {
     my ( %args ) = @_;
     my $c = $args{mojo_controller};
-
-    my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
-
-    if ( !$user->user->id ) {
-        # we need to redirect back to the /oauth/authorize route after
-        # login (with the original params)
-        my $uri = join( '?', $c->url_for('current'), $c->url_with->query );
-        $c->flash( 'redirect_after_login' => $uri );
-        $c->redirect_to('/login');
-        return 0;
-    }
-
+    my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return 0;
     return 1;
 }
 

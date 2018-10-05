@@ -75,9 +75,17 @@ sub fail_nodata {
         ThrowUserError('login_required');
     }
 
+    # If Mojo native app is requesting login, then we need
+    # specify a special target.
+    my $C = $Bugzilla::Quantum::CGI::C;
+    my $target = $cgi->url(-relative=>1);
+    if (my $override_target = $C->session('override_login_target')) {
+      $target = $override_target;
+    }
+
     print $cgi->header();
     $template->process("account/auth/login.html.tmpl",
-                       { 'target' => $cgi->url(-relative=>1) })
+                       { 'target' => $target })
         || ThrowTemplateError($template->error());
     exit;
 }
