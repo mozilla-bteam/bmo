@@ -27,11 +27,11 @@ use Bugzilla::Attachment::PatchReader;
 use Bugzilla::Token;
 use Bugzilla::Keyword;
 use Bugzilla::Hook;
+use Mojo::Util qw(url_escape);
 
 use Encode qw(encode find_encoding from_to);
 use URI;
 use URI::QueryParam;
-use URI::Escape qw(uri_escape_utf8);
 use File::Basename qw(basename);
 use MIME::Base64 qw(decode_base64);
 
@@ -406,12 +406,12 @@ sub view {
 
     my $disposition = Bugzilla->params->{'allow_attachment_display'} ? 'inline' : 'attachment';
 
+    $filename = encode('UTF-8', $filename);
     my $ascii_filename = $filename;
-    utf8::encode($ascii_filename);
     from_to($ascii_filename, 'UTF-8', 'ascii');
     $ascii_filename =~ s/(["\\])/\\$1/g;
     my $qfilename = qq{"$filename"};
-    my $ufilename = qq{UTF-8''} . uri_escape_utf8($filename);
+    my $ufilename = qq{UTF-8''} . url_escape($filename);
 
     my $filenames = "filename=$qfilename";
     if ($ascii_filename ne $filename) {
