@@ -1105,7 +1105,9 @@ sub update {
                 [$self->{"_old_${new_field}_name"}, $self->$new_field];
         }
     }
-    foreach my $field (qw(qa_contact assigned_to)) {
+
+    my @people = Bugzilla->params->{useqacontact} ? qw(qa_contact assigned_to) : qw( assigned_to );
+    foreach my $field (@people) {
         if ($changes->{$field}) {
             my ($from, $to) = @{ $changes->{$field} };
             $from = $old_bug->$field->login if $from;
