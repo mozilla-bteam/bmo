@@ -368,6 +368,7 @@ sub group_query {
             INFO( "Project " . $project->name . " updated" );
         }
     }
+
     if (Bugzilla->datadog) {
       my $dd = Bugzilla->datadog();
       $dd->increment('bugzilla.phabbugz.group_query_count');
