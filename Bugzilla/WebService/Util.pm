@@ -11,6 +11,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Logging;
 use Bugzilla::Flag;
 use Bugzilla::FlagType;
 use Bugzilla::Error;
@@ -217,31 +218,6 @@ sub _delete_bad_keys {
     return @_;
 }
 
-sub _guess_type {
-    my ($key, $caller) = @_;
-    state $ids = ArrayRef->of(Int)->plus_coercions(
-        Int, q{ [ $_ ] },
-    );
-    state $names = ArrayRef->of(Str)->plus_coercions(
-        Str, q{ [ $_ ] },
-    );
-
-    if ($key =~ /ids$/) {
-        if ($caller =~ /Bug::fields$/) {
-            return $ids;
-        }
-        elsif ($caller =~ /::Bug::\w+$/ && $key eq 'ids') {
-            return $names;
-        }
-        else {
-            return $ids;
-        }
-    }
-    else {
-        return $names;
-    }
-}
-
 sub validate  {
     my ($self, $params, @keys) = @_;
     my $cache_key = join('|', (caller(1))[3], sort @keys);
@@ -265,8 +241,10 @@ sub validate  {
     # parameters that have scalar values to arrayrefs
     # that match.
     $params = $params_type->coerce($params);
-    my $type_error = $params_type->validate($params);
-    ThrowUserError('invalid_params', { type_error => $type_error } ) if $type_error;
+    if (my $type_error = $params_type->validate($params)) {
+        FATAL("validate() found type error: $type_error");
+        ThrowUserError('invalid_params', { type_error => $type_error } ) if $type_error;
+    }
 
     return ($self, $params);
 }
