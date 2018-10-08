@@ -1880,6 +1880,7 @@ sub new {
         $class .= '::' . $subclass;
         try {
             require_module($class);
+        }
         catch {
             die "The $class class could not be found ($subclass not supported?): $_";
         };
