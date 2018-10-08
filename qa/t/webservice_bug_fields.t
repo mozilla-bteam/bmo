@@ -102,10 +102,8 @@ sub get_products_from_field {
 }
 
 our %field_ids;
-use Mojo::JSON qw(encode_json);
 foreach my $rpc (@clients) {
     my $call = $rpc->bz_call_success('Bug.fields');
-    diag "Result: ", encode_json($call->result), "\n";
     my $fields = $call->result->{fields};
     foreach my $field (ALL_FIELDS) {
         my $field_data = get_field($fields, $field);
