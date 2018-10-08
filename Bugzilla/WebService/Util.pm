@@ -18,6 +18,8 @@ use Bugzilla::WebService::Constants;
 
 use Storable qw(dclone);
 use URI::Escape qw(uri_unescape);
+use Type::Params qw( compile );
+use Types::Standard -all;
 
 use base qw(Exporter);
 
@@ -215,8 +217,44 @@ sub _delete_bad_keys {
     return @_;
 }
 
+sub _guess_type {
+    my ($key, $caller) = @_;
+    state $ids = ArrayRef->of(Int)->plus_coercions(
+        Int, q{ [ $_ ] },
+    );
+    state $names = ArrayRef->of(Str)->plus_coercions(
+        Str, q{ [ $_ ] },
+    );
+
+    if ($key =~ /ids$/) {
+        if ($caller =~ /Bug::fields$/) {
+            return $ids;
+        }
+        elsif ($caller =~ /::Bug::\w+$/ && $key eq 'ids') {
+            return $names;
+        }
+        else {
+            return $ids;
+        }
+    }
+    else {
+        return $names;
+    }
+}
+
 sub validate  {
     my ($self, $params, @keys) = @_;
+    my $cache_key = join('|', (caller(1))[3], sort @keys);
+    # Type->of() is the same as Type[], used here because it is easier
+    # to chain with plus_coercions.
+    state $array_of_nonrefs = ArrayRef->of(Maybe[Value])->plus_coercions(
+        Maybe[Value], q{ [ $_ ] },
+    );
+    state $type_cache = {};
+    my $params_type = $type_cache->{$cache_key} //= do {
+        my %fields = map { $_ => Optional[$array_of_nonrefs] } @keys;
+        Maybe[ Dict[%fields, slurpy Any] ];
+    };
 
     # If $params is defined but not a reference, then we weren't
     # sent any parameters at all, and we're getting @keys where
@@ -226,13 +264,9 @@ sub validate  {
     # If @keys is not empty then we convert any named
     # parameters that have scalar values to arrayrefs
     # that match.
-    foreach my $key (@keys) {
-        if (exists $params->{$key}) {
-            $params->{$key} = ref $params->{$key}
-                              ? $params->{$key}
-                              : [ $params->{$key} ];
-        }
-    }
+    $params = $params_type->coerce($params);
+    my $type_error = $params_type->validate($params);
+    ThrowUserError('invalid_params', { type_error => $type_error } ) if $type_error;
 
     return ($self, $params);
 }
