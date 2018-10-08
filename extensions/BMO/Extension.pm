@@ -2722,7 +2722,10 @@ sub enter_bug_entrydefaultvars {
 sub app_startup {
     my ($self, $args) = @_;
     my $app = $args->{app};
+    my $assets = $args->{assets};
     my $r = $app->routes;
+
+    push @{ $assets->{"bugzilla.js"} }, "../extensions/BMO/web/js/edituser_menu.js";
 
     $r->get(
         '/favicon.ico' => sub {

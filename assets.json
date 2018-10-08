@@ -1,0 +1,14 @@
+{
+  "bugzilla.js": [
+    "../js/jquery/jquery-min.js",
+    "../js/jquery/ui/jquery-ui-min.js",
+    "../js/jquery/plugins/cookie/cookie-min.js",
+    "../js/jquery/plugins/devbridgeAutocomplete/devbridgeAutocomplete-min.js",
+    "../js/jquery/plugins/contextMenu/contextMenu-min.js",
+    "../js/global.js",
+    "../js/dropdown.js",
+    "../js/util.js",
+    "../js/lib/md5.min.js",
+    "../extensions/Review/web/js/badge.js"
+  ]
+}

@@ -25,6 +25,7 @@ use Bugzilla::Quantum::SES;
 use Bugzilla::Quantum::Home;
 use Bugzilla::Quantum::Static;
 use Mojo::Loader qw( find_modules );
+use Mojo::JSON qw(decode_json);
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
 use Cwd qw(realpath);
@@ -42,6 +43,7 @@ sub startup {
     unless $ENV{BUGZILLA_DISABLE_HOSTAGE};
   $self->plugin('Bugzilla::Quantum::Plugin::BlockIP');
   $self->plugin('Bugzilla::Quantum::Plugin::Helpers');
+  $self->plugin('AssetPack' => { pipes => [qw(Css Combine)] });
 
   # hypnotoad is weird and doesn't look for MOJO_LISTEN itself.
   $self->config(
@@ -87,8 +89,13 @@ sub startup {
   Bugzilla::WebService::Server::REST->preload;
 
   $self->setup_routes;
+  my $assets_file = $self->home->child('assets.json');
+  my $assets = decode_json( $assets_file->slurp );
 
-  Bugzilla::Hook::process('app_startup', {app => $self});
+  Bugzilla::Hook::process('app_startup', {app => $self, assets => $assets});
+  foreach my $topic (keys %$assets) {
+    $self->asset->process($topic => @{ $assets->{$topic} });
+  }
 }
 
 sub setup_routes {

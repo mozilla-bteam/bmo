@@ -20,4 +20,12 @@ sub config_add_panels {
     $modules->{GoogleAnalytics} = "Bugzilla::Extension::GoogleAnalytics::Config";
 }
 
+sub app_startup {
+    my ($self, $args) = @_;
+    my $assets = $args->{assets};
+    push @{ $assets->{"bugzilla.js"} },
+        "../extensions/GoogleAnalytics/web/js/analytics.js",
+        "../extensions/GoogleAnalytics/web/js/dnt-helper.js";
+}
+
 __PACKAGE__->NAME;
