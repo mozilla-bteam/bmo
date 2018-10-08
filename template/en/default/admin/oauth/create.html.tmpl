@@ -6,12 +6,34 @@
 <form name="f" method="post" action="/admin/oauth/create">
   <table border="0" cellpadding="4" cellspacing="0">
     <tr>
+      <th align="right"><label for="description">Client Description:</label></th>
+      <td><input id="description" size="20" maxlength="20" name="description"></td>
+    </tr>
+    <tr>
       <th align="right"><label for="id">Client ID:</label></th>
       <td><input id="id" size="20" maxlength="20" name="id"></td>
     </tr>
     <tr>
       <th align="right"><label for="secret">Client Secret:</label></th>
       <td><input id="secret" size="40" maxlength="40" name="secret"></td>
+    </tr>
+    <tr>
+      <th class="field_label"><label for="scopes">Scopes:</label></th>
+      <td>
+        <table>
+        [% FOREACH scope = scopes %]
+          <tr>
+            <td>
+              <input id="scope_[% scope.id FILTER html %]"
+                     name="scopes" type="checkbox" value="[% scope.id FILTER html %]">
+            </td>
+            <td>
+              [% scope.description FILTER html %]
+            </td>
+          </tr>
+        [% END %]
+        </table>
+      </td>
     </tr>
   </table>
   <input type="submit" id="create" value="Add">
