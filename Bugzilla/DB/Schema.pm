@@ -1831,6 +1831,7 @@ use constant ABSTRACT_SCHEMA => {
     oauth2_client => {
         FIELDS => [
             id            => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
+            description   => {TYPE => 'varchar(255)', NOTNULL => 1},
             secret        => {TYPE => 'varchar(255)', NOTNULL => 1},
             active        => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'TRUE'},
             last_modified => {TYPE => 'DATETIME'}

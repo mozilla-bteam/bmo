@@ -5,7 +5,11 @@
 
 <form name="f" method="post" action="/admin/oauth/edit">
   <table border="0" cellpadding="4" cellspacing="0">
-
+    <tr>
+      <th class="field_label"><label for="description">Client Description:</label></th>
+      <td><input id="description" size="20" maxlength="20" name="description" value="
+      [%- client.description FILTER html %]"></td>
+    </tr>
     <tr>
       <th class="field_label"><label for="id">Client ID:</label></th>
       <td><input id="id" size="20" maxlength="20" name="id" value="
@@ -19,7 +23,26 @@
     <tr>
       <th class="field_label"><label for="active">Active:</label></th>
       <td><input id="active" name="active" type="checkbox" value="1"
-                 [% 'checked="checked"' IF client.active %]></td>
+                 [%+ 'checked="checked"' IF client.active %]></td>
+    </tr>
+    <tr>
+      <th class="field_label"><label for="scopes">Scopes:</label></th>
+      <td>
+        <table>
+        [% FOREACH scope = scopes %]
+          <tr>
+            <td>
+              <input id="scope_[% scope.id FILTER html %]"
+                     name="scopes" type="checkbox" value="[% scope.id FILTER html %]"
+                 [% 'checked="checked"' IF client.scopes.contains(scope.id) %]>
+            </td>
+            <td>
+              [% scope.description FILTER html %]
+            </td>
+          </tr>
+        [% END %]
+        </table>
+      </td>
     </tr>
   </table>
 
