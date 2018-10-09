@@ -37,6 +37,7 @@ use List::MoreUtils qw(uniq);
 use Storable qw(dclone);
 use Types::Standard -all;
 use Type::Utils;
+use Type::Params qw(compile);
 
 #############
 # Constants #
@@ -128,7 +129,15 @@ BEGIN {
 ###########
 
 sub fields {
-    my ($self, $params) = validate(@_, 'ids', 'names');
+    state $check = compile(
+        Object,
+        Dict[
+            ids   => Optional[ArrayRef[Int]],
+            names => Optional[ArrayRef[Str]],
+            slurpy Any,
+        ]
+    );
+    my ($self, $params) = $check->(@_);
 
     Bugzilla->switch_to_shadow_db();
 
@@ -292,7 +301,14 @@ sub _legal_field_values {
 }
 
 sub comments {
-    my ($self, $params) = validate(@_, 'ids', 'comment_ids');
+    state $check = compile( Object,
+        Dict [
+            ids         => Optional [ ArrayRef [Int] ],
+            comment_ids => Optional [ ArrayRef [Int] ],
+            slurpy Any
+        ]
+    );
+    my ($self, $params) = $check->(@_);
 
     if (!(defined $params->{ids} || defined $params->{comment_ids})) {
         ThrowCodeError('params_required',
@@ -351,7 +367,8 @@ sub comments {
 }
 
 sub render_comment {
-    my ($self, $params) = @_;
+    state $check = compile(Object, Dict[text => Str, id => Optional[Int], slurpy Any]);
+    my ($self, $params) = $check->(@_);
 
     unless (defined $params->{text}) {
         ThrowCodeError('params_required',
@@ -398,7 +415,8 @@ sub _translate_comment {
 }
 
 sub get {
-    my ($self, $params) = validate(@_, 'ids');
+    state $check = compile(Object, Dict[ids => ArrayRef[Int | Str], slurpy Any]);
+    my ($self, $params) = $check->(@_);
 
     unless (Bugzilla->user->id) {
         Bugzilla->check_rate_limit("get_bug", remote_ip());
@@ -456,7 +474,14 @@ sub get {
 # it can be called as the following:
 # $call = $rpc->call( 'Bug.history', { ids => [1,2] });
 sub history {
-    my ($self, $params) = validate(@_, 'ids');
+    state $check = compile( Object,
+        Dict [
+            ids       => ArrayRef [ Int | Str ],
+            new_since => Optional [Str],
+            slurpy Any
+        ]
+    );
+    my ($self, $params) = $check->(@_);
 
     Bugzilla->switch_to_shadow_db();
 
@@ -653,22 +678,22 @@ sub search {
 }
 
 sub possible_duplicates {
-    my ($self, $params) = validate(@_, 'product');
+    state $check = compile(
+        Object,
+        Dict [
+            id                 => Optional [Int],
+            product            => Optional [ ArrayRef [Str] ],
+            limit              => Optional [Int],
+            summary            => Optional [Str],
+            Bugzilla_api_token => Optional [Str],
+            slurpy Any,
+        ]
+    );
+    my ($self, $params) = $check->(@_);
+
     my $user = Bugzilla->user;
 
     Bugzilla->switch_to_shadow_db();
-
-    state $params_type = Dict [
-        id                 => Optional [Int],
-        product            => Optional [ ArrayRef [Str] ],
-        limit              => Optional [Int],
-        summary            => Optional [Str],
-        include_fields     => Optional [ ArrayRef [Str] ],
-        Bugzilla_api_token => Optional [Str]
-    ];
-
-    ThrowCodeError( 'param_invalid', { function => 'Bug.possible_duplicates', param => 'A param' } )
-        if !$params_type->check($params);
 
     my $summary;
     if ($params->{id}) {
@@ -855,7 +880,14 @@ sub create {
 }
 
 sub legal_values {
-    my ($self, $params) = @_;
+    state $check = compile(Object,
+        Dict[
+            field => 'Str',
+            product_id => Optional[Int],
+
+        ],
+    );
+    my ($self, $params) = $check->(@_);
 
     Bugzilla->switch_to_shadow_db();
 
@@ -908,7 +940,20 @@ sub legal_values {
 }
 
 sub add_attachment {
-    my ($self, $params) = validate(@_, 'ids');
+    state $check = compile(Object,
+        Dict[
+            ids => ArrayRef[Int],
+            data => Str,
+            summary => Optional[Str],
+            file_name => Optional[Str],
+            content_type => Optional[Str],
+            is_patch => Optional[Str],
+            is_private => Optional[Str],
+            flags => Optional[ArrayRef[HashRef]],
+            slurpy Any,
+        ],
+    );
+    my ($self, $params) = $check->(@_);
     my $dbh = Bugzilla->dbh;
 
     # BMO: Don't allow updating of bugs if disabled
