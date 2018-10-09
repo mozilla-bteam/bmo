@@ -32,6 +32,7 @@ use Bugzilla::Util;
 use HTTP::Message;
 use MIME::Base64 qw(decode_base64 encode_base64);
 use List::MoreUtils qw(none);
+use Bugzilla::WebService::JSON;
 
 #####################################
 # Public JSON::RPC Method Overrides #
@@ -48,7 +49,7 @@ sub new {
 
 sub create_json_coder {
     my $self = shift;
-    my $json = $self->SUPER::create_json_coder(@_);
+    my $json = Bugzilla::WebService::JSON->new;
     $json->allow_blessed(1);
     $json->convert_blessed(1);
     $json->allow_nonref(1);
