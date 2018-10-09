@@ -9,8 +9,6 @@ package Bugzilla::WebService::JSON::Lazy;
 use 5.10.1;
 use Moo;
 
-use overload q{""} => 'TO_STRING', fallback => 1;
-
 # the JSON encoder. This should be the real one, not Bugzilla::WebService::JSON.
 has 'json' => (is => 'ro', required => 1);
 
@@ -23,7 +21,7 @@ sub TO_JSON {
   return $self->value;
 }
 
-sub TO_STRING {
+sub to_string {
   my ($self) = @_;
 
   return $self->json->encode( $self->value );
