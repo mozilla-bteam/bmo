@@ -24,6 +24,9 @@ use Digest::MD5 qw(md5_hex);
 use Digest::SHA qw(hmac_sha256_base64);
 use Encode;
 use JSON qw(encode_json decode_json);
+use Mojo::JWT;
+use Mojo::Util qw(secure_compare);
+use Try::Tiny;
 
 use base qw(Exporter);
 
@@ -223,24 +226,31 @@ sub issue_short_lived_session_token {
 }
 
 sub issue_hash_sig {
-    my ($type, $data, $salt) = @_;
-    $data //= "";
-    $salt //= generate_random_password(16);
-
-    my $hmac = hmac_sha256_base64(
-        $salt,
-        $type,
-        $data,
-        Bugzilla->localconfig->{site_wide_secret}
+    my ($type, $data) = @_;
+    my $jwt = Mojo::JWT->new(
+        claims => { bz_type => $type, bz_data => $data },
+        secret => Bugzilla->localconfig->{site_wide_secret},
     );
-    return sprintf("%s|%s|%x", $salt, $hmac, length($data));
+
+    return $jwt;
 }
 
 sub check_hash_sig {
     my ($type, $sig, $data) = @_;
     return 0 unless defined $sig && defined $data;
-    my ($salt, undef, $len) = split(/\|/, $sig, 3);
-    return length($data) == hex($len) && $sig eq issue_hash_sig($type, $data, $salt);
+
+    my $jwt = Mojo::JWT->new(
+        secret => Bugzilla->localconfig->{site_wide_secret},
+    );
+    my $ok;
+    try {
+        my $claims = $jwt->decode($sig);
+        $ok = secure_compare($type, $claims->{bz_type}) && secure_compare($data, $claims->{bz_data});
+    }
+    catch {
+        $ok = 0;
+    };
+    return $ok;
 }
 
 sub issue_hash_token {

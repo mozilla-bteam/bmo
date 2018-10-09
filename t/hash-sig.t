@@ -19,6 +19,8 @@ my $localconfig = { site_wide_secret => generate_random_password(256) };
 }
 
 my $sig = issue_hash_sig("hero", "batman");
+diag $sig;
 ok(check_hash_sig("hero", $sig, "batman"), "sig for batman checks out");
+ok(!check_hash_sig("hero", $sig, "batmang"), "sig for batmang does not check out");
 
 done_testing();

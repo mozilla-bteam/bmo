@@ -29,12 +29,6 @@ my $prev_url_sig = $cgi->param('prev_url_sig');
 my $sig_type     = 'prev_url:' . $user->id;
 my $prev_url_ok  = check_hash_sig($sig_type, $prev_url_sig, $prev_url );
 
-unless ($prev_url_ok) {
-    open my $fh, '>', '/tmp/dump.pl' or die $!;
-    print $fh Dumper([$prev_url, $prev_url_sig]);
-    close $fh or die $!;
-}
-
 unless ($user->password_change_required) {
     ThrowUserError(
         'reset_password_denied',
