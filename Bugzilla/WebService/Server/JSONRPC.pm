@@ -85,6 +85,9 @@ sub response {
     # Implement JSONP.
     if (my $callback = $self->_bz_callback) {
         my $content = $response->content;
+        if (blessed $content) {
+          $content = $content->encode;
+        }
         # Prepend the JSONP response with /**/ in order to protect
         # against possible encoding attacks (e.g., affecting Flash).
         $response->content("/**/$callback($content)");
@@ -114,7 +117,7 @@ sub response {
         print $cgi->header(-status => $response->code, @header_args);
         my $content = $response->content;
         if (blessed $content) {
-          my $content = $content->encode;
+          $content = $content->encode;
           utf8::encode($content);
         }
         print $content;

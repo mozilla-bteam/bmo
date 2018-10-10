@@ -26,7 +26,7 @@ my $box = $json->encode($ref);
 is($json->decode(q[{"foo":1}]), {foo => 1});
 is($json->decode($box),         {foo => 1});
 
-like "$box", qr/^Bugzilla::WebService::JSON::Box/;
+is "$box", $box->label;
 
 $box->encode;
 
