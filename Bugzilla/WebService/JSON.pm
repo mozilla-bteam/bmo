@@ -9,52 +9,70 @@ package Bugzilla::WebService::JSON;
 use 5.10.1;
 use Moo;
 
-use Bugzilla::WebService::JSON::Lazy;
+use Bugzilla::WebService::JSON::Box;
 use JSON::MaybeXS;
 use Scalar::Util qw(refaddr blessed);
+use Package::Stash;
 
-use constant LazyJSON => 'Bugzilla::WebService::JSON::Lazy';
+use constant Box => 'Bugzilla::WebService::JSON::Box';
 
 # this cache is used to lookup if something already has a lazy wrapper,
 # using the address of the value.
 has 'cache' => (is => 'lazy', clearer => 'clear_cache',);
 
+has 'json' =>
+  (is => 'lazy', handles => {_encode => 'encode', _decode => 'decode'},);
+
 # delegation all the json options to the real json encoder.
-has 'json' => (
-  is      => 'lazy',
-  handles => [
-    qw[utf8 ascii pretty canonical allow_nonref allow_blessed convert_blessed]
-  ]
+my @json_methods = qw(
+  utf8 ascii pretty canonical
+  allow_nonref allow_blessed convert_blessed
 );
+my $stash = Package::Stash->new(__PACKAGE__);
+foreach my $method (@json_methods) {
+  my $symbol = '&' . $method;
+  $stash->add_symbol(
+    $symbol => sub {
+      my $self = shift;
+      $self->json->$method(@_);
+      return $self;
+    }
+  );
+}
+
+sub is_retained {
+  my ($self, $val) = @_;
+  my $addr = refaddr $val;
+  return $addr && $self->cache->{$addr};
+}
+
+sub retain {
+  my ($self, $val) = @_;
+
+  if (blessed $val && $val->isa(Box)) {
+    return $self->cache->{refaddr $val->value} //= $val;
+  }
+  else {
+    return $self->retain(Box->new(json => $self, value => $val));
+  }
+}
 
 sub encode {
   my ($self, $val) = @_;
-  if (blessed $val && $val->isa(LazyJSON)) {
-    return $val;
-  }
-  else {
-    my $cache = $self->cache;
-    my $addr  = refaddr $val;
-
-    # the Lazy class needs a reference to the real encoder for TO_JSON and stringification.
-    $cache->{$addr} //= LazyJSON->new(value => $val, json => $self->json);
-    return $cache->{$addr};
-  }
+  my $id = refaddr $val;
+  my $box = $id && $self->cache->{$id};
+  return $box if $box;
+  return $self->retain($val);
 }
 
 sub decode {
   my ($self, $val) = @_;
-  if (blessed $val && $val->isa(LazyJSON)) {
+
+  if (blessed $val && $val->isa(Box)) {
     return $val->value;
   }
   else {
-    my $new_val = $self->json->decode($val);
-    my $cache   = $self->cache;
-    $cache->{refaddr $new_val } = Bugzilla::WebService::JSON::Lazy->new(
-      value => $new_val,
-      json  => $self->json
-    );
-    return $new_val;
+    return $self->retain($self->_decode($val))->value;
   }
 }
 

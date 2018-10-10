@@ -112,12 +112,7 @@ sub response {
         push(@header_args, "-ETag", $etag) if $etag;
         print $cgi->header(-status => $response->code, @header_args);
         my $content = $response->content;
-        if (ref $content) {
-            $Bugzilla::Quantum::CGI::C->render(json => $content);
-        }
-        else {
-          print $content;
-        }
+        print $content;
     }
 }
 

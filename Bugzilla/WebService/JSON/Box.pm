@@ -5,15 +5,22 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::WebService::JSON::Lazy;
+package Bugzilla::WebService::JSON::Box;
 use 5.10.1;
 use Moo;
-
-# the JSON encoder. This should be the real one, not Bugzilla::WebService::JSON.
-has 'json' => (is => 'ro', required => 1);
+use Type::Utils;
 
 # this is the value that might eventually get passed to the encoder.
 has 'value' => (is => 'ro');
+
+has 'json' => (
+  is       => 'ro',
+  isa      => class_type({class => 'Bugzilla::WebService::JSON'}),
+  weak_ref => 1,
+  required => 1,
+);
+
+has 'json_value' => ( is => 'lazy' );
 
 sub TO_JSON {
   my ($self) = @_;
@@ -21,10 +28,11 @@ sub TO_JSON {
   return $self->value;
 }
 
-sub to_string {
+sub _build_json_value {
   my ($self) = @_;
-
-  return $self->json->encode( $self->value );
+  my $str = $self->json->_encode( $self->value );
+  utf8::encode($str) unless utf8::downgrade($str, 1);
+  return $str;
 }
 
 1;
