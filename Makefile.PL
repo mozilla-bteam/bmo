@@ -299,8 +299,8 @@ my %optional_features = (
     prereqs     => {runtime => {requires => {'Linux::Pid' => 0},},},
   },
   linux_smaps => {
-    description => 'Linux::Smaps for limiting memory usage',
-    prereqs     => {runtime => {requires => {'Linux::Smaps' => '0'},}},
+    description => 'Linux::Smaps::Tiny for limiting memory usage',
+    prereqs     => {runtime => {requires => {'Linux::Smaps::Tiny' => '0'}}},
   },
   linux_pdeath => {
     description => 'Linux::Pdeathsig for a good parent/child relationships',
