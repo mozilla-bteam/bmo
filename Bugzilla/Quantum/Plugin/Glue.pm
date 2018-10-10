@@ -80,8 +80,8 @@ sub register {
       my ($c, $type) = @_;
 
       if ($type == LOGIN_REQUIRED) {
-        my $uri = join( '?', $c->url_for('current'), $c->url_with->query );
-        $c->session(override_login_target => $uri);
+        my $uri = join '?', $c->url_for('current'), $c->url_with->query;
+        $c->session->{override_login_target} = $uri;
         $c->redirect_to('/login');
         return undef;
       }
