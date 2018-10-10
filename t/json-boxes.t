@@ -11,30 +11,26 @@ use 5.10.1;
 use lib qw( . lib local/lib/perl5 );
 
 use Scalar::Util qw(weaken);
+use Mojo::JSON qw(encode_json);
+use Scalar::Util qw(refaddr);
 use Test2::V0;
 
 use ok 'Bugzilla::WebService::JSON';
 
 my $json = Bugzilla::WebService::JSON->new;
 my $ref = {foo => 1};
-ok($json->decode($json->encode($ref)) == $ref);
+is(refaddr $json->decode($json->encode($ref)), refaddr $ref);
 
-$json->allow_nonref;
+my $box = $json->encode($ref);
 
-my $ref2 = ['foo'];
+is($json->decode(q[{"foo":1}]), {foo => 1});
+is($json->decode($box),         {foo => 1});
 
-ok($json->decode($json->encode($ref2)) == $ref2);
+like "$box", qr/^Bugzilla::WebService::JSON::Box/;
 
-my $box = $json->retain($ref2);
+$box->encode;
 
-is($box->json_value, q{["foo"]});
-
-weaken($box);
-ok(defined($box), "box is defined before cache clear");
-$json->clear_cache;
-ok(!defined($box), "box is not defined after cache clear");
-
-my $arrayref = $json->decode('[42]');
-ok( $json->decode( $json->encode($arrayref) ) == $arrayref );
+is encode_json([ $box ]), encode_json([ encode_json($box->value) ]);
+is "$box", q[{"foo":1}];
 
 done_testing;

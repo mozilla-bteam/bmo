@@ -9,6 +9,7 @@ package Bugzilla::WebService::JSON;
 use 5.10.1;
 use Moo;
 
+use Bugzilla::Logging;
 use Bugzilla::WebService::JSON::Box;
 use JSON::MaybeXS;
 use Scalar::Util qw(refaddr blessed);
@@ -16,67 +17,48 @@ use Package::Stash;
 
 use constant Box => 'Bugzilla::WebService::JSON::Box';
 
-# this cache is used to lookup if something already has a lazy wrapper,
-# using the address of the value.
-has 'cache' => (is => 'lazy', clearer => 'clear_cache',);
-
-has 'json' =>
-  (is => 'lazy', handles => {_encode => 'encode', _decode => 'decode'},);
-
-# delegation all the json options to the real json encoder.
-my @json_methods = qw(
-  utf8 ascii pretty canonical
-  allow_nonref allow_blessed convert_blessed
+has 'json' => (
+  init_arg => undef,
+  is       => 'lazy',
+  handles  => {_encode => 'encode', _decode => 'decode'},
 );
-my $stash = Package::Stash->new(__PACKAGE__);
-foreach my $method (@json_methods) {
-  my $symbol = '&' . $method;
-  $stash->add_symbol(
-    $symbol => sub {
-      my $self = shift;
-      $self->json->$method(@_);
-      return $self;
-    }
-  );
-}
-
-sub is_retained {
-  my ($self, $val) = @_;
-  my $addr = refaddr $val;
-  return $addr && $self->cache->{$addr};
-}
-
-sub retain {
-  my ($self, $val) = @_;
-
-  if (blessed $val && $val->isa(Box)) {
-    return $self->cache->{refaddr $val->value} //= $val;
-  }
-  else {
-    return $self->retain(Box->new(json => $self, value => $val));
-  }
-}
 
 sub encode {
-  my ($self, $val) = @_;
-  my $id = refaddr $val;
-  my $box = $id && $self->cache->{$id};
-  return $box if $box;
-  return $self->retain($val);
+  my ($self, $value) = @_;
+  return Box->new(json => $self, value => $value);
 }
 
 sub decode {
-  my ($self, $val) = @_;
+  my ($self, $box) = @_;
 
-  if (blessed $val && $val->isa(Box)) {
-    return $val->value;
+  if (blessed($box) && $box->isa(Box)) {
+    return $box->value;
   }
   else {
-    return $self->retain($self->_decode($val))->value;
+    return $self->_decode($box);
   }
 }
 
 sub _build_json  { JSON::MaybeXS->new }
-sub _build_cache { {} }
+
+# delegation all the json options to the real json encoder.
+{
+  my @json_methods = qw(
+    utf8 ascii pretty canonical
+    allow_nonref allow_blessed convert_blessed
+  );
+  my $stash = Package::Stash->new(__PACKAGE__);
+  foreach my $method (@json_methods) {
+    my $symbol = '&' . $method;
+    $stash->add_symbol(
+      $symbol => sub {
+        my $self = shift;
+        $self->json->$method(@_);
+        return $self;
+      }
+    );
+  }
+}
+
 
 1;

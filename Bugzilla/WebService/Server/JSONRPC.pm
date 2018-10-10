@@ -31,6 +31,7 @@ use Bugzilla::Util;
 
 use HTTP::Message;
 use MIME::Base64 qw(decode_base64 encode_base64);
+use Scalar::Util qw(blessed);
 use List::MoreUtils qw(none);
 use Bugzilla::WebService::JSON;
 
@@ -112,6 +113,10 @@ sub response {
         push(@header_args, "-ETag", $etag) if $etag;
         print $cgi->header(-status => $response->code, @header_args);
         my $content = $response->content;
+        if (blessed $content) {
+          my $content = $content->encode;
+          utf8::encode($content);
+        }
         print $content;
     }
 }
