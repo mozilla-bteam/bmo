@@ -174,8 +174,17 @@ sub fail_nodata {
 
     ThrowUserError('login_required') if Bugzilla->usage_mode != USAGE_MODE_BROWSER;
 
+    my $target = $cgi->url(-relative=>1);
+
+    # If Mojo native app is requesting login, then we need
+    # specify a special target.
+    my $C = $Bugzilla::Quantum::CGI::C;
+    if (my $override_target = $C->session->{override_login_target}) {
+      $target = $override_target;
+    }
+
     my $file = $self->{github_failure}{template} // "account/auth/login.html.tmpl";
-    my $vars = $self->{github_failure}{vars} // { target => $cgi->url(-relative=>1) };
+    my $vars = $self->{github_failure}{vars} // { target => $target };
 
     print $cgi->header();
     $template->process($file, $vars) or ThrowTemplateError($template->error());
