@@ -180,7 +180,7 @@ sub request {
 
     my $result = $response->json;
     ThrowCodeError('phabricator_api_error',
-        { reason => 'JSON decode failure' }) if HashRef->check($result);
+        { reason => 'JSON decode failure' }) if !defined($result);
     ThrowCodeError('phabricator_api_error',
         { code   => $result->{error_code},
           reason => $result->{error_info} }) if $result->{error_code};
