@@ -1869,7 +1869,7 @@ use constant ABSTRACT_SCHEMA => {
 
     oauth2_auth_code => {
         FIELDS => [
-            auth_code    => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
+          auth_code    => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
 	        client_id    => {TYPE => 'varchar(255)', NOTNULL => 1,
                              REFERENCES => {TABLE  => 'oauth2_client',
                                             COLUMN => 'id',
