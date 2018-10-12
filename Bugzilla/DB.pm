@@ -35,6 +35,7 @@ use Scalar::Util qw(weaken);
 use Storable qw(dclone);
 use English qw(-no_match_vars);
 use Module::Runtime qw(require_module);
+use Try::Tiny;
 
 has [qw(dsn user pass attrs)] => (
     is       => 'ro',
@@ -57,8 +58,29 @@ has [qw(dsn user pass attrs)] => (
         my $symbol = '&' . $method;
         $stash->add_symbol(
             $symbol => sub {
-                my $self = shift;
-                return $self->dbh->$method(@_);
+                my ($self, @args) = @_;
+                my $wantarray = wantarray;
+                my @result;
+                my ($pkg, $file, $line) = caller;
+                my $error;
+                try {
+                    if ($wantarray) {
+                        @result = $self->dbh->$method(@args);
+                    }
+                    else {
+                        $result[0] = $self->dbh->$method(@args);
+                    }
+                }
+                catch {
+                    $error = $_;
+                };
+                Mojo::Exception->throw($error) if defined $error;
+                if ($wantarray) {
+                    return @result;
+                }
+                else {
+                    return $result[0];
+                }
             }
         );
     }
@@ -1320,9 +1342,16 @@ sub _build_connector {
         connected => sub {
             my ($dbh, $dsn) = @_;
             INFO("$PROGRAM_NAME connected mysql $dsn");
-            ThrowCodeError('not_in_transaction') if $self && $self->bz_in_transaction;
+            my $error;
+            if ($self && $self->bz_in_transaction) {
+                $error = Mojo::Exception->new("reconnected in the middle of a transaction");
+            }
+            elsif (!$self) {
+                $error = Mojo::Exception->new("reconnected without a reference to Bugzilla::DB object!");
+            }
+            die $error->trace(3) if $error;
             $class->on_dbi_connected(@_) if $class->can('on_dbi_connected');
-            return
+            return;
         },
     };
 
