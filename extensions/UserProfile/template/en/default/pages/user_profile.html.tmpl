@@ -57,24 +57,11 @@
       &nbsp;
     [% END %]
   </td>
-  <th>Name</th>
+  <th>User</th>
   <td colspan="2">
-    [% target.name || target.address.user FILTER html %]
+    [% INCLUDE bug_modal/user.html.tmpl u = target %]
   </td>
 </tr>
-
-[% IF user.id %]
-  <tr>
-    <th>Email</th>
-    <td colspan="2">
-    [% INCLUDE bug_modal/user.html.tmpl u = target %]
-    </td>
-  </tr>
-  <tr>
-    <td>&nbsp;
-    </td>
-  </tr>
-[% END %]
 
 [%# user.creation_ts is added by the TagNewUsers extension %]
 [% IF target.can('creation_ts') %]
