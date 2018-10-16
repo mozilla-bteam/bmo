@@ -59,6 +59,22 @@ sub oauth2 {
     ->name('delete_client');
   $client_route->any('/edit')->to('OAuth2::Clients#edit')->name('edit_client');
 
+  $self->helper(
+    'bugzilla.oauth' => sub {
+        my ($c, @scopes) = @_;
+
+        my $oauth = $self->oauth(@scopes);
+
+        if ($oauth && $oauth->{user_id}) {
+          my $user = Bugzilla::User->check({id => $oauth->{user_id}, cache => 1});
+          Bugzilla->set_user($user);
+          return $user;
+        }
+
+        return undef;
+    }
+  );
+
   return 1;
 }
 
@@ -372,7 +388,10 @@ sub _verify_access_token {
       }
     }
 
-    return $refresh_token_data->{client_id};
+    return {
+      client_id => $refresh_token_data->{client_id},
+      user_id   => $refresh_token_data->{user_id},
+    };
   }
   elsif (
     my $access_token_data = $dbh->selectrow_hashref(
