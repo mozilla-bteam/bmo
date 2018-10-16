@@ -676,6 +676,7 @@ sub clear_request_cache {
     my (undef, %option) = @_;
     my $request_cache = request_cache();
     my @except        = $option{except} ? @{ $option{except} } : ();
+
     %{ $request_cache } = map { $_ => $request_cache->{$_} } @except;
 }
 
