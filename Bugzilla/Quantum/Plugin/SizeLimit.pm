@@ -54,7 +54,7 @@ sub register {
     my $size_limit = Bugzilla->localconfig->{size_limit};
     return unless $size_limit;
 
-    if ($size_limit <= MIN_SIZE_LIMIT) {
+    if ($size_limit < MIN_SIZE_LIMIT) {
       WARN(sprintf "size_limit cannot be smaller than %d", MIN_SIZE_LIMIT);
       $size_limit = MIN_SIZE_LIMIT;
     }
