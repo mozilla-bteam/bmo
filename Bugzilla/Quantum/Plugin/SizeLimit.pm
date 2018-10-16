@@ -13,14 +13,14 @@ use Bugzilla::Logging;
 
 use constant MIN_SIZE_LIMIT        => 750_000;
 use constant HAVE_LINUX_SMAPS_TINY => eval { require Linux::Smaps::Tiny };
-use constant HAVE_BSD_RESOURCE     => eval { require BSD::Resources };
+use constant HAVE_BSD_RESOURCE     => eval { require BSD::Resource };
 
 BEGIN {
   if (HAVE_LINUX_SMAPS_TINY) {
     Linux::Smaps::Tiny->import('get_smaps_summary');
   }
   if (HAVE_BSD_RESOURCE) {
-    BSD::Resources->import;
+    BSD::Resource->import;
   }
 }
 
