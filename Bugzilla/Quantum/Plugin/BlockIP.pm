@@ -35,7 +35,7 @@ sub _before_routes {
     $c->block_ip($ip);
     $c->res->code(429);
     $c->res->message('Too Many Requests');
-    $c->render(handler => 'bugzilla', template => 'global/ip-blocked');
+    $c->render(handler => 'bugzilla', template => 'global/ip-blocked', block_timeout => BLOCK_TIMEOUT);
   }
 }
 
