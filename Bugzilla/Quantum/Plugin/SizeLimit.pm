@@ -45,7 +45,7 @@ sub register {
     # This trick means the master process will not a size limit.
     Mojo::IOLoop->next_tick(sub {
       foreach my $resource (keys %$setrlimit) {
-        setrlimit($RESOURCE{$_}, $setrlimit->{$_}, $setrlimit->{$_});
+        setrlimit($RESOURCE{$resource}, $setrlimit->{$resource}, $setrlimit->{$resource});
       }
     });
   }
