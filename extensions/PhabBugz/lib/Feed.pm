@@ -80,9 +80,8 @@ sub start {
         on_receipt => sub {
             FATAL("Timeout reached while executing $CURRENT_QUERY query");
 
-            if (Bugzilla->datadog) {
+            if (my $dd = Bugzilla->datadog) {
                 my $lcname = lc $CURRENT_QUERY;
-                my $dd = Bugzilla->datadog();
                 $dd->increment("bugzilla.phabbugz.${lcname}_query_timeouts");
             }
 
