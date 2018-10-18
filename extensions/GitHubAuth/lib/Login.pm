@@ -98,9 +98,8 @@ sub _get_login_info_from_github {
     elsif ($e) {
         die $e;
     }
-
     my @emails = map { $_->{email} }
-                 grep { $_->{verified} && $_->{email} !~ /\@users\.noreply\.github\.com$/ } @$emails;
+                 grep { $_->{verified} && (!defined $_->{visibility} || $_->{visibility} eq 'public') } @$emails;
 
     my @bugzilla_users;
     my @github_emails;

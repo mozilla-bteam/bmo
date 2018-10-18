@@ -25,6 +25,7 @@ BEGIN {
 }
 
 sub _user_needinfo_blocked {
+    return 1 if $_[0]->login_name =~ /\@users\.noreply\.github\.com$/;
     return $_[0]->settings->{block_needinfo}->{value} eq 'on';
 }
 

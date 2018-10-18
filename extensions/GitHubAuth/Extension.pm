@@ -35,6 +35,17 @@ BEGIN {
     };
 }
 
+sub mailer_before_send {
+    my ($self, $args) = @_;
+    my $header = $email->{header};
+
+    return if $header->header('to') eq '';
+
+    if ($header->header('to') =~ /\@users\.noreply\.github\.com$/) {
+        $header->header_set(to => '');
+    }
+}
+
 sub install_before_final_checks {
     Bugzilla::Group->create({
         name        => 'no-github-auth',
