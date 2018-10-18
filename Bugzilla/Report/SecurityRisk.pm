@@ -21,6 +21,7 @@ use Chart::Clicker::Axis::DateTime;
 use Chart::Clicker::Data::Series;
 use Chart::Clicker::Data::DataSet;
 use Chart::Clicker::Renderer::Point;
+use Chart::Clicker::Renderer::StackedArea;
 
 use DateTime;
 use List::Util qw(any first sum);
@@ -111,7 +112,6 @@ has 'graphs' => (
   isa => Dict [
     bugs_by_sec_keyword_count => Object,
     bugs_by_sec_keyword_age   => Object,
-    bugs_by_product_count     => Object,
     bugs_by_product_age       => Object,
   ],
 );
@@ -319,6 +319,7 @@ sub _build_graphs {
           }
         } @{$self->sec_keywords}
       ],
+      renderer => Chart::Clicker::Renderer::StackedArea->new(opacity => .6),
       image_file => tempfile(SUFFIX => '.png'),
     },
     {
@@ -341,29 +342,6 @@ sub _build_graphs {
             ],
           }
         } @{$self->sec_keywords}
-      ],
-      image_file => tempfile(SUFFIX => '.png'),
-    },
-    {
-      id    => 'bugs_by_product_count',
-      title => sprintf(
-        'Open security bugs by product (%s to %s)',
-        $self->start_date->ymd,
-        $self->end_date->ymd
-      ),
-      range_label => 'Open Bugs Count',
-      datasets    => [
-        map {
-          my $product = $_;
-          {
-            name   => $_,
-            keys   => [map { $_->{date}->epoch } @{$self->results}],
-            values => [
-              map { scalar @{$_->{bugs_by_product}->{$product}->{open}} }
-                @{$self->results}
-            ],
-          }
-        } @{$self->products}
       ],
       image_file => tempfile(SUFFIX => '.png'),
     },
@@ -408,6 +386,7 @@ sub _build_graphs {
       $cc->add_to_datasets($ds);
     }
     my $ctx = $cc->get_context('default');
+    $ctx->renderer($datum->{renderer}) if exists $datum->{renderer};
     $ctx->range_axis->label($datum->{range_label});
     $ctx->domain_axis(Chart::Clicker::Axis::DateTime->new(
       position    => 'bottom',
@@ -479,8 +458,7 @@ sub _bugs_by_product {
     my @closed
       = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$product}};
     my @ages = map {
-      $_->{created_at}->subtract_datetime_absolute($report_date)->seconds
-        / 86_400;
+      $_->{created_at}->subtract_datetime_absolute($report_date)->seconds / 86_400;
     } grep { ($_->{is_open}) } @{$groups->{$product}};
     $result->{$product} = {
       open            => \@open,
@@ -512,8 +490,7 @@ sub _bugs_by_sec_keyword {
     my @closed
       = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$sec_keyword}};
     my @ages = map {
-      $_->{created_at}->subtract_datetime_absolute($report_date)->seconds
-        / 86_400
+      $_->{created_at}->subtract_datetime_absolute($report_date)->seconds / 86_400
     } grep { ($_->{is_open}) } @{$groups->{$sec_keyword}};
     $result->{$sec_keyword} = {
       open            => \@open,

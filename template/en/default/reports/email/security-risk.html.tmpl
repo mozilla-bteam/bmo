@@ -20,9 +20,13 @@
 <table style="border-spacing: 0">
   <tr>
     <th style="padding: 0px 15px 10px 0px;">Product</th>
+    <th style="padding: 0px 15px 10px 0px; text-align: right;">
+        Open<br>[% results.reverse.0.date FILTER time('%m/%d') %]
+    </th>
     <th style="padding: 0px 15px 10px 0px; text-align: right;">Closed<br />Last Week</th>
     <th style="padding: 0px 15px 10px 0px; text-align: right;">Added<br />Last Week</th>
     [% FOREACH result IN results.reverse %]
+      [% NEXT IF loop.count < 2 %]
       [% LAST IF loop.count > 4 %]
       <th style="padding: 0px 15px 10px [% IF loop.count == 2 %] 10px [% ELSE %] 0px [% END %]; text-align: right; [% IF loop.count == 1 %] border-right: 1px solid grey; [% END %]">
         Open<br>[% result.date FILTER time('%m/%d') %]
@@ -33,24 +37,37 @@
     <tr>
       <td style="padding: 0px 15px 10px 0px;">[% product FILTER html %]</td>
       <td style="padding: 0px 15px 10px 0px; text-align: right;">
+          [% IF results.reverse.0.bugs_by_product.$product.open.size %]
+            <a style="text-decoration: none;" href="[% build_bugs_link(results.reverse.0.bugs_by_product.$product.open) FILTER html %]">
+              [% results.reverse.0.bugs_by_product.$product.open.size FILTER html %]
+            </a>
+          [% ELSE %]
+            0
+          [% END %]
+        </td>
+      <td style="padding: 0px 15px 10px 0px; text-align: right;
+                [% IF deltas.by_product.$product.closed.size %] background-color: #e6ffe6 [% END %]">
         [% IF deltas.by_product.$product.closed.size %]
-          <a style="text-decoration: none;" href="[% build_bugs_link(deltas.by_product.$product.closed) FILTER html %]">
-            [% deltas.by_product.$product.closed.size FILTER html %]
+          <a style="text-decoration: none;"
+             href="[% build_bugs_link(deltas.by_product.$product.closed) FILTER html %]">
+            -[% deltas.by_product.$product.closed.size FILTER html %]
           </a>
         [% ELSE %]
           0
         [% END %]
       </td>
-      <td style="padding: 0px 15px 10px 0px; text-align: right;">
+      <td style="padding: 0px 15px 10px 0px; text-align: right;  border-right: 1px solid grey;
+                [% IF deltas.by_product.$product.added.size %] background-color: #ffe6e6 [% END %]">
         [% IF deltas.by_product.$product.added.size %]
           <a style="text-decoration: none;" href="[% build_bugs_link(deltas.by_product.$product.added) FILTER html %]">
-            [% deltas.by_product.$product.added.size FILTER html %]
+            +[% deltas.by_product.$product.added.size FILTER html %]
           </a>
         [% ELSE %]
           0
         [% END %]
       </td>
       [% FOREACH result IN results.reverse %]
+        [% NEXT IF loop.count < 2 %]
         [% LAST IF loop.count > 4 %]
         <td style="padding: 0px 15px 10px [% IF loop.count == 2 %] 10px [% ELSE %] 0px [% END %]; text-align: right; [% IF loop.count == 1 %] border-right: 1px solid grey; [% END %]">
           [% IF result.bugs_by_product.$product.open.size %]
@@ -71,10 +88,16 @@
 <table style="border-spacing: 0">
   <tr>
     <th style="padding: 0px 15px 10px 0px;">Category</th>
+    <th style="padding: 0px 15px 10px 0px; text-align: right;">
+        Open<br>[% results.reverse.0.date FILTER time('%m/%d') %]
+    </th>
     <th style="padding: 0px 15px 10px 0px; text-align: right;">Closed<br />Last Week</th>
     <th style="padding: 0px 15px 10px 0px; text-align: right;">Added<br />Last Week</th>
-    <th style="padding: 0px 15px 10px 0px; text-align: right;">Median Age<br/>of Open [% terms.Bugs %]<br></th>
+    <th style="padding: 0px 15px 10px 0px; text-align: right; border-right: 1px solid grey;">
+      Median Age<br/>of Open [% terms.Bugs %]<br>
+    </th>
     [% FOREACH result IN results.reverse %]
+      [% NEXT IF loop.count < 2 %]
       [% LAST IF loop.count > 4 %]
       <th style="padding: 0px 15px 10px [% IF loop.count == 2 %] 10px [% ELSE %] 0px [% END %]; text-align: right;  [% IF loop.count == 1 %] border-right: 1px solid grey; [% END %]">
         Open<br>[% result.date FILTER time('%m/%d') %]
@@ -85,27 +108,39 @@
     <tr>
       <td style="padding: 0px 15px 10px 0px;">[% keyword FILTER html %]</td>
       <td style="padding: 0px 15px 10px 0px; text-align: right;">
-        [% IF deltas.by_sec_keyword.$keyword.closed %]
+          [% IF results.reverse.0.bugs_by_sec_keyword.$keyword.open %]
+            <a style="text-decoration: none;" href="[% build_bugs_link(results.reverse.0.bugs_by_sec_keyword.$keyword.open) FILTER html %]">
+              [% results.reverse.0.bugs_by_sec_keyword.$keyword.open.size FILTER html %]
+            </a>
+          [% ELSE %]
+            0
+          [% END %]
+        </td>
+      <td style="padding: 0px 15px 10px 0px; text-align: right;
+                [% IF deltas.by_sec_keyword.$keyword.closed.size %] background-color: #e6ffe6 [% END %]">
+        [% IF deltas.by_sec_keyword.$keyword.closed.size %]
           <a style="text-decoration: none;" href="[% build_bugs_link(deltas.by_sec_keyword.$keyword.closed) FILTER html %]">
-            [% deltas.by_sec_keyword.$keyword.closed.size FILTER html %]
+            -[% deltas.by_sec_keyword.$keyword.closed.size FILTER html %]
           </a>
         [% ELSE %]
           0
         [% END %]
       </td>
-      <td style="padding: 0px 15px 10px 0px; text-align: right;">
-        [% IF deltas.by_sec_keyword.$keyword.added %]
+      <td style="padding: 0px 15px 10px 0px; text-align: right;
+                 [% IF deltas.by_sec_keyword.$keyword.added.size %] background-color: #ffe6e6 [% END %]">
+        [% IF deltas.by_sec_keyword.$keyword.added.size %]
           <a style="text-decoration: none;" href="[% build_bugs_link(deltas.by_sec_keyword.$keyword.added) FILTER html %]">
-            [% deltas.by_sec_keyword.$keyword.added.size FILTER html %]
+            +[% deltas.by_sec_keyword.$keyword.added.size FILTER html %]
           </a>
         [% ELSE %]
           0
         [% END %]
       </td>
-      <td style="padding: 0px 15px 10px 0px; text-align: right;">
-        [% results.-1.bugs_by_sec_keyword.$keyword.median_age_open FILTER format("%.1f") FILTER html %] days
+      <td style="padding: 0px 15px 10px 0px; text-align: right; border-right: 1px solid grey; ">
+        [% results.-1.bugs_by_sec_keyword.$keyword.median_age_open FILTER format("%.0f") FILTER html %] days
       </td>
       [% FOREACH result IN results.reverse %]
+        [% NEXT IF loop.count < 2 %]
         [% LAST IF loop.count > 4 %]
         <td style="padding: 0px 15px 10px [% IF loop.count == 2 %] 10px [% ELSE %] 0px [% END %]; text-align: right;  [% IF loop.count == 1 %] border-right: 1px solid grey; [% END %]">
           [% IF result.bugs_by_sec_keyword.$keyword.open %]
