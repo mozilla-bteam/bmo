@@ -37,6 +37,7 @@ BEGIN {
 
 sub mailer_before_send {
     my ($self, $args) = @_;
+    my $email = $args->{email};
     my $header = $email->{header};
 
     return if $header->header('to') eq '';
