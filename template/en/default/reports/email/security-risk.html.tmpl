@@ -16,10 +16,10 @@
 </head>
 <body>
 
-<h3>Sec-Critical + Sec-High [% terms.Bugs %] by Product</h3>
+<h3>Sec-Critical + Sec-High [% terms.Bugs %] by Team</h3>
 <table style="border-spacing: 0">
   <tr>
-    <th style="padding: 0px 15px 10px 0px;">Product</th>
+    <th style="padding: 0px 15px 10px 0px;">Team</th>
     <th style="padding: 0px 15px 10px 0px; text-align: right;">
         Open<br>[% results.reverse.0.date FILTER time('%m/%d') %]
     </th>
@@ -33,34 +33,34 @@
       </th>
     [% END %]
   </tr>
-  [% FOREACH product IN products %]
+  [% FOREACH team IN teams %]
     <tr>
-      <td style="padding: 0px 15px 10px 0px;">[% product FILTER html %]</td>
+      <td style="padding: 0px 15px 10px 0px;">[% team FILTER html %]</td>
       <td style="padding: 0px 15px 10px 0px; text-align: right;">
-          [% IF results.reverse.0.bugs_by_product.$product.open.size %]
-            <a style="text-decoration: none;" href="[% build_bugs_link(results.reverse.0.bugs_by_product.$product.open) FILTER html %]">
-              [% results.reverse.0.bugs_by_product.$product.open.size FILTER html %]
+          [% IF results.reverse.0.bugs_by_team.$team.open.size %]
+            <a style="text-decoration: none;" href="[% build_bugs_link(results.reverse.0.bugs_by_team.$team.open) FILTER html %]">
+              [% results.reverse.0.bugs_by_team.$team.open.size FILTER html %]
             </a>
           [% ELSE %]
             0
           [% END %]
         </td>
       <td style="padding: 0px 15px 10px 0px; text-align: right;
-                [% IF deltas.by_product.$product.closed.size %] background-color: #e6ffe6 [% END %]">
-        [% IF deltas.by_product.$product.closed.size %]
+                [% IF deltas.by_team.$team.closed.size %] background-color: #e6ffe6 [% END %]">
+        [% IF deltas.by_team.$team.closed.size %]
           <a style="text-decoration: none;"
-             href="[% build_bugs_link(deltas.by_product.$product.closed) FILTER html %]">
-            -[% deltas.by_product.$product.closed.size FILTER html %]
+             href="[% build_bugs_link(deltas.by_team.$team.closed) FILTER html %]">
+            -[% deltas.by_team.$team.closed.size FILTER html %]
           </a>
         [% ELSE %]
           0
         [% END %]
       </td>
       <td style="padding: 0px 15px 10px 0px; text-align: right;  border-right: 1px solid grey;
-                [% IF deltas.by_product.$product.added.size %] background-color: #ffe6e6 [% END %]">
-        [% IF deltas.by_product.$product.added.size %]
-          <a style="text-decoration: none;" href="[% build_bugs_link(deltas.by_product.$product.added) FILTER html %]">
-            +[% deltas.by_product.$product.added.size FILTER html %]
+                [% IF deltas.by_team.$team.added.size %] background-color: #ffe6e6 [% END %]">
+        [% IF deltas.by_team.$team.added.size %]
+          <a style="text-decoration: none;" href="[% build_bugs_link(deltas.by_team.$team.added) FILTER html %]">
+            +[% deltas.by_team.$team.added.size FILTER html %]
           </a>
         [% ELSE %]
           0
@@ -70,9 +70,9 @@
         [% NEXT IF loop.count < 2 %]
         [% LAST IF loop.count > 4 %]
         <td style="padding: 0px 15px 10px [% IF loop.count == 2 %] 10px [% ELSE %] 0px [% END %]; text-align: right; [% IF loop.count == 1 %] border-right: 1px solid grey; [% END %]">
-          [% IF result.bugs_by_product.$product.open.size %]
-            <a style="text-decoration: none;" href="[% build_bugs_link(result.bugs_by_product.$product.open) FILTER html %]">
-              [% result.bugs_by_product.$product.open.size FILTER html %]
+          [% IF result.bugs_by_team.$team.open.size %]
+            <a style="text-decoration: none;" href="[% build_bugs_link(result.bugs_by_team.$team.open) FILTER html %]">
+              [% result.bugs_by_team.$team.open.size FILTER html %]
             </a>
           [% ELSE %]
             0

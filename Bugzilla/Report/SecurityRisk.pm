@@ -24,22 +24,37 @@ use Chart::Clicker::Renderer::Point;
 use Chart::Clicker::Renderer::StackedArea;
 
 use DateTime;
-use List::Util qw(any first sum);
+use JSON::PP::Boolean;
+use List::Util qw(any first sum uniq);
 use Mojo::File qw(tempfile);
 use POSIX qw(ceil);
 use Type::Utils;
-use Types::Standard
-  qw(Num Int Bool Str HashRef ArrayRef CodeRef Map Dict Enum Object);
+use Types::Standard qw(Num Int Bool Str HashRef ArrayRef CodeRef Maybe Map Dict Enum Optional Object);
 
 my $DateTime = class_type {class => 'DateTime'};
+my $JSONBool = class_type {class => 'JSON::PP::Boolean'};
 
 has 'start_date' => (is => 'ro', required => 1, isa => $DateTime,);
 
 has 'end_date' => (is => 'ro', required => 1, isa => $DateTime,);
 
-has 'products' => (is => 'ro', required => 1, isa => ArrayRef [Str],);
+has 'teams' => (
+  is       => 'ro',
+  required => 1,
+  isa      => HashRef [    # Team
+    HashRef [              # Product
+      Dict [
+        all_components      => $JSONBool,
+        prefixed_components => Optional [ArrayRef [Str]],
+        named_components    => Optional [ArrayRef [Str]],
+      ],
+    ],
+  ],
+);
 
 has 'sec_keywords' => (is => 'ro', required => 1, isa => ArrayRef [Str],);
+
+has 'products' => (is => 'lazy', isa => ArrayRef [Str],);
 
 has 'initial_bug_ids' => (is => 'lazy', isa => ArrayRef [Int],);
 
@@ -49,6 +64,8 @@ has 'initial_bugs' => (
     Dict [
       id         => Int,
       product    => Str,
+      component  => Str,
+      team       => Maybe [Str],
       sec_level  => Str,
       status     => Str,
       is_stalled => Bool,
@@ -58,8 +75,7 @@ has 'initial_bugs' => (
   ],
 );
 
-has 'check_open_state' =>
-  (is => 'ro', isa => CodeRef, default => sub { return \&is_open_state; },);
+has 'check_open_state' => (is => 'ro', isa => CodeRef, default => sub { return \&is_open_state; },);
 
 has 'events' => (
   is  => 'lazy',
@@ -78,21 +94,9 @@ has 'results' => (
   is  => 'lazy',
   isa => ArrayRef [
     Dict [
-      date            => $DateTime,
-      bugs_by_product => HashRef [
-        Dict [
-          open   => ArrayRef [Int],
-          closed => ArrayRef [Int],
-          median_age_open => Num
-        ]
-      ],
-      bugs_by_sec_keyword => HashRef [
-        Dict [
-          open   => ArrayRef [Int],
-          closed => ArrayRef [Int],
-          median_age_open => Num
-        ]
-      ],
+      date                => $DateTime,
+      bugs_by_team        => HashRef [Dict [open => ArrayRef [Int], closed => ArrayRef [Int], median_age_open => Num]],
+      bugs_by_sec_keyword => HashRef [Dict [open => ArrayRef [Int], closed => ArrayRef [Int], median_age_open => Num]],
     ],
   ],
 );
@@ -100,21 +104,27 @@ has 'results' => (
 has 'deltas' => (
   is  => 'lazy',
   isa => Dict [
-    by_sec_keyword =>
-      HashRef [Dict [added => ArrayRef [Int], closed => ArrayRef [Int],],],
-    by_product =>
-      HashRef [Dict [added => ArrayRef [Int], closed => ArrayRef [Int],],],
+    by_sec_keyword => HashRef [Dict [added => ArrayRef [Int], closed => ArrayRef [Int],],],
+    by_team        => HashRef [Dict [added => ArrayRef [Int], closed => ArrayRef [Int],],],
   ],
 );
 
 has 'graphs' => (
   is  => 'lazy',
-  isa => Dict [
-    bugs_by_sec_keyword_count => Object,
-    bugs_by_sec_keyword_age   => Object,
-    bugs_by_product_age       => Object,
-  ],
+  isa => Dict [bugs_by_sec_keyword_count => Object, bugs_by_sec_keyword_age => Object, bugs_by_team_age => Object,],
 );
+
+sub _build_products {
+  my ($self) = @_;
+  my @products = ();
+  foreach my $team (values %{$self->teams}) {
+    foreach my $product (keys %$team) {
+      push @products, $product;
+    }
+  }
+  @products = uniq @products;
+  return \@products;
+}
 
 sub _build_initial_bug_ids {
 
@@ -146,11 +156,12 @@ sub _build_initial_bugs {
   my $bugs      = {};
   my $bugs_list = Bugzilla::Bug->new_from_list($self->initial_bug_ids);
   for my $bug (@$bugs_list) {
-    my $is_stalled
-      = grep { lc($_->name) eq 'stalled' } @{$bug->keyword_objects};
+    my $is_stalled = grep { lc($_->name) eq 'stalled' } @{$bug->keyword_objects};
     $bugs->{$bug->id} = {
       id        => $bug->id,
       product   => $bug->product,
+      component => $bug->component,
+      team      => $self->_find_team($bug->product, $bug->component),
       sec_level => (
 
         # Select the first keyword matching one of the target keywords
@@ -212,18 +223,14 @@ sub _build_results {
 
 # We must generate a report for each week in the target time interval, regardless of
 # whether anything changed. The for loop here ensures that we do so.
-  for (
-    my $report_date = $self->end_date->clone();
-    $report_date >= $self->start_date;
-    $report_date->subtract(weeks => 1)
-    )
+  for (my $report_date = $self->end_date->clone();
+    $report_date >= $self->start_date; $report_date->subtract(weeks => 1))
   {
+
 # We rewind events while there are still events existing which occured after the start
 # of the report week. The bugs will reflect a snapshot of how they were at the start of the week.
 # $self->events is ordered reverse chronologically, so the end of the array is the earliest event.
-    while ($e < @{$self->events}
-      && (@{$self->events}[$e])->{bug_when} > $report_date)
-    {
+    while ($e < @{$self->events} && (@{$self->events}[$e])->{bug_when} > $report_date) {
       my $event = @{$self->events}[$e];
       my $bug   = $bugs->{$event->{bug_id}};
 
@@ -231,8 +238,7 @@ sub _build_results {
       # Undo bug status changes
       if ($event->{field_name} eq 'bug_status') {
         $bug->{status} = $event->{removed};
-        $bug->{is_open}
-          = $self->_is_bug_open($bug->{status}, $bug->{is_stalled});
+        $bug->{is_open} = $self->_is_bug_open($bug->{status}, $bug->{is_stalled});
       }
 
       # Undo sec keyword changes
@@ -264,8 +270,7 @@ sub _build_results {
           # If the stalled keyword was removed in this event, add it:
           $bug->{is_stalled} = 1;
         }
-        $bug->{is_open}
-          = $self->_is_bug_open($bug->{status}, $bug->{is_stalled});
+        $bug->{is_open} = $self->_is_bug_open($bug->{status}, $bug->{is_stalled});
       }
 
       $e++;
@@ -282,11 +287,9 @@ sub _build_results {
     my $date_snapshot = $report_date->clone();
     my @bugs_snapshot = values %$bugs;
     my $result        = {
-      date => $date_snapshot,
-      bugs_by_product =>
-        $self->_bugs_by_product($date_snapshot, @bugs_snapshot),
-      bugs_by_sec_keyword =>
-        $self->_bugs_by_sec_keyword($date_snapshot, @bugs_snapshot),
+      date                => $date_snapshot,
+      bugs_by_team        => $self->_bugs_by_team($date_snapshot, @bugs_snapshot),
+      bugs_by_sec_keyword => $self->_bugs_by_sec_keyword($date_snapshot, @bugs_snapshot),
     };
     push @results, $result;
   }
@@ -299,12 +302,8 @@ sub _build_graphs {
   my $graphs = {};
   my $data   = [
     {
-      id    => 'bugs_by_sec_keyword_count',
-      title => sprintf(
-        'Open security bugs by severity (%s to %s)',
-        $self->start_date->ymd,
-        $self->end_date->ymd
-      ),
+      id          => 'bugs_by_sec_keyword_count',
+      title       => sprintf('Open security bugs by severity (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
       range_label => 'Open Bugs Count',
       datasets    => [
         map {
@@ -312,14 +311,11 @@ sub _build_graphs {
           {
             name   => $_,
             keys   => [map { $_->{date}->epoch } @{$self->results}],
-            values => [
-              map { scalar @{$_->{bugs_by_sec_keyword}->{$keyword}->{open}} }
-                @{$self->results}
-            ],
+            values => [map { scalar @{$_->{bugs_by_sec_keyword}->{$keyword}->{open}} } @{$self->results}],
           }
         } @{$self->sec_keywords}
       ],
-      renderer => Chart::Clicker::Renderer::StackedArea->new(opacity => .6),
+      renderer   => Chart::Clicker::Renderer::StackedArea->new(opacity => .6),
       image_file => tempfile(SUFFIX => '.png'),
     },
     {
@@ -336,35 +332,26 @@ sub _build_graphs {
           {
             name   => $_,
             keys   => [map { $_->{date}->epoch } @{$self->results}],
-            values => [
-              map { $_->{bugs_by_sec_keyword}->{$keyword}->{median_age_open} }
-                @{$self->results}
-            ],
+            values => [map { $_->{bugs_by_sec_keyword}->{$keyword}->{median_age_open} } @{$self->results}],
           }
         } @{$self->sec_keywords}
       ],
       image_file => tempfile(SUFFIX => '.png'),
     },
     {
-      id    => 'bugs_by_product_age',
-      title => sprintf(
-        'Median age of open security bugs by product (%s to %s)',
-        $self->start_date->ymd,
-        $self->end_date->ymd
-      ),
+      id => 'bugs_by_team_age',
+      title =>
+        sprintf('Median age of open security bugs by team (%s to %s)', $self->start_date->ymd, $self->end_date->ymd),
       range_label => 'Median Age (days)',
       datasets    => [
         map {
-          my $product = $_;
+          my $team = $_;
           {
             name   => $_,
             keys   => [map { $_->{date}->epoch } @{$self->results}],
-            values => [
-              map { $_->{bugs_by_product}->{$product}->{median_age_open} }
-                @{$self->results}
-            ],
+            values => [map { $_->{bugs_by_team}->{$team}->{median_age_open} } @{$self->results}],
           }
-        } @{$self->products}
+        } keys %{$self->teams}
       ],
       image_file => tempfile(SUFFIX => '.png'),
     },
@@ -388,11 +375,8 @@ sub _build_graphs {
     my $ctx = $cc->get_context('default');
     $ctx->renderer($datum->{renderer}) if exists $datum->{renderer};
     $ctx->range_axis->label($datum->{range_label});
-    $ctx->domain_axis(Chart::Clicker::Axis::DateTime->new(
-      position    => 'bottom',
-      orientation => 'horizontal',
-      format      => "%m/%d",
-    ));
+    $ctx->domain_axis(
+      Chart::Clicker::Axis::DateTime->new(position => 'bottom', orientation => 'horizontal', format => "%m/%d",));
     $cc->write_output($datum->{image_file});
     $graphs->{$datum->{id}} = $datum->{image_file};
   }
@@ -402,69 +386,51 @@ sub _build_graphs {
 
 sub _build_deltas {
   my ($self) = @_;
-  my $deltas = {by_product => {}, by_sec_keyword => {}};
+  my @teams = keys %{$self->teams};
+  my $deltas = {by_team => {}, by_sec_keyword => {}};
   my $data = [
-    {
-      domain      => $self->products,
-      results_key => 'bugs_by_product',
-      deltas_key  => 'by_product',
-    },
-    {
-      domain      => $self->sec_keywords,
-      results_key => 'bugs_by_sec_keyword',
-      deltas_key  => 'by_sec_keyword',
-    }
+    {domain => \@teams,             results_key => 'bugs_by_team',        deltas_key => 'by_team',},
+    {domain => $self->sec_keywords, results_key => 'bugs_by_sec_keyword', deltas_key => 'by_sec_keyword',}
   ];
 
   foreach my $datum (@$data) {
     foreach my $item (@{$datum->{domain}}) {
-      my $current_result
-        = $self->results->[-1]->{$datum->{results_key}}->{$item};
-      my $last_result = $self->results->[-2]->{$datum->{results_key}}->{$item};
+      my $current_result = $self->results->[-1]->{$datum->{results_key}}->{$item};
+      my $last_result    = $self->results->[-2]->{$datum->{results_key}}->{$item};
 
-      my @all_bugs_this_week
-        = (@{$current_result->{open}}, @{$current_result->{closed}});
-      my @all_bugs_last_week
-        = (@{$last_result->{open}}, @{$last_result->{closed}});
+      my @all_bugs_this_week = (@{$current_result->{open}}, @{$current_result->{closed}});
+      my @all_bugs_last_week = (@{$last_result->{open}},    @{$last_result->{closed}});
 
-      my $added_delta
-        = (diff_arrays(\@all_bugs_this_week, \@all_bugs_last_week))[0];
-      my $closed_delta
-        = (diff_arrays($current_result->{closed}, $last_result->{closed}))[0];
+      my $added_delta  = (diff_arrays(\@all_bugs_this_week,      \@all_bugs_last_week))[0];
+      my $closed_delta = (diff_arrays($current_result->{closed}, $last_result->{closed}))[0];
 
-      $deltas->{$datum->{deltas_key}}->{$item}
-        = {added => $added_delta, closed => $closed_delta};
+      $deltas->{$datum->{deltas_key}}->{$item} = {added => $added_delta, closed => $closed_delta};
     }
   }
   return $deltas;
 }
 
-sub _bugs_by_product {
+sub _bugs_by_team {
   my ($self, $report_date, @bugs) = @_;
   my $result = {};
   my $groups = {};
-  foreach my $product (@{$self->products}) {
-    $groups->{$product} = [];
+  foreach my $team (keys %{$self->teams}) {
+    $groups->{$team} = [];
   }
   foreach my $bug (@bugs) {
 
-  # We skip over bugs with no sec level which can happen during event rewinding.
-    if (defined $bug->{sec_level}) {
-      push @{$groups->{$bug->{product}}}, $bug;
+    # We skip over bugs with no sec level which can happen during event rewinding.
+    # We also skip over bugs that don't fall into one of the specified teams.
+    if (defined $bug->{sec_level} && defined $bug->{team}) {
+      push @{$groups->{$bug->{team}}}, $bug;
     }
   }
-  foreach my $product (@{$self->products}) {
-    my @open = map { $_->{id} } grep { ($_->{is_open}) } @{$groups->{$product}};
-    my @closed
-      = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$product}};
-    my @ages = map {
-      $_->{created_at}->subtract_datetime_absolute($report_date)->seconds / 86_400;
-    } grep { ($_->{is_open}) } @{$groups->{$product}};
-    $result->{$product} = {
-      open            => \@open,
-      closed          => \@closed,
-      median_age_open => @ages ? _median(@ages) : 0,
-    };
+  foreach my $team (keys %{$self->teams}) {
+    my @open   = map { $_->{id} } grep { ($_->{is_open}) } @{$groups->{$team}};
+    my @closed = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$team}};
+    my @ages = map { $_->{created_at}->subtract_datetime_absolute($report_date)->seconds / 86_400; }
+      grep { ($_->{is_open}) } @{$groups->{$team}};
+    $result->{$team} = {open => \@open, closed => \@closed, median_age_open => @ages ? _median(@ages) : 0,};
   }
 
   return $result;
@@ -479,24 +445,17 @@ sub _bugs_by_sec_keyword {
   }
   foreach my $bug (@bugs) {
 
-  # We skip over bugs with no sec level which can happen during event rewinding.
+    # We skip over bugs with no sec level which can happen during event rewinding.
     if (defined $bug->{sec_level}) {
       push @{$groups->{$bug->{sec_level}}}, $bug;
     }
   }
   foreach my $sec_keyword (@{$self->sec_keywords}) {
-    my @open
-      = map { $_->{id} } grep { ($_->{is_open}) } @{$groups->{$sec_keyword}};
-    my @closed
-      = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$sec_keyword}};
-    my @ages = map {
-      $_->{created_at}->subtract_datetime_absolute($report_date)->seconds / 86_400
-    } grep { ($_->{is_open}) } @{$groups->{$sec_keyword}};
-    $result->{$sec_keyword} = {
-      open            => \@open,
-      closed          => \@closed,
-      median_age_open => @ages ? _median(@ages) : 0,
-    };
+    my @open   = map { $_->{id} } grep { ($_->{is_open}) } @{$groups->{$sec_keyword}};
+    my @closed = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$sec_keyword}};
+    my @ages = map { $_->{created_at}->subtract_datetime_absolute($report_date)->seconds / 86_400 }
+      grep { ($_->{is_open}) } @{$groups->{$sec_keyword}};
+    $result->{$sec_keyword} = {open => \@open, closed => \@closed, median_age_open => @ages ? _median(@ages) : 0,};
   }
 
   return $result;
@@ -505,6 +464,19 @@ sub _bugs_by_sec_keyword {
 sub _is_bug_open {
   my ($self, $status, $is_stalled) = @_;
   return ($self->check_open_state->($status)) && !($is_stalled);
+}
+
+sub _find_team {
+  my ($self, $product, $component) = @_;
+  foreach my $team_key (keys %{$self->teams}) {
+    my $team = $self->teams->{$team_key};
+    if (exists $team->{$product}) {
+      return $team_key if $team->{$product}->{all_components};
+      return $team_key if any { lc $component eq lc $_ } @{$team->{$product}->{named_components}};
+      return $team_key if any { $component =~ /^\Q$_\E/i } @{$team->{$product}->{prefixed_components}};
+    }
+  }
+  return undef;
 }
 
 sub _median {

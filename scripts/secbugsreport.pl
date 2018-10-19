@@ -34,42 +34,41 @@ exit 0 unless Bugzilla->params->{report_secbugs_active};
 exit 0 unless defined $ARGV[0] && defined $ARGV[1] && defined $ARGV[2];
 
 my $html;
-my $template = Bugzilla->template();
-my $end_date
-  = DateTime->new(year => $ARGV[0], month => $ARGV[1], day => $ARGV[2]);
+my $template     = Bugzilla->template();
+my $end_date     = DateTime->new(year => $ARGV[0], month => $ARGV[1], day => $ARGV[2]);
 my $start_date   = $end_date->clone()->subtract(months => 12);
 my $report_week  = $end_date->ymd('-');
-my $products     = decode_json(Bugzilla->params->{report_secbugs_products});
+my $teams        = decode_json(Bugzilla->params->{report_secbugs_teams});
 my $sec_keywords = ['sec-critical', 'sec-high'];
 my $report       = Bugzilla::Report::SecurityRisk->new(
   start_date   => $start_date,
   end_date     => $end_date,
-  products     => $products,
+  teams        => $teams,
   sec_keywords => $sec_keywords
 );
+
+my @sorted_team_names = sort {
+  @{$report->results->[-1]->{bugs_by_team}->{$b}->{open}} <=> @{$report->results->[-1]->{bugs_by_team}->{$a}->{open}}
+    || $a cmp $b
+} keys %$teams;
 
 my $vars = {
   urlbase         => Bugzilla->localconfig->{urlbase},
   report_week     => $report_week,
-  products        => $products,
+  teams           => \@sorted_team_names,
   sec_keywords    => $sec_keywords,
   results         => $report->results,
   deltas          => $report->deltas,
   build_bugs_link => \&build_bugs_link,
 };
 
-$template->process('reports/email/security-risk.html.tmpl', $vars, \$html)
-  or ThrowTemplateError($template->error());
+$template->process('reports/email/security-risk.html.tmpl', $vars, \$html) or ThrowTemplateError($template->error());
 
 # For now, only send HTML email.
 my @parts = (
   Email::MIME->create(
-    attributes => {
-      content_type => 'text/html',
-      charset      => 'UTF-8',
-      encoding     => 'quoted-printable',
-    },
-    body_str => $html,
+    attributes => {content_type => 'text/html', charset => 'UTF-8', encoding => 'quoted-printable',},
+    body_str   => $html,
   ),
   map {
     Email::MIME->create(
