@@ -47,8 +47,9 @@ my $report       = Bugzilla::Report::SecurityRisk->new(
   sec_keywords => $sec_keywords
 );
 
+my $bugs_by_team = $report->results->[-1]->{bugs_by_team};
 my @sorted_team_names = sort { ## no critic qw(BuiltinFunctions::ProhibitReverseSortBlock
-  @{$report->results->[-1]->{bugs_by_team}->{$b}->{open}} <=> @{$report->results->[-1]->{bugs_by_team}->{$a}->{open}} ## no critic qw(Freenode::DollarAB)
+  @{$bugs_by_team->{$b}->{open}} <=> @{$bugs_by_team->{$a}->{open}} ## no critic qw(Freenode::DollarAB)
     || $a cmp $b
 } keys %$teams;
 

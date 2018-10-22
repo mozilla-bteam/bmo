@@ -38,11 +38,31 @@ has 'start_date' => (is => 'ro', required => 1, isa => $DateTime,);
 
 has 'end_date' => (is => 'ro', required => 1, isa => $DateTime,);
 
+# The teams are loaded from an admin parameter containing JSON, e.g.:
+# {
+#   "Plugins": {
+#     "Core": {
+#         "all_components": false,
+#         "prefixed_components": ["Plugin"],
+#         "named_components": [
+#             "Plug-ins"
+#         ]
+#     },
+#     "Plugins": { "all_components": true },
+#     "External Software Affecting Firefox": { "all_components": true }
+#   },
+#   ...
+# }
+# This will create a new team ("Plugins") which groups bugs in the following components:
+# - All components in the Core product that start with "Plugin" (e.g. Plugin:FlashPlayer)
+# - The single "Plug-ins" component in the Core product.
+# - All components in the Plugins _product_.
+# - All components in the External Software Affecting Firefox product.
 has 'teams' => (
   is       => 'ro',
   required => 1,
-  isa      => HashRef [    # Team
-    HashRef [              # Product
+  isa      => HashRef [
+    HashRef [
       Dict [
         all_components      => $JSONBool,
         prefixed_components => Optional [ArrayRef [Str]],
