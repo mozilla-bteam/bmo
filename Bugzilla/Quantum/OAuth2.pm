@@ -63,7 +63,7 @@ sub oauth2 {
     'bugzilla.oauth' => sub {
         my ($c, @scopes) = @_;
 
-        my $oauth = $self->oauth(@scopes);
+        my $oauth = $c->oauth(@scopes);
 
         if ($oauth && $oauth->{user_id}) {
           my $user = Bugzilla::User->check({id => $oauth->{user_id}, cache => 1});
@@ -81,7 +81,15 @@ sub oauth2 {
 sub _resource_owner_logged_in {
   my (%args) = @_;
   my $c = $args{mojo_controller};
-  my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return 0;
+
+  $c->session->{override_login_target} = $c->url_for('current');
+  $c->session->{cgi_params} = $c->req->params->to_hash;
+
+  $c->bugzilla->login(LOGIN_REQUIRED) || return;
+
+  delete $c->session->{override_login_target};
+  delete $c->session->{cgi_params};
+
   return 1;
 }
 
@@ -217,14 +225,14 @@ sub _verify_auth_code {
   $client_data || return (0, 'unauthorized_client');
 
   my $auth_code_data = $dbh->selectrow_hashref(
-    'SELECT UNIX_TIMESTAMP(expires) AS expires, verified, redirect_uri, user_id FROM oauth2_auth_code WHERE client_id = ? AND auth_code = ?',
+    'SELECT expires, verified, redirect_uri, user_id FROM oauth2_auth_code WHERE client_id = ? AND auth_code = ?',
     undef, $client_id, $auth_code
   );
 
   if (!$auth_code_data
     or $auth_code_data->{verified}
     or ($uri ne $auth_code_data->{redirect_uri})
-    or ($auth_code_data->{expires} <= time)
+    or (datetime_from($auth_code_data->{expires})->epoch <= time)
     or !secure_compare($client_secret, $client_data->{secret}))
   {
     INFO('Auth code does not exist') if !$auth_code;
@@ -395,13 +403,13 @@ sub _verify_access_token {
   }
   elsif (
     my $access_token_data = $dbh->selectrow_hashref(
-      'SELECT UNIX_TIMESTAMP(expires) AS expires, client_id, user_id FROM oauth2_access_token WHERE access_token = ?',
+      'SELECT expires, client_id, user_id FROM oauth2_access_token WHERE access_token = ?',
       undef,
       $access_token
     )
     )
   {
-    if ($access_token_data->{expires} <= time) {
+    if (datetime_from($access_token_data->{expires})->epoch <= time) {
       INFO('Access token has expired');
       $dbh->do('DELETE FROM oauth2_access_token WHERE access_token = ?',
         undef, $access_token);
