@@ -18,6 +18,11 @@ use constant REQUIRED_MODULES => [
         module  => 'Email::Address',
         version => 0,
     },
+    {
+        package => 'Net-DNS',
+        module  => 'Net::DNS',
+        version => 0,
+    }
 ];
 use constant OPTIONAL_MODULES => [];
 

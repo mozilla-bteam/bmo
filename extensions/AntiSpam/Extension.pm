@@ -17,6 +17,7 @@ use Bugzilla::Error;
 use Bugzilla::Group;
 use Bugzilla::Util qw(remote_ip trick_taint);
 use Email::Address;
+use Net::DNS qw(mx);
 use Socket;
 
 our $VERSION = '1';
@@ -83,11 +84,12 @@ sub _comment_blocking {
 
 sub _domain_blocking {
     my ($self, $login) = @_;
+    my $dbh     = Bugzilla->dbh;
     my $address = Email::Address->new(undef, $login);
-    my $blocked = Bugzilla->dbh->selectrow_array(
-        "SELECT 1 FROM antispam_domain_blocklist WHERE domain=?",
-        undef,
-        $address->host
+    my @domains = ($address->host, map { $_->exchange } mx($address->host) );
+    my $where   = $dbh->sql_in('domain', [ map { $dbh->quote($_) } @domains]);
+    my $blocked = $dbh->selectrow_array(
+        "SELECT 1 FROM antispam_domain_blocklist WHERE $where"
     );
     if ($blocked) {
         Bugzilla->audit(sprintf("blocked <%s> from creating %s, blacklisted domain", remote_ip(), $login));
