@@ -156,6 +156,26 @@ sub get_config {
     }
 }
 
+sub set_params {
+    my ($self, $params) = @_;
+    return unless $self->{memcached};
+
+    return $self->_set($self->_params_prefix . ".params", $params);
+}
+
+sub get_params {
+    my ($self) = @_;
+    return unless $self->{memcached};
+
+    return $self->_get($self->_params_prefix . ".params");
+}
+
+sub clear_params {
+    my ($self, $args) = @_;
+    return unless $self->{memcached};
+    $self->_inc_prefix("params");
+}
+
 sub set_bloomfilter {
     my ($self, $args) = @_;
     return unless $self->{memcached};
@@ -308,6 +328,10 @@ sub _global_prefix {
 
 sub _config_prefix {
     return $_[0]->_prefix("config");
+}
+
+sub _params_prefix {
+    return $_[0]->_prefix("params");
 }
 
 sub _bloomfilter_prefix {
