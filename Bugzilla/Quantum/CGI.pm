@@ -27,6 +27,9 @@ my %SEEN;
 sub load_all {
   my ($class, $r) = @_;
 
+  Bugzilla->cleanup;
+  CGI::initialize_globals();
+
   foreach my $file (glob '*.cgi') {
     my $name = _file_to_method($file);
     $class->load_one($name, $file);
