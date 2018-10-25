@@ -70,7 +70,7 @@ sub fail_nodata {
     foreach my $object (@reverse_stack) {
         # We pick the first object that actually has the method
         # implemented.
-        if (ref $object eq 'Bugzilla::Auth::Login::CGI') {
+        if ($object->can('fail_nodata')) {
             $object->fail_nodata(@_);
         }
     }
