@@ -150,7 +150,7 @@ sub _setup_routes {
     '/oauth/whoami' => sub {
       my $c = shift;
 
-      my $user = $c->bugzilla->oauth(['user:read']);
+      my $user = $c->bugzilla->oauth('user:read');
 
       if ($user && $user->id) {
         $c->render(
