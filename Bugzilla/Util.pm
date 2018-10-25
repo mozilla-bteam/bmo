@@ -326,7 +326,8 @@ sub remote_ip {
     if ($ENV{SERVER_SOFTWARE} eq 'Bugzilla::Quantum::CGI') {
         my $c = $Bugzilla::Quantum::CGI::C
             or LOGDIE("Cannot find controller!");
-        return $c->tx->remote_address
+        state $better_xff = Bugzilla->has_feature('better_xff');
+        return $better_xff ? $c->forwarded_for : $c->tx->remote_address;
     }
     else {
         WARN("remote_ip() called outside CGI controller!");
