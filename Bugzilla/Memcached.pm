@@ -290,6 +290,7 @@ sub clear_config {
 sub _prefix {
     my ($self, $name) = @_;
     # we don't want to change prefixes in the middle of a request
+    $name .= "/" . Bugzilla->VERSION;
     my $request_cache = Bugzilla->request_cache;
     my $request_cache_key = "memcached_prefix_$name";
     if (!$request_cache->{$request_cache_key}) {
@@ -313,6 +314,7 @@ sub _prefix {
 sub _inc_prefix {
     my ($self, $name) = @_;
     my $memcached = $self->{memcached};
+    $name .= "/" . Bugzilla->VERSION;
     if (!$memcached->incr($name, 1)) {
         $memcached->add($name, time());
     }
