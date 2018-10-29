@@ -182,7 +182,7 @@ sub _build_missing_components {
     }
   }
 
-  my $components = join ', ', map { $dbh->quote($_->[1]) } @named_components;
+  my @components = map { $dbh->quote($_->[1]) } @named_components;
   my $query = qq{
       SELECT
           product.name,
@@ -190,8 +190,8 @@ sub _build_missing_components {
       FROM
           components AS component
           JOIN products AS product ON component.product_id = product.id
-        WHERE
-          component.name IN ($components)
+      WHERE
+          @{[$dbh->sql_in('component.name', \@components)]}
   };
   my $found_components = Bugzilla->dbh->selectall_arrayref($query);
 
