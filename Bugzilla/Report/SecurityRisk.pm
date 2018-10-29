@@ -153,14 +153,14 @@ sub _build_products {
 sub _build_missing_products {
   my ($self) = @_;
   my $dbh = Bugzilla->dbh;
-  my $products = join ', ', map { $dbh->quote($_) } @{$self->products};
+  my @products = map { $dbh->quote($_) } @{$self->products};
   my $query = qq{
         SELECT
             name
         FROM
             products
          WHERE
-            products.name IN ($products)
+            @{[$dbh->sql_in('products.name', \@products)]}
     };
   my $found_products = Bugzilla->dbh->selectcol_arrayref($query);
   return (diff_arrays($self->products, $found_products))[0];
