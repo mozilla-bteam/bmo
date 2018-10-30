@@ -196,46 +196,6 @@ sub feed_query {
         $self->save_last_id($story_id, 'feed');
     }
 
-    # Process any build targets as well.
-    my $dbh = Bugzilla->dbh;
-
-    INFO("Checking for revisions in draft mode");
-    my $build_targets = $dbh->selectall_arrayref(
-        "SELECT name, value FROM phabbugz WHERE name LIKE 'build_target_%'",
-        { Slice => {} }
-    );
-
-    my $delete_build_target = $dbh->prepare(
-        "DELETE FROM phabbugz WHERE name = ? AND VALUE = ?"
-    );
-
-    foreach my $target (@$build_targets) {
-        my ($revision_id) = ($target->{name} =~ /^build_target_(\d+)$/);
-        my $build_target  = $target->{value};
-
-        next unless $revision_id && $build_target;
-
-        INFO("Processing revision $revision_id with build target $build_target");
-
-        my $revision =
-          Bugzilla::Extension::PhabBugz::Revision->new_from_query(
-            {
-              ids => [ int($revision_id) ]
-            }
-        );
-
-        $self->process_revision_change( $revision, $revision->author, " created D" . $revision->id );
-
-        # Set the build target to a passing status to
-        # allow the revision to exit draft state
-        request( 'harbormaster.sendmessage', {
-            buildTargetPHID => $build_target,
-            type            => 'pass'
-        } );
-
-        $delete_build_target->execute($target->{name}, $target->{value});
-     }
-
     if (Bugzilla->datadog) {
       my $dd = Bugzilla->datadog();
       $dd->increment('bugzilla.phabbugz.feed_query_count');
@@ -393,13 +353,18 @@ sub group_query {
 sub process_revision_change {
     state $check = compile($Invocant, Revision, LinkedPhabUser, Str);
     my ($self, $revision, $changer, $story_text) = $check->(@_);
+    my $is_new = $story_text =~ /\s+created\s+D\d+/;
 
     # NO BUG ID
     if (!$revision->bug_id) {
-        if ($story_text =~ /\s+created\s+D\d+/) {
+        if ($is_new) {
             # If new revision and bug id was omitted, make revision public
             INFO("No bug associated with new revision. Marking public.");
             $revision->make_public();
+            if ($revision->status eq 'draft') {
+              INFO("Moving from draft to needs-review");
+              $revision->set_status('request-review');
+            }
             $revision->update();
             INFO("SUCCESS");
             return;
@@ -428,7 +393,7 @@ sub process_revision_change {
     if ($bug->{error}
         ||!$revision->author->bugzilla_user->can_see_bug($revision->bug_id))
     {
-        if ($story_text =~ /\s+created\s+D\d+/) {
+        if ($is_new) {
             INFO('Invalid bug ID or author does not have access to the bug. ' .
                  'Waiting til next revision update to notify author.');
             return;
@@ -528,6 +493,12 @@ sub process_revision_change {
              $attachment->id . " for bug " . $attachment->bug_id);
         $attachment->set_is_obsolete(1);
         $attachment->update($timestamp);
+    }
+
+    # Set status to request-review if revision is new and in draft state
+    if ($is_new && $revision->status eq 'draft') {
+        INFO("Moving from draft to needs-review");
+        $revision->set_status('request-review');
     }
 
     # FINISH UP
