@@ -57,7 +57,6 @@ use List::Util qw(first);
 use Scalar::Util qw(blessed);
 use Sys::Syslog qw(:DEFAULT);
 use Text::Balanced qw( extract_bracketed extract_multiple );
-use File::Slurp qw(read_file);
 use JSON::XS;
 
 use Bugzilla::Extension::BMO::Constants;
@@ -2594,9 +2593,9 @@ sub install_filesystem {
     # version.json needs to have a source attribute pointing to
     # our repository. We already have this information in the (static)
     # contribute.json file, so parse that in
-    my $json = JSON::XS->new->pretty->utf8->canonical();
+    my $json = JSON::MaybeXS->new->pretty->utf8->canonical();
     my $contribute = eval {
-        $json->decode(scalar read_file(bz_locations()->{cgi_path} . "/contribute.json"));
+        $json->decode(path(bz_locations()->{cgi_path}, "/contribute.json")->slurp);
     };
 
     if (!$contribute) {
