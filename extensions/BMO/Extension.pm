@@ -57,7 +57,8 @@ use List::Util qw(first);
 use Scalar::Util qw(blessed);
 use Sys::Syslog qw(:DEFAULT);
 use Text::Balanced qw( extract_bracketed extract_multiple );
-use JSON::XS;
+use JSON::MaybeXS;
+use Mojo::File qw(path);
 
 use Bugzilla::Extension::BMO::Constants;
 use Bugzilla::Extension::BMO::FakeBug;
