@@ -40,19 +40,46 @@
 
 .phabricator-revisions td {
     padding: 2px;
+    vertical-align: top;
 }
 
-.phabricator-revisions .phabricator-title {
-    text-align: left;
+.phabricator-revisions .phabricator-reviewers td {
+    padding: 1px;
 }
 
-.phabricator-revisions .phabricator-open-issues {
-    text-align: center;
+td[class^="review-status-"] {
+    font-weight: bold;
 }
 
-.phabricator-revisions .phabricator-diffstat {
-    text-align: center;
+span[class^="revision-status-"] {
+    border: none;
+    font-weight: normal;
+    padding: 3px 9px;
+    border-radius: 3px;
     white-space: nowrap;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.revision-status-needs-review {
+    background: rgba(71,87,120,0.1);
+    color: inherit;
+}
+
+.revision-status-accepted {
+    background: #ddefdd;
+    color: #326d34;
+}
+
+.revision-status-changes-planned,
+.revision-status-needs-revision {
+    background: #f7e6e6;
+    color: #a53737;
+}
+
+.revision-status-abandoned {
+    background: #eae6f7;
+    color: #6e5cb6;
 }
 
 /* bug-modal specific */
@@ -66,7 +93,8 @@
 }
 
 .bug_modal .phabricator-revision td {
-    padding-left: 8px;
+    padding: 8px;
+    vertical-align: top;
 }
 
 .bug_modal .phabricator-revisions th {
@@ -74,6 +102,6 @@
     padding-left: 8px;
 }
 
-.bug_modal .phabricator-hide-discarded-row {
-    padding: 4px;
+.bug_modal .phabricator-revision .phabricator-reviewers td {
+    padding: 1px;
 }

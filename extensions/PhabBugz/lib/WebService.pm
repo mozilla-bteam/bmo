@@ -16,6 +16,7 @@ use base qw(Bugzilla::WebService);
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Util qw(detaint_natural trick_taint);
 use Bugzilla::WebService::Constants;
@@ -125,7 +126,7 @@ sub set_build_target {
     trick_taint($build_target);
 
     Bugzilla->dbh->do(
-        "INSERT INTO phabbugz (name, value) VALUES (?, ?)",
+        'INSERT INTO phabbugz (name, value) VALUES (?, ?)',
         undef,
         'build_target_' . $revision_id,
         $build_target
@@ -153,7 +154,7 @@ sub bug_revisions {
         next if $attachment->contenttype ne PHAB_CONTENT_TYPE;
         my ($revision_id) = ( $attachment->filename =~ PHAB_ATTACHMENT_PATTERN );
         next if !$revision_id;
-        push @revision_ids, int($revision_id);
+        push @revision_ids, int $revision_id;
     }
 
     my $response = request(
@@ -174,6 +175,22 @@ sub bug_revisions {
     ThrowCodeError( 'phabricator_api_error', { reason => 'Malformed Response' } )
         unless exists $response->{result}{data};
 
+    my $revision_status_map = {
+        'abandoned'       => 'Abandoned',
+        'accepted'        => 'Accepted',
+        'changes-planned' => 'Changes Planned',
+        'needs-review'    => 'Needs Review',
+        'needs-revision'  => 'Needs Revision',
+    };
+
+    my $review_status_map = {
+        accepted => 'Accepted',
+        added    => 'Review Requested',
+        blocking => 'Blocking Review',
+        rejected => 'Requested Changes',
+        resigned => 'Resigned'
+    };
+
     my @revisions;
     foreach my $revision ( @{ $response->{result}{data} } ) {
         my $revision_obj  = Bugzilla::Extension::PhabBugz::Revision->new($revision);
@@ -181,13 +198,15 @@ sub bug_revisions {
             id     => 'D' . $revision_obj->id,
             author => $revision_obj->author->name,
             status => $revision_obj->status,
+            long_status => $revision_status_map->{$revision_obj->status} || $revision_obj->status
         };
 
         my @reviews;
         foreach my $review ( @{ $revision_obj->reviews } ) {
             push @reviews, {
-                user   => $review->{user}->name,
-                status => $review->{status}
+                user        => $review->{user}->name,
+                status      => $review->{status},
+                long_status => $review_status_map->{$review->{status}} || $review->{status}
             };
         }
         $revision_data->{reviews} = \@reviews;
@@ -196,11 +215,14 @@ sub bug_revisions {
             $revision_data->{title} = '(secured)';
         }
         else {
-            $revision_data = $revision->title;
+            $revision_data->{title} = $revision_obj->title;
         }
 
         push @revisions, $revision_data;
     }
+
+    # sort by revision id
+    @revisions = sort { $a->{id} cmp $b->{id} } @revisions;
 
     return { revisions => \@revisions };
 }

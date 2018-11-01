@@ -13,14 +13,16 @@ Phabricator.getBugRevisions = function() {
     var tr      = $('<tr/>');
     var td      = $('<td/>');
     var link    = $('<a/>');
+    var span    = $('<span/>');
     var table   = $('<table/>');
 
     function revisionRow(revision) {
         var trRevision   = tr.clone();
         var tdId         = td.clone();
-        var tdAuthor     = td.clone();
         var tdTitle      = td.clone();
+        var tdAuthor     = td.clone();
         var tdStatus     = td.clone();
+        var spanStatus   = span.clone();
         var tdReviewers  = td.clone();
         var tableReviews = table.clone();
 
@@ -30,7 +32,9 @@ Phabricator.getBugRevisions = function() {
         tdId.append(revLink);
 
         tdAuthor.text(revision.author);
-        tdStatus.text(revision.status);
+        spanStatus.text(revision.long_status);
+        spanStatus.addClass('revision-status-' + revision.status);
+        tdStatus.append(spanStatus);
 
         tdTitle.text(revision.title);
         tdTitle.addClass('phabricator-title');
@@ -40,11 +44,14 @@ Phabricator.getBugRevisions = function() {
             var trReview       = tr.clone();
             var tdReviewStatus = td.clone();
             var tdReviewer     = td.clone();
-            tdReviewStatus.text(revision.reviews[i].status);
+            tdReviewStatus.text(revision.reviews[i].long_status);
+            tdReviewStatus.addClass('review-status-' + revision.reviews[i].status);
             tdReviewer.text(revision.reviews[i].user);
+            tdReviewer.addClass('review-reviewer');
             trReview.append(tdReviewStatus, tdReviewer);
             tableReviews.append(trReview);
         }
+        tableReviews.addClass('phabricator-reviewers');
         tdReviewers.append(tableReviews);
 
         trRevision.append(
