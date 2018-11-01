@@ -49,7 +49,7 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
 
   /**
    * Return a list of temporary fieldsets already inserted to the current page.
-   * @type {Array<HTMLElement>}
+   * @type {Array.<HTMLElement>}
    */
   get inserted_fieldsets() {
     return [...this.$fieldset_wrapper.querySelectorAll('section.approval-request')];
