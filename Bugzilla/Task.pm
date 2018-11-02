@@ -54,4 +54,10 @@ sub _build_name {
   return decamelize($class);
 }
 
+sub proper_name {
+    my ($self) = @_;
+
+    return join(' ', map { ucfirst } split(/_/, $self->name));
+}
+
 1;

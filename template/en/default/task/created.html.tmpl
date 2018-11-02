@@ -1,0 +1,14 @@
+[% PROCESS global/variables.none.tmpl %]
+
+[% PROCESS global/header.html.tmpl
+   title = task.subject,
+   header = task.subject,
+   style_urls = [ 'skins/standard/index.css' ]
+   no_yui = 1
+%]
+
+<div id="page-index">
+<p>Scheduled [% task.proper_name FILTER html %] task. You'll recieve an email when it is done.</p>.
+</div>
+
+[% PROCESS global/footer.html.tmpl %]

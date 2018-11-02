@@ -1,0 +1,46 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+  PROCESS global/variables.none.tmpl;
+  BLOCK results;
+    import(params);
+    header_done = 1;
+    PROCESS bug/process/results.html.tmpl;
+  END;
+%]
+
+<!doctype html>
+<html>
+<head>
+  <title>[% task.subject %]</title>
+  <base href="[% urlbase FILTER txt %]">
+</head>
+<body>
+[% IF all_sent_changes %]
+  <dl>
+    [% FOREACH sent_changes IN all_sent_changes %]
+      <dt>[% terms.Bug %] [% sent_changes.bug_id FILTER html %]</dt>
+      <dd>
+        [% IF sent_changes.error %]
+          Error: [% %sent_changes.error FILTER html %]
+        [% ELSE %]
+          [% FOREACH sent_change IN sent_changes %]
+            [% INCLUDE results
+                      params = sent_change.params
+                      sent_bugmail = sent_change.sent_bugmail %]
+          [% END %]
+        [% END %]
+      </dd>
+    [% END %]
+  </dl>
+[% ELSE %]
+  <p>Task Error: [% error FILTER html %]</p>
+[% END %]
+</body>
+</html>
