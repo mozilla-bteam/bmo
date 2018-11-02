@@ -26,6 +26,7 @@ use Bugzilla::Flag;
 use Bugzilla::Status;
 use Bugzilla::Token;
 use Bugzilla::Hook;
+use Bugzilla::Task::BulkEdit;
 
 use Scalar::Util qw(blessed);
 use List::MoreUtils qw(firstidx);
@@ -73,22 +74,35 @@ if (Bugzilla->params->{disable_bug_updates}) {
 
 # Create a list of objects for all bugs being modified in this request.
 my @bug_objects;
+my @bug_ids;
+
+# $bulk_edit is whether or not we use the bulk editing code,
+# $background is if the background=1 parameter was passed.
+my $bulk_edit = $cgi->param('bulk_edit') // 0;
+$cgi->delete('bulk_edit') if $bulk_edit;
+
 if (defined $cgi->param('id')) {
   my $bug = Bugzilla::Bug->check(scalar $cgi->param('id'));
   $cgi->param('id', $bug->id);
   push(@bug_objects, $bug);
 }
 else {
-  foreach my $i ($cgi->param()) {
-    if ($i =~ /^id_([1-9][0-9]*)/) {
-      my $id = $1;
-      push(@bug_objects, Bugzilla::Bug->check($id));
-    }
+  @bug_ids = map { /^id_([1-9][0-9]*)/ ? $1 : () } $cgi->param;
+
+  # Make sure there are bugs to process.
+  ThrowUserError("no_bugs_chosen", {action => 'modify'}) unless @bug_ids;
+  $bulk_edit = 1 if @bug_ids > 10;
+  $bulk_edit = 0 unless $user->in_group('bulk_edit');
+
+  if ($bulk_edit) {
+    # Not sure if we need $first_bug at all during a bulk update,
+    # but it won't hurt.
+    @bug_objects = (Bugzilla::Bug->check($bug_ids[0]));
+  }
+  else {
+    @bug_objects = map { Bugzilla::Bug->check($_) } @bug_ids;
   }
 }
-
-# Make sure there are bugs to process.
-scalar(@bug_objects) || ThrowUserError("no_bugs_chosen", {action => 'modify'});
 
 my $first_bug = $bug_objects[0];   # Used when we're only updating a single bug.
 
@@ -226,9 +240,12 @@ else {
 
 # For each bug, we have to check if the user can edit the bug the product
 # is currently in, before we allow them to change anything.
-foreach my $bug (@bug_objects) {
-  if (!Bugzilla->user->can_edit_product($bug->product_obj->id)) {
-    ThrowUserError("product_edit_denied", {product => $bug->product});
+# For bulk edits, this will be done in the background task.
+if (!$bulk_edit) {
+  foreach my $bug (@bug_objects) {
+    if (!Bugzilla->user->can_edit_product($bug->product_obj->id)) {
+      ThrowUserError("product_edit_denied", {product => $bug->product});
+    }
   }
 }
 
@@ -255,7 +272,10 @@ my %field_translation = (
   confirm_product_change => 'product_change_confirmed',
 );
 
-my %set_all_fields = (other_bugs => \@bug_objects);
+my %set_all_fields;
+if (not $bulk_edit) {
+  $set_all_fields{other_bugs} = \@bug_objects;
+}
 foreach my $field_name (@set_fields) {
   if (should_set($field_name, 1)) {
     my $param_name = $field_translation{$field_name} || $field_name;
@@ -278,6 +298,7 @@ if (should_set('comment')) {
     is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0,
   };
 }
+
 if (should_set('see_also')) {
   $set_all_fields{'see_also'}->{add} = [split(/[\s,]+/, $cgi->param('see_also'))];
 }
@@ -286,6 +307,7 @@ if (should_set('remove_see_also')) {
 }
 foreach my $dep_field (qw(dependson blocked)) {
   if (should_set($dep_field)) {
+
     if (my $dep_action = $cgi->param("${dep_field}_action")) {
       $set_all_fields{$dep_field}->{$dep_action}
         = [split(/[\s,]+/, $cgi->param($dep_field))];
@@ -369,6 +391,23 @@ foreach my $field (keys %$user_match_fields) {
 
 # We are going to alter the list of removed groups, so we keep a copy here.
 my @unchecked_groups = @$removed_groups;
+
+if ($bulk_edit) {
+  my $task = Bugzilla::Task::BulkEdit->new(
+    ids     => \@bug_ids,
+    set_all => \%set_all_fields,
+    user    => Bugzilla->user,
+  );
+  Bugzilla->job_queue->run_task($task);
+  my $name = $task->name;
+  # Delete the session token used for the mass-change.
+  delete_token($token) unless $cgi->param('id');
+  print $cgi->header();
+  $template->process("task/created.html.tmpl", {task => $task})
+    or ThrowTemplateError($template->error);
+  exit;
+}
+
 foreach my $b (@bug_objects) {
 
   # Don't blindly ask to remove unchecked groups available in the UI.

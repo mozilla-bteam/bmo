@@ -34,8 +34,13 @@
 
 [% DEFAULT type="bug" %]
 
-[% Link = BLOCK %][% "$terms.Bug $id" FILTER bug_link(id) %][% END %]
-[% link = BLOCK %][% "$terms.bug $id" FILTER bug_link(id) %][% END %]
+[% IF bulk_edit %]
+  [% Link = BLOCK %][% "$terms.Bug $id" FILTER bug_link(id, full_url => 1) %][% END %]
+  [% link = BLOCK %][% "$terms.bug $id" FILTER bug_link(id, full_url => 1) %][% END %]
+[% ELSE %]
+  [% Link = BLOCK %][% "$terms.Bug $id" FILTER bug_link(id) %][% END %]
+  [% link = BLOCK %][% "$terms.bug $id" FILTER bug_link(id) %][% END %]
+[% END %]
 
 [%
   title = {
