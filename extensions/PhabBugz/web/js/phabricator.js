@@ -39,11 +39,11 @@ Phabricator.getBugRevisions = function() {
 
         tdAuthor.text(revision.author);
 
-        spanRevisionStatusIcon.addClass('status-icon-' + revision.status);
+        spanRevisionStatusIcon.addClass('revision-status-icon-' + revision.status);
         spanRevisionStatus.append(spanRevisionStatusIcon);
         spanRevisionStatusText.text(revision.long_status);
         spanRevisionStatus.append(spanRevisionStatusText);
-        spanRevisionStatus.addClass('revision-status-' + revision.status);
+        spanRevisionStatus.addClass('revision-status-box-' + revision.status);
         tdRevisionStatus.append(spanRevisionStatus);
 
         var i = 0, l = revision.reviews.length;

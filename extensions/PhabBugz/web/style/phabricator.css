@@ -59,7 +59,7 @@ td[class^="review-status-"] {
     font-weight: bold;
 }
 
-span[class^="revision-status-"] {
+span[class^="revision-status-box-"] {
     border: none;
     font-weight: normal;
     padding: 3px 9px;
@@ -69,63 +69,66 @@ span[class^="revision-status-"] {
     margin-bottom: 5px;
 }
 
-span[class^="status-icon-"]::before {
+span[class^="revision-status-icon-"]::before,
+span[class^="review-status-icon-"]::before
+{
     display: inline-block;
-    font-style: normal;
     font-variant: normal;
     text-rendering: auto;
+    font-family: FontAwesome-DifferentialStatus;
 }
 
-.status-icon-needs-review::before {
+.revision-status-icon-needs-review::before {
   content: "\f121";
 }
 
-.status-icon-needs-revision::before {
+.revision-status-icon-needs-revision::before {
   content: "\f021";
 }
 
-.status-icon-changes-planned::before {
+.revision-status-icon-changes-planned::before {
   content: "\f025";
 }
 
-.status-icon-accepted::before {
+.revision-status-icon-accepted::before {
   content: "\f00C";
 }
 
-.status-icon-published::before {
+.revision-status-icon-published::before {
   content: "\f046";
 }
 
-.status-icon-abandoned::before {
+.revision-status-icon-abandoned::before {
   content: "\f072";
 }
 
-.status-icon-draft::before {
+.revision-status-icon-draft::before {
   content: "\f110";
 }
 
-.revision-status-needs-review {
+.revision-status-box-needs-review {
     background: rgba(71,87,120,0.1);
     color: inherit;
 }
 
-.revision-status-accepted {
+.revision-status-box-accepted {
     background: #ddefdd;
     color: #326d34;
 }
 
-.revision-status-changes-planned,
-.revision-status-needs-revision {
+.revision-status-box-changes-planned,
+.revision-status-box-needs-revision {
     background: #f7e6e6;
     color: #a53737;
 }
 
-.revision-status-abandoned {
+.revision-status-box-abandoned {
     background: #eae6f7;
     color: #6e5cb6;
 }
 
 .review-status-icon-accepted::before {
+    color: green;
     content: "\f058";
 }
 
@@ -138,6 +141,7 @@ span[class^="status-icon-"]::before {
 }
 
 .review-status-icon-rejected::before {
+    color: red;
     content: "\f05c";
 }
 
