@@ -17,35 +17,44 @@ Phabricator.getBugRevisions = function() {
     var table   = $('<table/>');
 
     function revisionRow(revision) {
-        var trRevision   = tr.clone();
-        var tdId         = td.clone();
-        var tdTitle      = td.clone();
-        var tdAuthor     = td.clone();
-        var tdStatus     = td.clone();
-        var spanStatus   = span.clone();
-        var tdReviewers  = td.clone();
-        var tableReviews = table.clone();
+        var trRevision     = tr.clone();
+        var tdId           = td.clone();
+        var tdTitle        = td.clone();
+        var tdAuthor       = td.clone();
+        var tdRevisionStatus       = td.clone();
+        var tdReviewers    = td.clone();
+        var tableReviews   = table.clone();
+
+        var spanRevisionStatus     = span.clone();
+        var spanRevisionStatusIcon = span.clone();
+        var spanRevisionStatusText = span.clone();
 
         var revLink = link.clone();
         revLink.attr('href', phabUrl + '/' + revision.id);
         revLink.text(revision.id);
         tdId.append(revLink);
 
-        tdAuthor.text(revision.author);
-        spanStatus.text(revision.long_status);
-        spanStatus.addClass('revision-status-' + revision.status);
-        tdStatus.append(spanStatus);
-
         tdTitle.text(revision.title);
         tdTitle.addClass('phabricator-title');
 
+        tdAuthor.text(revision.author);
+
+        spanRevisionStatusIcon.addClass('status-icon-' + revision.status);
+        spanRevisionStatus.append(spanRevisionStatusIcon);
+        spanRevisionStatusText.text(revision.long_status);
+        spanRevisionStatus.append(spanRevisionStatusText);
+        spanRevisionStatus.addClass('revision-status-' + revision.status);
+        tdRevisionStatus.append(spanRevisionStatus);
+
         var i = 0, l = revision.reviews.length;
         for (; i < l; i++) {
-            var trReview       = tr.clone();
-            var tdReviewStatus = td.clone();
-            var tdReviewer     = td.clone();
-            tdReviewStatus.text(revision.reviews[i].long_status);
-            tdReviewStatus.addClass('review-status-' + revision.reviews[i].status);
+            var trReview             = tr.clone();
+            var tdReviewStatus       = td.clone();
+            var tdReviewer           = td.clone();
+            var spanReviewStatusIcon = span.clone();
+            spanReviewStatusIcon.addClass('review-status-icon-' + revision.reviews[i].status);
+            spanReviewStatusIcon.prop('title', revision.reviews[i].long_status);
+            tdReviewStatus.append(spanReviewStatusIcon);
             tdReviewer.text(revision.reviews[i].user);
             tdReviewer.addClass('review-reviewer');
             trReview.append(tdReviewStatus, tdReviewer);
@@ -58,7 +67,7 @@ Phabricator.getBugRevisions = function() {
             tdId,
             tdTitle,
             tdAuthor,
-            tdStatus,
+            tdRevisionStatus,
             tdReviewers
         );
 

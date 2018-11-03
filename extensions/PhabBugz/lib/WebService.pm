@@ -161,9 +161,10 @@ sub bug_revisions {
         'differential.revision.search',
         {
             attachments => {
-                projects    => 1,
-                reviewers   => 1,
-                subscribers => 1,
+                'projects'        => 1,
+                'reviewers'       => 1,
+                'subscribers'     => 1,
+                'reviewers-extra' => 1,
             },
             constraints => {
                 ids => \@revision_ids,
