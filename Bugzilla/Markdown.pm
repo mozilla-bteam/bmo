@@ -32,7 +32,7 @@ sub _build_markdown_parser {
   }
 }
 
-sub render {
+sub render_html {
     my ($self, $markdown) = @_;
     my $parser = $self->markdown_parser;
     my $bugzilla_shorthand = $self->bugzilla_shorthand;
@@ -43,7 +43,7 @@ sub render {
         $dom->find('p, li')->map(
             sub {
                 my $node = shift;
-                if ($node->type ne 'text') {
+                if ($node->type eq 'text') {
                     my $text = $node->text;
                     $node->content( $bugzilla_shorthand->($text) );
                 }
