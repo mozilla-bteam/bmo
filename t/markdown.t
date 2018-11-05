@@ -40,7 +40,7 @@ is(
 
 is(
     $parser->render_html('<script>hijack()</script>'),
-    "&lt;script>hijack()&lt;/script>\n",
+    "&lt;script&gt;hijack()&lt;/script&gt;\n",
     'Tagfilter extension'
 );
 
