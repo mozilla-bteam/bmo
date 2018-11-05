@@ -12,13 +12,13 @@ use Moo;
 use Mojo::DOM;
 use HTML::Escape qw(escape_html);
 
-has 'markdown_parser' => ( is => 'lazy' );
+has 'markdown_parser' => (is => 'lazy');
 has 'bugzilla_shorthand' => (
-    is      => 'ro',
-    default => sub {
-        require Bugzilla::Template;
-        \&Bugzilla::Template::quoteUrls;
-    }
+  is      => 'ro',
+  default => sub {
+    require Bugzilla::Template;
+    \&Bugzilla::Template::quoteUrls;
+  }
 );
 
 sub _build_markdown_parser {
@@ -27,34 +27,33 @@ sub _build_markdown_parser {
     require Bugzilla::Markdown::GFM::Parser;
     return Bugzilla::Markdown::GFM::Parser->new(
       {extensions => [qw( autolink tagfilter table strikethrough)]});
-  } else {
+  }
+  else {
     return undef;
   }
 }
 
 sub render_html {
-    my ($self, $markdown) = @_;
-    my $parser = $self->markdown_parser;
-    my $bugzilla_shorthand = $self->bugzilla_shorthand;
+  my ($self, $markdown) = @_;
+  my $parser             = $self->markdown_parser;
+  my $bugzilla_shorthand = $self->bugzilla_shorthand;
 
-    if ($parser) {
-        my $html = $parser->render_html($markdown);
-        my $dom  = Mojo::DOM->new($html);
-        $dom->find('p, li')->map(
-            sub {
-                my $node = shift;
-                if ($node->type eq 'text') {
-                    my $text = $node->text;
-                    $node->content( $bugzilla_shorthand->($text) );
-                }
-                return $node;
-            }
-        );
-        return $dom->to_string;
-    }
-    else {
-        return escape_html($markdown);
-    }
+  if ($parser) {
+    my $html = $parser->render_html($markdown);
+    my $dom  = Mojo::DOM->new($html);
+    $dom->find('p, li')->map(sub {
+      my $node = shift;
+      if ($node->type eq 'text') {
+        my $text = $node->text;
+        $node->content($bugzilla_shorthand->($text));
+      }
+      return $node;
+    });
+    return $dom->to_string;
+  }
+  else {
+    return escape_html($markdown);
+  }
 }
 
 1;
