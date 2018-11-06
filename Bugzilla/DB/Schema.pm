@@ -1869,36 +1869,36 @@ use constant ABSTRACT_SCHEMA => {
 
     oauth2_auth_code => {
         FIELDS => [
-          auth_code    => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
-	        client_id    => {TYPE => 'varchar(255)', NOTNULL => 1,
+            auth_code    => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
+            client_id    => {TYPE => 'varchar(255)', NOTNULL => 1,
                              REFERENCES => {TABLE  => 'oauth2_client',
                                             COLUMN => 'id',
                                             UPDATE => 'CASCADE',
                                             DELETE => 'CASCADE'}},
-	        user_id      => {TYPE => 'INT3', NOTNULL => 1,
+            user_id      => {TYPE => 'INT3', NOTNULL => 1,
                              REFERENCES => {TABLE  => 'profiles',
                                             COLUMN => 'userid',
                                             UPDATE => 'CASCADE',
                                             DELETE => 'CASCADE'}},
-	        expires      => {TYPE => 'DATETIME', NOTNULL => 1},
-	        redirect_uri => {TYPE => 'TINYTEXT', NOTNULL => 1},
-	        verified     => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'},
+            expires      => {TYPE => 'DATETIME', NOTNULL => 1},
+            redirect_uri => {TYPE => 'TINYTEXT', NOTNULL => 1},
+            verified     => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'},
         ]
     },
 
     oauth2_auth_code_scope => {
         FIELDS => [
-	        auth_code => {TYPE => 'varchar(255)', NOTNULL => 1,
+            auth_code => {TYPE => 'varchar(255)', NOTNULL => 1,
                           REFERENCES => {TABLE  => 'oauth2_auth_code',
                                          COLUMN => 'auth_code',
                                          UPDATE => 'CASCADE',
                                          DELETE => 'CASCADE'}},
-	        scope_id  => {TYPE => 'INT3', NOTNULL => 1,
+            scope_id  => {TYPE => 'INT3', NOTNULL => 1,
                           REFERENCES => {TABLE  => 'oauth2_scope',
                                          COLUMN => 'id',
                                          UPDATE => 'CASCADE',
                                          DELETE => 'CASCADE'}},
-	        allowed   => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'},
+            allowed   => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'},
         ],
         INDEXES => [
             oauth2_auth_code_scope_idx => {FIELDS => ['auth_code', 'scope_id'],
