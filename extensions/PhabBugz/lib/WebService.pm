@@ -26,6 +26,7 @@ use Bugzilla::Extension::PhabBugz::Revision;
 use Bugzilla::Extension::PhabBugz::Util qw(request);
 
 use MIME::Base64 qw(decode_base64);
+use Try::Tiny;
 
 use constant READ_ONLY => qw(
     bug_revisions
@@ -185,16 +186,17 @@ sub bug_revisions {
     };
 
     my $review_status_map = {
-        accepted => 'Accepted',
-        added    => 'Review Requested',
-        blocking => 'Blocking Review',
-        rejected => 'Requested Changes',
-        resigned => 'Resigned'
+        'accepted'       => 'Accepted',
+        'accepted-prior' => 'Accepted Prior Diff',
+        'added'          => 'Review Requested',
+        'blocking'       => 'Blocking Review',
+        'rejected'       => 'Requested Changes',
+        'resigned'       => 'Resigned'
     };
 
     my @revisions;
     foreach my $revision ( @{ $response->{result}{data} } ) {
-        my $revision_obj  = Bugzilla::Extension::PhabBugz::Revision->new($revision);
+        my $revision_obj = Bugzilla::Extension::PhabBugz::Revision->new($revision);
         my $revision_data = {
             id     => 'D' . $revision_obj->id,
             author => $revision_obj->author->name,

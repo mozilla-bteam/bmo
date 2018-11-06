@@ -55,10 +55,6 @@
     padding: 1px;
 }
 
-td[class^="review-status-"] {
-    font-weight: bold;
-}
-
 span[class^="revision-status-box-"] {
     border: none;
     font-weight: normal;
@@ -132,11 +128,18 @@ span[class^="review-status-icon-"]::before
     content: "\f058";
 }
 
+.review-status-icon-accepted-prior::before {
+    color: grey;
+    content: "\f058";
+}
+
 .review-status-icon-added::before {
+    color: grey;
     content: "\f10c";
 }
 
 .review-status-icon-blocking::before {
+    color: red;
     content: "\f056";
 }
 
@@ -146,6 +149,7 @@ span[class^="review-status-icon-"]::before
 }
 
 .review-status-icon-resigned::before {
+    color: rgba(55,55,55,0.3);
     content: "\f024";
 }
 
