@@ -20,6 +20,8 @@ use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Util qw(detaint_natural trick_taint);
 use Bugzilla::WebService::Constants;
+use Types::Standard qw(-types slurpy);
+use Type::Params qw(compile);
 
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Revision;
@@ -137,7 +139,8 @@ sub set_build_target {
 }
 
 sub bug_revisions {
-    my ( $self, $params ) = @_;
+    state $check = compile(Object, Dict[bug_id => Int]);
+    my ( $self, $params ) = $check->(@_);
 
     $self->_check_phabricator();
 
@@ -174,8 +177,19 @@ sub bug_revisions {
         }
     );
 
-    ThrowCodeError( 'phabricator_api_error', { reason => 'Malformed Response' } )
-        unless exists $response->{result}{data};
+    state $SearchResult = Dict[
+        result => Dict[
+            # HashRef below could be better,
+            # but ::Revision takes a lot of options.
+            data => ArrayRef[ HashRef ],
+            slurpy Any,
+        ],
+        slurpy Any,
+    ];
+
+    my $error = $SearchResult->validate($response);
+    ThrowCodeError( 'phabricator_api_error', { reason => $error } )
+        if defined $error;
 
     my $revision_status_map = {
         'abandoned'       => 'Abandoned',
