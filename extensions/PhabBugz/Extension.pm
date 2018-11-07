@@ -23,9 +23,9 @@ sub template_before_process {
     my $file = $args->{'file'};
     my $vars = $args->{'vars'};
 
-    return
-        unless ( ( $file =~ /bug\/(show-header|edit).html.tmpl$/ || $file =~ /bug_modal\/(header|edit).html.tmpl$/ )
-        && Bugzilla->params->{phabricator_base_uri} );
+    return unless Bugzilla->params->{phabricator_enabled};
+    return unless Bugzilla->params->{phabricator_base_uri};
+    return unless $file =~ /bug_modal\/(header|edit).html.tmpl$/;
 
     if ( my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'} ) {
         my $has_revisions = 0;
