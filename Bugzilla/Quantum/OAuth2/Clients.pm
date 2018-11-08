@@ -15,7 +15,7 @@ use Moo;
 use Bugzilla;
 use Bugzilla::Error;
 use Bugzilla::Token;
-
+use Bugzilla::Util qw(generate_random_password);
 
 # Show list of clients
 sub list {
@@ -33,7 +33,9 @@ sub create {
   my $vars   = {};
 
   if ($self->req->method ne 'POST') {
-    $vars->{token} = issue_session_token('create_oauth_client');
+    $vars->{id}     = generate_random_password(20);
+    $vars->{secret} = generate_random_password(40);
+    $vars->{token}  = issue_session_token('create_oauth_client');
     $vars->{scopes}
       = $dbh->selectall_arrayref('SELECT * FROM oauth2_scope', {Slice => {}});
     $self->stash(%{$vars});

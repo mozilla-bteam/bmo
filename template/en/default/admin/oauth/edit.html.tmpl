@@ -12,13 +12,11 @@
     </tr>
     <tr>
       <th class="field_label"><label for="id">Client ID:</label></th>
-      <td><input id="id" size="20" maxlength="20" name="id" value="
-      [%- client.id FILTER html %]"></td>
+      <td>[% client.id FILTER html %]</td>
     </tr>
     <tr>
       <th class="field_label"><label for="secret">Client Secret:</label></th>
-      <td><input id="secret" size="40" maxlength="40" name="secret" value="
-      [%- client.secret FILTER html %]"></td>
+      <td>[% client.secret FILTER html %]</td>
     </tr>
     <tr>
       <th class="field_label"><label for="active">Active:</label></th>

@@ -11,11 +11,11 @@
     </tr>
     <tr>
       <th align="right"><label for="id">Client ID:</label></th>
-      <td><input id="id" size="20" maxlength="20" name="id"></td>
+      <td>[% id FILTER html %]</td>
     </tr>
     <tr>
       <th align="right"><label for="secret">Client Secret:</label></th>
-      <td><input id="secret" size="40" maxlength="40" name="secret"></td>
+      <td>[% secret FILTER html %]</td>
     </tr>
     <tr>
       <th class="field_label"><label for="scopes">Scopes:</label></th>
@@ -38,6 +38,8 @@
   </table>
   <input type="submit" id="create" value="Add">
   <input type="hidden" name="token" value="[% token FILTER html %]">
+  <input type="hidden" name="id" value="[% id FILTER html %]">
+  <input type="hidden" name="secret" value="[% secret FILTER html %]">
 </form>
 
 [% PROCESS global/footer.html.tmpl %]
