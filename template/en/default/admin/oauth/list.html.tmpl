@@ -2,14 +2,11 @@
   title = "Select OAuth2 Client"
 %]
 
-[% edit_contentlink = BLOCK %]/admin/oauth/edit?id=%%id%%[% END %]
-[% delete_contentlink = BLOCK %]/admin/oauth/delete?id=%%id%%[% END %]
-
 [% columns = [
      {
        name => "description"
        heading => "Edit client..."
-       contentlink => edit_contentlink
+       contentlink => "admin/oauth/edit?id=%%id%%"
      },
      {
        name => "active"
@@ -20,7 +17,7 @@
        name => "action"
        heading => "Action"
        content => "Delete"
-       contentlink => delete_contentlink
+       contentlink => "admin/oauth/delete?id=%%id%%"
      }
    ]
 %]
@@ -33,6 +30,6 @@
      overrides = overrides
 %]
 
-<a title="Add a client" href="/admin/oauth/create">Add</a> a client.
+<a title="Add a client" href="[% basepath FILTER none %]admin/oauth/create">Add</a> a client.
 
 [% PROCESS global/footer.html.tmpl %]
