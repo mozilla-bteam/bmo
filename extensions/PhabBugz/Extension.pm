@@ -87,4 +87,26 @@ sub install_filesystem {
     };
 }
 
+sub app_startup {
+    my ($self, $args) = @_;
+    my $app = $args->{app};
+    $app->hook( after_dispatch => \&mojo_after_dispatch );
+}
+
+sub mojo_after_dispatch {
+    my ($c) = @_;
+
+    return if !$c->req->url->path->contains('/rest/phabbugz/build_target');
+
+    if (my $dd = Bugzilla->datadog) {
+        if ($c->res->is_error) {
+            # res->is_error catches both 4XX and 5XX errors.
+            $dd->increment('bugzilla.phabbugz.api.errors');
+        }
+        else {
+            $dd->increment('bugzilla.phabbugz.api.requests');
+        }
+    }
+}
+
 __PACKAGE__->NAME;
