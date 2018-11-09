@@ -141,8 +141,8 @@ sub post_success {
     }
     else {
         my @item_keys = sort keys %$item;
-        is_deeply(\@item_keys, ['id', 'name', 'real_name'],
-            'Only id, name, and real_name are returned to logged-out users');
+        is_deeply(\@item_keys, ['id', 'name', 'real_name', 'nick'],
+            'Only id, name, real_name and nick are returned to logged-out users');
         return;
     }
 
