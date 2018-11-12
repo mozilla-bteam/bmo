@@ -1,5 +1,5 @@
 function SetCheckboxes(value) {
-  let elements = document.querySelectorAll("input[type='checkbox'][name^='id_'");
+  let elements = document.querySelectorAll("input[type='checkbox'][name^='id_']");
   for (let item of elements) {
     item.checked = value;
   }
