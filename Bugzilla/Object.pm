@@ -650,6 +650,7 @@ sub STORABLE_thaw {
     my ($self, $cloning, $serialized, $frozen) = @_;
     return if $cloning;
     %$self = %$frozen;
+    $self->initialize();
     return;
 }
 
