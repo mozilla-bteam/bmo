@@ -636,20 +636,21 @@ sub audit_log {
 }
 
 sub STORABLE_freeze {
-  my ($self, $cloning) = @_;
-  return if $cloning;    # Regular default serialization
-  my $class = blessed($self);
-  my @keys = $class->_serialisation_keys;
-  my %hash;
-  @hash{ @keys } = @$self{ @keys };
+    my ($self, $cloning) = @_;
+    return if $cloning;    # Regular default serialization
+    my $class = blessed($self);
+    my @keys = $class->_serialisation_keys;
+    my %hash;
+    @hash{ @keys } = @$self{ @keys };
 
-  return '', \%hash;
+    return '', \%hash;
 }
 
 sub STORABLE_thaw {
-  my ($self, $cloning, $serialized, $frozen) = @_;
-  return if $cloning;
-  %$self = %$frozen;
+    my ($self, $cloning, $serialized, $frozen) = @_;
+    return if $cloning;
+    %$self = %$frozen;
+    return;
 }
 
 ###############################
