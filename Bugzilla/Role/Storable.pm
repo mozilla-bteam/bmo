@@ -10,7 +10,6 @@ package Bugzilla::Role::Storable;
 use 5.10.1;
 use strict;
 use warnings;
-use Scalar::Util qw(blessed);
 use Role::Tiny;
 
 requires 'flatten_to_hash';
