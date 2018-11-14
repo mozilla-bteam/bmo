@@ -162,7 +162,7 @@ sub _add_activity_to_stream {
 sub _add_comments_to_stream {
     my ($bug, $stream) = @_;
     my $user = Bugzilla->user;
-    my $treeherder_id = Bugzilla->treeherder_user->id;
+    my @treeherder_ids = map { $_->id } @{Bugzilla->treeherder_users};
 
     my $raw_comments = $bug->comments();
     foreach my $comment (@$raw_comments) {
@@ -172,10 +172,11 @@ sub _add_comments_to_stream {
         next if $comment->body eq '' && ($comment->work_time - 0) != 0 && $user->is_timetracker;
 
         # treeherder is so spammy we hide its comments by default
-        if ($author_id == $treeherder_id) {
+        if (grep { $_ == $author_id  } @treeherder_ids) {
             $comment->{collapsed} = 1;
             $comment->{collapsed_reason} = $comment->author->name;
         }
+
         if ($comment->type != CMT_ATTACHMENT_CREATED && $comment->count == 0 && length($comment->body) == 0) {
             $comment->{collapsed} = 1;
             $comment->{collapsed_reason} = 'empty';

@@ -7,9 +7,7 @@
   #%]
 
 [% IF user.id
-      && (comment.author.login_name == 'tbplbot@gmail.com'
-          || comment.author.login_name == 'orangefactor@bots.tld'
-          || comment.author.login_name == 'intermittent-bug-filer@mozilla.bugs')
+      && (comment.author.login_name == 'tbplbot@gmail.com' || comment.author.login_name == 'orangefactor@bots.tld')
 %]
   [% has_tbpl_comment = 1 %]
   <script [% script_nonce FILTER none %]>
