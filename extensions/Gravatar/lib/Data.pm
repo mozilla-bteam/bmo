@@ -18,6 +18,7 @@ our @EXPORT_OK = qw(
 
 our %gravatar_user_map = (
     'orangefactor@bots.tld' => 'tbplbot@gmail.com',
+    'intermittent-bug-filer@mozilla.bugs' => 'tbplbot@gmail.com',
 );
 
 1;

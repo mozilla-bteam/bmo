@@ -20,6 +20,7 @@ sub treeherder_user {
     return Bugzilla->process_cache->{treeherder_user} //=
         Bugzilla::User->new({ name => 'tbplbot@gmail.com', cache => 1 })
         || Bugzilla::User->new({ name => 'orangefactor@bots.tld', cache => 1 })
+        || Bugzilla::User->new({ name => 'intermittent-bug-filer@mozilla.bugs', cache => 1 })
         || Bugzilla::User->new();
 }
 
