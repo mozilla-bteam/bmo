@@ -635,11 +635,21 @@ sub audit_log {
     }
 }
 
-sub flatten_to_hash {
-    my $self = shift;
-    my $class = blessed($self);
-    my %hash = map { $_ => $self->{$_} } $class->_serialisation_keys;
-    return \%hash;
+sub STORABLE_freeze {
+  my ($self, $cloning) = @_;
+  return if $cloning;    # Regular default serialization
+  my $class = blessed($self);
+  my @keys = $class->_serialisation_keys;
+  my %hash;
+  @hash{ @keys } = @$self{ @keys };
+
+  return '', \%hash;
+}
+
+sub STORABLE_thaw {
+  my ($self, $cloning, $serialized, $frozen) = @_;
+  return if $cloning;
+  %$self = %$frozen;
 }
 
 ###############################
