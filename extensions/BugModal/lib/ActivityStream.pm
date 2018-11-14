@@ -17,6 +17,7 @@ use warnings;
 use Bugzilla::Extension::BugModal::Util qw(date_str_to_time);
 use Bugzilla::User;
 use Bugzilla::Constants;
+use List::MoreUtils qw(any);
 
 # returns an arrayref containing all changes to the bug - comments, field
 # changes, and duplicates
@@ -172,7 +173,7 @@ sub _add_comments_to_stream {
         next if $comment->body eq '' && ($comment->work_time - 0) != 0 && $user->is_timetracker;
 
         # treeherder is so spammy we hide its comments by default
-        if (grep { $_ == $author_id  } @treeherder_ids) {
+        if (any { $_ == $author_id  } @treeherder_ids) {
             $comment->{collapsed} = 1;
             $comment->{collapsed_reason} = $comment->author->name;
         }

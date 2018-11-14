@@ -292,7 +292,7 @@ sub template_before_process {
     my @treeherder_ids = map { $_->id } @{Bugzilla->treeherder_users};
     foreach my $change_set (@{ $bug->activity_stream }) {
         if ($change_set->{comment} &&
-              grep { $change_set->{comment}->author->id == $_ } @treeherder_ids){
+              any { $change_set->{comment}->author->id == $_ } @treeherder_ids){
             $vars->{treeherder_user_ids} = \@treeherder_ids;
             last;
         }
