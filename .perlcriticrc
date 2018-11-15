@@ -1,5 +1,8 @@
-theme = freenode || core || certrec || certrule || performance || security
+theme = freenode || core || certrec || certrule || performance || security || bugs
 severity = 1
+
+[BMO::MissingImports]
+severity = 2
 
 [-CodeLayout::RequireTidyCode]
 #perltidyrc = .perltidyrc
@@ -79,6 +82,4 @@ allow = @ARGV $ARGV %ENV %SIG
 
 [Variables::ProhibitPunctuationVars]
 allow = $@ $! $/ $^O $^V
-
-
 
