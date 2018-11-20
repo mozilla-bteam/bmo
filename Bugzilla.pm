@@ -651,7 +651,7 @@ sub active_custom_fields {
         if ($can_cache) {
             request_cache->{$cache_id} = $fields;
         } else {
-            return $fields;
+            return @$fields;
         }
     }
     return @{request_cache->{$cache_id}};
