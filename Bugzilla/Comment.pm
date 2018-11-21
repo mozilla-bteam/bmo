@@ -45,6 +45,7 @@ use constant DB_COLUMNS => qw(
   already_wrapped
   type
   extra_data
+  is_markdown
 );
 
 use constant UPDATE_COLUMNS => qw(
@@ -68,6 +69,7 @@ use constant VALIDATORS => {
   work_time  => \&_check_work_time,
   thetext    => \&_check_thetext,
   isprivate  => \&_check_isprivate,
+  is_markdown => \&Bugzilla::Object::check_boolean,
   extra_data => \&_check_extra_data,
   type       => \&_check_type,
 };
@@ -234,6 +236,7 @@ sub body            { return $_[0]->{'thetext'}; }
 sub bug_id          { return $_[0]->{'bug_id'}; }
 sub creation_ts     { return $_[0]->{'bug_when'}; }
 sub is_private      { return $_[0]->{'isprivate'}; }
+sub is_markdown { return $_[0]->{'is_markdown'}; }
 
 sub work_time {
 
@@ -578,6 +581,10 @@ C<string> Time spent as related to this comment.
 =item C<is_private>
 
 C<boolean> Comment is marked as private.
+
+=item C<is_markdown>
+
+C<boolean> Whether this comment needs Markdown rendering to be applied.
 
 =item C<already_wrapped>
 

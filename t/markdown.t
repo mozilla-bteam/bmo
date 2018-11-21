@@ -11,7 +11,14 @@ use lib qw( . lib local/lib/perl5 );
 use Bugzilla;
 use Test2::V0;
 
-my $parser = Bugzilla->markdown_parser;
+my $have_cmark_gfm = eval {
+    require Alien::libcmark_gfm;
+    require Bugzilla::Markdown::GFM;
+};
+
+plan skip_all => "these tests require Alien::libcmark_gfm" unless $have_cmark_gfm;
+
+my $parser = Bugzilla->markdown;
 
 is($parser->render_html('# header'), "<h1>header</h1>\n", 'Simple header');
 
