@@ -265,6 +265,9 @@ to some group are shown by default.
 [% END %]
 
 [% BLOCK display_requestee %]
+  [% IF !request.requestee %]
+    [% RETURN %]
+  [% END %]
   [% IF request.requestee.name %]
     [% request.requestee.name _ ' <' _ request.requestee.email _ '>' FILTER email FILTER html %]
   [% ELSE %]
