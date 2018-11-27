@@ -32,7 +32,7 @@ use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::DB::Schema::Mysql;
 
-use List::Util qw(max any);
+use List::Util qw(max any all);
 use Text::ParseWords;
 use Carp;
 
@@ -236,13 +236,17 @@ sub sql_group_by {
 
 sub sql_prefix_match_fulltext {
   my ($self, $column, $prefix) = @_;
-  my @words = map { "+$_" } split(/\s+/, $prefix);
-  $words[-1] .= '*';
-  return sprintf(
-    'MATCH(%s) AGAINST (%s IN BOOLEAN MODE)',
-    $column,
-    $self->quote(join(' ', @words))
-  );
+  my @words = split(/\s+/, $prefix);
+  if (all { /^\w+$/ } @words) {
+      $words[-1] .= '*';
+      return sprintf(
+          'MATCH(%s) AGAINST (%s IN BOOLEAN MODE)',
+          $column,
+          $self->quote(join(' ', map { "+$_" } @words))
+      );
+  } else {
+      return sprintf('MATCH(%s) AGAINST (%s)', $column, $self->quote($prefix));
+  }
 }
 
 sub bz_explain {
