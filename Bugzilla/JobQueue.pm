@@ -28,7 +28,7 @@ use Type::Params qw( compile Invocant );
 use constant JOB_MAP => {
     send_mail => 'Bugzilla::Job::Mailer',
     bug_mail  => 'Bugzilla::Job::BugMail',
-    run_task => 'Bugzilla::Job::RunTask',
+    run_task  => 'Bugzilla::Job::RunTask',
 };
 
 # Without a driver cache TheSchwartz opens a new database connection
