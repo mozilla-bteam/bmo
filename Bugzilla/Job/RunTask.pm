@@ -55,7 +55,7 @@ sub work {
   my $email = Email::MIME->create(
     header_str => [
       From              => Bugzilla->params->{'mailfrom'},
-      To                => Bugzilla->params->{report_secbugs_emails},
+      To                => $task->user->email,
       Subject           => $task->subject,
       'X-Bugzilla-Type' => 'task',
     ],
