@@ -23,6 +23,6 @@ class_type Group,      { class => 'Bugzilla::Group' };
 class_type Attachment, { class => 'Bugzilla::Attachment' };
 class_type Comment,    { class => 'Bugzilla::Comment' };
 class_type JSONBool,   { class => 'JSON::PP::Boolean' };
-role_type  Task,     { role => 'Bugzilla::Task' };
+role_type  Task,       { role => 'Bugzilla::Task' };
 
 1;
