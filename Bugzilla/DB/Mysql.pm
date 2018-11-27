@@ -234,6 +234,17 @@ sub sql_group_by {
     return "GROUP BY $needed_columns";
 }
 
+sub sql_prefix_match_fulltext {
+  my ($self, $column, $prefix) = @_;
+  my @words = map { "+$_" } split(/\s+/, $prefix);
+  $words[-1] .= '*';
+  return sprintf(
+    'MATCH(%s) AGAINST (%s IN BOOLEAN MODE)',
+    $column,
+    $self->quote(join(' ', @words))
+  );
+}
+
 sub bz_explain {
     my ($self, $sql) = @_;
     my $sth  = $self->prepare("EXPLAIN $sql");
