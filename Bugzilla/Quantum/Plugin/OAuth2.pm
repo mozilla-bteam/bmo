@@ -28,7 +28,7 @@ sub register {
   $conf->{store_access_token}       = \&_store_access_token;
   $conf->{verify_access_token}      = \&_verify_access_token;
 
-  $self->helper(
+  $app->helper(
     'bugzilla.oauth' => sub {
         my ($c, @scopes) = @_;
 
