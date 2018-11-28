@@ -25,13 +25,7 @@ sub user_profile {
     );
   }
   else {
-    $self->render(
-      status => 401,
-      json   => {
-        error             => 'login_required',
-        error_description => 'You must log in before using this part of Bugzilla.'
-      }
-    );
+    $self->render( status => 401, text => 'Unauthorized');
   }
 }
 
