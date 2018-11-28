@@ -16,7 +16,8 @@ use Test::WWW::Selenium;
 use MIME::Base64 qw(decode_base64);
 use Sys::Hostname qw(hostname);
 use Socket qw(inet_ntoa);
-use WWW::Selenium::Util qw(server_is_running);
+use Test::Selenium::Remote::Driver;
+use Selenium::Firefox::Profile;
 use URI;
 use URI::QueryParam;
 
@@ -115,15 +116,20 @@ sub get_selenium {
     my $chrome_mode = shift;
     my $config = get_config();
 
-    if (!server_is_running) {
-        die "Selenium Server isn't running!";
-    }
-
-    my $sel = Test::WWW::Selenium->new(
-        host        => $config->{host},
-        port        => $config->{port},
-        browser     => $chrome_mode ? $config->{experimental_browser_launcher} : $config->{browser},
-        browser_url => $config->{browser_url}
+    my $sel = Test::Selenium::Remote::Driver->new(
+        browser_name       => $chrome_mode ? $config->{experimental_browser_launcher} : $config->{browser},
+        remote_server_addr => $config->{host},
+        port               => $config->{port},
+        base_url           => $config->{browser_url},
+        platform           => 'ANY',
+        firefox_profile    => Selenium::Firefox::Profile->new(),
+        accept_ssl_certs   => 0,
+        javascript         => 1,
+        extra_capabilities => {
+          'moz:firefoxOptions' => {
+            args    => [ '-headless' ],
+          },
+        },
     );
 
     return ($sel, $config);

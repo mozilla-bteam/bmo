@@ -7,7 +7,7 @@ version: 2
 
 defaults:
   bmo_slim_image: &bmo_slim_image
-    image: mozillabteam/bmo-slim:20181011.1
+    image: mozillabteam/bmo-slim:latest
     user: app
 
   mysql_image: &mysql_image
@@ -53,7 +53,7 @@ defaults:
         BZ_QA_LEGACY_MODE: 1
     - <<: *mysql_image
       environment: *mysql_env
-    - image: selenium/standalone-firefox:2.53.1
+    - image: selenium/standalone-firefox:latest
     - image: memcached:latest
 
   default_qa_setup: &default_qa_setup
@@ -245,7 +245,7 @@ jobs:
       - <<: *mysql_image
         environment: *mysql_env
       - image: memcached:latest
-      - image: selenium/standalone-firefox:2.53.1
+      - image: selenium/standalone-firefox:latest
     steps:
       - checkout
       - attach_workspace:
