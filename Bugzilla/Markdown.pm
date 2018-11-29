@@ -28,11 +28,9 @@ sub _build_markdown_parser {
     require Bugzilla::Markdown::GFM::Parser;
     return Bugzilla::Markdown::GFM::Parser->new(
       {
-        safe => 1,
-        hardbreaks =>,
+        hardbreaks => 1,
         validate_utf8 => 1,
-        strikethrough_double_tilde => 1,
-        extensions => [qw( autolink tagfilter table strikethrough)],
+        extensions => [qw( autolink tagfilter table strikethrough )],
       }
     );
   }
