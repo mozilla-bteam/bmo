@@ -56,7 +56,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
    * @type {Boolean}
    */
   get edited() {
-    return this.$textarea.value !== this.raw_comment;
+    return this.$textarea.value.trim() !== this.raw_comment.trim();
   }
 
   /**
