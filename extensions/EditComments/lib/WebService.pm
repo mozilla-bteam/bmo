@@ -145,7 +145,7 @@ sub update_comment {
   return {
     text => $self->type('string', $new_comment),
     html =>
-      $self->type('string', Bugzilla::Template::quoteUrls($new_comment, $bug)),
+      $self->type('string', Bugzilla->markdown->render_html($new_comment, $bug)),
     count => $self->type(
       'int',
       $dbh->selectrow_array(

@@ -9,6 +9,7 @@ package Bugzilla::Markdown;
 use 5.10.1;
 use Moo;
 
+use Encode;
 use Mojo::DOM;
 use HTML::Escape qw(escape_html);
 
@@ -26,7 +27,14 @@ sub _build_markdown_parser {
     require Bugzilla::Markdown::GFM;
     require Bugzilla::Markdown::GFM::Parser;
     return Bugzilla::Markdown::GFM::Parser->new(
-      {extensions => [qw( autolink tagfilter table strikethrough)]});
+      {
+        safe => 1,
+        hardbreaks =>,
+        validate_utf8 => 1,
+        strikethrough_double_tilde => 1,
+        extensions => [qw( autolink tagfilter table strikethrough)],
+      }
+    );
   }
   else {
     return undef;
@@ -39,7 +47,7 @@ sub render_html {
   my $bugzilla_shorthand = $self->bugzilla_shorthand;
 
   if ($parser) {
-    my $html = $parser->render_html($markdown);
+    my $html = decode('UTF-8', $parser->render_html($markdown));
     my $dom  = Mojo::DOM->new($html);
     $dom->find('p, li')->map(sub {
       my $node = shift;
