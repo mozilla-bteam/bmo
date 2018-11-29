@@ -200,7 +200,7 @@ sub bug_end_of_update {
     # or if editing comments is disabled
     my $user = Bugzilla->user;
     my $edit_comments_group = Bugzilla->params->{edit_comments_group};
-    return unless $user->is_insider || $edit_comments_group && $user->in_group($edit_comments_group);
+    return unless $user->is_moderator || $edit_comments_group && $user->in_group($edit_comments_group);
 
     my $bug       = $args->{bug};
     my $timestamp = $args->{timestamp};
@@ -216,8 +216,8 @@ sub bug_end_of_update {
         my ($comment_obj) = grep($_->id == $comment_id, @{ $bug->comments});
         next if (!$comment_obj || ($comment_obj->is_private && !$user->is_insider));
 
-        # Insiders can edit any comment while unprivileged users can only edit their own comments
-        next unless $user->is_insider || $comment_obj->author->id == $user->id;
+        # Moderators can edit any comment while unprivileged users can only edit their own comments
+        next unless $user->is_moderator || $comment_obj->author->id == $user->id;
 
         my $new_comment = $comment_obj->_check_thetext($params->{$param});
 
@@ -225,7 +225,7 @@ sub bug_end_of_update {
         next if $old_comment eq $new_comment;
 
         # Insiders can hide comment revisions where needed
-        my $is_hidden = ($user->is_insider && defined $params->{"edit_comment_checkbox_$comment_id"}
+        my $is_hidden = ($user->is_moderator && defined $params->{"edit_comment_checkbox_$comment_id"}
                             && $params->{"edit_comment_checkbox_$comment_id"} == 'on') ? 1 : 0;
 
         trick_taint($new_comment);

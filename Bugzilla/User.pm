@@ -2452,6 +2452,12 @@ sub is_insider {
     return $self->{'is_insider'};
 }
 
+sub is_moderator {
+    my $self = shift;
+
+    return $self->in_group('moderator');
+}
+
 sub is_global_watcher {
     my $self = shift;
 

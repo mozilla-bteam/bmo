@@ -74,7 +74,7 @@ sub update_comment {
 
     # Validate group membership
     ThrowUserError('auth_failure', { group => $edit_comments_group, action => 'view', object => 'editcomments' })
-        unless $user->is_insider || $edit_comments_group && $user->in_group($edit_comments_group);
+        unless $user->is_moderator || $edit_comments_group && $user->in_group($edit_comments_group);
 
     my $comment_id = (defined $params->{comment_id} && $params->{comment_id} =~ /^(\d+)$/) ? $1 : undef;
 
@@ -92,9 +92,9 @@ sub update_comment {
     ThrowUserError('comment_is_private', { id => $comment->id })
         unless $user->is_insider || !$comment->is_private;
 
-    # Insiders can edit any comment while unprivileged users can only edit their own comments
+    # Moderators can edit any comment while unprivileged users can only edit their own comments
     ThrowUserError('auth_failure', { group => 'insidergroup', action => 'view', object => 'editcomments' })
-        unless $user->is_insider || $comment->author->id == $user->id;
+        unless $user->is_moderator || $comment->author->id == $user->id;
 
     my $bug = $comment->bug;
     my $old_comment = $comment->body;
@@ -110,8 +110,8 @@ sub update_comment {
     my $dbh = Bugzilla->dbh;
     my $change_when = $dbh->selectrow_array('SELECT NOW()');
 
-    # Insiders can hide comment revisions where needed
-    my $is_hidden = ($user->is_insider && defined $params->{is_hidden} && $params->{is_hidden} == 1) ? 1 : 0;
+    # Moderators can hide comment revisions where needed
+    my $is_hidden = ($user->is_moderator && defined $params->{is_hidden} && $params->{is_hidden} == 1) ? 1 : 0;
 
     # Update the `longdescs` (comments) table
     trick_taint($new_comment);
@@ -141,7 +141,7 @@ sub modify_revision {
 
     # Only allow insiders to modify revisions
     ThrowUserError('auth_failure', { group => 'insidergroup', action => 'view', object => 'editcomments' })
-        unless $user->is_insider;
+        unless $user->is_moderator;
 
     my $comment_id = (defined $params->{comment_id}
         && $params->{comment_id} =~ /^(\d+)$/) ? $1 : undef;

@@ -196,6 +196,10 @@ use constant SYSTEM_GROUPS => (
         description => 'Administrators'
     },
     {
+        name        => 'moderator',
+        description => 'Moderators',
+    },
+    {
         name        => 'tweakparams',
         description => 'Can change Parameters'
     },
