@@ -50,7 +50,8 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
   }
 
   /**
-   * Check if the comment is edited.
+   * Check if the comment is edited. Ignore leading/trailing white space(s) and/or additional empty line(s) when
+   * comparing the changes.
    * @private
    * @readonly
    * @type {Boolean}
