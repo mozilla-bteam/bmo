@@ -12,6 +12,7 @@ use Moo;
 use Encode;
 use Mojo::DOM;
 use HTML::Escape qw(escape_html);
+use List::MoreUtils qw(any);
 
 has 'markdown_parser' => (is => 'lazy');
 has 'bugzilla_shorthand' => (
@@ -43,16 +44,24 @@ sub render_html {
   my ($self, $markdown, $bug, $comment, $user) = @_;
   my $parser             = $self->markdown_parser;
   my $bugzilla_shorthand = $self->bugzilla_shorthand;
+  my @valid_text_tags = ('p', 'li', 'td');
 
   if ($parser) {
     my $html = decode('UTF-8', $parser->render_html($markdown));
     my $dom  = Mojo::DOM->new($html);
-    $dom->find('p, li')->map(sub {
+    $dom->find(join ', ', @valid_text_tags)->map(sub {
       my $node = shift;
-      if ($node->type eq 'text') {
-        my $text = $node->text;
-        $node->content($bugzilla_shorthand->($text));
-      }
+       $node->descendant_nodes->map(sub {
+        my $child = shift;
+        if ($child->type eq 'text'
+            && $child->children->size == 0
+            && any { $child->parent->tag eq $_ } @valid_text_tags)
+        {
+          my $text = $child->content;
+          $child->replace(Mojo::DOM->new($bugzilla_shorthand->($text)));
+        }
+        return $child;
+      });
       return $node;
     });
     return $dom->to_string;
@@ -61,5 +70,7 @@ sub render_html {
     return escape_html($markdown);
   }
 }
+
+
 
 1;
