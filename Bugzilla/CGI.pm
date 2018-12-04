@@ -563,7 +563,7 @@ sub header {
 
     # Add Referrer-Policy (sic) header to prevent browsers sending
     # Referer (sic) headers to external websites.
-    $headers{'-referrer_policy'} = 'same-origin';
+    $headers{'-referrer_policy'} = 'origin-when-cross-origin';
 
     Bugzilla::Hook::process('cgi_headers',
         { cgi => $self, headers => \%headers }
