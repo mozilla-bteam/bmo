@@ -700,8 +700,6 @@ function browserCanHideOptions(aSelect) {
  */
 
 $(function() {
-    const is_gravatar_enabled = !!document.querySelector('img[src^="https://secure.gravatar.com/"]');
-
     function searchComplete() {
         var that = $(this);
         that.data('counter', that.data('counter') - 1);
@@ -730,10 +728,10 @@ $(function() {
         transformResult: function(response) {
             response = $.parseJSON(response);
             return {
-                suggestions: $.map(response.users, function({ name, real_name, requests } = {}) {
+                suggestions: $.map(response.users, function({ name, real_name, requests, gravatar } = {}) {
                     return {
                         value: name,
-                        data : { email: name, real_name, requests }
+                        data : { email: name, real_name, requests, gravatar }
                     };
                 })
             };
@@ -744,8 +742,7 @@ $(function() {
             const request_type = $input.getAttribute('data-request-type');
             const blocked = user.requests && request_type ? user.requests[request_type].blocked : false;
             const pending = user.requests && request_type ? user.requests[request_type].pending : 0;
-            const image = is_gravatar_enabled ? '<img itemprop="image" alt="" ' +
-                `src="https://secure.gravatar.com/avatar/${md5(user.email.toLowerCase())}?d=mm&amp;size=64">` : '';
+            const image = user.gravatar ? `<img itemprop="image" alt="" src="${user.gravatar}">` : '';
             const description = blocked ? '<span class="icon" aria-hidden="true"></span> Requests blocked' :
                 pending ? `${pending} pending ${request_type}${pending === 1 ? '' : 's'}` : '';
 
