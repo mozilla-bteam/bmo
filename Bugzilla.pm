@@ -1208,4 +1208,7 @@ information.
 
 Returns a L<Mojo::JWT> object, configured with the Bugzilla localconfig jwt_secret set.
 
+  my $payload_hash = Bugzilla->jwt->decode($jwt);
+  my $new_jwt      = Bugzilla->jwt(claims => $payload_hash)->encode;
+
 =back
