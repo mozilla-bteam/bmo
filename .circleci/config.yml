@@ -53,7 +53,7 @@ defaults:
         BZ_QA_LEGACY_MODE: 1
     - <<: *mysql_image
       environment: *mysql_env
-    - image: selenium/standalone-firefox:2.53.1
+    - image: selenium/standalone-firefox:3.12.0
     - image: memcached:latest
 
   default_qa_setup: &default_qa_setup
@@ -245,7 +245,7 @@ jobs:
       - <<: *mysql_image
         environment: *mysql_env
       - image: memcached:latest
-      - image: selenium/standalone-firefox:2.53.1
+      - image: selenium/standalone-firefox:3.12.0
     steps:
       - checkout
       - attach_workspace:
