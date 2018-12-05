@@ -6,16 +6,36 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Quantum::OAuth2::Clients;
+use 5.10.1;
 use Mojo::Base 'Mojolicious::Controller';
 
-use 5.10.1;
 use List::Util qw(first);
-use Moo;
-
-use Bugzilla;
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Token;
 use Bugzilla::Util qw(generate_random_password);
+
+sub setup_routes {
+  my ($class, $r) = @_;
+
+  # Manage the client list
+  my $client_route = $r->under(
+    '/admin/oauth' => sub {
+      my ($c) = @_;
+      my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
+      $user->in_group('admin')
+        || ThrowUserError('auth_failure',
+        {group => 'admin', action => 'edit', object => 'oauth_clients'});
+      return 1;
+    }
+  );
+  $client_route->any('/list')->to('OAuth2::Clients#list')->name('list_clients');
+  $client_route->any('/create')->to('OAuth2::Clients#create')
+    ->name('create_client');
+  $client_route->any('/delete')->to('OAuth2::Clients#delete')
+    ->name('delete_client');
+  $client_route->any('/edit')->to('OAuth2::Clients#edit')->name('edit_client');
+}
 
 # Show list of clients
 sub list {
@@ -39,8 +59,7 @@ sub create {
     $vars->{scopes}
       = $dbh->selectall_arrayref('SELECT * FROM oauth2_scope', {Slice => {}});
     $self->stash(%{$vars});
-    return $self->render(template => 'admin/oauth/create',
-      handler => 'bugzilla');
+    return $self->render(template => 'admin/oauth/create', handler => 'bugzilla');
   }
 
   $dbh->bz_start_transaction;
@@ -57,13 +76,11 @@ sub create {
   check_token_data($token, 'create_oauth_client');
 
 
-  $dbh->do(
-    'INSERT INTO oauth2_client (id, description, secret) VALUES (?, ?, ?)',
+  $dbh->do('INSERT INTO oauth2_client (id, description, secret) VALUES (?, ?, ?)',
     undef, $id, $description, $secret);
 
   foreach my $scope_id (@scopes) {
-    $scope_id
-      = $dbh->selectrow_array('SELECT id FROM oauth2_scope WHERE id = ?',
+    $scope_id = $dbh->selectrow_array('SELECT id FROM oauth2_scope WHERE id = ?',
       undef, $scope_id);
     if (!$scope_id) {
       ThrowCodeError('param_required', {param => 'scopes'});
@@ -94,9 +111,8 @@ sub delete {
   my $dbh    = Bugzilla->dbh;
   my $vars   = {};
 
-  my $id = $self->param('id');
-  my $client
-    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+  my $id     = $self->param('id');
+  my $client = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
     undef, $id);
 
   if (!$self->param('deleteme')) {
@@ -137,8 +153,7 @@ sub edit {
   my $vars   = {};
   my $id     = $self->param('id');
 
-  my $client
-    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+  my $client = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
     undef, $id);
   my $client_scopes
     = $dbh->selectall_arrayref(
