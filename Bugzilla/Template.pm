@@ -745,7 +745,7 @@ sub create {
             return sub {
                 my $text = shift;
                 if($comment && $comment->is_markdown) {
-                  return Bugzilla->markdown->renderMarkdown($text, $bug, $comment, $user);
+                  return Bugzilla->markdown->render_html($text, $bug, $comment, $user);
                 }
                 else {
                   return quoteUrls($text, $bug, $comment, $user);

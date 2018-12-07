@@ -795,7 +795,7 @@ sub check_rate_limit {
   }
 }
 
-sub markdown_parser {
+sub markdown {
   require Bugzilla::Markdown;
   state $markdown = Bugzilla::Markdown->new;
   return $markdown;
