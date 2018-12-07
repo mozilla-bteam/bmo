@@ -46,29 +46,4 @@ is(
   'Strikethrough extension'
 );
 
-my $table_markdown = <<'MARKDOWN';
-| Col1 | Col2 |
-| ---- |:----:|
-| val1 | val2 |
-MARKDOWN
-
-my $table_html = <<'HTML';
-<table>
-<thead>
-<tr>
-<th>Col1</th>
-<th align="center">Col2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>val1</td>
-<td align="center">val2</td>
-</tr>
-</tbody>
-</table>
-HTML
-
-is($parser->render_html($table_markdown), $table_html, 'Table extension');
-
 done_testing;
