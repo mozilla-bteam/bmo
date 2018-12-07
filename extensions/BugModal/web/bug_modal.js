@@ -1363,7 +1363,7 @@ $(function() {
                 .from(document.querySelectorAll('.comment-text a'))
                 .filter(anchor => {
                     return (
-                        `${anchor.origin}/` === BUGZILLA.constant.URL_BASE &&
+                        `${anchor.protocol}//${anchor.hostname}/` === BUGZILLA.constant.URL_BASE &&
                         pathnames.some((p) => anchor.pathname.startsWith(p)) &&
                         /^\d+$/.test(getResourceId(anchor))
                     )
@@ -1474,7 +1474,7 @@ $(function() {
                 return Promise.all(attachments.concat(missingAttachments));
             })
             .then(attachments => {
-                // Remove undefined attachments and convert from list to dictonary mapped by id. 
+                // Remove undefined attachments and convert from list to dictonary mapped by id.
                 return attachments.filter(filterUnique).reduce(reduceListToMap, {});
             })
             .then(attachments => {
