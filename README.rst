@@ -342,6 +342,11 @@ BMO_site_wide_secret
   security features in Bugzilla, to protect against certain types of attacks.
   It's very important that this key is kept secret.
 
+BMO_jwt_secret
+  This secret key is used by your installation for the creation and validation
+  of jwts.  It's very important that this key is kept secret and it should be
+  different from the side_wide_secret.
+
 BMO_inbound_proxies
   This is a list of IP addresses that we expect proxies to come from.
   This can be '*' if only the load balancer can connect to this container.
