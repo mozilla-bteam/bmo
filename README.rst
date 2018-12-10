@@ -345,7 +345,9 @@ BMO_site_wide_secret
 BMO_jwt_secret
   This secret key is used by your installation for the creation and validation
   of jwts.  It's very important that this key is kept secret and it should be
-  different from the side_wide_secret.
+  different from the side_wide_secret. Changing this will invalidate all issued
+  jwts, so all oauth clients will need to start over. As such it should be a
+  high level of entropy, as it probably won't change for a very long time.
 
 BMO_inbound_proxies
   This is a list of IP addresses that we expect proxies to come from.
