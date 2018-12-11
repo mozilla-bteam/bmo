@@ -40,33 +40,33 @@ sub _build_markdown_parser {
 
 sub render_html {
   my ($self, $markdown, $bug, $comment, $user) = @_;
-  my $parser             = $self->markdown_parser;
-  my $bugzilla_shorthand = $self->bugzilla_shorthand;
-  my @valid_text_tags    = ('p', 'li', 'td');
+  my $parser = $self->markdown_parser;
+  return escape_html($markdown) unless $parser;
 
-  if ($parser) {
-    my $html = decode('UTF-8', $parser->render_html($markdown));
-    my $dom = Mojo::DOM->new($html);
-    $dom->find(join ', ', @valid_text_tags)->map(sub {
-      my $node = shift;
-      $node->descendant_nodes->map(sub {
-        my $child = shift;
-        if ( $child->type eq 'text'
-          && $child->children->size == 0
-          && any { $child->parent->tag eq $_ } @valid_text_tags)
-        {
-          my $text = $child->content;
-          $child->replace(Mojo::DOM->new($bugzilla_shorthand->($text)));
-        }
-        return $child;
-      });
-      return $node;
+  my @valid_text_parent_tags = ('p', 'li', 'td');
+  my @bad_tags               = qw( img form button input );
+  my $bugzilla_shorthand     = $self->bugzilla_shorthand;
+  my $html                   = decode('UTF-8', $parser->render_html($markdown));
+  my $dom                    = Mojo::DOM->new($html);
+
+  $dom->find(join(', ', @bad_tags))->map('remove');
+  $dom->find(join ', ', @valid_text_parent_tags)->map(sub {
+    my $node = shift;
+    $node->descendant_nodes->map(sub {
+      my $child = shift;
+      if ( $child->type eq 'text'
+        && $child->children->size == 0
+        && any { $child->parent->tag eq $_ } @valid_text_parent_tags)
+      {
+        my $text = $child->content;
+        $child->replace(Mojo::DOM->new($bugzilla_shorthand->($text)));
+      }
+      return $child;
     });
-    return $dom->to_string;
-  }
-  else {
-    return escape_html($markdown);
-  }
+    return $node;
+  });
+  return $dom->to_string;
+
 }
 
 
