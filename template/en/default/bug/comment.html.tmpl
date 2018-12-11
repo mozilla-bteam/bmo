@@ -41,7 +41,9 @@
   </div>
 [% END %]
 
-<div id="comment-markdown-tip">
-  <img src="extensions/BMO/web/images/notice.png" width="16" height="16">
-  <a href="https://guides.github.com/features/mastering-markdown/" target="_blank">Markdown styling now supported</a>
-</div>
+[% IF Param('use_markdown') %]
+  <div id="comment-markdown-tip">
+    <img src="extensions/BMO/web/images/notice.png" width="16" height="16">
+    <a href="https://guides.github.com/features/mastering-markdown/" target="_blank">Markdown styling now supported</a>
+  </div>
+[% END %]
