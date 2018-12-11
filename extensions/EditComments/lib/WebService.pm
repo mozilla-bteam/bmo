@@ -141,7 +141,7 @@ sub update_comment {
   $comment->{thetext} = $new_comment;
   $bug->_sync_fulltext(update_comments => 1);
 
-  my $html = Bugzilla->params->{use_markdown}
+  my $html = $comment->is_markdown && Bugzilla->params->{use_markdown}
     ? Bugzilla->markdown->render_html($new_comment, $bug)
     : Bugzilla::Template::quoteUrls($new_comment, $bug);
 
