@@ -866,8 +866,8 @@ $(function() {
                         url: `rest/bug/comment/${uid}`,
                     },
                     (data) => {
-                        const quoted = data['comments'][uid]['text'].replace(/\n/g, "\n > ");
-                        reply_text = `${prefix}\n > ${quoted}`;
+                        const quoted = data['comments'][uid]['text'].replace(/\n/g, "\n> ");
+                        reply_text = `${prefix}\n> ${quoted}`;
                         populateNewComment();
                     }
                 );
