@@ -261,7 +261,7 @@
 [% END %]
 
 [% BLOCK comment_body %]
-  [% IF comment.is_markdown %]
+  [% IF comment.is_markdown AND Param('use_markdown') %]
     [% comment_tag = 'div' %]
   [% ELSE %]
     [% comment_tag = 'pre' %]
@@ -269,7 +269,7 @@
 
   <[% comment_tag FILTER none %] class="comment-text [%= "bz_private" IF comment.is_private %]"
                      id="ct-[% comment.count FILTER none %]"
-                     data-uniqueid="[% comment.id FILTER none %]"
+                     data-comment-id="[% comment.id FILTER none %]"
                      [% IF comment.is_markdown +%] data-ismarkdown="true" [% END ~%]
                      [% IF comment.collapsed +%] style="display:none"[% END ~%]
   >[% FILTER collapse %]

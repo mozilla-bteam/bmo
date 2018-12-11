@@ -50,7 +50,7 @@
               at [% comment.creation_ts FILTER time(undef, to_user.timezone) %]
             </b>
           [% END %]
-          [% IF comment.is_markdown %]
+          [% IF comment.is_markdown AND Param('use_markdown') %]
             [% comment_tag = 'div' %]
           [% ELSE %]
             [% comment_tag = 'pre' %]

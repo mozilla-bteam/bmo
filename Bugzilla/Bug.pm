@@ -995,7 +995,9 @@ sub create {
 
   # We now have a bug id so we can fill this out
   $creation_comment->{'bug_id'} = $bug->id;
-  $creation_comment->{'is_markdown'} = 1;
+  if (Bugzilla->params->{use_markdown}) {
+    $creation_comment->{'is_markdown'} = 1;
+  }
 
   # Insert the comment. We always insert a comment on bug creation,
   # but sometimes it's blank.
@@ -2729,7 +2731,7 @@ sub set_all {
       {
         isprivate => $params->{'comment'}->{'is_private'},
         work_time => $params->{'work_time'},
-        is_markdown => 1
+        is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0
       }
     );
   }

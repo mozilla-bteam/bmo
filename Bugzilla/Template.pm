@@ -744,7 +744,7 @@ sub create {
             my ($context, $bug, $comment, $user) = @_;
             return sub {
                 my $text = shift;
-                if($comment && $comment->is_markdown) {
+                if($comment && $comment->is_markdown && Bugzilla->params->{use_markdown} ) {
                   return Bugzilla->markdown->render_html($text, $bug, $comment, $user);
                 }
                 else {

@@ -860,7 +860,7 @@ $(function() {
             var reply_text = "";
 
             var quoteMarkdown = function($comment) {
-                const uid = $comment.data('uniqueid');
+                const uid = $comment.data('comment-id');
                 bugzilla_ajax(
                     {
                         url: `rest/bug/comment/${uid}`,
