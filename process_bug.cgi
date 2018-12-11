@@ -276,6 +276,10 @@ my %set_all_fields;
 if (not $bulk_edit) {
   $set_all_fields{other_bugs} = \@bug_objects;
 }
+else {
+  require Bugzilla::Object::Lazy;
+  $set_all_fields{other_bugs} = [ map { Bugzilla::Object::Lazy->new(id => $_) } @bug_ids ];
+}
 foreach my $field_name (@set_fields) {
   if (should_set($field_name, 1)) {
     my $param_name = $field_translation{$field_name} || $field_name;
