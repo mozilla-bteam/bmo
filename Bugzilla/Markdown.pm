@@ -45,10 +45,12 @@ sub render_html {
   return escape_html($markdown) unless $parser;
 
   my @valid_text_parent_tags = ('p', 'li', 'td');
+  my @bad_tags               = qw( img );
   my $bugzilla_shorthand     = $self->bugzilla_shorthand;
   my $html                   = decode('UTF-8', $parser->render_html($markdown));
   my $dom                    = Mojo::DOM->new($html);
 
+  $dom->find(join(', ', @bad_tags))->map('remove');
   $dom->find(join ', ', @valid_text_parent_tags)->map(sub {
     my $node = shift;
     $node->descendant_nodes->map(sub {

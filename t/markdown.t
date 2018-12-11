@@ -37,11 +37,14 @@ is(
   'Autolink extension'
 );
 
-is(
-  $parser->render_html('<script>hijack()</script>'),
-  "&lt;script&gt;hijack()&lt;/script&gt;\n",
-  'Tagfilter extension'
-);
+SKIP: {
+  skip("currently no raw html is allowed via the safe option", 1);
+  is(
+    $parser->render_html('<script>hijack()</script>'),
+    "&lt;script&gt;hijack()&lt;/script&gt;\n",
+    'Tagfilter extension'
+  );
+}
 
 is(
   $parser->render_html('~~strikethrough~~'),
