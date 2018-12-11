@@ -22,23 +22,18 @@
   <base href="[% urlbase FILTER txt %]">
 </head>
 <body>
-[% IF all_sent_changes %]
-  <dl>
-    [% FOREACH sent_changes IN all_sent_changes %]
-      <dt>[% terms.Bug %] [% sent_changes.bug_id FILTER html %]</dt>
-      <dd>
-        [% IF sent_changes.error %]
-          Error: [% sent_changes.error FILTER html %]
-        [% ELSE %]
-          [% FOREACH sent_change IN sent_changes %]
-            [% INCLUDE results
-                      params = sent_change.params
-                      sent_bugmail = sent_change.sent_bugmail %]
-          [% END %]
-        [% END %]
-      </dd>
+[% IF all_sent_changes && all_sent_changes.size > 0 %]
+  [% FOREACH sent_changes IN all_sent_changes %]
+    [% IF sent_changes.error %]
+      Error: [% sent_changes.error FILTER html %]
+    [% ELSE %]
+      [% FOREACH sent_change IN sent_changes %]
+        [% INCLUDE results
+                  params = sent_change.params
+                  sent_bugmail = sent_change.sent_bugmail %]
+      [% END %]
     [% END %]
-  </dl>
+  [% END %]
 [% ELSE %]
   <p>Task Error: [% error FILTER html %]</p>
 [% END %]
