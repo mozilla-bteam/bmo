@@ -63,15 +63,15 @@ use constant ID_FIELD => 'comment_id';
 use constant LIST_ORDER => 'bug_when, comment_id';
 
 use constant VALIDATORS => {
-  bug_id     => \&_check_bug_id,
-  who        => \&_check_who,
-  bug_when   => \&_check_bug_when,
-  work_time  => \&_check_work_time,
-  thetext    => \&_check_thetext,
-  isprivate  => \&_check_isprivate,
+  bug_id      => \&_check_bug_id,
+  who         => \&_check_who,
+  bug_when    => \&_check_bug_when,
+  work_time   => \&_check_work_time,
+  thetext     => \&_check_thetext,
+  isprivate   => \&_check_isprivate,
   is_markdown => \&Bugzilla::Object::check_boolean,
-  extra_data => \&_check_extra_data,
-  type       => \&_check_type,
+  extra_data  => \&_check_extra_data,
+  type        => \&_check_type,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -236,7 +236,7 @@ sub body            { return $_[0]->{'thetext'}; }
 sub bug_id          { return $_[0]->{'bug_id'}; }
 sub creation_ts     { return $_[0]->{'bug_when'}; }
 sub is_private      { return $_[0]->{'isprivate'}; }
-sub is_markdown { return $_[0]->{'is_markdown'}; }
+sub is_markdown     { return $_[0]->{'is_markdown'}; }
 
 sub work_time {
 

@@ -30,7 +30,7 @@ sub _build_markdown_parser {
     return Bugzilla::Markdown::GFM::Parser->new({
       hardbreaks    => 1,
       validate_utf8 => 1,
-      safe => 1,
+      safe          => 1,
       extensions    => [qw( autolink tagfilter table strikethrough )],
     });
   }

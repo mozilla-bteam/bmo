@@ -741,16 +741,16 @@ sub create {
 
       renderMarkdown => [
         sub {
-            my ($context, $bug, $comment, $user) = @_;
-            return sub {
-                my $text = shift;
-                if($comment && $comment->is_markdown && Bugzilla->params->{use_markdown} ) {
-                  return Bugzilla->markdown->render_html($text, $bug, $comment, $user);
-                }
-                else {
-                  return quoteUrls($text, $bug, $comment, $user);
-                }
-            };
+          my ($context, $bug, $comment, $user) = @_;
+          return sub {
+            my $text = shift;
+            if ($comment && $comment->is_markdown && Bugzilla->params->{use_markdown}) {
+              return Bugzilla->markdown->render_html($text, $bug, $comment, $user);
+            }
+            else {
+              return quoteUrls($text, $bug, $comment, $user);
+            }
+          };
         },
         1
       ],

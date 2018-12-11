@@ -2729,8 +2729,8 @@ sub set_all {
     $self->add_comment(
       $params->{'comment'}->{'body'},
       {
-        isprivate => $params->{'comment'}->{'is_private'},
-        work_time => $params->{'work_time'},
+        isprivate   => $params->{'comment'}->{'is_private'},
+        work_time   => $params->{'work_time'},
         is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0
       }
     );

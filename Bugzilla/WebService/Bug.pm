@@ -370,7 +370,8 @@ sub render_comment {
   Bugzilla->switch_to_shadow_db();
   my $bug = $params->{id} ? Bugzilla::Bug->check($params->{id}) : undef;
 
-  my $html = Bugzilla->params->{use_markdown}
+  my $html
+    = Bugzilla->params->{use_markdown}
     ? Bugzilla->markdown->render_html($params->{text}, $bug)
     : Bugzilla::Template::quoteUrls($params->{text}, $bug);
 
