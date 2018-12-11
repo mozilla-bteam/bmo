@@ -371,7 +371,9 @@
 
 <input type="submit" id="commit" value="Commit">
 <input type="checkbox" id="bulk_edit" name="bulk_edit" value="1">
-<label for="bulk_edit">bulk edit</label>
+[% IF user.in_group('bulk_edit') %]
+  <label for="bulk_edit">bulk edit</label>
+[% END %]
 
 [%############################################################################%]
 [%# Select Menu Block                                                        #%]
