@@ -28,7 +28,7 @@
       <dt>[% terms.Bug %] [% sent_changes.bug_id FILTER html %]</dt>
       <dd>
         [% IF sent_changes.error %]
-          Error: [% %sent_changes.error FILTER html %]
+          Error: [% sent_changes.error FILTER html %]
         [% ELSE %]
           [% FOREACH sent_change IN sent_changes %]
             [% INCLUDE results
