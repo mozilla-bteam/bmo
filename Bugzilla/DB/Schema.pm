@@ -1785,7 +1785,8 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_client => {
     FIELDS => [
-      id            => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
+      id            => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      client_id     => {TYPE => 'varchar(255)', NOTNULL => 1},
       description   => {TYPE => 'varchar(255)', NOTNULL => 1},
       secret        => {TYPE => 'varchar(255)', NOTNULL => 1},
       active        => {TYPE => 'BOOLEAN',      NOTNULL => 1, DEFAULT => 'TRUE'},
@@ -1795,15 +1796,16 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_scope => {
     FIELDS => [
-      id          => {TYPE => 'INT3',         NOTNULL => 1, PRIMARYKEY => 1},
+      id          => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
       description => {TYPE => 'varchar(255)', NOTNULL => 1}
     ]
   },
 
   oauth2_client_scope => {
     FIELDS => [
+      id        => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
       client_id => {
-        TYPE       => 'varchar(255)',
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_client',
@@ -1832,9 +1834,10 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_auth_code => {
     FIELDS => [
-      auth_code => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
+      id        => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      auth_code => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
       client_id => {
-        TYPE       => 'varchar(255)',
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_client',
@@ -1861,12 +1864,13 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_auth_code_scope => {
     FIELDS => [
-      auth_code => {
-        TYPE       => 'varchar(255)',
+      id        => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      auth_code_id => {
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_auth_code',
-          COLUMN => 'auth_code',
+          COLUMN => 'id',
           UPDATE => 'CASCADE',
           DELETE => 'CASCADE'
         }
@@ -1885,16 +1889,17 @@ use constant ABSTRACT_SCHEMA => {
     ],
     INDEXES => [
       oauth2_auth_code_scope_idx =>
-        {FIELDS => ['auth_code', 'scope_id'], TYPE => 'UNIQUE'},
+        {FIELDS => ['auth_code_id', 'scope_id'], TYPE => 'UNIQUE'},
     ]
   },
 
   oauth2_access_token => {
     FIELDS => [
-      access_token  => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
+      id            => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      access_token  => {TYPE => 'varchar(255)', NOTNULL => 1},
       refresh_token => {TYPE => 'varchar(255)'},
       client_id     => {
-        TYPE       => 'varchar(255)',
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_client',
@@ -1919,12 +1924,13 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_access_token_scope => {
     FIELDS => [
-      access_token => {
-        TYPE       => 'varchar(255)',
+      id              => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      access_token_id => {
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_access_token',
-          COLUMN => 'access_token',
+          COLUMN => 'id',
           UPDATE => 'CASCADE',
           DELETE => 'CASCADE'
         }
@@ -1943,25 +1949,26 @@ use constant ABSTRACT_SCHEMA => {
     ],
     INDEXES => [
       oauth2_access_token_scope_idx =>
-        {FIELDS => ['access_token', 'scope_id'], TYPE => 'UNIQUE'}
+        {FIELDS => ['access_token_id', 'scope_id'], TYPE => 'UNIQUE'}
     ]
   },
 
   oauth2_refresh_token => {
     FIELDS => [
-      refresh_token => {TYPE => 'varchar(255)', NOTNULL => 1, PRIMARYKEY => 1},
-      access_token  => {
-        TYPE       => 'varchar(255)',
+      id              => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      refresh_token   => {TYPE => 'varchar(255)', NOTNULL => 1},
+      access_token_id => {
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_access_token',
-          COLUMN => 'access_token',
+          COLUMN => 'id',
           UPDATE => 'CASCADE',
           DELETE => 'CASCADE'
         }
       },
       client_id => {
-        TYPE       => 'varchar(255)',
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_client',
@@ -1985,12 +1992,13 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_refresh_token_scope => {
     FIELDS => [
-      refresh_token => {
-        TYPE       => 'varchar(255)',
+      id               => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      refresh_token_id => {
+        TYPE       => 'INT3',
         NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_refresh_token',
-          COLUMN => 'refresh_token',
+          COLUMN => 'id',
           UPDATE => 'CASCADE',
           DELETE => 'CASCADE'
         }
@@ -2009,7 +2017,7 @@ use constant ABSTRACT_SCHEMA => {
     ],
     INDEXES => [
       oauth2_refresh_token_scope_idx =>
-        {FIELDS => ['refresh_token', 'scope_id'], TYPE => 'UNIQUE'}
+        {FIELDS => ['refresh_token_id', 'scope_id'], TYPE => 'UNIQUE'}
     ]
   }
 };

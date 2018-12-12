@@ -32,7 +32,7 @@ create_user($oauth_login, $oauth_password);
 
 # Create a new OAuth2 client used for testing
 my $oauth_client = create_oauth_client('Shiny New OAuth Client', ['user:read']);
-ok $oauth_client->{id}, 'New client id (' . $oauth_client->{id} . ')';
+ok $oauth_client->{client_id}, 'New client id (' . $oauth_client->{client_id} . ')';
 ok $oauth_client->{secret},
   'New client secret (' . $oauth_client->{secret} . ')';
 
@@ -48,7 +48,7 @@ $t->app->hook(after_dispatch => sub { $stash = shift->stash });
 # User should be logged out so /oauth/authorize should redirect to a login screen
 $t->get_ok(
   '/oauth/authorize' => {Referer => $referer} => form => {
-    client_id     => $oauth_client->{id},
+    client_id     => $oauth_client->{client_id},
     response_type => 'code',
     state         => 'state',
     scope         => 'user:read',
@@ -67,7 +67,7 @@ $t->post_ok(
     Bugzilla_password      => $oauth_password,
     Bugzilla_restrictlogin => 1,
     GoAheadAndLogIn        => 1,
-    client_id              => $oauth_client->{id},
+    client_id              => $oauth_client->{client_id},
     response_type          => 'code',
     state                  => 'state',
     scope                  => 'user:read',
@@ -84,9 +84,9 @@ ok $csrf_token, "Get csrf token ($csrf_token)";
 # URI specified in the redirect_uri value. In this case a simple text page.
 $t->get_ok(
   '/oauth/authorize' => {Referer => $referer} => form => {
-    "oauth_confirm_" . $oauth_client->{id} => 1,
+    "oauth_confirm_" . $oauth_client->{client_id} => 1,
     token                                  => $csrf_token,
-    client_id                              => $oauth_client->{id},
+    client_id                              => $oauth_client->{client_id},
     response_type                          => 'code',
     state                                  => 'state',
     scope                                  => 'user:read',
@@ -107,7 +107,7 @@ ok $auth_code, "Get auth code ($auth_code)";
 # end user.
 $t->post_ok(
   '/oauth/access_token' => {Referer => $referer} => form => {
-    client_id     => $oauth_client->{id},
+    client_id     => $oauth_client->{client_id},
     client_secret => $oauth_client->{secret},
     code          => $auth_code,
     grant_type    => 'authorization_code',

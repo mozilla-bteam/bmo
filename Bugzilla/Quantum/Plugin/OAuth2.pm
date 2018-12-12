@@ -73,7 +73,7 @@ sub _resource_owner_confirm_scopes {
   # access last time, we check [again] with the user for access
   if (!defined $is_allowed) {
     my $client
-      = Bugzilla->dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+      = Bugzilla->dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
       undef, $client_id);
     my $vars = {
       client => $client,
@@ -105,7 +105,7 @@ sub _verify_client {
 
   if (
     my $client_data = $dbh->selectrow_hashref(
-      'SELECT * FROM oauth2_client WHERE id = ?',
+      'SELECT * FROM oauth2_client WHERE client_id = ?',
       undef, $client_id
     )
     )
@@ -119,7 +119,7 @@ sub _verify_client {
       my $scope_allowed = $dbh->selectrow_array(
         'SELECT allowed FROM oauth2_client_scope
                 JOIN oauth2_scope ON oauth2_scope.id = oauth2_client_scope.scope_id
-          WHERE client_id = ? AND oauth2_scope.description = ?', undef, $client_id,
+          WHERE client_id = ? AND oauth2_scope.description = ?', undef, $client_data->{id},
         $rqd_scope
       );
       if (defined $scope_allowed) {
@@ -148,16 +148,24 @@ sub _store_auth_code {
     qw/ mojo_controller auth_code client_id expires_in redirect_uri scopes /};
   my $dbh = Bugzilla->dbh;
 
-  my $user_id = Bugzilla->user->id;
+  my $client_data = $dbh->selectrow_hashref(
+    'SELECT * FROM oauth2_client WHERE client_id = ?',
+    undef, $client_id
+  );
 
   $dbh->do(
-    'INSERT INTO oauth2_auth_code VALUES (?, ?, ?, ?, ?, 0)',
+    'INSERT INTO oauth2_auth_code (auth_code, client_id, user_id, expires, redirect_uri) VALUES (?, ?, ?, ?, ?)',
     undef,
     $auth_code,
-    $client_id,
+    $client_data->{id},
     Bugzilla->user->id,
     DateTime->from_epoch(epoch => time + $expires_in),
     $uri
+  );
+
+  my $auth_code_data = $dbh->selectrow_hashref(
+    'SELECT * FROM oauth2_auth_code WHERE auth_code = ?',
+    undef, $auth_code
   );
 
   foreach my $rqd_scope (@{$scopes_ref}) {
@@ -165,8 +173,8 @@ sub _store_auth_code {
       = $dbh->selectrow_array('SELECT id FROM oauth2_scope WHERE description = ?',
       undef, $rqd_scope);
     if ($scope_id) {
-      $dbh->do('INSERT INTO oauth2_auth_code_scope VALUES (?, ?, 1)',
-        undef, $auth_code, $scope_id);
+      $dbh->do('INSERT INTO oauth2_auth_code_scope (auth_code_id, scope_id, allowed) VALUES (?, ?, 1)',
+        undef, $auth_code_data->{id}, $scope_id);
     }
     else {
       ERROR("Unknown scope ($rqd_scope) in _store_auth_code");
@@ -183,13 +191,13 @@ sub _verify_auth_code {
   my $dbh = Bugzilla->dbh;
 
   my $client_data
-    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
     undef, $client_id);
   $client_data || return (0, 'unauthorized_client');
 
   my $auth_code_data = $dbh->selectrow_hashref(
-    'SELECT expires, verified, redirect_uri, user_id FROM oauth2_auth_code WHERE client_id = ? AND auth_code = ?',
-    undef, $client_id, $auth_code
+    'SELECT * FROM oauth2_auth_code WHERE client_id = ? AND auth_code = ?',
+    undef, $client_data->{id}, $auth_code
   );
 
   if (!$auth_code_data
@@ -215,7 +223,7 @@ sub _verify_auth_code {
             . 'revoking all associated access tokens');
         $dbh->do('DELETE FROM oauth2_auth_code WHERE auth_code = ?', undef, $auth_code);
         $dbh->do('DELETE FROM oauth2_access_token WHERE client_id = ? AND user_id = ?',
-          undef, $client_id, $auth_code_data->{user_id});
+          undef, $client_data->{id}, $auth_code_data->{user_id});
       }
     }
 
@@ -231,7 +239,7 @@ sub _verify_auth_code {
   my $scope_descriptions = $dbh->selectcol_arrayref(
     'SELECT oauth2_scope.description FROM oauth2_scope
             JOIN oauth2_auth_code_scope ON oauth2_scope.id = oauth2_auth_code_scope.scope_id
-      WHERE oauth2_auth_code_scope.auth_code = ?', undef, $auth_code
+      WHERE oauth2_auth_code_scope.auth_code_id = ?', undef, $auth_code_data->{id}
   );
 
   my %scope = map { $_ => 1 } @{$scope_descriptions};
@@ -241,7 +249,7 @@ sub _verify_auth_code {
 
 sub _store_access_token {
   my (%args) = @_;
-  my ($c, $client, $auth_code, $access_token, $refresh_token, $expires_in,
+  my ($c, $client_id, $auth_code, $access_token, $refresh_token, $expires_in,
     $scopes, $old_refresh_token)
     = @args{
     qw/ mojo_controller client_id auth_code access_token refresh_token expires_in scopes old_refresh_token /
@@ -268,7 +276,7 @@ sub _store_access_token {
     my $scope_descriptions = $dbh->selectall_array(
       'SELECT oauth2_scope.description FROM oauth2_scope
               JOIN oauth2_access_token_scope ON scope.id = oauth2_access_token_scope.scope_id
-        WHERE access_token = ?', undef, $old_refresh_token
+        WHERE access_token_id = ?', undef, $prev_refresh_token->{id}
     );
     $scopes //= map { $_ => 1 } @{$scope_descriptions};
 
@@ -281,29 +289,38 @@ sub _store_access_token {
       undef, $auth_code);
   }
 
-  if (ref $client) {
-    $scopes  //= $client->{scope};
-    $user_id //= $client->{user_id};
-    $client = $client->{client_id};
-  }
+  my $client_data = $dbh->selectrow_hashref(
+    'SELECT * FROM oauth2_client WHERE client_id = ?',
+    undef, $client_id
+  );
 
   foreach my $token_type (qw/ access refresh /) {
     my $table = "oauth2_${token_type}_token";
 
     # if the client has en existing access/refresh token we need to revoke it
     $dbh->do("DELETE FROM $table WHERE client_id = ? AND user_id = ?",
-      undef, $client, $user_id);
+      undef, $client_data->{id}, $user_id);
   }
 
   $dbh->do(
-    'INSERT INTO oauth2_access_token VALUES (?, ?, ?, ?, ?)', undef,
-    $access_token,                                            $refresh_token,
-    $client,                                                  $user_id,
+    'INSERT INTO oauth2_access_token (access_token, refresh_token, client_id, user_id, expires) VALUES (?, ?, ?, ?, ?)', undef,
+    $access_token, $refresh_token,
+    $client_data->{id}, $user_id,
     DateTime->from_epoch(epoch => time + $expires_in)
   );
 
-  $dbh->do('INSERT INTO oauth2_refresh_token VALUES (?, ?, ?, ?)',
-    undef, $refresh_token, $access_token, $client, $user_id);
+  my $access_token_data = $dbh->selectrow_hashref(
+    'SELECT * FROM oauth2_access_token WHERE access_token = ?',
+    undef, $access_token
+  );
+
+  $dbh->do('INSERT INTO oauth2_refresh_token (refresh_token, access_token_id, client_id, user_id) VALUES (?, ?, ?, ?)',
+    undef, $refresh_token, $access_token_data->{id}, $client_data->{id}, $user_id);
+
+  my $refresh_token_data = $dbh->selectrow_hashref(
+    'SELECT * FROM oauth2_refresh_token WHERE refresh_token = ? AND access_token_id = ?',
+    undef, $refresh_token, $access_token_data->{id}
+  );
 
   foreach my $rqd_scope (keys %{$scopes}) {
     my $scope_id
@@ -313,8 +330,8 @@ sub _store_access_token {
       foreach my $related (qw/ access_token refresh_token /) {
         my $table = "oauth2_${related}_scope";
         $dbh->do(
-          "INSERT INTO $table VALUES (?, ?, ?)",
-          undef, $related eq 'access_token' ? $access_token : $refresh_token,
+          "INSERT INTO $table (${related}_id, scope_id, allowed) VALUES (?, ?, ?)",
+          undef, $related eq 'access_token' ? $access_token_data->{id} : $refresh_token_data->{id},
           $scope_id, $scopes->{$rqd_scope}
         );
       }
@@ -333,64 +350,64 @@ sub _verify_access_token {
     = @args{qw/ mojo_controller access_token scope /};
   my $dbh = Bugzilla->dbh;
 
-  if (
-    my $refresh_token_data = $dbh->selectrow_hashref(
-      'SELECT * FROM oauth2_refresh_token WHERE access_token = ?', undef,
-      $access_token
-    )
-    )
-  {
-    foreach my $scope (@{$scopes_ref // []}) {
-      my $scope_allowed = $dbh->selectrow_array(
-        'SELECT allowed FROM oauth2_refresh_token_scope
-                JOIN oauth2_scope ON oauth2_scope.id = oauth2_refresh_token_scope.scope_id
-          WHERE refresh_token = ? AND oauth2_scope.description = ?', undef,
-        $access_token, $scope
-      );
+  my $access_token_data = $dbh->selectrow_hashref(
+    'SELECT * FROM oauth2_access_token WHERE access_token = ?',
+    undef, $access_token
+  );
 
-      if (!defined $scope_allowed || !$scope_allowed) {
-        INFO("Refresh token doesn't have scope ($scope)");
+  if ($access_token_data) {
+    if (
+      my $refresh_token_data = $dbh->selectrow_hashref(
+        'SELECT * FROM oauth2_refresh_token WHERE access_token_id = ?', undef,
+        $access_token_data->{id}
+      )
+      )
+    {
+      foreach my $scope (@{$scopes_ref // []}) {
+        my $scope_allowed = $dbh->selectrow_array(
+          'SELECT allowed FROM oauth2_refresh_token_scope
+                  JOIN oauth2_scope ON oauth2_scope.id = oauth2_refresh_token_scope.scope_id
+            WHERE refresh_token_id = ? AND oauth2_scope.description = ?', undef,
+          $access_token_data->{id}, $scope
+        );
+
+        if (!defined $scope_allowed || !$scope_allowed) {
+          INFO("Refresh token doesn't have scope ($scope)");
+          return (0, 'invalid_grant');
+        }
+      }
+
+      return {
+        client_id => $refresh_token_data->{client_id},
+        user_id   => $refresh_token_data->{user_id},
+      };
+    }
+    else {
+      if (datetime_from($access_token_data->{expires})->epoch <= time) {
+        INFO('Access token has expired');
+        $dbh->do('DELETE FROM oauth2_access_token WHERE access_token = ?',
+          undef, $access_token);
         return (0, 'invalid_grant');
       }
-    }
 
-    return {
-      client_id => $refresh_token_data->{client_id},
-      user_id   => $refresh_token_data->{user_id},
-    };
-  }
-  elsif (
-    my $access_token_data = $dbh->selectrow_hashref(
-      'SELECT expires, client_id, user_id FROM oauth2_access_token WHERE access_token = ?',
-      undef,
-      $access_token
-    )
-    )
-  {
-    if (datetime_from($access_token_data->{expires})->epoch <= time) {
-      INFO('Access token has expired');
-      $dbh->do('DELETE FROM oauth2_access_token WHERE access_token = ?',
-        undef, $access_token);
-      return (0, 'invalid_grant');
-    }
-
-    foreach my $scope (@{$scopes_ref // []}) {
-      my $scope_allowed = $dbh->selectrow_array(
-        'SELECT allowed FROM oauth2_access_token_scope
-                JOIN oauth2_scope ON oauth2_access_token_scope.scope_id = oauth2_scope.id
-          WHERE scope.description = ? AND access_token = ?', undef, $scope,
-        $access_token
-      );
-      if (!defined $scope_allowed || !$scope_allowed) {
-        INFO("Access token doesn't have scope ($scope)");
-        return (0, 'invalid_grant');
+      foreach my $scope (@{$scopes_ref // []}) {
+        my $scope_allowed = $dbh->selectrow_array(
+          'SELECT allowed FROM oauth2_access_token_scope
+                  JOIN oauth2_scope ON oauth2_access_token_scope.scope_id = oauth2_scope.id
+            WHERE scope.description = ? AND access_token_id = ?', undef, $scope,
+          $access_token_data->{id}
+        );
+        if (!defined $scope_allowed || !$scope_allowed) {
+          INFO("Access token doesn't have scope ($scope)");
+          return (0, 'invalid_grant');
+        }
       }
-    }
 
-    return {
-      client_id => $access_token_data->{client_id},
-      user_id   => $access_token_data->{user_id},
-    };
+      return {
+        client_id => $access_token_data->{client_id},
+        user_id   => $access_token_data->{user_id},
+      };
+    }
   }
   else {
     INFO('Access token does not exist');
