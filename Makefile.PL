@@ -62,6 +62,7 @@ my %requires = (
   'HTML::Escape'                        => '1.10',
   'IO::Async'                           => '0.71',
   'IPC::System::Simple'                 => 0,
+  'JCM::Net::Patricia'                  => 0,
   'JSON::MaybeXS'                       => '1.003008',
   'JSON::XS'                            => '2.01',
   'LWP::Protocol::https'                => '6.07',
