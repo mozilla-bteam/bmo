@@ -18,7 +18,7 @@ use Bugzilla::Bug;
 
 use List::Util qw(max);
 
-my $user = Bugzilla->login();
+my $user = Bugzilla->login(LOGIN_REQUIRED);
 
 my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
