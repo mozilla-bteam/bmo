@@ -780,6 +780,8 @@ sub update_table_definitions {
   $dbh->bz_add_column('products', 'bug_description_template',
     {TYPE => 'MEDIUMTEXT'});
 
+  _add_oauth2_primary_keys();
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
@@ -4225,6 +4227,103 @@ sub _populate_oauth2_scopes {
   my ($scope_count) = $dbh->selectrow_array('SELECT COUNT(*) FROM oauth2_scope');
   return if $scope_count;
   $dbh->do("INSERT INTO oauth2_scope (id, description) VALUES (1, 'user:read')");
+}
+
+sub _add_oauth2_primary_keys {
+  my $dbh = Bugzilla->dbh;
+
+  # Return if we have already made these changes
+  return if $dbh->bz_column_info('oauth2_client', 'client_id');
+
+  print "Update OAuth2 tables for better primary key support...\n";
+
+  # Need to drop the current foreign key constraints so they can be
+  # re-applied with updated values
+  $dbh->bz_drop_fk('oauth2_client_scope', 'client_id');
+  $dbh->bz_drop_fk('oauth2_client_scope', 'scope_id');
+  $dbh->bz_drop_fk('oauth2_auth_code', 'client_id');
+  $dbh->bz_drop_fk('oauth2_auth_code_scope', 'auth_code');
+  $dbh->bz_drop_fk('oauth2_auth_code_scope', 'scope_id');
+  $dbh->bz_drop_fk('oauth2_access_token', 'client_id');
+  $dbh->bz_drop_fk('oauth2_access_token_scope', 'access_token');
+  $dbh->bz_drop_fk('oauth2_access_token_scope', 'scope_id');
+  $dbh->bz_drop_fk('oauth2_refresh_token', 'access_token');
+  $dbh->bz_drop_fk('oauth2_refresh_token', 'client_id');
+  $dbh->bz_drop_fk('oauth2_refresh_token_scope', 'refresh_token');
+  $dbh->bz_drop_fk('oauth2_refresh_token_scope', 'scope_id');
+
+  # client id should no longer be the primary key for the clients table
+  $dbh->bz_rename_column('oauth2_client', 'id', 'client_id');
+  $dbh->bz_alter_column('oauth2_client', 'client_id',
+    {TYPE => 'varchar(255)', NOTNULL => 1});
+
+  # scope table needs INTSERIAL (INT4)
+  $dbh->bz_alter_column('oauth2_scope', 'id',
+    {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
+
+  # Truncate all tables except clients and client scopes. This will force
+  # a log out of of all current oauth sessions but is necessary.
+  # Add primary key columns to the tables that require it
+  foreach my $table (qw/
+    oauth2_auth_code oauth2_auth_code_scope
+    oauth2_access_token oauth2_access_token_scope
+    oauth2_refresh_token oauth2_refresh_token_scope/)
+  {
+    $dbh->do("DELETE FROM $table");
+  }
+
+  # Update old non-id string columns to new id columns
+  $dbh->bz_alter_column('oauth2_client_scope', 'client_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_client_scope', 'scope_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+
+  $dbh->bz_alter_column('oauth2_auth_code', 'client_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_auth_code', 'auth_code',
+    {TYPE => 'varchar(255)', NOTNULL => 1});
+
+  $dbh->bz_rename_column('oauth2_auth_code_scope', 'auth_code', 'auth_code_id');
+  $dbh->bz_alter_column('oauth2_auth_code_scope', 'auth_code_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_auth_code_scope', 'scope_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+
+  $dbh->bz_alter_column('oauth2_access_token', 'client_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_access_token', 'access_token',
+    {TYPE => 'varchar(255)', NOTNULL => 1});
+
+  $dbh->bz_rename_column('oauth2_access_token_scope', 'access_token', 'access_token_id');
+  $dbh->bz_alter_column('oauth2_access_token_scope', 'access_token_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_access_token_scope', 'scope_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+
+  $dbh->bz_rename_column('oauth2_refresh_token', 'access_token', 'access_token_id');
+  $dbh->bz_alter_column('oauth2_refresh_token', 'access_token_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_refresh_token', 'client_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_refresh_token', 'refresh_token',
+    {TYPE => 'varchar(255)', NOTNULL => 1});
+
+  $dbh->bz_rename_column('oauth2_refresh_token_scope', 'refresh_token', 'refresh_token_id');
+  $dbh->bz_alter_column('oauth2_refresh_token_scope', 'refresh_token_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+  $dbh->bz_alter_column('oauth2_refresh_token_scope', 'scope_id',
+    {TYPE => 'INT4', NOTNULL => 1});
+
+  # Add primary key columns to the tables that require it
+  foreach my $table (qw/
+    oauth2_client oauth2_client_scope
+    oauth2_auth_code oauth2_auth_code_scope
+    oauth2_access_token oauth2_access_token_scope
+    oauth2_refresh_token oauth2_refresh_token_scope/)
+  {
+    $dbh->bz_add_column($table, 'id',
+      {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
+  }
 }
 
 1;
