@@ -32,7 +32,8 @@ create_user($oauth_login, $oauth_password);
 
 # Create a new OAuth2 client used for testing
 my $oauth_client = create_oauth_client('Shiny New OAuth Client', ['user:read']);
-ok $oauth_client->{client_id}, 'New client id (' . $oauth_client->{client_id} . ')';
+ok $oauth_client->{client_id},
+  'New client id (' . $oauth_client->{client_id} . ')';
 ok $oauth_client->{secret},
   'New client secret (' . $oauth_client->{secret} . ')';
 
@@ -85,12 +86,12 @@ ok $csrf_token, "Get csrf token ($csrf_token)";
 $t->get_ok(
   '/oauth/authorize' => {Referer => $referer} => form => {
     "oauth_confirm_" . $oauth_client->{client_id} => 1,
-    token                                  => $csrf_token,
-    client_id                              => $oauth_client->{client_id},
-    response_type                          => 'code',
-    state                                  => 'state',
-    scope                                  => 'user:read',
-    redirect_uri                           => '/oauth/redirect'
+    token                                         => $csrf_token,
+    client_id                                     => $oauth_client->{client_id},
+    response_type                                 => 'code',
+    state                                         => 'state',
+    scope                                         => 'user:read',
+    redirect_uri                                  => '/oauth/redirect'
   }
 )->status_is(200)->content_is('Redirect Success!');
 
@@ -129,6 +130,36 @@ $t->get_ok('/api/user/profile')->status_is(401);
 $t->get_ok('/api/user/profile' =>
     {Authorization => 'Bearer ' . $access_data->{access_token}})->status_is(200)
   ->json_is('/login' => $oauth_login);
+
+# Should be able to use the refresh token to get a new access token
+$t->post_ok(
+  '/oauth/access_token' => {Referer => $referer} => form => {
+    client_id     => $oauth_client->{client_id},
+    client_secret => $oauth_client->{secret},
+    refresh_token => $access_data->{refresh_token},
+    grant_type    => 'refresh_token',
+    redirect_uri  => '/oauth/redirect',
+  }
+)->status_is(200)->json_has('access_token', 'Has access token')
+  ->json_has('refresh_token', 'Has refresh token')
+  ->json_has('token_type',    'Has token type');
+
+$access_data = $t->tx->res->json;
+
+$t->get_ok('/api/user/profile' =>
+    {Authorization => 'Bearer ' . $access_data->{access_token}})->status_is(200)
+  ->json_is('/login' => $oauth_login);
+
+# Should get an error if we try to re-use the same auth code again
+$t->post_ok(
+  '/oauth/access_token' => {Referer => $referer} => form => {
+    client_id     => $oauth_client->{client_id},
+    client_secret => $oauth_client->{secret},
+    code          => $auth_code,
+    grant_type    => 'authorization_code',
+    redirect_uri  => '/oauth/redirect',
+  }
+)->status_is(400)->json_is('/error' => 'invalid_grant');
 
 done_testing;
 

@@ -65,7 +65,7 @@ sub create_oauth_client {
       die "Scope $scope not found";
     }
     $dbh->do(
-      'INSERT INTO oauth2_client_scope (client_id, scope_id, allowed) VALUES (?, ?, 1)',
+      'INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
       undef, $client_data->{id}, $scope_id
     );
   }
