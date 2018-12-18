@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Quantum::Command::revoke_api_keys;
+package Bugzilla::Quantum::Command::revoke_api_keys; ## no critic (Capitalization)
 use 5.10.1;
 use Mojo::Base 'Mojolicious::Command';
 
@@ -34,7 +34,7 @@ sub run {
   };
   my $keys = Bugzilla::User::APIKey->match($query);
   foreach my $key (@$keys) {
-    say "Updating ", $key->id;
+    say 'Updating ', $key->id;
     $key->set_revoked(1);
     $key->update();
   }
@@ -46,7 +46,7 @@ __END__
 
 =head1 NAME
 
-Bugzilla::Quantum::Command::revoke_api_keys - CPAN-ify command
+Bugzilla::Quantum::Command::revoke_api_keys - revoke API keys command
 
 =head1 SYNOPSIS
 
@@ -61,13 +61,7 @@ Bugzilla::Quantum::Command::revoke_api_keys - CPAN-ify command
 
 =head1 DESCRIPTION
 
-L<Bugzilla::Quantum::Command::revoke_api_keys> uploads files to CPAN.
-
-This is a core command, that means it is always enabled and its code a good
-example for learning to build new commands, you're welcome to fork it.
-
-See L<Mojolicious::Commands/"COMMANDS"> for a list of commands that are
-available by default.
+L<Bugzilla::Quantum::Command::revoke_api_keys> revokes API keys.
 
 =head1 ATTRIBUTES
 
