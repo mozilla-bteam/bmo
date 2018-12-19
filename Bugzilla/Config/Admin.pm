@@ -39,7 +39,7 @@ sub get_param_list {
     {
       name    => 'rate_limit_rules',
       type    => 'l',
-      default => \&default_rate_limit_rules,
+      default => default_rate_limit_rules(),
       checker => \&check_rate_limit_rules,
       updater => \&update_rate_limit_rules,
     },
