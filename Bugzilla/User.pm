@@ -34,6 +34,12 @@ use Role::Tiny::With;
 
 use base qw(Bugzilla::Object Exporter);
 
+# users younger than PROFILE_AGE days will be tagged as new
+use constant PROFILE_AGE => 60;
+
+# users with fewer comments than COMMENT_COUNT will be tagged as new
+use constant COMMENT_COUNT => 25;
+
 with 'Bugzilla::Elastic::Role::Object', 'Bugzilla::Role::Storable',
   'Bugzilla::Role::FlattenToHash';
 
@@ -706,6 +712,22 @@ sub cryptpassword {
 sub set_authorizer {
   my ($self, $authorizer) = @_;
   $self->{authorizer} = $authorizer;
+}
+
+sub is_new {
+  my ($self) = @_;
+
+  if (!exists $self->{is_new}) {
+    if ($self->in_group('editbugs')) {
+      $self->{is_new} = 0;
+    }
+    else {
+      $self->{is_new} = ($self->comment_count <= COMMENT_COUNT)
+        || ($self->creation_age <= PROFILE_AGE);
+    }
+  }
+
+  return $self->{is_new};
 }
 
 sub authorizer {
