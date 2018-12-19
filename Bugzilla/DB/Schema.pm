@@ -1865,8 +1865,8 @@ use constant ABSTRACT_SCHEMA => {
   oauth2_access_token => {
     FIELDS => [
       id            => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
-      access_token  => {TYPE => 'varchar(255)', NOTNULL => 1},
-      refresh_token => {TYPE => 'varchar(255)'},
+      access_token  => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
+      refresh_token => {TYPE => 'MEDIUMTEXT'},
       jti           => {TYPE => 'varchar(255)', NOTNULL => 1},
       client_id     => {
         TYPE       => 'INT4',
@@ -1895,7 +1895,7 @@ use constant ABSTRACT_SCHEMA => {
   oauth2_refresh_token => {
     FIELDS => [
       id              => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
-      refresh_token   => {TYPE => 'varchar(255)', NOTNULL => 1},
+      refresh_token   => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
       access_token_id => {TYPE => 'INT4', NOTNULL => 1},
       jti             => {TYPE => 'varchar(255)', NOTNULL => 1},
       client_id       => {
