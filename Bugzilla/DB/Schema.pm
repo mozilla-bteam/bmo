@@ -1785,7 +1785,7 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_client => {
     FIELDS => [
-      id            => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      id            => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1},
       client_id     => {TYPE => 'varchar(255)', NOTNULL => 1},
       description   => {TYPE => 'varchar(255)', NOTNULL => 1},
       secret        => {TYPE => 'varchar(255)', NOTNULL => 1},
@@ -1796,7 +1796,7 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_scope => {
     FIELDS => [
-      id          => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      id          => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1},
       description => {TYPE => 'varchar(255)', NOTNULL => 1},
     ],
   },
@@ -1833,8 +1833,8 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_auth_code => {
     FIELDS => [
-      id        => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
-      auth_code => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
+      id        => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1},
+      auth_code => {TYPE => 'MEDIUMTEXT',   NOTNULL => 1},
       jti       => {TYPE => 'varchar(255)', NOTNULL => 1},
       client_id => {
         TYPE       => 'INT4',
@@ -1864,11 +1864,10 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_access_token => {
     FIELDS => [
-      id            => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
-      access_token  => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
-      refresh_token => {TYPE => 'MEDIUMTEXT'},
-      jti           => {TYPE => 'varchar(255)', NOTNULL => 1},
-      client_id     => {
+      id           => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1},
+      access_token => {TYPE => 'MEDIUMTEXT',   NOTNULL => 1},
+      jti          => {TYPE => 'varchar(255)', NOTNULL => 1},
+      client_id    => {
         TYPE       => 'INT4',
         NOTNULL    => 1,
         REFERENCES => {
@@ -1894,13 +1893,22 @@ use constant ABSTRACT_SCHEMA => {
 
   oauth2_refresh_token => {
     FIELDS => [
-      id              => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      id              => {TYPE => 'INTSERIAL',  NOTNULL => 1, PRIMARYKEY => 1},
       refresh_token   => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
-      access_token_id => {TYPE => 'INT4', NOTNULL => 1},
-      jti             => {TYPE => 'varchar(255)', NOTNULL => 1},
-      client_id       => {
+      access_token_id => {
         TYPE       => 'INT4',
-        NOTNULL    =>   1,
+        NOTNULL    => 1,
+        REFERENCES => {
+          TABLE  => 'oauth2_access_token',
+          COLUMN => 'id',
+          UPDATE => 'CASCADE',
+          DELETE => 'CASCADE',
+        },
+      },
+      jti       => {TYPE => 'varchar(255)', NOTNULL => 1},
+      client_id => {
+        TYPE       => 'INT4',
+        NOTNULL    => 1,
         REFERENCES => {
           TABLE  => 'oauth2_client',
           COLUMN => 'id',

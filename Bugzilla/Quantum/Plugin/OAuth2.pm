@@ -288,10 +288,9 @@ sub _store_access_token {
     undef, $client_data->{id}, $refresh_jwt_claims->{user_id});
 
   $dbh->do(
-    'INSERT INTO oauth2_access_token (access_token, refresh_token, client_id, jti, user_id, expires) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO oauth2_access_token (access_token, client_id, jti, user_id, expires) VALUES (?, ?, ?, ?, ?)',
     undef,
     $access_token,
-    $refresh_token,
     $client_data->{id},
     $access_jwt_claims->{jti},
     $access_jwt_claims->{user_id},
