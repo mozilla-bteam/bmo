@@ -28,7 +28,7 @@ my $referer        = Bugzilla->localconfig->{urlbase};
 my $stash          = {};
 
 # Create user to use as OAuth2 resource owner
-create_user($oauth_login, $oauth_password);
+my $oauth_user = create_user($oauth_login, $oauth_password);
 
 # Create a new OAuth2 client used for testing
 my $oauth_client = create_oauth_client('Shiny New OAuth Client', ['user:read']);
@@ -149,6 +149,13 @@ $access_data = $t->tx->res->json;
 $t->get_ok('/api/user/profile' =>
     {Authorization => 'Bearer ' . $access_data->{access_token}})->status_is(200)
   ->json_is('/login' => $oauth_login);
+
+# API should fail if user is disabled
+$oauth_user->set_disabledtext('DISABLED');
+$oauth_user->update();
+$t->get_ok('/api/user/profile' =>
+    {Authorization => 'Bearer ' . $access_data->{access_token}})
+  ->status_is(401);
 
 # Should get an error if we try to re-use the same auth code again
 $t->post_ok(

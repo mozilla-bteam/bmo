@@ -45,6 +45,7 @@ sub register {
 
       if ($oauth && $oauth->{user_id}) {
         my $user = Bugzilla::User->check({id => $oauth->{user_id}, cache => 1});
+        return undef if !$user->is_enabled;
         Bugzilla->set_user($user);
         return $user;
       }
