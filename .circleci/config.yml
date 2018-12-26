@@ -81,7 +81,7 @@ jobs:
           command: |
             mv /opt/bmo/local /app/local
             perl Makefile.PL
-            perl -I/app -I/app/local/lib/perl5 -MBugzilla -e 1
+            perl -I/app/lib -I/app/local/lib/perl5 -MBugzilla -e 1
             perl checksetup.pl --no-database --no-templates --no-permissions
             perl scripts/build-bmo-push-data.pl
       - run:
