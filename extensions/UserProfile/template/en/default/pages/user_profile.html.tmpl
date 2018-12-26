@@ -47,7 +47,8 @@
 
 <tr>
   [% offset = user.id == target.id ? 2 : 0 %]
-  <td rowspan="[% user.id ? 6 + offset : 5 + offset %]" id="gravatar-container">
+  [% permissions_offset = target.in_group("canconfirm") == 1 ? 1 : 0 %]
+   <td rowspan="[% user.id ? 3 + offset + permissions_offset : 3 + offset + permissions_offset %]" id="gravatar-container">
     [% IF user.gravatar %]
       <img id="gravatar" src="[% target.gravatar(256) FILTER none %]" width="128" height="128"><br>
       [% IF target.id == user.id %]
