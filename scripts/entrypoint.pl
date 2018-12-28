@@ -2,7 +2,17 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(/app /app/local/lib/perl5);
+
+use File::Basename qw(dirname);
+use File::Spec::Functions qw(catdir);
+use Cwd qw(realpath);
+
+BEGIN {
+  require lib;
+  my $dir = dirname( dirname(realpath(__FILE__)));
+  lib->import(catdir($dir, 'lib'), catdir($dir, qw(local lib perl5)));
+};
+
 use autodie qw(:all);
 
 use Bugzilla::Install::Localconfig ();
