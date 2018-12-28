@@ -153,7 +153,7 @@ sub cmd_test_webservices {
   my $prove_exit_f = run_prove(
     httpd_url => $conf->{browser_url},
     prove_cmd => [
-      'prove', '-qf', '-I/app', '-I/app/local/lib/perl5',
+      'prove', '-qf', '-I/app/lib', '-I/app/local/lib/perl5',
       sub { glob 'webservice_*.t' },
     ],
     prove_dir => '/app/qa/t',
@@ -175,7 +175,7 @@ sub cmd_test_selenium {
     httpd_url => $conf->{browser_url},
     prove_dir => '/app/qa/t',
     prove_cmd => [
-      'prove', '-qf', '-Ilib', '-I/app', '-I/app/local/lib/perl5',
+      'prove', '-qf', '-I/app/lib', '-I/app/local/lib/perl5',
       sub { glob 'test_*.t' }
     ],
   );
@@ -186,7 +186,7 @@ sub cmd_shell { run('bash', '-l'); }
 
 sub cmd_prove {
   my (@args) = @_;
-  run('prove', '-I/app', '-I/app/local/lib/perl5', @args);
+  run('prove', '-I/app/lib', '-I/app/local/lib/perl5', @args);
 }
 sub cmd_version { run('cat', '/app/version.json'); }
 
@@ -210,7 +210,7 @@ sub cmd_test_bmo {
   my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
   my $prove_exit_f = run_prove(
     httpd_url => $ENV{BZ_BASE_URL},
-    prove_cmd => ['prove', '-I/app', '-I/app/local/lib/perl5', @prove_args],
+    prove_cmd => ['prove', '-I/app/lib', '-I/app/local/lib/perl5', @prove_args],
   );
 
   exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;

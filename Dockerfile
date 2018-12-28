@@ -20,7 +20,7 @@ COPY . .
 
 RUN mv /opt/bmo/local /app && \
     chown -R app:app /app && \
-    perl -I/app -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
+    perl -I/app/lib -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
     perl -c /app/scripts/entrypoint.pl && \
     setcap 'cap_net_bind_service=+ep' /usr/bin/perl
 
