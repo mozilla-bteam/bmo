@@ -13,11 +13,6 @@ use warnings;
 
 use base qw(Exporter);
 
-# For bz_locations
-use File::Basename;
-use Cwd qw(realpath);
-use Memoize;
-
 @Bugzilla::Constants::EXPORT = qw(
   BUGZILLA_VERSION
 
@@ -656,62 +651,32 @@ use constant EMAIL_LIMIT_EXCEPTION => "email_limit_exceeded\n";
 use constant JOB_QUEUE_VIEW_MAX_JOBS => 2500;
 
 sub bz_locations {
-
-  # Force memoize() to re-compute data per project, to avoid
-  # sharing the same data across different installations.
-  return _bz_locations($ENV{'PROJECT'});
-}
-
-sub _bz_locations {
-  my $project = shift;
-
+  require Mojo::Home;
   # We know that Bugzilla/Constants.pm must be in %INC at this point.
-  # So the only question is, what's the name of the directory
-  # above it? This is the most reliable way to get our current working
-  # directory under both mod_cgi and mod_perl. We call dirname twice
-  # to get the name of the directory above the "Bugzilla/" directory.
-  #
   # Always use an absolute path, based on the location of this file.
-  my $libpath = realpath(dirname(dirname(__FILE__)));
+  state $locations;
 
-  # We have to detaint $libpath, but we can't use Bugzilla::Util here.
-  $libpath =~ /(.*)/;
-  $libpath = $1;
+  return $locations if $locations;
 
-  my ($localconfig, $datadir, $confdir);
-  if ($project && $project =~ /^(\w+)$/) {
-    $project     = $1;
-    $localconfig = "localconfig.$project";
-    $datadir     = "data/$project";
-    $confdir     = "conf/$project";
-  }
-  else {
-    $project     = undef;
-    $localconfig = "localconfig";
-    $datadir     = "data";
-    $confdir     = "conf";
-  }
-
-  $datadir = "$libpath/$datadir";
-  $confdir = "$libpath/$confdir";
+  my $home = Mojo::Home->new->detect('Bugzilla::App');
 
   # We have to return absolute paths for mod_perl.
   # That means that if you modify these paths, they must be absolute paths.
-  return {
-    'libpath'     => $libpath,
-    'ext_libpath' => "$libpath/lib",
+  $locations = {
+    home        => $home,
+    libpath     => $home->child('lib'),
 
     # If you put the libraries in a different location than the CGIs,
     # make sure this still points to the CGIs.
-    'cgi_path'       => $libpath,
-    'templatedir'    => "$libpath/template",
-    'template_cache' => "$libpath/template_cache",
-    'project'        => $project,
-    'localconfig'    => "$libpath/$localconfig",
-    'datadir'        => $datadir,
-    'attachdir'      => "$datadir/attachments",
-    'skinsdir'       => "$libpath/skins",
-    'graphsdir'      => "$libpath/graphs",
+    cgi_path       => $home,
+    templatedir    => $home->child('template'),
+    template_cache => $home->child('template_cache'),
+    project        => undef,
+    localconfig    => $home->child('localconfig'),
+    datadir        => $home->child('data'),
+    attachdir      => $home->child('data','attachments'),
+    skinsdir       => $home->child('skins'),
+    graphsdir      => $home->child('graphs'),
 
     # $webdotdir must be in the web server's tree somewhere. Even if you use a
     # local dot, we output images to there. Also, if $webdotdir is
@@ -719,16 +684,13 @@ sub _bz_locations {
     # change showdependencygraph.cgi to set image_url to the correct
     # location.
     # The script should really generate these graphs directly...
-    'webdotdir'     => "$datadir/webdot",
-    'extensionsdir' => "$libpath/extensions",
-    'logsdir'       => "$libpath/logs",
-    'assetsdir'     => "$datadir/assets",
-    'confdir'       => $confdir,
+    webdotdir     => $home->child('data', 'webdot'),
+    extensionsdir => $home->child('extensions'),
+    logsdir       => $home->child('logs'),
+    assetsdir     => $home->child('data', 'assets'),
+    confdir       => $home->child('conf'),
   };
 }
 
-# This makes us not re-compute all the bz_locations data every time it's
-# called.
-BEGIN { memoize('_bz_locations') }
 
 1;

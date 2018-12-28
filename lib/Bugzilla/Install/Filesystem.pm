@@ -142,7 +142,6 @@ sub FILESYSTEM {
   my $webdotdir      = bz_locations()->{'webdotdir'};
   my $templatedir    = bz_locations()->{'templatedir'};
   my $libdir         = bz_locations()->{'libpath'};
-  my $extlib         = bz_locations()->{'ext_libpath'};
   my $skinsdir       = bz_locations()->{'skinsdir'};
   my $localconfig    = bz_locations()->{'localconfig'};
   my $template_cache = bz_locations()->{'template_cache'};
@@ -239,8 +238,7 @@ sub FILESYSTEM {
 
     # Readable directories
     "$datadir/mining"  => {files => CGI_READ, dirs => DIR_CGI_READ},
-    "$libdir/Bugzilla" => {files => CGI_READ, dirs => DIR_CGI_READ},
-    $extlib            => {files => CGI_READ, dirs => DIR_CGI_READ},
+    $libdir => {files => CGI_READ, dirs => DIR_CGI_READ},
     $templatedir       => {files => CGI_READ, dirs => DIR_CGI_READ},
 
     # Directories in the extensions/ dir are WS_SERVE so that
@@ -472,8 +470,8 @@ sub update_filesystem {
 
 sub _css_url_fix {
   my ($content, $from, $to) = @_;
-  my $from_dir = dirname(File::Spec->rel2abs($from, bz_locations()->{libpath}));
-  my $to_dir   = dirname(File::Spec->rel2abs($to,   bz_locations()->{libpath}));
+  my $from_dir = dirname(File::Spec->rel2abs($from, bz_locations()->{home}));
+  my $to_dir   = dirname(File::Spec->rel2abs($to,   bz_locations()->{home}));
 
   return css_url_rewrite(
     $content,

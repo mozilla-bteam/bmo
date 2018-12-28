@@ -41,8 +41,8 @@ my (%FEATURE, %FEATURE_LOADED);
 
 sub cpan_meta {
   my ($class) = @_;
-  my $dir = bz_locations()->{libpath};
-  my $file = File::Spec->catfile($dir, 'MYMETA.json');
+  my $dir = bz_locations()->{home};
+  my $file = $dir->rel_file('MYMETA.json');
   state $CPAN_META;
 
   return $CPAN_META if $CPAN_META;
