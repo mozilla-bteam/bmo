@@ -385,7 +385,7 @@ $optional_features{bmo} = {
 WriteMakefile(
   NAME             => 'Bugzilla',
   AUTHOR           => q{Bugzilla Developers <developers@bugzilla.org>},
-  VERSION_FROM     => 'Bugzilla.pm',
+  VERSION_FROM     => 'lib/Bugzilla.pm',
   ABSTRACT         => 'Bugzilla Bug Tracking System',
   LICENSE          => 'Mozilla_2_0',
   MIN_PERL_VERSION => '5.10.1',
