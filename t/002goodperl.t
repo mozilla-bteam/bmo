@@ -69,7 +69,7 @@ foreach my $file (@testitems) {
       next;
     }
 
-    if ($file_line1 =~ m#^\#\!/usr/bin/perl(?:\s-(\w+))?$#) {
+    if ($file_line1 =~ m{^#!/usr/bin/env perl$}) {
       my $file_flags = $1 || '';
       if ($flags eq $file_flags) {
         ok(1,
