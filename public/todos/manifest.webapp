@@ -1,0 +1,13 @@
+{
+  "name": "Bugzilla Todos",
+  "description": "A Bugzilla todo list for Mozilla developers",
+  "launch_path": "/bugzilla-todos/index.html",
+  "developer": {
+    "name": "Heather Arthur",
+    "url": "https://github.com/fitzgen/bugzilla-todos"
+  },
+  "default_locale": "en-US",
+  "icons": {
+    "128": "/bugzilla-todos/bugzilla-todos-128.png"
+  }
+}

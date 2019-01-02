@@ -1,0 +1,17 @@
+{
+  "name": "bugzilla-todos",
+  "description": "Bugzilla todo list of reviews, flag requests, and bugs to fix",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/harthur/bugzilla-todos.git"
+  },
+  "author": "Heather Arthur <fayearthur@gmail.com>",
+  "main": "server.js",
+  "dependencies": {
+    "connect" : "~2.8.0"
+  },
+  "engines": {
+    "node": ">= 0.8.0"
+  }
+}

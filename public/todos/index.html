@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bugzilla Todos</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+
+  <link rel="icon" href="bugzilla-todos.png">
+
+  <link rel="stylesheet" href="lib/normalize.css">
+  <link rel="stylesheet" href="index.css" type="text/css">
+
+  <script src="lib/react-0.12.0.js" defer></script>
+  <script src="lib/jquery-1.6.4.min.js" type="text/javascript" defer></script>
+  <script src="lib/jquery.timeago.js" type="text/javascript" defer></script>
+  <script src="lib/bz-0.3.0.js" type="text/javascript" defer></script>
+  <script src="lib/tinycon.min.js" defer></script>
+
+  <script src="app/user.js" defer></script>
+  <script src="app/install-app.js" defer></script>
+
+  <script src="build/todo-tabs.js" defer></script>
+  <script src="build/bugzilla-todos.js" defer></script>
+</head>
+<body>
+  <div id="error-message"></div>
+  <div id="welcome-message">Bugzilla Todos fetches a list of the bugs and patches you have to <span class="keyword">review</span>, <span class="keyword">check in</span>, <span class="keyword">respond</span> to, (mindfully) <span class="keyword">nag</span> someone about, and <span class="keyword">fix</span>. Enter your <a href="http://bugzilla.mozilla.org">bugzilla.mozilla.org</a> email to fetch your todos:</span>
+  </div>
+  <div id="content">
+  </div>
+  <footer>
+    <p>
+      <label>
+        <input id="include-blocked-bugs" type="checkbox" checked/>
+        Include blocked bugs inside "To Fix"
+      </label>
+    </p>
+    <p id="notifications-container">
+      <label>
+        <input id="notifications" type="checkbox" checked/>
+        Send notification on change
+      </label>
+    </p>
+    <p id="info">
+      <a href="https://github.com/fitzgen/bugzilla-todos">code on GitHub</a>
+      <span class="divider">|</span>
+      <span id="key-info">key shortcuts: </span>
+    </p>
+    <button id="install">Install app</button>
+  </footer>
+
+  <iframe id="submit-iframe" name="submit-iframe" hidden>
+  </iframe>
+</body>
+</html>
