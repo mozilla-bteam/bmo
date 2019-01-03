@@ -47,6 +47,9 @@ sub DEFAULT_CSP {
     connect_src => [
       'self',
 
+      # This is for extensions/BMO/web/js/firefox-crash-table.js
+      'https://product-details.mozilla.org',
+
       # This is for extensions/GoogleAnalytics using beacon or XHR
       'https://www.google-analytics.com',
 
@@ -85,6 +88,9 @@ sub SHOW_BUG_MODAL_CSP {
     img_src     => ['self', 'https://secure.gravatar.com'],
     connect_src => [
       'self',
+
+      # This is for extensions/BMO/web/js/firefox-crash-table.js
+      'https://product-details.mozilla.org',
 
       # This is for extensions/GoogleAnalytics using beacon or XHR
       'https://www.google-analytics.com',
@@ -641,8 +647,8 @@ sub header {
     }
   }
   my $headers = $self->SUPER::header(%headers) || '';
-  if ($self->server_software eq 'Bugzilla::Quantum::CGI') {
-    my $c = $Bugzilla::Quantum::CGI::C;
+  if ($self->server_software eq 'Bugzilla::App::CGI') {
+    my $c = $Bugzilla::App::CGI::C;
     $c->res->headers->parse($headers);
     my $status = $c->res->headers->status;
     if ($status && $status =~ /^([0-9]+)/) {
@@ -658,7 +664,7 @@ sub header {
   }
   else {
     LOGDIE(
-      "Bugzilla::CGI->header() should only be called from inside Bugzilla::Quantum::CGI!"
+      "Bugzilla::CGI->header() should only be called from inside Bugzilla::App::CGI!"
     );
   }
 }

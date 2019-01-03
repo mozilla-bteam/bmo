@@ -1,4 +1,4 @@
-#!/usr/bin/perl -T
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -621,7 +621,8 @@ sub insert {
     {
       isprivate  => $attachment->isprivate,
       type       => CMT_ATTACHMENT_CREATED,
-      extra_data => $attachment->id
+      extra_data => $attachment->id,
+      is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0
     }
   );
 
@@ -780,7 +781,8 @@ sub update {
       {
         isprivate  => $attachment->isprivate,
         type       => CMT_ATTACHMENT_UPDATED,
-        extra_data => $attachment->id
+        extra_data => $attachment->id,
+        is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0
       }
     );
   }

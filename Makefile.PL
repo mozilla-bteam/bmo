@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -82,6 +82,7 @@ my %requires = (
   'Net::DNS'                            => '0',
   'Package::Stash'                      => '0.37',
   'Parse::CPAN::Meta'                   => '1.44',
+  'PerlX::Maybe'                        => 0,
   'Role::Tiny'                          => '2.000003',
   'Scope::Guard'                        => '0.21',
   'Sereal'                              => '4.004',
@@ -107,6 +108,7 @@ my %test_requires = (
   'Test::Perl::Critic::Progressive' => 0,
   'Test::Selenium::Firefox'         => 0,
   'Test::WWW::Selenium'             => 0,
+  'Test2::V0'                       => 0,
 );
 my %recommends = (Safe => '2.30',);
 

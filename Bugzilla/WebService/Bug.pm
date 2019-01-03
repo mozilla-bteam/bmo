@@ -314,6 +314,10 @@ sub comments {
   my $dbh  = Bugzilla->switch_to_shadow_db();
   my $user = Bugzilla->user;
 
+  unless (Bugzilla->user->id) {
+    Bugzilla->check_rate_limit("get_comments", remote_ip());
+  }
+
   my %bugs;
   foreach my $bug_id (@$bug_ids) {
     my $bug = Bugzilla::Bug->check($bug_id);
@@ -370,7 +374,10 @@ sub render_comment {
   Bugzilla->switch_to_shadow_db();
   my $bug = $params->{id} ? Bugzilla::Bug->check($params->{id}) : undef;
 
-  my $html = Bugzilla::Template::quoteUrls($params->{text}, $bug);
+  my $html
+    = Bugzilla->params->{use_markdown}
+    ? Bugzilla->markdown->render_html($params->{text}, $bug)
+    : Bugzilla::Template::quoteUrls($params->{text}, $bug);
 
   return {html => $html};
 }
@@ -1253,6 +1260,10 @@ sub attachments {
 
   my $ids        = $params->{ids}            || [];
   my $attach_ids = $params->{attachment_ids} || [];
+
+  unless (Bugzilla->user->id) {
+    Bugzilla->check_rate_limit("get_attachments", remote_ip());
+  }
 
   my %bugs;
   foreach my $bug_id (@$ids) {
