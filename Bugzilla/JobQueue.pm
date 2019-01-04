@@ -132,7 +132,7 @@ sub work {
     reschedule     => 'drift',
     on_tick        => sub {
       alarm(60 * 5);
-      $self->work_once
+      $self->work_once;
       alarm(0);
     }
   );
