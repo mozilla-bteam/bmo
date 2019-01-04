@@ -1,4 +1,4 @@
-#!/usr/bin/perl -T
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -45,7 +45,7 @@ my $stdout = capture_stdout {
 # for setting SOAPAction, which isn't used by XML-RPC.
   $server->on_action(sub { $server->handle_login(WS_DISPATCH, @_) })->handle();
 };
-my $C = $Bugzilla::Quantum::CGI::C;
+my $C = $Bugzilla::App::CGI::C;
 my ($header_str, $body) = split(/(?:\r\n\r\n|\n\n)/, $stdout, 2);
 my $headers = Mojo::Headers->new;
 $headers->parse("$header_str\r\n\r\n");

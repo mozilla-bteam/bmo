@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -43,7 +43,7 @@ my $api_key = issue_api_key('api@mozilla.org')->api_key;
 
 # Mojo::Test loads the application and provides methods for
 # testing requests without having to run a server.
-my $t = Test::Mojo->new('Bugzilla::Quantum');
+my $t = Test::Mojo->new('Bugzilla::App');
 
 # we ensure this file exists so the /__lbhearbeat__ test passes.
 $t->app->home->child('__lbheartbeat__')->spurt('httpd OK');
