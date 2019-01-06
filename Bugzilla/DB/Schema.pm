@@ -1831,11 +1831,11 @@ use constant ABSTRACT_SCHEMA => {
     ],
   },
 
-  oauth2_auth_code => {
+  oauth2_jwt => {
     FIELDS => [
-      id        => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1},
-      auth_code => {TYPE => 'MEDIUMTEXT',   NOTNULL => 1},
-      jti       => {TYPE => 'varchar(255)', NOTNULL => 1},
+      id      => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      jti     => {TYPE => 'varchar(255)', NOTNULL => 1},
+      type    => {TYPE => 'INT2', NOTNULL => 1},
       client_id => {
         TYPE       => 'INT4',
         NOTNULL    => 1,
@@ -1844,7 +1844,7 @@ use constant ABSTRACT_SCHEMA => {
           COLUMN => 'id',
           UPDATE => 'CASCADE',
           DELETE => 'CASCADE',
-        },
+        }
       },
       user_id => {
         TYPE       => 'INT3',
@@ -1856,78 +1856,12 @@ use constant ABSTRACT_SCHEMA => {
           DELETE => 'CASCADE',
         },
       },
-      expires      => {TYPE => 'DATETIME', NOTNULL => 1},
-      redirect_uri => {TYPE => 'TINYTEXT', NOTNULL => 1},
-      verified     => {TYPE => 'BOOLEAN',  NOTNULL => 1, DEFAULT => 'FALSE'},
+      expires => {TYPE => 'DATETIME'},
     ],
-  },
-
-  oauth2_access_token => {
-    FIELDS => [
-      id           => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1},
-      access_token => {TYPE => 'MEDIUMTEXT',   NOTNULL => 1},
-      jti          => {TYPE => 'varchar(255)', NOTNULL => 1},
-      client_id    => {
-        TYPE       => 'INT4',
-        NOTNULL    => 1,
-        REFERENCES => {
-          TABLE  => 'oauth2_client',
-          COLUMN => 'id',
-          UPDATE => 'CASCADE',
-          DELETE => 'CASCADE'
-        },
-      },
-      user_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {
-          TABLE  => 'profiles',
-          COLUMN => 'userid',
-          UPDATE => 'CASCADE',
-          DELETE => 'CASCADE',
-        },
-      },
-      expires => {TYPE => 'DATETIME', NOTNULL => 1},
+    INDEXES => [
+      oauth2_jwt_jti_type_idx => {FIELDS => [qw(jti type)], TYPE => 'UNIQUE'},
     ],
-  },
-
-  oauth2_refresh_token => {
-    FIELDS => [
-      id              => {TYPE => 'INTSERIAL',  NOTNULL => 1, PRIMARYKEY => 1},
-      refresh_token   => {TYPE => 'MEDIUMTEXT', NOTNULL => 1},
-      access_token_id => {
-        TYPE       => 'INT4',
-        NOTNULL    => 1,
-        REFERENCES => {
-          TABLE  => 'oauth2_access_token',
-          COLUMN => 'id',
-          UPDATE => 'CASCADE',
-          DELETE => 'CASCADE',
-        },
-      },
-      jti       => {TYPE => 'varchar(255)', NOTNULL => 1},
-      client_id => {
-        TYPE       => 'INT4',
-        NOTNULL    => 1,
-        REFERENCES => {
-          TABLE  => 'oauth2_client',
-          COLUMN => 'id',
-          UPDATE => 'CASCADE',
-          DELETE => 'CASCADE',
-        },
-      },
-      user_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {
-          TABLE  => 'profiles',
-          COLUMN => 'userid',
-          UPDATE => 'CASCADE',
-          DELETE => 'CASCADE',
-        },
-      },
-    ],
-  },
+  }
 };
 
 # Foreign Keys are added in Bugzilla::DB::bz_add_field_tables
