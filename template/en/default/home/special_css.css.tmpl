@@ -1,0 +1,16 @@
+[% SET font_family = user.settings.comment_font_family.value
+       font_size   = user.settings.comment_font_size.value
+       line_height = user.settings.comment_line_height.value %]
+
+div.comment-text {
+    [% IF font_family != 'bugzilla' %]
+    font-family: [% font_family %] !important;
+    [% END -%]
+    [% IF font_size != 'bugzilla' %]
+    font-size: [% font_size %] !important;
+    [% END %]
+    [% IF line_height != 'bugzilla' %]
+    line-height: [% line_height %] !important;
+    [% END %]
+}
+

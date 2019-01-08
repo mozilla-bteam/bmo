@@ -130,7 +130,8 @@ sub setup_routes {
   Bugzilla::App::CGI->setup_routes($r);
   Bugzilla::App::CGI->load_one('bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi');
 
-  $r->get('/home')->to('Home#index');
+  Bugzilla::App::Home->setup_routes($r);
+
   $r->any('/')->to('CGI#index_cgi');
   $r->any('/bug/<id:num>')->to('CGI#show_bug_cgi');
   $r->any('/<id:num>')->to('CGI#show_bug_cgi');

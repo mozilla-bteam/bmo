@@ -12,6 +12,14 @@ use Bugzilla::Error;
 use Try::Tiny;
 use Bugzilla::Constants;
 
+
+sub setup_routes {
+  my ($class, $r) = @_;
+
+  $r->get('/home')->to('Home#index');
+  $r->get('/home/special.css')->to('Home#special_css');
+}
+
 sub index {
   my ($c) = @_;
   $c->bugzilla->login(LOGIN_REQUIRED) or return;
@@ -22,6 +30,13 @@ sub index {
   catch {
     $c->bugzilla->error_page($_);
   };
+}
+
+sub special_css {
+  my ($c) = @_;
+
+  my $user = $c->bugzilla->login(LOGIN_OPTIONAL);
+  $c->render(handler => 'bugzilla', user => $user, format => 'css');
 }
 
 1;

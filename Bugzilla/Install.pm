@@ -204,6 +204,25 @@ sub SETTINGS {
       default  => 'on',
       category => 'User Interface'
     },
+    {
+      name     => 'comment_font_family',
+      options  => ['bugzilla', 'system', '-apple-system', 'sans-serif', 'sans', 'monospace'],
+      default  => 'bugzilla',
+      category => 'User Interface'
+    },
+    {
+      name => 'comment_font_size',
+      options =>
+        ['bugzilla', 'initial', "13px", map { $_ . "px" } grep { $_ % 2 == 0 } 14 .. 36],
+      default  => 'bugzilla',
+      category => 'User Interface'
+    },
+    {
+      name     => 'comment_line_height',
+      options  => ['bugzilla', 'normal', 'initial', '1.2', '21px'],
+      default  => 'bugzilla',
+      category => 'User Interface'
+    },
   ];
 }
 
