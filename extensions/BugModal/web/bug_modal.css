@@ -729,6 +729,15 @@ div.comment-text blockquote {
     padding: 0.5em 10px;
 }
 
+
+div.comment-text blockquote p:first-child {
+    margin-top: 0;
+}
+
+div.comment-text blockquote p:last-child {
+    margin-bottom: 0;
+}
+
 .comment-tags {
     padding: 0 8px !important;
 }
