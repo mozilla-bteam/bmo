@@ -4,13 +4,13 @@
 
 div.comment-text {
     [% IF font_family != 'bugzilla' %]
-    font-family: [% font_family %] !important;
+    font-family: [% font_family FILTER none %] !important;
     [% END -%]
     [% IF font_size != 'bugzilla' %]
-    font-size: [% font_size %] !important;
-    [% END %]
+    font-size: [% font_size FILTER none %] !important;
+    [% END -%]
     [% IF line_height != 'bugzilla' %]
-    line-height: [% line_height %] !important;
-    [% END %]
+    line-height: [% line_height FILTER none %] !important;
+    [% END -%]
 }
 
