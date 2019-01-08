@@ -213,7 +213,7 @@ sub SETTINGS {
     {
       name => 'comment_font_size',
       options =>
-        ['bugzilla', 'initial', "13px", map { $_ . "px" } grep { $_ % 2 == 0 } 14 .. 36],
+        ['bugzilla', 'initial', "13px", map { $_ . "px" } grep { $_ % 2 == 0 } 14 .. 38, 4096],
       default  => 'bugzilla',
       category => 'User Interface'
     },
