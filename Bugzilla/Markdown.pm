@@ -44,11 +44,15 @@ sub render_html {
   my $parser = $self->markdown_parser;
   return escape_html($markdown) unless $parser;
 
+  no warnings 'utf8';
+  $markdown =~ tr/<\x{FDD4}/\x{FDD4}/;
   my @valid_text_parent_tags = ('p', 'li', 'td');
   my @bad_tags               = qw( img );
   my $bugzilla_shorthand     = $self->bugzilla_shorthand;
-  my $html                   = decode('UTF-8', $parser->render_html($markdown));
-  my $dom                    = Mojo::DOM->new($html);
+  my $html                   = $parser->render_html($markdown);
+
+  $html =~ s/\x{ef}\x{b7}\x{94}/&lt;/g;
+  my $dom = Mojo::DOM->new(decode('UTF-8', $html));
 
   $dom->find(join(', ', @bad_tags))->map('remove');
   $dom->find(join ', ', @valid_text_parent_tags)->map(sub {
