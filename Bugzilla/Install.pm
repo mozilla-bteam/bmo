@@ -206,7 +206,7 @@ sub SETTINGS {
     },
     {
       name     => 'comment_font_family',
-      options  => ['bugzilla', 'system-ui', 'sans-serif', 'sans', 'monospace'],
+      options  => ['bugzilla', 'system-ui', 'sans-serif', 'serif', 'monospace', 'Comic Sans'],
       default  => 'bugzilla',
       category => 'User Interface'
     },
