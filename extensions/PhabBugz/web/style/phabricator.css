@@ -179,3 +179,7 @@ span[class^="review-status-icon-"]::before
     padding: 1px;
     border: 0px;
 }
+
+.revision-hide {
+    display: none;
+}
