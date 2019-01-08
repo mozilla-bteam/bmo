@@ -980,7 +980,7 @@ div.ui-tooltip {
     vertical-align: sub;
 }
 
-a.lightbox-icon {
+a.lightbox-icon.markdown {
     display: none;
 }
 
