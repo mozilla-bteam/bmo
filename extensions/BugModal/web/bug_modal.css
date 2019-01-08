@@ -730,11 +730,11 @@ div.comment-text blockquote {
 }
 
 
-div.comment-text blockquote p:first-child {
+div.comment-text blockquote :first-child {
     margin-top: 0;
 }
 
-div.comment-text blockquote p:last-child {
+div.comment-text blockquote :last-child {
     margin-bottom: 0;
 }
 
