@@ -65,7 +65,8 @@ Phabricator.getBugRevisions = function() {
 
         trRevision.attr('data-status', revision.status);
         if (revision.status === 'abandoned') {
-            trRevision.addClass('revision-hide');
+            trRevision.addClass('bz_default_hidden');
+            $('tbody.phabricator-show-abandoned').removeClass('bz_default_hidden');
         }
 
         trRevision.append(
@@ -123,10 +124,10 @@ $().ready(function() {
             var row = $(this);
             if (row.attr('data-status') === 'abandoned') {
                 if ($('#phabricator-show-abandoned').prop('checked') == true) {
-                    row.removeClass('revision-hide');
+                    row.removeClass('bz_default_hidden');
                 }
                 else {
-                    row.addClass('revision-hide');
+                    row.addClass('bz_default_hidden');
                 }
             }
         });

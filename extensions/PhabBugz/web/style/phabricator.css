@@ -180,6 +180,3 @@ span[class^="review-status-icon-"]::before
     border: 0px;
 }
 
-.revision-hide {
-    display: none;
-}
