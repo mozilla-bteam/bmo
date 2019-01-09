@@ -703,7 +703,8 @@ div.comment-text {
     font-size: 14px !important;
 }
 
-div.comment-text p {
+div.comment-text p,
+div.comment-text li {
     line-height: 21px;
     max-width: 70em;
 }
