@@ -49,7 +49,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
     this.$edit_button.addEventListener('click', event => this.edit_button_onclick(event));
 
     // Check if the comment is written in Markdown
-    this.is_markdown = this.$body.matches('div');
+    this.is_markdown = this.$body.matches('[data-ismarkdown="true"]');
   }
 
   /**
