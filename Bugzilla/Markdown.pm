@@ -48,7 +48,7 @@ sub render_html {
   # This is a bit faster since it doesn't engage the regex engine.
   # Replace < with \x{FDD4}, and remove \x{FDD4}.
   $markdown =~ tr/<\x{FDD4}/\x{FDD4}/d;
-  my @valid_text_parent_tags = ('p', 'li', 'td');
+  my @valid_text_parent_tags = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td');
   my @bad_tags               = qw( img );
   my $bugzilla_shorthand     = $self->bugzilla_shorthand;
   my $html                   = decode('UTF-8', $parser->render_html($markdown));
