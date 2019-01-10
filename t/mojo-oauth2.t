@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -36,7 +36,7 @@ ok $oauth_client->{id}, 'New client id (' . $oauth_client->{id} . ')';
 ok $oauth_client->{secret},
   'New client secret (' . $oauth_client->{secret} . ')';
 
-my $t = Test::Mojo->new('Bugzilla::Quantum');
+my $t = Test::Mojo->new('Bugzilla::App');
 
 # Allow 1 redirect max
 $t->ua->max_redirects(1);

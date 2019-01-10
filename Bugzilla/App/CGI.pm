@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Quantum::CGI;
+package Bugzilla::App::CGI;
 use Mojo::Base 'Mojolicious::Controller';
 
 use CGI::Compile;
@@ -17,11 +17,25 @@ use Sub::Name;
 use Socket qw(AF_INET inet_aton);
 use Mojo::File qw(path);
 use English qw(-no_match_vars);
-use Bugzilla::Quantum::Stdout;
+use Bugzilla::App::Stdout;
 use Bugzilla::Constants qw(bz_locations USAGE_MODE_BROWSER);
 
 our $C;
 my %SEEN;
+
+sub testagent {
+  my ($self) = @_;
+  $self->render(text => "OK Mojolicious");
+}
+
+sub announcement_hide {
+  my ($self) = @_;
+  my $checksum = $self->param('checksum');
+  if ($checksum && $checksum =~ /^[[:xdigit:]]{32}$/) {
+    $self->session->{announcement_checksum} = $checksum;
+  }
+  $self->render(json => {});
+}
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -53,7 +67,7 @@ sub load_one {
     open STDIN, '<', $stdin->path
       or die "STDIN @{[$stdin->path]}: $!"
       if -s $stdin->path;
-    tie *STDOUT, 'Bugzilla::Quantum::Stdout', controller => $c;   ## no critic (tie)
+    tie *STDOUT, 'Bugzilla::App::Stdout', controller => $c;   ## no critic (tie)
 
     # the finally block calls cleanup.
     $c->stash->{cleanup_guard}->dismiss;
@@ -78,7 +92,6 @@ sub load_one {
   *{$name} = subname($name, $wrapper);
   return 1;
 }
-
 
 sub _ENV {
   my ($c, $script_name) = @_;

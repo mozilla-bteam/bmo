@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20181130.1';
+our $VERSION = '20190108.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -395,7 +395,7 @@ sub login {
   }
 
   # If Mojo native app is requesting login, we need to possibly redirect
-  my $C = $Bugzilla::Quantum::CGI::C;
+  my $C = $Bugzilla::App::CGI::C;
   if ($C->session->{override_login_target}) {
     my $mojo_url = Mojo::URL->new($C->session->{override_login_target});
     $mojo_url->query($C->session->{cgi_params});
@@ -444,6 +444,12 @@ sub logout_request {
 sub job_queue {
   require Bugzilla::JobQueue;
   return request_cache->{job_queue} ||= Bugzilla::JobQueue->new();
+}
+
+sub jwt {
+  my ($class, @args) = @_;
+  require Mojo::JWT;
+  return Mojo::JWT->new(@args, secret => $class->localconfig->{jwt_secret});
 }
 
 sub dbh {
@@ -782,19 +788,17 @@ sub check_rate_limit {
       Bugzilla->audit(
         "[rate_limit] action=$action, ip=$ip, limit=$limit, name=$name");
       if ($action eq 'block') {
-        $Bugzilla::Quantum::CGI::C->block_ip($ip);
+        $Bugzilla::App::CGI::C->block_ip($ip);
         ThrowUserError("rate_limit");
       }
     }
   }
 }
 
-sub markdown_parser {
-  require Bugzilla::Markdown::GFM;
-  require Bugzilla::Markdown::GFM::Parser;
-  return request_cache->{markdown_parser}
-    ||= Bugzilla::Markdown::GFM::Parser->new(
-    {extensions => [qw( autolink tagfilter table strikethrough)]});
+sub markdown {
+  require Bugzilla::Markdown;
+  state $markdown = Bugzilla::Markdown->new;
+  return $markdown;
 }
 
 # Private methods
@@ -1115,10 +1119,9 @@ of features, see C<OPTIONAL_MODULES> in C<Bugzilla::Install::Requirements>.
 
 Feeds the provided message into our centralised auditing system.
 
-=item C<markdown_parser>
+=item C<markdown>
 
-Returns a L<Bugzilla::Markdown::GFM::Parser> with the default extensions
-loaded (autolink, tagfilter, table, and strikethrough).
+Returns a L<Bugzilla::Markdown> object.
 
 =back
 
@@ -1197,5 +1200,12 @@ See the documentation for the C<Bugzilla::Memcached> module for more
 information.
 
 =back
+
+=item C<jwt>
+
+Returns a L<Mojo::JWT> object, configured with the Bugzilla localconfig jwt_secret set.
+
+  my $payload_hash = Bugzilla->jwt->decode($jwt);
+  my $new_jwt      = Bugzilla->jwt(claims => $payload_hash)->encode;
 
 =back

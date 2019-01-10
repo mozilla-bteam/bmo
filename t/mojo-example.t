@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -26,10 +26,8 @@ use Bugzilla::Test::MockLocalconfig (urlbase => 'http://bmo-web.vm');
 use Bugzilla::Test::MockDB;
 
 # This redirects reads and writes from the config file (data/params)
-use Bugzilla::Test::MockParams (
-  phabricator_enabled => 1,
-  announcehtml        => '<div id="announcement">Mojo::Test is awesome</div>',
-);
+use Bugzilla::Test::MockParams (phabricator_enabled => 1,
+  announcehtml => 'Mojo::Test is awesome',);
 
 # Util provides a few functions more making mock data in the DB.
 use Bugzilla::Test::Util qw(create_user issue_api_key);
@@ -43,7 +41,7 @@ my $api_key = issue_api_key('api@mozilla.org')->api_key;
 
 # Mojo::Test loads the application and provides methods for
 # testing requests without having to run a server.
-my $t = Test::Mojo->new('Bugzilla::Quantum');
+my $t = Test::Mojo->new('Bugzilla::App');
 
 # we ensure this file exists so the /__lbhearbeat__ test passes.
 $t->app->home->child('__lbheartbeat__')->spurt('httpd OK');
@@ -61,7 +59,7 @@ $t->get_ok('/bzapi/configuration')->status_is(200)
 
 # for web requests, you use text_like (or text_is) with CSS selectors.
 $t->get_ok('/')->status_is(200)
-  ->text_like('#announcement' => qr/Mojo::Test is awesome/);
+  ->text_like('#new_announcement div' => qr/Mojo::Test is awesome/);
 
 # Chaining is not magical, you can break up longer lines
 # by calling methods on $t, as below.

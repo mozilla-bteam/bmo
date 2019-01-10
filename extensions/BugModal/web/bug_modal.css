@@ -638,6 +638,10 @@ h3.change-name {
     color: #555;
 }
 
+.comment-actions button.iconic .icon {
+  pointer-events: none;
+}
+
 .comment-actions button.iconic .icon::before {
     font-family: 'Material Icons';
     font-size: 16px;
@@ -676,8 +680,8 @@ h3.change-name {
 body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
     font-family: "Fira Mono", monospace;
 }
-
-.comment-text span.quote, .comment-text span.quote_wrapped {
+.comment-text span.quote, .comment-text span.quote_wrapped,
+div.comment-text pre {
     background: #eee !important;
     color: #444 !important;
     display: block !important;
@@ -689,6 +693,56 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
 .comment-text.bz_private {
     color: darkred;
     border: 1px dashed darkred;
+}
+
+/* Markdown comments */
+div.comment-text {
+    white-space: normal;
+    padding: 0 8px 0 8px;
+    font-family: inherit !important;
+    font-size: 14px !important;
+}
+
+div.comment-text p,
+div.comment-text li {
+    line-height: 21px;
+    max-width: 70em;
+}
+
+div.comment-text code {
+    color: #444;
+    background-color: #eee;
+    font-size: 13px;
+    font-family: "Fira Mono","Droid Sans Mono",Menlo,Monaco,"Courier New",monospace;
+}
+
+div.comment-text table {
+    border-collapse: collapse;
+}
+
+div.comment-text th, div.comment-text td {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+}
+
+div.comment-text hr {
+    display: block !important;
+}
+
+div.comment-text blockquote {
+    background: #fcfcfc;
+    border-left: 5px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+}
+
+
+div.comment-text blockquote > :first-child {
+    margin-top: 0;
+}
+
+div.comment-text blockquote > :last-child {
+    margin-bottom: 0;
 }
 
 .comment-tags {
@@ -764,9 +818,14 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
     margin-top: 20px;
 }
 
-#add-comment-private,
-#bugzilla-etiquette {
+#add-comment-private {
     float: right;
+}
+
+#add-comment-tips {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1em;
 }
 
 #comment {
@@ -777,7 +836,7 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
     clear: both;
     width: 100%;
     box-sizing: border-box !important;
-    margin: 0 0 1em;
+    margin: 0 0 0.5em;
     max-width: 1024px;
 }
 
@@ -935,6 +994,10 @@ div.ui-tooltip {
 .lightbox img {
     margin-right: 4px;
     vertical-align: sub;
+}
+
+a.lightbox-icon.markdown {
+    display: none;
 }
 
 #lb_img {

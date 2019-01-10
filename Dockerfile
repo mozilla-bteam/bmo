@@ -1,4 +1,4 @@
-FROM mozillabteam/bmo-slim:20181011.1
+FROM mozillabteam/bmo-slim:20181210.1
 
 ARG CI
 ARG CIRCLE_SHA1
@@ -22,10 +22,7 @@ RUN mv /opt/bmo/local /app && \
     chown -R app:app /app && \
     perl -I/app -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
     perl -c /app/scripts/entrypoint.pl && \
-    setcap 'cap_net_bind_service=+ep' /usr/bin/perl && \
-    for file in patches/*.patch; do \
-        patch -d /app/local/lib/perl5 -p2 < $file || exit 1; \
-    done
+    setcap 'cap_net_bind_service=+ep' /usr/bin/perl
 
 USER app
 

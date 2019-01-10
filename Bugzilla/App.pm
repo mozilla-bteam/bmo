@@ -5,13 +5,14 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Quantum;
+package Bugzilla::App;
 use Mojo::Base 'Mojolicious';
 
 # Needed for its exit() overload, must happen early in execution.
 use CGI::Compile;
 use utf8;
 use Encode;
+use FileHandle;    # this is for compat back to 5.10
 
 use Bugzilla          ();
 use Bugzilla::BugMail ();
@@ -20,34 +21,62 @@ use Bugzilla::Constants qw(bz_locations);
 use Bugzilla::Extension             ();
 use Bugzilla::Install::Requirements ();
 use Bugzilla::Logging;
-use Bugzilla::Quantum::CGI;
-use Bugzilla::Quantum::OAuth2::Clients;
-use Bugzilla::Quantum::SES;
-use Bugzilla::Quantum::Home;
-use Bugzilla::Quantum::API;
-use Bugzilla::Quantum::Static;
+use Bugzilla::App::CGI;
+use Bugzilla::App::OAuth2::Clients;
+use Bugzilla::App::SES;
+use Bugzilla::App::Home;
+use Bugzilla::App::API;
+use Bugzilla::App::Static;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
 use Cwd qw(realpath);
 use MojoX::Log::Log4perl::Tiny;
 use Bugzilla::WebService::Server::REST;
+use Try::Tiny;
 
-has 'static' => sub { Bugzilla::Quantum::Static->new };
+has 'static' => sub { Bugzilla::App::Static->new };
 
 sub startup {
   my ($self) = @_;
 
-  DEBUG('Starting up');
-  $self->plugin('Bugzilla::Quantum::Plugin::BlockIP');
-  $self->plugin('Bugzilla::Quantum::Plugin::Glue');
-  $self->plugin('Bugzilla::Quantum::Plugin::Hostage')
+  TRACE('Starting up');
+  $self->plugin('Bugzilla::App::Plugin::BlockIP');
+  $self->plugin('Bugzilla::App::Plugin::Glue');
+  $self->plugin('Bugzilla::App::Plugin::Hostage')
     unless $ENV{BUGZILLA_DISABLE_HOSTAGE};
-  $self->plugin('Bugzilla::Quantum::Plugin::SizeLimit')
+  $self->plugin('Bugzilla::App::Plugin::SizeLimit')
     unless $ENV{BUGZILLA_DISABLE_SIZELIMIT};
   $self->plugin('ForwardedFor') if Bugzilla->has_feature('better_xff');
-  $self->plugin('Bugzilla::Quantum::Plugin::Helpers');
-  $self->plugin('Bugzilla::Quantum::Plugin::OAuth2');
+  $self->plugin('Bugzilla::App::Plugin::Helpers');
+  $self->plugin('Bugzilla::App::Plugin::OAuth2');
+
+  push @{ $self->commands->namespaces }, 'Bugzilla::App::Command';
+
+  $self->sessions->cookie_name('bugzilla');
+
+  $self->hook(
+    before_routes => sub {
+      my ($c) = @_;
+      return if $c->stash->{'mojo.static'};
+
+      # It is possible the regexp is bad.
+      # If that is the case, we just log the error and continue on.
+      try {
+        my $regexp = Bugzilla->params->{block_user_agent};
+        if ($regexp && $c->req->headers->user_agent =~ /$regexp/) {
+          my $msg = "Contact " . Bugzilla->params->{maintainer};
+          $c->respond_to(
+            json => {json => {error => $msg}, status => 400},
+            any  => {text => "$msg\n",        status => 400},
+          );
+        }
+      }
+      catch {
+        ERROR($_);
+      };
+    }
+  );
 
   # hypnotoad is weird and doesn't look for MOJO_LISTEN itself.
   $self->config(
@@ -101,19 +130,16 @@ sub setup_routes {
   my ($self) = @_;
 
   my $r = $self->routes;
-  Bugzilla::Quantum::CGI->setup_routes($r);
-  Bugzilla::Quantum::CGI->load_one('bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi');
+  Bugzilla::App::CGI->setup_routes($r);
+  Bugzilla::App::CGI->load_one('bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi');
 
   $r->get('/home')->to('Home#index');
   $r->any('/')->to('CGI#index_cgi');
   $r->any('/bug/<id:num>')->to('CGI#show_bug_cgi');
   $r->any('/<id:num>')->to('CGI#show_bug_cgi');
-  $r->get(
-    '/testagent.cgi' => sub {
-      my $c = shift;
-      $c->render(text => "OK Mojolicious");
-    }
-  );
+  $r->get('/testagent.cgi')->to('CGI#testagent');
+  $r->add_type('hex32' => qr/[[:xdigit:]]{32}/);
+  $r->post('/announcement/hide/<checksum:hex32>')->to('CGI#announcement_hide');
 
   $r->any('/rest')->to('CGI#rest_cgi');
   $r->any('/rest.cgi/*PATH_INFO')->to('CGI#rest_cgi' => {PATH_INFO => ''});
@@ -137,9 +163,9 @@ sub setup_routes {
   $r->any('/login')->to('CGI#index_cgi' => {'GoAheadAndLogIn' => '1'});
   $r->any('/:new_bug' => [new_bug => qr{new[-_]bug}])->to('CGI#new_bug_cgi');
 
-  Bugzilla::Quantum::API->setup_routes($r);
-  Bugzilla::Quantum::SES->setup_routes($r);
-  Bugzilla::Quantum::OAuth2::Clients->setup_routes($r);
+  Bugzilla::App::API->setup_routes($r);
+  Bugzilla::App::SES->setup_routes($r);
+  Bugzilla::App::OAuth2::Clients->setup_routes($r);
 }
 
 1;

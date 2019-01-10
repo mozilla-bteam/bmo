@@ -5,9 +5,10 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Quantum::API;
+package Bugzilla::App::API;
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
+use Mojo::JSON qw( true false );
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -21,11 +22,13 @@ sub user_profile {
   if ($user && $user->id) {
     $self->render(
       json => {
-        id     => $user->id,
-        name   => $user->name,
-        login  => $user->login,
-        nick   => $user->nick,
-        groups => [map { $_->name } @{$user->groups}],
+        id                    => $user->id,
+        name                  => $user->name,
+        login                 => $user->login,
+        nick                  => $user->nick,
+        groups                => [map { $_->name } @{$user->groups}],
+        mfa                   => lc($user->mfa),
+        mfa_required_by_group => $user->in_mfa_group ? true : false,
       }
     );
   }

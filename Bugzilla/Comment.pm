@@ -45,12 +45,14 @@ use constant DB_COLUMNS => qw(
   already_wrapped
   type
   extra_data
+  is_markdown
 );
 
 use constant UPDATE_COLUMNS => qw(
   isprivate
   type
   extra_data
+  is_markdown
 );
 
 use constant DB_TABLE => 'longdescs';
@@ -62,14 +64,15 @@ use constant ID_FIELD => 'comment_id';
 use constant LIST_ORDER => 'bug_when, comment_id';
 
 use constant VALIDATORS => {
-  bug_id     => \&_check_bug_id,
-  who        => \&_check_who,
-  bug_when   => \&_check_bug_when,
-  work_time  => \&_check_work_time,
-  thetext    => \&_check_thetext,
-  isprivate  => \&_check_isprivate,
-  extra_data => \&_check_extra_data,
-  type       => \&_check_type,
+  bug_id      => \&_check_bug_id,
+  who         => \&_check_who,
+  bug_when    => \&_check_bug_when,
+  work_time   => \&_check_work_time,
+  thetext     => \&_check_thetext,
+  isprivate   => \&_check_isprivate,
+  is_markdown => \&Bugzilla::Object::check_boolean,
+  extra_data  => \&_check_extra_data,
+  type        => \&_check_type,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -234,6 +237,7 @@ sub body            { return $_[0]->{'thetext'}; }
 sub bug_id          { return $_[0]->{'bug_id'}; }
 sub creation_ts     { return $_[0]->{'bug_when'}; }
 sub is_private      { return $_[0]->{'isprivate'}; }
+sub is_markdown     { return $_[0]->{'is_markdown'}; }
 
 sub work_time {
 
@@ -341,6 +345,7 @@ sub body_full {
 sub set_is_private { $_[0]->set('isprivate',  $_[1]); }
 sub set_type       { $_[0]->set('type',       $_[1]); }
 sub set_extra_data { $_[0]->set('extra_data', $_[1]); }
+sub set_is_markdown { $_[0]->set('is_markdown', $_[1]); }
 
 sub add_tag {
   my ($self, $tag) = @_;
@@ -578,6 +583,10 @@ C<string> Time spent as related to this comment.
 =item C<is_private>
 
 C<boolean> Comment is marked as private.
+
+=item C<is_markdown>
+
+C<boolean> Whether this comment needs Markdown rendering to be applied.
 
 =item C<already_wrapped>
 
