@@ -45,10 +45,20 @@ sub render_html {
   return escape_html($markdown) unless $parser;
 
   no warnings 'utf8'; # this is needed because our perl is so old.
+  my %option;
+  if ($markdown =~ /^\s*#\[markdown\(\s*(.+)\s*\)\]\r?\n/s) {
+      $option{$_} = 1 for split(/\s*,\s*/, $1);
+
+      if ($option{escape}) {
+        $markdown =~ s/([=\\`*_{}\[\]()#+\.!\|\->])/\\$1/gs;
+      }
+  }
+
   # This is a bit faster since it doesn't engage the regex engine.
   # Replace < with \x{FDD4}, and remove \x{FDD4}.
   $markdown =~ tr/\x{FDD4}//d;
   $markdown =~ s{<(?!https?://)}{\x{FDD4}}gs;
+
   my @valid_text_parent_tags = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td');
   my @bad_tags               = qw( img );
   my $bugzilla_shorthand     = $self->bugzilla_shorthand;
@@ -72,7 +82,7 @@ sub render_html {
       return $child;
     });
     return $node;
-  });
+  }) unless $option{escape};
   return $dom->to_string;
 
 }
