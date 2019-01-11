@@ -2116,6 +2116,8 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
     border: 1px dashed darkred;
 }
 
+/* Markdown styling adapted from https://github.com/sindresorhus/github-markdown-css */
+
 .markdown-body {
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
