@@ -47,7 +47,8 @@ sub render_html {
   no warnings 'utf8'; # this is needed because our perl is so old.
   # This is a bit faster since it doesn't engage the regex engine.
   # Replace < with \x{FDD4}, and remove \x{FDD4}.
-  $markdown =~ tr/<\x{FDD4}/\x{FDD4}/d;
+  $markdown =~ tr/\x{FDD4}//d;
+  $markdown =~ s{<(?!https?://)}{\x{FDD4}}gs;
   my @valid_text_parent_tags = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td');
   my @bad_tags               = qw( img );
   my $bugzilla_shorthand     = $self->bugzilla_shorthand;
