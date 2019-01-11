@@ -1600,7 +1600,7 @@ div.bz_comment_text pre {
     clear: both;
 }
 
-#comment_preview_text {
+pre#comment_preview_text {
     background: transparent;
     border: none;
     box-shadow: none;
@@ -2688,7 +2688,6 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
 .markdown-body code {
   padding: 0.2em 0.4em;
   margin: 0;
-  font-size: 85%;
   background-color: rgba(27,31,35,0.05);
   border-radius: 3px;
 }
@@ -2719,7 +2718,6 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
 .markdown-body .highlight pre,
 .markdown-body pre {
   overflow: auto;
-  font-size: 85%;
   line-height: 1.45;
   background-color: #f6f8fa;
   border-radius: 3px;
