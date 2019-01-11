@@ -82,7 +82,7 @@ sub render_html {
       return $child;
     });
     return $node;
-  }) unless $option{escape};
+  });
   return $dom->to_string;
 
 }

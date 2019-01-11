@@ -91,7 +91,7 @@ is($ahref->attr('href'), 'https://searchfox.org/mozilla-central/rev/76fe4bb38534
 
 is($parser->render_html('<foo>'), "<p>&lt;foo&gt;</p>\n", "literal tags work");
 
-my $escaped_markdown = q{
+my $escaped_markdown = qq{
 #[markdown(escape)]
 
 fooooo
@@ -102,25 +102,24 @@ fooooo
 - Stuff
 - more stuff
 
-> foo
-> bar
-> baz
 ```code
 not really code!
 ```
+$table_markdown
 };
 
-my $expected_escaped_markdown = q{<p>fooooo<br>
+my $expected_escaped_markdown = qq{<p>#[markdown(escape)]</p>
+<p>fooooo<br>
 ======</p>
 <p>*foo*</p>
 <p>- Stuff<br>
 - more stuff</p>
-<p>&gt; foo<br>
-&gt; bar<br>
-&gt; baz<br>
-```code<br>
+<p>```code<br>
 not really code!<br>
-```</p>
+```<br>
+| Col1 | Col2 |<br>
+| ---- |:----:|<br>
+| val1 | val2 |</p>
 };
 
 is $parser->render_html($escaped_markdown), $expected_escaped_markdown, "check special markdown escape thing";
