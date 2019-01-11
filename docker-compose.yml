@@ -7,15 +7,18 @@ version: '2'
 services:
   bmo-web.vm:
     build: &bmo_build
-      context: .
-      dockerfile: Dockerfile
-    command: dev_httpd
+     context: .
+     dockerfile: Dockerfile.new
+    command: morbo bugzilla.pl -w Bugzilla -w Bugzilla.pm -w bugzilla.pl
     volumes:
+      - ./:/app/
       - bmo-data-dir:/app/data
     tmpfs:
       - /tmp
       - /run
     environment: &bmo_env
+      - "PERL5LIB=/app/local/lib/perl5:/app/lib:/app"
+      - "MOJO_LISTEN=http://*:80"
       - LOCALCONFIG_ENV=1
       - LOG4PERL_CONFIG_FILE=log4perl-docker.conf
       - BUGZILLA_UNSAFE_AUTH_DELEGATION=1
