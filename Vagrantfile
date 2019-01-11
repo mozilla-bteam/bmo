@@ -17,7 +17,6 @@ VENDOR_BUNDLE_URL = ENV.fetch "BMO_BUNDLE_URL",
 RSYNC_ARGS = [
   '--verbose',
   '--archive',
-  '--delete',
   '-z',
   '--copy-links',
   '--exclude=local/',
