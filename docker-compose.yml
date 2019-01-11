@@ -11,7 +11,7 @@ services:
      dockerfile: Dockerfile.new
     command: morbo bugzilla.pl -w Bugzilla -w Bugzilla.pm -w bugzilla.pl
     volumes:
-      - ./:/app/
+      - ./js:/app/js
       - bmo-data-dir:/app/data
     tmpfs:
       - /tmp
