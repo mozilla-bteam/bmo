@@ -1,0 +1,55 @@
+FROM perl:5.28.0-slim AS carton
+ARG PERL_VERSION=5.28.0
+RUN apt-get update
+RUN apt-get upgrade -y
+RUN apt-get install -y \
+        build-essential libcairo-dev curl libssl1.0-dev \
+        zlib1g-dev openssl git cmake libgd-dev \
+        libmariadbclient-dev wget libgmp-dev
+RUN useradd -u 10001 -U app -m -d /app
+RUN curl -sL --compressed https://git.io/cpm > /usr/local/bin/cpm; chmod 755 /usr/local/bin/cpm
+USER app
+WORKDIR /app
+COPY cpanfile-${PERL_VERSION} /app/cpanfile
+RUN cpm install
+RUN rm -vfr /app/local/cache /app/local/man
+
+FROM perl:5.28.0-slim
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+        libssl1.0.2 libpangoft2-1.0-0 libatk1.0-0 \
+        libexpat1 libfontconfig1 libglib2.0-0 libgd3 \
+        libpangocairo-1.0-0 libmariadbclient18 \
+        libgtk2.0-0 libgtk2.0-0 curl patch diffutils xz-utils libcap2-bin && \
+    apt-get clean
+
+ARG CI
+ARG CIRCLE_SHA1
+ARG CIRCLE_BUILD_URL
+
+ENV CI=${CI}
+ENV CIRCLE_BUILD_URL=${CIRCLE_BUILD_URL}
+ENV CIRCLE_SHA1=${CIRCLE_SHA1}
+ENV LOG4PERL_CONFIG_FILE=log4perl-json.conf
+ENV PORT=80
+ENV LOGGING_PORT=5880
+
+RUN useradd -u 10001 -U app -m
+WORKDIR /app
+COPY --from=carton /app/local /app/local
+COPY ./ /app/
+RUN chown -R app:app /app
+RUN setcap 'cap_net_bind_service=+ep' `which perl`
+USER app
+RUN perl Makefile.PL
+RUN perl -I/app -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
+    perl -c /app/scripts/entrypoint.pl
+
+RUN perl checksetup.pl --no-database --default-localconfig
+RUN rm -rf /app/data /app/localconfig && \
+    mkdir /app/data
+
+EXPOSE 80
+ENTRYPOINT ["/app/scripts/entrypoint.pl"]
+CMD ["httpd"]
