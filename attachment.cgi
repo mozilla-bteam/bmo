@@ -616,17 +616,13 @@ sub insert {
   # Insert a comment about the new attachment into the database.
   my $comment = $cgi->param('comment');
   $comment = '' unless defined $comment;
-  my $is_markdown = Bugzilla->params->{use_markdown} ? 1 : 0;
-  if ($cgi->param('markdown_off')) {
-    $is_markdown = 0;
-  }
   $bug->add_comment(
     $comment,
     {
-      isprivate  => $attachment->isprivate,
-      type       => CMT_ATTACHMENT_CREATED,
-      extra_data => $attachment->id,
-      is_markdown => $is_markdown,
+      isprivate   => $attachment->isprivate,
+      type        => CMT_ATTACHMENT_CREATED,
+      extra_data  => $attachment->id,
+      is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0,
     }
   );
 
@@ -779,6 +775,10 @@ sub update {
   # If the user submitted a comment while editing the attachment,
   # add the comment to the bug. Do this after having validated isprivate!
   my $comment = $cgi->param('comment');
+  my $is_markdown = Bugzilla->params->{use_markdown} ? 1 : 0;
+  if ($cgi->param('markdown_off')) {
+    $is_markdown = 0;
+  }
   if (defined $comment && trim($comment) ne '') {
     $bug->add_comment(
       $comment,
