@@ -90,7 +90,7 @@ sub create {
       ThrowCodeError('param_required', {param => 'scopes'});
     }
     $dbh->do(
-      'INSERT INTO oauth2_client_scope (client_id, scope_id, allowed) VALUES (?, ?, 1)',
+      'INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
       undef, $client_data->{id}, $scope_id
     );
   }
@@ -199,7 +199,7 @@ sub edit {
   $dbh->do('DELETE FROM oauth2_client_scope WHERE client_id = ?', undef, $id);
   foreach my $scope_id (@scopes) {
     $dbh->do(
-      'INSERT INTO oauth2_client_scope (client_id, scope_id, allowed) VALUES (?, ?, 1)',
+      'INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
       undef, $client_data->{id}, $scope_id
     );
   }
