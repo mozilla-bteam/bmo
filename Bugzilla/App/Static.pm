@@ -15,18 +15,18 @@ my $LEGACY_RE = qr{
     $
 }xs;
 
-sub file {
-  my ($self, $rel) = @_;
+sub serve {
+  my ($self, $c, $rel) = @_;
 
   if ($rel =~ $LEGACY_RE) {
     local $self->{paths} = [bz_locations->{cgi_path}];
     my $version = $+{version};
     my $file    = $+{file};
-    $self->stash->{static_file_version} = $version;
-    return $self->SUPER::file($file);
+    $c->stash->{static_file_version} = $version;
+    return $self->SUPER::serve($c, $file);
   }
   else {
-    return $self->SUPER::file($rel);
+    return $self->SUPER::serve($c, $rel);
   }
 }
 
