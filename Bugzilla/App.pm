@@ -115,7 +115,13 @@ sub startup {
     $self->hook(
       after_static => sub {
         my ($c) = @_;
-        $c->res->headers->cache_control('public, max-age=31536000, immutable');
+        my $version = $c->stash->{static_file_version};
+        if ($version && $version > Bugzilla->VERSION) {
+	  $c->res->headers->cache_control('no-cache, no-store');
+        }
+        else {
+          $c->res->headers->cache_control('public, max-age=31536000, immutable');
+        }
       }
     );
   }

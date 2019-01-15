@@ -10,17 +10,20 @@ use Mojo::Base 'Mojolicious::Static';
 use Bugzilla::Constants qw(bz_locations);
 
 my $LEGACY_RE = qr{
-    ^ (?:static/v[0-9]+\.[0-9]+/) ?
-    ( (?:extensions/[^/]+/web|(?:image|skin|j|graph)s)/.+)
+    ^ (?:static/v(?<version>[0-9]+\.[0-9]+)/) ?
+    (?<file>(?:extensions/[^/]+/web|(?:image|skin|j|graph)s)/.+)
     $
 }xs;
 
 sub file {
   my ($self, $rel) = @_;
 
-  if (my ($legacy_rel) = $rel =~ $LEGACY_RE) {
+  if ($rel =~ $LEGACY_RE) {
     local $self->{paths} = [bz_locations->{cgi_path}];
-    return $self->SUPER::file($legacy_rel);
+    my $version = $+{version};
+    my $file = $+{file};
+    $self->stash->{static_file_version} = $version;
+    return $self->SUPER::file($file);
   }
   else {
     return $self->SUPER::file($rel);
