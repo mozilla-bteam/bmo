@@ -21,7 +21,7 @@ sub file {
   if ($rel =~ $LEGACY_RE) {
     local $self->{paths} = [bz_locations->{cgi_path}];
     my $version = $+{version};
-    my $file = $+{file};
+    my $file    = $+{file};
     $self->stash->{static_file_version} = $version;
     return $self->SUPER::file($file);
   }
