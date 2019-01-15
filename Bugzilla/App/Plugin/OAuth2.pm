@@ -16,6 +16,7 @@ use Bugzilla::Util;
 use Bugzilla::Token;
 use DateTime;
 use List::MoreUtils qw(any);
+use Mojo::URL;
 use Mojo::Util qw(secure_compare);
 use Try::Tiny;
 
@@ -109,13 +110,18 @@ sub _resource_owner_confirm_scopes {
 
 sub _verify_client {
   my (%args) = @_;
-  my ($c, $client_id, $scopes_ref)
-    = @args{qw/ mojo_controller client_id scopes /};
+  my ($c, $client_id, $scopes_ref, $redirect_uri)
+    = @args{qw/ mojo_controller client_id scopes redirect_uri /};
   my $dbh = Bugzilla->dbh;
 
   if (!@{$scopes_ref}) {
     INFO('Client did not provide scopes');
     return (0, 'invalid_scope');
+  }
+
+  if (!$ENV{MOJO_TEST} && Mojo::URL->new($redirect_uri)->scheme ne 'https') {
+    INFO("invalid_redirect_uri: $redirect_uri");
+    return (0, 'invalid_redirect_uri');
   }
 
   if (
@@ -160,8 +166,8 @@ sub _verify_auth_code {
     undef, $client_id);
   $client_data || return (0, 'unauthorized_client');
 
-  my ($res, $jwt_claims) = _get_jwt_claims($auth_code);
-  return (0, 'invalid_jwt') unless ($res && $jwt_claims->{type} eq 'auth');
+  my ($res, $jwt_claims) = _get_jwt_claims($auth_code, 'auth');
+  return (0, 'invalid_jwt') unless $res;
 
   my $jwt_data = $dbh->selectrow_hashref('SELECT * FROM oauth2_jwt WHERE jti = ?',
     undef, $jwt_claims->{jti});
