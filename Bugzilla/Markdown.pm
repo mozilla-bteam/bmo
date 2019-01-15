@@ -46,9 +46,10 @@ sub render_html {
   my $parser = $self->markdown_parser;
   return escape_html($markdown) unless $parser;
 
+  # This makes sure we never handle > foo text in the shortcuts code.
+  local $Bugzilla::Template::COLOR_QUOTES = 0;
+
   if ($markdown =~ /^\s*$MARKDOWN_OFF\n/s) {
-    # This makes sure we never handle > foo text in the shortcuts code.
-    local $Bugzilla::Template::COLOR_QUOTES = 0;
     my $text = $self->bugzilla_shorthand->( trim($markdown) );
     my @p = split(/\n{2,}/, $text);
     my $html = join("\n", map { s/\n/<br>\n/gs; "<p>$_</p>\n" } @p );
