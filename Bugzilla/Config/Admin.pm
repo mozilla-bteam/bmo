@@ -58,7 +58,7 @@ sub default_rate_limit_rules {
     github          => [10, 60],
     get_attachments => [75, 60],
     get_comments    => [75, 60],
-    webpage_errors  => [10, 120],
+    webpage_errors  => [75, 60],
   });
 }
 
@@ -91,7 +91,7 @@ sub update_rate_limit_rules {
   $val->{github}          = [10, 60];
   $val->{get_attachments} = [75, 60];
   $val->{get_comments}    = [75, 60];
-  $val->{webpage_errors}  = [10, 120];
+  $val->{webpage_errors}  = [75, 60];
   return encode_json($val);
 }
 
