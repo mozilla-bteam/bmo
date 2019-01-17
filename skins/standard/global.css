@@ -2098,10 +2098,6 @@ pre.comment-text {
     border-top: 1px solid #ddd;
 }
 
-body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
-    font-family: "Fira Mono", monospace;
-}
-
 .comment-text span.quote, .comment-text span.quote_wrapped {
     background: #eee !important;
     color: #444 !important;
@@ -2121,7 +2117,7 @@ body.platform-Win32 .comment-text, body.platform-Win64 .comment-text {
 .markdown-body {
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
-  overflow: visible;
+  overflow: auto;
   padding: 8px;
   line-height: 1.5;
   color: #24292e;
