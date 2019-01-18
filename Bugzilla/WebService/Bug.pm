@@ -1522,11 +1522,18 @@ sub _bug_to_hash {
   }
 
   # And now custom fields
-  my @custom_fields = Bugzilla->active_custom_fields({
+  my $field_params = {
     product   => $bug->product_obj,
     component => $bug->component_obj,
     bug_id    => $bug->id
-  });
+  };
+  if (defined $params->{include_fields} && !defined $params->{exclude_fields}) {
+    $field_params->{name}
+      = ref $params->{include_fields}
+      ? $params->{include_fields}
+      : [split(/[\s,]+/, $params->{include_fields})];
+  }
+  my @custom_fields = Bugzilla->active_custom_fields($field_params);
   foreach my $field (@custom_fields) {
     my $name = $field->name;
     next if !filter_wants($params, $name, ['default', 'custom']);
