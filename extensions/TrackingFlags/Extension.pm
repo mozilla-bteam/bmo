@@ -26,6 +26,7 @@ use Bugzilla::Extension::BMO::Data;
 use Bugzilla::Field;
 use Bugzilla::Install::Filesystem;
 use Bugzilla::Product;
+use Bugzilla::WebService::Util qw(filter_wants);
 
 use JSON;
 use List::MoreUtils qw(none);
@@ -43,7 +44,19 @@ sub _tracking_flags {
 }
 
 sub _tracking_flag_names {
-  return Bugzilla::Extension::TrackingFlags::Flag->get_all_names();
+  my ($class)   = @_;
+  my $memcached = $class->memcached;
+  my $cache     = $class->request_cache;
+  my $tf_names  = $cache->{tracking_flags_names};
+
+  return @$tf_names if $tf_names;
+  $tf_names //= $memcached->get_config({key => 'tracking_flag_names'});
+  $tf_names //= Bugzilla->dbh->selectcol_arrayref(
+    "SELECT name FROM tracking_flags ORDER BY name");
+
+  $cache->{tracking_flags_names} = $tf_names;
+
+  return @$tf_names;
 }
 
 sub page_before_template {
@@ -287,14 +300,24 @@ sub install_filesystem {
     = {perms => Bugzilla::Install::Filesystem::OWNER_EXECUTE};
 }
 
+
 sub active_custom_fields {
   my ($self, $args) = @_;
   my $fields    = $args->{'fields'};
   my $params    = $args->{'params'};
   my $product   = $params->{'product'};
   my $component = $params->{'component'};
+  my $wants     = $params->{wants};
+  my $cache     = Bugzilla->request_cache;
 
   return if $params->{skip_extensions};
+
+  if (!exists $cache->{tracking_flags_skip}) {
+    my @names = Bugzilla->tracking_flag_names;
+    $cache->{tracking_flags_skip} = none { filter_wants($wants, $_, ['default', 'custom']) } @names;
+  }
+
+  return if $cache->{tracking_flags_skip};
 
   # Create a hash of current fields based on field names
   my %field_hash = map { $_->name => $_ } @$$fields;
