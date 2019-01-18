@@ -38,6 +38,7 @@ use List::MoreUtils qw(uniq);
 use Storable qw(dclone);
 use Types::Standard -all;
 use Type::Utils;
+use PerlX::Maybe qw(maybe);
 
 #############
 # Constants #
@@ -1525,7 +1526,11 @@ sub _bug_to_hash {
   my @custom_fields = Bugzilla->active_custom_fields({
     product   => $bug->product_obj,
     component => $bug->component_obj,
-    bug_id    => $bug->id
+    bug_id    => $bug->id,
+    wants     => {
+      maybe(include_fields => $params->{include_fields}),
+      maybe(exclude_fields => $params->{exclude_fields}),
+    }
   });
   foreach my $field (@custom_fields) {
     my $name = $field->name;
