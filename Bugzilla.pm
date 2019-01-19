@@ -678,22 +678,22 @@ sub fields {
 }
 
 sub active_custom_fields {
-  my (undef, $params) = @_;
+  my (undef, $params, $wants) = @_;
   my $cache_id  = 'active_custom_fields';
-  my $can_cache = !exists $params->{bug_id};
+  my $can_cache = !exists $params->{bug_id} && !$wants;
   if ($params) {
     $cache_id .= ($params->{product} ? '_p' . $params->{product}->id : '')
       . ($params->{component} ? '_c' . $params->{component}->id : '');
     $cache_id .= ':noext' if $params->{skip_extensions};
   }
-  if (my $wants = $params->{wants}) {
-    my $use_names
-      = $wants->{include_fields}
-      && !$wants->{exclude_fields}
-      && (none {/^_/} @{$wants->{include_fields}});
-    if ($use_names) {
-      $params->{name} = $wants->{include_fields};
-    }
+  my $use_names
+    = $wants
+    && $wants->{include_fields}
+    && !$wants->{exclude_fields}
+    && (none {/^_/} @{$wants->{include_fields}});
+
+  if ($use_names) {
+    $params->{name} = $wants->{include_fields};
   }
   if (!$can_cache || !exists request_cache->{$cache_id}) {
     my $fields = Bugzilla::Field->match(
