@@ -45,6 +45,8 @@ use File::Spec::Functions;
 use Safe;
 use JSON::XS qw(decode_json);
 use Scope::Guard;
+use PerlX::Maybe qw(maybe);
+use List::Util qw(none);
 
 use parent qw(Bugzilla::CPAN);
 
@@ -684,9 +686,24 @@ sub active_custom_fields {
       . ($params->{component} ? '_c' . $params->{component}->id : '');
     $cache_id .= ':noext' if $params->{skip_extensions};
   }
+  if (my $wants = $params->{wants}) {
+    my $use_names
+      = $wants->{include_fields}
+      && !$wants->{exclude_fields}
+      && (none {/^_/} @{$wants->{include_fields}});
+    if ($use_names) {
+      $params->{name} = $wants->{include_fields};
+    }
+  }
   if (!$can_cache || !exists request_cache->{$cache_id}) {
-    my $fields
-      = Bugzilla::Field->match({custom => 1, obsolete => 0, skip_extensions => 1});
+    my $fields = Bugzilla::Field->match(
+      {
+        custom          => 1,
+        obsolete        => 0,
+        skip_extensions => 1,
+        maybe name      => $params->{name}
+      }
+    );
     Bugzilla::Hook::process('active_custom_fields',
       {fields => \$fields, params => $params});
     if ($can_cache) {
