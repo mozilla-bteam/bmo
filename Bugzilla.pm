@@ -676,7 +676,7 @@ sub fields {
 }
 
 sub active_custom_fields {
-  my (undef, $params) = @_;
+  my (undef, $params, $wants) = @_;
   my $cache_id = 'active_custom_fields';
   my $can_cache = !exists $params->{bug_id} && !$wants;
   if ($can_cache && $params) {
@@ -689,14 +689,29 @@ sub active_custom_fields {
     return @{request_cache->{$cache_id}};
   }
   else {
-    my $fields
-      = Bugzilla::Field->match({custom => 1, obsolete => 0, skip_extensions => 1});
+    my $match_params = {custom => 1, obsolete => 0, skip_extensions => 1};
+    my $exclude_extensions = 0;
+    if ($wants) {
+      if ($wants->exclude->{custom}) {
+        return ();
+      }
+      elsif ($wants->exclude->{extensions}) {
+        $exclude_extensions = 1;
+      }
+      elsif ($wants->is_specific) {
+        my $names = [ grep { /^cf_/ } $wants->includes ];
+        $match_params->{name} = $names;
+      }
+    }
+    my $fields = Bugzilla::Field->match($match_params);
     Bugzilla::Hook::process('active_custom_fields',
-      {fields => \$fields, params => $params});
+      {fields => \$fields, params => $params}) unless $exclude_extensions;
     request_cache->{$cache_id} = $fields if $can_cache;
     return @$fields;
   }
+
 }
+
 
 sub has_flags {
 
