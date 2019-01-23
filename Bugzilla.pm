@@ -699,19 +699,19 @@ sub active_custom_fields {
         $exclude_extensions = 1;
       }
       elsif ($wants->is_specific) {
-        my $names = [ grep { /^cf_/ } $wants->includes ];
-        $match_params->{name} = $names;
+        my @names = (grep {/^cf_/} $wants->includes);
+        return () unless @names;
+        $match_params->{name} = \@names;
       }
     }
     my $fields = Bugzilla::Field->match($match_params);
     Bugzilla::Hook::process('active_custom_fields',
-      {fields => \$fields, params => $params}) unless $exclude_extensions;
+      {fields => \$fields, params => $params})
+      unless $exclude_extensions;
     request_cache->{$cache_id} = $fields if $can_cache;
     return @$fields;
   }
-
 }
-
 
 sub has_flags {
 
