@@ -38,6 +38,7 @@ use List::MoreUtils qw(uniq);
 use Storable qw(dclone);
 use Types::Standard -all;
 use Type::Utils;
+use Try::Tiny;
 
 #############
 # Constants #
@@ -1523,13 +1524,20 @@ sub _bug_to_hash {
   }
 
   # And now custom fields
+  my $wants;
+  try {
+    $wants = $self->wants_object;
+  }
+  catch {
+    FATAL($_);
+  };
   my @custom_fields = Bugzilla->active_custom_fields(
     {
       product   => $bug->product_obj,
       component => $bug->component_obj,
       bug_id    => $bug->id
     },
-    $self->wants_object
+    $wants
   );
   foreach my $field (@custom_fields) {
     my $name = $field->name;
