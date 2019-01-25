@@ -680,7 +680,7 @@ sub preload {
   my @all_dep_ids;
   foreach my $bug (@$bugs) {
     push(@all_dep_ids,
-      map { @{$bug->{$_} || []} } qw(dependson blocked regressed_by regresses));
+      map { @{$bug->$_ || []} } qw(dependson blocked regressed_by regresses));
   }
   @all_dep_ids = uniq @all_dep_ids;
 
@@ -1212,7 +1212,7 @@ sub update {
         _update_delta_ts($id, $delta_ts);
       }
 
-      if (scalar(@$removed) || scalar(@$added)) {
+      if (@$removed || @$added) {
         $changes->{$field} = [join(', ', @$removed), join(', ', @$added)];
       }
     }
