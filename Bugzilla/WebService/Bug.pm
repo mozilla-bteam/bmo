@@ -13,7 +13,6 @@ use warnings;
 
 use base qw(Bugzilla::WebService);
 
-use Bugzilla::Logging;
 use Bugzilla::Comment;
 use Bugzilla::Comment::TagWeights;
 use Bugzilla::Constants;
@@ -39,7 +38,6 @@ use List::MoreUtils qw(uniq);
 use Storable qw(dclone);
 use Types::Standard -all;
 use Type::Utils;
-use Try::Tiny;
 
 #############
 # Constants #
@@ -1525,21 +1523,13 @@ sub _bug_to_hash {
   }
 
   # And now custom fields
-  my $wants;
-  try {
-    $wants = $self->wants_object;
-  }
-  catch {
-    ERROR("\$self is $self");
-    ERROR("Error: $_");
-  };
   my @custom_fields = Bugzilla->active_custom_fields(
     {
       product   => $bug->product_obj,
       component => $bug->component_obj,
       bug_id    => $bug->id
     },
-    $wants
+    $self->wants_object,
   );
   foreach my $field (@custom_fields) {
     my $name = $field->name;
