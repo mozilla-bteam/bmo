@@ -596,7 +596,7 @@ sub _get_diffs {
       $diff->{num}       = $comment->count;
       $diff->{isprivate} = $diff->{new};
     }
-    elsif ($diff->{field_name} =~ /^(?:dependson|blocked|regress(ed_by|es))$/) {
+    elsif ($diff->{field_name} =~ /^(?:dependson|blocked|regress(?:ed_by|es))$/) {
       push @$referenced_bugs, grep {/^\d+$/} split(/[\s,]+/, $diff->{old});
       push @$referenced_bugs, grep {/^\d+$/} split(/[\s,]+/, $diff->{new});
     }

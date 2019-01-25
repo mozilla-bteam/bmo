@@ -582,7 +582,7 @@ sub check {
     }
   }
 
-  unless ($field && $field =~ /^(dependson|blocked|regress(ed_by|es)|dup_id)$/) {
+  unless ($field && $field =~ /^(?:dependson|blocked|regress(?:ed_by|es)|dup_id)$/) {
     $self->check_is_visible;
   }
   return $self;
@@ -4685,7 +4685,7 @@ sub _join_activity_entries {
   return $new_change if $current_change eq '';
 
   # Buglists and see_also need the comma restored
-  if ($field =~ /^(dependson|blocked|regress(ed_by|es)|see_also)$/) {
+  if ($field =~ /^(?:dependson|blocked|regress(?:ed_by|es)|see_also)$/) {
     if (substr($new_change, 0, 1) eq ',' || substr($new_change, 0, 1) eq ' ') {
       return $current_change . $new_change;
     }

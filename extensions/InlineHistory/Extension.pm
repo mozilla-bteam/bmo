@@ -118,7 +118,7 @@ sub template_before_process {
       }
 
       # identify buglist changes
-      if ($change->{fieldname} =~ /^(dependson|blocked|regress(ed_by|es)|dupe)$/
+      if ($change->{fieldname} =~ /^(?:dependson|blocked|regress(?:ed_by|es)|dupe)$/
         || ($field_obj && $field_obj->type == FIELD_TYPE_BUG_ID))
       {
         $change->{buglist} = 1;
