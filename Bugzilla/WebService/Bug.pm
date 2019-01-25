@@ -13,6 +13,7 @@ use warnings;
 
 use base qw(Bugzilla::WebService);
 
+use Bugzilla::Logging;
 use Bugzilla::Comment;
 use Bugzilla::Comment::TagWeights;
 use Bugzilla::Constants;
@@ -1529,7 +1530,8 @@ sub _bug_to_hash {
     $wants = $self->wants_object;
   }
   catch {
-    FATAL($_);
+    ERROR("\$self isa ", ref $self);
+    ERROR("Error: $_");
   };
   my @custom_fields = Bugzilla->active_custom_fields(
     {
