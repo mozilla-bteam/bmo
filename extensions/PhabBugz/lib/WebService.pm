@@ -200,7 +200,7 @@ sub bug_revisions {
   }
 
   # sort by revision id
-  @revisions = sort { $a->{id} cmp $b->{id} } @revisions;
+  @revisions = sort { $a->{id} <=> $b->{id} } @revisions;
 
   return {revisions => \@revisions};
 }
