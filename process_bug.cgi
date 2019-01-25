@@ -76,10 +76,10 @@ if (Bugzilla->params->{disable_bug_updates}) {
 my @bug_objects;
 my @bug_ids;
 
-# $bulk_edit is whether or not we use the bulk editing code,
+# $async_bulk_edit is whether or not we use the bulk editing code,
 # $background is if the background=1 parameter was passed.
-my $bulk_edit = $cgi->param('bulk_edit') // 0;
-$cgi->delete('bulk_edit') if $bulk_edit;
+my $async_bulk_edit = $cgi->param('async_bulk_edit') // 0;
+$cgi->delete('async_bulk_edit') if $async_bulk_edit;
 
 if (defined $cgi->param('id')) {
   my $bug = Bugzilla::Bug->check(scalar $cgi->param('id'));
@@ -91,10 +91,10 @@ else {
 
   # Make sure there are bugs to process.
   ThrowUserError("no_bugs_chosen", {action => 'modify'}) unless @bug_ids;
-  $bulk_edit = 1 if @bug_ids > 10;
-  $bulk_edit = 0 unless $user->in_group('bulk_edit');
+  $async_bulk_edit = 1 if @bug_ids > 10;
+  $async_bulk_edit = 0 unless $user->in_group('bz_can_async_bulk_edit');
 
-  if ($bulk_edit) {
+  if ($async_bulk_edit) {
     # Not sure if we need $first_bug at all during a bulk update,
     # but it won't hurt.
     @bug_objects = (Bugzilla::Bug->check($bug_ids[0]));
@@ -241,7 +241,7 @@ else {
 # For each bug, we have to check if the user can edit the bug the product
 # is currently in, before we allow them to change anything.
 # For bulk edits, this will be done in the background task.
-if (!$bulk_edit) {
+if (!$async_bulk_edit) {
   foreach my $bug (@bug_objects) {
     if (!Bugzilla->user->can_edit_product($bug->product_obj->id)) {
       ThrowUserError("product_edit_denied", {product => $bug->product});
@@ -273,7 +273,7 @@ my %field_translation = (
 );
 
 my %set_all_fields;
-if (not $bulk_edit) {
+if (not $async_bulk_edit) {
   $set_all_fields{other_bugs} = \@bug_objects;
 }
 else {
@@ -396,7 +396,7 @@ foreach my $field (keys %$user_match_fields) {
 # We are going to alter the list of removed groups, so we keep a copy here.
 my @unchecked_groups = @$removed_groups;
 
-if ($bulk_edit) {
+if ($async_bulk_edit) {
   my $task = Bugzilla::Task::BulkEdit->new(
     ids     => \@bug_ids,
     set_all => \%set_all_fields,

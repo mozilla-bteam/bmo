@@ -60,7 +60,7 @@ sub _build_ids_with_ts {
 sub run {
   my ($self) = @_;
 
-  return {bulk_edit => 1, all_sent_changes => [map { $self->edit_bug(@$_) } @{$self->ids_with_ts}]};
+  return {async_bulk_edit => 1, all_sent_changes => [map { $self->edit_bug(@$_) } @{$self->ids_with_ts}]};
 }
 
 sub edit_bug {

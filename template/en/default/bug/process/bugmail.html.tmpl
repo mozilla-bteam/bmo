@@ -35,7 +35,7 @@
 %]
 [% recipient_count = sent_bugmail.sent.size %]
 
-[% IF bulk_edit %]
+[% IF async_bulk_edit %]
   [% show_recipients = 1 %]
 [% ELSE %]
 <script [% script_nonce FILTER none %]>
@@ -73,7 +73,7 @@
     [% ELSE %]
       no one
     [% END %]
-    [% IF NOT bulk_edit %]
+    [% IF NOT async_bulk_edit %]
       (<a href="#" class="toggleBugmailRecipients" data-mailing-bugid="[% mailing_bugid FILTER html %]"
           data-mailing-show="false">hide</a>)
     [% END %]

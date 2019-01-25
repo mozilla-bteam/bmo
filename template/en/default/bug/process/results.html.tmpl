@@ -34,7 +34,7 @@
 
 [% DEFAULT type="bug" %]
 
-[% IF bulk_edit %]
+[% IF async_bulk_edit %]
   [% Link = BLOCK %][% "$terms.Bug $id" FILTER bug_link(id, full_url => 1) FILTER none %][% END %]
   [% link = BLOCK %][% "$terms.bug $id" FILTER bug_link(id, full_url => 1) FILTER none %][% END %]
 [% ELSE %]
