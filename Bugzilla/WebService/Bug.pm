@@ -1530,7 +1530,7 @@ sub _bug_to_hash {
     $wants = $self->wants_object;
   }
   catch {
-    ERROR("\$self isa ", ref $self);
+    ERROR("\$self is $self");
     ERROR("Error: $_");
   };
   my @custom_fields = Bugzilla->active_custom_fields(
