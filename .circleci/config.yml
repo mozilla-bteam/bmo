@@ -205,9 +205,12 @@ jobs:
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
           /app/scripts/entrypoint.pl load_test_data
-      - run: |
-          [[ -f build_info/only_version_changed.txt ]] && exit 0
-          /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
+      - run:
+          name: run webservice tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            /app/scripts/entrypoint.pl test_webservices | tee artifacts/$CIRCLE_JOB.txt
+          no_output_timeout: 15m
       - store_artifacts:
           path: /app/artifacts
       - *store_log
