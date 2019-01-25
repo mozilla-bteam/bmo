@@ -175,7 +175,7 @@ sub cmd_test_selenium {
     prove_dir => '/app/qa/t',
     prove_cmd => [
       'prove', '-qf', '-Ilib', '-I/app', '-I/app/local/lib/perl5',
-      sub { glob 'test_*.t' }
+      sub { glob 'test_bug_edit.t' }
     ],
   );
   exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;

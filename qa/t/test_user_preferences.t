@@ -249,7 +249,6 @@ $sel->type_ok("comment",
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
-$sel->is_text_present_ok("The next bug in your list is bug $bug2_id");
 ok(!$sel->is_text_present("I should see the next bug"),
   "The updated bug is no longer displayed");
 

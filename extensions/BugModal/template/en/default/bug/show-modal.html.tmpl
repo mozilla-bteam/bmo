@@ -12,5 +12,26 @@
   [% PROCESS global/header.html.tmpl %]
   [% header_done = 1 %]
 [% END %]
+
+[%# Display changes to bugs that happened in the last request #%]
+[% sentmail = c.flash("last_sent_changes") %]
+[% FOREACH item = sentmail %]
+  [% INCLUDE bug/process/results.html.tmpl
+     id = item.id
+     type = item.type
+     sent_bugmail = item.sent_bugmail
+   %]
+[% END %]
+
+[% sentattachmentmail = c.flash("last_sent_attachment_changes") %]
+[% FOREACH item = sentattachmentmail %]
+  [% INCLUDE "bug/process/attachment-results.html.tmpl"
+     attachment = item.attachment
+     type = item.type
+     sent_bugmail = item.sent_bugmail
+     content_type_method = item.content_type_method
+   %]
+[% END %]
+
 [% INCLUDE bug_modal/edit.html.tmpl %]
 [% PROCESS global/footer.html.tmpl %]

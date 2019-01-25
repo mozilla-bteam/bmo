@@ -273,38 +273,22 @@ ThrowCodeError("bug_error", {bug => $bug}) if $bug->error;
 
 my $recipients = {changer => $user};
 my $bug_sent = Bugzilla::BugMail::Send($id, $recipients);
-$bug_sent->{type} = 'created';
-$bug_sent->{id}   = $id;
-my @all_mail_results = ($bug_sent);
+my @all_mail_results = ({ id => $id, type => 'created', sent_bugmail => $bug_sent});
 
 foreach my $dep (@{$bug->dependson || []}, @{$bug->blocked || []}) {
   my $dep_sent = Bugzilla::BugMail::Send($dep, $recipients);
-  $dep_sent->{type} = 'dep';
-  $dep_sent->{id}   = $dep;
-  push(@all_mail_results, $dep_sent);
+  push(@all_mail_results, { id => $dep, type => 'dep', sent_bugmail => $dep_sent });
 }
 
 # Sending emails for any referenced bugs.
 foreach my $ref_bug_id (uniq @{$bug->{see_also_changes} || []}) {
   my $ref_sent = Bugzilla::BugMail::Send($ref_bug_id, $recipients);
-  $ref_sent->{id} = $ref_bug_id;
-  push(@all_mail_results, $ref_sent);
+  push(@all_mail_results, { id => $ref_bug_id, sent_bugmail => $ref_sent });
 }
 
-$vars->{sentmail} = \@all_mail_results;
+$Bugzilla::App::CGI::C->flash(last_sent_changes => \@all_mail_results);
 
-$format = $template->get_format("bug/create/created",
-  scalar($cgi->param('created-format')), "html");
-
-# don't leak the enter_bug format param to show_bug
-$cgi->delete('format');
-
-if ($user->setting('ui_experiments') eq 'on') {
-  Bugzilla->cgi->content_security_policy(
-    Bugzilla::CGI::SHOW_BUG_MODAL_CSP($bug->id));
-}
-print $cgi->header();
-$template->process($format->{'template'}, $vars)
-  || ThrowTemplateError($template->error());
+my $redirect_url = $Bugzilla::App::CGI::C->url_for('show_bugcgi')->query(id => $id);
+$Bugzilla::App::CGI::C->redirect_to($redirect_url);
 
 1;

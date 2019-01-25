@@ -267,26 +267,26 @@ workflows:
     jobs:
       - build_info:
           filters: *main_filters
-      - build:
-          filters: *main_filters
-          requires:
-            - build_info
-            - test_sanity
-            - test_bmo
-            - test_webservices
-            - test_selenium
-      - test_sanity:
-          filters: *main_filters
-          requires:
-            - build_info
-      - test_bmo:
-          filters: *main_filters
-          requires:
-            - build_info
-      - test_webservices:
-          filters: *main_filters
-          requires:
-            - build_info
+      # - build:
+      #     filters: *main_filters
+      #     requires:
+      #       - build_info
+      #       - test_sanity
+      #       - test_bmo
+      #       - test_webservices
+      #       - test_selenium
+      # - test_sanity:
+      #     filters: *main_filters
+      #     requires:
+      #       - build_info
+      # - test_bmo:
+      #     filters: *main_filters
+      #     requires:
+      #       - build_info
+      # - test_webservices:
+      #     filters: *main_filters
+      #     requires:
+      #       - build_info
       - test_selenium:
           filters: *main_filters
           requires:
