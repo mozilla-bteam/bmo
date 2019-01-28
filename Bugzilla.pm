@@ -690,13 +690,9 @@ sub active_custom_fields {
   }
   else {
     my $match_params = {custom => 1, obsolete => 0, skip_extensions => 1};
-    my $exclude_extensions = 0;
     if ($wants) {
       if ($wants->exclude->{custom}) {
         return ();
-      }
-      elsif ($wants->exclude->{extensions}) {
-        $exclude_extensions = 1;
       }
       elsif ($wants->is_specific) {
         my @names = (grep {/^cf_/} $wants->includes);
@@ -706,8 +702,7 @@ sub active_custom_fields {
     }
     my $fields = Bugzilla::Field->match($match_params);
     Bugzilla::Hook::process('active_custom_fields',
-      {fields => \$fields, params => $params})
-      unless $exclude_extensions;
+      {fields => \$fields, params => $params});
     request_cache->{$cache_id} = $fields if $can_cache;
     return @$fields;
   }
