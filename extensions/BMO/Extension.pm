@@ -873,6 +873,18 @@ sub quicksearch_map {
   }
 }
 
+sub quicksearch_run {
+  my ($self, $args) = @_;
+  my ($cgi, $bug_product_set) = @$args{qw(cgi bug_product_set)};
+
+  # Exclude Graveyard products by default
+  unless ($bug_product_set) {
+    $cgi->param("f1", 'classification');
+    $cgi->param("o1", 'notequals');
+    $cgi->param("v1", 'Graveyard');
+  }
+}
+
 sub object_columns {
   my ($self, $args) = @_;
   return unless $args->{class}->isa('Bugzilla::Product');
