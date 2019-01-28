@@ -127,7 +127,7 @@ sub startup {
   }
   $self->hook(after_dispatch => sub {
     my ($c) = @_;
-    if ($self->req->is_secure
+    if ($c->req->is_secure
       && ! $c->res->headers->strict_transport_security
       && Bugzilla->params->{'strict_transport_security'} ne 'off')
     {
