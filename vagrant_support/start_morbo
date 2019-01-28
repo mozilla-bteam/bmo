@@ -5,7 +5,7 @@ my $key_file  = '/vagrant/bmo-web.vm-key.pem';
 my $listen    = 'http://*:80';
 
 if (-f $cert_file && -f $key_file) {
-  $listen .= ",https://*:443??cert=$cert_file&key=$key_file";
+  $listen .= ",https://*:443?cert=$cert_file&key=$key_file";
 }
 
 $ENV{PERL5LIB}    = '/vagrant/local/lib/perl5';
