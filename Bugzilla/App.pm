@@ -122,19 +122,22 @@ sub startup {
         else {
           $c->res->headers->cache_control('public, max-age=31536000, immutable');
         }
-        if ($self->https
-          && not $c->res->headers->strict_transport_security
-          && Bugzilla->params->{'strict_transport_security'} ne 'off')
-        {
-          my $sts_opts = 'max-age=' . MAX_STS_AGE;
-          if (Bugzilla->params->{'strict_transport_security'} eq 'include_subdomains') {
-            $sts_opts .= '; includeSubDomains';
-          }
-          $c->res->headers->strict_transport_security($sts_opts);
-        }
       }
     );
   }
+  $self->hook(after_dispatch => sub {
+    my ($c) = @_;
+    if ($self->req->is_secure
+      && ! $c->res->headers->strict_transport_security
+      && Bugzilla->params->{'strict_transport_security'} ne 'off')
+    {
+      my $sts_opts = 'max-age=' . MAX_STS_AGE;
+      if (Bugzilla->params->{'strict_transport_security'} eq 'include_subdomains') {
+        $sts_opts .= '; includeSubDomains';
+      }
+      $c->res->headers->strict_transport_security($sts_opts);
+    }
+  });
   Bugzilla::WebService::Server::REST->preload;
 
   $self->setup_routes;
