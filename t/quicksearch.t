@@ -17,8 +17,8 @@ BEGIN { Bugzilla->extensions }
 use Test2::V0;
 use Test2::Tools::Mock qw(mock mock_accessor);
 use Test2::Tools::Exception qw(dies lives);
-use ok 'Bugzilla::Search::Quicksearch';
 use ok 'Bugzilla::Search';
+use ok 'Bugzilla::Search::Quicksearch';
 
 my $CGI = mock 'Bugzilla::CGI' => (add_constructor => [fake_new => 'hash',]);
 Bugzilla->usage_mode(USAGE_MODE_MOJO);
@@ -48,8 +48,6 @@ test_quicksearch(
   }xs
 );
 
-#my $search = Bugzilla::Search->new(params => scalar $cgi->Vars);
-#diag $search->_sql, "\n";
 test_quicksearch(
   input  => "summary:batman AND summary:robin",
   params => {
@@ -95,6 +93,8 @@ test_quicksearch(
 
 test_quicksearch(
   input       => "FIXED summary:batman AND summary:robin",
+  # bug_status comes from a hash, and thus will have random order.
+  # so there is an option to sort it.
   sort_params => ['bug_status'],
   params      => {
     'bug_status' => ['RESOLVED', 'VERIFIED'],
