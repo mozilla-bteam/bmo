@@ -702,7 +702,7 @@ sub active_custom_fields {
     }
     my $fields = Bugzilla::Field->match($match_params);
     Bugzilla::Hook::process('active_custom_fields',
-      {fields => \$fields, params => $params});
+      {fields => \$fields, params => $params, wants => $wants});
     request_cache->{$cache_id} = $fields if $can_cache;
     return @$fields;
   }
