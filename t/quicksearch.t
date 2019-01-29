@@ -13,22 +13,22 @@ use Bugzilla::Test::MockDB;
 use Bugzilla::Test::MockParams (password_complexity => 'no_constraints');
 use Bugzilla;
 use Bugzilla::Constants;
-BEGIN { Bugzilla->extensions };
+BEGIN { Bugzilla->extensions }
 use Test2::V0;
 use Test2::Tools::Mock qw(mock mock_accessor);
 use Test2::Tools::Exception qw(dies lives);
 use ok 'Bugzilla::Search::Quicksearch';
 use ok 'Bugzilla::Search';
 
-my $CGI = mock 'Bugzilla::CGI' => (
-  add_constructor => [
-    fake_new => 'hash',
-  ]
-);
+my $CGI = mock 'Bugzilla::CGI' => (add_constructor => [fake_new => 'hash',]);
 Bugzilla->usage_mode(USAGE_MODE_MOJO);
 Bugzilla->request_cache->{cgi} = Bugzilla::CGI->fake_new();
 
-like(dies { quicksearch('') }, qr/buglist_parameters_required/, "Got right exception");
+like(
+  dies { quicksearch('') },
+  qr/buglist_parameters_required/,
+  "Got right exception"
+);
 
 test_quicksearch(
   input  => "summary:batman OR summary:robin",
@@ -51,7 +51,7 @@ test_quicksearch(
 #my $search = Bugzilla::Search->new(params => scalar $cgi->Vars);
 #diag $search->_sql, "\n";
 test_quicksearch(
-  input => "summary:batman AND summary:robin",
+  input  => "summary:batman AND summary:robin",
   params => {
     'bug_status' => ['UNCONFIRMED', 'CONFIRMED', 'IN_PROGRESS'],
     'field0-0-0' => 'short_desc',
@@ -69,7 +69,7 @@ test_quicksearch(
 );
 
 test_quicksearch(
-  input      => "ALL summary:batman AND summary:robin",
+  input  => "ALL summary:batman AND summary:robin",
   params => {
     'field0-0-0' => 'short_desc',
     'field1-0-0' => 'short_desc',
@@ -94,9 +94,9 @@ test_quicksearch(
 );
 
 test_quicksearch(
-  input  => "FIXED summary:batman AND summary:robin",
+  input       => "FIXED summary:batman AND summary:robin",
   sort_params => ['bug_status'],
-  params => {
+  params      => {
     'bug_status' => ['RESOLVED', 'VERIFIED'],
     'resolution' => 'FIXED',
     'field0-0-0' => 'short_desc',
@@ -118,7 +118,7 @@ sub test_quicksearch {
   my $vars = $cgi->Vars;
   if ($opt{sort_params}) {
     foreach my $key (@{$opt{sort_params}}) {
-      $vars->{$key} = [sort @{$vars->{$key} // [] }];
+      $vars->{$key} = [sort @{$vars->{$key} // []}];
     }
   }
 
