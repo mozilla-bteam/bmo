@@ -125,7 +125,7 @@ sub test_quicksearch {
 
   # Provide a hook to allow modifying the params. This has to correspond with
   # the `quicksearch_run` hook
-  Bugzilla::Hook::process('quicksearch_test', { 'opt' => \%opt };
+  Bugzilla::Hook::process('quicksearch_test', { 'opt' => \%opt });
 
   is($vars, $opt{params}, "test params: $opt{input}");
   if (my $sql = $opt{sql_like}) {
