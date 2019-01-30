@@ -1438,6 +1438,20 @@ product and/or component is specified in the search query entered by user.
 
 =back
 
+=head2 quicksearch_test
+
+This hook allows you to alter the QuickSearch params in the test. This has to
+correspond with the C<quicksearch_run> hook described above.
+
+Params:
+
+=over
+
+=item C<opt> - A hash of the test options containing C<params>, which has to be
+altered in the same way as C<quicksearch_run>.
+
+=back
+
 =head2 sanitycheck_check
 
 This hook allows for extra sanity checks to be added, for use by

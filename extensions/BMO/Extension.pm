@@ -879,10 +879,19 @@ sub quicksearch_run {
 
   # Exclude Graveyard products by default
   unless ($bug_product_set) {
-    $cgi->param("f1", 'classification');
-    $cgi->param("o1", 'notequals');
-    $cgi->param("v1", 'Graveyard');
+    $cgi->param('f1', 'classification');
+    $cgi->param('o1', 'notequals');
+    $cgi->param('v1', 'Graveyard');
   }
+}
+
+sub quicksearch_test {
+  my ($self, $args) = @_;
+  my $opt = $args->{'opt'};
+
+  $opt{params}->{'f1'} = 'classification';
+  $opt{params}->{'o1'} = 'notequals';
+  $opt{params}->{'v1'} = 'Graveyard';
 }
 
 sub object_columns {
