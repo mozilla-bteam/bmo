@@ -889,9 +889,9 @@ sub quicksearch_test {
   my ($self, $args) = @_;
   my $opt = $args->{'opt'};
 
-  $opt{params}->{'f1'} = 'classification';
-  $opt{params}->{'o1'} = 'notequals';
-  $opt{params}->{'v1'} = 'Graveyard';
+  $opt->{params}->{'f1'} = 'classification';
+  $opt->{params}->{'o1'} = 'notequals';
+  $opt->{params}->{'v1'} = 'Graveyard';
 }
 
 sub object_columns {
