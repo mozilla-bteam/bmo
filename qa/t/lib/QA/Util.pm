@@ -241,7 +241,7 @@ sub file_bug_in_product {
   if ($sel->is_text_present($product)) {
     ok(1, "Display the list of enterable products");
     $sel->open_ok(
-        . "/enter_bug.cgi?product=$product&format=__default__",
+        "/enter_bug.cgi?product=$product&format=__default__",
       undef,
       "Choose product $product"
     );
