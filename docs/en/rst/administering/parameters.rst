@@ -246,10 +246,10 @@ usestatuswhiteboard
     common.
 
 use_regression_fields
-    Do you wish to use the :field:`Regressed by` and :field:`Regresses` fields?
-    These allow you to efficiently track software regressions, which might
-    previously be managed using the :field:`Depends on` and :field:`Blocks`
-    fields along with the “regression” keyword.
+    Do you wish to use the :field:`Regressed by` and :field:`Regressions`
+    fields? These allow you to efficiently track software regressions,
+    which might previously be managed using the :field:`Depends on` and
+    :field:`Blocks` fields along with the “regression” keyword.
 
 use_see_also
     Do you wish to use the :field:`See Also` field? It allows you mark bugs

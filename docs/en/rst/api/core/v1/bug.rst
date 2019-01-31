@@ -122,7 +122,7 @@ name              type   description
          "cf_free_text": "",
          "blocks": [],
          "regressed_by": [],
-         "regresses": [],
+         "regressions": [],
          "comment_count": 12
        }
      ]
@@ -208,7 +208,7 @@ qa_contact_detail      object    An object containing detailed user information
                                  for the qa_contact. To see the keys included in
                                  the user detail object, see below.
 regressed_by           array     The IDs of bugs that introduced this bug.
-regresses              array     The IDs of bugs that are introduced by this bug.
+regressions            array     The IDs of bugs that are introduced by this bug.
 remaining_time         double    The number of hours of work remaining until work
                                  on this bug is complete. If you are not in the
                                  time-tracking group, this field will not be
@@ -734,7 +734,7 @@ id    int   This is the ID of the newly-filed bug.
   You didn't specify a summary for the bug.
 * 116 (Dependency Loop)
   You specified values in the "blocks" and "depends_on" fields,
-  or the "regresses" and "regressed_by" fields, that would cause a
+  or the "regressions" and "regressed_by" fields, that would cause a
   circular dependency between bugs.
 * 120 (Group Restriction Denied)
   You tried to restrict the bug to a group which does not exist, or which
@@ -826,7 +826,7 @@ assigned_to            string   The full login name of the user this bug is
                                 assigned to.
 blocks                 object   (Same as ``regressed_by`` below)
 depends_on             object   (Same as ``regressed_by`` below)
-regresses              object   (Same as ``regressed_by`` below)
+regressions            object   (Same as ``regressed_by`` below)
 regressed_by           object   These specify the bugs that this bug blocks,
                                 depends on, regresses, or is regressed by,
                                 respectively. To set these, you should pass an

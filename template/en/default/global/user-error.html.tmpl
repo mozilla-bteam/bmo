@@ -508,7 +508,7 @@
     [% title = "Dependency Loop Detected" %]
     The following [% IF deps.size > 1; terms.bugs; ELSE; terms.bug; END %]
     would appear on both the “Depends on” and “blocks” fields, or both the
-    “Regressed by” and “Regresses” fields, of the dependency tree if these
+    “Regressed by” and “Regressions” fields, of the dependency tree if these
     changes are committed:
     [% FOREACH dep = deps %]
       [%+ dep FILTER bug_link(dep) FILTER none %]

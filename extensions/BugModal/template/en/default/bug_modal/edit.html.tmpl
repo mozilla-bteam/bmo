@@ -809,7 +809,7 @@
   END;
   open_regs = bug.regresses_obj.only("resolution", "").size;
   IF open_regs;
-    sub.push("Regresses " _ open_regs _ " bug" _ (open_regs == 1 ? "" : "s"));
+    sub.push("Regressed " _ open_regs _ " bug" _ (open_regs == 1 ? "" : "s"));
   END;
   IF bug.keyword_objects.size;
     IF bug.keyword_objects.size <= 3;

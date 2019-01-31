@@ -294,7 +294,7 @@ use constant DEFAULT_FIELDS => (
   },
   {
     name           => 'regresses',
-    desc           => 'Regresses',
+    desc           => 'Regressions',
     in_new_bugmail => 1,
     is_numeric     => 1,
     buglist        => 1

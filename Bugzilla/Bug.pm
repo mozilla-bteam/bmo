@@ -272,6 +272,7 @@ use constant FIELD_MAP => {
   last_change_time      => 'delta_ts',
   comment_count         => 'longdescs.count',
   platform              => 'rep_platform',
+  regressions           => 'regresses',
   severity              => 'bug_severity',
   status                => 'bug_status',
   summary               => 'short_desc',
