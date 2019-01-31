@@ -715,14 +715,14 @@
 [% BLOCK section_regressions %]
   <tr>
     [% INCLUDE dependencies
-      field = bug_fields.regressed_by
-      deps = bug.regressed_by_obj
+      field = bug_fields.regresses
+      deps = bug.regresses_obj
     %]
   </tr>
   <tr>
     [% INCLUDE dependencies
-      field = bug_fields.regresses
-      deps = bug.regresses_obj
+      field = bug_fields.regressed_by
+      deps = bug.regressed_by_obj
     %]
   </tr>
 [% END %]

@@ -963,18 +963,18 @@
     [%# regressions %]
     [% IF Param('use_regression_fields') %]
       [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.regressed_by
-        field_type = constants.FIELD_TYPE_BUG_LIST
-        values = bug.regressed_by_obj
-        hide_on_view = bug.regressed_by.size == 0
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#regressed_by"
-      %]
-      [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.regresses
         field_type = constants.FIELD_TYPE_BUG_LIST
         values = bug.regresses_obj
         hide_on_view = bug.regresses.size == 0
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#regresses"
+      %]
+      [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.regressed_by
+        field_type = constants.FIELD_TYPE_BUG_LIST
+        values = bug.regressed_by_obj
+        hide_on_view = bug.regressed_by.size == 0
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#regressed_by"
       %]
     [% END %]
 
