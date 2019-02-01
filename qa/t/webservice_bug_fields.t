@@ -14,7 +14,7 @@ use List::Util qw(first);
 use QA::Util;
 
 my ($config, @clients) = get_rpc_clients();
-plan tests => ($config->{test_extensions} ? 1374 : 1356);
+plan tests => ($config->{test_extensions} ? 1380 : 1362);
 
 use constant INVALID_FIELD_NAME => 'invalid_field';
 use constant INVALID_FIELD_ID   => -1;
