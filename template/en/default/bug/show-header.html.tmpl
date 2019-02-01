@@ -51,6 +51,19 @@
   [% END %]
   [% unfiltered_title = unfiltered_title _ bug.short_desc %]
   [% javascript =  BLOCK %]
+    if (history && history.replaceState) {
+      if(!document.location.href.match(/show_bug\.cgi/)) {
+        history.replaceState( null,
+                             "[% unfiltered_title FILTER js %]",
+                             "[% basepath FILTER js %]show_bug.cgi?id=[% bug.bug_id FILTER js %]" );
+        document.title = "[% unfiltered_title FILTER js %]";
+      }
+      if (document.location.href.match(/show_bug\.cgi\?.*list_id=/)) {
+        var href = document.location.href;
+        href = href.replace(/[\?&]+list_id=(\d+|cookie)/, '');
+        history.replaceState(null, "[% unfiltered_title FILTER js %]", href);
+      }
+    }
     YAHOO.util.Event.onDOMReady(function() {
       initDirtyFieldTracking();
 

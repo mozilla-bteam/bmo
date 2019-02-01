@@ -1445,6 +1445,19 @@ function show_new_changes_indicator() {
     });
 }
 
+// fix url after bug creation/update
+if (history && history.replaceState) {
+    var href = document.location.href;
+    if (!href.match(/show_bug\.cgi/)) {
+        history.replaceState(null, BUGZILLA.bug_title, `${BUGZILLA.config.basepath}show_bug.cgi?id=${BUGZILLA.bug_id}`);
+        document.title = BUGZILLA.bug_title;
+    }
+    if (href.match(/show_bug\.cgi\?.*list_id=/)) {
+        href = href.replace(/[\?&]+list_id=(\d+|cookie)/, '');
+        history.replaceState(null, BUGZILLA.bug_title, href);
+    }
+}
+
 // lightbox
 
 function lb_show(el) {
