@@ -226,6 +226,9 @@
         no_label = 1
         hide_on_edit = 1
     %]
+      <b id="status-bug-type" class="[% bug.bug_type FILTER html %]">
+        [%~ bug.bug_type FILTER html ~%]
+      </b>
       <b class="bz_status_[% bug.bug_status FILTER html %]">
         [% bug.bug_status FILTER html %]
         [%+ bug.resolution FILTER html IF bug.resolution %]
@@ -457,6 +460,15 @@
           </div>
         </aside>
       </div>
+    [% END %]
+
+    [%# type %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        field      = bug_fields.bug_type
+        field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        help       = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_type"
+    %]
+      [% bug.bug_type FILTER html %]
     [% END %]
 
     [%# importance %]

@@ -76,7 +76,7 @@ sub GLOBAL_GENERAL_FIELDS {
 }
 
 use constant STANDARD_SELECT_FIELDS =>
-  qw(bug_severity bug_status op_sys priority rep_platform resolution);
+  qw(bug_type bug_severity bug_status op_sys priority rep_platform resolution);
 
 use constant ALL_SELECT_FIELDS =>
   (STANDARD_SELECT_FIELDS, qw(cf_qa_status cf_single_select));
