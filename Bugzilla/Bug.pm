@@ -57,6 +57,12 @@ use constant ID_FIELD   => 'bug_id';
 use constant NAME_FIELD => 'alias';
 use constant LIST_ORDER => ID_FIELD;
 
+# Set up Dependencies and Regressions
+use constant BUG_RELATIONS => (
+  [dependencies => qw(dependson blocked)],
+  [regressions  => qw(regressed_by regresses)],
+);
+
 # Bugs have their own auditing table, bugs_activity.
 use constant AUDIT_CREATES => 0;
 use constant AUDIT_UPDATES => 0;
@@ -583,7 +589,14 @@ sub check {
     }
   }
 
-  unless ($field && $field =~ /^(?:dependson|blocked|regress(?:ed_by|es)|dup_id)$/) {
+  state $relation_field = {
+    dependson    => 1,
+    blocked      => 1,
+    regressed_by => 1,
+    regresses    => 1,
+    dup_id       => 1
+  };
+  unless ($field && $relation_field->{$field} {
     $self->check_is_visible;
   }
   return $self;
@@ -946,30 +959,25 @@ sub create {
     $sth_keyword->execute($bug->bug_id, $keyword_id);
   }
 
-  # Set up Dependencies and Regressions
-  my %relations = (
-    'dependencies'  => [qw(dependson blocked)],
-    'regressions'   => [qw(regressed_by regresses)]
-  );
-
-  while (my ($relation, $fields) = each %relations) {
-    my ($field1, $field2) = @$fields;
-    my $sth = $dbh->prepare(
-      "INSERT INTO $relation ($field1, $field2) VALUES (?, ?)");
+  foreach my $rel (BUG_RELATIONS) {
+    my ($table, $field1, $field2) = @$rel;
+    my $sth = $dbh->prepare("INSERT INTO $table ($field1, $field2) VALUES (?, ?)");
 
     foreach my $id (@{$relation_values{$field1}}) {
       $sth->execute($id, $bug->bug_id);
+
       # Log the reverse action on the other bug.
-      LogActivityEntry($id, $field2, '', $bug->bug_id,
-        $bug->{reporter_id}, $timestamp);
+      LogActivityEntry($id, $field2, '', $bug->bug_id, $bug->{reporter_id},
+        $timestamp);
       _update_delta_ts($id, $timestamp);
     }
 
     foreach my $id (@{$relation_values{$field2}}) {
       $sth->execute($bug->bug_id, $id);
+
       # Log the reverse action on the other bug.
-      LogActivityEntry($id, $field1, '', $bug->bug_id,
-        $bug->{reporter_id}, $timestamp);
+      LogActivityEntry($id, $field1, '', $bug->bug_id, $bug->{reporter_id},
+        $timestamp);
       _update_delta_ts($id, $timestamp);
     }
   }
@@ -1184,31 +1192,36 @@ sub update {
 
   # Dependencies and Regressions
   my %relations = (
-    'dependencies'  => [qw(dependson blocked)],
-    'regressions'   => [qw(regressed_by regresses)]
+    'dependencies' => [qw(dependson blocked)],
+    'regressions'  => [qw(regressed_by regresses)]
   );
 
-  while (my ($relation, $fields) = each %relations) {
-    my ($field1, $field2) = @$fields;
+
+  foreach my $rel (BUG_RELATIONS) {
+    my ($table, $field1, $field2) = @$rel;
 
     foreach my $pair ([$field1, $field2], [$field2, $field1]) {
       my ($field, $other_field) = @$pair;
       my ($removed, $added) = diff_arrays($old_bug->$field, $self->$field);
 
       foreach my $id (@$removed) {
-        $dbh->do("DELETE FROM $relation WHERE $field = ? AND $other_field = ?",
+        $dbh->do("DELETE FROM $table WHERE $field = ? AND $other_field = ?",
           undef, $id, $self->id);
+
         # Add an activity entry for the other bug.
         LogActivityEntry($id, $other_field, $self->id, '', $user->id, $delta_ts);
+
         # Update delta_ts on the other bug so that we trigger mid-airs.
         _update_delta_ts($id, $delta_ts);
       }
 
       foreach my $id (@$added) {
-        $dbh->do("INSERT INTO $relation ($field, $other_field) VALUES (?, ?)",
+        $dbh->do("INSERT INTO $table ($field, $other_field) VALUES (?, ?)",
           undef, $id, $self->id);
+
         # Add an activity entry for the other bug.
         LogActivityEntry($id, $other_field, '', $self->id, $user->id, $delta_ts);
+
         # Update delta_ts on the other bug so that we trigger mid-airs.
         _update_delta_ts($id, $delta_ts);
       }
@@ -1955,7 +1968,7 @@ sub _check_deadline {
 # regressed_by/regresses for regressions) and bug IDs as a comma/space-separated
 # string value for each, and return arrayrefs of valid bug IDs.
 sub _check_relationship {
-  my ($invocant, $product, $relation, %deps_in) = @_;
+  my ($invocant, $product, $table, %deps_in) = @_;
 
   if (!ref $invocant) {
 
@@ -2022,7 +2035,7 @@ sub _check_relationship {
 
   # And finally, check for dependency loops.
   my $bug_id = ref($invocant) ? $invocant->id : 0;
-  my %deps = validate_relationship($bug_id, $relation, %deps_in);
+  my %deps = validate_relationship($bug_id, $table, %deps_in);
 
   return %deps;
 }
@@ -2709,12 +2722,12 @@ sub set_all {
 
   # Dependencies and Regressions
   my %relations = (
-    'dependencies'  => [qw(dependson blocked)],
-    'regressions'   => [qw(regressed_by regresses)]
+    'dependencies' => [qw(dependson blocked)],
+    'regressions'  => [qw(regressed_by regresses)]
   );
 
-  while (my ($relation, $fields) = each %relations) {
-    my ($field1, $field2) = @$fields;
+  foreach my $rel (BUG_RELATIONS) {
+    my ($table, $field1, $field2) = @$rel;
 
     next unless (exists $params->{$field1} || exists $params->{$field2});
 
@@ -2745,7 +2758,7 @@ sub set_all {
       $set_deps{$name} = \@dep_ids;
     }
 
-    $self->set_relationship($relation, %set_deps);
+    $self->set_relationship($table, %set_deps);
   }
 
   if (exists $params->{'keywords'}) {
@@ -2900,9 +2913,9 @@ sub set_custom_field {
 sub set_deadline { $_[0]->set('deadline', $_[1]); }
 
 sub set_relationship {
-  my ($self, $relation, %fields) = @_;
+  my ($self, $table, %fields) = @_;
   my ($key1, $key2) = keys %fields;
-  my %lists = $self->_check_relationship(undef, $relation, %fields);
+  my %lists = $self->_check_relationship(undef, $table, %fields);
   my ($list1, $list2) = ($lists{$key1}, $lists{$key2});
 
   # These may already be detainted, but all setters are supposed to
@@ -4087,7 +4100,8 @@ sub regressed_by {
   return $self->{'regressed_by'} if exists $self->{'regressed_by'};
   return [] if $self->{'error'};
   $self->{'regressed_by'}
-    = list_relationship('regressions', 'regresses', 'regressed_by', $self->bug_id);
+    = list_relationship('regressions', 'regresses', 'regressed_by',
+    $self->bug_id);
   return $self->{'regressed_by'};
 }
 
@@ -4102,7 +4116,8 @@ sub regresses {
   return $self->{'regresses'} if exists $self->{'regresses'};
   return [] if $self->{'error'};
   $self->{'regresses'}
-    = list_relationship('regressions', 'regressed_by', 'regresses', $self->bug_id);
+    = list_relationship('regressions', 'regressed_by', 'regresses',
+    $self->bug_id);
   return $self->{'regresses'};
 }
 
@@ -4454,8 +4469,8 @@ sub editable_bug_fields {
 # Emit a list of dependencies or regressions. Join with bug_status and bugs
 # tables to show bugs with open statuses first, and then the others
 sub list_relationship {
-  my ($relation, $my_field, $target_field, $bug_id, $exclude_resolved) = @_;
-  my $cache = Bugzilla->request_cache->{"bug_$relation"} ||= {};
+  my ($table, $my_field, $target_field, $bug_id, $exclude_resolved) = @_;
+  my $cache = Bugzilla->request_cache->{"bug_$table"} ||= {};
 
   my $dbh = Bugzilla->dbh;
   $exclude_resolved = $exclude_resolved ? 1 : 0;
@@ -4463,8 +4478,8 @@ sub list_relationship {
 
   $cache->{"${target_field}_sth_$exclude_resolved"} ||= $dbh->prepare(
     "SELECT $target_field
-             FROM $relation
-                  INNER JOIN bugs ON $relation.$target_field = bugs.bug_id
+             FROM $table
+                  INNER JOIN bugs ON $table.$target_field = bugs.bug_id
                   INNER JOIN bug_status ON bugs.bug_status = bug_status.value
             WHERE $my_field = ? $is_open_clause
             ORDER BY is_open DESC, $target_field"
@@ -5015,7 +5030,7 @@ sub _changes_everconfirmed {
 
 # Validate and return a hash of dependencies or regressions
 sub validate_relationship {
-  my ($bug_id, $relation, %fields) = @_;
+  my ($bug_id, $table, %fields) = @_;
   my ($key1, $key2) = keys %fields;
 
   return unless (defined($fields{$key1}) || defined($fields{$key2}));
@@ -5049,9 +5064,10 @@ sub validate_relationship {
     @{$deps{$target}} = @{$deptree{$target}};
     my @stack = @{$deps{$target}};
     while (@stack) {
-      my $i        = shift @stack;
-      my $dep_list = $dbh->selectcol_arrayref(
-        "SELECT $target FROM $relation WHERE $me = ?", undef, $i);
+      my $i = shift @stack;
+      my $dep_list
+        = $dbh->selectcol_arrayref("SELECT $target FROM $table WHERE $me = ?",
+        undef, $i);
       foreach my $t (@$dep_list) {
 
         # ignore any _current_ dependencies involving this bug,
