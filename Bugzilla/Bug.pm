@@ -596,7 +596,7 @@ sub check {
     regresses    => 1,
     dup_id       => 1
   };
-  unless ($field && $relation_field->{$field} {
+  unless ($field && $relation_field->{$field}) {
     $self->check_is_visible;
   }
   return $self;
@@ -1191,12 +1191,6 @@ sub update {
   }
 
   # Dependencies and Regressions
-  my %relations = (
-    'dependencies' => [qw(dependson blocked)],
-    'regressions'  => [qw(regressed_by regresses)]
-  );
-
-
   foreach my $rel (BUG_RELATIONS) {
     my ($table, $field1, $field2) = @$rel;
 
@@ -2721,11 +2715,6 @@ sub set_all {
   $self->_add_remove($params, 'groups');
 
   # Dependencies and Regressions
-  my %relations = (
-    'dependencies' => [qw(dependson blocked)],
-    'regressions'  => [qw(regressed_by regresses)]
-  );
-
   foreach my $rel (BUG_RELATIONS) {
     my ($table, $field1, $field2) = @$rel;
 
