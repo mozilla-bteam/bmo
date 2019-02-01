@@ -226,7 +226,7 @@
         <li>Description updated to '[% comp.description FILTER html_light %]'</li>
       [% END %]
       [% IF changes.default_bug_type.defined %]
-        <li>Default bug type updated to '[% comp.default_bug_type FILTER html %]'</li>
+        <li>Default [% terms.bug %] type updated to '[% comp.default_bug_type FILTER html %]'</li>
       [% END %]
       [% IF changes.initialowner.defined %]
         <li>Default assignee updated to '[% comp.default_assignee.login FILTER html %]'</li>
