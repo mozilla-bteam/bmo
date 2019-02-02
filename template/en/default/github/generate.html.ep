@@ -1,0 +1,3 @@
+% layout 'bugzilla', title => 'Hi there';
+
+%= text_field webhook_url => url_for('github_webhook', jwt => $jwt->encode)->to_abs;

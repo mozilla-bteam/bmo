@@ -1,0 +1,16 @@
+% layout 'bugzilla', title => 'Hi there';
+
+%= form_for 'github_generate' => begin
+  <div>
+    %= label_for auto_close => 'Auto Close Behavior'
+    %= select_field auto_close => [['Default (close bugs)' => 'default'], ['Leave bugs open' => 'leave_open']];
+  </div>
+
+  <div>
+    %= label_for pull_request => 'Pull Request Behavior';
+    %= select_field pull_request => [['Do Nothing' => 'do_nothing'], ['Attach To Bug' => 'attach_to_bug']];
+  </div>
+
+  %= csrf_field
+  %= submit_button 'Generate URL';
+% end

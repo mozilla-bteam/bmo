@@ -27,6 +27,7 @@ use Bugzilla::App::SES;
 use Bugzilla::App::Home;
 use Bugzilla::App::API;
 use Bugzilla::App::Static;
+use Bugzilla::App::Github;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
@@ -186,6 +187,7 @@ sub setup_routes {
   Bugzilla::App::API->setup_routes($r);
   Bugzilla::App::SES->setup_routes($r);
   Bugzilla::App::OAuth2::Clients->setup_routes($r);
+  Bugzilla::App::Github->setup_routes($r);
 }
 
 1;
