@@ -2821,3 +2821,31 @@ pre.comment-text {
 .markdown-body hr {
   border-bottom-color: #eee;
 }
+
+/* Bug types */
+
+:root {
+  --bug-type-color-defect: #B32826;
+  --bug-type-color-enhancement: #246D3A;
+  --bug-type-color-task: #0E7DCC;
+}
+
+.bug-type-label {
+  border-radius: .2em;
+  padding: .2em .4em;
+  color: #FFF;
+  background-color: #666;
+  font-weight: 600;
+}
+
+.bug-type-label[data-type="defect"] {
+  background-color: var(--bug-type-color-defect);
+}
+
+.bug-type-label[data-type="enhancement"] {
+  background-color: var(--bug-type-color-enhancement);
+}
+
+.bug-type-label[data-type="task"] {
+  background-color: var(--bug-type-color-task);
+}

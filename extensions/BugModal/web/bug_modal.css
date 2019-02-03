@@ -262,26 +262,8 @@ input[type="number"] {
     display: inline;
 }
 
-#status-bug-type {
+#field-status_summary .bug-type-label {
   margin-right: 8px;
-  border-radius: 2px;
-  padding: 1px 6px;
-  color: #FFF;
-  background-color: #666;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-#status-bug-type.defect {
-  background-color: #d41311;
-}
-
-#status-bug-type.enhancement {
-  background-color: #1fa72a;
-}
-
-#status-bug-type.task {
-  background-color: #1183f2;
 }
 
 #status-assignee, #status-needinfo {

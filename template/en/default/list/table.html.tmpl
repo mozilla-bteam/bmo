@@ -45,7 +45,7 @@
 [%# Setting maxlength => 0 means no limit. We set it for performance reasons. %]
 [% abbrev =
   {
-    "bug_type"             => { maxlength => 20 } ,
+    "bug_type"             => { maxlength => 0 } ,
     "bug_severity"         => { maxlength => 3 , title => "Sev" } ,
     "priority"             => { maxlength => 7 , title => "Pri" } ,
     "rep_platform"         => { maxlength => 3 , title => "Plt" } ,
@@ -223,6 +223,10 @@
       [% END %]
       [% IF col_abbrev.format_value %]
         [%- bug.$column FILTER format(col_abbrev.format_value) FILTER html -%]
+      [% ELSIF column == 'bug_type' %]
+        <span class="bug-type-label" data-type="[% bug.bug_type FILTER html %]">
+          [%~ bug.bug_type FILTER html ~%]
+        </span>
       [% ELSIF column == 'actual_time' ||
                column == 'remaining_time' ||
                column == 'estimated_time' %]

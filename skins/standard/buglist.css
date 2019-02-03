@@ -83,12 +83,12 @@
 /* Style bug rows according to severity. */
 .bz_blocker { color: red; font-weight: bold; }
 .bz_critical { color: red; }
-.bz_enhancement { color: #666; background-color: white; }
 
 /* Align columns in the "change multiple bugs" form to the right. */
 table#form tr th { text-align: right; }
 
-table.bz_buglist td, table.bz_buglist th {
+.bz_buglist .bug-type-label {
+  font-size: 90%;
 }
 
 /* we use a first-child class and not the pseudo-class because IE
@@ -98,6 +98,10 @@ tr.bz_secure td.first-child, a.bz_secure {
   background-position: center left;
   background-repeat: no-repeat;
   background-color: inherit;
+}
+
+th, td {
+  padding: 6px 4px;
 }
 
 th.first-child, td.first-child, a.bz_secure {
