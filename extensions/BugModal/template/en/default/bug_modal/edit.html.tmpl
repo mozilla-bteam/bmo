@@ -466,6 +466,7 @@
     [% WRAPPER bug_modal/field.html.tmpl
         field      = bug_fields.bug_type
         field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        hide_on_view = 1  # Because it's displayed on the header
         help       = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_type"
     %]
       [% bug.bug_type FILTER html %]
