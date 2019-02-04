@@ -68,10 +68,10 @@ sub create {
   my $id          = $self->param('id');
   my $secret      = $self->param('secret');
   my @scopes      = $self->param('scopes');
-  $description || ThrowCodeError('param_required', {param => 'description'});
-  $id          || ThrowCodeError('param_required', {param => 'id'});
-  $secret      || ThrowCodeError('param_required', {param => 'secret'});
-  any { $_ > 0  } @scopes || ThrowCodeError('param_required', {param => 'scopes'});
+  $description or ThrowCodeError('param_required', {param => 'description'});
+  $id          or ThrowCodeError('param_required', {param => 'id'});
+  $secret      or ThrowCodeError('param_required', {param => 'secret'});
+  any { $_ > 0 } @scopes or ThrowCodeError('param_required', {param => 'scopes'});
   my $token = $self->param('token');
   check_token_data($token, 'create_oauth_client');
 
