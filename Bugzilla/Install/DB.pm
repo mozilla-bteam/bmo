@@ -781,8 +781,7 @@ sub update_table_definitions {
     {TYPE => 'MEDIUMTEXT'});
 
   # Bug 1522341 - kohei.yoshino@gmail.com
-  $dbh->bz_add_column('bugs', 'bug_type',
-    {TYPE => 'varchar(20)', NOTNULL => 1}, 'defect');
+  $dbh->bz_add_column('bugs', 'bug_type', {TYPE => 'varchar(20)'});
   $dbh->bz_add_column('components', 'default_bug_type',
     {TYPE => 'varchar(20)'});
 
