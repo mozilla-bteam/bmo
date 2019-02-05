@@ -9,41 +9,41 @@
 [% PROCESS global/variables.none.tmpl %]
 
 [% inline_style = BLOCK %]
-#blocklist_bug_form h1 {
+#blocklist_form h1 {
   margin-bottom: 0;
 }
-#blocklist_bug_form .required:after {
+#blocklist_form .required:after {
   content: " *";
   color: red;
 }
-#blocklist_bug_form .field_label {
+#blocklist_form .field_label {
   font-weight: bold;
 }
-#blocklist_bug_form .field_desc {
+#blocklist_form .field_desc {
   padding-bottom: 3px;
 }
-#blocklist_bug_form .field_desc,
-#blocklist_bug_form .head_desc {
+#blocklist_form .field_desc,
+#blocklist_form .head_desc {
   width: 600px;
   word-wrap: normal;
 }
-#blocklist_bug_form .head_desc {
+#blocklist_form .head_desc {
   padding-top: 5px;
   padding-bottom: 12px;
 }
-#blocklist_bug_form .form_section {
+#blocklist_form .form_section {
   margin-bottom: 10px;
 }
-#blocklist_bug_form textarea {
+#blocklist_form textarea {
   font-family: inherit;
   font-size: inherit;
   margin: 0 !important;
 }
-#blocklist_bug_form em {
+#blocklist_form em {
   font-size: 1em;
 }
 
-#blocklist_bug_form.noscript {
+#blocklist_form.noscript {
   display: none;
 }
 [% END %]
@@ -100,7 +100,7 @@ function validateAndSubmit() {
 }
 
 window.addEventListener("DOMContentLoaded", function() {
-  document.getElementById("blocklist_bug_form").classList.remove("noscript");
+  document.getElementById("blocklist_form").classList.remove("noscript");
 });
 
 [% END %]
@@ -117,7 +117,7 @@ window.addEventListener("DOMContentLoaded", function() {
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi %]
 
-<form id="blocklist_bug_form" method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data" class="noscript" onSubmit="return validateAndSubmit()">
+<form id="blocklist_form" method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data" class="noscript" onSubmit="return validateAndSubmit()">
   <input type="hidden" name="product" value="Toolkit">
   <input type="hidden" name="component" value="Blocklist Policy Requests">
   <input type="hidden" name="rep_platform" value="All">
@@ -203,7 +203,7 @@ window.addEventListener("DOMContentLoaded", function() {
     <label for="blocklist_platform_versions" class="field_label">Platforms</label>
     <div class="field_desc">
       The applications, application versions, and platform of the extension to be blocked. May be
-      left empty if this bug affects all Firefox versions on all platforms.
+      left empty if this [% terms.bug %] affects all Firefox versions on all platforms.
     </div>
     <input type="text" name="blocklist_platform_versions" id="blocklist_platform_versions" size="80" placeholder="<All Platforms>">
   </div>
