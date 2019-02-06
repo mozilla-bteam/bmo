@@ -8,19 +8,24 @@
 package Bugzilla::Cannon::Ping::Simple;
 use 5.10.1;
 use Moo;
-use JSON::Validator qw(joi);
+
+our $VERSION = '1';
 
 with 'Bugzilla::Cannon::Ping';
 
 sub _build_validator {
   my ($self) = @_;
+
+  # For prototyping we use joi, but after protyping
+  # $schema should be set to the file path or url of a json schema file.
   my $schema = joi->object->props({
     bug_id     => joi->integer->required->min(1),
     bug_status => joi->string->required,
-    resolution => joi->string,
+    keywords   => joi->array->items(joi->string)->required,
     priority   => joi->string->required,
+    resolution => joi->string,
     severity   => joi->string->required,
-  });
+  })->strict;
 
   return JSON::Validator->new(schema => $schema);
 }
@@ -30,13 +35,16 @@ sub _build_resultset {
   my $bugs    = $self->model->resultset('Bug');
   my $query   = { }; # match everything
   my $options = {
-    order_by => 'bugs.bug_id',
+    join => ['keywords'],
+    order_by => 'me.bug_id',
+    group_by => 'me.bug_id',
     columns  => {
       bug_id     => 'me.bug_id',
       bug_status => 'me.bug_status',
-      resolution => 'me.resolution',
       priority   => 'me.priority',
+      resolution => 'me.resolution',
       severity   => 'me.severity',
+      keywords   => { group_concat => 'keywords.name' },
     },
     result_class => 'DBIx::Class::ResultClass::HashRefInflator',
   };
