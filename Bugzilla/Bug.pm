@@ -3261,10 +3261,16 @@ sub set_bug_status {
     }
   }
 }
+
+sub set_type {
+  # The bug_type table column is nullable, but make sure to use the default type
+  # in case it's not set
+  $_[0]->set('bug_type', $_[1] || Bugzilla->params->{'default_bug_type'});
+}
+
 sub set_status_whiteboard { $_[0]->set('status_whiteboard', $_[1]); }
 sub set_summary           { $_[0]->set('short_desc',        $_[1]); }
 sub set_target_milestone  { $_[0]->set('target_milestone',  $_[1]); }
-sub set_type              { $_[0]->set('bug_type',          $_[1]); }
 sub set_url               { $_[0]->set('bug_file_loc',      $_[1]); }
 sub set_version           { $_[0]->set('version',           $_[1]); }
 
