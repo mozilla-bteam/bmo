@@ -11,7 +11,7 @@ defaults:
     user: app
 
   selenium_firefox_image: &selenium_firefox_image
-    image: selenium/standalone-firefox:3.141.59
+    image: selenium/standalone-firefox:3.141.59-gold
 
   mysql_image: &mysql_image
     image: mozillabteam/bmo-mysql:5.6
@@ -234,7 +234,7 @@ jobs:
           path: /app/artifacts
       - *store_log
 
-  test_bmo:
+   test_bmo:
     parallelism: 1
     working_directory: /app
     docker:
@@ -261,7 +261,7 @@ jobs:
           mkdir artifacts
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          /app/scripts/entrypoint.pl test_bmo -q -f t/bmo/*.t
+          /app/scripts/entrypoint.pl test_bmo -v -f t/bmo/basic-dkl.t
       - *store_log
 
 workflows:
