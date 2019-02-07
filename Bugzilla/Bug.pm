@@ -1354,8 +1354,11 @@ sub update {
     }
   );
 
-  # If any change occurred, refresh the timestamp of the bug.
-  if ( scalar(keys %$changes)
+  # If any change other than CC additions/removals occurred, refresh the
+  # timestamp of the bug.
+  my $changes_size = scalar(keys %$changes);
+  if ( $changes_size > 1
+    || $changes_size == 1 && !defined $changes->{'cc'}
     || $self->{added_comments}
     || $self->{comment_isprivate})
   {
