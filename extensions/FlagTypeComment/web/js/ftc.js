@@ -24,12 +24,18 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
     this.$comment = document.querySelector('#comment');
 
     if (this.$flags && this.$comment) {
+      const $form = this.$comment.form;
+      const $extra_patch_types = document.querySelector('meta[name="extra-patch-types"]');
+
+      this.bug_id = Number($form.bugid ? $form.bugid.value : $form.querySelector('meta[name="bug_id"]').content);
+      this.attachment_id = Number($form.id.value);
+      this.extra_patch_types = $extra_patch_types ? $extra_patch_types.content.split(' ') : [];
       this.selects = [...this.$flags.querySelectorAll('.flag_select')];
       this.selects.forEach($select => $select.addEventListener('change', () => this.flag_onselect($select)));
       this.$fieldset_wrapper = this.$flags.parentElement.appendChild(document.createElement('div'));
       this.$fieldset_wrapper.id = 'approval-request-fieldset-wrapper';
       this.$comment_wrapper = document.querySelector('#smallCommentFrame') || this.$comment.parentElement;
-      this.$comment.form.addEventListener('submit', () => this.form_onsubmit());
+      $form.addEventListener('submit', event => this.form_onsubmit(event));
     }
   }
 
@@ -91,13 +97,13 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
   }
 
   /**
-   * Find a `<select>` element for a requested flag that matches the given fieldset.
+   * Find one or more `<select>` elements that match the requested flag(s) of the given fieldset.
    * @param {HTMLElement} $fieldset `<section>` element with the `data-flags` attribute.
-   * @returns {HTMLSelectElement} Any `<select>` element.
+   * @returns {Array.<HTMLSelectElement>} Any `<select>` element(s).
    */
-  find_select($fieldset) {
+  find_selectors($fieldset) {
     return this.selects
-      .find($_select => $_select.value === '?' && this.check_compatibility($_select.dataset.name, $fieldset));
+      .filter($_select => $_select.value === '?' && this.check_compatibility($_select.dataset.name, $fieldset));
   }
 
   /**
@@ -127,7 +133,7 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
 
     // Remove the temporary fieldset if not required. One fieldset can support multiple flags, so, for example,
     // if `approval‑mozilla‑release` is unselected but `approval‑mozilla‑beta` is still selected, keep it
-    if (state !== '?' && $fieldset && !this.find_select($fieldset)) {
+    if (state !== '?' && $fieldset && !this.find_selectors($fieldset).length) {
       $fieldset.remove();
     }
 
@@ -137,6 +143,25 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
 
       if ($fieldset) {
         this.$fieldset_wrapper.appendChild($fieldset);
+
+        // Show any other patches that can be requested for approval
+        bugzilla_ajax({
+          url: `${BUGZILLA.config.basepath}rest/bug/${this.bug_id}/attachment?` +
+            'include_fields=id,summary,content_type,is_patch,is_obsolete',
+        }, ({ bugs }) => {
+          const attachments = bugs ? bugs[this.bug_id] : [];
+          const others = attachments.filter(att => att.id !== this.attachment_id && !att.is_obsolete &&
+            (att.is_patch || this.extra_patch_types.includes(att.content_type)));
+
+          if (others.length) {
+            $fieldset.querySelector('tbody').insertAdjacentHTML('beforeend',
+              '<tr class="other-patches"><th>Do you want to request approval of these patches as well?</th><td>' +
+              `${others.map(patch =>
+                `<div><label><input type="checkbox" checked data-id="${patch.id}"> ${patch.summary}</label></div>`
+              ).join('')}` +
+              '</td></tr>');
+          }
+        });
       }
     }
 
@@ -166,15 +191,49 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
 
   /**
    * Convert the input values into comment text and remove the temporary fieldset before submitting the form.
-   * @returns {Boolean} Always `true` to allow submitting the form.
+   * @param {Event} event `submit` event.
+   * @returns {Boolean} Always `false` to prevent the form from being auto-submitted.
    */
-  form_onsubmit() {
+  async form_onsubmit(event) {
+    // Submit the form normally if no fieldset has been inserted
+    if (!this.inserted_fieldsets.length) {
+      return true;
+    }
+
+    // Prevent auto-submission
+    event.preventDefault();
+
     const $markdown_off = this.$comment.form.querySelector('input[name="markdown_off"]');
 
     // Enable Markdown for any regular patches. Phabricator requests don't come with this hidden `<input>`
-    if (this.inserted_fieldsets.length && $markdown_off) {
+    if ($markdown_off) {
       $markdown_off.remove();
     }
+
+    // If the user wants to request approval of other patches as well, send API request(s) to do it first
+    await Promise.all([...this.inserted_fieldsets].map($fieldset => new Promise(resolve => {
+      const $others = $fieldset.querySelector('tr.other-patches');
+
+      if (!$others) {
+        resolve();
+        return;
+      }
+
+      const ids = [...$others.querySelectorAll('input:checked')].map($input => Number($input.dataset.id));
+      const flags = this.find_selectors($fieldset).map($select => ({ name: $select.dataset.name, status: '?' }));
+
+      $others.remove();
+
+      if (ids.length && flags.length) {
+        bugzilla_ajax({
+          type: 'PUT',
+          url: `${BUGZILLA.config.basepath}rest/bug/attachment/${ids[0]}`,
+          data: { ids, flags },
+        }, () => resolve(), () => resolve());
+      } else {
+        resolve();
+      }
+    })));
 
     for (const $fieldset of this.inserted_fieldsets) {
       const text = [
@@ -218,7 +277,10 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
       $fieldset.remove();
     }
 
-    return true;
+    // Submit the form once everything is done
+    this.$comment.form.submit();
+
+    return false;
   }
 };
 
