@@ -18,16 +18,14 @@ $(function() {
         }
 
         $('#bitly-url').val('');
-        var request = `${BUGZILLA.config.basepath}rest/bitly/${type}?` +
-                      `url=${encodeURIComponent($('#bitly-shorten').data('url'))}&` +
-                      `Bugzilla_api_token=${encodeURIComponent(BUGZILLA.api_token)}`;
-        $.ajax(request)
-            .done(function(data) {
+
+        Bugzilla.API.get(`bitly/${type}`, { url: $('#bitly-shorten').data('url') })
+            .then(data => {
                 urls[type] = data.url;
                 $('#bitly-url').val(urls[type]).select().focus();
             })
-            .fail(function(data) {
-                $('#bitly-url').val(data.responseJSON.message);
+            .catch(error => {
+                $('#bitly-url').val(error.message);
             });
     }
 

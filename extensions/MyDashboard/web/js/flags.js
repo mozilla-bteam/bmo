@@ -11,14 +11,8 @@ $(function () {
     YUI({
         base: 'js/yui3/',
         combine: false
-    }).use("node", "datatable", "datatable-sort",
-        "datatable-datasource", "datasource-io", "datasource-jsonschema", function(Y) {
+    }).use('node', 'datatable', 'datatable-sort', 'escape', function(Y) {
         // Common
-        var counter = 0;
-        var dataSource = {
-            requestee: null,
-            requester: null
-        };
         var dataTable = {
             requestee: null,
             requester: null
@@ -27,43 +21,6 @@ $(function () {
         var updateFlagTable = function(type) {
             if (!type) return;
 
-            counter = counter + 1;
-
-            var callback = {
-                success: function(e) {
-                    if (e.response) {
-                        Y.one('#' + type + '_loading').addClass('bz_default_hidden');
-                        Y.one('#' + type + '_count_refresh').removeClass('bz_default_hidden');
-                        Y.one("#" + type + "_flags_found").setHTML(
-                            e.response.results.length +
-                            ' request' + (e.response.results.length == 1 ? '' : 's') +
-                            ' found');
-                        dataTable[type].set('data', e.response.results);
-                    }
-                },
-                failure: function(o) {
-                    Y.one('#' + type + '_loading').addClass('bz_default_hidden');
-                    Y.one('#' + type + '_count_refresh').removeClass('bz_default_hidden');
-                    if (o.error && o.error.message) {
-                        alert("Failed to load requests:\n\n" + o.error.message);
-                    } else {
-                        alert("Failed to load requests");
-                    }
-                }
-            };
-
-            var json_object = {
-                version: "1.1",
-                method:  "MyDashboard.run_flag_query",
-                id:      counter,
-                params:  {
-                    type : type,
-                    Bugzilla_api_token : (BUGZILLA.api_token ? BUGZILLA.api_token : '')
-                }
-            };
-
-            var stringified = JSON.stringify(json_object);
-
             Y.one('#' + type + '_loading').removeClass('bz_default_hidden');
             Y.one('#' + type + '_count_refresh').addClass('bz_default_hidden');
 
@@ -71,13 +28,21 @@ $(function () {
             dataTable[type].render("#" + type + "_table");
             dataTable[type].showMessage('loadingMessage');
 
-            dataSource[type].sendRequest({
-                request: stringified,
-                cfg: {
-                    method:  "POST",
-                    headers: { 'Content-Type': 'application/json' }
-                },
-                callback: callback
+            Bugzilla.API.get('mydashboard/run_flag_query', { type }).then(data => {
+                const results = data.result[type];
+
+                Y.one(`#${type}_loading`).addClass('bz_default_hidden');
+                Y.one(`#${type}_count_refresh`).removeClass('bz_default_hidden');
+                Y.one(`#${type}_flags_found`)
+                    .setHTML(`${results.length} ${(results.length === 1 ? 'request' : 'requests')} found`);
+
+                dataTable[type].set('data', results);
+                dataTable[type].render(`#${type}_table`);
+            }).catch(error => {
+                Y.one(`#${type}_loading`).addClass('bz_default_hidden');
+                Y.one(`#${type}_count_refresh`).removeClass('bz_default_hidden');
+
+                alert(`Failed to load requests:\n\n${error.message}`);
             });
         };
 
@@ -134,16 +99,6 @@ $(function () {
         };
 
         // Requestee
-        dataSource.requestee = new Y.DataSource.IO({ source: `${BUGZILLA.config.basepath}jsonrpc.cgi` });
-        dataSource.requestee.on('error', function(e) {
-            try {
-                var response = JSON.parse(e.data.responseText);
-                if (response.error)
-                    e.error.message = response.error.message;
-            } catch(ex) {
-                // ignore
-            }
-        });
         dataTable.requestee = new Y.DataTable({
             columns: [
                 { key: "requester", label: "Requester", sortable: true },
@@ -161,20 +116,6 @@ $(function () {
 
         dataTable.requestee.plug(Y.Plugin.DataTableSort);
 
-        dataTable.requestee.plug(Y.Plugin.DataTableDataSource, {
-            datasource: dataSource.requestee
-        });
-
-        dataSource.requestee.plug(Y.Plugin.DataSourceJSONSchema, {
-            schema: {
-                resultListLocator: "result.result.requestee",
-                resultFields: ["requester", "type", "attach_id", "is_patch", "bug_id",
-                            "bug_status", "bug_summary", "updated", "updated_fancy"]
-            }
-        });
-
-        dataTable.requestee.render("#requestee_table");
-
         Y.one('#requestee_refresh').on('click', function(e) {
             updateFlagTable('requestee');
         });
@@ -183,16 +124,6 @@ $(function () {
         });
 
         // Requester
-        dataSource.requester = new Y.DataSource.IO({ source: `${BUGZILLA.config.basepath}jsonrpc.cgi` });
-        dataSource.requester.on('error', function(e) {
-            try {
-                var response = JSON.parse(e.data.responseText);
-                if (response.error)
-                    e.error.message = response.error.message;
-            } catch(ex) {
-                // ignore
-            }
-        });
         dataTable.requester = new Y.DataTable({
             columns: [
                 { key:"requestee", label:"Requestee", sortable:true,
@@ -210,18 +141,6 @@ $(function () {
         });
 
         dataTable.requester.plug(Y.Plugin.DataTableSort);
-
-        dataTable.requester.plug(Y.Plugin.DataTableDataSource, {
-            datasource: dataSource.requester
-        });
-
-        dataSource.requester.plug(Y.Plugin.DataSourceJSONSchema, {
-            schema: {
-                resultListLocator: "result.result.requester",
-                resultFields: ["requestee", "type", "attach_id", "is_patch", "bug_id",
-                            "bug_status", "bug_summary", "updated", "updated_fancy"]
-            }
-        });
 
         Y.one('#requester_refresh').on('click', function(e) {
             updateFlagTable('requester');

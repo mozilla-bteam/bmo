@@ -42,11 +42,9 @@ function getBugInfo (evt) {
 
     div.text('Getting bug info...');
 
-    var url = `${BUGZILLA.config.basepath}rest/bug/${bug_id}?` +
-              `include_fields=product,component,status,summary&Bugzilla_api_token=${BUGZILLA.api_token}`;
-    $.getJSON(url).done(function(data) {
-        var bug_message = "";
-        if (data) {
+    Bugzilla.API.get(`bug/${bug_id}?`, { include_fields: ['product', 'component', 'status', 'summary'] })
+        .then(data => {
+            let bug_message = '';
             if (data.bugs[0].product !== 'Mozilla Reps'
                 || data.bugs[0].component !== 'Budget Requests')
             {
@@ -58,17 +56,13 @@ function getBugInfo (evt) {
                 bug_message = "Bug " + bug_id + " - " + data.bugs[0].status +
                     " - " + data.bugs[0].summary;
             }
-        }
-        else {
-            bug_message = "Get bug failed: " + data.responseText;
-        }
-        div.text(bug_message);
-        bug_cache[bug_id] = bug_message;
-    }).fail(function(res, x, y) {
-        if (res.responseJSON && res.responseJSON.error) {
-            div.text(res.responseJSON.message);
-        }
-    });
+            div.text(bug_message);
+            bug_cache[bug_id] = bug_message;
+        })
+        .catch(error => {
+            div.text(`Get bug failed: ${error.message}`);
+        });
+
     return true;
 }
 

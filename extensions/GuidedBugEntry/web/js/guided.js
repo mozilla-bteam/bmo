@@ -115,7 +115,6 @@ var webdev = {
 
 var product = {
   details: false,
-  _counter: 0,
   _loaded: '',
   _preselectedComponent: '',
 
@@ -215,55 +214,23 @@ var product = {
     // grab the product information
     this.details = false;
     this._loaded = productName;
-    YAHOO.util.Connect.setDefaultPostHeader('application/json; charset=UTF-8');
-    YAHOO.util.Connect.asyncRequest(
-      'POST',
-      `${BUGZILLA.config.basepath}jsonrpc.cgi`,
-      {
-        success: function(res) {
-          try {
-            var data = JSON.parse(res.responseText);
-            if (data.error)
-              throw(data.error.message);
-            if (data.result.products.length == 0)
-              document.location.href = `${BUGZILLA.config.basepath}enter_bug.cgi?format=guided`;
-            product.details = data.result.products[0];
-            bugForm.onProductUpdated();
-          } catch (err) {
-            product.details = false;
-            bugForm.onProductUpdated();
-            if (err) {
-              alert('Failed to retrieve components for product "' +
-                productName + '":' + "\n\n" + err);
-              if (console)
-                console.error(err);
-            }
-          }
-        },
-        failure: function(res) {
-          this._loaded = '';
-          product.details = false;
-          bugForm.onProductUpdated();
-          if (res.responseText) {
-            alert('Failed to retrieve components for product "' +
-              productName + '":' + "\n\n" + res.responseText);
-            if (console)
-              console.error(res);
-          }
-        }
-      },
-      JSON.stringify({
-        version: "1.1",
-        method: "Product.get",
-        id: ++this._counter,
-        params: {
-          names: [productName],
-          exclude_fields: ['internals', 'milestones', 'components.flag_types'],
-          Bugzilla_api_token : (BUGZILLA.api_token ? BUGZILLA.api_token : '')
-        }
+
+    Bugzilla.API.get('product', {
+      names: [productName],
+      exclude_fields: ['internals', 'milestones', 'components.flag_types'],
+    }).then(data => {
+      if (data.products.length === 0) {
+        document.location.href = `${BUGZILLA.config.basepath}enter_bug.cgi?format=guided`;
       }
-      )
-    );
+
+      product.details = data.products[0];
+      bugForm.onProductUpdated();
+    }).catch(error => {
+      this._loaded = '';
+      product.details = false;
+      bugForm.onProductUpdated();
+      alert(`Failed to retrieve components for product "${productName}"\n\n${error.message}`);
+    });
   }
 };
 
@@ -280,7 +247,6 @@ var otherProducts = {
 // duplicates step
 
 var dupes = {
-  _counter: 0,
   _dataTable: null,
   _dataTableColumns: null,
   _elSummary: null,
@@ -311,37 +277,10 @@ var dupes = {
   },
 
   _initDataTable: function() {
-    var dataSource = new YAHOO.util.XHRDataSource(`${BUGZILLA.config.basepath}jsonrpc.cgi`);
-    dataSource.connTimeout = 15000;
-    dataSource.connMethodPost = true;
-    dataSource.connXhrMode = "cancelStaleRequests";
-    dataSource.maxCacheEntries = 3;
-    dataSource.responseSchema = {
-      resultsList : "result.bugs",
-      metaFields : { error: "error", jsonRpcId: "id" }
-    };
-    // DataSource can't understand a JSON-RPC error response, so
-    // we have to modify the result data if we get one.
-    dataSource.doBeforeParseData =
-      function(oRequest, oFullResponse, oCallback) {
-        if (oFullResponse.error) {
-          oFullResponse.result = {};
-          oFullResponse.result.bugs = [];
-          if (console)
-            console.error("JSON-RPC error:", oFullResponse.error);
-        }
-        return oFullResponse;
-      };
-    dataSource.subscribe('dataErrorEvent',
-      function() {
-        dupes._currentSearchQuery = '';
-      }
-    );
-
     this._dataTable = new YAHOO.widget.DataTable(
       'dupes_list',
       this._dataTableColumns,
-      dataSource,
+      new YAHOO.util.LocalDataSource([]), // Dummy data source
       {
         initialLoad: false,
         MSG_EMPTY: 'No similar issues found.',
@@ -423,34 +362,12 @@ var dupes = {
       ccObject = { remove: [ guided.currentUser ] };
     }
 
-    YAHOO.util.Connect.setDefaultPostHeader('application/json; charset=UTF-8');
-    YAHOO.util.Connect.asyncRequest(
-      'POST',
-      `${BUGZILLA.config.basepath}jsonrpc.cgi`,
-      {
-        success: function(res) {
-          var data = JSON.parse(res.responseText);
-          if (data.error)
-            throw(data.error.message);
-          dupes._buildCcHTML(el, bugID, bugStatus, follow);
-        },
-        failure: function(res) {
-          dupes._buildCcHTML(el, bugID, bugStatus, !follow);
-          if (res.responseText)
-            alert("Update failed:\n\n" + res.responseText);
-        }
-      },
-      JSON.stringify({
-        version: "1.1",
-        method: "Bug.update",
-        id: ++this._counter,
-        params: {
-          ids: [ bugID ],
-          cc : ccObject,
-          Bugzilla_api_token: (BUGZILLA.api_token ? BUGZILLA.api_token : '')
-        }
-      })
-    );
+    Bugzilla.API.put(`bug/${bugID}`, { ids: [bugID], cc: ccObject }).then(data => {
+      dupes._buildCcHTML(el, bugID, bugStatus, follow);
+    }).catch(error => {
+      dupes._buildCcHTML(el, bugID, bugStatus, !follow);
+      alert(`Update failed:\n\n${error.message}`);
+    });
   },
 
   reset: function() {
@@ -549,46 +466,32 @@ var dupes = {
         ' width="16" height="11">',
         YAHOO.widget.DataTable.CLASS_LOADING
       );
-      var json_object = {
-          version: "1.1",
-          method: "Bug.possible_duplicates",
-          id: ++dupes._counter,
-          params: {
-              product: product._getNameAndRelated(),
-              summary: dupes.getSummary(),
-              limit: 12,
-              include_fields: [ "id", "summary", "status", "resolution",
-                "update_token", "cc", "component" ],
-              Bugzilla_api_token: (BUGZILLA.api_token ? BUGZILLA.api_token : '')
-          }
-      };
-
-      dupes._dataTable.getDataSource().sendRequest(
-        JSON.stringify(json_object),
-        {
-          success: dupes._onDupeResults,
-          failure: dupes._onDupeResults,
-          scope: dupes._dataTable,
-          argument: dupes._dataTable.getState()
-        }
-      );
 
       Dom.get('dupes_continue_button_top').disabled = true;
       Dom.get('dupes_continue_button_bottom').disabled = true;
       Dom.removeClass('dupes_continue', 'hidden');
+
+      Bugzilla.API.get('bug/possible_duplicates', {
+        product: product._getNameAndRelated(),
+        summary: dupes.getSummary(),
+        limit: 12,
+        include_fields: ['id', 'summary', 'status', 'resolution', 'update_token', 'cc', 'component'],
+      }).then(data => {
+        return { results: data.bugs };
+      }).catch(() => {
+        dupes._currentSearchQuery = '';
+        return { error: true };
+      }).then(data => {
+        Dom.removeClass('advanced', 'hidden');
+        Dom.removeClass('dupes_continue_button_top', 'hidden');
+        Dom.get('dupes_continue_button_top').disabled = false;
+        Dom.get('dupes_continue_button_bottom').disabled = false;
+        dupes._dataTable.onDataReturnInitializeTable('', data);
+      });
     } catch(err) {
       if (console)
         console.error(err.message);
     }
-  },
-
-  _onDupeResults: function(sRequest, oResponse, oPayload) {
-    Dom.removeClass('advanced', 'hidden');
-    Dom.removeClass('dupes_continue_button_top', 'hidden');
-    Dom.get('dupes_continue_button_top').disabled = false;
-    Dom.get('dupes_continue_button_bottom').disabled = false;
-    dupes._dataTable.onDataReturnInitializeTable(sRequest, oResponse,
-      oPayload);
   },
 
   getSummary: function() {

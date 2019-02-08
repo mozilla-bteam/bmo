@@ -6,12 +6,6 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 /**
- * Reference or define the Bugzilla app namespace.
- * @namespace
- */
-var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
-
-/**
  * Provide the ability to insert a comment template when a patch's approval flag is selected.
  */
 Bugzilla.FlagTypeComment = class FlagTypeComment {

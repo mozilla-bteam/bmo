@@ -6,12 +6,6 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 /**
- * Reference or define the Bugzilla app namespace.
- * @namespace
- */
-var Bugzilla = Bugzilla || {};
-
-/**
  * Reference or define the Review namespace.
  * @namespace
  */

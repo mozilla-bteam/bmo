@@ -262,11 +262,9 @@ $(function() {
     }
 
     function ccListUpdate() {
-        bugzilla_ajax(
-            {
-                url: `${BUGZILLA.config.basepath}rest/bug_modal/cc/${BUGZILLA.bug_id}`
-            },
-            function(data) {
+        Bugzilla.API.get(`bug_modal/cc/${BUGZILLA.bug_id}`)
+            .then(data => {
+                $('#io-error').empty().hide();
                 $('#cc-list').html(data.html);
                 $('#cc-latch').data('fetched', true);
                 $('#cc-list .cc-user').hover(
@@ -298,8 +296,10 @@ $(function() {
                             }).appendTo('#changeform');
                         }
                     });
-            }
-        );
+            })
+            .catch(error => {
+                $('#io-error').html(error.message).show('fast');
+            });
     }
 
     if (BUGZILLA.user.id) {
@@ -516,11 +516,9 @@ $(function() {
             $('#mode-btn').prop('disabled', true);
 
             // load the missing select data
-            bugzilla_ajax(
-                {
-                    url: `${BUGZILLA.config.basepath}rest/bug_modal/edit/${BUGZILLA.bug_id}`
-                },
-                function(data) {
+            Bugzilla.API.get(`bug_modal/edit/${BUGZILLA.bug_id}`)
+                .then(data => {
+                    $('#io-error').empty().hide();
                     $('#mode-btn').hide();
 
                     // populate select menus
@@ -593,8 +591,9 @@ $(function() {
                     $('#top-save-btn').show();
                     $('#cancel-btn').show();
                     $('#commit-btn').show();
-                },
-                function() {
+                })
+                .catch(error => {
+                    $('#io-error').html(error.message).show('fast');
                     $('#mode-btn-readonly').show();
                     $('#mode-btn-loading').hide();
                     $('#mode-btn').prop('disabled', false);
@@ -604,8 +603,7 @@ $(function() {
 
                     $('.edit-show').hide();
                     $('.edit-hide').show();
-                }
-            );
+                });
         });
     $('#mode-btn').prop('disabled', false);
 
@@ -689,13 +687,9 @@ $(function() {
                 $('#add-self-cc').attr('disabled', false);
             }
 
-            bugzilla_ajax(
-                {
-                    url: `${BUGZILLA.config.basepath}rest/bug/${BUGZILLA.bug_id}`,
-                    type: 'PUT',
-                    data: JSON.stringify({ cc: cc_change })
-                },
-                function(data) {
+            Bugzilla.API.put(`bug/${BUGZILLA.bug_id}`, { cc: cc_change })
+                .then(data => {
+                    $('#io-error').empty().hide();
                     $('#cc-btn').prop('disabled', false);
                     if (!(data.bugs[0].changes && data.bugs[0].changes.cc))
                         return;
@@ -711,13 +705,13 @@ $(function() {
                     }
                     if ($('#cc-latch').data('expanded'))
                         ccListUpdate();
-                },
-                function(message) {
+                })
+                .catch(error => {
+                    $('#io-error').html(error.message).show('fast');
                     $('#cc-btn').prop('disabled', false);
                     if ($('#cc-latch').data('expanded'))
                         ccListUpdate();
-                }
-            );
+                });
 
         });
 
@@ -861,16 +855,11 @@ $(function() {
 
             var quoteMarkdown = function($comment) {
                 const uid = $comment.data('comment-id');
-                bugzilla_ajax(
-                    {
-                        url: `rest/bug/comment/${uid}`,
-                    },
-                    (data) => {
-                        const quoted = data['comments'][uid]['text'].replace(/\n/g, "\n> ");
-                        reply_text = `${prefix}\n> ${quoted}`;
-                        populateNewComment();
-                    }
-                );
+                Bugzilla.API.get(`bug/comment/${uid}`).then(data => {
+                    const quoted = data['comments'][uid]['text'].replace(/\n/g, '\n> ');
+                    reply_text = `${prefix}\n> ${quoted}`;
+                    populateNewComment();
+                });
             }
 
             var populateNewComment = function() {
@@ -1110,12 +1099,9 @@ $(function() {
                 }
             });
 
-            bugzilla_ajax(
-                {
-                    url: `${BUGZILLA.config.basepath}rest/bug_modal/new_product/${BUGZILLA.bug_id}?` +
-                         `product=${encodeURIComponent($('#product').val())}`
-                },
-                function(data) {
+            Bugzilla.API.get(`bug_modal/new_product/${BUGZILLA.bug_id}`, { product: $('#product').val() })
+                .then(data => {
+                    $('#io-error').empty().hide();
                     $('#product-throbber').hide();
                     $('#component, #version, #target_milestone').attr('disabled', false);
                     var is_default = $('#product').val() == $('#product').data('default');
@@ -1172,12 +1158,12 @@ $(function() {
                             }
                         });
                     }
-                },
-                function() {
+                })
+                .catch(error => {
+                    $('#io-error').html(error.message).show('fast');
                     $('#product-throbber').hide();
                     $('#component, #version, #target_milestone').attr('disabled', false);
-                }
-            );
+                });
         });
 
     // product/component search
@@ -1267,25 +1253,19 @@ $(function() {
             return;
         $('#preview-throbber').show();
         preview.html('');
-        bugzilla_ajax(
-            {
-                url: `${BUGZILLA.config.basepath}rest/bug/comment/render`,
-                type: 'POST',
-                data: { text: comment.val() },
-                hideError: true
-            },
-            function(data) {
+
+        Bugzilla.API.post('bug/comment/render', { text: comment.val() })
+            .then(data => {
                 $('#preview-throbber').hide();
                 preview.html(data.html);
-            },
-            function(message) {
+            })
+            .catch(error => {
                 $('#preview-throbber').hide();
                 var container = $('<div/>');
                 container.addClass('preview-error');
-                container.text(message);
+                container.text(error.message);
                 preview.html(container);
-            }
-        );
+            });
         last_comment_text = comment.val();
     }).keydown(function(event) {
         var that = $(this);
@@ -1359,12 +1339,12 @@ function confirmUnsafeURL(url) {
 }
 
 function show_new_changes_indicator() {
-    const url = `${BUGZILLA.config.basepath}rest/bug_user_last_visit/${BUGZILLA.bug_id}`;
+   const url = `bug_user_last_visit/${BUGZILLA.bug_id}`;
 
     // Get the last visited timestamp
-    bugzilla_ajax({ url }, data => {
+    Bugzilla.API.get(url).then(data => {
         // Save the current timestamp
-        bugzilla_ajax({ url, type: 'POST' });
+        Bugzilla.API.post(url);
 
         if (!data[0] || !data[0].last_visit_ts) {
             return;

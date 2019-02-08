@@ -5,11 +5,9 @@ var product_name = '';
 var component_load = function(product) {
     $('#product-throbber').show();
     $('#component').attr('disabled', true);
-    bugzilla_ajax(
-        {
-            url: `${BUGZILLA.config.basepath}rest/bug_modal/product_info?product=${encodeURIComponent(product)}`
-        },
-        function(data) {
+
+    Bugzilla.API.get('bug_modal/product_info', { product })
+        .then(data => {
             $('#product-throbber').hide();
             $('#component').attr('disabled', false);
             $('#comp_desc').text('Select a component to read its description.');
@@ -29,20 +27,17 @@ var component_load = function(product) {
             selectize.load(function(callback) {
                 callback(data.versions);
             });
-        },
-        function() {
+        })
+        .catch(() => {
             alert("Network issues. Please refresh the page and try again");
-        }
-    );
+        });
 }
 
 $(document).ready(function() {
     var product_name = window.location.hash? window.location.hash.substr(1) : null;
-    bugzilla_ajax(
-            {
-                url: `${BUGZILLA.config.basepath}rest/bug_modal/initial_field_values`
-            },
-            function(data) {
+
+    Bugzilla.API.get('bug_modal/initial_field_values')
+            .then(data => {
                 initial = data
                 if (product_name) {
                     for (product in initial.products) {
@@ -67,11 +62,10 @@ $(document).ready(function() {
                         callback(initial.products);
                     }
                 });
-            },
-            function() {
+            })
+            .catch(() => {
                 alert("Network issues. Please refresh the page and try again");
-            }
-        );
+            });
     var component_sel = $("#component").selectize({
         valueField: 'name',
         labelField: 'name',

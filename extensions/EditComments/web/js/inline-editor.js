@@ -141,13 +141,10 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
     this.$textarea.style.height = `${this.$textarea.scrollHeight}px`;
 
     // Retrieve the raw comment text
-    bugzilla_ajax({
-      url: `${BUGZILLA.config.basepath}rest/editcomments/comment/${this.comment_id}`,
-      hideError: true,
-    }, data => {
+    Bugzilla.API.get(`editcomments/comment/${this.comment_id}`).then(data => {
       this.fetch_onload(data);
-    }, message => {
-      this.fetch_onerror(message);
+    }).catch(error => {
+      this.fetch_onerror(error.message);
     });
   }
 
@@ -212,16 +209,14 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
 
     this.render_message(this.str.loading);
 
-    bugzilla_ajax({
-      url: `${BUGZILLA.config.basepath}rest/bug/comment/render`,
-      type: 'POST',
-      hideError: true,
-      data: { id: BUGZILLA.bug_id, text: this.$textarea.value },
-    }, data => {
+    Bugzilla.API.post('bug/comment/render', {
+      id: BUGZILLA.bug_id,
+      text: this.$textarea.value,
+    }).then(data => {
       this.$preview.innerHTML = data.html;
       this.$preview.style.removeProperty('height');
       this.$preview.setAttribute('aria-busy', 'false');
-    }, () => {
+    }).catch(() => {
       this.render_message(this.str.preview_error);
       this.$preview.setAttribute('aria-busy', 'false');
     });
@@ -251,18 +246,13 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
     this.$textarea.disabled = this.$save_button.disabled = this.$cancel_button.disabled = true;
     this.$status.textContent = this.str.saving;
 
-    bugzilla_ajax({
-      url: `${BUGZILLA.config.basepath}rest/editcomments/comment/${this.comment_id}`,
-      type: 'PUT',
-      hideError: true,
-      data: {
-        new_comment: this.$textarea.value,
-        is_hidden: this.$is_hidden_checkbox && this.$is_hidden_checkbox.checked ? 1 : 0,
-      },
-    }, data => {
+    Bugzilla.API.put(`editcomments/comment/${this.comment_id}`, {
+      new_comment: this.$textarea.value,
+      is_hidden: this.$is_hidden_checkbox && this.$is_hidden_checkbox.checked ? 1 : 0,
+    }).then(data => {
       this.save_onsuccess(data);
-    }, message => {
-      this.save_onerror(message);
+    }).catch(error => {
+      this.save_onerror(error.message);
     });
   }
 

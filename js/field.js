@@ -715,28 +715,20 @@ $(function() {
     var options_user = {
         appendTo: $('#main-inner'),
         forceFixPosition: true,
-        serviceUrl: `${BUGZILLA.config.basepath}rest/user/suggest`,
-        params: {
-            Bugzilla_api_token: BUGZILLA.api_token,
-            fast_mode: 1
-        },
-        paramName: 'match',
         deferRequestBy: 250,
         minChars: 2,
         noCache: true,
         tabDisabled: true,
         autoSelectFirst: true,
         triggerSelectOnValidInput: false,
-        transformResult: function(response) {
-            response = $.parseJSON(response);
-            return {
-                suggestions: $.map(response.users, function(dataItem) {
-                    return {
-                        value: dataItem.name,
-                        data : { login: dataItem.name, name: dataItem.real_name }
-                    };
-                })
-            };
+        lookup: (query, done) => {
+            Bugzilla.API.get('user/suggest', { match: query, fast_mode: 1 })
+                .then(data => data.users.map(user => ({
+                    value: user.name,
+                    data: { login: user.name, name: user.real_name },
+                })))
+                .catch(() => [])
+                .then(suggestions => done({ suggestions }));
         },
         formatResult: function(suggestion, currentValue) {
             return (suggestion.data.name === '' ?
@@ -923,40 +915,16 @@ function show_comment_preview(bug_id) {
     Dom.addClass('comment_preview_text', 'bz_default_hidden');
     Dom.removeClass('comment_preview_loading', 'bz_default_hidden');
 
-    YAHOO.util.Connect.setDefaultPostHeader('application/json', true);
-    YAHOO.util.Connect.asyncRequest('POST', `${BUGZILLA.config.basepath}jsonrpc.cgi`,
-    {
-        success: function(res) {
-            data = JSON.parse(res.responseText);
-            if (data.error) {
-                Dom.addClass('comment_preview_loading', 'bz_default_hidden');
-                Dom.removeClass('comment_preview_error', 'bz_default_hidden');
-                Dom.get('comment_preview_error').innerHTML =
-                    data.error.message.htmlEncode();
-            } else {
-                document.getElementById('comment_preview_text').innerHTML = data.result.html;
-                Dom.addClass('comment_preview_loading', 'bz_default_hidden');
-                Dom.removeClass('comment_preview_text', 'bz_default_hidden');
-                last_comment_text = comment.value;
-            }
-        },
-        failure: function(res) {
-            Dom.addClass('comment_preview_loading', 'bz_default_hidden');
-            Dom.removeClass('comment_preview_error', 'bz_default_hidden');
-            Dom.get('comment_preview_error').innerHTML =
-                res.responseText.htmlEncode();
-        }
-    },
-    JSON.stringify({
-        version: "1.1",
-        method: 'Bug.render_comment',
-        params: {
-            Bugzilla_api_token: BUGZILLA.api_token,
-            id: bug_id,
-            text: comment.value
-        }
-    })
-    );
+    Bugzilla.API.post('bug/comment/render', { id: bug_id, text: comment.value }).then(data => {
+        document.getElementById('comment_preview_text').innerHTML = data.html;
+        Dom.addClass('comment_preview_loading', 'bz_default_hidden');
+        Dom.removeClass('comment_preview_text', 'bz_default_hidden');
+        last_comment_text = comment.value;
+    }).catch(error => {
+        Dom.addClass('comment_preview_loading', 'bz_default_hidden');
+        Dom.removeClass('comment_preview_error', 'bz_default_hidden');
+        Dom.get('comment_preview_error').innerHTML = YAHOO.lang.escapeHTML(error.message);
+    });
 }
 
 function show_comment_edit() {

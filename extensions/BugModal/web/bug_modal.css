@@ -807,7 +807,7 @@ h3.change-name {
     vertical-align: top;
 }
 
-#xhr-error {
+#io-error {
     background: #fff;
     color: #000;
     border-radius: 2px;

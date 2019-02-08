@@ -281,12 +281,6 @@ function handleWantsAttachment(wants_attachment) {
 var bz_attachment_form;
 
 /**
- * Reference or define the Bugzilla app namespace.
- * @namespace
- */
-var Bugzilla = Bugzilla || {};
-
-/**
  * Implement the attachment selector functionality that can be used standalone or on the New Bug page. This supports 3
  * input methods: traditional `<input type="file">` field, drag & dropping of a file or text, as well as copy & pasting
  * an image or text.

@@ -6,12 +6,6 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 /**
- * Reference or define the Bugzilla app namespace.
- * @namespace
- */
-var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
-
-/**
  * Show the current user's most-used components on the New Bug page.
  */
 Bugzilla.NewBugFrequentComp = class NewBugFrequentComp {
@@ -82,16 +76,14 @@ Bugzilla.NewBugFrequentComp = class NewBugFrequentComp {
     });
 
     return new Promise((resolve, reject) => {
-      bugzilla_ajax({
-        url: `${BUGZILLA.config.basepath}rest/bug?${params.toString()}`
-      }, response => {
-        if (!response.bugs) {
+      Bugzilla.API.get(`bug?${params.toString()}`).then(data => {
+        if (!data.bugs) {
           reject(new Error('Your frequent components could not be retrieved.'));
 
           return;
         }
 
-        if (!response.bugs.length) {
+        if (!data.bugs.length) {
           reject(new Error(('Your frequent components could not be found.')));
 
           return;
@@ -99,7 +91,7 @@ Bugzilla.NewBugFrequentComp = class NewBugFrequentComp {
 
         const results = [];
 
-        for (const { product, component } of response.bugs) {
+        for (const { product, component } of data.bugs) {
           const index = results.findIndex(result => product === result.product && component === result.component);
 
           if (index > -1) {
@@ -113,7 +105,7 @@ Bugzilla.NewBugFrequentComp = class NewBugFrequentComp {
         results.sort((a, b) => (a.count < b.count ? 1 : a.count > b.count ? -1 : 0));
 
         resolve(results.slice(0, max));
-      }, () => {
+      }).catch(() => {
         reject(new Error('Your frequent components could not be retrieved.'));
       });
     });

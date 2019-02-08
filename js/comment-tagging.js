@@ -37,25 +37,14 @@ YAHOO.bugzilla.commentTagging = {
         $('#bz_ctag_add').devbridgeAutocomplete({
             appendTo: $('#main-inner'),
             forceFixPosition: true,
-            serviceUrl: function(query) {
-                return `${BUGZILLA.config.basepath}rest/bug/comment/tags/${encodeURIComponent(query)}`;
-            },
-            params: {
-                Bugzilla_api_token: BUGZILLA.api_token
-            },
             deferRequestBy: 250,
             minChars: 1,
             tabDisabled: true,
-            transformResult: function(response) {
-                response = $.parseJSON(response);
-                return {
-                    suggestions: $.map(response, function(dataItem) {
-                        return {
-                            value: dataItem,
-                            data : null
-                        };
-                    })
-                };
+            lookup: (query, done) => {
+                Bugzilla.API.get(`bug/comment/tags/${encodeURIComponent(query)}`)
+                    .then(data => data.map(tag => ({ value: tag })))
+                    .catch(() => [])
+                    .then(suggestions => done({ suggestions }));
             }
         });
     },
@@ -74,7 +63,7 @@ YAHOO.bugzilla.commentTagging = {
 
         } else {
             // show or move
-            this.rpcRefresh(comment_id, comment_no);
+            this.fetchRefresh(comment_id, comment_no);
             this.current_id = comment_id;
             this.current_no = comment_no;
             this.ctag_add.value = '';
@@ -274,14 +263,14 @@ YAHOO.bugzilla.commentTagging = {
         tags.sort();
         // update
         this.showTags(comment_id, comment_no, tags);
-        this.rpcUpdate(comment_id, comment_no, new_tags, undefined);
+        this.fetchUpdate(comment_id, comment_no, new_tags, undefined);
     },
 
     remove : function(comment_id, comment_no, tag) {
         var el = Dom.get('ct_' + comment_no + '_' + tag);
         if (el) {
             el.parentNode.removeChild(el);
-            this.rpcUpdate(comment_id, comment_no, undefined, [ tag ]);
+            this.fetchUpdate(comment_id, comment_no, undefined, [ tag ]);
             this.hideEmpty(comment_no);
         }
     },
@@ -306,80 +295,37 @@ YAHOO.bugzilla.commentTagging = {
                && this.pending['c' + comment_id] > 0;
     },
 
-    rpcRefresh : function(comment_id, comment_no, noRefreshOnError) {
+    fetchRefresh : function(comment_id, comment_no, noRefreshOnError) {
         this.incPending(comment_id);
-        YAHOO.util.Connect.setDefaultPostHeader('application/json', true);
-        YAHOO.util.Connect.asyncRequest('POST', `${BUGZILLA.config.basepath}jsonrpc.cgi`,
-        {
-            success: function(res) {
-                YAHOO.bugzilla.commentTagging.decPending(comment_id);
-                data = JSON.parse(res.responseText);
-                if (data.error) {
-                    YAHOO.bugzilla.commentTagging.handleRpcError(
-                        comment_id, comment_no, data.error.message, noRefreshOnError);
-                    return;
-                }
 
-                if (!YAHOO.bugzilla.commentTagging.hasPending(comment_id))
-                    YAHOO.bugzilla.commentTagging.showTags(
-                        comment_id, comment_no, data.result.comments[comment_id].tags);
-            },
-            failure: function(res) {
-                YAHOO.bugzilla.commentTagging.decPending(comment_id);
-                YAHOO.bugzilla.commentTagging.handleRpcError(
-                    comment_id, comment_no, res.responseText, noRefreshOnError);
+        Bugzilla.API.get(`bug/comment/${comment_id}?include_fields=tags`).then(data => {
+            this.decPending(comment_id);
+            if (!this.hasPending(comment_id)) {
+                this.showTags(comment_id, comment_no, data.comments[comment_id].tags);
             }
-        },
-        JSON.stringify({
-            version: "1.1",
-            method: 'Bug.comments',
-            params: {
-                Bugzilla_api_token: BUGZILLA.api_token,
-                comment_ids: [ comment_id ],
-                include_fields: [ 'tags' ]
-            }
-        })
-        );
+        }).catch(error => {
+            this.decPending(comment_id);
+            this.handleFetchError(comment_id, comment_no, error.message, noRefreshOnError);
+        });
     },
 
-    rpcUpdate : function(comment_id, comment_no, add, remove) {
+    fetchUpdate : function(comment_id, comment_no, add, remove) {
         this.incPending(comment_id);
-        YAHOO.util.Connect.setDefaultPostHeader('application/json', true);
-        YAHOO.util.Connect.asyncRequest('POST', `${BUGZILLA.config.basepath}jsonrpc.cgi`,
-        {
-            success: function(res) {
-                YAHOO.bugzilla.commentTagging.decPending(comment_id);
-                data = JSON.parse(res.responseText);
-                if (data.error) {
-                    YAHOO.bugzilla.commentTagging.handleRpcError(comment_id, comment_no, data.error.message);
-                    return;
-                }
 
-                if (!YAHOO.bugzilla.commentTagging.hasPending(comment_id))
-                    YAHOO.bugzilla.commentTagging.showTags(comment_id, comment_no, data.result);
-            },
-            failure: function(res) {
-                YAHOO.bugzilla.commentTagging.decPending(comment_id);
-                YAHOO.bugzilla.commentTagging.handleRpcError(comment_id, comment_no, res.responseText);
+        Bugzilla.API.put(`bug/comment/${comment_id}/tags`, { comment_id, add, remove }).then(data => {
+            if (!this.hasPending(comment_id)) {
+                this.showTags(comment_id, comment_no, data);
             }
-        },
-        JSON.stringify({
-            version: "1.1",
-            method: 'Bug.update_comment_tags',
-            params: {
-                Bugzilla_api_token: BUGZILLA.api_token,
-                comment_id: comment_id,
-                add: add,
-                remove: remove
-            }
-        })
-        );
+        }).catch(error => {
+            this.decPending(comment_id);
+            this.handleFetchError(comment_id, comment_no, error.message);
+        });
     },
 
-    handleRpcError : function(comment_id, comment_no, message, noRefreshOnError) {
-        YAHOO.bugzilla.commentTagging.showError(comment_id, comment_no, message);
+    handleFetchError : function(comment_id, comment_no, message, noRefreshOnError) {
+        this.showError(comment_id, comment_no, message);
         if (!noRefreshOnError) {
-            YAHOO.bugzilla.commentTagging.rpcRefresh(comment_id, comment_no, true);
+            this.fetchRefresh(comment_id, comment_no, true);
         }
     }
 }

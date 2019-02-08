@@ -301,21 +301,14 @@ $(function() {
         updateTagsMenu();
 
         // update bugzilla
-        bugzilla_ajax(
-            {
-                url: `${BUGZILLA.config.basepath}rest/bug/comment/${commentID}/tags`,
-                type: 'PUT',
-                data: { remove: [ tag ] },
-                hideError: true
-            },
-            function(data) {
+        Bugzilla.API.put(`bug/comment/${commentID}/tags`, { remove: [tag] })
+            .then(data => {
                 renderTags(commentNo, data);
                 updateTagsMenu();
-            },
-            function(message) {
-                taggingError(commentNo, message);
-            }
-        );
+            })
+            .catch(error => {
+                taggingError(commentNo, error.message);
+            });
     }
     $('.comment-tag a').click(deleteTag);
 
@@ -346,20 +339,23 @@ $(function() {
 
     function refreshTags(commentNo, commentID) {
         cancelRefresh();
-        refreshXHR = bugzilla_ajax(
-            {
-                url: `${BUGZILLA.config.basepath}rest/bug/comment/${commentID}?include_fields=tags`,
-                hideError: true
-            },
-            function(data) {
+
+        refreshXHR = Bugzilla.API.xhr(`bug/comment/${commentID}`, {
+            params: { include_fields: ['tags'] },
+            resolve: data => {
                 refreshXHR = false;
                 renderTags(commentNo, data.comments[commentID].tags);
             },
-            function(message) {
+            reject: error => {
                 refreshXHR = false;
-                taggingError(commentNo, message);
+
+                if (error.name === 'AbortError') {
+                  return;
+                }
+
+                taggingError(commentNo, error.message);
             }
-        );
+        });
     }
 
     function cancelRefresh() {
@@ -373,24 +369,16 @@ $(function() {
         .devbridgeAutocomplete({
             appendTo: $('#main-inner'),
             forceFixPosition: true,
-            serviceUrl: function(query) {
-                return `${BUGZILLA.config.basepath}rest/bug/comment/tags/${encodeURIComponent(query)}`;
-            },
-            params: {
-                Bugzilla_api_token: (BUGZILLA.api_token ? BUGZILLA.api_token : '')
-            },
             deferRequestBy: 250,
             minChars: 3,
             tabDisabled: true,
             autoSelectFirst: true,
             triggerSelectOnValidInput: false,
-            transformResult: function(response) {
-                response = $.parseJSON(response);
-                return {
-                    suggestions: $.map(response, function(tag) {
-                        return { value: tag };
-                    })
-                };
+            lookup: (query, done) => {
+                Bugzilla.API.get(`bug/comment/tags/${encodeURIComponent(query)}`)
+                    .then(data => data.map(tag => ({ value: tag })))
+                    .catch(() => [])
+                    .then(suggestions => done({ suggestions }));
             },
             formatResult: function(suggestion, currentValue) {
                 // disable <b> wrapping of matched substring
@@ -446,22 +434,15 @@ $(function() {
                 renderTags(commentNo, tags);
 
                 // update bugzilla
-                bugzilla_ajax(
-                    {
-                        url: `${BUGZILLA.config.basepath}rest/bug/comment/${commentID}/tags`,
-                        type: 'PUT',
-                        data: { add: addTags },
-                        hideError: true
-                    },
-                    function(data) {
+                Bugzilla.API.put(`bug/comment/${commentID}/tags`, { add: addTags })
+                    .then(data => {
                         renderTags(commentNo, data);
                         updateTagsMenu();
-                    },
-                    function(message) {
-                        taggingError(commentNo, message);
+                    })
+                    .catch(error => {
+                        taggingError(commentNo, error.message);
                         refreshTags(commentNo, commentID);
-                    }
-                );
+                    });
             }
         });
 

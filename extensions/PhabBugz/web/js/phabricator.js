@@ -88,10 +88,7 @@ Phabricator.getBugRevisions = function() {
         errRow.removeClass('bz_default_hidden');
     }
 
-    var $getUrl = '/rest/phabbugz/bug_revisions/' + BUGZILLA.bug_id +
-                  '?Bugzilla_api_token=' + BUGZILLA.api_token;
-
-    $.getJSON($getUrl, function(data) {
+    Bugzilla.API.get(`phabbugz/bug_revisions/${BUGZILLA.bug_id}`).then(data => {
         if (data.revisions.length === 0) {
             displayLoadError('none returned from server');
         } else {
@@ -100,18 +97,9 @@ Phabricator.getBugRevisions = function() {
                 tbody.append(revisionRow(data.revisions[i]));
             }
         }
-        tbody.find('.phabricator-loading-row').addClass('bz_default_hidden');
-    }).fail(function(jqXHR, textStatus, errorThrown) {
-        var errStr;
-        if (jqXHR.responseJSON && jqXHR.responseJSON.err &&
-            jqXHR.responseJSON.err.msg) {
-            errStr = jqXHR.responseJSON.err.msg;
-        } else if (errorThrown) {
-            errStr = errorThrown;
-        } else {
-            errStr = 'unknown';
-        }
-        displayLoadError(errStr);
+    }).catch(error => {
+        displayLoadError(error.message);
+    }).then(() => {
         tbody.find('.phabricator-loading-row').addClass('bz_default_hidden');
     });
 };

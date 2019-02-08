@@ -102,14 +102,7 @@ $(function() {
             $('#mfa-totp-throbber').show();
             $('#mfa-totp-issued').hide();
 
-            var url = `${BUGZILLA.config.basepath}rest/user/mfa/totp/enroll` +
-                `?Bugzilla_api_token=${encodeURIComponent(BUGZILLA.api_token)}`;
-            $.ajax({
-                "url": url,
-                "contentType": "application/json",
-                "processData": false
-            })
-            .done(function(data) {
+            Bugzilla.API.get('user/mfa/totp/enroll').then(data => {
                 $('#mfa-totp-throbber').hide();
                 var iframe = $('#mfa-enable-totp-frame').contents();
                 iframe.find('#qr').attr('src', 'data:image/png;base64,' + data.png);
@@ -117,13 +110,8 @@ $(function() {
                 $('#mfa-totp-issued').show();
                 $('#mfa-password').focus();
                 $('#update').attr('disabled', false);
-            })
-            .fail(function(data) {
+            }).catch(() => {
                 $('#mfa-totp-throbber').hide();
-                if (data.statusText === 'abort')
-                    return;
-                var message = data.responseJSON ? data.responseJSON.message : 'Unexpected Error';
-                console.log(message);
             });
         });
 
