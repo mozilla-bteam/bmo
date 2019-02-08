@@ -17,10 +17,10 @@
 */
 
 /**
- * Define the Bugzilla application namespace.
+ * Reference or define the Bugzilla app namespace.
  * @namespace
  */
-const Bugzilla = {};
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 
 /**
  * Enable easier access to the Bugzilla REST API.
