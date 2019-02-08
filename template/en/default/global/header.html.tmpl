@@ -132,6 +132,10 @@
                     "You must select a Component for this $terms.bug",
                 description_required =>
                     "You must enter a Description for this $terms.bug",
+                search_terms_in_all_bugs =>
+                    "Search <strong>%s</strong> in All $terms.Bugs",
+                search_terms_in_open_bugs =>
+                    "Search <strong>%s</strong> in Open $terms.Bugs",
                 short_desc_required =>
                     "You must enter a Summary for this $terms.bug",
                 version_required =>
@@ -183,7 +187,7 @@
     [% FOREACH jq_name = jquery.unique %]
       [% starting_js_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.js") %]
     [% END %]
-    [% starting_js_urls.push('js/global.js', 'js/util.js', 'js/dropdown.js') %]
+    [% starting_js_urls.push('js/global.js', 'js/util.js', 'js/models.js', 'js/dropdown.js', 'js/quick-search.js') %]
 
     [% FOREACH asset_url = starting_js_urls %]
       [% PROCESS format_js_link %]

@@ -24,11 +24,32 @@
 
 <div id="header-search-dropdown" class="dropdown-content right" role="listbox" style="display: none;">
   <div id="header-search-dropdown-wrapper">
+    <section data-type="terms" hidden>
+      <header>
+        <span class="icon" aria-hidden="true"></span>
+        <h3>Terms</h3>
+      </header>
+      <ul role="none"></ul>
+    </section>
+    <section data-type="recent" hidden>
+      <header>
+        <span class="icon" aria-hidden="true"></span>
+        <h3>Recent</h3>
+      </header>
+      <ul role="none"></ul>
+    </section>
+    <section data-type="shortcuts" hidden>
+      <header>
+        <span class="icon" aria-hidden="true"></span>
+        <h3>Shortcuts</h3>
+      </header>
+      <ul role="none"></ul>
+    </section>
     [% IF user.showmybugslink OR user.queries.size OR user.queries_subscribed.size %]
-      <section id="header-search-dropdown-saved">
+      <section data-type="saved">
         <header>
+          <span class="icon" aria-hidden="true"></span>
           <h3>Saved Searches</h3>
-          <a href="[% basepath FILTER none %]userprefs.cgi?tab=saved-searches">Edit</a>
         </header>
         <ul role="none">
           [% IF user.showmybugslink %][% filtered_username = user.login FILTER uri %]
@@ -47,5 +68,19 @@
         </ul>
       </section>
     [% END %]
+    <section data-type="products" hidden>
+      <header>
+        <span class="icon" aria-hidden="true"></span>
+        <h3>Products &amp; Components</h3>
+      </header>
+      <ul role="none"></ul>
+    </section>
+    <section data-type="keywords" hidden>
+      <header>
+        <span class="icon" aria-hidden="true"></span>
+        <h3>Keywords</h3>
+      </header>
+      <ul role="none"></ul>
+    </section>
   </div>
 </div>

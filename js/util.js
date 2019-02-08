@@ -651,3 +651,152 @@ Bugzilla.Error = class CustomError extends Error {
     return `${this.name}: "${this.message}" (code: ${this.code}${this.detail ? `, detail: ${this.detail}` : ''})`;
   }
 };
+
+/**
+ * Provide static utility methods related to the local storage.
+ */
+Bugzilla.Storage = class Storage {
+  /**
+   * Try to get a cache from the local storage.
+   * @param {String} key Cache key.
+   * @param {Boolean} [session_only=false] Whether the cache is stored only during the current session.
+   * @returns {*} Cached data if available.
+   */
+  static get(key, session_only = false) {
+    const storage = session_only ? sessionStorage : localStorage;
+
+    try {
+      const cache = storage.getItem(key);
+
+      if (!cache) {
+        return null;
+      }
+
+      const { data, expires } = JSON.parse(cache);
+
+      if (!expires || expires > Date.now()) {
+        return data;
+      }
+
+      // Remove expired cache
+      storage.removeItem(key);
+    } catch (ex) {}
+
+    return null;
+  }
+
+  /**
+   * Try to save a cache to the local storage.
+   * @param {String} key Cache key.
+   * @param {*} data Data to be cached.
+   * @param {Number} [life=0] Storage lifetime. Default: unlimited.
+   * @param {Boolean} [session_only=false] Whether the cache is stored only during the current session.
+   */
+  static save(key, data, life = 0, session_only = false) {
+    const storage = session_only ? sessionStorage : localStorage;
+
+    try {
+      storage.setItem(key, JSON.stringify({ data, expires: life ? Date.now() + life : 0 }));
+    } catch (ex) {}
+  }
+};
+
+/**
+ * Provide static utility methods related to UI localization.
+ * @todo Add plural support.
+ */
+Bugzilla.L10n = class L10n {
+  /**
+   * Get a global string by key while replacing a placeholder.
+   * @param {String} key Key to find the string.
+   * @param {String} [replacer] Placeholder replacement.
+   * @returns {String} Formatted string.
+   */
+  static get(key, replacer = '') {
+    return BUGZILLA.string[key].replace('%s', replacer);
+  }
+};
+
+/**
+ * Provide static utility methods related to array parsing and manipulation.
+ */
+Bugzilla.Array = class Array {
+  /**
+   * Sort an array of objects using a given property.
+   * @param {Object[]} array Array to be sorted.
+   * @param {String} key Object property to be used as a sort key.
+   * @param {Boolean} [descending] Whether the order is descending rather than ascending.
+   * @returns {Array} Sorted array.
+   * @todo Add support for several data types.
+   */
+  static sort(array, key, { descending = false } = {}) {
+    array.sort((a, b) => (a[key] > b[key] ? 1 : a[key] < b[key] ? -1 : 0));
+
+    return descending ? array.reverse() : array;
+  }
+};
+
+/**
+ * Provide static utility methods related to string parsing and manipulation.
+ */
+Bugzilla.String = class String {
+  /**
+   * Check if all words are contained in the given string.
+   * @param {String} string Original string to be searched.
+   * @param {(String|String[])} words Search terms, may contain spaces.
+   * @param {Boolean} [ignore_case] Whether to do a case insensitive match.
+   * @param {Boolean} [find_all] Whether all the words should be contained in the string.
+   * @param {Boolean} [match_boundaries] Whether the matching should consider word boundaries. This needs to be
+   * `false` for languages like Japanese where there's no space between words.
+   * @returns {Boolean} Whether the words could be found in the string.
+   */
+  static find(string, words, { ignore_case = true, find_all = true, match_boundaries = true } = {}) {
+    words = Array.isArray(words) ? words : words.split(/\s+/);
+
+    const finder = word => {
+      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Escaping
+      const escaped_word = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`${match_boundaries ? '\\b' : ''}${escaped_word}`, ignore_case ? 'i' : '');
+
+      return !!string.match(re);
+    };
+
+    return find_all ? words.every(finder) : words.some(finder);
+  }
+
+  /**
+   * Highlight words in a string with HTML `<strong>` elements.
+   * @param {String} string Original string that may contain these words.
+   * @param {(String|String[])} words Words to be highlighted.
+   * @param {Boolean} [ignore_case] Whether to do a case insensitive match.
+   * @returns {String} Highlighted HTML string.
+   */
+  static highlight(string, words, { ignore_case = true } = {}) {
+    words = Array.isArray(words) ? words : words.split(/\s+/);
+
+    const _string = ignore_case ? string.toLocaleLowerCase() : string;
+    const _words = ignore_case ? words.map(word => word.toLocaleLowerCase()) : words;
+    const matched = new Set(); // Allow to discard duplicates unlike Array
+
+    for (const word of _words) {
+      for (let i = 0; i < _string.length; i++) {
+        const index = _string.indexOf(word, i);
+
+        if (index === -1) {
+          break;
+        }
+
+        // Log the index and move the cursor forward
+        for (i = index; i < index + word.length; i++) {
+          matched.add(i);
+        }
+      }
+    }
+
+    return [...string].map((char, index) => {
+      char = char.htmlEncode();
+
+      return matched.has(index) ? `<strong>${char}</strong>` : char;
+    }).join('').replace(/<\/strong><strong>/g, '');
+  }
+};

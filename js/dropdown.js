@@ -39,7 +39,7 @@ $(function() {
                 if ($content.is(':visible')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    var $items = $content.find('[role="menuitem"], [role="option"]');
+                    var $items = $content.find('[role="menuitem"], [role="option"]').filter(':visible');
                     // if none active select the first or last
                     var $link = $items.filter('.active');
                     if ($link.length == 0) {
@@ -103,6 +103,7 @@ $(function() {
         var $div     = $(this);
         var $button  = $div.find('.dropdown-button');
         var $content = $div.find('.dropdown-content');
+        var is_input = $button.eq('input');
         $button.click(function(e) {
             // Do not handle non-primary click.
             if (e.button != 0 || $content.hasClass('hover-display')) {
@@ -111,12 +112,15 @@ $(function() {
             toggleDropDown(e, $button, $content);
         }).keydown(function(e) {
             if (e.keyCode == 13) {
-                if ($button.eq('input') && !$button.val()) {
+                if (is_input) {
                     // prevent the form being submitted if the search bar is empty
-                    e.preventDefault();
+                    if (!$button.val().trim()) {
+                        e.preventDefault();
+                    }
                     // navigate to an active link if any
                     var $link = $content.find('.active');
                     if ($link.length) {
+                        e.preventDefault();
                         if ($link.attr('href')) {
                             location.href = $link.attr('href');
                         } else {
@@ -127,6 +131,11 @@ $(function() {
 
                 // allow enter to toggle menu
                 toggleDropDown(e, $button, $content);
+            } else {
+                // When the search bar contains any term and the pressed key is not Escape, show the dropdown if hidden
+                if (is_input && $button.val().trim() && e.keyCode !== 27 && !$content.is(':visible')) {
+                    toggleDropDown(e, $button, $content, true, false);
+                }
             }
         });
 
