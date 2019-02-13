@@ -143,7 +143,7 @@ my $bug_ids = $dbh->selectcol_arrayref(
 
 # Set "enhancement" type on these bugs and reset the severity
 $dbh->do('UPDATE bugs SET bug_type = "enhancement", bug_severity = "normal"
-  WHERE ' . $dbh->sql_in('bug_id', $bug_ids), undef, ($type));
+  WHERE ' . $dbh->sql_in('bug_id', $bug_ids));
 
 # Finally, remove the "enhancement" severity
 $dbh->do('DELETE bug_severity WHERE value = "enhancement"');
