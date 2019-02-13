@@ -226,7 +226,8 @@
         no_label = 1
         hide_on_edit = 1
     %]
-      <span class="bug-type-label" data-type="[% bug.bug_type FILTER html %]">
+      <span class="bug-type-label iconic-text" data-type="[% bug.bug_type FILTER html %]">
+        <span class="icon" aria-hidden="true"></span>
         [%~ bug.bug_type FILTER html ~%]
       </span>
       <b class="bz_status_[% bug.bug_status FILTER html %]">

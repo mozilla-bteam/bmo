@@ -224,8 +224,9 @@
       [% IF col_abbrev.format_value %]
         [%- bug.$column FILTER format(col_abbrev.format_value) FILTER html -%]
       [% ELSIF column == 'bug_type' %]
-        <span class="bug-type-label" data-type="[% bug.bug_type FILTER html %]">
-          [%~ bug.bug_type FILTER html ~%]
+        <span class="bug-type-label iconic" title="[% bug.bug_type FILTER html %]"
+              aria-label="[% bug.bug_type FILTER html %]" data-type="[% bug.bug_type FILTER html %]">
+          <span class="icon" aria-hidden="true"></span>
         </span>
       [% ELSIF column == 'actual_time' ||
                column == 'remaining_time' ||

@@ -87,10 +87,6 @@
 /* Align columns in the "change multiple bugs" form to the right. */
 table#form tr th { text-align: right; }
 
-.bz_buglist .bug-type-label {
-  font-size: 90%;
-}
-
 /* we use a first-child class and not the pseudo-class because IE
  * doesn't support it :-( */
 tr.bz_secure td.first-child, a.bz_secure {
@@ -112,6 +108,11 @@ tr.bz_secure_mode_implied td.first-child {
 }
 
 tr.bz_secure_mode_manual td.first-child {
+}
+
+td.bz_bug_type_column {
+  padding: 4px;
+  text-align: center;
 }
 
 td.bz_estimated_time_column,
