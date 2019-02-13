@@ -137,16 +137,8 @@ foreach my $target (@MIGRATION_MAP) {
 
 $dbh->bz_start_transaction;
 
-# Next, select enhancement bugs
-my $bug_ids = $dbh->selectcol_arrayref(
-  'SELECT bug_id FROM bugs WHERE bug_severity = "enhancement"');
-
-# Set "enhancement" type on these bugs and reset the severity
-$dbh->do('UPDATE bugs SET bug_type = "enhancement", bug_severity = "normal"
-  WHERE ' . $dbh->sql_in('bug_id', $bug_ids));
-
-# Finally, remove the "enhancement" severity
-$dbh->do('DELETE bug_severity WHERE value = "enhancement"');
+# Finally, disable the "enhancement" severity
+$dbh->do('UPDATE bug_severity SET isactive = 0 WHERE value = "enhancement"');
 
 $dbh->bz_commit_transaction;
 
