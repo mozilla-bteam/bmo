@@ -324,6 +324,11 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
     this.$body.innerHTML = data.html;
     this.finish();
 
+    // Highlight code if possible
+    if (Prism) {
+      Prism.highlightAllUnder(this.$body);
+    }
+
     if (!this.$revisions_link) {
       const $time = this.$change_set.querySelector('.change-time');
       const params = new URLSearchParams({
