@@ -744,8 +744,6 @@ sub update_table_definitions {
 
   $dbh->bz_add_column('user_api_keys', 'last_used_ip', {TYPE => 'varchar(40)'});
 
-  _add_restrict_ipaddr();
-
   $dbh->bz_add_column('profiles', 'password_change_required',
     {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'});
   $dbh->bz_add_column('profiles', 'password_change_reason',
@@ -781,6 +779,8 @@ sub update_table_definitions {
     {TYPE => 'MEDIUMTEXT'});
 
   _add_oauth2_jwt_support();
+
+  _remove_restrict_ipaddr();
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
@@ -4176,16 +4176,6 @@ sub _fix_disable_mail {
   Bugzilla->dbh->do("UPDATE profiles SET disable_mail = 1 WHERE is_enabled = 0");
 }
 
-sub _add_restrict_ipaddr {
-  my $dbh = Bugzilla->dbh;
-  return if $dbh->bz_column_info('logincookies', 'restrict_ipaddr');
-
-  $dbh->bz_add_column('logincookies', 'restrict_ipaddr',
-    {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0});
-  $dbh->do(
-    "UPDATE logincookies SET restrict_ipaddr = 1 WHERE ipaddr IS NOT NULL");
-}
-
 sub _migrate_group_owners {
   my $dbh = Bugzilla->dbh;
   return if $dbh->bz_column_info('groups', 'owner_user_id');
@@ -4285,6 +4275,13 @@ sub _add_oauth2_jwt_support {
   $dbh->bz_rename_column('oauth2_client_scope', 'client_id_new', 'client_id');
   $dbh->bz_alter_column('oauth2_client_scope', 'client_id',
     {TYPE => 'INT4', NOTNULL => 1});
+}
+
+sub _remove_restrict_ipaddr {
+  my $dbh = Bugzilla->dbh;
+  return unless $dbh->bz_column_info('logincookies', 'restrict_ipaddr');
+
+  $dbh->do('ALTER TABLE logincookies DROP COLUMN restrict_ipaddr');
 }
 
 1;
