@@ -27,7 +27,7 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
       const $extra_patch_types = document.querySelector('meta[name="extra-patch-types"]');
 
       this.$form = this.$comment.form;
-      this.bug_id = Number((this.$form.bugid || {}).value || this.$form.querySelector('meta[name="bug_id"]').content);
+      this.bug_id = Number(this.$form.bugid.value);
       this.attachment_id = Number(this.$form.id.value);
       this.extra_patch_types = $extra_patch_types ? $extra_patch_types.content.split(' ') : [];
       this.selects = [...this.$flags.querySelectorAll('.flag_select')];
@@ -236,10 +236,9 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
   /**
    * Convert the input values into comment text and remove the temporary fieldset before submitting the form.
    * @param {Event} event `submit` event.
-   * @returns {Boolean} Always `false` to prevent the form from being auto-submitted.
+   * @returns {Boolean} `true` when submitting the form normally if no fieldset has been inserted, `false` otherwise.
    */
   async form_onsubmit(event) {
-    // Submit the form normally if no fieldset has been inserted
     if (!this.inserted_fieldsets.length) {
       return true;
     }
@@ -257,7 +256,7 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
     // Convert the form values to Markdown comment
     this.inserted_fieldsets.forEach($fieldset => this.add_comment(this.create_comment($fieldset)));
 
-    // Send the form via XHR before API requests to make sure the change is notified via email
+    // Submit the form via XHR before API requests to make sure the change is notified via email
     await new Promise(resolve => {
       const request = new XMLHttpRequest();
 
