@@ -219,6 +219,12 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
       data: { id: BUGZILLA.bug_id, text: this.$textarea.value },
     }, data => {
       this.$preview.innerHTML = data.html;
+
+      // Highlight code if possible
+      if (Prism) {
+        Prism.highlightAllUnder(this.$preview);
+      }
+
       this.$preview.style.removeProperty('height');
       this.$preview.setAttribute('aria-busy', 'false');
     }, () => {
