@@ -780,7 +780,8 @@ sub update_table_definitions {
 
   _add_oauth2_jwt_support();
 
-  _remove_restrict_ipaddr();
+  # Bug 1402894 - kohei.yoshino@gmail.com
+  $dbh->bz_drop_column('logincookies', 'restrict_ipaddr');
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
@@ -4275,13 +4276,6 @@ sub _add_oauth2_jwt_support {
   $dbh->bz_rename_column('oauth2_client_scope', 'client_id_new', 'client_id');
   $dbh->bz_alter_column('oauth2_client_scope', 'client_id',
     {TYPE => 'INT4', NOTNULL => 1});
-}
-
-sub _remove_restrict_ipaddr {
-  my $dbh = Bugzilla->dbh;
-  return unless $dbh->bz_column_info('logincookies', 'restrict_ipaddr');
-
-  $dbh->do('ALTER TABLE logincookies DROP COLUMN restrict_ipaddr');
 }
 
 1;
