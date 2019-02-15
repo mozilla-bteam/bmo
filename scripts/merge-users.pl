@@ -11,7 +11,7 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-=head1 NA
+=head1 NAME
 
 merge-users.pl - Merge two user accounts.
 
