@@ -401,8 +401,7 @@ foreach my $b (@bug_objects) {
 # allow them to be set using set_all.
 foreach my $bug (@bug_objects) {
   my ($flags, $new_flags)
-    = Bugzilla::Flag->extract_flags_from_cgi($bug, undef, $vars,
-    SKIP_REQUESTEE_ON_ERROR);
+    = Bugzilla::Flag->extract_flags_from_cgi($bug, undef, $vars);
   $bug->set_flags($flags, $new_flags);
 }
 
