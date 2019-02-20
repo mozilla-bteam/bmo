@@ -593,11 +593,12 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     // Draw a video frame on `<canvas>`
     $canvas.getContext('2d').drawImage($video, 0, 0, width, height);
 
+    // Convert to a PNG image
     const blob = await new Promise(resolve => $canvas.toBlob(blob => resolve(blob)));
-    const [date, time] = (new Date().toISOString()).match(/^(.+)T(.+)\./).splice(1);
+    const [date, time] = (new Date()).toISOString().match(/^(.+)T(.+)\./).splice(1);
+    const file = new File([blob], `Screenshot on ${date} at ${time}.png`, { type: 'image/png' });
 
-    // Process as a PNG file
-    this.process_file(new File([blob], `Screenshot on ${date} at ${time}.png`, { type: 'image/png' }));
+    this.process_file(file);
     this.update_ispatch(false, true);
 
     // Clean up
