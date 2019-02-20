@@ -564,9 +564,9 @@ Bugzilla.AttachmentForm = class AttachmentForm {
   }
 
   /**
-   * Called whenever the Take a Screenshot button is clicked. Capture a screen, window or browser tab if possible, and
-   * attach it as a image.
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API/Using_Screen_Capture
+   * Called whenever the Take a Screenshot button is clicked. Capture a screen, window or browser tab if the Screen
+   * Capture API is supported, then attach it as a PNG image.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API
    */
   async capture_onclick() {
     if (typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
