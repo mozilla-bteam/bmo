@@ -597,7 +597,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     const [date, time] = (new Date().toISOString()).match(/^(.+)T(.+)\./).splice(1);
 
     // Process as a PNG file
-    this.process_file(new File([blob], `Screenshot on ${date} at ${time}`, { type: 'image/png' }));
+    this.process_file(new File([blob], `Screenshot on ${date} at ${time}.png`, { type: 'image/png' }));
     this.update_ispatch(false, true);
 
     // Clean up
