@@ -568,7 +568,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    * Capture API is supported, then attach it as a PNG image.
    * @see https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API
    */
-  async capture_onclick() {
+  capture_onclick() { (async () => {
     if (typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
       alert('This function requires the latest browser such as Firefox 66 or Chrome 72.');
       return;
@@ -605,7 +605,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     $video.pause();
     $video.srcObject.getTracks().forEach(track => track.stop());
     $video.srcObject = null;
-  }
+  })(); }
 
   /**
    * Called whenever the content of the textarea is updated. Update the Content Type, `required` property, etc.
