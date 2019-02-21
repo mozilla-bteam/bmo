@@ -561,6 +561,9 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     }
   }
 
+  async capture_onclick() {
+  }
+
   /**
    * Called whenever the content of the textarea is updated. Update the Content Type, `required` property, etc.
    */
