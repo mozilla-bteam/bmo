@@ -568,7 +568,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    * Capture API is supported, then attach it as a PNG image.
    * @see https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API
    */
-  capture_onclick() { (async () => {
+  capture_onclick() {
     if (typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
       alert('This function requires the latest browser such as Firefox 66 or Chrome 72.');
       return;
@@ -577,35 +577,35 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     const $video = document.createElement('video');
     const $canvas = document.createElement('canvas');
 
-    try {
-      // Render a captured screenshot in `<video>`
-      $video.srcObject = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'window' } });
-    } catch (ex) {
+    navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'window' } }).then(stream => {
+      // Render a captured screenshot on `<video>`
+      $video.srcObject = stream;
+
+      return $video.play();
+    }).then(() => {
+      const width = $canvas.width = $video.videoWidth;
+      const height = $canvas.height = $video.videoHeight;
+
+      // Draw a video frame on `<canvas>`
+      $canvas.getContext('2d').drawImage($video, 0, 0, width, height);
+
+      // Clean up `<video>`
+      $video.pause();
+      $video.srcObject.getTracks().forEach(track => track.stop());
+      $video.srcObject = null;
+
+      // Convert to PNG
+      return new Promise(resolve => $canvas.toBlob(blob => resolve(blob)));
+    }).then(blob => {
+      const [date, time] = (new Date()).toISOString().match(/^(.+)T(.+)\./).splice(1);
+      const file = new File([blob], `Screenshot on ${date} at ${time}.png`, { type: 'image/png' });
+
+      this.process_file(file);
+      this.update_ispatch(false, true);
+    }).catch(() => {
       alert('Unable to capture a screenshot.');
-      return;
-    }
-
-    await $video.play();
-
-    const width = $canvas.width = $video.videoWidth;
-    const height = $canvas.height = $video.videoHeight;
-
-    // Draw a video frame on `<canvas>`
-    $canvas.getContext('2d').drawImage($video, 0, 0, width, height);
-
-    // Convert to a PNG image
-    const blob = await new Promise(resolve => $canvas.toBlob(blob => resolve(blob)));
-    const [date, time] = (new Date()).toISOString().match(/^(.+)T(.+)\./).splice(1);
-    const file = new File([blob], `Screenshot on ${date} at ${time}.png`, { type: 'image/png' });
-
-    this.process_file(file);
-    this.update_ispatch(false, true);
-
-    // Clean up
-    $video.pause();
-    $video.srcObject.getTracks().forEach(track => track.stop());
-    $video.srcObject = null;
-  })(); }
+    });
+  }
 
   /**
    * Called whenever the content of the textarea is updated. Update the Content Type, `required` property, etc.
