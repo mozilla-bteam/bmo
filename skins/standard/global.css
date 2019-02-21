@@ -2862,6 +2862,7 @@ pre.comment-text {
   padding: .2em .4em .2em .2em;
   color: #FFF;
   background-color: #666;
+  line-height: 16px;
   font-weight: 600;
 }
 
@@ -2880,9 +2881,10 @@ pre.comment-text {
 .bug-type-label.iconic-text .icon {
   margin-right: .2em;
   font-size: 16px;
-  vertical-align: top;
+  vertical-align: bottom;
 }
 
 .bug-type-label.iconic-text .icon::before {
   color: #FFF !important;
+  vertical-align: bottom;
 }

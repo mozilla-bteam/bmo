@@ -255,7 +255,8 @@ input[type="number"] {
 
 #field-status_summary {
     border-top: 1px dotted silver;
-    padding-top: 4px;
+    padding-top: 6px;
+    padding-bottom: 4px;
 }
 
 #status-assignee, #status-assignee .vcard, #status-needinfo, #status-needinfo .vcard {

@@ -112,6 +112,7 @@ tr.bz_secure_mode_manual td.first-child {
 
 td.bz_bug_type_column {
   padding: 4px;
+  width: 1em;
   text-align: center;
 }
 
