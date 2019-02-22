@@ -118,7 +118,7 @@ foreach my $target (@MIGRATION_MAP) {
 
   # Set type on these bugs
   # Since it's a silent migration, we don't update the timestamp
-  $dbh->do('UPDATE bugs SET type = ?
+  $dbh->do('UPDATE bugs SET bug_type = ?
     WHERE ' . $dbh->sql_in('bug_id', $bug_ids), undef, ($type));
 
   # Select components
