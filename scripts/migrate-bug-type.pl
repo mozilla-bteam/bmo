@@ -103,6 +103,16 @@ use constant MIGRATION_MAP => (
 
 my $dbh = Bugzilla->dbh;
 
+$dbh->bz_start_transaction;
+
+# Disable the "enhancement" severity
+$dbh->do('UPDATE bug_severity SET isactive = 0 WHERE value = "enhancement"');
+
+# Change the type of all bugs to "defect"
+$dbh->do('UPDATE bugs SET bug_type = "defect"');
+
+$dbh->bz_commit_transaction;
+
 foreach my $target (@MIGRATION_MAP) {
   my ($product, $component, $type) = @$target;
 
@@ -134,12 +144,5 @@ foreach my $target (@MIGRATION_MAP) {
 
   $dbh->bz_commit_transaction;
 }
-
-$dbh->bz_start_transaction;
-
-# Finally, disable the "enhancement" severity
-$dbh->do('UPDATE bug_severity SET isactive = 0 WHERE value = "enhancement"');
-
-$dbh->bz_commit_transaction;
 
 Bugzilla->memcached->clear_all();
