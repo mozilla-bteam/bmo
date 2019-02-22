@@ -547,7 +547,7 @@ else {
 # Weed out columns that don't actually exist to prevent the user
 # from hacking their column list cookie to grab data to which they
 # should not have access.
-@displaycolumns = grep { $columns->{$_} } @displaycolumns);
+@displaycolumns = grep { $columns->{$_} } @displaycolumns;
 
 # Remove the "ID" column from the list because bug IDs are always displayed
 # and are hard-coded into the display templates.
