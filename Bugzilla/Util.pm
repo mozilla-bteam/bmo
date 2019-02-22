@@ -45,7 +45,6 @@ use English qw(-no_match_vars $EGID);
 use List::MoreUtils qw(any none);
 use POSIX qw(floor ceil);
 use Scalar::Util qw(tainted blessed);
-use Taint::Util qw(untaint);
 use Text::Wrap;
 use Try::Tiny;
 
@@ -418,9 +417,6 @@ sub is_ipv6 {
 
   my $ipv6 = join(':', @chunks);
 
-  # The IP address is valid and can now be detainted.
-  untaint($ipv6);
-
   # Need to handle the exception of trailing :: being valid.
   return "${ipv6}::" if $ip =~ /::$/;
   return $ipv6;
@@ -716,12 +712,6 @@ sub bz_crypt {
 
     # Crypt the password.
     $crypted_password = crypt($password, $salt);
-
-    # HACK: Perl has bug where returned crypted password is considered
-    # tainted. See http://rt.perl.org/rt3/Public/Bug/Display.html?id=59998
-    unless (tainted($password) || tainted($salt)) {
-      untaint($crypted_password);
-    }
   }
   else {
     my $hasher = Digest->new($algorithm);
@@ -765,8 +755,6 @@ sub validate_email_syntax {
     && $email =~ /^$addr_spec$/
     && length($email) <= 127)
   {
-    # We assume these checks to suffice to consider the address untainted.
-    untaint($_[0]);
     return 1;
   }
   return 0;
