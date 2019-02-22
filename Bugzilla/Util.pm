@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use base qw(Exporter);
-@Bugzilla::Util::EXPORT = qw(trick_taint detaint_natural
+@Bugzilla::Util::EXPORT = qw(detaint_natural
   detaint_signed
   with_writable_database with_readonly_database
   html_quote url_quote xml_quote
@@ -73,12 +73,6 @@ sub with_readonly_database(&) {
   local Bugzilla->request_cache->{error_mode} = ERROR_MODE_DIE;
   Bugzilla->switch_to_shadow_db();
   $code->();
-}
-
-sub trick_taint {
-  untaint($_[0]);
-
-  return defined $_[0];
 }
 
 sub detaint_natural {
@@ -993,7 +987,6 @@ Bugzilla::Util - Generic utility functions for bugzilla
   use Bugzilla::Util;
 
   # Functions for dealing with variable tainting
-  trick_taint($var);
   detaint_natural($var);
   detaint_signed($var);
 
@@ -1055,17 +1048,6 @@ Several functions are available to deal with tainted variables. B<Use these
 with care> to avoid security holes.
 
 =over 4
-
-=item C<trick_taint($val)>
-
-Tricks perl into untainting a particular variable.
-
-Use trick_taint() when you know that there is no way that the data
-in a scalar can be tainted, but taint mode still bails on it.
-
-B<WARNING!! Using this routine on data that really could be tainted defeats
-the purpose of taint mode.  It should only be used on variables that have been
-sanity checked in some way and have been determined to be OK.>
 
 =item C<detaint_natural($num)>
 

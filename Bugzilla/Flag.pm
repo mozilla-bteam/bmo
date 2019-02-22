@@ -970,7 +970,6 @@ sub extract_flags_from_cgi {
     next if (!$flag_type->is_multiplicable && $has_flags);
 
     my $status = $cgi->param("flag_type-$type_id");
-    trick_taint($status);
 
     my @logins = $cgi->param("requestee_type-$type_id");
     if ($status eq "?" && scalar(@logins)) {
