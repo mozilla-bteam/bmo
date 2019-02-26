@@ -130,8 +130,10 @@ foreach my $target (@MIGRATION_MAP) {
 
   # Set type on these bugs
   # Since it's a silent migration, we don't update the timestamp
-  $dbh->do('UPDATE bugs SET bug_type = ?
-    WHERE ' . $dbh->sql_in('bug_id', $bug_ids), undef, ($type));
+  if (scalar @$bug_ids) {
+    $dbh->do('UPDATE bugs SET bug_type = ?
+      WHERE ' . $dbh->sql_in('bug_id', $bug_ids), undef, ($type));
+  }
 
   # Select components
   my $comp_ids = $dbh->selectcol_arrayref(
@@ -141,8 +143,10 @@ foreach my $target (@MIGRATION_MAP) {
     undef, ($component ? ($product, $component) : ($product)));
 
   # Set default bug type on these components
-  $dbh->do('UPDATE components SET default_bug_type = ?
-    WHERE ' . $dbh->sql_in('id', $comp_ids), undef, ($type));
+  if (scalar @$comp_ids) {
+    $dbh->do('UPDATE components SET default_bug_type = ?
+      WHERE ' . $dbh->sql_in('id', $comp_ids), undef, ($type));
+  }
 
   $dbh->bz_commit_transaction;
 }
