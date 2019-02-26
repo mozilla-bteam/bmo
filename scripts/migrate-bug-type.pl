@@ -14,7 +14,7 @@ use lib qw(. lib local/lib/perl5);
 use Bugzilla;
 
 # List of products and components that use a bug type other than "defect"
-use constant MIGRATION_MAP => (
+my @MIGRATION_MAP = (
   ['Air Mozilla', 'Events', 'task'],
   ['AUS Graveyard', 'Administration', 'task'],
   ['Bugzilla', 'Administration', 'task'],
