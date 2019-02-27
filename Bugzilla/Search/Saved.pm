@@ -128,9 +128,9 @@ sub _check_query {
   my $cgi = new Bugzilla::CGI($query);
   my $query_str = $cgi->param('POSTDATA') || $cgi->param('PUTDATA');
 
-  # The new CGI will inherit the current request method, perhaps of an API call,
-  # so the params will be bogus if sent via POST or PUT. This decodes and fixes
-  # the params before being canonicalizing with `clean_search_url()`.
+  # The new CGI inherits the current request method, perhaps of an API call, so
+  # the params will be bogus if sent via POST or PUT. This decodes and fixes the
+  # params before being canonicalized with `clean_search_url()`.
   if ($query_str) {
     my $uri = URI->new("buglist.cgi?$query_str");
 

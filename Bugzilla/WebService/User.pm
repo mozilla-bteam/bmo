@@ -510,9 +510,9 @@ sub whoami {
 sub add_saved_search {
   my ($self, $params) = @_;
 
-  # The `create` method fails when a saved search with the same name exists. The
-  # UI should ask in advance if the user wants to override the existing one, and
-  # if the answer is yes, use `update_saved_search()` instead.
+  # The `create()` method fails when a saved search with the same name exists.
+  # The UI should ask in advance if the user wants to override the existing one,
+  # and if the answer is yes, use `update_saved_search()` instead.
   my $search = Bugzilla::Search::Saved->create({
     name => $params->{name}, query => $params->{url}, link_in_footer => 1
   });
