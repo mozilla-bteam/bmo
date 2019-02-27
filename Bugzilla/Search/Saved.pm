@@ -22,6 +22,8 @@ use Bugzilla::User;
 use Bugzilla::Util;
 
 use Scalar::Util qw(blessed);
+use URI;
+use URI::QueryParam;
 
 #############
 # Constants #
@@ -124,6 +126,21 @@ sub _check_query {
   my ($invocant, $query) = @_;
   $query || ThrowUserError("buglist_parameters_required");
   my $cgi = new Bugzilla::CGI($query);
+  my $query_str = $cgi->param('POSTDATA') || $cgi->param('PUTDATA');
+
+  # The new CGI will inherit the current request method, perhaps of an API call,
+  # so the params will be bogus if sent via POST or PUT. This decodes and fixes
+  # the params before being canonicalizing with `clean_search_url()`.
+  if ($query_str) {
+    my $uri = URI->new("buglist.cgi?$query_str");
+
+    for my $key ($uri->query_param) {
+      $cgi->param($key, $uri->query_param($key));
+    }
+
+    $cgi->delete('POSTDATA', 'PUTDATA');
+  }
+
   $cgi->clean_search_url;
 
   # Don't store the query name as a parameter.
@@ -136,15 +153,20 @@ sub _check_query {
 #########################
 
 sub create {
-  my $class = shift;
-  Bugzilla->login(LOGIN_REQUIRED);
+  my ($class, $params) = @_;
+  my $user  = Bugzilla->login(LOGIN_REQUIRED);
+
+  # Prevent duplicated names from being saved
+  ThrowUserError('saved_search_same_name')
+    if scalar(grep { lc($_->name) eq lc($params->{name}) } @{$user->queries});
+
   my $dbh = Bugzilla->dbh;
-  $class->check_required_create_fields(@_);
+  $class->check_required_create_fields($params);
   $dbh->bz_start_transaction();
-  my $params = $class->run_create_validators(@_);
+  $params = $class->run_create_validators($params);
 
   # Right now you can only create a Saved Search for the current user.
-  $params->{userid} = Bugzilla->user->id;
+  $params->{userid} = $user->id;
 
   my $lif = delete $params->{link_in_footer};
   my $obj = $class->insert_create_data($params);
@@ -219,6 +241,40 @@ sub preload {
     $query->{link_in_footer} = ($links_in_footer{$query->id}) ? 1 : 0;
   }
 }
+
+sub update {
+  my ($self, $params) = @_;
+  my ($name, $url) = @$params{qw(name url)};
+
+  Bugzilla->login(LOGIN_REQUIRED);
+
+  $self->set_name($name) if $name;
+  $self->set_url($url) if $url;
+  $self->SUPER::update(@_);
+}
+
+sub remove {
+  my ($self) = @_;
+  my $dbh = Bugzilla->dbh;
+
+  Bugzilla->login(LOGIN_REQUIRED);
+
+  ThrowUserError('saved_search_used_by_whines', {
+    search_name => $self->name,
+    subjects    => $self->_whine_subjects,
+  }) if $self->used_in_whine;
+
+  $dbh->do('DELETE FROM namedqueries WHERE id = ?', undef, $self->id);
+  $dbh->do('DELETE FROM namedqueries_link_in_footer WHERE namedquery_id = ?',
+    undef, $self->id);
+  $dbh->do('DELETE FROM namedquery_group_map WHERE namedquery_id = ?',
+    undef, $self->id);
+
+  # Now reset the cached queries
+  Bugzilla->memcached->clear({table => 'namedqueries', id => $self->id});
+  Bugzilla->user->flush_queries_cache();
+}
+
 #####################
 # Complex Accessors #
 #####################
@@ -235,16 +291,24 @@ sub edit_link {
   return $self->{edit_link};
 }
 
+sub _whine_subjects {
+  my ($self) = @_;
+
+  return $self->{_whine_subjects} if exists $self->{_whine_subjects};
+
+  ($self->{_whine_subjects}) = Bugzilla->dbh->selectcol_arrayref(
+    'SELECT DISTINCT whine_events.subject FROM whine_events
+      INNER JOIN whine_queries ON whine_queries.eventid = whine_events.id
+      WHERE whine_events.owner_userid = ? AND whine_queries.query_name = ?',
+    undef, Bugzilla->user->id, $self->name);
+
+  return $self->{_whine_subjects};
+}
+
 sub used_in_whine {
   my ($self) = @_;
-  return $self->{used_in_whine} if exists $self->{used_in_whine};
-  ($self->{used_in_whine}) = Bugzilla->dbh->selectrow_array(
-    'SELECT 1 FROM whine_events INNER JOIN whine_queries
-                       ON whine_events.id = whine_queries.eventid
-          WHERE whine_events.owner_userid = ? AND query_name = ?', undef,
-    $self->{userid}, $self->name
-  ) || 0;
-  return $self->{used_in_whine};
+
+  return scalar(@{$self->_whine_subjects}) ? 1 : 0;
 }
 
 sub link_in_footer {

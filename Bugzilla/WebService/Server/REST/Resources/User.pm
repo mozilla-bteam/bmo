@@ -28,6 +28,30 @@ sub _rest_resources {
     {GET => {method => 'login'}},
     qr{^/logout$},
     {GET => {method => 'logout'}},
+    qr{^/saved_searches$},
+    {
+      GET => {
+        method => 'get_saved_searches',
+      },
+      POST => {
+        method => 'add_saved_search',
+      },
+    },
+    qr{^/saved_searches/(\d+)$},
+    {
+      GET => {
+        method => 'get_saved_search',
+        params => sub { return {id => $_[0]} },
+      },
+      PUT => {
+        method => 'update_saved_search',
+        params => sub { return {id => $_[0]} },
+      },
+      DELETE => {
+        method => 'remove_saved_search',
+        params => sub { return {id => $_[0]} },
+      },
+    },
     qr{^/user$},
     {
       GET  => {method => 'get'},

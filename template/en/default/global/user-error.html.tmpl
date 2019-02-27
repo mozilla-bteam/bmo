@@ -1726,12 +1726,18 @@
     [% title = "Resolution Not Allowed" %]
     You cannot set a resolution for open [% terms.bugs %].
 
+  [% ELSIF error == "saved_search_same_name" %]
+    A saved search with the same name already exists.
+
+  [% ELSIF error == "saved_search_not_found" %]
+    A saved search with the given ID could not be found.
+
   [% ELSIF error == "saved_search_used_by_whines" %]
     [% title = "Saved Search In Use" %]
     [% docslinks = {'whining.html' => 'About Whining'} %]
     The saved search <em>[% search_name FILTER html %]</em> is being used
     by <a href="[% basepath FILTER none %]editwhines.cgi">Whining events</a> with the following subjects:
-    [%+ subjects FILTER html %]
+    [%+ subjects.join(', ') FILTER html %]
 
   [% ELSIF error == "search_content_without_matches" %]
     [% title = "Illegal Search" %]

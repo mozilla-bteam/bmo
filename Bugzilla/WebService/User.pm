@@ -17,6 +17,7 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
+use Bugzilla::Search::Saved;
 use Bugzilla::User;
 use Bugzilla::Util qw(trim detaint_natural);
 use Bugzilla::WebService::Util qw(filter filter_wants validate
@@ -500,6 +501,63 @@ sub whoami {
       mfa_status => $self->type('boolean', !!$user->mfa),
     }
   );
+}
+
+#
+# Saved Searches
+#
+
+sub add_saved_search {
+  my ($self, $params) = @_;
+
+  # The `create` method fails when a saved search with the same name exists. The
+  # UI should ask in advance if the user wants to override the existing one, and
+  # if the answer is yes, use `update_saved_search()` instead.
+  my $search = Bugzilla::Search::Saved->create({
+    name => $params->{name}, query => $params->{url}, link_in_footer => 1
+  });
+
+  return $self->_query_to_hash($search);
+}
+
+sub get_saved_searches {
+  my ($self) = @_;
+
+  return [map { $self->_query_to_hash($_) } @{Bugzilla->user->queries}];
+}
+
+sub _get_saved_search_by_id {
+  my ($self, $id) = @_;
+  my ($search) = grep { $_->id == $id } @{Bugzilla->user->queries};
+
+  ThrowUserError('saved_search_not_found') unless $search;
+
+  return $search;
+}
+
+sub get_saved_search {
+  my ($self, $params) = @_;
+  my $search = $self->_get_saved_search_by_id($params->{id});
+
+  return $self->_query_to_hash($search);
+}
+
+sub update_saved_search {
+  my ($self, $params) = @_;
+  my $search = $self->_get_saved_search_by_id($params->{id});
+
+  $search->update({name => $params->{name}, url => $params->{url}});
+
+  return $self->_query_to_hash($search);
+}
+
+sub remove_saved_search {
+  my ($self, $params) = @_;
+  my $search = $self->_get_saved_search_by_id($params->{id});
+
+  $search->remove();
+
+  return {id => $self->type('int', $search->id)};
 }
 
 1;

@@ -219,9 +219,7 @@ sub InsertNamedQuery {
     = grep { lc($_->name) eq lc($query_name) } @{Bugzilla->user->queries};
 
   if ($query_obj) {
-    $query_obj->set_name($query_name);
-    $query_obj->set_url($query);
-    $query_obj->update();
+    $query_obj->update({name => $query_name, query => $query});
   }
   else {
     Bugzilla::Search::Saved->create({
@@ -350,56 +348,14 @@ if ($cmdtype eq "dorem") {
   elsif ($remaction eq "forget") {
     $user = Bugzilla->login(LOGIN_REQUIRED);
 
-    # Copy the name into a variable for
-    # the DB. We know it's safe, because we're using placeholders in
-    # the SQL, and the SQL is only a DELETE.
     my $qname = $cgi->param('namedcmd');
+    my ($search) = grep { lc($_->{name}) eq lc($qname) } @{$user->queries};
 
-    # Do not forget the saved search if it is being used in a whine
-    my $whines_in_use = $dbh->selectcol_arrayref(
-      'SELECT DISTINCT whine_events.subject
-                                                 FROM whine_events
-                                           INNER JOIN whine_queries
-                                                   ON whine_queries.eventid
-                                                      = whine_events.id
-                                                WHERE whine_events.owner_userid
-                                                      = ?
-                                                  AND whine_queries.query_name
-                                                      = ?
-                                      ', undef, $user->id, $qname
-    );
-    if (scalar(@$whines_in_use)) {
-      ThrowUserError('saved_search_used_by_whines',
-        {subjects => join(',', @$whines_in_use), search_name => $qname});
-    }
-
-    # If we are here, then we can safely remove the saved search
-    my $query_id;
-    ($buffer, $query_id)
-      = LookupNamedQuery(scalar $cgi->param("namedcmd"), $user->id);
-    if ($query_id) {
-
+    if ($search) {
       # Make sure the user really wants to delete their saved search.
-      my $token = $cgi->param('token');
-      check_hash_token($token, [$query_id, $qname]);
-
-      $dbh->do(
-        'DELETE FROM namedqueries
-                            WHERE id = ?', undef, $query_id
-      );
-      $dbh->do(
-        'DELETE FROM namedqueries_link_in_footer
-                            WHERE namedquery_id = ?', undef, $query_id
-      );
-      $dbh->do(
-        'DELETE FROM namedquery_group_map
-                            WHERE namedquery_id = ?', undef, $query_id
-      );
-      Bugzilla->memcached->clear({table => 'namedqueries', id => $query_id});
+      check_hash_token($cgi->param('token'), [$search->id, $qname]);
+      $search->remove();
     }
-
-    # Now reset the cached queries
-    $user->flush_queries_cache();
 
     print $cgi->header();
 
