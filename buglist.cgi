@@ -219,7 +219,7 @@ sub InsertNamedQuery {
     = grep { lc($_->name) eq lc($query_name) } @{Bugzilla->user->queries};
 
   if ($query_obj) {
-    $query_obj->update({name => $query_name, query => $query});
+    $query_obj->update({name => $query_name, url => $query});
   }
   else {
     Bugzilla::Search::Saved->create({
