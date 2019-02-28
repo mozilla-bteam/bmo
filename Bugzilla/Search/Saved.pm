@@ -296,7 +296,7 @@ sub _whine_subjects {
 
   return $self->{_whine_subjects} if exists $self->{_whine_subjects};
 
-  ($self->{_whine_subjects}) = Bugzilla->dbh->selectcol_arrayref(
+  $self->{_whine_subjects} = Bugzilla->dbh->selectcol_arrayref(
     'SELECT DISTINCT whine_events.subject FROM whine_events
       INNER JOIN whine_queries ON whine_queries.eventid = whine_events.id
       WHERE whine_events.owner_userid = ? AND whine_queries.query_name = ?',
