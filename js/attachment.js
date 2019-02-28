@@ -570,7 +570,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    */
   capture_onclick() {
     if (typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
-      alert('This function requires the latest browser such as Firefox 66 or Chrome 72.');
+      alert('This function requires the most recent browser version such as Firefox 66 or Chrome 72.');
       return;
     }
 
