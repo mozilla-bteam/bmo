@@ -19,6 +19,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Sanitize params
   params.delete('list_id');
+  params.delete('t');
   params.delete('token');
 
   // Activate Google Analytics
