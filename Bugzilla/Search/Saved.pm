@@ -24,6 +24,7 @@ use Bugzilla::Util;
 use Scalar::Util qw(blessed);
 use URI;
 use URI::QueryParam;
+use List::Util qw( any );
 
 #############
 # Constants #
@@ -158,7 +159,7 @@ sub create {
 
   # Prevent duplicated names from being saved
   ThrowUserError('saved_search_same_name')
-    if scalar(grep { lc($_->name) eq lc($params->{name}) } @{$user->queries});
+    if any { lc($_->name) eq lc($params->{name}) } @{$user->queries};
 
   my $dbh = Bugzilla->dbh;
   $class->check_required_create_fields($params);
@@ -308,7 +309,7 @@ sub _whine_subjects {
 sub used_in_whine {
   my ($self) = @_;
 
-  return scalar(@{$self->_whine_subjects}) ? 1 : 0;
+  return @{$self->_whine_subjects} ? 1 : 0;
 }
 
 sub link_in_footer {

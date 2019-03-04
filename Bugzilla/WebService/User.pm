@@ -17,7 +17,10 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
-use Bugzilla::Search::Saved;
+use List::Util qw(first);
+use Type::Params qw( compile );
+use Type::Utils;
+use Types::Standard qw( :types )
 use Bugzilla::User;
 use Bugzilla::Util qw(trim detaint_natural);
 use Bugzilla::WebService::Util qw(filter filter_wants validate
@@ -508,7 +511,8 @@ sub whoami {
 #
 
 sub add_saved_search {
-  my ($self, $params) = @_;
+  state $check = compile(Object, Dict[name => Str, url => Str]);
+  my ($self, $params) = $check->(@_);
 
   # The `create()` method fails when a saved search with the same name exists.
   # The UI should ask in advance if the user wants to override the existing one,
@@ -528,7 +532,7 @@ sub get_saved_searches {
 
 sub _get_saved_search_by_id {
   my ($self, $id) = @_;
-  my ($search) = grep { $_->id == $id } @{Bugzilla->user->queries};
+  my $search = first { $_->id == $id } @{Bugzilla->user->queries};
 
   ThrowUserError('saved_search_not_found') unless $search;
 
@@ -536,14 +540,16 @@ sub _get_saved_search_by_id {
 }
 
 sub get_saved_search {
-  my ($self, $params) = @_;
+  state $check = compile(Object, Dict[id => Int]);
+  my ($self, $params) = $check->(@_);
   my $search = $self->_get_saved_search_by_id($params->{id});
 
   return $self->_query_to_hash($search);
 }
 
 sub update_saved_search {
-  my ($self, $params) = @_;
+  state $check = compile(Object, Dict[name => Str, url => Str]);
+  my ($self, $params) = $check->(@_);
   my $search = $self->_get_saved_search_by_id($params->{id});
 
   $search->update({name => $params->{name}, url => $params->{url}});
@@ -552,7 +558,8 @@ sub update_saved_search {
 }
 
 sub remove_saved_search {
-  my ($self, $params) = @_;
+  state $check = compile(Object, Dict[id => Int]);
+  my ($self, $params) = $check->(@_);
   my $search = $self->_get_saved_search_by_id($params->{id});
 
   $search->remove();
