@@ -20,7 +20,7 @@ use Bugzilla::Group;
 use List::Util qw(first);
 use Type::Params qw( compile );
 use Type::Utils;
-use Types::Standard qw( :types )
+use Types::Standard qw( :types );
 use Bugzilla::User;
 use Bugzilla::Util qw(trim detaint_natural);
 use Bugzilla::WebService::Util qw(filter filter_wants validate
