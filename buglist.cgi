@@ -215,8 +215,8 @@ sub InsertNamedQuery {
   my $dbh = Bugzilla->dbh;
 
   $query_name = trim($query_name);
-  my ($query_obj)
-    = grep { lc($_->name) eq lc($query_name) } @{Bugzilla->user->queries};
+  my $query_obj
+    = first { lc($_->name) eq lc($query_name) } @{Bugzilla->user->queries};
 
   if ($query_obj) {
     $query_obj->update({name => $query_name, url => $query});
@@ -349,7 +349,7 @@ if ($cmdtype eq "dorem") {
     $user = Bugzilla->login(LOGIN_REQUIRED);
 
     my $qname = $cgi->param('namedcmd');
-    my ($search) = grep { lc($_->{name}) eq lc($qname) } @{$user->queries};
+    my $search = first { lc($_->{name}) eq lc($qname) } @{$user->queries};
 
     if ($search) {
       # Make sure the user really wants to delete their saved search.
