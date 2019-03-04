@@ -1364,7 +1364,15 @@ sub update {
   }
 
   # Update last-visited
-  $self->update_user_last_visit($user, $delta_ts);
+  if ($user->can_see_bug($self->id)) {
+    $self->update_user_last_visit($user, $delta_ts);
+  }
+
+  # If a user is no longer involved, remove their last visit entry
+  my $last_visits = Bugzilla::BugUserLastVisit->match({bug_id => $self->id});
+  foreach my $lv (@$last_visits) {
+    $lv->remove_from_db() unless $lv->user->can_see_bug($self->id);
+  }
 
   # Update bug ignore data if user wants to ignore mail for this bug
   if (exists $self->{'bug_ignored'}) {
