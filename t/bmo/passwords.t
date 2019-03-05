@@ -10,7 +10,7 @@ use Test::Selenium::Remote::Driver;
 
 BEGIN {
   plan skip_all => "these tests only run in CI"
-    unless $ENV{CI} && $ENV{CIRCLE_JOB} eq 'test_dkl';
+    unless $ENV{CI} && $ENV{CIRCLE_JOB} eq 'test_bmo';
 }
 
 my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
