@@ -44,8 +44,7 @@ sub update {
   foreach my $bug_id (@$ids) {
     my $bug = Bugzilla::Bug->check({id => $bug_id, cache => 1});
 
-    ThrowUserError('bug_access_denied', {bug_id => $bug->id})
-      unless $user->can_see_bug($bug->id);
+    next unless $user->can_see_bug($bug->id);
 
     $bug->update_user_last_visit($user, $last_visit_ts);
 
