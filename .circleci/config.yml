@@ -7,7 +7,7 @@ version: 2
 
 defaults:
   bmo_slim_image: &bmo_slim_image
-    image: mozillabteam/bmo-slim:20181210.1
+    image: mozillabteam/bmo-slim:20190208.2
     user: app
 
   selenium_firefox_image: &selenium_firefox_image
@@ -234,7 +234,7 @@ jobs:
           path: /app/artifacts
       - *store_log
 
-   test_bmo:
+  test_bmo:
     parallelism: 1
     working_directory: /app
     docker:
