@@ -57,8 +57,10 @@ $t->get_ok('/__lbheartbeat__')->status_is(200)->content_is('httpd OK');
 $t->get_ok('/bzapi/configuration')->status_is(200)
   ->json_like('/announcement' => qr/Mojo::Test is awesome/);
 
+$t->get_ok('/')->status_is(301);
+
 # for web requests, you use text_like (or text_is) with CSS selectors.
-$t->get_ok('/')->status_is(200)
+$t->get_ok('/home')->status_is(200)
   ->text_like('#new_announcement div' => qr/Mojo::Test is awesome/);
 
 # Chaining is not magical, you can break up longer lines
