@@ -29,6 +29,7 @@ use Bugzilla::Status;
 use Bugzilla::Token;
 
 use Date::Parse;
+use List::Util qw(first);
 
 my $cgi      = Bugzilla->cgi;
 my $dbh      = Bugzilla->dbh;
@@ -216,7 +217,7 @@ sub InsertNamedQuery {
 
   $query_name = trim($query_name);
   my $query_obj
-    = first { lc($_->name) eq lc($query_name) } @{Bugzilla->user->queries};
+    = first { lc($_->{name}) eq lc($query_name) } @{Bugzilla->user->queries};
 
   if ($query_obj) {
     $query_obj->update({name => $query_name, url => $query});
