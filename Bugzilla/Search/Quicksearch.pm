@@ -245,12 +245,6 @@ sub quicksearch {
       $or  = 0;
     }
 
-    # If there is no mention of a bug status, we restrict the query
-    # to open bugs by default.
-    unless ($bug_status_set) {
-      $cgi->param('bug_status', BUG_STATE_OPEN);
-    }
-
     # Provide a hook to allow modifying the params
     Bugzilla::Hook::process(
       'quicksearch_run',
