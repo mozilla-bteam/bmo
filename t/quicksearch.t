@@ -34,7 +34,6 @@ like(
 test_quicksearch(
   input  => "summary:batman OR summary:robin",
   params => {
-    'bug_status' => ['UNCONFIRMED', 'CONFIRMED', 'IN_PROGRESS'],
     'field0-0-0' => 'short_desc',
     'field0-0-1' => 'short_desc',
     'type0-0-0'  => 'substring',
@@ -52,7 +51,6 @@ test_quicksearch(
 test_quicksearch(
   input  => "summary:batman AND summary:robin",
   params => {
-    'bug_status' => ['UNCONFIRMED', 'CONFIRMED', 'IN_PROGRESS'],
     'field0-0-0' => 'short_desc',
     'field1-0-0' => 'short_desc',
     'type0-0-0'  => 'substring',
