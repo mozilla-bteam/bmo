@@ -121,20 +121,13 @@
           [% legal_values = ${"component_"} %]
         [% END %]
         [% FOREACH current_value = legal_values %]
-          [% IF current_value.id %]
-            [%# current_value is a hash instead of a value which
-                only applies for Resolution really, everywhere else current_value
-                is just the value %]
-            <option value="[% current_value.name FILTER html %]"
-              [% ' selected="selected"' IF value.contains( current_value.name ) %]>
-              [% display_value(field.name, current_value.name) FILTER html %]
-            </option>
-          [% ELSE %]
-            <option value="[% current_value OR '---' FILTER html %]"
-              [% ' selected="selected"' IF value.contains( current_value ) %]>
-              [% display_value(field.name, current_value) FILTER html %]
-            </option>
-          [% END %]
+          [%# current_value is a hash for Resolution, otherwise just a value %]
+          [% v = current_value -%]
+          [% v = current_value.name IF current_value.id -%]
+          <option value="[% v OR '---' FILTER html %]"
+            [% ' selected="selected"' IF value.contains(v) %]>
+            [% display_value(field.name, v) FILTER html %]
+          </option>
         [% END %]
       </select>
     </div>
