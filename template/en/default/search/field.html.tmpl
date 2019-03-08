@@ -125,7 +125,7 @@
           [% v = current_value -%]
           [% v = current_value.name IF current_value.id -%]
           <option value="[% v OR '---' FILTER html %]"
-            [% ' selected="selected"' IF value.contains(v) %]>
+            [% ' selected' IF value.contains(v) %]>
             [% display_value(field.name, v) FILTER html %]
           </option>
         [% END %]
