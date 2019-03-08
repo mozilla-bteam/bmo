@@ -1,5 +1,5 @@
 {
-	"Package (Moo)": {
+	"Moo Package": {
 		"scope": "perl",
 		"prefix": "package-moo",
 		"body": [
@@ -18,7 +18,7 @@
 			"1;"
 		],
 	},
-	"Package (Command)": {
+	"Mojo Command": {
 		"scope": "perl",
 		"prefix": "package-command",
 		"body": [
@@ -29,14 +29,14 @@
             "# This Source Code Form is \"Incompatible With Secondary Licenses\", as",
             "# defined by the Mozilla Public License, v. 2.0.",
             "",
-            "package Bugzilla::App::Command::${1:${TM_FILENAME_BASE}};   ## no critic (Capitalization)",
+            "package Bugzilla::App::Command::${TM_FILENAME_BASE};   ## no critic (Capitalization)",
             "use Mojo::Base 'Mojolicious::Command';",
             "",
             "use Bugzilla::Constants;",
             "use Mojo::File 'path';",
             "use Mojo::Util 'getopt';",
             "",
-            "has description => '${2:description}';",
+            "has description => '${1}';",
             "has usage       => sub { shift->extract_usage };",
             "",
             "sub run {",
@@ -46,8 +46,8 @@
             "",
             "  Bugzilla->usage_mode(USAGE_MODE_CMDLINE);",
             "  getopt \\@args,",
-            "    'option|o=s'    => \\\\$option,",
-            "    'required|r=s'  => \\\\$required;",
+            "    'option|o=s'    => \\\\\\$option,",
+            "    'required|r=s'  => \\\\\\$required;",
             "",
             "  die \\$self->usage unless \\$required;",
             "",
@@ -61,13 +61,13 @@
             "",
             "=head1 NAME",
             "",
-            "Bugzilla::App::Command::$1 - $2",
+            "Bugzilla::App::Command::${TM_FILENAME_BASE} - $1",
             "",
             "=head1 SYNOPSIS",
             "",
-            "  Usage: APPLICATION $1",
+            "  Usage: APPLICATION ${TM_FILENAME_BASE}",
             "",
-            "    ./bugzilla.pl $1 --option=foo --required=bar",
+            "    ./bugzilla.pl ${TM_FILENAME_BASE} --option=foo --required=bar",
             "",
             "  Options:",
             "    -h, --help               Print a brief help message and exits.",
@@ -80,36 +80,36 @@
             "",
             "=head1 ATTRIBUTES",
             "",
-            "L<Bugzilla::App::Command::$1> inherits all attributes from",
+            "L<Bugzilla::App::Command::${TM_FILENAME_BASE}> inherits all attributes from",
             "L<Mojolicious::Command> and implements the following new ones.",
             "",
             "=head2 description",
             "",
-            "  my \\$description = \\$$1->description;",
-            "  \\$$1        = \\$$1->description('Foo');",
+            "  my \\$description = \\$${TM_FILENAME_BASE}->description;",
+            "  \\$${TM_FILENAME_BASE}        = \\$${TM_FILENAME_BASE}->description('Foo');",
             "",
             "Short description of this command, used for the command list.",
             "",
             "=head2 usage",
             "",
-            "  my \\$usage = \\$$1->usage;",
-            "  \\$$1  = \\$$1->usage('Foo');",
+            "  my \\$usage = \\$${TM_FILENAME_BASE}->usage;",
+            "  \\$${TM_FILENAME_BASE}  = \\$${TM_FILENAME_BASE}->usage('Foo');",
             "",
             "Usage information for this command, used for the help screen.",
             "",
             "=head1 METHODS",
             "",
-            "L<Bugzilla::App::Command::$1> inherits all methods from",
+            "L<Bugzilla::App::Command::${TM_FILENAME_BASE}> inherits all methods from",
             "L<Mojolicious::Command> and implements the following new ones.",
             "",
             "=head2 run",
             "",
-            "  \\$$1->run(@ARGV);",
+            "  \\$${TM_FILENAME_BASE}->run(@ARGV);",
             "",
             "Run this command.",
 		]
 	},
-	"Package (Controller)": {
+	"Mojo Controller": {
 		"scope": "perl",
 		"prefix": "package-controller",
 		"body": [
@@ -119,24 +119,24 @@
 			"#",
 			"# This Source Code Form is \"Incompatible With Secondary Licenses\", as",
 			"# defined by the Mozilla Public License, v. 2.0.\n",
-			"package Bugzilla::App::${2:${TM_FILENAME_BASE}};",
+			"package Bugzilla::App::${TM_FILENAME_BASE};",
 			"use Mojo::Base qw( Mojolicious::Controller );\n",
 			"use Bugzilla::Logging;",
 			"",
 			"sub setup_routes {",
-			"\tmy (\\$class, \\$r) = @_;",
-			"\t\\$r->get('/$2')->to('$2#$1');",
+			"  my (\\$class, \\$r) = @_;",
+			"  \\$r->get('/$1')->to('${TM_FILENAME_BASE}#$1');",
 			"}",
 			"",
 			"sub ${1} {",
-			"\tmy (\\$self) = @_;",
-			"\t",
+			"  my (\\$self) = @_;",
+			"  $0",
 			"}",
 			"",
 			"1;"
 		]
 	},
-	"Package (DBIx::Class::Result)": {
+	"DBIC Result": {
 		"scope": "perl",
 		"description": "DBIx::Class Result",
 		"prefix": "package-dbic",
@@ -159,7 +159,7 @@
 			"1;"
 		],
 	},
-	"MPL": {
+	"License Header": {
 		"scope": "perl",
 		"prefix": "mpl",
 		"body": [
@@ -169,9 +169,11 @@
 			"#",
 			"# This Source Code Form is \"Incompatible With Secondary Licenses\", as",
 			"# defined by the Mozilla Public License, v. 2.0.\n",
+			"",
+			"$0"
 		]
 	},
-	"script": {
+	"Script Header": {
 		"scope": "perl",
 		"prefix": "script",
 		"body": [
@@ -186,7 +188,5 @@
 			"",
 			"$0"
 		]
-	},
-
-
+	}
 }
