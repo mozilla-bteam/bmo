@@ -125,7 +125,7 @@
             [%# current_value is a hash instead of a value which
                 only applies for Resolution really, everywhere else current_value
                 is just the value %]
-            <option value="[% v FILTER html %]"
+            <option value="[% current_value.name FILTER html %]"
               [% ' selected="selected"' IF value.contains( current_value.name ) %]>
               [% display_value(field.name, current_value.name) FILTER html %]
             </option>
