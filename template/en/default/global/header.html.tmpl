@@ -102,6 +102,10 @@
     [% IF Param('utf8') %]
       <meta charset="UTF-8">
     [% END %]
+    [% IF meta_refresh %]
+      <meta http-equiv="refresh"
+        content="[% meta_refresh FILTER html %]">
+    [% END %]
     [% USE Bugzilla %]
 
     [% IF Bugzilla.cgi.should_block_referrer %]
