@@ -23,7 +23,7 @@ use Bugzilla::WebService::Util
   qw(extract_flags filter filter_wants validate translate);
 use Bugzilla::Bug;
 use Bugzilla::BugMail;
-use Bugzilla::Util qw(trick_taint trim detaint_natural remote_ip);
+use Bugzilla::Util qw(trim detaint_natural remote_ip);
 use Bugzilla::Version;
 use Bugzilla::Milestone;
 use Bugzilla::Status;
@@ -55,7 +55,7 @@ sub DATE_FIELDS {
   };
 
   # Add date related custom fields
-  foreach my $field (Bugzilla->active_custom_fields) {
+  foreach my $field (Bugzilla->active_custom_fields({skip_extensions => 1})) {
     next
       unless ($field->type == FIELD_TYPE_DATETIME
       || $field->type == FIELD_TYPE_DATE);
@@ -536,6 +536,7 @@ sub search {
   my $user = Bugzilla->user;
   my $dbh  = Bugzilla->dbh;
 
+  local $Bugzilla::Extension::TrackingFlags::Flag::SKIP_PRELOAD = 1;
   Bugzilla->switch_to_shadow_db();
 
   my $match_params = dclone($params);
@@ -897,7 +898,6 @@ sub legal_values {
   if (grep($_->name eq $field, @global_selects)) {
 
     # The field is a valid one.
-    trick_taint($field);
     $values = get_legal_field_values($field);
   }
   elsif (grep($_ eq $field, PRODUCT_SPECIFIC_FIELDS)) {
@@ -1522,11 +1522,14 @@ sub _bug_to_hash {
   }
 
   # And now custom fields
-  my @custom_fields = Bugzilla->active_custom_fields({
-    product   => $bug->product_obj,
-    component => $bug->component_obj,
-    bug_id    => $bug->id
-  });
+  my @custom_fields = Bugzilla->active_custom_fields(
+    {
+      product   => $bug->product_obj,
+      component => $bug->component_obj,
+      bug_id    => $bug->id
+    },
+    $self->wants_object,
+  );
   foreach my $field (@custom_fields) {
     my $name = $field->name;
     next if !filter_wants($params, $name, ['default', 'custom']);

@@ -11,6 +11,7 @@ use Moo;
 
 use Encode;
 use Mojo::DOM;
+use Mojo::Util qw(trim);
 use HTML::Escape qw(escape_html);
 use List::MoreUtils qw(any);
 
@@ -39,16 +40,37 @@ sub _build_markdown_parser {
   }
 }
 
+my $MARKDOWN_OFF = quotemeta '#[markdown(off)]';
 sub render_html {
   my ($self, $markdown, $bug, $comment, $user) = @_;
   my $parser = $self->markdown_parser;
   return escape_html($markdown) unless $parser;
 
+  # This makes sure we never handle > foo text in the shortcuts code.
+  local $Bugzilla::Template::COLOR_QUOTES = 0;
+
+  if ($markdown =~ /^\s*$MARKDOWN_OFF\n/s) {
+    my $text = $self->bugzilla_shorthand->( trim($markdown) );
+    my $dom = Mojo::DOM->new($text);
+    $dom->find('*')->each(sub {
+      my ($e) = @_;
+      my $attr = $e->attr;
+      foreach my $key (keys %$attr) {
+        $attr->{$key} =~ s/\s+/ /gs;
+      }
+    });
+    $text = $dom->to_string;
+    my @p = split(/\n{2,}/, $text);
+    my $html = join("\n", map { s/\n/<br>\n/gs; "<p>$_</p>\n" } @p );
+    return $html;
+  }
+
   no warnings 'utf8'; # this is needed because our perl is so old.
   # This is a bit faster since it doesn't engage the regex engine.
   # Replace < with \x{FDD4}, and remove \x{FDD4}.
-  $markdown =~ tr/<\x{FDD4}/\x{FDD4}/d;
-  my @valid_text_parent_tags = ('p', 'li', 'td');
+  $markdown =~ tr/\x{FDD4}//d;
+  $markdown =~ s{<(?!https?://)}{\x{FDD4}}gs;
+  my @valid_text_parent_tags = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td');
   my @bad_tags               = qw( img );
   my $bugzilla_shorthand     = $self->bugzilla_shorthand;
   my $html                   = decode('UTF-8', $parser->render_html($markdown));

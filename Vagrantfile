@@ -7,7 +7,9 @@ DB_HOSTNAME  = ENV.fetch "BMO_DB_HOST",  'bmo-db.vm'
 WEB_HOSTNAME = ENV.fetch "BMO_WEB_HOST", 'bmo-web.vm'
 DB_PORT      = ENV.fetch "BMO_DB_PORT",  2221
 WEB_PORT     = ENV.fetch "BMO_WEB_PORT", 2222
+DB_MEM      = ENV.fetch "BMO_DB_MEM",  512
 WEB_MEM      = ENV.fetch "BMO_WEB_MEM",  2048
+DB_CPU      = ENV.fetch "BMO_DB_CPU",  1
 WEB_CPU      = ENV.fetch "BMO_WEB_CPU",  2
 
 # this is for centos 6 / el 6
@@ -17,7 +19,6 @@ VENDOR_BUNDLE_URL = ENV.fetch "BMO_BUNDLE_URL",
 RSYNC_ARGS = [
   '--verbose',
   '--archive',
-  '--delete',
   '-z',
   '--copy-links',
   '--exclude=local/',
@@ -27,6 +28,26 @@ RSYNC_ARGS = [
   '--exclude=localconfig',
   '--include=.git/'
 ]
+
+# This is a little weird, but we need to update
+require 'json'
+
+Dir.glob(".vagrant/machines/*/*/synced_folders").each do |filename|
+  synced_folders = JSON.parse(IO.read(filename))
+  synced_folder = synced_folders["rsync"]["/vagrant"]
+  dirty = false
+  %w( rsync__args args ).each do |key|
+    if RSYNC_ARGS != synced_folder[key]
+      dirty = true
+      synced_folder[key] = RSYNC_ARGS
+    end
+    if dirty
+      puts "Updating #{filename} because it has old rsync args"
+      IO.write(filename + ".new", JSON.unparse(synced_folders))
+    end
+  end
+end
+
 
 # All Vagrant configuration is done below. The '2' in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -70,10 +91,20 @@ Vagrant.configure('2') do |config|
     db.vm.provider "virtualbox" do |v|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+      v.memory = DB_MEM
+      v.cpus = DB_CPU
     end
 
     db.vm.provider 'parallels' do |prl, override|
       override.vm.box = 'parallels/centos-6.8'
+      prl.memory = DB_MEM
+      prl.cpus = DB_CPU
+    end
+
+    db.vm.provider 'vmware_fusion' do |v|
+      v.vmx['memsize'] = DB_MEM
+      v.vmx['numvcpus'] = DB_CPU
+      v.linked_clone = false
     end
   end
 

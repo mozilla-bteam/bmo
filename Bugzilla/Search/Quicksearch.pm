@@ -127,7 +127,7 @@ use constant COMPONENT_EXCEPTIONS => (
 );
 
 # Quicksearch-wide globals for boolean charts.
-our ($chart, $and, $or, $fulltext, $bug_status_set, $ELASTIC);
+our ($chart, $and, $or, $fulltext, $bug_status_set, $bug_product_set, $ELASTIC);
 
 sub quicksearch {
   my ($searchstring) = (@_);
@@ -145,8 +145,6 @@ sub quicksearch {
     _bug_numbers_only($searchstring);
   }
   else {
-    _handle_alias($searchstring);
-
     # Retain backslashes and quotes, to know which strings are quoted,
     # and which ones are not.
     my @words = _parse_line('\s+', 1, $searchstring);
@@ -253,6 +251,16 @@ sub quicksearch {
       $cgi->param('bug_status', BUG_STATE_OPEN);
     }
 
+    # Provide a hook to allow modifying the params
+    Bugzilla::Hook::process(
+      'quicksearch_run',
+      {
+        'cgi'             => $cgi,
+        'bug_status_set'  => $bug_status_set,
+        'bug_product_set' => $bug_product_set,
+      }
+    );
+
     # Inform user about any unknown fields
     if (scalar(@unknownFields) || scalar(keys %ambiguous_fields)) {
       ThrowUserError(
@@ -274,11 +282,8 @@ sub quicksearch {
   my $modified_query_string = $cgi->canonicalise_query(@params_to_strip);
 
   if ($cgi->param('load')) {
-    my $urlbase = Bugzilla->localconfig->{urlbase};
-
     # Param 'load' asks us to display the query in the advanced search form.
-    print $cgi->redirect(
-      -uri => "${urlbase}query.cgi?format=advanced&amp;" . $modified_query_string);
+    $cgi->base_redirect("query.cgi?format=advanced&$modified_query_string");
   }
 
   # Otherwise, pass the modified query string to the caller.
@@ -325,36 +330,13 @@ sub _bug_numbers_only {
   if ($searchstring !~ /,/ && !i_am_webservice()) {
 
     # Single bug number; shortcut to show_bug.cgi.
-    print $cgi->redirect(
-      -uri => Bugzilla->localconfig->{urlbase} . "show_bug.cgi?id=$searchstring");
-    exit;
+    $cgi->base_redirect("show_bug.cgi?id=$searchstring");
   }
   else {
     # List of bug numbers.
     $cgi->param('bug_id',      $searchstring);
     $cgi->param('order',       'bugs.bug_id');
     $cgi->param('bug_id_type', 'anyexact');
-  }
-}
-
-sub _handle_alias {
-  my $searchstring = shift;
-  if ($searchstring =~ /^([^,\s]+)$/) {
-    my $alias = $1;
-
-    # We use this direct SQL because we want quicksearch to be VERY fast.
-    my $bug_id
-      = Bugzilla->dbh->selectrow_array(q{SELECT bug_id FROM bugs WHERE alias = ?},
-      undef, $alias);
-
-    # If the user cannot see the bug or if we are using a webservice,
-    # do not resolve its alias.
-    if ($bug_id && Bugzilla->user->can_see_bug($bug_id) && !i_am_webservice()) {
-      $alias = url_quote($alias);
-      print Bugzilla->cgi->redirect(
-        -uri => Bugzilla->localconfig->{urlbase} . "show_bug.cgi?id=$alias");
-      exit;
-    }
   }
 }
 
@@ -476,6 +458,9 @@ sub _handle_field_names {
       else {
         if ($translated eq 'bug_status' || $translated eq 'resolution') {
           $bug_status_set = 1;
+        }
+        if ($translated =~ /^(?:classification|product|component)$/) {
+          $bug_product_set = 1;
         }
         foreach my $value (@values) {
           next unless defined $value;

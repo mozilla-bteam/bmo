@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20190108.1';
+our $VERSION = '20190221.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -303,11 +303,9 @@ sub login {
       my $self_url     = trim($cgi->self_url);
       my $sig_type     = 'prev_url:' . $authenticated_user->id;
       my $self_url_sig = issue_hash_sig($sig_type, $self_url);
-      my $redir_url
-        = URI->new(Bugzilla->localconfig->{urlbase} . "reset_password.cgi");
+      my $redir_url    = URI->new('reset_password.cgi');
       $redir_url->query_form(prev_url => $self_url, prev_url_sig => $self_url_sig);
-      print $cgi->redirect($redir_url);
-      exit;
+      $cgi->base_redirect($redir_url->as_string);
     }
   }
   elsif (!i_am_webservice()
@@ -329,8 +327,7 @@ sub login {
 
     if ($grace_period == 0 || $expired) {
       if (!($on_mfa_page || $on_token_page || $do_logout)) {
-        print Bugzilla->cgi->redirect("userprefs.cgi?tab=mfa");
-        exit;
+        $cgi->base_redirect('userprefs.cgi?tab=mfa');
       }
     }
     else {
@@ -602,9 +599,6 @@ sub log_user_request {
     $user_id, remote_ip(), $user_agent, $request_url, $method,
     $bug_id,  $attach_id,  $action,     $server
   );
-  foreach my $param (@params) {
-    trick_taint($param) if defined $param;
-  }
 
   eval {
     local request_cache->{dbh};
@@ -676,27 +670,36 @@ sub fields {
 }
 
 sub active_custom_fields {
-  my (undef, $params) = @_;
-  my $cache_id  = 'active_custom_fields';
-  my $can_cache = !exists $params->{bug_id};
-  if ($params) {
+  my (undef, $params, $wants) = @_;
+  my $cache_id = 'active_custom_fields';
+  my $can_cache = !exists $params->{bug_id} && !$wants;
+  if ($can_cache && $params) {
     $cache_id .= ($params->{product} ? '_p' . $params->{product}->id : '')
       . ($params->{component} ? '_c' . $params->{component}->id : '');
     $cache_id .= ':noext' if $params->{skip_extensions};
   }
-  if (!$can_cache || !exists request_cache->{$cache_id}) {
-    my $fields
-      = Bugzilla::Field->match({custom => 1, obsolete => 0, skip_extensions => 1});
-    Bugzilla::Hook::process('active_custom_fields',
-      {fields => \$fields, params => $params});
-    if ($can_cache) {
-      request_cache->{$cache_id} = $fields;
-    }
-    else {
-      return @$fields;
-    }
+
+  if ($can_cache && exists request_cache->{$cache_id}) {
+    return @{request_cache->{$cache_id}};
   }
-  return @{request_cache->{$cache_id}};
+  else {
+    my $match_params = {custom => 1, obsolete => 0, skip_extensions => 1};
+    if ($wants) {
+      if ($wants->exclude_type->{custom}) {
+        return ();
+      }
+      elsif ($wants->is_specific) {
+        my @names = (grep {/^cf_/} $wants->includes);
+        return () unless @names;
+        $match_params->{name} = \@names;
+      }
+    }
+    my $fields = Bugzilla::Field->match($match_params);
+    Bugzilla::Hook::process('active_custom_fields',
+      {fields => \$fields, params => $params, wants => $wants});
+    request_cache->{$cache_id} = $fields if $can_cache;
+    return @$fields;
+  }
 }
 
 sub has_flags {
@@ -769,7 +772,8 @@ sub elastic {
 }
 
 sub check_rate_limit {
-  my ($class, $name, $ip) = @_;
+  my ($class, $name, $ip, $throw_error) = @_;
+  $throw_error //= sub { ThrowUserError("rate_limit") };
   my $params = Bugzilla->params;
   if ($params->{rate_limit_active}) {
     my $rules = decode_json($params->{rate_limit_rules});
@@ -789,7 +793,7 @@ sub check_rate_limit {
         "[rate_limit] action=$action, ip=$ip, limit=$limit, name=$name");
       if ($action eq 'block') {
         $Bugzilla::App::CGI::C->block_ip($ip);
-        ThrowUserError("rate_limit");
+        $throw_error->();
       }
     }
   }

@@ -266,8 +266,7 @@ sub get_attachment {
         unless ($userid && $valid_token) {
 
           # Not a valid token.
-          print $cgi->redirect('-location' => Bugzilla->localconfig->{urlbase} . $path);
-          exit;
+          $cgi->base_redirect($path);
         }
 
         # Change current user without creating cookies.
@@ -389,12 +388,10 @@ sub view {
     {do_redirect => \$do_redirect});
 
   if ($do_redirect) {
-    my $uri = URI->new(Bugzilla->localconfig->{urlbase} . 'attachment.cgi');
+    my $uri = URI->new('attachment.cgi');
     $uri->query_param(id => $attachment->id);
     $uri->query_param(content_type => $contenttype) if $contenttype_override;
-
-    print $cgi->redirect('-location' => $uri);
-    exit 0;
+    $cgi->base_redirect($uri->as_string);
   }
 
   # Don't send a charset header with attachments--they might not be UTF-8.
@@ -619,10 +616,10 @@ sub insert {
   $bug->add_comment(
     $comment,
     {
-      isprivate  => $attachment->isprivate,
-      type       => CMT_ATTACHMENT_CREATED,
-      extra_data => $attachment->id,
-      is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0
+      isprivate   => $attachment->isprivate,
+      type        => CMT_ATTACHMENT_CREATED,
+      extra_data  => $attachment->id,
+      is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0,
     }
   );
 
@@ -775,14 +772,18 @@ sub update {
   # If the user submitted a comment while editing the attachment,
   # add the comment to the bug. Do this after having validated isprivate!
   my $comment = $cgi->param('comment');
+  my $is_markdown = Bugzilla->params->{use_markdown} ? 1 : 0;
+  if ($cgi->param('markdown_off')) {
+    $is_markdown = 0;
+  }
   if (defined $comment && trim($comment) ne '') {
     $bug->add_comment(
       $comment,
       {
-        isprivate  => $attachment->isprivate,
-        type       => CMT_ATTACHMENT_UPDATED,
-        extra_data => $attachment->id,
-        is_markdown => Bugzilla->params->{use_markdown} ? 1 : 0
+        isprivate   => $attachment->isprivate,
+        type        => CMT_ATTACHMENT_UPDATED,
+        extra_data  => $attachment->id,
+        is_markdown => $is_markdown,
       }
     );
   }

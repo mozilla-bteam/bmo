@@ -17,7 +17,7 @@ use Bugzilla::Extension::BzAPI::Constants;
 use Bugzilla::Extension::BzAPI::Util qw(fix_credentials filter_wants_nocache);
 
 use Bugzilla::Error;
-use Bugzilla::Util qw(trick_taint datetime_from);
+use Bugzilla::Util qw(datetime_from);
 use Bugzilla::Constants;
 use Bugzilla::Install::Filesystem;
 use Bugzilla::WebService::Constants;
@@ -269,7 +269,6 @@ sub _preload_handlers {
     my $all_handlers = {};
     foreach my $module (_resource_modules()) {
       my $resource_class = "Bugzilla::Extension::BzAPI::Resources::$module";
-      trick_taint($resource_class);
       eval { require_module($resource_class) };
       next if ($@ || !$resource_class->can('rest_handlers'));
       my $handlers = $resource_class->rest_handlers;
@@ -279,7 +278,21 @@ sub _preload_handlers {
     $cache->{rest_handlers} = $all_handlers;
   }
 
+
+
+
   return $cache->{rest_handlers};
+}
+
+sub app_startup {
+  my ($self, $args) = @_;
+  my $app = $args->{app};
+  my $r   = $app->routes;
+
+  Bugzilla::App::CGI->load_one('bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi');
+  $r->any('/extensions/BzAPI/bin/rest.cgi/*PATH_INFO')->to('CGI#bzapi_cgi');
+  $r->any('/latest/*PATH_INFO')->to('CGI#bzapi_cgi');
+  $r->any('/bzapi/*PATH_INFO')->to('CGI#bzapi_cgi');
 }
 
 __PACKAGE__->NAME;

@@ -14,7 +14,9 @@ use warnings;
 use parent qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
+use Bugzilla::Error;
 use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::Util qw(request);
 
 our $VERSION = '0.01';
 
@@ -30,12 +32,14 @@ sub template_before_process {
 
   if (my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'}) {
     my $has_revisions = 0;
+    my $active_revision_count = 0;
     foreach my $attachment (@{$bug->attachments}) {
       next if $attachment->contenttype ne PHAB_CONTENT_TYPE;
+      $active_revision_count++ if !$attachment->isobsolete;
       $has_revisions = 1;
-      last;
     }
     $vars->{phabricator_revisions} = $has_revisions;
+    $vars->{phabricator_active_revision_count} = $active_revision_count;
   }
 }
 
@@ -91,6 +95,22 @@ sub install_filesystem {
   my $scriptname    = $extensionsdir . "/PhabBugz/bin/phabbugz_feed.pl";
 
   $files->{$scriptname} = {perms => Bugzilla::Install::Filesystem::WS_EXECUTE};
+}
+
+sub merge_users_before {
+  my ($self, $args) = @_;
+  my $old_id = $args->{old_id};
+  my $force  = $args->{force};
+
+  return if $force;
+
+  my $result = request('bugzilla.account.search', {ids => [$old_id]});
+
+  foreach my $user (@{$result->{result}}) {
+    next if !$user->{phid};
+    ThrowUserError('phabricator_merge_user_abort',
+      {user => Bugzilla::User->new({id => $old_id, cache => 1})});
+  }
 }
 
 __PACKAGE__->NAME;

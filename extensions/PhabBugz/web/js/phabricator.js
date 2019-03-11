@@ -30,7 +30,7 @@ Phabricator.getBugRevisions = function() {
         var spanRevisionStatusText = span.clone();
 
         var revLink = link.clone();
-        revLink.attr('href', phabUrl + '/' + revision.id);
+        revLink.attr('href', phabUrl + revision.id);
         revLink.text(revision.id);
         tdId.append(revLink);
 
@@ -62,6 +62,12 @@ Phabricator.getBugRevisions = function() {
         }
         tableReviews.addClass('phabricator-reviewers');
         tdReviewers.append(tableReviews);
+
+        trRevision.attr('data-status', revision.status);
+        if (revision.status === 'abandoned') {
+            trRevision.addClass('bz_default_hidden');
+            $('tbody.phabricator-show-abandoned').removeClass('bz_default_hidden');
+        }
 
         trRevision.append(
             tdId,
@@ -112,4 +118,18 @@ Phabricator.getBugRevisions = function() {
 
 $().ready(function() {
     Phabricator.getBugRevisions();
+
+    $('#phabricator-show-abandoned').on('click', function (event) {
+        $('tbody.phabricator-revision > tr').each(function() {
+            var row = $(this);
+            if (row.attr('data-status') === 'abandoned') {
+                if ($('#phabricator-show-abandoned').prop('checked') == true) {
+                    row.removeClass('bz_default_hidden');
+                }
+                else {
+                    row.addClass('bz_default_hidden');
+                }
+            }
+        });
+    });
 });

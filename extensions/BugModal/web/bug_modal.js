@@ -1277,6 +1277,11 @@ $(function() {
             function(data) {
                 $('#preview-throbber').hide();
                 preview.html(data.html);
+
+                // Highlight code if possible
+                if (Prism) {
+                  Prism.highlightAllUnder(preview.get(0));
+                }
             },
             function(message) {
                 $('#preview-throbber').hide();
@@ -1433,7 +1438,8 @@ function show_new_changes_indicator() {
             const observer = new IntersectionObserver(entries => entries.forEach(entry => {
                 if (entry.intersectionRatio > 0) {
                     observer.unobserve($separator);
-                    $link.remove();
+                    $link.addEventListener('transitionend', () => $link.remove(), { once: true });
+                    $link.hidden = true;
                 }
             }), { root: document.querySelector('#bugzilla-body') });
 

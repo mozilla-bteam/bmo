@@ -57,8 +57,7 @@
     "extensions/ComponentWatching/web/js/overlay.js",
     "js/bugzilla-readable-status-min.js",
     "js/field.js",
-    "js/comments.js",
-    "js/util.js"
+    "js/comments.js"
   );
   jquery.push(
     "contextMenu",
@@ -78,7 +77,7 @@
 [% javascript = BLOCK %]
   [%# add tracking flags json if available %]
   [% IF tracking_flags %]
-    [% javascript_urls.push("extensions/TrackingFlags/web/js/tracking_flags.js") %]
+    [% javascript_urls.push("extensions/TrackingFlags/web/js/flags.js") %]
     var tracking_flags_str = "[% tracking_flags_json FILTER js %]";
     var TrackingFlags = $.parseJSON(tracking_flags_str);
   [% END %]
@@ -104,6 +103,7 @@
       quote_replies: '[% user.settings.quote_replies.value FILTER js %]',
       zoom_textareas: [% user.settings.zoom_textareas.value == "on" ? "true" : "false" %],
       remember_collapsed: [% user.settings.ui_remember_collapsed.value == "on" ? "true" : "false" %],
+      inline_attachments: [% user.settings.inline_attachments.value == "on" ? "true" : "false" %],
       autosize_comments: [% user.settings.autosize_comments.value == "on" ? "true" : "false" %]
     }
   };

@@ -38,13 +38,6 @@ sub register {
   $app->hook(
     before_dispatch => sub {
       my ($c) = @_;
-      if ($D{HTTPD_IN_SUBDIR}) {
-        my $path = $c->req->url->path;
-        if ($path =~ s{^/bmo}{}s) {
-          $c->stash->{bmo_prefix} = 1;
-          $c->req->url->path($path);
-        }
-      }
       Log::Log4perl::MDC->put(request_id => $c->req->request_id);
       $c->stash->{cleanup_guard} = Scope::Guard->new(\&Bugzilla::cleanup);
       Bugzilla->usage_mode(USAGE_MODE_MOJO);
@@ -80,7 +73,7 @@ sub register {
       my ($c, $type) = @_;
 
       if ($type == LOGIN_REQUIRED) {
-        $c->redirect_to('/login');
+        $c->redirect_to(Bugzilla->localconfig->{basepath} . 'login');
         return undef;
       }
       else {
@@ -106,19 +99,13 @@ sub register {
 
       my $login_cookie = $c->cookie("Bugzilla_logincookie");
       my $user_id      = $c->cookie("Bugzilla_login");
-      my $ip_addr      = $c->tx->remote_address;
 
       return $c->bugzilla->login_redirect_if_required($type)
         unless ($login_cookie && $user_id);
 
       my $db_cookie = Bugzilla->dbh->selectrow_array(
-        q{
-                    SELECT cookie
-                      FROM logincookies
-                     WHERE cookie = ?
-                           AND userid = ?
-                           AND (restrict_ipaddr = 0 OR ipaddr = ?)
-                }, undef, ($login_cookie, $user_id, $ip_addr)
+        'SELECT cookie FROM logincookies WHERE cookie = ? AND userid = ?',
+        undef, ($login_cookie, $user_id)
       );
 
       if (defined $db_cookie && secure_compare($login_cookie, $db_cookie)) {
@@ -153,6 +140,17 @@ sub register {
       else {
         $c->reply->exception($error);
       }
+    }
+  );
+
+  $app->helper(
+    'bz_include' => sub {
+      my ($self, $file, %vars) = @_;
+      my $template = Bugzilla->template;
+      my $buffer = "";
+      $template->process($file, \%vars, \$buffer)
+        or die $template->error;
+      return Mojo::ByteStream->new($buffer);
     }
   );
 

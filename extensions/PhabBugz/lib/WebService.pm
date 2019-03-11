@@ -18,7 +18,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::User;
-use Bugzilla::Util qw(detaint_natural trick_taint);
+use Bugzilla::Util qw(detaint_natural);
 use Bugzilla::WebService::Constants;
 use Types::Standard qw(-types slurpy);
 use Type::Params qw(compile);
@@ -40,7 +40,6 @@ use constant PUBLIC_METHODS => qw(
   bug_revisions
   check_user_enter_bug_permission
   check_user_permission_for_bug
-  set_build_target
 );
 
 sub _check_phabricator {
@@ -95,43 +94,6 @@ sub check_user_enter_bug_permission {
   # Send back an object with the attribute "result" set to 1 if the user
   # can enter bugs into the given product, or 0 if not.
   return {result => $target_user->can_enter_product($params->{product}) ? 1 : 0};
-}
-
-sub set_build_target {
-  my ($self, $params) = @_;
-
-  # Phabricator only supports sending credentials via HTTP Basic Auth
-  # so we exploit that function to pass in an API key as the password
-  # of basic auth. BMO does not support basic auth but does support
-  # use of API keys.
-  my $http_auth = Bugzilla->cgi->http('Authorization');
-  $http_auth =~ s/^Basic\s+//;
-  $http_auth = decode_base64($http_auth);
-  my ($login, $api_key) = split(':', $http_auth);
-  $params->{'Bugzilla_login'}   = $login;
-  $params->{'Bugzilla_api_key'} = $api_key;
-
-  my $user = Bugzilla->login(LOGIN_REQUIRED);
-
-  $self->_validate_phab_user($user);
-
-  my $revision_id  = $params->{revision_id};
-  my $build_target = $params->{build_target};
-
-  ThrowUserError('invalid_phabricator_revision_id')
-    unless detaint_natural($revision_id);
-
-  ThrowUserError('invalid_phabricator_build_target')
-    unless $build_target =~ /^PHID-HMBT-[a-zA-Z0-9]+$/;
-  trick_taint($build_target);
-
-  Bugzilla->dbh->do(
-    'INSERT INTO phabbugz (name, value) VALUES (?, ?)',
-    undef, 'build_target_' . $revision_id,
-    $build_target
-  );
-
-  return {result => 1};
 }
 
 sub bug_revisions {
@@ -203,9 +165,14 @@ sub bug_revisions {
 
   my @revisions;
   foreach my $revision (@{$response->{result}{data}}) {
+
+    # Skip if revision bug id was moved to a different bug
+    next if $revision->{fields}->{'bugzilla.bug-id'} ne $bug->id;
+
     my $revision_obj  = Bugzilla::Extension::PhabBugz::Revision->new($revision);
     my $revision_data = {
       id          => 'D' . $revision_obj->id,
+      sortkey     => $revision_obj->id,
       author      => $revision_obj->author->name,
       status      => $revision_obj->status,
       long_status => $revision_status_map->{$revision_obj->status}
@@ -234,24 +201,13 @@ sub bug_revisions {
   }
 
   # sort by revision id
-  @revisions = sort { $a->{id} cmp $b->{id} } @revisions;
+  @revisions = sort { $a->{sortkey} <=> $b->{sortkey} } @revisions;
 
   return {revisions => \@revisions};
 }
 
 sub rest_resources {
   return [
-    # Set build target in Phabricator
-    qr{^/phabbugz/build_target/(\d+)/(PHID-HMBT-.*)$},
-    {
-      POST => {
-        method => 'set_build_target',
-        params => sub {
-          return {revision_id => $_[0], build_target => $_[1]};
-        }
-      }
-    },
-
     # Bug permission checks
     qr{^/phabbugz/check_bug/(\d+)/(\d+)$},
     {

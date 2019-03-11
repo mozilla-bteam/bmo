@@ -14,6 +14,8 @@ use strict;
 use warnings;
 
 use Bugzilla::WebService::Server;
+use Bugzilla::WebService::Wants;
+use PerlX::Maybe qw(maybe);
 
 # Used by the JSON-RPC server to convert incoming date fields apprpriately.
 use constant DATE_FIELDS => {};
@@ -35,6 +37,20 @@ use constant PUBLIC_METHODS => ();
 sub login_exempt {
   my ($class, $method) = @_;
   return $class->LOGIN_EXEMPT->{$method};
+}
+
+sub wants_object {
+  my ($class) = @_;
+  my $cache = Bugzilla->request_cache;
+
+  return $cache->{filter_wants_object} //= do {
+    my $params = Bugzilla->input_params;
+     Bugzilla::WebService::Wants->new(
+      cache                => $cache->{filter_wants} ||= {},
+      maybe include_fields => $params->{include_fields},
+      maybe exclude_fields => $params->{exclude_fields},
+    );
+  };
 }
 
 1;
@@ -177,19 +193,15 @@ WebService method to perform a login:
 
 =item C<Bugzilla_password> (string) - That user's password.
 
-=item C<Bugzilla_restrictlogin> (boolean) - Optional. If true,
-then your login will only be valid for your IP address.
-
 =item C<Bugzilla_rememberlogin> (boolean) - Optional. If true,
 then the cookie sent back to you with the method response will
 not expire.
 
 =back
 
-The C<Bugzilla_restrictlogin> and C<Bugzilla_rememberlogin> options
-are only used when you have also specified C<Bugzilla_login> and
-C<Bugzilla_password>. This value will be deprecated in the release
-after Bugzilla 5.0 and you will be required to pass the Bugzilla_login
+The C<Bugzilla_rememberlogin> option is only used when you have also specified
+C<Bugzilla_login> and C<Bugzilla_password>. This value will be deprecated in the
+release after Bugzilla 5.0 and you will be required to pass the Bugzilla_login
 and Bugzilla_password for every call.
 
 Note that Bugzilla will return HTTP cookies along with the method

@@ -91,8 +91,6 @@ use constant FEATURE_FILES => (
     'Bugzilla/API/*/*.pm',    'Bugzilla/API/*/Server.pm',
     'Bugzilla/API/*/Resource/*.pm'
   ],
-  csp           => ['Bugzilla/CGI/ContentSecurityPolicy.pm'],
-  psgi          => ['app.psgi'],
   moving        => ['importxml.pl'],
   auth_ldap     => ['Bugzilla/Auth/Verify/LDAP.pm'],
   auth_radius   => ['Bugzilla/Auth/Verify/RADIUS.pm'],
@@ -119,7 +117,7 @@ sub check_all_cpan_features {
   my @features = sort { $a->identifier cmp $b->identifier } $meta->features;
   foreach my $feature (@features) {
     next if $feature->identifier eq 'features';
-    printf "Feature '%s': %s\n", $feature->identifier, $feature->description
+    printf "Feature '%s': %s\n", $feature->identifier // 'unknown', $feature->description // 'unknown',
       if $output;
     my $result = check_cpan_feature($feature, $dirs, $output);
     print "\n" if $output;

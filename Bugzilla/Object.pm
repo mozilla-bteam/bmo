@@ -161,7 +161,6 @@ sub _load_from_db {
       push(@values, @{$param->{'values'}});
     }
 
-    map { trick_taint($_) } @values;
     $object_data
       = $dbh->selectrow_hashref("SELECT $columns FROM $table WHERE $condition",
       undef, @values);
@@ -425,7 +424,6 @@ sub _do_list_select {
     # for the caller. So we copy the array. It's safe to untaint because
     # they're only used in placeholders here.
     my @untainted = @{$values || []};
-    trick_taint($_) foreach @untainted;
     $objects = $dbh->selectall_arrayref($sql, {Slice => {}}, @untainted);
     $class->_serialisation_keys($objects->[0]) if @$objects;
   }
@@ -474,7 +472,6 @@ sub set {
   if (exists $validators{$field}) {
     my $validator = $validators{$field};
     $value = $self->$validator($value, $field);
-    trick_taint($value) if (defined $value && !ref($value));
 
     if ($self->can('_set_global_validator')) {
       $self->_set_global_validator($value, $field);
@@ -552,7 +549,6 @@ sub update {
       next;
     }
 
-    trick_taint($new) if defined $new;
     push(@values,         $new);
     push(@update_columns, $column);
 
@@ -731,7 +727,6 @@ sub run_create_validators {
 
     # We want people to be able to explicitly set fields to NULL,
     # and that means they can be set to undef.
-    trick_taint($value) if defined $value && !ref($value);
     $field_values{$field} = $value;
   }
 
@@ -887,6 +882,22 @@ sub _insert_dep_field {
 # and only access them through the below methods. This also allows certain
 # hooks to only run once per request instead of multiple times on each
 # page.
+
+sub DB_COLUMN_NAMES {
+  my ($class) = @_;
+  my $table = $class->DB_TABLE;
+  my $_error = sub { die "$class: cannot determine attribute name from $_[0]\n" };
+
+  my $column_re = qr{
+      ^(?:\Q$table.\E)?(?<name>\w+)$
+    | ^(?:\Q$table.\E)?(?<name>\w+)\s+AS\s+\w+$
+    | (?<name>\w+)\b.+AS\s+\g{name}$
+  }six;
+
+  return map { trim($_) =~ $column_re ? $+{name} : $_error->($_) }
+    $class->_get_db_columns;
+}
+
 
 sub _get_db_columns {
   my $invocant  = shift;

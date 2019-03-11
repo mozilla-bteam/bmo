@@ -144,9 +144,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const hgrevs = [];
       let isFirst = false;
       let currentCommentId = "";
-      const aSelector = oldWay ? ".bz_comment_text > a" : ".comment-text > a";
+      const aSelector = oldWay ? ".bz_comment_text > a" : ".comment-text > a, .comment-text > p:first-child > a";
       document.querySelectorAll(aSelector).forEach(a => {
-        const parentId = a.parentNode.attributes.id;
+        const parentId = a.closest(oldWay ? '.bz_comment_text' : '.comment-text').id;
         let hasBugherderKw = false;
         let hasUpliftKw = false;
         if (parentId !== currentCommentId) {
@@ -157,7 +157,7 @@ window.addEventListener('DOMContentLoaded', () => {
           let commentTagSelector = "";
           let x = "";
           if (oldWay) {
-            const parts = parentId.value.split("_");
+            const parts = parentId.split("_");
             if (parts.length == 3) {
               const num = parts[2];
               const ctag = "comment_tag_" + num;
@@ -165,7 +165,7 @@ window.addEventListener('DOMContentLoaded', () => {
               x = "x" + String.fromCharCode(160); // &nbsp;
             }
           } else {
-            const parts = parentId.value.split("-");
+            const parts = parentId.split("-");
             if (parts.length == 2) {
               const num = parts[1];
               const ctag = "ctag-" + num;

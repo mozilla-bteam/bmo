@@ -230,7 +230,7 @@ sub page_before_template {
     Bugzilla::Extension::BMO::Reports::Internship::report($vars);
   }
   elsif ($page eq 'email_queue.html') {
-    print Bugzilla->cgi->redirect('view_job_queue.cgi');
+    Bugzilla->cgi->base_redirect('view_job_queue.cgi');
   }
   elsif ($page eq 'release_tracking_report.html') {
     require Bugzilla::Extension::BMO::Reports::ReleaseTracking;
@@ -305,8 +305,7 @@ sub bounty_attachment {
 
     Bugzilla::BugMail::Send($bug->id, {changer => $user});
 
-    print Bugzilla->cgi->redirect('show_bug.cgi?id=' . $bug->id);
-    exit;
+    Bugzilla->cgi->base_redirect('show_bug.cgi?id=' . $bug->id);
   }
 
   if ($attachment) {
@@ -873,6 +872,27 @@ sub quicksearch_map {
   }
 }
 
+sub quicksearch_run {
+  my ($self, $args) = @_;
+  my ($cgi, $bug_product_set) = @$args{qw(cgi bug_product_set)};
+
+  # Exclude Graveyard products by default
+  unless ($bug_product_set) {
+    $cgi->param('f1', 'classification');
+    $cgi->param('o1', 'notequals');
+    $cgi->param('v1', 'Graveyard');
+  }
+}
+
+sub quicksearch_test {
+  my ($self, $args) = @_;
+  my $opt = $args->{'opt'};
+
+  $opt->{params}->{'f1'} = 'classification';
+  $opt->{params}->{'o1'} = 'notequals';
+  $opt->{params}->{'v1'} = 'Graveyard';
+}
+
 sub object_columns {
   my ($self, $args) = @_;
   return unless $args->{class}->isa('Bugzilla::Product');
@@ -1109,7 +1129,6 @@ sub bug_end_of_create {
 
   # store user-agent
   if (my $ua = Bugzilla->cgi->user_agent) {
-    trick_taint($ua);
     Bugzilla->dbh->do(
       "INSERT INTO bug_user_agent (bug_id, user_agent) VALUES (?, ?)",
       undef, $bug->id, $ua);
@@ -2417,7 +2436,6 @@ sub query_database {
     }
 
     check_hash_token($input->{token}, ['query_database']);
-    trick_taint($query);
     $vars->{executed} = 1;
 
     # add limit if missing
@@ -2745,6 +2763,10 @@ sub app_startup {
     '/:REWRITE_web_bounty' => [REWRITE_web_bounty => qr{form[\.:]web[\.:]bounty}])
     ->to(
     'CGI#enter_bug_cgi' => {'format' => 'web-bounty', 'product' => 'mozilla.org'});
+  $r->any(
+    '/:REWRITE_blocklist_bug' => [REWRITE_blocklist_bug => qr{form[\.:]blocklist}])
+    ->to(
+    'CGI#enter_bug_cgi' => {'format' => 'blocklist', 'product' => 'Toolkit'});
   $r->any(
     '/:REWRITE_automative' => [REWRITE_automative => qr{form[\.:]automative}])
     ->to(

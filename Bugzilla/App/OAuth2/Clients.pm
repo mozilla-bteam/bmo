@@ -9,7 +9,7 @@ package Bugzilla::App::OAuth2::Clients;
 use 5.10.1;
 use Mojo::Base 'Mojolicious::Controller';
 
-use List::Util qw(first);
+use List::Util qw(any first);
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Token;
@@ -68,16 +68,19 @@ sub create {
   my $id          = $self->param('id');
   my $secret      = $self->param('secret');
   my @scopes      = $self->param('scopes');
-  $description || ThrowCodeError('param_required', {param => 'description'});
-  $id          || ThrowCodeError('param_required', {param => 'id'});
-  $secret      || ThrowCodeError('param_required', {param => 'secret'});
-  @scopes      || ThrowCodeError('param_required', {param => 'scopes'});
+  $description or ThrowCodeError('param_required', {param => 'description'});
+  $id          or ThrowCodeError('param_required', {param => 'id'});
+  $secret      or ThrowCodeError('param_required', {param => 'secret'});
+  any { $_ > 0 } @scopes or ThrowCodeError('param_required', {param => 'scopes'});
   my $token = $self->param('token');
   check_token_data($token, 'create_oauth_client');
 
-
-  $dbh->do('INSERT INTO oauth2_client (id, description, secret) VALUES (?, ?, ?)',
+  $dbh->do('INSERT INTO oauth2_client (client_id, description, secret) VALUES (?, ?, ?)',
     undef, $id, $description, $secret);
+
+  my $client_data
+    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
+    undef, $id);
 
   foreach my $scope_id (@scopes) {
     $scope_id = $dbh->selectrow_array('SELECT id FROM oauth2_scope WHERE id = ?',
@@ -86,8 +89,8 @@ sub create {
       ThrowCodeError('param_required', {param => 'scopes'});
     }
     $dbh->do(
-      'INSERT INTO oauth2_client_scope (client_id, scope_id, allowed) VALUES (?, ?, 1)',
-      undef, $id, $scope_id
+      'INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
+      undef, $client_data->{id}, $scope_id
     );
   }
 
@@ -111,12 +114,12 @@ sub delete {
   my $dbh    = Bugzilla->dbh;
   my $vars   = {};
 
-  my $id     = $self->param('id');
-  my $client = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+  my $id          = $self->param('id');
+  my $client_data = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
     undef, $id);
 
   if (!$self->param('deleteme')) {
-    $vars->{'client'} = $client;
+    $vars->{'client'} = $client_data;
     $vars->{'token'}  = issue_session_token('delete_oauth_client');
     $self->stash(%{$vars});
     return $self->render(
@@ -140,7 +143,7 @@ sub delete {
   $dbh->bz_commit_transaction;
 
   $vars->{'message'} = 'oauth_client_deleted';
-  $vars->{'client'}  = {description => $client->{description}};
+  $vars->{'client'}  = {description => $client_data->{description}};
   $vars->{'clients'} = $clients;
   $self->stash(%{$vars});
   return $self->render(template => 'admin/oauth/list', handler => 'bugzilla');
@@ -153,14 +156,14 @@ sub edit {
   my $vars   = {};
   my $id     = $self->param('id');
 
-  my $client = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+  my $client_data = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
     undef, $id);
   my $client_scopes
     = $dbh->selectall_arrayref(
     'SELECT scope_id FROM oauth2_client_scope WHERE client_id = ?',
-    undef, $id);
-  $client->{scopes} = [map { $_->[0] } @{$client_scopes}];
-  $vars->{client} = $client;
+    undef, $client_data->{id});
+  $client_data->{scopes} = [map { $_->[0] } @{$client_scopes}];
+  $vars->{client} = $client_data;
 
   # All scopes
   my $all_scopes
@@ -182,12 +185,12 @@ sub edit {
   my $active      = $self->param('active');
   my @scopes      = $self->param('scopes');
 
-  if ($description ne $client->{description}) {
+  if ($description ne $client_data->{description}) {
     $dbh->do('UPDATE oauth2_client SET description = ? WHERE id = ?',
       undef, $description, $id);
   }
 
-  if ($active ne $client->{active}) {
+  if ($active ne $client_data->{active}) {
     $dbh->do('UPDATE oauth2_client SET active = ? WHERE id = ?',
       undef, $active, $id);
   }
@@ -195,8 +198,8 @@ sub edit {
   $dbh->do('DELETE FROM oauth2_client_scope WHERE client_id = ?', undef, $id);
   foreach my $scope_id (@scopes) {
     $dbh->do(
-      'INSERT INTO oauth2_client_scope (client_id, scope_id, allowed) VALUES (?, ?, 1)',
-      undef, $id, $scope_id
+      'INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
+      undef, $client_data->{id}, $scope_id
     );
   }
 
