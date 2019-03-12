@@ -658,6 +658,9 @@ sub header {
   if ($self->server_software eq 'Bugzilla::App::CGI') {
     my $c = $Bugzilla::App::CGI::C;
     $c->res->headers->parse($headers);
+    unless ($c->res->headers->cache_control) {
+      $c->res->headers->cache_control('private, no-cache, no-store, must-revalidate');
+    }
     my $status = $c->res->headers->status;
     if ($status && $status =~ /^([0-9]+)/) {
       $c->res->code($1);
