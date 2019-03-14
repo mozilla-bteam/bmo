@@ -19,7 +19,6 @@ use Bugzilla::Error;
 use Bugzilla::Config::Common;
 use Bugzilla::Config::GroupSecurity;
 use Bugzilla::WebService::Bug;
-use Bugzilla::WebService::Util qw(filter_wants);
 
 our $VERSION = '1.0';
 
