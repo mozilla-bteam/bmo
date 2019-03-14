@@ -358,10 +358,12 @@ ok(
   "Inactive SeleniumAttachmentFlag3Test flag type not displayed"
 );
 
-# Let's generate some "flagmail", first with no requestee.
+# Let's generate some "flagmail" first.
 
 $sel->select_ok("flag_type-$aflagtype1_id", "label=?");
+$sel->type_ok("requestee_type-$aflagtype1_id", $config->{admin_user_login});
 $sel->select_ok("flag_type-$aflagtype2_id", "label=?");
+$sel->type_ok("requestee_type-$aflagtype2_id", $config->{admin_user_login});
 $sel->type_ok("comment", "patch for testing purposes only");
 $sel->click_ok("create");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
