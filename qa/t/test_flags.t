@@ -270,8 +270,11 @@ ok(
 # the MTA.
 
 $sel->select_ok("flag_type-$flagtype1_id", "label=?");
+$sel->type_ok("requestee_type-$flagtype1_id", "test@bugzilla.test");
 $sel->select_ok("flag_type-$flagtype2_id", "label=?");
+$sel->type_ok("requestee_type-$flagtype2_id", "test@bugzilla.test");
 $sel->select_ok("flag_type-$flagtype3_id", "label=?");
+$sel->type_ok("requestee_type-$flagtype3_id", "test@bugzilla.test");
 $sel->type_ok("comment", "Setting all 3 flags to ?");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
