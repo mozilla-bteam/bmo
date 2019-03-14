@@ -778,6 +778,13 @@ h3.change-name {
     color: #333;
 }
 
+.change-set .attachment button.outer {
+  padding: 0;
+  font-weight: normal;
+  box-shadow: none;
+  transition: none;
+}
+
 .change-set .attachment .lightbox {
     cursor: zoom-in;
 }
@@ -831,6 +838,10 @@ h3.change-name {
 
 .change-set .attachment ~ .comment-text {
     padding-top: 0;
+}
+
+.change-set .attachment ~ .comment-text:empty {
+    padding-bottom: 0;
 }
 
 /* add comment */
