@@ -18,7 +18,6 @@ use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::Config::Common;
 use Bugzilla::Config::GroupSecurity;
-use Bugzilla::WebService::Bug;
 
 our $VERSION = '1.0';
 
