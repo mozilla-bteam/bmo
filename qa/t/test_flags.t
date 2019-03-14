@@ -270,11 +270,11 @@ ok(
 # the MTA.
 
 $sel->select_ok("flag_type-$flagtype1_id", "label=?");
-$sel->type_ok("requestee_type-$flagtype1_id", "test@bugzilla.test");
+$sel->type_ok("requestee_type-$flagtype1_id", $config->{admin_user_login});
 $sel->select_ok("flag_type-$flagtype2_id", "label=?");
-$sel->type_ok("requestee_type-$flagtype2_id", "test@bugzilla.test");
+$sel->type_ok("requestee_type-$flagtype2_id", $config->{admin_user_login});
 $sel->select_ok("flag_type-$flagtype3_id", "label=?");
-$sel->type_ok("requestee_type-$flagtype3_id", "test@bugzilla.test");
+$sel->type_ok("requestee_type-$flagtype3_id", $config->{admin_user_login});
 $sel->type_ok("comment", "Setting all 3 flags to ?");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -362,7 +362,9 @@ ok(
 # Let's generate some "flagmail", first with no requestee.
 
 $sel->select_ok("flag_type-$aflagtype1_id", "label=?");
+$sel->type_ok("requestee_type-$flagtype1_id", $config->{admin_user_login});
 $sel->select_ok("flag_type-$aflagtype2_id", "label=?");
+$sel->type_ok("requestee_type-$flagtype2_id", $config->{admin_user_login});
 $sel->type_ok("comment", "patch for testing purposes only");
 $sel->click_ok("create");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
