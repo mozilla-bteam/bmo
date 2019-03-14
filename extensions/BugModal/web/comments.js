@@ -599,7 +599,7 @@ Bugzilla.BugModal.Comments = class Comments {
 
         $att.insertAdjacentHTML('beforeend', `
           <button type="button" role="link" title="${name}" class="outer">
-          <pre class="language-${lang}" role="img" itemprop="text">${text}</pre></button>`);
+          <pre class="language-${lang}" role="img" itemprop="text">${text.htmlEncode()}</pre></button>`);
 
         // Make the button work as a link. It cannot be `<a>` because Prism Autolinker plugin may add links to `<pre>`
         $att.querySelector('[role="link"]').addEventListener('click', () => location.href = link);
