@@ -116,7 +116,7 @@ window.addEventListener("DOMContentLoaded", function() {
 
   const canonical_path = `${BUGZILLA.config.basepath}form.blocklist`;
 
-  if (location.pathname != canonical_path) {
+  if (location.pathname !== canonical_path) {
     history.replaceState(null, document.title, canonical_path);
   }
 });
