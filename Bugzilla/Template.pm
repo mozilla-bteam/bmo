@@ -129,11 +129,11 @@ sub get_format {
 }
 
 sub prettify_internal_links {
-  my ($text, $bug, $comment, $user, $bug_link_func) = @_;
-  return $text unless $text;
-
+  my ($text) = @_;
   my $urlbase  = Bugzilla->localconfig->{canonical_urlbase};
   my $bug_word = template_var('terms')->{Bug};
+
+  return $text unless $text && $urlbase;
 
   # Replace full bug links with "Bug X" or "Bug X Comment Y"
   # except for quoted URLs which may be a Markdown link
