@@ -1039,6 +1039,12 @@ input.required, select.required, span.required_explanation {
     height: 20px;
 }
 
+.autocomplete-suggestion [itemprop="name"] {
+    overflow: hidden;
+    max-width: 20em;
+    text-overflow: ellipsis;
+}
+
 .autocomplete-suggestion [itemtype] .minor {
     opacity: .7;
     font-size: 13px;
