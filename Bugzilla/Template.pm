@@ -128,6 +128,35 @@ sub get_format {
   };
 }
 
+sub prettify_internal_links {
+  my ($text, $bug, $comment, $user, $bug_link_func) = @_;
+  return $text unless $text;
+
+  my $urlbase  = Bugzilla->localconfig->{canonical_urlbase};
+  my $bug_word = template_var('terms')->{Bug};
+
+  # Replace full bug links with "Bug X" or "Bug X Comment Y"
+  # except for quoted URLs which may be a Markdown link
+  # https://bugzilla.example.org/show_bug.cgi?id=12345
+  # https://bugzilla.example.org/show_bug.cgi?id=12345#c6
+  # https://bugzilla.example.org/bug/12345
+  # https://bugzilla.example.org/bug/12345#c6
+  # https://bugzilla.example.org/12345
+  # https://bugzilla.example.org/12345#c6
+  $text =~ s~(?<!\()\b\Q${urlbase}\E(?:\Qshow_bug.cgi?id=\E|bug/)?([0-9]+)(?:\#c([0-9]+))?\b
+              ~(defined($2) ? "$bug_word $1 Comment $2" : "$bug_word $1")~egx;
+
+  # Replace full attachment links with "Attachment Z"
+  # except for quoted URLs which may be a Markdown link
+  # https://bugzilla.example.org/attachment.cgi?id=12345
+  # https://bugzilla.example.org/attachment.cgi?id=12345&action=edit
+  # https://bugzilla.example.org/attachment.cgi?id=12345&action=diff
+  $text =~ s~(?<!\()\b\Q${urlbase}attachment.cgi?id=\E([0-9]+)(?:&action=\w+)?\b
+              ~Attachment $1~gx;
+
+  return $text;
+}
+
 # This routine quoteUrls contains inspirations from the HTML::FromText CPAN
 # module by Gareth Rees <garethr@cre.canon.co.uk>.  It has been heavily hacked,
 # all that is really recognizable from the original is bits of the regular
@@ -140,6 +169,9 @@ sub quoteUrls {
   return $text unless $text;
   $user ||= Bugzilla->user;
   $bug_link_func ||= \&get_bug_link;
+
+  # Replace internal links first
+  $text = prettify_internal_links($text);
 
   # We use /g for speed, but uris can have other things inside them
   # (http://foo/bug#3 for example). Filtering that out filters valid
@@ -194,13 +226,6 @@ sub quoteUrls {
                               && ("\x{FDD2}" . ($count-1) . "\x{FDD3}")/egx;
     }
   }
-
-  # Provide tooltips for full bug links (Bug 74355)
-  my $urlbase_re = '(' . quotemeta(Bugzilla->localconfig->urlbase) . ')';
-  $text =~ s~\b(${urlbase_re}\Qshow_bug.cgi?id=\E([0-9]+)(\#c([0-9]+))?)\b
-              ~($things[$count++] = $bug_link_func->($3, $1, { comment_num => $5, user => $user })) &&
-               ("\x{FDD2}" . ($count-1) . "\x{FDD3}")
-              ~egox;
 
   # non-mailto protocols
   my $safe_protocols = SAFE_URL_REGEXP();

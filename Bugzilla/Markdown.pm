@@ -46,6 +46,9 @@ sub render_html {
   my $parser = $self->markdown_parser;
   return escape_html($markdown) unless $parser;
 
+  # Replace internal links first
+  $markdown = Bugzilla::Template::prettify_internal_links($markdown);
+
   # This makes sure we never handle > foo text in the shortcuts code.
   local $Bugzilla::Template::COLOR_QUOTES = 0;
 
