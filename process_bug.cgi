@@ -444,6 +444,7 @@ if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
         push @saved_sent_changes, $saved_sent_change;
       }
     }
+
     $Bugzilla::App::CGI::C->flash(last_sent_changes => \@saved_sent_changes);
 
     # Redirect to show_bug.cgi.
