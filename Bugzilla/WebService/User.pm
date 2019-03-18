@@ -548,7 +548,7 @@ sub get_saved_search {
 }
 
 sub update_saved_search {
-  state $check = compile(Object, Dict[name => Str, url => Str]);
+  state $check = compile(Object, Dict[id => Int, name => Str, url => Str]);
   my ($self, $params) = $check->(@_);
   my $search = $self->_get_saved_search_by_id($params->{id});
 
