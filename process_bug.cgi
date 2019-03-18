@@ -439,7 +439,7 @@ if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
         my $saved_sent_change = {
           id => $sent_change->{params}->{id},
           type => $sent_change->{params}->{type},
-          sent_bugmail => $sent_change->{sent_bugmail},
+          recipient_count => scalar @{$sent_change->{sent_bugmail}->{sent}},
         };
         push @saved_sent_changes, $saved_sent_change;
       }
@@ -462,9 +462,9 @@ if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
     foreach my $sent_changes (@all_sent_changes) {
       foreach my $sent_change (@$sent_changes) {
         my $params       = $sent_change->{params};
-        my $sent_bugmail = $sent_change->{sent_bugmail};
+        my $recipient_count = scalar @{$sent_change->{sent_bugmail}->{sent}};
         $vars->{$_} = $params->{$_} foreach keys %$params;
-        $vars->{'sent_bugmail'} = $sent_bugmail;
+        $vars->{'recipient_count'} = $recipient_count;
         $template->process("bug/process/results.html.tmpl", $vars)
           || ThrowTemplateError($template->error());
         $vars->{'header_done'} = 1;

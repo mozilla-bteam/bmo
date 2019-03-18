@@ -275,19 +275,19 @@ ThrowCodeError("bug_error", {bug => $bug}) if $bug->error;
 
 my $recipients = {changer => $user};
 my $bug_sent = Bugzilla::BugMail::Send($id, $recipients);
-my @all_mail_results = ({ id => $id, type => 'created', sent_bugmail => $bug_sent});
+my @all_mail_results = ({ id => $id, type => 'created', recipient_count => scalar @{$bug_sent->{sent}} });
 
 foreach my $dep (
   map { @{$bug->{$_} || []} } qw(dependson blocked regressed_by regresses)
 ) {
   my $dep_sent = Bugzilla::BugMail::Send($dep, $recipients);
-  push(@all_mail_results, { id => $dep, type => 'dep', sent_bugmail => $dep_sent });
+  push(@all_mail_results, { id => $dep, type => 'dep', recipient_count => scalar @{$dep_sent->{sent}} });
 }
 
 # Sending emails for any referenced bugs.
 foreach my $ref_bug_id (uniq @{$bug->{see_also_changes} || []}) {
   my $ref_sent = Bugzilla::BugMail::Send($ref_bug_id, $recipients);
-  push(@all_mail_results, { id => $ref_bug_id, sent_bugmail => $ref_sent });
+  push(@all_mail_results, { id => $ref_bug_id, recipient_count => scalar @{$ref_sent->{sent}} });
 }
 
 $Bugzilla::App::CGI::C->flash(last_sent_changes => \@all_mail_results);
