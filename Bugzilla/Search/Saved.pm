@@ -155,7 +155,7 @@ sub _check_query {
 
 sub create {
   my ($class, $params) = @_;
-  my $user  = Bugzilla->login(LOGIN_REQUIRED);
+  my $user  = Bugzilla->user;
 
   # Prevent duplicated names from being saved
   ThrowUserError('saved_search_same_name')
@@ -247,8 +247,6 @@ sub update {
   my ($self, $params) = @_;
   my ($name, $url) = @$params{qw(name url)};
 
-  Bugzilla->login(LOGIN_REQUIRED);
-
   $self->set_name($name) if $name;
   $self->set_url($url) if $url;
   $self->SUPER::update(@_);
@@ -257,8 +255,6 @@ sub update {
 sub remove {
   my ($self) = @_;
   my $dbh = Bugzilla->dbh;
-
-  Bugzilla->login(LOGIN_REQUIRED);
 
   ThrowUserError('saved_search_used_by_whines', {
     search_name => $self->name,
