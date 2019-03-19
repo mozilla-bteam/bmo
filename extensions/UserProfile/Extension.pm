@@ -400,6 +400,80 @@ sub object_update_columns {
 }
 
 #
+# search hooks
+#
+
+use constant BUGLIST_ASSIGNEE_ACTIVITY_JOIN => {
+  as    => 'assignee_activity',
+  from  => 'assigned_to',
+  to    => 'userid',
+  table => 'profiles',
+  join  => 'INNER',
+};
+
+use constant BUGLIST_NEEDINFO_ACTIVITY_JOIN => {
+  as    => 'needinfo_activity',
+  table => '(SELECT bug_id, MAX(last_activity_ts) AS last_seen FROM flags
+    INNER JOIN flagtypes ON flags.type_id = flagtypes.id
+    INNER JOIN profiles ON flags.requestee_id = profiles.userid
+    WHERE flagtypes.name = "needinfo" GROUP BY bug_id)',
+};
+
+sub buglist_special_parsing {
+  my ($self, $args) = @_;
+  my $parsers = $args->{parsers};
+
+  $parsers->{assignee_last_seen} = \&Bugzilla::Search::_date_translate;
+  $parsers->{needinfo_last_seen} = \&Bugzilla::Search::_date_translate;
+}
+
+sub search_operator_field_override {
+  my ($self, $args) = @_;
+  my $operators = $args->{operators};
+
+  $operators->{assignee_last_seen} = {
+    _default => sub {
+      my ($self, $args) = @_;
+      push @{$args->{joins}}, BUGLIST_ASSIGNEE_ACTIVITY_JOIN;
+      # If the last seen date is empty, use the date when the field was added
+      $args->{full_field} = "COALESCE(assignee_activity.last_activity_ts, '2013-08-01')";
+    }
+  };
+
+  $operators->{needinfo_last_seen} = {
+    _default => sub {
+      my ($self, $args) = @_;
+      push @{$args->{joins}}, BUGLIST_NEEDINFO_ACTIVITY_JOIN;
+      $args->{full_field} = "COALESCE(needinfo_activity.last_seen, '2013-08-01')";
+    }
+  };
+}
+
+sub buglist_column_joins {
+  my ($self, $args) = @_;
+  my $column_joins = $args->{column_joins};
+
+  $column_joins->{assignee_last_seen} = BUGLIST_ASSIGNEE_ACTIVITY_JOIN;
+  $column_joins->{needinfo_last_seen} = BUGLIST_NEEDINFO_ACTIVITY_JOIN;
+}
+
+sub buglist_columns {
+  my ($self, $args) = @_;
+  my $dbh     = Bugzilla->dbh;
+  my $columns = $args->{columns};
+
+  $columns->{assignee_last_seen} = {
+    title => 'Assignee Last Seen Date',
+    name  => $dbh->sql_date_format('assignee_activity.last_activity_ts', '%Y-%m-%d'),
+  };
+
+  $columns->{needinfo_last_seen} = {
+    title => 'Needinfo Last Seen Date',
+    name  => $dbh->sql_date_format('needinfo_activity.last_seen', '%Y-%m-%d'),
+  };
+}
+
+#
 # installation
 #
 
@@ -483,6 +557,23 @@ sub install_update_db {
   my $dbh = Bugzilla->dbh;
   $dbh->bz_add_column('profiles', 'last_activity_ts',   {TYPE => 'DATETIME'});
   $dbh->bz_add_column('profiles', 'last_statistics_ts', {TYPE => 'DATETIME'});
+
+  # Create fields for search
+  unless (Bugzilla::Field->new({name => 'needinfo_last_seen'})) {
+    Bugzilla::Field->create({
+      name        => 'needinfo_last_seen',
+      description => 'Needinfo Last Seen Date',
+      buglist     => 1,
+    });
+  }
+
+  unless (Bugzilla::Field->new({name => 'assignee_last_seen'})) {
+    Bugzilla::Field->create({
+      name        => 'assignee_last_seen',
+      description => 'Assignee Last Seen Date',
+      buglist     => 1,
+    });
+  }
 }
 
 sub install_filesystem {

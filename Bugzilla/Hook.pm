@@ -533,6 +533,25 @@ The hash of changed fields. C<< $changes->{field} = [old, new] >>
 
 =back
 
+=head2 buglist_special_parsing
+
+This happens in L<Bugzilla::Search/SPECIAL_PARSING>, which defines special
+parsing methods for user input, such as relative date formats or user pronouns.
+
+Params:
+
+=over
+
+=item C<parsers> - A hashref, where the keys are unique string identifiers
+for the column being defined and the values is an arbitrary parser method.
+This example allows to accept a relative date:
+
+ $parsers->{$id} = \&Bugzilla::Search::_date_translate;
+
+Use built-in parsers as a reference if you need to implement a custom one.
+
+=back
+
 =head2 buglist_columns
 
 This happens in L<Bugzilla::Search/COLUMNS>, which determines legal bug

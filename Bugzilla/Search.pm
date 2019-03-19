@@ -393,6 +393,9 @@ sub SPECIAL_PARSING {
       $map->{$field->name} = \&_date_translate;
     }
   }
+
+  Bugzilla::Hook::process('buglist_special_parsing', {parsers => \%$map});
+
   return $map;
 }
 

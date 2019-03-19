@@ -1694,6 +1694,13 @@ sub _user_to_hash {
     email     => $self->type('email',  $user->email),
     },
     $types, $prefix;
+
+  # Add the `last_activity` field currently implemented in the UserProfile
+  # extension, if the user is logged in. TODO: move it to the core.
+  if (Bugzilla->user->id && $user->last_activity_ts) {
+    $item->{last_activity} = $self->type('dateTime', $user->last_activity_ts),
+  }
+
   return $item;
 }
 

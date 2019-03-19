@@ -32,6 +32,15 @@ sub install_update_db {
   my ($self, $args) = @_;
   my $dbh = Bugzilla->dbh;
 
+  # Create fields for search
+  unless (Bugzilla::Field->new({name => 'needinfo'})) {
+    Bugzilla::Field->create({
+      name        => 'needinfo',
+      description => 'Needinfo',
+      buglist     => 1,
+    });
+  }
+
   if (@{Bugzilla::FlagType::match({name => 'needinfo'})}) {
     return;
   }
@@ -294,6 +303,59 @@ sub user_preferences {
   $settings->{block_needinfo}->validate_value($value);
   $settings->{block_needinfo}->set($value);
   clear_settings_cache(Bugzilla->user->id);
+}
+
+#
+# search hooks
+#
+
+use constant BUGLIST_USERS_JOIN => {
+  as    => 'needinfo',
+  table => '(SELECT bug_id, requestee_id, login_name, realname FROM flags
+    INNER JOIN flagtypes ON flags.type_id = flagtypes.id
+    INNER JOIN profiles ON flags.requestee_id = profiles.userid
+    WHERE flagtypes.name = "needinfo")',
+};
+
+sub buglist_special_parsing {
+  my ($self, $args) = @_;
+  my $parsers = $args->{parsers};
+
+  $parsers->{needinfo} = \&Bugzilla::Search::_cc_pronoun;
+}
+
+sub search_operator_field_override {
+  my ($self, $args) = @_;
+  my $operators = $args->{operators};
+
+  $operators->{needinfo} = {
+    _non_changed => sub {
+      my ($self, $args) = @_;
+      push @{$args->{joins}}, BUGLIST_USERS_JOIN;
+      $args->{full_field} = $args->{value_is_id}
+        ? "COALESCE(needinfo.requestee_id, 0)" : "COALESCE(needinfo.login_name, '')";
+    }
+  };
+}
+
+sub buglist_column_joins {
+  my ($self, $args) = @_;
+  my $column_joins = $args->{column_joins};
+
+  $column_joins->{needinfo} = BUGLIST_USERS_JOIN;
+}
+
+sub buglist_columns {
+  my ($self, $args) = @_;
+  my $dbh     = Bugzilla->dbh;
+  my $columns = $args->{columns};
+
+  # Make sure to hide login names (email addresses) from logged-out users
+  $columns->{needinfo} = {
+    title => 'Needinfo',
+    name  => $dbh->sql_group_concat(
+      'needinfo.' . (Bugzilla->user->id ? 'login_name' : 'realname')),
+  };
 }
 
 __PACKAGE__->NAME;

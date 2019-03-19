@@ -34,6 +34,7 @@ use constant FAKE_FIELD_NAMES => [
 
 use constant IGNORE_FIELDS => qw(
   assignee_last_login
+  assignee_last_seen
   attach_data.thedata
   attachments.count
   attachments.submitter
@@ -52,6 +53,8 @@ use constant IGNORE_FIELDS => qw(
   last_visit_ts
   longdesc
   longdescs.count
+  needinfo
+  needinfo_last_seen
   owner_idle_time
   regressed_by.count
   regresses.count
