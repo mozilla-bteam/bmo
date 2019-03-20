@@ -1647,9 +1647,8 @@ sub _attachment_to_hash {
   }
 
   if (filter_wants $filters, 'creator', $types, $prefix) {
-    $item->{'creator_detail'} = $self->_user_to_hash(
-      Bugzilla::User->new({name => $attach->attacher->login, cache => 1}),
-      $filters, undef, 'creator');
+    $item->{'creator_detail'}
+      = $self->_user_to_hash($attach->attacher, $filters, undef, 'creator');
   }
 
   if (filter_wants $filters, 'data', $types, $prefix) {
