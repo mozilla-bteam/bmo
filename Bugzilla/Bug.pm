@@ -4461,7 +4461,7 @@ sub GetBugActivity {
     $suppwhere = "AND COALESCE(attachments.isprivate, 0) = 0";
   }
 
-  # Use DISTINCT and value comparison to surpress duplicated changes weirdly
+  # Use DISTINCT and value comparison to suppress duplicated changes weirdly
   # made at the same time by the same user
   my $query
     = "SELECT DISTINCT fielddefs.name, bugs_activity.attach_id, "
@@ -4531,7 +4531,7 @@ sub GetBugActivity {
     my $activity_visible = 1;
     my $last_change = @$changes[-1] || {};
 
-    # Surpress any mid-air collision
+    # Suppress any mid-air collision
     if ( $when eq $operation->{'when'}
       && $fieldname eq $last_change->{'fieldname'}
       && $removed eq $last_change->{'removed'}
