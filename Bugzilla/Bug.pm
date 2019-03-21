@@ -4461,7 +4461,7 @@ sub GetBugActivity {
     $suppwhere = "AND COALESCE(attachments.isprivate, 0) = 0";
   }
 
-  # Use DISTINCT and value comparison to surpress duplicated changes wierdly
+  # Use DISTINCT and value comparison to surpress duplicated changes weirdly
   # made at the same time by the same user
   my $query
     = "SELECT DISTINCT fielddefs.name, bugs_activity.attach_id, "
