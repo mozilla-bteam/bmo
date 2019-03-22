@@ -540,7 +540,7 @@ sub graph {
       $result = {text => $report->graph . ""};
     }
     elsif ($type eq 'json_tree') {
-      $result = $report->tree;
+      $result = {tree => $report->tree}
     }
     elsif ($type eq 'force_directed_graph' || $type eq 'hierarchical_edge_bundling')
     {
@@ -550,7 +550,7 @@ sub graph {
   catch {
     FATAL($_);
     $result = {
-      error      => "Internal error",
+      exception => "Internal Error",
       request_id => $Bugzilla::App::CGI::C->req->request_id
     };
   };
