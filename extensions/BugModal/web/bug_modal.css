@@ -749,12 +749,8 @@ h3.change-name {
 
 .change-set .attachment {
     border-top: 1px solid #ddd;
-    background-color: #FFF;
-}
-
-.change-set .attachment {
-    background-color: #FFF;
     padding: 8px;
+    background-color: #FFF;
 }
 
 .change-set .attachment .label {
