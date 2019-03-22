@@ -489,7 +489,17 @@ my $GRAPH_RELATIONSHIP = qr{
                               | dupe_of,dupe) )
     )
   $
-}xi;
+}xs;
+
+my $GRAPH_TYPE = qr{
+    ^
+    (?: text
+      | json_tree
+      | hierarchical_edge_bundling
+      | force_directed_graph
+    )
+    $
+}xs;
 
 sub graph {
   my ($self, $params) = @_;
@@ -508,8 +518,7 @@ sub graph {
     if $depth < 2 || $depth > 9;
 
   ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'type'})
-    unless $type
-    =~ /^(?:text|json_tree|hierarchical_edge_bundling|force_directed_graph)$/;
+    unless $type =~ $GRAPH_TYPE;
 
   my ($table, $source, $sink);
   if ($relationship) {
@@ -556,7 +565,6 @@ sub graph {
   };
 
   return $result;
-
 }
 
 
