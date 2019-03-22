@@ -9,20 +9,19 @@ package Bugzilla::Report::Graph;
 use 5.10.1;
 use Moo;
 
-use Types::Standard qw(Int Str);
 use Bugzilla::Types qw(DB);
 use Graph::Directed;
 use Graph::Traversal::DFS;
+use Types::Standard qw(Int Str);
 
-has 'graph'   => (is => 'lazy');
-has 'tree'    => (is => 'lazy');
-has 'query'   => (is => 'lazy', isa => Str);
-has 'dbh'     => (is => 'ro', isa => DB, required => 1);
-has 'bug_id'  => (is => 'ro', isa => Int, required => 1);
-has 'table'   => (is => 'ro', isa => Str, default => 'dependencies');
-has 'depth'   => (is => 'ro', isa => Int, default => 3);
-has 'source'  => (is => 'ro', isa => Str, default => 'dependson');
-has 'sink'    => (is => 'ro', isa => Str, default => 'blocked');
+has 'graph'  => (is => 'lazy');
+has 'query'  => (is => 'lazy', isa => Str);
+has 'dbh'    => (is => 'ro', isa => DB, required => 1);
+has 'bug_id' => (is => 'ro', isa => Int, required => 1);
+has 'table'  => (is => 'ro', isa => Str, default => 'dependencies');
+has 'depth'  => (is => 'ro', isa => Int, default => 3);
+has 'source' => (is => 'ro', isa => Str, default => 'dependson');
+has 'sink'   => (is => 'ro', isa => Str, default => 'blocked');
 
 sub _build_graph {
   my ($self) = @_;
@@ -38,14 +37,18 @@ sub _build_graph {
   return $graph;
 }
 
-sub _build_tree {
+sub tree {
   my ($self) = @_;
   my $g = $self->graph;
-  my %nodes = map { $_ => {} } $g->vertices;
-  my $search = Graph::Traversal::DFS->new($g, start => $self->bug_id, tree_edge => sub {
-    my ($u, $v) = @_;
-    $nodes{$u}{$v} = $nodes{$v};
-  });
+  my %nodes  = map { $_ => {} } $g->vertices;
+  my $search = Graph::Traversal::DFS->new(
+    $g,
+    start     => $self->bug_id,
+    tree_edge => sub {
+      my ($u, $v) = @_;
+      $nodes{$u}{$v} = $nodes{$v};
+    }
+  );
   $search->dfs;
 
   return $nodes{$self->bug_id} || {};

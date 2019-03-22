@@ -496,9 +496,16 @@ sub graph {
   my $bug_id       = $params->{id};
   my $type         = $params->{type};
   my $relationship = $params->{relationship};
+  my $depth        = $params->{depth};
 
   ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'bug_id'})
     unless $bug_id =~ /^\d+$/;
+
+  ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
+    unless $depth =~ /^\d+$/;
+
+  ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
+    if $depth < 2 || $depth > 9;
 
   ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'type'})
     unless $type
@@ -520,7 +527,8 @@ sub graph {
       bug_id       => $bug_id,
       maybe table  => $table,
       maybe source => $source,
-      maybe sink   => $sink
+      maybe sink   => $sink,
+      maybe depth  => $depth,
     );
 
     my $user         = Bugzilla->user;
