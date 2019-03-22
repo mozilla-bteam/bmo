@@ -48,7 +48,7 @@ sub _build_tree {
   });
   $search->dfs;
 
-  return $nodes{$self->bug_id};
+  return $nodes{$self->bug_id} || {};
 }
 
 sub _build_query {
