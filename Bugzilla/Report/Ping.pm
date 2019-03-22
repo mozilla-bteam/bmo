@@ -11,14 +11,13 @@ use Moo::Role;
 
 use Type::Utils qw(class_type);
 use Bugzilla::Types qw(URL);
-use Types::Standard qw(Str Num);
+use Types::Standard qw(Str Num Int);
 use Scalar::Util qw(blessed);
 use JSON::Validator;
 use Mojo::Promise;
 
 has 'model' =>
   (is => 'ro', required => 1, isa => class_type({class => 'Bugzilla::Model'}));
-
 
 has '_base_url' => (
   is       => 'ro',
@@ -29,7 +28,9 @@ has '_base_url' => (
   handles  => {base_url => 'clone'}
 );
 
-has 'batch_size' => ( is => 'ro', default => 10 );
+has 'page' => (is => 'ro', isa => Int, default => 1);
+
+has 'rows' => (is => 'ro', default => 10);
 
 has 'user_agent' => (
   is       => 'lazy',
@@ -62,7 +63,7 @@ requires '_build_resultset';
 around '_build_resultset' => sub {
   my ($method, $self, @args) = @_;
   my $rs = $self->$method(@args);
-  $rs = $rs->rows($self->batch_size)->page(1) if defined $rs;
+  $rs = $rs->rows($self->rows)->page($self->page) if defined $rs;
 
   return $rs;
 };

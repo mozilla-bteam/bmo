@@ -8,9 +8,16 @@
 package Bugzilla::Model::Result::Dependency;
 use Mojo::Base 'DBIx::Class::Core';
 
+__PACKAGE__->load_components('Helper::Row::NumifyGet');
+
 __PACKAGE__->table('dependencies');
 __PACKAGE__->add_columns(qw[ blocked dependson ]);
 __PACKAGE__->set_primary_key(qw[ blocked dependson ]);
+
+__PACKAGE__->add_columns(
+  '+blocked'   => {is_numeric => 1},
+  '+dependson' => {is_numeric => 1},
+);
 
 __PACKAGE__->belongs_to(
   blocked_by => 'Bugzilla::Model::Result::Bug',

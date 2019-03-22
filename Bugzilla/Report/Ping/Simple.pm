@@ -28,19 +28,22 @@ sub _build_validator {
     keywords   => joi->array->required->items(joi->string)->required,
     groups     => joi->array->required->items(joi->string)->required,
     flags      => joi->array->required->items(joi->object->strict->props({
-      name      => joi->string->required,
-      status    => joi->string->enum([qw[? + -]])->required,
+      name         => joi->string->required,
+      status       => joi->string->enum([qw[? + -]])->required,
       setter_id    => joi->integer->required,
       requestee_id => joi->type([qw[null integer]])->required,
     })),
     priority     => joi->string->required,
     bug_severity => joi->string->required,
     resolution   => joi->string,
+    blocked_by   => joi->array->required->items(joi->integer),
+    depends_on   => joi->array->required->items(joi->integer),
   });
 
-
-  return JSON::Validator->new(schema => Mojo::JSON::Pointer->new($schema->compile));
+  return JSON::Validator->new(
+    schema => Mojo::JSON::Pointer->new($schema->compile));
 }
+
 
 sub _build_resultset {
   my ($self)  = @_;
@@ -64,6 +67,12 @@ sub prepare {
     bug_severity => $bug->bug_severity,
     keywords     => [map { $_->name } $bug->keywords->all],
     groups       => [map { $_->name } $bug->groups->all],
+    blocked_by => [
+      map { $_->dependson } $bug->map_blocked_by->all
+    ],
+    depends_on => [
+      map { $_->blocked } $bug->map_depends_on->all
+    ],
     flags        => [
       map { $self->_prepare_flag($_) } $bug->flags->all
     ],

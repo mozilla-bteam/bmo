@@ -23,15 +23,16 @@ sub run {
   my $json
     = JSON::MaybeXS->new(convert_blessed => 1, canonical => 1, pretty => 1);
   my $report_type = 'Simple';
-  my ($batch_size, $base_url, $test, $dump_schema);
+  my ($page, $rows, $base_url, $test, $dump_schema);
 
   Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
   getopt \@args,
-    'base-url|u=s'   => \$base_url,
-    'batch-size|s=i' => \$batch_size,
-    'dump-schema'    => \$dump_schema,
-    'report|r=s'     => \$report_type,
-    'test'           => \$test;
+    'base-url|u=s'  => \$base_url,
+    'page|p=i'      => \$page,
+    'rows|r=i'      => \$rows,
+    'dump-schema'   => \$dump_schema,
+    'report-type=s' => \$report_type,
+    'test'          => \$test;
 
   $base_url = 'http://localhost' if $dump_schema || $test;
   die $self->usage unless $base_url;
@@ -40,9 +41,11 @@ sub run {
   require_module($report_class);
   my $report = $report_class->new(
     model      => Bugzilla->dbh->model,
-    batch_size => $batch_size,
-    base_url   => $base_url
+    base_url   => $base_url,
+    maybe rows => $rows,
+    maybe page => $page,
   );
+
   if ($dump_schema) {
     print $json->encode( $report->validator->schema->data );
     exit;
@@ -50,11 +53,10 @@ sub run {
 
   my $rs = $report->resultset;
   if ($test) {
-    foreach my $page ($report->pager->first_page .. $report->pager->last_page) {
-
+    foreach my $p ($report->page .. $report->pager->last_page) {
       # get the next page, except for page 1.
-      $rs = $rs->page($page) if $page > 1;
-      say "Testing batch $page of ", $report->pager->last_page;
+      $rs = $rs->page($p) if $p > $report->page;
+      say "Testing page $p of ", $report->pager->last_page;
       foreach my $result ($rs->all) {
         my @error = $report->test($result);
         if (@error) {
@@ -65,10 +67,10 @@ sub run {
     }
   }
   else {
-    foreach my $page ($report->pager->first_page .. $report->pager->last_page) {
+    foreach my $p ($report->page .. $report->pager->last_page) {
       # get the next page, except for page 1.
-      $rs = $rs->page($page) if $page > 1;
-      say "Sending batch $page of ", $report->pager->last_page;
+      $rs = $rs->page($p) if $p > $page;
+      say "Sending page $p of ", $report->pager->last_page;
       Mojo::Promise->all(map { $report->send($_) } $rs->all)->wait;
     }
   }
@@ -91,8 +93,9 @@ Bugzilla::App::Command::report_ping - descriptionsend a report ping to a url';
   Options:
     -h, --help               Print a brief help message and exits.
     -u, --base-url           URL to send the json documents to.
-    -s, --base-size num      (Optional) Number of requests to send at once. Default: 10.
-    -r, --report             (Optional) Report class to use. Default: Simple
+    -r, --rows num           (Optional) Number of requests to send at once. Default: 10.
+    -p, --page num           (Optional) Page to start on. Default: 1
+    --report-type word       (Optional) Report class to use. Default: Simple
     --test                   Validate the json documents against the json schema.
     --dump-schema            Print the json schema.
 
