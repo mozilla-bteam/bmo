@@ -288,19 +288,15 @@
     [% comment_tag = 'pre' %]
   [% END %]
 
-  <[% comment_tag FILTER none %] class="comment-text [%= "markdown-body" IF comment.is_markdown %] [%= "bz_private" IF comment.is_private %]"
-                     id="ct-[% comment.count FILTER none %]"
-                     data-comment-id="[% comment.id FILTER none %]"
-                     [% IF comment.is_markdown +%] data-ismarkdown="true" [% END ~%]
-                     [% IF comment.collapsed +%] style="display:none"[% END ~%]
-  >[% FILTER collapse %]
-    [% IF comment.is_about_attachment && comment.attachment.is_image ~%]
-      <a href="attachment.cgi?id=[% comment.attachment.id FILTER none %]"
-        title="[% comment.attachment.description FILTER html %]"
-        class="lightbox lightbox-icon [%= "markdown" IF comment_tag == 'div' %]"><img src="extensions/BugModal/web/image.png" width="16" height="16"></a>
-    [% END %]
+  [% IF comment.body %]
+    <[% comment_tag FILTER none %]
+        class="comment-text [%= "markdown-body" IF comment.is_markdown %] [%= "bz_private" IF comment.is_private %]"
+        id="ct-[% comment.count FILTER none %]" data-comment-id="[% comment.id FILTER none %]"
+        [% IF comment.is_markdown +%] data-ismarkdown="true" [% END ~%]
+        [% IF comment.collapsed +%] style="display:none"[% END ~%]>
+      [%~ comment.body_full({ exclude_attachment => 1 }) FILTER renderMarkdown(bug, comment) ~%]
+    </[% comment_tag FILTER none %]>
   [% END %]
-  [%~ comment.body_full({ exclude_attachment => 1 }) FILTER renderMarkdown(bug, comment) ~%]</[% comment_tag FILTER none %]>
 [% END %]
 
 [%
