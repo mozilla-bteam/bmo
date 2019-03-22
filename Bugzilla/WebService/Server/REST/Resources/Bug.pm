@@ -27,6 +27,15 @@ sub _rest_resources {
     },
     qr{^/bug/$},
     {GET => {method => 'get'}},
+    qr{^/bug/graph/(\d+)$},
+    {
+      GET => {
+        method => 'graph',
+        params => sub {
+          return {id => $_[0]};
+        }
+      }
+    },
     qr{^/bug/possible_duplicates$},
     {GET => {method => 'possible_duplicates'}},
     qr{^/bug/([^/]+)$},
