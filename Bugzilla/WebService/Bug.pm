@@ -43,6 +43,7 @@ use Type::Utils;
 use PerlX::Maybe;
 use Graph::D3;
 use Try::Tiny;
+use Set::Object qw(set);
 
 #############
 # Constants #
@@ -515,14 +516,17 @@ sub graph {
   try {
     Bugzilla->switch_to_shadow_db();
     my $report = Bugzilla::Report::Graph->new(
-      dbh    => Bugzilla->dbh,
-      bug_id => $bug_id,
-      maybe
-        table => $table,
-      maybe
-        source => $source,
-      maybe sink => $sink
+      dbh          => Bugzilla->dbh,
+      bug_id       => $bug_id,
+      maybe table  => $table,
+      maybe source => $source,
+      maybe sink   => $sink
     );
+
+    my $user         = Bugzilla->user;
+    my $graph_bugs   = set($report->graph->vertices);
+    my $visible_bugs = set(@{$user->visible_bugs([$graph_bugs->members])});
+    $report->graph->delete_vertices(($graph_bugs - $visible_bugs)->members);
 
     if ($type eq 'text') {
       $result = {text => $report->graph . ""};

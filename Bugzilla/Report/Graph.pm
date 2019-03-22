@@ -16,7 +16,7 @@ use Graph::Traversal::DFS;
 
 has 'graph'   => (is => 'lazy');
 has 'tree'    => (is => 'lazy');
-has '_query'  => (is => 'lazy', isa => Str);
+has 'query'   => (is => 'lazy', isa => Str);
 has 'dbh'     => (is => 'ro', isa => DB, required => 1);
 has 'bug_id'  => (is => 'ro', isa => Int, required => 1);
 has 'table'   => (is => 'ro', isa => Str, default => 'dependencies');
@@ -27,7 +27,7 @@ has 'sink'    => (is => 'ro', isa => Str, default => 'blocked');
 sub _build_graph {
   my ($self) = @_;
   my $dbh   = $self->dbh;
-  my $paths = $dbh->selectall_arrayref($self->_query, undef, $self->bug_id);
+  my $paths = $dbh->selectall_arrayref($self->query, undef, $self->bug_id);
   my $graph  = Graph::Directed->new;
 
   foreach my $path (@$paths) {
@@ -51,7 +51,7 @@ sub _build_tree {
   return $nodes{$self->bug_id};
 }
 
-sub _build__query {
+sub _build_query {
   my ($self) = @_;
   my $table  = $self->table;
   my $prefix = substr($table, 0, 1);
