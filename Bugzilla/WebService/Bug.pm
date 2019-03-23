@@ -514,7 +514,7 @@ sub graph {
 
   if (defined $depth) {
     ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
-      unless $depth =~ /^\d+$/
+      unless $depth =~ /^\d+$/;
 
     ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
       unless $depth > 1 && $depth < 9;
