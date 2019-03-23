@@ -30,6 +30,16 @@ use Bugzilla::Product;
 use JSON;
 use List::MoreUtils qw(none);
 
+use constant FIREFOX_VERSIONS_JSON =>
+  'https://product-details.mozilla.org/1.0/firefox_versions.json';
+
+use constant FIREFOX_CHANNELS => {
+  'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
+  'beta'    => {label => 'Beta',    json_key => 'LATEST_FIREFOX_DEVEL_VERSION'},
+  'release' => {label => 'Release', json_key => 'LATEST_FIREFOX_VERSION'},
+  'esr'     => {label => 'ESR',     json_key => 'FIREFOX_ESR'},
+};
+
 our $VERSION = '1';
 our @FLAG_CACHE;
 
@@ -289,6 +299,19 @@ sub install_update_db {
   $dbh->bz_add_column('tracking_flags_values', 'comment',
     {TYPE => 'TEXT', NOTNULL => 0,},
   );
+
+  # Add pronouns for Firefox Tracking Flags such as cf_tracking_firefox_nightly
+  foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
+    foreach my $type ('status', 'tracking') {
+      unless (Bugzilla::Field->new({name => "cf_${type}_firefox_${channel}"})) {
+        Bugzilla::Field->create({
+          name        => "cf_${type}_firefox_${channel}",
+          description => "${type}-firefox-${channel}",
+          buglist     => 1,
+        });
+      }
+    }
+  }
 }
 
 sub install_filesystem {
@@ -335,6 +358,90 @@ sub active_custom_fields {
   @$$fields = sort { $a->sortkey <=> $b->sortkey } values %field_hash;
 }
 
+sub _fetch_firefox_versions {
+  my $request_cache = Bugzilla->request_cache;
+  my $cache_key = 'firefox_versions';
+
+  return $request_cache->{$cache_key} if exists $request_cache->{$cache_key};
+
+  my $data = Bugzilla->memcached->get_config({key => $cache_key});
+  my $now  = time();
+  my $versions;
+
+  # Cache for 30 minutes
+  if ($data && $data->{timestamp} > $now - 1800) {
+    $versions = $data->{versions};
+  } else {
+    my $ua = LWP::UserAgent->new(timeout => 10);
+
+    if (Bugzilla->params->{proxy_url}) {
+      $ua->proxy('https', Bugzilla->params->{proxy_url});
+    }
+
+    my $response = $ua->get(FIREFOX_VERSIONS_JSON);
+    $versions
+      = $response->is_error ? {} : decode_json($response->decoded_content);
+
+    Bugzilla->memcached->set_config({
+      key => $cache_key,
+      data => {versions => $versions, timestamp => $now},
+    });
+  }
+
+  $request_cache->{$cache_key} = $versions;
+
+  return $versions;
+}
+
+sub _get_firefox_version {
+  my ($channel, $detail) = @_;
+  my $versions = _fetch_firefox_versions();
+  my $version  = $versions->{FIREFOX_CHANNELS->{$channel}->{json_key}};
+
+  unless ($version) {
+    ThrowUserError('firefox_versions_unavailable');
+  }
+
+  return $version if $detail;
+
+  # Return major version by default
+  my ($int_version) = $version =~ /^(\d+)/;
+  return $int_version;
+}
+
+sub _get_search_param_name {
+  my ($type, $channel) = @_;
+  my $version = _get_firefox_version($channel);
+  $version = '_esr' . $version if $channel eq 'esr';
+
+  # Return canonical name and its alias
+  return ("cf_${type}_firefox${version}", "cf_${type}_firefox_${channel}");
+}
+
+sub search_params_to_data_structure {
+  my ($self, $args) = @_;
+  my $params      = $args->{search}->_params;
+  my $channels_re = join('|', keys %{FIREFOX_CHANNELS()});
+  my $flag_re     = qr/^cf_(status|tracking)_firefox_($channels_re)$/;
+
+  # Replace pronouns for Firefox Tracking Flags, for example,
+  # cf_tracking_firefox_nightly -> cf_tracking_firefox68
+  # cf_tracking_firefox_esr     -> cf_tracking_firefox_esr60
+  for my $key (keys %$params) {
+    # Replace keys
+    if ($key =~ $flag_re) {
+      my ($canonical, $alias) = _get_search_param_name($1, $2);
+      $params->{$canonical} = delete $params->{$key};
+    }
+
+    # Replace values (custom search)
+    if ($params->{$key} =~ $flag_re) {
+      my ($canonical, $alias) = _get_search_param_name($1, $2);
+      $params->{$key} = $canonical;
+    }
+  }
+}
+
 sub buglist_columns {
   my ($self, $args) = @_;
   my $columns        = $args->{columns};
@@ -345,6 +452,19 @@ sub buglist_columns {
       name  => "COALESCE(map_" . $flag->name . ".value, '---')",
       title => $flag->description
     };
+  }
+
+  # Add column aliases for Firefox Tracking Flags
+  foreach my $type ('status', 'tracking') {
+    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
+      my ($canonical, $alias) = _get_search_param_name($type, $channel);
+
+      if ($columns->{$canonical}) {
+        $columns->{$alias}->{name} = $columns->{$canonical}->{name};
+      } else {
+        delete $columns->{$alias};
+      }
+    }
   }
 }
 
@@ -363,6 +483,19 @@ sub buglist_column_joins {
       table => 'tracking_flags_bugs',
       extra => ['map_' . $flag->name . '.tracking_flag_id = ' . $flag->flag_id]
     };
+  }
+
+  # Add column aliases for Firefox Tracking Flags
+  foreach my $type ('status', 'tracking') {
+    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
+      my ($canonical, $alias) = _get_search_param_name($type, $channel);
+
+      if ($column_joins->{$canonical}) {
+        $column_joins->{$alias} = $column_joins->{$canonical};
+      } else {
+        delete $column_joins->{$alias};
+      }
+    }
   }
 }
 
@@ -423,6 +556,19 @@ sub search_operator_field_override {
         _tracking_flags_search_nonchanged($flag->flag_id, @_);
       }
     };
+  }
+
+  # Add column aliases for Firefox Tracking Flags
+  foreach my $type ('status', 'tracking') {
+    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
+      my ($canonical, $alias) = _get_search_param_name($type, $channel);
+
+      if ($operators->{$canonical}) {
+        $operators->{$alias} = $operators->{$canonical};
+      } else {
+        delete $operators->{$alias};
+      }
+    }
   }
 }
 

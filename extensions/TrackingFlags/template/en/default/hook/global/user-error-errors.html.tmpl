@@ -55,4 +55,9 @@
   The tracking flag '[% flag.name FILTER html %]' cannot be deleted because
   at least one [% terms.bug %] has a non empty value for this field.
 
+[% ELSIF error == "firefox_versions_unavailable" %]
+  [% title = "Firefox Version Info Unavailable" %]
+  The pronouns for Firefox Tracking Flags cannot be used at this time.
+  Please try again later or use actual version numbers instead.
+
 [% END %]
