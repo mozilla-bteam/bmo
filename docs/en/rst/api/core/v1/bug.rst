@@ -1128,6 +1128,13 @@ To return a simple json tree of the blocks/depends for a given bug.
 
   GET /rest/bug/graph/1156?type=json_tree
 
+To return a simple json tree that includes bug data in a manner similar to the "get" API,
+use bug_tree
+
+.. code-block:: text
+
+  GET /rest/bug/graph/1156?type=bug_tree
+
 To feed the API to D3's force directed graph visualization:
 
 .. code-block:: text
@@ -1150,7 +1157,7 @@ The default relationship is the dependson to blocked relationship. To build the 
 ============  ======  ================================================================
 name          type    description
 ============  ======  ================================================================
-type          string  One of "text", "json_tree", "force_directed_graph",
+type          string  One of "text", "json_tree", "bug_tree", "force_directed_graph",
                       or "hierarchical_edge_bundling"
                       Required.
 depth         int     Limit the depth of the graph.

@@ -495,6 +495,7 @@ my $GRAPH_TYPE = qr{
     ^
     (?: text
       | json_tree
+      | bug_tree
       | hierarchical_edge_bundling
       | force_directed_graph
     )
@@ -512,7 +513,7 @@ sub graph {
     unless $bug_id =~ /^\d+$/;
 
   ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
-    unless $depth =~ /^\d+$/;
+    unless $depth =~ /^\d+$/ || !defined $depth;
 
   ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
     if $depth < 2 || $depth > 9;
@@ -540,15 +541,20 @@ sub graph {
       maybe depth  => $depth,
     );
 
-    my $user         = Bugzilla->user;
-    my $graph_bugs   = set($report->graph->vertices);
-    my $visible_bugs = set(@{$user->visible_bugs([$graph_bugs->members])});
-    $report->graph->delete_vertices(($graph_bugs - $visible_bugs)->members);
+    my $user = Bugzilla->user;
+    $report->prune_graph(sub { $user->visible_bugs($_[0]) });
 
     if ($type eq 'text') {
       $result = {text => $report->graph . ""};
     }
     elsif ($type eq 'json_tree') {
+      $result = {tree => $report->tree}
+    }
+    elsif ($type eq 'bug_tree') {
+      my $bugs = Bugzilla::Bug->new_from_list([$report->graph->vertices]);
+      foreach my $bug (@$bugs) {
+        $report->graph->set_vertex_attributes($bug->id, $self->_bug_to_hash($bug, $params));
+      }
       $result = {tree => $report->tree}
     }
     elsif ($type eq 'force_directed_graph' || $type eq 'hierarchical_edge_bundling')
