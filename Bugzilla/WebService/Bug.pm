@@ -512,11 +512,13 @@ sub graph {
   ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'bug_id'})
     unless $bug_id =~ /^\d+$/;
 
-  ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
-    unless $depth =~ /^\d+$/ || !defined $depth;
+  if (defined $depth) {
+    ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
+      unless $depth =~ /^\d+$/
 
-  ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
-    if $depth < 2 || $depth > 9;
+    ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'depth'})
+      unless $depth > 1 && $depth < 9;
+  }
 
   ThrowCodeError('param_invalid', {function => 'Bug.graph', param => 'type'})
     unless $type =~ $GRAPH_TYPE;
