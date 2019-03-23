@@ -301,8 +301,8 @@ sub install_update_db {
   );
 
   # Add pronouns for Firefox Tracking Flags such as cf_tracking_firefox_nightly
-  foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
-    foreach my $type ('status', 'tracking') {
+  foreach my $type ('status', 'tracking') {
+    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
       unless (Bugzilla::Field->new({name => "cf_${type}_firefox_${channel}"})) {
         Bugzilla::Field->create({
           name        => "cf_${type}_firefox_${channel}",
@@ -383,7 +383,7 @@ sub _fetch_firefox_versions {
       = $response->is_error ? {} : decode_json($response->decoded_content);
 
     Bugzilla->memcached->set_config({
-      key => $cache_key,
+      key  => $cache_key,
       data => {versions => $versions, timestamp => $now},
     });
   }
