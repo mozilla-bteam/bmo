@@ -22,6 +22,8 @@ use JSON::MaybeXS qw(decode_json);
 use constant PD_ENDPOINT => 'https://product-details.mozilla.org/1.0/';
 use constant PD_FILES    => qw(firefox_versions thunderbird_versions);
 
+return unless Bugzilla->memcached->{memcached};
+
 my $ua = LWP::UserAgent->new(timeout => 10);
 
 if (Bugzilla->params->{proxy_url}) {
