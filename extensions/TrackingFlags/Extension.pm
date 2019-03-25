@@ -30,14 +30,18 @@ use Bugzilla::Product;
 use JSON;
 use List::MoreUtils qw(none);
 
-use constant FIREFOX_VERSIONS_JSON =>
-  'https://product-details.mozilla.org/1.0/firefox_versions.json';
-
-use constant FIREFOX_CHANNELS => {
-  'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
-  'beta'    => {label => 'Beta',    json_key => 'LATEST_FIREFOX_DEVEL_VERSION'},
-  'release' => {label => 'Release', json_key => 'LATEST_FIREFOX_VERSION'},
-  'esr'     => {label => 'ESR',     json_key => 'FIREFOX_ESR'},
+use constant PRODUCT_CHANNELS => {
+  'firefox' => {
+    'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
+    'beta'    => {label => 'Beta',    json_key => 'LATEST_FIREFOX_DEVEL_VERSION'},
+    'release' => {label => 'Release', json_key => 'LATEST_FIREFOX_VERSION'},
+    'esr'     => {label => 'ESR',     json_key => 'FIREFOX_ESR'},
+  },
+  'thunderbird' => {
+    'nightly' => {label => 'Daily',   json_key => 'LATEST_THUNDERBIRD_NIGHTLY_VERSION'},
+    'beta'    => {label => 'Beta',    json_key => 'LATEST_THUNDERBIRD_DEVEL_VERSION'},
+    'release' => {label => 'Release', json_key => 'LATEST_THUNDERBIRD_VERSION'},
+  },
 };
 
 our $VERSION = '1';
@@ -300,15 +304,18 @@ sub install_update_db {
     {TYPE => 'TEXT', NOTNULL => 0,},
   );
 
-  # Add pronouns for Firefox Tracking Flags such as cf_tracking_firefox_nightly
+  # Add pronouns for Firefox/Thunderbird Status/Tracking Flags such as
+  # cf_tracking_firefox_nightly
   foreach my $type ('status', 'tracking') {
-    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
-      unless (Bugzilla::Field->new({name => "cf_${type}_firefox_${channel}"})) {
-        Bugzilla::Field->create({
-          name        => "cf_${type}_firefox_${channel}",
-          description => "${type}-firefox-${channel}",
-          buglist     => 1,
-        });
+    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
+      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
+        unless (Bugzilla::Field->new({name => "cf_${type}_${product}_${channel}"})) {
+          Bugzilla::Field->create({
+            name        => "cf_${type}_${product}_${channel}",
+            description => "${type}-${product}-${channel}",
+            buglist     => 1,
+          });
+        }
       }
     }
   }
@@ -319,6 +326,8 @@ sub install_filesystem {
   my $files          = $args->{files};
   my $extensions_dir = bz_locations()->{extensionsdir};
   $files->{"$extensions_dir/TrackingFlags/bin/bulk_flag_clear.pl"}
+    = {perms => Bugzilla::Install::Filesystem::OWNER_EXECUTE};
+  $files->{"$extensions_dir/TrackingFlags/bin/update.pl"}
     = {perms => Bugzilla::Install::Filesystem::OWNER_EXECUTE};
 }
 
@@ -358,85 +367,62 @@ sub active_custom_fields {
   @$$fields = sort { $a->sortkey <=> $b->sortkey } values %field_hash;
 }
 
-sub _fetch_firefox_versions {
+sub _get_product_version {
+  my ($product, $channel, $detail) = @_;
   my $request_cache = Bugzilla->request_cache;
-  my $cache_key = 'firefox_versions';
-
-  return $request_cache->{$cache_key} if exists $request_cache->{$cache_key};
-
-  my $data = Bugzilla->memcached->get_config({key => $cache_key});
-  my $now  = time();
+  my $cache_key     = "${product}_versions";
   my $versions;
 
-  # Cache for 30 minutes
-  if ($data && $data->{timestamp} > $now - 1800) {
-    $versions = $data->{versions};
+  if (exists $request_cache->{$cache_key}) {
+    $versions = $request_cache->{$cache_key};
   } else {
-    my $ua = LWP::UserAgent->new(timeout => 10);
-
-    if (Bugzilla->params->{proxy_url}) {
-      $ua->proxy('https', Bugzilla->params->{proxy_url});
-    }
-
-    my $response = $ua->get(FIREFOX_VERSIONS_JSON);
-    $versions
-      = $response->is_error ? {} : decode_json($response->decoded_content);
-
-    Bugzilla->memcached->set_config({
-      key  => $cache_key,
-      data => {versions => $versions, timestamp => $now},
-    });
+    my $data  = Bugzilla->memcached->get_config({key => $cache_key});
+    $versions = $request_cache->{$cache_key} = ($data || {});
   }
 
-  $request_cache->{$cache_key} = $versions;
+  my $version = $versions->{PRODUCT_CHANNELS->{$product}->{$channel}->{json_key}};
 
-  return $versions;
-}
-
-sub _get_firefox_version {
-  my ($channel, $detail) = @_;
-  my $versions = _fetch_firefox_versions();
-  my $version  = $versions->{FIREFOX_CHANNELS->{$channel}->{json_key}};
-
-  unless ($version) {
-    ThrowUserError('firefox_versions_unavailable');
-  }
+  ThrowUserError('product_versions_unavailable') unless ($version);
 
   return $version if $detail;
 
   # Return major version by default
-  my ($int_version) = $version =~ /^(\d+)/;
-  return $int_version;
+  my ($major_version) = $version =~ /^(\d+)/;
+  return $major_version;
 }
 
 sub _get_search_param_name {
-  my ($type, $channel) = @_;
-  my $version = _get_firefox_version($channel);
+  my ($type, $product, $channel) = @_;
+  my $version = _get_product_version($product, $channel);
+  $version = '_' . $version if $product eq 'thunderbird';
   $version = '_esr' . $version if $channel eq 'esr';
 
   # Return canonical name and its alias
-  return ("cf_${type}_firefox${version}", "cf_${type}_firefox_${channel}");
+  return ("cf_${type}_${product}${version}", "cf_${type}_${product}_${channel}");
 }
 
 sub search_params_to_data_structure {
   my ($self, $args) = @_;
-  my $params      = $args->{search}->_params;
-  my $channels_re = join('|', keys %{FIREFOX_CHANNELS()});
-  my $flag_re     = qr/^cf_(status|tracking)_firefox_($channels_re)$/;
+  my $params = $args->{search}->_params;
 
-  # Replace pronouns for Firefox Tracking Flags, for example,
+  # Get the Firefox channel list and put it a regex pattern
+  # Thunderbird doesn't have ESR now but it won't be practically a problem
+  my $channels_re = join('|', keys %{PRODUCT_CHANNELS->{'firefox'}});
+  my $flag_re     = qr/^cf_(status|tracking)_(firefox|thunderbird)_($channels_re)$/;
+
+  # Replace pronouns for Firefox/Thunderbird Status/Tracking Flags, for example,
   # cf_tracking_firefox_nightly -> cf_tracking_firefox68
   # cf_tracking_firefox_esr     -> cf_tracking_firefox_esr60
   for my $key (keys %$params) {
     # Replace keys
     if ($key =~ $flag_re) {
-      my ($canonical, $alias) = _get_search_param_name($1, $2);
+      my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
       $params->{$canonical} = delete $params->{$key};
     }
 
     # Replace values (custom search)
     if ($params->{$key} =~ $flag_re) {
-      my ($canonical, $alias) = _get_search_param_name($1, $2);
+      my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
       $params->{$key} = $canonical;
     }
   }
@@ -454,15 +440,17 @@ sub buglist_columns {
     };
   }
 
-  # Add column aliases for Firefox Tracking Flags
+  # Add column aliases for Firefox/Thunderbird Status/Tracking Flags
   foreach my $type ('status', 'tracking') {
-    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
-      my ($canonical, $alias) = _get_search_param_name($type, $channel);
+    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
+      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
+        my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
 
-      if ($columns->{$canonical}) {
-        $columns->{$alias}->{name} = $columns->{$canonical}->{name};
-      } else {
-        delete $columns->{$alias};
+        if ($columns->{$canonical}) {
+          $columns->{$alias}->{name} = $columns->{$canonical}->{name};
+        } else {
+          delete $columns->{$alias};
+        }
       }
     }
   }
@@ -485,15 +473,17 @@ sub buglist_column_joins {
     };
   }
 
-  # Add column aliases for Firefox Tracking Flags
+  # Add column aliases for Firefox/Thunderbird Status/Tracking Flags
   foreach my $type ('status', 'tracking') {
-    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
-      my ($canonical, $alias) = _get_search_param_name($type, $channel);
+    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
+      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
+        my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
 
-      if ($column_joins->{$canonical}) {
-        $column_joins->{$alias} = $column_joins->{$canonical};
-      } else {
-        delete $column_joins->{$alias};
+        if ($column_joins->{$canonical}) {
+          $column_joins->{$alias} = $column_joins->{$canonical};
+        } else {
+          delete $column_joins->{$alias};
+        }
       }
     }
   }
@@ -558,15 +548,17 @@ sub search_operator_field_override {
     };
   }
 
-  # Add column aliases for Firefox Tracking Flags
+  # Add column aliases for Firefox/Thunderbird Status/Tracking Flags
   foreach my $type ('status', 'tracking') {
-    foreach my $channel (keys %{FIREFOX_CHANNELS()}) {
-      my ($canonical, $alias) = _get_search_param_name($type, $channel);
+    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
+      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
+        my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
 
-      if ($operators->{$canonical}) {
-        $operators->{$alias} = $operators->{$canonical};
-      } else {
-        delete $operators->{$alias};
+        if ($operators->{$canonical}) {
+          $operators->{$alias} = $operators->{$canonical};
+        } else {
+          delete $operators->{$alias};
+        }
       }
     }
   }
