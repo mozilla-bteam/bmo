@@ -381,12 +381,10 @@ sub _get_product_version {
   }
 
   my $version = $versions->{PRODUCT_CHANNELS->{$product}->{$channel}->{json_key}};
-
-  ThrowUserError('product_versions_unavailable') unless ($version);
-
   return $version if $detail;
 
   # Return major version by default
+  return 0 unless $version;
   my ($major_version) = $version =~ /^(\d+)/;
   return $major_version;
 }
@@ -394,10 +392,11 @@ sub _get_product_version {
 sub _get_search_param_name {
   my ($type, $product, $channel) = @_;
   my $version = _get_product_version($product, $channel);
-  $version = '_' . $version if $product eq 'thunderbird';
-  $version = '_esr' . $version if $channel eq 'esr';
+  return () unless $version;
 
   # Return canonical name and its alias
+  $version = '_' . $version if $product eq 'thunderbird';
+  $version = '_esr' . $version if $channel eq 'esr';
   return ("cf_${type}_${product}${version}", "cf_${type}_${product}_${channel}");
 }
 
@@ -417,12 +416,14 @@ sub search_params_to_data_structure {
     # Replace keys
     if ($key =~ $flag_re) {
       my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
+      ThrowUserError('product_versions_unavailable') unless $canonical;
       $params->{$canonical} = delete $params->{$key};
     }
 
     # Replace values (custom search)
     if ($params->{$key} =~ $flag_re) {
       my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
+      ThrowUserError('product_versions_unavailable') unless $canonical;
       $params->{$key} = $canonical;
     }
   }
@@ -446,7 +447,7 @@ sub buglist_columns {
       foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
         my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
 
-        if ($columns->{$canonical}) {
+        if ($columns->{$canonical} && $canonical) {
           $columns->{$alias}->{name} = $columns->{$canonical}->{name};
         } else {
           delete $columns->{$alias};
@@ -479,7 +480,7 @@ sub buglist_column_joins {
       foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
         my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
 
-        if ($column_joins->{$canonical}) {
+        if ($column_joins->{$canonical} && $canonical) {
           $column_joins->{$alias} = $column_joins->{$canonical};
         } else {
           delete $column_joins->{$alias};
@@ -554,7 +555,7 @@ sub search_operator_field_override {
       foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
         my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
 
-        if ($operators->{$canonical}) {
+        if ($operators->{$canonical} && $canonical) {
           $operators->{$alias} = $operators->{$canonical};
         } else {
           delete $operators->{$alias};
