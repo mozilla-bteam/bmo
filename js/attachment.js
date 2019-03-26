@@ -312,6 +312,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$description = document.querySelector('#att-description');
     this.$error_message = document.querySelector('#att-error-message');
     this.$ispatch = document.querySelector('#att-ispatch');
+    this.$hide_preview = document.querySelector('#att-hide-preview');
     this.$type_outer = document.querySelector('#att-type-outer');
     this.$type_list = document.querySelector('#att-type-list');
     this.$type_manual = document.querySelector('#att-type-manual');
@@ -334,6 +335,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$description.addEventListener('input', () => this.description_oninput());
     this.$description.addEventListener('change', () => this.description_onchange());
     this.$ispatch.addEventListener('change', () => this.ispatch_onchange());
+    this.$hide_preview.addEventListener('change', () => this.hide_preview_onchange());
     this.$type_select.addEventListener('change', () => this.type_select_onchange());
     this.$type_input.addEventListener('change', () => this.type_input_onchange());
 
@@ -752,6 +754,23 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     // Reassign the bug to the user if the attachment is a patch or GitHub Pull Request
     if (this.$takebug && this.$takebug.clientHeight > 0 && this.$takebug.dataset.takeIfPatch) {
       this.$takebug.checked = is_patch || is_ghpr;
+    }
+  }
+
+  /**
+   * Called whenever the "hide preview" checkbox is checked or unchecked. Change the Content Type to binary if checked
+   * so the file will always be downloaded.
+   */
+  hide_preview_onchange() {
+    const hide_preview = this.$hide_preview.checked;
+
+    this.$type_outer.querySelectorAll('[name]').forEach($input => $input.disabled = hide_preview);
+
+    if (hide_preview) {
+      this.original_type = this.$type_input.value || this.$type_select.value;
+      this.update_content_type('application/octet-stream');
+    } else if (this.original_type) {
+      this.update_content_type(this.original_type);
     }
   }
 
