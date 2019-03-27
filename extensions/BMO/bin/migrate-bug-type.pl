@@ -111,10 +111,10 @@ my $dbh = Bugzilla->dbh;
 
 $dbh->bz_start_transaction;
 
-# Disable the "enhancement" severity
+say 'Disable the "enhancement" severity';
 $dbh->do('UPDATE bug_severity SET isactive = 0 WHERE value = "enhancement"');
 
-# Change the type of all bugs to "defect"
+say 'Change the type of all bugs to "defect"';
 $dbh->do('UPDATE bugs SET bug_type = "defect"');
 
 $dbh->bz_commit_transaction;
@@ -124,7 +124,7 @@ foreach my $target (@MIGRATION_MAP) {
 
   $dbh->bz_start_transaction;
 
-  # Select bugs in the product (and component)
+  say 'Select bugs in the product (and component)';
   my $bug_ids = $dbh->selectcol_arrayref(
     'SELECT bug_id FROM bugs AS bug
       JOIN products AS product ON bug.product_id = product.id
@@ -132,21 +132,21 @@ foreach my $target (@MIGRATION_MAP) {
       WHERE product.name = ?' . ($component ? ' AND component.name = ?' : ''),
     undef, ($component ? ($product, $component) : ($product)));
 
-  # Set type on these bugs
+  say 'Set type on these bugs';
   # Since it's a silent migration, we don't update the timestamp
   if (scalar @$bug_ids) {
     $dbh->do('UPDATE bugs SET bug_type = ?
       WHERE ' . $dbh->sql_in('bug_id', $bug_ids), undef, ($type));
   }
 
-  # Select components
+  say 'Select components';
   my $comp_ids = $dbh->selectcol_arrayref(
     'SELECT component.id FROM components as component
       JOIN products AS product ON component.id = product.id
       WHERE product.name = ?' . ($component ? ' AND component.name = ?' : ''),
     undef, ($component ? ($product, $component) : ($product)));
 
-  # Set default bug type on these components
+  say 'Set default bug type on these components';
   if (scalar @$comp_ids) {
     $dbh->do('UPDATE components SET default_bug_type = ?
       WHERE ' . $dbh->sql_in('id', $comp_ids), undef, ($type));
