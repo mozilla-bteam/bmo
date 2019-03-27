@@ -514,6 +514,8 @@ sub add_saved_search {
   state $check = compile(Object, Dict[name => Str, url => Str]);
   my ($self, $params) = $check->(@_);
 
+  Bugzilla->login(LOGIN_REQUIRED);
+
   # The `create()` method fails when a saved search with the same name exists.
   # The UI should ask in advance if the user wants to override the existing one,
   # and if the answer is yes, use `update_saved_search()` instead.
