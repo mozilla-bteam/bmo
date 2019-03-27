@@ -23,6 +23,7 @@ my @MIGRATION_MAP = (
   ['bugzilla.mozilla.org', 'Administration', 'task'],
   ['bugzilla.mozilla.org', 'Bulk Bug Edit Requests', 'task'],
   ['bugzilla.mozilla.org', 'Graveyard Tasks', 'task'],
+  ['Cloud Services', 'Iodide', 'task'],
   ['Cloud Services', 'Operations', 'task'],
   ['Cloud Services', 'Operations: Activedata', 'task'],
   ['Cloud Services', 'Operations: AMO', 'task'],
