@@ -33,7 +33,7 @@ sub _build_paths {
   return $self->dbh->selectall_arrayref($self->query, undef, $self->bug_id);
 }
 
-has 'graph'  => (is => 'lazy', isa => class_type({class => 'Graph'}));
+has 'graph' => (is => 'lazy', isa => class_type({class => 'Graph'}));
 
 sub _build_graph {
   my ($self) = @_;
