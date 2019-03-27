@@ -544,8 +544,10 @@ Bugzilla.BugModal.Comments = class Comments {
       const $comment = $set.querySelector('.comment:not([data-tags~="hide-attachment"])');
       // Skip if the attachment is obsolete or deleted
       const $attachment = $set.querySelector('.attachment:not(.obsolete):not(.deleted)');
+      // Skip if the attachment is SVG image
+      const is_svg = !!$set.querySelector('.attachment [itemprop="encodingFormat"][content="image/svg+xml"]');
 
-      if ($comment && $attachment) {
+      if ($comment && $attachment && !is_svg) {
         observer.observe($attachment);
       }
     });
