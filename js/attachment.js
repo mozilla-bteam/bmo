@@ -650,7 +650,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
 
   /**
    * Show the preview of a user-selected file. Display a thumbnail if it's a regular image (PNG, GIF, JPEG, etc.) or
-   * small plaintext file.
+   * small plaintext file. Don't show the preview of SVG image because it can be a crash test.
    * @param {File} file A file to be previewed.
    * @param {Boolean} [is_text=false] `true` if the file is a plaintext file, `false` otherwise.
    */
@@ -658,7 +658,7 @@ Bugzilla.AttachmentForm = class AttachmentForm {
     this.$preview_name.textContent = file.name;
     this.$preview_type.content = file.type;
     this.$preview_text.textContent = '';
-    this.$preview_image.src = file.type.match(/^image\/(?!vnd)/) ? URL.createObjectURL(file) : '';
+    this.$preview_image.src = file.type.match(/^image\/(?!vnd|svg)/) ? URL.createObjectURL(file) : '';
     this.$preview.hidden = false;
 
     if (is_text && file.size < 500000) {
