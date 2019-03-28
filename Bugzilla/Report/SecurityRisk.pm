@@ -29,15 +29,14 @@ use List::Util qw(any first sum uniq);
 use Mojo::File qw(tempfile);
 use POSIX qw(ceil);
 use Type::Utils;
-use Types::Standard
-  qw(Num Int Bool Str HashRef ArrayRef CodeRef Maybe Map Dict Enum Optional Object);
+use Types::Standard qw(:types);
 
 my $DateTime = class_type {class => 'DateTime'};
 my $JSONBool = class_type {class => 'JSON::PP::Boolean'};
 
-has 'start_date' => (is => 'ro', required => 1, isa => $DateTime,);
+has 'start_date' => (is => 'ro', required => 1, isa => $DateTime);
 
-has 'end_date' => (is => 'ro', required => 1, isa => $DateTime,);
+has 'end_date' => (is => 'ro', required => 1, isa => $DateTime);
 
 # The teams are loaded from an admin parameter containing JSON, e.g.:
 # {
@@ -301,6 +300,8 @@ sub _build_events {
     };
   # Don't use selectall_hashref as it only gets the latest event each bug.
   my $result = Bugzilla->dbh->selectall_arrayref($query);
+  my $type   = ArrayRef [Tuple [Int, Str, Str, Str, Str]];
+  $type->assert_valid($result);
 
   my @events = map {
     +{
@@ -351,7 +352,7 @@ sub _build_results {
 
       # Undo sec keyword changes
       if ($event->{field_name} eq 'keywords') {
-        my $bug_sec_level = $bug->{sec_level};
+        my $bug_sec_level = $bug->{sec_level} // '';
         if ($event->{added} =~ /\b\Q$bug_sec_level\E\b/) {
 
           # If the currently set sec level was added in this event, remove it.
