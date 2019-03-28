@@ -303,12 +303,12 @@ sub _build_events {
   my $result = Bugzilla->dbh->selectall_arrayref($query);
 
   my @events = map {
-    {
-      'bug_id' => @$_[0],
-      'bug_when' => datetime_from(@$_[1]),
-      'field_name' => @$_[2],
-      'removed' => @$_[3],
-      'added' => @$_[4],
+    +{
+      'bug_id'     => $_->[0],
+      'bug_when'   => datetime_from($_->[1]),
+      'field_name' => $_->[2],
+      'removed'    => $_->[3],
+      'added'      => $_->[4],
     }
   } @$result;
 
