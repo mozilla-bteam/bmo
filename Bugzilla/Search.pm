@@ -333,6 +333,7 @@ sub SPECIAL_PARSING {
     # Pronoun Fields (Ones that can accept %user%, etc.)
     assigned_to             => \&_contact_pronoun,
     'attachments.submitter' => \&_contact_pronoun,
+    'attachments.ispatch'   => \&_boolean_special,
     cc                      => \&_cc_pronoun,
     commenter               => \&_commenter_pronoun,
     qa_contact              => \&_contact_pronoun,
@@ -3071,6 +3072,25 @@ sub _flagtypes_nonchanged {
      WHERE bugs_$chart_id.bug_id = $bugs_table.bug_id
            AND $subselect_term
     )";
+}
+
+sub _boolean_special {
+  my ($self, $args) = @_;
+
+  # full on YAML compat. What could go wrong?
+  state $boolean_alias = {
+    'yes'   => 1,
+    'no'    => 0,
+    'on'    => 1,
+    'off'   => 0,
+    'true'  => 1,
+    'false' => 0,
+    '1'     => 1,
+    '0'     => 0
+  };
+
+  my $value = $args->{value};
+  $args->{quoted} = $boolean_alias->{$value} // 1;
 }
 
 sub _multiselect_nonchanged {
