@@ -15,6 +15,8 @@ use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 
+use Getopt::Long;
+
 # List of products and components that use a bug type other than "defect"
 my @MIGRATION_MAP = (
   ['Air Mozilla', 'Events', 'task'],
@@ -152,6 +154,27 @@ foreach my $target (@MIGRATION_MAP) {
       WHERE ' . $dbh->sql_in('id', $comp_ids), undef, ($type));
   }
 
+  $dbh->bz_commit_transaction;
+}
+
+my %switch;
+GetOptions(\%switch, 'csv=s');
+
+if ($switch{'csv'} && open(my $fh, '<', $switch{'csv'})) {
+  say 'Change the type of bugs according to bugbug';
+  my $bug_ids = {defect => [], enhancement => []};
+
+  while (my $line = <$fh>) {
+    if ($line =~ /^(\d+),(\w)/) {
+      push(@{$bug_ids->{$2 eq 'e' ? 'enhancement' : 'defect'}}, $1);
+    }
+  }
+
+  $dbh->bz_start_transaction;
+  $dbh->do('UPDATE bugs SET bug_type = "defect" WHERE ' .
+    $dbh->sql_in('bug_id', $bug_ids->{defect}));
+  $dbh->do('UPDATE bugs SET bug_type = "enhancement" WHERE ' .
+    $dbh->sql_in('bug_id', $bug_ids->{enhancement}));
   $dbh->bz_commit_transaction;
 }
 
