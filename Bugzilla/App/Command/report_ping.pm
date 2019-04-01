@@ -23,7 +23,9 @@ sub run {
   my $json
     = JSON::MaybeXS->new(convert_blessed => 1, canonical => 1, pretty => 1);
   my $report_type = 'Simple';
-  my ($page, $rows, $base_url, $test, $dump_schema);
+  my $page        = 1;
+  my ($rows, $base_url, $test, $dump_schema);
+
 
   Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
   getopt \@args,

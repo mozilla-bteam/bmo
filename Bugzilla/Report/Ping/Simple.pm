@@ -21,23 +21,30 @@ sub _build_validator {
   # For prototyping we use joi, but after protyping
   # $schema should be set to the file path or url of a json schema file.
   my $schema = joi->object->strict->props({
-    bug_id     => joi->integer->required->min(1),
-    product    => joi->string->required,
-    component  => joi->string->required,
-    bug_status => joi->string->required,
-    keywords   => joi->array->required->items(joi->string)->required,
-    groups     => joi->array->required->items(joi->string)->required,
-    flags      => joi->array->required->items(joi->object->strict->props({
+    reporter    => joi->integer->required,
+    assigned_to => joi->integer->required,
+    qa_contact  => joi->type([qw[null integer]])->required,
+    bug_id      => joi->integer->required->min(1),
+    product     => joi->string->required,
+    component   => joi->string->required,
+    bug_status  => joi->string->required,
+    keywords    => joi->array->required->items(joi->string)->required,
+    groups      => joi->array->required->items(joi->string)->required,
+    flags       => joi->array->required->items(joi->object->strict->props({
       name         => joi->string->required,
       status       => joi->string->enum([qw[? + -]])->required,
       setter_id    => joi->integer->required,
       requestee_id => joi->type([qw[null integer]])->required,
     })),
-    priority     => joi->string->required,
-    bug_severity => joi->string->required,
-    resolution   => joi->string,
-    blocked_by   => joi->array->required->items(joi->integer),
-    depends_on   => joi->array->required->items(joi->integer),
+    priority         => joi->string->required,
+    bug_severity     => joi->string->required,
+    resolution       => joi->string,
+    blocked_by       => joi->array->required->items(joi->integer),
+    depends_on       => joi->array->required->items(joi->integer),
+    duplicate_of     => joi->type([qw[null integer]])->required,
+    duplicates       => joi->array->required->items(joi->integer),
+    target_milestone => joi->string->required,
+    version          => joi->string->required,
   });
 
   return JSON::Validator->new(
@@ -58,6 +65,9 @@ sub _build_resultset {
 sub prepare {
   my ($self, $bug) = @_;
   my $doc = {
+    reporter     => $bug->reporter->id,
+    assigned_to  => $bug->assigned_to->id,
+    qa_contact   => $bug->qa_contact ? $bug->qa_contact->id : undef,
     bug_id       => 0 + $bug->id,
     product      => $bug->product->name,
     component    => $bug->component->name,
@@ -67,6 +77,10 @@ sub prepare {
     bug_severity => $bug->bug_severity,
     keywords     => [map { $_->name } $bug->keywords->all],
     groups       => [map { $_->name } $bug->groups->all],
+    duplicate_of => $bug->duplicate_of ? $bug->duplicate_of->id : undef,
+    duplicates   => [map { $_->id } $bug->duplicates->all ],
+    version => $bug->version,
+    target_milestone => $bug->target_milestone,
     blocked_by => [
       map { $_->dependson } $bug->map_blocked_by->all
     ],
