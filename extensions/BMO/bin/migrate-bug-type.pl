@@ -110,21 +110,16 @@ my @MIGRATION_MAP = (
 );
 
 my $dbh = Bugzilla->dbh;
-
 $dbh->bz_start_transaction;
+
+say 'Change the type of all bugs with the "enhancement" severity to "enhancement"';
+$dbh->do('UPDATE bugs SET bug_type = "enhancement" WHERE bug_severity = "enhancement"');
 
 say 'Disable the "enhancement" severity';
 $dbh->do('UPDATE bug_severity SET isactive = 0 WHERE value = "enhancement"');
 
-say 'Change the type of all bugs to "defect"';
-$dbh->do('UPDATE bugs SET bug_type = "defect"');
-
-$dbh->bz_commit_transaction;
-
 foreach my $target (@MIGRATION_MAP) {
   my ($product, $component, $type) = @$target;
-
-  $dbh->bz_start_transaction;
 
   say 'Select bugs in the product (and component)';
   my $bug_ids = $dbh->selectcol_arrayref(
@@ -153,8 +148,6 @@ foreach my $target (@MIGRATION_MAP) {
     $dbh->do('UPDATE components SET default_bug_type = ?
       WHERE ' . $dbh->sql_in('id', $comp_ids), undef, ($type));
   }
-
-  $dbh->bz_commit_transaction;
 }
 
 my %switch;
@@ -170,12 +163,15 @@ if ($switch{'csv'} && open(my $fh, '<', $switch{'csv'})) {
     }
   }
 
-  $dbh->bz_start_transaction;
   $dbh->do('UPDATE bugs SET bug_type = "defect" WHERE ' .
     $dbh->sql_in('bug_id', $bug_ids->{defect}));
   $dbh->do('UPDATE bugs SET bug_type = "enhancement" WHERE ' .
     $dbh->sql_in('bug_id', $bug_ids->{enhancement}));
-  $dbh->bz_commit_transaction;
 }
+
+say 'Change the type of all other bugs to "defect"';
+$dbh->do('UPDATE bugs SET bug_type = "defect" WHERE bug_type = NULL');
+
+$dbh->bz_commit_transaction;
 
 Bugzilla->memcached->clear_all();
