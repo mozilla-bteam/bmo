@@ -14,8 +14,8 @@ use 5.10.1;
 use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
-
-use Getopt::Long;
+use Mojo::File qw(path);
+use Mojo::Util qw(getopt);
 
 # List of products and components that use a bug type other than "defect"
 my @MIGRATION_MAP = (
@@ -150,10 +150,11 @@ foreach my $target (@MIGRATION_MAP) {
   }
 }
 
-my %switch;
-GetOptions(\%switch, 'csv=s');
+my $csv_file;
+getopt \@ARGV, 'csv=s' => \$csv_file;
 
-if ($switch{'csv'} && open(my $fh, '<', $switch{'csv'})) {
+if ($csv_file) {
+  my $fh = path($csv_file)->open('<');
   say 'Change the type of bugs according to bugbug';
   my $bug_ids = {defect => [], enhancement => []};
 
