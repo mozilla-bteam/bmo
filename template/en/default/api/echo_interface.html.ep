@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Echo</title></head>
+  <body>
+    <script>
+      var ws = new WebSocket("<%= url_for('apiecho')->to_abs %>");
+
+      // Incoming messages
+      ws.onmessage = function (event) {
+        document.body.innerHTML += event.data + '<br/>';
+      };
+
+      // Outgoing messages
+      ws.onopen = function (event) {
+        ws.send('Hello Mojo!');
+      };
+    </script>
+  </body>
+</html>

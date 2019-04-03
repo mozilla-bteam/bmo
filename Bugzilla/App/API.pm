@@ -13,6 +13,40 @@ use Mojo::JSON qw( true false );
 sub setup_routes {
   my ($class, $r) = @_;
   $r->get('/api/user/profile')->to('API#user_profile');
+  $r->websocket('/api/echo')->to('API#echo');
+  $r->get('/api/iecho')->to('API#echo_interface');
+}
+
+sub echo_interface {
+  my ($self) = @_;
+
+  $self->render(template => 'api/echo_interface');
+}
+
+sub echo {
+  my ($self) = @_;
+
+  # Opened
+  $self->app->log->debug('WebSocket opened');
+
+  # Increase inactivity timeout for connection a bit
+  $self->inactivity_timeout(300);
+
+  # Incoming message
+  $self->on(
+    message => sub {
+      my ($self, $msg) = @_;
+      $self->send("echo: $msg");
+    }
+  );
+
+  # Closed
+  $self->on(
+    finish => sub {
+      my ($self, $code, $reason) = @_;
+      $self->app->log->debug("WebSocket closed with status $code");
+    }
+  );
 }
 
 sub user_profile {
