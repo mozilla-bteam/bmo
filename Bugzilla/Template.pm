@@ -777,7 +777,7 @@ sub create {
           return sub {
             my $buglist = shift;
             return join(", ",
-              map(get_bug_link($_, $_, $options), split(/ *, */, $buglist)));
+              map { get_bug_link($_, $_, $options) } split(/\s*,\s*/, $buglist));
           };
         },
         1
