@@ -1392,9 +1392,10 @@ function show_new_changes_indicator() {
 
         const last_visit_ts = new Date(data[0].last_visit_ts);
         const new_changes = [...document.querySelectorAll('main .change-set')].filter($change => {
-            // Exclude hidden CC changes
+            // Exclude hidden CC changes and the user's own changes
             return $change.clientHeight > 0 &&
-                new Date($change.querySelector('[data-time]').getAttribute('data-time') * 1000) > last_visit_ts;
+                new Date($change.querySelector('[data-time]').getAttribute('data-time') * 1000) > last_visit_ts &&
+                Number($change.querySelector('.email').getAttribute('data-user-id')) !== BUGZILLA.user.id;
         });
 
         if (new_changes.length === 0) {
