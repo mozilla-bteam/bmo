@@ -262,7 +262,7 @@
          class="attachment[% " patch" IF att.ispatch; " obsolete" IF att.isobsolete; " deleted" IF !att.datasize %]"
          data-id="[% att.id FILTER none %]" itemscope itemtype="http://schema.org/MediaObject"
          [% IF comment.collapsed +%] style="display:none"[% END ~%]>
-      <meta itemprop="name" content="[% att.filename FILTER none %]">
+      <meta itemprop="name" content="[% att.filename FILTER html %]">
       <meta itemprop="contentSize" content="[% att.datasize FILTER none %]">
       <meta itemprop="encodingFormat" content="[% att.mimetype FILTER html %]">
       <div class="label">
