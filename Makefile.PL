@@ -248,11 +248,11 @@ my %optional_features = (
   },
   sqlite => {
     description => 'SQLite database support',
-    prereqs     => {runtime => {requires => {'DBD::SQLite' => '1.29'}}},
+    prereqs     => {runtime => {requires => {'DBD::SQLite' => '1.29', 'DateTime::Format::SQLite' => '0.11'}}},
   },
   mysql => {
     description => 'MySQL database support',
-    prereqs     => {runtime => {requires => {'DBD::mysql' => '4.037'}}}
+    prereqs     => {runtime => {requires => {'DBD::mysql' => '4.037', 'DateTime::Format::MySQL' => '0.06'}}}
   },
   jsonrpc => {
     description => 'JSON-RPC Interface',
