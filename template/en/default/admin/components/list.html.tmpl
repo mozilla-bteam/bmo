@@ -105,20 +105,22 @@
 
 [%# "component" is a reserved word in Template Toolkit. %]
 [% FOREACH my_component = product.components %]
-  [% overrides.initialowner.name.${my_component.name} = {
-       override_content => 1
-       content => my_component.default_assignee.login
-     }
-  %]
-  [% overrides.triage_owner.name.${my_component.name} = {
-       override_content => 1
-       content => my_component.default_assignee.login
-     }
-  %]
-  [% overrides.initialqacontact.name.${my_component.name} = {
-       override_content => 1
-       content => my_component.default_qa_contact.login
-     }
+  [%
+    users = [
+      { field_name => 'default_assignee',   column_name => 'initialowner' },
+      { field_name => 'triage_owner',       column_name => 'triage_owner' },
+      { field_name => 'default_qa_contact', column_name => 'initialqacontact' },
+    ];
+    FOREACH user IN users;
+      email = my_component.${user.field_name}.login;
+      IF (email.match('^nobody@') || email.match('\.bugs$'));
+        email = '';
+      END;
+      overrides.${user.column_name}.name.${my_component.name} = {
+        override_content => 1,
+        content => email || '(nobody)',
+      };
+    END;
   %]
 [% END %]
 
