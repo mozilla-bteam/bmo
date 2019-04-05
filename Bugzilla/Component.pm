@@ -204,10 +204,12 @@ sub _check_description {
 }
 
 sub _check_default_bug_type {
-  my ($invocant, $type) = @_;
+  my ($invocant, $type, undef, $params) = @_;
+  my $product = blessed($invocant) ? $invocant->product : $params->{product};
+
   # Reset if the specified bug type is the same as the product's default bug
   # type or if there's any error in validation
-  return undef if $type eq $invocant->product->default_bug_type
+  return undef if $type eq $product->default_bug_type
     || Bugzilla::Config::Common::check_bug_type($type) ne '';
   return $type;
 }
