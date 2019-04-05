@@ -205,9 +205,11 @@ sub _check_description {
 
 sub _check_default_bug_type {
   my ($invocant, $type) = @_;
-  return $type if Bugzilla::Config::Common::check_bug_type($type) eq '';
-  # Ignore silently just in case
-  return undef;
+  # Reset if the specified bug type is the same as the product's default bug
+  # type or if there's any error in validation
+  return undef if $type eq $invocant->product->default_bug_type
+    || Bugzilla::Config::Common::check_bug_type($type) ne '';
+  return $type;
 }
 
 sub _check_initialowner {
@@ -385,7 +387,7 @@ sub bug_ids {
 }
 
 sub default_bug_type {
-  return $_[0]->{'default_bug_type'} ||= Bugzilla->params->{'default_bug_type'};
+  return $_[0]->{'default_bug_type'} ||= $_[0]->product->default_bug_type;
 }
 
 sub default_assignee {
@@ -596,8 +598,8 @@ Component.pm represents a Product Component object.
 =item C<default_bug_type()>
 
  Description: Returns the default type for bugs filed under this component.
-              Returns the installation's global default bug type if the
-              component's specific type is not set.
+              Returns the product's default type or the installation's global
+              default type if the component-specific default type is not set.
 
  Params:      none.
 
