@@ -71,7 +71,7 @@
 
 [% IF changes.default_bug_type.defined %]
   <p>
-  Updated default bug type from '[% changes.default_bug_type.0 FILTER html %]' to
+  Updated default [% terms.bug %] type from '[% changes.default_bug_type.0 FILTER html %]' to
   '[% product.default_bug_type FILTER html %]'.
   </p>
 [% END %]
