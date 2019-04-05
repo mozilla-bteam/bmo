@@ -70,7 +70,7 @@ quotes).
 The development server (morbo) can also serve the site via HTTPS.
 
 Run `vagrant ssh web`, that should put you in the `/vagrant` directory.
-While there run `openssl req -newkey rsa:2048 -nodes -keyout bmo-web.vm-key.pem -x509 -days 365 -out bmo-web.vm.pem`.
+While there run `openssl req -newkey rsa:2048 -sha256 -nodes -keyout bmo-web.vm-key.pem -x509 -days 365 -out bmo-web.vm.pem`.
 Restart morbo and you should now be able to visit https://bmo-web.vm.
 
 Making Changes and Seeing them
