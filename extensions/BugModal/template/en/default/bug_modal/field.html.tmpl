@@ -197,14 +197,30 @@ END;
                 <div class="item">
                   <input id="v[% v.id FILTER html %]_[% name FILTER html %]" type="radio" name="[% name FILTER html %]"
                          value="[% v.name FILTER html %]" [% " checked" IF value.contains(v.name).size %]>
-                  <label for="v[% v.id FILTER html %]_[% name FILTER html %]">[% v.name FILTER html %]</label>
+                  <label for="v[% v.id FILTER html %]_[% name FILTER html %]">
+                    [% IF name == 'bug_type' %]
+                      <span class="bug-type-label iconic-text" data-type="[% v.name FILTER html %]">
+                        <span class="icon" aria-hidden="true"></span>[% v.name FILTER html %]
+                      </span>
+                    [% ELSE %]
+                      [%~ v.name FILTER html ~%]
+                    [% END %]
+                  </label>
                 </div>
               [% END %]
             [% ELSE %]
             <div class="item">
               <input id="[% name FILTER html %]_[% value FILTER html %]_radio" type="radio"
                      name="[% name FILTER html %]" value="[% value FILTER html %]" checked>
-              <label for="[% name FILTER html %]_[% value FILTER html %]_radio">[% value FILTER html %]</label>
+              <label for="[% name FILTER html %]_[% value FILTER html %]_radio">
+                [% IF name == 'bug_type' %]
+                  <span class="bug-type-label iconic-text" data-type="[% value FILTER html %]">
+                    <span class="icon" aria-hidden="true"></span>[% value FILTER html %]
+                  </span>
+                [% ELSE %]
+                  [%~ value FILTER html ~%]
+                [% END %]
+              </label>
             </div>
             [% END %]
           </div>

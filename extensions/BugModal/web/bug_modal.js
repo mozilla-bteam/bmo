@@ -551,7 +551,13 @@ $(function() {
                                   <div class="item">
                                     <input id="${$select.id}_${name}_radio" type="radio" name="${$select.id}"
                                            value="${name}" ${name === selected ? 'checked' : ''}>
-                                    <label for="${$select.id}_${name}_radio">${name}</label>
+                                    <label for="${$select.id}_${name}_radio">
+                                    ${$select.id === 'bug_type' ? `
+                                      <span class="bug-type-label iconic-text" data-type="${name}">
+                                        <span class="icon" aria-hidden="true"></span>${name}
+                                      </span>
+                                    ` : `${name}`}
+                                    </label>
                                   </div>
                                 `);
                             } else {

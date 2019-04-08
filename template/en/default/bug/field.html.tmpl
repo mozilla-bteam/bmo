@@ -166,7 +166,13 @@
                      [%# We always show selected values, even if they should be hidden %]
                      [% IF selected %]checked[% ELSIF disabled %]disabled class="bz_hidden_option"[% END %]>
               <label for="[% option_id FILTER html %]">
-                [%- display_value(field.name, legal_value.name) FILTER html ~%]
+                [% IF field.name == 'bug_type'%]
+                  <span class="bug-type-label iconic-text" data-type="[% legal_value.name FILTER html %]">
+                    <span class="icon" aria-hidden="true"></span>[% legal_value.name FILTER html %]
+                  </span>
+                [% ELSE %]
+                  [%- display_value(field.name, legal_value.name) FILTER html ~%]
+                [% END %]
               </label>
             </div>
             [% ELSE %]
