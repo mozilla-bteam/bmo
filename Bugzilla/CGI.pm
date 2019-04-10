@@ -625,7 +625,6 @@ sub header {
   # Referer (sic) headers to external websites.
   $headers{'-referrer_policy'} = 'same-origin';
 
-  Bugzilla::Hook::process('cgi_headers', {cgi => $self, headers => \%headers});
   $self->{_header_done} = 1;
 
   if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
