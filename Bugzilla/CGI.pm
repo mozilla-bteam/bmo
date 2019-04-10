@@ -590,12 +590,6 @@ sub header {
     $headers{'-cookie'} = $self->{Bugzilla_cookie_list};
   }
 
-  # Add X-Frame-Options header to prevent framing and subsequent
-  # possible clickjacking problems.
-  unless ($self->url_is_attachment_base) {
-    $headers{'-x_frame_options'} = 'SAMEORIGIN';
-  }
-
   if ($self->{'_content_disp'}) {
     $headers{'-content_disposition'} = $self->{'_content_disp'};
   }
@@ -884,25 +878,8 @@ sub base_redirect {
 
 sub url_is_attachment_base {
   my ($self, $id) = @_;
-  return 0 if !use_attachbase() or !i_am_cgi();
-  my $attach_base = Bugzilla->localconfig->{'attachment_base'};
-
-  # If we're passed an id, we only want one specific attachment base
-  # for a particular bug. If we're not passed an ID, we just want to
-  # know if our current URL matches the attachment_base *pattern*.
-  my $regex;
-  if ($id) {
-    $attach_base =~ s/\%bugid\%/$id/;
-    $regex = quotemeta($attach_base);
-  }
-  else {
-    # In this circumstance we run quotemeta first because we need to
-    # insert an active regex meta-character afterward.
-    $regex = quotemeta($attach_base);
-    $regex =~ s/\\\%bugid\\\%/\\d+/;
-  }
-  $regex = "^$regex";
-  return ($self->url =~ $regex) ? 1 : 0;
+  return 0 unless $Bugzilla::App::CGI::C;
+  return $Bugzilla::App::CGI::C->url_is_attachment_base($id);
 }
 
 sub set_dated_content_disp {

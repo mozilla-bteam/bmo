@@ -143,6 +143,10 @@ sub startup {
       }
       $res->headers->strict_transport_security($sts_opts);
     }
+
+    unless ($c->url_is_attachment_base) {
+      $res->headers->header('X-Frame-Options' => 'SAMEORIGIN');
+    }
   });
   Bugzilla::WebService::Server::REST->preload;
 
