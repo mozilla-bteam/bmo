@@ -25,7 +25,7 @@ sub run {
     = JSON::MaybeXS->new(convert_blessed => 1, canonical => 1, pretty => 1);
   my $report_type = 'Simple';
   my $working_dir = cwd();
-  my ($namespace, $page, $rows, $base_url, $test, $dump_schema, $dump_documents);
+  my ($namespace, $doctype, $page, $rows, $base_url, $test, $dump_schema, $dump_documents);
 
   Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
   getopt \@args,
@@ -50,6 +50,7 @@ sub run {
     maybe rows      => $rows,
     maybe page      => $page,
     maybe namespace => $namespace,
+    maybe doctype   => $doctype,
   );
 
   if ($dump_schema) {
