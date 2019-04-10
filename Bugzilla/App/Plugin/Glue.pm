@@ -163,7 +163,38 @@ sub register {
         $regex =~ s/\\\%bugid\\\%/\\d+/;
       }
       $regex = "^$regex";
-      return ($c->req->to_abs =~ $regex) ? 1 : 0;
+      return ($c->req->url->to_abs =~ $regex) ? 1 : 0;
+    }
+  );
+
+  $app->helper(
+    'content_security_policy' => sub {
+      my ($c, %add_params) = @_;
+      my $stash = $c->stash;
+      if (%add_params || !$stash->{Bugzilla_csp}) {
+        my %params = DEFAULT_CSP();
+        delete $params{report_only} if %add_params && !$add_params{report_only};
+        delete $params{report_only} if !$c->isa('Bugzilla::App::CGI');
+        foreach my $key (keys %add_params) {
+          if (defined $add_params{$key}) {
+            $params{$key} = $add_params{$key};
+          }
+          else {
+            delete $params{$key};
+          }
+        }
+        $stash->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
+      }
+
+      return $stash->{Bugzilla_csp};
+    }
+  );
+  $app->helper(
+    'csp_nonce' => sub {
+      my ($c) = @_;
+
+      my $csp = $c->content_security_policy;
+      return $csp->has_nonce ? $csp->nonce : '';
     }
   );
 

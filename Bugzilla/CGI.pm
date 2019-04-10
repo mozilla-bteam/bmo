@@ -34,92 +34,6 @@ BEGIN {
   *AUTOLOAD = \&CGI::AUTOLOAD;
 }
 
-sub DEFAULT_CSP {
-  my %policy = (
-    default_src => ['self'],
-    script_src =>
-      ['self', 'nonce', 'unsafe-inline', 'https://www.google-analytics.com'],
-    frame_src   => [
-      # This is for extensions/BMO/web/js/firefox-crash-table.js
-      'https://crash-stop-addon.herokuapp.com',
-    ],
-    worker_src  => ['none',],
-    img_src     => ['self', 'blob:', 'https://secure.gravatar.com'],
-    style_src   => ['self', 'unsafe-inline'],
-    object_src  => ['none'],
-    connect_src => [
-      'self',
-
-      # This is for extensions/BMO/web/js/firefox-crash-table.js
-      'https://product-details.mozilla.org',
-
-      # This is for extensions/GoogleAnalytics using beacon or XHR
-      'https://www.google-analytics.com',
-
-      # This is from extensions/OrangeFactor/web/js/orange_factor.js
-      'https://treeherder.mozilla.org/api/failurecount/',
-    ],
-    form_action => [
-      'self',
-
-      # used in template/en/default/search/search-google.html.tmpl
-      'https://www.google.com/search'
-    ],
-    frame_ancestors => ['none'],
-    report_only     => 1,
-  );
-  if (Bugzilla->params->{github_client_id} && !Bugzilla->user->id) {
-    push @{$policy{form_action}}, 'https://github.com/login/oauth/authorize',
-      'https://github.com/login';
-  }
-
-  return %policy;
-}
-
-# Because show_bug code lives in many different .cgi files,
-# we needed a centralized place to define the policy.
-# normally the policy would just live in one .cgi file.
-# Additionally, Bugzilla->localconfig->{urlbase} cannot be called at compile time, so this can't be a constant.
-sub SHOW_BUG_MODAL_CSP {
-  my ($bug_id) = @_;
-  my %policy = (
-    script_src => [
-      'self',          'nonce',
-      'unsafe-inline', 'unsafe-eval',
-      'https://www.google-analytics.com'
-    ],
-    img_src     => ['self', 'https://secure.gravatar.com'],
-    media_src   => ['self'],
-    connect_src => [
-      'self',
-
-      # This is for extensions/BMO/web/js/firefox-crash-table.js
-      'https://product-details.mozilla.org',
-
-      # This is for extensions/GoogleAnalytics using beacon or XHR
-      'https://www.google-analytics.com',
-
-      # This is from extensions/OrangeFactor/web/js/orange_factor.js
-      'https://treeherder.mozilla.org/api/failurecount/',
-    ],
-    frame_src  => [
-      'self',
-
-      # This is for extensions/BMO/web/js/firefox-crash-table.js
-      'https://crash-stop-addon.herokuapp.com',
-    ],
-    worker_src => ['none',],
-  );
-  if (use_attachbase() && $bug_id) {
-    my $attach_base = Bugzilla->localconfig->{'attachment_base'};
-    $attach_base =~ s/\%bugid\%/$bug_id/g;
-    push @{$policy{img_src}}, $attach_base;
-    push @{$policy{media_src}}, $attach_base;
-  }
-
-  return %policy;
-}
-
 sub _init_bz_cgi_globals {
   my $invocant = shift;
 
@@ -171,11 +85,13 @@ sub new {
   $self->charset(Bugzilla->params->{'utf8'} ? 'UTF-8' : '');
 
   # Redirect to urlbase if we are not viewing an attachment.
-  if ($self->url_is_attachment_base and $script ne 'attachment.cgi') {
-    DEBUG(
-      "Redirecting to urlbase because the url is in the attachment base and not attachment.cgi"
-    );
-    $self->redirect_to_urlbase();
+  if (my $C = $Bugzilla::App::CGI::C) {
+    if ($C->url_is_attachment_base and $script ne 'attachment.cgi') {
+      DEBUG(
+        "Redirecting to urlbase because the url is in the attachment base and not attachment.cgi"
+      );
+      $self->redirect_to_urlbase();
+    }
   }
 
   # Check for errors
@@ -220,32 +136,6 @@ sub target_uri {
   else {
     return $base . ($self->url(-relative => 1, -query => 1) || 'index.cgi');
   }
-}
-
-sub content_security_policy {
-  my ($self, %add_params) = @_;
-  if (%add_params || !$self->{Bugzilla_csp}) {
-    my %params = DEFAULT_CSP;
-    delete $params{report_only} if %add_params && !$add_params{report_only};
-    foreach my $key (keys %add_params) {
-      if (defined $add_params{$key}) {
-        $params{$key} = $add_params{$key};
-      }
-      else {
-        delete $params{$key};
-      }
-    }
-    $self->{Bugzilla_csp} = Bugzilla::CGI::ContentSecurityPolicy->new(%params);
-  }
-
-  return $self->{Bugzilla_csp};
-}
-
-sub csp_nonce {
-  my ($self) = @_;
-
-  my $csp = $self->content_security_policy;
-  return $csp->has_nonce ? $csp->nonce : '';
 }
 
 # We want this sorted plus the ability to exclude certain params
@@ -594,29 +484,9 @@ sub header {
     $headers{'-content_disposition'} = $self->{'_content_disp'};
   }
 
-  # Add X-XSS-Protection header to prevent simple XSS attacks
-  # and enforce the blocking (rather than the rewriting) mode.
-  $headers{'-x_xss_protection'} = '1; mode=block';
-
-  # Add X-Content-Type-Options header to prevent browsers sniffing
-  # the MIME type away from the declared Content-Type.
-  $headers{'-x_content_type_options'} = 'nosniff';
-
-  # Add Referrer-Policy (sic) header to prevent browsers sending
-  # Referer (sic) headers to external websites.
-  $headers{'-referrer_policy'} = 'same-origin';
-
   $self->{_header_done} = 1;
 
   if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
-    if ($self->should_block_referrer) {
-      $headers{'-referrer_policy'} = 'origin';
-    }
-    my $csp = $self->content_security_policy;
-    if (defined $csp && !$csp->disable) {
-      $csp->add_cgi_headers(\%headers);
-    }
-
     my @fonts = (
       "skins/standard/fonts/FiraMono-Regular.woff2?v=3.202",
       "skins/standard/fonts/FiraSans-Bold.woff2?v=4.203",
@@ -876,12 +746,6 @@ sub base_redirect {
   exit;
 }
 
-sub url_is_attachment_base {
-  my ($self, $id) = @_;
-  return 0 unless $Bugzilla::App::CGI::C;
-  return $Bugzilla::App::CGI::C->url_is_attachment_base($id);
-}
-
 sub set_dated_content_disp {
   my ($self, $type, $prefix, $ext) = @_;
 
@@ -987,18 +851,6 @@ argument to C<header>), so that under mod_perl the headers can be sent
 correctly, using C<print> or the mod_perl APIs as appropriate.
 
 To remove (expire) a cookie, use C<remove_cookie>.
-
-=item C<content_security_policy>
-
-Set a Content Security Policy for the current request. This is a no-op if the 'csp' feature
-is not available. The arguments to this method are passed to the constructor of L<Bugzilla::CGI::ContentSecurityPolicy>,
-consult that module for a list of what directives are supported.
-
-=item C<csp_nonce>
-
-Returns a CSP nonce value if CSP is available and 'nonce' is listed as a source in a CSP *_src directive.
-
-If there is no nonce used, or CSP is not available, this returns the empty string.
 
 =item C<remove_cookie>
 

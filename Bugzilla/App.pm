@@ -144,8 +144,31 @@ sub startup {
       $res->headers->strict_transport_security($sts_opts);
     }
 
+    # Add X-Frame-Options header to prevent framing and subsequent
+    # possible clickjacking problems.
     unless ($c->url_is_attachment_base) {
-      $res->headers->header('X-Frame-Options' => 'SAMEORIGIN');
+      $res->headers->header('X-frame-options' => 'SAMEORIGIN');
+    }
+
+    # Add X-XSS-Protection header to prevent simple XSS attacks
+    # and enforce the blocking (rather than the rewriting) mode.
+    $res->headers->header('X-xss-protection' => '1; mode=block');
+
+    # Add X-Content-Type-Options header to prevent browsers sniffing
+    # the MIME type away from the declared Content-Type.
+    $res->headers->header('X-content-type-options' => 'nosniff');
+
+    if (length($req->url->to_abs->to_string) > 8000) {
+      $res->headers->header('Referrer-policy' => 'origin');
+    }
+    else {
+      $res->headers->header('Referrer-policy' => 'same-origin');
+    }
+
+    unless ($res->headers->content_security_policy) {
+      if (my $csp = $c->content_security_policy) {
+        $res->headers->header($csp->header_name, $csp->value);
+      }
     }
   });
   Bugzilla::WebService::Server::REST->preload;
