@@ -590,19 +590,6 @@ sub header {
     $headers{'-cookie'} = $self->{Bugzilla_cookie_list};
   }
 
-  # Add Strict-Transport-Security (STS) header if this response
-  # is over SSL and the strict_transport_security param is turned on.
-  if ( $self->https
-    && !$self->url_is_attachment_base
-    && Bugzilla->params->{'strict_transport_security'} ne 'off')
-  {
-    my $sts_opts = 'max-age=' . MAX_STS_AGE;
-    if (Bugzilla->params->{'strict_transport_security'} eq 'include_subdomains') {
-      $sts_opts .= '; includeSubDomains';
-    }
-    $headers{'-strict_transport_security'} = $sts_opts;
-  }
-
   # Add X-Frame-Options header to prevent framing and subsequent
   # possible clickjacking problems.
   unless ($self->url_is_attachment_base) {
