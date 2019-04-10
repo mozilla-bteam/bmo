@@ -131,15 +131,17 @@ sub startup {
   }
   $self->hook(after_dispatch => sub {
     my ($c) = @_;
-    if ($c->req->is_secure
-      && ! $c->res->headers->strict_transport_security
+    my ($req, $res) = ($c->req, $c->res);
+
+    if ( $req->is_secure
+      && !$res->headers->strict_transport_security
       && Bugzilla->params->{'strict_transport_security'} ne 'off')
     {
       my $sts_opts = 'max-age=' . MAX_STS_AGE;
       if (Bugzilla->params->{'strict_transport_security'} eq 'include_subdomains') {
         $sts_opts .= '; includeSubDomains';
       }
-      $c->res->headers->strict_transport_security($sts_opts);
+      $res->headers->strict_transport_security($sts_opts);
     }
   });
   Bugzilla::WebService::Server::REST->preload;
