@@ -42,13 +42,6 @@
     minute: 30
     job: 'cd /vagrant; ./extensions/RequestNagger/bin/send-request-nags.pl'
 
-- name: tracking flags
-  cron:
-    name: tracking flags
-    user: apache
-    minute: '*/30'
-    job: 'cd /vagrant; ./extensions/TrackingFlags/bin/update.pl'
-
 - name: userprofile
   cron:
     name: userprofile

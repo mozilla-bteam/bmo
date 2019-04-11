@@ -29,7 +29,9 @@ use Bugzilla::Product;
 
 use JSON;
 use List::MoreUtils qw(none);
+use Mojo::UserAgent;
 
+use constant PD_ENDPOINT => 'https://product-details.mozilla.org/1.0/';
 use constant PRODUCT_CHANNELS => {
   'firefox' => {
     'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
@@ -327,8 +329,6 @@ sub install_filesystem {
   my $extensions_dir = bz_locations()->{extensionsdir};
   $files->{"$extensions_dir/TrackingFlags/bin/bulk_flag_clear.pl"}
     = {perms => Bugzilla::Install::Filesystem::OWNER_EXECUTE};
-  $files->{"$extensions_dir/TrackingFlags/bin/update.pl"}
-    = {perms => Bugzilla::Install::Filesystem::OWNER_EXECUTE};
 }
 
 sub active_custom_fields {
@@ -369,15 +369,25 @@ sub active_custom_fields {
 
 sub _get_product_version {
   my ($product, $channel, $detail) = @_;
-  my $request_cache = Bugzilla->request_cache;
-  my $cache_key     = "${product}_versions";
-  my $versions;
+  my $key      = "${product}_versions";
+  my $versions = Bugzilla->request_cache->{$key}
+    || Bugzilla->memcached->get_data({key => $key});
 
-  if (exists $request_cache->{$cache_key}) {
-    $versions = $request_cache->{$cache_key};
-  } else {
-    my $data  = Bugzilla->memcached->get_config({key => $cache_key});
-    $versions = $request_cache->{$cache_key} = ($data || {});
+  unless ($versions) {
+    my $ua = Mojo::UserAgent->new;
+    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
+      $ua->proxy->http($proxy_url);
+    }
+
+    my $response = $ua->get(PD_ENDPOINT . $key . '.json')->result;
+    $versions = Bugzilla->request_cache->{$key}
+      = $response->is_success ? decode_json($response->body) : {};
+    Bugzilla->memcached->set_data({
+      key   => $key,
+      value => $versions,
+      # Cache for 30 minutes if the data is available, otherwise retry in 5 min
+      expires_in => $response->is_success ? 1800 : 300,
+    });
   }
 
   my $version = $versions->{PRODUCT_CHANNELS->{$product}->{$channel}->{json_key}};
