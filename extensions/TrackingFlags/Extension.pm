@@ -31,21 +31,6 @@ use JSON;
 use List::MoreUtils qw(none);
 use Mojo::UserAgent;
 
-use constant PD_ENDPOINT => 'https://product-details.mozilla.org/1.0/';
-use constant PRODUCT_CHANNELS => {
-  'firefox' => {
-    'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
-    'beta'    => {label => 'Beta',    json_key => 'LATEST_FIREFOX_DEVEL_VERSION'},
-    'release' => {label => 'Release', json_key => 'LATEST_FIREFOX_VERSION'},
-    'esr'     => {label => 'ESR',     json_key => 'FIREFOX_ESR'},
-  },
-  'thunderbird' => {
-    'nightly' => {label => 'Daily',   json_key => 'LATEST_THUNDERBIRD_NIGHTLY_VERSION'},
-    'beta'    => {label => 'Beta',    json_key => 'LATEST_THUNDERBIRD_DEVEL_VERSION'},
-    'release' => {label => 'Release', json_key => 'LATEST_THUNDERBIRD_VERSION'},
-  },
-};
-
 our $VERSION = '1';
 our @FLAG_CACHE;
 
@@ -305,22 +290,6 @@ sub install_update_db {
   $dbh->bz_add_column('tracking_flags_values', 'comment',
     {TYPE => 'TEXT', NOTNULL => 0,},
   );
-
-  # Add pronouns for Firefox/Thunderbird Status/Tracking Flags such as
-  # cf_tracking_firefox_nightly
-  foreach my $type ('status', 'tracking') {
-    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
-      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
-        unless (Bugzilla::Field->new({name => "cf_${type}_${product}_${channel}"})) {
-          Bugzilla::Field->create({
-            name        => "cf_${type}_${product}_${channel}",
-            description => "${type}-${product}-${channel}",
-            buglist     => 1,
-          });
-        }
-      }
-    }
-  }
 }
 
 sub install_filesystem {
@@ -367,78 +336,6 @@ sub active_custom_fields {
   @$$fields = sort { $a->sortkey <=> $b->sortkey } values %field_hash;
 }
 
-sub _get_product_version {
-  my ($product, $channel, $detail) = @_;
-  my $key      = "${product}_versions";
-  my $versions = Bugzilla->request_cache->{$key}
-    || Bugzilla->memcached->get_data({key => $key});
-
-  unless ($versions) {
-    my $ua = Mojo::UserAgent->new;
-    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
-      $ua->proxy->http($proxy_url);
-    }
-
-    my $response = $ua->get(PD_ENDPOINT . $key . '.json')->result;
-    $versions = Bugzilla->request_cache->{$key}
-      = $response->is_success ? decode_json($response->body) : {};
-    Bugzilla->memcached->set_data({
-      key   => $key,
-      value => $versions,
-      # Cache for 30 minutes if the data is available, otherwise retry in 5 min
-      expires_in => $response->is_success ? 1800 : 300,
-    });
-  }
-
-  my $version = $versions->{PRODUCT_CHANNELS->{$product}->{$channel}->{json_key}};
-  return $version if $detail;
-
-  # Return major version by default
-  return 0 unless $version;
-  my ($major_version) = $version =~ /^(\d+)/;
-  return $major_version;
-}
-
-sub _get_search_param_name {
-  my ($type, $product, $channel) = @_;
-  my $version = _get_product_version($product, $channel);
-  return () unless $version;
-
-  # Return canonical name and its alias
-  $version = '_' . $version if $product eq 'thunderbird';
-  $version = '_esr' . $version if $channel eq 'esr';
-  return ("cf_${type}_${product}${version}", "cf_${type}_${product}_${channel}");
-}
-
-sub search_params_to_data_structure {
-  my ($self, $args) = @_;
-  my $params = $args->{search}->_params;
-
-  # Get the Firefox channel list and put it a regex pattern
-  # Thunderbird doesn't have ESR now but it won't be practically a problem
-  my $channels_re = join('|', keys %{PRODUCT_CHANNELS->{'firefox'}});
-  my $flag_re     = qr/^cf_(status|tracking)_(firefox|thunderbird)_($channels_re)$/;
-
-  # Replace pronouns for Firefox/Thunderbird Status/Tracking Flags, for example,
-  # cf_tracking_firefox_nightly -> cf_tracking_firefox68
-  # cf_tracking_firefox_esr     -> cf_tracking_firefox_esr60
-  for my $key (keys %$params) {
-    # Replace keys
-    if ($key =~ $flag_re) {
-      my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
-      ThrowUserError('product_versions_unavailable') unless $canonical;
-      $params->{$canonical} = delete $params->{$key};
-    }
-
-    # Replace values (custom search)
-    if ($params->{$key} =~ $flag_re) {
-      my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
-      ThrowUserError('product_versions_unavailable') unless $canonical;
-      $params->{$key} = $canonical;
-    }
-  }
-}
-
 sub buglist_columns {
   my ($self, $args) = @_;
   my $columns        = $args->{columns};
@@ -451,20 +348,8 @@ sub buglist_columns {
     };
   }
 
-  # Add column aliases for Firefox/Thunderbird Status/Tracking Flags
-  foreach my $type ('status', 'tracking') {
-    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
-      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
-        my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
-
-        if ($columns->{$canonical} && $canonical) {
-          $columns->{$alias}->{name} = $columns->{$canonical}->{name};
-        } else {
-          delete $columns->{$alias};
-        }
-      }
-    }
-  }
+  # Allow other extensions to alter columns
+  Bugzilla::Hook::process('tf_buglist_columns', {columns => $columns});
 }
 
 sub buglist_column_joins {
@@ -484,20 +369,9 @@ sub buglist_column_joins {
     };
   }
 
-  # Add column aliases for Firefox/Thunderbird Status/Tracking Flags
-  foreach my $type ('status', 'tracking') {
-    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
-      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
-        my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
-
-        if ($column_joins->{$canonical} && $canonical) {
-          $column_joins->{$alias} = $column_joins->{$canonical};
-        } else {
-          delete $column_joins->{$alias};
-        }
-      }
-    }
-  }
+  # Allow other extensions to alter column_joins
+  Bugzilla::Hook::process('tf_buglist_column_joins',
+    {column_joins => $column_joins});
 }
 
 sub bug_create_cf_accessors {
@@ -559,20 +433,9 @@ sub search_operator_field_override {
     };
   }
 
-  # Add column aliases for Firefox/Thunderbird Status/Tracking Flags
-  foreach my $type ('status', 'tracking') {
-    foreach my $product (keys %{PRODUCT_CHANNELS()}) {
-      foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
-        my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
-
-        if ($operators->{$canonical} && $canonical) {
-          $operators->{$alias} = $operators->{$canonical};
-        } else {
-          delete $operators->{$alias};
-        }
-      }
-    }
-  }
+  # Allow other extensions to alter operators
+  Bugzilla::Hook::process('tf_search_operator_field_override',
+    {operators => $operators});
 }
 
 sub _tracking_flags_search_nonchanged {
