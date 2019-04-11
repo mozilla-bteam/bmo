@@ -900,12 +900,25 @@ sub create {
   $dbh->bz_start_transaction();
 
   # These fields have default values which we can use if they are undefined.
-  $params->{bug_type} = Bugzilla->params->{default_bug_type}
-    unless defined $params->{bug_type};
   $params->{bug_severity} = Bugzilla->params->{defaultseverity}
     unless defined $params->{bug_severity};
   $params->{priority} = Bugzilla->params->{defaultpriority}
     unless defined $params->{priority};
+
+  # Bug type can be defined at the component, product or instance level
+  unless (defined $params->{bug_type}) {
+    my $product = Bugzilla::Product->new({name => $params->{product}, cache => 1});
+    my $component
+      = ($product)
+      ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
+      : undef;
+    $params->{bug_type}
+      = ($component && $component->default_bug_type)
+      ? $component->default_bug_type
+      : ($product && $product->default_bug_type)
+      ? $product->default_bug_type
+      : Bugzilla->params->{default_bug_type};
+  }
 
   # BMO - per-product hw/os defaults
   if (!defined $params->{rep_platform} || !defined $params->{op_sys}) {
