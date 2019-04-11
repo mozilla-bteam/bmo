@@ -907,9 +907,12 @@ sub create {
 
   # Bug type can be defined at the component, product or instance level
   unless (defined $params->{bug_type}) {
-    my $product = Bugzilla::Product->new({name => $params->{product}, cache => 1});
+    my $product
+      = (defined $params->{product})
+      ? Bugzilla::Product->new({name => $params->{product}, cache => 1})
+      : undef;
     my $component
-      = ($product)
+      = ($product && defined $params->{component})
       ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
       : undef;
     $params->{bug_type}
