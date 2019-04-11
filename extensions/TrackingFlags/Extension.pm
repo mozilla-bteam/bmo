@@ -29,7 +29,6 @@ use Bugzilla::Product;
 
 use JSON;
 use List::MoreUtils qw(none);
-use Mojo::UserAgent;
 
 our $VERSION = '1';
 our @FLAG_CACHE;
