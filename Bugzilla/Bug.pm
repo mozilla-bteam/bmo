@@ -915,8 +915,8 @@ sub create {
     $params->{bug_type}
       = ($component && $component->default_bug_type)
       ? $component->default_bug_type
-      : ($product && $product->default_bug_type)
-      ? $product->default_bug_type
+      # : ($product && $product->default_bug_type)
+      # ? $product->default_bug_type
       : Bugzilla->params->{default_bug_type};
   }
 
