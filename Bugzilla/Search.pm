@@ -2870,13 +2870,32 @@ sub _assignee_last_login {
 
 sub _component_nonchanged {
   my ($self, $args) = @_;
+  my $dbh = Bugzilla->dbh;
+  my (@products, @components);
 
+  # Allow to search product/component pairs like "Core::General, IPC"
+  foreach my $word (split(/[\s,]+/, $args->{value})) {
+    $word =~ /^(?:(.+)\s*::\s*)?(.+)$/;
+    push(@products, $1) if $1;
+    push(@components, $2);
+  }
+
+  $args->{value} = $args->{all_values} = join(', ', @components);
+  $args->{quoted} = $dbh->quote($args->{value});
   $args->{full_field} = "components.name";
   $self->_do_operator_function($args);
+
   my $term = $args->{term};
-  $args->{term}
-    = build_subselect("bugs.component_id", "components.id", "components",
-    $args->{term});
+
+  if (scalar @products) {
+    my @quoted_products = map { $dbh->quote($_) } uniq @products;
+    $args->{term} = build_subselect('bugs.component_id', 'components.id',
+      'components JOIN products ON components.product_id = products.id',
+      $term . ' AND ' . $dbh->sql_in('products.name', \@quoted_products));
+  } else {
+    $args->{term} = build_subselect('bugs.component_id', 'components.id',
+      'components', $term);
+  }
 }
 
 sub _product_nonchanged {
