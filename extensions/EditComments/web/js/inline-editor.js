@@ -48,7 +48,8 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
 
     this.$edit_button.addEventListener('click', event => this.edit_button_onclick(event));
 
-    // Check if the comment is written in Markdown
+    // Check if the comment is empty or written in Markdown
+    this.is_empty = this.$body.matches('.empty');
     this.is_markdown = this.$body.matches('[data-ismarkdown="true"]');
   }
 
@@ -139,6 +140,12 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
 
     // Adjust the height of `<textarea>`
     this.$textarea.style.height = `${this.$textarea.scrollHeight}px`;
+
+    // Let the user edit Description (Comment 0) immediately if it's empty
+    if (this.is_empty) {
+      this.fetch_onload({ comments: { [this.comment_id] : '' }});
+      return;
+    }
 
     // Retrieve the raw comment text
     bugzilla_ajax({
@@ -323,6 +330,12 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
   save_onsuccess(data) {
     this.$body.innerHTML = data.html;
     this.finish();
+
+    // Remove the empty state (new comment cannot be empty)
+    if (this.is_empty) {
+      this.is_empty = false;
+      this.$body.classList.remove('empty');
+    }
 
     // Highlight code if possible
     if (Prism) {
