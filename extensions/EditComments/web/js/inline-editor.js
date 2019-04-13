@@ -143,7 +143,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
 
     // Let the user edit Description (Comment 0) immediately if it's empty
     if (this.is_empty) {
-      this.fetch_onload({ comments: { [this.comment_id] : '' }});
+      this.fetch_onload({ comments: { [this.comment_id]: '' } });
       return;
     }
 
@@ -291,7 +291,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
 
   /**
    * Enable or disable buttons on the comment actions toolbar (not the editor's own toolbar) while editing the comment
-   * to avoid any unexpected behaviour.
+   * to avoid any unexpected behaviour. The Reply button should always be disabled if the comment is empty.
    * @param {Boolean} disabled Whether the buttons should be disabled.
    */
   toggle_toolbar_buttons(disabled) {
