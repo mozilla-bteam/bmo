@@ -295,7 +295,9 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
    * @param {Boolean} disabled Whether the buttons should be disabled.
    */
   toggle_toolbar_buttons(disabled) {
-    this.$change_set.querySelectorAll('.comment-actions button').forEach($button => $button.disabled = disabled);
+    this.$change_set.querySelectorAll('.comment-actions button').forEach($button => {
+      $button.disabled = $button.matches('.reply-btn') && this.is_empty ? true : disabled;
+    });
   }
 
   /**
@@ -329,13 +331,14 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
    */
   save_onsuccess(data) {
     this.$body.innerHTML = data.html;
-    this.finish();
 
     // Remove the empty state (new comment cannot be empty)
     if (this.is_empty) {
       this.is_empty = false;
       this.$body.classList.remove('empty');
     }
+
+    this.finish();
 
     // Highlight code if possible
     if (Prism) {
