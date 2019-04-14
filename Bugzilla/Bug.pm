@@ -915,11 +915,11 @@ sub create {
       = ($product && defined $params->{component})
       ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
       : undef;
+    # The component's default bug type inherits or overrides the default bug
+    # type of the product or instance
     $params->{bug_type}
-      = ($component && $component->default_bug_type)
+      = ($component)
       ? $component->default_bug_type
-      # : ($product && $product->default_bug_type)
-      # ? $product->default_bug_type
       : Bugzilla->params->{default_bug_type};
   }
 
