@@ -249,6 +249,13 @@ use constant DEFAULT_FIELDS => (
     buglist => 1
   },
   {
+    name           => 'bug_type',
+    desc           => 'Type',
+    in_new_bugmail => 1,
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    buglist        => 1
+  },
+  {
     name           => 'bug_severity',
     desc           => 'Severity',
     in_new_bugmail => 1,
@@ -281,6 +288,20 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'blocked',
     desc           => 'Blocks',
+    in_new_bugmail => 1,
+    is_numeric     => 1,
+    buglist        => 1
+  },
+  {
+    name           => 'regressed_by',
+    desc           => 'Regressed by',
+    in_new_bugmail => 1,
+    is_numeric     => 1,
+    buglist        => 1
+  },
+  {
+    name           => 'regresses',
+    desc           => 'Regressions',
     in_new_bugmail => 1,
     is_numeric     => 1,
     buglist        => 1

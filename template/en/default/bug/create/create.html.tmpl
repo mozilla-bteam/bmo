@@ -51,6 +51,10 @@ function init() {
   initCrashSignatureField();
   init_take_handler('[% user.login FILTER js %]');
   bz_attachment_form.update_requirements(false);
+
+  document.querySelector('#bug_type').addEventListener('change', () => {
+    bug_type_changed = true;
+  }, { once: true });
 }
 
 function initCrashSignatureField() {
@@ -66,6 +70,8 @@ function initCrashSignatureField() {
 
 var initialowners = new Array([% product.components.size %]);
 var last_initialowner;
+var default_bug_types = new Array([% product.components.size %]);
+let bug_type_changed = false;
 var initialccs = new Array([% product.components.size %]);
 var components = new Array([% product.components.size %]);
 var comp_desc = new Array([% product.components.size %]);
@@ -80,6 +86,7 @@ var flags = new Array([% product.components.size %]);
     components[[% count %]] = "[% c.name FILTER js %]";
     comp_desc[[% count %]] = "[% c.description FILTER html_light FILTER js %]";
     initialowners[[% count %]] = "[% c.default_assignee.login FILTER js %]";
+    default_bug_types[[% count %]] = "[% c.default_bug_type FILTER js %]";
     [% flag_list = [] %]
     [% FOREACH f = c.flag_types.bug %]
       [% flag_list.push(f.id) %]
@@ -127,6 +134,10 @@ function set_assign_to() {
             || assigned_to == '') {
             form.assigned_to.value = owner;
             last_initialowner = owner;
+        }
+
+        if (!bug_type_changed) {
+          form.bug_type.value = default_bug_types[index];
         }
 
         document.getElementById('initial_cc').innerHTML = initialccs[index];
@@ -301,9 +312,9 @@ TUI_hide_default('expert_fields');
 
   <tr>
     [% INCLUDE "bug/field-label.html.tmpl"
-      field = bug_fields.version editable = 1 rowspan = 3
+      field = bug_fields.version editable = 1 rowspan = 4
     %]
-    <td rowspan="3">
+    <td rowspan="4">
       <select name="version" id="version" size="5">
         [%- FOREACH v = version %]
           [% NEXT IF NOT v.is_active %]
@@ -314,6 +325,12 @@ TUI_hide_default('expert_fields');
       </select>
     </td>
 
+    [% INCLUDE bug/field.html.tmpl
+      bug = default, field = bug_fields.bug_type, editable = 1, use_buttons = 1,
+      value = default.bug_type %]
+  </tr>
+
+  <tr>
     [% INCLUDE bug/field.html.tmpl
       bug = default, field = bug_fields.bug_severity, editable = 1,
       value = default.bug_severity %]
@@ -607,6 +624,21 @@ TUI_hide_default('expert_fields');
         <input name="blocked" accesskey="b" value="[% blocked FILTER html %]" size="30">
       </td>
     </tr>
+
+    [% IF Param('use_regression_fields') %]
+      <tr>
+        [% INCLUDE "bug/field-label.html.tmpl"
+          field = bug_fields.regressed_by
+          editable = 1
+        %]
+        <td>
+          <input name="regressed_by" value="[% regressed_by FILTER html %]" size="30">
+        </td>
+        <td colspan="2">
+          [%~# Regressions field is hidden from new bugs ~%]
+        </td>
+      </tr>
+    [% END %]
 
     [% IF use_keywords %]
       <tr>

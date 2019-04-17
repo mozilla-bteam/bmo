@@ -57,11 +57,9 @@ sub unconfirmed {
         ? $input->{'component'}
         : [$input->{'component'}];
       foreach my $component_name (@$ra_components) {
-        my $component
-          = Bugzilla::Component->new({name => $component_name, product => $product})
-          || ThrowUserError('invalid_object',
-          {object => 'Component', value => $component_name});
-        push @component_ids, $component->id;
+        next unless my $component = Bugzilla::Component->new(
+          {name => $component_name, product => $product, cache => 1});
+        push(@component_ids, $component->id);
       }
     }
 
@@ -261,7 +259,8 @@ sub owners {
     my @product_names
       = $input->{product} ? ($input->{product}) : DEFAULT_OWNER_PRODUCTS;
     foreach my $name (@product_names) {
-      push(@products, Bugzilla::Product->check({name => $name}));
+      next unless my $product = Bugzilla::Product->new({name => $name, cache => 1});
+      push(@products, $product);
     }
   }
 
@@ -272,9 +271,9 @@ sub owners {
       ? $input->{'component'}
       : [$input->{'component'}];
     foreach my $component_name (@$ra_components) {
-      my $component = Bugzilla::Component->check(
-        {name => $component_name, product => $products[0]});
-      push @component_ids, $component->id;
+      next unless my $component = Bugzilla::Component->new(
+        {name => $component_name, product => $products[0], cache => 1});
+      push(@component_ids, $component->id);
     }
   }
 
@@ -302,7 +301,7 @@ sub owners {
   my $rows = $dbh->selectall_arrayref($sql);
 
   my $bug_count_sth = $dbh->prepare("
-        SELECT COUNT(bugs.bug_id)
+        SELECT bugs.bug_type, COUNT(bugs.bug_id)
         FROM   bugs INNER JOIN components AS map_component ON bugs.component_id = map_component.id
                INNER JOIN bug_status AS map_bug_status ON bugs.bug_status = map_bug_status.value
                INNER JOIN priority AS map_priority ON bugs.priority = map_priority.value
@@ -316,7 +315,8 @@ sub owners {
                            LEFT JOIN flags AS flags_1 ON bugs_1.bug_id = flags_1.bug_id AND (flags_1.attach_id = attachments_1.attach_id OR flags_1.attach_id IS NULL)
                            LEFT JOIN flagtypes AS flagtypes_1 ON flags_1.type_id = flagtypes_1.id
                     WHERE  bugs_1.bug_id = bugs.bug_id AND CONCAT(flagtypes_1.name, flags_1.status) = 'needinfo?')))
-                AND bugs.component_id = ?");
+                AND bugs.component_id = ?
+       GROUP BY bugs.bug_type");
 
   my @results;
   foreach my $row (@$rows) {
@@ -326,9 +326,10 @@ sub owners {
       ? Bugzilla::User->new({id => $triage_owner_id, cache => 1})
       : "";
     my $data = {
-      product   => $product_name,
-      component => $component_name,
-      owner     => $triage_owner,
+      product    => $product_name,
+      component  => $component_name,
+      owner      => $triage_owner,
+      bug_counts => {defect => 0, enhancement => 0, task => 0},
     };
     $data->{buglist_url}
       = 'priority=--&resolution=---&f1=creation_ts&o1=greaterthaneq&v1=2016-06-01'
@@ -338,7 +339,14 @@ sub owners {
         .= '&f3=triage_owner&o3=equals&v3=' . url_quote($triage_owner->login);
     }
     $bug_count_sth->execute($component_id);
-    ($data->{bug_count}) = $bug_count_sth->fetchrow_array();
+
+    my $total = 0;
+    while (my ($type, $count) = $bug_count_sth->fetchrow_array()) {
+      $data->{bug_counts}->{$type} = $count;
+      $total += $count;
+    }
+    $data->{bug_counts}->{total} = $total;
+
     push @results, $data;
   }
   $vars->{results} = \@results;

@@ -56,11 +56,14 @@
                 bug_file_loc?,
                 status_whiteboard?,
                 keywords*,
+                bug_type,
                 priority,
                 bug_severity,
                 target_milestone?,
                 dependson*,
                 blocked*,
+                regressed_by*,
+                regresses*,
                 everconfirmed,
                 reporter,
                 assigned_to,
@@ -85,6 +88,7 @@
 >
 <!ELEMENT bug_id (#PCDATA)>
 <!ELEMENT alias (#PCDATA)>
+<!ELEMENT bug_type (#PCDATA)>
 <!ELEMENT reporter_accessible (#PCDATA)>
 <!ELEMENT cclist_accessible (#PCDATA)>
 <!ELEMENT exporter (#PCDATA)>
@@ -122,6 +126,8 @@
 <!ELEMENT keywords (#PCDATA)>
 <!ELEMENT dependson (#PCDATA)>
 <!ELEMENT blocked (#PCDATA)>
+<!ELEMENT regressed_by (#PCDATA)>
+<!ELEMENT regresses (#PCDATA)>
 <!ELEMENT everconfirmed (#PCDATA)>
 <!ELEMENT cc (#PCDATA)>
 <!ELEMENT see_also (#PCDATA)>

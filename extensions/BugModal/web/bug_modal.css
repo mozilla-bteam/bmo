@@ -221,6 +221,14 @@ a.activity-ref {
     width: 170px;
 }
 
+.module .field.contains-buttons {
+    margin: 8px 0;
+}
+
+.module .field.contains-buttons .name {
+    vertical-align: middle;
+}
+
 .field-button {
     float: right;
     margin-left: 8px;
@@ -255,11 +263,16 @@ input[type="number"] {
 
 #field-status_summary {
     border-top: 1px dotted silver;
-    padding-top: 4px;
+    padding-top: 6px;
+    padding-bottom: 4px;
 }
 
 #status-assignee, #status-assignee .vcard, #status-needinfo, #status-needinfo .vcard {
     display: inline;
+}
+
+#field-status_summary .bug-type-label {
+  margin-right: 8px;
 }
 
 #status-assignee, #status-needinfo {
@@ -354,6 +367,26 @@ input[type="number"] {
 
 .cc-loadable:hover {
     text-decoration: underline;
+}
+
+.field .value .bug-list {
+  margin: -2px 0 6px;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+
+.field .value .bug-list .bug-type-label {
+  float: left;
+  margin-left: -20px;
+}
+
+.field .value .bug-list .bug-type-label .icon {
+  font-size: 16px;
+}
+
+#field-value-dependencytree {
+  display: block;
+  margin: -2px 0 8px;
 }
 
 /* actions */
@@ -462,6 +495,7 @@ input[type="number"] {
 
 .flag-name {
     text-align: right;
+    white-space: nowrap;
 }
 
 td.flag-name, td.flag-requestee {
@@ -749,12 +783,8 @@ h3.change-name {
 
 .change-set .attachment {
     border-top: 1px solid #ddd;
-    background-color: #FFF;
-}
-
-.change-set .attachment {
-    background-color: #FFF;
     padding: 8px;
+    background-color: #FFF;
 }
 
 .change-set .attachment .label {
@@ -763,8 +793,14 @@ h3.change-name {
     color: grey;
 }
 
-.change-set .attachment .label [itemprop="name"] {
+.change-set .attachment .label [itemprop="description"] {
     font-weight: 600;
+}
+
+.change-set .attachment.deleted .label [itemprop="description"],
+.change-set .attachment.obsolete .label [itemprop="description"] {
+    text-decoration: line-through;
+    text-decoration-color: grey;
 }
 
 .change-set .attachment .outer {
@@ -776,6 +812,13 @@ h3.change-name {
     vertical-align: top;
     text-decoration: none;
     color: #333;
+}
+
+.change-set .attachment button.outer {
+  padding: 0;
+  font-weight: normal;
+  box-shadow: none;
+  transition: none;
 }
 
 .change-set .attachment .lightbox {
@@ -792,10 +835,6 @@ h3.change-name {
     margin: 0;
     vertical-align: top;
     max-width: 426px;
-}
-
-.change-set .attachment [content="image/svg+xml"] ~ .outer img {
-    width: 426px;
 }
 
 .change-set .attachment pre {
@@ -831,6 +870,10 @@ h3.change-name {
 
 .change-set .attachment ~ .comment-text {
     padding-top: 0;
+}
+
+.change-set .attachment ~ .comment-text:empty {
+    padding-bottom: 0;
 }
 
 /* add comment */
@@ -1045,6 +1088,8 @@ a.lightbox-icon.markdown {
 
 #lb_overlay2 {
     position: absolute;
+    overflow: auto;
+    bottom: 0;
     left: 0px;
     width: 100%;
     text-align: center;

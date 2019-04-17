@@ -235,7 +235,7 @@ foreach my $bug (@bug_objects) {
 # Component, target_milestone, and version are in here just in case
 # the 'product' field wasn't defined in the CGI. It doesn't hurt to set
 # them twice.
-my @set_fields = qw(op_sys rep_platform priority bug_severity
+my @set_fields = qw(op_sys rep_platform priority bug_severity bug_type
   component target_milestone version
   bug_file_loc status_whiteboard short_desc
   deadline remaining_time estimated_time
@@ -246,6 +246,7 @@ my @set_fields = qw(op_sys rep_platform priority bug_severity
 push(@set_fields, 'assigned_to') if !$cgi->param('set_default_assignee');
 push(@set_fields, 'qa_contact')  if !$cgi->param('set_default_qa_contact');
 my %field_translation = (
+  bug_type               => 'type',
   bug_severity           => 'severity',
   rep_platform           => 'platform',
   short_desc             => 'summary',
@@ -284,7 +285,7 @@ if (should_set('see_also')) {
 if (should_set('remove_see_also')) {
   $set_all_fields{'see_also'}->{remove} = [$cgi->param('remove_see_also')];
 }
-foreach my $dep_field (qw(dependson blocked)) {
+foreach my $dep_field (qw(dependson blocked regressed_by regresses)) {
   if (should_set($dep_field)) {
     if (my $dep_action = $cgi->param("${dep_field}_action")) {
       $set_all_fields{$dep_field}->{$dep_action}
@@ -436,7 +437,7 @@ my $format_params = {
 Bugzilla::Hook::process('show_bug_format', $format_params);
 if ($format_params->{format} eq 'modal') {
   my $bug_id = $vars->{bug} ? $vars->{bug}->id : undef;
-  $cgi->content_security_policy(Bugzilla::CGI::SHOW_BUG_MODAL_CSP($bug_id));
+  $C->content_security_policy(SHOW_BUG_MODAL_CSP($bug_id));
 }
 my $format = $template->get_format(
   "bug/show",

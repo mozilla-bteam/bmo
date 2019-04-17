@@ -133,10 +133,14 @@
 
           [% PROCESS section_spacer %]
 
-          [%# *** Dependencies and duplicates *** %]
+          [%# *** Duplicates, Dependencies and Regressions *** %]
           [% PROCESS section_duplicates %]
 
           [% PROCESS section_dependson_blocks %]
+
+          [% IF Param('use_regression_fields') %]
+            [% PROCESS section_regressions %]
+          [% END %]
 
           [% IF user.id %]
             <tr>
@@ -441,6 +445,19 @@
  [%###############################################################%]
     <tr>
       <th class="field_label">
+        <label for="type" accesskey="t">
+          <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_type"><u>T</u>ype</a></label>
+      </th>
+      <td>
+       [% INCLUDE bug/field.html.tmpl
+            bug = bug, field = bug_fields.bug_type,
+            no_tds = 1, value = bug.bug_type
+            editable = bug.check_can_change_field('bug_type', 0, 1) %]
+      </td>
+    </tr>
+
+    <tr>
+      <th class="field_label">
         <label for="priority" accesskey="i">
           <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#importance"><u>I</u>mportance</a></label>
       </th>
@@ -704,6 +721,24 @@
   </tr>
 [% END %]
 
+[%############################################################################%]
+[%# Block for Regressed by / Regressions                                     #%]
+[%############################################################################%]
+
+[% BLOCK section_regressions %]
+  <tr>
+    [% INCLUDE dependencies
+      field = bug_fields.regresses
+      deps = bug.regresses_obj
+    %]
+  </tr>
+  <tr>
+    [% INCLUDE dependencies
+      field = bug_fields.regressed_by
+      deps = bug.regressed_by_obj
+    %]
+  </tr>
+[% END %]
 
 [%############################################################################%]
 [%# Block for Restricting Visibility                                         #%]

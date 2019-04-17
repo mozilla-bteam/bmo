@@ -92,7 +92,7 @@
       [% ELSE %]
         [% flag.setter.nick FILTER html %]:
       [% END %]
-      [%+ type.name FILTER html FILTER no_break %][% flag.status %]
+      [%+ type.name FILTER html %][% flag.status %]
       [% IF flag.requestee %]
         [% IF flag.requestee.name %]
           (<span title="[% flag.requestee.name FILTER html %]">[% flag.requestee.nick FILTER html %]</span>)
@@ -120,7 +120,7 @@
       </td>
       <td>
         <label title="[% type.description FILTER html %]" for="[% fid FILTER html %]">
-          [%- type.name FILTER html FILTER no_break -%]</label>
+          [%- type.name FILTER html -%]</label>
       </td>
       <td>
         <input type="hidden" id="[% fid FILTER html %]_dirty">
@@ -131,7 +131,7 @@
                 title="[% type.description FILTER html %]"
                 onchange="toggleRequesteeField(this);"
                 class="flag_select flag_type-[% type.id %]"
-                data-id="[% type.id %]" data-name="[% type.name FILTER html FILTER no_break %]"
+                data-id="[% type.id %]" data-name="[% type.name FILTER html %]"
                 [% IF !can_edit_flag %] disabled="disabled"[% END %]>
         [% IF dontchange %]
           <option value="[% dontchange FILTER html %]" selected>[% dontchange FILTER html %]</option>

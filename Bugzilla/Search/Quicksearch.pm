@@ -28,11 +28,15 @@ use base qw(Exporter);
 # Custom mappings for some fields.
 use constant MAPPINGS => {
 
-  # Status, Resolution, Platform, OS, Priority, Severity
+  # Type, Status, Resolution, Platform, OS, Priority, Severity
+  "type"     => "bug_type",
   "status"   => "bug_status",
   "platform" => "rep_platform",
   "os"       => "op_sys",
   "severity" => "bug_severity",
+
+  # Dependencies, Regressions
+  "regressions" => "regresses",
 
   # People: AssignedTo, Reporter, QA Contact, CC, etc.
   "assignee" => "assigned_to",
@@ -86,7 +90,7 @@ sub FIELD_MAP {
   # "reporter_accessible" and "reporter" both match "rep".
   delete @full_map{
     qw(rep_platform bug_status bug_file_loc bug_group
-      bug_severity bug_status
+      bug_severity bug_status bug_type
       status_whiteboard
       cclist_accessible reporter_accessible)
   };
@@ -127,7 +131,8 @@ use constant COMPONENT_EXCEPTIONS => (
 );
 
 # Quicksearch-wide globals for boolean charts.
-our ($chart, $and, $or, $fulltext, $bug_status_set, $bug_product_set, $ELASTIC);
+our ($chart, $and, $or, $longdesc_initial, $fulltext, $bug_status_set,
+     $bug_product_set, $ELASTIC);
 
 sub quicksearch {
   my ($searchstring) = (@_);
@@ -145,6 +150,8 @@ sub quicksearch {
     _bug_numbers_only($searchstring);
   }
   else {
+    _handle_alias($searchstring);
+
     # Retain backslashes and quotes, to know which strings are quoted,
     # and which ones are not.
     my @words = _parse_line('\s+', 1, $searchstring);
@@ -191,6 +198,12 @@ sub quicksearch {
             {operators => ['NOT', $word], quicksearch => $searchstring});
         }
         unshift(@words, "-$word");
+      }
+
+      # --description and ++description disable or enable description searching
+      elsif ($word =~ /^(--|\+\+)description?$/i) {
+        $longdesc_initial = $1 eq '--' ? 0 : 1;
+        $cgi->param('longdesc_initial', $longdesc_initial);
       }
 
       # --comment and ++comment disable or enable fulltext searching
@@ -340,6 +353,27 @@ sub _bug_numbers_only {
   }
 }
 
+sub _handle_alias {
+  my $searchstring = shift;
+  if ($searchstring =~ /^([^,\s]+)$/) {
+    my $alias = $1;
+
+    # We use this direct SQL because we want quicksearch to be VERY fast.
+    my $bug_id
+      = Bugzilla->dbh->selectrow_array(q{SELECT bug_id FROM bugs WHERE alias = ?},
+      undef, $alias);
+
+    # If the user cannot see the bug or if we are using a webservice,
+    # do not resolve its alias.
+    if ($bug_id && Bugzilla->user->can_see_bug($bug_id) && !i_am_webservice()) {
+      $alias = url_quote($alias);
+      print Bugzilla->cgi->redirect(
+        -uri => Bugzilla->localconfig->{urlbase} . "show_bug.cgi?id=$alias");
+      exit;
+    }
+  }
+}
+
 sub _handle_status_and_resolution {
   my $word           = shift;
   my $legal_statuses = get_legal_field_values('bug_status');
@@ -383,6 +417,8 @@ sub _handle_special_first_chars {
 
   if ($firstChar eq '#') {
     addChart('short_desc', 'substring', $baseWord, $negate);
+    addChart('longdesc',   'substring', $baseWord, $negate)
+      if $longdesc_initial;
     addChart('content', 'matches', _matches_phrase($baseWord), $negate)
       if $fulltext;
     return 1;
@@ -601,7 +637,8 @@ sub _default_quicksearch_word {
   addChart('alias',             'substring', $word, $negate);
   addChart('short_desc',        'substring', $word, $negate);
   addChart('status_whiteboard', 'substring', $word, $negate);
-  addChart('longdesc',          'substring', $word, $negate) if $ELASTIC;
+  addChart('longdesc',          'substring', $word, $negate)
+    if $longdesc_initial || $ELASTIC;
   addChart('content', 'matches', _matches_phrase($word), $negate)
     if $fulltext && !$ELASTIC;
 

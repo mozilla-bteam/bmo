@@ -48,7 +48,7 @@ my %whitelist = (
   ],
   bugs => [
     qw(
-      bug_id assigned_to bug_file_loc bug_severity bug_status
+      bug_id assigned_to bug_file_loc bug_severity bug_status bug_type
       creation_ts delta_ts short_desc op_sys priority product_id
       rep_platform reporter version component_id resolution
       target_milestone qa_contact status_whiteboard everconfirmed
@@ -148,6 +148,11 @@ my %whitelist = (
   profiles => [
     qw(
       userid login_name realname is_enabled creation_ts
+      )
+  ],
+  regressions => [
+    qw(
+      regresses regressed_by
       )
   ],
   tracking_flags => [

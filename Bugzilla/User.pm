@@ -2365,6 +2365,7 @@ our %names_to_events = (
   'resolution'              => EVT_OPENED_CLOSED,
   'keywords'                => EVT_KEYWORD,
   'cc'                      => EVT_CC,
+  'bug_type'                => EVT_PROJ_MANAGEMENT,
   'bug_severity'            => EVT_PROJ_MANAGEMENT,
   'priority'                => EVT_PROJ_MANAGEMENT,
   'bug_status'              => EVT_PROJ_MANAGEMENT,
@@ -2374,6 +2375,8 @@ our %names_to_events = (
   'attachments.ispatch'     => EVT_ATTACHMENT_DATA,
   'dependson'               => EVT_DEPEND_BLOCK,
   'blocked'                 => EVT_DEPEND_BLOCK,
+  'regressed_by'            => EVT_DEPEND_BLOCK,
+  'regresses'               => EVT_DEPEND_BLOCK,
   'product'                 => EVT_COMPONENT,
   'component'               => EVT_COMPONENT
 );

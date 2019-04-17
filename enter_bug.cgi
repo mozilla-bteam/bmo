@@ -214,6 +214,7 @@ my %default;
 
 $vars->{'product'} = $product;
 
+$vars->{'bug_type'}     = get_legal_field_values('bug_type');
 $vars->{'priority'}     = get_legal_field_values('priority');
 $vars->{'bug_severity'} = get_legal_field_values('bug_severity');
 $vars->{'rep_platform'} = get_legal_field_values('rep_platform');
@@ -252,6 +253,7 @@ if ($cloned_bug_id) {
 
   # BMO: allow form value component to override the cloned bug component
   $default{'component_'}   = formvalue('component') || $cloned_bug->component;
+  $default{'bug_type'}     = $cloned_bug->bug_type;
   $default{'priority'}     = $cloned_bug->priority;
   $default{'bug_severity'} = $cloned_bug->bug_severity;
   $default{'rep_platform'} = $cloned_bug->rep_platform;
@@ -262,6 +264,7 @@ if ($cloned_bug_id) {
   $vars->{'keywords'}     = $cloned_bug->keywords;
   $vars->{'dependson'}    = join(", ", $cloned_bug_id, @{$cloned_bug->dependson});
   $vars->{'blocked'}      = join(", ", @{$cloned_bug->blocked});
+  $vars->{'regressed_by'} = formvalue('regressed_by');
   $vars->{'deadline'}     = $cloned_bug->deadline;
   $vars->{'estimated_time'}    = $cloned_bug->estimated_time;
   $vars->{'status_whiteboard'} = $cloned_bug->status_whiteboard;
@@ -309,6 +312,8 @@ if ($cloned_bug_id) {
 
 else {
   $default{'component_'} = formvalue('component');
+  $default{'bug_type'}
+    = formvalue('bug_type', Bugzilla->params->{'default_bug_type'});
   $default{'priority'}
     = formvalue('priority', Bugzilla->params->{'defaultpriority'});
   $default{'bug_severity'}
@@ -328,6 +333,7 @@ else {
   $vars->{'keywords'}       = formvalue('keywords');
   $vars->{'dependson'}      = formvalue('dependson');
   $vars->{'blocked'}        = formvalue('blocked');
+  $vars->{'regressed_by'}   = formvalue('regressed_by');
   $vars->{'deadline'}       = formvalue('deadline');
   $vars->{'estimated_time'} = formvalue('estimated_time');
   $vars->{'bug_ignored'}    = formvalue('bug_ignored');

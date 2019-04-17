@@ -81,8 +81,13 @@ $(function() {
 
     // restore edit mode after navigating back
     function restoreEditMode() {
-        if (!$('#editing').val())
+        if (!$('#editing').val()) {
+            if (localStorage.getItem('modal-perm-edit-mode') === 'true') {
+                $('#mode-btn').click();
+                $('#action-enable-perm-edit').attr('aria-checked', 'true');
+            }
             return;
+        }
         $('.module')
             .each(function() {
                 slide_module($(this), 'hide', true);
@@ -388,6 +393,15 @@ $(function() {
 
     // action button actions
 
+    // enable perm edit mode
+    $('#action-enable-perm-edit')
+        .click(function(event) {
+            event.preventDefault();
+            const enabled = $(this).attr('aria-checked') !== 'true';
+            $(this).attr('aria-checked', enabled);
+            localStorage.setItem('modal-perm-edit-mode', enabled);
+        });
+
     // reset
     $('#action-reset')
         .click(function(event) {
@@ -524,17 +538,36 @@ $(function() {
                     $('#mode-btn').hide();
 
                     // populate select menus
-                    $.each(data.options, function(key, value) {
-                        var el = $('#' + key);
-                        if (!el) return;
-                        var selected = el.val();
-                        el.empty();
-                        $(value).each(function(i, v) {
-                            el.append($('<option>', { value: v.name, text: v.name }));
+                    Object.entries(data.options).forEach(([key, value]) => {
+                        const $select = document.querySelector(`#${key}`);
+                        if (!$select) return;
+                        // It can be radio-button-like UI
+                        const use_buttons = $select.matches('.buttons.toggle');
+                        const selected = use_buttons ? $select.querySelector('input').value : $select.value;
+                        $select.innerHTML = '';
+                        value.forEach(({ name }) => {
+                            if (use_buttons) {
+                                $select.insertAdjacentHTML('beforeend', `
+                                  <div class="item">
+                                    <input id="${$select.id}_${name}_radio" type="radio" name="${$select.id}"
+                                           value="${name}" ${name === selected ? 'checked' : ''}>
+                                    <label for="${$select.id}_${name}_radio">
+                                    ${$select.id === 'bug_type' ? `
+                                      <span class="bug-type-label iconic-text" data-type="${name}">
+                                        <span class="icon" aria-hidden="true"></span>${name}
+                                      </span>
+                                    ` : `${name}`}
+                                    </label>
+                                  </div>
+                                `);
+                            } else {
+                                $select.insertAdjacentHTML('beforeend', `
+                                  <option value="${name}" ${name === selected ? 'selected' : ''}>${name}</option>
+                                `);
+                            }
                         });
-                        el.val(selected);
-                        if (el.attr('multiple') && value.length < 5) {
-                            el.attr('size', value.length);
+                        if ($select.matches('[multiple]') && value.length < 5) {
+                            $select.size = value.length;
                         }
                     });
 
@@ -663,7 +696,7 @@ $(function() {
                 $('#cc-summary').text(is_cced ? 'Just you' : '1 person');
             }
             else {
-                $('#cc-summary').text(cc_count + ' people');
+                $('#cc-summary').text(`${cc_count} people${is_cced ? ' including you' : ''}`);
             }
 
             // clear/update user list
@@ -810,10 +843,11 @@ $(function() {
             var id = target.prop('id').replace(/^flag(_type)?-(\d+)/, "#requestee$1-$2");
             if (target.val() == '?') {
                 $(id + '-container').show();
-                $(id).focus().select();
+                $(id).focus().select().prop('required', true);
             }
             else {
                 $(id + '-container').hide();
+                $(id).prop('required', false);
             }
         });
 
@@ -1377,8 +1411,9 @@ function show_new_changes_indicator() {
 
         const last_visit_ts = new Date(data[0].last_visit_ts);
         const new_changes = [...document.querySelectorAll('main .change-set')].filter($change => {
-            // Exclude hidden CC changes
+            // Exclude hidden CC changes and the user's own changes
             return $change.clientHeight > 0 &&
+                Number($change.querySelector('.email').getAttribute('data-user-id')) !== BUGZILLA.user.id &&
                 new Date($change.querySelector('[data-time]').getAttribute('data-time') * 1000) > last_visit_ts;
         });
 

@@ -37,6 +37,11 @@
   usebugaliases => "Do you wish to use $terms.bug aliases, which allow you to assign " _
                    "$terms.bugs an easy-to-remember name by which you can refer to them?",
 
+  use_regression_fields =>
+    "Do you wish to use the “Regressions” and “Regressed by” fields? These allow you to"
+    _ " efficiently track software regressions, which might previously be managed using"
+    _ " the “Depends on” and “Blocks” fields along with the “regression” keyword."
+
   use_see_also =>
     "Do you wish to use the See Also field? It allows you refer to"
     _ " $terms.bugs in other installations. Even if you disable this field,"
@@ -58,6 +63,8 @@
                   "You can leave this empty: " _
                   "$terms.Bugzilla will then use the operating system that the browser " _
                   "reports to be running on as the default.",
+
+  default_bug_type => "This is the type that newly entered $terms.bugs are set to.",
 
   collapsed_comment_tags => "A comma separated list of tags which, when applied " _
                             "to comments, will cause them to be collapsed by default",

@@ -54,7 +54,7 @@ Vagrant might ask to install some missing plugins it detected, you should instal
 Depending on the speed of your computer and your Internet connection, this entire process
 will take from a few minutes to much longer.
 
-If this fails, please file a bug `using this link <https://bugzilla.mozilla.org/enter_bug.cgi?assigned_to=nobody%40mozilla.org&bug_file_loc=http%3A%2F%2F&bug_ignored=0&bug_severity=normal&bug_status=NEW&cf_fx_iteration=---&cf_fx_points=---&component=Developer%20Box&contenttypemethod=autodetect&contenttypeselection=text%2Fplain&defined_groups=1&flag_type-254=X&flag_type-4=X&flag_type-607=X&flag_type-791=X&flag_type-800=X&flag_type-803=X&form_name=enter_bug&maketemplate=Remember%20values%20as%20bookmarkable%20template&op_sys=Unspecified&priority=--&product=bugzilla.mozilla.org&rep_platform=Unspecified&target_milestone=---&version=Production>`__.
+If this fails, please file a bug `using this link <https://bugzilla.mozilla.org/enter_bug.cgi?assigned_to=nobody%40mozilla.org&bug_file_loc=http%3A%2F%2F&bug_ignored=0&bug_type=defect&bug_severity=normal&bug_status=NEW&cf_fx_iteration=---&cf_fx_points=---&component=Developer%20Box&contenttypemethod=autodetect&contenttypeselection=text%2Fplain&defined_groups=1&flag_type-254=X&flag_type-4=X&flag_type-607=X&flag_type-791=X&flag_type-800=X&flag_type-803=X&form_name=enter_bug&maketemplate=Remember%20values%20as%20bookmarkable%20template&op_sys=Unspecified&priority=--&product=bugzilla.mozilla.org&rep_platform=Unspecified&target_milestone=---&version=Production>`__.
 
 Otherwise, you should have a working BMO developer machine!
 
@@ -66,6 +66,12 @@ Then you must start the development webserver with ``vagrant ssh web -c 'start_m
 After that, you should be able to visit http://bmo-web.vm/ from your browser.
 You can login as vagrant@bmo-web.vm with the password "vagrant01!" (without
 quotes).
+
+The development server (morbo) can also serve the site via HTTPS.
+
+Run `vagrant ssh web`, that should put you in the `/vagrant` directory.
+While there run `openssl req -newkey rsa:2048 -sha256 -nodes -keyout bmo-web.vm-key.pem -x509 -days 365 -out bmo-web.vm.pem`.
+Restart morbo and you should now be able to visit https://bmo-web.vm.
 
 Making Changes and Seeing them
 ------------------------------

@@ -62,6 +62,7 @@ name              type   description
          ],
          "resolution": "INVALID",
          "id": 35,
+         "type": "defect",
          "qa_contact": "",
          "triage_owner": "",
          "version": "1.0",
@@ -121,6 +122,8 @@ name              type   description
          },
          "cf_free_text": "",
          "blocks": [],
+         "regressed_by": [],
+         "regressions": [],
          "comment_count": 12
        }
      ]
@@ -205,6 +208,8 @@ qa_contact             string    The login name of the current QA Contact on the
 qa_contact_detail      object    An object containing detailed user information
                                  for the qa_contact. To see the keys included in
                                  the user detail object, see below.
+regressed_by           array     The IDs of bugs that introduced this bug.
+regressions            array     The IDs of bugs that are introduced by this bug.
 remaining_time         double    The number of hours of work remaining until work
                                  on this bug is complete. If you are not in the
                                  time-tracking group, this field will not be
@@ -218,6 +223,7 @@ summary                string    The summary of this bug.
 target_milestone       string    The milestone that this bug is supposed to be
                                  fixed by, or for closed bugs, the milestone that
                                  it was fixed for.
+type                   string    The type of the bug.
 update_token           string    The token that you would have to pass to the
                                  ``process_bug.cgi`` page in order to update this
                                  bug. This changes every time the bug is updated.
@@ -246,6 +252,13 @@ These fields are returned only by specifying ``_extra`` or the field name in
 ===================  ======  ====================================================
 name                 type    description
 ===================  ======  ====================================================
+attachments          array   Each array item is an Attachment object. See
+                             :ref:`rest_attachments` for details of the object.
+comments             array   Each array item is a Comment object. See
+                             :ref:`rest_comments` for details of the object.
+description          string  The description (initial comment) of the bug.
+history              array   Each array item is a History object. See
+                             :ref:`rest_history` for details of the object.
 tags                 array   Each array item is a tag name. Note that tags are
                              personal to the currently logged in user and are not
                              the same as comment tags.
@@ -485,6 +498,7 @@ creator           string    The login name of the user who created the bug. You
                             can also pass this argument with the name
                             ``reporter``, for backwards compatibility with
                             older Bugzillas.
+description       string    The description (initial comment) of the bug.
 id                int       The numeric ID of the bug.
 last_change_time  datetime  Searches for bugs that were modified at this time
                             or later. May not be an array.
@@ -543,6 +557,7 @@ qa_contact        string    The login name of the bug's QA Contact. Note that
                             QA Contact set, if the field is disabled).
 triage_owner      string    The login name of the Triage Owner of a bug's
                             component.
+type              string    The Type field on a bug.
 url               string    The "URL" field of a bug.
 version           string    The Version field of a bug.
 whiteboard        string    Search the "Status Whiteboard" field on bugs for a
@@ -622,9 +637,9 @@ name                type     description
 **summary**         string   A brief description of the bug being filed.
 **version**         string   A version of the product above; the version the
                              bug was found in.
-description         string   (defaulted) The initial description for this bug.
-                             Some Bugzilla installations require this to not be
-                             blank.
+description         string   (defaulted) The description (initial comment) of the
+                             bug. Some Bugzilla installations require this to not
+                             be blank.
 op_sys              string   (defaulted) The operating system the bug was
                              discovered on.
 platform            string   (defaulted) What type of hardware the bug was
@@ -633,6 +648,7 @@ priority            string   (defaulted) What order the bug will be fixed in by
                              the developer, compared to the developer's other
                              bugs.
 severity            string   (defaulted) How severe the bug is.
+type                string   (defaulted) The basic category of the bug.
 alias               array    One or more brief aliases for the bug that can be
                              used instead of a bug number when accessing this bug.
                              Must be unique in all of this Bugzilla.
@@ -667,6 +683,7 @@ flags               array    Flags objects to add to the bug. The object format
 keywords            array    One or more valid keywords to add to this bug.
 dependson           array    One or more valid bug ids that this bug depends on.
 blocked             array    One or more valid bug ids that this bug blocks.
+regressed_by        array    One or more valid bug ids that introduced this bug.
 ==================  =======  ====================================================
 
 Flag object:
@@ -722,8 +739,9 @@ id    int   This is the ID of the newly-filed bug.
 * 107 (Invalid Summary)
   You didn't specify a summary for the bug.
 * 116 (Dependency Loop)
-  You specified values in the "blocks" or "depends_on" fields
-  that would cause a circular dependency between bugs.
+  You specified values in the "blocks" and "depends_on" fields,
+  or the "regressions" and "regressed_by" fields, that would cause a
+  circular dependency between bugs.
 * 120 (Group Restriction Denied)
   You tried to restrict the bug to a group which does not exist, or which
   you cannot use with this product.
@@ -812,11 +830,14 @@ alias                  object   These specify the aliases of a bug that can be
                                 if you specified the set key above.
 assigned_to            string   The full login name of the user this bug is
                                 assigned to.
-blocks                 object   (Same as ``depends_on`` below)
-depends_on             object   These specify the bugs that this bug blocks or
-                                depends on, respectively. To set these, you
-                                should pass an object as the value. The object
-                                may contain the following items:
+blocks                 object   (Same as ``regressed_by`` below)
+depends_on             object   (Same as ``regressed_by`` below)
+regressions            object   (Same as ``regressed_by`` below)
+regressed_by           object   These specify the bugs that this bug blocks,
+                                depends on, regresses, or is regressed by,
+                                respectively. To set these, you should pass an
+                                object as the value. The object may contain the
+                                following items:
 
                                 * ``add`` (array) Bug IDs to add to this field.
                                 * ``remove`` (array) Bug IDs to remove from this
@@ -982,6 +1003,7 @@ status                 string   The status you want to change the bug to. Note
                                 you should also specify a ``resolution``.
 summary                string   The Summary field of the bug.
 target_milestone       string   The bug's Target Milestone.
+type                   string   The Type field on the bug.
 url                    string   The "URL" field of a bug.
 version                string   The bug's Version field.
 whiteboard             string   The Status Whiteboard field of a bug.

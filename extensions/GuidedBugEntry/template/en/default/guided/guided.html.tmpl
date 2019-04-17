@@ -212,7 +212,7 @@ Other Mozilla products which aren't listed here
     <tr>
       <th align="right" valign="top">
         <a href="javascript:void(0)" onclick="product.select('[% p.name FILTER js %]')">
-        [% p.name FILTER html FILTER no_break %]</a>:&nbsp;
+        [% p.name FILTER html %]</a>:&nbsp;
       </th>
 
       <td valign="top">[% p.description FILTER html_light %]</td>
@@ -326,6 +326,7 @@ Product: <b><span id="dupes_product_name">?</span></b>:
 
 <form method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data" onsubmit="return bugForm.validate()">
 <input type="hidden" name="token" value="[% token FILTER html %]">
+<input type="hidden" name="bug_type" value="defect">
 <input type="hidden" name="product" id="product" value="">
 <input type="hidden" name="component" id="component" value="">
 <input type="hidden" name="bug_severity" value="normal">

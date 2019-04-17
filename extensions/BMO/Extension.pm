@@ -130,7 +130,7 @@ sub template_before_process {
 
     # fields that have a custom sortkey. (So they are correctly sorted
     # when using js)
-    my @sortkey_fields = qw(bug_status resolution bug_severity priority
+    my @sortkey_fields = qw(bug_status resolution bug_type bug_severity priority
       rep_platform op_sys);
 
     my %columns_sortkey;
@@ -995,7 +995,7 @@ sub _bug_reporters_hw_os {
 sub _bug_is_unassigned {
   my ($self) = @_;
   my $assignee = $self->assigned_to->login;
-  return $assignee eq 'nobody@mozilla.org' || $assignee =~ /\.bugs$/;
+  return $assignee eq 'nobody@mozilla.org' || $assignee =~ /@(?!invalid).+\.bugs$/;
 }
 
 sub _bug_has_current_patch {
@@ -1176,7 +1176,7 @@ sub object_start_of_update {
   # and the assignee isn't a real person
   return
     unless $new_bug->assigned_to->login eq 'nobody@mozilla.org'
-    || $new_bug->assigned_to->login =~ /\.bugs$/;
+    || $new_bug->assigned_to->login =~ /@(?!invalid).+\.bugs$/;
 
   # and the user can set the status to NEW
   return
@@ -1575,86 +1575,6 @@ sub _last_closed_date {
   return $self->{'last_closed_date'};
 }
 
-sub field_end_of_create {
-  my ($self, $args) = @_;
-  my $field = $args->{'field'};
-
-  # Create an IT bug so Mozilla's DBAs so they can update the grants for metrics
-
-  if ( Bugzilla->localconfig->{'urlbase'} ne 'https://bugzilla.mozilla.org/'
-    && Bugzilla->localconfig->{'urlbase'} ne 'https://bugzilla.allizom.org/')
-  {
-    return;
-  }
-
-  my $name = $field->name;
-
-  if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
-    Bugzilla->set_user(Bugzilla::User->check({name => 'nobody@mozilla.org'}));
-    print "Creating IT permission grant bug for new field '$name'...";
-  }
-
-  my $bug_data = {
-    short_desc   => "Custom field '$name' added to bugzilla.mozilla.org",
-    product      => 'Data & BI Services Team',
-    component    => 'Database Operations',
-    bug_severity => 'normal',
-    op_sys       => 'All',
-    rep_platform => 'All',
-    version      => 'other',
-  };
-
-  my $comment = <<COMMENT;
-The custom field '$name' has been added to the BMO database.
-Please run the following on bugzilla1.db.scl3.mozilla.com:
-COMMENT
-
-  if ( $field->type == FIELD_TYPE_SINGLE_SELECT
-    || $field->type == FIELD_TYPE_MULTI_SELECT)
-  {
-    $comment .= <<COMMENT;
-  GRANT SELECT ON `bugs`.`$name` TO 'metrics'\@'10.22.70.20_';
-  GRANT SELECT ON `bugs`.`$name` TO 'metrics'\@'10.22.70.21_';
-COMMENT
-  }
-  if ($field->type == FIELD_TYPE_MULTI_SELECT) {
-    $comment .= <<COMMENT;
-  GRANT SELECT ON `bugs`.`bug_$name` TO 'metrics'\@'10.22.70.20_';
-  GRANT SELECT ON `bugs`.`bug_$name` TO 'metrics'\@'10.22.70.21_';
-COMMENT
-  }
-  if ($field->type != FIELD_TYPE_MULTI_SELECT) {
-    $comment .= <<COMMENT;
-  GRANT SELECT ($name) ON `bugs`.`bugs` TO 'metrics'\@'10.22.70.20_';
-  GRANT SELECT ($name) ON `bugs`.`bugs` TO 'metrics'\@'10.22.70.21_';
-COMMENT
-  }
-
-  $bug_data->{'comment'} = $comment;
-
-  my $old_error_mode = Bugzilla->error_mode;
-  Bugzilla->error_mode(ERROR_MODE_DIE);
-
-  my $new_bug = eval { Bugzilla::Bug->create($bug_data) };
-
-  my $error = $@;
-  undef $@;
-  Bugzilla->error_mode($old_error_mode);
-
-  if ($error || !($new_bug && $new_bug->{'bug_id'})) {
-    warn "Error creating IT bug for new field $name: $error";
-    if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
-      print "\nError: $error\n";
-    }
-  }
-  else {
-    Bugzilla::BugMail::Send($new_bug->id, {changer => Bugzilla->user});
-    if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
-      print "bug " . $new_bug->id . " created.\n";
-    }
-  }
-}
-
 sub webservice {
   my ($self, $args) = @_;
 
@@ -1691,6 +1611,31 @@ sub search_operator_field_override {
     $operators->{'content'}->{matches}    = $search_content_matches;
     $operators->{'content'}->{notmatches} = $search_content_matches;
   }
+
+  $operators->{'attachments.ispatch'} = {
+    _non_changed => \&_attachments_ispatch_nonchanged,
+  };
+}
+
+# Treat external review requests as patches
+# Derived from Bugzilla::Search::_multiselect_term
+sub _attachments_ispatch_nonchanged {
+  my ($self, $args, $not) = @_;
+
+  # 'empty' operators require special handling
+  return $self->_multiselect_isempty($args, $not)
+    if $args->{operator} =~ /^is(not)?empty$/;
+
+  $args->{_extra_where} = ' AND isprivate = 0' unless $self->_user->is_insider;
+  $args->{full_field} = '(ispatch OR mimetype LIKE "text/x-%-request")';
+
+  my $table = 'attachments';
+  $self->_do_operator_function($args);
+  my $term = $args->{term};
+  $term .= $args->{_extra_where} || '';
+  my $select = $args->{_select_field} || 'bug_id';
+  $args->{term} = Bugzilla::Search::build_subselect(
+    "$args->{bugs_table}.bug_id", $select, $table, $term, $not);
 }
 
 sub _short_desc_matches {
@@ -1969,6 +1914,7 @@ sub _post_employee_incident_bug {
       product           => 'mozilla.org',
       component         => 'Security Assurance: Incident',
       status_whiteboard => '[infrasec:incident]',
+      bug_type          => 'task',
       bug_severity      => 'critical',
       cc                => ['jstevensen@mozilla.com'],
       groups            => ['infrasec'],
@@ -1993,6 +1939,7 @@ sub _post_employee_incident_bug {
       short_desc   => 'Disable/Regenerate SSH Key',
       product      => $bug->product,
       component    => $bug->component,
+      bug_type     => 'task',
       bug_severity => 'critical',
       cc           => $bug->cc,
       groups       => [map { $_->{name} } @{$bug->groups}],
@@ -2130,6 +2077,7 @@ sub _post_shield_studies {
     short_desc   => '[SHIELD] Study Validation Review for ' . $params->{hypothesis},
     product      => 'Shield',
     component    => 'Shield Study',
+    bug_type     => 'task',
     bug_severity => 'normal',
     op_sys       => 'All',
     rep_platform => 'All',
@@ -2144,6 +2092,7 @@ sub _post_shield_studies {
     short_desc   => '[SHIELD] Shipping Status for ' . $params->{hypothesis},
     product      => 'Shield',
     component    => 'Shield Study',
+    bug_type     => 'task',
     bug_severity => 'normal',
     op_sys       => 'All',
     rep_platform => 'All',
@@ -2158,6 +2107,7 @@ sub _post_shield_studies {
     short_desc   => '[SHIELD] Data Review for ' . $params->{hypothesis},
     product      => 'Shield',
     component    => 'Shield Study',
+    bug_type     => 'task',
     bug_severity => 'normal',
     op_sys       => 'All',
     rep_platform => 'All',
@@ -2172,6 +2122,7 @@ sub _post_shield_studies {
     short_desc   => '[SHIELD] Legal Review for ' . $params->{hypothesis},
     product      => 'Legal',
     component    => 'Firefox',
+    bug_type     => 'task',
     bug_severity => 'normal',
     op_sys       => 'All',
     rep_platform => 'All',
@@ -2330,6 +2281,25 @@ sub buglist_columns {
       '(SELECT COUNT(*) FROM duplicates WHERE duplicates.dupe_of = bugs.bug_id)',
     title => 'Duplicate Count',
   };
+
+  $columns->{'attachments.ispatch'} = {
+    # Return `1` if the bug has any regular patch or external review request,
+    # `0` otherwise
+    name  => 'COALESCE(MAX(attachments.ispatch OR ' .
+      'attachments.mimetype LIKE "text/x-%-request"), 0)',
+  }
+}
+
+sub buglist_column_joins {
+  my ($self, $args) = @_;
+  my $column_joins = $args->{column_joins};
+  $column_joins->{'attachments.ispatch'} = {
+    as    => 'attachments',
+    from  => 'bug_id',
+    to    => 'bug_id',
+    table => 'attachments',
+    join  => 'LEFT',
+  };
 }
 
 sub enter_bug_start {
@@ -2344,7 +2314,7 @@ sub enter_bug_start {
       $cgi->param('format_forced', 1);
     }
   }
-  elsif (my $format = forced_format($cgi->param('product'))) {
+  elsif (my $format = forced_format($cgi->param('product'), $cgi->param('component'))) {
     $cgi->param('format', $format);
   }
 
@@ -2389,7 +2359,7 @@ sub _map_groups {
 sub forced_format {
 
   # note: this is also called from the guided bug entry extension
-  my ($product) = @_;
+  my ($product, $component) = @_;
   return undef unless defined $product;
 
   # always work on the correct product name
@@ -2399,6 +2369,9 @@ sub forced_format {
 
   # check for a forced-format entry
   my $forced = $create_bug_formats{$product->name} || return;
+
+  # check if the form is component-specific
+  return if $forced->{component} && $forced->{component} ne $component;
 
   # should this user be included?
   my $user = Bugzilla->user;
@@ -2554,6 +2527,9 @@ sub install_filesystem {
     perms     => Bugzilla::Install::Filesystem::WS_SERVE,
     contents  => $json->encode($version_obj),
   };
+
+  $files->{"$extensions_dir/BMO/bin/migrate-bug-type.pl"}
+    = {perms => Bugzilla::Install::Filesystem::OWNER_EXECUTE};
 
   $files->{"$extensions_dir/BMO/bin/migrate-github-pull-requests.pl"}
     = {perms => Bugzilla::Install::Filesystem::OWNER_EXECUTE};

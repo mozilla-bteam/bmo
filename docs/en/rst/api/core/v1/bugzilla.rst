@@ -193,6 +193,7 @@ Example response for authenticated user:
           "defaultplatform" : "",
           "defaultpriority" : "--",
           "defaultseverity" : "normal",
+          "default_bug_type" : "defect",
           "duplicate_or_move_bug_status" : "RESOLVED",
           "emailregexp" : "^[\\w\\.\\+\\-=']+@[\\w\\.\\-]+\\.[\\w\\-]+$",
           "emailsuffix" : "",
@@ -208,6 +209,7 @@ Example response for authenticated user:
           "rememberlogin" : "on",
           "requirelogin" : "0",
           "urlbase" : "http://bugzilla.example.com/",
+          "use_regression_fields" : "1",
           "use_see_also" : "1",
           "useclassification" : "1",
           "usemenuforusers" : "0",
@@ -231,6 +233,7 @@ A logged-in user can access the following parameters (listed alphabetically):
 * defaultplatform
 * defaultpriority
 * defaultseverity
+* default_bug_type
 * duplicate_or_move_bug_status
 * emailregexpdesc
 * emailsuffix
@@ -247,6 +250,7 @@ A logged-in user can access the following parameters (listed alphabetically):
 * requirelogin
 * search_allow_no_criteria
 * urlbase
+* use_regression_fields
 * use_see_also
 * useclassification
 * usemenuforusers

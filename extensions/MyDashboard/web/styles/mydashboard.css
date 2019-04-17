@@ -13,6 +13,10 @@
     width: 100%;
 }
 
+.yui3-datatable-col-bug_type {
+    text-align: center;
+}
+
 .yui3-datatable-col-changeddate,
 .yui3-datatable-col-created {
     white-space: nowrap;
@@ -87,4 +91,5 @@
 #saved_searches_container li {
     margin: 5px;
     display: inline;
+    white-space: nowrap;
 }

@@ -54,10 +54,13 @@ bug_id =>
   _ " of ${terms.Bugzilla}.",
 
 bug_severity =>
-  "How severe the $terms.bug is, or whether it's an enhancement.",
+  "How severe the $terms.bug is.",
 
 bug_status =>
   "$terms.Abug may be in any of a number of states.",
+
+bug_type =>
+  "The basic category of the ${terms.bug}."
 
 cc =>
   "Users who may not have a direct role to play on this $terms.bug, but who
@@ -120,6 +123,12 @@ qa_contact =>
   "The person responsible for confirming this $terms.bug if it is"
   _ " unconfirmed, and for verifying the fix once the $terms.bug"
   _ " has been resolved.",
+
+regressed_by =>
+  "This $terms.bug has been introduced by the $terms.bugs listed here.",
+
+regresses =>
+  "This $terms.bug has introduced the $terms.bugs listed here.",
 
 remaining_time =>
   "The number of hours of work left on this $terms.bug, calculated by

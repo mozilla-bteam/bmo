@@ -110,6 +110,16 @@ use constant ATTACHMENT_MAPPED_RETURNS => {
   mimetype    => 'content_type',
 };
 
+our %api_field_types = (
+  %{{map { $_ => 'double' } Bugzilla::Bug::NUMERIC_COLUMNS()}},
+  %{{map { $_ => 'dateTime' } Bugzilla::Bug::DATE_COLUMNS()}},
+);
+
+our %api_field_names = reverse %{Bugzilla::Bug::FIELD_MAP()};
+# This doesn't normally belong in FIELD_MAP, but we do want to translate
+# "bug_group" back into "groups".
+$api_field_names{'bug_group'} = 'groups';
+
 ######################################################
 # Add aliases here for old method name compatibility #
 ######################################################
@@ -308,8 +318,9 @@ sub comments {
       {function => 'Bug.comments', params => ['ids', 'comment_ids']});
   }
 
-  my $bug_ids     = $params->{ids}         || [];
-  my $comment_ids = $params->{comment_ids} || [];
+  my $bug_ids      = $params->{ids}         || [];
+  my $comment_ids  = $params->{comment_ids} || [];
+  my $skip_private = $params->{skip_private} ? 1 : 0;
 
   my $dbh  = Bugzilla->switch_to_shadow_db();
   my $user = Bugzilla->user;
@@ -318,9 +329,23 @@ sub comments {
     Bugzilla->check_rate_limit("get_comments", remote_ip());
   }
 
+  if ($skip_private) {
+    # Cache permissions for bugs. This highly reduces the number of calls to the DB.
+    # visible_bugs() is only able to handle bug IDs, so we have to skip aliases.
+    my @int = grep { $_ =~ /^\d+$/ } @$bug_ids;
+    $user->visible_bugs(\@int);
+  }
+
   my %bugs;
   foreach my $bug_id (@$bug_ids) {
-    my $bug = Bugzilla::Bug->check($bug_id);
+    my $bug;
+
+    if ($skip_private) {
+      $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
+      next if $bug->error || !$user->can_see_bug($bug->id);
+    } else {
+      $bug = Bugzilla::Bug->check($bug_id);
+    }
 
     # We want the API to always return comments in the same order.
 
@@ -396,6 +421,7 @@ sub _translate_comment {
     creation_time => $self->type('dateTime', $comment->creation_ts),
     is_private    => $self->type('boolean',  $comment->is_private),
     text          => $self->type('string',   $comment->body_full),
+    raw_text      => $self->type('string',   $comment->body),
     attachment_id => $self->type('int',      $attach_id),
     count         => $self->type('int',      $comment->count),
   };
@@ -471,17 +497,28 @@ sub history {
   my $ids = $params->{ids};
   defined $ids || ThrowCodeError('param_required', {param => 'ids'});
 
-  my %api_type = (
-    %{{map { $_ => 'double' } Bugzilla::Bug::NUMERIC_COLUMNS()}},
-    %{{map { $_ => 'dateTime' } Bugzilla::Bug::DATE_COLUMNS()}},
-  );
-  my %api_name = reverse %{Bugzilla::Bug::FIELD_MAP()};
-  $api_name{'bug_group'} = 'groups';
+  my $user         = Bugzilla->user;
+  my $skip_private = $params->{skip_private} ? 1 : 0;
+
+  if ($skip_private) {
+    # Cache permissions for bugs. This highly reduces the number of calls to the DB.
+    # visible_bugs() is only able to handle bug IDs, so we have to skip aliases.
+    my @int = grep { $_ =~ /^\d+$/ } @$ids;
+    $user->visible_bugs(\@int);
+  }
 
   my @return;
   foreach my $bug_id (@$ids) {
     my %item;
-    my $bug = Bugzilla::Bug->check($bug_id);
+    my $bug;
+
+    if ($skip_private) {
+      $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
+      next if $bug->error || !$user->can_see_bug($bug->id);
+    } else {
+      $bug = Bugzilla::Bug->check($bug_id);
+    }
+
     $bug_id = $bug->id;
     $item{id} = $self->type('int', $bug_id);
 
@@ -490,25 +527,7 @@ sub history {
 
     my @history;
     foreach my $changeset (@$activity) {
-      my %bug_history;
-      $bug_history{when} = $self->type('dateTime', $changeset->{when});
-      $bug_history{who}  = $self->type('email',    $changeset->{who});
-      $bug_history{changes} = [];
-      foreach my $change (@{$changeset->{changes}}) {
-        my $field_name     = delete $change->{fieldname};
-        my $api_field_type = $api_type{$field_name} || 'string';
-        my $api_field_name = $api_name{$field_name} || $field_name;
-        my $attach_id      = delete $change->{attachid};
-        if ($attach_id) {
-          $change->{attachment_id} = $self->type('int', $attach_id);
-        }
-        $change->{removed}    = $self->type($api_field_type, $change->{removed});
-        $change->{added}      = $self->type($api_field_type, $change->{added});
-        $change->{field_name} = $self->type('string',        $api_field_name);
-        push(@{$bug_history{changes}}, $change);
-      }
-
-      push(@history, \%bug_history);
+      push(@history, $self->_changeset_to_hash($changeset, $params));
     }
 
     $item{history} = \@history;
@@ -536,7 +555,6 @@ sub search {
   my $user = Bugzilla->user;
   my $dbh  = Bugzilla->dbh;
 
-  local $Bugzilla::Extension::TrackingFlags::Flag::SKIP_PRELOAD = 1;
   Bugzilla->switch_to_shadow_db();
 
   my $match_params = dclone($params);
@@ -564,6 +582,12 @@ sub search {
   else {
     delete $match_params->{limit};
     delete $match_params->{offset};
+  }
+
+  # Allow to search only in bug description (initial comment)
+  if (defined $match_params->{description}) {
+    $match_params->{longdesc} = delete $match_params->{description};
+    $match_params->{longdesc_initial} = 1;
   }
 
   $match_params = Bugzilla::Bug::map_fields($match_params);
@@ -747,7 +771,7 @@ sub update {
   # We skip certain fields because their set_ methods actually use
   # the external names instead of the internal names.
   $params = Bugzilla::Bug::map_fields($params,
-    {summary => 1, platform => 1, severity => 1, url => 1});
+    {summary => 1, platform => 1, severity => 1, type => 1, url => 1});
 
   my $ids = delete $params->{ids};
   defined $ids || ThrowCodeError('param_required', {param => 'ids'});
@@ -791,12 +815,6 @@ sub update {
     $bug->send_changes($all_changes{$bug->id});
   }
 
-  my %api_name = reverse %{Bugzilla::Bug::FIELD_MAP()};
-
-  # This doesn't normally belong in FIELD_MAP, but we do want to translate
-  # "bug_group" back into "groups".
-  $api_name{'bug_group'} = 'groups';
-
   my @result;
   foreach my $bug (@bugs) {
     my %hash = (
@@ -820,7 +838,7 @@ sub update {
     my %changes = %{$all_changes{$bug->id}};
     foreach my $field (keys %changes) {
       my $change = $changes{$field};
-      my $api_field = $api_name{$field} || $field;
+      my $api_field = $api_field_names{$field} || $field;
 
       # We normalize undef to an empty string, so that the API
       # stays consistent for things like Deadline that can become
@@ -1411,6 +1429,7 @@ sub search_comment_tags {
 
 sub _bug_to_hash {
   my ($self, $bug, $params) = @_;
+  my $user = Bugzilla->user;
 
   # All the basic bug attributes are here, in alphabetical order.
   # A bug attribute is "basic" if it doesn't require an additional
@@ -1428,6 +1447,7 @@ sub _bug_to_hash {
       status           => $self->type('string',  $bug->bug_status),
       summary          => $self->type('string',  $bug->short_desc),
       target_milestone => $self->type('string',  $bug->target_milestone),
+      type             => $self->type('string',  $bug->bug_type),
       url              => $self->type('string',  $bug->bug_file_loc),
       version          => $self->type('string',  $bug->version),
       whiteboard       => $self->type('string',  $bug->status_whiteboard),
@@ -1446,12 +1466,32 @@ sub _bug_to_hash {
     $item{'assigned_to_detail'}
       = $self->_user_to_hash($bug->assigned_to, $params, undef, 'assigned_to');
   }
+  if (filter_wants $params, 'attachments', ['extra']) {
+    my @result;
+    foreach my $attachment (@{$bug->attachments}) {
+      next if $attachment->isprivate && !$user->is_insider;
+      push(@result,
+           $self->_attachment_to_hash($attachment, $params, ['extra'], 'attachments'));
+    }
+    $item{'attachments'} = \@result;
+  }
   if (filter_wants $params, 'blocks') {
     my @blocks = map { $self->type('int', $_) } @{$bug->blocked};
     $item{'blocks'} = \@blocks;
   }
   if (filter_wants $params, 'classification') {
     $item{classification} = $self->type('string', $bug->classification);
+  }
+  if (filter_wants $params, 'comments', ['extra']) {
+    my @result;
+    my $comments
+      = $bug->comments({order => 'oldest_to_newest', after => $params->{new_since}});
+    foreach my $comment (@$comments) {
+      next if $comment->is_private && !$user->is_insider;
+      push(@result,
+           $self->_translate_comment($comment, $params, ['extra'], 'comments'));
+    }
+    $item{'comments'} = \@result;
   }
   if (filter_wants $params, 'component') {
     $item{component} = $self->type('string', $bug->component);
@@ -1474,6 +1514,12 @@ sub _bug_to_hash {
     my @depends_on = map { $self->type('int', $_) } @{$bug->dependson};
     $item{'depends_on'} = \@depends_on;
   }
+  if (filter_wants $params, 'description', ['extra']) {
+    my $comment = Bugzilla::Comment->match({bug_id => $bug->id, LIMIT => 1})->[0];
+    $item{'description'}
+      = ($comment && (!$comment->is_private || Bugzilla->user->is_insider))
+      ? $comment->body : '';
+  }
   if (filter_wants $params, 'dupe_of') {
     $item{'dupe_of'} = $self->type('int', $bug->dup_id);
   }
@@ -1483,6 +1529,16 @@ sub _bug_to_hash {
   if (filter_wants $params, 'groups') {
     my @groups = map { $self->type('string', $_->name) } @{$bug->groups_in};
     $item{'groups'} = \@groups;
+  }
+  if (filter_wants $params, 'history', ['extra']) {
+    my @result;
+    my ($activity)
+      = Bugzilla::Bug::GetBugActivity($bug->id, undef, $params->{new_since});
+    foreach my $changeset (@$activity) {
+      push(@result,
+           $self->_changeset_to_hash($changeset, $params, ['extra'], 'history'));
+    }
+    $item{'history'} = \@result;
   }
   if (filter_wants $params, 'is_open') {
     $item{'is_open'} = $self->type('boolean', $bug->status->is_open);
@@ -1521,6 +1577,18 @@ sub _bug_to_hash {
     $item{'flags'} = [map { $self->_flag_to_hash($_) } @{$bug->flags}];
   }
 
+  # Regressions
+  if (Bugzilla->params->{use_regression_fields}) {
+    if (filter_wants $params, 'regressed_by') {
+      my @regressed_by = map { $self->type('int', $_) } @{$bug->regressed_by};
+      $item{'regressed_by'} = \@regressed_by;
+    }
+    if (filter_wants $params, 'regressions') {
+      my @regressions = map { $self->type('int', $_) } @{$bug->regresses};
+      $item{'regressions'} = \@regressions;
+    }
+  }
+
   # And now custom fields
   my @custom_fields = Bugzilla->active_custom_fields(
     {
@@ -1550,7 +1618,7 @@ sub _bug_to_hash {
   }
 
   # Timetracking fields are only sent if the user can see them.
-  if (Bugzilla->user->is_timetracker) {
+  if ($user->is_timetracker) {
     if (filter_wants $params, 'estimated_time') {
       $item{'estimated_time'} = $self->type('double', $bug->estimated_time);
     }
@@ -1635,6 +1703,11 @@ sub _attachment_to_hash {
     }
   }
 
+  if (filter_wants $filters, 'creator', $types, $prefix) {
+    $item->{'creator_detail'}
+      = $self->_user_to_hash($attach->attacher, $filters, undef, 'creator');
+  }
+
   if (filter_wants $filters, 'data', $types, $prefix) {
     $item->{'data'} = $self->type('base64', $attach->data);
   }
@@ -1648,6 +1721,32 @@ sub _attachment_to_hash {
   }
 
   return $item;
+}
+
+sub _changeset_to_hash {
+  my ($self, $changeset, $filters, $types, $prefix) = @_;
+
+  my $item = {
+    when    => $self->type('dateTime', $changeset->{when}),
+    who     => $self->type('email',    $changeset->{who}),
+    changes => []
+  };
+
+  foreach my $change (@{$changeset->{changes}}) {
+    my $field_name     = delete $change->{fieldname};
+    my $api_field_type = $api_field_types{$field_name} || 'string';
+    my $api_field_name = $api_field_names{$field_name} || $field_name;
+    my $attach_id      = delete $change->{attachid};
+
+    $change->{field_name}    = $self->type('string',        $api_field_name);
+    $change->{removed}       = $self->type($api_field_type, $change->{removed});
+    $change->{added}         = $self->type($api_field_type, $change->{added});
+    $change->{attachment_id} = $self->type('int', $attach_id) if $attach_id;
+
+    push (@{$item->{changes}}, $change);
+  }
+
+  return filter($filters, $item, $types, $prefix);
 }
 
 sub _flag_to_hash {
@@ -2294,6 +2393,12 @@ Also returned as C<attacher>, for backwards-compatibility with older
 Bugzillas. (However, this backwards-compatibility will go away in Bugzilla
 5.0.)
 
+=item C<creator_detail>
+
+C<hash> A hash containing detailed user information for the creator. The keys
+included in the user detail hash are the same as ones returned for the Get Bug
+method.
+
 =item C<flags>
 
 An array of hashes containing the information about flags currently set
@@ -2376,6 +2481,8 @@ C<summary>.
 
 =item REST API call added in Bugzilla B<5.0>.
 
+=item The C<creator_detail> field was added in Bugzilla B<6.0>.
+
 =back
 
 
@@ -2431,6 +2538,13 @@ than this time. This only affects comments returned from the C<ids>
 argument. You will always be returned all comments you request in the
 C<comment_ids> argument, even if they are older than this date.
 
+=item C<skip_private> B<EXPERIMENTAL>
+
+C<boolean> Normally, if you request any inaccessible or invalid bug ids, this
+method will throw an error. If this parameter is C<True>, these bugs will just
+be skipped. In the future, error objects will be returned instead, just like
+C<Bug.get> with the C<permissive> parameter provided.
+
 =back
 
 =item B<Returns>
@@ -2478,7 +2592,12 @@ ID of that attachment. Otherwise it will be null.
 
 =item text
 
-C<string> The actual text of the comment.
+C<string> The body of the comment, including any special text (such as
+"this bug was marked as a duplicate of...").
+
+=item raw_text
+
+C<string> The body of the comment without any special additional text.
 
 =item creator
 
@@ -2543,6 +2662,8 @@ C<creator>.
 =item C<creation_time> was added in Bugzilla B<4.4>.
 
 =item REST API call added in Bugzilla B<5.0>.
+
+=item C<raw_text> was added in Bugzilla B<6.0>.
 
 =back
 
@@ -2634,6 +2755,14 @@ C<string> The login name of the user to whom the bug is assigned.
 C<hash> A hash containing detailed user information for the assigned_to. To see the
 keys included in the user detail hash, see below.
 
+=item C<attachments>
+
+C<array> of hashes containing attachment details of the bug. See the attachments
+section above for the object format.
+
+This is an B<extra> field returned only by specifying C<attachments> or
+C<_extra> in C<include_fields>.
+
 =item C<blocks>
 
 C<array> of C<int>s. The ids of bugs that are "blocked" by this bug.
@@ -2651,6 +2780,14 @@ members. To see the keys included in the user detail hash, see below.
 =item C<classification>
 
 C<string> The name of the current classification the bug is in.
+
+=item C<comments>
+
+C<array> of hashes containing comment details of the bug. See the comments
+section above for the object format.
+
+This is an B<extra> field returned only by specifying C<comments> or C<_extra>
+in C<include_fields>.
 
 =item C<component>
 
@@ -2680,6 +2817,13 @@ in the return value.
 =item C<depends_on>
 
 C<array> of C<int>s. The ids of bugs that this bug "depends on".
+
+=item C<description>
+
+C<string> The description (initial comment) of the bug.
+
+This is an B<extra> field returned only by specifying C<description> or
+C<_extra> in C<include_fields>.
 
 =item C<dupe_of>
 
@@ -2744,6 +2888,14 @@ Note, this field is only returned if a requestee is set.
 
 C<array> of C<string>s. The names of all the groups that this bug is in.
 
+=item C<history>
+
+C<array> of hashes containing change details of the bug. See the history section
+below for the object format.
+
+This is an B<extra> field returned only by specifying C<history> or C<_extra>
+in C<include_fields>.
+
 =item C<id>
 
 C<int> The unique numeric id of this bug.
@@ -2802,6 +2954,14 @@ C<string> The login name of the current QA Contact on the bug.
 C<hash> A hash containing detailed user information for the qa_contact. To see the
 keys included in the user detail hash, see below.
 
+=item C<regressed_by>
+
+C<array> of C<int>s. The ids of bugs that introduced this bug.
+
+=item C<regressions>
+
+C<array> of C<int>s. The ids of bugs bugs that are introduced by this bug.
+
 =item C<remaining_time>
 
 C<double> The number of hours of work remaining until work on this bug
@@ -2852,6 +3012,10 @@ see the keys included in the user detail hash, see below.
 
 As with C<triage_owner>, this is an B<extra> field returned only by specifying
 C<triage_owner> or C<_extra> in C<include_fields>.
+
+=item C<type>
+
+C<string> The type of the bug.
 
 =item C<update_token>
 
@@ -3027,7 +3191,9 @@ and all custom fields.
 =item The C<actual_time> item was added to the C<bugs> return value
 in Bugzilla B<4.4>.
 
-=item The C<duplicates> and C<triage_owner> items were added in Bugzilla B<6.0>.
+=item The C<attachments>, C<comments>, C<description>, C<duplicates>,
+C<history>, C<regressed_by>, C<regressions>, C<triage_owner> and C<type> fields
+were added in Bugzilla B<6.0>.
 
 =back
 
@@ -3072,6 +3238,13 @@ than this time.
 Note that it's possible for aliases to be disabled in Bugzilla, in which
 case you will be told that you have specified an invalid bug_id if you
 try to specify an alias. (It will be error 100.)
+
+=item C<skip_private> B<EXPERIMENTAL>
+
+C<boolean> Normally, if you request any inaccessible or invalid bug ids, this
+method will throw an error. If this parameter is C<True>, these bugs will just
+be skipped. In the future, error objects will be returned instead, just like
+C<Bug.get> with the C<permissive> parameter provided.
 
 =back
 
@@ -3294,6 +3467,10 @@ C<string> The login name of the user who created the bug.
 You can also pass this argument with the name C<reporter>, for
 backwards compatibility with older Bugzillas.
 
+=item C<description>
+
+C<string> The description (initial comment) of the bug.
+
 =item C<id>
 
 C<int> The numeric id of the bug.
@@ -3377,6 +3554,10 @@ will have a QA Contact set, if the field is disabled).
 
 C<string> The login name of the Triage Owner of a bug's component.
 
+=item C<type>
+
+C<string> The Type field on a bug.
+
 =item C<url>
 
 C<string> The "URL" field of a bug.
@@ -3446,6 +3627,8 @@ in Bugzilla B<5.0>.
 
 =item Updated to allow quicksearch capability in Bugzilla B<5.0>.
 
+=item The C<description> field was added in Bugzilla B<6.0>.
+
 =back
 
 =back
@@ -3514,8 +3697,8 @@ filed.
 =item C<version> (string) B<Required> - A version of the product above;
 the version the bug was found in.
 
-=item C<description> (string) B<Defaulted> - The initial description for
-this bug. Some Bugzilla installations require this to not be blank.
+=item C<description> (string) B<Defaulted> - The description (initial comment)
+of the bug. Some Bugzilla installations require this to not be blank.
 
 =item C<op_sys> (string) B<Defaulted> - The operating system the bug was
 discovered on.
@@ -3527,6 +3710,8 @@ experienced on.
 in by the developer, compared to the developer's other bugs.
 
 =item C<severity> (string) B<Defaulted> - How severe the bug is.
+
+=item C<type> (string) B<Defaulted> - The basic category of the bug.
 
 =item C<alias> (string) - A brief alias for the bug that can be used
 instead of a bug number when accessing this bug. Must be unique in
@@ -3631,8 +3816,9 @@ You didn't specify a summary for the bug.
 
 =item 116 (Dependency Loop)
 
-You specified values in the C<blocks> or C<depends_on> fields
-that would cause a circular dependency between bugs.
+You specified values in the C<blocks> and C<depends_on> fields,
+or the C<regressions> and C<regressed_by> fields, that would cause a
+circular dependency between bugs.
 
 =item 120 (Group Restriction Denied)
 
@@ -4460,6 +4646,14 @@ C<boolean> Whether or not the bug's reporter is allowed to access
 the bug, even if he or she isn't in a group that can normally access
 the bug.
 
+=item C<regressed_by>
+
+C<array> of C<int>s. The ids of bugs that introduced this bug.
+
+=item C<regressions>
+
+C<array> of C<int>s. The ids of bugs bugs that are introduced by this bug.
+
 =item C<remaining_time>
 
 C<double> How much work time is remaining to fix the bug, in hours.
@@ -4525,6 +4719,10 @@ C<string> The Summary field of the bug.
 =item C<target_milestone>
 
 C<string> The bug's Target Milestone.
+
+=item C<type>
+
+C<string> The Type field on the bug.
 
 =item C<url>
 
@@ -4661,8 +4859,9 @@ The error message will have more detail.
 
 =item 116 (Dependency Loop)
 
-You specified a value in the C<blocks> or C<depends_on> fields that causes
-a dependency loop.
+You specified values in the C<blocks> and C<depends_on> fields,
+or the C<regressions> and C<regressed_by> fields, that would cause a
+circular dependency between bugs.
 
 =item 117 (Invalid Comment ID)
 

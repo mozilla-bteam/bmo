@@ -548,6 +548,14 @@ sub process_bug {
     $comments .= "This bug blocked bug(s) "
       . join(' ', _to_array($bug_fields{'blocked'})) . ".\n";
   }
+  if (defined $bug_fields{'regressed_by'}) {
+    $comments .= "This bug is regressed by bug(s) "
+      . join(' ', _to_array($bug_fields{'regressed_by'})) . ".\n";
+  }
+  if (defined $bug_fields{'regresses'}) {
+    $comments .= "This bug regressed bug(s) "
+      . join(' ', _to_array($bug_fields{'regresses'})) . ".\n";
+  }
 
   # Now we process each of the fields in turn and make sure they contain
   # valid data. We will create two parallel arrays, one for the query
@@ -690,8 +698,21 @@ sub process_bug {
     push(@query, "target_milestone");
   }
 
-  # For priority, severity, opsys and platform we check that the one being
+  # For type, priority, severity, opsys and platform we check that the one being
   # imported is valid. If it is not we use the defaults set in the parameters.
+  if (defined($bug_fields{'bug_type'})
+    && check_field('bug_type', scalar $bug_fields{'bug_type'}, undef, ERR_LEVEL))
+  {
+    push(@values, $bug_fields{'bug_type'});
+  }
+  else {
+    push(@values, $params->{'default_bug_type'});
+    $err .= "Unknown type ";
+    $err .= (defined $bug_fields{'bug_type'}) ? $bug_fields{'bug_type'} : "unknown";
+    $err .= ". Setting to default type \"" . $params->{'default_bug_type'} . "\".\n";
+  }
+  push(@query, "bug_type");
+
   if (
     defined($bug_fields{'bug_severity'})
     && check_field(

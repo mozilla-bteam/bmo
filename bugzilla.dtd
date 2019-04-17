@@ -8,15 +8,16 @@
 <!ELEMENT bug (bug_id, (alias?, creation_ts, short_desc, delta_ts, reporter_accessible,
     cclist_accessible, classification_id, classification, product, component,
     version, rep_platform, op_sys, bug_status, resolution?, dup_id?, see_also*,
-    bug_file_loc?, status_whiteboard?, keywords*, priority, bug_severity,
-    target_milestone?, dependson*, blocked*, everconfirmed, reporter, assigned_to,
-    cc*, (estimated_time, remaining_time, actual_time, deadline?)?, qa_contact?,
-    votes?, token?, group*, flag*, long_desc*, attachment*)?)>
+    bug_file_loc?, status_whiteboard?, keywords*, bug_type, priority, bug_severity,
+    target_milestone?, dependson*, blocked*, regressed_by*, regresses*, everconfirmed,
+    reporter, assigned_to, cc*, (estimated_time, remaining_time, actual_time, deadline?)?,
+    qa_contact?, votes?, token?, group*, flag*, long_desc*, attachment*)?)>
 <!ATTLIST bug
           error (NotFound | NotPermitted | InvalidBugId) #IMPLIED
 >
 <!ELEMENT bug_id (#PCDATA)>
 <!ELEMENT alias (#PCDATA)>
+<!ELEMENT bug_type (#PCDATA)>
 <!ELEMENT reporter_accessible (#PCDATA)>
 <!ELEMENT cclist_accessible (#PCDATA)>
 <!ELEMENT exporter (#PCDATA)>
@@ -54,6 +55,8 @@
 <!ELEMENT keywords (#PCDATA)>
 <!ELEMENT dependson (#PCDATA)>
 <!ELEMENT blocked (#PCDATA)>
+<!ELEMENT regressed_by (#PCDATA)>
+<!ELEMENT regresses (#PCDATA)>
 <!ELEMENT everconfirmed (#PCDATA)>
 <!ELEMENT cc (#PCDATA)>
 <!ELEMENT see_also (#PCDATA)>

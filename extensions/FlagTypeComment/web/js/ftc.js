@@ -121,7 +121,7 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
   create_comment($fieldset) {
     return [
       `### ${$fieldset.querySelector('h3').innerText}`,
-      ...[...$fieldset.querySelectorAll('tr')].map($tr => {
+      ...[...$fieldset.querySelectorAll('tr:not(.other-patches)')].map($tr => {
         const checkboxes = [...$tr.querySelectorAll('input[type="checkbox"]:checked')];
         const $radio = $tr.querySelector('input[type="radio"]:checked');
         const $input = $tr.querySelector('textarea,select,input');
@@ -198,12 +198,15 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
             (att.is_patch || this.extra_patch_types.includes(att.content_type)));
 
           if (others.length) {
-            $fieldset.querySelector('tbody').insertAdjacentHTML('beforeend',
-              '<tr class="other-patches"><th>Do you want to request approval of these patches as well?</th><td>' +
-              `${others.map(patch =>
-                `<div><label><input type="checkbox" checked data-id="${patch.id}"> ${patch.summary}</label></div>`
-              ).join('')}` +
-              '</td></tr>');
+            $fieldset.querySelector('tbody').insertAdjacentHTML('beforeend', `
+              <tr class="other-patches"><th>Do you want to request approval of these patches as well?</th><td>
+              ${others.map(patch => `
+                <div>
+                  <label><input type="checkbox" checked data-id="${patch.id}"> ${patch.summary.htmlEncode()}</label>
+                </div>
+              `).join('')}
+              </td></tr>
+            `);
           }
         });
       }
@@ -284,7 +287,7 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
 
     // Collect bug flags from checkboxes
     const bug_flags = [...this.$fieldset_wrapper.querySelectorAll('input[data-bug-flag]:checked')]
-      .map($input => ({ name: $input.getAttribute('data-bug-flag'), status: '?' }));
+      .map($input => ({ name: $input.getAttribute('data-bug-flag'), status: '+' }));
 
     // Update bug flags if needed
     if (bug_flags.length) {

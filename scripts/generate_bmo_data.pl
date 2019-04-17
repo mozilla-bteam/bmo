@@ -78,20 +78,21 @@ foreach my $pref (keys %user_prefs) {
 ############################################################
 
 my @priorities = qw(
-  --
   P1
   P2
   P3
   P4
   P5
+  --
 );
 
 if (!$dbh->selectrow_array("SELECT 1 FROM priority WHERE value = 'P1'")) {
   $dbh->do("DELETE FROM priority");
-  my $count = 100;
+  my $count = 1;
   foreach my $priority (@priorities) {
     $dbh->do("INSERT INTO priority (value, sortkey) VALUES (?, ?)",
-      undef, ($priority, $count + 100));
+      undef, ($priority, $count));
+    $count++;
   }
 }
 
@@ -482,6 +483,7 @@ my %set_params = (
   confirmuniqueusermatch => 0,
   maxusermatches         => '100',
   debug_group            => 'editbugs',
+  default_bug_type       => 'defect',
   defaultpriority        => '--',         # FIXME: add priority
   defaultquery => 'resolution=---&emailassigned_to1=1&emailassigned_to2=1'
     . '&emailreporter2=1&emailqa_contact2=1&emailtype1=exact'

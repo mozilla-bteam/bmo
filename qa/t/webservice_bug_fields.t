@@ -14,7 +14,7 @@ use List::Util qw(first);
 use QA::Util;
 
 my ($config, @clients) = get_rpc_clients();
-plan tests => ($config->{test_extensions} ? 1338 : 1320);
+plan tests => ($config->{test_extensions} ? 1416 : 1398);
 
 use constant INVALID_FIELD_NAME => 'invalid_field';
 use constant INVALID_FIELD_ID   => -1;
@@ -56,6 +56,8 @@ sub GLOBAL_GENERAL_FIELDS {
     owner_idle_time
     product
     qa_contact
+    regressed_by
+    regresses
     reporter
     reporter_accessible
     see_also
@@ -74,7 +76,7 @@ sub GLOBAL_GENERAL_FIELDS {
 }
 
 use constant STANDARD_SELECT_FIELDS =>
-  qw(bug_severity bug_status op_sys priority rep_platform resolution);
+  qw(bug_type bug_severity bug_status op_sys priority rep_platform resolution);
 
 use constant ALL_SELECT_FIELDS =>
   (STANDARD_SELECT_FIELDS, qw(cf_qa_status cf_single_select));
