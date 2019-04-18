@@ -754,7 +754,11 @@ sub DEFAULT_CSP {
 
       # This is from extensions/OrangeFactor/web/js/orange_factor.js
       'https://treeherder.mozilla.org/api/failurecount/',
+
+      # socorro lens
+      'https://crash-stats.mozilla.com/api/SuperSearch/',
     ],
+    font_src => [ 'self', 'https://fonts.gstatic.com' ],
     form_action => [
       'self',
 
