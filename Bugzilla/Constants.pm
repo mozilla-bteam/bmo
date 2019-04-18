@@ -761,7 +761,7 @@ sub DEFAULT_CSP {
       # used in template/en/default/search/search-google.html.tmpl
       'https://www.google.com/search'
     ],
-    frame_ancestors => ['none'],
+    frame_ancestors => ['self'],
     report_only     => 1,
   );
   if (Bugzilla->params->{github_client_id} && !Bugzilla->user->id) {
