@@ -1,0 +1,136 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+#custom-search {
+  display: flex;
+}
+
+#custom-search button.iconic {
+  display: inline-flex;
+  border-radius: 0;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  transition: none;
+}
+
+#custom-search button.iconic .icon,
+#custom-search button.iconic .icon::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+#custom-search .icon::before {
+  display: inline-block;
+  font-size: 16px;
+  font-family: 'Material Icons';
+  vertical-align: top;
+}
+
+#custom-search .conditions {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+#custom-search .condition.group {
+  margin: 4px 0;
+  border: 1px solid #CCC;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+#custom-search .condition.group [role="toolbar"] {
+  display: flex;
+  align-items: center;
+  margin: 0 -4px;
+}
+
+#custom-search .condition.group footer[role="toolbar"] {
+  justify-content: flex-end;
+}
+
+#custom-search .condition.group [role="toolbar"] > * {
+  margin: 0 4px;
+}
+
+#custom-search .condition.group [role="toolbar"] .match {
+  flex: auto;
+}
+
+#custom-search .condition.row {
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+  border-radius: 4px;
+  padding: 8px;
+  background: #EEE;
+}
+
+#custom-search .condition.row > * {
+  margin: 0 4px;
+}
+
+#custom-search .condition.row > input[type="text"] {
+  flex: auto;
+  min-width: 200px;
+}
+
+#custom-search .drop-target {
+  z-index: 2;
+  margin: -8px 0;
+  height: 16px;
+}
+
+#custom-search .drop-target .indicator {
+  margin: 6px 0;
+  height: 4px;
+  pointer-events: none;
+}
+
+#custom-search .drop-target.dragover .indicator {
+  background: lightblue;
+}
+
+#custom-search [draggable] {
+  transition: background-color .3s;
+}
+
+#custom-search [draggable="false"] > [data-action="grab"],
+#custom-search [draggable="false"] > [role="toolbar"] > [data-action="grab"] {
+  cursor: grab;
+}
+
+#custom-search [draggable="true"] > [data-action="grab"],
+#custom-search [draggable="true"] > [role="toolbar"] > [data-action="grab"] {
+  cursor: grabbing;
+}
+
+#custom-search [draggable="true"] {
+  background-color: lightskyblue !important;
+}
+
+#custom-search [data-action="grab"] .icon::before {
+  text-indent: -1ex;
+  letter-spacing: -1ex;
+  content: '\E5D4\E5D4';
+}
+
+#custom-search [data-action="remove"] .icon::before {
+  content: '\E5C9';
+}
+
+#custom-search [data-action^="add-"] .icon::before {
+  content: '\E145';
+}
