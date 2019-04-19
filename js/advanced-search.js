@@ -22,6 +22,9 @@ Bugzilla.CustomSearch = class CustomSearch {
     this.data = Bugzilla.CustomSearch.data = { group_count: 0, row_count: 0 };
     this.$container = document.querySelector('#custom-search');
 
+    // Decode and store required data
+    Object.entries(this.$container.dataset).forEach(([key, value]) => this.data[key] = JSON.parse(value));
+
     this.restore();
 
     this.$container.addEventListener('change', () => this.save_state());
@@ -36,9 +39,6 @@ Bugzilla.CustomSearch = class CustomSearch {
    * Add rows and groups specified with the URL query or history state.
    */
   restore() {
-    // Decode and store required data
-    Object.entries(this.$container.dataset).forEach(([key, value]) => this.data[key] = JSON.parse(value));
-
     const state = history.state || {};
     const { j_top, conditions } = state.default || this.data.default;
     const groups = [];
@@ -51,7 +51,7 @@ Bugzilla.CustomSearch = class CustomSearch {
     // eslint-disable-next-line prefer-const
     for (let condition of conditions) {
       // Skip empty conditions
-      if (!condition || !condition.f || condition.f === 'noop') {
+      if (!condition || !condition.f) {
         continue;
       }
 
