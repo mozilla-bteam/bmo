@@ -78,7 +78,8 @@ Bugzilla.CustomSearch = class CustomSearch {
     let index = 1;
     let cp_index = 0;
 
-    this.$container.querySelectorAll('.group.top .condition').forEach($item => {
+    // Use spread syntax to work around test failures on Firefox 47. `NodeList.forEach` was added to Firefox 50
+    [...this.$container.querySelectorAll('.group.top .condition')].forEach($item => {
       if ($item.matches('.group')) {
         cp_index = index + $item.querySelectorAll('.row').length + ($item.querySelectorAll('.group').length * 2) + 1;
       }
