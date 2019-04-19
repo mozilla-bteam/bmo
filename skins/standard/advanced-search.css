@@ -122,8 +122,8 @@
 }
 
 #custom-search [data-action="grab"] .icon::before {
-  text-indent: -1ex;
-  letter-spacing: -1ex;
+  text-indent: -11px;
+  letter-spacing: -11px;
   content: '\E5D4\E5D4';
 }
 
