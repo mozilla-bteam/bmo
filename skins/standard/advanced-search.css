@@ -9,6 +9,12 @@
   display: flex;
 }
 
+#custom-search label {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 #custom-search button.iconic {
   display: inline-flex;
   border-radius: 0;
@@ -29,6 +35,11 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+}
+
+#custom-search button.iconic-text {
+  display: inline-flex;
+  align-items: center;
 }
 
 #custom-search .icon::before {
@@ -132,5 +143,6 @@
 }
 
 #custom-search [data-action^="add-"] .icon::before {
+  margin-right: 2px;
   content: '\E145';
 }
