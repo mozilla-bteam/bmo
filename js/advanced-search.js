@@ -45,7 +45,9 @@ Bugzilla.CustomSearch = class CustomSearch {
     groups.push(new Bugzilla.CustomSearch.Group({ j: join.top, is_top: true, add_empty_row: !conditions.length }));
     groups[0].render(this.$container);
 
-    for (const condition of conditions) {
+    // Use `let` to work around test failures on Firefox 47 (Bug 1101653)
+    // eslint-disable-next-line prefer-const
+    for (let condition of conditions) {
       // Skip empty conditions
       if (!condition || !condition.f || condition.f === 'noop') {
         continue;
