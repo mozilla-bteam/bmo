@@ -73,7 +73,7 @@ Bugzilla.CustomSearch = class CustomSearch {
    * Update the `name` attribute on all the `<input>` elements when a row or group is added, removed or moved.
    */
   update_input_names() {
-    let index = 0;
+    let index = 1;
     let cp_index = 0;
 
     this.$container.querySelectorAll('.group.top .condition').forEach($item => {
