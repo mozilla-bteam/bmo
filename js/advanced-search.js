@@ -78,6 +78,10 @@ Bugzilla.CustomSearch = class CustomSearch {
     let index = 1;
     let cp_index = 0;
 
+    // Cache radio button state, which can be reset while renaming
+    const radio_states =
+      new Map([...this.$container.querySelectorAll('input[type="radio"]')].map(({ id, checked }) => [id, checked]));
+
     // Use spread syntax to work around test failures on Firefox 47. `NodeList.forEach` was added to Firefox 50
     [...this.$container.querySelectorAll('.group.top .condition')].forEach($item => {
       if ($item.matches('.group')) {
@@ -86,11 +90,6 @@ Bugzilla.CustomSearch = class CustomSearch {
 
       [...$item.querySelectorAll('[name]')].filter($input => $input.closest('.condition') === $item).forEach($input => {
         $input.name = $input.value === 'CP' ? `f${cp_index}` : `${$input.name.charAt(0)}${index}`;
-
-        // Make sure checkboxes are actually checked
-        if ($input.matches('[checked]')) {
-          $input.checked = true;
-        }
       });
 
       index++;
@@ -99,6 +98,9 @@ Bugzilla.CustomSearch = class CustomSearch {
         index++;
       }
     });
+
+    // Restore radio button state
+    radio_states.forEach((checked, id) => document.getElementById(id).checked = checked);
   }
 
   /**
