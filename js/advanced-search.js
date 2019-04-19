@@ -22,11 +22,9 @@ Bugzilla.CustomSearch = class CustomSearch {
     this.data = Bugzilla.CustomSearch.data = { group_count: 0, row_count: 0 };
     this.$container = document.querySelector('#custom-search');
 
-    // Decode and store required data
-    Object.entries(this.$container.dataset).forEach(([key, value]) => this.data[key] = JSON.parse(value));
-
     this.restore();
 
+    this.$container.addEventListener('change', () => this.save_state());
     this.$container.addEventListener('CustomSearch:ItemAdded', () => this.update_input_names());
     this.$container.addEventListener('CustomSearch:ItemRemoved', () => this.update_input_names());
     this.$container.addEventListener('CustomSearch:ItemMoved', () => this.remove_empty_group());
@@ -35,14 +33,18 @@ Bugzilla.CustomSearch = class CustomSearch {
   }
 
   /**
-   * Add rows and groups specified with the URL query.
+   * Add rows and groups specified with the URL query or history state.
    */
   restore() {
-    const { join, conditions } = this.data;
+    // Decode and store required data
+    Object.entries(this.$container.dataset).forEach(([key, value]) => this.data[key] = JSON.parse(value));
+
+    const state = history.state || {};
+    const { j_top, conditions } = state.default || this.data.default;
     const groups = [];
     let level = 0;
 
-    groups.push(new Bugzilla.CustomSearch.Group({ j: join.top, is_top: true, add_empty_row: !conditions.length }));
+    groups.push(new Bugzilla.CustomSearch.Group({ j: j_top, is_top: true, add_empty_row: !conditions.length }));
     groups[0].render(this.$container);
 
     // Use `let` to work around test failures on Firefox 47 (Bug 1101653)
@@ -101,6 +103,27 @@ Bugzilla.CustomSearch = class CustomSearch {
 
     // Restore radio button state
     radio_states.forEach((checked, id) => document.getElementById(id).checked = checked);
+
+    this.save_state();
+  }
+
+  /**
+   * Save the current search conditions in the browser history, so these rows and groups can be restored after the user
+   * reloads or navigates back to the page, just like native static form widgets.
+   */
+  save_state() {
+    const form_data = new FormData(this.$container.closest('form'));
+    const conditions = [];
+
+    for (const [name, value] of form_data.entries()) {
+      const [, key, index] = name.match(/^([njfov])(\d+)$/) || [];
+
+      if (key) {
+        conditions[index] = Object.assign(conditions[index] || {}, { [key]: value });
+      }
+    }
+
+    history.replaceState({ default: { j_top: form_data.get('j_top'), conditions } }, document.title, document.URL);
   }
 
   /**

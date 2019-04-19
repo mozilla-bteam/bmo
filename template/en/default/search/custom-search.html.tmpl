@@ -10,6 +10,11 @@
 
 PROCESS "global/field-descs.none.tmpl";
 
+_default = {
+  j_top       => default.j_top.0 || 'AND',
+  conditions  => default.custom_search || [],
+};
+
 _fields = [];
 
 FOREACH field = fields;
@@ -65,8 +70,7 @@ _strings = {
 </div>
 
 <div id="custom-search" class="bz_search_section custom_search_query"
-     data-conditions="[% json_encode(default.custom_search || []) FILTER html %]"
-     data-join="[% json_encode({ top => default.j_top.0 || 'AND' }) FILTER html %]"
+     data-default="[% json_encode(_default) FILTER html %]"
      data-fields="[% json_encode(_fields) FILTER html %]"
      data-types="[% json_encode(_types) FILTER html %]"
      data-strings="[% json_encode(_strings) FILTER html %]">
