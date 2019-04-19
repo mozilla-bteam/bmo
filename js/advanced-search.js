@@ -115,7 +115,8 @@ Bugzilla.CustomSearch = class CustomSearch {
     const form_data = new FormData(this.$container.closest('form'));
     const conditions = [];
 
-    for (const [name, value] of form_data.entries()) {
+    // eslint-disable-next-line prefer-const
+    for (let [name, value] of form_data.entries()) {
       const [, key, index] = name.match(/^([njfov])(\d+)$/) || [];
 
       if (key) {
