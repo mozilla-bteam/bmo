@@ -59,13 +59,14 @@ Bugzilla.CustomSearch = class CustomSearch {
         break;
       }
 
+      const group = groups[level];
+
       if (condition.f === 'OP') {
-        groups[level + 1] = groups[level].add_group(condition);
-        level++;
+        groups[++level] = group.add_group(condition);
       } else if (condition.f === 'CP') {
         level--;
       } else {
-        groups[level].add_row(condition);
+        group.add_row(condition);
       }
     }
 
@@ -147,10 +148,9 @@ Bugzilla.CustomSearch = class CustomSearch {
     const $source = document.getElementById(event.detail.id);
 
     this.$container.querySelectorAll('.drop-target').forEach($target => {
-      // A group cannot be moved into itself
-      if (!$source.contains($target)) {
-        $target.setAttribute('aria-dropeffect', 'copy move');
-      }
+      // Disable targets above/below the source or within the current group for move
+      $target.setAttribute('aria-dropeffect', $target === $source.previousElementSibling ||
+        $target === $source.nextElementSibling || $source.contains($target) ? 'copy' : 'copy move');
     });
   }
 
@@ -171,7 +171,7 @@ Bugzilla.CustomSearch = class CustomSearch {
 Bugzilla.CustomSearch.Condition = class CustomSearchCondition {
   /**
    * Add a group or row to the given element.
-   * @param {HTMLElement} $target Target element for the new element.
+   * @param {HTMLElement} $target Target relative to the new element.
    * @param {String} [position] Where the new element to be added.
    */
   render($target, position = 'beforeend') {
@@ -457,7 +457,7 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
 
   /**
    * Duplicate one or more drag & dropped items.
-   * @param {CustomEvent} event `CustomSearch:ItemCoping` event.
+   * @param {CustomEvent} event `CustomSearch:ItemDuplicating` event.
    */
   duplicate_items(event) {
     const { conditions, $target } = event.detail;
@@ -468,8 +468,7 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
       const group = groups[level];
 
       if (condition.f === 'OP') {
-        groups[level + 1] = group ? group.add_group(condition) : this.add_group(condition, $target, 'afterend');
-        level++;
+        groups[++level] = group ? group.add_group(condition) : this.add_group(condition, $target, 'afterend');
       } else if (condition.f === 'CP') {
         level--;
       } else {
@@ -570,48 +569,54 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
    * @param {DragEvent} event One of drag-related events.
    */
   handle_drag(event) {
+    const { type, dataTransfer: dt } = event;
+
     if (!this.$element.matches('[aria-dropeffect]')) {
       return;
     }
 
-    if (event.type === 'dragenter') {
+    const effect_allowed = this.$element.getAttribute('aria-dropeffect').split(' ').includes(dt.dropEffect);
+
+    if (type === 'dragenter' && effect_allowed) {
       this.$element.classList.add('dragover');
     }
 
-    if (event.type === 'dragover') {
+    if (type === 'dragover') {
       event.preventDefault();
     }
 
-    if (event.type === 'dragleave') {
+    if (type === 'dragleave') {
       this.$element.classList.remove('dragover');
     }
 
-    if (event.type === 'drop') {
+    if (type === 'drop') {
       event.preventDefault();
 
-      const source_id = event.dataTransfer.getData('application/x-cs-condition');
+      const source_id = dt.getData('application/x-cs-condition');
       const $source = document.getElementById(source_id);
 
       this.$element.classList.remove('dragover');
 
-      if (event.dataTransfer.dropEffect === 'copy') {
+      if (dt.dropEffect === 'copy' && effect_allowed) {
         const conditions = [];
 
-        $source.querySelectorAll('[name]').forEach(({ type, checked, name, value }) => {
-          if ((type === 'radio' || type === 'checkbox') && !checked) {
+        $source.querySelectorAll('[name]').forEach($input => {
+          if (($input.type === 'radio' || $input.type === 'checkbox') && !$input.checked) {
             return;
           }
 
-          const [, key, index] = name.match(/^([njfov])(\d+)$/) || [];
+          const [, key, index] = $input.name.match(/^([njfov])(\d+)$/) || [];
 
-          conditions[index] = Object.assign(conditions[index] || {}, { [key]: value });
+          conditions[index] = Object.assign(conditions[index] || {}, { [key]: $input.value });
         });
 
         // Let the parent group to duplicate the rows and groups; filter array to remove empty slots
         this.$element.closest('.group').dispatchEvent(new CustomEvent('CustomSearch:ItemDuplicating', {
           detail: { conditions: conditions.filter(condition => condition), $target: this.$element },
         }));
-      } else if ($source.previousElementSibling !== this.$element && $source.nextElementSibling !== this.$element) {
+      }
+
+      if (dt.dropEffect === 'move' && effect_allowed) {
         this.$element.insertAdjacentElement('beforebegin', $source.previousElementSibling); // drop target
         this.$element.insertAdjacentElement('beforebegin', $source);
 
