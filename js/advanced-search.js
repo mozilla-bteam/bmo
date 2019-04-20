@@ -171,13 +171,13 @@ Bugzilla.CustomSearch = class CustomSearch {
 Bugzilla.CustomSearch.Condition = class CustomSearchCondition {
   /**
    * Add a group or row to the given element.
-   * @param {HTMLElement} $target Target relative to the new element.
-   * @param {String} [position] Where the new element to be added.
+   * @param {HTMLElement} $parent Parent node of the new element.
+   * @param {HTMLElement} [$ref] Node before which the new element is inserted.
    */
-  render($target, position = 'beforeend') {
+  render($parent, $ref = null) {
     const { id, type, conditions } = this;
 
-    $target.insertAdjacentElement(position, this.$element);
+    $parent.insertBefore(this.$element, $ref);
 
     this.$element.dispatchEvent(new CustomEvent('CustomSearch:ItemAdded', {
       bubbles: true,
@@ -407,15 +407,14 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
   /**
    * Add a new subgroup to the condition area.
    * @param {Object} [conditions] Search conditions.
-   * @param {HTMLElement} [$target] Target relative to the new group.
-   * @param {String} [position] Where the new group to be added.
+   * @param {HTMLElement} [$ref] Node before which the new element is inserted.
    * @returns {CustomSearchGroup} New group object.
    */
-  add_group(conditions = {}, $target = this.$conditions, position = 'beforeend') {
+  add_group(conditions = {}, $ref = null) {
     const group = new Bugzilla.CustomSearch.Group(conditions);
 
-    group.render($target, position);
-    this.add_drop_target(group.$element, 'afterend');
+    group.render(this.$conditions, $ref);
+    this.add_drop_target(group.$element.nextElementSibling);
 
     return group;
   }
@@ -423,11 +422,10 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
   /**
    * Add a new child row to the condition area.
    * @param {Object} [conditions] Search conditions.
-   * @param {HTMLElement} [$target] Target relative to the new row.
-   * @param {String} [position] Where the new row to be added.
+   * @param {HTMLElement} [$ref] Node before which the new element is inserted.
    * @returns {CustomSearchRow} New row object.
    */
-  add_row(conditions = {}, $target = this.$conditions, position = 'beforeend') {
+  add_row(conditions = {}, $ref = null) {
     // Copy the field name from the group's last row when a new row is added manually or the group's join option is
     // "Match Any (Same Field)"
     if (!conditions.f || this.conditions.j === 'AND_G') {
@@ -440,19 +438,18 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
 
     const row = new Bugzilla.CustomSearch.Row(conditions);
 
-    row.render($target, position);
-    this.add_drop_target(row.$element, 'afterend');
+    row.render(this.$conditions, $ref);
+    this.add_drop_target(row.$element.nextElementSibling);
 
     return row;
   }
 
   /**
    * Add a new drop target to the condition area.
-   * @param {HTMLElement} [$target] Target relative to the new row.
-   * @param {String} [position] Where the new row to be added.
+   * @param {HTMLElement} [$ref] Node before which the new element is inserted.
    */
-  add_drop_target($target = this.$conditions, position = 'beforeend') {
-    $target.insertAdjacentElement(position, (new Bugzilla.CustomSearch.DropTarget()).$element);
+  add_drop_target($ref = null) {
+    this.$conditions.insertBefore((new Bugzilla.CustomSearch.DropTarget()).$element, $ref);
   }
 
   /**
@@ -468,11 +465,11 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
       const group = groups[level];
 
       if (condition.f === 'OP') {
-        groups[++level] = group ? group.add_group(condition) : this.add_group(condition, $target, 'afterend');
+        groups[++level] = group ? group.add_group(condition) : this.add_group(condition, $target.nextElementSibling);
       } else if (condition.f === 'CP') {
         level--;
       } else {
-        group ? group.add_row(condition) : this.add_row(condition, $target, 'afterend');
+        group ? group.add_row(condition) : this.add_row(condition, $target.nextElementSibling);
       }
     }
   }
