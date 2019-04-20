@@ -11,7 +11,7 @@
 PROCESS "global/field-descs.none.tmpl";
 
 _default = {
-  j_top       => default.j_top.0 || 'AND',
+  j_top       => default.j_top.0 || "AND",
   conditions  => default.custom_search || [],
 };
 
@@ -43,20 +43,24 @@ FOREACH type = types;
 END;
 
 _strings = {
-  add_group   => 'Add New Group',
-  add_row     => 'Add New Criteria',
-  criteria    => 'Criteria',
-  field       => 'Field',
-  grab        => 'Drag to Move',
-  group       => 'Group',
-  group_name  => 'Group { $count }',
-  match_all   => 'Match All',
-  match_any   => 'Match Any',
-  'not'       => 'Not',
-  operator    => 'Operator',
-  remove      => 'Remove',
-  row_name    => 'Row { $count }',
-  value       => 'Value',
+  add_group   => "Add New Group",
+  add_row     => "Add New Criteria",
+  criteria    => "Criteria",
+  field       => "Field",
+  grab        => "Drag to Move",
+  group       => "Group",
+  group_name  => "Group { $count }",
+  match_all         => "Match All",
+  match_all_hint    => "Match all of the following separately",
+  match_all_g       => "Match All (Same Field)",
+  match_all_g_hint  => "Match all of the following against the same field",
+  match_any         => "Match Any",
+  match_any_hint    => "Match any of the following separately",
+  "not"       => "Not",
+  operator    => "Operator",
+  remove      => "Remove",
+  row_name    => "Row { $count }",
+  value       => "Value",
 };
 
 %]
