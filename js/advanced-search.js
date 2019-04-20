@@ -344,6 +344,17 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
    * @returns {CustomSearchRow} New row object.
    */
   add_row(conditions = {}) {
+    // Use the field name in the last row when a new criteria is added manually. This mimics the behaviour of the "Match
+    // ALL of the following against the same field" (AND_G) join option that was available in the old UI
+    if (!conditions.f) {
+      const last_field = [...this.$conditions.querySelectorAll('select.field')]
+        .filter($select => $select.closest('.conditions') === this.$conditions).pop();
+
+      if (last_field) {
+        conditions.f = last_field.value;
+      }
+    }
+
     const row = new Bugzilla.CustomSearch.Row(conditions);
 
     row.render(this.$conditions);
@@ -390,17 +401,17 @@ Bugzilla.CustomSearch.Row = class CustomSearchRow extends Bugzilla.CustomSearch.
           <span class="icon" aria-hidden="true"></span>
         </button>
         <label><input type="checkbox" name="n1" value="1" ${n ? 'checked' : ''}> ${str.not}</label>
-        <select name="f1" aria-label="${str.field}">
+        <select class="field" name="f1" aria-label="${str.field}">
           ${fields.map(({ value, label }) => `
             <option value="${value.htmlEncode()}" ${f === value ? 'selected' : ''}>${label.htmlEncode()}</option>
           `).join('')}
         </select>
-        <select name="o1" aria-label="${str.operator}">
+        <select class="operator" name="o1" aria-label="${str.operator}">
           ${types.map(({ value, label }) => `
             <option value="${value.htmlEncode()}" ${o === value ? 'selected' : ''}>${label.htmlEncode()}</option>
           `).join('')}
         </select>
-        <input type="text" name="v1" value="${v.htmlEncode()}" aria-label="${str.value}">
+        <input class="value" type="text" name="v1" value="${v.htmlEncode()}" aria-label="${str.value}">
         <button type="button" class="iconic" aria-label="${str.remove}" data-action="remove">
           <span class="icon" aria-hidden="true"></span>
         </button>
