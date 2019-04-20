@@ -285,11 +285,11 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
         </header>
         <div class="conditions"></div>
         <footer role="toolbar">
-          <button type="button" class="minor iconic-text" data-action="add-group" aria-label="${str.add_group}">
-            <span class="icon" aria-hidden="true"></span> ${str.group}
-          </button>
           <button type="button" class="minor iconic-text" data-action="add-row" aria-label="${str.add_row}">
             <span class="icon" aria-hidden="true"></span> ${str.criteria}
+          </button>
+          <button type="button" class="minor iconic-text" data-action="add-group" aria-label="${str.add_group}">
+            <span class="icon" aria-hidden="true"></span> ${str.group}
           </button>
         </footer>
         ${is_top ? '' : '<input type="hidden" name="f2" value="CP">'}
