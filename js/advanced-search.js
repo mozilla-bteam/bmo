@@ -48,8 +48,7 @@ Bugzilla.CustomSearch = class CustomSearch {
     groups[0].render(this.$container);
 
     // Use `let` to work around test failures on Firefox 47 (Bug 1101653)
-    // eslint-disable-next-line prefer-const
-    for (let condition of conditions) {
+    for (let condition of conditions) { // eslint-disable-line prefer-const
       // Skip empty conditions
       if (!condition || !condition.f) {
         continue;
@@ -115,8 +114,7 @@ Bugzilla.CustomSearch = class CustomSearch {
     const form_data = new FormData(this.$container.closest('form'));
     const conditions = [];
 
-    // eslint-disable-next-line prefer-const
-    for (let [name, value] of form_data.entries()) {
+    for (let [name, value] of form_data.entries()) { // eslint-disable-line prefer-const
       const [, key, index] = name.match(/^([njfov])(\d+)$/) || [];
 
       if (key) {
@@ -466,7 +464,7 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
     const groups = [];
     let level = 0;
 
-    for (const condition of conditions) {
+    for (let condition of conditions) { // eslint-disable-line prefer-const
       const group = groups[level];
 
       if (condition.f === 'OP') {
