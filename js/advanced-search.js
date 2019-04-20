@@ -344,8 +344,8 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
    * @returns {CustomSearchRow} New row object.
    */
   add_row(conditions = {}) {
-    // Use the field name in the last row when a new criteria is added manually. This mimics the behaviour of the "Match
-    // ALL of the following against the same field" (AND_G) join option that was available in the old UI
+    // Copy the field name from the group's last row when a new row is added manually. This mimics the behaviour of the
+    // "Match ALL of the following against the same field" (AND_G) join option that was available in the old UI
     if (!conditions.f) {
       const last_field = [...this.$conditions.querySelectorAll('select.field')]
         .filter($select => $select.closest('.conditions') === this.$conditions).pop();
