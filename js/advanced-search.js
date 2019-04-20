@@ -263,35 +263,36 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
     const { data } = Bugzilla.CustomSearch;
     const { strings: str } = data;
     const count = ++data.group_count;
+    const index = data.group_count + data.row_count;
     const id = this.id = `group-${count}`;
 
     $placeholder.innerHTML = `
       <section role="group" id="${id}" class="condition group ${is_top ? 'top' : ''}" draggable="false"
           aria-grabbed="false" aria-label="${str.group_name.replace('{ $count }', count)}">
-        ${is_top ? '' : '<input type="hidden" name="f0" value="OP">'}
+        ${is_top ? '' : `<input type="hidden" name="f${index}" value="OP">`}
         <header role="toolbar">
           ${is_top ? '' : `
             <button type="button" class="iconic" aria-label="${str.grab}" data-action="grab">
               <span class="icon" aria-hidden="true"></span>
             </button>
-            <label><input type="checkbox" name="n0" value="1" ${n ? 'checked' : ''}> ${str.not}</label>
+            <label><input type="checkbox" name="n${index}" value="1" ${n ? 'checked' : ''}> ${str.not}</label>
           `}
           <div class="match">
             <div role="radiogroup" class="buttons toggle join">
               <div class="item">
-                <input id="${id}-join-r1" class="join" type="radio" name="${is_top ? 'j_top' : 'j0'}" value="AND"
+                <input id="${id}-j-r1" class="join" type="radio" name="${is_top ? 'j_top' : `j${index}`}" value="AND"
                   ${j === 'AND' ? 'checked' : ''}>
-                <label for="${id}-join-r1" title="${str.match_all_hint}">${str.match_all}</label>
+                <label for="${id}-j-r1" title="${str.match_all_hint}">${str.match_all}</label>
               </div>
               <div class="item">
-                <input id="${id}-join-r2" class="join" type="radio" name="${is_top ? 'j_top' : 'j0'}" value="AND_G"
+                <input id="${id}-j-r2" class="join" type="radio" name="${is_top ? 'j_top' : `j${index}`}" value="AND_G"
                   ${j === 'AND_G' ? 'checked' : ''}>
-                <label for="${id}-join-r2" title="${str.match_all_g_hint}">${str.match_all_g}</label>
+                <label for="${id}-j-r2" title="${str.match_all_g_hint}">${str.match_all_g}</label>
               </div>
               <div class="item">
-                <input id="${id}-join-r3" class="join" type="radio" name="${is_top ? 'j_top' : 'j0'}" value="OR"
+                <input id="${id}-j-r3" class="join" type="radio" name="${is_top ? 'j_top' : `j${index}`}" value="OR"
                   ${j === 'OR' ? 'checked' : ''}>
-                <label for="${id}-join-r3" title="${str.match_any_hint}">${str.match_any}</label>
+                <label for="${id}-j-r3" title="${str.match_any_hint}">${str.match_any}</label>
               </div>
             </div>
           </div>
@@ -310,7 +311,7 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
             <span class="icon" aria-hidden="true"></span> ${str.group}
           </button>
         </footer>
-        ${is_top ? '' : '<input type="hidden" name="f2" value="CP">'}
+        ${is_top ? '' : `<input type="hidden" name="f${index}" value="CP">`}
       </section>
     `;
 
@@ -470,6 +471,7 @@ Bugzilla.CustomSearch.Row = class CustomSearchRow extends Bugzilla.CustomSearch.
     const { data } = Bugzilla.CustomSearch;
     const { strings: str, fields, types } = data;
     const count = ++data.row_count;
+    const index = data.group_count + data.row_count;
     const id = this.id = `row-${count}`;
 
     $placeholder.innerHTML = `
@@ -478,18 +480,18 @@ Bugzilla.CustomSearch.Row = class CustomSearchRow extends Bugzilla.CustomSearch.
         <button type="button" class="iconic" aria-label="${str.grab}" aria-pressed="false" data-action="grab">
           <span class="icon" aria-hidden="true"></span>
         </button>
-        <label><input type="checkbox" name="n1" value="1" ${n ? 'checked' : ''}> ${str.not}</label>
-        <select class="field" name="f1" aria-label="${str.field}">
+        <label><input type="checkbox" name="n${index}" value="1" ${n ? 'checked' : ''}> ${str.not}</label>
+        <select class="field" name="f${index}" aria-label="${str.field}">
           ${fields.map(({ value, label }) => `
             <option value="${value.htmlEncode()}" ${f === value ? 'selected' : ''}>${label.htmlEncode()}</option>
           `).join('')}
         </select>
-        <select class="operator" name="o1" aria-label="${str.operator}">
+        <select class="operator" name="o${index}" aria-label="${str.operator}">
           ${types.map(({ value, label }) => `
             <option value="${value.htmlEncode()}" ${o === value ? 'selected' : ''}>${label.htmlEncode()}</option>
           `).join('')}
         </select>
-        <input class="value" type="text" name="v1" value="${v.htmlEncode()}" aria-label="${str.value}">
+        <input class="value" type="text" name="v${index}" value="${v.htmlEncode()}" aria-label="${str.value}">
         <button type="button" class="iconic" aria-label="${str.remove}" data-action="remove">
           <span class="icon" aria-hidden="true"></span>
         </button>
