@@ -29,7 +29,7 @@ Bugzilla.CustomSearch = class CustomSearch {
 
     this.$container.addEventListener('change', () => this.save_state());
     this.$container.addEventListener('CustomSearch:ItemAdded', () => this.update_input_names());
-    this.$container.addEventListener('CustomSearch:ItemRemoved', () => this.update_input_names());
+    this.$container.addEventListener('CustomSearch:ItemRemoved', () => this.remove_empty_group());
     this.$container.addEventListener('CustomSearch:ItemMoved', () => this.remove_empty_group());
     this.$container.addEventListener('CustomSearch:DragStarted', event => this.enable_drop_targets(event));
     this.$container.addEventListener('CustomSearch:DragEnded', () => this.disable_drop_targets());
@@ -39,8 +39,7 @@ Bugzilla.CustomSearch = class CustomSearch {
    * Add rows and groups specified with the URL query or history state.
    */
   restore() {
-    const state = history.state || {};
-    const { j_top, conditions } = state.default || this.data.default;
+    const { j_top, conditions } = history.state || this.data.initial;
     const groups = [];
     let level = 0;
 
@@ -62,8 +61,10 @@ Bugzilla.CustomSearch = class CustomSearch {
       const group = groups[level];
 
       if (condition.f === 'OP') {
+        // OP = open parentheses = starting a new group
         groups[++level] = group.add_group(condition);
       } else if (condition.f === 'CP') {
+        // OP = close parentheses = ending a new group
         level--;
       } else {
         group.add_row(condition);
@@ -80,13 +81,15 @@ Bugzilla.CustomSearch = class CustomSearch {
     let index = 1;
     let cp_index = 0;
 
-    // Cache radio button state, which can be reset while renaming
+    // Cache radio button states, which can be reset while renaming
     const radio_states =
       new Map([...this.$container.querySelectorAll('input[type="radio"]')].map(({ id, checked }) => [id, checked]));
 
     // Use spread syntax to work around test failures on Firefox 47. `NodeList.forEach` was added to Firefox 50
     [...this.$container.querySelectorAll('.group.top .condition')].forEach($item => {
       if ($item.matches('.group')) {
+        // CP needs to be added after all the rows and nested subgroups within the current group.
+        // Example: f1=OP, f2=product, f3=component, f4=OP, f5=reporter, f6=assignee, f7=CP, f8=CP
         cp_index = index + $item.querySelectorAll('.row').length + ($item.querySelectorAll('.group').length * 2) + 1;
       }
 
@@ -101,7 +104,7 @@ Bugzilla.CustomSearch = class CustomSearch {
       }
     });
 
-    // Restore radio button state
+    // Restore radio button states
     radio_states.forEach((checked, id) => document.getElementById(id).checked = checked);
 
     this.save_state();
@@ -113,6 +116,7 @@ Bugzilla.CustomSearch = class CustomSearch {
    */
   save_state() {
     const form_data = new FormData(this.$container.closest('form'));
+    const j_top = form_data.get('j_top');
     const conditions = [];
 
     for (let [name, value] of form_data.entries()) { // eslint-disable-line prefer-const
@@ -123,11 +127,13 @@ Bugzilla.CustomSearch = class CustomSearch {
       }
     }
 
-    history.replaceState({ default: { j_top: form_data.get('j_top'), conditions } }, document.title, document.URL);
+    // The conditions will be the same format as an array of user-defined initial conditions embedded in the page.
+    // Example: [{ f: 'OP', n: 1, j: 'AND' }, { f: 'product', o: 'equals', v: 'Bugzilla' }, { f: 'CP' }]
+    history.replaceState(Object.assign(history.state || {}, { j_top, conditions }), document.title);
   }
 
   /**
-   * Remove any empty group when a row or group is moved.
+   * Remove any empty group when a row or group is moved or removed.
    */
   remove_empty_group() {
     this.$container.querySelectorAll('.group').forEach($group => {
@@ -148,7 +154,7 @@ Bugzilla.CustomSearch = class CustomSearch {
     const $source = document.getElementById(event.detail.id);
 
     this.$container.querySelectorAll('.drop-target').forEach($target => {
-      // Disable targets above/below the source or within the current group for move
+      // The targets above/below the source or within the current group cannot be used for the `move` effect
       $target.setAttribute('aria-dropeffect', $target === $source.previousElementSibling ||
         $target === $source.nextElementSibling || $source.contains($target) ? 'copy' : 'copy move');
     });
@@ -159,7 +165,7 @@ Bugzilla.CustomSearch = class CustomSearch {
    */
   disable_drop_targets() {
     this.$container.querySelectorAll('[aria-dropeffect]').forEach($target => {
-      $target.removeAttribute('aria-dropeffect');
+      $target.setAttribute('aria-dropeffect', 'none');
     });
   }
 };
@@ -170,38 +176,38 @@ Bugzilla.CustomSearch = class CustomSearch {
  */
 Bugzilla.CustomSearch.Condition = class CustomSearchCondition {
   /**
-   * Add a group or row to the given element.
+   * Add a row or group to the given element.
    * @param {HTMLElement} $parent Parent node of the new element.
    * @param {HTMLElement} [$ref] Node before which the new element is inserted.
    */
   render($parent, $ref = null) {
-    const { id, type, conditions } = this;
+    const { id, type, condition } = this;
 
     $parent.insertBefore(this.$element, $ref);
 
     this.$element.dispatchEvent(new CustomEvent('CustomSearch:ItemAdded', {
       bubbles: true,
-      detail: { id, type, conditions },
+      detail: { id, type, condition },
     }));
   }
 
   /**
-   * Remove a group or row from view.
+   * Remove a row or group from view.
    */
   remove() {
-    const { id, type, conditions } = this;
+    const { id, type, condition } = this;
     const $parent = this.$element.parentElement;
 
     this.$element.remove();
 
     $parent.dispatchEvent(new CustomEvent('CustomSearch:ItemRemoved', {
       bubbles: true,
-      detail: { id, type, conditions },
+      detail: { id, type, condition },
     }));
   }
 
   /**
-   * Enable drag action.
+   * Enable drag action of a row or group.
    */
   enable_drag() {
     this.$element.draggable = true;
@@ -210,7 +216,7 @@ Bugzilla.CustomSearch.Condition = class CustomSearchCondition {
   }
 
   /**
-   * Disable drag action.
+   * Disable drag action of a row or group.
    */
   disable_drag() {
     this.$element.draggable = false;
@@ -247,17 +253,20 @@ Bugzilla.CustomSearch.Condition = class CustomSearchCondition {
 Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSearch.Condition {
   /**
    * Initialize a new CustomSearchGroup instance.
-   * @param {Object} [conditions] Search conditions.
-   * @param {Boolean} [conditions.n] Whether to use NOT.
-   * @param {String} [conditions.j] How to join: AND, AND_G or OR.
-   * @param {Boolean} [conditions.is_top] Whether this is the topmost group within the custom search container.
-   * @param {Boolean} [conditions.add_empty_row] Whether to add an empty new row to the condition area by default.
+   * @param {Object} [condition] Search condition.
+   * @param {Boolean} [condition.n] Whether to use NOT.
+   * @param {String} [condition.j] How to join: AND, AND_G or OR.
+   * @param {Boolean} [condition.is_top] Whether this is the topmost group within the custom search container.
+   * @param {Boolean} [condition.add_empty_row] Whether to add an empty new row to the condition area by default.
    */
-  constructor(conditions = {}) {
+  constructor(condition = {}) {
     super();
 
+    this.type = 'group';
+    this.condition = condition;
+
     const $placeholder = document.createElement('div');
-    const { n = false, j = 'AND', is_top = false, add_empty_row = false } = conditions;
+    const { n = false, j = 'AND', is_top = false, add_empty_row = false } = condition;
     const { data } = Bugzilla.CustomSearch;
     const { strings: str } = data;
     const count = ++data.group_count;
@@ -276,20 +285,20 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
             <label><input type="checkbox" name="n${index}" value="1" ${n ? 'checked' : ''}> ${str.not}</label>
           `}
           <div class="match">
-            <div role="radiogroup" class="buttons toggle join">
+            <div role="radiogroup" class="buttons toggle join" aria-label="${str.join_options}">
               <div class="item">
                 <input id="${id}-j-r1" class="join" type="radio" name="${is_top ? 'j_top' : `j${index}`}" value="AND"
-                  ${j === 'AND' ? 'checked' : ''}>
+                  ${j === 'AND' ? 'checked' : ''} aria-label="${str.match_all}">
                 <label for="${id}-j-r1" title="${str.match_all_hint}">${str.match_all}</label>
               </div>
               <div class="item">
                 <input id="${id}-j-r2" class="join" type="radio" name="${is_top ? 'j_top' : `j${index}`}" value="AND_G"
-                  ${j === 'AND_G' ? 'checked' : ''}>
+                  ${j === 'AND_G' ? 'checked' : ''} aria-label="${str.match_all_g}">
                 <label for="${id}-j-r2" title="${str.match_all_g_hint}">${str.match_all_g}</label>
               </div>
               <div class="item">
                 <input id="${id}-j-r3" class="join" type="radio" name="${is_top ? 'j_top' : `j${index}`}" value="OR"
-                  ${j === 'OR' ? 'checked' : ''}>
+                  ${j === 'OR' ? 'checked' : ''} aria-label="${str.match_any}">
                 <label for="${id}-j-r3" title="${str.match_any_hint}">${str.match_any}</label>
               </div>
             </div>
@@ -303,7 +312,7 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
         <div class="conditions"></div>
         <footer role="toolbar">
           <button type="button" class="minor iconic-text" data-action="add-row" aria-label="${str.add_row}">
-            <span class="icon" aria-hidden="true"></span> ${str.criteria}
+            <span class="icon" aria-hidden="true"></span> ${str.row}
           </button>
           <button type="button" class="minor iconic-text" data-action="add-group" aria-label="${str.add_group}">
             <span class="icon" aria-hidden="true"></span> ${str.group}
@@ -312,9 +321,6 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
         ${is_top ? '' : `<input type="hidden" name="f${index}" value="CP">`}
       </section>
     `;
-
-    this.type = 'group';
-    this.conditions = conditions;
 
     this.$element = $placeholder.firstElementChild;
     this.$join = this.$element.querySelector('.buttons.join');
@@ -370,14 +376,14 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
     let field_name;
 
     if ($target.matches('input.join') && this.get_elements('input.join').includes($target)) {
-      this.conditions.j = $target.value;
+      this.condition.j = $target.value;
 
       if (fields.length) {
         field_name = fields[0].value;
       }
     }
 
-    if (this.conditions.j === 'AND_G') {
+    if (this.condition.j === 'AND_G') {
       if ($target.matches('select.field') && fields.includes($target)) {
         field_name = $target.value;
       }
@@ -398,7 +404,7 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
 
     if (has_group && this.$join_and_g.checked) {
       this.$join_and.checked = true;
-      this.conditions.j = 'AND';
+      this.condition.j = 'AND';
     }
 
     this.$join_and_g.disabled = has_group;
@@ -406,12 +412,12 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
 
   /**
    * Add a new subgroup to the condition area.
-   * @param {Object} [conditions] Search conditions.
+   * @param {Object} [condition] Search condition.
    * @param {HTMLElement} [$ref] Node before which the new element is inserted.
    * @returns {CustomSearchGroup} New group object.
    */
-  add_group(conditions = {}, $ref = null) {
-    const group = new Bugzilla.CustomSearch.Group(conditions);
+  add_group(condition = {}, $ref = null) {
+    const group = new Bugzilla.CustomSearch.Group(condition);
 
     group.render(this.$conditions, $ref);
     this.add_drop_target(group.$element.nextElementSibling);
@@ -421,22 +427,22 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
 
   /**
    * Add a new child row to the condition area.
-   * @param {Object} [conditions] Search conditions.
+   * @param {Object} [condition] Search condition.
    * @param {HTMLElement} [$ref] Node before which the new element is inserted.
    * @returns {CustomSearchRow} New row object.
    */
-  add_row(conditions = {}, $ref = null) {
+  add_row(condition = {}, $ref = null) {
     // Copy the field name from the group's last row when a new row is added manually or the group's join option is
     // "Match Any (Same Field)"
-    if (!conditions.f || this.conditions.j === 'AND_G') {
+    if (!condition.f || this.condition.j === 'AND_G') {
       const last_field = this.get_elements('.conditions select.field').pop();
 
       if (last_field) {
-        conditions.f = last_field.value;
+        condition.f = last_field.value;
       }
     }
 
-    const row = new Bugzilla.CustomSearch.Row(conditions);
+    const row = new Bugzilla.CustomSearch.Row(condition);
 
     row.render(this.$conditions, $ref);
     this.add_drop_target(row.$element.nextElementSibling);
@@ -455,21 +461,30 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
   /**
    * Duplicate one or more drag & dropped items.
    * @param {CustomEvent} event `CustomSearch:ItemDuplicating` event.
+   * @see CustomSearch.restore
    */
   duplicate_items(event) {
     const { conditions, $target } = event.detail;
-    const groups = [];
+    const groups = [this];
     let level = 0;
 
     for (let condition of conditions) { // eslint-disable-line prefer-const
       const group = groups[level];
+      const $ref = level === 0 ? $target.nextElementSibling : null;
+
+      // Skip empty conditions
+      if (!condition || !condition.f) {
+        continue;
+      }
 
       if (condition.f === 'OP') {
-        groups[++level] = group ? group.add_group(condition) : this.add_group(condition, $target.nextElementSibling);
+        // OP = open parentheses = starting a new group
+        groups[++level] = group.add_group(condition, $ref);
       } else if (condition.f === 'CP') {
+        // OP = close parentheses = ending a new group
         level--;
       } else {
-        group ? group.add_row(condition) : this.add_row(condition, $target.nextElementSibling);
+        group.add_row(condition, $ref);
       }
     }
   }
@@ -481,16 +496,19 @@ Bugzilla.CustomSearch.Group = class CustomSearchGroup extends Bugzilla.CustomSea
 Bugzilla.CustomSearch.Row = class CustomSearchRow extends Bugzilla.CustomSearch.Condition {
   /**
    * Initialize a new CustomSearchRow instance.
-   * @param {Object} [conditions] Search conditions.
-   * @param {Boolean} [conditions.n] Whether to use NOT.
-   * @param {String} [conditions.f] Field name to be selected in the dropdown list.
-   * @param {String} [conditions.o] Operator name to be selected in the dropdown list.
-   * @param {String} [conditions.v] Field value.
+   * @param {Object} [condition] Search condition.
+   * @param {Boolean} [condition.n] Whether to use NOT.
+   * @param {String} [condition.f] Field name to be selected in the dropdown list.
+   * @param {String} [condition.o] Operator name to be selected in the dropdown list.
+   * @param {String} [condition.v] Field value.
    */
-  constructor(conditions = {}) {
+  constructor(condition = {}) {
     super();
 
-    const { n = false, f = 'noop', o = 'noop', v = '' } = conditions;
+    this.type = 'row';
+    this.condition = condition;
+
+    const { n = false, f = 'noop', o = 'noop', v = '' } = condition;
     const $placeholder = document.createElement('div');
     const { data } = Bugzilla.CustomSearch;
     const { strings: str, fields, types } = data;
@@ -522,9 +540,6 @@ Bugzilla.CustomSearch.Row = class CustomSearchRow extends Bugzilla.CustomSearch.
       </div>
     `;
 
-    this.type = 'row';
-    this.conditions = conditions;
-
     this.$element = $placeholder.firstElementChild;
     this.$action_grab = this.$element.querySelector('[data-action="grab"]');
     this.$action_remove = this.$element.querySelector('[data-action="remove"]');
@@ -548,7 +563,7 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
     const $placeholder = document.createElement('div');
 
     $placeholder.innerHTML = `
-      <div role="separator" class="drop-target">
+      <div role="separator" class="drop-target" aria-dropeffect="none">
         <div class="indicator"></div>
       </div>
     `;
@@ -567,14 +582,23 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
    */
   handle_drag(event) {
     const { type, dataTransfer: dt } = event;
+    const effect_allowed = this.$element.getAttribute('aria-dropeffect').split(' ');
 
-    if (!this.$element.matches('[aria-dropeffect]')) {
-      return;
+    // Chrome and Safari don't set `dropEffect` while Firefox does
+    if (dt.dropEffect === 'none') {
+      if (dt.effectAllowed === 'copy' && effect_allowed.includes('copy')) {
+        dt.dropEffect = 'copy';
+      } else if (dt.effectAllowed === 'copyMove' && effect_allowed.includes('move')) {
+        dt.dropEffect = 'move';
+      }
+    } else {
+      // The `move` effect is not allowed in some cases
+      if (!effect_allowed.includes(dt.dropEffect)) {
+        dt.dropEffect = 'none';
+      }
     }
 
-    const effect_allowed = this.$element.getAttribute('aria-dropeffect').split(' ').includes(dt.dropEffect);
-
-    if (type === 'dragenter' && effect_allowed) {
+    if (type === 'dragenter' && dt.dropEffect !== 'none') {
       this.$element.classList.add('dragover');
     }
 
@@ -594,9 +618,10 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
 
       this.$element.classList.remove('dragover');
 
-      if (dt.dropEffect === 'copy' && effect_allowed) {
+      if (dt.dropEffect === 'copy') {
         const conditions = [];
 
+        // Create an array in the same format as the initial conditions and history-saved state
         $source.querySelectorAll('[name]').forEach($input => {
           if (($input.type === 'radio' || $input.type === 'checkbox') && !$input.checked) {
             return;
@@ -607,13 +632,13 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
           conditions[index] = Object.assign(conditions[index] || {}, { [key]: $input.value });
         });
 
-        // Let the parent group to duplicate the rows and groups; filter array to remove empty slots
+        // Let the parent group to duplicate the rows and groups
         this.$element.closest('.group').dispatchEvent(new CustomEvent('CustomSearch:ItemDuplicating', {
-          detail: { conditions: conditions.filter(condition => condition), $target: this.$element },
+          detail: { conditions, $target: this.$element },
         }));
       }
 
-      if (dt.dropEffect === 'move' && effect_allowed) {
+      if (dt.dropEffect === 'move') {
         this.$element.insertAdjacentElement('beforebegin', $source.previousElementSibling); // drop target
         this.$element.insertAdjacentElement('beforebegin', $source);
 

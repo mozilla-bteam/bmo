@@ -103,9 +103,10 @@ operators for :guilabel:`is empty` and :guilabel:`is not empty`, because
 Bugzilla can't tell the difference between a value field left blank on
 purpose and one left blank by accident.
 
-You can have an arbitrary number of rows and groups, and rearrange them with a
-drag and drop of the handle on each item. The radio buttons above them define
-how they relate — :guilabel:`Match All`, :guilabel:`Match All (Same Field)` or
+You can have an arbitrary number of rows and groups, and rearrange them by
+dragging and dropping the handle on each item. You can even duplicate an item by
+holding the Alt key while dragging it. The radio buttons above them define how
+they relate — :guilabel:`Match All`, :guilabel:`Match All (Same Field)` or
 :guilabel:`Match Any`. The difference between the first and second can be
 illustrated with a comment search. If you have a search::
 

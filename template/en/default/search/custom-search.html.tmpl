@@ -10,9 +10,9 @@
 
 PROCESS "global/field-descs.none.tmpl";
 
-_default = {
-  j_top       => default.j_top.0 || "AND",
-  conditions  => default.custom_search || [],
+_initial = {
+  j_top       => initial.j_top.0 || "AND",
+  conditions  => initial.custom_search || [],
 };
 
 _fields = [];
@@ -42,25 +42,27 @@ FOREACH type = types;
   _types.push({ value => type, label => search_descs.$type });
 END;
 
+# Use single quotes because some strigs contain variables to be replaced in the code
 _strings = {
-  add_group   => "Add New Group",
-  add_row     => "Add New Criteria",
-  criteria    => "Criteria",
-  field       => "Field",
-  grab        => "Drag to Move",
-  group       => "Group",
-  group_name  => "Group { $count }",
-  match_all         => "Match All",
-  match_all_hint    => "Match all of the following separately",
-  match_all_g       => "Match All (Same Field)",
-  match_all_g_hint  => "Match all of the following against the same field",
-  match_any         => "Match Any",
-  match_any_hint    => "Match any of the following separately",
-  "not"       => "Not",
-  operator    => "Operator",
-  remove      => "Remove",
-  row_name    => "Row { $count }",
-  value       => "Value",
+  add_group         => 'Add New Group',
+  add_row           => 'Add New Row',
+  field             => 'Field',
+  grab              => 'Drag to Move',
+  group             => 'Group',
+  group_name        => 'Group { $count }',
+  join_options      => 'Join Options',
+  match_all         => 'Match All',
+  match_all_hint    => 'Match all of the following separately',
+  match_all_g       => 'Match All (Same Field)',
+  match_all_g_hint  => 'Match all of the following against the same field',
+  match_any         => 'Match Any',
+  match_any_hint    => 'Match any of the following separately',
+  'not'             => 'Not',
+  operator          => 'Operator',
+  remove            => 'Remove',
+  row               => 'Row',
+  row_name          => 'Row { $count }',
+  value             => 'Value',
 };
 
 %]
@@ -69,12 +71,12 @@ _strings = {
   <div id="custom_search_query_controller" class="arrow">&#9660;</div>
   <a id="chart" href="javascript:TUI_toggle_class('custom_search_query')">Custom Search</a>
   <span class="section_help">
-    Didn't find what you're looking for above? This area allows for ANDs, ORs, and other more complex searches.
+    Didn’t find what you’re looking for above? This area allows for ANDs, ORs, and other more complex searches.
   </span>
 </div>
 
 <div id="custom-search" class="bz_search_section custom_search_query"
-     data-default="[% json_encode(_default) FILTER html %]"
+     data-initial="[% json_encode(_initial) FILTER html %]"
      data-fields="[% json_encode(_fields) FILTER html %]"
      data-types="[% json_encode(_types) FILTER html %]"
      data-strings="[% json_encode(_strings) FILTER html %]">
