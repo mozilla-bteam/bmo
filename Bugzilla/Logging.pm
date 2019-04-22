@@ -12,15 +12,14 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Log::Log4perl::MDC;
+use File::Spec::Functions qw(rel2abs catfile);
 use Bugzilla::Constants qw(bz_locations);
-use Mojo::File qw(path);
 use English qw(-no_match_vars $PROGRAM_NAME);
 
 sub logfile {
   my ($class, $name) = @_;
 
-  my $file = path(bz_locations->{logsdir}, $name);
-  $file->dirname->make_path;
+  my $file = rel2abs(catfile(bz_locations->{logsdir}, $name));
   return $file;
 }
 
@@ -29,9 +28,9 @@ sub fields {
 }
 
 BEGIN {
-  my $file = path($ENV{LOG4PERL_CONFIG_FILE} // 'log4perl-syslog.conf');
+  my $file = $ENV{LOG4PERL_CONFIG_FILE} // 'log4perl-syslog.conf';
   Log::Log4perl::Logger::create_custom_level('NOTICE', 'WARN', 5, 2);
-  Log::Log4perl->init($file->rel2abs(bz_locations->{confdir}));
+  Log::Log4perl->init(rel2abs($file, bz_locations->{confdir}));
   TRACE("logging enabled in $PROGRAM_NAME");
 }
 
