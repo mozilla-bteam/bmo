@@ -2872,26 +2872,28 @@ sub _component_nonchanged {
   my ($self, $args) = @_;
   my $dbh = Bugzilla->dbh;
   my (@products, @components);
+  my $product;
 
-  # Allow to search product/component pairs like "Core::General, IPC"
-  foreach my $word (split(/[\s,]+/, $args->{value})) {
-    $word =~ /^(?:(.+)\s*::\s*)?(.+)$/;
-    push(@products, $1) if $1;
-    push(@components, $2);
+  # Allow to search product/component pairs like "Core::General" with a simple
+  # operator. Since product/component names may include spaces, other operators
+  # like `anywords` won't work.
+  if ($args->{operator} =~ /^(:?(:?not)?equals)$/
+    && $args->{value} =~ /^(?:(.+)\s*::\s*)?(.+)$/)
+  {
+    $product = $1;
+    $args->{value}  = $args->{all_values} = $2;
+    $args->{quoted} = $dbh->quote($2);
   }
 
-  $args->{value} = $args->{all_values} = join(', ', @components);
-  $args->{quoted} = $dbh->quote($args->{value});
   $args->{full_field} = "components.name";
   $self->_do_operator_function($args);
 
   my $term = $args->{term};
 
-  if (scalar @products) {
-    my @quoted_products = map { $dbh->quote($_) } uniq @products;
+  if ($product) {
     $args->{term} = build_subselect('bugs.component_id', 'components.id',
       'components JOIN products ON components.product_id = products.id',
-      $term . ' AND ' . $dbh->sql_in('products.name', \@quoted_products));
+      $term . ' AND products.name = ' . $dbh->quote($product));
   } else {
     $args->{term} = build_subselect('bugs.component_id', 'components.id',
       'components', $term);
