@@ -39,7 +39,7 @@ exit 0 unless Int->check($year) && Int->check($month) && Int->check($day);
 
 my $html;
 my $template     = Bugzilla->template();
-my $end_date     = DateTime->new(year => $year, month => $month, day => $day);
+my $end_date     = DateTime->new(year => $year, month => $month, day => $day, time_zone  => 'America/Los_Angeles');
 my $start_date   = $end_date->clone()->subtract(months => 12);
 my $report_week  = $end_date->ymd('-');
 my $teams        = decode_json(Bugzilla->params->{report_secbugs_teams});
