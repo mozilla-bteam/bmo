@@ -1411,9 +1411,6 @@
         <li role="presentation">
           <a href="[% basepath FILTER none %]show_bug.cgi?ctype=xml&amp;id=[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">XML</a>
         </li>
-        <li role="presentation">
-          <a href="[% basepath FILTER none %]show_bug.cgi?format=default&amp;id=[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">Legacy</a>
-        </li>
         [% IF bug.groups_in.size == 0 %]
           <li role="presentation">
             <a href="[% basepath FILTER none %]rest/bug/[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">JSON</a>

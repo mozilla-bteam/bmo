@@ -49,7 +49,12 @@ sub _alternative_show_bug_format {
     return '' if $ctype ne 'html';
   }
   if (my $format = $cgi->param('format')) {
-    return ($format eq '__default__' || $format eq 'default') ? '' : $format;
+    # Drop `format=default` and 301 Moved Permanently redirect to the modal UI
+    if ($format eq '__default__' || $format eq 'default') {
+      $cgi->base_redirect('show_bug.cgi?id=' . $cgi->param('id'), 1);
+    }
+    # Otherwise, printable `format=multiple` is still supported
+    return $format;
   }
   return $user->setting('ui_experiments') eq 'on' ? 'modal' : '';
 }
