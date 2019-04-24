@@ -161,7 +161,7 @@
             [% END %]
 
             [% IF use_buttons %]
-            [% NEXT IF legal_value.name == '--' %]
+            [% NEXT IF field.is_mandatory && legal_value.name == '--' %]
             <div class="item">
               <input id="[% option_id FILTER html %]" type="radio"
                      name="[% field.name FILTER html %]" value="[% legal_value.name FILTER html %]"
