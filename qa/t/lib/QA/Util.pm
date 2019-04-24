@@ -260,6 +260,9 @@ sub file_bug_in_product {
   }
   $sel->title_is("Enter Bug: $product", "Display form to enter bug data");
   sleep(1); # FIXME: Delay for slow page performance
+
+  # Select the defect type by default
+  $sel->check_ok('//input[@name="bug_type" and @value="defect"]');
 }
 
 sub create_bug {
