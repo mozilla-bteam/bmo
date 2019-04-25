@@ -2625,7 +2625,7 @@ sub _long_desc_changedby {
 
 sub _long_desc_everchanged {
   my ($self, $args) = @_;
-  $self->_preprocess_everchanged($args);
+  $self->_convert_everchanged($args);
   $self->_long_desc_changedbefore_after($args);
 }
 
@@ -2772,7 +2772,7 @@ sub _work_time_changedby {
 
 sub _work_time_everchanged {
   my ($self, $args) = @_;
-  $self->_preprocess_everchanged($args);
+  $self->_convert_everchanged($args);
   $self->_work_time_changedbefore_after($args);
 }
 
@@ -3420,7 +3420,7 @@ sub _nowords {
 
 # Add support for the `everchanged` operator, which is a shortcut for
 # `changedafter`: `1970-01-01`
-sub _preprocess_everchanged {
+sub _convert_everchanged {
   my ($self, $args) = @_;
   $args->{operator} = 'changedafter';
   $args->{value}    = EMPTY_DATE;
@@ -3429,7 +3429,7 @@ sub _preprocess_everchanged {
 
 sub _everchanged {
   my ($self, $args) = @_;
-  $self->_preprocess_everchanged($args);
+  $self->_convert_everchanged($args);
   $self->_changedbefore_changedafter($args);
 }
 
