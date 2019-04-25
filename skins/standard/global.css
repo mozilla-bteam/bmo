@@ -1939,7 +1939,7 @@ table.tabs .clickable_area {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  z-index: 1;
+  z-index: 10;
   margin: 0;
   border-width: 1px;
   border-style: solid;

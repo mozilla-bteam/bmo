@@ -25,9 +25,11 @@
 .inline {
   display: table-cell !important;
   width: auto !important;
+  vertical-align: middle !important;
 }
 
 .gravatar {
+  margin-right: 4px;
   border-radius: 4px;
   vertical-align: middle;
 }
@@ -144,12 +146,12 @@ a.activity-ref {
 }
 
 .module-content {
-  padding: 4px;
+  padding: 5px;
 }
 
 .module .field {
   display: table;
-  margin: 4px;
+  margin: 4px 0;
   width: 100%;
   vertical-align: top;
 }
@@ -252,25 +254,28 @@ input[type="number"] {
 }
 
 #field-status_summary {
-  padding-top: 6px;
-  padding-bottom: 4px;
+  padding-top: 8px;
   color: var(--secondary-label-color);
 }
 
-#status-assignee,
-#status-assignee .vcard,
-#status-needinfo,
-#status-needinfo .vcard {
-  display: inline;
+#field-status_summary .bug-status-label {
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: #FFF;
+  font-weight: bold;
 }
 
-#field-status_summary .bug-type-label {
-  margin-right: 8px;
+#field-status_summary .bug-status-label[data-status="open"] {
+  background-color: var(--bug-status-color-open);
 }
 
-#status-assignee,
-#status-needinfo {
+#field-status_summary .bug-status-label[data-status="closed"] {
+  background-color: var(--bug-status-color-closed);
+}
+
+#field-status_summary .bug-time-label {
   margin-left: 8px;
+  color: var(--secondary-label-color);
 }
 
 #duplicate-container,
@@ -285,6 +290,10 @@ input[type="number"] {
 
 #dup_id {
   margin-left: 4px;
+}
+
+#mark-as-dup-btn {
+  white-space: nowrap;
 }
 
 #resolve-as,
@@ -421,10 +430,14 @@ input[type="number"] {
 #bottom-right-actions,
 .edit-textarea-set-btn {
   float: right;
+  margin-left: 8px;
+}
+
+#new-comment-actions {
+  float: left;
 }
 
 #bottom-actions {
-  margin-top: 8px;
   margin-bottom: 50px;
   max-width: 1024px;
 }
@@ -491,6 +504,17 @@ input[type="number"] {
 
 #attachments .vcard {
   display: inline;
+}
+
+#attachments-footer {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+#attachments-actions {
+  flex: auto;
+  display: flex;
 }
 
 #attachments-actions button {
@@ -1004,8 +1028,8 @@ h3.change-name a {
 #mode-container {
   display: table-cell;
   margin: 5px;
-  border-left: 5px solid transparent;
-  padding: 5px;
+  border-left: 10px solid transparent;
+  padding: 10px 5px;
   text-align: right;
   white-space: nowrap;
 }
@@ -1025,11 +1049,6 @@ h3.change-name a {
 
 #commit {
   margin: 5px;
-}
-
-#mode-container .button-row {
-  margin-top: 4px;
-  border-left: 5px solid transparent;
 }
 
 /**

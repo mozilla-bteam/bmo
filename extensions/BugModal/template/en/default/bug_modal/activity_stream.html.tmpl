@@ -263,7 +263,7 @@
       <meta itemprop="contentSize" content="[% att.datasize FILTER none %]">
       <meta itemprop="encodingFormat" content="[% att.mimetype FILTER html %]">
       <div class="label">
-        Posted [% IF att.is_image %]image
+        Attached [% IF att.is_image %]image
           [% ELSIF att.is_audio %]audio[% ELSIF att.is_video %]video
           [% ELSIF att.ispatch %]patch[% ELSE %]file[% END %]
         [% IF att.ispatch %]
