@@ -196,7 +196,7 @@ END;
               [% FOREACH v IN values %]
                 [% NEXT IF NOT v.is_active AND NOT value.contains(v.name).size %]
                 [% NEXT IF NOT bug.check_can_change_field(name, bug.${field_name}, v.name) %]
-                [% NEXT IF field.is_mandatory && v == '--' %]
+                [% NEXT IF field.is_mandatory && v.name == '--' %]
                 <div class="item">
                   <input id="v[% v.id FILTER html %]_[% name FILTER html %]" type="radio" name="[% name FILTER html %]"
                          value="[% v.name FILTER html %]" [% " checked" IF value.contains(v.name).size %]>
