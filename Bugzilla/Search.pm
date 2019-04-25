@@ -203,7 +203,6 @@ use constant OPERATOR_REVERSE => {
 # For these operators, even if a field is numeric (is_numeric returns true),
 # we won't treat the input like a number.
 use constant NON_NUMERIC_OPERATORS => qw(
-  everchanged
   changedafter
   changedbefore
   changedfrom
