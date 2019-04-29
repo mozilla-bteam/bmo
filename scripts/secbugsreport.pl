@@ -33,16 +33,16 @@ use Types::Standard qw(Int);
 BEGIN { Bugzilla->extensions }
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my ($year, $month, $day, $hour, $minute, $second, $time_zone_offset) = @ARGV;
+my ($year, $month, $day, $hours, $minutes, $seconds, $time_zone_offset) = @ARGV;
 
 exit 0 unless Bugzilla->params->{report_secbugs_active};
 exit 0
   unless Int->check($year)
   && Int->check($month)
   && Int->check($day)
-  && Int->check($hour)
-  && Int->check($minute)
-  && Int->check($second);
+  && Int->check($hours)
+  && Int->check($minutes)
+  && Int->check($seconds);
 
 my $html;
 my $template = Bugzilla->template();
@@ -50,9 +50,9 @@ my $end_date = DateTime->new(
   year      => $year,
   month     => $month,
   day       => $day,
-  hour      => $hour,
-  minute    => $minute,
-  second    => $second,
+  hour      => $hours,
+  minute    => $minutes,
+  second    => $seconds,
   time_zone => $time_zone_offset
 );
 $end_date->set_time_zone('UTC');
