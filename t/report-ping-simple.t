@@ -70,16 +70,15 @@ is($rs->first->id, 1, "first bug of page 1 is 1");
 
 my ($first, $second, $third, @rest) = $rs->all;
 {
-  my ($id, $doc) = $report->prepare( $first );
+  my $doc = $report->prepare( $first );
 
-  is($id, "1-$time{1}", "doc id is correct");
   is($doc->{product}, 'Firefox');
   is($doc->{keywords}, []);
   is([map { "$_" } $report->validate($doc)], [], "No errors for first doc");
 }
 
 {
-  my ($id, $doc) = $report->prepare( $third );
+  my $doc = $report->prepare( $third );
   is($id, "3-$time{3}", "doc id is correct");
   is($doc->{product}, 'Firefox');
   is($doc->{keywords}, ['regression']);
