@@ -18,6 +18,7 @@ my ($sel, $config) = get_selenium();
 # If a saved search named 'SavedSearchTEST1' exists, remove it.
 
 log_in($sel, $config, 'QA_Selenium_TEST');
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -52,12 +53,13 @@ ok(
   $text =~ /OK, you have a new search named SavedSearchTEST1./,
   "New search named SavedSearchTEST1 has been created"
 );
-$sel->click_ok("link=SavedSearchTEST1");
+$sel->click_ok('//a[normalize-space(text())="SavedSearchTEST1" and not(@role="option")]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: SavedSearchTEST1");
 
 # Remove the saved search from the Search Bar. It should no longer be displayed there.
 
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -104,6 +106,7 @@ ok(
 # As the saved search is no longer displayed in the Search Bar, we have to go
 # to the "Preferences" page to edit it.
 
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -117,6 +120,7 @@ $sel->click_ok(
 );
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: SavedSearchTEST1");
+sleep(30);
 $sel->click_ok("link=Edit Search");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search for bugs");

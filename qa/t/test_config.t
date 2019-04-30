@@ -23,16 +23,15 @@ logout($sel);
 
 # Accessing config.cgi should display no sensitive data.
 
-$sel->open_ok("/config.cgi",
-  undef, "Go to config.cgi (JS format)");
-$sel->is_text_present_ok("var status = [ ];");
-$sel->is_text_present_ok("var status_open = [ ];");
-$sel->is_text_present_ok("var status_closed = [ ];");
-$sel->is_text_present_ok("var resolution = [ ];");
-$sel->is_text_present_ok("var keyword = [ ];");
-$sel->is_text_present_ok("var platform = [ ];");
-$sel->is_text_present_ok("var severity = [ ];");
-$sel->is_text_present_ok("var field = [\n];");
+$sel->open_ok("/config.cgi", undef, "Go to config.cgi (JS format)");
+$sel->is_text_present_ok("var status");
+$sel->is_text_present_ok("var status_open");
+$sel->is_text_present_ok("var status_closed");
+$sel->is_text_present_ok("var resolution");
+$sel->is_text_present_ok("var keyword");
+$sel->is_text_present_ok("var platform");
+$sel->is_text_present_ok("var severity");
+$sel->is_text_present_ok("var field");
 
 ok(!$sel->is_text_present("cf_"),        "No custom field displayed");
 ok(!$sel->is_text_present("component["), "No component displayed");

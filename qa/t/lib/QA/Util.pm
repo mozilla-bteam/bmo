@@ -16,7 +16,7 @@ use Test::WWW::Selenium;
 use MIME::Base64 qw(decode_base64);
 use Sys::Hostname qw(hostname);
 use Socket qw(inet_ntoa);
-use Test::Selenium::Remote::Driver;
+use Bugzilla::Test::Selenium;
 use Selenium::Firefox::Profile;
 use URI;
 use URI::QueryParam;
@@ -59,7 +59,7 @@ use base qw(Exporter);
 );
 
 # How long we wait for pages to load.
-use constant WAIT_TIME => 60000;
+use constant WAIT_TIME => 60000;;
 use constant CONF_FILE => $ENV{BZ_QA_CONF_FILE}
   // "../config/selenium_test.conf";
 use constant CHROME_MODE => 1;
@@ -117,22 +117,19 @@ sub get_config {
 
 sub get_selenium {
   my $chrome_mode = shift;
-  my $config = get_config();
+  my $config      = get_config();
 
-  my $sel = Test::Selenium::Remote::Driver->new({
-    browser_name       => $chrome_mode ? $config->{experimental_browser_launcher} : $config->{browser},
-    remote_server_addr => $config->{host},
-    port               => $config->{port},
-    base_url           => $config->{browser_url},
-    platform           => 'ANY',
-    firefox_profile    => Selenium::Firefox::Profile->new(),
-    accept_ssl_certs   => 0,
-    javascript         => 1,
-    extra_capabilities => {
-    'moz:firefoxOptions' => {
-      args => [ '-headless' ],
-    },
-  });
+  my $sel = Bugzilla::Test::Selenium->new({
+    driver_args => {
+      base_url   => $config->{browser_url},
+      browser    => 'firefox',
+      version    => '',
+      javascript => 1
+    }
+    });
+
+  $sel->driver->set_timeout('implicit', 600);
+  $sel->driver->set_timeout('page load', 60000);
 
   return ($sel, $config);
 }
@@ -140,7 +137,7 @@ sub get_selenium {
 sub get_xmlrpc_client {
   my $config = get_config();
   my $xmlrpc_url
-    = $config->{browser_url}
+    = $config->{browser_url} . "/"
     . "/xmlrpc.cgi";
 
   require QA::RPC::XMLRPC;
@@ -184,7 +181,7 @@ sub screenshot_page {
   my ($sel, $filename) = @_;
   open my $fh, '>:raw', $filename or die "unable to write $filename: $!";
   binmode $fh;
-  print $fh decode_base64($sel->capture_entire_page_screenshot_to_string());
+  print $fh decode_base64($sel->driver->screenshot());
   close $fh;
 }
 
@@ -192,8 +189,7 @@ sub screenshot_page {
 sub log_in {
   my ($sel, $config, $user) = @_;
 
-  $sel->open_ok("/login",
-    undef, "Go to the home page");
+  $sel->open_ok("/login", undef, "Go to the home page");
   $sel->title_is("Log in to Bugzilla");
   $sel->type_ok(
     "Bugzilla_login",
@@ -213,8 +209,7 @@ sub log_in {
 # Log out. Will fail if you are not logged in.
 sub logout {
   my $sel = shift;
-
-  $sel->click_ok("link=Log out", undef, "Logout");
+  $sel->open_ok('/logout', undef, "Logout");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Logged Out");
 }
@@ -224,9 +219,19 @@ sub file_bug_in_product {
   my ($sel, $product, $classification) = @_;
   my $config = get_config();
 
+  $sel->add_cookie('TUI',
+    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1&custom_search_advanced=1'
+  );
+
   $classification ||= "Unclassified";
   $sel->click_ok('//*[@class="link-file"]//a', undef, "Go create a new bug");
   $sel->wait_for_page_to_load(WAIT_TIME);
+
+  # Use normal bug form instead of helper
+  if ($sel->is_text_present('Switch to the advanced bug entry form')) {
+    $sel->click_ok('//a[@id="advanced_link"]', undef, 'Switch to the advanced bug entry form');
+  }
+
   my $title = $sel->get_title();
   if ($sel->is_text_present("Select Classification")) {
     ok(1,
@@ -237,14 +242,13 @@ sub file_bug_in_product {
   }
   if ($sel->is_text_present("Which product is affected by the problem")) {
     ok(1, "Which product is affected by the problem");
-    $sel->click_ok("link=Other Products", undef, "Choose full product list");
+    $sel->click_ok('//a/span[contains(text(),"Other Products")]', undef, "Choose full product list");
     $sel->wait_for_page_to_load(WAIT_TIME);
     $title = $sel->get_title();
   }
   if ($sel->is_text_present($product)) {
     ok(1, "Display the list of enterable products");
-    $sel->open_ok(
-        "/enter_bug.cgi?product=$product&format=__default__",
+    $sel->open_ok("/enter_bug.cgi?product=$product&format=__default__",
       undef,
       "Choose product $product"
     );
@@ -256,22 +260,16 @@ sub file_bug_in_product {
     );
   }
   $sel->title_is("Enter Bug: $product", "Display form to enter bug data");
-
-  # Always make sure all fields are visible
-  if ($sel->is_element_present('//input[@value="Show Advanced Fields"]')) {
-    $sel->click_ok('//input[@value="Show Advanced Fields"]');
-  }
+  sleep(1); # FIXME: Delay for slow page performance
 }
 
 sub create_bug {
   my ($sel, $bug_summary) = @_;
-  my $ndash = NDASH;
-
   $sel->click_ok('commit');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  my $bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
+  my $bug_id = $sel->find_element('//input[@name="id" and @type="hidden"]')->get_value();
   $sel->title_like(
-    qr/$bug_id $ndash( \(.*\))? $bug_summary/,
+    qr/$bug_id -( \(.*\))? $bug_summary/,
     "Bug $bug_id created with summary '$bug_summary'"
   );
   return $bug_id;
@@ -279,7 +277,7 @@ sub create_bug {
 
 sub edit_bug {
   my ($sel, $bug_id, $bug_summary, $options) = @_;
-  my $btn_id = $options ? $options->{id} : 'commit';
+  my $btn_id = $options ? $options->{id} : 'bottom-save-btn';
   $sel->click_ok($btn_id);
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->is_text_present_ok("Changes submitted for bug $bug_id");
@@ -287,30 +285,35 @@ sub edit_bug {
 
 sub edit_bug_and_return {
   my ($sel, $bug_id, $bug_summary, $options) = @_;
-  my $ndash = NDASH;
   edit_bug($sel, $bug_id, $bug_summary, $options);
   $sel->click_ok("//a[contains(\@href, '/show_bug.cgi?id=$bug_id')]");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("$bug_id $ndash $bug_summary", "Returning back to bug $bug_id");
+  $sel->title_is("$bug_id - $bug_summary", "Returning back to bug $bug_id");
 }
 
 # Go to show_bug.cgi.
 sub go_to_bug {
-  my ($sel, $bug_id) = @_;
+  my ($sel, $bug_id, $logged_out) = @_;
 
   $sel->type_ok("quicksearch_top", $bug_id);
-  $sel->submit("header-search");
+  $sel->driver->find_element('//*[@id="quicksearch_top"]')->submit;
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
+  check_page_load($sel,
+    qq{http://HOSTNAME/show_bug.cgi?id=$bug_id});
   my $bug_title = $sel->get_title();
   utf8::encode($bug_title) if utf8::is_utf8($bug_title);
   $sel->title_like(qr/^$bug_id /, $bug_title);
+  sleep(1); # FIXME: Sometimes we try to click edit bug before it is ready so wait a second
+  $sel->click_ok('mode-btn-readonly', 'Click Edit Bug') if !$logged_out;
+  $sel->click_ok('action-menu-btn', 'Expand action menu');
+  $sel->click_ok('action-expand-all', 'Expand all modal panels');
 }
 
 # Go to admin.cgi.
 sub go_to_admin {
   my $sel = shift;
 
-  $sel->click_ok("link=Administration", undef, "Go to the Admin page");
+  $sel->open_ok("/admin.cgi", undef, "Go to the Admin page");
   $sel->wait_for_page_to_load(WAIT_TIME);
   $sel->title_like(qr/^Administer your installation/, "Display admin.cgi");
 }
@@ -366,6 +369,9 @@ sub add_product {
 sub open_advanced_search_page {
   my $sel = shift;
 
+  $sel->add_cookie('TUI',
+    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1&custom_search_advanced=1'
+  );
   $sel->click_ok('//*[@class="link-search"]//a');
   $sel->wait_for_page_to_load(WAIT_TIME);
   my $title = $sel->get_title();
@@ -374,7 +380,7 @@ sub open_advanced_search_page {
     $sel->click_ok("link=Advanced Search");
     $sel->wait_for_page_to_load(WAIT_TIME);
   }
-  $sel->title_is("Search for bugs", "Display the Advanced search form");
+  sleep(1); # FIXME: Delay for slow page performance
 }
 
 # $params is a hashref of the form:
@@ -435,12 +441,14 @@ sub set_parameters {
   }
 }
 
-my @ANY_KEYS = qw( t token );
+my @ANY_KEYS = qw( t token list_id );
 
 sub check_page_load {
-  my ($sel, $wait, $expected) = @_;
+  my ($sel, $expected) = @_;
+  # FIXME: For some reason in some cases I need this otherwise
+  # it thinks it is still on the previous page
+  sleep(1);
   my $expected_uri = URI->new($expected);
-  $sel->wait_for_page_to_load_ok($wait);
   my $uri = URI->new($sel->get_location);
 
   foreach my $u ($expected_uri, $uri) {

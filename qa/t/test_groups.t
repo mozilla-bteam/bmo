@@ -69,10 +69,10 @@ $sel->value_is("group_${group_id}", "on");     # Must be ON
 
 open_advanced_search_page($sel);
 $sel->remove_all_selections_ok("product");
-$sel->add_selection_ok("product", "TestProduct");
+$sel->select_ok("product", "label=TestProduct");
 $sel->remove_all_selections("bug_status");
-$sel->add_selection_ok("bug_status", "UNCONFIRMED");
-$sel->add_selection_ok("bug_status", "CONFIRMED");
+$sel->select_ok("bug_status", "label=UNCONFIRMED");
+$sel->select_ok("bug_status", "label=CONFIRMED");
 $sel->select_ok("f1", "Group");
 $sel->select_ok("o1", "is equal to");
 $sel->type_ok("v1", "Selenium-test");

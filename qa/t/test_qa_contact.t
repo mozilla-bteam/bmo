@@ -61,10 +61,10 @@ my $bug1_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 open_advanced_search_page($sel);
 $sel->remove_all_selections_ok("product");
-$sel->add_selection_ok("product", "TestProduct");
+$sel->select_ok("product", "label=TestProduct");
 $sel->remove_all_selections("bug_status");
-$sel->select_ok("f1", "label=QA Contact");
-$sel->select_ok("o1", "label=is equal to");
+$sel->select_ok("f1", "value=qa_contact");
+$sel->select_ok("o1", "value=equals");
 $sel->type_ok(
   "v1",
   $config->{unprivileged_user_login},
@@ -98,11 +98,9 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: My QA query");
 $sel->is_text_present_ok("One bug found");
 $sel->is_element_present_ok("b$bug1_id", undef, "Bug $bug1_id is on the list");
-$sel->click_ok("link=$bug1_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id /);
 
 # The 'QA Contact' label must not be displayed.
+go_to_bug($sel, $bug1_id);
 ok(!$sel->is_element_present('//label[@for="qa_contact"]'));
 logout($sel);
 
@@ -151,6 +149,7 @@ logout($sel);
 # some user prefs correctly to not interfere with our test.
 
 log_in($sel, $config, 'unprivileged');
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -165,10 +164,10 @@ $sel->title_is("User Preferences");
 
 open_advanced_search_page($sel);
 $sel->remove_all_selections_ok("product");
-$sel->add_selection_ok("product", "TestProduct");
+$sel->select_ok("product", "label=TestProduct");
 $sel->remove_all_selections_ok("bug_status");
-$sel->select_ok("f1", "label=QA Contact");
-$sel->select_ok("o1", "label=is equal to");
+$sel->select_ok("f1", "value=qa_contact");
+$sel->select_ok("o1", "value=equals");
 $sel->type_ok(
   "v1",
   $config->{unprivileged_user_login},
@@ -180,9 +179,7 @@ $sel->title_is("Bug List");
 $sel->is_text_present_ok("One bug found");
 $sel->is_element_present_ok("b$bug1_id", undef, "Bug $bug1_id is on the list");
 $sel->is_text_present_ok("Test for QA contact");
-$sel->click_ok("link=$bug1_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/$bug1_id /);
+go_to_bug($sel, $bug1_id);
 $sel->click_ok("bz_qa_contact_edit_action");
 $sel->value_is(
   "qa_contact",

@@ -34,7 +34,7 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create Flag Type for Bugs");
 $sel->type_ok("name",        "selenium");
 $sel->type_ok("description", "Available in TestProduct and Another Product/c1");
-$sel->add_selection_ok("inclusion_to_remove", "label=__Any__:__Any__");
+$sel->select_ok("inclusion_to_remove", "label=__Any__:__Any__");
 $sel->click_ok("categoryAction-removeInclusion");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create Flag Type for Bugs");
@@ -83,7 +83,7 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create Flag Type for Attachments");
 $sel->type_ok("name",        "selenium_review");
 $sel->type_ok("description", "Review flag used by Selenium");
-$sel->add_selection_ok("inclusion_to_remove", "label=__Any__:__Any__");
+$sel->select_ok("inclusion_to_remove", "label=__Any__:__Any__");
 $sel->click_ok("categoryAction-removeInclusion");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create Flag Type for Attachments");
@@ -151,7 +151,7 @@ $sel->type_ok("short_desc",
   "The selenium flag should be kept on product change");
 $sel->type_ok("comment", "pom");
 $sel->click_ok('//input[@value="Add an attachment"]');
-$sel->attach_file('//input[@name="data"]', $config->{attachment_file});
+$sel->type_ok('//textarea[@name="attach_text"]', read_file($config->{attachment_file}));
 $sel->type_ok('//input[@name="description"]', "small patch");
 
 # This somehow fails with the current script but works when testing manually
@@ -260,7 +260,7 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create Flag Type for Bugs");
 $sel->type_ok("name",        "selenium");
 $sel->type_ok("description", "Another flag with the selenium name");
-$sel->add_selection_ok("inclusion_to_remove", "label=__Any__:__Any__");
+$sel->select_ok("inclusion_to_remove", "label=__Any__:__Any__");
 $sel->click_ok("categoryAction-removeInclusion");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create Flag Type for Bugs");

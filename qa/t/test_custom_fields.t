@@ -23,7 +23,7 @@ my $bug_summary = "What's your ID?";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment",
   "Use the ID of this bug to generate a unique custom field name.");
-$sel->type_ok("bug_severity", "label=normal");
+$sel->select_ok("bug_severity", "label=normal");
 my $bug1_id = create_bug($sel, $bug_summary);
 
 # Create custom fields
@@ -239,7 +239,7 @@ edit_bug($sel, $bug2_id);
 
 open_advanced_search_page($sel);
 $sel->remove_all_selections_ok("product");
-$sel->add_selection_ok("product", "TestProduct");
+$sel->select_ok("product", "label=TestProduct");
 $sel->remove_all_selections("bug_status");
 $sel->remove_all_selections("resolution");
 $sel->select_ok("f1", "label=List$bug1_id");
@@ -411,8 +411,8 @@ $sel->is_text_present_ok("Freetext$bug1_id: thanks");
 log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("Freetext$bug1_id: thanks");
-$sel->click_ok("cc_edit_area_showhide");
-$sel->type_ok("newcc", $config->{unprivileged_user_login});
+$sel->click_ok("add-cc-btn");
+$sel->type_ok("add-cc", $config->{unprivileged_user_login});
 edit_bug($sel, $bug1_id);
 logout($sel);
 

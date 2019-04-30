@@ -29,7 +29,7 @@ set_parameters(
 # Create new saved search and call it 'Shared Selenium buglist'.
 
 $sel->type_ok("quicksearch_top", ":TestProduct Selenium");
-$sel->submit("header-search");
+$sel->submit("quicksearch_top");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^Bug List:/);
 $sel->type_ok("save_newqueryname", "Shared Selenium buglist");
@@ -45,6 +45,7 @@ ok(
 # Retrieve the newly created saved search's internal ID and make sure it's displayed
 # in the Search Bar by default.
 
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -84,6 +85,7 @@ ok(!$sel->is_text_present("Forget Search 'Shared Selenium buglist'"),
 
 # The name of the sharer must appear in the "Saved Searches" section.
 
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -113,7 +115,7 @@ ok(
 # Create your own saved search, and share it with the canconfirm group.
 
 $sel->type_ok("quicksearch_top", ":TestProduct sw:helpwanted");
-$sel->submit("header-search");
+$sel->submit("quicksearch_top");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^Bug List:/);
 $sel->type_ok("save_newqueryname", "helpwanted");
@@ -126,6 +128,7 @@ ok(
   "New search named helpwanted has been created"
 );
 
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -155,6 +158,7 @@ ok(
   !$sel->is_text_present("helpwanted"),
   "No 'helpwanted' shared search displayed"
 );
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -181,6 +185,7 @@ $sel->title_is("Bug List: helpwanted");
 
 # Remove the 'Shared Selenium buglist' query.
 
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -209,6 +214,7 @@ log_in($sel, $config, 'QA_Selenium_TEST');
 $sel->click_ok("quicksearch_top");
 ok(!$sel->is_text_present("helpwanted"),
   "The 'helpwanted' query is not displayed in the Search Bar");
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
@@ -223,6 +229,7 @@ logout($sel);
 # Now remove the 'helpwanted' saved search.
 
 log_in($sel, $config, 'canconfirm');
+$sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
