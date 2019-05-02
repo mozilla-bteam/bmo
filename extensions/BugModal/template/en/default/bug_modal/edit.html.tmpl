@@ -490,7 +490,8 @@
 
     [%# importance %]
     [% WRAPPER bug_modal/field.html.tmpl
-        label = "Importance"
+        name = "importance"
+        label = "Priority"
         container = 1
         hide_on_view = bug.priority == "--" && bug.bug_severity == "normal"
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
@@ -507,6 +508,7 @@
           field_type = constants.FIELD_TYPE_SINGLE_SELECT
           aria_label = bug_fields.bug_severity.description
           inline = 1
+          label = "Severity"
       %]
       [% UNLESS cf_hidden_in_product('cf_rank', bug.product, bug.component, bug) %]
         [% rendered_custom_fields.push('cf_rank') %]

@@ -278,6 +278,14 @@ input[type="number"] {
   color: var(--secondary-label-color);
 }
 
+#field-importance .name {
+  vertical-align: middle;
+}
+
+#field-importance .container {
+  display: flex;
+}
+
 #duplicate-container,
 #duplicate-actions,
 #assigned-container,
