@@ -509,6 +509,7 @@
           aria_label = bug_fields.bug_severity.description
           inline = 1
           label = "Severity"
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_severity"
       %]
       [% UNLESS cf_hidden_in_product('cf_rank', bug.product, bug.component, bug) %]
         [% rendered_custom_fields.push('cf_rank') %]
@@ -519,6 +520,7 @@
             label = "Rank"
             hide_on_view = bug.cf_rank == ""
             hide_on_edit = !user.in_group('rank-setters')
+            help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#rank"
         %]
       [% END %]
     [% END %]
