@@ -11,6 +11,7 @@
 
 #mydashboard .yui3-skin-sam .yui3-datatable-table {
   width: 100%;
+  color: var(--secondary-label-color);
 }
 
 .yui3-datatable-col-bug_type {
@@ -20,6 +21,10 @@
 .yui3-datatable-col-changeddate,
 .yui3-datatable-col-created {
   white-space: nowrap;
+}
+
+.yui3-datatable-col-short_desc {
+  color: var(--primary-label-color);
 }
 
 #mydashboard .requests {

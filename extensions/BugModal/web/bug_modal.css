@@ -1045,20 +1045,20 @@ h3.change-name a {
 }
 
 div.ui-widget-content {
-  color: var(--control-foreground-color);
-  background: var(--control-background-color);
+  color: var(--control-foreground-color) !important;
+  background: var(--control-background-color) !important;
 }
 
 div.ui-tooltip {
-  border: 1px solid var(--control-border-color);
-  border-radius: 2px;
-  padding: 4px 8px;
-  max-width: 500px;
-  color: var(--secondary-label-color);
-  background: var(--menu-background-color);
-  box-shadow: var(--menu-box-shadow);
-  font-size: var(--font-size-small);
-  font-family: inherit;
+  border: 1px solid var(--control-border-color) !important;
+  border-radius: 2px !important;
+  padding: 4px 8px !important;
+  max-width: 500px !important;
+  color: var(--secondary-label-color) !important;
+  background: var(--menu-background-color) !important;
+  box-shadow: var(--menu-box-shadow) !important;
+  font-size: var(--font-size-small) !important;
+  font-family: inherit !important;
 }
 
 .yui-ac {

@@ -149,6 +149,7 @@
     --application-foreground-color: rgb(60, 61, 62);
     --application-background-color: rgb(235, 236, 237);
     --application-header-foreground-color: rgb(200, 201, 202);
+    --application-header-foreground-hover-color: rgb(240, 241, 242);
     --application-header-background-color: rgb(50, 51, 52);
     --secondary-application-header-foreground-color: rgb(240, 241, 242);
     --secondary-application-header-background-color: rgb(70, 71, 72);
@@ -205,10 +206,10 @@
     --disabled-control-foreground-color: rgb(160, 161, 162);
 
     /** Button */
-    --primary-button-foreground-color: rgb(250, 251, 252);
+    --primary-button-foreground-color: rgb(255, 255, 255);
     --primary-button-background-color: rgb(var(--accent-color-blue-1));
     --primary-button-border-color: rgb(var(--accent-color-blue-1));
-    --secondary-button-foreground-color: var(--secondary-text-color);
+    --secondary-button-foreground-color: var(--primary-label-color);
     --secondary-button-background-color: rgb(220, 221, 222);
     --secondary-button-border-color: rgb(210, 211, 212);
     --danger-button-foreground-color: var(--primary-button-foreground-color);
@@ -221,13 +222,14 @@
 
     /** Menu */
     --menu-border-color: var(--secondary-button-border-color);
-    --menu-foreground-color: var(--secondary-text-color);
+    --menu-foreground-color: var(--primary-label-color);
     --menu-background-color: var(--primary-region-background-color);
     --menu-box-shadow: 0 1px 12px rgba(40, 41, 42, .2);
     --hovered-menuitem-background-color: var(--selected-control-background-color);
 
     /** Tab */
-    --selected-tab-foreground-color: rgb(var(--accent-color-blue-1));
+    --selected-tab-foreground-color: var(--link-text-color);
+    --selected-tab-border-color: var(--focused-control-border-color);
 
     /** Grid */
     --grid-background-color: var(--primary-region-background-color);
@@ -237,11 +239,11 @@
   }
 
   input[type="checkbox"]:checked {
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="rgb(250, 251, 252)" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="rgb(255, 255, 255)" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
   }
 
   input[type="checkbox"]:indeterminate {
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="rgb(250, 251, 252)" d="M19 13H5v-2h14v2z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="rgb(255, 255, 255)" d="M19 13H5v-2h14v2z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
   }
 
   select:not([multiple]):not([size]) {
@@ -256,8 +258,10 @@
 @media screen and (prefers-color-scheme: dark) {
   :root {
     /** Accent Colors */
-    --accent-color-green-1: 61, 153, 61;
-    --accent-color-blue-2: 0, 148, 247;
+    --accent-color-red-1: 255, 47, 36;
+    --accent-color-red-2: 220, 40, 30;
+    --accent-color-green-1: 17, 166, 17;
+    --accent-color-blue-3: 0, 148, 247;
     --accent-color-lightyellow-1: 64, 47, 4;
     --accent-color-pink-1: 128, 64, 64;
     --accent-color-lightgreen-1: 64, 128, 64;
@@ -282,6 +286,8 @@
 
     /** Text */
     --secondary-text-color: rgb(140, 141, 142);
+    --link-text-color: rgb(var(--accent-color-blue-3));
+    --link-text-hover-color: rgb(var(--accent-color-blue-1));
 
     /** Control */
     --control-background-color: rgb(35, 36, 37);
@@ -455,7 +461,6 @@ button,
 select,
 textarea {
   vertical-align: middle;
-  transition: all linear 100ms;
 }
 
 input[type="date"],
@@ -654,7 +659,6 @@ input[type="radio"]:checked {
   min-width: 1em;
   min-height: 1em;
   background-color: var(--secondary-button-background-color);
-  transition: all linear 100ms;
 }
 
 .buttons.toggle[role="radiogroup"] .item:first-child label {
@@ -702,7 +706,7 @@ input[type="radio"]:checked {
 }
 
 [role="tab"][aria-selected="true"] {
-  border-color: var(--focused-control-border-color);
+  border-color: var(--selected-tab-border-color);
   color: var(--selected-tab-foreground-color);
 }
 
@@ -993,7 +997,6 @@ input[type="radio"]:checked {
   line-height: 1;
   font-family: 'Material Icons';
   vertical-align: middle;
-  opacity: .8;
   pointer-events: none;
 }
 
@@ -1010,7 +1013,6 @@ input[type="radio"]:checked {
   border-radius: 4px;
   padding: 0 8px;
   height: 32px;
-  transition: all linear 100ms;
 }
 
 #header .title a:hover,
@@ -1019,7 +1021,7 @@ input[type="radio"]:checked {
 #header .links a:focus,
 #header-tools-menu-button:hover,
 #header-tools-menu-button:focus {
-  opacity: .8;
+  color: var(--application-header-foreground-hover-color) !important;
 }
 
 #header form.quicksearch {
@@ -1112,7 +1114,6 @@ input[type="radio"]:checked {
   color: inherit;
   background: transparent;
   box-shadow: none;
-  transition: none;
 }
 
 #header-search h2 {
@@ -1736,10 +1737,11 @@ table.tabs td {
 
 table.tabs td.selected {
   position: relative;
-  border-color: var(--focused-control-border-color);
+  border-color: var(--selected-tab-border-color);
   color: var(--selected-tab-foreground-color);
   background-color: var(--primary-region-background-color);
   box-shadow: var(--primary-region-box-shadow);
+  font-weight: 500;
 }
 
 table.tabs td.selected::before,
@@ -1894,7 +1896,6 @@ table.tabs .clickable_area {
   outline: 0;
   text-decoration: none;
   cursor: pointer;
-  transition: all linear 100ms;
 }
 
 .dropdown-content [role^="menuitem"]:hover,

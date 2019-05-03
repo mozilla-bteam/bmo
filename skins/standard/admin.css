@@ -190,8 +190,9 @@ th.title {
 }
 
 #prefnav li.selected {
-  border-color: var(--focused-control-border-color);
+  border-color: var(--selected-tab-border-color);
   color: var(--selected-tab-foreground-color);
+  font-weight: 500;
 }
 
 .category_header {
