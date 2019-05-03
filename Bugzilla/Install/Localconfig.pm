@@ -138,6 +138,7 @@ sub _read_localconfig_from_file {
   my %localconfig;
   if (-e $filename) {
     my $s = Safe->new;
+    my $stash = Package::Stash->new($s->root);
 
     # Some people like to store their database password in another file.
     $s->permit('dofile');
@@ -153,17 +154,13 @@ sub _read_localconfig_from_file {
 
     my @read_symbols;
     if ($include_deprecated) {
-
-      # First we have to get the whole symbol table
-      my $stash = Package::Stash->new($s->root);
-
       # And now we read the contents of every var in the symbol table.
       # However:
       # * We only include symbols that start with an alphanumeric
       #   character. This excludes symbols like "_<./localconfig"
       #   that show up in some perls.
       # * We ignore the INC symbol, which exists in every package.
-      # * Perl 5.10 imports a lot of random symbols that all
+      # * Perl 5.10 includes default symbol tables which
       #   contain "::", and we want to ignore those.
       @read_symbols
         = grep { /^[A-Za-z0-1]/ and !/^INC$/ and !/::/ } $stash->list_all_symbols();
