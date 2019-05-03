@@ -1262,7 +1262,7 @@ input[type="radio"]:checked {
  * Narrower global header
  */
 
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1023px) {
   #message-container .inner,
   #header .inner {
     width: 800px;
