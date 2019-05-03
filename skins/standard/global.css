@@ -323,6 +323,7 @@ body {
   font-size: var(--font-size-medium);
   line-height: var(--line-height-default);
   font-family: var(--font-family-sans-serif);
+  scrollbar-color: var(--control-border-color) var(--secondary-control-border-color);
 }
 
 pre,
