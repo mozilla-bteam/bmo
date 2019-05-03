@@ -175,7 +175,8 @@ sub _read_localconfig_from_file {
       foreach my $sigil (qw( $ @ % )) {
         my $symbol = $sigil . $var;
         if ($stash->has_symbol($symbol)) {
-          $localconfig{$var} = $stash->get_symbol($symbol);
+          my $val = $stash->get_symbol($symbol);
+          $localconfig{$var} = ref($val) eq 'SCALAR' ? $$val : $val;
         }
       }
     }
