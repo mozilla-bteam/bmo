@@ -28,7 +28,7 @@
   style = "
     table#flag_types_bugs tr th,
     table#flag_types_attachments tr th { text-align: left; }
-    .inactive { color: #787878; }
+    .inactive { color: var(--disabled-control-foreground-color); }
     .multiplicable { display: block; }
   "
   onload="var f = document.flagtype_form; selectProduct(f.product, f.component, null, null, '__All__');"
@@ -111,7 +111,7 @@
 
 
 [% BLOCK display_flag_types %]
-  <table id="flag_types_[% types_id FILTER html %]" cellspacing="0" cellpadding="4" border="1">
+  <table id="flag_types_[% types_id FILTER html %]" class="standard">
 
     <tr>
       <th>Edit name ...</th>

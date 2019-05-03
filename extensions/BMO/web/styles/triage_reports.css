@@ -10,11 +10,12 @@
 }
 
 #triage_form th {
-    text-align: left;
+  text-align: left;
 }
 
-#product, #component {
-    width: 20em;
+#product,
+#component {
+  width: 20em;
 }
 
 #triage_owners_form th {
@@ -26,17 +27,15 @@
   position: relative;
   width: 100%;
   border-collapse: collapse;
+  border: 1px solid var(--control-border-color);
+  background-color: var(--grid-background-color);
 }
 
 #report thead {
   position: sticky;
   top: 0;
   left: 0;
-  background: #dddddd;
-}
-
-#report tr.bugitem:hover {
-  background: #ccccff;
+  background-color: var(--grid-header-background-color);
 }
 
 #report th,
@@ -53,7 +52,7 @@
 }
 
 #report td.count {
-  color: #CCC;
+  color: var(--tertiary-label-color);
 }
 
 #report td.count a {
