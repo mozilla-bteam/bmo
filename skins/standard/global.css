@@ -421,9 +421,6 @@ fieldset {
 }
 
 select:not([multiple]):not([size]) {
-  -moz-appearance: none;
-  -webkit-appearance: none;
-  appearance: none;
   background-position: calc(100% - 4px) center;
   background-repeat: no-repeat;
   background-size: 16px;
@@ -461,6 +458,25 @@ button,
 select,
 textarea {
   vertical-align: middle;
+}
+
+input[type="button"],
+input[type="checkbox"],
+input[type="email"],
+input[type="password"],
+input[type="radio"],
+input[type="submit"],
+input[type="text"],
+input[type="url"],
+input:not([type]),
+button,
+optgroup,
+option,
+select,
+textarea {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 input[type="date"],
@@ -522,19 +538,12 @@ select:-moz-focusring * {
 }
 
 option {
-  -moz-appearance: none;
-  -webkit-appearance: none;
-  appearance: none;
   padding: 2px 4px;
 }
 
 option:checked {
   color: var(--selected-control-foreground-color);
   background-color: var(--selected-control-background-color);
-}
-
-optgroup {
-  color: var(--inverted-label-color) !important;
 }
 
 button,
@@ -593,9 +602,6 @@ button .icon {
 
 input[type="checkbox"],
 input[type="radio"] {
-  -moz-appearance: none;
-  -webkit-appearance: none;
-  appearance: none;
   display: inline-block;
   margin: 4px;
   border: 2px solid var(--control-border-color);
@@ -1910,9 +1916,6 @@ table.tabs .clickable_area {
 }
 
 .dropdown-content button[role^="menuitem"] {
-  -moz-appearance: none;
-  -webkit-appearance: none;
-  appearance: none;
   outline: 0;
   border: 0;
   border-radius: 0;
