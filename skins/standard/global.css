@@ -2171,6 +2171,10 @@ pre.comment-text {
     border: 1px dashed darkred;
 }
 
+.comment-text.empty {
+  color: #666;
+}
+
 /* Markdown styling adapted from https://github.com/sindresorhus/github-markdown-css */
 
 .markdown-body {
@@ -2751,6 +2755,7 @@ pre.comment-text {
 }
 
 .markdown-body pre {
+  max-height: 600px;
   word-wrap: normal;
 }
 

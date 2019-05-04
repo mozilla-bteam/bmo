@@ -973,7 +973,7 @@
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#blocks"
     %]
 
-    [% IF bug.dependson.size + bug.blocked.size > 1 %]
+    [% IF bug.dependson.size + bug.blocked.size > 0 %]
       [% WRAPPER bug_modal/field.html.tmpl
           name = "dependencytree"
           container = 1
@@ -1407,13 +1407,7 @@
         aria-expanded="false" aria-controls="format-menu" class="dropdown-button minor">Format [% terms.Bug %] &#9652;</button>
       <ul class="dropdown-content left menu-up" id="format-menu" role="menu" style="display:none;">
         <li role="presentation">
-          <a href="[% basepath FILTER none %]show_bug.cgi?format=multiple&amp;id=[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">For Printing</a>
-        </li>
-        <li role="presentation">
           <a href="[% basepath FILTER none %]show_bug.cgi?ctype=xml&amp;id=[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">XML</a>
-        </li>
-        <li role="presentation">
-          <a href="[% basepath FILTER none %]show_bug.cgi?format=default&amp;id=[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">Legacy</a>
         </li>
         [% IF bug.groups_in.size == 0 %]
           <li role="presentation">
@@ -1441,20 +1435,24 @@
           </li>
           <li role="separator"></li>
           <li role="presentation">
-            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;product=[% bug.product FILTER uri %]&amp;blocked=[% bug.id FILTER uri %]"
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;blocked=[% bug.id FILTER uri %]
+                     [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; that blocks this [% terms.bug %]</a>
           </li>
           <li role="presentation">
-            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;product=[% bug.product FILTER uri %]&amp;dependson=[% bug.id FILTER uri %]"
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;dependson=[% bug.id FILTER uri %]
+                     [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; that depends on this [% terms.bug %]</a>
           </li>
           <li role="presentation">
-            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;product=[% bug.product FILTER uri %]&amp;regressed_by=[% bug.id FILTER uri %]"
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;regressed_by=[% bug.id FILTER uri %]
+                     [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; that is regressed by this [% terms.bug %]</a>
           </li>
           <li role="separator"></li>
           <li role="presentation">
-            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;product=[% bug.product FILTER uri %]&amp;cloned_bug_id=[% bug.id FILTER uri %]"
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]
+                     [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
                role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone of this [% terms.bug %]</a>
           </li>
           <li role="presentation">
@@ -1535,11 +1533,14 @@
 [% BLOCK bug_url_link %]
 [%
   IF !link_text.defined;
-    link_text = bug.bug_file_loc FILTER truncate(40);
+    link_text = bug.bug_file_loc FILTER pretty_url FILTER truncate(40);
   END;
 %]
-  <a href="[% bug.bug_file_loc FILTER html %]" target="_blank"
-     rel="noreferrer" title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]"
-     class="bug-url" data-safe="[% is_safe_url(bug.bug_file_loc) ? 1 : 0 %]"
-  >[% link_text FILTER html %]</a>
+  <div class="link">
+    <a href="[% bug.bug_file_loc FILTER html %]" target="_blank"
+      rel="noreferrer" title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]"
+      class="bug-url" data-safe="[% is_safe_url(bug.bug_file_loc) ? 1 : 0 %]">
+      [%~ link_text FILTER html ~%]
+    </a>
+  </div>
 [% END %]

@@ -159,6 +159,7 @@ use constant OPERATORS => {
   anywords       => \&_anywords,
   allwords       => \&_allwords,
   nowords        => \&_nowords,
+  everchanged    => \&_everchanged,
   changedbefore  => \&_changedbefore_changedafter,
   changedafter   => \&_changedbefore_changedafter,
   changedfrom    => \&_changedfrom_changedto,
@@ -212,6 +213,7 @@ use constant NON_NUMERIC_OPERATORS => qw(
 
 # These operators ignore the entered value
 use constant NO_VALUE_OPERATORS => qw(
+  everchanged
   isempty
   isnotempty
 );
@@ -266,12 +268,14 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   'flagtypes.name' => {_non_changed => \&_flagtypes_nonchanged,},
   longdesc         => {
     changedby     => \&_long_desc_changedby,
+    everchanged   => \&_long_desc_everchanged,
     changedbefore => \&_long_desc_changedbefore_after,
     changedafter  => \&_long_desc_changedbefore_after,
     _non_changed  => \&_long_desc_nonchanged,
   },
   'longdescs.count' => {
     changedby     => \&_long_desc_changedby,
+    everchanged   => \&_long_desc_everchanged,
     changedbefore => \&_long_desc_changedbefore_after,
     changedafter  => \&_long_desc_changedbefore_after,
     changedfrom   => \&_invalid_combination,
@@ -297,6 +301,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   percentage_complete => {_non_changed => \&_percentage_complete,},
   work_time           => {
     changedby     => \&_work_time_changedby,
+    everchanged   => \&_work_time_everchanged,
     changedbefore => \&_work_time_changedbefore_after,
     changedafter  => \&_work_time_changedbefore_after,
     _default      => \&_work_time,
@@ -337,6 +342,8 @@ sub SPECIAL_PARSING {
     commenter               => \&_commenter_pronoun,
     qa_contact              => \&_contact_pronoun,
     reporter                => \&_contact_pronoun,
+    'requestees.login_name' => \&_contact_pronoun,
+    'setters.login_name'    => \&_contact_pronoun,
 
     # Date Fields that accept the 1d, 1w, 1m, 1y, etc. format.
     creation_ts => \&_datetime_translate,
@@ -2310,7 +2317,7 @@ sub SqlifyDate {
 
 sub pronoun {
   my ($noun, $user) = (@_);
-  if ($noun eq "%user%") {
+  if ($noun eq "%user%" || $noun eq "%self%") {
     if ($user->id) {
       return $user->id;
     }
@@ -2320,6 +2327,11 @@ sub pronoun {
   }
   if ($noun eq "%reporter%") {
     return "bugs.reporter";
+  }
+  if ($noun eq "%triageowner%") {
+    return "(SELECT COALESCE(userid, 0) FROM profiles
+      JOIN components ON components.triage_owner_id = profiles.userid
+      WHERE bugs.component_id = components.id)";
   }
   if ($noun eq "%assignee%") {
     return "bugs.assigned_to";
@@ -2463,7 +2475,7 @@ sub _triage_owner_pronoun {
   my ($self, $args) = @_;
   my $value = $args->{value};
   my $user  = $self->_user;
-  if ($value eq "%user%") {
+  if ($value eq "%user%" || $value eq "%self%") {
     if ($user->id) {
       $args->{value}       = $user->id;
       $args->{quoted}      = $args->{value};
@@ -2617,6 +2629,12 @@ sub _long_desc_changedby {
   $args->{term} = "$table.who = $user_id";
 }
 
+sub _long_desc_everchanged {
+  my ($self, $args) = @_;
+  $self->_convert_everchanged($args);
+  $self->_long_desc_changedbefore_after($args);
+}
+
 sub _long_desc_changedbefore_after {
   my ($self, $args) = @_;
   my ($chart_id, $operator, $value, $joins)
@@ -2756,6 +2774,12 @@ sub _work_time_changedby {
   push(@$joins, {table => 'longdescs', as => $table});
   my $user_id = login_to_id($value, THROW_ERROR);
   $args->{term} = "$table.who = $user_id AND $table.work_time != 0";
+}
+
+sub _work_time_everchanged {
+  my ($self, $args) = @_;
+  $self->_convert_everchanged($args);
+  $self->_work_time_changedbefore_after($args);
 }
 
 sub _work_time_changedbefore_after {
@@ -3398,6 +3422,21 @@ sub _nowords {
   $self->_anywords($args);
   my $term = $args->{term};
   $args->{term} = "NOT($term)";
+}
+
+# Add support for the `everchanged` operator, which is a shortcut for
+# `changedafter`: `1970-01-01`
+sub _convert_everchanged {
+  my ($self, $args) = @_;
+  $args->{operator} = 'changedafter';
+  $args->{value}    = EMPTY_DATE;
+  $args->{quoted}   = Bugzilla->dbh->quote(EMPTY_DATE);
+}
+
+sub _everchanged {
+  my ($self, $args) = @_;
+  $self->_convert_everchanged($args);
+  $self->_changedbefore_changedafter($args);
 }
 
 sub _changedbefore_changedafter {

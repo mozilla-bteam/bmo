@@ -6,15 +6,10 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<tr class="expert_fields">
-  <th class="field_label">Mentors:</th>
-  <td colspan="3" class="field_value">
-     [% INCLUDE global/userselect.html.tmpl
-        id       = "bug_mentors"
-        name     = "bug_mentors"
-        size     = 30
-        multiple = 5
-        value    = bug_mentors
-      %]
-  </td>
-</tr>
+<select name="[% field_name FILTER html %]">
+  [% FOREACH v IN field_values %]
+    <option value="[% v.value FILTER html %]" [% " selected" IF field_value == v.value %]>
+      [% v.value FILTER html %]
+    </option>
+  [% END %]
+</select>

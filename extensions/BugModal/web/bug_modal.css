@@ -137,6 +137,10 @@ a.activity-ref {
     transition: all .2s;
 }
 
+.module-subtitle .link {
+  display: inline;
+}
+
 .module-spinner[aria-expanded="true"] ~ .module-subtitle {
     opacity: 0;
 }
@@ -227,6 +231,12 @@ a.activity-ref {
 
 .module .field.contains-buttons .name {
     vertical-align: middle;
+}
+
+/* Show dependencies and regressions while editing */
+.module .field.bug-list .value[style="display: none;"],
+.module .field.bug-list .value[style="display: none;"] + .value.edit {
+    display: block !important;
 }
 
 .field-button {
@@ -382,6 +392,11 @@ input[type="number"] {
 
 .field .value .bug-list .bug-type-label .icon {
   font-size: 16px;
+  vertical-align: text-bottom;
+}
+
+.field .value div.link {
+  line-height: 1.5;
 }
 
 #field-value-dependencytree {
