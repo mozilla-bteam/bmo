@@ -174,9 +174,10 @@
     --primary-text-color: var(--application-foreground-color);
     --primary-text-background-color: var(--primary-region-background-color);
     --secondary-text-color: rgb(120, 121, 122);
+    --secondary-text-border-color: rgb(220, 221, 222);
     --placeholder-text-color: var(--secondary-text-color);
     --secondary-text-background-color: var(--primary-region-header-background-color);
-    --selected-text-background-color: rgba(var(--accent-color-blue-2), .2);
+    --selected-text-background-color: rgba(var(--accent-color-blue-1), .3);
     --link-text-color: rgb(var(--accent-color-blue-1));
     --link-text-hover-color: rgb(var(--accent-color-blue-2));
     --text-shadow-light: 0 0 4px rgb(40, 41, 42);
@@ -262,7 +263,7 @@
     --accent-color-red-2: 220, 40, 30;
     --accent-color-green-1: 17, 166, 17;
     --accent-color-blue-3: 0, 148, 247;
-    --accent-color-lightyellow-1: 64, 47, 4;
+    --accent-color-lightyellow-1: 51, 37, 3;
     --accent-color-pink-1: 128, 64, 64;
     --accent-color-lightgreen-1: 64, 128, 64;
     --accent-color-wine-1: 50, 45, 64;
@@ -286,6 +287,7 @@
 
     /** Text */
     --secondary-text-color: rgb(140, 141, 142);
+    --secondary-text-border-color: rgb(60, 61, 62);
     --link-text-color: rgb(var(--accent-color-blue-3));
     --link-text-hover-color: rgb(var(--accent-color-blue-1));
 
@@ -1075,11 +1077,6 @@ input[type="radio"]:checked {
   border-color: var(--focused-control-border-color);
 }
 
-#header #quicksearch_top::-moz-selection,
-#header #quicksearch_top::selection {
-  color: var(--inverted-label-color);
-}
-
 #header nav {
   flex: auto !important;
   display: flex;
@@ -1391,7 +1388,7 @@ table.standard {
 
 table.standard th,
 table.standard td {
-  border: 1px solid var(--secondary-control-border-color);
+  border: 1px solid var(--control-border-color);
   padding: 4px 8px;
 }
 
@@ -2287,7 +2284,7 @@ pre.comment-text {
   border: 0;
   padding: 0;
   height: .25em;
-  background-color: var(--primary-region-border-color);
+  background-color: var(--secondary-text-border-color);
 }
 
 .markdown-body hr::before {
@@ -2402,7 +2399,7 @@ pre.comment-text {
 .markdown-body blockquote {
   padding: 0 1em;
   color: var(--secondary-text-color);
-  border-left: .25em solid var(--secondary-region-border-color);
+  border-left: .25em solid var(--secondary-text-border-color);
 }
 
 .markdown-body blockquote > :first-child {
@@ -2437,13 +2434,13 @@ pre.comment-text {
 .markdown-body h1 {
   padding-bottom: .3em;
   font-size: 2em;
-  border-bottom: 1px solid var(--secondary-region-border-color);
+  border-bottom: 1px solid var(--secondary-text-border-color);
 }
 
 .markdown-body h2 {
   padding-bottom: .3em;
   font-size: 1.5em;
-  border-bottom: 1px solid var(--secondary-region-border-color);
+  border-bottom: 1px solid var(--secondary-text-border-color);
 }
 
 .markdown-body h3 {

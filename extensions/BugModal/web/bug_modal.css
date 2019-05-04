@@ -1054,10 +1054,9 @@ div.ui-tooltip {
   border-radius: 2px !important;
   padding: 4px 8px !important;
   max-width: 500px !important;
-  color: var(--secondary-label-color) !important;
+  color: var(--primary-label-color) !important;
   background: var(--menu-background-color) !important;
   box-shadow: var(--menu-box-shadow) !important;
-  font-size: var(--font-size-small) !important;
   font-family: inherit !important;
 }
 

@@ -81,6 +81,7 @@ tbody.file pre:empty {
 }
 
 .removed.num {
+  color: var(--secondary-label-color);
   background-color: rgba(var(--accent-color-pink-1), .8);
 }
 
@@ -89,6 +90,7 @@ tbody.file pre:empty {
 }
 
 .added.num {
+  color: var(--secondary-label-color);
   background-color: rgba(var(--accent-color-lightgreen-1), .8);
 }
 

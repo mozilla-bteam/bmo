@@ -30,12 +30,17 @@
 .search_description {
   margin: .5em 0;
   padding: 0;
+  color: var(--secondary-label-color);
 }
 
 .search_description li {
   list-style-type: none;
   display: inline;
   margin-right: 2em;
+}
+
+.search_description strong {
+  color: var(--primary-label-color);
 }
 
 .zero_result_links {
@@ -86,12 +91,14 @@
 }
 
 /* Style bug rows according to severity. */
-.bz_blocker {
+.bz_blocker,
+.bz_blocker .bz_short_desc_column {
   color: rgb(var(--accent-color-red-1));
   font-weight: bold;
 }
 
-.bz_critical {
+.bz_critical,
+.bz_critical .bz_short_desc_column {
   color: rgb(var(--accent-color-red-1));
 }
 
@@ -154,9 +161,9 @@ td.bz_total {
   text-align: left;
 }
 
-.bz_short_desc_column a,
-.bz_short_short_desc_column a {
-  color: var(--primary-label-color) !important;
+.bz_short_desc_column,
+.bz_short_short_desc_column {
+  color: var(--primary-label-color);
 }
 
 /* The "filtering" table is specific to request.cgi.
