@@ -28,10 +28,6 @@
   background-color: var(--control-background-color);
 }
 
-#edit_table td:not(.editable) {
-  background-color: var(--alternate-grid-background-color);
-}
-
 #edit_table .action {
   display: none;
 }

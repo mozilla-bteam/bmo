@@ -49,7 +49,7 @@ table#attachment_flags td {
 .section_head {
   padding: 2px 4px;
   border: 1px solid var(--control-border-color);
-  background-color: var(--alternate-grid-background-color);
+  background-color: var(--grid-header-background-color);
   text-align: left;
 }
 

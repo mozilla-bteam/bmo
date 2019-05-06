@@ -19,17 +19,6 @@
   vertical-align: middle !important;
 }
 
-#report {
-  border-collapse: collapse;
-  border: 1px solid var(--control-border-color);
-  background-color: var(--grid-background-color);
-}
-
-#report th,
-#report td {
-  padding: 4px 8px;
-}
-
 #report th {
   text-align: left;
 }
@@ -48,10 +37,6 @@
 
 .report_subheader {
   background-color: var(--grid-subheader-background-color);
-}
-
-.report_row_even {
-  background-color: var(--alternate-grid-background-color);
 }
 
 #report td time {

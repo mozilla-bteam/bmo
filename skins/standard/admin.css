@@ -115,27 +115,12 @@ th.title {
   white-space: normal;
 }
 
-#report {
-  border: 1px solid var(--control-border-color);
-  background-color: var(--grid-background-color);
-}
-
-#report td,
-#report th {
-  padding: 3px 10px 3px 3px;
-  border: 0;
-}
-
 #report th {
   text-align: left;
 }
 
 #report-header {
   background-color: var(--grid-header-background-color);
-}
-
-.report_row_even {
-  background-color: var(--alternate-grid-background-color);
 }
 
 .report_information {

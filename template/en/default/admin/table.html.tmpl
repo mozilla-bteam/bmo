@@ -83,6 +83,7 @@
 [%###################  TABLE HEADER   ######################%]
 
 <table class="standard">
+  <thead>
   <tr>
     [% FOREACH col = columns %]
       [%# Default to align left for headers %]
@@ -91,10 +92,12 @@
       </th>
     [% END %]
   </tr>
+  </thead>
 
 
 [%###################  TABLE CONTENT  ######################%]
 
+  <tbody>
 [% FOREACH row = data %]
 
   <tr>
@@ -187,6 +190,7 @@
 [% IF data.size == 0 %]
   <tr><td colspan="[% columns.size %]" align="center"><i>&lt;none&gt;</i></td></tr>
 [% END %]
+  </tbody>
 
 
 [%###################  TABLE FOOTER   ######################%]

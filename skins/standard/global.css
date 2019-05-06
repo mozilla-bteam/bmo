@@ -236,7 +236,6 @@
     --grid-background-color: var(--primary-region-background-color);
     --grid-header-background-color: rgb(230, 231, 232);
     --grid-subheader-background-color: rgb(210, 211, 212);
-    --alternate-grid-background-color: rgb(240, 241, 242);
   }
 
   input[type="checkbox"]:checked {
@@ -309,7 +308,6 @@
     /** Grid */
     --grid-header-background-color: rgb(50, 51, 52);
     --grid-subheader-background-color: rgb(70, 71, 72);
-    --alternate-grid-background-color: rgb(30, 31, 32);
   }
 
   select:not([multiple]):not([size]) {
@@ -363,13 +361,13 @@ h4 {
 }
 
 dt,
-th,
 b,
 strong {
   font-weight: bold;
 }
 
 th {
+  font-weight: normal;
   white-space: nowrap;
 }
 
@@ -732,6 +730,9 @@ input[type="radio"]:checked {
 .yui-skin-sam .yui-dt table,
 .yui3-skin-sam .yui3-datatable-table {
   margin: 8px 0 !important;
+  border-collapse: collapse !important;
+  border-width: 1px 0 0 !important;
+  border-style: solid !important;
   border-color: var(--control-border-color) !important;
   font-family: var(--font-family-sans-serif) !important;
   background: var(--grid-background-color) !important;
@@ -758,14 +759,15 @@ input[type="radio"]:checked {
   text-shadow: none !important;
 }
 
-.yui-skin-sam tr.yui-dt-odd,
-.yui3-skin-sam .yui3-datatable-odd .yui3-datatable-cell {
-  background-color: transparent !important;
+.yui-skin-sam .yui-dt table tr,
+.yui3-skin-sam .yui3-datatable-table tr {
+  border-bottom: 1px solid var(--control-border-color) !important;
 }
 
-.yui-skin-sam tr.yui-dt-even,
-.yui3-skin-sam .yui3-datatable-even .yui3-datatable-cell {
-  background-color: var(--alternate-grid-background-color) !important;
+.yui-skin-sam .yui-dt table .yui-skin-sam td,
+.yui3-skin-sam .yui3-datatable-cell {
+  padding: 8px !important;
+  background-color: transparent !important;
 }
 
 .yui3-skin-sam .yui3-datatable-message-content {
@@ -1382,23 +1384,27 @@ input.requestee {
 
 table.standard {
   border-collapse: collapse;
-  border: 1px solid var(--control-border-color);
+  border-top: 1px solid var(--control-border-color);
   background-color: var(--grid-background-color);
 }
 
-table.standard th,
-table.standard td {
-  border: 1px solid var(--control-border-color);
-  padding: 4px 8px;
-}
-
-table.standard th {
+table.standard thead {
   background-color: var(--grid-header-background-color);
-  white-space: normal !important;
 }
 
-table.standard tr:nth-child(even) {
-  background-color: var(--alternate-grid-background-color);
+table.standard tr {
+  border-bottom: 1px solid var(--control-border-color);
+}
+
+table.standard thead th {
+  padding: 4px 8px;
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+}
+
+table.standard tbody th,
+table.standard tbody td {
+  padding: 8px;
 }
 
 /* Arrow buttons are buttons with only &uarr;, &darr;, &larr; or &rarr; on
@@ -2506,25 +2512,17 @@ pre.comment-text {
   display: block;
   width: 100%;
   overflow: auto;
-}
-
-.markdown-body table th {
-  font-weight: bold;
+  border-top: 1px solid var(--control-border-color);
 }
 
 .markdown-body table th,
 .markdown-body table td {
-  padding: 6px 13px;
-  border: 1px solid var(--secondary-control-border-color);
+  padding: 8px;
 }
 
 .markdown-body table tr {
+  border-bottom: 1px solid var(--control-border-color);
   background-color: var(--control-background-color);
-  border-top: 1px solid var(--control-border-color);
-}
-
-.markdown-body table tr:nth-child(2n) {
-  background-color: var(--alternate-grid-background-color);
 }
 
 .markdown-body img {

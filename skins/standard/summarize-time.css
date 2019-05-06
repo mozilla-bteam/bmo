@@ -31,7 +31,7 @@ td.subtotal {
 }
 
 .zeroitems .bug_header2 {
-  background: var(--alternate-grid-background-color);
+  background: var(--grid-subheader-background-color);
 }
 
 /* the fixed headers -- .number uses bug_header so hack it here */
@@ -52,5 +52,5 @@ td.subtotal {
 
 .number .owner_header2,
 .owner .bug_header2 {
-  background: var(--alternate-grid-background-color);
+  background: var(--grid-subheader-background-color);
 }

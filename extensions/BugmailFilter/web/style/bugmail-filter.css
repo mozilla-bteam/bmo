@@ -29,18 +29,11 @@
 
 #filters_table {
   margin-bottom: 1em;
-  border-collapse: collapse;
-  background-color: var(--grid-background-color);
 }
 
 #filters_table th,
 #filters_table td {
-  padding: 4px 8px;
   text-align: left;
-}
-
-#filters_table tr:nth-child(even) {
-  background-color: var(--alternate-grid-background-color);
 }
 
 .flag-description {

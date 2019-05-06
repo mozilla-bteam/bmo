@@ -32,12 +32,14 @@
 </p>
 
 <table class="standard">
-  <tr class="column_header">
+<thead>
+  <tr>
     <th>Last used</th>
     <th>IP Address</th>
     <th>Logout</th>
   </tr>
-
+</thead>
+<tbody>
   [% FOREACH session IN sessions %]
     <tr>
       <td>[% session.lastused FILTER time %]</td>
@@ -51,4 +53,5 @@
         [% END %]
     </tr>
   [% END %]
+</tbody>
 </table>

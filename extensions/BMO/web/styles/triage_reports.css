@@ -26,21 +26,16 @@
 #report {
   position: relative;
   width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--control-border-color);
-  background-color: var(--grid-background-color);
 }
 
 #report thead {
   position: sticky;
   top: 0;
   left: 0;
-  background-color: var(--grid-header-background-color);
 }
 
 #report th,
 #report td {
-  padding: 4px 8px;
   text-align: left;
 }
 

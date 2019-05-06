@@ -7,7 +7,7 @@
 
 /* Highlight the row for the bug being voted on */
 tr.bz_bug_being_voted_on {
-  background-color: var(--alternate-grid-background-color);
+  background-color: var(--grid-subheader-background-color);
 }
 
 tr.bz_bug_being_voted_on td {

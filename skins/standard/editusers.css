@@ -38,7 +38,7 @@ table.groups tr {
 }
 
 table.groups tr.indirect {
-  background-color: var(--alternate-grid-background-color);
+  background-color: var(--grid-subheader-background-color);
 }
 
 table.groups th {

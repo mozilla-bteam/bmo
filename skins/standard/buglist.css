@@ -50,6 +50,7 @@
 
 .bz_buglist {
   margin: 16px 0;
+  border-top: 1px solid var(--control-border-color);
   color: var(--secondary-label-color);
   background-color: var(--grid-background-color);
   box-shadow: var(--primary-region-box-shadow);
@@ -67,7 +68,6 @@
   padding-bottom: 4px;
   color: var(--secondary-label-color);
   font-size: var(--font-size-small);
-  font-weight: normal;
   text-align: left;
 }
 
@@ -86,20 +86,28 @@
   text-decoration: none;
 }
 
-.bz_row_even {
-  background-color: var(--alternate-grid-background-color);
+.bz_buglist tr {
+  border-bottom: 1px solid var(--control-border-color);
+}
+
+.bz_buglist thead th {
+  padding: 4px 8px;
+}
+
+.bz_buglist tbody td {
+  padding: 8px;
 }
 
 /* Style bug rows according to severity. */
 .bz_blocker,
 .bz_blocker .bz_short_desc_column {
-  color: rgb(var(--accent-color-red-1));
+  color: rgb(var(--accent-color-red-1)) !important;
   font-weight: bold;
 }
 
 .bz_critical,
 .bz_critical .bz_short_desc_column {
-  color: rgb(var(--accent-color-red-1));
+  color: rgb(var(--accent-color-red-1)) !important;
 }
 
 /* Align columns in the "change multiple bugs" form to the right. */
@@ -117,15 +125,10 @@ a.bz_secure {
   background-color: inherit;
 }
 
-th,
-td {
-  padding: 6px;
-}
-
 th.first-child,
 td.first-child,
 a.bz_secure {
-  padding-left: 20px;
+  padding-left: 20px !important;
 }
 
 td.bz_bug_type_column {
@@ -164,6 +167,13 @@ td.bz_total {
 .bz_short_desc_column,
 .bz_short_short_desc_column {
   color: var(--primary-label-color);
+}
+
+.bz_short_desc_column:hover,
+.bz_short_desc_column:focus,
+.bz_short_short_desc_column:hover,
+.bz_short_short_desc_column:focus {
+  color: var(--secondary-label-color);
 }
 
 /* The "filtering" table is specific to request.cgi.
