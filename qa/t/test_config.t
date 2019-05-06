@@ -39,7 +39,7 @@ ok(!$sel->is_text_present("version["),   "No version displayed");
 ok(!$sel->is_text_present("target_milestone["),
   "No target milestone displayed");
 
-# Turn on 'requirelogin' and log out.
+# Turn off 'requirelogin' and log out.
 
 log_in($sel, $config, 'admin');
 set_parameters($sel, {"User Authentication" => {"requirelogin-off" => undef}});

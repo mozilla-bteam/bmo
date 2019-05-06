@@ -22,6 +22,7 @@ has 'driver'      => (
   handles => [qw(
       add_cookie
       alert_text_like
+      get_all_cookies
       get_ok
       get_title
       go_back_ok
@@ -35,7 +36,7 @@ sub click_ok {
   $arg1 ||= 'undefined';
   $desc ||= "Click ok: $locator";
   DEBUG("click_ok: $locator, $arg1, $desc");
-  $locator = $self->_fix_locator($locator, 'id');
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if (!$element) {
     $locator =~ s/\@id/\@name/;
@@ -55,7 +56,7 @@ sub type_ok {
   my ($self, $locator, $text, $desc) = @_;
   $desc ||= '';
   DEBUG("type_ok: $locator, $text, $desc");
-  $locator = $self->_fix_locator($locator, 'id');
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if (!$element) {
     $locator =~ s/\@id/\@name/;
@@ -104,7 +105,6 @@ sub find_element {
   my ($self, $locator, $method) = @_;
   $method ||= 'xpath';
   DEBUG("find_element: $locator $method");
-  $locator = $self->_fix_locator($locator, 'id');
   try {
     return $self->driver->find_element($locator, $method);
   }
@@ -114,15 +114,21 @@ sub find_element {
 }
 
 sub is_element_present {
-  my ($self, $element) = @_;
-  DEBUG("is_element_present: $element");
-  return $self->find_element($element);
+  my ($self, $locator) = @_;
+  DEBUG("is_element_present: $locator");
+  $locator = $self->_fix_locator($locator);
+  my $element = $self->find_element($locator);
+  if (!$element) {
+    $locator =~ s/\@id/\@name/;
+    $element = $self->find_element($locator);
+  }
+  return $element;
 }
 
 sub is_element_present_ok {
-  my ($self, $element) = @_;
-  DEBUG("is_element_present_ok: $element");
-  ok($self->is_element_present($element), "Element is present: $element");
+  my ($self, $locator) = @_;
+  DEBUG("is_element_present_ok: $locator");
+  ok($self->is_element_present($locator), "Element is present: $locator");
 }
 
 sub is_enabled {
@@ -165,7 +171,7 @@ sub get_value {
 sub get_text {
   my ($self, $locator) = @_;
   DEBUG("get_text: $locator");
-  $locator = $self->_fix_locator($locator, 'id');
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if ($element) {
     return $element->get_text();
@@ -199,9 +205,9 @@ sub selected_label_is {
 }
 
 sub get_selected_labels {
-  my ($self, $id) = @_;
-  DEBUG("get_selected_labels: $id");
-  my $locator = $self->_fix_locator($id, 'id');
+  my ($self, $locator) = @_;
+  DEBUG("get_selected_labels: $locator");
+  $locator = $self->_fix_locator($locator);
   my @elements;
   try {
     @elements = $self->driver->find_elements($locator . '/option');
@@ -218,9 +224,9 @@ sub get_selected_labels {
 }
 
 sub get_select_options {
-  my ($self, $id) = @_;
-  DEBUG("get_select_options: $id");
-  my $locator = $self->_fix_locator($id, 'id');
+  my ($self, $locator) = @_;
+  DEBUG("get_select_options: $locator");
+  $locator = $self->_fix_locator($locator);
   my @elements;
   try {
     @elements = $self->driver->find_elements($locator . '/option');
@@ -251,7 +257,7 @@ sub remove_all_selections_ok {
 sub is_checked {
   my ($self, $locator) = @_;
   DEBUG("is_checked: $locator");
-  $locator = $self->_fix_locator($locator, 'id');
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if (!$element) {
     $locator =~ s/\@id/\@name/;
@@ -270,9 +276,9 @@ sub is_checked_ok {
 }
 
 sub select_ok {
-  my ($self, $id, $label) = @_;
-  DEBUG("selected_label_is: $id, $label");
-  my $locator = $self->_fix_locator($id, 'id');
+  my ($self, $locator, $label) = @_;
+  DEBUG("select_ok: $locator, $label");
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if (!$element) {
     $locator =~ s/\@id/\@name/;
@@ -283,11 +289,11 @@ sub select_ok {
     @options = $self->driver->find_elements($locator . '/option');
   };
   my ($is_label, $is_value);
-  if ($label =~ /label=(.*)$/) {
+  if ($label =~ /^label=(.*)$/) {
     $label = $1;
     $is_label = 1;
   }
-  elsif ($label =~ /value=(.*)$/) {
+  elsif ($label =~ /^value=(.*)$/) {
     $label = $1;
     $is_value = 1;
   }
@@ -300,7 +306,7 @@ sub select_ok {
       $value = $option->get_value();
     }
     else {
-      $value = $option->get_value();
+      $value = $option->get_text();
     }
     $value = trim($value);
     if ($value eq $label) {
@@ -337,7 +343,7 @@ sub get_location {
 sub value_is {
   my ($self, $locator, $value) = @_;
   DEBUG("value_is: $locator $value");
-  $locator = $self->_fix_locator($locator, 'id');
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if (!$element) {
     $locator =~ s/\@id/\@name/;
@@ -361,7 +367,7 @@ sub get_attribute {
   DEBUG("get_attribute: $locator");
   my $attr;
   ($locator, $attr) = ($locator =~ /(.*)@([^@]+)$/);
-  $locator = $self->_fix_locator($locator, 'id');
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if ($element) {
     return $element->get_attribute($attr);
@@ -372,14 +378,14 @@ sub get_attribute {
 sub submit {
   my ($self, $locator) = @_;
   DEBUG("submit: $locator");
-  $locator = $self->_fix_locator($locator, 'id');
+  $locator = $self->_fix_locator($locator);
   $self->find_element($locator)->submit();
 }
 
 sub is_editable {
   my ($self, $locator) = @_;
   DEBUG("is_editable: $locator");
-  $self->_fix_locator($locator);
+  $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if ($element) {
     DEBUG("is_editable found element");

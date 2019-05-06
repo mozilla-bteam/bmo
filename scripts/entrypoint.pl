@@ -100,6 +100,16 @@ sub cmd_jobqueue {
   exit run_cereal_and_jobqueue(@args)->get;
 }
 
+sub cmd_selenium_dev {
+  assert_database->get();
+  copy_qa_extension();
+  cmd_load_test_data() unless -f "/app/data/params";
+  mkdir('/app/artifacts') unless -d "/app/artifacts";
+  my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
+  assert_httpd()->get;
+  exit $httpd_exit_f->get;
+}
+
 sub cmd_dev_httpd {
   my $have_params = -f "/app/data/params";
   assert_database->get();
@@ -130,16 +140,11 @@ sub cmd_load_test_data {
   die 'BZ_QA_ANSWERS_FILE is not set' unless $ENV{BZ_QA_ANSWERS_FILE};
   run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_QA_ANSWERS_FILE});
 
-  if ($ENV{BZ_QA_LEGACY_MODE}) {
-    run('perl', 'scripts/generate_bmo_data.pl', '--user-pref',
-      'ui_experiments=off');
-    chdir '/app/qa/config';
-    say 'chdir(/app/qa/config)';
-    run('perl', 'generate_test_data.pl');
-  }
-  else {
-    run('perl', 'scripts/generate_bmo_data.pl', '--param' => 'use_mailer_queue=0');
-  }
+  run('perl', 'scripts/generate_bmo_data.pl', '--user-pref', 'ui_experiments=on');
+
+  chdir '/app/qa/config';
+  say 'chdir(/app/qa/config)';
+  run('perl', 'generate_test_data.pl');
 }
 
 sub cmd_test_webservices {

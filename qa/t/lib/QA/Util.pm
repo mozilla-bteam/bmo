@@ -170,10 +170,8 @@ sub get_rpc_clients {
 ################################
 
 sub go_to_home {
-  my ($sel, $config) = @_;
-  $sel->open_ok("/",
-    undef, "Go to the home page");
-  $sel->set_speed(500);
+  my ($sel) = @_;
+  $sel->open_ok("/home", undef, "Go to the home page");
   $sel->title_is("Bugzilla Main Page");
 }
 

@@ -19,8 +19,8 @@ log_in($sel, $config, 'admin');
 set_parameters($sel, {"Bug Fields" => {"usestatuswhiteboard-on" => undef}});
 
 # Clear the saved search, in case this test didn't complete previously.
+$sel->click_ok('quicksearch_top');
 if ($sel->is_element_present('//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]')) {
-  $sel->click_ok('quicksearch_top');
   $sel->click_ok('//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Bug List: My bugs from QA_Selenium");
@@ -446,7 +446,7 @@ $sel->driver->switch_to_window($windows->[0]);
 #     # $sel->wait_for_page_to_load_ok(WAIT_TIME);
 #     # $sel->title_is("Bug List: My bugs from QA_Selenium");
 #     # $sel->is_text_present_ok("2 bugs found");
-#     # $sel->click_ok("link=Change Several Bugs at Once");
+#     # $sel->click_ok('change-several', 'Change Several Bugs at Once');
 #     # $sel->wait_for_page_to_load_ok(WAIT_TIME);
 #     # $sel->title_is("Bug List");
 #     # $sel->click_ok("check_all");
@@ -456,18 +456,14 @@ $sel->driver->switch_to_window($windows->[0]);
 #     # $sel->title_is("Bugs processed");
 #     # $sel->is_text_present_ok("Bug $bug1_id has been moved to another database");
 #     # $sel->is_text_present_ok("Bug $bug2_id has been moved to another database");
-#     # $sel->click_ok("link=Bug $bug2_id");
-#     # $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     # $sel->title_like(qr/^$bug2_id/);
+#     # go_to_bug($sel, $bug2_id);
 #     # $sel->selected_label_is("resolution", "MOVED");
 #
 #     go_to_bug($sel, $bug2_id);
 #     $sel->click_ok('oldbugmove');
 #     $sel->wait_for_page_to_load_ok(WAIT_TIME);
 #     $sel->is_text_present_ok("Changes submitted for bug $bug2_id");
-#     $sel->click_ok("link=bug $bug2_id");
-#     $sel->wait_for_page_to_load_ok(WAIT_TIME);
-#     $sel->title_like(qr/$bug2_id /);
+#     go_to_bug($sel, $bug2_id);
 #     $sel->selected_label_is("resolution", "MOVED");
 #     $sel->is_text_present_ok("Bug moved to http://www.foo.com/.");
 #
@@ -489,9 +485,7 @@ foreach my $params (["no_token_single_bug", ""],
   $sel->click_ok("confirm");
   check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
   $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
-  $sel->click_ok("link=bug $bug1_id");
-  check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
-  $sel->title_like(qr/^$bug1_id /);
+  go_to_bug($sel, $bug1_id);
   $sel->is_text_present_ok($comment);
 }
 
@@ -526,7 +520,7 @@ check_page_load($sel,
 );
 $sel->title_is("Bug List: My bugs from QA_Selenium");
 $sel->is_text_present_ok("2 bugs found");
-$sel->click_ok("link=Change Several Bugs at Once");
+$sel->click_ok('change-several', 'Change Several Bugs at Once');
 check_page_load($sel,
   q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=22}
 );

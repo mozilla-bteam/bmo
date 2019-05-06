@@ -248,7 +248,7 @@ $sel->is_text_present_ok("Et de un");
 
 # Now edit custom fields in mass changes.
 
-$sel->click_ok("link=Change Several Bugs at Once");
+$sel->click_ok('change-several', 'Change Several Bugs at Once');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");
@@ -257,9 +257,7 @@ $sel->type_ok("cf_qa_freetext_$bug1_id", "thanks");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bugs processed");
-$sel->click_ok("link=bug $bug2_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$bug2_id/);
+go_to_bug($sel, $bug2_id);
 $sel->value_is("cf_qa_freetext_$bug1_id", "thanks");
 $sel->selected_label_is("cf_qa_list_$bug1_id", "---");
 $sel->select_ok("cf_qa_list_$bug1_id", "label=storage");

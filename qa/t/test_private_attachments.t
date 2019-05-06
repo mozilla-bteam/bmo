@@ -91,7 +91,7 @@ logout($sel);
 
 foreach my $user (undef, 'unprivileged') {
   log_in($sel, $config, $user) if $user;
-  go_to_bug($sel, $bug1_id);
+  go_to_bug($sel, $bug1_id, ($user ? 0 : 1));
   ok(!$sel->is_text_present("private attachment, v1"),
     "Private attachment not visible");
   $sel->is_text_present_ok("public attachment, v2");
@@ -113,9 +113,7 @@ $sel->click_ok("update");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok(
   "Changes to attachment $attachment1_id of bug $bug1_id submitted");
-$sel->click_ok("link=bug $bug1_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id/);
+go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("This attachment is not mine");
 
 # Powerless users will always be able to view their own attachments, even
@@ -139,9 +137,7 @@ $alink = $sel->get_attribute(
   '//a[@title="My patch, which I should see, always"]@href');
 $alink =~ /id=(\d+)/;
 my $attachment2_id = $1;
-$sel->click_ok("link=bug $bug1_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id/);
+go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("My patch, which I should see, always");
 $sel->is_text_present_ok("This is my patch!");
 logout($sel);
@@ -171,7 +167,7 @@ logout($sel);
 
 # A logged out user cannot see private attachments.
 
-go_to_bug($sel, $bug1_id);
+go_to_bug($sel, $bug1_id, 1);
 ok(
   !$sel->is_text_present("private attachment, v1"),
   "Private attachment not visible to logged out users"
@@ -183,7 +179,7 @@ ok(
 $sel->is_text_present_ok("This is my patch!");
 ok(!$sel->is_text_present("Making the powerless user's patch private"),
   "Private comment not visible to logged out users");
-sleep(60);
+
 # A powerless user can only see private attachments he owns.
 
 log_in($sel, $config, 'unprivileged');
@@ -216,9 +212,7 @@ $sel->click_ok("delete");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok(
   "Changes to attachment $attachment2_id of bug $bug1_id submitted");
-$sel->click_ok("link=bug $bug1_id");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^$bug1_id/);
+go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("deleted by Selenium");
 $sel->click_ok("link=attachment $attachment2_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
