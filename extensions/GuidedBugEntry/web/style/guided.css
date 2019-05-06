@@ -165,7 +165,7 @@ ul.product-list > li > .product-item {
 }
 
 #other_products .classification th {
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
 }
 
 /**

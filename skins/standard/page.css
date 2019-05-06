@@ -80,7 +80,7 @@ table.field_value_explanation {
 
 .field_value_explanation .header_row td {
   text-align: center;
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
   font-weight: bold;
 }
 
@@ -95,5 +95,5 @@ table.field_value_explanation {
 }
 
 .field_descriptions dt {
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
 }

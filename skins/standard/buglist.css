@@ -44,14 +44,13 @@
 }
 
 .zero_result_links {
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
   font-weight: bold;
 }
 
 .bz_buglist {
   margin: 16px 0;
   border-top: 1px solid var(--control-border-color);
-  color: var(--secondary-label-color);
   background-color: var(--grid-background-color);
   box-shadow: var(--primary-region-box-shadow);
 }
@@ -164,9 +163,10 @@ td.bz_total {
   text-align: left;
 }
 
+.bz_id_column,
 .bz_short_desc_column,
 .bz_short_short_desc_column {
-  color: var(--primary-label-color);
+  font-size: var(--font-size-large);
 }
 
 .bz_short_desc_column:hover,

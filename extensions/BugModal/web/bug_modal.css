@@ -246,7 +246,7 @@ input[type="number"] {
  */
 
 #field-value-bug_id {
-  font-weight: bold;
+  font-size: var(--font-size-large);
 }
 
 #field-value-short_desc {
@@ -692,7 +692,7 @@ h3.change-name a {
 .comment-actions button {
   outline: 0;
   margin: 0;
-  padding: 4px 8px;
+  padding: 6px 8px;
   line-height: 1;
 }
 

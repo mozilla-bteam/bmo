@@ -101,7 +101,8 @@
     --font-size-h2: 26px;
     --font-size-h3: 20px;
     --font-size-h4: 16px;
-    --font-size-large: 15px;
+    --font-size-x-large: 15px;
+    --font-size-large: 14px;
     --font-size-medium: 13px;
     --font-size-small: 12px;
     --font-size-x-small: 11px;
@@ -123,7 +124,7 @@
 
     /** Button */
     --button-border-radius: 4px;
-    --button-padding: 4px 10px;
+    --button-padding: 6px 12px;
   }
 }
 
@@ -211,7 +212,7 @@
     --primary-button-background-color: rgb(var(--accent-color-blue-1));
     --primary-button-border-color: rgb(var(--accent-color-blue-1));
     --secondary-button-foreground-color: var(--primary-label-color);
-    --secondary-button-background-color: rgb(220, 221, 222);
+    --secondary-button-background-color: rgb(230, 231, 232);
     --secondary-button-border-color: rgb(210, 211, 212);
     --danger-button-foreground-color: var(--primary-button-foreground-color);
     --danger-button-background-color: rgb(var(--accent-color-red-1));
@@ -429,11 +430,20 @@ select:not([multiple]):not([size]) {
   min-width: 4em;
 }
 
+@supports (-moz-appearance: none) {
+  /* Remove extra padding in Firefox */
+  select:not([multiple]):not([size]) {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+}
+
 input,
 button,
 select,
 option,
 optgroup {
+  margin: 0; /* Suppress WebKit default */
   outline: 0; /* Suppress WebKit default */
   font-size: var(--font-size-medium);
   line-height: var(--line-height-default);
@@ -443,7 +453,7 @@ optgroup {
 textarea {
   margin: 0; /* Suppress Firefox default */
   outline: 0; /* Suppress WebKit default */
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
   line-height: var(--line-height-comfortable);
   font-family: var(--font-family-sans-serif);
   resize: vertical;
@@ -662,7 +672,7 @@ input[type="radio"]:checked {
   position: relative;
   z-index: 1;
   border: 1px solid var(--secondary-button-border-color);
-  padding: 4px 8px;
+  padding: var(--button-padding);
   min-width: 1em;
   min-height: 1em;
   background-color: var(--secondary-button-background-color);
@@ -680,16 +690,16 @@ input[type="radio"]:checked {
 
 .buttons.toggle[role="radiogroup"] .item:not(:first-child) label {
   margin-left: -1px;
-  border-left-color: var(--control-border-color);
+  border-left-color: var(--secondary-control-border-color);
 }
 
 .buttons.toggle[role="radiogroup"] .item:not(:last-child) label {
-  border-right-color: var(--control-border-color);
+  border-right-color: var(--secondary-control-border-color);
 }
 
 .buttons.toggle[role="radiogroup"] input[type="radio"]:checked + label {
   z-index: 2;
-  border-color: var(--control-border-color);
+  border-color: var(--secondary-button-border-color);
   color: var(--pressed-button-foreground-color);
   background-color: var(--pressed-button-background-color);
 }
@@ -1070,7 +1080,7 @@ input[type="radio"]:checked {
   color: var(--secondary-application-header-foreground-color);
   background-color: var(--secondary-application-header-background-color);
   box-shadow: none;
-  font-size: var(--font-size-large) !important;
+  font-size: var(--font-size-x-large) !important;
   line-height: 32px;
   cursor: text;
 }
@@ -1365,7 +1375,7 @@ input.requestee {
 }
 
 #error_msg {
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
 }
 
 .warning {
@@ -1378,7 +1388,7 @@ input.requestee {
   border-radius: var(--primary-region-border-radius);
   padding: 16px;
   background-color: var(--primary-region-background-color);
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
   line-height: var(--line-height-comfortable);
 }
 
@@ -1410,7 +1420,7 @@ table.standard tbody td {
 /* Arrow buttons are buttons with only &uarr;, &darr;, &larr; or &rarr; on
  * them. We want these to look a little less spidery. */
 .arrow_button {
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
 }
 
 /* Style of the attachment table and time tracking table */
@@ -1576,7 +1586,7 @@ form#Create td {
 
 .uneditable_textarea {
   width: 30em;
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
 }
 
 th.required:before {
@@ -1742,7 +1752,7 @@ table.tabs td {
   border-top: 4px solid transparent;
   padding: 1em;
   text-align: center;
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
 }
 
 table.tabs td.selected {
@@ -1962,7 +1972,7 @@ table.tabs .clickable_area {
   margin: 0;
   padding: 8px 12px;
   color: var(--secondary-label-color);
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
   line-height: 100%;
 }
 
@@ -2242,7 +2252,7 @@ pre#comment_preview_text {
 pre.comment-text {
   margin: 0;
   white-space: pre-wrap;
-  font-size: calc(var(--font-size-large) * 90%);
+  font-size: calc(var(--font-size-x-large) * 90%);
 }
 
 .comment-text span.quote,
@@ -2270,7 +2280,7 @@ pre.comment-text {
 .markdown-body {
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
   word-wrap: break-word;
 }
 

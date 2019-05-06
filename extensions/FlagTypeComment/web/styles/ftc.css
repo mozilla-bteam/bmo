@@ -40,7 +40,7 @@ section.approval-request h3 {
   flex: auto;
   margin: 0;
   padding: 4px 8px;
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-x-large);
 }
 
 section.approval-request button.dismiss {
