@@ -163,19 +163,6 @@ td.bz_total {
   text-align: left;
 }
 
-.bz_id_column,
-.bz_short_desc_column,
-.bz_short_short_desc_column {
-  font-size: var(--font-size-large);
-}
-
-.bz_short_desc_column:hover,
-.bz_short_desc_column:focus,
-.bz_short_short_desc_column:hover,
-.bz_short_short_desc_column:focus {
-  color: var(--secondary-label-color);
-}
-
 /* The "filtering" table is specific to request.cgi.
  * Same for the "requests" class used for tables. */
 
@@ -190,15 +177,22 @@ td.bz_total {
 
 /* For the JS-sorting buglist. */
 
+.bz_id_column,
+.bz_short_desc_column,
+.bz_short_short_desc_column {
+  font-size: var(--font-size-large);
+}
+
 .bz_short_desc_column a,
 .bz_short_short_desc_column a {
   color: inherit;
-  text-decoration: none;
 }
 
 .bz_short_desc_column a:hover,
-.bz_short_short_desc_column a:hover {
-  text-decoration: underline;
+.bz_short_desc_column a:focus,
+.bz_short_short_desc_column a:hover,
+.bz_short_short_desc_column a:focus {
+  color: var(--secondary-label-color);
 }
 
 #request_form #filtering th {
