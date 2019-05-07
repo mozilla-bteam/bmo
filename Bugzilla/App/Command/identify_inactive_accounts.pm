@@ -32,7 +32,7 @@ sub run {
   # Which domains to ignore -- very few, maybe just a regex?
   my $report = Bugzilla::Report::InactiveUser->new(dbh => Bugzilla->dbh);
 
-  foreach my $user (@{ $report->users }) {
+  foreach my $user (@{ $report->userids }) {
       # Printing the list out for now
       say $user->email;
   }

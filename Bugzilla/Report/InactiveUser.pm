@@ -9,37 +9,31 @@ package Bugzilla::Report::InactiveUser;
 use 5.10.1;
 use Moo;
 
+use Data::Dumper; # TODO remove me
+
 use Bugzilla::Logging;
 use Bugzilla::Types qw(User);
 use Type::Utils;
 use Types::Standard qw(:types);
 
-has 'users' => ( is => 'lazy', isa      => ArrayRef [User] );
-has 'dbh'   => ( is => 'ro',   required => 1 );
+has 'dbh'     => (is => 'ro',   required => 1);
+has 'userids' => (is => 'lazy', isa      => ArrayRef [Int]);
 
-# https://metacpan.org/pod/distribution/DBIx-Class/lib/DBIx/Class/Manual/DocMap.pod
 # TODO: double check that last_seen applies to api requests
-
-# first criteria: last_seen is null OR more than 12 months old
-# ignore emails ending in netscape*** or mozilla.org or mozilla.com or mozillafoundation.org or getpocket
-# REMOVE ME:
-#  SELECT * FROM profiles WHERE last_seen_date IS NULL LIMIT 1000
-#  SELECT COUNT(userid) FROM profiles WHERE last_seen_date IS NULL; --
-
-# Verify the ~470000 results returned
-# Figure out how to process these without using up too memory (paging somehow)
-# Load entire list ~ 12megs (depending on if it's really 470000)
-# load the actual user models in batches
-sub _build_users {
+# TODO: ignore users with email in the badhosts
+# TODO: should we ignore .tld and .bugs?
+sub _build_userids {
     my ($self) = @_;
     my $dbh = $self->dbh;
 
     my $query = qq{
-      SELECT COUNT(userid)
+      SELECT userid
       FROM profiles
       WHERE
-        ( last_seen_date IS NULL
-          OR last_seen_date > @{[  $dbh->sql_date_math('NOW()', '-', 1, 'YEAR') ]})
+        (
+          last_seen_date IS NULL
+          OR last_seen_date > @{[  $dbh->sql_date_math('NOW()', '-', 1, 'YEAR') ]}
+        )
         AND NOT (
           login_name LIKE '%\@mozilla.com'
           OR  login_name LIKE '%\@mozilla.org'
@@ -48,17 +42,19 @@ sub _build_users {
           OR  login_name LIKE '%\@formerly-netscape.com.tld'
           OR  login_name LIKE '%\@bugzilla.org'
         )
-      AND login_name <> 'nobody\@mozilla.com'
+        AND login_name <> 'nobody\@mozilla.com'
+        AND userid NOT IN ( SELECT DISTINCT who FROM bugs_activity )
+        AND userid NOT IN ( SELECT DISTINCT who FROM longdescs )
+        AND disabledtext = ''
+        ORDER BY userid
     };
-    # LIMT 1000
-    DEBUG("sql: $query");
 
-    # ARRAY1 = [ [ 1 ] ];
-    my $users = $dbh->selectcol_arrayref($query);
-    use Data::Dumper;
-    WARN(Dumper($users));
-    exit;
-    return Bugzilla::User->new_from_list($users);
+    my $userids = $dbh->selectcol_arrayref($query);
+    # WARN(Dumper($userids));
+    sleep;
+    return $userids;
+
+    #return Bugzilla::User->new_from_list($users);
 }
 
 1;
