@@ -96,6 +96,9 @@
 
 @media all {
   :root {
+    /* Dark Mode Support */
+    color-scheme: light dark;
+
     /* Typography */
     --font-size-h1: 32px;
     --font-size-h2: 26px;
