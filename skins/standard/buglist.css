@@ -50,7 +50,7 @@
 
 .bz_buglist {
   margin: 16px 0;
-  border-top: 1px solid var(--control-border-color);
+  border-top: 1px solid var(--grid-border-color);
   background-color: var(--grid-background-color);
   box-shadow: var(--primary-region-box-shadow);
 }
@@ -62,7 +62,7 @@
 }
 
 .bz_buglist_header th {
-  border-bottom: 1px solid var(--control-border-color);
+  border-bottom: 1px solid var(--grid-border-color);
   padding-top: 4px;
   padding-bottom: 4px;
   color: var(--secondary-label-color);
@@ -71,7 +71,7 @@
 }
 
 .bz_buglist_header th:not(:last-of-type) {
-  border-right: 1px solid var(--control-border-color);
+  border-right: 1px solid var(--grid-border-color);
 }
 
 .bz_buglist_header th a {
@@ -86,7 +86,7 @@
 }
 
 .bz_buglist tr {
-  border-bottom: 1px solid var(--control-border-color);
+  border-bottom: 1px solid var(--grid-border-color);
 }
 
 .bz_buglist thead th {

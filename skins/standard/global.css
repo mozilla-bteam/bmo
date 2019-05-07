@@ -235,6 +235,7 @@
 
     /** Grid */
     --grid-background-color: var(--primary-region-background-color);
+    --grid-border-color: var(--control-border-color);
     --grid-header-background-color: rgb(230, 231, 232);
     --grid-subheader-background-color: rgb(210, 211, 212);
   }
@@ -743,7 +744,7 @@ input[type="radio"]:checked {
   border-collapse: collapse !important;
   border-width: 1px 0 0 !important;
   border-style: solid !important;
-  border-color: var(--control-border-color) !important;
+  border-color: var(--grid-border-color) !important;
   font-family: var(--font-family-sans-serif) !important;
   background: var(--grid-background-color) !important;
 }
@@ -761,7 +762,7 @@ input[type="radio"]:checked {
 
 .yui-skin-sam .yui-dt th,
 .yui3-skin-sam .yui3-datatable-header {
-  border-bottom: 1px solid var(--control-border-color) !important;
+  border-bottom: 1px solid var(--grid-border-color) !important;
   color: var(--secondary-label-color) !important;
   background-color: var(--grid-header-background-color) !important;
   background-image: none !important;
@@ -771,7 +772,7 @@ input[type="radio"]:checked {
 
 .yui-skin-sam .yui-dt table tr,
 .yui3-skin-sam .yui3-datatable-table tr {
-  border-bottom: 1px solid var(--control-border-color) !important;
+  border-bottom: 1px solid var(--grid-border-color) !important;
 }
 
 .yui-skin-sam .yui-dt table .yui-skin-sam td,
@@ -781,7 +782,7 @@ input[type="radio"]:checked {
 }
 
 .yui3-skin-sam .yui3-datatable-message-content {
-  border-color: var(--control-border-color) !important;
+  border-color: var(--grid-border-color) !important;
 }
 
 .yui-calcontainer {
@@ -1394,7 +1395,7 @@ input.requestee {
 
 table.standard {
   border-collapse: collapse;
-  border-top: 1px solid var(--control-border-color);
+  border-top: 1px solid var(--grid-border-color);
   background-color: var(--grid-background-color);
 }
 
@@ -1403,7 +1404,7 @@ table.standard thead {
 }
 
 table.standard tr {
-  border-bottom: 1px solid var(--control-border-color);
+  border-bottom: 1px solid var(--grid-border-color);
 }
 
 table.standard thead th {
@@ -2522,7 +2523,7 @@ pre.comment-text {
   display: block;
   width: 100%;
   overflow: auto;
-  border-top: 1px solid var(--control-border-color);
+  border-top: 1px solid var(--grid-border-color);
 }
 
 .markdown-body table th,
@@ -2531,7 +2532,7 @@ pre.comment-text {
 }
 
 .markdown-body table tr {
-  border-bottom: 1px solid var(--control-border-color);
+  border-bottom: 1px solid var(--grid-border-color);
   background-color: var(--control-background-color);
 }
 

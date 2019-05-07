@@ -13,7 +13,7 @@ tr.bz_bug_being_voted_on {
 tr.bz_bug_being_voted_on td {
   border-width: 1px 0;
   border-style: solid;
-  border-color: var(--control-border-color);
+  border-color: var(--grid-border-color);
 }
 
 #votes_container {

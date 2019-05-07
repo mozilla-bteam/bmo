@@ -35,7 +35,7 @@
 
 .req_table td,
 .req_table th {
-  border: 1px solid var(--control-border-color);
+  border: 1px solid var(--grid-border-color);
   padding: .25em;
 }
 
@@ -57,7 +57,7 @@
 
 .qs_fields td {
   padding: .25em;
-  border-top: 1px solid var(--control-border-color);
+  border-top: 1px solid var(--grid-border-color);
   line-height: var(--line-height-comfortable);
 }
 
@@ -85,7 +85,7 @@ table.field_value_explanation {
 }
 
 .field_value_explanation tbody td {
-  border: 1px solid var(--control-border-color);
+  border: 1px solid var(--grid-border-color);
   padding: 1em;
 }
 

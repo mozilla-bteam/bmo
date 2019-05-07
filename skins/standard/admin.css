@@ -68,7 +68,7 @@ td.admin_links .forbidden a {
 }
 
 .checkbox-cell {
-  border: 1px black var(--control-border-color);
+  border: 1px solid var(--grid-border-color);
 }
 
 #workflow_form table {
@@ -77,7 +77,7 @@ td.admin_links .forbidden a {
 
 #workflow_form th,
 #workflow_form td {
-  border: 1px solid var(--control-border-color);
+  border: 1px solid var(--grid-border-color);
   padding: 4px 8px;
 }
 

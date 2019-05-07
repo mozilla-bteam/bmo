@@ -34,7 +34,7 @@ table#attachment_flags td {
   font-weight: bold;
   font-size: var(--font-size-x-large);
   background-color: var(--grid-header-background-color);
-  border: 1px solid var(--control-border-color);
+  border: 1px solid var(--grid-border-color);
 }
 
 .file_head a {
@@ -48,7 +48,7 @@ table#attachment_flags td {
 
 .section_head {
   padding: 2px 4px;
-  border: 1px solid var(--control-border-color);
+  border: 1px solid var(--grid-border-color);
   background-color: var(--grid-header-background-color);
   text-align: left;
 }
@@ -59,7 +59,7 @@ table.file_table {
   empty-cells: show;
   border-spacing: 0;
   border-collapse: collapse;
-  border: 1px solid var(--control-border-color);
+  border: 1px solid var(--grid-border-color);
   border-top: 0;
   background-color: var(--grid-background-color);
 }
@@ -109,7 +109,7 @@ tbody.file pre:empty {
 }
 
 .num:not(:first-child) {
-  border-left: 1px solid var(--control-border-color);
+  border-left: 1px solid var(--grid-border-color);
 }
 
 table.attachment_info th {
