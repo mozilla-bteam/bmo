@@ -306,7 +306,6 @@ if ($cgi->param('remove_invalid_bug_references')) {
     'bug_user_map/',
     'bugs_activity/',
     'bugs_fulltext/',
-    'component_user_map/',
     'dependencies/blocked',
     'dependencies/dependson',
     'duplicates/dupe',
@@ -314,7 +313,6 @@ if ($cgi->param('remove_invalid_bug_references')) {
     'flags/',
     'keywords/',
     'longdescs/',
-    'product_user_map/',
     'regressions/regresses',
     'regressions/regressed_by'
     )
