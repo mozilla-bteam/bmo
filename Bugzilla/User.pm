@@ -1538,6 +1538,7 @@ sub visible_bugs {
                     LEFT JOIN bug_user_map
                               ON bug_user_map.bug_id = bugs.bug_id
                                  AND bug_user_map.user_id = $user_id
+                                 AND bug_user_map.user_role = ' . REL_CC . '
                     LEFT JOIN components
                               ON bugs.component_id = components.id
                     LEFT JOIN bug_group_map
@@ -1545,14 +1546,13 @@ sub visible_bugs {
                                  AND bug_group_map.group_id NOT IN ("
         . $self->groups_as_string . ')
               WHERE bugs.bug_id IN (' . join(',', ('?') x @check_ids) . ')
-                    AND bug_user_map.user_role = ?
                     AND creation_ts IS NOT NULL '
     );
     if (scalar(@check_ids) == 1) {
       $self->{_sth_one_visible_bug} = $sth;
     }
 
-    $sth->execute(@check_ids, REL_CC);
+    $sth->execute(@check_ids);
     my $use_qa_contact = Bugzilla->params->{'useqacontact'};
     while (my $row = $sth->fetchrow_arrayref) {
       my ($bug_id, $reporter, $owner, $qacontact, $triage_owner, $reporter_access,
