@@ -72,8 +72,9 @@ sub _reviewers_objs {
     my $dbh = Bugzilla->dbh;
     my $user_ids
       = $dbh->selectcol_arrayref(
-      "SELECT user_id FROM ${type}_reviewers WHERE ${type}_id = ? ORDER BY sortkey",
-      undef, $object->id,);
+      "SELECT user_id FROM ${type}_user_map
+        WHERE ${type}_id = ? AND user_role = ? ORDER BY sortkey",
+      undef, $object->id, REL_REVIEWER);
 
     # new_from_list always sorts according to the object's definition,
     # so we have to reorder the list
