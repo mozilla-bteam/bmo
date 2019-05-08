@@ -1538,7 +1538,7 @@ sub visible_bugs {
                     LEFT JOIN bug_user_map
                               ON bug_user_map.bug_id = bugs.bug_id
                                  AND bug_user_map.user_id = $user_id
-                                 AND bug_user_map.user_role = ' . REL_CC . '
+                                 AND bug_user_map.user_role = " . REL_CC . "
                     LEFT JOIN components
                               ON bugs.component_id = components.id
                     LEFT JOIN bug_group_map
