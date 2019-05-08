@@ -36,9 +36,9 @@ my %whitelist = (
       mimetype ispatch filename submitter_id isobsolete attach_size
       )
   ],
-  bug_mentors => [
+  bug_user_map => [
     qw(
-      bug_id user_id
+      bug_id user_id user_role sortkey
       )
   ],
   bug_see_also => [
@@ -62,14 +62,14 @@ my %whitelist = (
       comment_id
       )
   ],
-  cc => [
-    qw(
-      bug_id who
-      )
-  ],
   classifications => [
     qw(
       id name description sortkey
+      )
+  ],
+  component_user_map => [
+    qw(
+      component_id user_id user_role sortkey
       )
   ],
   components => [
@@ -138,6 +138,11 @@ my %whitelist = (
   milestones => [
     qw(
       id product_id value sortkey isactive
+      )
+  ],
+  product_user_map => [
+    qw(
+      product_id user_id user_role sortkey
       )
   ],
   products => [

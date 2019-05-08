@@ -119,7 +119,7 @@ sub create {
   my $component = $class->insert_create_data($params);
   $component->{product} = $product;
 
-  # We still have to fill the component_cc table.
+  # We still have to fill the component_user_map table.
   $component->_update_cc_list($cc_list) if $cc_list;
 
   # Create series for the new component.
@@ -133,7 +133,7 @@ sub update {
   my $self    = shift;
   my $changes = $self->SUPER::update(@_);
 
-  # Update the component_cc table if necessary.
+  # Update the component_user_map table if necessary.
   if (defined $self->{cc_ids}) {
     my $diff = $self->_update_cc_list($self->{cc_ids});
     $changes->{cc_list} = $diff if defined $diff;
@@ -167,7 +167,7 @@ sub remove_from_db {
 
   $dbh->do('DELETE FROM flaginclusions WHERE component_id = ?', undef, $self->id);
   $dbh->do('DELETE FROM flagexclusions WHERE component_id = ?', undef, $self->id);
-  $dbh->do('DELETE FROM component_cc WHERE component_id = ?',   undef, $self->id);
+  $dbh->do('DELETE FROM component_user_map WHERE component_id = ?', undef, $self->id);
   $dbh->do('DELETE FROM components WHERE id = ?',               undef, $self->id);
 
   $dbh->bz_commit_transaction();
@@ -271,9 +271,8 @@ sub _update_cc_list {
   my $dbh = Bugzilla->dbh;
 
   my $old_cc_list = $dbh->selectcol_arrayref(
-    'SELECT user_id FROM component_cc
-                                WHERE component_id = ?', undef, $self->id
-  );
+    'SELECT user_id FROM component_user_map
+      WHERE component_id = ? AND user_role = ?', undef, $self->id, REL_CC);
 
   my ($removed, $added) = diff_arrays($old_cc_list, $cc_list);
   my $diff;
@@ -281,13 +280,14 @@ sub _update_cc_list {
     $diff = [join(', ', @$removed), join(', ', @$added)];
   }
 
-  $dbh->do('DELETE FROM component_cc WHERE component_id = ?', undef, $self->id);
+  $dbh->do(
+    'DELETE FROM component_user_map WHERE component_id = ? AND user_role = ?',
+    undef, $self->id, REL_CC);
 
   my $sth = $dbh->prepare(
-    'INSERT INTO component_cc
-                             (user_id, component_id) VALUES (?, ?)'
-  );
-  $sth->execute($_, $self->id) foreach (@$cc_list);
+    'INSERT INTO component_user_map (user_id, component_id, user_role)
+      VALUES (?,?,?)');
+  $sth->execute($_, $self->id, REL_CC) foreach (@$cc_list);
 
   return $diff;
 }
@@ -475,10 +475,8 @@ sub initial_cc {
     # If set_cc_list() has been called but data are not yet written
     # into the DB, we want the new values defined by it.
     my $cc_ids = $self->{cc_ids} || $dbh->selectcol_arrayref(
-      'SELECT user_id FROM component_cc
-                                                  WHERE component_id = ?', undef,
-      $self->id
-    );
+      'SELECT user_id FROM component_user_map
+        WHERE component_id = ? AND user_role = ?', undef, $self->id, REL_CC);
 
     $self->{'initial_cc'} = Bugzilla::User->new_from_list($cc_ids);
   }

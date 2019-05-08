@@ -42,8 +42,8 @@ $dbh->bz_start_transaction();
 print "Deleting all bug data...\n";
 
 delete_from_table('bug_group_map');
+delete_from_table('bug_user_map');
 delete_from_table('bugs_activity');
-delete_from_table('cc');
 delete_from_table('dependencies');
 delete_from_table('duplicates');
 delete_from_table('flags');

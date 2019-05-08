@@ -78,11 +78,13 @@ while (my $row = $sth->fetchrow_hashref) {
       $dbh->do("DELETE FROM bugs_activity WHERE id = ?", undef, $row->{id});
       my ($exists)
         = $dbh->selectrow_array(
-        "SELECT 1 FROM bug_mentors WHERE bug_id = ? AND user_id = ?",
-        undef, $row->{bug_id}, $user->id);
+        "SELECT 1 FROM bug_user_map
+          WHERE bug_id = ? AND user_id = ? AND user_role = ?",
+        undef, $row->{bug_id}, $user->id, REL_MENTOR);
       if (!$exists) {
-        $dbh->do("INSERT INTO bug_mentors (bug_id, user_id) VALUES (?, ?)",
-          undef, $row->{bug_id}, $user->id,);
+        $dbh->do(
+          "INSERT INTO bug_user_map (bug_id, user_id, user_role) VALUES (?,?,?)",
+          undef, $row->{bug_id}, $user->id, REL_MENTOR);
       }
       $dbh->bz_commit_transaction;
       %pair = ();
@@ -117,8 +119,9 @@ foreach my $bug (@$bugs) {
   $whiteboard =~ s/\[mentor=[^\]]+\]//g;
 
   my $migrated
-    = $dbh->selectcol_arrayref("SELECT user_id FROM bug_mentors WHERE bug_id = ?",
-    undef, $bug->id);
+    = $dbh->selectcol_arrayref(
+    "SELECT user_id FROM bug_user_map WHERE bug_id = ? AND user_role = ?",
+    undef, $bug->id, REL_MENTOR);
   if (@$migrated) {
     foreach my $migrated_id (@$migrated) {
       $mentors = [grep { $_->id != $migrated_id } @$mentors];
@@ -136,8 +139,9 @@ foreach my $bug (@$bugs) {
   Bugzilla::Bug::LogActivityEntry($bug->id, 'status_whiteboard',
     $orig_whiteboard, $whiteboard, $nobody->id, $delta_ts,);
   foreach my $mentor (@$mentors) {
-    $dbh->do("INSERT INTO bug_mentors (bug_id, user_id) VALUES (?, ?)",
-      undef, $bug->id, $mentor->id,);
+    $dbh->do(
+      "INSERT INTO bug_user_map (bug_id, user_id, user_role) VALUES (?,?,?)",
+      undef, $bug->id, $mentor->id, REL_MENTOR);
     Bugzilla::Bug::LogActivityEntry($bug->id, 'bug_mentor', '', $mentor->login,
       $nobody->id, $delta_ts,);
   }

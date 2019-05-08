@@ -1168,7 +1168,7 @@ sub force_bug_dissociation {
   my $group_marks = join(", ", ('?') x @$groups);
   my $user_id     = $self->id;
   my @params      = (
-    $user_id, $user_id, $user_id, $user_id,
+    $user_id, $user_id, $user_id, $user_id, REL_CC,
     map { blessed $_ ? $_->id : $_ } @$groups
   );
   my $bugs = $dbh->selectall_arrayref(
@@ -1179,15 +1179,16 @@ sub force_bug_dissociation {
             bugs.reporter    = ? AS match_reporter,
             bugs.assigned_to = ? AS match_assignee,
             bugs.qa_contact  = ? AS match_qa_contact,
-            cc.who           = ? AS match_cc
+            bug_user_map.user_id = ? AS match_cc
         FROM
             bug_group_map
                 JOIN
             bugs ON bug_group_map.bug_id = bugs.bug_id
                 LEFT JOIN
-            cc ON cc.bug_id = bugs.bug_id
+            bug_user_map ON bug_user_map.bug_id = bugs.bug_id
         WHERE
-            group_id IN ($group_marks)
+            bug_user_map.user_role = ?
+            AND group_id IN ($group_marks)
         HAVING match_reporter AND reporter_accessible
             OR match_assignee
             OR match_qa_contact
@@ -1250,8 +1251,9 @@ sub force_bug_dissociation {
             VALUES (?, ?, ?, ?, ?, '')}, undef, $bug_id, $auto_user->id, $timestamp,
       $cc_field_id, $self->login
     );
-    $dbh->do(q{DELETE FROM cc WHERE bug_id = ? AND who = ?},
-      undef, $bug_id, $self->id);
+    $dbh->do(
+      q{DELETE FROM bug_user_map WHERE bug_id = ? AND user_id = ? AND user_role = ?},
+      undef, $bug_id, $self->id, REL_CC);
   }
 
   if (@reporter_bugs || @assignee_bugs || @qa_bugs || @cc_bugs) {
@@ -1530,11 +1532,12 @@ sub visible_bugs {
       # out duplicate rows).
       "SELECT DISTINCT bugs.bug_id, reporter, assigned_to, qa_contact,
                     components.triage_owner_id, reporter_accessible,
-                    cclist_accessible, cc.who, bug_group_map.bug_id
+                    cclist_accessible, bug_user_map.user_id,
+                    bug_group_map.bug_id
                FROM bugs
-                    LEFT JOIN cc
-                              ON cc.bug_id = bugs.bug_id
-                                 AND cc.who = $user_id
+                    LEFT JOIN bug_user_map
+                              ON bug_user_map.bug_id = bugs.bug_id
+                                 AND bug_user_map.user_id = $user_id
                     LEFT JOIN components
                               ON bugs.component_id = components.id
                     LEFT JOIN bug_group_map
@@ -1542,13 +1545,14 @@ sub visible_bugs {
                                  AND bug_group_map.group_id NOT IN ("
         . $self->groups_as_string . ')
               WHERE bugs.bug_id IN (' . join(',', ('?') x @check_ids) . ')
+                    AND bug_user_map.user_role = ?
                     AND creation_ts IS NOT NULL '
     );
     if (scalar(@check_ids) == 1) {
       $self->{_sth_one_visible_bug} = $sth;
     }
 
-    $sth->execute(@check_ids);
+    $sth->execute(@check_ids, REL_CC);
     my $use_qa_contact = Bugzilla->params->{'useqacontact'};
     while (my $row = $sth->fetchrow_arrayref) {
       my ($bug_id, $reporter, $owner, $qacontact, $triage_owner, $reporter_access,
@@ -2008,13 +2012,13 @@ sub product_responsibilities {
 
   my $list = $dbh->selectall_arrayref(
     'SELECT components.product_id, components.id
-                                           FROM components
-                                           LEFT JOIN component_cc
-                                           ON components.id = component_cc.component_id
-                                          WHERE components.initialowner = ?
-                                             OR components.initialqacontact = ?
-                                             OR component_cc.user_id = ?',
-    {Slice => {}}, ($self->id, $self->id, $self->id)
+      FROM components
+      LEFT JOIN component_user_map
+        ON components.id = component_user_map.component_id
+      WHERE components.initialowner = ?
+        OR components.initialqacontact = ?
+        OR (component_user_map.user_id = ? AND component_user_map.user_role = ?)
+    ', {Slice => {}}, ($self->id, $self->id, $self->id, REL_CC)
   );
 
   unless ($list) {

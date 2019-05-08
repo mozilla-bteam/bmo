@@ -80,10 +80,11 @@ my $qa_bugs = $dbh->selectcol_arrayref(
 ) || [];
 
 my $cc_bugs = $dbh->selectcol_arrayref(
-  q{SELECT DISTINCT cc.bug_id
-        FROM cc, bug_group_map
-       WHERE cc.bug_id = bug_group_map.bug_id
-             AND cc.who = ?}, undef, $target_user->id
+  q{SELECT DISTINCT bug_user_map.bug_id
+        FROM bug_user_map, bug_group_map
+       WHERE bug_user_map.bug_id = bug_group_map.bug_id
+             AND bug_user_map.user_id = ?
+             AND bug_user_map.user_role = ?}, undef, $target_user->id, REL_CC
 ) || [];
 
 my $reporter_count = scalar @$reporter_bugs;
@@ -164,8 +165,9 @@ foreach my $bug_id (@$cc_bugs) {
           VALUES (?, ?, ?, ?, ?, '')}, undef, $bug_id, $auto_user->id, $timestamp,
     $field_id, $target_user->login
   );
-  $dbh->do(q{DELETE FROM cc WHERE bug_id = ? AND who = ?},
-    undef, $bug_id, $target_user->id);
+  $dbh->do(
+    q{DELETE FROM bug_user_map WHERE bug_id = ? AND user_id = ? AND user_role = ?},
+    undef, $bug_id, $target_user->id, REL_CC);
 }
 
 $target_user->clear_last_statistics_ts();

@@ -419,14 +419,17 @@ elsif ($action eq 'del') {
   $vars->{'reporter'}
     = $dbh->selectrow_array('SELECT COUNT(*) FROM bugs WHERE reporter = ?',
     undef, $otherUserID);
-  $vars->{'cc'} = $dbh->selectrow_array('SELECT COUNT(*) FROM cc WHERE who = ?',
-    undef, $otherUserID);
+  $vars->{'cc'}
+    = $dbh->selectrow_array(
+    'SELECT COUNT(*) FROM bug_user_map WHERE user_id = ? AND user_role = ?',
+    undef, $otherUserID, REL_CC);
   $vars->{'bugs_activity'}
     = $dbh->selectrow_array('SELECT COUNT(*) FROM bugs_activity WHERE who = ?',
     undef, $otherUserID);
   $vars->{'component_cc'}
-    = $dbh->selectrow_array('SELECT COUNT(*) FROM component_cc WHERE user_id = ?',
-    undef, $otherUserID);
+    = $dbh->selectrow_array(
+    'SELECT COUNT(*) FROM component_user_map WHERE user_id = ? AND user_role = ?',
+    undef, $otherUserID, REL_CC);
   $vars->{'email_setting'}
     = $dbh->selectrow_array(
     'SELECT COUNT(*) FROM email_setting WHERE user_id = ?',
@@ -583,9 +586,11 @@ elsif ($action eq 'delete') {
     undef, ($otherUserID, $otherUserID));
 
   # Deletions in referred tables which need LogActivityEntry.
-  my $buglist = $dbh->selectcol_arrayref('SELECT bug_id FROM cc WHERE who = ?',
-    undef, $otherUserID);
-  $dbh->do('DELETE FROM cc WHERE who = ?', undef, $otherUserID);
+  my $buglist = $dbh->selectcol_arrayref(
+    'SELECT bug_id FROM bug_user_map WHERE user_id = ? AND user_role = ?',
+    undef, $otherUserID, REL_CC);
+  $dbh->do('DELETE FROM bug_user_map WHERE user_id = ? AND user_role = ?',
+    undef, $otherUserID, REL_CC);
   foreach my $bug_id (@$buglist) {
     LogActivityEntry($bug_id, 'cc', $otherUser->login, '', $userid, $timestamp);
     $sth_set_bug_timestamp->execute($timestamp, $bug_id);

@@ -669,7 +669,9 @@ sub _create_one_bug {
                                   cclist_accessible = 0 WHERE bug_id = ?', undef,
       $bug->id
     );
-    $dbh->do('DELETE FROM cc WHERE bug_id = ?', undef, $bug->id);
+    $dbh->do(
+      'DELETE FROM bug_user_map WHERE bug_id = ? AND user_role = ?',
+      undef, $bug->id, REL_CC);
     my $ts = '1970-01-01 00:00:00';
     $dbh->do(
       'UPDATE bugs SET creation_ts = ?, delta_ts = ?

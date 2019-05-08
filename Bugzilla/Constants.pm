@@ -87,6 +87,7 @@ use Memoize;
 
   RELATIONSHIPS
   REL_ASSIGNEE REL_QA REL_REPORTER REL_CC REL_GLOBAL_WATCHER
+  REL_TRIAGER REL_MENTOR REL_REVIEWER REL_OWNER REL_MEMBER
   REL_ANY
 
   POS_EVENTS
@@ -341,9 +342,14 @@ use constant REL_ASSIGNEE => 0;
 use constant REL_QA       => 1;
 use constant REL_REPORTER => 2;
 use constant REL_CC       => 3;
-
-# REL 4 was REL_VOTER, before it was moved ino an extension.
+# REL 4 is REL_VOTER used in the Voting extension
 use constant REL_GLOBAL_WATCHER => 5;
+use constant REL_TRIAGER  => 6;
+use constant REL_MENTOR   => 7; # Review extension
+use constant REL_REVIEWER => 8; # Review extension
+use constant REL_OWNER    => 9;
+use constant REL_MEMBER   => 10;
+# REL 15 is REL_COMPONENT_WATCHER used in the Component Watching extension
 
 # We need these strings for the X-Bugzilla-Reasons header
 # Note: this hash uses "," rather than "=>" to avoid auto-quoting of the LHS.

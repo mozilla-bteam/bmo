@@ -13,6 +13,7 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
+use Bugzilla::Constants;
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::Flag;
@@ -139,14 +140,14 @@ sub queue {
                  AND bgmap.group_id NOT IN (" . $user->groups_as_string . ")
            LEFT JOIN bug_group_map AS privs
                   ON privs.bug_id = bugs.bug_id
-           LEFT JOIN cc AS ccmap
-                  ON ccmap.who = $userid
-                 AND ccmap.bug_id = bugs.bug_id
-    " .
+           LEFT JOIN bug_user_map AS bumap
+                  ON bumap.bug_id = bugs.bug_id
+                 AND bumap.user_id = $userid
+                 AND bumap.user_role = " . REL_CC .
 
     # Weed out bug the user does not have access to
     " WHERE     ((bgmap.group_id IS NULL) OR
-                 (ccmap.who IS NOT NULL AND cclist_accessible = 1) OR
+                 (bumap.user_id IS NOT NULL AND cclist_accessible = 1) OR
                  (bugs.reporter = $userid AND bugs.reporter_accessible = 1) OR
                  (bugs.assigned_to = $userid) " . (
     Bugzilla->params->{'useqacontact'}

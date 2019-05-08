@@ -301,13 +301,22 @@ if ($cgi->param('remove_invalid_bug_references')) {
   $dbh->bz_start_transaction();
 
   foreach my $pair (
-    'attachments/',           'bug_group_map/',
-    'bugs_activity/',         'bugs_fulltext/',
-    'cc/',                    'dependencies/blocked',
-    'dependencies/dependson', 'duplicates/dupe',
-    'duplicates/dupe_of',     'flags/',
-    'keywords/',              'longdescs/',
-    'regressions/regresses',  'regressions/regressed_by'
+    'attachments/',
+    'bug_group_map/',
+    'bug_user_map/',
+    'bugs_activity/',
+    'bugs_fulltext/',
+    'component_user_map/',
+    'dependencies/blocked',
+    'dependencies/dependson',
+    'duplicates/dupe',
+    'duplicates/dupe_of',
+    'flags/',
+    'keywords/',
+    'longdescs/',
+    'product_user_map/',
+    'regressions/regresses',
+    'regressions/regressed_by'
     )
   {
 
@@ -513,8 +522,10 @@ CrossCheck(
   ["bug_group_map", "bug_id"],
   ["bugs_fulltext", "bug_id"],
   ["attachments",   "bug_id"],
-  ["cc",            "bug_id"],
   ["longdescs",     "bug_id"],
+  ["product_user_map",    "bug_id"],
+  ["component_user_map",  "bug_id"],
+  ["bug_user_map",        "bug_id"],
   ["dependencies",  "blocked"],
   ["dependencies",  "dependson"],
   ["regressions",   "regresses"],
@@ -559,7 +570,9 @@ CrossCheck(
   ['flags',                       'setter_id',        'bug_id'],
   ['flags',                       'requestee_id',     'bug_id'],
   ["bugs_activity",               "who",              "bug_id"],
-  ["cc",                          "who",              "bug_id"],
+  ["product_user_map",            "user_id",          "bug_id"],
+  ["component_user_map",          "user_id",          "bug_id"],
+  ["bug_user_map",                "user_id",          "bug_id"],
   ['quips',                       'userid'],
   ["longdescs",                   "who",              "bug_id"],
   ["logincookies",                "userid"],
@@ -572,8 +585,7 @@ CrossCheck(
   ["tokens",                      "userid"],
   ["user_group_map",              "user_id"],
   ["components",                  "initialowner",     "name"],
-  ["components",                  "initialqacontact", "name"],
-  ["component_cc",                "user_id"]
+  ["components",                  "initialqacontact", "name"]
 );
 
 CrossCheck(
@@ -584,13 +596,14 @@ CrossCheck(
   ["milestones",        "product_id", "value"],
   ["versions",          "product_id", "value"],
   ["group_control_map", "product_id"],
+  ["product_user_map",  "product_id"],
   ["flaginclusions",    "product_id", "type_id"],
   ["flagexclusions",    "product_id", "type_id"]
 );
 
 CrossCheck(
   "components", "id",
-  ["component_cc", "component_id"],
+  ["component_user_map", "component_id"],
   ["flagexclusions", "component_id", "type_id"],
   ["flaginclusions", "component_id", "type_id"]
 );

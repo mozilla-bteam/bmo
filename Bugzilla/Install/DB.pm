@@ -201,8 +201,9 @@ sub update_table_definitions {
   # 2000-03-24 Added unique indexes into the cc and keyword tables.  This
   # prevents certain database inconsistencies, and, moreover, is required for
   # new generalized list code to work.
-  if ( !$dbh->bz_index_info('cc', 'cc_bug_id_idx')
-    || !$dbh->bz_index_info('cc', 'cc_bug_id_idx')->{TYPE})
+  if ( $dbh->bz_table_info('cc')
+    && (!$dbh->bz_index_info('cc', 'cc_bug_id_idx')
+    || !$dbh->bz_index_info('cc', 'cc_bug_id_idx')->{TYPE}))
   {
     $dbh->bz_drop_index('cc', 'cc_bug_id_idx');
     $dbh->bz_add_index('cc', 'cc_bug_id_idx',
@@ -805,6 +806,8 @@ sub update_table_definitions {
   # Bug 1576667 - dkl@mozilla.com
   _populate_api_keys_creation_ts();
 
+  _migrate_user_role_tables();
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
@@ -1066,15 +1069,16 @@ sub _add_unique_login_name_index_to_profiles {
         ["bugs",          "qa_contact"],
         ["attachments",   "submitter_id"],
         ["bugs_activity", "who"],
-        ["cc",            "who"],
+        ["bug_user_map",  "user_id", "user_role = " . REL_CC],
         ["votes",         "who"],
         ["longdescs",     "who"]
         )
       {
-        my ($table, $field) = (@$i);
+        my ($table, $field, $extra) = (@$i);
         if ($dbh->bz_table_info($table)) {
           print "   Updating $table.$field...\n";
-          $dbh->do("UPDATE $table SET $field = $u1 " . "WHERE $field = $u2");
+          $dbh->do("UPDATE $table SET $field = $u1 "
+            . "WHERE $field = $u2" . ($extra ? ' AND ' . $extra : ''));
         }
       }
       $dbh->do("DELETE FROM profiles WHERE userid = $u2");
@@ -4324,6 +4328,70 @@ sub _populate_api_keys_creation_ts {
 
   $dbh->bz_alter_column('user_api_keys', 'creation_ts',
     {TYPE => 'DATETIME', NOTNULL => 1});
+}
+
+sub _migrate_user_role_tables {
+  my $dbh = Bugzilla->dbh;
+
+  if ($dbh->bz_table_info('product_reviewers')) {
+    # Migrate Review extension
+    print "Copying data from 'product_reviewers' to 'product_user_map'...\n";
+    $dbh->do("
+      INSERT INTO product_user_map (product_id, user_id, user_role, sortkey)
+      SELECT product_id, user_id, " . REL_REVIEWER . ", sortkey
+      FROM product_reviewers
+    ");
+    $dbh->bz_drop_table("product_reviewers");
+  }
+
+  if ($dbh->bz_table_info('component_reviewers')) {
+    # Migrate Review extension
+    print "Copying data from 'component_reviewers' to 'component_user_map'...\n";
+    $dbh->do("
+      INSERT INTO component_user_map (component_id, user_id, user_role, sortkey)
+      SELECT component_id, user_id, " . REL_REVIEWER . ", sortkey
+      FROM component_reviewers
+    ");
+    $dbh->bz_drop_table("component_reviewers");
+  }
+
+  if ($dbh->bz_table_info('component_cc')) {
+    print "Copying data from 'component_cc' to 'component_user_map'...\n";
+    $dbh->do("
+      INSERT INTO component_user_map (component_id, user_id, user_role)
+      SELECT component_id, user_id, " . REL_CC . " FROM component_cc
+    ");
+    $dbh->bz_drop_table("component_cc");
+  }
+
+  if ($dbh->bz_table_info('cc')) {
+    # If we get here, it's because the schema created "bug_user_map" as an empty
+    # table while "cc" still exists. We get rid of the empty table so we can do
+    # the rename over the top of it. The "cc" tabie can be too big, so we just
+    # extend it instead of copying the entire rows to the empty table.
+    print "Renaming 'cc' to 'bug_user_map'...\n";
+    $dbh->bz_drop_table('bug_user_map');
+    $dbh->bz_drop_index('cc', 'cc_bug_id_idx');
+    $dbh->bz_drop_index('cc', 'cc_who_idx');
+    $dbh->bz_rename_table('cc', 'bug_user_map');
+    $dbh->bz_rename_column('bug_user_map', 'who', 'user_id');
+    $dbh->bz_add_column('bug_user_map', 'user_role',
+      {TYPE => 'INT2', NOTNULL => 1, DEFAULT => REL_CC});
+    $dbh->bz_add_column('bug_user_map', 'sortkey',
+      {TYPE => 'INT2', NOTNULL => 1, DEFAULT => 0});
+    $dbh->bz_add_index('bug_user_map', 'bug_user_map_idx',
+      {TYPE => 'UNIQUE', FIELDS => ['bug_id', 'user_id', 'user_role']});
+  }
+
+  if ($dbh->bz_table_info('bug_mentors')) {
+    # Migrate Review extension
+    print "Copying data from 'bug_mentors' to 'bug_user_map'...\n";
+    $dbh->do("
+      INSERT INTO bug_user_map (bug_id, user_id, user_role)
+      SELECT bug_id, user_id, " . REL_MENTOR . " FROM bug_mentors
+    ");
+    $dbh->bz_drop_table("bug_mentors");
+  }
 }
 
 1;

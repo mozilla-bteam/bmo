@@ -963,9 +963,10 @@ sub create {
   $bug->{creation_ts} = $timestamp;
 
   # Add the CCs
-  my $sth_cc = $dbh->prepare('INSERT INTO cc (bug_id, who) VALUES (?,?)');
+  my $sth_cc = $dbh->prepare(
+    'INSERT INTO bug_user_map (bug_id, user_id, user_role) VALUES (?,?,?)');
   foreach my $user_id (@$cc_ids) {
-    $sth_cc->execute($bug->bug_id, $user_id);
+    $sth_cc->execute($bug->bug_id, $user_id, REL_CC);
   }
 
   # Add in keywords
@@ -1162,12 +1163,14 @@ sub update {
 
   if (scalar @$removed_cc) {
     $dbh->do(
-      'DELETE FROM cc WHERE bug_id = ? AND ' . $dbh->sql_in('who', $removed_cc),
-      undef, $self->id);
+      'DELETE FROM bug_user_map WHERE bug_id = ? AND '
+        . $dbh->sql_in('user_id', $removed_cc) . ' AND user_role = ?',
+      undef, $self->id, REL_CC);
   }
   foreach my $user_id (@$added_cc) {
-    $dbh->do('INSERT INTO cc (bug_id, who) VALUES (?,?)',
-      undef, $self->id, $user_id);
+    $dbh->do(
+      'INSERT INTO bug_user_map (bug_id, user_id, user_role) VALUES (?,?,?)',
+      undef, $self->id, $user_id, REL_CC);
   }
 
   # If any changes were found, record it in the activity log
@@ -1546,10 +1549,10 @@ sub remove_from_db {
   # tables having 'bugs.bug_id' as a foreign key:
   # - attachments
   # - bug_group_map
+  # - bug_user_map
   # - bugs
   # - bugs_activity
   # - bugs_fulltext
-  # - cc
   # - dependencies
   # - duplicates
   # - flags
@@ -1562,8 +1565,8 @@ sub remove_from_db {
   $dbh->bz_start_transaction();
 
   $dbh->do("DELETE FROM bug_group_map WHERE bug_id = ?", undef, $bug_id);
+  $dbh->do("DELETE FROM bug_user_map WHERE bug_id = ?",  undef, $bug_id);
   $dbh->do("DELETE FROM bugs_activity WHERE bug_id = ?", undef, $bug_id);
-  $dbh->do("DELETE FROM cc WHERE bug_id = ?",            undef, $bug_id);
   $dbh->do("DELETE FROM dependencies WHERE blocked = ? OR dependson = ?",
     undef, ($bug_id, $bug_id));
   $dbh->do("DELETE FROM regressions WHERE regresses = ? OR regressed_by = ?",
@@ -3876,10 +3879,11 @@ sub cc {
 
   my $dbh = Bugzilla->dbh;
   $self->{'cc'} = $dbh->selectcol_arrayref(
-    q{SELECT profiles.login_name FROM cc, profiles
+    q{SELECT profiles.login_name FROM bug_user_map, profiles
            WHERE bug_id = ?
-             AND cc.who = profiles.userid
-        ORDER BY profiles.login_name}, undef, $self->bug_id
+             AND bug_user_map.user_id = profiles.userid
+             AND bug_user_map.user_role = ?
+        ORDER BY profiles.login_name}, undef, $self->bug_id, REL_CC
   );
 
   $self->{'cc'} = undef if !scalar(@{$self->{'cc'}});
@@ -3894,8 +3898,9 @@ sub cc_users {
   return [] if $self->{'error'};
 
   my $dbh    = Bugzilla->dbh;
-  my $cc_ids = $dbh->selectcol_arrayref('SELECT who FROM cc WHERE bug_id = ?',
-    undef, $self->id);
+  my $cc_ids = $dbh->selectcol_arrayref(
+    'SELECT user_id FROM bug_user_map WHERE bug_id = ? AND user_role = ?',
+    undef, $self->id, REL_CC);
   $self->{'cc_users'} = Bugzilla::User->new_from_list($cc_ids);
   return $self->{'cc_users'};
 }

@@ -117,10 +117,11 @@ if ($old_id == $new_id) {
 # We set the tables that require custom stuff (multiple columns to check)
 # here, but the simple stuff is all handled below by bz_get_related_fks.
 my %changes = (
-  cc => ['who bug_id'],
+  product_user_map   => ['user_id product_id user_role sortkey'],
+  component_user_map => ['user_id component_id user_role sortkey'],
+  bug_user_map       => ['user_id bug_id user_role sortkey'],
 
   # Tables affecting global behavior / other users.
-  component_cc => ['user_id component_id'],
   watch        => ['watcher watched', 'watched watcher'],
 
   # Tables affecting the user directly.

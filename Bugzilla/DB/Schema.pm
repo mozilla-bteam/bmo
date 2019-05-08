@@ -370,25 +370,6 @@ use constant ABSTRACT_SCHEMA => {
     ],
   },
 
-  cc => {
-    FIELDS => [
-      bug_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE'}
-      },
-      who => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'}
-      },
-    ],
-    INDEXES => [
-      cc_bug_id_idx => {FIELDS => [qw(bug_id who)], TYPE => 'UNIQUE'},
-      cc_who_idx    => ['who'],
-    ],
-  },
-
   longdescs => {
     FIELDS => [
       comment_id => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
@@ -1137,26 +1118,6 @@ use constant ABSTRACT_SCHEMA => {
       [bug_tag_bug_id_idx => {FIELDS => [qw(bug_id tag_id)], TYPE => 'UNIQUE'},],
   },
 
-  component_cc => {
-
-    FIELDS => [
-      user_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'}
-      },
-      component_id => {
-        TYPE       => 'INT2',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE'}
-      },
-    ],
-    INDEXES => [
-      component_cc_user_id_idx =>
-        {FIELDS => [qw(component_id user_id)], TYPE => 'UNIQUE'},
-    ],
-  },
-
   # Authentication
   # --------------
 
@@ -1394,6 +1355,77 @@ use constant ABSTRACT_SCHEMA => {
     ],
   },
 
+  # USER ROLES
+  # ----------
+
+  product_user_map => {
+    FIELDS => [
+      product_id => {
+        TYPE       => 'INT2',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'products', COLUMN => 'id', DELETE => 'CASCADE'},
+      },
+      user_id => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'},
+      },
+      user_role => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => REL_CC},
+      sortkey   => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => 0},
+    ],
+    INDEXES => [
+      product_user_map_idx => {
+        FIELDS => ['product_id', 'user_id', 'user_role'],
+        TYPE   => 'UNIQUE',
+      },
+    ]
+  },
+
+  component_user_map => {
+    FIELDS => [
+      component_id => {
+        TYPE       => 'INT2',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE'},
+      },
+      user_id => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'},
+      },
+      user_role => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => REL_CC},
+      sortkey   => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => 0},
+    ],
+    INDEXES => [
+      component_user_map_idx => {
+        FIELDS => ['component_id', 'user_id', 'user_role'],
+        TYPE   => 'UNIQUE',
+      },
+    ]
+  },
+
+  bug_user_map => {
+    FIELDS => [
+      bug_id  => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE'},
+      },
+      user_id => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'},
+      },
+      user_role => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => REL_CC},
+      sortkey   => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => 0},
+    ],
+    INDEXES => [
+      bug_user_map_idx => {
+        FIELDS => ['bug_id', 'user_id', 'user_role'],
+        TYPE   => 'UNIQUE',
+      },
+    ]
+  },
 
   # PRODUCTS
   # --------

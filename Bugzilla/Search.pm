@@ -402,7 +402,10 @@ sub SPECIAL_PARSING {
 use constant USER_FIELDS => {
   'attachments.submitter' =>
     {field => 'submitter_id', join => {table => 'attachments'}, isprivate => 1,},
-  cc        => {field => 'who', join => {table => 'cc'},},
+  cc => {
+    field => 'user_id',
+    join  => {table => 'bug_user_map', extra => ['user_role = ' . REL_CC]},
+  },
   commenter => {
     field     => 'who',
     join      => {table => 'longdescs', join => 'INNER'},
@@ -414,7 +417,10 @@ use constant USER_FIELDS => {
   'setters.login_name' => {field => 'setter_id', join => {table => 'flags'},},
 
   # BMO - Ability to search for bugs with specific mentors
-  'bug_mentor' => {field => 'user_id', join => {table => 'bug_mentors'},}
+  'bug_mentor' => {
+    field => 'user_id',
+    join  => {table => 'bug_user_map', extra => ['user_role = ' . REL_MENTOR]},
+  },
 };
 
 # Backwards compatibility for times that we changed the names of fields
@@ -1377,9 +1383,12 @@ sub _standard_joins {
       = ["NOT (" . $user->groups_in_sql('security_map.group_id') . ")"];
 
     my $security_cc_join = {
-      table => 'cc',
+      table => 'bug_user_map',
       as    => 'security_cc',
-      extra => ['security_cc.who = ' . $user->id],
+      extra => [
+        'security_cc.user_id = ' . $user->id,
+        'security_cc.user_role = ' . REL_CC,
+      ],
     };
     my $security_triage_join = {
       table => 'components',
@@ -1468,7 +1477,7 @@ sub _standard_where {
     $security_term .= <<END;
 
         OR (bugs.reporter_accessible = 1 AND bugs.reporter = $userid)
-        OR (bugs.cclist_accessible = 1 AND security_cc.who IS NOT NULL)
+        OR (bugs.cclist_accessible = 1 AND security_cc.user_id IS NOT NULL)
         OR bugs.assigned_to = $userid
         OR security_triage.triage_owner_id IS NOT NULL
 END
@@ -2505,7 +2514,11 @@ sub _cc_exact_group {
   }
 
   my $cc_table = "cc_$chart_id";
-  push(@$joins, {table => 'cc', as => $cc_table});
+  push(@$joins, {
+    table => 'bug_user_map',
+    as    => $cc_table,
+    extra => [$cc_table . '.user_role = ' . REL_CC]
+  });
   my $group_table = "user_group_map_$chart_id";
   my $group_join  = {
     table => 'user_group_map',

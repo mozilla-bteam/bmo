@@ -1120,13 +1120,14 @@ sub process_bug {
   # Handle CC's
   if (defined $bug_fields{'cc'}) {
     my %ccseen;
-    my $sth_cc = $dbh->prepare("INSERT INTO cc (bug_id, who) VALUES (?,?)");
+    my $sth_cc = $dbh->prepare(
+      'INSERT INTO bug_user_map (bug_id, user_id, user_role) VALUES (?,?,?)');
     foreach my $person (_to_array($bug_fields{'cc'})) {
       next unless $person;
       my $uid;
       if ($uid = login_to_id($person)) {
         if (!$ccseen{$uid}) {
-          $sth_cc->execute($id, $uid);
+          $sth_cc->execute($id, $uid, REL_CC);
           $ccseen{$uid} = 1;
         }
       }

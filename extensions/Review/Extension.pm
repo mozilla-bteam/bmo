@@ -137,8 +137,10 @@ sub _bug_mentors {
   $options //= {};
   my $dbh = Bugzilla->dbh;
   if (!$self->{bug_mentors}) {
-    my $mentor_ids = $dbh->selectcol_arrayref("
-            SELECT user_id FROM bug_mentors WHERE bug_id = ?", undef, $self->id);
+    my $mentor_ids
+      = $dbh->selectcol_arrayref(
+      'SELECT user_id FROM bug_user_map WHERE bug_id = ? AND user_role = ?',
+      undef, $self->id, REL_MENTOR);
     $self->{bug_mentors} = [];
     foreach my $mentor_id (@$mentor_ids) {
       push(
@@ -210,24 +212,25 @@ sub bug_end_of_create {
       object    => $bug,
       old_users => [],
       new_users => $self->_bug_check_bug_mentors($mentors),
-      table     => 'bug_mentors',
+      table     => 'bug_user_map',
       id_field  => 'bug_id',
+      user_role => REL_MENTOR,
     });
   }
 }
 
 sub _update_user_table {
   my ($self, $args) = @_;
-  my ($object, $old_users, $new_users, $table, $id_field, $has_sortkey, $return)
-    = @$args{qw(object old_users new_users table id_field has_sortkey return)};
+  my ($object, $old_users, $new_users, $table, $id_field, $user_role, $has_sortkey, $return)
+    = @$args{qw(object old_users new_users table id_field user_role has_sortkey return)};
   my $dbh = Bugzilla->dbh;
   my (@removed, @added);
 
   # remove deleted users
   foreach my $old_user (@$old_users) {
     if (!grep { $_->id == $old_user->id } @$new_users) {
-      $dbh->do("DELETE FROM $table WHERE $id_field = ? AND user_id = ?",
-        undef, $object->id, $old_user->id,);
+      $dbh->do("DELETE FROM $table WHERE $id_field = ? AND user_id = ? AND user_role = ?",
+        undef, $object->id, $old_user->id, $user_role);
       push @removed, $old_user;
     }
   }
@@ -235,8 +238,8 @@ sub _update_user_table {
   # add new users
   foreach my $new_user (@$new_users) {
     if (!grep { $_->id == $new_user->id } @$old_users) {
-      $dbh->do("INSERT INTO $table ($id_field, user_id) VALUES (?, ?)",
-        undef, $object->id, $new_user->id,);
+      $dbh->do("INSERT INTO $table ($id_field, user_id, user_role) VALUES (?,?,?)",
+        undef, $object->id, $new_user->id, $user_role);
       push @added, $new_user;
     }
   }
@@ -346,8 +349,9 @@ sub object_end_of_create {
       object      => $object,
       old_users   => [],
       new_users   => _new_users_from_input('reviewers'),
-      table       => 'product_reviewers',
+      table       => 'product_user_map',
       id_field    => 'product_id',
+      user_role   => REL_REVIEWER,
       has_sortkey => 1,
     });
   }
@@ -356,8 +360,9 @@ sub object_end_of_create {
       object      => $object,
       old_users   => [],
       new_users   => _new_users_from_input('reviewers'),
-      table       => 'component_reviewers',
+      table       => 'component_user_map',
       id_field    => 'component_id',
+      user_role   => REL_REVIEWER,
       has_sortkey => 1,
     });
   }
@@ -385,8 +390,9 @@ sub object_end_of_update {
       object      => $object,
       old_users   => $old_object->reviewers_objs(1),
       new_users   => _new_users_from_input('reviewers'),
-      table       => 'product_reviewers',
+      table       => 'product_user_map',
       id_field    => 'product_id',
+      user_role   => REL_REVIEWER,
       has_sortkey => 1,
       return      => 'old-new',
     });
@@ -397,8 +403,9 @@ sub object_end_of_update {
       object      => $object,
       old_users   => $old_object->reviewers_objs(1),
       new_users   => _new_users_from_input('reviewers'),
-      table       => 'component_reviewers',
+      table       => 'component_user_map',
       id_field    => 'component_id',
+      user_role   => REL_REVIEWER,
       has_sortkey => 1,
       return      => 'old-new',
     });
@@ -409,8 +416,9 @@ sub object_end_of_update {
       object    => $object,
       old_users => $old_object->mentors,
       new_users => $object->mentors,
-      table     => 'bug_mentors',
+      table     => 'bug_user_map',
       id_field  => 'bug_id',
+      user_role => REL_MENTOR,
       return    => 'diff',
     });
     $changes->{bug_mentor} = $diff if $diff;
@@ -670,7 +678,8 @@ sub buglist_column_joins {
   my $column_joins = $args->{column_joins};
   $column_joins->{bug_mentor} = {
     as      => 'map_mentors',
-    table   => 'bug_mentors',
+    table   => 'bug_user_map',
+    extra   => ['user_role = ' . REL_MENTOR],
     then_to => {
       as    => 'map_mentors_names',
       table => 'profiles',
@@ -801,49 +810,6 @@ sub review_history {
 
 sub db_schema_abstract_schema {
   my ($self, $args) = @_;
-  $args->{'schema'}->{'product_reviewers'} = {
-    FIELDS => [
-      id      => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1,},
-      user_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',}
-      },
-      display_name => {TYPE => 'VARCHAR(64)',},
-      product_id   => {
-        TYPE       => 'INT2',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'products', COLUMN => 'id', DELETE => 'CASCADE',}
-      },
-      sortkey => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => 0,},
-    ],
-    INDEXES => [
-      product_reviewers_idx =>
-        {FIELDS => ['user_id', 'product_id'], TYPE => 'UNIQUE',},
-    ],
-  };
-  $args->{'schema'}->{'component_reviewers'} = {
-    FIELDS => [
-      id      => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1,},
-      user_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',}
-      },
-      display_name => {TYPE => 'VARCHAR(64)',},
-      component_id => {
-        TYPE       => 'INT2',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE',}
-      },
-      sortkey => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => 0,},
-    ],
-    INDEXES => [
-      component_reviewers_idx =>
-        {FIELDS => ['user_id', 'component_id'], TYPE => 'UNIQUE',},
-    ],
-  };
-
   $args->{'schema'}->{'flag_state_activity'} = {
     FIELDS => [
       id => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1,},
@@ -880,44 +846,6 @@ sub db_schema_abstract_schema {
       },
 
       status => {TYPE => 'CHAR(1)', NOTNULL => 1,},
-    ],
-  };
-
-  $args->{'schema'}->{'bug_mentors'} = {
-    FIELDS => [
-      bug_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE',},
-      },
-      user_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',}
-      },
-    ],
-    INDEXES => [
-      bug_mentors_idx        => {FIELDS => ['bug_id', 'user_id'], TYPE => 'UNIQUE',},
-      bug_mentors_bug_id_idx => ['bug_id'],
-    ],
-  };
-
-  $args->{'schema'}->{'bug_mentors'} = {
-    FIELDS => [
-      bug_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE',},
-      },
-      user_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',}
-      },
-    ],
-    INDEXES => [
-      bug_mentors_idx        => {FIELDS => ['bug_id', 'user_id'], TYPE => 'UNIQUE',},
-      bug_mentors_bug_id_idx => ['bug_id'],
     ],
   };
 }
