@@ -1186,9 +1186,9 @@ sub force_bug_dissociation {
             bugs ON bug_group_map.bug_id = bugs.bug_id
                 LEFT JOIN
             bug_user_map ON bug_user_map.bug_id = bugs.bug_id
+                        AND bug_user_map.user_role = ?
         WHERE
-            bug_user_map.user_role = ?
-            AND group_id IN ($group_marks)
+            group_id IN ($group_marks)
         HAVING match_reporter AND reporter_accessible
             OR match_assignee
             OR match_qa_contact
