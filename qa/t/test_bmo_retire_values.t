@@ -118,16 +118,6 @@ go_to_bug($sel, $bug_id);
 # make sure the component is still tempcomponent
 $sel->selected_label_is("component", 'TempComponent');
 
-# update
-$sel->click_ok('bottom-save-btn');
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("Changes submitted for bug $bug_id");
-
-go_to_bug($sel, $bug_id);
-
-# make sure the component is still tempcomponent
-ok($sel->get_selected_labels("component"), 'TempComponent');
-
 # try creating new bug with TempComponent
 
 file_bug_in_product($sel, "TestProduct");

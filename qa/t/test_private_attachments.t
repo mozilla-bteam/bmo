@@ -172,10 +172,6 @@ ok(
   !$sel->is_text_present("private attachment, v1"),
   "Private attachment not visible to logged out users"
 );
-ok(
-  !$sel->is_text_present("My patch, which I should see, always"),
-  "Private attachment not visible to logged out users"
-);
 $sel->is_text_present_ok("This is my patch!");
 ok(!$sel->is_text_present("Making the powerless user's patch private"),
   "Private comment not visible to logged out users");

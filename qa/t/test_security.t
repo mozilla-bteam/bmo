@@ -46,26 +46,28 @@ my $cookies = $sel->get_all_cookies();
 my $nb_cookies = scalar @$cookies;
 ok($nb_cookies, "Found $nb_cookies cookies");
 my %cookies = map { $_->{name} => $_->{value} } @$cookies;
-ok(!exists $cookies{Bugzilla_login}, "Bugzilla_login not accessible");
-ok(!exists $cookies{Bugzilla_logincookie},
-  "Bugzilla_logincookie not accessible");
+ok(exists $cookies{Bugzilla_login}, "Bugzilla_login is accessible");
+ok(exists $cookies{Bugzilla_logincookie},
+  "Bugzilla_logincookie is accessible");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
 
-# # Alternate host for attachments; no cookie should be accessible.
+# Alternate host for attachments; no cookie should be accessible.
+# FIXME: Figure out how to do this properly in a CI environment.
+# Bugzilla->process_cache->{localconfig}->{attachment_base} = 'http://bmo.attachment/';
 
-# set_parameters($sel, { "Attachments" => {"attachment_base" => {type  => "text",
-#                                                                value => "$config->{browser_ip_url}/"}} });
 # go_to_bug($sel, $bug1_id);
 # $sel->click_ok("link=simple patch, v1");
 # $sel->wait_for_page_to_load_ok(WAIT_TIME);
 # $sel->title_is("");
-# @cookies = split(/[\s;]+/, $sel->get_cookie());
-# $nb_cookies = scalar @cookies;
+# $cookies = $sel->get_all_cookies();
+# $nb_cookies = scalar @$cookies;
 # ok(!$nb_cookies, "No cookies found");
-# ok(!$sel->is_cookie_present("Bugzilla_login"), "Bugzilla_login not accessible");
-# ok(!$sel->is_cookie_present("Bugzilla_logincookie"), "Bugzilla_logincookie not accessible");
+# my %cookies = map { $_->{name} => $_->{value} } @$cookies;
+# ok(!exists $cookies{Bugzilla_login}, "Bugzilla_login not accessible");
+# ok(!exists $cookies{Bugzilla_logincookie},
+#   "Bugzilla_logincookie not accessible");
 # $sel->go_back_ok();
 # $sel->wait_for_page_to_load_ok(WAIT_TIME);
 # $sel->title_like(qr/^$bug1_id /);
@@ -142,7 +144,7 @@ ok(!$sel->is_text_present("secret_qa_bug_$bug2_id"),
 $sel->is_text_present_ok($bug2_id);
 logout($sel);
 
-go_to_bug($sel, $bug1_id);
+go_to_bug($sel, $bug1_id, 1);
 ok(!$sel->is_text_present("secret_qa_bug_$bug2_id"),
   "The alias 'secret_qa_bug_$bug2_id' is not visible for logged out users");
 $sel->is_text_present_ok($bug2_id);

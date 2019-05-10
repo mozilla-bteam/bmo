@@ -59,11 +59,10 @@ use base qw(Exporter);
 );
 
 # How long we wait for pages to load.
-use constant WAIT_TIME => 60000;;
+use constant WAIT_TIME => 60000;
 use constant CONF_FILE => $ENV{BZ_QA_CONF_FILE}
   // "../config/selenium_test.conf";
 use constant CHROME_MODE => 1;
-use constant NDASH       => chr(0x2013);
 
 #####################
 # Utility Functions #
@@ -172,6 +171,7 @@ sub get_rpc_clients {
 sub go_to_home {
   my ($sel) = @_;
   $sel->open_ok("/home", undef, "Go to the home page");
+  $sel->wait_for_page_to_load(WAIT_TIME);
   $sel->title_is("Bugzilla Main Page");
 }
 
@@ -218,7 +218,7 @@ sub file_bug_in_product {
   my $config = get_config();
 
   $sel->add_cookie('TUI',
-    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1&custom_search_advanced=1'
+    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
   );
 
   $classification ||= "Unclassified";
@@ -284,14 +284,12 @@ sub edit_bug {
 sub edit_bug_and_return {
   my ($sel, $bug_id, $bug_summary, $options) = @_;
   edit_bug($sel, $bug_id, $bug_summary, $options);
-  $sel->click_ok("//a[contains(\@href, '/show_bug.cgi?id=$bug_id')]");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("$bug_id - $bug_summary", "Returning back to bug $bug_id");
+  go_to_bug($sel, $bug_id);
 }
 
 # Go to show_bug.cgi.
 sub go_to_bug {
-  my ($sel, $bug_id, $logged_out) = @_;
+  my ($sel, $bug_id, $no_edit) = @_;
 
   $sel->type_ok("quicksearch_top", $bug_id);
   $sel->driver->find_element('//*[@id="quicksearch_top"]')->submit;
@@ -302,7 +300,7 @@ sub go_to_bug {
   utf8::encode($bug_title) if utf8::is_utf8($bug_title);
   $sel->title_like(qr/^$bug_id /, $bug_title);
   sleep(1); # FIXME: Sometimes we try to click edit bug before it is ready so wait a second
-  $sel->click_ok('mode-btn-readonly', 'Click Edit Bug') if !$logged_out;
+  $sel->click_ok('mode-btn-readonly', 'Click Edit Bug') if !$no_edit;
   $sel->click_ok('action-menu-btn', 'Expand action menu');
   $sel->click_ok('action-expand-all', 'Expand all modal panels');
 }
@@ -368,7 +366,7 @@ sub open_advanced_search_page {
   my $sel = shift;
 
   $sel->add_cookie('TUI',
-    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1&custom_search_advanced=1'
+    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
   );
   $sel->click_ok('//*[@class="link-search"]//a');
   $sel->wait_for_page_to_load(WAIT_TIME);
@@ -450,7 +448,13 @@ sub check_page_load {
   my $uri = URI->new($sel->get_location);
 
   foreach my $u ($expected_uri, $uri) {
-    $u->host('HOSTNAME');
+    $u->host('HOSTNAME:8000');
+    # Remove list id from newquery param
+    if ($u->query_param('newquery')) {
+      my $newquery = $u->query_param('newquery');
+      $newquery =~ s/list_id=[^&]+//g;
+      $u->query_param(newquery => $newquery);
+    }
     foreach my $any_key (@ANY_KEYS) {
       if ($u->query_param($any_key)) {
         $u->query_param($any_key => '__ANYTHING__');

@@ -111,7 +111,6 @@ $sel->click_ok(
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Delete Milestone of Product 'TestProduct'");
 $text = trim($sel->get_body_text());
-sleep(30);
 ok(
   $text =~ /There is 1 bug entered for this milestone/,
   "Warning displayed about 1 bug targetted to TM1"

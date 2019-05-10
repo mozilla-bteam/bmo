@@ -26,7 +26,9 @@ has 'driver'      => (
       get_ok
       get_title
       go_back_ok
+      refresh
       title_is
+      title_isnt
       title_like
       )],
 );
@@ -48,6 +50,7 @@ sub click_ok {
 sub open_ok {
   my ($self, $arg1, $arg2, $name) = @_;
   $arg2 ||= 'undefined';
+  $name ||= "open_ok: $arg1";
   DEBUG("open_ok: $arg1, $arg2, $name");
   $self->get_ok($arg1, $name);
 }
@@ -244,8 +247,12 @@ sub get_select_options {
 sub remove_all_selections {
   my ($self, $id) = @_;
   DEBUG("remove_all_selections: $id");
-  $self->driver->execute_script('document.getElementById(arguments[0]).selectedIndex = -1;', $id);
-  return 1;
+  my $locator = $self->_fix_locator($id);
+  if ($self->find_element($locator)) {
+    $self->driver->execute_script('document.getElementById(arguments[0]).selectedIndex = -1;', $id);
+    return 1;
+  }
+  return 0;
 }
 
 sub remove_all_selections_ok {

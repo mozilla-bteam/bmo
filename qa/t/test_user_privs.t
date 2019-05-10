@@ -45,7 +45,6 @@ logout($sel);
 go_to_bug($sel, $bug1_id, 1);
 ok(!$sel->is_element_present('bottom-save-btn'), "Save changes button not available");
 my $text = trim($sel->get_text('//div[@id="new-comment-notice"]'));
-print STDERR $text;
 ok(
   $text
     =~ /You need to log in before you can comment on or make changes to this bug./,

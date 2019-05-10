@@ -29,8 +29,9 @@ set_parameters(
 # Create new saved search and call it 'Shared Selenium buglist'.
 
 $sel->type_ok("quicksearch_top", ":TestProduct Selenium");
-$sel->submit("quicksearch_top");
+$sel->submit('header-search');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
+sleep(1);
 $sel->title_like(qr/^Bug List:/);
 $sel->type_ok("save_newqueryname", "Shared Selenium buglist");
 $sel->click_ok("remember");
@@ -115,8 +116,9 @@ ok(
 # Create your own saved search, and share it with the canconfirm group.
 
 $sel->type_ok("quicksearch_top", ":TestProduct sw:helpwanted");
-$sel->submit("quicksearch_top");
+$sel->submit('header-search');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
+sleep(1);
 $sel->title_like(qr/^Bug List:/);
 $sel->type_ok("save_newqueryname", "helpwanted");
 $sel->click_ok("remember");
@@ -155,7 +157,7 @@ logout($sel);
 log_in($sel, $config, 'admin');
 $sel->click_ok("quicksearch_top");
 ok(
-  !$sel->is_text_present("helpwanted"),
+  !$sel->is_element_present('//a[normalize-space(text())="helpwanted" and @role="option"]'),
   "No 'helpwanted' shared search displayed"
 );
 $sel->click_ok('header-account-menu-button');
@@ -165,7 +167,6 @@ $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
-$sel->click_ok("quicksearch_top");
 $sel->is_text_present_ok("helpwanted");
 $sel->is_text_present_ok($config->{canconfirm_user_login});
 
@@ -179,7 +180,8 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 
 # This query is now available from the Search Bar.
-$sel->click_ok("link=helpwanted");
+$sel->click_ok('quicksearch_top');
+$sel->click_ok('//a[normalize-space(text())="helpwanted" and @role="option"]'),
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: helpwanted");
 
@@ -212,8 +214,10 @@ logout($sel);
 
 log_in($sel, $config, 'QA_Selenium_TEST');
 $sel->click_ok("quicksearch_top");
-ok(!$sel->is_text_present("helpwanted"),
-  "The 'helpwanted' query is not displayed in the Search Bar");
+ok(
+  !$sel->is_element_present('//a[normalize-space(text())="helpwanted" and @role="option"]'),
+  "The 'helpwanted' query is not displayed in the Search Bar"
+);
 $sel->click_ok('header-account-menu-button');
 $sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);

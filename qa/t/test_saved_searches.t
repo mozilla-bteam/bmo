@@ -120,14 +120,13 @@ $sel->click_ok(
 );
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: SavedSearchTEST1");
-sleep(30);
-$sel->click_ok("link=Edit Search");
+$sel->click_ok('edit-search', 'Edit Search');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search for bugs");
 $sel->value_is("short_desc", "bilboa");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->click_ok("link=Forget Search 'SavedSearchTEST1'");
+$sel->click_ok('forget-search', 'Forget Search');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search is gone");
 $text = trim($sel->get_text("message"));
