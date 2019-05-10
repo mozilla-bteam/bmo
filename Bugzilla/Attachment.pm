@@ -11,31 +11,6 @@ use 5.10.1;
 use strict;
 use warnings;
 
-=head1 NAME
-
-Bugzilla::Attachment - Bugzilla attachment class.
-
-=head1 SYNOPSIS
-
-  use Bugzilla::Attachment;
-
-  # Get the attachment with the given ID.
-  my $attachment = new Bugzilla::Attachment($attach_id);
-
-  # Get the attachments with the given IDs.
-  my $attachments = Bugzilla::Attachment->new_from_list($attach_ids);
-
-=head1 DESCRIPTION
-
-Attachment.pm represents an attachment object. It is an implementation
-of L<Bugzilla::Object>, and thus provides all methods that
-L<Bugzilla::Object> provides.
-
-The methods that are specific to C<Bugzilla::Attachment> are listed
-below.
-
-=cut
-
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Flag;
@@ -109,33 +84,9 @@ use constant UPDATE_VALIDATORS =>
 ####      Accessors      ######
 ###############################
 
-=pod
-
-=head2 Instance Properties
-
-=over
-
-=item C<bug_id>
-
-the ID of the bug to which the attachment is attached
-
-=back
-
-=cut
-
 sub bug_id {
   return $_[0]->{bug_id};
 }
-
-=over
-
-=item C<bug>
-
-the bug object to which the attachment is attached
-
-=back
-
-=cut
 
 sub bug {
   my ($self) = @_;
@@ -146,145 +97,42 @@ sub bug {
   return $bug;
 }
 
-=over
-
-=item C<description>
-
-user-provided text describing the attachment
-
-=back
-
-=cut
-
 sub description {
   return $_[0]->{description};
 }
 
-=over
-
-=item C<contenttype>
-
-the attachment's MIME media type
-
-=back
-
-=cut
-
 sub contenttype {
   return $_[0]->{mimetype};
 }
-
-=over
-
-=item C<attacher>
-
-the user who attached the attachment
-
-=back
-
-=cut
 
 sub attacher {
   return $_[0]->{attacher}
     //= new Bugzilla::User({id => $_[0]->{submitter_id}, cache => 1});
 }
 
-=over
-
-=item C<attached>
-
-the date and time on which the attacher attached the attachment
-
-=back
-
-=cut
-
 sub attached {
   return $_[0]->{creation_ts};
 }
-
-=over
-
-=item C<modification_time>
-
-the date and time on which the attachment was last modified.
-
-=back
-
-=cut
 
 sub modification_time {
   return $_[0]->{modification_time};
 }
 
-=over
-
-=item C<filename>
-
-the name of the file the attacher attached
-
-=back
-
-=cut
-
 sub filename {
   return $_[0]->{filename};
 }
-
-=over
-
-=item C<ispatch>
-
-whether or not the attachment is a patch
-
-=back
-
-=cut
 
 sub ispatch {
   return $_[0]->{ispatch};
 }
 
-=over
-
-=item C<isobsolete>
-
-whether or not the attachment is obsolete
-
-=back
-
-=cut
-
 sub isobsolete {
   return $_[0]->{isobsolete};
 }
 
-=over
-
-=item C<isprivate>
-
-whether or not the attachment is private
-
-=back
-
-=cut
-
 sub isprivate {
   return $_[0]->{isprivate};
 }
-
-=over
-
-=item C<is_viewable>
-
-Returns 1 if the attachment has a content-type viewable in this browser.
-Note that we don't use $cgi->Accept()'s ability to check if a content-type
-matches, because this will return a value even if it's matched by the generic
-*/* which most browsers add to the end of their Accept: headers.
-
-=back
-
-=cut
 
 sub is_viewable {
   my $contenttype = $_[0]->contenttype;
@@ -304,61 +152,20 @@ sub is_viewable {
   return 0;
 }
 
-=over
-
-=item C<data>
-
-the content of the attachment
-
-=back
-
-=cut
-
 sub data {
   my $self = shift;
   return $self->{data} //= current_storage()->retrieve($self->id);
 }
 
-=over
-
-=item C<datasize>
-
-the length (in bytes) of the attachment content
-
-=back
-
-=cut
-
 sub datasize {
   return $_[0]->{attach_size};
 }
-
-=over
-
-=item C<flags>
-
-flags that have been set on the attachment
-
-=back
-
-=cut
 
 sub flags {
 
   # Don't cache it as it must be in sync with ->flag_types.
   return $_[0]->{flags} = [map { @{$_->{flags}} } @{$_[0]->flag_types}];
 }
-
-=over
-
-=item C<flag_types>
-
-Return all flag types available for this attachment as well as flags
-already set, grouped by flag type.
-
-=back
-
-=cut
 
 sub flag_types {
   my $self = shift;
@@ -518,24 +325,6 @@ sub _check_is_private {
   return $is_private;
 }
 
-=pod
-
-=head2 Class Methods
-
-=over
-
-=item C<get_attachments_by_bug($bug)>
-
-Description: retrieves and returns the attachments the currently logged in
-             user can view for the given bug.
-
-Params:     C<$bug> - Bugzilla::Bug object - the bug for which
-            to retrieve and return attachments.
-
-Returns:    a reference to an array of attachment objects.
-
-=cut
-
 sub get_attachments_by_bug {
   my ($class, $bug, $vars) = @_;
   my $user = Bugzilla->user;
@@ -599,21 +388,6 @@ sub get_attachments_by_bug {
   return $attachments;
 }
 
-=pod
-
-=item C<validate_can_edit>
-
-Description: validates if the user is allowed to view and edit the attachment.
-             Only the submitter or someone with editbugs privs can edit it.
-             Only the submitter and users in the insider group can view
-             private attachments.
-
-Params:      none
-
-Returns:     1 on success, 0 otherwise.
-
-=cut
-
 sub validate_can_edit {
   my $self = shift;
   my $user = Bugzilla->user;
@@ -632,21 +406,6 @@ sub validate_can_edit {
 
   return 0;
 }
-
-=item C<validate_obsolete($bug, $attach_ids)>
-
-Description: validates if attachments the user wants to mark as obsolete
-             really belong to the given bug and are not already obsolete.
-             Moreover, a user cannot mark an attachment as obsolete if
-             he cannot view it (due to restrictions on it).
-
-Params:      $bug - The bug object obsolete attachments should belong to.
-             $attach_ids - The list of attachments to mark as obsolete.
-
-Returns:     The list of attachment objects to mark as obsolete.
-             Else an error is thrown.
-
-=cut
 
 sub validate_obsolete {
   my ($class, $bug, $list) = @_;
@@ -685,33 +444,6 @@ sub validate_obsolete {
 ###############################
 ####     Constructors     #####
 ###############################
-
-=pod
-
-=item C<create>
-
-Description: inserts an attachment into the given bug.
-
-Params:     takes a hashref with the following keys:
-            C<bug> - Bugzilla::Bug object - the bug for which to insert
-            the attachment.
-            C<data> - Either a filehandle pointing to the content of the
-            attachment, or the content of the attachment itself.
-            C<description> - string - describe what the attachment is about.
-            C<filename> - string - the name of the attachment (used by the
-            browser when downloading it). If the attachment is a URL, this
-            parameter has no effect.
-            C<mimetype> - string - a valid MIME type.
-            C<creation_ts> - string (optional) - timestamp of the insert
-            as returned by SELECT LOCALTIMESTAMP(0).
-            C<ispatch> - boolean (optional, default false) - true if the
-            attachment is a patch.
-            C<isprivate> - boolean (optional, default false) - true if
-            the attachment is private.
-
-Returns:    The new attachment object.
-
-=cut
 
 sub create {
   my $class = shift;
@@ -797,20 +529,6 @@ sub update {
 
   return $changes;
 }
-
-=pod
-
-=item C<remove_from_db()>
-
-Description: removes an attachment from the DB.
-
-Params:     none
-
-Returns:    nothing
-
-=back
-
-=cut
 
 sub remove_from_db {
   my $self = shift;
@@ -928,3 +646,288 @@ sub get_storage_by_name {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::Attachment - Bugzilla attachment class.
+
+=head1 SYNOPSIS
+
+  use Bugzilla::Attachment;
+
+  # Get the attachment with the given ID.
+  my $attachment = new Bugzilla::Attachment($attach_id);
+
+  # Get the attachments with the given IDs.
+  my $attachments = Bugzilla::Attachment->new_from_list($attach_ids);
+
+=head1 DESCRIPTION
+
+Attachment.pm represents an attachment object. It is an implementation
+of L<Bugzilla::Object>, and thus provides all methods that
+L<Bugzilla::Object> provides.
+
+The methods that are specific to C<Bugzilla::Attachment> are listed
+below.
+
+=cut
+
+=pod
+
+=head2 Instance Properties
+
+=over
+
+=item C<bug_id>
+
+the ID of the bug to which the attachment is attached
+
+=back
+
+=cut
+
+=over
+
+=item C<bug>
+
+the bug object to which the attachment is attached
+
+=back
+
+=cut
+
+=over
+
+=item C<description>
+
+user-provided text describing the attachment
+
+=back
+
+=cut
+
+=over
+
+=item C<contenttype>
+
+the attachment's MIME media type
+
+=back
+
+=cut
+
+=over
+
+=item C<attacher>
+
+the user who attached the attachment
+
+=back
+
+=cut
+
+=over
+
+=item C<attached>
+
+the date and time on which the attacher attached the attachment
+
+=back
+
+=cut
+
+=over
+
+=item C<modification_time>
+
+the date and time on which the attachment was last modified.
+
+=back
+
+=cut
+
+=over
+
+=item C<filename>
+
+the name of the file the attacher attached
+
+=back
+
+=cut
+
+=over
+
+=item C<ispatch>
+
+whether or not the attachment is a patch
+
+=back
+
+=cut
+
+=over
+
+=item C<isobsolete>
+
+whether or not the attachment is obsolete
+
+=back
+
+=cut
+
+=over
+
+=item C<isprivate>
+
+whether or not the attachment is private
+
+=back
+
+=cut
+
+=over
+
+=item C<is_viewable>
+
+Returns 1 if the attachment has a content-type viewable in this browser.
+Note that we don't use $cgi->Accept()'s ability to check if a content-type
+matches, because this will return a value even if it's matched by the generic
+*/* which most browsers add to the end of their Accept: headers.
+
+=back
+
+=cut
+
+=over
+
+=item C<data>
+
+the content of the attachment
+
+=back
+
+=cut
+
+=over
+
+=item C<datasize>
+
+the length (in bytes) of the attachment content
+
+=back
+
+=cut
+
+=over
+
+=item C<flags>
+
+flags that have been set on the attachment
+
+=back
+
+=cut
+
+=over
+
+=item C<flag_types>
+
+Return all flag types available for this attachment as well as flags
+already set, grouped by flag type.
+
+=back
+
+=cut
+
+=pod
+
+=head2 Class Methods
+
+=over
+
+=item C<get_attachments_by_bug($bug)>
+
+Description: retrieves and returns the attachments the currently logged in
+             user can view for the given bug.
+
+Params:     C<$bug> - Bugzilla::Bug object - the bug for which
+            to retrieve and return attachments.
+
+Returns:    a reference to an array of attachment objects.
+
+=cut
+
+=pod
+
+=item C<validate_can_edit>
+
+Description: validates if the user is allowed to view and edit the attachment.
+             Only the submitter or someone with editbugs privs can edit it.
+             Only the submitter and users in the insider group can view
+             private attachments.
+
+Params:      none
+
+Returns:     1 on success, 0 otherwise.
+
+=cut
+
+=item C<validate_obsolete($bug, $attach_ids)>
+
+Description: validates if attachments the user wants to mark as obsolete
+             really belong to the given bug and are not already obsolete.
+             Moreover, a user cannot mark an attachment as obsolete if
+             he cannot view it (due to restrictions on it).
+
+Params:      $bug - The bug object obsolete attachments should belong to.
+             $attach_ids - The list of attachments to mark as obsolete.
+
+Returns:     The list of attachment objects to mark as obsolete.
+             Else an error is thrown.
+
+=cut
+
+=pod
+
+=item C<create>
+
+Description: inserts an attachment into the given bug.
+
+Params:     takes a hashref with the following keys:
+            C<bug> - Bugzilla::Bug object - the bug for which to insert
+            the attachment.
+            C<data> - Either a filehandle pointing to the content of the
+            attachment, or the content of the attachment itself.
+            C<description> - string - describe what the attachment is about.
+            C<filename> - string - the name of the attachment (used by the
+            browser when downloading it). If the attachment is a URL, this
+            parameter has no effect.
+            C<mimetype> - string - a valid MIME type.
+            C<creation_ts> - string (optional) - timestamp of the insert
+            as returned by SELECT LOCALTIMESTAMP(0).
+            C<ispatch> - boolean (optional, default false) - true if the
+            attachment is a patch.
+            C<isprivate> - boolean (optional, default false) - true if
+            the attachment is private.
+
+Returns:    The new attachment object.
+
+=cut
+
+=pod
+
+=item C<remove_from_db()>
+
+Description: removes an attachment from the DB.
+
+Params:     none
+
+Returns:    nothing
+
+=back
+
+=cut
+
