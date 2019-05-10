@@ -662,16 +662,11 @@ sub buglist_columns {
   my ($self, $args) = @_;
   my $dbh     = Bugzilla->dbh;
   my $columns = $args->{columns};
-  $columns->{bug_mentor} = {title => 'Mentor'};
-  if (Bugzilla->user->id) {
-    $columns->{bug_mentor}->{name}
-      = $dbh->sql_group_concat('map_mentors_names.login_name');
-  }
-  else {
-    $columns->{bug_mentor}->{name}
-      = $dbh->sql_group_concat('map_mentors_names.realname');
-
-  }
+  $columns->{bug_mentor} = {
+    title => 'Mentors',
+    name  => $dbh->sql_group_concat('DISTINCT map_mentors_names.'
+      . (Bugzilla->user->id ? 'login_name' : 'realname')),
+  };
 }
 
 sub buglist_column_joins {
