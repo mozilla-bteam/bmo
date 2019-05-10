@@ -545,10 +545,8 @@ Bugzilla.BugModal.Comments = class Comments {
       const $comment = $set.querySelector('.comment:not([data-tags~="hide-attachment"])');
       // Skip if the attachment is obsolete or deleted
       const $attachment = $set.querySelector('.attachment:not(.obsolete):not(.deleted)');
-      // Skip if the attachment is SVG image
-      const is_svg = !!$set.querySelector('.attachment [itemprop="encodingFormat"][content="image/svg+xml"]');
 
-      if ($comment && $attachment && !is_svg) {
+      if ($comment && $attachment) {
         observer.observe($attachment);
       }
     });
@@ -564,10 +562,14 @@ Bugzilla.BugModal.Comments = class Comments {
     const name = $att.querySelector('[itemprop="name"]').content;
     const type = $att.querySelector('[itemprop="encodingFormat"]').content;
     const size = Number($att.querySelector('[itemprop="contentSize"]').content);
-    const max_size = 2000000;
 
-    // Show image smaller than 2 MB
-    if (type.match(/^image\/(?!vnd).+$/) && size < max_size) {
+    // Skip if the attachment is marked as binary
+    if (type.match(/^application\/(?:octet-stream|binary)$/)) {
+      return;
+    }
+
+    // Show image smaller than 2 MB, excluding SVG and non-standard formats
+    if (type.match(/^image\/(?!vnd|svg).+$/) && size < 2000000) {
       $att.insertAdjacentHTML('beforeend', `
         <a href="${link}" class="outer lightbox"><img src="${link}" alt="${name.htmlEncode()}" itemprop="image"></a>`);
 
@@ -598,8 +600,8 @@ Bugzilla.BugModal.Comments = class Comments {
     const is_source = !!name.match(/\.(?:cpp|es|h|js|json|rs|rst|sh|toml|ts|tsx|xml|yaml|yml)$/);
     const is_text = type.match(/^text\/(?!x-).+$/) || is_patch || is_markdown || is_source;
 
-    // Show text smaller than 2 MB
-    if (is_text && size < max_size) {
+    // Show text smaller than 50 KB
+    if (is_text && size < 50000) {
       // Load text body
       bugzilla_ajax({ url: `${BUGZILLA.config.basepath}rest/bug/attachment/${id}?include_fields=data` }, data => {
         if (data.error) {
