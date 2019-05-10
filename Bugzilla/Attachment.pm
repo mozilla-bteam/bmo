@@ -107,7 +107,7 @@ sub contenttype {
 
 sub attacher {
   return $_[0]->{attacher}
-    //= new Bugzilla::User({id => $_[0]->{submitter_id}, cache => 1});
+    ||= new Bugzilla::User({id => $_[0]->{submitter_id}, cache => 1});
 }
 
 sub attached {
@@ -154,7 +154,7 @@ sub is_viewable {
 
 sub data {
   my $self = shift;
-  return $self->{data} //= current_storage()->retrieve($self->id);
+  return $self->{data} ||= current_storage()->retrieve($self->id);
 }
 
 sub datasize {
@@ -612,7 +612,7 @@ sub get_content_type {
 
 sub current_storage {
   return state $storage
-    //= get_storage_by_name(Bugzilla->params->{attachment_storage});
+    ||= get_storage_by_name(Bugzilla->params->{attachment_storage});
 }
 
 sub get_storage_names {
