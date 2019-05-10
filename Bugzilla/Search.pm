@@ -2523,7 +2523,7 @@ sub _cc_exact_group {
   my $group_join  = {
     table => 'user_group_map',
     as    => $group_table,
-    from  => "$cc_table.who",
+    from  => "$cc_table.user_id",
     to    => 'user_id',
     extra => [
       $dbh->sql_in("$group_table.group_id", $all_groups),
