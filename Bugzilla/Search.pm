@@ -2604,8 +2604,12 @@ sub _user_nonchanged {
     = @$args{qw(field operator chart_id sequence joins)};
 
   my $is_in_other_table;
+  my $join_extra;
+
   if (my $join = USER_FIELDS->{$field}->{join}) {
     $is_in_other_table = 1;
+    $join_extra = $join->{extra} || [];
+
     my $as = "${field}_$chart_id";
 
     # Needed for setters.login_name and requestees.login_name.
@@ -2645,6 +2649,7 @@ sub _user_nonchanged {
       as    => $as,
       from  => $args->{full_field},
       to    => 'userid',
+      extra => $join_extra,
       join  => (!$is_in_other_table and !$is_nullable) ? 'INNER' : undef,
     };
     push(@$joins, $join);
