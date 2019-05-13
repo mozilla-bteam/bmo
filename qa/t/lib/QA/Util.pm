@@ -136,7 +136,7 @@ sub get_selenium {
 sub get_xmlrpc_client {
   my $config = get_config();
   my $xmlrpc_url
-    = $config->{browser_url} . "/"
+    = $config->{browser_url}
     . "/xmlrpc.cgi";
 
   require QA::RPC::XMLRPC;
