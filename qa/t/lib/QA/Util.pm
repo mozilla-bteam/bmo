@@ -16,6 +16,7 @@ use Test::WWW::Selenium;
 use MIME::Base64 qw(decode_base64);
 use Sys::Hostname qw(hostname);
 use Socket qw(inet_ntoa);
+use Bugzilla::RNG;
 use Bugzilla::Test::Selenium;
 use Selenium::Firefox::Profile;
 use URI;
@@ -71,7 +72,7 @@ use constant CHROME_MODE => 1;
 sub random_string {
   my $size = shift || 30;    # default to 30 chars if nothing specified
   return
-    join("", map { ('0' .. '9', 'a' .. 'z', 'A' .. 'Z')[rand 62] } (1 .. $size));
+    join("", map { ('0' .. '9', 'a' .. 'z', 'A' .. 'Z')[Bugzilla::RNG::rand 62] } (1 .. $size));
 }
 
 # Remove consecutive as well as leading and trailing whitespaces.
@@ -136,7 +137,7 @@ sub get_selenium {
 sub get_xmlrpc_client {
   my $config = get_config();
   my $xmlrpc_url
-    = $config->{browser_url} . "/"
+    = $config->{browser_url}
     . "/xmlrpc.cgi";
 
   require QA::RPC::XMLRPC;
