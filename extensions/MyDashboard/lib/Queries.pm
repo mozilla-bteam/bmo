@@ -313,6 +313,9 @@ sub query_flags {
     # Skip this flag if the bug is not visible to the user
     next if !$visible_bugs{$flag->{'bug_id'}};
 
+    # Skip this flag unless it's specifically requestable and has a requestee
+    next unless $flag->{'requestee'};
+
     # Include bug status and summary with each flag
     $flag->{'bug_status'}  = $visible_bugs{$flag->{'bug_id'}}->{'bug_status'};
     $flag->{'bug_summary'} = $visible_bugs{$flag->{'bug_id'}}->{'short_desc'};
