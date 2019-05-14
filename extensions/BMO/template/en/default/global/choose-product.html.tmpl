@@ -157,15 +157,15 @@
 [% ELSE %]
 
   <table>
-    [% FOREACH c = classifications %]
-      [% IF c.object %]
+    [% FOREACH classification = classifications %]
+      [% IF classification.object %]
         <tr>
-          <td align="right"><h2>[% c.object.name FILTER html %]</h2></td>
-          <td><strong>[%+ c.object.description FILTER html_light %]</strong></td>
+          <td align="right"><h2>[% classification.object.name FILTER html %]</h2></td>
+          <td><strong>[%+ classification.object.description FILTER html_light %]</strong></td>
         </tr>
       [% END %]
 
-      [% FOREACH p = c.products %]
+      [% FOREACH p = classification.products %]
         [% class = "" %]
         [% has_entry_groups = 0 %]
         [% FOREACH gid = p.group_controls.keys %]
@@ -219,8 +219,8 @@
 [%###########################################################################%]
 
 [% BLOCK easyproduct %]
-  [% FOREACH c = classifications %]
-    [% FOREACH p = c.products %]
+  [% FOREACH classification = classifications %]
+    [% FOREACH p = classification.products %]
       [% IF p.name == name %]
         <section class="product major">
           <h3>
