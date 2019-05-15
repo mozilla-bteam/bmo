@@ -28,6 +28,7 @@ use Bugzilla::Field;
 use Bugzilla::Flag;
 use Bugzilla::Hook;
 use Bugzilla::Install::Localconfig qw(read_localconfig);
+use Bugzilla::Localconfig;
 use Bugzilla::Install::Util qw(init_console include_languages);
 use Bugzilla::Memcached;
 use Bugzilla::Template;
@@ -163,8 +164,9 @@ sub input_params {
 }
 
 sub localconfig {
-  return $_[0]->process_cache->{localconfig} ||= read_localconfig();
+  return $_[0]->process_cache->{localconfig} ||= Bugzilla::Localconfig->new(read_localconfig());
 }
+
 
 sub params {
   return request_cache->{params} ||= Bugzilla::Config::read_param_file();

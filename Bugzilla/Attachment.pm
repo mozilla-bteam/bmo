@@ -134,6 +134,15 @@ sub isprivate {
   return $_[0]->{isprivate};
 }
 
+sub is_public {
+  my ($self) = @_;
+
+  return 0 if Bugzilla->params->{'requirelogin'};
+  return 0 if $self->isprivate;
+
+  return Bugzilla::User->new->can_see_bug($self->bug_id);
+}
+
 sub is_viewable {
   my $contenttype = $_[0]->contenttype;
   my $cgi         = Bugzilla->cgi;
@@ -647,7 +656,7 @@ sub get_storage_by_name {
 
 1;
 
-__END__
+__DATA__
 
 =head1 NAME
 
@@ -930,4 +939,3 @@ Returns:    nothing
 =back
 
 =cut
-

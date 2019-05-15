@@ -73,13 +73,19 @@ sub register {
       my ($c, $type) = @_;
 
       if ($type == LOGIN_REQUIRED) {
-        $c->redirect_to(Bugzilla->localconfig->{basepath} . 'login');
+        $c->redirect_to(Bugzilla->localconfig->basepath . 'login');
         return undef;
       }
       else {
         return Bugzilla->user;
       }
     }
+  );
+  $app->helper(
+    'bugzilla.jwt' => sub {
+      my ($c, @args) = @_;
+      return Bugzilla->jwt(@args);
+    },
   );
   $app->helper(
     'bugzilla.login' => sub {

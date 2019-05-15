@@ -177,18 +177,6 @@ sub check_can_access {
   return 1;
 }
 
-# Determines if the attachment is public -- that is, if users who are
-# not logged in have access to the attachment
-sub attachmentIsPublic {
-  my $attachment = shift;
-
-  return 0 if Bugzilla->params->{'requirelogin'};
-  return 0 if $attachment->isprivate;
-
-  my $anon_user = new Bugzilla::User;
-  return $anon_user->can_see_bug($attachment->bug_id);
-}
-
 # Validates format of a diff/interdiff. Takes a list as an parameter, which
 # defines the valid format values. Will throw an error if the format is not
 # in the list. Returns either the user selected or default format.
@@ -335,7 +323,7 @@ sub get_attachment {
 sub all_attachments_are_public {
   my $attachments = shift;
   foreach my $field_name (keys %$attachments) {
-    if (!attachmentIsPublic($attachments->{$field_name})) {
+    if (!$attachments->{$field_name}->is_public) {
       return 0;
     }
   }

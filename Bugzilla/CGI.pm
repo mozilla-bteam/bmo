@@ -740,7 +740,7 @@ sub redirect_to_urlbase {
 sub base_redirect {
   my ($self, $path, $is_perm) = @_;
   print $self->redirect(
-    -location => Bugzilla->localconfig->{basepath} . ($path || ''),
+    -location => Bugzilla->localconfig->basepath . ($path || ''),
     -status   => $is_perm ? '301 Moved Permanently' : '302 Found'
   );
   exit;

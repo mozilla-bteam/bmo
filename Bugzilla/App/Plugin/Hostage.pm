@@ -62,7 +62,7 @@ sub _before_routes {
     return;
   }
   elsif ($attachment_base && $hostname =~ $attachment_host_regex) {
-    if ($path =~ m{^/attachment\.cgi}s) {
+    if ($path =~ m{^/attachment(?:/view|\.cgi)}s) {
       return;
     }
     else {
