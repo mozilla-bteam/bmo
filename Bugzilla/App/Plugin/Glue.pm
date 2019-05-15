@@ -44,7 +44,7 @@ sub register {
     }
   );
 
-  $app->secrets([Bugzilla->localconfig->side_wide_secret]);
+  $app->secrets([Bugzilla->localconfig->site_wide_secret]);
 
   $app->renderer->add_handler(
     'bugzilla' => sub {
