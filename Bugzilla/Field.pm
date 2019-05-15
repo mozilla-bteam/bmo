@@ -294,7 +294,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'dependson',
     desc           => 'Depends on',
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
   },
   {
@@ -307,7 +306,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'blocked',
     desc           => 'Blocks',
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
   },
   {
@@ -320,7 +318,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'regressed_by',
     desc           => 'Regressed by',
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
   },
   {
@@ -333,7 +330,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'regresses',
     desc           => 'Regressions',
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
   },
   {
@@ -352,7 +348,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'duplicates',
     desc           => 'Duplicates',
     buglist        => 1,
-    is_numeric     => 1,
   },
 
   {
