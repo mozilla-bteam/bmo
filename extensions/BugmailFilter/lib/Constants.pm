@@ -35,6 +35,7 @@ use constant FAKE_FIELD_NAMES => [
 use constant IGNORE_FIELDS => qw(
   assignee_last_login
   attach_data.thedata
+  attachments.count
   attachments.submitter
   blocked.count
   cc_count

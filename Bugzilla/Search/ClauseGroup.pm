@@ -18,6 +18,7 @@ use Bugzilla::Search::Condition qw(condition);
 use List::MoreUtils qw(uniq);
 
 use constant UNSUPPORTED_FIELDS => qw(
+  attachments.count
   blocked.count
   cc_count
   classification

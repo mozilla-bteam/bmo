@@ -356,6 +356,12 @@ use constant DEFAULT_FIELDS => (
     buglist => 1
   },
 
+  {
+    name           => 'attachments.count',
+    desc           => 'Number of Attachments',
+    buglist        => 1,
+    is_numeric     => 1,
+  },
   {name => 'attachments.description', desc => 'Attachment description'},
   {name => 'attachments.filename',    desc => 'Attachment filename'},
   {name => 'attachments.mimetype',    desc => 'Attachment mime type'},

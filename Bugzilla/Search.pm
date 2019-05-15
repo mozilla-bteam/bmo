@@ -299,13 +299,14 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   comment_tag => MULTI_SELECT_OVERRIDE,
 
   # Count Fields
+  'attachments.count'   => RELATION_COUNT_OVERRIDE,
+  'cc_count'            => RELATION_COUNT_OVERRIDE,
+  'keywords.count'      => RELATION_COUNT_OVERRIDE,
   'blocked.count'       => RELATION_COUNT_OVERRIDE,
   'dependson.count'     => RELATION_COUNT_OVERRIDE,
   'regressed_by.count'  => RELATION_COUNT_OVERRIDE,
   'regresses.count'     => RELATION_COUNT_OVERRIDE,
   'dupe_count'          => RELATION_COUNT_OVERRIDE,
-  'cc_count'            => RELATION_COUNT_OVERRIDE,
-  'keywords.count'      => RELATION_COUNT_OVERRIDE,
   'longdescs.count'     => {
     changedby     => \&_long_desc_changedby,
     everchanged   => \&_long_desc_everchanged,
@@ -313,7 +314,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
     changedafter  => \&_long_desc_changedbefore_after,
     changedfrom   => \&_invalid_combination,
     changedto     => \&_invalid_combination,
-    _default      => \&_long_descs_count,
+    _default      => \&_relation_count_default,
   },
 
   # Timetracking Fields
@@ -510,6 +511,7 @@ sub COLUMN_JOINS {
         to    => 'id',
       },
     },
+    'attachments.count'   => {table => 'attachments',},
     'cc_count'            => {table => 'cc',},
     'keywords.count'      => {table => 'keywords',},
     'longdescs.count'     => {table => 'longdescs', join => 'INNER',},
@@ -607,6 +609,7 @@ sub COLUMNS {
     'regresses'     => $dbh->sql_group_concat('DISTINCT map_regresses.regresses'),
     'duplicates'    => $dbh->sql_group_concat('DISTINCT map_duplicates.dupe'),
 
+    'attachments.count'  => 'COUNT(DISTINCT map_attachments_count.attach_id)',
     'cc_count'           => 'COUNT(DISTINCT map_cc_count.who)',
     'keywords.count'     => 'COUNT(DISTINCT map_keywords_count.keywordid)',
     'longdescs.count'    => 'COUNT(DISTINCT map_longdescs_count.comment_id)',
@@ -719,6 +722,7 @@ sub REPORT_COLUMNS {
 # is here because it *always* goes into the GROUP BY as the first item,
 # so it should be skipped when determining extra GROUP BY columns.
 use constant GROUP_BY_SKIP => qw(
+  attachments.count
   blocked
   blocked.count
   bug_id
@@ -2798,20 +2802,6 @@ sub _content_matches {
   $self->COLUMNS->{'relevance'}->{name} = $select_term;
 }
 
-sub _long_descs_count {
-  my ($self,     $args)  = @_;
-  my ($chart_id, $joins) = @$args{qw(chart_id joins)};
-  my $table = "longdescs_count_$chart_id";
-  my $extra = $self->_user->is_insider ? "" : "WHERE isprivate = 0";
-  my $join  = {
-    table => "(SELECT bug_id, COUNT(*) AS num"
-      . " FROM longdescs $extra GROUP BY bug_id)",
-    as => $table,
-  };
-  push(@$joins, $join);
-  $args->{full_field} = "${table}.num";
-}
-
 sub _relation_count_changed {
   my ($self, $args) = @_;
   $args->{field} =~ /^(\w+)\.count$/;
@@ -2822,20 +2812,24 @@ sub _relation_count_changed {
 sub _relation_count_default {
   my ($self, $args) = @_;
   my ($chart_id, $field, $joins) = @$args{qw(chart_id field joins)};
+  my $extra = !$self->_user->is_insider
+    && $field =~ /^(?:attachments|longdescs)\.count$/ ? 'WHERE isprivate = 0' : '';
   my ($table, $column, $other_column)
-    = $field eq 'blocked.count' ? ('dependencies', 'blocked', 'dependson')
+    = $field eq 'attachments.count' ? ('attachments', 'attach_id', 'bug_id')
+    : $field eq 'cc_count' ? ('cc', 'cc', 'bug_id')
+    : $field eq 'keywords.count' ? ('keywords', 'keywords', 'bug_id')
+    : $field eq 'longdescs.count' ? ('longdescs', 'comment_id', 'bug_id')
+    : $field eq 'blocked.count' ? ('dependencies', 'blocked', 'dependson')
     : $field eq 'dependson.count' ? ('dependencies', 'dependson', 'blocked')
     : $field eq 'regressed_by.count' ? ('regressions', 'regressed_by', 'regresses')
     : $field eq 'regresses.count' ? ('regressions', 'regresses', 'regressed_by')
     : $field eq 'dupe_count' ? ('duplicates', 'dupe', 'dupe_of')
-    : $field eq 'cc_count' ? ('cc', 'cc', 'bug_id')
-    : $field eq 'keywords.count' ? ('keywords', 'keywords', 'bug_id')
     : undef;
   my $alias = "${column}_count_${chart_id}";
 
   push(@$joins, {
     table => "(SELECT $other_column AS bug_id, COUNT(*) AS num"
-      . " FROM $table GROUP BY $other_column)",
+      . " FROM $table $extra GROUP BY $other_column)",
     as => $alias,
   });
 
