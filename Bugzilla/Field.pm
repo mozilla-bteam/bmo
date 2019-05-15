@@ -343,14 +343,14 @@ use constant DEFAULT_FIELDS => (
     is_numeric     => 1,
   },
   {
-    name           => 'dup_id',
-    desc           => 'Duplicates',
+    name           => 'dupe_count', # Originated in BMO extension
+    desc           => 'Number of Duplicates',
     buglist        => 1,
     is_numeric     => 1,
   },
   {
-    name           => 'dupe_count', # Originated in BMO extension
-    desc           => 'Number of Duplicates',
+    name           => 'duplicates',
+    desc           => 'Duplicates',
     buglist        => 1,
     is_numeric     => 1,
   },

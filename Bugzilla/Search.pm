@@ -294,6 +294,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   product     => {_non_changed => \&_product_nonchanged,},
   regressed_by  => MULTI_SELECT_OVERRIDE,
   regresses     => MULTI_SELECT_OVERRIDE,
+  duplicates    => MULTI_SELECT_OVERRIDE,
   tag         => MULTI_SELECT_OVERRIDE,
   comment_tag => MULTI_SELECT_OVERRIDE,
 
@@ -520,8 +521,8 @@ sub COLUMN_JOINS {
     'regressed_by.count'  => {table => 'regressions', to => 'regresses',},
     'regresses'           => {table => 'regressions', to => 'regressed_by',},
     'regresses.count'     => {table => 'regressions', to => 'regressed_by',},
-    'dup_id'              => {table => 'duplicates', to => 'dupe_of',},
     'dupe_count'          => {table => 'duplicates', to => 'dupe_of',},
+    'duplicates'          => {table => 'duplicates', to => 'dupe_of',},
     last_visit_ts     => {
       as    => 'bug_user_last_visit',
       table => 'bug_user_last_visit',
@@ -604,7 +605,7 @@ sub COLUMNS {
     'dependson'     => $dbh->sql_group_concat('DISTINCT map_dependson.dependson'),
     'regressed_by'  => $dbh->sql_group_concat('DISTINCT map_regressed_by.regressed_by'),
     'regresses'     => $dbh->sql_group_concat('DISTINCT map_regresses.regresses'),
-    'dup_id'        => $dbh->sql_group_concat('DISTINCT map_dup_id.dupe'),
+    'duplicates'    => $dbh->sql_group_concat('DISTINCT map_duplicates.dupe'),
 
     'cc_count'           => 'COUNT(DISTINCT map_cc_count.who)',
     'keywords.count'     => 'COUNT(DISTINCT map_keywords_count.keywordid)',
@@ -725,6 +726,7 @@ use constant GROUP_BY_SKIP => qw(
   dependson
   dependson.count
   dupe_count
+  duplicates
   flagtypes.name
   keywords
   keywords.count
@@ -3216,6 +3218,11 @@ sub _multiselect_table {
     $args->{full_field}    = $field;
     return "regressions";
   }
+  elsif ($field eq 'duplicates') {
+    $args->{_select_field} = 'dupe_of';
+    $args->{full_field}    = 'dupe';
+    return "duplicates";
+  }
   elsif ($field eq 'longdesc') {
     $args->{_extra_where} = " AND isprivate = 0" if !$self->_user->is_insider;
     $args->{full_field} = 'thetext';
@@ -3327,6 +3334,16 @@ sub _multiselect_isempty {
       to    => $to,
       };
     return "regressions_$chart_id.$to IS $not NULL";
+  }
+  elsif ($field eq 'duplicates') {
+    push @$joins,
+      {
+      table => 'duplicates',
+      as    => "duplicates_$chart_id",
+      from  => 'bug_id',
+      to    => 'dupe_of',
+      };
+    return "duplicates_$chart_id.dupe_of IS $not NULL";
   }
   elsif ($field eq 'longdesc') {
     my @extra = ("longdescs_$chart_id.type != " . CMT_HAS_DUPE);
