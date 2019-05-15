@@ -18,12 +18,19 @@ use Bugzilla::Search::Condition qw(condition);
 use List::MoreUtils qw(uniq);
 
 use constant UNSUPPORTED_FIELDS => qw(
+  blocked.count
+  cc_count
   classification
   commenter
   component
+  dependson.count
+  dupe_count
+  keywords.count
   longdescs.count
   product
   owner_idle_time
+  regressed_by.count
+  regresses.count
 );
 
 sub new {

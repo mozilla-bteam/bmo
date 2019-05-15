@@ -36,17 +36,24 @@ use constant IGNORE_FIELDS => qw(
   assignee_last_login
   attach_data.thedata
   attachments.submitter
+  blocked.count
+  cc_count
   cf_last_resolved
   commenter
   comment_tag
   creation_ts
   days_elapsed
   delta_ts
+  dependson.count
+  dupe_count
   everconfirmed
+  keywords.count
   last_visit_ts
   longdesc
   longdescs.count
   owner_idle_time
+  regressed_by.count
+  regresses.count
   reporter
   reporter_accessible
   setters.login_name

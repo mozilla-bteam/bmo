@@ -243,6 +243,12 @@ use constant DEFAULT_FIELDS => (
     buglist        => 1
   },
   {
+    name           => 'keywords.count',
+    desc           => 'Number of Keywords',
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
     name    => 'resolution',
     desc    => 'Resolution',
     type    => FIELD_TYPE_SINGLE_SELECT,
@@ -279,11 +285,23 @@ use constant DEFAULT_FIELDS => (
   {name => 'qa_contact', desc => 'QAContact',  in_new_bugmail => 1, buglist => 1},
   {name => 'cc',         desc => 'CC',         in_new_bugmail => 1},
   {
+    name           => 'cc_count', # Originated in BMO extension
+    desc           => 'Number of CC',
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
     name           => 'dependson',
     desc           => 'Depends on',
     in_new_bugmail => 1,
     is_numeric     => 1,
     buglist        => 1
+  },
+  {
+    name           => 'dependson.count',
+    desc           => 'Number of Depends on',
+    buglist        => 1,
+    is_numeric     => 1,
   },
   {
     name           => 'blocked',
@@ -293,6 +311,12 @@ use constant DEFAULT_FIELDS => (
     buglist        => 1
   },
   {
+    name           => 'blocked.count',
+    desc           => 'Number of Blocks',
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
     name           => 'regressed_by',
     desc           => 'Regressed by',
     in_new_bugmail => 1,
@@ -300,11 +324,35 @@ use constant DEFAULT_FIELDS => (
     buglist        => 1
   },
   {
+    name           => 'regressed_by.count',
+    desc           => 'Number of Regressed by',
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
     name           => 'regresses',
     desc           => 'Regressions',
     in_new_bugmail => 1,
     is_numeric     => 1,
     buglist        => 1
+  },
+  {
+    name           => 'regresses.count',
+    desc           => 'Number of Regressions',
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'dup_id',
+    desc           => 'Duplicates',
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'dupe_count', # Originated in BMO extension
+    desc           => 'Number of Duplicates',
+    buglist        => 1,
+    is_numeric     => 1,
   },
 
   {

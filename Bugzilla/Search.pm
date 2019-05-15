@@ -234,6 +234,16 @@ use constant MULTI_SELECT_OVERRIDE => {
   _non_changed => \&_multiselect_nonchanged,
 };
 
+use constant RELATION_COUNT_OVERRIDE => {
+  changedby     => \&_relation_count_changed,
+  everchanged   => \&_relation_count_changed,
+  changedbefore => \&_relation_count_changed,
+  changedafter  => \&_relation_count_changed,
+  changedfrom   => \&_invalid_combination,
+  changedto     => \&_invalid_combination,
+  _default      => \&_relation_count_default,
+};
+
 use constant OPERATOR_FIELD_OVERRIDE => {
 
   # User fields
@@ -273,15 +283,6 @@ use constant OPERATOR_FIELD_OVERRIDE => {
     changedafter  => \&_long_desc_changedbefore_after,
     _non_changed  => \&_long_desc_nonchanged,
   },
-  'longdescs.count' => {
-    changedby     => \&_long_desc_changedby,
-    everchanged   => \&_long_desc_everchanged,
-    changedbefore => \&_long_desc_changedbefore_after,
-    changedafter  => \&_long_desc_changedbefore_after,
-    changedfrom   => \&_invalid_combination,
-    changedto     => \&_invalid_combination,
-    _default      => \&_long_descs_count,
-  },
   'longdescs.isprivate' => MULTI_SELECT_OVERRIDE,
   owner_idle_time       => {
     greaterthan   => \&_owner_idle_time_greater_less,
@@ -295,6 +296,24 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   regresses     => MULTI_SELECT_OVERRIDE,
   tag         => MULTI_SELECT_OVERRIDE,
   comment_tag => MULTI_SELECT_OVERRIDE,
+
+  # Count Fields
+  'blocked.count'       => RELATION_COUNT_OVERRIDE,
+  'dependson.count'     => RELATION_COUNT_OVERRIDE,
+  'regressed_by.count'  => RELATION_COUNT_OVERRIDE,
+  'regresses.count'     => RELATION_COUNT_OVERRIDE,
+  'dupe_count'          => RELATION_COUNT_OVERRIDE,
+  'cc_count'            => RELATION_COUNT_OVERRIDE,
+  'keywords.count'      => RELATION_COUNT_OVERRIDE,
+  'longdescs.count'     => {
+    changedby     => \&_long_desc_changedby,
+    everchanged   => \&_long_desc_everchanged,
+    changedbefore => \&_long_desc_changedbefore_after,
+    changedafter  => \&_long_desc_changedbefore_after,
+    changedfrom   => \&_invalid_combination,
+    changedto     => \&_invalid_combination,
+    _default      => \&_long_descs_count,
+  },
 
   # Timetracking Fields
   deadline            => {_non_changed => \&_deadline},
@@ -490,11 +509,19 @@ sub COLUMN_JOINS {
         to    => 'id',
       },
     },
-    blocked           => {table => 'dependencies', to   => 'dependson',},
-    dependson         => {table => 'dependencies', to   => 'blocked',},
-    regresses         => {table => 'regressions',  to   => 'regressed_by',},
-    regressed_by      => {table => 'regressions',  to   => 'regresses',},
-    'longdescs.count' => {table => 'longdescs',    join => 'INNER',},
+    'cc_count'            => {table => 'cc',},
+    'keywords.count'      => {table => 'keywords',},
+    'longdescs.count'     => {table => 'longdescs', join => 'INNER',},
+    'blocked'             => {table => 'dependencies', to => 'dependson',},
+    'blocked.count'       => {table => 'dependencies', to => 'dependson',},
+    'dependson'           => {table => 'dependencies', to => 'blocked',},
+    'dependson.count'     => {table => 'dependencies', to => 'blocked',},
+    'regressed_by'        => {table => 'regressions', to => 'regresses',},
+    'regressed_by.count'  => {table => 'regressions', to => 'regresses',},
+    'regresses'           => {table => 'regressions', to => 'regressed_by',},
+    'regresses.count'     => {table => 'regressions', to => 'regressed_by',},
+    'dup_id'              => {table => 'duplicates', to => 'dupe_of',},
+    'dupe_count'          => {table => 'duplicates', to => 'dupe_of',},
     last_visit_ts     => {
       as    => 'bug_user_last_visit',
       table => 'bug_user_last_visit',
@@ -572,15 +599,22 @@ sub COLUMNS {
       'DISTINCT ' . $dbh->sql_string_concat('map_flagtypes.name', 'map_flags.status')
     ),
 
-    'keywords' => $dbh->sql_group_concat('DISTINCT map_keyworddefs.name'),
+    'keywords'      => $dbh->sql_group_concat('DISTINCT map_keyworddefs.name'),
+    'blocked'       => $dbh->sql_group_concat('DISTINCT map_blocked.blocked'),
+    'dependson'     => $dbh->sql_group_concat('DISTINCT map_dependson.dependson'),
+    'regressed_by'  => $dbh->sql_group_concat('DISTINCT map_regressed_by.regressed_by'),
+    'regresses'     => $dbh->sql_group_concat('DISTINCT map_regresses.regresses'),
+    'dup_id'        => $dbh->sql_group_concat('DISTINCT map_dup_id.dupe'),
 
-    blocked   => $dbh->sql_group_concat('DISTINCT map_blocked.blocked'),
-    dependson => $dbh->sql_group_concat('DISTINCT map_dependson.dependson'),
+    'cc_count'           => 'COUNT(DISTINCT map_cc_count.who)',
+    'keywords.count'     => 'COUNT(DISTINCT map_keywords_count.keywordid)',
+    'longdescs.count'    => 'COUNT(DISTINCT map_longdescs_count.comment_id)',
+    'blocked.count'      => 'COUNT(DISTINCT map_blocked_count.blocked)',
+    'dependson.count'    => 'COUNT(DISTINCT map_dependson_count.dependson)',
+    'regressed_by.count' => 'COUNT(DISTINCT map_regressed_by_count.regressed_by)',
+    'regresses.count'    => 'COUNT(DISTINCT map_regresses_count.regresses)',
+    'dupe_count'         => 'COUNT(DISTINCT map_dupe_count.dupe)',
 
-    regresses     => $dbh->sql_group_concat('DISTINCT map_regresses.regresses'),
-    regressed_by  => $dbh->sql_group_concat('DISTINCT map_regressed_by.regressed_by'),
-
-    'longdescs.count'   => 'COUNT(DISTINCT map_longdescs_count.comment_id)',
     last_visit_ts       => 'bug_user_last_visit.last_visit_ts',
     bug_interest_ts     => 'bug_interest.modification_time',
     assignee_last_login => 'assignee.last_seen_date',
@@ -685,14 +719,21 @@ sub REPORT_COLUMNS {
 # so it should be skipped when determining extra GROUP BY columns.
 use constant GROUP_BY_SKIP => qw(
   blocked
+  blocked.count
   bug_id
+  cc_count
   dependson
+  dependson.count
+  dupe_count
   flagtypes.name
   keywords
+  keywords.count
   longdescs.count
   percentage_complete
   regressed_by
+  regressed_by.count
   regresses
+  regresses.count
 );
 
 ###############
@@ -2767,6 +2808,36 @@ sub _long_descs_count {
   };
   push(@$joins, $join);
   $args->{full_field} = "${table}.num";
+}
+
+sub _relation_count_changed {
+  my ($self, $args) = @_;
+  $args->{field} =~ /^(\w+)\.count$/;
+  $args->{field} = $args->{full_field} = $1;
+  $self->_do_operator_function($args);
+}
+
+sub _relation_count_default {
+  my ($self, $args) = @_;
+  my ($chart_id, $field, $joins) = @$args{qw(chart_id field joins)};
+  my ($table, $column, $other_column)
+    = $field eq 'blocked.count' ? ('dependencies', 'blocked', 'dependson')
+    : $field eq 'dependson.count' ? ('dependencies', 'dependson', 'blocked')
+    : $field eq 'regressed_by.count' ? ('regressions', 'regressed_by', 'regresses')
+    : $field eq 'regresses.count' ? ('regressions', 'regresses', 'regressed_by')
+    : $field eq 'dupe_count' ? ('duplicates', 'dupe', 'dupe_of')
+    : $field eq 'cc_count' ? ('cc', 'cc', 'bug_id')
+    : $field eq 'keywords.count' ? ('keywords', 'keywords', 'bug_id')
+    : undef;
+  my $alias = "${column}_count_${chart_id}";
+
+  push(@$joins, {
+    table => "(SELECT $other_column AS bug_id, COUNT(*) AS num"
+      . " FROM $table GROUP BY $other_column)",
+    as => $alias,
+  });
+
+  $args->{full_field} = "COALESCE(${alias}.num, 0)";
 }
 
 sub _work_time_changedby {
