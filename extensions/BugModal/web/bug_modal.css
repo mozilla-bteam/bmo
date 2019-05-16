@@ -1059,6 +1059,10 @@ h3.change-name a {
   margin: 5px;
 }
 
+#mode-container .button-row {
+  margin: 4px 0;
+}
+
 /**
  * theme
  */

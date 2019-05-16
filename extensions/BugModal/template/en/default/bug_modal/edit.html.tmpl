@@ -212,7 +212,7 @@
   [%# buttons %]
 
   <div id="mode-container">
-    <div>
+    <div class="button-row">
       [% IF user.id %]
         <button type="button" class="secondary" id="cc-btn" data-is-cced="[% is_cced ? 1 : 0 %]">
           [%~ is_cced ? "Stop Following" : "Follow" ~%]
