@@ -132,7 +132,7 @@
     </span>
     [% IF global.seen.$bugid %]
       <button type="button" role="button" class="iconic duplicate-highlighter"
-              title="Already displayed above; click to locate">
+              title="Already displayed above; click to locate" aria-pressed="false">
         <span class="icon" aria-hidden="true"></span>
       </button>
     [% ELSIF tree.dependencies.$bugid.size %]

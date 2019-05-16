@@ -80,6 +80,10 @@
   content: '\E0B8';
 }
 
+.duplicate-highlighter[aria-pressed="true"] {
+  color: rgb(var(--accent-color-red-1));
+}
+
 .duplicate-highlighter .icon::before {
   content: '\E417';
 }

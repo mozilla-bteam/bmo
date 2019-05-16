@@ -59,10 +59,38 @@ Bugzilla.DependencyTree = class DependencyTree {
    * @param {MouseEvent} event `click`, `mouseenter` or `mouseleave` event.
    */
   highlight_duplicates(event) {
-    const id = Number(event.target.closest('[role="treeitem"]').dataset.id);
+    const { target, type } = event;
+    const id = Number(target.closest('[role="treeitem"]').dataset.id);
+    const pressed = type === 'click' ? target.matches('[aria-pressed="false"]') : undefined;
 
-    document.querySelectorAll(`[role="treeitem"][data-id="${id}"] > .summary`).forEach($summary => {
-      $summary.classList.toggle('highlight');
+    if (type.startsWith('mouse') && this.highlighted) {
+      return;
+    }
+
+    if (type === 'click') {
+      if (this.highlighted) {
+        // Remove existing highlights
+        document.querySelectorAll(`[role="treeitem"][data-id="${this.highlighted}"]`).forEach($item => {
+          const $highlighter = $item.querySelector('.duplicate-highlighter');
+
+          if ($highlighter) {
+            $highlighter.setAttribute('aria-pressed', 'false');
+          }
+
+          $item.querySelector('.summary').classList.remove('highlight');
+        });
+      }
+
+      target.setAttribute('aria-pressed', pressed);
+      this.highlighted = pressed ? id : undefined;
+    }
+
+    document.querySelectorAll(`[role="treeitem"][data-id="${id}"]`).forEach(($item, index) => {
+      $item.querySelector('.summary').classList.toggle('highlight', pressed);
+
+      if (index === 0 && pressed) {
+        $item.scrollIntoView();
+      }
     });
   }
 };
