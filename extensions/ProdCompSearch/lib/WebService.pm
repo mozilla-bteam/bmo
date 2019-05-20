@@ -15,6 +15,7 @@ use base qw(Bugzilla::WebService);
 
 use Bugzilla::Error;
 use Bugzilla::Util qw(detaint_natural trim);
+use Time::localtime;
 
 #############
 # Constants #
@@ -159,8 +160,8 @@ sub list_frequent_components {
   return {results => []} unless $user->id;
 
   # Select the date of 2 years ago today
-  my ($day, $month, $year) = (localtime(time))[3, 4, 5];
-  my $date = sprintf('%4d-%02d-%02d', $year + 1900 - 2, $month + 1, $day);
+  my $now = localtime;
+  my $date = sprintf('%4d-%02d-%02d', $now->year + 1900 - 2, $now->mon + 1, $now->mday);
 
   my $dbh = Bugzilla->switch_to_shadow_db();
   my $sql = q{
