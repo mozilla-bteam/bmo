@@ -1,94 +1,99 @@
-/* The contents of this file are subject to the Mozilla Public
-  * License Version 1.1 (the "License"); you may not use this file
-  * except in compliance with the License. You may obtain a copy of
-  * the License at http://www.mozilla.org/MPL/
-  *
-  * Software distributed under the License is distributed on an "AS
-  * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  * implied. See the License for the specific language governing
-  * rights and limitations under the License.
-  *
-  * The Original Code is the Bugzilla Bug Tracking System.
-  *
-  * The Initial Developer of the Original Code is Netscape
-  * Communications
-  * Corporation. Portions created by Netscape are
-  * Copyright (C) 1998 Netscape Communications Corporation. All
-  * Rights Reserved.
-  *
-  * Contributor(s): Christian Reis <kiko@async.com.br>
-  *                 André Batosti <batosti@async.com.br>
-  */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
 
-ul.tree {
-    padding-left: 0em;
-    margin-left: 1em;
-    display: block;
+[role="button"] {
+  outline: 0;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: none transparent !important;
+  box-shadow: none !important;
+  font-size: inherit;
+  font-weight: normal;
+  transition: none;
 }
 
-ul.tree ul {
-    padding-top: 3px;
-    display: block;
+[role="button"] * {
+  pointer-events: none;
 }
 
-ul.tree li {
-    /* see http://www.kryogenix.org/code/browser/aqlists/ for idea */
-    padding-top: 3px;
-    text-indent: -1.2em;
-    padding-left: 0.5em;
-    padding-bottom: 3px;
-    list-style-type: none;
-    background: url("dependency-tree/bug-item.png") no-repeat;
+[role="tree"] {
+  display: block;
+  margin: 16px 0;
+  padding: 0;
 }
 
-ul.tree li a.b {
-    padding-left: 30px;
-    margin-right: -14px;
-    text-decoration: none;
+[role="tree"] ul {
+  display: block;
+  margin: 0;
+  padding: 0 0 0 22px;
 }
 
-ul.tree li a.b_open {
-    background: url("dependency-tree/tree-open.png") center no-repeat;
-    cursor: pointer;
+[role="tree"] li {
+  display: block;
+  margin: 8px 0;
+  padding: 0;
+  list-style-type: none;
 }
 
-ul.tree li a.b_closed {
-    background: url("dependency-tree/tree-closed.png") center no-repeat;
-    cursor: pointer;
+[role="tree"] .icon::before {
+  font-family: 'Material Icons';
+  font-size: 18px;
+  line-height: 100%;
+  vertical-align: top;
 }
 
-ul.tree a.tree_link img {
-    border: 0;
+[role="treeitem"][aria-expanded="true"] > .expander .icon {
+  transform: rotate(90deg);
+}
+
+[role="treeitem"][aria-expanded="false"] > .expander .icon {
+  transform: rotate(0);
+}
+
+[role="treeitem"][aria-expanded="false"] [role="group"] {
+  display: none;
+}
+
+.expander {
+  width: 18px;
+  height: 18px;
+}
+
+.expander .icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  transform-origin: center;
+  transition: transform .2s;
+}
+
+.expander .icon::before {
+  content: '\E037';
+}
+
+.tree-link .icon::before {
+  content: '\E0B8';
+}
+
+.duplicate-highlighter[aria-pressed="true"] {
+  color: rgb(var(--accent-color-red-1));
+}
+
+.duplicate-highlighter .icon::before {
+  content: '\E417';
+}
+
+.summary.highlight .bug-link {
+  background-color: var(--selected-control-background-color) !important;
+  font-weight: 500 !important;
 }
 
 .summ_info {
-    /* change to inline if you would like to see the full bug details
-     * displayed in the list */
-    display: none;
-    font-size: 75%;
-}
-
-.hint {
-    font-size: 90%;
-    margin: 0.2em;
-    padding: 0.1em;
-}
-
-.hint h3, .hint ul {
-    margin-top: 0.1em;
-    margin-bottom: 0.1em;
-}
-
-.summ A, .summ_deep A {
-    text-decoration: none;
-    color: darkblue;
-}
-
-.summ_deep {
-}
-
-.summ_h A {
-    background-color: #ffffaa;
-    color: #333;
-    font-weight: bold;
+  display: none; /* change to inline if you would like to see the full bug details displayed in the list */
+  font-size: 75%;
 }

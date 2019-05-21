@@ -84,9 +84,9 @@ to some group are shown by default.
         <select name="product" onchange="selectProduct(this, this.form.component, null, null, 'Any');">
           <option value="">Any</option>
           [% IF Param('useclassification') %]
-            [% FOREACH c = user.get_selectable_classifications %]
-              <optgroup label="[% c.name FILTER html %]">
-                [% FOREACH p = user.get_selectable_products(c.id) %]
+            [% FOREACH cls = user.get_selectable_classifications %]
+              <optgroup label="[% cls.name FILTER html %]">
+                [% FOREACH p = user.get_selectable_products(cls.id) %]
                   <option value="[% p.name FILTER html %]"
                     [% " selected" IF cgi.param('product') == p.name %]>
                     [% p.name FILTER html %]
@@ -232,7 +232,7 @@ to some group are shown by default.
 
   <h3>[% column_headers.$group_field %]:
     [%+ (request.$group_field.email || request.$group_field || "None") FILTER email FILTER html %]</h3>
-  <table class="requests" cellspacing="0" cellpadding="4" border="1">
+  <table class="standard">
     <tr>
       [% FOREACH column = display_columns %]
         [% NEXT IF column == group_field || excluded_columns.contains(column) %]
