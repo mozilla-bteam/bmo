@@ -255,7 +255,7 @@ sub update_localconfig {
     }
   }
 
-  if (!$localconfig->interdiffbin && $output) {
+  if (!$localconfig->{interdiffbin} && $output) {
     print "\n", install_string('patchutils_missing'), "\n";
   }
 
