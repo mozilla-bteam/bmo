@@ -10,6 +10,7 @@ package Bugzilla::Test::Selenium;
 use 5.10.1;
 use Bugzilla::Logging;
 use Bugzilla::Util qw(trim);
+use Mojo::File;
 use Moo;
 use Test2::V0;
 use Test::Selenium::Remote::Driver;
@@ -409,7 +410,8 @@ sub is_editable_ok {
 
 sub attach_file {
   my ($self, $locator, $filename) = @_;
-  $self->type_ok('att-textarea', _read_file($filename), 'Add attachment data');
+  my $path = Mojo::File->new($filename);
+  $self->type_ok('att-textarea', $path->slurp, 'Add attachment data');
 }
 
 # Private Helpers
@@ -451,16 +453,6 @@ sub _toggle_check {
     return 1;
   }
   return 0;
-}
-
-sub _read_file {
-  my ($filename) = @_;
-  my $fh = IO::File->new($filename, 'r');
-  $fh || die "Could not open file $filename: $!";
-  my $content;
-  { local $/; $content = <$fh> }
-  $fh->close() || die "Could not close file $filename: $!";
-  return $content;
 }
 
 1;
