@@ -263,6 +263,11 @@
   select:not([multiple]):not([size]) {
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="rgb(160, 161, 162)" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/><path fill="none" d="M0 0h24v24H0V0z"/></svg>');
   }
+
+  #private-bug-banner {
+    --confidential-bug-background-color: #b595f5;
+    --security-bug-background-color: #ffaf1a;
+  }
 }
 
 /**
@@ -943,10 +948,6 @@ input[type="radio"]:checked {
     background-color: var(--application-background-color);
   }
 
-  body[class*="bz_group_"] {
-    background-color: rgb(var(--accent-color-wine-1)); /* Colorize private bugs */
-  }
-
   #wrapper {
     display: flex;
     flex-direction: column;
@@ -1343,6 +1344,41 @@ input[type="radio"]:checked {
 
 #header-login .mini-popup .close-button .icon::before {
   content: '\E5CD';
+}
+
+/**
+ * Private group banner for confidential and security bugs
+ */
+
+#private-bug-banner {
+  padding: 4px;
+  color: #111;
+  background-color: var(--confidential-bug-background-color);
+  text-align: center;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#private-bug-banner .icon {
+  font-family: 'Material Icons';
+  vertical-align: text-bottom;
+}
+
+#private-bug-banner .icon::before {
+  content: '\E897';
+}
+
+#private-bug-banner.security {
+  background-color: var(--security-bug-background-color);
+}
+
+#private-bug-banner strong {
+  text-transform: uppercase;
+}
+
+#private-bug-banner .groups {
+  font-size: var(--font-size-small);
 }
 
 /**
