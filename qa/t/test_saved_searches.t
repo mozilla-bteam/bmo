@@ -53,7 +53,8 @@ ok(
   $text =~ /OK, you have a new search named SavedSearchTEST1./,
   "New search named SavedSearchTEST1 has been created"
 );
-$sel->click_ok('//a[normalize-space(text())="SavedSearchTEST1" and not(@role="option")]');
+$sel->click_ok(
+  '//a[normalize-space(text())="SavedSearchTEST1" and not(@role="option")]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: SavedSearchTEST1");
 

@@ -219,6 +219,7 @@ edit_bug($sel, $bug2_id);
 go_to_bug($sel, $bug1_id);
 $sel->type_ok("cf_qa_freetext_$bug1_id", "dumbo");
 $sel->select_ok("cf_qa_list_$bug1_id", "label=storage");
+
 # FIXME: The reverse description is not displaying properly on bug modal page
 #$sel->is_text_present_ok("IsRef$bug1_id: $bug2_id");
 $sel->select_ok("bug_status", "RESOLVED");

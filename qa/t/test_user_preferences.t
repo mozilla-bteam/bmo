@@ -77,8 +77,8 @@ $sel->click_ok('bottom-save-btn');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 go_to_bug($sel, $bug1_id);
-$sel->value_is("short_desc", "First bug created");
-$sel->value_is("add-self-cc",  "off");
+$sel->value_is("short_desc",  "First bug created");
+$sel->value_is("add-self-cc", "off");
 
 # Tag the bug.
 
@@ -136,8 +136,7 @@ $sel->is_text_present_ok("The next bug I should see is this one.");
 
 # Remove the tag from all bugs.
 
-$sel->open_ok("/buglist.cgi?tag=sel-tmp",
-  undef, "List 'sel-tmp' bugs");
+$sel->open_ok("/buglist.cgi?tag=sel-tmp", undef, "List 'sel-tmp' bugs");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List");
 $sel->is_text_present_ok("Tags: sel-tmp");
@@ -231,7 +230,8 @@ ok(
 
 # Editing bugs should follow user preferences.
 
-$sel->click_ok('//a[normalize-space(text())="my_list" and not(@role="option")]');
+$sel->click_ok(
+  '//a[normalize-space(text())="my_list" and not(@role="option")]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: my_list");
 go_to_bug($sel, $bug1_id);

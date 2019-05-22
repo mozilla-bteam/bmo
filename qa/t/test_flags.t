@@ -281,15 +281,18 @@ go_to_bug($sel, $bug1_id);
 # We need to store the new flag IDs.
 
 $sel->is_element_present_ok(
-  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="SeleniumBugFlag1Test"]});
+  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="SeleniumBugFlag1Test"]}
+);
 my $flag1_1_id = $sel->get_attribute('//select[@title="bugflag1"]@id');
 $flag1_1_id =~ s/flag-//;
 $sel->is_element_present_ok(
-  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="SeleniumBugFlag2Test"]});
+  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="SeleniumBugFlag2Test"]}
+);
 my $flag2_1_id = $sel->get_attribute('//select[@title="bugflag2"]@id');
 $flag2_1_id =~ s/flag-//;
 $sel->is_element_present_ok(
-  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/a[normalize-space(text())="SeleniumBugFlag3Test"]});
+  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/a[normalize-space(text())="SeleniumBugFlag3Test"]}
+);
 my $flag3_1_id = $sel->get_attribute('//select[@title="bugflag3"]@id');
 $flag3_1_id =~ s/flag-//;
 
@@ -320,11 +323,12 @@ $sel->title_is("Flag Requestee Not Authorized");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
+
 # FIXME: Two issues that need to be investigated
 # 1. going back does not keep panels expanded
 # 2. to get the requestee field to display for the addl flags,
 #    we have to set to X and then back to ? for each one.
-$sel->click_ok('action-menu-btn', 'Expand action menu');
+$sel->click_ok('action-menu-btn',   'Expand action menu');
 $sel->click_ok('action-expand-all', 'Expand all modal panels');
 $sel->select_ok("flag_type-$flagtype1_id", "value=X");
 $sel->select_ok("flag_type-$flagtype1_id", "label=?");
@@ -430,6 +434,7 @@ my $attachment3_id = $1;
 # Display the bug and check flags are correctly set.
 
 go_to_bug($sel, $bug1_id, 1);
+
 # FIME: OMG there must be a better way :(
 $sel->is_element_present_ok(
   qq{//div[\@class="attach-flag"]/div/span[text()="$config->{admin_user_nick}"]/../..//a[normalize-space(text())="SeleniumAttachmentFlag1Test?"]/../div[2]/span[text()="$config->{admin_user_nick}"]}
@@ -502,8 +507,7 @@ $sel->type_ok('//input[@name="description"]', "patch, v4");
 
 $sel->is_element_present_ok(
   qq{//select[\@id="flag_type-$aflagtype1_id"][\@disabled]},
-  "Flag type non editable by powerless user"
-);
+  "Flag type non editable by powerless user");
 
 # No privs are required to edit this flag.
 

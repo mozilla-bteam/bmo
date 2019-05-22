@@ -18,8 +18,7 @@ my $test_bug_1 = $config->{test_bug_1};
 
 # When being logged out, the 'Commit' button should not be displayed.
 
-$sel->open_ok("/logout",
-  undef, "Log out (if required)");
+$sel->open_ok("/logout", undef, "Log out (if required)");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Logged Out");
 go_to_bug($sel, $test_bug_1, 1);
@@ -43,7 +42,10 @@ logout($sel);
 # Some checks while being logged out.
 
 go_to_bug($sel, $bug1_id, 1);
-ok(!$sel->is_element_present('bottom-save-btn'), "Save changes button not available");
+ok(
+  !$sel->is_element_present('bottom-save-btn'),
+  "Save changes button not available"
+);
 my $text = trim($sel->get_text('//div[@id="new-comment-notice"]'));
 ok(
   $text
@@ -72,7 +74,7 @@ $sel->click_ok("log_in", undef, "Submit credentials");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id/, "Display bug $bug1_id");
 $sel->click_ok('mode-btn-readonly', 'Click Edit Bug');
-$sel->click_ok('action-menu-btn', 'Expand action menu');
+$sel->click_ok('action-menu-btn',   'Expand action menu');
 $sel->click_ok('action-expand-all', 'Expand all modal panels');
 
 # The assigned_to field must not exist.

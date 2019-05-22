@@ -58,7 +58,8 @@ ok($text =~ /you have a new search named sw-x77v/,
 
 # Make sure the saved query works.
 
-$sel->click_ok('//a[normalize-space(text())="sw-x77v" and not(@role="option")]');
+$sel->click_ok(
+  '//a[normalize-space(text())="sw-x77v" and not(@role="option")]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: sw-x77v");
 $sel->is_text_present_ok("2 bugs found");

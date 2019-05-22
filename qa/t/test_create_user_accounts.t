@@ -92,7 +92,10 @@ foreach my $account (@accounts) {
   $sel->type_ok("login", $account);
   $sel->check_ok("etiquette", "Agree to abide by code of conduct");
   $sel->click_ok('//input[@value="Create Account"]');
-  $sel->alert_text_like(qr/The e-mail address doesn't pass our syntax checking for a legal email address/, 'Invalid email address detected');
+  $sel->alert_text_like(
+    qr/The e-mail address doesn't pass our syntax checking for a legal email address/,
+    'Invalid email address detected'
+  );
 }
 
 # These accounts are illegal but do not cause a javascript alert

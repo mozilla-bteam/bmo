@@ -117,8 +117,7 @@ $sel->is_text_present_ok("The sudo session has been ended");
 # Try to access the sudo page directly, with no credentials.
 
 $sel->open_ok(
-  "/relogin.cgi?action=begin-sudo&target_login=$config->{admin_user_login}"
-);
+  "/relogin.cgi?action=begin-sudo&target_login=$config->{admin_user_login}");
 $sel->title_is("Password Required");
 
 # The link should populate the target_login field correctly.
@@ -156,9 +155,7 @@ $sel->title_is("Password Required");
 
 # Same as above, but with your password.
 
-$sel->open_ok(
-  "/relogin.cgi?action=prepare-sudo&target_login=foo\@bar.com"
-);
+$sel->open_ok("/relogin.cgi?action=prepare-sudo&target_login=foo\@bar.com");
 $sel->title_is("Begin sudo session");
 $sel->value_is("target_login", 'foo@bar.com');
 $sel->type_ok(

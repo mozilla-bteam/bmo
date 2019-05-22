@@ -73,8 +73,8 @@ $sel->select_ok("product", "label=TestProduct");
 $sel->remove_all_selections("bug_status");
 $sel->select_ok("bug_status", "label=UNCONFIRMED");
 $sel->select_ok("bug_status", "label=CONFIRMED");
-$sel->select_ok("f1", "Group");
-$sel->select_ok("o1", "is equal to");
+$sel->select_ok("f1",         "Group");
+$sel->select_ok("o1",         "is equal to");
 $sel->type_ok("v1", "Selenium-test");
 $sel->click_ok("Search");
 $sel->wait_for_page_to_load(WAIT_TIME);
@@ -85,7 +85,8 @@ $sel->type_ok("save_newqueryname", "Selenium bugs");
 $sel->click_ok("remember");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->is_text_present_ok("OK, you have a new search named Selenium bugs");
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and not(@role="option")]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and not(@role="option")]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_text_present_ok("One bug found");
@@ -128,7 +129,8 @@ $sel->is_text_present_ok('has been added to the database',
 # Make sure the new bug doesn't appear in the "Selenium bugs" saved search.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and @role="option"]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_text_present_ok("One bug found");
@@ -159,7 +161,8 @@ $sel->is_text_present_ok("The group will now be used for bugs");
 # Make sure the second filed bug has not been added to the bug group.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and @role="option"]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_text_present_ok("One bug found");
@@ -191,7 +194,8 @@ $sel->is_text_present_ok(
 # All bugs being in TestProduct must now be restricted to the bug group.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and @role="option"]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_element_present_ok("b$bug1_id", undef,
@@ -220,7 +224,8 @@ $sel->is_text_present_ok('has been added to the database',
 # Make sure all three bugs are listed as being restricted to the bug group.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and @role="option"]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_element_present_ok("b$bug1_id", undef,
@@ -265,7 +270,8 @@ $sel->is_text_present_ok('has been added to the database',
 # The last bug must not be in the list.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and @role="option"]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_element_present_ok("b$bug1_id", undef,
@@ -298,7 +304,8 @@ $sel->is_text_present_ok("The group will now be used for bugs");
 # Make sure all bugs are restricted to the bug group.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and @role="option"]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_element_present_ok("b$bug1_id", undef,
@@ -362,7 +369,8 @@ $sel->is_text_present_ok("The group Selenium-test has been deleted.");
 # No more bugs listed in the saved search as the bug group is gone.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="Selenium bugs" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="Selenium bugs" and @role="option"]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Bug List: Selenium bugs");
 $sel->is_text_present_ok("Zarro Boogs found");

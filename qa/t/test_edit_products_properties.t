@@ -184,10 +184,16 @@ $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $bug1_id = $sel->get_value("//input[\@name='id' and \@type='hidden']");
 go_to_bug($sel, $bug1_id);
 $sel->click_ok('cc-summary');
-ok($sel->find_element(qq{//div[\@class="cc-user"]//a[\@data-user-email="$unprivileged_user_login"]}),
-  "$unprivileged_user_login correctly added to the CC list");
-ok(!$sel->find_element(qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
-  "$permanent_user not in the CC list for 'first comp' by default");
+ok(
+  $sel->find_element(
+    qq{//div[\@class="cc-user"]//a[\@data-user-email="$unprivileged_user_login"]}),
+  "$unprivileged_user_login correctly added to the CC list"
+);
+ok(
+  !$sel->find_element(
+    qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
+  "$permanent_user not in the CC list for 'first comp' by default"
+);
 
 # File a second bug, and make sure users in the default CC list are added.
 file_bug_in_product($sel, "Kill me!");
@@ -201,8 +207,11 @@ $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $bug2_id = $sel->get_value("//input[\@name='id' and \@type='hidden']");
 go_to_bug($sel, $bug2_id);
 $sel->click_ok('cc-summary');
-ok($sel->find_element(qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
-  "$permanent_user in the CC list for 'second comp' by default");
+ok(
+  $sel->find_element(
+    qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
+  "$permanent_user in the CC list for 'second comp' by default"
+);
 
 # Edit product properties and set votes_to_confirm to 0, which has
 # the side-effect to disable auto-confirmation (new behavior compared
@@ -287,8 +296,11 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 go_to_bug($sel, $bug1_id);
 $sel->click_ok('cc-summary');
-ok($sel->find_element(qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
-  "User $permanent_user automatically added to the CC list");
+ok(
+  $sel->find_element(
+    qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
+  "User $permanent_user automatically added to the CC list"
+);
 
 # Delete the milestone the bug belongs to. This should retarget the bug
 # to the default milestone.

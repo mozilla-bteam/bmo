@@ -198,9 +198,7 @@ sub selected_label_is {
   };
   foreach my $option (@options) {
     my $text = trim($option->get_text());
-    if ($text eq $label
-        && $option->get_property('selected'))
-    {
+    if ($text eq $label && $option->get_property('selected')) {
       ok(1, "Selected label is: $label");
       return;
     }
@@ -250,7 +248,8 @@ sub remove_all_selections {
   TRACE("remove_all_selections: $id");
   my $locator = $self->_fix_locator($id);
   if ($self->find_element($locator)) {
-    $self->driver->execute_script('document.getElementById(arguments[0]).selectedIndex = -1;', $id);
+    $self->driver->execute_script(
+      'document.getElementById(arguments[0]).selectedIndex = -1;', $id);
     return 1;
   }
   return 0;
@@ -298,11 +297,11 @@ sub select_ok {
   };
   my ($is_label, $is_value);
   if ($label =~ /^label=(.*)$/) {
-    $label = $1;
+    $label    = $1;
     $is_label = 1;
   }
   elsif ($label =~ /^value=(.*)$/) {
-    $label = $1;
+    $label    = $1;
     $is_value = 1;
   }
   foreach my $option (@options) {
@@ -357,6 +356,7 @@ sub value_is {
     $locator =~ s/\@id/\@name/;
     $element = $self->find_element($locator);
   }
+
   # checkboxes
   if ($value eq 'on') {
     ok($element->is_selected(), 'Value is on');

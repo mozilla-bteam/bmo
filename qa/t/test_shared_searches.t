@@ -157,7 +157,8 @@ logout($sel);
 log_in($sel, $config, 'admin');
 $sel->click_ok("quicksearch_top");
 ok(
-  !$sel->is_element_present('//a[normalize-space(text())="helpwanted" and @role="option"]'),
+  !$sel->is_element_present(
+    '//a[normalize-space(text())="helpwanted" and @role="option"]'),
   "No 'helpwanted' shared search displayed"
 );
 $sel->click_ok('header-account-menu-button');
@@ -182,7 +183,7 @@ $sel->title_is("User Preferences");
 # This query is now available from the Search Bar.
 $sel->click_ok('quicksearch_top');
 $sel->click_ok('//a[normalize-space(text())="helpwanted" and @role="option"]'),
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
+  $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: helpwanted");
 
 # Remove the 'Shared Selenium buglist' query.
@@ -215,7 +216,8 @@ logout($sel);
 log_in($sel, $config, 'QA_Selenium_TEST');
 $sel->click_ok("quicksearch_top");
 ok(
-  !$sel->is_element_present('//a[normalize-space(text())="helpwanted" and @role="option"]'),
+  !$sel->is_element_present(
+    '//a[normalize-space(text())="helpwanted" and @role="option"]'),
   "The 'helpwanted' query is not displayed in the Search Bar"
 );
 $sel->click_ok('header-account-menu-button');

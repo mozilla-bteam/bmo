@@ -51,6 +51,7 @@ $sel->is_text_present_ok("private attachment, v1");
 $sel->is_text_present_ok("and some attachments too, like this one.");
 $sel->is_checked_ok(
   '//div[@class="comment" and @data-no="0"]//input[@class="is-private"]');
+
 # Now attach a public patch to the existing bug.
 
 $sel->click_ok('attachments-add-link');

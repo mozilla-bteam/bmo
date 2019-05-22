@@ -170,7 +170,8 @@ $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $bug1_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 go_to_bug($sel, $bug1_id);
 $sel->is_element_present_ok(
-  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="selenium"]});
+  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="selenium"]}
+);
 my $flag1_id = $sel->get_attribute(
   '//select[@title="Available in TestProduct and Another Product/c1"]@id');
 $flag1_id =~ s/flag-//;
@@ -182,7 +183,7 @@ $sel->is_element_present_ok(
 # Now move the bug into the 'Another Product' product.
 # Both the bug and attachment flags should survive.
 
-$sel->select_ok("product", "label=Another Product");
+$sel->select_ok("product",   "label=Another Product");
 $sel->select_ok("component", "label=c1");
 $sel->type_ok("comment",
   "Moving to Another Product / c1. The flag should be preserved.");
@@ -223,17 +224,15 @@ $sel->type_ok("assigned_to", $config->{unprivileged_user_login});
 $sel->click_ok('//input[@value="Set bug flags"]');
 $sel->is_element_present_ok(
   qq{//select[\@id="flag_type-$flagtype1_id"][\@disabled]},
-  "The selenium bug flag type is not editable"
-);
+  "The selenium bug flag type is not editable");
 $sel->select_ok("component", "label=c1");
 $sel->is_element_present_ok(
   qq{//select[\@id="flag_type-$flagtype1_id"][not(\@disabled)]},
-  "The selenium bug flag type is now editable"
-);
+  "The selenium bug flag type is now editable");
 $sel->select_ok("flag_type-$flagtype1_id", "label=?");
 $sel->type_ok("requestee_type-$flagtype1_id", $config->{admin_user_login});
 $sel->type_ok("short_desc", "Create a new selenium flag for c2");
-$sel->type_ok("comment", ".");
+$sel->type_ok("comment",    ".");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
@@ -243,7 +242,8 @@ $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $bug2_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 go_to_bug($sel, $bug2_id);
 $sel->is_element_present_ok(
-  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="selenium"]});
+  qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="selenium"]}
+);
 my $flag2_id = $sel->get_attribute(
   '//select[@title="Available in TestProduct and Another Product/c1"]@id');
 $flag2_id =~ s/flag-//;
@@ -317,7 +317,7 @@ $sel->selected_label_is("flag-$flag2_id", "+");
 # But moving the bug into TestProduct will delete the flag
 # as the flag setter is not in the editbugs group.
 
-$sel->select_ok("product", "label=TestProduct");
+$sel->select_ok("product",   "label=TestProduct");
 $sel->select_ok("component", "label=TestComponent");
 $sel->type_ok("comment",
   "selenium flag will be lost. I don't have editbugs privs.");

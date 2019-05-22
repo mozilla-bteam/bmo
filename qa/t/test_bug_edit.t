@@ -20,8 +20,11 @@ set_parameters($sel, {"Bug Fields" => {"usestatuswhiteboard-on" => undef}});
 
 # Clear the saved search, in case this test didn't complete previously.
 $sel->click_ok('quicksearch_top');
-if ($sel->is_element_present('//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]')) {
-  $sel->click_ok('//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
+if ($sel->is_element_present(
+  '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]'))
+{
+  $sel->click_ok(
+    '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Bug List: My bugs from QA_Selenium");
   $sel->click_ok('forget-search', 'Forget Search');
@@ -238,6 +241,7 @@ ok(!$sel->is_element_present('//select[@name="op_sys"]'),
 ok(!$sel->is_element_present('//select[@name="rep_platform"]'),
   "Hardware field not editable");
 $sel->click_ok("cc-summary");
+
 # display all links for removing a cc list member
 $sel->driver->execute_script('
   var remove_cc_elements = document.getElementsByClassName("cc-remove");
@@ -322,7 +326,9 @@ check_page_load($sel,
 $sel->title_is("Search created");
 $sel->is_text_present_ok(
   "OK, you have a new search named My bugs from QA_Selenium.");
-$sel->click_ok('//a[normalize-space(text())="My bugs from QA_Selenium" and not(@role="option")]');
+$sel->click_ok(
+  '//a[normalize-space(text())="My bugs from QA_Selenium" and not(@role="option")]'
+);
 check_page_load($sel,
   q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=17}
 );
@@ -380,7 +386,8 @@ $sel->is_text_present_ok("Changes submitted for bug $bug2_id");
 # Test mass-change.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
 screenshot_page($sel, '/app/artifacts/line344.png');
 check_page_load($sel,
   q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=19}
@@ -414,7 +421,8 @@ go_to_bug($sel, $bug1_id);
 $sel->selected_label_is("resolution", "INVALID");
 
 $sel->click_ok('action-menu-btn', 'Expand action menu');
-$sel->click_ok('action-history', 'Show bug history');
+$sel->click_ok('action-history',  'Show bug history');
+
 # Clicking history opens a new tab
 my $windows = $sel->driver->get_window_handles;
 $sel->driver->switch_to_window($windows->[1]);
@@ -426,6 +434,7 @@ $sel->is_text_present_ok(
   "Whiteboard [Selenium was here] [Selenium was here][admin too]");
 $sel->is_text_present_ok("Product QA-Selenium-TEST TestProduct");
 $sel->is_text_present_ok("Status CONFIRMED RESOLVED");
+
 # Close tab and switch back
 $sel->driver->close;
 $sel->driver->switch_to_window($windows->[0]);
@@ -514,7 +523,8 @@ foreach my $params (["no_token_mass_change", ""],
 # Now move these bugs out of our radar.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
 check_page_load($sel,
   q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=21}
 );
@@ -535,7 +545,8 @@ $sel->title_is("Bugs processed");
 # Now delete the saved search.
 
 $sel->click_ok('quicksearch_top');
-$sel->click_ok('//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
+$sel->click_ok(
+  '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
 check_page_load($sel,
   q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=23}
 );

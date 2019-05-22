@@ -19,7 +19,9 @@ my ($sel, $config) = get_selenium();
 
 log_in($sel, $config, 'admin');
 $sel->click_ok('quicksearch_top');
-if ($sel->is_element_present('//a[normalize-space(text())="My QA query" and @role="option"]')) {
+if ($sel->is_element_present(
+  '//a[normalize-space(text())="My QA query" and @role="option"]'))
+{
   $sel->click_ok('//a[normalize-space(text())="My QA query" and @role="option"]');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->click_ok('forget-search', 'Forget search');
@@ -77,7 +79,8 @@ $sel->title_is("Search created");
 my $text = trim($sel->get_text("message"));
 ok($text =~ /OK, you have a new search named My QA query/,
   "New saved search 'My QA query'");
-$sel->click_ok('//a[normalize-space(text())="My QA query" and not(@role="option")]');
+$sel->click_ok(
+  '//a[normalize-space(text())="My QA query" and not(@role="option")]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bug List: My QA query");
 $sel->is_element_present_ok("b$bug1_id", undef, "Bug $bug1_id is on the list");
@@ -107,7 +110,7 @@ go_to_home($sel);
 $sel->type_ok('quicksearch_top', $bug1_id);
 $sel->submit('header-search');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-sleep(1); # FIXME
+sleep(1);    # FIXME
 $sel->title_is("Access Denied");
 $sel->is_text_present_ok("You are not authorized to access bug");
 

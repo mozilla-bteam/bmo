@@ -42,13 +42,12 @@ go_to_bug($sel, $bug1_id);
 $sel->click_ok("link=simple patch, v1");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("");
-my $cookies = $sel->get_all_cookies();
+my $cookies    = $sel->get_all_cookies();
 my $nb_cookies = scalar @$cookies;
 ok($nb_cookies, "Found $nb_cookies cookies");
 my %cookies = map { $_->{name} => $_->{value} } @$cookies;
-ok(exists $cookies{Bugzilla_login}, "Bugzilla_login is accessible");
-ok(exists $cookies{Bugzilla_logincookie},
-  "Bugzilla_logincookie is accessible");
+ok(exists $cookies{Bugzilla_login},       "Bugzilla_login is accessible");
+ok(exists $cookies{Bugzilla_logincookie}, "Bugzilla_logincookie is accessible");
 $sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^$bug1_id /);
@@ -105,8 +104,7 @@ my @args = ("", "token=", "token=i123x", "token=$admin_cookie",
   "token=$editbugs_cookie");
 
 foreach my $arg (@args) {
-  $sel->open_ok(
-    "/userprefs.cgi?tab=settings&dosave=1&display_quips=off&$arg");
+  $sel->open_ok("/userprefs.cgi?tab=settings&dosave=1&display_quips=off&$arg");
   $sel->title_is("Suspicious Action");
 
   if ($arg eq "token=$admin_cookie") {
