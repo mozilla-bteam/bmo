@@ -53,7 +53,6 @@ defaults:
         <<: *bmo_env
         BZ_QA_CONF_FILE: /app/.circleci/selenium_test.conf
         BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.legacy.txt
-        BZ_QA_LEGACY_MODE: 1
     - <<: *mysql_image
       environment: *mysql_env
     - <<: *selenium_firefox_image

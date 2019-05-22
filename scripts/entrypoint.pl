@@ -46,8 +46,7 @@ my $func = __PACKAGE__->can("cmd_$cmd") // sub {
 
 fix_path();
 check_user();
-check_env(
-  qw(
+check_env(qw(
     LOCALCONFIG_ENV
     BMO_db_host
     BMO_db_name
@@ -56,12 +55,11 @@ check_env(
     BMO_memcached_namespace
     BMO_memcached_servers
     BMO_urlbase
-    )
-);
+    ));
 
 if ($ENV{BMO_urlbase} eq 'AUTOMATIC') {
   $ENV{BMO_urlbase} = sprintf 'http://%s:%d/', hostname(), $ENV{PORT};
-  $ENV{BZ_BASE_URL} = sprintf 'http://%s:%d', hostname(), $ENV{PORT};
+  $ENV{BZ_BASE_URL} = sprintf 'http://%s:%d',  hostname(), $ENV{PORT};
 }
 
 $func->($opts->());
@@ -69,16 +67,14 @@ $func->($opts->());
 sub cmd_demo {
   unless (-f '/app/data/params') {
     cmd_load_test_data();
-    check_env(
-      qw(
+    check_env(qw(
         PHABRICATOR_BOT_LOGIN
         PHABRICATOR_BOT_PASSWORD
         PHABRICATOR_BOT_API_KEY
         CONDUIT_USER_LOGIN
         CONDUIT_USER_PASSWORD
         CONDUIT_USER_API_KEY
-        )
-    );
+        ));
     run('perl', 'scripts/generate_conduit_data.pl');
   }
   cmd_httpd();
@@ -140,7 +136,11 @@ sub cmd_load_test_data {
   die 'BZ_QA_ANSWERS_FILE is not set' unless $ENV{BZ_QA_ANSWERS_FILE};
   run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_QA_ANSWERS_FILE});
 
-  run('perl', 'scripts/generate_bmo_data.pl', '--user-pref', 'ui_experiments=on');
+  run(
+    'perl',        'scripts/generate_bmo_data.pl',
+    '--user-pref', 'ui_experiments=on',
+    '--param',     'use_mailer_queue=0'
+  );
 
   chdir '/app/qa/config';
   say 'chdir(/app/qa/config)';
