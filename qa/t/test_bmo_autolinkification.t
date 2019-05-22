@@ -31,7 +31,7 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/\d+ \S $bug_summary/, "crash report added");
 $sel->click_ok("link=bug $bug_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-attribute_is('link=bp-63f096f7-253b-4ee2-ae3d-8bb782090824@href',
+attribute_is($sel, 'bp-63f096f7-253b-4ee2-ae3d-8bb782090824',
   'https://crash-stats.mozilla.org/report/index/63f096f7-253b-4ee2-ae3d-8bb782090824'
 );
 
@@ -59,7 +59,7 @@ logout($sel);
 
 sub attribute_is {
   my ($sel, $text, $href) = @_;
-  my $element = $sel->driver->find_element(qq{//a[contains(text(),"$text")]});
+  my $element = $sel->find_element(qq{//a[contains(text(),"$text")]});
   if ($element) {
     ok($element->get_attribute('href') eq $href, "Attribute is: $href");
     return;
