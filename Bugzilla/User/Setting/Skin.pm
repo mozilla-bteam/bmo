@@ -18,7 +18,7 @@ use Bugzilla::Constants;
 use File::Spec::Functions;
 use File::Basename;
 
-use constant BUILTIN_SKIN_NAMES => ['standard'];
+use constant BUILTIN_SKIN_NAMES => ['standard', 'standard-light', 'standard-dark'];
 
 sub legal_values {
   my ($self) = @_;

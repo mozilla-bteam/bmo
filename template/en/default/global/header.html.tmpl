@@ -163,6 +163,15 @@
     [% FOREACH asset_url = css_sets.standard %]
       [% PROCESS format_css_link %]
     [% END %]
+    [%
+      # Dark Mode support
+      skin = user.settings.skin.value;
+      IF skin == 'standard' || skin == 'standard-dark';
+        asset_url = 'skins/standard/dark.css' FILTER version;
+        css_media = 'screen and (prefers-color-scheme: dark)' IF skin == 'standard';
+        PROCESS format_css_link;
+      END;
+    %]
     [% FOREACH asset_url = css_sets.skin %]
       [% PROCESS format_css_link %]
     [% END %]
@@ -441,7 +450,7 @@
 [% END %]
 
 [% BLOCK format_css_link %]
-  <link href="[% asset_url FILTER html %]" rel="stylesheet" type="text/css">
+  <link href="[% asset_url FILTER html %]" rel="stylesheet"[% IF css_media %] media="[% css_media FILTER html %]"[% END %]>
   [% "\n" %]
 [% END %]
 

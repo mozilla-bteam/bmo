@@ -59,7 +59,7 @@ $answer{'default_bug_type'}     = 'defect';
 $answer{'defaultpriority'}      = '--';
 $answer{'defaultseverity'}      = 'normal';
 $answer{'maxattachmentsize'}    = 4095;
-$answer{'skin'} = 'Mozilla';
+$answer{'skin'}                 = 'standard';
 ANSWERS
 sudo tee /etc/mysql/conf.d/max-packet.cnf <<CONF
 [mysqld]
