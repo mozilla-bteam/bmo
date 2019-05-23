@@ -225,7 +225,7 @@
     --hovered-secondary-button-border-color: var(--secondary-button-border-color);
     --pressed-secondary-button-foreground-color: var(--secondary-button-foreground-color);
     --pressed-secondary-button-background-color: rgb(200, 201, 202);
-    --pressed-secondary-button-border-color: var(--pressed-secondary-button-background-color);
+    --pressed-secondary-button-border-color: var(--secondary-button-border-color);
     --danger-button-foreground-color: var(--primary-button-foreground-color);
     --danger-button-background-color: rgb(var(--accent-color-red-1));
     --danger-button-border-color: rgb(var(--accent-color-red-1));
@@ -289,7 +289,7 @@
     --accent-color-pink-1: 128, 64, 64;
     --accent-color-lightgreen-1: 64, 128, 64;
     --accent-color-wine-1: 50, 45, 64;
-    --accent-color-purple-1: 192, 100, 255;
+    --accent-color-purple-1: 240, 115, 240;
 
     /** App */
     --application-foreground-color: rgb(210, 211, 212);
@@ -315,15 +315,15 @@
     /** Control */
     --control-background-color: rgb(35, 36, 37);
     --control-border-color: rgb(60, 61, 62);
-    --selected-control-background-color: rgb(50, 51, 52);
+    --selected-control-background-color: rgb(60, 61, 62);
     --disabled-control-foreground-color: rgb(90, 91, 92);
     --scrollbar-color: rgb(70, 71, 72) var(--application-background-color);
 
     /** Button */
-    --secondary-button-background-color: rgb(60, 61, 62);
-    --secondary-button-border-color: rgb(40, 41, 42);
-    --hovered-secondary-button-background-color: rgb(50, 51, 52);
-    --pressed-secondary-button-background-color: rgb(30, 31, 32);
+    --secondary-button-background-color: rgb(70, 71, 72);
+    --secondary-button-border-color: rgb(70, 71, 72);
+    --hovered-secondary-button-background-color: rgb(60, 61, 62);
+    --pressed-secondary-button-background-color: rgb(40, 41, 42);
     --selected-button-foreground-color: rgb(60, 61, 62);
     --selected-button-background-color: rgb(180, 181, 182);
 
@@ -333,6 +333,14 @@
     /** Grid */
     --grid-header-background-color: rgb(50, 51, 52);
     --grid-subheader-background-color: rgb(70, 71, 72);
+  }
+
+  input[type="checkbox"]:checked {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="rgb(35, 36, 37)" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
+  }
+
+  input[type="checkbox"]:indeterminate {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="rgb(35, 36, 37)" d="M19 13H5v-2h14v2z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
   }
 
   select:not([multiple]):not([size]) {
@@ -462,6 +470,9 @@ select:not([multiple]):not([size]) {
 
 @supports (-moz-appearance: none) {
   /* Remove extra padding in Firefox */
+  button,
+  input[type="button"],
+  input[type="submit"],
   select:not([multiple]):not([size]) {
     padding-top: 5px !important;
     padding-bottom: 5px !important;
@@ -538,6 +549,7 @@ textarea {
   padding: var(--control-padding);
 }
 
+input[type="checkbox"]:focus,
 input[type="date"]:focus,
 input[type="email"]:focus,
 input[type="number"]:focus,
@@ -695,7 +707,7 @@ input[type="checkbox"]:checked {
   background-color: var(--checked-control-background-color);
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 16px 16px;
+  background-size: 18px 18px;
 }
 
 input[type="radio"] {
@@ -2116,13 +2128,13 @@ table.tabs .clickable_area {
 .dropdown-panel .notifications img {
   float: left;
   border-radius: 4px;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
 }
 
 .dropdown-panel .notifications img ~ * {
   display: block;
-  margin-left: 52px;
+  margin-left: 44px;
 }
 
 .dropdown-panel .notifications label {

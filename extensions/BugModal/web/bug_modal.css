@@ -306,6 +306,10 @@ input[type="number"] {
   margin-left: 5px;
 }
 
+#module-security-content {
+  padding: 8px;
+}
+
 #module-user-story-content {
   overflow: hidden;
 }
@@ -335,6 +339,10 @@ input[type="number"] {
   clear: both;
   max-height: 150px;
   white-space: nowrap;
+}
+
+#cc-list .cc-user {
+  margin: 4px 0;
 }
 
 #cc-list .vcard {
