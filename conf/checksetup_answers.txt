@@ -25,5 +25,5 @@ $answer{'insidergroup'}         = 'admin';
 $answer{'default_bug_type'}     = 'defect';
 $answer{'defaultpriority'}      = '--';
 $answer{'defaultseverity'}      = 'normal';
-$answer{'skin'}                 = 'standard';
+$answer{'skin'}                 = 'Mozilla';
 $answer{'docs_urlbase'}         = 'https://bmo.readthedocs.io/en/latest/';
