@@ -188,10 +188,6 @@ a.activity-ref {
   display: block;
 }
 
-.module .field .value.edit {
-  width: 100%;
-}
-
 .module .field .value input[type="text"],
 .module .field .value input:not([type]) {
   width: 100%;
