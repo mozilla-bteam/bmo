@@ -100,7 +100,6 @@
     --font-size-medium: 13px;
     --font-size-small: 12px;
     --font-size-x-small: 11px;
-    --font-size-monospace: 100%;
     --line-height-default: 1.25;
     --line-height-comfortable: 1.5;
     --font-family-sans-serif: 'FiraGO', sans-serif;
@@ -362,7 +361,7 @@ body {
 pre,
 code,
 kbd {
-  font-size: var(--font-size-monospace);
+  font-size-adjust: .5;
   font-family: var(--font-family-monospace);
 }
 
