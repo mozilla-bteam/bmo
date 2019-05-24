@@ -52,7 +52,7 @@ defaults:
       environment:
         <<: *bmo_env
         BZ_QA_CONF_FILE: /app/.circleci/selenium_test.conf
-        BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.legacy.txt
+        BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.txt
     - <<: *mysql_image
       environment: *mysql_env
     - <<: *selenium_firefox_image
@@ -225,7 +225,7 @@ jobs:
       - *default_qa_setup
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          /app/scripts/entrypoint.pl load_test_data --legacy
+          /app/scripts/entrypoint.pl load_test_data
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
           /app/scripts/entrypoint.pl test_selenium | tee artifacts/$CIRCLE_JOB.txt
