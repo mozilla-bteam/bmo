@@ -2140,7 +2140,7 @@ table.tabs .clickable_area {
 .dropdown-panel .notifications label {
   display: -webkit-box;
   overflow: hidden;
-  max-height: 40px;
+  max-height: calc(2em * var(--line-height-default));
   white-space: normal;
   text-overflow: ellipsis;
   -webkit-line-clamp: 2;
