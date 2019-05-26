@@ -193,7 +193,6 @@ sub setup_routes {
     '/__version__' => {file => 'version.json', content_type => 'application/json'});
   $r->static_file('/version.json', {content_type => 'application/json'});
 
-  $r->page('/review',        'splinter.html');
   $r->page('/user_profile',  'user_profile.html');
   $r->page('/userprofile',   'user_profile.html');
   $r->page('/request_defer', 'request_defer.html');

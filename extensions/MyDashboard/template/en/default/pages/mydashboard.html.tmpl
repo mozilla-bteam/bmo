@@ -74,12 +74,6 @@
   </div>
 </script>
 
-<script [% script_nonce FILTER none %]>
-  [% IF Param('splinter_base') %]
-    MyDashboard.splinter_base = '[% Bugzilla.splinter_review_base FILTER js %]';
-  [% END %]
-</script>
-
 <div id="mydashboard">
   <div class="yui3-skin-sam">
     <div id="left">

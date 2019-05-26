@@ -115,20 +115,7 @@ $(function () {
         };
 
         var flagNameFormatter = function(o) {
-            if (parseInt(o.data.attach_id)
-                && parseInt(o.data.is_patch)
-                && MyDashboard.splinter_base)
-            {
-                return '<a href="' + MyDashboard.splinter_base +
-                    (MyDashboard.splinter_base.indexOf('?') == -1 ? '?' : '&') +
-                    'bug=' + encodeURIComponent(o.data.bug_id) +
-                    '&attachment=' + encodeURIComponent(o.data.attach_id) +
-                    '" target="_blank" title="Review this patch">' +
-                    o.value.htmlEncode() + '</a>';
-            }
-            else {
-                return o.value.htmlEncode();
-            }
+            return o.value.htmlEncode();
         };
 
         // Requestee

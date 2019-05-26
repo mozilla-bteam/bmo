@@ -278,9 +278,6 @@
         <span id="att-[% att.id FILTER none %]-description" itemprop="description">[% att.description FILTER html %]</span></a>
         [% " (obsolete)" IF att.isobsolete; " (deleted)" IF !att.datasize %]
         — <a href="[% link FILTER html %]&amp;action=edit" itemprop="url">Details</a>
-        [% IF att.ispatch && Param('splinter_base') %]
-          — <a href="[% Bugzilla.splinter_review_url(bug.bug_id, att.id) FILTER none %]">Splinter Review</a>
-        [% END %]
       </div>
     </div>
   [% END %]
