@@ -250,6 +250,7 @@ sub remove_all_selections {
   if ($self->find_element($locator)) {
     $self->driver->execute_script(
       'document.getElementById(arguments[0]).selectedIndex = -1;', $id);
+    sleep(1); # FIXME: timing issue when running under CircleCI
     return 1;
   }
   return 0;
