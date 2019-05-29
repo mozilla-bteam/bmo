@@ -346,6 +346,9 @@ sub buglist_columns {
       title => $flag->description
     };
   }
+
+  # Allow other extensions to alter columns
+  Bugzilla::Hook::process('tf_buglist_columns', {columns => $columns});
 }
 
 sub buglist_column_joins {
@@ -364,6 +367,10 @@ sub buglist_column_joins {
       extra => ['map_' . $flag->name . '.tracking_flag_id = ' . $flag->flag_id]
     };
   }
+
+  # Allow other extensions to alter column_joins
+  Bugzilla::Hook::process('tf_buglist_column_joins',
+    {column_joins => $column_joins});
 }
 
 sub bug_create_cf_accessors {
@@ -404,15 +411,6 @@ sub bug_create_cf_accessors {
   }
 }
 
-sub bug_editable_bug_fields {
-  my ($self, $args) = @_;
-  my $fields         = $args->{'fields'};
-  my @tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->get_all;
-  foreach my $flag (@tracking_flags) {
-    push(@$fields, $flag->name);
-  }
-}
-
 sub search_operator_field_override {
   my ($self, $args) = @_;
   my $operators      = $args->{'operators'};
@@ -424,6 +422,10 @@ sub search_operator_field_override {
       }
     };
   }
+
+  # Allow other extensions to alter operators
+  Bugzilla::Hook::process('tf_search_operator_field_override',
+    {operators => $operators});
 }
 
 sub _tracking_flags_search_nonchanged {
