@@ -1023,7 +1023,7 @@
   sub = [];
   IF bug.keyword_objects.size;
     IF bug.keyword_objects.size <= 3;
-      sub.push("{" _ bug.keyword_objects.pluck("name").join(", ") _ "}");
+      sub.push("Keywords: " _ bug.keyword_objects.pluck("name").join(", "));
     ELSE;
       sub.push(bug.keyword_objects.size _ " keywords");
     END;
