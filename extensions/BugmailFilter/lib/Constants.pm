@@ -52,6 +52,7 @@ use constant IGNORE_FIELDS => qw(
   last_visit_ts
   longdesc
   longdescs.count
+  major_change_ts
   owner_idle_time
   regressed_by.count
   regresses.count

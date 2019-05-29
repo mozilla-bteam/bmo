@@ -218,10 +218,8 @@
     <td [% 'style="white-space: nowrap"' IF NOT col_abbrev.wrap %]
         class="bz_[% column FILTER css_class_quote %]_column"
         [% SWITCH column %]
-          [% CASE 'opendate' %]
-            sorttable_customkey="[% bug.opentime FILTER html %]"
-          [% CASE 'changeddate' %]
-            sorttable_customkey="[% bug.changedtime FILTER html %]"
+          [% CASE ['opendate', 'changeddate', 'major_change_ts'] %]
+            sorttable_customkey="[% bug.$column FILTER html %]"
           [% CASE columns_sortkey.keys %]
             [% SET sortkey = columns_sortkey.$column.${bug.$column} %]
             sorttable_customkey="[% sortkey FILTER html %]"

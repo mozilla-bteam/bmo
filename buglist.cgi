@@ -858,6 +858,10 @@ foreach my $row (@$data) {
     $bug->{'changeddate'} = DiffDate($bug->{'changeddate'});
   }
 
+  if ($bug->{'major_change_ts'}) {
+    $bug->{'major_change_ts'} = DiffDate($bug->{'major_change_ts'});
+  }
+
   if ($bug->{'opendate'}) {
     $bug->{'opentime'} = $bug->{'opendate'};                # for iCalendar
     $bug->{'opendate'} = DiffDate($bug->{'opendate'});

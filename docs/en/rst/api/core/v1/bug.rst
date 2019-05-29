@@ -71,6 +71,7 @@ name              type   description
          "cf_drop_down": "---",
          "summary": "test bug",
          "last_change_time": "2014-09-23T19:12:17Z",
+         "major_change_time": "2014-09-23T17:34:06Z",
          "platform": "All",
          "url": "",
          "classification": "Unclassified",
@@ -195,7 +196,9 @@ is_creator_accessible  boolean   If ``true``, this bug can be accessed by the
                                  creator of the bug, even if they are not a
                                  member of the groups the bug is restricted to.
 keywords               array     Each keyword that is on this bug.
-last_change_time       datetime  When the bug was last changed.
+last_change_time       datetime  When the bug was last updated.
+major_change_time      datetime  When the bug was last updated, excluding minor,
+                                 bulk and automated changes.
 comment_count          int       Number of comments associated with the bug.
 op_sys                 string    The name of the operating system that the bug
                                  was filed against.
@@ -484,94 +487,101 @@ format Bugzilla expects is to first construct your query using the
 Advanced Search UI, execute it and use the query parameters in they URL
 as your query for the REST call.
 
-================  ========  =====================================================
-name              type      description
-================  ========  =====================================================
-alias             string    The unique alias of this bug. A ``null`` value will
-                            be returned if this bug has no alias.
-assigned_to       string    The login name of a user that a bug is assigned to.
-component         string    The name of the Component that the bug is in. Note
-                            that if there are multiple Components with the same
-                            name, and you search for that name, bugs in *all*
-                            those Components will be returned. If you don't want
-                            this, be sure to also specify the ``product`` argument.
-count_only        boolean   If set to true, an object with a single key called
-                            "bug_count" will be returned which is the number of
-                            bugs that matched the search.
-creation_time     datetime  Searches for bugs that were created at this time or
-                            later. May not be an array.
-creator           string    The login name of the user who created the bug. You
-                            can also pass this argument with the name
-                            ``reporter``, for backwards compatibility with
-                            older Bugzillas.
-description       string    The description (initial comment) of the bug.
-filed_via         string    Searches for bugs that were created with this method.
-id                int       The numeric ID of the bug.
-last_change_time  datetime  Searches for bugs that were modified at this time
-                            or later. May not be an array.
-limit             int       Limit the number of results returned. If the value is
-                            unset, zero or greater than the maximum value set by
-                            the administrator, which is 10,000 by default, then
-                            the maximum value will be used instead. This is a
-                            preventive measure against DoS-like attacks on
-                            Bugzilla. Use the ``offset`` argument described below
-                            to retrieve more results.
-longdescs.count   int       The number of comments a bug has. The bug's description
-                            is the first comment. For example, to find bugs which someone
-                            has commented on after they have been filed, search on
-                            ``longdescs.count`` *greater than* 1.
-offset            int       Used in conjunction with the ``limit`` argument,
-                            ``offset`` defines the starting position for the
-                            search. For example, given a search that would
-                            return 100 bugs, setting ``limit`` to 10 and
-                            ``offset`` to 10 would return bugs 11 through 20
-                            from the set of 100.
-op_sys            string    The "Operating System" field of a bug.
-platform          string    The Platform (sometimes called "Hardware") field of
-                            a bug.
-priority          string    The Priority field on a bug.
-product           string    The name of the Product that the bug is in.
-quicksearch       string    Search for bugs using quicksearch syntax.
-resolution        string    The current resolution--only set if a bug is closed.
-                            You can find open bugs by searching for bugs with an
-                            empty resolution.
-severity          string    The Severity field on a bug.
-status            string    The current status of a bug (not including its
-                            resolution, if it has one, which is a separate field
-                            above).
-summary           string    Searches for substrings in the single-line Summary
-                            field on bugs. If you specify an array, then bugs
-                            whose summaries match *any* of the passed substrings
-                            will be returned. Note that unlike searching in the
-                            Bugzilla UI, substrings are not split on spaces. So
-                            searching for ``foo bar`` will match "This is a foo
-                            bar" but not "This foo is a bar". ``['foo', 'bar']``,
-                            would, however, match the second item.
-tags              string    Searches for a bug with the specified tag. If you
-                            specify an array, then any bugs that match *any* of
-                            the tags will be returned. Note that tags are
-                            personal to the currently logged in user.
-target_milestone  string    The Target Milestone field of a bug. Note that even
-                            if this Bugzilla does not have the Target Milestone
-                            field enabled, you can still search for bugs by
-                            Target Milestone. However, it is likely that in that
-                            case, most bugs will not have a Target Milestone set
-                            (it defaults to "---" when the field isn't enabled).
-qa_contact        string    The login name of the bug's QA Contact. Note that
-                            even if this Bugzilla does not have the QA Contact
-                            field enabled, you can still search for bugs by QA
-                            Contact (though it is likely that no bug will have a
-                            QA Contact set, if the field is disabled).
-triage_owner      string    The login name of the Triage Owner of a bug's
-                            component.
-type              string    The Type field on a bug.
-url               string    The "URL" field of a bug.
-version           string    The Version field of a bug.
-whiteboard        string    Search the "Status Whiteboard" field on bugs for a
-                            substring. Works the same as the ``summary`` field
-                            described above, but searches the Status Whiteboard
-                            field.
-================  ========  =====================================================
+=================  ========  ====================================================
+name               type      description
+=================  ========  ====================================================
+alias              string    The unique alias of this bug. A ``null`` value will
+                             be returned if this bug has no alias.
+assigned_to        string    The login name of a user that a bug is assigned to.
+component          string    The name of the Component that the bug is in. Note
+                             that if there are multiple Components with the same
+                             name, and you search for that name, bugs in *all*
+                             those Components will be returned. If you don't want
+                             this, be sure to also specify the ``product``
+                             argument.
+count_only         boolean   If set to true, an object with a single key called
+                             "bug_count" will be returned which is the number of
+                             bugs that matched the search.
+creation_time      datetime  Searches for bugs that were created at this time or
+                             later. May not be an array.
+creator            string    The login name of the user who created the bug. You
+                             can also pass this argument with the name
+                             ``reporter``, for backwards compatibility with
+                             older Bugzillas.
+description        string    The description (initial comment) of the bug.
+filed_via          string    Searches for bugs that were created with this
+                             method.
+id                 int       The numeric ID of the bug.
+last_change_time   datetime  Searches for bugs that were modified at this time
+                             or later. May not be an array.
+major_change_time  datetime  Searches for bugs that were modified at this time or
+                             later, excluding minor, bulk and automated changes.
+                             May not be an array.
+limit              int       Limit the number of results returned. If the value
+                             is unset, zero or greater than the maximum value set
+                             by the administrator, which is 10,000 by default,
+                             then the maximum value will be used instead. This is
+                             a preventive measure against DoS-like attacks on
+                             Bugzilla. Use the ``offset`` argument described
+                             below to retrieve more results.
+longdescs.count    int       The number of comments a bug has. The bug's
+                             description is the first comment. For example, to
+                             find bugs which someone has commented on after they
+                             have been filed, search on ``longdescs.count``
+                             *greater than* 1.
+offset             int       Used in conjunction with the ``limit`` argument,
+                             ``offset`` defines the starting position for the
+                             search. For example, given a search that would
+                             return 100 bugs, setting ``limit`` to 10 and
+                             ``offset`` to 10 would return bugs 11 through 20
+                             from the set of 100.
+op_sys             string    The "Operating System" field of a bug.
+platform           string    The Platform (sometimes called "Hardware") field of
+                             a bug.
+priority           string    The Priority field on a bug.
+product            string    The name of the Product that the bug is in.
+quicksearch        string    Search for bugs using quicksearch syntax.
+resolution         string    The current resolution--only set if a bug is closed.
+                             You can find open bugs by searching for bugs with an
+                             empty resolution.
+severity           string    The Severity field on a bug.
+status             string    The current status of a bug (not including its
+                             resolution, if it has one, which is a separate field
+                             above).
+summary            string    Searches for substrings in the single-line Summary
+                             field on bugs. If you specify an array, then bugs
+                             whose summaries match *any* of the passed substrings
+                             will be returned. Note that unlike searching in the
+                             Bugzilla UI, substrings are not split on spaces. So
+                             searching for ``foo bar`` will match "This is a foo
+                             bar" but not "This foo is a bar".
+                             ``['foo', 'bar']``, would, however, match the second
+                             item.
+tags               string    Searches for a bug with the specified tag. If you
+                             specify an array, then any bugs that match *any* of
+                             the tags will be returned. Note that tags are
+                             personal to the currently logged in user.
+target_milestone   string    The Target Milestone field of a bug. Note that even
+                             if this Bugzilla does not have the Target Milestone
+                             field enabled, you can still search for bugs by
+                             Target Milestone. However, it is likely that in that
+                             case, most bugs will not have a Target Milestone set
+                             (it defaults to "---" when the field isn't enabled).
+qa_contact         string    The login name of the bug's QA Contact. Note that
+                             even if this Bugzilla does not have the QA Contact
+                             field enabled, you can still search for bugs by QA
+                             Contact (though it is likely that no bug will have a
+                             QA Contact set, if the field is disabled).
+triage_owner       string    The login name of the Triage Owner of a bug's
+                             component.
+type               string    The Type field on a bug.
+url                string    The "URL" field of a bug.
+version            string    The Version field of a bug.
+whiteboard         string    Search the "Status Whiteboard" field on bugs for a
+                             substring. Works the same as the ``summary`` field
+                             described above, but searches the Status Whiteboard
+                             field.
+=================  ========  ====================================================
 
 **Response**
 

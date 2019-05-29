@@ -93,6 +93,7 @@ sub DB_COLUMNS {
       everconfirmed
       filed_via
       lastdiffed
+      major_change_ts
       op_sys
       priority
       product_id
@@ -279,6 +280,7 @@ use constant FIELD_MAP => {
   is_cc_accessible      => 'cclist_accessible',
   is_creator_accessible => 'reporter_accessible',
   last_change_time      => 'delta_ts',
+  major_change_time     => 'major_change_ts',
   comment_count         => 'longdescs.count',
   platform              => 'rep_platform',
   regressions           => 'regresses',
@@ -1403,7 +1405,10 @@ sub update {
     || $self->{added_comments}
     || $self->{comment_isprivate})
   {
-    _update_delta_ts($self->id, $delta_ts);
+    # Don't update `major_change_ts` unless Status is changed or comment is added
+    my $major = $changes->{bug_status} || $changes->{resolution}
+      || $self->{added_comments} || $self->{comment_isprivate};
+    _update_delta_ts($self->id, $delta_ts, $major);
     $self->{delta_ts} = $delta_ts;
   }
 
@@ -1521,13 +1526,22 @@ sub _sync_fulltext {
   }
 }
 
-# Update a bug's delta_ts without requiring the full object to be loaded.
+# Update a bug's `delta_ts` without requiring the full object to be loaded.
+# While the `delta_ts` field is updated for any change, `major_change_ts` is
+# updated only for a new comment, attachment or Status change.
 sub _update_delta_ts {
-  my ($bug_id, $timestamp) = @_;
-  Bugzilla->dbh->do("UPDATE bugs SET delta_ts = ? WHERE bug_id = ?",
-    undef, $timestamp, $bug_id);
+  my ($bug_id, $timestamp, $major) = @_;
+  $major ||= 0;
+
+  # Changes made by silent user are always minor
+  $major = 0 if Bugzilla->user->is_silent_user;
+
+  Bugzilla->dbh->do('UPDATE bugs SET delta_ts = ?'
+    . ($major ? ', major_change_ts = ?' : '') . ' WHERE bug_id = ?',
+    undef, $major ? ($timestamp, $timestamp, $bug_id) : ($timestamp, $bug_id));
+
   Bugzilla::Hook::process('bug_end_of_update_delta_ts',
-    {bug_id => $bug_id, timestamp => $timestamp});
+    {bug_id => $bug_id, timestamp => $timestamp, major => $major});
 }
 
 # This is the correct way to delete bugs from the DB.
@@ -2664,7 +2678,7 @@ sub fields {
     # Standard Fields
     # Keep this ordering in sync with bugzilla.dtd.
     qw(bug_id alias filed_via creation_ts short_desc delta_ts
-      reporter_accessible cclist_accessible
+      major_change_ts reporter_accessible cclist_accessible
       classification_id classification
       product component version rep_platform op_sys
       bug_type bug_status resolution dup_id see_also
@@ -4027,6 +4041,12 @@ sub has_keyword {
   my ($self, $keyword) = @_;
   $keyword = lc($keyword);
   return any { lc($_->name) eq $keyword } @{$self->keyword_objects};
+}
+
+sub major_change_ts {
+  my $self = shift;
+  # Fall back to `delta_ts` if `major_change_ts` is NULL
+  return $self->{major_change_ts} || $self->{delta_ts};
 }
 
 sub comments {

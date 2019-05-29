@@ -452,8 +452,7 @@ sub translate_value {
 
   my $field_obj = $self->bug_fields->{$field};
   if (
-       $field eq 'creation_ts'
-    or $field eq 'delta_ts'
+       $field =~ /_ts$/
     or (
       $field_obj
       and

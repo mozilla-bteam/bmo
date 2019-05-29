@@ -50,7 +50,7 @@ sub DATE_FIELDS {
     comments => ['new_since'],
     create   => [],
     history  => ['new_since'],
-    search   => ['last_change_time', 'creation_time'],
+    search   => ['last_change_time', 'major_change_time', 'creation_time'],
     update   => []
   };
 
@@ -601,6 +601,12 @@ sub search {
   # Do special search types for certain fields.
   if (my $change_when = delete $match_params->{'delta_ts'}) {
     $match_params->{"f${last_field_id}"} = 'delta_ts';
+    $match_params->{"o${last_field_id}"} = 'greaterthaneq';
+    $match_params->{"v${last_field_id}"} = $change_when;
+    $last_field_id++;
+  }
+  if (my $change_when = delete $match_params->{'major_change_ts'}) {
+    $match_params->{"f${last_field_id}"} = 'major_change_ts';
     $match_params->{"o${last_field_id}"} = 'greaterthaneq';
     $match_params->{"v${last_field_id}"} = $change_when;
     $last_field_id++;
@@ -1562,6 +1568,7 @@ sub _bug_to_hash {
   }
   if (filter_wants $params, 'last_change_time') {
     $item{'last_change_time'} = $self->type('dateTime', $bug->delta_ts);
+    $item{'major_change_time'} = $self->type('dateTime', $bug->major_change_ts);
   }
   if (filter_wants $params, 'product') {
     $item{product} = $self->type('string', $bug->product);
@@ -2973,7 +2980,12 @@ C<array> of C<string>s. Each keyword that is on this bug.
 
 =item C<last_change_time>
 
-C<dateTime> When the bug was last changed.
+C<dateTime> When the bug was last updated.
+
+=item C<major_change_time>
+
+C<dateTime> When the bug was last updated, excluding minor, bulk and automated
+changes.
 
 =item C<op_sys>
 
@@ -3238,9 +3250,9 @@ and all custom fields.
 in Bugzilla B<4.4>.
 
 =item The C<attachments>, C<comment_count>, C<comments>, C<counts>,
-C<description>, C<duplicates>, C<filed_via>, C<history>, C<regressed_by>,
-C<regressions>, C<triage_owner> and C<type> fields were added in Bugzilla
-B<6.0>.
+C<description>, C<duplicates>, C<filed_via>, C<history>, C<major_change_time>,
+C<regressed_by>, C<regressions>, C<triage_owner> and C<type> fields were added
+in Bugzilla B<6.0>.
 
 =back
 
@@ -3528,8 +3540,13 @@ C<int> The numeric id of the bug.
 
 =item C<last_change_time>
 
-C<dateTime> Searches for bugs that were modified at this time or later.
+C<dateTime> Searches for bugs that were last updated at this time or later.
 May not be an array.
+
+=item C<major_change_time>
+
+C<dateTime> Searches for bugs that were last updated at this time or later,
+excluding minor, bulk and automated changes. May not be an array.
 
 =item C<limit>
 

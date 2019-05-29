@@ -139,7 +139,7 @@
       [% val = val.email FILTER email %]
     [% ELSIF field == 'cc' %]
         [% val = val FILTER email %]
-    [% ELSIF field == 'creation_ts' OR field == 'delta_ts' %]
+    [% ELSIF field.match('_ts$') %]
       [% val = val FILTER time("%Y-%m-%d %T %z") %]
     [% ELSIF field == "see_also" %]
       [% val = val.name %]

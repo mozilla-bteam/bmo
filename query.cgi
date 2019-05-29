@@ -196,10 +196,9 @@ my $uneditable_fields_re = join('|', qw(
   attachments\.submitter
   bug_id
   commenter
-  creation_ts
-  delta_ts
   lastdiffed
   reporter
+  \w+_ts
 ));
 
 push @chfields, "[Bug creation]";

@@ -143,9 +143,9 @@ sub remove_from_db {
     my $timestamp = $dbh->selectrow_array('SELECT NOW()');
 
     $dbh->do(
-      'UPDATE bugs SET target_milestone = ?, delta_ts = ?
+      'UPDATE bugs SET target_milestone = ?, delta_ts = ?, major_change_ts = ?
                    WHERE ' . $dbh->sql_in('bug_id', $bug_ids), undef,
-      ($self->product->default_milestone, $timestamp)
+      ($self->product->default_milestone, $timestamp, $timestamp)
     );
 
     require Bugzilla::Bug;

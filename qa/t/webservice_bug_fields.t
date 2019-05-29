@@ -14,7 +14,7 @@ use List::Util qw(first);
 use QA::Util;
 
 my ($config, @clients) = get_rpc_clients();
-plan tests => ($config->{test_extensions} ? 1416 : 1398);
+plan tests => ($config->{test_extensions} ? 1434 : 1416);
 
 use constant INVALID_FIELD_NAME => 'invalid_field';
 use constant INVALID_FIELD_ID   => -1;
@@ -53,6 +53,7 @@ sub GLOBAL_GENERAL_FIELDS {
     keywords
     longdesc
     longdescs.isprivate
+    major_change_ts
     owner_idle_time
     product
     qa_contact

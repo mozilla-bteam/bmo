@@ -805,6 +805,10 @@ sub update_table_definitions {
   # Bug 1576667 - dkl@mozilla.com
   _populate_api_keys_creation_ts();
 
+  $dbh->bz_add_column('bugs', 'major_change_ts', {TYPE => 'DATETIME'});
+  $dbh->bz_add_index('bugs', 'bugs_major_change_ts_idx',
+    ['major_change_ts']);
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################

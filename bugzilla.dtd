@@ -5,8 +5,8 @@
           maintainer CDATA #REQUIRED
           exporter CDATA #IMPLIED
 >
-<!ELEMENT bug (bug_id, (alias?, filed_via, creation_ts, short_desc, delta_ts, reporter_accessible,
-    cclist_accessible, classification_id, classification, product, component,
+<!ELEMENT bug (bug_id, (alias?, filed_via, creation_ts, short_desc, delta_ts, major_change_ts,
+    reporter_accessible, cclist_accessible, classification_id, classification, product, component,
     version, rep_platform, op_sys, bug_status, resolution?, dup_id?, duplicates*, see_also*,
     bug_file_loc?, status_whiteboard?, keywords*, bug_type, priority, bug_severity,
     target_milestone?, dependson*, blocked*, regressed_by*, regresses*, everconfirmed,
@@ -34,6 +34,7 @@
           name CDATA #REQUIRED
 >
 <!ELEMENT delta_ts (#PCDATA)>
+<!ELEMENT major_change_ts (#PCDATA)>
 <!ELEMENT component (#PCDATA)>
 <!ELEMENT reporter (#PCDATA)>
 <!ATTLIST reporter

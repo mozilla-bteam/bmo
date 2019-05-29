@@ -284,6 +284,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
     _non_changed  => \&_long_desc_nonchanged,
   },
   'longdescs.isprivate' => MULTI_SELECT_OVERRIDE,
+  major_change_ts => {_default => \&_major_change_ts,},
   owner_idle_time       => {
     greaterthan   => \&_owner_idle_time_greater_less,
     greaterthaneq => \&_owner_idle_time_greater_less,
@@ -370,6 +371,7 @@ sub SPECIAL_PARSING {
     creation_ts => \&_datetime_translate,
     deadline    => \&_date_translate,
     delta_ts    => \&_datetime_translate,
+    major_change_ts => \&_datetime_translate,
 
     # last_visit field that accept both a 1d, 1w, 1m, 1y format and the
     # %last_changed% pronoun.
@@ -622,6 +624,7 @@ sub COLUMNS {
     'regresses.count'    => 'COUNT(DISTINCT map_regresses_count.regresses)',
     'dupe_count'         => 'COUNT(DISTINCT map_dupe_count.dupe)',
 
+    major_change_ts     => 'COALESCE(bugs.major_change_ts, bugs.delta_ts)',
     last_visit_ts       => 'bug_user_last_visit.last_visit_ts',
     bug_interest_ts     => 'bug_interest.modification_time',
     assignee_last_login => 'assignee.last_seen_date',
@@ -2920,6 +2923,12 @@ sub _percentage_complete {
   # We need actual_time in _select_columns, otherwise we can't use
   # it in the expression for searching percentage_complete.
   $self->_add_extra_column('actual_time');
+}
+
+sub _major_change_ts {
+  my ($self, $args) = @_;
+  # Fall back to `delta_ts` if `major_change_ts` is NULL
+  $args->{full_field} = 'COALESCE(bugs.major_change_ts, bugs.delta_ts)';
 }
 
 sub _last_visit_ts {

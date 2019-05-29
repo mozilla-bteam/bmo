@@ -435,6 +435,12 @@ use constant DEFAULT_FIELDS => (
     type    => FIELD_TYPE_DATETIME,
     buglist => 1,
   },
+  {
+    name    => 'major_change_ts',
+    desc    => 'Last Major Update',
+    type    => FIELD_TYPE_DATETIME,
+    buglist => 1,
+  },
   {name => 'longdesc',            desc => 'Comment'},
   {
     name       => 'longdescs.isprivate',
