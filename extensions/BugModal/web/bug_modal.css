@@ -358,6 +358,11 @@ input[type="number"] {
   color: var(--secondary-label-color);
 }
 
+#cc-latch,
+#cc-summary {
+  cursor: default;
+}
+
 #cc-list {
   overflow-y: auto;
   clear: both;
