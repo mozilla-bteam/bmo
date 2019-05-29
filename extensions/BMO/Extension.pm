@@ -2962,8 +2962,7 @@ sub app_startup {
   $r->any( '/:REWRITE_dev_engagement_event' =>
     [ REWRITE_dev_engagement_event => qr{form[\.:]dev[\.\-:]engagement[\.\-\:]event} ]
     => sub { my $c = shift; $c->redirect_to('https://mzl.la/devevents'); });
-  $r->any( '/:REWRITE_ipc' =>
-    [ REWRITE_dev_engagement_event => qr{form[\.:](?:ipc|IPC)} ]
+  $r->any( '/:REWRITE_ipc' => [ REWRITE_ipc => qr{form[\.:](?:ipc|IPC)} ]
     => sub { my $c = shift; $c->redirect_to('https://mzl.la/snippet-submit-form'); });
 }
 
