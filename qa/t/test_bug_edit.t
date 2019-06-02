@@ -296,7 +296,6 @@ logout($sel);
 log_in($sel, $config, 'admin');
 open_advanced_search_page($sel);
 screenshot_page($sel, '/app/artifacts/line259.png');
-$sel->remove_all_selections_ok("classification");
 $sel->remove_all_selections_ok("product");
 $sel->select_ok("product", "label=TestProduct");
 $sel->remove_all_selections_ok("bug_status");
