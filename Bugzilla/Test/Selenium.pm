@@ -409,6 +409,12 @@ sub is_editable_ok {
   ok($self->is_editable($locator), "Is editable: $locator");
 }
 
+# Here we simply load the attachment text into the textarea of
+# attachment page for Bugzilla or the enter bug page. We do this
+# currently since Firefox is actually running in the Selenium
+# container and not the same host as the test scripts. Therefore
+# specifying the path the attachment file using the Browse button
+# will not work as the file is not in the same container as Firefox.
 sub attach_file {
   my ($self, $locator, $filename) = @_;
   my $path = Mojo::File->new($filename);
