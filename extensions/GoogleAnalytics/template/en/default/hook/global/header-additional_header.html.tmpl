@@ -10,6 +10,15 @@
 [% RETURN IF !Bugzilla.params.google_analytics_tracking_id || Bugzilla.cgi.http('dnt') == '1' ||
     (bug.defined && bug.groups_in.size) %]
 
-<meta name="google-analytics" content="[% Bugzilla.params.google_analytics_tracking_id FILTER html %]">
+<meta name="google-analytics" content="[% Bugzilla.params.google_analytics_tracking_id FILTER html %]" data-location="
+  [%~ urlbase FILTER html %][% template.name.replace('\.html\.tmpl$', '') FILTER html ~%]
+  " data-title="
+  [%~ IF template.name == 'pages/user_activity.html.tmpl' ~%]
+    User Activity Report
+  [%~ ELSIF template.name == 'pages/user_profile.html.tmpl' ~%]
+    User Profile
+  [%~ ELSE ~%]
+    [% title FILTER html | collapse %]
+  [%~ END ~%]">
 <script async src="https://www.google-analytics.com/analytics
   [%~ "_debug" IF Bugzilla.params.google_analytics_debug ~%].js"></script>

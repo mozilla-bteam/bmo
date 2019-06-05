@@ -14,20 +14,14 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  const url = new URL(document.location);
-  const params = url.searchParams;
-
-  // Sanitize params
-  params.delete('list_id');
-  params.delete('t');
-  params.delete('token');
-
   // Activate Google Analytics
   window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
   ga('create', $meta.content, 'auto');
   ga('set', 'anonymizeIp', true);
-  ga('set', 'location', url);
   ga('set', 'transport', 'beacon');
+  // Record a crafted location (template name) and title instead of actual URL
+  ga('set', 'location', $meta.dataset.location);
+  ga('set', 'title', $meta.dataset.title);
   // Custom Dimension: logged in (true) or out (false)
   ga('set', 'dimension1', !!BUGZILLA.user.login);
   // Track page view
