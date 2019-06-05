@@ -283,6 +283,7 @@ use constant ABSTRACT_SCHEMA => {
       remaining_time      => {TYPE => 'decimal(7,2)', NOTNULL => 1, DEFAULT => '0'},
       deadline            => {TYPE => 'DATETIME'},
       alias               => {TYPE => 'varchar(40)'},
+      major_change_ts     => {TYPE => 'DATETIME'},
     ],
     INDEXES => [
       bugs_alias_idx            => {FIELDS => ['alias'], TYPE => 'UNIQUE'},
@@ -301,6 +302,7 @@ use constant ABSTRACT_SCHEMA => {
       bugs_resolution_idx       => ['resolution'],
       bugs_target_milestone_idx => ['target_milestone'],
       bugs_qa_contact_idx       => ['qa_contact'],
+      bugs_major_change_ts_idx  => ['major_change_ts'],
     ],
   },
 
