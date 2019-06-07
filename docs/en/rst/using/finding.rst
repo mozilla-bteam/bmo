@@ -255,8 +255,9 @@ Edit Search:
     to the query you just made so you get more accurate results.
 
 Remember Search As:
-    You can give a search a name and remember it; a link will appear
-    in your page footer giving you quick access to run it again later.
+    You can give a search a name and remember it; the name will appear
+    as an auto-completion in the search field in the header of Bugzilla 
+    pages giving you quick access to run it again later.
 
 Individual Bug Lists
 ====================
