@@ -25,6 +25,14 @@ Bugzilla.CustomSearch = class CustomSearch {
     // Decode and store required data
     Object.entries(this.$container.dataset).forEach(([key, value]) => this.data[key] = JSON.parse(value));
 
+    // Sort the fields by label instead of name
+    {
+      const { lang } = document.documentElement;
+      const options = { sensitivity: 'base' };
+
+      this.data.fields.sort((a, b) => a.label.localeCompare(b.label, lang, options));
+    }
+
     this.restore();
 
     this.$container.addEventListener('change', () => this.save_state());
