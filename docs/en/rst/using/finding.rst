@@ -221,7 +221,7 @@ A value of `1d` means 24 hours in the future from the time of the search.
 
 A value of `-1d` means 24 hours in the past from the time of the search.
 
-These relative values can be use when the :guilabel:`Custom Search` operator is one of:
+These relative values can be used when the :guilabel:`Custom Search` operator is one of:
 
 * :guilabel:`is less than`
 * :guilabel:`is less than or equal to`
