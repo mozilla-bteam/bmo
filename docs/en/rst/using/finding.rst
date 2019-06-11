@@ -202,7 +202,7 @@ So if you are looking for bugs reported by any user being in the
 
     reporter   equals   "%group.editbugs%"
 
-.. _relative_dates:
+.. _relative-dates:
 
 Searching on Relative Dates
 ---------------------------
