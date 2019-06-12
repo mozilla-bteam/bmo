@@ -597,7 +597,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.cf_fx_iteration
           field_type = bug_fields.cf_fx_iteration.type
-          hide_on_view = bug.cf_iteration == ""
+          hide_on_view = bug.cf_fx_iteration == "---"
       %]
     [% END %]
 
