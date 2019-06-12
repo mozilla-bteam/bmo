@@ -142,9 +142,110 @@
   <input type="hidden" name="format" value="modal">
   <input type="hidden" name="editing" id="editing" value="">
   <input type="hidden" name="token" value="[% issue_hash_token([bug.id, bug.delta_ts]) FILTER html %]">
-
-  [% PROCESS bug_modal/navigate.html.tmpl %]
 [% END %]
+
+<div role="toolbar" id="page-toolbar">
+  [% IF user.id %]
+    [% PROCESS bug_modal/navigate.html.tmpl %]
+  [% END %]
+  <div role="group" class="buttons">
+    <button type="button" id="copy-summary" class="secondary"
+      title="Copy [% terms.bug %] number and summary to your clipboard">Copy Summary</button>
+    <div id="clip-container" style="display:none"><input type="text" id="clip"></div>
+    [% IF user.id %]
+      <button type="button" class="secondary" id="cc-btn" data-is-cced="[% is_cced ? 1 : 0 %]">
+        [%~ is_cced ? "Stop Following" : "Follow" ~%]
+      </button>
+    [% END %]
+    <div class="dropdown">
+      <button type="button" id="action-menu-btn" aria-haspopup="true" aria-label="View"
+        aria-expanded="false" aria-controls="action-menu" class="dropdown-button secondary">View &#9662;</button>
+      <ul class="dropdown-content left" id="action-menu" role="menu" style="display:none;">
+        [% IF user.id %]
+        <li role="presentation">
+          <a id="action-enable-perm-edit" role="menuitemcheckbox" tabindex="-1">Always Enable Edit Mode</a>
+        </li>
+        <li role="separator"></li>
+        [% END %]
+        <li role="presentation">
+          <a id="action-reset" role="menuitem" tabindex="-1">Reset Sections</a>
+        </li>
+        <li role="presentation">
+          <a id="action-expand-all" role="menuitem" tabindex="-1">Expand All Sections</a>
+        </li>
+        <li role="presentation">
+          <a id="action-collapse-all" role="menuitem" tabindex="-1">Collapse All Sections</a>
+        </li>
+        <li role="separator"></li>
+        <li role="presentation">
+          <a id="action-history" role="menuitem" tabindex="-1">History</a>
+        </li>
+        <li role="separator"></li>
+        <li role="presentation">
+          <a href="[% basepath FILTER none %]rest/bug/[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">JSON</a>
+        </li>
+        <li role="presentation">
+          <a href="[% basepath FILTER none %]show_bug.cgi?ctype=xml&amp;id=[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">XML</a>
+        </li>
+      </ul>
+    </div>
+    [% IF user.id %]
+      <div class="dropdown">
+        <button type="button" id="new-bug-btn" aria-haspopup="true" aria-label="New/Clone [% terms.Bug %]"
+          aria-expanded="false" aria-controls="new-bug-menu" class="dropdown-button secondary">New/Clone &#9662;</button>
+        <ul class="dropdown-content left" id="new-bug-menu" role="menu" style="display:none;">
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi" role="menuitem" tabindex="-1" target="_blank">
+              Create a new [% terms.bug %]</a>
+          </li>
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% bug.product FILTER uri %]"
+              role="menuitem" tabindex="-1" target="_blank">&#8230; in this product</a>
+          </li>
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
+              role="menuitem" tabindex="-1" target="_blank">&#8230; in this component</a>
+          </li>
+          <li role="separator"></li>
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;blocked=[% bug.id FILTER uri %]
+                    [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
+              role="menuitem" tabindex="-1" target="_blank">&#8230; that blocks this [% terms.bug %]</a>
+          </li>
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;dependson=[% bug.id FILTER uri %]
+                    [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
+              role="menuitem" tabindex="-1" target="_blank">&#8230; that depends on this [% terms.bug %]</a>
+          </li>
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;regressed_by=[% bug.id FILTER uri %]
+                    [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
+              role="menuitem" tabindex="-1" target="_blank">&#8230; that is regressed by this [% terms.bug %]</a>
+          </li>
+          <li role="separator"></li>
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]
+                    [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
+              role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone of this [% terms.bug %]</a>
+          </li>
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]"
+              role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone, in a different product</a>
+          </li>
+        </ul>
+      </div>
+      <button type="button" id="cancel-btn" class="secondary" aria-label="Cancel Editing" style="display:none">Cancel</button>
+      <button type="button" id="mode-btn" class="primary">
+        <span id="mode-btn-readonly" title="Enable editing fields for [% terms.bug %] metadata">Edit [% terms.Bug %]</span>
+        <span id="mode-btn-loading">
+          <img id="edit-throbber" src="[% basepath FILTER none %]extensions/BugModal/web/throbber.gif" width="16" height="11">
+          Fetching
+        </span>
+      </button>
+      <button type="submit" id="commit-btn" class="save-btn primary" style="display:none">Save Changes</button>
+    [% END %]
+  </div>
+</div>
 
 [%# === header === %]
 
@@ -157,23 +258,33 @@
     title = ""
 %]
   <div id="summary-container">
-    [%# bug id, alias, and summary %]
+    [%# status summary %]
     [% WRAPPER bug_modal/field.html.tmpl
         container = 1
+        name = "status_summary"
         no_label = 1
-        view_only = 1
     %]
-      <div id="field-value-bug_id">
+      <span class="bug-status-label text" data-status="[% bug.isopened ? 'open' : 'closed' %]">
+        [%~ bug.isopened ? 'Open' : 'Closed' ~%]
+      </span>
+      <span id="field-value-bug_id">
         <a href="[% basepath _ "show_bug.cgi?id=" _ bug.id FILTER html %]">
           [%~ terms.Bug _ " " _ bug.id FILTER none ~%]
         </a>
         [% IF bug.alias %]
-          <span class="edit-hide">
-            ([% bug.alias FILTER html %])
-          </span>
+          <span class="edit-hide">([% bug.alias FILTER html %])</span>
         [% END %]
-      </div>
+      </span>
+      <span class="edit-hide">
+        <span class="bug-time-label">Opened [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.creation_ts %]</span>
+        [% IF !bug.isopened %]
+          <span class="bug-time-label">Closed [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.cf_last_resolved %]</span>
+        [% ELSIF bug.creation_ts != bug.delta_ts %]
+          <span class="bug-time-label">Updated [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.delta_ts %]</span>
+        [% END %]
+      </span>
     [% END %]
+
     [% WRAPPER bug_modal/field.html.tmpl
         container = 1
         no_label = 1
@@ -190,134 +301,6 @@
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#short_desc"
         required = 1
     %]
-
-    [%# status summary %]
-    [% WRAPPER bug_modal/field.html.tmpl
-        name = "status_summary"
-        no_label = 1
-        hide_on_edit = 1
-    %]
-      <span class="bug-status-label text" data-status="[% bug.isopened ? 'open' : 'closed' %]">
-        [%~ bug.isopened ? 'Open' : 'Closed' ~%]
-      </span>
-      <span class="bug-time-label">Opened [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.creation_ts %]</span>
-      [% IF !bug.isopened %]
-        <span class="bug-time-label">Closed [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.cf_last_resolved %]</span>
-      [% ELSIF bug.creation_ts != bug.delta_ts %]
-        <span class="bug-time-label">Updated [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.delta_ts %]</span>
-      [% END %]
-    [% END %]
-  </div>
-
-  [%# buttons %]
-
-  <div id="mode-container">
-    <div class="button-row">
-      [% IF user.id %]
-        <button type="button" class="secondary" id="cc-btn" data-is-cced="[% is_cced ? 1 : 0 %]">
-          [%~ is_cced ? "Stop Following" : "Follow" ~%]
-        </button>
-        <button type="button" id="cancel-btn" class="secondary" style="display:none" aria-label="Cancel Editing">Cancel</button>
-        <button type="button" id="mode-btn" class="primary">
-          <span id="mode-btn-readonly" title="Enable editing fields for [% terms.bug %] metadata">Edit [% terms.Bug %]</span>
-          <span id="mode-btn-loading">
-            <img id="edit-throbber" src="[% basepath FILTER none %]extensions/BugModal/web/throbber.gif" width="16" height="11">
-            Fetching
-          </span>
-        </button>
-        <button type="submit" id="commit-btn" class="save-btn primary" style="display:none">Save Changes</button>
-      [% END %]
-    </div>
-    <div class="button-row">
-      <div class="dropdown">
-        <button type="button" id="format-btn" aria-haspopup="true" aria-label="Format [% terms.Bug %] Menu"
-          aria-expanded="false" aria-controls="format-menu" class="dropdown-button secondary">Copy/Format &#9662;</button>
-        <ul class="dropdown-content left" id="format-menu" role="menu" style="display:none;">
-          <li role="presentation">
-            <a id="copy-summary" role="menuitem" tabindex="-1">Copy Summary</a>
-            <div id="clip-container" style="display:none"><input type="text" id="clip"></div>
-          </li>
-          <li role="separator"></li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]rest/bug/[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">JSON</a>
-          </li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]show_bug.cgi?ctype=xml&amp;id=[% bug.id FILTER uri %]" role="menuitem" tabindex="-1">XML</a>
-          </li>
-        </ul>
-      </div>
-      [% IF user.id %]
-        <div class="dropdown">
-          <button type="button" id="new-bug-btn" aria-haspopup="true" aria-label="New/Clone [% terms.Bug %] Menu"
-            aria-expanded="false" aria-controls="new-bug-menu" class="dropdown-button secondary">New/Clone &#9662;</button>
-          <ul class="dropdown-content left" id="new-bug-menu" role="menu" style="display:none;">
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi" role="menuitem" tabindex="-1" target="_blank">
-                Create a new [% terms.bug %]</a>
-            </li>
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% bug.product FILTER uri %]"
-                role="menuitem" tabindex="-1" target="_blank">&#8230; in this product</a>
-            </li>
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
-                role="menuitem" tabindex="-1" target="_blank">&#8230; in this component</a>
-            </li>
-            <li role="separator"></li>
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;blocked=[% bug.id FILTER uri %]
-                      [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
-                role="menuitem" tabindex="-1" target="_blank">&#8230; that blocks this [% terms.bug %]</a>
-            </li>
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;dependson=[% bug.id FILTER uri %]
-                      [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
-                role="menuitem" tabindex="-1" target="_blank">&#8230; that depends on this [% terms.bug %]</a>
-            </li>
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;regressed_by=[% bug.id FILTER uri %]
-                      [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
-                role="menuitem" tabindex="-1" target="_blank">&#8230; that is regressed by this [% terms.bug %]</a>
-            </li>
-            <li role="separator"></li>
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]
-                      [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
-                role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone of this [% terms.bug %]</a>
-            </li>
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]"
-                role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone, in a different product</a>
-            </li>
-          </ul>
-        </div>
-      [% END %]
-      <div class="dropdown">
-        <button type="button" id="action-menu-btn" aria-haspopup="true" aria-label="Actions"
-          aria-expanded="false" aria-controls="action-menu" class="dropdown-button secondary">&#9662;</button>
-        <ul class="dropdown-content left" id="action-menu" role="menu" style="display:none;">
-          [% IF user.id %]
-          <li role="presentation">
-            <a id="action-enable-perm-edit" role="menuitemcheckbox" tabindex="-1">Always Enable Edit Mode</a>
-          </li>
-          <li role="separator"></li>
-          [% END %]
-          <li role="presentation">
-            <a id="action-reset" role="menuitem" tabindex="-1">Reset Sections</a>
-          </li>
-          <li role="presentation">
-            <a id="action-expand-all" role="menuitem" tabindex="-1">Expand All Sections</a>
-          </li>
-          <li role="presentation">
-            <a id="action-collapse-all" role="menuitem" tabindex="-1">Collapse All Sections</a>
-          </li>
-          <li role="separator"></li>
-          <li role="presentation">
-            <a id="action-history" role="menuitem" tabindex="-1">History</a>
-          </li>
-        </ul>
-      </div>
-    </div>
   </div>
 [% END %]
 

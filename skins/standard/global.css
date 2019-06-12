@@ -1414,6 +1414,21 @@ input[type="radio"]:checked {
 }
 
 /**
+ * Page toolbar
+ */
+
+#page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--secondary-label-color);
+}
+
+#page-toolbar .buttons {
+  flex: none;
+}
+
+/**
  * Link lists
  */
 
@@ -2021,7 +2036,7 @@ table.tabs .clickable_area {
 .dropdown-content li > div {
   display: block;
   box-sizing: border-box;
-  padding: 4px 8px 4px 24px;
+  padding: 4px 24px;
   width: 100%;
   color: inherit;
   background: none transparent;

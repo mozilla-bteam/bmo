@@ -151,6 +151,7 @@ a.activity-ref {
 
 .module .field {
   display: table;
+  box-sizing: border-box;
   margin: 4px 0;
   width: 100%;
   vertical-align: top;
@@ -178,6 +179,7 @@ a.activity-ref {
 }
 
 .module .indent {
+  padding-right: 10px;
   padding-left: 10px;
 }
 
@@ -241,11 +243,12 @@ input[type="number"] {
  */
 
 #field-value-bug_id {
+  margin-left: 8px;
   font-size: var(--font-size-large);
 }
 
 #field-value-bug_id a {
-  color: inherit;
+  color: var(--primary-label-color);
 }
 
 #field-value-short_desc {
@@ -254,7 +257,8 @@ input[type="number"] {
 }
 
 #field-status_summary {
-  padding-top: 8px;
+  padding-top: 4px;
+  padding-bottom: 8px;
   color: var(--secondary-label-color);
 }
 
@@ -276,6 +280,10 @@ input[type="number"] {
 #field-status_summary .bug-time-label {
   margin-left: 8px;
   color: var(--secondary-label-color);
+}
+
+#field-status_summary .bug-time-label span {
+  text-transform: lowercase;
 }
 
 #field-importance .name {
@@ -1073,7 +1081,7 @@ h3.change-name a {
  */
 
 #main-inner {
-  margin: 15px auto;
+  margin: 8px auto;
   max-width: 1024px;
   min-width: 800px;
 }
@@ -1249,9 +1257,8 @@ a.lightbox-icon.markdown {
  */
 
 #search-nav {
-  padding: 4px 8px;
-  color: var(--secondary-label-color);
-  background: var(--primary-region-header-background-color);
+  flex: auto;
+  margin: 4px;
 }
 
 #search-nav-label {
@@ -1261,10 +1268,6 @@ a.lightbox-icon.markdown {
 .search-nav-link,
 .search-nav-disabled {
   margin-left: 4px;
-}
-
-#search-nav-reget {
-  margin-left: 8px;
 }
 
 .search-nav-disabled {
