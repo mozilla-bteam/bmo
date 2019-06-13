@@ -3,8 +3,8 @@
 
 [% SWITCH block_type %]
   [% CASE 'internal' %]
-  [% title = "Too Many Requests" %]
-  [% user_message = BLOCK %]
+    [% title = "Too Many Requests" %]
+    [% user_message = BLOCK %]
     <p>
       We’re sorry, but you have sent too many requests to us recently.
       You will be unblocked in [% block_timeout / 60 FILTER none %] minutes.
