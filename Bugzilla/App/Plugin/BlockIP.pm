@@ -19,6 +19,7 @@ declare ResponseType, as Dict [
   reviewed    => JSONBool,
   lastupdated => Str,
   decayafter  => Optional[Str],
+  slurpy Any,
 ];
 
 use constant BLOCK_TIMEOUT => 60 * 60;
