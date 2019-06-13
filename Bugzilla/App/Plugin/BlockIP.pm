@@ -12,15 +12,16 @@ use Type::Library -base, -declare => qw( ResponseType);
 use Type::Utils -all;
 use Types::Standard -all;
 
-declare ResponseType, as Dict [
+declare ResponseType,
+  as Dict [
   object      => Str,
   type        => Str,
   reputation  => Int,
   reviewed    => JSONBool,
   lastupdated => Str,
-  decayafter  => Optional[Str],
+  decayafter  => Optional [Str],
   slurpy Any,
-];
+  ];
 
 use constant BLOCK_TIMEOUT => 60 * 60;
 
@@ -34,7 +35,7 @@ sub register {
   $app->hook(before_routes => \&_before_routes);
   $app->helper(block_ip   => \&_block_ip);
   $app->helper(unblock_ip => \&_unblock_ip);
-  $app->helper(check_ip => \&_check_ip);
+  $app->helper(check_ip   => \&_check_ip);
 
   $app->hook(
     before_server_start => sub {
@@ -42,8 +43,7 @@ sub register {
       $template->process('global/ip-blocked.html.tmpl',
         {block_timeout => BLOCK_TIMEOUT, block_type => 'internal'},
         \$BLOCKED_INTERNAL_HTML);
-      $template->process('global/ip-blocked.html.tmpl',
-        {block_type => 'external'},
+      $template->process('global/ip-blocked.html.tmpl', {block_type => 'external'},
         \$BLOCKED_EXTERNAL_HTML);
       undef $template;
       utf8::encode($BLOCKED_INTERNAL_HTML);
@@ -90,8 +90,8 @@ sub _check_ip {
       return '';
     }
 
-    my $tx     = $c->ua->get($url => {Authorization => "APIKey $iprepd_key"});
-    my $code   = $tx->result->code;
+    my $tx   = $c->ua->get($url => {Authorization => "APIKey $iprepd_key"});
+    my $code = $tx->result->code;
     if ($code == 200) {
       my $response = $tx->result->json;
       my $error    = ResponseType->validate($response);
