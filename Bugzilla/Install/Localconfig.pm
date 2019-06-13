@@ -80,6 +80,8 @@ use constant LOCALCONFIG_VARS => (
     # is larger than anybody would ever be able to brute-force.
     default => sub { generate_random_password(64) },
   },
+  {name => 'iprepd_url', default => '',},
+  {name => 'iprepd_key', default => '',},
   {name => 'jwt_secret', default => sub { generate_random_password(64) },},
   {
     name    => 'param_override',

@@ -1,15 +1,31 @@
 [% PROCESS global/variables.none.tmpl %]
 
-[% title = "Too Many Requests" %]
+
+[% SWITCH block_type %]
+  [% CASE 'internal' %]
+  [% title = "Too Many Requests" %]
+  [% user_message = BLOCK %]
+    <p>
+      We’re sorry, but you have sent too many requests to us recently.
+      You will be unblocked in [% block_timeout / 60 FILTER none %] minutes.
+    </p>
+  [% END %]
+
+  [% CASE 'external' %]
+    [% title = "Forbidden" %]
+    [% user_message = BLOCK %]
+      <p>
+        We’re sorry, but we have blocked access to [% terms.Bugzilla %] from this location.
+        Please email [% Param('iprepd_email') FILTER html %] to regain access.
+      </p>
+    [% END %]
+[% END %]
 
 [% PROCESS global/header.html.tmpl
            robots = 'noindex' %]
 
 <h1>[% title FILTER html %]</h1>
 
-<p>
-    We’re sorry, but you have sent too many requests to us recently.
-    You will be unblocked in [% block_timeout / 60 FILTER none %] minutes.
-</p>
+[% user_message FILTER none %]
 
 [% PROCESS global/footer.html.tmpl %]

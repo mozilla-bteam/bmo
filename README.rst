@@ -363,6 +363,12 @@ BMO_inbound_proxies
   This can be '*' if only the load balancer can connect to this container.
   Setting this to '*' means that BMO will trust the X-Forwarded-For header.
 
+BMO_iprepd_url
+  This is the url to iprepd, probably something like https://iprepd.prod.mozaws.net/
+
+BMO_iprepd_key
+  This is an API key to iprepd.
+
 BMO_memcached_namespace
   The global namespace for the memcached servers.
 

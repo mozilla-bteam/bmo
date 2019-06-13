@@ -189,6 +189,8 @@ This is a list of IP addresses that we expect proxies to come from.
 This can be '*' if only the load balancer can connect.
 Setting this to '*' means that we can trust the X-Forwarded-For header.
 END
+  localconfig_iprepd_url => 'This is the url to iprepd, probably something like https://iprepd.prod.mozaws.net/',
+  localconfig_iprepd_key => 'This is an API key to iprepd.',
   localconfig_index_html => <<'END',
 Most web servers will allow you to use index.cgi as a directory
 index, and many come preconfigured that way, but if yours doesn't

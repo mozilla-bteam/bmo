@@ -55,6 +55,12 @@ over 60 seconds. Valid keys are <code>get_b[%''%]ug</code> which covers JSONRPC,
 
   rate_limit_rules => rate_limit_rules_desc
 
+  iprepd_active => "Allow $terms.Bugzilla to query iprepd and block requests with low reputation"
+
+  iprepd_email => "Email address that will be a point of contact for blocked people"
+
+  iprepd_min_reputation => "The minimum level of reputation allowed."
+
   log_user_requests => "This option controls logging of authenticated requests in the user_request_log table"}
 
 %]
