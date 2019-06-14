@@ -1,5 +1,9 @@
 #!/usr/bin/env perl
+use strict;
+use warnings;
+
 BEGIN { $ENV{MOJO_LISTEN} = 'http://*:8025' }
+
 use Mojolicious::Lite;
 use Mojo::JSON qw(true false);
 
