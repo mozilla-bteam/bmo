@@ -1394,7 +1394,7 @@ $(function() {
       const text = event.clipboardData.getData('text');
       const lines = text.split(/(?:\r\n|\r|\n)/).length;
 
-      if (lines < 20) {
+      if (lines < 50) {
         return;
       }
 
