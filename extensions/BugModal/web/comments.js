@@ -314,7 +314,7 @@ $(function() {
         $.each(tags, function() {
             var span = $('<span/>').addClass('comment-tag').text(this);
             if (BUGZILLA.user.can_tag) {
-                span.prepend($('<a role="button" aria-label="Delete">x</a>').click(deleteTag));
+                span.prepend($('<a role="button" aria-label="Remove">x</a>').click(deleteTag));
             }
             root.append(span);
         });
