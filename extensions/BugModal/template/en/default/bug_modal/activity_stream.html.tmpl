@@ -174,7 +174,7 @@
         <td colspan="2" class="comment-tags">
           [% FOREACH tag IN comment.tags ~%]
             <span class="comment-tag">
-              [%~ '<a aria-label="Delete">x</a>' IF user.can_tag_comments %][% tag FILTER html ~%]
+              [%~ '<a role="button" aria-label="Delete">x</a>' IF user.can_tag_comments %][% tag FILTER html ~%]
             </span>
           [%~ END %]
         </td>
