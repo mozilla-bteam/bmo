@@ -63,13 +63,6 @@ sub install_update_db {
   # because existing admin-edited revisions may contain sensitive info
   $dbh->bz_add_column('longdescs_activity', 'is_hidden',
     {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 1});
-
-  unless (Bugzilla::Field->new({name => 'comment_revision'})) {
-    Bugzilla::Field->create({
-      name        => 'comment_revision',
-      description => 'Comment Revision',
-    });
-  }
 }
 
 ####################
