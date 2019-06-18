@@ -90,6 +90,10 @@ sub _check_ip {
       return '';
     }
 
+    # API may not be slower than 200ms
+    $c->ua->connect_timeout(0.100);
+    $c->ua->inactivity_timeout(0.100);
+    $c->ua->request_timeout(0.200);
     my $tx   = $c->ua->get($url => {Authorization => "APIKey $iprepd_key"});
     my $code = $tx->result->code;
     if ($code == 200) {
