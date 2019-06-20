@@ -10,7 +10,7 @@
   [% IF user.id && user.settings.comment_box_position.value == 'after_comments' %]
     <button type="button" id="add-comment-btn" class="secondary" aria-label="Add Comment">Add Comment &darr;</button>
   [% ELSE %]
-    <button type="button" id="bottom-btn" class="secondary">Bottom &darr;</button>
+    <button type="button" id="bottom-btn" class="secondary" aria-label="Go to Page Bottom">Bottom &darr;</button>
   [% END %]
   <div class="dropdown">
     <button type="button" id="comment-tags-btn" aria-haspopup="true" aria-label="Tags"
