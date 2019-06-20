@@ -164,237 +164,395 @@ use constant SQL_DEFINITIONS => {
 # 'days_elapsed' is set in populate_field_definitions() itself.
 use constant DEFAULT_FIELDS => (
   {
-    name           => 'bug_id',
-    desc           => 'Bug #',
-    in_new_bugmail => 1,
+    name           => 'alias',
+    desc           => 'Alias',
+    type           => FIELD_TYPE_FREETEXT,
     buglist        => 1,
-    is_numeric     => 1
-  },
-  {
-    name           => 'short_desc',
-    desc           => 'Summary',
-    in_new_bugmail => 1,
-    is_mandatory   => 1,
-    buglist        => 1
-  },
-  {
-    name           => 'classification',
-    desc           => 'Classification',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {
-    name           => 'product',
-    desc           => 'Product',
-    in_new_bugmail => 1,
-    is_mandatory   => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {
-    name           => 'component',
-    desc           => 'Component',
-    in_new_bugmail => 1,
-    is_mandatory   => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {
-    name           => 'version',
-    desc           => 'Version',
-    in_new_bugmail => 1,
-    is_mandatory   => 1,
-    buglist        => 1
-  },
-  {
-    name           => 'rep_platform',
-    desc           => 'Platform',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {name => 'bug_file_loc', desc => 'URL', in_new_bugmail => 1, buglist => 1},
-  {
-    name           => 'op_sys',
-    desc           => 'OS/Version',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {
-    name           => 'bug_status',
-    desc           => 'Status',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {
-    name           => 'status_whiteboard',
-    desc           => 'Status Whiteboard',
-    in_new_bugmail => 1,
-    buglist        => 1
-  },
-  {
-    name           => 'keywords',
-    desc           => 'Keywords',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_KEYWORDS,
-    buglist        => 1
-  },
-  {
-    name    => 'resolution',
-    desc    => 'Resolution',
-    type    => FIELD_TYPE_SINGLE_SELECT,
-    buglist => 1
-  },
-  {
-    name           => 'bug_type',
-    desc           => 'Type',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {
-    name           => 'bug_severity',
-    desc           => 'Severity',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
-  },
-  {
-    name           => 'priority',
-    desc           => 'Priority',
-    in_new_bugmail => 1,
-    type           => FIELD_TYPE_SINGLE_SELECT,
-    buglist        => 1
   },
   {
     name           => 'assigned_to',
-    desc           => 'AssignedTo',
+    desc           => 'Assignee',
+    type           => FIELD_TYPE_USER,
     in_new_bugmail => 1,
-    buglist        => 1
+    buglist        => 1,
   },
-  {name => 'reporter',   desc => 'ReportedBy', in_new_bugmail => 1, buglist => 1},
-  {name => 'qa_contact', desc => 'QAContact',  in_new_bugmail => 1, buglist => 1},
-  {name => 'cc',         desc => 'CC',         in_new_bugmail => 1},
   {
-    name           => 'dependson',
-    desc           => 'Depends on',
-    in_new_bugmail => 1,
+    name           => 'assignee_last_login',
+    desc           => 'Assignee Last Login Date',
+    type           => FIELD_TYPE_DATE,
+    buglist        => 1,
+  },
+  {
+    name           => 'attachments.description',
+    desc           => 'Attachment Description',
+    type           => FIELD_TYPE_FREETEXT,
+  },
+  {
+    name           => 'attachments.filename',
+    desc           => 'Attachment Filename',
+    type           => FIELD_TYPE_FREETEXT,
+  },
+  {
+    name           => 'attachments.isobsolete',
+    desc           => 'Attachment is Obsolete',
+    type           => FIELD_TYPE_BOOLEAN,
     is_numeric     => 1,
-    buglist        => 1
+  },
+  {
+    name           => 'attachments.ispatch',
+    desc           => 'Attachment is Patch',
+    type           => FIELD_TYPE_BOOLEAN,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'attachments.isprivate',
+    desc           => 'Attachment is Private',
+    type           => FIELD_TYPE_BOOLEAN,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'attachments.mimetype',
+    desc           => 'Attachment MIME Type',
+    type           => FIELD_TYPE_FREETEXT,
+  },
+  {
+    name           => 'attachments.submitter',
+    desc           => 'Attachment Creator',
+    type           => FIELD_TYPE_USER,
+  },
+  {
+    name           => 'attach_data.thedata',
+    desc           => 'Attachment Data',
+    type           => FIELD_TYPE_TEXTAREA,
   },
   {
     name           => 'blocked',
     desc           => 'Blocks',
-    in_new_bugmail => 1,
+    type           => FIELD_TYPE_BUG_LIST,
     is_numeric     => 1,
-    buglist        => 1
-  },
-  {
-    name           => 'regressed_by',
-    desc           => 'Regressed by',
-    in_new_bugmail => 1,
-    is_numeric     => 1,
-    buglist        => 1
-  },
-  {
-    name           => 'regresses',
-    desc           => 'Regressions',
-    in_new_bugmail => 1,
-    is_numeric     => 1,
-    buglist        => 1
-  },
-
-  {
-    name    => 'assignee_last_login',
-    desc    => 'Assignee Last Login Date',
-    buglist => 1
-  },
-
-  {name => 'attachments.description', desc => 'Attachment description'},
-  {name => 'attachments.filename',    desc => 'Attachment filename'},
-  {name => 'attachments.mimetype',    desc => 'Attachment mime type'},
-  {name => 'attachments.ispatch', desc => 'Attachment is patch', is_numeric => 1},
-  {
-    name       => 'attachments.isobsolete',
-    desc       => 'Attachment is obsolete',
-    is_numeric => 1
-  },
-  {
-    name       => 'attachments.isprivate',
-    desc       => 'Attachment is private',
-    is_numeric => 1
-  },
-  {name => 'attachments.submitter', desc => 'Attachment creator'},
-
-  {name => 'target_milestone',    desc => 'Target Milestone',   buglist    => 1},
-  {name => 'creation_ts',         desc => 'Creation date',      buglist    => 1},
-  {name => 'delta_ts',            desc => 'Last changed date',  buglist    => 1},
-  {name => 'longdesc',            desc => 'Comment'},
-  {name => 'longdescs.isprivate', desc => 'Comment is private', is_numeric => 1},
-  {
-    name       => 'longdescs.count',
-    desc       => 'Number of Comments',
-    buglist    => 1,
-    is_numeric => 1
-  },
-  {name => 'alias',               desc => 'Alias',               buglist    => 1},
-  {name => 'everconfirmed',       desc => 'Ever Confirmed',      is_numeric => 1},
-  {name => 'reporter_accessible', desc => 'Reporter Accessible', is_numeric => 1},
-  {name => 'cclist_accessible',   desc => 'CC Accessible',       is_numeric => 1},
-  {name => 'bug_group', desc => 'Group', in_new_bugmail => 1},
-  {
-    name           => 'estimated_time',
-    desc           => 'Estimated Hours',
     in_new_bugmail => 1,
     buglist        => 1,
-    is_numeric     => 1
   },
   {
-    name       => 'remaining_time',
-    desc       => 'Remaining Hours',
-    buglist    => 1,
-    is_numeric => 1
+    name           => 'bug_file_loc',
+    desc           => 'URL',
+    type           => FIELD_TYPE_FREETEXT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'bug_id',
+    desc           => 'Bug ID',
+    type           => FIELD_TYPE_INTEGER,
+    is_numeric     => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'bug_group',
+    desc           => 'Groups',
+    type           => FIELD_TYPE_FREETEXT,
+    in_new_bugmail => 1,
+  },
+  {
+    name           => 'bug_interest_ts',
+    desc           => 'Bug Interest',
+    type           => FIELD_TYPE_DATETIME,
+    buglist        => 1,
+  },
+  {
+    name           => 'bug_severity',
+    desc           => 'Severity',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'bug_status',
+    desc           => 'Status',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'bug_type',
+    desc           => 'Type',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'cc',
+    desc           => 'Subscribers',
+    type           => FIELD_TYPE_USERS,
+    in_new_bugmail => 1,
+  },
+  {
+    name           => 'cclist_accessible',
+    desc           => 'CC Accessible',
+    type           => FIELD_TYPE_BOOLEAN,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'classification',
+    desc           => 'Classification',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'commenter',
+    desc           => 'Commenter',
+    type           => FIELD_TYPE_USER,
+  },
+  {
+    name           => 'comment_tag',
+    desc           => 'Comment Tag',
+    type           => FIELD_TYPE_KEYWORDS,
+  },
+  {
+    name           => 'component',
+    desc           => 'Component',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    is_mandatory   => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'content',
+    desc           => 'Content',
+    type           => FIELD_TYPE_TEXTAREA,
+  },
+  {
+    name           => 'creation_ts',
+    desc           => 'Created',
+    type           => FIELD_TYPE_DATETIME,
+    buglist        => 1,
   },
   {
     name           => 'deadline',
     desc           => 'Deadline',
     type           => FIELD_TYPE_DATETIME,
     in_new_bugmail => 1,
-    buglist        => 1
-  },
-  {name => 'commenter',             desc => 'Commenter'},
-  {name => 'flagtypes.name',        desc => 'Flags', buglist => 1},
-  {name => 'requestees.login_name', desc => 'Flag Requestee'},
-  {name => 'setters.login_name',    desc => 'Flag Setter'},
-  {name => 'work_time', desc => 'Hours Worked', buglist => 1, is_numeric => 1},
-  {
-    name       => 'percentage_complete',
-    desc       => 'Percentage Complete',
-    buglist    => 1,
-    is_numeric => 1
-  },
-  {name => 'content',             desc => 'Content'},
-  {name => 'attach_data.thedata', desc => 'Attachment data'},
-  {name => "owner_idle_time",     desc => "Time Since Assignee Touched"},
-  {name => 'see_also', desc => "See Also", type => FIELD_TYPE_BUG_URLS},
-  {name => 'tag',      desc => 'Tags'},
-  {
-    name    => 'last_visit_ts',
-    desc    => 'Last Visit',
-    buglist => 1,
-    type    => FIELD_TYPE_DATETIME
+    buglist        => 1,
   },
   {
-    name    => 'bug_interest_ts',
-    desc    => 'Bug Interest',
-    buglist => 1,
-    type    => FIELD_TYPE_DATETIME
+    name           => 'delta_ts',
+    desc           => 'Updated',
+    type           => FIELD_TYPE_DATETIME,
+    buglist        => 1,
   },
-  {name => 'comment_tag',  desc => 'Comment Tag'},
-  {name => 'triage_owner', desc => 'Triage Owner', buglist => 1},
+  {
+    name           => 'dependson',
+    desc           => 'Depends on',
+    type           => FIELD_TYPE_BUG_LIST,
+    is_numeric     => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'estimated_time',
+    desc           => 'Estimated Hours',
+    type           => FIELD_TYPE_INTEGER,
+    is_numeric     => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'everconfirmed',
+    desc           => 'Ever Confirmed',
+    type           => FIELD_TYPE_BOOLEAN,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'flagtypes.name',
+    desc           => 'Flags',
+    type           => FIELD_TYPE_FREETEXT,
+    buglist        => 1,
+  },
+  {
+    name           => 'keywords',
+    desc           => 'Keywords',
+    type           => FIELD_TYPE_KEYWORDS,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'last_visit_ts',
+    desc           => 'Last Visit',
+    type           => FIELD_TYPE_DATETIME,
+    buglist        => 1,
+  },
+  {
+    name           => 'longdesc',
+    desc           => 'Comment',
+    type           => FIELD_TYPE_TEXTAREA,
+  },
+  {
+    name           => 'longdescs.isprivate',
+    desc           => 'Comment is Private',
+    type           => FIELD_TYPE_BOOLEAN,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'longdescs.count',
+    desc           => 'Number of Comments',
+    type           => FIELD_TYPE_INTEGER,
+    is_numeric     => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'op_sys',
+    desc           => 'OS/Version',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'owner_idle_time',
+    desc           => 'Time Since Assignee Touched',
+    type           => FIELD_TYPE_INTEGER,
+  },
+  {
+    name           => 'percentage_complete',
+    desc           => 'Percentage Complete',
+    type           => FIELD_TYPE_INTEGER,
+    is_numeric     => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'product',
+    desc           => 'Product',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    is_mandatory   => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'priority',
+    desc           => 'Priority',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'qa_contact',
+    desc           => 'QA Contact',
+    type           => FIELD_TYPE_USER,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'regressed_by',
+    desc           => 'Regressed by',
+    type           => FIELD_TYPE_BUG_LIST,
+    is_numeric     => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'regresses',
+    desc           => 'Regressions',
+    type           => FIELD_TYPE_BUG_LIST,
+    is_numeric     => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'remaining_time',
+    desc           => 'Remaining Hours',
+    type           => FIELD_TYPE_INTEGER,
+    is_numeric     => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'reporter',
+    desc           => 'Reporter',
+    type           => FIELD_TYPE_USER,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'reporter_accessible',
+    desc           => 'Reporter Accessible',
+    type           => FIELD_TYPE_BOOLEAN,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'rep_platform',
+    desc           => 'Platform',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'requestees.login_name',
+    desc           => 'Flag Requestee',
+    type           => FIELD_TYPE_USER,
+  },
+  {
+    name           => 'resolution',
+    desc           => 'Resolution',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    buglist        => 1,
+  },
+  {
+    name           => 'see_also',
+    desc           => 'See Also',
+    type           => FIELD_TYPE_BUG_URLS,
+  },
+  {
+    name           => 'setters.login_name',
+    desc           => 'Flag Setter',
+    type           => FIELD_TYPE_USER,
+  },
+  {
+    name           => 'short_desc',
+    desc           => 'Summary',
+    type           => FIELD_TYPE_FREETEXT,
+    is_mandatory   => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'status_whiteboard',
+    desc           => 'Whiteboard',
+    type           => FIELD_TYPE_FREETEXT,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'tag',
+    desc           => 'Tags',
+    type           => FIELD_TYPE_KEYWORDS,
+  },
+  {
+    name           => 'target_milestone',
+    desc           => 'Target Milestone',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    buglist        => 1,
+  },
+  {
+    name           => 'triage_owner',
+    desc           => 'Triage Owner',
+    type           => FIELD_TYPE_USER,
+    buglist        => 1,
+  },
+  {
+    name           => 'version',
+    desc           => 'Version',
+    type           => FIELD_TYPE_SINGLE_SELECT,
+    is_mandatory   => 1,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'work_time',
+    desc           => 'Hours Worked',
+    type           => FIELD_TYPE_INTEGER,
+    is_numeric     => 1,
+    buglist        => 1,
+  },
 );
 
 ################
