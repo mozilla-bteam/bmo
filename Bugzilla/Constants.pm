@@ -441,8 +441,13 @@ use constant EMPTY_DATETIME_REGEX => qr/^[0\-:\sA-Za-z]+$/;
 
 # See the POD for Bugzilla::Field/is_abnormal to see why these are listed
 # here.
-use constant ABNORMAL_SELECTS =>
-  {classification => 1, component => 1, product => 1,};
+use constant ABNORMAL_SELECTS => {
+  classification    => 1,
+  component         => 1,
+  product           => 1,
+  target_milestone  => 1,
+  version           => 1,
+};
 
 # The fields from fielddefs that are blocked from non-timetracking users.
 # work_time is sometimes called actual_time.
