@@ -245,6 +245,7 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'keywords.count',
     desc           => 'Number of Keywords',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
@@ -287,6 +288,7 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'cc_count', # Originated in BMO extension
     desc           => 'Number of CC',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
@@ -299,6 +301,7 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'dependson.count',
     desc           => 'Number of Depends on',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
@@ -311,6 +314,7 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'blocked.count',
     desc           => 'Number of Blocks',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
@@ -323,6 +327,7 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'regressed_by.count',
     desc           => 'Number of Regressed by',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
@@ -335,18 +340,21 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'regresses.count',
     desc           => 'Number of Regressions',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
   {
     name           => 'dupe_count', # Originated in BMO extension
     desc           => 'Number of Duplicates',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
   {
     name           => 'duplicates',
     desc           => 'Duplicates',
+    type           => FIELD_TYPE_BUG_ID,
     buglist        => 1,
   },
 
@@ -359,6 +367,7 @@ use constant DEFAULT_FIELDS => (
   {
     name           => 'attachments.count',
     desc           => 'Number of Attachments',
+    type           => FIELD_TYPE_INTEGER,
     buglist        => 1,
     is_numeric     => 1,
   },
