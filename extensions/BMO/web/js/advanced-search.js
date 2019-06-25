@@ -6,15 +6,21 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 /**
- * Reference or define the BMO app namespace.
+ * Reference or define the Bugzilla app namespace.
  * @namespace
  */
-var BMO = BMO || {}; // eslint-disable-line no-var
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
+
+/**
+ * Reference or define the BMO extension namespace.
+ * @namespace
+ */
+Bugzilla.BMO = Bugzilla.BMO || {};
 
 /**
  * Implement Advanced Search page features.
  */
-BMO.AdvancedSearch = class AdvancedSearch {
+Bugzilla.BMO.AdvancedSearch = class AdvancedSearch {
   /**
    * Initialize a new AdvancedSearch instance.
    */
@@ -44,4 +50,4 @@ BMO.AdvancedSearch = class AdvancedSearch {
   }
 };
 
-window.addEventListener('DOMContentLoaded', () => new BMO.AdvancedSearch(), { once: true });
+window.addEventListener('DOMContentLoaded', () => new Bugzilla.BMO.AdvancedSearch(), { once: true });
