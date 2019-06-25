@@ -35,7 +35,7 @@ is(
 
 is(
   $parser->render_html('http://bmo-web.vm'),
-  "<p><a href=\"http://bmo-web.vm\">http://bmo-web.vm</a></p>\n",
+  "<p><a href=\"http://bmo-web.vm\" rel=\"nofollow\">http://bmo-web.vm</a></p>\n",
   'Autolink extension'
 );
 
