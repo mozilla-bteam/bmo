@@ -398,7 +398,7 @@ Returns:     a pointer to a hash of settings
 
 Description: Removes an existing setting and the options.
 
-Params:      C<$name> - string - the name of the new setting
+Params:      C<$name> - string - the name of the setting to be removed.
              C<$options> (optional) - arrayref - contains the existing setting
              choices that shouldn't be removed.
 
