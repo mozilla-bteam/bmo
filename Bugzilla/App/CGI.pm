@@ -47,7 +47,7 @@ sub setup_routes {
   $r->any('/:new_bug' => [new_bug => qr{new[-_]bug}] => sub {
     my $c = shift;
     $c->res->code(301);
-    $c->redirect_to('enter_bugcgi');
+    $c->redirect_to(Bugzilla->localconfig->basepath . 'enter_bug.cgi');
   });
 }
 
