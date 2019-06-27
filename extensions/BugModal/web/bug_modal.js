@@ -1399,8 +1399,10 @@ $(function() {
       }
 
       const extract = text.replace(/(?:\r\n|\r|\n)/, ' ').trim().substr(0, 20);
-      const summary = (window.prompt(`You’re pasting ${lines} lines of text starting with “${extract}”. Enter the ` +
-        'summary below and click OK to upload it as an attachment. Click Cancel to paste it normally.') || '').trim();
+      const summary = (window.prompt(
+        `You’re pasting ${lines} lines of text starting with “${extract}”. ` +
+        'Enter the summary below and click OK to upload it as an attachment. Click Cancel to paste it normally.'
+      ) || '').trim();
 
       if (!summary) {
         return;
