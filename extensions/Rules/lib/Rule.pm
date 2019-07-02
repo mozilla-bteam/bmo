@@ -9,13 +9,13 @@ package Bugzilla::Extension::Rules::Rule;
 
 use 5.10.1;
 use Moo;
+use List::Util qw(none);
+use Types::Standard -all;
+use Type::Utils;
 
 use Bugzilla::Logging;
 use Bugzilla::Status;
 use Bugzilla::Types qw(Bug User);
-
-use Types::Standard -all;
-use Type::Utils;
 
 #########################
 #    Initialization     #
@@ -43,71 +43,74 @@ sub BUILDARGS {
 }
 
 #########################
-#       Utilities       #
+#        Actions        #
 #########################
 
-sub allow {
+sub process {
   my ($self) = @_;
+  my $cgi = Bugzilla->cgi;
 
-  DEBUG('Processing rule: ' . ($self->desc || 'No description'));
+  DEBUG('PROCESSING RULE: ' . $self->desc);
 
-  my $matched = 0;
+  my @matches;
+
+  if ($self->condition->{new_bug}) {
+    push @matches, $cgi->script_name eq 'enter_bug.cgi' ? 1 : 0;
+  }
 
   if ($self->condition->{field}) {
-    $matched = $self->condition->{field} eq $self->field ? 1 : 0;
+    push @matches, $self->condition->{field} eq $self->field ? 1 : 0;
   }
 
   if ($self->condition->{product}) {
-    $matched = $self->condition->{product} eq $self->bug->product ? 1 : 0;
+    push @matches, $self->condition->{product} eq $self->bug->product ? 1 : 0;
   }
 
   if ($self->condition->{component}) {
-    $matched = $self->condition->{component} eq $self->bug->component ? 1 : 0;
+    push @matches, $self->condition->{component} eq $self->bug->component ? 1 : 0;
   }
 
   if ($self->condition->{user_not_in_group} ) {
-    $matched
-      = !$self->user->in_group($self->condition->{user_not_in_group}) ? 1 : 0;
+    push @matches, !$self->user->in_group($self->condition->{user_not_in_group}) ? 1 : 0;
   }
 
   if ($self->condition->{user_in_group}) {
-    $matched = $self->user->in_group($self->condition->{user_group}) ? 1 : 0;
+    push @matches, $self->user->in_group($self->condition->{user_group}) ? 1 : 0;
   }
 
   if ($self->condition->{new_value}) {
     my $new_value = $self->condition->{new_value};
     if ($new_value eq '_open_state_') {
-      $matched = is_open_state($self->new_value) ? 1 : 0;
+      push @matches, is_open_state($self->new_value) ? 1 : 0;
     }
     elsif ($new_value eq '_closed_state_') {
-      $matched = !is_open_state($self->new_value) ? 1 : 0;
+      push @matches, !is_open_state($self->new_value) ? 1 : 0;
     }
     else {
-      $matched = $new_value eq $self->new_value ? 1 : 0;
+      push @matches, $new_value eq $self->new_value ? 1 : 0;
     }
   }
 
   if ($self->condition->{old_value}) {
     my $old_value = $self->condition->{old_value};
     if ($old_value eq '_open_state_') {
-      $matched = is_open_state($self->old_value) ? 1 : 0;
+      push @matches, is_open_state($self->old_value) ? 1 : 0;
     } elsif ($old_value eq '_closed_state_') {
-      $matched = !is_open_state($self->old_value) ? 1 : 0;
+      push @matches, !is_open_state($self->old_value) ? 1 : 0;
     }
     else {
-      $matched = $old_value eq $self->old_value ? 1 : 0;
+      push @matches, $old_value eq $self->old_value ? 1 : 0;
     }
   }
 
-  if ($matched) {
-    return ($self->action && $self->action eq 'deny') ? 0 : 1;
+  # If we matched one or more and there were no mismatches, then return the action required
+  if (@matches && none { $_ == 0 } @matches) {
+    DEBUG('MATCHED: action => ' . $self->action);
+    return { action => $self->action };
   }
 
-  return 1;
+  DEBUG('NO MATCH');
+  return { action => 'none' };
 }
-
-#########################
-#    Private Methods    #
-#########################
 
 1;

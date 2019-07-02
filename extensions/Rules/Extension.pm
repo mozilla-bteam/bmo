@@ -61,10 +61,14 @@ sub bug_check_can_change_field {
       new_value => $new_value,
       old_value => $old_value,
     });
-    DEBUG('PROCESSING RULE: ' . $rule->desc);
-    if (!$rule->allow) {
-      DEBUG('RULE: Not Allowed');
+    my $result = $rule->process();
+    if ($result->{action} eq 'deny') {
+      # Explicitly deny
       push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
+    }
+    elsif ($result->{action} eq 'allow') {
+      # Explicitly allow
+      push @{$priv_results}, PRIVILEGES_REQUIRED_NONE;
     }
   }
 
