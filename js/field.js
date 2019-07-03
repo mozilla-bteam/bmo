@@ -717,6 +717,7 @@ $(function() {
     var options_user = {
         appendTo: $('#main-inner'),
         forceFixPosition: true,
+        paramName: 'match',
         deferRequestBy: 250,
         minChars: 2,
         noCache: true,
