@@ -40,7 +40,7 @@
 [% title = title _ filtered_desc %]
 [% generate_api_token = 1 %]
 [% header = "$terms.Bug&nbsp;$bug.bug_id" %]
-[% javascript_urls = [ "js/field.js" ] %]
+[% javascript_urls = [ "js/field.js", "js/search-nav.js" ] %]
 [% javascript_urls.push("js/bug.js") IF user.id  %]
 [% javascript_urls.push('js/comment-tagging.js')
      IF user.id && Param('comment_taggers_group') %]
@@ -57,11 +57,6 @@
                              "[% unfiltered_title FILTER js %]",
                              "[% basepath FILTER js %]show_bug.cgi?id=[% bug.bug_id FILTER js %]" );
         document.title = "[% unfiltered_title FILTER js %]";
-      }
-      if (document.location.href.match(/show_bug\.cgi\?.*list_id=/)) {
-        var href = document.location.href;
-        href = href.replace(/[\?&]+list_id=(\d+|cookie)/, '');
-        history.replaceState(null, "[% unfiltered_title FILTER js %]", href);
       }
     }
     YAHOO.util.Event.onDOMReady(function() {

@@ -262,8 +262,10 @@ sorttable = {
   _on_column_header_clicked: function(evt) {
 
       // The table is already sorted by this column. Just reverse it.
-      if (sorttable._check_already_sorted(this))
+      if (sorttable._check_already_sorted(this)) {
+        sorttable.notify(this.table);
         return;
+      }
 
 
       // First, remove sorttable_sorted classes from the other header
@@ -280,7 +282,33 @@ sorttable = {
       sorttable._mark_column_as_sorted(this, '&#x25BC;', 0);
 
       sorttable.sort_table(this);
+      sorttable.notify(this.table);
+  },
 
+  /**
+   * Fire an event whenever the table is sorted, and let others know the sorted bug list and new sort condition.
+   * @param {HTMLTableElement} $table The bug list table.
+   */
+  notify: $table => {
+    const sort_by = [];
+    const sort_desc = $table.tHead.querySelector('th.sorttable_sorted_reverse');
+
+    // Generate a list of sorted columns. `<th class="sorted_0">` is the last sorted column.
+    for (let i = 0; ; i++) {
+      const $th = $table.tHead.querySelector(`th.sorted_${i}`);
+
+      if ($th) {
+        sort_by.push($th.dataset.id);
+      } else {
+        break;
+      }
+    }
+
+    $table.dispatchEvent(new CustomEvent('sorted', { detail: {
+      bugs: [...$table.tBodies[0].querySelectorAll('.bz_id_column a')].map($link => Number($link.dataset.bugId)),
+      sort: `${sort_by[0]}${sort_desc ? ' DESC' : ''}`,
+      sort_history: `${sort_by.join(',')}${sort_desc ? ' DESC' : ''}`,
+    }}));
   },
 
   sort_table: function(cell) {
@@ -290,8 +318,6 @@ sorttable = {
       // which is a lot faster because you only do getInnerText once per row
       col = cell.sorttable_columnindex;
       rows = cell.table.sorttable_rows;
-
-      var BUGLIST = '';
 
       for (var j = 0; j < cell.table.sorttable_rows.length; j++) {
           rows[j].sort_data = sorttable.getInnerText(rows[j].cells[col]);
@@ -316,8 +342,6 @@ sorttable = {
                                                             'bz_row_even');
 
           tb.appendChild(rows[j]);
-          var bug_id = sorttable.getInnerText(rows[j].cells[0].childNodes[1]);
-          BUGLIST = BUGLIST ? BUGLIST+':'+bug_id : bug_id;
 
           if (j % body_size == body_size-1) {
             body_index++;
@@ -326,8 +350,6 @@ sorttable = {
             }
           }
       }
-
-      document.cookie = 'BUGLIST='+BUGLIST;
 
       cell.table.sorttable_rows = rows;
   },
@@ -344,8 +366,6 @@ sorttable = {
     body_size = cell.table.sorttable_body_size;
     body_index = 0;
 
-    var BUGLIST = '';
-
     cell.table.sorttable_rows = [];
     for (var i = newrows.length-1; i >= 0; i--) {
         if (i % 2)
@@ -358,9 +378,6 @@ sorttable = {
         tb.appendChild(newrows[i]);
         cell.table.sorttable_rows.push(newrows[i]);
 
-        var bug_id = sorttable.getInnerText(newrows[i].cells[0].childNodes[1]);
-        BUGLIST = BUGLIST ? BUGLIST+':'+bug_id : bug_id;
-
         if ((newrows.length-1-i) % body_size == body_size-1) {
             body_index++;
             if (body_index < cell.table.sorttable_bodies.length) {
@@ -369,8 +386,6 @@ sorttable = {
         }
 
     }
-
-    document.cookie = 'BUGLIST='+BUGLIST;
 
     delete newrows;
   },

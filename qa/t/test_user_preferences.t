@@ -241,8 +241,13 @@ $sel->type_ok("comment",
 $sel->click_ok('bottom-save-btn');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
-ok(!$sel->is_text_present("I should see the next bug"),
-  "The updated bug is no longer displayed");
+## Since the current "next bug" navigation relies on JavaScript that dynamically
+## embeds the next bug ID as the bug page's hidden form value, this check is no
+## longer working:
+# ok(!$sel->is_text_present("I should see the next bug"),
+#   "The updated bug is no longer displayed");
+## Go to the next page instead:
+go_to_bug($sel, $bug2_id);
 
 # The user has no privs, so the short_desc field is not present.
 $sel->is_text_present_ok("My second bug");

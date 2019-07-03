@@ -18,7 +18,6 @@ use Bugzilla::Error;
 use Bugzilla::Util;
 use Bugzilla::Search;
 use Bugzilla::Search::Quicksearch;
-use Bugzilla::Search::Recent;
 use Bugzilla::Search::Saved;
 use Bugzilla::User;
 use Bugzilla::Bug;
@@ -40,9 +39,9 @@ my $vars     = {};
 # is turned 'on'.
 my $user = Bugzilla->login();
 
-$cgi->redirect_search_url();
-use Bugzilla::Logging;
-DEBUG("After the redirect.");
+# Create the clean, canonical URL that will be embedded in the HTML template for
+# client-side URL rewrite and other links such as Atom and CSV formats
+$cgi->clean_search_url();
 
 my $buffer = $cgi->query_string();
 if (length($buffer) == 0) {
@@ -116,31 +115,6 @@ my $order = $cgi->param('order') || "";
 
 # The params object to use for the actual query itself
 my $params;
-
-# If the user is retrieving the last bug list they looked at, hack the buffer
-# storing the query string so that it looks like a query retrieving those bugs.
-if (my $last_list = $cgi->param('regetlastlist')) {
-  my $bug_ids;
-
-  # Logged-out users use the old cookie method for storing the last search.
-  if (!$user->id or $last_list eq 'cookie') {
-    $bug_ids = $cgi->cookie('BUGLIST') or ThrowUserError("missing_cookie");
-    $bug_ids =~ s/[:-]/,/g;
-    $order ||= "reuse last sort";
-  }
-
-  # But logged in users store the last X searches in the DB so they can
-  # have multiple bug lists available.
-  else {
-    my $last_search = Bugzilla::Search::Recent->check({id => $last_list});
-    $bug_ids = join(',', @{$last_search->bug_list});
-    $order ||= $last_search->list_order;
-  }
-
-  # set up the params for this new query
-  $params = new Bugzilla::CGI({bug_id => $bug_ids, order => $order});
-  $params->param('list_id', $last_list);
-}
 
 # Figure out whether or not the user is doing a fulltext search.  If not,
 # we'll remove the relevance column from the lists of columns to display
@@ -1104,10 +1078,6 @@ my $contenttype;
 my $disposition = "inline";
 
 if ($format->{'extension'} eq "html" && !$agent) {
-  my $list_id = $cgi->param('list_id') || $cgi->param('regetlastlist');
-  my $search = $user->save_last_search(
-    {bugs => \@bugidlist, order => $order, vars => $vars, list_id => $list_id});
-  $cgi->param('list_id', $search->id) if $search;
   $contenttype = "text/html";
 }
 else {

@@ -126,7 +126,19 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search for bugs");
 $sel->value_is("short_desc", "bilboa");
 $sel->go_back_ok();
+
+# Since JavaScript for the search results page dynamically rewrites the Saved
+# Search URL with a shareable, canonical URL, going back to `buglist.cgi` will
+# lose the Forget Search button (unless the page is cached within the browser).
+# So, for this test, we have to go back to the User Preferences page and run the
+# same search again.
+$sel->go_back_ok();
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->click_ok(
+  '//a[contains(@href,"/buglist.cgi?cmdtype=dorem&remaction=run&namedcmd=SavedSearchTEST1")]'
+);
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+
 $sel->click_ok('forget-search', 'Forget Search');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Search is gone");

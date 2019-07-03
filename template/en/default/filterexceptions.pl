@@ -151,8 +151,6 @@
 
   'bug/show-multiple.html.tmpl' => ['attachment.id', 'flag.status',],
 
-  'bug/show.html.tmpl' => ['bug.bug_id',],
-
   'bug/show.xml.tmpl' => ['constants.BUGZILLA_VERSION', 'a.id', 'field',],
 
   'bug/summarize-time.html.tmpl' => [

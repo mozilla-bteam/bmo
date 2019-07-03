@@ -1683,6 +1683,60 @@ a.controller {
 }
 
 /**
+ * Bug Search Navigation
+ */
+
+#search-nav {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--primary-region-background-color);
+}
+
+#search-nav-label {
+  font-weight: bold;
+}
+
+#search-nav a {
+  margin: 0 8px 0 0;
+  text-decoration: none;
+}
+
+#search-nav a[aria-disabled="true"] {
+  color: inherit;
+  opacity: .3;
+  pointer-events: none;
+}
+
+#search-nav a .icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  font-size: 1.5em;
+  line-height: 1em;
+  font-family: 'Material Icons';
+  text-align: center;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+#search-nav a[rel="first"] .icon::before {
+  content: '\E5DC';
+}
+
+#search-nav a[rel="prev"] .icon::before {
+  content: '\E408';
+}
+
+#search-nav a[rel="next"] .icon::before {
+  content: '\E409';
+}
+
+#search-nav a[rel="last"] .icon::before {
+  content: '\E5DD';
+}
+
+/**
  * Bug Fields
  */
 

@@ -197,19 +197,13 @@ if (defined $cgi->param('id')) {
     ThrowCodeError("invalid_post_bug_submit_action");
   }
 
-  if ($action eq 'next_bug') {
-    my $bug_list_obj = $user->recent_search_for($first_bug);
-    my @bug_list     = $bug_list_obj ? @{$bug_list_obj->bug_list} : ();
-    my $cur          = firstidx { $_ eq $cgi->param('id') } @bug_list;
-    if ($cur >= 0 && $cur < $#bug_list) {
-      my $next_bug_id = $bug_list[$cur + 1];
-      detaint_natural($next_bug_id);
-      if ($next_bug_id and $user->can_see_bug($next_bug_id)) {
+  if ($action eq 'next_bug' && defined $cgi->param('next_bug_id')) {
+    my $next_bug_id = ($cgi->param('next_bug_id') =~ /^(\d+)$/) ? $1 : undef;
 
-        # We create an object here so that $bug->send_changes can use it
-        # when displaying the header.
-        $vars->{'bug'} = new Bugzilla::Bug($next_bug_id);
-      }
+    if ($next_bug_id && $user->can_see_bug($next_bug_id)) {
+      # We create an object here so that $bug->send_changes can use it
+      # when displaying the header.
+      $vars->{'bug'} = new Bugzilla::Bug($next_bug_id);
     }
   }
 

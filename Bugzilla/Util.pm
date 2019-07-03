@@ -20,7 +20,7 @@ use base qw(Exporter);
   i_am_cgi i_am_webservice is_webserver_group
   correct_urlbase remote_ip
   validate_ip do_ssl_redirect_if_required use_attachbase
-  diff_arrays on_main_db css_url_rewrite
+  diff_arrays css_url_rewrite
   trim wrap_hard wrap_comment find_wrap_point
   format_time validate_date validate_time datetime_from time_ago
   file_mod_time is_7bit_clean
@@ -806,14 +806,6 @@ sub clean_text {
   return trim($dtext);
 }
 
-sub on_main_db (&) {
-  my $code         = shift;
-  my $original_dbh = Bugzilla->dbh;
-  Bugzilla->request_cache->{dbh} = Bugzilla->dbh_main;
-  $code->();
-  Bugzilla->request_cache->{dbh} = $original_dbh;
-}
-
 sub get_text {
   my ($name, $vars) = @_;
   my $template = Bugzilla->template_inner;
@@ -1016,11 +1008,6 @@ Bugzilla::Util - Generic utility functions for Bugzilla
   # Validation Functions
   validate_email_syntax($email);
   validate_date($date);
-
-  # DB-related functions
-  on_main_db {
-     ... code here ...
-  };
 
 =head1 DESCRIPTION
 
@@ -1333,23 +1320,6 @@ Untaints C<$email> if successful.
 
 Make sure the date has the correct format and returns 1 if
 the check is successful, else returns 0.
-
-=back
-
-=head2 Database
-
-=over
-
-=item C<on_main_db>
-
-Runs a block of code always on the main DB. Useful for when you're inside
-a subroutine and need to do some writes to the database, but don't know
-if Bugzilla is currently using the shadowdb or not. Used like:
-
- on_main_db {
-     my $dbh = Bugzilla->dbh;
-     $dbh->do("INSERT ...");
- }
 
 =back
 

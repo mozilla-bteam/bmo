@@ -6,11 +6,6 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-.navigation {
-  padding: 5px 10px;
-  background: var(--primary-region-background-color);
-}
-
 .bz_alias_short_desc_container {
   margin: 8px 0 0;
   padding: 0.3em;

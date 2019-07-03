@@ -1209,33 +1209,6 @@ a.lightbox-icon.markdown {
 }
 
 /**
- * search navigation
- */
-
-#search-nav {
-  padding: 4px 8px;
-  color: var(--secondary-label-color);
-  background: var(--primary-region-header-background-color);
-}
-
-#search-nav-label {
-  font-weight: bold;
-}
-
-.search-nav-link,
-.search-nav-disabled {
-  margin-left: 4px;
-}
-
-#search-nav-reget {
-  margin-left: 8px;
-}
-
-.search-nav-disabled {
-  color: var(--disabled-control-foreground-color);
-}
-
-/**
  * clipboard shenanigans
  */
 

@@ -14,7 +14,6 @@ use warnings;
 use Bugzilla::Error;
 use Bugzilla::Util;
 use Bugzilla::Constants;
-use Bugzilla::Search::Recent;
 use Bugzilla::User::Setting;
 use Bugzilla::Product;
 use Bugzilla::Classification;
@@ -24,12 +23,9 @@ use Bugzilla::Hook;
 use Bugzilla::BugUserLastVisit;
 
 use DateTime::TimeZone;
-use List::Util qw(max);
 use List::MoreUtils qw(any);
 use Scalar::Util qw(blessed);
 use Storable qw(dclone);
-use URI;
-use URI::QueryParam;
 use Role::Tiny::With;
 
 use base qw(Bugzilla::Object Exporter);
@@ -884,156 +880,6 @@ sub bugs_ignored {
 sub is_bug_ignored {
   my ($self, $bug_id) = @_;
   return (grep { $_->{'id'} == $bug_id } @{$self->bugs_ignored}) ? 1 : 0;
-}
-
-##########################
-# Saved Recent Bug Lists #
-##########################
-
-sub recent_searches {
-  my $self = shift;
-  $self->{recent_searches}
-    ||= Bugzilla::Search::Recent->match({user_id => $self->id});
-  return $self->{recent_searches};
-}
-
-sub recent_search_containing {
-  my ($self, $bug_id) = @_;
-  my $searches = $self->recent_searches;
-
-  foreach my $search (@$searches) {
-    return $search if grep($_ == $bug_id, @{$search->bug_list});
-  }
-
-  return undef;
-}
-
-sub recent_search_for {
-  my ($self, $bug) = @_;
-  my $params = Bugzilla->input_params;
-  my $cgi    = Bugzilla->cgi;
-
-  if ($self->id) {
-
-    # First see if there's a list_id parameter in the query string.
-    my $list_id = $params->{list_id};
-    if (!$list_id) {
-
-      # If not, check for "list_id" in the query string of the referer.
-      my $referer = $cgi->referer;
-      if ($referer) {
-        my $uri = URI->new($referer);
-        if ($uri->path =~ /buglist\.cgi$/) {
-          $list_id = $uri->query_param('list_id') || $uri->query_param('regetlastlist');
-        }
-      }
-    }
-
-    if ($list_id && $list_id ne 'cookie') {
-
-      # If we got a bad list_id (either some other user's or an expired
-      # one) don't crash, just don't return that list.
-      my $search = Bugzilla::Search::Recent->check_quietly({id => $list_id});
-      return $search if $search;
-    }
-
-    # If there's no list_id, see if the current bug's id is contained
-    # in any of the user's saved lists.
-    my $search = $self->recent_search_containing($bug->id);
-    return $search if $search;
-  }
-
-  # Finally (or always, if we're logged out), if there's a BUGLIST cookie
-  # and the selected bug is in the list, then return the cookie as a fake
-  # Search::Recent object.
-  if (my $list = $cgi->cookie('BUGLIST')) {
-
-    # Also split on colons, which was used as a separator in old cookies.
-    my @bug_ids = split(/[:-]/, $list);
-    if (grep { $_ == $bug->id } @bug_ids) {
-      my $search = Bugzilla::Search::Recent->new_from_cookie(\@bug_ids);
-      return $search;
-    }
-  }
-
-  return undef;
-}
-
-sub save_last_search {
-  my ($self, $params) = @_;
-  my ($bug_ids, $order, $vars, $list_id) = @$params{qw(bugs order vars list_id)};
-
-  my $cgi = Bugzilla->cgi;
-  if ($order) {
-    $cgi->send_cookie(
-      -name    => 'LASTORDER',
-      -value   => $order,
-      -expires => 'Fri, 01-Jan-2038 00:00:00 GMT'
-    );
-  }
-
-  return if !@$bug_ids;
-
-  my $search;
-  if ($self->id) {
-    on_main_db {
-      if ($list_id) {
-        $search = Bugzilla::Search::Recent->check_quietly({id => $list_id});
-      }
-
-      if ($search) {
-        if (join(',', @{$search->bug_list}) ne join(',', @$bug_ids)) {
-          $search->set_bug_list($bug_ids);
-        }
-        if (!$search->list_order || $order ne $search->list_order) {
-          $search->set_list_order($order);
-        }
-        $search->update();
-      }
-      else {
-        # If we already have an existing search with a totally
-        # identical bug list, then don't create a new one. This
-        # prevents people from writing over their whole
-        # recent-search list by just refreshing a saved search
-        # (which doesn't have list_id in the header) over and over.
-        my $list_string = join(',', @$bug_ids);
-        my $existing_search = Bugzilla::Search::Recent->match(
-          {user_id => $self->id, bug_list => $list_string});
-
-        if (!scalar(@$existing_search)) {
-          $search
-            = Bugzilla::Search::Recent->create({
-            user_id => $self->id, bug_list => $bug_ids, list_order => $order
-            });
-        }
-        else {
-          $search = $existing_search->[0];
-        }
-      }
-    };
-    delete $self->{recent_searches};
-  }
-
-  # Logged-out users use a cookie to store a single last search. We don't
-  # override that cookie with the logged-in user's latest search, because
-  # if they did one search while logged out and another while logged in,
-  # they may still want to navigate through the search they made while
-  # logged out.
-  else {
-    my $bug_list = join('-', @$bug_ids);
-    if (length($bug_list) < 4000) {
-      $cgi->send_cookie(
-        -name    => 'BUGLIST',
-        -value   => $bug_list,
-        -expires => 'Fri, 01-Jan-2038 00:00:00 GMT'
-      );
-    }
-    else {
-      $cgi->remove_cookie('BUGLIST');
-      $vars->{'toolong'} = 1;
-    }
-  }
-  return $search;
 }
 
 sub settings {
@@ -3012,35 +2858,6 @@ C<string> The current summary of the bug.
 
 Returns true if the user does not want email notifications for the
 specified bug ID, else returns false.
-
-=back
-
-=head2 Saved Recent Bug Lists
-
-=over
-
-=item C<recent_searches>
-
-Returns an arrayref of L<Bugzilla::Search::Recent> objects
-containing the user's recent searches.
-
-=item C<recent_search_containing(bug_id)>
-
-Returns a L<Bugzilla::Search::Recent> object that contains the most recent
-search by the user for the specified bug id. Returns undef if no match is found.
-
-=item C<recent_search_for(bug)>
-
-Returns a L<Bugzilla::Search::Recent> object that contains a search by the
-user. Uses the list_id of the current loaded page, or the referrer page, and
-the bug id if that fails. Finally it will check the BUGLIST cookie, and create
-an object based on that, or undef if it does not exist.
-
-=item C<save_last_search>
-
-Saves the users most recent search in the database if logged in, or in the
-BUGLIST cookie if not logged in. Parameters are bug_ids, order, vars and
-list_id.
 
 =back
 

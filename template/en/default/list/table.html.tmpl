@@ -101,7 +101,7 @@
       [% IF dotweak %]
       <th class="sorttable_nosort">&nbsp;</th>
       [% END %]
-      <th colspan="[% splitheader ? 2 : 1 %]" class="first-child
+      <th colspan="[% splitheader ? 2 : 1 %]" data-id="bug_id" class="first-child
                    sorted_[% lsearch(order_columns, 'bug_id') FILTER html %]">
         <a href="[% basepath FILTER none %]buglist.cgi?
                   [% urlquerypart FILTER html %]&amp;order=
@@ -146,7 +146,7 @@
 [% END %]
 
 [% BLOCK columnheader %]
-  <th colspan="[% splitheader ? 2 : 1 %]"
+  <th colspan="[% splitheader ? 2 : 1 %]" data-id="[% id FILTER html %]"
       class="sortable_column_[% key FILTER html %]
              sorted_[% lsearch(order_columns, id) FILTER html %]">
     <a href="[% basepath FILTER none %]buglist.cgi?[% urlquerypart FILTER html %]&amp;order=
@@ -209,7 +209,7 @@
     </td>
     [% END %]
     <td class="first-child bz_id_column">
-      <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id %]">[% bug.bug_id %]</a>
+      <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id %]" data-bug-id="[% bug.bug_id %]">[% bug.bug_id %]</a>
       <span style="display: none">[%+ '[SEC]' IF bug.secure_mode %]</span>
     </td>
 
@@ -247,7 +247,7 @@
         [% bug.${login_column}.truncate(col_abbrev.maxlength,
                                         col_abbrev.ellipsis) FILTER html %]
       [% ELSIF column == 'short_desc' || column == "short_short_desc" %]
-        <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id FILTER html %]">
+        <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id %]" data-bug-id="[% bug.bug_id %]">
           [%- bug.$column.truncate(col_abbrev.maxlength, col_abbrev.ellipsis) FILTER html FILTER wbr -%]
         </a>
       [% ELSIF bug_fields.$column.type == constants.FIELD_TYPE_BUG_ID %]

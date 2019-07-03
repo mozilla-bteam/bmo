@@ -2072,8 +2072,6 @@
     group
   [% ELSIF class == "Bugzilla::Keyword" %]
     keyword
-  [% ELSIF class == "Bugzilla::Search::Recent" %]
-    recent search
   [% ELSIF class == "Bugzilla::Search::Saved" %]
     saved search
   [% ELSIF ( matches = class.match('^Bugzilla::Field::Choice::(.+)') ) %]

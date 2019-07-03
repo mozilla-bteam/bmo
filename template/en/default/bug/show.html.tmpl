@@ -52,15 +52,6 @@
    %]
 [% END %]
 
-[% IF nextbug %]
-  <hr>
-  <p>
-    The next [% terms.bug %] in your list is [% terms.bug %]
-    <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id %]">[% bug.bug_id %]</a>:
-  </p>
-  <hr>
-[% END %]
-
 [% PROCESS bug/navigate.html.tmpl %]
 
 [% PROCESS bug/edit.html.tmpl %]

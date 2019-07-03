@@ -6,38 +6,11 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-
-[%
-  search = user.recent_search_for(bug);
-  RETURN UNLESS search;
-  last_bug_list = search.bug_list;
-  this_bug_idx = lsearch(last_bug_list, bug.id);
-%]
-
-<nav id="search-nav" aria-labelledby="search-nav-label">
-  <span id="search-nav-label">[% terms.Bug %] List:</span>
-  ([% this_bug_idx + 1 %] of [% last_bug_list.size %])
-  [% INCLUDE nav_link text="&#10096;&#10096; First" bug_id=last_bug_list.first %]
-  [% IF this_bug_idx > 0 %]
-    [% INCLUDE nav_link text="&#10096; Prev" bug_id=last_bug_list.item(this_bug_idx - 1) %]
-  [% ELSE %]
-    [% INCLUDE nav_link text="&#10096; Prev" bug_id="" %]
-  [% END %]
-  [% IF this_bug_idx + 1 < last_bug_list.size %]
-    [% INCLUDE nav_link text="Next &#10097;" bug_id=last_bug_list.item(this_bug_idx + 1) %]
-  [% ELSE %]
-    [% INCLUDE nav_link text="Next &#10097;" bug_id="" %]
-  [% END %]
-  [% INCLUDE nav_link text="Last &#10097;&#10097;" bug_id=last_bug_list.last %]
-  <a id="search-nav-reget" href="[% basepath FILTER none %]buglist.cgi?regetlastlist=[% search.id FILTER uri %]">Last search results</a>
+<nav id="search-nav" aria-labelledby="search-nav-label" aria-disabled="true">
+  <a rel="index" tabindex="-1" aria-disabled="true" id="search-nav-label">[% terms.Bug %] List</a>
+  <a rel="first" tabindex="-1" aria-disabled="true" aria-label="First"><span class="icon" aria-hidden="true"></span></a>
+  <a rel="prev" tabindex="-1" aria-disabled="true" aria-label="Previous"><span class="icon" aria-hidden="true"></span></a>
+  <a rel="next" tabindex="-1" aria-disabled="true" aria-label="Next"><span class="icon" aria-hidden="true"></span></a>
+  <a rel="last" tabindex="-1" aria-disabled="true" aria-label="Last"><span class="icon" aria-hidden="true"></span></a>
+  <span hidden class="position">{ $position } of { $total }</span>
 </nav>
-
-[% BLOCK nav_link %]
-  [% IF bug_id == "" %]
-    <span class="search-nav-disabled">[% text FILTER none %]</span>
-  [% ELSE %]
-    <a class="search-nav-link" href="[% basepath FILTER none %]show_bug.cgi?id=[% bug_id FILTER uri %]&amp;list_id=[% search.id FILTER uri %]">
-      [%~ text FILTER none ~%]
-    </a>
-  [% END %]
-[% END %]

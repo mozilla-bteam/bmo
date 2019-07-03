@@ -37,6 +37,13 @@
   [% title = title FILTER html %]
 [% END %]
 
+[% pretty_title = "" %]
+[% IF searchname || defaultsavename || quicksearch %]
+  [% pretty_title = (searchname || defaultsavename || quicksearch) FILTER html %]
+[% ELSIF title != "$terms.Bug List" %]
+  [% pretty_title = title %][%# filtered #%]
+[% END %]
+
 [% qorder = order FILTER uri IF order %]
 
 
@@ -55,12 +62,15 @@
   doc_section = "query.html#list"
 %]
 
+<meta name="search-results" content=""
+      data-name="[% pretty_title FILTER none %]"
+      data-query="[% urlquerypart FILTER html %]"
+      data-bugs="[% buglist.join(',') FILTER html %]"
+      data-sort="[% order FILTER html %]">
+
 <div class="bz_query_head">
-  [% IF searchname || defaultsavename || quicksearch %]
-    <h1>[% (searchname || defaultsavename || quicksearch) FILTER html %]</h1>
-  [% ELSIF title != "$terms.Bug List" %]
-    [%# Already filtered #%]
-    <h1>[% title FILTER none %]</h1>
+  [% IF pretty_title %]
+    <h1>[% pretty_title FILTER none %]</h1>
   [% END %]
 
   <span class="bz_query_timestamp">
