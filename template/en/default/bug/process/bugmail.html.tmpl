@@ -35,6 +35,9 @@
 %]
 [% recipient_count = sent_bugmail.sent.size %]
 
+[% IF async_bulk_edit %]
+  [% show_recipients = 1 %]
+[% ELSE %]
 <script [% script_nonce FILTER none %]>
   function toggleBugmailRecipients(bug_id, show) {
     if (show) {
@@ -56,6 +59,7 @@
      });
    });
 </script>
+[% END %]
 
 <dl id="bugmail_summary_[% mailing_bugid FILTER none %]"
     [% IF !show_recipients %]style="display:none;"[% END %]>
@@ -69,8 +73,10 @@
     [% ELSE %]
       no one
     [% END %]
-    (<a href="#" class="toggleBugmailRecipients" data-mailing-bugid="[% mailing_bugid FILTER html %]"
-        data-mailing-show="false">hide</a>)
+    [% IF NOT async_bulk_edit %]
+      (<a href="#" class="toggleBugmailRecipients" data-mailing-bugid="[% mailing_bugid FILTER html %]"
+          data-mailing-show="false">hide</a>)
+    [% END %]
   [% ELSE %]
     (list of e-mails not available)
   [% END %]

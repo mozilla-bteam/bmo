@@ -373,6 +373,10 @@
                     'query.html#list' => "$terms.Bug lists"} %]
     You may not search, or create saved searches, without any search terms.
 
+  [% ELSIF error == "bulk_edit_stale" %]
+    [% title = "Bulk Edit is stale" %]
+    [% terms.Abug %] was updated before the bulk edit could be made.
+
   [% ELSIF error == "cc_remove_denied" %]
     [% title = "Change Denied" %]
     You do not have permission to remove other people from the CC list.

@@ -263,6 +263,10 @@ use constant SYSTEM_GROUPS => (
     name        => 'bz_can_disable_mfa',
     description => 'Can disable MFA when editing users',
   },
+  {
+    name        => 'bz_can_async_bulk_edit',
+    description => 'Can asynchronously bulk edit bugs',
+  },
 );
 
 use constant DEFAULT_CLASSIFICATION =>

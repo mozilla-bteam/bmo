@@ -414,6 +414,10 @@
 [%+ Hook.process('after_groups') %]
 
 <input type="submit" id="commit" value="Commit">
+[% IF user.in_group('bz_can_async_bulk_edit') %]
+  <label for="async_bulk_edit">Bulk Edit in Background</label>
+  <input type="checkbox" id="async_bulk_edit" name="async_bulk_edit" value="1">
+[% END %]
 
 [%############################################################################%]
 [%# Select Menu Block                                                        #%]
