@@ -22,8 +22,8 @@ Bugzilla.ComponentWatching = class ComponentWatching {
     this._method = 'component-watching';
     this.buttons = document.querySelectorAll('button.component-watching');
 
-    // Check if the user is logged in and the API key is available. If not, remove the Watch buttons.
-    if (BUGZILLA.api_token) {
+    // Check if the user is logged in. If not, remove the Watch buttons.
+    if (BUGZILLA.user.login) {
       this.init();
     } else {
       this.buttons.forEach($button => $button.remove());

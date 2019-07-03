@@ -96,7 +96,6 @@
                     <td nowrap>
                       [% IF member.mfa %]
                         [% member.mfa FILTER html %]
-                        [% " (weakened)" IF member.settings.api_key_only.value == "off" %]
                       [% ELSE %]
                         -
                       [% END %]

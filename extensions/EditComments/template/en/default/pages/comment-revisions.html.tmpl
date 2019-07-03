@@ -12,7 +12,6 @@
     title           = "$terms.Bug $bug.id Comment $comment.count Edit History"
     style_urls      = ['extensions/EditComments/web/styles/revisions.css']
     javascript_urls = (user.is_insider ? ['extensions/EditComments/web/js/revisions.js'] : [])
-    generate_api_token = 1
 %]
 
 <h2>[% "$terms.Bug $bug.id Comment $comment.count" FILTER none %] Edit History</h2>

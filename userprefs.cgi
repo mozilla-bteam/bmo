@@ -259,16 +259,6 @@ sub SaveSettings {
     next unless defined $value;
     my $setting = new Bugzilla::User::Setting($name);
 
-    if (
-         $name eq 'api_key_only'
-      && $user->mfa
-      && ($value eq 'off'
-        || ($value eq 'api_key_only-isdefault' && $setting->{default_value} eq 'off'))
-      )
-    {
-      $mfa_event = {};
-    }
-
     if ($value eq "${name}-isdefault") {
       if (!$settings->{$name}->{'is_default'}) {
         if ($mfa_event) {
@@ -281,12 +271,7 @@ sub SaveSettings {
     }
     else {
       $setting->validate_value($value);
-      if ($name eq 'api_key_only' && $mfa_event) {
-        $mfa_event->{set} = $value;
-      }
-      else {
-        $settings->{$name}->set($value);
-      }
+      $settings->{$name}->set($value);
     }
   }
 
@@ -309,14 +294,6 @@ sub MfaSettings {
   return unless $user->mfa;
 
   my $event = $user->mfa_provider->verify_token($cgi->param('mfa_token'));
-
-  my $settings = $user->settings;
-  if ($event->{reset}) {
-    $settings->{api_key_only}->reset_to_default();
-  }
-  elsif (my $value = $event->{set}) {
-    $settings->{api_key_only}->set($value);
-  }
 
   $vars->{settings} = $user->settings(1);
   clear_settings_cache($user->id);
@@ -730,8 +707,6 @@ sub SaveMFAupdate {
     $user->set_mfa($mfa);
     $user->mfa_provider->enrolled();
     Bugzilla->request_cache->{mfa_warning} = 0;
-    my $settings = Bugzilla->user->settings;
-    $settings->{api_key_only}->set('on');
     clear_settings_cache(Bugzilla->user->id);
 
     $user->update({keep_session => 1, keep_tokens => 1});

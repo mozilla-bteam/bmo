@@ -35,7 +35,6 @@
   # style_urls: list. List of URLs to CSS style sheets.
   # message: string. A message to display to the user. May contain HTML.
   # atomlink: Atom link URL, May contain HTML
-  # generate_api_token: generate a token which can be used to make authenticated webservice calls
   # no_body: if true the body element will not be generated
   # allow_mobile: allow special CSS and viewport for detected mobile user agents
   # use_login_page: display a link to the full login page, rather than an inline login.
@@ -54,7 +53,6 @@
   no_yui = 0
   jquery = []
   jquery_css = []
-  generate_api_token = 1
   robots = 'index'
 %]
 
@@ -140,11 +138,6 @@
         };
     %]
     [% Hook.process("start") %]
-    [%
-       IF generate_api_token;
-        js_BUGZILLA.api_token = get_api_token();
-       END;
-    %]
 
     <meta name="viewport" content="width=1024">
     <meta name="color-scheme" content="dark light">

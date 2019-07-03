@@ -43,8 +43,7 @@
   cgi = Bugzilla.cgi;
   classification = cgi.param('classification');
 
-  PROCESS global/header.html.tmpl
-    generate_api_token = 1;
+  PROCESS global/header.html.tmpl;
 %]
 
 [% IF NOT is_describe %]

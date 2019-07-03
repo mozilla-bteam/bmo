@@ -713,7 +713,6 @@ sub possible_duplicates {
     limit              => Optional [Int],
     summary            => Optional [Str],
     include_fields     => Optional [ArrayRef [Str]],
-    Bugzilla_api_token => Optional [Str]
   ];
 
   ThrowCodeError('param_invalid',

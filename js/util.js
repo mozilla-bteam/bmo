@@ -391,7 +391,6 @@ Bugzilla.API = class API {
    */
   static _init(endpoint, method = 'GET', params = {}) {
     const url = new URL(`${BUGZILLA.config.basepath}rest/${endpoint}`, location.origin);
-    const token = BUGZILLA.api_token;
 
     if (method === 'GET') {
       for (const [key, value] of Object.entries(params)) {
@@ -408,11 +407,6 @@ Bugzilla.API = class API {
           url.searchParams.set(key, value);
         }
       }
-    }
-
-    /** @todo Remove this once Bug 1477163 is solved */
-    if (token) {
-      url.searchParams.set('Bugzilla_api_token', token);
     }
 
     return new Request(url, {

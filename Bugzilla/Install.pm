@@ -187,12 +187,6 @@ sub SETTINGS {
       category => 'Reviews and Needinfo'
     },
     {
-      name     => 'api_key_only',
-      options  => ['on', 'off'],
-      default  => 'off',
-      category => 'API'
-    },
-    {
       name     => 'use_elasticsearch',
       options  => ['on', 'off'],
       default  => 'off',
@@ -212,6 +206,14 @@ sub SETTINGS {
     },
   ];
 }
+
+sub REMOVED_SETTINGS {
+  return [
+    {
+      name => 'api_key_only',
+    },
+  ];
+};
 
 use constant SYSTEM_GROUPS => (
   {name => 'admin',        description => 'Administrators'},
@@ -298,6 +300,11 @@ sub update_settings {
   my @settings = @{SETTINGS()};
   foreach my $params (@settings) {
     add_setting($params);
+  }
+
+  @settings = @{REMOVED_SETTINGS()};
+  foreach my $params (@settings) {
+    remove_setting($params);
   }
 }
 

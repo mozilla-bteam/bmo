@@ -242,10 +242,6 @@ sub members_report {
             $rh_user->{groups}    = [$rh->{name}];
             $rh_user->{lastseeon} = $member->last_seen_date;
             $rh_user->{mfa}       = $member->mfa;
-            $rh_user->{api_key_only}
-              = $member->settings->{api_key_only}->{value} eq 'on'
-              ? JSON::true
-              : JSON::false;
           }
           $users{$login} = $rh_user;
         }

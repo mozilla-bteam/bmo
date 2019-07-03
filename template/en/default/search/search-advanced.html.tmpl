@@ -42,7 +42,6 @@ function remove_token() {
 
 [% PROCESS global/header.html.tmpl
   title = "Search for $terms.bugs"
-  generate_api_token = 1
   onload = "doOnSelectProduct(0);"
   javascript = js_data
   javascript_urls = [ "js/productform.js", "js/TUI.js", "js/field.js", "js/advanced-search.js" ]

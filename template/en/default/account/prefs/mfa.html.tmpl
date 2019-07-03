@@ -74,23 +74,6 @@
       </div>
     </div>
 
-    <p class="mfa-api-blurb">
-      [% IF user.settings.api_key_only.value == 'on' %]
-        Enabling two-factor authentication has also required systems that
-        interface with [% terms.Bugzilla %]'s API to use <a href="[% basepath FILTER none %]userprefs.cgi?tab=apikey">API keys</a>
-        for authentication.<br>
-        <br>
-        While not recommended, this limitation can be lifted by changing the
-        <a href="[% basepath FILTER none %]userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
-        preference.
-      [% ELSE %]
-        Systems that interface with [% terms.Bugzilla %]'s API are not required to use API keys.<br>
-        Change the
-        <a href="[% basepath FILTER none %]userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
-        preference to enforce API key usage.
-      [% END %]
-    </p>
-
     [% IF user.mfa  %]
       <p class="mfa-disable-blurb">
         You will need to disable your two-factor authentication in order to change to a different method.
@@ -269,20 +252,6 @@
       Two-factor authentication settings will not be updated until you
       <b>Submit Changes</b>.
     </p>
-
-    <p class="mfa-api-blurb" style="display:none">
-      Enabling two-factor authentication will also require systems that
-      interface with [% terms.Bugzilla %]'s API to use <a href="[% basepath FILTER none %]userprefs.cgi?tab=apikey">API keys</a>
-      for authentication.  While not recommended, this limitation can be lifted by changing the
-      <a href="[% basepath FILTER none %]userprefs.cgi?tab=settings#api_key_only">Require API key authentication for API requests</a>
-      preference after 2FA is enabled.
-    </p>
-
-    <p>
-      <em>Warning:</em> Changing your Two-factor authentication settings will
-      automatically log out other login sessions except for the current one.
-    </p>
-
   </div>
 
 </div>
