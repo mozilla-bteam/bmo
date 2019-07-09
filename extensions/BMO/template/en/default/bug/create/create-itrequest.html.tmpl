@@ -82,6 +82,7 @@
 [% PROCESS global/header.html.tmpl
    title = "Mozilla Corporation/Foundation IT Requests"
    generate_api_token = 1
+   use_text_editor = 1
    javascript = inline_javascript
    javascript_urls = [ 'js/field.js' ]
 %]
@@ -167,7 +168,7 @@
 
       <tr><td align="right" valign="top"><strong>Description:</strong></td>
         <td colspan="3">
-          <textarea name="comment" rows="10" cols="80">
+          <textarea id="comment" name="comment" rows="10" cols="80">
             [% comment FILTER html %]</textarea>
           <br>
         </td>

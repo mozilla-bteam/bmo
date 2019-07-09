@@ -51,9 +51,6 @@ YAHOO.util.Event.onDOMReady(function() {
   var width = document.getElementById('short_desc').clientWidth + 'px';
   var el;
 
-  el = document.getElementById('comment');
-  el.style.width = width;
-
   el = document.getElementById('cf_crash_signature');
   if (el) el.style.width = width;
 

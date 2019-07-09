@@ -216,13 +216,6 @@ table.attachment_info td {
   margin: 0 0 0 16px;
 }
 
-#smallCommentFrame #comment,
-#smallCommentFrame #comment_preview {
-  display: block;
-  box-sizing: border-box;
-  width: 100% !important;
-}
-
 textarea.bz_private {
   border: 1px solid var(--accent-color-pink-1);
 }

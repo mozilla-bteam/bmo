@@ -38,6 +38,7 @@
   header = header
   subheader = subheader
   generate_api_token = 1
+  use_text_editor = 1
   doc_section = "attachments.html"
   javascript_urls = ['js/attachment.js', 'js/field.js']
   style_urls = ['skins/standard/attachment.css']
@@ -272,7 +273,9 @@
             <label for="comment">Comment (on the [% terms.bug %]):</label>
             [% classNames = 'block' %]
             [% classNames = "$classes bz_private" IF attachment.isprivate %]
-            [% INCLUDE bug/comment.html.tmpl
+            [% INCLUDE global/textarea.html.tmpl
+               name    = 'comment'
+               id      = 'comment'
                minrows = 10
                cols    = 80
                wrap    = 'soft'

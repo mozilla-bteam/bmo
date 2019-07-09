@@ -25,6 +25,7 @@
 
 [% PROCESS global/header.html.tmpl
    title = "Trademark Usage Requests"
+   use_text_editor = 1
 %]
 
 [% USE Bugzilla %]
@@ -61,7 +62,7 @@
 
     <tr><td align="right" valign="top"><strong>Description:</strong></td>
       <td colspan="3">
-        <textarea name="comment" rows="10" cols="80">
+        <textarea id="comment" name="comment" rows="10" cols="80">
           [% comment FILTER html %]</textarea>
         <br>
       </td>

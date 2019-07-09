@@ -39,6 +39,7 @@
 [% END %]
 [% title = title _ filtered_desc %]
 [% generate_api_token = 1 %]
+[% use_text_editor = 1 %]
 [% header = "$terms.Bug&nbsp;$bug.bug_id" %]
 [% javascript_urls = [ "js/field.js" ] %]
 [% javascript_urls.push("js/bug.js") IF user.id  %]

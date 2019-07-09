@@ -648,3 +648,92 @@ Bugzilla.Error = class CustomError extends Error {
     return `${this.name}: "${this.message}" (code: ${this.code}${this.detail ? `, detail: ${this.detail}` : ''})`;
   }
 };
+
+/**
+ * Provide static utility methods related to event handlers.
+ */
+Bugzilla.Event = class Event {
+  /**
+   * Add keyboard shortcuts to an element.
+   * @param {EventTarget} $target Event target, such as an element, `document` or `window`.
+   * @param {Object.<String, Function>} mapping Key binding mapping object where the key is a key combination and the
+   * value is a handler function. In most cases, `Ctrl` and `Meta` have to be replaced with the virtual `Accel`
+   * modifier. Also, the Space key has to be defined as `Space`.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
+   * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
+   */
+  static enable_keyshortcuts($target, mapping) {
+    const { is_mac } = Bugzilla.UA;
+    const shortcuts = [];
+
+    for (const [combination, handler] of Object.entries(mapping)) {
+      const keys = new Set(combination.split('+'));
+      const accel = keys.delete('Accel');
+
+      shortcuts.push({
+        ctrlKey: keys.delete('Ctrl') || (!is_mac && accel),
+        metaKey: keys.delete('Meta') || (is_mac && accel),
+        altKey: keys.delete('Alt'),
+        shiftKey: keys.delete('Shift'),
+        key: keys.size ? [...keys][0].replace('Space', ' ') : undefined,
+        handler,
+      });
+    }
+
+    $target.addEventListener('keydown', event => {
+      if (event.isComposing) {
+        return;
+      }
+
+      for (const shortcut of shortcuts) {
+        if (['ctrlKey', 'metaKey', 'altKey', 'shiftKey'].every(key => event[key] === shortcut[key]) &&
+          event.key.toLowerCase() === shortcut.key.toLowerCase()) {
+          event.preventDefault();
+          shortcut.handler(event);
+        }
+      }
+    });
+  }
+};
+
+/**
+ * Provide static utility methods related to regular expressions.
+ */
+Bugzilla.RegExp = class RegExp {
+  /**
+   * Escape special characters in a string so it can be used for `new RegExp()`.
+   * @param {String} str Input string.
+   * @returns {String} Escaped string.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Escaping
+   */
+  static escape(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+};
+
+/**
+ * Provide static utility methods related to string parsing and manipulation.
+ */
+Bugzilla.String = class String {
+  /**
+   * Generate a random hash string like `57D627E` that can be used for DOM node IDs.
+   * @param {Number} [length] Size of hash.
+   * @returns {String} Generated hash.
+   */
+  static generate_hash(length = 7) {
+    return [...Array(length)].map(() => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
+  }
+};
+
+/**
+ * Provide static utility methods related to the user's browser and OS.
+ */
+Bugzilla.UA = class UA {
+  /**
+   * Check if the user is on the macOS platform.
+   * @type {Boolean}
+   */
+  static get is_mac() {
+    return navigator.platform === 'MacIntel';
+  }
+};

@@ -936,7 +936,7 @@ $(function() {
 
             if (BUGZILLA.user.settings.quote_replies == 'quoted_reply') {
                 var $comment = $('#ct-' + comment_no);
-                if ($comment.attr('data-ismarkdown')) {
+                if ($comment.is('.markdown-body')) {
                     quoteMarkdown($comment);
                 } else {
                     reply_text = prefix + wrapReplyText($comment.text());
@@ -1096,20 +1096,6 @@ $(function() {
                     if ($('#cancel-btn:visible').length === 0) {
                         event.preventDefault();
                         $('#mode-btn').click();
-                    }
-                    break;
-
-                // ctrl+shift+p = toggle comment preview
-                case 'p':
-                    if (event.metaKey || !event.shiftKey)
-                        return;
-                    if (document.activeElement.id == 'comment') {
-                        event.preventDefault();
-                        $('#comment-preview-tab').click();
-                    }
-                    else if ($('#comment-preview:visible').length !== 0) {
-                        event.preventDefault();
-                        $('#comment-edit-tab').click();
                     }
                     break;
             }
@@ -1276,81 +1262,6 @@ $(function() {
                 .prop('title', message)
                 .show();
         });
-
-    // comment preview
-    var last_comment_text = '';
-    $('#comment-tabs li').click(async event => {
-        var that = $(event.target);
-        if (that.attr('aria-selected') === 'true')
-            return;
-
-        // ensure preview's height matches the comment
-        var comment = $('#comment');
-        var preview = $('#comment-preview');
-        var comment_height = comment[0].offsetHeight;
-
-        // change tabs
-        $('#comment-tabs li').attr({ tabindex: -1, 'aria-selected': false });
-        $('.comment-tabpanel').hide();
-        that.attr({ tabindex: 0, 'aria-selected': true });
-        var tabpanel = $('#' + that.attr('aria-controls')).show();
-        var focus = that.data('focus');
-        if (focus !== '') {
-            $('#' + focus).focus();
-        }
-
-        // update preview
-        preview.css('height', comment_height + 'px');
-        if (tabpanel.attr('id') != 'comment-preview-tabpanel' || last_comment_text == comment.val())
-            return;
-        $('#preview-throbber').show();
-        preview.html('');
-
-        try {
-            const { html } = await Bugzilla.API.post('bug/comment/render', { text: comment.val() });
-
-            $('#preview-throbber').hide();
-            preview.html(html);
-
-            // Highlight code if possible
-            if (Prism) {
-                Prism.highlightAllUnder(preview.get(0));
-            }
-        } catch ({ message }) {
-            $('#preview-throbber').hide();
-            var container = $('<div/>');
-            container.addClass('preview-error');
-            container.text(message);
-            preview.html(container);
-        }
-
-        last_comment_text = comment.val();
-    }).keydown(function(event) {
-        var that = $(this);
-        var tabs = $('#comment-tabs li');
-        var target;
-
-        // enable keyboard navigation on tabs
-        switch (event.keyCode) {
-            case 35: // End
-                target = tabs.last();
-                break;
-            case 36: // Home
-                target = tabs.first();
-                break;
-            case 37: // Left arrow
-                target = that.prev('[role="tab"]');
-                break;
-            case 39: // Right arrow
-                target = that.next('[role="tab"]');
-                break;
-        }
-
-        if (target && target.length) {
-            event.preventDefault();
-            target.click().focus();
-        }
-    });
 
     // dirty field tracking
     $('#changeform select')

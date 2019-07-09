@@ -1,0 +1,35 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+
+style_urls.push('skins/standard/text-editor.css');
+
+# Use `unshift()` instead of `push()` to make sure the script is loaded before `InlineCommentEditor`
+javascript_urls.unshift('js/text-editor.js');
+
+js_BUGZILLA.string.TextEditor = {
+  command_bold => 'Bold',
+  command_bulleted_list => 'Bulleted list',
+  command_code => 'Code',
+  command_heading => 'Heading',
+  command_italic => 'Italic',
+  command_link => 'Link',
+  command_numbered_list => 'Numbered list',
+  command_quote => 'Quote',
+  container_label => 'Text Editor',
+  edit => 'Edit',
+  etiquette => 'Comments subject to Etiquette and Contributor Guidelines',
+  loading => 'Loading…',
+  markdown_supported => 'Markdown styling supported',
+  preview => 'Preview',
+  preview_error => 'Preview could not be loaded. Please try again later.',
+  toolbar_label => 'Markdown text-formatting toolbar',
+};
+
+%]

@@ -14,42 +14,15 @@
   content: '\E254';
 }
 
-.comment-editor {
+.inline-comment-editor {
   background-color: var(--primary-region-header-background-color);
 }
 
-.comment-editor [role="tablist"] {
-  margin: 0 8px;
-  padding: 4px 8px 0;
-}
-
-.comment-editor [role="tab"] {
-  margin: 0;
-  padding: 4px 8px;
-}
-
-.comment-editor [role="tabpanel"] {
-  padding: 0 8px;
-}
-
-.comment-editor textarea {
-  margin: 0;
-  padding: 12px;
-  width: 100%;
-  min-height: 5em;
-}
-
-.comment-editor .comment-text {
-  margin: 0;
-  outline: none;
-  border: 1px solid var(--control-border-color);
-}
-
-.comment-editor .bottom-toolbar {
+.inline-comment-editor .bottom-toolbar {
   padding: 8px;
   text-align: right;
 }
 
-.comment-editor .bottom-toolbar label {
+.inline-comment-editor .bottom-toolbar label {
   margin: 0 8px;
 }

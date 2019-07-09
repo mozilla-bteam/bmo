@@ -31,6 +31,7 @@
 [% PROCESS global/header.html.tmpl
   title = title
   generate_api_token = 1
+  use_text_editor = 1
   style_urls = [ 'skins/standard/attachment.css',
                  'skins/standard/enter_bug.css',
                  'skins/standard/create_bug.css' ]
@@ -544,7 +545,9 @@ TUI_hide_default('expert_fields');
           # by global/textarea.html.tmpl. So we must not escape the comment here. %]
         [% comment FILTER none %]
       [%- END %]
-      [% INCLUDE bug/comment.html.tmpl
+      [% INCLUDE global/textarea.html.tmpl
+         name           = 'comment'
+         id             = 'comment'
          minrows        = 5
          maxrows        = 15
          cols           = constants.COMMENT_COLS

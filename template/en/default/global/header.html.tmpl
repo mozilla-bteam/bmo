@@ -40,6 +40,7 @@
   # allow_mobile: allow special CSS and viewport for detected mobile useragents
   # use_login_page: display a link to the full login page, rather than an inline login.
   # robots: index / noindex (default: index)
+  # use_text_editor: include text editor to enrich `<textarea>` with preview and Markdown editor.
   #%]
 
 [% IF message %]
@@ -120,6 +121,7 @@
                 maxattachmentsize => Param('maxattachmentsize'),
                 maxusermatches => Param('maxusermatches'),
                 splinter_base => Param('splinter_base'),
+                use_markdown => Param('use_markdown'),
             },
             constant => {
                 COMMENT_COLS => constants.COMMENT_COLS,
@@ -145,6 +147,9 @@
         js_BUGZILLA.api_token = get_api_token();
        END;
     %]
+
+    [%# This provides some strings; must go before `json_encode(js_BUGZILLA)` %]
+    [% PROCESS 'global/text-editor.html.tmpl' IF use_text_editor %]
 
     <meta name="viewport" content="width=1024">
     <meta name="color-scheme" content="dark light">
@@ -183,7 +188,7 @@
     [% FOREACH jq_name = jquery.unique %]
       [% starting_js_urls.push("js/jquery/plugins/$jq_name/${jq_name}-min.js") %]
     [% END %]
-    [% starting_js_urls.push('js/global.js', 'js/util.js', 'js/dropdown.js') %]
+    [% starting_js_urls.push('js/global.js', 'js/util.js', 'js/widgets.js') %]
 
     [% FOREACH asset_url = starting_js_urls %]
       [% PROCESS format_js_link %]

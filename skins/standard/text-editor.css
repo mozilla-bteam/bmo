@@ -1,0 +1,114 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+.text-editor {
+  width: 640px;
+}
+
+.text-editor .icon::before {
+  font-size: 16px;
+  font-family: 'Material Icons';
+  vertical-align: top;
+}
+
+.text-editor header,
+.text-editor footer:not([hidden]) {
+  display: flex;
+  justify-content: space-between;
+}
+
+.text-editor [role="tablist"] {
+  padding: 4px 8px 0;
+}
+
+.text-editor [role="tab"] {
+  padding: 4px 8px;
+}
+
+.text-editor .markdown-toolbar:not([hidden]) {
+  display: flex;
+}
+
+.text-editor .markdown-toolbar .group {
+  display: flex;
+  align-items: center;
+  margin: 0 8px;
+}
+
+.text-editor .markdown-toolbar [role="button"] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--button-border-radius);
+  width: 24px;
+  height: 24px;
+}
+
+.text-editor .markdown-toolbar [role="button"]:hover {
+  color: var(--hovered-secondary-button-foreground-color);
+  background-color: var(--hovered-secondary-button-background-color);
+}
+
+.text-editor .markdown-toolbar [role="button"] * {
+  pointer-events: none;
+}
+
+.text-editor [data-command="heading"] .icon::before {
+  content: '\E264';
+}
+
+.text-editor [data-command="bold"] .icon::before {
+  content: '\E238';
+}
+
+.text-editor [data-command="italic"] .icon::before {
+  content: '\E23F';
+}
+
+.text-editor [data-command="quote"] .icon::before {
+  content: '\E244';
+}
+
+.text-editor [data-command="code"] .icon::before {
+  content: '\E86F';
+}
+
+.text-editor [data-command="link"] .icon::before {
+  content: '\E250';
+}
+
+.text-editor [data-command="bulleted-list"] .icon::before {
+  content: '\E241';
+}
+
+.text-editor [data-command="numbered-list"] .icon::before {
+  content: '\E242';
+}
+
+.text-editor textarea {
+  display: block;
+  padding: 12px;
+  width: 100%;
+  min-height: 10em;
+  max-height: 40em;
+}
+
+.text-editor .comment-text {
+  box-sizing: border-box;
+  border: 1px solid var(--control-border-color);
+  max-height: 40em;
+}
+
+.text-editor .comment-text .error {
+  color: var(--secondary-label-color);
+  font-style: italic;
+}
+
+.text-editor footer {
+  padding: 8px;
+  font-size: var(--font-size-small);
+}

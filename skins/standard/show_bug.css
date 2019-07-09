@@ -125,6 +125,10 @@ table.edit_form hr {
   width: 661px;
 }
 
+#add_comment .text-editor {
+  width: 800px;
+}
+
 .notransition {
   transition: none !important;
 }
@@ -292,10 +296,6 @@ table#flags {
 
 #comment_tags_collapse_expand li {
   margin-bottom: 0;
-}
-
-#bugzilla-etiquette {
-  float: right;
 }
 
 .last_comment_link {

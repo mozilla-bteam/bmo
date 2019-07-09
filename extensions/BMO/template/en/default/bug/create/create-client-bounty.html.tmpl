@@ -80,6 +80,9 @@
 #client_bounty_form .form_section {
   margin-bottom: 10px;
 }
+#client_bounty_form .text-editor {
+  width: 100%;
+}
 [% END %]
 
 [% inline_javascript = BLOCK %]
@@ -98,6 +101,7 @@ function validateAndSubmit() {
 [% PROCESS global/header.html.tmpl
    title = "Client Bounty Form"
    generate_api_token = 1
+   use_text_editor = 1
    style = inline_style
    javascript = inline_javascript
    javascript_urls = [ 'extensions/BMO/web/js/form_validate.js',

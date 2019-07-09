@@ -908,56 +908,11 @@ h3.change-name a {
 
 #add-comment-private {
   float: right;
+  margin: 4px 8px;
 }
 
-#add-comment-tips {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1em;
-}
-
-#comment,
-#comment-preview {
-  clear: both;
-  box-sizing: border-box !important;
-  margin: 0 0 0.5em;
-  padding: 12px;
-  width: 100%;
-  max-width: 1024px;
-}
-
-.autosized-comment {
-  max-height: 400px;
-}
-
-#comment-preview {
-  border: 1px solid var(--control-border-color);
-}
-
-#preview-throbber {
-  margin-left: 8px;
-}
-
-#comment-tabs {
-  margin: 0;
-  padding: 0 8px;
-  list-style: none;
-}
-
-#comment-tabs li {
-  outline: 0;
-  border-bottom: 4px solid transparent;
-  padding: 4px 8px;
-}
-
-#comment-tabs li[aria-selected="true"] {
-  color: var(--selected-tab-foreground-color);
-  border-color: var(--control-accent-color);
-}
-
-.preview-error {
-  color: var(--secondary-label-color);
-  font-style: italic;
+.text-editor {
+  width: 100% !important;
 }
 
 /**

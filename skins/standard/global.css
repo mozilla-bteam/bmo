@@ -793,6 +793,7 @@ input[type="radio"]:checked {
 }
 
 [role="tab"] {
+  outline: 0;
   border-radius: 0;
   border-width: 0 0 4px;
   border-style: solid;
@@ -806,10 +807,12 @@ input[type="radio"]:checked {
   color: var(--selected-tab-foreground-color);
 }
 
+[role="tab"][aria-disabled="true"],
 [role="tab"][disabled] {
   border-color: transparent !important;
   color: var(--disabled-control-foreground-color) !important;
   background-color: transparent !important;
+  pointer-events: none;
 }
 
 /**
@@ -2330,48 +2333,6 @@ div.bz_comment_text pre {
   font-weight: normal;
 }
 
-#comment_tabs {
-  margin: 4px 8px 0;
-  border-spacing: 0;
-  padding: 0 !important;
-}
-
-.comment_tab {
-  padding: 4px 8px;
-}
-
-#comment_preview_loading {
-  font-style: italic;
-}
-
-#comment_preview {
-  display: block;
-  clear: both;
-  overflow: auto;
-  border: 1px solid var(--control-border-color);
-  padding: 12px;
-  color: var(--primary-text-color);
-  background-color: var(--primary-text-background-color);
-  font-size: var(--font-size-x-large);
-  line-height: var(--line-height-comfortable);
-}
-
-pre#comment_preview_text {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-
-#comment {
-  padding: 12px;
-}
-
-#bugzilla-etiquette,
-#comment-markdown-tip {
-  font-size: var(--font-size-small);
-}
-
 .comment-text {
   overflow: auto;
   padding: 12px;
@@ -2381,8 +2342,10 @@ pre#comment_preview_text {
   line-height: var(--line-height-comfortable);
 }
 
-pre.comment-text {
+.comment-text:not(.markdown-body) {
   margin: 0;
+  font-size-adjust: .5;
+  font-family: var(--font-family-monospace);
   white-space: pre-wrap;
 }
 

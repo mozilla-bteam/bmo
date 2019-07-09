@@ -5,7 +5,7 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-$(function() {
+$(() => {
     'use strict';
 
     $(window).click(function(e) {
@@ -202,3 +202,122 @@ $(function() {
         }
     }
 });
+
+/**
+ * Reference or define the Bugzilla app namespace.
+ * @namespace
+ */
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
+
+/**
+ * Implement a simple button widget.
+ */
+Bugzilla.Button = class Button {
+  /**
+   * Initialize a new Button instance.
+   * @param {HTMLElement} $button Element with the `button` role.
+   * @param {Function} listener Event hander called whenever the button is pressed.
+   */
+  constructor($button, listener) {
+    this.$button = $button;
+    this.listener = listener;
+
+    this.$button.addEventListener('click', event => this.handle_event(event));
+    this.$button.addEventListener('keydown', event => this.handle_event(event));
+  }
+
+  /**
+   * Call the event listener and fire a custom `pressed` event whenever the left mouse button is clicked or the Enter
+   * key is pressed on it.
+   * @param {(MouseEvent|KeyboardEvent)} event `click` or `keydown` event.
+   */
+  handle_event(event) {
+    if ((event.type === 'click' && event.button === 0) || (event.type === 'keydown' && event.key === 'Enter')) {
+      this.listener(event);
+
+      this.$button.dispatchEvent(new CustomEvent('pressed', { detail: {
+        original_event: event,
+        command: this.$button.dataset.command,
+      } }));
+    }
+  }
+};
+
+/**
+ * Implement a simple tabbed UI widget.
+ */
+Bugzilla.Tabs = class Tabs {
+  /**
+   * Initialize a new Tabs instance.
+   * @param {HTMLElement} $tablist Element with the `tablist` role.
+   */
+  constructor($tablist) {
+    this.$tablist = $tablist;
+
+    this.$tablist.addEventListener('click', event => this.tablist_onclick(event));
+
+    Bugzilla.Event.enable_keyshortcuts(this.$tablist, {
+      Home: event => this.handle_keyshortcuts(event),
+      End: event => this.handle_keyshortcuts(event),
+      ArrowLeft: event => this.handle_keyshortcuts(event),
+      ArrowRight: event => this.handle_keyshortcuts(event),
+    });
+  }
+
+  /**
+   * Get the currently selected tab.
+   * @type {HTMLElement}
+   */
+  get $selected() {
+    return this.$tablist.querySelector('[role="tab"][aria-selected="true"]');
+  }
+
+  /**
+   * Called whenever the tablist is clicked. Switch the tabs if possible.
+   * @param {MouseEvent} event `click` event.
+   */
+  tablist_onclick(event) {
+    if (event.target.matches('[role="tab"]:not([aria-selected="true"]):not([aria-disabled="true"])')) {
+      this.select_tab(event.target, event);
+    }
+  }
+
+  /**
+   * Called whenever a key is pressed on the tablist. Switch the tabs if possible.
+   * @param {KeyboardEvent} event `keydown` event.
+   */
+  handle_keyshortcuts(event) {
+    const tabs = [...this.$tablist.querySelectorAll('[role="tab"]:not([aria-disabled="true"])')];
+    const $new_tab = {
+      Home: tabs[0],
+      End: tabs[tabs.length - 1],
+      ArrowLeft: this.$selected ? tabs[tabs.indexOf(this.$selected) - 1] : undefined,
+      ArrowRight: this.$selected ? tabs[tabs.indexOf(this.$selected) + 1] : undefined,
+    }[event.key];
+
+    if ($new_tab) {
+      this.select_tab($new_tab, event);
+    }
+  }
+
+  /**
+   * Select a new tab.
+   * @param {HTMLElement} $new_tab Tab to be selected.
+   * @param {(MouseEvent|KeyboardEvent)} original_event `click` or `keydown` event.
+   */
+  select_tab($new_tab, original_event) {
+    const $current_tab = this.$selected;
+
+    if ($current_tab) {
+      $current_tab.tabIndex = -1;
+      $current_tab.setAttribute('aria-selected', 'false');
+      document.getElementById($current_tab.getAttribute('aria-controls')).hidden = true;
+    }
+
+    $new_tab.tabIndex = 0;
+    $new_tab.setAttribute('aria-selected', 'true');
+    document.getElementById($new_tab.getAttribute('aria-controls')).hidden = false;
+
+    this.$tablist.dispatchEvent(new CustomEvent('select', { detail: { original_event, $current_tab, $new_tab } }));
+  }
+};
