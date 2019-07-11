@@ -64,12 +64,12 @@ $(function() {
     });
 
     function relativeTimer() {
-        var now = Math.floor(new Date().getTime() / 1000);
-        $('.rel-time').each(function() {
-            $(this).text(timeAgo(now - $(this).data('time')));
+        var now = Date.now();
+        $('time.relative[title]').each(function() {
+            $(this).text(timeAgo(now - new Date($(this).attr('datetime'))));
         });
-        $('.rel-time-title').each(function() {
-            $(this).attr('title', timeAgo(now - $(this).data('time')));
+        $('time.absolute[title]').each(function() {
+            $(this).attr('title', timeAgo(now - new Date($(this).attr('datetime'))));
         });
     }
 
@@ -167,8 +167,8 @@ $(function() {
     $('#attachments-obsolete-btn')
         .click(function(event) {
             event.preventDefault();
-            $(event.target).text(($('#attachments tr:hidden').length ? 'Hide' : 'Show') + ' Obsolete Attachments');
-            $('#attachments tr.attach-obsolete').toggle();
+            $(event.target).text(($('#attachments .attachment:hidden').length ? 'Hide' : 'Show') + ' Obsolete Attachments');
+            $('#attachments .attachment.obsolete').each(function() { this.hidden = !this.hidden; });
         });
 
     // url --> unsafe warning
@@ -212,7 +212,7 @@ $(function() {
         });
 
     // use non-native tooltips for relative/absolute times and bug summaries
-    $('.rel-time, .rel-time-title, .abs-time-title, .bz_bug_link, .tt').tooltip({
+    $('time[title], .bz_bug_link, .tt').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
         hide: { effect: 'none' }
@@ -936,7 +936,7 @@ $(function() {
 
             if (BUGZILLA.user.settings.quote_replies == 'quoted_reply') {
                 var $comment = $('#ct-' + comment_no);
-                if ($comment.attr('data-ismarkdown')) {
+                if ($comment.is('.markdown-body')) {
                     quoteMarkdown($comment);
                 } else {
                     reply_text = prefix + wrapReplyText($comment.text());
@@ -1450,7 +1450,7 @@ async function show_new_changes_indicator() {
             // Exclude hidden CC changes and the user's own changes
             return $change.clientHeight > 0 &&
                 Number($change.querySelector('.email').getAttribute('data-user-id')) !== BUGZILLA.user.id &&
-                new Date($change.querySelector('[data-time]').getAttribute('data-time') * 1000) > last_visit_ts;
+                new Date($change.querySelector('time').dateTime) > last_visit_ts;
         });
 
         if (new_changes.length === 0) {

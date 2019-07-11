@@ -344,12 +344,12 @@ function bz_toggleClass(anElement, aClass) {
 
 /* Retruns a string representation of a duration.
  *
- * @param ss   Duration in seconds
+ * @param ss   Duration in milliseconds
  * or
  * @param date Date object
  */
 function timeAgo(param) {
-    var ss = param.constructor === Date ? Math.round((new Date() - param) / 1000) : param;
+    var ss = Math.round((param.constructor === Date ? new Date() - param : param) / 1000);
     var mm = Math.round(ss / 60),
         hh = Math.round(mm / 60),
         dd = Math.round(hh / 24),

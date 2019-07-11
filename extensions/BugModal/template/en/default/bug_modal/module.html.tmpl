@@ -8,6 +8,7 @@
 
 [%#
   # title: (string, optional) main title of module
+  # is_header: (boolean) if true, show as <header> instead of <section>
   # collapse: (boolean) if true, show as collapsed by default (default false)
   # subtitle: (optional) any of:
   #   a string
@@ -21,6 +22,9 @@
   #   not be remembered between page loads
   #%]
 
+[% IF is_header %]
+<header class="module">
+[% ELSE %]
 <section class="module
     [%~ " edit-hide" IF hide_on_edit %]
     [%~ " edit-show" IF hide_on_view && !hide_on_edit %]"
@@ -28,6 +32,7 @@
     [% IF title %] id="module-[% title.replace FILTER id %]"[% END %]
     [%~ ' data-non-stick="1"' IF no_collapse_persist %]
 >
+[% END %]
   [% IF title %]
     <header id="module-[% title.replace FILTER id %]-header" class="module-header">
       <div class="module-latch"
@@ -40,7 +45,7 @@
              aria-describedby="module-[% title.replace FILTER id %]-subtitle"></div>
         <h2 class="module-title" id="module-[% title.replace FILTER id %]-title">[% title FILTER html %]</h2>
         [% IF subtitle != "" && subtitle.size %]
-          <h3 class="module-subtitle" id="module-[% title.replace FILTER id %]-subtitle">
+          <div class="module-subtitle" id="module-[% title.replace FILTER id %]-subtitle">
             ([% FOREACH st IN subtitle.list %]
               [% IF st.unfiltered.defined %]
                 [% st.unfiltered FILTER none %]
@@ -49,7 +54,7 @@
               [% END %]
               [% ", " UNLESS loop.last %]
             [% END %])
-          </h3>
+          </div>
         [% END %]
       </div>
     </header>
@@ -60,4 +65,8 @@
   >
     [% content FILTER none %]
   </div>
+[% IF is_header %]
+</header>
+[% ELSE %]
 </section>
+[% END %]

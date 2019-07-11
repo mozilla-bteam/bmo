@@ -8,13 +8,12 @@
 
 [%#
   # ts: timestamp
+  # extra_class: Extra class name
+  # itemprop: A schema.org property name for the timestamp, e.g. `datePublished`
   #%]
-[% IF user.setting("ui_use_absolute_time") == "on" -%]
-<span class="rel-time-title" title="[% ts FILTER time_duration FILTER html %]" data-time="[% ts FILTER epoch FILTER none %]">
-  [%~ ts FILTER time("%Y-%m-%d %H:%M %Z"); ~%]
-</span>
-[% ELSE -%]
-<span class="rel-time" title="[% ts FILTER time("%Y-%m-%d %H:%M %Z") %]" data-time="[% ts FILTER epoch FILTER none %]">
-  [%~ ts FILTER time_duration FILTER html; ~%]
-</span>
-[% END -%]
+[% abstime = user.setting("ui_use_absolute_time") == "on" %]
+<time datetime="[% ts FILTER time('%FT%T%z') %]" [% IF itemprop %]itemprop="[% itemprop FILTER html %]"[% END %]
+      class="[% IF abstime %]absolute[% ELSE %]relative[% END %][% IF extra_class %][%+ extra_class FILTER html %][% END %]"
+      title="[% IF abstime %][% ts FILTER time_duration FILTER html %][% ELSE %][% ts FILTER time('%Y-%m-%d %H:%M %Z') %][% END %]">
+  [%~ IF abstime %][% ts FILTER time('%Y-%m-%d %H:%M %Z') %][% ELSE %][% ts FILTER time_duration FILTER html %][% END ~%]
+</time>

@@ -25,7 +25,7 @@
 [%# view %]
 [% IF set_flags.size %]
   <div class="flags edit-hide">
-    <table class="layout-table tracking-flags">
+    <table class="tracking-flags">
       [% IF type == "tracking" %]
         <tr>
           <th></th>
@@ -68,7 +68,7 @@
 
 [%# edit %]
 <div class="flags edit-show" style="display:none">
-  <table class="layout-table tracking-flags">
+  <table class="tracking-flags">
     [% IF type == "tracking" %]
       <tr>
         <th></th>

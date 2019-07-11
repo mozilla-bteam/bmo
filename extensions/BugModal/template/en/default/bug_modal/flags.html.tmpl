@@ -36,7 +36,7 @@
 [% END %]
 
 <div id="bug-flags" class="flags">
-  <table class="layout-table">
+  <table>
   [%
     FOREACH type IN types;
       FOREACH flag IN type.flags;
@@ -80,21 +80,16 @@
     <td class="flag-name">
       [% activity_id = bug.find_activity_id_for_flag(f) %]
       [% IF activity_id %]
-        <a href="#[% activity_id FILTER none %]"
-      [% ELSE %]
-        <span
+        <a href="#[% activity_id FILTER none %]">
       [% END %]
-        [% IF user.setting("ui_use_absolute_time") == "on"  %]
-            class="abs-time-title[% " activity-ref" IF activity_id %]"
-            title="[% f.creation_date FILTER time('%Y-%m-%d %H:%M %Z') %]"
-        [% ELSE %]
-            class="rel-time-title[% " activity-ref" IF activity_id %]"
-            title="[% f.creation_date FILTER time_duration FILTER html %]"
-        [% END %]
-        data-time="[% f.creation_date FILTER epoch FILTER none %]"
-      >
-        [% f.type.name FILTER html %]
-      [% activity_id ? "</a>" : "</span>" %]
+      [% INCLUDE bug_modal/rel_time.html.tmpl
+          ts = f.creation_date
+          extra_class = activity_id ? 'activity-ref' : ''
+      %]
+      [% f.type.name FILTER html %]
+      [% IF activity_id %]
+        </a>
+      [% END %]
     </td>
 
     <td class="flag-value">

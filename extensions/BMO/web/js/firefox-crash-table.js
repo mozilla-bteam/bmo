@@ -175,7 +175,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (parts.length == 2) {
               const num = parts[1];
               const ctag = "ctag-" + num;
-              commentTagSelector = "#" + ctag + ">.comment-tags>.comment-tag";
+              commentTagSelector = "#" + ctag + " .tag";
               x = "x";
             }
           }

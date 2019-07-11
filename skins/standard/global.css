@@ -356,6 +356,9 @@ body {
   line-height: var(--line-height-default);
   font-family: var(--font-family-sans-serif);
   scrollbar-color: var(--scrollbar-color);
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  -ms-text-size-adjust: none;
 }
 
 pre,
@@ -1004,12 +1007,12 @@ input[type="radio"]:checked {
   flex: auto;
   position: relative;
   outline: none;
-  padding: 0 15px;
+  padding: 0 8px;
 }
 
 #main-inner {
   position: relative;
-  margin: 15px 0;
+  margin: 8px 0;
 }
 
 /**

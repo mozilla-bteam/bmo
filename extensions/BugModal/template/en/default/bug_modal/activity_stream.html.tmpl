@@ -6,7 +6,7 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<div id="comment-actions">
+<div role="toolbar" id="comment-actions">
   [% IF user.id && user.settings.comment_box_position.value == 'after_comments' %]
     <button type="button" id="add-comment-btn" class="secondary" aria-label="Add Comment">Add Comment &darr;</button>
   [% ELSE %]
@@ -48,39 +48,59 @@
    </div>
 </div>
 
+<div role="feed" id="timeline">
 [%
   PROCESS bug/time.html.tmpl;
 
   FOREACH change_set IN bug.activity_stream;
     NEXT IF change_set.cc_only;
-    extra_class = change_set.comment.collapsed ? " ca-" _ change_set.comment.author.id : "";
-    '<div class="change-set' _ extra_class _ '" id="' _ change_set.id _ '">';
 
-    extra_class = "";
+    comment = change_set.comment;
+    user_role = "";
+    extra_class = comment.collapsed ? "ca-" _ comment.author.id : "";
+
     IF change_set.user_id == bug.assigned_to.id;
-      extra_class = "assignee";
+      user_role = "assignee";
     ELSIF change_set.user_id == bug.reporter.id;
-      extra_class = "reporter";
+      user_role = "reporter";
     END;
 
-    IF change_set.comment;
-      PROCESS comment_header comment=change_set.comment;
+    IF comment;
+%]
+  <article class="change-set comment [% comment.collapsed ? 'default-collapsed' : '' %] [%+ user_role %] [%+ extra_class %]"
+      id="[% change_set.id %]" itemscope itemtype="http://schema.org/Comment"
+      data-id="[% comment.id FILTER none %]" data-no="[% comment.count FILTER none %]"
+      [% IF comment.tags.size %]data-tags="[% comment.tags.join(' ') FILTER html %]"[% END %]
+      aria-expanded="[% comment.collapsed ? 'false' : 'true' %]">
+[% ELSE %]
+  <article class="change-set change [% user_role %] [% extra_class %]" id="[% change_set.id %]">
+[%
+    END;
+
+    IF comment;
+      PROCESS comment_header comment=comment;
     ELSE;
       PROCESS activity_header activities=change_set.activity id=change_set.id;
     END;
 
-    IF change_set.comment != "";
-      PROCESS comment_body comment=change_set.comment;
+    IF comment != "";
+      PROCESS comment_body comment=comment;
     END;
     FOREACH activity IN change_set.activity;
       PROCESS activity_body activity=activity change_set=change_set;
     END;
 
-    '</div>';
+    IF comment;
+      PROCESS comment_footer comment=comment;
+    END;
+
+    '</article>';
   END;
 %]
+</div>[%# end #timeline %]
 
 [% IF user.can_tag_comments %]
+
   <div id="ctag" style="display:none">
     <input id="ctag-add" size="10" placeholder="add tag"
       maxlength="[% constants.MAX_COMMENT_TAG_LENGTH FILTER html %]">
@@ -94,162 +114,112 @@
 [% END %]
 
 [% BLOCK comment_header %]
-  <div class="comment" data-id="[% comment.id FILTER none %]" data-no="[% comment.count FILTER none %]"
-       data-tags="[% comment.tags.join(' ') FILTER html %]">
-    [%# normal comment header %]
-    <table class="layout-table change-head [% extra_class FILTER none %]" id="ch-[% comment.count FILTER none %]"
-      [% IF comment.collapsed +%] style="display:none"[% END %] role="presentation">
-      <tr>
-        <td rowspan="2" class="change-gravatar">
-          [% INCLUDE bug_modal/user.html.tmpl
-              u = comment.author
-              gravatar_size = 32
-              gravatar_only = 1
-          %]
-        </td>
-
-        <td class="change-author">
-          [% INCLUDE bug_modal/user.html.tmpl
-              u = comment.author
-          %]
-          [% IF extra_class %]
-            <span class="user-role">[% extra_class.ucfirst FILTER none %]</span>
+  <header>
+    [% IF comment.collapsed %]
+      <div class="comment-collapse-reason">Comment hidden ([% comment.collapsed_reason FILTER html %])</div>
+    [% END %]
+    <div class="info">
+      <div class="primary">
+        <div class="author">
+          [% INCLUDE bug_modal/user.html.tmpl u=comment.author gravatar_size=32 itemprop='creator' %]
+          [% IF user_role %]
+            <span class="user-role">[% user_role.ucfirst FILTER none %]</span>
           [% END %]
           [% Hook.process('user', 'bug/comments.html.tmpl') %]
-        </td>
-
-        <td rowspan="2" class="comment-actions"><div role="group">
-          [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
-            [% IF comment.is_private %]
-              <div class="comment-private edit-hide bz_private">
-                Private
-              </div>
-            [% END %]
-            <div class="comment-private edit-show" style="display:none">
-              <input type="hidden" value="1" name="defined_isprivate_[% comment.id FILTER none %]">
-              <input type="checkbox" name="isprivate_[% comment.id FILTER none %]"
-                  id="is-private-[% comment.id FILTER none %]"
-                  class="is-private" value="1" [%= "checked" IF comment.is_private %]>
-              <label for="is-private-[% comment.id FILTER none %]" aria-label="Mark as Private">Private</label>
-            </div>
-          [% END %]
-          [% Hook.process('comment_action', 'bug_modal/activity_stream.html.tmpl') %]
-          [% IF user.id %]
-            [% IF user.can_tag_comments %]
-              <button type="button" class="tag-btn minor iconic" aria-label="Tag"
-                      data-id="[% comment.id FILTER none %]" data-no="[% comment.count FILTER none %]">
-                <span class="icon" aria-hidden="true"></span>
-              </button>
-            [% END %]
-            <button type="button" class="reply-btn minor iconic" aria-label="Reply" [% 'disabled' IF !comment.body %]
-                    data-id="[% comment.id FILTER none %]" data-no="[% comment.count FILTER none %]"
-                    data-reply-name="[% comment.author.name || comment.author.nick FILTER html %]">
-              <span class="icon" aria-hidden="true"></span>
-            </button>
-          [% END %]
-          <button type="button" class="change-spinner minor iconic" id="cs-[% comment.count FILTER none %]"
-                  aria-label="Collapse" aria-expanded="true"
-                  data-strings='{ "collapse_label": "Collapse", "expand_label": "Expanded" }'>
+        </div>
+      </div>
+      <div class="secondary">
+        <h3 itemprop="name">
+          <a rel="bookmark" href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id FILTER none %]#c[% comment.count FILTER none %]">
+            [% comment.count == 0 ? "Description" : "Comment " _ comment.count ~%]
+          </a>
+        </h3>
+        &bull;
+        <div class="time">
+          [% INCLUDE bug_modal/rel_time.html.tmpl ts=comment.creation_ts itemprop='dateCreated' %]
+        </div>
+        [% Hook.process('comment_meta', 'bug_modal/activity_stream.html.tmpl') %]
+      </div>
+    </div>
+    <div role="toolbar" class="actions">
+      [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
+        [% IF comment.is_private %]
+          <div class="comment-private edit-hide bz_private">Private</div>
+        [% END %]
+        <div class="comment-private edit-show" style="display:none">
+          <input type="hidden" value="1" name="defined_isprivate_[% comment.id FILTER none %]">
+          <input type="checkbox" name="isprivate_[% comment.id FILTER none %]"
+              id="is-private-[% comment.id FILTER none %]"
+              class="is-private" value="1" [%= "checked" IF comment.is_private %]>
+          <label for="is-private-[% comment.id FILTER none %]" aria-label="Mark as Private">Private</label>
+        </div>
+      [% END %]
+      [% Hook.process('comment_action', 'bug_modal/activity_stream.html.tmpl') %]
+      [% IF user.id %]
+        [% IF user.can_tag_comments %]
+          <button type="button" class="tag-btn minor iconic" aria-label="Tag"
+              data-id="[% comment.id FILTER none %]" data-no="[% comment.count FILTER none %]">
             <span class="icon" aria-hidden="true"></span>
           </button>
-        </div></td>
-      </tr>
+        [% END %]
+        <button type="button" class="reply-btn minor iconic" aria-label="Reply"
+            [%+ 'disabled' IF !comment.body %] data-reply-id="[% comment.count FILTER none %]"
+            data-reply-name="[% comment.author.name || comment.author.nick FILTER html %]">
+          <span class="icon" aria-hidden="true"></span>
+        </button>
+      [% END %]
+      <button type="button" class="change-spinner minor iconic" id="cs-[% comment.count FILTER none %]"
+          aria-label="[% comment.collapsed ? 'Expand' : 'Collapse' %]"
+          aria-expanded="[% comment.collapsed ? 'false' : 'true' %]">
+        <span class="icon" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+[% END %]
 
-      <tr id="cr-[% comment.count FILTER none %]" [%= IF comment.collapsed %]style="display:none"[% END %]>
-        <td>
-          <h3 class="change-name">
-            <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id FILTER none %]#c[% comment.count FILTER none %]">
-              [% comment.count == 0 ? "Description" : "Comment " _ comment.count ~%]
-            </a>
-          </h3>
-          &bull;
-          <div class="change-time">
-            [% INCLUDE bug_modal/rel_time.html.tmpl ts=comment.creation_ts %]
-          </div>
-          [% Hook.process('comment_meta', 'bug_modal/activity_stream.html.tmpl') %]
-        </td>
-      </tr>
-
-      <tr id="ctag-[% comment.count FILTER none %]">
-        <td colspan="2" class="comment-tags">
-          [% FOREACH tag IN comment.tags ~%]
-            <span class="comment-tag">
-              [%~ '<a role="button" aria-label="Remove">x</a>' IF user.can_tag_comments %][% tag FILTER html ~%]
-            </span>
-          [%~ END %]
-        </td>
-      </tr>
-    </table>
-
-    [%# default-collapsed comment header %]
-    [% IF comment.collapsed %]
-      <table class="layout-table change-head default-collapsed" id="cc-[% comment.count FILTER none %]"
-             role="presentation">
-      <tr>
-        <td class="comment-collapse-reason"
-            [% IF user.setting("ui_use_absolute_time") == "on" %]
-            title="[% comment.author.nick FILTER html %] [[% comment.creation_ts FILTER time("%Y-%m-%d %H:%M %Z") FILTER html %]]">
-            [% ELSE %]
-            title="[% comment.author.nick FILTER html %] [[% comment.creation_ts FILTER time_duration FILTER html %]]">
-            [% END %]
-            Comment hidden ([% comment.collapsed_reason FILTER html %])
-        </td>
-        <td class="comment-actions">
-          <button type="button" class="change-spinner minor iconic" id="ccs-[% comment.count FILTER none %]"
-                  aria-label="[% comment.collapsed ? 'Expand' : 'Collapse' %]"
-                  aria-expanded="[% comment.collapsed ? 'false' : 'true' %]"
-                  data-strings='{ "collapse_label": "Collapse", "expand_label": "Expanded" }'>
-            <span class="icon" aria-hidden="true"></span>
-          </button>
-        </td>
-      </tr>
-      </table>
-    [% END %]
-  </div>
+[% BLOCK comment_footer %]
+  <footer[% ' hidden' UNLESS comment.tags.size %]>
+    <div class="comment-tags" id="ctag-[% comment.count FILTER none %]">
+      <div class="list">
+        [% FOREACH tag IN comment.tags ~%]
+          <span class="tag">
+            [%~ '<a role="button" aria-label="Remove">x</a>' IF user.can_tag_comments %]
+            <span itemprop="keywords">[% tag FILTER html ~%]</span>
+          </span>
+        [%~ END %]
+      </div>
+    </div>
+  </footer>
 [% END %]
 
 [% BLOCK activity_header %]
   [% action = activities.0 %]
-  <div class="change" id="a[% id FILTER none %]">
-    <table class="layout-table change-head [% extra_class FILTER none %]" role="presentation">
-      <tr>
-        <td rowspan="2" class="change-gravatar">
-          [% INCLUDE bug_modal/user.html.tmpl
-              u = action.who
-              gravatar_size = 32
-              gravatar_only = 1
-          %]
-        </td>
-        <td class="change-author">
-          [% INCLUDE bug_modal/user.html.tmpl
-              u = action.who
-          %]
-          [% IF extra_class %]
-            <span class="user-role">[% extra_class.ucfirst FILTER none %]</span>
+  <header id="a[% id FILTER none %]">
+    <div class="info">
+      <div class="primary">
+        <div class="author">
+          [% INCLUDE bug_modal/user.html.tmpl u = action.who, gravatar_size = 32 %]
+          [% IF user_role %]
+            <span class="user-role">[% user_role.ucfirst FILTER none %]</span>
           [% END %]
           [% Hook.process('user', 'bug/changes.html.tmpl') %]
-        </td>
-        <td rowspan="2" class="comment-actions"><div role="group">
-          <button type="button" class="change-spinner minor iconic" id="as-[% id FILTER none %]"
-                  aria-label="Collapse" aria-expanded="true"
-                  data-strings='{ "collapse_label": "Collapse", "expand_label": "Expanded" }'>
-            <span class="icon" aria-hidden="true"></span>
-          </button>
-        </div></td>
-      </tr>
-      <tr id="ar-[% id FILTER none %]">
-        <td>
-          <h3 class="change-name">
-            <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id FILTER none %]#[% id FILTER none %]">Updated</a>
-          </h3>
-          &bull;
-          <div class="change-time">
-            [% INCLUDE bug_modal/rel_time.html.tmpl ts=action.when %]
-          </div>
-        </td>
-      </tr>
-    </table>
-  </div>
+        </div>
+      </div>
+      <div class="secondary">
+        <div class="time">
+          <a rel="bookmark" href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.bug_id FILTER none %]#[% id FILTER none %]">
+            [% INCLUDE bug_modal/rel_time.html.tmpl ts=action.when itemprop='dateCreated' %]
+          </a>
+        </div>
+      </div>
+    </div>
+    <div role="toolbar" class="actions">
+      <button type="button" id="as-[% id FILTER none %]" class="change-spinner minor iconic"
+          title="Collapse this change" aria-label="Collapse" aria-expanded="true">
+        <span class="icon" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
 [% END %]
 
 [% BLOCK comment_body %]
@@ -257,7 +227,7 @@
     [% att = comment.attachment; link = 'attachment.cgi?id=' _ att.id %]
     <div id="att-[% att.id FILTER none %]"
          class="attachment[% " patch" IF att.ispatch; " obsolete" IF att.isobsolete; " deleted" IF !att.datasize %]"
-         data-id="[% att.id FILTER none %]" itemscope itemtype="http://schema.org/MediaObject"
+         data-id="[% att.id FILTER none %]" itemprop="subjectOf" itemscope itemtype="http://schema.org/MediaObject"
          [% IF comment.collapsed +%] style="display:none"[% END ~%]>
       <meta itemprop="name" content="[% att.filename FILTER html %]">
       <meta itemprop="contentSize" content="[% att.datasize FILTER none %]">
@@ -292,8 +262,7 @@
     <[% comment_tag FILTER none %]
         class="comment-text [%= "markdown-body" IF comment.is_markdown %] [%= "bz_private" IF comment.is_private %]
                [% "empty" IF !comment.body %]"
-        id="ct-[% comment.count FILTER none %]" data-comment-id="[% comment.id FILTER none %]"
-        [% IF comment.is_markdown +%] data-ismarkdown="true" [% END ~%]
+        id="ct-[% comment.count FILTER none %]" itemprop="text" data-comment-id="[% comment.id FILTER none %]"
         [% IF comment.collapsed +%] style="display:none"[% END ~%]>
       [%~ IF comment.body ~%]
         [%~ comment.body_full({ exclude_attachment => 1 }) FILTER renderMarkdown(bug, comment) ~%]

@@ -38,7 +38,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
    */
   constructor($change_set) {
     this.str = BUGZILLA.string.InlineCommentEditor;
-    this.comment_id = Number($change_set.querySelector('.comment').dataset.id);
+    this.comment_id = Number($change_set.dataset.id);
     this.commenter_id = Number($change_set.querySelector('.email').dataset.userId);
 
     this.$change_set = $change_set;
@@ -50,7 +50,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
 
     // Check if the comment is empty or written in Markdown
     this.is_empty = this.$body.matches('.empty');
-    this.is_markdown = this.$body.matches('[data-ismarkdown="true"]');
+    this.is_markdown = this.$body.matches('.markdown-body');
   }
 
   /**
@@ -285,7 +285,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
    * @param {Boolean} disabled Whether the buttons should be disabled.
    */
   toggle_toolbar_buttons(disabled) {
-    this.$change_set.querySelectorAll('.comment-actions button').forEach($button => {
+    this.$change_set.querySelectorAll('.actions button').forEach($button => {
       $button.disabled = $button.matches('.reply-btn') && this.is_empty ? true : disabled;
     });
   }
@@ -336,7 +336,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
     }
 
     if (!this.$revisions_link) {
-      const $time = this.$change_set.querySelector('.change-time');
+      const $time = this.$change_set.querySelector('.time');
       const params = new URLSearchParams({
         id: 'comment-revisions.html',
         bug_id: BUGZILLA.bug_id,

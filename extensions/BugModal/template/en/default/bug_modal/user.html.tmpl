@@ -13,6 +13,7 @@
   # gravatar_only : boolean, if true output just the gravatar (not-simple only)
   # nick_only : boolean, if true, the nickname will be used instead of the full name
   # id : string, if provided the id of the vcard div
+  # itemprop : A schema.org property name for the user, e.g. `creator`
   #%]
 
 [%
@@ -25,23 +26,24 @@ IF user.settings.show_gravatars.value != 'On';
   gravatar_size = 0;
 END;
 %]
-<div class="vcard vcard_[% u.id FILTER none %]" [% IF id %]id="[% id FILTER html %]"[% END %]>
+<div class="vcard vcard_[% u.id FILTER none %]" [% IF id %]id="[% id FILTER html %]"[% END %]
+     itemscope itemtype="http://schema.org/Person" [% IF itemprop %]itemprop="[% itemprop FILTER html %]"[% END %]>
   [% FILTER collapse %]
 
     [% IF simple %]
       [% IF user.id %]
-        <span class="fn" title="[% u.identity FILTER html %]">[% u.nick FILTER html %]</span>
+        <span itemprop="name" class="fn" title="[% u.identity FILTER html %]">[% u.nick FILTER html %]</span>
       [% ELSE %]
-        <span class="fn">[% u.nick FILTER html %]</span>
+        <span itemprop="name" class="fn">[% u.nick FILTER html %]</span>
       [% END %]
 
     [% ELSE %]
       [% IF gravatar_size %]
-        <img src="[% u.gravatar(gravatar_size * 2) FILTER none %]" class="gravatar"
+        <img itemprop="image" src="[% u.gravatar(gravatar_size * 2) FILTER none %]" class="gravatar"
           width="[% gravatar_size FILTER none %]" height="[% gravatar_size FILTER none %]">
       [% END %]
       [% UNLESS gravatar_only %]
-        <a class="email [%= "disabled" UNLESS u.is_enabled %] [% " show_usermenu" IF user.id %]"
+        <a itemprop="url" class="email [%= "disabled" UNLESS u.is_enabled %] [% " show_usermenu" IF user.id %]"
           [% IF user.id %]
             href="mailto:[% u.email FILTER html %]"
             data-user-email="[% u.email FILTER html %]"
@@ -53,7 +55,7 @@ END;
             href="[% basepath FILTER none %]user_profile?user_id=[% u.id FILTER none %]"
           [% END %]
           >
-          <span class="[% user.id ? 'fn' : 'fna' %]">[% nick_only ? u.nick : (u.name || u.nick) FILTER html %]</span>
+          <span itemprop="name" class="[% user.id ? 'fn' : 'fna' %]">[% nick_only ? u.nick : (u.name || u.nick) FILTER html %]</span>
           [%~~%]
         </a>
       [% END %]

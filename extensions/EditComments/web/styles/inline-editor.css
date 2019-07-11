@@ -10,7 +10,7 @@
   font-size: var(--font-size-small);
 }
 
-.comment-actions .edit-btn .icon::before {
+.change-set .actions .edit-btn .icon::before {
   content: '\E254';
 }
 

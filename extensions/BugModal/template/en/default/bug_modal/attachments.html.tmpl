@@ -12,7 +12,7 @@
   # obsolete_attachments: array of obsolete attachment objects
   #%]
 
-<table role="table" class="layout-table" id="attachments">
+<div id="attachments">
   [% FOREACH attachment IN bug.attachments %]
     [%
       NEXT IF attachment.isprivate && !(user.is_insider || attachment.attacher.id == user.id);
@@ -20,80 +20,87 @@
       Hook.process("row");
       NEXT IF attachment_rendered;
     %]
-    <tr class="
-        [%~ " bz_private" IF attachment.isprivate %]
-        [%~ " attach-obsolete" IF attachment.isobsolete %]
-        [%~ " attach-patch" IF attachment.can_review %]
-    " [% IF attachment.isobsolete %]style="display:none"[% END %]>
-      <td class="attach-desc-td">
-        <div class="attach-desc">
+    <section itemscope itemtype="http://schema.org/MediaObject" class="attachment
+        [%~ ' bz_private' IF attachment.isprivate %]
+        [%~ ' deleted' IF !attachment.datasize %]
+        [%~ ' obsolete' IF attachment.isobsolete %]
+        [%~ ' patch' IF attachment.can_review %]"
+        [%~ ' hidden' IF attachment.isobsolete %]>
+      <div class="info">
+        <div class="primary">
           [% IF attachment.is_image %]
-            <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]"
+            <a itemprop="contentUrl" href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]"
               title="[% attachment.description FILTER html %]"
               class="lightbox">
               <img src="[% basepath FILTER none %]extensions/BugModal/web/image.png" width="16" height="16">
-              [%~ attachment.description FILTER html %]
+              <h3 itemprop="description">[% attachment.description FILTER html %]</h3>
             </a>
           [% ELSE %]
             <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]">
-              [%~ attachment.description FILTER html %]</a>
+              <h3 itemprop="description">[% attachment.description FILTER html %]</h3>
+            </a>
           [% END %]
         </div>
-        <div>
+        <div class="secondary">
           [% activity_id = bug.find_activity_id_for_attachment(attachment) %]
           [% IF activity_id %]
-            <a href="#[% activity_id FILTER none %]" class="attach-time activity-ref">
-              [% INCLUDE bug_modal/rel_time.html.tmpl ts=attachment.attached %]</a>
+            <a itemprop="discussionUrl" href="#[% activity_id FILTER none %]" class="attach-time activity-ref">
           [% ELSE %]
-            <span class="attach-time">[% INCLUDE bug_modal/rel_time.html.tmpl ts=attachment.attached %]</span>
+            <span class="attach-time">
           [% END %]
-          <span class="attach-author">[% INCLUDE bug_modal/user.html.tmpl u=attachment.attacher %]</span>
+          [% INCLUDE bug_modal/rel_time.html.tmpl ts=attachment.attached itemprop='uploadDate' %]
+          [% IF activity_id %]
+            </a>
+          [% ELSE %]
+            </span>
+          [% END %]
+          <span class="attach-author">[% INCLUDE bug_modal/user.html.tmpl u=attachment.attacher itemprop='creator' %]</span>
         </div>
-        <div class="attach-info">
+        <div class="tertiary">
           [% IF attachment.datasize %]
-            [%- attachment.datasize FILTER unitconvert %]
+            <span itemprop="contentSize">[% attachment.datasize FILTER unitconvert %]</span>
           [% ELSE %]
             (deleted)
           [% END %],
-          [%+ attachment.ispatch ? "patch" : attachment.contenttype FILTER html -%]
+          [%+ IF attachment.ispatch %]
+            patch
+          [% ELSE %]
+            <span itemprop="encodingFormat">[% attachment.contenttype FILTER html %]</span>
+          [% END %]
         </div>
-      </td>
-      <td>
+      </div>
+      <div class="extra">
         [% FOREACH flag IN attachment.flags %]
-          <div class="attach-flag">
+          <div class="flag">
             [% INCLUDE bug_modal/user.html.tmpl u=flag.setter simple=1 %]:
             [% activity_id = bug.find_activity_id_for_flag(flag) %]
             [% IF activity_id %]
-              <a href="#[% activity_id FILTER none %]"
-            [% ELSE %]
-              <span
+              <a href="#[% activity_id FILTER none %]">
             [% END %]
-              [% IF user.setting("ui_use_absolute_time") == "on" %]
-                  class="flag-name-status abs-time-title[% " activity-ref" IF activity_id %]"
-                  title="[% flag.creation_date FILTER time("%Y-%m-%d %H:%M %Z") FILTER html %]"
-              [% ELSE %]
-                  class="flag-name-status rel-time-title[% " activity-ref" IF activity_id %]"
-                  title="[% flag.creation_date FILTER time_duration FILTER html %]"
-              [% END %]
-              data-time="[% flag.creation_date FILTER epoch FILTER none %]"
-            >
-              [%+ flag.type.name FILTER html %][% flag.status FILTER none %]
-            [% activity_id ? "</a>" : "</span>" %]
+            [% INCLUDE bug_modal/rel_time.html.tmpl
+                ts = flag.creation_date
+                extra_class = 'flag-name-status' _ (activity_id ? ' activity-ref' : '')
+            %]
+            [%+ flag.type.name FILTER html %][% flag.status FILTER none %]
+            [% IF activity_id %]
+              </a>
+            [% END %]
             [% IF flag.requestee %]
               [%+ INCLUDE bug_modal/user.html.tmpl u=flag.requestee simple=1 %]
             [% END %]
           </div>
         [% END %]
-      </td>
-      <td class="attach-actions">
+      </div>
+      <div class="actions">
         <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]&amp;action=edit">Details</a>
         [% IF attachment.ispatch %]
           | <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]&amp;action=diff">Diff</a>
         [% END %]
         [% Hook.process("action", "attachment/list.html.tmpl") %]
-    </tr>
+      </div>
+    </section>
   [% END %]
-</table>
+</div>
 
 <div id="attachments-actions">
   [% IF obsolete_attachments %]
