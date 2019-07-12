@@ -212,11 +212,11 @@ sub _generate_watch_user_name {
 # that javascript needs to be kept in sync with this perl
   my ($component) = @_;
   return
-      _sanitise_name($component->name) . '@'
-    . _sanitise_name($component->product->name) . '.bugs';
+      _sanitize_name($component->name) . '@'
+    . _sanitize_name($component->product->name) . '.bugs';
 }
 
-sub _sanitise_name {
+sub _sanitize_name {
   my ($name) = @_;
   $name = lc($name);
   $name =~ s/[^a-z0-9_]/-/g;

@@ -281,7 +281,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
 
   /**
    * Enable or disable buttons on the comment actions toolbar (not the editor's own toolbar) while editing the comment
-   * to avoid any unexpected behaviour. The Reply button should always be disabled if the comment is empty.
+   * to avoid any unexpected behavior. The Reply button should always be disabled if the comment is empty.
    * @param {Boolean} disabled Whether the buttons should be disabled.
    */
   toggle_toolbar_buttons(disabled) {

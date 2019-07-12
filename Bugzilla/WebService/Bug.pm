@@ -1076,7 +1076,7 @@ sub update_attachment {
     }
     elsif (scalar @$update_flags && !scalar(@$new_flags) && !scalar keys %$params) {
 
-      # Requestees can set flags targetted to them, even if they cannot
+      # Requestees can set flags targeted to them, even if they cannot
       # edit the attachment. Flag setters can edit their own flags too.
       my %flag_list = map { $_->{id} => $_ } @$update_flags;
       my $flag_objs = Bugzilla::Flag->new_from_list([keys %flag_list]);

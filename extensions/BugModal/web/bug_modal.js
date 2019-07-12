@@ -149,14 +149,14 @@ $(function() {
         });
     }
 
-    // expand/colapse module
+    // expand/collapse module
     $('.module-latch')
         .click(function(event) {
             event.preventDefault();
             slide_module($(this).parents('.module'));
         })
         .keydown(function(event) {
-            // expand/colapse module with the enter or space key
+            // expand/collapse module with the enter or space key
             if (event.keyCode === 13 || event.keyCode === 32) {
                 event.preventDefault();
                 slide_module($(this).parents('.module'));
@@ -1056,7 +1056,7 @@ $(function() {
         // subtracts time spent from remaining time
         // prevent negative values if work_time > fRemainingTime
         var new_time = Math.max(BUGZILLA.remaining_time - $('#work_time').val(), 0.0);
-        // get upto 2 decimal places
+        // get up to 2 decimal places
         $('#remaining_time').val(Math.round((new_time * 100)/100).toFixed(1));
     });
     $('#remaining_time').change(function() {
@@ -1593,7 +1593,7 @@ $(function() {
 
 (function($) {
     $.extend({
-        // Case insensative $.inArray (http://api.jquery.com/jquery.inarray/)
+        // Case insensitive $.inArray (http://api.jquery.com/jquery.inarray/)
         // $.inArrayIn(value, array [, fromIndex])
         //  value (type: String)
         //    The value to search for

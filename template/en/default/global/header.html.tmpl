@@ -37,7 +37,7 @@
   # atomlink: Atom link URL, May contain HTML
   # generate_api_token: generate a token which can be used to make authenticated webservice calls
   # no_body: if true the body element will not be generated
-  # allow_mobile: allow special CSS and viewport for detected mobile useragents
+  # allow_mobile: allow special CSS and viewport for detected mobile user agents
   # use_login_page: display a link to the full login page, rather than an inline login.
   # robots: index / noindex (default: index)
   #%]
@@ -220,7 +220,7 @@
              href="[% atomlink FILTER html %]">
     [% END %]
 
-    [%# Required for the 'Autodiscovery' feature in Firefox 2 and IE 7. %]
+    [%# Required for the 'Auto-discovery' feature in Firefox 2 and IE 7. %]
     <link rel="search" type="application/opensearchdescription+xml"
                        title="[% terms.BugzillaTitle %]" href="[% basepath FILTER none %]search_plugin.cgi">
     [% IF allow_mobile && is_mobile_browser %]

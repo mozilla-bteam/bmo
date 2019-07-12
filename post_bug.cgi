@@ -71,7 +71,7 @@ Bugzilla::Hook::process('bug_user_match_fields',
 Bugzilla::User::match_field($user_match_fields);
 
 if (defined $cgi->param('maketemplate')) {
-  $vars->{'url'}        = $cgi->canonicalise_query('token');
+  $vars->{'url'}        = $cgi->canonicalize_query('token');
   $vars->{'short_desc'} = $cgi->param('short_desc');
 
   print $cgi->header();

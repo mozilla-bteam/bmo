@@ -127,7 +127,7 @@ my $urlbase = Bugzilla->localconfig->urlbase;
 print $fh "digraph G {";
 print $fh qq(
 graph [URL="${urlbase}query.cgi", rankdir=$rankdir]
-node [URL="${urlbase}show_bug.cgi?id=\\N", style=filled, color=lightgrey]
+node [URL="${urlbase}show_bug.cgi?id=\\N", style=filled, color=lightgray]
 );
 
 my %baselist;

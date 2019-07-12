@@ -560,7 +560,7 @@ sub update_table_definitions {
   # 2008-09-07 LpSolit@gmail.com - Bug 452893
   _fix_illegal_flag_modification_dates();
 
-  _add_visiblity_value_to_value_tables();
+  _add_visibility_value_to_value_tables();
 
   # 2009-03-02 arbingersys@gmail.com - Bug 423613
   _add_extern_id_index();
@@ -3627,7 +3627,7 @@ sub _fix_illegal_flag_modification_dates {
     if ($rows =~ /^\d+$/);
 }
 
-sub _add_visiblity_value_to_value_tables {
+sub _add_visibility_value_to_value_tables {
   my $dbh = Bugzilla->dbh;
   my @standard_fields
     = qw(bug_status resolution priority bug_severity op_sys rep_platform);
@@ -4276,7 +4276,7 @@ sub _add_oauth2_jwt_support {
   $dbh->bz_alter_column('oauth2_scope', 'id',
     {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
 
-  # oauth2_client_scope.allowed is unncessary so we drop it
+  # oauth2_client_scope.allowed is unnecessary so we drop it
   $dbh->bz_drop_column('oauth2_client_scope', 'allowed');
 
   # Update old non-id string columns to new id column

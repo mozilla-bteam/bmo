@@ -174,7 +174,7 @@ $(function () {
                     case '+':
                     case '-':
                         // if we get a + or -, we only accept it if the requestee is the user we're interested in.
-                        // we set is_complete to handle cancelations.
+                        // we set is_complete to handle cancellations.
                         if (stash[flag_id] && stash[flag_id].requestee.name == user) {
                             add_historical_action(history, flag, stash[flag_id], "review" + flag.status);
                             stash[flag_id].is_complete = true;

@@ -972,7 +972,7 @@ sub create {
       # If an sudo session is in progress, this is the user we're faking
       'user' => sub { return Bugzilla->user; },
 
-      # Currenly active language
+      # Currently active language
       'current_language' => sub { return Bugzilla->current_language; },
 
       'script_nonce' => sub {
@@ -984,7 +984,7 @@ sub create {
       # started the session.
       'sudoer' => sub { return Bugzilla->sudoer; },
 
-      # Allow templates to access the "corect" URLBase value
+      # Allow templates to access the "correct" URLBase value
       'urlbase' => sub { return Bugzilla->localconfig->urlbase; },
 
       # Allow templates to get the absolute path of the URLBase value

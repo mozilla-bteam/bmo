@@ -50,7 +50,7 @@ sub suggestions {
   my @reviewers;
   if ($bug) {
 
-    # we always need to be authentiated to perform user matching
+    # we always need to be authenticated to perform user matching
     my $user = Bugzilla->user;
     if (!$user->id) {
       Bugzilla->set_user(Bugzilla::User->check({name => 'nobody@mozilla.org'}));
@@ -316,7 +316,7 @@ __END__
 =head1 NAME
 
 Bugzilla::Extension::Review::WebService - Functions for the Mozilla specific
-'review' flag optimisations.
+'review' flag optimizations.
 
 =head1 METHODS
 

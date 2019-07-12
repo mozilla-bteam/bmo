@@ -137,7 +137,7 @@ Perl Shell (re.pl, repl)
 
 Installed on the vagrant vm is also a program called re.pl.
 
-re.pl an interactive perl shell (somtimes called a REPL (short for Read-Eval-Print-Loop)).
+re.pl an interactive perl shell (sometimes called a REPL (short for Read-Eval-Print-Loop)).
 It loads Bugzilla.pm and you can call Bugzilla internal API methods from it, an example session is reproduced below:
 
 .. code-block:: plain
@@ -188,7 +188,7 @@ Using Docker (For Development)
 While not yet as featureful or complete as the vagrant setup, this repository now contains a
 docker-compose file that will create a local bugzilla for testing.
 
-To use docker-compose, ensure you have the latest Docker install for your environemnt
+To use docker-compose, ensure you have the latest Docker install for your environment
 (Linux, Windows, or Mac OS). If you are using Ubuntu, then you can read the next section
 to ensure that you have the correct docker setup.
 
@@ -199,7 +199,7 @@ to ensure that you have the correct docker setup.
 
 Then, you must configure your browser to use http://localhost:1091 as an HTTP proxy.
 For setting a proxy in Firefox, see `Firefox Connection Settings`_.
-The procecure should be similar for other browsers.
+The procedure should be similar for other browsers.
 
 .. _`Firefox Connection Settings`: https://support.mozilla.org/en-US/kb/connection-settings-firefox
 
@@ -408,7 +408,7 @@ NYTPROF_DIR
 LOG4PERL_CONFIG_FILE
   Filename of `Log::Log4perl`_ config file.
   It defaults to log4perl-syslog.conf.
-  If the file is given as a relative path, it will belative to the /app/conf/ directory.
+  If the file is given as a relative path, it will relative to the /app/conf/ directory.
 
 .. _`Devel::NYTProf`: https://metacpan.org/pod/Devel::NYTProf
 
@@ -418,7 +418,7 @@ LOG4PERL_STDERR_DISABLE
   Boolean. By default log messages are logged as plain text to `STDERR`.
   Setting this to a true value disables this behavior.
 
-  Note: For programs that run using the `cereal` log aggregator, this environemnt
+  Note: For programs that run using the `cereal` log aggregator, this environment
   variable will be ignored.
 
 
@@ -466,7 +466,7 @@ changing the mail_delivery_method to either 'Test' or 'Sendmail'. Afterwards res
 With this option, all mail will be appended to a ``mailer.testfile``.
 
 - Using docker, run ``docker-compose run bmo-web.vm cat /app/data/mailer.testfile``.
-- Using vagrant, run ``vagrant ssh web`` and then naviage to ``/vagrant/data/mailer.testfile``.
+- Using vagrant, run ``vagrant ssh web`` and then navigate to ``/vagrant/data/mailer.testfile``.
 
 'Sendmail' option (Default for Vagrant)
 ~~~~~~~~~~~~~~~~~

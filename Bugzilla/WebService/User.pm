@@ -555,7 +555,7 @@ call to login should expire with the session or not.  In order for
 this option to have effect the Bugzilla server must be configured to
 allow the user to set this option - the Bugzilla parameter
 I<rememberlogin> must be set to "defaulton" or
-"defaultoff". Addionally, the client application must implement
+"defaultoff". Additionally, the client application must implement
 management of cookies across sessions.
 
 =back
@@ -601,7 +601,7 @@ A login or password parameter was not provided.
 
 =item C<token> was added in Bugzilla B<4.4.3>.
 
-=item This function will be removed in the release after Bugzilla 5.0, in favour of API keys.
+=item This function will be removed in the release after Bugzilla 5.0, in favor of API keys.
 
 =back
 
@@ -665,7 +665,7 @@ for the provided username.
 
 =item Added in Bugzilla B<5.0>.
 
-=item This function will be removed in the release after Bugzilla 5.0, in favour of API keys.
+=item This function will be removed in the release after Bugzilla 5.0, in favor of API keys.
 
 =back
 
@@ -1171,7 +1171,7 @@ illegal to pass a group name you don't belong to.
 =item B<Description>
 
 Allows for validating a user's API key, token, or username and password.
-If sucessfully authenticated, it returns simple information about the
+If successfully authenticated, it returns simple information about the
 logged in user.
 
 =item B<Params> (none)

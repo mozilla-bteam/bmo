@@ -591,7 +591,7 @@ sub _check_review_flag {
       }
 
       # we want to throw an error if the requestee does not have access
-      # to the bug.  bugzilla's default behaviour is to sliently drop the
+      # to the bug.  bugzilla's default behavior is to silently drop the
       # requestee, which results in a confusing 'reviewer required'
       # error.
       # fake it by creating a flag and try to set the requestee.

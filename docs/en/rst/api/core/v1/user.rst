@@ -12,7 +12,7 @@ Login
 Logging in with a username and password is required for many Bugzilla
 installations, in order to search for private bugs, post new bugs, etc. This
 method allows you to retrieve a token that can be used as authentication for
-subsequent API calls. Otherwise yuou will need to pass your ``login`` and
+subsequent API calls. Otherwise you will need to pass your ``login`` and
 ``password`` with each call.
 
 This method will be going away in the future in favor of using *API keys*.
@@ -159,7 +159,7 @@ password    string  The password for the new user account, in plain text. It
    }
 
 ====  ====  ============================================
-name  type  desciption
+name  type  description
 ====  ====  ============================================
 id    int   The numeric ID of the user that was created.
 ====  ====  ============================================
@@ -427,7 +427,7 @@ Who Am I
 --------
 
 Allows for validating a user's API key, token, or username and password.
-If sucessfully authenticated, it returns simple information about the
+If successfully authenticated, it returns simple information about the
 logged in user.
 
 **Request**
@@ -442,7 +442,7 @@ logged in user.
 
    {
      "id" : "1234",
-     "name" : "user@bugzulla.org",
+     "name" : "user@bugzilla.org",
      "real_name" : "Test User",
      "nick" : "user"
    }

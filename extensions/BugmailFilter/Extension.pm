@@ -112,7 +112,7 @@ sub user_preferences {
   my %fields = map { $_->name => $field_descs->{$_->name} }
     @{Bugzilla->fields({obsolete => 0})};
 
-  # remove time trackinger fields
+  # remove time tracking fields
   if (!Bugzilla->user->is_timetracker) {
     foreach my $field (TIMETRACKING_FIELDS) {
       delete $fields{$field};

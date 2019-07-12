@@ -518,7 +518,7 @@ password.
 
 If an Info Getter returns only a C<user_id> and no username/password,
 then it MUST NOT require verification. If an Info Getter requires
-verfication, then it MUST return at least a C<username>.
+verification, then it MUST return at least a C<username>.
 
 =head2 The Verifier
 

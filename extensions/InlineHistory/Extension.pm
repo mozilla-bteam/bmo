@@ -68,7 +68,7 @@ sub template_before_process {
   }
 
   # allow other extensions to alter history
-  Bugzilla::Hook::process('inline_history_activtiy', {activity => $activity});
+  Bugzilla::Hook::process('inline_history_activity', {activity => $activity});
 
   my %attachment_cache;
   foreach my $attachment (@{$bug->attachments}) {

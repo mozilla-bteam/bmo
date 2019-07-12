@@ -654,7 +654,7 @@ use constant AUDIT_CREATE => '__create__';
 use constant AUDIT_REMOVE => '__remove__';
 
 # The maximum number of emails per minute and hour a recipient can receive.
-# Email will be queued/backlogged to avoid exceeeding these limits.
+# Email will be queued/backlogged to avoid exceeding these limits.
 # Setting a limit to 0 will disable this feature.
 use constant EMAIL_LIMIT_PER_MINUTE => 1000;
 use constant EMAIL_LIMIT_PER_HOUR   => 2500;

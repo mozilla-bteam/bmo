@@ -284,7 +284,7 @@ sub get_set_serial_sql {
 }
 
 # Converts a DBI column_info output to an abstract column definition.
-# Expects to only be called by Bugzila::DB::Mysql::_bz_build_schema_from_disk,
+# Expects to only be called by Bugzilla::DB::Mysql::_bz_build_schema_from_disk,
 # although there's a chance that it will also work properly if called
 # elsewhere.
 sub column_info_to_column {

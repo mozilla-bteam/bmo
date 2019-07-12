@@ -139,7 +139,7 @@ sub target_uri {
 }
 
 # We want this sorted plus the ability to exclude certain params
-sub canonicalise_query {
+sub canonicalize_query {
   my ($self, @exclude) = @_;
 
   # Reconstruct the URL by concatenating the sorted param=value pairs
@@ -326,7 +326,7 @@ sub _prevent_unsafe_response {
 
   if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
 
-    # Safe content types are ones that arn't images.
+    # Safe content types are ones that aren't images.
     # For now let's assume plain text and html are not valid images.
     my $content_type = $headers->{'-type'} // $headers->{'-content_type'}
       // 'text/html';
@@ -737,7 +737,7 @@ Bugzilla::CGI - CGI handling for Bugzilla
 
 This package inherits from the standard CGI module, to provide additional
 Bugzilla-specific functionality. In general, see L<the CGI.pm docs|CGI> for
-documention.
+documentation.
 
 =head1 CHANGES FROM L<CGI.PM|CGI>
 
@@ -758,7 +758,7 @@ I<Bugzilla::CGI> also includes additional functions.
 
 =over 4
 
-=item C<canonicalise_query(@exclude)>
+=item C<canonicalize_query(@exclude)>
 
 This returns a sorted string of the parameters whose values are non-empty,
 suitable for use in a url.

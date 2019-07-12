@@ -18,7 +18,7 @@ use Bugzilla::Bug;
 use Bugzilla::Component;
 use Bugzilla::Constants;
 use Bugzilla::Extension::Push::Constants;
-use Bugzilla::Extension::Push::Serialise;
+use Bugzilla::Extension::Push::Serialize;
 use Bugzilla::Extension::Push::Util;
 use Bugzilla::Field;
 use Bugzilla::Mailer;
@@ -155,7 +155,7 @@ sub should_send {
   my $bug_data = $self->_get_bug_data($data) || return 0;
 
   # we don't want to send the initial comment in a separate message
-  # because we inject it into the inital message
+  # because we inject it into the initial message
   if (exists $data->{comment} && $data->{comment}->{number} == 0) {
     return 0;
   }
@@ -191,7 +191,7 @@ sub send {
   my $logger = Bugzilla->push_ext->logger;
   my $config = $self->config;
 
-# should_send intiailises bugzilla_user; make sure we return a useful error message
+# should_send initializes bugzilla_user; make sure we return a useful error message
   if (!$self->{bugzilla_user}) {
     return (PUSH_RESULT_TRANSIENT,
       "Invalid bugzilla-user (" . $self->config->{bugzilla_user} . ")");
@@ -208,7 +208,7 @@ sub send {
     my $comment = shift @{$bug->comments};
     if ($comment->body ne '') {
       $bug_data->{comment}
-        = Bugzilla::Extension::Push::Serialise->instance->object_to_hash($comment, 1);
+        = Bugzilla::Extension::Push::Serialize->instance->object_to_hash($comment, 1);
     }
 
   }

@@ -231,7 +231,7 @@ sub edit_link {
   {
     $cgi->param('query_type', 'advanced');
   }
-  $self->{edit_link} = $cgi->canonicalise_query;
+  $self->{edit_link} = $cgi->canonicalize_query;
   return $self->{edit_link};
 }
 

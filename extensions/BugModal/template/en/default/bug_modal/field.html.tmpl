@@ -144,7 +144,7 @@ END;
             [% INCLUDE bug_urls values=values edit=0 %]
 
           [% CASE constants.FIELD_TYPE_BUG_LIST %]
-            [%# bug lists (generally dependancies) %]
+            [%# bug lists (generally dependencies) %]
             [% INCLUDE bug_list values=values edit=0 %]
 
           [% CASE constants.FIELD_TYPE_TEXTAREA %]
@@ -401,7 +401,7 @@ END;
   [% END %]
 [% END %]
 
-[%# bug lists, depencancies, blockers %]
+[%# bug lists, dependencies, blockers %]
 [% BLOCK bug_list %]
   [% IF NOT edit %]
     [% FOREACH type IN bug_fields.bug_type.legal_values.pluck('name') %]

@@ -171,7 +171,7 @@ C<string> The name of the classification.
 
 =item C<description>
 
-C<string> The description of the classificaion.
+C<string> The description of the classification.
 
 =item C<sort_key>
 

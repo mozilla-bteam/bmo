@@ -220,13 +220,13 @@ Example:
 
    GET /rest/bug/comment/tags/spa
 
-=========  ======  ====================================================
+=========  ======  =====================================================
 name       type    description
-=========  ======  ====================================================
-**query**  string  Only tags containg this substring will be returned.
+=========  ======  =====================================================
+**query**  string  Only tags containing this substring will be returned.
 limit      int     If provided will return no more than ``limit`` tags.
                    Defaults to ``10``.
-=========  ======  ====================================================
+=========  ======  =====================================================
 
 **Response**
 
