@@ -380,7 +380,7 @@ sub flag_end_of_update {
   delete $args->{changes};
 }
 
-# comments in bugzilla 4.0 doesn't aren't included in the bug_end_of_* hooks,
+# comments in Bugzilla 4.0 doesn't aren't included in the bug_end_of_* hooks,
 # this code uses custom hooks to trigger
 sub bug_comment_create {
   my ($self, $args) = @_;

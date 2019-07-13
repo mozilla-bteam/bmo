@@ -186,7 +186,7 @@ Using Docker (For Development)
 ==============================
 
 While not yet as featureful or complete as the vagrant setup, this repository now contains a
-docker-compose file that will create a local bugzilla for testing.
+docker-compose file that will create a local Bugzilla for testing.
 
 To use docker-compose, ensure you have the latest Docker install for your environment
 (Linux, Windows, or Mac OS). If you are using Ubuntu, then you can read the next section
@@ -455,9 +455,9 @@ Development Tips
 Testing Emails
 --------------
 
-With vagrant have two options to test emails sent by a local bugzilla instance. You can configure
+With vagrant have two options to test emails sent by a local Bugzilla instance. You can configure
 which setting you want to use by going to http://bmo-web.vm/editparams.cgi?section=mta and
-changing the mail_delivery_method to either 'Test' or 'Sendmail'. Afterwards restart bmo with
+changing the mail_delivery_method to either 'Test' or 'Sendmail'. Afterwards restart BMO with
 ``vagrant reload``. With docker, only the default 'Test' option is supported.
 
 'Test' option (Default for Docker)
@@ -490,6 +490,6 @@ mail (SMTP, which bmo-web.vm doesn't provide). To work around this, using a regu
 account to first setup, then modify the settings of that account: Right Click the account in
 the left side bar > Settings > Server Settings. Update the server settings to match those
 listed above. Afterwards, you may update the account name to be vagrant@bmo-web.vm. Thunderbird
-will now pull email from bmo. You can try it out by commenting on a bug.
+will now pull email from BMO. You can try it out by commenting on a bug.
 
 .. _`Thunderbird's`: https://www.mozilla.org/en-US/thunderbird/

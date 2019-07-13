@@ -197,7 +197,7 @@ login names using the ``ids`` or ``names`` parameters respectively.
 **names**          array    Additional login names of users to update.
 full_name          string   The new name of the user.
 email              string   The email of the user. Note that email used to
-                            login to bugzilla. Also note that you can only
+                            login to Bugzilla. Also note that you can only
                             update one user at a time when changing the login
                             name / email. (An error will be thrown if you try to
                             update this field for multiple users at once.)
@@ -355,7 +355,7 @@ email              string   The email address of the user.
 name               string   The login name of the user. Note that in some
                             situations this is different than their email.
 can_login          boolean  A boolean value to indicate if the user can login
-                            into bugzilla.
+                            into Bugzilla.
 email_enabled      boolean  A boolean value to indicate if bug-related mail will
                             be sent to the user or not.
 login_denied_text  string   A text field that holds the reason for disabling a

@@ -503,7 +503,7 @@ $(function() {
         that.data('preselected', value);
 
         // if the user hasn't touched a field, override the browser's choice
-        // with bugzilla's
+        // with Bugzilla's
         if (!dirty.val())
             that.val(value);
     });

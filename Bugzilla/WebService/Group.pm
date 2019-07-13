@@ -567,7 +567,7 @@ different than their email.
 
 =item can_login
 
-C<boolean> A boolean value to indicate if the user can login into bugzilla.
+C<boolean> A boolean value to indicate if the user can login into Bugzilla.
 
 =item email_enabled
 
@@ -577,7 +577,7 @@ to the user or not.
 =item disabled_text
 
 C<string> A text field that holds the reason for disabling a user from logging
-into bugzilla, if empty then the user account is enabled otherwise it is
+into Bugzilla, if empty then the user account is enabled otherwise it is
 disabled/closed.
 
 =back
@@ -595,8 +595,8 @@ group object existed for that invalid name.
 
 =item 805 (Cannot view groups)
 
-Logged-in users are not authorized to edit bugzilla groups as they are not
-members of the creategroups group in bugzilla, or they are not authorized to
+Logged-in users are not authorized to edit Bugzilla groups as they are not
+members of the creategroups group in Bugzilla, or they are not authorized to
 access group member's information as they are not members of the "editusers"
 group or can bless the group.
 

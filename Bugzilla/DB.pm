@@ -41,7 +41,7 @@ around 'attrs' => sub {
   my $class = ref $self;
 
   # This is only used by the DBIx::Class code DBIx::Connector does something
-  # different because the old bugzilla code has its own ideas about
+  # different because the old Bugzilla code has its own ideas about
   # transactions.
   $attrs->{Callbacks}{connected} = sub {
     my ($dbh, $dsn) = @_;

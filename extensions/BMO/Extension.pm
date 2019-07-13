@@ -458,7 +458,7 @@ sub active_custom_fields {
 sub cf_hidden_in_product {
   my ($field_name, $product_name, $component_name, $bug) = @_;
 
-  # check bugzilla's built-in visibility controls first
+  # check Bugzilla's built-in visibility controls first
   if ($bug) {
     my $field = Bugzilla::Field->new({name => $field_name, cache => 1});
     return 1 if $field && !$field->is_visible_on_bug($bug);

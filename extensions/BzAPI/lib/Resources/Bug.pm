@@ -399,7 +399,7 @@ sub create_bug_request {
     }
   }
 
-  # CC should just be a list of bugzilla logins
+  # CC should just be a list of Bugzilla logins
   if (exists $params->{cc}) {
     $params->{cc} = [map { $_->{name} } @{$params->{cc}}];
   }

@@ -814,7 +814,7 @@ C<string> The new name of the user.
 
 =item C<email>
 
-C<string> The email of the user. Note that email used to login to bugzilla.
+C<string> The email of the user. Note that email used to login to Bugzilla.
 Also note that you can only update one user at a time when changing the
 login name / email. (An error will be thrown if you try to update this field
 for multiple users at once.)
@@ -830,7 +830,7 @@ C<boolean> A boolean value to enable/disable sending bug-related mail to the use
 =item C<login_denied_text>
 
 C<string> A text field that holds the reason for disabling a user from logging
-into bugzilla, if empty then the user account is enabled otherwise it is
+into Bugzilla, if empty then the user account is enabled otherwise it is
 disabled/closed.
 
 =item C<groups>
@@ -1042,7 +1042,7 @@ different than their email.
 
 =item can_login
 
-C<boolean> A boolean value to indicate if the user can login into bugzilla.
+C<boolean> A boolean value to indicate if the user can login into Bugzilla.
 
 =item email_enabled
 
@@ -1052,7 +1052,7 @@ to the user or not.
 =item login_denied_text
 
 C<string> A text field that holds the reason for disabling a user from logging
-into bugzilla, if empty then the user account is enabled. Otherwise it is
+into Bugzilla, if empty then the user account is enabled. Otherwise it is
 disabled/closed.
 
 =item groups

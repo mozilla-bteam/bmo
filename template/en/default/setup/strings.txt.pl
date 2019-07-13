@@ -161,7 +161,7 @@ SQLite, this is a name (or path) for the DB file.
 END
   localconfig_db_pass => <<'END',
 Enter your database password here. It's normally advisable to specify
-a password for your bugzilla database user.
+a password for your Bugzilla database user.
 If you use apostrophe (') or a backslash (\) in your password, you'll
 need to escape it by preceding it with a '\' character. (\') or (\)
 (It is far simpler to just not use those characters.)

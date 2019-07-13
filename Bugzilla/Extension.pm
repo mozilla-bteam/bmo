@@ -209,7 +209,7 @@ L<wiki page|https://wiki.mozilla.org/Bugzilla:Extension_Notes> with additional H
 
 There is a script, L<extensions::create>, that will set up the framework
 of a new extension for you. To use it, pick a name for your extension
-and, in the base bugzilla directory, do:
+and, in the base Bugzilla directory, do:
 
 C<extensions/create.pl NAME>
 

@@ -40,7 +40,7 @@ sub _validate_uri {
   }
   my $url = ref($params->{url}) ? $params->{url}->[0] : $params->{url};
 
-  # only allow buglist queries for this bugzilla install
+  # only allow buglist queries for this Bugzilla install
   my $uri = URI->new($url);
   $uri->query(undef);
   $uri->fragment(undef);

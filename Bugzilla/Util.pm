@@ -955,7 +955,7 @@ sub extract_nicks {
             (?<!\d)
             :
             # try tp capture a "word", plus some symbols
-            # this covers most everything people use for ircnicks
+            # this covers most everything people use for IRC nicks
             # in BMO.
             ([\p{IsAlnum}|._-]+)
             # require a word terminator, which
@@ -1190,7 +1190,7 @@ The search starts at $maxpos and goes back to the beginning of the string.
 =item C<is_7bit_clean($str)>
 
 Returns true is the string contains only 7-bit characters (ASCII 32 through 126,
-ASCII 10 (LineFeed) and ASCII 13 (Carrage Return).
+ASCII 10 (LineFeed) and ASCII 13 (Carriage Return).
 
 =item C<disable_utf8()>
 

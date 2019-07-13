@@ -15,7 +15,7 @@ use QA::Util;
 
 my ($sel, $config) = get_selenium();
 
-# Set the email regexp for new bugzilla accounts to end with @bugzilla.test.
+# Set the email regexp for new Bugzilla accounts to end with @bugzilla.test.
 
 log_in($sel, $config, 'admin');
 set_parameters(

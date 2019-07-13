@@ -210,7 +210,7 @@ use Memoize;
 # CONSTANTS
 #
 # Bugzilla version
-# BMO: we don't map exactly to a specific bugzilla version, so override our
+# BMO: we don't map exactly to a specific Bugzilla version, so override our
 # reported version with a parameter.
 sub BUGZILLA_VERSION {
   my $bugzilla_version = '4.2';
@@ -726,7 +726,7 @@ sub _bz_locations {
 
     # $webdotdir must be in the web server's tree somewhere. Even if you use a
     # local dot, we output images to there. Also, if $webdotdir is
-    # not relative to the bugzilla root directory, you'll need to
+    # not relative to the Bugzilla root directory, you'll need to
     # change showdependencygraph.cgi to set image_url to the correct
     # location.
     # The script should really generate these graphs directly...

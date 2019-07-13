@@ -104,7 +104,7 @@ sub changes_to_event {
   return $event;
 }
 
-# bugzilla returns '---' or '--' for single-select fields that have no value
+# Bugzilla returns '---' or '--' for single-select fields that have no value
 # selected.  it makes more sense to return an empty string.
 sub _select {
   my ($value) = @_;
