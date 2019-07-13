@@ -2689,7 +2689,7 @@ B<STABLE>
 
 Gets information about particular bugs in the database.
 
-Note: Can also be called as "get_bugs" for compatibilty with Bugzilla 3.0 API.
+Note: Can also be called as "get_bugs" for compatibility with Bugzilla 3.0 API.
 
 =item B<REST>
 

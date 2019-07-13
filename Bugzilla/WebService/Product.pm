@@ -425,7 +425,7 @@ B<EXPERIMENTAL>
 
 Returns a list of information about the products passed to it.
 
-Note: Can also be called as "get_products" for compatibilty with Bugzilla 3.0 API.
+Note: Can also be called as "get_products" for compatibility with Bugzilla 3.0 API.
 
 =item B<REST>
 
