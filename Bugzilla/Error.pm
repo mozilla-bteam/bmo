@@ -113,7 +113,7 @@ sub _throw_error {
     }
 
     if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
-      $logfunc->("XMLRPC error: $error ($code)");
+      $logfunc->("XML-RPC error: $error ($code)");
       die SOAP::Fault->faultcode($code)->faultstring($message);
     }
     else {
@@ -127,7 +127,7 @@ sub _throw_error {
       }
       else {
         my $fake_code = 100000 + $code;
-        $logfunc->("JSONRPC error: $error ($fake_code)");
+        $logfunc->("JSON-RPC error: $error ($fake_code)");
       }
 
       # Technically JSON-RPC isn't allowed to have error numbers

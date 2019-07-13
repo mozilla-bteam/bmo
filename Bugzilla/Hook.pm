@@ -1746,7 +1746,7 @@ they have been obtained from the URL or body of the request.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
@@ -1767,7 +1767,7 @@ which code handler to use based on a regex match of the CGI path.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
@@ -1791,7 +1791,7 @@ A reference to a hash that contains the result data.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 

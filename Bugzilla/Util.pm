@@ -1114,7 +1114,7 @@ in a command-line script.
 =item C<i_am_webservice()>
 
 Tells you whether or not the current usage mode is WebServices related
-such as JSONRPC or XMLRPC.
+such as JSON-RPC or XML-RPC.
 
 =item C<is_webserver_group()>
 

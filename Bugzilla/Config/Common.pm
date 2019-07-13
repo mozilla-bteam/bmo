@@ -337,7 +337,7 @@ sub check_theschwartz_available {
 sub check_comment_taggers_group {
   my $group_name = shift;
   if ($group_name && !Bugzilla->feature('jsonrpc')) {
-    return "Comment tagging requires installation of the JSONRPC feature";
+    return "Comment tagging requires installation of the JSON-RPC feature";
   }
   return check_group($group_name);
 }

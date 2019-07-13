@@ -520,7 +520,7 @@ log in/out using an existing account.
 See L<Bugzilla::WebService> for a description of how parameters are passed,
 and what B<STABLE>, B<UNSTABLE>, and B<EXPERIMENTAL> mean.
 
-Although the data input and output is the same for JSONRPC, XMLRPC and REST,
+Although the data input and output is the same for JSON-RPC, XML-RPC and REST,
 the directions for how to access the data via REST is noted in each method
 where applicable.
 
@@ -567,7 +567,7 @@ user that was logged in, and a C<token> which can be passed in
 the parameters as authentication in other calls. A set of http cookies
 is also sent with the response. These cookies *or* the token can be sent
 along with any future requests to the webservice, for the duration of the
-session. Note that cookies are not accepted for GET requests for JSONRPC
+session. Note that cookies are not accepted for GET requests for JSON-RPC
 and REST for security reasons. You may, however, use the token or valid
 login parameters for those requests.
 

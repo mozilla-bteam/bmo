@@ -112,7 +112,7 @@ sub response {
   my ($self, $response) = @_;
 
   # If we have thrown an error, the 'error' key will exist
-  # otherwise we use 'result'. JSONRPC returns other data
+  # otherwise we use 'result'. JSON-RPC returns other data
   # along with the result/error such as version and id which
   # we will strip off for REST calls.
   my $content = $response->content;
@@ -547,7 +547,7 @@ looks cleaner.
 
 The REST API only supports JSON input, and either JSON and JSONP output.
 So objects sent and received must be in JSON format. Basically since
-the REST API is a sub class of the JSONRPC API, you can refer to
+the REST API is a sub class of the JSON-RPC API, you can refer to
 L<JSONRPC|Bugzilla::WebService::Server::JSONRPC> for more information
 on data types that are valid for REST.
 
@@ -602,14 +602,14 @@ the JSON-RPC library that Bugzilla uses, not by Bugzilla.
 
 =item B<handle>
 
-This method overrides the handle method provided by JSONRPC so that certain
+This method overrides the handle method provided by JSON-RPC so that certain
 actions related to REST such as determining the proper resource to use,
 loading query parameters, etc. can be done before the proper WebService
 method is executed.
 
 =item B<response>
 
-This method overrides the response method provided by JSONRPC so that
+This method overrides the response method provided by JSON-RPC so that
 the response content can be altered for REST before being returned to
 the client.
 
