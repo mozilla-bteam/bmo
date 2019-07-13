@@ -197,7 +197,7 @@ sub FILESYSTEM {
     "$extensionsdir/*/*.pl"        => {perms => WS_EXECUTE},
     "$extensionsdir/*/bin/*"       => {perms => WS_EXECUTE},
 
-    # google webmaster tools verification files
+    # Google Webmaster Tools verification files
     'google*.html'    => {perms => WS_SERVE},
     'contribute.json' => {perms => WS_SERVE},
   );

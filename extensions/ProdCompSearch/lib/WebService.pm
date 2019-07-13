@@ -117,7 +117,7 @@ sub prod_comp_search {
   }
   return {products => []} if !scalar @terms;
 
-  # To help mozilla staff file bmo administration bugs into the right
+  # To help Mozilla staff file bmo administration bugs into the right
   # component, sort bmo first when searching for 'bugzilla'
   if (
        $search =~ /bugzilla/i

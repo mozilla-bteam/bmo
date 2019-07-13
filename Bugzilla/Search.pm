@@ -3700,7 +3700,7 @@ sub _empty_value {
 sub IsValidQueryType {
   my ($queryType) = @_;
 
-  # BMO: Added google and instant
+  # BMO: Added Google and instant
   if (grep { $_ eq $queryType } qw(specific advanced google instant)) {
     return 1;
   }

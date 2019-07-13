@@ -248,7 +248,7 @@ sub new_product {
     || $current_version =~ /^Firefox (\d+)$/
     || $current_version =~ /^(\d+)$/)
   {
-    # firefox, with its three version naming schemes
+    # Firefox, with its three version naming schemes
     my $branch = $1;
     foreach my $test_version ("$branch Branch", "Firefox $branch", $branch) {
       if (my $version = first_value { $_->{name} eq $test_version } @$versions) {

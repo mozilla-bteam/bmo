@@ -396,7 +396,7 @@ on what constant you pass into it:
 =head2 C<LOGIN_OPTIONAL>
 
 A login is never required to access this data. Attempting to login is
-still useful, because this allows the page to be personalised. Note that
+still useful, because this allows the page to be personalized. Note that
 an incorrect login will still trigger an error, even though the lack of
 a login will be OK.
 
