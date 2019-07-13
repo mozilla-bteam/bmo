@@ -1302,13 +1302,13 @@ sub _recrypt_plaintext_passwords {
   my $dbh = Bugzilla->dbh;
 
   # 2001-06-12; myk@mozilla.org; bugs 74032, 77473:
-  # Recrypt passwords using Perl &crypt instead of the mysql equivalent
+  # Recrypt passwords using Perl &crypt instead of the MySQL equivalent
   # and delete plaintext passwords from the database.
   if ($dbh->bz_column_info('profiles', 'password')) {
 
     print <<ENDTEXT;
 Your current installation of Bugzilla stores passwords in plaintext
-in the database and uses mysql's encrypt function instead of Perl's
+in the database and uses MySQL's encrypt function instead of Perl's
 crypt function to crypt passwords.  Passwords are now going to be
 re-crypted with the Perl function, and plaintext passwords will be
 deleted from the database.  This could take a while if your
@@ -1442,7 +1442,7 @@ sub _delete_logincookies_cryptpassword_and_handle_invalid_cookies {
     # column
     print "Removing invalid login cookies...\n";
 
-    # mysql doesn't support DELETE with multi-table queries, so we have
+    # MySQL doesn't support DELETE with multi-table queries, so we have
     # to iterate
     my $sth
       = $dbh->prepare("SELECT cookie FROM logincookies, profiles "
@@ -1676,7 +1676,7 @@ sub _convert_groups_system_from_groupset {
   # The groups system needs to be converted if groupset exists
   if ($dbh->bz_column_info("profiles", "groupset")) {
 
-    # Some mysql versions will promote any unique key to primary key
+    # Some MySQL versions will promote any unique key to primary key
     # so all unique keys are removed first and then added back in
     $dbh->bz_drop_index('groups', 'groups_bit_idx');
     $dbh->bz_drop_index('groups', 'groups_name_idx');

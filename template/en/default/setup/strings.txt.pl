@@ -82,7 +82,7 @@ the documentation of Bugzilla::Extension for details.
 END
   file_remove => 'Removing ##name##...',
   file_rename => 'Renaming ##from## to ##to##...',
-  header      => "* This is Bugzilla ##bz_ver## on perl ##perl_ver##\n"
+  header      => "* This is Bugzilla ##bz_ver## on Perl ##perl_ver##\n"
     . "* Running on ##os_name## ##os_ver##",
   installation_failed => '*** Installation aborted. Read the messages above. ***',
   install_data_too_long => <<EOT,

@@ -1059,7 +1059,7 @@ B<MUST> check the result of this routine to avoid security holes.
 
 =head2 Quoting
 
-Some values may need to be quoted from perl. However, this should in general
+Some values may need to be quoted from Perl. However, this should in general
 be done in the template where possible.
 
 =over 4
@@ -1269,7 +1269,7 @@ the Bugzilla server's local timezone if there isn't a logged-in user.
 
 =item C<time_ago($datetime_object)>, C<time_ago($seconds)>
 
-Returns a concise representation of the time passed.  eg. "11 months ago".
+Returns a concise representation of the time passed. e.g. "11 months ago".
 
 Accepts either a DateTime object, which is assumed to be in the past, or
 seconds.
@@ -1284,7 +1284,7 @@ seconds.
 =item C<file_mod_time($filename)>
 
 Takes a filename and returns the modification time. It returns it in the format
-of the "mtime" parameter of the perl "stat" function.
+of the "mtime" parameter of the Perl "stat" function.
 
 =back
 
@@ -1297,7 +1297,7 @@ of the "mtime" parameter of the perl "stat" function.
 Takes a string and returns a hashed (encrypted) value for it, using a
 random salt. An optional salt string may also be passed in.
 
-Please always use this function instead of the built-in perl C<crypt>
+Please always use this function instead of the built-in Perl C<crypt>
 function, when checking or setting a password. Bugzilla does not use
 C<crypt>.
 

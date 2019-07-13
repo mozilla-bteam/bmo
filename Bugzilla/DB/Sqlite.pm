@@ -106,7 +106,7 @@ sub on_dbi_connected {
 
   my %pragmas = (
 
-    # Make sure that the sqlite file doesn't grow without bound.
+    # Make sure that the SQLite file doesn't grow without bound.
     auto_vacuum  => 1,
     encoding     => "'UTF-8'",
     foreign_keys => 'ON',

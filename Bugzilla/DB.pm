@@ -1374,7 +1374,7 @@ sub _build_connector {
   $attributes->{Callbacks} = {
     connected => sub {
       my ($dbh, $dsn) = @_;
-      TRACE("$PROGRAM_NAME connected mysql $dsn");
+      TRACE("$PROGRAM_NAME connected MySQL $dsn");
       ThrowCodeError('not_in_transaction') if $self && $self->bz_in_transaction;
       $class->on_dbi_connected(@_) if $class->can('on_dbi_connected');
       return;

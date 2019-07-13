@@ -106,7 +106,7 @@ sub get_format {
   $template .= ".$ctype.tmpl";
 
   # Now check that the template actually exists. We only want to check
-  # if the template exists; any other errors (eg parse errors) will
+  # if the template exists; any other errors (e.g. parse errors) will
   # end up being detected later.
   eval { $self->context->template($template); };
 

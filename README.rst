@@ -118,7 +118,7 @@ Technical Details
 
 This Vagrant environment is a very complete but scaled-down version of
 production BMO.  It uses roughly the same RPMs (from CentOS 6, versus RHEL 6
-in production) and the same perl dependencies (via
+in production) and the same Perl dependencies (via
 https://github.com/mozilla-bteam/carton-bundles).
 
 It includes a couple example products, some fake users, and some of BMO's
@@ -137,7 +137,7 @@ Perl Shell (re.pl, repl)
 
 Installed on the vagrant vm is also a program called re.pl.
 
-re.pl an interactive perl shell (sometimes called a REPL (short for Read-Eval-Print-Loop)).
+re.pl an interactive Perl shell (sometimes called a REPL (short for Read-Eval-Print-Loop)).
 It loads Bugzilla.pm and you can call Bugzilla internal API methods from it, an example session is reproduced below:
 
 .. code-block:: plain

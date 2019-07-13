@@ -889,7 +889,7 @@ sub create {
   my $dbh = Bugzilla->dbh;
 
   # BMO - allow parameter alteration before creation.  also add support for
-  # fields which are not bug columns (eg bug_mentors). extensions should move
+  # fields which are not bug columns (e.g. bug_mentors). extensions should move
   # fields from $params to $stash, then use the bug_end_of_create hook to
   # update the database
   my $stash = {};
@@ -4314,7 +4314,7 @@ sub groups {
   }
 
   # BMO: if required, hack in groups exposed by -visible membership
-  # (eg mozilla-employee-confidential-visible), so reporters can add the
+  # (e.g. mozilla-employee-confidential-visible), so reporters can add the
   # bug to a group on show_bug.
   # if the bug is already in the group, the user will not be able to remove
   # it unless they are a true group member.

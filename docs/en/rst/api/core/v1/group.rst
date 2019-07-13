@@ -124,7 +124,7 @@ description  string   A new description for the groups. This is what will appear
                       in the UI as the name of the groups.
 user_regexp  string   A new regular expression for email. Will automatically
                       grant membership to these groups to anyone with an email
-                      address that matches this perl regular expression.
+                      address that matches this Perl regular expression.
 is_active    boolean  Set if groups are active and eligible to be used for bugs.
                       ``true`` if bugs can be restricted to this group, ``false``
                       otherwise.

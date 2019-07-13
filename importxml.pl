@@ -329,7 +329,7 @@ sub init() {
 # one bugs' attachments at a time.
 # The cycle will then repeat for the next <bug>
 #
-# The attach_id is ignored since mysql generates a new one for us.
+# The attach_id is ignored since MySQL generates a new one for us.
 # The submitter_id gets filled in with $exporterid.
 
 sub process_attachment() {

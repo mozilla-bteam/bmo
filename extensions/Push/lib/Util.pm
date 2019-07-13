@@ -138,7 +138,7 @@ sub clean_email {
 }
 
 # resolve to canonical email form
-# eg. glob+bmo@mozilla.com --> glob@mozilla.com
+# e.g. glob+bmo@mozilla.com --> glob@mozilla.com
 sub canon_email {
   my $email = shift;
   $email = clean_email($email);

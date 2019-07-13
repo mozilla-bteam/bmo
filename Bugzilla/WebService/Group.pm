@@ -384,7 +384,7 @@ as the name of the groups.
 
 C<string> A new regular expression for email. Will automatically grant
 membership to these groups to anyone with an email address that matches
-this perl regular expression.
+this Perl regular expression.
 
 =item C<is_active>
 

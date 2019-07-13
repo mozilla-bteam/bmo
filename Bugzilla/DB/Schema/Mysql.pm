@@ -322,7 +322,7 @@ sub column_info_to_column {
   if (defined $column_info->{COLUMN_DEF}) {
 
     # The defaults that MySQL inputs automatically are usually
-    # something that would be considered "false" by perl, either
+    # something that would be considered "false" by Perl, either
     # a 0 or an empty string. (Except for datetime and decimal
     # fields, which have their own special auto-defaults.)
     #

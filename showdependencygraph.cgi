@@ -316,7 +316,7 @@ else {
 # Cleanup any old .dot files created from previous runs.
 my $since = time() - 24 * 60 * 60;
 
-# Can't use glob, since even calling that fails taint checks for perl < 5.6
+# Can't use glob, since even calling that fails taint checks for Perl < 5.6
 opendir(DIR, $webdotdir);
 my @files = grep { /\.dot$|\.png$|\.map$/ && -f "$webdotdir/$_" } readdir(DIR);
 closedir DIR;

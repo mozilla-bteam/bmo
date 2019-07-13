@@ -295,7 +295,7 @@ This method can throw all of the errors that :ref:`rest_single_bug` throws, plus
 * 125 (Comment Tagging Disabled)
   Comment tagging support is not available or enabled.
 * 126 (Invalid Comment Tag)
-  The comment tag provided was not valid (eg. contains invalid characters).
+  The comment tag provided was not valid (e.g. contains invalid characters).
 * 127 (Comment Tag Too Short)
   The comment tag provided is shorter than the minimum length.
 * 128 (Comment Tag Too Long)

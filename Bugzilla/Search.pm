@@ -802,7 +802,7 @@ sub data {
   my %tf_map = map { $_ => 1 } Bugzilla->tracking_flag_names;
   my @tf_selected = grep { exists $tf_map{$_} } @orig_fields;
 
-  # mysql has a limit of 61 joins, and we want to avoid massive amounts of joins
+  # MySQL has a limit of 61 joins, and we want to avoid massive amounts of joins
   # 30 ensures we won't hit the limit, nor generate too many joins
   if (scalar @tf_selected > 30) {
     foreach my $column (@tf_selected) {
