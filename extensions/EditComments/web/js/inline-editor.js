@@ -270,7 +270,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
   }
 
   /**
-   * Finish editing by restoring the UI, once editing is complete or cancelled. Any unsaved comment will be discarded.
+   * Finish editing by restoring the UI, once editing is complete or canceled. Any unsaved comment will be discarded.
    */
   finish() {
     this.toggle_toolbar_buttons(false);

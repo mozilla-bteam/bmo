@@ -95,7 +95,7 @@ sub _domain_blocking {
 }
 
 #
-# ip blocking
+# IP blocking
 #
 
 sub _ip_blocking {

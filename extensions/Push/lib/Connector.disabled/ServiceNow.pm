@@ -194,7 +194,7 @@ sub send {
 # should_send initializes bugzilla_user; make sure we return a useful error message
   if (!$self->{bugzilla_user}) {
     return (PUSH_RESULT_TRANSIENT,
-      "Invalid bugzilla-user (" . $self->config->{bugzilla_user} . ")");
+      "Invalid Bugzilla-user (" . $self->config->{bugzilla_user} . ")");
   }
 
   # load the bug
@@ -219,10 +219,10 @@ sub send {
     $data->{attachment}->{data} = encode_base64($attachment->data);
   }
 
-  # map bmo login to ldap login and insert into json payload
+  # map BMO login to ldap login and insert into JSON payload
   $self->_add_ldap_logins($data, {});
 
-  # flatten json data
+  # flatten JSON data
   $self->_flatten($data);
 
   # add sysparm_action
@@ -242,7 +242,7 @@ sub send {
   $self->{lwp} ||= LWP::UserAgent->new(agent => Bugzilla->localconfig->urlbase);
   my $result = $self->{lwp}->request($request);
 
-  # http level errors
+  # HTTP level errors
   if (!$result->is_success) {
 
     # treat these as transient
@@ -257,7 +257,7 @@ sub send {
     return (PUSH_RESULT_TRANSIENT, "Empty response");
   }
 
-  # json errors
+  # JSON errors
   my $result_data;
   eval { $result_data = from_json($result->content); };
   if ($@) {
@@ -270,7 +270,7 @@ sub send {
     return (PUSH_RESULT_ERROR, $result_data->{error});
   }
 
-  # malformed/unexpected json response
+  # malformed/unexpected JSON response
   if (!exists $result_data->{records}
     || ref($result_data->{records}) ne 'ARRAY'
     || scalar(@{$result_data->{records}}) == 0)
@@ -313,7 +313,7 @@ sub _get_bug_data {
 
 sub _flatten {
 
-  # service-now expects a flat json object
+  # service-now expects a flat JSON object
   my ($self, $data) = @_;
 
   my $target = $data->{event}->{target};

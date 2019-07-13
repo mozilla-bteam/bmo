@@ -28,7 +28,7 @@ and the Bugzilla site is `http://bugzilla.mozilla.org`.
    resource.
 
 Your application should take measures to ensure when receiving a user at your
-callback URL that you previously redirected them to Bugzilla. The simplest method would be ensuring the callback url always has the
+callback URL that you previously redirected them to Bugzilla. The simplest method would be ensuring the callback URL always has the
 hostname and path you specified, with only the query string parameters varying.
 
 The description should include the name of your application, in a form that will be recognizable to users.

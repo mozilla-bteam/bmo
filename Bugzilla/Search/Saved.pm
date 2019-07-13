@@ -369,7 +369,7 @@ These return data about the object, without modifying the object.
 
 =item C<edit_link>
 
-A url with which you can edit the search.
+A URL with which you can edit the search.
 
 =item C<url>
 

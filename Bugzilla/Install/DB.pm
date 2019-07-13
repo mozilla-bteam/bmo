@@ -1465,7 +1465,7 @@ sub _use_ip_instead_of_hostname_in_logincookies {
   # 2002-05-13 preed@sigkill.com - bug 129446 patch backported to the
   #  BUGZILLA-2_14_1-BRANCH as a security blocker for the 2.14.2 release
   #
-  # Use the ip, not the hostname, in the logincookies table
+  # Use the IP, not the hostname, in the logincookies table
   if ($dbh->bz_column_info("logincookies", "hostname")) {
     print "Clearing the logincookies table...\n";
 
@@ -3592,7 +3592,7 @@ sub _populate_bugs_fulltext {
     }
 
     # As recommended by Monty Widenius for GNOME's upgrade.
-    # mkanat and justdave concur it'll be helpful for bmo, too.
+    # mkanat and justdave concur it'll be helpful for BMO, too.
     $dbh->do('SET SESSION myisam_sort_buffer_size = 3221225472');
 
     my $newline = $dbh->quote("\n");

@@ -121,7 +121,7 @@ sub response {
   if ($content) {
 
     # Content is in bytes at this point and needs to be converted
-    # back to utf8 string.
+    # back to UTF-8 string.
     enable_utf8();
     utf8::decode($content) if !utf8::is_utf8($content);
     $json_data = $self->json->decode($content);
@@ -352,7 +352,7 @@ sub _retrieve_json_params {
   }
 
   # Any parameters passed in in the body of a non-GET request will override
-  # any parameters pull from the url path. Otherwise non-unique keys are
+  # any parameters pull from the URL path. Otherwise non-unique keys are
   # combined.
   if ($self->request->method ne 'GET') {
     my $extra_params = {};

@@ -171,7 +171,7 @@ $(function() {
             $('#attachments tr.attach-obsolete').toggle();
         });
 
-    // url --> unsafe warning
+    // URL --> unsafe warning
     $('.bug-url')
         .click(function(event) {
             var that = $(this);
@@ -1522,7 +1522,7 @@ async function show_new_changes_indicator() {
     } catch (ex) {}
 }
 
-// fix url after bug creation/update
+// fix URL after bug creation/update
 if (history && history.replaceState) {
     var href = document.location.href;
     if (!href.match(/show_bug\.cgi/)) {
@@ -1624,7 +1624,7 @@ $(function() {
 
         // Bring an element into view, leaving space for the outline. If passed
         // a string, it will be treated as an id - the page will scroll and the
-        // url will be added to the browser's history. If passed an element, no
+        // URL will be added to the browser's history. If passed an element, no
         // entry will be added to the history.
         scrollTo: function(target, complete) {
             let $target;

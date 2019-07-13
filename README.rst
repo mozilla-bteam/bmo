@@ -302,15 +302,15 @@ BUGZILLA_ALLOW_INSECURE_HTTP
   This should never be set in production. It allows auth delegation and oauth over http.
 
 BMO_urlbase
-  The public url for this instance. Note that if this begins with https://
+  The public URL for this instance. Note that if this begins with https://
   and BMO_inbound_proxies is set to '*' Bugzilla will believe the connection to it
   is using SSL.
 
 BMO_canonical_urlbase
-  The public url for the production instance, if different from urlbase above.
+  The public URL for the production instance, if different from urlbase above.
 
 BMO_attachment_base
-  This is the url for attachments.
+  This is the URL for attachments.
   When the allow_attachment_display parameter is on, it is possible for a
   malicious attachment to steal your cookies or perform an attack on Bugzilla
   using your credentials.
@@ -367,19 +367,19 @@ BMO_memcached_namespace
   The global namespace for the memcached servers.
 
 BMO_memcached_servers
-  A list of memcached servers (ip addresses or host names). Can be empty.
+  A list of memcached servers (IP addresses or host names). Can be empty.
 
 BMO_shadowdb
   The database name of the read-only database.
 
 BMO_shadowdbhost
-  The hotname or ip address of the read-only database.
+  The hotname or IP address of the read-only database.
 
 BMO_shadowdbport
    The port of the read-only database.
 
 BMO_setrlimit
-    This is a json object and can set any limit described in https://metacpan.org/pod/BSD::Resource.
+    This is a JSON object and can set any limit described in https://metacpan.org/pod/BSD::Resource.
     Typically it used for setting RLIMIT_AS, and the default value is ``{ "RLIMIT_AS": 2000000000 }``.
 
 BMO_size_limit

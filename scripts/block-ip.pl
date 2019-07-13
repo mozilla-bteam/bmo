@@ -34,7 +34,7 @@ else {
 
 =head1 NAME
 
-block-ip.pl -- block or unlock ip addresses from Bugzilla's IP block list
+block-ip.pl -- block or unlock IP addresses from Bugzilla's IP block list
 
 =head1 SYNOPSIS
 

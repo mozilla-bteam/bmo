@@ -81,7 +81,7 @@ sub mapr(&$) {
 }
 
 
-# convert datetime string (from db) to a UTC json friendly datetime
+# convert datetime string (from db) to a UTC JSON friendly datetime
 sub datetime_to_timestamp {
   my ($datetime_string) = @_;
   return '' unless $datetime_string;
@@ -146,7 +146,7 @@ sub canon_email {
   return $email;
 }
 
-# json helpers
+# JSON helpers
 sub to_json {
   my ($object, $pretty) = @_;
   if ($pretty) {

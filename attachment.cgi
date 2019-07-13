@@ -381,7 +381,7 @@ sub view {
   # Return the appropriate HTTP response headers.
   $attachment->datasize || ThrowUserError("attachment_removed");
 
-  # BMO add a hook for github url redirection
+  # BMO add a hook for GitHub URL redirection
   Bugzilla::Hook::process('attachment_view', {attachment => $attachment});
 
   my $do_redirect = 0;
@@ -569,7 +569,7 @@ sub insert {
 
   if ($attach_text) {
 
-    # Convert to unix line-endings if pasting a patch
+    # Convert to Unix line-endings if pasting a patch
     if (scalar($cgi->param('ispatch'))) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }

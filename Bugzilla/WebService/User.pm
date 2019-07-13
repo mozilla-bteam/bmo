@@ -564,7 +564,7 @@ management of cookies across sessions.
 
 On success, a hash containing two items, C<id>, the numeric id of the
 user that was logged in, and a C<token> which can be passed in
-the parameters as authentication in other calls. A set of http cookies
+the parameters as authentication in other calls. A set of HTTP cookies
 is also sent with the response. These cookies *or* the token can be sent
 along with any future requests to the webservice, for the duration of the
 session. Note that cookies are not accepted for GET requests for JSON-RPC

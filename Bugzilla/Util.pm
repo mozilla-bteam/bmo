@@ -96,7 +96,7 @@ my %html_quote = (
   q{@} => '&#64;',    # Obscure '@'.
 );
 
-# Bug 120030: Override html filter to obscure the '@' in user
+# Bug 120030: Override HTML filter to obscure the '@' in user
 #             visible strings.
 # Bug 319331: Handle BiDi disruptions.
 sub html_quote {
@@ -108,8 +108,8 @@ sub html_quote {
 
   if ($use_utf8) {
 
-    # Remove control characters if the encoding is utf8.
-    # Other multibyte encodings may be using this range; so ignore if not utf8.
+    # Remove control characters if the encoding is UTF-8.
+    # Other multibyte encodings may be using this range; so ignore if not UTF-8.
     $var =~ s/(?![\t\r\n])[[:cntrl:]]//g;
 
     # Remove the following characters because they're
@@ -956,7 +956,7 @@ sub extract_nicks {
             :
             # try tp capture a "word", plus some symbols
             # this covers most everything people use for ircnicks
-            # in bmo.
+            # in BMO.
             ([\p{IsAlnum}|._-]+)
             # require a word terminator, which
             # can be the end of the string or some punctuation.
@@ -974,7 +974,7 @@ __END__
 
 =head1 NAME
 
-Bugzilla::Util - Generic utility functions for bugzilla
+Bugzilla::Util - Generic utility functions for Bugzilla
 
 =head1 SYNOPSIS
 
@@ -1078,7 +1078,7 @@ escaped (if HTML::Scrubber is not installed) or removed.
 
 =item C<url_quote($val)>
 
-Quotes characters so that they may be included as part of a url.
+Quotes characters so that they may be included as part of a URL.
 
 =item C<css_class_quote($val)>
 
@@ -1194,7 +1194,7 @@ ASCII 10 (LineFeed) and ASCII 13 (Carrage Return).
 
 =item C<disable_utf8()>
 
-Disable utf8 on STDOUT (and display raw data instead).
+Disable UTF-8 on STDOUT (and display raw data instead).
 
 =item C<detect_encoding($str)>
 

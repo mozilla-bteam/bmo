@@ -201,7 +201,7 @@ if ($data_fh || $attach_text || $data_base64) {
 
   if ($attach_text) {
 
-    # Convert to unix line-endings if pasting a patch
+    # Convert to Unix line-endings if pasting a patch
     if (scalar($cgi->param('ispatch'))) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }

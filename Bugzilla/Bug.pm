@@ -3553,7 +3553,7 @@ sub remove_see_also {
       {field => 'see_also', oldvalue => $url, privs => $privs});
   }
 
-  # Since we remove also the url from the referenced bug,
+  # Since we remove also the URL from the referenced bug,
   # we need to notify changes for that bug too.
   $removed_bug_url = $removed_bug_url->[0];
   if ( !$skip_recursion
@@ -4746,7 +4746,7 @@ sub _join_activity_entries {
     }
   }
 
-  # Assume bug_file_loc contain a single url, don't insert a delimiter
+  # Assume bug_file_loc contain a single URL, don't insert a delimiter
   if ($field eq 'bug_file_loc') {
     return $current_change . $new_change;
   }

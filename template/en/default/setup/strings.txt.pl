@@ -173,7 +173,7 @@ database server is running on. Setting this to 0 means "use the default
 port for my database server."
 END
   localconfig_db_sock => <<'END',
-MySQL Only: Enter a path to the unix socket for MySQL. If this is
+MySQL Only: Enter a path to the Unix socket for MySQL. If this is
 blank, then MySQL's compiled-in default will be used. You probably
 want that.
 END
@@ -239,7 +239,7 @@ The URL that is the common initial leading part of all URLs.
 END
   localconfig_canonical_urlbase => <<'END',
 The URL that is the canonical initial leading part of all URLs.
-This will be the production url for a dev site, for instance.
+This will be the production URL for a dev site, for instance.
 END
   localconfig_use_suexec => <<'END',
 Set this to 1 if Bugzilla runs in an Apache SuexecUserGroup environment.
@@ -277,7 +277,7 @@ If you set this to anything other than "", you will need to run checksetup.pl
 as ##root## or as a user who is a member of the specified group.
 END
   localconfig_setrlimit => <<EOT,
-This a json object whose keys are the named constants for the setrlimit(1) C library
+This a JSON object whose keys are the named constants for the setrlimit(1) C library
 function. The default sets RLIMIT_AS to 2GiB.
 EOT
   localconfig_size_limit => <<EOT,

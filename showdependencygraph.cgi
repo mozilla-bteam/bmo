@@ -295,7 +295,7 @@ else {
 
   # Then, generate a imagemap datafile that contains the corner data
   # for drawn bug objects. Pass it on to $CreateImagemap that
-  # turns this monster into html.
+  # turns this monster into HTML.
 
   my ($mapfh, $mapfilename)
     = File::Temp::tempfile("XXXXXXXXXX", SUFFIX => '.map', DIR => $webdotdir);

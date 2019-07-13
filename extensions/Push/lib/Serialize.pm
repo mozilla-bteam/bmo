@@ -112,7 +112,7 @@ sub _select {
   return $value;
 }
 
-# return an object which serializes to a json boolean, but still acts as a perl
+# return an object which serializes to a JSON boolean, but still acts as a perl
 # boolean
 sub _boolean {
   my ($value) = @_;

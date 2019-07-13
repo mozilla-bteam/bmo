@@ -164,7 +164,7 @@ $(function () {
                         if (stash[flag_id]) {
                             // Only process if we did not get a + or a - since
                             if (!stash[flag_id].is_complete) {
-                                add_historical_action(history, flag, stash[flag_id], 'cancelled');
+                                add_historical_action(history, flag, stash[flag_id], 'canceled');
                             }
                             delete stash[flag_id];
                         }

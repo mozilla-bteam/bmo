@@ -721,7 +721,7 @@ var bugForm = {
         // standards
         elVersions.add(opt, elVersions.options[0]);
       } catch(ex) {
-        // ie only
+        // IE only
         elVersions.add(opt, 0);
       }
       elVersions.value = '';

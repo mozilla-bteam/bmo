@@ -718,7 +718,7 @@ override this method in F<Config.pm>.
 
 =head3 C<web_dir>
 
-The directory that your package's web related files are in, such as css and javascript.
+The directory that your package's web related files are in, such as CSS and JavaScript.
 
 This defaults to the C<web> subdirectory of the L</package_dir>.
 

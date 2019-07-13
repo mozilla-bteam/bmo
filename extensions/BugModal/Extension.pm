@@ -292,7 +292,7 @@ sub template_before_process {
   }
   $vars->{tracking_flags_table} = \@tracking_table;
 
-  # for the "view -> hide treeherder comments" menu item
+  # for the "View -> Hide Treeherder Comments" menu item
   my @treeherder_ids = map { $_->id } @{Bugzilla->treeherder_users};
   foreach my $change_set (@{$bug->activity_stream}) {
     if (

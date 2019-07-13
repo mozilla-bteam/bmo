@@ -433,7 +433,7 @@ in the relevant F<Bugzilla::Config::*> package.
 
 =item C<check_multi>
 
-Checks that a multi-valued parameter (ie types C<s>, C<o> or C<m>) satisfies
+Checks that a multi-valued parameter (i.e. types C<s>, C<o> or C<m>) satisfies
 its constraints.
 
 =item C<check_numeric>

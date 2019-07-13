@@ -177,7 +177,7 @@ sub feed_query {
 
     if ($author && $author->bugzilla_id) {
       if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
-        INFO("SKIPPING: Change made by phabricator user");
+        INFO("SKIPPING: Change made by Phabricator user");
         $self->save_last_id($story_id, 'feed');
         next;
       }
@@ -551,7 +551,7 @@ sub process_new_user {
   my $phab_user = Bugzilla::Extension::PhabBugz::User->new($user_data);
 
   if (!$phab_user->bugzilla_id) {
-    WARN("SKIPPING: No bugzilla id associated with user");
+    WARN("SKIPPING: No Bugzilla ID associated with user");
     return;
   }
 

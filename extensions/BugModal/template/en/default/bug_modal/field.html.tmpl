@@ -26,9 +26,9 @@
   # hide_on_view: (boolean) hide field from read-only view (default: false)
   # hide_on_edit: (boolean) hide content when in edit mode (default: false)
   # append_content: (boolean) when called as a WRAPPER, the content will be appended to the
-  #                 edit html instead of replacing it.  forces edit_only (default: false);
+  #                 edit HTML instead of replacing it.  forces edit_only (default: false);
   # default: (string) default value (eg. used as a placeholder in user fields)
-  # help: (string) optional url that describes the field (requires a label to be defined and visible)
+  # help: (string) optional URL that describes the field (requires a label to be defined and visible)
   # required: (boolean) if the field is required. (At present, only implemented for FIELD_TYPE_FREETEXT)
   # action: (hash) show a button to the right of the edit field (user fields only currently).  keys:
   #   id: (string) optional button id
@@ -122,7 +122,7 @@ END;
     [% aria_labelledby_html = BLOCK %]aria-label="[% aria_label || label FILTER html %]"[% END %]
   [% END %]
 
-  [%# read-only html %]
+  [%# read-only HTML %]
   [% UNLESS edit_only %]
     <div class="[% "value" IF !container %][% " edit-hide" IF editable %][% " container" IF container %]">
       [% IF name %]
@@ -179,7 +179,7 @@ END;
     </div>
   [% END %]
 
-  [%# edit html %]
+  [%# edit HTML %]
   [% IF editable %]
     [% "MISSING NAME" UNLESS name %]
     <div class="value edit edit-show [% " wide" IF full_width %][% " short" IF short_width %]"

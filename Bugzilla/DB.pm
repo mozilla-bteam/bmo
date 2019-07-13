@@ -1973,7 +1973,7 @@ Formatted SQL for negative regular expression search (e.g. NOT REGEXP)
 =item B<Description>
 
 Returns SQL syntax for limiting results to some number of rows
-with optional offset if not starting from the begining.
+with optional offset if not starting from the beginning.
 
 Abstract method, should be overridden by database specific code.
 

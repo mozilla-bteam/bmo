@@ -165,7 +165,7 @@ sub _get_create_index_ddl {
 sub get_create_database_sql {
   my ($self, $name) = @_;
 
-  # We only create as utf8 if we have no params (meaning we're doing
+  # We only create as UTF-8 if we have no params (meaning we're doing
   # a new installation) or if the utf8 param is on.
   my $charset = Bugzilla::DB::Mysql->utf8_charset;
   my $collate = Bugzilla::DB::Mysql->utf8_collate;
