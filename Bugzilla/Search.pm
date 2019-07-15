@@ -2871,7 +2871,6 @@ sub _assignee_last_login {
 sub _component_nonchanged {
   my ($self, $args) = @_;
   my $dbh = Bugzilla->dbh;
-  my (@products, @components);
   my $product;
 
   # Allow to search product/component pairs like "Core::General" with a simple
@@ -2891,9 +2890,13 @@ sub _component_nonchanged {
   my $term = $args->{term};
 
   if ($product) {
+    # We need to pass the complete condition and negative option to make sure
+    # both product and components are included or excluded
     $args->{term} = build_subselect('bugs.component_id', 'components.id',
       'components JOIN products ON components.product_id = products.id',
-      $term . ' AND products.name = ' . $dbh->quote($product));
+      'products.name = ' . $dbh->quote($product)
+        . ' AND components.name = ' . $args->{quoted},
+      $args->{operator} eq 'notequals');
   } else {
     $args->{term} = build_subselect('bugs.component_id', 'components.id',
       'components', $term);
