@@ -205,7 +205,7 @@ This restriction is mostly used for security-related bugs, or internal tickets.
 
 In order to search for bugs restricted to a group, you must be a member of the group. 
 
-Use `the group membership report <https://bugzilla.mozilla.org/page.cgi?id=group_membership.html>`_ 
+Visit `the Permissions page <https://bugzilla.mozilla.org/userprefs.cgi?tab=permissions>`_ 
 to find the groups you belong to, then search using the clause
 
     Group   is equal to "%group.groupname%"
