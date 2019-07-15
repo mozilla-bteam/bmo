@@ -3455,7 +3455,7 @@ sub _changedbefore_changedafter {
   my $table;
   my $join = {table => 'bugs_activity', extra => []};
 
-  if ($field eq 'whatever') {
+  if ($field eq 'anything') {
     # Handle special field name to find changes in any field
     $table = $join->{as} = "act_x_$chart_id";
   } else {
@@ -3495,7 +3495,7 @@ sub _changedfrom_changedto {
   my $join = {table => 'bugs_activity', extra => []};
   my $column = ($operator =~ /from/) ? 'removed' : 'added';
 
-  if ($field eq 'whatever') {
+  if ($field eq 'anything') {
     # Handle special field name to find changes in any field
     $table = $join->{as} = "act_x_$chart_id";
   } else {
@@ -3521,7 +3521,7 @@ sub _changedby {
   my $table;
   my $join = {table => 'bugs_activity', extra => []};
 
-  if ($field eq 'whatever') {
+  if ($field eq 'anything') {
     # Handle special field name to find changes in any field
     $table = $join->{as} = "act_x_$chart_id";
   } else {

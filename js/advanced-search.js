@@ -567,14 +567,14 @@ Bugzilla.CustomSearch.Row = class CustomSearchRow extends Bugzilla.CustomSearch.
    * Called whenever a field option is selected.
    */
   field_onchange() {
-    const is_whatever = this.$select_field.value === 'whatever';
+    const is_anything = this.$select_field.value === 'anything';
 
-    // Add support for the "Whatever" special field that allows to search the bug history. When it's selected, disable
+    // Add support for the "anything" special field that allows to search the bug history. When it's selected, disable
     // search types other than "changed before", "changed after", "changed from", "changed to", "changed by", and make
     // "changed by" selected for convenience.
     for (const $option of this.$select_operator.options) {
-      $option.disabled = is_whatever ? !$option.value.match(/changed\w+/) : false;
-      $option.selected = $option.value === (is_whatever ? 'changedby' : 'noop');
+      $option.disabled = is_anything ? !$option.value.match(/changed\w+/) : false;
+      $option.selected = $option.value === (is_anything ? 'changedby' : 'noop');
     }
   }
 };

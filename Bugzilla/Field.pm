@@ -488,7 +488,7 @@ use constant DEFAULT_FIELDS => (
   },
 
   # Special field that allows to search everything with Custom Search queries
-  {name => 'whatever', desc => 'Whatever'},
+  {name => 'anything', desc => 'Any field'},
 );
 
 ################
