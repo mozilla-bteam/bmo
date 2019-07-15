@@ -2890,8 +2890,8 @@ sub _component_nonchanged {
   my $term = $args->{term};
 
   if ($product) {
-    # We need to pass the complete condition and negative option to make sure
-    # both product and components are included or excluded
+    # Pass the complete condition and negative option to make sure both product
+    # and component are included or excluded
     $args->{term} = build_subselect('bugs.component_id', 'components.id',
       'components JOIN products ON components.product_id = products.id',
       'products.name = ' . $dbh->quote($product)
