@@ -218,6 +218,7 @@ $vars->{'resolution'}
 # Boolean charts
 my @fields = sort { lc($a->description) cmp lc($b->description) }
   values %$search_fields;
+unshift(@fields, {name => "anything", description => "Any field"});
 unshift(@fields, {name => "noop", description => "---"});
 $vars->{'fields'} = \@fields;
 
