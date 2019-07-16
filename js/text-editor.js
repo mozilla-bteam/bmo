@@ -312,11 +312,12 @@ Bugzilla.TextEditor = class TextEditor {
   };
 
   /**
-   * Insert a code fencing block to the `<textarea>`, or remove an existing markup.
+   * Insert a wrapped block Markdown markup to the `<textarea>`, or remove an existing markup.
+   * @param {String} mark Character(s) to be added before and after any selected text, e.g. "```" for a code fencing.
    */
-  insert_code_fencing() {
+  insert_wrap_markup(mark) {
     const { start, end, before, after, selection, any_chars } = this.get_selection();
-    const escaped_mark = Bugzilla.RegExp.escape('```');
+    const escaped_mark = Bugzilla.RegExp.escape(mark);
     const before_match = before.match(new RegExp(`^(${any_chars}\n)?(${escaped_mark}\n)$`));
     const after_match = after.match(new RegExp(`^(\n?${escaped_mark})(\n${any_chars})?$`));
     const inside_match = selection.match(new RegExp(`^${escaped_mark}\n(${any_chars})\n${escaped_mark}$`));
@@ -353,7 +354,7 @@ Bugzilla.TextEditor = class TextEditor {
       'bold': () => this.insert_inline_markup('**'),
       'italic': () => this.insert_inline_markup('_'),
       'quote': () => this.insert_block_markup('>'),
-      'code': () => (multiline ? this.insert_code_fencing() : this.insert_inline_markup('`')),
+      'code': () => (multiline ? this.insert_wrap_markup('```') : this.insert_inline_markup('`')),
       'link': () => this.insert_link(),
       'bulleted-list': () => this.insert_block_markup('*'),
       'numbered-list': () => this.insert_block_markup('1.'),
