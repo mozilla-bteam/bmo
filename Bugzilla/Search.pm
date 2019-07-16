@@ -521,7 +521,8 @@ sub COLUMN_JOINS {
       },
     },
     'attachments.count'   => {table => 'attachments',},
-    'cc_count'            => {table => 'cc',},
+    'cc_count' =>
+      {table => 'bug_user_map', extra => ['user_role = ' . REL_CC],},
     'keywords.count'      => {table => 'keywords',},
     'longdescs.count'     => {table => 'longdescs', join => 'INNER',},
     'blocked'             => {table => 'dependencies', to => 'dependson',},
@@ -619,7 +620,7 @@ sub COLUMNS {
     'duplicates'    => $dbh->sql_group_concat('DISTINCT map_duplicates.dupe'),
 
     'attachments.count'  => 'COUNT(DISTINCT map_attachments_count.attach_id)',
-    'cc_count'           => 'COUNT(DISTINCT map_cc_count.who)',
+    'cc_count'           => 'COUNT(DISTINCT map_cc_count.user_id)',
     'keywords.count'     => 'COUNT(DISTINCT map_keywords_count.keywordid)',
     'longdescs.count'    => 'COUNT(DISTINCT map_longdescs_count.comment_id)',
     'blocked.count'      => 'COUNT(DISTINCT map_blocked_count.blocked)',
@@ -2865,11 +2866,12 @@ sub _relation_count_changed {
 sub _relation_count_default {
   my ($self, $args) = @_;
   my ($chart_id, $field, $joins) = @$args{qw(chart_id field joins)};
-  my $extra = !$self->_user->is_insider
+  my $where = !$self->_user->is_insider
     && $field =~ /^(?:attachments|longdescs)\.count$/ ? 'WHERE isprivate = 0' : '';
-  my ($table, $column, $other_column)
+  my ($table, $column, $other_column, $extra)
     = $field eq 'attachments.count' ? ('attachments', 'attach_id', 'bug_id')
-    : $field eq 'cc_count' ? ('cc', 'cc', 'bug_id')
+    : $field eq 'cc_count'
+      ? ('bug_user_map', 'user_id', 'bug_id', 'user_role = ' . REL_CC)
     : $field eq 'keywords.count' ? ('keywords', 'keywords', 'bug_id')
     : $field eq 'longdescs.count' ? ('longdescs', 'comment_id', 'bug_id')
     : $field eq 'blocked.count' ? ('dependencies', 'blocked', 'dependson')
@@ -2880,9 +2882,13 @@ sub _relation_count_default {
     : undef;
   my $alias = "${column}_count_${chart_id}";
 
+  if ($extra) {
+    $where .= ($where ? ' AND ' : 'WHERE ') . $extra;
+  }
+
   push(@$joins, {
     table => "(SELECT $other_column AS bug_id, COUNT(*) AS num"
-      . " FROM $table $extra GROUP BY $other_column)",
+      . " FROM $table $where GROUP BY $other_column)",
     as => $alias,
   });
 
