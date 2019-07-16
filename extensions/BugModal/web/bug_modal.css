@@ -132,20 +132,18 @@ a.activity-ref {
   opacity: 0;
 }
 
-.module .fields-lhs {
-  display: table-cell;
-  min-width: 450px;
-  vertical-align: top;
-}
-
+.module .fields-lhs,
 .module .fields-rhs {
-  display: table-cell;
+  flex: none;
+  width: 50%;
   min-width: 450px;
-  width: 100%;
+  display: table-cell;
   vertical-align: top;
 }
 
 .module-content {
+  display: flex;
+  flex-wrap: wrap;
   padding: 5px;
 }
 
@@ -1303,11 +1301,6 @@ a.lightbox-icon.markdown {
 
   #header .inner {
     width: auto !important;
-  }
-
-  .module .fields-lhs,
-  .module .fields-rhs {
-    min-width: 380px;
   }
 
   #main-inner {
