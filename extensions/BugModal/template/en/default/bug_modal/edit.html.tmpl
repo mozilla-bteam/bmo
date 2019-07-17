@@ -476,22 +476,28 @@
         name = "importance"
         label = "Priority"
         container = 1
-        hide_on_view = bug.priority == "--" && bug.bug_severity == "normal"
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
     %]
-      [% INCLUDE bug_modal/field.html.tmpl
+      [% WRAPPER bug_modal/field.html.tmpl
           field = bug_fields.priority
           field_type = constants.FIELD_TYPE_SINGLE_SELECT
           aria_label = bug_fields.priority.description
           no_indent = 1
           inline = 1
       %]
+        [% IF bug.priority == "--" %]
+          <em>Not set</em>
+        [% ELSE %]
+          [% bug.priority FILTER html %]
+        [% END %]
+      [% END %]
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.bug_severity
           field_type = constants.FIELD_TYPE_SINGLE_SELECT
           aria_label = bug_fields.bug_severity.description
           inline = 1
           label = "Severity"
+          hide_on_view = bug.bug_severity == "normal"
           help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_severity"
       %]
       [% UNLESS cf_hidden_in_product('cf_rank', bug.product, bug.component, bug) %]
