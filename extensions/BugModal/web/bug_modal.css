@@ -306,6 +306,7 @@ input[type="number"] {
   margin-left: 4px;
 }
 
+#mark-as-assigned-btn,
 #mark-as-dup-btn {
   white-space: nowrap;
 }
