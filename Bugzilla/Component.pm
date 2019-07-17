@@ -348,7 +348,7 @@ sub set_cc_list {
 
   $self->{cc_ids} = $self->_check_cc_list($cc_list);
 
-  # Reset the list of CC user objects.
+  # Reset the list of Subscriber user objects.
   delete $self->{initial_cc};
 }
 
@@ -628,7 +628,7 @@ Component.pm represents a Product Component object.
 =item C<initial_cc>
 
  Description: Returns a list of user objects representing users being
-              in the initial CC list.
+              in the Default Subscriber list.
 
  Params:      none.
 
@@ -718,7 +718,7 @@ Component.pm represents a Product Component object.
 
 =item C<set_cc_list(\@cc_list)>
 
- Description: Changes the list of users being in the CC list by default.
+ Description: Changes the list of users being in the Subscriber list by default.
 
  Params:      \@cc_list - list of login names (string). All the user
                           accounts must already exist.
@@ -771,7 +771,7 @@ Component.pm represents a Product Component object.
               initiaqacontact - login name of the default QA contact (string),
                                 or an empty string to clear it.
               initial_cc      - an arrayref of login names to add to the
-                                CC list by default.
+                                Subscriber list by default.
               triage_owner    - login name of the default triage owner
 
  Returns:     A Bugzilla::Component object.

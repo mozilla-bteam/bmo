@@ -375,7 +375,7 @@
 
   [% ELSIF error == "cc_remove_denied" %]
     [% title = "Change Denied" %]
-    You do not have permission to remove other people from the CC list.
+    You do not have permission to get other people unsubscribed from the [% terms.bug %].
 
   [% ELSIF error == "chart_too_large" %]
     [% title = "Chart Too Large" %]
@@ -760,7 +760,7 @@
     and the user you asked isn't in all the groups to which
     the [% terms.bug %] has been restricted.
     Please choose someone else to ask, or make the [% terms.bug %] accessible
-    to users on its CC: list and add that user to the list.
+    to Subscribers and add that user to the list.
 
   [% ELSIF error == "flag_requestee_unauthorized_attachment" %]
     [% title = "Flag Requestee Not Authorized" %]
@@ -796,9 +796,9 @@
     products you cannot see, and so you are not allowed to delete it.
 
   [% ELSIF error == "flag_type_cc_list_invalid" %]
-    [% title = "Flag Type CC List Invalid" %]
+    [% title = "Flag Type Subscriber List Invalid" %]
     [% admindocslinks = {'flags-overview.html#flags-admin'  => 'Administering Flags'} %]
-    The CC list [% cc_list FILTER html %] must be less than 200 characters long.
+    The Subscriber list [% cc_list FILTER html %] must be less than 200 characters long.
 
   [% ELSIF error == "flag_type_component_without_product" %]
     [% title = "Product Missing" %]

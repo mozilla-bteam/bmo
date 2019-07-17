@@ -39,12 +39,12 @@ members of *all* the groups that the bug is in can see
 the bug. For information on granting read-only access to certain people and
 full edit access to others, see :ref:`product-group-controls`.
 
-.. note:: By default, bugs can also be seen by the Assignee, the Reporter, and
-   everyone on the CC List, regardless of whether or not the bug would
-   typically be viewable by them. Visibility to the Reporter and CC List can
-   be overridden (on a per-bug basis) by bringing up the bug, finding the
-   section that starts with ``Users in the roles selected below...``
-   and un-checking the box next to either 'Reporter' or 'CC List' (or both).
+.. note:: By default, bugs can also be seen by the Assignee, Reporter and
+   Subscribers, regardless of whether or not the bug would typically be viewable
+   by them. Visibility to the Reporter and Subscribers can be overridden (on a
+   per-bug basis) by bringing up the bug, finding the section that starts with
+   ``Users in the roles selected below...`` and un-checking the box next to
+   either 'Reporter' or 'Subscribers' (or both).
 
 .. _create-groups:
 

@@ -1117,7 +1117,7 @@ sub process_bug {
     );
   };
 
-  # Handle CC's
+  # Handle Subscribers
   if (defined $bug_fields{'cc'}) {
     my %ccseen;
     my $sth_cc = $dbh->prepare("INSERT INTO cc (bug_id, who) VALUES (?,?)");
@@ -1131,7 +1131,7 @@ sub process_bug {
         }
       }
       else {
-        $err .= "CC member $person does not have an account here\n";
+        $err .= "Subscriber $person does not have an account here\n";
       }
     }
   }

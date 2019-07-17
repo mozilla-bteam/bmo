@@ -1162,7 +1162,7 @@ sub update {
     }
   }
 
-  # CC
+  # Subscribers
   my @old_cc = map { $_->id } @{$old_bug->cc_users};
   my @new_cc = map { $_->id } @{$self->cc_users};
   my ($removed_cc, $added_cc) = diff_arrays(\@old_cc, \@new_cc);
@@ -1896,7 +1896,7 @@ sub _check_cc {
     $cc_ids{$id} = 1;
   }
 
-  # Enforce Default CC
+  # Enforce Default Subscribers
   $cc_ids{$_->id} = 1 foreach (@{$component->initial_cc});
 
   return [keys %cc_ids];
@@ -2078,7 +2078,7 @@ sub _check_dup_id {
     ThrowUserError('comment_required');
   }
 
-  # Should we add the reporter to the CC list of the new bug?
+  # Should we get the reporter subscribed to the new bug?
   # If he can see the bug...
   if ($self->reporter->can_see_bug($dupe_of)) {
 
@@ -2373,7 +2373,7 @@ sub _check_strict_isolation {
     if !ref $invocant;
 
   # For each unique user in @related_users...(assignee and qa_contact
-  # could be duplicates of users in the CC list)
+  # could be duplicates of users in the Subscriber list)
   my %unique_users = map { $_->id => $_ } @related_users;
   my @blocked_users;
   foreach my $id (keys %unique_users) {
@@ -2823,7 +2823,7 @@ sub set_all {
   # a new assignee or qa_contact, or adding/removing any CCs. So,
   # we have to check that the current assignee, qa, and CCs are still
   # valid if we've switched products, under strict_isolation. We can only
-  # do that here, because if they *did* change the assignee, qa, or CC,
+  # do that here, because if they *did* change the assignee, qa, or Subscribers,
   # then we don't want to check the original ones, only the new ones.
   $self->_check_strict_isolation() if $product_changed;
 }
@@ -2895,7 +2895,7 @@ sub set_component {
     # For update()
     $self->{_old_component_name} = $old_comp->name;
 
-    # Add in the Default CC of the new Component;
+    # Add in the Default Subscribers of the new Component;
     foreach my $cc (@{$component->initial_cc}) {
       $self->add_cc($cc);
     }
@@ -3283,7 +3283,7 @@ sub set_version           { $_[0]->set('version',           $_[1]); }
 # These are in alphabetical order by field name.
 
 # Accepts a User object or a username. Adds the user only if they
-# don't already exist as a CC on the bug.
+# don't already exist as a Subscriber on the bug.
 sub add_cc {
   my ($self, $user_or_name) = @_;
   return if !$user_or_name;

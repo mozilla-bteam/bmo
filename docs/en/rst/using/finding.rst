@@ -134,14 +134,14 @@ one could search for::
 
 However, the search::
 
-    CC   does not contain the string   "@mozilla.org"
+    Subscriber   does not contain the string   "@mozilla.org"
 
-would find every bug where anyone on the CC list did not contain
+would find every bug where anyone on the Subscriber list did not contain
 "@mozilla.org" while::
 
-    NOT ( CC   contains the string   "@mozilla.org" )
+    NOT ( Subscriber   contains the string   "@mozilla.org" )
 
-would find every bug where there was nobody on the CC list who
+would find every bug where there was nobody on the Subscriber list who
 did contain the string. Similarly, the use of negation also permits
 complex expressions to be built using terms OR'd together and then
 negated. Negation permits queries such as::
@@ -217,7 +217,7 @@ to list the bugs restricted to `groupname`.
 Searching on Relative Dates
 ---------------------------
 
-In order to conduct searches over a window of time, you can use *relative dates* in query values. 
+In order to conduct searches over a window of time, you can use *relative dates* in query values.
 
 The relative date values are of the form `nnV` where `nn` is a positive or negative integer and `V` is one of:
 
@@ -227,7 +227,7 @@ The relative date values are of the form `nnV` where `nn` is a positive or negat
 * `m` – for months
 * `y` – for years
 
-A value of `1d` means 24 hours in the future from the time of the search. 
+A value of `1d` means 24 hours in the future from the time of the search.
 
 A value of `-1d` means 24 hours in the past from the time of the search.
 
@@ -243,11 +243,11 @@ and the field compared is a Datetime type.
 To find bugs opened in the last 24 hours, you could search on:
 
     Opened   is less than   "-1d"
-    
+
 To find bugs opened during the current day (UTC),
 
     Opened   is less than   "-0ds"
-    
+
 Appending `s` to a relative date means *start of*.
 
 You may also use relative dates for when a field changed. In the :guilabel:`Custom Search` operator that would be
@@ -319,5 +319,5 @@ Edit Search:
 
 Remember Search As:
     You can give a search a name and remember it; the name will appear
-    as an auto-completion in the search field in the header of Bugzilla 
+    as an auto-completion in the search field in the header of Bugzilla
     pages giving you quick access to run it again later.

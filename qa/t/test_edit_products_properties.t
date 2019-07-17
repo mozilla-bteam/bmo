@@ -187,20 +187,20 @@ $sel->click_ok('cc-summary');
 ok(
   $sel->find_element(
     qq{//div[\@class="cc-user"]//a[\@data-user-email="$unprivileged_user_login"]}),
-  "$unprivileged_user_login correctly added to the CC list"
+  "$unprivileged_user_login correctly added to the Subscriber list"
 );
 ok(
   !$sel->find_element(
     qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
-  "$permanent_user not in the CC list for 'first comp' by default"
+  "$permanent_user not in the Subscriber list for 'first comp' by default"
 );
 
-# File a second bug, and make sure users in the default CC list are added.
+# File a second bug, and make sure users in the Default Subscribers are added.
 file_bug_in_product($sel, "Kill me!");
 $sel->select_ok("version",   "label=0.1a");
 $sel->select_ok("component", "label=second comp");
-$sel->type_ok("short_desc", "check default CC list");
-$sel->type_ok("comment",    "is the CC list populated correctly?");
+$sel->type_ok("short_desc", "check Default Subscribers");
+$sel->type_ok("comment",    "is the Subscriber list populated correctly?");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
@@ -210,7 +210,7 @@ $sel->click_ok('cc-summary');
 ok(
   $sel->find_element(
     qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
-  "$permanent_user in the CC list for 'second comp' by default"
+  "$permanent_user in the Subscriber list for 'second comp' by default"
 );
 
 # Edit product properties and set votes_to_confirm to 0, which has
@@ -299,7 +299,7 @@ $sel->click_ok('cc-summary');
 ok(
   $sel->find_element(
     qq{//div[\@class="cc-user"]//a[\@data-user-email="$permanent_user"]}),
-  "User $permanent_user automatically added to the CC list"
+  "User $permanent_user automatically added to the Subscriber list"
 );
 
 # Delete the milestone the bug belongs to. This should retarget the bug

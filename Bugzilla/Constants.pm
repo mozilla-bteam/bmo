@@ -350,8 +350,8 @@ use constant REL_GLOBAL_WATCHER => 5;
 # This should be accessed through Bugzilla::BugMail::relationships() instead
 # of being accessed directly.
 use constant RELATIONSHIPS => {
-  REL_ASSIGNEE,       "AssignedTo", REL_REPORTER, "Reporter",
-  REL_QA,             "QAcontact",  REL_CC,       "CC",
+  REL_ASSIGNEE,       "Assignee",   REL_REPORTER, "Reporter",
+  REL_QA,             "QAcontact",  REL_CC,       "Subscriber",
   REL_GLOBAL_WATCHER, "GlobalWatcher"
 };
 

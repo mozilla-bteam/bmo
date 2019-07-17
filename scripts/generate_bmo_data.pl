@@ -374,7 +374,7 @@ my @groups = (
   {
     name => 'partner-confidential',
     description =>
-      'Restrict the visibility of this bug to the assignee, QA contact, and CC list only.',
+      'Restrict the visibility of this bug to the Assignee, QA Contact and Subscribers only.',
     no_admin     => 1,
     all_products => 0,
     bug_group    => 1,

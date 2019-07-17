@@ -401,7 +401,7 @@ logout($sel);
 go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("Freetext$bug1_id: thanks");
 
-# Powerless users should still be able to CC themselves when
+# Powerless users should still be able to subscribe to a bug by themselves when
 # custom fields are in use.
 
 log_in($sel, $config, 'unprivileged');

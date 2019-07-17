@@ -340,12 +340,12 @@ var dupes = {
     var button = document.createElement('button');
     button.setAttribute('type', 'button');
     if (isCCed) {
-      button.innerHTML = 'Stop&nbsp;following';
+      button.innerHTML = 'Unsubscribe';
       button.onclick = function() {
         dupes.updateFollowing(el, id, bugStatus, button, false); return false;
       };
     } else {
-      button.innerHTML = 'Follow&nbsp;bug';
+      button.innerHTML = 'Subscribe';
       button.onclick = function() {
         dupes.updateFollowing(el, id, bugStatus, button, true); return false;
       };

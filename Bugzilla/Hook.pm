@@ -492,7 +492,7 @@ This happens near the beginning of L<Bugzilla::Bug/update>, after L<Bugzilla::Ob
 is called, but before all other special changes are made to the database. Once use case is
 this allows for adding your own entries to the C<changes> hash which gets added to the
 bugs_activity table later keeping you from having to do it yourself. Also this is also helpful
-if your extension needs to add CC members, flags, keywords, groups, etc. This generally
+if your extension needs to add Subscribers, flags, keywords, groups, etc. This generally
 occurs inside a database transaction.
 
 Params:
@@ -644,8 +644,8 @@ the bugmail.
 
 Users' bugmail preferences will be applied to any users that you add
 to the list. (So, for example, if you add somebody as though they were
-a CC on the bug, and their preferences state that they don't get email
-when they are a CC, they won't get email.)
+a Subscriber on the bug, and their preferences state that they don't get email
+when they are a Subscriber, they won't get email.)
 
 This hook is called before watchers or globalwatchers are added to the
 recipient list.
@@ -668,7 +668,7 @@ about, and the value should always be C<1>. The "relationships"
 are described by the various C<REL_> constants in L<Bugzilla::Constants>.
 
 Here's an example of adding userid C<123> to the recipient list
-as though he were on the CC list:
+as though he were on the Subscriber list:
 
  $recipients->{123}->{+REL_CC} = 1
 
@@ -698,7 +698,7 @@ is subject to change in future releases of Bugzilla.
 =head2 bugmail_relationships
 
 There are various sorts of "relationships" that a user can have to a bug,
-such as Assignee, CC, etc. If you want to add a new type of relationship,
+such as Assignee, Subscriber, etc. If you want to add a new type of relationship,
 you should use this hook.
 
 Params:

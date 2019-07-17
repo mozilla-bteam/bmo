@@ -194,7 +194,7 @@ commenton*
     All these fields allow you to dictate what changes can pass
     without comment and which must have a comment from the
     person who changed them.  Often, administrators will allow
-    users to add themselves to the CC list, accept bugs, or
+    users to subscribe to bugs by themselves, accept bugs, or
     change the Status Whiteboard without adding a comment as to
     their reasons for the change, yet require that most other
     changes come with an explanation.
@@ -408,7 +408,7 @@ email address and users are still queried by email address.
 .. warning:: Because the Bugzilla account is not created until the first time
    a user logs in, a user who has not yet logged is unknown to Bugzilla.
    This means they cannot be used as an assignee or QA contact (default or
-   otherwise), added to any CC list, or any other such operation. One
+   otherwise), subscribed to bugs, or any other such operation. One
    possible workaround is the :file:`bugzilla_ldapsync.rb`
    script in the :file:`contrib`
    directory. Another possible solution is fixing :bug:`201069`.
@@ -667,7 +667,7 @@ User Matching
 
 The settings on this page control how users are selected and queried
 when adding a user to a bug. For example, users need to be selected
-when assigning the bug, adding to the CC list, or
+when assigning the bug, getting them subscribed to the bug, or
 selecting a QA contact. With the :param:`usemenuforusers` parameter, it is
 possible to configure Bugzilla to
 display a list of users in the fields instead of an empty text field.

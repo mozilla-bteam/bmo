@@ -31,7 +31,7 @@ log_in($sel, $config, 'unprivileged');
 file_bug_in_product($sel, 'TestProduct');
 ok(!$sel->is_editable("assigned_to"), "The assignee field is not editable");
 $sel->type_ok("short_desc", "Greetings from a powerless user");
-$sel->type_ok("comment",    "File a bug with an empty CC list");
+$sel->type_ok("comment",    "File a bug with an empty Subscriber list");
 $sel->click_ok("commit");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 my $bug1_id = $sel->get_value("//input[\@name='id' and \@type='hidden']");

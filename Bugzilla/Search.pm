@@ -81,26 +81,26 @@ use Time::HiRes qw(gettimeofday tv_interval);
 # The terms within a single row of a boolean chart are all constraints
 # on a single piece of data.  If you're looking for a bug that has two
 # different people cc'd on it, then you need to use two boolean charts.
-# This will find bugs with one CC matching 'foo@blah.org' and and another
-# CC matching 'bar@blah.org'.
+# This will find bugs with one Subscriber matching 'foo@blah.org' and another
+# Subscriber matching 'bar@blah.org'.
 #
 # --------------------------------------------------------------
-# CC    | equal to
+# Subscriber    | equal to
 # foo@blah.org
 # --------------------------------------------------------------
-# CC    | equal to
+# Subscriber    | equal to
 # bar@blah.org
 #
 # If you try to do this query by pressing the AND button in the
 # original boolean chart then what you'll get is an expression that
-# looks for a single CC where the login name is both "foo@blah.org",
+# looks for a single Subscriber where the login name is both "foo@blah.org",
 # and "bar@blah.org". This is impossible.
 #
 # --------------------------------------------------------------
-# CC    | equal to
+# Subscriber    | equal to
 # foo@blah.org
 # AND
-# CC    | equal to
+# Subscriber    | equal to
 # bar@blah.org
 # --------------------------------------------------------------
 

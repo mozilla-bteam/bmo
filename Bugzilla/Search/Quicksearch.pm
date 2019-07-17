@@ -38,7 +38,7 @@ use constant MAPPINGS => {
   # Dependencies, Regressions
   "regressions" => "regresses",
 
-  # People: AssignedTo, Reporter, QA Contact, CC, etc.
+  # People: Assignee, Reporter, QA Contact, Subscribers, etc.
   "assignee" => "assigned_to",
   "owner"    => "assigned_to",
   "mentor"   => "bug_mentor",

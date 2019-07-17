@@ -181,7 +181,7 @@ sub bug_end_of_create {
   my ($bug, $params, $timestamp) = @$args{qw(bug params timestamp)};
   my $user = Bugzilla->user;
 
-  # Anyone added to the CC list of a bug is now interested in that bug.
+  # Anyone getting subscribed to a bug is now interested in that bug.
   foreach my $cc_user (@{$bug->cc_users}) {
     next if $user->id == $cc_user->id;
     Bugzilla::Extension::MyDashboard::BugInterest->mark($cc_user->id, $bug->id,
@@ -201,7 +201,7 @@ sub bug_end_of_update {
     = @$args{qw(bug old_bug changes timestamp)};
   my $user = Bugzilla->user;
 
-  # Anyone added to the CC list of a bug is now interested in that bug.
+  # Anyone getting subscribed to a bug is now interested in that bug.
   my %old_cc = map { $_->id => $_ } grep {defined} @{$old_bug->cc_users};
   my @added = grep { not $old_cc{$_->id} } grep {defined} @{$bug->cc_users};
   foreach my $cc_user (@added) {

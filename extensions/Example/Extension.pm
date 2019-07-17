@@ -333,7 +333,7 @@ sub bugmail_recipients {
 
     # Uncomment the line below to add the maintainer to the recipients
     # list of every bugmail from bug 1 as though that the maintainer
-    # were on the CC list.
+    # were on the Subscriber list.
     #$recipients->{$user->id}->{+REL_CC} = 1;
 
     # And this line adds the maintainer as though he had the "REL_EXAMPLE"

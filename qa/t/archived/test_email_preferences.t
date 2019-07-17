@@ -25,8 +25,8 @@ my @email_normal = ($config->{editbugs_user_login});
 #
 # Admin should get following bugmails (in order):
 #  1) A bug is created
-#  2) Normal user adds a CC for itself
-#  3) Admin removes CC of normal user
+#  2) Normal user subscribes to bug itself
+#  3) Admin removes normal user from Subscribers
 #  4) Admin assigns the bug to itself
 #  5) Admin requests a flag from normal user
 #  6) Admin grants a flag requested from itself
@@ -38,7 +38,7 @@ my @email_normal = ($config->{editbugs_user_login});
 #  2) Normal user sets severity to blocker
 #  3) Admin sets severity to trivial
 #  4) Admin adds a comment #2
-#  5) Admin removes CC of normal user
+#  5) Admin removes normal user from Subscribers
 #  6) Admin assigns the bug to itself
 #  7) Normal user sets severity to normal
 #
@@ -68,7 +68,7 @@ $sel->click_ok("email-0-2", undef,
   'Set "New comments are added" for Assignee role');
 $sel->click_ok("email-0-0", undef,
   'Set "Any field not mentioned above changes" for Assignee role');
-$sel->click_ok("email-3-8", undef, 'Set "The CC field changes" for CCed role');
+$sel->click_ok("email-3-8", undef, 'Set "The Subscribers field changes" for CCed role');
 $sel->click_ok("email-1-10", undef,
   'Set "A new bug is created" for QA Contact role');
 $sel->click_ok("email-100-101", undef,
@@ -168,9 +168,9 @@ $sel->click_ok("email-2-2", undef,
 $sel->click_ok("email-3-2", undef,
   'Clear "New comments are added" for CCed role');
 $sel->click_ok("email-2-8", undef,
-  'Clear "The CC field changes" for Reporter role');
+  'Clear "The Subscribers field changes" for Reporter role');
 $sel->click_ok("email-3-8", undef,
-  'Clear "The CC field changes" for CCed role');
+  'Clear "The Subscribers field changes" for CCed role');
 $sel->click_ok("email-2-0", undef,
   'Clear "Any field not mentioned above changes" for Reporter role');
 $sel->click_ok("email-3-0", undef,
@@ -297,7 +297,7 @@ $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 @email_sentto = get_email_sentto($sel);
 ok($email_sentto[0] eq "no one", "No bugmail sent");
 
-# Add normal user to CC list (bugmail to admin but not normal user)
+# Add normal user to Subscriber list (bugmail to admin but not normal user)
 $sel->type_ok("newcc", $config->{editbugs_user_login});
 $sel->value_is("newcc", $config->{editbugs_user_login});
 $sel->click_ok("commit");
@@ -346,7 +346,7 @@ $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 @email_sentto = get_email_sentto($sel);
 is_deeply(\@email_sentto, \@email_normal, "Normal user got bugmail");
 
-# Remove normal user from CC list (bugmail to both normal user and admin)
+# Remove normal user from Subscriber list (bugmail to both normal user and admin)
 $sel->click_ok("removecc");
 $sel->add_selection_ok("cc", "label=$config->{editbugs_user_login}");
 $sel->value_is("removecc", "on");

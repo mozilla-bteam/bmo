@@ -673,7 +673,7 @@ $(function() {
         })
         .attr('disabled', false);
 
-    // cc toggle (follow/stop following)
+    // subscription toggle
     $('#cc-btn')
         .click(async event => {
             event.preventDefault();
@@ -685,7 +685,7 @@ $(function() {
                 cc_change = { remove: [ BUGZILLA.user.login ] };
                 cc_count--;
                 $('#cc-btn')
-                    .text('Follow')
+                    .text('Subscribe')
                     .data('is-cced', '0')
                     .prop('disabled', true);
             }
@@ -693,7 +693,7 @@ $(function() {
                 cc_change = { add: [ BUGZILLA.user.login ] };
                 cc_count++;
                 $('#cc-btn')
-                    .text('Stop Following')
+                    .text('Unsubscribe')
                     .data('is-cced', '1')
                     .prop('disabled', true);
             }
@@ -715,7 +715,7 @@ $(function() {
 
             // show message
             $('#floating-message-text')
-                .text(is_cced ? 'You are now following this bug' : 'You are no longer following this bug');
+                .text(is_cced ? 'You’re now subscribed to this bug' : 'You’re no longer subscribed to this bug');
             $('#floating-message')
                 .fadeIn(250)
                 .delay(2500)
@@ -743,9 +743,9 @@ $(function() {
                 }
 
                 if (changes.cc.added == BUGZILLA.user.login) {
-                    $('#cc-btn').text('Stop Following').data('is-cced', '1');
+                    $('#cc-btn').text('Unsubscribe').data('is-cced', '1');
                 } else if (changes.cc.removed == BUGZILLA.user.login) {
-                    $('#cc-btn').text('Follow').data('is-cced', '0');
+                    $('#cc-btn').text('Subscribe').data('is-cced', '0');
                 }
 
                 if ($('#cc-latch').data('expanded')) {
@@ -1000,7 +1000,7 @@ $(function() {
         });
 
     // vote button
-    // ideally this should function like CC and xhr it, but that would require
+    // ideally this should function like Subscribers and xhr it, but that would require
     // a rewrite of the voting extension
     $('#vote-btn')
         .click(function(event) {
@@ -1447,7 +1447,7 @@ async function show_new_changes_indicator() {
 
         const last_visit_ts = new Date(data[0].last_visit_ts);
         const new_changes = [...document.querySelectorAll('main .change-set')].filter($change => {
-            // Exclude hidden CC changes and the user's own changes
+            // Exclude hidden Subscriber changes and the user's own changes
             return $change.clientHeight > 0 &&
                 Number($change.querySelector('.email').getAttribute('data-user-id')) !== BUGZILLA.user.id &&
                 new Date($change.querySelector('[data-time]').getAttribute('data-time') * 1000) > last_visit_ts;

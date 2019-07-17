@@ -179,7 +179,7 @@ except group restrictions (unless they are members of the groups they
 are trying to change). Bug reporters also have the ability to edit some
 fields, but in a more restrictive manner. Other users, without
 *editbugs* privileges, cannot edit
-bugs, except to comment and add themselves to the CC list.
+bugs, except to leave a comment and subscribe to bugs.
 
 Because this kind of change is such a common request, we have added a
 specific hook for it that :ref:`extensions` can call. It's called

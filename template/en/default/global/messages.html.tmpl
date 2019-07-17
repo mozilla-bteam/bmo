@@ -251,9 +251,9 @@
           [% FOREACH cc_user = comp.initial_cc %]
             [% cc_list.push(cc_user.login) %]
           [% END %]
-          <li>Default CC list updated to [% cc_list.join(", ") FILTER html %]</li>
+          <li>Default Subscribers updated to [% cc_list.join(", ") FILTER html %]</li>
         [% ELSE %]
-          <li>Default CC list deleted</li>
+          <li>Default Subscribers deleted</li>
         [% END %]
       [% END %]
       [% IF changes.isactive.defined %]
@@ -631,9 +631,9 @@
         [% END %]
         [% IF changes.cc_list.defined %]
           [% IF flagtype.cc_list %]
-            <li>CC list updated to <em>[% flagtype.cc_list FILTER html %]</em></li>
+            <li>Subscriber list updated to <em>[% flagtype.cc_list FILTER html %]</em></li>
           [% ELSE %]
-            <li>CC list is now empty</li>
+            <li>Subscriber list is now empty</li>
           [% END %]
         [% END %]
         [% IF changes.sortkey.defined %]

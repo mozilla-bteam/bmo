@@ -91,8 +91,8 @@ sub QUERY_DEFS {
     },
     {
       name        => 'openccbugs',
-      heading     => "You Are CC'd On",
-      description => 'You are in the CC list of the bug, so you are watching it.',
+      heading     => "You Are Subscribed",
+      description => 'You are in the Subscriber list of the bug, so you are watching it.',
       params      => {
         'bug_status' => ['__open__'],
         'emailcc1'   => 1,

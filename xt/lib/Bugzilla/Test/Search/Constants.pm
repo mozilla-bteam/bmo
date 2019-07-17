@@ -595,7 +595,7 @@ use constant CHANGED_OVERRIDE => (
 #              a space-separated string of the login names of all the ccs
 #              on Bug 1. If we did an "anywordssubstr" search test, it would
 #              become a space-separated string of the first few characters
-#              of each CC's login name on Bug 1.
+#              of each Subscriber's login name on Bug 1.
 #
 #        <#-id> - The bug id of the numbered bug.
 #        <#-reporter> - The login name of the numbered bug's reporter.

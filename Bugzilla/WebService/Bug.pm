@@ -2780,7 +2780,7 @@ C<array> of C<int>s. The ids of bugs that are "blocked" by this bug.
 
 =item C<cc>
 
-C<array> of C<string>s. The login names of users on the CC list of this
+C<array> of C<string>s. The login names of users on the Subscriber list of this
 bug.
 
 =item C<cc_detail>
@@ -2928,7 +2928,7 @@ C<int> The unique numeric id of this bug.
 
 =item C<is_cc_accessible>
 
-C<boolean> If true, this bug can be accessed by members of the CC list,
+C<boolean> If true, this bug can be accessed by members of the Subscriber list,
 even if they are not in the groups the bug is restricted to.
 
 =item C<is_confirmed>
@@ -3746,7 +3746,8 @@ all of this Bugzilla.
 =item C<assigned_to> (username) - A user to assign this bug to, if you
 don't want it to be assigned to the component owner.
 
-=item C<cc> (array) - An array of usernames to CC on this bug.
+=item C<cc> (array) - An array of user names to add to the Subscriber list on
+this bug.
 
 =item C<comment_is_private> (boolean) - If set to true, the description
 is private, otherwise it is assumed to be public.
@@ -3875,7 +3876,7 @@ The flag type is inactive and cannot be used to create new flags.
 
 =item 504 (Invalid User)
 
-Either the QA Contact, Assignee, or CC lists have some invalid user
+Either the QA Contact, Assignee, or Subscribers have some invalid user
 in them. The error message will have more details.
 
 =back
@@ -4486,11 +4487,11 @@ may have the following fields:
 
 =over
 
-=item C<add> Array of C<string>s. User names to add to the CC list.
+=item C<add> Array of C<string>s. User names to add to the Subscriber list.
 They must be full user names, and an error will be thrown if you pass
 in an invalid user name.
 
-=item C<remove> Array of C<string>s. User names to remove from the CC
+=item C<remove> Array of C<string>s. User names to remove from the Subscriber
 list. They must be full user names, and an error will be thrown if you
 pass in an invalid user name.
 
@@ -4498,7 +4499,7 @@ pass in an invalid user name.
 
 =item C<is_cc_accessible>
 
-C<boolean> Whether or not users in the CC list are allowed to access
+C<boolean> Whether or not users in the Subscriber list are allowed to access
 the bug, even if they aren't in a group that can normally access the bug.
 
 =item C<comment>

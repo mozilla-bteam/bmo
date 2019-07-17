@@ -399,7 +399,7 @@ sub create_bug_request {
     }
   }
 
-  # CC should just be a list of bugzilla logins
+  # Subscribers should just be a list of bugzilla logins
   if (exists $params->{cc}) {
     $params->{cc} = [map { $_->{name} } @{$params->{cc}}];
   }
@@ -470,7 +470,7 @@ sub update_bug_request {
     }
   }
 
-  # CC is treated like groups in that we need 'add' and 'remove' keys
+  # Subscribers are treated like groups in that we need 'add' and 'remove' keys
   if (exists $params->{cc}) {
     my $new_cc = [map { $_->{name} } @{$params->{cc}}];
     my ($removed, $added) = diff_arrays($bug->cc, $new_cc);
@@ -628,7 +628,7 @@ sub search_bugs_response {
     my $bug_obj = shift @$bug_objs;
     my $fixed = fix_bug($bug_data, $bug_obj, $stash);
 
-    # CC count and Dupe count
+    # Subscriber and Dupe count
     if (filter_wants_nocache($params, 'cc_count')) {
       $fixed->{cc_count} = scalar @{$bug_obj->cc} if $bug_obj->cc;
     }

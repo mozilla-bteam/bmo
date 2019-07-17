@@ -263,7 +263,7 @@ ok(
   "SeleniumBugFlag3Test is not specifically requestable"
 );
 
-# This is intentional to generate "flagmail". Some flags have a CC list
+# This is intentional to generate "flagmail". Some flags have Subscribers
 # associated with them, some others don't. This is to catch crashes due to
 # the MTA.
 

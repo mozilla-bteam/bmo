@@ -39,7 +39,7 @@
       <b>Users in the roles below can always view this [% terms.bug %]:</b>
       <ul>
         [% IF bug.reporter_accessible %]<li>Reporter</li>[% END %]
-        [% IF bug.cclist_accessible %]<li>CC List</li>[% END %]
+        [% IF bug.cclist_accessible %]<li>Subscriber</li>[% END %]
       </ul>
     [% END %]
   [% ELSE %]
@@ -106,7 +106,7 @@
              name="cclist_accessible" id="cclist_accessible"
              [% " checked" IF bug.cclist_accessible %]
              [% " disabled=\"disabled\"" UNLESS user_can_edit_accessible %]>
-      <label for="cclist_accessible">CC List</label>
+      <label for="cclist_accessible">Subscriber</label>
     </div>
     The assignee [% IF (Param('useqacontact')) %]and QA contact[% END %]
     can always see [% terms.abug %], and this section does not take effect

@@ -820,7 +820,7 @@
                  name="cclist_accessible" id="cclist_accessible"
                  [% " checked" IF bug.cclist_accessible %]
                  [% " disabled=\"disabled\"" UNLESS user_can_edit_accessible %]>
-          <label for="cclist_accessible">CC List</label>
+          <label for="cclist_accessible">Subscribers</label>
         </div>
         <p class="instructions">
           The assignee
@@ -863,12 +863,12 @@
 [% END %]
 
 [%############################################################################%]
-[%# Block for CC LIST                                                        #%]
+[%# Block for Subscriber list                                                 #%]
 [%############################################################################%]
 [% BLOCK section_cclist %]
     <tr>
       <th class="field_label">
-        <label for="newcc" accesskey="a">CC List:</label>
+        <label for="newcc" accesskey="a">Subscribers:</label>
       </th>
       <td>
         [% IF user.id %]
@@ -883,7 +883,7 @@
                    IF user.settings.state_addselfcc.value == 'always'
                       || (!has_role
                           && user.settings.state_addselfcc.value == 'cc_unless_role') %]>
-            <label for="addselfcc">Add me to CC list</label>
+            <label for="addselfcc">Subscribe</label>
             <br>
           [% END %]
         [% END %]
@@ -941,9 +941,9 @@
               <input type="checkbox" id="removecc" name="removecc">
               <label for="removecc">
                 [% IF bug.user.canedit %]
-                  Remove selected CCs
+                  Get selected users unsubscribed
                 [% ELSE %]
-                  Remove me from the CC list
+                  Unsubscribe
                 [% END %]
               </label>
               <br>

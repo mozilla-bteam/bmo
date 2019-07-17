@@ -364,15 +364,15 @@ var inline_history = {
     a.href = 'javascript:void(0)';
     a.id = 'ih_toggle_cc';
     YAHOO.util.Event.addListener(a, 'click', function(e) {
-      if (Dom.get('ih_toggle_cc').innerHTML == 'Show CC Changes') {
-        a.innerHTML = 'Hide CC Changes';
+      if (Dom.get('ih_toggle_cc').innerHTML == 'Show Subscriber Changes') {
+        a.innerHTML = 'Hide Subscriber Changes';
         inline_history.showCC();
       } else {
-        a.innerHTML = 'Show CC Changes';
+        a.innerHTML = 'Show Subscriber Changes';
         inline_history.hideCC();
       }
     });
-    a.innerHTML = 'Show CC Changes';
+    a.innerHTML = 'Show Subscriber Changes';
     var li = document.createElement('li');
     li.appendChild(a);
     ul.appendChild(li);

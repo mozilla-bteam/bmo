@@ -1130,7 +1130,7 @@ sub bug_end_of_create {
   my ($self, $args) = @_;
   my $bug = $args->{'bug'};
 
-  # automatically CC users to bugs based on group & product
+  # automatically get users subscribed to bugs based on group & product
   foreach my $group_name (keys %group_auto_cc) {
     my $group_obj = Bugzilla::Group->new({name => $group_name});
     if ($group_obj && $bug->in_group($group_obj)) {

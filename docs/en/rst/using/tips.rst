@@ -50,10 +50,9 @@ If you are changing the fields on a bug, only comment if
 either you have something pertinent to say or Bugzilla requires it.
 Otherwise, you may spam people unnecessarily with bugmail.
 To take an example: a user can set up their account to filter out messages
-where someone just adds themselves to the CC field of a bug
-(which happens a lot). If you come along, add yourself to the CC field,
-and add a comment saying "Adding self to CC", then that person
-gets a pointless piece of mail they would otherwise have avoided.
+where someone just subscribes to a bug (which happens a lot). If you come
+along, subscribe to a bug, and add a comment saying "Subscribing", then that
+person gets a pointless piece of mail they would otherwise have avoided.
 
 Don't use sigs in comments. Signing your name ("Bill") is acceptable,
 if you do it out of habit, but full mail/news-style
@@ -61,5 +60,5 @@ four line ASCII art creations are not.
 
 If you feel a bug you filed was incorrectly marked as a
 DUPLICATE of another, please question it in your bug, not
-the bug it was duped to. Feel free to CC the person who duped it
-if they are not already CCed.
+the bug it was duped to. Feel free to get the person who duped it subscribed
+to the bug if they are not already subscribed.

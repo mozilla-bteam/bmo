@@ -261,7 +261,8 @@ our @always_fileable_groups = qw(
   webtools-security
 );
 
-# Automatically CC users to bugs filed into configured groups and products
+# Automatically get users subscribed to bugs which is filed into configured
+# groups and products
 our %group_auto_cc = (
   'partner-confidential' => {
     'Marketing' => ['jbalaco@mozilla.com'],

@@ -150,10 +150,10 @@ assigned_to_detail     object    An object containing detailed user information
                                  for the assigned_to. To see the keys included
                                  in the user detail object, see below.
 blocks                 array     The IDs of bugs that are "blocked" by this bug.
-cc                     array     The login names of users on the CC list of this
-                                 bug.
+cc                     array     The login names of users on the Subscriber list
+                                 of this bug.
 cc_detail              array     Array of objects containing detailed user
-                                 information for each of the cc list members.
+                                 information for each of the Subscribers.
                                  To see the keys included in the user detail
                                  object, see below.
 classification         string    The name of the current classification the bug
@@ -182,8 +182,8 @@ flags                  array     An array of objects containing the information
                                  objects contains the following items
 groups                 array     The names of all the groups that this bug is in.
 id                     int       The unique numeric ID of this bug.
-is_cc_accessible       boolean   If true, this bug can be accessed by members of
-                                 the CC list, even if they are not in the groups
+is_cc_accessible       boolean   If true, this bug can be accessed by
+                                 Subscribers, even if they are not in the groups
                                  the bug is restricted to.
 is_confirmed           boolean   ``true`` if the bug has been confirmed. Usually
                                  this means that the bug has at some point been
@@ -659,7 +659,8 @@ alias               string   The alias for the bug that can be used instead of a
                              in all of this Bugzilla.
 assigned_to         string   A user to assign this bug to, if you don't want it
                              to be assigned to the component owner.
-cc                  array    An array of usernames to CC on this bug.
+cc                  array    An array of user names to add to the Subscriber list
+                             on this bug.
 comment_is_private  boolean  If set to true, the description is private,
                              otherwise it is assumed to be public.
 groups              array    An array of group names to put this bug into. You
@@ -763,7 +764,7 @@ id    int   This is the ID of the newly-filed bug.
 * 134 (Inactive Flag Type)
   The flag type is inactive and cannot be used to create new flags.
 * 504 (Invalid User)
-  Either the QA Contact, Assignee, or CC lists have some invalid user
+  Either the QA Contact, Assignee, or Subscribers have some invalid user
   in them. The error message will have more details.
 
 .. _rest_update_bug:
@@ -836,17 +837,17 @@ cc                     object   The users on the cc list. To modify this field,
                                 pass an object, which may have the following
                                 items:
 
-                                * ``add`` (array) User names to add to the CC
-                                  list. They must be full user names, and an
-                                  error will be thrown if you pass in an invalid
-                                  user name.
-                                * ``remove`` (array) User names to remove from
-                                  the CC list. They must be full user names, and
-                                  an error will be thrown if you pass in an
+                                * ``add`` (array) User names to add to the
+                                  Subscriber list. They must be full user names,
+                                  and an error will be thrown if you pass in an
                                   invalid user name.
-is_cc_accessible       boolean  Whether or not users in the CC list are allowed
-                                to access the bug, even if they aren't in a group
-                                that can normally access the bug.
+                                * ``remove`` (array) User names to remove from
+                                  the Subscriber list. They must be full user
+                                  names, and an error will be thrown if you pass
+                                  in an invalid user name.
+is_cc_accessible       boolean  Whether or not Subscribers are allowed to access
+                                the bug, even if they aren't in a group that can
+                                normally access the bug.
 comment                object   A comment on the change. The object may contain
                                 the following items:
 

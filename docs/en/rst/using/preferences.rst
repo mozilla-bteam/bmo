@@ -53,16 +53,16 @@ allows you to do just that. The rows of the table
 define events that can happen to a bug -- things like
 attachments being added, new comments being made, the
 priority changing, etc. The columns in the table define
-your relationship with the bug - reporter, assignee, QA contact (if enabled)
-or CC list member.
+your relationship with the bug - Reporter, Assignee, QA Contact (if enabled)
+or Subscriber.
 
 To fine-tune your bugmail, decide the events for which you want
 to receive bugmail; then decide if you want to receive it all
 the time (enable the checkbox for every column) or only when
 you have a certain relationship with a bug (enable the checkbox
 only for those columns). For example, if you didn't want to
-receive mail when someone added themselves to the CC list, you
-could uncheck all the boxes in the ``CC Field Changes``
+receive mail when someone subscribed to a bug, you
+could uncheck all the boxes in the ``Subscribers Field Changes``
 line. As another example, if you never wanted to receive email
 on bugs you reported unless the bug was resolved, you would
 uncheck all boxes in the ``Reporter`` column
@@ -71,7 +71,7 @@ verified`` row.
 
 .. note:: Bugzilla adds the ``X-Bugzilla-Reason`` header to
    all bugmail it sends, describing the recipient's relationship
-   (AssignedTo, Reporter, QAContact, CC, or Voter) to the bug.
+   (Assignee, Reporter, QA Contact, Subscriber, or Voter) to the bug.
    This header can be used to do further client-side filtering.
 
 Bugzilla has a feature called ``User Watching``.

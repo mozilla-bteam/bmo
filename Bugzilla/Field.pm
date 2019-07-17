@@ -300,7 +300,7 @@ use constant DEFAULT_FIELDS => (
   },
   {
     name           => 'cc',
-    desc           => 'CC',
+    desc           => 'Subscribers',
     type           => FIELD_TYPE_USERS,
     in_new_bugmail => 1,
   },
@@ -464,7 +464,7 @@ use constant DEFAULT_FIELDS => (
   },
   {
     name       => 'cclist_accessible',
-    desc       => 'CC Accessible',
+    desc       => 'Subscriber Accessible',
     type       => FIELD_TYPE_BOOLEAN,
     is_numeric => 1,
   },

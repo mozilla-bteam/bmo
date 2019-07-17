@@ -37,8 +37,8 @@ will remove the specified user from the following roles on private only bugs:
 - Clear qa_contact if the user is qa_contact
 - Re-assign to nobody\@mozilla.org if user is the assignee
 
-This script should not touch user's membership or default assignee, qa contact,
-or cc settings for components.
+This script should not touch user's membership or Default Assignee, Default QA
+Contact or Default Subscribers settings for components.
 
 Script should not send any email about the changes.
 USAGE
@@ -99,10 +99,10 @@ if (!$reporter_count && !$assignee_count && !$qa_count && !$cc_count) {
 warn <<EOF;
 About to remove user from the following number of bugs:
 
-Reporter:   $reporter_count
-Assignee:   $assignee_count
-QA Contact: $qa_count
-CC:         $cc_count
+Reporter:    $reporter_count
+Assignee:    $assignee_count
+QA Contact:  $qa_count
+Subscribers: $cc_count
 
 Press <Ctrl-C> to stop or <Enter> to continue...
 EOF
@@ -155,7 +155,7 @@ foreach my $bug_id (@$qa_bugs) {
   );
 }
 
-# CC list
+# Subscribers
 $field_id = get_field_id('cc');
 foreach my $bug_id (@$cc_bugs) {
   warn "Updating bug $bug_id\n";

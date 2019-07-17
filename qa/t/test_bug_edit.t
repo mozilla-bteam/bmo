@@ -112,7 +112,7 @@ check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 logout($sel);
 
-# The admin is not in the mandatory group, but he has been CC'ed,
+# The admin is not in the mandatory group, but they have subscribed,
 # so he can view and edit the bug (as he has editbugs privs by inheritance).
 
 log_in($sel, $config, 'admin');
@@ -136,7 +136,7 @@ check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 logout($sel);
 
-# The powerless user can see the restricted bug, as he has been CC'ed.
+# The powerless user can see the restricted bug, as they have subscribed.
 
 log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
@@ -226,7 +226,7 @@ logout($sel);
 log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
 $sel->type_ok("comment",
-  "I have no privs, I can only comment (and remove myself from the CC list)");
+  "I have no privs, I can only comment (and unsubscribe from the bug)");
 ok(!$sel->is_element_present('//select[@name="product"]'),
   "Product field not editable");
 ok(!$sel->is_element_present('//select[@name="bug_type"]'),
@@ -241,7 +241,7 @@ ok(!$sel->is_element_present('//select[@name="rep_platform"]'),
   "Hardware field not editable");
 $sel->click_ok("cc-summary");
 
-# display all links for removing a cc list member
+# display all links for removing a Subscriber
 $sel->driver->execute_script('
   var remove_cc_elements = document.getElementsByClassName("cc-remove");
   for (var i = 0; i < remove_cc_elements.length; i++) {

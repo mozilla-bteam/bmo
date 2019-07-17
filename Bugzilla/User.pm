@@ -1242,7 +1242,7 @@ sub force_bug_dissociation {
     );
   }
 
-  # CC list
+  # Subscribers
   my $cc_field_id = get_field_id('cc');
   foreach my $bug_id (@cc_bugs) {
     $dbh->do(
@@ -2429,7 +2429,7 @@ sub wants_bug_mail {
     $events{+EVT_BUG_CREATED} = 1;
 
     # You role is new if the bug itself is.
-    # Only makes sense for the assignee, QA contact and the CC list.
+    # Only makes sense for the Assignee, QA Contact and Subscribers.
     if ( $relationship == REL_ASSIGNEE
       || $relationship == REL_QA
       || $relationship == REL_CC)
@@ -2656,7 +2656,7 @@ sub create {
       # These "exceptions" define the default email preferences.
       #
       # We enable mail unless the change was made by the user, or it's
-      # just a CC list addition and the user is not the reporter.
+      # just a Subscriber list addition and the user is not the reporter.
       next if ($event == EVT_CHANGED_BY_ME);
       next if (($event == EVT_CC) && ($rel != REL_REPORTER));
 

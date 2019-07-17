@@ -139,7 +139,7 @@ sub _cc_limit {
   my $cc_count = ref($params->{$cc_field}) ? scalar(@{$params->{$cc_field}}) : 1;
   if ($cc_count > Bugzilla->params->{antispam_multi_user_limit_count}) {
     Bugzilla->audit(
-      sprintf("blocked <%s> from CC'ing %s users", Bugzilla->user->login, $cc_count));
+      sprintf("blocked <%s> from getting %s users subscribed", Bugzilla->user->login, $cc_count));
     delete $params->{$cc_field};
     if (exists $params->{cc} && exists $params->{cc}->{add}) {
       delete $params->{cc}->{add};

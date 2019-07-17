@@ -207,8 +207,8 @@ sub process_bug {
     $fields{'knob'} = 'duplicate';
   }
 
-  # Move @cc to @newcc as @cc is used by process_bug.cgi to remove
-  # users from the CC list when @removecc is set.
+  # Move @cc to @newcc as @cc is used by process_bug.cgi to get users
+  # unsubscribed when @removecc is set.
   $fields{'newcc'} = delete $fields{'cc'} if $fields{'cc'};
 
   # Make it possible to remove CCs.

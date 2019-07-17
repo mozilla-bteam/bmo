@@ -584,7 +584,8 @@ C<string> Returns the description of the flagtype.
 
 =item C<cc_list>
 
-C<string> Returns the concatenated CC list for the flagtype, as a single string.
+C<string> Returns the concatenated Subscriber list for the flagtype, as a single
+string.
 
 =item C<sort_key>
 

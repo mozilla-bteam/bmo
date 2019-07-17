@@ -244,8 +244,8 @@ name              type     description
 id                int      Returns the ID of the flagtype.
 name              string   Returns the name of the flagtype.
 description       string   Returns the description of the flagtype.
-cc_list           string   Returns the concatenated CC list for the flagtype, as
-                           a single string.
+cc_list           string   Returns the concatenated Subscriber list for the
+                           flagtype, as a single string.
 sort_key          int      Returns the sortkey of the flagtype.
 is_active         boolean  Returns whether the flagtype is active or disabled.
                            Flags being in a disabled flagtype are not deleted.

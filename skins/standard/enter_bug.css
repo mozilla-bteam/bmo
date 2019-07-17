@@ -87,7 +87,7 @@
   text-align: center;
 }
 
-/* Make the Add Me to CC button never wrap. */
+/* Make the Subscribe button never wrap. */
 #possible_duplicates .yui-dt-col-update_token {
   white-space: nowrap;
 }

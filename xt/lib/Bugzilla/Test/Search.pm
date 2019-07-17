@@ -754,7 +754,7 @@ sub _create_one_bug {
     my $cc_new    = $update_params{cc};
     my @cc_add    = ref($cc_new) ? @$cc_new : ($cc_new);
 
-    # We make the admin an explicit CC on bug 1 (but not on bug 6), so
+    # We make the admin an explicit Subscriber on bug 1 (but not on bug 6), so
     # that we can test the %user% pronoun properly.
     if ($real_number == 1) {
       push(@cc_add, $self->admin->login);

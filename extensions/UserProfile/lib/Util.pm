@@ -187,7 +187,7 @@ EOF
 
 sub last_user_activity {
 
-  # last comment, or change to a bug (excluding CC changes)
+  # last comment, or change to a bug (excluding Subscriber changes)
   my ($user_id) = @_;
   return Bugzilla->dbh->selectrow_array(
     <<EOF, undef, $user_id, $user_id, _field_id('cc'));

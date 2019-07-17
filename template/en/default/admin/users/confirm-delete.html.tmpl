@@ -24,8 +24,7 @@
   #                           or the QA contact
   # bugs_activity:            number of bugs the viewed user has activity
   #                           entries on
-  # cc                        number of bugs the viewed user is cc list member
-  #                           of
+  # cc                        number of bugs the viewed user is subscribed to
   # flags.requestee:          number of flags the viewed user is being asked for
   # flags.setter:             number of flags the viewed user has set
   # longdescs:                number of bug comments the viewed user has written
@@ -252,25 +251,21 @@
           <li>
             [% otheruser.login FILTER html %]
             <a href="[% basepath FILTER none %]buglist.cgi?emailcc1=1&amp;emailtype1=exact&amp;email1=
-               [%- otheruser.login FILTER uri %]">is
-            on the CC list of
-            [% IF cc == 1 %]
-              [%+ terms.abug %]
-            [% ELSE %]
-              [%+ cc %] [%+ terms.bugs %]
-            [% END %]</a>.
-            If you delete the user account, it will be removed from these CC lists.
+               [%- otheruser.login FILTER uri %]">is a Subscriber of
+            [% IF cc == 1 %][%+ terms.abug %][% ELSE %][%+ cc %] [%+ terms.bugs %][% END %]</a>.
+            If you delete the user account, it will get unsubscribed from
+            [% IF cc == 1 %]the [% terms.bug %][% ELSE %]these [% terms.bugs %][% END %].
           </li>
         [% END %]
         [% IF component_cc %]
           <li>
-            [% otheruser.login FILTER html %] is on the default CC list of
+            [% otheruser.login FILTER html %] is on the Default Subscribers of
             [% IF component_cc == 1 %]
               one component
             [% ELSE %]
               [%+ component_cc %] components
             [% END %].
-            If you delete the user account, it will be removed from these CC lists.
+            If you delete the user account, it will get unsubscribed from these [% terms.bugs %].
           </li>
         [% END %]
         [% IF email_setting %]

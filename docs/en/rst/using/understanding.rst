@@ -96,9 +96,9 @@ installation of Bugzilla.
 *Updated:*
    The date and time the bug was last changed.
 
-*CC List:*
+*Subscribers:*
    A list of people who get mail when the bug changes, in addition to the
-   Reporter, Assignee and QA Contact (if enabled).
+   Reporter, Assignee and QA Contact (if enabled). Previously called CC List.
 
 *Ignore Bug Mail:*
    Set this if you want never to get bugmail from this bug again. See also

@@ -87,7 +87,7 @@ sub send {
     }
 
     # Subscriber list of the private revision should always match
-    # the bug roles such as assignee, qa contact, and cc members.
+    # the bug roles such as Assignee, QA Contact and Subscriber.
     if (!$is_public) {
       Bugzilla->audit(
         sprintf('Updating subscribers for %s for bug %s', $revision->id, $bug->id));

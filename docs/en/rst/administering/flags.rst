@@ -115,7 +115,7 @@ Multiplicable
     "additional") before the name. There is no limit to the number of
     times a Multiplicable flags may be set on the same bug/attachment.
 
-CC List
+Subscribers
     If you want certain users to be notified every time this flag is
     set to ``?``, ``-``, or ``+``, or is unset, add them here. This is a comma-separated
     list of email addresses that need not be restricted to Bugzilla usernames.

@@ -234,7 +234,7 @@ Returns the description of the flagtype.
 
 =item C<cc_list>
 
-Returns the concatenated CC list for the flagtype, as a single string.
+Returns the concatenated Subscriber list for the flagtype, as a single string.
 
 =item C<target_type>
 

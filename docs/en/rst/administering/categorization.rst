@@ -218,7 +218,7 @@ Basic Product/Group Restriction
 Suppose there is a product called "Bar". You would like to make it so that only
 users in the group "Foo" can enter bugs in the "Bar" product. Additionally,
 bugs filed in product "Bar" must be visible only to users in "Foo" (plus, by
-default, the reporter, assignee, and CC list of each bug) at all times.
+default, the reporter, assignee, and Subscribers of each bug) at all times.
 Furthermore, only members of group "Foo" should be able to edit bugs filed
 against product "Bar", even if other users could see the bug. This arrangement
 would achieved by the following:
@@ -363,7 +363,7 @@ To create a new Component:
 
 #. Fill out the ``Component`` field, a
    short ``Description``, the
-   ``Default Assignee``, ``Default CC List``,
+   ``Default Assignee``, ``Default Subscribers``,
    and ``Default QA Contact`` (if enabled).
    The ``Component Description`` field may contain a
    limited subset of HTML tags. The ``Default Assignee``

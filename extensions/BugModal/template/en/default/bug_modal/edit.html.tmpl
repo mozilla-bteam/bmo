@@ -305,7 +305,7 @@
       [% END %]
       [% IF user.id %]
         <button type="button" class="secondary" id="cc-btn" data-is-cced="[% is_cced ? 1 : 0 %]">
-          [% is_cced ? "Stop Following" : "Follow" %]
+          [% is_cced ? "Unsubscribe" : "Subscribe" %]
         </button>
       [% END %]
       <div class="dropdown">
@@ -749,9 +749,9 @@
     [%# cc %]
     [% WRAPPER bug_modal/field.html.tmpl
         container = 1
-        label = "CC"
+        label = "Subscribers"
         hide_on_view = bug.cc.size == 0
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#cc"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#subscribers"
     %]
 
       [% IF user.id %]

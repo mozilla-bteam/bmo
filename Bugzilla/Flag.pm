@@ -1060,7 +1060,7 @@ sub notify {
 
   # If the target bug is restricted to one or more groups, then we need
   # to make sure we don't send email about it to unauthorized users
-  # on the request type's CC: list, so we have to trawl the list for users
+  # on the request type's Subscriber list, so we have to trawl the list for users
   # not in those groups or email addresses that don't have an account.
   my @bug_in_groups = grep { $_->{'ison'} || $_->{'mandatory'} } @{$bug->groups};
   my $attachment_is_private = $attachment ? $attachment->isprivate : undef;
@@ -1084,7 +1084,7 @@ sub notify {
   }
 
   # Process and send notification for each recipient.
-  # If there are users in the CC list who don't have an account,
+  # If there are users in the Subscriber list who don't have an account,
   # use the default language for email notifications.
   my $default_lang;
   if (grep { !$_ } values %recipients) {

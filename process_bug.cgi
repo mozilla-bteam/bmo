@@ -138,7 +138,7 @@ if ($delta_ts) {
     # regardless of the user's personal preference.
     my $comments = $first_bug->comments({order => "oldest_to_newest"});
 
-    # Show midair if previous changes made other than CC
+    # Show midair if previous changes made other than Subscribers
     # and/or one or more comments were made
     my $do_midair = scalar @$comments > $start_at ? 1 : 0;
 
@@ -297,7 +297,8 @@ foreach my $dep_field (qw(dependson blocked regressed_by regresses)) {
   }
 }
 
-# Formulate the CC data into two arrays of users involved in this CC change.
+# Formulate the Subscriber data into two arrays of users involved in this
+# Subscriber change.
 if ( defined $cgi->param('newcc')
   or defined $cgi->param('addselfcc')
   or defined $cgi->param('removecc')

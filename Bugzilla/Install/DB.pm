@@ -2604,7 +2604,7 @@ sub _migrate_email_prefs_to_new_table {
       "Status"      => EVT_PROJ_MANAGEMENT,
       "Resolved"    => EVT_OPENED_CLOSED,
       "Keywords"    => EVT_KEYWORD,
-      "CC"          => EVT_CC,
+      "Subscribers" => EVT_CC,
       "Other"       => EVT_OTHER,
       "Unconfirmed" => EVT_UNCONFIRMED
     );

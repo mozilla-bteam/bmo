@@ -451,7 +451,7 @@ sub process_revision_change {
     $revision->set_private_project_tags($set_project_names);
 
     # Subscriber list of the private revision should always match
-    # the bug roles such as assignee, qa contact, and cc members.
+    # the bug roles such as Assignee, QA Contact and Subscriber.
     my $subscribers = get_bug_role_phids($bug);
     $revision->set_subscribers($subscribers);
   }
