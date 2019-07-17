@@ -4539,8 +4539,8 @@ sub GetBugActivity {
     = $dbh->sql_date_format('bugs_activity.bug_when', '%Y-%m-%d %H:%i:%s');
 
   # Use an outer table so alias column `bug_when` will work within the `where`
-  # clause. Also use `DISTINCT` and a value comparison to suppress duplicated
-  # changes weirdly made at the same time by the same user.
+  # clause. Also use `DISTINCT` to suppress duplicated changes weirdly made at
+  # the same time by the same user.
   my $query = "
     SELECT
       field_name, activity_id, attach_id, bug_when, removed, added, who, comment_id
