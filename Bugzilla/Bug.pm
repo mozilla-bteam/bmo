@@ -4545,7 +4545,7 @@ sub GetBugActivity {
     SELECT
       field_name, activity_id, attach_id, bug_when, removed, added, who, comment_id
     FROM (
-      SELECT   DISTINCT fielddefs.name AS field_name,
+        SELECT DISTINCT fielddefs.name AS field_name,
                bugs_activity.id AS activity_id,
                bugs_activity.attach_id,
                $bug_when AS bug_when,
@@ -4593,9 +4593,11 @@ sub GetBugActivity {
                    $suppjoins
              WHERE longdescs_tags_activity.bug_id = ?
                    $suppwhere
-    ) AS OUTER_TABLE";
+        ";
     push @args, $bug_id;
   }
+
+  $query .= ") AS OUTER_TABLE";
 
   # Only consider changes since $starttime, if given.
   if (defined $starttime) {
