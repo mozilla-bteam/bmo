@@ -668,25 +668,29 @@
       inline = 1
       edit_only = 1
   %]
-  [% UNLESS prefix %]
-    <div id="assigned-container" style="display:none">
-      <button type="button" class="secondary" id="mark-as-assigned-btn">
-        Mark as Assigned
-      </button>
-    </div>
-  [% END %]
   [% IF bug.choices.resolution.only("name", "DUPLICATE").size %]
     <div id="[% prefix FILTER none %]duplicate-container">
       of
       <input id="[% prefix FILTER none %]dup_id" name="[% prefix FILTER none %]dup_id"
         size="6" value="[% bug.dup_id FILTER html %]">
     </div>
-    <div id="[% prefix FILTER none %]duplicate-actions">
-      <button type="button" class="secondary" id="[% prefix FILTER none %]mark-as-dup-btn">
-        Mark as Duplicate
-      </button>
-    </div>
   [% END %]
+  <div id="status-action-buttons">
+    [% IF bug.choices.resolution.only("name", "DUPLICATE").size %]
+      <div id="[% prefix FILTER none %]duplicate-actions">
+        <button type="button" class="secondary" id="[% prefix FILTER none %]mark-as-dup-btn">
+          Mark as Duplicate
+        </button>
+      </div>
+    [% END %]
+    [% UNLESS prefix %]
+      <div id="assigned-container" style="display:none">
+        <button type="button" class="secondary" id="mark-as-assigned-btn">
+          Mark as Assigned
+        </button>
+      </div>
+    [% END %]
+  </div>
 [% END %]
 
 [%# === people === %]

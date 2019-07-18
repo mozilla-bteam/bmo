@@ -296,6 +296,18 @@ input[type="number"] {
   display: none !important; /* Override `inline` */
 }
 
+#field-resolution {
+  padding: 0;
+}
+
+#status-action-buttons,
+#duplicate-container {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
 #duplicate-container,
 #duplicate-actions,
 #assigned-container,
