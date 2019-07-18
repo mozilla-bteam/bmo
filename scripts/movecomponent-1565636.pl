@@ -22,7 +22,7 @@ use Bugzilla::Util;
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 if (scalar @ARGV < 3) {
-  die <<USAGE;
+  die <<"USAGE";
 Usage: movecomponent.pl <oldproduct> <newproduct> <component>
 
 E.g.: movecomponent.pl ReplicationEngine FoodReplicator SeaMonkey
@@ -163,14 +163,14 @@ my $milestone_field_id = get_field_id('target_milestone');
 my $dbh = Bugzilla->dbh;
 
 # confirmation
-print <<EOF;
+print <<"EOF";
 About to move the component '$component_name'
 From '$old_product_name'
 To '$new_product_name'
 
 Press <Ctrl-C> to stop or <Enter> to continue...
 EOF
-getc();
+getc;
 
 print
   "Moving '$component_name' from '$old_product_name' to '$new_product_name'...\n\n";
@@ -180,7 +180,7 @@ my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
 Bugzilla->set_user($auto_user);
 
 my $bugs = $dbh->selectall_arrayref(
-  "SELECT bug_id, version, target_milestone FROM bugs WHERE product_id = ? AND component_id = ?",
+  'SELECT bug_id, version, target_milestone FROM bugs WHERE product_id = ? AND component_id = ?',
   {Slice => {}}, $old_product->id, $component->id
 );
 
@@ -246,7 +246,7 @@ foreach my $bug (@$bugs) {
 
   # Mark bug as touched
   $dbh->do(
-    "UPDATE bugs SET delta_ts = NOW(), lastdiffed = NOW() WHERE bug_id = ?",
+    'UPDATE bugs SET delta_ts = NOW(), lastdiffed = NOW() WHERE bug_id = ?',
     undef, $bug->{bug_id});
 
   print 'Bug ' . $bug->{bug_id} . "\n";
@@ -257,7 +257,7 @@ fix_flags('flaginclusions', $new_product, $component);
 fix_flags('flagexclusions', $new_product, $component);
 
 # Components
-$dbh->do("UPDATE components SET product_id = ? WHERE id = ?",
+$dbh->do('UPDATE components SET product_id = ? WHERE id = ?',
   undef, ($new_product->id, $component->id));
 
 Bugzilla::Hook::process(
@@ -279,17 +279,15 @@ $dbh->bz_commit_transaction();
 Bugzilla->memcached->clear_all();
 
 sub fix_flags {
-  my ($table, $new_product, $component) = @_;
-  my $dbh = Bugzilla->dbh;
-
+  my ($table, $new_product_obj, $component_obj) = @_;
   my $type_ids
     = $dbh->selectcol_arrayref(
     "SELECT DISTINCT type_id FROM $table WHERE component_id = ?",
-    undef, $component->id);
-  $dbh->do("DELETE FROM $table WHERE component_id = ?", undef, $component->id);
+    undef, $component_obj->id);
+  $dbh->do("DELETE FROM $table WHERE component_id = ?", undef, $component_obj->id);
   foreach my $type_id (@$type_ids) {
     $dbh->do(
       "INSERT INTO $table (type_id, product_id, component_id) VALUES (?, ?, ?)",
-      undef, ($type_id, $new_product->id, $component->id));
+      undef, ($type_id, $new_product_obj->id, $component_obj->id));
   }
 }
