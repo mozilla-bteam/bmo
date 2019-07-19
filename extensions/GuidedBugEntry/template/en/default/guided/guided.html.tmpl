@@ -325,6 +325,7 @@ Product: <b><span id="dupes_product_name">?</span></b>:
 [% INCLUDE page_title %]
 
 <form method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data" onsubmit="return bugForm.validate()">
+<input type="hidden" name="filed_via" value="guided_form">
 <input type="hidden" name="token" value="[% token FILTER html %]">
 <input type="hidden" name="product" id="product" value="">
 <input type="hidden" name="component" id="component" value="">
