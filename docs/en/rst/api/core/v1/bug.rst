@@ -262,7 +262,7 @@ counts               object  An object containing the numbers of the items in th
                              ``depends_on``, ``regressed_by``, ``regressions``
                              and ``duplicates``.
 description          string  The description (initial comment) of the bug.
-filed_via            string  How the bug was filed, e.g. ``advanced_form``.
+filed_via            string  How the bug was filed, e.g. ``standard_form``.
 history              array   Each array item is a History object. See
                              :ref:`rest_history` for details of the object.
 tags                 array   Each array item is a tag name. Note that tags are

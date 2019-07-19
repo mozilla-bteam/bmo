@@ -314,7 +314,7 @@ use constant EXTRA_REQUIRED_FIELDS =>
   qw(creation_ts target_milestone cc qa_contact groups);
 
 sub BUG_FILE_METHODS {
-  my @methods = qw(advanced_form custom_form api);
+  my @methods = qw(standard_form custom_form api);
 
   # Allow extensions to add other methods, e.g. `guided_form`
   Bugzilla::Hook::process('bug_file_methods', {methods => \@methods});

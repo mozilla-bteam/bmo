@@ -2876,7 +2876,7 @@ in the return value.
 
 =item C<filed_via>
 
-How the bug was filed, e.g. C<advanced_form>.
+How the bug was filed, e.g. C<standard_form>.
 
 This is an B<extra> field returned only by specifying C<filed_via> or
 C<_extra> in C<include_fields>.
