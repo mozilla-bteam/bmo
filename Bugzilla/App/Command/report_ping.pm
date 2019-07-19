@@ -130,7 +130,7 @@ __END__
 
 =head1 NAME
 
-Bugzilla::App::Command::report_ping - descriptionsend a report ping to a URL';
+Bugzilla::App::Command::report_ping - Send a report ping to a URL';
 
 =head1 SYNOPSIS
 
