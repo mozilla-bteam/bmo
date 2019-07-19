@@ -304,7 +304,7 @@
   </div>
 [% END %]
 
-[%# === triage === %]
+[%# === categories === %]
 
 [%
   sub = [];
@@ -314,7 +314,7 @@
   sub.push(bug.bug_severity) IF bug.bug_severity != "normal";
 %]
 [% WRAPPER bug_modal/module.html.tmpl
-  title = "Triage"
+  title = "Categories"
   subtitle = sub
 %]
   [% WRAPPER fields_lhs %]
