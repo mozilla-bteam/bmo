@@ -3874,6 +3874,10 @@ the type id value to update or add a flag.
 
 The flag type is inactive and cannot be used to create new flags.
 
+=item 135 (Bug Type Required)
+
+You didn't specify a type for the bug.
+
 =item 504 (Invalid User)
 
 Either the QA Contact, Assignee, or CC lists have some invalid user
