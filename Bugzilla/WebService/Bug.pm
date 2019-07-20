@@ -3737,7 +3737,8 @@ in by the developer, compared to the developer's other bugs.
 
 =item C<severity> (string) B<Defaulted> - How severe the bug is.
 
-=item C<type> (string) B<Defaulted> - The basic category of the bug.
+=item C<type> (string) B<Defaulted> - The basic category of the bug. Some
+Bugzilla installations require this to be specified.
 
 =item C<alias> (string) - A brief alias for the bug that can be used
 instead of a bug number when accessing this bug. Must be unique in
