@@ -72,7 +72,7 @@ my $fields = {
   },
 
   type => {
-    undefined => {faultstring => 'You must select/enter a Type.', value => ''},
+    undefined => {faultstring => 'you must first choose a type', value => undef},
     invalid   => {
       faultstring => "There is no Type named 'does-not-exist'.",
       value       => 'does-not-exist'

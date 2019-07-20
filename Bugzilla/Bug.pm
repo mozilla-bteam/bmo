@@ -1864,7 +1864,7 @@ sub _check_bug_status {
 sub _check_bug_type {
   my ($invocant, $type, undef, $params) = @_;
 
-  if (defined $type) {
+  if (defined $type && trim($type)) {
     return $invocant->_check_select_field($type, 'bug_type');
   }
 
