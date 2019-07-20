@@ -71,6 +71,14 @@ my $fields = {
     },
   },
 
+  type => {
+    undefined => {faultstring => 'you must first choose a type', value => ''},
+    invalid   => {
+      faultstring => "There is no Severity named 'does-not-exist'.",
+      value       => 'does-not-exist'
+    },
+  },
+
   severity => {
     undefined => {faultstring => 'You must select/enter a Severity.', value => ''},
     invalid   => {
@@ -155,6 +163,7 @@ my @tests = (
     user => PRIVATE_BUG_USER,
     args => {
       %$bug_fields,
+      type             => 'defect',
       product          => 'QA-Selenium-TEST',
       component        => 'QA-Selenium-TEST',
       target_milestone => 'QAMilestone',
