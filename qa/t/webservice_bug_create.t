@@ -13,7 +13,7 @@ use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
 use Storable qw(dclone);
-use Test::More tests => 293;
+use Test::More tests => 311;
 use QA::Util;
 use QA::Tests qw(create_bug_fields PRIVATE_BUG_USER);
 
@@ -72,7 +72,7 @@ my $fields = {
   },
 
   type => {
-    undefined => {faultstring => 'You must select/enter a Type', value => undef},
+    undefined => {faultstring => 'you must first choose a type', value => undef},
     invalid   => {
       faultstring => "There is no Type named 'does-not-exist'.",
       value       => 'does-not-exist'
