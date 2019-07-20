@@ -74,7 +74,7 @@ my $fields = {
   type => {
     undefined => {faultstring => 'you must first choose a type', value => ''},
     invalid   => {
-      faultstring => "There is no Severity named 'does-not-exist'.",
+      faultstring => "There is no Type named 'does-not-exist'.",
       value       => 'does-not-exist'
     },
   },
