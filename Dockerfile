@@ -1,4 +1,4 @@
-FROM perl:5.28.0-slim AS builder
+FROM perl:5.28.2 AS builder
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -28,7 +28,7 @@ RUN find local -name '*.so' -exec ldd {} \; \
     | xargs -IFILE apt-file search -l FILE \
     | sort -u > PACKAGES
 
-FROM perl:5.28.0-slim
+FROM perl:5.28.2
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -52,9 +52,7 @@ WORKDIR /app
 COPY --from=builder /app/local /app/local
 COPY --from=builder /app/PACKAGES /app/PACKAGES
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl libcap2-bin xz-utils $(cat PACKAGES)
-
-COPY . /app
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl git libcap2-bin xz-utils $(cat PACKAGES)
 
 RUN curl -L https://github.com/dylanwh/tocotrienol/releases/download/1.0.6/tct-centos6.tar.xz > /usr/local/bin/tct.tar.xz && \
     tar -C /usr/local/bin -xvf /usr/local/bin/tct.tar.xz && \
@@ -63,10 +61,13 @@ RUN curl -L https://github.com/dylanwh/tocotrienol/releases/download/1.0.6/tct-c
     curl -L https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini > /usr/local/sbin/tini && \
     chmod +x /usr/local/sbin/tini && \
     useradd -u 10001 -U app -m && \
-    chown -R app.app /app && \
-    perl -I/app -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
-    perl -c /app/scripts/entrypoint.pl && \
     setcap 'cap_net_bind_service=+ep' /usr/local/bin/perl
+
+COPY . /app
+
+RUN chown -R app.app /app && \
+    perl -I/app -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
+    perl -c /app/scripts/entrypoint.pl
 
 USER app
 
