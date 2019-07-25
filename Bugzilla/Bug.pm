@@ -889,7 +889,7 @@ sub create {
   my $dbh = Bugzilla->dbh;
 
   # BMO - allow parameter alteration before creation.  also add support for
-  # fields which are not bug columns (eg bug_mentors). extensions should move
+  # fields which are not bug columns (e.g. bug_mentors). extensions should move
   # fields from $params to $stash, then use the bug_end_of_create hook to
   # update the database
   my $stash = {};
@@ -3553,7 +3553,7 @@ sub remove_see_also {
       {field => 'see_also', oldvalue => $url, privs => $privs});
   }
 
-  # Since we remove also the url from the referenced bug,
+  # Since we remove also the URL from the referenced bug,
   # we need to notify changes for that bug too.
   $removed_bug_url = $removed_bug_url->[0];
   if ( !$skip_recursion
@@ -4053,6 +4053,27 @@ sub comment_count {
   );
 }
 
+sub counts {
+  my ($self) = @_;
+  my $dbh = Bugzilla->dbh;
+  my $extra = !Bugzilla->user->is_insider ? 'AND isprivate = 0' : '';
+  my $id = $self->id;
+
+  $self->{counts} ||= $dbh->selectrow_hashref("SELECT
+    (SELECT COUNT(*) FROM attachments WHERE bug_id = ? $extra) AS attachments,
+    (SELECT COUNT(*) FROM cc WHERE bug_id = ?) AS cc,
+    (SELECT COUNT(*) FROM longdescs WHERE bug_id = ? $extra) AS comments,
+    (SELECT COUNT(*) FROM keywords WHERE bug_id = ?) AS keywords,
+    (SELECT COUNT(*) FROM dependencies WHERE blocked = ?) AS blocks,
+    (SELECT COUNT(*) FROM dependencies WHERE dependson = ?) AS depends_on,
+    (SELECT COUNT(*) FROM regressions WHERE regressed_by = ?) AS regressed_by,
+    (SELECT COUNT(*) FROM regressions WHERE regresses = ?) AS regressions,
+    (SELECT COUNT(*) FROM duplicates WHERE dupe_of = ?) AS duplicates
+  ", undef, $id, $id, $id, $id, $id, $id, $id, $id, $id);
+
+  return $self->{counts};
+}
+
 # This is needed by xt/search.t.
 sub percentage_complete {
   my $self = shift;
@@ -4293,7 +4314,7 @@ sub groups {
   }
 
   # BMO: if required, hack in groups exposed by -visible membership
-  # (eg mozilla-employee-confidential-visible), so reporters can add the
+  # (e.g. mozilla-employee-confidential-visible), so reporters can add the
   # bug to a group on show_bug.
   # if the bug is already in the group, the user will not be able to remove
   # it unless they are a true group member.
@@ -4499,13 +4520,6 @@ sub GetBugActivity {
   # Arguments passed to the SQL query.
   my @args = ($bug_id);
 
-  # Only consider changes since $starttime, if given.
-  my $datepart = "";
-  if (defined $starttime) {
-    push(@args, $starttime);
-    $datepart = "AND bug_when > ?";
-  }
-
   my $attachpart = "";
   if ($attach_id) {
     push(@args, $attach_id);
@@ -4521,14 +4535,23 @@ sub GetBugActivity {
     $suppwhere = "AND COALESCE(attachments.isprivate, 0) = 0";
   }
 
-  # Use DISTINCT and value comparison to suppress duplicated changes weirdly
-  # made at the same time by the same user
-  my $query
-    = "SELECT DISTINCT fielddefs.name,
+  my $bug_when
+    = $dbh->sql_date_format('bugs_activity.bug_when', '%Y-%m-%d %H:%i:%s');
+
+  # Use an outer table so alias column `bug_when` will work within the `where`
+  # clause. Also use `DISTINCT` to suppress duplicated changes weirdly made at
+  # the same time by the same user.
+  my $query = "
+    SELECT
+      field_name, activity_id, attach_id, bug_when, removed, added, who, comment_id
+    FROM (
+        SELECT DISTINCT fielddefs.name AS field_name,
                bugs_activity.id AS activity_id,
-               bugs_activity.attach_id, "
-    . $dbh->sql_date_format('bugs_activity.bug_when', '%Y-%m-%d %H:%i:%s')
-    . " AS bug_when, bugs_activity.removed, bugs_activity.added, profiles.login_name,
+               bugs_activity.attach_id,
+               $bug_when AS bug_when,
+               bugs_activity.removed,
+               bugs_activity.added,
+               profiles.login_name AS who,
                bugs_activity.comment_id
           FROM bugs_activity
                $suppjoins
@@ -4537,7 +4560,6 @@ sub GetBugActivity {
     INNER JOIN profiles
             ON profiles.userid = bugs_activity.who
          WHERE bugs_activity.bug_id = ?
-               $datepart
                $attachpart
                $suppwhere ";
 
@@ -4554,30 +4576,36 @@ sub GetBugActivity {
       $suppwhere = "AND longdescs.isprivate = 0";
     }
 
+    $bug_when
+      = $dbh->sql_date_format('longdescs_tags_activity.bug_when', '%Y-%m-%d %H:%i:%s');
     $query .= "
             UNION ALL
-            SELECT 'comment_tag' AS name,
+            SELECT 'comment_tag' AS field_name,
                    NULL AS activity_id,
-                   NULL AS attach_id,"
-      . $dbh->sql_date_format('longdescs_tags_activity.bug_when',
-      '%Y-%m-%d %H:%i:%s')
-      . " AS bug_when,
+                   NULL AS attach_id,
+                   $bug_when AS bug_when,
                    longdescs_tags_activity.removed,
                    longdescs_tags_activity.added,
-                   profiles.login_name,
-                   longdescs_tags_activity.comment_id as comment_id
+                   profiles.login_name AS who,
+                   longdescs_tags_activity.comment_id
               FROM longdescs_tags_activity
                    INNER JOIN profiles ON profiles.userid = longdescs_tags_activity.who
                    $suppjoins
              WHERE longdescs_tags_activity.bug_id = ?
-                   $datepart
                    $suppwhere
         ";
     push @args, $bug_id;
-    push @args, $starttime if defined $starttime;
   }
 
-  $query .= "ORDER BY bug_when, comment_id, activity_id";
+  $query .= ") AS OUTER_TABLE";
+
+  # Only consider changes since $starttime, if given.
+  if (defined $starttime) {
+    $query .= ' WHERE bug_when > ?';
+    push(@args, $starttime);
+  }
+
+  $query .= " ORDER BY bug_when, comment_id, activity_id";
 
   my $list = $dbh->selectall_arrayref($query, undef, @args);
 
@@ -4718,7 +4746,7 @@ sub _join_activity_entries {
     }
   }
 
-  # Assume bug_file_loc contain a single url, don't insert a delimiter
+  # Assume bug_file_loc contain a single URL, don't insert a delimiter
   if ($field eq 'bug_file_loc') {
     return $current_change . $new_change;
   }

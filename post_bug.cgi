@@ -71,7 +71,7 @@ Bugzilla::Hook::process('bug_user_match_fields',
 Bugzilla::User::match_field($user_match_fields);
 
 if (defined $cgi->param('maketemplate')) {
-  $vars->{'url'}        = $cgi->canonicalise_query('token');
+  $vars->{'url'}        = $cgi->canonicalize_query('token');
   $vars->{'short_desc'} = $cgi->param('short_desc');
 
   print $cgi->header();
@@ -171,16 +171,6 @@ my $timestamp
   = $dbh->selectrow_array('SELECT creation_ts FROM bugs WHERE bug_id = ?',
   undef, $id);
 
-# Set Version cookie, but only if the user actually selected
-# a version on the page.
-if (defined $cgi->param('version')) {
-  $cgi->send_cookie(
-    -name    => "VERSION-" . $bug->product,
-    -value   => $bug->version,
-    -expires => "Fri, 01-Jan-2038 00:00:00 GMT"
-  );
-}
-
 # We don't have to check if the user can see the bug, because a user filing
 # a bug can always see it. You can't change reporter_accessible until
 # after the bug is filed.
@@ -201,7 +191,7 @@ if ($data_fh || $attach_text || $data_base64) {
 
   if ($attach_text) {
 
-    # Convert to unix line-endings if pasting a patch
+    # Convert to Unix line-endings if pasting a patch
     if (scalar($cgi->param('ispatch'))) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }

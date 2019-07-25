@@ -11,6 +11,48 @@
  */
 var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 
+Bugzilla.AdvancedSearch = {};
+
+/**
+ * Implement features in the Search By Change History section.
+ */
+Bugzilla.AdvancedSearch.HistoryFilter = class HistoryFilter {
+  /**
+   * Initialize a new HistoryFilter instance.
+   */
+  constructor() {
+    this.$chfield = document.querySelector('#chfield');
+    this.$chfieldfrom = document.querySelector('#chfieldfrom');
+    this.$chfieldfrom_button = document.querySelector('#chfieldfrom + button');
+    this.$chfieldto = document.querySelector('#chfieldto');
+    this.$chfieldto_button = document.querySelector('#chfieldto + button');
+
+    this.$chfieldfrom.addEventListener('input', event => this.on_date_change(event));
+    this.$chfieldto.addEventListener('input', event => this.on_date_change(event));
+
+    // Use on-event handler because `field.js` will update it
+    this.$chfieldfrom_button.onclick = () => showCalendar('chfieldfrom');
+    this.$chfieldto_button.onclick = () => showCalendar('chfieldto');
+
+    createCalendar('chfieldfrom');
+    createCalendar('chfieldto');
+  }
+
+  /**
+   * Called whenever the date field value is updated.
+   * @param {InputEvent} event `input` event fired on date fields.
+   */
+  on_date_change(event) {
+    // Update the calendar when the user enters a date manually
+    if (event.isTrusted) {
+      updateCalendarFromField(event.target);
+    }
+
+    // Mark `<select>` required if the value is not empty
+    this.$chfield.required = !!this.$chfieldfrom.value.trim() || !!this.$chfieldto.value.trim();
+  }
+};
+
 /**
  * Implement Custom Search features.
  */
@@ -551,12 +593,31 @@ Bugzilla.CustomSearch.Row = class CustomSearchRow extends Bugzilla.CustomSearch.
     this.$element = $placeholder.firstElementChild;
     this.$action_grab = this.$element.querySelector('[data-action="grab"]');
     this.$action_remove = this.$element.querySelector('[data-action="remove"]');
+    this.$select_field = this.$element.querySelector('select.field');
+    this.$select_operator = this.$element.querySelector('select.operator');
+    this.$input_value = this.$element.querySelector('input.value');
 
     this.$element.addEventListener('dragstart', event => this.handle_drag(event));
     this.$element.addEventListener('dragend', event => this.handle_drag(event));
     this.$action_grab.addEventListener('mousedown', () => this.enable_drag());
     this.$action_grab.addEventListener('mouseup', () => this.disable_drag());
     this.$action_remove.addEventListener('click', () => this.remove());
+    this.$select_field.addEventListener('change', () => this.field_onchange());
+  }
+
+  /**
+   * Called whenever a field option is selected.
+   */
+  field_onchange() {
+    const is_anything = this.$select_field.value === 'anything';
+
+    // Add support for the "anything" special field that allows to search the bug history. When it's selected, disable
+    // search types other than "changed before", "changed after", "changed from", "changed to", "changed by", and make
+    // "changed by" selected for convenience.
+    for (const $option of this.$select_operator.options) {
+      $option.disabled = is_anything ? !$option.value.match(/changed\w+/) : false;
+      $option.selected = $option.value === (is_anything ? 'changedby' : 'noop');
+    }
   }
 };
 
@@ -659,4 +720,7 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
   }
 };
 
-window.addEventListener('DOMContentLoaded', () => new Bugzilla.CustomSearch(), { once: true });
+window.addEventListener('DOMContentLoaded', () => {
+  new Bugzilla.AdvancedSearch.HistoryFilter();
+  new Bugzilla.CustomSearch();
+}, { once: true });

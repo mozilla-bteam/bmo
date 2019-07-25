@@ -197,6 +197,7 @@ function setFieldFromCalendar(type, args, date_field) {
     }
 
     date_field.value = dateStr;
+    date_field.dispatchEvent(new Event('input'));
     hideCalendar(date_field.id);
 }
 
@@ -446,7 +447,7 @@ function showDuplicateItem(e) {
             dup_id.blur();
         }
     }
-    YAHOO.util.Event.preventDefault(e); //prevents the hyperlink from going to the url in the href.
+    YAHOO.util.Event.preventDefault(e); //prevents the hyperlink from going to the URL in the href.
 }
 
 function setResolutionToDuplicate(e, duplicate_or_move_bug_status) {
@@ -737,28 +738,27 @@ $(function() {
         },
         formatResult: function(suggestion) {
             const $input = this;
-            const user = suggestion.data;
+            const { email, real_name, requests, gravatar } = suggestion.data;
             const request_type = $input.getAttribute('data-request-type');
-            const blocked = user.requests && request_type ? user.requests[request_type].blocked : false;
-            const pending = user.requests && request_type ? user.requests[request_type].pending : 0;
-            const image = user.gravatar ? `<img itemprop="image" alt="" src="${user.gravatar}">` : '';
+            const { blocked, pending } = requests ? (requests[request_type] || {}) : {};
+            const image = gravatar ? `<img itemprop="image" alt="" src="${gravatar}">` : '';
             const description = blocked ? '<span class="icon" aria-hidden="true"></span> Requests blocked' :
                 pending ? `${pending} pending ${request_type}${pending === 1 ? '' : 's'}` : '';
 
             return `<div itemscope itemtype="http://schema.org/Person">${image} ` +
-                `<span itemprop="name">${user.real_name.htmlEncode()}</span> ` +
-                `<span class="minor" itemprop="email">${user.email.htmlEncode()}</span> ` +
+                `<span itemprop="name">${real_name.htmlEncode()}</span> ` +
+                `<span class="minor" itemprop="email">${email.htmlEncode()}</span> ` +
                 `<span class="minor${blocked ? ' blocked' : ''}" itemprop="description">${description}</span></div>`;
         },
         onSelect: function (suggestion) {
             const $input = this;
-            const user = suggestion.data;
+            const { real_name, requests } = suggestion.data;
             const is_multiple = !!$input.getAttribute('data-multiple');
             const request_type = $input.getAttribute('data-request-type');
-            const blocked = user.requests && request_type ? user.requests[request_type].blocked : false;
+            const { blocked } = requests ? (requests[request_type] || {}) : {};
 
             if (blocked) {
-                window.alert(`${user.real_name} is not accepting ${request_type} requests at this time. ` +
+                window.alert(`${real_name} is not accepting ${request_type} requests at this time. ` +
                     'If you’re in a hurry, ask someone else for help.');
             } else if (is_multiple) {
                 const _values = $input.value.split(',').map(value => value.trim());

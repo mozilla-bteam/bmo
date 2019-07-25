@@ -256,6 +256,11 @@ attachments          array   Each array item is an Attachment object. See
                              :ref:`rest_attachments` for details of the object.
 comments             array   Each array item is a Comment object. See
                              :ref:`rest_comments` for details of the object.
+counts               object  An object containing the numbers of the items in the
+                             following fields: ``attachments``, ``cc``,
+                             ``comments``, ``keywords``, ``blocks``,
+                             ``depends_on``, ``regressed_by``, ``regressions``
+                             and ``duplicates``.
 description          string  The description (initial comment) of the bug.
 history              array   Each array item is a History object. See
                              :ref:`rest_history` for details of the object.
@@ -928,9 +933,9 @@ product                string   The name of the product that the bug is in. If
                                 valid on a bug depends on the product. Groups
                                 that are not valid in the new product will be
                                 automatically removed, and groups which are
-                                mandatory in the new product will be automaticaly
-                                added, but no other automatic group changes will
-                                be done.
+                                mandatory in the new product will be
+                                automatically added, but no other automatic group
+                                changes will be done.
 
                                 .. note::
                                    Users can only move a bug into a product if

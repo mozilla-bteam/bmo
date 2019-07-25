@@ -89,7 +89,7 @@ There are three fields in each row (known as a "term") of a custom search:
   the value to which the field is being compared
 
 The list of available *fields* contains all the fields defined for a bug,
-including any custom fields, and then also some pseudofields like
+including any custom fields, and then also some pseudo-fields like
 :guilabel:`Assignee Real Name`, :guilabel:`Days Since Bug Changed`,
 :guilabel:`Time Since Assignee Touched` and other things it may be useful to
 search on.
@@ -192,12 +192,32 @@ So if you are looking for bugs reported by any user being in the
 
     reporter   equals   "%group.editbugs%"
 
+.. _group_restrictions:
+
+Searching for Bugs Restricted to Groups
+---------------------------------------
+
+When administrators set up products, they can establish one or more 
+groups bugs in the product can be associated with. If a bug is associated
+with a group then only users who are members of the group can see them. 
+
+This restriction is mostly used for security-related bugs, or internal tickets.
+
+In order to search for bugs restricted to a group, you must be a member of the group. 
+
+Visit `the Permissions page <https://bugzilla.mozilla.org/userprefs.cgi?tab=permissions>`_ 
+to find the groups you belong to, then search using the clause
+
+    Group   is equal to "%group.groupname%"
+    
+to list the bugs restricted to `groupname`.
+
 .. _relative-dates:
 
 Searching on Relative Dates
 ---------------------------
 
-In order to conduct searches over a window of time, you can use *relative dates* in query values. 
+In order to conduct searches over a window of time, you can use *relative dates* in query values.
 
 The relative date values are of the form `nnV` where `nn` is a positive or negative integer and `V` is one of:
 
@@ -207,7 +227,7 @@ The relative date values are of the form `nnV` where `nn` is a positive or negat
 * `m` – for months
 * `y` – for years
 
-A value of `1d` means 24 hours in the future from the time of the search. 
+A value of `1d` means 24 hours in the future from the time of the search.
 
 A value of `-1d` means 24 hours in the past from the time of the search.
 
@@ -223,11 +243,11 @@ and the field compared is a Datetime type.
 To find bugs opened in the last 24 hours, you could search on:
 
     Opened   is less than   "-1d"
-    
+
 To find bugs opened during the current day (UTC),
 
     Opened   is less than   "-0ds"
-    
+
 Appending `s` to a relative date means *start of*.
 
 You may also use relative dates for when a field changed. In the :guilabel:`Custom Search` operator that would be
@@ -299,5 +319,5 @@ Edit Search:
 
 Remember Search As:
     You can give a search a name and remember it; the name will appear
-    as an auto-completion in the search field in the header of Bugzilla 
+    as an auto-completion in the search field in the header of Bugzilla
     pages giving you quick access to run it again later.

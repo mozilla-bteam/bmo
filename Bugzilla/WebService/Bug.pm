@@ -1076,7 +1076,7 @@ sub update_attachment {
     }
     elsif (scalar @$update_flags && !scalar(@$new_flags) && !scalar keys %$params) {
 
-      # Requestees can set flags targetted to them, even if they cannot
+      # Requestees can set flags targeted to them, even if they cannot
       # edit the attachment. Flag setters can edit their own flags too.
       my %flag_list = map { $_->{id} => $_ } @$update_flags;
       my $flag_objs = Bugzilla::Flag->new_from_list([keys %flag_list]);
@@ -1659,6 +1659,14 @@ sub _bug_to_hash {
     $item{'comment_count'} = $self->type('int', $bug->comment_count);
   }
 
+  if (filter_wants $params, 'counts', ['extra']) {
+    $item{'counts'} = {};
+
+    while (my ($key, $value) = each %{$bug->counts}) {
+      $item{'counts'}->{$key} = $self->type('int', $value);
+    }
+  }
+
   return \%item;
 }
 
@@ -1859,7 +1867,7 @@ or get information about bugs that have already been filed.
 See L<Bugzilla::WebService> for a description of how parameters are passed,
 and what B<STABLE>, B<UNSTABLE>, and B<EXPERIMENTAL> mean.
 
-Although the data input and output is the same for JSONRPC, XMLRPC and REST,
+Although the data input and output is the same for JSON-RPC, XML-RPC and REST,
 the directions for how to access the data via REST is noted in each method
 where applicable.
 
@@ -2681,7 +2689,7 @@ B<STABLE>
 
 Gets information about particular bugs in the database.
 
-Note: Can also be called as "get_bugs" for compatibilty with Bugzilla 3.0 API.
+Note: Can also be called as "get_bugs" for compatibility with Bugzilla 3.0 API.
 
 =item B<REST>
 
@@ -2784,6 +2792,10 @@ members. To see the keys included in the user detail hash, see below.
 
 C<string> The name of the current classification the bug is in.
 
+=item C<comment_count>
+
+C<int> The number of the comments left on this bug.
+
 =item C<comments>
 
 C<array> of hashes containing comment details of the bug. See the comments
@@ -2795,6 +2807,17 @@ in C<include_fields>.
 =item C<component>
 
 C<string> The name of the current component of this bug.
+
+=item C<counts>
+
+B<UNSTABLE>
+
+C<hash> A hash containing the numbers of the items in the following fields:
+C<attachments>, C<cc>, C<comments>, C<keywords>, C<blocks>, C<depends_on>,
+C<regressed_by>, C<regressions> and C<duplicates>.
+
+This is an B<extra> field returned only by specifying C<counts> or C<_extra> in
+C<include_fields>.
 
 =item C<creation_time>
 
@@ -3194,9 +3217,9 @@ and all custom fields.
 =item The C<actual_time> item was added to the C<bugs> return value
 in Bugzilla B<4.4>.
 
-=item The C<attachments>, C<comments>, C<description>, C<duplicates>,
-C<history>, C<regressed_by>, C<regressions>, C<triage_owner> and C<type> fields
-were added in Bugzilla B<6.0>.
+=item The C<attachments>, C<comment_count>, C<comments>, C<counts>,
+C<description>, C<duplicates>, C<history>, C<regressed_by>, C<regressions>,
+C<triage_owner> and C<type> fields were added in Bugzilla B<6.0>.
 
 =back
 
