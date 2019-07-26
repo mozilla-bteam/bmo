@@ -1,4 +1,4 @@
-FROM perl:5.28.2 AS builder
+FROM perl:5.28.2-slim AS builder
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -28,7 +28,7 @@ RUN find local -name '*.so' -exec ldd {} \; \
     | xargs -IFILE apt-file search -l FILE \
     | sort -u > PACKAGES
 
-FROM perl:5.28.2
+FROM perl:5.28.2-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
