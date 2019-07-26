@@ -44,7 +44,7 @@ defaults:
     MYSQL_ALLOW_EMPTY_PASSWORD: 1
 
   docker_oldtests: &docker_oldtests
-    - image: bmo:$CIRCLE_SHA1
+    - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
       environment:
         <<: *bmo_env
         BZ_QA_CONF_FILE: /app/.circleci/selenium_test.conf
@@ -81,6 +81,7 @@ jobs:
             --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
             --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
             -t bmo:$CIRCLE_SHA1 .
+      - run: docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
       - attach_workspace:
           at: /app/build_info
       - run: "docker run --name bmo --entrypoint true bmo:$CIRCLE_SHA1"
@@ -93,7 +94,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: bmo:$CIRCLE_SHA1
+      - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
         environment:
           <<: *bmo_env
     steps:
@@ -174,7 +175,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: bmo:$CIRCLE_SHA1
+      - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
         environment: *bmo_env
     steps:
       - attach_workspace:
@@ -237,7 +238,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: bmo:$CIRCLE_SHA1
+      - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
         environment:
           <<: *bmo_env
           BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.txt
