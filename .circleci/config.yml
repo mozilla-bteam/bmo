@@ -90,7 +90,7 @@ jobs:
       - *store_log
       - deploy:
           command: |
-            [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 1
+            [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
             docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
             docker tag "bmo:$CIRCLECI_SHA1" "$DOCKERHUB_REPO:$CIRCLE_SHA1"
             docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
