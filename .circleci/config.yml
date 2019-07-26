@@ -87,8 +87,8 @@ jobs:
           docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
       - attach_workspace:
           at: /app/build_info
-      - run: "docker run --name bmo --entrypoint true "$DOCKERHUB_REPO:$CIRCLE_SHA1"
-      - run: "docker cp bmo:/app/version.json build_info/version.json"
+      - run: docker run --name bmo --entrypoint true "$DOCKERHUB_REPO:$CIRCLE_SHA1
+      - run: docker cp bmo:/app/version.json build_info/version.json
       - store_artifacts:
           path: /app/build_info
       - *store_log
