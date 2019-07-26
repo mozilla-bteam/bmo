@@ -6,14 +6,6 @@
 version: 2
 
 defaults:
-  install_dependencies: &install_dependencies
-    run:
-      name: Install Dependencies
-      command: |
-        apk update
-        apk add git py-pip
-        pip install 'docker-compose==1.23.0'
-
   selenium_firefox_image: &selenium_firefox_image
     image: selenium/standalone-firefox:3.141.59
 
@@ -68,7 +60,6 @@ defaults:
       name: default qa setup
       command: |
         [[ -f build_info/only_version_changed.txt ]] && exit 0
-        mv /opt/bmo/local /app/local
         perl -MSys::Hostname -i -pE 's/bmo.test/hostname() . ":$ENV{PORT}"/ges' $BZ_QA_CONF_FILE
         perl checksetup.pl --no-database --default-localconfig
         mkdir artifacts
@@ -109,6 +100,8 @@ jobs:
       - run:
           name: Custom checkout to add missing git information
           command: cp -a /tmp/_circleci_local_build_repo/.git /app
+      - attach_workspace:
+          at: /app/build_info
       - run:
           name: build push data
           command: |
@@ -167,13 +160,13 @@ jobs:
               git config user.name "$GITHUB_NAME"
               git tag $TAG
               git push https://${GITHUB_PERSONAL_TOKEN}:x-oauth-basic@github.com/$GITHUB_REPO.git $TAG
-              docker tag bmo "$DOCKERHUB_REPO:$TAG"
+              docker tag bmo:$CIRCLE_SHA1 "$DOCKERHUB_REPO:$TAG"
               docker push "$DOCKERHUB_REPO:$TAG"
             fi
-            docker tag bmo "$DOCKERHUB_REPO:latest"
+            docker tag bmo:$CIRCLE_SHA1 "$DOCKERHUB_REPO:latest"
             docker push "$DOCKERHUB_REPO:latest"
           else
-            docker tag bmo "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
+            docker tag bmo:$CIRCLE_SHA1 "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
             docker push "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
           fi
 
@@ -184,12 +177,10 @@ jobs:
       - image: bmo:$CIRCLE_SHA1
         environment: *bmo_env
     steps:
-      - checkout
       - attach_workspace:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          mv /opt/bmo/local /app/local
           mkdir artifacts
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
@@ -211,7 +202,6 @@ jobs:
     working_directory: /app
     docker: *docker_oldtests
     steps:
-      - checkout
       - attach_workspace:
           at: /app/build_info
       - *default_qa_setup
@@ -230,7 +220,6 @@ jobs:
     working_directory: /app
     docker: *docker_oldtests
     steps:
-      - checkout
       - attach_workspace:
           at: /app/build_info
       - *default_qa_setup
@@ -260,12 +249,10 @@ jobs:
       - image: memcached:latest
       - <<: *selenium_firefox_image
     steps:
-      - checkout
       - attach_workspace:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          mv /opt/bmo/local /app/local
           perl checksetup.pl --no-database
           /app/scripts/entrypoint.pl load_test_data
           mkdir artifacts
@@ -280,6 +267,10 @@ workflows:
     jobs:
       - build:
           filters: *main_filters
+      - build_info:
+          filters: *main_filters
+          requires:
+            - build
       - deploy:
           filters: *main_filters
           requires:
