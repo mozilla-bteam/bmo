@@ -6,7 +6,7 @@ RUN apt-get update
 RUN apt-get install -y \
     build-essential curl libssl-dev zlib1g-dev openssl \
     libexpat-dev cmake git libcairo-dev libgd-dev \
-    default-libmysqlclient-dev
+    default-libmysqlclient-dev unzip
 RUN cpanm --notest App::cpm Module::CPANfile
 
 WORKDIR /app
