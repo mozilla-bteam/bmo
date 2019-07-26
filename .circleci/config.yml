@@ -44,7 +44,7 @@ defaults:
     MYSQL_ALLOW_EMPTY_PASSWORD: 1
 
   docker_oldtests: &docker_oldtests
-    - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
+    - image: "$DOCKERHUB_REPO:$CIRCLE_SHA1"
       environment:
         <<: *bmo_env
         BZ_QA_CONF_FILE: /app/.circleci/selenium_test.conf
@@ -80,11 +80,14 @@ jobs:
             --build-arg CI="$CI" \
             --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
             --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
-            -t bmo:$CIRCLE_SHA1 .
-      - run: docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
+            -t "$DOCKERHUB_REPO:$CIRCLE_SHA1" .
+      - run: |
+          [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 1
+          docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+          docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
       - attach_workspace:
           at: /app/build_info
-      - run: "docker run --name bmo --entrypoint true bmo:$CIRCLE_SHA1"
+      - run: "docker run --name bmo --entrypoint true "$DOCKERHUB_REPO:$CIRCLE_SHA1"
       - run: "docker cp bmo:/app/version.json build_info/version.json"
       - store_artifacts:
           path: /app/build_info
@@ -94,7 +97,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
+      - image: "$DOCKERHUB_REPO:$CIRCLE_SHA1"
         environment:
           <<: *bmo_env
     steps:
@@ -161,13 +164,13 @@ jobs:
               git config user.name "$GITHUB_NAME"
               git tag $TAG
               git push https://${GITHUB_PERSONAL_TOKEN}:x-oauth-basic@github.com/$GITHUB_REPO.git $TAG
-              docker tag bmo:$CIRCLE_SHA1 "$DOCKERHUB_REPO:$TAG"
+              docker tag "$DOCKERHUB_REPO:$CIRCLE_SHA1" "$DOCKERHUB_REPO:$TAG"
               docker push "$DOCKERHUB_REPO:$TAG"
             fi
             docker tag bmo:$CIRCLE_SHA1 "$DOCKERHUB_REPO:latest"
             docker push "$DOCKERHUB_REPO:latest"
           else
-            docker tag bmo:$CIRCLE_SHA1 "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
+            docker tag "$DOCKERHUB_REPO:$CIRCLE_SHA1" "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
             docker push "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
           fi
 
@@ -175,7 +178,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
+      - image: "$DOCKERHUB_REPO:$CIRCLE_SHA1"
         environment: *bmo_env
     steps:
       - attach_workspace:
@@ -238,7 +241,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: $DOCKERHUB_REPO:$CIRCLE_SHA1
+      - image: "$DOCKERHUB_REPO:$CIRCLE_SHA1"
         environment:
           <<: *bmo_env
           BZ_QA_ANSWERS_FILE:  /app/.circleci/checksetup_answers.txt
