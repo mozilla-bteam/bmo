@@ -67,15 +67,15 @@
                             menuitems = components %]
     </td>
 
-    <th>
-      <label for="priority">
-        <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority">Priority</a>:
-      </label>
-    </th>
-    <td>
-      [% PROCESS selectmenu menuname = "priority"
-                            menuitems = priorities %]
-    </td>
+    [% IF Param("usetargetmilestone") %]
+      <th><label for="target_milestone">Target Milestone:</label></th>
+      <td>
+        [% PROCESS selectmenu menuname = "target_milestone"
+                              menuitems = targetmilestones %]
+      </td>
+    [% ELSE %]
+      <td colspan="2">&nbsp;</td>
+    [% END %]
 
   </tr>
   <tr>
@@ -91,13 +91,13 @@
     </td>
 
     <th>
-      <label for="bug_severity">
-        <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_severity">Severity</a>:
+      <label for="priority">
+        <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority">Priority</a>:
       </label>
     </th>
     <td>
-      [% PROCESS selectmenu menuname = "bug_severity"
-                            menuitems = severities %]
+      [% PROCESS selectmenu menuname = "priority"
+                            menuitems = priorities %]
     </td>
 
   </tr>
@@ -108,18 +108,21 @@
         <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#op_sys">OS</a>:
       </label>
     </th>
-    <td [% " colspan=\"3\"" IF !Param("usetargetmilestone") %]>
+    <td>
       [% PROCESS selectmenu menuname = "op_sys"
                             menuitems = op_sys %]
     </td>
 
-    [% IF Param("usetargetmilestone") %]
-      <th><label for="target_milestone">Target Milestone:</label></th>
-      <td>
-        [% PROCESS selectmenu menuname = "target_milestone"
-                              menuitems = targetmilestones %]
-      </td>
-    [% END %]
+    <th>
+      <label for="bug_severity">
+        <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_severity">Severity</a>:
+      </label>
+    </th>
+    <td>
+      [% PROCESS selectmenu menuname = "bug_severity"
+                            menuitems = severities %]
+    </td>
+
   </tr>
 
   <tr>

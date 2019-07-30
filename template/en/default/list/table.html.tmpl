@@ -205,7 +205,8 @@
 
     [% IF dotweak %]
     <td class="bz_checkbox_column">
-      <input type="checkbox" name="id_[% bug.bug_id %]">
+      <input type="checkbox" name="id_[% bug.bug_id %]"
+             data-id="[% bug.bug_id %]" data-product="[% bug.product FILTER html %]">
     </td>
     [% END %]
     <td class="first-child bz_id_column">

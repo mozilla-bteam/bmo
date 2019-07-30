@@ -202,3 +202,9 @@ td.bz_total {
 #request_form #filtering th {
   padding-left: 0.5em;
 }
+
+/* For bulk editor */
+
+select.attention {
+  border-color: var(--invalid-control-border-color) !important;
+}

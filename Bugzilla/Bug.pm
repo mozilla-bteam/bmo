@@ -3087,8 +3087,8 @@ sub _set_product {
 
     my $verified = $params->{product_change_confirmed};
 
-    # BMO - if everything is ok then we can skip the verfication page when using bug_modal
-    if (($params->{format} eq 'modal' || !$verified) && $component_ok && $version_ok && $milestone_ok) {
+    # Skip the verification page if everything is ok
+    if (!$verified && $component_ok && $version_ok && $milestone_ok) {
       $invalid_groups
         = $self->get_invalid_groups({bug_ids => \@idlist, product => $product});
       my $has_invalid_group = 0;
@@ -3103,11 +3103,9 @@ sub _set_product {
         # always check for invalid groups
         !$has_invalid_group
 
-        # never skip verification when changing multiple bugs
-        && scalar(@idlist) == 1
-
         # ensure the user has seen the group ui for private bugs
-        && (!@{$self->groups_in} || Bugzilla->input_params->{group_verified});
+        && (!@{$self->groups_in}
+          || ($params->{format} eq 'modal' && Bugzilla->input_params->{group_verified}));
     }
 
     my %vars;
