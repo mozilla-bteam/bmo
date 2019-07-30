@@ -149,11 +149,21 @@ sub cmd_load_test_data {
   }
 }
 
+sub cmd_push_data {
+  run('perl', 'scripts/build-bmo-push-data.pl');
+}
+
+sub cmd_test_sanity {
+  run('prove', '-I/app', '-I/app/local/lib/perl5', '-qf', @_);
+}
+
 sub cmd_test_webservices {
   my $conf = require $ENV{BZ_QA_CONF_FILE};
 
+  cmd_load_test_data() unless -f "/app/data/params";
   check_data_dir();
   copy_qa_extension();
+
   assert_database()->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
   my $prove_exit_f = run_prove(
@@ -171,11 +181,12 @@ sub cmd_test_selenium {
   my $conf = require $ENV{BZ_QA_CONF_FILE};
   $ENV{HTTP_BACKEND} = 'simple';
 
+  cmd_load_test_data() unless -f "/app/data/params";
   check_data_dir();
   copy_qa_extension();
 
   assert_database()->get;
-  assert_selenium()->get;
+  assert_selenium('selenium')->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR');
   my $prove_exit_f = run_prove(
     httpd_url => $conf->{browser_url},
@@ -198,10 +209,12 @@ sub cmd_version { run('cat', '/app/version.json'); }
 
 sub cmd_test_bmo {
   my (@prove_args) = @_;
+
+  cmd_load_test_data() unless -f "/app/data/params";
   check_data_dir();
 
   assert_database()->get;
-  assert_selenium()->get;
+  assert_selenium('selenium')->get;
   $ENV{BZ_TEST_NEWBIE}      = 'newbie@mozilla.example';
   $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';
   create_user(
