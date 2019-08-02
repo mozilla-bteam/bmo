@@ -30,8 +30,8 @@
 
 [% DEFAULT
   product.is_active = 1,
-  version = "unspecified",
   product.defaultmilestone = constants.DEFAULT_MILESTONE
+  product.default_version = "unspecified"
   product.allows_unconfirmed = 1
 %]
 
@@ -40,12 +40,6 @@
 
     [% PROCESS "admin/products/edit-common.html.tmpl" %]
 
-    <tr>
-      <th align="right">Version:</th>
-      <td><input size="64" maxlength="255" name="version"
-                value="[% version FILTER html %]">
-      </td>
-    </tr>
     <tr>
       <th align="right">Create chart datasets for this product:</th>
       <td>

@@ -67,10 +67,20 @@
 [% END %]
 
 [% columns.push({
+       name => "action"
        heading => "Action"
        content => "Delete"
        contentlink => delete_contentlink
      })
+%]
+
+[%# We want to override the usual 'Delete' link for the default version %]
+[% overrides.action.name.${product.default_version} = {
+     override_content => 1
+     content => "(Default version)"
+     override_contentlink => 1
+     contentlink => undef
+   }
 %]
 
 [% Hook.process('before_table') %]

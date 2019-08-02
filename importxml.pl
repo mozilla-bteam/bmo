@@ -662,13 +662,12 @@ sub process_bug {
     push(@values, $version->name);
   }
   else {
-    my @versions = @{$product->versions};
-    my $v        = $versions[0];
-    push(@values, $v->name);
+    push(@values, $product->default_version);
     $err .= "Unknown version \"";
     $err .= (defined $bug_fields{'version'}) ? $bug_fields{'version'} : "unknown";
     $err .= " in product " . $product->name . ". \n";
-    $err .= "   Setting version to \"" . $v->name . "\".\n";
+    $err .= "   Setting to default version for this product, ";
+    $err .= "\"" . $product->default_version . "\".\n";
   }
 
   # Milestone

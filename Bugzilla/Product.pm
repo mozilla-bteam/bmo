@@ -47,6 +47,7 @@ use constant DB_COLUMNS => qw(
   isactive
   default_bug_type
   defaultmilestone
+  default_version
   allows_unconfirmed
 );
 
@@ -55,6 +56,7 @@ use constant UPDATE_COLUMNS => qw(
   description
   default_bug_type
   defaultmilestone
+  default_version
   isactive
   allows_unconfirmed
   bug_description_template
@@ -65,9 +67,9 @@ use constant VALIDATORS => {
   classification     => \&_check_classification,
   name               => \&_check_name,
   description        => \&_check_description,
-  version            => \&_check_version,
   default_bug_type   => \&_check_default_bug_type,
   defaultmilestone   => \&_check_default_milestone,
+  default_version    => \&_check_default_version,
   isactive           => \&Bugzilla::Object::check_boolean,
   create_series      => \&Bugzilla::Object::check_boolean
 };
@@ -90,7 +92,6 @@ sub create {
   if (defined $params->{classification}) {
     $params->{classification_id} = delete $params->{classification};
   }
-  my $version       = delete $params->{version};
   my $create_series = delete $params->{create_series};
 
   # Some fields can be NULLs
@@ -103,7 +104,8 @@ sub create {
   Bugzilla->user->clear_product_cache();
 
   # Add the new version and milestone into the DB as valid values.
-  Bugzilla::Version->create({value => $version, product => $product});
+  Bugzilla::Version->create(
+    {value => $product->default_version, product => $product});
   Bugzilla::Milestone->create(
     {value => $product->default_milestone, product => $product});
 
@@ -410,16 +412,6 @@ sub _check_description {
   return $description;
 }
 
-sub _check_version {
-  my ($invocant, $version) = @_;
-
-  $version = trim($version);
-  $version || ThrowUserError('product_must_have_version');
-
-  # We will check the version length when Bugzilla::Version->create will do it.
-  return $version;
-}
-
 sub _check_default_bug_type {
   my ($invocant, $type) = @_;
   return $type if Bugzilla::Config::Common::check_bug_type($type) eq '';
@@ -450,6 +442,26 @@ sub _check_default_milestone {
     $milestone ||= '---';
   }
   return $milestone;
+}
+
+sub _check_default_version {
+  my ($invocant, $version) = @_;
+
+  $version = trim($version);
+
+  if (ref $invocant) {
+
+    # The default version must be one of the existing versions.
+    my $mil_obj
+      = new Bugzilla::Version({name => $version, product => $invocant});
+
+    $mil_obj || ThrowUserError('product_must_define_default_version',
+      {product => $invocant->name, version => $version});
+  }
+  else {
+    $version ||= Bugzilla::Version::DEFAULT_VERSION;
+  }
+  return $version;
 }
 
 sub _check_milestone_url {
@@ -531,6 +543,7 @@ sub set_name               { $_[0]->set('name',               $_[1]); }
 sub set_description        { $_[0]->set('description',        $_[1]); }
 sub set_default_bug_type   { $_[0]->set('default_bug_type',   $_[1]); }
 sub set_default_milestone  { $_[0]->set('defaultmilestone',   $_[1]); }
+sub set_default_version    { $_[0]->set('default_version',    $_[1]); }
 sub set_is_active          { $_[0]->set('isactive',           $_[1]); }
 sub set_allows_unconfirmed { $_[0]->set('allows_unconfirmed', $_[1]); }
 sub set_bug_description_template { $_[0]->set('bug_description_template', $_[1]); }
@@ -912,6 +925,7 @@ sub allows_unconfirmed { return $_[0]->{'allows_unconfirmed'}; }
 sub description        { return $_[0]->{'description'}; }
 sub is_active          { return $_[0]->{'isactive'}; }
 sub default_milestone  { return $_[0]->{'defaultmilestone'}; }
+sub default_version    { return $_[0]->{'default_version'}; }
 sub classification_id  { return $_[0]->{'classification_id'}; }
 
 # Lazy-load the bug_description_template column
@@ -980,6 +994,7 @@ Bugzilla::Product - Bugzilla product class.
     my isactive          = $product->is_active;
     my $default_bug_type = $product->default_bug_type;
     my $defaultmilestone = $product->default_milestone;
+    my $default_version  = $product->default_version;
     my $classificationid = $product->classification_id;
     my $allows_unconfirmed = $product->allows_unconfirmed;
     my $bug_description_template = $product->bug_description_template;

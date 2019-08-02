@@ -209,8 +209,10 @@ use constant WS_ERROR_CODE => {
   product_name_already_in_use          => 702,
   product_name_diff_in_case            => 702,
   product_must_have_description        => 703,
-  product_must_have_version            => 704,
+  # Removed in favour of default value 'unspecified':
+  # product_must_have_version          => 704,
   product_must_define_defaultmilestone => 705,
+  product_must_define_default_version  => 706,
 
   # Group errors are 800-900
   empty_group_name        => 800,

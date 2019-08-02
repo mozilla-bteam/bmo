@@ -143,6 +143,7 @@ my %whitelist = (
   products => [
     qw(
       id name classification_id description isactive defaultmilestone
+      default_version
       )
   ],
   profiles => [

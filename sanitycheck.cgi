@@ -728,6 +728,12 @@ DoubleCrossCheck(
   ["products", "id",         "defaultmilestone", "name"]
 );
 
+DoubleCrossCheck(
+  "versions", "product_id", "value",
+  ["bugs",     "product_id", "version", "bug_id"],
+  ["products", "id",         "default_version", "name"]
+);
+
 ###########################################################################
 # Perform login checks
 ###########################################################################

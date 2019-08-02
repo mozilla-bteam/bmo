@@ -12,7 +12,7 @@
 use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
-use Test::More tests => 121;
+use Test::More tests => 109;
 use QA::Util;
 
 use constant DESCRIPTION  => 'Product created by Product.create';
@@ -71,12 +71,6 @@ my @tests = (
   },
   {
     user  => 'admin',
-    args  => {name => random_string(20), description => DESCRIPTION},
-    error => 'You must enter a valid version',
-    test  => 'Missing version to Product.create',
-  },
-  {
-    user  => 'admin',
     args  => {name => '', version => PROD_VERSION, description => DESCRIPTION},
     error => 'You must enter a name',
     test  => 'Name to Product.create cannot be empty',
@@ -86,12 +80,6 @@ my @tests = (
     args => {name => random_string(20), version => PROD_VERSION, description => ''},
     error => 'You must enter a description',
     test  => 'Description to Product.create cannot be empty',
-  },
-  {
-    user  => 'admin',
-    args  => {name => random_string(20), version => '', description => DESCRIPTION},
-    error => 'You must enter a valid version',
-    test  => 'Version to Product.create cannot be empty',
   },
   {
     user => 'admin',
@@ -134,7 +122,7 @@ if (0) {
       user => 'admin',
       args => {
         name              => random_string(20),
-        version           => PROD_VERSION,
+        default_version   => PROD_VERSION,
         description       => DESCRIPTION,
         has_unconfirmed   => 1,
         classification    => '',
@@ -149,7 +137,7 @@ if (0) {
       user => 'admin',
       args => {
         name              => random_string(20),
-        version           => PROD_VERSION,
+        default_version   => PROD_VERSION,
         description       => DESCRIPTION,
         has_unconfirmed   => 1,
         classification    => random_string(10),
@@ -193,7 +181,7 @@ foreach my $rpc ($xmlrpc, $jsonrpc) {
       user => 'admin',
       args => {
         name              => random_string(20),
-        version           => PROD_VERSION,
+        default_version   => PROD_VERSION,
         description       => DESCRIPTION,
         has_unconfirmed   => 1,
         classification    => 'Class2_QA',
@@ -207,7 +195,7 @@ foreach my $rpc ($xmlrpc, $jsonrpc) {
       user => 'admin',
       args => {
         name              => random_string(20),
-        version           => PROD_VERSION,
+        default_version   => PROD_VERSION,
         description       => DESCRIPTION,
         has_unconfirmed   => 0,
         classification    => 'Class2_QA',
@@ -221,7 +209,7 @@ foreach my $rpc ($xmlrpc, $jsonrpc) {
       user => 'admin',
       args => {
         name              => random_string(20),
-        version           => PROD_VERSION,
+        default_version   => PROD_VERSION,
         description       => DESCRIPTION,
         has_unconfirmed   => 1,
         classification    => 'Class2_QA',

@@ -411,6 +411,7 @@ my @products = (
     product_name     => 'QA-Selenium-TEST',
     description      => "used by Selenium test.. DON'T DELETE",
     versions         => ['unspecified', 'QAVersion'],
+    default_version  => 'unspecified',
     milestones       => ['QAMilestone'],
     defaultmilestone => '---',
     components       => [{
@@ -429,6 +430,7 @@ my @products = (
     product_name     => 'Another Product',
     description      => "Alternate product used by Selenium. <b>Do not edit!</b>",
     versions         => ['unspecified', 'Another1', 'Another2'],
+    default_version  => 'unspecified',
     milestones       => ['AnotherMS1', 'AnotherMS2', 'Milestone'],
     defaultmilestone => '---',
 
@@ -460,6 +462,7 @@ my @products = (
       . 'in all cases! Do not edit!',
     classification   => 'Class2_QA',
     versions         => ['unspecified', 'C2Ver'],
+    default_version  => 'unspecified',
     milestones       => ['C2Mil'],
     defaultmilestone => '---',
     components       => [{
@@ -478,6 +481,7 @@ my @products = (
     product_name     => 'QA Entry Only',
     description      => 'Only the QA group may enter bugs here.',
     versions         => ['unspecified'],
+    default_version  => 'unspecified',
     milestones       => [],
     defaultmilestone => '---',
     components       => [{
@@ -495,6 +499,7 @@ my @products = (
     product_name     => 'QA Search Only',
     description      => 'Only the QA group may search for bugs here.',
     versions         => ['unspecified'],
+    default_version  => 'unspecified',
     milestones       => [],
     defaultmilestone => '---',
     components       => [{
@@ -533,6 +538,9 @@ foreach my $product (@products) {
 
     $dbh->do('INSERT INTO milestones (product_id, value) VALUES (?, ?)',
       undef, ($new_product->id, $product->{defaultmilestone}));
+
+    $dbh->do('INSERT INTO versions (product_id, value) VALUES (?, ?)',
+      undef, ($new_product->id, $product->{default_version}));
 
     # Now clear the internal list of accessible products.
     delete Bugzilla->user->{selectable_products};

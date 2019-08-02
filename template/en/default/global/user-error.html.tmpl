@@ -1590,6 +1590,14 @@
     create the milestone '[% milestone FILTER html %]'</a> before
     it can be made the default milestone for product '[% product FILTER html %]'.
 
+  [% ELSIF error == "product_must_define_default_version" %]
+    [% title = "Must define new default version" %]
+    [% admindocslinks = {'products.html' => 'Administering products',
+                         'versions.html' => 'About Versions'} %]
+    You must <a href="[% basepath FILTER none %]editversions.cgi?action=add&amp;product=[% product FILTER uri %]">
+    create the version '[% version FILTER html %]'</a> before
+    it can be made the default version for product '[% product FILTER html %]'.
+
   [% ELSIF error == "product_admin_denied" %]
     [% title = "Product Access Denied" %]
     You are not allowed to edit properties of product '[% product FILTER html %]'.
@@ -1623,12 +1631,6 @@
     [% title = "Product needs Description" %]
     [% admindocslinks = {'products.html' => 'Administering products'} %]
     You must enter a description for this product.
-
-  [% ELSIF error == "product_must_have_version" %]
-    [% title = "Product needs Version" %]
-    [% admindocslinks = {'products.html' => 'Administering products',
-                         'versions.html' => 'Administering versions'} %]
-    You must enter a valid version to create a new product.
 
   [% ELSIF error == "product_unknown_component" %]
     [% title = "Unknown Component" %]
@@ -1871,11 +1873,13 @@
     [% title = "Blank Version Name Not Allowed" %]
     You must enter a name for this version.
 
-  [% ELSIF error == "version_has_bugs" %]
-    [% title = BLOCK %]Version has [% terms.Bugs %][% END %]
-    There are [% nb FILTER html %] [%+ terms.bugs %] associated with this
-    version! You must reassign those [% terms.bugs %] to another version
-    before you can delete this one.
+  [% ELSIF error == "version_is_default" %]
+    [% title = "Default version not deletable" %]
+    [% admindocslinks = {'products.html' => 'Administering products',
+                         'versions.html' => 'About Versions'} %]
+    Sorry, but [% version.name FILTER html %] is the default version
+    for the '[% version.product.name FILTER html %]' product, and so
+    it cannot be deleted.
 
   [% ELSIF error == "users_deletion_disabled" %]
     [% title = "Deletion not activated" %]

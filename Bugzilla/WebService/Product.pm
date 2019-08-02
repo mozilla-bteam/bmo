@@ -153,9 +153,10 @@ sub create {
   my $args = {
     name             => $params->{name},
     description      => $params->{description},
-    version          => $params->{version},
     default_bug_type => $params->{default_bug_type},
     defaultmilestone => $params->{default_milestone},
+    # Accept the old param name `version` for backward compatibility
+    default_version  => $params->{default_version} || $params->{version},
 
     # create_series has no default value.
     create_series => defined $params->{create_series}
@@ -181,6 +182,7 @@ sub _product_to_hash {
     description       => $self->type('string',  $product->description),
     is_active         => $self->type('boolean', $product->is_active),
     default_milestone => $self->type('string',  $product->default_milestone),
+    default_version   => $self->type('string',  $product->default_version),
     has_unconfirmed   => $self->type('boolean', $product->allows_unconfirmed),
     classification    => $self->type('string',  $product->classification->name),
     default_bug_type  => $self->type('string',  $product->default_bug_type),
@@ -503,6 +505,10 @@ C<string> The default type for bugs filed under this product.
 
 C<string> The name of the default milestone for the product.
 
+=item C<default_version>
+
+C<string> The name of the default version for the product.
+
 =item C<has_unconfirmed>
 
 C<boolean> Indicates whether the UNCONFIRMED bug status is available
@@ -661,6 +667,9 @@ been removed.
 =item In Bugzilla B<4.4>, C<flag_types> was added to the fields returned
 by C<get>.
 
+=item In Bugzilla B<6.0>, C<default_version> was added to the fields returned
+by C<get>.
+
 =back
 
 =back
@@ -722,6 +731,10 @@ override this value.
 
 C<string> The default milestone for this product. Default: '---'.
 
+=item C<default_version>
+
+C<string> The default version for this product. Default: 'unspecified'.
+
 =item C<is_open>
 
 C<boolean> True if the product is currently allowing bugs to be entered
@@ -764,10 +777,6 @@ You specified the name of a product that already exists.
 
 You must specify a description for this product.
 
-=item 704 (Product must have version)
-
-You must specify a version for this product.
-
 =back
 
 =item B<History>
@@ -775,6 +784,9 @@ You must specify a version for this product.
 =over
 
 =item REST API call added in Bugzilla B<5.0>.
+
+=item The C<version> field was renamed to C<default_version> in Bugzilla B<6.0>.
+The old name is still accepted for backward compatibility.
 
 =back
 

@@ -2476,9 +2476,10 @@ sub _check_time_field {
 
 sub _check_version {
   my ($invocant, $version, undef, $params) = @_;
-  $version = trim($version);
   my $product  = blessed($invocant) ? $invocant->product_obj : $params->{product};
   my $old_vers = blessed($invocant) ? $invocant->version     : '';
+  $version = trim($version);
+  $version = $product->default_version if !defined $version;
   my $object = Bugzilla::Version->check({product => $product, name => $version});
   if ($object->name ne $old_vers && !$object->is_active) {
     ThrowUserError('value_inactive', {class => ref($object), value => $version});
@@ -3118,7 +3119,7 @@ sub _set_product {
         # already set correctly if they're valid, otherwise they're
         # set to some invalid value which the template will ignore.
         component => $self->component,
-        version   => $self->version,
+        version   => $version_ok ? $self->version : $product->default_version,
         milestone => $milestone_ok
         ? $self->target_milestone
         : $product->default_milestone

@@ -270,9 +270,10 @@ sub new_product {
     }
   }
   if (!$selected_version) {
-
-    # default to a blank value
-    unshift @$versions, {name => '', selected => $true,};
+    # use default version
+    my $default_version = $product->default_version;
+    my $version = first_value { $_->{name} eq $default_version } @$versions;
+    $version->{selected} = $true;
   }
   $result{version} = $versions;
 

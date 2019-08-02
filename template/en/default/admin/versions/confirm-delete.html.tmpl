@@ -65,36 +65,33 @@
 <h2>Confirmation</h2>
 
 [% IF version.bug_count %]
-  <p>
-  Sorry, there
-  [% IF version.bug_count > 1 %]
-    are [% version.bug_count FILTER none %] [%+ terms.bugs %]
-  [% ELSE %]
-    is [% version.bug_count FILTER none %] [%+ terms.bug %]
-  [% END %]
 
-  outstanding for this version. You must move
-
-  [% IF version.bug_count > 1 %]
-     those [% terms.bugs %]
-  [% ELSE %]
-     that [% terms.bug %]
-  [% END %]
-  to another version before you can delete this one.
-  </p>
-[% ELSE %]
-
-  <p>Do you really want to delete this version?</p>
-
-  <form method="post" action="[% basepath FILTER none %]editversions.cgi">
-    <input type="submit" id="delete" value="Yes, delete">
-    <input type="hidden" name="action" value="delete">
-    <input type="hidden" name="product" value="[% product.name FILTER html %]">
-    <input type="hidden" name="version" value="[% version.name FILTER html %]">
-    <input type="hidden" name="token" value="[% token FILTER html %]">
-  </form>
+  <table border="0" cellpadding="20" width="70%" bgcolor="red">
+  <tr><td>
+    There
+    [% IF version.bug_count > 1 %]
+      are [% version.bug_count FILTER none %] [%+ terms.bugs %]
+    [% ELSE %]
+      is 1 [% terms.bug %]
+    [% END %]
+    entered for this version! When you delete this version,
+    <b><blink>ALL</blink></b> of these [% terms.bugs %] will be retargeted
+    to [% product.default_version FILTER html %], the default version for
+    the [% product.name FILTER html %] product.
+  </td></tr>
+  </table>
 
 [% END %]
+
+<p>Do you really want to delete this version?</p>
+
+<form method="post" action="[% basepath FILTER none %]editversions.cgi">
+  <input type="submit" id="delete" value="Yes, delete">
+  <input type="hidden" name="action" value="delete">
+  <input type="hidden" name="product" value="[% product.name FILTER html %]">
+  <input type="hidden" name="version" value="[% version.name FILTER html %]">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+</form>
 
 [% PROCESS admin/versions/footer.html.tmpl %]
 

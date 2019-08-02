@@ -924,6 +924,10 @@
     [% title = "Version Deleted" %]
     The version <em>[% version.name FILTER html %]</em> of product
     <em>[% product.name FILTER html %]</em> has been deleted.
+    [% IF version.bug_count %]
+      [%+ terms.Bugs %] targeted to this version have been retargeted to
+      the default version <em>[% product.default_version FILTER html %]</em>.
+    [% END %]
 
   [% ELSIF message_tag == "version_updated" %]
     [% title = "Version Updated" %]

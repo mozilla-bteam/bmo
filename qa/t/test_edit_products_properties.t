@@ -67,7 +67,7 @@ if ($config->{test_extensions}) {
   $sel->type_ok("maxvotesperbug", "1");
   $sel->type_ok("votestoconfirm", "10");
 }
-$sel->type_ok("version", "0.1a");
+$sel->type_ok("default_version", "0.1a");
 $sel->select_ok("security_group_id",   "label=core-security");
 $sel->select_ok("default_op_sys_id",   "label=Unspecified");
 $sel->select_ok("default_platform_id", "label=Unspecified");
@@ -126,6 +126,22 @@ $sel->title_is("Select version of product 'Kill me!'");
 $sel->click_ok("link=Add");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->type_ok("version", "0.1");
+$sel->click_ok("create");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Version Created");
+
+# Add another version.
+
+$sel->click_ok("link=Add");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Add Version to Product 'Kill me!'");
+$sel->type_ok("version", "0.1a");
+$sel->click_ok("create");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Version Already Exists");
+$sel->go_back_ok();
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->type_ok("version", "pre-0.1");
 $sel->click_ok("create");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Version Created");
@@ -289,6 +305,7 @@ go_to_bug($sel, $bug1_id);
 $sel->selected_label_is("product",    "Kill me nicely");
 $sel->selected_label_is("bug_status", "CONFIRMED")
   if $config->{test_extensions};
+$sel->select_ok("version",          "label=pre-0.1");
 $sel->select_ok("target_milestone", "label=pre-0.1");
 $sel->select_ok("component",        "label=second comp");
 $sel->click_ok("bottom-save-btn");
@@ -328,7 +345,8 @@ ok(
   "Bug retargeted"
 );
 
-# Try deleting the version used by the bug. This action must be rejected.
+# Delete the version the bug belongs to. This should retarget the bug
+# to the default version.
 
 $sel->click_ok("link='Kill me nicely'");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -337,15 +355,23 @@ $sel->click_ok("link=Edit versions:");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Select version of product 'Kill me nicely'");
 $sel->click_ok(
-  "//a[contains(\@href, '/editversions.cgi?action=del&product=Kill%20me%20nicely&version=0.1a')]"
+  "//a[contains(\@href, '/editversions.cgi?action=del&product=Kill%20me%20nicely&version=pre-0.1')]"
 );
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Delete Version of Product 'Kill me nicely'");
 $text = trim($sel->get_text("bugzilla-body"));
-ok($text =~ /Sorry, there are 2 bugs outstanding for this version/,
-  "Rejecting version deletion");
-$sel->go_back_ok();
+ok($text =~ /There is 1 bug entered for this version/, "Warning displayed");
+ok($text =~ /Do you really want to delete this version\?/,
+  "Requesting confirmation");
+$sel->click_ok("delete");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Version Deleted");
+$text = trim($sel->get_text("message"));
+ok(
+  $text
+    =~ /Bugs targeted to this version have been retargeted to the default version/,
+  "Bug retargeted"
+);
 
 # Delete an unused version. The action must succeed.
 

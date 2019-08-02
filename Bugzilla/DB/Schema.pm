@@ -1422,6 +1422,7 @@ use constant ABSTRACT_SCHEMA => {
       description        => {TYPE => 'MEDIUMTEXT',  NOTNULL => 1},
       isactive           => {TYPE => 'BOOLEAN',     NOTNULL => 1, DEFAULT => 1},
       defaultmilestone   => {TYPE => 'varchar(20)', NOTNULL => 1, DEFAULT => "'---'"},
+      default_version    => {TYPE => 'varchar(20)', NOTNULL => 1, DEFAULT => "'unspecified'"},
       allows_unconfirmed => {TYPE => 'BOOLEAN',     NOTNULL => 1, DEFAULT => 'TRUE'},
       bug_description_template => {TYPE => 'MEDIUMTEXT'},
       default_bug_type  => {TYPE => 'varchar(20)'},

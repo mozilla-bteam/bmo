@@ -273,7 +273,7 @@ use constant DEFAULT_PRODUCT => {
   description => 'This is a test product.'
     . ' This ought to be blown away and replaced with real stuff in a'
     . ' finished installation of Bugzilla.',
-  version          => Bugzilla::Version::DEFAULT_VERSION,
+  default_version  => Bugzilla::Version::DEFAULT_VERSION,
   classification   => 'Unclassified',
   defaultmilestone => DEFAULT_MILESTONE,
 };

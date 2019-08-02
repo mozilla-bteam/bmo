@@ -103,6 +103,7 @@ type        string  The group of products to return. Valid values are
          "id": 1,
          "default_bug_type": "defect",
          "default_milestone": "---",
+         "default_version": "unspecified",
          "components": [
            {
              "is_active": true,
@@ -186,6 +187,7 @@ description        string   A description of the product, which may contain HTML
 is_active          boolean  A boolean indicating if the product is active.
 default_bug_type   string   The default type for bugs filed under this product.
 default_milestone  string   The name of the default milestone for the product.
+default_version    string   The name of the default version for the product.
 has_unconfirmed    boolean  Indicates whether the UNCONFIRMED bug status is
                             available for this product.
 classification     string   The classification name for the product.
@@ -287,7 +289,7 @@ This allows you to create a new product in Bugzilla.
      "classification" : "Unclassified",
      "is_open" : false,
      "has_unconfirmed" : false,
-     "version" : "unspecified"
+     "default_version" : "unspecified"
    }
 
 Some params must be set, or an error will be thrown. The required params are
@@ -300,7 +302,6 @@ name               type     description
                             within Bugzilla.
 **description**    string   A description for this product. Allows some simple
                             HTML.
-**version**        string   The default version for this product.
 has_unconfirmed    boolean  Allow the UNCONFIRMED status to be set on bugs in
                             this product. Default: true.
 classification     string   The name of the Classification which contains this
@@ -309,6 +310,9 @@ default_bug_type   string   The default type for bugs filed under this product.
                             Each component can override this value.
 default_milestone  string   The default milestone for this product. Default
                             '---'.
+default_version    string   The default version for this product. Default
+                            'unspecified'. The old name ``version`` is still
+                            accepted for backward compatibility.
 is_open            boolean  ``true`` if the product is currently allowing bugs
                             to be entered into it. Default: ``true``.
 create_series      boolean  ``true`` if you want series for New Charts to be
@@ -345,8 +349,6 @@ id    int   ID of the newly-filed product.
   (Product names must be globally unique in Bugzilla.)
 * 703 (Product must have description)
   You must specify a description for this product.
-* 704 (Product must have version)
-  You must specify a version for this product.
 
 .. _rest_product_update:
 
@@ -397,6 +399,9 @@ default_bug_type   string   The default type for bugs filed under this product.
 default_milestone  string   When a new bug is filed, what milestone does it
                             get by default if the user does not choose one? Must
                             represent a milestone that is valid for this product.
+default_version    string   When a new bug is filed, what version does it
+                            get by default if the user does not choose one? Must
+                            represent a version that is valid for this product.
 description        string   Update the long description for these products to
                             this value.
 has_unconfirmed    boolean  Allow the UNCONFIRMED status to be set on bugs in
@@ -459,3 +464,5 @@ as they are stored as strings in the database currently.
   You must specify a description for this product.
 * 705 (Product must define a default milestone)
   You must define a default milestone.
+* 706 (Product must define a default version)
+  You must define a default version.

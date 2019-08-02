@@ -204,7 +204,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'version',
     desc           => 'Version',
     in_new_bugmail => 1,
-    is_mandatory   => 1,
     buglist        => 1
   },
   {

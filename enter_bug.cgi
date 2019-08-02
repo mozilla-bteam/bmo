@@ -372,7 +372,7 @@ elsif (formvalue('version')) {
   $default{'version'} = formvalue('version');
 }
 else {
-  $default{'version'} = $vars->{'version'}->[$#{$vars->{'version'}}]->name;
+  $default{'version'} = $product->default_version;
 }
 
 # Get list of milestones.

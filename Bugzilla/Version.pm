@@ -113,31 +113,78 @@ sub bug_count {
   return $self->{'bug_count'};
 }
 
+# Copied from Milestone::update()
 sub update {
   my $self = shift;
-  my ($changes, $old_self) = $self->SUPER::update(@_);
+  my $dbh  = Bugzilla->dbh;
+
+  $dbh->bz_start_transaction();
+  my $changes = $self->SUPER::update(@_);
 
   if (exists $changes->{value}) {
-    my $dbh = Bugzilla->dbh;
+
+    # The version value is stored in the bugs table instead of its ID.
     $dbh->do(
       'UPDATE bugs SET version = ?
                   WHERE version = ? AND product_id = ?', undef,
-      ($self->name, $old_self->name, $self->product_id)
+      ($self->name, $changes->{value}->[0], $self->product_id)
     );
+
+    # The default value also stores the value instead of the ID.
+    $dbh->do(
+      'UPDATE products SET default_version = ?
+                  WHERE id = ? AND default_version = ?', undef,
+      ($self->name, $self->product_id, $changes->{value}->[0])
+    );
+    Bugzilla->memcached->clear({table => 'products', id => $self->product_id});
   }
+  $dbh->bz_commit_transaction();
+  Bugzilla->memcached->clear_config();
+
   return $changes;
 }
 
+# Copied from Milestone::remove_from_db()
 sub remove_from_db {
   my $self = shift;
   my $dbh  = Bugzilla->dbh;
 
-  # The version cannot be removed if there are bugs
-  # associated with it.
+  $dbh->bz_start_transaction();
+
+  # The default version cannot be deleted.
+  if ($self->name eq $self->product->default_version) {
+    ThrowUserError('version_is_default', {version => $self});
+  }
+
   if ($self->bug_count) {
-    ThrowUserError("version_has_bugs", {nb => $self->bug_count});
+
+    # We don't want to delete bugs when deleting a version.
+    # Bugs concerned are reassigned to the default version.
+    my $bug_ids = $dbh->selectcol_arrayref(
+      'SELECT bug_id FROM bugs
+                                    WHERE product_id = ? AND version = ?',
+      undef, ($self->product->id, $self->name)
+    );
+
+    my $timestamp = $dbh->selectrow_array('SELECT NOW()');
+
+    $dbh->do(
+      'UPDATE bugs SET version = ?, delta_ts = ?
+                   WHERE ' . $dbh->sql_in('bug_id', $bug_ids), undef,
+      ($self->product->default_version, $timestamp)
+    );
+
+    require Bugzilla::Bug;
+    import Bugzilla::Bug qw(LogActivityEntry);
+    foreach my $bug_id (@$bug_ids) {
+      LogActivityEntry($bug_id, 'version', $self->name,
+        $self->product->default_version,
+        Bugzilla->user->id, $timestamp);
+    }
   }
   $self->SUPER::remove_from_db();
+
+  $dbh->bz_commit_transaction();
 }
 
 ###############################
