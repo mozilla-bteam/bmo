@@ -40,7 +40,12 @@ use constant REQUIRED_MODULES => [
     # blacklist => [ '1.04' ],
   },
   {package => 'Crypt-SMIME', module => 'Crypt::SMIME', version => 0,},
-  {package => 'HTML-Tree',   module => 'HTML::Tree',   version => 0,}
+  {package => 'HTML-Tree',   module => 'HTML::Tree',   version => 0,},
+  {
+    package => 'Bytes-Random-Secure',
+    module  => 'Bytes::Random::Secure',
+    version => 0
+  }
 ];
 
 __PACKAGE__->NAME;

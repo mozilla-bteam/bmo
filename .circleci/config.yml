@@ -59,7 +59,7 @@ jobs:
       - run:
           name: build push data
           command: |
-            docker-compose -f docker-compose.test.rml run --name push_data bmo-web.vm push_data
+            docker-compose -f docker-compose.test.yml run --name push_data bmo-web.vm push_data
             docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
             docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
             docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt

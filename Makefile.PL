@@ -77,8 +77,8 @@ my %requires = (
   'Module::Runtime'                     => '0.014',
   'Mojo::JWT'                           => '0.07',
   'MojoX::Log::Log4perl::Tiny'          => '0.01',
-  'Mojolicious'                         => '8.02',
-  'Mojolicious::Plugin::OAuth2::Server' => '0.42',
+  'Mojolicious'                         => '8.22',
+  'Mojolicious::Plugin::OAuth2::Server' => '0.44',
   'Moo'                                 => '2.002004',
   'MooX::StrictConstructor'             => '0.008',
   'Mozilla::CA'                         => '20160104',
@@ -93,7 +93,7 @@ my %requires = (
   'Template'                            => '2.24',
   'Text::CSV_XS'                        => '1.26',
   'Throwable'                           => '0.200013',
-  'Type::Tiny'                          => '1.004002',
+  'Type::Tiny'                          => '1.004004',
   'URI'                                 => '1.55',
   'URI::Escape::XS'                     => '0.14',
   'version'                             => '0.87',
@@ -159,7 +159,10 @@ my %optional_features = (
   },
   markdown => {
     description => 'Markdown syntax support for comments',
-    prereqs => {runtime => {requires => {'Text::MultiMarkdown' => '1.000034'}}}
+    prereqs     => {
+      runtime =>
+        {requires => {'Text::MultiMarkdown' => '1.000034', 'Unicode::GCString' => 0}}
+    }
   },
   pg => {
     description => 'Postgres database support',

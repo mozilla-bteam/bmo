@@ -34,8 +34,8 @@ is(
 );
 
 is(
-  $parser->render_html('http://bmo-web.vm'),
-  "<p><a href=\"http://bmo-web.vm\" rel=\"nofollow\">http://bmo-web.vm</a></p>\n",
+  $parser->render_html('https://www.mozilla.org'),
+  "<p><a href=\"https://www.mozilla.org\" rel=\"nofollow\">https://www.mozilla.org</a></p>\n",
   'Autolink extension'
 );
 
