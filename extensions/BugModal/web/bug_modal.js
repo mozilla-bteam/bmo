@@ -56,11 +56,13 @@ $(function() {
     // update relative dates
     var relative_timer_duration = 60000;
     var relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
-    $(document).on('show.visibility', function() {
-        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
-    });
-    $(document).on('hide.visibility', function() {
+
+    window.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
         window.clearInterval(relative_timer_id);
+      } else {
+        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
+      }
     });
 
     function relativeTimer() {
@@ -149,14 +151,14 @@ $(function() {
         });
     }
 
-    // expand/colapse module
+    // expand/collapse module
     $('.module-latch')
         .click(function(event) {
             event.preventDefault();
             slide_module($(this).parents('.module'));
         })
         .keydown(function(event) {
-            // expand/colapse module with the enter or space key
+            // expand/collapse module with the enter or space key
             if (event.keyCode === 13 || event.keyCode === 32) {
                 event.preventDefault();
                 slide_module($(this).parents('.module'));
@@ -171,7 +173,7 @@ $(function() {
             $('#attachments tr.attach-obsolete').toggle();
         });
 
-    // url --> unsafe warning
+    // URL --> unsafe warning
     $('.bug-url')
         .click(function(event) {
             var that = $(this);
@@ -212,10 +214,36 @@ $(function() {
         });
 
     // use non-native tooltips for relative/absolute times and bug summaries
-    $('.rel-time, .rel-time-title, .abs-time-title, .bz_bug_link, .tt').tooltip({
+    const tooltip_sources = $('.rel-time, .rel-time-title, .abs-time-title, .bz_bug_link, .tt').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
         hide: { effect: 'none' }
+    }).on('tooltipopen', function(event, ui) {
+        const $this = $(this);
+        const $parent = $this.offsetParent();
+        const { top, left } = $this.position();
+        const right_margin = $parent.width() - left;
+        const flip = right_margin < 250;
+
+        // Move the tooltip from `<body>` to a proper parent and position
+        // because the tooltip `position` option doesn't accept `within` for
+        // some reason
+        ui.tooltip
+          .appendTo($parent)
+          .css({
+            top: `${parseInt(top + $this.height() + 4)}px`,
+            right: flip ? `${parseInt(right_margin - $this.width())}px` : 'auto',
+            left: flip ? 'auto' : `${parseInt(left)}px`,
+          });
+    });
+
+    // Don't show the tooltip when the window gets focus
+    window.addEventListener('focus', event => {
+      // Temporarily disable the tooltip and enable it again
+      tooltip_sources.tooltip('option', 'disabled', true);
+      window.setTimeout(() => {
+        tooltip_sources.tooltip('option', 'disabled', false);
+      }, 150);
     });
 
     // tooltips create a new ui-helper-hidden-accessible div each time a
@@ -503,7 +531,7 @@ $(function() {
         that.data('preselected', value);
 
         // if the user hasn't touched a field, override the browser's choice
-        // with bugzilla's
+        // with Bugzilla's
         if (!dirty.val())
             that.val(value);
     });
@@ -1056,7 +1084,7 @@ $(function() {
         // subtracts time spent from remaining time
         // prevent negative values if work_time > fRemainingTime
         var new_time = Math.max(BUGZILLA.remaining_time - $('#work_time').val(), 0.0);
-        // get upto 2 decimal places
+        // get up to 2 decimal places
         $('#remaining_time').val(Math.round((new_time * 100)/100).toFixed(1));
     });
     $('#remaining_time').change(function() {
@@ -1522,7 +1550,7 @@ async function show_new_changes_indicator() {
     } catch (ex) {}
 }
 
-// fix url after bug creation/update
+// fix URL after bug creation/update
 if (history && history.replaceState) {
     var href = document.location.href;
     if (!href.match(/show_bug\.cgi/)) {
@@ -1593,7 +1621,7 @@ $(function() {
 
 (function($) {
     $.extend({
-        // Case insensative $.inArray (http://api.jquery.com/jquery.inarray/)
+        // Case insensitive $.inArray (http://api.jquery.com/jquery.inarray/)
         // $.inArrayIn(value, array [, fromIndex])
         //  value (type: String)
         //    The value to search for
@@ -1624,7 +1652,7 @@ $(function() {
 
         // Bring an element into view, leaving space for the outline. If passed
         // a string, it will be treated as an id - the page will scroll and the
-        // url will be added to the browser's history. If passed an element, no
+        // URL will be added to the browser's history. If passed an element, no
         // entry will be added to the history.
         scrollTo: function(target, complete) {
             let $target;

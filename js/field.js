@@ -40,6 +40,8 @@ function validateEnterBug(theform) {
     var attach_data = theform.data;
     var attach_desc = theform.description;
 
+    const $bug_type_group = document.querySelector('#bug_type');
+
     var current_errors = YAHOO.util.Dom.getElementsByClassName(
         'validation_error_text', null, theform);
     for (var i = 0; i < current_errors.length; i++) {
@@ -77,8 +79,8 @@ function validateEnterBug(theform) {
         _errorFor(component);
         focus_me = component;
     }
-    if (!bug_type.value) {
-        _errorFor(document.querySelector('#bug_type'));
+    if ($bug_type_group.matches('[aria-required="true"]') && !bug_type.value) {
+        _errorFor($bug_type_group);
         focus_me = bug_type[0];
     }
 
@@ -447,7 +449,7 @@ function showDuplicateItem(e) {
             dup_id.blur();
         }
     }
-    YAHOO.util.Event.preventDefault(e); //prevents the hyperlink from going to the url in the href.
+    YAHOO.util.Event.preventDefault(e); //prevents the hyperlink from going to the URL in the href.
 }
 
 function setResolutionToDuplicate(e, duplicate_or_move_bug_status) {

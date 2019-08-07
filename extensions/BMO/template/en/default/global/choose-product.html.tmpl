@@ -82,7 +82,7 @@
 
 [% IF NOT ((cgi.param("full")) OR (user.settings.product_chooser.value == 'full_product_chooser')) %]
 
-  <div class="tile">
+  <div class="tiles">
     [% INCLUDE easyproduct
       name="Core"
       icon="component.png"
@@ -114,6 +114,10 @@
     [% INCLUDE easyproduct
       name="GeckoView"
       icon="firefox_android.png"
+    %]
+    [% INCLUDE easyproduct
+      name="Firefox Brand"
+      icon="firefox_brand.png"
     %]
     [% INCLUDE easyproduct
       name="Mozilla Localizations"

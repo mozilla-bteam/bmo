@@ -74,7 +74,7 @@ function initCrashSignatureField() {
 
 const params = new URLSearchParams(location.search);
 let bug_type_specified = params.has('bug_type') || params.has('cloned_bug_id') || params.has('regressed_by');
-let desc_edited = false;
+let desc_edited = params.has('comment') || params.has('cloned_bug_id');
 
 var initialowners = new Array([% product.components.size %]);
 var last_initialowner;
@@ -341,7 +341,7 @@ TUI_hide_default('expert_fields');
 
     [% INCLUDE bug/field.html.tmpl
       bug = default, field = bug_fields.bug_type, editable = 1, use_buttons = 1,
-      value = default.bug_type %]
+      value = default.bug_type, required = Param('require_bug_type') %]
   </tr>
 
   [% needs_extra_tr = 1 %]

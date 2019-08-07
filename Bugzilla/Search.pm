@@ -381,6 +381,9 @@ sub SPECIAL_PARSING {
 
     # BMO - add ability to use pronoun for triage owners
     triage_owner => \&_triage_owner_pronoun,
+
+    # Misc.
+    resolution => \&_chart_resolution_parser,
   };
   foreach my $field (Bugzilla->active_custom_fields({skip_extensions => 1})) {
     if ($field->type == FIELD_TYPE_DATETIME) {
@@ -802,7 +805,7 @@ sub data {
   my %tf_map = map { $_ => 1 } Bugzilla->tracking_flag_names;
   my @tf_selected = grep { exists $tf_map{$_} } @orig_fields;
 
-  # mysql has a limit of 61 joins, and we want to avoid massive amounts of joins
+  # MySQL has a limit of 61 joins, and we want to avoid massive amounts of joins
   # 30 ensures we won't hit the limit, nor generate too many joins
   if (scalar @tf_selected > 30) {
     foreach my $column (@tf_selected) {
@@ -1979,7 +1982,7 @@ sub _handle_chart {
 
   $search_args{quoted} = $self->_quote_unless_numeric(\%search_args);
 
-  # This should add a "term" selement to %search_args.
+  # This should add a "term" element to %search_args.
   $self->do_search_function(\%search_args);
 
   # If term is left empty, then this means the criteria
@@ -2254,11 +2257,7 @@ sub _timestamp_translate {
   my $value = $args->{value};
   my $dbh   = Bugzilla->dbh;
 
-  # Allow to support custom date pronouns
-  Bugzilla::Hook::process('search_timestamp_translate',
-    {search => $self, args => $args});
-
-  return if $value !~ /^(?:[\+\-]?\d+[hdwmy]s?|now)$/i;
+  return if $value !~ /^(?:[\+\-]?\d+[hdwmy]s?|now)$/i && $value !~ /^%\w+%$/;
 
   $value = SqlifyDate($value);
 
@@ -2301,6 +2300,16 @@ sub SqlifyDate {
   if ($str eq "") {
     my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime(time());
     return sprintf("%4d-%02d-%02d 00:00:00", $year + 1900, $month + 1, $mday);
+  }
+
+  # Allow to support custom date pronouns
+  if ($str =~ /^%(\w+)%$/) {
+    my $pronoun = {name => uc($1)};
+    Bugzilla::Hook::process('search_date_pronoun', {pronoun => $pronoun});
+    unless ($pronoun->{date}) {
+      ThrowUserError('illegal_date_pronoun', {pronoun => $str});
+    }
+    return $pronoun->{date};
   }
 
   if ($str =~ /^(-|\+)?(\d+)([hdwmy])(s?)$/i) {    # relative date
@@ -2538,6 +2547,21 @@ sub _triage_owner_pronoun {
     else {
       ThrowUserError('login_required_for_pronoun');
     }
+  }
+}
+
+######################################
+# "Special Parsing" Functions: Misc. #
+######################################
+
+sub _chart_resolution_parser {
+  my ($self, $args) = @_;
+  my ($value, $operator) = @$args{qw(value operator)};
+
+  # Treat `---` as empty
+  if (trim($value) eq '---' && $operator =~ /^(?:not)?equals$/) {
+    $args->{value} = $args->{all_values} = $args->{quoted} = '';
+    $args->{operator} = $operator eq 'equals' ? 'isempty' : 'isnotempty';
   }
 }
 
@@ -2947,7 +2971,7 @@ sub _component_nonchanged {
   # Allow to search product/component pairs like "Core::General" with a simple
   # operator. Since product/component names may include spaces, other operators
   # like `anywords` won't work.
-  if ($args->{operator} =~ /^(:?(:?not)?equals)$/
+  if ($args->{operator} =~ /^(?:(?:not)?equals)$/
     && $args->{value} =~ /^(?:(.+)\s*::\s*)?(.+)$/)
   {
     $product = $1;
@@ -3700,7 +3724,7 @@ sub _empty_value {
 sub IsValidQueryType {
   my ($queryType) = @_;
 
-  # BMO: Added google and instant
+  # BMO: Added Google and instant
   if (grep { $_ eq $queryType } qw(specific advanced google instant)) {
     return 1;
   }

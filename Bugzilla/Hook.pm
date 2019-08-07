@@ -597,19 +597,18 @@ Params:
 
 =back
 
-=head2 search_timestamp_translate
+=head2 search_date_pronoun
 
-This happens in L<Bugzilla::Search/_timestamp_translate> and allows you to
-support pronouns for specific dates, such as a product release date. Check the
-`value` argument and replace it with actual date where needed.
+This happens in L<Bugzilla::Search/SqlifyDate> and allows you to support
+pronouns for specific dates, such as a product release date. Pronouns must be
+quoted with percent signs like C<%LAST_RELEASE_DATE%>.
 
 Params:
 
 =over
 
-=item C<search> - The L<Bugzilla::Search> object.
-
-=item C<args> - The original arguments including C<value>.
+=item C<pronoun> - A capitalized pronoun without percent signs can be found in
+the C<name>. Add an actual date back to the C<date> if it's a supported pronoun.
 
 =back
 
@@ -1732,7 +1731,7 @@ they have been obtained from the URL or body of the request.
 =head2 webservice_rest_request
 
 This hook allows for altering any of the parameters provided by the client
-after authentication has occured. You are able to change things like renaming
+after authentication has occurred. You are able to change things like renaming
 of keys, removing values, or adding additional information.
 
 Params:
@@ -1746,7 +1745,7 @@ they have been obtained from the URL or body of the request.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
@@ -1767,7 +1766,7 @@ which code handler to use based on a regex match of the CGI path.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
@@ -1791,11 +1790,11 @@ A reference to a hash that contains the result data.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
-=head2 wevservice_status_code_map
+=head2 webservice_status_code_map
 
 This hook allows an extension to change the status codes returned by
 specific webservice errors. The valid internal error codes that Bugzilla

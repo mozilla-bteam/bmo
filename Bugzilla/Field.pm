@@ -259,7 +259,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'bug_type',
     desc           => 'Type',
     in_new_bugmail => 1,
-    is_mandatory   => 1,
     type           => FIELD_TYPE_SINGLE_SELECT,
     buglist        => 1
   },
@@ -1262,7 +1261,7 @@ sub remove_from_db {
 
     my $type = $self->type;
 
-    # the values for multi-select are stored in a seperate table
+    # the values for multi-select are stored in a separate table
     if ($type != FIELD_TYPE_MULTI_SELECT) {
       $dbh->bz_drop_column('bugs', $name);
     }

@@ -83,7 +83,7 @@ use constant ALL_SELECT_FIELDS =>
 use constant PRODUCT_FIELDS => qw(version target_milestone component);
 use constant ALL_FIELDS =>
   (GLOBAL_GENERAL_FIELDS, ALL_SELECT_FIELDS, PRODUCT_FIELDS);
-use constant MANDATORY_FIELDS => qw(short_desc product version component bug_type);
+use constant MANDATORY_FIELDS => qw(short_desc product version component);
 
 use constant PUBLIC_PRODUCT  => 'Another Product';
 use constant PRIVATE_PRODUCT => 'QA-Selenium-TEST';
@@ -145,7 +145,7 @@ foreach my $rpc (@clients) {
       '=~', qr/^-?\d+$/, "The first value has a numeric sortkey");
 
     ok(defined $first_value->{visibility_values},
-      "$field has visibilty_values defined on its first value")
+      "$field has visibility_values defined on its first value")
       or diag(Dumper($field_data->{values}));
     my @value_visibility_values
       = map { @{$_->{visibility_values}} } @{$field_data->{values}};

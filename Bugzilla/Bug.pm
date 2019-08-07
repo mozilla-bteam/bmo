@@ -121,7 +121,7 @@ sub VALIDATORS {
     bug_file_loc      => \&_check_bug_file_loc,
     bug_severity      => \&_check_select_field,
     bug_status        => \&_check_bug_status,
-    bug_type          => \&_check_select_field,
+    bug_type          => \&_check_bug_type,
     cc                => \&_check_cc,
     comment           => \&_check_comment,
     component         => \&_check_component,
@@ -889,7 +889,7 @@ sub create {
   my $dbh = Bugzilla->dbh;
 
   # BMO - allow parameter alteration before creation.  also add support for
-  # fields which are not bug columns (eg bug_mentors). extensions should move
+  # fields which are not bug columns (e.g. bug_mentors). extensions should move
   # fields from $params to $stash, then use the bug_end_of_create hook to
   # update the database
   my $stash = {};
@@ -903,24 +903,6 @@ sub create {
     unless defined $params->{bug_severity};
   $params->{priority} = Bugzilla->params->{defaultpriority}
     unless defined $params->{priority};
-
-  # Bug type can be defined at the component, product or instance level
-  unless (defined $params->{bug_type}) {
-    my $product
-      = (defined $params->{product})
-      ? Bugzilla::Product->new({name => $params->{product}, cache => 1})
-      : undef;
-    my $component
-      = ($product && defined $params->{component})
-      ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
-      : undef;
-    # The component's default bug type inherits or overrides the default bug
-    # type of the product or instance
-    $params->{bug_type}
-      = ($component)
-      ? $component->default_bug_type
-      : Bugzilla->params->{default_bug_type};
-  }
 
   # BMO - per-product hw/os defaults
   if (!defined $params->{rep_platform} || !defined $params->{op_sys}) {
@@ -1877,6 +1859,35 @@ sub _check_bug_status {
   }
 
   return $new_status->name;
+}
+
+sub _check_bug_type {
+  my ($invocant, $type, undef, $params) = @_;
+
+  if (defined $type && trim($type)) {
+    return $invocant->_check_select_field($type, 'bug_type');
+  }
+
+  if (Bugzilla->params->{'require_bug_type'}) {
+    ThrowUserError('bug_type_required');
+  }
+
+  if (blessed $invocant) {
+    return $invocant->component_obj->default_bug_type;
+  }
+
+  my $product
+    = (defined $params->{product})
+    ? Bugzilla::Product->new({name => $params->{product}, cache => 1})
+    : undef;
+  my $component
+    = ($product && defined $params->{component})
+    ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
+    : undef;
+
+  return $component
+    ? $component->default_bug_type
+    : Bugzilla->params->{default_bug_type};
 }
 
 sub _check_cc {
@@ -3553,7 +3564,7 @@ sub remove_see_also {
       {field => 'see_also', oldvalue => $url, privs => $privs});
   }
 
-  # Since we remove also the url from the referenced bug,
+  # Since we remove also the URL from the referenced bug,
   # we need to notify changes for that bug too.
   $removed_bug_url = $removed_bug_url->[0];
   if ( !$skip_recursion
@@ -4314,7 +4325,7 @@ sub groups {
   }
 
   # BMO: if required, hack in groups exposed by -visible membership
-  # (eg mozilla-employee-confidential-visible), so reporters can add the
+  # (e.g. mozilla-employee-confidential-visible), so reporters can add the
   # bug to a group on show_bug.
   # if the bug is already in the group, the user will not be able to remove
   # it unless they are a true group member.
@@ -4746,7 +4757,7 @@ sub _join_activity_entries {
     }
   }
 
-  # Assume bug_file_loc contain a single url, don't insert a delimiter
+  # Assume bug_file_loc contain a single URL, don't insert a delimiter
   if ($field eq 'bug_file_loc') {
     return $current_change . $new_change;
   }
