@@ -154,7 +154,8 @@ sub cmd_push_data {
 }
 
 sub cmd_test_sanity {
-  run('prove', '-I/app', '-I/app/local/lib/perl5', '-qf', @_);
+  my @tests = @_;
+  run('prove', '-I/app', '-I/app/local/lib/perl5', '-qf', @tests);
 }
 
 sub cmd_test_webservices {
