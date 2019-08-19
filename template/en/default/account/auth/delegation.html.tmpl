@@ -21,7 +21,8 @@
 
 <p>A new [% terms.Bugzilla %] API key[% IF description %], with the description
   '[% description FILTER truncate(10) %]'[% END %] will also be created. You can
-  view or update the key in <a href="[% basepath %]userprefs.cgi?tab=apikey">your preferences</a>.</p>
+  view or update the key in <a href="[% basepath FILTER html %]userprefs.cgi?tab=apikey">
+  your preferences</a>.</p>
 
 <p>Do you want this website to have <strong>complete</strong> access to your [% terms.Bugzilla %]
   account?</p>
