@@ -29,6 +29,7 @@ use constant DB_COLUMNS => qw(
   app_id
   description
   revoked
+  creation_ts
   last_used
   last_used_ip
   sticky
@@ -60,6 +61,7 @@ sub api_key      { return $_[0]->{api_key} }
 sub app_id       { return $_[0]->{app_id} }
 sub description  { return $_[0]->{description} }
 sub revoked      { return $_[0]->{revoked} }
+sub creation_ts  { return $_[0]->{creation_ts} }
 sub last_used    { return $_[0]->{last_used} }
 sub last_used_ip { return $_[0]->{last_used_ip} }
 sub sticky       { return $_[0]->{sticky} }
