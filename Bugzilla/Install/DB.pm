@@ -4320,10 +4320,10 @@ sub _populate_api_keys_creation_ts {
 
   # We do not have a way to tell when an API key was originally created
   # so we use the last_used timestamp as the initial creation value.
-  $dbh->do('UPDATE user_api_keys SET creation_ts = last_used');
+  $dbh->do('UPDATE user_api_keys SET creation_ts = COALESCE(last_used, mysql STAMP)');
 
   $dbh->bz_alter_column('user_api_keys', 'creation_ts',
-    {TYPE => 'DATETIME', NOTNULL => 1, DEFAULT => 'NOW()'});
+    {TYPE => 'DATETIME', NOTNULL => 1});
 }
 
 1;

@@ -87,6 +87,14 @@ sub set_revoked     { $_[0]->set('revoked',     $_[1]); }
 sub set_sticky      { $_[0]->set('sticky',      $_[1]); }
 
 # Validators
+sub run_create_validators {
+  my ($class, $params) = @_;
+  $params = $class->SUPER::run_create_validators($params);
+  $params->{creation_ts}
+    ||= Bugzilla->dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+  return $params;
+}
+
 sub _check_api_key { return generate_random_password(40); }
 sub _check_description { return trim($_[1]) || ''; }
 
