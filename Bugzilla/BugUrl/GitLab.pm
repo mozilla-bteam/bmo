@@ -22,8 +22,7 @@ sub should_handle {
 
 # GitLab issue URLs can have the form:
 # https://gitlab.com/projectA/subprojectB/subprojectC/../issues/53
-  return (lc($uri->authority) eq 'gitlab.com'
-      and $uri->path =~ m!^/.*/issues/\d+$!) ? 1 : 0;
+  return ($uri->path =~ m!^/.*/issues/\d+$!) ? 1 : 0;
 }
 
 sub _check_value {
@@ -33,6 +32,12 @@ sub _check_value {
 
   # Require the HTTPS scheme.
   $uri->scheme('https');
+
+  # Make sure there are no query parameters.
+  $uri->query(undef);
+
+  # And remove any # part if there is one.
+  $uri->fragment(undef);
 
   return $uri;
 }
