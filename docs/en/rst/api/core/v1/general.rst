@@ -108,7 +108,7 @@ Preferences pages.
 
 API keys may also be requested via :ref:`Authentication Delegation <auth-delegation>`.
 
-**WARNING**: It should be noted that additional authentication methods exist, but they are **not recommended** for use and are likely be deprecated in future versions of BMO, due to security concerns.  These additional methods include the following:
+**WARNING**: It should be noted that additional authentication methods exist, but they are **not recommended** for use and are likely to be deprecated in future versions of BMO, due to security concerns.  These additional methods include the following:
 
  - username and password via ``Bugzilla_login`` and ``Bugzilla_password`` or simply ``login`` and ``password`` respectively in query parameters.
  - username and password via ``X-BUGZILLA-LOGIN`` and ``X-BUGZILLA-PASSWORD`` headers respectively.
