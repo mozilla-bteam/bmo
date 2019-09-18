@@ -25,6 +25,7 @@ use IO::Async::Process;
 use IO::Async::Signal;
 use IO::Async::Timer::Periodic;
 use LWP::Simple qw(get);
+use Path::Tiny;
 use POSIX qw(WEXITSTATUS setsid);
 use Sys::Hostname;
 use User::pwent;
@@ -58,8 +59,12 @@ check_env(qw(
     ));
 
 if ($ENV{BMO_urlbase} eq 'AUTOMATIC') {
-  $ENV{BMO_urlbase} = sprintf 'http://%s:%d/', hostname(), $ENV{PORT};
-  $ENV{BZ_BASE_URL} = sprintf 'http://%s:%d',  hostname(), $ENV{PORT};
+  my $urlbase = sprintf 'http://%s:%d', hostname(), $ENV{PORT};
+  $ENV{BZ_BASE_URL} = $ENV{BMO_urlbase} = $urlbase . '/';
+  my $file = path($ENV{BZ_QA_CONF_FILE});
+  my $data = $file->slurp_utf8;
+  $data =~ s{http://bmo.test/?}{$urlbase}g;
+  $file->spew_utf8( $data );
 }
 
 $func->($opts->());
@@ -97,10 +102,12 @@ sub cmd_jobqueue {
 }
 
 sub cmd_selenium_dev {
-  assert_database->get();
+  cmd_load_test_data();
+  check_data_dir();
   copy_qa_extension();
-  cmd_load_test_data() unless -f "/app/data/params";
-  mkdir('/app/artifacts') unless -d "/app/artifacts";
+  mkdir('/app/artifacts');
+
+  assert_database->get();
   my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
   assert_httpd()->get;
   exit $httpd_exit_f->get;
@@ -159,19 +166,17 @@ sub cmd_test_sanity {
 }
 
 sub cmd_test_webservices {
-  my $conf = require $ENV{BZ_QA_CONF_FILE};
+  $ENV{HTTP_BACKEND} = 'simple';
 
-  cmd_load_test_data() unless -f "/app/data/params";
+  cmd_load_test_data();
   check_data_dir();
-  copy_qa_extension();
 
   assert_database()->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
   my $prove_exit_f = run_prove(
-    httpd_url => $conf->{browser_url},
     prove_cmd => [
       'prove', '-qf', '-I/app', '-I/app/local/lib/perl5',
-      sub { glob 'webservice_*.t' },
+      sub { glob '{webservice,rest}_*.t' },
     ],
     prove_dir => '/app/qa/t',
   );
@@ -179,18 +184,15 @@ sub cmd_test_webservices {
 }
 
 sub cmd_test_selenium {
-  my $conf = require $ENV{BZ_QA_CONF_FILE};
   $ENV{HTTP_BACKEND} = 'simple';
 
-  cmd_load_test_data() unless -f "/app/data/params";
+  cmd_load_test_data();
   check_data_dir();
-  copy_qa_extension();
 
   assert_database()->get;
   assert_selenium('selenium')->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR');
   my $prove_exit_f = run_prove(
-    httpd_url => $conf->{browser_url},
     prove_dir => '/app/qa/t',
     prove_cmd => [
       'prove', '-qf', '-Ilib', '-I/app', '-I/app/local/lib/perl5',
@@ -210,8 +212,9 @@ sub cmd_version { run('cat', '/app/version.json'); }
 
 sub cmd_test_bmo {
   my (@prove_args) = @_;
+  $ENV{HTTP_BACKEND} = 'simple';
 
-  cmd_load_test_data() unless -f "/app/data/params";
+  cmd_load_test_data();
   check_data_dir();
 
   assert_database()->get;
@@ -229,7 +232,6 @@ sub cmd_test_bmo {
 
   my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
   my $prove_exit_f = run_prove(
-    httpd_url => $ENV{BZ_BASE_URL},
     prove_cmd => ['prove', '-I/app', '-I/app/local/lib/perl5', @prove_args],
   );
 

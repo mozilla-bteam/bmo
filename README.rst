@@ -493,3 +493,12 @@ listed above. Afterwards, you may update the account name to be vagrant@bmo-web.
 will now pull email from BMO. You can try it out by commenting on a bug.
 
 .. _`Thunderbird's`: https://www.mozilla.org/en-US/thunderbird/
+
+
+Generating cpanfile and cpanfile.snapshot files
+===============================================
+
+.. code-block:: bash
+
+    docker build -t bmo-cpanfile -d Dockerfile.cpanfile .
+    docker run -it -v "${pwd}:/app/result" bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result

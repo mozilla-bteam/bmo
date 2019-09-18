@@ -19,15 +19,15 @@ services:
       - BMO_db_user=bugs
       - BMO_memcached_namespace=bugzilla
       - BMO_memcached_servers=memcached:11211
-      - BMO_urlbase=http://bmo-web.vm/
+      - BMO_urlbase=AUTOMATIC
       - BUGZILLA_ALLOW_INSECURE_HTTP=1
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
       - BZ_QA_ANSWERS_FILE=/app/.circleci/checksetup_answers.txt
       - BZ_QA_CONF_FILE=/app/.circleci/selenium_test.conf
       - BZ_QA_CONFIG=1
-      - HTTP_BACKEND=simple
       - LOCALCONFIG_ENV=1
-      - LOG4PERL_CONFIG_FILE=log4perl-docker.conf
+      - LOG4PERL_CONFIG_FILE=log4perl-test.conf
+      - LOGGING_PORT=5880
       - PORT=80
       - TWD_HOST=selenium
       - TWD_PORT=4444
@@ -35,7 +35,6 @@ services:
     depends_on:
       - bmo-db.vm
       - memcached
-      - tinyproxy
       - selenium
 
   bmo-db.vm:
@@ -51,10 +50,8 @@ services:
   memcached:
     image: memcached:latest
 
-  tinyproxy:
-    image: mozillabteam/tinyproxy
-    ports:
-      - "1090:1090"
-
   selenium:
-    image: selenium/standalone-firefox:3.141.59
+    image: selenium/standalone-firefox-debug:3.141
+    ports:
+      - "5900:5900"
+    mem_reservation: 512m

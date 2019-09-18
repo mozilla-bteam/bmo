@@ -1,23 +1,19 @@
-FROM perl:5.28.2-slim AS builder
-
-ENV DEBIAN_FRONTEND noninteractive
+FROM perl:5.30.0-slim AS builder
 
 RUN apt-get update
 RUN apt-get install -y \
     build-essential curl libssl-dev zlib1g-dev openssl \
     libexpat-dev cmake git libcairo-dev libgd-dev \
-    default-libmysqlclient-dev unzip
-RUN cpanm --notest App::cpm Module::CPANfile
+    default-libmysqlclient-dev unzip wget
+RUN cpanm --notest --quiet App::cpm Module::CPANfile Carton::Snapshot
 
 WORKDIR /app
 
-COPY Makefile.PL Bugzilla.pm gen-cpanfile.pl /app/
-COPY extensions/ /app/extensions/
+COPY cpanfile cpanfile.snapshot /app/
 
-RUN perl Makefile.PL
-RUN make cpanfile
-RUN grep -r Tie::IxHash cpanfile
 RUN cpm install
+# secure mail loop fixes
+RUN cpm install http://s3.amazonaws.com/moz-devservices-bmocartons/third-party/Crypt-OpenPGP-1.15.tar.gz
 
 RUN apt-get install -y apt-file
 RUN apt-file update
@@ -28,7 +24,7 @@ RUN find local -name '*.so' -exec ldd {} \; \
     | xargs -IFILE apt-file search -l FILE \
     | sort -u > PACKAGES
 
-FROM perl:5.28.2-slim
+FROM perl:5.30.0-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -52,7 +48,7 @@ WORKDIR /app
 COPY --from=builder /app/local /app/local
 COPY --from=builder /app/PACKAGES /app/PACKAGES
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl git libcap2-bin xz-utils $(cat PACKAGES)
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl git libcap2-bin xz-utils vim $(cat PACKAGES)
 
 RUN curl -L https://github.com/dylanwh/tocotrienol/releases/download/1.0.6/tct-centos6.tar.xz > /usr/local/bin/tct.tar.xz && \
     tar -C /usr/local/bin -xvf /usr/local/bin/tct.tar.xz && \

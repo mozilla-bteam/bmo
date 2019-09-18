@@ -121,7 +121,7 @@ sub get_selenium {
 
   my $sel = Bugzilla::Test::Selenium->new({
     driver_args => {
-      base_url   => $config->{browser_url},
+      base_url   => $ENV{BZ_BASE_URL} // $config->{browser_url},
       browser    => 'firefox',
       version    => '',
       javascript => 1
