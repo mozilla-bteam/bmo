@@ -16,6 +16,14 @@ defaults:
   docker_image: &docker_image
     image: docker:18.06.0-ce-git
 
+  build_image: &build_image
+    run: |
+      docker build \
+        --build-arg CI="$CI" \
+        --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
+        --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
+        -t bmo .
+
   store_log: &store_log
     store_artifacts:
       path: /app/bugzilla.log
@@ -38,12 +46,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - run: |
-          docker build \
-            --build-arg CI="$CI" \
-            --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
-            --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
-            -t bmo .
+      - *build_image
       - *install_deps
       - run: |
           [[ -d build_info ]] || mkdir build_info
@@ -106,6 +109,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
+      - *build_image
       - attach_workspace:
           at: /app/build_info
       - deploy:
@@ -140,6 +144,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
+      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
@@ -166,6 +171,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
+      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
@@ -189,6 +195,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
+      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
@@ -212,6 +219,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
+      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
