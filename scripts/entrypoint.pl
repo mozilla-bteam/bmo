@@ -165,7 +165,8 @@ sub cmd_test_sanity {
   run('prove', '-I/app', '-I/app/local/lib/perl5', '-qf', @tests);
 }
 
-sub cmd_test_webservices {
+sub cmd_test_qa {
+  my $type = shift;
   $ENV{HTTP_BACKEND} = 'simple';
 
   cmd_load_test_data();
@@ -173,31 +174,20 @@ sub cmd_test_webservices {
 
   assert_database()->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
+
+  my $test_files;
+  if ($type eq 'selenium') {
+    $test_files = 'test_*.t';
+  }
+  elsif ($type eq 'webservices') {
+    $test_files = '{webservice,rest}_*.t';
+  }
   my $prove_exit_f = run_prove(
     prove_cmd => [
       'prove', '-qf', '-I/app', '-I/app/local/lib/perl5',
-      sub { glob '{webservice,rest}_*.t' },
+      sub { glob $test_files },
     ],
     prove_dir => '/app/qa/t',
-  );
-  exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
-}
-
-sub cmd_test_selenium {
-  $ENV{HTTP_BACKEND} = 'simple';
-
-  cmd_load_test_data();
-  check_data_dir();
-
-  assert_database()->get;
-  assert_selenium('selenium')->get;
-  my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR');
-  my $prove_exit_f = run_prove(
-    prove_dir => '/app/qa/t',
-    prove_cmd => [
-      'prove', '-qf', '-Ilib', '-I/app', '-I/app/local/lib/perl5',
-      sub { glob 'test_*.t' }
-    ],
   );
   exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
 }
@@ -208,6 +198,7 @@ sub cmd_prove {
   my (@args) = @_;
   run('prove', '-I/app', '-I/app/local/lib/perl5', @args);
 }
+
 sub cmd_version { run('cat', '/app/version.json'); }
 
 sub cmd_test_bmo {

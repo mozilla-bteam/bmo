@@ -42,6 +42,7 @@ use base qw(Exporter);
   create_bug
   edit_bug
   edit_bug_and_return
+  get_config
   go_to_bug
   go_to_home
   go_to_admin
@@ -121,7 +122,7 @@ sub get_selenium {
 
   my $sel = Bugzilla::Test::Selenium->new({
     driver_args => {
-      base_url   => $ENV{BZ_BASE_URL} // $config->{browser_url},
+      base_url   => $config->{browser_url},
       browser    => 'firefox',
       version    => '',
       javascript => 1
