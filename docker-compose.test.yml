@@ -28,10 +28,10 @@ services:
       - LOCALCONFIG_ENV=1
       - LOG4PERL_CONFIG_FILE=log4perl-test.conf
       - LOGGING_PORT=5880
-      - PORT=80
+      - PORT=8000
+      - TWD_BROWSER=firefox
       - TWD_HOST=selenium
       - TWD_PORT=4444
-      - TWD_BROWSER=firefox
     depends_on:
       - bmo-db.vm
       - memcached
@@ -51,7 +51,6 @@ services:
     image: memcached:latest
 
   selenium:
-    image: selenium/standalone-firefox-debug:3.141
+    image: selenium/standalone-firefox:3.141.59
     ports:
       - "5900:5900"
-    mem_reservation: 512m
