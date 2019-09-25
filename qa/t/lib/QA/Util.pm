@@ -453,7 +453,7 @@ sub check_page_load {
   my ($sel, $expected) = @_;
   # FIXME: For some reason in some cases I need this otherwise
   # it thinks it is still on the previous page
-  sleep(1);
+  sleep(2);
   my $expected_uri = URI->new($expected);
   my $uri = URI->new($sel->get_location);
 
