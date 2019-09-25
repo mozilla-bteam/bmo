@@ -171,6 +171,7 @@ sub cmd_test_qa {
 
   cmd_load_test_data();
   check_data_dir();
+  mkdir('/app/artifacts');
 
   assert_database()->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');

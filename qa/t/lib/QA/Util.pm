@@ -20,6 +20,7 @@ use Bugzilla::RNG;
 use Bugzilla::Test::Selenium;
 use Selenium::Firefox::Profile;
 use URI;
+use URI::Escape;
 use URI::QueryParam;
 
 # Fixes wide character warnings
@@ -384,6 +385,7 @@ sub open_advanced_search_page {
     $sel->click_ok("link=Advanced Search");
     $sel->wait_for_page_to_load(WAIT_TIME);
   }
+  $sel->remove_all_selections('classification');
   sleep(1); # FIXME: Delay for slow page performance
 }
 
@@ -478,8 +480,32 @@ sub check_page_load {
     $uri->query_param('list_id' => '__LIST_ID__');
   }
 
+  # When comparing two URIs, we need the query params to be in the same order
+  # otherwise the comparison fails even when the params are the same.
+  fix_query_order($uri);
+  fix_query_order($expected_uri);
+
   my ($pkg, $file, $line) = caller;
   is($uri, $expected_uri, "checking location on $file line $line");
+}
+
+sub fix_query_order {
+  my ($uri) = @_;
+  my $query_hash = $uri->query_form_hash();
+  my @out        = ();
+  for my $key (sort keys %{$query_hash}) {
+    if (ref $query_hash->{$key}) {
+      for my $value (@{$query_hash->{$key}}) {
+        push @out, sprintf("%s=%s", uri_escape_utf8($key), uri_escape_utf8($value));
+      }
+    }
+    else {
+      push @out,
+        sprintf("%s=%s", uri_escape_utf8($key), uri_escape_utf8($query_hash->{$key}));
+    }
+  }
+  my $query_string = join '&', @out;
+  $uri->query($query_string);
 }
 
 1;
