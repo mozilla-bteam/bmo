@@ -102,7 +102,7 @@ has 'initial_bugs' => (
 has 'check_open_state' =>
   (is => 'ro', isa => CodeRef, default => sub { return \&is_open_state; },);
 
-has 'very_old_days' => (is => 'ro', isa => Int, default => 45,);
+has 'very_old_days' => (is => 'ro', isa => Int, default => 45);
 
 has 'events' => (
   is  => 'lazy',
@@ -123,10 +123,10 @@ has 'results' => (
     Dict [
       date         => $DateTime,
       bugs_by_team => HashRef [
-        Dict [open => ArrayRef [Int], closed => ArrayRef [Int], very_old_bugs => ArrayRef [Int],],
+        Dict [open => ArrayRef [Int], closed => ArrayRef [Int], very_old_bugs => ArrayRef [Int]]
       ],
       bugs_by_sec_keyword => HashRef [
-        Dict [open => ArrayRef [Int], closed => ArrayRef [Int], very_old_bugs => ArrayRef [Int],],
+        Dict [open => ArrayRef [Int], closed => ArrayRef [Int], very_old_bugs => ArrayRef [Int]]
       ],
     ],
   ],
