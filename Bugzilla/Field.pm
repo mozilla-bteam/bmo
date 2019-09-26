@@ -259,7 +259,6 @@ use constant DEFAULT_FIELDS => (
     name           => 'bug_type',
     desc           => 'Type',
     in_new_bugmail => 1,
-    is_mandatory   => 1,
     type           => FIELD_TYPE_SINGLE_SELECT,
     buglist        => 1
   },
@@ -423,6 +422,7 @@ use constant DEFAULT_FIELDS => (
   },
 
   {name => 'target_milestone',    desc => 'Target Milestone',   buglist    => 1},
+  {name => 'filed_via', desc => 'Filed via', buglist => 1,},
   {
     name    => 'creation_ts',
     desc    => 'Opened',

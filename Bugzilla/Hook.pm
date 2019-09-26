@@ -400,6 +400,20 @@ User is not a sufficiently empowered user, so B<deny>.
 
 =back
 
+=head2 bug_file_methods
+
+This happens in L<Bugzilla::Bug/BUG_FILE_METHODS>, and allows you to add one or
+more valid file methods stored with bugs.
+
+Params:
+
+=over
+
+=item C<method> - A arrayref containing an array of method names. Push your
+method name(s) onto the array.
+
+=back
+
 =head2 bug_fields
 
 Allows the addition of database fields from the bugs table to the standard
@@ -597,19 +611,18 @@ Params:
 
 =back
 
-=head2 search_timestamp_translate
+=head2 search_date_pronoun
 
-This happens in L<Bugzilla::Search/_timestamp_translate> and allows you to
-support pronouns for specific dates, such as a product release date. Check the
-`value` argument and replace it with actual date where needed.
+This happens in L<Bugzilla::Search/SqlifyDate> and allows you to support
+pronouns for specific dates, such as a product release date. Pronouns must be
+quoted with percent signs like C<%LAST_RELEASE_DATE%>.
 
 Params:
 
 =over
 
-=item C<search> - The L<Bugzilla::Search> object.
-
-=item C<args> - The original arguments including C<value>.
+=item C<pronoun> - A capitalized pronoun without percent signs can be found in
+the C<name>. Add an actual date back to the C<date> if it's a supported pronoun.
 
 =back
 

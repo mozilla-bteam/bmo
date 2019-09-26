@@ -381,6 +381,9 @@ sub SPECIAL_PARSING {
 
     # BMO - add ability to use pronoun for triage owners
     triage_owner => \&_triage_owner_pronoun,
+
+    # Misc.
+    resolution => \&_chart_resolution_parser,
   };
   foreach my $field (Bugzilla->active_custom_fields({skip_extensions => 1})) {
     if ($field->type == FIELD_TYPE_DATETIME) {
@@ -1378,7 +1381,15 @@ sub _standard_joins {
       as    => 'security_cc',
       extra => ['security_cc.who = ' . $user->id],
     };
-    push(@joins, $security_cc_join);
+    my $security_triage_join = {
+      table => 'components',
+      as    => 'security_triage',
+      from  => 'bugs.component_id',
+      to    => 'id',
+      join  => 'LEFT',
+      extra => ['security_triage.triage_owner_id = ' . $user->id],
+    };
+    push(@joins, $security_cc_join, $security_triage_join);
   }
 
   return @joins;
@@ -1459,6 +1470,7 @@ sub _standard_where {
         OR (bugs.reporter_accessible = 1 AND bugs.reporter = $userid)
         OR (bugs.cclist_accessible = 1 AND security_cc.who IS NOT NULL)
         OR bugs.assigned_to = $userid
+        OR security_triage.triage_owner_id IS NOT NULL
 END
     if (Bugzilla->params->{'useqacontact'}) {
       $security_term .= "        OR bugs.qa_contact = $userid";
@@ -2254,11 +2266,7 @@ sub _timestamp_translate {
   my $value = $args->{value};
   my $dbh   = Bugzilla->dbh;
 
-  # Allow to support custom date pronouns
-  Bugzilla::Hook::process('search_timestamp_translate',
-    {search => $self, args => $args});
-
-  return if $value !~ /^(?:[\+\-]?\d+[hdwmy]s?|now)$/i;
+  return if $value !~ /^(?:[\+\-]?\d+[hdwmy]s?|now)$/i && $value !~ /^%\w+%$/;
 
   $value = SqlifyDate($value);
 
@@ -2278,14 +2286,12 @@ sub _last_visit_datetime {
   my ($self, $args) = @_;
   my $value = $args->{value};
 
-  $self->_datetime_translate($args);
-  if ($value eq $args->{value}) {
-
-    # Failed to translate a datetime. let's try the pronoun expando.
-    if ($value eq '%last_changed%') {
-      $self->_add_extra_column('changeddate');
-      $args->{value} = $args->{quoted} = 'bugs.delta_ts';
-    }
+  if ($value eq '%last_changed%') {
+    $self->_add_extra_column('changeddate');
+    $args->{value} = $args->{quoted} = 'bugs.delta_ts';
+  }
+  else {
+    $self->_datetime_translate($args);
   }
 }
 
@@ -2301,6 +2307,16 @@ sub SqlifyDate {
   if ($str eq "") {
     my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime(time());
     return sprintf("%4d-%02d-%02d 00:00:00", $year + 1900, $month + 1, $mday);
+  }
+
+  # Allow to support custom date pronouns
+  if ($str =~ /^%(\w+)%$/) {
+    my $pronoun = {name => uc($1)};
+    Bugzilla::Hook::process('search_date_pronoun', {pronoun => $pronoun});
+    unless ($pronoun->{date}) {
+      ThrowUserError('illegal_date_pronoun', {pronoun => $str});
+    }
+    return $pronoun->{date};
   }
 
   if ($str =~ /^(-|\+)?(\d+)([hdwmy])(s?)$/i) {    # relative date
@@ -2538,6 +2554,21 @@ sub _triage_owner_pronoun {
     else {
       ThrowUserError('login_required_for_pronoun');
     }
+  }
+}
+
+######################################
+# "Special Parsing" Functions: Misc. #
+######################################
+
+sub _chart_resolution_parser {
+  my ($self, $args) = @_;
+  my ($value, $operator) = @$args{qw(value operator)};
+
+  # Treat `---` as empty
+  if (trim($value) eq '---' && $operator =~ /^(?:not)?equals$/) {
+    $args->{value} = $args->{all_values} = $args->{quoted} = '';
+    $args->{operator} = $operator eq 'equals' ? 'isempty' : 'isnotempty';
   }
 }
 

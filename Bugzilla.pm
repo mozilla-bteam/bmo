@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20190725.1';
+our $VERSION = '20190926.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -63,12 +63,9 @@ use constant request_cache => Bugzilla::Install::Util::_cache();
 #####################################################################
 
 # Note that this is a raw subroutine, not a method, so $class isn't available.
+# Called prior to every Bugzilla CGI request (not called for native Mojo
+# routes).
 sub init_page {
-
-  # This is probably not needed, but bugs resulting from a dirty
-  # request cache are very annoying (see bug 1347335)
-  # and this is not an expensive operation.
-  clear_request_cache();
   if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
     init_console();
   }

@@ -91,6 +91,7 @@ sub DB_COLUMNS {
       delta_ts
       estimated_time
       everconfirmed
+      filed_via
       lastdiffed
       op_sys
       priority
@@ -121,7 +122,7 @@ sub VALIDATORS {
     bug_file_loc      => \&_check_bug_file_loc,
     bug_severity      => \&_check_select_field,
     bug_status        => \&_check_bug_status,
-    bug_type          => \&_check_select_field,
+    bug_type          => \&_check_bug_type,
     cc                => \&_check_cc,
     comment           => \&_check_comment,
     component         => \&_check_component,
@@ -130,6 +131,7 @@ sub VALIDATORS {
     dup_id            => \&_check_dup_id,
     estimated_time    => \&_check_time_field,
     everconfirmed     => \&Bugzilla::Object::check_boolean,
+    filed_via         => \&_check_filed_via,
     groups            => \&_check_groups,
     keywords          => \&_check_keywords,
     op_sys            => \&_check_select_field,
@@ -309,6 +311,15 @@ use constant REQUIRED_FIELD_MAP =>
 # mandatory groups get set on bugs.
 use constant EXTRA_REQUIRED_FIELDS =>
   qw(creation_ts target_milestone cc qa_contact groups);
+
+sub BUG_FILE_METHODS {
+  my @methods = qw(standard_form custom_form api);
+
+  # Allow extensions to add other methods, e.g. `guided_form`
+  Bugzilla::Hook::process('bug_file_methods', {methods => \@methods});
+
+  return @methods;
+}
 
 with 'Bugzilla::Elastic::Role::Object';
 
@@ -872,6 +883,7 @@ sub possible_duplicates {
 # C<status_whiteboard> - A string.
 # C<bug_status>   - The initial status of the bug, a string.
 # C<bug_file_loc> - The URL field.
+# C<filed_via>    - How this bug is being filed.
 #
 # C<assigned_to> - The full login name of the user who the bug is
 #                  initially assigned to.
@@ -902,24 +914,6 @@ sub create {
     unless defined $params->{bug_severity};
   $params->{priority} = Bugzilla->params->{defaultpriority}
     unless defined $params->{priority};
-
-  # Bug type can be defined at the component, product or instance level
-  unless (defined $params->{bug_type}) {
-    my $product
-      = (defined $params->{product})
-      ? Bugzilla::Product->new({name => $params->{product}, cache => 1})
-      : undef;
-    my $component
-      = ($product && defined $params->{component})
-      ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
-      : undef;
-    # The component's default bug type inherits or overrides the default bug
-    # type of the product or instance
-    $params->{bug_type}
-      = ($component)
-      ? $component->default_bug_type
-      : Bugzilla->params->{default_bug_type};
-  }
 
   # BMO - per-product hw/os defaults
   if (!defined $params->{rep_platform} || !defined $params->{op_sys}) {
@@ -1878,6 +1872,35 @@ sub _check_bug_status {
   return $new_status->name;
 }
 
+sub _check_bug_type {
+  my ($invocant, $type, undef, $params) = @_;
+
+  if (defined $type && trim($type)) {
+    return $invocant->_check_select_field($type, 'bug_type');
+  }
+
+  if (Bugzilla->params->{'require_bug_type'}) {
+    ThrowUserError('bug_type_required');
+  }
+
+  if (blessed $invocant) {
+    return $invocant->component_obj->default_bug_type;
+  }
+
+  my $product
+    = (defined $params->{product})
+    ? Bugzilla::Product->new({name => $params->{product}, cache => 1})
+    : undef;
+  my $component
+    = ($product && defined $params->{component})
+    ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
+    : undef;
+
+  return $component
+    ? $component->default_bug_type
+    : Bugzilla->params->{default_bug_type};
+}
+
 sub _check_cc {
   my ($invocant, $ccs, undef, $params) = @_;
   my $component
@@ -1945,6 +1968,13 @@ sub _check_component {
     ThrowUserError('value_inactive', {class => ref($object), value => $name});
   }
   return $object;
+}
+
+sub _check_filed_via {
+  my ($invocant, $method) = @_;
+
+  return $method if defined $method && grep(/^$method$/, BUG_FILE_METHODS());
+  return 'unknown';
 }
 
 sub _check_creation_ts {
@@ -2632,7 +2662,7 @@ sub fields {
 
     # Standard Fields
     # Keep this ordering in sync with bugzilla.dtd.
-    qw(bug_id alias creation_ts short_desc delta_ts
+    qw(bug_id alias filed_via creation_ts short_desc delta_ts
       reporter_accessible cclist_accessible
       classification_id classification
       product component version rep_platform op_sys
@@ -3674,6 +3704,7 @@ sub deadline            { return $_[0]->{deadline} }
 sub delta_ts            { return $_[0]->{delta_ts} }
 sub error               { return $_[0]->{error} }
 sub everconfirmed       { return $_[0]->{everconfirmed} }
+sub filed_via           { return $_[0]->{filed_via} }
 sub lastdiffed          { return $_[0]->{lastdiffed} }
 sub op_sys              { return $_[0]->{op_sys} }
 sub priority            { return $_[0]->{priority} }

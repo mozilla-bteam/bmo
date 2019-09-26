@@ -29,6 +29,7 @@ use constant DB_COLUMNS => qw(
   app_id
   description
   revoked
+  creation_ts
   last_used
   last_used_ip
   sticky
@@ -45,13 +46,8 @@ use constant VALIDATORS     => {
 use constant LIST_ORDER => 'id';
 use constant NAME_FIELD => 'api_key';
 
-# turn off auditing and exclude these objects from memcached
-use constant {
-  AUDIT_CREATES => 0,
-  AUDIT_UPDATES => 0,
-  AUDIT_REMOVES => 0,
-  USE_MEMCACHED => 0
-};
+# Exclude these objects from memcached
+use constant USE_MEMCACHED => 0;
 
 # Accessors
 sub id           { return $_[0]->{id} }
@@ -60,6 +56,7 @@ sub api_key      { return $_[0]->{api_key} }
 sub app_id       { return $_[0]->{app_id} }
 sub description  { return $_[0]->{description} }
 sub revoked      { return $_[0]->{revoked} }
+sub creation_ts  { return $_[0]->{creation_ts} }
 sub last_used    { return $_[0]->{last_used} }
 sub last_used_ip { return $_[0]->{last_used_ip} }
 sub sticky       { return $_[0]->{sticky} }
@@ -79,12 +76,34 @@ sub update_last_used {
   $self->update;
 }
 
+# We override Object.pm audit_log cause we need to remove the
+# last_used and last_used_ip changes so they are not logged.
+# Otherwise the audit_log table would fill up from people just
+# normally using the api keys.
+sub audit_log {
+  my ($self, $changes) = @_;
+  # Only interested in AUDIT_UPDATE
+  if (ref $changes eq 'HASH') {
+    delete $changes->{last_used};
+    delete $changes->{last_used_ip};
+  }
+  $self->SUPER::audit_log($changes);
+}
+
 # Setters
 sub set_description { $_[0]->set('description', $_[1]); }
 sub set_revoked     { $_[0]->set('revoked',     $_[1]); }
 sub set_sticky      { $_[0]->set('sticky',      $_[1]); }
 
 # Validators
+sub run_create_validators {
+  my ($class, $params) = @_;
+  $params = $class->SUPER::run_create_validators($params);
+  $params->{creation_ts}
+    ||= Bugzilla->dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+  return $params;
+}
+
 sub _check_api_key { return generate_random_password(40); }
 sub _check_description { return trim($_[1]) || ''; }
 

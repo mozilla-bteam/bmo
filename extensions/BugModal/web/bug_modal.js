@@ -20,7 +20,7 @@ function slide_module(module, action, fast) {
             'aria-expanded': is_visible,
             'aria-label': is_visible ? latch.data('label-expanded') : latch.data('label-collapsed'),
         });
-        if (BUGZILLA.user.settings.remember_collapsed)
+        if (BUGZILLA.user.settings.remember_collapsed && module.is(':visible'))
             localStorage.setItem(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
     }
 
@@ -56,11 +56,13 @@ $(function() {
     // update relative dates
     var relative_timer_duration = 60000;
     var relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
-    $(document).on('show.visibility', function() {
-        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
-    });
-    $(document).on('hide.visibility', function() {
+
+    window.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
         window.clearInterval(relative_timer_id);
+      } else {
+        relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
+      }
     });
 
     function relativeTimer() {
@@ -167,7 +169,7 @@ $(function() {
     $('#attachments-obsolete-btn')
         .click(function(event) {
             event.preventDefault();
-            $(event.target).text(($('#attachments tr:hidden').length ? 'Hide' : 'Show') + ' Obsolete Attachments');
+            $(event.target).text(($('#attachments tr:hidden').length ? 'Hide Obsolete' : 'Show Obsolete'));
             $('#attachments tr.attach-obsolete').toggle();
         });
 
@@ -698,6 +700,12 @@ $(function() {
             clearSavedBugComment();
         })
         .attr('disabled', false);
+
+    // re-enable the save buttons when the user goes back to the page due to any
+    // field error or mid-air collision
+    $(window).on('pageshow', function() {
+        $('.save-btn').attr('disabled', false);
+    });
 
     // cc toggle (follow/stop following)
     $('#cc-btn')

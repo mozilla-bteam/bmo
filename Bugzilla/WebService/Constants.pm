@@ -70,6 +70,7 @@ use constant WS_ERROR_CODE => {
   number_too_large      => 54,
   number_too_small      => 55,
   illegal_date          => 56,
+  illegal_date_pronoun  => 57,
 
   # Bug errors usually occupy the 100-200 range.
   improper_bug_id_field_value => 100,
@@ -155,6 +156,9 @@ use constant WS_ERROR_CODE => {
   flag_not_unique              => 132,
   flag_type_not_unique         => 133,
   flag_type_inactive           => 134,
+
+  # Bug Type errors
+  bug_type_required => 135,
 
   # Authentication errors are usually 300-400.
   invalid_username_or_password => 300,

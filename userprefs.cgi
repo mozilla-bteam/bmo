@@ -198,6 +198,15 @@ sub MfaAccount {
 
 sub DisableAccount {
   my $user = Bugzilla->user;
+  my $cgi  = Bugzilla->cgi;
+
+  my $oldpassword   = $cgi->param('old_password');
+  my $oldcryptedpwd = $user->cryptpassword;
+  $oldcryptedpwd || ThrowCodeError("unable_to_retrieve_password");
+
+  if (bz_crypt($oldpassword, $oldcryptedpwd) ne $oldcryptedpwd) {
+    ThrowUserError("old_password_incorrect");
+  }
 
   my $new_login = 'u' . $user->id . '@disabled.tld';
 
@@ -741,6 +750,11 @@ sub SaveMFAupdate {
     $user->set_mfa('');
     $user->update({keep_session => 1, keep_tokens => 1});
 
+  }
+
+  # Invalidate all logins except for the current one
+  if ($action eq 'enable' || $action eq 'disable') {
+    Bugzilla->logout(LOGOUT_KEEP_CURRENT);
   }
 }
 
