@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-version: '2'
+version: '3'
 
 services:
   bmo-web.vm:
@@ -55,5 +55,6 @@ services:
 
   selenium:
     image: selenium/standalone-firefox:3.141.59
+    shm_size: '512m'
     ports:
       - "5900:5900"
