@@ -165,8 +165,16 @@ sub cmd_test_sanity {
   run('prove', '-I/app', '-I/app/local/lib/perl5', '-qf', @tests);
 }
 
+sub cmd_test_webservices {
+  cmd_test_qa('{webservice,rest}_*.t');
+}
+
+sub cmd_test_selenium {
+  cmd_test_qa('test_*.t');
+}
+
 sub cmd_test_qa {
-  my $type = shift;
+  my $test_files = shift;
   $ENV{HTTP_BACKEND} = 'simple';
 
   cmd_load_test_data();
@@ -175,14 +183,6 @@ sub cmd_test_qa {
 
   assert_database()->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
-
-  my $test_files;
-  if ($type eq 'selenium') {
-    $test_files = 'test_*.t';
-  }
-  elsif ($type eq 'webservices') {
-    $test_files = '{webservice,rest}_*.t';
-  }
   my $prove_exit_f = run_prove(
     prove_cmd => [
       'prove', '-qf', '-I/app', '-I/app/local/lib/perl5',

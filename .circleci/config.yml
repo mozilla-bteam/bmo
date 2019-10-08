@@ -179,7 +179,7 @@ jobs:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run --name test_webservices bmo-web.vm test_qa webservices | \
+          docker-compose -f docker-compose.test.yml run --name test_webservices bmo-web.vm test_webservices | \
             tee artifacts/$CIRCLE_JOB.txt
           docker rm test_webservices
       - store_artifacts:
@@ -203,7 +203,7 @@ jobs:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run --name test_selenium bmo-web.vm test_qa selenium | \
+          docker-compose -f docker-compose.test.yml run --name test_selenium bmo-web.vm test_selenium | \
             tee artifacts/$CIRCLE_JOB.txt
           docker rm test_selenium
       - store_artifacts:
