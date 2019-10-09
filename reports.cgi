@@ -95,7 +95,7 @@ else {
   # the same product names.
   my $project = bz_locations()->{'project'} || '';
   my $image_file = join(':', ($project, $prod_id, @datasets));
-  my $key = Bugzilla->localconfig->{'site_wide_secret'};
+  my $key = Bugzilla->localconfig->site_wide_secret;
   $image_file = hmac_sha256_base64($image_file, $key) . '.png';
   $image_file =~ s/\+/-/g;
   $image_file =~ s/\//_/g;
@@ -219,7 +219,7 @@ sub generate_chart {
     "grey_background" => "false",
     "colors"          => {
 
-      # default dataset colours are too alike
+      # default dataset colors are too alike
       dataset4 => [0, 0, 0],    # black
     },
   );

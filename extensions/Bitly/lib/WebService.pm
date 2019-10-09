@@ -34,17 +34,17 @@ use constant PUBLIC_METHODS => qw(
 sub _validate_uri {
   my ($self, $params) = @_;
 
-  # extract url from params
+  # extract URL from params
   if (!defined $params->{url}) {
     ThrowCodeError('param_required', {function => 'Bitly.shorten', param => 'url'});
   }
   my $url = ref($params->{url}) ? $params->{url}->[0] : $params->{url};
 
-  # only allow buglist queries for this bugzilla install
+  # only allow buglist queries for this Bugzilla install
   my $uri = URI->new($url);
   $uri->query(undef);
   $uri->fragment(undef);
-  if ($uri->as_string ne Bugzilla->localconfig->{urlbase} . 'buglist.cgi') {
+  if ($uri->as_string ne Bugzilla->localconfig->urlbase . 'buglist.cgi') {
     ThrowUserError('bitly_unsupported');
   }
 
@@ -79,9 +79,9 @@ sub list {
   );
   my $data = $search->data;
 
-  # form a bug_id only url, sanity check the length
+  # form a bug_id only URL, sanity check the length
   $uri
-    = URI->new(Bugzilla->localconfig->{urlbase}
+    = URI->new(Bugzilla->localconfig->urlbase
       . 'buglist.cgi?bug_id='
       . join(',', map { $_->[0] } @$data));
   if (length($uri->as_string) > CGI_URI_LIMIT) {
@@ -96,7 +96,7 @@ sub list {
 sub _bitly {
   my ($self, $uri) = @_;
 
-  # form request url
+  # form request URL
   # http://dev.bitly.com/links.html#v3_shorten
   my $bitly_url = sprintf(
     'https://api-ssl.bitly.com/v3/shorten?access_token=%s&longUrl=%s',
@@ -127,7 +127,7 @@ sub _bitly {
     ThrowUserError('bitly_failure', {message => $result->{status_txt}});
   }
 
-  # return just the short url
+  # return just the short URL
   return {url => $result->{data}->{url}};
 }
 

@@ -246,7 +246,8 @@ use constant ABSTRACT_SCHEMA => {
       bug_file_loc => {TYPE => 'MEDIUMTEXT',   NOTNULL => 1, DEFAULT => "''"},
       bug_severity => {TYPE => 'varchar(64)',  NOTNULL => 1},
       bug_status   => {TYPE => 'varchar(64)',  NOTNULL => 1},
-      bug_type     => {TYPE => 'varchar(20)'},
+      bug_type     => {TYPE => 'varchar(20)',  NOTNULL => 1},
+      filed_via    => {TYPE => 'varchar(40)',  NOTNULL => 1, DEFAULT => "'unknown'"},
       creation_ts  => {TYPE => 'DATETIME'},
       delta_ts     => {TYPE => 'DATETIME',     NOTNULL => 1},
       short_desc   => {TYPE => 'varchar(255)', NOTNULL => 1},
@@ -1452,6 +1453,7 @@ use constant ABSTRACT_SCHEMA => {
         TYPE       => 'INT3',
         REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'SET NULL'}
       },
+      bug_description_template => {TYPE => 'MEDIUMTEXT'},
       default_bug_type  => {TYPE => 'varchar(20)'},
     ],
     INDEXES => [
@@ -1786,6 +1788,7 @@ use constant ABSTRACT_SCHEMA => {
       api_key      => {TYPE => 'varchar(40)', NOTNULL => 1},
       description  => {TYPE => 'varchar(255)'},
       revoked      => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'},
+      creation_ts  => {TYPE => 'DATETIME', NOTNULL => 1},
       last_used    => {TYPE => 'DATETIME'},
       last_used_ip => {TYPE => 'varchar(40)'},
       app_id       => {TYPE => 'varchar(64)'},
@@ -1896,7 +1899,19 @@ use constant ABSTRACT_SCHEMA => {
     INDEXES => [
       oauth2_jwt_jti_type_idx => {FIELDS => [qw(jti type)], TYPE => 'UNIQUE'},
     ],
+  },
+
+  # Report Ping Table
+  # -----------------
+
+  report_ping => {
+    FIELDS => [
+      id           => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      class        => {TYPE => 'varchar(255)', NOTNULL => 1},
+      last_ping_ts => {TYPE => 'DATETIME', NOTNULL => 1},
+    ]
   }
+
 };
 
 # Foreign Keys are added in Bugzilla::DB::bz_add_field_tables

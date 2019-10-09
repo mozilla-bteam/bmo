@@ -40,7 +40,7 @@ $sel->title_is("Milestone Created");
 # Edit the milestone of test_bug_1.
 
 go_to_bug($sel, $test_bug_1);
-$sel->is_text_present_ok("Target:");
+$sel->is_text_present_ok("Milestone:");
 $sel->select_ok("target_milestone", "label=TM1");
 $sel->click_ok("bottom-save-btn");
 $sel->wait_for_page_to_load(WAIT_TIME);
@@ -113,7 +113,7 @@ $sel->title_is("Delete Milestone of Product 'TestProduct'");
 $text = trim($sel->get_body_text());
 ok(
   $text =~ /There is 1 bug entered for this milestone/,
-  "Warning displayed about 1 bug targetted to TM1"
+  "Warning displayed about 1 bug targeted to TM1"
 );
 $sel->click_ok("delete");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);

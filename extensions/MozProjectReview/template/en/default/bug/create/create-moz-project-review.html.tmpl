@@ -48,6 +48,7 @@
 </p>
 
 <form method="post" action="[% basepath FILTER none %]post_bug.cgi" id="mozProjectForm" enctype="multipart/form-data">
+  <input type="hidden" name="filed_via" value="custom_form">
   <input type="hidden" id="bug_type" name="bug_type" value="task">
   <input type="hidden" id="product" name="product" value="Legal">
   <input type="hidden" id="component" name="component" value="General">
@@ -334,7 +335,7 @@
     <div id="independent_contractor_self_manage_row" class="field_row">
       <span class="field_label required"a>Self Managed:</span>
       <span class="field_data">
-        <div class="field_description">Will the person be managing his or her own time?</div>
+        <div class="field_description">Will the person be managing their own time?</div>
         <select name="independent_contractor_self_manage" id="independent_contractor_self_manage">
           <option value="">Select One</option>
           <option value="Yes">Yes</option>
@@ -346,7 +347,7 @@
 -    <div id="independent_contractor_own_equipment_row" class="field_row">
       <span class="field_label required">Own Equipment:</span>
       <span class="field_data">
-        <div class="field_description">Will the person be using his or her own equipment?</div>
+        <div class="field_description">Will the person be using their own equipment?</div>
         <select name="independent_contractor_own_equipment" id="independent_contractor_own_equipment">
           <option value="">Select One</option>
           <option value="Yes">Yes</option>
@@ -435,7 +436,7 @@
         <span class="field_label required">Mozilla Systems:</span>
         <span class="field_data">
           <div class="field_description">
-            Will vendor require access to Mozilla systems (e.g. workday, email, google docs, servers)?
+            Will vendor require access to Mozilla systems (e.g. Workday, email, Google Docs, servers)?
           </div>
           <select name="sow_vendor_mozilla_systems" id="sow_vendor_mozilla_systems">
             <option value="">Select One</option>

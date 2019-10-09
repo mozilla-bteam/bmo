@@ -327,6 +327,14 @@
                    [% bug_id FILTER uri %]&amp;GoAheadAndLogIn=1">log
     in to an account</a> with the appropriate permissions.
 
+  [% ELSIF error == "bug_type_required" %]
+    [% title = "Bug Type Required" %]
+    To file a new [% terms.bug %], you must first choose a type:
+    [% FOREACH type = bug_fields.bug_type.legal_values.pluck('name') %]
+      [% IF loop.last %] or [% ELSIF !loop.first %], [% END %]
+      <strong>[% type FILTER html %]</strong>
+    [% END %].
+
   [% ELSIF error == "bug_url_invalid" %]
     [% title = "Invalid $terms.Bug URL" %]
     <code>[% url FILTER html %]</code> is not a valid URL to [% terms.abug %].
@@ -732,7 +740,7 @@
     and then paste the URL to this file on the attachment
     creation page in the appropriate text field.
     <br>Alternately, if your attachment is an image, you could convert
-    it to a compressible format like JPG or PNG and try again.
+    it to a compressible format like JPEG or PNG and try again.
 
   [% ELSIF error == "flag_requestee_disabled" %]
     [% title = "Flag Requestee Disabled" %]
@@ -976,6 +984,10 @@
     [% IF format %]
       Please use the format '<tt>[% format FILTER html %]</tt>'.
     [% END %]
+
+  [% ELSIF error == "illegal_date_pronoun" %]
+    [% title = "Illegal Date Pronoun" %]
+    '<code>[% pronoun FILTER html %]</code>' is not a legal date pronoun.
 
   [% ELSIF error == "illegal_email_address" %]
     [% title = "Invalid Email Address" %]

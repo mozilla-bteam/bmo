@@ -51,7 +51,7 @@ my $single = (!$format->{format} || $format->{format} ne 'multiple')
 # If we don't have an ID, _AND_ we're only doing a single bug, then prompt
 if (!$cgi->param('id') && $single) {
   print Bugzilla->cgi->header();
-  $template->process("bug/choose.html.tmpl", $vars)
+  $template->process('bug/choose.html.tmpl', $vars)
     || ThrowTemplateError($template->error());
   exit;
 }
@@ -66,8 +66,8 @@ if ($format_params->{format} eq 'modal') {
 my @bugs;
 my %marks;
 
-# If the user isn't logged in, we use data from the shadow DB. If he plans
-# to edit the bug(s), he will have to log in first, meaning that the data
+# If the user isn't logged in, we use data from the shadow DB. If they plan
+# to edit the bug(s), they will have to log in first, meaning that the data
 # will be reloaded anyway, from the main DB.
 Bugzilla->switch_to_shadow_db unless $user->id;
 

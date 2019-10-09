@@ -137,14 +137,6 @@ function check_mini_login_fields( suffix ) {
     }
 }
 
-function set_language( value ) {
-    Cookies.set('LANG', value, {
-        expires: new Date('January 1, 2038'),
-        path: BUGZILLA.param.cookie_path
-    });
-    window.location.reload()
-}
-
 // This basically duplicates Bugzilla::Util::display_value for code that
 // can't go through the template and has to be in JS.
 function display_value(field, value) {
@@ -155,50 +147,7 @@ function display_value(field, value) {
     return value;
 }
 
-// ajax wrapper, to simplify error handling and auth
-// TODO: Rewrite this method using Promise (Bug 1380437)
-function bugzilla_ajax(request, done_fn, error_fn) {
-    $('#xhr-error').hide('');
-    $('#xhr-error').html('');
-    if (BUGZILLA.api_token) {
-        request.url += (request.url.match('\\?') ? '&' : '?') +
-            'Bugzilla_api_token=' + encodeURIComponent(BUGZILLA.api_token);
-    }
-    if (request.type != 'GET') {
-        request.contentType = 'application/json';
-        request.processData = false;
-        if (request.data && request.data.constructor === Object) {
-            request.data = JSON.stringify(request.data);
-        }
-    }
-    return $.ajax(request)
-        .done(function(data) {
-            if (data.error) {
-                if (!request.hideError) {
-                    $('#xhr-error').html(data.message);
-                    $('#xhr-error').show('fast');
-                }
-                if (error_fn)
-                    error_fn(data.message);
-            }
-            else if (done_fn) {
-                done_fn(data);
-            }
-        })
-        .fail(function(data) {
-            if (data.statusText === 'abort')
-                return;
-            var message = data.responseJSON ? data.responseJSON.message : 'Unexpected Error'; // all errors are unexpected :)
-            if (!request.hideError) {
-                $('#xhr-error').html(message);
-                $('#xhr-error').show('fast');
-            }
-            if (error_fn)
-                error_fn(message);
-        });
-}
-
-// html encoding
+// HTML encoding
 if (!String.prototype.htmlEncode) {
     (function() {
         String.prototype.htmlEncode = function() {

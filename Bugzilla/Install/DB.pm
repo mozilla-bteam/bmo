@@ -560,7 +560,7 @@ sub update_table_definitions {
   # 2008-09-07 LpSolit@gmail.com - Bug 452893
   _fix_illegal_flag_modification_dates();
 
-  _add_visiblity_value_to_value_tables();
+  _add_visibility_value_to_value_tables();
 
   # 2009-03-02 arbingersys@gmail.com - Bug 423613
   _add_extern_id_index();
@@ -783,16 +783,27 @@ sub update_table_definitions {
   # Bug 1354589 - dkl@mozilla.com
   _populate_oauth2_scopes();
 
-  # Bug 1510109 - kohei.yoshino@gmail.com
+  # Bug 1510109, 1252298 - kohei.yoshino@gmail.com
   $dbh->bz_add_column('products', 'bug_description_template',
     {TYPE => 'MEDIUMTEXT'});
+  $dbh->bz_add_column('components', 'bug_description_template',
+    {TYPE => 'MEDIUMTEXT'});
 
-  # Bug 1522341, 1541617 - kohei.yoshino@gmail.com
+  # Bug 1522341, 1541617, 1546788 - kohei.yoshino@gmail.com
   $dbh->bz_add_column('bugs', 'bug_type', {TYPE => 'varchar(20)'});
   $dbh->bz_add_column('components', 'default_bug_type', {TYPE => 'varchar(20)'});
   $dbh->bz_add_column('products',   'default_bug_type', {TYPE => 'varchar(20)'});
+  $dbh->bz_alter_column('bugs', 'bug_type',
+    {TYPE => 'varchar(20)', NOTNULL => 1}, '--');
 
   _add_oauth2_jwt_support();
+
+  # Bug 1565403 - kohei.yoshino@gmail.com
+  $dbh->bz_add_column('bugs', 'filed_via',
+    {TYPE => 'varchar(40)', NOTNULL => 1, DEFAULT => "'unknown'"});
+
+  # Bug 1576667 - dkl@mozilla.com
+  _populate_api_keys_creation_ts();
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
@@ -956,8 +967,8 @@ sub _populate_longdescs {
             if (!$who) {
 
               # This username doesn't exist.  Maybe someone
-              # renamed him or something.  Invent a new profile
-              # entry disabled, just to represent him.
+              # renamed them or something.  Invent a new profile
+              # entry disabled, just to represent them.
               $dbh->do(
                 "INSERT INTO profiles (login_name,
                                       cryptpassword, disabledtext)
@@ -1298,13 +1309,13 @@ sub _recrypt_plaintext_passwords {
   my $dbh = Bugzilla->dbh;
 
   # 2001-06-12; myk@mozilla.org; bugs 74032, 77473:
-  # Recrypt passwords using Perl &crypt instead of the mysql equivalent
+  # Recrypt passwords using Perl &crypt instead of the MySQL equivalent
   # and delete plaintext passwords from the database.
   if ($dbh->bz_column_info('profiles', 'password')) {
 
     print <<ENDTEXT;
 Your current installation of Bugzilla stores passwords in plaintext
-in the database and uses mysql's encrypt function instead of Perl's
+in the database and uses MySQL's encrypt function instead of Perl's
 crypt function to crypt passwords.  Passwords are now going to be
 re-crypted with the Perl function, and plaintext passwords will be
 deleted from the database.  This could take a while if your
@@ -1438,7 +1449,7 @@ sub _delete_logincookies_cryptpassword_and_handle_invalid_cookies {
     # column
     print "Removing invalid login cookies...\n";
 
-    # mysql doesn't support DELETE with multi-table queries, so we have
+    # MySQL doesn't support DELETE with multi-table queries, so we have
     # to iterate
     my $sth
       = $dbh->prepare("SELECT cookie FROM logincookies, profiles "
@@ -1461,7 +1472,7 @@ sub _use_ip_instead_of_hostname_in_logincookies {
   # 2002-05-13 preed@sigkill.com - bug 129446 patch backported to the
   #  BUGZILLA-2_14_1-BRANCH as a security blocker for the 2.14.2 release
   #
-  # Use the ip, not the hostname, in the logincookies table
+  # Use the IP, not the hostname, in the logincookies table
   if ($dbh->bz_column_info("logincookies", "hostname")) {
     print "Clearing the logincookies table...\n";
 
@@ -1672,7 +1683,7 @@ sub _convert_groups_system_from_groupset {
   # The groups system needs to be converted if groupset exists
   if ($dbh->bz_column_info("profiles", "groupset")) {
 
-    # Some mysql versions will promote any unique key to primary key
+    # Some MySQL versions will promote any unique key to primary key
     # so all unique keys are removed first and then added back in
     $dbh->bz_drop_index('groups', 'groups_bit_idx');
     $dbh->bz_drop_index('groups', 'groups_name_idx');
@@ -3588,7 +3599,7 @@ sub _populate_bugs_fulltext {
     }
 
     # As recommended by Monty Widenius for GNOME's upgrade.
-    # mkanat and justdave concur it'll be helpful for bmo, too.
+    # mkanat and justdave concur it'll be helpful for BMO, too.
     $dbh->do('SET SESSION myisam_sort_buffer_size = 3221225472');
 
     my $newline = $dbh->quote("\n");
@@ -3623,7 +3634,7 @@ sub _fix_illegal_flag_modification_dates {
     if ($rows =~ /^\d+$/);
 }
 
-sub _add_visiblity_value_to_value_tables {
+sub _add_visibility_value_to_value_tables {
   my $dbh = Bugzilla->dbh;
   my @standard_fields
     = qw(bug_status resolution priority bug_severity op_sys rep_platform);
@@ -4272,7 +4283,7 @@ sub _add_oauth2_jwt_support {
   $dbh->bz_alter_column('oauth2_scope', 'id',
     {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
 
-  # oauth2_client_scope.allowed is unncessary so we drop it
+  # oauth2_client_scope.allowed is unnecessary so we drop it
   $dbh->bz_drop_column('oauth2_client_scope', 'allowed');
 
   # Update old non-id string columns to new id column
@@ -4297,6 +4308,22 @@ sub _add_oauth2_jwt_support {
   $dbh->bz_rename_column('oauth2_client_scope', 'client_id_new', 'client_id');
   $dbh->bz_alter_column('oauth2_client_scope', 'client_id',
     {TYPE => 'INT4', NOTNULL => 1});
+}
+
+sub _populate_api_keys_creation_ts {
+  my $dbh = Bugzilla->dbh;
+
+  # Return if we have already made these changes
+  return if $dbh->bz_column_info('user_api_keys', 'creation_ts');
+
+  $dbh->bz_add_column('user_api_keys', 'creation_ts', {TYPE => 'DATETIME'});
+
+  # We do not have a way to tell when an API key was originally created
+  # so we use the last_used timestamp as the initial creation value.
+  $dbh->do('UPDATE user_api_keys SET creation_ts = COALESCE(last_used, LOCALTIMESTAMP(0))');
+
+  $dbh->bz_alter_column('user_api_keys', 'creation_ts',
+    {TYPE => 'DATETIME', NOTNULL => 1});
 }
 
 1;

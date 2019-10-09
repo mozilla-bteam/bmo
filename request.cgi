@@ -45,7 +45,7 @@ print $cgi->header($format->{'ctype'});
 my $fields;
 $fields->{'requester'}->{'type'} = 'single';
 
-# If the user doesn't restrict his search to requests from the wind
+# If the user doesn't restrict their search to requests from the wind
 # (requestee ne '-'), include the requestee for completion.
 unless (defined $cgi->param('requestee') && $cgi->param('requestee') eq '-') {
   $fields->{'requestee'}->{'type'} = 'single';
@@ -104,7 +104,7 @@ sub queue {
                 flags.attach_id, attachments.description,
                 requesters.realname, requesters.login_name,
                 requestees.realname, requestees.login_name, COUNT(privs.group_id),
-    " . $dbh->sql_date_format('flags.modification_date', '%Y.%m.%d %H:%i') . ",
+    " . $dbh->sql_date_format('flags.modification_date', '%Y-%m-%d %H:%i') . ",
                 attachments.mimetype,
                 attachments.ispatch,
                 bugs.bug_status,
@@ -329,7 +329,7 @@ sub queue {
   }
   $vars->{'components'} = [sort { $a cmp $b } keys %components];
 
-  $vars->{'urlquerypart'} = $cgi->canonicalise_query('ctype');
+  $vars->{'urlquerypart'} = $cgi->canonicalize_query('ctype');
 
   # Generate and return the UI (HTML page) from the appropriate template.
   $template->process($format->{'template'}, $vars)

@@ -243,6 +243,13 @@ use constant DEFAULT_FIELDS => (
     buglist        => 1
   },
   {
+    name           => 'keywords.count',
+    desc           => 'Number of Keywords',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
     name    => 'resolution',
     desc    => 'Resolution',
     type    => FIELD_TYPE_SINGLE_SELECT,
@@ -271,83 +278,201 @@ use constant DEFAULT_FIELDS => (
   },
   {
     name           => 'assigned_to',
-    desc           => 'AssignedTo',
+    desc           => 'Assignee',
+    type           => FIELD_TYPE_USER,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'reporter',
+    desc           => 'Reporter',
+    type           => FIELD_TYPE_USER,
     in_new_bugmail => 1,
     buglist        => 1
   },
-  {name => 'reporter',   desc => 'ReportedBy', in_new_bugmail => 1, buglist => 1},
-  {name => 'qa_contact', desc => 'QAContact',  in_new_bugmail => 1, buglist => 1},
-  {name => 'cc',         desc => 'CC',         in_new_bugmail => 1},
+  {
+    name           => 'qa_contact',
+    desc           => 'QA Contact',
+    type           => FIELD_TYPE_USER,
+    in_new_bugmail => 1,
+    buglist        => 1,
+  },
+  {
+    name           => 'cc',
+    desc           => 'CC',
+    type           => FIELD_TYPE_USERS,
+    in_new_bugmail => 1,
+  },
+  {
+    name           => 'cc_count', # Originated in BMO extension
+    desc           => 'Number of CC',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
+  },
   {
     name           => 'dependson',
     desc           => 'Depends on',
+    type           => FIELD_TYPE_BUG_LIST,
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
+  },
+  {
+    name           => 'dependson.count',
+    desc           => 'Number of Depends on',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
   },
   {
     name           => 'blocked',
     desc           => 'Blocks',
+    type           => FIELD_TYPE_BUG_LIST,
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
+  },
+  {
+    name           => 'blocked.count',
+    desc           => 'Number of Blocks',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
   },
   {
     name           => 'regressed_by',
     desc           => 'Regressed by',
+    type           => FIELD_TYPE_BUG_LIST,
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
+  },
+  {
+    name           => 'regressed_by.count',
+    desc           => 'Number of Regressed by',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
   },
   {
     name           => 'regresses',
     desc           => 'Regressions',
+    type           => FIELD_TYPE_BUG_LIST,
     in_new_bugmail => 1,
-    is_numeric     => 1,
     buglist        => 1
+  },
+  {
+    name           => 'regresses.count',
+    desc           => 'Number of Regressions',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'dupe_count', # Originated in BMO extension
+    desc           => 'Number of Duplicates',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
+    name           => 'duplicates',
+    desc           => 'Duplicates',
+    type           => FIELD_TYPE_BUG_ID,
+    buglist        => 1,
   },
 
   {
     name    => 'assignee_last_login',
     desc    => 'Assignee Last Login Date',
+    type    => FIELD_TYPE_DATE,
     buglist => 1
   },
 
+  {
+    name           => 'attachments.count',
+    desc           => 'Number of Attachments',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
+  },
   {name => 'attachments.description', desc => 'Attachment description'},
   {name => 'attachments.filename',    desc => 'Attachment filename'},
   {name => 'attachments.mimetype',    desc => 'Attachment mime type'},
-  {name => 'attachments.ispatch', desc => 'Attachment is patch', is_numeric => 1},
+  {
+    name       => 'attachments.ispatch',
+    desc       => 'Attachment is patch',
+    type       => FIELD_TYPE_BOOLEAN,
+    is_numeric => 1,
+  },
   {
     name       => 'attachments.isobsolete',
     desc       => 'Attachment is obsolete',
+    type       => FIELD_TYPE_BOOLEAN,
     is_numeric => 1
   },
   {
     name       => 'attachments.isprivate',
     desc       => 'Attachment is private',
+    type       => FIELD_TYPE_BOOLEAN,
     is_numeric => 1
   },
-  {name => 'attachments.submitter', desc => 'Attachment creator'},
+  {
+    name => 'attachments.submitter',
+    desc => 'Attachment Creator',
+    type => FIELD_TYPE_USER,
+  },
 
   {name => 'target_milestone',    desc => 'Target Milestone',   buglist    => 1},
-  {name => 'creation_ts',         desc => 'Creation date',      buglist    => 1},
-  {name => 'delta_ts',            desc => 'Last changed date',  buglist    => 1},
+  {name => 'filed_via', desc => 'Filed via', buglist => 1,},
+  {
+    name    => 'creation_ts',
+    desc    => 'Opened',
+    type    => FIELD_TYPE_DATETIME,
+    buglist => 1,
+  },
+  {
+    name    => 'delta_ts',
+    desc    => 'Updated',
+    type    => FIELD_TYPE_DATETIME,
+    buglist => 1,
+  },
   {name => 'longdesc',            desc => 'Comment'},
-  {name => 'longdescs.isprivate', desc => 'Comment is private', is_numeric => 1},
+  {
+    name       => 'longdescs.isprivate',
+    desc       => 'Comment is private',
+    type       => FIELD_TYPE_BOOLEAN,
+    is_numeric => 1,
+  },
   {
     name       => 'longdescs.count',
     desc       => 'Number of Comments',
+    type       => FIELD_TYPE_INTEGER,
     buglist    => 1,
     is_numeric => 1
   },
   {name => 'alias',               desc => 'Alias',               buglist    => 1},
-  {name => 'everconfirmed',       desc => 'Ever Confirmed',      is_numeric => 1},
-  {name => 'reporter_accessible', desc => 'Reporter Accessible', is_numeric => 1},
-  {name => 'cclist_accessible',   desc => 'CC Accessible',       is_numeric => 1},
+  {
+    name       => 'everconfirmed',
+    desc       => 'Ever Confirmed',
+    type       => FIELD_TYPE_BOOLEAN,
+    is_numeric => 1,
+  },
+  {
+    name       => 'reporter_accessible',
+    desc       => 'Reporter Accessible',
+    type       => FIELD_TYPE_BOOLEAN,
+    is_numeric => 1,
+  },
+  {
+    name       => 'cclist_accessible',
+    desc       => 'CC Accessible',
+    type       => FIELD_TYPE_BOOLEAN,
+    is_numeric => 1,
+  },
   {name => 'bug_group', desc => 'Group', in_new_bugmail => 1},
   {
     name           => 'estimated_time',
     desc           => 'Estimated Hours',
+    type           => FIELD_TYPE_INTEGER,
     in_new_bugmail => 1,
     buglist        => 1,
     is_numeric     => 1
@@ -355,6 +480,7 @@ use constant DEFAULT_FIELDS => (
   {
     name       => 'remaining_time',
     desc       => 'Remaining Hours',
+    type       => FIELD_TYPE_INTEGER,
     buglist    => 1,
     is_numeric => 1
   },
@@ -365,14 +491,33 @@ use constant DEFAULT_FIELDS => (
     in_new_bugmail => 1,
     buglist        => 1
   },
-  {name => 'commenter',             desc => 'Commenter'},
+  {
+    name => 'commenter',
+    desc => 'Commenter',
+    type => FIELD_TYPE_USER,
+  },
   {name => 'flagtypes.name',        desc => 'Flags', buglist => 1},
-  {name => 'requestees.login_name', desc => 'Flag Requestee'},
-  {name => 'setters.login_name',    desc => 'Flag Setter'},
-  {name => 'work_time', desc => 'Hours Worked', buglist => 1, is_numeric => 1},
+  {
+    name => 'requestees.login_name',
+    desc => 'Flag Requestee',
+    type => FIELD_TYPE_USER,
+  },
+  {
+    name => 'setters.login_name',
+    desc => 'Flag Setter',
+    type => FIELD_TYPE_USER,
+  },
+  {
+    name       => 'work_time',
+    desc       => 'Hours Worked',
+    type       => FIELD_TYPE_INTEGER,
+    buglist    => 1,
+    is_numeric => 1,
+  },
   {
     name       => 'percentage_complete',
     desc       => 'Percentage Complete',
+    type       => FIELD_TYPE_INTEGER,
     buglist    => 1,
     is_numeric => 1
   },
@@ -394,7 +539,15 @@ use constant DEFAULT_FIELDS => (
     type    => FIELD_TYPE_DATETIME
   },
   {name => 'comment_tag',  desc => 'Comment Tag'},
-  {name => 'triage_owner', desc => 'Triage Owner', buglist => 1},
+  {
+    name    => 'triage_owner',
+    desc    => 'Triage Owner',
+    type    => FIELD_TYPE_USER,
+    buglist => 1,
+  },
+
+  # Special field that allows to search everything with Custom Search queries
+  {name => 'anything', desc => 'Any field'},
 );
 
 ################
@@ -1109,7 +1262,7 @@ sub remove_from_db {
 
     my $type = $self->type;
 
-    # the values for multi-select are stored in a seperate table
+    # the values for multi-select are stored in a separate table
     if ($type != FIELD_TYPE_MULTI_SELECT) {
       $dbh->bz_drop_column('bugs', $name);
     }

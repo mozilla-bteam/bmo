@@ -179,7 +179,7 @@ my %whitelist = (
 
 #
 
-my $db_name = Bugzilla->localconfig->{db_name};
+my $db_name = Bugzilla->localconfig->db_name;
 print <<EOF;
 WARNING
 
@@ -194,7 +194,7 @@ getc();
 
 my $dbh = Bugzilla->dbh;
 
-# run sanitiseme.pl
+# run sanitizeme.pl
 
 print "running sanitizeme.pl\n";
 my $sanitizeme = catfile(realpath(dirname(__FILE__)), 'sanitizeme.pl');

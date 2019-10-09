@@ -110,7 +110,7 @@ sub get_config {
     $config->{browser_ip_url} = "$uri";
   }
   else {
-    die "unable to find ip for $config->{browser_url}\n";
+    die "unable to find IP for $config->{browser_url}\n";
   }
   return $config;
 }
@@ -227,8 +227,8 @@ sub file_bug_in_product {
   $sel->wait_for_page_to_load(WAIT_TIME);
 
   # Use normal bug form instead of helper
-  if ($sel->is_text_present('Switch to the advanced bug entry form')) {
-    $sel->click_ok('//a[@id="advanced_link"]', undef, 'Switch to the advanced bug entry form');
+  if ($sel->is_text_present('Switch to the standard bug entry form')) {
+    $sel->click_ok('//a[@id="advanced_link"]', undef, 'Switch to the standard bug entry form');
   }
 
   my $title = $sel->get_title();
@@ -260,6 +260,12 @@ sub file_bug_in_product {
   }
   $sel->title_is("Enter Bug: $product", "Display form to enter bug data");
   sleep(1); # FIXME: Delay for slow page performance
+
+  # Select the defect type by default
+  # `check_ok()` doesn't work here because the checkbox is invisible
+  $sel->driver->execute_script('
+    document.querySelector(\'input[name="bug_type"][value="defect"]\').checked = true;
+  ');
 }
 
 sub create_bug {
@@ -463,11 +469,14 @@ sub check_page_load {
     }
   }
 
-  if ($expected_uri->query_param('id')) {
-    if ($expected_uri->query_param('id') eq '__BUG_ID__') {
-      $uri->query_param('id' => '__BUG_ID__');
-    }
+  if ($expected_uri->query_param('id') and $expected_uri->query_param('id') eq '__BUG_ID__') {
+    $uri->query_param('id' => '__BUG_ID__');
   }
+
+  if ($expected_uri->query_param('list_id') and $expected_uri->query_param('list_id') eq '__LIST_ID__') {
+    $uri->query_param('list_id' => '__LIST_ID__');
+  }
+
   my ($pkg, $file, $line) = caller;
   is($uri, $expected_uri, "checking location on $file line $line");
 }

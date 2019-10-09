@@ -14,7 +14,6 @@ $(function() {
         const str = spinner.data('strings');
 
         spinner.attr({
-            'title': expanded ? str.collapse_tooltip : str.expand_tooltip,
             'aria-label': expanded ? str.collapse_label : str.expand_label,
             'aria-expanded': expanded,
         });
@@ -262,7 +261,7 @@ $(function() {
         $('#ctag-error').show();
     }
 
-    function deleteTag(event) {
+    async function deleteTag(event) {
         event.preventDefault();
         $('#ctag-error').hide();
 
@@ -280,22 +279,13 @@ $(function() {
         renderTags(commentNo, tagsFromDom(container));
         updateTagsMenu();
 
-        // update bugzilla
-        bugzilla_ajax(
-            {
-                url: `${BUGZILLA.config.basepath}rest/bug/comment/${commentID}/tags`,
-                type: 'PUT',
-                data: { remove: [ tag ] },
-                hideError: true
-            },
-            function(data) {
-                renderTags(commentNo, data);
-                updateTagsMenu();
-            },
-            function(message) {
-                taggingError(commentNo, message);
-            }
-        );
+        // update Bugzilla
+        try {
+            renderTags(commentNo, await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { remove: [tag] }));
+            updateTagsMenu();
+        } catch ({ message }) {
+            taggingError(commentNo, message);
+        }
     }
     $('.comment-tag a').click(deleteTag);
 
@@ -315,7 +305,7 @@ $(function() {
         $.each(tags, function() {
             var span = $('<span/>').addClass('comment-tag').text(this);
             if (BUGZILLA.user.can_tag) {
-                span.prepend($('<a>x</a>').click(deleteTag));
+                span.prepend($('<a role="button" aria-label="Remove">x</a>').click(deleteTag));
             }
             root.append(span);
         });
@@ -323,30 +313,33 @@ $(function() {
         $(`.comment[data-no="${commentNo}"]`).attr('data-tags', tags.join(' '));
     }
 
-    var refreshXHR;
+    let abort_controller;
 
-    function refreshTags(commentNo, commentID) {
+    const refreshTags = async (commentNo, commentID) => {
         cancelRefresh();
-        refreshXHR = bugzilla_ajax(
-            {
-                url: `${BUGZILLA.config.basepath}rest/bug/comment/${commentID}?include_fields=tags`,
-                hideError: true
-            },
-            function(data) {
-                refreshXHR = false;
-                renderTags(commentNo, data.comments[commentID].tags);
-            },
-            function(message) {
-                refreshXHR = false;
+
+        try {
+            abort_controller = new AbortController();
+
+            const { signal } = abort_controller;
+            const { comments } = await Bugzilla.API.get(`bug/comment/${commentID}`, {
+              include_fields: ['tags'],
+            }, { signal });
+
+            renderTags(commentNo, comments[commentID].tags);
+        } catch ({ name, message }) {
+            if (name !== 'AbortError') {
                 taggingError(commentNo, message);
             }
-        );
+        } finally {
+            abort_controller = undefined;
+        }
     }
 
     function cancelRefresh() {
-        if (refreshXHR) {
-            refreshXHR.abort();
-            refreshXHR = false;
+        if (abort_controller) {
+            abort_controller.abort();
+            abort_controller = undefined;
         }
     }
 
@@ -354,31 +347,24 @@ $(function() {
         .devbridgeAutocomplete({
             appendTo: $('#main-inner'),
             forceFixPosition: true,
-            serviceUrl: function(query) {
-                return `${BUGZILLA.config.basepath}rest/bug/comment/tags/${encodeURIComponent(query)}`;
-            },
-            params: {
-                Bugzilla_api_token: (BUGZILLA.api_token ? BUGZILLA.api_token : '')
-            },
             deferRequestBy: 250,
             minChars: 3,
             tabDisabled: true,
             autoSelectFirst: true,
             triggerSelectOnValidInput: false,
-            transformResult: function(response) {
-                response = $.parseJSON(response);
-                return {
-                    suggestions: $.map(response, function(tag) {
-                        return { value: tag };
-                    })
-                };
+            lookup: (query, done) => {
+                // Note: `async` doesn't work for this `lookup` function, so use a `Promise` chain instead
+                Bugzilla.API.get(`bug/comment/tags/${encodeURIComponent(query)}`)
+                    .then(data => data.map(tag => ({ value: tag })))
+                    .catch(() => [])
+                    .then(suggestions => done({ suggestions }));
             },
             formatResult: function(suggestion, currentValue) {
                 // disable <b> wrapping of matched substring
                 return suggestion.value.htmlEncode();
             }
         })
-        .keydown(function(event) {
+        .keydown(async event => {
             if (event.which === 27) {
                 event.preventDefault();
                 $('#ctag-close').click();
@@ -426,23 +412,14 @@ $(function() {
                 tags.sort();
                 renderTags(commentNo, tags);
 
-                // update bugzilla
-                bugzilla_ajax(
-                    {
-                        url: `${BUGZILLA.config.basepath}rest/bug/comment/${commentID}/tags`,
-                        type: 'PUT',
-                        data: { add: addTags },
-                        hideError: true
-                    },
-                    function(data) {
-                        renderTags(commentNo, data);
-                        updateTagsMenu();
-                    },
-                    function(message) {
-                        taggingError(commentNo, message);
-                        refreshTags(commentNo, commentID);
-                    }
-                );
+                // update Bugzilla
+                try {
+                    renderTags(commentNo, await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { add: addTags }));
+                    updateTagsMenu();
+                } catch ({ message }) {
+                    taggingError(commentNo, message);
+                    refreshTags(commentNo, commentID);
+                }
             }
         });
 
@@ -496,7 +473,7 @@ $(function() {
  * Reference or define the Bugzilla app namespace.
  * @namespace
  */
-var Bugzilla = Bugzilla || {};
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 
 /**
  * Reference or define the Review namespace.
@@ -516,11 +493,7 @@ Bugzilla.BugModal.Comments = class Comments {
   }
 
   /**
-   * Prepare to show image, media and text attachments inline if possible. For a better performance, this functionality
-   * uses the Intersection Observer API to show attachments when the associated comment goes into the viewport, when the
-   * page is scrolled down or the collapsed comment is expanded. This also utilizes the Network Information API to save
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API
+   * Prepare to show an attachment inline if possible.
    */
   prepare_inline_attachments() {
     // Check the connectivity, API support, user setting, bug security and sensitive keywords
@@ -531,15 +504,6 @@ Bugzilla.BugModal.Comments = class Comments {
       return;
     }
 
-    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
-      const $att = entry.target;
-
-      if (entry.intersectionRatio > 0) {
-        observer.unobserve($att);
-        this.show_attachment($att);
-      }
-    }), { root: document.querySelector('#bugzilla-body') });
-
     document.querySelectorAll('.change-set').forEach($set => {
       // Skip if the comment has the `hide-attachment` tag
       const $comment = $set.querySelector('.comment:not([data-tags~="hide-attachment"])');
@@ -547,83 +511,162 @@ Bugzilla.BugModal.Comments = class Comments {
       const $attachment = $set.querySelector('.attachment:not(.obsolete):not(.deleted)');
 
       if ($comment && $attachment) {
-        observer.observe($attachment);
+        this.attachment = new Bugzilla.InlineAttachment($attachment);
       }
     });
   }
+};
 
+/**
+ * Implement the inline attachment renderer that will be used for bug comments. For a better performance, this
+ * functionality uses the Intersection Observer API to show an attachment when the comment goes into the viewport.
+ */
+Bugzilla.InlineAttachment = class InlineAttachment {
   /**
-   * Load and show an image, audio, video or text attachment.
-   * @param {HTMLElement} $att An attachment wrapper element.
+   * Initiate a new InlineAttachment instance.
+   * @param {HTMLElement} $attachment Attachment container on each comment.
    */
-  async show_attachment($att) {
-    const id = Number($att.dataset.id);
-    const link = $att.querySelector('.link').href;
-    const name = $att.querySelector('[itemprop="name"]').content;
-    const type = $att.querySelector('[itemprop="encodingFormat"]').content;
-    const size = Number($att.querySelector('[itemprop="contentSize"]').content);
-
-    // Skip if the attachment is marked as binary
-    if (type.match(/^application\/(?:octet-stream|binary)$/)) {
-      return;
-    }
+  constructor($attachment) {
+    this.$attachment = $attachment;
+    this.id = Number(this.$attachment.dataset.id);
+    this.link = this.$attachment.querySelector('.link').href;
+    this.name = this.$attachment.querySelector('[itemprop="name"]').content;
+    this.size = Number(this.$attachment.querySelector('[itemprop="contentSize"]').content);
+    this.type = this.$attachment.querySelector('[itemprop="encodingFormat"]').content;
+    this.media = this.type.split('/').shift();
 
     // Show image smaller than 2 MB, excluding SVG and non-standard formats
-    if (type.match(/^image\/(?!vnd|svg).+$/) && size < 2000000) {
-      $att.insertAdjacentHTML('beforeend', `
-        <a href="${link}" class="outer lightbox"><img src="${link}" alt="${name.htmlEncode()}" itemprop="image"></a>`);
-
-      // Add lightbox support
-      $att.querySelector('.outer.lightbox').addEventListener('click', event => {
-        if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
-          return;
-        }
-
-        event.preventDefault();
-        lb_show(event.target);
-      });
+    if (this.type.match(/^image\/(?!vnd|svg).+$/) && this.size < 2000000) {
+      this.show_image();
     }
 
     // Show audio and video
-    if (type.match(/^(?:audio|video)\/(?!vnd).+$/)) {
-      const media = type.split('/')[0];
-
-      if (document.createElement(media).canPlayType(type)) {
-        $att.insertAdjacentHTML('beforeend', `
-          <span class="outer"><${media} src="${link}" controls itemprop="${media}"></span>`);
-      }
+    if (this.type.match(/^(?:audio|video)\/(?!vnd).+$/) && document.createElement(this.media).canPlayType(this.type)) {
+      this.show_media();
     }
 
     // Detect text (code from attachment.js)
-    const is_patch = $att.matches('.patch');
-    const is_markdown = !!name.match(/\.(?:md|mkdn?|mdown|markdown)$/);
-    const is_source = !!name.match(/\.(?:cpp|es|h|js|json|rs|rst|sh|toml|ts|tsx|xml|yaml|yml)$/);
-    const is_text = type.match(/^text\/(?!x-).+$/) || is_patch || is_markdown || is_source;
+    this.is_patch = this.$attachment.matches('.patch');
+    this.is_markdown = !!this.name.match(/\.(?:md|mkdn?|mdown|markdown)$/);
+    this.is_source = !!this.name.match(/\.(?:cpp|es|h|js|json|rs|rst|sh|toml|ts|tsx|xml|yaml|yml)$/);
+    this.is_text = this.type.match(/^text\/(?!x-).+$/) || this.is_patch || this.is_markdown || this.is_source;
 
     // Show text smaller than 50 KB
-    if (is_text && size < 50000) {
-      // Load text body
-      bugzilla_ajax({ url: `${BUGZILLA.config.basepath}rest/bug/attachment/${id}?include_fields=data` }, data => {
-        if (data.error) {
-          return;
-        }
+    if (this.is_text && this.size < 50000) {
+      this.show_text();
+    }
+  }
 
-        const text = decodeURIComponent(escape(atob(data.attachments[id].data)));
-        const lang = is_patch ? 'diff' : type.match(/\w+$/)[0];
+  /**
+   * Show an image attachment.
+   */
+  async show_image() {
+    // Insert a placeholder first
+    this.$attachment.insertAdjacentHTML('beforeend', `<a href="${this.link}" class="outer lightbox"></a>`);
 
-        $att.insertAdjacentHTML('beforeend', `
-          <button type="button" role="link" title="${name.htmlEncode()}" class="outer">
-          <pre class="language-${lang}" role="img" itemprop="text">${text.htmlEncode()}</pre></button>`);
+    // Wait until the container goes into the viewport
+    await this.watch_visibility();
 
-        // Make the button work as a link. It cannot be `<a>` because Prism Autolinker plugin may add links to `<pre>`
-        $att.querySelector('[role="link"]').addEventListener('click', () => location.href = link);
+    const $image = new Image();
 
-        if (Prism) {
-          Prism.highlightElement($att.querySelector('pre'));
-          $att.querySelectorAll('pre a').forEach($a => $a.tabIndex = -1);
+    try {
+      await new Promise((resolve, reject) => {
+        $image.addEventListener('load', () => resolve(), { once: true });
+        $image.addEventListener('error', () => reject(), { once: true });
+        $image.src = this.link;
+      });
+
+      $image.setAttribute('itemprop', 'image');
+      $image.alt = this.name;
+      this.$outer.appendChild($image);
+
+      // Add lightbox support
+      this.$outer.addEventListener('click', event => {
+        if (!event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+          event.preventDefault();
+          lb_show(event.target);
         }
       });
+    } catch (ex) {
+      this.$outer.remove();
     }
+  }
+
+  /**
+   * Show an audio or video attachment.
+   */
+  async show_media() {
+    // Insert a placeholder first
+    this.$attachment.insertAdjacentHTML('beforeend', '<span class="outer"></span>');
+
+    // Wait until the container goes into the viewport
+    await this.watch_visibility();
+
+    const $media = document.createElement(this.media);
+
+    try {
+      await new Promise((resolve, reject) => {
+        $media.addEventListener('loadedmetadata', () => resolve(), { once: true });
+        $media.addEventListener('error', () => reject(), { once: true });
+        $media.src = this.link;
+      });
+
+      $media.setAttribute('itemprop', this.media);
+      $media.controls = true;
+      this.$outer.appendChild($media);
+    } catch (ex) {
+      this.$outer.remove();
+    }
+  }
+
+  /**
+   * Show a text attachment. Fetch the raw text via the API.
+   */
+  async show_text() {
+    // Insert a placeholder first
+    this.$attachment.insertAdjacentHTML('beforeend',
+      `<button type="button" role="link" title="${this.name.htmlEncode()}" class="outer"></button>`);
+
+    // Wait until the container goes into the viewport
+    await this.watch_visibility();
+
+    try {
+      const { attachments } = await Bugzilla.API.get(`bug/attachment/${this.id}`, { include_fields: 'data' });
+      const text = decodeURIComponent(escape(atob(attachments[this.id].data)));
+      const lang = this.is_patch ? 'diff' : this.type.match(/\w+$/)[0];
+
+      this.$outer.innerHTML = `<pre class="language-${lang}" role="img" itemprop="text">${text.htmlEncode()}</pre>`;
+
+      // Make the button work as a link. It cannot be `<a>` because Prism Autolinker plugin may add links to `<pre>`
+      this.$attachment.querySelector('[role="link"]').addEventListener('click', () => location.href = this.link);
+
+      if (Prism) {
+        Prism.highlightElement(this.$attachment.querySelector('pre'));
+        this.$attachment.querySelectorAll('pre a').forEach($a => $a.tabIndex = -1);
+      }
+    } catch (ex) {
+      this.$outer.remove();
+    }
+  }
+
+  /**
+   * Use the Intersection Observer API to watch the visibility of the attachment container.
+   * @returns {Promise} Resolved once the container goes into the viewport.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
+   */
+  async watch_visibility() {
+    this.$outer = this.$attachment.querySelector('.outer');
+
+    return new Promise(resolve => {
+      const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+        if (entry.intersectionRatio > 0) {
+          observer.disconnect();
+          resolve();
+        }
+      }), { root: document.querySelector('#bugzilla-body') });
+
+      observer.observe(this.$attachment);
+    });
   }
 };
 

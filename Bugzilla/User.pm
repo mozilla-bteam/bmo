@@ -751,7 +751,7 @@ sub name_or_login {
 }
 
 # Generate a string to identify the user by name + login if the user
-# has a name or by login only if she doesn't.
+# has a name or by login only if they don’t.
 sub identity {
   my $self = shift;
 
@@ -1529,12 +1529,14 @@ sub visible_bugs {
       # same result for bug_group_map.bug_id (so DISTINCT filters
       # out duplicate rows).
       "SELECT DISTINCT bugs.bug_id, reporter, assigned_to, qa_contact,
-                    reporter_accessible, cclist_accessible, cc.who,
-                    bug_group_map.bug_id
+                    components.triage_owner_id, reporter_accessible,
+                    cclist_accessible, cc.who, bug_group_map.bug_id
                FROM bugs
                     LEFT JOIN cc
                               ON cc.bug_id = bugs.bug_id
                                  AND cc.who = $user_id
+                    LEFT JOIN components
+                              ON bugs.component_id = components.id
                     LEFT JOIN bug_group_map
                               ON bugs.bug_id = bug_group_map.bug_id
                                  AND bug_group_map.group_id NOT IN ("
@@ -1549,12 +1551,13 @@ sub visible_bugs {
     $sth->execute(@check_ids);
     my $use_qa_contact = Bugzilla->params->{'useqacontact'};
     while (my $row = $sth->fetchrow_arrayref) {
-      my ($bug_id, $reporter, $owner, $qacontact, $reporter_access, $cclist_access,
-        $isoncclist, $missinggroup)
+      my ($bug_id, $reporter, $owner, $qacontact, $triage_owner, $reporter_access,
+          $cclist_access, $isoncclist, $missinggroup)
         = @$row;
       $visible_cache->{$bug_id}
         ||= ((($reporter == $user_id) && $reporter_access)
           || ($use_qa_contact && $qacontact && ($qacontact == $user_id))
+          || ($triage_owner && $triage_owner == $user_id)
           || ($owner == $user_id)
           || ($isoncclist && $cclist_access)
           || !$missinggroup) ? 1 : 0;
@@ -1771,7 +1774,7 @@ sub check_can_admin_flagtype {
     my $e         = $flagtype->exclusions_as_hash;
 
     # If there is at least one product for which the user doesn't have
-    # editcomponents privs, then don't allow him to do everything with
+    # editcomponents privs, then don't allow them to do everything with
     # this flagtype, independently of whether this product is in the
     # exclusion list or not.
     my %product_ids;
@@ -2493,7 +2496,7 @@ sub wants_mail {
 
   # Don't send any mail, ever, if account is disabled
   # XXX Temporary Compatibility Change 1 of 2:
-  # This code is disabled for the moment to make the behaviour like the old
+  # This code is disabled for the moment to make the behavior like the old
   # system, which sent bugmail to disabled accounts.
   # return 0 if $self->{'disabledtext'};
 
@@ -2678,7 +2681,7 @@ sub create {
 
   # Add the creation date to the profiles_activity table.
   # $who is the user who created the new user account, i.e. either an
-  # admin or the new user himself.
+  # admin or the new user themselves.
   my $who = Bugzilla->user->id || $user->id;
   my $creation_date_fieldid = get_field_id('creation_ts');
 
@@ -3027,7 +3030,7 @@ containing the user's recent searches.
 =item C<recent_search_containing(bug_id)>
 
 Returns a L<Bugzilla::Search::Recent> object that contains the most recent
-search by the user for the specified bug id. Retuns undef if no match is found.
+search by the user for the specified bug id. Returns undef if no match is found.
 
 =item C<recent_search_for(bug)>
 
@@ -3094,7 +3097,7 @@ Returns the 'real' name for this user, if any.
 
 =item C<showmybugslink>
 
-Returns C<1> if the user has set his preference to show the 'My Bugs' link in
+Returns C<1> if the user has set their preference to show the 'My Bugs' link in
 the page footer, and C<0> otherwise.
 
 =item C<identity>
@@ -3187,7 +3190,7 @@ that you need to be able to see a group in order to bless it.
 =item C<get_products_by_permission($group)>
 
 Returns a list of product objects for which the user has $group privileges
-and which he can access.
+and which they can access.
 $group must be one of the groups defined in PER_PRODUCT_PRIVILEGES.
 
 =item C<can_see_user(user)>
@@ -3299,7 +3302,7 @@ not be aware of the existence of the product.
  Description: Checks whether the user is allowed to edit properties of the flag type.
               If the flag type is also used by some products for which the user
               hasn't editcomponents privs, then the user is only allowed to edit
-              the inclusion and exclusion lists for products he can administrate.
+              the inclusion and exclusion lists for products they can administrate.
 
  Params:      $flagtype_id - a flag type ID.
 
@@ -3437,7 +3440,7 @@ Params: login_name - B<Required> The login name for the new user.
             a plain-text password. If you specify '*', the user will not
             be able to log in using DB authentication.
         disabledtext - The disable-text for the new user. If given, the user
-            will be disabled, meaning he cannot log in. Defaults to an
+            will be disabled, meaning they cannot log in. Defaults to an
             empty string.
         disable_mail - If 1, bug-related mail will not be  sent to this user;
             if 0, mail will be sent depending on the user's  email preferences.
@@ -3468,8 +3471,8 @@ Params: $username (scalar, string) - The full login name of the username
             that you are checking.
         $old_username (scalar, string) - If you are checking an email-change
             token, insert the "old" username that the user is changing from,
-            here. Then, as long as it's the right user for that token, he
-            can change his username to $username. (That is, this function
+            here. Then, as long as it's the right user for that token, they
+            can change their username to $username. (That is, this function
             will return a boolean true value).
 
 =item C<login_to_id($login, $throw_error)>

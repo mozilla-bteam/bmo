@@ -34,9 +34,9 @@ sub _new {
 
   # always return an object to simplify calling code when memcached is
   # disabled.
-  my $servers = Bugzilla->localconfig->{memcached_servers};
+  my $servers = Bugzilla->localconfig->memcached_servers;
   if (Bugzilla->feature('memcached') && $servers) {
-    $self->{namespace} = Bugzilla->localconfig->{memcached_namespace};
+    $self->{namespace} = Bugzilla->localconfig->memcached_namespace;
     TRACE("connecting servers: $servers, namespace: $self->{namespace}");
     $self->{memcached} = Cache::Memcached::Fast->new({
       servers         => [_parse_memcached_server_list($servers)],
@@ -603,7 +603,7 @@ C<$object-E<gt>update()>), then it's possible for the data in the cache to be
 out of sync with the database.
 
 As an example let's consider an extension which adds a timestamp field
-C<last_activitiy_ts> to the profiles table and user object which contains the
+C<last_activity_ts> to the profiles table and user object which contains the
 user's last activity.  If the extension were to call C<$user-E<gt>update()>,
 then an audit entry would be created for each change to the C<last_activity_ts>
 field, which is undesirable.

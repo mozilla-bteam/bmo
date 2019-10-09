@@ -35,9 +35,12 @@ function validateEnterBug(theform) {
     var short_desc = theform.short_desc;
     var version = theform.version;
     var bug_status = theform.bug_status;
+    var bug_type = theform.bug_type;
     var description = theform.comment;
     var attach_data = theform.data;
     var attach_desc = theform.description;
+
+    const $bug_type_group = document.querySelector('#bug_type');
 
     var current_errors = YAHOO.util.Dom.getElementsByClassName(
         'validation_error_text', null, theform);
@@ -75,6 +78,10 @@ function validateEnterBug(theform) {
     if (component.selectedIndex < 0) {
         _errorFor(component);
         focus_me = component;
+    }
+    if ($bug_type_group.matches('[aria-required="true"]') && !bug_type.value) {
+        _errorFor($bug_type_group);
+        focus_me = bug_type[0];
     }
 
     if (focus_me) {
@@ -192,6 +199,7 @@ function setFieldFromCalendar(type, args, date_field) {
     }
 
     date_field.value = dateStr;
+    date_field.dispatchEvent(new Event('input'));
     hideCalendar(date_field.id);
 }
 
@@ -441,7 +449,7 @@ function showDuplicateItem(e) {
             dup_id.blur();
         }
     }
-    YAHOO.util.Event.preventDefault(e); //prevents the hyperlink from going to the url in the href.
+    YAHOO.util.Event.preventDefault(e); //prevents the hyperlink from going to the URL in the href.
 }
 
 function setResolutionToDuplicate(e, duplicate_or_move_bug_status) {
@@ -567,7 +575,6 @@ function handleValControllerChange(e, args) {
         var item = getPossiblyHiddenOption(controlled_field,
                                            controlled_value_ids[i]);
         if (item.disabled && controller_item && controller_item.selected) {
-            item = showOptionInIE(item, controlled_field);
             YAHOO.util.Dom.removeClass(item, 'bz_hidden_option');
             item.disabled = false;
         }
@@ -578,7 +585,6 @@ function handleValControllerChange(e, args) {
                 bz_fireEvent(controlled_field, 'change');
             }
             item.disabled = true;
-            hideOptionInIE(item, controlled_field);
         }
     }
 }
@@ -588,112 +594,6 @@ function handleValControllerChange(e, args) {
 function _value_id(field_name, id) {
     return 'v' + id + '_' + field_name;
 }
-
-/*********************************/
-/* Code for Hiding Options in IE */
-/*********************************/
-
-/* IE 7 and below (and some other browsers) don't respond to "display: none"
- * on <option> tags. However, you *can* insert a Comment Node as a
- * child of a <select> tag. So we just insert a Comment where the <option>
- * used to be. */
-var ie_hidden_options = new Array();
-function hideOptionInIE(anOption, aSelect) {
-    if (browserCanHideOptions(aSelect)) return;
-
-    var commentNode = document.createComment(anOption.value);
-    commentNode.id = anOption.id;
-    // This keeps the interface of Comments and Options the same for
-    // our other functions.
-    commentNode.disabled = true;
-    // replaceChild is very slow on IE in a <select> that has a lot of
-    // options, so we use replaceNode when we can.
-    if (anOption.replaceNode) {
-        anOption.replaceNode(commentNode);
-    }
-    else {
-        aSelect.replaceChild(commentNode, anOption);
-    }
-
-    // Store the comment node for quick access for getPossiblyHiddenOption
-    if (!ie_hidden_options[aSelect.id]) {
-        ie_hidden_options[aSelect.id] = new Array();
-    }
-    ie_hidden_options[aSelect.id][anOption.id] = commentNode;
-}
-
-function showOptionInIE(aNode, aSelect) {
-    if (browserCanHideOptions(aSelect)) return aNode;
-
-    // We do this crazy thing with innerHTML and createElement because
-    // this is the ONLY WAY that this works properly in IE.
-    var optionNode = document.createElement('option');
-    optionNode.innerHTML = aNode.data;
-    optionNode.value = aNode.data;
-    optionNode.id = aNode.id;
-    // replaceChild is very slow on IE in a <select> that has a lot of
-    // options, so we use replaceNode when we can.
-    if (aNode.replaceNode) {
-        aNode.replaceNode(optionNode);
-    }
-    else {
-        aSelect.replaceChild(optionNode, aNode);
-    }
-    delete ie_hidden_options[aSelect.id][optionNode.id];
-    return optionNode;
-}
-
-function initHidingOptionsForIE(select_name) {
-    var aSelect = document.getElementById(select_name);
-    if (browserCanHideOptions(aSelect)) return;
-
-    for (var i = 0; ;i++) {
-        var item = aSelect.options[i];
-        if (!item) break;
-        if (item.disabled) {
-          hideOptionInIE(item, aSelect);
-          i--; // Hiding an option means that the options array has changed.
-        }
-    }
-}
-
-function getPossiblyHiddenOption(aSelect, optionId) {
-    // Works always for <option> tags, and works for commentNodes
-    // in IE (but not in Webkit).
-    var id = _value_id(aSelect.id, optionId);
-    var val = document.getElementById(id);
-
-    // This is for WebKit and other browsers that can't "display: none"
-    // an <option> and also can't getElementById for a commentNode.
-    if (!val && ie_hidden_options[aSelect.id]) {
-        val = ie_hidden_options[aSelect.id][id];
-    }
-
-    return val;
-}
-
-var browser_can_hide_options;
-function browserCanHideOptions(aSelect) {
-    /* As far as I can tell, browsers that don't hide <option> tags
-     * also never have a X position for <option> tags, even if
-     * they're visible. This is the only reliable way I found to
-     * differentiate browsers. So we create a visible option, see
-     * if it has a position, and then remove it. */
-    if (typeof(browser_can_hide_options) == "undefined") {
-        var new_opt = bz_createOptionInSelect(aSelect, '', '');
-        var opt_pos = YAHOO.util.Dom.getX(new_opt);
-        aSelect.removeChild(new_opt);
-        if (opt_pos) {
-            browser_can_hide_options = true;
-        }
-        else {
-            browser_can_hide_options = false;
-        }
-    }
-    return browser_can_hide_options;
-}
-
-/* (end) option hiding code */
 
 /**
  * Autocompletion
@@ -712,11 +612,6 @@ $(function() {
     var options_user = {
         appendTo: $('#main-inner'),
         forceFixPosition: true,
-        serviceUrl: `${BUGZILLA.config.basepath}rest/user/suggest`,
-        params: {
-            Bugzilla_api_token: BUGZILLA.api_token,
-            fast_mode: 1
-        },
         paramName: 'match',
         deferRequestBy: 250,
         minChars: 2,
@@ -725,41 +620,39 @@ $(function() {
         autoSelectFirst: true,
         preserveInput: true,
         triggerSelectOnValidInput: false,
-        transformResult: function(response) {
-            response = $.parseJSON(response);
-            return {
-                suggestions: $.map(response.users, function({ name, real_name, requests, gravatar } = {}) {
-                    return {
-                        value: name,
-                        data : { email: name, real_name, requests, gravatar }
-                    };
-                })
-            };
+        lookup: (query, done) => {
+            // Note: `async` doesn't work for this `lookup` function, so use a `Promise` chain instead
+            Bugzilla.API.get('user/suggest', { match: query })
+                .then(({ users }) => users.map(({ name, real_name, requests, gravatar }) => ({
+                    value: name,
+                    data: { email: name, real_name, requests, gravatar },
+                })))
+                .catch(() => [])
+                .then(suggestions => done({ suggestions }));
         },
         formatResult: function(suggestion) {
             const $input = this;
-            const user = suggestion.data;
+            const { email, real_name, requests, gravatar } = suggestion.data;
             const request_type = $input.getAttribute('data-request-type');
-            const blocked = user.requests && request_type ? user.requests[request_type].blocked : false;
-            const pending = user.requests && request_type ? user.requests[request_type].pending : 0;
-            const image = user.gravatar ? `<img itemprop="image" alt="" src="${user.gravatar}">` : '';
+            const { blocked, pending } = requests ? (requests[request_type] || {}) : {};
+            const image = gravatar ? `<img itemprop="image" alt="" src="${gravatar}">` : '';
             const description = blocked ? '<span class="icon" aria-hidden="true"></span> Requests blocked' :
                 pending ? `${pending} pending ${request_type}${pending === 1 ? '' : 's'}` : '';
 
             return `<div itemscope itemtype="http://schema.org/Person">${image} ` +
-                `<span itemprop="name">${user.real_name.htmlEncode()}</span> ` +
-                `<span class="minor" itemprop="email">${user.email.htmlEncode()}</span> ` +
+                `<span itemprop="name">${real_name.htmlEncode()}</span> ` +
+                `<span class="minor" itemprop="email">${email.htmlEncode()}</span> ` +
                 `<span class="minor${blocked ? ' blocked' : ''}" itemprop="description">${description}</span></div>`;
         },
         onSelect: function (suggestion) {
             const $input = this;
-            const user = suggestion.data;
+            const { real_name, requests } = suggestion.data;
             const is_multiple = !!$input.getAttribute('data-multiple');
             const request_type = $input.getAttribute('data-request-type');
-            const blocked = user.requests && request_type ? user.requests[request_type].blocked : false;
+            const { blocked } = requests ? (requests[request_type] || {}) : {};
 
             if (blocked) {
-                window.alert(`${user.real_name} is not accepting ${request_type} requests at this time. ` +
+                window.alert(`${real_name} is not accepting ${request_type} requests at this time. ` +
                     'If you’re in a hurry, ask someone else for help.');
             } else if (is_multiple) {
                 const _values = $input.value.split(',').map(value => value.trim());
@@ -917,7 +810,7 @@ function initDirtyFieldTracking() {
 
 var last_comment_text = '';
 
-function show_comment_preview(bug_id) {
+async function show_comment_preview(bug_id) {
     var Dom = YAHOO.util.Dom;
     var comment = document.getElementById('comment');
     var preview = document.getElementById('comment_preview');
@@ -947,46 +840,24 @@ function show_comment_preview(bug_id) {
     Dom.addClass('comment_preview_text', 'bz_default_hidden');
     Dom.removeClass('comment_preview_loading', 'bz_default_hidden');
 
-    YAHOO.util.Connect.setDefaultPostHeader('application/json', true);
-    YAHOO.util.Connect.asyncRequest('POST', `${BUGZILLA.config.basepath}jsonrpc.cgi`,
-    {
-        success: function(res) {
-            data = JSON.parse(res.responseText);
-            if (data.error) {
-                Dom.addClass('comment_preview_loading', 'bz_default_hidden');
-                Dom.removeClass('comment_preview_error', 'bz_default_hidden');
-                Dom.get('comment_preview_error').innerHTML =
-                    data.error.message.htmlEncode();
-            } else {
-                $comment_body.innerHTML = data.result.html;
+    try {
+        const { html } = await Bugzilla.API.post('bug/comment/render', { id: bug_id, text: comment.value });
 
-                // Highlight code if possible
-                if (Prism) {
-                  Prism.highlightAllUnder($comment_body);
-                }
+        $comment_body.innerHTML = html;
 
-                Dom.addClass('comment_preview_loading', 'bz_default_hidden');
-                Dom.removeClass('comment_preview_text', 'bz_default_hidden');
-                last_comment_text = comment.value;
-            }
-        },
-        failure: function(res) {
-            Dom.addClass('comment_preview_loading', 'bz_default_hidden');
-            Dom.removeClass('comment_preview_error', 'bz_default_hidden');
-            Dom.get('comment_preview_error').innerHTML =
-                res.responseText.htmlEncode();
+        // Highlight code if possible
+        if (Prism) {
+            Prism.highlightAllUnder($comment_body);
         }
-    },
-    JSON.stringify({
-        version: "1.1",
-        method: 'Bug.render_comment',
-        params: {
-            Bugzilla_api_token: BUGZILLA.api_token,
-            id: bug_id,
-            text: comment.value
-        }
-    })
-    );
+
+        Dom.addClass('comment_preview_loading', 'bz_default_hidden');
+        Dom.removeClass('comment_preview_text', 'bz_default_hidden');
+        last_comment_text = comment.value;
+    } catch ({ message }) {
+        Dom.addClass('comment_preview_loading', 'bz_default_hidden');
+        Dom.removeClass('comment_preview_error', 'bz_default_hidden');
+        Dom.get('comment_preview_error').innerHTML = YAHOO.lang.escapeHTML(message);
+    }
 }
 
 function show_comment_edit() {

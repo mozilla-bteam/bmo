@@ -37,14 +37,6 @@ sub new {
   return $self;
 }
 
-sub login_uri {
-  my ($class, $target_uri) = @_;
-
-  my $uri = URI->new(Bugzilla->localconfig->{urlbase} . "github.cgi");
-  $uri->query_form(target_uri => $target_uri);
-  return $uri;
-}
-
 sub authorize_uri {
   my ($class, $state) = @_;
 
@@ -53,7 +45,7 @@ sub authorize_uri {
     client_id    => Bugzilla->params->{github_client_id},
     scope        => 'user:email',
     state        => $state,
-    redirect_uri => Bugzilla->localconfig->{urlbase} . "github.cgi",
+    redirect_uri => Bugzilla->localconfig->urlbase . "github.cgi",
   );
 
   return $uri;
@@ -68,7 +60,7 @@ sub get_email_key {
   $digest->add(remote_ip());
   $digest->add($cgi->cookie('Bugzilla_github_token')
       // Bugzilla->request_cache->{github_token} // '');
-  $digest->add(Bugzilla->localconfig->{site_wide_secret});
+  $digest->add(Bugzilla->localconfig->site_wide_secret);
   return $digest->hexdigest;
 }
 
@@ -77,7 +69,7 @@ sub _handle_response {
   my $data = eval { decode_json($response->content); };
   if ($@) {
     ThrowCodeError("github_bad_response",
-      {message => "Unable to parse json response"});
+      {message => "Unable to parse JSON response"});
   }
 
   unless ($response->is_success) {

@@ -43,11 +43,13 @@
 </p>
 
 <form method="post" action="[% basepath FILTER none %]post_bug.cgi" id="shieldStudies" class="enter_bug_form" enctype="multipart/form-data">
+<input type="hidden" name="filed_via" value="custom_form">
 <input type="hidden" name="format" id="format" value="shield-studies">
 <input type="hidden" name="product" id="product" value="Shield">
 <input type="hidden" name="component" id="component" value="Shield Study">
 <input type="hidden" name="rep_platform" id="rep_platform" value="All">
 <input type="hidden" name="op_sys" id="op_sys" value="All">
+<input type="hidden" name="bug_type" value="task">
 <input type="hidden" name="priority" id="priority" value="--">
 <input type="hidden" name="version" id="version" value="unspecified">
 <input type="hidden" name="comment" id="comment" value="">
@@ -103,7 +105,7 @@
     If there is prior art or previous results?
   </label>
   <div class="field_desc">
-    I.e.,such as testpilot, usertesting.com, field research, etc. Please list it here.
+    I.e.,such as Test Pilot, UserTesting.com, field research, etc. Please list it here.
   </div>
   <textarea name="prior_art" id="prior_art" rows="10" cols="60"></textarea>
 </div>
@@ -113,7 +115,7 @@
     How do you intend to test your study prior to launch?
   </label>
   <div class="field_desc">
-    Moco wide, team only, etc.
+    MoCo wide, team only, etc.
   </div>
   <input type="text" name="test_method" id="test_method" size="60" required="true">
 </div>
@@ -131,10 +133,10 @@
 <h3>Shipping Status</h3>
 
 <div class="form_section">
-  <label for="targetted_locales" class="field_label required">
+  <label for="targeted_locales" class="field_label required">
     Targeted locales
   </label>
-  <input type="text" name="targetted_locales" id="targetted_locales" size="60" required="true">
+  <input type="text" name="targeted_locales" id="targeted_locales" size="60" required="true">
 </div>
 
 <div class="form_section">
@@ -165,7 +167,7 @@
     Will your study require third-party data collection?
   </label>
   <div class="field_desc">
-    I.e., Google analytics, loggly, any Apache server logs, etc.
+    I.e., Google Analytics, Loggly, any Apache server logs, etc.
   </div>
   <input type="text" name="third_party_data" id="third_party_data" size="60" required="true">
 </div>

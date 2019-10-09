@@ -21,7 +21,7 @@ use Bugzilla::Extension::Push::Connectors;
 use Bugzilla::Extension::Push::Logger;
 use Bugzilla::Extension::Push::Message;
 use Bugzilla::Extension::Push::Push;
-use Bugzilla::Extension::Push::Serialise;
+use Bugzilla::Extension::Push::Serialize;
 use Bugzilla::Extension::Push::Util;
 use Bugzilla::Install::Filesystem;
 
@@ -34,7 +34,7 @@ our $VERSION = '1';
 $Carp::CarpInternal{'CGI::Carp'} = 1;
 
 #
-# monkey patch for convience
+# monkey patch for convenience
 #
 
 BEGIN {
@@ -58,22 +58,24 @@ sub _get_instance {
 
 sub _enabled {
   my ($self) = @_;
-  if (!exists $self->{'enabled'}) {
+  my $cache = Bugzilla->request_cache->{+__PACKAGE__} //= {};
+
+  if (!exists $cache->{'enabled'}) {
     my $push = Bugzilla->push_ext;
-    $self->{'enabled'} = $push->config->{enabled} eq 'Enabled';
-    if ($self->{'enabled'}) {
+    $cache->{'enabled'} = $push->config->{enabled} eq 'Enabled';
+    if ($cache->{'enabled'}) {
 
       # if no connectors are enabled, no need to push anything
-      $self->{'enabled'} = 0;
+      $cache->{'enabled'} = 0;
       foreach my $connector (Bugzilla->push_ext->connectors->list) {
         if ($connector->enabled) {
-          $self->{'enabled'} = 1;
+          $cache->{'enabled'} = 1;
           last;
         }
       }
     }
   }
-  return $self->{'enabled'};
+  return $cache->{'enabled'};
 }
 
 #
@@ -264,26 +266,26 @@ sub _morph_flag_update {
 }
 
 #
-# serialise and insert into the table
+# serialize and insert into the table
 #
 
 sub _push_object {
   my ($self, $message_type, $object, $change_set, $changes) = @_;
   my $rh;
 
-  # serialise the object
+  # serialize the object
   my ($rh_object, $name)
-    = Bugzilla::Extension::Push::Serialise->instance->object_to_hash($object);
+    = Bugzilla::Extension::Push::Serialize->instance->object_to_hash($object);
 
   if (!$rh_object) {
-    warn "empty hash from serialiser ($message_type $object)\n";
+    warn "empty hash from serializer ($message_type $object)\n";
     return;
   }
   $rh->{$name} = $rh_object;
 
   # add in the events hash
   my $rh_event
-    = Bugzilla::Extension::Push::Serialise->instance->changes_to_event($changes);
+    = Bugzilla::Extension::Push::Serialize->instance->changes_to_event($changes);
   return unless $rh_event;
   $rh_event->{'action'}      = $message_type;
   $rh_event->{'target'}      = $name;
@@ -378,7 +380,7 @@ sub flag_end_of_update {
   delete $args->{changes};
 }
 
-# comments in bugzilla 4.0 doesn't aren't included in the bug_end_of_* hooks,
+# comments in Bugzilla 4.0 doesn't aren't included in the bug_end_of_* hooks,
 # this code uses custom hooks to trigger
 sub bug_comment_create {
   my ($self, $args) = @_;

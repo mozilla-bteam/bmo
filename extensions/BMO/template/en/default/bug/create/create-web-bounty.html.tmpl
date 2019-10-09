@@ -68,6 +68,7 @@ function validateAndSubmit() {
 
 <form id="web_bounty_form" method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data"
       onSubmit="return validateAndSubmit();">
+  <input type="hidden" name="filed_via" value="custom_form">
   <input type="hidden" name="product" value="Websites">
   <input type="hidden" name="component" value="Other">
   <input type="hidden" name="rep_platform" value="All">
@@ -92,7 +93,7 @@ function validateAndSubmit() {
   <label for="short_desc" class="field_label required">Summary / Title</label>
   <div class="field_desc">
     A short description of the issue being reported including the host name
-    for the website on which it exists (example xss in blarg.foo.mozilla.org)
+    for the website on which it exists (example XSS in blarg.foo.mozilla.org)
   </div>
   <input type="text" name="short_desc" id="short_desc" size="80">
 </div>

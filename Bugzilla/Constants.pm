@@ -117,6 +117,10 @@ use Memoize;
   FIELD_TYPE_BUG_URLS
   FIELD_TYPE_KEYWORDS
   FIELD_TYPE_INTEGER
+  FIELD_TYPE_BOOLEAN
+  FIELD_TYPE_USER
+  FIELD_TYPE_USERS
+  FIELD_TYPE_BUG_LIST
   FIELD_TYPE_EXTENSION
 
   FIELD_TYPE_HIGHEST_PLUS_ONE
@@ -206,7 +210,7 @@ use Memoize;
 # CONSTANTS
 #
 # Bugzilla version
-# BMO: we don't map exactly to a specific bugzilla version, so override our
+# BMO: we don't map exactly to a specific Bugzilla version, so override our
 # reported version with a parameter.
 sub BUGZILLA_VERSION {
   my $bugzilla_version = '4.2';
@@ -423,6 +427,10 @@ use constant FIELD_TYPE_BUG_URLS      => 7;
 use constant FIELD_TYPE_KEYWORDS      => 8;
 use constant FIELD_TYPE_DATE          => 9;
 use constant FIELD_TYPE_INTEGER       => 10;
+use constant FIELD_TYPE_BOOLEAN       => 11;
+use constant FIELD_TYPE_USER          => 20;
+use constant FIELD_TYPE_USERS         => 21;
+use constant FIELD_TYPE_BUG_LIST      => 22;
 use constant FIELD_TYPE_EXTENSION     => 99;
 
 # Add new field types above this line, and change the below value in the
@@ -474,8 +482,8 @@ use constant SAFE_PROTOCOLS => (
 
 # Valid MIME types for attachments.
 use constant LEGAL_CONTENT_TYPES => (
-  'application', 'audio',     'image', 'message',
-  'model',       'multipart', 'text',  'video'
+  'application', 'audio',     'font', 'image', 'message',
+  'model',       'multipart', 'text', 'video'
 );
 
 use constant contenttypes => {
@@ -619,7 +627,7 @@ use constant MAX_WEBDOT_BUGS => 2000;
 # This is the name of the algorithm used to hash passwords before storing
 # them in the database. This can be any string that is valid to pass to
 # Perl's "Digest" module. Note that if you change this, it won't take
-# effect until a user changes his password.
+# effect until a user changes their password.
 use constant PASSWORD_DIGEST_ALGORITHM => 'SHA-256';
 
 # How long of a salt should we use? Note that if you change this, none
@@ -631,7 +639,7 @@ use constant PASSWORD_SALT_LENGTH => 8;
 # can be safely done or not based on the web server's URI length setting.
 use constant CGI_URI_LIMIT => 8000;
 
-# If the user isn't allowed to change a field, we must tell him who can.
+# If the user isn't allowed to change a field, we must tell them who can.
 # We store the required permission set into the $PrivilegesRequired
 # variable which gets passed to the error template.
 
@@ -646,7 +654,7 @@ use constant AUDIT_CREATE => '__create__';
 use constant AUDIT_REMOVE => '__remove__';
 
 # The maximum number of emails per minute and hour a recipient can receive.
-# Email will be queued/backlogged to avoid exceeeding these limits.
+# Email will be queued/backlogged to avoid exceeding these limits.
 # Setting a limit to 0 will disable this feature.
 use constant EMAIL_LIMIT_PER_MINUTE => 1000;
 use constant EMAIL_LIMIT_PER_HOUR   => 2500;
@@ -718,7 +726,7 @@ sub _bz_locations {
 
     # $webdotdir must be in the web server's tree somewhere. Even if you use a
     # local dot, we output images to there. Also, if $webdotdir is
-    # not relative to the bugzilla root directory, you'll need to
+    # not relative to the Bugzilla root directory, you'll need to
     # change showdependencygraph.cgi to set image_url to the correct
     # location.
     # The script should really generate these graphs directly...
@@ -779,7 +787,7 @@ sub DEFAULT_CSP {
 # Because show_bug code lives in many different .cgi files,
 # we needed a centralized place to define the policy.
 # normally the policy would just live in one .cgi file.
-# Additionally, Bugzilla->localconfig->{urlbase} cannot be called at compile time, so this can't be a constant.
+# Additionally, Bugzilla->localconfig->urlbase cannot be called at compile time, so this can't be a constant.
 sub SHOW_BUG_MODAL_CSP {
   my ($bug_id) = @_;
   my %policy = (
@@ -811,7 +819,7 @@ sub SHOW_BUG_MODAL_CSP {
     worker_src => ['none',],
   );
   if (Bugzilla::Util::use_attachbase() && $bug_id) {
-    my $attach_base = Bugzilla->localconfig->{'attachment_base'};
+    my $attach_base = Bugzilla->localconfig->attachment_base;
     $attach_base =~ s/\%bugid\%/$bug_id/g;
     push @{$policy{img_src}}, $attach_base;
     push @{$policy{media_src}}, $attach_base;

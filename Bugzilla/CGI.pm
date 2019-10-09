@@ -73,7 +73,7 @@ sub new {
     if (!grep($_ eq $script, @whitelist)) {
 
       # apache collapses // to / in $ENV{PATH_INFO} but not in $self->path_info.
-      # url() requires the full path in ENV in order to generate the correct url.
+      # url() requires the full path in ENV in order to generate the correct URL.
       $ENV{PATH_INFO} = $path;
       DEBUG("redirecting because we see PATH_INFO and don't like it");
       print $self->redirect($self->url(-path => 0, -query => 1));
@@ -88,7 +88,7 @@ sub new {
   if (my $C = $Bugzilla::App::CGI::C) {
     if ($C->url_is_attachment_base and $script ne 'attachment.cgi') {
       DEBUG(
-        "Redirecting to urlbase because the url is in the attachment base and not attachment.cgi"
+        "Redirecting to urlbase because the URL is in the attachment base and not attachment.cgi"
       );
       $self->redirect_to_urlbase();
     }
@@ -113,7 +113,7 @@ sub new {
     # ends up here, and calls ThrowCodeError, and then recurses forever.
     # So don't use it.
     # In fact, we can't use templates at all, because we need a CGI object
-    # to determine the template lang as well as the current url (from the
+    # to determine the template lang as well as the current URL (from the
     # template)
     # Since this is an internal error which indicates a severe browser bug,
     # just die.
@@ -126,7 +126,7 @@ sub new {
 sub target_uri {
   my ($self) = @_;
 
-  my $base = Bugzilla->localconfig->{urlbase};
+  my $base = Bugzilla->localconfig->urlbase;
   if (my $request_uri = $self->request_uri) {
     my $base_uri = URI->new($base);
     $base_uri->path('');
@@ -139,7 +139,7 @@ sub target_uri {
 }
 
 # We want this sorted plus the ability to exclude certain params
-sub canonicalise_query {
+sub canonicalize_query {
   my ($self, @exclude) = @_;
 
   # Reconstruct the URL by concatenating the sorted param=value pairs
@@ -284,82 +284,6 @@ sub check_etag {
   return 0;
 }
 
-# Overwrite to ensure nph doesn't get set, and unset HEADERS_ONCE
-sub multipart_init {
-  my $self = shift;
-
-  # Keys are case-insensitive, map to lowercase
-  my %args = @_;
-  my %param;
-  foreach my $key (keys %args) {
-    $param{lc $key} = $args{$key};
-  }
-
-  # Set the MIME boundary and content-type
-  my $boundary
-    = $param{'-boundary'} || '------- =_' . generate_random_password(16);
-  delete $param{'-boundary'};
-  $self->{'separator'}       = "\r\n--$boundary\r\n";
-  $self->{'final_separator'} = "\r\n--$boundary--\r\n";
-  $param{'-type'}            = CGI::SERVER_PUSH($boundary);
-
-  # Note: CGI.pm::multipart_init up to v3.04 explicitly set nph to 0
-  # CGI.pm::multipart_init v3.05 explicitly sets nph to 1
-  # CGI.pm's header() sets nph according to a param or $CGI::NPH, which
-  # is the desired behaviour.
-
-  return
-      $self->header(%param,)
-    . "WARNING: YOUR BROWSER DOESN'T SUPPORT THIS SERVER-PUSH TECHNOLOGY."
-    . $self->multipart_end;
-}
-
-# Have to add the cookies in.
-sub multipart_start {
-  my $self = shift;
-
-  my %args = @_;
-
-  # CGI.pm::multipart_start doesn't honour its own charset information, so
-  # we do it ourselves here
-  if (defined $self->charset() && defined $args{-type}) {
-
-    # Remove any existing charset specifier
-    $args{-type} =~ s/;.*$//;
-
-    # and add the specified one
-    $args{-type} .= '; charset=' . $self->charset();
-  }
-
-  my $headers = $self->SUPER::multipart_start(%args);
-
-  # Eliminate the one extra CRLF at the end.
-  $headers =~ s/$CGI::CRLF$//;
-
-  # Add the cookies. We have to do it this way instead of
-  # passing them to multpart_start, because CGI.pm's multipart_start
-  # doesn't understand a '-cookie' argument pointing to an arrayref.
-  foreach my $cookie (@{$self->{Bugzilla_cookie_list}}) {
-    $headers .= "Set-Cookie: ${cookie}${CGI::CRLF}";
-  }
-  $headers .= $CGI::CRLF;
-  $self->{_multipart_in_progress} = 1;
-  return $headers;
-}
-
-sub close_standby_message {
-  my ($self, $contenttype, $disp, $disp_prefix, $extension) = @_;
-  $self->set_dated_content_disp($disp, $disp_prefix, $extension);
-
-  if ($self->{_multipart_in_progress}) {
-    print $self->multipart_end();
-    print $self->multipart_start(-type => $contenttype);
-  }
-  else {
-    print $self->header($contenttype);
-  }
-}
-
 our $ALLOW_UNSAFE_RESPONSE = 0;
 
 # responding to text/plain or text/html is safe
@@ -386,7 +310,7 @@ sub _prevent_unsafe_response {
 
     # Note that urlbase must end with a /.
     # It almost certainly does, but let's be extra careful.
-    my $urlbase = Bugzilla->localconfig->{urlbase};
+    my $urlbase = Bugzilla->localconfig->urlbase;
     $urlbase =~ s{/$}{};
     qr{
             # Begins with literal urlbase
@@ -402,8 +326,8 @@ sub _prevent_unsafe_response {
 
   if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
 
-    # Safe content types are ones that arn't images.
-    # For now let's assume plain text and html are not valid images.
+    # Safe content types are ones that aren't images.
+    # For now let's assume plain text and HTML are not valid images.
     my $content_type = $headers->{'-type'} // $headers->{'-content_type'}
       // 'text/html';
     my $is_safe_content_type = $content_type =~ $safe_content_type_re;
@@ -464,7 +388,7 @@ sub header {
   }
 
   # We generate a cookie and store it in the request cache
-  # To initiate github login, a form POSTs to github.cgi with the
+  # To initiate GitHub login, a form POSTs to github.cgi with the
   # github_secret as a parameter. It must match the github_secret cookie.
   # this prevents some types of redirection attacks.
   unless ($user->id || $self->{bz_redirecting}) {
@@ -590,7 +514,7 @@ sub param {
 sub _fix_utf8 {
   my $input = shift;
 
-  # The is_utf8 is here in case CGI gets smart about utf8 someday.
+  # The is_utf8 is here in case CGI gets smart about UTF-8 someday.
   utf8::decode($input) if defined $input && !ref $input && !utf8::is_utf8($input);
   return $input;
 }
@@ -616,7 +540,7 @@ sub send_cookie {
   }
 
   # Add the default path and the domain in.
-  state $uri = URI->new(Bugzilla->localconfig->{urlbase});
+  state $uri = URI->new(Bugzilla->localconfig->urlbase);
   $paramhash{'-path'} = $uri->path;
 
   # we don't set the domain.
@@ -702,7 +626,7 @@ sub redirect_search_url {
   # are only redirected if they're under the CGI_URI_LIMIT though.
   my $self_url = $self->self_url();
   if ($self->request_method() ne 'POST' or length($self_url) < CGI_URI_LIMIT) {
-    DEBUG("Redirecting search url");
+    DEBUG("Redirecting search URL");
     print $self->redirect(-url => $self_url);
     exit;
   }
@@ -710,7 +634,7 @@ sub redirect_search_url {
 
 sub redirect_to_https {
   my $self    = shift;
-  my $urlbase = Bugzilla->localconfig->{'urlbase'};
+  my $urlbase = Bugzilla->localconfig->urlbase;
 
   # If this is a POST, we don't want ?POSTDATA in the query string.
   # We expect the client to re-POST, which may be a violation of
@@ -733,14 +657,14 @@ sub redirect_to_https {
 sub redirect_to_urlbase {
   my $self = shift;
   my $path = $self->url('-path_info' => 1, '-query' => 1, '-relative' => 1);
-  print $self->redirect('-location' => Bugzilla->localconfig->{urlbase} . $path);
+  print $self->redirect('-location' => Bugzilla->localconfig->urlbase . $path);
   exit;
 }
 
 sub base_redirect {
   my ($self, $path, $is_perm) = @_;
   print $self->redirect(
-    -location => Bugzilla->localconfig->{basepath} . ($path || ''),
+    -location => Bugzilla->localconfig->basepath . ($path || ''),
     -status   => $is_perm ? '301 Moved Permanently' : '302 Found'
   );
   exit;
@@ -813,7 +737,7 @@ Bugzilla::CGI - CGI handling for Bugzilla
 
 This package inherits from the standard CGI module, to provide additional
 Bugzilla-specific functionality. In general, see L<the CGI.pm docs|CGI> for
-documention.
+documentation.
 
 =head1 CHANGES FROM L<CGI.PM|CGI>
 
@@ -834,10 +758,10 @@ I<Bugzilla::CGI> also includes additional functions.
 
 =over 4
 
-=item C<canonicalise_query(@exclude)>
+=item C<canonicalize_query(@exclude)>
 
 This returns a sorted string of the parameters whose values are non-empty,
-suitable for use in a url.
+suitable for use in a URL.
 
 Values in C<@exclude> are not included in the result.
 

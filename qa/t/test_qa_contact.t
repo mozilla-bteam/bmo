@@ -35,8 +35,8 @@ if ($sel->is_element_present(
 }
 
 # Enable the QA contact field and file a new bug restricted to the 'Master' group
-# with a powerless user as the QA contact. He should only be able to access the
-# bug if the QA contact field is enabled, else he looses this privilege.
+# with a powerless user as the QA contact. They should only be able to access the
+# bug if the QA contact field is enabled, else they loose this privilege.
 
 set_parameters($sel, {"Bug Fields" => {"useqacontact-on" => undef}});
 file_bug_in_product($sel, 'TestProduct');
@@ -189,12 +189,9 @@ $sel->value_is(
 $sel->type_ok("qa_contact", " ");
 $sel->click_ok('bottom-save-btn');
 
-# The user is no longer the QA contact, and he has no other role
-# with the bug. He can no longer see it.
+# The user is no longer the QA contact, and they have no other role
+# with the bug. They can no longer see it.
 
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok("(list of e-mails not available)");
-$sel->click_ok("link=bug $bug1_id");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Access Denied");
 logout($sel);

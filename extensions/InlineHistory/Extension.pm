@@ -68,7 +68,7 @@ sub template_before_process {
   }
 
   # allow other extensions to alter history
-  Bugzilla::Hook::process('inline_history_activtiy', {activity => $activity});
+  Bugzilla::Hook::process('inline_history_activity', {activity => $activity});
 
   my %attachment_cache;
   foreach my $attachment (@{$bug->attachments}) {
@@ -134,7 +134,7 @@ sub template_before_process {
 
       # split see-also
       if ($change->{fieldname} eq 'see_also') {
-        my $url_base = Bugzilla->localconfig->{urlbase};
+        my $url_base = Bugzilla->localconfig->urlbase;
         foreach my $f (qw( added removed )) {
           my @values;
           foreach my $value (split(/, /, $change->{$f})) {
@@ -199,7 +199,7 @@ sub _add_duplicates {
 
   my ($bug_id, $activity) = @_;
 
-  # we're ignoring pre-bugzilla 3.0 ".. has been marked as a duplicate .."
+  # we're ignoring pre-Bugzilla 3.0 ".. has been marked as a duplicate .."
   # comments because searching each comment's text is expensive.  these
   # legacy comments will not be visible at all in the bug's comment/activity
   # stream.  bug 928786 deals with migrating those comments to be stored as
@@ -208,7 +208,7 @@ sub _add_duplicates {
   my $dbh = Bugzilla->dbh;
   my $sth = $dbh->prepare("
         SELECT profiles.login_name, "
-      . $dbh->sql_date_format('bug_when', '%Y.%m.%d %H:%i:%s') . ",
+      . $dbh->sql_date_format('bug_when', '%Y-%m-%d %H:%i:%s') . ",
                extra_data
           FROM longdescs
                INNER JOIN profiles ON profiles.userid = longdescs.who

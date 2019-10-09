@@ -37,6 +37,7 @@
 >
 <!ELEMENT [% "bug" %] (bug_id,
                (alias?,
+                filed_via,
                 creation_ts,
                 short_desc,
                 delta_ts,
@@ -52,6 +53,7 @@
                 bug_status,
                 resolution?,
                 dup_id?,
+                duplicates*,
                 see_also*,
                 bug_file_loc?,
                 status_whiteboard?,
@@ -121,6 +123,7 @@
 <!ELEMENT op_sys (#PCDATA)>
 <!ELEMENT resolution (#PCDATA)>
 <!ELEMENT dup_id (#PCDATA)>
+<!ELEMENT duplicates (#PCDATA)>
 <!ELEMENT bug_file_loc (#PCDATA)>
 <!ELEMENT short_desc (#PCDATA)>
 <!ELEMENT keywords (#PCDATA)>

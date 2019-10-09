@@ -122,12 +122,12 @@ my ($fh, $filename) = File::Temp::tempfile(
 chmod Bugzilla::Install::Filesystem::CGI_WRITE, $filename
   or warn install_string('chmod_failed', {path => $filename, error => $!});
 
-my $urlbase = Bugzilla->localconfig->{urlbase};
+my $urlbase = Bugzilla->localconfig->urlbase;
 
 print $fh "digraph G {";
 print $fh qq(
 graph [URL="${urlbase}query.cgi", rankdir=$rankdir]
-node [URL="${urlbase}show_bug.cgi?id=\\N", style=filled, color=lightgrey]
+node [URL="${urlbase}show_bug.cgi?id=\\N", style=filled, color=lightgray]
 );
 
 my %baselist;
@@ -260,7 +260,7 @@ if ($bug_count > MAX_WEBDOT_BUGS) {
 my $webdotbase = Bugzilla->params->{'webdotbase'};
 
 if ($webdotbase =~ /^https?:/) {
-  $webdotbase =~ s/%(?:sslbase|urlbase)%/Bugzilla->localconfig->{urlbase}/eg;
+  $webdotbase =~ s/%(?:sslbase|urlbase)%/Bugzilla->localconfig->urlbase/eg;
   my $url = $webdotbase . $filename;
   $vars->{'image_url'} = $url . ".gif";
   $vars->{'map_url'}   = $url . ".map";
@@ -295,7 +295,7 @@ else {
 
   # Then, generate a imagemap datafile that contains the corner data
   # for drawn bug objects. Pass it on to $CreateImagemap that
-  # turns this monster into html.
+  # turns this monster into HTML.
 
   my ($mapfh, $mapfilename)
     = File::Temp::tempfile("XXXXXXXXXX", SUFFIX => '.map', DIR => $webdotdir);
@@ -316,7 +316,7 @@ else {
 # Cleanup any old .dot files created from previous runs.
 my $since = time() - 24 * 60 * 60;
 
-# Can't use glob, since even calling that fails taint checks for perl < 5.6
+# Can't use glob, since even calling that fails taint checks for Perl < 5.6
 opendir(DIR, $webdotdir);
 my @files = grep { /\.dot$|\.png$|\.map$/ && -f "$webdotdir/$_" } readdir(DIR);
 closedir DIR;

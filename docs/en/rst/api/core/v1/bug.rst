@@ -256,7 +256,13 @@ attachments          array   Each array item is an Attachment object. See
                              :ref:`rest_attachments` for details of the object.
 comments             array   Each array item is a Comment object. See
                              :ref:`rest_comments` for details of the object.
+counts               object  An object containing the numbers of the items in the
+                             following fields: ``attachments``, ``cc``,
+                             ``comments``, ``keywords``, ``blocks``,
+                             ``depends_on``, ``regressed_by``, ``regressions``
+                             and ``duplicates``.
 description          string  The description (initial comment) of the bug.
+filed_via            string  How the bug was filed, e.g. ``standard_form``.
 history              array   Each array item is a History object. See
                              :ref:`rest_history` for details of the object.
 tags                 array   Each array item is a tag name. Note that tags are
@@ -499,6 +505,7 @@ creator           string    The login name of the user who created the bug. You
                             ``reporter``, for backwards compatibility with
                             older Bugzillas.
 description       string    The description (initial comment) of the bug.
+filed_via         string    Searches for bugs that were created with this method.
 id                int       The numeric ID of the bug.
 last_change_time  datetime  Searches for bugs that were modified at this time
                             or later. May not be an array.
@@ -640,6 +647,8 @@ name                type     description
 description         string   (defaulted) The description (initial comment) of the
                              bug. Some Bugzilla installations require this to not
                              be blank.
+filed_via           string   (defaulted) How the bug is being filed. It will be
+                             ``api`` by default when filing through the API.
 op_sys              string   (defaulted) The operating system the bug was
                              discovered on.
 platform            string   (defaulted) What type of hardware the bug was
@@ -648,7 +657,8 @@ priority            string   (defaulted) What order the bug will be fixed in by
                              the developer, compared to the developer's other
                              bugs.
 severity            string   (defaulted) How severe the bug is.
-type                string   (defaulted) The basic category of the bug.
+type                string   (defaulted) The basic category of the bug. Some
+                             Bugzilla installations require this to be specified.
 alias               string   The alias for the bug that can be used instead of a
                              bug number when accessing this bug. Must be unique
                              in all of this Bugzilla.
@@ -757,6 +767,8 @@ id    int   This is the ID of the newly-filed bug.
   the type id value to update or add a flag.
 * 134 (Inactive Flag Type)
   The flag type is inactive and cannot be used to create new flags.
+* 135 (Bug Type Required)
+  You didn't specify a type for the bug.
 * 504 (Invalid User)
   Either the QA Contact, Assignee, or CC lists have some invalid user
   in them. The error message will have more details.
@@ -928,9 +940,9 @@ product                string   The name of the product that the bug is in. If
                                 valid on a bug depends on the product. Groups
                                 that are not valid in the new product will be
                                 automatically removed, and groups which are
-                                mandatory in the new product will be automaticaly
-                                added, but no other automatic group changes will
-                                be done.
+                                mandatory in the new product will be
+                                automatically added, but no other automatic group
+                                changes will be done.
 
                                 .. note::
                                    Users can only move a bug into a product if

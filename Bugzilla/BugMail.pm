@@ -616,8 +616,8 @@ sub _get_new_bugmail_fields {
   my @diffs;
 
   # Show fields in the same order as the DEFAULT_FIELDS list, which mirrors
-  # 4.0's behavour and provides sane grouping of similar fields.
-  # Any additional fields are sorted by descrsiption
+  # 4.0's behavior and provides sane grouping of similar fields.
+  # Any additional fields are sorted by description
   my @prepend;
   foreach my $name (map { $_->{name} } Bugzilla::Field::DEFAULT_FIELDS) {
     my $idx = firstidx { $_->name eq $name } @fields;
@@ -673,7 +673,7 @@ sub _get_new_bugmail_fields {
 
 sub _parse_see_also {
   my (@links) = @_;
-  my $urlbase = Bugzilla->localconfig->{urlbase};
+  my $urlbase = Bugzilla->localconfig->urlbase;
   my $bug_link_re = qr/^\Q$urlbase\Eshow_bug\.cgi\?id=(\d+)$/;
 
   return grep { /^\d+$/ } map { /$bug_link_re/ ? int($1) : () } @links;

@@ -44,7 +44,7 @@ our @EXPORT = qw(
 # Return an URL base appropriate for constructing a ref link
 # normally required by REST API calls.
 sub ref_urlbase {
-  return Bugzilla->localconfig->{urlbase} . "bzapi";
+  return Bugzilla->localconfig->urlbase . "bzapi";
 }
 
 # convert certain fields within a bug object
@@ -208,7 +208,7 @@ sub fix_bug {
       next;
     }
 
-    next if $method eq 'Bug.search' && $key eq 'url';    # Return url even if empty
+    next if $method eq 'Bug.search' && $key eq 'url';    # Return URL even if empty
     next if $method eq 'Bug.search' && $key eq 'keywords'; # Return keywords even if empty
     next if $method eq 'Bug.search' && $key eq 'whiteboard'; # Return whiteboard even if empty
     next if $method eq 'Bug.get' && grep($_ eq $key, TIMETRACKING_FIELDS);

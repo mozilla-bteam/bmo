@@ -106,7 +106,7 @@ sub MessageToMTA {
   # We add this header to uniquely identify all email that we
   # send as coming from this Bugzilla installation.
   #
-  $email->header_set('X-Bugzilla-URL', Bugzilla->localconfig->{urlbase});
+  $email->header_set('X-Bugzilla-URL', Bugzilla->localconfig->urlbase);
 
   # We add this header to mark the mail as "auto-generated" and
   # thus to hopefully avoid auto replies.
@@ -157,7 +157,7 @@ sub MessageToMTA {
   else {
     # Sendmail will automatically append our hostname to the From
     # address, but other mailers won't.
-    my $urlbase = Bugzilla->localconfig->{urlbase};
+    my $urlbase = Bugzilla->localconfig->urlbase;
     $urlbase =~ m|//([^:/]+)[:/]?|;
     $hostname = $1;
     $from .= "\@$hostname" if $from !~ /@/;
@@ -218,14 +218,14 @@ sub MessageToMTA {
     $content_type =~ /charset=['"](.+)['"]/;
 
     # If no charset is defined or is the default us-ascii,
-    # then we encode the email to UTF-8 if Bugzilla has utf8 enabled.
+    # then we encode the email to UTF-8 if Bugzilla has UTF-8 enabled.
     # XXX - This is a hack to workaround bug 723944.
     if (!$1 || $1 eq 'us-ascii') {
       my $body = $part->body;
       if (Bugzilla->params->{'utf8'}) {
         $part->charset_set('UTF-8');
 
-        # encoding_set works only with bytes, not with utf8 strings.
+        # encoding_set works only with bytes, not with UTF-8 strings.
         my $raw = $part->body_raw;
         if (utf8::is_utf8($raw)) {
           utf8::encode($raw);
@@ -273,7 +273,7 @@ sub build_thread_marker {
     $user_id = Bugzilla->user->id;
   }
 
-  my $sitespec = '@' . Bugzilla->localconfig->{urlbase};
+  my $sitespec = '@' . Bugzilla->localconfig->urlbase;
   $sitespec =~ s/:\/\//\./;    # Make the protocol look like part of the domain
   $sitespec =~ s/^([^:\/]+):(\d+)/$1/;    # Remove a port number, to relocate
   if ($2) {

@@ -523,7 +523,7 @@ sub history {
     $item{id} = $self->type('int', $bug_id);
 
     my ($activity)
-      = Bugzilla::Bug::GetBugActivity($bug_id, undef, $params->{new_since});
+      = Bugzilla::Bug::GetBugActivity($bug_id, undef, $params->{new_since}, 1);
 
     my @history;
     foreach my $changeset (@$activity) {
@@ -878,6 +878,9 @@ sub create {
 
   $params = Bugzilla::Bug::map_fields($params);
 
+  # Define the bug file method if missing
+  $params->{filed_via} //= 'api';
+
   my $flags = delete $params->{flags};
 
   # We start a nested transaction in case flag setting fails
@@ -1076,7 +1079,7 @@ sub update_attachment {
     }
     elsif (scalar @$update_flags && !scalar(@$new_flags) && !scalar keys %$params) {
 
-      # Requestees can set flags targetted to them, even if they cannot
+      # Requestees can set flags targeted to them, even if they cannot
       # edit the attachment. Flag setters can edit their own flags too.
       my %flag_list = map { $_->{id} => $_ } @$update_flags;
       my $flag_objs = Bugzilla::Flag->new_from_list([keys %flag_list]);
@@ -1526,6 +1529,9 @@ sub _bug_to_hash {
   if (filter_wants $params, 'duplicates') {
     $item{'duplicates'} = [map { $self->type('int', $_->id) } @{$bug->duplicates}];
   }
+  if (filter_wants $params, 'filed_via', ['extra']) {
+    $item{'filed_via'} = $self->type('string', $bug->filed_via);
+  }
   if (filter_wants $params, 'groups') {
     my @groups = map { $self->type('string', $_->name) } @{$bug->groups_in};
     $item{'groups'} = \@groups;
@@ -1533,7 +1539,7 @@ sub _bug_to_hash {
   if (filter_wants $params, 'history', ['extra']) {
     my @result;
     my ($activity)
-      = Bugzilla::Bug::GetBugActivity($bug->id, undef, $params->{new_since});
+      = Bugzilla::Bug::GetBugActivity($bug->id, undef, $params->{new_since}, 1);
     foreach my $changeset (@$activity) {
       push(@result,
            $self->_changeset_to_hash($changeset, $params, ['extra'], 'history'));
@@ -1659,6 +1665,14 @@ sub _bug_to_hash {
     $item{'comment_count'} = $self->type('int', $bug->comment_count);
   }
 
+  if (filter_wants $params, 'counts', ['extra']) {
+    $item{'counts'} = {};
+
+    while (my ($key, $value) = each %{$bug->counts}) {
+      $item{'counts'}->{$key} = $self->type('int', $value);
+    }
+  }
+
   return \%item;
 }
 
@@ -1737,11 +1751,14 @@ sub _changeset_to_hash {
     my $api_field_type = $api_field_types{$field_name} || 'string';
     my $api_field_name = $api_field_names{$field_name} || $field_name;
     my $attach_id      = delete $change->{attachid};
+    my $comment        = delete $change->{comment};
 
     $change->{field_name}    = $self->type('string',        $api_field_name);
     $change->{removed}       = $self->type($api_field_type, $change->{removed});
     $change->{added}         = $self->type($api_field_type, $change->{added});
     $change->{attachment_id} = $self->type('int', $attach_id) if $attach_id;
+    $change->{comment_id}    = $self->type('int', $comment->id) if $comment;
+    $change->{comment_count} = $self->type('int', $comment->count) if $comment;
 
     push (@{$item->{changes}}, $change);
   }
@@ -1856,7 +1873,7 @@ or get information about bugs that have already been filed.
 See L<Bugzilla::WebService> for a description of how parameters are passed,
 and what B<STABLE>, B<UNSTABLE>, and B<EXPERIMENTAL> mean.
 
-Although the data input and output is the same for JSONRPC, XMLRPC and REST,
+Although the data input and output is the same for JSON-RPC, XML-RPC and REST,
 the directions for how to access the data via REST is noted in each method
 where applicable.
 
@@ -2678,7 +2695,7 @@ B<STABLE>
 
 Gets information about particular bugs in the database.
 
-Note: Can also be called as "get_bugs" for compatibilty with Bugzilla 3.0 API.
+Note: Can also be called as "get_bugs" for compatibility with Bugzilla 3.0 API.
 
 =item B<REST>
 
@@ -2781,6 +2798,10 @@ members. To see the keys included in the user detail hash, see below.
 
 C<string> The name of the current classification the bug is in.
 
+=item C<comment_count>
+
+C<int> The number of the comments left on this bug.
+
 =item C<comments>
 
 C<array> of hashes containing comment details of the bug. See the comments
@@ -2792,6 +2813,17 @@ in C<include_fields>.
 =item C<component>
 
 C<string> The name of the current component of this bug.
+
+=item C<counts>
+
+B<UNSTABLE>
+
+C<hash> A hash containing the numbers of the items in the following fields:
+C<attachments>, C<cc>, C<comments>, C<keywords>, C<blocks>, C<depends_on>,
+C<regressed_by>, C<regressions> and C<duplicates>.
+
+This is an B<extra> field returned only by specifying C<counts> or C<_extra> in
+C<include_fields>.
 
 =item C<creation_time>
 
@@ -2841,6 +2873,13 @@ take.
 
 If you are not in the time-tracking group, this field will not be included
 in the return value.
+
+=item C<filed_via>
+
+How the bug was filed, e.g. C<standard_form>.
+
+This is an B<extra> field returned only by specifying C<filed_via> or
+C<_extra> in C<include_fields>.
 
 =item C<flags>
 
@@ -2918,7 +2957,7 @@ C<boolean> True if this bug is open, false if it is closed.
 =item C<is_creator_accessible>
 
 C<boolean> If true, this bug can be accessed by the creator (reporter)
-of the bug, even if he or she is not a member of the groups the bug
+of the bug, even if they’re not a member of the groups the bug
 is restricted to.
 
 =item C<keywords>
@@ -3191,9 +3230,10 @@ and all custom fields.
 =item The C<actual_time> item was added to the C<bugs> return value
 in Bugzilla B<4.4>.
 
-=item The C<attachments>, C<comments>, C<description>, C<duplicates>,
-C<history>, C<regressed_by>, C<regressions>, C<triage_owner> and C<type> fields
-were added in Bugzilla B<6.0>.
+=item The C<attachments>, C<comment_count>, C<comments>, C<counts>,
+C<description>, C<duplicates>, C<filed_via>, C<history>, C<regressed_by>,
+C<regressions>, C<triage_owner> and C<type> fields were added in Bugzilla
+B<6.0>.
 
 =back
 
@@ -3471,6 +3511,10 @@ backwards compatibility with older Bugzillas.
 
 C<string> The description (initial comment) of the bug.
 
+=item C<filed_via>
+
+C<string> Searches for bugs that were created with this method.
+
 =item C<id>
 
 C<int> The numeric id of the bug.
@@ -3700,6 +3744,9 @@ the version the bug was found in.
 =item C<description> (string) B<Defaulted> - The description (initial comment)
 of the bug. Some Bugzilla installations require this to not be blank.
 
+=item C<filed_via> (string) B<Defaulted> - How the bug is being filed.
+It will be C<api> by default when filing through the API.
+
 =item C<op_sys> (string) B<Defaulted> - The operating system the bug was
 discovered on.
 
@@ -3711,7 +3758,8 @@ in by the developer, compared to the developer's other bugs.
 
 =item C<severity> (string) B<Defaulted> - How severe the bug is.
 
-=item C<type> (string) B<Defaulted> - The basic category of the bug.
+=item C<type> (string) B<Defaulted> - The basic category of the bug. Some
+Bugzilla installations require this to be specified.
 
 =item C<alias> (string) - A brief alias for the bug that can be used
 instead of a bug number when accessing this bug. Must be unique in
@@ -3846,6 +3894,10 @@ the type id value to update or add a flag.
 =item 134 (Inactive Flag Type)
 
 The flag type is inactive and cannot be used to create new flags.
+
+=item 135 (Bug Type Required)
+
+You didn't specify a type for the bug.
 
 =item 504 (Invalid User)
 
@@ -4643,7 +4695,7 @@ C<string> The full login name of the bug's QA Contact.
 =item C<is_creator_accessible>
 
 C<boolean> Whether or not the bug's reporter is allowed to access
-the bug, even if he or she isn't in a group that can normally access
+the bug, even if they aren’t in a group that can normally access
 the bug.
 
 =item C<regressed_by>

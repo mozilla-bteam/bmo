@@ -53,7 +53,6 @@ logout($sel);
 
 log_in($sel, $config, 'QA_Selenium_TEST');
 file_bug_in_product($sel, 'TestProduct');
-$sel->check_ok('//input[@name="bug_type" and @value="defect"]');
 $sel->select_ok("bug_severity", "label=critical");
 $sel->type_ok("short_desc", "Test bug editing");
 $sel->type_ok("comment",    "ploc");
@@ -113,8 +112,8 @@ check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 logout($sel);
 
-# The admin is not in the mandatory group, but he has been CC'ed,
-# so he can view and edit the bug (as he has editbugs privs by inheritance).
+# The admin is not in the mandatory group, but they have been CC'ed,
+# so they can view and edit the bug (as they have editbugs privs by inheritance).
 
 log_in($sel, $config, 'admin');
 go_to_bug($sel, $bug1_id);
@@ -137,7 +136,7 @@ check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 logout($sel);
 
-# The powerless user can see the restricted bug, as he has been CC'ed.
+# The powerless user can see the restricted bug, as they have been CC'ed.
 
 log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
@@ -270,7 +269,7 @@ $sel->click_ok("submit");
 check_page_load($sel, q{http://HOSTNAME/editproducts.cgi});
 $sel->title_is("Update group access controls for TestProduct");
 
-# The user is in the master group, so he can comment.
+# The user is in the master group, so they can comment.
 
 go_to_bug($sel, $bug1_id);
 $sel->type_ok("comment", "Do nothing except adding a comment...");
@@ -279,7 +278,7 @@ check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 logout($sel);
 
-# This user is not in the master group, so he cannot comment.
+# This user is not in the master group, so they cannot comment.
 
 log_in($sel, $config, 'QA_Selenium_TEST');
 go_to_bug($sel, $bug1_id);
@@ -312,16 +311,17 @@ $sel->type_ok("email2", $config->{QA_Selenium_TEST_user_login});
 screenshot_page($sel, '/app/artifacts/line271.png');
 $sel->click_ok("Search");
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?emailreporter2=1&emailtype2=exact&order=Importance&list_id=15&emailtype1=exact&emailcc2=1&query_format=advanced&emailassigned_to1=1&emailqa_contact2=1&email2=QA-Selenium-TEST%40mozilla.test&email1=admin%40mozilla.test&emailassigned_to2=1&product=TestProduct}
+  q{http://HOSTNAME/buglist.cgi?emailreporter2=1&order=Importance&emailtype2=exact&list_id=__LIST_ID__&emailtype1=exact&emailcc2=1&emailassigned_to1=1&query_format=advanced&emailqa_contact2=1&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to2=1&email1=admin%40mozilla.test&product=TestProduct}
 );
 $sel->title_is("Bug List");
 screenshot_page($sel, '/app/artifacts/line275.png');
 $sel->is_text_present_ok("One bug found.");
 $sel->type_ok("save_newqueryname", "My bugs from QA_Selenium");
 $sel->click_ok("remember");
-check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?newquery=email1%3Dadmin%2540mozilla.test%26email2%3DQA-Selenium-TEST%2540mozilla.test%26emailassigned_to1%3D1%26emailassigned_to2%3D1%26emailcc2%3D1%26emailqa_contact2%3D1%26emailreporter2%3D1%26emailtype1%3Dexact%26emailtype2%3Dexact%26list_id%3D15%26product%3DTestProduct%26query_format%3Dadvanced%26order%3Dpriority%252Cbug_severity&cmdtype=doit&remtype=asnamed&token=1531926552-dc69995d79c786af046436ec6717000b&newqueryname=My%20bugs%20from%20QA_Selenium&list_id=16}
-);
+# Bad test below, unable to deterministically know the inner list_id encoded in the newquery param.
+# check_page_load($sel,
+#   q{http://HOSTNAME/buglist.cgi?newquery=email1%3Dadmin%2540mozilla.test%26email2%3DQA-Selenium-TEST%2540mozilla.test%26emailassigned_to1%3D1%26emailassigned_to2%3D1%26emailcc2%3D1%26emailqa_contact2%3D1%26emailreporter2%3D1%26emailtype1%3Dexact%26emailtype2%3Dexact%26list_id%3D15%26product%3DTestProduct%26query_format%3Dadvanced%26order%3Dpriority%252Cbug_severity&cmdtype=doit&remtype=asnamed&token=1531926552-dc69995d79c786af046436ec6717000b&newqueryname=My+bugs+from+QA_Selenium&list_id=__LIST_ID__}
+# );
 $sel->title_is("Search created");
 $sel->is_text_present_ok(
   "OK, you have a new search named My bugs from QA_Selenium.");
@@ -329,7 +329,7 @@ $sel->click_ok(
   '//a[normalize-space(text())="My bugs from QA_Selenium" and not(@role="option")]'
 );
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=17}
+  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My+bugs+from+QA_Selenium&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List: My bugs from QA_Selenium");
 logout($sel);
@@ -339,7 +339,6 @@ logout($sel);
 
 log_in($sel, $config, 'QA_Selenium_TEST');
 file_bug_in_product($sel, 'TestProduct');
-$sel->check_ok('//input[@name="bug_type" and @value="defect"]');
 $sel->select_ok("bug_severity", "label=blocker");
 $sel->type_ok("short_desc", "New bug from me");
 
@@ -389,7 +388,7 @@ $sel->click_ok(
   '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
 screenshot_page($sel, '/app/artifacts/line344.png');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=19}
+  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My+bugs+from+QA_Selenium&list_id=__LIST_ID__}
 );
 screenshot_page($sel, '/app/artifacts/line346.png');
 $sel->title_is("Bug List: My bugs from QA_Selenium");
@@ -398,7 +397,7 @@ $sel->is_text_present_ok("2 bugs found");
 screenshot_page($sel, '/app/artifacts/line350.png');
 $sel->click_ok('change-several');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=20}
+  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");
@@ -525,13 +524,13 @@ $sel->click_ok('quicksearch_top');
 $sel->click_ok(
   '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=21}
+  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My+bugs+from+QA_Selenium&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List: My bugs from QA_Selenium");
 $sel->is_text_present_ok("2 bugs found");
 $sel->click_ok('change-several', 'Change Several Bugs at Once');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=22}
+  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");
@@ -547,12 +546,12 @@ $sel->click_ok('quicksearch_top');
 $sel->click_ok(
   '//a[normalize-space(text())="My bugs from QA_Selenium" and @role="option"]');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My%20bugs%20from%20QA_Selenium&list_id=23}
+  q{http://HOSTNAME/buglist.cgi?cmdtype=runnamed&namedcmd=My+bugs+from+QA_Selenium&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List: My bugs from QA_Selenium");
 $sel->click_ok('forget-search', 'Forget Search');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?cmdtype=dorem&remaction=forget&namedcmd=My%20bugs%20from%20QA_Selenium&token=1531926582-f228fa8ebc2f2b3970f2a791e54534ec&list_id=24}
+  q{http://HOSTNAME/buglist.cgi?cmdtype=dorem&remaction=forget&namedcmd=My+bugs+from+QA_Selenium&token=1531926582-f228fa8ebc2f2b3970f2a791e54534ec&list_id=__LIST_ID__}
 );
 $sel->title_is("Search is gone");
 $sel->is_text_present_ok("OK, the My bugs from QA_Selenium search is gone");

@@ -83,8 +83,8 @@ sub process_diff {
 
     setup_template_patch_reader($last_reader, $format, $context, $vars);
 
-    # The patch is going to be displayed in a HTML page and if the utf8
-    # param is enabled, we have to encode attachment data as utf8.
+    # The patch is going to be displayed in a HTML page and if the UTF-8
+    # param is enabled, we have to encode attachment data as UTF-8.
     if (Bugzilla->params->{'utf8'}) {
       $attachment->data;    # Populate ->{data}
       utf8::decode($attachment->{data});
@@ -106,7 +106,7 @@ sub process_interdiff {
     }
   }
 
-  # Encode attachment data as utf8 if it's going to be displayed in a HTML
+  # Encode attachment data as UTF-8 if it's going to be displayed in a HTML
   # page using the UTF-8 encoding.
   if ($format ne 'raw' && Bugzilla->params->{'utf8'}) {
     $old_attachment->data;    # Populate ->{data}
@@ -275,14 +275,14 @@ sub setup_patch_readers {
 
   # Add in cvs context if we have the necessary info to do it
   if ( $context ne 'patch'
-    && Bugzilla->localconfig->{cvsbin}
+    && Bugzilla->localconfig->cvsbin
     && Bugzilla->params->{'cvsroot_get'})
   {
     require Bugzilla::PatchReader::AddCVSContext;
 
     # We need to set $cvsbin as global, because PatchReader::CVSClient
     # needs it in order to find 'cvs'.
-    $main::cvsbin = Bugzilla->localconfig->{cvsbin};
+    $main::cvsbin = Bugzilla->localconfig->cvsbin;
     $last_reader->sends_data_to(new Bugzilla::PatchReader::AddCVSContext(
       $context, Bugzilla->params->{'cvsroot_get'}
     ));
@@ -310,7 +310,7 @@ sub setup_template_patch_reader {
   $vars->{'collapsed'} = $cgi->param('collapsed');
   $vars->{'context'}   = $context;
   $vars->{'do_context'}
-    = Bugzilla->localconfig->{cvsbin}
+    = Bugzilla->localconfig->cvsbin
     && Bugzilla->params->{'cvsroot_get'}
     && !$vars->{'newid'};
 

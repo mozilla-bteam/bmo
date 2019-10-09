@@ -70,14 +70,12 @@ returned by a query, over and above those defined in the fields at the top
 of the page. It is thereby possible to search for bugs
 based on elaborate combinations of criteria.
 
-The simplest custom searches have only one term. These searches
-permit the selected *field*
-to be compared using a
-selectable *operator* to a
-specified *value.* Much of this could be reproduced using the standard
-fields. However, you can then combine terms using "Match ANY" or "Match ALL",
-using parentheses for combining and priority, in order to construct searches
-of almost arbitrary complexity.
+The simplest custom searches have only one term. These searches permit the
+selected *field* to be compared using a selectable *operator* to a specified
+*value*. Much of this could be reproduced using the standard fields. However,
+you can then combine terms using "Match All" (AND) or "Match Any" (OR), using
+groups for combining and priority, in order to construct searches of almost
+arbitrary complexity.
 
 There are three fields in each row (known as a "term") of a custom search:
 
@@ -91,7 +89,7 @@ There are three fields in each row (known as a "term") of a custom search:
   the value to which the field is being compared
 
 The list of available *fields* contains all the fields defined for a bug,
-including any custom fields, and then also some pseudofields like
+including any custom fields, and then also some pseudo-fields like
 :guilabel:`Assignee Real Name`, :guilabel:`Days Since Bug Changed`,
 :guilabel:`Time Since Assignee Touched` and other things it may be useful to
 search on.
@@ -105,11 +103,12 @@ operators for :guilabel:`is empty` and :guilabel:`is not empty`, because
 Bugzilla can't tell the difference between a value field left blank on
 purpose and one left blank by accident.
 
-You can have an arbitrary number of rows, and the dropdown box above them
-defines how they relate—:guilabel:`Match ALL of the following separately`,
-:guilabel:`Match ANY of the following separately`, or :guilabel:`Match ALL of
-the following against the same field`. The difference between the first and
-the third can be illustrated with a comment search. If you have a search::
+You can have an arbitrary number of rows and groups, and rearrange them by
+dragging and dropping the handle on each item. You can even duplicate an item by
+holding the Alt key while dragging it. The radio buttons above them define how
+they relate — :guilabel:`Match All`, :guilabel:`Match All (Same Field)` or
+:guilabel:`Match Any`. The difference between the first and second can be
+illustrated with a comment search. If you have a search::
 
     Comment   contains the string   "Fred"
     Comment   contains the string   "Barney"
@@ -120,15 +119,6 @@ comment, whereas under the second (match against the same field), both strings
 would need to occur in exactly the same comment.
 
 .. _advanced-features:
-
-Advanced Features
------------------
-
-If you click :guilabel:`Show Advanced Features`, then more capabilities appear.
-You can negate any row with a checkbox (see below) and also group lines of the
-search with parentheses to determine how different search terms relate. Within
-each bracketed set, you get the choice of combining them using ALL (i.e. AND)
-or ANY (i.e. OR).
 
 Negation
 --------
@@ -202,6 +192,79 @@ So if you are looking for bugs reported by any user being in the
 
     reporter   equals   "%group.editbugs%"
 
+.. _group_restrictions:
+
+Searching for Bugs Restricted to Groups
+---------------------------------------
+
+When administrators set up products, they can establish one or more 
+groups bugs in the product can be associated with. If a bug is associated
+with a group then only users who are members of the group can see them. 
+
+This restriction is mostly used for security-related bugs, or internal tickets.
+
+In order to search for bugs restricted to a group, you must be a member of the group. 
+
+Visit `the Permissions page <https://bugzilla.mozilla.org/userprefs.cgi?tab=permissions>`_ 
+to find the groups you belong to, then search using the clause
+
+    Group   is equal to "%group.groupname%"
+    
+to list the bugs restricted to `groupname`.
+
+.. _relative-dates:
+
+Searching on Relative Dates
+---------------------------
+
+In order to conduct searches over a window of time, you can use *relative dates* in query values.
+
+The relative date values are of the form `nnV` where `nn` is a positive or negative integer and `V` is one of:
+
+* `h` – for hours
+* `d` – for days
+* `w` – for weeks
+* `m` – for months
+* `y` – for years
+
+A value of `1d` means 24 hours in the future from the time of the search.
+
+A value of `-1d` means 24 hours in the past from the time of the search.
+
+These relative values can be used when the :guilabel:`Custom Search` operator is one of:
+
+* :guilabel:`is less than`
+* :guilabel:`is less than or equal to`
+* :guilabel:`is greater than`
+* :guilabel:`is greater than or equal to`
+
+and the field compared is a Datetime type.
+
+To find bugs opened in the last 24 hours, you could search on:
+
+    Opened   is less than   "-1d"
+
+To find bugs opened during the current day (UTC),
+
+    Opened   is less than   "-0ds"
+
+Appending `s` to a relative date means *start of*.
+
+You may also use relative dates for when a field changed. In the :guilabel:`Custom Search` operator that would be
+
+* :guilabel:`changed after`
+* :guilabel:`changed before`
+
+To find bugs whose :guilabel:`priority` changed in the last seven days, search on:
+
+    Priority   changed after   "-1w"
+
+You can also search for a change to a particular value over a relative date using the :guilabel:`Search by Change History` operator.
+
+To find the bugs `RESOLVED` as `WONTFIX` in the current year to date, you would search on
+
+    Resolution   changed to "WONTFIX"   between "-0ys" and "NOW"
+
 .. _list:
 
 Bug Lists
@@ -255,22 +318,6 @@ Edit Search:
     to the query you just made so you get more accurate results.
 
 Remember Search As:
-    You can give a search a name and remember it; a link will appear
-    in your page footer giving you quick access to run it again later.
-
-Individual Bug Lists
-====================
-
-You can add and remove tags from individual bugs, which let you find and manage
-bugs more easily. Tags are per-user and so are only visible and editable by the
-user who created them. You can then run queries using tags as a criteria, either
-by using the Advanced Search form, or simply by typing "tag:my_tag_name" in the
-QuickSearch box at the top (or bottom) of the page. Tags can also be displayed
-in bug lists.
-
-This feature is useful when you want to keep track of several bugs, but for
-different reasons. Instead of adding yourself to the CC list of all these bugs
-and mixing all these reasons, you can now store these bugs in separate lists,
-e.g. “Keep in mind”, “Interesting bugs”, or “Triage”. One big advantage of this
-way to manage bugs is that you can easily add or remove tags from bugs one by
-one.
+    You can give a search a name and remember it; the name will appear
+    as an auto-completion in the search field in the header of Bugzilla
+    pages giving you quick access to run it again later.

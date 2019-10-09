@@ -108,7 +108,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   let oldWay = false;
-  let container = document.getElementById("module-details-content");
+  let container = document.getElementById("module-crash-data-content");
   if (!container) {
     container = document.getElementById("field_label_cf_crash_signature");
     oldWay = true;
@@ -247,7 +247,6 @@ window.addEventListener('DOMContentLoaded', () => {
           addUpdateSFButton(statusFlagsSelects);
         }
       });
-      iframe.setAttribute("src", crashStopLink);
       iframe.setAttribute("id", "crash-stop-iframe");
       iframe.setAttribute("tabindex", "0");
       iframe.setAttribute("style", "display:block;width:100%;height:100%;margin-top:8px;border:0px;");
@@ -258,6 +257,23 @@ window.addEventListener('DOMContentLoaded', () => {
       spinner.setAttribute("role", "button");
       spinner.setAttribute("tabindex", "0");
       spinner.setAttribute("style", "padding-right:5px;cursor:pointer;");
+
+      const load_iframe = () => iframe.src = crashStopLink;
+
+      // Load the iframe once it becomes visible in the viewport, otherwise the height passed by
+      // *hidden* iframe through `postMessage()` will be 25px, hiding most of the content
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+          if (entry.intersectionRatio > 0) {
+            observer.unobserve(iframe);
+            load_iframe();
+          }
+        }), { root: document.querySelector('#bugzilla-body') });
+
+        observer.observe(iframe);
+      } else {
+        load_iframe();
+      }
 
       function hide() {
         spinner.innerText = "▸";
@@ -331,7 +347,8 @@ window.addEventListener('DOMContentLoaded', () => {
       divButton.setAttribute("style", "display:none;");
       button.setAttribute("type", "button");
       button.setAttribute("style", "position:absolute;right:0;top:0");
-      button.innerText = "Update status flags";
+      button.classList.add("minor");
+      button.innerText = "Update Status Flags";
       button.addEventListener("click", updateStatusFlags, false);
       divButton.append(button);
       rightDiv.append(divButton);
@@ -354,7 +371,7 @@ window.addEventListener('DOMContentLoaded', () => {
             });
           } else {
             document.getElementById("mode-btn").click();
-            const e = document.getElementById("module-firefox-tracking-flags");
+            const e = document.getElementById("module-tracking");
             e.scrollIntoView();
           }
           statusFlagsSelects.affected.map(function (select) {
@@ -391,7 +408,7 @@ window.addEventListener('DOMContentLoaded', () => {
         mainDiv.setAttribute("class", "field");
         const leftDiv = document.createElement("div");
         leftDiv.setAttribute("class", "name");
-        leftDiv.innerText = "Crash Data:";
+        leftDiv.innerText = "Stats:";
         mainDiv.append(leftDiv, rightDiv);
         container.append(mainDiv);
       }

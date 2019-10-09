@@ -65,7 +65,8 @@ my $report       = Bugzilla::Report::SecurityRisk->new(
   start_date   => $start_date,
   end_date     => $end_date,
   teams        => $teams,
-  sec_keywords => $sec_keywords
+  sec_keywords => $sec_keywords,
+  very_old_days => 45
 );
 
 my $bugs_by_team = $report->results->[-1]->{bugs_by_team};
@@ -75,7 +76,7 @@ my @sorted_team_names = sort { ## no critic qw(BuiltinFunctions::ProhibitReverse
 } keys %$teams;
 
 my $vars = {
-  urlbase            => Bugzilla->localconfig->{urlbase},
+  urlbase            => Bugzilla->localconfig->urlbase,
   report_week        => $report_week,
   teams              => \@sorted_team_names,
   sec_keywords       => $sec_keywords,
@@ -83,6 +84,7 @@ my $vars = {
   deltas             => $report->deltas,
   missing_products   => $report->missing_products,
   missing_components => $report->missing_components,
+  very_old_days      => $report->very_old_days,
   build_bugs_link    => \&build_bugs_link,
 };
 
@@ -132,7 +134,7 @@ $report_dump_file->spurt(Dumper($report));
 
 sub build_bugs_link {
   my ($arr, $product) = @_;
-  my $uri = URI->new(Bugzilla->localconfig->{urlbase} . 'buglist.cgi');
+  my $uri = URI->new(Bugzilla->localconfig->urlbase . 'buglist.cgi');
   $uri->query_param(bug_id => (join ',', @$arr));
   $uri->query_param(product => $product) if $product;
   return $uri->as_string;

@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20190606.1';
+our $VERSION = '20190926.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -28,6 +28,7 @@ use Bugzilla::Field;
 use Bugzilla::Flag;
 use Bugzilla::Hook;
 use Bugzilla::Install::Localconfig qw(read_localconfig);
+use Bugzilla::Localconfig;
 use Bugzilla::Install::Util qw(init_console include_languages);
 use Bugzilla::Memcached;
 use Bugzilla::Template;
@@ -62,12 +63,9 @@ use constant request_cache => Bugzilla::Install::Util::_cache();
 #####################################################################
 
 # Note that this is a raw subroutine, not a method, so $class isn't available.
+# Called prior to every Bugzilla CGI request (not called for native Mojo
+# routes).
 sub init_page {
-
-  # This is probably not needed, but bugs resulting from a dirty
-  # request cache are very annoying (see bug 1347335)
-  # and this is not an expensive operation.
-  clear_request_cache();
   if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE) {
     init_console();
   }
@@ -79,9 +77,9 @@ sub init_page {
     Bugzilla::Logging->fields->{remote_ip} = remote_ip();
   }
 
-  # Because this function is run live from perl "use" commands of
+  # Because this function is run live from Perl "use" commands of
   # other scripts, we're skipping the rest of this function if we get here
-  # during a perl syntax check (perl -c, like we do during the
+  # during a Perl syntax check (perl -c, like we do during the
   # 001compile.t test).
   return if $^C;
 
@@ -109,7 +107,7 @@ sub preload_templates {
 
 sub template {
   request_cache->{template}
-    //= Bugzilla::Template->create(preload => $preload_templates);
+    ||= Bugzilla::Template->create(preload => $preload_templates);
   request_cache->{template}->{_is_main} = 1;
 
   return request_cache->{template};
@@ -126,19 +124,16 @@ sub template_inner {
 }
 
 sub extensions {
-  my $cache = request_cache;
-  if (!$cache->{extensions}) {
-    my $extension_packages = Bugzilla::Extension->load_all();
-    my @extensions;
-    foreach my $package (@$extension_packages) {
-      my $extension = $package->new();
-      if ($extension->enabled) {
-        push(@extensions, $extension);
-      }
+  state $extensions;
+  return $extensions if $extensions;
+  my $extension_packages = Bugzilla::Extension->load_all();
+  $extensions = [];
+  foreach my $package (@$extension_packages) {
+    if ($package->enabled) {
+      push @$extensions, $package;
     }
-    $cache->{extensions} = \@extensions;
   }
-  return $cache->{extensions};
+  return $extensions;
 }
 
 sub cgi {
@@ -163,8 +158,9 @@ sub input_params {
 }
 
 sub localconfig {
-  return $_[0]->process_cache->{localconfig} ||= read_localconfig();
+  return $_[0]->process_cache->{localconfig} ||= Bugzilla::Localconfig->new(read_localconfig());
 }
+
 
 sub params {
   return request_cache->{params} ||= Bugzilla::Config::read_param_file();
@@ -172,7 +168,7 @@ sub params {
 
 sub get_param_with_override {
   my ($class, $name) = @_;
-  return $class->localconfig->{param_override}{$name} // $class->params->{$name};
+  return $class->localconfig->param_override->{$name} // $class->params->{$name};
 }
 
 sub user {
@@ -449,7 +445,7 @@ sub job_queue {
 sub jwt {
   my ($class, @args) = @_;
   require Mojo::JWT;
-  return Mojo::JWT->new(@args, secret => $class->localconfig->{jwt_secret});
+  return Mojo::JWT->new(@args, secret => $class->localconfig->jwt_secret);
 }
 
 sub dbh {
@@ -718,7 +714,7 @@ sub local_timezone {
     ||= DateTime::TimeZone->new(name => 'local');
 }
 
-# Send messages to syslog for the auditing systems (eg. mozdef) to pick up.
+# Send messages to syslog for the auditing systems (e.g. mozdef) to pick up.
 sub audit {
   my (undef, $message) = @_;
   state $logger = Log::Log4perl->get_logger("audit");
@@ -751,8 +747,8 @@ sub memcached {
 # Connector to the Datadog metrics collection daemon.
 sub datadog {
   my ($class, $namespace) = @_;
-  my $host = $class->localconfig->{datadog_host};
-  my $port = $class->localconfig->{datadog_port};
+  my $host = $class->localconfig->datadog_host;
+  my $port = $class->localconfig->datadog_port;
 
   $namespace //= '';
 
@@ -886,7 +882,7 @@ all passed from the caller, and the caller's caller, and....
 
 =item *
 
-We can reuse objects across requests using mod_perl where appropriate (eg
+We can reuse objects across requests using mod_perl where appropriate (e.g.
 templates), whilst destroying those which are only valid for a single request
 (such as the current user)
 
@@ -896,7 +892,7 @@ Note that items accessible via this object are demand-loaded when requested.
 
 For something to be added to this object, it should either be able to benefit
 from persistence when run under mod_perl (such as the a C<template> object),
-or should be something which is globally required by a large ammount of code
+or should be something which is globally required by a large amount of code
 (such as the current C<user> object).
 
 =head1 METHODS
@@ -994,7 +990,7 @@ default), LOGOUT_ALL or LOGOUT_KEEP_CURRENT.
 
 =item C<logout_user($user)>
 
-Logs out the specified user (invalidating all his sessions), taking a
+Logs out the specified user (invalidating all their sessions), taking a
 Bugzilla::User instance.
 
 =item C<logout_by_id($id)>
@@ -1023,7 +1019,7 @@ If false (or not specified), this method will return an arrayref of
 the requested fields.
 
 If true, this method will return a hashref of fields, where the keys
-are field names and the valules are L<Bugzilla::Field> objects.
+are field names and the values are L<Bugzilla::Field> objects.
 
 =item C<type>
 
@@ -1103,7 +1099,7 @@ Change the database object to refer to the main database.
 
 The current Parameters of Bugzilla, as a hashref. If C<data/params>
 does not exist, then we return an empty hashref. If C<data/params>
-is unreadable or is not valid perl, we C<die>.
+is unreadable or is not valid Perl, we C<die>.
 
 =item C<local_timezone>
 
@@ -1124,7 +1120,7 @@ of features, see C<OPTIONAL_MODULES> in C<Bugzilla::Install::Requirements>.
 
 =item C<audit>
 
-Feeds the provided message into our centralised auditing system.
+Feeds the provided message into our centralized auditing system.
 
 =item C<markdown>
 
@@ -1144,7 +1140,7 @@ collisions.
 
 =item B<Request Cache>
 
-The request cache is a hashref which supports caching any perl variable for the
+The request cache is a hashref which supports caching any Perl variable for the
 duration of the current request. At the end of the current request the contents
 of this cache are cleared.
 
@@ -1156,7 +1152,7 @@ Bugzilla.
 
 =item C<request_cache>
 
-Returns a hashref which can be checked and modified to store any perl variable
+Returns a hashref which can be checked and modified to store any Perl variable
 for the duration of the current request.
 
 =item C<clear_request_cache>
@@ -1167,7 +1163,7 @@ Removes all entries from the C<request_cache>.
 
 =item B<Process Cache>
 
-The process cache is a hashref which support caching of any perl variable. If
+The process cache is a hashref which support caching of any Perl variable. If
 Bugzilla is configured to run using Apache mod_perl, the contents of this cache
 are persisted across requests for the lifetime of the Apache worker process
 (which varies depending on the SizeLimit configuration in mod_perl.pl).
@@ -1182,7 +1178,7 @@ is running (for example the path where Bugzilla is installed).
 
 =item C<process_cache>
 
-Returns a hashref which can be checked and modified to store any perl variable
+Returns a hashref which can be checked and modified to store any Perl variable
 for the duration of the current process (mod_perl) or request (mod_cgi).
 
 =back

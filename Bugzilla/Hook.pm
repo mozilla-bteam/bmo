@@ -6,39 +6,45 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Hook;
+use Mojo::Base -strict;
 
-use 5.10.1;
-use strict;
-use warnings;
+use Bugzilla::Logging;
+use List::Util qw(any);
+use Package::Stash;
+use Sub::Identify qw(stash_name);
+use Type::Params qw(compile);
+use Type::Utils -all;
+use Types::Standard -all;
+
+my %HOOKS;
+
+sub finalize {
+  state $check = compile(ArrayRef[ClassName]);
+  my ($extensions) = $check->(@_);
+
+  foreach my $extension (@$extensions) {
+    my $stash = Package::Stash->new($extension);
+    foreach my $name ($stash->list_all_symbols('CODE')) {
+      next if $name =~ /^[A-Z_]+/;
+      my $hook = $extension->can($name) or die "$extension has no method '$name'";
+      next if stash_name($hook) ne $extension; # skip imported methods.
+      push @{$HOOKS{$name}}, [$hook, $extension];
+    }
+  }
+}
 
 sub process {
   my ($name, $args) = @_;
 
-  _entering($name);
-
-  foreach my $extension (@{Bugzilla->extensions}) {
-    if ($extension->can($name)) {
-      $extension->$name($args);
+  # this state variable is used to execute the load_all() method only once.
+  # The double-negation is used because I don't want to hold a reference to it.
+  state $once = !!Bugzilla::Extension->load_all();
+  if ($HOOKS{$name}) {
+    foreach my $hook (@{$HOOKS{$name}}) {
+      $hook->[0]->($hook->[1], $args);
     }
   }
-
-  _leaving($name);
-}
-
-sub in {
-  my $hook_name = shift;
-  my $currently_in = Bugzilla->request_cache->{hook_stack}->[-1] || '';
-  return $hook_name eq $currently_in ? 1 : 0;
-}
-
-sub _entering {
-  my ($hook_name) = @_;
-  my $hook_stack = Bugzilla->request_cache->{hook_stack} ||= [];
-  push(@$hook_stack, $hook_name);
-}
-
-sub _leaving {
-  pop @{Bugzilla->request_cache->{hook_stack}};
+  return;
 }
 
 1;
@@ -297,6 +303,40 @@ The hash of changed fields. C<< $changes->{field} = [old, new] >>
 
 =back
 
+=head2 get_bug_activity
+
+This happens in L<Bugzilla::Bug::GetBugActivity>, where you can add custom bug
+activity, such as comment revisions, if needed.
+
+Params:
+
+=over
+
+=item C<bug_id>
+
+The bug ID that the activity belongs to.
+
+=item C<attach_id>
+
+An optional attachment ID that filters the activity.
+
+=item C<start_time>
+
+An optional time that filters the activity.
+
+=item C<include_comment_activity>
+
+Whether any comment activity, including comment tags, should be included.
+
+=item C<list>
+
+The core activity list that you can extend or modify in a hook. An list item is
+an array that should contain field name, activity ID (can be undef), attach ID
+(can be undef), timestamp, removed value, added value, user name and comment ID
+(can be undef).
+
+=back
+
 =head2 bug_check_can_change_field
 
 This hook controls what fields users are allowed to change. You can add code
@@ -357,6 +397,20 @@ User is not the assignee or an empowered user, so B<deny>.
 User is not a sufficiently empowered user, so B<deny>.
 
 =back
+
+=back
+
+=head2 bug_file_methods
+
+This happens in L<Bugzilla::Bug/BUG_FILE_METHODS>, and allows you to add one or
+more valid file methods stored with bugs.
+
+Params:
+
+=over
+
+=item C<method> - A arrayref containing an array of method names. Push your
+method name(s) onto the array.
 
 =back
 
@@ -557,6 +611,21 @@ Params:
 
 =back
 
+=head2 search_date_pronoun
+
+This happens in L<Bugzilla::Search/SqlifyDate> and allows you to support
+pronouns for specific dates, such as a product release date. Pronouns must be
+quoted with percent signs like C<%LAST_RELEASE_DATE%>.
+
+Params:
+
+=over
+
+=item C<pronoun> - A capitalized pronoun without percent signs can be found in
+the C<name>. Add an actual date back to the C<date> if it's a supported pronoun.
+
+=back
+
 =head2 search_operator_field_override
 
 This allows you to modify L<Bugzilla::Search/OPERATOR_FIELD_OVERRIDE>,
@@ -612,7 +681,7 @@ about, and the value should always be C<1>. The "relationships"
 are described by the various C<REL_> constants in L<Bugzilla::Constants>.
 
 Here's an example of adding userid C<123> to the recipient list
-as though he were on the CC list:
+as though they were on the CC list:
 
  $recipients->{123}->{+REL_CC} = 1
 
@@ -1676,7 +1745,7 @@ they have been obtained from the URL or body of the request.
 =head2 webservice_rest_request
 
 This hook allows for altering any of the parameters provided by the client
-after authentication has occured. You are able to change things like renaming
+after authentication has occurred. You are able to change things like renaming
 of keys, removing values, or adding additional information.
 
 Params:
@@ -1690,7 +1759,7 @@ they have been obtained from the URL or body of the request.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
@@ -1711,7 +1780,7 @@ which code handler to use based on a regex match of the CGI path.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
@@ -1735,11 +1804,11 @@ A reference to a hash that contains the result data.
 
 =item C<rpc>
 
-The current JSONRPC, XMLRPC, or REST object.
+The current JSON-RPC, XML-RPC, or REST object.
 
 =back
 
-=head2 wevservice_status_code_map
+=head2 webservice_status_code_map
 
 This hook allows an extension to change the status codes returned by
 specific webservice errors. The valid internal error codes that Bugzilla

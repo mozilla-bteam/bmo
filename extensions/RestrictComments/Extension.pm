@@ -42,8 +42,8 @@ sub bug_check_can_change_field {
 sub _can_restrict_comments {
   my ($self, $object) = @_;
   return unless $object->isa('Bugzilla::Bug');
-  $self->{setter_group} ||= Bugzilla->params->{'restrict_comments_enable_group'};
-  return Bugzilla->user->in_group($self->{setter_group});
+  return Bugzilla->user->in_group(
+    Bugzilla->params->{'restrict_comments_enable_group'});
 }
 
 sub object_end_of_set_all {
@@ -90,8 +90,11 @@ sub install_update_db {
 
   my $field = new Bugzilla::Field({name => 'restrict_comments'});
   if (!$field) {
-    Bugzilla::Field->create(
-      {name => 'restrict_comments', description => 'Restrict Comments'});
+    Bugzilla::Field->create({
+      name        => 'restrict_comments',
+      description => 'Restrict Comments',
+      type        => FIELD_TYPE_BOOLEAN,
+    });
   }
 
   $dbh->bz_add_column('bugs', 'restrict_comments', {TYPE => 'BOOLEAN'});

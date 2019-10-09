@@ -52,6 +52,13 @@ The error contents look similar to:
      "code": 123
    }
 
+To protect the application from large requests, Bugzilla returns a 302 redirect
+to the homepage when your query string is too long. The current limit is 10 KB,
+which can accept roughly 1,000 bug IDs in the ``id`` parameter for the
+``/rest/bug`` method, but it could be smaller or may lead to a 414 URI Too Long
+HTTP error depending on the server configuration. Split your query into multiple
+requests if you encounter the issue.
+
 Common Data Types
 -----------------
 
@@ -89,55 +96,23 @@ Some methods do not require you to log in. An example of this is
 :ref:`rest_single_bug`. However, authenticating yourself allows you to see
 non-public information, for example, a bug that is not publicly visible.
 
-There are two ways to authenticate yourself:
+To authenticate yourself, you will need to use API keys:
 
 **API Keys**
 
-You can specify ``Bugzilla_api_key`` or simply ``api_key`` as an argument to
-any call, and you will be logged in as that user if the key is correct and has
-not been revoked. You can set up an API key by using the :ref:`API Keys tab <api-keys>` in the
+You can specify 'X-BUGZILLA-API-KEY' header with the API key as a value to
+any request, and you will be authenticated as that user if the key is correct and has not been revoked.
+
+You can set up an API key by using the :ref:`API Keys tab <api-keys>` in the
 Preferences pages.
 
 API keys may also be requested via :ref:`Authentication Delegation <auth-delegation>`.
 
-**Login and Password**
+**WARNING**: It should be noted that additional authentication methods exist, but they are **not recommended** for use and are likely to be deprecated in future versions of BMO, due to security concerns.  These additional methods include the following:
 
-You can specify ``Bugzilla_login`` and ``Bugzilla_password`` or simply
-``login`` and ``password`` respectively, as arguments to any call, and you will
-be logged in as that user if your credentials are correct.
-
-======================  =======  ==============================================
-name                    type     description
-======================  =======  ==============================================
-**Bugzilla_login**      string   A user's login name.
-**Bugzilla_password**   string   That user's password.
-======================  =======  ==============================================
-
-There is also a deprecated method of authentication described below that will be
-removed in the version after Bugzilla 5.0.
-
-**Bugzilla Tokens**
-
-You can use :ref:`rest_user_login` to log in as a Bugzilla user. This issues a
-token that you must then use in future calls. Just use the value for ``token``
-and pass as either ``Bugzilla_token`` or simply ``token`` as arguments to an
-API call.
-
-==================  ======  ===================================================
-name                type    description
-==================  ======  ===================================================
-**Bugzilla_token**  string  You can specify this as argument to any call,
-                            and you will be logged in as that user if the
-                            token is correct. This is the token returned
-                            when calling :ref:`rest_user_login` mentioned
-                            above.
-==================  ======  ===================================================
-
-An error is thrown if you pass an invalid token; you will need to log in again
-to get a new token.
-
-Also starting with Bugzilla 5.0, login cookies are no longer returned by
-:ref:`rest_user_login` due to security concerns.
+ - username and password via ``Bugzilla_login`` and ``Bugzilla_password`` or simply ``login`` and ``password`` respectively in query parameters.
+ - username and password via ``X-BUGZILLA-LOGIN`` and ``X-BUGZILLA-PASSWORD`` headers respectively.
+ - api key via ``Bugzilla_api_key`` or simply ``api_key`` in query parameters.
 
 Useful Parameters
 -----------------

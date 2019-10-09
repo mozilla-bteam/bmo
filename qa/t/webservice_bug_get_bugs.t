@@ -16,7 +16,7 @@ use Data::Dumper;
 use DateTime;
 use QA::Util;
 use QA::Tests qw(bug_tests PRIVATE_BUG_USER);
-use Test::More tests => 1012;
+use Test::More tests => 1036;
 my ($config, @clients) = get_rpc_clients();
 
 my $xmlrpc = $clients[0];
@@ -70,7 +70,7 @@ $public_bug->{see_also}         = ["${base_url}show_bug.cgi?id=$private_id"];
 $public_bug->{cf_qa_status}     = [];
 $public_bug->{cf_single_select} = '---';
 
-# Fill in the timetracking fields on the public bug.
+# Fill in the time tracking fields on the public bug.
 $xmlrpc->bz_log_in('admin');
 $xmlrpc->bz_call_success(
   'Bug.update',

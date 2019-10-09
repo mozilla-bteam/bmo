@@ -81,6 +81,7 @@ function toggleAreaOther() {
 
 <form id="newsletter_form" method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data"
       onSubmit="return validateAndSubmit();">
+  <input type="hidden" name="filed_via" value="custom_form">
   <input type="hidden" name="format" value="comm-newsletter">
   <input type="hidden" name="product" value="Marketing">
   <input type="hidden" name="component" value="Community">
@@ -172,7 +173,7 @@ function toggleAreaOther() {
   </label>
   <div class="field_desc">
     What product or functional area does this opportunity relate to? Click
-    multiple areas if they apply (ie both Security and UX)
+    multiple areas if they apply (i.e. both Security and UX)
   </div>
   <input type="checkbox" name="area_coding" id="area_coding" value="Coding">Coding<br>
   <input type="checkbox" name="area_community_building"
@@ -224,7 +225,7 @@ function toggleAreaOther() {
 
 <div class="form_section">
   <label for="background_url" class="field_label">
-    Please provide a url that provides full background and instructions on this
+    Please provide a URL that provides full background and instructions on this
     contribution opportunity.
   </label>
   <div class="field_desc">

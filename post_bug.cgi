@@ -71,7 +71,7 @@ Bugzilla::Hook::process('bug_user_match_fields',
 Bugzilla::User::match_field($user_match_fields);
 
 if (defined $cgi->param('maketemplate')) {
-  $vars->{'url'}        = $cgi->canonicalise_query('token');
+  $vars->{'url'}        = $cgi->canonicalize_query('token');
   $vars->{'short_desc'} = $cgi->param('short_desc');
 
   print $cgi->header();
@@ -117,6 +117,7 @@ push(
     bug_status
     bug_type
     dependson
+    filed_via
     keywords
     short_desc
     op_sys
@@ -171,16 +172,6 @@ my $timestamp
   = $dbh->selectrow_array('SELECT creation_ts FROM bugs WHERE bug_id = ?',
   undef, $id);
 
-# Set Version cookie, but only if the user actually selected
-# a version on the page.
-if (defined $cgi->param('version')) {
-  $cgi->send_cookie(
-    -name    => "VERSION-" . $bug->product,
-    -value   => $bug->version,
-    -expires => "Fri, 01-Jan-2038 00:00:00 GMT"
-  );
-}
-
 # We don't have to check if the user can see the bug, because a user filing
 # a bug can always see it. You can't change reporter_accessible until
 # after the bug is filed.
@@ -201,7 +192,7 @@ if ($data_fh || $attach_text || $data_base64) {
 
   if ($attach_text) {
 
-    # Convert to unix line-endings if pasting a patch
+    # Convert to Unix line-endings if pasting a patch
     if (scalar($cgi->param('ispatch'))) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }
@@ -275,39 +266,24 @@ ThrowCodeError("bug_error", {bug => $bug}) if $bug->error;
 
 my $recipients = {changer => $user};
 my $bug_sent = Bugzilla::BugMail::Send($id, $recipients);
-$bug_sent->{type} = 'created';
-$bug_sent->{id}   = $id;
-my @all_mail_results = ($bug_sent);
+my @all_mail_results = ({ id => $id, type => 'created', recipient_count => scalar @{$bug_sent->{sent}} });
 
 foreach my $dep (
   map { @{$bug->{$_} || []} } qw(dependson blocked regressed_by regresses)
 ) {
   my $dep_sent = Bugzilla::BugMail::Send($dep, $recipients);
-  $dep_sent->{type} = 'dep';
-  $dep_sent->{id}   = $dep;
-  push(@all_mail_results, $dep_sent);
+  push(@all_mail_results, { id => $dep, type => 'dep', recipient_count => scalar @{$dep_sent->{sent}} });
 }
 
 # Sending emails for any referenced bugs.
 foreach my $ref_bug_id (uniq @{$bug->{see_also_changes} || []}) {
   my $ref_sent = Bugzilla::BugMail::Send($ref_bug_id, $recipients);
-  $ref_sent->{id} = $ref_bug_id;
-  push(@all_mail_results, $ref_sent);
+  push(@all_mail_results, { id => $ref_bug_id, recipient_count => scalar @{$ref_sent->{sent}} });
 }
 
-$vars->{sentmail} = \@all_mail_results;
+$Bugzilla::App::CGI::C->flash(last_sent_changes => \@all_mail_results);
 
-$format = $template->get_format("bug/create/created",
-  scalar($cgi->param('created-format')), "html");
-
-# don't leak the enter_bug format param to show_bug
-$cgi->delete('format');
-
-if ($user->setting('ui_experiments') eq 'on') {
-  $C->content_security_policy(SHOW_BUG_MODAL_CSP($bug->id));
-}
-print $cgi->header();
-$template->process($format->{'template'}, $vars)
-  || ThrowTemplateError($template->error());
+my $redirect_url = $Bugzilla::App::CGI::C->url_for('show_bugcgi')->query(id => $id);
+$Bugzilla::App::CGI::C->redirect_to($redirect_url);
 
 1;

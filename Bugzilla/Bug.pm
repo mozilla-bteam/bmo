@@ -91,6 +91,7 @@ sub DB_COLUMNS {
       delta_ts
       estimated_time
       everconfirmed
+      filed_via
       lastdiffed
       op_sys
       priority
@@ -121,7 +122,7 @@ sub VALIDATORS {
     bug_file_loc      => \&_check_bug_file_loc,
     bug_severity      => \&_check_select_field,
     bug_status        => \&_check_bug_status,
-    bug_type          => \&_check_select_field,
+    bug_type          => \&_check_bug_type,
     cc                => \&_check_cc,
     comment           => \&_check_comment,
     component         => \&_check_component,
@@ -130,6 +131,7 @@ sub VALIDATORS {
     dup_id            => \&_check_dup_id,
     estimated_time    => \&_check_time_field,
     everconfirmed     => \&Bugzilla::Object::check_boolean,
+    filed_via         => \&_check_filed_via,
     groups            => \&_check_groups,
     keywords          => \&_check_keywords,
     op_sys            => \&_check_select_field,
@@ -310,6 +312,15 @@ use constant REQUIRED_FIELD_MAP =>
 # mandatory groups get set on bugs.
 use constant EXTRA_REQUIRED_FIELDS =>
   qw(creation_ts target_milestone cc qa_contact groups);
+
+sub BUG_FILE_METHODS {
+  my @methods = qw(standard_form custom_form api);
+
+  # Allow extensions to add other methods, e.g. `guided_form`
+  Bugzilla::Hook::process('bug_file_methods', {methods => \@methods});
+
+  return @methods;
+}
 
 with 'Bugzilla::Elastic::Role::Object';
 
@@ -873,6 +884,7 @@ sub possible_duplicates {
 # C<status_whiteboard> - A string.
 # C<bug_status>   - The initial status of the bug, a string.
 # C<bug_file_loc> - The URL field.
+# C<filed_via>    - How this bug is being filed.
 #
 # C<assigned_to> - The full login name of the user who the bug is
 #                  initially assigned to.
@@ -889,7 +901,7 @@ sub create {
   my $dbh = Bugzilla->dbh;
 
   # BMO - allow parameter alteration before creation.  also add support for
-  # fields which are not bug columns (eg bug_mentors). extensions should move
+  # fields which are not bug columns (e.g. bug_mentors). extensions should move
   # fields from $params to $stash, then use the bug_end_of_create hook to
   # update the database
   my $stash = {};
@@ -903,24 +915,6 @@ sub create {
     unless defined $params->{bug_severity};
   $params->{priority} = Bugzilla->params->{defaultpriority}
     unless defined $params->{priority};
-
-  # Bug type can be defined at the component, product or instance level
-  unless (defined $params->{bug_type}) {
-    my $product
-      = (defined $params->{product})
-      ? Bugzilla::Product->new({name => $params->{product}, cache => 1})
-      : undef;
-    my $component
-      = ($product && defined $params->{component})
-      ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
-      : undef;
-    # The component's default bug type inherits or overrides the default bug
-    # type of the product or instance
-    $params->{bug_type}
-      = ($component)
-      ? $component->default_bug_type
-      : Bugzilla->params->{default_bug_type};
-  }
 
   # BMO - per-product hw/os defaults
   if (!defined $params->{rep_platform} || !defined $params->{op_sys}) {
@@ -1879,6 +1873,35 @@ sub _check_bug_status {
   return $new_status->name;
 }
 
+sub _check_bug_type {
+  my ($invocant, $type, undef, $params) = @_;
+
+  if (defined $type && trim($type)) {
+    return $invocant->_check_select_field($type, 'bug_type');
+  }
+
+  if (Bugzilla->params->{'require_bug_type'}) {
+    ThrowUserError('bug_type_required');
+  }
+
+  if (blessed $invocant) {
+    return $invocant->component_obj->default_bug_type;
+  }
+
+  my $product
+    = (defined $params->{product})
+    ? Bugzilla::Product->new({name => $params->{product}, cache => 1})
+    : undef;
+  my $component
+    = ($product && defined $params->{component})
+    ? Bugzilla::Component->new({name => $params->{component}, product => $product, cache => 1})
+    : undef;
+
+  return $component
+    ? $component->default_bug_type
+    : Bugzilla->params->{default_bug_type};
+}
+
 sub _check_cc {
   my ($invocant, $ccs, undef, $params) = @_;
   my $component
@@ -1946,6 +1969,13 @@ sub _check_component {
     ThrowUserError('value_inactive', {class => ref($object), value => $name});
   }
   return $object;
+}
+
+sub _check_filed_via {
+  my ($invocant, $method) = @_;
+
+  return $method if defined $method && grep(/^$method$/, BUG_FILE_METHODS());
+  return 'unknown';
 }
 
 sub _check_creation_ts {
@@ -2079,10 +2109,10 @@ sub _check_dup_id {
   }
 
   # Should we add the reporter to the CC list of the new bug?
-  # If he can see the bug...
+  # If they can see the bug...
   if ($self->reporter->can_see_bug($dupe_of)) {
 
-    # We only add him if he's not the reporter of the other bug.
+    # We only add them if they’re not the reporter of the other bug.
     $self->{_add_dup_cc} = 1 if $dupe_of_bug->reporter->id != $self->reporter->id;
   }
 
@@ -2098,11 +2128,11 @@ sub _check_dup_id {
       $self->{_add_dup_cc} = $add_confirmed;
     }
     else {
-      # Note that here we don't check if he user is already the reporter
-      # of the dupe_of bug, since we already checked if he can *see*
+      # Note that here we don't check if the user is already the reporter
+      # of the dupe_of bug, since we already checked if they can *see*
       # the bug, above. People might have reporter_accessible turned
       # off, but cclist_accessible turned on, so they might want to
-      # add the reporter even though he's already the reporter of the
+      # add the reporter even though they’re already the reporter of the
       # dup_of bug.
       my $vars     = {};
       my $template = Bugzilla->template;
@@ -2266,7 +2296,7 @@ sub _check_reporter {
   }
   else {
     # On bug creation, the reporter is the logged in user
-    # (meaning that he must be logged in first!).
+    # (meaning that they must be logged in first!).
     Bugzilla->login(LOGIN_REQUIRED);
     $reporter = Bugzilla->user->id;
   }
@@ -2633,7 +2663,7 @@ sub fields {
 
     # Standard Fields
     # Keep this ordering in sync with bugzilla.dtd.
-    qw(bug_id alias creation_ts short_desc delta_ts
+    qw(bug_id alias filed_via creation_ts short_desc delta_ts
       reporter_accessible cclist_accessible
       classification_id classification
       product component version rep_platform op_sys
@@ -3553,7 +3583,7 @@ sub remove_see_also {
       {field => 'see_also', oldvalue => $url, privs => $privs});
   }
 
-  # Since we remove also the url from the referenced bug,
+  # Since we remove also the URL from the referenced bug,
   # we need to notify changes for that bug too.
   $removed_bug_url = $removed_bug_url->[0];
   if ( !$skip_recursion
@@ -3675,6 +3705,7 @@ sub deadline            { return $_[0]->{deadline} }
 sub delta_ts            { return $_[0]->{delta_ts} }
 sub error               { return $_[0]->{error} }
 sub everconfirmed       { return $_[0]->{everconfirmed} }
+sub filed_via           { return $_[0]->{filed_via} }
 sub lastdiffed          { return $_[0]->{lastdiffed} }
 sub op_sys              { return $_[0]->{op_sys} }
 sub priority            { return $_[0]->{priority} }
@@ -3744,7 +3775,7 @@ sub _resolve_ultimate_dup_id {
     # If $dupes{$this_dup} is already set to 1, then a loop
     # already exists which does not involve this bug.
     # As the user is not responsible for this loop, do not
-    # prevent him from marking this bug as a duplicate.
+    # prevent them from marking this bug as a duplicate.
     return $last_dup if exists $dupes{$this_dup};
     $dupes{$this_dup} = 1;
     $last_dup = $this_dup;
@@ -4053,6 +4084,27 @@ sub comment_count {
   );
 }
 
+sub counts {
+  my ($self) = @_;
+  my $dbh = Bugzilla->dbh;
+  my $extra = !Bugzilla->user->is_insider ? 'AND isprivate = 0' : '';
+  my $id = $self->id;
+
+  $self->{counts} ||= $dbh->selectrow_hashref("SELECT
+    (SELECT COUNT(*) FROM attachments WHERE bug_id = ? $extra) AS attachments,
+    (SELECT COUNT(*) FROM cc WHERE bug_id = ?) AS cc,
+    (SELECT COUNT(*) FROM longdescs WHERE bug_id = ? $extra) AS comments,
+    (SELECT COUNT(*) FROM keywords WHERE bug_id = ?) AS keywords,
+    (SELECT COUNT(*) FROM dependencies WHERE blocked = ?) AS blocks,
+    (SELECT COUNT(*) FROM dependencies WHERE dependson = ?) AS depends_on,
+    (SELECT COUNT(*) FROM regressions WHERE regressed_by = ?) AS regressed_by,
+    (SELECT COUNT(*) FROM regressions WHERE regresses = ?) AS regressions,
+    (SELECT COUNT(*) FROM duplicates WHERE dupe_of = ?) AS duplicates
+  ", undef, $id, $id, $id, $id, $id, $id, $id, $id, $id);
+
+  return $self->{counts};
+}
+
 # This is needed by xt/search.t.
 sub percentage_complete {
   my $self = shift;
@@ -4293,7 +4345,7 @@ sub groups {
   }
 
   # BMO: if required, hack in groups exposed by -visible membership
-  # (eg mozilla-employee-confidential-visible), so reporters can add the
+  # (e.g. mozilla-employee-confidential-visible), so reporters can add the
   # bug to a group on show_bug.
   # if the bug is already in the group, the user will not be able to remove
   # it unless they are a true group member.
@@ -4493,18 +4545,11 @@ sub _bugs_in_order {
 # Get the activity of a bug, starting from $starttime (if given).
 # This routine assumes Bugzilla::Bug->check has been previously called.
 sub GetBugActivity {
-  my ($bug_id, $attach_id, $starttime, $include_comment_tags) = @_;
+  my ($bug_id, $attach_id, $starttime, $include_comment_activity) = @_;
   my $dbh = Bugzilla->dbh;
 
   # Arguments passed to the SQL query.
   my @args = ($bug_id);
-
-  # Only consider changes since $starttime, if given.
-  my $datepart = "";
-  if (defined $starttime) {
-    push(@args, $starttime);
-    $datepart = "AND bug_when > ?";
-  }
 
   my $attachpart = "";
   if ($attach_id) {
@@ -4521,14 +4566,23 @@ sub GetBugActivity {
     $suppwhere = "AND COALESCE(attachments.isprivate, 0) = 0";
   }
 
-  # Use DISTINCT and value comparison to suppress duplicated changes weirdly
-  # made at the same time by the same user
-  my $query
-    = "SELECT DISTINCT fielddefs.name,
+  my $bug_when
+    = $dbh->sql_date_format('bugs_activity.bug_when', '%Y-%m-%d %H:%i:%s');
+
+  # Use an outer table so alias column `bug_when` will work within the `where`
+  # clause. Also use `DISTINCT` to suppress duplicated changes weirdly made at
+  # the same time by the same user.
+  my $query = "
+    SELECT
+      field_name, activity_id, attach_id, bug_when, removed, added, who, comment_id
+    FROM (
+        SELECT DISTINCT fielddefs.name AS field_name,
                bugs_activity.id AS activity_id,
-               bugs_activity.attach_id, "
-    . $dbh->sql_date_format('bugs_activity.bug_when', '%Y.%m.%d %H:%i:%s')
-    . " AS bug_when, bugs_activity.removed, bugs_activity.added, profiles.login_name,
+               bugs_activity.attach_id,
+               $bug_when AS bug_when,
+               bugs_activity.removed,
+               bugs_activity.added,
+               profiles.login_name AS who,
                bugs_activity.comment_id
           FROM bugs_activity
                $suppjoins
@@ -4537,12 +4591,11 @@ sub GetBugActivity {
     INNER JOIN profiles
             ON profiles.userid = bugs_activity.who
          WHERE bugs_activity.bug_id = ?
-               $datepart
                $attachpart
                $suppwhere ";
 
   if ( Bugzilla->params->{'comment_taggers_group'}
-    && $include_comment_tags
+    && $include_comment_activity
     && !$attach_id)
   {
     # Only includes comment tag activity for comments the user is allowed to see.
@@ -4554,32 +4607,52 @@ sub GetBugActivity {
       $suppwhere = "AND longdescs.isprivate = 0";
     }
 
+    $bug_when
+      = $dbh->sql_date_format('longdescs_tags_activity.bug_when', '%Y-%m-%d %H:%i:%s');
     $query .= "
             UNION ALL
-            SELECT 'comment_tag' AS name,
+            SELECT 'comment_tag' AS field_name,
                    NULL AS activity_id,
-                   NULL AS attach_id,"
-      . $dbh->sql_date_format('longdescs_tags_activity.bug_when',
-      '%Y.%m.%d %H:%i:%s')
-      . " AS bug_when,
+                   NULL AS attach_id,
+                   $bug_when AS bug_when,
                    longdescs_tags_activity.removed,
                    longdescs_tags_activity.added,
-                   profiles.login_name,
-                   longdescs_tags_activity.comment_id as comment_id
+                   profiles.login_name AS who,
+                   longdescs_tags_activity.comment_id
               FROM longdescs_tags_activity
                    INNER JOIN profiles ON profiles.userid = longdescs_tags_activity.who
                    $suppjoins
              WHERE longdescs_tags_activity.bug_id = ?
-                   $datepart
                    $suppwhere
         ";
     push @args, $bug_id;
-    push @args, $starttime if defined $starttime;
   }
 
-  $query .= "ORDER BY bug_when, comment_id, activity_id";
+  $query .= ") AS OUTER_TABLE";
+
+  # Only consider changes since $starttime, if given.
+  if (defined $starttime) {
+    $query .= ' WHERE bug_when > ?';
+    push(@args, $starttime);
+  }
+
+  $query .= " ORDER BY bug_when, comment_id, activity_id";
 
   my $list = $dbh->selectall_arrayref($query, undef, @args);
+
+  Bugzilla::Hook::process(
+    'get_bug_activity',
+    {
+      bug_id => $bug_id,
+      attach_id => $attach_id,
+      start_time => $starttime,
+      include_comment_activity => $include_comment_activity,
+      list => \@$list
+    }
+  );
+
+  # ORDER BY bug_when
+  @$list = sort { $a->[3] cmp $b->[3] } @$list;
 
   my @operations;
   my $operation       = {};
@@ -4704,7 +4777,7 @@ sub _join_activity_entries {
     }
   }
 
-  # Assume bug_file_loc contain a single url, don't insert a delimiter
+  # Assume bug_file_loc contain a single URL, don't insert a delimiter
   if ($field eq 'bug_file_loc') {
     return $current_change . $new_change;
   }
@@ -4893,7 +4966,7 @@ sub check_can_change_field {
     return 1;
   }
 
-# If the user isn't allowed to change a field, we must tell him who can.
+# If the user isn't allowed to change a field, we must tell them who can.
 # We store the required permission set into the $PrivilegesRequired
 # variable which gets passed to the error template.
 #
@@ -4947,7 +5020,7 @@ sub check_can_change_field {
   # is not allowed to change.
 
   # The reporter may not:
-  # - reassign bugs, unless the bugs are assigned to him;
+  # - reassign bugs, unless the bugs are assigned to them;
   #   in that case we will have already returned 1 above
   #   when checking for the assignee of the bug.
   if ($field eq 'assigned_to') {
@@ -4967,7 +5040,7 @@ sub check_can_change_field {
     return 0;
   }
 
-  # - change the priority (unless he could have set it originally)
+  # - change the priority (unless they could have set it originally)
   if ($field eq 'priority' && !Bugzilla->params->{'letsubmitterchoosepriority'}) {
     $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
     return 0;

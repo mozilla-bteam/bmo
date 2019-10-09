@@ -311,8 +311,8 @@ sub remove_from_db {
       require Bugzilla::Bug;
       foreach my $bug_id (@{$self->bug_ids}) {
 
-        # Note that we allow the user to delete bugs he can't see,
-        # which is okay, because he's deleting the whole Product.
+        # Note that we allow the user to delete bugs they can't see,
+        # which is okay, because they’re deleting the whole Product.
         my $bug = new Bugzilla::Bug($bug_id);
         $bug->remove_from_db();
       }
@@ -1053,7 +1053,7 @@ currently-logged-in user. Returns an arrayref of C<Bugzilla::Group> objects.
 Tells you whether or not the currently-logged-in user can set a group
 on a bug (whether or not they match the MemberControl/OtherControl
 settings for a group in this product). Groups that are C<Mandatory> for
-the currently-loggeed-in user are also acceptable since from Bugzilla's
+the currently-logged-in user are also acceptable since from Bugzilla's
 perspective, there's no problem with "setting" a Mandatory group on
 a bug. (In fact, the user I<must> set the Mandatory group on the bug.)
 
@@ -1142,7 +1142,7 @@ a group is valid in a particular product.)
 
  Params:      C<$user> - A Bugzilla::User object.
 
- Returns      C<1> If this user's groups allow him C<entry> access to
+ Returns      C<1> If this user's groups allow them C<entry> access to
               this Product, C<0> otherwise.
 
 =item C<flag_types()>

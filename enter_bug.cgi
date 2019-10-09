@@ -313,7 +313,9 @@ if ($cloned_bug_id) {
 else {
   $default{'component_'} = formvalue('component');
   $default{'bug_type'}
-    = formvalue('bug_type', Bugzilla->params->{'default_bug_type'});
+    = defined $cgi->param('regressed_by')
+    ? 'defect'
+    : formvalue('bug_type', Bugzilla->params->{'default_bug_type'});
   $default{'priority'}
     = formvalue('priority', Bugzilla->params->{'defaultpriority'});
   $default{'bug_severity'}
@@ -355,8 +357,6 @@ else {
 #   THEN use the version from the parent bug
 # ELSE IF a version is supplied in the URL
 #   THEN use it
-# ELSE IF there is a version in the cookie
-#   THEN use it (Posting a bug sets a cookie for the current version.)
 # ELSE
 #   The default version is the last one in the list (which, it is
 #   hoped, will be the most recent one).
@@ -365,18 +365,11 @@ else {
 # parameter.
 $vars->{'version'} = $product->versions;
 
-my $version_cookie = $cgi->cookie("VERSION-" . $product->name);
-
 if (($cloned_bug_id) && ($product->name eq $cloned_bug->product)) {
   $default{'version'} = $cloned_bug->version;
 }
 elsif (formvalue('version')) {
   $default{'version'} = formvalue('version');
-}
-elsif (defined $version_cookie
-  and grep { $_->name eq $version_cookie } @{$vars->{'version'}})
-{
-  $default{'version'} = $version_cookie;
 }
 else {
   $default{'version'} = $vars->{'version'}->[$#{$vars->{'version'}}]->name;

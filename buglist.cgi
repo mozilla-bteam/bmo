@@ -268,7 +268,7 @@ sub GetGroups {
 
     foreach my $gid (keys %{$product->group_controls}) {
 
-      # The user can only edit groups he belongs to.
+      # The user can only edit groups they belong to.
       next unless $user->in_group_id($gid);
 
       # The user has no control on groups marked as NA or MANDATORY.
@@ -379,7 +379,7 @@ if ($cmdtype eq "dorem") {
       = LookupNamedQuery(scalar $cgi->param("namedcmd"), $user->id);
     if ($query_id) {
 
-      # Make sure the user really wants to delete his saved search.
+      # Make sure the user really wants to delete their saved search.
       my $token = $cgi->param('token');
       check_hash_token($token, [$query_id, $qname]);
 
@@ -423,7 +423,7 @@ elsif (($cmdtype eq "doit") && defined $cgi->param('remtype')) {
     $user = Bugzilla->login(LOGIN_REQUIRED);
     my $token = $cgi->param('token');
     check_hash_token($token, ['searchknob']);
-    $buffer = $params->canonicalise_query('cmdtype', 'remtype', 'query_based_on',
+    $buffer = $params->canonicalize_query('cmdtype', 'remtype', 'query_based_on',
       'token');
     InsertNamedQuery(DEFAULT_QUERY_NAME, $buffer);
     $vars->{'message'} = "buglist_new_default_query";
@@ -439,7 +439,7 @@ elsif (($cmdtype eq "doit") && defined $cgi->param('remtype')) {
     # individual bugs.
     if ($cgi->param('list_of_bugs')) {
 
-      # We add/remove tags based on the action choosen.
+      # We add/remove tags based on the action chosen.
       my $action = trim($cgi->param('action') || '');
       $action =~ /^(add|remove)$/
         || ThrowUserError('unknown_action', {action => $action});
@@ -744,9 +744,6 @@ $params->delete('limit') if $vars->{'default_limited'};
 ################################################################################
 # Query Execution
 ################################################################################
-
-# Time to use server push to display an interim message to the user until
-# the query completes and we can display the bug list.
 
 # Connect to the shadow database if this installation is using one to improve
 # query performance.
@@ -1119,7 +1116,7 @@ else {
 
 # Set 'urlquerypart' once the buglist ID is known.
 $vars->{'urlquerypart'}
-  = $params->canonicalise_query('order', 'cmdtype', 'query_based_on', 'token');
+  = $params->canonicalize_query('order', 'cmdtype', 'query_based_on', 'token');
 
 if ($format->{'extension'} eq "csv") {
 
@@ -1132,8 +1129,8 @@ if ($format->{'extension'} eq "csv") {
   $vars->{'human'} = $cgi->param('human');
 }
 
-$cgi->close_standby_message($contenttype, $disposition, $disp_prefix,
-  $format->{'extension'});
+$cgi->set_dated_content_disp($disposition, $disp_prefix, $format->{extension});
+print $cgi->header($contenttype);
 
 ################################################################################
 # Content Generation

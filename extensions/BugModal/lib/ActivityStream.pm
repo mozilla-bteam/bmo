@@ -204,7 +204,7 @@ sub _add_activities_to_stream {
     : Bugzilla::Bug::GetBugActivity($bug->id);
 
   # allow other extensions to alter history
-  Bugzilla::Hook::process('inline_history_activitiy',
+  Bugzilla::Hook::process('inline_history_activity',
     {activity => $raw_activity});
 
   my %attachment_cache;
@@ -276,7 +276,7 @@ sub _add_activities_to_stream {
 
       # split see-also
       if ($change->{fieldname} eq 'see_also') {
-        my $url_base = Bugzilla->localconfig->{urlbase};
+        my $url_base = Bugzilla->localconfig->urlbase;
         foreach my $f (qw( added removed )) {
           my @values;
           foreach my $value (split(/, /, $change->{$f})) {

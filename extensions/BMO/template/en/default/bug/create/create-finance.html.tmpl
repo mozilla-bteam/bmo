@@ -33,7 +33,7 @@
     if (!isFilledOut('team_priority'))
       alert_text += "Please select a value for team priority.\n";
     if (!isFilledOut('signature_time'))
-      alert_text += "Please enter a value for signture timeframe.\n";
+      alert_text += "Please enter a value for signature timeframe.\n";
     if (!isFilledOut('other_party'))
       alert_text += "Please enter a value for the name of other party.\n";
     if (!isFilledOut('business_obj'))
@@ -77,6 +77,7 @@
 
 <form method="post" action="[% basepath FILTER none %]post_bug.cgi" id="bug_form" class="enter_bug_form"
       enctype="multipart/form-data" onsubmit="return onSubmit();">
+<input type="hidden" name="filed_via" value="custom_form">
 <input type="hidden" name="format" value="finance">
 <input type="hidden" name="product" value="Finance">
 <input type="hidden" name="rep_platform" value="All">

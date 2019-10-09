@@ -17,6 +17,8 @@ use Bugzilla::Install::Util qw( extension_code_files );
 
 use File::Basename;
 use File::Spec;
+use List::Util qw(any);
+use Scalar::Util qw(refaddr);
 
 BEGIN { push @INC, \&INC_HOOK }
 
@@ -56,17 +58,6 @@ sub INC_HOOK {
     };
   }
   return;
-}
-
-####################
-# Subclass Methods #
-####################
-
-sub new {
-  my ($class, $params) = @_;
-  $params ||= {};
-  bless $params, $class;
-  return $params;
 }
 
 #######################################
@@ -147,6 +138,8 @@ sub load_all {
     push(@$EXTENSIONS, $package);
   }
 
+  Bugzilla::Hook::finalize($EXTENSIONS);
+
   return $EXTENSIONS;
 }
 
@@ -216,7 +209,7 @@ L<wiki page|https://wiki.mozilla.org/Bugzilla:Extension_Notes> with additional H
 
 There is a script, L<extensions::create>, that will set up the framework
 of a new extension for you. To use it, pick a name for your extension
-and, in the base bugzilla directory, do:
+and, in the base Bugzilla directory, do:
 
 C<extensions/create.pl NAME>
 
@@ -725,7 +718,7 @@ override this method in F<Config.pm>.
 
 =head3 C<web_dir>
 
-The directory that your package's web related files are in, such as css and javascript.
+The directory that your package's web related files are in, such as CSS and JavaScript.
 
 This defaults to the C<web> subdirectory of the L</package_dir>.
 

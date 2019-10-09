@@ -74,6 +74,10 @@
   border-right: 1px solid var(--grid-border-color);
 }
 
+.bz_buglist.sortable .bz_buglist_header th {
+  cursor: pointer;
+}
+
 .bz_buglist_header th a {
   color: inherit;
 }
@@ -192,7 +196,7 @@ td.bz_total {
 .bz_short_desc_column a:focus,
 .bz_short_short_desc_column a:hover,
 .bz_short_short_desc_column a:focus {
-  color: var(--secondary-label-color);
+  color: var(--hovered-link-text-color);
 }
 
 #request_form #filtering th {

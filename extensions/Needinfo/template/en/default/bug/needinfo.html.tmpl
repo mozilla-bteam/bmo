@@ -157,7 +157,7 @@ $(function() {
           </label>
         </td>
       [% ELSIF user.in_group("canconfirm") || flag.setter_id == user.id %]
-        [%# needinfo targetted at someone else, but the user can clear %]
+        [%# needinfo targeted at someone else, but the user can clear %]
         <td align="center">
           <input type="checkbox" id="needinfo_override_[% flag.id FILTER html %]"
                   name="needinfo_override_[% flag.id FILTER html %]" value="1">
@@ -183,14 +183,12 @@ $(function() {
         <input type="checkbox" name="needinfo" id="needinfo" value="1">
       </td>
       <td>
-        <label for="needinfo" id="needinfo_from_label">
-          Request information from
-        </label>
-        <select name="needinfo_type" id="needinfo_type" style="display:none;">
+        <label for="needinfo" id="needinfo_from_label">Request information from</label>
+        <select name="needinfo_type" id="needinfo_type" style="display:none;" aria-label="Request info actions">
           <option value="needinfo_from" selected="true">Need more information from</option>
           <option value="redirect_to">Redirect needinfo request to</option>
         </select>
-        <select name="needinfo_role" id="needinfo_role">
+        <select name="needinfo_role" id="needinfo_role" aria-label="Request info from">
           <option value="other">other</option>
           [% IF NOT bug.reporter.needinfo_blocked %]
             <option
