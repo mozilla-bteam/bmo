@@ -699,9 +699,8 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    */
   description_oninput() {
     const is_patch = !!this.$description.value.match(/^patch\b/i);
-    const { checked } = this.$ispatch;
 
-    if ((is_patch && !checked) || (!is_patch && checked)) {
+    if (is_patch !== this.$ispatch.checked) {
       this.update_ispatch(is_patch);
     }
   }
