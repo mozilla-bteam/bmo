@@ -698,8 +698,11 @@ Bugzilla.AttachmentForm = class AttachmentForm {
    * Called whenever the Description is updated. Update the Patch checkbox when needed.
    */
   description_oninput() {
-    if (this.$description.value.match(/\bpatch\b/i) && !this.$ispatch.checked) {
-      this.update_ispatch(true);
+    const is_patch = this.$description.value.match(/^patch\b/i);
+    const { checked } = this.$ispatch;
+
+    if ((is_patch && !checked) || (!is_patch && checked)) {
+      this.update_ispatch(is_patch);
     }
   }
 
