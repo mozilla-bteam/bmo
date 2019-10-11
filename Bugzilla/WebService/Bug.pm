@@ -1197,7 +1197,7 @@ sub add_comment {
       isprivate => $params->{is_private},
       work_time => $params->{work_time},
       is_markdown =>
-        ( defined $params->{is_markdown} ? $params->{is_markdown} : 1 )
+        ( defined $params->{is_markdown} ? $params->{is_markdown} : 0 )
     }
   );
 
