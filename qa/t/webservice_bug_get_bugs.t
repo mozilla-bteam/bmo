@@ -121,15 +121,17 @@ sub post_success {
     );
   }
 
-  is_deeply(
-    $bug->{depends_on},
-    $is_private_bug ? [] : $is_private_user ? [$private_id] : [],
-    $is_private_bug
-      ? 'depends_on value is correct'
-      : $is_private_user
-      ? 'Private bug ID in depends_on is returned to privileged users'
-      : 'Private bug ID in depends_on is not returned to non-privileged users'
-  );
+  if (exists $bug->{depends_on}) {
+    is_deeply(
+      $bug->{depends_on},
+      $is_private_bug ? [] : $is_private_user ? [$private_id] : [],
+      $is_private_bug
+        ? 'depends_on value is correct'
+        : $is_private_user
+        ? 'Private bug ID in depends_on is returned to private bug user'
+        : 'Private bug ID in depends_on is not returned to non-private bug user (' . $t->{user} . ')'
+    );
+  }
 
   if ($t->{user}) {
     ok($bug->{update_token}, 'Update token returned for logged-in user');
