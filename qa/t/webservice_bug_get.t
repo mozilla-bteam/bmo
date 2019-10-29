@@ -67,7 +67,6 @@ $private_bug->{see_also}              = [
 $private_bug->{cf_qa_status} = ['in progress', 'verified'];
 $private_bug->{cf_single_select} = 'two';
 
-$public_bug->{depends_on}            = [$private_id];
 $public_bug->{dupe_of}               = undef;
 $public_bug->{resolution}            = '';
 $public_bug->{is_open}               = 1;
@@ -108,6 +107,7 @@ sub post_success {
 
   is(scalar @{$call->result->{bugs}}, 1, "Got exactly one bug");
   my $bug = $call->result->{bugs}->[0];
+  my $is_private = $bug->{id} == $private_bug->{id};
 
   if ($t->{user} && $t->{user} eq 'admin') {
     ok(exists $bug->{estimated_time} && exists $bug->{remaining_time},
@@ -115,11 +115,27 @@ sub post_success {
     is($bug->{deadline}, '2038-01-01', 'deadline is correct');
     cmp_ok($bug->{estimated_time}, '==', '10.0', 'estimated_time is correct');
     cmp_ok($bug->{remaining_time}, '==', '5.0',  'remaining_time is correct');
+
+    is_deeply(
+      $bug->{depends_on}->[0],
+      $is_private ? [] : [$private_id],
+      $is_private
+        ? 'depends_on value is correct'
+        : 'Private bug ID in depends_on is returned to privileged users'
+    );
   }
   else {
     ok(
       !exists $bug->{estimated_time} && !exists $bug->{remaining_time},
       'Time-tracking fields are not returned to non-privileged users'
+    );
+
+    is_deeply(
+      $bug->{depends_on}->[0],
+      [],
+      $is_private
+        ? 'depends_on value is correct'
+        : 'Private bug ID in depends_on is not returned to non-privileged users'
     );
   }
 
@@ -131,7 +147,7 @@ sub post_success {
       'Update token not returned for logged-out users');
   }
 
-  my $expect = $bug->{id} == $private_bug->{id} ? $private_bug : $public_bug;
+  my $expect = $is_private ? $private_bug : $public_bug;
 
   my @fields = sort keys %$expect;
   push(@fields, 'creation_time', 'last_change_time');
