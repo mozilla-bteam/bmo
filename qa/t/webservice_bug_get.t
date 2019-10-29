@@ -117,7 +117,7 @@ sub post_success {
     cmp_ok($bug->{remaining_time}, '==', '5.0',  'remaining_time is correct');
 
     is_deeply(
-      $bug->{depends_on}->[0],
+      $bug->{depends_on},
       $is_private ? [] : [$private_id],
       $is_private
         ? 'depends_on value is correct'
@@ -131,7 +131,7 @@ sub post_success {
     );
 
     is_deeply(
-      $bug->{depends_on}->[0],
+      $bug->{depends_on},
       [],
       $is_private
         ? 'depends_on value is correct'
