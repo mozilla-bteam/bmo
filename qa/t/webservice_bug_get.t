@@ -107,7 +107,8 @@ sub post_success {
 
   is(scalar @{$call->result->{bugs}}, 1, "Got exactly one bug");
   my $bug = $call->result->{bugs}->[0];
-  my $is_private = $bug->{id} == $private_bug->{id};
+  my $is_private_bug  = $bug->{id} == $private_bug->{id};
+  my $is_private_user = $t->{user} && $t->{user} eq PRIVATE_BUG_USER;
 
   if ($t->{user} && $t->{user} eq 'admin') {
     ok(exists $bug->{estimated_time} && exists $bug->{remaining_time},
@@ -115,29 +116,23 @@ sub post_success {
     is($bug->{deadline}, '2038-01-01', 'deadline is correct');
     cmp_ok($bug->{estimated_time}, '==', '10.0', 'estimated_time is correct');
     cmp_ok($bug->{remaining_time}, '==', '5.0',  'remaining_time is correct');
-
-    is_deeply(
-      $bug->{depends_on},
-      $is_private ? [] : [$private_id],
-      $is_private
-        ? 'depends_on value is correct'
-        : 'Private bug ID in depends_on is returned to privileged users'
-    );
   }
   else {
     ok(
       !exists $bug->{estimated_time} && !exists $bug->{remaining_time},
       'Time-tracking fields are not returned to non-privileged users'
     );
-
-    is_deeply(
-      $bug->{depends_on},
-      [],
-      $is_private
-        ? 'depends_on value is correct'
-        : 'Private bug ID in depends_on is not returned to non-privileged users'
-    );
   }
+
+  is_deeply(
+    $bug->{depends_on},
+    $is_private_bug ? [] : $is_private_user ? [$private_id] : [],
+    $is_private_bug
+      ? 'depends_on value is correct'
+      : $is_private_user
+      ? 'Private bug ID in depends_on is returned to privileged users'
+      : 'Private bug ID in depends_on is not returned to non-privileged users'
+  );
 
   if ($t->{user}) {
     ok($bug->{update_token}, 'Update token returned for logged-in user');
@@ -147,7 +142,7 @@ sub post_success {
       'Update token not returned for logged-out users');
   }
 
-  my $expect = $is_private ? $private_bug : $public_bug;
+  my $expect = $is_private_bug ? $private_bug : $public_bug;
 
   my @fields = sort keys %$expect;
   push(@fields, 'creation_time', 'last_change_time');
