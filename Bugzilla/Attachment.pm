@@ -316,7 +316,7 @@ the content of the attachment
 
 sub data {
   my $self = shift;
-  return $self->{data} //= current_storage()->retrieve($self->id);
+  return $self->{data} //= current_storage()->retrieve($self);
 }
 
 =over
@@ -735,7 +735,7 @@ sub create {
     close($data);
     $data = $tmp;
   }
-  current_storage()->store($attachment->id, $data);
+  current_storage()->store($attachment, $data);
 
   # Return the new attachment object
   return $attachment;
@@ -827,7 +827,7 @@ sub remove_from_db {
               WHERE attach_id = ?', undef, ('text/plain', 0, 1, 0, $self->id)
   );
   $dbh->bz_commit_transaction();
-  current_storage()->remove($self->id);
+  current_storage()->remove($self);
 
   # As we don't call SUPER->remove_from_db we need to manually clear
   # memcached here.

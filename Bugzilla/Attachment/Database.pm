@@ -16,8 +16,9 @@ sub new {
 }
 
 sub store {
-  my ($self, $attach_id, $data) = @_;
+  my ($self, $attachment, $data) = @_;
   my $dbh = Bugzilla->dbh;
+  my $attach_id = $attachment->id;
   my $sth = $dbh->prepare(
     "INSERT INTO attach_data (id, thedata) VALUES ($attach_id, ?)");
   $sth->bind_param(1, $data, $dbh->BLOB_TYPE);
@@ -25,11 +26,11 @@ sub store {
 }
 
 sub retrieve {
-  my ($self, $attach_id) = @_;
+  my ($self, $attachment) = @_;
   my $dbh = Bugzilla->dbh;
   my ($data)
     = $dbh->selectrow_array("SELECT thedata FROM attach_data WHERE id = ?",
-    undef, $attach_id);
+    undef, $attachment->id);
   return $data;
 }
 

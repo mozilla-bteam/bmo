@@ -18,7 +18,8 @@ sub new {
 }
 
 sub store {
-  my ($self, $attach_id, $data) = @_;
+  my ($self, $attachment, $data) = @_;
+  my $attach_id = $attachment->id;
   my $path = _local_path($attach_id);
   mkdir($path, 0770) unless -d $path;
   open(my $fh, '>', _local_file($attach_id));
@@ -28,8 +29,8 @@ sub store {
 }
 
 sub retrieve {
-  my ($self, $attach_id) = @_;
-  if (open(my $fh, '<', _local_file($attach_id))) {
+  my ($self, $attachment) = @_;
+  if (open(my $fh, '<', _local_file($attachment->id))) {
     local $/;
     binmode($fh);
     my $data = <$fh>;

@@ -70,22 +70,24 @@ if ($options{mirror}) {
     'Mirror %s attachments from %s to %s?', $total, @{$options{mirror}}));
 
   my $sth = $dbh->prepare(
-    "SELECT attach_id, attach_size FROM attachments ORDER BY attach_id DESC");
+    "SELECT attach_id FROM attachments ORDER BY attach_id DESC");
   $sth->execute();
   my ($count, $deleted, $stored) = (0, 0, 0);
-  while (my ($attach_id, $attach_size) = $sth->fetchrow_array()) {
+  while (my ($attach_id) = $sth->fetchrow_array()) {
     indicate_progress({total => $total, current => ++$count});
 
+    my $attachment = Bugzilla::Attachment->new({ id => $attach_id, cached => 1 });
+
     # remove deleted attachments
-    if ($attach_size == 0 && $dest->exists($attach_id)) {
-      $dest->remove($attach_id);
+    if ($attachment->size == 0 && $dest->exists($attachment)) {
+      $dest->remove($attachment);
       $deleted++;
     }
 
     # store attachments that don't already exist
-    elsif ($attach_size != 0 && !$dest->exists($attach_id)) {
-      if (my $data = $source->retrieve($attach_id)) {
-        $dest->store($attach_id, $data);
+    elsif ($attachment->size != 0 && !$dest->exists($attachment)) {
+      if (my $data = $source->retrieve($attachment)) {
+        $dest->store($attachment, $data);
         $stored++;
       }
     }
@@ -109,17 +111,19 @@ elsif ($options{copy}) {
 
   my $sth
     = $dbh->prepare(
-    "SELECT attach_id, attach_size FROM attachments WHERE attach_size != 0 ORDER BY attach_id DESC"
+    "SELECT attach_id FROM attachments WHERE attach_size != 0 ORDER BY attach_id DESC"
     );
   $sth->execute();
   my ($count, $stored) = (0, 0);
-  while (my ($attach_id, $attach_size) = $sth->fetchrow_array()) {
+  while (my ($attach_id) = $sth->fetchrow_array()) {
     indicate_progress({total => $total, current => ++$count});
 
+    my $attachment = Bugzilla::Attachment->new({ id => $attach_id, cached => 1 });
+
     # store attachments that don't already exist
-    if (!$dest->exists($attach_id)) {
-      if (my $data = $source->retrieve($attach_id)) {
-        $dest->store($attach_id, $data);
+    if (!$dest->exists($attachment)) {
+      if (my $data = $source->retrieve($attachment)) {
+        $dest->store($attachment, $data);
         $stored++;
       }
     }
@@ -143,8 +147,11 @@ elsif ($options{delete}) {
   my ($count, $deleted) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
     indicate_progress({total => $total, current => ++$count});
-    if ($storage->exists($attach_id)) {
-      $storage->remove($attach_id);
+
+    my $attachment = Bugzilla::Attachment->new({ id => $attach_id, cached => 1 });
+
+    if ($storage->exists($attachment)) {
+      $storage->remove($attachment);
       $deleted++;
     }
   }

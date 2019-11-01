@@ -26,7 +26,15 @@ sub new {
 }
 
 sub store {
-  my ($self, $attach_id, $data) = @_;
+  my ($self, $attachment, $data) = @_;
+
+  if (_store_db_check($attachment)) {
+    require Bugzilla::Attachment::Database;
+    Bugzilla::Attachment::Database->new()->store($attachment, $data);
+    return;
+  }
+
+  my $attach_id = $attachment->id;
   unless ($self->{bucket}->add_key($attach_id, $data)) {
     warn "Failed to add attachment $attach_id to S3: "
       . $self->{bucket}->errstr . "\n";
@@ -36,7 +44,14 @@ sub store {
 }
 
 sub retrieve {
-  my ($self, $attach_id) = @_;
+  my ($self, $attachment) = @_;
+
+  if (_store_db_check($attachment)) {
+    require Bugzilla::Attachment::Database;
+    return Bugzilla::Attachment::Database->new()->retrieve($attachment);
+  }
+
+  my $attach_id = $attachment->id;
   my $response = $self->{bucket}->get_key($attach_id);
   if (!$response) {
     warn "Failed to retrieve attachment $attach_id from S3: "
@@ -48,15 +63,41 @@ sub retrieve {
 }
 
 sub remove {
-  my ($self, $attach_id) = @_;
+  my ($self, $attachment) = @_;
+
+  if (_store_db_check($attachment)) {
+    require Bugzilla::Attachment::Database;
+    Bugzilla::Attachment::Database->new()->remove($attachment);
+    return;
+  }
+
+  my $attach_id = $attachment->id;
   $self->{bucket}->delete_key($attach_id)
     or warn "Failed to remove attachment $attach_id from S3: "
     . $self->{bucket}->errstr . "\n";
 }
 
 sub exists {
-  my ($self, $attach_id) = @_;
-  return !!$self->{bucket}->head_key($attach_id);
+  my ($self, $attachment) = @_;
+
+  if (_store_db_check($attachment)) {
+    require Bugzilla::Attachment::Database;
+    return Bugzilla::Attachment::Database->new()->exists($attachment);
+  }
+
+  return !!$self->{bucket}->head_key($attachment->id);
+}
+
+# If the attachment is larger than attachment_s3_minsize,
+# we instead store it in the database.
+sub _store_db_check {
+  my ($attachment) = @_;
+  if (Bugzilla->params->{attachment_s3_minsize}
+      && $attachment->datasize < Bugzilla->params->{attachment_s3_minsize})
+  {
+    return 1;
+  }
+  return 0;
 }
 
 1;
