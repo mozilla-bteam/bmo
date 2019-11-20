@@ -46,9 +46,8 @@ sub set_data {
     && $self->attachment->datasize < Bugzilla->params->{attachment_s3_minsize})
   {
     require Bugzilla::Attachment::Storage::Database;
-    Bugzilla::Attachment::Storage::Database->new({attachment => $self->attachment})
+    return Bugzilla::Attachment::Storage::Database->new({attachment => $self->attachment})
       ->set_data($data);
-    return $self;
   }
 
   unless ($self->bucket->add_key($attach_id, $data)) {
