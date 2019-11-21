@@ -50,14 +50,7 @@ COPY --from=builder /app/PACKAGES /app/PACKAGES
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y curl git libcap2-bin xz-utils vim $(cat PACKAGES)
 
-RUN curl -L https://github.com/dylanwh/tocotrienol/releases/download/1.0.6/tct-centos6.tar.xz > /usr/local/bin/tct.tar.xz && \
-    tar -C /usr/local/bin -xvf /usr/local/bin/tct.tar.xz && \
-    rm /usr/local/bin/tct.tar.xz && \
-    chmod +x /usr/local/bin/tct && \
-    curl -L https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini > /usr/local/sbin/tini && \
-    chmod +x /usr/local/sbin/tini && \
-    useradd -u 10001 -U app -m && \
-    setcap 'cap_net_bind_service=+ep' /usr/local/bin/perl
+RUN useradd -u 10001 -U app -m && setcap 'cap_net_bind_service=+ep' /usr/local/bin/perl
 
 COPY . /app
 

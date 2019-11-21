@@ -500,5 +500,5 @@ Generating cpanfile and cpanfile.snapshot files
 
 .. code-block:: bash
 
-    docker build -t bmo-cpanfile -d Dockerfile.cpanfile .
-    docker run -it -v "${pwd}:/app/result" bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
+    docker build -t bmo-cpanfile -f Dockerfile.cpanfile .
+    docker run -it -v "$(pwd):/app/result" bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
