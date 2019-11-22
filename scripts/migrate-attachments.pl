@@ -21,8 +21,8 @@ use Getopt::Long qw(GetOptions);
 my @storage_names = Bugzilla::Attachment->get_storage_names();
 
 my %options;
-GetOptions(\%options, 'mirror=s@{2}', 'copy=s@{2}', 'delete=s') or exit(1);
-unless ($options{mirror} || $options{copy} || $options{delete}) {
+GetOptions(\%options, 'migrate=s@{2}', 'mirror=s@{2}', 'copy=s@{2}', 'delete=s') or exit(1);
+unless ($options{migrate} || $options{mirror} || $options{copy} || $options{delete}) {
   die <<EOF;
 Syntax:
     migrate-attachments.pl --migrate source destination
@@ -69,14 +69,14 @@ EOF
 my $dbh = Bugzilla->dbh;
 
 if ($options{migrate}) {
-  if ($options{mirror}->[0] eq $options{mirror}->[1]) {
+  if ($options{migrate}->[0] eq $options{migrate}->[1]) {
     die "Source and destination must be different\n";
   }
-  my ($source, $dest) = @{$options{mirror}};
+  my ($source, $dest) = @{$options{migrate}};
 
   my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments");
   confirm(sprintf(
-    'Migrate %s attachments from %s to %s?', $total, @{$options{mirror}}));
+    'Migrate %s attachments from %s to %s?', $total, @{$options{migrate}}));
 
   my $sth
     = $dbh->prepare("SELECT attach_id FROM attachments ORDER BY attach_id DESC");
@@ -143,7 +143,7 @@ elsif ($options{copy}) {
   if ($options{copy}->[0] eq $options{copy}->[1]) {
     die "Source and destination must be different\n";
   }
-  my ($source, $dest) = map { storage($_) } @{$options{copy}};
+  my ($source, $dest) = @{$options{copy}};
 
   my ($total)
     = $dbh->selectrow_array(
@@ -164,7 +164,7 @@ elsif ($options{copy}) {
 
     # store attachments that don't already exist
     if (!$attachment->current_storage($dest)->data_exists()) {
-      if (my $data = $attachment->current_storage($source)(->get_data())) {
+      if (my $data = $attachment->current_storage($source)->get_data()) {
         $attachment->current_storage($dest)->set_data($data);
         $stored++;
       }
@@ -175,7 +175,7 @@ elsif ($options{copy}) {
 }
 
 elsif ($options{delete}) {
-  my $storage = storage($options{delete});
+  my $storage = $options{delete};
   my ($total)
     = $dbh->selectrow_array(
     "SELECT COUNT(*) FROM attachments WHERE attach_size != 0");
@@ -192,20 +192,13 @@ elsif ($options{delete}) {
 
     my $attachment = Bugzilla::Attachment->new({id => $attach_id, cached => 1});
 
-    if ($attachment->current_storage->data_exists()) {
-      $attachment->current_storage->remove_data();
+    if ($attachment->current_storage($storage)->data_exists()) {
+      $attachment->current_storage($storage)->remove_data();
       $deleted++;
     }
   }
   print "\n";
   print "Attachments deleted: $deleted\n";
-}
-
-sub storage {
-  my ($name) = @_;
-  my $storage = Bugzilla::Attachment::get_storage_by_name($name)
-    or die "Invalid attachment location: $name\n";
-  return $storage;
 }
 
 sub confirm {
