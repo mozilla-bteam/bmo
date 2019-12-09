@@ -13,7 +13,7 @@ use lib qw(. lib local/lib/perl5);
 use IO::Handle;
 use Test::More;
 
-my $dockerfile = 'Dockerfile';
+my $dockerfile = 'Dockerfile.bmo-slim';
 my $ci_config  = '.circleci/config.yml';
 
 my $base;

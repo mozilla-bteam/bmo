@@ -500,5 +500,27 @@ Generating cpanfile and cpanfile.snapshot files
 
 .. code-block:: bash
 
-    docker build -t bmo-cpanfile -f Dockerfile.cpanfile .
-    docker run -it -v "$(pwd):/app/result" bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
+  docker build -t bmo-cpanfile -f Dockerfile.cpanfile .
+  docker run -it -v "$(pwd):/app/result" bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
+
+Generating a new mozillabteam/bmo-perl-slim base image
+======================================================
+
+The mozillabteam/bmo-perl-slim image is stored in the Mozilla B-Team
+Docker Hub repository. It contains just the Perl dependencies in ``/app/local``
+and other Debian packages needed. Whenever the ``cpanfile`` and
+``cpanfile.snapshot`` files have been changed by the above steps after a
+succcessful merge, a new mozillabteam/bmo-perl-slim image will need to be
+built and pushed to Docker Hub.
+
+A Docker Hub organization administrator with the correct permissions will
+normally do the ``docker login`` and ``docker push``.
+
+The ``<DATE>`` value should be the current date in ``YYYYMMDD.X``
+format with X being the current iteration value. For example, ``20191209.1``.
+
+.. code-block:: bash
+
+    docker build -t mozillabteam/bmo-perl-slim:<DATE> -f Dockerfile.bmo-slim .
+    docker login
+    docker push mozillabteam/bmo-perl-slim:<DATE>
