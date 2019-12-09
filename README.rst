@@ -111,14 +111,14 @@ Set some environment variables to use for Vagrant
 
 .. code-block:: powershell
 
-  [System.Environment]::SetEnvironmentVariable('HYPERV', '1')``
+  [System.Environment]::SetEnvironmentVariable('HYPERV', '1')
 
 Update hosts file in Windows
 
 - Press the Windows key.
 - Type `notepad` in the search field.
 - In the search results, select `Run as administrator`.
-- From Notepad, open the following file: ``c:\Windows\System32\Drivers\etc\hosts``.
+- From Notepad, open the following file: ``C:\Windows\System32\Drivers\etc\hosts``.
 - Add ``192.168.3.43 bmo-web.vm`` to the end of the file.
 - Select File > Save to save your changes.
 
@@ -130,7 +130,7 @@ Git clone BMO repo ``git clone https://github.com/mozilla-bteam/bmo bmo``
   vagrant up --provider hyperv
 
 When requested (twice), select the NAT Switch that was created earlier. You will need to atart the mojo server to access BMO from the browser
-using ``vagrant ssh web -c 'start_morbo'``. In your browser go to: `http://bmo-web.vm`
+using ``vagrant ssh web -c 'start_morbo'``. In your browser go to: ``http://bmo-web.vm``.
 
 Making Changes and Seeing them
 ------------------------------
