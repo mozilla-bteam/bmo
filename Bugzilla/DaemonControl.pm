@@ -187,7 +187,7 @@ sub assert_httpd {
     ($f->get =~ /^httpd OK/);
   };
   my $timeout
-    = $loop->timeout_future(after => 20)->else_fail('assert_httpd timeout');
+    = $loop->timeout_future(after => 40)->else_fail('assert_httpd timeout');
   return Future->wait_any($repeat, $timeout);
 }
 
@@ -240,7 +240,7 @@ sub assert_database {
   until => sub { defined shift->get };
 
   my $timeout
-    = $loop->timeout_future(after => 20)->else_fail('assert_database timeout');
+    = $loop->timeout_future(after => 40)->else_fail('assert_database timeout');
   my $any_f = Future->wait_any($repeat, $timeout);
   return $any_f->transform(
     done => sub {return},
