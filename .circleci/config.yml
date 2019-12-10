@@ -151,10 +151,9 @@ jobs:
           name: run sanity tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --name test_sanity --no-deps bmo-web.vm \
+            docker-compose -f docker-compose.test.yml run --no-deps bmo-web.vm \
               test_sanity $(circleci tests glob 't/*.t' 'extensions/*/t/*.t' | \
               circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
-            docker rm test_sanity
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -175,9 +174,8 @@ jobs:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run --name test_webservices bmo-web.vm test_webservices | \
+          docker-compose -f docker-compose.test.yml run bmo-web.vm test_webservices | \
             tee artifacts/$CIRCLE_JOB.txt
-          docker rm test_webservices
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -198,9 +196,8 @@ jobs:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run --name test_selenium bmo-web.vm test_selenium | \
+          docker-compose -f docker-compose.test.yml run bmo-web.vm test_selenium | \
             tee artifacts/$CIRCLE_JOB.txt
-          docker rm test_selenium
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -221,7 +218,7 @@ jobs:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run --name test_bmo bmo-web.vm test_bmo -q -f t/bmo/*.t
+          docker-compose -f docker-compose.test.yml run bmo-web.vm test_bmo -q -f t/bmo/*.t
       - *store_log
 
 workflows:

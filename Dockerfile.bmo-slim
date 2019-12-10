@@ -9,8 +9,7 @@ RUN cpanm --notest --quiet App::cpm Module::CPANfile Carton::Snapshot
 
 WORKDIR /app
 
-COPY cpanfile /app/cpanfile
-COPY cpanfile.snapshot /app/cpanfile.snapshot
+COPY cpanfile cpanfile.snapshot /app/
 
 RUN cpm install
 # secure mail loop fixes
@@ -32,6 +31,6 @@ ENV DEBIAN_FRONTEND noninteractive
 COPY --from=builder /app/local /app/local
 COPY --from=builder /app/PACKAGES /app/PACKAGES
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl git libcap2-bin xz-utils vim $(cat PACKAGES)
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl git libcap2-bin xz-utils vim $(cat /app/PACKAGES)
 
 RUN useradd -u 10001 -U app -m && setcap 'cap_net_bind_service=+ep' /usr/local/bin/perl
