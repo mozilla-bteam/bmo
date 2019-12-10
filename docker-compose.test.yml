@@ -41,7 +41,7 @@ services:
       - selenium
 
   bmo-db.vm:
-    image: mozillabteam/bmo-mysql:5.6
+    image: mozillabteam/bmo-mysql:5.7
     logging:
       driver: "none"
     environment:
