@@ -43,8 +43,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *build_image
       - *install_deps
@@ -106,8 +105,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *build_image
       - attach_workspace:
@@ -141,8 +139,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *build_image
       - *install_deps
@@ -168,8 +165,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *build_image
       - *install_deps
@@ -192,8 +188,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *build_image
       - *install_deps
@@ -216,8 +211,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *build_image
       - *install_deps
