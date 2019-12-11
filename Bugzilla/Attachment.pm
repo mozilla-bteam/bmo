@@ -316,7 +316,7 @@ the content of the attachment
 
 sub data {
   my $self = shift;
-  return $self->{data} //= current_storage()->retrieve($self->id);
+  return $self->{data} //= $self->current_storage->get_data();
 }
 
 =over
@@ -638,7 +638,7 @@ sub validate_can_edit {
 Description: validates if attachments the user wants to mark as obsolete
              really belong to the given bug and are not already obsolete.
              Moreover, a user cannot mark an attachment as obsolete if
-             he cannot view it (due to restrictions on it).
+             they cannot view it (due to restrictions on it).
 
 Params:      $bug - The bug object obsolete attachments should belong to.
              $attach_ids - The list of attachments to mark as obsolete.
@@ -735,7 +735,8 @@ sub create {
     close($data);
     $data = $tmp;
   }
-  current_storage()->store($attachment->id, $data);
+
+  $attachment->current_storage->set_data($data)->set_class();
 
   # Return the new attachment object
   return $attachment;
@@ -827,7 +828,7 @@ sub remove_from_db {
               WHERE attach_id = ?', undef, ('text/plain', 0, 1, 0, $self->id)
   );
   $dbh->bz_commit_transaction();
-  current_storage()->remove($self->id);
+  $self->current_storage->remove_data()->remove_class();
 
   # As we don't call SUPER->remove_from_db we need to manually clear
   # memcached here.
@@ -846,7 +847,7 @@ sub get_content_type {
   my $cgi = Bugzilla->cgi;
 
   return 'application/octet-stream' if ($cgi->param('hide_preview'));
-  return 'text/plain' if ($cgi->param('ispatch') || $cgi->param('attach_text'));
+  return 'text/plain' if ($cgi->param('ispatch'));
 
   my $content_type;
   my $method = $cgi->param('contenttypemethod');
@@ -893,8 +894,31 @@ sub get_content_type {
 }
 
 sub current_storage {
-  return state $storage
-    //= get_storage_by_name(Bugzilla->params->{attachment_storage});
+  my ($self, $override_class) = @_;
+  my $dbh  = Bugzilla->dbh;
+
+  # Sometimes we might want to copy attachment data from one
+  # storage class to another. With this param, we can override
+  # the current class, and then call ->set_data().
+  if ($override_class) {
+    return $self->{current_storage} = $self->get_storage_by_name($override_class, $self);
+  }
+
+  if (!$self->{current_storage}) {
+    my ($current_storage)
+      = $dbh->selectrow_array(
+      "SELECT storage_class FROM attachment_storage_class WHERE id = ?",
+      undef, $self->id);
+    if (!$current_storage) {
+      $self->{current_storage}
+        = $self->get_storage_by_name(Bugzilla->params->{attachment_storage});
+    }
+    else {
+      $self->{current_storage} = $self->get_storage_by_name($current_storage);
+    }
+  }
+
+  return $self->{current_storage};
 }
 
 sub get_storage_names {
@@ -907,20 +931,20 @@ sub get_storage_names {
 }
 
 sub get_storage_by_name {
-  my ($name) = @_;
+  my ($self, $name) = @_;
 
   # all options for attachment_storage need to be handled here
   if ($name eq 'database') {
-    require Bugzilla::Attachment::Database;
-    return Bugzilla::Attachment::Database->new();
+    require Bugzilla::Attachment::Storage::Database;
+    return Bugzilla::Attachment::Storage::Database->new({attachment => $self});
   }
   elsif ($name eq 'filesystem') {
-    require Bugzilla::Attachment::FileSystem;
-    return Bugzilla::Attachment::FileSystem->new();
+    require Bugzilla::Attachment::Storage::FileSystem;
+    return Bugzilla::Attachment::Storage::FileSystem->new({attachment => $self});
   }
   elsif ($name eq 's3') {
-    require Bugzilla::Attachment::S3;
-    return Bugzilla::Attachment::S3->new();
+    require Bugzilla::Attachment::Storage::S3;
+    return Bugzilla::Attachment::Storage::S3->new({attachment => $self});
   }
   else {
     return undef;

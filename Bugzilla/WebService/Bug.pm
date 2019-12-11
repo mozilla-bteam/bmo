@@ -1191,8 +1191,15 @@ sub add_comment {
   }
 
   # Append comment
-  $bug->add_comment($comment,
-    {isprivate => $params->{is_private}, work_time => $params->{work_time}});
+  $bug->add_comment(
+    $comment,
+    {
+      isprivate => $params->{is_private},
+      work_time => $params->{work_time},
+      is_markdown =>
+        ( defined $params->{is_markdown} ? $params->{is_markdown} : 0 )
+    }
+  );
 
   # Add comment tags
   $bug->set_all({comment_tags => $params->{comment_tags}})
@@ -2957,7 +2964,7 @@ C<boolean> True if this bug is open, false if it is closed.
 =item C<is_creator_accessible>
 
 C<boolean> If true, this bug can be accessed by the creator (reporter)
-of the bug, even if he or she is not a member of the groups the bug
+of the bug, even if they’re not a member of the groups the bug
 is restricted to.
 
 =item C<keywords>
@@ -4695,7 +4702,7 @@ C<string> The full login name of the bug's QA Contact.
 =item C<is_creator_accessible>
 
 C<boolean> Whether or not the bug's reporter is allowed to access
-the bug, even if he or she isn't in a group that can normally access
+the bug, even if they aren’t in a group that can normally access
 the bug.
 
 =item C<regressed_by>

@@ -290,6 +290,20 @@
         no_label = 1
         hide_on_edit = 1
     %]
+      [%# non-public bug text for screen readers %]
+      [% IF bug.groups_in.size %]
+        [%
+          non_public_desc = "Confidential";
+          FOREACH group IN bug.groups_in;
+            IF group.secure_mail;
+              non_public_desc = "Security";
+              BREAK;
+            END;
+          END;
+        %]
+        <h1 class="offscreen">[% non_public_desc FILTER none %] [%+ terms.bug %]</h1>
+      [% END %]
+
       <h1 id="field-value-short_desc">[% bug.short_desc FILTER quoteUrls(bug) FILTER wbr %]</h1>
     [% END %]
 
@@ -404,6 +418,9 @@
             <div><a href="[% basepath FILTER none %]buglist.cgi?product=[% bug.product FILTER uri %]&amp;
                           [%~ %]component=[% bug.component FILTER uri %]&amp;bug_status=__open__"
                     target="_blank" role="menuitem" tabindex="-1">See Open [% terms.Bugs %] in This Component</a></div>
+            <div><a href="[% basepath FILTER none %]buglist.cgi?product=[% bug.product FILTER uri %]&amp;
+                          [%~ %]component=[% bug.component FILTER uri %]&amp;chfield=resolution&chfieldfrom=-6m&chfieldvalue=FIXED&bug_status=__closed__"
+                    target="_blank" role="menuitem" tabindex="-1">Recently Fixed [% terms.Bugs %] in This Component</a></div>
             <div><a href="[% basepath FILTER none %]enter_bug.cgi?product=[% bug.product FILTER uri %]&amp;
                           [%~ %]component=[% bug.component FILTER uri %]"
                     target="_blank" role="menuitem" tabindex="-1">File New [% terms.Bug %] in This Component</a></div>
@@ -945,7 +962,6 @@
           name = "dependencytree"
           container = 1
           label = ""
-          hide_on_edit = 1
       %]
         Dependency <a href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bug.bug_id FILTER none %]&amp;hide_resolved=1">tree</a>
         / <a href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id FILTER none %]">graph</a>

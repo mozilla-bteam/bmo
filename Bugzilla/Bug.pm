@@ -1761,7 +1761,8 @@ sub _check_assigned_to {
 
 sub _check_bug_file_loc {
   my ($invocant, $url) = @_;
-  $url = '' if !defined($url);
+  return '' if !defined $url;
+  $url = trim($url);
 
   # On bug entry, if bug_file_loc is "http://", the default, use an
   # empty value instead. However, on bug editing people can set that
@@ -2108,10 +2109,10 @@ sub _check_dup_id {
   }
 
   # Should we add the reporter to the CC list of the new bug?
-  # If he can see the bug...
+  # If they can see the bug...
   if ($self->reporter->can_see_bug($dupe_of)) {
 
-    # We only add him if he's not the reporter of the other bug.
+    # We only add them if they’re not the reporter of the other bug.
     $self->{_add_dup_cc} = 1 if $dupe_of_bug->reporter->id != $self->reporter->id;
   }
 
@@ -2127,11 +2128,11 @@ sub _check_dup_id {
       $self->{_add_dup_cc} = $add_confirmed;
     }
     else {
-      # Note that here we don't check if he user is already the reporter
-      # of the dupe_of bug, since we already checked if he can *see*
+      # Note that here we don't check if the user is already the reporter
+      # of the dupe_of bug, since we already checked if they can *see*
       # the bug, above. People might have reporter_accessible turned
       # off, but cclist_accessible turned on, so they might want to
-      # add the reporter even though he's already the reporter of the
+      # add the reporter even though they’re already the reporter of the
       # dup_of bug.
       my $vars     = {};
       my $template = Bugzilla->template;
@@ -2295,7 +2296,7 @@ sub _check_reporter {
   }
   else {
     # On bug creation, the reporter is the logged in user
-    # (meaning that he must be logged in first!).
+    # (meaning that they must be logged in first!).
     Bugzilla->login(LOGIN_REQUIRED);
     $reporter = Bugzilla->user->id;
   }
@@ -3774,7 +3775,7 @@ sub _resolve_ultimate_dup_id {
     # If $dupes{$this_dup} is already set to 1, then a loop
     # already exists which does not involve this bug.
     # As the user is not responsible for this loop, do not
-    # prevent him from marking this bug as a duplicate.
+    # prevent them from marking this bug as a duplicate.
     return $last_dup if exists $dupes{$this_dup};
     $dupes{$this_dup} = 1;
     $last_dup = $this_dup;
@@ -4768,6 +4769,9 @@ sub _join_activity_entries {
 
   # Buglists and see_also need the comma restored
   if ($field =~ /^(?:dependson|blocked|regress(?:ed_by|es)|see_also)$/) {
+    if ($new_change eq '') {
+      return $current_change;
+    }
     if (substr($new_change, 0, 1) eq ',' || substr($new_change, 0, 1) eq ' ') {
       return $current_change . $new_change;
     }
@@ -4965,7 +4969,7 @@ sub check_can_change_field {
     return 1;
   }
 
-# If the user isn't allowed to change a field, we must tell him who can.
+# If the user isn't allowed to change a field, we must tell them who can.
 # We store the required permission set into the $PrivilegesRequired
 # variable which gets passed to the error template.
 #
@@ -5019,7 +5023,7 @@ sub check_can_change_field {
   # is not allowed to change.
 
   # The reporter may not:
-  # - reassign bugs, unless the bugs are assigned to him;
+  # - reassign bugs, unless the bugs are assigned to them;
   #   in that case we will have already returned 1 above
   #   when checking for the assignee of the bug.
   if ($field eq 'assigned_to') {
@@ -5039,7 +5043,7 @@ sub check_can_change_field {
     return 0;
   }
 
-  # - change the priority (unless he could have set it originally)
+  # - change the priority (unless they could have set it originally)
   if ($field eq 'priority' && !Bugzilla->params->{'letsubmitterchoosepriority'}) {
     $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
     return 0;

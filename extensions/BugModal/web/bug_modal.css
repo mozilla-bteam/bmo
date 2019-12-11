@@ -28,6 +28,15 @@
   vertical-align: middle !important;
 }
 
+.offscreen {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .gravatar {
   margin-right: 4px;
   border-radius: 4px;
@@ -641,6 +650,7 @@ td.flag-requestee {
   opacity: 1;
   font-size: var(--font-size-small);
   text-align: center;
+  cursor: pointer;
   transition: all .2s 2s;
   will-change: transform; /* for performance */
 }

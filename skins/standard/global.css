@@ -299,7 +299,7 @@
     --control-background-color: rgb(35, 36, 37);
     --control-border-color: rgb(60, 61, 62);
     --selected-control-background-color: rgb(60, 61, 62);
-    --disabled-control-foreground-color: rgb(90, 91, 92);
+    --disabled-control-foreground-color: rgb(110, 111, 112);
     --scrollbar-color: rgb(70, 71, 72) var(--application-background-color);
 
     /** Button */
@@ -840,6 +840,10 @@ input[type="radio"]:checked {
   background-image: none !important;
   font-size: var(--font-size-small) !important;
   text-shadow: none !important;
+}
+
+.yui-skin-sam .yui-dt th a {
+  color: inherit !important;
 }
 
 .yui-skin-sam .yui-dt table tr,
