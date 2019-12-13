@@ -584,3 +584,6 @@ format with X being the current iteration value. For example, ``20191209.1``.
     docker build -t mozillabteam/bmo-perl-slim:<DATE> -f Dockerfile.bmo-slim .
     docker login
     docker push mozillabteam/bmo-perl-slim:<DATE>
+
+After pushing to Docker Hub, you will need to update ``Dockerfile`` to include the new
+built image with correct date. Create a PR, review and commit the new change.
