@@ -4332,12 +4332,28 @@ sub _populate_api_keys_creation_ts {
 sub _populate_attachment_storage_class {
   my $dbh = Bugzilla->dbh;
 
+  my $attach_count
+    = $dbh->selectrow_array('SELECT COUNT(attach_id) FROM attachments');
+  my $class_count
+    = $dbh->selectrow_array('SELECT COUNT(id) FROM attachment_storage_class');
+
   # Return if we have already made these changes
-  if (!$dbh->selectrow_arrayref('SELECT COUNT(id) FROM attachment_storage_class'))
-  {
-    $dbh->do(
-      "INSERT INTO attachment_storage_class (id, storage_class) SELECT attachments.id, 'database' FROM attachments ORDER BY attachments.id"
-    );
+  if ($attach_count != $class_count) {
+    print "Populating attachments_storage_class table...\n";
+    my $attach_ids = $dbh->selectcol_arrayref(
+      'SELECT attach_id FROM attachments ORDER BY attach_id');
+    foreach my $attach_id (@$attach_ids) {
+      if (!$dbh->selectrow_array(
+        'SELECT id FROM attachment_storage_class WHERE id = ?',
+        undef, $attach_id
+      ))
+      {
+        $dbh->do(
+          "INSERT INTO attachment_storage_class (id, storage_class) VALUES (?, 'database')",
+          undef, $attach_id
+        );
+      }
+    }
   }
 }
 
