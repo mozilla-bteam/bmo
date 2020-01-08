@@ -4340,20 +4340,11 @@ sub _populate_attachment_storage_class {
   # Return if we have already made these changes
   if ($attach_count != $class_count) {
     print "Populating attachments_storage_class table...\n";
-    my $attach_ids = $dbh->selectcol_arrayref(
-      'SELECT attach_id FROM attachments ORDER BY attach_id');
-    foreach my $attach_id (@$attach_ids) {
-      if (!$dbh->selectrow_array(
-        'SELECT id FROM attachment_storage_class WHERE id = ?',
-        undef, $attach_id
-      ))
-      {
-        $dbh->do(
-          "INSERT INTO attachment_storage_class (id, storage_class) VALUES (?, 'database')",
-          undef, $attach_id
-        );
-      }
-    }
+    $dbh->do("
+       INSERT INTO attachment_storage_class (id, storage_class)
+       SELECT attachments.attach_id, 'database' FROM attachments
+       WHERE NOT EXISTS (SELECT 1 FROM attachment_storage_class WHERE id = attachments.attach_id)
+    ");
   }
 }
 
