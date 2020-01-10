@@ -51,9 +51,10 @@ services:
       - memcached
 
   bmo-db.vm:
-    image: mozillabteam/bmo-mysql:5.7
+    image: mysql:5.7
     volumes:
       - bmo-mysql-db:/var/lib/mysql
+      - bmo-mysql-config:/etc/mysql/conf.d
     logging:
       driver: "none"
     environment:
@@ -80,4 +81,10 @@ volumes:
     driver_opts:
       type: none
       device: '$PWD'
+      o: bind
+  bmo-mysql-config:
+    driver: local
+    driver_opts:
+      type: none
+      device: '$PWD/docker/mysql'
       o: bind
