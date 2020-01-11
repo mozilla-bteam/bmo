@@ -2,9 +2,18 @@ FROM perl:5.30.0-slim AS builder
 
 RUN apt-get update
 RUN apt-get install -y \
-    apt-file build-essential curl libssl-dev zlib1g-dev openssl \
-    libexpat-dev cmake git libcairo-dev libgd-dev \
-    default-libmysqlclient-dev unzip wget
+    apt-file \
+    build-essential \
+    cmake \
+    curl \
+    default-libmysqlclient-dev \
+    git \
+    libcairo-dev \
+    libexpat-dev \
+    libgd-dev \
+    libssl-dev \
+    openssl \
+    zlib1g-dev
 
 RUN cpanm --notest --quiet App::cpm Module::CPANfile Carton::Snapshot
 
@@ -33,7 +42,11 @@ COPY --from=builder /app/PACKAGES /app/PACKAGES
 
 RUN apt-get update \
     && apt-get install -y \
-        curl git libcap2-bin rsync xz-utils vim $(cat /app/PACKAGES) \
+       curl \
+       git \
+       libcap2-bin \
+       rsync \
+       $(cat /app/PACKAGES) \
     && rm -rf /var/cache/apt/* /var/lib/apt/lists/*
 
 RUN useradd -u 10001 -U app -m && setcap 'cap_net_bind_service=+ep' /usr/local/bin/perl
