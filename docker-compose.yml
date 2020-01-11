@@ -12,7 +12,7 @@ services:
     command: dev_httpd
     volumes:
       - bmo-data-dir:/app/data
-      - bmo-sync-dir:/mnt/sync
+      - .:/mnt/sync
     tmpfs:
       - /tmp
       - /run
@@ -54,7 +54,7 @@ services:
     image: mysql:5.7
     volumes:
       - bmo-mysql-db:/var/lib/mysql
-      - bmo-mysql-config:/etc/mysql/conf.d
+      - ./docker/mysql:/etc/mysql/conf.d
     logging:
       driver: "none"
     environment:
@@ -76,15 +76,3 @@ services:
 volumes:
   bmo-mysql-db:
   bmo-data-dir:
-  bmo-sync-dir:
-    driver: local
-    driver_opts:
-      type: none
-      device: '$PWD'
-      o: bind
-  bmo-mysql-config:
-    driver: local
-    driver_opts:
-      type: none
-      device: '$PWD/docker/mysql'
-      o: bind
