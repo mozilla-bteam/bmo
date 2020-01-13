@@ -50,6 +50,44 @@ services:
       - bmo-db.vm
       - memcached
 
+  bmo-feed.vm:
+    build: *bmo_build
+    command:
+      - perl
+      - extensions/PhabBugz/bin/phabbugz_feed.pl
+      - start
+      - '-d'
+      - '-f'
+    volumes:
+      - bmo-data-dir:/app/data
+    tmpfs:
+      - /tmp
+      - /run
+    environment: *bmo_env
+    restart: always
+    depends_on:
+      - bmo-db.vm
+      - memcached
+
+  bmo-pushd.vm:
+    build: *bmo_build
+    command:
+      - perl
+      - extensions/Push/bin/bugzilla-pushd.pl
+      - start
+      - '-d'
+      - '-f'
+    volumes:
+      - bmo-data-dir:/app/data
+    tmpfs:
+      - /tmp
+      - /run
+    environment: *bmo_env
+    restart: always
+    depends_on:
+      - bmo-db.vm
+      - memcached
+
   bmo-db.vm:
     image: mysql:5.7
     volumes:
