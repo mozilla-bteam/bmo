@@ -337,7 +337,7 @@ use constant ABSTRACT_SCHEMA => {
         REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE'}
       },
       attach_id => {
-        TYPE => 'INT3',
+        TYPE => 'INT5',
         REFERENCES =>
           {TABLE => 'attachments', COLUMN => 'attach_id', DELETE => 'CASCADE'}
       },
@@ -509,7 +509,7 @@ use constant ABSTRACT_SCHEMA => {
 
   attachments => {
     FIELDS => [
-      attach_id => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      attach_id => {TYPE => 'BIGSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
       bug_id    => {
         TYPE       => 'INT3',
         NOTNULL    => 1,
@@ -542,7 +542,7 @@ use constant ABSTRACT_SCHEMA => {
   attach_data => {
     FIELDS => [
       id => {
-        TYPE       => 'INT3',
+        TYPE       => 'INT5',
         NOTNULL    => 1,
         PRIMARYKEY => 1,
         REFERENCES =>
@@ -555,7 +555,7 @@ use constant ABSTRACT_SCHEMA => {
   attachment_storage_class => {
     FIELDS => [
       id => {
-        TYPE       => 'INT3',
+        TYPE       => 'INT5',
         NOTNULL    => 1,
         PRIMARYKEY => 1,
         REFERENCES =>
@@ -669,7 +669,7 @@ use constant ABSTRACT_SCHEMA => {
         REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE'}
       },
       attach_id => {
-        TYPE => 'INT3',
+        TYPE => 'INT5',
         REFERENCES =>
           {TABLE => 'attachments', COLUMN => 'attach_id', DELETE => 'CASCADE'}
       },
@@ -1824,7 +1824,7 @@ use constant ABSTRACT_SCHEMA => {
       user_agent  => {TYPE => 'TINYTEXT',    NOTNULL => 1},
       timestamp   => {TYPE => 'DATETIME',    NOTNULL => 1},
       bug_id      => {TYPE => 'INT3',        NOTNULL => 0},
-      attach_id   => {TYPE => 'INT4',        NOTNULL => 0},
+      attach_id   => {TYPE => 'INT5',        NOTNULL => 0},
       request_url => {TYPE => 'TINYTEXT',    NOTNULL => 1},
       method      => {TYPE => 'TINYTEXT',    NOTNULL => 1},
       action      => {TYPE => 'varchar(20)', NOTNULL => 1},
