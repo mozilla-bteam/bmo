@@ -10,7 +10,7 @@ package Bugzilla::App::SES;
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
 
-use Bugzilla::Constants qw(ERROR_MODE_DIE);
+use Bugzilla::Constants qw(BOUNCE_COUNT_MAX ERROR_MODE_DIE);
 use Bugzilla::Logging;
 use Bugzilla::Mailer qw(MessageToMTA);
 use Bugzilla::User ();
@@ -199,16 +199,32 @@ sub _process_bounce {
           mta    => $notification->{bounce}->{reportingMTA} // 'unknown',
           reason => $reason,
         };
-        my $disable_text;
+        my $bounce_message;
         $template->process('admin/users/bounce-disabled.txt.tmpl',
-          $vars, \$disable_text)
+          $vars, \$bounce_message)
           || die $template->error();
 
-        $user->set_disabledtext($disable_text);
         $user->set_disable_mail(1);
+        $user->set_bounce_count($user->bounce_count + 1);
+
+        # if we hit the max amount, go ahead and disabled the account
+        # and an admin will need to reactivate the account.
+        if ($user->bounce_count > BOUNCE_COUNT_MAX) {
+          $user->set_disabletext($bounce_message);
+        }
+
         $user->update();
+
+        # Do this outside of Object.pm as we do not want to
+        # store the messages anywhere else.
+        Bugzilla->dbh->do(
+          "INSERT INTO audit_log (user_id, class, object_id, field, removed, added, at_time)
+           VALUES (?, 'Bugzilla::User', ?, 'bounce_message', '', ?, LOCALTIMESTAMP(0))",
+          undef, $user->id, $user->id, $bounce_message
+        );
+
         Bugzilla->audit(
-          "bounce for <$address> disabled userid-" . $user->id . ": $reason");
+          "bounce for <$address> disabled email for userid-" . $user->id . ": $reason");
       }
     }
 
