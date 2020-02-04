@@ -1,0 +1,47 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/header.html.tmpl
+  title = "Bounced Emails"
+%]
+
+<h2>[% title FILTER html %]</h2>
+
+[% IF user.id == other_user.id AND other_user.email_disabled %]
+<form action="/bounced_emails/[% other_user.id FILTER uri %]">
+<table>
+  <tr>
+    <td><input type="checkbox" name="enable_email" id="enable_email" value="1"></td>
+    <td>I have resolved the issue and would like email delivery for my account to be reactivated.</td>
+  </tr>
+</table>
+<input type="submit" value="Submit">
+</form>
+[% END %]
+
+<h3>History</h3>
+
+[% columns =
+  [
+   {
+    name    => 'bounce_when'
+    heading => 'When'
+   }
+   {
+    name    => 'bounce_message'
+    heading => 'Message'
+   }
+  ]
+%]
+
+[% PROCESS admin/table.html.tmpl
+  columns = columns
+  data    = other_user.bounce_messages
+%]
+
+[% PROCESS global/footer.html.tmpl %]
