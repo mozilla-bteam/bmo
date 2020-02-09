@@ -35,7 +35,7 @@
                  'skins/standard/enter_bug.css',
                  'skins/standard/create_bug.css' ]
   javascript_urls = [ "js/attachment.js",
-                      "js/field.js", "js/TUI.js", "js/bug.js",
+                      "js/field.js", "js/expander.js", "js/bug.js",
                       "js/create_bug.js" ]
   onload = "init();"
 %]
@@ -212,11 +212,6 @@ var status_comment_required = new Array();
   status_comment_required['[% status.name FILTER js %]'] =
     [% status.comment_required_on_change_from() ? 'true' : 'false' %]
 [% END %]
-
-TUI_alternates['expert_fields'] = 'Show Advanced Fields';
-// Hide the Advanced Fields by default, unless the user has a cookie
-// that specifies otherwise.
-TUI_hide_default('expert_fields');
 -->
 </script>
 
@@ -241,13 +236,8 @@ TUI_hide_default('expert_fields');
 
   <tr>
     <td colspan="2">
-      <input type="button" id="expert_fields_controller"
-             value="Hide Advanced Fields" onClick="toggleAdvancedFields()">
-      [%# Show the link if the browser supports JS %]
-      <script [% script_nonce FILTER none %]>
-        YAHOO.util.Dom.removeClass('expert_fields_controller',
-                                   'bz_default_hidden');
-      </script>
+      <input type="button" id="expert_fields_controller" value="Hide Advanced Fields"
+             data-expander-target="expert_fields" data-expander-alt-text="Show Advanced Fields">
     </td>
     <td colspan="2">&nbsp;</td>
   </tr>

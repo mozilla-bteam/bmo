@@ -651,3 +651,17 @@ Bugzilla.Error = class CustomError extends Error {
     return `${this.name}: "${this.message}" (code: ${this.code}${this.detail ? `, detail: ${this.detail}` : ''})`;
   }
 };
+
+/**
+ * Provide static utility methods related to string parsing and manipulation.
+ */
+Bugzilla.String = class String {
+  /**
+   * Generate a random hash string like `57D627E` that can be used for DOM node IDs.
+   * @param {Number} [length] Size of hash.
+   * @returns {String} Generated hash.
+   */
+  static generate_hash(length = 7) {
+    return [...Array(length)].map(() => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
+  }
+};

@@ -1,10 +1,46 @@
-function toggleAdvancedFields() {
-  TUI_toggle_class('expert_fields');
-  var elements = YAHOO.util.Dom.getElementsByClassName('expert_fields');
-  if (YAHOO.util.Dom.hasClass(elements[0], TUI_HIDDEN_CLASS)) {
-    handleWantsBugFlags(false);
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+/**
+ * Reference or define the Bugzilla app namespace.
+ * @namespace
+ */
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
+
+/**
+ * Implement features on the New Bug page.
+ */
+Bugzilla.CreateBug = class CreateBug {
+  /**
+   * Initialize a new CreateBug instance.
+   */
+  constructor() {
+    this.init_expander();
   }
-}
+
+  /**
+   * Activate expanders on each section.
+   */
+  init_expander() {
+    const $controller = document.querySelector('#expert_fields_controller');
+
+    new Bugzilla.Expander($controller);
+
+    $controller.addEventListener('Expander#toggle', event => {
+      if (event.detail.hidden) {
+        handleWantsBugFlags(false);
+      }
+    });
+  }
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  new Bugzilla.CreateBug();
+}, { once: true });
 
 function handleWantsBugFlags(wants) {
   if (wants) {

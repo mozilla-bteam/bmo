@@ -154,12 +154,39 @@ div.bz_section_title {
   font-size: var(--font-size-h3);
 }
 
-div.bz_section_title a {
-  color: inherit;
-  font-weight: bold;
+div.bz_section_title h3 {
+  display: inline-flex;
+  align-items: center;
+  outline: 0;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
 }
 
-div.bz_section_title span {
+div.bz_section_title h3 .icon {
+  display: inline-block;
+  margin-right: 4px;
+}
+
+div.bz_section_title h3 .icon::before {
+  display: inline-block;
+  font-family: "Material Icons";
+  vertical-align: middle;
+  content: '\e037';
+  transform: rotate(0deg);
+  transition: transform .3s;
+}
+
+div.bz_section_title h3[aria-expanded="true"] .icon::before {
+  transform: rotate(90deg);
+}
+
+div.bz_section_title h3:hover strong,
+div.bz_section_title h3:focus strong {
+  text-decoration: underline;
+}
+
+div.bz_section_title h3 ~ span {
   margin-left: 1em;
   font-size: var(--font-size-medium);
   font-style: italic;
@@ -178,10 +205,6 @@ div.bz_section_title span {
 .hide_history_filter #history_filter_section,
 .hide_detailed_information #detailed_information_section {
   display: none;
-}
-
-.arrow {
-  display: inline;
 }
 
 .bz_search_section,

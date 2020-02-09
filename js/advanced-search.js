@@ -11,7 +11,26 @@
  */
 var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 
-Bugzilla.AdvancedSearch = {};
+/**
+ * Implement generic features on the Advanced Search page.
+ */
+Bugzilla.AdvancedSearch = class AdvancedSearch {
+  /**
+   * Initialize a new AdvancedSearch instance.
+   */
+  constructor() {
+    this.init_expander();
+  }
+
+  /**
+   * Activate expanders on each section.
+   */
+  init_expander() {
+    for (const $controller of document.querySelectorAll('[data-expander-target]')) {
+      new Bugzilla.Expander($controller);
+    }
+  }
+};
 
 /**
  * Implement features in the Search By Change History section.
@@ -721,6 +740,7 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
+  new Bugzilla.AdvancedSearch();
   new Bugzilla.AdvancedSearch.HistoryFilter();
   new Bugzilla.CustomSearch();
 }, { once: true });

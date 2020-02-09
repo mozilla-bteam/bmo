@@ -103,20 +103,6 @@ function doOnSelectProduct(selectmode) {
         selectProduct(f.product, f.component, f.version, milestone, null);
     }
 }
-
-// Hide the Advanced Fields by default, unless the user has a cookie
-// that specifies otherwise.
-// &#9656; and &#9662; are both UTF-8 escaped characters for right
-//    and down facing arrows respectively.
-TUI_alternates['history_query'] = '&#9658;';
-TUI_alternates['people_query'] = '&#9658;';
-TUI_alternates['information_query'] = '&#9658;';
-TUI_alternates['custom_search_query'] = '&#9658;';
-
-TUI_hide_default('history_query');
-TUI_hide_default('people_query');
-TUI_hide_default('information_query');
-TUI_hide_default('custom_search_query');
 </script>
 
 [% query_types = [
@@ -191,10 +177,10 @@ TUI_hide_default('custom_search_query');
 [% Hook.process('after_selects_top') %]
 
 <div id="detailed_information" class="bz_section_title">
-  <div id="information_query_controller" class="arrow">&#9660;</div>
-  <a href="javascript:TUI_toggle_class('information_query')">
-    Detailed [% terms.Bug %] Information
-  </a>
+  <h3 data-expander-target="information_query">
+    <span class="icon" aria-hidden="true"></span>
+    <strong>Detailed [% terms.Bug %] Information</strong>
+  </h3>
   <span class="section_help">Narrow results by the following fields:
     [%+ field_descs.longdesc FILTER html %]s, [%+ field_descs.bug_file_loc FILTER html %],
     [% IF Param('usestatuswhiteboard') %] [%+ field_descs.status_whiteboard FILTER html %], [%+ END %]
@@ -316,8 +302,10 @@ TUI_hide_default('custom_search_query');
 </div>
 [%# *** Email Numbering *** %]
   <div class="bz_section_title" id="people_filter">
-    <div id="people_query_controller" class="arrow">&#9660;</div>
-    <a href="javascript:TUI_toggle_class('people_query')">Search By People</a>
+    <h3 data-expander-target="people_query">
+      <span class="icon" aria-hidden="true"></span>
+      <strong>Search By People</strong>
+    </h3>
     <span>Narrow results to a role (i.e. [% field_descs.assigned_to FILTER html %],
       [%+ field_descs.reporter FILTER html %], [% field_descs.commenter FILTER html %],
       etc.) a person has on [% terms.abug %]
@@ -364,8 +352,10 @@ TUI_hide_default('custom_search_query');
   </div>
 [%# *** Bug Changes *** %]
 <div class="bz_section_title" id="history_filter">
-  <div id="history_query_controller" class="arrow">&#9660;</div>
-  <a href="javascript:TUI_toggle_class('history_query')">Search By Change History</a>
+  <h3 data-expander-target="history_query">
+    <span class="icon" aria-hidden="true"></span>
+    <strong>Search By Change History</strong>
+  </h3>
   <span>Narrow results to how fields have changed during a specific time period</span>
 </div>
 <ul class="bug_changes bz_search_section history_query" id="history_filter_section">
