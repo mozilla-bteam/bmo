@@ -52,7 +52,6 @@ use base qw(Exporter);
   open_advanced_search_page
   set_parameters
   screenshot_page
-  set_expander_states
 
   get_selenium
   get_rpc_clients
@@ -172,20 +171,6 @@ sub get_rpc_clients {
 # Helpers for Selenium Scripts #
 ################################
 
-# Save Expander UI states in browser’s local storage, which are required to use
-# the advanced fields on the Enter Bug page and the Advanced Search page.
-sub set_expander_states {
-  my $sel = shift;
-
-  $sel->driver->execute_script("
-    window.localStorage.setItem('expander:expert_fields', 1);
-    window.localStorage.setItem('expander:information_query', 1);
-    window.localStorage.setItem('expander:people_query', 1);
-    window.localStorage.setItem('expander:history_query', 1);
-    window.localStorage.setItem('expander:custom_search_query', 1);
-  ");
-}
-
 sub go_to_home {
   my ($sel) = @_;
   $sel->open_ok("/home", undef, "Go to the home page");
@@ -235,7 +220,9 @@ sub file_bug_in_product {
   my ($sel, $product, $classification) = @_;
   my $config = get_config();
 
-  set_expander_states($sel);
+  $sel->add_cookie('TUI',
+    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
+  );
 
   $classification ||= "Unclassified";
   $sel->click_ok('//*[@class="link-file"]//a', undef, "Go create a new bug");
@@ -387,8 +374,9 @@ sub add_product {
 sub open_advanced_search_page {
   my $sel = shift;
 
-  set_expander_states($sel);
-
+  $sel->add_cookie('TUI',
+    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
+  );
   $sel->click_ok('//*[@class="link-search"]//a');
   $sel->wait_for_page_to_load(WAIT_TIME);
   my $title = $sel->get_title();
