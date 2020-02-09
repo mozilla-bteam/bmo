@@ -220,10 +220,6 @@ sub file_bug_in_product {
   my ($sel, $product, $classification) = @_;
   my $config = get_config();
 
-  $sel->add_cookie('TUI',
-    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
-  );
-
   $classification ||= "Unclassified";
   $sel->click_ok('//*[@class="link-file"]//a', undef, "Go create a new bug");
   $sel->wait_for_page_to_load(WAIT_TIME);
@@ -262,6 +258,14 @@ sub file_bug_in_product {
   }
   $sel->title_is("Enter Bug: $product", "Display form to enter bug data");
   sleep(1); # FIXME: Delay for slow page performance
+
+  # Show Advanced Fields
+  $sel->driver->execute_script("
+    const $controller = document.querySelector('#expert_fields_controller');
+    if ($controller && !$controller.matches('[aria-expanded=\"true\"]')) {
+      $controller.click();
+    }
+  ");
 
   # Select the defect type by default
   # `check_ok()` doesn't work here because the checkbox is invisible
@@ -374,9 +378,6 @@ sub add_product {
 sub open_advanced_search_page {
   my $sel = shift;
 
-  $sel->add_cookie('TUI',
-    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
-  );
   $sel->click_ok('//*[@class="link-search"]//a');
   $sel->wait_for_page_to_load(WAIT_TIME);
   my $title = $sel->get_title();
@@ -386,6 +387,17 @@ sub open_advanced_search_page {
     $sel->wait_for_page_to_load(WAIT_TIME);
   }
   $sel->remove_all_selections('classification');
+
+  # Expand all sections
+  $sel->driver->execute_script("
+    for (const key of ['information', 'people', 'history', 'custom_search']) {
+      const $controller = document.querySelector(`[data-expander-target=\"${key}_query\"]`);
+      if ($controller && !$controller.matches('[aria-expanded=\"true\"]')) {
+        $controller.click();
+      }
+    }
+  ");
+
   sleep(1); # FIXME: Delay for slow page performance
 }
 
