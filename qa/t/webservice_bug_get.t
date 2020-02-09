@@ -16,12 +16,12 @@ use Data::Dumper;
 use DateTime;
 use QA::Util;
 use QA::Tests qw(bug_tests PRIVATE_BUG_USER);
-use Test::More tests => 1036;
+use Test::More tests => 1009;
 my ($config, @clients) = get_rpc_clients();
 
 my $xmlrpc = $clients[0];
 our $creation_time = DateTime->now();
-our ($public_bug, $private_bug) = $xmlrpc->bz_create_test_bugs('private');
+our ($public_bug, $private_bug) = $xmlrpc->bz_create_test_bugs('private', 'no_cc');
 my $private_id = $private_bug->{id};
 my $public_id  = $public_bug->{id};
 
