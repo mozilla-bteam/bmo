@@ -34,7 +34,7 @@ Bugzilla.Expander = class Expander {
     this.$controller.setAttribute('role', 'button');
 
     // Assign the `aria-controls` attribute, even though we are not using this in Expander
-    this.$controller.setAttribute('aria-controls', this.elements.map($element => {
+    this.$controller.setAttribute('aria-controls', this.targets.map($element => {
       // If the element doesn’t have an ID, assign a random one first
       if (!$element.id) {
         $element.id = `e${Bugzilla.String.generate_hash()}`;
@@ -64,7 +64,7 @@ Bugzilla.Expander = class Expander {
     } else if (this.$controller.hasAttribute('aria-expanded')) {
       this.hidden = this.$controller.matches('[aria-expanded="false"]');
     } else {
-      this.hidden = false;
+      this.hidden = true;
     }
 
     if (this.hidden) {
