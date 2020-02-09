@@ -261,9 +261,9 @@ sub file_bug_in_product {
 
   # Show Advanced Fields
   $sel->driver->execute_script("
-    const $controller = document.querySelector('#expert_fields_controller');
-    if ($controller && !$controller.matches('[aria-expanded=\"true\"]')) {
-      $controller.click();
+    const controller = document.querySelector('#expert_fields_controller');
+    if (controller && !controller.matches('[aria-expanded=\"true\"]')) {
+      controller.click();
     }
   ");
 
@@ -391,9 +391,9 @@ sub open_advanced_search_page {
   # Expand all sections
   $sel->driver->execute_script("
     for (const key of ['information', 'people', 'history', 'custom_search']) {
-      const $controller = document.querySelector(`[data-expander-target=\"${key}_query\"]`);
-      if ($controller && !$controller.matches('[aria-expanded=\"true\"]')) {
-        $controller.click();
+      const controller = document.querySelector('[data-expander-target=\"' + key + '_query\"]');
+      if (controller && !controller.matches('[aria-expanded=\"true\"]')) {
+        controller.click();
       }
     }
   ");
