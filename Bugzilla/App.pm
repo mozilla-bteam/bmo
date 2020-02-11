@@ -31,7 +31,7 @@ use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
 use Cwd qw(realpath);
-use MojoX::Log::Log4perl;
+use MojoX::Log::Log4perl::Tiny;
 use Bugzilla::WebService::Server::REST;
 use Try::Tiny;
 
