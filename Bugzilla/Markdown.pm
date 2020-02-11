@@ -65,7 +65,6 @@ sub render_html {
     return $html;
   }
 
-  # This is a bit faster since it doesn't engage the regex engine.
   # Replace < with \x{FFFD} (special unicode replacement character),
   # and remove \x{FFFD} later.
   $markdown =~ tr/\x{FFFD}//d;
