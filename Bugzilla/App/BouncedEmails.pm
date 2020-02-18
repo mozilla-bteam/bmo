@@ -15,7 +15,7 @@ use Bugzilla::Error;
 
 sub setup_routes {
   my ($class, $r) = @_;
-  $r->get('/bounced_emails/:userid')->to('BouncedEmails#view');
+  $r->any('/bounced_emails/:userid')->to('BouncedEmails#view');
 }
 
 sub view {
@@ -37,6 +37,7 @@ sub view {
   {
     $other_user->set_email_enabled(1);
     $other_user->update();
+    
     return $self->render(template => 'index', handler => 'bugzilla');
   }
 

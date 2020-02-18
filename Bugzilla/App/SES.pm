@@ -209,8 +209,8 @@ sub _process_bounce {
 
         # if we hit the max amount, go ahead and disabled the account
         # and an admin will need to reactivate the account.
-        if ($user->bounce_count > BOUNCE_COUNT_MAX) {
-          $user->set_disabletext($bounce_message);
+        if ($user->bounce_count == BOUNCE_COUNT_MAX) {
+          $user->set_disabledtext($bounce_message);
         }
 
         $user->update();
@@ -218,8 +218,8 @@ sub _process_bounce {
         # Do this outside of Object.pm as we do not want to
         # store the messages anywhere else.
         Bugzilla->dbh->do(
-          "INSERT INTO audit_log (user_id, class, object_id, field, removed, added, at_time)
-           VALUES (?, 'Bugzilla::User', ?, 'bounce_message', '', ?, LOCALTIMESTAMP(0))",
+          "INSERT INTO audit_log (user_id, class, object_id, field, added, at_time)
+           VALUES (?, 'Bugzilla::User', ?, 'bounce_message', ?, LOCALTIMESTAMP(0))",
           undef, $user->id, $user->id, $bounce_message
         );
 

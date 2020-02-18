@@ -12,7 +12,7 @@
 
 <h2>[% title FILTER html %]</h2>
 
-[% IF user.id == other_user.id AND other_user.email_disabled %]
+[% IF user.id == other_user.id AND other_user.bounce_count AND other_user.email_disabled %]
 <form action="/bounced_emails/[% other_user.id FILTER uri %]">
 <table>
   <tr>
@@ -24,6 +24,8 @@
 </form>
 [% END %]
 
+[% IF (user.id == other_user.id OR user.in_group('editusers') OR user.in_group('disableusers'))
+       AND other_user.bounce_count %]
 <h3>History</h3>
 
 [% columns =
@@ -43,5 +45,8 @@
   columns = columns
   data    = other_user.bounce_messages
 %]
+[% ELSE %]
+  No bounced email messages have been recorded.
+[% END %]
 
 [% PROCESS global/footer.html.tmpl %]

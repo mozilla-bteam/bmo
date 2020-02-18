@@ -2778,7 +2778,7 @@ sub bounce_messages {
   my $bounce_count = $self->bounce_count;
   return $self->{bounce_messages} ||= $dbh->selectall_arrayref(
     "SELECT at_time AS bounce_when, added AS bounce_message FROM audit_log
-     WHERE object_id = ? AND class = 'Bugzlla::User' AND field = 'bounce_message'
+     WHERE object_id = ? AND class = 'Bugzilla::User' AND field = 'bounce_message'
      ORDER BY at_time DESC LIMIT $bounce_count",
     {Slice => {}},
     $self->id
