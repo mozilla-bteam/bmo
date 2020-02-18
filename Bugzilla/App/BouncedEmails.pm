@@ -37,7 +37,7 @@ sub view {
   {
     $other_user->set_email_enabled(1);
     $other_user->update();
-    
+
     return $self->render(template => 'index', handler => 'bugzilla');
   }
 
