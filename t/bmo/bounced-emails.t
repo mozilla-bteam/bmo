@@ -18,13 +18,32 @@ BEGIN {
 use Mojo::URL;
 use Test2::V0;
 use Test::Mojo;
-
-use Bugzilla::User;
+use Test::Selenium::Remote::Driver;
 
 use Bugzilla::Test::MockLocalconfig (ses_username => 'ses@mozilla.bugs', ses_password => 'password123456789!');
 use Bugzilla::Test::MockDB;
 use Bugzilla::Test::MockParams (password_complexity => 'no_constraints');
 use Bugzilla::Test::Util qw(create_user);
+use Bugzilla::User;
+
+my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
+my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
+
+my @require_env = qw(
+  BZ_BASE_URL
+  TWD_HOST
+  TWD_PORT
+);
+
+my @missing_env = grep { !exists $ENV{$_} } @require_env;
+BAIL_OUT("Missing env: @missing_env") if @missing_env;
+
+my $sel = Test::Selenium::Remote::Driver->new(
+  base_url   => $ENV{BZ_BASE_URL},
+  browser    => 'firefox',
+  version    => '',
+  javascript => 1
+);
 
 # Create the bounce user
 my $bounce_user = create_user('bouncer@mozilla.bugs', 'password123456789!');
