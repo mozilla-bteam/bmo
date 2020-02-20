@@ -12,6 +12,7 @@ use Mojo::Base qw( Mojolicious::Controller );
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Token;
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -35,13 +36,17 @@ sub view {
     && $user->id == $other_user->id
     && $other_user->email_disabled)
   {
+    my $token = $self->param('token');
+    check_token_data($token, 'bounced_emails');
+
     $other_user->set_email_enabled(1);
     $other_user->update();
 
-    return $self->render(template => 'index', handler => 'bugzilla');
+    return $self->redirect_to('/home');
   }
 
-  $self->stash({user => $user, other_user => $other_user});
+  my $token = issue_session_token('bounced_emails');
+  $self->stash({user => $user, other_user => $other_user, token => $token});
   return $self->render(
     template => 'account/email/bounced-emails',
     handler  => 'bugzilla'

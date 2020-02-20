@@ -14,13 +14,15 @@
 
 [% IF user.id == other_user.id AND other_user.bounce_count AND other_user.email_disabled %]
 <form action="/bounced_emails/[% other_user.id FILTER uri %]">
-<table>
-  <tr>
-    <td><input type="checkbox" name="enable_email" id="enable_email" value="1"></td>
-    <td>I have resolved the issue and would like email delivery for my account to be reactivated.</td>
-  </tr>
-</table>
-<input type="submit" value="Submit">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+  <table>
+    <tr>
+      <td><input type="checkbox" name="enable_email" id="enable_email" value="1"></td>
+      <td>I have resolved the issue and would like email delivery for my account to be reactivated.</td>
+    </tr>
+  </table>
+  <br>
+  <input type="submit" value="Submit">
 </form>
 [% END %]
 
