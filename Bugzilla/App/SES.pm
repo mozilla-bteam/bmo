@@ -182,7 +182,7 @@ sub _process_bounce {
   # disable each account that is bouncing
   foreach my $recipient (@{$notification->{bounce}->{bouncedRecipients}}) {
     my $address = $recipient->{emailAddress};
-    my $reason = sprintf '(%s) %s', $recipient->{action} // 'error',
+    my $reason  = sprintf '(%s) %s', $recipient->{action} // 'error',
       $recipient->{diagnosticCode} // 'unknown';
 
     my $user = Bugzilla::User->new({name => $address, cache => 1});
@@ -204,12 +204,25 @@ sub _process_bounce {
           $vars, \$bounce_message)
           || die $template->error();
 
+        # Increment bounce count for user
+        my $bounce_count = $user->bounce_count + 1;
+
+        # If user has not had a bounce in less than 30 days, set the bounce count to 1 instead
+        my $dbh = Bugzilla->dbh;
+        my ($has_recent_bounce) = $dbh->selectrow_array(
+          "SELECT 1 FROM audit_log WHERE object_id = ? AND class = 'Bugzilla::User' AND field = 'bounce_message' AND ("
+            . $dbh->sql_date_math('at_time', '+', 30, 'DAY')
+            . ") > NOW()",
+          undef, $user->id
+        );
+        $bounce_count = 1 if !$has_recent_bounce;
+
         $user->set_disable_mail(1);
-        $user->set_bounce_count($user->bounce_count + 1);
+        $user->set_bounce_count($bounce_count);
 
         # if we hit the max amount, go ahead and disabled the account
         # and an admin will need to reactivate the account.
-        if ($user->bounce_count == BOUNCE_COUNT_MAX) {
+        if ($bounce_count == BOUNCE_COUNT_MAX) {
           $user->set_disabledtext($bounce_message);
         }
 
@@ -217,7 +230,7 @@ sub _process_bounce {
 
         # Do this outside of Object.pm as we do not want to
         # store the messages anywhere else.
-        Bugzilla->dbh->do(
+        $dbh->do(
           "INSERT INTO audit_log (user_id, class, object_id, field, added, at_time)
            VALUES (?, 'Bugzilla::User', ?, 'bounce_message', ?, LOCALTIMESTAMP(0))",
           undef, $user->id, $user->id, $bounce_message
@@ -240,7 +253,7 @@ sub _process_complaint {
   state $check = compile(Self, ComplaintNotification);
   my ($self, $notification) = $check->(@_);
   my $template = Bugzilla->template_inner();
-  my $json = JSON::MaybeXS->new(pretty => 1, utf8 => 1, canonical => 1,);
+  my $json     = JSON::MaybeXS->new(pretty => 1, utf8 => 1, canonical => 1,);
 
   foreach my $recipient (@{$notification->{complaint}->{complainedRecipients}}) {
     my $reason  = $notification->{complaint}->{complaintFeedbackType} // 'unknown';

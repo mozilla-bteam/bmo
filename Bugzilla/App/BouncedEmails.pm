@@ -46,7 +46,14 @@ sub view {
   }
 
   my $token = issue_session_token('bounced_emails');
-  $self->stash({user => $user, other_user => $other_user, token => $token});
+  $self->stash(
+    {
+      bounce_max => BOUNCE_COUNT_MAX,
+      user       => $user,
+      other_user => $other_user,
+      token      => $token
+    }
+  );
   return $self->render(
     template => 'account/email/bounced-emails',
     handler  => 'bugzilla'

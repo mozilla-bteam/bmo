@@ -8,11 +8,18 @@
 
 [% PROCESS global/header.html.tmpl
   title = "Bounced Emails"
+  style_urls = [ "skins/standard/describecomponents.css" ]
 %]
 
 <h2>[% title FILTER html %]</h2>
 
 [% IF user.id == other_user.id AND other_user.bounce_count AND other_user.email_disabled %]
+<p>
+  Due to issues delivering email to your account, we have temporarily disabled email notifications
+  being sent to it. If you feel like the issue has been resolved, you may reactivate email delivery
+  below. After a maximum of [% bounce_max FILTER html %] bounces, we will disable logging in to your
+  account and you will need to contact an administrator to reactivate it.</p>
+
 <form action="/bounced_emails/[% other_user.id FILTER uri %]">
   <input type="hidden" name="token" value="[% token FILTER html %]">
   <table>
@@ -30,25 +37,25 @@
        AND other_user.bounce_count %]
 <h3>History</h3>
 
-[% columns =
-  [
-   {
-    name    => 'bounce_when'
-    heading => 'When'
-   }
-   {
-    name    => 'bounce_message'
-    heading => 'Message'
-   }
-  ]
-%]
-
-[% PROCESS admin/table.html.tmpl
-  columns = columns
-  data    = other_user.bounce_messages
-%]
+<div class="list">
+  [% FOREACH bounce = other_user.bounce_messages %]
+    [% IF loop.first %]
+    <strong>Current</strong>
+    [% ELSIF loop.count == 2 %]
+    <strong>Older</strong>
+    [% END %]
+    <section class="component">
+    <header>
+      <h2>[% bounce.bounce_when FILTER time FILTER html %]</h2>
+    </header>
+    <div>
+      <p class="description">[% bounce.bounce_message FILTER html %]</p>
+    </div>
+  </section>
+  [% END %]
+</div>
 [% ELSE %]
-  No bounced email messages have been recorded.
+No bounced email messages have been recorded.
 [% END %]
 
 [% PROCESS global/footer.html.tmpl %]
