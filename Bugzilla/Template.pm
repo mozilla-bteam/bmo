@@ -807,7 +807,12 @@ sub create {
         my %units = ('KB' => 1024, 'MB' => 1024 * 1024, 'GB' => 1024 * 1024 * 1024,);
 
         if ($data < 1024) {
-          return "$data bytes";
+          if($data == 1) {
+            return "1 byte";
+          }
+          else {
+            return "$data bytes";
+          }
         }
         else {
           my $u;
