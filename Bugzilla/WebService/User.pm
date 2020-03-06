@@ -24,11 +24,8 @@ use Bugzilla::WebService::Util qw(filter filter_wants validate
   translate params_to_objects);
 use Bugzilla::Hook;
 
-use CGI           ();
-use HTTP::Request ();
-use JSON::MaybeXS qw(decode_json);
+use Mojo::UserAgent ();
 use List::Util qw(first);
-use LWP::UserAgent ();
 use Try::Tiny;
 
 # Don't need auth to login
@@ -520,15 +517,11 @@ sub _user_from_phab_token {
   my $phab_token = Bugzilla->input_params->{Phabricator_token};
   return undef unless $phab_url && $phab_token;
 
-  # build request to phabricator's whoami endpoint
-  my $req = HTTP::Request->new('GET' => "$phab_url/api/user.whoami");
-  $req->header('Content-type' => 'application/x-www-form-urlencoded');
-  $req->content('api.token=' . CGI::escape($phab_token));
-
   try {
-    # request
-    my $res       = _ua()->request($req);
-    my $ph_whoami = decode_json($res->content);
+    # query phabricator's whoami endpoint
+    my $res = _ua()
+      ->get("$phab_url/api/user.whoami" => form => {'api.token' => $phab_token});
+    my $ph_whoami = $res->result->json;
 
     # treat any phabricator generated error as an invalid api-key
     if (my $error = $ph_whoami->{error_info}) {
@@ -547,13 +540,13 @@ sub _user_from_phab_token {
 }
 
 sub _ua {
-  my $ua = LWP::UserAgent->new();
-  $ua->timeout(10);
+  my $ua = Mojo::UserAgent->new(request_timeout => 10);
+  $ua->transactor->name('BMO user.whoami shim');
   if (my $proxy = Bugzilla->params->{proxy_url}) {
-    $ua->proxy(['https', 'http'], $proxy);
+    $ua->proxy->http($proxy)->https($proxy);
   }
   else {
-    $ua->env_proxy();
+    $ua->proxy->detect();
   }
   return $ua;
 }
