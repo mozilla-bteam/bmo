@@ -26,7 +26,8 @@ sub _rest_resources {
     qr{^/time$},            {GET => {method => 'time'}},
     qr{^/last_audit_time$}, {GET => {method => 'last_audit_time'}},
     qr{^/parameters$},      {GET => {method => 'parameters'}},
-    qr{^/jobqueue_status$}, {GET => {method => 'jobqueue_status'}}
+    qr{^/jobqueue_status$}, {GET => {method => 'jobqueue_status'}},
+    qr{^/configuration$},   {GET => {method => 'configuration'}}
   ];
   return $rest_resources;
 }
