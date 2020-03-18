@@ -12,7 +12,7 @@
 use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
-use Test::More tests => 11 * 3;
+use Test::More tests => 42;
 use QA::Util;
 my ($config, @clients) = get_rpc_clients();
 
@@ -30,7 +30,7 @@ foreach my $rpc (@clients) {
   isa_ok($extensions, 'HASH', 'extensions');
 
   # There is always at least the QA extension enabled.
-  my $cmp = $config->{test_extensions} ? '>' : '==';
+  my $cmp       = $config->{test_extensions} ? '>' : '==';
   my @ext_names = keys %$extensions;
   my $desc
     = scalar(@ext_names) . ' extension(s) returned: ' . join(', ', @ext_names);
@@ -43,4 +43,11 @@ foreach my $rpc (@clients) {
     cmp_ok($time_result->{$type}, '=~', $rpc->DATETIME_REGEX,
       "Bugzilla.time returns a datetime for $type");
   }
+
+  my $config_call   = $rpc->bz_call_success('Bugzilla.configuration');
+  my $config_result = $config_call->result;
+  use Data::Dumper; print STDERR Dumper $config_result;
+  ok($config_result->{version}, 'Bugzilla.configuration returns version');
+  isa_ok($config_result->{product},
+    'HASH', 'Bugzilla.configuration returns a product hash');
 }

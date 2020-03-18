@@ -20,6 +20,7 @@ use Bugzilla::Logging;
 use Bugzilla::Product;
 use Bugzilla::Status;
 use Bugzilla::Util qw(datetime_from);
+use JSON::XS;
 use Try::Tiny;
 
 use DateTime;
@@ -131,8 +132,9 @@ sub configuration {
   my $params = Bugzilla->input_params;
 
   my $can_cache = !exists $params->{product} && !exists $params->{flags};
-  my $cache_key = 'config.get_configuration';
 
+# Using config.* will clear this data in memcache when Bugzilla changes are made to products, components, etc.
+  my $cache_key = 'config.configuration';
   if ($can_cache) {
     my $result = Bugzilla->memcached->get_config({key => $cache_key});
     return $result if defined $result;
@@ -207,7 +209,7 @@ sub configuration {
   my $json;
   Bugzilla->template->process('config.json.tmpl', $vars, \$json);
   if ($json) {
-    my $result = $self->json->decode($json);
+    my $result = JSON::XS->new->boolean_values(0, 1)->decode($json);
     if ($can_cache) {
       Bugzilla->memcached->set_config({key => $cache_key, data => $result});
     }
