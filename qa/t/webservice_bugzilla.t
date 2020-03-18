@@ -46,7 +46,6 @@ foreach my $rpc (@clients) {
 
   my $config_call   = $rpc->bz_call_success('Bugzilla.configuration');
   my $config_result = $config_call->result;
-  use Data::Dumper; print STDERR Dumper $config_result;
   ok($config_result->{version}, 'Bugzilla.configuration returns version');
   isa_ok($config_result->{product},
     'HASH', 'Bugzilla.configuration returns a product hash');
