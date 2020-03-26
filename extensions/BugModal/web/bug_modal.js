@@ -638,8 +638,8 @@ $(function() {
                         forceFixPosition: true,
                         lookup: function(query, done) {
                             query = query.toLowerCase();
-                            var that = $('#keywords');
-                            var activeValues = that.val().split(',');
+                            let that = document.querySelector('#keywords');
+                            var activeValues = that.value.split(',');
                             activeValues.forEach((o,i,a) => a[i] = a[i].trim());
                             var matchStart =
                                 $.grep(keywords, function(keyword) {
