@@ -716,8 +716,7 @@ $(function() {
                 lookup: function(query, done) {
                     var values = BUGZILLA.autocomplete_values[that.data('values')];
                     query = query.toLowerCase();
-                    var activeValues = document.querySelector('#keywords').value.split(',');
-                    // var activeValues = $('#keywords').val().split(',');
+                    var activeValues = that.val().split(',');
                     activeValues.forEach((o,i,a) => a[i] = a[i].trim());
                     var matchStart =
                         $.grep(values, function(value) {
