@@ -78,14 +78,15 @@ ORDER BY
 EOF
 
 if ($dump_sql) {
-  $sql =~ s/\?/$date/g;
+  $sql =~ s/[?]/$date/g;
   print $sql;
   exit;
 }
 
 say STDERR "looking for users inactive since $date";
 my $users = $dbh->selectall_arrayref($sql, {Slice => {}}, $date, $date);
-my $total = scalar(@$users) or die "no matching users found.\n";
+my $total = scalar @$users;
+die "no matching users found.\n" unless $total;
 
 if ($list) {
   foreach my $user_row (@$users) {
