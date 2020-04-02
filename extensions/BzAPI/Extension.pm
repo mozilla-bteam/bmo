@@ -278,9 +278,6 @@ sub _preload_handlers {
     $cache->{rest_handlers} = $all_handlers;
   }
 
-
-
-
   return $cache->{rest_handlers};
 }
 
@@ -291,6 +288,9 @@ sub app_startup {
 
   Bugzilla::App::CGI->load_one('bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi');
   $r->any('/extensions/BzAPI/bin/rest.cgi/*PATH_INFO')->to('CGI#bzapi_cgi');
+  # Use Bugzilla::API::V1::Configuration
+  $r->any('/latest/configuration')->to('V1::Configuration#configuration');
+  $r->any('/bzapi/configuration')->to('V1::Configuration#configuration');
   $r->any('/latest/*PATH_INFO')->to('CGI#bzapi_cgi');
   $r->any('/bzapi/*PATH_INFO')->to('CGI#bzapi_cgi');
 }

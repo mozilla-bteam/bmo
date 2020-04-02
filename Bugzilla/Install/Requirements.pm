@@ -81,15 +81,11 @@ use constant APACHE_PATH => [
 # This maps features to the files that require that feature in order
 # to compile. It is used by t/001compile.t and mod_perl.pl.
 use constant FEATURE_FILES => (
+  rest    => ['Bugzilla/WebService/Server/REST.pm', 'rest.cgi'],
   jsonrpc => ['Bugzilla/WebService/Server/JSONRPC.pm', 'jsonrpc.cgi'],
   xmlrpc  => [
     'Bugzilla/WebService/Server/XMLRPC.pm', 'xmlrpc.cgi',
     'Bugzilla/WebService.pm',               'Bugzilla/WebService/*.pm'
-  ],
-  rest => [
-    'Bugzilla/API/Server.pm', 'rest.cgi',
-    'Bugzilla/API/*/*.pm',    'Bugzilla/API/*/Server.pm',
-    'Bugzilla/API/*/Resource/*.pm'
   ],
   moving        => ['importxml.pl'],
   auth_ldap     => ['Bugzilla/Auth/Verify/LDAP.pm'],
