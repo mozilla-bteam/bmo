@@ -805,6 +805,9 @@ sub update_table_definitions {
   # Bug 1576667 - dkl@mozilla.com
   _populate_api_keys_creation_ts();
 
+  # Bug 1612290 - dkl@mozilla.com
+  $dbh->bz_add_column('profiles', 'bounce_count', {TYPE => 'INT1', NOTNULL => 1, DEFAULT => 0});
+
   # Bug 1588221 - dkl@mozilla.com
   _populate_attachment_storage_class();
 

@@ -1,4 +1,4 @@
-FROM mozillabteam/bmo-perl-slim:20191209.1
+FROM mozillabteam/bmo-perl-slim:20200320.1
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -11,6 +11,8 @@ ENV CIRCLE_BUILD_URL=${CIRCLE_BUILD_URL}
 ENV CIRCLE_SHA1=${CIRCLE_SHA1}
 
 ENV LOG4PERL_CONFIG_FILE=log4perl-json.conf
+
+RUN apt-get install -y rsync
 
 # we run a loopback logging server on this TCP port.
 ENV LOGGING_PORT=5880

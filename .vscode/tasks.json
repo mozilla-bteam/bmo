@@ -4,55 +4,20 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Vagrant: Start VM",
+      "label": "Docker: Start Web Server",
       "type": "shell",
-      "command": "vagrant up",
+      "command": "docker-compose up --build",
       "group": "none",
       "problemMatcher": []
     },
     {
-      "label": "Vagrant: Suspend VM",
+      "label": "Docker: Update Web Server",
       "type": "shell",
-      "command": "vagrant suspend",
-      "group": "none",
-      "problemMatcher": []
-    },
-    {
-        "label": "Vagrant: Start Web Server",
-        "type": "shell",
-        "command": "vagrant ssh web -c 'start_morbo'",
-        "group": "none",
-        "problemMatcher": []
-    },
-    {
-      "label": "Vagrant: Update Web Server",
-      "type": "shell",
-      "command": "vagrant rsync web",
+      "command": "docker-compose exec bmo.test rsync -avz --exclude .git --exclude local /mnt/sync/ /app/",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": []
-    },
-    {
-      "label": "Vagrant: Force Update VM",
-      "type": "shell",
-      "command": "vagrant rsync && vagrant provision",
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
-      "label": "Vagrant: Connect to Database",
-      "type": "shell",
-      "command": "vagrant ssh db -c 'mysql -u root -p bugs_bmo'",
-      "group": "none",
-      "problemMatcher": []
-    },
-    {
-      "label": "Vagrant: Update Perl Dependencies",
-      "type": "shell",
-      "command": "vagrant ssh web -c bmo-refresh-bundle",
-      "group": "none",
       "problemMatcher": []
     }
   ]

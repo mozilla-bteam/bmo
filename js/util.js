@@ -359,13 +359,13 @@ function timeAgo(param) {
     if (ss < 45) return ss + ' seconds ago';
     if (ss < 90) return '1 minute ago';
     if (mm < 45) return mm + ' minutes ago';
-    if (mm < 90) return 'Last hour';
+    if (mm < 90) return '1 hour ago';
     if (hh < 24) return hh + ' hours ago';
-    if (hh < 36) return 'Yesterday';
+    if (hh < 36) return '1 day ago';
     if (dd < 30) return dd + ' days ago';
-    if (dd < 45) return 'Last month';
+    if (dd < 45) return '1 month ago';
     if (mo < 12) return mo + ' months ago';
-    if (mo < 18) return 'Last year';
+    if (mo < 18) return '1 year ago';
     return yy + ' years ago';
 }
 

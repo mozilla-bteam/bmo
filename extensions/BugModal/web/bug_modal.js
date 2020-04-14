@@ -114,9 +114,20 @@ $(function() {
         localStorage.setItem(key, JSON.stringify(value));
     }
 
-    function clearSavedBugComment() {
-        let key = `bug-modal-saved-comment-${BUGZILLA.bug_id}`;
-        localStorage.removeItem(key);
+    /**
+     * Clear comment cache once the comment field is emptied or the bug is successfully updated.
+     * @param {Number} [bug_id] Bug ID to be used for the cache key. The updated bug will be different from the current
+     * bug when the user has changed the “after changing a bug” preference to “show next bug in my list.” Pass a bug ID
+     * to take such special cases into account. Otherwise the current bug’s comment cache will be removed.
+     */
+    const clearSavedBugComment = (bug_id = BUGZILLA.bug_id) => {
+        localStorage.removeItem(`bug-modal-saved-comment-${bug_id}`);
+    };
+
+    const $change_summary = document.querySelector('.change-summary[data-type="bug"]');
+
+    if ($change_summary) {
+        clearSavedBugComment(Number($change_summary.dataset.id));
     }
 
     function restoreSavedBugComment() {
@@ -205,6 +216,11 @@ $(function() {
             event.preventDefault();
             $.scrollTo($('#bottom-actions'));
         });
+
+    // show floating message after creating/updating a bug/attachment
+    if ($('#floating-message-text').text()) {
+        $('#floating-message').fadeIn(250).delay(4000).fadeOut();
+    }
 
     // hide floating message when clicked
     $('#floating-message')
@@ -388,7 +404,7 @@ $(function() {
         if (hasExecCopy) {
             const url = BUGZILLA.bug_url;
             const text = `Bug ${BUGZILLA.bug_id} - ${BUGZILLA.bug_summary}`;
-            const html = `<a href="${url}">${text}</a>`;
+            const html = `<a href="${url}">${text.htmlEncode()}</a>`;
 
             document.addEventListener('copy', event => {
                 if (event.target.nodeType === 1 && event.target.matches('#clip')) {
@@ -622,14 +638,19 @@ $(function() {
                         forceFixPosition: true,
                         lookup: function(query, done) {
                             query = query.toLowerCase();
+                            let that = document.querySelector('#keywords');
+                            var activeValues = that.value.split(',');
+                            activeValues.forEach((o,i,a) => a[i] = a[i].trim());
                             var matchStart =
                                 $.grep(keywords, function(keyword) {
-                                    return keyword.toLowerCase().substr(0, query.length) === query;
+                                    if(!(activeValues.includes(keyword)))
+                                        return keyword.toLowerCase().substr(0, query.length) === query;
                                 });
                             var matchSub =
                                 $.grep(keywords, function(keyword) {
-                                    return keyword.toLowerCase().indexOf(query) !== -1 &&
-                                        $.inArray(keyword, matchStart) === -1;
+                                    if(!(activeValues.includes(keyword)))
+                                        return keyword.toLowerCase().indexOf(query) !== -1 &&
+                                            $.inArray(keyword, matchStart) === -1;
                                 });
                             var suggestions =
                                 $.map($.merge(matchStart, matchSub), function(suggestion) {
@@ -696,8 +717,6 @@ $(function() {
                     .toArray()
                     .join(' ')
             );
-
-            clearSavedBugComment();
         })
         .attr('disabled', false);
 

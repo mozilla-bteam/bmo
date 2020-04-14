@@ -5,7 +5,7 @@
 version: '3'
 
 services:
-  bmo-web.vm:
+  bmo.test:
     image: bmo
     command: dev_httpd
     tmpfs:
@@ -13,12 +13,14 @@ services:
       - /run
     environment:
       - 'BMO_inbound_proxies=*'
-      - BMO_db_host=bmo-db.vm
+      - BMO_db_host=bmo.db
       - BMO_db_name=bugs
       - BMO_db_pass=bugs
       - BMO_db_user=bugs
       - BMO_memcached_namespace=bugzilla
       - BMO_memcached_servers=memcached:11211
+      - BMO_ses_username=ses@mozilla.bugs
+      - BMO_ses_password=password123456789!
       - BMO_urlbase=AUTOMATIC
       - BUGZILLA_ALLOW_INSECURE_HTTP=1
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
@@ -36,12 +38,14 @@ services:
       - TWD_HOST=selenium
       - TWD_PORT=4444
     depends_on:
-      - bmo-db.vm
+      - bmo.db
       - memcached
       - selenium
 
-  bmo-db.vm:
+  bmo.db:
     image: mozillabteam/bmo-mysql:5.7
+    tmpfs:
+      - /tmp
     logging:
       driver: "none"
     environment:

@@ -106,6 +106,7 @@ $(function() {
                 { key: "bug_id", label: "Bug", sortable: true, allowHTML: true, formatter: link_formatter },
                 { key: "changeddate", label: "Updated", formatter: updatedFormatter,
                 allowHTML: true, sortable: true },
+                { key: "priority", label: "Pri", sortable: true, allowHTML: true},
                 { key: "bug_status", label: "Status", sortable: true },
                 { key: "short_desc", label: "Summary", sortable: true, allowHTML: true, formatter: link_formatter },
             ],
@@ -170,6 +171,17 @@ $(function() {
             var index = query_select.get('selectedIndex');
             var selected_value = query_select.get("options").item(index).getAttribute('value');
             updateQueryTable(selected_value);
+        });
+
+        var refresh_interval;
+        Y.one('#auto_refresh').on('click', function(e) {
+            if(auto_refresh.checked == true){
+                refresh_interval = setInterval(function(e) {
+                    updateQueryTable(default_query);
+                },1000*60*10);
+            }else if(auto_refresh.checked == false){
+                clearInterval(refresh_interval);
+            }
         });
 
         Y.one('#query_markread').on('click', function(e) {
