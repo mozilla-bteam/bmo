@@ -49,12 +49,9 @@ $(function() {
         // Grab last used auto-refresh configuration from cookie or use default
         var autorefresh_cookie = Y.Cookie.get("my_dashboard_autorefresh");
         if (autorefresh_cookie) {
-            var cookie_value_found = 0;
             if ("true" == autorefresh_cookie) {
                 Y.one("#auto_refresh").set('checked', true);
-                cookie_value_found = 1;
-            }
-            if (!cookie_value_found) {
+            } else {
                 Y.Cookie.set("my_dashboard_autorefresh", "false");
             }
         }
@@ -169,13 +166,13 @@ $(function() {
 
         bugQueryTable.plug(Y.Plugin.DataTableSort);
 
-        var auto_updateQueryTable = function(o){
+        var auto_updateQueryTable = function(o) {
             button_state = auto_refresh.checked;
-            if(button_state == true){
+            if (button_state == true) {
                 refresh_interval = setInterval(function(e) {
                     updateQueryTable(default_query);
-                },1000*60*10);
-            }else if(button_state == false){
+                }, 1000*60*10);
+            } else {
                 clearInterval(refresh_interval);
             }
         };

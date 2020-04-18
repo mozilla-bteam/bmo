@@ -11,7 +11,7 @@ $(function () {
     YUI({
         base: 'js/yui3/',
         combine: false
-    }).use('node', 'datatable', 'datatable-sort', 'escape','cookie', function(Y) {
+    }).use('node', 'datatable', 'datatable-sort', 'escape', 'cookie', function(Y) {
         // Common
         var dataTable = {
             requestee: null,
@@ -108,13 +108,13 @@ $(function () {
             }
         };
 
-        var auto_updateFlagTable = function(o){
-            if(button_state == true){
+        var auto_updateFlagTable = function(o) {
+            if (button_state == true) {
                 refresh_interval = setInterval(function(e) {
                     updateFlagTable('requestee');
                     updateFlagTable('requester');
-                },1000*60*10);
-            }else if(button_state == false){
+                }, 1000*60*10);
+            } else {
                 clearInterval(refresh_interval);
             }
         };
