@@ -15,6 +15,7 @@ use Bugzilla::Types qw(:types);
 use Bugzilla::Extension::PhabBugz::Util qw(request);
 
 use List::Util qw(first);
+use Scalar::Util qw(weaken);
 use Types::Standard -all;
 use Type::Utils;
 use Type::Params qw(compile);
