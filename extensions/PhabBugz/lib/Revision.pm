@@ -270,7 +270,9 @@ sub update {
 
 sub _build_bug {
   my ($self) = @_;
-  return $self->{bug} ||= Bugzilla::Bug->new({id => $self->bug_id, cache => 1});
+  my $bug = $self->{bug} ||= Bugzilla::Bug->new({id => $self->bug_id, cache => 1});
+  weaken($self->{bug});
+  return $bug;
 }
 
 sub _build_author {
