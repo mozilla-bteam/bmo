@@ -20,7 +20,7 @@ be in the *creategroups* group to perform this action.
 .. code-block:: js
 
    {
-     "name" : "secret-group",
+     "name" : "group",
      "description" : "Too secret for you!",
      "is_active" : true
    }
@@ -70,7 +70,7 @@ id    int   ID of the newly-created group.
   There is already another group with the same "name".
 * 802 (Group Missing Description)
   You must specify a value for the "description" field.
-* 803 (Group Regexp Invalid)
+* 803 (Group Regexp)
   You specified an invalid regular expression in the "user_regexp" field.
 
 .. _rest_group_update:
@@ -92,7 +92,7 @@ To update a group using the group ID or name:
 .. code-block:: js
 
    {
-     "name" : "secret-group",
+     "name" : "group",
      "description" : "Too secret for you! (updated description)",
      "is_active" : false
    }
@@ -225,11 +225,11 @@ membership  boolean  Set to 1 then a list of members of the passed groups names
              "real_name": "Bugzilla User",
              "nick": "user",
              "can_login": true,
-             "name": "user@bugzilla.org",
+             "name": "eduardo@buzilla.com",
              "login_denied_text": "",
              "id": 85,
-             "email_enabled": false,
-             "email": "user@bugzilla.org"
+             "email_enabled": true,
+             "email": "eduardo_666_9@hotmail.com "
            },
          ],
          "is_active": true,
