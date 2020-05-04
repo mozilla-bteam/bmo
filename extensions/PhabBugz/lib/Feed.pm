@@ -384,7 +384,7 @@ sub process_revision_change {
   );
   INFO($log_message);
 
-# change to the phabricator user, which returns a guard that restores the previous user.
+  # change to the phabricator user, which returns a guard that restores the previous user.
   my $restore_prev_user = set_phab_user();
   my $bug               = $revision->bug;
 
@@ -460,7 +460,7 @@ sub process_revision_change {
 
   INFO('Checking for revision attachment');
   my $rev_attachment = create_revision_attachment($bug, $revision, $timestamp,
-    $revision->author->bugzilla_user);
+  $revision->author->bugzilla_user);
   INFO('Attachment ' . $rev_attachment->id . ' created or already exists.');
 
   # ATTACHMENT OBSOLETES
@@ -483,6 +483,8 @@ sub process_revision_change {
     }
 
     $attachment->update($timestamp);
+
+    undef $attachment;
   }
 
   # fixup attachments with same revision id but on different bugs
@@ -537,7 +539,7 @@ sub process_revision_change {
   # Email changes for this revisions bug and also for any other
   # bugs that previously had these revision attachments
   foreach my $bug_id ($revision->bug_id, keys %other_bugs) {
-    Bugzilla::BugMail::Send($bug_id, {changer => $changer->bugzilla_user});
+   Bugzilla::BugMail::Send($bug_id, {changer => $changer->bugzilla_user});
   }
 
   INFO('SUCCESS: Revision D' . $revision->id . ' processed');
@@ -630,7 +632,6 @@ sub process_new_user {
     f7 => 'reporter',
     o7 => 'equals',
     v7 => $bug_user->login,
-
     f9 => 'CP',
 
     # The bug needs to be private
