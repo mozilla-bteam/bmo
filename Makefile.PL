@@ -49,7 +49,7 @@ my %requires = (
   'DBI'                                 => '1.614',
   'DBIx::Connector'                     => 0,
   'DBIx::Class'                         => 0,
-  'DBIx::Class::Helpers'                => 0,
+  'DBIx::Class::Helpers'                => '== 2.034002',
   'Data::Password::passwdqc'            => '0.08',
   'Date::Format'                        => '2.23',
   'Date::Parse'                         => '2.31',
