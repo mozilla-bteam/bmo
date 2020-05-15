@@ -520,7 +520,7 @@ sub process_revision_change {
   }
 
   # Set status to request-review if revision is new and
-  # in draft state and not changes-planned
+  # in draft state and not changes-planned, closed, or abandoned.
   if ($is_new
       && $revision->status ne 'changes-planned'
       && $revision->status ne 'closed'
