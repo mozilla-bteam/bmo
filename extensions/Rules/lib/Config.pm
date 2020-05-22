@@ -11,7 +11,8 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use YAML qw(Load);
+use Data::Dumper;
+use TOML qw(from_toml);
 use Try::Tiny;
 
 use Bugzilla::Config::Common;
@@ -29,15 +30,16 @@ sub get_param_list {
       type    => 'l',
       default => '',
       checker => sub {
-        my ($yaml) = (@_);
+        my ($toml) = @_;
 
         # Must be valid YAML
         try {
-          Load($yaml);
+          my ($data, $err) = from_toml($toml);
+          die $err if $err;
           return '';
         }
         catch {
-          return "Must be valid YAML: $_";
+          return "Must be valid TOML: $_";
         };
       }
     }

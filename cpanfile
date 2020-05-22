@@ -99,6 +99,7 @@ requires 'Search::Elasticsearch';
 requires 'Sereal', '4.004';
 requires 'Sub::Quote', '2.005000';
 requires 'Sys::Syslog';
+requires 'TOML';
 requires 'Template', '2.24';
 requires 'Template::Plugin::GD::Image';
 requires 'Test::CPAN::Meta';

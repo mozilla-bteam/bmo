@@ -156,17 +156,7 @@
               option_id = "v" _ legal_value.id _ "_" _ field.name;
               disabled = bug AND !legal_value.is_visible_on_bug(bug);
             %]
-
-            [%# Purpose: hide field values from those who can't change them %]
-            [% IF field.name.match("^cf_blocking_") OR
-                  field.name.match("^cf_status_") OR
-                  field.name.match("^cf_tracking_") OR
-                  field.name == "cf_cab_review" OR
-                  field.name == "resolution" %]
-              [% NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name) OR
-                             selected %]
-            [% END %]
-
+            [% NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name) OR selected %]
             [% IF field.name == "resolution" &&
                legal_value.name != bug.resolution %]
               [% r = legal_value.name %]

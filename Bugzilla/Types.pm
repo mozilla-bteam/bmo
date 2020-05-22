@@ -12,11 +12,12 @@ use strict;
 use warnings;
 
 use Type::Library -base,
-  -declare => qw( Bug User Group Attachment Comment JSONBool URI URL Task );
+  -declare => qw( Bug FakeBug User Group Attachment Comment JSONBool URI URL Task );
 use Type::Utils -all;
 use Types::Standard -types;
 
 class_type Bug,        {class => 'Bugzilla::Bug'};
+class_type FakeBug     {class => 'Bugzilla::Extension::BMO::FakeBug'};
 class_type User,       {class => 'Bugzilla::User'};
 class_type Group,      {class => 'Bugzilla::Group'};
 class_type Attachment, {class => 'Bugzilla::Attachment'};

@@ -13,7 +13,7 @@ use warnings;
 use parent qw(Bugzilla::Extension);
 
 use Try::Tiny;
-use YAML;
+use TOML qw(from_toml);
 
 use Bugzilla::Constants;
 use Bugzilla::Logging;
@@ -27,54 +27,60 @@ our $VERSION = '0.01';
 sub config_add_panels {
   my ($self, $args) = @_;
   my $modules = $args->{panel_modules};
-  $modules->{Rules} = 'Bugzilla::Extension::Rules::Config';
+  return $modules->{Rules} = 'Bugzilla::Extension::Rules::Config';
 }
 
 sub bug_check_can_change_field {
   my ($self, $args) = @_;
-  my $bug          = $args->{'bug'};
-  my $field        = $args->{'field'};
-  my $new_value    = $args->{'new_value'};
-  my $old_value    = $args->{'old_value'};
-  my $priv_results = $args->{'priv_results'};
-  my $user         = Bugzilla->user;
+  my ($bug, $field, $new_value, $old_value, $priv_results)
+    = @$args{qw(bug field new_value old_value priv_results)};
+  my $user          = Bugzilla->user;
+  my $request_cache = Bugzilla->request_cache;
 
   my $rules_enabled = Bugzilla->params->{change_field_rules_enabled};
-  my $rules_yaml    = Bugzilla->params->{change_field_rules};
+  my $rules_toml    = Bugzilla->params->{change_field_rules};
 
-  return unless ($rules_enabled && $rules_yaml);
-
-  my $rule_defs;
-  try {
-    $rule_defs = Load($rules_yaml);
-  }
-  catch {
-    FATAL("Unable to load YAML: $_");
-  };
-
-  foreach my $rule_def (@{$rule_defs->{rules}}) {
-    my $rule = Bugzilla::Extension::Rules::Rule->new({
-      rule      => $rule_def,
-      bug       => $bug,
-      user      => $user,
-      field     => $field,
-      new_value => $new_value,
-      old_value => $old_value,
-    });
-    my $result = $rule->process();
-    if ($result->{action} eq 'deny') {
-      # Explicitly deny
-      push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
+  if ($rules_enabled && $rules_toml) {
+    DEBUG('CHECKING RULES');
+    my $rule_defs;
+    try {
+      $rule_defs = $request_cache->{rule_defs} ||= from_toml($rules_toml);
     }
-    elsif ($result->{action} eq 'allow') {
-      # Explicitly allow
-      push @{$priv_results}, PRIVILEGES_REQUIRED_NONE;
+    catch {
+      FATAL("Unable to load TOML: $_");
+    };
+
+    foreach my $rule_def (@{$rule_defs->{rule}}) {
+      my $rule = Bugzilla::Extension::Rules::Rule->new({
+        rule      => $rule_def,
+        bug       => $bug,
+        user      => $user,
+        field     => $field,
+        new_value => $new_value,
+        old_value => $old_value,
+      });
+
+      $rule->debug_info();
+
+      my $result = $rule->process();
+      if ($result->{action} eq 'deny') {
+
+        # Explicitly deny
+        push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
+      }
+      elsif ($result->{action} eq 'allow') {
+
+        # Explicitly allow
+        push @{$priv_results}, PRIVILEGES_REQUIRED_NONE;
+      }
     }
+
+    return;
   }
 
-  # Old stuff to be migrated
+  # LEGACY Code
 
-  if ($field =~ /^cf/ && !@$priv_results && $new_value ne '---') {
+  if ($field =~ /^cf/sm && !@{$priv_results} && $new_value ne '---') {
 
     # Cannot use the standard %cf_setter mapping as we want anyone
     # to be able to set ?, just not the other values.
@@ -83,7 +89,7 @@ sub bug_check_can_change_field {
         && $new_value ne '?'
         && !$user->in_group('infra', $bug->product_id))
       {
-        push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+        push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
       }
     }
 
@@ -97,11 +103,36 @@ sub bug_check_can_change_field {
         }
       }
       if (!$in_group) {
-        push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+        push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
       }
     }
   }
+  elsif ($field eq 'resolution' && $new_value eq 'EXPIRED') {
 
+    # The EXPIRED resolution should only be settable by gerv.
+    if ($user->login ne 'gerv@mozilla.org') {
+      push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
+    }
+
+  }
+  elsif ($field eq 'resolution' && $new_value eq 'FIXED') {
+
+    # You need at least canconfirm to mark a bug as FIXED
+    if (!$user->in_group('canconfirm', $bug->{'product_id'})) {
+      push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
+    }
+
+  }
+  elsif (($field eq 'bug_status' && $old_value eq 'VERIFIED')
+    || ($field eq 'dup_id' && $bug->status->name eq 'VERIFIED')
+    || ($field eq 'resolution' && $bug->status->name eq 'VERIFIED'))
+  {
+    # You need at least editbugs to reopen a resolved/verified bug
+    if (!$user->in_group('editbugs', $bug->{'product_id'})) {
+      push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
+    }
+
+  }
   elsif ($user->in_group('canconfirm', $bug->{'product_id'})) {
 
     # Canconfirm is really "cantriage"; users with canconfirm can also mark
@@ -110,24 +141,23 @@ sub bug_check_can_change_field {
       && is_open_state($old_value)
       && !is_open_state($new_value))
     {
-      push(@$priv_results, PRIVILEGES_REQUIRED_NONE);
+      push @{$priv_results}, PRIVILEGES_REQUIRED_NONE;
     }
     elsif (
       $field eq 'resolution'
       && ( $new_value eq 'DUPLICATE'
         || $new_value eq 'WORKSFORME'
         || $new_value eq 'INCOMPLETE'
-        || ($old_value eq '' && $new_value eq '1'))
+        || (!$old_value && $new_value eq '1'))
       )
     {
-      push(@$priv_results, PRIVILEGES_REQUIRED_NONE);
+      push @{$priv_results}, PRIVILEGES_REQUIRED_NONE;
     }
     elsif ($field eq 'dup_id') {
-      push(@$priv_results, PRIVILEGES_REQUIRED_NONE);
+      push @{$priv_results}, PRIVILEGES_REQUIRED_NONE;
     }
 
   }
-
   elsif ($field eq 'bug_status') {
 
     # Disallow reopening of bugs which have been resolved for > 1 year
@@ -139,7 +169,7 @@ sub bug_check_can_change_field {
       $days_ago->subtract(days => 365);
       my $last_closed = datetime_from($bug->last_closed_date);
       if ($last_closed lt $days_ago) {
-        push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+        push @{$priv_results}, PRIVILEGES_REQUIRED_EMPOWERED;
       }
     }
   }

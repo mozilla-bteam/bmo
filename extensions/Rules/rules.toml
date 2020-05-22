@@ -1,0 +1,42 @@
+# This will create an array of rules in TOML
+[[rule]]
+  # Prevent users who aren't in editbugs from setting priority
+  name = "firefox priority"
+  error = "You cannot set the priority of a new bug."
+  action = ["cannot_update","cannot_create"]
+  [rule.filter]
+    field = "product"
+    value = "Firefox"
+  [rule.change]
+    field = "priority"
+  [rule.condition]
+    not_user_group = "editbugs"
+# [[rule]]
+#   # Prevent users who aren't in editbugs from assigning Firefox bugs
+#   name = "firefox assignee"
+#   error = "You cannot assign this bug."
+#   action = ["cannot_save","cannot_create"]
+#   [rule.fitler]
+#     Field = "product"
+#     value = "Firefox"
+#   [rule.change]
+#     field = "assigned_to"
+#   [rule.condition]
+#     not_user_group = "editbugs"
+# [[rule]]
+#   # Require canconfirm to mark a bug as FIXED
+#   name = "fixed canconfirm"
+#   error = "You cannot mark this bug as FIXED"
+#   action = "cannot_save"
+#   [rule.change]
+#     field = "resolution"
+#     new_value = "FIXED"
+#   [rule.condition]
+#     not_user_group = "canconfirm"
+# [[rule]]w
+#   # people without editbugs can’t comment on closed bugs
+#   name = "closed can comment"
+#   error = "You cannot comment on closed bugs"
+#   action = "cannot_comment"
+#   [rule.condition]
+#     not_user_group = "editbugs"

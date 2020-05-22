@@ -13,10 +13,9 @@ use warnings;
 
 use constant NAME => 'Rules';
 
-use constant REQUIRED_MODULES => [
-];
+use constant REQUIRED_MODULES =>
+  [{package => 'TOML', module => 'TOML', version => 0},];
 
-use constant OPTIONAL_MODULES => [
-];
+use constant OPTIONAL_MODULES => [];
 
 __PACKAGE__->NAME;

@@ -114,6 +114,7 @@ sub template_before_process {
   my ($self, $args) = @_;
   my $file = $args->{'file'};
   my $vars = $args->{'vars'};
+  my $user = Bugzilla->user;
 
   $vars->{'cf_hidden_in_product'} = \&cf_hidden_in_product;
 
@@ -183,8 +184,10 @@ sub template_before_process {
 
     # hack to allow the bug entry templates to use check_can_change_field
     # to see if various field values should be available to the current user.
-    $vars->{'default'}
-      = Bugzilla::Extension::BMO::FakeBug->new($vars->{'default'} || {});
+    $vars->{'default'}->{'reporter_id'} = $user->id;
+    $vars->{'default'}->{'assigned_to'} = 0;
+    $vars->{'default'} = Bugzilla::Extension::BMO::FakeBug->new($vars->{'default'}
+        || {reporter_id => $user->id, assigned_to => 0});
   }
 
   if ($file =~ /^attachment\/diff-header\./) {
