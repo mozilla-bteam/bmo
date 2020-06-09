@@ -11,6 +11,7 @@ defaults:
       name: install dependencies
       command: |
         apk update && apk add py-pip
+        pip install --upgrade pip
         pip install "docker-compose==1.23.2"
 
   docker_image: &docker_image

@@ -61,38 +61,66 @@ sub process {
   my @matches;
 
   # Process filter first
-  if ($self->filter) {
-    if ($self->filter->{field} eq 'product') {
-      push @matches, $self->filter->{value} eq $self->bug->product ? 1 : 0;
-    }
-    if ($self->filter->{field} eq 'component') {
-      push @matches, $self->filter->{value} eq $self->bug->component ? 1 : 0;
+  if (my $filter = $self->filter) {
+    foreach my $item (qw(product component)) {
+      if (exists $filter->{$item}) {
+        push @matches, $filter->{$item} eq $self->bug->$item ? 1 : 0;
+      }
     }
   }
 
   # Then process what is changing
-  if ($self->change) {
-    if ($self->change->{field}) {
-      push @matches, $self->change->{field} eq $self->field ? 1 : 0;
+  if (my $change = $self->change) {
+    if ($change->{field}) {
+      push @matches, $change->{field} eq $self->field ? 1 : 0;
     }
-    if ($self->change->{old_value}) {
-      push @matches, $self->change->{old_value} eq $self->old_value ? 1 : 0;
-    }
-    if ($self->change->{new_value}) {
-      push @matches, $self->change->{new_value} eq $self->new_value ? 1 : 0;
+
+    foreach my $item (qw(new_value old_value not_new_value not_old_value)) {
+      if (my $values = $change->{$item}) {
+        $values = ref $values ? $values : [$values];
+        foreach my $value (@{$values}) {
+          if ($value eq '_open_state_') {
+            push @matches, is_open_state($self->$item) ? 1 : 0;
+          }
+          elsif ($value eq '_closed_state_') {
+            push @matches, !is_open_state($self->$item) ? 1 : 0;
+          }
+          else {
+            if ($item =~ /^not_/) {
+              push @matches, $value ne $self->$item ? 1 : 0;
+            }
+            else {
+              push @matches, $value eq $self->$item ? 1 : 0;
+            }
+          }
+        }
+      }
     }
   }
 
   # Finally process the special conditions that need to be met
-  if ($self->condition) {
-    if ($self->condition->{not_user_group}) {
-      push @matches,
-        !$self->user->in_group($self->condition->{not_user_group}) ? 1 : 0;
+  if (my $condition = $self->condition) {
+    if ($condition->{not_user_group}) {
+      my $values
+        = ref $condition->{not_user_group}
+        ? $condition->{not_user_group}
+        : [$condition->{not_user_group}];
+      my $in_group = 0;
+      foreach my $value (@{$values}) {
+        if ($self->user->in_group($value)) {
+          $in_group = 1;
+          last;
+        }
+      }
+      push @matches, !$in_group ? 1 : 0;
     }
-    if ($self->condition->{user_group}) {
-      push @matches, $self->user->in_group($self->condition->{user_group}) ? 1 : 0;
+    foreach my $item (qw(bug_status)) {
+      if (exists $condition->{$item}) {
+        push @matches, $condition->{$item} eq $self->bug->$item ? 1 : 0;
+      }
     }
   }
+
 
   # If we have not fully matched by this point we ignore this rule
   if (any { $_ == 0 } @matches) {
@@ -111,7 +139,7 @@ sub process {
     }
 
     # cannot_update means we disallow this change for any bug, even current
-    if (any { $_ eq 'cannot_update' } @{$action}) {
+    if (any { $_ eq 'cannot_update' || $_ eq 'cannot_comment' } @{$action}) {
       $result = {action => 'deny'};
     }
 
@@ -119,32 +147,6 @@ sub process {
 
     return $result;
   }
-
-#   if ($self->condition->{new_value}) {
-#     my $new_value = $self->condition->{new_value};
-#     if ($new_value eq '_open_state_') {
-#       push @matches, is_open_state($self->new_value) ? 1 : 0;
-#     }
-#     elsif ($new_value eq '_closed_state_') {
-#       push @matches, !is_open_state($self->new_value) ? 1 : 0;
-#     }
-#     else {
-#       push @matches, $new_value eq $self->new_value ? 1 : 0;
-#     }
-#   }
-
-#   if ($self->condition->{old_value}) {
-#     my $old_value = $self->condition->{old_value};
-#     if ($old_value eq '_open_state_') {
-#       push @matches, is_open_state($self->old_value) ? 1 : 0;
-#     }
-#     elsif ($old_value eq '_closed_state_') {
-#       push @matches, !is_open_state($self->old_value) ? 1 : 0;
-#     }
-#     else {
-#       push @matches, $old_value eq $self->old_value ? 1 : 0;
-#     }
-#   }
 }
 
 sub debug_info {
