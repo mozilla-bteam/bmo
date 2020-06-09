@@ -87,7 +87,9 @@ sub process {
           }
           else {
             if ($item =~ /^not_/) {
-              push @matches, $value ne $self->$item ? 1 : 0;
+              my $not_item = $item;
+              $not_item =~ s/^not_//;
+              push @matches, $value ne $self->$not_item ? 1 : 0;
             }
             else {
               push @matches, $value eq $self->$item ? 1 : 0;
