@@ -9,7 +9,7 @@
 # 1. Some of the forms have been commented as they have been removed since
 #    this script was originally created. I left them in insteading of deleting
 #    so they could be used for reference for adding new form tests.
-# 2. The _check_* utility functions for creating objects should be moved to
+# 2. The check_* utility functions for creating objects should be moved to
 #    generate_test_data.pl at some point.
 
 use strict;
@@ -30,10 +30,10 @@ set_parameters($sel, {"Bug Fields" => {"useclassification-off" => undef}});
 
 ## mktgevent
 #
-#_check_product('Marketing');
-#_check_component('Marketing', 'Event Requests');
-#_check_component('Marketing', 'Swag Requests');
-#_check_group('mozilla-corporation-confidential');
+#check_product('Marketing');
+#check_component('Marketing', 'Event Requests');
+#check_component('Marketing', 'Swag Requests');
+#check_group('mozilla-corporation-confidential');
 #
 ## FIXME figure out how to use format= with file_bug_in_product
 #
@@ -86,9 +86,9 @@ set_parameters($sel, {"Bug Fields" => {"useclassification-off" => undef}});
 
 # trademark
 
-_check_product('Marketing');
-_check_component('Marketing', 'Trademark Permissions');
-_check_group('marketing-private');
+check_product($sel, 'Marketing');
+check_component($sel, 'Marketing', 'Trademark Permissions');
+check_group($sel, 'marketing-private');
 
 $sel->open_ok("/enter_bug.cgi?product=Marketing&format=trademark");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -108,11 +108,11 @@ my $trademark_bug_id
 
 # itrequest
 
-_check_product('mozilla.org');
-_check_product('Infrastructure & Operations');
-_check_component('Infrastructure & Operations', 'WebOps: Other');
-_check_version('Infrastructure & Operations', 'other');
-_check_group('infra');
+check_product($sel, 'mozilla.org');
+check_product($sel, 'Infrastructure & Operations');
+check_component($sel, 'Infrastructure & Operations', 'WebOps: Other');
+check_version($sel, 'Infrastructure & Operations', 'other');
+check_group($sel, 'infra');
 
 #$sel->open_ok("/enter_bug.cgi?product=mozilla.org&format=itrequest");
 #$sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -172,12 +172,12 @@ _check_group('infra');
 #$sel->is_text_present_ok('has been added to the database', 'Bug created');
 #my $presentation_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
-_check_component('mozilla.org', 'Discussion Forums');
+check_component($sel, 'mozilla.org', 'Discussion Forums');
 
 #mozlist
 
-_check_version('mozilla.org', 'other');
-_check_component('mozilla.org', 'Discussion Forums');
+check_version($sel, 'mozilla.org', 'other');
+check_component($sel, 'mozilla.org', 'Discussion Forums');
 
 $sel->open_ok("/enter_bug.cgi?product=mozilla.org&format=mozlist");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -201,13 +201,13 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $mozlist_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
-_check_product('Mozilla PR');
-_check_component('Mozilla PR', 'China - AMO');
-_check_group('mozilla-confidential');
+check_product($sel, 'Mozilla PR');
+check_component($sel, 'Mozilla PR', 'China - AMO');
+check_group($sel, 'mozilla-confidential');
 
 #mozpr
 
-_check_group('pr-private');
+check_group($sel, 'pr-private');
 
 #$sel->open_ok("/enter_bug.cgi?product=Mozilla PR&format=mozpr");
 #$sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -225,9 +225,9 @@ _check_group('pr-private');
 
 # legal
 
-_check_product('Legal');
-_check_component('Legal', 'Contract Request');
-_check_group('mozilla-employee-confidential');
+check_product($sel, 'Legal');
+check_component($sel, 'Legal', 'Contract Request');
+check_group($sel, 'mozilla-employee-confidential');
 
 $sel->open_ok("/enter_bug.cgi?product=Legal&format=legal");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -254,181 +254,3 @@ my $legal_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 set_parameters($sel, {"Bug Fields" => {"useclassification-on" => undef}});
 logout($sel);
-
-sub _check_product {
-  my ($product, $version) = @_;
-
-  go_to_admin($sel);
-  $sel->click_ok("link=Products");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Select product");
-
-  my $product_description = "$product Description";
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$product_description/) {
-
-    # Product exists already
-    return 1;
-  }
-
-  $sel->click_ok("link=Add");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Add Product");
-  $sel->type_ok("product",     $product);
-  $sel->type_ok("description", $product_description);
-  $sel->type_ok("version",     $version) if $version;
-  $sel->select_ok("security_group_id",   "label=core-security");
-  $sel->select_ok("default_op_sys_id",   "label=Unspecified");
-  $sel->select_ok("default_platform_id", "label=Unspecified");
-  $sel->click_ok('//input[@type="submit" and @value="Add"]');
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $text = trim($sel->get_text("message"));
-  ok(
-    $text
-      =~ /You will need to add at least one component before anyone can enter bugs against this product/,
-    "Display a reminder about missing components"
-  );
-
-  return 1;
-}
-
-sub _check_component {
-  my ($product, $component) = @_;
-
-  go_to_admin($sel);
-  $sel->click_ok("link=components");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Edit components for which product?");
-
-  $sel->click_ok(
-    "//*[\@id='bugzilla-body']//a[normalize-space(text())='$product']");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Select component of product '$product'");
-
-  my $component_description = "$component Description";
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$component_description/) {
-
-    # Component exists already
-    return 1;
-  }
-
-  go_to_admin($sel);
-  $sel->click_ok("link=components");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Edit components for which product?");
-  $sel->click_ok(
-    "//*[\@id='bugzilla-body']//a[normalize-space(text())='$product']");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Select component of product '$product'");
-  $sel->click_ok("link=Add");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Add component to the $product product");
-  $sel->type_ok("component",    $component);
-  $sel->type_ok("description",  $component_description);
-  $sel->type_ok("initialowner", $config->{'admin_user_login'});
-  $sel->click_ok('//input[@type="submit" and @value="Add"]');
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Component Created");
-  $text = trim($sel->get_text("message"));
-  ok($text eq "The component $component has been created.",
-    "Component successfully created");
-
-  return 1;
-}
-
-sub _check_group {
-  my ($group) = @_;
-
-  go_to_admin($sel);
-  $sel->click_ok("link=Groups");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("Edit Groups");
-
-  my $group_description = "$group Description";
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$group_description/) {
-
-    # Group exists already
-    return 1;
-  }
-
-  $sel->title_is("Edit Groups");
-  $sel->click_ok("link=Add Group");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("Add group");
-  $sel->type_ok("name",  $group);
-  $sel->type_ok("desc",  $group_description);
-  $sel->type_ok("owner", $config->{'admin_user_login'});
-  $sel->check_ok("isactive");
-  $sel->check_ok("insertnew");
-  $sel->click_ok("create");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("New Group Created");
-  my $group_id = $sel->get_value("group_id");
-
-  return 1;
-}
-
-sub _check_version {
-  my ($product, $version) = @_;
-
-  go_to_admin($sel);
-  $sel->click_ok("link=versions");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("Edit versions for which product?");
-  $sel->click_ok(
-    "//*[\@id='bugzilla-body']//a[normalize-space(text())='$product']");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$version/) {
-
-    # Version exists already
-    return 1;
-  }
-
-  $sel->click_ok("link=Add");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_like(qr/^Add Version to Product/);
-  $sel->type_ok("version", $version);
-  $sel->click_ok("create");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("Version Created");
-
-  return 1;
-}
-
-sub _check_user {
-  my ($user) = @_;
-
-  go_to_admin($sel);
-  $sel->click_ok("link=Users");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("Search users");
-  $sel->type_ok("matchstr", $user);
-  $sel->click_ok("search");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$user/) {
-
-    # User exists already
-    return 1;
-  }
-
-  $sel->click_ok("link=add a new user");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is('Add user');
-  $sel->type_ok('login',    $user);
-  $sel->type_ok('password', 'icohF1io2ohw');
-  $sel->click_ok("add");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->is_text_present(
-    'regexp:The user account .* has been created successfully');
-
-  return 1;
-}

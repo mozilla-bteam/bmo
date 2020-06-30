@@ -58,21 +58,78 @@ sub BUILDARGS {
 
 sub process {
   my ($self) = @_;
-  my @matches;
+  my $matches = [];
 
-  # Process filter first
+  $self->_debug_info();
+
+  # Process filters to match this rule to the bugs current attributes
+  $self->_process_filters($matches);
+
+  # Process what is changing and what the new/old values are
+  $self->_process_changes($matches);
+
+  # Process any special conditions that need to be met
+  $self->_process_conditions($matches);
+
+  # If we have not fully matched by this point we ignore this rule
+  if (any { $_ == 0 } @{$matches}) {
+    DEBUG('NO MATCH');
+    return {name => $self->name, action => 'none'};
+  }
+  else {
+    my $result = {name => $self->name, action => 'allow'};
+
+    # Process actions since we matched
+    my $action = ref $self->action ? $self->action : [$self->action];
+
+    # cannot_create means we disallow this change for new bugs
+    if (any { $_ eq 'cannot_create' } @{$action} && !$self->bug->id) {
+      $result->{action} = 'deny';
+    }
+
+    # cannot_update means we disallow this change for any bug, even current
+    if (any { $_ eq 'cannot_update' || $_ eq 'cannot_comment' } @{$action}) {
+      $result->{action} = 'deny';
+    }
+
+    $result->{error} = $self->error if $result->{action} eq 'deny';
+
+    DEBUG('MATCHED: ' . $result->{action});
+
+    return $result;
+  }
+}
+
+#############################
+#      Privcate Methods     #
+#############################
+
+sub _process_filters {
+  my ($self, $matches) = @_;
+
   if (my $filter = $self->filter) {
     foreach my $item (qw(product component)) {
-      if (exists $filter->{$item}) {
-        push @matches, $filter->{$item} eq $self->bug->$item ? 1 : 0;
+      if (my $values = $filter->{$item}) {
+        $values = ref $values ? $values : [$values];
+        my $found = 0;
+        foreach my $value (@{$values}) {
+          if ($value eq $self->bug->$item) {
+            $found = 1;
+            last;
+          }
+        }
+        push @{$matches}, $found;
       }
     }
   }
+}
 
-  # Then process what is changing
+sub _process_changes {
+  my ($self, $matches) = @_;
+
   if (my $change = $self->change) {
     if ($change->{field}) {
-      push @matches, $change->{field} eq $self->field ? 1 : 0;
+      push @{$matches}, $change->{field} eq $self->field ? 1 : 0;
     }
 
     foreach my $item (qw(new_value old_value not_new_value not_old_value)) {
@@ -80,27 +137,31 @@ sub process {
         $values = ref $values ? $values : [$values];
         foreach my $value (@{$values}) {
           if ($value eq '_open_state_') {
-            push @matches, is_open_state($self->$item) ? 1 : 0;
+            push @{$matches}, is_open_state($self->$item) ? 1 : 0;
           }
           elsif ($value eq '_closed_state_') {
-            push @matches, !is_open_state($self->$item) ? 1 : 0;
+            push @{$matches}, !is_open_state($self->$item) ? 1 : 0;
           }
           else {
             if ($item =~ /^not_/) {
               my $not_item = $item;
               $not_item =~ s/^not_//;
-              push @matches, $value ne $self->$not_item ? 1 : 0;
+              push @{$matches}, $value ne $self->$not_item ? 1 : 0;
             }
             else {
-              push @matches, $value eq $self->$item ? 1 : 0;
+              push @{$matches}, $value eq $self->$item ? 1 : 0;
             }
           }
         }
       }
     }
   }
+}
 
-  # Finally process the special conditions that need to be met
+# Process any special conditions that need to be met
+sub _process_conditions {
+  my ($self, $matches) = @_;
+
   if (my $condition = $self->condition) {
     if ($condition->{not_user_group}) {
       my $values
@@ -114,44 +175,17 @@ sub process {
           last;
         }
       }
-      push @matches, !$in_group ? 1 : 0;
+      push @{$matches}, !$in_group ? 1 : 0;
     }
     foreach my $item (qw(bug_status)) {
       if (exists $condition->{$item}) {
-        push @matches, $condition->{$item} eq $self->bug->$item ? 1 : 0;
+        push @{$matches}, $condition->{$item} eq $self->bug->$item ? 1 : 0;
       }
     }
   }
-
-
-  # If we have not fully matched by this point we ignore this rule
-  if (any { $_ == 0 } @matches) {
-    DEBUG('NO MATCH');
-    return {action => 'none'};
-  }
-  else {
-    my $result = {action => 'allow'};
-
-    # Process actions since we matched
-    my $action = ref $self->action ? $self->action : [$self->action];
-
-    # cannot_create means we disallow this change for new bugs
-    if (any { $_ eq 'cannot_create' } @{$action} && !$self->bug->id) {
-      $result = {action => 'deny'};
-    }
-
-    # cannot_update means we disallow this change for any bug, even current
-    if (any { $_ eq 'cannot_update' || $_ eq 'cannot_comment' } @{$action}) {
-      $result = {action => 'deny'};
-    }
-
-    DEBUG('MATCHED: ' . $result->{action});
-
-    return $result;
-  }
 }
 
-sub debug_info {
+sub _debug_info {
   my ($self) = @_;
   DEBUG('PROCESSING RULE: ' . $self->name);
   DEBUG('user: ' . $self->user->login);

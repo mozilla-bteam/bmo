@@ -21,7 +21,7 @@ use Bugzilla::Keyword;
 use Bugzilla::Milestone;
 use Bugzilla::Product;
 use Bugzilla::Version;
-use List::MoreUtils qw(any first_value);
+use List::MoreUtils qw(any first_value none);
 
 # these methods are much lighter than our public API calls
 
@@ -145,11 +145,23 @@ sub edit {
     {product => $bug->product_obj, component => $bug->component_obj});
   foreach my $field (@custom_fields) {
     my $field_name = $field->name;
-    my @values = map { {name => $_->name} } grep {
-      $bug->$field_name eq $_->name
-        || ($_->is_active
-        && $bug->check_can_change_field($field_name, $bug->$field_name, $_->name))
-    } @{$field->legal_values};
+    my @values;
+    if ($field->type == FIELD_TYPE_SINGLE_SELECT) {
+      @values = map { {name => $_->name} } grep {
+        $bug->$field_name eq $_->name
+          || ($_->is_active
+          && $bug->check_can_change_field($field_name, $bug->$field_name, $_->name))
+      } @{$field->legal_values};
+    }
+    else {
+      foreach my $value (@{$field->legal_values}) {
+        next if none { $_ eq $value->name } @{$bug->$field_name} && !$value->is_active;
+        next if none { $bug->check_can_change_field($field_name, $_, $value->name) }
+        @{$bug->$field_name};
+        push @values, {{name => $value->name}};
+      }
+    }
+
     $options{$field_name} = \@values;
   }
 

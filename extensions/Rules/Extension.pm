@@ -41,7 +41,6 @@ sub bug_check_can_change_field {
   my $rules_toml    = Bugzilla->params->{change_field_rules};
 
   if ($rules_enabled && $rules_toml) {
-    DEBUG('CHECKING RULES');
     my $rule_defs;
     try {
       $rule_defs = $request_cache->{rule_defs} ||= from_toml($rules_toml);
@@ -60,9 +59,8 @@ sub bug_check_can_change_field {
         old_value => $old_value,
       });
 
-      $rule->debug_info();
-
       my $result = $rule->process();
+
       if ($result->{action} eq 'deny') {
 
         # Explicitly deny
