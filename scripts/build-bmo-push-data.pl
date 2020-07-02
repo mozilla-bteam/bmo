@@ -25,6 +25,8 @@ use MIME::Base64 qw(decode_base64);
 use URI::QueryParam;
 use URI;
 
+Bugzilla->extensions;
+
 my $github_repo  = "https://github.com/mozilla-bteam/bmo";
 my $version_info = decode_json(get('https://bugzilla.mozilla.org/__version__'));
 my $tag          = 'release-' . Bugzilla->VERSION;
