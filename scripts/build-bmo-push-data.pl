@@ -64,7 +64,7 @@ foreach my $line (@log) {
   next if $duplicate;
 
   my $bug = fetch_bug($bug_id);
-  if (!$bug || ($bug->{status} eq 'RESOLVED' && $bug->{resolution} ne 'FIXED')) {
+  if ($bug->{status} eq 'RESOLVED' && $bug->{resolution} ne 'FIXED') {
     next;
   }
   if ($bug->{summary} =~ /\bbackport\s+(?:upstream\s+)?bug\s+(\d+)/i) {
@@ -83,8 +83,8 @@ else {
   @revisions = reverse @revisions;
 }
 
-my $first_revision = $revisions[0]->{hash}  || $prod_tag;
-my $last_revision  = $revisions[-1]->{hash} || 'HEAD';
+my $first_revision = @revisions ? $revisions[0]->{hash} : $prod_tag;
+my $last_revision  = @revisions ? $revisions[-1]->{hash} : 'HEAD';
 
 say "write tag.txt";
 open my $tag_fh, '>', 'tag.txt';
