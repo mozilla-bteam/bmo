@@ -45,48 +45,46 @@ foreach my $line (@log) {
     next;
   }
 
-  my @bug_ids;
+  my $bug_id;
   if ($message =~ /\bBug (\d+)/i) {
-    push @bug_ids, $1;
+    $bug_id = $1;
   }
-
-  if (!@bug_ids) {
+  else {
     warn "skipping $line (no bug)\n";
     next;
   }
 
-  foreach my $bug_id (@bug_ids) {
-    my $duplicate = 0;
-    foreach my $revisions (@revisions) {
-      if ($revisions->{bug_id} == $bug_id) {
-        $duplicate = 1;
-        last;
-      }
+  my $duplicate = 0;
+  foreach my $revisions (@revisions) {
+    if ($revisions->{bug_id} == $bug_id) {
+      $duplicate = 1;
+      last;
     }
-    next if $duplicate;
-
-    my $bug = fetch_bug($bug_id);
-    if ($bug->{status} eq 'RESOLVED' && $bug->{resolution} ne 'FIXED') {
-      next;
-    }
-    if ($bug->{summary} =~ /\bbackport\s+(?:upstream\s+)?bug\s+(\d+)/i) {
-      my $upstream = $1;
-      $bug->{summary} = fetch_bug($upstream)->{summary};
-    }
-    push @revisions,
-      {hash => $revision, bug_id => $bug_id, summary => $bug->{summary},};
   }
+  next if $duplicate;
+
+  my $bug = fetch_bug($bug_id);
+  if ($bug->{status} eq 'RESOLVED' && $bug->{resolution} ne 'FIXED') {
+    next;
+  }
+  if ($bug->{summary} =~ /\bbackport\s+(?:upstream\s+)?bug\s+(\d+)/i) {
+    my $upstream = $1;
+    $bug->{summary} = fetch_bug($upstream)->{summary};
+  }
+  push @revisions,
+    {hash => $revision, bug_id => $bug_id, summary => $bug->{summary},};
 }
+
 if (!@revisions) {
-  die
-    "no new revisions.  make sure you run this script before production is updated.\n";
+  warn
+    "no new revisions. make sure you run this script before deployment to production.\n";
 }
 else {
   @revisions = reverse @revisions;
 }
 
-my $first_revision = $revisions[0]->{hash};
-my $last_revision  = $revisions[-1]->{hash};
+my $first_revision = $revisions[0]->{hash}  || $prod_tag;
+my $last_revision  = $revisions[-1]->{hash} || 'HEAD';
 
 say "write tag.txt";
 open my $tag_fh, '>', 'tag.txt';
