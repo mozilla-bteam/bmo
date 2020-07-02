@@ -16,7 +16,6 @@ use Tie::IxHash;
 
 our @EXPORT = qw( $cf_visible_in_products
   %group_change_notification
-  $cf_setters
   @always_fileable_groups
   %group_auto_cc
   %create_bug_formats
@@ -234,10 +233,6 @@ our %group_change_notification = (
   'websites-security'        => ['web-security@mozilla.org'],
   'webtools-security'        => ['web-security@mozilla.org'],
 );
-
-# Who can set custom flags (use full field names only, not regex's)
-our $cf_setters
-  = {'cf_colo_site' => ['infra', 'build'], 'cf_rank' => ['rank-setters'],};
 
 # Groups in which you can always file a bug, regardless of product or user.
 our @always_fileable_groups = qw(

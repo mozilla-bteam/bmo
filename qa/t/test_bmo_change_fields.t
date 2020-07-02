@@ -89,7 +89,6 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 go_to_bug($sel, $bug_id);
-
 if ($sel->is_element_present('cab-review-gate-close')) {
   $sel->click_ok('cab-review-gate-close');
 }
@@ -294,6 +293,37 @@ $bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 go_to_bug($sel, $bug_id);
 $sel->is_element_present_ok('//select[@id="priority"]/option[@value="P1"]',
   'Priority can be set');
+logout($sel);
+
+# People without editbugs can’t comment on closed bugs
+log_in($sel, $config, 'permanent');
+file_bug_in_product($sel, "Firefox");
+$sel->type_ok(
+  "short_desc",
+  "Bug created by permanent User",
+  "Enter bug summary"
+);
+$sel->type_ok(
+  "comment",
+  "--- Bug created by Selenium ---",
+  "Enter bug description"
+);
+$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->is_text_present_ok('has been added to the database', 'Bug created');
+$bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
+go_to_bug($sel, $bug_id);
+$sel->select_ok('bug_status', 'label=RESOLVED');
+$sel->select_ok('resolution', 'label=FIXED');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug_id});
+$sel->is_text_present_ok("Changes submitted for bug $bug_id");
+logout($sel);
+
+log_in($sel, $config, 'unprivileged');
+go_to_bug($sel, $bug_id);
+ok(!$sel->is_element_present('comment'),
+  'New comment cannot be added');
 logout($sel);
 
 # Cleanup

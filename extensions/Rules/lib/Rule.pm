@@ -10,7 +10,7 @@ package Bugzilla::Extension::Rules::Rule;
 use 5.10.1;
 use Data::Dumper;
 use Moo;
-use List::Util qw(any);
+use List::Util qw(any none);
 use Types::Standard -all;
 use Type::Utils;
 
@@ -80,15 +80,15 @@ sub process {
     my $result = {name => $self->name, action => 'allow'};
 
     # Process actions since we matched
-    my $action = ref $self->action ? $self->action : [$self->action];
+    my $actions = ref $self->action ? $self->action : [$self->action];
 
     # cannot_create means we disallow this change for new bugs
-    if (any { $_ eq 'cannot_create' } @{$action} && !$self->bug->id) {
+    if (any { $_ eq 'cannot_create' } @{$actions} && !$self->bug->id) {
       $result->{action} = 'deny';
     }
 
     # cannot_update means we disallow this change for any bug, even current
-    if (any { $_ eq 'cannot_update' || $_ eq 'cannot_comment' } @{$action}) {
+    if (any { $_ eq 'cannot_update' || $_ eq 'cannot_comment' } @{$actions}) {
       $result->{action} = 'deny';
     }
 
@@ -111,6 +111,7 @@ sub _process_filters {
     foreach my $item (qw(product component)) {
       if (my $values = $filter->{$item}) {
         $values = ref $values ? $values : [$values];
+
         my $found = 0;
         foreach my $value (@{$values}) {
           if ($value eq $self->bug->$item) {
@@ -118,6 +119,7 @@ sub _process_filters {
             last;
           }
         }
+
         push @{$matches}, $found;
       }
     }
@@ -132,27 +134,19 @@ sub _process_changes {
       push @{$matches}, $change->{field} eq $self->field ? 1 : 0;
     }
 
-    foreach my $item (qw(new_value old_value not_new_value not_old_value)) {
-      if (my $values = $change->{$item}) {
+    foreach my $full_item (qw(new_value old_value not_new_value not_old_value)) {
+      if (my $values = $change->{$full_item}) {
+        my $item = $full_item;
+        my $not = $item =~ /^not_/ ? 1 : 0;
+        $item =~ s/^not_//;
+
         $values = ref $values ? $values : [$values];
-        foreach my $value (@{$values}) {
-          if ($value eq '_open_state_') {
-            push @{$matches}, is_open_state($self->$item) ? 1 : 0;
-          }
-          elsif ($value eq '_closed_state_') {
-            push @{$matches}, !is_open_state($self->$item) ? 1 : 0;
-          }
-          else {
-            if ($item =~ /^not_/) {
-              my $not_item = $item;
-              $not_item =~ s/^not_//;
-              push @{$matches}, $value ne $self->$not_item ? 1 : 0;
-            }
-            else {
-              push @{$matches}, $value eq $self->$item ? 1 : 0;
-            }
-          }
-        }
+
+        my $matched = 0;
+        $matched = 1 if ($not && none { $_ eq $self->$item } @{$values});
+        $matched = 1 if (!$not && any { $_ eq $self->$item } @{$values});
+
+        push @{$matches}, $matched;
       }
     }
   }
@@ -168,6 +162,7 @@ sub _process_conditions {
         = ref $condition->{not_user_group}
         ? $condition->{not_user_group}
         : [$condition->{not_user_group}];
+
       my $in_group = 0;
       foreach my $value (@{$values}) {
         if ($self->user->in_group($value)) {
@@ -175,11 +170,23 @@ sub _process_conditions {
           last;
         }
       }
+
       push @{$matches}, !$in_group ? 1 : 0;
     }
-    foreach my $item (qw(bug_status)) {
-      if (exists $condition->{$item}) {
-        push @{$matches}, $condition->{$item} eq $self->bug->$item ? 1 : 0;
+
+    foreach my $full_item (qw(bug_status not_bug_status)) {
+      if (my $values = $condition->{$full_item}) {
+        my $item = $full_item;
+        my $not = $item =~ /^not_/ ? 1 : 0;
+        $item =~ s/^not_//;
+
+        $values = ref $values ? $values : [$values];
+
+        my $matched = 0;
+        $matched = 1 if ($not && none { $_ eq $self->bug->$item } @{$values});
+        $matched = 1 if (!$not && any { $_ eq $self->bug->$item } @{$values});
+
+        push @{$matches}, $matched;
       }
     }
   }
@@ -197,6 +204,9 @@ sub _debug_info {
   DEBUG('component: ' . ($self->bug->component || 'None'));
   DEBUG(
     'action: ' . (ref $self->action ? join ',', @{$self->action} : $self->action));
+  DEBUG('current_bug_status: ', $self->bug->bug_status);
+  DEBUG('not_new_value: ' . Dumper $self->change->{not_new_value});
 }
+
 
 1;
