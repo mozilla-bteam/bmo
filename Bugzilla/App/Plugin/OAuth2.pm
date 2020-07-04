@@ -40,6 +40,7 @@ sub register {
     if (!$args->{user_id}) {
       return (user_id => Bugzilla->user->id);
     }
+    return;
   };
 
   $app->helper(
