@@ -6,9 +6,13 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% CALL tabs.import([{
-    name => "webhook",
-    label => "Webhook",
-    link => "userprefs.cgi?tab=webhook",
-    saveable => 1
-    }]) %]
+[%
+   title = "Webhooks"
+   desc = "Webhooks feature flag"
+%]
+
+[%
+   param_descs = {
+     webhooks_enabled => "Enable or disable the webhooks feature.",
+   }
+%]

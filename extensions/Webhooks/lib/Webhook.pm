@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::Webhook::webhook;
+package Bugzilla::Extension::Webhooks::Webhook;
 
 use base qw(Bugzilla::Object);
 
@@ -18,7 +18,7 @@ use Bugzilla::Product;
 use Bugzilla::Component;
 use Bugzilla::Error;
 
-use constant DB_TABLE => 'webhook';
+use constant DB_TABLE => 'webhooks';
 
 use constant DB_COLUMNS => qw(
   id

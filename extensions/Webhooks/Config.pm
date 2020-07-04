@@ -5,12 +5,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::Webhook;
+package Bugzilla::Extension::Webhooks;
 
 use 5.10.1;
 use strict;
 use warnings;
 
-use constant NAME => 'Webhook';
+use constant NAME => 'Webhooks';
 
 __PACKAGE__->NAME;

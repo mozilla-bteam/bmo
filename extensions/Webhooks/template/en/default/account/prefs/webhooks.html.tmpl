@@ -11,26 +11,13 @@
 [% SET selectable_products = user.get_selectable_products %]
 [% SET dont_show_button = 1 %]
 
-<style>
-#add_compwatch input[type=text],
-#add_compwatch select
-{
-  width: 30em;
-}
-
-#component[disabled] {
-  color: silver;
-}
-</style>
-
 <script [% script_nonce FILTER none %]>
 var Dom = YAHOO.util.Dom;
 var useclassification = false;
 var first_load = true;
 var last_sel = [];
 var cpts = new Array();
-var watch_users = new Array();
-[% n = 1 %]
+[% n = 0 %]
 [% FOREACH prod = selectable_products %]
   cpts['[% n %]'] = [
     [%- FOREACH comp = prod.components %]'[% comp.name FILTER js %]'[% ", " UNLESS loop.last %] [%- END -%] ];
@@ -42,8 +29,37 @@ var watch_users = new Array();
 
 <script [% script_nonce FILTER none %]>
 function onSelectProduct() {
-  selectProduct(Dom.get('product'), Dom.get('component'), null, null, '__Any__');
-  Dom.get('component').disabled = Dom.get('product').value == '';
+  var component = Dom.get('component');
+  selectProduct(Dom.get('product'), component);
+  // selectProduct only supports __Any__ on both elements
+  // we only want it on component, so add it back in
+  try {
+    component.add(new Option('__Any__', ''), component.options[0]);
+  } catch(e) {
+    // support IE
+    component.add(new Option('__Any__', ''), 0);
+  }
+  if ('[% add_component FILTER js %]' != ''
+      && bz_valueSelected(Dom.get('product'), '[% add_product FILTER js %]')
+  ) {
+    var index = bz_optionIndex(Dom.get('component'), '[% add_component FILTER js %]');
+    if (index != -1)
+      Dom.get('component').options[index].selected = true;
+  }
+  onSelectComponent();
+}
+
+function onSelectComponent() {
+  var product_select = Dom.get('product');
+  var product = product_select.options[product_select.selectedIndex].value;
+  var component = Dom.get('component').value;
+  if (component && watch_users[product] && watch_users[product][component]) {
+    Dom.get('watch-user-email').innerHTML = watch_users[product][component];
+    Dom.get('watch-user-div').style.display = '';
+  } else {
+    Dom.get('watch-user-div').style.display = 'none';
+  }
+  Dom.get('add').disabled = Dom.get('component').selectedIndex == -1;
 }
 
 YAHOO.util.Event.onDOMReady(onSelectProduct);
@@ -64,8 +80,7 @@ YAHOO.util.Event.onDOMReady(onRemoveChange);
 </script>
 
 <p>
-  It will be sent a POST request with all the information of the bugs that match with the events and filters selected to your URL.<br>
-  Documentation about webhooks is available <a href="">here</a>.
+  It will be sent a POST request with the information of the bugs that match with the events and filters selected to your URL.
 </p>
 
 <table border="0" cellpadding="3" cellspacing="0">
@@ -89,15 +104,13 @@ YAHOO.util.Event.onDOMReady(onRemoveChange);
 </p>
 <h4>Filters</h4>
 <p>
-  To receive all bugs related to all products, select "__Any__".<br>
   To receive all components in a product, select "__Any__".
 </p>
 <table border="0" cellpadding="3" cellspacing="0">
 <tr>
   <th align="right">Product:</th>
   <td colspan="2">
-    <select name="product" id="product" onChange="onSelectProduct()">
-    <option value="">__Any__</option>
+    <select name="add_product" id="product" onChange="onSelectProduct()">
     [% FOREACH product IN selectable_products %]
       <option [% 'selected' IF add_product == product.name %]>
         [%~ product.name FILTER html %]</option>
@@ -108,7 +121,7 @@ YAHOO.util.Event.onDOMReady(onRemoveChange);
 <tr>
   <th align="right">Component:</th>
   <td colspan="2">
-    <select name="component" id="component">
+    <select name="add_component" id="component" onChange="onSelectComponent()>
       <option value="">__Any__</option>
     [% FOREACH product IN selectable_products %]
       [% FOREACH component IN product.components %]
@@ -138,7 +151,7 @@ YAHOO.util.Event.onDOMReady(onRemoveChange);
       <th>&nbsp;</th>
       <th>Name</th>
       <th>URL</th>
- <!-- <th>Events</th> -->
+      <th>Events</th>
       <th>Product</th>
       <th>Component</th>
     </tr>
@@ -151,12 +164,12 @@ YAHOO.util.Event.onDOMReady(onRemoveChange);
                name="remove" value="[% webhook.id FILTER none %]">
       </td>
       <td>[% webhook.name FILTER html %]</td>
-  <!--<td>[% webhook.event FILTER html %]</td>-->
       <td>
         <a href="[% webhook.url FILTER html %]">
           [% webhook.url FILTER html %]
         </a>
       </td>
+      <td>[% webhook.event FILTER html %]</td>
       <td>[% webhook.product ? webhook.product.name : 'Any' FILTER html %]</td>
       <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
     </tr>
