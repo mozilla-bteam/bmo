@@ -55,7 +55,7 @@ sub db_schema_abstract_schema {
 sub db_sanitize {
   my $dbh = Bugzilla->dbh;
   print "Deleting webhooks...\n";
-  $dbh->do("DELETE FROM webhook");
+  $dbh->do("DELETE FROM webhooks");
 }
 
 #
