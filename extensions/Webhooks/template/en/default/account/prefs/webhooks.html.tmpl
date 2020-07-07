@@ -65,11 +65,11 @@ function onRemoveChange() {
   document.getElementById('remove').disabled = true;
 }
 
-$(window).on("load", function(){
+window.onload = function() {
   onSelectComponent();
   onSelectProduct();
   onRemoveChange();
-});
+};
 </script>
 
 <p>
