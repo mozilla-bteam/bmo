@@ -12,7 +12,6 @@
 [% SET dont_show_button = 1 %]
 
 <script [% script_nonce FILTER none %]>
-var Dom = YAHOO.util.Dom;
 var useclassification = false;
 var first_load = true;
 var last_sel = [];
@@ -24,13 +23,13 @@ var cpts = new Array();
   [% n = n + 1 %]
 [% END %]
 </script>
-<script src="[% 'js/productform.js' FILTER version FILTER html %]">
-</script>
+
+<script src="[% 'js/productform.js' FILTER version FILTER html %]"></script>
 
 <script [% script_nonce FILTER none %]>
 function onSelectProduct() {
-  var component = Dom.get('component');
-  selectProduct(Dom.get('product'), component);
+  var component = document.getElementById('component');
+  selectProduct(document.getElementById('product'), component);
   // selectProduct only supports __Any__ on both elements
   // we only want it on component, so add it back in
   try {
@@ -40,47 +39,41 @@ function onSelectProduct() {
     component.add(new Option('__Any__', ''), 0);
   }
   if ('[% add_component FILTER js %]' != ''
-      && bz_valueSelected(Dom.get('product'), '[% add_product FILTER js %]')
+      && bz_valueSelected(document.getElementById('product'), '[% add_product FILTER js %]')
   ) {
-    var index = bz_optionIndex(Dom.get('component'), '[% add_component FILTER js %]');
+    var index = bz_optionIndex(document.getElementById('component'), '[% add_component FILTER js %]');
     if (index != -1)
-      Dom.get('component').options[index].selected = true;
+      document.getElementById('component').options[index].selected = true;
   }
   onSelectComponent();
 }
 
 function onSelectComponent() {
-  var product_select = Dom.get('product');
+  var product_select = document.getElementById('product');
   var product = product_select.options[product_select.selectedIndex].value;
-  var component = Dom.get('component').value;
-  if (component && watch_users[product] && watch_users[product][component]) {
-    Dom.get('watch-user-email').innerHTML = watch_users[product][component];
-    Dom.get('watch-user-div').style.display = '';
-  } else {
-    Dom.get('watch-user-div').style.display = 'none';
-  }
-  Dom.get('add').disabled = Dom.get('component').selectedIndex == -1;
+  var component = document.getElementById('component').value;
 }
 
-YAHOO.util.Event.onDOMReady(onSelectProduct);
-
 function onRemoveChange() {
-  var cbs = Dom.get('webhook_table').getElementsByTagName('input');
+  var cbs = document.getElementById('webhooks_table').getElementsByTagName('input');
   for (var i = 0, l = cbs.length; i < l; i++) {
     if (cbs[i].checked) {
-      Dom.get('remove').disabled = false;
+      document.getElementById('remove').disabled = false;
       return;
     }
   }
-  Dom.get('remove').disabled = true;
+  document.getElementById('remove').disabled = true;
 }
 
-YAHOO.util.Event.onDOMReady(onRemoveChange);
-
+$(window).on("load", function(){
+  onSelectComponent();
+  onSelectProduct();
+  onRemoveChange();
+});
 </script>
 
 <p>
-  It will be sent a POST request with the information of the bugs that match with the events and filters selected to your URL.<br>
+  It will be sent a POST request with the information of the [% terms.bugs %] that match with the events and filters selected to your URL.<br>
   Documentation about webhooks is available <a href="">here</a>.
 </p>
 
