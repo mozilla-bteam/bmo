@@ -98,11 +98,35 @@ sub page_before_template {
 
 BEGIN {
   no warnings 'redefine';
-  *Bugzilla::Comment::activity   = \&_get_activity;
   *Bugzilla::Comment::edit_count = \&_edit_count;
+  *Bugzilla::Comment::is_editable_by = \&_is_editable_by;
+  *Bugzilla::Comment::activity   = \&_get_activity;
 }
 
 sub _edit_count { return $_[0]->{'edit_count'}; }
+
+sub _is_editable_by {
+  my ($self, $user) = @_;
+  # Note: Does not verify that the bug is visible or editable by the user; the calling
+  # code needs to perform this validation at the bug level.
+
+  # Insiders can always edit all comments
+  return 1 if $user->is_insider;
+
+  # Need to be a member of edit_comments_group
+  my $edit_comments_group = Bugzilla->params->{edit_comments_group};
+  return 0 unless $edit_comments_group && $user->in_group($edit_comments_group);
+
+  # Can always edit your own comments
+  return 1 if $self->author->id == $user->id;
+
+  # Can edit comment 0 (description) on any bug, if enabled
+  return 1 if Bugzilla->params->{allow_global_initial_comment_editing}
+    && $self->count == 0;
+
+  # Otherwise not editable
+  return 0;
+}
 
 sub _get_activity {
   my ($self, $activity_sort_order) = @_;
@@ -212,8 +236,8 @@ sub bug_end_of_update {
     my ($comment_obj) = grep($_->id == $comment_id, @{$bug->comments});
     next if (!$comment_obj || ($comment_obj->is_private && !$user->is_insider));
 
-# Insiders can edit any comment while unprivileged users can only edit their own comments
-    next unless $user->is_insider || $comment_obj->author->id == $user->id;
+    # Check that user can edit the comment.
+    next unless $comment_obj->is_editable_by($user);
 
     my $new_comment = $comment_obj->_check_thetext($params->{$param});
 
@@ -259,6 +283,12 @@ sub config_modify_panels {
     choices => \&get_all_group_names,
     default => 'editbugs',
     checker => \&check_group
+    };
+  push @{$args->{panels}->{groupsecurity}->{params}},
+    {
+    name    => 'allow_global_initial_comment_editing',
+    type    => 'b',
+    default => 1
     };
 }
 
