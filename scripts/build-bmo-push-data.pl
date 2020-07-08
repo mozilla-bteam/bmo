@@ -21,6 +21,7 @@ use IPC::System::Simple qw(runx capture);
 use JSON::MaybeXS qw(decode_json);
 use LWP::Simple qw(get);
 use LWP::UserAgent;
+use Mozilla::CA;
 use MIME::Base64 qw(decode_base64);
 use URI::QueryParam;
 use URI;
@@ -178,6 +179,7 @@ sub fetch_bug {
 sub _get {
   my ($endpoint, $args) = @_;
   my $ua = LWP::UserAgent->new(agent => $PROGRAM_NAME);
+  $ua->ssl_opts(SSL_ca_file => Mozilla::CA::SSL_ca_file());
   $args //= {};
 
   if (exists $args->{include_fields} && ref($args->{include_fields})) {
