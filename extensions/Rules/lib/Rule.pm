@@ -60,7 +60,7 @@ sub process {
   my ($self) = @_;
   my $matches = [];
 
-  $self->_debug_info();
+  # $self->_debug_info();
 
   # Process filters to match this rule to the bugs current attributes
   $self->_process_filters($matches);
@@ -73,7 +73,7 @@ sub process {
 
   # If we have not fully matched by this point we ignore this rule
   if (any { $_ == 0 } @{$matches}) {
-    DEBUG('NO MATCH');
+    # DEBUG('NO MATCH');
     return {name => $self->name, action => 'none'};
   }
   else {
@@ -94,7 +94,7 @@ sub process {
 
     $result->{error} = $self->error if $result->{action} eq 'deny';
 
-    DEBUG('MATCHED: ' . $result->{action});
+    # DEBUG('MATCHED: ' . $result->{action});
 
     return $result;
   }

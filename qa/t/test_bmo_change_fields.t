@@ -32,7 +32,7 @@ set_parameters($sel,
   {'Rules' => {'change_field_rules' => {type => 'text', value => $rules}}});
 
 # Create cf_cab_review
-create_custom_field($sel, 'cf_cab_review', 'Change Request');
+check_custom_field($sel, 'cf_cab_review', 'Change Request');
 add_values_custom_field(
   $sel, 'cf_cab_review',
   'Change Request',
@@ -40,11 +40,11 @@ add_values_custom_field(
 );
 
 # Create cf_colo_site (from cf_setters in extensions/BMO/lib/Data.pm)
-create_custom_field($sel, 'cf_colo_site', 'colo-trip');
+check_custom_field($sel, 'cf_colo_site', 'colo-trip');
 add_values_custom_field($sel, 'cf_colo_site', 'colo-trip', ['ams1', 'ber3']);
 
 # Create infra group
-create_group($sel, 'infra', 'Infrastructure-related Bugs');
+check_group($sel, 'infra', 'Infrastructure-related Bugs');
 
 # Add the privileged user to the new infra group
 add_user_group(
@@ -54,7 +54,7 @@ add_user_group(
 );
 
 # Create rank-setters group
-create_group($sel, 'rank-setters', 'Rank Setters');
+check_group($sel, 'rank-setters', 'Rank Setters');
 
 # Add the privileged user to the new infra group
 add_user_group(

@@ -46,8 +46,8 @@ use base qw(Exporter);
   check_user
   check_version
   create_bug
-  create_custom_field
-  create_group
+  check_custom_field
+  check_group
   delete_custom_field
   delete_group
   edit_bug
@@ -524,12 +524,10 @@ sub check_product {
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Select product");
 
-  my $product_description = "$product Description";
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$product_description/) {
-
-    # Product exists already
+  my $url_product = url_quote($product);
+  if ($sel->is_element_present(
+    "//a[contains(\@href, '/editproducts.cgi?action=edit&product=$url_product')]"))
+  {
     return 1;
   }
 
@@ -537,14 +535,14 @@ sub check_product {
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Add Product");
   $sel->type_ok("product",     $product);
-  $sel->type_ok("description", $product_description);
+  $sel->type_ok("description", "$product Description");
   $sel->type_ok("version",     $version) if $version;
   $sel->select_ok("security_group_id",   "label=core-security");
   $sel->select_ok("default_op_sys_id",   "label=Unspecified");
   $sel->select_ok("default_platform_id", "label=Unspecified");
   $sel->click_ok('//input[@type="submit" and @value="Add"]');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $text = trim($sel->get_text("message"));
+  my $text = trim($sel->get_text("message"));
   ok(
     $text
       =~ /You will need to add at least one component before anyone can enter bugs against this product/,
@@ -556,24 +554,22 @@ sub check_product {
 
 sub check_component {
   my ($sel, $product, $component) = @_;
-  my $config = get_config();
+  my $config        = get_config();
+  my $url_product   = url_quote($product);
+  my $url_component = url_quote($component);
 
   go_to_admin($sel);
   $sel->click_ok("link=components");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Edit components for which product?");
-
   $sel->click_ok(
-    "//*[\@id='bugzilla-body']//a[normalize-space(text())='$product']");
+    "//a[contains(\@href, '/editcomponents.cgi?product=$url_product')]");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Select component of product '$product'");
 
-  my $component_description = "$component Description";
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$component_description/) {
-
-    # Component exists already
+  if ($sel->is_element_present(
+    "//a[contains(\@href, '/editcomponents.cgi?action=edit&component=$url_component')]"))
+  {
     return 1;
   }
 
@@ -582,56 +578,21 @@ sub check_component {
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Edit components for which product?");
   $sel->click_ok(
-    "//*[\@id='bugzilla-body']//a[normalize-space(text())='$product']");
+    "//a[contains(\@href, '/editcomponents.cgi?product=$url_product')]");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Select component of product '$product'");
   $sel->click_ok("link=Add");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Add component to the $product product");
   $sel->type_ok("component",    $component);
-  $sel->type_ok("description",  $component_description);
+  $sel->type_ok("description",  "$component Description");
   $sel->type_ok("initialowner", $config->{'admin_user_login'});
   $sel->click_ok('//input[@type="submit" and @value="Add"]');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Component Created");
-  $text = trim($sel->get_text("message"));
+  my $text = trim($sel->get_text("message"));
   ok($text eq "The component $component has been created.",
     "Component successfully created");
-
-  return 1;
-}
-
-sub check_group {
-  my ($sel, $group) = @_;
-  my $config = get_config();
-
-  go_to_admin($sel);
-  $sel->click_ok("link=Groups");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("Edit Groups");
-
-  my $group_description = "$group Description";
-
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$group_description/) {
-
-    # Group exists already
-    return 1;
-  }
-
-  $sel->title_is("Edit Groups");
-  $sel->click_ok("link=Add Group");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("Add group");
-  $sel->type_ok("name",  $group);
-  $sel->type_ok("desc",  $group_description);
-  $sel->type_ok("owner", $config->{'admin_user_login'});
-  $sel->check_ok("isactive");
-  $sel->check_ok("insertnew");
-  $sel->click_ok("create");
-  $sel->wait_for_page_to_load(WAIT_TIME);
-  $sel->title_is("New Group Created");
-  my $group_id = $sel->get_value("group_id");
 
   return 1;
 }
@@ -647,10 +608,7 @@ sub check_version {
     "//*[\@id='bugzilla-body']//a[normalize-space(text())='$product']");
   $sel->wait_for_page_to_load(WAIT_TIME);
 
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$version/) {
-
-    # Version exists already
+  if ($sel->is_element_present("//a[normalize-space(text())=\"$version\"]")) {
     return 1;
   }
 
@@ -676,10 +634,7 @@ sub check_user {
   $sel->click_ok("search");
   $sel->wait_for_page_to_load(WAIT_TIME);
 
-  my $text = trim($sel->get_text("bugzilla-body"));
-  if ($text =~ /$user/) {
-
-    # User exists already
+  if ($sel->is_element_present("//a[normalize-space(text())=\"$user\"]")) {
     return 1;
   }
 
@@ -696,12 +651,17 @@ sub check_user {
   return 1;
 }
 
-sub create_custom_field {
+sub check_custom_field {
   my ($sel, $field_name, $field_desc, $type) = @_;
   $type ||= 'Drop Down';
 
   go_to_admin($sel);
   $sel->click_ok('link=Custom Fields');
+
+  if ($sel->is_element_present("//a[normalize-space(text())=\"$field_name\"]")) {
+    return 1;
+  }
+
   $sel->click_ok('link=Add a new custom field');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is('Add a new Custom Field');
@@ -712,6 +672,8 @@ sub create_custom_field {
   $sel->click_ok('create');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is('Custom Field Created');
+
+  return 1;
 }
 
 sub add_values_custom_field {
@@ -733,16 +695,24 @@ sub add_values_custom_field {
     $sel->type_ok('sortkey', '0');
     $sel->click_ok('create');
   }
+
+  return 1;
 }
 
-sub create_group {
+sub check_group {
   my ($sel, $group_name, $group_desc) = @_;
   my $config = get_config();
+  $group_desc ||= "$group_name Description";
 
   go_to_admin($sel);
   $sel->click_ok('link=Groups');
   $sel->wait_for_page_to_load(WAIT_TIME);
   $sel->title_is('Edit Groups');
+
+  if ($sel->is_element_present("//a[normalize-space(text())=\"$group_name\"]")) {
+    return 1;
+  }
+
   $sel->click_ok('link=Add Group');
   $sel->wait_for_page_to_load(WAIT_TIME);
   $sel->title_is('Add group');
@@ -750,10 +720,12 @@ sub create_group {
   $sel->type_ok('desc', $group_desc);
   $sel->type_ok('owner', $config->{'admin_user_login'});
   $sel->check_ok('isactive');
-  $sel->uncheck_ok('insertnew');
+  $sel->check_ok('insertnew');
   $sel->click_ok('create');
   $sel->wait_for_page_to_load(WAIT_TIME);
   $sel->title_is('New Group Created');
+
+  return 1;
 }
 
 sub add_user_group {
@@ -782,6 +754,8 @@ sub add_user_group {
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("User $login updated");
   $sel->is_text_present_ok("The account has been added to the $group group");
+
+  return 1;
 }
 
 1;

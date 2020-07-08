@@ -172,8 +172,6 @@ check_group($sel, 'infra');
 #$sel->is_text_present_ok('has been added to the database', 'Bug created');
 #my $presentation_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
-check_component($sel, 'mozilla.org', 'Discussion Forums');
-
 #mozlist
 
 check_version($sel, 'mozilla.org', 'other');

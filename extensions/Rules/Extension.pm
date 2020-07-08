@@ -18,8 +18,8 @@ use TOML qw(from_toml);
 use Bugzilla::Constants;
 use Bugzilla::Logging;
 use Bugzilla::Status;
+use Bugzilla::Util qw(datetime_from);
 
-use Bugzilla::Extension::BMO::Data;
 use Bugzilla::Extension::Rules::Rule;
 
 our $VERSION = '0.01';
@@ -70,6 +70,46 @@ sub bug_check_can_change_field {
 
         # Explicitly allow
         push @{$priv_results}, PRIVILEGES_REQUIRED_NONE;
+      }
+    }
+
+    if ($user->in_group('canconfirm', $bug->{'product_id'})) {
+
+      # Canconfirm is really "cantriage"; users with canconfirm can also mark
+      # bugs as DUPLICATE, WORKSFORME, and INCOMPLETE.
+      if ( $field eq 'bug_status'
+        && is_open_state($old_value)
+        && !is_open_state($new_value))
+      {
+        push(@$priv_results, PRIVILEGES_REQUIRED_NONE);
+      }
+      elsif (
+        $field eq 'resolution'
+        && ( $new_value eq 'DUPLICATE'
+          || $new_value eq 'WORKSFORME'
+          || $new_value eq 'INCOMPLETE'
+          || ($old_value eq '' && $new_value eq '1'))
+        )
+      {
+        push(@$priv_results, PRIVILEGES_REQUIRED_NONE);
+      }
+      elsif ($field eq 'dup_id') {
+        push(@$priv_results, PRIVILEGES_REQUIRED_NONE);
+      }
+    }
+    elsif ($field eq 'bug_status') {
+
+      # Disallow reopening of bugs which have been resolved for > 1 year
+      if ( is_open_state($new_value)
+        && !is_open_state($old_value)
+        && $bug->resolution eq 'FIXED')
+      {
+        my $days_ago = DateTime->now(time_zone => Bugzilla->local_timezone);
+        $days_ago->subtract(days => 365);
+        my $last_closed = datetime_from($bug->last_closed_date);
+        if ($last_closed lt $days_ago) {
+          push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+        }
       }
     }
 

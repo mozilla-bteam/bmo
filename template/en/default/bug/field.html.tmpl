@@ -156,7 +156,12 @@
               option_id = "v" _ legal_value.id _ "_" _ field.name;
               disabled = bug AND !legal_value.is_visible_on_bug(bug);
             %]
-            [% NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name) OR selected %]
+            [%# Purpose: hide field values from those who can't change them %]
+            [% IF field.type == constants.FIELD_TYPE_SINGLE_SELECT %]
+              [% curr_bug = bug || default %]
+              [% NEXT UNLESS curr_bug.check_can_change_field(field.name, '---', legal_value.name) OR
+                             selected %]
+            [% END %]
             [% IF field.name == "resolution" &&
                legal_value.name != bug.resolution %]
               [% r = legal_value.name %]
