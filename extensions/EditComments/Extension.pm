@@ -98,24 +98,22 @@ sub page_before_template {
 
 BEGIN {
   no warnings 'redefine';
-  *Bugzilla::Comment::edit_count = \&_edit_count;
-  *Bugzilla::Comment::is_editable_by = \&_is_editable_by;
-  *Bugzilla::Comment::activity   = \&_get_activity;
+  *Bugzilla::Comment::edit_count          = \&_comment_edit_count;
+  *Bugzilla::Comment::is_editable_by      = \&_comment_is_editable_by;
+  *Bugzilla::Comment::activity            = \&_comment_get_activity;
+  *Bugzilla::User::can_edit_comments      = \&_user_can_edit_comments;
+  *Bugzilla::User::is_edit_comments_admin = \&_user_is_edit_comments_admin;
 }
 
-sub _edit_count { return $_[0]->{'edit_count'}; }
+sub _comment_edit_count { return $_[0]->{'edit_count'}; }
 
-sub _is_editable_by {
+sub _comment_is_editable_by {
   my ($self, $user) = @_;
   # Note: Does not verify that the bug is visible or editable by the user; the calling
   # code needs to perform this validation at the bug level.
 
-  # Insiders can always edit all comments
-  return 1 if $user->is_insider;
-
-  # Need to be a member of edit_comments_group
-  my $edit_comments_group = Bugzilla->params->{edit_comments_group};
-  return 0 unless $edit_comments_group && $user->in_group($edit_comments_group);
+  # Need to be able to edit comments via group membership
+  return 0 unless $user->can_edit_comments;
 
   # Can always edit your own comments
   return 1 if $self->author->id == $user->id;
@@ -128,7 +126,7 @@ sub _is_editable_by {
   return 0;
 }
 
-sub _get_activity {
+sub _comment_get_activity {
   my ($self, $activity_sort_order) = @_;
 
   return $self->{'activity'} if $self->{'activity'};
@@ -162,7 +160,6 @@ sub _get_activity {
       {
         author       => Bugzilla::User->new({id => $revision->{userid}, cache => 1}),
         created_time => $revision->{time},
-        old          => $revision->{old},
         revised_time => $current ? undef : $prev_rev->{time},
         new          => $current ? $self->body : $prev_rev->{old},
         is_hidden    => $current ? 0 : $prev_rev->{is_hidden},
@@ -199,6 +196,29 @@ sub _get_activity {
   return $self->{'activity'};
 }
 
+sub _user_can_edit_comments {
+  my ($self) = @_;
+  # Checks that edit-comments is enabled, and if the user is a member of a group
+  # controlling it, or if the user is an edit-comments-admin.
+
+  my $edit_comments_group = Bugzilla->params->{edit_comments_group};
+
+  return $self->{can_edit_comments} //=
+    $self->is_edit_comments_admin()
+    || ($edit_comments_group && $self->in_group($edit_comments_group));
+}
+
+sub _user_is_edit_comments_admin {
+  my ($self) = @_;
+  # Checks that edit-all-comments is enabled, and if the user is a member of a group
+  # controlling it.
+
+  my $edit_comments_admins_group = Bugzilla->params->{edit_comments_admins_group};
+
+  return $self->{is_edit_comments_admin} //=
+    $edit_comments_admins_group && $self->in_group($edit_comments_admins_group);
+}
+
 #########
 # Hooks #
 #########
@@ -214,13 +234,9 @@ sub object_columns {
 sub bug_end_of_update {
   my ($self, $args) = @_;
 
-  # Silently return if not in the proper group
-  # or if editing comments is disabled
-  my $user                = Bugzilla->user;
-  my $edit_comments_group = Bugzilla->params->{edit_comments_group};
-  return
-    unless $user->is_insider
-    || $edit_comments_group && $user->in_group($edit_comments_group);
+  # Silently return if not in the proper group or if editing comments is disabled
+  my $user = Bugzilla->user;
+  return unless $user->can_edit_comments();
 
   my $bug       = $args->{bug};
   my $timestamp = $args->{timestamp};
@@ -244,9 +260,9 @@ sub bug_end_of_update {
     my $old_comment = $comment_obj->body;
     next if $old_comment eq $new_comment;
 
-    # Insiders can hide comment revisions where needed
+    # edit_comments_admins_group members can hide comment revisions where needed
     my $is_hidden
-      = (  $user->is_insider
+      = (  $user->is_edit_comments_admin
         && defined $params->{"edit_comment_checkbox_$comment_id"}
         && $params->{"edit_comment_checkbox_$comment_id"} == 'on') ? 1 : 0;
 
@@ -286,6 +302,14 @@ sub config_modify_panels {
     };
   push @{$args->{panels}->{groupsecurity}->{params}},
     {
+    name    => 'edit_comments_admins_group',
+    type    => 's',
+    choices => \&get_all_group_names,
+    default => 'admin',
+    checker => \&check_group
+    };
+  push @{$args->{panels}->{groupsecurity}->{params}},
+    {
     name    => 'allow_global_initial_comment_editing',
     type    => 'b',
     default => 1
@@ -297,9 +321,10 @@ sub get_bug_activity {
 
   return unless $args->{include_comment_activity};
 
-  my $list       = $args->{list};
-  my $starttime  = $args->{start_time};
-  my $is_insider = Bugzilla->user->is_insider;
+  my $list               = $args->{list};
+  my $starttime          = $args->{start_time};
+  my $is_insider         = Bugzilla->user->is_insider;
+  my $is_comments_admin  = Bugzilla->user->is_edit_comments_admin;
   my $hidden_placeholder = '(Hidden by Administrator)';
 
   my $query = "SELECT DISTINCT(c.comment_id) from longdescs_activity AS a

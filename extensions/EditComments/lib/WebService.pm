@@ -110,9 +110,9 @@ sub update_comment {
   my $dbh         = Bugzilla->dbh;
   my $change_when = $dbh->selectrow_array('SELECT NOW()');
 
-  # Insiders can hide comment revisions where needed
+  # edit_comments_admins_group members can hide comment revisions where needed
   my $is_hidden
-    = (  $user->is_insider
+    = (  $user->is_edit_comments_admin
       && defined $params->{is_hidden}
       && $params->{is_hidden} == 1) ? 1 : 0;
 
@@ -157,10 +157,10 @@ sub modify_revision {
   my ($self, $params) = @_;
   my $user = Bugzilla->login(LOGIN_REQUIRED);
 
-  # Only allow insiders to modify revisions
+  # Only allow edit_comments_admins_group members to modify revisions
   ThrowUserError('auth_failure',
-    {group => 'insidergroup', action => 'view', object => 'editcomments'})
-    unless $user->is_insider;
+    {group => 'edit_comments_admins_group', action => 'view', object => 'editcomments'})
+    unless $user->is_edit_comments_admin;
 
   my $comment_id
     = (defined $params->{comment_id} && $params->{comment_id} =~ /^(\d+)$/)
