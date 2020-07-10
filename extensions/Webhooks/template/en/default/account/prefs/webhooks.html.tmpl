@@ -2,7 +2,7 @@
   # License, v. 2.0. If a copy of the MPL was not distributed with this
   # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # This Source Code Form is  |  "Incompatible With Secondary Licenses", as
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
@@ -38,20 +38,7 @@ function onSelectProduct() {
     // support IE
     component.add(new Option('__Any__', ''), 0);
   }
-  if ('[% add_component FILTER js %]' != ''
-      && bz_valueSelected(document.getElementById('product'), '[% add_product FILTER js %]')
-  ) {
-    var index = bz_optionIndex(document.getElementById('component'), '[% add_component FILTER js %]');
-    if (index != -1)
-      document.getElementById('component').options[index].selected = true;
-  }
-  onSelectComponent();
-}
-
-function onSelectComponent() {
-  var product_select = document.getElementById('product');
-  var product = product_select.options[product_select.selectedIndex].value;
-  var component = document.getElementById('component').value;
+  document.getElementById('component').options[0].selected = true;
 }
 
 function onRemoveChange() {
@@ -66,7 +53,6 @@ function onRemoveChange() {
 }
 
 window.onload = function() {
-  onSelectComponent();
   onSelectProduct();
   onRemoveChange();
 };
@@ -74,7 +60,7 @@ window.onload = function() {
 
 <p>
   It will be sent a POST request with the information of the [% terms.bugs %] that match with the events and filters selected to your URL.<br>
-  Documentation about webhooks is available <a href="">here</a>.
+  Documentation about webhooks is available <a href="page.cgi?id=webhooks.html">here</a>.
 </p>
 
 <table border="0" cellpadding="3" cellspacing="0">
@@ -91,10 +77,10 @@ window.onload = function() {
 <p>Select the events you want to receive.</p>
 <p>
   <input type="checkbox" id="create_event" name="create_event" value="1">
-  <label>Create</label>
+  <label for="create_event">Create</label>
 <br>
   <input type="checkbox" id="change_event" name="change_event" value="1">
-  <label>Change</label>
+  <label for="change_event">Change</label>
 </p>
 <h4>Filters</h4>
 <p>
@@ -102,30 +88,29 @@ window.onload = function() {
 </p>
 <table border="0" cellpadding="3" cellspacing="0">
 <tr>
-  <th align="right">Product:</th>
-  <td colspan="2">
+  <th>Product:</th>
+  <td>
     <select name="add_product" id="product" onChange="onSelectProduct()">
     [% FOREACH product IN selectable_products %]
-      <option [% 'selected' IF add_product == product.name %]>
-        [%~ product.name FILTER html %]</option>
+      <option>[% product.name FILTER html %]</option>
     [% END %]
     </select>
   </td>
 </tr>
 <tr>
-  <th align="right">Component:</th>
-  <td colspan="2">
-    <select name="add_component" id="component" onChange="onSelectComponent()>
+  <th>Component:</th>
+  <td>
+    <select name="add_component" id="component">
       <option value="">__Any__</option>
     [% FOREACH product IN selectable_products %]
       [% FOREACH component IN product.components %]
-        <option [% 'selected' IF add_component == component.name %]>
-          [%~ component.name FILTER html %]</option>
+        <option>[% component.name FILTER html %]</option>
       [% END %]
     [% END %]
-    </select><br>
+    </select>
   </td>
 </tr>
+<br>
 <tr>
   <td>&nbsp;</td>
   <td><input type="submit" id="add_webhook" name="add_webhook" value="Add"></td>
@@ -176,7 +161,7 @@ window.onload = function() {
 [% ELSE %]
 
   <p>
-    <i>You do not have any webhook.</i>
+    <i>You do not have any webhooks.</i>
   </p>
 
 [% END %]

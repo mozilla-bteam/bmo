@@ -81,30 +81,30 @@ sub user_preferences {
       my $params = {user_id => Bugzilla->user->id,};
 
       if ($input->{name} eq '') {
-        ThrowUserError('define_a_name');
+        ThrowUserError('webhooks_define_name');
       }
       else {
         $params->{name} = $input->{name};
       }
 
       if ($input->{url} eq '') {
-        ThrowUserError('define_a_url');
+        ThrowUserError('webhooks_define_url');
       }
       else {
         $params->{url} = $input->{url};
       }
 
-      if ($input->{create_event} == 1 && $input->{change_event} == 1) {
+      if ($input->{create_event} && $input->{change_event}) {
         $params->{event} = 'create,change';
       }
-      elsif ($input->{create_event} == 1) {
+      elsif ($input->{create_event}) {
         $params->{event} = 'create';
       }
-      elsif ($input->{change_event} == 1) {
+      elsif ($input->{change_event}) {
         $params->{event} = 'change';
       }
       else {
-        ThrowUserError('select_an_event');
+        ThrowUserError('webhooks_select_event');
       }
 
       my $product_name = $input->{add_product};
