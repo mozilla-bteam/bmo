@@ -115,6 +115,9 @@ sub _comment_is_editable_by {
   # Need to be able to edit comments via group membership
   return 0 unless $user->can_edit_comments;
 
+  # Comment admins can edit any comment
+  return 1 if $user->is_edit_comments_admin;
+
   # Can always edit your own comments
   return 1 if $self->author->id == $user->id;
 
