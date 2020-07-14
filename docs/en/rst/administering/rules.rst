@@ -33,6 +33,8 @@ a Bugzilla instance in the Administration screens.
 
 Write rules using the `TOML format <https://github.com/toml-lang/toml>`_.
 
+.. _example_rules:
+
 Example rules
 =============
 
@@ -80,6 +82,8 @@ Example rules
     [rule.condition]
         Bug_status = “RESOLVED”
         not_user_group = "editbugs"
+
+.. _rules_properties:
 
 Rules properties
 ================
