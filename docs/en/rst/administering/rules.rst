@@ -169,3 +169,4 @@ condition
         a list of groups, at least one of which the user is a member of, for the rule to be valid
     *not_user_group*
         a group, if the user is not a member of, then the rule is applied
+
