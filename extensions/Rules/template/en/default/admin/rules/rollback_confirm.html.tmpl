@@ -1,0 +1,40 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+  PROCESS global/variables.none.tmpl;
+  PROCESS global/header.html.tmpl
+    title      = "Rules Rollback Connfirm"
+    style_urls = ['extensions/Rules/web/styles/activity.css']
+%]
+
+<h2>Rules Rollback Confirm</h2>
+
+<article class="change">
+  <header>
+    <span class="metadata">
+      Change made by [% INCLUDE bug_modal/user.html.tmpl u=activity.who %]
+      on <time datetime="[% activity.when FILTER html %]">[% activity.when FILTER time %]</time>
+    </span>
+  </header>
+  <div class="body">
+    <pre class="bz_comment_text">
+      [% activity.rules FILTER html %]
+    </pre>
+  </div>
+</article>
+
+<form action="/admin/rules/rollback/[% activity.id FILTER uri %]" method="POST">
+  <input type="hidden" id="token" name="token" value="[% token FILTER html %]">
+  <input type="hidden" id="id" name="id" value="[% activity.id FILTER html %]">
+  <input type="submit" id="submit" name="submit" value="Submit">
+</form>
+
+<p>Back to <a href="[% basepath FILTER none %]editparams.cgi?section=rules">Rules Administration</a></p>
+
+[% PROCESS global/footer.html.tmpl %]

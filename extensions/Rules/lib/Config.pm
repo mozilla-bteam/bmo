@@ -11,12 +11,11 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use Data::Dumper;
 use TOML qw(from_toml);
 use Try::Tiny;
 
 use Bugzilla::Config::Common;
-use Bugzilla::Logging;
+use Bugzilla::Extension::Rules::Activity;
 
 our $sortkey = 1300;
 
@@ -26,26 +25,41 @@ sub get_param_list {
   my @params = (
     {name => 'change_field_rules_enabled', type => 'b', default => 0},
     {
-      name    => 'change_field_rules',
-      type    => 'l',
-      default => '',
-      checker => sub {
-        my ($toml) = @_;
-
-        # Must be valid YAML
-        try {
-          my ($data, $err) = from_toml($toml);
-          die $err if $err;
-          return '';
-        }
-        catch {
-          return "Must be valid TOML: $_";
-        };
-      }
+      name           => 'change_field_rules',
+      type           => 'l',
+      default        => '',
+      checker        => \&_rules_checker,
+      post_set_param => \&_post_set_param,
     }
   );
 
   return @params;
+}
+
+sub _rules_checker {
+  my ($toml) = @_;
+
+  # Must be valid YAML
+  try {
+    my ($data, $err) = from_toml($toml);
+    die $err if $err;
+  }
+  catch {
+    return "Must be valid TOML: $_";
+  };
+
+  return '';
+}
+
+sub _post_set_param {
+  my ($toml) = @_;
+
+  # Store the new version in the activity table
+  if (Bugzilla->params->{change_field_rules} ne $toml) {
+    Bugzilla::Extension::Rules::Activity->log_activity($toml);
+  }
+
+  return '';
 }
 
 1;

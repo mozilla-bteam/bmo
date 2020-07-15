@@ -1,0 +1,43 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+  PROCESS global/variables.none.tmpl;
+  PROCESS global/header.html.tmpl
+    title      = "Rules Activity"
+    style_urls = ['extensions/Rules/web/styles/activity.css']
+%]
+
+<h2>Rules Activity</h2>
+
+[% FOREACH a = activity %]
+  <article class="change">
+    <header>
+      <span class="metadata">
+        Change made by [% INCLUDE bug_modal/user.html.tmpl u=a.who %]
+        on <time datetime="[% a.when FILTER html %]">[% a.when FILTER time %]</time>
+      </span>
+      <span class="actions">
+        <a href="/admin/rules/rollback/[% a.id FILTER uri %]">Rollback to this version</a>
+      </span>
+    </header>
+    <div class="body">
+      <pre class="bz_comment_text">
+        [% a.rules FILTER html %]
+      </pre>
+    </div>
+  </article>
+[% END %]
+
+[% IF !activity.size %]
+  <p><em>No Rules Activity.</em></p>
+[% END %]
+
+<p>Back to <a href="[% basepath FILTER none %]editparams.cgi?section=rules">Rules Administration</a></p>
+
+[% PROCESS global/footer.html.tmpl %]

@@ -88,6 +88,13 @@ sub SetParam {
     die "Param $name is not valid: $err" unless $err eq '';
   }
 
+  # Some extensions may need to perform other operations
+  # if a param has changed, etc.
+  if (exists $entry->{'post_set_param'}) {
+    my $err = $entry->{'post_set_param'}->($value, $entry);
+    die "Param $name post set param failure: $err" unless $err eq '';
+  }
+
   Bugzilla->params->{$name} = $value;
 }
 

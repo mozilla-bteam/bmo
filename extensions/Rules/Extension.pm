@@ -20,9 +20,16 @@ use Bugzilla::Logging;
 use Bugzilla::Status;
 use Bugzilla::Util qw(datetime_from);
 
+use Bugzilla::Extension::Rules::Activity;
 use Bugzilla::Extension::Rules::Rule;
 
 our $VERSION = '0.01';
+
+sub app_startup {
+  my ($self, $args) = @_;
+  my $routes = $args->{app}->routes;
+  Bugzilla::Extension::Rules::Activity->setup_routes($routes);
+}
 
 sub config_add_panels {
   my ($self, $args) = @_;
@@ -115,6 +122,29 @@ sub bug_check_can_change_field {
 
     return;
   }
+}
+
+################
+# Installation #
+################
+
+sub db_schema_abstract_schema {
+  my ($self, $args) = @_;
+  my $schema = $args->{schema};
+
+  $schema->{'rules_activity'} = {
+    FIELDS => [
+      id  => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      who => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'}
+      },
+      change_when => {TYPE => 'DATETIME', NOTNULL => 1},
+      rules       => {TYPE => 'LONGTEXT', NOTNULL => 1},
+    ],
+    INDEXES => [rules_activity_change_when_idx => ['change_when'],],
+  };
 }
 
 __PACKAGE__->NAME;

@@ -188,6 +188,9 @@ sub startup {
 
   $self->setup_routes;
 
+  # Allow extensions to add routes of their own for extra functionality
+  push @{$self->routes->namespaces}, 'Bugzilla::Extension';
+
   Bugzilla::Hook::process('app_startup', {app => $self});
 }
 
