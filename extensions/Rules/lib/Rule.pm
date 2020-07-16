@@ -8,7 +8,9 @@
 package Bugzilla::Extension::Rules::Rule;
 
 use 5.10.1;
+
 use Data::Dumper;
+use Mojo::Util qw(trim);
 use Moo;
 use List::Util qw(any none);
 use Types::Standard -all;
@@ -40,12 +42,13 @@ has new_value => (is => 'ro', isa => Str);
 sub BUILDARGS {
   my ($class, $params) = @_;
 
-  $params->{action}    = $params->{rule}->{action};
+  $params->{name}   = trim $params->{rule}->{name}  || '';
+  $params->{error}  = trim $params->{rule}->{error} || '';
+  $params->{action} = $params->{rule}->{action};
+
+  $params->{filter}    = $params->{rule}->{filter};
   $params->{change}    = $params->{rule}->{change};
   $params->{condition} = $params->{rule}->{condition};
-  $params->{error}     = $params->{rule}->{error};
-  $params->{filter}    = $params->{rule}->{filter};
-  $params->{name}      = $params->{rule}->{name};
 
   delete $params->{rule};
 
@@ -73,35 +76,37 @@ sub process {
 
   # If we have not fully matched by this point we ignore this rule
   if (any { $_ == 0 } @{$matches}) {
+
     # DEBUG('NO MATCH');
     return {name => $self->name, action => 'none'};
   }
-  else {
-    my $result = {name => $self->name, action => 'allow'};
 
-    # Process actions since we matched
-    my $actions = ref $self->action ? $self->action : [$self->action];
+  my $result = {name => $self->name, action => 'allow'};
 
-    # cannot_create means we disallow this change for new bugs
-    if (any { $_ eq 'cannot_create' } @{$actions} && !$self->bug->id) {
-      $result->{action} = 'deny';
-    }
+  # Process actions since we matched
+  my $actions = ref $self->action ? $self->action : [$self->action];
 
-    # cannot_update means we disallow this change for any bug, even current
-    if (any { $_ eq 'cannot_update' || $_ eq 'cannot_comment' } @{$actions}) {
-      $result->{action} = 'deny';
-    }
-
-    $result->{error} = $self->error if $result->{action} eq 'deny';
-
-    # DEBUG('MATCHED: ' . $result->{action});
-
-    return $result;
+  # cannot_create means we disallow this change for new bugs
+  if (any { trim $_ eq 'cannot_create' } @{$actions} && !$self->bug->id) {
+    $result->{action} = 'deny';
   }
+
+  # cannot_update means we disallow this change for any bug, even current
+  if (any { trim $_ eq 'cannot_update' || trim $_ eq 'cannot_comment' }
+    @{$actions})
+  {
+    $result->{action} = 'deny';
+  }
+
+  $result->{error} = $self->error if $result->{action} eq 'deny';
+
+  # DEBUG('MATCHED: ' . $result->{action});
+
+  return $result;
 }
 
 #############################
-#      Privcate Methods     #
+#      Private Methods      #
 #############################
 
 sub _process_filters {
@@ -114,7 +119,7 @@ sub _process_filters {
 
         my $found = 0;
         foreach my $value (@{$values}) {
-          if ($value eq $self->bug->$item) {
+          if (trim $value eq $self->bug->$item) {
             $found = 1;
             last;
           }
@@ -137,14 +142,14 @@ sub _process_changes {
     foreach my $full_item (qw(new_value old_value not_new_value not_old_value)) {
       if (my $values = $change->{$full_item}) {
         my $item = $full_item;
-        my $not = $item =~ /^not_/ ? 1 : 0;
+        my $not  = $item =~ /^not_/ ? 1 : 0;
         $item =~ s/^not_//;
 
         $values = ref $values ? $values : [$values];
 
         my $matched = 0;
-        $matched = 1 if ($not && none { $_ eq $self->$item } @{$values});
-        $matched = 1 if (!$not && any { $_ eq $self->$item } @{$values});
+        $matched = 1 if ($not  && none { trim $_ eq $self->$item } @{$values});
+        $matched = 1 if (!$not && any { trim $_ eq $self->$item } @{$values});
 
         push @{$matches}, $matched;
       }
@@ -165,7 +170,7 @@ sub _process_conditions {
 
       my $in_group = 0;
       foreach my $value (@{$values}) {
-        if ($self->user->in_group($value)) {
+        if ($self->user->in_group(trim $value)) {
           $in_group = 1;
           last;
         }
@@ -177,14 +182,14 @@ sub _process_conditions {
     foreach my $full_item (qw(bug_status not_bug_status)) {
       if (my $values = $condition->{$full_item}) {
         my $item = $full_item;
-        my $not = $item =~ /^not_/ ? 1 : 0;
+        my $not  = $item =~ /^not_/ ? 1 : 0;
         $item =~ s/^not_//;
 
         $values = ref $values ? $values : [$values];
 
         my $matched = 0;
-        $matched = 1 if ($not && none { $_ eq $self->bug->$item } @{$values});
-        $matched = 1 if (!$not && any { $_ eq $self->bug->$item } @{$values});
+        $matched = 1 if ($not  && none { trim $_ eq $self->bug->$item } @{$values});
+        $matched = 1 if (!$not && any { trim $_ eq $self->bug->$item } @{$values});
 
         push @{$matches}, $matched;
       }
@@ -207,6 +212,5 @@ sub _debug_info {
   DEBUG('current_bug_status: ', $self->bug->bug_status);
   DEBUG('not_new_value: ' . Dumper $self->change->{not_new_value});
 }
-
 
 1;

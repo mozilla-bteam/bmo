@@ -473,11 +473,15 @@ if ($default_security_group) {
 # Set Parameters
 ##########################################################################
 
+my $rules = do { local $/ = undef; <DATA> };
+
 my %set_params = (
   allowbugdeletion          => 1,
   allowuserdeletion         => 0,
   allow_attachment_deletion => 1,
   bonsai_url                => 'http://bonsai.mozilla.org',
+  change_field_rules_enabled => 1,
+  change_field_rules         => $rules,
   collapsed_comment_tags =>
     'obsolete,spam,typo,me-too,advocacy,off-topic,offtopic,abuse,abusive',
   confirmuniqueusermatch => 0,
@@ -765,3 +769,106 @@ foreach my $kw (@keywords) {
 }
 
 print "installation and configuration complete!\n";
+
+__DATA__
+# This will create an array of rules in TOML
+[[rule]]
+  # Prevent users not in infra group from updating cf_cab_review
+  name = "cab review"
+  error = "You cannot update the cab review field"
+  action = ["cannot_create", "cannot_update"]
+  [rule.change]
+    field = "cf_cab_review"
+    not_new_value = ["1","?"]
+  [rule.condition]
+    not_user_group = "infra"
+[[rule]]
+  # Prevent users not in infra group from updating cf_colo_site
+  name = "colo site"
+  error = "You cannot update the colo site field"
+  action = ["cannot_create", "cannot_update"]
+  [rule.change]
+    field = "cf_colo_site"
+  [rule.condition]
+    not_user_group = ["infra", "build"]
+[[rule]]
+  # Prevent users not in rank-setters group from updating cf_rank
+  name = "rank"
+  error = "You cannot update the rank field"
+  action = ["cannot_create", "cannot_update"]
+  [rule.change]
+    field = "cf_rank"
+  [rule.condition]
+    not_user_group = "rank-setters"
+[[rule]]
+  # User without editbugs cannot update a bug closed as VERIFIED
+  name = "reopen verified"
+  error = "You cannot update VERIFIED bug without editbugs."
+  action = ["cannot_update"]
+  [rule.change]
+    field = "bug_status"
+  [rule.condition]
+    bug_status = "VERIFIED"
+    not_user_group = "editbugs"
+[[rule]]
+  # User without editbugs cannot update bug closed as VERIFIED
+  name = "duplicate verified"
+  error = "You cannot update VERIFIED bug without editbugs."
+  action = ["cannot_update"]
+  [rule.change]
+    field = "dup_id"
+  [rule.condition]
+    bug_status = "VERIFIED"
+    not_user_group = "editbugs"
+[[rule]]
+  # User without editbugs cannot update a bug closed as VERIFIED
+  name = "resolution verified"
+  error = "You cannot reopen VERIFIED bug without editbugs."
+  action = ["cannot_update"]
+  [rule.change]
+    field = "resolution"
+  [rule.condition]
+    bug_status = "VERIFIED"
+    not_user_group = "editbugs"
+[[rule]]
+  # Prevent users who aren't in editbugs from setting priority
+  name = "firefox priority"
+  error = "You cannot set the priority of a bug."
+  action = ["cannot_update","cannot_create"]
+  [rule.filter]
+    product = "Firefox"
+  [rule.change]
+    field = "priority"
+  [rule.condition]
+    not_user_group = "editbugs"
+[[rule]]
+  # Prevent users who aren't in editbugs from assigning Firefox bugs
+  name = "firefox assignee"
+  error = "You cannot assign this bug."
+  action = ["cannot_update", "cannot_create"]
+  [rule.filter]
+    product = "Firefox"
+  [rule.change]
+    field = "assigned_to"
+  [rule.condition]
+    not_user_group = "editbugs"
+[[rule]]
+  # Require canconfirm to mark a bug as FIXED
+  name = "fixed canconfirm"
+  error = "You cannot mark this bug as FIXED"
+  action = "cannot_update"
+  [rule.change]
+    field = "resolution"
+    new_value = "FIXED"
+  [rule.condition]
+    not_user_group = "canconfirm"
+[[rule]]
+  # People without editbugs can’t comment on closed bugs
+  name = "closed can comment"
+  error = "You cannot comment on closed bugs"
+  action = "cannot_comment"
+  [rule.change]
+    field = "longdesc"
+  [rule.condition]
+    bug_status = ["RESOLVED", "VERIFIED"]
+    not_user_group = "editbugs"
