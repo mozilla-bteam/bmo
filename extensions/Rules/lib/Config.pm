@@ -59,6 +59,10 @@ sub _post_set_param {
     Bugzilla::Extension::Rules::Activity->log_activity($toml);
   }
 
+  # Store rules_definitions in memcache also
+  my $data = from_toml($toml);
+  Bugzilla->memcached->set({key => 'rule_definitions', value => $data});
+
   return '';
 }
 

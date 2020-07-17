@@ -43,15 +43,28 @@ sub bug_check_can_change_field {
     = @$args{qw(bug field new_value old_value priv_results)};
   my $user          = Bugzilla->user;
   my $request_cache = Bugzilla->request_cache;
+  my $memcache      = Bugzilla->memcached;
 
   my $rules_enabled = Bugzilla->params->{change_field_rules_enabled};
   my $rules_toml    = Bugzilla->params->{change_field_rules};
 
   return if (!$rules_enabled || !$rules_toml);
 
+  # Try to load parsed TOML rule data from the request_cache
+  # first. If not available attempt to load from memcached.
+  # And finally reparse the TOML definition into Perl data
+  # and cache the result.
   my $rule_defs;
   try {
-    $rule_defs = $request_cache->{rule_defs} ||= from_toml($rules_toml);
+    $rule_defs = $request_cache->{'rule_definitions'};
+    if (!$rule_defs) {
+      $rule_defs = $memcache->get({key => 'rule_definitions'});
+      if (!$rule_defs) {
+        $rule_defs = from_toml($rules_toml);
+        $memcache->set({key => 'rule_definitions', value => $rule_defs});
+      }
+      $request_cache->{'rule_definitions'} = $rule_defs;
+    }
   }
   catch {
     FATAL("Unable to load TOML: $_");
