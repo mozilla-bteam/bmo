@@ -47,19 +47,18 @@ Example rules
     Error = "You cannot set the priority of a new bug."
     action = ["cannot_update","cannot_create"]
     [rule.filter]
-        Product = “Firefox”
+        product = “Firefox”
     [rule.change]
         field = "priority"
     [rule.condition]
         not_user_group = "editbugs"
     [[rule]]
-    # Prevent users who aren't in editbugs from assigning Firefox bugs
+    # Prevent users who aren't in editbugs from assigning Firefox or Core bugs
     name = "firefox_assignee"
     Error = "You cannot assign this bug."
     action = ["cannot_update","cannot_create"]
     [rule.fitler]
-        field = "product"
-        value = "Firefox"
+        product = ["Firefox", "Core"]
     [rule.change]
         field = "assigned_to"
     [rule.condition]
@@ -138,12 +137,25 @@ filter
 
 The available properties are:
 
+    *product*
+        a product name or array of product names
+    *component*
+        a component name or array of product names
     *field*
         the db name of a bug field such as ‘priority’ or ‘cf_status_firefox76’
     *value*
         the value of the field defined in field
 
-If there are multiple filters, use the [[rule.filter]] syntax.
+If there are multiple filters, use the `[[rule.filter]]` syntax.
+
+.. code-block::
+
+    [[rule.filter]]
+    [rule.filter]
+        product = ["Core", "Toolkit"]
+    [rule.filter]
+        field = "type"
+        value = "defect"
 
 change
     The change section enumerates the changes to a bug’s fields
@@ -169,4 +181,3 @@ condition
         a list of groups, at least one of which the user is a member of, for the rule to be valid
     *not_user_group*
         a group, if the user is not a member of, then the rule is applied
-
