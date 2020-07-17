@@ -24,3 +24,4 @@ controls are divided into several sections:
    whining
    quips
    extensions
+   rules
