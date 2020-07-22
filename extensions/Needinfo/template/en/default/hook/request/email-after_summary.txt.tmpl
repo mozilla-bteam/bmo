@@ -6,12 +6,18 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[%# Case for needinfo set for bug reporter here
-  #
-  #%]
-
 [% RETURN UNLESS flag && flag.type.name == 'needinfo' && flag.status == '?' %]
+---
+--- Hello!
+---
+--- Someone has asked for you for information about this bug.
+---
+--- Please go to [% terms.bug %] to see the question, and respond
+--- to it. If you reported this bug, then the person asking the
+--- question most-likely needs more information to understand
+--- the bug.
 ---
 --- This request has set a needinfo flag on the [% terms.bug %].
 --- You can clear it by logging in and replying in a comment.
 ---
+
