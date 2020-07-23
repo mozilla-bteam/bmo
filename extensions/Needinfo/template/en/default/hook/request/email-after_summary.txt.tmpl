@@ -8,15 +8,27 @@
 
 [% RETURN UNLESS flag && flag.type.name == 'needinfo' && flag.status == '?' %]
 ---
---- Hello!
+--- Hello from [% terms.Bugzilla %], the bug tracker for Mozilla and Firefox:
 ---
 --- Someone has asked for you for information about this [% terms.bug %].
 ---
---- Please go to [% terms.bug %] to see the question, and respond
---- to it. If you reported this [% terms.bug %], then the person asking the
---- question most-likely needs more information to understand
---- the [% terms.bug %].
+--- Please go to [%+ urlbase %]show_bug.cgi?id=[% bug.bug_id %] to see the
+--- question and respond to it.
+[% IF flag.requestee.login_name == bug.reporter.login_name %]
 ---
---- This request has set a needinfo flag on the [% terms.bug %].
---- You can clear it by logging in and replying in a comment.
+--- Since you reported this [% terms.bug %], then the person asking the
+--- question needs more information from you to understand it.
+[% END %]
+---
+--- Responding to the question will enable developers to take further
+--- action on this [% terms.bug %].
+---
+--- Please log into [% terms.Bugzilla %] and respond as soon as possible
+--- so developers may take action on this [% terms.bug %].
+---
+--- If you have questions on this report, please contact the
+--- [% terms.Bugzilla %] team on https://chat.mozilla.org/#/room/#bmo:mozilla.org.
+---
+--- Thank you,
+--- The [% terms.Bugzilla %] team
 ---
