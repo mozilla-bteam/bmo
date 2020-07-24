@@ -12,7 +12,8 @@
 ---
 --- Someone has asked for you for information about this [% terms.bug %].
 ---
---- Please go to the [% terms.bug %] URL listed above to respond.
+--- Please go to [% urlbase %]show_bug.cgi?id=[% bug.bug_id %] to respond
+--- to the question below.
 [% IF flag.requestee.login_name == bug.reporter.login_name %]
 ---
 --- Since you reported this [% terms.bug %], then the person asking the
