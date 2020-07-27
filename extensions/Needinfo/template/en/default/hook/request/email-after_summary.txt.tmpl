@@ -10,7 +10,7 @@
 ---
 --- Hello from [% terms.Bugzilla %], the [% terms.bug %] tracker for Mozilla and Firefox:
 ---
---- Someone has asked for you for information about this [% terms.bug %].
+--- Someone has asked you for information about this [% terms.bug %].
 ---
 --- Please go to [% urlbase %]show_bug.cgi?id=[% bug.bug_id %] to respond
 --- to the question below.
@@ -18,13 +18,14 @@
 ---
 --- Since you reported this [% terms.bug %], then the person asking the
 --- question needs more information from you to understand it.
-[% END %]
 ---
 --- Responding to the question will enable developers to take further
 --- action on this [% terms.bug %].
+[% ELSE %]
 ---
 --- Please log into [% terms.Bugzilla %] and respond as soon as possible
 --- so developers may take action on this [% terms.bug %].
+[% END %]
 ---
 --- If you have questions about responding to needinfo requests, please
 --- see https://mozilla.tld/some/path/to/documentation.
