@@ -63,6 +63,14 @@ sub event {
   return $_[0]->{event};
 }
 
+sub product_id {
+  return $_[0]->{product_id};
+}
+
+sub component_id {
+  return $_[0]->{component_id};
+}
+
 sub product {
   my ($self) = @_;
   return $self->{product_id}

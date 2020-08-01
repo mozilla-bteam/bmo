@@ -36,7 +36,9 @@ sub admin_config {
     $dbh->bz_start_transaction();
     _update_config_from_form('global', $push->config);
     foreach my $connector ($push->connectors->list) {
-      _update_config_from_form($connector->name, $connector->config);
+      if (!($connector->name =~ /\QWebhook\E/)) {
+        _update_config_from_form($connector->name, $connector->config);
+      }
     }
     $push->set_config_last_modified();
     $dbh->bz_commit_transaction();
