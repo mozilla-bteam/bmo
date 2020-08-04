@@ -44,9 +44,6 @@ services:
 
   bmo.db:
     image: mysql:5.7
-    volumes:
-      - bmo-mysql-db:/var/lib/mysql
-      - ./docker/mysql:/etc/mysql/conf.d
     tmpfs:
       - /tmp
     logging:
