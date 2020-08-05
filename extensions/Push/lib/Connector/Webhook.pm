@@ -30,7 +30,7 @@ sub options {
   return (
     {
       name     => 'id',
-      label    => 'webhook_id',
+      label    => 'Webhook id',
       type     => 'string',
       default  => '',
       required => 1,
@@ -57,15 +57,15 @@ sub options {
       required => 1,
     },
     {
-      name     => 'product_id',
-      label    => 'Product_id',
+      name     => 'product_name',
+      label    => 'Product name',
       type     => 'string',
       default  => '',
       required => 1,
     },
     {
-      name     => 'component_id',
-      label    => 'Component_id',
+      name     => 'component_name',
+      label    => 'Component name',
       type     => 'string',
       default  => '',
       required => 0,
@@ -107,16 +107,16 @@ sub should_send {
   return 0 unless Bugzilla->params->{webhooks_enabled};
 
   my $event     = $self->config->{event};
-  my $product   = $self->config->{product_id};
-  my $component = $self->config->{component_id} ? $self->config->{component_id} : 'any';
+  my $product   = $self->config->{product_name};
+  my $component = $self->config->{component_name} ? $self->config->{component_name} : 'any';
 
   my $data     = $message->payload_decoded;
   my $bug_data = $self->_get_bug_data($data) || return 0;
 
   my $bug = Bugzilla::Bug->new({id => $bug_data->{id}, cache => 1});
 
-  if ($product eq $bug->product_id
-      && ($component eq $bug->component_id || $component eq 'any'))
+  if ($product eq $bug->product
+      && ($component eq $bug->component || $component eq 'any'))
   {
     if ($event =~ /\Qcreate\E/ && $message->routing_key eq 'bug.create') {
       return 1;

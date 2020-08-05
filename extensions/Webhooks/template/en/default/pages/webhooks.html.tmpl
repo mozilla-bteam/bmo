@@ -25,25 +25,25 @@
             "
 %]
 
-<h1>Bugzilla Webhooks</h1>
+<h1>[% terms.Bugzilla %] Webhooks</h1>
 
 <p>A webhook is a custom callback defined by events. Is triggered when those events happen, and a POST
 request is sent to a defined URL.</p>
 
-<p>In the case of Bugzilla, a WebHook can be triggered by a change to, or creation of a bug, the
-parameters of the bug are exposed to the WebHook handler which makes a callback (over HTTP) to another
+<p>In the case of [% terms.Bugzilla %], a WebHook can be triggered by a change to, or creation of a [% terms.bug %], the
+parameters of the [% terms.bug %] are exposed to the WebHook handler which makes a callback (over HTTP) to another
 web application.</p>
 
-<p>Examples of Bugzilla WebHooks could include:</p>
+<p>Examples of [% terms.Bugzilla %] WebHooks could include:</p>
 <ul>
-  <li>Updating a copy of the Bugzilla bug in another system such as Jira</li>
+  <li>Updating a copy of the [% terms.Bugzilla %] [% terms.bug %] in another system such as Jira</li>
   <li>Sending a message to a chat server such as Matrix or Slack</li>
 </ul>
 
 <h2>Creating a webhook</h2>
 <p>To create a webhook you just need to follow the next steps:</p>
 <ol>
-  <li>Access to your Bugzilla Account.</li>
+  <li>Access to your [% terms.Bugzilla %] Account.</li>
   <li>Go to your Preferences Panel > Webhooks.</li>
   <li>Fill all the parameters:</li>
     <h4>Name</h4>
@@ -53,19 +53,18 @@ web application.</p>
     <p>A valid URL where the callback will be sent.</p>
 
     <h4>Events</h4>
-    <p>The bug events that will trigger your new webhook</p>
+    <p>The [% terms.bug %] events that will trigger your new webhook</p>
       <ul>
-        <li><b>create</b>: when a new bug is created.</li>
-        <li><b>change</b>: when an existing bug has some change.</li>
+        <li><b>create</b>: when a new [% terms.bug %] is created.</li>
+        <li><b>change</b>: when an existing [% terms.bug %] has some change.</li>
       </ul>
 
     <h4>Filters</h4>
-    <p>Properties of a bug that specify which bugs you will receive.</p>
+    <p>Properties of a [% terms.bug %] that specify which [% terms.bugs %] you will receive.</p>
       <ul>
-        <li><b>product</b>: name of the product of the bugs that you want to receive.</li>
-        <li><b>component</b>: name of the component of the product that is selected of the
-        bugs that you want to receive.  If you want to receive the bugs of all the components
-        of a product, select Any.</li>
+        <li><b>product</b>: name of the product of the [% terms.bugs %] that you want to receive.</li>
+        <li><b>component</b>: name of the component of the [% terms.bugs %] that you want to receive.
+        If you want to receive the [% terms.bugs %] of all the components of a product, select Any.</li>
       </ul>
     <br>
   <li>Add the webhook.</li>
@@ -77,16 +76,16 @@ selected. You can select more than one.</p>
 
 <h2>Delivered webhook</h2>
 <p>When a webhook is triggered the HTTP POST of a fixed JSON structure payload that is delivered
-contains the webhook_id, webhook_name and the information about the bug that matches the event and filters.</p>
+contains the webhook_id, webhook_name and the information about the [% terms.bug %] that matches the event and filters.</p>
 
-<p>If the bug is private, only the bug id and some other basic information is sent and the external system will
-need to query BMO over the REST API to get the actual details of the bug.</p>
+<p>If the [% terms.bug %] is private, only the [% terms.bug %] id and some other basic information is sent and the external system will
+need to query BMO over the REST API to get the actual details of the [% terms.bug %].</p>
 
 <p>The webhooks will be called in the same order as the events triggering them and will be one request per new
-bug and per changed bug. The "changes" parameter will be sent only when the triggered event is changed and will
-content every change made in the Bug.</p>
+[% terms.bug %] and per changed [% terms.bug %]. The "changes" parameter will be sent only when the triggered event is changed and will
+content every change made in the [% terms.Bug %].</p>
 
-<h4>Public Bug Request</h4>
+<h4>Public [% terms.Bug %] Request</h4>
 <xmp>{
 "webhook_id": 23,
 "webhook_name": "Example webhook",
@@ -106,7 +105,7 @@ content every change made in the Bug.</p>
             }
         ],
 },
-"bug": {
+"[% terms.bug %]": {
       "version": {
             "name": "unspecified",
             "id": 1
@@ -131,7 +130,7 @@ content every change made in the Bug.</p>
       "last_change_time": "2020-07-23T00:01:45",
       "is_private": false,
       "severity": "normal",
-      "summary": "TestBug",
+      "summary": "Test",
       "alias": "",
       "reporter": {
             "id": 1,
@@ -157,7 +156,7 @@ content every change made in the Bug.</p>
    }
 }</xmp>
 
-<h4>Private Bug Request</h4>
+<h4>Private [% terms.bug %] Request</h4>
 <xmp>{
 "webhook_id": 23,
 "webhook_name": "Example webhook",
@@ -170,7 +169,7 @@ content every change made in the Bug.</p>
             "real_name": "Vagrant User"
       },
 },
-"bug": {
+"[% terms.bug %]": {
       "id": 2,
       "is_private": true
       }
@@ -180,7 +179,7 @@ content every change made in the Bug.</p>
 <p>HTTP 200 OK. The request has succeeded.</p>
 
 <h4>Errors</h4>
-<p>If the response is not 200, the Bugzilla system will retry 4 attempts, waiting 5s, 10s, 15s and
+<p>If the response is not 200, the [% terms.Bugzilla %] system will retry 4 attempts, waiting 5s, 10s, 15s and
 20s between each attempt. If none of those attempts is successful, the system will continue trying
 every 15 minutes.</p>
 

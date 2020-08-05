@@ -72,7 +72,13 @@ sub load {
       $config->{$option->name} = $self->_decrypt($option->value);
     }
     elsif ($webhook_id) {
-      $config->{$option->name} = $webhook->{$option->name};
+      if ($option->name eq 'product_name'){
+        $config->{$option->name} = $webhook->product_name;
+      }elsif ($option->name eq 'component_name'){
+        $config->{$option->name} = $webhook->component_name;
+      }else{
+        $config->{$option->name} = $webhook->{$option->name};
+      }
     }
     else {
       $config->{$option->name} = $option->value;

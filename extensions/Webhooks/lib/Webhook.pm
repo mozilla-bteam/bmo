@@ -80,8 +80,7 @@ sub product {
 
 sub product_name {
   my ($self) = @_;
-  return $self->{product_name}
-    //= $self->{product_id} ? $self->product->name : '';
+  return $self->{product_id} ? $self->product->name : '';
 }
 
 sub component {
@@ -93,8 +92,7 @@ sub component {
 
 sub component_name {
   my ($self) = @_;
-  return $self->{component_name}
-    //= $self->{component_id} ? $self->component->name : '';
+  return $self->{component_id} ? $self->component->name : '';
 }
 
 # validators
