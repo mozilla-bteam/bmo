@@ -65,7 +65,6 @@ sub _load {
             my $connector = $package->new($webhook->{id});
             $connector->load_config($webhook->{id});
             $self->{objects}->{$webhook_name} = $connector;
-            $connector->save();
           }
           catch {
             ERROR("Connector '$webhook_name' failed to load: " . clean_error($_));

@@ -19,6 +19,8 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::User;
+use Bugzilla::Logging;
+use Try::Tiny;
 
 #
 # installation
@@ -117,7 +119,9 @@ sub user_preferences {
         $params->{component_id} = $component->id;
       }
 
-      Bugzilla::Extension::Webhooks::Webhook->create($params);
+      my $new_webhook = Bugzilla::Extension::Webhooks::Webhook->create($params);
+
+      create_push_connector($new_webhook->{id});
 
     }
     else {
@@ -135,7 +139,10 @@ sub user_preferences {
       }
       $dbh->bz_commit_transaction;
 
+      update_push_connectors();
+
     }
+
   }
 
   $vars->{webhooks} = [
@@ -171,6 +178,33 @@ sub template_before_process {
   my ($vars, $file) = @$args{qw(vars file)};
   return unless $file eq 'account/prefs/tabs.html.tmpl';
   @{$vars->{tabs}} = grep { $_->{name} ne 'webhooks' } @{$vars->{tabs}};
+}
+
+#
+# push connector
+#
+
+sub create_push_connector {
+  my ($webhook_id) = @_;
+  my $webhook_name = 'Webhoook_' . $webhook_id;
+  my $package = "Bugzilla::Extension::Push::Connector::Webhook";
+  try {
+    my $connector = $package->new($webhook_id);
+    $connector->load_config($webhook_id);
+    $connector->save();
+  }
+  catch {
+    ERROR("Connector '$webhook_name' failed to load: " . clean_error($_));
+  };
+}
+
+sub update_push_connectors {
+  my ($self) = @_;
+  my $dbh  = Bugzilla->dbh;
+  my $push = Bugzilla->push_ext;
+  $dbh->bz_start_transaction();
+  $push->set_config_last_modified();
+  $dbh->bz_commit_transaction();
 }
 
 __PACKAGE__->NAME;
