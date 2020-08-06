@@ -135,6 +135,7 @@ sub user_preferences {
         {id => $ids, user_id => $user->id});
       $dbh->bz_start_transaction;
       foreach my $webhook (@$webhooks) {
+        delete_backlog_queue($webhook->id);
         $webhook->remove_from_db();
       }
       $dbh->bz_commit_transaction;
@@ -155,6 +156,7 @@ sub user_preferences {
     }
   ];
 
+  $vars->{webhooks_saved} = 1;
   ${$args->{handled}} = 1;
 }
 
@@ -196,6 +198,15 @@ sub create_push_connector {
   catch {
     ERROR("Connector '$webhook_name' failed to load: " . clean_error($_));
   };
+}
+
+sub delete_backlog_queue {
+  my ($webhook_id) = @_;
+  my $push  = Bugzilla->push_ext;
+  my $webhook_name = 'Webhook_' . $webhook_id;
+  my $connector = $push->connectors->by_name($webhook_name);
+  my $queue = $connector->backlog;
+  $queue->delete();
 }
 
 sub update_push_connectors {
