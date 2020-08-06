@@ -20,11 +20,10 @@ die "Need mbox filename\n" if !$filename;
 
 print "Processing $filename\n";
 
-open(FILE, '<', $filename) || die "Could not open mbox file: $!\n";
-binmode FILE, ':utf8';
+open my $fh, '<:encoding(UTF-8)', $filename || die "Could not open mbox file: $!\n";
 
 my ($msg, $count);
-while (my $line = <FILE>) {
+while (my $line = <$fh>) {
   if ($line =~ /^From - /) {
     if ($msg) {
       Bugzilla->job_queue->insert('send_mail', {msg => $msg});
@@ -36,6 +35,6 @@ while (my $line = <FILE>) {
   $msg .= $line;
 }
 
-close(FILE) || die "Could not close mbox file: $!\n";
+close $fh || die "Could not close mbox file: $!\n";
 
 print "Imported $count emails\n";
