@@ -25,6 +25,7 @@ use Bugzilla::Util ();
 use JSON qw(decode_json encode_json);
 use LWP::UserAgent;
 use List::MoreUtils qw(any);
+use Try::Tiny;
 
 sub options {
   return (
@@ -77,7 +78,7 @@ sub new {
   my ($class,$webhook_id) = @_;
   my $self = {};
   bless($self, $class);
-  ($self->{name}) = 'Webhook_' . $webhook_id;
+  $self->{name} = 'Webhook_' . $webhook_id;
   $self->init();
   return $self;
 }
@@ -118,9 +119,9 @@ sub should_send {
   if ($product eq $bug->product
       && ($component eq $bug->component || $component eq 'any'))
   {
-    if ($event =~ /\Qcreate\E/ && $message->routing_key eq 'bug.create') {
+    if ($event =~ /create/ && $message->routing_key eq 'bug.create') {
       return 1;
-    }elsif ($event =~ /\Qchange\E/ && $message->routing_key =~ /\Qbug.modify\E/) {
+    }elsif ($event =~ /change/ && $message->routing_key =~ /\Qbug.modify\E/) {
       return 1;
     }
   }
@@ -131,10 +132,10 @@ sub should_send {
 sub send {
   my ($self, $message) = @_;
 
-  eval {
-    my $payload                = $message->payload_decoded;
-    $payload->{'webhook_name'} = $self->config->{name};
-    $payload->{'webhook_id'}   = $self->config->{id};
+  try {
+    my $payload              = $message->payload_decoded;
+    $payload->{webhook_name} = $self->config->{name};
+    $payload->{webhook_id}   = $self->config->{id};
 
     my $bug_data   = $self->_get_bug_data($payload);
     my $is_private = $bug_data->{is_private};
@@ -143,8 +144,8 @@ sub send {
       if($payload->{event}->{action} eq 'modify'){
         delete @{$payload->{event}}{changes};
       }
-      $payload->{'bug'}->{'id'}       = $bug_data->{id};
-      $payload->{bug}->{'is_private'} = $is_private;
+      $payload->{bug}->{id}       = $bug_data->{id};
+      $payload->{bug}->{is_private} = $is_private;
     }
     delete @{$payload->{event}}{qw(routing_key change_set target)};
 
@@ -155,10 +156,10 @@ sub send {
     if ($resp->code != 200) {
       die "Expected HTTP 200 response, got " . $resp->code;
     }
-  };
-  if ($@) {
-    return (PUSH_RESULT_TRANSIENT, clean_error($@));
   }
+  catch{
+    return (PUSH_RESULT_TRANSIENT, clean_error($_));
+  };
 
   return PUSH_RESULT_OK;
 }

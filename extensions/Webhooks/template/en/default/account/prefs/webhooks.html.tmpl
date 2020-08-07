@@ -66,29 +66,29 @@ window.onload = function() {
 <table border="0" cellpadding="3" cellspacing="0">
 <tr>
   <th align="right">Name:</th>
-  <td colspan="2"><input type="text" name="name" id="name" maxlength="64"></td>
+  <td><input type="text" name="name" id="name" maxlength="64"></td>
 </tr>
 <tr>
   <th align="right">URL:</th>
-  <td colspan="2"><input type="text" name="url" id="url" maxlength="64"></td>
+  <td><input type="text" name="url" id="url" maxlength="64"></td>
 </tr>
 </table>
 <h4>Events</h4>
 <p>Select the events you want to receive.</p>
 <p>
   <input type="checkbox" id="create_event" name="create_event" value="1">
-  <label for="create_event">Create</label>
+  <label for="create_event">When a new bug is created</label>
 <br>
   <input type="checkbox" id="change_event" name="change_event" value="1">
-  <label for="change_event">Change</label>
+  <label for="change_event">When an existing bug is modified</label>
 </p>
 <h4>Filters</h4>
 <p>
-  To receive all components in a product, select "__Any__".
+  To receive all components in a product, select "Any".
 </p>
 <table border="0" cellpadding="3" cellspacing="0">
 <tr>
-  <th>Product:</th>
+  <th align="right">Product:</th>
   <td>
     <select name="add_product" id="product" onChange="onSelectProduct()">
     [% FOREACH product IN selectable_products %]
@@ -98,7 +98,7 @@ window.onload = function() {
   </td>
 </tr>
 <tr>
-  <th>Component:</th>
+  <th align="right">Component:</th>
   <td>
     <select name="add_component" id="component">
       <option value="">__Any__</option>
@@ -118,11 +118,12 @@ window.onload = function() {
 </table>
 
 <hr>
-<h3>
-  Your webhooks:
-</h3>
 
 [% IF webhooks.size %]
+
+  <h3>
+    Your webhooks:
+  </h3>
 
   <table id="webhooks_table" class="standard">
   <thead>
@@ -151,7 +152,7 @@ window.onload = function() {
         </a>
       </td>
       <td>[% webhook.event FILTER html %]</td>
-      <td>[% webhook.product ? webhook.product.name : 'Any' FILTER html %]</td>
+      <td>[% webhook.product.name FILTER html %]</td>
       <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
     </tr>
   [% END %]

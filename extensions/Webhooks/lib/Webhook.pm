@@ -51,6 +51,10 @@ sub user {
   return Bugzilla::User->new({id => $self->{user_id}, cache => 1});
 }
 
+sub id {
+  return $_[0]->{id};
+}
+
 sub name {
   return $_[0]->{name};
 }
@@ -73,26 +77,24 @@ sub component_id {
 
 sub product {
   my ($self) = @_;
-  return $self->{product_id}
-    ? Bugzilla::Product->new({id => $self->{product_id}, cache => 1})
-    : undef;
+  return $self->{product} ||=
+    Bugzilla::Product->new({id => $self->{product_id}, cache => 1});
 }
 
 sub product_name {
   my ($self) = @_;
-  return $self->{product_id} ? $self->product->name : '';
+  return $self->{product_name} ||= $self->{product_id} ? $self->product->name : '';
 }
 
 sub component {
   my ($self) = @_;
-  return $self->{component_id}
-    ? Bugzilla::Component->new({id => $self->{component_id}, cache => 1})
-    : undef;
+  return $self->{component} ||= $self->{component_id}
+    ? Bugzilla::Component->new({id => $self->{component_id}, cache => 1}) : undef;
 }
 
 sub component_name {
   my ($self) = @_;
-  return $self->{component_id} ? $self->component->name : '';
+  return $self->{component_name} ||= $self->{component_id} ? $self->component->name : '';
 }
 
 # validators

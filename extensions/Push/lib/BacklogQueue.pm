@@ -80,9 +80,7 @@ sub list {
 
 sub delete {
   my ($self) = @_;
-  my $dbh = Bugzilla->dbh;
-  return $dbh->do("DELETE FROM push_backlog WHERE connector = ?",
-    undef, $self->{connector});
+  Bugzilla->dbh->do("DELETE FROM push_backlog WHERE connector = ?",undef, $self->{connector});
 }
 
 #

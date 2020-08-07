@@ -30,11 +30,11 @@
 <p>A webhook is a custom callback defined by events. Is triggered when those events happen, and a POST
 request is sent to a defined URL.</p>
 
-<p>In the case of [% terms.Bugzilla %], a WebHook can be triggered by a change to, or creation of a [% terms.bug %], the
-parameters of the [% terms.bug %] are exposed to the WebHook handler which makes a callback (over HTTP) to another
+<p>In the case of [% terms.Bugzilla %], a webhook can be triggered by a change to, or creation of a [% terms.bug %]. The
+parameters of the [% terms.bug %] are exposed to the webhook handler which makes a callback (over HTTP) to another
 web application.</p>
 
-<p>Examples of [% terms.Bugzilla %] WebHooks could include:</p>
+<p>Examples of [% terms.Bugzilla %] webhooks could include:</p>
 <ul>
   <li>Updating a copy of the [% terms.Bugzilla %] [% terms.bug %] in another system such as Jira</li>
   <li>Sending a message to a chat server such as Matrix or Slack</li>
@@ -45,7 +45,7 @@ web application.</p>
 <ol>
   <li>Access to your [% terms.Bugzilla %] Account.</li>
   <li>Go to your Preferences Panel > Webhooks.</li>
-  <li>Fill all the parameters:</li>
+  <li>Fill out all of the parameters:</li>
     <h4>Name</h4>
     <p>A name for you to recognize the webhook. (e.g. “My Jira webhook”)</p>
 
@@ -54,23 +54,23 @@ web application.</p>
 
     <h4>Events</h4>
     <p>The [% terms.bug %] events that will trigger your new webhook</p>
-      <ul>
-        <li><b>create</b>: when a new [% terms.bug %] is created.</li>
-        <li><b>change</b>: when an existing [% terms.bug %] has some change.</li>
+      <ul>[% terms.bug %][% terms.bug %]
+        <li><b>When a new [% terms.bug %] is created</b></li>
+        <li><b>When an existing [% terms.bug %] is modified</b></li>
       </ul>
 
     <h4>Filters</h4>
     <p>Properties of a [% terms.bug %] that specify which [% terms.bugs %] you will receive.</p>
       <ul>
-        <li><b>product</b>: name of the product of the [% terms.bugs %] that you want to receive.</li>
-        <li><b>component</b>: name of the component of the [% terms.bugs %] that you want to receive.
-        If you want to receive the [% terms.bugs %] of all the components of a product, select Any.</li>
+        <li><b>Product</b>: name of the product of the [% terms.bugs %] that you want to receive.</li>
+        <li><b>Component</b>: name of the component of the [% terms.bugs %] that you want to receive.
+        If you want to receive the [% terms.bugs %] of all the components of a product, select <b>Any</b>.</li>
       </ul>
     <br>
   <li>Add the webhook.</li>
 </ol>
 
-<p>You can see your registered webhooks in the same Panel.</p>
+<p>You can see your registered webhooks in the same panel.</p>
 <p>If you want to delete a webhook, select the webhook in “Your webhooks” table and click remove
 selected. You can select more than one.</p>
 

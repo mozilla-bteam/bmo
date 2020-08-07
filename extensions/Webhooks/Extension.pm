@@ -17,9 +17,10 @@ use Bugzilla::Component;
 use Bugzilla::Product;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::User;
 use Bugzilla::Logging;
+use Bugzilla::Extension::Webhooks::Webhook;
+use Bugzilla::Extension::Push::Util;
 use Try::Tiny;
 
 #
@@ -50,6 +51,9 @@ sub db_schema_abstract_schema {
         NOTNULL    => 0,
         REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE',}
       }
+    ],
+    INDEXES => [
+      webhooks_userid_name_idx => {FIELDS => ['user_id', 'name'], TYPE => 'UNIQUE',},
     ],
   };
 }

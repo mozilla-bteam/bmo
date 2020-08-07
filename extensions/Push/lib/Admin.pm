@@ -36,7 +36,7 @@ sub admin_config {
     $dbh->bz_start_transaction();
     _update_config_from_form('global', $push->config);
     foreach my $connector ($push->connectors->list) {
-      if (!($connector->name =~ /\QWebhook\E/)) {
+      if ($connector->name !~ /\QWebhook\E/) {
         _update_config_from_form($connector->name, $connector->config);
       }
     }
