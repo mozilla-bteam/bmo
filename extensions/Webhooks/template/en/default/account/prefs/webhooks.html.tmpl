@@ -30,13 +30,13 @@ var cpts = new Array();
 function onSelectProduct() {
   var component = document.getElementById('component');
   selectProduct(document.getElementById('product'), component);
-  // selectProduct only supports __Any__ on both elements
+  // selectProduct only supports Any on both elements
   // we only want it on component, so add it back in
   try {
-    component.add(new Option('__Any__', ''), component.options[0]);
+    component.add(new Option('Any', ''), component.options[0]);
   } catch(e) {
     // support IE
-    component.add(new Option('__Any__', ''), 0);
+    component.add(new Option('Any', ''), 0);
   }
   document.getElementById('component').options[0].selected = true;
 }
@@ -77,10 +77,10 @@ window.onload = function() {
 <p>Select the events you want to receive.</p>
 <p>
   <input type="checkbox" id="create_event" name="create_event" value="1">
-  <label for="create_event">When a new bug is created</label>
+  <label for="create_event">When a new [% terms.bug %] is created</label>
 <br>
   <input type="checkbox" id="change_event" name="change_event" value="1">
-  <label for="change_event">When an existing bug is modified</label>
+  <label for="change_event">When an existing [% terms.bug %] is modified</label>
 </p>
 <h4>Filters</h4>
 <p>
@@ -101,7 +101,7 @@ window.onload = function() {
   <th align="right">Component:</th>
   <td>
     <select name="add_component" id="component">
-      <option value="">__Any__</option>
+      <option value="">Any</option>
     [% FOREACH product IN selectable_products %]
       [% FOREACH component IN product.components %]
         <option>[% component.name FILTER html %]</option>

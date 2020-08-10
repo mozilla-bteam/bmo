@@ -50,7 +50,7 @@ sub option {
 }
 
 sub load {
-  my ($self,$webhook_id) = @_;
+  my ($self) = @_;
   my $config = {};
 
   # prime $config with defaults
@@ -59,26 +59,12 @@ sub load {
   }
 
   # override defaults with values from database
-  my $webhook;
-  if ($webhook_id){
-    $webhook
-      = Bugzilla::Extension::Webhooks::Webhook->new($webhook_id);
-  }
   my $options
     = Bugzilla::Extension::Push::Option->match({connector => $self->{_name},});
   foreach my $option (@$options) {
     my $option_config = $self->option($option->name) || next;
     if ($option_config->{type} eq 'password') {
       $config->{$option->name} = $self->_decrypt($option->value);
-    }
-    elsif ($webhook_id) {
-      if ($option->name eq 'product_name'){
-        $config->{$option->name} = $webhook->product_name;
-      }elsif ($option->name eq 'component_name'){
-        $config->{$option->name} = $webhook->component_name;
-      }else{
-        $config->{$option->name} = $webhook->{$option->name};
-      }
     }
     else {
       $config->{$option->name} = $option->value;

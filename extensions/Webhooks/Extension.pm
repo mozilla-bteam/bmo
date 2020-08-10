@@ -197,6 +197,7 @@ sub create_push_connector {
   try {
     my $connector = $package->new($webhook_id);
     $connector->load_config($webhook_id);
+    $connector->config->{enabled} = 'Enabled';
     $connector->save();
   }
   catch {

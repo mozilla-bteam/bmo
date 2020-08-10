@@ -30,43 +30,8 @@ use Try::Tiny;
 sub options {
   return (
     {
-      name     => 'id',
+      name     => 'webhook_id',
       label    => 'Webhook id',
-      type     => 'string',
-      default  => '',
-      required => 1,
-    },
-    {
-      name     => 'url',
-      label    => 'URL',
-      type     => 'string',
-      default  => '',
-      required => 1,
-    },
-    {
-      name     => 'name',
-      label    => 'Name',
-      type     => 'string',
-      default  => '',
-      required => 1,
-    },
-    {
-      name     => 'event',
-      label    => 'Event',
-      type     => 'string',
-      default  => '',
-      required => 1,
-    },
-    {
-      name     => 'product_name',
-      label    => 'Product name',
-      type     => 'string',
-      default  => '',
-      required => 1,
-    },
-    {
-      name     => 'component_name',
-      label    => 'Component name',
       type     => 'string',
       default  => '',
       required => 0,
@@ -87,9 +52,9 @@ sub load_config {
   my ($self, $webhook_id) = @_;
   my $config
     = Bugzilla::Extension::Push::Config->new($self->name, $self->options);
-  $config->load($webhook_id);
+  $config->load();
   $self->{config} = $config;
-  $self->config->{enabled} = 'Enabled';
+  $self->config->{webhook_id} = $webhook_id;
 }
 
 sub save {
@@ -107,9 +72,10 @@ sub should_send {
 
   return 0 unless Bugzilla->params->{webhooks_enabled};
 
-  my $event     = $self->config->{event};
-  my $product   = $self->config->{product_name};
-  my $component = $self->config->{component_name} ? $self->config->{component_name} : 'any';
+  my $webhook   = Bugzilla::Extension::Webhooks::Webhook->new($self->config->{webhook_id});
+  my $event     = $webhook->event;
+  my $product   = $webhook->product_name;
+  my $component = $webhook->component_name ? $webhook->component_name : 'any';
 
   my $data     = $message->payload_decoded;
   my $bug_data = $self->_get_bug_data($data) || return 0;
@@ -133,9 +99,11 @@ sub send {
   my ($self, $message) = @_;
 
   try {
+    my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($self->config->{webhook_id});
+
     my $payload              = $message->payload_decoded;
-    $payload->{webhook_name} = $self->config->{name};
-    $payload->{webhook_id}   = $self->config->{id};
+    $payload->{webhook_name} = $webhook->name;
+    $payload->{webhook_id}   = $webhook->id;
 
     my $bug_data   = $self->_get_bug_data($payload);
     my $is_private = $bug_data->{is_private};
@@ -151,17 +119,18 @@ sub send {
 
     my $headers = HTTP::Headers->new(Content_Type => 'application/json');
     my $request
-      = HTTP::Request->new('POST', $self->config->{url}, $headers, encode_json($payload));
+      = HTTP::Request->new('POST', $webhook->url, $headers, encode_json($payload));
     my $resp = $self->_user_agent->request($request);
     if ($resp->code != 200) {
       die "Expected HTTP 200 response, got " . $resp->code;
+    }else{
+      return PUSH_RESULT_OK;
     }
   }
   catch{
     return (PUSH_RESULT_TRANSIENT, clean_error($_));
   };
 
-  return PUSH_RESULT_OK;
 }
 
 # Private methods

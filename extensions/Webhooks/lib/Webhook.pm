@@ -104,5 +104,4 @@ sub _check_user {
   $user || ThrowCodeError('param_required', {param => 'user'});
 }
 
-
 1;
