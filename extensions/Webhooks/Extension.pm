@@ -71,7 +71,8 @@ sub db_sanitize {
 sub user_preferences {
   my ($self, $args) = @_;
 
-  return unless Bugzilla->params->{webhooks_enabled};
+  return unless Bugzilla->params->{webhooks_enabled}
+                && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
   return unless $args->{'current_tab'} eq 'webhooks';
 
   my $input = Bugzilla->input_params;
@@ -180,7 +181,8 @@ sub config_add_panels {
 
 sub template_before_process {
   my ($self, $args) = @_;
-  return if Bugzilla->params->{webhooks_enabled};
+  return if Bugzilla->params->{webhooks_enabled}
+            && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
   my ($vars, $file) = @$args{qw(vars file)};
   return unless $file eq 'account/prefs/tabs.html.tmpl';
   @{$vars->{tabs}} = grep { $_->{name} ne 'webhooks' } @{$vars->{tabs}};
