@@ -53,8 +53,8 @@ web application.</p>
     <p>The URL which will receive and process the webhook.</p>
 
     <h4>Events</h4>
-    <p>The [% terms.bug %] events that will trigger your new webhook</p>
-      <ul>[% terms.bug %]
+    <p>The [% terms.bug %] events that will trigger your new webhook.</p>
+      <ul>
         <li><b>When a new [% terms.bug %] is created</b></li>
         <li><b>When an existing [% terms.bug %] is modified</b></li>
       </ul>
@@ -83,7 +83,7 @@ need to query BMO over the REST API to get the actual details of the [% terms.bu
 
 <p>The webhooks will be called in the same order as the events triggering them and will be one request per new
 [% terms.bug %] and per changed [% terms.bug %]. The "changes" parameter will be sent only when the triggered event is changed and will
-content every change made in the [% terms.Bug %].</p>
+content every change made in the [% terms.bug %].</p>
 
 <h4>Public [% terms.Bug %] Request</h4>
 <xmp>{
@@ -156,7 +156,7 @@ content every change made in the [% terms.Bug %].</p>
    }
 }</xmp>
 
-<h4>Private [% terms.bug %] Request</h4>
+<h4>Private [% terms.Bug %] Request</h4>
 <xmp>{
 "webhook_id": 23,
 "webhook_name": "Example webhook",

@@ -63,7 +63,7 @@ sub _load {
           try {
             TRACE("Loading connector '$webhook_name'");
             my $connector = $package->new($webhook->{id});
-            $connector->load_config($webhook->{id});
+            $connector->load_config();
             $self->{objects}->{$webhook_name} = $connector;
           }
           catch {

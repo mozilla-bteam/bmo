@@ -27,34 +27,14 @@ use LWP::UserAgent;
 use List::MoreUtils qw(any);
 use Try::Tiny;
 
-sub options {
-  return (
-    {
-      name     => 'webhook_id',
-      label    => 'Webhook id',
-      type     => 'string',
-      default  => '',
-      required => 0,
-    },
-  );
-}
-
 sub new {
   my ($class,$webhook_id) = @_;
   my $self = {};
   bless($self, $class);
   $self->{name} = 'Webhook_' . $webhook_id;
+  $self->{webhook_id} = $webhook_id;
   $self->init();
   return $self;
-}
-
-sub load_config {
-  my ($self, $webhook_id) = @_;
-  my $config
-    = Bugzilla::Extension::Push::Config->new($self->name, $self->options);
-  $config->load();
-  $self->{config} = $config;
-  $self->config->{webhook_id} = $webhook_id;
 }
 
 sub save {
@@ -72,7 +52,7 @@ sub should_send {
 
   return 0 unless Bugzilla->params->{webhooks_enabled};
 
-  my $webhook   = Bugzilla::Extension::Webhooks::Webhook->new($self->config->{webhook_id});
+  my $webhook   = Bugzilla::Extension::Webhooks::Webhook->new($self->{webhook_id});
   my $event     = $webhook->event;
   my $product   = $webhook->product_name;
   my $component = $webhook->component_name ? $webhook->component_name : 'any';
@@ -99,7 +79,7 @@ sub send {
   my ($self, $message) = @_;
 
   try {
-    my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($self->config->{webhook_id});
+    my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($self->{webhook_id});
 
     my $payload              = $message->payload_decoded;
     $payload->{webhook_name} = $webhook->name;

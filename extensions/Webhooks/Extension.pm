@@ -198,7 +198,7 @@ sub create_push_connector {
   my $package = "Bugzilla::Extension::Push::Connector::Webhook";
   try {
     my $connector = $package->new($webhook_id);
-    $connector->load_config($webhook_id);
+    $connector->load_config();
     $connector->config->{enabled} = 'Enabled';
     $connector->save();
   }

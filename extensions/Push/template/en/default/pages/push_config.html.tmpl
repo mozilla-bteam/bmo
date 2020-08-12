@@ -41,7 +41,7 @@ var push_defaults = new Array();
 %]
 
 [% FOREACH connector = connectors.list %]
-  [% NEXT IF connector.config.webhook_id %]
+  [% NEXT IF connector.webhook_id %]
   [% PROCESS options
              name = connector.name
              config = connector.config
