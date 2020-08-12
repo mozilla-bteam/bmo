@@ -6,13 +6,14 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% IF error == "push_error" %]
-  [% error_message FILTER html %]
+[%
+   title = "Webhooks"
+   desc = "Webhooks feature flag"
+%]
 
-[% ELSIF error == "webhooks_disabled" %]
-    The webhooks feature is not available.
-    [% IF user.in_group('admin') %]
-      If you would like to enable this feature, please go to webhooks section in parameters panel.
-    [% END %]
-
-[% END %]
+[%
+   param_descs = {
+     webhooks_enabled => "Enable or disable the webhooks feature.",
+     webhooks_group => "The name of the group of users who can create webhooks."
+   }
+%]
