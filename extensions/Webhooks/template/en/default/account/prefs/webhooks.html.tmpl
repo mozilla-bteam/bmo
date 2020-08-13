@@ -135,6 +135,7 @@ window.onload = function() {
       <th>Events</th>
       <th>Product</th>
       <th>Component</th>
+      <th>Status</th>
     </tr>
   </thead>
   <tbody>
@@ -154,12 +155,23 @@ window.onload = function() {
       <td>[% webhook.event FILTER html %]</td>
       <td>[% webhook.product.name FILTER html %]</td>
       <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
+      <td>
+        [% connector = connectors.by_name('Webhook_' _ webhook.id)
+           config = connector.config
+        %]
+        <select name="[% connector.name FILTER html %].enabled"
+                id="[% connector.name FILTER html %]_enabled">
+          <option value="Enabled" [% 'selected' IF config.${'enabled'} == 'Enabled' %]>Enabled</option>
+          <option value="Disabled" [% 'selected' IF config.${'enabled'} == 'Disabled' %]>Disabled</option>
+        </select>
+      </td>
     </tr>
   [% END %]
   </tbody>
   </table>
   <br>
   <input id="remove" type="submit" value="Remove Selected">
+  <input id="save_changes" type="submit" value="Save Changes">
 
 [% ELSE %]
 

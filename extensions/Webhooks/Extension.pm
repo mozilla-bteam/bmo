@@ -21,6 +21,7 @@ use Bugzilla::User;
 use Bugzilla::Logging;
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Util;
+use Bugzilla::Util;
 use Try::Tiny;
 
 #
@@ -77,6 +78,7 @@ sub user_preferences {
 
   my $input = Bugzilla->input_params;
   my $user  = Bugzilla->user;
+  my $push  = Bugzilla->push_ext;
   my $vars  = $args->{vars};
 
   if ($args->{'save_changes'}) {
@@ -85,7 +87,7 @@ sub user_preferences {
 
       # add webhook
 
-      my $params = {user_id => Bugzilla->user->id,};
+      my $params = {user_id => $user->id,};
 
       if ($input->{name} eq '') {
         ThrowUserError('webhooks_define_name');
@@ -129,12 +131,13 @@ sub user_preferences {
       create_push_connector($new_webhook->{id});
 
     }
-    else {
+    elsif ($input->{'remove'}) {
 
       # remove webhook(s)
 
       my $ids  = ref($input->{remove}) ? $input->{remove} : [$input->{remove}];
       my $dbh  = Bugzilla->dbh;
+      my $push = Bugzilla->push_ext;
 
       my $webhooks = Bugzilla::Extension::Webhooks::Webhook->match(
         {id => $ids, user_id => $user->id});
@@ -143,10 +146,26 @@ sub user_preferences {
         delete_backlog_queue($webhook->id);
         $webhook->remove_from_db();
       }
+      $push->set_config_last_modified();
       $dbh->bz_commit_transaction;
 
-      update_push_connectors();
+    }else{
 
+      # save change(s)
+
+      my $dbh      = Bugzilla->dbh;
+      my $webhooks = Bugzilla::Extension::Webhooks::Webhook->match(
+        {user_id => $user->id});
+
+      $dbh->bz_start_transaction();
+      foreach my $webhook (@$webhooks) {
+        my $connector = $push->connectors->by_name('Webhook_' . $webhook->id);
+        my $config = $connector->config;
+        $config->{enabled} = trim($input->{$connector->name . ".enabled"});
+        $config->update();
+      }
+      $push->set_config_last_modified();
+      $dbh->bz_commit_transaction();
     }
 
   }
@@ -156,12 +175,14 @@ sub user_preferences {
            $a->product_name cmp $b->product_name
         || $a->component_name cmp $b->component_name
     } @{Bugzilla::Extension::Webhooks::Webhook->match({
-        user_id => Bugzilla->user->id,
+        user_id => $user->id,
       })
     }
   ];
-
+  $vars->{push}           = $push;
+  $vars->{connectors}     = $push->connectors;
   $vars->{webhooks_saved} = 1;
+
   ${$args->{handled}} = 1;
 }
 
@@ -214,15 +235,6 @@ sub delete_backlog_queue {
   my $connector = $push->connectors->by_name($webhook_name);
   my $queue = $connector->backlog;
   $queue->delete();
-}
-
-sub update_push_connectors {
-  my ($self) = @_;
-  my $dbh  = Bugzilla->dbh;
-  my $push = Bugzilla->push_ext;
-  $dbh->bz_start_transaction();
-  $push->set_config_last_modified();
-  $dbh->bz_commit_transaction();
 }
 
 __PACKAGE__->NAME;
