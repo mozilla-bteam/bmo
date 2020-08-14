@@ -18,4 +18,8 @@
   [% title = "Define a URL" %]
   You didn't define a URL for your webhook. Define one.
 
+[% ELSIF error == "invalid_option" %]
+  [% title = "Invalid option" %]
+  The option value specified is invalid.
+
 [% END %]

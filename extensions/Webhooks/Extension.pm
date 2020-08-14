@@ -161,8 +161,13 @@ sub user_preferences {
       foreach my $webhook (@$webhooks) {
         my $connector = $push->connectors->by_name('Webhook_' . $webhook->id);
         my $config = $connector->config;
-        $config->{enabled} = trim($input->{$connector->name . ".enabled"});
-        $config->update();
+        my $status = trim($input->{$connector->name . ".enabled"});
+        if ( $status eq 'Enabled' || $status eq 'Disabled' ){
+          $config->{enabled} = $status;
+          $config->update();
+        }else{
+          ThrowUserError('invalid_option');
+        }
       }
       $push->set_config_last_modified();
       $dbh->bz_commit_transaction();
@@ -220,7 +225,6 @@ sub create_push_connector {
   try {
     my $connector = $package->new($webhook_id);
     $connector->load_config();
-    $connector->config->{enabled} = 'Enabled';
     $connector->save();
   }
   catch {
