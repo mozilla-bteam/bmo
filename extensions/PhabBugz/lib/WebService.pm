@@ -110,12 +110,12 @@ sub bug_revisions {
   # Validate that the user can see the bug itself
   my $bug = Bugzilla::Bug->check({id => $params->{bug_id}, cache => 1});
 
-  my @revision_ids;
+  my %revision_map;
   foreach my $attachment (@{$bug->attachments}) {
     next if $attachment->contenttype ne PHAB_CONTENT_TYPE;
     my ($revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
     next if !$revision_id;
-    push @revision_ids, int $revision_id;
+    $revision_map{$revision_id} = $attachment->id;
   }
 
   my $response = request(
@@ -127,7 +127,7 @@ sub bug_revisions {
         'subscribers'     => 1,
         'reviewers-extra' => 1,
       },
-      constraints => {ids => \@revision_ids,},
+      constraints => {ids => [ map { int $_ } keys %revision_map ]},
       order       => 'newest',
     }
   );
@@ -172,6 +172,7 @@ sub bug_revisions {
     my $revision_obj  = Bugzilla::Extension::PhabBugz::Revision->new($revision);
     my $revision_data = {
       id          => 'D' . $revision_obj->id,
+      attach_id   => $revision_map{$revision_obj->id},
       sortkey     => $revision_obj->id,
       status      => $revision_obj->status,
       long_status => $revision_status_map->{$revision_obj->status}

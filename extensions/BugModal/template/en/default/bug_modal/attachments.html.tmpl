@@ -16,6 +16,7 @@
 <table role="table" class="layout-table" id="attachments">
   [% FOREACH attachment IN bug.attachments %]
     [%
+      NEXT IF attachment.contenttype == 'text/x-phabricator-request';
       NEXT IF attachment.isprivate && !(user.is_insider || attachment.attacher.id == user.id);
       attachment_rendered = 0;
       Hook.process("row");

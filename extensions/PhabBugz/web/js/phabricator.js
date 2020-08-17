@@ -17,12 +17,13 @@ Phabricator.getBugRevisions = async () => {
     var table   = $('<table/>');
 
     function revisionRow(revision) {
-        var trRevision     = tr.clone();
-        var tdId           = td.clone();
-        var tdTitle        = td.clone();
-        var tdRevisionStatus       = td.clone();
-        var tdReviewers    = td.clone();
-        var tableReviews   = table.clone();
+        var trRevision       = tr.clone();
+        var tdId             = td.clone();
+        var tdTitle          = td.clone();
+        var tdRevisionStatus = td.clone();
+        var tdReviewers      = td.clone();
+        var tdDetails        = td.clone();
+        var tableReviews     = table.clone();
 
         var spanRevisionStatus     = span.clone();
         var spanRevisionStatusIcon = span.clone();
@@ -66,11 +67,18 @@ Phabricator.getBugRevisions = async () => {
             $('tbody.phabricator-show-abandoned').removeClass('bz_default_hidden');
         }
 
+        var detailsLink = link.clone();
+        detailsLink.attr('href', `${BUGZILLA.config.basepath}attachment.cgi?action=edit&id=${revision.attach_id}`);
+        detailsLink.attr('title', 'Local Bugzilla Attachment Details');
+        detailsLink.text('Details');
+        tdDetails.append(detailsLink);
+
         trRevision.append(
             tdId,
             tdTitle,
             tdRevisionStatus,
-            tdReviewers
+            tdReviewers,
+            tdDetails
         );
 
         return trRevision;
