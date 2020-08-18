@@ -37,6 +37,15 @@ sub new {
   return $self;
 }
 
+sub load_config {
+  my ($self) = @_;
+  my $config
+    = Bugzilla::Extension::Push::Config->new($self->name, $self->options);
+  $config->option('enabled')->{'default'} = 'Enabled';
+  $config->load();
+  $self->{config} = $config;
+}
+
 sub save {
   my ($self) = @_;
   my $dbh  = Bugzilla->dbh;
