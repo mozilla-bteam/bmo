@@ -131,7 +131,7 @@ sub user_preferences {
       create_push_connector($new_webhook->{id});
 
     }
-    elsif ($input->{'remove'}) {
+    else {
 
       # remove webhook(s)
 
@@ -147,17 +147,13 @@ sub user_preferences {
         $webhook->remove_from_db();
       }
       $push->set_config_last_modified();
-      $dbh->bz_commit_transaction;
-
-    }else{
+      $dbh->bz_commit_transaction();
 
       # save change(s)
 
-      my $dbh      = Bugzilla->dbh;
-      my $webhooks = Bugzilla::Extension::Webhooks::Webhook->match(
+      $webhooks = Bugzilla::Extension::Webhooks::Webhook->match(
         {user_id => $user->id});
-
-      $dbh->bz_start_transaction();
+      $dbh->bz_start_transaction;
       foreach my $webhook (@$webhooks) {
         my $connector = $push->connectors->by_name('Webhook_' . $webhook->id);
         my $config = $connector->config;
@@ -166,7 +162,7 @@ sub user_preferences {
           $config->{enabled} = $status;
           $config->update();
         }else{
-          ThrowUserError('invalid_option');
+          ThrowUserError('webhooks_invalid_option');
         }
       }
       $push->set_config_last_modified();
