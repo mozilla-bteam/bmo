@@ -26,6 +26,7 @@ use JSON qw(decode_json encode_json);
 use LWP::UserAgent;
 use List::MoreUtils qw(any);
 use Try::Tiny;
+#use HTML::Strip;
 
 sub new {
   my ($class,$webhook_id) = @_;
@@ -76,7 +77,7 @@ sub should_send {
   {
     if ($event =~ /create/ && $message->routing_key eq 'bug.create') {
       return 1;
-    }elsif ($event =~ /change/ && $message->routing_key =~ /\Qbug.modify\E/) {
+    }elsif ($event =~ /change/ && ($message->routing_key =~ /\Qbug.modify\E/ || $message->routing_key eq 'comment.create')) {
       return 1;
     }
   }
@@ -96,12 +97,23 @@ sub send {
 
     my $bug_data   = $self->_get_bug_data($payload);
     my $is_private = $bug_data->{is_private};
+
+    if ($message->routing_key eq 'comment.create'){
+      my $comment->{field} = $payload->{comment}->{number} == 0 ? 'description' : 'comment';
+      #$comment->{added}    = HTML::Strip->new()->parse($payload->{comment}->{body});
+      $comment->{added}    = $payload->{comment}->{body};
+      $comment->{removed}  = '';
+      $payload->{event}->{action}  = 'modify';
+      $payload->{event}->{changes} = [$comment];
+      $payload->{bug}              = $bug_data;
+      delete @{$payload}{comment};
+    }
     if ($is_private){
       delete @{$payload}{bug};
       if($payload->{event}->{action} eq 'modify'){
         delete @{$payload->{event}}{changes};
       }
-      $payload->{bug}->{id}       = $bug_data->{id};
+      $payload->{bug}->{id}         = $bug_data->{id};
       $payload->{bug}->{is_private} = $is_private;
     }
     delete @{$payload->{event}}{qw(routing_key change_set target)};
