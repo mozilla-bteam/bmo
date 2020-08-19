@@ -19,8 +19,8 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::User;
 use Bugzilla::Logging;
-use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Util;
+use Bugzilla::Token qw(check_hash_token);
 use Bugzilla::Util;
 use Try::Tiny;
 
@@ -235,6 +235,49 @@ sub delete_backlog_queue {
   my $connector = $push->connectors->by_name($webhook_name);
   my $queue = $connector->backlog;
   $queue->delete();
+}
+
+#
+# Queues
+#
+
+sub page_before_template {
+  my ($self, $args) = @_;
+  #return if Bugzilla->params->{webhooks_enabled}
+  #          && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
+  my ($vars, $page) = @$args{qw(vars page_id)};
+  return unless $page eq 'webhooks_queues.html';
+  webhooks_queues($vars);
+}
+
+sub webhooks_queues {
+  my ($vars) = @_;
+  my $push  = Bugzilla->push_ext;
+  my $input = Bugzilla->input_params;
+  my $dbh   = Bugzilla->dbh;
+
+  if($input->{webhook}){
+    my $webhook_name = 'Webhook_' . $input->{webhook};
+    my $connector = $push->connectors->by_name($webhook_name)
+      || ThrowUserError('push_error', {error_message => 'Invalid connector'. $webhook_name});
+    my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($input->{webhook});
+    $vars->{connector} = $connector;
+    $vars->{webhook} = $webhook;
+  }
+
+  if ($input->{delete}) {
+    my $token = $input->{token};
+      check_hash_token($token, ['deleteMessage']);
+    my $connector = $push->connectors->by_name($input->{connector})
+      || ThrowUserError('push_error', {error_message => 'Invalid connector'});
+    my $id = $input->{message} || 0;
+    detaint_natural($id)
+      || ThrowUserError('push_error', {error_message => 'Invalid message ID'});
+    my $message = $connector->backlog->by_id($id)
+      || ThrowUserError('push_error', {error_message => 'Invalid message ID'});
+    $message->remove_from_db();
+    $vars->{message} = 'push_message_deleted';
+  }
 }
 
 __PACKAGE__->NAME;

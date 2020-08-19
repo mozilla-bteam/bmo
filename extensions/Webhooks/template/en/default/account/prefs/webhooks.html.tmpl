@@ -41,20 +41,8 @@ function onSelectProduct() {
   document.getElementById('component').options[0].selected = true;
 }
 
-function onRemoveChange() {
-  var cbs = document.getElementById('webhooks_table').getElementsByTagName('input');
-  for (var i = 0, l = cbs.length; i < l; i++) {
-    if (cbs[i].checked) {
-      document.getElementById('remove').disabled = false;
-      return;
-    }
-  }
-  document.getElementById('remove').disabled = true;
-}
-
 window.onload = function() {
   onSelectProduct();
-  onRemoveChange();
 };
 </script>
 
@@ -136,10 +124,12 @@ window.onload = function() {
       <th>Product</th>
       <th>Component</th>
       <th>Status</th>
+      <th>Queue</th>
     </tr>
   </thead>
   <tbody>
   [% FOREACH webhook IN webhooks %]
+  [% connector = connectors.by_name('Webhook_' _ webhook.id) %]
     <tr>
       <td>
         <input type="checkbox" onChange="onRemoveChange()"
@@ -156,14 +146,22 @@ window.onload = function() {
       <td>[% webhook.product.name FILTER html %]</td>
       <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
       <td>
-        [% connector = connectors.by_name('Webhook_' _ webhook.id)
-           config = connector.config
-        %]
+        [% config = connector.config %]
         <select name="[% connector.name FILTER html %].enabled"
                 id="[% connector.name FILTER html %]_enabled">
           <option value="Enabled" [% 'selected' IF config.${'enabled'} == 'Enabled' %]>Enabled</option>
           <option value="Disabled" [% 'selected' IF config.${'enabled'} == 'Disabled' %]>Disabled</option>
         </select>
+      </td>
+      <td>
+        [% IF connector.backlog.count%]
+          <a href="page.cgi?id=webhooks_queues.html&amp;[% ~%]
+                  webhook=[% webhook.id FILTER uri %]">
+            [% connector.backlog.count FILTER html %]
+          </a>
+        [% ELSE %]
+          [% connector.backlog.count FILTER html %]
+        [% END %]
       </td>
     </tr>
   [% END %]
