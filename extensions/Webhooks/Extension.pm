@@ -243,10 +243,11 @@ sub delete_backlog_queue {
 
 sub page_before_template {
   my ($self, $args) = @_;
-  #return if Bugzilla->params->{webhooks_enabled}
-  #          && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
   my ($vars, $page) = @$args{qw(vars page_id)};
   return unless $page eq 'webhooks_queues.html';
+  Bugzilla->params->{webhooks_enabled} || ThrowUserError('webhooks_disabled');
+  Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"}) || ThrowUserError('auth_failure',
+    {group => Bugzilla->params->{"webhooks_group"}, action => "access", object => "webhooks"});
   webhooks_queues($vars);
 }
 
