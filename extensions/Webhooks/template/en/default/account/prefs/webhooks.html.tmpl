@@ -124,7 +124,7 @@ window.onload = function() {
       <th>Product</th>
       <th>Component</th>
       <th>Status</th>
-      <th>Queue</th>
+      <th>Errors</th>
     </tr>
   </thead>
   <tbody>
@@ -159,8 +159,6 @@ window.onload = function() {
                   webhook=[% webhook.id FILTER uri %]">
             [% connector.backlog.count FILTER html %]
           </a>
-        [% ELSE %]
-          [% connector.backlog.count FILTER html %]
         [% END %]
       </td>
     </tr>
