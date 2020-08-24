@@ -22,4 +22,8 @@
   [% title = "Invalid option" %]
   The option value specified is invalid.
 
+[% ELSIF error == "webhooks_wrong_user" %]
+  [% title = "Wrong webhook" %]
+  This webhook doesn't belong to you.
+
 [% END %]
