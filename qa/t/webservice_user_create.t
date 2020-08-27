@@ -13,7 +13,7 @@ use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
 use QA::Util;
-use Test::More tests => 75;
+use Test::More tests => 81;
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 
 use constant NEW_PASSWORD => 'UiX1Shuuchid';
@@ -127,8 +127,14 @@ foreach my $rpc ($jsonrpc, $xmlrpc) {
     },
     {
       user => 'admin',
-      args => {email => new_login(), full_name => NEW_FULLNAME},
-      test => 'Leaving out password works',
+      args => {email => new_login(), full_name => NEW_FULLNAME, iam_username => $rpc->TYPE},
+      test => 'Adding an IAM username works.',
+    },
+    {
+      user  => 'admin',
+      args  => {email => new_login(), full_name => NEW_FULLNAME, iam_username => $rpc->TYPE},
+      error => "IAM username '" . $rpc->TYPE . "' exists. You must choose a different username.",
+      test  => 'Adding a duplicate IAM username fails.',
     },
   );
 

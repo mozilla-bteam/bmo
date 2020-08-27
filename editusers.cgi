@@ -224,6 +224,7 @@ elsif ($action eq 'new') {
     disabledtext  => scalar $cgi->param('disabledtext'),
     disable_mail  => scalar $cgi->param('disable_mail'),
     extern_id     => scalar $cgi->param('extern_id'),
+    iam_username  => scalar $cgi->param('iam_username'),
   });
 
   userDataToVars($new_user->id);
@@ -268,6 +269,8 @@ elsif ($action eq 'update') {
     $otherUser->set_password($cgi->param('password')) if $cgi->param('password');
     $otherUser->set_extern_id($cgi->param('extern_id'))
       if defined($cgi->param('extern_id'));
+    $otherUser->set_iam_username($cgi->param('iam_username'))
+      if defined($cgi->param('iam_username'));
     $otherUser->set_password_change_required(
       $cgi->param('password_change_required'));
     $otherUser->set_password_change_reason($otherUser->password_change_required

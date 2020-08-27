@@ -936,6 +936,11 @@
     <em>[% name FILTER html %]</em> is a system group.
     This group cannot be deleted.
 
+  [% ELSIF error == "iam_username_exists" %]
+    [% title = "IAM Username Exists" %]
+    IAM username '[% username FILTER html %]' exists. You must choose
+    a different username.
+
   [% ELSIF error == "illegal_attachment_edit" %]
     [% title = "Unauthorized Action" %]
     You are not authorized to edit attachment [% attach_id FILTER html %].
