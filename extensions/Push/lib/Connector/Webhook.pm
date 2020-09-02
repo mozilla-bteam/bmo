@@ -74,13 +74,11 @@ sub should_send {
   if ($product eq $bug->product
       && ($component eq $bug->component || $component eq 'any'))
   {
-    if ($event =~ /create/ && $message->routing_key eq 'bug.create') {
-      return 1;
-    }elsif ($event =~ /change/ && $message->routing_key =~ /^bug\.modify/) {
-      return 1;
-    }elsif ($event =~ /comment/ && $message->routing_key eq 'comment.create') {
-      return 1;
-    }elsif ($event =~ /attachment/ &&  $message->routing_key eq 'attachment.create') {
+    if (($event =~ /create/ && $message->routing_key eq 'bug.create')
+      || ($event =~ /change/ && $message->routing_key =~ /^bug\.modify/)
+      || ($event =~ /comment/ && $message->routing_key eq 'comment.create')
+      || ($event =~ /attachment/ &&  $message->routing_key eq 'attachment.create'))
+    {
       return 1;
     }
   }

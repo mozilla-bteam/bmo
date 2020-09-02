@@ -150,7 +150,6 @@ window.onload = function() {
         <input type="checkbox" onChange="onRemoveChange()"
                name="remove" value="[% webhook.id FILTER none %]">
       </td>
-      <td>[% webhook.id FILTER html %]</td>
       <td>[% webhook.name FILTER html %]</td>
       <td>
         <a href="[% webhook.url FILTER html %]">
