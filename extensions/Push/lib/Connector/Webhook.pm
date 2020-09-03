@@ -20,6 +20,7 @@ use Bugzilla::Attachment;
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util;
+use Bugzilla::Extension::Push::Serialize qw(_integer _boolean _bug);
 use Bugzilla::Util ();
 
 use JSON qw(decode_json encode_json);
@@ -101,24 +102,24 @@ sub send {
     my $target         = $payload->{event}->{target};
 
     my $target_is_private = $payload->{$target}->{is_private};
-    if ($target_is_private && ($target eq 'attachment' || $target eq 'comment')){
+    if (($target_is_private || $bug_is_private) && ($target eq 'attachment' || $target eq 'comment')){
       my $target_id = $payload->{$target}->{id};
       delete @{$payload}{$target};
-      $payload->{$target}->{id}         = $target_id;
-      $payload->{$target}->{is_private} = $target_is_private;
-      $payload->{$target}->{bug}        = $bug_data;
+      $payload->{$target}->{id}         = _integer($target_id) ;
+      $payload->{$target}->{is_private} = _boolean($target_is_private);
+      $payload->{$target}->{bug}        = _bug($bug_data);
     }
 
     if ($bug_is_private){
       if ($target eq 'bug'){
         delete @{$payload}{bug};
-        $payload->{bug}->{id}         = $bug_data->{id};
-        $payload->{bug}->{is_private} = $bug_is_private;
+        $payload->{bug}->{id}         = _integer($bug_data->{id});
+        $payload->{bug}->{is_private} = _boolean($bug_is_private);
       }
       else{
         delete @{$payload->{$target}}{bug};
-        $payload->{$target}->{bug}->{id}         = $bug_data->{id};
-        $payload->{$target}->{bug}->{is_private} = $bug_is_private;
+        $payload->{$target}->{bug}->{id}         = _integer($bug_data->{id});
+        $payload->{$target}->{bug}->{is_private} = _boolean($bug_is_private);
       }
       if ($payload->{event}->{action} eq 'modify'){
         delete @{$payload->{event}}{changes};
