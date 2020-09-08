@@ -20,7 +20,6 @@ use Bugzilla::Attachment;
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util;
-use Bugzilla::Extension::Push::Serialize qw(_integer _boolean _bug);
 use Bugzilla::Util ();
 
 use JSON qw(decode_json encode_json);
@@ -107,7 +106,7 @@ sub send {
       delete @{$payload}{$target};
       $payload->{$target}->{id}         = _integer($target_id) ;
       $payload->{$target}->{is_private} = _boolean($target_is_private);
-      $payload->{$target}->{bug}        = _bug($bug_data);
+      $payload->{$target}->{bug}        = $bug_data;
     }
 
     if ($bug_is_private){
@@ -174,6 +173,16 @@ sub _user_agent {
   }
 
   return $ua;
+}
+
+sub _boolean {
+  my ($value) = @_;
+  return $value ? JSON::true : JSON::false;
+}
+
+sub _integer {
+  my ($value) = @_;
+  return defined($value) ? $value + 0 : undef;
 }
 
 1;
