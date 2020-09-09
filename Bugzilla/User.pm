@@ -513,6 +513,28 @@ sub _check_numeric {
   return $value;
 }
 
+sub _check_iam_username {
+  my ($self, $username) = (@_);
+  $username = trim($username);
+
+  if ($username) {
+    validate_email_syntax($username)
+      || ThrowUserError('iam_illegal_username', {username => $username});
+
+    if ($username ne $self->iam_username) {
+      my $existing_username
+        = Bugzilla->dbh->selectrow_array(
+        'SELECT iam_username FROM profiles_iam WHERE iam_username = ?',
+        undef, $username);
+      if ($existing_username) {
+        ThrowUserError('iam_username_exists', {username => $username});
+      }
+    }
+  }
+
+  return $username;
+}
+
 ################################################################################
 # Mutators
 ################################################################################
@@ -523,20 +545,8 @@ sub set_extern_id     { $_[0]->set('extern_id',    $_[1]); }
 
 sub set_iam_username {
   my ($self, $username) = @_;
-  $username = trim($username);
-
-  if ($username) {
-    my $existing_username
-      = Bugzilla->dbh->selectrow_array(
-      'SELECT iam_username FROM profiles_iam WHERE iam_username = ?',
-      undef, $username);
-    if ($existing_username) {
-      ThrowUserError('iam_username_exists', {username => $username});
-    }
-  }
-
-  # Store new value for permanent storage later in update()
-  $self->{new_iam_username} = $username;
+  # Validate and store new value for permanent storage later in update()
+  $self->{new_iam_username} = $self->_check_iam_username($username);
   return $self;
 }
 

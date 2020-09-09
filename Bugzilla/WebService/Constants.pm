@@ -185,7 +185,8 @@ use constant WS_ERROR_CODE => {
 
   # Error 502 password_too_short no longer exists.
   # Error 503 password_too_long no longer exists.
-  invalid_username => 504,
+  invalid_username     => 504,
+  iam_illegal_username => 504,
 
   # This is from strict_isolation, but it also basically means
   # "invalid user."
