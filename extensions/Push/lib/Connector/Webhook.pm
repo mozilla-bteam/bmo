@@ -74,9 +74,11 @@ sub should_send {
   if ($product eq $bug->product
       && ($component eq $bug->component || $component eq 'any'))
   {
-    if ($event =~ /create/ && $message->routing_key eq 'bug.create') {
-      return 1;
-    }elsif ($event =~ /change/ && $message->routing_key =~ /\Qbug.modify\E/) {
+    if (($event =~ /create/ && $message->routing_key eq 'bug.create')
+      || ($event =~ /change/ && $message->routing_key =~ /^bug\.modify/)
+      || ($event =~ /comment/ && $message->routing_key eq 'comment.create')
+      || ($event =~ /attachment/ &&  $message->routing_key eq 'attachment.create'))
+    {
       return 1;
     }
   }
@@ -94,17 +96,35 @@ sub send {
     $payload->{webhook_name} = $webhook->name;
     $payload->{webhook_id}   = $webhook->id;
 
-    my $bug_data   = $self->_get_bug_data($payload);
-    my $is_private = $bug_data->{is_private};
-    if ($is_private){
-      delete @{$payload}{bug};
-      if($payload->{event}->{action} eq 'modify'){
+    my $bug_data       = $self->_get_bug_data($payload);
+    my $bug_is_private = $bug_data->{is_private};
+    my $target         = $payload->{event}->{target};
+
+    my $target_is_private = $payload->{$target}->{is_private};
+    if (($target_is_private || $bug_is_private) && ($target eq 'attachment' || $target eq 'comment')){
+      my $target_id = $payload->{$target}->{id};
+      delete @{$payload}{$target};
+      $payload->{$target}->{id}         = _integer($target_id) ;
+      $payload->{$target}->{is_private} = _boolean($target_is_private);
+      $payload->{$target}->{bug}        = $bug_data;
+    }
+
+    if ($bug_is_private){
+      if ($target eq 'bug'){
+        delete @{$payload}{bug};
+        $payload->{bug}->{id}         = _integer($bug_data->{id});
+        $payload->{bug}->{is_private} = _boolean($bug_is_private);
+      }
+      else{
+        delete @{$payload->{$target}}{bug};
+        $payload->{$target}->{bug}->{id}         = _integer($bug_data->{id});
+        $payload->{$target}->{bug}->{is_private} = _boolean($bug_is_private);
+      }
+      if ($payload->{event}->{action} eq 'modify'){
         delete @{$payload->{event}}{changes};
       }
-      $payload->{bug}->{id}       = $bug_data->{id};
-      $payload->{bug}->{is_private} = $is_private;
     }
-    delete @{$payload->{event}}{qw(routing_key change_set target)};
+    delete @{$payload->{event}}{change_set};
 
     my $headers = HTTP::Headers->new(Content_Type => 'application/json');
     my $request
@@ -153,6 +173,16 @@ sub _user_agent {
   }
 
   return $ua;
+}
+
+sub _boolean {
+  my ($value) = @_;
+  return $value ? JSON::true : JSON::false;
+}
+
+sub _integer {
+  my ($value) = @_;
+  return defined($value) ? $value + 0 : undef;
 }
 
 1;
