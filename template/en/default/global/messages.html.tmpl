@@ -80,6 +80,8 @@
               The user [% otheruser.password_change_required ? "must" : "no longer needs to" %] update their password.
             [% ELSIF field == 'password_change_reason' %]
               The password change reason has been modified.
+            [% ELSIF field == 'iam_username' %]
+              The IAM username has been modified.
             [% END %]
           </li>
         [% END %]

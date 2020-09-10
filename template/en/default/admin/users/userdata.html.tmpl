@@ -64,6 +64,19 @@
   </td>
 </tr>
 
+<tr>
+  <th><label for="name">IAM username:</label></th>
+  <td>
+    [% IF editusers %]
+      <input size="64" maxlength="255" name="iam_username"
+             autocomplete="off"
+             id="iam_username" value="[% otheruser.iam_username FILTER html %]">
+    [% ELSE %]
+      [% otheruser.iam_username FILTER html %]
+    [% END %]
+  </td>
+</tr>
+
 [% IF editusers %]
   <tr>
     <th>

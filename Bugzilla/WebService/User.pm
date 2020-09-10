@@ -120,13 +120,18 @@ sub create {
 
   my $email = trim($params->{email})
     || ThrowCodeError('param_required', {param => 'email'});
-  my $realname = trim($params->{full_name});
-  my $password = trim($params->{password}) || '*';
 
-  my $user
-    = Bugzilla::User->create({
-    login_name => $email, realname => $realname, cryptpassword => $password
-    });
+  my $data = {
+    login_name    => $email,
+    realname      => trim($params->{full_name}),
+    cryptpassword => trim($params->{password}) || '*',
+  };
+
+  if (my $iam_username = trim($params->{iam_username})) {
+    $data->{iam_username} = $iam_username;
+  }
+
+  my $user = Bugzilla::User->create($data);
 
   return {id => $self->type('int', $user->id)};
 }
@@ -293,12 +298,13 @@ sub get {
   foreach my $user (@$in_group) {
     my $user_info = filter $params,
       {
-      id        => $self->type('int',     $user->id),
-      real_name => $self->type('string',  $user->name),
-      nick      => $self->type('string',  $user->nick),
-      name      => $self->type('email',   $user->login),
-      email     => $self->type('email',   $user->email),
-      can_login => $self->type('boolean', $user->is_enabled ? 1 : 0),
+      id           => $self->type('int',     $user->id),
+      real_name    => $self->type('string',  $user->name),
+      nick         => $self->type('string',  $user->nick),
+      name         => $self->type('email',   $user->login),
+      email        => $self->type('email',   $user->email),
+      can_login    => $self->type('boolean', $user->is_enabled ? 1 : 0),
+      iam_username => $self->type('string',  $user->iam_username),
       };
 
     if (Bugzilla->user->in_group('editusers')) {
@@ -802,6 +808,9 @@ exist in Bugzilla, but will not be allowed to log in using DB
 authentication until a password is set either by the user (through
 resetting their password) or by the administrator.
 
+=item C<iam_username> (string) B<optional> - The IAM username used
+to authenticate with using an external IAM system.
+
 =back
 
 =item B<Returns>
@@ -867,6 +876,10 @@ C<string> The email of the user. Note that email used to login to Bugzilla.
 Also note that you can only update one user at a time when changing the
 login name / email. (An error will be thrown if you try to update this field
 for multiple users at once.)
+
+=item C<iam_username>
+
+C<string> The IAM username used to authenticate with using an external IAM system.
 
 =item C<password>
 
