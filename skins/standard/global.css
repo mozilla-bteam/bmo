@@ -973,19 +973,23 @@ input[type="radio"]:checked {
    * Fixed global header
    */
 
-  #wrapper {
-    width: 100%;
+  html,
+  body {
+    overflow-y: hidden; /* Disable bounce effect (Safari) */
+    height: 100%;
   }
 
-  #header {
-    height: 48px;
-    position: fixed;
+  #wrapper {
+    overflow: hidden;
     width: 100%;
-    z-index: 5;
+    height: 100%;
   }
 
   #bugzilla-body {
-    margin-top: 48px;
+    overflow-x: auto;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS */
+    will-change: transform; /* Enable smooth scrolling (Safari) */
   }
 }
 
