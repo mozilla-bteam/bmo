@@ -266,7 +266,7 @@ sub _attachment {
 sub _comment {
   my ($self, $comment, $is_shallow) = @_;
   my $rh = {
-    id            => _integer($comment->bug_id),
+    id            => _integer($comment->id),
     body          => _string($comment->body),
     creation_time => _time($comment->creation_ts),
     is_private    => _boolean($comment->is_private),

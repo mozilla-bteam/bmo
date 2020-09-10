@@ -1043,10 +1043,11 @@ use constant ABSTRACT_SCHEMA => {
       },
       iam_username => {TYPE => 'varchar(255)', NOTNULL => 1},
     ],
-    INDEXES =>
-      [profile_iam_userid_idx => {FIELDS => ['user_id'], TYPE => 'UNIQUE'},],
-    },
-
+    INDEXES => [
+      profile_iam_userid_idx =>
+        {FIELDS => ['user_id'], TYPE => 'UNIQUE'},
+    ],
+  },
 
   email_setting => {
     FIELDS => [

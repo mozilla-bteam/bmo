@@ -41,20 +41,8 @@ function onSelectProduct() {
   document.getElementById('component').options[0].selected = true;
 }
 
-function onRemoveChange() {
-  var cbs = document.getElementById('webhooks_table').getElementsByTagName('input');
-  for (var i = 0, l = cbs.length; i < l; i++) {
-    if (cbs[i].checked) {
-      document.getElementById('remove').disabled = false;
-      return;
-    }
-  }
-  document.getElementById('remove').disabled = true;
-}
-
 window.onload = function() {
   onSelectProduct();
-  onRemoveChange();
 };
 </script>
 
@@ -76,11 +64,17 @@ window.onload = function() {
 <h4>Events</h4>
 <p>Select the events you want to receive.</p>
 <p>
-  <input type="checkbox" id="create_event" name="create_event" value="1">
-  <label for="create_event">When a new [% terms.bug %] is created</label>
+  <input type="checkbox" id="create_event" name="event" value="create">
+  <label for="create_event">When a new <b>[% terms.bug %]</b> is <b>created</b></label>
 <br>
-  <input type="checkbox" id="change_event" name="change_event" value="1">
-  <label for="change_event">When an existing [% terms.bug %] is modified</label>
+  <input type="checkbox" id="change_event" name="event" value="change">
+  <label for="change_event">When an existing <b>[% terms.bug %]</b> is <b>modified</b></label>
+<br>
+  <input type="checkbox" id="attachment_event" name="event" value="attachment">
+  <label for="attachment_event">When a new <b>attachment</b> is created</label>
+<br>
+  <input type="checkbox" id="comment_event" name="event" value="comment">
+  <label for="comment_event">When a new <b>comment</b> is created</label>
 </p>
 <h4>Filters</h4>
 <p>
@@ -129,23 +123,23 @@ window.onload = function() {
   <thead>
     <tr>
       <th>Remove</th>
-      <th>ID</th>
       <th>Name</th>
       <th>URL</th>
       <th>Events</th>
       <th>Product</th>
       <th>Component</th>
       <th>Status</th>
+      <th>Errors</th>
     </tr>
   </thead>
   <tbody>
   [% FOREACH webhook IN webhooks %]
+  [% connector = connectors.by_name('Webhook_' _ webhook.id) %]
     <tr>
       <td>
         <input type="checkbox" onChange="onRemoveChange()"
                name="remove" value="[% webhook.id FILTER none %]">
       </td>
-      <td>[% webhook.id FILTER html %]</td>
       <td>[% webhook.name FILTER html %]</td>
       <td>
         <a href="[% webhook.url FILTER html %]">
@@ -156,14 +150,20 @@ window.onload = function() {
       <td>[% webhook.product.name FILTER html %]</td>
       <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
       <td>
-        [% connector = connectors.by_name('Webhook_' _ webhook.id)
-           config = connector.config
-        %]
+        [% config = connector.config %]
         <select name="[% connector.name FILTER html %].enabled"
                 id="[% connector.name FILTER html %]_enabled">
           <option value="Enabled" [% 'selected' IF config.${'enabled'} == 'Enabled' %]>Enabled</option>
           <option value="Disabled" [% 'selected' IF config.${'enabled'} == 'Disabled' %]>Disabled</option>
         </select>
+      </td>
+      <td>
+        [% IF connector.backlog.count%]
+          <a href="page.cgi?id=webhooks_queues.html&amp;[% ~%]
+                  webhook=[% webhook.id FILTER uri %]">
+            [% connector.backlog.count FILTER html %]
+          </a>
+        [% END %]
       </td>
     </tr>
   [% END %]
