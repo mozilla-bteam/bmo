@@ -416,7 +416,9 @@
 </header> [%# header %]
 
 [%
+  has_banner = 0;
   IF bug && bug.groups_in.size;
+    has_banner = 1;
     is_security_bug = 0;
     FOREACH group IN bug.groups_in;
       is_security_bug = 1 IF group.secure_mail;
@@ -435,7 +437,7 @@
   </div>
 [% END %]
 
-<main id="bugzilla-body" tabindex="-1">
+<main id="bugzilla-body" tabindex="-1"[% ' class="has-banner"' IF has_banner %]>
 <div id="main-inner">
 
 [%# in most cases the "header" variable provides redundant information, however
