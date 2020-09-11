@@ -38,8 +38,17 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
    */
   constructor($change_set) {
     this.str = BUGZILLA.string.InlineCommentEditor;
-    this.comment_id = Number($change_set.querySelector('.comment').dataset.id);
-    this.commenter_id = Number($change_set.querySelector('.email').dataset.userId);
+
+    const $comment = $change_set.querySelector('.comment');
+    this.comment_id = Number($comment.dataset.id);
+    this.comment_no = Number($comment.dataset.no);
+
+    const $email = $change_set.querySelector('.email');
+    if ($email) {
+      this.commenter_id = Number($email.dataset.userId);
+    } else {
+      this.commenter_id = 0;
+    }
 
     this.$change_set = $change_set;
     this.$edit_button = $change_set.querySelector('.edit-btn');
@@ -108,7 +117,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
         <div role="toolbar" class="bottom-toolbar" aria-label="${this.str.toolbar}">
           <span role="status"></span>
           ${BUGZILLA.user.is_insider && BUGZILLA.user.id !== this.commenter_id ? `<label>
-            <input type="checkbox" value="on" checked data-action="hide"> ${this.str.hide_revision}</label>` : ''}
+            <input type="checkbox" value="on" ${this.comment_no === 0 ? '' : 'checked'} data-action="hide"> ${this.str.hide_revision}</label>` : ''}
           <button type="button" class="secondary" data-action="cancel" title="${this.str.cancel_tooltip} (Esc)"
                   aria-keyshortcuts="Escape">${this.str.cancel}</button>
           <button type="button" class="primary" disabled data-action="save"

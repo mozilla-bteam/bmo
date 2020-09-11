@@ -719,6 +719,11 @@ td.flag-requestee {
   display: inline;
 }
 
+.change-authors {
+  font-weight: bold;
+  padding-right: 8px;
+}
+
 .change-author .user-role {
   margin-left: 1em;
   border: 1px solid var(--positive-message-foreground-color);

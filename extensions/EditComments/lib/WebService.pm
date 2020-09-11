@@ -107,8 +107,8 @@ sub update_comment {
     {function => 'EditComments.update_comment', param => 'new_comment'})
     if $old_comment eq $new_comment;
 
-  my $dbh         = Bugzilla->dbh;
-  my $change_when = $dbh->selectrow_array('SELECT NOW()');
+  my $dbh       = Bugzilla->dbh;
+  my $timestamp = $dbh->selectrow_array('SELECT NOW()');
 
   # edit_comments_admins_group members can hide comment revisions where needed
   my $is_hidden
@@ -116,22 +116,12 @@ sub update_comment {
       && defined $params->{is_hidden}
       && $params->{is_hidden} == 1) ? 1 : 0;
 
-  # Update the `longdescs` (comments) table
-  $dbh->do(
-    'UPDATE longdescs SET thetext = ?, edit_count = edit_count + 1 WHERE comment_id = ?',
-    undef, $new_comment, $comment_id
-  );
-  Bugzilla->memcached->clear({table => 'longdescs', id => $comment_id});
-
-  # Log old comment to the `longdescs_activity` (comment revisions) table
-  $dbh->do(
-    'INSERT INTO longdescs_activity (comment_id, who, change_when, old_comment, is_hidden)
-              VALUES (?, ?, ?, ?, ?)', undef,
-    ($comment_id, $user->id, $change_when, $old_comment, $is_hidden)
-  );
-
-  $comment->{thetext} = $new_comment;
-  $bug->_sync_fulltext(update_comments => 1);
+  $comment->update_text({
+    text          => $new_comment,
+    timestamp     => $timestamp,
+    is_hidden     => $is_hidden,
+    sync_fulltext => 1,
+  });
 
   my $html
     = $comment->is_markdown && Bugzilla->params->{use_markdown}
