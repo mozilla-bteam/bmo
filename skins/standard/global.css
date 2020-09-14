@@ -973,23 +973,23 @@ input[type="radio"]:checked {
    * Fixed global header
    */
 
-  html,
-  body {
-    overflow-y: hidden; /* Disable bounce effect (Safari) */
-    height: 100%;
+  #wrapper {
+    width: 100%;
   }
 
-  #wrapper {
-    overflow: hidden;
+  #header {
+    height: 48px;
+    position: fixed;
     width: 100%;
-    height: 100%;
+    z-index: 5;
   }
 
   #bugzilla-body {
-    overflow-x: auto;
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS */
-    will-change: transform; /* Enable smooth scrolling (Safari) */
+    margin-top: 48px;
+  }
+
+  #bugzilla-body.has-banner {
+    margin-top: 72px;
   }
 }
 
@@ -1001,12 +1001,11 @@ input[type="radio"]:checked {
   flex: auto;
   position: relative;
   outline: none;
-  padding: 0 15px;
 }
 
 #main-inner {
   position: relative;
-  margin: 15px 0;
+  margin: 15px;
 }
 
 /**
@@ -1363,13 +1362,16 @@ input[type="radio"]:checked {
  */
 
 #private-bug-banner {
-  padding: 4px;
-  color: #111;
   background-color: var(--confidential-bug-background-color);
+  color: #111;
+  height: 18px;
+  margin-top: 48px;
+  padding: 4px;
+  position: fixed;
   text-align: center;
-  -moz-user-select: none;
-  -webkit-user-select: none;
   user-select: none;
+  width: 100%;
+  z-index: 2;
 }
 
 #private-bug-banner .icon {
