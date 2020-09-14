@@ -1001,12 +1001,11 @@ input[type="radio"]:checked {
   flex: auto;
   position: relative;
   outline: none;
-  padding: 0 15px;
 }
 
 #main-inner {
   position: relative;
-  margin: 15px 0;
+  margin: 15px;
 }
 
 /**
@@ -1372,7 +1371,7 @@ input[type="radio"]:checked {
   text-align: center;
   user-select: none;
   width: 100%;
-  z-index: 5;
+  z-index: 2;
 }
 
 #private-bug-banner .icon {
