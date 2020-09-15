@@ -4272,8 +4272,15 @@ sub _populate_oauth2_scopes {
   # Bug 1658317 - dkl@mozilla - Update column names if this is an existing DB
   if (!$dbh->bz_column_info('oauth2_scope', 'name')) {
     $dbh->bz_rename_column("oauth2_scope", "description", "name");
-    $dbh->bz_add_column('oauth2_scope', 'description',
-      {TYPE => 'TINYTEXT', NOTNULL => 1, DEFAULT => "'Needs Description'"});
+    $dbh->bz_add_column('oauth2_scope', 'description', {TYPE => 'TINYTEXT'});
+    $dbh->do(
+      "UPDATE oauth2_scope SET description = 'View basic account information such as email address.' WHERE name = 'user:read'"
+    );
+    $dbh->do(
+      "UPDATE oauth2_scope SET description = 'Needs description.' WHERE name != 'user:read'"
+    );
+    $dbh->bz_alter_column('oauth2_scope', 'description',
+      {TYPE => 'TINYTEXT', NOTNULL => 1});
   }
 }
 
