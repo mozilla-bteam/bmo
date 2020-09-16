@@ -1,0 +1,16 @@
+{
+    "product": "Core",
+    "component": "General",
+    "summary": "ThreadSanitizer: data race [@ assign_assuming_AddRef] vs. [@ get]",
+    "version": "Trunk",
+    "type": "defect",
+    "description": "#### Why fix races? match on the full stack, so it should be picked such that it is unique to this particular race. The bug number of this bug should also be included so we have some documentation on why this suppression was added.",
+    "op_sys": "Linux",
+    "platform": "x86_64",
+    "cc": "choller@mozilla.com, fuzzing@mozilla.com, nfroyd@mozilla.com",
+    "groups": [
+        "core-security"
+    ],
+    "blocks": "929478",
+    "cf_status_firefox82": "affected"
+}
