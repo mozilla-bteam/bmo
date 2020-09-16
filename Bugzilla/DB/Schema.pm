@@ -1033,6 +1033,22 @@ use constant ABSTRACT_SCHEMA => {
     ],
   },
 
+  profiles_iam => {
+    FIELDS => [
+      id      => {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      user_id => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'}
+      },
+      iam_username => {TYPE => 'varchar(255)', NOTNULL => 1},
+    ],
+    INDEXES => [
+      profile_iam_userid_idx =>
+        {FIELDS => ['user_id'], TYPE => 'UNIQUE'},
+    ],
+  },
+
   email_setting => {
     FIELDS => [
       user_id => {

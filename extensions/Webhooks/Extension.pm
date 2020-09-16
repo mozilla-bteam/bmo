@@ -104,14 +104,9 @@ sub user_preferences {
         $params->{url} = $input->{url};
       }
 
-      if ($input->{create_event} && $input->{change_event}) {
-        $params->{event} = 'create,change';
-      }
-      elsif ($input->{create_event}) {
-        $params->{event} = 'create';
-      }
-      elsif ($input->{change_event}) {
-        $params->{event} = 'change';
+      if ($input->{event}) {
+        $params->{event} = ref($input->{event}) eq 'ARRAY' ? join(',', @{$input->{event}})
+                          : $input->{event};
       }
       else {
         ThrowUserError('webhooks_select_event');

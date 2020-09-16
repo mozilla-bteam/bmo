@@ -366,6 +366,33 @@ sub update {
     $dbh->do("DELETE FROM profile_mfa WHERE user_id = ?", undef, $self->id);
   }
 
+  # IAM usernames are stored separately from normal profiles
+  # data so we update them here instead
+  my $new_iam_username = delete $self->{new_iam_username};
+  my $old_iam_username = $self->iam_username;
+
+  $dbh->bz_start_transaction();
+  if (!defined $old_iam_username && $new_iam_username) {
+    $dbh->do('INSERT INTO profiles_iam (user_id, iam_username) VALUES (?, ?)',
+      undef, $self->id, $new_iam_username);
+    $changes->{iam_username} = ['', $new_iam_username];
+  }
+  elsif ($old_iam_username && !$new_iam_username) {
+    $dbh->do('DELETE FROM profiles_iam WHERE user_id = ?', undef, $self->id);
+    $changes->{iam_username} = [$old_iam_username, ''];
+  }
+  elsif ($old_iam_username ne $new_iam_username) {
+    $dbh->do('UPDATE profiles_iam SET iam_username = ? WHERE user_id = ?',
+      undef, $new_iam_username, $self->id);
+    $changes->{iam_username} = [$old_iam_username, $new_iam_username];
+  }
+  if (exists $changes->{iam_username}) {
+    $self->audit_log({iam_username => $changes->{iam_username}})
+      if $self->AUDIT_UPDATES;
+    $self->{iam_username} = defined $new_iam_username ? $new_iam_username : undef;
+  }
+  $dbh->bz_commit_transaction();
+
   # Logout the user if necessary.
   Bugzilla->logout_user($self)
     if (
@@ -486,6 +513,28 @@ sub _check_numeric {
   return $value;
 }
 
+sub _check_iam_username {
+  my ($self, $username) = (@_);
+  $username = trim($username);
+
+  if ($username) {
+    validate_email_syntax($username)
+      || ThrowUserError('iam_illegal_username', {username => $username});
+
+    if ($username ne $self->iam_username) {
+      my $existing_username
+        = Bugzilla->dbh->selectrow_array(
+        'SELECT iam_username FROM profiles_iam WHERE iam_username = ?',
+        undef, $username);
+      if ($existing_username) {
+        ThrowUserError('iam_username_exists', {username => $username});
+      }
+    }
+  }
+
+  return $username;
+}
+
 ################################################################################
 # Mutators
 ################################################################################
@@ -493,6 +542,13 @@ sub _check_numeric {
 sub set_disable_mail  { $_[0]->set('disable_mail', $_[1]); }
 sub set_email_enabled { $_[0]->set('disable_mail', !$_[1]); }
 sub set_extern_id     { $_[0]->set('extern_id',    $_[1]); }
+
+sub set_iam_username {
+  my ($self, $username) = @_;
+  # Validate and store new value for permanent storage later in update()
+  $self->{new_iam_username} = $self->_check_iam_username($username);
+  return $self;
+}
 
 sub set_password_change_required {
   $_[0]->set('password_change_required', $_[1]);
@@ -709,6 +765,14 @@ sub email_enabled  { !$_[0]->email_disabled; }
 sub last_seen_date { $_[0]->{last_seen_date}; }
 sub password_change_required { $_[0]->{password_change_required}; }
 sub password_change_reason   { $_[0]->{password_change_reason}; }
+
+sub iam_username {
+  my $self = shift;
+  return $self->{iam_username}
+    ||= Bugzilla->dbh->selectrow_array(
+    'SELECT iam_username FROM profiles_iam WHERE user_id = ?',
+    undef, $self->id);
+}
 
 sub cryptpassword {
   my $self = shift;
@@ -2668,7 +2732,16 @@ sub create {
   $dbh->bz_start_transaction();
   $params->{nickname}
     = _generate_nickname($params->{realname}, $params->{login_name}, 0);
+
+  my $iam_username = delete $params->{iam_username};
+
   my $user = $class->SUPER::create($params);
+
+  # IAM usernames are stored separately from normal profiles
+  # data so we update it here instead
+  if ($iam_username) {
+    $user->set_iam_username($iam_username)->update();
+  }
 
   # Turn on all email for the new user
   require Bugzilla::BugMail;
