@@ -72,7 +72,6 @@ function compileDescription() {
     }).join("|\n|") + "|\n";
   }
 
-  let severity = document.querySelector("input[name='blocklist_severity']:checked").value;
   let name = document.getElementById("blocklist_name").value;
   let versions = document.getElementById("blocklist_versions").value || "<all versions>";
   let platformVersions = document.getElementById("blocklist_platform_versions").value || "<all platforms>";
@@ -83,8 +82,7 @@ function compileDescription() {
   let descr = table([
     ["Extension name", name],
     ["Extension versions affected", versions],
-    ["Platforms affected", platformVersions],
-    ["Block severity", severity]
+    ["Platforms affected", platformVersions]
   ]);
 
   descr += "\n### Reason\n" + unlink(reason);
@@ -180,19 +178,6 @@ window.addEventListener("DOMContentLoaded", function() {
     </div>
     <textarea name="blocklist_reason" id="blocklist_reason" cols="80" rows="5" required></textarea>
   </div>
-
-  <div class="form_section">
-    <label class="field_label required">Block Severity</label>
-    <div class="field_desc">
-      The severity of the block. Hard blocks are employed for malicious extensions.
-    </div>
-    <input type="radio" name="blocklist_severity" id="blocklist_severity_hard" value="hard" checked="checked">
-    <label for="blocklist_severity_extension">Hard</label>
-
-    <input type="radio" name="blocklist_severity" id="blocklist_severity_soft" value="soft">
-    <label for="blocklist_severity_extension">Soft</label>
-  </div>
-
 
   <div class="form_section">
     <label for="blocklist_guids" class="field_label">Extension ID(s)</label>
