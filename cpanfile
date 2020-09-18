@@ -81,6 +81,7 @@ requires 'Mojo::JWT', '0.07';
 requires 'MojoX::Log::Log4perl', '0.04';
 requires 'Mojolicious', '8.42';
 requires 'Mojolicious::Plugin::ForwardedFor';
+requires 'Mojolicious::Plugin::OAuth2', '1.58';
 requires 'Mojolicious::Plugin::OAuth2::Server', '0.44';
 requires 'Moo', '2.002004';
 requires 'MooX::StrictConstructor', '0.008';

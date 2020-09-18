@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::App::OAuth2::Clients;
+package Bugzilla::App::OAuth2::Server::Clients;
 use 5.10.1;
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -20,7 +20,7 @@ sub setup_routes {
 
   # Manage the client list
   my $client_route = $r->under(
-    '/admin/oauth' => sub {
+    '/admin/oauth/server' => sub {
       my ($c) = @_;
       my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
       $user->in_group('admin')
@@ -29,12 +29,12 @@ sub setup_routes {
       return 1;
     }
   );
-  $client_route->any('/list')->to('OAuth2::Clients#list')->name('list_clients');
-  $client_route->any('/create')->to('OAuth2::Clients#create')
+  $client_route->any('/list')->to('OAuth2::Server::Clients#list')->name('list_clients');
+  $client_route->any('/create')->to('OAuth2::Server::Clients#create')
     ->name('create_client');
-  $client_route->any('/delete')->to('OAuth2::Clients#delete')
+  $client_route->any('/delete')->to('OAuth2::Server::Clients#delete')
     ->name('delete_client');
-  $client_route->any('/edit')->to('OAuth2::Clients#edit')->name('edit_client');
+  $client_route->any('/edit')->to('OAuth2::Server::Clients#edit')->name('edit_client');
 }
 
 # Show list of clients
@@ -43,7 +43,7 @@ sub list {
   my $clients = Bugzilla->dbh->selectall_arrayref('SELECT * FROM oauth2_client',
     {Slice => {}});
   $self->stash(clients => $clients);
-  return $self->render(template => 'admin/oauth/list', handler => 'bugzilla');
+  return $self->render(template => 'admin/oauth/server/list', handler => 'bugzilla');
 }
 
 # Create new client
@@ -59,7 +59,7 @@ sub create {
     $vars->{scopes}
       = $dbh->selectall_arrayref('SELECT * FROM oauth2_scope', {Slice => {}});
     $self->stash(%{$vars});
-    return $self->render(template => 'admin/oauth/create', handler => 'bugzilla');
+    return $self->render(template => 'admin/oauth/server/create', handler => 'bugzilla');
   }
 
   $dbh->bz_start_transaction;
@@ -105,7 +105,7 @@ sub create {
   $vars->{'client'}  = {description => $description};
   $vars->{'clients'} = $clients;
   $self->stash(%{$vars});
-  return $self->render(template => 'admin/oauth/list', handler => 'bugzilla');
+  return $self->render(template => 'admin/oauth/server/list', handler => 'bugzilla');
 }
 
 # Delete client
@@ -123,7 +123,7 @@ sub delete {
     $vars->{'token'}  = issue_session_token('delete_oauth_client');
     $self->stash(%{$vars});
     return $self->render(
-      template => 'admin/oauth/confirm-delete',
+      template => 'admin/oauth/server/confirm-delete',
       handler  => 'bugzilla'
     );
   }
@@ -146,7 +146,7 @@ sub delete {
   $vars->{'client'}  = {description => $client_data->{description}};
   $vars->{'clients'} = $clients;
   $self->stash(%{$vars});
-  return $self->render(template => 'admin/oauth/list', handler => 'bugzilla');
+  return $self->render(template => 'admin/oauth/server/list', handler => 'bugzilla');
 }
 
 #  Edit client
@@ -173,7 +173,7 @@ sub edit {
   if ($self->req->method ne 'POST') {
     $vars->{token} = issue_session_token('edit_oauth_client');
     $self->stash(%{$vars});
-    return $self->render(template => 'admin/oauth/edit', handler => 'bugzilla');
+    return $self->render(template => 'admin/oauth/server/edit', handler => 'bugzilla');
   }
 
   $dbh->bz_start_transaction;
@@ -214,7 +214,7 @@ sub edit {
   $vars->{'client'}  = {description => $description};
   $vars->{'clients'} = $clients;
   $self->stash(%{$vars});
-  return $self->render(template => 'admin/oauth/list', handler => 'bugzilla');
+  return $self->render(template => 'admin/oauth/server/list', handler => 'bugzilla');
 }
 
 1;
