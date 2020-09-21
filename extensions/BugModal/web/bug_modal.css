@@ -74,6 +74,10 @@ a.activity-ref {
   color: inherit;
 }
 
+.no-scroll {
+    overflow: hidden;
+}
+
 /**
  * modules
  */
@@ -1181,18 +1185,17 @@ a.lightbox-icon.markdown {
   position: absolute;
   bottom: 0;
   left: 0;
-  overflow: auto;
   width: 100%;
   text-align: center;
+  overflow-y: scroll;
   z-index: 2;
 }
 
 #lb_text {
-  position: fixed;
-  top: 4px;
-  left: 8px;
+  padding: 4px;
   z-index: 3;
-  color: var(--secondary-label-color);
+  color: var(--primary-text-color);
+  background: var(--primary-text-background-color);
   font-weight: bold;
   cursor: default;
 }
