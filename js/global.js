@@ -236,23 +236,9 @@ const adjust_scroll_onload = () => {
  *  once the scroll is complete.
  */
 const scroll_element_into_view = ($target, complete) => {
-    let top = 0;
-    let $element = $target;
-
-    // Traverse up in the DOM tree to the scroll container of the
-    // focused element, either `<main>` or `<div role="feed">`.
-    do {
-        top += ($element.offsetTop || 0);
-        $element = $element.offsetParent;
-    } while ($element && !$element.matches('main, [role="feed"]'))
-
-    if (!$element) {
-        return;
-    }
-
     if (typeof complete === 'function') {
         const callback = () => {
-            $element.removeEventListener('scroll', listener);
+            document.documentElement.removeEventListener('scroll', listener);
             complete();
         };
 
@@ -265,10 +251,10 @@ const scroll_element_into_view = ($target, complete) => {
         // Make sure the callback is always fired even if no scroll happened
         let timer = window.setTimeout(callback, 100);
 
-        $element.addEventListener('scroll', listener);
+        document.documentElement.addEventListener('scroll', listener);
     }
 
-    $element.scrollTop = top - 20;
+    document.documentElement.scrollTop = $target.offsetTop - 20;
 }
 
 window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
