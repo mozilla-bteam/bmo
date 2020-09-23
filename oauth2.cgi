@@ -31,9 +31,5 @@ $cache->{oauth2_client_userinfo} = $c->oauth2->userinfo($resp->{access_token});
 
 my $user = Bugzilla->login(LOGIN_REQUIRED);
 
-if ($user && $user->in_group('no-sso-auth')) {
-  ThrowUserError('sso_auth_account_too_powerful');
-}
-
 # Go back where we came from
 $cgi->redirect($cgi->param('redirect'));
