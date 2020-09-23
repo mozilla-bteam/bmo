@@ -1548,7 +1548,7 @@ async function show_new_changes_indicator() {
             ` since <time datetime="${date_attr}">${date_label}</time>`;
         $link.addEventListener('click', () => {
             $link.remove();
-            scroll_element_into_view($separator);
+            $.scrollTo($separator);
         }, { once: true });
         document.querySelector('#changeform').insertAdjacentElement('beforebegin', $link);
 
@@ -1565,13 +1565,10 @@ async function show_new_changes_indicator() {
                     $link.addEventListener('transitionend', () => $link.remove(), { once: true });
                     $link.hidden = true;
                 }
-            }), { root: document.querySelector('#bugzilla-body') });
+            }));
 
             observer.observe($separator);
         }
-
-        // TODO: Enable auto-scroll once the modal page layout is optimized
-        // scroll_element_into_view($separator);
     } catch (ex) {}
 }
 
@@ -1686,10 +1683,12 @@ $(function() {
 
             if (typeof target === 'string') {
                 $target = document.getElementById(target);
-                window.location.hash = target;
-            } else {
-                // Use raw DOM node instead of jQuery
+                window.location.hash = $target;
+            } else if (typeof target.get === 'function') {
+                // Use native DOM element instead of jQuery
                 $target = target.get(0);
+            } else {
+                $target = target;
             }
 
             if ($target) {
