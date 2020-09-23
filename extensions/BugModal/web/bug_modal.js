@@ -1597,13 +1597,14 @@ function lb_show(el) {
             lb_close(event);
         }
     });
+    $('html').addClass('no-scroll');
     var overlay = $('<div>')
         .prop('id', 'lb_overlay')
         .css({ opacity: 0 })
         .appendTo('body');
     var overlay2 = $('<div>')
         .prop('id', 'lb_overlay2')
-        .css({ top: $(window).scrollTop() + 5 })
+        .css({ top: $(window).scrollTop() + $('#header').height() })
         .appendTo('body');
     var title = $('<div>')
         .prop('id', 'lb_text')
@@ -1633,6 +1634,7 @@ function lb_close(event) {
     event.preventDefault();
     $(document).unbind('keyup.lb');
     $('#lb_overlay, #lb_overlay2, #lb_close_btn, #lb_img, #lb_text').remove();
+    $('html').removeClass('no-scroll');
 }
 
 $(function() {
