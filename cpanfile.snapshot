@@ -23,83 +23,83 @@ DISTRIBUTIONS
       Algorithm::Diff::_impl 1.1903
     requirements:
       ExtUtils::MakeMaker 0
-  Alien-Build-2.32
-    pathname: P/PL/PLICEASE/Alien-Build-2.32.tar.gz
+  Alien-Build-2.33
+    pathname: P/PL/PLICEASE/Alien-Build-2.33.tar.gz
     provides:
-      Alien::Base 2.32
-      Alien::Base::PkgConfig 2.32
-      Alien::Base::Wrapper 2.32
-      Alien::Build 2.32
-      Alien::Build::CommandSequence 2.32
-      Alien::Build::Helper 2.32
-      Alien::Build::Interpolate 2.32
-      Alien::Build::Interpolate::Default 2.32
-      Alien::Build::Interpolate::Helper 2.32
-      Alien::Build::Log 2.32
-      Alien::Build::Log::Abbreviate 2.32
-      Alien::Build::Log::Default 2.32
-      Alien::Build::MM 2.32
-      Alien::Build::Meta 2.32
-      Alien::Build::Plugin 2.32
-      Alien::Build::Plugin::Build::Autoconf 2.32
-      Alien::Build::Plugin::Build::CMake 2.32
-      Alien::Build::Plugin::Build::Copy 2.32
-      Alien::Build::Plugin::Build::MSYS 2.32
-      Alien::Build::Plugin::Build::Make 2.32
-      Alien::Build::Plugin::Build::SearchDep 2.32
-      Alien::Build::Plugin::Core::CleanInstall 2.32
-      Alien::Build::Plugin::Core::Download 2.32
-      Alien::Build::Plugin::Core::FFI 2.32
-      Alien::Build::Plugin::Core::Gather 2.32
-      Alien::Build::Plugin::Core::Legacy 2.32
-      Alien::Build::Plugin::Core::Override 2.32
-      Alien::Build::Plugin::Core::Setup 2.32
-      Alien::Build::Plugin::Core::Tail 2.32
-      Alien::Build::Plugin::Decode::DirListing 2.32
-      Alien::Build::Plugin::Decode::DirListingFtpcopy 2.32
-      Alien::Build::Plugin::Decode::HTML 2.32
-      Alien::Build::Plugin::Decode::Mojo 2.32
-      Alien::Build::Plugin::Download::Negotiate 2.32
-      Alien::Build::Plugin::Extract::ArchiveTar 2.32
-      Alien::Build::Plugin::Extract::ArchiveZip 2.32
-      Alien::Build::Plugin::Extract::CommandLine 2.32
-      Alien::Build::Plugin::Extract::Directory 2.32
-      Alien::Build::Plugin::Extract::Negotiate 2.32
-      Alien::Build::Plugin::Fetch::CurlCommand 2.32
-      Alien::Build::Plugin::Fetch::HTTPTiny 2.32
-      Alien::Build::Plugin::Fetch::LWP 2.32
-      Alien::Build::Plugin::Fetch::Local 2.32
-      Alien::Build::Plugin::Fetch::LocalDir 2.32
-      Alien::Build::Plugin::Fetch::NetFTP 2.32
-      Alien::Build::Plugin::Fetch::Wget 2.32
-      Alien::Build::Plugin::Gather::IsolateDynamic 2.32
-      Alien::Build::Plugin::PkgConfig::CommandLine 2.32
-      Alien::Build::Plugin::PkgConfig::LibPkgConf 2.32
-      Alien::Build::Plugin::PkgConfig::MakeStatic 2.32
-      Alien::Build::Plugin::PkgConfig::Negotiate 2.32
-      Alien::Build::Plugin::PkgConfig::PP 2.32
-      Alien::Build::Plugin::Prefer::BadVersion 2.32
-      Alien::Build::Plugin::Prefer::GoodVersion 2.32
-      Alien::Build::Plugin::Prefer::SortVersions 2.32
-      Alien::Build::Plugin::Probe::CBuilder 2.32
-      Alien::Build::Plugin::Probe::CommandLine 2.32
-      Alien::Build::Plugin::Probe::Vcpkg 2.32
-      Alien::Build::Plugin::Test::Mock 2.32
-      Alien::Build::PluginMeta 2.32
-      Alien::Build::Temp 2.32
-      Alien::Build::TempDir 2.32
-      Alien::Build::Util 2.32
-      Alien::Build::Version::Basic 2.32
-      Alien::Build::rc 2.32
-      Alien::Role 2.32
-      Test::Alien 2.32
-      Test::Alien::Build 2.32
-      Test::Alien::CanCompile 2.32
-      Test::Alien::CanPlatypus 2.32
-      Test::Alien::Diag 2.32
-      Test::Alien::Run 2.32
-      Test::Alien::Synthetic 2.32
-      alienfile 2.32
+      Alien::Base 2.33
+      Alien::Base::PkgConfig 2.33
+      Alien::Base::Wrapper 2.33
+      Alien::Build 2.33
+      Alien::Build::CommandSequence 2.33
+      Alien::Build::Helper 2.33
+      Alien::Build::Interpolate 2.33
+      Alien::Build::Interpolate::Default 2.33
+      Alien::Build::Interpolate::Helper 2.33
+      Alien::Build::Log 2.33
+      Alien::Build::Log::Abbreviate 2.33
+      Alien::Build::Log::Default 2.33
+      Alien::Build::MM 2.33
+      Alien::Build::Meta 2.33
+      Alien::Build::Plugin 2.33
+      Alien::Build::Plugin::Build::Autoconf 2.33
+      Alien::Build::Plugin::Build::CMake 2.33
+      Alien::Build::Plugin::Build::Copy 2.33
+      Alien::Build::Plugin::Build::MSYS 2.33
+      Alien::Build::Plugin::Build::Make 2.33
+      Alien::Build::Plugin::Build::SearchDep 2.33
+      Alien::Build::Plugin::Core::CleanInstall 2.33
+      Alien::Build::Plugin::Core::Download 2.33
+      Alien::Build::Plugin::Core::FFI 2.33
+      Alien::Build::Plugin::Core::Gather 2.33
+      Alien::Build::Plugin::Core::Legacy 2.33
+      Alien::Build::Plugin::Core::Override 2.33
+      Alien::Build::Plugin::Core::Setup 2.33
+      Alien::Build::Plugin::Core::Tail 2.33
+      Alien::Build::Plugin::Decode::DirListing 2.33
+      Alien::Build::Plugin::Decode::DirListingFtpcopy 2.33
+      Alien::Build::Plugin::Decode::HTML 2.33
+      Alien::Build::Plugin::Decode::Mojo 2.33
+      Alien::Build::Plugin::Download::Negotiate 2.33
+      Alien::Build::Plugin::Extract::ArchiveTar 2.33
+      Alien::Build::Plugin::Extract::ArchiveZip 2.33
+      Alien::Build::Plugin::Extract::CommandLine 2.33
+      Alien::Build::Plugin::Extract::Directory 2.33
+      Alien::Build::Plugin::Extract::Negotiate 2.33
+      Alien::Build::Plugin::Fetch::CurlCommand 2.33
+      Alien::Build::Plugin::Fetch::HTTPTiny 2.33
+      Alien::Build::Plugin::Fetch::LWP 2.33
+      Alien::Build::Plugin::Fetch::Local 2.33
+      Alien::Build::Plugin::Fetch::LocalDir 2.33
+      Alien::Build::Plugin::Fetch::NetFTP 2.33
+      Alien::Build::Plugin::Fetch::Wget 2.33
+      Alien::Build::Plugin::Gather::IsolateDynamic 2.33
+      Alien::Build::Plugin::PkgConfig::CommandLine 2.33
+      Alien::Build::Plugin::PkgConfig::LibPkgConf 2.33
+      Alien::Build::Plugin::PkgConfig::MakeStatic 2.33
+      Alien::Build::Plugin::PkgConfig::Negotiate 2.33
+      Alien::Build::Plugin::PkgConfig::PP 2.33
+      Alien::Build::Plugin::Prefer::BadVersion 2.33
+      Alien::Build::Plugin::Prefer::GoodVersion 2.33
+      Alien::Build::Plugin::Prefer::SortVersions 2.33
+      Alien::Build::Plugin::Probe::CBuilder 2.33
+      Alien::Build::Plugin::Probe::CommandLine 2.33
+      Alien::Build::Plugin::Probe::Vcpkg 2.33
+      Alien::Build::Plugin::Test::Mock 2.33
+      Alien::Build::PluginMeta 2.33
+      Alien::Build::Temp 2.33
+      Alien::Build::TempDir 2.33
+      Alien::Build::Util 2.33
+      Alien::Build::Version::Basic 2.33
+      Alien::Build::rc 2.33
+      Alien::Role 2.33
+      Test::Alien 2.33
+      Test::Alien::Build 2.33
+      Test::Alien::CanCompile 2.33
+      Test::Alien::CanPlatypus 2.33
+      Test::Alien::Diag 2.33
+      Test::Alien::Run 2.33
+      Test::Alien::Synthetic 2.33
+      alienfile 2.33
     requirements:
       Capture::Tiny 0.17
       ExtUtils::CBuilder 0
@@ -2765,53 +2765,53 @@ DISTRIBUTIONS
     requirements:
       ExtUtils::MakeMaker 0
       perl 5.006
-  FFI-Platypus-1.31
-    pathname: P/PL/PLICEASE/FFI-Platypus-1.31.tar.gz
+  FFI-Platypus-1.32
+    pathname: P/PL/PLICEASE/FFI-Platypus-1.32.tar.gz
     provides:
-      FFI::Build 1.31
-      FFI::Build::File::Base 1.31
-      FFI::Build::File::C 1.31
-      FFI::Build::File::CXX 1.31
-      FFI::Build::File::Library 1.31
-      FFI::Build::File::Object 1.31
-      FFI::Build::MM 1.31
-      FFI::Build::MM::FBX 1.31
-      FFI::Build::Platform 1.31
-      FFI::Platypus 1.31
-      FFI::Platypus::API 1.31
-      FFI::Platypus::Buffer 1.31
-      FFI::Platypus::Bundle 1.31
-      FFI::Platypus::Closure 1.31
-      FFI::Platypus::ClosureData 1.31
-      FFI::Platypus::Constant 1.31
-      FFI::Platypus::DL 1.31
-      FFI::Platypus::Declare 1.31
-      FFI::Platypus::Function 1.31
-      FFI::Platypus::Function::Function 1.31
-      FFI::Platypus::Function::Wrapper 1.31
-      FFI::Platypus::Internal 1.31
-      FFI::Platypus::Lang 1.31
-      FFI::Platypus::Lang::ASM 1.31
-      FFI::Platypus::Lang::C 1.31
-      FFI::Platypus::Lang::Win32 1.31
-      FFI::Platypus::Legacy 1.31
-      FFI::Platypus::Memory 1.31
-      FFI::Platypus::Record 1.31
-      FFI::Platypus::Record::Meta 1.31
-      FFI::Platypus::Record::TieArray 1.31
-      FFI::Platypus::ShareConfig 1.31
-      FFI::Platypus::Type 1.31
-      FFI::Platypus::Type::PointerSizeBuffer 1.31
-      FFI::Platypus::Type::StringArray 1.31
-      FFI::Platypus::Type::StringPointer 1.31
-      FFI::Platypus::TypeParser 1.31
-      FFI::Platypus::TypeParser::Version0 1.31
-      FFI::Platypus::TypeParser::Version1 1.31
-      FFI::Probe 1.31
-      FFI::Probe::Runner 1.31
-      FFI::Probe::Runner::Builder 1.31
-      FFI::Probe::Runner::Result 1.31
-      FFI::Temp 1.31
+      FFI::Build 1.32
+      FFI::Build::File::Base 1.32
+      FFI::Build::File::C 1.32
+      FFI::Build::File::CXX 1.32
+      FFI::Build::File::Library 1.32
+      FFI::Build::File::Object 1.32
+      FFI::Build::MM 1.32
+      FFI::Build::MM::FBX 1.32
+      FFI::Build::Platform 1.32
+      FFI::Platypus 1.32
+      FFI::Platypus::API 1.32
+      FFI::Platypus::Buffer 1.32
+      FFI::Platypus::Bundle 1.32
+      FFI::Platypus::Closure 1.32
+      FFI::Platypus::ClosureData 1.32
+      FFI::Platypus::Constant 1.32
+      FFI::Platypus::DL 1.32
+      FFI::Platypus::Declare 1.32
+      FFI::Platypus::Function 1.32
+      FFI::Platypus::Function::Function 1.32
+      FFI::Platypus::Function::Wrapper 1.32
+      FFI::Platypus::Internal 1.32
+      FFI::Platypus::Lang 1.32
+      FFI::Platypus::Lang::ASM 1.32
+      FFI::Platypus::Lang::C 1.32
+      FFI::Platypus::Lang::Win32 1.32
+      FFI::Platypus::Legacy 1.32
+      FFI::Platypus::Memory 1.32
+      FFI::Platypus::Record 1.32
+      FFI::Platypus::Record::Meta 1.32
+      FFI::Platypus::Record::TieArray 1.32
+      FFI::Platypus::ShareConfig 1.32
+      FFI::Platypus::Type 1.32
+      FFI::Platypus::Type::PointerSizeBuffer 1.32
+      FFI::Platypus::Type::StringArray 1.32
+      FFI::Platypus::Type::StringPointer 1.32
+      FFI::Platypus::TypeParser 1.32
+      FFI::Platypus::TypeParser::Version0 1.32
+      FFI::Platypus::TypeParser::Version1 1.32
+      FFI::Probe 1.32
+      FFI::Probe::Runner 1.32
+      FFI::Probe::Runner::Builder 1.32
+      FFI::Probe::Runner::Result 1.32
+      FFI::Temp 1.32
     requirements:
       Capture::Tiny 0
       ExtUtils::CBuilder 0
@@ -2822,7 +2822,7 @@ DISTRIBUTIONS
       JSON::PP 0
       List::Util 1.45
       constant 1.32
-      perl 5.008001
+      perl 5.008004
   File-BaseDir-0.08
     pathname: K/KI/KIMRYAN/File-BaseDir-0.08.tar.gz
     provides:
@@ -6062,10 +6062,10 @@ DISTRIBUTIONS
       Perl::Tidy::VerticalAligner::Line 20200907
     requirements:
       ExtUtils::MakeMaker 0
-  PerlIO-utf8_strict-0.007
-    pathname: L/LE/LEONT/PerlIO-utf8_strict-0.007.tar.gz
+  PerlIO-utf8_strict-0.008
+    pathname: L/LE/LEONT/PerlIO-utf8_strict-0.008.tar.gz
     provides:
-      PerlIO::utf8_strict 0.007
+      PerlIO::utf8_strict 0.008
     requirements:
       ExtUtils::MakeMaker 0
       XSLoader 0
@@ -8204,32 +8204,32 @@ DISTRIBUTIONS
       XSLoader 0
       lib 0
       perl 5.008001
-  libwww-perl-6.47
-    pathname: O/OA/OALDERS/libwww-perl-6.47.tar.gz
+  libwww-perl-6.48
+    pathname: O/OA/OALDERS/libwww-perl-6.48.tar.gz
     provides:
-      LWP 6.47
-      LWP::Authen::Basic 6.47
-      LWP::Authen::Digest 6.47
-      LWP::Authen::Ntlm 6.47
-      LWP::ConnCache 6.47
-      LWP::Debug 6.47
-      LWP::Debug::TraceHTTP 6.47
-      LWP::DebugFile 6.47
-      LWP::MemberMixin 6.47
-      LWP::Protocol 6.47
-      LWP::Protocol::cpan 6.47
-      LWP::Protocol::data 6.47
-      LWP::Protocol::file 6.47
-      LWP::Protocol::ftp 6.47
-      LWP::Protocol::gopher 6.47
-      LWP::Protocol::http 6.47
-      LWP::Protocol::loopback 6.47
-      LWP::Protocol::mailto 6.47
-      LWP::Protocol::nntp 6.47
-      LWP::Protocol::nogo 6.47
-      LWP::RobotUA 6.47
-      LWP::Simple 6.47
-      LWP::UserAgent 6.47
+      LWP 6.48
+      LWP::Authen::Basic 6.48
+      LWP::Authen::Digest 6.48
+      LWP::Authen::Ntlm 6.48
+      LWP::ConnCache 6.48
+      LWP::Debug 6.48
+      LWP::Debug::TraceHTTP 6.48
+      LWP::DebugFile 6.48
+      LWP::MemberMixin 6.48
+      LWP::Protocol 6.48
+      LWP::Protocol::cpan 6.48
+      LWP::Protocol::data 6.48
+      LWP::Protocol::file 6.48
+      LWP::Protocol::ftp 6.48
+      LWP::Protocol::gopher 6.48
+      LWP::Protocol::http 6.48
+      LWP::Protocol::loopback 6.48
+      LWP::Protocol::mailto 6.48
+      LWP::Protocol::nntp 6.48
+      LWP::Protocol::nogo 6.48
+      LWP::RobotUA 6.48
+      LWP::Simple 6.48
+      LWP::UserAgent 6.48
       libwww::perl undef
     requirements:
       CPAN::Meta::Requirements 2.120620
@@ -8249,7 +8249,7 @@ DISTRIBUTIONS
       HTTP::Request 6
       HTTP::Request::Common 6
       HTTP::Response 6
-      HTTP::Status 6.18
+      HTTP::Status 6.07
       IO::Select 0
       IO::Socket 0
       LWP::MediaTypes 6

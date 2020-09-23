@@ -19,8 +19,14 @@ sub get_param_list {
   my ($class) = @_;
 
   my @params = (
-    {name => 'oauth2_client_id',     type => 't', default => '',},
-    {name => 'oauth2_client_secret', type => 't', default => '',},
+    {name => 'oauth2_client_enabled', type => 'b', default => 0,},
+    {name => 'oauth2_client_domain',  type => 't', default => '',},
+    {name => 'oauth2_client_id',      type => 't', default => '',},
+    {name => 'oauth2_client_secret',  type => 't', default => '',},
+    {name => 'oauth2_client_access_token_url', type => 't', default => '',},
+    {name => 'oauth2_client_authorize_url',    type => 't', default => '',},
+    {name => 'oauth2_client_userinfo_url',     type => 't', default => '',},
+    {name => 'oauth2_client_scopes',           type => 't', default => '',},
   );
 
   return @params;
