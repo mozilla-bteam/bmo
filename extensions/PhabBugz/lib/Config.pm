@@ -27,26 +27,6 @@ sub get_param_list {
       checker => \&check_urlbase
     },
     {name => 'phabricator_api_key', type => 't', default => '',},
-    {
-      name    => 'phabricator_auth_callback_url',
-      type    => 't',
-      default => '',
-      checker => sub {
-        my ($url) = (@_);
-        return 'must be an HTTP/HTTPS absolute URL' unless $url =~ m{^https?://};
-        return '';
-      }
-    },
-    {
-      name    => 'phabricator_app_id',
-      type    => 't',
-      default => '',
-      checker => sub {
-        my ($app_id) = (@_);
-        return 'must be a hex number' unless $app_id =~ /^[[:xdigit:]]+$/;
-        return '';
-      }
-    }
   );
 
   return @params;

@@ -11,11 +11,7 @@ use warnings;
 use lib qw( . lib local/lib/perl5 );
 use Test::More;
 use Test2::Tools::Mock qw(mock);
-use Bugzilla::Test::MockParams (
-  phabricator_auth_callback_url => 'http://pants.gov/',);
-
-is(Bugzilla->params->{phabricator_auth_callback_url},
-  'http://pants.gov/', 'import default params');
+use Bugzilla::Test::MockParams;
 
 Bugzilla::Test::MockParams->import(phabricator_api_key => 'FAKE-KEY');
 
