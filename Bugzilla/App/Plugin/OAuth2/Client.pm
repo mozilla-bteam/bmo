@@ -24,11 +24,13 @@ sub register {
   $app->helper(
     'oauth2.userinfo' => sub {
       my ($c, $access_token) = @_;
-      my $ua           = Mojo::UserAgent->new;
-      return $ua->get(
+      my $ua     = Mojo::UserAgent->new;
+      my $result = $ua->get(
         Bugzilla->params->{'oauth2_client_userinfo_url'},
         {Authorization => 'Bearer ' . $access_token},
-      )->result->json;
+      )->result;
+      WARN($result->message) if !$result->is_success;
+      return $result->json || {};
     }
   );
 

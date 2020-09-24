@@ -15,6 +15,10 @@ use lib qw(. lib local/lib/perl5);
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Logging;
+use Bugzilla::Token qw(check_hash_token delete_token);
+
+use Try::Tiny;
 
 my $c     = $Bugzilla::App::CGI::C;
 my $cache = Bugzilla->request_cache;
@@ -23,11 +27,24 @@ my $cgi   = Bugzilla->cgi;
 # GET requests come from OAuth2 provider,
 # with this script acting as the OAuth2 callback.
 
-# Get access token from OAuth2 provider;
-my $resp = $c->oauth2->get_token('oauth2');
+# Verify state value is valid
+my $token = $cgi->param('state');
+check_hash_token($token, ['oauth2']);
+delete_token($token);
 
-# Store access token for use by OAuth2 login info getter
-$cache->{oauth2_client_userinfo} = $c->oauth2->userinfo($resp->{access_token});
+# Get access token from OAuth2 provider;
+my $resp = {};
+try {
+  $resp = $c->oauth2->get_token('oauth2');
+}
+catch {
+  WARN($_);
+};
+
+# Store user information for use by OAuth2 login info getter
+if ($resp) {
+  $cache->{oauth2_client_userinfo} = $c->oauth2->userinfo($resp->{access_token});
+}
 
 my $user = Bugzilla->login(LOGIN_REQUIRED);
 
