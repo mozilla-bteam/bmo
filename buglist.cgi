@@ -122,20 +122,11 @@ my $params;
 if (my $last_list = $cgi->param('regetlastlist')) {
   my $bug_ids;
 
-  # Logged-out users use the old cookie method for storing the last search.
-  if (!$user->id or $last_list eq 'cookie') {
-    $bug_ids = $cgi->cookie('BUGLIST') or ThrowUserError("missing_cookie");
-    $bug_ids =~ s/[:-]/,/g;
-    $order ||= "reuse last sort";
-  }
-
-  # But logged in users store the last X searches in the DB so they can
+  # Logged in users store the last X searches in the DB so they can
   # have multiple bug lists available.
-  else {
-    my $last_search = Bugzilla::Search::Recent->check({id => $last_list});
-    $bug_ids = join(',', @{$last_search->bug_list});
-    $order ||= $last_search->list_order;
-  }
+  my $last_search = Bugzilla::Search::Recent->check({id => $last_list});
+  $bug_ids = join(',', @{$last_search->bug_list});
+  $order ||= $last_search->list_order;
 
   # set up the params for this new query
   $params = new Bugzilla::CGI({bug_id => $bug_ids, order => $order});
