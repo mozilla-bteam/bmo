@@ -1186,6 +1186,7 @@ a.lightbox-icon.markdown {
   bottom: 0;
   left: 0;
   width: 100%;
+  height: 100%;
   text-align: center;
   overflow-y: scroll;
   z-index: 2;
