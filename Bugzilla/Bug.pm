@@ -1884,7 +1884,7 @@ sub _check_bug_type {
     }
     return $invocant->_check_select_field($type, 'bug_type');
   }
-d
+
   $type_required && ThrowUserError('bug_type_required');
 
   if (blessed $invocant) {
