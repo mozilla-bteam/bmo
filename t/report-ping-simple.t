@@ -51,7 +51,8 @@ for (1..250) {
     short_desc  => "test bug $_",
     comment     => "Hello, world: $_",
     provided $_ % 3 == 0, keywords => ['regression'],
-    assigned_to => 'reportuser@invalid.tld'
+    assigned_to => 'reportuser@invalid.tld',
+    bug_type    => 'defect'
   );
   $time{ $bug->id } = datetime_from($bug->delta_ts)->epoch;
 }
