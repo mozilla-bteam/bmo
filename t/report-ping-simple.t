@@ -1,3 +1,4 @@
+
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -51,7 +52,8 @@ for (1..250) {
     short_desc  => "test bug $_",
     comment     => "Hello, world: $_",
     provided $_ % 3 == 0, keywords => ['regression'],
-    assigned_to => 'reportuser@invalid.tld'
+    assigned_to => 'reportuser@invalid.tld',
+    bug_type    => 'defect'
   );
   $time{ $bug->id } = datetime_from($bug->delta_ts)->epoch;
 }

@@ -38,7 +38,8 @@ create_bug(
   short_desc  => "test bug $_",
   comment     => "Hello, world: $_",
   provided $_ % 3 == 0, keywords => ['regression'],
-  assigned_to => 'reportuser@invalid.tld'
+  assigned_to => 'reportuser@invalid.tld',
+  bug_type    => 'defect'
 ) for (1..10);
 
 my $model = Bugzilla->dbh->model;
