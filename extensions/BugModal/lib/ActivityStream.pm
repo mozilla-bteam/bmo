@@ -26,6 +26,8 @@ use List::MoreUtils qw(any);
 #       time    => $unix_timestamp,
 #       user_id => actor user-id
 #       comment => optional, comment added
+#       editors => list of users who have edited the comment
+#       edited  => datetime object of last edit
 #       id      => unique identifier for this change-set
 #       cc_only => boolean
 #       activty => [
@@ -130,8 +132,14 @@ sub find_activity_id_for_flag {
 # comments are processed first, so there's no need to merge into existing entries
 sub _add_comment_to_stream {
   my ($stream, $time, $user_id, $comment) = @_;
-  my $rh
-    = {time => $time, user_id => $user_id, comment => $comment, activity => [],};
+  my $rh = {
+    time     => $time,
+    user_id  => $user_id,
+    comment  => $comment,
+    editors  => [],
+    edited   => $comment->creation_ts,
+    activity => [],
+  };
   if ( $comment->type == CMT_ATTACHMENT_CREATED
     || $comment->type == CMT_ATTACHMENT_UPDATED)
   {
@@ -153,6 +161,8 @@ sub _add_activity_to_stream {
     time     => $time,
     user_id  => $user_id,
     comment  => undef,
+    editors  => [],
+    edited   => undef,
     cc_only  => $data->{cc_only},
     activity => [$data],
     };
@@ -179,7 +189,8 @@ sub _add_comments_to_stream {
       $comment->{collapsed_reason} = $comment->author->name;
     }
 
-# If comment type is resolved as duplicate, do not add '...marked as duplicate...' string to comment body
+    # If comment type is resolved as duplicate, do not add '...marked as
+    # duplicate...' string to comment body
     if ($comment->type == CMT_DUPE_OF) {
       $comment->set_type(0);
 
@@ -212,7 +223,8 @@ sub _add_activities_to_stream {
     $attachment_cache{$attachment->id} = $attachment;
   }
 
-# build a list of bugs we need to check visibility of, so we can check with a single query
+  # build a list of bugs we need to check visibility of, so we can check with a
+  # single query
   my %visible_bug_ids;
 
   # envelope, augment and tweak
@@ -341,6 +353,9 @@ sub _add_activities_to_stream {
       $operation->{who}->id, $operation
     );
   }
+
+  # allow other extensions to alter history
+  Bugzilla::Hook::process('inline_history_stream', {stream => $stream});
 
   # prime the visible-bugs cache
   $user->visible_bugs([keys %visible_bug_ids]);
