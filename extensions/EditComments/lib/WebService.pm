@@ -181,6 +181,9 @@ sub modify_revision {
     ($is_hidden, $comment_id, $change_when)
   );
 
+  # Clear memcached entry of comment 0 authors
+  Bugzilla->memcached->clear({ key => 'c0:' . $comment_id });
+
   # Respond with updated revision info
   return {
     change_when => $self->type('dateTime', $change_when),

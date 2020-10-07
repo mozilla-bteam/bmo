@@ -234,7 +234,6 @@ sub _comment_update_text {
   $self->{thetext} = $new_text;
 
   # Clear memcached entry of comment 0 authors
-  print STDERR "CLEAR CACHE c0:$comment_id\n";
   Bugzilla->memcached->clear({ key => 'c0:' . $comment_id });
 
   # Update fulltext entry if required
@@ -333,8 +332,8 @@ sub inline_history_stream {
   }
   return unless $change_set;
 
-  # if comment 0 has been edited by more than one user
-  return unless $change_set->{comment}->edit_count > 1;
+  # if comment 0 has been edited
+  return unless $change_set->{comment}->edit_count;
 
   my $key = 'c0:' . $change_set->{comment}->id;
   my @editors;
@@ -373,8 +372,10 @@ sub inline_history_stream {
       push @editors, $entry->{author};
       push @editor_ids, $author_id;
     }
-    push @editors, $change_set->{comment}->author;
-    push @editor_ids, $change_set->{comment}->author->id;
+    if (!exists $seen{$change_set->{comment}->author->id}) {
+      push @editors, $change_set->{comment}->author;
+      push @editor_ids, $change_set->{comment}->author->id;
+    }
 
     # stored as oldest to newest
     @editors = reverse @editors;
