@@ -28,8 +28,6 @@ defaults:
           --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
           --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
           -t bmo .
-      environment:
-        DOCKER_BUILDKIT: 1
 
   store_log: &store_log
     store_artifacts:
