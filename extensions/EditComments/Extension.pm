@@ -14,6 +14,7 @@ use warnings;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Bug;
+use Bugzilla::User;
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::Config::Common;
@@ -101,6 +102,7 @@ BEGIN {
   *Bugzilla::Comment::edit_count          = \&_comment_edit_count;
   *Bugzilla::Comment::is_editable_by      = \&_comment_is_editable_by;
   *Bugzilla::Comment::activity            = \&_comment_get_activity;
+  *Bugzilla::Comment::update_text         = \&_comment_update_text;
   *Bugzilla::User::can_edit_comments      = \&_user_can_edit_comments;
   *Bugzilla::User::is_edit_comments_admin = \&_user_is_edit_comments_admin;
 }
@@ -131,72 +133,111 @@ sub _comment_is_editable_by {
 
 sub _comment_get_activity {
   my ($self, $activity_sort_order) = @_;
+  my $activity;
 
-  return $self->{'activity'} if $self->{'activity'};
+  if (!defined $self->{activity}) {
+    my $dbh = Bugzilla->dbh;
+    my $query
+      = 'SELECT longdescs_activity.comment_id AS id, profiles.userid, '
+      . $dbh->sql_date_format('longdescs_activity.change_when', '%Y-%m-%d %H:%i:%s')
+      . '
+                          AS time, longdescs_activity.old_comment AS old,
+                          longdescs_activity.is_hidden as is_hidden
+                    FROM longdescs_activity
+              INNER JOIN profiles
+                      ON profiles.userid = longdescs_activity.who
+                    WHERE longdescs_activity.comment_id = ?';
+    $query .= " ORDER BY longdescs_activity.change_when DESC";
+    my $sth = $dbh->prepare($query);
+    $sth->execute($self->id);
 
-  my $dbh = Bugzilla->dbh;
-  my $query
-    = 'SELECT longdescs_activity.comment_id AS id, profiles.userid, '
-    . $dbh->sql_date_format('longdescs_activity.change_when', '%Y-%m-%d %H:%i:%s')
-    . '
-                        AS time, longdescs_activity.old_comment AS old,
-                        longdescs_activity.is_hidden as is_hidden
-                   FROM longdescs_activity
-             INNER JOIN profiles
-                     ON profiles.userid = longdescs_activity.who
-                  WHERE longdescs_activity.comment_id = ?';
-  $query .= " ORDER BY longdescs_activity.change_when DESC";
-  my $sth = $dbh->prepare($query);
-  $sth->execute($self->id);
-
-  # We are shifting each comment activity body 1 back. The reason this
-  # has to be done is that the longdescs_activity table stores the comment
-  # body that the comment was before the edit, not the actual new version
-  # of the comment.
-  my @activity;
-  my $prev_rev;
-  my $count = 0;
-  while (my $revision = $sth->fetchrow_hashref()) {
-    my $current = $count == 0;
-    push(
-      @activity,
-      {
-        author       => Bugzilla::User->new({id => $revision->{userid}, cache => 1}),
-        created_time => $revision->{time},
-        revised_time => $current ? undef : $prev_rev->{time},
-        new          => $current ? $self->body : $prev_rev->{old},
-        is_hidden    => $current ? 0 : $prev_rev->{is_hidden},
-      }
-    );
-    $prev_rev = $revision;
-    $count++;
-  }
-
-  return [] if !@activity;
-
-  # Store the original comment as the first or last entry
-  # depending on sort order
-  push(
-    @activity,
-    {
-      author       => $self->author,
-      created_time => $self->creation_ts,
-      revised_time => $prev_rev->{time},
-      new          => $prev_rev->{old},
-      is_hidden    => $prev_rev->{is_hidden},
+    # We are shifting each comment activity body 1 back. The reason this
+    # has to be done is that the longdescs_activity table stores the comment
+    # body that the comment was before the edit, not the actual new version
+    # of the comment.
+    my @activity;
+    my $prev_rev;
+    my $count = 0;
+    while (my $revision = $sth->fetchrow_hashref()) {
+      my $current = $count == 0;
+      push(
+        @activity,
+        {
+          author       => Bugzilla::User->new({id => $revision->{userid}, cache => 1}),
+          created_time => $revision->{time},
+          revised_time => $current ? undef : $prev_rev->{time},
+          new          => $current ? $self->body : $prev_rev->{old},
+          is_hidden    => $current ? 0 : $prev_rev->{is_hidden},
+        }
+      );
+      $prev_rev = $revision;
+      $count++;
     }
-  );
+
+    if (@activity) {
+      # Store the original comment as the first entry, sorting oldest_to_newest
+      push(
+        @activity,
+        {
+          author       => $self->author,
+          created_time => $self->creation_ts,
+          revised_time => $prev_rev->{time},
+          new          => $prev_rev->{old},
+          is_hidden    => $prev_rev->{is_hidden},
+        }
+      );
+      @activity = reverse @activity;
+    }
+
+    $activity = \@activity;
+    $self->{activity} = $activity;
+
+  } else {
+    $activity = $self->{activity};
+  }
 
   $activity_sort_order
     ||= Bugzilla->user->settings->{'comment_sort_order'}->{'value'};
-
-  if ($activity_sort_order eq "oldest_to_newest") {
-    @activity = reverse @activity;
+  if ($activity_sort_order ne "oldest_to_newest") {
+    $activity = [reverse @$activity];
   }
+  return $activity;
+}
 
-  $self->{'activity'} = \@activity;
+sub _comment_update_text {
+  my ($self, $args) = @_;
+  my $user = Bugzilla->user;
+  my $dbh  = Bugzilla->dbh;
 
-  return $self->{'activity'};
+  my $comment_id    = $self->id;
+  my $old_text      = $self->body;
+  my $new_text      = $args->{text};
+  my $timestamp     = $args->{timestamp};
+  my $is_hidden     = $args->{is_hidden};
+  my $sync_fulltext = $args->{sync_fulltext};
+
+  # Update the `longdescs` (comments) table
+  $dbh->do(
+    'UPDATE longdescs SET thetext = ?, edit_count = edit_count + 1 WHERE comment_id = ?',
+    undef, $new_text, $comment_id
+  );
+  Bugzilla->memcached->clear({table => 'longdescs', id => $comment_id});
+
+  # Log old comment to the `longdescs_activity` (comment revisions) table
+  $dbh->do(
+    'INSERT INTO longdescs_activity (comment_id, who, change_when, old_comment, is_hidden)
+              VALUES (?, ?, ?, ?, ?)', undef,
+    ($comment_id, $user->id, $timestamp, $old_text, $is_hidden)
+  );
+
+  # Update comment object
+  $self->{thetext} = $new_text;
+
+  # Clear memcached entry of comment 0 authors
+  Bugzilla->memcached->clear({ key => 'c0:' . $comment_id });
+
+  # Update fulltext entry if required
+  $self->bug->_sync_fulltext(update_comments => 1) if $sync_fulltext;
 }
 
 sub _user_can_edit_comments {
@@ -241,10 +282,10 @@ sub bug_end_of_update {
   my $user = Bugzilla->user;
   return unless $user->can_edit_comments();
 
-  my $bug       = $args->{bug};
-  my $timestamp = $args->{timestamp};
   my $params    = Bugzilla->input_params;
   my $dbh       = Bugzilla->dbh;
+  my $bug       = $args->{bug};
+  my $timestamp = $args->{timestamp} || $dbh->selectrow_array("SELECT NOW()");
 
   my $updated = 0;
   foreach my $param (grep(/^edit_comment_textarea_/, keys %$params)) {
@@ -259,9 +300,7 @@ sub bug_end_of_update {
     next unless $comment_obj->is_editable_by($user);
 
     my $new_comment = $comment_obj->_check_thetext($params->{$param});
-
-    my $old_comment = $comment_obj->body;
-    next if $old_comment eq $new_comment;
+    next if $comment_obj->body eq $new_comment;
 
     # edit_comments_admins_group members can hide comment revisions where needed
     my $is_hidden
@@ -269,28 +308,95 @@ sub bug_end_of_update {
         && defined $params->{"edit_comment_checkbox_$comment_id"}
         && $params->{"edit_comment_checkbox_$comment_id"} == 'on') ? 1 : 0;
 
-    $dbh->do(
-      "UPDATE longdescs SET thetext = ?, edit_count = edit_count + 1
-                  WHERE comment_id = ?", undef, $new_comment, $comment_id
-    );
-    Bugzilla->memcached->clear({table => 'longdescs', id => $comment_id});
-
-    # Log old comment to the longdescs activity table
-    $timestamp ||= $dbh->selectrow_array("SELECT NOW()");
-    $dbh->do(
-      "INSERT INTO longdescs_activity "
-        . "(comment_id, who, change_when, old_comment, is_hidden) "
-        . "VALUES (?, ?, ?, ?, ?)",
-      undef,
-      ($comment_id, $user->id, $timestamp, $old_comment, $is_hidden)
-    );
-
-    $comment_obj->{thetext} = $new_comment;
-
+    $comment_obj->update_text({
+      text          => $new_comment,
+      timestamp     => $timestamp,
+      is_hidden     => $is_hidden,
+      sync_fulltext => 0,
+    });
     $updated = 1;
   }
 
   $bug->_sync_fulltext(update_comments => 1) if $updated;
+}
+
+sub inline_history_stream {
+  my ($self, $args) = @_;
+
+  # find comment 0 (description) change_set
+  my $change_set;
+  foreach my $cs (@{ $args->{stream} }) {
+    next unless $cs->{comment};
+    $change_set = $cs;
+    last;
+  }
+  return unless $change_set;
+
+  # if comment 0 has been edited
+  return unless $change_set->{comment}->edit_count;
+
+  my $key = 'c0:' . $change_set->{comment}->id;
+  my @editors;
+  my $edited_ts;
+  my $cached = Bugzilla->memcached->get({ key => $key });
+
+  if (defined $cached) {
+    # cache hit
+
+    # comment->edit_count includes admin edits; there's nothing to do if the
+    # count of users making _visible_ edits is 1 so we re-check the editor
+    # count.
+    return if scalar(@{ $cached->{editors} }) == 1;
+
+    # expand users; because this is generally a short list, build user objects
+    # individually to leverage object caching rather than new_from_list which
+    # doesn't use caching.
+    foreach my $user_id (@{ $cached->{editors} }) {
+      push @editors, Bugzilla::User->new({ id => $user_id, cache => 1 });
+    }
+
+    $edited_ts = $cached->{edited_ts};
+
+  } else {
+    # cache miss
+
+    # grab editors and the last edit date from comment activity
+    my @editor_ids;
+    my %seen;
+    foreach my $entry (@{ $change_set->{comment}->activity('newest_to_oldest') }) {
+      next if $entry->{is_hidden};
+      $edited_ts //= $entry->{created_time};
+      my $author_id = $entry->{author}->id;
+      next if $seen{$author_id};
+      $seen{$author_id} = 1;
+      push @editors, $entry->{author};
+      push @editor_ids, $author_id;
+    }
+    if (!exists $seen{$change_set->{comment}->author->id}) {
+      push @editors, $change_set->{comment}->author;
+      push @editor_ids, $change_set->{comment}->author->id;
+    }
+
+    # stored as oldest to newest
+    @editors = reverse @editors;
+    @editor_ids = reverse @editor_ids;
+
+    # cache
+    $cached = {
+      editors   => [ @editor_ids ],
+      edited_ts => $edited_ts,
+    };
+    Bugzilla->memcached->set({ key => $key, value => $cached });
+
+    # comment->edit_count includes admin edits; there's nothing to do if the
+    # count of users making _visible_ edits is 1 so we re-check the editor
+    # count.
+    return if scalar(@editor_ids) == 1;
+  }
+
+  # populate change-set's editors and edited fields
+  push @{ $change_set->{editors} }, @editors;
+  $change_set->{edited} = $edited_ts;
 }
 
 sub config_modify_panels {
