@@ -14,7 +14,10 @@ defaults:
         pip install "docker-compose==1.23.2"
 
   docker_image: &docker_image
-    image: docker:18.09.3-git
+    image: docker:stable-git
+    auth:
+      username: $DOCKER_USER
+      password: $DOCKER_PASS
 
   build_image: &build_image
     run:
@@ -41,22 +44,28 @@ defaults:
         - production
 
 jobs:
-  build_info:
+  build:
     parallelism: 1
     working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
           docker_layer_caching: true
       - checkout
-      - *build_image
       - *install_deps
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
           at: /app/build_info
+      - run:
+          name: Login to Dockerhub
+          command: |
+            if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
+              echo "Skipping Login to Dockerhub, credentials not available."
+            else
+              echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
+            fi
       - run: |
           docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
           docker cp version_json:/app/version.json build_info/version.json
@@ -105,23 +114,21 @@ jobs:
           path: /app/build_info
       - *store_log
 
-  build:
+  deploy:
     parallelism: 1
     working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
           docker_layer_caching: true
       - checkout
-      - *build_image
       - attach_workspace:
           at: /app/build_info
       - deploy:
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
-            docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+            echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
               TAG="$(cat build_info/tag.txt)"
               if [[ -n "$TAG" && -f build_info/publish.txt ]]; then
@@ -148,10 +155,8 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
           docker_layer_caching: true
       - checkout
-      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
@@ -175,10 +180,8 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
           docker_layer_caching: true
       - checkout
-      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
@@ -199,10 +202,8 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
           docker_layer_caching: true
       - checkout
-      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
@@ -223,10 +224,8 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
           docker_layer_caching: true
       - checkout
-      - *build_image
       - *install_deps
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
@@ -241,12 +240,12 @@ workflows:
   version: 2
   main:
     jobs:
-      - build_info:
-          filters: *main_filters
       - build:
           filters: *main_filters
+      - deploy:
+          filters: *main_filters
           requires:
-            - build_info
+            - build
             - test_sanity
             - test_bmo
             - test_webservices
@@ -254,16 +253,16 @@ workflows:
       - test_sanity:
           filters: *main_filters
           requires:
-            - build_info
+            - build
       - test_bmo:
           filters: *main_filters
           requires:
-            - build_info
+            - build
       - test_webservices:
           filters: *main_filters
           requires:
-            - build_info
+            - build
       - test_selenium:
           filters: *main_filters
           requires:
-            - build_info
+            - build
