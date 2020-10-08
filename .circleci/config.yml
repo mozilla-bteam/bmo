@@ -54,6 +54,7 @@ jobs:
           docker_layer_caching: true
       - checkout
       - *install_deps
+      - *build_image
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
