@@ -50,7 +50,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
+      - setup_remote_docker
       - checkout
       - *install_deps
       - *build_image
@@ -129,7 +129,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
+      - setup_remote_docker
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -167,7 +167,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
+      - setup_remote_docker
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -196,7 +196,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
+      - setup_remote_docker
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -222,7 +222,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
+      - setup_remote_docker
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -248,7 +248,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
+      - setup_remote_docker
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
