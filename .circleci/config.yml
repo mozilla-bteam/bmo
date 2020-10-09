@@ -6,6 +6,16 @@
 version: 2.1
 
 defaults:
+  docker_login: &docker_login
+    run:
+      name: Login to Dockerhub
+      command: |
+        if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
+          echo "Skipping Login to Dockerhub, credentials not available."
+        else
+          echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
+        fi
+
   install_deps: &install_deps
     run:
       name: install dependencies
@@ -54,19 +64,12 @@ jobs:
           version: 18.09.3
       - checkout
       - *install_deps
+      - *docker_login
       - *build_image
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
           at: /app/build_info
-      - run:
-          name: Login to Dockerhub
-          command: |
-            if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
-              echo "Skipping Login to Dockerhub, credentials not available."
-            else
-              echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
-            fi
       - run: |
           docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
           docker cp version_json:/app/version.json build_info/version.json
@@ -138,6 +141,7 @@ jobs:
           name: Restore Docker image cache
           command: docker load -i /cache/docker.tar
       - checkout
+      - *docker_login
       - attach_workspace:
           at: /app/build_info
       - deploy:
@@ -178,6 +182,7 @@ jobs:
           command: docker load -i /cache/docker.tar
       - checkout
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -208,6 +213,7 @@ jobs:
           command: docker load -i /cache/docker.tar
       - checkout
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -235,6 +241,7 @@ jobs:
           command: docker load -i /cache/docker.tar
       - checkout
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -262,6 +269,7 @@ jobs:
           command: docker load -i /cache/docker.tar
       - checkout
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
