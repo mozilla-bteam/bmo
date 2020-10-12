@@ -1603,9 +1603,12 @@ function lb_show(el) {
         .prop('id', 'lb_overlay2')
         .css({ top: $(window).scrollTop() + $('#header').height() })
         .appendTo('body');
+    var text_container = $('<div>')
+        .prop('id', 'lb_text_container')
+        .appendTo(overlay2);
     var title = $('<div>')
         .prop('id', 'lb_text')
-        .appendTo(overlay2);
+        .appendTo(text_container);
     var img = $('<img>')
         .prop('id', 'lb_img')
         .prop('src', el.href)
@@ -1621,7 +1624,7 @@ function lb_show(el) {
         .prop('type', 'button')
         .addClass('minor')
         .text('Close')
-        .appendTo(overlay2);
+        .appendTo(text_container);
     title.text(el.title);
     overlay.add(overlay2).click(lb_close);
     img.add(overlay).animate({ opacity: 1 }, 200);

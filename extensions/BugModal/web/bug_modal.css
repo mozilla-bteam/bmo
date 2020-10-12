@@ -1197,19 +1197,24 @@ a.lightbox-icon.markdown {
   z-index: 2;
 }
 
-#lb_text {
+#lb_text_container {
+  align-items: center;
+  background-color: var(--primary-text-background-color);
+  color: var(--primary-text-color);
+  cursor: default;
+  display: flex;
+  justify-content: center;
   padding: 4px;
   z-index: 3;
-  color: var(--primary-text-color);
-  background: var(--primary-text-background-color);
+}
+
+#lb_text {
   font-weight: bold;
-  cursor: default;
+  flex-grow: 1;
 }
 
 #lb_close_btn {
-  position: fixed;
-  top: 8px;
-  right: 8px;
+  margin-left: 4px;
 }
 
 /**
