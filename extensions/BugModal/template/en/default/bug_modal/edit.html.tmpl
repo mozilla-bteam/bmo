@@ -29,7 +29,7 @@
   ];
 
   # all custom fields
-  custom_fields = Bugzilla.active_custom_fields(product => bug.product_obj, component => bug.component_obj, bug_id => bug.id);
+  custom_fields = Bugzilla.active_custom_fields(product => bug.product_obj, component => bug.component_obj, bug => bug);
 
   # extract needinfo flags
   needinfo = [];

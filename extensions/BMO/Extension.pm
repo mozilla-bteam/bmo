@@ -441,6 +441,7 @@ sub active_custom_fields {
   my $params    = $args->{'params'};
   my $product   = $params->{'product'};
   my $component = $params->{'component'};
+  my $bug       = $params->{'bug'};
 
   return if !$product;
 
@@ -449,7 +450,7 @@ sub active_custom_fields {
 
   my @tmp_fields;
   foreach my $field (@$$fields) {
-    next if cf_hidden_in_product($field->name, $product_name, $component_name);
+    next if cf_hidden_in_product($field->name, $product_name, $component_name, $bug);
     push(@tmp_fields, $field);
   }
   $$fields = \@tmp_fields;
@@ -457,6 +458,16 @@ sub active_custom_fields {
 
 sub cf_hidden_in_product {
   my ($field_name, $product_name, $component_name, $bug) = @_;
+
+  # Show field if a value has been set
+  my $value;
+  if (blessed($bug) && $bug->can($field_name)) {
+    $value = $bug->$field_name;
+  }
+  else {
+    $value = $bug->{$field_name};
+  }
+  return 0 if $value && $value ne '---';
 
   # check Bugzilla's built-in visibility controls first
   if ($bug) {

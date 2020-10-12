@@ -184,6 +184,8 @@ sub match {
 
   # Use later for preload
   my $bug_id = delete $params->{'bug_id'};
+  my $bug = delete $params->{'bug'};
+  $bug_id = $bug->id if $bug;
 
   # Retrieve all flags relevant for the given product and component
   if (
