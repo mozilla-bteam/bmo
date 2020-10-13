@@ -115,7 +115,7 @@ function invertFields() {
 }
 
 function onFormSubmit() {
-  if ($('#is_custom').is(':checked') && (!$('#from').val() || !$('#to').val())) {
+  if (!$('#from').val() || !$('#to').val()) {
     alert('You must enter both the start and end dates.');
     return false;
   }
@@ -127,30 +127,13 @@ function onFormReset() {
   deserializeForm('');
 }
 
-function selectRangeType() {
-  if ($('#is_custom').is(':checked')) {
-    $('#custom_range').show();
-    $('#fixed_range').hide();
-  }
-  else {
-    $('#custom_range').hide();
-    $('#fixed_range').show();
-  }
-  serializeForm();
-}
-
 function serializeForm() {
   var q = flagEl.value + ':' +
           $('#flag_value').val() + ':';
-  if ($('#is_custom').is(':checked')) {
-    var from = $('#from').val();
-    var to = $('#to').val();
-    q = q + from.replace(/-/g, '') +
-            '-' + to.replace(/-/g, '');
-  }
-  else {
-    q = q + $('#range').val();
-  }
+  var from = $('#from').val();
+  var to = $('#to').val();
+  q = q + from.replace(/-/g, '') +
+          '-' + to.replace(/-/g, '');
   q = q + ':' + productEl.value + ':' +
       $('#op').val() + ':';
   for(var id in selectedFields) {
@@ -160,9 +143,8 @@ function serializeForm() {
   }
 
   $('#q').val(q);
-  var is_custom = $('#is_custom').is(':checked') ? 1 : 0;
-  $('#bookmark').attr('href', `${BUGZILLA.config.basepath}page.cgi?id=release_tracking_report.html&is_custom=` +
-                              `${is_custom}&q=${encodeURIComponent(q)}`);
+  $('#bookmark').attr('href', `${BUGZILLA.config.basepath}page.cgi?id=release_tracking_report.html&` +
+                              `q=${encodeURIComponent(q)}`);
 }
 
 function deserializeForm(q) {

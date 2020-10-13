@@ -330,7 +330,14 @@
   [% ELSIF error == "bug_type_required" %]
     [% title = "Bug Type Required" %]
     To file a new [% terms.bug %], you must first choose a type:
-    [% FOREACH type = bug_fields.bug_type.legal_values.pluck('name') %]
+    [%
+      bug_types = [];
+      FOREACH type = bug_fields.bug_type.legal_values.pluck('name');
+        NEXT IF type == "--";
+        bug_types.push(type);
+      END;
+    %]
+    [% FOREACH type = bug_types %]
       [% IF loop.last %] or [% ELSIF !loop.first %], [% END %]
       <strong>[% type FILTER html %]</strong>
     [% END %].

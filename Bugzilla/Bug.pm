@@ -1875,14 +1875,17 @@ sub _check_bug_status {
 
 sub _check_bug_type {
   my ($invocant, $type, undef, $params) = @_;
+  my $type_required = Bugzilla->params->{'require_bug_type'};
 
   if (defined $type && trim($type)) {
+    # Treat '--' type value same as empty
+    if ($type_required && $type eq '--') {
+      ThrowUserError('bug_type_required');
+    }
     return $invocant->_check_select_field($type, 'bug_type');
   }
 
-  if (Bugzilla->params->{'require_bug_type'}) {
-    ThrowUserError('bug_type_required');
-  }
+  $type_required && ThrowUserError('bug_type_required');
 
   if (blessed $invocant) {
     return $invocant->component_obj->default_bug_type;

@@ -74,6 +74,10 @@ a.activity-ref {
   color: inherit;
 }
 
+.no-scroll {
+    overflow: hidden;
+}
+
 /**
  * modules
  */
@@ -633,12 +637,12 @@ td.flag-requestee {
 
 .new-changes-link {
   position: sticky;
-  top: 8px;
+  top: 48px;
   left: 0;
   right: 0;
   z-index: 10;
   overflow: hidden;
-  margin: 8px -8px;
+  margin: 8px 0;
   border-radius: 4px;
   padding: 4px;
   color: var(--primary-button-foreground-color);
@@ -657,18 +661,18 @@ td.flag-requestee {
 }
 
 .new-changes-separator {
-  position: relative;
-  margin: 16px -8px;
+  margin: 16px 0;
   height: 0;
   border-top: 1px solid rgb(var(--accent-color-red-1));
   -moz-user-select: none;
   -webkit-user-select: none;
   user-select: none;
+  text-align: right;
 }
 
 .new-changes-separator span {
   display: inline-block;
-  position: absolute;
+  position: relative;
   top: -10px;
   right: 16px;
   border: 1px solid var(--secondary-region-border-color);
@@ -717,6 +721,11 @@ td.flag-requestee {
 
 .change-author .vcard {
   display: inline;
+}
+
+.change-authors {
+  font-weight: bold;
+  padding-right: 8px;
 }
 
 .change-author .user-role {
@@ -1181,26 +1190,31 @@ a.lightbox-icon.markdown {
   position: absolute;
   bottom: 0;
   left: 0;
-  overflow: auto;
   width: 100%;
+  height: 100%;
   text-align: center;
+  overflow-y: scroll;
   z-index: 2;
 }
 
-#lb_text {
-  position: fixed;
-  top: 4px;
-  left: 8px;
-  z-index: 3;
-  color: var(--secondary-label-color);
-  font-weight: bold;
+#lb_text_container {
+  align-items: center;
+  background-color: var(--primary-text-background-color);
+  color: var(--primary-text-color);
   cursor: default;
+  display: flex;
+  justify-content: center;
+  padding: 4px;
+  z-index: 3;
+}
+
+#lb_text {
+  font-weight: bold;
+  flex-grow: 1;
 }
 
 #lb_close_btn {
-  position: fixed;
-  top: 8px;
-  right: 8px;
+  margin-left: 4px;
 }
 
 /**

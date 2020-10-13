@@ -584,16 +584,8 @@ Bugzilla.InlineAttachment = class InlineAttachment {
       });
 
       $image.setAttribute('itemprop', 'image');
-      $image.alt = this.name;
+      this.$outer.title = this.name;
       this.$outer.appendChild($image);
-
-      // Add lightbox support
-      this.$outer.addEventListener('click', event => {
-        if (!event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
-          event.preventDefault();
-          lb_show(event.target);
-        }
-      });
     } catch (ex) {
       this.$outer.remove();
     }

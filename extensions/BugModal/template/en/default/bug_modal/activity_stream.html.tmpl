@@ -64,7 +64,7 @@
     END;
 
     IF change_set.comment;
-      PROCESS comment_header comment=change_set.comment;
+      PROCESS comment_header comment=change_set.comment editors=change_set.editors ts=change_set.edited;
     ELSE;
       PROCESS activity_header activities=change_set.activity id=change_set.id;
     END;
@@ -101,23 +101,41 @@
     <table class="layout-table change-head [% extra_class FILTER none %]" id="ch-[% comment.count FILTER none %]"
       [% IF comment.collapsed +%] style="display:none"[% END %] role="presentation">
       <tr>
-        <td rowspan="2" class="change-gravatar">
-          [% INCLUDE bug_modal/user.html.tmpl
-              u = comment.author
-              gravatar_size = 32
-              gravatar_only = 1
-          %]
-        </td>
+        [% IF editors.size %]
+          <td rowspan="2" class="change-gravatar">
+            <img class="gravatar" src="/extensions/Gravatar/web/multiple.svg" width="32" height="32">
+          </td>
+          <td class="change-author">
+            <span class="change-authors">Multiple Authors</span>
+            [% FOREACH u IN editors %]
+              <span class="tt" title="[% u.name FILTER html %]">
+                [% INCLUDE bug_modal/user.html.tmpl
+                    u = u
+                    gravatar_size = 16
+                    gravatar_only = 1
+                %]
+              </span>
+            [% END %]
+          </td>
+        [% ELSE %]
+          <td rowspan="2" class="change-gravatar">
+            [% INCLUDE bug_modal/user.html.tmpl
+                u = comment.author
+                gravatar_size = 32
+                gravatar_only = 1
+            %]
+          </td>
 
-        <td class="change-author">
-          [% INCLUDE bug_modal/user.html.tmpl
-              u = comment.author
-          %]
-          [% IF extra_class %]
-            <span class="user-role">[% extra_class.ucfirst FILTER none %]</span>
-          [% END %]
-          [% Hook.process('user', 'bug/comments.html.tmpl') %]
-        </td>
+          <td class="change-author">
+            [% INCLUDE bug_modal/user.html.tmpl
+                u = comment.author
+            %]
+            [% IF extra_class %]
+              <span class="user-role">[% extra_class.ucfirst FILTER none %]</span>
+            [% END %]
+            [% Hook.process('user', 'bug/comments.html.tmpl') %]
+          </td>
+        [% END %]
 
         <td rowspan="2" class="comment-actions"><div role="group">
           [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
@@ -165,7 +183,7 @@
           </h3>
           &bull;
           <div class="change-time">
-            [% INCLUDE bug_modal/rel_time.html.tmpl ts=comment.creation_ts %]
+            [% INCLUDE bug_modal/rel_time.html.tmpl ts=ts %]
           </div>
           [% Hook.process('comment_meta', 'bug_modal/activity_stream.html.tmpl') %]
         </td>

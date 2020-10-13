@@ -48,24 +48,13 @@ var default_query = '[% default_query FILTER js %]';
     </select>
 
     between
-    <span id="fixed_range">
-      <select id="range" onChange="serializeForm()">
-        [% FOREACH range = ranges %]
-          <option value="[% range.value FILTER html %]">
-            [% range.label FILTER html %]
-          </option>
-        [% END %]
-      </select>
-    </span>
-    <span id="custom_range" style="display:none;">
+    <span id="custom_range">
       <input class="date_field" name="from" id="from" onChange="serializeForm()">
       <img class="date_field-img" id="from-img" src="[% basepath FILTER none %]extensions/BugModal/web/calendar.png" width="16" height="16">
       and
       <input class="date_field" name="to" id="to" onChange="serializeForm()">
       <img class="date_field-img" id="to-img" src="[% basepath FILTER none %]extensions/BugModal/web/calendar.png" width="16" height="16">
     </span>
-    <input type="checkbox" id="is_custom" onchange="selectRangeType()" [% "checked" IF is_custom %]>
-    <label for="is_custom">Custom</label>
   </td>
 </tr>
 

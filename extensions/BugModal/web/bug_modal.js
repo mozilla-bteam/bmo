@@ -1548,7 +1548,7 @@ async function show_new_changes_indicator() {
             ` since <time datetime="${date_attr}">${date_label}</time>`;
         $link.addEventListener('click', () => {
             $link.remove();
-            scroll_element_into_view($separator);
+            $.scrollTo($separator);
         }, { once: true });
         document.querySelector('#changeform').insertAdjacentElement('beforebegin', $link);
 
@@ -1565,13 +1565,10 @@ async function show_new_changes_indicator() {
                     $link.addEventListener('transitionend', () => $link.remove(), { once: true });
                     $link.hidden = true;
                 }
-            }), { root: document.querySelector('#bugzilla-body') });
+            }));
 
             observer.observe($separator);
         }
-
-        // TODO: Enable auto-scroll once the modal page layout is optimized
-        // scroll_element_into_view($separator);
     } catch (ex) {}
 }
 
@@ -1597,17 +1594,21 @@ function lb_show(el) {
             lb_close(event);
         }
     });
+    $('html').addClass('no-scroll');
     var overlay = $('<div>')
         .prop('id', 'lb_overlay')
         .css({ opacity: 0 })
         .appendTo('body');
     var overlay2 = $('<div>')
         .prop('id', 'lb_overlay2')
-        .css({ top: $(window).scrollTop() + 5 })
+        .css({ top: $(window).scrollTop() + $('#header').height() })
         .appendTo('body');
+    var text_container = $('<div>')
+        .prop('id', 'lb_text_container')
+        .appendTo(overlay2);
     var title = $('<div>')
         .prop('id', 'lb_text')
-        .appendTo(overlay2);
+        .appendTo(text_container);
     var img = $('<img>')
         .prop('id', 'lb_img')
         .prop('src', el.href)
@@ -1623,7 +1624,7 @@ function lb_show(el) {
         .prop('type', 'button')
         .addClass('minor')
         .text('Close')
-        .appendTo(overlay2);
+        .appendTo(text_container);
     title.text(el.title);
     overlay.add(overlay2).click(lb_close);
     img.add(overlay).animate({ opacity: 1 }, 200);
@@ -1633,6 +1634,7 @@ function lb_close(event) {
     event.preventDefault();
     $(document).unbind('keyup.lb');
     $('#lb_overlay, #lb_overlay2, #lb_close_btn, #lb_img, #lb_text').remove();
+    $('html').removeClass('no-scroll');
 }
 
 $(function() {
@@ -1684,10 +1686,12 @@ $(function() {
 
             if (typeof target === 'string') {
                 $target = document.getElementById(target);
-                window.location.hash = target;
-            } else {
-                // Use raw DOM node instead of jQuery
+                window.location.hash = $target;
+            } else if (typeof target.get === 'function') {
+                // Use native DOM element instead of jQuery
                 $target = target.get(0);
+            } else {
+                $target = target;
             }
 
             if ($target) {

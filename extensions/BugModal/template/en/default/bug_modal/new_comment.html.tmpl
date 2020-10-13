@@ -108,6 +108,7 @@
         <td>
           <input type="checkbox" name="bug_ignored" id="bug-ignored"
             [%= "checked" IF user.is_bug_ignored(bug.id) %]>
+          <input type="hidden" name="defined_bug_ignored" value="1">
         </td>
         <td>
           <label for="bug-ignored" title="You will still receive emails for flag requests directed at you">

@@ -6,6 +6,16 @@
 version: 2.1
 
 defaults:
+  docker_login: &docker_login
+    run:
+      name: Login to Dockerhub
+      command: |
+        if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
+          echo "Skipping Login to Dockerhub, credentials not available."
+        else
+          echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
+        fi
+
   install_deps: &install_deps
     run:
       name: install dependencies
@@ -15,6 +25,9 @@ defaults:
 
   docker_image: &docker_image
     image: docker:18.09.3-git
+    auth:
+      username: $DOCKER_USER
+      password: $DOCKER_PASS
 
   build_image: &build_image
     run:
@@ -41,7 +54,7 @@ defaults:
         - production
 
 jobs:
-  build_info:
+  build:
     parallelism: 1
     working_directory: /app
     docker:
@@ -49,10 +62,10 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 18.09.3
-          docker_layer_caching: true
       - checkout
-      - *build_image
       - *install_deps
+      - *docker_login
+      - *build_image
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
@@ -104,8 +117,17 @@ jobs:
       - store_artifacts:
           path: /app/build_info
       - *store_log
+      # save the built docker container into CircleCI's cache. This is
+      # required since Workflows do not have the same remote docker instance.
+      - run:
+          name: docker save bmo
+          command: mkdir -p /cache; docker save -o /cache/docker.tar "bmo"
+      - save_cache:
+          key: v1-{{ .Environment.CIRCLE_SHA1 }}-{{epoch}}
+          paths:
+            - /cache/docker.tar
 
-  build:
+  deploy:
     parallelism: 1
     working_directory: /app
     docker:
@@ -113,15 +135,18 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 18.09.3
-          docker_layer_caching: true
+      - restore_cache:
+          key: v1-{{.Environment.CIRCLE_SHA1}}
+      - run:
+          name: Restore Docker image cache
+          command: docker load -i /cache/docker.tar
       - checkout
-      - *build_image
+      - *docker_login
       - attach_workspace:
           at: /app/build_info
       - deploy:
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
-            docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
               TAG="$(cat build_info/tag.txt)"
               if [[ -n "$TAG" && -f build_info/publish.txt ]]; then
@@ -149,10 +174,14 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 18.09.3
-          docker_layer_caching: true
+      - restore_cache:
+          key: v1-{{.Environment.CIRCLE_SHA1}}
+      - run:
+          name: Restore Docker image cache
+          command: docker load -i /cache/docker.tar
       - checkout
-      - *build_image
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -176,10 +205,14 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 18.09.3
-          docker_layer_caching: true
+      - restore_cache:
+          key: v1-{{.Environment.CIRCLE_SHA1}}
+      - run:
+          name: Restore Docker image cache
+          command: docker load -i /cache/docker.tar
       - checkout
-      - *build_image
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -200,10 +233,14 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 18.09.3
-          docker_layer_caching: true
+      - restore_cache:
+          key: v1-{{.Environment.CIRCLE_SHA1}}
+      - run:
+          name: Restore Docker image cache
+          command: docker load -i /cache/docker.tar
       - checkout
-      - *build_image
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -224,10 +261,14 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 18.09.3
-          docker_layer_caching: true
+      - restore_cache:
+          key: v1-{{.Environment.CIRCLE_SHA1}}
+      - run:
+          name: Restore Docker image cache
+          command: docker load -i /cache/docker.tar
       - checkout
-      - *build_image
       - *install_deps
+      - *docker_login
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -241,12 +282,12 @@ workflows:
   version: 2
   main:
     jobs:
-      - build_info:
-          filters: *main_filters
       - build:
           filters: *main_filters
+      - deploy:
+          filters: *main_filters
           requires:
-            - build_info
+            - build
             - test_sanity
             - test_bmo
             - test_webservices
@@ -254,16 +295,16 @@ workflows:
       - test_sanity:
           filters: *main_filters
           requires:
-            - build_info
+            - build
       - test_bmo:
           filters: *main_filters
           requires:
-            - build_info
+            - build
       - test_webservices:
           filters: *main_filters
           requires:
-            - build_info
+            - build
       - test_selenium:
           filters: *main_filters
           requires:
-            - build_info
+            - build

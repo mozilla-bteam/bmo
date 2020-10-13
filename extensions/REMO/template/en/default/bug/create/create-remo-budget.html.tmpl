@@ -37,7 +37,7 @@ function validateAndSubmit() {
   var alert_text = '';
   if(!isFilledOut('firstname')) alert_text += "Please enter your first name\n";
   if(!isFilledOut('lastname')) alert_text += "Please enter your last name\n";
-  if(!isFilledOut('profilepage')) alert_text += "Please enter a Mozilla Reps profile page.\n";
+  if(!isFilledOut('profilepage')) alert_text += "Please enter your Community Portal profile.\n";
   if(!isFilledOut('eventpage')) alert_text += "Please enter an event page address.\n";
   if(!isFilledOut('cf_due_date')) alert_text += "Please enter an event date.\n";
   if(!isFilledOut('functional_goals')) alert_text += "Please list functional goals the event will be supporting.\n";
@@ -108,10 +108,10 @@ function validateAndSubmit() {
 </tr>
 
 <tr class="odd">
-  <th class="field_label required">Mozilla Reps Profile Page:</th>
+  <th class="field_label required">Community Portal Profile:</th>
   <td>
     <input type="text" name="profilepage" id="profilepage"
-           value="" size="40" placeholder="https://reps.mozilla.org/u/JohnDoe">
+           value="" size="40" placeholder="https://community.mozilla.org/en/people/test-user/">
   </td>
 </tr>
 
@@ -119,7 +119,7 @@ function validateAndSubmit() {
   <th class="field_label required">Event Page:</th>
   <td>
     <input type="text" name="eventpage" id="eventpage"
-           value="" size="40" placeholder="https://reps.mozilla.org/e/TestEvent">
+           value="" size="40" placeholder="https://community.mozilla.org/en/events/test-event/">
   </td>
 </tr>
 
