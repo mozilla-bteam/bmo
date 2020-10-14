@@ -298,12 +298,11 @@ sub changeEmail {
   # Update the user's login name in the profiles table and delete the token
   # from the tokens table.
   $dbh->bz_start_transaction();
-  $dbh->do(
-    q{UPDATE   profiles
-               SET      login_name = ?
-               WHERE    userid = ?}, undef, ($new_email, $userid)
-  );
-  Bugzilla->memcached->clear({table => 'profiles', id => $userid});
+
+  my $user = Bugzilla::User->new($userid);
+  $user->set_login($new_email);
+  $user->update();
+
   $dbh->do('DELETE FROM tokens WHERE token = ?', undef, $token);
   $dbh->do(
     q{DELETE FROM tokens WHERE userid = ?
@@ -311,7 +310,6 @@ sub changeEmail {
   );
 
   # The email address has been changed, so we need to rederive the groups
-  my $user = new Bugzilla::User($userid);
   $user->derive_regexp_groups;
 
   $dbh->bz_commit_transaction();

@@ -619,7 +619,8 @@ To create a new bug in Bugzilla.
      "alias" : "SomeAlias",
      "op_sys" : "All",
      "priority" : "P1",
-     "rep_platform" : "All"
+     "platform" : "All",
+     "type" : "defect"
    }
 
 Some params must be set, or an error will be thrown. These params are
@@ -657,8 +658,8 @@ priority            string   (defaulted) What order the bug will be fixed in by
                              the developer, compared to the developer's other
                              bugs.
 severity            string   (defaulted) How severe the bug is.
-type                string   (defaulted) The basic category of the bug. Some
-                             Bugzilla installations require this to be specified.
+**type**            string   The basic category of the bug. Some Bugzilla
+                             installations require this to be specified.
 alias               string   The alias for the bug that can be used instead of a
                              bug number when accessing this bug. Must be unique
                              in all of this Bugzilla.
