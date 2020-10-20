@@ -24,9 +24,19 @@ sub should_handle {
 #  https://github.com/USER_OR_TEAM_OR_ORGANIZATION_NAME/REPOSITORY_NAME/issues/111
 # GitHub pull request URLs have only one form:
 #  https://github.com/USER_OR_TEAM_OR_ORGANIZATION_NAME/REPOSITORY_NAME/pull/111
-  return (lc($uri->authority) eq 'github.com'
-      and $uri->path =~ m!^/[^/]+/[^/]+/(?:issues|pull)/\d+$!) ? 1 : 0;
+# Github security advisories have the form of:
+#  https://github.com/USER_OR_TEAM_OR_ORGANIZATION_NAME/REPOSITORY_NAME/security/advisories/GHSA-XXXX-XXXX-XXXX
+  if (lc($uri->authority) eq 'github.com') {
+    if ( $uri->path =~ m!^/[^/]+/[^/]+/(?:issues|pull)/\d+$!
+      || $uri->path =~ m!^/[^/]+/[^/]+/security/advisories/GHSA-.*$!)
+    {
+      return 1;
+    }
+  }
+
+  return 0;
 }
+
 
 sub _check_value {
   my ($class, $uri) = @_;
