@@ -95,6 +95,17 @@ $t->get_ok("/rest/user/"
 # should result in an access error.
 $t->get_ok("/rest/user/" . $oauth_user->id)->status_is(401);
 
+# Pass in garbage as an access-token to ensure that the call fails correctly
+$t->get_ok("/rest/user/"
+    . $oauth_user->id =>
+    {Authorization => 'Bearer 1234567890!@#$%^&*()'})->status_is(401);
+$t->get_ok("/rest/user/"
+    . $oauth_user->id =>
+    {Authorization => 'Bearer '})->status_is(401);
+$t->get_ok("/rest/user/"
+    . $oauth_user->id =>
+    {Authorization => ' '})->status_is(401);
+
 # User profile API call should fail if user is disabled
 $oauth_user->set_disabledtext('DISABLED');
 $oauth_user->update();

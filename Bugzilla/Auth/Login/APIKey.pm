@@ -42,18 +42,11 @@ sub get_login_info {
   my $params = Bugzilla->input_params;
   my ($user_id, $login_cookie);
 
+  return {failure => AUTH_NODATA} if !i_am_webservice();
+
   # First check for an API key in the header or passed as query params
   my $api_key_text = trim($cgi->http('X_BUGZILLA_API_KEY'))
     || trim($params->{'Bugzilla_api_key'});
-
-  # Also allow use of OAuth2 bearer tokens to access the API
-  # substr() removes the "Bearer " portion of the header
-  my $oauth_token = trim($cgi->http('Authorization')) || '';
-  $oauth_token = substr($oauth_token, 7) if $oauth_token;
-
-  if (!i_am_webservice() || (!$api_key_text && !$oauth_token)) {
-    return {failure => AUTH_NODATA};
-  }
 
   if ($api_key_text) {
     my $api_key   = Bugzilla::User::APIKey->new({name => $api_key_text});
@@ -80,7 +73,8 @@ sub get_login_info {
     return {user_id => $api_key->user_id};
   }
 
-  if ($oauth_token) {
+  # Also allow use of OAuth2 bearer tokens to access the API
+  if (trim($cgi->http('Authorization'))) {
     my $C    = $Bugzilla::App::CGI::C;
     my $user = $C->bugzilla->oauth('api:modify');
     if ($user && $user->id) {

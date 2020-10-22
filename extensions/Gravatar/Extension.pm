@@ -27,7 +27,9 @@ BEGIN {
 
 sub _user_gravatar {
   my ($self, $size) = @_;
-  if ($self->setting('show_my_gravatar') eq 'Off') {
+  if ( $self->setting('show_my_gravatar')
+    && $self->setting('show_my_gravatar') eq 'Off')
+  {
     return DEFAULT_URL;
   }
   if (!$self->{gravatar}) {
