@@ -148,7 +148,7 @@ sub _verify_client {
 
     if ($scopes_ref) {
       my $client_scopes = $dbh->selectcol_arrayref(
-        'SELECT oauth2_scope.description FROM oauth2_scope
+        'SELECT oauth2_scope.name FROM oauth2_scope
                 JOIN oauth2_client_scope ON oauth2_scope.id = oauth2_client_scope.scope_id
           WHERE oauth2_client_scope.client_id = ?', undef, $client_data->{id}
       );
@@ -367,7 +367,7 @@ sub _get_jwt_claims {
 
 sub _has_scope {
   my ($scope, $available_scopes) = @_;
-  return any {$scope} @{$available_scopes // []};
+  return any {$_ eq $scope} @{$available_scopes // []};
 }
 
 1;
