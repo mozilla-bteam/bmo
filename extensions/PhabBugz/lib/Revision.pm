@@ -293,12 +293,11 @@ sub _build_reviews {
   my %by_phid = map { $_->{reviewerPHID} => $_ } @{$self->reviewers_raw};
   my @users;
   foreach my $phid (keys %by_phid) {
-    next if $phid !~ /^PHID-PROJ/ && $phid !~ /^PHID-USER/;
     if ($phid =~ /^PHID-PROJ/) {
       push(@users,
         Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$phid]}));
     }
-    else {
+    elsif ($phid =~ /^PHID-USER/) {
       push(@users,
         Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$phid]}));
     }
