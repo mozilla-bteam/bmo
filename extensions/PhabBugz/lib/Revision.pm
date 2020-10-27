@@ -297,7 +297,7 @@ sub _build_reviews {
       push(@users,
         Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$phid]}));
     }
-    else {
+    elsif ($phid =~ /^PHID-USER/) {
       push(@users,
         Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$phid]}));
     }

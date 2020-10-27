@@ -125,6 +125,7 @@ tie(
     "Other Applications"                  => [],
     "Penelope"                            => [],
     "Release Engineering"                 => [],
+    "Remote Protocol"                     => [],
     "Rhino"                               => [],
     "SeaMonkey"                           => [],
     "Tamarin"                             => [],
