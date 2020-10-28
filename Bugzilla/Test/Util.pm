@@ -70,8 +70,6 @@ sub create_oauth_client {
     );
   }
 
-  $client_data->{scopes} = $scopes;
-
   return $client_data;
 }
 

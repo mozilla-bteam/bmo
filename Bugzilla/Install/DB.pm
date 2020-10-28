@@ -4262,14 +4262,10 @@ sub _populate_oauth2_scopes {
 
   # if there are no scopes, then we're creating a database from scratch
   my ($scope_count) = $dbh->selectrow_array('SELECT COUNT(*) FROM oauth2_scope');
-  if (!$scope_count) {
+    if (!$scope_count) {
     $dbh->do(
       "INSERT INTO oauth2_scope (id, name, description) VALUES " .
       "(1, 'user:read', 'View basic account information such as email address.')"
-    );
-    $dbh->do(
-      "INSERT INTO oauth2_scope (id, name, description) VALUES " .
-      "(2, 'api:modify', 'Read and modify data in Bugzilla using the Web API.')"
     );
   }
 
@@ -4285,13 +4281,6 @@ sub _populate_oauth2_scopes {
     );
     $dbh->bz_alter_column('oauth2_scope', 'description',
       {TYPE => 'TINYTEXT', NOTNULL => 1});
-  }
-
-  # Bug 1670319 - dkl@mozilla.com - Add new api:modify scope to scope list
-  my ($scope_found) = $dbh->selectrow_array("SELECT 1 FROM oauth2_scope WHERE name = 'api:modify'");
-  if (!$scope_found) {
-    $dbh->do("INSERT INTO oauth2_scope (name, description) VALUES "
-        . "('api:modify', 'Read and modify data in Bugzilla using the Web API.')");
   }
 }
 
