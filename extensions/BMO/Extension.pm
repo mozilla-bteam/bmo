@@ -687,6 +687,11 @@ sub bug_check_can_change_field {
       }
     }
   }
+  elsif (($field eq 'bug_severity' || $field eq 'priority')
+    && !$user->in_group('editbugs'))
+  {
+    push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+  }
 }
 
 # link up various Mozilla-specific strings
