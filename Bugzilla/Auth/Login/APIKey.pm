@@ -45,8 +45,14 @@ sub get_login_info {
   return {failure => AUTH_NODATA} if !i_am_webservice();
 
   # First check for an API key in the header or passed as query params
-  my $api_key_text = trim($cgi->http('X_BUGZILLA_API_KEY'))
-    || trim($params->{'Bugzilla_api_key'});
+  my $api_key_text = trim($cgi->http('X_BUGZILLA_API_KEY'));
+  
+  # Legacy API code looks for the header and if present puts the value
+  # into the input params as well. If exists, we need to delete it here
+  # as the extra param can crash other functions such as Bugzilla::Bug::create().
+  if ($params->{'Bugzilla_api_key'}) {
+    $api_key_text = trim(delete $params->{Bugzilla_api_key});
+  }
 
   if ($api_key_text) {
     my $api_key   = Bugzilla::User::APIKey->new({name => $api_key_text});

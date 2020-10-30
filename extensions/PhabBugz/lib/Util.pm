@@ -94,10 +94,13 @@ sub create_revision_attachment {
 
   # Assign the bug to the submitter if it isn't already owned and
   # the revision has reviewers assigned to it.
+  # Skip this change if 'leave-open' and 'intermittent-failure'
+  # keywords are set (bug 1673348).
   if (
     !is_bug_assigned($bug)
     && $revision->status ne 'abandoned'
     && @{$revision->reviews}
+    && !($bug->has_keyword('leave-open') && $bug->has_keyword('intermittent-failure'))
   ) {
     INFO('Assigning bug ' . $bug->id . ' to ' . $submitter->email);
     $bug->set_assigned_to($submitter);
