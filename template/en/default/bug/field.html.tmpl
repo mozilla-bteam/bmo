@@ -162,6 +162,8 @@
                   field.name.match("^cf_status_") OR
                   field.name.match("^cf_tracking_") OR
                   field.name == "cf_cab_review" OR
+                  field.name == "bug_severity" OR
+                  field.name == "priority" OR
                   field.name == "resolution" %]
               [% NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name) OR
                              selected %]

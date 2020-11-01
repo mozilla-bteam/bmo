@@ -617,12 +617,6 @@ if (!Bugzilla::Group->new({name => $group_name})) {
   );
 }
 
-# BMO 'editbugs' is also a member of 'canconfirm'
-my $editbugs   = Bugzilla::Group->new({name => 'editbugs'});
-my $canconfirm = Bugzilla::Group->new({name => 'canconfirm'});
-$dbh->do('INSERT INTO group_group_map VALUES (?, ?, 0)',
-  undef, $editbugs->id, $canconfirm->id);
-
 # BMO: Update default security group settings for new products
 my $default_security_group
   = Bugzilla::Group->new({name => 'core-security-release'});
@@ -638,6 +632,7 @@ if ($default_security_group) {
 ##########################################################################
 my @users_groups = (
   {user => $config->{QA_Selenium_TEST_user_login}, group => 'QA-Selenium-TEST'},
+  {user => $config->{QA_Selenium_TEST_user_login}, group => 'editbugs'},
   {user => $config->{tweakparams_user_login},      group => 'tweakparams'},
   {user => $config->{canconfirm_user_login},       group => 'canconfirm'},
   {user => $config->{editbugs_user_login},         group => 'editbugs'},
@@ -848,19 +843,6 @@ if (Bugzilla::Bug->new('private_bug')->{error}) {
 # Create Attachments #
 ######################
 
-# BMO FIXME: Users must be in 'editbugs' to set their own
-# content type other than text/plain or application/octet-stream
-$group = new Bugzilla::Group({name => 'editbugs'});
-my $sth_add_mapping = $dbh->prepare(
-  qq{INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)
-       VALUES (?, ?, ?, ?)}
-);
-
-# Don't crash if the entry already exists.
-eval {
-  $sth_add_mapping->execute(Bugzilla->user->id, $group->id, 0, GRANT_DIRECT);
-};
-
 print "creating attachments...\n";
 
 # We use the contents of this script as the attachment.
@@ -884,17 +866,6 @@ foreach my $alias (qw(public_bug private_bug)) {
     });
   }
 }
-
-# BMO FIXME: Remove test user from 'editbugs' group
-my $sth_remove_mapping = $dbh->prepare(
-  qq{DELETE FROM user_group_map WHERE user_id = ?
-       AND group_id = ? AND isbless = 0 AND grant_type = ?}
-);
-
-# Don't crash if the entry already exists.
-eval {
-  $sth_remove_mapping->execute(Bugzilla->user->id, $group->id, GRANT_DIRECT);
-};
 
 ###################
 # Create Keywords #
