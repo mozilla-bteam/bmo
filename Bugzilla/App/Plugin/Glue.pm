@@ -13,8 +13,6 @@ use Try::Tiny;
 use Bugzilla::Constants;
 use Bugzilla::Logging;
 use Bugzilla::RNG ();
-use Bugzilla::Util qw(with_writable_database);
-use Mojo::Util qw(secure_compare);
 use Mojo::JSON qw(decode_json);
 use Scalar::Util qw(blessed);
 use Scope::Guard;
@@ -68,64 +66,7 @@ sub register {
       $template->process($name, \%params, $output) or die $template->error;
     }
   );
-  $app->helper(
-    'bugzilla.login_redirect_if_required' => sub {
-      my ($c, $type) = @_;
 
-      if ($type == LOGIN_REQUIRED) {
-        $c->redirect_to(Bugzilla->localconfig->basepath . 'login');
-        return undef;
-      }
-      else {
-        return Bugzilla->user;
-      }
-    }
-  );
-  $app->helper(
-    'bugzilla.login' => sub {
-      my ($c, $type) = @_;
-      $type //= LOGIN_NORMAL;
-
-      return Bugzilla->user if Bugzilla->user->id;
-
-      $type = LOGIN_REQUIRED
-        if $c->param('GoAheadAndLogIn') || Bugzilla->params->{requirelogin};
-
-      # Allow templates to know that we're in a page that always requires
-      # login.
-      if ($type == LOGIN_REQUIRED) {
-        Bugzilla->request_cache->{page_requires_login} = 1;
-      }
-
-      my $login_cookie = $c->cookie("Bugzilla_logincookie");
-      my $user_id      = $c->cookie("Bugzilla_login");
-
-      return $c->bugzilla->login_redirect_if_required($type)
-        unless ($login_cookie && $user_id);
-
-      my $db_cookie = Bugzilla->dbh->selectrow_array(
-        'SELECT cookie FROM logincookies WHERE cookie = ? AND userid = ?',
-        undef, ($login_cookie, $user_id)
-      );
-
-      if (defined $db_cookie && secure_compare($login_cookie, $db_cookie)) {
-        my $user = Bugzilla::User->check({id => $user_id, cache => 1});
-
-        # If we logged in successfully, then update the lastused
-        # time on the login cookie
-        with_writable_database {
-          Bugzilla->dbh->do(
-            q{ UPDATE logincookies SET lastused = NOW() WHERE cookie = ? },
-            undef, $login_cookie);
-        };
-        Bugzilla->set_user($user);
-        return $user;
-      }
-      else {
-        return $c->bugzilla->login_redirect_if_required($type);
-      }
-    }
-  );
   $app->helper(
     'bugzilla.error_page' => sub {
       my ($c, $error) = @_;
@@ -142,6 +83,7 @@ sub register {
       }
     }
   );
+
   $app->helper(
     'url_is_attachment_base' => sub {
       my ($c, $id) = @_;
@@ -191,6 +133,7 @@ sub register {
       return $stash->{Bugzilla_csp};
     }
   );
+
   $app->helper(
     'csp_nonce' => sub {
       my ($c) = @_;

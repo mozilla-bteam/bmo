@@ -35,9 +35,6 @@ sub setup_routes {
   $r->any('/bug/<id:num>')->to('CGI#show_bug_cgi');
   $r->any('/<id:num>')->to('CGI#show_bug_cgi');
 
-  # Route to Bugzilla::API::V1::Configuration for now
-  $r->get('/rest/configuration')->to('V1::Configuration#configuration');
-
   $r->any('/rest')->to('CGI#rest_cgi');
   $r->any('/rest.cgi/*PATH_INFO')->to('CGI#rest_cgi' => {PATH_INFO => ''});
   $r->any('/rest/*PATH_INFO')->to('CGI#rest_cgi' => {PATH_INFO => ''});

@@ -14,6 +14,7 @@ use Mojo::JSON qw( true false );
 sub setup_routes {
   my ($class, $r) = @_;
   $r->get('/api/user/profile')->to('V1::User#user_profile');
+  $r->get('/rest/user/profile')->to('V1::User#user_profile');
 }
 
 sub user_profile {

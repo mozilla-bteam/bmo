@@ -23,15 +23,17 @@ use Mojo::JSON qw( true false );
 sub setup_routes {
   my ($class, $r) = @_;
   $r->get('/latest/configuration')->to('V1::Configuration#configuration');
+  $r->get('/rest/configuration')->to('V1::Configuration#configuration');
+  $r->get('/bzapi/configuration')->to('V1::Configuration#configuration');
 }
 
 sub configuration {
   my ($self) = @_;
-  my $user = Bugzilla->user;
+  my $user = $self->bugzilla->login;
 
-  my $can_cache = !$self->param('product') && !$self->param('flags');
+  my $can_cache = !$user->id && !$self->param('product') && !$self->param('flags');
 
-# Using config.* will clear this data in memcache when Bugzilla changes are made to products, components, etc.
+  # Using config.* will clear this data in memcache when Bugzilla changes are made to products, components, etc.
   my $cache_key = 'config.configuration';
   if ($can_cache) {
     my $result = Bugzilla->memcached->get_config({key => $cache_key});
@@ -144,7 +146,7 @@ sub configuration {
       $flag_types{$type_id} = {
         name                        => $type->name,
         description                 => $type->description,
-        is_for_bugs                 => $type->target_type == 'bug' ? true : false,
+        is_for_bugs                 => $type->target_type eq 'bug' ? true : false,
         is_requestable              => $type->is_requestable ? true : false,
         is_specifically_requestable => $type->is_requesteeble ? true : false,
         is_multiplicable            => $type->is_multiplicable ? true : false,
@@ -266,6 +268,10 @@ sub configuration {
     }
   }
   $result{field} = \%fields;
+
+  if ($can_cache) {
+    Bugzilla->memcached->set_config({key => $cache_key, data => \%result});
+  }
 
   return $self->render(json => \%result);
 }
