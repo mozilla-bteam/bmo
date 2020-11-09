@@ -1567,6 +1567,11 @@ sub install_update_db {
             name        => "cf_${type}_${product}_${channel}",
             description => "${type}-${product}-${channel}",
             buglist     => 1,
+            custom      => 1,
+            enter_bug   => 0,
+            obsolete    => 0,
+            mailhead    => 0,
+            type        => FIELD_TYPE_FREETEXT
           });
         }
       }

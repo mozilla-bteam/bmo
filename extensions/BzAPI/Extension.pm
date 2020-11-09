@@ -278,9 +278,6 @@ sub _preload_handlers {
     $cache->{rest_handlers} = $all_handlers;
   }
 
-
-
-
   return $cache->{rest_handlers};
 }
 

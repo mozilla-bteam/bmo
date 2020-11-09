@@ -14,8 +14,8 @@ use Bugzilla;
 use QA::Util qw(get_config);
 
 use MIME::Base64 qw(encode_base64 decode_base64);
-use Test2::V0;
 use Test::Mojo;
+use Test::More;
 
 my $config  = get_config();
 my $api_key = $config->{admin_user_api_key};
@@ -146,4 +146,4 @@ $t->put_ok($url
   ->status_is(200)->json_is('/bugs/0/id' => $bug_id)
   ->json_has('/bugs/0/changes');
 
-done_testing;
+done_testing();

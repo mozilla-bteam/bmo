@@ -16,6 +16,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::Util qw(datetime_from);
+use JSON::XS;
 use Try::Tiny;
 
 use DateTime;
@@ -50,7 +51,7 @@ sub extensions {
   my %retval;
   foreach my $extension (@{Bugzilla->extensions}) {
     my $version = $extension->VERSION || 0;
-    my $name = $extension->NAME;
+    my $name    = $extension->NAME;
     $retval{$name}->{version} = $self->type('string', $version);
   }
   return {extensions => \%retval};
