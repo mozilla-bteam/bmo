@@ -6,34 +6,37 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::App::API;
+
 use 5.10.1;
+use Bugzilla::Logging;
+use Module::Runtime qw(require_module);
 use Mojo::Base qw( Mojolicious::Controller );
-use Mojo::JSON qw( true false );
+use Mojo::Loader qw( find_modules );
+use Try::Tiny;
+
+use constant SUPPORTED_VERSIONS => qw(V1);
 
 sub setup_routes {
   my ($class, $r) = @_;
-  $r->get('/api/user/profile')->to('API#user_profile');
-}
 
-sub user_profile {
-  my ($self) = @_;
+  # Add Bugzilla::API to namespaces for searching for controllers
+  my $namespaces = $r->namespaces;
+  push @$namespaces, 'Bugzilla::API';
+  $r->namespaces($namespaces);
 
-  my $user = $self->bugzilla->oauth('user:read');
-  if ($user && $user->id) {
-    $self->render(
-      json => {
-        id                    => $user->id,
-        name                  => $user->name,
-        login                 => $user->login,
-        nick                  => $user->nick,
-        groups                => [map { $_->name } @{$user->groups}],
-        mfa                   => lc($user->mfa),
-        mfa_required_by_group => $user->in_mfa_group ? true : false,
+  foreach my $version (SUPPORTED_VERSIONS) {
+    foreach my $module (find_modules("Bugzilla::API::$version")) {
+      try {
+        require_module($module);
+        my $controller = $module->new;
+        if ($controller->can('setup_routes')) {
+          $controller->setup_routes($r);
+        }
       }
-    );
-  }
-  else {
-    $self->render(status => 401, text => 'Unauthorized');
+      catch {
+        WARN("$module could not be loaded");
+      };
+    }
   }
 }
 
