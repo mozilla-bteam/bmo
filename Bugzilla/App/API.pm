@@ -16,6 +16,8 @@ use Try::Tiny;
 
 use constant SUPPORTED_VERSIONS => qw(V1);
 
+use Bugzilla::Constants;
+
 sub setup_routes {
   my ($class, $r) = @_;
 

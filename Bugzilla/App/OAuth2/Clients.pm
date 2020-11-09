@@ -22,6 +22,7 @@ sub setup_routes {
   my $client_route = $r->under(
     '/admin/oauth' => sub {
       my ($c) = @_;
+      Bugzilla->usage_mode(USAGE_MODE_MOJO);
       my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
       $user->in_group('admin')
         || ThrowUserError('auth_failure',
