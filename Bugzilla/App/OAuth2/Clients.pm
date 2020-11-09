@@ -25,7 +25,7 @@ sub setup_routes {
       Bugzilla->usage_mode(USAGE_MODE_MOJO);
       my $user = $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
       $user->in_group('admin')
-        || ThrowUserError('auth_failure',
+        || return $c->user_error('auth_failure',
         {group => 'admin', action => 'edit', object => 'oauth_clients'});
       return 1;
     }
@@ -68,31 +68,32 @@ sub create {
   my $description = $self->param('description');
   my $id          = $self->param('id');
   my $secret      = $self->param('secret');
-  my @scopes      = $self->param('scopes');
-  $description or ThrowCodeError('param_required', {param => 'description'});
-  $id          or ThrowCodeError('param_required', {param => 'id'});
-  $secret      or ThrowCodeError('param_required', {param => 'secret'});
-  any { $_ > 0 } @scopes or ThrowCodeError('param_required', {param => 'scopes'});
+  my $scopes      = $self->every_param('scopes');
+  $description
+    or return $self->code_error('param_required', {param => 'description'});
+  $id     or return $self->code_error('param_required', {param => 'id'});
+  $secret or return $self->code_error('param_required', {param => 'secret'});
+  any { $_ > 0 } @{$scopes}
+    or return $self->code_error('param_required', {param => 'scopes'});
   my $token = $self->param('token');
   check_token_data($token, 'create_oauth_client');
 
-  $dbh->do('INSERT INTO oauth2_client (client_id, description, secret) VALUES (?, ?, ?)',
+  $dbh->do(
+    'INSERT INTO oauth2_client (client_id, description, secret) VALUES (?, ?, ?)',
     undef, $id, $description, $secret);
 
   my $client_data
     = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
     undef, $id);
 
-  foreach my $scope_id (@scopes) {
+  foreach my $scope_id (@{$scopes}) {
     $scope_id = $dbh->selectrow_array('SELECT id FROM oauth2_scope WHERE id = ?',
       undef, $scope_id);
     if (!$scope_id) {
-      ThrowCodeError('param_required', {param => 'scopes'});
+      return $self->code_error('param_required', {param => 'scopes'});
     }
-    $dbh->do(
-      'INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
-      undef, $client_data->{id}, $scope_id
-    );
+    $dbh->do('INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
+      undef, $client_data->{id}, $scope_id);
   }
 
   delete_token($token);
@@ -115,8 +116,9 @@ sub delete {
   my $dbh    = Bugzilla->dbh;
   my $vars   = {};
 
-  my $id          = $self->param('id');
-  my $client_data = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+  my $id = $self->param('id');
+  my $client_data
+    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
     undef, $id);
 
   if (!$self->param('deleteme')) {
@@ -157,14 +159,15 @@ sub edit {
   my $vars   = {};
   my $id     = $self->param('id');
 
-  my $client_data = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
+  my $client_data
+    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE id = ?',
     undef, $id);
   my $client_scopes
     = $dbh->selectall_arrayref(
     'SELECT scope_id FROM oauth2_client_scope WHERE client_id = ?',
     undef, $client_data->{id});
   $client_data->{scopes} = [map { $_->[0] } @{$client_scopes}];
-  $vars->{client} = $client_data;
+  $vars->{client}        = $client_data;
 
   # All scopes
   my $all_scopes
@@ -184,7 +187,7 @@ sub edit {
 
   my $description = $self->param('description');
   my $active      = $self->param('active');
-  my @scopes      = $self->param('scopes');
+  my $scopes      = $self->every_param('scopes');
 
   if ($description ne $client_data->{description}) {
     $dbh->do('UPDATE oauth2_client SET description = ? WHERE id = ?',
@@ -197,11 +200,9 @@ sub edit {
   }
 
   $dbh->do('DELETE FROM oauth2_client_scope WHERE client_id = ?', undef, $id);
-  foreach my $scope_id (@scopes) {
-    $dbh->do(
-      'INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
-      undef, $client_data->{id}, $scope_id
-    );
+  foreach my $scope_id (@{$scopes}) {
+    $dbh->do('INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
+      undef, $client_data->{id}, $scope_id);
   }
 
   delete_token($token);
