@@ -42,7 +42,6 @@ my $user = Bugzilla->login();
 
 $cgi->redirect_search_url();
 use Bugzilla::Logging;
-DEBUG("After the redirect.");
 
 my $buffer = $cgi->query_string();
 if (length($buffer) == 0) {
@@ -752,6 +751,9 @@ do {
   local $SIG{__DIE__}  = undef;
   local $SIG{__WARN__} = undef;
   ($data, $extra_data) = eval { $search->data };
+  # If the search query failed in any way, log the error and return an empty
+  # list of bugs
+  ERROR 'buglist.cgi?' . $cgi->query_string . " $@" if $@;
 };
 
 if ($elastic && not defined $data) {

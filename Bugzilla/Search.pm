@@ -17,24 +17,25 @@ use base qw(Exporter);
   split_order_term
 );
 
-use Bugzilla::Error;
-use Bugzilla::Util;
 use Bugzilla::Constants;
-use Bugzilla::Group;
-use Bugzilla::User;
+use Bugzilla::Error;
 use Bugzilla::Field;
+use Bugzilla::Group;
+use Bugzilla::Keyword;
 use Bugzilla::Search::Clause;
 use Bugzilla::Search::ClauseGroup;
 use Bugzilla::Search::Condition qw(condition);
 use Bugzilla::Status;
-use Bugzilla::Keyword;
+use Bugzilla::Teams qw(component_to_team_name);
+use Bugzilla::User;
+use Bugzilla::Util;
 
 use Data::Dumper;
 use Date::Format;
 use Date::Parse;
-use Scalar::Util qw(blessed);
-use List::MoreUtils qw(all firstidx part uniq);
+use List::MoreUtils qw(all any firstidx part uniq);
 use POSIX qw(INT_MAX);
+use Scalar::Util qw(blessed);
 use Storable qw(dclone);
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -625,6 +626,10 @@ sub COLUMNS {
     last_visit_ts       => 'bug_user_last_visit.last_visit_ts',
     bug_interest_ts     => 'bug_interest.modification_time',
     assignee_last_login => 'assignee.last_seen_date',
+
+    # Return a placeholder for team_name, it will be replaced in data() before
+    # results are returned.
+    team_name           => "'---'",
   );
 
   if ($user->id) {
@@ -857,6 +862,13 @@ sub data {
     '_no_security_check' => 1
   );
 
+  # always select product and component names when returning team_name
+  my $team_name_column_idx = firstidx { $_ eq 'team_name' } @orig_fields;
+  if ($team_name_column_idx != -1) {
+    $search->_add_extra_column('product');
+    $search->_add_extra_column('component');
+  }
+
   $start_time = [gettimeofday()];
   $sql        = $search->_sql;
   my $unsorted_data = $dbh->selectall_arrayref($sql);
@@ -902,6 +914,18 @@ sub data {
         if (exists $tf_pos{$field}) {
           $row->[$tf_pos{$field}] = $values->{$bug_id}{$field};
         }
+      }
+    }
+  }
+
+  #  replace team_name placeholder with real team name from
+  # `report_component_teams` parameter.
+  if ($team_name_column_idx != -1) {
+    my $product_idx = firstidx { $_ eq 'product' } $search->_display_columns;
+    my $component_idx = firstidx { $_ eq 'component' } $search->_display_columns;
+    foreach my $row (@{$self->{data}}) {
+      if (my $team_name = component_to_team_name($row->[$product_idx], $row->[$component_idx])) {
+        $row->[$team_name_column_idx] = $team_name;
       }
     }
   }
