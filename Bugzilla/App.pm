@@ -196,7 +196,7 @@ sub setup_routes {
   my ($self) = @_;
 
   my $r = $self->routes;
-  Bugzilla::App::API->setup_routes($r);
+  Bugzilla::App::API->setup_routes($r, $self);
   Bugzilla::App::BouncedEmails->setup_routes($r);
   Bugzilla::App::CGI->setup_routes($r);
   Bugzilla::App::Main->setup_routes($r);
