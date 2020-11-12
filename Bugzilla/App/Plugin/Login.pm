@@ -50,54 +50,58 @@ sub register {
         Bugzilla->request_cache->{page_requires_login} = 1;
       }
 
-      # Try cookies first
-      my $login_cookie  = $c->cookie("Bugzilla_logincookie");
-      my $login_user_id = $c->cookie("Bugzilla_login");
+      # Try cookies first if we are using the web UI
+      if (Bugzilla->usage_mode != USAGE_MODE_REST) {
+        my $login_cookie  = $c->cookie("Bugzilla_logincookie");
+        my $login_user_id = $c->cookie("Bugzilla_login");
 
-      if ($login_cookie && $login_user_id) {
-        my $db_cookie
-          = Bugzilla->dbh->selectrow_array(
-          'SELECT cookie FROM logincookies WHERE cookie = ? AND userid = ?',
-          undef, ($login_cookie, $login_user_id));
+        if ($login_cookie && $login_user_id) {
+          my $db_cookie
+            = Bugzilla->dbh->selectrow_array(
+            'SELECT cookie FROM logincookies WHERE cookie = ? AND userid = ?',
+            undef, ($login_cookie, $login_user_id));
 
-        if (defined $db_cookie && secure_compare($login_cookie, $db_cookie)) {
-          $user_id = $login_user_id;
+          if (defined $db_cookie && secure_compare($login_cookie, $db_cookie)) {
+            $user_id = $login_user_id;
 
-          # If we logged in successfully, then update the lastused
-          # time on the login cookie
-          with_writable_database {
-            Bugzilla->dbh->do(
-              q{ UPDATE logincookies SET lastused = NOW() WHERE cookie = ? },
-              undef, $login_cookie);
-          };
-        }
-      }
-
-      # Next check for an API key in the header or passed as query params
-      if (my $api_key_text = $headers->header('X_BUGZILLA_API_KEY')) {
-        my $api_key   = Bugzilla::User::APIKey->new({name => $api_key_text});
-        my $remote_ip = remote_ip();
-        if ($api_key && $api_key->api_key eq $api_key_text) {
-          if (
-            !(
-                 $api_key->sticky
-              && $api_key->last_used_ip
-              && $api_key->last_used_ip ne $remote_ip
-            )
-            && !$api_key->revoked
-            )
-          {
-            $api_key->update_last_used($remote_ip);
-            $user_id = $api_key->user_id;
+            # If we logged in successfully, then update the lastused
+            # time on the login cookie
+            with_writable_database {
+              Bugzilla->dbh->do(
+                q{ UPDATE logincookies SET lastused = NOW() WHERE cookie = ? },
+                undef, $login_cookie);
+            };
           }
         }
       }
 
-      # Also allow use of OAuth2 bearer tokens to access the API
-      if ($headers->header('Authorization')) {
-        my $user = $c->bugzilla->oauth('api:modify');
-        if ($user && $user->id) {
-          $user_id = $user->id;
+      # Next check for an API key in the header or passed as query params
+      if (Bugzilla->usage_mode == USAGE_MODE_REST) {
+        if (my $api_key_text = $headers->header('x-bugzilla-api-key')) {
+          my $api_key   = Bugzilla::User::APIKey->new({name => $api_key_text});
+          my $remote_ip = $c->tx->remote_address;
+          if ($api_key && $api_key->api_key eq $api_key_text) {
+            if (
+              !(
+                  $api_key->sticky
+                && $api_key->last_used_ip
+                && $api_key->last_used_ip ne $remote_ip
+              )
+              && !$api_key->revoked
+              )
+            {
+              $api_key->update_last_used($remote_ip);
+              $user_id = $api_key->user_id;
+            }
+          }
+        }
+
+        # Also allow use of OAuth2 bearer tokens to access the API
+        if ($headers->header('Authorization')) {
+          my $user = $c->bugzilla->oauth('api:modify');
+          if ($user && $user->id) {
+            $user_id = $user->id;
+          }
         }
       }
 
