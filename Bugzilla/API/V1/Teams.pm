@@ -7,6 +7,7 @@
 
 package Bugzilla::API::V1::Teams;
 use 5.10.1;
+use Bugzilla::Constants;
 use Mojo::Base qw( Mojolicious::Controller );
 use JSON::MaybeXS qw(decode_json);
 
@@ -18,6 +19,8 @@ sub setup_routes {
 
 sub component_teams {
   my ($self) = @_;
+  $self->bugzilla->login(LOGIN_REQUIRED)
+    || return $self->render(status => 401, text => 'Unauthorized');
   $self->render(
     json => decode_json(Bugzilla->params->{report_component_teams})
   );
@@ -25,6 +28,8 @@ sub component_teams {
 
 sub component_security_teams {
   my ($self) = @_;
+  $self->bugzilla->login(LOGIN_REQUIRED)
+    || return $self->render(status => 401, text => 'Unauthorized');
   $self->render(
     json => decode_json(Bugzilla->params->{report_secbugs_teams})
   );
