@@ -28,10 +28,10 @@ use List::MoreUtils qw(any);
 use Try::Tiny;
 
 sub new {
-  my ($class,$webhook_id) = @_;
+  my ($class, $webhook_id) = @_;
   my $self = {};
   bless($self, $class);
-  $self->{name} = 'Webhook_' . $webhook_id;
+  $self->{name}       = 'Webhook_' . $webhook_id;
   $self->{webhook_id} = $webhook_id;
   $self->init();
   return $self;
@@ -48,8 +48,8 @@ sub load_config {
 
 sub save {
   my ($self) = @_;
-  my $dbh  = Bugzilla->dbh;
-  my $push = Bugzilla->push_ext;
+  my $dbh    = Bugzilla->dbh;
+  my $push   = Bugzilla->push_ext;
   $dbh->bz_start_transaction();
   $self->config->update();
   $push->set_config_last_modified();
@@ -61,23 +61,25 @@ sub should_send {
 
   return 0 unless Bugzilla->params->{webhooks_enabled};
 
-  my $webhook   = Bugzilla::Extension::Webhooks::Webhook->new($self->{webhook_id});
-  my $event     = $webhook->event;
-  my $product   = $webhook->product_name;
+  my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($self->{webhook_id});
+  my $event   = $webhook->event;
+  my $product = $webhook->product_name;
   my $component = $webhook->component_name ? $webhook->component_name : 'any';
 
-  my $data     = $message->payload_decoded;
-  my $bug_data = $self->_get_bug_data($data) || return 0;
+  my $payload  = $message->payload_decoded;
+  my $target   = $payload->{event}->{target};
+  my $bug_data = $target eq 'bug' ? $payload->{bug} : $payload->{$target}->{bug};
+  $bug_data || return 0;
 
   my $bug = Bugzilla::Bug->new({id => $bug_data->{id}, cache => 1});
 
   if ($product eq $bug->product
-      && ($component eq $bug->component || $component eq 'any'))
+    && ($component eq $bug->component || $component eq 'any'))
   {
-    if (($event =~ /create/ && $message->routing_key eq 'bug.create')
+    if ( ($event =~ /create/ && $message->routing_key eq 'bug.create')
       || ($event =~ /change/ && $message->routing_key =~ /^bug\.modify/)
-      || ($event =~ /comment/ && $message->routing_key eq 'comment.create')
-      || ($event =~ /attachment/ &&  $message->routing_key eq 'attachment.create'))
+      || ($event =~ /comment/    && $message->routing_key eq 'comment.create')
+      || ($event =~ /attachment/ && $message->routing_key eq 'attachment.create'))
     {
       return 1;
     }
@@ -92,39 +94,47 @@ sub send {
   try {
     my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($self->{webhook_id});
 
-    my $payload              = $message->payload_decoded;
+    my $payload = $message->payload_decoded;
     $payload->{webhook_name} = $webhook->name;
     $payload->{webhook_id}   = $webhook->id;
 
-    my $bug_data       = $self->_get_bug_data($payload);
-    my $bug_is_private = $bug_data->{is_private};
-    my $target         = $payload->{event}->{target};
-
+    my $target            = $payload->{event}->{target};
     my $target_is_private = $payload->{$target}->{is_private};
-    if (($target_is_private || $bug_is_private) && ($target eq 'attachment' || $target eq 'comment')){
-      my $target_id = $payload->{$target}->{id};
-      delete @{$payload}{$target};
-      $payload->{$target}->{id}         = _integer($target_id) ;
-      $payload->{$target}->{is_private} = _boolean($target_is_private);
-      $payload->{$target}->{bug}        = $bug_data;
+
+    my $bug_data;
+    if ($target_is_private && ($target eq 'attachment' || $target eq 'comment')) {
+      $bug_data = {
+        id         => $payload->{$target}->{bug}->{id},
+        is_private => $payload->{$target}->{bug}->{is_private},
+        $target    => {
+          id         => _integer($payload->{$target}->{id}),
+          is_private => _boolean($target_is_private),
+        }
+      };
+    }
+    elsif ($target_is_private && $target eq 'bug') {
+      $bug_data = {
+        id         => _integer($payload->{$target}->{id}),
+        is_private => _boolean($target_is_private),
+      };
+    }
+    elsif ($target eq 'bug') {
+      $bug_data = $payload->{$target};
+    }
+    else {
+      $bug_data = $payload->{$target}->{bug};
+      $bug_data->{$target} = $payload->{$target};
+      delete $bug_data->{$target}->{bug};
     }
 
-    if ($bug_is_private){
-      if ($target eq 'bug'){
-        delete @{$payload}{bug};
-        $payload->{bug}->{id}         = _integer($bug_data->{id});
-        $payload->{bug}->{is_private} = _boolean($bug_is_private);
-      }
-      else{
-        delete @{$payload->{$target}}{bug};
-        $payload->{$target}->{bug}->{id}         = _integer($bug_data->{id});
-        $payload->{$target}->{bug}->{is_private} = _boolean($bug_is_private);
-      }
-      if ($payload->{event}->{action} eq 'modify'){
-        delete @{$payload->{event}}{changes};
-      }
+    if ($target_is_private && $payload->{event}->{action} eq 'modify') {
+      delete $payload->{event}->{changes};
     }
-    delete @{$payload->{event}}{change_set};
+
+    delete $payload->{$target};
+    $payload->{bug} = $bug_data;
+
+    delete $payload->{event}->{change_set};
 
     my $headers = HTTP::Headers->new(Content_Type => 'application/json');
     my $request
@@ -132,31 +142,17 @@ sub send {
     my $resp = $self->_user_agent->request($request);
     if ($resp->code != 200) {
       die "Expected HTTP 200 response, got " . $resp->code;
-    }else{
+    }
+    else {
       return PUSH_RESULT_OK;
     }
   }
-  catch{
+  catch {
     return (PUSH_RESULT_TRANSIENT, clean_error($_));
   };
-
 }
 
 # Private methods
-
-sub _get_bug_data {
-  my ($self, $data) = @_;
-  my $target = $data->{event}->{target};
-  if ($target eq 'bug') {
-    return $data->{bug};
-  }
-  elsif (exists $data->{$target}->{bug}) {
-    return $data->{$target}->{bug};
-  }
-  else {
-    return;
-  }
-}
 
 sub _user_agent {
   my ($self) = @_;
