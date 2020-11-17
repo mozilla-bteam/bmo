@@ -19,6 +19,7 @@ sub setup_routes {
 
 sub component_teams {
   my ($self) = @_;
+  Bugzilla->usage_mode(USAGE_MODE_REST);
   $self->bugzilla->login(LOGIN_REQUIRED)
     || return $self->render(status => 401, text => 'Unauthorized');
   $self->render(
@@ -28,6 +29,7 @@ sub component_teams {
 
 sub component_security_teams {
   my ($self) = @_;
+  Bugzilla->usage_mode(USAGE_MODE_REST);
   $self->bugzilla->login(LOGIN_REQUIRED)
     || return $self->render(status => 401, text => 'Unauthorized');
   $self->render(
