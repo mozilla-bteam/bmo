@@ -9,6 +9,7 @@ package Bugzilla::API::V1::User;
 
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
+
 use Mojo::JSON qw( true false );
 
 use Bugzilla::Constants;
