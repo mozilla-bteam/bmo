@@ -68,23 +68,6 @@ sub register {
   );
 
   $app->helper(
-    'bugzilla.error_page' => sub {
-      my ($c, $error) = @_;
-      if (blessed $error && $error->isa('Bugzilla::Error::Base')) {
-        $c->render(
-          handler  => 'bugzilla',
-          template => $error->template,
-          error    => $error->message,
-          %{$error->vars}
-        );
-      }
-      else {
-        $c->reply->exception($error);
-      }
-    }
-  );
-
-  $app->helper(
     'url_is_attachment_base' => sub {
       my ($c, $id) = @_;
       return 0 unless Bugzilla::Util::use_attachbase();

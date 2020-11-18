@@ -22,9 +22,7 @@ use Mojo::JSON qw( true false );
 
 sub setup_routes {
   my ($class, $r) = @_;
-  $r->get('/latest/configuration')->to('V1::Configuration#configuration');
-  $r->get('/rest/configuration')->to('V1::Configuration#configuration');
-  $r->get('/bzapi/configuration')->to('V1::Configuration#configuration');
+  $r->get('/configuration')->to('V1::Configuration#configuration');
 }
 
 sub configuration {
