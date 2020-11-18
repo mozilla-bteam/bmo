@@ -545,6 +545,11 @@ use constant DEFAULT_FIELDS => (
     type    => FIELD_TYPE_USER,
     buglist => 1,
   },
+  {
+    name    => 'team_name',
+    desc    => 'Team Name',
+    buglist => 1,
+  },
 
   # Special field that allows to search everything with Custom Search queries
   {name => 'anything', desc => 'Any field'},
