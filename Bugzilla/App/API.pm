@@ -25,7 +25,15 @@ sub setup_routes {
   push @$namespaces, 'Bugzilla::API';
   $r->namespaces($namespaces);
 
-  # Backwards compat routes
+  # Backwards compat with /api/user/profile which Phabricator requires
+  $r->under('/api' => sub {
+    my ($c) = @_;
+    _insert_rest_headers($c);
+    Bugzilla->usage_mode(USAGE_MODE_REST);
+  })
+  ->get('/user/profile')->to('V1::User#user_profile');
+
+  # Other backwards compat routes
   $r->under(
     '/latest' => sub {
       my ($c) = @_;

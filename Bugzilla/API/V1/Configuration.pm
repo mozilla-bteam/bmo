@@ -27,8 +27,6 @@ sub setup_routes {
 
 sub configuration {
   my ($self) = @_;
-  Bugzilla->usage_mode(USAGE_MODE_REST);
-
   my $user = $self->bugzilla->login;
 
   my $can_cache = !$user->id && !$self->param('product') && !$self->param('flags');

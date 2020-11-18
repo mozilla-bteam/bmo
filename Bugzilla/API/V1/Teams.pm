@@ -13,13 +13,12 @@ use JSON::MaybeXS qw(decode_json);
 
 sub setup_routes {
   my ($class, $r) = @_;
-  $r->get('/rest/config/component_teams')->to('V1::Teams#component_teams');
-  $r->get('/rest/config/component_security_teams')->to('V1::Teams#component_security_teams');
+  $r->get('/config/component_teams')->to('V1::Teams#component_teams');
+  $r->get('/config/component_security_teams')->to('V1::Teams#component_security_teams');
 }
 
 sub component_teams {
   my ($self) = @_;
-  Bugzilla->usage_mode(USAGE_MODE_REST);
   $self->bugzilla->login(LOGIN_REQUIRED)
     || return $self->render(status => 401, text => 'Unauthorized');
   $self->render(
@@ -29,7 +28,6 @@ sub component_teams {
 
 sub component_security_teams {
   my ($self) = @_;
-  Bugzilla->usage_mode(USAGE_MODE_REST);
   $self->bugzilla->login(LOGIN_REQUIRED)
     || return $self->render(status => 401, text => 'Unauthorized');
   $self->render(
