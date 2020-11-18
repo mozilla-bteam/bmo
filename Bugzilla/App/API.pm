@@ -27,7 +27,7 @@ sub setup_routes {
   push @$namespaces, 'Bugzilla::API';
   $r->namespaces($namespaces);
 
-  # Backwards compat with /api/user/profile which Phabricator
+  # Backwards compat with /api/user/profile which Phabricator requires
   $r->under('/api' => sub { Bugzilla->usage_mode(USAGE_MODE_REST); })
     ->get('/user/profile')->to('V1::User#user_profile');
 
