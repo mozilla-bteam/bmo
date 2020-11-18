@@ -29,6 +29,11 @@ $t->ua->max_redirects(1);
 # Check for version returned
 $t->get_ok($url . 'rest/version')->status_is(200)->json_has('/version');
 
+# Change for proper CORS headers
+my $headers = $t->tx->res->headers;
+ok($headers->header('Access-Control-Allow-Origin') eq '*');
+ok($headers->header('Access-control-allow-headers') =~ /x-bugzilla-api-key/);
+
 # Make sure list of enabled extensions is returned
 $t->get_ok($url . 'rest/extensions')->status_is(200)->json_has('/extensions');
 my $extensions = $t->tx->res->json->{extensions};
