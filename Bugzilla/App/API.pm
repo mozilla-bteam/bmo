@@ -28,18 +28,37 @@ sub setup_routes {
   $r->namespaces($namespaces);
 
   # Backwards compat with /api/user/profile which Phabricator requires
-  $r->under('/api' => sub { Bugzilla->usage_mode(USAGE_MODE_REST); })
-    ->get('/user/profile')->to('V1::User#user_profile');
+  $r->under('/api' => sub {
+    my ($c) = @_;
+    _insert_rest_headers($c);
+    Bugzilla->usage_mode(USAGE_MODE_REST);
+  })
+  ->get('/user/profile')->to('V1::User#user_profile');
 
   # Other backwards compat routes
-  $r->under('/latest' => sub { Bugzilla->usage_mode(USAGE_MODE_REST); })
-    ->get('/configuration')->to('V1::Configuration#configuration');
-  $r->under('/bzapi' => sub { Bugzilla->usage_mode(USAGE_MODE_REST); })
-    ->get('/configuration')->to('V1::Configuration#configuration');
+  $r->under(
+    '/latest' => sub {
+      my ($c) = @_;
+      _insert_rest_headers($c);
+      Bugzilla->usage_mode(USAGE_MODE_REST);
+    }
+  )->get('/configuration')->to('V1::Configuration#configuration');
+  $r->under(
+    '/bzapi' => sub {
+      my ($c) = @_;
+      _insert_rest_headers($c);
+      Bugzilla->usage_mode(USAGE_MODE_REST);
+    }
+  )->get('/configuration')->to('V1::Configuration#configuration');
 
   # Set the usage mode for all routes under /rest
-  my $rest_routes
-    = $r->under('/rest' => sub { Bugzilla->usage_mode(USAGE_MODE_REST); });
+  my $rest_routes = $r->under(
+    '/rest' => sub {
+      my ($c) = @_;
+      _insert_rest_headers($c);
+      Bugzilla->usage_mode(USAGE_MODE_REST);
+    }
+  );
 
   foreach my $version (SUPPORTED_VERSIONS) {
     foreach my $module (find_modules("Bugzilla::API::$version")) {
@@ -55,6 +74,17 @@ sub setup_routes {
       };
     }
   }
+}
+
+sub _insert_rest_headers {
+  my ($c) = @_;
+
+  # Access Control
+  my @allowed_headers
+    = qw(accept authorization content-type origin user-agent x-bugzilla-api-key x-requested-with);
+  $c->res->headers->header('Access-Control-Allow-Origin' => '*');
+  $c->res->headers->header('Access-Control-Allow-Headers' =>
+    join ', ', @allowed_headers);
 }
 
 1;
