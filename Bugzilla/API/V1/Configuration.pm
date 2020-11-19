@@ -22,15 +22,11 @@ use Mojo::JSON qw( true false );
 
 sub setup_routes {
   my ($class, $r) = @_;
-  $r->get('/latest/configuration')->to('V1::Configuration#configuration');
-  $r->get('/rest/configuration')->to('V1::Configuration#configuration');
-  $r->get('/bzapi/configuration')->to('V1::Configuration#configuration');
+  $r->get('/configuration')->to('V1::Configuration#configuration');
 }
 
 sub configuration {
   my ($self) = @_;
-  Bugzilla->usage_mode(USAGE_MODE_REST);
-
   my $user = $self->bugzilla->login;
 
   my $can_cache = !$user->id && !$self->param('product') && !$self->param('flags');
