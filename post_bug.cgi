@@ -37,6 +37,7 @@ my $cgi      = Bugzilla->cgi;
 my $dbh      = Bugzilla->dbh;
 my $template = Bugzilla->template;
 my $vars     = {};
+my $C        = Bugzilla->request_cache->{mojo_controller};
 
 ######################################################################
 # Main Script
@@ -281,9 +282,9 @@ foreach my $ref_bug_id (uniq @{$bug->{see_also_changes} || []}) {
   push(@all_mail_results, { id => $ref_bug_id, recipient_count => scalar @{$ref_sent->{sent}} });
 }
 
-$Bugzilla::App::CGI::C->flash(last_sent_changes => \@all_mail_results);
+$C->flash(last_sent_changes => \@all_mail_results);
 
-my $redirect_url = $Bugzilla::App::CGI::C->url_for('show_bugcgi')->query(id => $id);
-$Bugzilla::App::CGI::C->redirect_to($redirect_url);
+my $redirect_url = $C->url_for('show_bugcgi')->query(id => $id);
+$C->redirect_to($redirect_url);
 
 1;

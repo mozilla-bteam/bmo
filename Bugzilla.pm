@@ -791,7 +791,7 @@ sub check_rate_limit {
       Bugzilla->audit(
         "[rate_limit] action=$action, ip=$ip, limit=$limit, name=$name");
       if ($action eq 'block') {
-        $Bugzilla::App::CGI::C->block_ip($ip);
+        request_cache->{mojo_controller}->block_ip($ip);
         $throw_error->();
       }
     }

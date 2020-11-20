@@ -540,7 +540,7 @@ sub process {
   my ($self, $input, $vars, $output) = @_;
   $vars //= {};
   if (($ENV{SERVER_SOFTWARE} // '') eq 'Bugzilla::App::CGI') {
-    $vars->{self} = $vars->{c} = $Bugzilla::App::CGI::C;
+    $vars->{self} = $vars->{c} = Bugzilla->request_cache->{mojo_controller};
   }
 
   # All of this current_langs stuff allows template_inner to correctly
