@@ -92,7 +92,7 @@ sub _build_output_fh {
   if (-e $file) {
     croak "I will not overwrite a file (file $file already exists)";
   }
-  return IO::File->new($file, '>:bytes') or die "cannot write $file: $!";
+  return IO::File->new($file, '>:bytes') || die "cannot write $file: $!";
 }
 
 sub _read_header {

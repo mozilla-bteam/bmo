@@ -85,7 +85,7 @@ sub new {
   $self->charset(Bugzilla->params->{'utf8'} ? 'UTF-8' : '');
 
   # Redirect to urlbase if we are not viewing an attachment.
-  if (my $C = $Bugzilla::App::CGI::C) {
+  if (my $C = Bugzilla->request_cache->{mojo_controller}) {
     if ($C->url_is_attachment_base and $script ne 'attachment.cgi') {
       DEBUG(
         "Redirecting to urlbase because the URL is in the attachment base and not attachment.cgi"
@@ -412,17 +412,17 @@ sub header {
 
   my $headers = $self->SUPER::header(%headers) || '';
   if ($self->server_software eq 'Bugzilla::App::CGI') {
-    my $c = $Bugzilla::App::CGI::C;
-    $c->res->headers->parse($headers);
-    my $status = $c->res->headers->status;
+    my $C = Bugzilla->request_cache->{mojo_controller};
+    $C->res->headers->parse($headers);
+    my $status = $C->res->headers->status;
     if ($status && $status =~ /^([0-9]+)/) {
-      $c->res->code($1);
+      $C->res->code($1);
     }
-    elsif ($c->res->headers->location) {
-      $c->res->code(302);
+    elsif ($C->res->headers->location) {
+      $C->res->code(302);
     }
     else {
-      $c->res->code(200);
+      $C->res->code(200);
     }
     return '';
   }

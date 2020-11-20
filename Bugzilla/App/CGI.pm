@@ -19,7 +19,6 @@ use English qw(-no_match_vars);
 use Bugzilla::App::Stdout;
 use Bugzilla::Constants qw(bz_locations USAGE_MODE_BROWSER);
 
-our $C;
 my %SEEN;
 
 sub setup_routes {
@@ -55,14 +54,14 @@ sub load_one {
   my ($class, $name, $file) = @_;
   my $package = __PACKAGE__ . "::$name", my $inner_name = "_$name";
   my $content = path(bz_locations->{cgi_path}, $file)->slurp;
-  $content = "package $package; local our \$C = \$Bugzilla::App::CGI::C; $content";
+  $content = "package $package; $content";
   my %options = (package => $package, file => $file, line => 1, no_defer => 1,);
   die "Tried to load $file more than once" if $SEEN{$file}++;
   my $inner = quote_sub $inner_name, $content, {}, \%options;
   my $wrapper = sub {
     my ($c) = @_;
+    Bugzilla->request_cache->{mojo_controller} = $c;
     my $stdin = $c->_STDIN;
-    local $C                           = $c;
     local %ENV                         = $c->_ENV($file);
     local $CGI::Compile::USE_REAL_EXIT = 0;
     local $PROGRAM_NAME                = $file;

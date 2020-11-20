@@ -23,6 +23,7 @@ use List::MoreUtils qw(any);
 my $user = Bugzilla->login(LOGIN_OPTIONAL);
 my $cgi  = Bugzilla->cgi;
 my $vars = {};
+my $C    = Bugzilla->request_cache->{mojo_controller};
 
 # Yes, I really want to avoid two calls to the id method.
 my $user_id = $user->id;

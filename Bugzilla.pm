@@ -388,7 +388,7 @@ sub login {
   }
 
   # If Mojo native app is requesting login, we need to possibly redirect
-  my $C = $Bugzilla::App::CGI::C;
+  my $C = Bugzilla->request_cache->{mojo_controller};
   my $session = $C->session;
   if (!$on_token_page && $session->{override_login_target}) {
     my $override_login_target = delete $session->{override_login_target};

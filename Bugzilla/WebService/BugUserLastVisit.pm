@@ -23,6 +23,31 @@ use constant PUBLIC_METHODS => qw(
   update
 );
 
+sub rest_resources {
+  return [
+    # bug-id
+    qr{^/bug_user_last_visit/(\d+)$},
+    {
+      GET => {
+        method => 'get',
+        params => sub {
+          return {ids => $_[0]};
+        },
+      },
+      POST => {
+        method => 'update',
+        params => sub {
+          return {ids => $_[0]};
+        },
+      },
+    },
+
+    # no bug-id
+    qr{^/bug_user_last_visit$},
+    {GET => {method => 'get',}, POST => {method => 'update',},},
+  ];
+}
+
 sub update {
   my ($self, $params) = validate(@_, 'ids');
   my $user = Bugzilla->user;
