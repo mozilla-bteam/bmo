@@ -20,11 +20,12 @@ defaults:
     run:
       name: install dependencies
       command: |
-        apk update && apk add py-pip
-        pip install "docker-compose==1.23.2"
+        apk update && apk add py-pip gcc python3-dev musl-dev \
+          libffi-dev openssl-dev make
+        pip install "docker-compose==1.27.4"
 
   docker_image: &docker_image
-    image: docker:18.09.3-git
+    image: docker:19.03.13-git
     auth:
       username: $DOCKER_USER
       password: $DOCKER_PASS
@@ -61,7 +62,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
+          version: 19.03.13
       - checkout
       - *install_deps
       - *docker_login
@@ -134,7 +135,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
+          version: 19.03.13
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -173,7 +174,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
+          version: 19.03.13
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -204,7 +205,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
+          version: 19.03.13
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -232,7 +233,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
+          version: 19.03.13
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
@@ -260,7 +261,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 18.09.3
+          version: 19.03.13
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
       - run:
