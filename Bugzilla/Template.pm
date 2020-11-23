@@ -976,7 +976,7 @@ sub create {
       'current_language' => sub { return Bugzilla->current_language; },
 
       'script_nonce' => sub {
-        my $C = $Bugzilla::App::CGI::C or return '';
+        my $C = Bugzilla->request_cache->{mojo_controller} || return '';
         return $C->csp_nonce ? sprintf('nonce="%s"', $C->csp_nonce) : '';
       },
 

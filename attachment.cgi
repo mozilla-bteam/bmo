@@ -71,6 +71,7 @@ if ($action ne 'view'
   && (($action !~ /^(?:interdiff|diff)$/) || $format ne 'raw'))
 {
   do_ssl_redirect_if_required();
+  my $C = Bugzilla->request_cache->{mojo_controller};
   if ($C->url_is_attachment_base) {
     $cgi->redirect_to_urlbase;
   }
@@ -220,6 +221,7 @@ sub validateContext {
 # attachbase and token authentication is used when required.
 sub get_attachment {
   my @field_names = @_ ? @_ : qw(id);
+  my $C = Bugzilla->request_cache->{mojo_controller};
 
   my %attachments;
 

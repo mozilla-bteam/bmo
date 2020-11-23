@@ -25,6 +25,7 @@ use Bugzilla::Util qw(detaint_natural remote_ip);
 my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
 my $vars     = {};
+my $C        = Bugzilla->request_cache->{mojo_controller};
 
 my $user = Bugzilla->login();
 
