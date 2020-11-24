@@ -539,7 +539,7 @@ sub enter {
 sub insert {
   my $dbh  = Bugzilla->dbh;
   my $user = Bugzilla->user;
-  my $C    = Bugzilla->require_cache->{mojo_controller};
+  my $C    = Bugzilla->request_cache->{mojo_controller};
 
   $dbh->bz_start_transaction;
 
@@ -714,7 +714,7 @@ sub edit {
 sub update {
   my $user = Bugzilla->user;
   my $dbh  = Bugzilla->dbh;
-  my $C    = Bugzilla->require_cache->{mojo_controller};
+  my $C    = Bugzilla->request_cache->{mojo_controller};
 
   # Start a transaction in preparation for updating the attachment.
   $dbh->bz_start_transaction();
@@ -862,7 +862,7 @@ sub update {
 sub delete_attachment {
   my $user = Bugzilla->login(LOGIN_REQUIRED);
   my $dbh  = Bugzilla->dbh;
-  my $C    = Bugzilla->require_cache->{mojo_controller};
+  my $C    = Bugzilla->request_cache->{mojo_controller};
 
   $user->in_group('admin')
     || ThrowUserError('auth_failure',
