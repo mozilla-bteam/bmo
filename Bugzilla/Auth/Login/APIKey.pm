@@ -46,7 +46,7 @@ sub get_login_info {
 
   # First check for an API key in the header or passed as query params
   my $api_key_text = trim($cgi->http('X_BUGZILLA_API_KEY'));
-  
+
   # Legacy API code looks for the header and if present puts the value
   # into the input params as well. If exists, we need to delete it here
   # as the extra param can crash other functions such as Bugzilla::Bug::create().
@@ -81,7 +81,7 @@ sub get_login_info {
 
   # Also allow use of OAuth2 bearer tokens to access the API
   if (trim($cgi->http('Authorization'))) {
-    my $C    = $Bugzilla::App::CGI::C;
+    my $C    = Bugzilla->request_cache->{mojo_controller};
     my $user = $C->bugzilla->oauth('api:modify');
     if ($user && $user->id) {
       return {user_id => $user->id};
