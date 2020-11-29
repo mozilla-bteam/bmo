@@ -34,7 +34,7 @@ sub new {
   my $self = fields::new($class);
 
   $params           ||= {};
-  $params->{Login}  ||= Bugzilla->params->{'user_info_class'} . ',Cookie,APIKey';
+  $params->{Login}  ||= Bugzilla->params->{'user_info_class'} . ',Cookie,APIKey,OAuth2';
   $params->{Verify} ||= Bugzilla->params->{'user_verify_class'};
 
   $self->{_info_getter} = new Bugzilla::Auth::Login::Stack($params->{Login});

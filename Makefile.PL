@@ -80,6 +80,7 @@ my %requires = (
   'Mojo::JWT'                           => '0.07',
   'MojoX::Log::Log4perl'                => '0.04',
   'Mojolicious'                         => '8.42',
+  'Mojolicious::Plugin::OAuth2'         => '1.58',
   'Mojolicious::Plugin::OAuth2::Server' => '0.44',
   'Moo'                                 => '2.002004',
   'MooX::StrictConstructor'             => '0.008',
