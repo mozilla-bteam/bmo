@@ -143,6 +143,7 @@ sub _ENV {
     %env_headers,
     QUERY_STRING   => $cgi_query->to_string,
     PATH_INFO      => $path_info ? "/$path_info" : '',
+    REQUEST_URI    => $tx->req->url->path,
     REMOTE_ADDR    => $tx->original_remote_address,
     REMOTE_HOST    => $tx->original_remote_address,
     REMOTE_PORT    => $tx->remote_port,
