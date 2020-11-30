@@ -47,6 +47,7 @@ my $stdout = capture_stdout {
 };
 my ($header_str, $body) = split(/(?:\r\n\r\n|\n\n)/, $stdout, 2);
 my $headers = Mojo::Headers->new;
+my $C = Bugzilla->request_cache->{mojo_controller};
 $headers->parse("$header_str\r\n\r\n");
 foreach my $name (@{$headers->names}) {
   $C->res->headers->header($name => $headers->header($name));

@@ -37,6 +37,7 @@ my $cgi      = Bugzilla->cgi;
 my $dbh      = Bugzilla->dbh;
 my $template = Bugzilla->template;
 my $vars     = {};
+my $C        = Bugzilla->request_cache->{mojo_controller};
 
 ######################################################################
 # Subroutines
@@ -445,7 +446,7 @@ if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
       }
     }
 
-    $Bugzilla::App::CGI::C->flash(last_sent_changes => \@saved_sent_changes);
+    $C->flash(last_sent_changes => \@saved_sent_changes);
 
     # Redirect to show_bug.cgi.
     # $bug_id will be the same bug or the next bug due to checks earlier in this file.
@@ -453,8 +454,8 @@ if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
     # show_bug.cgi which will prompt for a bug. This allows mass bug updates to still see
     # the result of what changed/emails sent.
     my $bug_id = $vars->{bug} ? $vars->{bug}->id : undef;
-    my $redirect_url = $Bugzilla::App::CGI::C->url_for('show_bugcgi')->query(id => $bug_id);
-    $Bugzilla::App::CGI::C->redirect_to($redirect_url);
+    my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bug_id);
+    $C->redirect_to($redirect_url);
     exit;
   }
   else { # Handle $action = 'nothing' or mass bug update case.

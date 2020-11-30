@@ -25,6 +25,7 @@ my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
 my $vars     = {};
 
+my $C = Bugzilla->request_cache->{mojo_controller};
 $C->content_security_policy(report_only => 0);
 
 # Go straight back to query.cgi if we are adding a boolean chart.
