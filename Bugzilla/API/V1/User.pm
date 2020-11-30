@@ -35,7 +35,7 @@ sub user_profile {
     );
   }
   else {
-    $self->render(status => 401, text => 'Unauthorized');
+    return $self->user_error('invalid_username');
   }
 }
 

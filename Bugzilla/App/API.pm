@@ -8,12 +8,14 @@
 package Bugzilla::App::API;
 
 use 5.10.1;
+use Mojo::Base qw( Mojolicious::Controller );
+
+use Mojo::Loader qw( find_modules );
+use Module::Runtime qw(require_module);
+use Try::Tiny;
+
 use Bugzilla::Constants;
 use Bugzilla::Logging;
-use Module::Runtime qw(require_module);
-use Mojo::Base qw( Mojolicious::Controller );
-use Mojo::Loader qw( find_modules );
-use Try::Tiny;
 
 use constant SUPPORTED_VERSIONS => qw(V1);
 
