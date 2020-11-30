@@ -1,0 +1,31 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% title = "Confirm Cancellation" %]
+[% PROCESS global/header.html.tmpl %]
+
+<p>
+  Click <strong>Cancel</strong> to confirm you want to cancel the <strong>
+  [% IF action == 'cxlpw' %]
+    password change
+  [% ELSIF action == 'cxlem' %]
+    email change
+  [% ELSIF action == 'cancel_new_account' %]
+    new account
+  [% END %]</strong>
+  request.
+</p>
+
+<form method="post" action="[% basepath FILTER none %]token.cgi">
+  <input type="hidden" name="cancel_token" value="[% issue_hash_token(['confirm_cancel']) FILTER html %]">
+  <input type="hidden" name="t" value="[% token FILTER html %]">
+  <input type="hidden" name="a" value="[% action FILTER html %]">
+  <input type="submit"  name="cancel" value="Cancel"></td>
+</form>
+
+[% PROCESS global/footer.html.tmpl %]
