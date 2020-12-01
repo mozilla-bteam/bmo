@@ -314,6 +314,30 @@ nodes.
 Development Tips
 ================
 
+Test Suite
+----------
+
+Bugzilla comes with several integrated test suites that do basic sanity checks to more involved web UI testing. To
+execute the tests, run the following commands:
+
+Basic sanity tests
+
+.. code-block:: bash
+
+  docker build -t bmo . ; docker-compose -f docker-compose.test.yml run -e CI=1 bmo.test test_sanity
+
+Webservices API tests
+
+.. code-block:: bash
+
+  docker build -t bmo . ; docker-compose -f docker-compose.test.yml run bmo.test test_webservices
+
+Selenium Web UI tests
+
+.. code-block:: bash
+
+  docker build -t bmo . ; docker-compose -f docker-compose.test.yml run bmo.test test_selenium
+
 Testing Emails
 --------------
 
