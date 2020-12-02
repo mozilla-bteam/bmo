@@ -29,7 +29,7 @@ sub setup_routes {
     $class->load_one($name, $file);
     $r->any("/$file")->to("CGI#$name");
   }
-  $r->get('/home')->to('CGI#index_cgi');
+  $r->any('/home')->to('CGI#index_cgi');
 
   $r->any('/bug/<id:num>')->to('CGI#show_bug_cgi');
   $r->any('/<id:num>')->to('CGI#show_bug_cgi');
