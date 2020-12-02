@@ -208,6 +208,9 @@ sub confirmChangePassword {
 
 sub cancelChangePassword {
   my $token = shift;
+
+  confirm_cancel('cxlpw', $token);
+
   $vars->{'message'} = "password_change_canceled";
   Bugzilla::Token::Cancel($token, $vars->{'message'});
 
@@ -331,6 +334,8 @@ sub cancelChangeEmail {
   my $token = shift;
   my $dbh   = Bugzilla->dbh;
 
+  confirm_cancel('cxlem', $token);
+
   $dbh->bz_start_transaction();
 
   # Get the user's ID from the tokens table.
@@ -446,6 +451,8 @@ sub confirm_create_account {
 sub cancel_create_account {
   my $token = shift;
 
+  confirm_cancel('cancel_new_account', $token);
+
   my (undef, undef, $login_name) = Bugzilla::Token::GetTokenData($token);
 
   $vars->{'message'} = 'account_creation_canceled';
@@ -487,3 +494,23 @@ sub mfa_event_from_token {
   my $event = $user->mfa_provider->verify_token($token);
   return ($user, $event);
 }
+
+sub confirm_cancel {
+  my ($action, $token) = @_;
+  my $cgi      = Bugzilla->cgi;
+  my $template = Bugzilla->template;
+
+  if (my $cancel_token = $cgi->param('cancel_token')) {
+    check_hash_token($cancel_token, ['confirm_cancel']);
+    return;
+  }
+
+  print $cgi->header();
+  $template->process(
+    'account/prefs/confirm-cancel.html.tmpl',
+    {token => $token, action => $action,}
+  ) || ThrowTemplateError($template->error());
+  exit;
+}
+
+

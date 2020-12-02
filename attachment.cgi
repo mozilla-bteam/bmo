@@ -71,6 +71,7 @@ if ($action ne 'view'
   && (($action !~ /^(?:interdiff|diff)$/) || $format ne 'raw'))
 {
   do_ssl_redirect_if_required();
+  my $C = Bugzilla->request_cache->{mojo_controller};
   if ($C->url_is_attachment_base) {
     $cgi->redirect_to_urlbase;
   }
@@ -220,6 +221,7 @@ sub validateContext {
 # attachbase and token authentication is used when required.
 sub get_attachment {
   my @field_names = @_ ? @_ : qw(id);
+  my $C = Bugzilla->request_cache->{mojo_controller};
 
   my %attachments;
 
@@ -537,6 +539,7 @@ sub enter {
 sub insert {
   my $dbh  = Bugzilla->dbh;
   my $user = Bugzilla->user;
+  my $C    = Bugzilla->request_cache->{mojo_controller};
 
   $dbh->bz_start_transaction;
 
@@ -669,10 +672,10 @@ sub insert {
     recipient_count => scalar @{$sent_bugmail->{sent}},
     content_type_method => $content_type_method,
   };
-  $Bugzilla::App::CGI::C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
+  $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-  my $redirect_url = $Bugzilla::App::CGI::C->url_for('show_bugcgi')->query(id => $bugid);
-  $Bugzilla::App::CGI::C->redirect_to($redirect_url);
+  my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bugid);
+  $C->redirect_to($redirect_url);
 }
 
 # Displays a form for editing attachment properties.
@@ -711,6 +714,7 @@ sub edit {
 sub update {
   my $user = Bugzilla->user;
   my $dbh  = Bugzilla->dbh;
+  my $C    = Bugzilla->request_cache->{mojo_controller};
 
   # Start a transaction in preparation for updating the attachment.
   $dbh->bz_start_transaction();
@@ -848,16 +852,17 @@ sub update {
     type => 'updated',
     recipient_count => scalar @{$sent_bugmail->{sent}},
   };
-  $Bugzilla::App::CGI::C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
+  $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-  my $redirect_url = $Bugzilla::App::CGI::C->url_for('show_bugcgi')->query(id => $bug->id);
-  $Bugzilla::App::CGI::C->redirect_to($redirect_url);
+  my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bug->id);
+  $C->redirect_to($redirect_url);
 }
 
 # Only administrators can delete attachments.
 sub delete_attachment {
   my $user = Bugzilla->login(LOGIN_REQUIRED);
   my $dbh  = Bugzilla->dbh;
+  my $C    = Bugzilla->request_cache->{mojo_controller};
 
   $user->in_group('admin')
     || ThrowUserError('auth_failure',
@@ -919,10 +924,10 @@ sub delete_attachment {
       type => 'deleted',
       recipient_count => scalar @{$sent_bugmail->{sent}},
     };
-    $Bugzilla::App::CGI::C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
+    $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-    my $redirect_url = $Bugzilla::App::CGI::C->url_for('show_bugcgi')->query(id => $bug->id);
-    $Bugzilla::App::CGI::C->redirect_to($redirect_url);
+    my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bug->id);
+    $C->redirect_to($redirect_url);
   }
   else {
     # Create a token.

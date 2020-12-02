@@ -15,14 +15,11 @@ use Bugzilla::Constants;
 
 sub setup_routes {
   my ($class, $r) = @_;
-  $r->get('/api/user/profile')->to('V1::User#user_profile');
-  $r->get('/rest/user/profile')->to('V1::User#user_profile');
+  $r->get('/user_profile')->to('V1::User#user_profile');
 }
 
 sub user_profile {
   my ($self) = @_;
-  Bugzilla->usage_mode(USAGE_MODE_REST);
-
   my $user = $self->bugzilla->oauth('user:read');
   if ($user && $user->id) {
     $self->render(
@@ -38,7 +35,7 @@ sub user_profile {
     );
   }
   else {
-    $self->render(status => 401, text => 'Unauthorized');
+    return $self->user_error('invalid_username');
   }
 }
 
