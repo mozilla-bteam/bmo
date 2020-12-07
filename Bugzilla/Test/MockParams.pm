@@ -48,7 +48,7 @@ sub import {
   my $BugzillaField = mock 'Bugzilla::Field' =>
     (override => [get_legal_field_values => sub { [] },],);
   my $BugzillaStatus = mock 'Bugzilla::Status' =>
-    (override => [closed_bug_statuses => sub { die "no database" },],);
+    (override => [closed_bug_statuses => sub { () },],);
 
   # prod-like defaults
   $answers{user_info_class}   //= 'GitHubAuth,CGI';

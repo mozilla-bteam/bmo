@@ -19,6 +19,8 @@ use Config;
 use Support::Files;
 use Test::More;
 
+use Bugzilla::Test::MockParams;
+
 BEGIN {
   plan tests => @Support::Files::testitems + @Support::Files::test_files;
 
