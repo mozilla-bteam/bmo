@@ -20,10 +20,6 @@ use Support::Files;
 use Test::More;
 
 BEGIN {
-  if ($ENV{CI}) {
-    plan skip_all => 'Not running compile tests in CI.';
-    exit;
-  }
   plan tests => @Support::Files::testitems + @Support::Files::test_files;
 
   use_ok('Bugzilla::Constants');
