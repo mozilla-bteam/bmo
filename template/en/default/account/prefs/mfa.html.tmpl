@@ -130,7 +130,7 @@
         <label for="code">Code:</label>
         <input type="text" name="code" id="code"
                placeholder="123456" maxlength="9" pattern="\d{6,9}" size="10"
-               autocomplete="off" required>
+               autocomplete="off" inputmode="numeric" required>
 
       [%# disable/recovery - duo %]
       [% ELSIF user.mfa == "Duo" %]
@@ -213,7 +213,7 @@
           <label id="mfa-totp-enable-code">Code:</label>
           <input type="text" name="code" id="mfa-totp-enable-code"
                   placeholder="123456" maxlength="6" pattern="\d{6}" size="10"
-                  autocomplete="off">
+                  autocomplete="off" inputmode="numeric">
         </div>
       </div>
 
