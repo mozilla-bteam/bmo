@@ -38,36 +38,11 @@ has 'start_date' => (is => 'ro', required => 1, isa => $DateTime);
 
 has 'end_date' => (is => 'ro', required => 1, isa => $DateTime);
 
-# The teams are loaded from an admin parameter containing JSON, e.g.:
-# {
-#   "Plugins": {
-#     "Core": {
-#         "all_components": false,
-#         "prefixed_components": ["Plugin"],
-#         "named_components": [
-#             "Plug-ins"
-#         ]
-#     },
-#     "Plugins": { "all_components": true },
-#     "External Software Affecting Firefox": { "all_components": true }
-#   },
-#   ...
-# }
-# This will create a new team ("Plugins") which groups bugs in the following components:
-# - All components in the Core product that start with "Plugin" (e.g. Plugin:FlashPlayer)
-# - The single "Plug-ins" component in the Core product.
-# - All components in the Plugins _product_.
-# - All components in the External Software Affecting Firefox product.
 has 'teams' => (
-  is       => 'ro',
-  required => 1,
+  is       => 'lazy',
   isa      => HashRef [
     HashRef [
-      Dict [
-        all_components      => $JSONBool,
-        prefixed_components => Optional [ArrayRef [Str]],
-        named_components    => Optional [ArrayRef [Str]],
-      ],
+      ArrayRef [Str]
     ],
   ],
 );
@@ -77,8 +52,6 @@ has 'sec_keywords' => (is => 'ro', required => 1, isa => ArrayRef [Str],);
 has 'products' => (is => 'lazy', isa => ArrayRef [Str],);
 
 has 'missing_products' => (is => 'lazy', isa => ArrayRef [Str],);
-
-has 'missing_components' => (is => 'lazy', isa => ArrayRef [Str],);
 
 has 'initial_bug_ids' => (is => 'lazy', isa => ArrayRef [Int],);
 
@@ -150,6 +123,27 @@ has 'graphs' => (
   ],
 );
 
+sub _build_teams {
+  my ($self) = @_;
+  my $teams  = {};
+  my $query  = "
+    SELECT products.name AS product,
+           components.name AS component,
+           components.team_name AS team
+      FROM components JOIN products ON components.product_id = products.id
+           AND components.name != 'Mozilla'";
+  my $rows = Bugzilla->dbh->selectall_arrayref($query, {'Slice' => {}});
+  foreach my $row (@$rows) {
+    my $product   = $row->{product};
+    my $component = $row->{component};
+    my $team      = $row->{team};
+    $teams->{$team} ||= {};
+    $teams->{$team}->{$product} ||= [];
+    push @{$teams->{$team}->{$product}}, $component;
+  }
+  return $teams;
+}
+
 sub _build_products {
   my ($self) = @_;
   my @products = ();
@@ -176,51 +170,6 @@ sub _build_missing_products {
     };
   my $found_products = Bugzilla->dbh->selectcol_arrayref($query);
   return (diff_arrays($self->products, $found_products))[0];
-}
-
-sub _build_missing_components {
-  my ($self) = @_;
-  my $dbh = Bugzilla->dbh;
-  my $products           = join ', ', map { $dbh->quote($_) } @{$self->products};
-  my @named_components   = ();
-  my @missing_components = ();
-  foreach my $team (values %{$self->teams}) {
-    foreach my $product (keys %$team) {
-      if (exists $team->{$product}->{named_components}) {
-        foreach my $component (@{$team->{$product}->{named_components}}) {
-          push @named_components, [$product, $component];
-        }
-      }
-    }
-  }
-
-  my @components = map { $dbh->quote($_->[1]) } @named_components;
-  my $query = qq{
-      SELECT
-          product.name,
-          component.name
-      FROM
-          components AS component
-          JOIN products AS product ON component.product_id = product.id
-      WHERE
-          @{[$dbh->sql_in('component.name', \@components)]}
-  };
-  my $found_components = Bugzilla->dbh->selectall_arrayref($query);
-
-  foreach my $named_component (@named_components) {
-    my $found = 0;
-    foreach my $found_component (@$found_components) {
-      if ( lc $named_component->[0] eq lc $found_component->[0]
-        && lc $named_component->[1] eq lc $found_component->[1])
-      {
-        $found = 1;
-        last;
-      }
-    }
-    push @missing_components, "$named_component->[0]::$named_component->[1]"
-      if !$found;
-  }
-  return \@missing_components;
 }
 
 sub _build_initial_bug_ids {
@@ -622,15 +571,10 @@ sub _find_team {
   foreach my $team_key (keys %{$self->teams}) {
     my $team = $self->teams->{$team_key};
     if (exists $team->{$product}) {
-      return $team_key if $team->{$product}->{all_components};
-      return $team_key
-        if any { lc $component eq lc $_ } @{$team->{$product}->{named_components}};
-      return $team_key if any { $component =~ /^\Q$_\E/i }
-      @{$team->{$product}->{prefixed_components}};
+      return $team_key if any { lc $component eq lc $_ } @{$team->{$product}};
     }
   }
   return undef;
 }
-
 
 1;

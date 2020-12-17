@@ -21,20 +21,32 @@ use Try::Tiny;
 use ok 'Bugzilla::Report::SecurityRisk';
 can_ok('Bugzilla::Report::SecurityRisk', qw(new results));
 
+my $SecurityRisk = mock 'Bugzilla::Report::SecurityRisk' => (
+  override => [
+    _build_teams => sub {
+      return {
+        Frontend => {Firefox => ['ComponentA'],},
+        Backend  => {Core    => ['ComponentB'],}
+      };
+    },
+  ]
+);
+
+
+my $teams_json
+  = '{ "Frontend": { "Firefox": { "all_components": true } }, "Backend": { "Core": { "all_components": true } } }';
+
+
 sub check_open_state_mock {
   my ($state) = @_;
   return grep {/^$state$/} qw(UNCOMFIRMED NEW ASSIGNED REOPENED);
 }
-
-my $teams_json
-  = '{ "Frontend": { "Firefox": { "all_components": true } }, "Backend": { "Core": { "all_components": true } } }';
 
 try {
   use Bugzilla::Report::SecurityRisk;
   my $report = Bugzilla::Report::SecurityRisk->new(
     start_date => DateTime->new(year => 2000, month => 1, day => 9),
     end_date   => DateTime->new(year => 2000, month => 1, day => 16),
-    teams      => decode_json($teams_json),
     sec_keywords     => ['sec-critical', 'sec-high'],
     check_open_state => \&check_open_state_mock,
     very_old_days    => 45,

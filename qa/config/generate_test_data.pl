@@ -562,6 +562,7 @@ foreach my $product (@products) {
         initialowner     => $component->{initialowner},
         initialqacontact => $component->{initialqacontact},
         initial_cc       => $component->{initial_cc},
+        team_name        => 'Mozilla',
       });
     }
   }

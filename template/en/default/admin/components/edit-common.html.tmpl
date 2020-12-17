@@ -95,6 +95,11 @@
     </td>
 </tr>
 <tr>
+  <th class="field_label"><label for="team_name">Team Name:</label></th>
+  <td><input size="64" maxlength="64" name="team_name" id="team_name"
+             value="[%- comp.team_name || 'Mozilla' FILTER html %]"></td>
+</tr>
+<tr>
   <th class="field_label"><label for="initialcc">Default CC List:</label></th>
   <td>
     [% INCLUDE global/userselect.html.tmpl

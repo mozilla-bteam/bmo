@@ -83,8 +83,6 @@ my $vars_crit_high = {
   sec_keywords       => $sec_keywords_crit_high,
   results            => $report_crit_high->results,
   deltas             => $report_crit_high->deltas,
-  missing_products   => $report_crit_high->missing_products,
-  missing_components => $report_crit_high->missing_components,
   very_old_days      => $report_crit_high->very_old_days,
   build_bugs_link    => \&build_bugs_link,
 };
