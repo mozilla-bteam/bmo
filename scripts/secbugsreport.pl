@@ -34,24 +34,7 @@ use Types::Standard qw(Int);
 BEGIN { Bugzilla->extensions }
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-use constant TEAMS => [
-  'Crypto',
-  'DOM',
-  'DevTools',
-  'Frontend',
-  'GFX',
-  'Javascript',
-  'Layout',
-  'Media',
-  'Mobile'
-  'Networking',
-  'Other',
-  'Platform',
-  'Pocket and User Journey',
-  'Privacy and Security',
-  'Services',
-  'Web Extensions',
-];
+my $teams = [split /\n/, Bugzilla->params->{report_secbugs_teams}];
 
 my ($year, $month, $day, $hours, $minutes, $seconds, $time_zone_offset) = @ARGV;
 
@@ -89,7 +72,7 @@ my $sec_keywords_crit_high = ['sec-critical', 'sec-high'];
 my $report_crit_high       = Bugzilla::Report::SecurityRisk->new(
   start_date   => $start_date,
   end_date     => $end_date,
-  teams        => TEAMS,
+  teams        => $teams,
   sec_keywords => $sec_keywords_crit_high,
   very_old_days => 45
 );
@@ -117,14 +100,14 @@ $template_crit_high->process(
 my $report_moderate       = Bugzilla::Report::SecurityRisk->new(
   start_date   => $start_date_no_graphs,
   end_date     => $end_date,
-  teams        => TEAMS,
+  teams        => $teams,
   sec_keywords => ['sec-moderate'],
   very_old_days => 45
 );
 my $report_low       = Bugzilla::Report::SecurityRisk->new(
   start_date   => $start_date_no_graphs,
   end_date     => $end_date,
-  teams        => TEAMS,
+  teams        => $teams,
   sec_keywords => ['sec-low'],
   very_old_days => 45
 );
@@ -236,6 +219,6 @@ sub sorted_team_names_by_open_bugs {
   my @sorted_team_names = sort { ## no critic qw(BuiltinFunctions::ProhibitReverseSortBlock
     @{$bugs_by_team->{$b}->{open}} <=> @{$bugs_by_team->{$a}->{open}}
       || $a cmp $b
-  } @{TEAMS};
+  } @{$teams};
   return \@sorted_team_names;
 }

@@ -18,6 +18,8 @@ use Test::More;
 use Test2::Tools::Mock;
 use Try::Tiny;
 
+use Bugzilla::Test::MockParams (report_secbugs_teams => "Frontend\nBackend");
+
 use ok 'Bugzilla::Report::SecurityRisk';
 can_ok('Bugzilla::Report::SecurityRisk', qw(new results));
 
@@ -39,11 +41,12 @@ sub check_open_state_mock {
 
 try {
   use Bugzilla::Report::SecurityRisk;
+  my $teams = [split /\n/, Bugzilla->params->{report_secbugs_teams}];
   my $report = Bugzilla::Report::SecurityRisk->new(
     start_date => DateTime->new(year => 2000, month => 1, day => 9),
     end_date   => DateTime->new(year => 2000, month => 1, day => 16),
     sec_keywords     => ['sec-critical', 'sec-high'],
-    teams            => ['Frontend', 'Backend'],
+    teams            => $teams,
     check_open_state => \&check_open_state_mock,
     very_old_days    => 45,
     initial_bug_ids  => [1, 2, 3, 4],

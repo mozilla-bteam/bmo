@@ -21,7 +21,7 @@ use Mojo::JSON qw(decode_json);
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my $teams = decode_json(Bugzilla->params->{report_component_teams});
+my $teams = decode_json(Bugzilla->params->{report_secbugs_teams});
 
 my $dbh = Bugzilla->dbh;
 
@@ -64,7 +64,5 @@ foreach my $team_name (keys %{$teams}) {
     }
   }
 }
-
-$dbh->do("UPDATE components SET team_name = 'Mozilla' WHERE team_name IS NULL");
 
 $dbh->bz_commit_transaction();

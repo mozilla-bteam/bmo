@@ -18,6 +18,7 @@ use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::User;
 use Bugzilla::Component;
+use Bugzilla::Teams qw(team_names);
 use Bugzilla::Token;
 
 my $cgi      = Bugzilla->cgi;
@@ -91,8 +92,9 @@ unless ($action) {
 #
 
 if ($action eq 'add') {
-  $vars->{'token'}   = issue_session_token('add_component');
-  $vars->{'product'} = $product;
+  $vars->{'token'}      = issue_session_token('add_component');
+  $vars->{'product'}    = $product;
+  $vars->{'team_names'} = team_names();
   $template->process("admin/components/create.html.tmpl", $vars)
     || ThrowTemplateError($template->error());
   exit;
@@ -204,7 +206,8 @@ if ($action eq 'edit') {
   $vars->{'initial_cc_names'}
     = join(', ', map($_->login, @{$component->initial_cc}));
 
-  $vars->{'product'} = $product;
+  $vars->{'product'}    = $product;
+  $vars->{'team_names'} = team_names();
 
   $template->process("admin/components/edit.html.tmpl", $vars)
     || ThrowTemplateError($template->error());

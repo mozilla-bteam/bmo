@@ -758,7 +758,56 @@ $(function() {
             });
             that.addClass('bz_autocomplete');
         });
-});
+
+        // init autocomplete fields with a single value
+    $('.bz_autocomplete_single_value')
+        .each(function() {
+            var that = $(this);
+            that.devbridgeAutocomplete({
+                appendTo: $('#main-inner'),
+                forceFixPosition: true,
+                lookup: function(query, done) {
+                    var values = BUGZILLA.autocomplete_values[that.data('values')];
+                    query = query.toLowerCase();
+                    var activeValue = document.querySelector('#' + that.data('identifier')).value;
+                    var matchStart =
+                        $.grep(values, function(value) {
+                            if(activeValue != value)
+                                return value.toLowerCase().substr(0, query.length) === query;
+                        });
+                    var matchSub =
+                        $.grep(values, function(value) {
+                            if(activeValue != value)
+                                return value.toLowerCase().indexOf(query) !== -1 &&
+                                    $.inArray(value, matchStart) === -1;
+                        });
+                    var suggestions =
+                        $.map($.merge(matchStart, matchSub), function(suggestion) {
+                            return { value: suggestion };
+                        });
+                    done({ suggestions: suggestions });
+                },
+                tabDisabled: true,
+                minChars: 0,
+                autoSelectFirst: false,
+                triggerSelectOnValidInput: false,
+                formatResult: function(suggestion, currentValue) {
+                    // disable <b> wrapping of matched substring
+                    return suggestion.value.htmlEncode();
+                },
+                onSearchStart: function(params) {
+                    var that = $(this);
+                    // adding spaces shouldn't initiate a new search
+                    var parts = that.val().split(/,\s*/);
+                    var query = parts[parts.length - 1];
+                    return query === $.trim(query);
+                },
+                onSelect: function() {
+                    this.focus();
+                }
+            });
+            that.addClass('bz_autocomplete');
+        });
 
 /**
  * Force the browser to honour the selected option when a page is refreshed,
