@@ -13,8 +13,10 @@ use warnings;
 
 use base qw(Exporter);
 our @EXPORT = qw(
-  component_to_team_name
   check_value
+  component_to_team_name
+  get_team_info
+  team_names
 );
 
 use JSON::MaybeXS qw(decode_json);
@@ -24,6 +26,7 @@ use Try::Tiny qw(try catch);
 use Type::Utils;
 use Types::Standard qw(:types);
 
+# DEPRECATED: Will be removed in future release
 sub component_to_team_name {
   # Use the `report_component_teams` parameter to return the Team Name for the
   # specified product and component.  Returns `undef` if no matching team name
@@ -41,6 +44,7 @@ sub component_to_team_name {
   return $cache->{$key};
 }
 
+# DEPRECATED: Will be removed in future release
 sub _component_to_team_name {
   my ($product, $component) = @_;
 
@@ -72,6 +76,7 @@ my $json_structure = HashRef [
   ],
 ];
 
+# DEPRECATED: Will be removed in future release
 sub check_value {
   my ($string_value) = @_;
 
@@ -84,6 +89,45 @@ sub check_value {
   return 'Malformed JSON' unless $ok;
 
   return $json_structure->check($value) ? '' : 'Invalid structure';
+}
+
+sub team_names {
+  return Bugzilla->dbh->selectcol_arrayref(
+    "SELECT DISTINCT team_name FROM components WHERE team_name != 'Mozilla' ORDER BY team_name"
+  );
+}
+
+sub get_team_info {
+  my @team_names = @_;
+  my $teams_sql;
+
+  my $query = "
+    SELECT products.name AS product,
+           components.name AS component,
+           components.team_name AS team
+      FROM components INNER JOIN products ON components.product_id = products.id";
+  if (@team_names) {
+    $query .= ' WHERE components.team_name IN (' . join(',', ('?') x @team_names) . ')';
+  }
+  else {
+    $query .= " WHERE components.name != 'Mozilla'";
+  }
+
+  my $rows
+    = Bugzilla->dbh->selectall_arrayref($query, {'Slice' => {}}, @team_names);
+
+  my $teams = {};
+  foreach my $row (@{$rows}) {
+    my $product   = $row->{product};
+    my $component = $row->{component};
+    my $team      = $row->{team};
+    next if !Bugzilla->user->can_see_product($product);
+    $teams->{$team} ||= {};
+    $teams->{$team}->{$product} ||= [];
+    push @{$teams->{$team}->{$product}}, $component;
+  }
+
+  return $teams;
 }
 
 1;

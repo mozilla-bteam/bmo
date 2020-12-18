@@ -13,6 +13,7 @@ use MooX::StrictConstructor;
 
 use Bugzilla::Error;
 use Bugzilla::Status qw(is_open_state);
+use Bugzilla::Teams qw(get_team_info);
 use Bugzilla::Util qw(datetime_from diff_arrays);
 use Bugzilla;
 
@@ -38,14 +39,9 @@ has 'start_date' => (is => 'ro', required => 1, isa => $DateTime);
 
 has 'end_date' => (is => 'ro', required => 1, isa => $DateTime);
 
-has 'teams' => (
-  is       => 'lazy',
-  isa      => HashRef [
-    HashRef [
-      ArrayRef [Str]
-    ],
-  ],
-);
+has 'teams' => (is => 'ro', required => 1, isa => ArrayRef [Str]);
+
+has 'team_info' => (is => 'lazy', isa => HashRef [HashRef [ArrayRef [Str]],],);
 
 has 'sec_keywords' => (is => 'ro', required => 1, isa => ArrayRef [Str],);
 
@@ -123,31 +119,15 @@ has 'graphs' => (
   ],
 );
 
-sub _build_teams {
+sub _build_team_info {
   my ($self) = @_;
-  my $teams  = {};
-  my $query  = "
-    SELECT products.name AS product,
-           components.name AS component,
-           components.team_name AS team
-      FROM components JOIN products ON components.product_id = products.id
-           AND components.name != 'Mozilla'";
-  my $rows = Bugzilla->dbh->selectall_arrayref($query, {'Slice' => {}});
-  foreach my $row (@$rows) {
-    my $product   = $row->{product};
-    my $component = $row->{component};
-    my $team      = $row->{team};
-    $teams->{$team} ||= {};
-    $teams->{$team}->{$product} ||= [];
-    push @{$teams->{$team}->{$product}}, $component;
-  }
-  return $teams;
+  return get_team_info(@{$self->teams});
 }
 
 sub _build_products {
   my ($self) = @_;
   my @products = ();
-  foreach my $team (values %{$self->teams}) {
+  foreach my $team (values %{$self->team_info}) {
     foreach my $product (keys %$team) {
       push @products, $product;
     }
@@ -430,7 +410,7 @@ sub _build_graphs {
               }@{$self->results}
             ],
           }
-        } keys %{$self->teams}
+        } @{$self->teams}
       ],
       image_file => tempfile(SUFFIX => '.png'),
     },
@@ -468,7 +448,7 @@ sub _build_graphs {
 
 sub _build_deltas {
   my ($self) = @_;
-  my @teams = keys %{$self->teams};
+  my @teams = @{$self->teams};
   my $deltas = {by_team => {}, by_sec_keyword => {}};
   my $data = [
     {domain => \@teams, results_key => 'bugs_by_team', deltas_key => 'by_team',},
@@ -503,7 +483,7 @@ sub _bugs_by_team {
   my ($self, $report_date, @bugs) = @_;
   my $result = {};
   my $groups = {};
-  foreach my $team (keys %{$self->teams}) {
+  foreach my $team (@{$self->teams}) {
     $groups->{$team} = [];
   }
   foreach my $bug (@bugs) {
@@ -514,7 +494,7 @@ sub _bugs_by_team {
       push @{$groups->{$bug->{team}}}, $bug;
     }
   }
-  foreach my $team (keys %{$self->teams}) {
+  foreach my $team (@{$self->teams}) {
     my @open   = map { $_->{id} } grep { ($_->{is_open}) } @{$groups->{$team}};
     my @closed = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$team}};
     my @very_old_bugs   = map { $_->{id} } grep {
@@ -568,8 +548,8 @@ sub _is_bug_open {
 
 sub _find_team {
   my ($self, $product, $component) = @_;
-  foreach my $team_key (keys %{$self->teams}) {
-    my $team = $self->teams->{$team_key};
+  foreach my $team_key (@{$self->teams}) {
+    my $team = $self->team_info->{$team_key};
     if (exists $team->{$product}) {
       return $team_key if any { lc $component eq lc $_ } @{$team->{$product}};
     }

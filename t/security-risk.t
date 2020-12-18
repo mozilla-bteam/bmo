@@ -23,19 +23,14 @@ can_ok('Bugzilla::Report::SecurityRisk', qw(new results));
 
 my $SecurityRisk = mock 'Bugzilla::Report::SecurityRisk' => (
   override => [
-    _build_teams => sub {
+    _build_team_info => sub {
       return {
         Frontend => {Firefox => ['ComponentA'],},
         Backend  => {Core    => ['ComponentB'],}
       };
-    },
+    }
   ]
 );
-
-
-my $teams_json
-  = '{ "Frontend": { "Firefox": { "all_components": true } }, "Backend": { "Core": { "all_components": true } } }';
-
 
 sub check_open_state_mock {
   my ($state) = @_;
@@ -48,6 +43,7 @@ try {
     start_date => DateTime->new(year => 2000, month => 1, day => 9),
     end_date   => DateTime->new(year => 2000, month => 1, day => 16),
     sec_keywords     => ['sec-critical', 'sec-high'],
+    teams            => ['Frontend', 'Backend'],
     check_open_state => \&check_open_state_mock,
     very_old_days    => 45,
     initial_bug_ids  => [1, 2, 3, 4],

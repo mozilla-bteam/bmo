@@ -819,7 +819,8 @@ sub update_table_definitions {
   _populate_attachment_storage_class();
 
   # Bug 1682404 - dkl@mozilla.com
-  $dbh->bz_add_column('components', 'team_name', {TYPE => 'TINYTEXT'});
+  $dbh->bz_add_column('components', 'team_name',
+    {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "'Mozilla'"});
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
