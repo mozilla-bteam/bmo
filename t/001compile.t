@@ -18,6 +18,8 @@ use lib qw(. lib local/lib/perl5 t);
 use Config;
 use Support::Files;
 use Test::More;
+use Module::Runtime qw(use_module);
+use Test2::Tools::Mock qw(mock);
 
 use Bugzilla::Test::MockParams;
 
@@ -29,6 +31,9 @@ BEGIN {
   use_ok('Bugzilla');
 }
 Bugzilla->usage_mode(USAGE_MODE_TEST);
+
+my $BugzillaField = mock 'Bugzilla::Field' =>
+  (override => [get_legal_field_values => sub { [] },],);
 
 sub compile_file {
   my ($file) = @_;
