@@ -759,7 +759,7 @@ $(function() {
             that.addClass('bz_autocomplete');
         });
 
-        // init autocomplete fields with a single value
+    // init autocomplete fields with a single value
     $('.bz_autocomplete_single_value')
         .each(function() {
             var that = $(this);
@@ -791,11 +791,11 @@ $(function() {
                 minChars: 0,
                 autoSelectFirst: false,
                 triggerSelectOnValidInput: false,
-                formatResult: function(suggestion, currentValue) {
+                formatResult: function(suggestion) {
                     // disable <b> wrapping of matched substring
                     return suggestion.value.htmlEncode();
                 },
-                onSearchStart: function(params) {
+                onSearchStart: function() {
                     var that = $(this);
                     // adding spaces shouldn't initiate a new search
                     var parts = that.val().split(/,\s*/);
@@ -808,6 +808,7 @@ $(function() {
             });
             that.addClass('bz_autocomplete');
         });
+});
 
 /**
  * Force the browser to honour the selected option when a page is refreshed,
