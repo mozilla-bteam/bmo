@@ -21,8 +21,6 @@ use Test::More;
 use Module::Runtime qw(use_module);
 use Test2::Tools::Mock qw(mock);
 
-use Bugzilla::Test::MockParams;
-
 BEGIN {
   plan tests => @Support::Files::testitems + @Support::Files::test_files;
 
@@ -32,6 +30,9 @@ BEGIN {
 }
 Bugzilla->usage_mode(USAGE_MODE_TEST);
 
+use Bugzilla::Test::MockParams;
+use Bugzilla::Test::MockLocalconfig (db_driver => 'sqlite',
+  db_name => $ENV{test_db_name} // ':memory:',);
 my $BugzillaField = mock 'Bugzilla::Field' =>
   (override => [get_legal_field_values => sub { [] },],);
 
