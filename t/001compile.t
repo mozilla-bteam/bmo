@@ -34,12 +34,13 @@ use Bugzilla::Test::MockParams;
 use Bugzilla::Test::MockLocalconfig (db_driver => 'sqlite',
   db_name => $ENV{test_db_name} // ':memory:',);
 
-#use Bugzilla::Field;
-#use Bugzilla::User;
 my $BugzillaField = mock 'Bugzilla::Field' =>
   (override => [get_legal_field_values => sub { [] },],);
-my $BugzillaUser = mock 'Bugzilla::User' =>
-  (override => ['groups' => sub { [] },'in_group' => sub { 1; },],);
+my $BugzillaUser
+  = mock 'Bugzilla::User' => (override =>
+    ['get_all' => sub { [] }, 'groups' => sub { [] }, 'in_group' => sub { 1; },],
+  );
+
 
 sub compile_file {
   my ($file) = @_;
