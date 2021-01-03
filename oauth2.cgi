@@ -20,9 +20,9 @@ use Bugzilla::Token qw(check_hash_token delete_token);
 
 use Try::Tiny;
 
-my $c     = $Bugzilla::App::CGI::C;
 my $cache = Bugzilla->request_cache;
 my $cgi   = Bugzilla->cgi;
+my $c     = $cache->{mojo_controller};
 
 # GET requests come from OAuth2 provider,
 # with this script acting as the OAuth2 callback.
