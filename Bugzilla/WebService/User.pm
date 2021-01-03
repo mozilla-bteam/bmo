@@ -509,13 +509,14 @@ sub whoami {
   return filter(
     $params,
     {
-      id         => $self->type('int',     $user->id),
-      real_name  => $self->type('string',  $user->name),
-      nick       => $self->type('string',  $user->nick),
-      name       => $self->type('email',   $user->login),
-      mfa_status => $self->type('boolean', !!$user->mfa),
-      groups     => [map { $_->name } @{$user->groups}],
-      uuid       => $self->type('string',  'bmo-who:' . $uuid),
+      id           => $self->type('int',     $user->id),
+      real_name    => $self->type('string',  $user->name),
+      nick         => $self->type('string',  $user->nick),
+      name         => $self->type('email',   $user->login),
+      mfa_status   => $self->type('boolean', !!$user->mfa),
+      groups       => [map { $_->name } @{$user->groups}],
+      uuid         => $self->type('string',  'bmo-who:' . $uuid),
+      iam_username => $self->type('string',  $user->iam_username),
     }
   );
 }
