@@ -28,7 +28,7 @@ use base qw(Exporter);
   validate_email_syntax clean_text
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
-  round extract_nicks);
+  round extract_nicks mojo_user_agent);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -971,6 +971,21 @@ sub extract_nicks {
   return grep { defined $_ } @nicks;
 }
 
+sub mojo_user_agent {
+  my $ua = Mojo::UserAgent->new(
+    request_timeout     => 5,
+    connect_timeout     => 5,
+    inactivity_timesout => 30
+  );
+  if (my $proxy = Bugzilla->params->{proxy_url}) {
+    $ua->proxy->http($proxy)->https($proxy);
+  }
+  else {
+    $ua->proxy->detect();
+  }
+  $ua->transactor->name('Bugzilla');
+  return $ua;
+}
 
 1;
 

@@ -193,8 +193,8 @@ jobs:
           name: run sanity tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
-              test_sanity $(circleci tests glob 't/*.t' 'extensions/*/t/*.t' | \
+            docker-compose -f docker-compose.test.yml run -e CIRCLE_JOB=$CIRCLE_JOB \
+              --no-deps bmo.test test_sanity $(circleci tests glob 't/*.t' 'extensions/*/t/*.t' | \
               circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
@@ -222,8 +222,8 @@ jobs:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run bmo.test test_webservices | \
-            tee artifacts/$CIRCLE_JOB.txt
+          docker-compose -f docker-compose.test.yml run -e CIRCLE_JOB=$CIRCLE_JOB \
+            bmo.test test_webservices | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -250,8 +250,8 @@ jobs:
           at: /app/build_info
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run bmo.test test_selenium | \
-            tee artifacts/$CIRCLE_JOB.txt
+          docker-compose -f docker-compose.test.yml run -e CIRCLE_JOB=$CIRCLE_JOB \
+            bmo.test test_selenium | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -276,9 +276,13 @@ jobs:
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
           at: /app/build_info
-      - run: |
-          [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run bmo.test test_bmo -q -f t/bmo/*.t
+      - run:
+          name: run bmo specific tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e CI=1 -e CIRCLE_JOB=$CIRCLE_JOB \
+              bmo.test test_bmo -q -f $(circleci tests glob 't/bmo/*.t' 'extensions/*/t/bmo/*.t' | \
+              circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - *store_log
 
 workflows:
