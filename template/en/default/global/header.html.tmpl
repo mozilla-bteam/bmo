@@ -220,6 +220,11 @@
              href="[% atomlink FILTER html %]">
     [% END %]
 
+    [%# Required for login button icons %]
+    <link href="[% 'skins/lib/fontawesome.min.css' FILTER version %]" rel="stylesheet" type="text/css">
+    <link href="[% 'skins/lib/fontawesome-brands.min.css' FILTER version %]" rel="stylesheet" type="text/css">
+    <link href="[% 'skins/lib/fontawesome-solid.min.css' FILTER version %]" rel="stylesheet" type="text/css">
+
     [%# Required for the 'Auto-discovery' feature in Firefox 2 and IE 7. %]
     <link rel="search" type="application/opensearchdescription+xml"
                        title="[% terms.BugzillaTitle %]" href="[% basepath FILTER none %]search_plugin.cgi">

@@ -211,15 +211,33 @@ sub cmd_test_bmo {
 
   assert_database()->get;
   assert_selenium('selenium')->get;
-  $ENV{BZ_TEST_NEWBIE}      = 'newbie@mozilla.example';
+
+  $ENV{BZ_TEST_OAUTH2_NORMAL_USER}  = 'oauth2-user@example.com';
+  $ENV{BZ_TEST_OAUTH2_MOZILLA_USER} = 'oauth2-user@mozilla.com';
+  $ENV{BZ_TEST_OAUTH2_PASSWORD}     = 'non-working-password';
+  create_user(
+    $ENV{BZ_TEST_OAUTH2_NORMAL_USER},
+    $ENV{BZ_TEST_OAUTH2_PASSWORD},
+    realname => 'OAuth2 User'
+  );
+
+  $ENV{BZ_TEST_BOUNCE_USER} = 'bouncer@mozilla.example';
+  $ENV{BZ_TEST_BOUNCE_PASS} = 'captain.space.bagel.ROBOT!';
+  create_user(
+    $ENV{BZ_TEST_BOUNCE_USER},
+    $ENV{BZ_TEST_BOUNCE_PASS},
+    realname => 'Bouncing User'
+  );
+
+  $ENV{BZ_TEST_NEWBIE_USER} = 'newbie@mozilla.example';
   $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';
   create_user(
-    $ENV{BZ_TEST_NEWBIE},
+    $ENV{BZ_TEST_NEWBIE_USER},
     $ENV{BZ_TEST_NEWBIE_PASS},
     realname => 'Newbie User'
   );
 
-  $ENV{BZ_TEST_NEWBIE2}      = 'newbie2@mozilla.example';
+  $ENV{BZ_TEST_NEWBIE2_USER} = 'newbie2@mozilla.example';
   $ENV{BZ_TEST_NEWBIE2_PASS} = 'captain.space.pants.time.lord';
 
   my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');

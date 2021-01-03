@@ -79,7 +79,7 @@ sub config_modify_panels {
   my $user_info_class
     = first { $_->{name} eq 'user_info_class' } @$auth_panel_params;
   if ($user_info_class) {
-    push @{$user_info_class->{choices}}, "GitHubAuth,CGI";
+    push @{$user_info_class->{choices}}, "GitHubAuth,CGI", "GitHubAuth,OAuth2,CGI";
   }
 
   my $user_verify_class
