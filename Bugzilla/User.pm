@@ -261,9 +261,9 @@ sub new {
 sub super_user {
   my $invocant = shift;
   my $class    = ref($invocant) || $invocant;
-  my ($param)  = @_;
 
-  my $user = {%{DEFAULT_USER()}};
+  my $user = Bugzilla::User->new({name => 'automation@bmo.tld'});
+  $user ||= {%{DEFAULT_USER()}};
   $user->{groups}       = [Bugzilla::Group->get_all];
   $user->{bless_groups} = [Bugzilla::Group->get_all];
   bless $user, $class;
@@ -368,30 +368,34 @@ sub update {
 
   # IAM usernames are stored separately from normal profiles
   # data so we update them here instead
-  my $new_iam_username = delete $self->{new_iam_username};
-  my $old_iam_username = $self->iam_username;
+  if (exists $self->{new_iam_username}) {
+    my $new_iam_username = delete $self->{new_iam_username};
+    my $old_iam_username = $self->iam_username;
 
-  $dbh->bz_start_transaction();
-  if (!defined $old_iam_username && $new_iam_username) {
-    $dbh->do('INSERT INTO profiles_iam (user_id, iam_username) VALUES (?, ?)',
-      undef, $self->id, $new_iam_username);
-    $changes->{iam_username} = ['', $new_iam_username];
+    $dbh->bz_start_transaction();
+
+    if (!defined $old_iam_username && $new_iam_username) {
+      $dbh->do('INSERT INTO profiles_iam (user_id, iam_username) VALUES (?, ?)',
+        undef, $self->id, $new_iam_username);
+      $changes->{iam_username} = ['', $new_iam_username];
+    }
+    elsif ($old_iam_username && !$new_iam_username) {
+      $dbh->do('DELETE FROM profiles_iam WHERE user_id = ?', undef, $self->id);
+      $changes->{iam_username} = [$old_iam_username, ''];
+    }
+    elsif ($old_iam_username ne $new_iam_username) {
+      $dbh->do('UPDATE profiles_iam SET iam_username = ? WHERE user_id = ?',
+        undef, $new_iam_username, $self->id);
+      $changes->{iam_username} = [$old_iam_username, $new_iam_username];
+    }
+    if (exists $changes->{iam_username}) {
+      $self->audit_log({iam_username => $changes->{iam_username}})
+        if $self->AUDIT_UPDATES;
+      $self->{iam_username} = defined $new_iam_username ? $new_iam_username : undef;
+    }
+
+    $dbh->bz_commit_transaction();
   }
-  elsif ($old_iam_username && !$new_iam_username) {
-    $dbh->do('DELETE FROM profiles_iam WHERE user_id = ?', undef, $self->id);
-    $changes->{iam_username} = [$old_iam_username, ''];
-  }
-  elsif ($old_iam_username ne $new_iam_username) {
-    $dbh->do('UPDATE profiles_iam SET iam_username = ? WHERE user_id = ?',
-      undef, $new_iam_username, $self->id);
-    $changes->{iam_username} = [$old_iam_username, $new_iam_username];
-  }
-  if (exists $changes->{iam_username}) {
-    $self->audit_log({iam_username => $changes->{iam_username}})
-      if $self->AUDIT_UPDATES;
-    $self->{iam_username} = defined $new_iam_username ? $new_iam_username : undef;
-  }
-  $dbh->bz_commit_transaction();
 
   # Logout the user if necessary.
   Bugzilla->logout_user($self)
@@ -446,7 +450,7 @@ sub check_login_name_for_creation {
 
   # Check the name if it's a new user, or if we're changing the name.
   if (!ref($invocant) || $invocant->login ne $name) {
-    is_available_username($name)
+    is_available_username($name, (ref $invocant ? $invocant->login : undef))
       || ThrowUserError('account_exists', {email => $name});
   }
 
@@ -521,7 +525,8 @@ sub _check_iam_username {
     validate_email_syntax($username)
       || ThrowUserError('iam_illegal_username', {username => $username});
 
-    if ($username ne $self->iam_username) {
+    my $iam_username = $self->iam_username || '';
+    if ($username && $username ne $iam_username) {
       my $existing_username
         = Bugzilla->dbh->selectrow_array(
         'SELECT iam_username FROM profiles_iam WHERE iam_username = ?',
@@ -649,8 +654,6 @@ sub _set_groups {
   my $changes  = shift;
   my $dbh      = Bugzilla->dbh;
 
-  use Data::Dumper;
-
   # The person making the change is $user, $self is the person being changed
   my $user = Bugzilla->user;
 
@@ -768,8 +771,9 @@ sub password_change_reason   { $_[0]->{password_change_reason}; }
 
 sub iam_username {
   my $self = shift;
+  return $self->{iam_username} if exists $self->{iam_username};
   return $self->{iam_username}
-    ||= Bugzilla->dbh->selectrow_array(
+    = Bugzilla->dbh->selectrow_array(
     'SELECT iam_username FROM profiles_iam WHERE user_id = ?',
     undef, $self->id);
 }
