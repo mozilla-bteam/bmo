@@ -31,7 +31,9 @@ var products = {
       if (match) {
         var maj = match[1];
         var min = match[2];
-        if (maj * 1 >= 5) {
+        if (maj * 1 >= 80) {
+          return "Firefox " + maj;
+        } else if (maj * 1 >= 5) {
           return maj + " Branch";
         } else {
           return maj + "." + min + " Branch";
