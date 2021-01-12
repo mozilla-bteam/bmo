@@ -4969,11 +4969,11 @@ sub check_can_change_field {
       priv_results => \@priv_results
     }
   );
-  if (my $priv_required = first { $_ > 0 } @priv_results) {
-    $$PrivilegesRequired = $priv_required;
-    return 0;
+  if (my $priv_required = first { $_->{result} > 0 } @priv_results) {
+    $$PrivilegesRequired = $priv_required->{result};
+    return (0, $priv_required->{reason});
   }
-  my $allow_found = first { $_ == 0 } @priv_results;
+  my $allow_found = first { $_->{result} == 0 } @priv_results;
   if (defined $allow_found) {
     return 1;
   }
