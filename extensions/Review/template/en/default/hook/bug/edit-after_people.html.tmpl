@@ -13,7 +13,7 @@
 <tr>
   <th class="field_label">Mentors:</th>
   <td>
-    [% IF bug.check_can_change_field("bug_mentors", 0, 1) %]
+    [% IF bug.check_can_change_field("bug_mentors", 0, 1).allowed %]
       <div id="bz_bug_mentors_edit_container" class="bz_default_hidden">
         <span>
           [% FOREACH mentor = bug.mentors %]

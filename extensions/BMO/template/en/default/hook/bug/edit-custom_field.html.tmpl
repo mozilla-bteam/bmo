@@ -80,7 +80,7 @@
           [%
             FOREACH legal_value = field.legal_values;
               NEXT IF NOT legal_value.is_active AND NOT value.contains(legal_value.name).size;
-              NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name)
+              NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name).allowed
                 OR value.contains(legal_value.name).size;
               %]
               <option value="[% legal_value.name FILTER html %]"

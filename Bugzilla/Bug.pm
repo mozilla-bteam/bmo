@@ -2048,10 +2048,18 @@ sub _check_relationship {
 
       # Check field permissions if we've changed anything.
       if (@$added || @$removed) {
-        my $privs;
-        if (!$invocant->check_can_change_field($type, 0, 1, \$privs)) {
-          ThrowUserError('illegal_change', {field => $type, privs => $privs});
+        my $can_change = $invocant->check_can_change_field($type, 0, 1);
+        if (!$can_change->{allowed}) {
+          ThrowUserError(
+            'illegal_change',
+            {
+              field  => $type,
+              privs  => $can_change->{privs},
+              reason => $can_change->{reason}
+            }
+          );
         }
+
       }
     }
 
@@ -2697,7 +2705,6 @@ sub fields {
 sub _set_global_validator {
   my ($self, $value, $field) = @_;
   my $current = $self->$field;
-  my $privs;
 
   if ( ref $current
     && ref($current) ne 'ARRAY'
@@ -2708,14 +2715,22 @@ sub _set_global_validator {
   if (ref $value && ref($value) ne 'ARRAY' && $value->isa('Bugzilla::Object')) {
     $value = $value->id;
   }
-  my $can = $self->check_can_change_field($field, $current, $value, \$privs);
-  if (!$can) {
+  my $can_change = $self->check_can_change_field($field, $current, $value);
+  if (!$can_change->{allowed}) {
     if ($field eq 'assigned_to' || $field eq 'qa_contact') {
       $value   = user_id_to_login($value);
       $current = user_id_to_login($current);
     }
-    ThrowUserError('illegal_change',
-      {field => $field, oldvalue => $current, newvalue => $value, privs => $privs});
+    ThrowUserError(
+      'illegal_change',
+      {
+        field    => $field,
+        oldvalue => $current,
+        newvalue => $value,
+        privs    => $can_change->{privs},
+        reason   => $can_change->{reason}
+      }
+    );
   }
   $self->_check_field_is_mandatory($value, $field);
 }
@@ -3070,7 +3085,8 @@ sub _set_product {
     my $milestone_ok = 1;
 
     # Reporters can move bugs between products but not set the TM.
-    if ($self->check_can_change_field('target_milestone', 0, 1)) {
+    my $can_change = $self->check_can_change_field('target_milestone', 0, 1);
+    if ($can_change->{allowed}) {
       $milestone_ok = eval { $self->set_target_milestone($tm_name); 1; };
     }
     else {
@@ -3154,8 +3170,9 @@ sub _set_product {
     # just die if any of these are invalid.
     $self->set_component($comp_name);
     $self->set_version($vers_name);
+    my $can_change = $self->check_can_change_field('target_milestone', 0, 1);
     if ($product_changed
-      and !$self->check_can_change_field('target_milestone', 0, 1))
+      and !$can_change->{allowed})
     {
       # Have to set this directly to bypass the validators.
       $self->{target_milestone} = $product->default_milestone;
@@ -3416,18 +3433,18 @@ sub modify_keywords {
   @result = sort { lc($a->name) cmp lc($b->name) } @result;
 
   if ($any_changes) {
-    my $privs;
     my $new = join(', ', (map { $_->name } @result));
-    my $check
-      = $self->check_can_change_field('keywords', 0, 1, \$privs) || ThrowUserError(
+    my $can_change = $self->check_can_change_field('keywords', 0, 1);
+    $can_change->{allowed} || ThrowUserError(
       'illegal_change',
       {
         field    => 'keywords',
         oldvalue => $self->keywords,
         newvalue => $new,
-        privs    => $privs
+        privs    => $can_change->{privs},
+        reason   => $can_change->{reason}
       }
-      );
+    );
   }
 
   $self->{'keyword_objects'} = \@result;
@@ -3546,19 +3563,26 @@ sub add_see_also {
   # case-sensitive, but most of our DBs are case-insensitive, so we do
   # this check case-insensitively.
   if (!grep { lc($_->name) eq lc($value) } @{$self->see_also}) {
-    my $privs;
-    my $can = $self->check_can_change_field('see_also', '', $value, \$privs);
-    if (!$can) {
-      ThrowUserError('illegal_change',
-        {field => 'see_also', newvalue => $value, privs => $privs});
+    my $can_change = $self->check_can_change_field('see_also', '', $value);
+    if (!$can_change->{allowed}) {
+      ThrowUserError(
+        'illegal_change',
+        {
+          field    => 'see_also',
+          newvalue => $value,
+          privs    => $can_change->{privs},
+          reason   => $can_change->{reason}
+        }
+      );
     }
 
     # If this is a link to a local bug then save the
     # ref bug id for sending changes email.
     my $ref_bug = delete $field_values->{ref_bug};
+    my $ref_can_change = $ref_bug->check_can_change_field('see_also', '', $self->id);
     if (  $class->isa('Bugzilla::BugUrl::Bugzilla::Local')
       and !$skip_recursion
-      and $ref_bug->check_can_change_field('see_also', '', $self->id, \$privs))
+      and $ref_can_change->{allowed})
     {
       $ref_bug->add_see_also($self->id, 'skip_recursion');
       push @{$self->{_update_ref_bugs}}, $ref_bug;
@@ -3578,12 +3602,18 @@ sub remove_see_also {
   my ($removed_bug_url, $new_see_also)
     = part { lc($_->name) ne lc($url) } @$see_also;
 
-  my $privs;
-  my $can = $self->check_can_change_field('see_also', $see_also, $new_see_also,
-    \$privs);
-  if (!$can) {
-    ThrowUserError('illegal_change',
-      {field => 'see_also', oldvalue => $url, privs => $privs});
+  my $can_change
+    = $self->check_can_change_field('see_also', $see_also, $new_see_also);
+  if (!$can_change->{allowed}) {
+    ThrowUserError(
+      'illegal_change',
+      {
+        field    => 'see_also',
+        oldvalue => $url,
+        privs    => $can_change->{privs},
+        reason   => $can_change->{reason}
+      }
+    );
   }
 
   # Since we remove also the URL from the referenced bug,
@@ -3597,7 +3627,7 @@ sub remove_see_also {
     my $ref_bug = Bugzilla::Bug->check($removed_bug_url->ref_bug_url->bug_id);
 
     if (Bugzilla->user->can_edit_product($ref_bug->product_id)
-      and $ref_bug->check_can_change_field('see_also', $self->id, '', \$privs))
+      and $ref_bug->check_can_change_field('see_also', $self->id, ''))
     {
       my $self_url = $removed_bug_url->local_uri($self->id);
       $ref_bug->remove_see_also($self_url, 'skip_recursion');
@@ -4237,9 +4267,10 @@ sub statuses_available {
   foreach my $status (@statuses) {
 
     # Make sure this is a legal status transition
-    next
-      if !$self->check_can_change_field('bug_status', $self->status->name,
+    my $can_change
+      = $self->check_can_change_field('bug_status', $self->status->name,
       $status->name);
+    next if !$can_change->{allowed};
     push(@available, $status);
   }
 
@@ -4923,11 +4954,10 @@ sub get_invalid_groups {
 # $field    - name of the field in the bugs table the user is trying to change
 # $oldvalue - what they are changing it from
 # $newvalue - what they are changing it to
-# $PrivilegesRequired - return the reason of the failure, if any
 ################################################################################
 sub check_can_change_field {
   my $self = shift;
-  my ($field, $oldvalue, $newvalue, $PrivilegesRequired) = (@_);
+  my ($field, $oldvalue, $newvalue) = (@_);
   my $user = Bugzilla->user;
 
   $oldvalue = defined($oldvalue) ? $oldvalue : '';
@@ -4935,14 +4965,14 @@ sub check_can_change_field {
 
   # Return true if they haven't changed this field at all.
   if ($oldvalue eq $newvalue) {
-    return 1;
+    return {allowed => 1};
   }
   elsif (ref($newvalue) eq 'ARRAY' && ref($oldvalue) eq 'ARRAY') {
     my ($removed, $added) = diff_arrays($oldvalue, $newvalue);
-    return 1 if !scalar(@$removed) && !scalar(@$added);
+    return {allowed => 1} if !scalar(@$removed) && !scalar(@$added);
   }
   elsif (trim($oldvalue) eq trim($newvalue)) {
-    return 1;
+    return {allowed => 1};
 
     # numeric fields need to be compared using ==
   }
@@ -4955,7 +4985,7 @@ sub check_can_change_field {
     && $oldvalue == $newvalue
     )
   {
-    return 1;
+    return {allowed => 1};
   }
 
   my @priv_results;
@@ -4970,45 +5000,57 @@ sub check_can_change_field {
     }
   );
   if (my $priv_required = first { $_->{result} > 0 } @priv_results) {
-    $$PrivilegesRequired = $priv_required->{result};
-    return (0, $priv_required->{reason});
+    return {
+      allowed => 0,
+      privs   => $priv_required->{result},
+      reason  => $priv_required->{reason}
+    };
   }
   my $allow_found = first { $_->{result} == 0 } @priv_results;
   if (defined $allow_found) {
-    return 1;
+    return {allowed => 1};
   }
 
   # Allow anyone to change comments, or set flags
   if ($field =~ /^longdesc/ || $field eq 'flagtypes.name') {
-    return 1;
+    return {allowed => 1};
   }
 
-# If the user isn't allowed to change a field, we must tell them who can.
-# We store the required permission set into the $PrivilegesRequired
-# variable which gets passed to the error template.
-#
-# $PrivilegesRequired = PRIVILEGES_REQUIRED_NONE : no privileges required;
-# $PrivilegesRequired = PRIVILEGES_REQUIRED_REPORTER : the reporter, assignee or an empowered user;
-# $PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE : the assignee or an empowered user;
-# $PrivilegesRequired = PRIVILEGES_REQUIRED_EMPOWERED : an empowered user.
+  # If the user isn't allowed to change a field, we must tell them who can.
+  #
+  # PRIVILEGES_REQUIRED_NONE : no privileges required;
+  # PRIVILEGES_REQUIRED_REPORTER : the reporter, assignee or an empowered user;
+  # PRIVILEGES_REQUIRED_ASSIGNEE : the assignee or an empowered user;
+  # PRIVILEGES_REQUIRED_EMPOWERED : an empowered user.
 
   # Only users in the time-tracking group can change time-tracking fields.
   if (grep($_ eq $field, TIMETRACKING_FIELDS)) {
     if (!$user->is_timetracker) {
-      $$PrivilegesRequired = PRIVILEGES_REQUIRED_EMPOWERED;
-      return 0;
+      return {
+        allowed => 0,
+        privs   => PRIVILEGES_REQUIRED_EMPOWERED,
+        reason  => 'Specific permissions are required to make this change'
+      };
     }
   }
 
   # Allow anyone with (product-specific) "editbugs" privs to change anything.
   if ($user->in_group('editbugs', $self->{'product_id'})) {
-    return 1;
+    return {allowed => 1};
   }
 
   # *Only* users with (product-specific) "canconfirm" privs can confirm bugs.
   if ($self->_changes_everconfirmed($field, $oldvalue, $newvalue)) {
-    $$PrivilegesRequired = PRIVILEGES_REQUIRED_EMPOWERED;
-    return $user->in_group('canconfirm', $self->{'product_id'});
+    if ($user->in_group('canconfirm', $self->{'product_id'})) {
+      return {allowed => 1};
+    }
+    else {
+      return {
+        allowed => 0,
+        privs   => PRIVILEGES_REQUIRED_EMPOWERED,
+        reason  => 'Specific permissions are required to make this change'
+      };
+    }
   }
 
   # Make sure that a valid bug ID has been given.
@@ -5018,7 +5060,7 @@ sub check_can_change_field {
     if ( $self->{'assigned_to'} == $user->id
       || $self->{'_old_assigned_to'} && $self->{'_old_assigned_to'} == $user->id)
     {
-      return 1;
+      return {allowed => 1};
     }
 
     # Allow the QA contact to change anything else.
@@ -5028,7 +5070,7 @@ sub check_can_change_field {
         || ($self->{'_old_qa_contact'} && $self->{'_old_qa_contact'} == $user->id))
       )
     {
-      return 1;
+      return {allowed => 1};
     }
   }
 
@@ -5041,32 +5083,47 @@ sub check_can_change_field {
   #   in that case we will have already returned 1 above
   #   when checking for the assignee of the bug.
   if ($field eq 'assigned_to') {
-    $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
-    return 0;
+    return {
+      allowed => 0,
+      privs   => PRIVILEGES_REQUIRED_ASSIGNEE,
+      reason  => 'The bug reporter is not allowed to change this field'
+    };
   }
 
   # - change the QA contact
   if ($field eq 'qa_contact') {
-    $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
-    return 0;
+    return {
+      allowed => 0,
+      privs   => PRIVILEGES_REQUIRED_ASSIGNEE,
+      reason  => 'The bug reporter is not allowed to change this field'
+    };
   }
 
   # - change the target milestone
   if ($field eq 'target_milestone') {
-    $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
-    return 0;
+    return {
+      allowed => 0,
+      privs   => PRIVILEGES_REQUIRED_ASSIGNEE,
+      reason  => 'The bug reporter is not allowed to change this field'
+    };
   }
 
   # - change the priority (unless they could have set it originally)
   if ($field eq 'priority' && !Bugzilla->params->{'letsubmitterchoosepriority'}) {
-    $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
-    return 0;
+    return {
+      allowed => 0,
+      privs   => PRIVILEGES_REQUIRED_ASSIGNEE,
+      reason  => 'The bug reporter is not allowed to change this field'
+    };
   }
 
   # - unconfirm bugs (confirming them is handled above)
   if ($field eq 'everconfirmed') {
-    $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
-    return 0;
+    return {
+      allowed => 0,
+      privs   => PRIVILEGES_REQUIRED_ASSIGNEE,
+      reason  => 'The bug reporter is not allowed to change this field'
+    };
   }
 
   # - change the status from one open state to another
@@ -5074,19 +5131,25 @@ sub check_can_change_field {
     && is_open_state($oldvalue)
     && is_open_state($newvalue))
   {
-    $$PrivilegesRequired = PRIVILEGES_REQUIRED_ASSIGNEE;
-    return 0;
+    return {
+      allowed => 0,
+      privs   => PRIVILEGES_REQUIRED_ASSIGNEE,
+      reason  => 'The bug reporter is not allowed to change this field'
+    };
   }
 
   # The reporter is allowed to change anything else.
   if (!$self->{'error'} && $self->{'reporter_id'} == $user->id) {
-    return 1;
+    return {allowed => 1};
   }
 
   # If we haven't returned by this point, then the user doesn't
   # have the necessary permissions to change this field.
-  $$PrivilegesRequired = PRIVILEGES_REQUIRED_REPORTER;
-  return 0;
+  return {
+    allowed => 0,
+    privs   => PRIVILEGES_REQUIRED_REPORTER,
+    reason  => 'You are not allowed to change this field'
+  };
 }
 
 # A helper for check_can_change_field

@@ -1073,9 +1073,8 @@ sub object_start_of_update {
     || $new_bug->assigned_to->login =~ /@(?!invalid).+\.bugs$/;
 
   # and the user can set the status to NEW
-  return
-    unless $old_bug->check_can_change_field('bug_status', $old_bug->bug_status,
-    'NEW');
+  my $can_change = $old_bug->check_can_change_field('bug_status', $old_bug->bug_status, 'NEW');
+  return unless $can_change->{allowed};
 
   # if the user is changing the assignee, silently change the bug's status to new
   if ($old_bug->assigned_to->id != $new_bug->assigned_to->id) {

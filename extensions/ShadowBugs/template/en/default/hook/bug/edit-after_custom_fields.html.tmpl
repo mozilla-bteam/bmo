@@ -20,7 +20,7 @@
   [% ELSE %]
     [% PROCESS bug/field.html.tmpl
         value      = bug.cf_shadow_bug
-        editable   = bug.check_can_change_field(field.name, 0, 1)
+        editable   = bug.check_can_change_field(field.name, 0, 1).allowed
         no_tds     = false
         value_span = 2 %]
   [% END %]

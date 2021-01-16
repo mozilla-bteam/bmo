@@ -20,7 +20,7 @@ use Bugzilla::Util qw(datetime_from);
 our $VERSION = '0.1';
 
 # Who can set custom flags (use full field names only, not regex's)
-my $cf_setters
+our $cf_setters
   = {'cf_colo_site' => ['infra', 'build'], 'cf_rank' => ['rank-setters'],};
 
 sub bug_check_can_change_field {
