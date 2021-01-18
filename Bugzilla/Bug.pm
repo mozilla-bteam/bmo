@@ -3578,15 +3578,16 @@ sub add_see_also {
 
     # If this is a link to a local bug then save the
     # ref bug id for sending changes email.
-    my $ref_bug = delete $field_values->{ref_bug};
-    my $ref_can_change = $ref_bug->check_can_change_field('see_also', '', $self->id);
-    if (  $class->isa('Bugzilla::BugUrl::Bugzilla::Local')
-      and !$skip_recursion
-      and $ref_can_change->{allowed})
-    {
-      $ref_bug->add_see_also($self->id, 'skip_recursion');
-      push @{$self->{_update_ref_bugs}}, $ref_bug;
-      push @{$self->{see_also_changes}}, $ref_bug->id;
+    if (my $ref_bug = delete $field_values->{ref_bug}) {
+      my $ref_can_change = $ref_bug->check_can_change_field('see_also', '', $self->id);
+      if (  $class->isa('Bugzilla::BugUrl::Bugzilla::Local')
+        and !$skip_recursion
+        and $ref_can_change->{allowed})
+      {
+        $ref_bug->add_see_also($self->id, 'skip_recursion');
+        push @{$self->{_update_ref_bugs}}, $ref_bug;
+        push @{$self->{see_also_changes}}, $ref_bug->id;
+      }
     }
     push @{$self->{see_also}}, bless($field_values, $class);
   }

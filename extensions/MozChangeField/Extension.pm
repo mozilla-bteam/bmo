@@ -14,125 +14,43 @@ use warnings;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
+use Bugzilla::Logging;
 use Bugzilla::Status qw(is_open_state);
-use Bugzilla::Util qw(datetime_from);
+
+use Module::Runtime qw(require_module);
+use Mojo::Loader qw( find_modules );
+use Try::Tiny;
 
 our $VERSION = '0.1';
 
-# Who can set custom flags (use full field names only, not regex's)
-our $cf_setters
-  = {'cf_colo_site' => ['infra', 'build'], 'cf_rank' => ['rank-setters'],};
-
 sub bug_check_can_change_field {
   my ($self, $args) = @_;
-  my $bug          = $args->{'bug'};
-  my $field        = $args->{'field'};
-  my $new_value    = $args->{'new_value'};
-  my $old_value    = $args->{'old_value'};
-  my $priv_results = $args->{'priv_results'};
-  my $user         = Bugzilla->user;
+  my $user = Bugzilla->user;
 
-  if ($field =~ /^cf/ && !@$priv_results && $new_value ne '---') {
+  # Some modules need these so only look up once
+  $args->{canconfirm} = $user->in_group('canconfirm', $args->{bug}->{'product_id'});
+  $args->{editbugs}   = $user->in_group('editbugs',   $args->{bug}->{'product_id'});
 
-    # Cannot use the standard %cf_setter mapping as we want anyone
-    # to be able to set ?, just not the other values.
-    if ($field eq 'cf_cab_review') {
-      if ( $new_value ne '1'
-        && $new_value ne '?'
-        && !$user->in_group('infra', $bug->product_id))
-      {
-        push @{$priv_results},
-          {
-          result => PRIVILEGES_REQUIRED_EMPOWERED,
-          reason => 'Specific permissions are required to make this change',
-          };
+  my $object_cache = Bugzilla->request_cache->{mozchangefield_object_cache} ||= {};
+
+  foreach my $module (find_modules('Bugzilla::Extensions::MozChangeField')) {
+    my $result;
+    try {
+      my $object = $object_cache->{$module};
+      if (!$object) {
+        require_module($module);
+        $object = $module->new;
+        next if !$object->can('process_field');
+        $object_cache->{$module} = $object;
       }
+      $result = $object->process($args);
     }
+    catch {
+      WARN("$module could not be loaded or processed: $_");
+    };
 
-    # "other" custom field setters restrictions
-    elsif (exists $cf_setters->{$field}) {
-      my $in_group = 0;
-      foreach my $group (@{$cf_setters->{$field}}) {
-        if ($user->in_group($group, $bug->product_id)) {
-          $in_group = 1;
-          last;
-        }
-      }
-      if (!$in_group) {
-        push @{$priv_results},
-          {
-          result => PRIVILEGES_REQUIRED_EMPOWERED,
-          reason => 'Specific permissions are required to make this change',
-          };
-      }
-    }
-  }
-  elsif ($field eq 'resolution' && $new_value eq 'FIXED') {
-
-    # You need at least canconfirm to mark a bug as FIXED
-    if (!$user->in_group('canconfirm', $bug->{'product_id'})) {
-      push @{$priv_results},
-        {
-        result => PRIVILEGES_REQUIRED_EMPOWERED,
-        reason => 'You need "canconfirm" permissions to mark a bug as RESOLVED/FIXED',
-        };
-    }
-  }
-  elsif (($field eq 'bug_status' && $old_value eq 'VERIFIED')
-    || ($field eq 'dup_id'     && $bug->status->name eq 'VERIFIED')
-    || ($field eq 'resolution' && $bug->status->name eq 'VERIFIED'))
-  {
-    # You need at least editbugs to reopen a resolved/verified bug
-    if (!$user->in_group('editbugs', $bug->{'product_id'})) {
-      push @{$priv_results},
-        {
-        result => PRIVILEGES_REQUIRED_EMPOWERED,
-        reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug',
-        };
-    }
-  }
-  elsif ($user->in_group('canconfirm', $bug->{'product_id'})) {
-
-    # Canconfirm is really "cantriage"; users with canconfirm can also mark
-    # bugs as DUPLICATE, WORKSFORME, and INCOMPLETE.
-    if ( $field eq 'bug_status'
-      && is_open_state($old_value)
-      && !is_open_state($new_value))
-    {
-      push @{$priv_results}, {result => PRIVILEGES_REQUIRED_NONE};
-    }
-    elsif (
-      $field eq 'resolution'
-      && ( $new_value eq 'DUPLICATE'
-        || $new_value eq 'WORKSFORME'
-        || $new_value eq 'INCOMPLETE'
-        || ($old_value eq '' && $new_value eq '1'))
-      )
-    {
-      push @{$priv_results}, {result => PRIVILEGES_REQUIRED_NONE};
-    }
-    elsif ($field eq 'dup_id') {
-      push @{$priv_results}, {result => PRIVILEGES_REQUIRED_NONE};
-    }
-
-  }
-  elsif ($field eq 'bug_status') {
-
-    # Disallow reopening of bugs which have been resolved for > 1 year
-    if ( is_open_state($new_value)
-      && !is_open_state($old_value)
-      && $bug->resolution eq 'FIXED')
-    {
-      my $days_ago = DateTime->now(time_zone => Bugzilla->local_timezone);
-      $days_ago->subtract(days => 365);
-      my $last_closed = datetime_from($bug->last_closed_date);
-      if ($last_closed lt $days_ago) {
-        push @{$priv_results},
-          {
-          result => PRIVILEGES_REQUIRED_EMPOWERED,
-          reason => 'Bugs closed as FIXED cannot be reopened after one year',
-          };
-      }
+    if (ref $result) {
+      push @{$args->{priv_results}}, $result;
     }
   }
 }
