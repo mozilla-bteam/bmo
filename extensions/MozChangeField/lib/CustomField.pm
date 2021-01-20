@@ -10,12 +10,14 @@ package Bugzilla::Extension::MozChangeField::CustomField;
 use 5.10.1;
 use Moo;
 
+use Bugzilla::Constants;
+
 # Who can set custom flags (use full field names only, not regex's)
 our $cf_setters
   = {'cf_colo_site' => ['infra', 'build'], 'cf_rank' => ['rank-setters'],};
 
-sub process_field {
-  my ($self, $params) = @_;
+sub evaluate_change {
+  my ($self, $args) = @_;
 
   my $bug          = $args->{'bug'};
   my $field        = $args->{'field'};
@@ -36,7 +38,7 @@ sub process_field {
       {
         return {
           result => PRIVILEGES_REQUIRED_EMPOWERED,
-          reason => 'Specific permissions are required to make this change',
+          reason => 'Specific permissions are required to make this change.',
         };
       }
     }
@@ -53,7 +55,7 @@ sub process_field {
       if (!$in_group) {
         return {
           result => PRIVILEGES_REQUIRED_EMPOWERED,
-          reason => 'Specific permissions are required to make this change',
+          reason => 'Specific permissions are required to make this change.',
         };
       }
     }
@@ -61,3 +63,5 @@ sub process_field {
 
   return undef;
 }
+
+1;

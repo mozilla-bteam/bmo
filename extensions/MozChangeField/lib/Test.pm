@@ -5,12 +5,13 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::MozChangeField::DupeId;
+package Bugzilla::Extension::MozChangeField::Test;
 
 use 5.10.1;
 use Moo;
 
 use Bugzilla::Constants;
+use Bugzilla::Logging;
 
 sub evaluate_change {
   my ($self, $args) = @_;
@@ -23,23 +24,12 @@ sub evaluate_change {
   my $canconfirm   = $args->{'canconfirm'};
   my $editbugs     = $args->{'editbugs'};
 
-  return undef if $field ne 'dup_id';
-
-  # You need at least editbugs to reopen a resolved/verified bug
-  if ($bug->status->name eq 'VERIFIED' && !$args->{'editbugs'}) {
-    return {
-      result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug.',
-    };
-  }
-
-  # Canconfirm is really "cantriage"; users with canconfirm can also mark
-  # bugs as DUPLICATE, WORKSFORME, and INCOMPLETE.
-  if ($args->{'canconfirm'}) {
-    return {
-      result => PRIVILEGES_REQUIRED_NONE,
-    };
-  }
+  # if ($field eq 'priority' && !$editbugs) {
+  #   return {
+  #     result => PRIVILEGES_REQUIRED_EMPOWERED,
+  #     reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug',
+  #   };
+  # }
 
   return undef;
 }

@@ -10,8 +10,10 @@ package Bugzilla::Extension::MozChangeField::Resolution;
 use 5.10.1;
 use Moo;
 
-sub process_field {
-  my ($self, $params) = @_;
+use Bugzilla::Constants;
+
+sub evaluate_change {
+  my ($self, $args) = @_;
 
   my $bug          = $args->{'bug'};
   my $field        = $args->{'field'};
@@ -22,10 +24,10 @@ sub process_field {
 
   return undef if $field ne 'resolution';
 
-  # You need at least canconfirm to mark a bug as
-  # DUPLICATE, WORKSFORME, or INCOMPLETE
+  # Canconfirm is really "cantriage"; users with canconfirm can also mark
+  # bugs as DUPLICATE, WORKSFORME, and INCOMPLETE.
   if (
-    !$canconfirm
+    $canconfirm
     && ( $new_value eq 'DUPLICATE'
       || $new_value eq 'WORKSFORME'
       || $new_value eq 'INCOMPLETE'
@@ -33,9 +35,7 @@ sub process_field {
     )
   {
     return {
-      result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason =>
-        "You require 'canconfirm' permission to close this bug with the selected status",
+      result => PRIVILEGES_REQUIRED_NONE,
     };
   }
 
@@ -43,7 +43,7 @@ sub process_field {
   if ($bug->status->name eq 'VERIFIED' && !$editbugs) {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug',
+      reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug.',
     };
   }
 
@@ -51,9 +51,11 @@ sub process_field {
   if ($new_value eq 'FIXED' && !$canconfirm) {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason => 'You need "canconfirm" permissions to mark a bug as RESOLVED/FIXED',
+      reason => 'You need "canconfirm" permissions to mark a bug as RESOLVED/FIXED.',
     };
   }
 
   return undef;
 }
+
+1;

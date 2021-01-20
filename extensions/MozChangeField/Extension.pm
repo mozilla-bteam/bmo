@@ -15,10 +15,9 @@ use base qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
 use Bugzilla::Logging;
-use Bugzilla::Status qw(is_open_state);
 
+use File::Basename qw(basename);
 use Module::Runtime qw(require_module);
-use Mojo::Loader qw( find_modules );
 use Try::Tiny;
 
 our $VERSION = '0.1';
@@ -28,25 +27,33 @@ sub bug_check_can_change_field {
   my $user = Bugzilla->user;
 
   # Some modules need these so only look up once
-  $args->{canconfirm} = $user->in_group('canconfirm', $args->{bug}->{'product_id'});
-  $args->{editbugs}   = $user->in_group('editbugs',   $args->{bug}->{'product_id'});
+  $args->{canconfirm}
+    = $user->in_group('canconfirm', $args->{bug}->{'product_id'});
+  $args->{editbugs} = $user->in_group('editbugs', $args->{bug}->{'product_id'});
 
-  my $object_cache = Bugzilla->request_cache->{mozchangefield_object_cache} ||= {};
+  my $object_cache = Bugzilla->request_cache->{mozchangefield_object_cache}
+    ||= {};
 
-  foreach my $module (find_modules('Bugzilla::Extensions::MozChangeField')) {
+  foreach my $full_file (
+    glob bz_locations->{'extensionsdir'} . '/MozChangeField/lib/*.pm')
+  {
+    my $filename = basename($full_file, '.pm');
+    my $class    = "Bugzilla::Extension::MozChangeField::$filename";
+
     my $result;
+
     try {
-      my $object = $object_cache->{$module};
+      my $object = $object_cache->{$class};
       if (!$object) {
-        require_module($module);
-        $object = $module->new;
-        next if !$object->can('process_field');
-        $object_cache->{$module} = $object;
+        require $full_file;
+        $object = $class->new;
+        next if !$object->can('evaluate_change');
+        $object_cache->{$class} = $object;
       }
-      $result = $object->process($args);
+      $result = $object->evaluate_change($args);
     }
     catch {
-      WARN("$module could not be loaded or processed: $_");
+      WARN("$class could not be loaded or processed: $_");
     };
 
     if (ref $result) {

@@ -16,8 +16,8 @@ use Bugzilla::Util qw(datetime_from);
 
 use DateTime;
 
-sub process_field {
-  my ($self, $params) = @_;
+sub evaluate_change {
+  my ($self, $args) = @_;
 
   my $bug          = $args->{'bug'};
   my $field        = $args->{'field'};
@@ -31,7 +31,7 @@ sub process_field {
   if ($old_value eq 'VERIFIED' && !$editbugs) {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug',
+      reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug.',
     };
   }
 
@@ -46,10 +46,12 @@ sub process_field {
     if ($last_closed lt $days_ago) {
       return {
         result => PRIVILEGES_REQUIRED_EMPOWERED,
-        reason => 'Bugs closed as FIXED cannot be reopened after one year',
+        reason => 'Bugs closed as FIXED cannot be reopened after one year.',
       };
     }
   }
 
   return undef;
 }
+
+1;
