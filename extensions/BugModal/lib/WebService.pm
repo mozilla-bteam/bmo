@@ -148,11 +148,10 @@ sub edit {
     my $field_name = $field->name;
     my @values;
     foreach my $value (@{$field->legal_values}) {
-      if (
-        $bug->$field_name eq $value->name
-        || ( $value->is_active
-          && $bug->check_can_change_field($field_name, $bug->$field_name, $value->name))
-        )
+      my $can_change
+        = $bug->check_can_change_field($field_name, $bug->$field_name, $value->name);
+      if ($bug->$field_name eq $value->name
+        || ($value->is_active && $can_change->{allowed}))
       {
         push @values, {name => $value->name};
       }

@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::MozChangeField::Resolution;
+package Bugzilla::Extension::MozChangeField::CanConfirm;
 
 use 5.10.1;
 use Moo;
@@ -19,36 +19,30 @@ sub evaluate_change {
   my $field        = $args->{'field'};
   my $new_value    = $args->{'new_value'};
   my $old_value    = $args->{'old_value'};
+  my $priv_results = $args->{'priv_results'};
   my $canconfirm   = $args->{'canconfirm'};
   my $editbugs     = $args->{'editbugs'};
-
-  return undef if $field ne 'resolution';
 
   # Canconfirm is really "cantriage"; users with canconfirm can also mark
   # bugs as DUPLICATE, WORKSFORME, and INCOMPLETE.
   if (
-    $canconfirm
+       $canconfirm
+    && $field eq 'resolution'
     && ( $new_value eq 'DUPLICATE'
       || $new_value eq 'WORKSFORME'
       || $new_value eq 'INCOMPLETE'
       || ($old_value eq '' && $new_value eq '1'))
     )
   {
-    return {
-      result => PRIVILEGES_REQUIRED_NONE,
-    };
+    return {result => PRIVILEGES_REQUIRED_NONE,};
   }
 
-  # You need at least editbugs to reopen a resolved/verified bug
-  if ($bug->status->name eq 'VERIFIED' && !$editbugs) {
-    return {
-      result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason => 'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug.',
-    };
+  if ($canconfirm && $field eq 'dup_id') {
+    return {result => PRIVILEGES_REQUIRED_NONE,};
   }
 
   # You need at least canconfirm to mark a bug as FIXED
-  if ($new_value eq 'FIXED' && !$canconfirm) {
+  if (!$canconfirm && $field eq 'resolution' && $new_value eq 'FIXED') {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
       reason => 'You need "canconfirm" permissions to mark a bug as RESOLVED/FIXED.',

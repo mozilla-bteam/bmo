@@ -3626,9 +3626,10 @@ sub remove_see_also {
     and $removed_bug_url->ref_bug_url)
   {
     my $ref_bug = Bugzilla::Bug->check($removed_bug_url->ref_bug_url->bug_id);
-
+    my $ref_can_change
+      = $ref_bug->check_can_change_field('see_also', $self->id, '');
     if (Bugzilla->user->can_edit_product($ref_bug->product_id)
-      and $ref_bug->check_can_change_field('see_also', $self->id, ''))
+      && $ref_can_change->{allowed})
     {
       my $self_url = $removed_bug_url->local_uri($self->id);
       $ref_bug->remove_see_also($self_url, 'skip_recursion');

@@ -16,9 +16,19 @@ use base qw(Bugzilla::Extension);
 use Bugzilla::Constants;
 use Bugzilla::Logging;
 
-use File::Basename qw(basename);
-use Module::Runtime qw(require_module);
-use Try::Tiny;
+use Bugzilla::Extension::MozChangeField::CanConfirm;
+use Bugzilla::Extension::MozChangeField::CustomField;
+use Bugzilla::Extension::MozChangeField::Reopen;
+
+my $instances = {
+  CanConfirm  => Bugzilla::Extension::MozChangeField::CanConfirm->new,
+  CustomField => Bugzilla::Extension::MozChangeField::CustomField->new,
+  Resolution  => Bugzilla::Extension::MozChangeField::Reopen->new,
+};
+
+my @evaluate_order = qw(
+  CanConfirm CustomField Reopen
+);
 
 our $VERSION = '0.1';
 
@@ -31,35 +41,129 @@ sub bug_check_can_change_field {
     = $user->in_group('canconfirm', $args->{bug}->{'product_id'});
   $args->{editbugs} = $user->in_group('editbugs', $args->{bug}->{'product_id'});
 
-  my $object_cache = Bugzilla->request_cache->{mozchangefield_object_cache}
-    ||= {};
-
-  foreach my $full_file (
-    glob bz_locations->{'extensionsdir'} . '/MozChangeField/lib/*.pm')
-  {
-    my $filename = basename($full_file, '.pm');
-    my $class    = "Bugzilla::Extension::MozChangeField::$filename";
-
-    my $result;
-
-    try {
-      my $object = $object_cache->{$class};
-      if (!$object) {
-        require $full_file;
-        $object = $class->new;
-        next if !$object->can('evaluate_change');
-        $object_cache->{$class} = $object;
-      }
-      $result = $object->evaluate_change($args);
-    }
-    catch {
-      WARN("$class could not be loaded or processed: $_");
-    };
-
-    if (ref $result) {
-      push @{$args->{priv_results}}, $result;
-    }
+  foreach my $module (@evaluate_order) {
+    my $result = $instances->{$module}->evaluate_change($args);
+    push @{$args->{priv_results}}, $result if defined $result;
   }
 }
 
 __PACKAGE__->NAME;
+
+__END__
+
+=head1 NAME
+
+Bugzilla::Extension::MozChangeField - An extension to support
+customizing how field permissions are handle to support the
+Mozilla bug workflow.
+
+=head1 SYNOPSIS
+
+  use Bugzilla::Extension::MozChangeField::BugStatus;
+
+  my $bug_status_instance = Bugzilla::Extension::MozChangeField::BugStatus->new,
+
+  sub bug_check_can_change_field {
+    my ($self, $args) = @_;
+    my $result = $bug_status_instance->evaluate_change($args);
+    push @{$args->{priv_results}}, $result if defined $result;
+  }
+
+=head1 DESCRIPTION
+
+Bugzilla::Extension::MozChangeField is a Bugzilla extension that customizes
+the default behavior of Bugzilla.
+
+This extension primarily uses the C<bug_check_can_change_field> hook. This
+hook controls what fields users are allowed to change. This hook adds code
+for site-specific policy changes and other customizations that support the
+Mozilla bug workflow.
+
+This hook is only executed if the field's new and old values differ.
+
+Any denies take priority over any allows. So, if one module explicitly denies
+a change but then another allows the change, the other module's deny will
+override the allow. Same goes for other extensions in use by Bugzilla that
+may also be using C<bug_check_can_change_field>.
+
+Each smaller supporting module defines a function called C<evaluate_change>
+which is called in a defined order. The function is passed the following
+parameters in a hash as the first parameter.
+
+Params:
+
+=over
+
+=item C<bug>
+
+L<Bugzilla::Bug> - The current bug object that this field is changing on.
+
+=item C<field>
+
+The name (from the C<fielddefs> table) of the field that we are checking.
+
+=item C<new_value>
+
+The new value that the field is being changed to.
+
+=item C<old_value>
+
+The old value that the field is being changed from.
+
+=item C<canconfirm>
+
+Whether the current user is in the C<canconfirm> group.
+
+=item C<editbugs>
+
+Whether the current user is in the C<editbugs> group.
+
+=back
+
+Each module will either return C<undef> if the current change is not
+applicable to it, or a hash containing the result of whether the user
+is allowed to make the change or not. If the result is a hash, it
+is added to the C<priv_results> list explained below. The hash should
+contain a key called C<privs> and optionally, a key called C<reason>.
+
+=over
+
+=item C<privs>
+
+The below values are actually constants defined in L<Bugzilla::Constants>.
+
+=over
+
+=item C<PRIVILEGES_REQUIRED_NONE>
+
+No privileges required. This explicitly B<allows> a change.
+
+=item C<PRIVILEGES_REQUIRED_REPORTER>
+
+User is not the reporter, assignee or an empowered user, so B<deny>.
+
+=item C<PRIVILEGES_REQUIRED_ASSIGNEE>
+
+User is not the assignee or an empowered user, so B<deny>.
+
+=item C<PRIVILEGES_REQUIRED_EMPOWERED>
+
+User is not a sufficiently empowered user, so B<deny>.
+
+=back
+
+=item C<reason>
+
+String containing a more detailed reason of why the change was denied if needed.
+
+=back
+
+=head2 C<priv_results>
+
+This is how you explicitly allow or deny a change. You should only
+push something into this array if you want to explicitly allow or explicitly
+deny the change, and thus skip all other permission checks that would otherwise
+happen after this hook is called. If you don't care about the field change,
+then don't push anything into the array.
+
+=cut
