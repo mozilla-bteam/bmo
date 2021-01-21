@@ -11,6 +11,7 @@ use 5.10.1;
 use Moo;
 
 use Bugzilla::Constants;
+use Bugzilla::Status qw(is_open_state);
 
 sub evaluate_change {
   my ($self, $args) = @_;
@@ -21,7 +22,6 @@ sub evaluate_change {
   my $old_value    = $args->{'old_value'};
   my $priv_results = $args->{'priv_results'};
   my $canconfirm   = $args->{'canconfirm'};
-  my $editbugs     = $args->{'editbugs'};
 
   # Canconfirm is really "cantriage"; users with canconfirm can also mark
   # bugs as DUPLICATE, WORKSFORME, and INCOMPLETE.
@@ -41,11 +41,19 @@ sub evaluate_change {
     return {result => PRIVILEGES_REQUIRED_NONE,};
   }
 
+  if ( $canconfirm
+    && $field eq 'bug_status'
+    && is_open_state($old_value)
+    && !is_open_state($new_value))
+  {
+    return {result => PRIVILEGES_REQUIRED_NONE,};
+  }
+
   # You need at least canconfirm to mark a bug as FIXED
   if (!$canconfirm && $field eq 'resolution' && $new_value eq 'FIXED') {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason => 'You need "canconfirm" permissions to mark a bug as RESOLVED/FIXED.',
+      reason => 'You need "canconfirm" permissions to mark a bug as fixed.',
     };
   }
 

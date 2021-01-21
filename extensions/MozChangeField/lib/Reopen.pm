@@ -18,19 +18,17 @@ use DateTime;
 sub evaluate_change {
   my ($self, $args) = @_;
 
-  my $bug        = $args->{'bug'};
-  my $field      = $args->{'field'};
-  my $new_value  = $args->{'new_value'};
-  my $old_value  = $args->{'old_value'};
-  my $canconfirm = $args->{'canconfirm'};
-  my $editbugs   = $args->{'editbugs'};
+  my $bug       = $args->{'bug'};
+  my $field     = $args->{'field'};
+  my $new_value = $args->{'new_value'};
+  my $old_value = $args->{'old_value'};
+  my $editbugs  = $args->{'editbugs'};
 
   # You need at least editbugs to reopen a resolved/verified bug
   if (!$editbugs && $field eq 'resolution' && $bug->status->name eq 'VERIFIED') {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason =>
-        'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug.',
+      reason => 'You require "editbugs" permission to reopen a verified bug.',
     };
   }
 
@@ -38,8 +36,7 @@ sub evaluate_change {
   if (!$editbugs && $field eq 'bug_status' && $old_value eq 'VERIFIED') {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason =>
-        'You require "editbugs" permission to reopen a RESOLVED/VERIFIED bug.',
+      reason => 'You require "editbugs" permission to reopen a verified bug.',
     };
   }
 
@@ -47,8 +44,14 @@ sub evaluate_change {
   if (!$editbugs && $field eq 'resolution' && $old_value eq 'DUPLICATE') {
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason =>
-        'You require "editbugs" permission to reopen a RESOLVED/DUPLICATE bug.',
+      reason => 'You require "editbugs" permission to reopen a duplicate bug.',
+    };
+  }
+
+  if (!$editbugs && $field eq 'dup_id' && $bug->status->name eq 'VERIFIED') {
+    return {
+      result => PRIVILEGES_REQUIRED_EMPOWERED,
+      reason => 'You require "editbugs" permission to reopen a duplicate bug.',
     };
   }
 
@@ -61,10 +64,10 @@ sub evaluate_change {
     my $days_ago = DateTime->now(time_zone => Bugzilla->local_timezone);
     $days_ago->subtract(days => 365);
     my $last_closed = datetime_from($bug->last_closed_date);
-    if ($last_closed lt $days_ago) {
+    if ($last_closed < $days_ago) {
       return {
         result => PRIVILEGES_REQUIRED_EMPOWERED,
-        reason => 'Bugs closed as FIXED cannot be reopened after one year.',
+        reason => 'Bugs closed as fixed cannot be reopened after one year.',
       };
     }
   }

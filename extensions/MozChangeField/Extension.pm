@@ -20,14 +20,10 @@ use Bugzilla::Extension::MozChangeField::CanConfirm;
 use Bugzilla::Extension::MozChangeField::CustomField;
 use Bugzilla::Extension::MozChangeField::Reopen;
 
-my $instances = {
-  CanConfirm  => Bugzilla::Extension::MozChangeField::CanConfirm->new,
-  CustomField => Bugzilla::Extension::MozChangeField::CustomField->new,
-  Reopen      => Bugzilla::Extension::MozChangeField::Reopen->new,
-};
-
-my @evaluate_order = qw(
-  CanConfirm CustomField Reopen
+my @instances = (
+  Bugzilla::Extension::MozChangeField::CanConfirm->new,
+  Bugzilla::Extension::MozChangeField::CustomField->new,
+  Bugzilla::Extension::MozChangeField::Reopen->new,
 );
 
 our $VERSION = '0.1';
@@ -41,8 +37,8 @@ sub bug_check_can_change_field {
     = $user->in_group('canconfirm', $args->{bug}->{'product_id'});
   $args->{editbugs} = $user->in_group('editbugs', $args->{bug}->{'product_id'});
 
-  foreach my $module (@evaluate_order) {
-    my $result = $instances->{$module}->evaluate_change($args);
+  foreach my $instance (@instances) {
+    my $result = $instance->evaluate_change($args);
     push @{$args->{priv_results}}, $result if defined $result;
   }
 }
