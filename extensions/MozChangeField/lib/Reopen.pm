@@ -11,6 +11,9 @@ use 5.10.1;
 use Moo;
 
 use Bugzilla::Constants;
+use Bugzilla::Status qw(is_open_state);
+
+use DateTime;
 
 sub evaluate_change {
   my ($self, $args) = @_;

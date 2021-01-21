@@ -23,7 +23,7 @@ use Bugzilla::Extension::MozChangeField::Reopen;
 my $instances = {
   CanConfirm  => Bugzilla::Extension::MozChangeField::CanConfirm->new,
   CustomField => Bugzilla::Extension::MozChangeField::CustomField->new,
-  Resolution  => Bugzilla::Extension::MozChangeField::Reopen->new,
+  Reopen      => Bugzilla::Extension::MozChangeField::Reopen->new,
 };
 
 my @evaluate_order = qw(
