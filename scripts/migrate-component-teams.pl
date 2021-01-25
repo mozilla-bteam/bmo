@@ -13,6 +13,7 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
+use Bugzilla::Config qw(write_params);
 use Bugzilla::Constants;
 use Bugzilla::Component;
 use Bugzilla::Product;
@@ -66,3 +67,7 @@ foreach my $team_name (keys %{$teams}) {
 }
 
 $dbh->bz_commit_transaction();
+
+# Update the param with the new format (one team per line)
+Bugzilla->params->{report_secbugs_teams} = join("\n", sort keys %{$teams});
+write_params();
