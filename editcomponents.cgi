@@ -18,6 +18,7 @@ use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::User;
 use Bugzilla::Component;
+use Bugzilla::Teams qw(team_names);
 use Bugzilla::Token;
 
 my $cgi      = Bugzilla->cgi;
@@ -91,8 +92,9 @@ unless ($action) {
 #
 
 if ($action eq 'add') {
-  $vars->{'token'}   = issue_session_token('add_component');
-  $vars->{'product'} = $product;
+  $vars->{'token'}      = issue_session_token('add_component');
+  $vars->{'product'}    = $product;
+  $vars->{'team_names'} = team_names();
   $template->process("admin/components/create.html.tmpl", $vars)
     || ThrowTemplateError($template->error());
   exit;
@@ -117,6 +119,7 @@ if ($action eq 'new') {
   my $default_qa_contact = trim($cgi->param('initialqacontact') || '');
   my $description        = trim($cgi->param('description')      || '');
   my $triage_owner       = trim($cgi->param('triage_owner')     || '');
+  my $team_name          = trim($cgi->param('team_name')        || '');
   my @initial_cc         = $cgi->param('initialcc');
   my $isactive           = $cgi->param('isactive');
   my $default_bug_type   = $cgi->param('default_bug_type');
@@ -130,6 +133,7 @@ if ($action eq 'new') {
     initialqacontact => $default_qa_contact,
     initial_cc       => \@initial_cc,
     triage_owner_id  => $triage_owner,
+    team_name        => $team_name,
     default_bug_type => $default_bug_type,
     bug_description_template => $bug_desc_template,
 
@@ -202,7 +206,8 @@ if ($action eq 'edit') {
   $vars->{'initial_cc_names'}
     = join(', ', map($_->login, @{$component->initial_cc}));
 
-  $vars->{'product'} = $product;
+  $vars->{'product'}    = $product;
+  $vars->{'team_names'} = team_names();
 
   $template->process("admin/components/edit.html.tmpl", $vars)
     || ThrowTemplateError($template->error());
@@ -230,6 +235,7 @@ if ($action eq 'update') {
   my $default_qa_contact = trim($cgi->param('initialqacontact') || '');
   my $description        = trim($cgi->param('description')      || '');
   my $triage_owner       = trim($cgi->param('triage_owner')     || '');
+  my $team_name          = trim($cgi->param('team_name')        || '');
   my @initial_cc         = $cgi->param('initialcc');
   my $isactive           = $cgi->param('isactive');
   my $bug_desc_template  = $cgi->param('bug_description_template'),
@@ -243,6 +249,7 @@ if ($action eq 'update') {
   $component->set_default_assignee($default_assignee);
   $component->set_default_qa_contact($default_qa_contact);
   $component->set_triage_owner($triage_owner);
+  $component->set_team_name($team_name);
   $component->set_cc_list(\@initial_cc);
   $component->set_is_active($isactive);
   $component->set_bug_description_template($bug_desc_template);

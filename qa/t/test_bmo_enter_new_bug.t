@@ -329,6 +329,7 @@ sub _check_component {
   $sel->type_ok("component",    $component);
   $sel->type_ok("description",  $component_description);
   $sel->type_ok("initialowner", $config->{'admin_user_login'});
+  $sel->type_ok("team_name",    'Mozilla');
   $sel->click_ok('//input[@type="submit" and @value="Add"]');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Component Created");

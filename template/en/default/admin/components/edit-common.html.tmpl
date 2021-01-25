@@ -22,6 +22,17 @@
   # comp: object; Bugzilla::Component object.
   #%]
 
+<script [% script_nonce FILTER none %]>
+  if (typeof BUGZILLA.autocomplete_values === 'undefined') {
+      BUGZILLA.autocomplete_values = [];
+  }
+  BUGZILLA.autocomplete_values['team_name'] = [
+  [%- FOREACH name = team_names %]
+    [%-# %]"[% name FILTER js %]"
+    [%- "," IF NOT loop.last %]
+  [% END %]];
+</script>
+
 <tr>
   <th class="field_label"><label for="component">Component:</label></th>
   <td><input size="64" maxlength="64" name="component" id="component"
@@ -93,6 +104,13 @@
          emptyok => 1
        %]
     </td>
+</tr>
+<tr>
+  <th class="field_label"><label for="team_name">Team Name:</label></th>
+  <td><input size="64" maxlength="64" name="team_name"
+             id="team_name" class="bz_autocomplete_team"
+             data-values="team_name" data-identifier="team_name"
+             value="[% comp.team_name FILTER html %]"></td>
 </tr>
 <tr>
   <th class="field_label"><label for="initialcc">Default CC List:</label></th>

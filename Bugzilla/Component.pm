@@ -42,6 +42,7 @@ use constant DB_COLUMNS => qw(
   description
   isactive
   triage_owner_id
+  team_name
 );
 
 use constant UPDATE_COLUMNS => qw(
@@ -53,6 +54,7 @@ use constant UPDATE_COLUMNS => qw(
   isactive
   triage_owner_id
   bug_description_template
+  team_name
 );
 
 use constant REQUIRED_FIELD_MAP => {product_id => 'product',};
@@ -68,6 +70,7 @@ use constant VALIDATORS => {
   name             => \&_check_name,
   isactive         => \&Bugzilla::Object::check_boolean,
   triage_owner_id  => \&_check_triage_owner,
+  team_name        => \&_check_team_name,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {name => ['product'],};
@@ -262,6 +265,13 @@ sub _check_triage_owner {
   return $triage_owner_id;
 }
 
+sub _check_team_name {
+  my ($invocant, $name, undef, $params) = @_;
+  $name = trim($name);
+  $name || ThrowUserError('component_blank_team_name');
+  return $name;
+}
+
 ###############################
 ####       Methods         ####
 ###############################
@@ -326,6 +336,7 @@ sub set_description      { $_[0]->set('description',      $_[1]); }
 sub set_is_active        { $_[0]->set('isactive',         $_[1]); }
 sub set_default_bug_type { $_[0]->set('default_bug_type', $_[1]); }
 sub set_bug_description_template { $_[0]->set('bug_description_template', $_[1]); }
+sub set_team_name        { $_[0]->set('team_name',        $_[1]); }
 
 sub set_default_assignee {
   my ($self, $owner) = @_;
@@ -498,11 +509,11 @@ sub product {
 ####      Accessors        ####
 ###############################
 
-sub description { return $_[0]->{'description'}; }
-sub product_id  { return $_[0]->{'product_id'}; }
-sub is_active   { return $_[0]->{'isactive'}; }
-
+sub description     { return $_[0]->{'description'}; }
+sub product_id      { return $_[0]->{'product_id'}; }
+sub is_active       { return $_[0]->{'isactive'}; }
 sub triage_owner_id { return $_[0]->{'triage_owner_id'} }
+sub team_name       { return $_[0]->{'team_name'} }
 
 ##############################################
 # Implement Bugzilla::Field::ChoiceInterface #
@@ -550,6 +561,7 @@ Bugzilla::Component - Bugzilla product component class.
     my $default_qa_contact = $component->default_qa_contact;
     my $initial_cc         = $component->initial_cc;
     my $triage_owner       = $component->triage_owner;
+    my $team_name          = $component->team_name;
     my $product            = $component->product;
     my $bug_flag_types     = $component->flag_types->{'bug'};
     my $attach_flag_types  = $component->flag_types->{'attachment'};
@@ -564,6 +576,7 @@ Bugzilla::Component - Bugzilla product component class.
                                     initialowner     => $user_login1,
                                     initialqacontact => $user_login2,
                                     triage_owner     => $user_login3,
+                                    team_name        => $team_name,
                                     description      => $description});
 
     $component->set_name($new_name);
@@ -573,6 +586,7 @@ Bugzilla::Component - Bugzilla product component class.
     $component->set_default_qa_contact($new_login_name);
     $component->set_cc_list(\@new_login_names);
     $component->set_triage_owner($new_triage_owner);
+    $component->set_team_name($new_team_name);
     $component->set_bug_description_template($new_template);
     $component->update();
 
@@ -673,6 +687,14 @@ Component.pm represents a Product Component object.
 
  Returns:     A Bugzilla::User object.
 
+=item C<team_name>
+
+ Description: Returns the team name responsible for bugs in this component.
+
+ Params:      none
+
+ Returns:     A string.
+
 =item C<flag_types()>
 
  Description: Returns all bug and attachment flagtypes available for
@@ -769,6 +791,12 @@ Component.pm represents a Product Component object.
  Description: Changes the triage owner of the component.
 
  Params:      $new_triage_owner - login name of the new triage owner (string).
+
+=item C<set_team_name>
+
+ Description: Changes the team name of the component.
+
+ Params:      $new_team_name - value of the new team name (string).
 
 =item C<update()>
 

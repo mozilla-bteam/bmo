@@ -235,7 +235,8 @@ my @products = (
       initialowner   => 'nobody@mozilla.org',
       initialqaowner => '',
       initial_cc     => [],
-      watch_user     => 'general@firefox.bugs'
+      watch_user     => 'general@firefox.bugs',
+      team_name      => 'Mozilla'
     }],
   },
   {
@@ -254,7 +255,8 @@ my @products = (
       initialowner   => 'nobody@mozilla.org',
       initialqaowner => '',
       initial_cc     => [],
-      watch_user     => 'general@bugzilla.bugs'
+      watch_user     => 'general@bugzilla.bugs',
+      team_name      => 'Mozilla',
     }],
   },
 );
@@ -306,6 +308,7 @@ for my $product (@products) {
         initialowner     => $component->{initialowner},
         initialqacontact => $component->{initialqacontact} || '',
         initial_cc       => $component->{initial_cc} || [],
+        team_name        => 'Mozilla',
       });
     }
   }

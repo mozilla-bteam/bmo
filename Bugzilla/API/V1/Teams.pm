@@ -7,29 +7,26 @@
 
 package Bugzilla::API::V1::Teams;
 use 5.10.1;
-use Bugzilla::Constants;
 use Mojo::Base qw( Mojolicious::Controller );
-use JSON::MaybeXS qw(decode_json);
+
+use Bugzilla::Teams qw(team_names get_team_info);
 
 sub setup_routes {
   my ($class, $r) = @_;
-  $r->get('/config/component_teams')->to('V1::Teams#component_teams');
-  $r->get('/config/component_security_teams')
-    ->to('V1::Teams#component_security_teams');
+  $r->get('/config/component_teams/:team')->to('V1::Teams#component_teams', team => '');
 }
 
 sub component_teams {
   my ($self) = @_;
-  $self->bugzilla->login(LOGIN_REQUIRED)
-    || return $self->user_error('invalid_username');
-  $self->render(json => decode_json(Bugzilla->params->{report_component_teams}));
-}
-
-sub component_security_teams {
-  my ($self) = @_;
-  $self->bugzilla->login(LOGIN_REQUIRED)
-    || return $self->user_error('invalid_username');
-  $self->render(json => decode_json(Bugzilla->params->{report_secbugs_teams}));
+  $self->bugzilla->login();
+  my $result;
+  if (my $team = $self->param('team')) {
+    $result = get_team_info($team);
+  }
+  else {
+    $result = team_names();
+  }
+  return $self->render(json => $result);
 }
 
 1;

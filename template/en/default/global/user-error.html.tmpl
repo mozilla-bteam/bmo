@@ -488,6 +488,10 @@
     [% title = "Blank Component Name Not Allowed" %]
     You must enter a name for this new component.
 
+  [% ELSIF error == "component_blank_team_name" %]
+    [% title = "Blank Component Team Name Not Allowed" %]
+    You must enter a team name for this component.
+
   [% ELSIF error == "component_has_bugs" %]
     [% title = BLOCK %]Component has [% terms.Bugs %][% END %]
     There are [% nb FILTER html %] [%+ terms.bugs %] entered for this component!
