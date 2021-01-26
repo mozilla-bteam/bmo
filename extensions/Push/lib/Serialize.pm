@@ -207,6 +207,7 @@ sub _bug {
     qa_contact       => $self->_user($bug->qa_contact),
     reporter         => $self->_user($bug->reporter),
     resolution       => _string($bug->resolution),
+    see_also         => (mapr { _string($_->name) } $bug->see_also),
     severity         => _string($bug->bug_severity),
     status           => $self->_status($status),
     summary          => _string($bug->short_desc),
