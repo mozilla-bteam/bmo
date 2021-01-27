@@ -989,6 +989,10 @@
       of the [% terms.bug %], or
     [% END %]
     a user with the required permissions may change that field.
+    [% IF reason %]
+      <p><strong>Additonal information:</strong><br>
+        [% reason FILTER html %]</p>
+    [% END %]
 
   [% ELSIF error == "illegal_change_deps" %]
     [% title = "Not allowed" %]

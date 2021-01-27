@@ -18,6 +18,7 @@ use Bugzilla::Error;
 use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Keyword;
+use Bugzilla::Logging;
 use Bugzilla::Milestone;
 use Bugzilla::Product;
 use Bugzilla::Version;
@@ -145,11 +146,16 @@ sub edit {
     {product => $bug->product_obj, component => $bug->component_obj});
   foreach my $field (@custom_fields) {
     my $field_name = $field->name;
-    my @values = map { {name => $_->name} } grep {
-      $bug->$field_name eq $_->name
-        || ($_->is_active
-        && $bug->check_can_change_field($field_name, $bug->$field_name, $_->name))
-    } @{$field->legal_values};
+    my @values;
+    foreach my $value (@{$field->legal_values}) {
+      my $can_change
+        = $bug->check_can_change_field($field_name, $bug->$field_name, $value->name);
+      if ($bug->$field_name eq $value->name
+        || ($value->is_active && $can_change->{allowed}))
+      {
+        push @values, {name => $value->name};
+      }
+    }
     $options{$field_name} = \@values;
   }
 
@@ -218,7 +224,8 @@ sub new_product {
 
   my $milestones        = _name($product->milestones);
   my $current_milestone = $bug->target_milestone;
-  if ($bug->check_can_change_field('target_milestone', 0, 1)
+  my $can_change = $bug->check_can_change_field('target_milestone', 0, 1);
+  if ($can_change->{allowed}
     && (my $milestone
       = first_value { $_->{name} eq $current_milestone } @$milestones))
   {

@@ -68,7 +68,11 @@ sub bug_check_can_change_field {
   my ($self,  $args)         = @_;
   my ($field, $priv_results) = @$args{qw(field priv_results)};
   if ($field eq 'cf_last_resolved') {
-    push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+    push @{$priv_results},
+      {
+      result => PRIVILEGES_REQUIRED_EMPOWERED,
+      reason => 'Users are not able to update this field directly',
+      };
   }
 }
 

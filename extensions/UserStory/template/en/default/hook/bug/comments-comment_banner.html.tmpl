@@ -8,7 +8,7 @@
 
 [% RETURN UNLESS bug.user_story_visible.0 %]
 [% RETURN IF user.id == 0 && bug.cf_user_story == "" %]
-[% can_edit_story = bug.check_can_change_field('cf_user_story', 0, 1) %]
+[% can_edit_story = bug.check_can_change_field('cf_user_story', 0, 1).allowed %]
 
 <div class="user_story">
   <script [% script_nonce FILTER none %]>
@@ -32,7 +32,7 @@
     [% END %]
     [% IF user.id
           && bug.cf_user_story != ""
-          && bug.check_can_change_field('longdesc', 0, 1) %]
+          && bug.check_can_change_field('longdesc', 0, 1).allowed %]
       <span id="user_story_comment">
         [<a class="bz_reply_link" href="#user_story_comment"
            onclick="userStoryComment(); return false;"

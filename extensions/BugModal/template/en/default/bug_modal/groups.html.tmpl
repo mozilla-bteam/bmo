@@ -87,7 +87,7 @@
   [% IF in_a_group %]
     <b>Users in the roles selected below can always view this [% terms.bug %]:</b>
     <div>
-      [% user_can_edit_accessible = bug.check_can_change_field("reporter_accessible", 0, 1) %]
+      [% user_can_edit_accessible = bug.check_can_change_field("reporter_accessible", 0, 1).allowed %]
       [% IF user_can_edit_accessible %]
         <input type="hidden" name="defined_reporter_accessible" value="1">
       [% END %]
@@ -98,7 +98,7 @@
       <label for="reporter_accessible">Reporter</label>
     </div>
     <div>
-      [% user_can_edit_accessible = bug.check_can_change_field("cclist_accessible", 0, 1) %]
+      [% user_can_edit_accessible = bug.check_can_change_field("cclist_accessible", 0, 1).allowed %]
       [% IF user_can_edit_accessible %]
         <input type="hidden" name="defined_cclist_accessible" value="1">
       [% END %]
