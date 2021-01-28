@@ -73,6 +73,7 @@ $sel->title_is("Add component to the TestProduct product");
 $sel->type_ok("component",    "TempComponent");
 $sel->type_ok("description",  "Temp component");
 $sel->type_ok("initialowner", $admin_user_login);
+$sel->type_ok("team_name",    "Mozilla");
 $sel->click_ok('//input[@type="submit" and @value="Add"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Component Created");

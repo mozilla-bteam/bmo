@@ -145,6 +145,7 @@ type        string  The group of products to return. Valid values are
              },
              "default_qa_contact": "",
              "triage_owner": "",
+             "team_name": "Mozilla",
              "description": "This is a test component."
            }
          ],
@@ -224,6 +225,7 @@ default_qa_contact   string   The login name of the user who will be set as
 triage_owner         string   The login name of the user who is named as the
                               Triage Owner of the component. Empty string if the
                               Triage Owner is not defined.
+team_name            string   The team name that is the owner of the component.
 sort_key             int      Components, when displayed in a list, are sorted
                               first by this integer and then secondly by their
                               name.
@@ -266,8 +268,8 @@ request_group     int      The group ID that is allowed to request the flag if
                            flagtype.
 ================  =======  ======================================================
 
-To return information about components in products, you can use the 
-``.`` property accesssor in your request: 
+To return information about components in products, you can use the
+``.`` property accesssor in your request:
 
 .. code-block:: text
 

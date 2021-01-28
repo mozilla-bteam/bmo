@@ -34,6 +34,8 @@ use Types::Standard qw(Int);
 BEGIN { Bugzilla->extensions }
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
+my $teams = [split /\n/, Bugzilla->params->{report_secbugs_teams}];
+
 my ($year, $month, $day, $hours, $minutes, $seconds, $time_zone_offset) = @ARGV;
 
 die 'secbugsreport.pl: report not active'
@@ -64,7 +66,6 @@ $end_date->set_time_zone('UTC');
 my $start_date            = $end_date->clone()->subtract(months => 12);
 my $start_date_no_graphs  = $end_date->clone()->subtract(months => 2);
 my $report_week           = $end_date->ymd('-');
-my $teams                 = decode_json(Bugzilla->params->{report_secbugs_teams});
 
 # Sec Critical and Sec High report
 my $sec_keywords_crit_high = ['sec-critical', 'sec-high'];
@@ -83,8 +84,6 @@ my $vars_crit_high = {
   sec_keywords       => $sec_keywords_crit_high,
   results            => $report_crit_high->results,
   deltas             => $report_crit_high->deltas,
-  missing_products   => $report_crit_high->missing_products,
-  missing_components => $report_crit_high->missing_components,
   very_old_days      => $report_crit_high->very_old_days,
   build_bugs_link    => \&build_bugs_link,
 };
@@ -220,6 +219,6 @@ sub sorted_team_names_by_open_bugs {
   my @sorted_team_names = sort { ## no critic qw(BuiltinFunctions::ProhibitReverseSortBlock
     @{$bugs_by_team->{$b}->{open}} <=> @{$bugs_by_team->{$a}->{open}}
       || $a cmp $b
-  } keys %$teams;
+  } @{$teams};
   return \@sorted_team_names;
 }
