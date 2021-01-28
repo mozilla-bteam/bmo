@@ -12,6 +12,7 @@ use Moo;
 
 use Bugzilla::Constants;
 use Bugzilla::Status qw(is_open_state);
+use Bugzilla::Util qw(datetime_from);
 
 use DateTime;
 
