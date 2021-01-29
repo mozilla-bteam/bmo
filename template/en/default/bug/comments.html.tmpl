@@ -177,7 +177,7 @@
               [<a class="bz_wrap_link" href="#"
                   onclick="return toggleCommentWrap(this, [% comment.count %])">wrap</a>]
             [% END %]
-            [% IF bug.check_can_change_field('longdesc', 1, 0) %]
+            [% IF bug.check_can_change_field('longdesc', 1, 0).allowed %]
               [% IF user.can_tag_comments %]
                 [<a href="#"
                     onclick="YAHOO.bugzilla.commentTagging.toggle([% comment.id %], [% comment.count %]);return false">tag</a>]
@@ -203,7 +203,7 @@
           </span>
         [% END %]
 
-        [% IF mode == "edit" && user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
+        [% IF mode == "edit" && user.is_insider && bug.check_can_change_field('longdesc', 0, 1).allowed %]
           <div class="bz_private_checkbox">
             <input type="hidden" value="1"
                    name="defined_isprivate_[% comment.id %]">

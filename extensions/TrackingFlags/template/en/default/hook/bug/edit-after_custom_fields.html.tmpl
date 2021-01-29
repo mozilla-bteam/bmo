@@ -19,7 +19,7 @@
         <label>[% type.description FILTER html %]:</label>
       </td>
       <td>
-        [% IF bug.check_can_change_field('flagtypes.name', 0, 1) %]
+        [% IF bug.check_can_change_field('flagtypes.name', 0, 1).allowed %]
           [% IF user.id && type.collapsed %]
             <span id="edit_[% type.name FILTER html %]_flags_action">
               (<a href="#" name="[% type.name FILTER html %]" class="edit_tracking_flags_link">edit</a>)

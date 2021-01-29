@@ -55,7 +55,11 @@ sub bug_check_can_change_field {
   my ($bug, $field, $priv_results) = @$args{qw(bug field priv_results)};
   return unless $field eq 'cf_user_story';
   if (!Bugzilla->user->in_group(USER_STORY_GROUP)) {
-    push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+    push @{$priv_results},
+      {
+      result => PRIVILEGES_REQUIRED_EMPOWERED,
+      reason => 'Specific permissions are required to make this change',
+      };
   }
 }
 

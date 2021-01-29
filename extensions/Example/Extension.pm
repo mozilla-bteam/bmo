@@ -99,7 +99,11 @@ sub bug_check_can_change_field {
       && is_open_state($new_value)
       && !$user->in_group('admin'))
     {
-      push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+      push @{$priv_results},
+        {
+        result => PRIVILEGES_REQUIRED_EMPOWERED,
+        reason => 'Specific permissions are required to make this change',
+        };
       return;
     }
   }
@@ -110,7 +114,12 @@ sub bug_check_can_change_field {
     && $bug->product_obj->name eq 'Example'
     && $user->login ne $bug->reporter->login)
   {
-    push(@$priv_results, PRIVILEGES_REQUIRED_REPORTER);
+    push @{$priv_results},
+      {
+      result => PRIVILEGES_REQUIRED_REPORTER,
+      reason =>
+        'Keywords for this bug can only be updated by reporter in the product',
+      };
     return;
   }
 
@@ -120,7 +129,7 @@ sub bug_check_can_change_field {
     && $bug->product_obj->name eq 'Example'
     && $user->in_group('engineering'))
   {
-    push(@$priv_results, PRIVILEGES_REQUIRED_NONE);
+    push @{$priv_results}, {result => PRIVILEGES_REQUIRED_NONE};
     return;
   }
 }

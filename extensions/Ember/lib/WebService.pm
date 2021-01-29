@@ -630,11 +630,12 @@ sub _can_change_field {
   # If not a multi-select or single-select, value is not provided
   # and we just check if the field itself is editable by the user.
   if (!defined $value) {
-    return $self->type('boolean', $bug->check_can_change_field($field_name, 0, 1));
+    my $can_change = $bug->check_can_change_field($field_name, 0, 1);
+    return $self->type('boolean', $can_change->{allowed});
   }
 
-  return $self->type('boolean',
-    $bug->check_can_change_field($field_name, '', $value));
+  my $can_change = $bug->check_can_change_field($field_name, '', $value);
+  return $self->type('boolean', $can_change->{allowed});
 }
 
 sub _flag_to_hash {

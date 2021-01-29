@@ -446,9 +446,16 @@ sub _check_bug_id {
   Bugzilla->user->can_edit_product($bug->{product_id});
 
   # Make sure the user can comment
-  my $privs;
-  $bug->check_can_change_field('longdesc', 0, 1, \$privs)
-    || ThrowUserError('illegal_change', {field => 'longdesc', privs => $privs});
+  my $can_change = $bug->check_can_change_field('longdesc', 0, 1);
+  $can_change->{allowed} || ThrowUserError(
+    'illegal_change',
+    {
+      field  => 'longdesc',
+      privs  => $can_change->{privs},
+      reason => $can_change->{reason}
+    }
+  );
+
   return $bug;
 }
 
@@ -480,9 +487,15 @@ sub _check_work_time {
   # Call down to Bugzilla::Object, letting it know negative
   # values are ok
   my $time = $invocant->check_time($value_in, $field, $params, 1);
-  my $privs;
-  $params->{bug_id}->check_can_change_field('work_time', 0, $time, \$privs)
-    || ThrowUserError('illegal_change', {field => 'work_time', privs => $privs});
+  my $can_change = $params->{bug_id}->check_can_change_field('work_time', 0, $time);
+  $can_change->{allowed} || ThrowUserError(
+    'illegal_change',
+    {
+      field  => 'work_time',
+      privs  => $can_change->{privs},
+      reason => $can_change->{reason}
+    }
+  );
   return $time;
 }
 

@@ -542,10 +542,14 @@ sub bug_check_can_change_field {
     = Bugzilla::Extension::TrackingFlags::Flag->new({name => $field});
 
   if ($flag->can_set_value($new_value)) {
-    push @$priv_results, PRIVILEGES_REQUIRED_NONE;
+    push @{$priv_results}, {result => PRIVILEGES_REQUIRED_NONE};
   }
   else {
-    push @$priv_results, PRIVILEGES_REQUIRED_EMPOWERED;
+    push @{$priv_results},
+      {
+      result => PRIVILEGES_REQUIRED_EMPOWERED,
+      reason => 'Specific permissions are required to make this change',
+      };
   }
 }
 

@@ -13,7 +13,7 @@
 
 <div id="add-comment">
 
-  [% IF !bug.check_can_change_field('longdesc', 0, 1) %]
+  [% IF !bug.check_can_change_field('longdesc', 0, 1).allowed %]
     <div id="new-comment-notice">
       You are not allowed to make an additional comment on this [% terms.bug %].
     </div>

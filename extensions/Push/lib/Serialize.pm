@@ -11,12 +11,16 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Extension::Push::Util;
 use Bugzilla::Version;
 
 use Scalar::Util 'blessed';
 use JSON ();
+
+my %translated_field_names = reverse %{Bugzilla::Bug::FIELD_MAP()};
+$translated_field_names{'bug_group'} = 'groups';
 
 my $_instance;
 
@@ -84,7 +88,9 @@ sub changes_to_event {
 
       # use saner field serialization
       my $field = $change->{'field'};
-      $change->{'field'} = $field;
+
+      # Fix field name to match other API methods
+      $change->{'field'} = $translated_field_names{$field} || $field;
 
       if ($field eq 'priority' || $field eq 'target_milestone') {
         $change->{'added'}   = _select($change->{'added'});
@@ -97,6 +103,7 @@ sub changes_to_event {
       }
 
       $event->{'changes'} = [] unless exists $event->{'changes'};
+
       push @{$event->{'changes'}}, $change;
     }
   }
@@ -207,6 +214,7 @@ sub _bug {
     qa_contact       => $self->_user($bug->qa_contact),
     reporter         => $self->_user($bug->reporter),
     resolution       => _string($bug->resolution),
+    see_also         => (mapr { _string($_->name) } $bug->see_also),
     severity         => _string($bug->bug_severity),
     status           => $self->_status($status),
     summary          => _string($bug->short_desc),

@@ -163,7 +163,7 @@
                   field.name.match("^cf_tracking_") OR
                   field.name == "cf_cab_review" OR
                   field.name == "resolution" %]
-              [% NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name) OR
+              [% NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name).allowed OR
                              selected %]
             [% END %]
 

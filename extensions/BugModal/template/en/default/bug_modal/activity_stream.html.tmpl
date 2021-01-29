@@ -138,7 +138,7 @@
         [% END %]
 
         <td rowspan="2" class="comment-actions"><div role="group">
-          [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
+          [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1).allowed %]
             [% IF comment.is_private %]
               <div class="comment-private edit-hide bz_private">
                 Private
