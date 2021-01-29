@@ -35,7 +35,8 @@ foreach my $team_name (keys %{$teams}) {
     if ($team->{$product}->{all_components}) {
       my $components = Bugzilla::Component->match({product_id => $product_obj->id});
       foreach my $component_obj (@{$components}) {
-        Bugzilla->input_params->{watch_user} = $component_obj->watch_user->login;
+        Bugzilla->input_params->{watch_user} = $component_obj->watch_user->login
+          if $component_obj->watch_user;
         $component_obj->set_team_name($team_name);
         $component_obj->update();
       }
@@ -44,7 +45,9 @@ foreach my $team_name (keys %{$teams}) {
       foreach my $component (@{$team->{$product}->{named_components}}) {
         my $component_obj = Bugzilla::Component->new(
           {name => $component, product => $product_obj, cache => 1});
-        Bugzilla->input_params->{watch_user} = $component_obj->watch_user->login;
+        next if !$component_obj;
+        Bugzilla->input_params->{watch_user} = $component_obj->watch_user->login
+          if $component_obj->watch_user;
         $component_obj->set_team_name($team_name);
         $component_obj->update();
       }
@@ -57,7 +60,9 @@ foreach my $team_name (keys %{$teams}) {
         );
         foreach my $component_id (@{$component_ids}) {
           my $component_obj = Bugzilla::Component->new({id => $component_id, cache => 1});
-          Bugzilla->input_params->{watch_user} = $component_obj->watch_user->login;
+          next if !$component_obj;
+          Bugzilla->input_params->{watch_user} = $component_obj->watch_user->login
+            if $component_obj->watch_user;
           $component_obj->set_team_name($team_name);
           $component_obj->update();
         }
