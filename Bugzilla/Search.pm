@@ -26,7 +26,6 @@ use Bugzilla::Search::Clause;
 use Bugzilla::Search::ClauseGroup;
 use Bugzilla::Search::Condition qw(condition);
 use Bugzilla::Status;
-use Bugzilla::Teams qw(component_to_team_name);
 use Bugzilla::User;
 use Bugzilla::Util;
 
@@ -480,6 +479,8 @@ sub COLUMN_JOINS {
     qa_contact => {from => 'qa_contact', to => 'userid', table => 'profiles',},
     component =>
       {from => 'component_id', to => 'id', table => 'components', join => 'INNER',},
+    team_name =>
+      {from => 'component_id', to => 'id', table => 'components', join => 'INNER',},
     product =>
       {from => 'product_id', to => 'id', table => 'products', join => 'INNER',},
     classification => {
@@ -626,10 +627,7 @@ sub COLUMNS {
     last_visit_ts       => 'bug_user_last_visit.last_visit_ts',
     bug_interest_ts     => 'bug_interest.modification_time',
     assignee_last_login => 'assignee.last_seen_date',
-
-    # Return a placeholder for team_name, it will be replaced in data() before
-    # results are returned.
-    team_name           => "'---'",
+    team_name           => 'map_team_name.team_name',
   );
 
   if ($user->id) {
@@ -862,13 +860,6 @@ sub data {
     '_no_security_check' => 1
   );
 
-  # always select product and component names when returning team_name
-  my $team_name_column_idx = firstidx { $_ eq 'team_name' } @orig_fields;
-  if ($team_name_column_idx != -1) {
-    $search->_add_extra_column('product');
-    $search->_add_extra_column('component');
-  }
-
   $start_time = [gettimeofday()];
   $sql        = $search->_sql;
   my $unsorted_data = $dbh->selectall_arrayref($sql);
@@ -914,18 +905,6 @@ sub data {
         if (exists $tf_pos{$field}) {
           $row->[$tf_pos{$field}] = $values->{$bug_id}{$field};
         }
-      }
-    }
-  }
-
-  #  replace team_name placeholder with real team name from
-  # `report_component_teams` parameter.
-  if ($team_name_column_idx != -1) {
-    my $product_idx = firstidx { $_ eq 'product' } $search->_display_columns;
-    my $component_idx = firstidx { $_ eq 'component' } $search->_display_columns;
-    foreach my $row (@{$self->{data}}) {
-      if (my $team_name = component_to_team_name($row->[$product_idx], $row->[$component_idx])) {
-        $row->[$team_name_column_idx] = $team_name;
       }
     }
   }

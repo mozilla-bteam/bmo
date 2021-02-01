@@ -54,6 +54,7 @@ $sel->type_ok(
   $config->{permanent_user},
   "Setting the default owner"
 );
+$sel->type_ok("team_name", "Mozilla");
 $sel->click_ok("create");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Component Created");

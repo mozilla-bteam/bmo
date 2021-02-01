@@ -34,7 +34,11 @@ sub bug_check_can_change_field {
     && $bug->restrict_comments
     && !$user->in_group(Bugzilla->params->{'restrict_comments_group'}))
   {
-    push(@$priv_results, PRIVILEGES_REQUIRED_EMPOWERED);
+    push @$priv_results,
+      {
+      result => PRIVILEGES_REQUIRED_EMPOWERED,
+      reason => 'Specific permissions are required to make this change',
+      };
     return;
   }
 }

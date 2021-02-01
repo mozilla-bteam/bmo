@@ -249,6 +249,9 @@
           <li>Triage owner deleted</li>
         [% END %]
       [% END %]
+      [% IF changes.team_name.defined %]
+        <li>Team name updated to '[% comp.team_name FILTER html %]'</li>
+      [% END %]
       [% IF changes.cc_list.defined %]
         [% IF comp.initial_cc.size %]
           [% cc_list = [] %]

@@ -242,7 +242,8 @@ sub template_before_process {
     next unless $r->is_active;
 
     # ensure the user has basic rights to change this field
-    next unless $bug->check_can_change_field('resolution', '---', $resolution);
+    my $can_change = $bug->check_can_change_field('resolution', '---', $resolution);
+    next unless $can_change->{allowed};
 
     # canconfirm users can only set the resolution to WFM, INCOMPLETE or DUPE
     if ($perms->{canconfirm} && !($perms->{canedit} || $perms->{isreporter})) {

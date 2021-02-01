@@ -224,6 +224,7 @@ sub _component_to_hash {
       0,
     is_active => $self->type('boolean', $component->is_active),
     default_bug_type => $self->type('string', $component->default_bug_type),
+    team_name => $self->type('string', $component->team_name),
     },
     undef, 'components';
 
@@ -551,6 +552,10 @@ new bugs by default.
 
 C<string> The login name of the user who is named as the Triage Owner of the
 component.
+
+=item C<team_name>
+
+C<string> The team name that owns the component.
 
 =item C<sort_key>
 

@@ -53,11 +53,11 @@
 <h3>Verify Version, Component
   [%- ", Target Milestone"
       IF Param("usetargetmilestone")
-         && bug.check_can_change_field('target_milestone', 0, 1) %]</h3>
+         && bug.check_can_change_field('target_milestone', 0, 1).allowed %]</h3>
 
 <p>
 [% IF Param("usetargetmilestone")
-   && bug.check_can_change_field('target_milestone', 0, 1)
+   && bug.check_can_change_field('target_milestone', 0, 1).allowed
 %]
   You are moving the [% terms.bug %](s) to the product
   <b>[% product.name FILTER html %]</b>,
@@ -100,7 +100,7 @@
                  size=10 %]
     </td>
     [% IF Param("usetargetmilestone")
-          && bug.check_can_change_field('target_milestone', 0, 1)
+          && bug.check_can_change_field('target_milestone', 0, 1).allowed
     %]
       <td>
         <b>Target Milestone:</b><br>

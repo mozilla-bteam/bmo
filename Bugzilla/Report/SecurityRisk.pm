@@ -13,6 +13,7 @@ use MooX::StrictConstructor;
 
 use Bugzilla::Error;
 use Bugzilla::Status qw(is_open_state);
+use Bugzilla::Teams qw(get_team_info);
 use Bugzilla::Util qw(datetime_from diff_arrays);
 use Bugzilla;
 
@@ -38,47 +39,15 @@ has 'start_date' => (is => 'ro', required => 1, isa => $DateTime);
 
 has 'end_date' => (is => 'ro', required => 1, isa => $DateTime);
 
-# The teams are loaded from an admin parameter containing JSON, e.g.:
-# {
-#   "Plugins": {
-#     "Core": {
-#         "all_components": false,
-#         "prefixed_components": ["Plugin"],
-#         "named_components": [
-#             "Plug-ins"
-#         ]
-#     },
-#     "Plugins": { "all_components": true },
-#     "External Software Affecting Firefox": { "all_components": true }
-#   },
-#   ...
-# }
-# This will create a new team ("Plugins") which groups bugs in the following components:
-# - All components in the Core product that start with "Plugin" (e.g. Plugin:FlashPlayer)
-# - The single "Plug-ins" component in the Core product.
-# - All components in the Plugins _product_.
-# - All components in the External Software Affecting Firefox product.
-has 'teams' => (
-  is       => 'ro',
-  required => 1,
-  isa      => HashRef [
-    HashRef [
-      Dict [
-        all_components      => $JSONBool,
-        prefixed_components => Optional [ArrayRef [Str]],
-        named_components    => Optional [ArrayRef [Str]],
-      ],
-    ],
-  ],
-);
+has 'teams' => (is => 'ro', required => 1, isa => ArrayRef [Str]);
+
+has 'team_info' => (is => 'lazy', isa => HashRef [HashRef [ArrayRef [Str]],],);
 
 has 'sec_keywords' => (is => 'ro', required => 1, isa => ArrayRef [Str],);
 
 has 'products' => (is => 'lazy', isa => ArrayRef [Str],);
 
 has 'missing_products' => (is => 'lazy', isa => ArrayRef [Str],);
-
-has 'missing_components' => (is => 'lazy', isa => ArrayRef [Str],);
 
 has 'initial_bug_ids' => (is => 'lazy', isa => ArrayRef [Int],);
 
@@ -150,10 +119,15 @@ has 'graphs' => (
   ],
 );
 
+sub _build_team_info {
+  my ($self) = @_;
+  return get_team_info(@{$self->teams});
+}
+
 sub _build_products {
   my ($self) = @_;
   my @products = ();
-  foreach my $team (values %{$self->teams}) {
+  foreach my $team (values %{$self->team_info}) {
     foreach my $product (keys %$team) {
       push @products, $product;
     }
@@ -176,51 +150,6 @@ sub _build_missing_products {
     };
   my $found_products = Bugzilla->dbh->selectcol_arrayref($query);
   return (diff_arrays($self->products, $found_products))[0];
-}
-
-sub _build_missing_components {
-  my ($self) = @_;
-  my $dbh = Bugzilla->dbh;
-  my $products           = join ', ', map { $dbh->quote($_) } @{$self->products};
-  my @named_components   = ();
-  my @missing_components = ();
-  foreach my $team (values %{$self->teams}) {
-    foreach my $product (keys %$team) {
-      if (exists $team->{$product}->{named_components}) {
-        foreach my $component (@{$team->{$product}->{named_components}}) {
-          push @named_components, [$product, $component];
-        }
-      }
-    }
-  }
-
-  my @components = map { $dbh->quote($_->[1]) } @named_components;
-  my $query = qq{
-      SELECT
-          product.name,
-          component.name
-      FROM
-          components AS component
-          JOIN products AS product ON component.product_id = product.id
-      WHERE
-          @{[$dbh->sql_in('component.name', \@components)]}
-  };
-  my $found_components = Bugzilla->dbh->selectall_arrayref($query);
-
-  foreach my $named_component (@named_components) {
-    my $found = 0;
-    foreach my $found_component (@$found_components) {
-      if ( lc $named_component->[0] eq lc $found_component->[0]
-        && lc $named_component->[1] eq lc $found_component->[1])
-      {
-        $found = 1;
-        last;
-      }
-    }
-    push @missing_components, "$named_component->[0]::$named_component->[1]"
-      if !$found;
-  }
-  return \@missing_components;
 }
 
 sub _build_initial_bug_ids {
@@ -481,7 +410,7 @@ sub _build_graphs {
               }@{$self->results}
             ],
           }
-        } keys %{$self->teams}
+        } @{$self->teams}
       ],
       image_file => tempfile(SUFFIX => '.png'),
     },
@@ -519,7 +448,7 @@ sub _build_graphs {
 
 sub _build_deltas {
   my ($self) = @_;
-  my @teams = keys %{$self->teams};
+  my @teams = @{$self->teams};
   my $deltas = {by_team => {}, by_sec_keyword => {}};
   my $data = [
     {domain => \@teams, results_key => 'bugs_by_team', deltas_key => 'by_team',},
@@ -554,7 +483,7 @@ sub _bugs_by_team {
   my ($self, $report_date, @bugs) = @_;
   my $result = {};
   my $groups = {};
-  foreach my $team (keys %{$self->teams}) {
+  foreach my $team (@{$self->teams}) {
     $groups->{$team} = [];
   }
   foreach my $bug (@bugs) {
@@ -565,7 +494,7 @@ sub _bugs_by_team {
       push @{$groups->{$bug->{team}}}, $bug;
     }
   }
-  foreach my $team (keys %{$self->teams}) {
+  foreach my $team (@{$self->teams}) {
     my @open   = map { $_->{id} } grep { ($_->{is_open}) } @{$groups->{$team}};
     my @closed = map { $_->{id} } grep { !($_->{is_open}) } @{$groups->{$team}};
     my @very_old_bugs   = map { $_->{id} } grep {
@@ -619,18 +548,13 @@ sub _is_bug_open {
 
 sub _find_team {
   my ($self, $product, $component) = @_;
-  foreach my $team_key (keys %{$self->teams}) {
-    my $team = $self->teams->{$team_key};
+  foreach my $team_key (@{$self->teams}) {
+    my $team = $self->team_info->{$team_key};
     if (exists $team->{$product}) {
-      return $team_key if $team->{$product}->{all_components};
-      return $team_key
-        if any { lc $component eq lc $_ } @{$team->{$product}->{named_components}};
-      return $team_key if any { $component =~ /^\Q$_\E/i }
-      @{$team->{$product}->{prefixed_components}};
+      return $team_key if any { lc $component eq lc $_ } @{$team->{$product}};
     }
   }
   return undef;
 }
-
 
 1;

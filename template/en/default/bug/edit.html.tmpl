@@ -257,8 +257,8 @@
         [% END %]
       [% END %]
       <span role="heading" aria-level="1" id="short_desc_nonedit_display">[% bug.short_desc FILTER quoteUrls(bug) FILTER wbr %]</span>
-      [% IF bug.check_can_change_field('short_desc', 0, 1) ||
-            bug.check_can_change_field('alias', 0, 1)  %]
+      [% IF bug.check_can_change_field('short_desc', 0, 1).allowed ||
+            bug.check_can_change_field('alias', 0, 1).allowed  %]
         <small class="editme">(<a href="#" id="editme_action">edit</a>)</small>
       [% END %]
      </span>
@@ -268,7 +268,7 @@
       <table id="summary">
         [% IF Param("usebugaliases") %]
           <tr>
-          [% IF bug.check_can_change_field('alias', 0, 1) %]
+          [% IF bug.check_can_change_field('alias', 0, 1).allowed %]
             <td>
               <label
                 for="alias"
@@ -285,7 +285,7 @@
                      size => "40"
                      maxlength => "40"
                      no_td => 1
-                     %][% ")" IF NOT bug.check_can_change_field('alias', 0, 1)
+                     %][% ")" IF NOT bug.check_can_change_field('alias', 0, 1).allowed
                                   && bug.alias %]
           </td>
         </tr>
@@ -322,7 +322,7 @@
             bug = bug, field = bug_fields.product,
             override_legal_values = bug.choices.product
             desc_url = basepath _ 'describecomponents.cgi', value = bug.product
-            editable = bug.check_can_change_field('product', 0, 1) %]
+            editable = bug.check_can_change_field('product', 0, 1).allowed %]
     </tr>
 
     [%# Classification is here so that it can be used in value controllers
@@ -335,7 +335,7 @@
             bug = bug field = bug_fields.classification
             override_legal_values = bug.choices.classification
             value = bug.classification
-            editable = bug.check_can_change_field('product', 0, 1) %]
+            editable = bug.check_can_change_field('product', 0, 1).allowed %]
     </tr>
     [%###############%]
     [%#  Component  #%]
@@ -345,7 +345,7 @@
           bug = bug, field = bug_fields.component, value = bug.component
           override_legal_values = bug.choices.component
           desc_url = basepath _ "describecomponents.cgi?product=$bug.product"
-          editable = bug.check_can_change_field('component', 0, 1)
+          editable = bug.check_can_change_field('component', 0, 1).allowed
       %]
     </tr>
     <tr>
@@ -366,11 +366,11 @@
        [% INCLUDE bug/field.html.tmpl
             bug = bug, field = bug_fields.rep_platform,
             no_tds = 1, value = bug.rep_platform
-            editable = bug.check_can_change_field('rep_platform', 0, 1) %]
+            editable = bug.check_can_change_field('rep_platform', 0, 1).allowed %]
        [%+ INCLUDE bug/field.html.tmpl
             bug = bug, field = bug_fields.op_sys,
             no_tds = 1, value = bug.op_sys
-            editable = bug.check_can_change_field('op_sys', 0, 1) %]
+            editable = bug.check_can_change_field('op_sys', 0, 1).allowed %]
         [%# BMO - hook for hw/os detection from reporter %]
         [% Hook.process('after_op_sys', 'bug/edit.html.tmpl') %]
       </td>
@@ -426,7 +426,7 @@
       <td class="field_value" colspan="2">
         [% INCLUDE bug/field.html.tmpl
            bug = bug, field = bug_fields.keywords, value = bug.keywords
-           editable = bug.check_can_change_field("keywords", 0, 1),
+           editable = bug.check_can_change_field("keywords", 0, 1).allowed,
            no_tds = 1
         %]
       </td>
@@ -452,7 +452,7 @@
        [% INCLUDE bug/field.html.tmpl
             bug = bug, field = bug_fields.bug_type,
             no_tds = 1, value = bug.bug_type
-            editable = bug.check_can_change_field('bug_type', 0, 1) %]
+            editable = bug.check_can_change_field('bug_type', 0, 1).allowed %]
       </td>
     </tr>
 
@@ -465,11 +465,11 @@
        [% INCLUDE bug/field.html.tmpl
             bug = bug, field = bug_fields.priority,
             no_tds = 1, value = bug.priority
-            editable = bug.check_can_change_field('priority', 0, 1) %]
+            editable = bug.check_can_change_field('priority', 0, 1).allowed %]
        [%+ INCLUDE bug/field.html.tmpl
             bug = bug, field = bug_fields.bug_severity,
             no_tds = 1, value = bug.bug_severity
-            editable = bug.check_can_change_field('bug_severity', 0, 1) %]
+            editable = bug.check_can_change_field('bug_severity', 0, 1).allowed %]
         [% Hook.process('after_importance', 'bug/edit.html.tmpl') %]
       </td>
     </tr>
@@ -498,7 +498,7 @@
         <a href="https://wiki.mozilla.org/BMO/UserGuide/BugFields#assigned_to">Assigned To</a>:
       </th>
       <td>
-        [% IF bug.check_can_change_field("assigned_to", 0, 1) %]
+        [% IF bug.check_can_change_field("assigned_to", 0, 1).allowed %]
           <div id="bz_assignee_edit_container" class="bz_default_hidden">
             <span>
               [% INCLUDE global/user.html.tmpl who = bug.assigned_to %]
@@ -995,7 +995,7 @@
       [% INCLUDE bug/field.html.tmpl
            field    = bug_fields.see_also
            value    = bug.see_also
-           editable = bug.check_can_change_field('see_also', 0, 1)
+           editable = bug.check_can_change_field('see_also', 0, 1).allowed
       %]
     </tr>
   [% END %]
@@ -1033,7 +1033,7 @@
                                            flag_types = bug.flag_types
                                            any_flags_requesteeble = bug.any_flags_requesteeble %]
         [% END %]
-        [% IF show_more_flags && bug.check_can_change_field('flagtypes.name', 0, 1) %]
+        [% IF show_more_flags && bug.check_can_change_field('flagtypes.name', 0, 1).allowed %]
           <span id="bz_flags_more_container" class="bz_default_hidden">
             [% IF !bug_flags_set %]<em>None yet set</em>[% END %]
             (<a href="#" id="bz_flags_more_action">[% IF !bug_flags_set %]set[% ELSE %]more[% END %] flags</a>)
@@ -1074,7 +1074,7 @@
     [% NEXT IF field.hidden %]
     <tr>
       [% PROCESS bug/field.html.tmpl value = bug.${field.name}
-                                     editable = bug.check_can_change_field(field.name, 0, 1)
+                                     editable = bug.check_can_change_field(field.name, 0, 1).allowed
                                      value_span = 2 %]
     </tr>
     [% IF extra_field_item %]
@@ -1109,7 +1109,7 @@
 
   <td>
     <span id="[% field.name FILTER html %]_input_area">
-      [% IF bug.check_can_change_field(field.name, 0, 1) %]
+      [% IF bug.check_can_change_field(field.name, 0, 1).allowed %]
         <input name="[% field.name FILTER html %]"
                id="[% field.name FILTER html %]" class="text_input"
                value="[% bug.${field.name}.join(', ') FILTER html %]">
@@ -1120,7 +1120,7 @@
       [% dep_bug.id FILTER bug_link(dep_bug, use_alias => 1)
                     FILTER none %][% " " %]
     [% END %]
-    [% IF bug.check_can_change_field(field.name, 0, 1) %]
+    [% IF bug.check_can_change_field(field.name, 0, 1).allowed %]
       <span id="[% field.name FILTER html %]_edit_container"
             class="edit_me bz_default_hidden">
         (<a href="#" id="[% field.name FILTER html %]_edit_action">edit</a>)
@@ -1199,7 +1199,7 @@
        <td>
          [% INCLUDE bug/field.html.tmpl
            field = bug_fields.deadline, value = bug.deadline, no_tds = 1
-           editable = bug.check_can_change_field('deadline', 0, 1) %]
+           editable = bug.check_can_change_field('deadline', 0, 1).allowed %]
       </td>
     </tr>
     <tr>
@@ -1222,7 +1222,7 @@
       <label for="comment" accesskey="c"><b>Additional
         <u>C</u>omments</b></label>:
 
-      [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1) %]
+      [% IF user.is_insider && bug.check_can_change_field('longdesc', 0, 1).allowed %]
         <input type="checkbox" name="comment_is_private" value="1"
                id="newcommentprivacy"
                onClick="updateCommentTagControl(this, 'comment')">
@@ -1234,7 +1234,7 @@
 
       <!-- This table keeps the submit button aligned with the box. -->
       <table><tr><td>
-        [% IF bug.check_can_change_field('longdesc', 0, 1) %]
+        [% IF bug.check_can_change_field('longdesc', 0, 1).allowed %]
           [% INCLUDE bug/comment.html.tmpl
                      minrows   = 5
                      maxrows   = 15
@@ -1307,7 +1307,7 @@
 
 [% BLOCK select %]
   <td>
-    [% IF bug.check_can_change_field(selname, 0, 1)
+    [% IF bug.check_can_change_field(selname, 0, 1).allowed
           AND bug.choices.${selname}.size > 1 %]
       <input type="hidden" id="[% selname %]_dirty">
       <select id="[% selname %]" name="[% selname %]">
@@ -1333,7 +1333,7 @@
   <td[% " colspan=\"$colspan\"" IF colspan %]>
   [% END %]
     [% val = bug.$inputname %]
-    [% IF bug.check_can_change_field(inputname, 0, 1) %]
+    [% IF bug.check_can_change_field(inputname, 0, 1).allowed %]
        <input id="[% inputname %]" name="[% inputname %]" class="text_input"
               value="[% val FILTER html %]"[% " size=\"$size\"" IF size %]
               [% IF placeholder %] placeholder="[% placeholder FILTER html %]"[% END %]

@@ -12,7 +12,6 @@ use strict;
 use warnings;
 
 use Bugzilla::Config::Common;
-use Bugzilla::Teams qw(check_value);
 
 our $sortkey = 1100;
 
@@ -33,13 +32,6 @@ sub get_param_list {
       name    => 'report_secbugs_teams',
       type    => 'l',
       default => '{}',
-      checker => \&check_value,
-    },
-    {
-      name    => 'report_component_teams',
-      type    => 'l',
-      default => '{}',
-      checker => \&check_value,
-    },
+    }
   );
 }

@@ -1485,6 +1485,7 @@ use constant ABSTRACT_SCHEMA => {
         TYPE       => 'INT3',
         REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'SET NULL'}
       },
+      team_name => {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "'Mozilla'"},
       bug_description_template => {TYPE => 'MEDIUMTEXT'},
       default_bug_type  => {TYPE => 'varchar(20)'},
     ],

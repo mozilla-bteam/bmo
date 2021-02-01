@@ -11,7 +11,7 @@
 [%
   RETURN UNLESS
     (bug.status.value == "UNCONFIRMED" || bug.component == "Untriaged")
-    && bug.check_can_change_field('op_sys', 0, 1);
+    && bug.check_can_change_field('op_sys', 0, 1).allowed;
   hw_os = bug.reporters_hw_os;
   RETURN UNLESS hw_os.size;
   RETURN IF bug.rep_platform == hw_os.0 && bug.op_sys == hw_os.1;

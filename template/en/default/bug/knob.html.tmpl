@@ -32,7 +32,7 @@
   %]
 
   [% IF bug.resolution
-        OR bug.check_can_change_field('resolution', bug.resolution, 1)
+        OR bug.check_can_change_field('resolution', bug.resolution, 1).allowed
   %]
     <noscript><br>resolved&nbsp;as&nbsp;</noscript>
   [% END %]
@@ -43,11 +43,11 @@
       field  = bug_fields.resolution
       value  = bug.resolution
       override_legal_values = bug.choices.resolution
-      editable = bug.check_can_change_field('resolution', bug.resolution, 1)
+      editable = bug.check_can_change_field('resolution', bug.resolution, 1).allowed
   %]
   </span>
 
-  [% IF bug.check_can_change_field('dup_id', 0, 1) %]
+  [% IF bug.check_can_change_field('dup_id', 0, 1).allowed %]
     <noscript><br> duplicate</noscript>
     <span id="duplicate_settings">of
       <span id="dup_id_container" class="bz_default_hidden">

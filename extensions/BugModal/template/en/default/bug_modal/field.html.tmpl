@@ -55,7 +55,7 @@ IF view_only || container;
   editable = 0;
 END;
 IF !editable.defined;
-  editable = bug.check_can_change_field(name, 0, 1);
+  editable = bug.check_can_change_field(name, 0, 1).allowed;
 END;
 IF append_content;
   edit_only = 1;
@@ -196,7 +196,7 @@ END;
             [% IF values.defined %]
               [% FOREACH v IN values %]
                 [% NEXT IF NOT v.is_active AND NOT value.contains(v.name).size %]
-                [% NEXT IF NOT bug.check_can_change_field(name, bug.${field_name}, v.name) %]
+                [% NEXT IF NOT bug.check_can_change_field(name, bug.${field_name}, v.name).allowed %]
                 [% NEXT IF (field.is_mandatory || required) && v.name == '--' %]
                 <div class="item">
                   <input id="v[% v.id FILTER html %]_[% name FILTER html %]" type="radio" name="[% name FILTER html %]"
@@ -233,7 +233,7 @@ END;
             [% IF values.defined %]
               [% FOREACH v IN values %]
                 [% NEXT IF NOT v.is_active AND NOT value.contains(v.name).size %]
-                [% NEXT IF NOT bug.check_can_change_field(name, bug.${field_name}, v.name) %]
+                [% NEXT IF NOT bug.check_can_change_field(name, bug.${field_name}, v.name).allowed %]
                 <option value="[% v.name FILTER html %]"
                         id="v[% v.id FILTER html %]_[% name FILTER html %]"
                         [% " selected" IF value.contains(v.name).size %]

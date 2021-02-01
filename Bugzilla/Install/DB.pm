@@ -818,6 +818,9 @@ sub update_table_definitions {
   $dbh->bz_alter_column('user_request_log', 'attach_id', {TYPE => 'INT5', NOTNULL => 0});
   _populate_attachment_storage_class();
 
+  # Bug 1682404 - dkl@mozilla.com
+  $dbh->bz_add_column('components', 'team_name',
+    {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "'Mozilla'"});
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #

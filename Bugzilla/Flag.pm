@@ -300,11 +300,15 @@ sub set_flag {
   }
 
   # Make sure the user can change flags
-  my $privs;
-  $bug->check_can_change_field('flagtypes.name', 0, 1, \$privs)
-    || ThrowUserError('illegal_change',
-    {field => 'flagtypes.name', privs => $privs});
-
+  my $can_change = $bug->check_can_change_field('flagtypes.name', 0, 1);
+  $can_change->{allowed} || ThrowUserError(
+    'illegal_change',
+    {
+      field  => 'flagtypes.name',
+      privs  => $can_change->{privs},
+      reason => $can_change->{reason}
+    }
+  );
   # Update (or delete) an existing flag.
   if ($params->{id}) {
     my $flag = $class->check({id => $params->{id}});

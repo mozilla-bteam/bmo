@@ -13,8 +13,8 @@ use warnings;
 
 use base qw(Exporter);
 our @EXPORT = qw(
-  component_to_team_name
-  check_value
+  get_team_info
+  team_names
 );
 
 use JSON::MaybeXS qw(decode_json);
@@ -24,66 +24,41 @@ use Try::Tiny qw(try catch);
 use Type::Utils;
 use Types::Standard qw(:types);
 
-sub component_to_team_name {
-  # Use the `report_component_teams` parameter to return the Team Name for the
-  # specified product and component.  Returns `undef` if no matching team name
-  # is found.
-  # This function provides a request level cache around calls to
-  # _component_to_team_name().
-  my ($product, $component) = @_;
-
-  my $cache = Bugzilla->request_cache->{team_name_cache} //= {};
-  my $key = $product . "\n" . $component;
-  if (!(exists $cache->{$key})) {
-    $cache->{$key} = _component_to_team_name($product, $component);
-  }
-
-  return $cache->{$key};
-}
-
-sub _component_to_team_name {
-  my ($product, $component) = @_;
-
-  my $teams = Bugzilla->request_cache->{report_component_teams} //= decode_json(
-    Bugzilla->params->{report_component_teams}
+sub team_names {
+  return Bugzilla->dbh->selectcol_arrayref(
+    'SELECT DISTINCT team_name FROM components ORDER BY team_name'
   );
-
-  foreach my $team_name (keys %$teams) {
-    my $team = $teams->{$team_name};
-    next unless exists $team->{$product};
-    return $team_name
-      if $team->{$product}->{all_components};
-    return $team_name
-      if any { lc $component eq lc $_ } @{$team->{$product}->{named_components}};
-    return $team_name
-      if any { $component =~ /^\Q$_\E/i } @{$team->{$product}->{prefixed_components}};
-  }
-  return undef;
 }
 
-my $JSONBool = class_type {class => 'JSON::PP::Boolean'};
-my $json_structure = HashRef [
-  HashRef [
-    Dict [
-      all_components      => $JSONBool,
-      prefixed_components => Optional [ArrayRef [Str]],
-      named_components    => Optional [ArrayRef [Str]],
-    ],
-  ],
-];
+sub get_team_info {
+  my @team_names = @_;
+  my $teams_sql;
 
-sub check_value {
-  my ($string_value) = @_;
+  my $query = "
+    SELECT products.name AS product,
+           components.name AS component,
+           components.team_name AS team
+      FROM components INNER JOIN products ON components.product_id = products.id";
+  if (@team_names) {
+    $query .= ' WHERE components.team_name IN (' . join(',', ('?') x @team_names) . ')';
+  }
+  $query .= " ORDER by components.team_name";
 
-  my $value;
-  my $ok = try {
-    $value = decode_json($string_value);
-  } catch {
-    return undef;
-  };
-  return 'Malformed JSON' unless $ok;
+  my $rows
+    = Bugzilla->dbh->selectall_arrayref($query, {'Slice' => {}}, @team_names);
 
-  return $json_structure->check($value) ? '' : 'Invalid structure';
+  my $teams = {};
+  foreach my $row (@{$rows}) {
+    my $product   = $row->{product};
+    my $component = $row->{component};
+    my $team      = $row->{team};
+    next if !Bugzilla->user->can_see_product($product);
+    $teams->{$team} ||= {};
+    $teams->{$team}->{$product} ||= [];
+    push @{$teams->{$team}->{$product}}, $component;
+  }
+
+  return $teams;
 }
 
 1;
