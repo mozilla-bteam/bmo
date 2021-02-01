@@ -42,7 +42,7 @@ sub get_team_info {
   if (@team_names) {
     $query .= ' WHERE components.team_name IN (' . join(',', ('?') x @team_names) . ')';
   }
-  $query .= " ORDER by components.team";
+  $query .= " ORDER by components.team_name";
 
   my $rows
     = Bugzilla->dbh->selectall_arrayref($query, {'Slice' => {}}, @team_names);
