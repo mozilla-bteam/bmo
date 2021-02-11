@@ -22,7 +22,9 @@ defaults:
       command: |
         apk update && apk add py-pip gcc python3-dev musl-dev \
           libffi-dev openssl-dev make
-        pip install "docker-compose==1.27.4"
+        pip install docker-compose
+      environment:
+        CRYPTOGRAPHY_DONT_BUILD_RUST: 1
 
   docker_image: &docker_image
     image: docker:19.03.13-git
