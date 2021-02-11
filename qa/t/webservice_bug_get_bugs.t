@@ -16,7 +16,7 @@ use Data::Dumper;
 use DateTime;
 use QA::Util;
 use QA::Tests qw(bug_tests PRIVATE_BUG_USER);
-use Test::More tests => 1009;
+use Test::More tests => 985;
 my ($config, @clients) = get_rpc_clients();
 
 my $xmlrpc = $clients[0];
@@ -98,7 +98,11 @@ sub post_success {
   is(scalar @{$call->result->{bugs}}, 1, "Got exactly one bug");
   my $bug = $call->result->{bugs}->[0];
   my $is_private_bug  = $bug->{id} == $private_bug->{id};
-  my $is_private_user = $t->{user} && $t->{user} eq PRIVATE_BUG_USER;
+  my $is_privileged_user
+    = $t->{user}
+    && ($t->{user} eq 'editbugs'
+    || $t->{user} eq 'admin'
+    || $t->{user} eq PRIVATE_BUG_USER);
 
   if ($t->{user} && $t->{user} eq 'admin') {
     ok(
@@ -124,21 +128,13 @@ sub post_success {
   if (exists $bug->{depends_on}) {
     is_deeply(
       $bug->{depends_on},
-      $is_private_bug ? [] : $is_private_user ? [$private_id] : [],
-      $is_private_bug
-        ? 'depends_on value is correct'
-        : $is_private_user
-        ? 'Private bug ID in depends_on is returned to private bug user'
-        : 'Private bug ID in depends_on is not returned to non-private bug user (' . $t->{user} . ')'
+      $is_private_bug ? [] : $is_privileged_user ? [$private_id] : [],
+      $is_private_bug ? 'depends_on value is correct'
+      : $is_privileged_user
+      ? 'Private bug ID in depends_on is returned to privileged bug user'
+      : 'Private bug ID in depends_on is not returned to non-privileged bug user'
+        . ($t->{user} ? ' (' . $t->{user} . ')' : '')
     );
-  }
-
-  if ($t->{user}) {
-    ok($bug->{update_token}, 'Update token returned for logged-in user');
-  }
-  else {
-    ok(!exists $bug->{update_token},
-      'Update token not returned for logged-out users');
   }
 
   my $expect = $is_private_bug ? $private_bug : $public_bug;
