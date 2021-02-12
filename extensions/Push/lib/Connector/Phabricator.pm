@@ -46,7 +46,7 @@ sub should_send {
 # We are only interested currently in bug group, assignee, qa-contact, or cc changes.
   return 0
     unless $message->routing_key
-    =~ /^(?:attachment|bug)\.modify:.*\b(bug_group|assigned_to|qa_contact|cc)\b/;
+    =~ /^(?:attachment|bug)\.modify:.*\b(groups|assigned_to|qa_contact|cc)\b/;
 
   my $bug = $self->_get_bug_by_data($message->payload_decoded) || return 0;
 
