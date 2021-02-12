@@ -67,7 +67,7 @@ sub send {
   my $revisions = get_attachment_revisions($bug);
 
   my $group_change
-    = ($message->routing_key =~ /^(?:attachment|bug)\.modify:.*\bbug_group\b/)
+    = ($message->routing_key =~ /^(?:attachment|bug)\.modify:.*\bgroups\b/)
     ? 1
     : 0;
 
