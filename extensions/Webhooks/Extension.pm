@@ -142,7 +142,6 @@ sub user_preferences {
         delete_backlog_queue($webhook->id);
         $webhook->remove_from_db();
       }
-      $push->set_config_last_modified();
       $dbh->bz_commit_transaction();
 
       # save change(s)
@@ -161,10 +160,10 @@ sub user_preferences {
           ThrowUserError('webhooks_invalid_option');
         }
       }
-      $push->set_config_last_modified();
       $dbh->bz_commit_transaction();
     }
 
+    $push->set_config_last_modified();
   }
 
   $vars->{webhooks} = [
