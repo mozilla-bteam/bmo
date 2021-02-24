@@ -157,7 +157,7 @@ sub send {
 # Private methods
 
 sub _user_agent {
-  my $ua = Mojo::UserAgent->new(request_timeout => 30);
+  my $ua = Mojo::UserAgent->new(request_timeout => 30, connect_timeout => 5);
   if (my $proxy = Bugzilla->params->{proxy_url}) {
     $ua->proxy->http($proxy)->https($proxy);
   }
