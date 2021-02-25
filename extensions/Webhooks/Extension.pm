@@ -90,6 +90,9 @@ sub user_preferences {
 
       my $params = {user_id => $user->id,};
 
+      $input->{name} = trim($input->{name});
+      $input->{url}  = trim($input->{url});
+
       if ($input->{name} eq '') {
         ThrowUserError('webhooks_define_name');
       }
