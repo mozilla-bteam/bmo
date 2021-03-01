@@ -176,54 +176,43 @@ sub _custom_field {
 sub _bug {
   my ($self, $bug) = @_;
 
-  my $version
-    = $bug->can('version_obj')
-    ? $bug->version_obj
-    : Bugzilla::Version->new(
-    {name => $bug->version, product => $bug->product_obj});
-
-  my $milestone;
-  if (_select($bug->target_milestone) ne '') {
-    $milestone
-      = $bug->can('target_milestone_obj')
-      ? $bug->target_milestone_obj
-      : Bugzilla::Milestone->new(
-      {name => $bug->target_milestone, product => $bug->product_obj});
-  }
-
-  my $status
-    = $bug->can('status_obj')
-    ? $bug->status_obj
-    : Bugzilla::Status->new({name => $bug->bug_status});
-
   my $rh = {
-    id               => _integer($bug->bug_id),
-    alias            => _string($bug->alias),
-    assigned_to      => $self->_user($bug->assigned_to),
-    classification   => _string($bug->classification),
-    component        => $self->_component($bug->component_obj),
-    creation_time    => _time($bug->creation_ts || $bug->delta_ts),
-    flags            => (mapr { $self->_flag($_) } $bug->flags),
-    is_private       => _boolean(!is_public($bug)),
-    keywords         => (mapr { _string($_->name) } $bug->keyword_objects),
-    last_change_time => _time($bug->delta_ts),
-    operating_system => _string($bug->op_sys),
-    platform         => _string($bug->rep_platform),
-    priority         => _select($bug->priority),
-    product          => $self->_product($bug->product_obj),
-    qa_contact       => $self->_user($bug->qa_contact),
-    reporter         => $self->_user($bug->reporter),
-    resolution       => _string($bug->resolution),
-    see_also         => (mapr { _string($_->name) } $bug->see_also),
-    severity         => _string($bug->bug_severity),
-    status           => $self->_status($status),
-    summary          => _string($bug->short_desc),
-    target_milestone => $self->_milestone($milestone),
-    type             => _string($bug->bug_type),
-    url              => _string($bug->bug_file_loc),
-    version          => $self->_version($version),
-    whiteboard       => _string($bug->status_whiteboard),
+    id                 => _integer($bug->bug_id),
+    alias              => _string($bug->alias),
+    assigned_to        => _string($bug->assigned_to->login),
+    assigned_to_detail => $self->_user($bug->assigned_to),
+    classification     => _string($bug->classification),
+    component          => _string($bug->component),
+    creation_time      => _time($bug->creation_ts || $bug->delta_ts),
+    creator            => _string($bug->reporter->login),
+    creator_detail     => $self->_user($bug->reporter),
+    flags              => (mapr { $self->_flag($_) } $bug->flags),
+    is_private         => _boolean(!is_public($bug)),
+    keywords           => (mapr { _string($_->name) } $bug->keyword_objects),
+    last_change_time   => _time($bug->delta_ts),
+    operating_system   => _string($bug->op_sys),
+    platform           => _string($bug->rep_platform),
+    priority           => _select($bug->priority),
+    product            => _string($bug->product),
+    resolution         => _string($bug->resolution),
+    see_also           => (mapr { _string($_->name) } $bug->see_also),
+    severity           => _string($bug->bug_severity),
+    status             => _string($bug->bug_status),
+    summary            => _string($bug->short_desc),
+    target_milestone   => _string($bug->target_milestone),
+    type               => _string($bug->bug_type),
+    url                => _string($bug->bug_file_loc),
+    version            => _string($bug->version),
+    whiteboard         => _string($bug->status_whiteboard),
   };
+
+  if ($bug->qa_contact) {
+    $rh->{qa_contact}        = $bug->qa_contact->login;
+    $rh->{qa_contact_detail} = $self->_user($bug->qa_contact);
+  }
+  else {
+    $rh->{qa_contact} = _string('');
+  }
 
   # add custom fields
   my @custom_fields = Bugzilla->active_custom_fields(
@@ -244,11 +233,6 @@ sub _user {
     login     => _string($user->login),
     real_name => _string($user->name),
   };
-}
-
-sub _component {
-  my ($self, $component) = @_;
-  return {id => _integer($component->id), name => _string($component->name),};
 }
 
 sub _attachment {
@@ -286,11 +270,6 @@ sub _comment {
   return $rh;
 }
 
-sub _product {
-  my ($self, $product) = @_;
-  return {id => _integer($product->id), name => _string($product->name),};
-}
-
 sub _flag {
   my ($self, $flag) = @_;
   my $rh = {
@@ -302,22 +281,6 @@ sub _flag {
     $rh->{'requestee'} = $self->_user($flag->requestee);
   }
   return $rh;
-}
-
-sub _version {
-  my ($self, $version) = @_;
-  return {id => _integer($version->id), name => _string($version->name),};
-}
-
-sub _milestone {
-  my ($self, $milestone) = @_;
-  return undef unless $milestone;
-  return {id => _integer($milestone->id), name => _string($milestone->name),};
-}
-
-sub _status {
-  my ($self, $status) = @_;
-  return {id => _integer($status->id), name => _string($status->name),};
 }
 
 1;

@@ -90,6 +90,9 @@ sub user_preferences {
 
       my $params = {user_id => $user->id,};
 
+      $input->{name} = trim($input->{name});
+      $input->{url}  = trim($input->{url});
+
       if ($input->{name} eq '') {
         ThrowUserError('webhooks_define_name');
       }
@@ -142,7 +145,6 @@ sub user_preferences {
         delete_backlog_queue($webhook->id);
         $webhook->remove_from_db();
       }
-      $push->set_config_last_modified();
       $dbh->bz_commit_transaction();
 
       # save change(s)
@@ -161,10 +163,10 @@ sub user_preferences {
           ThrowUserError('webhooks_invalid_option');
         }
       }
-      $push->set_config_last_modified();
       $dbh->bz_commit_transaction();
     }
 
+    $push->set_config_last_modified();
   }
 
   $vars->{webhooks} = [

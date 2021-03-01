@@ -23,7 +23,7 @@ use Bugzilla::Extension::Push::Util;
 use Bugzilla::Util ();
 
 use JSON qw(decode_json encode_json);
-use LWP::UserAgent;
+use Mojo::UserAgent;
 use List::MoreUtils qw(any);
 use Try::Tiny;
 
@@ -136,12 +136,14 @@ sub send {
 
     delete $payload->{event}->{change_set};
 
-    my $headers = HTTP::Headers->new(Content_Type => 'application/json');
-    my $request
-      = HTTP::Request->new('POST', $webhook->url, $headers, encode_json($payload));
-    my $resp = $self->_user_agent->request($request);
-    if ($resp->code != 200) {
-      die "Expected HTTP 200 response, got " . $resp->code;
+    my $tx = $self->_user_agent->post($webhook->url,
+      {'Content-Type' => 'application/json', 'Accept' => 'application/json'} =>
+        json => $payload);
+    if ($tx->res->code != 200) {
+      die 'Expected HTTP 200, got '
+        . $tx->res->code . ' ('
+        . $tx->error->{message} . ') '
+        . $tx->res->body;
     }
     else {
       return PUSH_RESULT_OK;
@@ -155,19 +157,13 @@ sub send {
 # Private methods
 
 sub _user_agent {
-  my ($self) = @_;
-
-  my $ua = LWP::UserAgent->new(agent => 'Bugzilla');
-  $ua->timeout(10);
-  $ua->protocols_allowed(['http', 'https']);
-
-  if (my $proxy_url = Bugzilla->params->{proxy_url}) {
-    $ua->proxy(['http', 'https'], $proxy_url);
+  my $ua = Mojo::UserAgent->new(request_timeout => 30, connect_timeout => 5);
+  if (my $proxy = Bugzilla->params->{proxy_url}) {
+    $ua->proxy->http($proxy)->https($proxy);
   }
   else {
-    $ua->env_proxy();
+    $ua->proxy->detect();
   }
-
   return $ua;
 }
 
