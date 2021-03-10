@@ -39,8 +39,11 @@ sub persist_login {
 
   my $ip_addr = remote_ip();
 
-  $dbh->do('INSERT INTO logincookies (cookie, userid, ipaddr, lastused)
-    VALUES (?, ?, ?, NOW())', undef, $login_cookie, $user->id, $ip_addr);
+  # Record the auth method the user used to get the new cookie
+  my $auth_type = ref $user->authorizer->{_info_getter}->{successful} || 'Unknown';
+
+  $dbh->do('INSERT INTO logincookies (cookie, userid, ipaddr, lastused, auth_type)
+    VALUES (?, ?, ?, NOW(), ?)', undef, $login_cookie, $user->id, $ip_addr, $auth_type);
 
   # Issuing a new cookie is a good time to clean up the old
   # cookies.
