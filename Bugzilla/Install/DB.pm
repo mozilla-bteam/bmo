@@ -822,7 +822,7 @@ sub update_table_definitions {
   $dbh->bz_add_column('components', 'team_name',
     {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "'Mozilla'"});
 
-  # Bug 1697642	- dkl@mozilla.com
+  # Bug 1697642 - dkl@mozilla.com
   $dbh->bz_add_column('logincookies', 'auth_method',{TYPE => 'varchar(40)'});
 
   ################################################################
