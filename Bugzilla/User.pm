@@ -800,6 +800,11 @@ sub authorizer {
   return $self->{authorizer};
 }
 
+sub auth_method {
+  my ($self) = @_;
+  return eval { $self->authorizer->successful_info_getter->auth_method } // 'Unknown';
+}
+
 sub mfa { $_[0]->{mfa} }
 
 sub mfa_required_date {
@@ -3207,6 +3212,11 @@ returned.
 
 Sets the L<Bugzilla::Auth> object to be returned by C<authorizer()>.
 Should only be called by C<Bugzilla::Auth::login>, for the most part.
+
+=item C<auth_method>
+
+Returns the method (class name) that was successfully used to authenticate
+the current user.
 
 =item C<disabledtext>
 

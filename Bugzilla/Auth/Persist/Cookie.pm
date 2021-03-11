@@ -39,11 +39,8 @@ sub persist_login {
 
   my $ip_addr = remote_ip();
 
-  # Record the auth method the user used to get the new cookie
-  my $auth_type = ref $user->authorizer->{_info_getter}->{successful} || 'Unknown';
-
-  $dbh->do('INSERT INTO logincookies (cookie, userid, ipaddr, lastused, auth_type)
-    VALUES (?, ?, ?, NOW(), ?)', undef, $login_cookie, $user->id, $ip_addr, $auth_type);
+  $dbh->do('INSERT INTO logincookies (cookie, userid, ipaddr, lastused, auth_method)
+    VALUES (?, ?, ?, NOW(), ?)', undef, $login_cookie, $user->id, $ip_addr, $user->auth_method);
 
   # Issuing a new cookie is a good time to clean up the old
   # cookies.
@@ -91,12 +88,9 @@ sub persist_login {
   if (any { $user->in_group($_) } 'mozilla-employee-confidential',
     @$securemail_groups)
   {
-    my $auth_method
-      = eval { ref($user->authorizer->successful_info_getter) } // 'unknown';
-
     Bugzilla->audit(
       sprintf "successful login of %s from %s using \"%s\", authenticated by %s",
-      $user->login, $ip_addr, $cgi->user_agent // '', $auth_method);
+      $user->login, $ip_addr, $cgi->user_agent // '', $user->auth_method);
   }
 
   return $login_cookie;
