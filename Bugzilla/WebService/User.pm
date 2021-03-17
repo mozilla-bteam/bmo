@@ -24,6 +24,7 @@ use Bugzilla::WebService::Util qw(filter filter_wants validate
   translate params_to_objects);
 use Bugzilla::Hook;
 
+use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 use Mojo::UserAgent ();
 use List::Util qw(first);
 use Try::Tiny;
@@ -499,6 +500,12 @@ sub mfa_enroll {
 sub whoami {
   my ($self, $params) = @_;
   my $user = _user_from_phab_token() || Bugzilla->login(LOGIN_REQUIRED);
+
+  # Generate a deterministic ID from the site-wide-secret and user-id.
+  # This can be used for user tracking in other systems without the
+  # ability to trace the ID back to a specific Bugzilla account.
+  my $uuid = hmac_sha1_hex($user->id, Bugzilla->localconfig->site_wide_secret);
+
   return filter(
     $params,
     {
@@ -508,6 +515,7 @@ sub whoami {
       name       => $self->type('email',   $user->login),
       mfa_status => $self->type('boolean', !!$user->mfa),
       groups     => [map { $_->name } @{$user->groups}],
+      uuid       => $self->type('string',  'bmo-who:' . $uuid),
     }
   );
 }
@@ -531,13 +539,19 @@ sub _user_from_phab_token {
 
     # treat any phabricator generated error as an invalid api-key
     if (my $error = $ph_whoami->{error_info}) {
+      DEBUG("Phabricator user.whoami failed: $error");
       ThrowUserError("api_key_not_valid");
     }
 
     # load user from primaryEmail
-    return Bugzilla::User->new(
-      {name => $ph_whoami->{result}->{primaryEmail}, cache => 1})
-      || ThrowUserError("api_key_not_valid");
+    my $user = Bugzilla::User->new(
+      {name => $ph_whoami->{result}->{primaryEmail}, cache => 1});
+    if (!$user) {
+      DEBUG("No Bugzilla user for Phabricator email: "
+            . $ph_whoami->{result}->{primaryEmail});
+      ThrowUserError("api_key_not_valid");
+    }
+    return $user;
   }
   catch {
     WARN("Request to $phab_url failed: $_");

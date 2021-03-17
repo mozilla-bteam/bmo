@@ -266,6 +266,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   bug_file_loc        => {_non_changed => \&_nullable},
   bug_group           => MULTI_SELECT_OVERRIDE,
   classification      => {_non_changed => \&_classification_nonchanged,},
+  comment_tag         => MULTI_SELECT_OVERRIDE,
   component           => {_non_changed => \&_component_nonchanged,},
   content             => {
     matches    => \&_content_matches,
@@ -274,6 +275,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   },
   days_elapsed     => {_default => \&_days_elapsed,},
   dependson        => MULTI_SELECT_OVERRIDE,
+  duplicates       => MULTI_SELECT_OVERRIDE,
   keywords         => MULTI_SELECT_OVERRIDE,
   'flagtypes.name' => {_non_changed => \&_flagtypes_nonchanged,},
   longdesc         => {
@@ -291,12 +293,11 @@ use constant OPERATOR_FIELD_OVERRIDE => {
     lessthaneq    => \&_owner_idle_time_greater_less,
     _default      => \&_invalid_combination,
   },
-  product     => {_non_changed => \&_product_nonchanged,},
-  regressed_by  => MULTI_SELECT_OVERRIDE,
-  regresses     => MULTI_SELECT_OVERRIDE,
-  duplicates    => MULTI_SELECT_OVERRIDE,
-  tag         => MULTI_SELECT_OVERRIDE,
-  comment_tag => MULTI_SELECT_OVERRIDE,
+  product      => {_non_changed => \&_product_nonchanged,},
+  regressed_by => MULTI_SELECT_OVERRIDE,
+  regresses    => MULTI_SELECT_OVERRIDE,
+  tag          => MULTI_SELECT_OVERRIDE,
+  team_name    => {_non_changed => \&_team_name_nonchanged},
 
   # Count Fields
   'attachments.count'   => RELATION_COUNT_OVERRIDE,
@@ -627,7 +628,7 @@ sub COLUMNS {
     last_visit_ts       => 'bug_user_last_visit.last_visit_ts',
     bug_interest_ts     => 'bug_interest.modification_time',
     assignee_last_login => 'assignee.last_seen_date',
-    team_name           => 'map_team_name.team_name',
+    team_name           => 'map_component.team_name',
   );
 
   if ($user->id) {
@@ -3038,6 +3039,13 @@ sub _product_nonchanged {
   my $term = $args->{term};
   $args->{term}
     = build_subselect("bugs.product_id", "products.id", "products", $term);
+}
+
+sub _team_name_nonchanged {
+  my ($self, $args) = @_;
+  # This joins the right tables for us.
+  $self->_add_extra_column('component');
+  $args->{full_field} = "map_component.team_name";
 }
 
 sub _classification_nonchanged {
