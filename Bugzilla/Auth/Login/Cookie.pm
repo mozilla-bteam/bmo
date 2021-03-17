@@ -24,6 +24,7 @@ use List::Util qw(first);
 use constant requires_persistence  => 0;
 use constant requires_verification => 0;
 use constant can_login             => 0;
+use constant auth_method           => 'Cookie';
 
 sub is_automatic { return $_[0]->login_token ? 0 : 1; }
 
