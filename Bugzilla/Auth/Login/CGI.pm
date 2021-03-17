@@ -12,7 +12,9 @@ use strict;
 use warnings;
 
 use base qw(Bugzilla::Auth::Login);
+
 use constant user_can_create_account => 1;
+use constant auth_method             => 'CGI';
 
 use Bugzilla::Constants;
 use Bugzilla::WebService::Constants;

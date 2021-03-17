@@ -24,8 +24,10 @@ use Bugzilla::Extension::GitHubAuth::Client;
 use Bugzilla::Extension::GitHubAuth::Client::Error ();
 use Bugzilla::Error;
 
-use constant {requires_verification => 1, is_automatic => 1,
-  user_can_create_account => 1};
+use constant requires_verification   => 1;
+use constant is_automatic            => 1;
+use constant user_can_create_account => 1;
+use constant auth_method             => 'GitHub';
 
 sub get_login_info {
   my ($self)        = @_;
