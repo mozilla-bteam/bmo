@@ -19,7 +19,7 @@ my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // 'she7Ka8t';
 
 my @require_env = qw(
   BZ_BASE_URL
-  BZ_TEST_NEWBIE
+  BZ_TEST_NEWBIE_USER
   BZ_TEST_NEWBIE_PASS
   TWD_HOST
   TWD_PORT
@@ -57,7 +57,7 @@ eval {
   $sel->title_is("User Preferences");
   logout_ok($sel);
 
-  login_ok($sel, $ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
+  login_ok($sel, $ENV{BZ_TEST_NEWBIE_USER}, $ENV{BZ_TEST_NEWBIE_PASS});
 
   $sel->get_ok("/editusers.cgi");
   $sel->title_is("Authorization Required");
@@ -65,10 +65,10 @@ eval {
 
   login_ok($sel, $ADMIN_LOGIN, $ADMIN_PW_OLD);
 
-  toggle_require_password_change($sel, $ENV{BZ_TEST_NEWBIE});
+  toggle_require_password_change($sel, $ENV{BZ_TEST_NEWBIE_USER});
   logout_ok($sel);
 
-  login($sel, $ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
+  login($sel, $ENV{BZ_TEST_NEWBIE_USER}, $ENV{BZ_TEST_NEWBIE_PASS});
   $sel->title_is('Password change required');
   click_and_type($sel, "old_password",  $ENV{BZ_TEST_NEWBIE_PASS});
   click_and_type($sel, "new_password1", "password");
@@ -118,7 +118,7 @@ eval {
   $sel->title_is('Token Does Not Exist');
   $sel->get_ok("/login");
   $sel->title_is('Log in to Bugzilla');
-  login_ok($sel, $ENV{BZ_TEST_NEWBIE}, "??" . $ENV{BZ_TEST_NEWBIE_PASS});
+  login_ok($sel, $ENV{BZ_TEST_NEWBIE_USER}, "??" . $ENV{BZ_TEST_NEWBIE_PASS});
   change_password(
     $sel,
     "??" . $ENV{BZ_TEST_NEWBIE_PASS},
@@ -133,11 +133,11 @@ eval {
 
   $sel->get('/createaccount.cgi');
   $sel->title_is('Create a new Bugzilla account');
-  click_and_type($sel, 'login', $ENV{BZ_TEST_NEWBIE2});
+  click_and_type($sel, 'login', $ENV{BZ_TEST_NEWBIE2_USER});
   $sel->find_element('//input[@id="etiquette"]', 'xpath')->click();
   submit($sel, '//input[@value="Create Account"]');
   $sel->title_is(
-    "Request for new user account '$ENV{BZ_TEST_NEWBIE2}' submitted");
+    "Request for new user account '$ENV{BZ_TEST_NEWBIE2_USER}' submitted");
   my ($create_token)
     = search_mailer_testfile(qr{/token\.cgi\?t=([^&]+)&a=request_new_account}xs);
   $sel->get("/token.cgi?t=$create_token&a=request_new_account");
@@ -147,7 +147,7 @@ eval {
 
   $sel->title_is('Bugzilla Main Page');
   $sel->body_text_contains([
-    "The user account $ENV{BZ_TEST_NEWBIE2} has been created", "successfully"
+    "The user account $ENV{BZ_TEST_NEWBIE2_USER} has been created", "successfully"
   ]);
 };
 if ($@) {
