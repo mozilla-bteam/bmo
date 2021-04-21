@@ -279,7 +279,7 @@ jobs:
       - run: |
           [[ -f build_info/only_version_changed.txt ]] && exit 0
           docker-compose -f docker-compose.test.yml run -e CIRCLE_JOB=$CIRCLE_JOB \
-            bmo.test test_bmo -q -f t/bmo/*.t
+            bmo.test test_bmo -v -f t/bmo/*.t
       - *store_log
 
 workflows:
