@@ -37,6 +37,8 @@ BEGIN {
 
 use constant CI => $ENV{CI};
 
+print STDERR Dumper \%ENV;
+
 my $cmd  = shift @ARGV;
 my $opts = __PACKAGE__->can("opt_$cmd") // sub {@ARGV};
 my $func = __PACKAGE__->can("cmd_$cmd") // sub {
