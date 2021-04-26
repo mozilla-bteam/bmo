@@ -8,22 +8,30 @@
 
 [% PROCESS global/variables.none.tmpl %]
 
-<p>
-  [% UNLESS cloned_bug_id || no_guided_bug_link %]
-    Consider using the
-    <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% product.name FILTER html %]&amp;format=guided"
-    ><img src="[% basepath FILTER none %]extensions/BMO/web/images/guided.png" width="16" height="16" align="absmiddle" border="0">
-    [%+ terms.Bugzilla %] Helper</a> instead of this form.
-  [% END +%]
-  [% UNLESS no_bug_guidelines %]
-    Before reporting a [% terms.bug %], make sure you've read our
-    <a href="https://developer.mozilla.org/docs/Mozilla/QA/Bug_writing_guidelines">
-    [% terms.bug %] writing guidelines</a> and double checked that your [% terms.bug %] hasn't already
-    been reported. Consult our list of <a href="https://bugzilla.mozilla.org/duplicates.cgi">
+<fieldset style="width:60%;">
+  <legend><b>Before You Begin</b></legend>
+  <p>
+    Please double check that your [% terms.bug %] hasn't already been reported. Consult our list of
+    <a href="[% basepath FILTER none %]duplicates.cgi[% IF product.name %]?product=[% product.name FILTER uri %][% END %]">
     most frequently reported [% terms.bugs %]</a> and <a href="https://bugzilla.mozilla.org/query.cgi">
     search through descriptions</a> of previously reported [% terms.bugs %].
+  </p>
+  [% UNLESS no_bug_guidelines %]
+    <p>
+      Before reporting a [% terms.bug %], make sure you've read our
+      <a href="https://developer.mozilla.org/docs/Mozilla/QA/Bug_writing_guidelines">
+      [% terms.bug %] writing guidelines</a>.
+    </p>
   [% END %]
-</p>
+  [% UNLESS cloned_bug_id || no_guided_bug_link %]
+    <p>
+      Consider using the
+      <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% product.name FILTER html %]&amp;format=guided">
+      <img src="[% basepath FILTER none %]extensions/BMO/web/images/guided.png" width="16" height="16" align="absmiddle" border="0">
+      [%+ terms.Bugzilla %] Helper</a> instead of this form.
+    </p>
+  [% END +%]
+</fieldset>
 
 [%
   PROCESS bug/create/custom_forms.none.tmpl;
