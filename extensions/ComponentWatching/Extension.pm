@@ -20,6 +20,8 @@ use Bugzilla::User;
 use Bugzilla::User::Setting;
 use Bugzilla::Util qw(detaint_natural trim);
 
+use List::Util qw(any);
+
 our $VERSION = '2';
 
 use constant REQUIRE_WATCH_USER => 1;
@@ -183,7 +185,13 @@ sub object_end_of_update {
   my $object     = $args->{object};
   my $old_object = $args->{old_object};
   my $changes    = $args->{changes};
+  my $user       = Bugzilla->user;
+
   return unless $object->isa('Bugzilla::Component');
+  return
+    unless $user->in_group('editcomponents')
+    || any { $_->id == $object->product->id }
+  @{$user->get_products_by_permission('editcomponents')};
 
   my $old_id = $old_object->watch_user ? $old_object->watch_user->id : 0;
   my $new_id = $object->watch_user     ? $object->watch_user->id     : 0;
@@ -191,8 +199,8 @@ sub object_end_of_update {
     $changes->{watch_user} = [$old_id ? $old_id : undef, $new_id ? $new_id : undef];
   }
 
-# when a component is renamed, update the watch-user to follow
-# this only happens when the user appears to have been auto-generated from the old name
+  # when a component is renamed, update the watch-user to follow
+  # this only happens when the user appears to have been auto-generated from the old name
   if ( $changes->{name}
     && $old_object->watch_user
     && $object->watch_user

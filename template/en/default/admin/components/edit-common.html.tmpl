@@ -22,80 +22,113 @@
   # comp: object; Bugzilla::Component object.
   #%]
 
-<script [% script_nonce FILTER none %]>
-  if (typeof BUGZILLA.autocomplete_values === 'undefined') {
-      BUGZILLA.autocomplete_values = [];
-  }
-  BUGZILLA.autocomplete_values['team_name'] = [
-  [%- FOREACH name = team_names %]
-    [%-# %]"[% name FILTER js %]"
-    [%- "," IF NOT loop.last %]
-  [% END %]];
-</script>
-
 <tr>
   <th class="field_label"><label for="component">Component:</label></th>
-  <td><input size="64" maxlength="64" name="component" id="component"
-             value="[%- comp.name FILTER html %]"></td>
-</tr>
-<tr>
-  <th class="field_label"><label for="[% desc_name FILTER html %]">Component Description:</label></th>
   <td>
-    [% INCLUDE global/textarea.html.tmpl
-      name           = 'description'
-      id             = 'description'
-      minrows        = 4
-      cols           = 64
-      wrap           = 'virtual'
-      defaultcontent = comp.description
-    %]
+    [% IF editcomponents %]
+      <input size="64" maxlength="64" name="component" id="component"
+             value="[%- comp.name FILTER html %]">
+    [% ELSE %]
+      [%- comp.name FILTER html %]
+    [% END %]
   </td>
 </tr>
-<tr>
-  <th class="field_label"><label for="bug_description_template">New [% terms.bug %] comment template:</label></th>
-  <td><textarea rows="8" cols="64" wrap="virtual" name="bug_description_template"
-                placeholder="[% product.bug_description_template FILTER html %]">
-        [% comp.bug_description_template FILTER html %]</textarea>
-  </td>
-</tr>
-<tr>
-  <th class="field_label"><label for="default_bug_type">Default [% terms.Bug %] Type:</label></th>
-  <td>
-    [% INCLUDE admin/default_select.html.tmpl
-        field_name   = 'default_bug_type'
-        field_value  = comp.default_bug_type || product.default_bug_type
-        field_values = bug_fields.bug_type.legal_values
-    %]
-  </td>
-</tr>
-<tr>
-  <th class="field_label"><label for="initialowner">Default Assignee:</label></th>
-  <td>
-    [% INCLUDE global/userselect.html.tmpl
-       name => "initialowner"
-       id => "initialowner"
-       value => comp.default_assignee.login
-       size => 64
-     %]
-  </td>
-</tr>
-[% IF Param('useqacontact') %]
+
+[% IF editcomponents %]
+  <script [% script_nonce FILTER none %]>
+    if (typeof BUGZILLA.autocomplete_values === 'undefined') {
+        BUGZILLA.autocomplete_values = [];
+    }
+    BUGZILLA.autocomplete_values['team_name'] = [
+    [%- FOREACH name = team_names %]
+      [%-# %]"[% name FILTER js %]"
+      [%- "," IF NOT loop.last %]
+    [% END %]];
+  </script>
   <tr>
-    <th class="field_label"><label for="initialqacontact">Default QA contact:</label></th>
+    <th class="field_label"><label for="[% desc_name FILTER html %]">Component Description:</label></th>
+    <td>
+      [% INCLUDE global/textarea.html.tmpl
+        name           = 'description'
+        id             = 'description'
+        minrows        = 4
+        cols           = 64
+        wrap           = 'virtual'
+        defaultcontent = comp.description
+      %]
+    </td>
+  </tr>
+  <tr>
+    <th class="field_label"><label for="bug_description_template">New [% terms.bug %] comment template:</label></th>
+    <td><textarea rows="8" cols="64" wrap="virtual" name="bug_description_template"
+                  placeholder="[% product.bug_description_template FILTER html %]">
+          [% comp.bug_description_template FILTER html %]</textarea>
+    </td>
+  </tr>
+  <tr>
+    <th class="field_label"><label for="default_bug_type">Default [% terms.Bug %] Type:</label></th>
+    <td>
+      [% INCLUDE admin/default_select.html.tmpl
+          field_name   = 'default_bug_type'
+          field_value  = comp.default_bug_type || product.default_bug_type
+          field_values = bug_fields.bug_type.legal_values
+      %]
+    </td>
+  </tr>
+  <tr>
+    <th class="field_label"><label for="initialowner">Default Assignee:</label></th>
     <td>
       [% INCLUDE global/userselect.html.tmpl
-         name => "initialqacontact"
-         id => "initialqacontact"
-         value => comp.default_qa_contact.login
-         size => 64
-         emptyok => 1
-       %]
+        name => "initialowner"
+        id => "initialowner"
+        value => comp.default_assignee.login
+        size => 64
+      %]
+    </td>
+  </tr>
+  [% IF Param('useqacontact') %]
+    <tr>
+      <th class="field_label"><label for="initialqacontact">Default QA contact:</label></th>
+      <td>
+        [% INCLUDE global/userselect.html.tmpl
+          name => "initialqacontact"
+          id => "initialqacontact"
+          value => comp.default_qa_contact.login
+          size => 64
+          emptyok => 1
+        %]
+      </td>
+    </tr>
+  [% END %]
+  <tr>
+    <th class="field_label"><label for="team_name">Team Name:</label></th>
+    <td><input size="64" maxlength="64" name="team_name"
+              id="team_name" class="bz_autocomplete_team"
+              data-values="team_name" data-identifier="team_name"
+              value="[% comp.team_name FILTER html %]"></td>
+  </tr>
+  <tr>
+    <th class="field_label"><label for="initialcc">Default CC List:</label></th>
+    <td>
+      [% INCLUDE global/userselect.html.tmpl
+        name     => "initialcc"
+        id       => "initialcc"
+        value    => initial_cc_names
+        size     => 64
+        multiple => 5
+      %]
+      <br>
+      [% IF !Param("usemenuforusers") %]
+        <em>Enter user names for the CC list as a comma-separated list.</em>
+      [% END %]
     </td>
   </tr>
 [% END %]
-<tr>
-  <td class="field_label"><label for="triage_owner">Triage Owner:</label></th>
-   <td>
+
+[% IF editcomponents || edittriageowners %]
+  <tr>
+    <td class="field_label"><label for="triage_owner">Triage Owner:</label></th>
+    <td>
       [% INCLUDE global/userselect.html.tmpl
          name    => "triage_owner"
          id      => "triage_owner"
@@ -104,29 +137,7 @@
          emptyok => 1
        %]
     </td>
-</tr>
-<tr>
-  <th class="field_label"><label for="team_name">Team Name:</label></th>
-  <td><input size="64" maxlength="64" name="team_name"
-             id="team_name" class="bz_autocomplete_team"
-             data-values="team_name" data-identifier="team_name"
-             value="[% comp.team_name FILTER html %]"></td>
-</tr>
-<tr>
-  <th class="field_label"><label for="initialcc">Default CC List:</label></th>
-  <td>
-    [% INCLUDE global/userselect.html.tmpl
-       name     => "initialcc"
-       id       => "initialcc"
-       value    => initial_cc_names
-       size     => 64
-       multiple => 5
-    %]
-    <br>
-    [% IF !Param("usemenuforusers") %]
-      <em>Enter user names for the CC list as a comma-separated list.</em>
-    [% END %]
-  </td>
-</tr>
+  </tr>
+[% END %]
 
 [% Hook.process('rows') %]

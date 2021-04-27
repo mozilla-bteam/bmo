@@ -96,11 +96,13 @@
 
 [% END %]
 
-[% columns.push({
-     heading => "Action"
-     content => "Delete"
-     contentlink => delete_contentlink
-   }) %]
+[% IF editcomponents %]
+  [% columns.push({
+      heading => "Action"
+      content => "Delete"
+      contentlink => delete_contentlink
+    }) %]
+[% END %]
 
 [%# Overrides the initialowner and the initialqacontact with right values %]
 [% overrides.initialowner = {} %]
@@ -136,14 +138,14 @@
      overrides = overrides
 %]
 
-<p><a href="[% basepath FILTER none %]editcomponents.cgi?action=add&amp;product=[% product.name FILTER uri %]">Add</a>
+[% IF editcomponents %]
+  <p><a href="[% basepath FILTER none %]editcomponents.cgi?action=add&amp;product=[% product.name FILTER uri %]">Add</a>
     a new component to product '[% product.name FILTER html %]'</p>
+[% END %]
 
-[% IF ! showbugcounts %]
-
+[% IF NOT showbugcounts %]
   <p><a href="[% basepath FILTER none %]editcomponents.cgi?product=[% product.name FILTER uri %]&amp;showbugcounts=1">
       Redisplay table with [% terms.bug %] counts (slower)</a></p>
-
 [% END %]
 
 [% PROCESS admin/components/footer.html.tmpl

@@ -132,6 +132,10 @@ fields:
   must be removed from any bugs upon which it is currently set
   before it can be destroyed.
 
+- *edittriageowners*:
+  This flag will allow a user to edit the triage owner values
+  of components.
+  
 - *editusers*:
   This flag allows a user to do what you're doing right now: edit
   other users. This will allow those with the right to do so to

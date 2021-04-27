@@ -31,11 +31,17 @@ print $cgi->header();
   && $user->in_group('editclassifications'))
   || $user->in_group('editcomponents')
   || scalar(@{$user->get_products_by_permission('editcomponents')})
+  || $user->in_group('edittriageowners')
   || $user->in_group('creategroups')
   || $user->in_group('editkeywords')
   || $user->in_group('bz_canusewhines')
   || ThrowUserError('auth_failure',
   {action => 'access', object => 'administrative_pages'});
 
-$template->process('admin/admin.html.tmpl')
+my $vars = {
+  editcomponents   => $user->in_group('editcomponents'),
+  edittriageowners => $user->in_group('edittriageowners'),
+};
+
+$template->process('admin/admin.html.tmpl', $vars)
   || ThrowTemplateError($template->error());

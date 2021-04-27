@@ -1796,13 +1796,18 @@ sub check_can_admin_product {
   # First make sure the product name is valid.
   my $product = Bugzilla::Product->check($product_name);
 
-  (      $self->in_group('editcomponents', $product->id)
-      && $self->can_see_product($product->name))
-    || ThrowUserError('product_admin_denied', {product => $product->name});
+  (
+    (
+           $self->in_group('editcomponents', $product->id)
+        || $self->in_group('edittriageowners')
+    )
+      && $self->can_see_product($product->name)
+  ) || ThrowUserError('product_admin_denied', {product => $product->name});
 
   # Return the validated product object.
   return $product;
 }
+
 
 sub check_can_admin_flagtype {
   my ($self, $flagtype_id) = @_;

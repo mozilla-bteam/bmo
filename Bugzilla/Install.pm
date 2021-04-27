@@ -263,6 +263,10 @@ use constant SYSTEM_GROUPS => (
     name        => 'bz_can_disable_mfa',
     description => 'Can disable MFA when editing users',
   },
+  {
+    name        => 'edittriageowners',
+    description => 'Can edit triage owners of components'
+  }
 );
 
 use constant DEFAULT_CLASSIFICATION =>
