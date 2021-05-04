@@ -16,31 +16,67 @@ use base qw(Bugzilla::Extension);
 use Bugzilla::Constants;
 use Bugzilla::Logging;
 
-use Bugzilla::Extension::MozChangeField::CanConfirm;
-use Bugzilla::Extension::MozChangeField::CustomField;
-use Bugzilla::Extension::MozChangeField::Reopen;
+use Bugzilla::Extension::MozChangeField::Pre::CanConfirm;
+use Bugzilla::Extension::MozChangeField::Pre::CustomField;
+use Bugzilla::Extension::MozChangeField::Pre::Reopen;
 
-my @instances = (
-  Bugzilla::Extension::MozChangeField::CanConfirm->new,
-  Bugzilla::Extension::MozChangeField::CustomField->new,
-  Bugzilla::Extension::MozChangeField::Reopen->new,
+my @pre_instances = (
+  Bugzilla::Extension::MozChangeField::Pre::CanConfirm->new,
+  Bugzilla::Extension::MozChangeField::Pre::CustomField->new,
+  Bugzilla::Extension::MozChangeField::Pre::Reopen->new,
+);
+
+use Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity;
+
+my @post_instances = (
+  Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity->new,
 );
 
 our $VERSION = '0.1';
 
 sub bug_check_can_change_field {
   my ($self, $args) = @_;
-  my $user = Bugzilla->user;
 
-  # Some modules need these so only look up once
-  $args->{canconfirm}
-    = $user->in_group('canconfirm', $args->{bug}->{'product_id'});
-  $args->{editbugs} = $user->in_group('editbugs', $args->{bug}->{'product_id'});
+  _populate_permissions($args);
 
-  foreach my $instance (@instances) {
+  foreach my $instance (@pre_instances) {
+    next if !$instance->can('evaluate_change');
     my $result = $instance->evaluate_change($args);
     push @{$args->{priv_results}}, $result if defined $result;
   }
+}
+
+sub bug_end_of_update {
+  my ($self, $args) = @_;
+  my $object = $args->{object};
+
+  _populate_permissions($args);
+
+  foreach my $instance (@post_instances) {
+    next if !$instance->can('evaluate_change');
+    $instance->evaluate_change($args);
+  }
+}
+
+sub bug_end_of_create {
+  my ($self, $args) = @_;
+
+  _populate_permissions($args);
+
+  foreach my $instance (@post_instances) {
+    next if !$instance->can('evaluate_create');
+    $instance->evaluate_create($args);
+  }
+}
+
+sub _populate_permissions {
+  my ($args) = @_;
+  my $user = Bugzilla->user;
+
+  # Some modules need these permissions to function so only look up once
+  $args->{canconfirm}
+    = $user->in_group('canconfirm', $args->{bug}->{'product_id'});
+  $args->{editbugs} = $user->in_group('editbugs', $args->{bug}->{'product_id'});
 }
 
 __PACKAGE__->NAME;
@@ -55,7 +91,7 @@ Mozilla bug workflow.
 
 =head1 SYNOPSIS
 
-  use Bugzilla::Extension::MozChangeField::BugStatus;
+  use Bugzilla::Extension::MozChangeField::Pre::BugStatus;
 
   my $bug_status_instance = Bugzilla::Extension::MozChangeField::BugStatus->new,
 
