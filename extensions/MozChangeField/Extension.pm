@@ -27,9 +27,11 @@ my @pre_instances = (
 );
 
 use Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity;
+use Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity;
 
 my @post_instances = (
   Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity->new,
+  Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity->new,
 );
 
 our $VERSION = '0.1';
