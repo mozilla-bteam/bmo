@@ -759,6 +759,10 @@ my @keywords = (
     description => 'This bug need to be put on release notes for next '
       . 'milestone announcement.'
   },
+  {
+    name        => 'crash',
+    description => ' A Critical Severity bug which causes a crash.'
+  },
 );
 
 print "creating keywords...\n";
