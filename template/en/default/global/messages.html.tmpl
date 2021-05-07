@@ -266,6 +266,13 @@
       [% IF changes.isactive.defined %]
         <li>[% comp.is_active ? "Enabled" : "Disabled" %] for [% terms.bugs %]</li>
       [% END %]
+      [% IF changes.bug_description_template.defined %]
+        [% IF comp.bug_description_template %]
+          <li>Bug description template updated.</li>
+        [% ELSE %]
+          <li>Bug description template deleted</li>
+        [% END %]
+      [% END %]
       [% Hook.process('component_updated_fields') %]
       </ul>
     [% ELSE %]

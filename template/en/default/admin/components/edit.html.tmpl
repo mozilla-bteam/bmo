@@ -70,7 +70,7 @@
    <input type="hidden" name="product" value="[% product.name FILTER html %]">
    <input type="hidden" name="token" value="[% token FILTER html %]">
    <input type="submit" value="Save Changes" id="update">
-   [% IF editcomponentsup %]
+   [% IF editcomponents %]
      or <a href="[% basepath FILTER none %]editcomponents.cgi?action=del&amp;product=
         [%- product.name FILTER uri %]&amp;component=
         [%- comp.name FILTER uri %]">Delete</a> this component.

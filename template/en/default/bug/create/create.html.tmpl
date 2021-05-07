@@ -103,7 +103,8 @@ var flags = new Array([% product.components.size %]);
     comp_desc[[% count %]] = "[% comp.description FILTER html_light FILTER js %]";
     initialowners[[% count %]] = "[% comp.default_assignee.login FILTER js %]";
     default_bug_types[[% count %]] = "[% comp.default_bug_type FILTER js %]";
-    desc_templates[[% count %]] = "[% comp.bug_description_template.replace('\\r', '') FILTER js %]";
+    [% bug_description_template = comp.bug_description_template || product.bug_description_template %]
+    desc_templates[[% count %]] = "[% bug_description_template.replace('\\r', '') FILTER js %]";
     [% flag_list = [] %]
     [% FOREACH f = comp.flag_types.bug %]
       [% flag_list.push(f.id) %]
