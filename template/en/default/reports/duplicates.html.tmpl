@@ -47,9 +47,7 @@
 %]
 
 <p>
-  <a href="#explanation">What is this data?</a>
-  <br>
-  <a href="#params">Change parameters</a>
+  <a href="#explanation">What is this data?</a> | <a href="#params">Update Search</a>
 </p>
 
 [% PROCESS "reports/duplicates-table.html.tmpl" %]
@@ -58,7 +56,7 @@
 
 [% bug_ids_string = bug_ids.join(',') %]
 
-<h3 id="params">Change Parameters</h3>
+<h3 id="params">Update Search</h3>
 
 <form method="get" action="[% basepath FILTER none %]duplicates.cgi" data-no-csrf>
   <input type="hidden" name="sortby" value="[% sortby FILTER html %]">
@@ -102,7 +100,7 @@
 
     <tr>
       <td>
-        <label for="changedsince">Change column is change in the last:</label>
+        <label for="changedsince">Resolved as a duplicate in last:</label>
       </td>
       <td>
         <input size="4" name="changedsince" id="changedsince"
@@ -117,24 +115,26 @@
         </label>
       </td>
       <td>
-        <input type="checkbox" name="openonly" id="openonly" value="1"
-          [% ' checked="checked"' IF openonly %]>
+        <select name="openonly" id="openonly">
+          <option value="yes" [% ' selected' IF openonly == 'yes' %]>yes</option>
+          <option value="no" [% ' selected' IF openonly == 'no' %]>no</option>
+        </select>
       </td>
     </tr>
 
   </table>
-
+  <br>
   <input type="submit" id="change" value="Change">
 </form>
 
+<br>
+
 <form method="post" action="[% basepath FILTER none %]buglist.cgi" data-no-csrf>
   <input type="hidden" name="bug_id" value="[% bug_ids_string FILTER html %]">
-  Or just give this to me as a <input type="submit" id="list" class="secondary"
-                                      value="[% terms.bug %] list">.
-  (Note: the order may not be the same.)
+  Or just give this to me as a
+  <input type="submit" id="list" class="secondary" value="[% terms.bug %] list">
+  (order may not be the same)
 </form>
-
-<hr>
 
 <h3 id="explanation">
   What are "Most Frequently Reported [% terms.Bugs %]"?
