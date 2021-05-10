@@ -34,6 +34,7 @@ use constant DEFAULTS => {
   fully_exclude_status  => ['CLOSED'],
   partly_exclude_status => ['VERIFIED'],
   except_resolution     => ['INVALID', 'WONTFIX'],
+  openonly              => 'yes',
   changedsince          => 7,
   maxrows               => 20,
   sortby                => 'count',
@@ -213,7 +214,7 @@ foreach my $bug (@bugs) {
   # would be bugs in the list with 0 dups, so we want to avoid that.
   next if !$total_dups{$bug->id};
 
-  next if ($openonly and !$bug->isopened);
+  next if ($openonly eq 'yes' and !$bug->isopened);
 
   # If the bug has a status in @fully_exclude_status, we skip it,
   # no question.
