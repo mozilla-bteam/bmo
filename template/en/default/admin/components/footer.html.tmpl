@@ -24,7 +24,15 @@
   #               which the component belongs.
   #%]
 
-<hr>
+[% IF NOT editcomponents %]
+  [% IF NOT no_edit_other_components_link %]
+    <p>Edit other components of product
+      <a title="Choose a component from product '[% product.name FILTER html %]' to edit"
+         href="[% basepath FILTER none %]editcomponents.cgi?product=
+        [%- product.name FILTER uri %]">'[% product.name FILTER html %]'</a>.</p>
+  [% END %]
+  [% RETURN %]
+[% END %]
 
 <p>
 Edit

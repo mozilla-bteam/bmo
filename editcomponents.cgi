@@ -13,13 +13,16 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
-use Bugzilla::Constants;
-use Bugzilla::Util;
-use Bugzilla::Error;
-use Bugzilla::User;
 use Bugzilla::Component;
+use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Hook;
 use Bugzilla::Teams qw(team_names);
 use Bugzilla::Token;
+use Bugzilla::User;
+use Bugzilla::Util;
+
+use List::Util qw(any);
 
 my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
@@ -30,26 +33,29 @@ my $vars     = {};
 $vars->{'doc_section'} = 'components.html';
 
 #
-# Preliminary checks:
+# Often used variables
 #
-
-my $user = Bugzilla->login(LOGIN_REQUIRED);
+my $user              = Bugzilla->login(LOGIN_REQUIRED);
+my $product_name      = trim($cgi->param('product')   || '');
+my $comp_name         = trim($cgi->param('component') || '');
+my $action            = trim($cgi->param('action')    || '');
+my $showbugcounts     = (defined $cgi->param('showbugcounts'));
+my $token             = $cgi->param('token');
+my $editcomponents    = $user->in_group('editcomponents');
+my $edittriageowners  = $user->in_group('edittriageowners');
+my $editable_products = $user->get_products_by_permission('editcomponents');
 
 print $cgi->header();
 
-$user->in_group('editcomponents')
-  || scalar(@{$user->get_products_by_permission('editcomponents')})
+#
+# Preliminary permission checks:
+#
+
+$editcomponents
+  || scalar @{$editable_products}
+  || $edittriageowners
   || ThrowUserError("auth_failure",
   {group => "editcomponents", action => "edit", object => "components"});
-
-#
-# often used variables
-#
-my $product_name = trim($cgi->param('product')   || '');
-my $comp_name    = trim($cgi->param('component') || '');
-my $action       = trim($cgi->param('action')    || '');
-my $showbugcounts = (defined $cgi->param('showbugcounts'));
-my $token         = $cgi->param('token');
 
 #
 # product = '' -> Show nice list of products
@@ -60,9 +66,10 @@ unless ($product_name) {
 
   # If the user has editcomponents privs for some products only,
   # we have to restrict the list of products to display.
-  unless ($user->in_group('editcomponents')) {
-    $selectable_products = $user->get_products_by_permission('editcomponents');
+  unless ($editcomponents || $edittriageowners) {
+    $selectable_products = $editable_products;
   }
+
   $vars->{'products'}      = $selectable_products;
   $vars->{'showbugcounts'} = $showbugcounts;
 
@@ -72,6 +79,15 @@ unless ($product_name) {
 }
 
 my $product = $user->check_can_admin_product($product_name);
+
+# If user can edit the component based on product specific permissions
+# then set edit_components true
+$editcomponents
+  = $editcomponents || any { $_->id == $product->id } @{$editable_products};
+
+# Pass in commonly needed values to the templates
+$vars->{editcomponents}   = $editcomponents;
+$vars->{edittriageowners} = $edittriageowners;
 
 #
 # action='' -> Show nice list of components
@@ -91,7 +107,7 @@ unless ($action) {
 # (next action will be 'new')
 #
 
-if ($action eq 'add') {
+if ($action eq 'add' && $editcomponents) {
   $vars->{'token'}      = issue_session_token('add_component');
   $vars->{'product'}    = $product;
   $vars->{'team_names'} = team_names();
@@ -104,7 +120,7 @@ if ($action eq 'add') {
 # action='new' -> add component entered in the 'action=add' screen
 #
 
-if ($action eq 'new') {
+if ($action eq 'new' && $editcomponents) {
   check_token_data($token, 'add_component');
 
   # Do the user matching
@@ -115,32 +131,27 @@ if ($action eq 'new') {
     'initialcc'        => {'type' => 'multi'},
   });
 
-  my $default_assignee   = trim($cgi->param('initialowner')     || '');
-  my $default_qa_contact = trim($cgi->param('initialqacontact') || '');
-  my $description        = trim($cgi->param('description')      || '');
-  my $triage_owner       = trim($cgi->param('triage_owner')     || '');
-  my $team_name          = trim($cgi->param('team_name')        || '');
-  my @initial_cc         = $cgi->param('initialcc');
-  my $isactive           = $cgi->param('isactive');
-  my $default_bug_type   = $cgi->param('default_bug_type');
-  my $bug_desc_template  = $cgi->param('bug_description_template');
-
-  my $component = Bugzilla::Component->create({
-    name             => $comp_name,
-    product          => $product,
-    description      => $description,
-    initialowner     => $default_assignee,
-    initialqacontact => $default_qa_contact,
-    initial_cc       => \@initial_cc,
-    triage_owner_id  => $triage_owner,
-    team_name        => $team_name,
-    default_bug_type => $default_bug_type,
-    bug_description_template => $bug_desc_template,
+  my $params = {
+    name                     => $comp_name,
+    product                  => $product,
+    description              => trim($cgi->param('description')      || ''),
+    initialowner             => trim($cgi->param('initialowner')     || ''),
+    initialqacontact         => trim($cgi->param('initialqacontact') || ''),
+    initial_cc               => [$cgi->param('initialcc')],
+    triage_owner_id          => trim($cgi->param('triage_owner') || ''),
+    team_name                => trim($cgi->param('team_name')    || ''),
+    default_bug_type         => scalar $cgi->param('default_bug_type'),
+    bug_description_template => trim($cgi->param('bug_description_template') || ''),
 
     # XXX We should not be creating series for products that we
     # didn't create series for.
     create_series => 1,
-  });
+  };
+
+
+  Bugzilla::Hook::process('editcomponents_before_create', {params => $params});
+
+  my $component = Bugzilla::Component->create($params);
 
   $vars->{'message'} = 'component_created';
   $vars->{'comp'}    = $component;
@@ -158,7 +169,7 @@ if ($action eq 'new') {
 # (next action would be 'delete')
 #
 
-if ($action eq 'del') {
+if ($action eq 'del'  && $editcomponents) {
   $vars->{'token'} = issue_session_token('delete_component');
   $vars->{'comp'}
     = Bugzilla::Component->check({product => $product, name => $comp_name});
@@ -173,7 +184,7 @@ if ($action eq 'del') {
 # action='delete' -> really delete the component
 #
 
-if ($action eq 'delete') {
+if ($action eq 'delete' && $editcomponents) {
   check_token_data($token, 'delete_component');
   my $component
     = Bugzilla::Component->check({product => $product, name => $comp_name});
@@ -229,30 +240,40 @@ if ($action eq 'update') {
     'initialcc'        => {'type' => 'multi'},
   });
 
-  my $comp_old_name      = trim($cgi->param('componentold')     || '');
-  my $default_bug_type   = trim($cgi->param('default_bug_type') || '');
-  my $default_assignee   = trim($cgi->param('initialowner')     || '');
-  my $default_qa_contact = trim($cgi->param('initialqacontact') || '');
-  my $description        = trim($cgi->param('description')      || '');
-  my $triage_owner       = trim($cgi->param('triage_owner')     || '');
-  my $team_name          = trim($cgi->param('team_name')        || '');
-  my @initial_cc         = $cgi->param('initialcc');
-  my $isactive           = $cgi->param('isactive');
-  my $bug_desc_template  = $cgi->param('bug_description_template'),
+  my $comp_old_name = trim($cgi->param('componentold') || '');
 
   my $component
     = Bugzilla::Component->check({product => $product, name => $comp_old_name});
 
-  $component->set_name($comp_name);
-  $component->set_description($description);
-  $component->set_default_bug_type($default_bug_type);
-  $component->set_default_assignee($default_assignee);
-  $component->set_default_qa_contact($default_qa_contact);
-  $component->set_triage_owner($triage_owner);
-  $component->set_team_name($team_name);
-  $component->set_cc_list(\@initial_cc);
-  $component->set_is_active($isactive);
-  $component->set_bug_description_template($bug_desc_template);
+  if ($editcomponents) {
+    my $default_bug_type   = trim($cgi->param('default_bug_type') || '');
+    my $default_assignee   = trim($cgi->param('initialowner')     || '');
+    my $default_qa_contact = trim($cgi->param('initialqacontact') || '');
+    my $description        = trim($cgi->param('description')      || '');
+    my $team_name          = trim($cgi->param('team_name')        || '');
+    my @initial_cc         = $cgi->param('initialcc');
+    my $isactive           = $cgi->param('isactive');
+    my $bug_desc_template  = $cgi->param('bug_description_template'),
+
+    $component->set_name($comp_name);
+    $component->set_description($description);
+    $component->set_default_bug_type($default_bug_type);
+    $component->set_default_assignee($default_assignee);
+    $component->set_default_qa_contact($default_qa_contact);
+    $component->set_team_name($team_name);
+    $component->set_cc_list(\@initial_cc);
+    $component->set_is_active($isactive);
+    $component->set_bug_description_template($bug_desc_template);
+  }
+
+  if ($edittriageowners) {
+    my $triage_owner = trim($cgi->param('triage_owner') || '');
+    $component->set_triage_owner($triage_owner);
+  }
+
+  Bugzilla::Hook::process('editcomponents_before_update',
+    {component => $component});
+
   my $changes = $component->update();
 
   $vars->{'message'} = 'component_updated';

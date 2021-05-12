@@ -43,6 +43,7 @@ use constant DB_COLUMNS => qw(
   isactive
   triage_owner_id
   team_name
+  bug_description_template
 );
 
 use constant UPDATE_COLUMNS => qw(
@@ -387,22 +388,6 @@ sub bug_count {
   return $self->{'bug_count'};
 }
 
-# Lazy-load the bug_description_template column. If the component-specific
-# template is not found, look for the product's template instead. Can be empty.
-sub bug_description_template {
-  my $self = shift;
-
-  if (!exists $self->{'bug_description_template'}) {
-    my ($comp_template, $prod_template) = Bugzilla->dbh->selectrow_array('
-      SELECT c.bug_description_template, p.bug_description_template
-      FROM components AS c INNER JOIN products AS p ON c.product_id = p.id
-      WHERE c.id = ?', undef, $self->id);
-    $self->{'bug_description_template'} = $comp_template || $prod_template;
-  }
-
-  return $self->{'bug_description_template'};
-}
-
 sub bug_ids {
   my $self = shift;
   my $dbh  = Bugzilla->dbh;
@@ -509,11 +494,12 @@ sub product {
 ####      Accessors        ####
 ###############################
 
-sub description     { return $_[0]->{'description'}; }
-sub product_id      { return $_[0]->{'product_id'}; }
-sub is_active       { return $_[0]->{'isactive'}; }
-sub triage_owner_id { return $_[0]->{'triage_owner_id'} }
-sub team_name       { return $_[0]->{'team_name'} }
+sub description              { return $_[0]->{'description'}; }
+sub product_id               { return $_[0]->{'product_id'}; }
+sub is_active                { return $_[0]->{'isactive'}; }
+sub triage_owner_id          { return $_[0]->{'triage_owner_id'} }
+sub team_name                { return $_[0]->{'team_name'} }
+sub bug_description_template { return $_[0]->{'bug_description_template'} }
 
 ##############################################
 # Implement Bugzilla::Field::ChoiceInterface #
