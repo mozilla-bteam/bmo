@@ -193,6 +193,9 @@ editcomponents
 editkeywords
     Indicates user can create, destroy and edit keywords.
 
+edittriageowners
+    Indicates user can edit the triage owner values for components.
+
 editusers
     Indicates user can create, disable and edit users.
 

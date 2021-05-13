@@ -49,7 +49,7 @@
         which will be used by default for all users. Users will be able to edit their
         own preferences from the <a href="[% basepath FILTER none %]userprefs.cgi?tab=settings">Preferences</a>.</dd>
 
-        [% class = user.in_group('editcomponents') ? "" : "forbidden" %]
+        [% class = editcomponents ? "" : "forbidden" %]
         <dt id="sanitycheck" class="[% class %]"><a href="[% basepath FILTER none %]sanitycheck.cgi">Sanity Check</a></dt>
         <dd class="[% class %]">Run sanity checks to locate problems in your database.
         This may take several tens of minutes depending on the size of your installation.
@@ -67,14 +67,25 @@
         it's a good idea to group these products into distinct categories. This lets users
         find information more easily when doing searches or when filing new [% terms.bugs %].</dd>
 
-        [% class = (user.in_group('editcomponents')
+        [% class = (editcomponents
+                    || edittriageowners
                     || user.get_products_by_permission("editcomponents").size) ? "" : "forbidden" %]
-        <dt id="products" class="[% class %]"><a href="[% basepath FILTER none %]editproducts.cgi">Products</a></dt>
+        <dt id="products" class="[% class %]">
+        [% IF editcomponents %]
+          <a href="[% basepath FILTER none %]editproducts.cgi">Products</a>
+        [% ELSE %]
+          Products
+        [% END %]</dt>
         <dd class="[% class %]">Edit all aspects of products, including group restrictions
         which let you define who can access [% terms.bugs %] being in these products. You
         can also edit some specific attributes of products such as
-        <a href="[% basepath FILTER none %]editcomponents.cgi">components</a>, <a href="[% basepath FILTER none %]editversions.cgi">versions</a>
-        and <a href="[% basepath FILTER none %]editmilestones.cgi">milestones</a> directly.</dd>
+        <a href="[% basepath FILTER none %]editcomponents.cgi">components</a>,
+        [% IF editcomponents %]
+          <a href="[% basepath FILTER none %]editversions.cgi">versions</a>, and
+          <a href="[% basepath FILTER none %]editmilestones.cgi">milestones</a>
+        [% ELSE %]
+          versions, and milestones
+        [% END %] directly.</dd>
 
         [% class = (user.in_group('editcomponents')
                    || user.get_products_by_permission('editcomponents').size) ? "" : "forbidden" %]

@@ -20,6 +20,8 @@ use Bugzilla::User;
 use Bugzilla::User::Setting;
 use Bugzilla::Util qw(detaint_natural trim);
 
+use List::Util qw(any);
+
 our $VERSION = '2';
 
 use constant REQUIRE_WATCH_USER => 1;
@@ -108,7 +110,8 @@ sub template_before_process {
 #
 
 BEGIN {
-  *Bugzilla::Component::watch_user = \&_component_watch_user;
+  *Bugzilla::Component::watch_user     = \&_component_watch_user;
+  *Bugzilla::Component::set_watch_user = \&_set_watch_user;
 }
 
 sub _component_watch_user {
@@ -116,6 +119,37 @@ sub _component_watch_user {
   return unless $self->{watch_user};
   $self->{watch_user_object} ||= Bugzilla::User->new($self->{watch_user});
   return $self->{watch_user_object};
+}
+
+sub _set_watch_user {
+  my ($self, $watch_user) = @_;
+  # add the user if not yet exists
+  _create_watch_user($watch_user) if $watch_user;
+  $self->set('watch_user', $watch_user);
+}
+
+sub editcomponents_before_create {
+  my ($self, $args) = @_;
+  my $params = $args->{params};
+  my $cgi    = Bugzilla->cgi;
+
+  return if !Bugzilla->user->in_group('editcomponents');
+
+  if (defined $cgi->param('watch_user')) {
+    $params->{watch_user} = $cgi->param('watch_user');
+  }
+}
+
+sub editcomponents_before_update {
+  my ($self, $args) = @_;
+  my $component = $args->{component};
+  my $cgi       = Bugzilla->cgi;
+
+  return if !Bugzilla->user->in_group('editcomponents');
+
+  if (defined $cgi->param('watch_user')) {
+    $component->set_watch_user($cgi->param('watch_user'));
+  }
 }
 
 sub object_columns {
@@ -134,13 +168,6 @@ sub object_update_columns {
   return unless $object->isa('Bugzilla::Component');
 
   push(@$columns, 'watch_user');
-
-  # add the user if not yet exists and user chooses 'automatic'
-  $self->_create_watch_user();
-
-  # editcomponents.cgi doesn't call set_all, so we have to do this here
-  my $input = Bugzilla->input_params;
-  $object->set('watch_user', $input->{watch_user});
 }
 
 sub object_validators {
@@ -156,6 +183,7 @@ sub object_before_create {
   my ($self, $args) = @_;
   my $class  = $args->{class};
   my $params = $args->{params};
+
   return unless $class->isa('Bugzilla::Component');
 
   # We need to create a watch user for the default product/component
@@ -164,17 +192,14 @@ sub object_before_create {
   if (Bugzilla->usage_mode == USAGE_MODE_CMDLINE
     && !$dbh->selectrow_array('SELECT 1 FROM components'))
   {
-    my $watch_user = Bugzilla::User->create({
-      login_name    => 'testcomponent@testproduct.bugs',
-      cryptpassword => '*',
-      disable_mail  => 1
-    });
+    my $watch_user = _create_watch_user('testcomponent@testproduct.bugs');
     $params->{watch_user} = $watch_user->login;
   }
-  else {
-    my $input = Bugzilla->input_params;
-    $params->{watch_user} = $input->{watch_user};
-    $self->_create_watch_user();
+  elsif (my $watch_user = $params->{watch_user}) {
+    my $user = Bugzilla::User->new({name => $watch_user});
+    if (!$user) {
+      _create_watch_user($watch_user);
+    }
   }
 }
 
@@ -183,6 +208,7 @@ sub object_end_of_update {
   my $object     = $args->{object};
   my $old_object = $args->{old_object};
   my $changes    = $args->{changes};
+
   return unless $object->isa('Bugzilla::Component');
 
   my $old_id = $old_object->watch_user ? $old_object->watch_user->id : 0;
@@ -191,8 +217,8 @@ sub object_end_of_update {
     $changes->{watch_user} = [$old_id ? $old_id : undef, $new_id ? $new_id : undef];
   }
 
-# when a component is renamed, update the watch-user to follow
-# this only happens when the user appears to have been auto-generated from the old name
+  # when a component is renamed, update the watch-user to follow
+  # this only happens when the user appears to have been auto-generated from the old name
   if ( $changes->{name}
     && $old_object->watch_user
     && $object->watch_user
@@ -226,18 +252,16 @@ sub _sanitize_name {
 }
 
 sub _create_watch_user {
-  my $input = Bugzilla->input_params;
-  if ($input->{watch_user_auto}
-    && !Bugzilla::User->new({name => $input->{watch_user}}))
-  {
-    Bugzilla::User->create({
-      login_name => $input->{watch_user}, cryptpassword => '*',
-    });
+  my ($watch_user) = @_;
+  my $user = Bugzilla::User->new({name => $watch_user});
+  if (!$user) {
+    $user = Bugzilla::User->create({login_name => $watch_user, cryptpassword => '*'});
   }
+  return $user;
 }
 
 sub _check_watch_user {
-  my ($self, $value, $field) = @_;
+  my ($self, $value) = @_;
   $value = trim($value || '');
   return undef if !REQUIRE_WATCH_USER && $value eq '';
   if ($value eq '') {

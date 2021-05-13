@@ -343,7 +343,7 @@ else {
 
   $vars->{'cc'} = join(', ', $cgi->param('cc'));
 
-  $vars->{'comment'}            = formvalue('comment', $product->bug_description_template);
+  $vars->{'comment'}            = formvalue('comment');
   $vars->{'comment_is_private'} = formvalue('comment_is_private');
 
   # BMO Add support for mentors
