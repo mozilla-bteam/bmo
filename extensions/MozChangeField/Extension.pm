@@ -27,9 +27,11 @@ my @pre_instances = (
 );
 
 use Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity;
+use Bugzilla::Extension::MozChangeField::Post::SeverityS1PriorityP1;
 
 my @post_instances = (
   Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity->new,
+  Bugzilla::Extension::MozChangeField::Post::SeverityS1PriorityP1->new,
 );
 
 our $VERSION = '0.1';
@@ -46,9 +48,8 @@ sub bug_check_can_change_field {
   }
 }
 
-sub bug_end_of_update {
+sub bug_update_before_logging {
   my ($self, $args) = @_;
-  my $object = $args->{object};
 
   _populate_permissions($args);
 
