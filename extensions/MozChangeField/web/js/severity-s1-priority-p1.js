@@ -21,10 +21,7 @@ Bugzilla.SeverityS1PriorityP1 = class SeverityS1PriorityP1 {
   constructor() {
     this.priority = document.querySelector("#priority");
     this.severity = document.querySelector("#bug_severity");
-
     if (this.severity && this.priority) {
-      this.severity_current_value = this.severity.value;
-      this.priority_current_value = this.priority.value;
       this.severity.addEventListener("change", () => this.severity_onselect());
     }
   }
@@ -33,22 +30,13 @@ Bugzilla.SeverityS1PriorityP1 = class SeverityS1PriorityP1 {
    * Called when severity select is changed. Updated priority field options appropriately
    */
   severity_onselect() {
-    let options = this.priority.getElementsByTagName("option");
-    if (this.severity.value == 'S1') {
-      for (var i = 0; i < options.length; i++) {
-        if (options[i].value == 'P1') {
-          options[i].selected = true;
-          options[i].disabled = false;
-        }
-        else {
-          options[i].disabled = true;
-        }
-      }
-    }
-    else {
-      for (var i = 0; i < options.length; i++) {
-        options[i].disabled = false;
-      }
+    const s1_selected = this.severity.value === 'S1';
+    const options = this.priority.querySelectorAll("option");
+    options.forEach(opt => opt.disabled = s1_selected);
+    if (s1_selected) {
+      const p1_opt = Array.from(options).filter(opt => opt.value === 'P1')[0];
+      p1_opt.disabled = false;
+      p1_opt.selected = true;
     }
   };
 };

@@ -12,13 +12,17 @@ use Moo;
 
 use Bugzilla::Field;
 
+use List::MoreUtils qw(any);
+
 sub evaluate_create {
   my ($self, $args) = @_;
   my $bug       = $args->{bug};
   my $timestamp = $args->{timestamp};
 
-  if ($bug->bug_severity eq 'S1' && $bug->priority ne 'P1' && grep { $_ eq 'P1' }
-    @{get_legal_field_values('priority')})
+  if (
+    $bug->bug_severity eq 'S1' && $bug->priority ne 'P1' && any { $_ eq 'P1' }
+    @{get_legal_field_values('priority')}
+    )
   {
     $bug->set_priority('P1');
     $bug->update($timestamp);
@@ -30,10 +34,11 @@ sub evaluate_change {
   my $bug       = $args->{bug};
   my $timestamp = $args->{timestamp};
   my $changes   = $args->{changes};
-  my $old_bug   = $args->{old_bug};
 
-  if ($bug->bug_severity eq 'S1' && $bug->priority ne 'P1' && grep { $_ eq 'P1' }
-    @{get_legal_field_values('priority')})
+  if (
+    $bug->bug_severity eq 'S1' && $bug->priority ne 'P1' && any { $_ eq 'P1' }
+    @{get_legal_field_values('priority')}
+    )
   {
     $bug->set_priority('P1');
     $bug->update($timestamp);
