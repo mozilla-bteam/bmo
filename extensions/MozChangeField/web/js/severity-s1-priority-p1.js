@@ -21,6 +21,7 @@ Bugzilla.SeverityS1PriorityP1 = class SeverityS1PriorityP1 {
   constructor() {
     this.priority = document.querySelector("#priority");
     this.severity = document.querySelector("#bug_severity");
+    this.pri_orig_title = this.priority.title;
     if (this.severity && this.priority) {
       this.severity.addEventListener("change", () => this.severity_onselect());
     }
@@ -37,6 +38,9 @@ Bugzilla.SeverityS1PriorityP1 = class SeverityS1PriorityP1 {
       const p1_opt = Array.from(options).filter(opt => opt.value === 'P1')[0];
       p1_opt.disabled = false;
       p1_opt.selected = true;
+      this.priority.title = 'Priority is locked to P1 since Severity is set to S1';
+    } else {
+      this.priority.title = this.pri_orig_title;
     }
   };
 };
