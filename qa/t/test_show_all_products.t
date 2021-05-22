@@ -44,8 +44,8 @@ logout($sel);
 log_in($sel, $config, 'QA_Selenium_TEST');
 $sel->click_ok('//*[@class="link-file"]//a');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("Enter A Bug");
-if ($sel->is_text_present('None of the above; my bug is in')) {
+$sel->title_is("Create a new Issue, request, or provide feedback");
+if ($sel->is_text_present('None of the above; my issue, request, or feedback is for')) {
   $sel->click_ok('advanced_link');
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Enter Bug");

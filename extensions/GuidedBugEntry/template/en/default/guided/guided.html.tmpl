@@ -341,8 +341,8 @@ explain how to write effective [% terms.bug %] reports.</li>
 <tr>
   <td class="label">Type:</td>
   <td width="100%" colspan="2">
-    <div role="radiogroup" class="buttons toggle" id="bug_type" aria-description="The basic category of the bug." aria-required="true">
-    [% FOR type IN ['defect', 'enhancement', 'feedback'] %]
+    <div role="radiogroup" class="buttons toggle" id="bug_type" aria-description="The basic category of the issue." aria-required="true">
+    [% FOREACH type IN ['defect', 'enhancement', 'feedback'] %]
       <div class="item">
         <input id="v[% type FILTER html %]_bug_type" type="radio" name="bug_type"
               value="[% type FILTER html %]">
@@ -358,7 +358,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   <td valign="top">
     [% PROCESS help id="type_help" %]
     <div id="type_help" class="hidden help">
-      Please select what kind of [% terms.bug %] you’re about to submit.<br>
+      Please select what category of issue you’re about to submit.<br>
       <br>
       <strong>defect:</strong> Regression, crash, hang, security vulnerability and any other general issue<br>
       <br>
