@@ -329,7 +329,7 @@ sub owners {
       product    => $product_name,
       component  => $component_name,
       owner      => $triage_owner,
-      bug_counts => {defect => 0, enhancement => 0, task => 0},
+      bug_counts => {defect => 0, enhancement => 0, task => 0, feedback => 0},
     };
     $data->{buglist_url}
       = 'priority=--&resolution=---&f1=creation_ts&o1=greaterthaneq&v1=2016-06-01'

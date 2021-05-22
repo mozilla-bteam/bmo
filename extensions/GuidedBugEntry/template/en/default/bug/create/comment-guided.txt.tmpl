@@ -5,22 +5,36 @@ User Agent: [% cgi.param('user_agent') %]
 Firefox for Android
 [% END %]
 
-[% IF cgi.param('bug_steps') %]
+[% IF cgi.param('bug_type') == 'enhancement' && cgi.param('enhancement_description') %]
+What enhancement would you like to request?
+
+[%+ cgi.param('enhancement_description') %]
+[% END %]
+
+[% IF cgi.param('bug_type') == 'feedback' && cgi.param('feedback_description') %]
+What feedback would you like to provide?
+
+[%+ cgi.param('feedback_description') %]
+[% END %]
+
+[% IF cgi.param('bug_type') == 'defect' %]
+  [% IF cgi.param('bug_steps') %]
 Steps to reproduce:
 
 [%+ cgi.param('bug_steps') %]
-[% END %]
+  [% END %]
 
-[% IF cgi.param('actual') %]
+  [% IF cgi.param('actual') %]
 
 Actual results:
 
 [%+ cgi.param('actual') %]
-[% END %]
+  [% END %]
 
-[% IF cgi.param('expected') %]
+  [% IF cgi.param('expected') %]
 
 Expected results:
 
 [%+ cgi.param('expected') %]
+  [% END %]
 [% END %]

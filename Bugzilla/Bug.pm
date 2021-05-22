@@ -5140,6 +5140,15 @@ sub check_can_change_field {
     };
   }
 
+  # - change the bug_type
+  if ($field eq 'bug_type') {
+    return {
+      allowed => 0,
+      privs   => PRIVILEGES_REQUIRED_ASSIGNEE,
+      reason  => 'The bug reporter is not allowed to change this field'
+    };
+  }
+
   # The reporter is allowed to change anything else.
   if (!$self->{'error'} && $self->{'reporter_id'} == $user->id) {
     return {allowed => 1};

@@ -528,6 +528,19 @@ var bugForm = {
       Dom.get('dupes_summary').value = Dom.get('short_desc').value;
       guided.setAdvancedLink();
     });
+
+    const bug_types = document.getElementsByName('bug_type');
+    for (var i = 0; i < bug_types.length; i++) {
+      bug_types[i].addEventListener('click', function(event) {
+        document.querySelectorAll('.description_row').forEach(function(row) {
+          if (row.classList.contains(event.target.value + '_description_row')) {
+            row.classList.remove('hidden');
+          } else {
+            row.classList.add('hidden');
+          }
+        });
+      });
+    }
   },
 
   onShow: function() {
@@ -609,9 +622,9 @@ var bugForm = {
     var elComponent = Dom.get('component');
     if (products[productName] && products[productName].noComponentSelection || guided.webdev) {
       elComponent.value = products[productName].defaultComponent;
-      bugForm._mandatoryFields = [ 'short_desc', 'version_select' ];
+      bugForm._mandatoryFields = [ 'bug_type', 'short_desc', 'version_select' ];
     } else {
-      bugForm._mandatoryFields = [ 'short_desc', 'component_select', 'version_select' ];
+      bugForm._mandatoryFields = [ 'bug_type', 'short_desc', 'component_select', 'version_select' ];
 
       // check for the default component
       var defaultRegex;
@@ -799,21 +812,29 @@ var bugForm = {
     var result = new Array();
     for (var i = 0, n = this._mandatoryFields.length; i < n; i++ ) {
       var id = this._mandatoryFields[i];
-      var el = Dom.get(id);
-      var value;
 
-      if (el.type.toString() == "checkbox") {
-        value = el.checked;
+      if (id === 'bug_type') {
+        let bug_types = document.querySelectorAll('input[name="bug_type"]:checked');
+        if (bug_types.length === 0) {
+          result.push(id);
+        }
       } else {
-        value = el.value.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-        el.value = value;
-      }
+        var el = Dom.get(id);
+        var value;
 
-      if (value == '') {
-        Dom.addClass(id, 'missing');
-        result.push(id);
-      } else {
-        Dom.removeClass(id, 'missing');
+        if (el.type.toString() == "checkbox") {
+          value = el.checked;
+        } else {
+          value = el.value.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+          el.value = value;
+        }
+
+        if (value == '') {
+          Dom.addClass(id, 'missing');
+          result.push(id);
+        } else {
+          Dom.removeClass(id, 'missing');
+        }
       }
     }
     return result;
@@ -829,6 +850,7 @@ var bugForm = {
         (missing.length == 1 ? ' is' : 's are') + ' required:\n\n';
       for (var i = 0, n = missing.length; i < n; i++ ) {
         var id = missing[i];
+        if (id == 'bug_type')         message += '  Type\n';
         if (id == 'short_desc')       message += '  Summary\n';
         if (id == 'component_select') message += '  Component\n';
         if (id == 'version_select')   message += '  Version\n';

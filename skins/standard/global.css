@@ -2778,6 +2778,7 @@ pre.comment-text {
   --bug-type-color-defect: #EA3C3D;
   --bug-type-color-enhancement: #2ABA27;
   --bug-type-color-task: #2886C9;
+  --bug-type-color-feedback: darkmagenta;
 }
 
 .bug-type-label .icon {
@@ -2800,6 +2801,11 @@ pre.comment-text {
 .bug-type-label[data-type="task"] .icon::before {
   content: '\E85D';
   color: var(--bug-type-color-task);
+}
+
+.bug-type-label[data-type="feedback"] .icon::before {
+  content: '\E87F';
+  color: var(--bug-type-color-feedback);
 }
 
 .bug-type-label.iconic .icon {

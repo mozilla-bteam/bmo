@@ -15,7 +15,7 @@
                'js/field.js', 'js/TUI.js', 'js/bug.js' ] %]
 
 [% PROCESS global/header.html.tmpl
-   title = "Enter A Bug"
+   title = "Create a new Issue, request, or provide feedback"
    generate_api_token = 1
    javascript_urls = js_urls
    style_urls = [ 'extensions/GuidedBugEntry/web/style/guided.css' ]
@@ -78,7 +78,7 @@ dupes.setLabels(
 
 [% BLOCK page_title %]
   <div id="page_title">
-    <h2>Enter A [% terms.Bug %]</h2>
+    <h2>Create a new Issue, request, or provide feedback</h2>
   </div>
 [% END %]
 
@@ -252,7 +252,7 @@ tabbed browsing or the location bar)
 </table>
 
 <h3>
-  None of the above; my [% terms.bug %] is in:
+  None of the above; my issue, request, or feedback is for:
 </h3>
 [% END %]
 
@@ -294,7 +294,7 @@ Product: <b><span id="dupes_product_name">?</span></b>:
 
 <div id="dupe_form">
   <p>
-  Please summarize your issue or request in one sentence:
+    Please summarise your issue, request, or feedback in one sentence:
   </p>
   <input id="dupes_summary" value="Short summary of issue" spellcheck="true" placeholder="Short summary of issue">
   <button id="dupes_search">Find similar issues</button>
@@ -338,6 +338,36 @@ explain how to write effective [% terms.bug %] reports.</li>
 </ul>
 
 <table id="bugForm" cellspacing="0">
+<tr>
+  <td class="label">Type:</td>
+  <td width="100%" colspan="2">
+    <div role="radiogroup" class="buttons toggle" id="bug_type" aria-description="The basic category of the bug." aria-required="true">
+    [% FOR type IN ['defect', 'enhancement', 'feedback'] %]
+      <div class="item">
+        <input id="v[% type FILTER html %]_bug_type" type="radio" name="bug_type"
+              value="[% type FILTER html %]">
+        <label for="v[% type FILTER html %]_bug_type">
+          <span class="bug-type-label iconic-text" data-type="[% type FILTER html %]">
+            <span class="icon" aria-hidden="true"></span>[% type FILTER html %]
+          </span>
+        </label>
+      </div>
+    [% END %]
+    </div>
+  </td>
+  <td valign="top">
+    [% PROCESS help id="type_help" %]
+    <div id="type_help" class="hidden help">
+      Please select what kind of [% terms.bug %] you’re about to submit.<br>
+      <br>
+      <strong>defect:</strong> Regression, crash, hang, security vulnerability and any other general issue<br>
+      <br>
+      <strong>enhancement:</strong> New feature, improvement in UI, performance, etc. and any other request for enhancement<br>
+      <br>
+      <strong>feedback:</strong> Comments about features, UI, performance, etc. or any other function of the project<br>
+    </div>
+  </td>
+</tr>
 
 <tr>
   <td class="label">Summary:</td>
@@ -396,7 +426,37 @@ explain how to write effective [% terms.bug %] reports.</li>
     </div>
 </tr>
 
-<tr>
+<tr class="description_row enhancement_description_row hidden">
+  <td class="label" colspan="3">What enhancement would you like to request?</td>
+  <td valign="top">
+  [% PROCESS help id="enhancement_description_help" %]
+  <div id="enhancement_description_help" class="hidden help">
+  </div>
+  </td>
+</tr>
+<tr class="description_row enhancement_description_row hidden">
+  <td colspan="3">
+    <textarea id="enhancement_description" name="enhancement_description" rows="5"></textarea>
+  </td>
+  <td>&nbsp;</td>
+</tr>
+
+<tr class="description_row feedback_description_row hidden">
+  <td class="label" colspan="3">What feedback would you like to provide?</td>
+  <td valign="top">
+  [% PROCESS help id="feedback_description_help" %]
+  <div id="feedback_description_help" class="hidden help">
+  </div>
+  </td>
+</tr>
+<tr class="description_row feedback_description_row hidden">
+  <td colspan="3">
+    <textarea id="feedback_description" name="feedback_description" rows="5"></textarea>
+  </td>
+  <td>&nbsp;</td>
+</tr>
+
+<tr class="description_row defect_description_row hidden">
   <td class="label" colspan="3">What did you do? (steps to reproduce)</td>
   <td valign="top">
   [% PROCESS help id="steps_help" %]
@@ -414,12 +474,12 @@ explain how to write effective [% terms.bug %] reports.</li>
   </div>
   </td>
 </tr>
-<tr>
+<tr class="description_row defect_description_row hidden">
   <td colspan="3"><textarea id="bug_steps" name="bug_steps" rows="5"></textarea></td>
   <td>&nbsp;</td>
 </tr>
 
-<tr>
+<tr class="description_row defect_description_row hidden">
   <td class="label" colspan="3">What happened? (actual results)</td>
   <td valign="top">
   [% PROCESS help id="actual_help" %]
@@ -427,12 +487,12 @@ explain how to write effective [% terms.bug %] reports.</li>
   What happened after you performed the steps above?
   </div>
 </tr>
-<tr>
+<tr class="description_row defect_description_row hidden">
   <td colspan="3"><textarea id="actual" name="actual" rows="5"></textarea></td>
   <td>&nbsp;</td>
 </tr>
 
-<tr>
+<tr class="description_row defect_description_row hidden">
   <td class="label" colspan="3">What should have happened? (expected results)</td>
   <td valign="top">
   [% PROCESS help id="expected_help" %]
@@ -440,7 +500,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   What should the software have done instead?
   </div>
 </tr>
-<tr>
+<tr class="description_row defect_description_row hidden">
   <td colspan="3"><textarea id="expected" name="expected" rows="5"></textarea></td>
   <td>&nbsp;</td>
 </tr>
@@ -464,28 +524,6 @@ explain how to write effective [% terms.bug %] reports.</li>
   <td class="label">File Description:</td>
   <td colspan="2"><input type="text" name="description" id="data_description" class="textInput" disabled></td>
   <td>&nbsp;</td>
-</tr>
-
-<tr>
-  <td class="label">[% terms.Bug %] Type:</td>
-  <td>
-    <label>
-      <input type="radio" name="bug_type" value="defect" required>
-      This is a defect report.
-    </label>
-  </td>
-  <td>
-    <label>
-      <input type="radio" name="bug_type" value="enhancement" required>
-      This is a request for enhancement.
-    </label>
-  </td>
-  <td>
-    [% PROCESS help id="type_help" %]
-    <div id="type_help" class="hidden help">
-      Please select what kind of [% terms.bug %] you’re about to submit.
-    </div>
-  </td>
 </tr>
 
 <tr>
