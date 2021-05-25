@@ -96,15 +96,13 @@ sub get_access_token {
 sub get_user_emails {
   my ($self, $access_token) = @_;
 
-  $self->user_agent->default_header(
+  my $response = $self->user_agent->get(GH_USER_EMAILS_URI,
     'Accept'        => 'application/json',
     'Authorization' => "token $access_token"
   );
-  my $response = $self->user_agent->get(GH_USER_EMAILS_URI);
 
   return $self->_handle_response($response);
 }
-
 
 sub user_agent {
   my ($self) = @_;
