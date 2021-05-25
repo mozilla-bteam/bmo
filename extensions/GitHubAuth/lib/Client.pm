@@ -95,10 +95,11 @@ sub get_access_token {
 
 sub get_user_emails {
   my ($self, $access_token) = @_;
-  my $uri = URI->new(GH_USER_EMAILS_URI);
-  $uri->query_form(access_token => $access_token);
 
-  my $response = $self->user_agent->get($uri, Accept => 'application/json');
+  my $response = $self->user_agent->get(GH_USER_EMAILS_URI,
+    'Accept'        => 'application/json',
+    'Authorization' => "token $access_token"
+  );
 
   return $self->_handle_response($response);
 }
