@@ -21,6 +21,7 @@ use Bugzilla::Token qw(check_hash_token delete_token);
 
 use Mojo::JWT;
 use Mojo::UserAgent;
+use Mojo::Util qw(dumper);
 use Try::Tiny;
 
 my $cache = Bugzilla->request_cache;
@@ -38,6 +39,8 @@ delete_token($token);
 # Get access token from OAuth2 provider;
 my $resp = $c->oauth2->get_token();
 
+DEBUG(dumper $resp);
+
 # Store user information for use by OAuth2 login info getter
 my $userinfo;
 if ($resp && $resp->{id_token}) {
@@ -46,7 +49,9 @@ if ($resp && $resp->{id_token}) {
       = Mojo::UserAgent->new->get(
       Bugzilla->params->{oauth2_client_domain} . '/.well-known/jwks.json')
       ->result->json('/keys');
+    DEBUG(dumper $jwks);
     $userinfo = Mojo::JWT->new(jwks => $jwks)->decode($resp->{id_token});
+    DEBUG(dumper $userinfo);
   }
   catch {
     WARN($_);
@@ -55,6 +60,7 @@ if ($resp && $resp->{id_token}) {
 
 if (!$userinfo && $resp && $resp->{access_token}) {
   $userinfo = $c->oauth2->userinfo($resp->{access_token});
+  DEBUG(dumper $userinfo);
 }
 
 $userinfo || ThrowUserError('oauth2_userinfo_error');
