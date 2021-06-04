@@ -39,7 +39,7 @@ delete_token($token);
 # Get access token from OAuth2 provider;
 my $resp = $c->oauth2->get_token();
 
-DEBUG(dumper $resp);
+WARN(dumper $resp);
 
 # Store user information for use by OAuth2 login info getter
 my $userinfo;
@@ -49,9 +49,9 @@ if ($resp && $resp->{id_token}) {
       = Mojo::UserAgent->new->get(
       Bugzilla->params->{oauth2_client_domain} . '/.well-known/jwks.json')
       ->result->json('/keys');
-    DEBUG(dumper $jwks);
+    WARN(dumper $jwks);
     $userinfo = Mojo::JWT->new(jwks => $jwks)->decode($resp->{id_token});
-    DEBUG(dumper $userinfo);
+    WARN(dumper $userinfo);
   }
   catch {
     WARN($_);
@@ -60,7 +60,7 @@ if ($resp && $resp->{id_token}) {
 
 if (!$userinfo && $resp && $resp->{access_token}) {
   $userinfo = $c->oauth2->userinfo($resp->{access_token});
-  DEBUG(dumper $userinfo);
+  WARN(dumper $userinfo);
 }
 
 $userinfo || ThrowUserError('oauth2_userinfo_error');
