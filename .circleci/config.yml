@@ -32,15 +32,23 @@ defaults:
       username: $DOCKER_USER
       password: $DOCKER_PASS
 
-  build_image: &build_image
+  build_testing_image: &build_testing_image
     run:
-      name: Build Docker BMO image
+      name: Build Docker BMO Testing Image
       command: |
         docker build \
           --build-arg CI="$CI" \
           --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
           --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
-          -t bmo .
+          -t bmo-test .
+      environment:
+        DOCKER_BUILDKIT: 1
+
+  build_deploy_image: &build_deploy_image
+    run:
+      name: Build Docker BMO Deployment Image
+      command: |
+        docker build -t bmo .
       environment:
         DOCKER_BUILDKIT: 1
 
@@ -68,7 +76,7 @@ jobs:
       - checkout
       - *install_deps
       - *docker_login
-      - *build_image
+      - *build_testing_image
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
@@ -145,6 +153,7 @@ jobs:
           command: docker load -i /cache/docker.tar
       - checkout
       - *docker_login
+      - *build_deploy_image
       - attach_workspace:
           at: /app/build_info
       - deploy:
