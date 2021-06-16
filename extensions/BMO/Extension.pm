@@ -174,10 +174,9 @@ sub template_before_process {
     }
   }
   elsif ($file eq 'bug/edit.html.tmpl' || $file eq 'bug_modal/edit.html.tmpl') {
-    $vars->{firefox_versions} = _fetch_product_version_file('firefox', 1);
+    $vars->{firefox_versions} = _fetch_product_version_file('firefox');
     $vars->{split_cf_crash_signature} = $self->_split_crash_signature($vars);
   }
-
 
   if ($file =~ /^list\/list/ || $file =~ /^bug\/create\/create[\.-]/) {
 
@@ -2515,12 +2514,10 @@ sub _split_crash_signature {
 }
 
 sub _fetch_product_version_file {
-  my ($product, $cache_only) = @_;
+  my ($product) = @_;
   my $key      = "${product}_versions";
   my $versions = Bugzilla->request_cache->{$key}
     || Bugzilla->memcached->get_data({key => $key});
-
-  return $versions if $cache_only;
 
   unless ($versions) {
     my $ua = Mojo::UserAgent->new;
