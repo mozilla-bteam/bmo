@@ -6,5 +6,12 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% javascript_urls.push("extensions/MozChangeField/web/js/comment-on-severity.js") %]
-[% javascript_urls.push("extensions/MozChangeField/web/js/severity-s1-priority-p1.js") %]
+[% IF error == "mozchangefield_severity_comment_required" %]
+  [% title = "Comment Required" %]
+  [% IF new %]
+    You have to specify a description for this [% terms.bug %] if severity
+    is set other than the default value.
+  [% ELSE %]
+    A <b>comment</b> is required when changing the severity field.
+  [% END %]
+[% END %]
