@@ -29,11 +29,13 @@ my @pre_instances = (
 use Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity;
 use Bugzilla::Extension::MozChangeField::Post::SeverityS1PriorityP1;
 use Bugzilla::Extension::MozChangeField::Post::ClearTrackingPriorityS1;
+use Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity;
 
 my @post_instances = (
   Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity->new,
   Bugzilla::Extension::MozChangeField::Post::SeverityS1PriorityP1->new,
   Bugzilla::Extension::MozChangeField::Post::ClearTrackingPriorityS1->new,
+  Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity->new,
 );
 
 our $VERSION = '0.1';

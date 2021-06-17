@@ -6,6 +6,6 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% javascript_urls.push("extensions/MozChangeField/web/js/comment-on-severity.js") %]
-[% javascript_urls.push("extensions/MozChangeField/web/js/severity-s1-priority-p1.js") %]
-[% javascript_urls.push("extensions/MozChangeField/web/js/clear-tracking-priority-s1.js") %]
+[% IF template.name == 'bug/create/create.html.tmpl' %]
+  [% javascript_urls.push('extensions/MozChangeField/web/js/comment-on-severity.js') %]
+[% END %]
