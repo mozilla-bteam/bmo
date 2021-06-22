@@ -65,7 +65,6 @@ use Bugzilla::Extension::BMO::Constants;
 use Bugzilla::Extension::BMO::FakeBug;
 use Bugzilla::Extension::BMO::Data;
 
-use constant PD_ENDPOINT => 'https://product-details.mozilla.org/1.0/';
 use constant PRODUCT_CHANNELS => {
   'firefox' => {
     'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
@@ -174,7 +173,7 @@ sub template_before_process {
     }
   }
   elsif ($file eq 'bug/edit.html.tmpl' || $file eq 'bug_modal/edit.html.tmpl') {
-    $vars->{firefox_versions} = _fetch_product_version_file('firefox');
+    $vars->{firefox_versions} = fetch_product_version_file('firefox');
     $vars->{split_cf_crash_signature} = $self->_split_crash_signature($vars);
   }
 
@@ -2513,35 +2512,9 @@ sub _split_crash_signature {
       extract_multiple($crash_signature, [sub { extract_bracketed($_[0], '[]') }])];
 }
 
-sub _fetch_product_version_file {
-  my ($product) = @_;
-  my $key      = "${product}_versions";
-  my $versions = Bugzilla->request_cache->{$key}
-    || Bugzilla->memcached->get_data({key => $key});
-
-  unless ($versions) {
-    my $ua = Mojo::UserAgent->new;
-    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
-      $ua->proxy->http($proxy_url);
-    }
-
-    my $response = $ua->get(PD_ENDPOINT . $key . '.json')->result;
-    $versions = Bugzilla->request_cache->{$key}
-      = $response->is_success ? decode_json($response->body) : {};
-    Bugzilla->memcached->set_data({
-      key   => $key,
-      value => $versions,
-      # Cache for 30 minutes if the data is available, otherwise retry in 5 min
-      expires_in => $response->is_success ? 1800 : 300,
-    });
-  }
-
-  return $versions;
-}
-
 sub _get_product_version {
   my ($product, $channel, $detail) = @_;
-  my $versions = _fetch_product_version_file($product);
+  my $versions = fetch_product_version_file($product);
   my $version = $versions->{PRODUCT_CHANNELS->{$product}->{$channel}->{json_key}};
   return $version if $detail;
 
@@ -2600,7 +2573,7 @@ sub search_date_pronoun {
   my $keys = ['LAST_MERGE_DATE', 'LAST_RELEASE_DATE', 'LAST_SOFTFREEZE_DATE'];
   return unless grep(/^$key$/, @$keys);
 
-  my $date = _fetch_product_version_file('firefox')->{$key};
+  my $date = fetch_product_version_file('firefox')->{$key};
   ThrowUserError('product_date_pronouns_unavailable') unless $date;
   $pronoun->{date} = $date;
 }

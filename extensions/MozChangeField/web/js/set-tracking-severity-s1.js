@@ -18,14 +18,14 @@ Bugzilla.SetTrackingSeverityS1 = class SetTrackingSeverityS1 {
   /**
    * Initialize a new SetTrackingSeverityS1 instance.
    */
-  constructor() {
+   constructor() {
     this.priority = document.querySelector("#priority");
     this.severity = document.querySelector("#bug_severity");
     this.flags = document.querySelector("div.edit-show table.tracking-flags");
 
     if (this.severity && this.priority && this.flags) {
       this.sev_curr_value = this.severity.value;
-      //this.severity.addEventListener("change", () => this.severity_onselect());
+      this.severity.addEventListener("change", () => this.severity_onselect());
 
       // Find cf_tracking_ specific flags and
       // store current values to reset them if needed
@@ -84,7 +84,6 @@ Bugzilla.SetTrackingSeverityS1 = class SetTrackingSeverityS1 {
   // Below borrowed from extensions/BMO/web/js/firefox-crash-table.js
   async fetchProductDetails() {
     const $meta = document.querySelector('meta[name="firefox-versions"]');
-
     if ($meta) {
       return JSON.parse($meta.content);
     }

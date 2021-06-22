@@ -9,13 +9,10 @@ package Bugzilla::Extension::MozChangeField::Post::SetTrackingSeverityS1;
 
 use 5.10.1;
 use Moo;
-use Mojo::JSON qw(decode_json);
-use Mojo::Util qw(dumper);
 
-use Bugzilla::Logging;
+use Bugzilla::Extension::TrackingFlags::Flag;
 use Bugzilla::Extension::TrackingFlags::Flag::Bug;
-
-use constant PD_ENDPOINT => 'https://product-details.mozilla.org/1.0/';
+use Bugzilla::Util qw(fetch_product_version_file);
 
 sub evaluate_create {
   my ($self, $args) = @_;
@@ -24,7 +21,7 @@ sub evaluate_create {
 
   if ($bug->bug_severity eq 'S1') {
     my $cache    = Bugzilla->request_cache->{tracking_flags_create_params};
-    my $versions = _fetch_product_version_file();
+    my $versions = _fetch_nightly_beta_versions();
     my $nightly  = 'cf_tracking_firefox' . $versions->{nightly};
     my $beta     = 'cf_tracking_firefox' . $versions->{beta};
 
@@ -67,7 +64,7 @@ sub evaluate_change {
     && exists $changes->{bug_severity}
     && $changes->{bug_severity}->[1] eq 'S1')
   {
-    my $versions = _fetch_product_version_file();
+    my $versions = _fetch_nightly_beta_versions();
     my $nightly  = 'cf_tracking_firefox' . $versions->{nightly};
     my $beta     = 'cf_tracking_firefox' . $versions->{beta};
 
@@ -113,36 +110,17 @@ sub evaluate_change {
 
       # Update the name/value pair in the bug object
       $old_bug->{$flag_name} = '?';
-      $bug->{$flag_name} = '?';
+      $bug->{$flag_name}     = '?';
     }
   }
 }
 
-sub _fetch_product_version_file {
-  my $key      = "firefox_versions";
-  my $versions = Bugzilla->request_cache->{$key}
-    || Bugzilla->memcached->get_data({key => $key});
-
-  unless ($versions) {
-    my $ua = Mojo::UserAgent->new;
-    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
-      $ua->proxy->http($proxy_url);
-    }
-
-    my $response = $ua->get(PD_ENDPOINT . $key . '.json')->result;
-    $versions = Bugzilla->request_cache->{$key}
-      = $response->is_success ? decode_json($response->body) : {};
-    Bugzilla->memcached->set_data({
-      key   => $key,
-      value => $versions,
-
-      # Cache for 30 minutes if the data is available, otherwise retry in 5 min
-      expires_in => $response->is_success ? 1800 : 300,
-    });
-  }
-
+sub _fetch_nightly_beta_versions {
+  my $versions  = fetch_product_version_file('firefox');
   my ($nightly) = split /\./, $versions->{FIREFOX_NIGHTLY};
   my ($beta)    = split /\./, $versions->{LATEST_FIREFOX_RELEASED_DEVEL_VERSION};
+  $nightly ||= 0;
+  $beta    ||= 0;
   return {nightly => $nightly, beta => $beta};
 }
 
