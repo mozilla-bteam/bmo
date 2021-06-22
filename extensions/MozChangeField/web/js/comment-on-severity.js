@@ -21,13 +21,14 @@ Bugzilla.CommentOnSeverity = class CommentOnSeverity {
   constructor() {
     this.comment = document.querySelector("#comment");
     this.severity = document.querySelector("#bug_severity");
-    this.comment_text = "Changing severity to S? because of <rationale>.";
 
     if (this.severity && this.comment) {
-      this.severity_comment_required = this.severity.parentElement.appendChild(
-        document.createElement("span")
-      );
       this.curr_severity = this.severity.value;
+      this.comment_text = "Changing severity to S? because of <rationale>.";
+      this.comment_required_html =
+        "A comment is required when changing the severity field. Please use " +
+        '<a href="https://firefox-source-docs.mozilla.org/bug-mgmt/guides/severity.html" ' +
+        'target="_blank" id="severity-guide">this</a> as a guide';
       this.severity.addEventListener("change", () => this.severity_onselect());
     }
   }
@@ -37,11 +38,14 @@ Bugzilla.CommentOnSeverity = class CommentOnSeverity {
    */
   severity_onselect() {
     // Set comment required warning
-    if (this.severity.value != this.curr_severity) {
-      this.severity_comment_required.innerHTML =
-        ' <a href="https://firefox-source-docs.mozilla.org/bug-mgmt/guides/severity.html" target="_blank">Comment Required</a>';
-    } else {
-      this.severity_comment_required.innerHTML = "";
+    if (
+      this.severity.value != this.curr_severity &&
+      document.querySelector("#floating-message")
+    ) {
+      document.querySelector("#floating-message").style.position = "fixed";
+      $("#floating-message-text").html(this.comment_required_html);
+      $("#floating-message").fadeIn(250);
+      document.querySelector('#severity-guide').addEventListener('click', this.openNewTab);
     }
 
     // Set comment text to the template if severity has changed.
@@ -54,6 +58,13 @@ Bugzilla.CommentOnSeverity = class CommentOnSeverity {
     ) {
       this.comment.value = "";
     }
+  }
+
+  /**
+   * Display severity guide in a separate tab
+   */
+  openNewTab(event) {
+    window.open(event.target.getAttribute('href'), '_blank').focus();
   }
 };
 

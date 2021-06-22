@@ -16,22 +16,6 @@ use Bugzilla::Util qw(trim);
 use constant DEFAULT_COMMENT =>
   'Changing severity to S? because of <rationale>.';
 
-sub evaluate_create {
-  my ($self, $args) = @_;
-  my $bug = $args->{bug};
-
-  # If setting the severity other than default, a comment is required
-  if (
-    $bug->bug_severity ne Bugzilla->params->{defaultseverity}
-    && ( !$bug->comments->[0]
-      || !trim($bug->comments->[0]->body)
-      || trim($bug->comments->[0]->body) eq DEFAULT_COMMENT)
-    )
-  {
-    ThrowUserError('mozchangefield_severity_comment_required', {new => 1});
-  }
-}
-
 sub evaluate_change {
   my ($self, $args) = @_;
   my $bug     = $args->{bug};
