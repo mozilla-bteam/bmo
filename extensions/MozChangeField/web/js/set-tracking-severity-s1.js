@@ -18,34 +18,37 @@ Bugzilla.SetTrackingSeverityS1 = class SetTrackingSeverityS1 {
   /**
    * Initialize a new SetTrackingSeverityS1 instance.
    */
-   constructor() {
+  constructor() {
     this.priority = document.querySelector("#priority");
     this.severity = document.querySelector("#bug_severity");
     this.flags = document.querySelector("div.edit-show table.tracking-flags");
+    this.firefox_versions = document.querySelector(
+      'meta[name="firefox-versions"]'
+    );
 
-    if (this.severity && this.priority && this.flags) {
+    if (this.severity && this.priority && this.flags && this.firefox_versions) {
       this.sev_curr_value = this.severity.value;
       this.severity.addEventListener("change", () => this.severity_onselect());
 
       // Find cf_tracking_ specific flags and
       // store current values to reset them if needed
-      this.fetchProductDetails().then((data) => {
-        const product_details = this.getMajors(data);
-        const nightly = "cf_tracking_firefox" + product_details.nightly;
-        const beta = "cf_tracking_firefox" + product_details.beta;
-        this.flag_selects = [];
-        this.flag_curr_values = [];
-        this.flag_curr_titles = [];
-        this.flags
-          .querySelectorAll(
-            'select[name="' + nightly + '"], select[name="' + beta + '"]'
-          )
-          .forEach((flag) => {
-            this.flag_selects.push(flag);
-            this.flag_curr_values[flag.name] = flag.value;
-            this.flag_curr_titles[flag.name] = flag.title;
-          });
-      });
+      const product_details = this.getMajors(
+        JSON.parse(this.firefox_versions.content)
+      );
+      const nightly = "cf_tracking_firefox" + product_details.nightly;
+      const beta = "cf_tracking_firefox" + product_details.beta;
+      this.flag_selects = [];
+      this.flag_curr_values = [];
+      this.flag_curr_titles = [];
+      this.flags
+        .querySelectorAll(
+          'select[name="' + nightly + '"], select[name="' + beta + '"]'
+        )
+        .forEach((flag) => {
+          this.flag_selects.push(flag);
+          this.flag_curr_values[flag.name] = flag.value;
+          this.flag_curr_titles[flag.name] = flag.title;
+        });
     }
   }
 
@@ -79,18 +82,6 @@ Bugzilla.SetTrackingSeverityS1 = class SetTrackingSeverityS1 {
         flag.title = this.flag_curr_titles[flag.name];
       }
     });
-  }
-
-  // Below borrowed from extensions/BMO/web/js/firefox-crash-table.js
-  async fetchProductDetails() {
-    const $meta = document.querySelector('meta[name="firefox-versions"]');
-    if ($meta) {
-      return JSON.parse($meta.content);
-    }
-
-    const url = "https://product-details.mozilla.org/1.0/firefox_versions.json";
-    const response = await fetch(url);
-    return await response.json();
   }
 
   getMajor(s) {
