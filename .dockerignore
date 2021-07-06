@@ -20,3 +20,4 @@ template_cache
 */*/*/*/.DS_Store
 .vstags
 .vscode
+.pls_cache
