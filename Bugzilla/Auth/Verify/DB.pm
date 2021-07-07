@@ -65,12 +65,21 @@ sub check_credentials {
   {
     my $pwqc = Bugzilla->passwdqc;
     unless ($pwqc->validate_password($password)) {
-      my $reason = $pwqc->reason;
+      my $reason     = $pwqc->reason;
+      my $old_reason = $user->password_change_reason;
+
       Bugzilla->audit(sprintf "%s logged in with a weak password (reason: %s)",
         $user->login, $reason);
       $user->set_password_change_required(1);
       $user->set_password_change_reason(
         "You must change your password for the following reason: $reason");
+
+      # Remove disabled text if user was previously disabled due to inactivity
+      if ($old_reason eq 'Inactive Account') {
+        $user->set_disabledtext('');
+        $user->set_disable_mail(0);
+      }
+
       $user->update();
     }
   }
