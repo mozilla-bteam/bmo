@@ -844,7 +844,8 @@ sub object_end_of_create {
     my $user = $args->{object};
 
     # Log real IP addresses for auditing
-    Bugzilla->audit(sprintf('<%s> created user %s', remote_ip(), $user->login));
+    Bugzilla->audit(
+      sprintf('%s <%s> created user %s', Bugzilla->user->login, remote_ip(), $user->login));
 
     # Add default searches to new user's footer
     my $dbh = Bugzilla->dbh;

@@ -1,0 +1,20 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% IF error == "mozilla_iam_access_token_error" %]
+  An error was encountered while obtaining an access token from IAM.
+  Please contact [% Param("maintainer") %] describing the steps taken to obtain this message.
+
+[% ELSIF error == "mozilla_iam_get_profile_error" %]
+  An error was encountered retrieving profile information from IAM.
+  Please contact [% Param("maintainer") %] describing the steps taken to obtain this message.
+
+[% ELSIF error == "mozilla_iam_verify_token_error" %]
+  The token provided was not valid or missing during verification with IAM.
+  Please contact [% Param("maintainer") %] describing the steps taken to obtain this message.
+[% END %]

@@ -1,0 +1,22 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+   title = "Mozilla IAM"
+   desc = "Configure as an Mozilla IAM Client for Authentication (Requires OAuth2 Client Enabled)"
+%]
+
+[%
+   param_descs = {
+      mozilla_iam_enabled => "Mozilla IAM Client Enabled",
+      mozilla_iam_person_api_uri => "Mozilla IAM Person API URI",
+      mozilla_iam_person_api_client_id => "Mozilla IAM Person API Client ID",
+      mozilla_iam_person_api_client_secret => "Mozilla IAM Person API Client Secret"
+      mozilla_iam_mandatory_domains => "Account domains that must use Mozilla IAM to authenticate (one per line)"
+   }
+%]
