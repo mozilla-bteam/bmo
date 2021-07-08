@@ -110,15 +110,20 @@ use constant ATTACHMENT_MAPPED_RETURNS => {
   mimetype    => 'content_type',
 };
 
-our %api_field_types = (
-  %{{map { $_ => 'double' } Bugzilla::Bug::NUMERIC_COLUMNS()}},
-  %{{map { $_ => 'dateTime' } Bugzilla::Bug::DATE_COLUMNS()}},
-);
+sub API_FIELD_TYPES {
+  return {
+    %{{map { $_ => 'double' } Bugzilla::Bug::NUMERIC_COLUMNS()}},
+    %{{map { $_ => 'dateTime' } Bugzilla::Bug::DATE_COLUMNS()}},
+  };
+}
 
-our %api_field_names = reverse %{Bugzilla::Bug::FIELD_MAP()};
-# This doesn't normally belong in FIELD_MAP, but we do want to translate
-# "bug_group" back into "groups".
-$api_field_names{'bug_group'} = 'groups';
+sub API_FIELD_NAMES {
+  my %api_field_names = reverse %{Bugzilla::Bug::FIELD_MAP()};
+  # This doesn't normally belong in FIELD_MAP, but we do want to translate
+  # "bug_group" back into "groups".
+  $api_field_names{'bug_group'} = 'groups';
+  return \%api_field_names;
+}
 
 ######################################################
 # Add aliases here for old method name compatibility #
@@ -135,6 +140,170 @@ BEGIN {
 ###########
 # Methods #
 ###########
+
+sub rest_resources {
+  return [
+    qr{^/bug$},
+    {
+      GET  => {method => 'search',},
+      POST => {method => 'create', status_code => STATUS_CREATED}
+    },
+    qr{^/bug/$},
+    {GET => {method => 'get'}},
+    qr{^/bug/possible_duplicates$},
+    {GET => {method => 'possible_duplicates'}},
+    qr{^/bug/([^/]+)$},
+    {
+      GET => {
+        method => 'get',
+        params => sub {
+          return {ids => [$_[0]]};
+        }
+      },
+      PUT => {
+        method => 'update',
+        params => sub {
+          return {ids => [$_[0]]};
+        }
+      }
+    },
+    qr{^/bug/([^/]+)/comment$},
+    {
+      GET => {
+        method => 'comments',
+        params => sub {
+          return {ids => [$_[0]]};
+        }
+      },
+      POST => {
+        method => 'add_comment',
+        params => sub {
+          return {id => $_[0]};
+        },
+        success_code => STATUS_CREATED
+      }
+    },
+    qr{^/bug/comment/(\d+)$},
+    {
+      GET => {
+        method => 'comments',
+        params => sub {
+          return {comment_ids => [$_[0]]};
+        }
+      }
+    },
+    qr{^/bug/comment/tags/([^/]+)$},
+    {
+      GET => {
+        method => 'search_comment_tags',
+        params => sub {
+          return {query => $_[0]};
+        },
+      },
+    },
+    qr{^/bug/comment/([^/]+)/tags$},
+    {
+      PUT => {
+        method => 'update_comment_tags',
+        params => sub {
+          return {comment_id => $_[0]};
+        },
+      },
+    },
+    qr{^/bug/comment/render$},
+    {POST => {method => 'render_comment',},},
+    qr{^/bug/([^/]+)/history$},
+    {
+      GET => {
+        method => 'history',
+        params => sub {
+          return {ids => [$_[0]]};
+        },
+      }
+    },
+    qr{^/bug/([^/]+)/attachment$},
+    {
+      GET => {
+        method => 'attachments',
+        params => sub {
+          return {ids => [$_[0]]};
+        }
+      },
+      POST => {
+        method => 'add_attachment',
+        params => sub {
+          return {ids => [$_[0]]};
+        },
+        success_code => STATUS_CREATED
+      }
+    },
+    qr{^/bug/attachment/([^/]+)$},
+    {
+      GET => {
+        method => 'attachments',
+        params => sub {
+          return {attachment_ids => [$_[0]]};
+        }
+      },
+      PUT => {
+        method => 'update_attachment',
+        params => sub {
+          return {ids => [$_[0]]};
+        }
+      }
+    },
+    qr{^/field/bug$},
+    {GET => {method => 'fields',}},
+    qr{^/field/bug/([^/]+)$},
+    {
+      GET => {
+        method => 'fields',
+        params => sub {
+          my $value = $_[0];
+          my $param = 'names';
+          $param = 'ids' if $value =~ /^\d+$/;
+          return {$param => [$_[0]]};
+        }
+      }
+    },
+    qr{^/field/bug/([^/]+)/values$},
+    {
+      GET => {
+        method => 'legal_values',
+        params => sub {
+          return {field => $_[0]};
+        }
+      }
+    },
+    qr{^/field/bug/([^/]+)/([^/]+)/values$},
+    {
+      GET => {
+        method => 'legal_values',
+        params => sub {
+          return {field => $_[0], product_id => $_[1]};
+        }
+      }
+    },
+    qr{^/flag_types/([^/]+)/([^/]+)$},
+    {
+      GET => {
+        method => 'flag_types',
+        params => sub {
+          return {product => $_[0], component => $_[1]};
+        }
+      }
+    },
+    qr{^/flag_types/([^/]+)$},
+    {
+      GET => {
+        method => 'flag_types',
+        params => sub {
+          return {product => $_[0]};
+        }
+      }
+    }
+  ];
+}
 
 sub fields {
   my ($self, $params) = validate(@_, 'ids', 'names');
@@ -838,7 +1007,7 @@ sub update {
     my %changes = %{$all_changes{$bug->id}};
     foreach my $field (keys %changes) {
       my $change = $changes{$field};
-      my $api_field = $api_field_names{$field} || $field;
+      my $api_field = API_FIELD_NAMES()->{$field} || $field;
 
       # We normalize undef to an empty string, so that the API
       # stays consistent for things like Deadline that can become
@@ -1755,8 +1924,8 @@ sub _changeset_to_hash {
 
   foreach my $change (@{$changeset->{changes}}) {
     my $field_name     = delete $change->{fieldname};
-    my $api_field_type = $api_field_types{$field_name} || 'string';
-    my $api_field_name = $api_field_names{$field_name} || $field_name;
+    my $api_field_type = API_FIELD_TYPES()->{$field_name} || 'string';
+    my $api_field_name = API_FIELD_NAMES()->{$field_name} || $field_name;
     my $attach_id      = delete $change->{attachid};
     my $comment        = delete $change->{comment};
 

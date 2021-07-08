@@ -52,6 +52,10 @@ sub isTestingFile {
     return undef if $ignore eq $file;
   }
 
+  # Skip testing Bugzilla/Model modules as they
+  # need access to a running DB
+  return undef if $file =~ /Bugzilla\/Model/;
+  
   if ($file =~ /\.psgi$|\.cgi$|\.pl$|\.pm$/) {
     return 1;
   }

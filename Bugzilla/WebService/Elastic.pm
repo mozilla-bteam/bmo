@@ -33,6 +33,10 @@ use Bugzilla::Util qw(trim detaint_natural );
 use constant READ_ONLY      => qw( suggest_users );
 use constant PUBLIC_METHODS => qw( suggest_users );
 
+sub rest_resources {
+  return [qr{^/elastic/suggest_users$}, {GET => {method => 'suggest_users'},},];
+}
+
 sub suggest_users {
   my ($self, $params) = @_;
 

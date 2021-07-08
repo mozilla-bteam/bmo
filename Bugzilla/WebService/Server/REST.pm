@@ -21,16 +21,6 @@ use Bugzilla::Util qw(html_quote disable_utf8 enable_utf8);
 use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util qw(taint_data fix_credentials);
 
-# Load resource modules
-use Bugzilla::WebService::Server::REST::Resources::Bug;
-use Bugzilla::WebService::Server::REST::Resources::Bugzilla;
-use Bugzilla::WebService::Server::REST::Resources::Classification;
-use Bugzilla::WebService::Server::REST::Resources::Group;
-use Bugzilla::WebService::Server::REST::Resources::Product;
-use Bugzilla::WebService::Server::REST::Resources::User;
-use Bugzilla::WebService::Server::REST::Resources::BugUserLastVisit;
-use Bugzilla::WebService::Server::REST::Resources::Elastic;
-
 use List::MoreUtils qw(uniq);
 use Scalar::Util qw(blessed reftype);
 use MIME::Base64 qw(decode_base64);

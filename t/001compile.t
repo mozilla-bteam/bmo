@@ -18,12 +18,10 @@ use lib qw(. lib local/lib/perl5 t);
 use Config;
 use Support::Files;
 use Test::More;
+use Module::Runtime qw(use_module);
+use Test2::Tools::Mock qw(mock);
 
 BEGIN {
-  if ($ENV{CI}) {
-    plan skip_all => 'Not running compile tests in CI.';
-    exit;
-  }
   plan tests => @Support::Files::testitems + @Support::Files::test_files;
 
   use_ok('Bugzilla::Constants');
@@ -31,6 +29,18 @@ BEGIN {
   use_ok('Bugzilla');
 }
 Bugzilla->usage_mode(USAGE_MODE_TEST);
+
+use Bugzilla::Test::MockParams;
+use Bugzilla::Test::MockLocalconfig (db_driver => 'sqlite',
+  db_name => $ENV{test_db_name} // ':memory:',);
+
+my $BugzillaField = mock 'Bugzilla::Field' =>
+  (override => [get_legal_field_values => sub { [] },],);
+my $BugzillaUser
+  = mock 'Bugzilla::User' => (override =>
+    ['get_all' => sub { [] }, 'groups' => sub { [] }, 'in_group' => sub { 1; },],
+  );
+
 
 sub compile_file {
   my ($file) = @_;

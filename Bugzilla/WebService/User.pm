@@ -20,6 +20,7 @@ use Bugzilla::Group;
 use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Util qw(trim detaint_natural);
+use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util qw(filter filter_wants validate
   translate params_to_objects);
 use Bugzilla::Hook;
@@ -56,6 +57,52 @@ use constant MAPPED_RETURNS => {
   realname     => 'full_name',
   disabledtext => 'login_denied_text',
 };
+
+sub rest_resources {
+  return [
+    qr{^/user/suggest$},
+    {GET => {method => 'suggest',},},
+    qr{^/valid_login$},
+    {GET => {method => 'valid_login'}},
+    qr{^/login$},
+    {GET => {method => 'login'}},
+    qr{^/logout$},
+    {GET => {method => 'logout'}},
+    qr{^/user$},
+    {
+      GET  => {method => 'get'},
+      POST => {method => 'create', success_code => STATUS_CREATED}
+    },
+    qr{^/user/([^/]+)$},
+    {
+      GET => {
+        method => 'get',
+        params => sub {
+          my $param = $_[0] =~ /^\d+$/ ? 'ids' : 'names';
+          return {$param => [$_[0]]};
+        }
+      },
+      PUT => {
+        method => 'update',
+        params => sub {
+          my $param = $_[0] =~ /^\d+$/ ? 'ids' : 'names';
+          return {$param => [$_[0]]};
+        }
+      }
+    },
+    qr{^/user/mfa/([^/]+)/enroll$},
+    {
+      GET => {
+        method => 'mfa_enroll',
+        params => sub {
+          return {provider => $_[0]};
+        }
+      },
+    },
+    qr{^/whoami$},
+    {GET => {method => 'whoami'}}
+  ];
+}
 
 ##############
 # User Login #

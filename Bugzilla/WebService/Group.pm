@@ -14,6 +14,7 @@ use warnings;
 use base qw(Bugzilla::WebService);
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util qw(validate translate params_to_objects);
 
 use constant PUBLIC_METHODS => qw(
@@ -24,6 +25,33 @@ use constant PUBLIC_METHODS => qw(
 
 use constant MAPPED_RETURNS =>
   {userregexp => 'user_regexp', isactive => 'is_active'};
+
+sub rest_resources {
+  return [
+    qr{^/group$},
+    {
+      GET  => {method => 'get'},
+      POST => {method => 'create', success_code => STATUS_CREATED}
+    },
+    qr{^/group/([^/]+)$},
+    {
+      GET => {
+        method => 'get',
+        params => sub {
+          my $param = $_[0] =~ /^\d+$/ ? 'ids' : 'names';
+          return {$param => [$_[0]]};
+        }
+      },
+      PUT => {
+        method => 'update',
+        params => sub {
+          my $param = $_[0] =~ /^\d+$/ ? 'ids' : 'names';
+          return {$param => [$_[0]]};
+        }
+      }
+    }
+  ];
+}
 
 sub create {
   my ($self, $params) = @_;
