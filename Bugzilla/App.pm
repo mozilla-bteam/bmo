@@ -124,6 +124,9 @@ sub startup {
     $self->hook(
       after_static => sub {
         my ($c) = @_;
+        my @policies = ("default-src: 'self'", "frame-ancestors: 'self'");
+        $c->res->content_security_policy(join('; ', @policies));
+
         my $version = $c->stash->{static_file_version};
         if ($version && $version > Bugzilla->VERSION) {
           $c->res->headers->cache_control('no-cache, no-store');
