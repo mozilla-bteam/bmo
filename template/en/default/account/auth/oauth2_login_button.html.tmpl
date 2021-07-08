@@ -1,0 +1,19 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+[%
+  redirect_uri  = c.oauth2.redirect_uri(target);
+  authorize_url = c.oauth2.auth_url('oauth2',
+    {state => issue_hash_token(['oauth2']), redirect_uri => redirect_uri });
+%]
+<div class="oauth2-login">
+  <a href="[% authorize_url FILTER none %]">
+    <button type="submit">
+      <i class="fas fa-sign-in-alt"></i> Login with OAuth2
+    </button>
+  </a>
+</div>

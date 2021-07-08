@@ -51,7 +51,7 @@ sub import {
     (override => [closed_bug_statuses => sub { die "no database" },],);
 
   # prod-like defaults
-  $answers{user_info_class}   //= 'GitHubAuth,CGI';
+  $answers{user_info_class}   //= 'GitHubAuth,OAuth2,CGI';
   $answers{user_verify_class} //= 'GitHubAuth,DB';
 
   if ($first_time++) {

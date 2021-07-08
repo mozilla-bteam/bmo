@@ -40,6 +40,13 @@
      class='show_mini_login_form' data-qs-suffix="[% qs_suffix FILTER html %]">Log In</a>
 
   <div id="mini_login[% qs_suffix FILTER html %]" class="mini-popup mini_login bz_default_hidden">
+
+  [% IF Param('oauth2_client_enabled') %]
+    [% INCLUDE account/auth/oauth2_login_button.html.tmpl
+       target => login_target
+    %]
+  [% END %]
+
   [% Hook.process('additional_methods') %]
 
   <form action="[% login_target FILTER html %]" method="POST"

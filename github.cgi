@@ -36,12 +36,12 @@ if (lc($cgi->request_method) eq 'post') {
   my $user       = Bugzilla->login(LOGIN_OPTIONAL);
   my $target_uri = $cgi->param('target_uri')
     or ThrowCodeError("github_invalid_target");
-  my $github_secret = $cgi->param('github_secret')
+  my $github_token = $cgi->param('github_token')
     or ThrowCodeError("github_invalid_request", {reason => 'invalid secret'});
-  my $github_secret2 = Bugzilla->github_secret
+  my $github_token2 = Bugzilla->github_token
     or ThrowCodeError("github_invalid_request", {reason => 'invalid secret'});
 
-  if ($github_secret ne $github_secret2) {
+  if ($github_token ne $github_token2) {
     Bugzilla->check_rate_limit('github', remote_ip());
     ThrowCodeError("github_invalid_request", {reason => 'invalid secret'});
   }

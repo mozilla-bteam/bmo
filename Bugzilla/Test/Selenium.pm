@@ -23,11 +23,16 @@ has 'driver'      => (
   handles => [qw(
       add_cookie
       alert_text_like
+      body_text_contains
+      body_text_lacks
+      click_element_ok
       get_all_cookies
       get_ok
       get_title
       go_back_ok
       refresh
+      send_keys_to_active_element
+      set_implicit_wait_timeout
       title_is
       title_isnt
       title_like
@@ -390,7 +395,7 @@ sub submit {
   my ($self, $locator) = @_;
   TRACE("submit: $locator");
   $locator = $self->_fix_locator($locator);
-  $self->find_element($locator)->submit();
+  my $element = $self->find_element($locator)->submit();
 }
 
 sub is_editable {
@@ -462,6 +467,117 @@ sub _toggle_check {
     return 1;
   }
   return 0;
+}
+
+# New utility methods used by t/bmo/*.t tests
+# Use these for any new scripts
+
+sub get_token {
+  my $token;
+  my $count = 0;
+  do {
+    sleep 1 if $count++;
+    open my $fh, '<', '/app/data/mailer.testfile';
+    my $content = do {
+      local $/ = undef;
+      <$fh>;
+    };
+    ($token) = $content =~ m!/token\.cgi\?t=3D([^&]+)&a=3Dcfmpw!s;
+    close $fh;
+  } until $token || $count > 60;
+  return $token;
+}
+
+sub search_mailer_testfile {
+  my ($self, $regexp) = @_;
+  my $content = "";
+  my @result;
+  my $count = 0;
+  do {
+    sleep 1 if $count++;
+    open my $fh, '<', '/app/data/mailer.testfile';
+    $content .= do {
+      local $/ = undef;
+      <$fh>;
+    };
+    close $fh;
+    my $decoded = $content;
+    $decoded =~ s/\r\n/\n/gs;
+    $decoded =~ s/=\n//gs;
+    $decoded =~ s/=([[:xdigit:]]{2})/chr(hex($1))/ges;
+    @result = $decoded =~ $regexp;
+  } until @result || $count > 60;
+  return @result;
+}
+
+sub click_and_type {
+  my ($self, $name, $text) = @_;
+  $self->click_ok(qq{//*[\@id="bugzilla-body"]//input[\@name="$name"]}, "Click on $name");
+  $self->send_keys_to_active_element($text);
+}
+
+sub click_link {
+  my ($self, $text) = @_;
+  my $el = $self->find_element($text, 'link_text');
+  $el->click();
+}
+
+sub change_password {
+  my ($self, $old, $new1, $new2) = @_;
+  $self->get_ok('/userprefs.cgi?tab=account', 'Go to user preferences');
+  $self->title_is('User Preferences', 'User preferences loaded');
+  $self->click_and_type('old_password',  $old);
+  $self->click_and_type('new_password1', $new1);
+  $self->click_and_type('new_password2', $new2);
+  $self->click_ok('//input[@value="Submit Changes"]');
+}
+
+sub toggle_require_password_change {
+  my ($self, $login) = @_;
+  $self->get_ok('/editusers.cgi', 'Go to edit users');
+  $self->title_is('Search users', 'Edit users loaded');
+  $self->type_ok('matchstr', $login, "Type $login for search");
+  $self->click_ok('//input[@id="search"]');
+  $self->title_is('Select user', 'Select a user loaded');
+  $self->click_link($login);
+  $self->find_element('//input[@id="password_change_required"]')->click;
+  $self->click_ok('//input[@id="update"]');
+  $self->title_is("User $login updated", "User $login updated");
+}
+
+sub enable_user_account {
+  my ($self, $login) = @_;
+  $self->get_ok('/editusers.cgi', 'Go to edit users');
+  $self->title_is('Search users', 'Edit users loaded');
+  $self->type_ok('matchstr', $login, "Type $login for search");
+  $self->click_ok('//input[@id="search"]');
+  $self->title_is('Select user', 'Select a user loaded');
+  $self->click_link($login);
+  $self->type_ok('disabledtext', '', 'Clear disabled text');
+  $self->uncheck_ok('disable_mail');
+  $self->click_ok('//input[@id="update"]');
+  $self->title_is("User $login updated", "User $login updated");
+}
+
+sub login {
+  my ($self, $username, $password) = @_;
+  $self->get_ok('/login', undef, 'Go to the home page');
+  $self->title_is('Log in to Bugzilla', 'Log in to Bugzilla');
+  $self->type_ok('Bugzilla_login',    $username, "Enter login name $username");
+  $self->type_ok('Bugzilla_password', $password, "Enter password $password");
+  $self->click_ok('log_in', undef, 'Submit credentials');
+}
+
+sub login_ok {
+  my $self = shift;
+  $self->login(@_);
+  $self->title_is('Bugzilla Main Page', 'User is logged in');
+}
+
+sub logout_ok {
+  my ($self) = @_;
+  $self->get_ok('/index.cgi?logout=1', 'Logout current user');
+  $self->title_is('Logged Out', 'Logged Out');
 }
 
 1;

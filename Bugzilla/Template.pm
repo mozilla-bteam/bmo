@@ -539,6 +539,7 @@ our $is_processing = 0;
 sub process {
   my ($self, $input, $vars, $output) = @_;
   $vars //= {};
+
   if (($ENV{SERVER_SOFTWARE} // '') eq 'Bugzilla::App::CGI') {
     $vars->{self} = $vars->{c} = Bugzilla->request_cache->{mojo_controller};
   }

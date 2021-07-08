@@ -9,7 +9,7 @@ package Bugzilla::Report::Ping::Simple;
 use 5.10.1;
 use Moo;
 
-use JSON::Validator qw(joi);
+use JSON::Validator::Joi qw(joi);
 
 our $VERSION = '1';
 

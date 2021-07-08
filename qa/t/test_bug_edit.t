@@ -40,7 +40,7 @@ check_page_load($sel, q{http://HOSTNAME/editgroups.cgi});
 $sel->title_is("Edit Groups");
 $sel->click_ok("link=Master");
 check_page_load($sel,
-  q{http://HOSTNAME/editgroups.cgi?action=changeform&group=26});
+  q{http://HOSTNAME/editgroups.cgi?action=changeform&group=27});
 $sel->title_is("Change Group: Master");
 my $group_url = $sel->get_location();
 $group_url =~ /group=(\d+)$/;

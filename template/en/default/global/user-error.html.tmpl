@@ -305,6 +305,11 @@
     The token is not valid. It could be because you loaded this page more than
     [%= constants.MAX_TOKEN_AGE FILTER html %] days ago.
 
+  [% ELSIF error == "oauth2_userinfo_error" %]
+    [% title = 'Error Occurred Logging In' %]
+    An error occurred completing the login process using the single signon provider.
+    Contact an administrator explaining the problem.
+  
   [% ELSIF error == "attachment_deletion_disabled" %]
     [% title = "Attachment Deletion Disabled" %]
     Attachment deletion is disabled on this installation.
