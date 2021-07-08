@@ -14,60 +14,65 @@ var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 /**
  * Enforce setting of Priority to P1 when Severity is set to S1
  */
-Bugzilla.ClearTrackingPriorityS1 = class ClearTrackingPriorityS1 {
+Bugzilla.SetTrackingSeverityS1 = class SetTrackingSeverityS1 {
   /**
-   * Initialize a new ClearTrackingPriorityS1 instance.
+   * Initialize a new SetTrackingSeverityS1 instance.
    */
   constructor() {
     this.priority = document.querySelector("#priority");
     this.severity = document.querySelector("#bug_severity");
     this.flags = document.querySelector("div.edit-show table.tracking-flags");
+    this.firefox_versions = document.querySelector(
+      'meta[name="firefox-versions"]'
+    );
 
-    if (this.severity && this.priority && this.flags) {
+    if (this.severity && this.priority && this.flags && this.firefox_versions) {
       this.sev_curr_value = this.severity.value;
       this.severity.addEventListener("change", () => this.severity_onselect());
 
       // Find cf_tracking_ specific flags and
       // store current values to reset them if needed
+      const product_details = this.getMajors(
+        JSON.parse(this.firefox_versions.content)
+      );
+      const nightly = "cf_tracking_firefox" + product_details.nightly;
+      const beta = "cf_tracking_firefox" + product_details.beta;
       this.flag_selects = [];
       this.flag_curr_values = [];
       this.flag_curr_titles = [];
-      this.flags.querySelectorAll("select").forEach((flag) => {
-        if (flag.name.indexOf("cf_tracking_") !== -1) {
+      this.flags
+        .querySelectorAll(
+          'select[name="' + nightly + '"], select[name="' + beta + '"]'
+        )
+        .forEach((flag) => {
           this.flag_selects.push(flag);
           this.flag_curr_values[flag.name] = flag.value;
           this.flag_curr_titles[flag.name] = flag.title;
-        }
-      });
+        });
     }
   }
 
   /**
-   * Called when severity select is changed. If severity if changed away from S1
-   * then reset priority to '--' and clear any tracking flags set to '?'.
+   * Called when severity select is changed. If severity if changed to S1
+   * from something else, set firefox beta and nightly tracking flags to '?'.
    */
   severity_onselect() {
-    const s1_not_selected =
-      this.sev_curr_value === "S1" && this.severity.value !== "S1";
-
-    if (s1_not_selected) {
-      this.priority.value = "--";
-      this.priority.title = "Priority cleared due to Severity change from S1";
-    }
+    const s1_selected =
+      this.sev_curr_value !== "S1" && this.severity.value === "S1";
 
     this.flag_selects.forEach((flag) => {
       const options = flag.querySelectorAll("option");
-      options.forEach((opt) => (opt.disabled = s1_not_selected));
-      if (s1_not_selected && flag.value === "?") {
+      options.forEach((opt) => (opt.disabled = s1_selected));
+      if (s1_selected && flag.value !== "+") {
         const request_opt = Array.from(options).filter(
-          (opt) => opt.value === "---"
+          (opt) => opt.value === "?"
         )[0];
         request_opt.disabled = false;
         request_opt.selected = true;
-        flag.title = "Flag is locked since Severity was moved from S1";
+        flag.title = "Flag is locked since Severity was moved to S1";
       } else if (
         flag.value !== this.flag_curr_values[flag.name] &&
-        flag.value === "---"
+        flag.value === "?"
       ) {
         const request_opt = Array.from(options).filter(
           (opt) => opt.value === this.flag_curr_values[flag.name]
@@ -78,9 +83,20 @@ Bugzilla.ClearTrackingPriorityS1 = class ClearTrackingPriorityS1 {
       }
     });
   }
+
+  getMajor(s) {
+    return parseInt(s.split(".")[0], 10);
+  }
+
+  getMajors(pd) {
+    const res = {};
+    res.nightly = this.getMajor(pd.FIREFOX_NIGHTLY);
+    res.beta = this.getMajor(pd.LATEST_FIREFOX_RELEASED_DEVEL_VERSION);
+    return res;
+  }
 };
 
 window.addEventListener(
   "DOMContentLoaded",
-  () => new Bugzilla.ClearTrackingPriorityS1()
+  () => new Bugzilla.SetTrackingSeverityS1()
 );

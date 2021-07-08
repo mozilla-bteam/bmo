@@ -45,10 +45,10 @@ sub evaluate_change {
 
       $flag->bug_flag->remove_from_db();
 
-      $changes->{$flag->name} = [$flag_value, '---'];
+      $changes->{$flag_name} = [$flag_value, '---'];
 
       # Update the name/value pair in the bug object
-      $bug->{$flag->name} = '---';
+      $bug->{$flag_name} = '---';
     }
 
     $bug->update($timestamp);
