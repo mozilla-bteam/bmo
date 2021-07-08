@@ -1607,7 +1607,7 @@ sub _bug_to_hash {
     {
       product   => $bug->product_obj,
       component => $bug->component_obj,
-      bug_id    => $bug->id
+      bug       => $bug
     },
     $self->wants_object,
   );
