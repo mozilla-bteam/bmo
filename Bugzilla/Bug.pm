@@ -4536,8 +4536,9 @@ sub bug_alias_to_id {
 sub list_relationship {
   my ($table, $my_field, $target_field, $bug_id, $exclude_resolved) = @_;
   my $cache = Bugzilla->request_cache->{"bug_$table"} ||= {};
+  my $user  = Bugzilla->user;
+  my $dbh   = Bugzilla->dbh;
 
-  my $dbh = Bugzilla->dbh;
   $exclude_resolved = $exclude_resolved ? 1 : 0;
   my $is_open_clause = $exclude_resolved ? 'AND is_open = 1' : '';
 
@@ -4554,8 +4555,14 @@ sub list_relationship {
     $cache->{"${target_field}_sth_$exclude_resolved"},
     undef, $bug_id);
 
-  # List only bugs visible to the user
-  return Bugzilla->user->visible_bugs(\@$bug_ids);
+  # If user has 'editbugs', show all bug ids.
+  # Otherwise list only bugs visible to the user
+  if ($user->in_group('editbugs')) {
+    return $bug_ids;
+  }
+  else {
+    return $user->visible_bugs(\@$bug_ids);
+  }
 }
 
 # Creates a lot of bug objects in the same order as the input array.
@@ -4774,8 +4781,11 @@ sub GetBugActivity {
         $added = _join_activity_entries($fieldname, $old_change->{'added'}, $added);
       }
 
-      # List only bugs visible to the user
-      if ($fieldname =~ /^(?:dependson|blocked|regress(?:ed_by|es))$/) {
+      # If user has 'editbugs', show all bug ids.
+      # Otherwise list only bugs visible to the user
+      if (!$user->in_group('editbugs')
+        && $fieldname =~ /^(?:dependson|blocked|regress(?:ed_by|es))$/)
+      {
         $removed = join(', ', @{$user->visible_bugs([split(/,\s*/, $removed)])});
         $added   = join(', ', @{$user->visible_bugs([split(/,\s*/, $added)])});
         next if !$removed && !$added;
