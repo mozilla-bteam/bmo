@@ -160,7 +160,7 @@ MOJO_CLIENTS
   Default: 200
 
 BUGZILLA_ALLOW_INSECURE_HTTP
-  This should never be set in production. It allows auth delegation and oauth over http.
+  This should never be set in production. It allows OAuth2 over HTTP.
 
 BMO_urlbase
   The public URL for this instance. Note that if this begins with https://

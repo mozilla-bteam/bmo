@@ -136,8 +136,6 @@ sub get_param_list {
       default => 'The password must be complex.',
     },
 
-    {name => 'auth_delegation', type => 'b', default => 0,},
-
     {name => 'duo_host', type => 't', default => '',},
     {name => 'duo_akey', type => 't', default => '',},
     {name => 'duo_ikey', type => 't', default => '',},
