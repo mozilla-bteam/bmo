@@ -88,8 +88,6 @@ sub install_before_final_checks {
     print STDERR get_text('sitemap_requirelogin'), "\n";
     return;
   }
-
-  return if (Bugzilla->localconfig->urlbase ne 'https://bugzilla.mozilla.org/');
 }
 
 sub install_filesystem {
