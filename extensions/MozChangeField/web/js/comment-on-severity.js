@@ -38,13 +38,9 @@ Bugzilla.CommentOnSeverity = class CommentOnSeverity {
    */
   severity_onselect() {
     // Set comment required warning
-    if (
-      this.severity.value != this.curr_severity &&
-      document.querySelector("#floating-message")
-    ) {
-      document.querySelector("#floating-message").style.position = "fixed";
+    if (this.severity.value != this.curr_severity) {
       $("#floating-message-text").html(this.comment_required_html);
-      $("#floating-message").fadeIn(250);
+      $('#floating-message').fadeIn(250).delay(4000).fadeOut();
       document.querySelector('#severity-guide').addEventListener('click', this.openNewTab);
     }
 
