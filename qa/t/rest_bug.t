@@ -29,12 +29,13 @@ $t->ua->max_redirects(1);
 ### Section 1: Create new bug
 
 my $new_bug = {
-  product   => 'Firefox',
-  component => 'General',
-  summary   => 'This is a new test bug',
-  type      => 'defect',
-  version   => 'unspecified',
-  severity  => 'blocker',
+  product     => 'Firefox',
+  component   => 'General',
+  summary     => 'This is a new test bug',
+  type        => 'defect',
+  version     => 'unspecified',
+  severity    => 'blocker',
+  description => 'This is a new test bug',
 };
 
 # First try unauthenticated. Should fail with error.
@@ -60,6 +61,7 @@ my $update = {
   severity    => 'minor',
   status      => 'ASSIGNED',
   assigned_to => $config->{admin_user_login},
+  comment     => {body => 'Updating bug report'},
 };
 
 # Unauthenticated update should fail

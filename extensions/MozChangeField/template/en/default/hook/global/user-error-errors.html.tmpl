@@ -6,6 +6,7 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% javascript_urls.push("extensions/MozChangeField/web/js/comment-on-severity.js") %]
-[% javascript_urls.push("extensions/MozChangeField/web/js/severity-s1-priority-p1.js") %]
-[% javascript_urls.push("extensions/MozChangeField/web/js/clear-tracking-priority-s1.js") %]
+[% IF error == "mozchangefield_severity_comment_required" %]
+  [% title = "Comment Required" %]
+  A <b>comment</b> is required when changing the severity field.
+[% END %]

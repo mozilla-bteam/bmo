@@ -1072,6 +1072,10 @@ h3.change-name a {
   margin: 4px;
 }
 
+.floating-message-fixed {
+  position: fixed;
+}
+
 #floating-message-text {
   position: relative;
   left: -50%;
