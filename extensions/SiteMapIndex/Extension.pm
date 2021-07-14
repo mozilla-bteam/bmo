@@ -78,18 +78,6 @@ sub page_before_template {
 # Installation #
 ################
 
-sub install_before_final_checks {
-  my ($self) = @_;
-  if (!Bugzilla->localconfig->urlbase) {
-    print STDERR get_text('sitemap_no_urlbase'), "\n";
-    return;
-  }
-  if (Bugzilla->params->{'requirelogin'}) {
-    print STDERR get_text('sitemap_requirelogin'), "\n";
-    return;
-  }
-}
-
 sub install_filesystem {
   my ($self, $args) = @_;
   my $create_dirs  = $args->{'create_dirs'};
