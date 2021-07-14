@@ -12,7 +12,7 @@ use Moo;
 
 use Bugzilla::Extension::TrackingFlags::Flag;
 use Bugzilla::Extension::TrackingFlags::Flag::Bug;
-use Bugzilla::Util qw(fetch_product_version_file);
+use Bugzilla::Util qw(fetch_product_versions);
 
 sub evaluate_create {
   my ($self, $args) = @_;
@@ -116,7 +116,13 @@ sub evaluate_change {
 }
 
 sub _fetch_nightly_beta_versions {
-  my $versions  = fetch_product_version_file('firefox');
+  my $versions  = fetch_product_versions('firefox');
+  if (!%$versions
+    || !exists $versions->{FIREFOX_NIGHTLY}
+    || !exists $versions->{LATEST_FIREFOX_RELEASED_DEVEL_VERSION}
+  ) {
+    return {nightly => 0, beta => 0};
+  }
   my ($nightly) = split /\./, $versions->{FIREFOX_NIGHTLY};
   my ($beta)    = split /\./, $versions->{LATEST_FIREFOX_RELEASED_DEVEL_VERSION};
   $nightly ||= 0;

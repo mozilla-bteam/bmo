@@ -28,7 +28,7 @@ use base qw(Exporter);
   validate_email_syntax clean_text
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
-  round extract_nicks fetch_product_version_file);
+  round extract_nicks fetch_product_versions);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -972,7 +972,7 @@ sub extract_nicks {
   return grep { defined $_ } @nicks;
 }
 
-sub fetch_product_version_file {
+sub fetch_product_versions {
   my ($product)  = @_;
   my $key      = "${product}_versions";
   my $versions = Bugzilla->request_cache->{$key}

@@ -173,7 +173,7 @@ sub template_before_process {
     }
   }
   elsif ($file eq 'bug/edit.html.tmpl' || $file eq 'bug_modal/edit.html.tmpl') {
-    $vars->{firefox_versions} = fetch_product_version_file('firefox');
+    $vars->{firefox_versions} = fetch_product_versions('firefox');
     $vars->{split_cf_crash_signature} = $self->_split_crash_signature($vars);
   }
 
@@ -2514,12 +2514,13 @@ sub _split_crash_signature {
 
 sub _get_product_version {
   my ($product, $channel, $detail) = @_;
-  my $versions = fetch_product_version_file($product);
+  my $versions = fetch_product_versions($product);
+  return 0 unless %$versions;
+
   my $version = $versions->{PRODUCT_CHANNELS->{$product}->{$channel}->{json_key}};
   return $version if $detail;
 
   # Return major version by default
-  return 0 unless $version;
   my ($major_version) = $version =~ /^(\d+)/;
   return $major_version;
 }
@@ -2573,7 +2574,7 @@ sub search_date_pronoun {
   my $keys = ['LAST_MERGE_DATE', 'LAST_RELEASE_DATE', 'LAST_SOFTFREEZE_DATE'];
   return unless grep(/^$key$/, @$keys);
 
-  my $date = fetch_product_version_file('firefox')->{$key};
+  my $date = fetch_product_versions('firefox')->{$key};
   ThrowUserError('product_date_pronouns_unavailable') unless $date;
   $pronoun->{date} = $date;
 }
