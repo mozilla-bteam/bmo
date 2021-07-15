@@ -60,6 +60,7 @@ use constant SUB_CLASSES => qw(
   Bugzilla::BugUrl::Chromium
   Bugzilla::BugUrl::Edge
   Bugzilla::BugUrl::Debian
+  Bugzilla::BugUrl::Ideas
   Bugzilla::BugUrl::JIRA
   Bugzilla::BugUrl::Trac
   Bugzilla::BugUrl::MantisBT
