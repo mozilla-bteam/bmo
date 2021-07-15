@@ -1,7 +1,8 @@
-FROM perl:5.30.2-slim AS builder
+FROM perl:5.34.0-slim AS builder
 
-RUN apt-get update
-RUN apt-get install -y \
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y \
     apt-file \
     build-essential \
     cmake \
@@ -25,15 +26,15 @@ RUN cpm install
 # secure mail loop fixes
 RUN cpm install http://s3.amazonaws.com/moz-devservices-bmocartons/third-party/Crypt-OpenPGP-1.15.tar.gz
 
-RUN apt-file update
-RUN find local -name '*.so' -exec ldd {} \; \
+RUN apt-file update \
+    && find local -name '*.so' -exec ldd {} \; \
     | egrep -v 'not.found|not.a.dynamic.executable' \
     | awk '$3 {print $3}' \
     | sort -u \
     | xargs -IFILE apt-file search -l FILE \
     | sort -u > PACKAGES
 
-FROM perl:5.30.2-slim
+FROM perl:5.34.0-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -41,6 +42,7 @@ COPY --from=builder /app/local /app/local
 COPY --from=builder /app/PACKAGES /app/PACKAGES
 
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y \
        curl \
        git \
