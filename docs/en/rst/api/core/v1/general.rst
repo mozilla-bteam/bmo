@@ -106,12 +106,8 @@ any request, and you will be authenticated as that user if the key is correct an
 You can set up an API key by using the :ref:`API Keys tab <api-keys>` in the
 Preferences pages.
 
-API keys may also be requested via :ref:`Authentication Delegation <auth-delegation>`.
-
 **WARNING**: It should be noted that additional authentication methods exist, but they are **not recommended** for use and are likely to be deprecated in future versions of BMO, due to security concerns.  These additional methods include the following:
 
- - username and password via ``Bugzilla_login`` and ``Bugzilla_password`` or simply ``login`` and ``password`` respectively in query parameters.
- - username and password via ``X-BUGZILLA-LOGIN`` and ``X-BUGZILLA-PASSWORD`` headers respectively.
  - api key via ``Bugzilla_api_key`` or simply ``api_key`` in query parameters.
 
 Useful Parameters
