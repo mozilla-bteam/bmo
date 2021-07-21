@@ -1,6 +1,6 @@
 [%# This Source Code Form is subject to the terms of the Mozilla Public
   # License, v. 2.0. If a copy of the MPL was not distributed with this
-  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  # file, You can obtain one at https://mozilla.org/MPL/2.0/.
   #
   # This Source Code Form is "Incompatible With Secondary Licenses", as
   # defined by the Mozilla Public License, v. 2.0.
@@ -10,10 +10,7 @@
    title = "Bug Writing Guidelines"
 %]
 
-<div class="message">
-  <p><strong>If you need help with Mozilla software (for example with Firefox, Seamonkey or Thunderbird),
-    use one of the available <a href="http://www.mozilla.org/support/">support options</a>.</strong>
-</div>
+<h1>Bug Writing Guidelines</h1>
 
 <p>This page assumes you&apos;d like to contribute to the Mozilla project by collecting enough information
   to enter a useful [% terms.bug %] report in [% terms.Bugzilla %] , the Mozilla [% terms.bug %] tracking system. Thank you!</p>
@@ -40,17 +37,17 @@
    <li>If you have <a href="#Writing_precise_steps_to_reproduce">precise steps to reproduce</a>
      — great! — you&apos;re on your way to reporting a useful [% terms.bug %] report.</li>
    <li>If you can reproduce occasionally, but not after following specific steps, you must provide
-     <a href="#specific-types">additional information</a> for the [% terms.bug %] to be useful.</li>
+     additional information for the [% terms.bug %] to be useful.</li>
    <li>If you can&apos;t reproduce the problem, there&apos;s probably no use in reporting it, unless
      you provide unique information about its occurrence.</li>
   </ul>
  </li>
  <li>Make sure your software is up to date. Ideally, test an in-development version to see whether
-   your [% terms.bug %] has already been fixed (e.g. <a href="http://www.mozilla.com/en-US/firefox/channel/">
-   Firefox Beta, Aurora</a>, or bleeding-edge <a class="link-https" href="https://nightly.mozilla.org/">
+   your [% terms.bug %] has already been fixed (e.g. <a href="https://www.mozilla.com/en-US/firefox/channel/">
+   Firefox Beta</a>, or bleeding-edge <a class="link-https" href="https://nightly.mozilla.org/">
    Nightly</a>).</li>
  <li>When reporting a Firefox [% terms.bug %], first check if you can reproduce the [% terms.bug %] in a
-   <a href="https://support.mozilla.org/en-US/kb/profile-manager-create-and-remove-firefox-profiles">
+   <a href="https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles">
    new Firefox profile</a>. If the [% terms.bug %] only happens in your existing profile, try to figure out what
    <a href="https://support.mozilla.org/en-US/kb/troubleshoot-extensions-themes-to-fix-problems">
    settings, extensions</a>, or <a href="https://support.mozilla.org/en-US/kb/profiles-where-firefox-stores-user-data">
@@ -60,16 +57,16 @@
        probably something unusual about your setup that&apos;s a necessary part of the steps to reproduce
        the [% terms.bug %]. You have much better chances of figuring it out than a developer who does not have access
        to your system.</li>
-     <li>If the [% terms.bug %] falls into one of <a href="#specific-types">specific types of [% terms.bugs %] listed in a section
-       below</a>, it may still be useful even if you can&apos;t reproduce it in a new Firefox profile.</li>
+     <li>If the [% terms.bug %] falls into one of specific types of [% terms.bugs %] listed in a section
+       below, it may still be useful even if you can&apos;t reproduce it in a new Firefox profile.</li>
    </ul></li>
  <li>Open the <a class="link-https" href="https://bugzilla.mozilla.org/enter_bug.cgi?format=guided">
    Enter a new [% terms.bug %]</a> form, which will guide you through most of the [% terms.bug %] reporting process:
    <ul>
      <li>Create a [% terms.Bugzilla %]  account if you don&apos;t have one already, select the product having the [% terms.bug %].</li>
      <li>Enter a <strong>clear unique summary</strong> as <a href="#Writing_a_clear_summary">described below</a>;
-       check if the [% terms.bug %] has already been reported (if you want to be more thorough, there&apos;s an advanced guide
-       on <a href="/en-US/docs/Screening_duplicate_bugs">screening duplicate [% terms.bugs %]</a>).</li>
+       <a href="[% basepath FILTER none %]query.cgi?format=instant&amp;product=Firefox">check if the [% terms.bug %]
+       has already been reported</a>.</li>
      <li>Provide <strong>precise steps to reproduce</strong>, <strong>expected results</strong> and <strong>actual
        results</strong> as <a href="#Writing_precise_steps_to_reproduce">described in the following section</a>.</li>
      <li>Provide additional information (also <a href="#Providing_additional_information">described below</a>),
@@ -156,40 +153,40 @@
 <h3 id="For_specific_types_of_bugs">For specific types of [% terms.bugs %]</h3>
 
 <p>If you are reporting a <strong>crash [% terms.bug %]</strong>, please
-  <a href="/en-US/docs/How_to_get_a_stacktrace_for_a_bug_report">include a Breakpad ID or attach stack
-  trace</a>, and include the crash signature in the [% terms.bug %] summary as well as in the <strong>Crash
-  Signature</strong> field.</p>
+  <a href="https://firefox-source-docs.mozilla.org/contributing/debugging/stacktrace_report.html">
+  include a Breakpad ID or attach stack trace</a>, and include the crash signature in the [% terms.bug %]
+  summary as well as in the <strong>Crash Signature</strong> field.</p>
 
 <p>If you are reporting a <strong>memory use or leak [% terms.bug %]</strong>, please
-  <a href="/en-US/docs/Mozilla/Performance/about:memory">attach the output of about:memory</a>.
-  Ideally, find steps to reproduce an increase in what is shown in about:memory (even after
-  clicking the &quot;Minimize memory usage&quot; button at the bottom). If you have trouble finding steps
-  to reproduce, try the Firefox Support page titled
-  <a href="https://support.mozilla.org/en-US/kb/firefox-uses-too-much-memory-ram">Firefox Uses Too Much
-  Memory (Ram) - How to Fix</a>.</p>
+  <a href="https://firefox-source-docs.mozilla.org/performance/memory/about_colon_memory.html">
+  attach the output of about:memory</a>. Ideally, find steps to reproduce an increase in what is shown
+  in about:memory (even after clicking the &quot;Minimize memory usage&quot; button at the bottom).
+  If you have trouble finding steps to reproduce, try the Firefox Support page titled
+  <a href="https://support.mozilla.org/en-US/kb/firefox-uses-too-much-memory-or-cpu-resources">
+  Firefox Uses Too Much Memory (Ram) - How to Fix</a>.</p>
 
 <p>If you are reporting a <strong>[% terms.bug %] about slowness or high CPU usage</strong>, please
-  <a href="/en-US/docs/Mozilla/Performance/Reporting_a_Performance_Problem">provide a link to the
-  performance profile in the [% terms.bug %]</a>.</p>
+  <a href="https://firefox-source-docs.mozilla.org/performance/reporting_a_performance_problem.html">
+  provide a link to the performance profile in the [% terms.bug %]</a>.</p>
 
 <p>If you are reporting a <strong>hang</strong> (beachball on macOS or &quot;not responding&quot; on Windows),
-  please follow the instructions in <a href="/en-US/docs/How_to_Report_a_Hung_Firefox">How to Report a
-  Hung Firefox</a>.</p>
+  please follow the instructions first in <a href="https://support.mozilla.org/en-US/kb/firefox-hangs-or-not-responding">
+  Firefox hangs or is not responding - How to fix</a>.</p>
 
 <p>If you are reporting a [% terms.bug %] involving a <strong>Flash hang</strong>, please visit
   <a href="https://wiki.mozilla.org/Flash/Hang_Debugging">https://wiki.mozilla.org/Flash/Hang_Debugging</a>
   to learn how to provide useful information for developers.</p>
 
 <p>If you are reporting a <strong>[% terms.bug %] involving a specific web page</strong>, please try to make a
-  <a href="/en-US/docs/Reducing_testcases">reduced testcase</a> and attach it to the [% terms.bug %] report.
-  If you don&apos;t have time or expertise, please report the issue to <a href="https://webcompat.com/">
-  webcompat.com</a> instead, where our volunteers will do this for you.</p>
+  reduced testcase and attach it to the [% terms.bug %] report. If you don&apos;t have time or expertise,
+  please report the issue to <a href="https://webcompat.com/"> webcompat.com</a> instead, where our volunteers
+  will do this for you.</p>
 
 <p>If the [% terms.bug %] was <strong>recently introduced</strong>, finding a
-  <a href="http://mozilla.github.io/mozregression/quickstart.html">regression window</a> can help identify
+  <a href="https://mozilla.github.io/mozregression/quickstart.html">regression window</a> can help identify
   the cause of the [% terms.bug %].</p>
 
-<p><a href="http://www.chiark.greenend.org.uk/~sgtatham/bugs.html#intermittent">What if my [% terms.bug %] seems
+<p><a href="https://www.chiark.greenend.org.uk/~sgtatham/bugs.html#intermittent">What if my [% terms.bug %] seems
   &quot;random&quot; or &quot;intermittent&quot;?</a></p>
 
 <h3 id="For_most_Firefox_bugs">For most Firefox [% terms.bugs %]</h3>
@@ -205,7 +202,7 @@
     <tr>
       <td>
         Indicate if the problem can be reproduced using a
-        <a href="https://support.mozilla.org/en-US/kb/profile-manager-create-and-remove-firefox-profiles">
+        <a href="https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles">
         new Firefox profile</a> and any changes you need to make in order to reproduce.
       </td>
       <td>
@@ -218,7 +215,7 @@
         <a href="https://support.mozilla.org/en-US/kb/troubleshoot-extensions-themes-to-fix-problems">
         settings, extensions</a>, or <a href="https://support.mozilla.org/en-US/kb/profiles-where-firefox-stores-user-data">
         files in your profile</a> are needed to reproduce the [% terms.bug %]. If you skip the step,
-        <a href="https://support.mozilla.org/en-US/kb/use-troubleshooting-information-page-fix-firefox">save the\
+        <a href="https://support.mozilla.org/en-US/kb/use-troubleshooting-information-page-fix-firefox">save the
         troubleshooting information from about:support</a> to a file and attach it to the [% terms.bug %] report.
       </td>
       <td>
@@ -314,7 +311,7 @@
   <li><strong>Steps to Reproduce</strong>: Minimized, easy-to-follow steps that will trigger the [% terms.bug %].
     If they&apos;re necessary, make sure to include any special setup steps. A good example of this would
     look like the following:<br>
-    1) View any web page. (I used the default sample page, http://www.google.com/).<br>
+    1) View any web page. (I used the default sample page, https://www.google.com/).<br>
     2) Drag-select the page. Specifically, while holding down the mouse button, drag the mouse pointer
        downwards from any point in the browser&apos;s content region to the bottom of the browser&apos;s content region.</li>
   <li><strong>Actual Results</strong>: What the application did after performing the above steps.
