@@ -316,16 +316,6 @@ my %optional_features = (
       runtime => {requires => {TheSchwartz => '1.10', 'Daemon::Generic' => 0}}
     }
   },
-  elasticsearch => {
-    description => 'Elasticsearch-powered searches',
-    prereqs     => {
-      runtime => {
-        recommends => {'Term::ProgressBar'     => 0},
-        requires   => {'Search::Elasticsearch' => 0},
-
-      },
-    },
-  },
   sentry => {
     description => 'Sentry Support',
     prereqs     => {

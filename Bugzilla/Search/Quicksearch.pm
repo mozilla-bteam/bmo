@@ -131,8 +131,7 @@ use constant COMPONENT_EXCEPTIONS => (
 );
 
 # Quicksearch-wide globals for boolean charts.
-our ($chart, $and, $or, $longdesc_initial, $fulltext, $bug_status_set,
-     $bug_product_set, $ELASTIC);
+our ($chart, $and, $or, $longdesc_initial, $fulltext, $bug_status_set, $bug_product_set);
 
 sub quicksearch {
   my ($searchstring) = (@_);
@@ -638,9 +637,9 @@ sub _default_quicksearch_word {
   addChart('short_desc',        'substring', $word, $negate);
   addChart('status_whiteboard', 'substring', $word, $negate);
   addChart('longdesc',          'substring', $word, $negate)
-    if $longdesc_initial || $ELASTIC;
+    if $longdesc_initial;
   addChart('content', 'matches', _matches_phrase($word), $negate)
-    if $fulltext && !$ELASTIC;
+    if $fulltext;
 
 # BMO Bug 664124 - Include the crash signature (sig:) field in default quicksearches
   addChart('cf_crash_signature', 'substring', $word, $negate);
@@ -671,7 +670,6 @@ sub _handle_urls {
 # Quote and escape a phrase appropriately for a "content matches" search.
 sub _matches_phrase {
   my ($phrase) = @_;
-  return $phrase if $ELASTIC;
   $phrase =~ s/"/\\"/g;
   return "\"$phrase\"";
 }
