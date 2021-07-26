@@ -263,6 +263,9 @@ our @always_fileable_groups = qw(
 our %group_auto_cc = (
   'partner-confidential' => {
     'Marketing' => ['jbalaco@mozilla.com'],
+    # As the group is for generic partnership it's hard to find a specific person
+    # who could fix bugs that are accidentally placed in this group. Setting to
+    # glob for now who will update the bugs appropriately.
     '_default'  => ['glob@mozilla.com'],
   },
 );
