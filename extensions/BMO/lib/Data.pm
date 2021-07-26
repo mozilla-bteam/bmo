@@ -263,7 +263,7 @@ our @always_fileable_groups = qw(
 our %group_auto_cc = (
   'partner-confidential' => {
     'Marketing' => ['jbalaco@mozilla.com'],
-    '_default'  => ['mbest@mozilla.com'],
+    '_default'  => ['glob@mozilla.com'],
   },
 );
 
