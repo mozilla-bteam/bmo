@@ -88,6 +88,12 @@ sub verify_token {
   # return event data
   my $event = get_token_extra_data($token);
   delete_token($token);
+
+  # Delete other previous mfa related tokens for this user as well
+  Bugzilla->dbh->do(
+    "DELETE FROM tokens WHERE tokentype = ? AND userid = ? AND eventdata = 'mfa'",
+    undef, 'session.short', $user->id);
+
   if (!$event) {
     Bugzilla->cgi->base_redirect();
   }
