@@ -31,11 +31,7 @@
 [% login_target = basepath _ login_target %]
 
 <li id="mini_login_container[% qs_suffix %]">
-  [% connector = "?" %]
-  [% IF cgi.request_method == "GET" AND cgi.query_string %]
-    [% connector = "&" %]
-  [% END %]
-  [% script_url = login_target _ connector _ "GoAheadAndLogIn=1" %]
+  [% script_url = basepath _ "index.cgi?GoAheadAndLogIn=1" %]
   <a id="login_link[% qs_suffix %]" href="[% script_url FILTER html %]"
      class='show_mini_login_form' data-qs-suffix="[% qs_suffix FILTER html %]">Log In</a>
 
