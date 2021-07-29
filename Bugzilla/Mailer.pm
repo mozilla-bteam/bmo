@@ -198,12 +198,14 @@ sub MessageToMTA {
     my ($part) = @_;
     return if $part->parts > 1;    # Top-level
     my $content_type = $part->content_type || '';
-    $content_type =~ /charset=['"](.+)['"]/;
+    $content_type =~ /charset=(.+)/;
+    my $charset = $1;
+    $charset =~ s/['"]//g;
 
     # If no charset is defined or is the default us-ascii,
     # then we encode the email to UTF-8 if Bugzilla has UTF-8 enabled.
     # XXX - This is a hack to workaround bug 723944.
-    if (!$1 || $1 eq 'us-ascii') {
+    if (!$charset || $charset eq 'us-ascii') {
       my $body = $part->body;
       if (Bugzilla->params->{'utf8'}) {
         $part->charset_set('UTF-8');
