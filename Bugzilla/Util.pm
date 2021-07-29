@@ -28,7 +28,7 @@ use base qw(Exporter);
   validate_email_syntax clean_text
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
-  round extract_nicks);
+  round extract_nicks fetch_product_versions);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -43,6 +43,7 @@ use Encode qw(encode decode resolve_alias);
 use Encode::Guess;
 use English qw(-no_match_vars $EGID);
 use List::MoreUtils qw(any none);
+use Mojo::JSON qw(decode_json);
 use POSIX qw(floor ceil);
 use Scalar::Util qw(tainted blessed);
 use Text::Wrap;
@@ -971,6 +972,32 @@ sub extract_nicks {
   return grep { defined $_ } @nicks;
 }
 
+sub fetch_product_versions {
+  my ($product)  = @_;
+  my $key      = "${product}_versions";
+  my $versions = Bugzilla->request_cache->{$key}
+    || Bugzilla->memcached->get_data({key => $key});
+
+  unless ($versions) {
+    my $ua = Mojo::UserAgent->new(request_timeout => 30, connect_timeout => 5);
+    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
+      $ua->proxy->http($proxy_url);
+    }
+
+    my $response = $ua->get(PD_ENDPOINT . $key . '.json')->result;
+    $versions = Bugzilla->request_cache->{$key}
+      = $response->is_success ? decode_json($response->body) : {};
+    Bugzilla->memcached->set_data({
+      key   => $key,
+      value => $versions,
+
+      # Cache for 1 day if the data is available, otherwise retry in 5 min
+      expires_in => $response->is_success ? 86_400 : 300,
+    });
+  }
+
+  return $versions;
+}
 
 1;
 
