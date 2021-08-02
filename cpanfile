@@ -40,6 +40,7 @@ requires 'EV', '4.0';
 requires 'Email::Address';
 requires 'Email::MIME', '1.904';
 requires 'Email::MIME::Attachment::Stripper';
+requires 'Email::MIME::ContentType';
 requires 'Email::Reply';
 requires 'Email::Send', '1.911';
 requires 'Encode', '2.21';

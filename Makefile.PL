@@ -61,6 +61,7 @@ my %requires = (
   'Digest::SHA'                         => '5.47',
   'EV'                                  => '4.0',
   'Email::MIME'                         => '1.904',
+  'Email::MIME::ContentType'            => 0,
   'Email::Send'                         => '1.911',
   'FFI::Platypus'                       => 0,
   'Future'                              => '0.34',

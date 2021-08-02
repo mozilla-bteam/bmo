@@ -911,6 +911,16 @@ sub create {
       # places; we have a none filter for people to use when they
       # really, really don't want a variable to be changed.
       none => sub { return $_[0]; },
+
+      # Fixes "Wide character in substitution (s///) at [..]/Template/Filters.pm line 62."
+        collapse => sub {
+          my $content = $_[0];
+          no warnings 'utf8';
+          $content =~ s/^\s+//;
+          $content =~ s/\s+$//;
+          $content =~ s/\s+/ /g;
+          return $content;
+        },
     },
 
     PLUGIN_BASE => 'Bugzilla::Template::Plugin',
