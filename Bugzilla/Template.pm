@@ -914,12 +914,9 @@ sub create {
 
       # Fixes "Wide character in substitution (s///) at [..]/Template/Filters.pm line 62."
       collapse => sub {
-        my $content = $_[0];
         no warnings 'utf8';
-        $content =~ s/^\s+//;
-        $content =~ s/\s+$//;
-        $content =~ s/\s+/ /g;
-        return $content;
+        for ($_[0]) { s/^\s+//; s/\s+$//; s/\s+/ /g };
+        $_[0];
       },
     },
 
