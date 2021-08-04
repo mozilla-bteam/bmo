@@ -57,7 +57,10 @@ Mozilla/5.0 (compatible; SputnikBot/2.3; +http://corp.sputnik.ru/webmaster)
 Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)
 Mozilla/5.0 (compatible; Yeti/1.1; +http://naver.me/spd)
 Mozilla/5.0 (compatible; special_archiver/3.1.1 +http://www.archive.org/details/archive.org_bot)"
+Mozilla/5.0 (iPhone; CPU iPhone OS 13_7 like Mac OS X)
 SEMrushBot
 Sogou web spider/4.0(+http://www.sogou.com/docs/help/webmasters.htm#07)
 make-fetch-happen/2.6.0 (+https://npm.im/make-fetch-happen)
 python-requests/2.14.2
+RestSharp/106.5.4.0
+Perceval/0.12.7
