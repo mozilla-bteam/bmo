@@ -381,8 +381,10 @@ sub Cancel {
 
   # Some DBs such as MySQL are case-insensitive by default so we do
   # a quick comparison to make sure the tokens are indeed the same.
-  (defined $db_token && $db_token eq $token)
-    || ThrowCodeError("cancel_token_does_not_exist");
+  unless (defined $db_token && $db_token eq $token) {
+    Bugzilla->check_rate_limit('token', remote_ip());
+    ThrowCodeError("cancel_token_does_not_exist");
+  }
 
   # If we are canceling the creation of a new user account, then there
   # is no entry in the 'profiles' table.

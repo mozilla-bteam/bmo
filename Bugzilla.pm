@@ -787,15 +787,36 @@ sub check_rate_limit {
       if ($filter && $filter->test($ip)) {
         $action = 'ignore';
       }
-      my $limit = join("/", @$limit);
+      my $full_limit = join("/", @$limit);
       Bugzilla->audit(
-        "[rate_limit] action=$action, ip=$ip, limit=$limit, name=$name");
+        "[rate_limit] action=$action, ip=$ip, limit=$full_limit, name=$name");
       if ($action eq 'block') {
         request_cache->{mojo_controller}->block_ip($ip);
         $throw_error->();
       }
     }
   }
+
+  # Send information about this event to the iprepd API if active
+  if ($params->{iprepd_base_url} && $params->{iprepd_client_secret}) {
+    my $ua      = mojo_user_agent({request_timeout => 5});
+    my $payload = {object => $ip, type => "ip", violation => $name};
+    try {
+      my $tx = $ua->put($params->{iprepd_base_url} . '/violations/type/ip/' . $ip,
+        {'Authorization' => 'Bearer ' . $params->{iprepd_client_secret}} => json => $payload);
+      if ($tx->res->code != 200) {
+        die 'Expected HTTP 200, got '
+          . $tx->res->code . ' ('
+          . $tx->error->{message} . ') '
+          . $tx->res->body;
+      }
+    }
+    catch {
+      WARN("IPREPD ERROR: $_");
+    };
+  }
+
+  return 1;
 }
 
 sub markdown {

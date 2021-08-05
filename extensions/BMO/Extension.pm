@@ -59,7 +59,6 @@ use Sys::Syslog qw(:DEFAULT);
 use Text::Balanced qw( extract_bracketed extract_multiple );
 use JSON::MaybeXS;
 use Mojo::File qw(path);
-use Mojo::UserAgent;
 
 use Bugzilla::Extension::BMO::Constants;
 use Bugzilla::Extension::BMO::FakeBug;
@@ -2523,11 +2522,7 @@ sub _fetch_product_version_file {
   return $versions if $cache_only;
 
   unless ($versions) {
-    my $ua = Mojo::UserAgent->new;
-    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
-      $ua->proxy->http($proxy_url);
-    }
-
+    my $ua = mojo_user_agent();
     my $response = $ua->get(PD_ENDPOINT . $key . '.json')->result;
     $versions = Bugzilla->request_cache->{$key}
       = $response->is_success ? decode_json($response->body) : {};

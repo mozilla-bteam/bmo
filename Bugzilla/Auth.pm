@@ -20,7 +20,7 @@ use fields qw(
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Mailer;
-use Bugzilla::Util qw(datetime_from i_am_webservice);
+use Bugzilla::Util qw(datetime_from i_am_webservice remote_ip);
 use Bugzilla::User::Setting ();
 use Bugzilla::Auth::Login::Stack;
 use Bugzilla::Auth::Verify::Stack;
@@ -230,6 +230,7 @@ sub _handle_login_result {
   # to find account names by brute force)
   elsif ($fail_code == AUTH_LOGINFAILED or $fail_code == AUTH_NO_SUCH_USER) {
     my $remaining_attempts = MAX_LOGIN_ATTEMPTS - ($result->{failure_count} || 0);
+    Bugzilla->check_rate_limit('username_password', remote_ip());
     ThrowUserError("invalid_username_or_password",
       {remaining => $remaining_attempts});
   }

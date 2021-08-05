@@ -26,7 +26,6 @@ use Try::Tiny;
 use Type::Params qw( compile );
 use Type::Utils;
 use Types::Standard qw( :types );
-use Mojo::UserAgent;
 use Mojo::JSON qw(encode_json);
 
 use base qw(Exporter);
@@ -174,14 +173,7 @@ sub request {
   my ($method, $data) = $check->(@_);
   my $request_cache = Bugzilla->request_cache;
   my $params        = Bugzilla->params;
-
-  my $ua = $request_cache->{phabricator_ua};
-  unless ($ua) {
-    $ua = $request_cache->{phabricator_ua} = Mojo::UserAgent->new;
-    if ($params->{proxy_url}) {
-      $ua->proxy($params->{proxy_url});
-    }
-  }
+  my $ua            = $request_cache->{phabricator_ua} ||= mojo_user_agent();
 
   my $phab_api_key = $params->{phabricator_api_key};
   ThrowUserError('invalid_phabricator_api_key') unless $phab_api_key;

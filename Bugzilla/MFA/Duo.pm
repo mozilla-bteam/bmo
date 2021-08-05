@@ -16,6 +16,7 @@ use base 'Bugzilla::MFA';
 use Bugzilla::DuoAPI;
 use Bugzilla::DuoWeb;
 use Bugzilla::Error;
+use Bugzilla::Util qw(remote_ip);
 
 sub can_verify_inline {
   return 0;
@@ -68,6 +69,8 @@ sub check {
     Bugzilla->params->{duo_ikey}, Bugzilla->params->{duo_skey},
     Bugzilla->params->{duo_akey}, $params->{sig_response}
     );
+
+  Bugzilla->check_rate_limit('mfa', remote_ip());
   ThrowUserError('mfa_bad_code');
 }
 
