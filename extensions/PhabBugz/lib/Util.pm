@@ -17,7 +17,7 @@ use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Types qw(:types);
-use Bugzilla::Util qw(trim);
+use Bugzilla::Util qw(mojo_user_agent trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
