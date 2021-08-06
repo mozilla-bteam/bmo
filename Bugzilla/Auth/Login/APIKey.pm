@@ -62,7 +62,7 @@ sub get_login_info {
     if (!$api_key or $api_key->api_key ne $api_key_text) {
 
       # The second part checks the correct capitalization. Silly MySQL
-      Bugzilla->check_rate_limit('api_key', $remote_ip);
+      Bugzilla->iprepd_report('api_key', $remote_ip);
       ThrowUserError("api_key_not_valid");
     }
     elsif ($api_key->sticky

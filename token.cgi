@@ -53,38 +53,38 @@ if ($token) {
     $token
   );
   unless (defined $db_token && $db_token eq $token) {
-    Bugzilla->check_rate_limit('token', remote_ip());
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("token_does_not_exist");
   }
 
   # Make sure the token is the correct type for the action being taken.
   if (grep($action eq $_, qw(cfmpw cxlpw chgpw)) && $tokentype ne 'password') {
     Bugzilla::Token::Cancel($token, "wrong_token_for_changing_passwd");
-    Bugzilla->check_rate_limit('token', remote_ip());
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("wrong_token_for_changing_passwd");
   }
   if ( ($action eq 'cxlem')
     && (($tokentype ne 'emailold') && ($tokentype ne 'emailnew')))
   {
     Bugzilla::Token::Cancel($token, "wrong_token_for_cancelling_email_change");
-    Bugzilla->check_rate_limit('token', remote_ip());
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("wrong_token_for_cancelling_email_change");
   }
   if (grep($action eq $_, qw(cfmem chgem)) && ($tokentype ne 'emailnew')) {
     Bugzilla::Token::Cancel($token, "wrong_token_for_confirming_email_change");
-    Bugzilla->check_rate_limit('token', remote_ip());
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("wrong_token_for_confirming_email_change");
   }
   if ( ($action =~ /^(request|confirm|cancel)_new_account$/)
     && ($tokentype ne 'account'))
   {
     Bugzilla::Token::Cancel($token, 'wrong_token_for_creating_account');
-    Bugzilla->check_rate_limit('token', remote_ip());
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError('wrong_token_for_creating_account');
   }
   if (substr($action, 0, 4) eq 'mfa_' && $tokentype ne 'session.short') {
     Bugzilla::Token::Cancel($token, 'wrong_token_for_mfa');
-    Bugzilla->check_rate_limit('token', remote_ip());
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError('wrong_token_for_mfa');
   }
 }

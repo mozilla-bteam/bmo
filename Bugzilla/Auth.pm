@@ -230,7 +230,7 @@ sub _handle_login_result {
   # to find account names by brute force)
   elsif ($fail_code == AUTH_LOGINFAILED or $fail_code == AUTH_NO_SUCH_USER) {
     my $remaining_attempts = MAX_LOGIN_ATTEMPTS - ($result->{failure_count} || 0);
-    Bugzilla->check_rate_limit('username_password', remote_ip());
+    Bugzilla->iprepd_report('username_password', remote_ip());
     ThrowUserError("invalid_username_or_password",
       {remaining => $remaining_attempts});
   }

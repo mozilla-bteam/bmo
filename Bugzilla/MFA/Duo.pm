@@ -70,7 +70,7 @@ sub check {
     Bugzilla->params->{duo_akey}, $params->{sig_response}
     );
 
-  Bugzilla->check_rate_limit('mfa', remote_ip());
+  Bugzilla->iprepd_report('mfa', remote_ip());
   ThrowUserError('mfa_bad_code');
 }
 

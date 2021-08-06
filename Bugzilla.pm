@@ -46,6 +46,7 @@ use File::Spec::Functions;
 use Safe;
 use JSON::XS qw(decode_json);
 use Scope::Guard;
+use Try::Tiny;
 
 use parent qw(Bugzilla::CPAN);
 
@@ -797,24 +798,34 @@ sub check_rate_limit {
     }
   }
 
+  return 1;
+}
+
+sub iprepd_report {
+  my ($class, $name, $ip) = @_;
+  my $params = Bugzilla->params;
+
+  return 0 if !$params->{iprepd_base_url} || !$params->{iprepd_client_secret};
+
   # Send information about this event to the iprepd API if active
-  if ($params->{iprepd_base_url} && $params->{iprepd_client_secret}) {
-    my $ua      = mojo_user_agent({request_timeout => 5});
-    my $payload = {object => $ip, type => "ip", violation => $name};
-    try {
-      my $tx = $ua->put($params->{iprepd_base_url} . '/violations/type/ip/' . $ip,
-        {'Authorization' => 'Bearer ' . $params->{iprepd_client_secret}} => json => $payload);
-      if ($tx->res->code != 200) {
-        die 'Expected HTTP 200, got '
-          . $tx->res->code . ' ('
-          . $tx->error->{message} . ') '
-          . $tx->res->body;
-      }
+  my $ua      = mojo_user_agent({request_timeout => 5});
+  my $payload = {object => $ip, type => "ip", violation => $name};
+  try {
+    my $tx = $ua->put(
+      $params->{iprepd_base_url} . '/violations/type/ip/' . $ip,
+      {'Authorization' => 'Bearer ' . $params->{iprepd_client_secret}} => json =>
+        $payload
+    );
+    if ($tx->res->code != 200) {
+      die 'Expected HTTP 200, got '
+        . $tx->res->code . ' ('
+        . $tx->error->{message} . ') '
+        . $tx->res->body;
     }
-    catch {
-      WARN("IPREPD ERROR: $_");
-    };
   }
+  catch {
+    WARN("IPREPD ERROR: $_");
+  };
 
   return 1;
 }
