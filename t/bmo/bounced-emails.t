@@ -35,7 +35,7 @@ my @require_env = qw(
 );
 
 my @missing_env = grep { !exists $ENV{$_} } @require_env;
-BAIL_OUT("Missing env: @missing_env") if @missing_env;
+bail_out("Missing env: @missing_env") if @missing_env;
 
 my $sel = Test::Selenium::Remote::Driver->new(
   base_url   => $ENV{BZ_BASE_URL},

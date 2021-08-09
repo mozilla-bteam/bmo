@@ -802,12 +802,13 @@ sub check_rate_limit {
 }
 
 sub iprepd_report {
-  my ($class, $name, $ip) = @_;
+  my ($class, $name) = @_;
   my $params = Bugzilla->params;
 
   return 0 if !$params->{iprepd_base_url} || !$params->{iprepd_client_secret};
 
   # Send information about this event to the iprepd API if active
+  my $ip      = remote_ip();
   my $ua      = mojo_user_agent({request_timeout => 5});
   my $payload = {object => $ip, type => "ip", violation => $name};
   try {
@@ -816,12 +817,8 @@ sub iprepd_report {
       {'Authorization' => 'Bearer ' . $params->{iprepd_client_secret}} => json =>
         $payload
     );
-    if ($tx->res->code != 200) {
-      die 'Expected HTTP 200, got '
-        . $tx->res->code . ' ('
-        . $tx->error->{message} . ') '
-        . $tx->res->body;
-    }
+    my $res = $tx->result;
+    die $res->message . ' ' . $res->body unless $res->is_success;
   }
   catch {
     WARN("IPREPD ERROR: $_");

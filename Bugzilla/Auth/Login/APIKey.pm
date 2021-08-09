@@ -69,6 +69,7 @@ sub get_login_info {
       && $api_key->last_used_ip
       && $api_key->last_used_ip ne $remote_ip)
     {
+      Bugzilla->iprepd_report('api_key');
       ThrowUserError("api_key_not_valid");
     }
     elsif ($api_key->revoked) {
