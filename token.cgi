@@ -52,32 +52,39 @@ if ($token) {
                                                        WHERE token = ?', undef,
     $token
   );
-  (defined $db_token && $db_token eq $token)
-    || ThrowUserError("token_does_not_exist");
+  unless (defined $db_token && $db_token eq $token) {
+    Bugzilla->iprepd_report('token', remote_ip());
+    ThrowUserError("token_does_not_exist");
+  }
 
   # Make sure the token is the correct type for the action being taken.
   if (grep($action eq $_, qw(cfmpw cxlpw chgpw)) && $tokentype ne 'password') {
     Bugzilla::Token::Cancel($token, "wrong_token_for_changing_passwd");
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("wrong_token_for_changing_passwd");
   }
   if ( ($action eq 'cxlem')
     && (($tokentype ne 'emailold') && ($tokentype ne 'emailnew')))
   {
     Bugzilla::Token::Cancel($token, "wrong_token_for_cancelling_email_change");
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("wrong_token_for_cancelling_email_change");
   }
   if (grep($action eq $_, qw(cfmem chgem)) && ($tokentype ne 'emailnew')) {
     Bugzilla::Token::Cancel($token, "wrong_token_for_confirming_email_change");
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("wrong_token_for_confirming_email_change");
   }
   if ( ($action =~ /^(request|confirm|cancel)_new_account$/)
     && ($tokentype ne 'account'))
   {
     Bugzilla::Token::Cancel($token, 'wrong_token_for_creating_account');
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError('wrong_token_for_creating_account');
   }
   if (substr($action, 0, 4) eq 'mfa_' && $tokentype ne 'session.short') {
     Bugzilla::Token::Cancel($token, 'wrong_token_for_mfa');
+    Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError('wrong_token_for_mfa');
   }
 }
@@ -107,7 +114,9 @@ if ($action eq 'reqpw') {
   $user_account = Bugzilla::User->check($login_name);
 
   # Make sure the user account is active or was deactivated due to inactivity
-  if (!$user_account->is_enabled && $user_account->password_change_reason ne 'Inactive Account') {
+  if (!$user_account->is_enabled
+    && $user_account->password_change_reason ne 'Inactive Account')
+  {
     ThrowUserError('account_disabled',
       {disabled_reason => get_text('account_disabled', {account => $login_name})});
   }

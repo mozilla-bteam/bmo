@@ -15,8 +15,9 @@ BEGIN {
   $ENV{BUGZILLA_DISABLE_HOSTAGE} = 1;
 }
 
+use Bugzilla;
+use Bugzilla::Util qw(mojo_user_agent);
 use Mojo::URL;
-use Mojo::UserAgent;
 use Test2::V0;
 use Test::Selenium::Remote::Driver;
 
@@ -34,7 +35,7 @@ my @require_env = qw(
 );
 
 my @missing_env = grep { !exists $ENV{$_} } @require_env;
-BAIL_OUT("Missing env: @missing_env") if @missing_env;
+bail_out("Missing env: @missing_env") if @missing_env;
 
 my $sel = Test::Selenium::Remote::Driver->new(
   base_url   => $ENV{BZ_BASE_URL},
@@ -43,7 +44,7 @@ my $sel = Test::Selenium::Remote::Driver->new(
   javascript => 1
 );
 
-my $ua = Mojo::UserAgent->new;
+my $ua = mojo_user_agent();
 $ua->on(
   start => sub {
     my ($ua, $tx) = @_;

@@ -75,24 +75,29 @@ sub register {
         }
       }
 
-      # Next check for an API key in the header or passed as query params
+      # Next check for an API key in the header
       if (Bugzilla->usage_mode == USAGE_MODE_REST) {
         if (my $api_key_text = $headers->header('x-bugzilla-api-key')) {
-          my $api_key   = Bugzilla::User::APIKey->new({name => $api_key_text});
-          my $remote_ip = $c->tx->remote_address;
-          if ($api_key && $api_key->api_key eq $api_key_text) {
+          if (my $api_key = Bugzilla::User::APIKey->new({name => $api_key_text})) {
+            my $remote_ip = $c->tx->remote_address;
             if (
-              !(
-                  $api_key->sticky
+              (
+                   $api_key->sticky
                 && $api_key->last_used_ip
                 && $api_key->last_used_ip ne $remote_ip
               )
-              && !$api_key->revoked
+              || $api_key->revoked
               )
             {
+              Bugzilla->iprepd_report('api_key');
+            }
+            else {
               $api_key->update_last_used($remote_ip);
               $user_id = $api_key->user_id;
             }
+          }
+          else {
+            Bugzilla->iprepd_report('api_key');
           }
         }
 
@@ -101,6 +106,9 @@ sub register {
           my $user = $c->bugzilla->oauth('api:modify');
           if ($user && $user->id) {
             $user_id = $user->id;
+          }
+          else {
+            Bugzilla->iprepd_report('api_key');
           }
         }
       }

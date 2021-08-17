@@ -20,10 +20,9 @@ use Bugzilla::Attachment;
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util;
-use Bugzilla::Util ();
+use Bugzilla::Util (mojo_user_agent);
 
 use JSON qw(decode_json encode_json);
-use Mojo::UserAgent;
 use List::MoreUtils qw(any);
 use Try::Tiny;
 
@@ -136,7 +135,8 @@ sub send {
 
     delete $payload->{event}->{change_set};
 
-    my $tx = $self->_user_agent->post($webhook->url,
+
+    my $tx = mojo_user_agent()->post($webhook->url,
       {'Content-Type' => 'application/json', 'Accept' => 'application/json'} =>
         json => $payload);
     if ($tx->res->code != 200) {
@@ -155,17 +155,6 @@ sub send {
 }
 
 # Private methods
-
-sub _user_agent {
-  my $ua = Mojo::UserAgent->new(request_timeout => 30, connect_timeout => 5);
-  if (my $proxy = Bugzilla->params->{proxy_url}) {
-    $ua->proxy->http($proxy)->https($proxy);
-  }
-  else {
-    $ua->proxy->detect();
-  }
-  return $ua;
-}
 
 sub _boolean {
   my ($value) = @_;

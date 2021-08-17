@@ -45,6 +45,7 @@ sub _before_routes {
   my $ip = $c->tx->remote_address;
   if ($MEMCACHED && $MEMCACHED->get("block_ip:$ip")) {
     $c->block_ip($ip);
+    $c->res->headers->header('Content-Type' => 'text/html');
     $c->res->code(429);
     $c->res->message('Too Many Requests');
     $c->write($BLOCKED_HTML);

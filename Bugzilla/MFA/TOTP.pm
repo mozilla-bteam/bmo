@@ -16,7 +16,7 @@ use base 'Bugzilla::MFA';
 use Auth::GoogleAuth;
 use Bugzilla::Error;
 use Bugzilla::Token qw( issue_session_token );
-use Bugzilla::Util qw( template_var generate_random_password );
+use Bugzilla::Util qw( template_var generate_random_password remote_ip );
 use GD::Barcode::QRcode;
 use MIME::Base64 qw( encode_base64 );
 
@@ -70,6 +70,7 @@ sub check {
   my $code = $params->{code};
   return if $self->_auth()->verify($code, 1);
 
+  Bugzilla->iprepd_report('mfa', remote_ip())
   if ($params->{mfa_action} && $params->{mfa_action} eq 'enable') {
     ThrowUserError('mfa_totp_bad_enrollment_code');
   }
