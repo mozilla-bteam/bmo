@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20210601.1';
+our $VERSION = '20210728.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -46,6 +46,7 @@ use File::Spec::Functions;
 use Safe;
 use JSON::XS qw(decode_json);
 use Scope::Guard;
+use Try::Tiny;
 
 use parent qw(Bugzilla::CPAN);
 
@@ -787,15 +788,43 @@ sub check_rate_limit {
       if ($filter && $filter->test($ip)) {
         $action = 'ignore';
       }
-      my $limit = join("/", @$limit);
+      my $full_limit = join("/", @$limit);
       Bugzilla->audit(
-        "[rate_limit] action=$action, ip=$ip, limit=$limit, name=$name");
+        "[rate_limit] action=$action, ip=$ip, limit=$full_limit, name=$name");
       if ($action eq 'block') {
         request_cache->{mojo_controller}->block_ip($ip);
         $throw_error->();
       }
     }
   }
+
+  return 1;
+}
+
+sub iprepd_report {
+  my ($class, $name) = @_;
+  my $params = Bugzilla->params;
+
+  return 0 if !$params->{iprepd_base_url} || !$params->{iprepd_client_secret};
+
+  # Send information about this event to the iprepd API if active
+  my $ip      = remote_ip();
+  my $ua      = mojo_user_agent({request_timeout => 5});
+  my $payload = {object => $ip, type => "ip", violation => $name};
+  try {
+    my $tx = $ua->put(
+      $params->{iprepd_base_url} . '/violations/type/ip/' . $ip,
+      {'Authorization' => 'Bearer ' . $params->{iprepd_client_secret}} => json =>
+        $payload
+    );
+    my $res = $tx->result;
+    die $res->message . ' ' . $res->body unless $res->is_success;
+  }
+  catch {
+    WARN("IPREPD ERROR: $_");
+  };
+
+  return 1;
 }
 
 sub markdown {

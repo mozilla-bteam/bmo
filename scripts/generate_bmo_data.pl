@@ -519,6 +519,8 @@ my %set_params = (
     . '&amp;value0-0-0=UNCONFIRMED&amp;field0-0-1=reporter'
     . '&amp;type0-0-1=equals&amp;value0-0-1=%userid%',
   quip_list_entry_control        => 'moderated',
+  rate_limit_active              => 1,
+  rate_limit_rules               => '{"get_attachments":[75,0],"get_comments":[75,0],"get_bug":[200,0],"show_bug":[120,0],"github":[10,0],"webpage_errors":[30,60]}',
   restrict_comments_group        => 'editbugs',
   restrict_comments_enable_group => 'can_restrict_comments',
   search_allow_no_criteria       => 0,

@@ -38,9 +38,14 @@ services:
       - TWD_HOST=selenium
       - TWD_PORT=4444
     depends_on:
+      - externalapi.test
       - bmo.db
       - memcached
       - selenium
+
+  externalapi.test:
+    image: bmo
+    entrypoint: perl /app/external_test_api.pl daemon -l http://*:80
 
   bmo.db:
     image: mysql:5.7

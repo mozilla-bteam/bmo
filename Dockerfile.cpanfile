@@ -1,7 +1,8 @@
-FROM perl:5.32.0-slim
+FROM perl:5.34.0-slim
 
-RUN apt-get update
-RUN apt-get install -y \
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y \
     build-essential curl libssl-dev zlib1g-dev openssl \
     libexpat-dev cmake git libcairo-dev libgd-dev \
     default-libmysqlclient-dev unzip wget

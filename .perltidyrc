@@ -14,4 +14,5 @@
 -bt=2    # High brace tightness
 -sbt=2   # High square bracket tightness
 -wn      # Weld nested containers
--isbc # Don't indent comments without leading space
+-isbc    # Don't indent comments without leading space
+-nst     # Necessary to turn off the -st flag contained in the -pbp parameter

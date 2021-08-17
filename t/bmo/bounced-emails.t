@@ -15,10 +15,11 @@ BEGIN {
   $ENV{BUGZILLA_DISABLE_HOSTAGE} = 1;
 }
 
+use Bugzilla;
+use Bugzilla::Util qw(mojo_user_agent);
 use Mojo::URL;
-use Mojo::UserAgent;
-use QA::Util;
-use Test::More;
+use Test2::V0;
+use Test::Selenium::Remote::Driver;
 
 my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN}      // 'admin@mozilla.bugs';
 my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
@@ -34,11 +35,11 @@ my @require_env = qw(
 );
 
 my @missing_env = grep { !exists $ENV{$_} } @require_env;
-BAIL_OUT("Missing env: @missing_env") if @missing_env;
+bail_out("Missing env: @missing_env") if @missing_env;
 
 my ($sel, $config) = get_selenium();
 
-my $ua = Mojo::UserAgent->new;
+my $ua = mojo_user_agent();
 $ua->on(
   start => sub {
     my ($ua, $tx) = @_;

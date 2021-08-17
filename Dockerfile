@@ -12,7 +12,9 @@ ENV CIRCLE_SHA1=${CIRCLE_SHA1}
 
 ENV LOG4PERL_CONFIG_FILE=log4perl-json.conf
 
-RUN apt-get install -y rsync
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y rsync
 
 # we run a loopback logging server on this TCP port.
 ENV LOGGING_PORT=5880

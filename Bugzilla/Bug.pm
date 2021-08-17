@@ -4711,7 +4711,7 @@ sub GetBugActivity {
       && $fieldname eq $last_change->{'fieldname'}
       && $removed eq $last_change->{'removed'}
       && $added eq $last_change->{'added'}
-      && $attachid eq $last_change->{'attachid'})
+      && (defined $attachid && $attachid eq $last_change->{'attachid'}))
       || $removed eq $added )
     {
       next;
