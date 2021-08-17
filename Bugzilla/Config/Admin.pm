@@ -44,6 +44,18 @@ sub get_param_list {
       updater => \&update_rate_limit_rules,
     },
 
+    {
+      name    => 'iprepd_base_url',
+      type    => 't',
+      default => '',
+    },
+
+    {
+      name    => 'iprepd_client_secret',
+      type    => 't',
+      default => '',
+    },
+
     {name => 'log_user_requests', type => 'b', default => 0},
 
     {name => 'block_user_agent', type => 't', default => ''},

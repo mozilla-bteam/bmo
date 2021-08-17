@@ -28,7 +28,7 @@ use base qw(Exporter);
   validate_email_syntax clean_text
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
-  round extract_nicks fetch_product_versions);
+  round extract_nicks fetch_product_versions mojo_user_agent);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -43,6 +43,7 @@ use Encode qw(encode decode resolve_alias);
 use Encode::Guess;
 use English qw(-no_match_vars $EGID);
 use List::MoreUtils qw(any none);
+use Mojo::UserAgent ();
 use Mojo::JSON qw(decode_json);
 use POSIX qw(floor ceil);
 use Scalar::Util qw(tainted blessed);
@@ -998,6 +999,24 @@ sub fetch_product_versions {
 
   return $versions;
 }
+
+sub mojo_user_agent {
+  my ($params)        = @_;
+  my $request_timeout = $params->{request_timeout} // 30;
+  my $connect_timeout = $params->{connect_timeout} // 5;
+
+  my $ua = Mojo::UserAgent->new(
+    request_timeout => $request_timeout,
+    connect_timeout => $connect_timeout
+  );
+  if (my $proxy = Bugzilla->params->{proxy_url}) {
+    $ua->proxy->http($proxy)->https($proxy);
+  }
+  else {
+    $ua->proxy->detect();
+  }
+  return $ua;
+} 
 
 1;
 
