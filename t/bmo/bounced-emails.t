@@ -21,10 +21,10 @@ use Mojo::URL;
 use Test2::V0;
 use Test::Selenium::Remote::Driver;
 
-my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN}      // 'admin@mozilla.bugs';
-my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
-my $SES_USERNAME = $ENV{BMO_ses_username}   // 'ses@mozilla.bugs';
-my $SES_PASSWORD = $ENV{BMO_ses_password}   // 'password123456789!';
+my $ADMIN_LOGIN    = $ENV{BZ_TEST_ADMIN}      // 'admin@mozilla.bugs';
+my $ADMIN_PASSWORD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
+my $SES_USERNAME   = $ENV{BMO_ses_username}   // 'ses@mozilla.bugs';
+my $SES_PASSWORD   = $ENV{BMO_ses_password}   // 'password123456789!';
 
 my @require_env = qw(
   BZ_BASE_URL
@@ -92,9 +92,26 @@ ok($result->is_success, 'Posting fifth bounce was successful');
 login($sel, $ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
 $sel->title_is('Account Disabled');
 $sel->body_text_contains(
-  'Your Bugzilla account has been disabled due to issues delivering emails to your address.',
+'Your Bugzilla account has been disabled due to issues delivering emails to your address.',
   'Account disabled message is displayed'
 );
+
+# Reactivate account
+my $newbie_login = $ENV{BZ_TEST_NEWBIE};
+login($sel, $ADMIN_LOGIN, $ADMIN_PASSWORD);
+$sel->get_ok('/editusers.cgi');
+$sel->title_is('Search users');
+click_and_type($sel, 'matchstr', $newbie_login);
+submit($sel, '//input[@id="search"]');
+$sel->title_is('Select user', 'Select user');
+$sel->find_element(qq{//a[normalize-space(text())="$newbie_login"]})->click();
+$sel->title_like(qr/Edit user/, 'Edit user');
+$sel->clear_element_ok('//textarea[@name="disabledtext"]');
+$sel->click_element_ok('//textarea[@name="disabledtext"]');
+$sel->send_keys_to_active_element(' ');
+$sel->click_element_ok('//input[@name="disable_mail"]', 'Enable bugmail');
+$sel->click_element_ok('//input[@name="reset_bounce"]', 'Reset bounce count');
+submit($sel, '//input[@id="update"]');
 
 done_testing;
 
@@ -107,8 +124,8 @@ sub click_and_type {
   my ($sel, $name, $text) = @_;
 
   eval {
-    my $el
-      = $sel->find_element(qq{//*[\@id="bugzilla-body"]//input[\@name="$name"]},
+    my $el =
+      $sel->find_element(qq{//*[\@id="bugzilla-body"]//input[\@name="$name"]},
       'xpath');
     $el->click();
     $sel->send_keys_to_active_element($text);

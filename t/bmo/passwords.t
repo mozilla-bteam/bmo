@@ -8,11 +8,6 @@ use Mojo::Base -strict;
 use Test::More;
 use Test::Selenium::Remote::Driver;
 
-BEGIN {
-  plan skip_all => "these tests only run in CI"
-    unless $ENV{CI} && $ENV{CIRCLE_JOB} eq 'test_bmo';
-}
-
 my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
 my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
 my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // 'she7Ka8t';
