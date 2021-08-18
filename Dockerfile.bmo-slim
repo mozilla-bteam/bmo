@@ -1,4 +1,4 @@
-FROM perl:5.34.0-slim AS builder
+FROM perl:5.30.2-slim AS builder
 
 RUN apt-get update \
     && apt-get upgrade -y \
@@ -34,7 +34,7 @@ RUN apt-file update \
     | xargs -IFILE apt-file search -l FILE \
     | sort -u > PACKAGES
 
-FROM perl:5.34.0-slim
+FROM perl:5.30.2-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 

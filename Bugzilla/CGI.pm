@@ -389,12 +389,12 @@ sub header {
 
   # We generate a cookie and store it in the request cache
   # To initiate GitHub login, a form POSTs to github.cgi with the
-  # github_token as a parameter. It must match the github_token cookie.
+  # github_secret as a parameter. It must match the github_secret cookie.
   # this prevents some types of redirection attacks.
   unless ($user->id || $self->{bz_redirecting}) {
     $self->send_cookie(
-      -name     => 'github_token',
-      -value    => Bugzilla->github_token,
+      -name     => 'github_secret',
+      -value    => Bugzilla->github_secret,
       -httponly => 1
     );
   }

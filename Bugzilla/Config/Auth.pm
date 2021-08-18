@@ -37,7 +37,7 @@ sub get_param_list {
     {
       name    => 'user_info_class',
       type    => 's',
-      choices => ['CGI', 'OAuth2,CGI', 'Env', 'Env,CGI', 'Env,OAuth2,CGI'],
+      choices => ['CGI', 'Env', 'Env,CGI'],
       default => 'CGI',
       checker => \&check_multi
     },

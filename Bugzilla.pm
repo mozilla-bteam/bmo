@@ -207,15 +207,15 @@ sub page_requires_login {
   return request_cache->{page_requires_login};
 }
 
-sub github_token {
+sub github_secret {
   my ($class) = @_;
   my $cache   = request_cache;
   my $cgi     = $class->cgi;
 
-  $cache->{github_token} //= $cgi->cookie('github_token')
+  $cache->{github_secret} //= $cgi->cookie('github_secret')
     // generate_random_password(256);
 
-  return $cache->{github_token};
+  return $cache->{github_secret};
 }
 
 sub passwdqc {
