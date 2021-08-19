@@ -20,7 +20,7 @@ use Bugzilla::Attachment;
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util;
-use Bugzilla::Util (mojo_user_agent);
+use Bugzilla::Util qw(mojo_user_agent);
 
 use JSON qw(decode_json encode_json);
 use List::MoreUtils qw(any);
