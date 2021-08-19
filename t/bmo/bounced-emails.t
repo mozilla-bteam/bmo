@@ -22,7 +22,7 @@ use Test2::V0;
 use Test::Selenium::Remote::Driver;
 
 my $ADMIN_LOGIN    = $ENV{BZ_TEST_ADMIN}      // 'admin@mozilla.bugs';
-my $ADMIN_PASSWORD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
+my $ADMIN_PASSWORD = $ENV{BZ_TEST_ADMIN_PASS} // 'password01!';
 my $SES_USERNAME   = $ENV{BMO_ses_username}   // 'ses@mozilla.bugs';
 my $SES_PASSWORD   = $ENV{BMO_ses_password}   // 'password123456789!';
 
