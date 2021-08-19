@@ -9,7 +9,7 @@ use Test::More;
 use Test::Selenium::Remote::Driver;
 
 my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
-my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'Te6Oovohch';
+my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'password01!';
 my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // 'she7Ka8t';
 
 my @require_env = qw(
