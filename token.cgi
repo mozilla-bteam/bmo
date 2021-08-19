@@ -53,6 +53,7 @@ if ($token) {
     $token
   );
   unless (defined $db_token && $db_token eq $token) {
+    Bugzilla->iprepd_report('violation10'); # FIXME: Remove later
     Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError("token_does_not_exist");
   }
