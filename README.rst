@@ -47,7 +47,7 @@ The procedure should be similar for other browsers.
 .. _`Firefox Connection Settings`: https://support.mozilla.org/en-US/kb/connection-settings-firefox
 
 After that, you should be able to visit http://bmo.test/ from your browser.
-You can login as admin@bmo.test with the password "password01!" (without
+You can login as admin@mozilla.bugs with the password "password01!" (without
 quotes).
 
 If you want to update the code running in the web container, you do not need to restart everything.
