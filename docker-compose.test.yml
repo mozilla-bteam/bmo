@@ -6,7 +6,7 @@ version: '3'
 
 services:
   bmo.test:
-    image: bmo-test
+    image: bmo
     command: dev_httpd
     tmpfs:
       - /tmp
