@@ -131,8 +131,8 @@ jobs:
       # save the built docker container into CircleCI's cache. This is
       # required since Workflows do not have the same remote docker instance.
       - run:
-          name: docker save bmo-test
-          command: mkdir -p /cache; docker save -o /cache/docker.tar bmo-test
+          name: docker save bmo
+          command: mkdir -p /cache; docker save -o /cache/docker.tar "bmo"
       - save_cache:
           key: v1-{{ .Environment.CIRCLE_SHA1 }}-{{epoch}}
           paths:
@@ -148,6 +148,9 @@ jobs:
           version: 19.03.13
       - restore_cache:
           key: v1-{{.Environment.CIRCLE_SHA1}}
+      - run:
+          name: Restore Docker image cache
+          command: docker load -i /cache/docker.tar
       - checkout
       - *docker_login
       - *build_deploy_image
