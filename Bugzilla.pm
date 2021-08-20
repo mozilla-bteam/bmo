@@ -814,7 +814,7 @@ sub iprepd_report {
   try {
     my $tx = $ua->put(
       $params->{iprepd_base_url} . '/violations/type/ip/' . $ip,
-      {'Authorization' => 'Bearer ' . $params->{iprepd_client_secret}} => json =>
+      {'Authorization' => 'APIKey ' . $params->{iprepd_client_secret}} => json =>
         $payload
     );
     my $res = $tx->result;
