@@ -291,7 +291,8 @@ sub valid_values {
       {value => 'CONFIRMED'},
     ],
 
-    severity => [{value => 'critical'},],
+    severity =>
+      [{value => 'critical', extra => {comment => {body => 'Updating severity'}}}],
 
     summary => [{value => random_string(100)},],
 

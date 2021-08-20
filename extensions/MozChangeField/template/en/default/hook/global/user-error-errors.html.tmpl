@@ -6,8 +6,7 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% INCLUDE bug/legal_disclaimer.html.tmpl %]
-
-[% IF firefox_versions.size %]
-  <meta name="firefox-versions" content="[% json_encode(firefox_versions) FILTER html %]">
+[% IF error == "mozchangefield_severity_comment_required" %]
+  [% title = "Comment Required" %]
+  A <b>comment</b> is required when changing the severity field.
 [% END %]

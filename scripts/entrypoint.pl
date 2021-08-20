@@ -122,7 +122,7 @@ sub cmd_dev_httpd {
     run(
       'perl', 'scripts/generate_bmo_data.pl',
       '--param' => 'use_mailer_queue=0',
-      'admin@bmo.test'
+      'admin@mozilla.bugs'
     );
   }
 
@@ -140,8 +140,8 @@ sub cmd_checksetup {
 sub cmd_load_test_data {
   wait_for_db();
 
-  die 'BZ_QA_ANSWERS_FILE is not set' unless $ENV{BZ_QA_ANSWERS_FILE};
-  run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_QA_ANSWERS_FILE});
+  die 'BZ_ANSWERS_FILE is not set' unless $ENV{BZ_ANSWERS_FILE};
+  run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_ANSWERS_FILE});
 
   run(
     'perl',        'scripts/generate_bmo_data.pl',

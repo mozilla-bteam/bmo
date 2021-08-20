@@ -10,13 +10,8 @@ use Mojo::Base -strict;
 use QA::Util;
 use Test::More;
 
-BEGIN {
-  plan skip_all => "these tests only run in CI"
-    unless $ENV{CI} && $ENV{CIRCLE_JOB} eq 'test_bmo';
-}
-
-my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN}         // 'admin@mozilla.bugs';
-my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS}    // 'Te6Oovohch';
+my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
+my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'password01!';
 my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // 'she7Ka8t';
 
 my @require_env = qw(
@@ -28,7 +23,7 @@ my @require_env = qw(
 );
 
 my @missing_env = grep { !exists $ENV{$_} } @require_env;
-BAIL_OUT("Missing env: @missing_env") if @missing_env;
+bail_out("Missing env: @missing_env") if @missing_env;
 
 my ($sel, $config) = get_selenium();
 

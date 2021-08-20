@@ -10,6 +10,7 @@ use 5.10.1;
 use Moo::Role;
 
 use Bugzilla::Types qw(URL);
+use Bugzilla::Util qw(mojo_user_agent);
 use JSON::Validator;
 use Mojo::Promise;
 use Scalar::Util qw(blessed);
@@ -34,16 +35,6 @@ has 'page' => (is => 'ro', isa => Int, default => 1);
 has 'rows' => (is => 'ro', default => 10);
 
 has 'since' => (is => 'ro', predicate => 1);
-
-has 'user_agent' => (
-  is       => 'lazy',
-  init_arg => undef,
-  isa      => class_type({class => 'Mojo::UserAgent'})
-);
-
-sub _build_user_agent {
-  return Mojo::UserAgent->new;
-}
 
 has 'validator' => (
   is       => 'lazy',
@@ -115,7 +106,7 @@ sub send_row {
   my $id      = $self->extract_id($row);
   my $content = $self->extract_content($row);
   push @{$url->path}, $self->namespace, $self->doctype, $self->docversion, $id;
-  return $self->user_agent->put_p($url, json => $content);
+  return mojo_user_agent()->put_p($url, json => $content);
 }
 
 sub test_row {

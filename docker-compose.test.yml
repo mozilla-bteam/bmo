@@ -24,8 +24,7 @@ services:
       - BMO_urlbase=AUTOMATIC
       - BUGZILLA_ALLOW_INSECURE_HTTP=1
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
-      - BZ_QA_ANSWERS_FILE=/app/.circleci/checksetup_answers.txt
-      - BZ_QA_CONF_FILE=/app/.circleci/selenium_test.conf
+      - BZ_QA_CONF_FILE=/app/qa/config/selenium_test.conf
       - BZ_QA_CONFIG=1
       - CI=${CI}
       - CIRCLE_SHA1=${CIRCLE_SHA1}
@@ -38,9 +37,14 @@ services:
       - TWD_HOST=selenium
       - TWD_PORT=4444
     depends_on:
+      - externalapi.test
       - bmo.db
       - memcached
       - selenium
+
+  externalapi.test:
+    image: bmo
+    entrypoint: perl /app/external_test_api.pl daemon -l http://*:80
 
   bmo.db:
     image: mysql:5.7

@@ -19,13 +19,12 @@ use Bugzilla::Error;
 use Bugzilla::Group;
 use Bugzilla::Logging;
 use Bugzilla::User;
-use Bugzilla::Util qw(trim detaint_natural);
+use Bugzilla::Util qw(trim detaint_natural mojo_user_agent);
 use Bugzilla::WebService::Util qw(filter filter_wants validate
   translate params_to_objects);
 use Bugzilla::Hook;
 
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
-use Mojo::UserAgent ();
 use List::Util qw(first);
 use Try::Tiny;
 
@@ -534,8 +533,10 @@ sub _user_from_phab_token {
 
   try {
     # query phabricator's whoami endpoint
-    my $res = _ua()
-      ->get("$phab_url/api/user.whoami" => form => {'api.token' => $phab_token});
+    my $ua = mojo_user_agent({request_timeout => 5});
+    $ua->transactor->name('BMO user.whoami shim');
+    my $res = $ua->get(
+      "$phab_url/api/user.whoami" => form => {'api.token' => $phab_token});
     my $ph_whoami = $res->result->json;
 
     # treat any phabricator generated error as an invalid api-key
@@ -558,18 +559,6 @@ sub _user_from_phab_token {
     WARN("Request to $phab_url failed: $_");
     ThrowUserError("api_key_not_valid");
   };
-}
-
-sub _ua {
-  my $ua = Mojo::UserAgent->new(request_timeout => 10);
-  $ua->transactor->name('BMO user.whoami shim');
-  if (my $proxy = Bugzilla->params->{proxy_url}) {
-    $ua->proxy->http($proxy)->https($proxy);
-  }
-  else {
-    $ua->proxy->detect();
-  }
-  return $ua;
 }
 
 1;
