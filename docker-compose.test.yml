@@ -43,7 +43,7 @@ services:
       - selenium
 
   externalapi.test:
-    image: bmo-test
+    image: bmo
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:80
 
   bmo.db:
