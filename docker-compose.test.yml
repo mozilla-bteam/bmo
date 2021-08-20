@@ -26,9 +26,6 @@ services:
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
       - BZ_QA_CONF_FILE=/app/qa/config/selenium_test.conf
       - BZ_QA_CONFIG=1
-      - CI=${CI}
-      - CIRCLE_SHA1=${CIRCLE_SHA1}
-      - CIRCLE_BUILD_URL=${CIRCLE_BUILD_URL}
       - LOCALCONFIG_ENV=1
       - LOG4PERL_CONFIG_FILE=log4perl-test.conf
       - LOGGING_PORT=5880
