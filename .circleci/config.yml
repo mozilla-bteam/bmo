@@ -193,7 +193,7 @@ jobs:
           name: run sanity tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --no-deps bmo.test
+            docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
               test_sanity $(circleci tests glob 't/*.t' 'extensions/*/t/*.t' | \
               circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
