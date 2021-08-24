@@ -1281,8 +1281,7 @@ sub update {
   }
 
   # Comments and comment tags
-  $self->{added_comments} ||= [];
-  while (my $comment = shift @{$self->{pending_comments} || []}) {
+  foreach my $comment (@{$self->{added_comments} || []}) {
 
     # Override the Comment's timestamp to be identical to the update timestamp.
     $comment->{bug_when} = $delta_ts;
@@ -1291,12 +1290,10 @@ sub update {
       LogActivityEntry($self->id, "work_time", "", $comment->work_time, $user->id,
         $delta_ts);
     }
-    foreach my $tag (@{$self->{pending_comment_tags} || []}) {
+    foreach my $tag (@{$self->{added_comment_tags} || []}) {
       $comment->add_tag($tag) if defined $tag;
     }
-    $comment->update() if @{$self->{pending_comment_tags} || []};
-
-    push(@{$self->{added_comments}}, $comment);
+    $comment->update() if @{$self->{added_comment_tags} || []};
   }
 
   # Comment Privacy
@@ -1354,6 +1351,10 @@ sub update {
     $changes->{'flagtypes.name'} = [$removed, $added];
   }
 
+  use Bugzilla::Logging;
+  use Mojo::Util qw(dumper);
+  DEBUG(dumper $changes);
+
   # BMO - allow extensions to alter what is logged into bugs_activity
   Bugzilla::Hook::process(
     'bug_update_before_logging',
@@ -1364,6 +1365,8 @@ sub update {
       old_bug   => $old_bug
     }
   );
+
+  DEBUG(dumper $changes);
 
   # Log bugs_activity items
   # XXX Eventually, when bugs_activity is able to track the dupe_id,
@@ -1786,7 +1789,7 @@ sub _check_bug_status {
     @valid_statuses = @{$invocant->statuses_available};
     $product        = $invocant->product_obj;
     $old_status     = $invocant->status;
-    my $comments = $invocant->{pending_comments} || [];
+    my $comments = $invocant->{added_comments} || [];
     $comment = $comments->[-1];
   }
   else {
@@ -2116,7 +2119,7 @@ sub _check_dup_id {
   my $cur_dup = $self->dup_id || 0;
   if ( $cur_dup != $dupe_of
     && Bugzilla->params->{'commentonduplicate'}
-    && !$self->{pending_comments})
+    && !$self->{added_comments})
   {
     ThrowUserError('comment_required');
   }
@@ -2350,7 +2353,7 @@ sub _check_resolution {
   if ( Bugzilla->params->{'commentonchange_resolution'}
     && $self->resolution
     && $resolution ne $self->resolution
-    && !$self->{pending_comments})
+    && !$self->{added_comments})
   {
     ThrowUserError('comment_required');
   }
@@ -2836,7 +2839,7 @@ sub set_all {
   }
 
   if (defined $params->{comment_tags} && Bugzilla->user->can_tag_comments()) {
-    $self->{pending_comment_tags}
+    $self->{added_comment_tags}
       = ref $params->{comment_tags}
       ? $params->{comment_tags}
       : [$params->{comment_tags}];
@@ -3013,9 +3016,9 @@ sub set_dup_id {
   # Now make sure that we add a duplicate comment on *this* bug.
   # (Change an existing comment into a dup comment, if there is one,
   # or add an empty dup comment.)
-  if ($self->{pending_comments}) {
+  if ($self->{added_comments}) {
     my @normal = grep { !defined $_->{type} || $_->{type} == CMT_NORMAL }
-      @{$self->{pending_comments}};
+      @{$self->{added_comments}};
 
     # Turn the last one into a dup comment.
     $normal[-1]->{type}       = CMT_DUPE_OF;
@@ -3390,9 +3393,9 @@ sub add_comment {
     $self->set_remaining_time(max($self->remaining_time - $params->{work_time}, 0));
   }
 
-  $self->{pending_comments} ||= [];
+  $self->{added_comments} ||= [];
 
-  push(@{$self->{pending_comments}}, $params);
+  push(@{$self->{added_comments}}, $params);
 }
 
 # There was a lot of duplicate code when I wrote this as three separate
