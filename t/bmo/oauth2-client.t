@@ -14,14 +14,34 @@ use Mojo::Base -strict;
 use QA::Util;
 use Test::More;
 
-BEGIN {
-  plan skip_all => "these tests only run in CI"
-    unless $ENV{CI} && $ENV{CIRCLE_JOB} eq 'test_bmo';
-}
-
 my ($sel, $config) = get_selenium();
 
 $sel->set_implicit_wait_timeout(600);
+
+# Update parameters for OAuth2 tests
+log_in($sel, $config, 'admin');
+set_parameters(
+  $sel,
+  {
+    'Mozilla IAM' => {
+      'mozilla_iam_enabled-on'        => undef,
+      'mozilla_iam_mandatory_domains' => {type => 'text', value => 'mozilla.com'},
+    },
+    'OAuth2 Client' => {
+      'oauth2_client_enabled-on'    => undef,
+      'oauth2_client_id'            => {type => 'text', value => 'client_id'},
+      'oauth2_client_secret'        => {type => 'text', value => 'client_secret'},
+      'oauth2_client_authorize_url' =>
+        {type => 'text', value => 'http://externalapi.test/oauth/test/authorize'},
+      'oauth2_client_token_url' =>
+        {type => 'text', value => 'http://externalapi.test/oauth/test/token'},
+      'oauth2_client_userinfo_url' =>
+        {type => 'text', value => 'http://externalapi.test/oauth/test/userinfo'},
+      'oauth2_client_scopes' => {type => 'text', value => 'openid profile email'},
+    }
+  }
+);
+logout($sel);
 
 ### Non-Mozilla normal user tests
 
@@ -53,5 +73,16 @@ $sel->click_ok('//a[contains(text(),"Connect")]',
   'Click OAuth2 provider login');
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
 $sel->logout_ok();
+
+# Reset parameters for OAuth2 tests
+log_in($sel, $config, 'admin');
+set_parameters(
+  $sel,
+  {
+    'Mozilla IAM'   => {'mozilla_iam_enabled-on'    => undef},
+    'OAuth2 Client' => {'oauth2_client_enabled-off' => undef}
+  }
+);
+logout($sel);
 
 done_testing;

@@ -25,6 +25,7 @@ has 'driver'      => (
       alert_text_like
       body_text_contains
       body_text_lacks
+      clear_element_ok
       click_element_ok
       get_all_cookies
       get_ok

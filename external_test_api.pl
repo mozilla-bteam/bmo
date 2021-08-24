@@ -46,6 +46,45 @@ sub startup {
       $c->render(json => $c->app->defaults->{last_violation}, status => 200);
     }
   );
+
+  # Mocked OAuth2 endpoints
+  $r->post(
+    '/oauth/test/token' => sub {
+      my $c = shift;
+      $c->render(
+        json => {
+          access_token  => 'fake_access_token',
+          expires_in    => 3600,
+          refresh_token => 'fake_refresh_token',
+          scope         => 'openid profile email',
+          token_type    => 'bearer',
+        },
+        status => 200
+      );
+    }
+  );
+  $r->get(
+    '/oauth/test/authorize' => sub {
+      my $c   = shift;
+      my $url = Mojo::URL->new($c->param('redirect_uri'));
+      $url->query->append(code  => 'fake_return_code');
+      $url->query->append(state => $c->param('state'));
+      $c->render(text => $c->tag('a', href => $url, sub { 'Connect' }));
+    }
+  );
+  $r->get(
+    '/oauth/test/userinfo' => sub {
+      my $c = shift;
+      $c->render(
+        json => {
+          email          => 'oauth2-user@mozilla.com',
+          name           => 'OAuth2 Test User',
+          email_verified => 1,
+        },
+        status => 200
+      );
+    }
+  );
 }
 
 1;

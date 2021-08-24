@@ -18,6 +18,7 @@ BEGIN {
 use Bugzilla;
 use Bugzilla::Util qw(mojo_user_agent);
 use Mojo::URL;
+use QA::Util;
 use Test2::V0;
 use Test::Selenium::Remote::Driver;
 
@@ -28,8 +29,8 @@ my $SES_PASSWORD   = $ENV{BMO_ses_password}   // 'password123456789!';
 
 my @require_env = qw(
   BZ_BASE_URL
-  BZ_TEST_BOUNCE_USER
-  BZ_TEST_BOUNCE_PASS
+  BZ_TEST_NEWBIE
+  BZ_TEST_NEWBIE_PASS
   TWD_HOST
   TWD_PORT
 );
@@ -57,7 +58,7 @@ ok($result->is_success, 'Posting first bounce was successful');
 
 # Allow user to reset their email
 $sel->set_implicit_wait_timeout(600);
-$sel->login_ok($ENV{BZ_TEST_BOUNCE_USER}, $ENV{BZ_TEST_BOUNCE_PASS});
+$sel->login_ok($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
 $sel->body_text_contains('Change notification emails have been disabled',
   'Email disabled warning is displayed');
 $sel->click_element_ok('//a[@id="bounced_emails_link"]');
@@ -84,7 +85,7 @@ $result = $ua->post($ses_url => $ses_data)->result;
 ok($result->is_success, 'Posting fifth bounce was successful');
 
 # User should not be able to login again
-$sel->login($ENV{BZ_TEST_BOUNCE_USER}, $ENV{BZ_TEST_BOUNCE_PASS});
+$sel->login($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
 $sel->title_is('Account Disabled');
 $sel->body_text_contains(
 'Your Bugzilla account has been disabled due to issues delivering emails to your address.',
@@ -153,4 +154,4 @@ sub logout_ok {
 }
 
 __DATA__
-{"Type":"Notification","Message":"{\"eventType\":\"Bounce\",\"bounce\":{\"bounceType\":\"Permanent\",\"bounceSubType\":\"General\",\"bouncedRecipients\":[{\"emailAddress\":\"bouncer@mozilla.example\",\"action\":\"failed\",\"status\":\"5.1.1\",\"diagnosticCode\":\"smtp;5505.1.1userunknown\"}],\"timestamp\":\"2017-08-05T00:41:02.669Z\",\"feedbackId\":\"01000157c44f053b-61b59c11-9236-11e6-8f96-7be8aexample-000000\",\"reportingMTA\":\"dsn;mta.example.com\"},\"mail\":{\"timestamp\":\"2017-08-05T00:40:02.012Z\",\"source\":\"BugzillaDaemon<bugzilla@mozilla.bugs>\",\"sourceArn\":\"arn:aws:ses:us-east-1:123456789012:identity/bugzilla@mozilla.bugs\",\"sendingAccountId\":\"123456789012\",\"messageId\":\"EXAMPLE7c191be45-e9aedb9a-02f9-4d12-a87d-dd0099a07f8a-000000\",\"destination\":[\"bouncer@mozilla.example\"],\"headersTruncated\":false,\"headers\":[{\"name\":\"From\",\"value\":\"BugzillaDaemon<bugzilla@mozilla.bugs>\"},{\"name\":\"To\",\"value\":\"bouncer@mozilla.example\"},{\"name\":\"Subject\",\"value\":\"MessagesentfromAmazonSES\"},{\"name\":\"MIME-Version\",\"value\":\"1.0\"},{\"name\":\"Content-Type\",\"value\":\"multipart/alternative;boundary=\"}],\"commonHeaders\":{\"from\":[\"BugzillaDaemon<bugzilla@mozilla.bugs>\"],\"to\":[\"bouncer@mozilla.example\"],\"messageId\":\"EXAMPLE7c191be45-e9aedb9a-02f9-4d12-a87d-dd0099a07f8a-000000\",\"subject\":\"MessagesentfromAmazonSES\"},\"tags\":{\"ses:configuration-set\":[\"ConfigSet\"],\"ses:source-ip\":[\"192.0.2.0\"],\"ses:from-domain\":[\"example.com\"],\"ses:caller-identity\":[\"ses_user\"]}}}"}
+{"Type":"Notification","Message":"{\"eventType\":\"Bounce\",\"bounce\":{\"bounceType\":\"Permanent\",\"bounceSubType\":\"General\",\"bouncedRecipients\":[{\"emailAddress\":\"newbie@mozilla.example\",\"action\":\"failed\",\"status\":\"5.1.1\",\"diagnosticCode\":\"smtp;5505.1.1userunknown\"}],\"timestamp\":\"2017-08-05T00:41:02.669Z\",\"feedbackId\":\"01000157c44f053b-61b59c11-9236-11e6-8f96-7be8aexample-000000\",\"reportingMTA\":\"dsn;mta.example.com\"},\"mail\":{\"timestamp\":\"2017-08-05T00:40:02.012Z\",\"source\":\"BugzillaDaemon<bugzilla@mozilla.bugs>\",\"sourceArn\":\"arn:aws:ses:us-east-1:123456789012:identity/bugzilla@mozilla.bugs\",\"sendingAccountId\":\"123456789012\",\"messageId\":\"EXAMPLE7c191be45-e9aedb9a-02f9-4d12-a87d-dd0099a07f8a-000000\",\"destination\":[\"newbie@mozilla.example\"],\"headersTruncated\":false,\"headers\":[{\"name\":\"From\",\"value\":\"BugzillaDaemon<bugzilla@mozilla.bugs>\"},{\"name\":\"To\",\"value\":\"newbie@mozilla.example\"},{\"name\":\"Subject\",\"value\":\"MessagesentfromAmazonSES\"},{\"name\":\"MIME-Version\",\"value\":\"1.0\"},{\"name\":\"Content-Type\",\"value\":\"multipart/alternative;boundary=\"}],\"commonHeaders\":{\"from\":[\"BugzillaDaemon<bugzilla@mozilla.bugs>\"],\"to\":[\"newbie@mozilla.example\"],\"messageId\":\"EXAMPLE7c191be45-e9aedb9a-02f9-4d12-a87d-dd0099a07f8a-000000\",\"subject\":\"MessagesentfromAmazonSES\"},\"tags\":{\"ses:configuration-set\":[\"ConfigSet\"],\"ses:source-ip\":[\"192.0.2.0\"],\"ses:from-domain\":[\"example.com\"],\"ses:caller-identity\":[\"ses_user\"]}}}"}

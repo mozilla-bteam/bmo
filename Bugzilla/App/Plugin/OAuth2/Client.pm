@@ -21,9 +21,6 @@ use Try::Tiny;
 
 sub register {
   my ($self, $app) = @_;
-  my $params = Bugzilla->params;
-
-  return unless $params->{oauth2_client_enabled};
 
   $app->helper(
     'oauth2.auth_url' => sub {
@@ -54,16 +51,6 @@ sub register {
     'oauth2.get_token' => sub {
       my ($c, $args) = @_;
       my $params = Bugzilla->params;
-
-      if ($ENV{CI}) {
-        return {
-          access_token  => 'fake_access_token',
-          expires_in    => 3600,
-          refresh_token => 'fake_refresh_token',
-          scope         => 'openid profile email',
-          token_type    => 'bearer',
-        };
-      }
 
       my $data = {
         client_id     => $params->{oauth2_client_id},
@@ -96,14 +83,6 @@ sub register {
       my ($c, $access_token) = @_;
       my $params = Bugzilla->params;
 
-      if ($ENV{CI} && $ENV{BZ_TEST_OAUTH2_NORMAL_USER}) {
-        return {
-          email          => $ENV{BZ_TEST_OAUTH2_NORMAL_USER},
-          name           => 'OAuth2 Test User',
-          email_verified => 1,
-        };
-      }
-
       try {
         my $tx = mojo_user_agent()->get(
           $params->{'oauth2_client_userinfo_url'},
@@ -122,22 +101,10 @@ sub register {
   $app->helper(
     'oauth2.redirect_uri' => sub {
       my ($c, $redirect) = @_;
+      DEBUG('oauth2.redirect_uri');
       return Bugzilla->localconfig->urlbase . 'oauth2.cgi?redirect=' . $redirect;
     }
   );
-
-  # Add special routes for CI testing that mocks a providers login
-  if ($ENV{CI}) {
-    $app->routes->get(
-      '/oauth/test/authorize' => sub {
-        my $c   = shift;
-        my $url = Mojo::URL->new($c->param('redirect_uri'));
-        $url->query->append(code  => 'fake_return_code');
-        $url->query->append(state => $c->param('state'));
-        $c->render(text => $c->tag('a', href => $url, sub {'Connect'}));
-      },
-    );
-  }
 
   Bugzilla::Hook::process('oauth2_client_register', {app => $app});
 }
