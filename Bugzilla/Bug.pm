@@ -1283,7 +1283,8 @@ sub update {
   # Comments and comment tags
   foreach my $comment (@{$self->{added_comments} || []}) {
 
-    # Override the Comment's timestamp to be identical to the update timestamp.
+    # Override the Comment's timestamp to be identical to the update
+    # timestamp.
     $comment->{bug_when} = $delta_ts;
     $comment = Bugzilla::Comment->insert_create_data($comment);
     if ($comment->work_time) {
@@ -1351,10 +1352,6 @@ sub update {
     $changes->{'flagtypes.name'} = [$removed, $added];
   }
 
-  use Bugzilla::Logging;
-  use Mojo::Util qw(dumper);
-  DEBUG(dumper $changes);
-
   # BMO - allow extensions to alter what is logged into bugs_activity
   Bugzilla::Hook::process(
     'bug_update_before_logging',
@@ -1365,8 +1362,6 @@ sub update {
       old_bug   => $old_bug
     }
   );
-
-  DEBUG(dumper $changes);
 
   # Log bugs_activity items
   # XXX Eventually, when bugs_activity is able to track the dupe_id,
