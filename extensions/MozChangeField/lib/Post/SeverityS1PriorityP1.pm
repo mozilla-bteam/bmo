@@ -40,9 +40,11 @@ sub evaluate_change {
     @{get_legal_field_values('priority')}
     )
   {
-    $bug->set_priority('P1');
-    $bug->update($timestamp);
+    # Cannot call $bug->update here so set directly
+    Bugzilla->dbh->do("UPDATE bugs SET priority = 'P1' WHERE bug_id = ?",
+      undef, $bug->id);
     $changes->{priority} = [$bug->priority, 'P1'];
+    $bug->{priority}     = 'P1';
   }
 }
 
