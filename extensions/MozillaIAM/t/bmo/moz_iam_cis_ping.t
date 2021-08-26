@@ -33,6 +33,8 @@ use Test2::V0;
 my $bmo_email    = $ENV{BZ_TEST_OAUTH2_NORMAL_USER};
 my $iam_username = $ENV{BZ_TEST_OAUTH2_MOZILLA_USER};
 
+create_user($ENV{BZ_TEST_OAUTH2_NORMAL_USER}, '*');
+
 my $t = Test::Mojo->new('Bugzilla::App');
 
 # Simulate ping from CIS system about a user change
