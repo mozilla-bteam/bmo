@@ -11,11 +11,13 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Extension::MozillaIAM::Constants qw(STAFF_GROUPS);
 use Bugzilla::Logging;
 use Bugzilla::Token;
 use Bugzilla::User;
-use Bugzilla::Util qw(url_quote);
+use Bugzilla::Util qw(mojo_user_agent url_quote);
 
+use List::MoreUtils qw(any);
 use Mojo::JWT;
 use Mojo::UserAgent;
 use Try::Tiny;
@@ -27,7 +29,6 @@ our @EXPORT_OK = qw(
   get_profile_by_email
   get_profile_by_id
   remove_staff_member
-  user_agent
   verify_token
 );
 
@@ -35,24 +36,21 @@ sub add_staff_member {
   my $params       = shift;
   my $bmo_email    = $params->{bmo_email};
   my $iam_username = $params->{iam_username};
-  my $real_name    = $params->{real_name};
   my $is_staff     = $params->{is_staff};
 
   # We need to make the below changes as an empowered user
-  my $empowered_user
-    = Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
+  my $empowered_user =
+    Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
 
-  # If user does not have an account, create one
   my $user = Bugzilla::User->new({name => $bmo_email});
-
   return 0 if !$user;
 
   # Update iam_username value with email from Mozilla IAM
   # Also set password to * to disallow local login.
-  if ($user->iam_username ne $iam_username) {
+  if (!$user->iam_username || $user->iam_username ne $iam_username) {
     $user->set_iam_username($iam_username);
     $user->set_password('*') if $user->cryptpassword ne '*';
-    $user->set_mfa('');
+    $user->set_mfa('Duo');
   }
 
   # Update group permissions if user is staff
@@ -69,13 +67,12 @@ sub remove_staff_member {
   my $params = shift;
 
   # We need to make the below changes as an empowered user
-  my $empowered_user
-    = Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
+  my $empowered_user =
+    Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
 
   my $user = $params->{user};
   if (!$user) {
-    my $user_id
-      = Bugzilla->dbh->selectrow_array(
+    my $user_id = Bugzilla->dbh->selectrow_array(
       'SELECT user_id FROM profiles_iam WHERE iam_username = ?',
       undef, $params->{iam_username});
     $user = Bugzilla::User->new($user_id);
@@ -106,10 +103,11 @@ sub get_access_token {
   return 'fake_access_token' if $ENV{CI};
 
   my $access_token;
+  my $ua = mojo_user_agent({request_timeout => 5});
   try {
-    $access_token = user_agent()->post(
+    $access_token = $ua->post(
       $params->{oauth2_client_token_url} => {'Content-Type' => 'application/json'} =>
-        json                             => {
+        json => {
         client_id     => $params->{mozilla_iam_person_api_client_id},
         client_secret => $params->{mozilla_iam_person_api_client_secret},
         audience      => 'api.sso.mozilla.com',
@@ -139,60 +137,42 @@ sub get_profile_by_id {
 sub _get_profile {
   my ($query_path, $access_token) = @_;
 
-  # For CI, return test data that mocks the PersonAPI
-  if ( $ENV{CI}
-    && $ENV{BZ_TEST_OAUTH2_NORMAL_USER}
-    && $ENV{BZ_TEST_OAUTH2_MOZILLA_USER})
-  {
-    return {
-      bmo_email    => $ENV{BZ_TEST_OAUTH2_NORMAL_USER},
-      first_name   => 'Mozilla',
-      last_name    => 'IAM User',
-      iam_username => $ENV{BZ_TEST_OAUTH2_MOZILLA_USER},
-      is_staff     => 1,
-    };
-  }
-
   $access_token ||= get_access_token();
   return {} if !$access_token;
 
   my $url = Bugzilla->params->{mozilla_iam_person_api_uri} . $query_path;
 
-  my $data = {};
+  my $profile;
+  my $ua = mojo_user_agent({request_timeout => 5});
   try {
-    $data = user_agent()->get($url => {'Authorization' => "Bearer ${access_token}"})
-      ->result->json;
+    $profile =
+      $ua->get($url => {'Authorization' => "Bearer ${access_token}"})->result->json;
   }
   catch {
     WARN($_);
     ThrowCodeError('mozilla_iam_get_profile_error');
   };
 
-  return {} if !$data;
+  return {} if !$profile;
+
+  my $is_staff = 0;
+  if ($profile && $profile->{ldap} && $profile->{ldap}->{values}) {
+    foreach my $key (keys %{$profile->{ldap}->{values}}) {
+      if (any { $_ eq $key } STAFF_GROUPS) {
+        $is_staff = 1;
+        last;
+      }
+    }
+  }
 
   return {
-    is_staff     => $data->{staff_information}->{staff}->{value},
-    iam_username => $data->{primary_email}->{value},
-    bmo_email => $data->{identities}->{bugzilla_mozilla_org_primary_email}->{value},
-    first_name => $data->{first_name}->{value},
-    last_name  => $data->{last_name}->{value},
+    is_staff     => $is_staff,
+    iam_username => $profile->{primary_email}->{value},
+    first_name   => $profile->{first_name}->{value},
+    last_name    => $profile->{last_name}->{value},
+    bmo_email    =>
+      $profile->{identities}->{bugzilla_mozilla_org_primary_email}->{value},
   };
-}
-
-sub user_agent {
-  my $ua = Mojo::UserAgent->new(
-    request_timeout     => 5,
-    connect_timeout     => 5,
-    inactivity_timesout => 30
-  );
-  if (my $proxy = Bugzilla->params->{proxy_url}) {
-    $ua->proxy->http($proxy)->https($proxy);
-  }
-  else {
-    $ua->proxy->detect();
-  }
-  $ua->transactor->name('Bugzilla');
-  return $ua;
 }
 
 sub verify_token {
@@ -201,10 +181,10 @@ sub verify_token {
 
   return 0 if $bearer !~ /bearer/i || !$token;
 
+  my $ua = mojo_user_agent({request_timeout => 5});
   try {
-    my $jwks
-      = user_agent()
-      ->get(Bugzilla->params->{oauth2_client_domain} . '/.well-known/jwks.json')
+    my $jwks =
+      $ua->get(Bugzilla->params->{oauth2_client_domain} . '/.well-known/jwks.json')
       ->result->json('/keys');
     $token = Mojo::JWT->new(jwks => $jwks)->decode($token);
   }

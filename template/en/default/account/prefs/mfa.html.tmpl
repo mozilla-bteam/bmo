@@ -22,7 +22,7 @@
   </p>
   [% RETURN %]
 [% END %]
-[% IF user.cryptpassword == '*' %]
+[% IF user.cryptpassword == '*' && user.mfa != 'Duo' %]
   <input type="hidden" name="mfa_action" id="mfa-action" value="" data-nopassword="true">
   [% IF Bugzilla.request_cache.mfa_warning %]
     <p>
@@ -33,9 +33,6 @@
     Before you can enable two-factor authentication you must set a password on your account.
     To do this on your account please click on "Reset Password";
     this will email you instructions to start the password reset process.
-  </p>
-  <p>
-    As part of this transition you will no longer be able to use GitHub to log in to [% terms.Bugzilla %].
   </p>
   [% RETURN %]
 [% END %]

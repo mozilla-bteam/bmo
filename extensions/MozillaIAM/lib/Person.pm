@@ -142,7 +142,6 @@ sub cis_update_query {
           add_staff_member({
             bmo_email    => $profile->{bmo_email},
             iam_username => $profile->{iam_username},
-            real_name    => $profile->{first_name} . ' ' . $profile->{last_name},
             is_staff     => $profile->{is_staff},
           });
         }

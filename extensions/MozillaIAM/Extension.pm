@@ -18,7 +18,6 @@ use Bugzilla::Logging;
 use Bugzilla::Token qw(issue_hash_token);
 use Bugzilla::User;
 use Bugzilla::Util qw(trim);
-
 use Bugzilla::Extension::MozillaIAM::Util
   qw(add_staff_member get_access_token get_profile_by_email remove_staff_member);
 
@@ -55,6 +54,13 @@ sub oauth2_client_pre_login {
 
       # Save profile data for post login
       $userinfo->{iam_profile_data} = $profile;
+
+      # Use first and last name from CIS instead of Auth0 as
+      # default real name if user does not yet exist in BMO.
+      my $user = Bugzilla::User->new({name => $bmo_email});
+      if (!$user) {
+        $userinfo->{name} = $profile->{first_name} . ' ' . $profile->{last_name};
+      }
     }
   }
 
@@ -75,16 +81,8 @@ sub oauth2_client_post_login {
   my $profile = $userinfo->{iam_profile_data}
     ||= get_profile_by_email($iam_username);
 
-  if ($profile->{is_staff}) {
-    add_staff_member({
-      bmo_email    => $profile->{bmo_email},
-      iam_username => $profile->{iam_username},
-      real_name    => $profile->{first_name} . ' ' . $profile->{last_name},
-      is_staff     => $profile->{is_staff},
-    });
-  }
+  add_staff_member($profile) if $profile && $profile->{is_staff};
 }
-
 
 sub oauth2_client_handle_redirect {
   my ($self, $args) = @_;

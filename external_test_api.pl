@@ -77,12 +77,32 @@ sub startup {
       my $c = shift;
       $c->render(
         json => {
-          email          => 'oauth2-user@mozilla.com',
+          email          => 'oauth2-user@example.com',
           name           => 'OAuth2 Test User',
           email_verified => 1,
         },
         status => 200
       );
+    }
+  );
+
+  # Mocked PersonAPI endpoints
+  my $person_data = {
+    primary_email => {value => 'oauth2-user@mozilla.com'},
+    first_name    => {value => 'Mozilla'},
+    last_name     => {value => 'IAM User'},
+    identities    =>
+      {bugzilla_mozilla_org_primary_email => {value => 'oauth2-user@example.com'}},
+    ldap => {values => {team_moco => 1}}
+  };
+  $r->get(
+    '/person/test/v2/user/primary_email/*email' => sub {
+      shift->render(json => $person_data, status => 200);
+    }
+  );
+  $r->get(
+    '/person/test/v2/user/user_id/*id' => sub {
+      shift->render(json => $person_data, status => 200);
     }
   );
 }

@@ -16,10 +16,13 @@ our @EXPORT = qw(
   CIS_UPDATE_SECONDS
   MANUAL_UPDATE_SECONDS
   POLL_TIMEOUT
+  STAFF_GROUPS
 );
 
 use constant CIS_UPDATE_SECONDS    => $ENV{CIS_UPDATE_SECONDS}    // 10;
 use constant MANUAL_UPDATE_SECONDS => $ENV{MANUAL_UPDATE_SECONDS} // 3600;
 use constant POLL_TIMEOUT          => $ENV{POLL_TIMEOUT}          // 3600;
+use constant STAFF_GROUPS          =>
+  qw(team_moco team_mofo team_mozillaonline team_pocket);
 
 1;
