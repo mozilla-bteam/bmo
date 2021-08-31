@@ -204,7 +204,7 @@ sub object_end_of_update {
 
 sub bug_end_of_update {
   my ($self, $args)    = @_;
-  my ($bug,  $changes) = @$args{qw(bug changes)};
+  my ($bug,  $changes, $timestamp) = @$args{qw(bug changes timestamp)};
 
   if ($changes->{'product'}) {
     my @msgs;
@@ -212,7 +212,10 @@ sub bug_end_of_update {
     # If some votes have been removed, RemoveVotes() returns
     # a list of messages to send to voters.
     @msgs = _remove_votes($bug->id, 0, 'votes_bug_moved');
-    _confirm_if_vote_confirmed($bug);
+    my $new_changes = _confirm_if_vote_confirmed($bug, undef, $timestamp);
+    if ($new_changes) {
+      map {$changes->{$_} = $new_changes->{$_}} keys %{$new_changes};
+    }
 
     foreach my $msg (@msgs) {
       MessageToMTA($msg);
@@ -894,16 +897,23 @@ sub _remove_votes {
 # If a user votes for a bug, or the number of votes required to
 # confirm a bug has been reduced, check if the bug is now confirmed.
 sub _confirm_if_vote_confirmed {
-  my ($id, $product) = @_;
+  my ($id, $product, $timestamp) = @_;
   my $bug = ref $id ? $id : new Bugzilla::Bug({id => $id, cache => 1});
   $product ||= $bug->product_obj;
 
-  my $ret = 0;
+  my $changes = {};
   if ( !$bug->everconfirmed
     and $product->{votestoconfirm}
     and $bug->votes >= $product->{votestoconfirm})
   {
-    $bug->add_comment('', {type => CMT_POPULAR_VOTES});
+    my $new_comment = {
+      bug_id   => $bug->id,
+      bug_when => $timestamp,
+      thetext  => '',
+      type     => CMT_POPULAR_VOTES,
+      who      => Bugzilla->user->id,
+    };
+    Bugzilla::Comment->insert_create_data($new_comment);
 
     if ($bug->bug_status eq 'UNCONFIRMED') {
 
@@ -920,20 +930,27 @@ sub _confirm_if_vote_confirmed {
       # We cannot call $bug->set_bug_status() here, because a user without
       # canconfirm privs should still be able to confirm a bug by
       # popular vote. We already know the new status is valid, so it's safe.
-      $bug->{bug_status}    = $new_status;
-      $bug->{everconfirmed} = 1;
+      # Also we cannot call $bug->update inside of the bug_end_of_update hook
+      Bugzilla->dbh->do(
+        'UPDATE bugs SET bug_status = ?, everconfirmed = 1 WHERE bug_id = ?',
+        undef, $new_status, $bug->id);
+      $changes->{bug_status}    = [$bug->bug_status,    $new_status];
+      $changes->{everconfirmed} = [$bug->everconfirmed, 1];
+      $bug->{bug_status}        = $new_status;
+      $bug->{everconfirmed}     = 1;
       delete $bug->{'status'};    # Contains the status object.
     }
     else {
       # If the bug is in a closed state, only set everconfirmed to 1.
       # Do not call $bug->_set_everconfirmed(), for the same reason as above.
-      $bug->{everconfirmed} = 1;
+      Bugzilla->dbh->do("UPDATE bugs SET everconfirmed = 1 WHERE bug_id = ?",
+        undef, $bug->id);
+      $changes->{everconfirmed} = [$bug->everconfirmed, 1];
+      $bug->{everconfirmed}     = 1;
     }
-    $bug->update();
-
-    $ret = 1;
   }
-  return $ret;
+
+  return keys %{$changes} ? $changes : 0;
 }
 
 

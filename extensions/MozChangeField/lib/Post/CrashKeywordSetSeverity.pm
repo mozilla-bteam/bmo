@@ -23,8 +23,10 @@ sub evaluate_create {
     && $bug->bug_severity eq Bugzilla->params->{defaultseverity}
     && grep { $_ eq 'S2' } @{get_legal_field_values('bug_severity')})
   {
-    $bug->set_severity('S2');
-    $bug->update($timestamp);
+    # Cannot call $bug->update here so set directly
+    Bugzilla->dbh->do('UPDATE bugs SET bug_severity = ? WHERE bug_id = ?',
+      undef, 'S2', $bug->id);
+    $bug->{bug_severity} = 'S2';
   }
 }
 

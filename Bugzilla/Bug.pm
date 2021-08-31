@@ -1118,6 +1118,13 @@ sub update {
   my $dbh  = Bugzilla->dbh;
   my $user = Bugzilla->user;
 
+  # Do not allow calling up $bug->update from extensions,
+  # etc. inside the current update()
+  if ($self->{_inside_bug_update}) {
+    ThrowCodeError('inside_bug_update');
+  }
+  $self->{_inside_bug_update} = 1;
+
   # XXX This is just a temporary hack until all updating happens
   # inside this function.
   my $delta_ts = shift || $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
@@ -1453,6 +1460,9 @@ sub update {
       old_bug   => $old_bug
     }
   );
+
+  # Clear the inside of update flag
+  delete $self->{_inside_bug_update};
 
   return $changes;
 }
