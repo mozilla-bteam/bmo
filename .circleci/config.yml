@@ -133,6 +133,7 @@ jobs:
           docker_layer_caching: true
       - checkout
       - *docker_login
+      - *build_image
       - attach_workspace:
           at: /app/build_info
       - deploy:
@@ -169,6 +170,7 @@ jobs:
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -196,6 +198,7 @@ jobs:
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -220,6 +223,7 @@ jobs:
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -244,6 +248,7 @@ jobs:
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
