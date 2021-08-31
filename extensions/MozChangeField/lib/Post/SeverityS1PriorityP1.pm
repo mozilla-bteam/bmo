@@ -24,7 +24,7 @@ sub evaluate_create {
     @{get_legal_field_values('priority')}
     )
   {
-# Should call $bug->update here so set directly
+    # Should call $bug->update here so set directly
     Bugzilla->dbh->do('UPDATE bugs SET priority = ? WHERE bug_id = ?',
       undef, 'P1', $bug->id);
     $bug->{priority} = 'P1';
