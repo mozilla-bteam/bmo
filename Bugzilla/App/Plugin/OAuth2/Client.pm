@@ -101,7 +101,6 @@ sub register {
   $app->helper(
     'oauth2.redirect_uri' => sub {
       my ($c, $redirect) = @_;
-      DEBUG('oauth2.redirect_uri');
       return Bugzilla->localconfig->urlbase . 'oauth2.cgi?redirect=' . $redirect;
     }
   );

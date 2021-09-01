@@ -16,7 +16,10 @@ use fields qw();
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::User;
+use Bugzilla::Token qw( set_token_extra_data );
 use Bugzilla::Util;
+
+use Mojo::URL;
 
 use constant user_can_create_account => 1;
 use constant extern_id_used          => 0;
@@ -49,7 +52,7 @@ sub create_or_update_user {
     if ($extern_id) {
       $extern_user_id = $dbh->selectrow_array(
         'SELECT userid
-                 FROM profiles WHERE extern_id = ?', undef, $extern_id
+           FROM profiles WHERE extern_id = ?', undef, $extern_id
       );
     }
 
@@ -78,16 +81,35 @@ sub create_or_update_user {
         details => {addr => $username}
       };
 
-      # external authentication
-      # systems might follow different standards than ours. So in this
+      # At this point we know that the user is authenticated
+      # but we want to confirm that they are OK with a new account
+      # being created in case they already have another one.
+      my $uri = Mojo::URL->new(Bugzilla->cgi->self_url);
+      foreach my $param (qw(Bugzilla_remember GoAheadAndLogIn)) {
+        $uri->query->remove($param);
+      }
 
-      # XXX Theoretically this could fail with an error, but the fix for
-      # that is too involved to be done right now.
-      my $user
-        = Bugzilla::User->create({
-        login_name => $username, cryptpassword => $password, realname => $real_name
-        });
-      $username_user_id = $user->id;
+      # If this OAuth2 then use the redirect value instead
+      if ($uri->query->param('redirect')) {
+        $uri = Mojo::URL->new($uri->query->param('redirect'));
+      }
+
+      my $token = Bugzilla::Token::_create_token(undef, 'account_create');
+      my $extra_data = {login => $username, realname => $real_name, url => $uri->to_string};
+      $extra_data->{auth_method} = $params->{auth_method} if $params->{auth_method};
+      set_token_extra_data($token, $extra_data);
+
+      my $vars = {
+        login    => $username,
+        realname => $real_name,
+        token    => $token,
+      };
+
+      my $template = Bugzilla->template;
+      print Bugzilla->cgi->header();
+      $template->process('account/auth/verify_account_creation.html.tmpl', $vars)
+        || ThrowTemplateError($template->error());
+      exit;
     }
 
     # If we have a valid username id and an extern_id, but no valid

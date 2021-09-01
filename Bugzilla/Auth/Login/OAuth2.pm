@@ -14,12 +14,12 @@ use warnings;
 use base qw(Bugzilla::Auth::Login);
 
 use Bugzilla::Constants;
-use Bugzilla::Token qw(issue_hash_token);
 
 use constant can_logout            => 0;
 use constant can_login             => 0;
 use constant requires_verification => 0;
 use constant is_automatic          => 1;
+use constant auth_method           => 'OAuth2';
 
 sub get_login_info {
   my ($self) = @_;
@@ -37,7 +37,11 @@ sub get_login_info {
   return {failure => AUTH_NODATA} if !$userinfo;
 
   if ($userinfo->{email} && $userinfo->{email_verified}) {
-    return {username => $userinfo->{email}, realname => $userinfo->{name}};
+    return {
+      username    => $userinfo->{email},
+      realname    => $userinfo->{name},
+      auth_method => auth_method
+    };
   }
 
   return {failure => AUTH_NODATA};

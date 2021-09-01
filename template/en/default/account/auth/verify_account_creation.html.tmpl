@@ -1,0 +1,27 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/header.html.tmpl
+   title = "Verify Account Creation" %]
+
+<h1>Verify Account Creation</h1>
+
+<p>An account for <em>[% login FILTER html %]
+  [% IF realname %]([% realname FILTER html %])[% END %]</em> was not
+  found already in the system. Please verify that you want a new account
+  to be created.</p>
+
+<div class="verify-auto-account-creation">
+  <form method="POST" action="[% basepath FILTER none %]token.cgi">
+    <input type="hidden" name="t" value="[% token FILTER html %]">
+    <input type="hidden" name="a" value="verify_auto_account_creation">
+    <input type="submit" name="verify" value="Verify">
+  </form>
+</div>
+
+[% PROCESS global/footer.html.tmpl %]

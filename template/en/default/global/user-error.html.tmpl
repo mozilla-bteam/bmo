@@ -309,7 +309,7 @@
     [% title = 'Error Occurred Logging In' %]
     An error occurred completing the login process using the single signon provider.
     Contact an administrator explaining the problem.
-  
+
   [% ELSIF error == "attachment_deletion_disabled" %]
     [% title = "Attachment Deletion Disabled" %]
     Attachment deletion is disabled on this installation.
@@ -1980,6 +1980,10 @@
   [% ELSIF error == "wrong_token_for_mfa" %]
     [% title = "Wrong Token" %]
     That token cannot be used for MFA.
+
+  [% ELSIF error == "wrong_token_for_account_creation" %]
+    [% title = "Wrong Token" %]
+    That token cannot be used for automatic account creation.
 
   [% ELSIF error == "xmlrpc_invalid_value" %]
     "[% value FILTER html %]" is not a valid value for a
