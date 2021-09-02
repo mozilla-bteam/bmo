@@ -74,7 +74,7 @@ foreach my $pref (keys %user_prefs) {
 }
 
 ############################################################
-# OS, Platform, Priority
+# OS, Platform, Priority, Severity
 ############################################################
 
 my @priorities = qw(
@@ -115,17 +115,29 @@ if (!$dbh->selectrow_array("SELECT 1 FROM rep_platform WHERE value = 'ARM'")) {
 }
 
 my @oses = (
-  'All',           'Windows',
-  'Windows XP',    'Windows Server 2008',
-  'Windows Vista', 'Windows 7',
-  'Windows 8',     'Windows 8.1',
-  'Windows 10',    'Windows Phone',
-  'macOS',         'Linux',
-  'Android',       'iOS',
-  'iOS 7',         'iOS 8',
-  'BSDI',          'FreeBSD',
-  'NetBSD',        'OpenBSD',
-  'Unspecified',   'Other'
+  'All',
+  'Windows',
+  'Windows XP',
+  'Windows Server 2008',
+  'Windows Vista',
+  'Windows 7',
+  'Windows 8',
+  'Windows 8.1',
+  'Windows 10',
+  'Windows 11',
+  'Windows Phone',
+  'macOS',
+  'Linux',
+  'Android',
+  'iOS',
+  'iOS 7',
+  'iOS 8',
+  'BSDI',
+  'FreeBSD',
+  'NetBSD',
+  'OpenBSD',
+  'Unspecified',
+  'Other',
 );
 
 if (!$dbh->selectrow_array("SELECT 1 FROM op_sys WHERE value = 'AIX'")) {
@@ -134,6 +146,23 @@ if (!$dbh->selectrow_array("SELECT 1 FROM op_sys WHERE value = 'AIX'")) {
   foreach my $os (@oses) {
     $dbh->do("INSERT INTO op_sys (value, sortkey) VALUES (?, ?)",
       undef, ($os, $count + 100));
+  }
+}
+
+my @severities = qw(
+  S1
+  S2
+  S3
+  S4
+  N/A
+);
+
+if (!$dbh->selectrow_array("SELECT 1 FROM bug_severity WHERE value = 'S1'")) {
+  my $count = 1;
+  foreach my $severity (@severities) {
+    $dbh->do("INSERT INTO bug_severity (value, sortkey) VALUES (?, ?)",
+      undef, ($severity, $count));
+    $count++;
   }
 }
 
