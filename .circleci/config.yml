@@ -65,6 +65,7 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 19.03.13
+          docker_layer_caching: true
       - checkout
       - *install_deps
       - *docker_login
@@ -120,15 +121,6 @@ jobs:
       - store_artifacts:
           path: /app/build_info
       - *store_log
-      # save the built docker container into CircleCI's cache. This is
-      # required since Workflows do not have the same remote docker instance.
-      - run:
-          name: docker save bmo
-          command: mkdir -p /cache; docker save -o /cache/docker.tar "bmo"
-      - save_cache:
-          key: v1-{{ .Environment.CIRCLE_SHA1 }}-{{epoch}}
-          paths:
-            - /cache/docker.tar
 
   deploy:
     parallelism: 1
@@ -138,13 +130,10 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 19.03.13
-      - restore_cache:
-          key: v1-{{.Environment.CIRCLE_SHA1}}
-      - run:
-          name: Restore Docker image cache
-          command: docker load -i /cache/docker.tar
+          docker_layer_caching: true
       - checkout
       - *docker_login
+      - *build_image
       - attach_workspace:
           at: /app/build_info
       - deploy:
@@ -177,14 +166,11 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 19.03.13
-      - restore_cache:
-          key: v1-{{.Environment.CIRCLE_SHA1}}
-      - run:
-          name: Restore Docker image cache
-          command: docker load -i /cache/docker.tar
+          docker_layer_caching: true
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -208,14 +194,11 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 19.03.13
-      - restore_cache:
-          key: v1-{{.Environment.CIRCLE_SHA1}}
-      - run:
-          name: Restore Docker image cache
-          command: docker load -i /cache/docker.tar
+          docker_layer_caching: true
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -236,14 +219,11 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 19.03.13
-      - restore_cache:
-          key: v1-{{.Environment.CIRCLE_SHA1}}
-      - run:
-          name: Restore Docker image cache
-          command: docker load -i /cache/docker.tar
+          docker_layer_caching: true
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -264,14 +244,11 @@ jobs:
     steps:
       - setup_remote_docker:
           version: 19.03.13
-      - restore_cache:
-          key: v1-{{.Environment.CIRCLE_SHA1}}
-      - run:
-          name: Restore Docker image cache
-          command: docker load -i /cache/docker.tar
+          docker_layer_caching: true
       - checkout
       - *install_deps
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
