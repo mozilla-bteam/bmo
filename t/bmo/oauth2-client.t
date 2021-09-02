@@ -30,6 +30,9 @@ $sel->click_ok('//div[@id="main-inner"]/div[@class="oauth2-login"]/a/button',
   'Click OAuth2 login button');
 $sel->click_ok('//a[contains(text(),"Connect")]',
   'Click OAuth2 provider login');
+$sel->title_is('Verify Account Creation', 'Verify creation of new account');
+$sel->click_ok('//input[@name="verify"]',
+  'Click to verify creation of new account');
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
 $sel->logout_ok();
 

@@ -14,10 +14,11 @@ use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::Constants;
-use Bugzilla::Util;
 use Bugzilla::Error;
+use Bugzilla::Hook;
 use Bugzilla::Token;
 use Bugzilla::User;
+use Bugzilla::Util;
 
 use Date::Format;
 use Date::Parse;
@@ -49,8 +50,7 @@ if ($token) {
   # Make sure the token exists in the database.
   my ($db_token, $tokentype) = $dbh->selectrow_array(
     'SELECT token, tokentype FROM tokens
-      WHERE token = ?', undef,
-    $token
+      WHERE token = ?', undef, $token
   );
   unless (defined $db_token && $db_token eq $token) {
     Bugzilla->iprepd_report('token', remote_ip());
@@ -87,7 +87,9 @@ if ($token) {
     Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError('wrong_token_for_mfa');
   }
-  if ($action eq 'verify_auto_account_creation' && $tokentype ne 'account_create') {
+  if ($action eq 'verify_auto_account_creation'
+    && $tokentype ne 'account_create')
+  {
     Bugzilla->iprepd_report('token', remote_ip());
     ThrowUserError('wrong_token_for_account_creation');
   }
@@ -541,6 +543,11 @@ sub verify_auto_account_creation {
   });
 
   $user->authorizer->auto_verified($user, $event);
+
+  # If the external account was OAuth2 then we may
+  # need to perform some extra tasks
+  Bugzilla::Hook::process('oauth2_client_post_login',
+    {userinfo => $event->{oauth2_client_userinfo}});
 
   if ($event->{url}) {
     print Bugzilla->cgi->redirect($event->{url});

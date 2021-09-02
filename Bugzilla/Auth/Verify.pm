@@ -95,8 +95,12 @@ sub create_or_update_user {
       }
 
       my $token = Bugzilla::Token::_create_token(undef, 'account_create');
-      my $extra_data = {login => $username, realname => $real_name, url => $uri->to_string};
+      my $extra_data
+        = {login => $username, realname => $real_name, url => $uri->to_string};
       $extra_data->{auth_method} = $params->{auth_method} if $params->{auth_method};
+      $extra_data->{oauth2_client_userinfo}
+        = Bugzilla->request_cache->{oauth2_client_userinfo}
+        if Bugzilla->request_cache->{oauth2_client_userinfo};
       set_token_extra_data($token, $extra_data);
 
       my $vars = {

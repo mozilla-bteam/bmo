@@ -29,7 +29,7 @@ sub get_login_info {
 
   return {failure => AUTH_NODATA} if !$params->{oauth2_client_enabled};
 
-  my $userinfo = delete $cache->{oauth2_client_userinfo};
+  my $userinfo = $cache->{oauth2_client_userinfo};
 
   Bugzilla::Hook::process('oauth2_client_handle_redirect',
     {userinfo => $userinfo});

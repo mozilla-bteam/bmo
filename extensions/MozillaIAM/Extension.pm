@@ -75,11 +75,14 @@ sub oauth2_client_post_login {
 
   return if !Bugzilla->params->{mozilla_iam_enabled};
 
-  my $userinfo     = $args->{userinfo};
+  my $userinfo =
+    $args->{userinfo} || Bugzilla->request_cache->{oauth2_client_userinfo};
+  return if !$userinfo;
+
   my $iam_username = $userinfo->{iam_username} || $userinfo->{email};
 
-  my $profile = $userinfo->{iam_profile_data}
-    ||= get_profile_by_email($iam_username);
+  my $profile = $userinfo->{iam_profile_data} ||=
+    get_profile_by_email($iam_username);
 
   add_staff_member($profile) if $profile && $profile->{is_staff};
 }
