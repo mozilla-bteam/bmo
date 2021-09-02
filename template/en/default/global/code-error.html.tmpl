@@ -501,6 +501,10 @@
     [% terms.Bugzilla %] does not support the search type
     "[% operator FILTER html %]".
 
+  [% ELSIF error == "inside_bug_update" %]
+    Extensions cannot call <code>$[% terms.bug %]->update()</code>
+    inside [% terms.Bug %] update hooks otherwise errors may occur.
+
   [% ELSE %]
     [%# Try to find hooked error messages %]
     [% error_message = Hook.process("errors") %]
