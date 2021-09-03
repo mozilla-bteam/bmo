@@ -180,8 +180,7 @@ jobs:
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
-              test_sanity $(circleci tests glob 't/*.t' 'extensions/*/t/*.t' | \
-              circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
+              test_sanity t/*.t extensions/*/t/*.t | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -258,8 +257,7 @@ jobs:
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run bmo.test test_bmo \
-              -q -f $(circleci tests glob 't/bmo/*.t' 'extensions/*/t/bmo/*.t' | \
-              circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
+              -q -f t/bmo/*.t extensions/*/t/bmo/*.t | tee artifacts/$CIRCLE_JOB.txt
       - *store_log
 
 workflows:

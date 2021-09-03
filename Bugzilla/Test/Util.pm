@@ -34,6 +34,8 @@ our $Priority  = 'P1';
 sub create_user {
   my ($login, $password, %extra) = @_;
   require Bugzilla;
+  my $user = Bugzilla::User->new({name => $login});
+  return $user if $user;
   return Bugzilla::User->create({
     login_name    => $login,
     cryptpassword => $password,
