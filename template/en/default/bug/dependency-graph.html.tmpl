@@ -53,7 +53,7 @@
 </p>
 
 [% IF image_map %]
-  <img src="[% image_url %]" alt="Dependency graph" usemap="#imagemap">
+  <img src="data:image/png;base64,[% image_data FILTER html %]" alt="Dependency graph" usemap="#imagemap">
 [% ELSE %]
   <a href="[% map_url %]">
     <img src="[% image_url %]" alt="Dependency graph" ismap="ismap">

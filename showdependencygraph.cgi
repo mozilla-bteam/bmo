@@ -13,6 +13,7 @@ use warnings;
 use lib qw(. lib local/lib/perl5);
 
 use File::Temp;
+use MIME::Base64 qw(encode_base64);
 
 use Bugzilla;
 use Bugzilla::Constants;
@@ -267,31 +268,15 @@ if ($webdotbase =~ /^https?:/) {
 }
 else {
   # Local dot installation
+  my $image_data;
+  open my $pipe, '-|', "\"$webdotbase\" -Tpng $filename";
+  binmode $pipe;
+  while (my $dot_data = <$pipe>) {
+    $image_data .= $dot_data;
+  }
+  close $pipe;
 
-  # First, generate the png image file from the .dot source
-
-  my ($pngfh, $pngfilename)
-    = File::Temp::tempfile("XXXXXXXXXX", SUFFIX => '.png', DIR => $webdotdir);
-
-  chmod Bugzilla::Install::Filesystem::WS_SERVE, $pngfilename
-    or warn install_string('chmod_failed', {path => $pngfilename, error => $!});
-
-  binmode $pngfh;
-  open(DOT, '-|', "\"$webdotbase\" -Tpng $filename");
-  binmode DOT;
-  print $pngfh $_ while <DOT>;
-  close DOT;
-  close $pngfh;
-
-  # On Windows $pngfilename will contain \ instead of /
-  $pngfilename =~ s|\\|/|g if ON_WINDOWS;
-
-  # Under mod_perl, pngfilename will have an absolute path, and we
-  # need to make that into a relative path.
-  my $cgi_root = bz_locations()->{cgi_path};
-  $pngfilename =~ s#^\Q$cgi_root\E/?##;
-
-  $vars->{'image_url'} = $pngfilename;
+  $vars->{'image_data'} = encode_base64($image_data);
 
   # Then, generate a imagemap datafile that contains the corner data
   # for drawn bug objects. Pass it on to $CreateImagemap that
