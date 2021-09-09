@@ -214,17 +214,6 @@ sub check_webdotbase {
       return
         "The file path \"$value\" is not a valid executable.  Please specify the complete file path to 'dot' if you intend to generate graphs locally.";
     }
-
-    # Check .htaccess allows access to generated images
-    my $webdotdir = bz_locations()->{'webdotdir'};
-    if (-e "$webdotdir/.htaccess") {
-      open HTACCESS, "<", "$webdotdir/.htaccess";
-      if (!grep(/ \\\.png\$/, <HTACCESS>)) {
-        return
-          "Dependency graph images are not accessible.\nAssuming that you have not modified the file, delete $webdotdir/.htaccess and re-run checksetup.pl to rectify.\n";
-      }
-      close HTACCESS;
-    }
   }
   return "";
 }
