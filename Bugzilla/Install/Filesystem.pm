@@ -218,7 +218,7 @@ sub FILESYSTEM {
     # Writeable directories
     $template_cache => {files => CGI_READ,  dirs => DIR_CGI_OVERWRITE},
     $attachdir      => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
-    $webdotdir => {files => WS_SERVE, dirs => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE},
+    $webdotdir => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
     $graphsdir => {files => WS_SERVE, dirs => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE},
     "$datadir/db" => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
     $logsdir => {files => CGI_WRITE, dirs => DIR_CGI_WRITE | DIR_ALSO_WS_STICKY},
@@ -271,8 +271,7 @@ sub FILESYSTEM {
   # pointing at its default permissions.
   my %create_dirs = (
 
-    # This is DIR_ALSO_WS_SERVE because it contains $webdotdir and
-    # $assetsdir.
+    # This is DIR_ALSO_WS_SERVE because it contains $assetsdir.
     $datadir => DIR_CGI_OVERWRITE | DIR_ALSO_WS_SERVE,
 
     # Directories that are read-only for cgi scripts
@@ -284,7 +283,7 @@ sub FILESYSTEM {
     "$datadir/db"   => DIR_CGI_WRITE,
     $attachdir      => DIR_CGI_WRITE,
     $graphsdir      => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
-    $webdotdir      => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
+    $webdotdir      => DIR_CGI_WRITE,
     $assetsdir      => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
     $template_cache => DIR_CGI_WRITE,
     $logsdir        => DIR_CGI_WRITE | DIR_ALSO_WS_STICKY,
