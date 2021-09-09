@@ -193,12 +193,6 @@ sub SETTINGS {
       category => 'API'
     },
     {
-      name     => 'use_elasticsearch',
-      options  => ['on', 'off'],
-      default  => 'off',
-      category => 'Searching'
-    },
-    {
       name     => 'autosize_comments',
       options  => ['on', 'off'],
       default  => 'on',
