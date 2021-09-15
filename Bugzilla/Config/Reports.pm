@@ -32,6 +32,21 @@ sub get_param_list {
       name    => 'report_secbugs_teams',
       type    => 'l',
       default => '{}',
+    },
+    {
+      name    => 's3_mining_access_key_id',
+      type    => 't',
+      default => '',
+    },
+    {
+      name    => 's3_mining_secret_access_key',
+      type    => 't',
+      default => '',
+    },
+    {
+      name    => 's3_mining_bucket',
+      type    => 't',
+      default => '',
     }
   );
 }

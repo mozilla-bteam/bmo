@@ -20,12 +20,13 @@ use Cwd;
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Util;
-use Bugzilla::Search;
-use Bugzilla::User;
-use Bugzilla::Product;
 use Bugzilla::Field;
 use Bugzilla::Install::Filesystem qw(fix_dir_permissions);
+use Bugzilla::Product;
+use Bugzilla::Report::S3;
+use Bugzilla::Search;
+use Bugzilla::User;
+use Bugzilla::Util;
 
 my %switch;
 GetOptions(\%switch, 'help|h', 'regenerate');
@@ -37,18 +38,7 @@ pod2usage({-verbose => 1, -exitval => 1}) if $switch{'help'};
 # in the regenerate mode).
 $| = 1;
 
-my $datadir   = bz_locations()->{'datadir'};
-my $graphsdir = bz_locations()->{'graphsdir'};
-
-# Tidy up after graphing module
-my $cwd = Cwd::getcwd();
-if (chdir($graphsdir)) {
-  unlink <./*.gif>;
-  unlink <./*.png>;
-
-  # chdir("..") doesn't work if graphs is a symlink, see bug 429378
-  chdir($cwd);
-}
+my $datadir = bz_locations()->{'datadir'};
 
 my $dbh = Bugzilla->switch_to_shadow_db();
 
@@ -160,8 +150,8 @@ sub collect_stats {
   my $product = shift;
   my $when    = localtime(time);
   my $dbh     = Bugzilla->dbh;
-  my $product_id;
 
+  my $product_id;
   if (ref $product) {
     $product_id = $product->id;
     $product    = $product->name;
@@ -172,24 +162,12 @@ sub collect_stats {
   my $file_product = $product;
   $file_product =~ s/\//-/gs;
   my $file = join '/', $dir, $file_product;
-  my $exists = -f $file;
 
-  # if the file exists, get the old status and resolution list for that product.
-  my @data;
-  @data = get_old_data($file) if $exists;
-
-  # If @data is not empty, then we have to recreate the data file.
-  if (scalar(@data)) {
-    open(DATA, '>', $file)
-      || ThrowCodeError('chart_file_open_fail', {'filename' => $file});
-  }
-  else {
-    open(DATA, '>>', $file)
-      || ThrowCodeError('chart_file_open_fail', {'filename' => $file});
-  }
-
-  if (Bugzilla->params->{'utf8'}) {
-    binmode DATA, ':utf8';
+  # if the data exists, get the old status and resolution list for that product.
+  my $s3 = Bugzilla::Report::S3->new;
+  my ($data, $recreate);
+  if ($s3->is_enabled || -f $file) {
+    ($data, $recreate) = get_old_data($product);
   }
 
   # Now collect current data.
@@ -219,9 +197,10 @@ sub collect_stats {
     push(@row, $count);
   }
 
-  if (!$exists || scalar(@data)) {
+  my $chart_data = '';
+  if ($s3->is_enabled || $recreate) {
     my $fields = join('|', ('DATE', @statuses, @resolutions));
-    print DATA <<FIN;
+    $chart_data = <<"FIN";
 # Bugzilla Daily Bug Stats
 #
 # Do not edit me! This file is generated.
@@ -234,61 +213,83 @@ FIN
 
   # Add existing data, if needed. Note that no count is not treated
   # the same way as a count with 0 bug.
-  foreach my $data (@data) {
-    print DATA join('|',
+  foreach my $data (@{$data}) {
+    $chart_data .= join('|',
       map { defined $data->{$_} ? $data->{$_} : '' }
         ('DATE', @statuses, @resolutions))
       . "\n";
   }
-  print DATA (join '|', @row) . "\n";
-  close DATA;
+  $chart_data .= (join '|', @row) . "\n";
+
+  if ($s3->is_enabled) {
+    $s3->set_data($product, $chart_data);
+  }
+  else {
+# If statuses or resolutions were different, then we have to recreate the data file.
+    my $data_fh;
+    if ($recreate) {
+      open $data_fh, '>:encoding(UTF-8)',
+        $file || ThrowCodeError('chart_file_fail', {'filename' => $file});
+    }
+    else {
+      open $data_fh, '>>:encoding(UTF-8)',
+        $file || ThrowCodeError('chart_file_fail', {'filename' => $file});
+    }
+
+    print $data_fh $chart_data;
+    close $data_fh || ThrowCodeError('chart_file_fail', {'filename' => $file});
+  }
 }
 
 sub get_old_data {
-  my $file = shift;
+  my $product      = shift;
+  my $file_product = $product;
+  $file_product =~ s/\//-/gs;
+  my $file = join '/', $dir, $file_product;
 
-  open(DATA, '<', $file)
-    || ThrowCodeError('chart_file_open_fail', {'filename' => $file});
-
-  if (Bugzilla->params->{'utf8'}) {
-    binmode DATA, ':utf8';
+  # First try to get the data from S3 if enabled
+  my $chart_data = '';
+  my $s3 = Bugzilla::Report::S3->new;
+  if ($s3->is_enabled) {
+    $chart_data = $s3->get_data($product) if $s3->data_exists($product);
+  }
+  else {
+    local $/;
+    open my $data_fh, '<:encoding(UTF-8)',
+      $file || ThrowCodeError('chart_file_fail', {filename => $file});
+    $chart_data = <$data_fh>;
+    close $data_fh || ThrowCodeError('chart_file_fail', {filename => $file});
   }
 
-  my @data;
-  my @columns;
+  my @data     = ();
+  my @columns  = ();
   my $recreate = 0;
-  while (<DATA>) {
-    chomp;
-    next unless $_;
-    if (/^# fields?:\s*(.+)\s*$/) {
+  foreach my $line (split /\n/, $chart_data) {
+    chomp $line;
+    next unless $line;
+    if ($line =~ /^# fields?:\s*(.+)\s*$/) {
       @columns = split(/\|/, $1);
 
       # Compare this list with @statuses and @resolutions.
       # If they are identical, then we can safely append new data
       # to the end of the file; else we have to recreate it.
-      $recreate = 1;
       my @new_cols = ($columns[0], @statuses, @resolutions);
       if (scalar(@columns) == scalar(@new_cols)) {
-        my $identical = 1;
         for (0 .. $#columns) {
-          $identical = 0 if ($columns[$_] ne $new_cols[$_]);
+          $recreate = 1 if ($columns[$_] ne $new_cols[$_]);
         }
-        last if $identical;
       }
     }
-    next unless $recreate;
-    next if (/^#/);  # Ignore comments.
-                     # If we have to recreate the file, we have to load all existing
-                     # data first.
-    my @line = split /\|/;
+    next if ($line =~ /^#/);    # Ignore comments.
+    my @line = split /\|/, $line;
     my %data;
     foreach my $column (@columns) {
       $data{$column} = shift @line;
     }
-    push(@data, \%data);
+    push @data, \%data;
   }
-  close(DATA);
-  return @data;
+
+  return (\@data, $recreate);
 }
 
 # This regenerates all statistics from the database.
@@ -339,9 +340,8 @@ sub regenerate_stats {
     return;
   }
 
-  if (open DATA, ">", $file) {
-    my $fields = join('|', ('DATE', @statuses, @resolutions));
-    print DATA <<FIN;
+  my $fields     = join('|', ('DATE', @statuses, @resolutions));
+  my $chart_data = <<"FIN";
 # Bugzilla Daily Bug Stats
 #
 # Do not edit me! This file is generated.
@@ -351,65 +351,73 @@ sub regenerate_stats {
 # Created: $when
 FIN
 
-    # For each day, generate a line of statistics.
-    my $total_days = $end - $start;
-    my @bugs;
-    for (my $day = $start + 1; $day <= $end; $day++) {
+  # For each day, generate a line of statistics.
+  my $total_days = $end - $start;
+  my @bugs;
+  for (my $day = $start + 1; $day <= $end; $day++) {
 
-      # Some output feedback
-      my $percent_done = ($day - $start - 1) * 100 / $total_days;
-      printf "\rRegenerating $product \[\%.1f\%\%]", $percent_done;
+    # Some output feedback
+    my $percent_done = ($day - $start - 1) * 100 / $total_days;
+    printf "\rRegenerating $product \[\%.1f\%\%]", $percent_done;
 
-      # Get a list of bugs that were created the previous day, and
-      # add those bugs to the list of bugs for this product.
-      $query = qq{SELECT bug_id
-                          FROM bugs $from_product
-                         WHERE bugs.creation_ts < }
-        . $dbh->sql_from_days($day - 1)
-        . q{ AND bugs.creation_ts >= }
-        . $dbh->sql_from_days($day - 2)
-        . $and_product
-        . q{ ORDER BY bug_id};
+    # Get a list of bugs that were created the previous day, and
+    # add those bugs to the list of bugs for this product.
+    $query = qq{SELECT bug_id
+                        FROM bugs $from_product
+                        WHERE bugs.creation_ts < }
+      . $dbh->sql_from_days($day - 1)
+      . q{ AND bugs.creation_ts >= }
+      . $dbh->sql_from_days($day - 2)
+      . $and_product
+      . q{ ORDER BY bug_id};
 
-      my $bug_ids = $dbh->selectcol_arrayref($query, undef, @values);
-      push(@bugs, @$bug_ids);
+    my $bug_ids = $dbh->selectcol_arrayref($query, undef, @values);
+    push(@bugs, @$bug_ids);
 
-      my %bugcount;
-      foreach (@statuses)    { $bugcount{$_} = 0; }
-      foreach (@resolutions) { $bugcount{$_} = 0; }
+    my %bugcount;
+    foreach (@statuses)    { $bugcount{$_} = 0; }
+    foreach (@resolutions) { $bugcount{$_} = 0; }
 
-      # Get information on bug states and resolutions.
-      for my $bug (@bugs) {
-        my $status
-          = _get_value($removed->{'bug_status'}->{$bug}, $bug_status, $day, $bug);
+    # Get information on bug states and resolutions.
+    for my $bug (@bugs) {
+      my $status
+        = _get_value($removed->{'bug_status'}->{$bug}, $bug_status, $day, $bug);
 
-        if (defined $bugcount{$status}) {
-          $bugcount{$status}++;
-        }
-
-        my $resolution
-          = _get_value($removed->{'resolution'}->{$bug}, $bug_resolution, $day, $bug);
-
-        if (defined $bugcount{$resolution}) {
-          $bugcount{$resolution}++;
-        }
+      if (defined $bugcount{$status}) {
+        $bugcount{$status}++;
       }
 
-      # Generate a line of output containing the date and counts
-      # of bugs in each state.
-      my $date = sqlday($day, $base);
-      print DATA "$date";
-      foreach (@statuses)    { print DATA "|$bugcount{$_}"; }
-      foreach (@resolutions) { print DATA "|$bugcount{$_}"; }
-      print DATA "\n";
+      my $resolution
+        = _get_value($removed->{'resolution'}->{$bug}, $bug_resolution, $day, $bug);
+
+      if (defined $bugcount{$resolution}) {
+        $bugcount{$resolution}++;
+      }
     }
+
+    # Generate a line of output containing the date and counts
+    # of bugs in each state.
+    my $date = sqlday($day, $base);
+    $chart_data .= "$date";
+    foreach (@statuses)    { $chart_data .= "|$bugcount{$_}"; }
+    foreach (@resolutions) { $chart_data .= "|$bugcount{$_}"; }
+    $chart_data .= "\n";
 
     # Finish up output feedback for this product.
     my $tend = time;
     print "\rRegenerating $product \[100.0\%] - "
       . delta_time($tstart, $tend) . "\n";
+  }
 
-    close DATA;
+  # First try to set the data in S3 if enabled
+  my $s3 = Bugzilla::Report::S3->new;
+  if ($s3->is_enabled) {
+    $s3->set_data($product, $chart_data);
+  }
+  else {
+    open my $data_fh, ">:encoding(UTF-8)", $file || ThrowCodeError();
+    print $data_fh $chart_data;
+    close $data_fh || ThrowCodeError();
   }
 }
 
@@ -468,7 +476,7 @@ sub CollectSeriesData {
   # (days_since_epoch + series_id) % frequency = 0. So they'll run every
   # <frequency> days, but the start date depends on the series_id.
   my $days_since_epoch = int(time() / (60 * 60 * 24));
-  my $today = today_dash();
+  my $today            = today_dash();
 
   # We save a copy of the main $dbh and then switch to the shadow and get
   # that one too. Remember, these may be the same.

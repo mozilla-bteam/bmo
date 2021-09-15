@@ -14,12 +14,14 @@ use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::Constants;
-use Bugzilla::Util;
 use Bugzilla::Error;
+use Bugzilla::Report::S3;
 use Bugzilla::Status;
+use Bugzilla::Util;
 
-use File::Basename;
 use Digest::SHA qw(hmac_sha256_base64);
+use File::Basename;
+use MIME::Base64 qw(encode_base64);
 
 # If we're using bug groups for products, we should apply those restrictions
 # to viewing reports, as well.  Time to check the login in that case.
@@ -33,19 +35,11 @@ if (!Bugzilla->feature('old_charts')) {
 }
 
 my $dir          = bz_locations()->{'datadir'} . "/mining";
-my $graph_dir    = bz_locations()->{'graphsdir'};
-my $graph_url    = basename($graph_dir);
 my $product_name = $cgi->param('product') || '';
 
 Bugzilla->switch_to_shadow_db();
 
 if (!$product_name) {
-
-  # Can we do bug charts?
-  (-d $dir && -d $graph_dir)
-    || ThrowCodeError('chart_dir_nonexistent',
-    {dir => $dir, graph_dir => $graph_dir});
-
   my %default_sel = map { $_ => 1 } BUG_STATE_OPEN;
 
   my @datasets;
@@ -53,7 +47,7 @@ if (!$product_name) {
 
   foreach my $dataset (@data) {
     my $datasets = {};
-    $datasets->{'value'} = $dataset;
+    $datasets->{'value'}    = $dataset;
     $datasets->{'selected'} = $default_sel{$dataset} ? 1 : 0;
     push(@datasets, $datasets);
   }
@@ -90,21 +84,8 @@ else {
     ThrowUserError('invalid_datasets', {'datasets' => \@datasets});
   }
 
-  # Filenames must not be guessable as they can point to products
-  # you are not allowed to see. Also, different projects can have
-  # the same product names.
-  my $project = bz_locations()->{'project'} || '';
-  my $image_file = join(':', ($project, $prod_id, @datasets));
-  my $key = Bugzilla->localconfig->site_wide_secret;
-  $image_file = hmac_sha256_base64($image_file, $key) . '.png';
-  $image_file =~ s/\+/-/g;
-  $image_file =~ s/\//_/g;
-
-  if (!-e "$graph_dir/$image_file") {
-    generate_chart($dir, "$graph_dir/$image_file", $product, \@datasets);
-  }
-
-  $vars->{'url_image'} = "$graph_url/$image_file";
+  my $png = generate_chart($dir, $product, \@datasets);
+  $vars->{'image_data'} = encode_base64($png);
 
   print $cgi->header(
     -Content_Disposition => 'inline; filename=bugzilla_report.html');
@@ -119,51 +100,76 @@ $template->process('reports/old-charts.html.tmpl', $vars)
 
 sub get_data {
   my $dir = shift;
+  my $chart_data;
+
+  # First try to get the data from S3 if enabled
+  my $s3 = Bugzilla::Report::S3->new;
+  if ($s3->is_enabled) {
+    $chart_data = $s3->get_data('-All-') if $s3->data_exists('-All-');
+  }
+  else {
+    local $/;
+    open my $data_fh, '<:encoding(UTF-8)',
+      "$dir/-All-" || ThrowCodeError('chart_file_fail', {filename => "$dir/-All-"});
+    $chart_data = <$data_fh>;
+    close $data_fh || ThrowCodeError('chart_file_fail', {filename => "$dir/-All-"});
+  }
+
+  $chart_data
+    || ThrowCodeError('chart_data_not_generated', {'product' => '-All-'});
 
   my @datasets;
-  open(DATA, '<', "$dir/-All-")
-    || ThrowCodeError('chart_file_open_fail', {filename => "$dir/-All-"});
-
-  while (<DATA>) {
-    if (/^# fields?: (.+)\s*$/) {
-      @datasets = grep !/date/i, (split /\|/, $1);
+  foreach my $line (split /\n/, $chart_data) {
+    if ($line =~ /^# fields?: (.+)\s*$/) {
+      @datasets = grep { !/date/i } (split /\|/, $1);
       last;
     }
   }
-  close(DATA);
+
   return @datasets;
 }
 
 sub generate_chart {
-  my ($dir, $image_file, $product, $datasets) = @_;
+  my ($dir, $product, $datasets) = @_;
   $product = $product ? $product->name : '-All-';
+  my @fields;
+  my @labels    = qw(DATE);
+  my %datasets  = map { $_ => 1 } @$datasets;
+  my %data      = ();
   my $data_file = $product;
   $data_file =~ s/\//-/gs;
   $data_file = $dir . '/' . $data_file;
+  my $chart_data;
 
-  if (!open(FILE, '<', $data_file)) {
-    if ($product eq '-All-') {
-      $product = '';
-    }
-    ThrowCodeError('chart_data_not_generated', {'product' => $product});
+  # First try to get the data from S3 if enabled
+  my $s3 = Bugzilla::Report::S3->new;
+  if ($s3->is_enabled) {
+    $chart_data = $s3->get_data($product) if $s3->data_exists($product);
+  }
+  else {
+    local $/;
+    open my $fh, '<:encoding(UTF-8)',
+      $data_file || ThrowCodeError('chart_file_fail', {filename => $data_file});
+    $chart_data = <$fh>;
+    close $fh || ThrowCodeError('chart_file_fail', {filename => $data_file});
   }
 
-  my @fields;
-  my @labels = qw(DATE);
-  my %datasets = map { $_ => 1 } @$datasets;
+  $chart_data
+    || ThrowCodeError('chart_data_not_generated', {'product' => $product});
 
-  my %data = ();
-  while (<FILE>) {
-    chomp;
-    next unless $_;
-    if (/^#/) {
-      if (/^# fields?: (.*)\s*$/) {
+  foreach my $line (split /\n/, $chart_data) {
+    chomp $line;
+    next unless $line;
+    if ($line =~ /^#/) {
+      if ($line =~ /^# fields?: (.*)\s*$/) {
         @fields = split /\||\r/, $1;
-        $data{$_} ||= [] foreach @fields;
-        unless ($fields[0] =~ /date/i) {
-          ThrowCodeError('chart_datafile_corrupt', {'file' => $data_file});
+        foreach my $field (@fields) {
+          $data{$field} ||= [];
         }
-        push @labels, grep($datasets{$_}, @fields);
+        unless ($fields[0] =~ /date/i) {
+          ThrowCodeError('chart_datafile_corrupt', {file => $data_file});
+        }
+        push @labels, grep { $datasets{$_} } @fields;
       }
       next;
     }
@@ -172,7 +178,7 @@ sub generate_chart {
       ThrowCodeError('chart_datafile_corrupt', {'file' => $data_file});
     }
 
-    my @line = split /\|/;
+    my @line = split /\|/, $line;
     my $date = $line[0];
     my ($yy, $mm, $dd) = $date =~ /^\d{2}(\d{2})(\d{2})(\d{2})$/;
     push @{$data{DATE}}, "$mm/$dd/$yy";
@@ -194,14 +200,12 @@ sub generate_chart {
 
   shift @labels;
 
-  close FILE;
-
   if (!@{$data{DATE}}) {
     ThrowUserError('insufficient_data_points');
   }
 
   my $img = Chart::Lines->new(800, 600);
-  my $i = 0;
+  my $i   = 0;
 
   my $MAXTICKS = 20;    # Try not to show any more x ticks than this.
   my $skip     = 1;
@@ -225,5 +229,5 @@ sub generate_chart {
   );
 
   $img->set(%settings);
-  $img->png($image_file, [@data{('DATE', @labels)}]);
+  return $img->scalar_png([@data{('DATE', @labels)}]);
 }
