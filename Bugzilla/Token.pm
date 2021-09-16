@@ -382,7 +382,7 @@ sub Cancel {
   # Some DBs such as MySQL are case-insensitive by default so we do
   # a quick comparison to make sure the tokens are indeed the same.
   unless (defined $db_token && $db_token eq $token) {
-    Bugzilla->iprepd_report('token', remote_ip());
+    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
     ThrowCodeError("cancel_token_does_not_exist");
   }
 

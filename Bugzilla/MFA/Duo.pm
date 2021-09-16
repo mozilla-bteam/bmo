@@ -70,7 +70,7 @@ sub check {
     Bugzilla->params->{duo_akey}, $params->{sig_response}
     );
 
-  Bugzilla->iprepd_report('mfa', remote_ip());
+  Bugzilla->iprepd_report('bmo.mfa_mismatch', remote_ip());
   ThrowUserError('mfa_bad_code');
 }
 

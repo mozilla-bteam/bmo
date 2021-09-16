@@ -112,7 +112,7 @@ $sel->title_is('Invalid Username Or Password',
 
 # Check that iprepd was properly notified
 $t->get_ok('http://externalapi.test/violations/last')->status_is(200)
-  ->json_is('/violation' => 'username_password')->json_has('/object')
+  ->json_is('/violation' => 'bmo.username_password_mismatch')->json_has('/object')
   ->json_is('/type', 'ip');
 
 # Invalid api keys via REST API should send report to iprepd
@@ -125,7 +125,7 @@ $t->post_ok($config->{browser_url}
 
 # Check that iprepd was properly notified
 $t->get_ok('http://externalapi.test/violations/last')->status_is(200)
-  ->json_is('/violation' => 'api_key')->json_has('/object')
+  ->json_is('/violation' => 'bmo.api_key_mismatch')->json_has('/object')
   ->json_is('/type', 'ip');
 
 # Token errors should send report to iprepd
@@ -137,7 +137,7 @@ $t->get_ok(
 
 # Check that iprepd was properly notified
 $t->get_ok('http://externalapi.test/violations/last')->status_is(200)
-  ->json_is('/violation' => 'token')->json_has('/object')
+  ->json_is('/violation' => 'bmo.token_mismatch')->json_has('/object')
   ->json_is('/type', 'ip');
 
 # Turn rate limiting off
