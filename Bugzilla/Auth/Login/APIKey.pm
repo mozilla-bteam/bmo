@@ -62,14 +62,14 @@ sub get_login_info {
     if (!$api_key or $api_key->api_key ne $api_key_text) {
 
       # The second part checks the correct capitalization. Silly MySQL
-      Bugzilla->iprepd_report('api_key', $remote_ip);
+      Bugzilla->iprepd_report('bmo.api_key_mismatch', $remote_ip);
       ThrowUserError("api_key_not_valid");
     }
     elsif ($api_key->sticky
       && $api_key->last_used_ip
       && $api_key->last_used_ip ne $remote_ip)
     {
-      Bugzilla->iprepd_report('api_key');
+      Bugzilla->iprepd_report('bmo.api_key_mismatch');
       ThrowUserError("api_key_not_valid");
     }
     elsif ($api_key->revoked) {

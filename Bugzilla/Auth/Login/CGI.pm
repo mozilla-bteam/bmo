@@ -64,7 +64,7 @@ sub get_login_info {
   # is missing, we have no way to make sure that the authentication
   # request comes from the user.
   elsif ($login && $password) {
-    Bugzilla->iprepd_report('token');
+    Bugzilla->iprepd_report('bmo.token_mismatch');
     ThrowUserError('auth_untrusted_request', {login => $login});
   }
 
