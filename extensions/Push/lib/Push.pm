@@ -203,6 +203,11 @@ sub _reload {
   $self->{config_last_modified} = $self->get_config_last_modified();
 
   $self->logger->debug('Configuration has been updated');
+
+  # Reload parameters
+  delete Bugzilla->request_cache->{params};
+  Bugzilla->memcached->clear_params();
+
   $self->connectors->reload();
 }
 
