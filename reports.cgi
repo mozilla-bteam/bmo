@@ -110,9 +110,9 @@ sub get_data {
   else {
     local $/;
     open my $data_fh, '<:encoding(UTF-8)',
-      "$dir/-All-" || ThrowCodeError('chart_file_fail', {filename => "$dir/-All-"});
+      "$dir/-All-" or ThrowCodeError('chart_file_fail', {filename => "$dir/-All-"});
     $chart_data = <$data_fh>;
-    close $data_fh || ThrowCodeError('chart_file_fail', {filename => "$dir/-All-"});
+    close $data_fh or ThrowCodeError('chart_file_fail', {filename => "$dir/-All-"});
   }
 
   $chart_data
@@ -149,9 +149,9 @@ sub generate_chart {
   else {
     local $/;
     open my $fh, '<:encoding(UTF-8)',
-      $data_file || ThrowCodeError('chart_file_fail', {filename => $data_file});
+      $data_file or ThrowCodeError('chart_file_fail', {filename => $data_file});
     $chart_data = <$fh>;
-    close $fh || ThrowCodeError('chart_file_fail', {filename => $data_file});
+    close $fh or ThrowCodeError('chart_file_fail', {filename => $data_file});
   }
 
   $chart_data

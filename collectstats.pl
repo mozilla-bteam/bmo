@@ -198,7 +198,7 @@ sub collect_stats {
   }
 
   my $chart_data = '';
-  if ($s3->is_enabled || $recreate) {
+  if ($s3->is_enabled || !-f $file || $recreate) {
     my $fields = join('|', ('DATE', @statuses, @resolutions));
     $chart_data = <<"FIN";
 # Bugzilla Daily Bug Stats
@@ -209,15 +209,13 @@ sub collect_stats {
 # Product: $product
 # Created: $when
 FIN
-  }
 
-  # Add existing data, if needed. Note that no count is not treated
-  # the same way as a count with 0 bug.
-  foreach my $data (@{$data}) {
-    $chart_data .= join('|',
-      map { defined $data->{$_} ? $data->{$_} : '' }
-        ('DATE', @statuses, @resolutions))
-      . "\n";
+    foreach my $data (@{$data}) {
+      $chart_data .= join('|',
+        map { defined $data->{$_} ? $data->{$_} : '' }
+          ('DATE', @statuses, @resolutions))
+        . "\n";
+    }
   }
   $chart_data .= (join '|', @row) . "\n";
 
@@ -225,19 +223,19 @@ FIN
     $s3->set_data($product, $chart_data);
   }
   else {
-# If statuses or resolutions were different, then we have to recreate the data file.
+    # If statuses or resolutions were different, then we have to recreate the data file.
     my $data_fh;
-    if ($recreate) {
-      open $data_fh, '>:encoding(UTF-8)',
-        $file || ThrowCodeError('chart_file_fail', {'filename' => $file});
+    if (!-f $file || $recreate) {
+      open $data_fh, '>:encoding(UTF-8)', $file
+        or ThrowCodeError('chart_file_fail', {'filename' => $file});
     }
     else {
-      open $data_fh, '>>:encoding(UTF-8)',
-        $file || ThrowCodeError('chart_file_fail', {'filename' => $file});
+      open $data_fh, '>>:encoding(UTF-8)', $file
+        or ThrowCodeError('chart_file_fail', {'filename' => $file});
     }
 
     print $data_fh $chart_data;
-    close $data_fh || ThrowCodeError('chart_file_fail', {'filename' => $file});
+    close $data_fh or ThrowCodeError('chart_file_fail', {'filename' => $file});
   }
 }
 
@@ -255,10 +253,10 @@ sub get_old_data {
   }
   else {
     local $/;
-    open my $data_fh, '<:encoding(UTF-8)',
-      $file || ThrowCodeError('chart_file_fail', {filename => $file});
+    open my $data_fh, '<:encoding(UTF-8)', $file
+      or ThrowCodeError('chart_file_fail', {filename => $file});
     $chart_data = <$data_fh>;
-    close $data_fh || ThrowCodeError('chart_file_fail', {filename => $file});
+    close $data_fh or ThrowCodeError('chart_file_fail', {filename => $file});
   }
 
   my @data     = ();
@@ -415,9 +413,9 @@ FIN
     $s3->set_data($product, $chart_data);
   }
   else {
-    open my $data_fh, ">:encoding(UTF-8)", $file || ThrowCodeError();
+    open my $data_fh, ">:encoding(UTF-8)", $file or ThrowCodeError();
     print $data_fh $chart_data;
-    close $data_fh || ThrowCodeError();
+    close $data_fh or ThrowCodeError();
   }
 }
 
