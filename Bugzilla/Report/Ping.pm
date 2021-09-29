@@ -106,8 +106,7 @@ sub send_row {
   my $id      = $self->extract_id($row);
   my $content = $self->extract_content($row);
   push @{$url->path}, $self->namespace, $self->doctype, $self->docversion, $id;
-  return mojo_user_agent({request_timeout => 60, connect_timeout => 60})
-    ->put_p($url, json => $content);
+  return mojo_user_agent()->put($url, json => $content);
 }
 
 sub test_row {
