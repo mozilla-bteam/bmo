@@ -13,12 +13,11 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20210728.1';
+our $VERSION = '20210901.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
 use Bugzilla::CGI;
-use Bugzilla::Elastic;
 use Bugzilla::Config;
 use Bugzilla::Constants;
 use Bugzilla::DB;
@@ -764,11 +763,6 @@ sub datadog {
   else {
     return undef;
   }
-}
-
-sub elastic {
-  my ($class) = @_;
-  $class->process_cache->{elastic} //= Bugzilla::Elastic->new();
 }
 
 sub check_rate_limit {

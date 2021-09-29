@@ -22,15 +22,18 @@ sub evaluate_change {
   {
     # Clear priority
     if ($bug->priority ne '--') {
-      $bug->set_priority('--');
+
+      # Cannot call $bug->update here so set directly
+      Bugzilla->dbh->do("UPDATE bugs SET priority = '--' WHERE bug_id = ?",
+        undef, $bug->id);
       $changes->{priority} = [$bug->priority, '--'];
+      $bug->{priority}     = '--';
     }
 
     # Clear current tracking flags if set to '?', otherwise leave alone
-    my $tracking_flags
-      = Bugzilla::Extension::TrackingFlags::Flag->match({
+    my $tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->match({
       bug_id => $bug->id, is_active => 1,
-      });
+    });
 
     foreach my $flag (@{$tracking_flags}) {
       my $flag_name  = $flag->name;
@@ -50,8 +53,6 @@ sub evaluate_change {
       # Update the name/value pair in the bug object
       $bug->{$flag_name} = '---';
     }
-
-    $bug->update($timestamp);
   }
 }
 
