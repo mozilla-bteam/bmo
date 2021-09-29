@@ -123,7 +123,7 @@ sub run {
       $report,
       'Sending',
       sub {
-        Mojo::Promise->all(map { $report->send_row($_) } @_)->wait if @_;
+        map { $report->send_row($_) } @_ if @_;
       }
     );
 
