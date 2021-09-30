@@ -36,6 +36,23 @@ has 'rows' => (is => 'ro', default => 10);
 
 has 'since' => (is => 'ro', predicate => 1);
 
+has 'user_agent' => (
+  is       => 'lazy',
+  init_arg => undef,
+  isa      => class_type({class => 'Mojo::UserAgent'})
+);
+
+sub _build_user_agent {
+  my $ua = Mojo::UserAgent->new;
+  if (my $proxy = Bugzilla->params->{proxy_url}) {
+    $ua->proxy->http($proxy)->https($proxy);
+  }
+  else {
+    $ua->proxy->detect();
+  }
+  return $ua;
+}
+
 has 'validator' => (
   is       => 'lazy',
   init_arg => undef,
@@ -106,7 +123,7 @@ sub send_row {
   my $id      = $self->extract_id($row);
   my $content = $self->extract_content($row);
   push @{$url->path}, $self->namespace, $self->doctype, $self->docversion, $id;
-  return mojo_user_agent()->put_p($url, json => $content);
+  return $self->user_agent->put_p($url, json => $content);
 }
 
 sub test_row {
