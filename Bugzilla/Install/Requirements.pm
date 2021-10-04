@@ -219,18 +219,6 @@ sub check_webdotbase {
     print install_string('bad_executable', {bin => $webdotbase}), "\n";
   }
 
-  my $webdotdir = bz_locations()->{'webdotdir'};
-
-  # Check .htaccess allows access to generated images
-  if (-e "$webdotdir/.htaccess") {
-    my $htaccess = new IO::File("$webdotdir/.htaccess", 'r')
-      || die "$webdotdir/.htaccess: " . $!;
-    if (!grep(/ \\\.png\$/, $htaccess->getlines)) {
-      print STDERR install_string('webdot_bad_htaccess', {dir => $webdotdir}), "\n";
-    }
-    $htaccess->close;
-  }
-
   return $return;
 }
 

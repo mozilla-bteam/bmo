@@ -65,7 +65,7 @@ sub get_login_info {
           || $token_type ne 'api_token'
           || $user_id != $token_user_id)
         {
-          Bugzilla->iprepd_report('token');
+          Bugzilla->iprepd_report('bmo.token_mismatch');
           ThrowUserError('auth_invalid_token', {token => $api_token});
         }
         $is_internal = 1;
@@ -104,7 +104,7 @@ sub get_login_info {
       if (i_am_webservice() && !$is_internal) {
         my $user = Bugzilla::User->new({id => $user_id, cache => 1});
         if ($user->settings->{api_key_only}->{value} eq 'on') {
-          Bugzilla->iprepd_report('token');
+          Bugzilla->iprepd_report('bmo.token_mismatch');
           ThrowUserError('invalid_cookies_or_token');
         }
       }
