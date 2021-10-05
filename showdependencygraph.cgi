@@ -269,7 +269,7 @@ if ($webdotbase =~ /^https?:/) {
 else {
   # Local dot installation
   my $image_data;
-  open(my $pipe, '-|', $webdotbase, '-T png', $filename) || ThrowCodeError('webdot_error');
+  open(my $pipe, '-|', $webdotbase, '-Tpng', $filename) || ThrowCodeError('webdot_error');
   binmode $pipe;
   while (my $dot_data = <$pipe>) {
     $image_data .= $dot_data;
