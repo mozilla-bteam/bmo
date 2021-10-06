@@ -105,6 +105,7 @@ tie(
     "Calendar"                            => [],
     "Composer"                            => [],
     "Core"                                => [],
+    "Data Platform and Tools"             => [],
     "DevTools"                            => [],
     "Directory"                           => [],
     "External Software Affecting Firefox" => [],
