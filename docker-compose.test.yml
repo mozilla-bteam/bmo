@@ -63,6 +63,3 @@ services:
     shm_size: '512m'
     ports:
       - "5900:5900"
-
-volumes:
-  bmo-mysql-db:
