@@ -126,6 +126,27 @@ sub startup {
       }
     }
   );
+
+  # Webhook endpoints for testing
+  $r->post(
+    '/webhooks/test/noauth' => sub {
+      my $c = shift;
+      $c->render(json => {ok => 1}, status => 200);
+    }
+  );
+  $r->post(
+    '/webhooks/test/withauth' => sub {
+      my $c = shift;
+      if ($c->req->headers->header('Authorization') eq
+        'Token zQ5TSBzq7tTZMtKYq9K1ZqJMjifKx3cPL7pIGk9Q')
+      {
+        $c->render(json => {ok => 1}, status => 200);
+      }
+      else {
+        $c->render(json => {ok => 0}, status => 401);
+      }
+    }
+  );
 }
 
 1;
