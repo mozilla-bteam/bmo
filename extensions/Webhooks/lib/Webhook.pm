@@ -28,8 +28,6 @@ use constant DB_COLUMNS => qw(
   event
   product_id
   component_id
-  api_key_header
-  api_key_value
 );
 
 use constant LIST_ORDER => 'id';
@@ -97,16 +95,6 @@ sub component {
 sub component_name {
   my ($self) = @_;
   return $self->{component_name} ||= $self->{component_id} ? $self->component->name : '';
-}
-
-sub api_key_header {
-  my ($self) = @_;
-  return $self->{api_key_header}
-}
-
-sub api_key_value {
-  my ($self) = @_;
-  return $self->{api_key_value}
 }
 
 # validators

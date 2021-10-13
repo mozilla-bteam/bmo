@@ -135,13 +135,10 @@ sub send {
 
     delete $payload->{event}->{change_set};
 
-    my $headers
-      = {'Content-Type' => 'application/json', 'Accept' => 'application/json'};
-    if ($webhook->api_key_header && $webhook->api_key_value) {
-      $headers->{$webhook->api_key_header} = $webhook->api_key_value;
-    }
 
-    my $tx = mojo_user_agent()->post($webhook->url, $headers => json => $payload);
+    my $tx = mojo_user_agent()->post($webhook->url,
+      {'Content-Type' => 'application/json', 'Accept' => 'application/json'} =>
+        json => $payload);
     if ($tx->res->code != 200) {
       die 'Expected HTTP 200, got '
         . $tx->res->code . ' ('

@@ -94,7 +94,7 @@ window.onload = function() {
 <tr>
   <th align="right">Component:</th>
   <td>
-    <select name="api_key" id="api_key">
+    <select name="add_component" id="component">
       <option value="">Any</option>
     [% FOREACH product IN selectable_products %]
       [% FOREACH component IN product.components %]
@@ -104,35 +104,12 @@ window.onload = function() {
     </select>
   </td>
 </tr>
-<table>
-<h4>API Keys (optional)</h4>
-<p>
-  Specify API keys if endpoint requires authentication.
-</p>
-<table border="0" cellpadding="3" cellspacing="0">
+<br>
 <tr>
-  <th align="right">API Key Header:</th>
-  <td>
-    <td>
-      <input type="text" name="api_key_header" id="api_key_header" maxlength="64">
-      <br>
-      (Example: Authorization)
-    </td>
-  </td>
-</tr>
-<tr>
-  <th align="right">API Key Value:</th>
-  <td>
-    <td>
-      <input type="text" name="api_key_value" id="api_key_value" maxlength="64">
-      <br>
-      (Example: Token zQ5TSBzq7tTZMtKYq9K1ZqJMjifKx3cPL7pIGk9Q)
-    </td>
-  </td>
+  <td>&nbsp;</td>
+  <td><input type="submit" id="add_webhook" name="add_webhook" value="Add"></td>
 </tr>
 </table>
-
-<p><input type="submit" id="add_webhook" name="add_webhook" value="Add"></p>
 
 <hr>
 
@@ -151,7 +128,6 @@ window.onload = function() {
       <th>Events</th>
       <th>Product</th>
       <th>Component</th>
-      <th>API Key</th>
       <th>Status</th>
       <th>Errors</th>
     </tr>
@@ -173,7 +149,6 @@ window.onload = function() {
       <td>[% webhook.event FILTER html %]</td>
       <td>[% webhook.product.name FILTER html %]</td>
       <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
-      <td>[% webhook.api_key_value FILTER html %]</td>
       <td>
         [% config = connector.config %]
         <select name="[% connector.name FILTER html %].enabled"
