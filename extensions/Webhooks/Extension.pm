@@ -40,10 +40,10 @@ sub db_schema_abstract_schema {
         NOTNULL    => 1,
         REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',}
       },
-      name  => {TYPE    => 'VARCHAR(64)', NOTNULL => 1,},
-      url   => {TYPE    => 'VARCHAR(64)', NOTNULL => 1,},
-      event => {TYPE    => 'VARCHAR(64)', NOTNULL => 1,},
-      product_id   => {
+      name       => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
+      url        => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
+      event      => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
+      product_id => {
         TYPE       => 'INT2',
         NOTNULL    => 1,
         REFERENCES => {TABLE => 'products', COLUMN => 'id', DELETE => 'CASCADE',}
@@ -52,12 +52,20 @@ sub db_schema_abstract_schema {
         TYPE       => 'INT2',
         NOTNULL    => 0,
         REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE',}
-      }
+      },
+      api_key_header => {TYPE => 'VARCHAR(64)'},
+      api_key_value  => {TYPE => 'VARCHAR(64)'},
     ],
     INDEXES => [
       webhooks_userid_name_idx => {FIELDS => ['user_id', 'name'], TYPE => 'UNIQUE',},
     ],
   };
+}
+
+sub install_update_db {
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_add_column('webhooks', 'api_key_header', {TYPE => 'VARCHAR(64)'});
+  $dbh->bz_add_column('webhooks', 'api_key_value',  {TYPE => 'VARCHAR(64)'});
 }
 
 sub db_sanitize {
