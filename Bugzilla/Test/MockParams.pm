@@ -13,28 +13,6 @@ use Capture::Tiny qw(capture_merged);
 use Test2::Tools::Mock qw(mock);
 
 use Bugzilla::Config;
-use Safe;
-
-our $Params;
-
-BEGIN {
-  our $Mock = mock 'Bugzilla::Config' => (
-    override => [
-      'read_param_file' => sub {
-        my ($class) = @_;
-        return {} unless $Params;
-        my $s = Safe->new;
-        $s->reval($Params);
-        die "Error evaluating params: $@" if $@;
-        return {%{$s->varglob('param')}};
-      },
-      '_write_file' => sub {
-        my ($class, $str) = @_;
-        $Params = $str;
-      },
-    ],
-  );
-}
 
 sub import {
   my ($self, %answers) = @_;

@@ -14,9 +14,10 @@ use warnings;
 use base qw(Exporter);
 use Bugzilla::Constants;
 use Bugzilla::Hook;
-use Data::Dumper;
-use File::Temp;
+use Bugzilla::Logging;
 use Module::Runtime qw(require_module);
+use Scalar::Util qw(looks_like_number);
+use Try::Tiny;
 
 # Don't export localvars by default - people should have to explicitly
 # ask for it, as a (probably futile) attempt to stop code using it
@@ -95,7 +96,7 @@ sub update_params {
   my ($params) = @_;
   my $answer = Bugzilla->installation_answers;
 
-  my $param = read_param_file();
+  my $param = read_params();
   my %new_params;
 
   # If we didn't return any param values, then this is a new installation.
@@ -171,7 +172,7 @@ sub update_params {
     $new_params{'ssl_redirect'} = 1;
   }
 
-# "specific_search_allow_empty_words" has been renamed to "search_allow_no_criteria".
+  # "specific_search_allow_empty_words" has been renamed to "search_allow_no_criteria".
   if (exists $param->{'specific_search_allow_empty_words'}) {
     $new_params{'search_allow_no_criteria'}
       = $param->{'specific_search_allow_empty_words'};
@@ -252,69 +253,71 @@ sub write_params {
   my ($param_data) = @_;
   $param_data ||= Bugzilla->params;
 
-  local $Data::Dumper::Sortkeys = 1;
+  try {
+    my $dbh        = Bugzilla->dbh;
+    my $insert_sth = $dbh->prepare(
+      'INSERT INTO params (name, value_text, value_numeric) VALUES (?, ?, ?)');
+    my $update_sth = $dbh->prepare(
+      'UPDATE params SET value_text = ?, value_numeric = ? WHERE name = ?');
 
-  my %params = %$param_data;
-  $params{urlbase} = Bugzilla->localconfig->urlbase;
-  __PACKAGE__->_write_file(Data::Dumper->Dump([\%params], ['*param']));
+    $dbh->bz_start_transaction();
+    foreach my $key (keys %{$param_data}) {
+      my ($name, $value_text, $value_numeric)
+        = $dbh->selectrow_array(
+        'SELECT name, value_text, value_numeric FROM params WHERE name = ?',
+        undef, $key);
 
-  # And now we have to reset the params cache so that Bugzilla will re-read
-  # them.
-  Bugzilla->memcached->clear_params();
-  delete Bugzilla->request_cache->{params};
+      if (!defined $name) {
+        $insert_sth->execute(
+          $key,
+          (
+            looks_like_number($param_data->{$key})
+            ? (undef, $param_data->{$key})
+            : ($param_data->{$key}, undef)
+          )
+        );
+      }
+      else {
+        if ( defined $param_data->{$key}
+          && looks_like_number($param_data->{$key})
+          && $value_numeric != $param_data->{$key})
+        {
+          $update_sth->execute(undef, $param_data->{$key}, $key);
+        }
+        elsif (defined $param_data->{$key}
+          && !looks_like_number($param_data->{$key})
+          && $value_text ne $param_data->{$key})
+        {
+          $update_sth->execute($param_data->{$key}, undef, $key);
+        }
+      }
+    }
+    $dbh->bz_commit_transaction();
+  };
+
+  # And now we have to reset the params cache
+  Bugzilla->memcached->set_params($param_data);
+  Bugzilla->request_cache->{params} = $param_data;
 }
 
-sub read_param_file {
+sub read_params {
   my $cached_params = Bugzilla->memcached->get_params();
   return $cached_params if $cached_params;
-  my %params;
-  my $datadir = bz_locations()->{'datadir'};
-  if (-e "$datadir/params") {
+  my $params = {};
 
-    # Note that checksetup.pl sets file permissions on '$datadir/params'
+  try {
+    my $dbh  = Bugzilla->dbh;
+    my $rows = Bugzilla->dbh->selectall_arrayref(
+      'SELECT name, value_text, value_numeric FROM params');
+    foreach my $row (@{$rows}) {
+      my $name          = $row->[0];
+      my $value_text    = $row->[1];
+      my $value_numeric = $row->[2];
+      $params->{$name} = (!$value_numeric ? $value_text : int($value_numeric));
+    }
+  };
 
-    # Using Safe mode is _not_ a guarantee of safety if someone does
-    # manage to write to the file. However, it won't hurt...
-    # See bug 165144 for not needing to eval this at all
-    my $s = new Safe;
-
-    $s->rdo("$datadir/params");
-    die "Error reading $datadir/params: $!"    if $!;
-    die "Error evaluating $datadir/params: $@" if $@;
-
-    # Now read the param back out from the sandbox
-    %params = %{$s->varglob('param')};
-  }
-  elsif ($ENV{'SERVER_SOFTWARE'}) {
-
-    # We're in a CGI, but the params file doesn't exist. We can't
-    # Template Toolkit, or even install_string, since checksetup
-    # might not have thrown an error. Bugzilla::CGI->new
-    # hasn't even been called yet, so we manually use CGI::Carp here
-    # so that the user sees the error.
-    require CGI::Carp;
-    CGI::Carp->import('fatalsToBrowser');
-    die "The $datadir/params file does not exist."
-      . ' You probably need to run checksetup.pl.',;
-  }
-  Bugzilla->memcached->set_params(\%params);
-  return \%params;
-}
-
-sub _write_file {
-  my ($class, $str) = @_;
-  my $datadir    = bz_locations()->{'datadir'};
-  my $param_file = "$datadir/params";
-  my ($fh, $tmpname) = File::Temp::tempfile('params.XXXXX', DIR => $datadir);
-  print $fh $str || die "Can't write param file: $!";
-  close $fh || die "Can't close param file: $!";
-
-  rename $tmpname, $param_file or die "Can't rename $tmpname to $param_file: $!";
-
-  # It's not common to edit parameters and loading
-  # Bugzilla::Install::Filesystem is slow.
-  require Bugzilla::Install::Filesystem;
-  Bugzilla::Install::Filesystem::fix_file_permissions($param_file);
+  return $params;
 }
 
 1;
@@ -366,20 +369,20 @@ specified.
 
 Description: Writes the parameters to disk.
 
-Params:      C<$params> (optional) - A hashref to write to the disk
+Params:      C<$params> (optional) - A hashref to write to the DB
                instead of C<Bugzilla->params>. Used only by
                C<update_params>.
 
 Returns:     nothing
 
-=item C<read_param_file()>
+=item C<read_params()>
 
 Description: Most callers should never need this. This is used
-             by C<Bugzilla->params> to directly read C<$datadir/params>
+             by C<Bugzilla->params> to directly read params from DB
              and load it into memory. Use C<Bugzilla->params> instead.
 
 Params:      none
 
-Returns:     A hashref containing the current params in C<$datadir/params>.
+Returns:     A hashref containing the current params in the DB.
 
 =back

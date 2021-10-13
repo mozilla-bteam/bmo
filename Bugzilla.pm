@@ -163,7 +163,7 @@ sub localconfig {
 
 
 sub params {
-  return request_cache->{params} ||= Bugzilla::Config::read_param_file();
+  return request_cache->{params} ||= Bugzilla::Config::read_params();
 }
 
 sub get_param_with_override {

@@ -277,7 +277,6 @@ sub check_user {
 sub check_data_dir {
   die "/app/data must be writable by user 'app' (id: $EUID)"
     unless -w '/app/data';
-  die '/app/data/params must exist' unless -f '/app/data/params';
 }
 
 sub check_env {
