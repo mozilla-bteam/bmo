@@ -16,6 +16,7 @@ use Bugzilla::Constants;
 use Bugzilla::Hook;
 use Bugzilla::Logging;
 use Module::Runtime qw(require_module);
+use Safe;
 use Scalar::Util qw(looks_like_number);
 use Try::Tiny;
 
@@ -101,6 +102,17 @@ sub update_params {
 
   # If we didn't return any param values, then this is a new installation.
   my $new_install = !(keys %$param);
+
+  # Migrate old data/params file to DB if exists
+  my $datadir = bz_locations()->{'datadir'};
+  if ($new_install && -e "$datadir/params") {
+    my $s = new Safe;
+    $s->rdo("$datadir/params");
+    die "Error reading $datadir/params: $!"    if $!;
+    die "Error evaluating $datadir/params: $@" if $@;
+    $param = $s->varglob('param');
+    unlink("$datadir/params");
+  }
 
   # --- UPDATE OLD PARAMS ---
 
