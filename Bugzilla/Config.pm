@@ -298,12 +298,9 @@ sub read_params {
     }
   }
   catch {
-    warn "Database not available: $_";
     if ($ENV{'SERVER_SOFTWARE'}) {
-      require CGI::Carp;
-      CGI::Carp->import('fatalsToBrowser');
-      die "Parameters have not yet been written to the database."
-        . ' You probably need to run checksetup.pl.',;
+      FATAL('Parameters have not yet been written to the database.'
+          . ' You probably need to run checksetup.pl.');
     }
   };
 
@@ -317,9 +314,9 @@ sub _migrate_file_params {
   $s->rdo("$datadir/params");
   die "Error reading $datadir/params: $!"    if $!;
   die "Error evaluating $datadir/params: $@" if $@;
-  my $param = $s->varglob('param');
+  my $params = $s->varglob('param');
   unlink("$datadir/params");
-  return $param;
+  return $params;
 }
 
 1;
