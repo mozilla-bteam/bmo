@@ -12,12 +12,14 @@ use strict;
 use warnings;
 
 use base qw(Exporter);
+
+use Bugzilla::Config::Param;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
 use Bugzilla::Logging;
+
 use Module::Runtime qw(require_module);
 use Safe;
-use Scalar::Util qw(looks_like_number);
 use Try::Tiny;
 
 # Don't export localvars by default - people should have to explicitly
@@ -63,6 +65,7 @@ sub param_panels {
   foreach my $item ((glob "$libpath/Bugzilla/Config/*.pm")) {
     $item =~ m#/([^/]+)\.pm$#;
     my $module = $1;
+    next if $module eq 'Param';    # Skip the module used for loading params from DB
     $param_panels->{$module} = "Bugzilla::Config::$module"
       unless $module eq 'Common';
   }
@@ -104,15 +107,7 @@ sub update_params {
   my $new_install = !(keys %$param);
 
   # Migrate old data/params file to DB if exists
-  my $datadir = bz_locations()->{'datadir'};
-  if ($new_install && -e "$datadir/params") {
-    my $s = new Safe;
-    $s->rdo("$datadir/params");
-    die "Error reading $datadir/params: $!"    if $!;
-    die "Error evaluating $datadir/params: $@" if $@;
-    $param = $s->varglob('param');
-    unlink("$datadir/params");
-  }
+  $param = _migrate_file_params() if $new_install;
 
   # --- UPDATE OLD PARAMS ---
 
@@ -266,45 +261,25 @@ sub write_params {
   $param_data ||= Bugzilla->params;
 
   try {
-    my $dbh        = Bugzilla->dbh;
-    my $insert_sth = $dbh->prepare(
-      'INSERT INTO params (name, value_text, value_numeric) VALUES (?, ?, ?)');
-    my $update_sth = $dbh->prepare(
-      'UPDATE params SET value_text = ?, value_numeric = ? WHERE name = ?');
-
+    my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
     foreach my $key (keys %{$param_data}) {
-      my ($name, $value_text, $value_numeric)
-        = $dbh->selectrow_array(
-        'SELECT name, value_text, value_numeric FROM params WHERE name = ?',
-        undef, $key);
-
-      if (!defined $name) {
-        $insert_sth->execute(
-          $key,
-          (
-            looks_like_number($param_data->{$key})
-            ? (undef, $param_data->{$key})
-            : ($param_data->{$key}, undef)
-          )
-        );
+      my $value = $param_data->{$key};
+      if (my $param = Bugzilla::Config::Param->new({name => $key})) {
+        if (($param->is_numeric && $value != $param->value) || $value ne $param->value)
+        {
+          $param->set_value($value);
+          $param->update();
+        }
       }
       else {
-        if ( defined $param_data->{$key}
-          && looks_like_number($param_data->{$key})
-          && $value_numeric != $param_data->{$key})
-        {
-          $update_sth->execute(undef, $param_data->{$key}, $key);
-        }
-        elsif (defined $param_data->{$key}
-          && !looks_like_number($param_data->{$key})
-          && $value_text ne $param_data->{$key})
-        {
-          $update_sth->execute($param_data->{$key}, undef, $key);
-        }
+        Bugzilla::Config::Param->create({name => $key, value => $value});
       }
     }
     $dbh->bz_commit_transaction();
+  }
+  catch {
+    WARN("Database not available: $_");
   };
 
   # And now we have to reset the params cache
@@ -313,23 +288,38 @@ sub write_params {
 }
 
 sub read_params {
-  my $cached_params = Bugzilla->memcached->get_params();
-  return $cached_params if $cached_params;
-  my $params = {};
-
+  my %params;
   try {
-    my $dbh  = Bugzilla->dbh;
-    my $rows = Bugzilla->dbh->selectall_arrayref(
-      'SELECT name, value_text, value_numeric FROM params');
-    foreach my $row (@{$rows}) {
-      my $name          = $row->[0];
-      my $value_text    = $row->[1];
-      my $value_numeric = $row->[2];
-      $params->{$name} = (!$value_numeric ? $value_text : int($value_numeric));
+    my @all_params = Bugzilla::Config::Param->get_all();
+    if (@all_params) {
+      foreach my $param (@all_params) {
+        $params{$param->name} = $param->value;
+      }
+    }
+  }
+  catch {
+    warn "Database not available: $_";
+    if ($ENV{'SERVER_SOFTWARE'}) {
+      require CGI::Carp;
+      CGI::Carp->import('fatalsToBrowser');
+      die "Parameters have not yet been written to the database."
+        . ' You probably need to run checksetup.pl.',;
     }
   };
 
-  return $params;
+  return \%params;
+}
+
+sub _migrate_file_params {
+  my $datadir = bz_locations()->{'datadir'};
+  return {} if !-e "$datadir/params";
+  my $s = new Safe;
+  $s->rdo("$datadir/params");
+  die "Error reading $datadir/params: $!"    if $!;
+  die "Error evaluating $datadir/params: $@" if $@;
+  my $param = $s->varglob('param');
+  unlink("$datadir/params");
+  return $param;
 }
 
 1;
@@ -386,15 +376,5 @@ Params:      C<$params> (optional) - A hashref to write to the DB
                C<update_params>.
 
 Returns:     nothing
-
-=item C<read_params()>
-
-Description: Most callers should never need this. This is used
-             by C<Bugzilla->params> to directly read params from DB
-             and load it into memory. Use C<Bugzilla->params> instead.
-
-Params:      none
-
-Returns:     A hashref containing the current params in the DB.
 
 =back
