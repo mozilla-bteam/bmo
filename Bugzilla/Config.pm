@@ -106,9 +106,6 @@ sub update_params {
   # If we didn't return any param values, then this is a new installation.
   my $new_install = !(keys %$param);
 
-  # Migrate old data/params file to DB if exists
-  $param = _migrate_file_params() if $new_install;
-
   # --- UPDATE OLD PARAMS ---
 
   # Change from usebrowserinfo to defaultplatform/defaultopsys combo
@@ -306,18 +303,6 @@ sub read_params {
   };
 
   return \%params;
-}
-
-sub _migrate_file_params {
-  my $datadir = bz_locations()->{'datadir'};
-  return {} if !-e "$datadir/params";
-  my $s = new Safe;
-  $s->rdo("$datadir/params");
-  die "Error reading $datadir/params: $!"    if $!;
-  die "Error evaluating $datadir/params: $@" if $@;
-  my $params = $s->varglob('param');
-  unlink("$datadir/params");
-  return $params;
 }
 
 1;
