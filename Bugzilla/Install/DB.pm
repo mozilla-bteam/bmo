@@ -27,6 +27,7 @@ use Date::Parse;
 use Date::Format;
 use IO::File;
 use List::MoreUtils qw(uniq);
+use Scalar::Util qw(looks_like_number);
 use URI;
 use URI::QueryParam;
 
@@ -824,6 +825,9 @@ sub update_table_definitions {
 
   # Bug 1697642 - dkl@mozilla.com
   $dbh->bz_add_column('logincookies', 'auth_method',{TYPE => 'varchar(40)'});
+
+  # Bug 1729091 - dkl@mozilla.com
+  _migrate_db_parameters();
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
