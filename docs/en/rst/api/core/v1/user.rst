@@ -284,7 +284,7 @@ To get multiple users by name or ID:
 
 .. code-block:: text
 
-   GET /rest/user?names=foo@bar.com&name=test@bugzilla.org
+   GET /rest/user?names=foo@bar.com&names=test@bugzilla.org
    GET /rest/user?ids=123&ids=321
 
 To get user matching a search string:
