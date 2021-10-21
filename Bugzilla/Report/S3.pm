@@ -35,10 +35,7 @@ sub _build_bucket {
 }
 
 sub _build_is_enabled {
-  my $params = Bugzilla->params;
-  return !($params->{s3_mining_access_key_id}
-    && $params->{s3_mining_secret_access_key}
-    && $params->{s3_mining_bucket}) ? 0 : 1;
+  return Bugzilla->params->{s3_mining_enabled} ? 1 : 0;
 }
 
 sub set_data {

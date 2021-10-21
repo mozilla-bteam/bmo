@@ -16,18 +16,11 @@ use Bugzilla::Constants;
 use Bugzilla::Product;
 use Bugzilla::Report::S3;
 
+use Pod::Usage;
+
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my ($source, $dest) = @ARGV;
-
-my $description = <<"EOF";
-Both 's3_mining_secret_access_key' and 's3_mining_bucket' system parameters
-must be set with correct values fro AWS S3.
-
-Note: This will not delete the mining files and that will need to be done
-manually. If copying from 's3' to 'file', you may want to back up the old
-files first as they will be overwritten.
-EOF
 
 if ( !$source
   || !$dest
@@ -35,29 +28,27 @@ if ( !$source
   || ($dest ne 's3' && $dest ne 'file')
   || $source eq $dest)
 {
-  die <<"EOF";
-Syntax:
-    migrate-mining-s3.pl source destination
+  pod2usage({-message => "Missing or incorrect parameters\n", -verbose => 2});
+}
 
-'source' is either s3 or file. Same for 'destination'.
-
-$description
-
-EOF
+my $params = Bugzilla->params;
+foreach my $param (
+  qw(s3_mining_access_key_id s3_mining_secret_access_key s3_mining_bucket))
+{
+  $params->{$param}
+    || pod2usage(
+    "S3 is not configured correctly. Check your settings for 's3_mining_access_key_id',\n"
+      . "'s3_mining_secret_access_key' and 's3_mining_bucket'.\n");
 }
 
 print STDERR <<"EOF";
 About to copy mining data from data/mining/* to or from an AWS S3 bucket.
 
-$description
-
 Press <Ctrl-C> to stop or <Enter> to continue...
 EOF
-getc();
+getc;
 
 my $s3 = Bugzilla::Report::S3->new;
-die "S3 is not enabled. Check your settings for '' and ''.\n"
-  if !$s3->is_enabled;
 
 my @product_names = map { $_->name } Bugzilla::Product->get_all();
 my $mining_dir = bz_locations()->{'datadir'} . '/mining';
@@ -114,7 +105,7 @@ __END__
 
 migrate-mining-s3.pl - Copy the mining data files from data/mining/* the a AWS S3 bucket
 
-  =head1 SYNOPSIS
+=head1 SYNOPSIS
 
   ./migrate-mining-s3.pl source destination
 
@@ -126,3 +117,10 @@ This script migrates data from or to AWS S3. Historically mining data files were
 data/mining/* with each file named after a product. Bugzilla can now be configured to store
 the mining data in S3 getting rid of the need for a shared file system when using multiple
 web heads.
+
+Make sure 's3_mining_access_key_id', 's3_mining_secret_access_key' and 's3_mining_bucket'
+system parameters are all set with correct values for AWS S3.
+
+Note: This will not delete the mining files and that will need to be done
+manually. If copying from 's3' to 'file', you may want to back up the old
+files first as they will be overwritten.

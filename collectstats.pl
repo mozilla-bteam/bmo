@@ -166,7 +166,7 @@ sub collect_stats {
   # if the data exists, get the old status and resolution list for that product.
   my $s3 = Bugzilla::Report::S3->new;
   my ($data, $recreate);
-  if ($s3->is_enabled || -f $file) {
+  if (($s3->is_enabled && $s3->data_exists($product)) || -f $file) {
     ($data, $recreate) = get_old_data($product);
   }
 
@@ -250,6 +250,9 @@ sub get_old_data {
   my $s3 = Bugzilla::Report::S3->new;
   if ($s3->is_enabled) {
     $chart_data = $s3->get_data($product) if $s3->data_exists($product);
+    if (!$chart_data) {
+      ThrowCodeError('s3_mining_get_failed');
+    }
   }
   else {
     local $/;

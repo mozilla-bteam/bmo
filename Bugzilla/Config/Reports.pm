@@ -34,6 +34,11 @@ sub get_param_list {
       default => '{}',
     },
     {
+      name    => 's3_mining_enabled',
+      type    => 'b',
+      default => 0,
+    },
+    {
       name    => 's3_mining_access_key_id',
       type    => 't',
       default => '',
