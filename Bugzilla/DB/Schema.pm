@@ -1950,10 +1950,9 @@ use constant ABSTRACT_SCHEMA => {
 
   params => {
     FIELDS => [
-      id            => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
-      name          => {TYPE => 'VARCHAR(64)',  NOTNULL => 1},
-      value_text    => {TYPE => 'VARCHAR(4000)'},
-      value_numeric => {TYPE => 'INT4'}
+      id    => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      name  => {TYPE => 'VARCHAR(64)',  NOTNULL => 1},
+      value => {TYPE => 'VARCHAR(4000)'},
     ],
   }
 

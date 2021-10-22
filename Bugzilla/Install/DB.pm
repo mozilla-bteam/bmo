@@ -4407,16 +4407,8 @@ sub _migrate_db_parameters {
   # Insert the key/values into the params table
   foreach my $key (keys %{$params}) {
     my $value = $params->{$key};
-    print "Migrating $key -> $value\n";
     next if !defined $value;
-    if (looks_like_number($value)) {
-      $dbh->do('INSERT INTO params (name, value_text, value_numeric) VALUES (?, ?, ?)',
-        undef, $key, undef, $value);
-    }
-    else {
-      $dbh->do('INSERT INTO params (name, value_text, value_numeric) VALUES (?, ?, ?)',
-        undef, $key, $value, undef);
-    }
+    $dbh->do('INSERT INTO params (name, value) VALUES (?, ?)', undef, $key, $value);
   }
 }
 

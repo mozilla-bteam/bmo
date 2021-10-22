@@ -26,35 +26,15 @@ use constant DB_TABLE => 'params';
 use constant DB_COLUMNS => qw(
   id
   name
-  value_text
-  value_numeric
+  value
 );
-
-use constant LIST_ORDER => 'id';
 
 use constant UPDATE_COLUMNS => qw(
   name
-  value_text
-  value_numeric
+  value
 );
 
-use constant VALIDATORS => {
-  name          => \&_check_name,
-  value_text    => \&_check_value,
-  value_numeric => \&_check_value,
-};
-
-sub create {
-  my ($class, $params) = @_;
-  my $create_params = {name => $params->{name}};
-  if (looks_like_number($params->{value})) {
-    $create_params->{value_numeric} = $params->{value};
-  }
-  else {
-    $create_params->{value_text} = $params->{value};
-  }
-  return $class->SUPER::create($create_params);
-}
+use constant VALIDATORS => {name => \&_check_name, value => \&_check_value,};
 
 ###############################
 ####      Validators       ####
@@ -76,32 +56,18 @@ sub _check_value {
 ####       Setters         ####
 ###############################
 
-sub set_name { $_[0]->set('name', $_[1]); }
-
-sub set_value {
-  my ($self, $value) = @_;
-  if (looks_like_number($value)) {
-    $self->set('value_numeric', $value);
-  }
-  else {
-    $self->set('value_text', $value);
-  }
-}
+sub set_name  { $_[0]->set('name',  $_[1]); }
+sub set_value { $_[0]->set('value', $_[1]); }
 
 ###############################
 ####      Accessors        ####
 ###############################
 
-sub name { return $_[0]->{name}; }
-
-sub value {
-  my $self = shift;
-  return
-    defined $self->{value_text} ? $self->{value_text} : $self->{value_numeric};
-}
+sub name  { return $_[0]->{name};  }
+sub value { return $_[0]->{value}; }
 
 sub is_numeric {
-  return defined $_[0]->{value_text} ? 0 : 1;
+  return looks_like_number($_[0]->{value}) ? 1 : 0;
 }
 
 1;
