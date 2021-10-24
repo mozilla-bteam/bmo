@@ -13,7 +13,7 @@
     {
       "label": "Docker: Update Web Server",
       "type": "shell",
-      "command": "docker-compose exec bmo.test rsync -avz --exclude .git --exclude local /mnt/sync/ /app/",
+      "command": "docker-compose exec bmo.test rsync -avz --exclude .git --exclude local --exclude .vscode --exclude .pls_cache --exclude .circleci /mnt/sync/ /app/",
       "group": {
         "kind": "build",
         "isDefault": true

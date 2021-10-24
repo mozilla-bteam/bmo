@@ -40,10 +40,10 @@ sub db_schema_abstract_schema {
         NOTNULL    => 1,
         REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',}
       },
-      name  => {TYPE    => 'VARCHAR(64)', NOTNULL => 1,},
-      url   => {TYPE    => 'VARCHAR(64)', NOTNULL => 1,},
-      event => {TYPE    => 'VARCHAR(64)', NOTNULL => 1,},
-      product_id   => {
+      name       => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
+      url        => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
+      event      => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
+      product_id => {
         TYPE       => 'INT2',
         NOTNULL    => 1,
         REFERENCES => {TABLE => 'products', COLUMN => 'id', DELETE => 'CASCADE',}
@@ -52,12 +52,20 @@ sub db_schema_abstract_schema {
         TYPE       => 'INT2',
         NOTNULL    => 0,
         REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE',}
-      }
+      },
+      api_key_header => {TYPE => 'VARCHAR(64)'},
+      api_key_value  => {TYPE => 'VARCHAR(64)'},
     ],
     INDEXES => [
       webhooks_userid_name_idx => {FIELDS => ['user_id', 'name'], TYPE => 'UNIQUE',},
     ],
   };
+}
+
+sub install_update_db {
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_add_column('webhooks', 'api_key_header', {TYPE => 'VARCHAR(64)'});
+  $dbh->bz_add_column('webhooks', 'api_key_value',  {TYPE => 'VARCHAR(64)'});
 }
 
 sub db_sanitize {
@@ -73,8 +81,9 @@ sub db_sanitize {
 sub user_preferences {
   my ($self, $args) = @_;
 
-  return unless Bugzilla->params->{webhooks_enabled}
-                && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
+  return
+    unless Bugzilla->params->{webhooks_enabled}
+    && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
   return unless $args->{'current_tab'} eq 'webhooks';
 
   my $input = Bugzilla->input_params;
@@ -108,8 +117,10 @@ sub user_preferences {
       }
 
       if ($input->{event}) {
-        $params->{event} = ref($input->{event}) eq 'ARRAY' ? join(',', @{$input->{event}})
-                          : $input->{event};
+        $params->{event}
+          = ref($input->{event}) eq 'ARRAY'
+          ? join(',', @{$input->{event}})
+          : $input->{event};
       }
       else {
         ThrowUserError('webhooks_select_event');
@@ -120,9 +131,19 @@ sub user_preferences {
       $params->{product_id} = $product->id;
 
       if (my $component_name = $input->{add_component}) {
-        my $component = Bugzilla::Component->check({
-          name => $component_name, product => $product, cache => 1});
+        my $component
+          = Bugzilla::Component->check({
+          name => $component_name, product => $product, cache => 1
+          });
         $params->{component_id} = $component->id;
+      }
+
+      if ($input->{api_key_header}) {
+        $params->{api_key_header} = $input->{api_key_header};
+      }
+
+      if ($input->{api_key_value}) {
+        $params->{api_key_value} = $input->{api_key_value};
       }
 
       my $new_webhook = Bugzilla::Extension::Webhooks::Webhook->create($params);
@@ -149,17 +170,18 @@ sub user_preferences {
 
       # save change(s)
 
-      $webhooks = Bugzilla::Extension::Webhooks::Webhook->match(
-        {user_id => $user->id});
+      $webhooks
+        = Bugzilla::Extension::Webhooks::Webhook->match({user_id => $user->id});
       $dbh->bz_start_transaction;
       foreach my $webhook (@$webhooks) {
         my $connector = $push->connectors->by_name('Webhook_' . $webhook->id);
-        my $config = $connector->config;
-        my $status = trim($input->{$connector->name . ".enabled"});
-        if ( $status eq 'Enabled' || $status eq 'Disabled' ){
+        my $config    = $connector->config;
+        my $status    = trim($input->{$connector->name . ".enabled"});
+        if ($status eq 'Enabled' || $status eq 'Disabled') {
           $config->{enabled} = $status;
           $config->update();
-        }else{
+        }
+        else {
           ThrowUserError('webhooks_invalid_option');
         }
       }
@@ -173,10 +195,7 @@ sub user_preferences {
     sort {
            $a->product_name cmp $b->product_name
         || $a->component_name cmp $b->component_name
-    } @{Bugzilla::Extension::Webhooks::Webhook->match({
-        user_id => $user->id,
-      })
-    }
+    } @{Bugzilla::Extension::Webhooks::Webhook->match({user_id => $user->id,})}
   ];
   $vars->{push}           = $push;
   $vars->{connectors}     = $push->connectors;
@@ -201,8 +220,9 @@ sub config_add_panels {
 
 sub template_before_process {
   my ($self, $args) = @_;
-  return if Bugzilla->params->{webhooks_enabled}
-            && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
+  return
+    if Bugzilla->params->{webhooks_enabled}
+    && Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"});
   my ($vars, $file) = @$args{qw(vars file)};
   return unless $file eq 'account/prefs/tabs.html.tmpl';
   @{$vars->{tabs}} = grep { $_->{name} ne 'webhooks' } @{$vars->{tabs}};
@@ -215,7 +235,7 @@ sub template_before_process {
 sub create_push_connector {
   my ($webhook_id) = @_;
   my $webhook_name = 'Webhoook_' . $webhook_id;
-  my $package = "Bugzilla::Extension::Push::Connector::Webhook";
+  my $package      = "Bugzilla::Extension::Push::Connector::Webhook";
   try {
     my $connector = $package->new($webhook_id);
     $connector->load_config();
@@ -228,10 +248,10 @@ sub create_push_connector {
 
 sub delete_backlog_queue {
   my ($webhook_id) = @_;
-  my $push  = Bugzilla->push_ext;
+  my $push         = Bugzilla->push_ext;
   my $webhook_name = 'Webhook_' . $webhook_id;
-  my $connector = $push->connectors->by_name($webhook_name);
-  my $queue = $connector->backlog;
+  my $connector    = $push->connectors->by_name($webhook_name);
+  my $queue        = $connector->backlog;
   $queue->delete();
 }
 
@@ -244,25 +264,33 @@ sub page_before_template {
   my ($vars, $page) = @$args{qw(vars page_id)};
   return unless $page eq 'webhooks_queues.html';
   Bugzilla->params->{webhooks_enabled} || ThrowUserError('webhooks_disabled');
-  Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"}) || ThrowUserError('auth_failure',
-    {group => Bugzilla->params->{"webhooks_group"}, action => "access", object => "webhooks"});
+  Bugzilla->user->in_group(Bugzilla->params->{"webhooks_group"})
+    || ThrowUserError(
+    'auth_failure',
+    {
+      group  => Bugzilla->params->{"webhooks_group"},
+      action => "access",
+      object => "webhooks"
+    }
+    );
   webhooks_queues($vars);
 }
 
 sub webhooks_queues {
   my ($vars) = @_;
-  my $push  = Bugzilla->push_ext;
-  my $input = Bugzilla->input_params;
+  my $push   = Bugzilla->push_ext;
+  my $input  = Bugzilla->input_params;
 
-  if($input->{webhook}){
+  if ($input->{webhook}) {
     my $webhook_name = 'Webhook_' . $input->{webhook};
-    my $connector = $push->connectors->by_name($webhook_name)
+    my $connector    = $push->connectors->by_name($webhook_name)
       || ThrowUserError('push_error', {error_message => 'Invalid connector'});
     my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($input->{webhook});
-    if ($webhook->{user_id} == Bugzilla->user->id){
+    if ($webhook->{user_id} == Bugzilla->user->id) {
       $vars->{connector} = $connector;
-      $vars->{webhook} = $webhook;
-    }else{
+      $vars->{webhook}   = $webhook;
+    }
+    else {
       ThrowUserError('webhooks_wrong_user');
     }
   }

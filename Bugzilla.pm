@@ -13,12 +13,11 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20210901.1';
+our $VERSION = '20211014.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
 use Bugzilla::CGI;
-use Bugzilla::Elastic;
 use Bugzilla::Config;
 use Bugzilla::Constants;
 use Bugzilla::DB;
@@ -285,6 +284,14 @@ sub login {
   my $do_logout     = $cgi->param('logout');
   my $on_token_page = $script_name eq '/token.cgi';
 
+  my $is_creatingaccount = 0;
+  if ($script_name eq '/createaccount.cgi'
+    || ($on_token_page && !$cgi->param('token_account_created')))
+  {
+    # The user hasn't yet created account.
+    $is_creatingaccount = 1;
+  }
+
   if ($authenticated_user->password_change_required) {
 
     # We cannot show the password reset UI for API calls, so treat those as
@@ -389,9 +396,10 @@ sub login {
   }
 
   # If Mojo native app is requesting login, we need to possibly redirect
+  # If the user is creating account, we should wait until the process finishes.
   my $C = Bugzilla->request_cache->{mojo_controller};
   my $session = $C->session;
-  if (!$on_token_page && $session->{override_login_target}) {
+  if (!$is_creatingaccount && $session->{override_login_target}) {
     my $override_login_target = delete $session->{override_login_target};
     my $cgi_params            = delete $session->{cgi_params};
     my $mojo_url              = Mojo::URL->new($override_login_target);
@@ -764,11 +772,6 @@ sub datadog {
   else {
     return undef;
   }
-}
-
-sub elastic {
-  my ($class) = @_;
-  $class->process_cache->{elastic} //= Bugzilla::Elastic->new();
 }
 
 sub check_rate_limit {

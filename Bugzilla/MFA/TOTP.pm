@@ -70,7 +70,7 @@ sub check {
   my $code = $params->{code};
   return if $self->_auth()->verify($code, 1);
 
-  Bugzilla->iprepd_report('mfa', remote_ip());
+  Bugzilla->iprepd_report('bmo.mfa_mismatch', remote_ip());
   if ($params->{mfa_action} && $params->{mfa_action} eq 'enable') {
     ThrowUserError('mfa_totp_bad_enrollment_code');
   }

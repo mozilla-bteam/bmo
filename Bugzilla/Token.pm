@@ -101,6 +101,9 @@ sub issue_new_user_account_token {
   my $template   = Bugzilla->template;
   my $vars       = {};
 
+  # Report this event for possible rate limiting
+  Bugzilla->iprepd_report('bmo.create_account');
+
   # Is there already a pending request for this login name? If yes, do not throw
   # an error because the user may have lost their email with the token inside.
   # But to prevent using this way to mailbomb an email address, make sure
@@ -140,6 +143,9 @@ sub IssueEmailChangeToken {
   my ($user, $new_email) = @_;
   my $email_suffix = Bugzilla->params->{'emailsuffix'};
   my $old_email    = $user->login;
+
+  # Report this event for possible rate limiting
+  Bugzilla->iprepd_report('bmo.email_change');
 
   my ($token, $token_ts)
     = _create_token($user->id, 'emailold', $old_email . ":" . $new_email);
@@ -182,6 +188,9 @@ sub IssueEmailChangeToken {
 sub IssuePasswordToken {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
+
+  # Report this event for possible rate limiting
+  Bugzilla->iprepd_report('bmo.password_reset');
 
   my $too_soon = $dbh->selectrow_array(
     'SELECT 1 FROM tokens
@@ -369,6 +378,9 @@ sub Cancel {
   my $dbh = Bugzilla->dbh;
   $vars ||= {};
 
+  # Report this event for possible rate limiting
+  Bugzilla->iprepd_report('bmo.cancel_token');
+
   # Get information about the token being canceled.
   my ($db_token, $issuedate, $tokentype, $eventdata, $userid)
     = $dbh->selectrow_array(
@@ -382,7 +394,7 @@ sub Cancel {
   # Some DBs such as MySQL are case-insensitive by default so we do
   # a quick comparison to make sure the tokens are indeed the same.
   unless (defined $db_token && $db_token eq $token) {
-    Bugzilla->iprepd_report('token', remote_ip());
+    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
     ThrowCodeError("cancel_token_does_not_exist");
   }
 
