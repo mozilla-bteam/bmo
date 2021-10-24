@@ -51,7 +51,7 @@ sub db_schema_abstract_schema {
       component_id => {
         TYPE       => 'INT2',
         NOTNULL    => 0,
-        REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE',}
+        REFERENCES => {TABLE => 'components', COLUMN => 'id', DELETE => 'CASCADE',},
       },
       api_key_header => {TYPE => 'VARCHAR(64)'},
       api_key_value  => {TYPE => 'VARCHAR(64)'},
