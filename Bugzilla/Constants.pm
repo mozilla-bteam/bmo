@@ -735,7 +735,6 @@ sub _bz_locations {
     'datadir'        => $datadir,
     'attachdir'      => "$datadir/attachments",
     'skinsdir'       => "$libpath/skins",
-    'graphsdir'      => "$libpath/graphs",
 
     # $webdotdir must be in the web server's tree somewhere. Even if you use a
     # local dot, we output images to there. Also, if $webdotdir is

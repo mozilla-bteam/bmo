@@ -88,8 +88,8 @@
     One of the directories <tt>[% dir FILTER html %]</tt> and
     <tt>[% graph_dir FILTER html %]</tt> does not exist.
 
-  [% ELSIF error == "chart_file_open_fail" %]
-    Unable to open the chart datafile <tt>[% filename FILTER html %]</tt>.
+  [% ELSIF error == "chart_file_fail" %]
+    Unable to access the chart datafile <tt>[% filename FILTER html %]</tt>.
 
   [% ELSIF error == "column_alter_nonexistent_fk" %]
     You attempted to modify the foreign key for
@@ -434,6 +434,14 @@
 
   [% ELSIF error == "s3_get_failed" %]
     Failed to fetch attachment ID [% attach_id FILTER html %] from S3:
+    [%+ reason FILTER html %]
+
+  [% ELSIF error == "s3_mining_add_failed" %]
+    Failed to add mining data for product [% product FILTER html %] to S3:
+    [%+ reason FILTER html %]
+
+  [% ELSIF error == "s3_mining_get_failed" %]
+    Failed to fetch mining data for product [% product FILTER html %] from S3:
     [%+ reason FILTER html %]
 
   [% ELSIF error == "search_cp_without_op" %]
