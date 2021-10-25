@@ -16,7 +16,7 @@
 [%# INTERFACE:
   # products: an array of product names the user is allowed to view.
   # datasets: an array of hashes with available statuses and resolutions.
-  # url_image: URL of the generated graph.
+  # image_data: base64 data of the generated graph.
   #%]
 
 [% PROCESS "global/field-descs.none.tmpl" %]
@@ -28,8 +28,8 @@
 %]
 
 <div align="center">
-  [% IF url_image %]
-    <img src="[% url_image FILTER html %]">
+  [% IF image_data %]
+    <img src="data:image/png;base64,[% image_data FILTER none %]">
     <br clear="both">
   [% ELSE %]
     <form id="choose_product" method="get" action="[% basepath FILTER none %]reports.cgi" data-no-csrf>
