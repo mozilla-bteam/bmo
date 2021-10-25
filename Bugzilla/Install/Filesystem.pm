@@ -134,7 +134,6 @@ sub FILESYSTEM {
   my $skinsdir       = bz_locations()->{'skinsdir'};
   my $localconfig    = bz_locations()->{'localconfig'};
   my $template_cache = bz_locations()->{'template_cache'};
-  my $graphsdir      = bz_locations()->{'graphsdir'};
   my $assetsdir      = bz_locations()->{'assetsdir'};
   my $logsdir        = bz_locations()->{'logsdir'};
 
@@ -219,7 +218,6 @@ sub FILESYSTEM {
     $template_cache => {files => CGI_READ,  dirs => DIR_CGI_OVERWRITE},
     $attachdir      => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
     $webdotdir => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
-    $graphsdir => {files => WS_SERVE, dirs => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE},
     "$datadir/db" => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
     $logsdir => {files => CGI_WRITE, dirs => DIR_CGI_WRITE | DIR_ALSO_WS_STICKY},
     $assetsdir =>
@@ -282,7 +280,6 @@ sub FILESYSTEM {
     # Directories that cgi scripts can write to.
     "$datadir/db"   => DIR_CGI_WRITE,
     $attachdir      => DIR_CGI_WRITE,
-    $graphsdir      => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
     $webdotdir      => DIR_CGI_WRITE,
     $assetsdir      => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
     $template_cache => DIR_CGI_WRITE,
@@ -374,15 +371,7 @@ sub update_filesystem {
   my %files    = %{$fs->{create_files}};
 
   my $datadir   = bz_locations->{'datadir'};
-  my $graphsdir = bz_locations->{'graphsdir'};
   my $assetsdir = bz_locations->{'assetsdir'};
-
-  # If the graphs/ directory doesn't exist, we're upgrading from
-  # a version old enough that we need to update the $datadir/mining
-  # format.
-  if (-d "$datadir/mining" && !-d $graphsdir) {
-    _update_old_charts($datadir);
-  }
 
   # By sorting the dirs, we assure that shorter-named directories
   # (meaning parent directories) are always created before their
