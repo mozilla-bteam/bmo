@@ -21,7 +21,7 @@ defaults:
       name: install dependencies
       command: |
         apk update && apk add py-pip gcc python3-dev musl-dev \
-          libffi-dev openssl-dev make cargo rust
+          libffi-dev openssl-dev make rust cargo
         pip install docker-compose
       environment:
         CRYPTOGRAPHY_DONT_BUILD_RUST: 1
