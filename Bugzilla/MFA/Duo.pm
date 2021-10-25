@@ -71,6 +71,7 @@ sub check {
     );
 
   Bugzilla->iprepd_report('bmo.mfa_mismatch', remote_ip());
+  Bugzilla->check_rate_limit('mfa_mismatch', $self->{user}->id);
   ThrowUserError('mfa_bad_code');
 }
 

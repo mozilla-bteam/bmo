@@ -775,7 +775,7 @@ sub datadog {
 }
 
 sub check_rate_limit {
-  my ($class, $name, $ip, $throw_error) = @_;
+  my ($class, $name, $identifier, $throw_error) = @_;
   $throw_error //= sub { ThrowUserError("rate_limit") };
   my $params = Bugzilla->params;
   if ($params->{rate_limit_active}) {
@@ -785,7 +785,8 @@ sub check_rate_limit {
       warn "no rules for $name!";
       return 0;
     }
-    if (Bugzilla->memcached->should_rate_limit("$name:$ip", @$limit)) {
+    if (Bugzilla->memcached->should_rate_limit("$name:$identifier", @$limit)) {
+      my $ip = remote_ip();
       my $action = 'block';
       my $filter = Bugzilla::Bloomfilter->lookup("rate_limit_whitelist");
       if ($filter && $filter->test($ip)) {
@@ -793,7 +794,7 @@ sub check_rate_limit {
       }
       my $full_limit = join("/", @$limit);
       Bugzilla->audit(
-        "[rate_limit] action=$action, ip=$ip, limit=$full_limit, name=$name");
+        "[rate_limit] action=$action, ip=$ip, identifier=$identifier, limit=$full_limit, name=$name");
       if ($action eq 'block') {
         request_cache->{mojo_controller}->block_ip($ip);
         $throw_error->();

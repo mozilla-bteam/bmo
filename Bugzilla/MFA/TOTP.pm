@@ -75,6 +75,7 @@ sub check {
     ThrowUserError('mfa_totp_bad_enrollment_code');
   }
   else {
+    Bugzilla->check_rate_limit('mfa_mismatch', $self->{user}->id);
     ThrowUserError('mfa_bad_code');
   }
 }
