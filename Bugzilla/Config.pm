@@ -261,9 +261,8 @@ sub write_params {
     my $dbh = Bugzilla->dbh;
     $dbh->bz_start_transaction();
     foreach my $key (keys %{$param_data}) {
-      my $value = $param_data->{$key};
-      next if !defined $value;
       if (my $param = Bugzilla::Config::Param->new({name => $key})) {
+        my $value = $param_data->{$key} || ($param->is_numeric ? 0 : '');
         if (($param->is_numeric && $value != $param->value) || $value ne $param->value)
         {
           $param->set_value($value);
@@ -271,6 +270,7 @@ sub write_params {
         }
       }
       else {
+        my $value = $param_data->{$key} || '';
         Bugzilla::Config::Param->create({name => $key, value => $value});
       }
     }

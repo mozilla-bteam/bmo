@@ -40,11 +40,7 @@ ok(scalar keys %file_params, 'Parameters file read back correctly');
 # Make copy of the newly updated database parameters
 my %db_params = %{Bugzilla->params};
 
-foreach my $param (
-  qw(attachment_storage bitly_token github_client_id honeypot_api_key
-     iprepd_client_secret mfa_group phabricator_api_key webhooks_group)
-  )
-{
+foreach my $param (keys %file_params) {
   ok($file_params{$param} eq $db_params{$param}, "$param matches");
 }
 
