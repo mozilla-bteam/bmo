@@ -266,7 +266,6 @@ sub write_params {
 
   try {
     my $dbh = Bugzilla->dbh;
-    $dbh->bz_start_transaction();
     foreach my $key (keys %{$param_data}) {
       if (my $param = Bugzilla::Config::Param->new({name => $key})) {
         my $value = $param_data->{$key} || ($param->is_numeric ? 0 : '');
@@ -281,7 +280,6 @@ sub write_params {
         Bugzilla::Config::Param->create({name => $key, value => $value});
       }
     }
-    $dbh->bz_commit_transaction();
   }
   catch {
     WARN("Database not available: $_");
