@@ -23,17 +23,17 @@ print $data_fh <DATA>;
 close $data_fh;
 close DATA;
 
+ok(-f "$datadir/params", 'Original parameters file exists');
+
 # We run import manually instead of with 'use' so that
-# these load after the data/params file has been written.
+# this loads after the data/params file has been written.
 require Bugzilla::Test::MockDB;
 Bugzilla::Test::MockDB->import;
-require Bugzilla::Test::MockParams;
-Bugzilla::Test::MockParams->import;
 
 # Read file back as a Perl data structure for comparison
-ok(-f "$datadir/params", 'Parameters file exists');
+ok(-f "$datadir/params.old", 'Backup parameters file exists');
 my $s = Safe->new;
-$s->rdo("$datadir/params");
+$s->rdo("$datadir/params.old");
 my %file_params = %{$s->varglob('param')};
 ok(scalar keys %file_params, 'Parameters file read back correctly');
 
@@ -55,7 +55,5 @@ __DATA__
            'github_client_id' => 'GITHUB_CLIENT_ID',
            'honeypot_api_key' => 'HONEYPOT_API_KEY',
            'iprepd_client_secret' => 'IPREPD_CLIENT_SECRET',
-           'mfa_group' => 'editbugs',
            'phabricator_api_key' => 'PHABRICATOR_API_KEY',
-           'webhooks_group' => 'editbugs',
          );
