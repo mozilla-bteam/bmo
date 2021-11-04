@@ -308,9 +308,9 @@ Change Several Bugs At Once:
     their assignee.
 
 Send Mail to Bug Assignees:
-    If more than one bug appear in the bug list and there are at least
-    two distinct bug assignees, this links is displayed which lets you
-    easily send a mail to the assignees of all bugs on the list.
+    If more than one bug appears in the bug list and there are at least
+    two distinct bug assignees, this link is displayed which lets you
+    easily send an e-mail to the assignees of all bugs on the list.
 
 Edit Search:
     If you didn't get exactly the results you were looking for, you can
