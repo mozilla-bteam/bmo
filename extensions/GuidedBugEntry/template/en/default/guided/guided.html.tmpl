@@ -459,6 +459,22 @@ explain how to write effective [% terms.bug %] reports.</li>
 </tr>
 
 <tr>
+  <td colspan="3">
+    <table>
+    <tr>
+      <td>
+        <input type="checkbox" name="include_user_agent" id="include_user_agent" checked>
+      </td>
+      <td>
+        Include your browsers user agent string in the [% terms.bug %] description. This can be
+        helpful to developers working on your issue.
+      </td>
+    </tr>
+    </table>
+  </td>
+</tr>
+
+<tr>
   <td class="label">Attach a file:</td>
   <td colspan="2">
     <input type="file" name="data" id="data" size="50" onchange="bugForm.onFileChange()">
