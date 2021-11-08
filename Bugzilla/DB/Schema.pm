@@ -1943,6 +1943,17 @@ use constant ABSTRACT_SCHEMA => {
       class        => {TYPE => 'varchar(255)', NOTNULL => 1},
       last_ping_ts => {TYPE => 'DATETIME',     NOTNULL => 1},
     ]
+  },
+
+  # Parameters Table
+  # ----------------
+
+  params => {
+    FIELDS => [
+      id    => {TYPE => 'MEDIUMSERIAL',  NOTNULL => 1, PRIMARYKEY => 1},
+      name  => {TYPE => 'VARCHAR(64)',   NOTNULL => 1},
+      value => {TYPE => 'VARCHAR(4000)', NOTNULL => 1},
+    ],
   }
 
 };
