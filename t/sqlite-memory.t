@@ -12,16 +12,17 @@ use Test::More;
 use Test2::Tools::Mock;
 use Try::Tiny;
 use Capture::Tiny qw(capture_merged);
-use Bugzilla::Test::MockParams;
 
 BEGIN {
   $ENV{LOCALCONFIG_ENV} = 'BMO';
   $ENV{BMO_db_driver}   = 'sqlite';
   $ENV{BMO_db_name}     = ':memory:';
 }
+
+use Bugzilla::Test::MockParams;
+
 use Bugzilla;
 BEGIN { Bugzilla->extensions }
-
 
 isa_ok(Bugzilla->dbh, 'Bugzilla::DB::Sqlite');
 

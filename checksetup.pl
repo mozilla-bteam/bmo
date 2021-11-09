@@ -465,8 +465,7 @@ L<Bugzilla::Install::Filesystem/create_htaccess>.
 
 =item 9
 
-Updates the system parameters (stored in F<data/params.json>), using
-L<Bugzilla::Config/update_params>.
+Updates the system parameters using L<Bugzilla::Config/update_params>.
 
 =item 10
 
