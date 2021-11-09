@@ -826,9 +826,6 @@ sub update_table_definitions {
   # Bug 1697642 - dkl@mozilla.com
   $dbh->bz_add_column('logincookies', 'auth_method',{TYPE => 'varchar(40)'});
 
-  # Bug 1729091 - dkl@mozilla.com
-  _migrate_db_parameters();
-
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
@@ -4381,34 +4378,6 @@ sub _populate_attachment_storage_class {
     $dbh->do(
       "INSERT INTO attachment_storage_class (id, storage_class) SELECT attachments.attach_id, 'database' FROM attachments ORDER BY attachments.attach_id"
     );
-  }
-}
-
-sub _migrate_db_parameters {
-  my $dbh = Bugzilla->dbh;
-
-  # Return if the old data/params file has already been removed
-  my $datadir = bz_locations()->{'datadir'};
-  return if !-e "$datadir/params";
-
-  # Return if we have already populated the params table before
-  my $count = $dbh->selectrow_array('SELECT COUNT(*) FROM params');
-  return if $count;
-
-  print "Migrating old parameters from data/params to database...\n";
-
-  # Read in the old data/params values
-  my $s = Safe->new;
-  $s->rdo("$datadir/params");
-  die "Error reading $datadir/params: $!"    if $!;
-  die "Error evaluating $datadir/params: $@" if $@;
-  my $params = $s->varglob('param');
-
-  # Insert the key/values into the params table
-  foreach my $key (keys %{$params}) {
-    my $value = $params->{$key};
-    next if !defined $value;
-    $dbh->do('INSERT INTO params (name, value) VALUES (?, ?)', undef, $key, $value);
   }
 }
 
