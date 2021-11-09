@@ -1,6 +1,8 @@
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi %]
+[% IF cgi.param('include_user_agent') %]
 User Agent: [% cgi.param('user_agent') %]
+[% END %]
 [% IF cgi.param('firefox_for_android') %]
 Firefox for Android
 [% END %]
