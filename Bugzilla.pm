@@ -587,10 +587,10 @@ sub log_user_request {
 
   my $cgi         = $class->cgi;
   my $user_id     = $class->user->id;
-  my $request_url = $cgi->request_uri // '';
-  my $method      = $cgi->request_method;
-  my $user_agent  = $cgi->user_agent // '';
-  my $script_name = $cgi->script_name;
+  my $request_url = $cgi->request_uri    // '';
+  my $method      = $cgi->request_method // 'GET';
+  my $user_agent  = $cgi->user_agent     // '';
+  my $script_name = $cgi->script_name    // '';
   my $server      = "web";
 
   if ($script_name =~ /rest\.cgi/) {
