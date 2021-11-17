@@ -194,7 +194,7 @@ sub startup {
     last_name     => {value => 'IAM User'},
     identities    =>
       {bugzilla_mozilla_org_primary_email => {value => 'oauth2-user@example.com'}},
-    ldap => {values => {team_moco => 1}}
+    access_information => {ldap => {values => {team_moco => 1}}}
   };
   $r->get(
     '/person/test/v2/user/primary_email/*email' => sub {
