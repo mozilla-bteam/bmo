@@ -11,6 +11,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
+use Bugzilla::Error;
 use Bugzilla::Extension::MozillaIAM::Constants qw(STAFF_GROUPS);
 use Bugzilla::Logging;
 use Bugzilla::Token;
@@ -39,8 +40,8 @@ sub add_staff_member {
   my $is_staff     = $params->{is_staff};
 
   # We need to make the below changes as an empowered user
-  my $empowered_user =
-    Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
+  my $empowered_user
+    = Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
 
   my $user = Bugzilla::User->new({name => $bmo_email});
   return 0 if !$user;
@@ -67,12 +68,13 @@ sub remove_staff_member {
   my $params = shift;
 
   # We need to make the below changes as an empowered user
-  my $empowered_user =
-    Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
+  my $empowered_user
+    = Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
 
   my $user = $params->{user};
   if (!$user) {
-    my $user_id = Bugzilla->dbh->selectrow_array(
+    my $user_id
+      = Bugzilla->dbh->selectrow_array(
       'SELECT user_id FROM profiles_iam WHERE iam_username = ?',
       undef, $params->{iam_username});
     $user = Bugzilla::User->new($user_id);
@@ -145,8 +147,8 @@ sub _get_profile {
   my $profile;
   my $ua = mojo_user_agent({request_timeout => 5});
   try {
-    $profile =
-      $ua->get($url => {'Authorization' => "Bearer ${access_token}"})->result->json;
+    $profile = $ua->get($url => {'Authorization' => "Bearer ${access_token}"})
+      ->result->json;
   }
   catch {
     WARN($_);
@@ -156,8 +158,12 @@ sub _get_profile {
   return {} if !$profile;
 
   my $is_staff = 0;
-  if ($profile && $profile->{ldap} && $profile->{ldap}->{values}) {
-    foreach my $key (keys %{$profile->{ldap}->{values}}) {
+  if ( $profile
+    && $profile->{access_information}
+    && $profile->{access_information}->{ldap}
+    && $profile->{access_information}->{ldap}->{values})
+  {
+    foreach my $key (keys %{$profile->{access_information}->{ldap}->{values}}) {
       if (any { $_ eq $key } STAFF_GROUPS) {
         $is_staff = 1;
         last;
@@ -183,8 +189,9 @@ sub verify_token {
 
   my $ua = mojo_user_agent({request_timeout => 5});
   try {
-    my $jwks =
-      $ua->get(Bugzilla->params->{oauth2_client_domain} . '/.well-known/jwks.json')
+    my $jwks
+      = $ua->get(
+      Bugzilla->params->{oauth2_client_domain} . '/.well-known/jwks.json')
       ->result->json('/keys');
     $token = Mojo::JWT->new(jwks => $jwks)->decode($token);
   }
