@@ -2818,6 +2818,15 @@ pre.comment-text {
   vertical-align: bottom;
 }
 
+/* OAuth2 */
+div.oauth2-login {
+  margin-bottom: 10px;
+}
+
+#mini_login_top div.oauth2-login {
+  margin: 0;
+}
+
 /**
  * Print media
  */

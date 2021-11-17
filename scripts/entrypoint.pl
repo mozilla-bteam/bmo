@@ -211,6 +211,12 @@ sub cmd_test_bmo {
 
   assert_database()->get;
   assert_selenium('selenium')->get;
+
+  # OAuth2 testing user
+  $ENV{BZ_TEST_OAUTH2_NORMAL_USER}  = 'oauth2-user@example.com';
+  $ENV{BZ_TEST_OAUTH2_MOZILLA_USER} = 'oauth2-user@mozilla.com';
+  $ENV{BZ_TEST_OAUTH2_PASSWORD}     = 'non-working-password';
+
   $ENV{BZ_TEST_NEWBIE}      = 'newbie@mozilla.example';
   $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';
   create_user(

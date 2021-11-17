@@ -31,6 +31,7 @@ sub user_profile {
         groups                => [map { $_->name } @{$user->groups}],
         mfa                   => lc($user->mfa),
         mfa_required_by_group => $user->in_mfa_group ? true : false,
+        iam_username          => $user->iam_username,
       }
     );
   }

@@ -13,8 +13,9 @@ use warnings;
 
 use base qw(Exporter);
 our @EXPORT
-  = qw(create_user create_bug create_oauth_client issue_api_key mock_useragent_tx);
+  = qw(create_user create_bug create_group create_oauth_client issue_api_key mock_useragent_tx);
 
+use Bugzilla::Group;
 use Bugzilla::User;
 use Bugzilla::Bug;
 use Bugzilla::User::APIKey;
@@ -33,12 +34,24 @@ our $Priority  = 'P1';
 sub create_user {
   my ($login, $password, %extra) = @_;
   require Bugzilla;
+  my $user = Bugzilla::User->new({name => $login});
+  return $user if $user;
   return Bugzilla::User->create({
     login_name    => $login,
     cryptpassword => $password,
     disabledtext  => "",
     disable_mail  => 0,
     extern_id     => undef,
+    %extra,
+  });
+}
+
+sub create_group {
+  my ($group, %extra) = @_;
+  require Bugzilla;
+  return Bugzilla::Group->create({
+    name        => $group,
+    description => "$group Group Description",
     %extra,
   });
 }

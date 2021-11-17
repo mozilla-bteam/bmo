@@ -140,7 +140,7 @@ foreach my $rpc ($jsonrpc, $xmlrpc) {
       user  => 'admin',
       args  => {email => new_login(), full_name => NEW_FULLNAME, iam_username => $rpc->TYPE},
       error => "The IAM username '" . $rpc->TYPE . "' you entered did not pass syntax checking for a legal email address.",
-      test  => 'Adding a duplicate IAM username fails.',
+      test  => 'Adding an invalid IAM username fails.',
     },
   );
 

@@ -50,7 +50,7 @@
         <th>Count</th>
         <th>Members</th>
         [% IF privileged %]
-          <th class="right">2FA, Last Seen (days ago)</th>
+          <th class="right">IAM Username, 2FA, Last Seen (days ago)</th>
         [% END %]
       </tr>
     </thead>
@@ -93,6 +93,13 @@
                     </a>
                   </td>
                   [% IF privileged %]
+                    <td align="right" nowrap>
+                      [% IF member.iam_username %]
+                        [% member.iam_username FILTER html %]
+                      [% ELSE %]
+                        -
+                      [% END %]
+                    </td>
                     <td nowrap>
                       [% IF member.mfa %]
                         [% member.mfa FILTER html %]

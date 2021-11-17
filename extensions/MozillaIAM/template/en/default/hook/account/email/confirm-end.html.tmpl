@@ -1,0 +1,19 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% IF user.iam_username %]
+  <br>
+  <div id="message">
+    You are currently using Mozilla IAM to sign on to [% terms.Bugzilla %].
+    If you change your email and want the new address linked to your Mozilla
+    IAM account, you will need to update your Bugzilla email at
+    <a href="https://people.mozilla.org">people.mozilla.org</a>. If not, then
+    you will then need to <a href="[% basepath FILTER none %]index.cgi?GoAheadAndLogIn=1#forgot">
+    reset your password</a> to login again.
+  </div>
+[% END %]

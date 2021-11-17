@@ -21,7 +21,7 @@
 
 <p>Do you really want to delete this client?<p>
 
-<form method="post" action="[% basepath FILTER none %]admin/oauth/delete">
+<form method="post" action="[% basepath FILTER none %]admin/oauth/provider/delete">
   <input type="submit" id="delete" value="Yes, delete">
   <input type="hidden" name="id" value="[% client.id FILTER html %]">
   <input type="hidden" name="deleteme" value="delete">

@@ -6,7 +6,7 @@
      {
        name => "description"
        heading => "Edit client..."
-       contentlink => "admin/oauth/edit?id=%%id%%"
+       contentlink => "admin/oauth/provider/edit?id=%%id%%"
      },
      {
        name => "active"
@@ -17,7 +17,7 @@
        name => "action"
        heading => "Action"
        content => "Delete"
-       contentlink => "admin/oauth/delete?id=%%id%%"
+       contentlink => "admin/oauth/provider/delete?id=%%id%%"
      }
    ]
 %]
@@ -30,6 +30,6 @@
      overrides = overrides
 %]
 
-<a title="Add a client" href="[% basepath FILTER none %]admin/oauth/create">Add</a> a client.
+<a title="Add a client" href="[% basepath FILTER none %]admin/oauth/provider/create">Add</a> a client.
 
 [% PROCESS global/footer.html.tmpl %]

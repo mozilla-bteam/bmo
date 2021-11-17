@@ -1,0 +1,18 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% IF error == "api_input_schema_error" %]
+  [% title = "API Input Schema Error" %]
+  The following errors occurred when validating input data:
+  [%+ FOREACH e = errors %]
+    [% e.message FILTER html %] => [% e.path FILTER html %][% ", " UNLESS loop.last() %]
+  [% END %]
+
+[% ELSIF error == "mozilla_iam_token_error" %]
+  The authentication token provided was not valid or missing.
+[% END %]
