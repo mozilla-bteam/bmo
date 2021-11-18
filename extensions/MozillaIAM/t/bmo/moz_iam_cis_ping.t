@@ -65,10 +65,12 @@ ok(
 # them from Mozilla confidential
 local $ENV{CI} = 0, $ENV{NO_VERIFY_TOKEN} = 1;
 my $mocked_data = {
-  first_name        => {value => 'Mozilla'},
-  last_name         => {value => 'IAM User'},
-  primary_email     => {value => $iam_username},
-  staff_information => {staff => {value => false}},
+  first_name    => {value => 'Mozilla'},
+  last_name     => {value => 'IAM User'},
+  primary_email => {value => $iam_username},
+  identities    =>
+    {bugzilla_mozilla_org_primary_email => {value => 'oauth2-user@example.com'}},
+  access_information => {ldap => {values => {}}}
 };
 my $user_agent = mock 'Mojo::UserAgent' => (
   override => [
