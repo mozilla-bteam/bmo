@@ -171,6 +171,17 @@ sub _get_profile {
     }
   }
 
+  ## REMOVE: Debugging
+  use Mojo::Util qw(dumper);
+  DEBUG(dumper {
+    ldap         => $profile->{access_information}->{ldap}->{values},
+    iam_username => $profile->{primary_email}->{value},
+    first_name   => $profile->{first_name}->{value},
+    last_name    => $profile->{last_name}->{value},
+    bmo_email    =>
+      $profile->{identities}->{bugzilla_mozilla_org_primary_email}->{value}
+  });
+
   return {
     is_staff     => $is_staff,
     iam_username => $profile->{primary_email}->{value},
