@@ -47,7 +47,9 @@ jobs:
     docker:
       - image: cimg/python:3.10.0
     steps:
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
       - checkout
       - *docker_login
       - *build_image
@@ -109,7 +111,9 @@ jobs:
     docker:
       - image: cimg/python:3.10.0
     steps:
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
       - checkout
       - *docker_login
       - *build_image
@@ -169,7 +173,9 @@ jobs:
     docker:
       - image: cimg/python:3.10.0
     steps:
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
       - checkout
       - *docker_login
       - *build_image
@@ -191,7 +197,9 @@ jobs:
     docker:
       - image: cimg/python:3.10.0
     steps:
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
       - checkout
       - *docker_login
       - *build_image
@@ -213,7 +221,9 @@ jobs:
     docker:
       - image: cimg/python:3.10.0
     steps:
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
       - checkout
       - *docker_login
       - *build_image
