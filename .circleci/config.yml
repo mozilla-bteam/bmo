@@ -45,7 +45,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: circleci/python
+      - image: cimg/python:3.10.0
     steps:
       - setup_remote_docker
       - checkout
@@ -107,7 +107,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: circleci/python
+      - image: cimg/python:3.10.0
     steps:
       - setup_remote_docker
       - checkout
@@ -141,7 +141,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: circleci/python
+      - image: cimg/python:3.10.0
     steps:
       - setup_remote_docker:
           version: 19.03.13
@@ -167,7 +167,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: circleci/python
+      - image: cimg/python:3.10.0
     steps:
       - setup_remote_docker
       - checkout
@@ -189,7 +189,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: circleci/python
+      - image: cimg/python:3.10.0
     steps:
       - setup_remote_docker
       - checkout
@@ -211,7 +211,7 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: circleci/python
+      - image: cimg/python:3.10.0
     steps:
       - setup_remote_docker
       - checkout
