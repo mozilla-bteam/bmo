@@ -101,13 +101,10 @@ sub remove_staff_member {
 sub get_access_token {
   my $params = Bugzilla->params;
 
-  # Return fake token for CI tests
-  return 'fake_access_token' if $ENV{CI};
-
   my $access_token;
   my $ua = mojo_user_agent({request_timeout => 5});
   try {
-    $access_token = $ua->post(
+    my $result = $ua->post(
       $params->{oauth2_client_token_url} => {'Content-Type' => 'application/json'} =>
         json => {
         client_id     => $params->{mozilla_iam_person_api_client_id},
@@ -115,7 +112,12 @@ sub get_access_token {
         audience      => 'api.sso.mozilla.com',
         grant_type    => 'client_credentials',
         },
-    )->result->json('/access_token');
+    );
+    my $data = $result->result->json;
+    $access_token = $data->{access_token};
+
+    use Mojo::Util qw(dumper);
+    WARN('Access Data: ' . dumper $data) if !$access_token;
   }
   catch {
     WARN($_);
