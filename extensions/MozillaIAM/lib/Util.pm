@@ -155,6 +155,11 @@ sub _get_profile {
     ThrowCodeError('mozilla_iam_get_profile_error');
   };
 
+  ## REMOVE: Debugging
+  use Mojo::Util qw(dumper);
+  WARN("query_path: $query_path");
+  WARN(dumper $profile);
+
   return {} if !$profile;
 
   my $is_staff = 0;
@@ -170,17 +175,6 @@ sub _get_profile {
       }
     }
   }
-
-  ## REMOVE: Debugging
-  use Mojo::Util qw(dumper);
-  WARN(dumper {
-    ldap         => $profile->{access_information}->{ldap}->{values},
-    iam_username => $profile->{primary_email}->{value},
-    first_name   => $profile->{first_name}->{value},
-    last_name    => $profile->{last_name}->{value},
-    bmo_email    =>
-      $profile->{identities}->{bugzilla_mozilla_org_primary_email}->{value}
-  });
 
   return {
     is_staff     => $is_staff,
