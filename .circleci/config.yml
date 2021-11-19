@@ -16,6 +16,22 @@ defaults:
           echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
         fi
 
+  install_deps: &install_deps
+    run:
+      name: install dependencies
+      command: |
+        apk update && apk add py-pip gcc python3-dev musl-dev \
+          libffi-dev openssl-dev make rust cargo
+        pip install docker-compose
+      environment:
+        CRYPTOGRAPHY_DONT_BUILD_RUST: 1
+
+  docker_image: &docker_image
+    image: docker:19.03.13-git
+    auth:
+      username: $DOCKER_USER
+      password: $DOCKER_PASS
+
   build_image: &build_image
     run:
       name: Build Docker BMO image
@@ -45,13 +61,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/base:2021.11
+      - *docker_image
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout:
-          path: ~/app
+      - checkout
+      - *install_deps
       - *docker_login
       - *build_image
       - run: |
@@ -70,7 +86,7 @@ jobs:
             docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
             docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
             docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
-            docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txtinstall_deps
+            docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
             docker rm push_data
       - run:
           name: only publish if tag exists
@@ -110,13 +126,12 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/base:2021.11
+      - *docker_image
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout:
-          path: ~/app
+      - checkout
       - *docker_login
       - *build_image
       - attach_workspace:
@@ -147,13 +162,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/base:2021.11
+      - *docker_image
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout:
-          path: ~/app
+      - checkout
+      - *install_deps
       - *docker_login
       - *build_image
       - run: |
@@ -174,13 +189,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/base:2021.11
+      - *docker_image
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout:
-          path: ~/app
+      - checkout
+      - *install_deps
       - *docker_login
       - *build_image
       - run: |
@@ -199,13 +214,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/base:2021.11
+      - *docker_image
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout:
-          path: ~/app
+      - checkout
+      - *install_deps
       - *docker_login
       - *build_image
       - run: |
@@ -224,13 +239,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/base:2021.11
+      - *docker_image
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout:
-          path: ~/app
+      - checkout
+      - *install_deps
       - *docker_login
       - *build_image
       - run: |
