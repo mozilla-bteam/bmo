@@ -16,15 +16,10 @@ defaults:
           echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
         fi
 
-  install_deps: &install_deps
+  install_docker_compose: &install_docker_compose
     run:
-      name: install dependencies
-      command: |
-        apk update && apk add py-pip gcc python3-dev musl-dev \
-          libffi-dev openssl-dev make rust cargo
-        pip install docker-compose
-      environment:
-        CRYPTOGRAPHY_DONT_BUILD_RUST: 1
+      name: install docker-compose
+      command: apk update && apk add docker-compose
 
   docker_image: &docker_image
     image: docker:19.03.13-git
@@ -67,17 +62,19 @@ jobs:
           version: 19.03.13
           docker_layer_caching: true
       - checkout
-      - *install_deps
+      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
           at: /app/build_info
-      - run: |
-          docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
-          docker cp version_json:/app/version.json build_info/version.json
-          docker rm version_json
+      - run:
+          name: build version_json
+          command: |
+            docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
+            docker cp version_json:/app/version.json build_info/version.json
+            docker rm version_json
       - run:
           name: build push data
           command: |
@@ -168,7 +165,7 @@ jobs:
           version: 19.03.13
           docker_layer_caching: true
       - checkout
-      - *install_deps
+      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -180,7 +177,8 @@ jobs:
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
-              test_sanity t/*.t extensions/*/t/*.t | tee artifacts/$CIRCLE_JOB.txt
+              test_sanity $(circleci tests glob 't/*.t' 'extensions/*/t/*.t' | \
+              circleci tests split) | tee artifacts/$CIRCLE_JOB.txt
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -195,7 +193,7 @@ jobs:
           version: 19.03.13
           docker_layer_caching: true
       - checkout
-      - *install_deps
+      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -220,7 +218,7 @@ jobs:
           version: 19.03.13
           docker_layer_caching: true
       - checkout
-      - *install_deps
+      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -245,19 +243,16 @@ jobs:
           version: 19.03.13
           docker_layer_caching: true
       - checkout
-      - *install_deps
+      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
           at: /app/build_info
-      - run:
-          name: run bmo specific tests
-          command: |
-            [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run bmo.test test_bmo \
-              -q -f t/bmo/*.t extensions/*/t/bmo/*.t | tee artifacts/$CIRCLE_JOB.txt
+      - run: |
+          [[ -f build_info/only_version_changed.txt ]] && exit 0
+          docker-compose -f docker-compose.test.yml run bmo.test test_bmo -q -f t/bmo/*.t
       - *store_log
 
 workflows:
