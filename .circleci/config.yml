@@ -45,12 +45,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/python:3.10.0
+      - image: cimg/base:2021.11
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout
+      - checkout:
+          path: ~/app
       - *docker_login
       - *build_image
       - run: |
@@ -109,12 +110,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/python:3.10.0
+      - image: cimg/base:2021.11
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout
+      - checkout:
+          path: ~/app
       - *docker_login
       - *build_image
       - attach_workspace:
@@ -145,12 +147,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/python:3.10.0
+      - image: cimg/base:2021.11
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout
+      - checkout:
+          path: ~/app
       - *docker_login
       - *build_image
       - run: |
@@ -171,12 +174,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/python:3.10.0
+      - image: cimg/base:2021.11
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout
+      - checkout:
+          path: ~/app
       - *docker_login
       - *build_image
       - run: |
@@ -195,12 +199,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/python:3.10.0
+      - image: cimg/base:2021.11
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout
+      - checkout:
+          path: ~/app
       - *docker_login
       - *build_image
       - run: |
@@ -219,12 +224,13 @@ jobs:
     parallelism: 1
     working_directory: /app
     docker:
-      - image: cimg/python:3.10.0
+      - image: cimg/base:2021.11
     steps:
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
-      - checkout
+      - checkout:
+          path: ~/app
       - *docker_login
       - *build_image
       - run: |
