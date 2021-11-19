@@ -117,7 +117,8 @@ sub get_access_token {
     $access_token = $data->{access_token};
 
     use Mojo::Util qw(dumper);
-    WARN('Access Data: ' . dumper $data) if !$access_token;
+    my $dump_data = dumper $data;
+    DEBUG('Access Data: ' . substr $dump_data, 0, 10000);
   }
   catch {
     WARN($_);
@@ -156,11 +157,6 @@ sub _get_profile {
     WARN($_);
     ThrowCodeError('mozilla_iam_get_profile_error');
   };
-
-  ## REMOVE: Debugging
-  use Mojo::Util qw(dumper);
-  WARN("query_path: $query_path");
-  WARN(dumper $profile);
 
   return {} if !$profile;
 
