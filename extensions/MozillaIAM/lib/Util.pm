@@ -115,13 +115,6 @@ sub get_access_token {
     );
     my $data = $result->result->json;
     $access_token = $data->{access_token};
-
-    # Write to local log file
-    use Mojo::Util qw(dumper);
-    my $dump_data = dumper $data;
-    open my $data_fh, '>>:encoding(UTF-8)', '/app/data/profile.log';
-    print $data_fh $dump_data . "\n---\n$access_token\n---\n";
-    close $data_fh;
   }
   catch {
     WARN($_);
@@ -161,16 +154,7 @@ sub _get_profile {
     ThrowCodeError('mozilla_iam_get_profile_error');
   };
 
-  return {} if !$profile;
-
-  # Write to local log file
-  use Mojo::Util qw(dumper);
-  my $dump_data = dumper {
-    access_information => $profile->{access_information}
-  };
-  open my $data_fh, '>>:encoding(UTF-8)', '/app/data/profile.log';
-  print $data_fh $dump_data . "\n---\n";
-  close $data_fh;
+  return {} if !keys %{$profile};
 
   my $is_staff = 0;
   if ( $profile

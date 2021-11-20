@@ -266,22 +266,22 @@ workflows:
           requires:
             - build
             - test_sanity
-            # - test_bmo
-            # - test_webservices
-            # - test_selenium
+            - test_bmo
+            - test_webservices
+            - test_selenium
       - test_sanity:
           filters: *main_filters
           requires:
             - build
-      # - test_bmo:
-      #     filters: *main_filters
-      #     requires:
-      #       - build
-      # - test_webservices:
-      #     filters: *main_filters
-      #     requires:
-      #       - build
-      # - test_selenium:
-      #     filters: *main_filters
-      #     requires:
-      #       - build
+      - test_bmo:
+          filters: *main_filters
+          requires:
+            - build
+      - test_webservices:
+          filters: *main_filters
+          requires:
+            - build
+      - test_selenium:
+          filters: *main_filters
+          requires:
+            - build
