@@ -118,7 +118,7 @@ sub get_access_token {
 
     use Mojo::Util qw(dumper);
     my $dump_data = dumper $data;
-    DEBUG('Access Data: ' . substr $dump_data, 0, 10000);
+    WARN('Access Data: ' . substr $dump_data, 0, 10000);
   }
   catch {
     WARN($_);
