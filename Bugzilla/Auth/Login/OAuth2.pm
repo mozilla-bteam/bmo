@@ -37,11 +37,7 @@ sub get_login_info {
   return {failure => AUTH_NODATA} if !$userinfo;
 
   if ($userinfo->{email} && $userinfo->{email_verified}) {
-    return {
-      username    => $userinfo->{email},
-      realname    => $userinfo->{name},
-      auth_method => auth_method
-    };
+    return {username => $userinfo->{email}, auth_method => auth_method};
   }
 
   return {failure => AUTH_NODATA};
