@@ -38,11 +38,12 @@ sub create_or_update_user {
   my ($self, $params) = @_;
   my $dbh = Bugzilla->dbh;
 
-  my $extern_id = $params->{extern_id};
-  my $username  = $params->{bz_username} || $params->{username};
-  my $password  = $params->{password} || '*';
-  my $real_name = $params->{realname} || '';
-  my $user_id   = $params->{user_id};
+  my $extern_id   = $params->{extern_id};
+  my $username    = $params->{bz_username} || $params->{username};
+  my $password    = $params->{password} || '*';
+  my $real_name   = $params->{realname} || '';
+  my $user_id     = $params->{user_id};
+  my $auth_method = $params->{auth_method} || '';
 
   # A passed-in user_id always overrides anything else, for determining
   # what account we should return.
@@ -152,7 +153,7 @@ sub create_or_update_user {
     $user->set_login($username);
     $user_updated = 1;
   }
-  if ($real_name && $user->name ne $real_name) {
+  if ($real_name && $user->name ne $real_name && $auth_method ne 'OAuth2') {
 
     # $real_name is more than likely tainted, but we only use it
     # in a placeholder and we never use it after this.
