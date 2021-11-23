@@ -39,6 +39,8 @@ sub add_staff_member {
   my $iam_username = $params->{iam_username};
   my $is_staff     = $params->{is_staff};
 
+  return 0 if !$bmo_email;
+
   # We need to make the below changes as an empowered user
   my $empowered_user
     = Bugzilla->set_user(Bugzilla::User->super_user, scope_guard => 1);
