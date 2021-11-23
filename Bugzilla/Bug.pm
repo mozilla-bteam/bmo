@@ -4076,7 +4076,16 @@ sub see_also {
 
     my $bug_urls = Bugzilla::BugUrl->new_from_list($ids);
 
-    $self->{see_also} = $bug_urls;
+    # Filter local bugs by visibility
+    my @links = ();
+    foreach my $link (@{$bug_urls}) {
+      if (!$link->isa('Bugzilla::BugUrl::Bugzilla::Local')
+        || Bugzilla->user->can_see_bug($link->bug->id))
+      {
+        push @links, $link;
+      }
+    }
+    $self->{see_also} = \@links;
   }
   return $self->{see_also};
 }
@@ -4615,6 +4624,30 @@ sub GetBugActivity {
         $removed = join(', ', @{$user->visible_bugs([split(/,\s*/, $removed)])});
         $added   = join(', ', @{$user->visible_bugs([split(/,\s*/, $added)])});
         next if !$removed && !$added;
+      }
+
+      # List only local see_also bugs visible to the user
+      if ($fieldname eq 'see_also') {
+        my $url_base = Bugzilla->localconfig->urlbase;
+        my @filtered_removed;
+        my @filtered_added;
+        foreach my $value (split /, /, $removed) {
+          if (substr($value, 0, length $url_base) eq $url_base) {
+            my ($bug_id) = $value =~ /id=(\d+)$/;
+            next if !Bugzilla->user->can_see_bug($bug_id);
+          }
+          push @filtered_removed, $value;
+        }
+        foreach my $value (split /, /, $added) {
+          if (substr($value, 0, length $url_base) eq $url_base) {
+            my ($bug_id) = $value =~ /id=(\d+)$/;
+            next if !Bugzilla->user->can_see_bug($bug_id);
+          }
+          push @filtered_added, $value;
+        }
+        next if !@filtered_removed && !@filtered_added;
+        $removed = join ', ', @filtered_removed;
+        $added   = join', ', @filtered_added;
       }
 
       $operation->{'who'}       = $who;
