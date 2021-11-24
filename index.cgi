@@ -28,7 +28,9 @@ my $C    = Bugzilla->request_cache->{mojo_controller};
 # Yes, I really want to avoid two calls to the id method.
 my $user_id = $user->id;
 
-my $can_cache = $cgi->param('GoAheadAndLogIn') ? 0 : 1;
+# Disable content caching by browser because there will be different items on the global navigation
+# before and after signed in.
+my $can_cache = 0;
 
 # And log out the user if requested. We do this first so that nothing
 # else accidentally relies on the current login.

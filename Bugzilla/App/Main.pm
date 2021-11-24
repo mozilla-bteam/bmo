@@ -14,9 +14,19 @@ use Bugzilla::Constants;
 
 sub setup_routes {
   my ($class, $r) = @_;
+
+  $r->any('/')->to('Main#root');
+
   $r->get('/testagent.cgi')->to('Main#testagent');
+
   $r->add_type('hex32' => qr/[[:xdigit:]]{32}/);
   $r->post('/announcement/hide/<checksum:hex32>')->to('Main#announcement_hide');
+}
+
+sub root {
+  my ($c) = @_;
+  $c->res->headers->cache_control('public, max-age=3600, immutable');
+  $c->render(handler => 'bugzilla');
 }
 
 sub testagent {

@@ -29,8 +29,6 @@ sub setup_routes {
     $class->load_one($name, $file);
     $r->any("/$file")->to("CGI#$name");
   }
-
-  $r->any('/')->to('CGI#index_cgi');
   $r->any('/home')->to('CGI#index_cgi');
 
   $r->any('/bug/<id:num>')->to('CGI#show_bug_cgi');
