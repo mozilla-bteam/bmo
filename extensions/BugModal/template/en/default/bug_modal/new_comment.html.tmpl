@@ -42,7 +42,7 @@
   </ul>
 
   <div id="comment-edit-tabpanel" class="comment-tabpanel" role="tabpanel" aria-labelledby="comment-edit-tab">
-    <textarea rows="5" cols="80" name="comment" id="comment" aria-labelledby="comment-edit-tab"></textarea>
+    <textarea rows="5" cols="80" name="comment" id="comment" aria-labelledby="comment-edit-tab"[% IF user.setting("ui_attach_long_paste") == "on" %] class="attach-long-paste"[% END %]></textarea>
   </div>
   <div id="comment-preview-tabpanel" class="comment-tabpanel" role="tabpanel" aria-labelledby="comment-preview-tab" style="display:none">
     [% IF Param('use_markdown') %]
