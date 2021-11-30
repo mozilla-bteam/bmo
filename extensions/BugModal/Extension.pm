@@ -347,6 +347,12 @@ sub install_before_final_checks {
     default  => 'off',
     category => 'User Interface',
   });
+  add_setting({
+    name     => 'ui_attach_long_paste',
+    options  => ['on', 'off'],
+    default  => 'on',
+    category => 'User Interface',
+  });
 }
 
 __PACKAGE__->NAME;
