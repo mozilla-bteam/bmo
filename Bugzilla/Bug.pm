@@ -3418,6 +3418,7 @@ sub add_see_also {
       my $ref_can_change = $ref_bug->check_can_change_field('see_also', '', $self->id);
       if (  $class->isa('Bugzilla::BugUrl::Bugzilla::Local')
         and !$skip_recursion
+        and Bugzilla->user->can_see_bug($ref_bug->id)
         and $ref_can_change->{allowed})
       {
         $ref_bug->add_see_also($self->id, 'skip_recursion');
@@ -3459,6 +3460,7 @@ sub remove_see_also {
   if ( !$skip_recursion
     and $removed_bug_url
     and $removed_bug_url->isa('Bugzilla::BugUrl::Bugzilla::Local')
+    and Bugzilla->user->can_see_bug($removed_bug_url->ref_bug_url->bug_id)
     and $removed_bug_url->ref_bug_url)
   {
     my $ref_bug = Bugzilla::Bug->check($removed_bug_url->ref_bug_url->bug_id);
