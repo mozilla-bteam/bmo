@@ -34,9 +34,9 @@ my $private_bug = create_bug_fields($config);
 delete $private_bug->{cc};
 $private_bug->{product}          = 'QA-Selenium-TEST';
 $private_bug->{component}        = 'QA-Selenium-TEST';
-$private_bug->{summary}          = 'This is a private test bug';
 $private_bug->{version}          = 'QAVersion';
 $private_bug->{target_milestone} = 'QAMilestone';
+$private_bug->{summary}          = 'This is a private test bug';
 $private_bug->{description}      = 'This is a private test bug';
 $private_bug->{creator}          = $config->{PRIVATE_BUG_USER . '_user_login'};
 $private_bug->{groups}           = ['QA-Selenium-TEST'];
@@ -55,7 +55,9 @@ $t->get_ok($url
 ### Section 2: Create new public bug
 
 my $public_bug = create_bug_fields($config);
-$public_bug->{creator} = $config->{unprivileged_user_login};
+$public_bug->{summary}     = 'This is a public test bug';
+$public_bug->{description} = 'This is a public test bug';
+$public_bug->{creator}     = $config->{unprivileged_user_login};
 
 $t->post_ok($url
     . 'rest/bug' => {'X-Bugzilla-API-Key' => $public_user_api_key} => json =>
