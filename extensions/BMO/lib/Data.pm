@@ -111,6 +111,7 @@ tie(
     "External Software Affecting Firefox" => [],
     "Fenix"                               => [],
     "Firefox"                             => [],
+    "Firefox Build System"                => [],
     "Firefox for Android"                 => [],
     "Focus"                               => [],
     "GeckoView"                           => [],

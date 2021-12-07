@@ -70,7 +70,7 @@ jobs:
       - attach_workspace:
           at: /app/build_info
       - run:
-          name: build version_json
+          name: build version.json
           command: |
             docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
             docker cp version_json:/app/version.json build_info/version.json
