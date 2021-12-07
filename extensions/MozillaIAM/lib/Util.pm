@@ -49,17 +49,14 @@ sub add_staff_member {
   return 0 if !$user;
 
   # Update iam_username value with email from Mozilla IAM
-  # Also set password to * to disallow local login.
-  if (!$user->iam_username || $user->iam_username ne $iam_username) {
-    $user->set_iam_username($iam_username);
-    $user->set_password('*') if $user->cryptpassword ne '*';
-    $user->set_mfa('Duo');
-  }
+  # Also set password to * to disallow local login and Duo
+  # as the 2FA method.
+  $user->set_iam_username($iam_username);
+  $user->set_password('*');
+  $user->set_mfa('Duo');
 
-  # Update group permissions if user is staff
-  if (!$user->in_group('mozilla-employee-confidential') && $is_staff) {
-    $user->set_groups({add => ['mozilla-employee-confidential']});
-  }
+  # Update group permissions
+  $user->set_groups({add => ['mozilla-employee-confidential']});
 
   $user->update({keep_session => 1, keep_tokens => 1});    # Do not log user out
 
@@ -82,20 +79,17 @@ sub remove_staff_member {
     $user = Bugzilla::User->new($user_id);
   }
 
-  if ($user && $user->iam_username) {
-    $user->set_iam_username('');
-    $user->set_password('*') if $user->cryptpassword ne '*';
-    $user->set_mfa('');
+  return 0 if !$user;
 
-    if ($user->in_group('mozilla-employee-confidential')) {
-      $user->set_groups({remove => ['mozilla-employee-confidential']});
-    }
+  $user->set_iam_username('');
+  $user->set_password('*');
+  $user->set_mfa('');
+  $user->set_groups({remove => ['mozilla-employee-confidential']});
 
-    # Issue email allowing user to set their password
-    Bugzilla::Token::IssuePasswordToken($user);
+  # Issue email allowing user to set their password
+  Bugzilla::Token::IssuePasswordToken($user);
 
-    $user->update();    # Do not keep_session so user is logged out
-  }
+  $user->update();    # Do not keep_session so user is logged out
 
   return 1;
 }
@@ -156,7 +150,7 @@ sub _get_profile {
     ThrowCodeError('mozilla_iam_get_profile_error');
   };
 
-  return {} if !keys %{$profile};
+  return {} if !$profile;
 
   my $is_staff = 0;
   if ( $profile
