@@ -60,16 +60,23 @@
     </p>
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
-    <div class="mfa-buttons">
-      <div>
-        <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
-        [% INCLUDE "mfa/protected.html.tmpl" %]
+    [% IF user.iam_username %]
+      <p class="mfa-disable-blurb">
+        Since your account uses Mozilla IAM for authentication, you are currently
+        not able to disable Two-Factor Authentication.
+      </p>
+    [% ELSE %]
+      <div class="mfa-buttons">
+        <div>
+          <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
+          [% INCLUDE "mfa/protected.html.tmpl" %]
+        </div>
+        <div>
+          <button type="button" id="mfa-recovery">Generate Printable Recovery Codes</button>
+          [% INCLUDE "mfa/protected.html.tmpl" %]
+        </div>
       </div>
-      <div>
-        <button type="button" id="mfa-recovery">Generate Printable Recovery Codes</button>
-        [% INCLUDE "mfa/protected.html.tmpl" %]
-      </div>
-    </div>
+    [% END %]
 
     <p class="mfa-api-blurb">
       [% IF user.settings.api_key_only.value == 'on' %]
@@ -88,7 +95,7 @@
       [% END %]
     </p>
 
-    [% IF user.mfa  %]
+    [% IF user.mfa && !user.iam_username %]
       <p class="mfa-disable-blurb">
         You will need to disable your two-factor authentication in order to change to a different method.
         There will be a small amount of time when your account will not be as secure, so you may use the
