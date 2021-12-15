@@ -37,7 +37,7 @@ declare ComplaintNotification,
   as Dict [
   complaint => Dict [
     complainedRecipients  => ComplainedRecipients,
-    complaintFeedbackType => Str,
+    complaintFeedbackType => Optional [Str],
     slurpy Any,
   ],
   slurpy Any,
