@@ -51,7 +51,7 @@ $sel->type_ok("component",   "Pegasus");
 $sel->type_ok("description", "A constellation in the north hemisphere.");
 $sel->type_ok(
   "initialowner",
-  $config->{permanent_user},
+  $config->{permanent_user_login},
   "Setting the default owner"
 );
 $sel->type_ok("team_name", "Mozilla");
