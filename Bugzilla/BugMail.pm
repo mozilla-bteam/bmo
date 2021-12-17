@@ -363,7 +363,28 @@ sub sendMail {
   foreach my $diff (@diffs) {
     my $add_diff = 0;
 
-    if (grep { $_ eq $diff->{field_name} } TIMETRACKING_FIELDS) {
+    # Only display bug ids that the user is allowed to see for certain fields
+    if ($diff->{field_name} =~ /^(?:dependson|blocked|regress(?:ed_by|es))$/) {
+      foreach my $field ('new', 'old') {
+        my @bug_ids = grep {/^\d+$/} split(/[\s,]+/, $diff->{$field});
+        $diff->{$field} = join ', ', @{$user->visible_bugs(\@bug_ids)};
+      }
+      $add_diff = 1 if $diff->{old} || $diff->{new};
+    }
+    elsif ($diff->{field_name} eq 'see_also') {
+      my $urlbase = Bugzilla->localconfig->urlbase;
+      my $bug_link_re = qr/^\Q$urlbase\Eshow_bug\.cgi\?id=(\d+)$/;
+      foreach my $field ('new', 'old') {
+        my @filtered;
+        foreach my $value (split /[\s,]+/, $diff->{$field}) {
+          next if $value =~ /$bug_link_re/ && !$user->can_see_bug($1);
+          push @filtered, $value;
+        }
+        $diff->{$field} = join ', ', @filtered;
+      }
+      $add_diff = 1 if $diff->{old} || $diff->{new};
+    }
+    elsif (grep { $_ eq $diff->{field_name} } TIMETRACKING_FIELDS) {
       $add_diff = 1 if $user->is_timetracker;
     }
     elsif (!$diff->{isprivate} || $user->is_insider) {

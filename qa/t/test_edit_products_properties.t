@@ -17,7 +17,7 @@ my ($sel, $config) = get_selenium();
 
 my $admin_user_login        = $config->{admin_user_login};
 my $unprivileged_user_login = $config->{unprivileged_user_login};
-my $permanent_user          = $config->{permanent_user};
+my $permanent_user          = $config->{permanent_user_login};
 
 log_in($sel, $config, 'admin');
 set_parameters(
