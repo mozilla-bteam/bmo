@@ -976,6 +976,11 @@ input[type="radio"]:checked {
   #wrapper {
     width: 100%;
   }
+  
+  html {
+    /* Ensure that shift-tab and other ways of scrolling up take the fixed header into account. */
+    scroll-padding-top: 48px;
+  }
 
   #header {
     height: 48px;
