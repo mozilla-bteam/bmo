@@ -68,5 +68,12 @@ my $user = Bugzilla->login(LOGIN_REQUIRED);
 Bugzilla::Hook::process('oauth2_client_post_login',
   {user => $user, userinfo => $userinfo});
 
-# Go back where we came from
-$cgi->redirect($cgi->param('redirect'));
+my $redirect = $cgi->param('redirect');
+if ($redirect eq 'login') {
+  print $cgi->header;
+  Bugzilla->template->process("index.html.tmpl")
+    or ThrowTemplateError(Bugzilla->template->error());
+}
+else {
+  $cgi->redirect($cgi->param('redirect'));
+}
