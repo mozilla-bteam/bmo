@@ -185,7 +185,7 @@ my @tests = (
 
       # These are here because PRIVATE_BUG_USER can't set them
       # and we need their values to be correct for post_success.
-      assigned_to => $config->{'permanent_user'},
+      assigned_to => $config->{'permanent_user_login'},
       qa_contact  => '',
       status      => 'UNCONFIRMED'
     },

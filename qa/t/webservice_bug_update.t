@@ -240,7 +240,7 @@ sub valid_values {
     remaining_time => [{value => '1000.50'}, {value => 0},],
 
     reset_assigned_to =>
-      [{value => 1, field => 'assigned_to', added => $config->{permanent_user}},],
+      [{value => 1, field => 'assigned_to', added => $config->{permanent_user_login}},],
 
     reset_qa_contact => [{value => 1, field => 'qa_contact', added => ''},],
 

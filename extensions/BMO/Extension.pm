@@ -2753,7 +2753,7 @@ sub app_startup {
   $r->any(
     '/:REWRITE_automative' => [REWRITE_automative => qr{form[\.:]automative}])
     ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Testing', 'format' => 'automative'});
+    'CGI#enter_bug_cgi' => {'product' => 'Testing', 'component' => 'CI Configuration'});
   $r->any('/:REWRITE_comm_newsletter' =>
       [REWRITE_comm_newsletter => qr{form[\.:]comm[\.:]newsletter}])
     ->to('CGI#enter_bug_cgi' =>

@@ -16,7 +16,7 @@ use Data::Dumper;
 use DateTime;
 use QA::Util;
 use QA::Tests qw(bug_tests PRIVATE_BUG_USER);
-use Test::More tests => 1009;
+use Test::More tests => 1006;
 my ($config, @clients) = get_rpc_clients();
 
 my $xmlrpc = $clients[0];
@@ -65,9 +65,8 @@ $public_bug->{is_open}               = 1;
 $public_bug->{is_creator_accessible} = 1;
 $public_bug->{is_cc_accessible}      = 1;
 $public_bug->{keywords}              = [];
-$public_bug->{see_also}         = ["${base_url}show_bug.cgi?id=$private_id"];
-$public_bug->{cf_qa_status}     = [];
-$public_bug->{cf_single_select} = '---';
+$public_bug->{cf_qa_status}          = [];
+$public_bug->{cf_single_select}      = '---';
 
 # Fill in the time tracking fields on the public bug.
 $xmlrpc->bz_log_in('admin');
@@ -118,6 +117,14 @@ sub post_success {
         && !exists $bug->{remaining_time}
         && !exists $bug->{deadline},
       'Time-tracking fields are not returned to non-privileged users'
+    );
+  }
+
+  # See also to a private bug should not display for the public bug
+  if (!$is_private_bug && !$is_private_user) {
+    ok(
+      !exists $bug->{see_also} || !@{$bug->{see_also}},
+      'See also to a private bug should not display for the public bug and normal user'
     );
   }
 
