@@ -15,6 +15,7 @@ use Bugzilla::Types qw(:types);
 use Bugzilla::Extension::PhabBugz::Util qw(request);
 
 use List::Util qw(first);
+use Mojo::JSON qw(false true);
 use Scalar::Util qw(weaken);
 use Types::Standard -all;
 use Type::Utils;
@@ -197,6 +198,28 @@ sub get_phab_bugzilla_ids {
   }
 
   return \@results;
+}
+
+#################
+#   Helpers     #
+#################
+
+sub enable_user {
+  my ($self) = @_;
+  my $params = {
+    objectIdentifier => $self->phid,
+    transactions     => [{type => 'disabled', value => false,}]
+  };
+  request('user.edit', $params);
+}
+
+sub disable_user {
+  my ($self) = @_;
+  my $params = {
+    objectIdentifier => $self->phid,
+    transactions     => [{type => 'disabled', value => true,}]
+  };
+  request('user.edit', $params);
 }
 
 1;

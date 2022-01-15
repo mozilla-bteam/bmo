@@ -15,8 +15,12 @@ use parent qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Logging;
 use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::User;
 use Bugzilla::Extension::PhabBugz::Util qw(request);
+
+use Try::Tiny;
 
 our $VERSION = '0.01';
 
@@ -31,14 +35,14 @@ sub template_before_process {
   return unless $file =~ /bug_modal\/(header|edit).html.tmpl$/;
 
   if (my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'}) {
-    my $has_revisions = 0;
+    my $has_revisions         = 0;
     my $active_revision_count = 0;
     foreach my $attachment (@{$bug->attachments}) {
-      next if $attachment->contenttype ne PHAB_CONTENT_TYPE;
+      next                     if $attachment->contenttype ne PHAB_CONTENT_TYPE;
       $active_revision_count++ if !$attachment->isobsolete;
       $has_revisions = 1;
     }
-    $vars->{phabricator_revisions} = $has_revisions;
+    $vars->{phabricator_revisions}             = $has_revisions;
     $vars->{phabricator_active_revision_count} = $active_revision_count;
   }
 }
@@ -52,6 +56,34 @@ sub config_add_panels {
 sub webservice {
   my ($self, $args) = @_;
   $args->{dispatch}->{PhabBugz} = "Bugzilla::Extension::PhabBugz::WebService";
+}
+
+sub object_end_of_update {
+  my ($self,   $args)    = @_;
+  my ($object, $changes) = @$args{qw(object changes)};
+  my $params = Bugzilla->params;
+
+  next
+    if !$params->{phabricator_enabled}
+    || !$object->isa('Bugzilla::User')
+    || !$changes
+    || !$changes->{disabledtext};
+
+  try {
+    my $phab_user
+      = Bugzilla::Extension::PhabBugz::User->new_from_query({ids => [$object->id]});
+    return if !$phab_user;
+    if ($object->is_enabled) {
+      $phab_user->enable_user;
+    }
+    else {
+      $phab_user->disable_user;
+    }
+  }
+  catch {
+    WARN('ERROR: Error updating Phabricator user status for Bugzilla user '
+        . $object->login);
+  };
 }
 
 #
