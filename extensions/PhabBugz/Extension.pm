@@ -39,11 +39,11 @@ sub template_before_process {
     my $has_revisions = 0;
     my $active_revision_count = 0;
     foreach my $attachment (@{$bug->attachments}) {
-      next                     if $attachment->contenttype ne PHAB_CONTENT_TYPE;
+      next if $attachment->contenttype ne PHAB_CONTENT_TYPE;
       $active_revision_count++ if !$attachment->isobsolete;
       $has_revisions = 1;
     }
-    $vars->{phabricator_revisions}             = $has_revisions;
+    $vars->{phabricator_revisions} = $has_revisions;
     $vars->{phabricator_active_revision_count} = $active_revision_count;
   }
 }
@@ -79,7 +79,7 @@ sub object_end_of_update {
     my $phab_user
       = Bugzilla::Extension::PhabBugz::User->new_from_query({ids => [$user->id]});
     return if !$phab_user;
-    $phab_user->set_user_enabled_status(($user->is_enabled ? 1 : 0));
+    $phab_user->set_user_enabled_status($user->is_enabled);
   }
   catch {
     # We're sending to the maintainer, who may be not a Bugzilla
