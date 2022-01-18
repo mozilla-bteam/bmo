@@ -204,23 +204,13 @@ sub get_phab_bugzilla_ids {
 #   Helpers     #
 #################
 
-sub enable_user {
-  my ($self) = @_;
+sub set_user_enabled_status {
+  my ($self, $enabled) = @_;
   my $params = {
     objectIdentifier => $self->phid,
-    transactions     => [{type => 'disabled', value => false,}]
-  };
-  request('user.edit', $params);
-}
-
-sub disable_user {
-  my ($self) = @_;
-  my $params = {
-    objectIdentifier => $self->phid,
-    transactions     => [{type => 'disabled', value => true,}]
+    transactions     => [{type => 'disabled', value => ($enabled ? false : true),}]
   };
   request('user.edit', $params);
 }
 
 1;
-

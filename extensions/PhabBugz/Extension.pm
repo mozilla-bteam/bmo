@@ -16,6 +16,7 @@ use parent qw(Bugzilla::Extension);
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
+use Bugzilla::Mailer qw(MessageToMTA);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::User;
 use Bugzilla::Extension::PhabBugz::Util qw(request);
@@ -35,7 +36,7 @@ sub template_before_process {
   return unless $file =~ /bug_modal\/(header|edit).html.tmpl$/;
 
   if (my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'}) {
-    my $has_revisions         = 0;
+    my $has_revisions = 0;
     my $active_revision_count = 0;
     foreach my $attachment (@{$bug->attachments}) {
       next                     if $attachment->contenttype ne PHAB_CONTENT_TYPE;
@@ -69,21 +70,35 @@ sub object_end_of_update {
     || !$changes
     || !$changes->{disabledtext};
 
+  my $user = $object;
+
+  my $orig_error_mode = Bugzilla->error_mode;
+  Bugzilla->error_mode(ERROR_MODE_DIE);
+
   try {
     my $phab_user
-      = Bugzilla::Extension::PhabBugz::User->new_from_query({ids => [$object->id]});
+      = Bugzilla::Extension::PhabBugz::User->new_from_query({ids => [$user->id]});
     return if !$phab_user;
-    if ($object->is_enabled) {
-      $phab_user->enable_user;
-    }
-    else {
-      $phab_user->disable_user;
-    }
+    $phab_user->set_user_enabled_status(($user->is_enabled ? 1 : 0));
   }
   catch {
+    # We're sending to the maintainer, who may be not a Bugzilla
+    # account, but just an email address. So we use the
+    # installation's default language for sending the email.
+    my $default_settings = Bugzilla::User::Setting::get_defaults();
+    my $template
+      = Bugzilla->template_inner($default_settings->{lang}->{default_value});
+    my $vars = {user => $user, error => $_};
+    my $message;
+    $template->process('email/phab_enabled_status.txt.tmpl', $vars, \$message)
+      || ThrowTemplateError($template->error);
+    MessageToMTA($message);
+
     WARN('ERROR: Error updating Phabricator user status for Bugzilla user '
-        . $object->login);
+        . $user->login);
   };
+
+  Bugzilla->error_mode($orig_error_mode);
 }
 
 #
