@@ -11,7 +11,6 @@ use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
 
-
 use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
@@ -30,11 +29,21 @@ $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
 Bugzilla->set_user($auto_user);
 
 my $query = {
-  o1 => 'isnotempty',
   f1 => 'regressed_by',
-  f2 => 'keywords',
-  o2 => 'notequals',
-  v2 => 'regression',
+  o1 => 'isnotempty',
+
+  f2 => 'OP',
+  j2 => 'OR',
+
+  f3 => 'keywords',
+  o3 => 'notequals',
+  v3 => 'regression',
+
+  f4 => 'cf_has_regression_range',
+  o4 => 'equals',
+  v4 => '---',
+
+  f5 => 'CP',
 };
 
 my $search = Bugzilla::Search->new(fields => ['bug_id'], params => $query,);
@@ -46,16 +55,17 @@ if ($bug_count == 0) {
   exit 1;
 }
 
-# if running from command line
-if (-t STDIN) {
-  print STDERR <<EOF;
+print STDERR <<EOF;
 About to update $bug_count bugs by adding regression keyword
 and updating has regression range custom field.
 
 Press <Ctrl-C> to stop or <Enter> to continue...
 EOF
-  getc();
-}
+getc();
+
+my $regression_field
+  = Bugzilla::Field->check({name => 'cf_has_regression_range'});
+my $regression_keyword = Bugzilla::Keyword->check({name => 'regression'});
 
 foreach my $row (@$data) {
   my $bug_id = shift @$row;
@@ -74,6 +84,7 @@ foreach my $row (@$data) {
             AND added IS NOT NULL
       ORDER BY bug_when DESC LIMIT 1', undef, $bug->id
   );
+
   # If no timestamp was found in the activity table, it was added
   # at the time the bug was created. In this case we will just use
   # the current last modified timestamp.
@@ -81,14 +92,12 @@ foreach my $row (@$data) {
     $regressed_by_ts = $bug->delta_ts;
   }
 
-  my $field = Bugzilla::Field->new({name => 'cf_has_regression_range'});
-  $field || die 'Custom field cf_has_regression_range field does not exist';
-  $bug->set_custom_field($field, 'yes');
-
-  my $keyword = Bugzilla::Keyword->new({name => 'regression'});
-  $keyword || die 'Keyword regression does not exist';
+  # Do not change if already set to something other than '---'
+  if ($bug->cf_has_regression_range eq '---') {
+    $bug->set_custom_field($regression_field, 'yes');
+  }
+  
   $bug->modify_keywords(['regression'], 'add');
-
   $bug->update($regressed_by_ts);
 
   $dbh->do('UPDATE bugs SET delta_ts = ? WHERE bug_id = ?',
