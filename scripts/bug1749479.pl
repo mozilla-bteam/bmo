@@ -96,7 +96,7 @@ foreach my $row (@$data) {
   if ($bug->cf_has_regression_range eq '---') {
     $bug->set_custom_field($regression_field, 'yes');
   }
-  
+
   $bug->modify_keywords(['regression'], 'add');
   $bug->update($regressed_by_ts);
 
