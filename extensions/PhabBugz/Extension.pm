@@ -15,8 +15,13 @@ use parent qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Logging;
+use Bugzilla::Mailer qw(MessageToMTA);
 use Bugzilla::Extension::PhabBugz::Constants;
+use Bugzilla::Extension::PhabBugz::User;
 use Bugzilla::Extension::PhabBugz::Util qw(request);
+
+use Try::Tiny;
 
 our $VERSION = '0.01';
 
@@ -52,6 +57,48 @@ sub config_add_panels {
 sub webservice {
   my ($self, $args) = @_;
   $args->{dispatch}->{PhabBugz} = "Bugzilla::Extension::PhabBugz::WebService";
+}
+
+sub object_end_of_update {
+  my ($self,   $args)    = @_;
+  my ($object, $changes) = @$args{qw(object changes)};
+  my $params = Bugzilla->params;
+
+  next
+    if !$params->{phabricator_enabled}
+    || !$object->isa('Bugzilla::User')
+    || !$changes
+    || !$changes->{disabledtext};
+
+  my $user = $object;
+
+  my $orig_error_mode = Bugzilla->error_mode;
+  Bugzilla->error_mode(ERROR_MODE_DIE);
+
+  try {
+    my $phab_user
+      = Bugzilla::Extension::PhabBugz::User->new_from_query({ids => [$user->id]});
+    return if !$phab_user;
+    $phab_user->set_user_enabled_status($user->is_enabled);
+  }
+  catch {
+    # We're sending to the maintainer, who may be not a Bugzilla
+    # account, but just an email address. So we use the
+    # installation's default language for sending the email.
+    my $default_settings = Bugzilla::User::Setting::get_defaults();
+    my $template
+      = Bugzilla->template_inner($default_settings->{lang}->{default_value});
+    my $vars = {user => $user, error => $_};
+    my $message;
+    $template->process('email/phab_enabled_status.txt.tmpl', $vars, \$message)
+      || ThrowTemplateError($template->error);
+    MessageToMTA($message);
+
+    WARN('ERROR: Error updating Phabricator user status for Bugzilla user '
+        . $user->login);
+  };
+
+  Bugzilla->error_mode($orig_error_mode);
 }
 
 #
