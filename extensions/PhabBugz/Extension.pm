@@ -64,8 +64,8 @@ sub object_end_of_update {
   my ($object, $changes) = @$args{qw(object changes)};
   my $params = Bugzilla->params;
 
-  next
-    if !$params->{phabricator_enabled}
+  return
+       if !$params->{phabricator_enabled}
     || !$object->isa('Bugzilla::User')
     || !$changes
     || !$changes->{disabledtext};
