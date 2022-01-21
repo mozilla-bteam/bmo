@@ -18,6 +18,10 @@ use Bugzilla::Group;
 use Bugzilla::Search;
 use Getopt::Long;
 
+BEGIN { Bugzilla->extensions(); }
+
+use Bugzilla::Extension::BMO::Data qw($cf_visible_in_products);
+
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my $dbh = Bugzilla->dbh;
@@ -28,7 +32,21 @@ $auto_user->{groups}       = [Bugzilla::Group->get_all];
 $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
 Bugzilla->set_user($auto_user);
 
+my $regression_field
+  = Bugzilla::Field->check({name => 'cf_has_regression_range'});
+my $regression_keyword = Bugzilla::Keyword->check({name => 'regression'});
+
+my $products;
+foreach my $field_re (keys %$cf_visible_in_products) {
+  if ($regression_field->name =~ $field_re) {
+    $products = [keys %{$cf_visible_in_products->{$field_re}}];
+    last;
+  }
+}
+
 my $query = {
+  product => $products,
+
   f1 => 'regressed_by',
   o1 => 'isnotempty',
 
@@ -37,9 +55,9 @@ my $query = {
 
   f3 => 'keywords',
   o3 => 'notequals',
-  v3 => 'regression',
+  v3 => $regression_keyword->name,
 
-  f4 => 'cf_has_regression_range',
+  f4 => $regression_field->name,
   o4 => 'equals',
   v4 => '---',
 
@@ -62,10 +80,6 @@ and updating has regression range custom field.
 Press <Ctrl-C> to stop or <Enter> to continue...
 EOF
 getc();
-
-my $regression_field
-  = Bugzilla::Field->check({name => 'cf_has_regression_range'});
-my $regression_keyword = Bugzilla::Keyword->check({name => 'regression'});
 
 foreach my $row (@$data) {
   my $bug_id = shift @$row;
