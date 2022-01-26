@@ -79,9 +79,11 @@ sub _check_value {
   # and other parts of the code.
   my $ref_bug_id = $uri->query_param('id');
   if ($ref_bug_id !~ /^\d+$/) {
+    my $orig_ref_bug_id = $ref_bug_id;
     $ref_bug_id = bug_alias_to_id($ref_bug_id);
     $ref_bug_id
-      || ThrowUserError('improper_bug_id_field_value', {bug_id => $ref_bug_id});
+      || ThrowUserError('improper_bug_id_field_value',
+      {bug_id => $orig_ref_bug_id});
     $uri->query_param('id', $ref_bug_id);
   }
 
