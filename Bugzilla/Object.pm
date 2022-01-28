@@ -131,9 +131,8 @@ sub _load_from_db {
     return if $id > MAX_INT_32;
 
     $object_data = $dbh->selectrow_hashref(
-      qq{
-            SELECT $columns FROM $table
-             WHERE $id_field = ?}, undef, $id
+      "SELECT $columns FROM " . $dbh->quote_identifier($table) . "
+             WHERE $id_field = ?", undef, $id
     );
   }
   else {
@@ -161,9 +160,10 @@ sub _load_from_db {
       push(@values, @{$param->{'values'}});
     }
 
-    $object_data
-      = $dbh->selectrow_hashref("SELECT $columns FROM $table WHERE $condition",
-      undef, @values);
+    $object_data = $dbh->selectrow_hashref(
+      "SELECT $columns FROM " . $dbh->quote_identifier($table) . " WHERE $condition",
+      undef, @values
+    );
   }
   return $object_data;
 }
@@ -411,14 +411,14 @@ sub _do_list_select {
   }
 
   if (!$objects) {
-    my $sql = "SELECT $cols FROM $table";
+    my $dbh = Bugzilla->dbh;
+
+    my $sql = "SELECT $cols FROM " . $dbh->quote_identifier($table);
     if (defined $where) {
       $sql .= " WHERE $where ";
     }
     $sql .= " ORDER BY $order";
     $sql .= " $postamble" if $postamble;
-
-    my $dbh = Bugzilla->dbh;
 
     # Sometimes the values are tainted, but we don't want to untaint them
     # for the caller. So we copy the array. It's safe to untaint because
@@ -559,9 +559,12 @@ sub update {
 
   my $columns = join(', ', map {"$_ = ?"} @update_columns);
 
-  $dbh->do("UPDATE $table SET $columns WHERE $id_field = ?",
-    undef, @values, $self->id)
-    if @values;
+  $dbh->do(
+    "UPDATE "
+      . $dbh->quote_identifier($table)
+      . " SET $columns WHERE $id_field = ?",
+    undef, @values, $self->id
+  ) if @values;
 
   Bugzilla::Hook::process('object_end_of_update',
     {object => $self, old_object => $old_self, changes => \%changes});
@@ -591,7 +594,9 @@ sub remove_from_db {
   my $dbh      = Bugzilla->dbh;
   $dbh->bz_start_transaction();
   $self->audit_log(AUDIT_REMOVE) if $self->AUDIT_REMOVES;
-  $dbh->do("DELETE FROM $table WHERE $id_field = ?", undef, $self->id);
+  $dbh->do(
+    "DELETE FROM " . $dbh->quote_identifier($table) . " WHERE $id_field = ?",
+    undef, $self->id);
   $dbh->bz_commit_transaction();
 
   if ($self->USE_MEMCACHED) {
@@ -652,8 +657,8 @@ sub any_exist {
   my $class = shift;
   my $table = $class->DB_TABLE;
   my $dbh   = Bugzilla->dbh;
-  my $any_exist
-    = $dbh->selectrow_array("SELECT 1 FROM $table " . $dbh->sql_limit(1));
+  my $any_exist = $dbh->selectrow_array(
+    'SELECT 1 FROM ' . $dbh->quote_identifier($table) . ' ' . $dbh->sql_limit(1));
   return $any_exist ? 1 : 0;
 }
 
@@ -751,8 +756,12 @@ sub insert_create_data {
   chop($qmarks);
   my $table = $class->DB_TABLE;
   $dbh->do(
-    "INSERT INTO $table (" . join(', ', @field_names) . ") VALUES ($qmarks)",
-    undef, @values);
+    "INSERT INTO "
+      . $dbh->quote_identifier($table) . "("
+      . join(', ', @field_names)
+      . ") VALUES ($qmarks)",
+    undef, @values
+  );
   my $id = $dbh->bz_last_key($table, $class->ID_FIELD);
 
   my $object = $class->new($id);

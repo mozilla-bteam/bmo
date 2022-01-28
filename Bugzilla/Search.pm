@@ -1436,7 +1436,10 @@ sub _translate_join {
     $extra_condition = " AND $extra_condition";
   }
 
-  my @join_sql = "$join JOIN $table AS $name"
+  my @join_sql
+    = "$join JOIN "
+    . Bugzilla->dbh->quote_identifier($table)
+    . " AS $name"
     . " ON $from_table.$from = $name.$to$extra_condition";
   return @join_sql;
 }
@@ -3267,7 +3270,7 @@ sub _multiselect_table {
   }
   elsif ($field eq 'bug_group') {
     $args->{full_field} = 'groups.name';
-    return "bug_group_map INNER JOIN groups
+    return "bug_group_map INNER JOIN " . $dbh->quote_identifier('groups') . "
                                       ON bug_group_map.group_id = groups.id";
   }
   elsif ($field eq 'blocked' or $field eq 'dependson') {

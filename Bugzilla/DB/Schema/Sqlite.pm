@@ -112,7 +112,7 @@ sub _sqlite_alter_schema {
   my $insert_str = join(',', @insert_cols);
   my $select_str = join(',', @select_cols);
   my $copy_sql
-    = "INSERT INTO $table ($insert_str)" . " SELECT $select_str FROM $rename_to";
+    = "INSERT INTO " . $dbh->quote_identifier($table) . " ($insert_str)" . " SELECT $select_str FROM " . $dbh->quote_identifier($rename_to);
 
   # We have to turn FKs off before doing this. Otherwise, when we rename
   # the table, all of the FKs in the other tables will be automatically

@@ -373,7 +373,7 @@ if ($cgi->param('remove_old_whine_targets')) {
     my $old_ids = $dbh->selectcol_arrayref(
       "SELECT DISTINCT mailto
                                       FROM whine_schedules
-                                 LEFT JOIN $table
+                                 " . $dbh->quote_identifier($table) . "
                                         ON $table.$col = whine_schedules.mailto
                                      WHERE mailto_type = $type AND $table.$col IS NULL"
     );
@@ -448,13 +448,14 @@ sub CrossCheck {
     Status('cross_check_from', {table => $refertable, field => $referfield});
 
     my $query
-      = qq{SELECT DISTINCT $refertable.$referfield}
-      . ($keyname ? qq{, $refertable.$keyname } : q{})
-      . qq{ FROM $refertable
-                    LEFT JOIN $table
+      = "SELECT DISTINCT $refertable.$referfield"
+      . ($keyname ? ", $refertable.$keyname " : "")
+      . " FROM "
+      . $dbh->quote_identifier($refertable) . "
+                    LEFT JOIN " . $dbh->quote_identifier($table) . "
                            ON $refertable.$referfield = $table.$field
                         WHERE $table.$field IS NULL
-                          AND $refertable.$referfield IS NOT NULL};
+                          AND $refertable.$referfield IS NOT NULL";
 
     my $sth = $dbh->prepare($query);
     $sth->execute;
@@ -675,14 +676,14 @@ sub DoubleCrossCheck {
       qq{
                         SELECT DISTINCT $refertable.$referfield1,
                                         $refertable.$referfield2 }
-        . ($keyname ? qq{, $refertable.$keyname } : q{}) . qq{ FROM $refertable
-                     LEFT JOIN $table
+        . ($keyname ? qq{, $refertable.$keyname } : q{}) . " FROM $refertable
+                     LEFT JOIN " . $dbh->quote_identifier($table) . "
                             ON $refertable.$referfield1 = $table.$field1
                            AND $refertable.$referfield2 = $table.$field2
                          WHERE $table.$field1 IS NULL
                            AND $table.$field2 IS NULL
                            AND $refertable.$referfield1 IS NOT NULL
-                           AND $refertable.$referfield2 IS NOT NULL}
+                           AND $refertable.$referfield2 IS NOT NULL"
     );
 
     foreach my $check (@$d_cross_check) {
@@ -969,7 +970,7 @@ BugCheck(
   "bugs
          INNER JOIN group_control_map
             ON bugs.product_id = group_control_map.product_id
-         INNER JOIN groups
+         INNER JOIN " . $dbh->quote_identifier('groups') . "
             ON group_control_map.group_id = groups.id
           LEFT JOIN bug_group_map
             ON bugs.bug_id = bug_group_map.bug_id
@@ -1015,7 +1016,7 @@ foreach my $target (['groups', 'id', MAILTO_GROUP],
   my $old = $dbh->selectall_arrayref(
     "SELECT whine_schedules.id, mailto
                                           FROM whine_schedules
-                                     LEFT JOIN $table
+                                     LEFT JOIN " . $dbh->quote_identifier($table) . "
                                             ON $table.$col = whine_schedules.mailto
                                          WHERE mailto_type = $type AND $table.$col IS NULL"
   );

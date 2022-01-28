@@ -330,15 +330,6 @@ sub bz_setup_database {
   }
 
   if ($self->utf8_charset eq 'utf8mb4') {
-    my %global = map {@$_}
-      @{$self->selectall_arrayref(q(SHOW GLOBAL VARIABLES LIKE 'innodb_%'))};
-    my $utf8mb4_supported
-      = $global{innodb_file_format} eq 'Barracuda'
-      && $global{innodb_file_per_table} eq 'ON'
-      && $global{innodb_large_prefix} eq 'ON';
-
-    die install_string('mysql_innodb_settings') unless $utf8mb4_supported;
-
     my $tables = $self->selectall_arrayref('SHOW TABLE STATUS');
     foreach my $table (@$tables) {
       my ($table, undef, undef, $row_format) = @$table;
@@ -349,7 +340,7 @@ sub bz_setup_database {
           'mysql_row_format_conversion', {table => $table, format => $new_row_format}
           ),
           "\n";
-        $self->do(sprintf 'ALTER TABLE %s ROW_FORMAT=%s', $table, $new_row_format);
+        $self->do(sprintf 'ALTER TABLE `%s` ROW_FORMAT=%s', $table, $new_row_format);
       }
     }
   }
@@ -392,7 +383,7 @@ sub bz_setup_database {
       " most tables.\nConverting tables to InnoDB:\n";
     foreach my $table (@$myisam_tables) {
       print "Converting table $table... ";
-      $self->do("ALTER TABLE $table ENGINE = InnoDB");
+      $self->do("ALTER TABLE `$table` ENGINE = InnoDB");
       print "done.\n";
     }
   }
@@ -687,8 +678,8 @@ sub bz_setup_database {
         }
 
         print "Converting the $table table to UTF-8...\n";
-        my $bin = "ALTER TABLE $table " . join(', ', @binary_sql);
-        my $utf = "ALTER TABLE $table "
+        my $bin = "ALTER TABLE `$table` " . join(', ', @binary_sql);
+        my $utf = "ALTER TABLE `$table` "
           . join(', ', @utf8_sql, "DEFAULT CHARACTER SET $charset COLLATE $collate");
         $self->do($bin);
         $self->do($utf);
@@ -699,7 +690,7 @@ sub bz_setup_database {
         }
       }
       else {
-        $self->do("ALTER TABLE $table DEFAULT CHARACTER SET $charset COLLATE $collate");
+        $self->do("ALTER TABLE `$table` DEFAULT CHARACTER SET $charset COLLATE $collate");
       }
 
     }    # foreach my $table (@tables)
@@ -787,7 +778,7 @@ sub _fix_defaults {
   print "Fixing defaults...\n";
   foreach my $table (reverse sort keys %fix_columns) {
     my @alters = map("ALTER COLUMN $_ DROP DEFAULT", @{$fix_columns{$table}});
-    my $sql = "ALTER TABLE $table " . join(',', @alters);
+    my $sql = "ALTER TABLE `$table` " . join(',', @alters);
     $self->do($sql);
   }
 }
