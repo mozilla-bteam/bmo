@@ -2253,6 +2253,7 @@ sub forced_format {
   # note: this is also called from the guided bug entry extension
   my ($product, $component) = @_;
   return undef unless defined $product;
+  $component ||= '';
 
   # always work on the correct product name
   $product = Bugzilla::Product->new({name => $product, cache => 1})
