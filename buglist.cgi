@@ -29,6 +29,8 @@ use Bugzilla::Status;
 use Bugzilla::Token;
 
 use Date::Parse;
+use List::MoreUtils qw(uniq);
+
 
 my $cgi      = Bugzilla->cgi;
 my $dbh      = Bugzilla->dbh;
@@ -512,6 +514,9 @@ if (defined $params->param('columnlist')) {
   }
   else {
     @displaycolumns = split(/[ ,]+/, $params->param('columnlist'));
+    # Weed out duplicate column names
+    @displaycolumns = uniq @displaycolumns;
+    $params->param('columnlist', join ',', @displaycolumns);
   }
 }
 elsif (defined $cgi->cookie('COLUMNLIST')) {
