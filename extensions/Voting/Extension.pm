@@ -899,7 +899,8 @@ sub _remove_votes {
 sub _confirm_if_vote_confirmed {
   my ($id, $product, $timestamp) = @_;
   my $bug = ref $id ? $id : new Bugzilla::Bug({id => $id, cache => 1});
-  $product ||= $bug->product_obj;
+  $product   ||= $bug->product_obj;
+  $timestamp ||= Bugzilla->dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
   my $changes = {};
   if ( !$bug->everconfirmed

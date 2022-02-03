@@ -112,6 +112,7 @@ sub _load_from_db {
   my $table      = $class->DB_TABLE;
   my $name_field = $class->NAME_FIELD;
   my $id_field   = $class->ID_FIELD;
+  my $sql_table  = $dbh->quote_identifier($table);
 
   my $id = $param;
   if (ref $param eq 'HASH') {
@@ -130,10 +131,10 @@ sub _load_from_db {
     # Too large integers make PostgreSQL crash.
     return if $id > MAX_INT_32;
 
-    $object_data = $dbh->selectrow_hashref(
-      "SELECT $columns FROM " . $dbh->quote_identifier($table) . "
-             WHERE $id_field = ?", undef, $id
-    );
+    $object_data
+      = $dbh->selectrow_hashref(
+      "SELECT $columns FROM $sql_table WHERE $id_field = ?",
+      undef, $id);
   }
   else {
     unless (defined $param->{name}
@@ -160,10 +161,9 @@ sub _load_from_db {
       push(@values, @{$param->{'values'}});
     }
 
-    $object_data = $dbh->selectrow_hashref(
-      "SELECT $columns FROM " . $dbh->quote_identifier($table) . " WHERE $condition",
-      undef, @values
-    );
+    $object_data
+      = $dbh->selectrow_hashref("SELECT $columns FROM $sql_table WHERE $condition",
+      undef, @values);
   }
   return $object_data;
 }
@@ -413,7 +413,8 @@ sub _do_list_select {
   if (!$objects) {
     my $dbh = Bugzilla->dbh;
 
-    my $sql = "SELECT $cols FROM " . $dbh->quote_identifier($table);
+    my $sql_table = $dbh->quote_identifier($table);
+    my $sql = "SELECT $cols FROM $sql_table";
     if (defined $where) {
       $sql .= " WHERE $where ";
     }
@@ -559,12 +560,10 @@ sub update {
 
   my $columns = join(', ', map {"$_ = ?"} @update_columns);
 
-  $dbh->do(
-    "UPDATE "
-      . $dbh->quote_identifier($table)
-      . " SET $columns WHERE $id_field = ?",
-    undef, @values, $self->id
-  ) if @values;
+  my $sql_table = $dbh->quote_identifier($table);
+  $dbh->do("UPDATE $sql_table SET $columns WHERE $id_field = ?",
+    undef, @values, $self->id)
+    if @values;
 
   Bugzilla::Hook::process('object_end_of_update',
     {object => $self, old_object => $old_self, changes => \%changes});
@@ -594,9 +593,8 @@ sub remove_from_db {
   my $dbh      = Bugzilla->dbh;
   $dbh->bz_start_transaction();
   $self->audit_log(AUDIT_REMOVE) if $self->AUDIT_REMOVES;
-  $dbh->do(
-    "DELETE FROM " . $dbh->quote_identifier($table) . " WHERE $id_field = ?",
-    undef, $self->id);
+  my $sql_table = $dbh->quote_identifier($table);
+  $dbh->do("DELETE FROM $sql_table WHERE $id_field = ?", undef, $self->id);
   $dbh->bz_commit_transaction();
 
   if ($self->USE_MEMCACHED) {
@@ -657,8 +655,9 @@ sub any_exist {
   my $class = shift;
   my $table = $class->DB_TABLE;
   my $dbh   = Bugzilla->dbh;
+  my $sql_table = $dbh->quote_identifier($table);
   my $any_exist = $dbh->selectrow_array(
-    'SELECT 1 FROM ' . $dbh->quote_identifier($table) . ' ' . $dbh->sql_limit(1));
+    "SELECT 1 FROM $sql_table " . $dbh->sql_limit(1));
   return $any_exist ? 1 : 0;
 }
 
@@ -755,9 +754,9 @@ sub insert_create_data {
   my $qmarks = '?,' x @field_names;
   chop($qmarks);
   my $table = $class->DB_TABLE;
+  my $sql_table = $dbh->quote_identifier($table);
   $dbh->do(
-    "INSERT INTO "
-      . $dbh->quote_identifier($table) . "("
+    "INSERT INTO $sql_table ("
       . join(', ', @field_names)
       . ") VALUES ($qmarks)",
     undef, @values

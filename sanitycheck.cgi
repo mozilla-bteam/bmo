@@ -124,7 +124,7 @@ if ($cgi->param('createmissinggroupcontrolmapentries')) {
   # Find all group/product combinations used for bugs but not set up
   # correctly in group_control_map
   my $invalid_combinations = $dbh->selectall_arrayref(
-    qq{    SELECT bugs.product_id,
+    "SELECT bugs.product_id,
                       bgm.group_id,
                       gcm.membercontrol,
                       groups.name,
@@ -132,15 +132,14 @@ if ($cgi->param('createmissinggroupcontrolmapentries')) {
                  FROM bugs
            INNER JOIN bug_group_map AS bgm
                    ON bugs.bug_id = bgm.bug_id
-           INNER JOIN groups
+           INNER JOIN " . $dbh->quote_identifier('groups') . "
                    ON bgm.group_id = groups.id
            INNER JOIN products
                    ON bugs.product_id = products.id
             LEFT JOIN group_control_map AS gcm
                    ON bugs.product_id = gcm.product_id
                   AND    bgm.group_id = gcm.group_id
-                WHERE COALESCE(gcm.membercontrol, $na) = $na
-          }
+                WHERE COALESCE(gcm.membercontrol, $na) = $na "
       . $dbh->sql_group_by(
       'bugs.product_id, bgm.group_id',
       'gcm.membercontrol, groups.name, products.name'
@@ -373,7 +372,7 @@ if ($cgi->param('remove_old_whine_targets')) {
     my $old_ids = $dbh->selectcol_arrayref(
       "SELECT DISTINCT mailto
                                       FROM whine_schedules
-                                 " . $dbh->quote_identifier($table) . "
+                                 LEFT JOIN " . $dbh->quote_identifier($table) . "
                                         ON $table.$col = whine_schedules.mailto
                                      WHERE mailto_type = $type AND $table.$col IS NULL"
     );

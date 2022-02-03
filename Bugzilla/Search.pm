@@ -1435,11 +1435,9 @@ sub _translate_join {
   if ($extra_condition) {
     $extra_condition = " AND $extra_condition";
   }
-
-  my @join_sql
-    = "$join JOIN "
-    . Bugzilla->dbh->quote_identifier($table)
-    . " AS $name"
+  my $sql_table
+    = $table eq 'groups' ? Bugzilla->dbh->quote_identifier($table) : $table;
+  my @join_sql  = "$join JOIN $sql_table AS $name "
     . " ON $from_table.$from = $name.$to$extra_condition";
   return @join_sql;
 }
