@@ -4636,14 +4636,14 @@ sub GetBugActivity {
         foreach my $value (split /, /, $removed) {
           if (substr($value, 0, length $url_base) eq $url_base) {
             my ($bug_id) = $value =~ /id=(\d+)$/;
-            next if !Bugzilla->user->can_see_bug($bug_id);
+            next if !$bug_id || !Bugzilla->user->can_see_bug($bug_id);
           }
           push @filtered_removed, $value;
         }
         foreach my $value (split /, /, $added) {
           if (substr($value, 0, length $url_base) eq $url_base) {
             my ($bug_id) = $value =~ /id=(\d+)$/;
-            next if !Bugzilla->user->can_see_bug($bug_id);
+            next if !$bug_id || !Bugzilla->user->can_see_bug($bug_id);
           }
           push @filtered_added, $value;
         }

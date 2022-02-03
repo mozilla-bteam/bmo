@@ -13,6 +13,7 @@ use warnings;
 
 use base qw(Bugzilla::BugUrl::Bugzilla);
 
+use Bugzilla::Bug qw(bug_alias_to_id);
 use Bugzilla::Error;
 use Bugzilla::Util;
 
@@ -73,7 +74,19 @@ sub _check_value {
     $uri = $class->SUPER::_check_value($uri);
   }
 
-  my $ref_bug_id  = $uri->query_param('id');
+  # If bug ID is an alias, we want to store the value in the DB
+  # as the actual ID instead of the alias for visibility checking
+  # and other parts of the code.
+  my $ref_bug_id = $uri->query_param('id');
+  if ($ref_bug_id !~ /^\d+$/) {
+    my $orig_ref_bug_id = $ref_bug_id;
+    $ref_bug_id = bug_alias_to_id($ref_bug_id);
+    $ref_bug_id
+      || ThrowUserError('improper_bug_id_field_value',
+      {bug_id => $orig_ref_bug_id});
+    $uri->query_param('id', $ref_bug_id);
+  }
+
   my $ref_bug     = Bugzilla::Bug->check($ref_bug_id);
   my $self_bug_id = $params->{bug_id};
   $params->{ref_bug} = $ref_bug;
