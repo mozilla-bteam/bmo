@@ -20,5 +20,4 @@ explains how to use the available mechanisms for integration and customization.
    templates
    extensions
    apis
-   auth-delegation
    auth0

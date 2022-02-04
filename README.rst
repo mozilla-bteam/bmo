@@ -160,7 +160,7 @@ MOJO_CLIENTS
   Default: 200
 
 BUGZILLA_ALLOW_INSECURE_HTTP
-  This should never be set in production. It allows auth delegation and oauth over http.
+  This should never be set in production. It allows oauth over http.
 
 BMO_urlbase
   The public URL for this instance. Note that if this begins with https://
@@ -348,23 +348,6 @@ and changing the mail_delivery_method to 'Test'. With this option, all mail will
 .. code-block:: bash
 
   docker-compose run bmo.test cat /app/data/mailer.testfile
-
-Testing Auth delegation
------------------------
-
-For testing auth-delegation there is included an `scripts/auth-test-app`
-script that runs a webserver and implements the auth delegation protocol.
-
-Provided you have `Mojolicious`_ installed:
-
-.. code-block:: bash
-
-  perl auth-test-app daemon
-
-Then just browse to `localhost:3000`_ to test creating API keys.
-
-.. _`Mojolicious`: https://metacpan.org/pod/Mojolicious
-.. _`localhost:3000`: http://localhost:3000
 
 Technical Details
 -----------------
