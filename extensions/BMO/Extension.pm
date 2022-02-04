@@ -2254,6 +2254,7 @@ sub forced_format {
   # note: this is also called from the guided bug entry extension
   my ($product, $component) = @_;
   return undef unless defined $product;
+  $component ||= '';
 
   # always work on the correct product name
   $product = Bugzilla::Product->new({name => $product, cache => 1})
@@ -2753,7 +2754,7 @@ sub app_startup {
   $r->any(
     '/:REWRITE_automative' => [REWRITE_automative => qr{form[\.:]automative}])
     ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Testing', 'format' => 'automative'});
+    'CGI#enter_bug_cgi' => {'product' => 'Testing', 'component' => 'CI Configuration'});
   $r->any('/:REWRITE_comm_newsletter' =>
       [REWRITE_comm_newsletter => qr{form[\.:]comm[\.:]newsletter}])
     ->to('CGI#enter_bug_cgi' =>

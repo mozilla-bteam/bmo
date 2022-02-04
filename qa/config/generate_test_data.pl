@@ -129,36 +129,18 @@ $group->set_user_regexp('');
 $group->update();
 
 my @usernames = (
-  'admin',       'no-privs',       'QA-Selenium-TEST', 'canconfirm',
-  'tweakparams', 'permanent_user', 'editbugs',         'disabled',
+  'admin',       'unprivileged',   'QA_Selenium_TEST', 'canconfirm',
+  'tweakparams', 'permanent',      'editbugs',         'disabled',
 );
 
 print "creating user accounts...\n";
 foreach my $username (@usernames) {
-
-  my $password;
-  my $login;
   my $realname
     = exists $config->{"$username" . "_user_username"}
     ? $config->{"$username" . "_user_username"}
     : $username;
-
-  if ($username eq 'permanent_user') {
-    $password = $config->{admin_user_passwd};
-    $login    = $config->{$username};
-  }
-  elsif ($username eq 'no-privs') {
-    $password = $config->{unprivileged_user_passwd};
-    $login    = $config->{unprivileged_user_login};
-  }
-  elsif ($username eq 'QA-Selenium-TEST') {
-    $password = $config->{QA_Selenium_TEST_user_passwd};
-    $login    = $config->{QA_Selenium_TEST_user_login};
-  }
-  else {
-    $password = $config->{"$username" . "_user_passwd"};
-    $login    = $config->{"$username" . "_user_login"};
-  }
+  my $password = $config->{"$username" . "_user_passwd"};
+  my $login    = $config->{"$username" . "_user_login"};
 
   if (is_available_username($login)) {
     my %extra_args;
@@ -173,7 +155,7 @@ foreach my $username (@usernames) {
       %extra_args,
     });
 
-    if ($username eq 'admin' or $username eq 'permanent_user') {
+    if ($username eq 'admin' or $username eq 'permanent') {
       Bugzilla::Install::make_admin($login);
     }
 
@@ -437,7 +419,7 @@ my @products = (
       {
         name             => "c1",
         description      => "c1",
-        initialowner     => $config->{permanent_user},
+        initialowner     => $config->{permanent_user_login},
         initialqacontact => '',
         initial_cc       => [],
 
@@ -445,7 +427,7 @@ my @products = (
       {
         name             => "c2",
         description      => "c2",
-        initialowner     => $config->{permanent_user},
+        initialowner     => $config->{permanent_user_login},
         initialqacontact => '',
         initial_cc       => [],
 
@@ -466,7 +448,7 @@ my @products = (
     components       => [{
       name             => "Helium",
       description      => "Feel free to add bugs to me",
-      initialowner     => $config->{permanent_user},
+      initialowner     => $config->{permanent_user_login},
       initialqacontact => '',
       initial_cc       => [],
 

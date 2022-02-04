@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20211108.3';
+our $VERSION = '20220202.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -588,7 +588,7 @@ sub log_user_request {
   my $cgi         = $class->cgi;
   my $user_id     = $class->user->id;
   my $request_url = $cgi->request_uri // '';
-  my $method      = $cgi->request_method;
+  my $method      = $cgi->request_method // 'GET';
   my $user_agent  = $cgi->user_agent // '';
   my $script_name = $cgi->script_name;
   my $server      = "web";

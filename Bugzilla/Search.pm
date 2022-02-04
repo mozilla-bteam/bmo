@@ -167,6 +167,8 @@ use constant OPERATORS => {
   changedby      => \&_changedby,
   isempty        => \&_isempty,
   isnotempty     => \&_isnotempty,
+  isdisabled     => \&_is_disabled,
+  isnotdisabled  => \&_is_not_disabled,
 };
 
 # Some operators are really just standard SQL operators, and are
@@ -195,6 +197,8 @@ use constant OPERATOR_REVERSE => {
   greaterthaneq  => 'lessthan',
   isempty        => 'isnotempty',
   isnotempty     => 'isempty',
+  isdisabled     => 'isnotdisabled',
+  isnotdisabled  => 'isdisabled',
 
   # The following don't currently have reversals:
   # casesubstring, anyexact, allwords, allwordssubstr
@@ -216,6 +220,8 @@ use constant NO_VALUE_OPERATORS => qw(
   everchanged
   isempty
   isnotempty
+  isdisabled
+  isnotdisabled
 );
 
 use constant MULTI_SELECT_OVERRIDE => {
@@ -2616,6 +2622,7 @@ sub _user_nonchanged {
     push(@$joins, {%$join, as => $as, extra => $extra});
     my $search_field = USER_FIELDS->{$field}->{field};
     $args->{full_field} = "$as.$search_field";
+    $args->{enabled_field} = "$as.is_enabled";
   }
 
   my $is_nullable    = USER_FIELDS->{$field}->{nullable};
@@ -2640,6 +2647,7 @@ sub _user_nonchanged {
     };
     push(@$joins, $join);
     $args->{full_field} = "$as.login_name";
+    $args->{enabled_field} = "$as.is_enabled";
   }
 
   # We COALESCE fields that can be NULL, to make "not"-style operators
@@ -3722,6 +3730,24 @@ sub _isnotempty {
   my $full_field = $args->{full_field};
   $args->{term} = "$full_field IS NOT NULL AND $full_field != "
     . $self->_empty_value($args->{field});
+}
+
+sub _is_disabled {
+  my ($self, $args) = @_;
+  if (!defined $args->{enabled_field}) {
+    ThrowUserError("search_field_operator_invalid",
+      {field => $args->{field}, operator => $args->{operator}});
+  }
+  $args->{term} = $args->{enabled_field} . ' = 0';
+}
+
+sub _is_not_disabled {
+  my ($self, $args) = @_;
+  if (!defined $args->{enabled_field}) {
+    ThrowUserError("search_field_operator_invalid",
+      {field => $args->{field}, operator => $args->{operator}});
+  }
+  $args->{term} = $args->{enabled_field} . ' = 1';
 }
 
 sub _empty_value {
