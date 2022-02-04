@@ -75,14 +75,14 @@ sub oauth2_client_post_login {
 
   return if !Bugzilla->params->{mozilla_iam_enabled};
 
-  my $userinfo =
-    $args->{userinfo} || Bugzilla->request_cache->{oauth2_client_userinfo};
+  my $userinfo
+    = $args->{userinfo} || Bugzilla->request_cache->{oauth2_client_userinfo};
   return if !$userinfo;
 
   my $iam_username = $userinfo->{iam_username} || $userinfo->{email};
 
-  my $profile = $userinfo->{iam_profile_data} ||=
-    get_profile_by_email($iam_username);
+  my $profile = $userinfo->{iam_profile_data}
+    ||= get_profile_by_email($iam_username);
 
   add_staff_member($profile) if $profile && $profile->{is_staff};
 }
@@ -154,6 +154,15 @@ sub object_end_of_update {
   # Remove mapping of profile_iam to profiles if a user has changed their email
   if ($old_object->login ne $object->login && $old_object->iam_username) {
     remove_staff_member({iam_username => $old_object->iam_username});
+  }
+}
+
+sub userprefs_can_change_email_password {
+  my ($self, $args) = @_;
+  my ($can_change_email_password, $user)
+    = @$args{qw(can_change_email_password user)};
+  if (Bugzilla->params->{mozilla_iam_enabled} && $user->iam_username) {
+    $can_change_email_password = 0;
   }
 }
 
