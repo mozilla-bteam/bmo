@@ -123,14 +123,14 @@ sub get_selenium {
 
   my $sel = Bugzilla::Test::Selenium->new({
     driver_args => {
-      base_url   => $config->{browser_url},
+      base_url   => $ENV{BZ_BASE_URL} || $config->{browser_url},
       browser    => 'firefox',
       version    => '',
       javascript => 1
     }
-    });
+  });
 
-  $sel->driver->set_timeout('implicit', 600);
+  $sel->driver->set_timeout('implicit',  600);
   $sel->driver->set_timeout('page load', 60000);
 
   return ($sel, $config);

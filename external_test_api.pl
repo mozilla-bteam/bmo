@@ -67,6 +67,65 @@ sub startup {
       }
     }
   );
+
+  # Mocked OAuth2 endpoints
+  $r->post(
+    '/oauth/test/token' => sub {
+      my $c = shift;
+      $c->render(
+        json => {
+          access_token  => 'fake_access_token',
+          expires_in    => 3600,
+          refresh_token => 'fake_refresh_token',
+          scope         => 'openid profile email',
+          token_type    => 'bearer',
+        },
+        status => 200
+      );
+    }
+  );
+  $r->get(
+    '/oauth/test/authorize' => sub {
+      my $c   = shift;
+      my $url = Mojo::URL->new($c->param('redirect_uri'));
+      $url->query->append(code  => 'fake_return_code');
+      $url->query->append(state => $c->param('state'));
+      $c->render(text => $c->tag('a', href => $url, sub { 'Connect' }));
+    }
+  );
+  $r->get(
+    '/oauth/test/userinfo' => sub {
+      my $c = shift;
+      $c->render(
+        json => {
+          email          => 'oauth2-user@example.com',
+          name           => 'OAuth2 Test User',
+          email_verified => 1,
+        },
+        status => 200
+      );
+    }
+  );
+
+  # Mocked PersonAPI endpoints
+  my $person_data = {
+    primary_email => {value => 'oauth2-user@mozilla.com'},
+    first_name    => {value => 'Mozilla'},
+    last_name     => {value => 'IAM User'},
+    identities    =>
+      {bugzilla_mozilla_org_primary_email => {value => 'oauth2-user@example.com'}},
+    access_information => {ldap => {values => {team_moco => 1}}}
+  };
+  $r->get(
+    '/person/test/v2/user/primary_email/*email' => sub {
+      shift->render(json => $person_data, status => 200);
+    }
+  );
+  $r->get(
+    '/person/test/v2/user/user_id/*id' => sub {
+      shift->render(json => $person_data, status => 200);
+    }
+  );
 }
 
 1;

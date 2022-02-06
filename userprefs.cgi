@@ -81,6 +81,11 @@ sub SaveAccount {
 
   my $user = Bugzilla->user;
 
+  my $can_change_email_password = 1;
+  Bugzilla::Hook::process('userprefs_can_change_email_password',
+    {can_change_email_password => $can_change_email_password, user => $user});
+  return if !$can_change_email_password;
+
   my $oldpassword    = $cgi->param('old_password');
   my $pwd1           = $cgi->param('new_password1');
   my $pwd2           = $cgi->param('new_password2');

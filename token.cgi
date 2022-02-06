@@ -14,10 +14,11 @@ use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::Constants;
-use Bugzilla::Util;
 use Bugzilla::Error;
+use Bugzilla::Hook;
 use Bugzilla::Token;
 use Bugzilla::User;
+use Bugzilla::Util;
 
 use Date::Format;
 use Date::Parse;
@@ -49,8 +50,7 @@ if ($token) {
   # Make sure the token exists in the database.
   my ($db_token, $tokentype) = $dbh->selectrow_array(
     'SELECT token, tokentype FROM tokens
-                                                       WHERE token = ?', undef,
-    $token
+      WHERE token = ?', undef, $token
   );
   unless (defined $db_token && $db_token eq $token) {
     Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
@@ -86,6 +86,12 @@ if ($token) {
     Bugzilla::Token::Cancel($token, 'wrong_token_for_mfa');
     Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
     ThrowUserError('wrong_token_for_mfa');
+  }
+  if ($action eq 'verify_auto_account_creation'
+    && $tokentype ne 'account_create')
+  {
+    Bugzilla->iprepd_report('token', remote_ip());
+    ThrowUserError('wrong_token_for_account_creation');
   }
 }
 
@@ -181,6 +187,9 @@ elsif ($action eq 'mfa_l') {
 }
 elsif ($action eq 'mfa_p') {
   verify_mfa_password($token);
+}
+elsif ($action eq 'verify_auto_account_creation') {
+  verify_auto_account_creation($token);
 }
 else {
   ThrowUserError('unknown_action', {action => $action});
@@ -310,12 +319,12 @@ sub changeEmail {
   # Update the user's login name in the profiles table and delete the token
   # from the tokens table.
   $dbh->bz_start_transaction();
-  $dbh->do(
-    q{UPDATE   profiles
-               SET      login_name = ?
-               WHERE    userid = ?}, undef, ($new_email, $userid)
-  );
+
+  my $user = Bugzilla::User->new({name => $old_email});
+  $user->set_login($new_email);
+  $user->update({keep_session => 1});
   Bugzilla->memcached->clear({table => 'profiles', id => $userid});
+
   $dbh->do('DELETE FROM tokens WHERE token = ?', undef, $token);
   $dbh->do(
     q{DELETE FROM tokens WHERE userid = ?
@@ -323,7 +332,6 @@ sub changeEmail {
   );
 
   # The email address has been changed, so we need to rederive the groups
-  my $user = new Bugzilla::User($userid);
   $user->derive_regexp_groups;
 
   $dbh->bz_commit_transaction();
@@ -477,7 +485,7 @@ sub cancel_create_account {
 sub verify_mfa_login {
   my $token = shift;
   my ($user, $event) = mfa_event_from_token($token);
-  $user->authorizer->mfa_verified($user, $event);
+  $user->authorizer->auto_verified($user, $event);
 
   if ($event->{url}) {
     print Bugzilla->cgi->redirect($event->{url});
@@ -523,4 +531,30 @@ sub confirm_cancel {
   exit;
 }
 
+sub verify_auto_account_creation {
+  my $token = shift;
+
+  # create user from token data
+  my $event = get_token_extra_data($token);
+
+  my $user = Bugzilla::User->create({
+    login_name    => $event->{login},
+    cryptpassword => '*',
+    realname      => $event->{realname}
+  });
+
+  $user->authorizer->auto_verified($user, $event);
+
+  # If the external account was OAuth2 then we may
+  # need to perform some extra tasks
+  Bugzilla::Hook::process('oauth2_client_post_login',
+    {userinfo => $event->{oauth2_client_userinfo}});
+
+  if ($event->{url}) {
+    print Bugzilla->cgi->redirect($event->{url});
+    exit;
+  }
+
+  Bugzilla->cgi->base_redirect();
+}
 

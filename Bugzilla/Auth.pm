@@ -25,6 +25,7 @@ use Bugzilla::User::Setting ();
 use Bugzilla::Auth::Login::Stack;
 use Bugzilla::Auth::Verify::Stack;
 use Bugzilla::Auth::Persist::Cookie;
+use Module::Runtime qw(require_module);
 use Socket;
 use URI;
 use URI::QueryParam;
@@ -108,16 +109,19 @@ sub login {
     });
   }
 
-
   return $self->_handle_login_result($login_info, $type);
 }
 
-sub mfa_verified {
+sub auto_verified {
   my ($self, $user, $event) = @_;
-  require Bugzilla::Auth::Login::CGI;
-
   my $params = Bugzilla->input_params;
-  $self->{_info_getter}->{successful} = Bugzilla::Auth::Login::CGI->new();
+
+  my $auth_method = $event->{auth_method} || 'CGI';
+  my $auth_class  = "Bugzilla::Auth::Login::$auth_method";
+
+  require_module($auth_class);
+
+  $self->{_info_getter}->{successful} = $auth_class->new();
   $params->{Bugzilla_remember} = $event->{remember} if defined $event->{remember};
 
   $self->_handle_login_result({user => $user}, $event->{type});

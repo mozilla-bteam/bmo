@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 use 5.10.1;
-use lib qw( . lib local/lib/perl5 );
+use lib qw( . lib qa/t/lib local/lib/perl5 );
 
 BEGIN {
   $ENV{LOG4PERL_CONFIG_FILE}     = 'log4perl-t.conf';
@@ -18,6 +18,7 @@ BEGIN {
 use Bugzilla;
 use Bugzilla::Util qw(mojo_user_agent);
 use Mojo::URL;
+use QA::Util;
 use Test2::V0;
 use Test::Selenium::Remote::Driver;
 
@@ -37,12 +38,7 @@ my @require_env = qw(
 my @missing_env = grep { !exists $ENV{$_} } @require_env;
 bail_out("Missing env: @missing_env") if @missing_env;
 
-my $sel = Test::Selenium::Remote::Driver->new(
-  base_url   => $ENV{BZ_BASE_URL},
-  browser    => 'firefox',
-  version    => '',
-  javascript => 1
-);
+my ($sel, $config) = get_selenium();
 
 my $ua = mojo_user_agent();
 $ua->on(
@@ -62,21 +58,21 @@ ok($result->is_success, 'Posting first bounce was successful');
 
 # Allow user to reset their email
 $sel->set_implicit_wait_timeout(600);
-login_ok($sel, $ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
+$sel->login_ok($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
 $sel->body_text_contains('Change notification emails have been disabled',
   'Email disabled warning is displayed');
 $sel->click_element_ok('//a[@id="bounced_emails_link"]');
 sleep(2);
 $sel->title_is('Bounced Emails');
 $sel->click_element_ok('//input[@id="enable_email"]');
-submit($sel, '//input[@value="Submit"]');
+$sel->submit('//input[@value="Submit"]');
 sleep(2);
 $sel->title_is('Bugzilla Main Page');
 $sel->body_text_lacks(
   'Change notification emails have been disabled',
   'Email disabled warning is no longer displayed'
 );
-logout_ok($sel);
+$sel->logout_ok();
 
 # Bounce 4 more times causing account to be locked
 $result = $ua->post($ses_url => $ses_data)->result;
@@ -89,7 +85,7 @@ $result = $ua->post($ses_url => $ses_data)->result;
 ok($result->is_success, 'Posting fifth bounce was successful');
 
 # User should not be able to login again
-login($sel, $ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
+$sel->login($ENV{BZ_TEST_NEWBIE}, $ENV{BZ_TEST_NEWBIE_PASS});
 $sel->title_is('Account Disabled');
 $sel->body_text_contains(
 'Your Bugzilla account has been disabled due to issues delivering emails to your address.',
