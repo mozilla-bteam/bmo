@@ -2490,7 +2490,9 @@ sub _get_create_index_ddl {
   my $sql = "CREATE ";
   $sql .= "$index_type " if ($index_type && $index_type eq 'UNIQUE');
   $sql
-    .= "INDEX \`$index_name\` ON \`$table_name\` \(" . join(", ", @$index_fields) . "\)";
+    .= "INDEX $index_name ON "
+    . Bugzilla->dbh->quote_identifier($table_name) . ' ('
+    . join(', ', @$index_fields) . ')';
 
   return ($sql);
 
