@@ -330,6 +330,22 @@ sub bz_setup_database {
   }
 
   if ($self->utf8_charset eq 'utf8mb4') {
+    my %global = map {@$_}
+      @{$self->selectall_arrayref(q(SHOW GLOBAL VARIABLES LIKE 'innodb_%'))};
+
+    # Newer versions of MySQL the default value for innodb_file_format is Barracuda
+    # and the setting was deprecated. Also innodb_file_per_table also now defaults
+    # to ON. innodb_large_prefix has also been removed in newer MySQL versions.
+    my $utf8mb4_supported
+      = (!exists $global{innodb_file_format}
+        || $global{innodb_file_format} eq 'Barracuda')
+      && (!exists $global{innodb_file_per_table}
+      || $global{innodb_file_per_table} eq 'ON')
+      && (!exists $global{innodb_large_prefix}
+      || $global{innodb_large_prefix} eq 'ON');
+
+    die install_string('mysql_innodb_settings') unless $utf8mb4_supported;
+
     my $tables = $self->selectall_arrayref('SHOW TABLE STATUS');
     foreach my $table (@$tables) {
       my ($table, undef, undef, $row_format) = @$table;
