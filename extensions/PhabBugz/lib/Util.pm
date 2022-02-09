@@ -21,6 +21,7 @@ use Bugzilla::Util qw(mojo_user_agent trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
+use List::MoreUtils qw(any);
 use List::Util qw(first);
 use Try::Tiny;
 use Type::Params qw( compile );
@@ -103,7 +104,10 @@ sub create_revision_attachment {
   ) {
     INFO('Assigning bug ' . $bug->id . ' to ' . $submitter->email);
     $bug->set_assigned_to($submitter);
-    $bug->set_bug_status('ASSIGNED') if $bug->status->name eq 'NEW';
+    if (any { $bug->status->name eq $_ } 'NEW', 'UNCONFIRMED') {
+      INFO('Setting bug ' . $bug->id . ' to ASSIGNED');
+      $bug->set_bug_status('ASSIGNED');
+    }
   }
 
   return $attachment;
