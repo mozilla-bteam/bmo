@@ -14,10 +14,12 @@ use warnings;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Group;
 use Bugzilla::Logging;
 use Bugzilla::Token qw(issue_hash_token);
 use Bugzilla::User;
-use Bugzilla::Util qw(trim);
+use Bugzilla::Util qw(i_am_webservice trim);
 use Bugzilla::Extension::MozillaIAM::Util
   qw(add_staff_member get_access_token get_profile_by_email remove_staff_member);
 
@@ -141,6 +143,30 @@ sub oauth2_client_handle_redirect {
   }
 
   return;
+}
+
+sub object_end_of_set_all {
+  my ($self, $args) = @_;
+  my $object = $args->{'object'};
+  my $params = $args->{'params'};
+
+  return unless $object->isa('Bugzilla::User');    # Only user changes
+  return unless i_am_webservice();                 # We only want to filter API requests
+  return unless $object->iam_username;             # If user is not IAM then no filtering needed
+
+  my $moz_group = Bugzilla::Group->new({name => 'mozilla-employee-confidential'});
+  return unless $moz_group;
+
+  if ($params->{groups}) {
+    foreach my $action (qw(add remove)) {
+      next if !exists $params->{groups}->{$action};
+      foreach my $group (@{$params->{groups}->{$action}}) {
+        if ($group->id == $moz_group->id) {
+          ThrowUserError('mozilla_iam_group_blocked', {group => $moz_group});
+        }
+      }
+    }
+  }
 }
 
 sub object_end_of_update {
