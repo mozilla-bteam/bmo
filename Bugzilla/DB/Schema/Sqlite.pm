@@ -125,7 +125,10 @@ sub _sqlite_alter_schema {
     'PRAGMA foreign_keys = OFF',
     'BEGIN EXCLUSIVE TRANSACTION',
     @{$options->{pre_sql} || []},
-    "ALTER TABLE $table RENAME TO $rename_to",
+    'ALTER TABLE '
+      . Bugzilla->dbh->quote_identifier($table)
+      . ' RENAME TO '
+      . Bugzilla->dbh->quote_identifier($rename_to),
     $create_table,
     $copy_sql,
     "DROP TABLE $rename_to",

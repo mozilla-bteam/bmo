@@ -2518,16 +2518,20 @@ sub get_add_column_ddl {
 
   my ($self, $table, $column, $definition, $init_value) = @_;
   my @statements;
+  my $dbh = Bugzilla->dbh;
   push(@statements,
-        "ALTER TABLE `$table` "
+        'ALTER TABLE '
+      . $dbh->quote_identifier($table) . ' '
       . $self->ADD_COLUMN
       . " $column "
       . $self->get_type_ddl($definition));
 
   # XXX - Note that although this works for MySQL, most databases will fail
   # before this point, if we haven't set a default.
-  (push(@statements, "UPDATE `$table` SET $column = $init_value"))
-    if defined $init_value;
+  (
+    push(@statements,
+      'UPDATE ' . $dbh->quote_identifier($table) . " SET $column = $init_value")
+  ) if defined $init_value;
 
   if (defined $definition->{REFERENCES}) {
     push(@statements,
