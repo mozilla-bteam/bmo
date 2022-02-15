@@ -192,6 +192,28 @@ sub userprefs_can_change_email_password {
   }
 }
 
+sub admin_editusers_action {
+  my ($self, $args) = @_;
+  return unless $args->{action} eq 'update';    # Only interested in update operation
+
+  # We need to load the user being edited to tell if IAM user
+  my $cgi              = Bugzilla->cgi;
+  my $other_user_id    = $cgi->param('userid');
+  my $other_user_login = $cgi->param('user');
+  return unless $other_user_id || $other_user_login;
+  my $other_user
+    = $other_user_id
+    ? Bugzilla::User->new($other_user_id)
+    : Bugzilla::User->new({name => $other_user_login});
+  return unless $other_user;
+
+  # Restrict setting mozilla-employee-confidential if IAM username is set
+  return unless $other_user->iam_username;
+  my $moz_group = Bugzilla::Group->new({name => 'mozilla-employee-confidential'}) || return;
+  $cgi->delete('group_' . $moz_group->id);
+  $cgi->delete('bless_' . $moz_group->id);
+}
+
 sub db_schema_abstract_schema {
   my ($self, $args) = @_;
   $args->{'schema'}->{'mozilla_iam_updates'} = {
