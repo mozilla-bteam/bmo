@@ -14,10 +14,12 @@ use warnings;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Group;
 use Bugzilla::Logging;
 use Bugzilla::Token qw(issue_hash_token);
 use Bugzilla::User;
-use Bugzilla::Util qw(trim);
+use Bugzilla::Util qw(i_am_webservice trim);
 use Bugzilla::Extension::MozillaIAM::Util
   qw(add_staff_member get_access_token get_profile_by_email remove_staff_member);
 
@@ -143,6 +145,30 @@ sub oauth2_client_handle_redirect {
   return;
 }
 
+sub object_end_of_set_all {
+  my ($self, $args) = @_;
+  my $object = $args->{'object'};
+  my $params = $args->{'params'};
+
+  return unless $object->isa('Bugzilla::User');    # Only user changes
+  return unless i_am_webservice();                 # We only want to filter API requests
+  return unless $object->iam_username;             # If user is not IAM then no filtering needed
+
+  my $moz_group = Bugzilla::Group->new({name => 'mozilla-employee-confidential'});
+  return unless $moz_group;
+
+  if ($params->{groups}) {
+    foreach my $action (qw(add remove)) {
+      next if !exists $params->{groups}->{$action};
+      foreach my $group (@{$params->{groups}->{$action}}) {
+        if ($group->id == $moz_group->id) {
+          ThrowUserError('mozilla_iam_group_blocked', {group => $moz_group});
+        }
+      }
+    }
+  }
+}
+
 sub object_end_of_update {
   my ($self, $args) = @_;
   my ($object, $old_object, $changes) = @$args{qw(object old_object changes)};
@@ -164,6 +190,28 @@ sub userprefs_can_change_email_password {
   if (Bugzilla->params->{mozilla_iam_enabled} && $user->iam_username) {
     $can_change_email_password = 0;
   }
+}
+
+sub admin_editusers_action {
+  my ($self, $args) = @_;
+  return unless $args->{action} eq 'update';    # Only interested in update operation
+
+  # We need to load the user being edited to tell if IAM user
+  my $cgi              = Bugzilla->cgi;
+  my $other_user_id    = $cgi->param('userid');
+  my $other_user_login = $cgi->param('user');
+  return unless $other_user_id || $other_user_login;
+  my $other_user
+    = $other_user_id
+    ? Bugzilla::User->new($other_user_id)
+    : Bugzilla::User->new({name => $other_user_login});
+  return unless $other_user;
+
+  # Restrict setting mozilla-employee-confidential if IAM username is set
+  return unless $other_user->iam_username;
+  my $moz_group = Bugzilla::Group->new({name => 'mozilla-employee-confidential'}) || return;
+  $cgi->delete('group_' . $moz_group->id);
+  $cgi->delete('bless_' . $moz_group->id);
 }
 
 sub db_schema_abstract_schema {
