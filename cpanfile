@@ -99,7 +99,6 @@ requires 'Regexp::Common';
 requires 'Role::Tiny', '2.000003';
 requires 'SOAP::Lite', '0.712';
 requires 'Scope::Guard', '0.21';
-requires 'Search::Elasticsearch';
 requires 'Sereal', '4.004';
 requires 'Sub::Quote', '2.005000';
 requires 'Sys::Syslog';
