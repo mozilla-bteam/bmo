@@ -333,7 +333,7 @@ sub bz_setup_database {
     my %global = map {@$_}
       @{$self->selectall_arrayref(q(SHOW GLOBAL VARIABLES LIKE 'innodb_%'))};
 
-    # Newer versions of MySQL the default value for innodb_file_format is Barracuda
+    # In versions of MySQL > 8, the default value for innodb_file_format is Barracuda
     # and the setting was deprecated. Also innodb_file_per_table also now defaults
     # to ON. innodb_large_prefix has also been removed in newer MySQL versions.
     my $utf8mb4_supported

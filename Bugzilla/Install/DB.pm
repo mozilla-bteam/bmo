@@ -1931,7 +1931,8 @@ sub _convert_groups_system_from_groupset {
 
     # Identify admin group.
     my ($admin_gid)
-      = $dbh->selectrow_array("SELECT id FROM `groups` WHERE name = 'admin'");
+      = $dbh->selectrow_array(
+      "SELECT id FROM " . $dbh->quote_identifier('groups') . " WHERE name = 'admin'");
     if (!$admin_gid) {
       $dbh->do("INSERT INTO "
           . $dbh->quote_identifier('groups')

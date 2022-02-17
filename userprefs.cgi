@@ -544,8 +544,8 @@ sub DoPermissions {
   }
   $groups = $dbh->selectall_arrayref(
     'SELECT DISTINCT id, name, description
-                                          FROM `groups`
-                                         ORDER BY name'
+       FROM ' . $dbh->quote_identifier('groups') . '
+      ORDER BY name'
   );
   foreach my $group (@$groups) {
     my ($group_id, $nam, $desc) = @$group;
