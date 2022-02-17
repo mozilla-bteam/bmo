@@ -110,27 +110,8 @@ services:
       - bmo.db
       - memcached
 
-  bmo.iamd:
-    build: *bmo_build
-    command:
-      - perl
-      - extensions/MozillaIAM/bin/person_update.pl
-      - start
-      - '-d'
-      - '-f'
-    volumes:
-      - bmo-data-dir:/app/data
-    tmpfs:
-      - /tmp
-      - /run
-    environment: *bmo_env
-    restart: always
-    depends_on:
-      - bmo.db
-      - memcached
-
   bmo.db:
-    image: mysql:5.7
+    image: mysql:8.0.28
     volumes:
       - bmo-mysql-db:/var/lib/mysql
       - ./docker/mysql:/etc/mysql/conf.d
