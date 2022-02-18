@@ -22,12 +22,16 @@
 
 From: [% Param('mailfrom') %]
 To: [% Param('maintainer') %]
-Subject: [[% terms.Bugzilla %]] Account Lock-Out: [% locked_user.login %] ([% address %])
+Subject: [[% terms.Bugzilla %]] Account Lock-Out: [% locked_user.login %]
 X-Bugzilla-Type: admin
 
-The address [% address %] failed too many login attempts (
+The following ip address(es) failed too many login attempts (
 [%- constants.MAX_LOGIN_ATTEMPTS +%]) for
 the account [% locked_user.login %].
+
+[% FOREACH address = addresses.keys %]
+  [%+ address +%] [%+ IF addresses.${address} %]([% addresses.${address} %])[% END %]
+[% END %]
 
 The login attempts occurred at these times:
 
@@ -35,5 +39,4 @@ The login attempts occurred at these times:
   [%+ login.login_time FILTER time %]
 [% END %]
 
-This IP will be able to log in again using this account at
-[%+ unlock_at FILTER time %].
+This account will be able to log in again at [%+ unlock_at FILTER time %].

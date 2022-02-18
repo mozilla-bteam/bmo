@@ -2720,8 +2720,7 @@ sub account_ip_login_failures {
   $self->{account_ip_login_failures} ||= Bugzilla->dbh->selectall_arrayref(
     "SELECT login_time, ip_addr, user_id FROM login_failure
           WHERE user_id = ? AND login_time > $time
-                AND ip_addr = ?
-       ORDER BY login_time", {Slice => {}}, $self->id, $ip_addr
+       ORDER BY login_time", {Slice => {}}, $self->id
   );
   return $self->{account_ip_login_failures};
 }
