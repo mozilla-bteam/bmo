@@ -107,9 +107,9 @@ close $bug_fh;
 say 'write blog.push.txt';
 
 open my $blog_fh, '>', 'blog.push.txt';
-say $blog_fh "[release tag]($tag_url)\n";
+say $blog_fh qq{<a href="$tag_url" target="_blank">Github Link</a>};
 say $blog_fh
-  "the following changes have been pushed to bugzilla.mozilla.org:\n<ul>";
+  "<p>The following changes have been pushed to bugzilla.mozilla.org:</p>\n<p><ul>";
 say $blog_fh '<li>no bugs</li>' if !@revisions;
 foreach my $revision (@revisions) {
   printf $blog_fh
@@ -117,9 +117,9 @@ foreach my $revision (@revisions) {
     $revision->{bug_id}, $revision->{bug_id}, html_escape($revision->{summary}),
     "\n";
 }
-say $blog_fh '</ul>';
+say $blog_fh '</ul></p>';
 say $blog_fh
-  q{discuss these changes in the <a href="https://discourse.mozilla.org/c/firefox-tooling-announcements/521" target="_blank">Firefox Tooling Discourse</a>.};
+  q{Discuss these changes in the <a href="https://discourse.mozilla.org/c/firefox-tooling-announcements/521" target="_blank">Firefox Tooling Discourse</a>.};
 close $blog_fh;
 
 say 'write email.push.txt';
