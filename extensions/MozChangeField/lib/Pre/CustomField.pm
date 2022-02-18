@@ -29,22 +29,9 @@ sub evaluate_change {
 
   if (!@$priv_results && $new_value ne '---') {
 
-    # Cannot use the standard %cf_setter mapping as we want anyone
-    # to be able to set ?, just not the other values.
-    if ($field eq 'cf_cab_review') {
-      if ( $new_value ne '1'
-        && $new_value ne '?'
-        && !$user->in_group('infra', $bug->product_id))
-      {
-        return {
-          result => PRIVILEGES_REQUIRED_EMPOWERED,
-          reason => 'Specific permissions are required to make this change.',
-        };
-      }
-    }
 
-    # "other" custom field setters restrictions
-    elsif (exists $cf_setters->{$field}) {
+    # Custom field setters restrictions
+    if (exists $cf_setters->{$field}) {
       my $in_group = 0;
       foreach my $group (@{$cf_setters->{$field}}) {
         if ($user->in_group($group, $bug->product_id)) {
