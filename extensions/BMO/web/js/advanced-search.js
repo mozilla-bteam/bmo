@@ -42,6 +42,10 @@ Bugzilla.BMO.AdvancedSearch = class AdvancedSearch {
 
     // Select non-Graveyard classifications
     for (const $option of this.$classifications.options) {
+      // Return if already selected (part of the default search params for query page)
+      if ($option.selected) {
+        return;
+      }
       $option.selected = $option.value !== 'Graveyard';
     }
 
