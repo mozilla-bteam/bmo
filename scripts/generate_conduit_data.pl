@@ -219,7 +219,7 @@ foreach my $flag (@flagtypes) {
   my $type_id = $dbh->bz_last_key('flagtypes', 'id');
 
   foreach my $inclusion (@{$flag->{inclusions}}) {
-    my ($product, $component) = split(':', $inclusion);
+    my ($product, $component) = split /:/, $inclusion;
     my ($prod_id, $comp_id);
     if ($product) {
       my $prod_obj = Bugzilla::Product->new({name => $product});
