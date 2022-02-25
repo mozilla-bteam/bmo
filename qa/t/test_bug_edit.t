@@ -67,9 +67,6 @@ $sel->is_text_present_ok('has been added to the database',
 go_to_bug($sel, $bug1_id);
 $sel->select_ok("rep_platform", "label=Other");
 $sel->select_ok("op_sys",       "label=Other");
-$sel->select_ok("priority",     "label=Highest");
-$sel->check_ok('//input[@name="bug_type" and @value="defect"]');
-$sel->select_ok("bug_severity", "label=blocker");
 $sel->type_ok("bug_file_loc",      "foo.cgi?action=bar");
 $sel->type_ok("status_whiteboard", "[Selenium was here]");
 $sel->type_ok("comment",           "new comment from me :)");
@@ -88,9 +85,6 @@ $sel->click_ok('bottom-save-btn', 'Save changes');
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 
 go_to_bug($sel, $bug1_id);
-$sel->check_ok('//input[@name="bug_type" and @value="defect"]');
-$sel->select_ok("bug_severity", "label=normal");
-$sel->select_ok("priority",     "label=High");
 $sel->select_ok("rep_platform", "label=All");
 $sel->select_ok("op_sys",       "label=All");
 $sel->click_ok("add-cc-btn", "Show add cc field");

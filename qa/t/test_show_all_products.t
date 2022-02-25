@@ -44,7 +44,12 @@ logout($sel);
 log_in($sel, $config, 'QA_Selenium_TEST');
 $sel->click_ok('//*[@class="link-file"]//a');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("Enter Bug");
+$sel->title_is("Enter A Bug");
+if ($sel->is_text_present('None of the above; my bug is in')) {
+  $sel->click_ok('advanced_link');
+  $sel->wait_for_page_to_load_ok(WAIT_TIME);
+  $sel->title_is("Enter Bug");
+}
 $sel->click_ok('//a/span[contains(text(),"Other Products")]',
   undef, "Choose full product list");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
