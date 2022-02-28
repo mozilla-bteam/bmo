@@ -105,8 +105,26 @@ sub update_params {
 
   my $param = read_params();
 
-  # Check to see if we need to migrate old file based parameters
-  $param = _migrate_file_parameters($param);
+  # Migrate old file based parameters to the database
+  my $datadir = bz_locations()->{'datadir'};
+  if (-e "$datadir/params") {
+
+    # Read in the old data/params values
+    my $s = Safe->new;
+    $s->rdo("$datadir/params");
+    die "Error reading $datadir/params: $!"    if $!;
+    die "Error evaluating $datadir/params: $@" if $@;
+    my %file_params = %{$s->varglob('param')};
+
+    WARN('Migrating old parameters from data/params to database');
+    foreach my $key (keys %file_params) {
+      $param->{$key} = $file_params{$key};
+    }
+
+    WARN('Backing up old params file');
+    rename("$datadir/params", "$datadir/params.old")
+      or die "Rename params file failed: $!";
+  }
 
   my %new_params;
 
@@ -261,83 +279,72 @@ sub update_params {
 }
 
 sub write_params {
-  my ($param_data) = @_;
-  $param_data ||= Bugzilla->params;
+  my ($params) = @_;
+  $params ||= Bugzilla->params;
 
-  try {
-    my $dbh = Bugzilla->dbh;
-    foreach my $key (keys %{$param_data}) {
-      if (my $param = Bugzilla::Config::Param->new({name => $key})) {
-        my $value = $param_data->{$key} || ($param->is_numeric ? 0 : '');
-        if (($param->is_numeric && $value != $param->value) || $value ne $param->value)
-        {
-          $param->set_value($value);
-          $param->update();
+  unless (Bugzilla->request_cache->{no_database}) {
+    try {
+      foreach my $key (keys %{$params}) {
+        if (my $param = Bugzilla::Config::Param->new({name => $key})) {
+          my $value = $params->{$key} || ($param->is_numeric ? 0 : '');
+          if (($param->is_numeric && $value != $param->value) || $value ne $param->value)
+          {
+            $param->set_value($value);
+            $param->update();
+          }
+        }
+        else {
+          my $value = $params->{$key} || '';
+          Bugzilla::Config::Param->create({name => $key, value => $value});
         }
       }
-      else {
-        my $value = $param_data->{$key} || '';
-        Bugzilla::Config::Param->create({name => $key, value => $value});
-      }
     }
+    catch {
+      WARN("Database not available: $_");
+    };
   }
-  catch {
-    WARN("Database not available: $_");
-  };
 
   # And now we have to reset the params cache
-  Bugzilla->memcached->set_params($param_data);
-  Bugzilla->request_cache->{params} = $param_data;
+  Bugzilla->memcached->set_params($params);
+  Bugzilla->request_cache->{params} = $params;
 }
 
 sub read_params {
+  my $cached_params = Bugzilla->memcached->get_params();
+  return $cached_params if $cached_params;
+
   my %params;
 
-  try {
-    my @all_params = Bugzilla::Config::Param->get_all();
-    if (@all_params) {
-      foreach my $param (@all_params) {
-        $params{$param->name} = $param->value;
+  unless (Bugzilla->request_cache->{no_database}) {
+    try {
+      my @all_params = Bugzilla::Config::Param->get_all();
+      if (@all_params) {
+        foreach my $param (@all_params) {
+          $params{$param->name} = $param->value;
+        }
       }
     }
+    catch {
+      WARN("Database not available: $_");
+    };
   }
-  catch {
-    if ($ENV{'SERVER_SOFTWARE'}) {
-      FATAL('Parameters have not yet been written to the database.'
-          . ' You probably need to run checksetup.pl.');
-    }
-  };
+
+  if (!%params && $ENV{'SERVER_SOFTWARE'}) {
+
+    # We're in a CGI, but the parameters do not yet exist. We can't
+    # Template Toolkit, or even install_string, since checksetup
+    # might not have thrown an error. Bugzilla::CGI->new
+    # hasn't even been called yet, so we manually use CGI::Carp here
+    # so that the user sees the error.
+    require CGI::Carp;
+    CGI::Carp->import('fatalsToBrowser');
+    die "The parameters do not yet exist."
+      . ' You probably need to run checksetup.pl.',;
+  }
+
+  Bugzilla->memcached->set_params(\%params);
 
   return \%params;
-}
-
-sub _migrate_file_parameters {
-  my $params = shift;
-
-  # Return if the old data/params file has already been removed
-  my $datadir = bz_locations()->{'datadir'};
-  return if !-f "$datadir/params";
-
-  # Read in the old data/params values
-  my $s = Safe->new;
-  $s->rdo("$datadir/params");
-  die "Error reading $datadir/params: $!"    if $!;
-  die "Error evaluating $datadir/params: $@" if $@;
-  my $file_params = $s->varglob('param');
-  return if !%{$file_params};
-
-  WARN('Migrating old parameters from data/params to database');
-
-  # Insert the key/values into the params table
-  foreach my $key (keys %{$file_params}) {
-    $params->{$key} = $file_params->{$key} || '';
-  }
-
-  # Move the params file so we do not run this again
-  rename("$datadir/params", "$datadir/params.old")
-    or die "Rename params file failed: $!";
-
-  return $params;
 }
 
 1;

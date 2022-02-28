@@ -805,8 +805,7 @@ if (Bugzilla->params->{insidergroup} ne 'QA-Selenium-TEST') {
 if ($params_modified) {
   write_params();
   print <<EOT;
-** Parameters have been modified by this script. Please re-run
-** checksetup.pl to set file permissions on data/params correctly.
+** Parameters have been modified by this script.
 
 EOT
 }

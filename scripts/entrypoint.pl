@@ -70,18 +70,16 @@ if ($ENV{BMO_urlbase} eq 'AUTOMATIC') {
 $func->($opts->());
 
 sub cmd_demo {
-  unless (-f '/app/data/params') {
-    cmd_load_test_data();
-    check_env(qw(
-        PHABRICATOR_BOT_LOGIN
-        PHABRICATOR_BOT_PASSWORD
-        PHABRICATOR_BOT_API_KEY
-        CONDUIT_USER_LOGIN
-        CONDUIT_USER_PASSWORD
-        CONDUIT_USER_API_KEY
-        ));
-    run('perl', 'scripts/generate_conduit_data.pl');
-  }
+  cmd_load_test_data();
+  check_env(qw(
+      PHABRICATOR_BOT_LOGIN
+      PHABRICATOR_BOT_PASSWORD
+      PHABRICATOR_BOT_API_KEY
+      CONDUIT_USER_LOGIN
+      CONDUIT_USER_PASSWORD
+      CONDUIT_USER_API_KEY
+      ));
+  run('perl', 'scripts/generate_conduit_data.pl');
   cmd_httpd();
 }
 
@@ -114,17 +112,14 @@ sub cmd_selenium_dev {
 }
 
 sub cmd_dev_httpd {
-  my $have_params = -f "/app/data/params";
   assert_database->get();
 
   run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_ANSWERS_FILE});
-  if (not $have_params) {
-    run(
-      'perl', 'scripts/generate_bmo_data.pl',
-      '--param' => 'use_mailer_queue=0',
-      'admin@mozilla.bugs'
-    );
-  }
+  run(
+    'perl', 'scripts/generate_bmo_data.pl',
+    '--param' => 'use_mailer_queue=0',
+    'admin@mozilla.bugs'
+  );
 
   my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
   assert_httpd()->get;

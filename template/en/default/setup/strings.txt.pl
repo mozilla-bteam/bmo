@@ -229,8 +229,8 @@ This secret key is used to generate JWTs. It should be a long unique value.
 It should not be the same as the site_wide_secret.
 END
   localconfig_param_override => <<'END',
-This hash is used by BMO to override select data/params values on a per-webhead
-basis. Keys set to undef will default to the value in data/params.
+This hash is used by BMO to override select parameters on a per-webhead
+basis. Keys set to undef will default to the value in the database.
 Only the keys listed below can be overridden.
 END
   localconfig_urlbase => <<'END',

@@ -157,6 +157,7 @@ require Bugzilla::Install;
 
 Bugzilla->installation_mode(INSTALLATION_MODE_NON_INTERACTIVE) if $answers_file;
 Bugzilla->installation_answers($answers_file);
+Bugzilla->request_cache->{no_database} = 1 if $switch{'no-database'};
 
 ###########################################################################
 # Check and update --LOCAL-- configuration
