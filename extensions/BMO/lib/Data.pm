@@ -185,11 +185,6 @@ tie(
     "Toolkit"                             => [],
     "WebExtensions"                       => [],
   },
-  qr/^cf_cab_review$/ => {
-    "Infrastructure & Operations Graveyard" => [],
-    "Infrastructure & Operations"           => [],
-    "Data & BI Services Team"               => [],
-  }
 );
 
 # Who to CC on particular bugmails when certain groups are added or removed.
