@@ -67,6 +67,16 @@ $sel->is_text_present_ok('has been added to the database',
 go_to_bug($sel, $bug1_id);
 $sel->select_ok("rep_platform", "label=Other");
 $sel->select_ok("op_sys",       "label=Other");
+
+# QA_Selenium_TEST does not have editbugs so we make sure
+# the following fields are not editable
+ok(!$sel->is_element_present('//select[@name="priority"]'),
+  'Priority field not editable');
+ok(!$sel->is_element_present('//select[@name="bug_type"]'),
+  'Bug type field not editable');
+ok(!$sel->is_element_present('//select[@name="bug_severity"]'),
+  'Severity field not editable');
+
 $sel->type_ok("bug_file_loc",      "foo.cgi?action=bar");
 $sel->type_ok("status_whiteboard", "[Selenium was here]");
 $sel->type_ok("comment",           "new comment from me :)");
