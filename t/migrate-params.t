@@ -29,6 +29,8 @@ ok(-f "$datadir/params", 'Original parameters file exists');
 # this loads after the data/params file has been written.
 require Bugzilla::Test::MockDB;
 Bugzilla::Test::MockDB->import;
+require Bugzilla::Test::MockParams;
+Bugzilla::Test::MockParams->import;
 
 # Read file back as a Perl data structure for comparison
 ok(-f "$datadir/params.old", 'Backup parameters file exists');

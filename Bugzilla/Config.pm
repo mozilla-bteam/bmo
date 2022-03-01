@@ -78,9 +78,6 @@ sub param_panels {
 sub SetParam {
   my ($name, $value) = @_;
 
-  # Initialize the parameters if none exist (first time) and reload
-  update_params() if !keys %{Bugzilla->params};
-
   _load_params unless %params;
   die "Unknown param $name" unless (exists $params{$name});
 
@@ -306,7 +303,7 @@ sub write_params {
 
   # And now we have to reset the params cache
   Bugzilla->memcached->set_params($params);
-  Bugzilla->request_cache->{params} = $params;
+  delete Bugzilla->request_cache->{params};
 }
 
 sub read_params {
