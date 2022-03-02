@@ -19,11 +19,13 @@ use Bugzilla::Logging;
 use Bugzilla::Extension::MozChangeField::Pre::CanConfirm;
 use Bugzilla::Extension::MozChangeField::Pre::CustomField;
 use Bugzilla::Extension::MozChangeField::Pre::Reopen;
+use Bugzilla::Extension::MozChangeField::Pre::TypePriSevEditbugs;
 
 my @pre_instances = (
   Bugzilla::Extension::MozChangeField::Pre::CanConfirm->new,
   Bugzilla::Extension::MozChangeField::Pre::CustomField->new,
   Bugzilla::Extension::MozChangeField::Pre::Reopen->new,
+  Bugzilla::Extension::MozChangeField::Pre::TypePriSevEditbugs->new,
 );
 
 use Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity;

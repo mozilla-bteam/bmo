@@ -170,12 +170,71 @@ Bugzilla::Bug->create({
   version      => 'unspecified',
 });
 
-set_params(
-  password_check_on_login => 0,
-  phabricator_base_uri    => 'http://phabricator.test/',
-  phabricator_enabled     => 1,
+##########################################################################
+# Create conduit related flag types
+##########################################################################
+my @flagtypes = (
+  {
+    name => 'qe-verify',
+    desc =>
+      'qe-verify: ? ➜ request to assess whether the bug should be tested manually
+qe-verify: + ➜ request to verify the bug manually
+qe-verify: - ➜ the bug will not/can not be verified manually',
+    is_requestable   => 1,
+    is_requesteeble  => 0,
+    is_multiplicable => 0,
+    grant_group      => '',
+    target_type      => 'b',
+    cc_list          => '',
+    inclusions       => ['Firefox:']
+  },
 );
-set_push_connector_options();
+
+print "creating flag types...\n";
+foreach my $flag (@flagtypes) {
+  next if Bugzilla::FlagType->new({name => $flag->{name}});
+  my $grant_group_id
+    = $flag->{grant_group}
+    ? Bugzilla::Group->new({name => $flag->{grant_group}})->id
+    : undef;
+  my $request_group_id
+    = $flag->{request_group}
+    ? Bugzilla::Group->new({name => $flag->{request_group}})->id
+    : undef;
+
+  $dbh->do(
+    'INSERT INTO flagtypes (name, description, cc_list, target_type, is_requestable,
+                                     is_requesteeble, is_multiplicable, grant_group_id, request_group_id)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    undef,
+    (
+      $flag->{name},             $flag->{desc},
+      $flag->{cc_list},          $flag->{target_type},
+      $flag->{is_requestable},   $flag->{is_requesteeble},
+      $flag->{is_multiplicable}, $grant_group_id,
+      $request_group_id
+    )
+  );
+
+  my $type_id = $dbh->bz_last_key('flagtypes', 'id');
+
+  foreach my $inclusion (@{$flag->{inclusions}}) {
+    my ($product, $component) = split /:/, $inclusion;
+    my ($prod_id, $comp_id);
+    if ($product) {
+      my $prod_obj = Bugzilla::Product->new({name => $product});
+      $prod_id = $prod_obj->id;
+      if ($component) {
+        $comp_id
+          = Bugzilla::Component->new({name => $component, product => $prod_obj})->id;
+      }
+    }
+    $dbh->do(
+      'INSERT INTO flaginclusions (type_id, product_id, component_id)
+                  VALUES (?, ?, ?)', undef, ($type_id, $prod_id, $comp_id)
+    );
+  }
+}
 
 ##########################################################################
 # Create Phabricator OAuth2 Client
@@ -202,6 +261,13 @@ if ($oauth_id && $oauth_secret) {
   $dbh->do('REPLACE INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
     undef, $client_data->{id}, $scope_id);
 }
+
+set_params(
+  password_check_on_login => 0,
+  phabricator_base_uri    => 'http://phabricator.test/',
+  phabricator_enabled     => 1,
+);
+set_push_connector_options();
 
 print "installation and configuration complete!\n";
 

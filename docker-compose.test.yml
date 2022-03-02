@@ -44,7 +44,7 @@ services:
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:80
 
   bmo.db:
-    image: mysql:8.0.28
+    image: mysql:5.7
     tmpfs:
       - /tmp
     logging:

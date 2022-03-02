@@ -79,9 +79,13 @@
 
   [% ELSIF error == "account_locked" %]
     [% title = "Account Locked" %]
-    Your IP ([% ip_addr FILTER html %]) has been locked out of this
-    account until [% unlock_at FILTER time %], as you have
-    exceeded the maximum number of login attempts.
+    This account has been locked out until [% unlock_at FILTER time %] due
+    to exceeding the maximum number of failed login attempts from the
+    following ip address(es):<br>
+    [% FOREACH address = addresses.keys %]
+      [%+ address FILTER html +%]
+      [%+ IF addresses.${address} %]([% addresses.${address} FILTER html %])[% END %]<br>
+    [% END %]
 
   [% ELSIF error == "alias_has_comma_or_space" %]
     [% title = "Invalid Characters In Alias" %]

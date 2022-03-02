@@ -261,6 +261,19 @@ sub _handle_login_result {
       = datetime_from($determiner->{login_time}, Bugzilla->local_timezone);
     $unlock_at->add(minutes => LOGIN_LOCKOUT_INTERVAL);
 
+    # Note: inet_aton will only resolve IPv4 addresses.
+    # For IPv6 we'll need to use inet_pton which requires Perl 5.12.
+    # We use a hash for %addresses to filter out duplicates
+    my %addresses;
+    foreach my $attempt (@{$attempts}) {
+      $addresses{$attempt->{ip_addr}} = 0;
+      my $n = inet_aton($attempt->{ip_addr});
+      if ($n) {
+        my $host = gethostbyaddr($n, AF_INET);
+        $addresses{$attempt->{ip_addr}} = $host if $host;
+      }
+    }
+
     # If we were *just* locked out, notify the maintainer about the
     # lockout.
     if ($result->{just_locked_out}) {
@@ -271,34 +284,27 @@ sub _handle_login_result {
       my $default_settings = Bugzilla::User::Setting::get_defaults();
       my $template
         = Bugzilla->template_inner($default_settings->{lang}->{default_value});
-      my $address = $attempts->[0]->{ip_addr};
 
-      # Note: inet_aton will only resolve IPv4 addresses.
-      # For IPv6 we'll need to use inet_pton which requires Perl 5.12.
-      my $n = inet_aton($address);
-      if ($n) {
-        my $host = gethostbyaddr($n, AF_INET);
-        $address = "$host ($address)" if $host;
-      }
       my $vars = {
         locked_user => $user,
         attempts    => $attempts,
+        addresses   => \%addresses,
         unlock_at   => $unlock_at,
-        address     => $address,
       };
       my $message;
       $template->process('email/lockout.txt.tmpl', $vars, \$message)
         || ThrowTemplateError($template->error);
       MessageToMTA($message);
+      my $address_string = join ',', keys %addresses;
       Bugzilla->audit(sprintf(
-        '<%s> triggered lockout of %s after %s attempts',
-        $address, $user->login, scalar(@$attempts)
+        '%s triggered lockout of %s after %s attempts',
+        $address_string, $user->login, scalar @{$attempts}
       ));
     }
 
     $unlock_at->set_time_zone($user->timezone);
     ThrowUserError('account_locked',
-      {ip_addr => $determiner->{ip_addr}, unlock_at => $unlock_at});
+      {addresses => \%addresses, unlock_at => $unlock_at});
   }
 
   # If we get here, then we've run out of options, which shouldn't happen.

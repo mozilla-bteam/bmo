@@ -26,7 +26,7 @@ sub setup_routes {
 sub root {
   my ($c) = @_;
   $c->res->headers->cache_control('public, max-age=3600, immutable');
-  $c->render('index', handler => 'bugzilla');
+  $c->render(handler => 'bugzilla');
 }
 
 sub testagent {
