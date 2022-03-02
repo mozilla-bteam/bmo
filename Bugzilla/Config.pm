@@ -12,11 +12,15 @@ use strict;
 use warnings;
 
 use base qw(Exporter);
+
+use Bugzilla::Config::Param;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
-use Data::Dumper;
-use File::Temp;
+use Bugzilla::Logging;
+
 use Module::Runtime qw(require_module);
+use Safe;
+use Try::Tiny;
 
 # Don't export localvars by default - people should have to explicitly
 # ask for it, as a (probably futile) attempt to stop code using it
@@ -61,6 +65,7 @@ sub param_panels {
   foreach my $item ((glob "$libpath/Bugzilla/Config/*.pm")) {
     $item =~ m#/([^/]+)\.pm$#;
     my $module = $1;
+    next if $module eq 'Param';    # Skip the module used for loading params from DB
     $param_panels->{$module} = "Bugzilla::Config::$module"
       unless $module eq 'Common';
   }
@@ -95,7 +100,29 @@ sub update_params {
   my ($params) = @_;
   my $answer = Bugzilla->installation_answers;
 
-  my $param = read_param_file();
+  my $param = read_params();
+
+  # Migrate old file based parameters to the database
+  my $datadir = bz_locations()->{'datadir'};
+  if (-e "$datadir/params") {
+
+    # Read in the old data/params values
+    my $s = Safe->new;
+    $s->rdo("$datadir/params");
+    die "Error reading $datadir/params: $!"    if $!;
+    die "Error evaluating $datadir/params: $@" if $@;
+    my %file_params = %{$s->varglob('param')};
+
+    WARN('Migrating old parameters from data/params to database');
+    foreach my $key (keys %file_params) {
+      $param->{$key} = $file_params{$key};
+    }
+
+    WARN('Backing up old params file');
+    rename("$datadir/params", "$datadir/params.old")
+      or die "Rename params file failed: $!";
+  }
+
   my %new_params;
 
   # If we didn't return any param values, then this is a new installation.
@@ -171,7 +198,7 @@ sub update_params {
     $new_params{'ssl_redirect'} = 1;
   }
 
-# "specific_search_allow_empty_words" has been renamed to "search_allow_no_criteria".
+  # "specific_search_allow_empty_words" has been renamed to "search_allow_no_criteria".
   if (exists $param->{'specific_search_allow_empty_words'}) {
     $new_params{'search_allow_no_criteria'}
       = $param->{'specific_search_allow_empty_words'};
@@ -249,72 +276,72 @@ sub update_params {
 }
 
 sub write_params {
-  my ($param_data) = @_;
-  $param_data ||= Bugzilla->params;
+  my ($params) = @_;
+  $params ||= Bugzilla->params;
 
-  local $Data::Dumper::Sortkeys = 1;
+  unless (Bugzilla->request_cache->{no_database}) {
+    try {
+      foreach my $key (keys %{$params}) {
+        if (my $param = Bugzilla::Config::Param->new({name => $key})) {
+          my $value = $params->{$key} || ($param->is_numeric ? 0 : '');
+          if (($param->is_numeric && $value != $param->value) || $value ne $param->value)
+          {
+            $param->set_value($value);
+            $param->update();
+          }
+        }
+        else {
+          my $value = $params->{$key} || '';
+          Bugzilla::Config::Param->create({name => $key, value => $value});
+        }
+      }
+    }
+    catch {
+      WARN("Database not available: $_");
+    };
+  }
 
-  my %params = %$param_data;
-  $params{urlbase} = Bugzilla->localconfig->urlbase;
-  __PACKAGE__->_write_file(Data::Dumper->Dump([\%params], ['*param']));
-
-  # And now we have to reset the params cache so that Bugzilla will re-read
-  # them.
-  Bugzilla->memcached->clear_params();
+  # And now we have to reset the params cache
+  Bugzilla->memcached->set_params($params);
   delete Bugzilla->request_cache->{params};
 }
 
-sub read_param_file {
+sub read_params {
   my $cached_params = Bugzilla->memcached->get_params();
   return $cached_params if $cached_params;
+
   my %params;
-  my $datadir = bz_locations()->{'datadir'};
-  if (-e "$datadir/params") {
 
-    # Note that checksetup.pl sets file permissions on '$datadir/params'
-
-    # Using Safe mode is _not_ a guarantee of safety if someone does
-    # manage to write to the file. However, it won't hurt...
-    # See bug 165144 for not needing to eval this at all
-    my $s = new Safe;
-
-    $s->rdo("$datadir/params");
-    die "Error reading $datadir/params: $!"    if $!;
-    die "Error evaluating $datadir/params: $@" if $@;
-
-    # Now read the param back out from the sandbox
-    %params = %{$s->varglob('param')};
+  unless (Bugzilla->request_cache->{no_database}) {
+    try {
+      my @all_params = Bugzilla::Config::Param->get_all();
+      if (@all_params) {
+        foreach my $param (@all_params) {
+          $params{$param->name} = $param->value;
+        }
+      }
+    }
+    catch {
+      WARN("Database not available: $_");
+    };
   }
-  elsif ($ENV{'SERVER_SOFTWARE'}) {
 
-    # We're in a CGI, but the params file doesn't exist. We can't
+  if (!%params && $ENV{'SERVER_SOFTWARE'}) {
+
+    # We're in a CGI, but the parameters do not yet exist. We can't
     # Template Toolkit, or even install_string, since checksetup
     # might not have thrown an error. Bugzilla::CGI->new
     # hasn't even been called yet, so we manually use CGI::Carp here
     # so that the user sees the error.
     require CGI::Carp;
     CGI::Carp->import('fatalsToBrowser');
-    die "The $datadir/params file does not exist."
+    die "The parameters do not yet exist."
       . ' You probably need to run checksetup.pl.',;
   }
+
   Bugzilla->memcached->set_params(\%params);
+
   return \%params;
-}
-
-sub _write_file {
-  my ($class, $str) = @_;
-  my $datadir    = bz_locations()->{'datadir'};
-  my $param_file = "$datadir/params";
-  my ($fh, $tmpname) = File::Temp::tempfile('params.XXXXX', DIR => $datadir);
-  print $fh $str || die "Can't write param file: $!";
-  close $fh || die "Can't close param file: $!";
-
-  rename $tmpname, $param_file or die "Can't rename $tmpname to $param_file: $!";
-
-  # It's not common to edit parameters and loading
-  # Bugzilla::Install::Filesystem is slow.
-  require Bugzilla::Install::Filesystem;
-  Bugzilla::Install::Filesystem::fix_file_permissions($param_file);
 }
 
 1;
@@ -366,20 +393,10 @@ specified.
 
 Description: Writes the parameters to disk.
 
-Params:      C<$params> (optional) - A hashref to write to the disk
+Params:      C<$params> (optional) - A hashref to write to the DB
                instead of C<Bugzilla->params>. Used only by
                C<update_params>.
 
 Returns:     nothing
-
-=item C<read_param_file()>
-
-Description: Most callers should never need this. This is used
-             by C<Bugzilla->params> to directly read C<$datadir/params>
-             and load it into memory. Use C<Bugzilla->params> instead.
-
-Params:      none
-
-Returns:     A hashref containing the current params in C<$datadir/params>.
 
 =back

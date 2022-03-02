@@ -12,8 +12,8 @@ use lib qw( . lib local/lib/perl5 );
 use Test::More;
 use Test2::Tools::Mock qw(mock);
 
-require Bugzilla::Test::MockParams;
-Bugzilla::Test::MockParams->import(phabricator_api_key => 'FAKE-KEY');
+use Bugzilla::Test::MockDB;
+use Bugzilla::Test::MockParams (phabricator_api_key => 'FAKE-KEY');
 
 is(Bugzilla->params->{phabricator_api_key}, 'FAKE-KEY', 'set key');
 

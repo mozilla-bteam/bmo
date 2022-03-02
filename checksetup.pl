@@ -157,6 +157,7 @@ require Bugzilla::Install;
 
 Bugzilla->installation_mode(INSTALLATION_MODE_NON_INTERACTIVE) if $answers_file;
 Bugzilla->installation_answers($answers_file);
+Bugzilla->request_cache->{no_database} = 1 if $switch{'no-database'};
 
 ###########################################################################
 # Check and update --LOCAL-- configuration
@@ -465,8 +466,7 @@ L<Bugzilla::Install::Filesystem/create_htaccess>.
 
 =item 9
 
-Updates the system parameters (stored in F<data/params.json>), using
-L<Bugzilla::Config/update_params>.
+Updates the system parameters using L<Bugzilla::Config/update_params>.
 
 =item 10
 

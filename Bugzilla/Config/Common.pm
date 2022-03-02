@@ -102,7 +102,7 @@ sub check_utf8 {
 sub check_bug_type {
   my ($value) = (@_);
   my $legal_types = get_legal_field_values('bug_type');
-  if (!grep($_ eq $value, @$legal_types)) {
+  if (!$value || !grep($_ eq $value, @$legal_types)) {
     return "Must be a legal type value: one of "
       . join(", ", @$legal_types);
   }
