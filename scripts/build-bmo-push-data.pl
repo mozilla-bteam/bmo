@@ -173,7 +173,18 @@ sub fetch_bug {
   die 'missing id' unless $bug_id;
 
   my $response = _get('bug/' . $bug_id, {include_fields => BUG_FIELDS,});
-  return $response->{bugs}->[0];
+
+  if (exists $response->{bugs}) {
+    return $response->{bugs}->[0];
+  }
+  else {
+    return {
+      bug_id     => $bug_id,
+      status     => 'RESOLVED',
+      resolution => 'FIXED',
+      summary    => '*** Place holder for summary ***'
+    };
+  }
 }
 
 sub _get {
@@ -199,7 +210,13 @@ sub _get {
   }
 
   my $response = $ua->request($request);
-  if ($response->code !~ /^2/) {
+  if ($response->code =~ /^2/) {
+    return decode_json($response->decoded_content);
+  }
+  elsif ($response->code =~ /^4/) {
+    return {};
+  }
+  else {
     my $error = $response->message;
     my $ok    = eval {
       $error = decode_json($response->decoded_content)->{message};
@@ -208,5 +225,4 @@ sub _get {
     $error = $@ unless $ok;
     die $error . "\n";
   }
-  return decode_json($response->decoded_content);
 }
