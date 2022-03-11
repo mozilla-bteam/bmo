@@ -75,6 +75,7 @@ use constant SUB_CLASSES => qw(
   Bugzilla::BugUrl::Splat
   Bugzilla::BugUrl::Phabricator
   Bugzilla::BugUrl::ConnectMozOrg
+  Bugzilla::BugUrl::Reddit
 );
 
 ###############################
