@@ -395,10 +395,7 @@ END;
   [% END %]
 
   [% IF edit %]
-    <button type="button" id="[% name FILTER html %]-btn" class="bug-urls-btn minor"
-            aria-label="[% 'Add ' _ label FILTER html %]">Add</button>
-    <input id="[% name FILTER html %]" name="[% name FILTER html %]" style="display:none"
-           aria-label="[% label FILTER html %]">
+    <input id="[% name FILTER html %]" name="[% name FILTER html %]" aria-label="[% label FILTER html %]">
   [% END %]
 [% END %]
 

@@ -870,15 +870,6 @@ $(function() {
             other.val(that.val());
         });
 
-    // add see-also button
-    $('.bug-urls-btn')
-        .click(function(event) {
-            event.preventDefault();
-            var name = event.target.id.replace(/-btn$/, '');
-            $(event.target).hide();
-            $('#' + name).show().focus();
-        });
-
     // bug flag value <select>
     $('.bug-flag')
         .change(function(event) {
