@@ -15,6 +15,9 @@ use Test::More;
 
 use Bugzilla::Constants;
 
+use Bugzilla::Test::MockDB;
+use Bugzilla::Test::MockParams;
+
 # Write out the data/params file for migration
 my $datadir = bz_locations()->{'datadir'};
 open my $data_fh, '>:encoding(UTF-8)', "$datadir/params"
@@ -25,12 +28,8 @@ close DATA;
 
 ok(-f "$datadir/params", 'Original parameters file exists');
 
-# We run import manually instead of with 'use' so that
-# this loads after the data/params file has been written.
-require Bugzilla::Test::MockDB;
-Bugzilla::Test::MockDB->import;
-require Bugzilla::Test::MockParams;
-Bugzilla::Test::MockParams->import;
+my $params = Bugzilla::Config->new;
+$params->migrate_params();
 
 # Read file back as a Perl data structure for comparison
 ok(-f "$datadir/params.old", 'Backup parameters file exists');

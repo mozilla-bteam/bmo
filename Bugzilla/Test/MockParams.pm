@@ -16,7 +16,6 @@ use Bugzilla::Config;
 
 sub import {
   my ($self, %answers) = @_;
-  state $first_time = 0;
 
   require Bugzilla::Field;
   require Bugzilla::Status;
@@ -32,14 +31,9 @@ sub import {
   $answers{user_info_class}   //= 'GitHubAuth,CGI';
   $answers{user_verify_class} //= 'GitHubAuth,DB';
 
-  if ($first_time++) {
-    capture_merged {
-      Bugzilla::Config::update_params();
-    };
-  }
-  else {
-    Bugzilla::Config::SetParam($_, $answers{$_}) for keys %answers;
-  }
+  my $params = Bugzilla::Config->new;
+  $params->set_param($_, $answers{$_}) for keys %answers;
+  $params->update();
 }
 
 1;

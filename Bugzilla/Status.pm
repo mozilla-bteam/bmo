@@ -26,6 +26,8 @@ use base qw(Bugzilla::Field::Choice Exporter);
 
 use Bugzilla::Error;
 
+use Try::Tiny;
+
 ################################
 #####   Initialization     #####
 ################################
@@ -139,8 +141,11 @@ sub is_open_state {
 }
 
 sub closed_bug_statuses {
-  my @bug_statuses = Bugzilla::Status->get_all;
-  @bug_statuses = grep { !$_->is_open } @bug_statuses;
+  my @bug_statuses;
+  try {
+    @bug_statuses = Bugzilla::Status->get_all;
+    @bug_statuses = grep { !$_->is_open } @bug_statuses;
+  };
   return @bug_statuses;
 }
 
