@@ -20,6 +20,8 @@ use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Status;
 
+use Try::Tiny;
+
 use base qw(Exporter);
 @Bugzilla::Config::Common::EXPORT = qw(
   check_multi check_numeric check_regexp check_url check_group
@@ -112,7 +114,7 @@ sub check_bug_type {
 sub check_priority {
   my ($value) = (@_);
   my $legal_priorities = get_legal_field_values('priority');
-  if (!grep($_ eq $value, @$legal_priorities)) {
+  if (!$value || !grep($_ eq $value, @$legal_priorities)) {
     return "Must be a legal priority value: one of "
       . join(", ", @$legal_priorities);
   }
@@ -122,7 +124,7 @@ sub check_priority {
 sub check_severity {
   my ($value) = (@_);
   my $legal_severities = get_legal_field_values('bug_severity');
-  if (!grep($_ eq $value, @$legal_severities)) {
+  if (!$value || !grep($_ eq $value, @$legal_severities)) {
     return "Must be a legal severity value: one of "
       . join(", ", @$legal_severities);
   }
@@ -162,10 +164,12 @@ sub check_bug_status {
 sub check_group {
   my $group_name = shift;
   return "" unless $group_name;
-  my $group = new Bugzilla::Group({'name' => $group_name});
-  unless (defined $group) {
-    return "Must be an existing group name";
-  }
+  try {
+    my $group = new Bugzilla::Group({'name' => $group_name});
+    unless (defined $group) {
+      return "Must be an existing group name";
+    }
+  };
   return "";
 }
 
@@ -270,18 +274,20 @@ sub check_maxattachmentsize {
   my $check = check_numeric(@_);
   return $check if $check;
   my $size = shift;
-  my $dbh  = Bugzilla->dbh;
-  if ($dbh->isa('Bugzilla::DB::Mysql')) {
-    my (undef, $max_packet)
-      = $dbh->selectrow_array(q{SHOW VARIABLES LIKE 'max\_allowed\_packet'});
-    my $byte_size = $size * 1024;
-    if ($max_packet < $byte_size) {
-      return
-          "You asked for a maxattachmentsize of $byte_size bytes,"
-        . " but the max_allowed_packet setting in MySQL currently"
-        . " only allows packets up to $max_packet bytes";
+  try {
+    my $dbh = Bugzilla->dbh;
+    if ($dbh->isa('Bugzilla::DB::Mysql')) {
+      my (undef, $max_packet)
+        = $dbh->selectrow_array(q{SHOW VARIABLES LIKE 'max\_allowed\_packet'});
+      my $byte_size = $size * 1024;
+      if ($max_packet < $byte_size) {
+        return
+            "You asked for a maxattachmentsize of $byte_size bytes,"
+          . " but the max_allowed_packet setting in MySQL currently"
+          . " only allows packets up to $max_packet bytes";
+      }
     }
-  }
+  };
   return "";
 }
 
@@ -332,7 +338,11 @@ sub check_comment_taggers_group {
 }
 
 sub get_all_group_names {
-  return ['', map { $_->name } Bugzilla::Group->get_all,];
+  my $group_names = [''];
+  try {
+    $group_names = ['', map { $_->name } Bugzilla::Group->get_all,];
+  };
+  return $group_names;
 }
 
 # OK, here are the parameter definitions themselves.
