@@ -222,10 +222,8 @@ update_filesystem({index_html => $lc_hash->{'index_html'}});
 
 # Remove parameters from the params file that no longer exist in Bugzilla,
 # and set the defaults for new ones
-my %old_params = ();
-unless ($switch{'no-database'}) {
-  %old_params = Bugzilla::Config->new->migrate_params();
-}
+my %old_params
+  = $switch{'no-database'} ? () : Bugzilla::Config->new->migrate_params();
 
 ###########################################################################
 # Pre-compile --TEMPLATE-- code
