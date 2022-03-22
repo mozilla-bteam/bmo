@@ -141,7 +141,6 @@ require Bugzilla::Util;
 import Bugzilla::Util qw(get_text);
 
 require Bugzilla::Config;
-import Bugzilla::Config qw(:admin);
 
 require Bugzilla::Install::Localconfig;
 import Bugzilla::Install::Localconfig qw(update_localconfig);
@@ -221,7 +220,8 @@ update_filesystem({index_html => $lc_hash->{'index_html'}});
 
 # Remove parameters from the params file that no longer exist in Bugzilla,
 # and set the defaults for new ones
-my %old_params = $switch{'no-database'} ? () : update_params();
+my %old_params
+  = $switch{'no-database'} ? () : Bugzilla::Config->new->migrate_params();
 
 ###########################################################################
 # Pre-compile --TEMPLATE-- code
