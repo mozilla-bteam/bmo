@@ -72,6 +72,7 @@ use Bugzilla::Config qw(SetParam write_params);
 use Bugzilla::Hook;
 
 use Scalar::Util qw(blessed);
+use Try::Tiny;
 
 ###############################
 ####    Initialization     ####
@@ -1460,14 +1461,16 @@ Returns:   a reference to a list of valid values.
 =cut
 
 sub get_legal_field_values {
-  my ($field)    = @_;
-  my $dbh        = Bugzilla->dbh;
-  my $result_ref = $dbh->selectcol_arrayref(
-    "SELECT value FROM $field
-           WHERE isactive = ?
-        ORDER BY sortkey, value", undef, (1)
-  );
-  return $result_ref;
+  my ($field) = @_;
+  my $results = [];
+  try {
+    $results = Bugzilla->dbh->selectcol_arrayref(
+      "SELECT value FROM $field
+             WHERE isactive = ?
+          ORDER BY sortkey, value", undef, (1)
+    );
+  };
+  return $results;
 }
 
 =over
