@@ -104,7 +104,7 @@ sub check_utf8 {
 sub check_bug_type {
   my ($value) = (@_);
   my $legal_types = get_legal_field_values('bug_type');
-  if (!grep($_ eq $value, @$legal_types)) {
+  if (!$value || !grep($_ eq $value, @$legal_types)) {
     return "Must be a legal type value: one of "
       . join(", ", @$legal_types);
   }
@@ -114,7 +114,7 @@ sub check_bug_type {
 sub check_priority {
   my ($value) = (@_);
   my $legal_priorities = get_legal_field_values('priority');
-  if (!grep($_ eq $value, @$legal_priorities)) {
+  if (!$value || !grep($_ eq $value, @$legal_priorities)) {
     return "Must be a legal priority value: one of "
       . join(", ", @$legal_priorities);
   }
@@ -124,7 +124,7 @@ sub check_priority {
 sub check_severity {
   my ($value) = (@_);
   my $legal_severities = get_legal_field_values('bug_severity');
-  if (!grep($_ eq $value, @$legal_severities)) {
+  if (!$value || !grep($_ eq $value, @$legal_severities)) {
     return "Must be a legal severity value: one of "
       . join(", ", @$legal_severities);
   }
