@@ -263,6 +263,15 @@ sub migrate_params {
     }
   }
 
+  # Return deleted params and values so that checksetup.pl has a chance
+  # to convert old params to new data.
+  my %oldparams;
+  foreach my $item (keys %$param) {
+    if (!exists $params{$item}) {
+      $oldparams{$item} = delete $param->{$item};
+    }
+  }
+
   # Generate unique Duo integration secret key
   if ($param->{duo_akey} eq '') {
     require Bugzilla::Util;
@@ -270,8 +279,6 @@ sub migrate_params {
   }
 
   $param->{'utf8'} = 1 if $new_install;
-
-  my %oldparams;
 
   if ( ON_WINDOWS
     && !-e SENDMAIL_EXE
@@ -296,8 +303,6 @@ sub migrate_params {
 
   $self->update($param);
 
-  # Return deleted params and values so that checksetup.pl has a chance
-  # to convert old params to new data.
   return %oldparams;
 }
 
