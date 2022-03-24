@@ -192,8 +192,7 @@ unless ($switch{'no-database'}) {
 ###########################################################################
 
 # At this point, localconfig is defined and is readable. So we know
-# everything we need to create the DB. We have to create it early,
-# because some data required to populate data/params.json is stored in the DB.
+# everything we need to create the DB.
 
 unless ($switch{'no-database'}) {
   Bugzilla::DB::bz_check_requirements(!$silent);
@@ -465,8 +464,8 @@ L<Bugzilla::Install::Filesystem/create_htaccess>.
 
 =item 9
 
-Updates the system parameters (stored in F<data/params.json>), using
-L<Bugzilla::Config/update_params>.
+Updates the system parameters stored in the database, using
+L<Bugzilla::Config/migrate_params>.
 
 =item 10
 
