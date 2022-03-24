@@ -133,6 +133,27 @@ sub migrate_params {
   # If we didn't return any param values, then this is a new installation.
   my $new_install = !(keys %$param);
 
+  # Migrate old file based parameters to the database
+  my $datadir = bz_locations()->{'datadir'};
+  if (-e "$datadir/params") {
+
+    # Read in the old data/params values
+    my $s = Safe->new;
+    $s->rdo("$datadir/params");
+    die "Error reading $datadir/params: $!"    if $!;
+    die "Error evaluating $datadir/params: $@" if $@;
+    my %file_params = %{$s->varglob('param')};
+
+    WARN('Migrating old parameters from data/params to database');
+    foreach my $key (keys %file_params) {
+      $param->{$key} = $file_params{$key};
+    }
+
+    WARN('Backing up old params file');
+    rename("$datadir/params", "$datadir/params.old")
+      or die "Rename params file failed: $!";
+  }
+
   # --- UPDATE OLD PARAMS ---
 
   # Change from usebrowserinfo to defaultplatform/defaultopsys combo
