@@ -66,6 +66,7 @@ use base qw(Exporter Bugzilla::Object);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Logging;
 use Bugzilla::Util;
 use List::MoreUtils qw(any);
 use Bugzilla::Config qw(SetParam write_params);
@@ -1469,6 +1470,9 @@ sub get_legal_field_values {
              WHERE isactive = ?
           ORDER BY sortkey, value", undef, (1)
     );
+  }
+  catch {
+    WARN("Unable to retrieve legal field values: $_");
   };
   return $results;
 }

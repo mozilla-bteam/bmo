@@ -159,6 +159,9 @@ sub check_bug_status {
       return "Must be a valid closed status: one of "
         . join(', ', @closed_bug_statuses);
     }
+  }
+  catch {
+    WARN("Unable to check bug status: $_");
   };
   return "";
 }
@@ -171,6 +174,9 @@ sub check_group {
     unless (defined $group) {
       return "Must be an existing group name";
     }
+  }
+  catch {
+    WARN("Unable to check group name: $_");
   };
   return "";
 }
@@ -289,6 +295,9 @@ sub check_maxattachmentsize {
           . " only allows packets up to $max_packet bytes";
       }
     }
+  }
+  catch {
+    WARN("Unable to check max attachment size: $_");
   };
   return "";
 }
@@ -343,6 +352,9 @@ sub get_all_group_names {
   my $group_names = [''];
   try {
     $group_names = ['', map { $_->name } Bugzilla::Group->get_all,];
+  }
+  catch {
+    WARN("Unable to retrieve all group names: $_");
   };
   return $group_names;
 }
