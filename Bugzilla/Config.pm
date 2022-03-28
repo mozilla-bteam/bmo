@@ -79,7 +79,7 @@ sub set_param {
 
   die "Unknown param $name" unless (exists $self->{params}->{$name});
 
-  # Sanity check the value
+  # Validate the value
   # XXX - This runs the checks. Which would be good, except that
   # check_shadowdb creates the database as a side effect, and so the
   # checker fails the second time around...
