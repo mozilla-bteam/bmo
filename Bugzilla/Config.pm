@@ -126,12 +126,7 @@ sub update {
 sub migrate_params {
   my ($self, $params) = @_;
   my $answer = Bugzilla->installation_answers;
-
-  my $param = $self->params_as_hash;
-  my %new_params;
-
-  # If we didn't return any param values, then this is a new installation.
-  my $new_install = !(keys %$param);
+  my $param  = $self->params_as_hash;
 
   # Migrate old file based parameters to the database
   my $datadir = bz_locations()->{'datadir'};
@@ -155,6 +150,8 @@ sub migrate_params {
   }
 
   # --- UPDATE OLD PARAMS ---
+
+  my %new_params;
 
   # Change from usebrowserinfo to defaultplatform/defaultopsys combo
   if (exists $param->{'usebrowserinfo'}) {
@@ -224,7 +221,8 @@ sub migrate_params {
     $new_params{'ssl_redirect'} = 1;
   }
 
-# "specific_search_allow_empty_words" has been renamed to "search_allow_no_criteria".
+  # "specific_search_allow_empty_words" has been renamed to
+  # "search_allow_no_criteria".
   if (exists $param->{'specific_search_allow_empty_words'}) {
     $new_params{'search_allow_no_criteria'}
       = $param->{'specific_search_allow_empty_words'};
@@ -235,30 +233,37 @@ sub migrate_params {
   my %params = %{$self->_load_param_defs};
   foreach my $name (keys %params) {
     my $item = $params{$name};
-    unless (exists $param->{$name}) {
-      print "New parameter: $name\n" unless $new_install;
+
+    # If a new param was added since the last time we ran migrate_params,
+    # use either the value from new_params, if exists, or use the default.
+    if (!exists $param->{$name}) {
+      print "New parameter: $name\n";
       if (exists $new_params{$name}) {
         $param->{$name} = $new_params{$name};
-      }
-      elsif (exists $answer->{$name}) {
-        $param->{$name} = $answer->{$name};
       }
       else {
         $param->{$name} = $item->{'default'};
       }
     }
-    else {
-      my $checker = $item->{'checker'};
-      my $updater = $item->{'updater'};
-      if ($checker) {
-        my $error = $checker->($param->{$name}, $item);
-        if ($error && $updater) {
-          my $new_val = $updater->($param->{$name});
-          $param->{$name} = $new_val unless $checker->($new_val, $item);
-        }
-        elsif ($error) {
-          warn "Invalid parameter: $name\n";
-        }
+
+    # If an answers file was passed to checksetup.pl then override the
+    # current values with the ones in the answers file.
+    if (exists $answer->{$name}) {
+      $param->{$name} = $answer->{$name};
+    }
+
+    # Check all values to make sure they are still valid if a checker
+    # function exists.
+    my $checker = $item->{'checker'};
+    my $updater = $item->{'updater'};
+    if ($checker) {
+      my $error = $checker->($param->{$name}, $item);
+      if ($error && $updater) {
+        my $new_val = $updater->($param->{$name});
+        $param->{$name} = $new_val unless $checker->($new_val, $item);
+      }
+      elsif ($error) {
+        warn "Invalid parameter: $name\n";
       }
     }
   }
@@ -277,8 +282,6 @@ sub migrate_params {
     require Bugzilla::Util;
     $param->{duo_akey} = Bugzilla::Util::generate_random_password(40);
   }
-
-  $param->{'utf8'} = 1 if $new_install;
 
   if ( ON_WINDOWS
     && !-e SENDMAIL_EXE
