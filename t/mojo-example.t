@@ -25,7 +25,7 @@ use Bugzilla::Test::MockLocalconfig (urlbase => 'http://bmo.test');
 # This configures an in-memory SQLite database.
 use Bugzilla::Test::MockDB;
 
-# This redirects reads and writes from the system parameters
+# This redirects reads and writes parameters in the database.
 use Bugzilla::Test::MockParams (announcehtml => 'Mojo::Test is awesome');
 
 # Util provides a few functions more making mock data in the DB.

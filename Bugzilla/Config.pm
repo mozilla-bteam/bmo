@@ -58,7 +58,7 @@ sub new {
       WARN("Database not yet available: $_");
 
       # Load defaults if database is unavailable
-      my $defs = $self->_load_defs();
+      my $defs = $self->_load_param_defs();
       foreach my $key (keys %{$defs}) {
         $self->{params}->{$key} = $defs->{$key}->{default};
       }
@@ -79,17 +79,20 @@ sub set_param {
 
   die "Unknown param $name" unless (exists $self->{params}->{$name});
 
-  # Sanity check the value
+  # Validate the value
   # XXX - This runs the checks. Which would be good, except that
   # check_shadowdb creates the database as a side effect, and so the
   # checker fails the second time around...
-  my $def = $self->{param_defs}->{$name};
+  my $def = $self->_load_param_defs->{$name};
   if ($name ne 'shadowdb' && exists $def->{'checker'}) {
     my $err = $def->{'checker'}->($value, $def);
     die "Param $name is not valid: $err" unless $err eq '';
   }
 
   $self->{params}->{$name} = $value;
+
+  # Force Bugzilla->params to see the new change
+  delete Bugzilla->request_cache->{params};
 }
 
 sub update {
@@ -121,12 +124,11 @@ sub update {
 }
 
 sub migrate_params {
-  my ($self) = @_;
-  my $answers = Bugzilla->installation_answers;
-  my $params  = $self->{params};
+  my ($self, $params) = @_;
+  my $answer = Bugzilla->installation_answers;
+  my $param  = $self->params_as_hash;
 
   # Migrate old file based parameters to the database
-
   my $datadir = bz_locations()->{'datadir'};
   if (-e "$datadir/params") {
 
@@ -139,7 +141,7 @@ sub migrate_params {
 
     WARN('Migrating old parameters from data/params to database');
     foreach my $key (keys %file_params) {
-      $params->{$key} = $file_params{$key};
+      $param->{$key} = $file_params{$key};
     }
 
     WARN('Backing up old params file');
@@ -147,70 +149,61 @@ sub migrate_params {
       or die "Rename params file failed: $!";
   }
 
-  # Update old params
+  # --- UPDATE OLD PARAMS ---
 
   my %new_params;
 
   # Change from usebrowserinfo to defaultplatform/defaultopsys combo
-  if (exists $params->{'usebrowserinfo'}) {
-    if (!$params->{'usebrowserinfo'}) {
-      if (!exists $params->{'defaultplatform'}) {
+  if (exists $param->{'usebrowserinfo'}) {
+    if (!$param->{'usebrowserinfo'}) {
+      if (!exists $param->{'defaultplatform'}) {
         $new_params{'defaultplatform'} = 'Other';
       }
-      if (!exists $params->{'defaultopsys'}) {
+      if (!exists $param->{'defaultopsys'}) {
         $new_params{'defaultopsys'} = 'Other';
       }
     }
   }
 
   # Change from a boolean for quips to multi-state
-  if (exists $params->{'usequip'}
-    && !exists $params->{'enablequips'})
-  {
-    $new_params{'enablequips'} = $params->{'usequip'} ? 'on' : 'off';
+  if (exists $param->{'usequip'} && !exists $param->{'enablequips'}) {
+    $new_params{'enablequips'} = $param->{'usequip'} ? 'on' : 'off';
   }
 
   # Change from old product groups to controls for group_control_map
   # 2002-10-14 bug 147275 bugreport@peshkin.net
-  if (exists $params->{'usebuggroups'}
-    && !exists $params->{'makeproductgroups'})
-  {
-    $new_params{'makeproductgroups'} = $params->{'usebuggroups'};
+  if (exists $param->{'usebuggroups'} && !exists $param->{'makeproductgroups'}) {
+    $new_params{'makeproductgroups'} = $param->{'usebuggroups'};
   }
 
   # Modularise auth code
-  if (exists $params->{'useLDAP'}
-    && !exists $params->{'loginmethod'})
-  {
-    $new_params{'loginmethod'} = $params->{'useLDAP'} ? "LDAP" : "DB";
+  if (exists $param->{'useLDAP'} && !exists $param->{'loginmethod'}) {
+    $new_params{'loginmethod'} = $param->{'useLDAP'} ? "LDAP" : "DB";
   }
 
   # set verify method to whatever loginmethod was
-  if (exists $params->{'loginmethod'}
-    && !exists $params->{'user_verify_class'})
-  {
-    $new_params{'user_verify_class'} = $params->{'loginmethod'};
+  if (exists $param->{'loginmethod'} && !exists $param->{'user_verify_class'}) {
+    $new_params{'user_verify_class'} = $param->{'loginmethod'};
   }
 
   # Remove quip-display control from parameters
   # and give it to users via User Settings (Bug 41972)
-  if (exists $params->{'enablequips'}
-    && !exists $params->{'quip_list_entry_control'})
+  if (exists $param->{'enablequips'}
+    && !exists $param->{'quip_list_entry_control'})
   {
     my $new_value;
-    ($params->{'enablequips'} eq 'on') && do { $new_value = 'open'; };
-    ($params->{'enablequips'} eq 'approved')
-      && do { $new_value = 'moderated'; };
-    ($params->{'enablequips'} eq 'frozen') && do { $new_value = 'closed'; };
-    ($params->{'enablequips'} eq 'off')    && do { $new_value = 'closed'; };
+    ($param->{'enablequips'} eq 'on')       && do { $new_value = 'open'; };
+    ($param->{'enablequips'} eq 'approved') && do { $new_value = 'moderated'; };
+    ($param->{'enablequips'} eq 'frozen')   && do { $new_value = 'closed'; };
+    ($param->{'enablequips'} eq 'off')      && do { $new_value = 'closed'; };
     $new_params{'quip_list_entry_control'} = $new_value;
   }
 
   # Old mail_delivery_method choices contained no uppercase characters
-  if (exists $params->{'mail_delivery_method'}
-    && $params->{'mail_delivery_method'} !~ /[A-Z]/)
+  if (exists $param->{'mail_delivery_method'}
+    && $param->{'mail_delivery_method'} !~ /[A-Z]/)
   {
-    my $method      = $params->{'mail_delivery_method'};
+    my $method      = $param->{'mail_delivery_method'};
     my %translation = (
       'sendmail' => 'Sendmail',
       'smtp'     => 'SMTP',
@@ -218,40 +211,56 @@ sub migrate_params {
       'testfile' => 'Test',
       'none'     => 'None'
     );
-    $params->{'mail_delivery_method'} = $translation{$method};
+    $param->{'mail_delivery_method'} = $translation{$method};
   }
 
   # Convert the old "ssl" parameter to the new "ssl_redirect" parameter.
   # Both "authenticated sessions" and "always" turn on "ssl_redirect"
   # when upgrading.
-  if (exists $params->{'ssl'} and $params->{'ssl'} ne 'never') {
+  if (exists $param->{'ssl'} and $param->{'ssl'} ne 'never') {
     $new_params{'ssl_redirect'} = 1;
   }
 
-  # "specific_search_allow_empty_words" has been renamed to "search_allow_no_criteria".
-  if (exists $params->{'specific_search_allow_empty_words'}) {
+  # "specific_search_allow_empty_words" has been renamed to
+  # "search_allow_no_criteria".
+  if (exists $param->{'specific_search_allow_empty_words'}) {
     $new_params{'search_allow_no_criteria'}
-      = $params->{'specific_search_allow_empty_words'};
+      = $param->{'specific_search_allow_empty_words'};
   }
 
-  # Defaults for new params
+  # --- DEFAULTS FOR NEW PARAMS ---
 
-  my $defs = $self->_load_defs();
-  foreach my $name (keys %{$defs}) {
-    my $item = $defs->{$name};
-    if (!exists $params->{$name} && exists $new_params{$name}) {
-      $params->{$name} = $new_params{$name};
+  my %params = %{$self->_load_param_defs};
+  foreach my $name (keys %params) {
+    my $item = $params{$name};
+
+    # If a new param was added since the last time we ran migrate_params,
+    # use either the value from new_params, if exists, or use the default.
+    if (!exists $param->{$name}) {
+      print "New parameter: $name\n";
+      if (exists $new_params{$name}) {
+        $param->{$name} = $new_params{$name};
+      }
+      else {
+        $param->{$name} = $item->{'default'};
+      }
     }
-    elsif (exists $answers->{$name}) {
-      $params->{$name} = $answers->{$name};
+
+    # If an answers file was passed to checksetup.pl then override the
+    # current values with the ones in the answers file.
+    if (exists $answer->{$name}) {
+      $param->{$name} = $answer->{$name};
     }
+
+    # Check all values to make sure they are still valid if a checker
+    # function exists.
     my $checker = $item->{'checker'};
     my $updater = $item->{'updater'};
     if ($checker) {
-      my $error = $checker->($params->{$name}, $item);
+      my $error = $checker->($param->{$name}, $item);
       if ($error && $updater) {
-        my $new_val = $updater->($params->{$name});
-        $params->{$name} = $new_val unless $checker->($new_val, $item);
+        my $new_val = $updater->($param->{$name});
+        $param->{$name} = $new_val unless $checker->($new_val, $item);
       }
       elsif ($error) {
         warn "Invalid parameter: $name\n";
@@ -259,54 +268,52 @@ sub migrate_params {
     }
   }
 
-  # Warn about old params
-  my %old_params;
-  foreach my $item (keys %{$defs}) {
-    if (!exists $params->{$item}) {
-      warn "Obsolete parameter: $item\n";
-      $old_params{$item} = delete $params->{$item};
+  # Return deleted params and values so that checksetup.pl has a chance
+  # to convert old params to new data.
+  my %oldparams;
+  foreach my $item (keys %$param) {
+    if (!exists $params{$item}) {
+      $oldparams{$item} = delete $param->{$item};
     }
   }
 
   # Generate unique Duo integration secret key
-  if ($params->{duo_akey} eq '') {
+  if ($param->{duo_akey} eq '') {
     require Bugzilla::Util;
-    $params->{duo_akey} = Bugzilla::Util::generate_random_password(40);
+    $param->{duo_akey} = Bugzilla::Util::generate_random_password(40);
   }
-
-  $params->{'utf8'} = 1;
 
   if ( ON_WINDOWS
     && !-e SENDMAIL_EXE
-    && $params->{'mail_delivery_method'} eq 'Sendmail')
+    && $param->{'mail_delivery_method'} eq 'Sendmail')
   {
-    my $smtp = $answers->{'SMTP_SERVER'};
+    my $smtp = $answer->{'SMTP_SERVER'};
     if (!$smtp) {
       print "\nBugzilla requires an SMTP server to function on",
         " Windows.\nPlease enter your SMTP server's hostname: ";
       $smtp = <STDIN>;
       chomp $smtp;
       if ($smtp) {
-        $params->{'smtpserver'} = $smtp;
+        $param->{'smtpserver'} = $smtp;
       }
       else {
         print "\nWarning: No SMTP Server provided, defaulting to", " localhost\n";
       }
     }
 
-    $params->{'mail_delivery_method'} = 'SMTP';
+    $param->{'mail_delivery_method'} = 'SMTP';
   }
 
-  $self->update($params);
+  $self->update($param);
 
-  return %old_params;
+  return %oldparams;
 }
 
 ###############################
 ####      Accessors        ####
 ###############################
 
-sub get_param      { return $_[0]->{params} => [1]; }
+sub get_param      { return $_[0]->{params}->{$_[1]}; }
 sub params_as_hash { return $_[0]->{params}; }
 
 sub param_panels {
@@ -333,12 +340,12 @@ sub param_panels {
 ####      Private          ####
 ###############################
 
-sub _load_defs {
+sub _load_param_defs {
   my ($self) = @_;
 
   return $self->{param_defs} if exists $self->{params_def};
 
-  my $panels = $self->param_panels();
+  my $panels = $self->param_panels;
   my %hook_panels;
   foreach my $panel (keys %$panels) {
     my $module = $panels->{$panel};

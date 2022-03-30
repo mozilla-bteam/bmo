@@ -190,6 +190,8 @@ sub FILESYSTEM {
     'docs/style.css'               => {perms => WS_SERVE},
     'docs/*/rel_notes.txt'         => {perms => WS_SERVE},
     'docs/*/README.docs'           => {perms => OWNER_WRITE},
+    "$datadir/params.old"          => {perms => CGI_WRITE},
+    "$datadir/old-params.txt"      => {perms => OWNER_WRITE},
     "$extensionsdir/create.pl"     => {perms => OWNER_EXECUTE},
     "$extensionsdir/*/*.pl"        => {perms => WS_EXECUTE},
     "$extensionsdir/*/bin/*"       => {perms => WS_EXECUTE},

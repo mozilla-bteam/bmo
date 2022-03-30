@@ -13,19 +13,14 @@ use Capture::Tiny qw(capture_merged);
 use Test2::Tools::Mock qw(mock);
 
 use Bugzilla::Config;
+use Bugzilla::Logging;
 
 sub import {
   my ($self, %answers) = @_;
 
-  require Bugzilla::Field;
-  require Bugzilla::Status;
   require Bugzilla;
   my $Bugzilla = mock 'Bugzilla' =>
     (override => [installation_answers => sub { \%answers },],);
-  my $BugzillaField = mock 'Bugzilla::Field' =>
-    (override => [get_legal_field_values => sub { [] },],);
-  my $BugzillaStatus = mock 'Bugzilla::Status' =>
-    (override => [closed_bug_statuses => sub { die "no database" },],);
 
   # prod-like defaults
   $answers{user_info_class}   //= 'GitHubAuth,OAuth2,CGI';
