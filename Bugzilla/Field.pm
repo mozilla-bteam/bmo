@@ -311,6 +311,13 @@ use constant DEFAULT_FIELDS => (
     is_numeric     => 1,
   },
   {
+    name           => 'see_also_count',
+    desc           => 'Number of See Also',
+    type           => FIELD_TYPE_INTEGER,
+    buglist        => 1,
+    is_numeric     => 1,
+  },
+  {
     name           => 'dependson',
     desc           => 'Depends on',
     type           => FIELD_TYPE_BUG_LIST,

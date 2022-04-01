@@ -57,6 +57,7 @@ use constant IGNORE_FIELDS => qw(
   regresses.count
   reporter
   reporter_accessible
+  see_also_count
   setters.login_name
   tag
   votes
