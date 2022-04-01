@@ -143,6 +143,8 @@ sub startup {
       Bugzilla->clear_request_cache();
       # We also need to clear CGI's globals.
       CGI::initialize_globals();
+      # Store away the default controller for use by non-Mojo legacy code
+      Bugzilla->request_cache->{mojo_controller} = $_[0];
     }
   );
   $self->hook(after_dispatch => sub {

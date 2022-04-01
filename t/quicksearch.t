@@ -22,12 +22,11 @@ use ok 'Bugzilla::Search';
 use ok 'Bugzilla::Search::Quicksearch';
 
 my $CGI = mock 'Bugzilla::CGI' => (add_constructor => [fake_new => 'hash',]);
-Bugzilla->usage_mode(USAGE_MODE_MOJO);
 Bugzilla->request_cache->{cgi} = Bugzilla::CGI->fake_new();
 
 like(
   dies { quicksearch('') },
-  qr/buglist_parameters_required/,
+  qr/without any search terms/,
   "Got right exception"
 );
 

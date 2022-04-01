@@ -518,7 +518,7 @@ sub usage_mode {
     elsif ($newval == USAGE_MODE_REST) {
       $class->error_mode(ERROR_MODE_REST);
     }
-    elsif ($newval == USAGE_MODE_MOJO) {
+    elsif ($newval == USAGE_MODE_MOJO || $newval == USAGE_MODE_MOJO_REST) {
       $class->error_mode(ERROR_MODE_MOJO);
     }
     else {
