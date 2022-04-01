@@ -980,7 +980,6 @@ sub config_modify_panels {
     {
     name    => 'max_reviewer_last_seen',
     type    => 't',
-    default => '',
     default => 0,
     checker => \&check_numeric,
     };
