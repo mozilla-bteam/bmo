@@ -13,55 +13,22 @@ use Capture::Tiny qw(capture_merged);
 use Test2::Tools::Mock qw(mock);
 
 use Bugzilla::Config;
-use Safe;
-
-our $Params;
-
-BEGIN {
-  our $Mock = mock 'Bugzilla::Config' => (
-    override => [
-      'read_param_file' => sub {
-        my ($class) = @_;
-        return {} unless $Params;
-        my $s = Safe->new;
-        $s->reval($Params);
-        die "Error evaluating params: $@" if $@;
-        return {%{$s->varglob('param')}};
-      },
-      '_write_file' => sub {
-        my ($class, $str) = @_;
-        $Params = $str;
-      },
-    ],
-  );
-}
+use Bugzilla::Logging;
 
 sub import {
   my ($self, %answers) = @_;
-  state $first_time = 0;
 
-  require Bugzilla::Field;
-  require Bugzilla::Status;
   require Bugzilla;
   my $Bugzilla = mock 'Bugzilla' =>
     (override => [installation_answers => sub { \%answers },],);
-  my $BugzillaField = mock 'Bugzilla::Field' =>
-    (override => [get_legal_field_values => sub { [] },],);
-  my $BugzillaStatus = mock 'Bugzilla::Status' =>
-    (override => [closed_bug_statuses => sub { die "no database" },],);
 
   # prod-like defaults
   $answers{user_info_class}   //= 'GitHubAuth,OAuth2,CGI';
   $answers{user_verify_class} //= 'GitHubAuth,DB';
 
-  if ($first_time++) {
-    capture_merged {
-      Bugzilla::Config::update_params();
-    };
-  }
-  else {
-    Bugzilla::Config::SetParam($_, $answers{$_}) for keys %answers;
-  }
+  my $params = Bugzilla::Config->new;
+  $params->set_param($_, $answers{$_}) for keys %answers;
+  $params->update();
 }
 
 1;

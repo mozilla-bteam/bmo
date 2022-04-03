@@ -421,9 +421,8 @@ user_verify_class (in the Authentication section)
     Unless you have other (working) authentication methods listed as
     well, you may otherwise not be able to log back in to Bugzilla once
     you log out.
-    If this happens to you, you will need to manually edit
-    :file:`data/params.json` and set :param:`user_verify_class` to
-    :paramval:`DB`.
+    If this happens to you, you will need to manually set
+    :param:`user_verify_class` to :paramval:`DB` in the database.
 
 LDAPserver
     This parameter should be set to the name (and optionally the
@@ -496,9 +495,8 @@ user_verify_class (in the Authentication section)
     Unless you have other (working) authentication methods listed as
     well, you may otherwise not be able to log back in to Bugzilla once
     you log out.
-    If this happens to you, you will need to manually edit
-    :file:`data/params.json` and set :param:`user_verify_class` to
-    :paramval:`DB`.
+    If this happens to you, you will need to manually set
+    :param:`user_verify_class` to :paramval:`DB` in the database.
 
 RADIUS_server
     The name (and optionally the port) of your RADIUS server.

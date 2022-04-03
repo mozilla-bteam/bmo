@@ -163,7 +163,7 @@ sub localconfig {
 
 
 sub params {
-  return request_cache->{params} ||= Bugzilla::Config::read_param_file();
+  return request_cache->{params} ||= Bugzilla::Config->new->params_as_hash;
 }
 
 sub get_param_with_override {
@@ -1130,9 +1130,7 @@ Change the database object to refer to the main database.
 
 =item C<params>
 
-The current Parameters of Bugzilla, as a hashref. If C<data/params>
-does not exist, then we return an empty hashref. If C<data/params>
-is unreadable or is not valid Perl, we C<die>.
+The current Parameters of Bugzilla, as a hashref.
 
 =item C<local_timezone>
 

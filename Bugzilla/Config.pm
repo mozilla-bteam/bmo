@@ -11,97 +11,147 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use base qw(Exporter);
-use Bugzilla::Constants;
-use Bugzilla::Hook;
-use Data::Dumper;
-use File::Temp;
-use Module::Runtime qw(require_module);
+use base qw(Bugzilla::Object Exporter);
 
-# Don't export localvars by default - people should have to explicitly
-# ask for it, as a (probably futile) attempt to stop code using it
-# when it shouldn't
+use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Hook;
+use Bugzilla::Logging;
+
+use Module::Runtime qw(require_module);
+use Safe;
+use Try::Tiny;
+
 %Bugzilla::Config::EXPORT_TAGS
-  = (admin => [qw(update_params SetParam write_params)],);
+  = (admin => [qw(SetParam write_params)],);
 Exporter::export_ok_tags('admin');
 
-# INITIALIZATION CODE
-# Perl throws a warning if we use bz_locations() directly after do.
-our %params;
+###############################
+####    Initialization     ####
+###############################
 
-# Load in the param definitions
-sub _load_params {
-  my $panels = param_panels();
-  my %hook_panels;
-  foreach my $panel (keys %$panels) {
-    my $module = $panels->{$panel};
-    require_module($module);
-    my @new_param_list = $module->get_param_list();
-    $hook_panels{lc($panel)} = {params => \@new_param_list};
+sub new {
+  my $invocant = shift;
+  my $class    = ref($invocant) || $invocant;
+
+  my $cache = Bugzilla->request_cache;
+  if ($cache->{params_obj}) {
+    return $cache->{params_obj};
   }
 
-  # This hook is also called in editparams.cgi. This call here is required
-  # to make SetParam work.
-  Bugzilla::Hook::process('config_modify_panels', {panels => \%hook_panels});
+  my $self = {params => {}};
+  bless($self, $class);
 
-  foreach my $panel (keys %hook_panels) {
-    foreach my $item (@{$hook_panels{$panel}->{params}}) {
-      $params{$item->{'name'}} = $item;
+  if (my $cached_params = Bugzilla->memcached->get_params()) {
+    $self->{params} = $cached_params;
+  }
+  else {
+    try {
+      my $dbh  = Bugzilla->dbh;
+      my $rows = $dbh->selectall_arrayref('SELECT name, value FROM params');
+      foreach my $row (@$rows) {
+        my ($name, $value) = @$row;
+        $self->{params}->{$name} = $value;
+      }
     }
-  }
-}
+    catch {
+      WARN("Database not yet available: $_");
 
-# END INIT CODE
-
-# Subroutines go here
-
-sub param_panels {
-  my $param_panels = {};
-  my $libpath      = bz_locations()->{'libpath'};
-  foreach my $item ((glob "$libpath/Bugzilla/Config/*.pm")) {
-    $item =~ m#/([^/]+)\.pm$#;
-    my $module = $1;
-    $param_panels->{$module} = "Bugzilla::Config::$module"
-      unless $module eq 'Common';
+      # Load defaults if database is unavailable
+      my $defs = $self->_load_param_defs();
+      foreach my $key (keys %{$defs}) {
+        $self->{params}->{$key} = $defs->{$key}->{default};
+      }
+    };
   }
 
-  # Now check for any hooked params
-  Bugzilla::Hook::process('config_add_panels', {panel_modules => $param_panels});
-  return $param_panels;
+  $cache->{params_obj} = $self;
+
+  return $self;
 }
 
-sub SetParam {
-  my ($name, $value) = @_;
+###############################
+####       Setters         ####
+###############################
 
-  _load_params unless %params;
-  die "Unknown param $name" unless (exists $params{$name});
+sub set_param {
+  my ($self, $name, $value) = @_;
 
-  my $entry = $params{$name};
+  die "Unknown param $name" unless (exists $self->{params}->{$name});
 
-  # sanity check the value
-
+  # Validate the value
   # XXX - This runs the checks. Which would be good, except that
   # check_shadowdb creates the database as a side effect, and so the
   # checker fails the second time around...
-  if ($name ne 'shadowdb' && exists $entry->{'checker'}) {
-    my $err = $entry->{'checker'}->($value, $entry);
+  my $def = $self->_load_param_defs->{$name};
+  if ($name ne 'shadowdb' && exists $def->{'checker'}) {
+    my $err = $def->{'checker'}->($value, $def);
     die "Param $name is not valid: $err" unless $err eq '';
   }
 
-  Bugzilla->params->{$name} = $value;
+  $self->{params}->{$name} = $value;
+
+  # Force Bugzilla->params to see the new change
+  delete Bugzilla->request_cache->{params};
 }
 
-sub update_params {
-  my ($params) = @_;
+sub update {
+  my ($self, $params) = @_;
+  $params ||= $self->{params};
+
+  try {
+    my $dbh = Bugzilla->dbh;
+    foreach my $key (keys %{$params}) {
+      my $new_value = $params->{$key} || '';
+      if ($dbh->selectrow_array('SELECT 1 FROM params WHERE name = ?', undef, $key)) {
+        $dbh->do('UPDATE params SET value = ? WHERE name = ?', undef, $new_value, $key);
+      }
+      else {
+        $dbh->do('INSERT INTO params (name, value) VALUES (?, ?)',
+          undef, $key, $new_value);
+      }
+    }
+
+    # And now we have to reset the params cache
+    Bugzilla->memcached->set_params($params);
+    delete Bugzilla->request_cache->{params};
+    delete Bugzilla->request_cache->{params_obj};
+    $self->{params} = $params;
+  }
+  catch {
+    WARN("Database not yet available: $_");
+  };
+}
+
+sub migrate_params {
+  my ($self, $params) = @_;
   my $answer = Bugzilla->installation_answers;
+  my $param  = $self->params_as_hash;
 
-  my $param = read_param_file();
-  my %new_params;
+  # Migrate old file based parameters to the database
+  my $datadir = bz_locations()->{'datadir'};
+  if (-e "$datadir/params") {
 
-  # If we didn't return any param values, then this is a new installation.
-  my $new_install = !(keys %$param);
+    # Read in the old data/params values
+    my $s = Safe->new;
+    $s->rdo("$datadir/params");
+    die "Error reading $datadir/params: $!"    if $!;
+    die "Error evaluating $datadir/params: $@" if $@;
+    my %file_params = %{$s->varglob('param')};
+
+    WARN('Migrating old parameters from data/params to database');
+    foreach my $key (keys %file_params) {
+      $param->{$key} = $file_params{$key};
+    }
+
+    WARN('Backing up old params file');
+    rename("$datadir/params", "$datadir/params.old")
+      or die "Rename params file failed: $!";
+  }
 
   # --- UPDATE OLD PARAMS ---
+
+  my %new_params;
 
   # Change from usebrowserinfo to defaultplatform/defaultopsys combo
   if (exists $param->{'usebrowserinfo'}) {
@@ -171,7 +221,8 @@ sub update_params {
     $new_params{'ssl_redirect'} = 1;
   }
 
-# "specific_search_allow_empty_words" has been renamed to "search_allow_no_criteria".
+  # "specific_search_allow_empty_words" has been renamed to
+  # "search_allow_no_criteria".
   if (exists $param->{'specific_search_allow_empty_words'}) {
     $new_params{'search_allow_no_criteria'}
       = $param->{'specific_search_allow_empty_words'};
@@ -179,34 +230,50 @@ sub update_params {
 
   # --- DEFAULTS FOR NEW PARAMS ---
 
-  _load_params unless %params;
+  my %params = %{$self->_load_param_defs};
   foreach my $name (keys %params) {
     my $item = $params{$name};
-    unless (exists $param->{$name}) {
-      print "New parameter: $name\n" unless $new_install;
+
+    # If a new param was added since the last time we ran migrate_params,
+    # use either the value from new_params, if exists, or use the default.
+    if (!exists $param->{$name}) {
+      print "New parameter: $name\n";
       if (exists $new_params{$name}) {
         $param->{$name} = $new_params{$name};
-      }
-      elsif (exists $answer->{$name}) {
-        $param->{$name} = $answer->{$name};
       }
       else {
         $param->{$name} = $item->{'default'};
       }
     }
-    else {
-      my $checker = $item->{'checker'};
-      my $updater = $item->{'updater'};
-      if ($checker) {
-        my $error = $checker->($param->{$name}, $item);
-        if ($error && $updater) {
-          my $new_val = $updater->($param->{$name});
-          $param->{$name} = $new_val unless $checker->($new_val, $item);
-        }
-        elsif ($error) {
-          warn "Invalid parameter: $name\n";
-        }
+
+    # If an answers file was passed to checksetup.pl then override the
+    # current values with the ones in the answers file.
+    if (exists $answer->{$name}) {
+      $param->{$name} = $answer->{$name};
+    }
+
+    # Check all values to make sure they are still valid if a checker
+    # function exists.
+    my $checker = $item->{'checker'};
+    my $updater = $item->{'updater'};
+    if ($checker) {
+      my $error = $checker->($param->{$name}, $item);
+      if ($error && $updater) {
+        my $new_val = $updater->($param->{$name});
+        $param->{$name} = $new_val unless $checker->($new_val, $item);
       }
+      elsif ($error) {
+        warn "Invalid parameter: $name\n";
+      }
+    }
+  }
+
+  # Return deleted params and values so that checksetup.pl has a chance
+  # to convert old params to new data.
+  my %oldparams;
+  foreach my $item (keys %$param) {
+    if (!exists $params{$item}) {
+      $oldparams{$item} = delete $param->{$item};
     }
   }
 
@@ -215,10 +282,6 @@ sub update_params {
     require Bugzilla::Util;
     $param->{duo_akey} = Bugzilla::Util::generate_random_password(40);
   }
-
-  $param->{'utf8'} = 1 if $new_install;
-
-  my %oldparams;
 
   if ( ON_WINDOWS
     && !-e SENDMAIL_EXE
@@ -241,145 +304,80 @@ sub update_params {
     $param->{'mail_delivery_method'} = 'SMTP';
   }
 
-  write_params($param);
+  $self->update($param);
 
-  # Return deleted params and values so that checksetup.pl has a chance
-  # to convert old params to new data.
   return %oldparams;
 }
 
+###############################
+####      Accessors        ####
+###############################
+
+sub get_param      { return $_[0]->{params}->{$_[1]}; }
+sub params_as_hash { return $_[0]->{params}; }
+
+sub param_panels {
+  my ($self) = @_;
+
+  return $self->{param_panels} if exists $self->{param_panels};
+
+  $self->{param_panels} = {};
+  my $libpath = bz_locations()->{'libpath'};
+  foreach my $item ((glob "$libpath/Bugzilla/Config/*.pm")) {
+    $item =~ m#/([^/]+)\.pm$#;
+    my $module = $1;
+    $self->{param_panels}->{$module} = "Bugzilla::Config::$module"
+      unless $module eq 'Common';
+  }
+
+  # Now check for any hooked params
+  Bugzilla::Hook::process('config_add_panels', {panel_modules => $self->{param_panels}});
+
+  return $self->{param_panels};
+}
+
+###############################
+####      Private          ####
+###############################
+
+sub _load_param_defs {
+  my ($self) = @_;
+
+  return $self->{param_defs} if exists $self->{params_def};
+
+  my $panels = $self->param_panels;
+  my %hook_panels;
+  foreach my $panel (keys %$panels) {
+    my $module = $panels->{$panel};
+    require_module($module);
+    my @new_param_list = $module->get_param_list();
+    $hook_panels{lc($panel)} = {params => \@new_param_list};
+  }
+
+  # This hook is also called in editparams.cgi. This call here is required
+  # to make set_param work.
+  Bugzilla::Hook::process('config_modify_panels', {panels => \%hook_panels});
+
+  foreach my $panel (keys %hook_panels) {
+    foreach my $item (@{$hook_panels{$panel}->{params}}) {
+      $self->{param_defs}->{$item->{name}} = $item;
+    }
+  }
+
+  return $self->{param_defs};
+}
+
+###############################
+####     Legacy Methods    ####
+###############################
+
+sub SetParam {
+  my ($name, $value) = @_;
+  __PACKAGE__->new->set_param($name, $value);
+}
+
 sub write_params {
-  my ($param_data) = @_;
-  $param_data ||= Bugzilla->params;
-
-  local $Data::Dumper::Sortkeys = 1;
-
-  my %params = %$param_data;
-  $params{urlbase} = Bugzilla->localconfig->urlbase;
-  __PACKAGE__->_write_file(Data::Dumper->Dump([\%params], ['*param']));
-
-  # And now we have to reset the params cache so that Bugzilla will re-read
-  # them.
-  Bugzilla->memcached->clear_params();
-  delete Bugzilla->request_cache->{params};
-}
-
-sub read_param_file {
-  my $cached_params = Bugzilla->memcached->get_params();
-  return $cached_params if $cached_params;
-  my %params;
-  my $datadir = bz_locations()->{'datadir'};
-  if (-e "$datadir/params") {
-
-    # Note that checksetup.pl sets file permissions on '$datadir/params'
-
-    # Using Safe mode is _not_ a guarantee of safety if someone does
-    # manage to write to the file. However, it won't hurt...
-    # See bug 165144 for not needing to eval this at all
-    my $s = new Safe;
-
-    $s->rdo("$datadir/params");
-    die "Error reading $datadir/params: $!"    if $!;
-    die "Error evaluating $datadir/params: $@" if $@;
-
-    # Now read the param back out from the sandbox
-    %params = %{$s->varglob('param')};
-  }
-  elsif ($ENV{'SERVER_SOFTWARE'}) {
-
-    # We're in a CGI, but the params file doesn't exist. We can't
-    # Template Toolkit, or even install_string, since checksetup
-    # might not have thrown an error. Bugzilla::CGI->new
-    # hasn't even been called yet, so we manually use CGI::Carp here
-    # so that the user sees the error.
-    require CGI::Carp;
-    CGI::Carp->import('fatalsToBrowser');
-    die "The $datadir/params file does not exist."
-      . ' You probably need to run checksetup.pl.',;
-  }
-  Bugzilla->memcached->set_params(\%params);
-  return \%params;
-}
-
-sub _write_file {
-  my ($class, $str) = @_;
-  my $datadir    = bz_locations()->{'datadir'};
-  my $param_file = "$datadir/params";
-  my ($fh, $tmpname) = File::Temp::tempfile('params.XXXXX', DIR => $datadir);
-  print $fh $str || die "Can't write param file: $!";
-  close $fh || die "Can't close param file: $!";
-
-  rename $tmpname, $param_file or die "Can't rename $tmpname to $param_file: $!";
-
-  # It's not common to edit parameters and loading
-  # Bugzilla::Install::Filesystem is slow.
-  require Bugzilla::Install::Filesystem;
-  Bugzilla::Install::Filesystem::fix_file_permissions($param_file);
+  __PACKAGE__->new->update(@_);
 }
 
 1;
-
-__END__
-
-=head1 NAME
-
-Bugzilla::Config - Configuration parameters for Bugzilla
-
-=head1 SYNOPSIS
-
-  # Administration functions
-  use Bugzilla::Config qw(:admin);
-
-  update_params();
-  SetParam($param, $value);
-  write_params();
-
-=head1 DESCRIPTION
-
-This package contains ways to access Bugzilla configuration parameters.
-
-=head1 FUNCTIONS
-
-=head2 Parameters
-
-Parameters can be set, retrieved, and updated.
-
-=over 4
-
-=item C<SetParam($name, $value)>
-
-Sets the param named $name to $value. Values are checked using the checker
-function for the given param if one exists.
-
-=item C<update_params()>
-
-Updates the parameters, by transitioning old params to new formats, setting
-defaults for new params, and removing obsolete ones. Used by F<checksetup.pl>
-in the process of an installation or upgrade.
-
-Prints out information about what it's doing, if it makes any changes.
-
-May prompt the user for input, if certain required parameters are not
-specified.
-
-=item C<write_params($params)>
-
-Description: Writes the parameters to disk.
-
-Params:      C<$params> (optional) - A hashref to write to the disk
-               instead of C<Bugzilla->params>. Used only by
-               C<update_params>.
-
-Returns:     nothing
-
-=item C<read_param_file()>
-
-Description: Most callers should never need this. This is used
-             by C<Bugzilla->params> to directly read C<$datadir/params>
-             and load it into memory. Use C<Bugzilla->params> instead.
-
-Params:      none
-
-Returns:     A hashref containing the current params in C<$datadir/params>.
-
-=back
