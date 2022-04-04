@@ -75,6 +75,7 @@ $sel->is_text_present_ok('Token zQ5TSBzq7tTZMtKYq9K1ZqJMjifKx3cPL7pIGk9Q');
 # File a new bug in the Firefox product
 file_bug_in_product($sel, 'Firefox');
 my $bug_summary = 'Test bug for webhooks';
+$sel->select_ok('component', 'value=General');
 $sel->type_ok('short_desc', $bug_summary);
 $sel->type_ok('comment',    $bug_summary);
 my $bug_id = create_bug($sel, $bug_summary);
