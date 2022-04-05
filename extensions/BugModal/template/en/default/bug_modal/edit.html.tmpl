@@ -620,7 +620,7 @@
           container    = 1
           label        = "Project Flags"
           hide_on_view = !project_flags_set
-          help         = "https://wiki.mozilla.org/BMO/UserGuide#Tracking_Flags"
+          help         = "https://wiki.mozilla.org/BMO/UserGuide#Project_Flags"
       %]
         [% INCLUDE bug_modal/tracking_flags.html.tmpl
             type = "project"
@@ -648,9 +648,10 @@
     [% IF blocking_flags_has %]
       [%# blocking flags %]
       [% WRAPPER bug_modal/field.html.tmpl
-          container = 1
-          label = "Blocking Flags"
+          container    = 1
+          label        = "Blocking Flags"
           hide_on_view = !blocking_flags_set
+          help         = "https://wiki.mozilla.org/BMO/UserGuide#Blocking_Flags"
       %]
         [% INCLUDE bug_modal/tracking_flags.html.tmpl
             type = "blocking"
