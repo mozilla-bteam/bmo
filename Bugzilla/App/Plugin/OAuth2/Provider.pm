@@ -86,20 +86,22 @@ sub _resource_owner_confirm_scopes {
 
   $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
 
-  my $is_allowed = $c->param("oauth_confirm_${client_id}");
+  my $client
+    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
+    undef, $client_id);
 
   # if user hasn't yet allowed the client access, or if they denied
   # access last time, we check [again] with the user for access
-  if (!defined $is_allowed) {
-    my $client
-      = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
-      undef, $client_id);
+  if (!$c->param("oauth_confirm_${client_id}")) {
     my $scopes = $dbh->selectall_arrayref(
       'SELECT * FROM oauth2_scope WHERE name IN ('
         . join(',', map { $dbh->quote($_) } @{$scopes_ref}) . ')',
       {Slice => {}}
     );
 
+    # Deny access if hostname of redirect_uri doesn't match
+    # the hostname assigned to the client id
+    _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri')) || return 0;
 
     my $vars = {
       client => $client,
@@ -111,11 +113,15 @@ sub _resource_owner_confirm_scopes {
     return undef;
   }
 
+  # Deny access if hostname of redirect_uri doesn't match
+  # the hostname assigned to the client id
+  _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri')) || return 0;
+
   my $token = $c->param('token');
   check_token_data($token, 'oauth_confirm_scopes');
   delete_token($token);
 
-  return $is_allowed;
+  return 1;
 }
 
 sub _verify_client {
@@ -368,6 +374,12 @@ sub _get_jwt_claims {
 sub _has_scope {
   my ($scope, $available_scopes) = @_;
   return any {$_ eq $scope} @{$available_scopes // []};
+}
+
+sub _validate_redirect_uri {
+  my ($hostname, $redirect_uri) = @_;
+  my $uri = Mojo::URL->new($redirect_uri);
+  return ($uri->host && $uri->host ne $hostname) ? 0 : 1;
 }
 
 1;

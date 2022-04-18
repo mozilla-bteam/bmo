@@ -19,6 +19,11 @@
       <td>[% client.secret FILTER html %]</td>
     </tr>
     <tr>
+      <th class="field_label"><label for="hostname">Redirect Hostname:</label></th>
+      <td><input id="hostname" size="20" maxlength="20" name="hostname" value="
+      [%- client.hostname FILTER html %]"></td>
+    </tr>
+    <tr>
       <th class="field_label"><label for="active">Active:</label></th>
       <td><input id="active" name="active" type="checkbox" value="1"
                  [%+ 'checked="checked"' IF client.active %]></td>

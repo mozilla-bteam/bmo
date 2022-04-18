@@ -21,6 +21,7 @@ use Bugzilla::Bug;
 use Bugzilla::User::APIKey;
 use Bugzilla::Util qw(generate_random_password);
 use Mojo::Message::Response;
+use Sys::Hostname;
 use Test2::Tools::Mock qw(mock);
 
 use Type::Params -all;
@@ -63,8 +64,8 @@ sub create_oauth_client {
   my $id     = generate_random_password(20);
   my $secret = generate_random_password(40);
 
-  $dbh->do('INSERT INTO oauth2_client (client_id, description, secret) VALUES (?, ?, ?)',
-    undef, $id, $description, $secret);
+  $dbh->do('INSERT INTO oauth2_client (client_id, description, secret, hostname) VALUES (?, ?, ?, ?)',
+    undef, $id, $description, $secret, hostname());
 
   my $client_data
     = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
