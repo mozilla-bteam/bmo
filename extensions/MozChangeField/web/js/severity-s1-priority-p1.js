@@ -21,8 +21,8 @@ Bugzilla.SeverityS1PriorityP1 = class SeverityS1PriorityP1 {
   constructor() {
     this.priority = document.querySelector("#priority");
     this.severity = document.querySelector("#bug_severity");
-    this.pri_orig_title = this.priority.title;
     if (this.severity && this.priority) {
+      this.pri_orig_title = this.priority.title;
       this.severity.addEventListener("change", () => this.severity_onselect());
     }
   }
