@@ -81,7 +81,7 @@ sub _throw_error {
   if (Bugzilla->error_mode == ERROR_MODE_MOJO) {
     my ($type) = $name =~ /^global\/(user|code)-error/;
     my $c = Bugzilla->request_cache->{mojo_controller};
-    $c->stash({type => $type, error => $error, message =>$message, vars => $vars,}) and die;
+    $c->stash({type => $type, error => $error, message => $message, vars => $vars,}) and die;
   }
 
   if (Bugzilla->error_mode == ERROR_MODE_WEBPAGE) {
