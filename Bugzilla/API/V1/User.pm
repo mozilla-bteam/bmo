@@ -20,6 +20,7 @@ sub setup_routes {
 
 sub user_profile {
   my ($self) = @_;
+  Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
   my $user = $self->bugzilla->oauth('user:read');
   if ($user && $user->id) {
     $self->render(

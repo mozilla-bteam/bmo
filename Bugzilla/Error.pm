@@ -52,14 +52,6 @@ sub _throw_error {
   $dbh->bz_rollback_transaction()
     if ($dbh && $dbh->bz_in_transaction() && !_in_eval());
 
-  if (Bugzilla->error_mode == ERROR_MODE_MOJO) {
-    my ($type) = $name =~ /^global\/(user|code)-error/;
-    my $class = $type ? 'Bugzilla::Error::' . ucfirst($type) : 'Mojo::Exception';
-    my $e = $class->new($error)->trace(2);
-    $e->vars($vars) if $e->can('vars');
-    CORE::die $e->inspect;
-  }
-
   $vars->{error} = $error;
   my $template = Bugzilla->template;
   my $message;
@@ -84,6 +76,12 @@ sub _throw_error {
     my ($type) = $name =~ /^global\/(user|code)-error/;
     $type //= 'unknown';
     die Template::Exception->new("bugzilla.$type.$error", $vars);
+  }
+
+  if (Bugzilla->error_mode == ERROR_MODE_MOJO) {
+    my ($type) = $name =~ /^global\/(user|code)-error/;
+    my $c = Bugzilla->request_cache->{mojo_controller};
+    $c->stash({type => $type, error => $error, message => $message, vars => $vars,}) and die;
   }
 
   if (Bugzilla->error_mode == ERROR_MODE_WEBPAGE) {
