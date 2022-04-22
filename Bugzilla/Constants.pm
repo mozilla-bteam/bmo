@@ -140,6 +140,7 @@ use Memoize;
   USAGE_MODE_TEST
   USAGE_MODE_REST
   USAGE_MODE_MOJO
+  USAGE_MODE_MOJO_REST
 
   ERROR_MODE_WEBPAGE
   ERROR_MODE_DIE
@@ -148,6 +149,7 @@ use Memoize;
   ERROR_MODE_TEST
   ERROR_MODE_REST
   ERROR_MODE_MOJO
+  ERROR_MODE_MOJO_REST
 
   COLOR_ERROR
   COLOR_SUCCESS
@@ -507,14 +509,15 @@ use constant contenttypes => {
 };
 
 # Usage modes. Default USAGE_MODE_BROWSER. Use with Bugzilla->usage_mode.
-use constant USAGE_MODE_BROWSER => 0;
-use constant USAGE_MODE_CMDLINE => 1;
-use constant USAGE_MODE_XMLRPC  => 2;
-use constant USAGE_MODE_EMAIL   => 3;
-use constant USAGE_MODE_JSON    => 4;
-use constant USAGE_MODE_TEST    => 5;
-use constant USAGE_MODE_REST    => 6;
-use constant USAGE_MODE_MOJO    => 7;
+use constant USAGE_MODE_BROWSER   => 0;
+use constant USAGE_MODE_CMDLINE   => 1;
+use constant USAGE_MODE_XMLRPC    => 2;
+use constant USAGE_MODE_EMAIL     => 3;
+use constant USAGE_MODE_JSON      => 4;
+use constant USAGE_MODE_TEST      => 5;
+use constant USAGE_MODE_REST      => 6;
+use constant USAGE_MODE_MOJO      => 7;
+use constant USAGE_MODE_MOJO_REST => 8;
 
 # Error modes. Default set by Bugzilla->usage_mode (so ERROR_MODE_WEBPAGE
 # usually). Use with Bugzilla->error_mode.
@@ -525,6 +528,7 @@ use constant ERROR_MODE_JSON_RPC       => 3;
 use constant ERROR_MODE_TEST           => 4;
 use constant ERROR_MODE_REST           => 5;
 use constant ERROR_MODE_MOJO           => 6;
+use constant ERROR_MODE_MOJO_REST      => 7;
 
 # The ANSI colors of messages that command-line scripts use
 use constant COLOR_ERROR   => 'red';

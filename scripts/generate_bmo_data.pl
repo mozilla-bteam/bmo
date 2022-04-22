@@ -265,7 +265,18 @@ my @products = (
       initialqaowner => '',
       initial_cc     => [],
       watch_user     => 'general@firefox.bugs',
-      team_name      => 'Mozilla'
+      team_name      => 'Mozilla',
+      triage_owner   => 'admin@mozilla.bugs',
+    },
+    {
+      name        => 'Installer',
+      description => 'Bugs and feature requests for the Firefox application install wizard.',
+      initialowner   => 'nobody@mozilla.org',
+      initialqaowner => '',
+      initial_cc     => [],
+      watch_user     => 'general@firefox.bugs',
+      team_name      => 'Mozilla',
+      triage_owner   => 'nobody@mozilla.org',
     }],
   },
   {
@@ -286,6 +297,18 @@ my @products = (
       initial_cc     => [],
       watch_user     => 'general@bugzilla.bugs',
       team_name      => 'Mozilla',
+      triage_owner   => 'admin@mozilla.bugs',
+    },
+    {
+      name => 'API',
+      description =>
+        'Issues relating to integrating bugzilla.mozilla.org with external systems.',
+      initialowner   => 'nobody@mozilla.org',
+      initialqaowner => '',
+      initial_cc     => [],
+      watch_user     => 'api@bugzilla.bugs',
+      team_name      => 'Mozilla',
+      triage_owner   => 'automation@bmo.tld',
     }],
   },
 );
@@ -338,6 +361,7 @@ for my $product (@products) {
         initialqacontact => $component->{initialqacontact} || '',
         initial_cc       => $component->{initial_cc} || [],
         team_name        => 'Mozilla',
+        triage_owner_id  => $component->{triage_owner} || '',
       });
     }
   }

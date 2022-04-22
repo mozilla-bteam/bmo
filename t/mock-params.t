@@ -17,5 +17,4 @@ use Bugzilla::Test::MockParams (phabricator_api_key => 'FAKE-KEY');
 
 is(Bugzilla->params->{phabricator_api_key}, 'FAKE-KEY', 'set key');
 
-
 done_testing;

@@ -13,33 +13,63 @@ use Bugzilla::Constants;
 use Bugzilla::Logging;
 use Bugzilla::WebService::Constants;
 
+my $EXCEPTION_HELPER;
+
 sub register {
   my ($self, $app) = @_;
+
+  # For Bugzilla::Error exceptions when using Mojo native
+  # code and some function calls Throw{Code,User}Error().
+  $EXCEPTION_HELPER = $app->renderer->get_helper('reply.exception');
+  $app->helper('reply.exception' => sub { _render_error('code', @_); });
+
   $app->helper('code_error' => sub { _render_error('code', @_); });
   $app->helper('user_error' => sub { _render_error('user', @_); });
 }
 
 sub _render_error {
   my ($type, $c, $error, $vars) = @_;
+
+  # If values are defined in the stash, use those instead
+  my $stash = $c->stash;
+  $type  = $stash->{type}  if $stash->{type};
+  $error = $stash->{error} if $stash->{error};
+  $vars  = $stash->{vars}  if $stash->{vars};
+
   my $logfunc = _make_logfunc(ucfirst($type));
 
+  # Find the full error message
+  my $message;
+  $vars->{error} = $error;
+  my $template = Bugzilla->template;
+  $template->process("global/$type-error.html.tmpl", $vars, \$message)
+    || die $template->error();
+
   # Errors displayed in a web page
-  if (Bugzilla->error_mode == ERROR_MODE_MOJO
-    || Bugzilla->error_mode == ERROR_MODE_WEBPAGE)
-  {
+  if (Bugzilla->usage_mode == USAGE_MODE_MOJO) {
     $logfunc->("webpage error: $error");
 
-    $c->render(
-      handler  => 'bugzilla',
-      template => "global/$type-error",
-      format   => 'html',
-      error    => $error,
-      %{$vars}
-    );
+    if ($c->app->mode eq 'development') {
+      use Bugzilla::Logging;
+      my $class = $type ? 'Bugzilla::Error::' . ucfirst($type) : 'Mojo::Exception';
+      my $e     = $class->new($error)->trace(2);
+      $e->vars($vars) if $e->can('vars');
+      $EXCEPTION_HELPER->($c, $e->inspect);
+    }
+    else {
+      $c->render(
+        handler  => 'bugzilla',
+        template => "global/$type-error",
+        format   => 'html',
+        error    => $error,
+        status   => 200,
+        %{$vars}
+      );
+    }
   }
 
   # Errors returned in an API request
-  elsif (Bugzilla->error_mode == ERROR_MODE_REST) {
+  elsif (Bugzilla->usage_mode == USAGE_MODE_MOJO_REST) {
     my %error_map = %{WS_ERROR_CODE()};
     my $code      = $error_map{$error};
 
@@ -52,13 +82,6 @@ sub _render_error {
     my $status_code     = $status_code_map{$code} || $status_code_map{'_default'};
 
     $logfunc->("REST error: $error (HTTP $status_code, internal code $code)");
-
-    # Find the full error message
-    my $message;
-    $vars->{error} = $error;
-    my $template = Bugzilla->template;
-    $template->process("global/$type-error.html.tmpl", $vars, \$message)
-      || die $template->error();
 
     my $error = {
       error         => 1,

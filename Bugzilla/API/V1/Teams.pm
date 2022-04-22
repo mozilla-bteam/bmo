@@ -18,6 +18,7 @@ sub setup_routes {
 
 sub component_teams {
   my ($self) = @_;
+  Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
   $self->bugzilla->login();
   my $result;
   if (my $team = $self->param('team')) {

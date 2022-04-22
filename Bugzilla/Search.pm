@@ -308,6 +308,7 @@ use constant OPERATOR_FIELD_OVERRIDE => {
   # Count Fields
   'attachments.count'   => RELATION_COUNT_OVERRIDE,
   'cc_count'            => RELATION_COUNT_OVERRIDE,
+  'see_also_count'      => RELATION_COUNT_OVERRIDE,
   'keywords.count'      => RELATION_COUNT_OVERRIDE,
   'blocked.count'       => RELATION_COUNT_OVERRIDE,
   'dependson.count'     => RELATION_COUNT_OVERRIDE,
@@ -525,6 +526,7 @@ sub COLUMN_JOINS {
     },
     'attachments.count'   => {table => 'attachments',},
     'cc_count'            => {table => 'cc',},
+    'see_also_count'      => {table => 'bug_see_also'},
     'keywords.count'      => {table => 'keywords',},
     'longdescs.count'     => {table => 'longdescs', join => 'INNER',},
     'blocked'             => {table => 'dependencies', to => 'dependson',},
@@ -623,6 +625,7 @@ sub COLUMNS {
 
     'attachments.count'  => 'COUNT(DISTINCT map_attachments_count.attach_id)',
     'cc_count'           => 'COUNT(DISTINCT map_cc_count.who)',
+    'see_also_count'     => 'COUNT(DISTINCT map_see_also_count.id)',
     'keywords.count'     => 'COUNT(DISTINCT map_keywords_count.keywordid)',
     'longdescs.count'    => 'COUNT(DISTINCT map_longdescs_count.comment_id)',
     'blocked.count'      => 'COUNT(DISTINCT map_blocked_count.blocked)',
@@ -740,6 +743,7 @@ use constant GROUP_BY_SKIP => qw(
   blocked.count
   bug_id
   cc_count
+  see_also_count
   dependson
   dependson.count
   dupe_count
@@ -2865,6 +2869,7 @@ sub _relation_count_default {
   my ($table, $column, $other_column)
     = $field eq 'attachments.count' ? ('attachments', 'attach_id', 'bug_id')
     : $field eq 'cc_count' ? ('cc', 'cc', 'bug_id')
+    : $field eq 'see_also_count' ? ('bug_see_also', 'id', 'bug_id')
     : $field eq 'keywords.count' ? ('keywords', 'keywords', 'bug_id')
     : $field eq 'longdescs.count' ? ('longdescs', 'comment_id', 'bug_id')
     : $field eq 'blocked.count' ? ('dependencies', 'blocked', 'dependson')

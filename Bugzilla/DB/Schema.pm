@@ -1859,6 +1859,7 @@ use constant ABSTRACT_SCHEMA => {
       client_id     => {TYPE => 'varchar(255)', NOTNULL => 1},
       description   => {TYPE => 'varchar(255)', NOTNULL => 1},
       secret        => {TYPE => 'varchar(255)', NOTNULL => 1},
+      hostname      => {TYPE => 'varchar(255)', NOTNULL => 1},
       active        => {TYPE => 'BOOLEAN',      NOTNULL => 1, DEFAULT => 'TRUE'},
       last_modified => {TYPE => 'DATETIME'},
     ],

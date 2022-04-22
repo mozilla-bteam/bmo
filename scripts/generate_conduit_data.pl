@@ -247,7 +247,7 @@ if ($oauth_id && $oauth_secret) {
   print "creating phabricator oauth2 client...\n";
 
   $dbh->do(
-    'REPLACE INTO oauth2_client (client_id, description, secret) VALUES (?, \'Phabricator\', ?)',
+    'REPLACE INTO oauth2_client (client_id, description, secret, hostname) VALUES (?, \'Phabricator\', ?, \'phabricator.test\')',
     undef, $oauth_id, $oauth_secret
   );
 

@@ -13,10 +13,10 @@ use lib qw( . lib local/lib/perl5 );
 use Safe;
 use Test::More;
 
+use Bugzilla;
 use Bugzilla::Constants;
 
 use Bugzilla::Test::MockDB;
-use Bugzilla::Test::MockParams;
 
 # Write out the data/params file for migration
 my $datadir = bz_locations()->{'datadir'};
@@ -28,8 +28,7 @@ close DATA;
 
 ok(-f "$datadir/params", 'Original parameters file exists');
 
-my $params = Bugzilla::Config->new;
-$params->migrate_params();
+Bugzilla::Config->new->migrate_params();
 
 # Read file back as a Perl data structure for comparison
 ok(-f "$datadir/params.old", 'Backup parameters file exists');

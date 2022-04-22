@@ -21,6 +21,7 @@ use constant UNSUPPORTED_FIELDS => qw(
   attachments.count
   blocked.count
   cc_count
+  see_also_count
   classification
   commenter
   component

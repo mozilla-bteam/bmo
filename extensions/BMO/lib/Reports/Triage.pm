@@ -244,12 +244,15 @@ sub unconfirmed {
 }
 
 sub owners {
-  my ($vars, $filter) = @_;
+  my ($vars, $input, $skip_confirm) = @_;
   my $dbh   = Bugzilla->dbh;
-  my $input = Bugzilla->input_params;
   my $user  = Bugzilla->user;
 
-  Bugzilla::User::match_field({'owner' => {'type' => 'multi'}});
+  $input        ||= Bugzilla->input_params;
+  $skip_confirm ||= 0;
+
+  Bugzilla::User::match_field({'owner' => {'type' => 'multi'}},
+    $input, $skip_confirm);
 
   my @products;
   if (!$input->{product} && $input->{owner}) {
@@ -260,6 +263,7 @@ sub owners {
       = $input->{product} ? ($input->{product}) : DEFAULT_OWNER_PRODUCTS;
     foreach my $name (@product_names) {
       next unless my $product = Bugzilla::Product->new({name => $name, cache => 1});
+      next if !Bugzilla->user->can_access_product($product);
       push(@products, $product);
     }
   }
@@ -277,12 +281,15 @@ sub owners {
     }
   }
 
-  my @owner_names = split(/[,;]+/, $input->{owner}) if $input->{owner};
   my @owner_ids;
-  foreach my $name (@owner_names) {
-    $name = trim($name);
-    next unless $name;
-    push(@owner_ids, login_to_id($name, THROW_ERROR));
+  if ($input->{owner}) {
+    my @owner_names
+      = ref $input->{owner} ? @{$input->{owner}} : split(/[,;]+/, $input->{owner});
+    foreach my $name (@owner_names) {
+      $name = trim($name);
+      next unless $name;
+      push(@owner_ids, login_to_id($name, THROW_ERROR));
+    }
   }
 
   my $sql

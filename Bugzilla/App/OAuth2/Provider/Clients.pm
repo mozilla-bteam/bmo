@@ -68,19 +68,29 @@ sub create {
   my $description = $self->param('description');
   my $id          = $self->param('id');
   my $secret      = $self->param('secret');
+  my $hostname    = $self->param('hostname');
   my $scopes      = $self->every_param('scopes');
   $description
-    or return $self->code_error('param_required', {param => 'description'});
-  $id     or return $self->code_error('param_required', {param => 'id'});
-  $secret or return $self->code_error('param_required', {param => 'secret'});
+    or return $self->code_error('param_required',
+    {function => 'admin/oauth/provider/create', param => 'description'});
+  $id
+    or return $self->code_error('param_required',
+    {function => 'admin/oauth/provider/create', param => 'id'});
+  $secret
+    or return $self->code_error('param_required',
+    {function => 'admin/oauth/provider/create', param => 'secret'});
+  $hostname
+    or return $self->code_error('param_required',
+    {function => 'admin/oauth/provider/create', param => 'hostname'});
   any { $_ > 0 } @{$scopes}
-    or return $self->code_error('param_required', {param => 'scopes'});
+    or return $self->code_error('param_required',
+    {function => 'admin/oauth/provider/create', param => 'scopes'});
   my $token = $self->param('token');
   check_token_data($token, 'create_oauth_client');
 
   $dbh->do(
-    'INSERT INTO oauth2_client (client_id, description, secret) VALUES (?, ?, ?)',
-    undef, $id, $description, $secret);
+    'INSERT INTO oauth2_client (client_id, description, secret, hostname) VALUES (?, ?, ?, ?)',
+    undef, $id, $description, $secret, $hostname);
 
   my $client_data
     = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
@@ -90,7 +100,8 @@ sub create {
     $scope_id = $dbh->selectrow_array('SELECT id FROM oauth2_scope WHERE id = ?',
       undef, $scope_id);
     if (!$scope_id) {
-      return $self->code_error('param_required', {param => 'scopes'});
+      return $self->code_error('param_required',
+        {function => 'admin/oauth/provider/create', param => 'scopes'});
     }
     $dbh->do('INSERT INTO oauth2_client_scope (client_id, scope_id) VALUES (?, ?)',
       undef, $client_data->{id}, $scope_id);
@@ -186,12 +197,18 @@ sub edit {
   check_token_data($token, 'edit_oauth_client');
 
   my $description = $self->param('description');
+  my $hostname    = $self->param('hostname');
   my $active      = $self->param('active');
   my $scopes      = $self->every_param('scopes');
 
   if ($description ne $client_data->{description}) {
     $dbh->do('UPDATE oauth2_client SET description = ? WHERE id = ?',
       undef, $description, $id);
+  }
+
+  if ($hostname ne $client_data->{hostname}) {
+    $dbh->do('UPDATE oauth2_client SET hostname = ? WHERE id = ?',
+      undef, $hostname, $id);
   }
 
   if ($active ne $client_data->{active}) {
