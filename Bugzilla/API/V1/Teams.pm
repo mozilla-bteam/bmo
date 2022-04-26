@@ -9,6 +9,7 @@ package Bugzilla::API::V1::Teams;
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
 
+use Bugzilla::Constants;
 use Bugzilla::Teams qw(team_names get_team_info);
 
 sub setup_routes {
