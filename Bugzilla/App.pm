@@ -17,7 +17,7 @@ use FileHandle;    # this is for compat back to 5.10
 use Bugzilla          ();
 use Bugzilla::BugMail ();
 use Bugzilla::CGI     ();
-use Bugzilla::Constants qw(bz_locations MAX_STS_AGE);
+use Bugzilla::Constants;
 use Bugzilla::Extension             ();
 use Bugzilla::Install::Requirements ();
 use Bugzilla::Logging;
@@ -83,6 +83,10 @@ sub startup {
       catch {
         ERROR($_);
       };
+
+      # Set usage mode and store controller for Error.pm exception handling
+      Bugzilla->usage_mode(USAGE_MODE_MOJO);
+      Bugzilla->request_cache->{mojo_controller} = $c;
     }
   );
 

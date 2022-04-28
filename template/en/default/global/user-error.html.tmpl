@@ -271,6 +271,10 @@
     An error occurred completing the login process using the single signon provider.
     Contact an administrator explaining the problem.
 
+  [% ELSIF error == "oauth2_invalid_redirect_uri" %]
+    [% title = 'Invalid Redirect URI' %]
+    The redirect uri provided is not allowed for the OAuth2 client.
+
   [% ELSIF error == "attachment_deletion_disabled" %]
     [% title = "Attachment Deletion Disabled" %]
     Attachment deletion is disabled on this installation.

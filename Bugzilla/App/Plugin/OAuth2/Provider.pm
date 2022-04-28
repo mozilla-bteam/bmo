@@ -101,7 +101,8 @@ sub _resource_owner_confirm_scopes {
 
     # Deny access if hostname of redirect_uri doesn't match
     # the hostname assigned to the client id
-    _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri')) || return 0;
+    _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
+      || ThrowUserError('oauth2_invalid_redirect_uri');
 
     my $vars = {
       client => $client,
@@ -115,7 +116,8 @@ sub _resource_owner_confirm_scopes {
 
   # Deny access if hostname of redirect_uri doesn't match
   # the hostname assigned to the client id
-  _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri')) || return 0;
+  _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
+    || ThrowUserError('oauth2_invalid_redirect_uri');
 
   my $token = $c->param('token');
   check_token_data($token, 'oauth_confirm_scopes');
