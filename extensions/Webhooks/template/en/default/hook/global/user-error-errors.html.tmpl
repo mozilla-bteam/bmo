@@ -26,4 +26,9 @@
   [% title = "Wrong webhook" %]
   This webhook doesn't belong to you.
 
+[% ELSIF error == "webhooks_any_product_not_allowed" %]
+  [% title = "Any Product Not Allowed" %]
+  You do not have the proper permissions to create a hook
+  for any product.
+
 [% END %]
