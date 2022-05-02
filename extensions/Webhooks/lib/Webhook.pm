@@ -79,24 +79,33 @@ sub component_id {
 
 sub product {
   my ($self) = @_;
-  return $self->{product} ||=
-    Bugzilla::Product->new({id => $self->{product_id}, cache => 1});
+  return $self->{product} if exists $self->{product};
+  $self->{product}
+    = $self->{product_id}
+    ? Bugzilla::Product->new({id => $self->{product_id}, cache => 1})
+    : undef;
+  return $self->{product};
 }
 
 sub product_name {
   my ($self) = @_;
-  return $self->{product_name} ||= $self->{product_id} ? $self->product->name : '';
+  return $self->{product_name} ||= $self->product ? $self->product->name : 'Any';
 }
 
 sub component {
   my ($self) = @_;
-  return $self->{component} ||= $self->{component_id}
-    ? Bugzilla::Component->new({id => $self->{component_id}, cache => 1}) : undef;
+  return $self->{component} if exists $self->{component};
+  $self->{component}
+    = $self->{component_id}
+    ? Bugzilla::Component->new({id => $self->{component_id}, cache => 1})
+    : undef;
+  return $self->{component};
 }
 
 sub component_name {
   my ($self) = @_;
-  return $self->{component_name} ||= $self->{component_id} ? $self->component->name : '';
+  return $self->{component_name}
+    ||= $self->component ? $self->component->name : 'Any';
 }
 
 sub api_key_header {

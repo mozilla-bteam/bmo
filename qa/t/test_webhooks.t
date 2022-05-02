@@ -51,11 +51,20 @@ $sel->click_ok('link=Webhooks');
 $sel->click_ok('add_webhook');
 $sel->title_is('Define a name', 'Define a name');
 $sel->go_back_ok();
+
+# Verify product Any is not present for non-privileged user
+ok(
+  !$sel->is_element_present(
+    q#//select[@id='product']/option[@value='Any']#),
+  'Any is missing from product select'
+);
+
 $sel->type_ok('name', 'Webhook (no auth)');
 $sel->type_ok('url',  'http://externalapi.test/webhooks/test/noauth');
 $sel->check_ok('change_event');
 $sel->check_ok('comment_event');
 $sel->select_ok('product', 'value=Firefox');
+$sel->select_ok('component', 'value=General');
 $sel->click_ok('add_webhook');
 $sel->is_text_present_ok('Webhook (no auth)');
 $sel->is_text_present_ok('change,comment');
@@ -64,6 +73,7 @@ $sel->type_ok('url',  'http://externalapi.test/webhooks/test/withauth');
 $sel->check_ok('create_event');
 $sel->check_ok('attachment_event');
 $sel->select_ok('product', 'value=Firefox');
+$sel->select_ok('component', 'value=General');
 $sel->type_ok('api_key_header', 'Authorization');
 $sel->type_ok('api_key_value',
   'Token zQ5TSBzq7tTZMtKYq9K1ZqJMjifKx3cPL7pIGk9Q');
@@ -71,14 +81,39 @@ $sel->click_ok('add_webhook');
 $sel->is_text_present_ok('Webhook (with auth)');
 $sel->is_text_present_ok('create,attachment');
 $sel->is_text_present_ok('Token zQ5TSBzq7tTZMtKYq9K1ZqJMjifKx3cPL7pIGk9Q');
+logout($sel);
+
+# Login as admin user and a webhook using Any product
+log_in($sel, $config, 'admin');
+$sel->click_ok('header-account-menu-button');
+$sel->click_ok('link=Preferences');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is('User Preferences', 'User preferences');
+$sel->click_ok('link=Webhooks');
+$sel->type_ok('name', 'Webhook Any Product');
+$sel->type_ok('url',  'http://externalapi.test/webhooks/test/noauth');
+$sel->check_ok('create_event');
+$sel->check_ok('attachment_event');
+$sel->select_ok('product', 'value=Any');
+$sel->select_ok('component', 'value=Any');
+$sel->click_ok('add_webhook');
+$sel->is_text_present_ok('Webhook Any Product');
+$sel->is_text_present_ok('create,attachment');
+logout($sel);
 
 # File a new bug in the Firefox product
+log_in($sel, $config, 'editbugs');
 file_bug_in_product($sel, 'Firefox');
 my $bug_summary = 'Test bug for webhooks';
 $sel->select_ok('component', 'value=General');
 $sel->type_ok('short_desc', $bug_summary);
 $sel->type_ok('comment',    $bug_summary);
 my $bug_id = create_bug($sel, $bug_summary);
+
+# Add a new comment so the second webhook should execute
+go_to_bug($sel, $bug_id);
+$sel->type_ok('comment', 'This is a new comment');
+$sel->click_ok('bottom-save-btn');
 logout($sel);
 
 # Give run push extension to pick up the new events
@@ -91,6 +126,7 @@ $sel->click_ok('link=Log');
 $sel->title_is('Push Administration: Logs', 'Push logs');
 $sel->is_text_present_ok('Webhook_1', 'First webhook executed');
 $sel->is_text_present_ok('Webhook_2', 'Second webhook executed');
+$sel->is_text_present_ok('Webhook_3', 'Third webhook executed');
 ok(!$sel->is_text_present('ERROR'), 'ERROR message not present');
 
 set_parameters($sel, {'Webhooks' => {'webhooks_enabled-off' => undef,}});

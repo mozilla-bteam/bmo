@@ -99,7 +99,7 @@ sub _load_api_module {
     }
   }
   catch {
-    WARN("$module could not be loaded");
+    WARN("$module could not be loaded: $_");
   };
 }
 
