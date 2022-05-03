@@ -298,13 +298,14 @@ sub get {
   foreach my $user (@$in_group) {
     my $user_info = filter $params,
       {
-      id           => $self->type('int',     $user->id),
-      real_name    => $self->type('string',  $user->name),
-      nick         => $self->type('string',  $user->nick),
-      name         => $self->type('email',   $user->login),
-      email        => $self->type('email',   $user->email),
-      can_login    => $self->type('boolean', $user->is_enabled ? 1 : 0),
-      iam_username => $self->type('string',  $user->iam_username),
+      id             => $self->type('int',     $user->id),
+      real_name      => $self->type('string',  $user->name),
+      nick           => $self->type('string',  $user->nick),
+      name           => $self->type('email',   $user->login),
+      email          => $self->type('email',   $user->email),
+      can_login      => $self->type('boolean', $user->is_enabled ? 1 : 0),
+      iam_username   => $self->type('string',  $user->iam_username),
+      last_seen_date => $self->type('dateTime',  $user->last_seen_date),
       };
 
     if (Bugzilla->user->in_group('editusers')) {

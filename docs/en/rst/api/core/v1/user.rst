@@ -378,6 +378,7 @@ saved_searches     array    User's saved searches, each having the following
                             Search object items described below.
 saved_reports      array    User's saved reports, each having the following
                             Search object items described below.
+last_seen_date     datetime The time when the user last loaded any page.
 =================  =======  =====================================================
 
 Group object:
