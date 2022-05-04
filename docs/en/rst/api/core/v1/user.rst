@@ -346,40 +346,40 @@ include_disabled  boolean  By default, when using the ``match`` parameter,
 
 * users: (array) Each object describes a user and has the following items:
 
-=================  =======  =====================================================
-name               type     description
-=================  =======  =====================================================
-id                 int      The unique integer ID that Bugzilla uses to represent
-                            this user. Even if the user's login name changes,
-                            this will not change.
-real_name          string   The actual name of the user. May be blank.
-nick               string   The user's nickname. Currently this is extracted from
-                            the real_name, name or email field.
-email              string   The email address of the user.
-name               string   The login name of the user. Note that in some
-                            situations this is different than their email.
-can_login          boolean  A boolean value to indicate if the user can login
-                            into Bugzilla.
-email_enabled      boolean  A boolean value to indicate if bug-related mail will
-                            be sent to the user or not.
-login_denied_text  string   A text field that holds the reason for disabling a
-                            user from logging into Bugzilla. If empty then the
-                            user account is enabled; otherwise it is
-                            disabled/closed.
-groups             array    Groups the user is a member of. If the currently
-                            logged in user is querying their own account or is a
-                            member of the 'editusers' group, the array will
-                            contain all the groups that the user is a member of.
-                            Otherwise, the array will only contain groups that
-                            the logged in user can bless. Each object describes
-                            the group and contains the items described in the
-                            Group object below.
-saved_searches     array    User's saved searches, each having the following
-                            Search object items described below.
-saved_reports      array    User's saved reports, each having the following
-                            Search object items described below.
-last_seen_date     datetime The time when the user last loaded any page.
-=================  =======  =====================================================
+=================  =========  =====================================================
+name               type       description
+=================  =========  =====================================================
+id                 int        The unique integer ID that Bugzilla uses to represent
+                              this user. Even if the user's login name changes,
+                              this will not change.
+real_name          string     The actual name of the user. May be blank.
+nick               string     The user's nickname. Currently this is extracted from
+                              the real_name, name or email field.
+email              string     The email address of the user.
+name               string     The login name of the user. Note that in some
+                              situations this is different than their email.
+can_login          boolean    A boolean value to indicate if the user can login
+                              into Bugzilla.
+email_enabled      boolean    A boolean value to indicate if bug-related mail will
+                              be sent to the user or not.
+login_denied_text  string     A text field that holds the reason for disabling a
+                              user from logging into Bugzilla. If empty then the
+                              user account is enabled; otherwise it is
+                              disabled/closed.
+groups             array      Groups the user is a member of. If the currently
+                              logged in user is querying their own account or is a
+                              member of the 'editusers' group, the array will
+                              contain all the groups that the user is a member of.
+                              Otherwise, the array will only contain groups that
+                              the logged in user can bless. Each object describes
+                              the group and contains the items described in the
+                              Group object below.
+saved_searches     array      User's saved searches, each having the following
+                              Search object items described below.
+saved_reports      array      User's saved reports, each having the following
+                              Search object items described below.
+last_seen_date     datetime   The time when the user last loaded any page.
+=================  =========  =====================================================
 
 Group object:
 
