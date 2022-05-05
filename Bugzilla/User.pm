@@ -79,8 +79,8 @@ sub DB_COLUMNS {
     'profiles.disable_mail',
     'profiles.extern_id',
     'profiles.is_enabled',
-    $dbh->sql_date_format('last_seen_date',   '%Y-%m-%d') . ' AS last_seen_date',
-    $dbh->sql_date_format('last_activity_ts', '%Y-%m-%d') . ' AS last_activity_date',
+    $dbh->sql_date_format('last_seen_date', '%Y-%m-%d') . ' AS last_seen_date',
+    'profiles.last_activity_ts AS last_activity_time',
     'profiles.password_change_required',
     'profiles.password_change_reason',
     'profiles.mfa',
@@ -667,7 +667,7 @@ sub showmybugslink { $_[0]->{showmybugslink}; }
 sub email_disabled { $_[0]->{disable_mail} || !$_[0]->{is_enabled}; }
 sub email_enabled  { !$_[0]->email_disabled; }
 sub last_seen_date { $_[0]->{last_seen_date}; }
-sub last_activity_date       { $_[0]->{last_activity_date}; }
+sub last_activity_time       { $_[0]->{last_activity_time}; }
 sub password_change_required { $_[0]->{password_change_required}; }
 sub password_change_reason   { $_[0]->{password_change_reason}; }
 
