@@ -44,9 +44,10 @@ use constant VALIDATORS => {vote_count => \&_check_vote_count};
 ################################
 
 # We override the parent audit_log so we can store the bug id
-# value instead of the vote table id. Also is we are creating a
+# value instead of the vote table id. Also when we are creating a
 # new vote table entry, then we record it as a vote_count change
-# from 0 to the new count or vice versa.
+# from 0 to the new count and the opposite when removing a vote
+# table entry.
 sub audit_log {
   my ($self, $changes) = @_;
   my $new_changes = $changes;
