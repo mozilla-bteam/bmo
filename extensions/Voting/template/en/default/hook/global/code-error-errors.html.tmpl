@@ -22,4 +22,9 @@
     [% title = "$terms.Bug Cannot Be Confirmed" %]
     There is no valid transition from
     [%+ display_value("bug_status", "UNCONFIRMED") FILTER html %] to an open state
+
+[% ELSIF error == "voting_count_invalid" %]
+    [% title = "Invalid Vote Count" %]
+    The vote count provided '[% count FILTER html %]' is not a valid integer.
+
 [% END %]
