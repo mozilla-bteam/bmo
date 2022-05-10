@@ -114,7 +114,7 @@ sub install_update_db {
   }
 
   $dbh->bz_add_column('votes', 'id',
-    {TYPE => 'SMALLSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
+    {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
 }
 
 ###########
