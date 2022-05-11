@@ -378,7 +378,7 @@ var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 /**
  * Enable easier access to the Bugzilla REST API.
  * @hideconstructor
- * @see https://bugzilla.readthedocs.io/en/latest/api/
+ * @see https://bmo.readthedocs.io/en/latest/api/
  */
 Bugzilla.API = class API {
   /**
