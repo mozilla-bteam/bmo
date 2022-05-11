@@ -39,6 +39,17 @@ to ensure that you have the correct docker setup.
 
     docker-compose up --build
 
+This command will bring up the main webserver process, database, memcached, and various other
+background tasks such as the Push system and the Feed system. The latter two are used for workflow
+management between bugzilla.mozilla.org and other external systems.
+
+For normal development, you can run just the main webserver, database, and memcached by running the
+following command instead:
+
+.. code-block:: bash
+
+    docker-compose up --build bmo.test
+
 Then, you must configure your browser to use localhost and port 1080 as an HTTP proxy.
 For setting a proxy in Firefox, see `Firefox Connection Settings`_.
 The procedure should be similar for other browsers.
