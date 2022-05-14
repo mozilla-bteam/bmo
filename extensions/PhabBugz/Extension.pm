@@ -33,6 +33,9 @@ sub template_before_process {
   return unless Bugzilla->user->id;
   return unless Bugzilla->params->{phabricator_enabled};
   return unless Bugzilla->params->{phabricator_base_uri};
+
+  $vars->{phabricator_available} = 1;
+
   return unless $file =~ /bug_modal\/(header|edit).html.tmpl$/;
 
   if (my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'}) {

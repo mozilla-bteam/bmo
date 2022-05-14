@@ -205,6 +205,55 @@ sub bug_revisions {
   return {revisions => \@revisions};
 }
 
+sub user {
+  state $check = compile(Object, Dict [user_id => Int]);
+  my ($self, $params) = $check->(@_);
+
+  $self->_check_phabricator();
+
+  my $bmo_user_id = $params->{user_id};
+
+  my $response = request(
+    'bmoexternalaccount.search',
+    {
+      accountids => [$bmo_user_id],
+    }
+  );
+  if (scalar(@{$response->{result}}) == 0) {
+    return {};
+  }
+
+  my $phid = $response->{result}[0]{phid};
+
+  $response = request(
+    'user.query',
+    {
+      phids => [$phid],
+    }
+  );
+  if (scalar(@{$response->{result}}) == 0) {
+    return {};
+  }
+
+  my $user_name = $response->{result}[0]{userName};
+  my $real_name = $response->{result}[0]{realName};
+
+  my $base_url = Bugzilla->params->{phabricator_base_uri};
+  $base_url =~ s{/$}{};
+  my $user_url = "$base_url/p/$user_name/";
+  my $revisions_url = "$base_url/differential/?responsiblePHIDs%5B0%5D=$phid&statuses%5B0%5D=open()&order=newest&bucket=action";
+
+  return {
+    user => {
+      phid => $phid,
+      userName => $user_name,
+      realName => $real_name,
+      userURL => $user_url,
+      revisionsURL => $revisions_url,
+    },
+  };
+}
+
 sub rest_resources {
   return [
     # Bug permission checks
@@ -232,6 +281,15 @@ sub rest_resources {
         method => 'bug_revisions',
         params => sub {
           return {bug_id => $_[0]};
+        },
+      },
+    },
+    qr{^/phabbugz/user/(\d+)$},
+    {
+      GET => {
+        method => 'user',
+        params => sub {
+          return {user_id => $_[0]};
         },
       },
     },

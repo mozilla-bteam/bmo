@@ -13,11 +13,18 @@
 [% ELSE %]
   [% filtered_identity = target.name || target.address.user FILTER html %]
 [% END %]
+
+[% javascript_urls = [ "js/field.js" ] %]
+
+[% IF phabricator_available %]
+[% javascript_urls.push('extensions/PhabBugz/web/js/phab_user.js') %]
+[% END %]
+
 [% PROCESS global/header.html.tmpl
    title = "User Profile: $filtered_identity"
    generate_api_token = 1
    style_urls = [ "extensions/UserProfile/web/styles/user_profile.css" ]
-   javascript_urls = [ "js/field.js" ]
+   javascript_urls = javascript_urls
 %]
 
 <table id="user_profile_table">
@@ -171,6 +178,25 @@
       [% target.needinfo_request_count FILTER html %]
       [% "</a>" IF user.id %]
     </td>
+  </tr>
+[% END %]
+
+[% IF phabricator_available %]
+  <tr>
+    <td colspan="4" class="separator"><hr></td>
+  </tr>
+  <tr>
+    <td>Phabricator</td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <th>User</th>
+    <td colspan="2" id="phab_user" data-target-user-id="[% target.id %]"></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <th>Revisions</th>
+    <td colspan="2" id="phab_revisions"></td>
   </tr>
 [% END %]
 
