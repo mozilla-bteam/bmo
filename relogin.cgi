@@ -90,6 +90,11 @@ elsif ($action eq 'begin-sudo') {
   my $current_password = $cgi->param('current_password');
   my $mfa_token        = $cgi->param('mfa_token');
 
+  # must provide a password
+  $current_password
+    || ThrowUserError('sudo_password_required',
+    {target_login => $target_login, reason => $reason});
+
   # validate entered password
   my $crypt_password = $user->cryptpassword;
   unless (($user->mfa && $mfa_token)

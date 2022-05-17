@@ -11,11 +11,10 @@ use 5.10.1;
 use lib qw( . lib local/lib/perl5 );
 
 BEGIN {
+  unlink('data/db/db_errors') if -f 'data/db/db_errors';
   $ENV{LOG4PERL_CONFIG_FILE} = 'log4perl-t.conf';
   $ENV{test_db_name}         = 'db_errors';
 }
-
-END { unlink('data/db/db_errors') }
 
 use Bugzilla::Test::MockLocalconfig (urlbase => 'http://bmo.test');
 use Bugzilla::Test::MockDB;

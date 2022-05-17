@@ -354,7 +354,8 @@ sub get_all_group_names {
     $group_names = ['', map { $_->name } Bugzilla::Group->get_all,];
   }
   catch {
-    WARN("Unable to retrieve all group names: $_");
+    WARN("Unable to retrieve all group names: $_")
+      unless Bugzilla->usage_mode == USAGE_MODE_CMDLINE;
   };
   return $group_names;
 }

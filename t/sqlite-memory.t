@@ -40,9 +40,6 @@ my $lives_ok = sub {
   catch {
     diag $_;
     fail($desc);
-  }
-  finally {
-    diag "OUTPUT: $output" if $output;
   };
 };
 

@@ -139,7 +139,7 @@ sub post_success {
         ? 'depends_on value is correct'
         : $is_private_user
         ? 'Private bug ID in depends_on is returned to private bug user'
-        : 'Private bug ID in depends_on is not returned to non-private bug user (' . $t->{user} . ')'
+        : 'Private bug ID in depends_on is not returned to non-private bug user'
     );
   }
 

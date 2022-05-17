@@ -52,10 +52,8 @@ Bugzilla::Extension::MozillaIAM::Person->cis_update_query();
 my $user = Bugzilla::User->new({name => $bmo_email});
 
 ok($user->login eq $bmo_email, "User $bmo_email was created");
-ok(
-  $user->iam_username eq $iam_username,
-  "User iam_username is set to $iam_username"
-);
+ok($user->iam_username && $user->iam_username eq $iam_username,
+  "User iam_username is set to $iam_username");
 ok(
   $user->in_group('mozilla-employee-confidential'),
   'User was added to the mozilla-employee-confidential group'
@@ -90,7 +88,7 @@ Bugzilla::Extension::MozillaIAM::Person->cis_update_query();
 
 $user = Bugzilla::User->new({name => $bmo_email});
 
-ok($user->iam_username ne $iam_username, 'User iam_username is unset');
+ok(!$user->iam_username, 'User iam_username is unset');
 ok(!$user->in_group('mozilla-employee-confidential'),
   'User was removed from the mozilla-employee-confidential group');
 
