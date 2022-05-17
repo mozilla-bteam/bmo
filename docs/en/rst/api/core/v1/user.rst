@@ -361,14 +361,16 @@ name                string    The login name of the user. Note that in some
 can_login           boolean   A boolean value to indicate if the user can login
                               into Bugzilla.
 email_enabled       boolean   A boolean value to indicate if bug-related mail will
-                              be sent to the user or not.
+                              be sent to the user or not. Only users in the
+                              *disableusers* group can see this field.
 login_denied_text   string    A text field that holds the reason for disabling a
                               user from logging into Bugzilla. If empty then the
                               user account is enabled; otherwise it is
-                              disabled/closed.
+                              disabled/closed. Only users in the *disableusers*
+                              group can see this field.
 groups              array     Groups the user is a member of. If the currently
                               logged in user is querying their own account or is a
-                              member of the 'editusers' group, the array will
+                              member of a privileged permission group, the array will
                               contain all the groups that the user is a member of.
                               Otherwise, the array will only contain groups that
                               the logged in user can bless. Each object describes
