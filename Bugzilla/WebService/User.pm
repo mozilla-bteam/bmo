@@ -309,7 +309,7 @@ sub get {
       last_activity_time => $self->type('dateTime', $user->last_activity_time),
       };
 
-    if (Bugzilla->user->in_group('editusers')) {
+    if (Bugzilla->user->in_group('disableusers')) {
       $user_info->{email_enabled}     = $self->type('boolean', $user->email_enabled);
       $user_info->{login_denied_text} = $self->type('string',  $user->disabledtext);
     }
@@ -322,7 +322,9 @@ sub get {
     }
 
     if (filter_wants($params, 'groups')) {
-      if (Bugzilla->user->id == $user->id || Bugzilla->user->in_group('editusers')) {
+      if ( Bugzilla->user->id == $user->id
+        || Bugzilla->user->in_group('mozilla-employee-confidential'))
+      {
         $user_info->{groups} = [map { $self->_group_to_hash($_) } @{$user->groups}];
       }
       else {
