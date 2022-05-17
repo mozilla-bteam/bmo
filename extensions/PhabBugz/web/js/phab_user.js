@@ -9,43 +9,46 @@
 var PhabUser = {};
 
 PhabUser.getUser = async () => {
-    var userCell = $('#phab_user');
-    var revisionsCell = $('#phab_revisions');
+    var userCell = document.getElementById("phab_user");
+    var revisionsCell = document.getElementById("phab_revisions");
     if (!userCell || !revisionsCell) {
       return;
     }
 
-    var user_id = userCell.data('target-user-id');
+    var user_id = userCell.getAttribute("data-target-user-id");
 
-    userCell.text('Loading...');
-    revisionsCell.text('Loading...');
+    userCell.textContent = "Loading...";
+    revisionsCell.textContent = "Loading...";
+
+    function displayLoadError(errStr) {
+        userCell.textContent = errStr;
+        revisionsCell.textContent = "";
+    }
 
     try {
         var { user } = await Bugzilla.API.get(`phabbugz/user/${user_id}`);
         if (!user) {
-            userCell.text('Not Found');
-            revisionsCell.text('Not Found');
+            userCell.textContent = "Not Found";
+            revisionsCell.textContent = "Not Found";
             return;
         }
 
-        var userLink = $('<a/>');
-        userLink.attr('href', user.userURL);
-        userLink.text(`${user.userName} (${user.realName})`);
-        userCell.text('');
-        userCell.append(userLink);
+        var userLink = document.createElement("a");
+        userLink.setAttribute("href", user.userURL);
+        userLink.textContent = `${user.userName} (${user.realName})`;
+        userCell.textContent = "";
+        userCell.appendChild(userLink);
 
-        var revisionsLink = $('<a/>');
-        revisionsLink.attr('href', user.revisionsURL);
-        revisionsLink.text('Open revisions');
-        revisionsCell.text('');
-        revisionsCell.append(revisionsLink);
+        var revisionsLink = document.createElement("a");
+        revisionsLink.setAttribute("href", user.revisionsURL);
+        revisionsLink.textContent = "Open revisions";
+        revisionsCell.textContent = "";
+        revisionsCell.appendChild(revisionsLink);
     } catch ({ message }) {
-        userCell.text(message);
-        revisionsCell.text('');
+        displayLoadError('Error: ' + message);
     }
 };
 
-
-$().ready(function() {
+document.addEventListener("DOMContentLoaded", function(event) {
     PhabUser.getUser();
 });
