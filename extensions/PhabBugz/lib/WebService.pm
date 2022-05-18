@@ -211,6 +211,8 @@ sub user {
 
   $self->_check_phabricator();
 
+  Bugzilla->login(LOGIN_REQUIRED);
+
   my $bmo_user_id = $params->{user_id};
 
   my $response = request(
