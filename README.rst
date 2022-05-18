@@ -324,7 +324,7 @@ Basic sanity tests
 
 .. code-block:: bash
 
-  docker build -t bmo . && docker compose -f docker-compose.test.yml run -e CI=1 bmo.test test_sanity
+  docker build -t bmo . && docker compose -f docker-compose.test.yml run -e CI=1 --no-deps bmo.test test_sanity
 
 Webservices API tests
 
