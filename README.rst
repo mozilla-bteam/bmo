@@ -31,13 +31,13 @@ Using Docker (For Development)
 
 This repository contains a docker-compose file that will create a local Bugzilla for testing.
 
-To use docker-compose, ensure you have the latest Docker install for your environment
+To use docker compose, ensure you have the latest Docker install for your environment
 (Linux, Windows, or Mac OS). If you are using Ubuntu, then you can read the next section
 to ensure that you have the correct docker setup.
 
 .. code-block:: bash
 
-    docker-compose up --build
+    docker compose up --build
 
 Then, you must configure your browser to use localhost and port 1080 as an HTTP proxy.
 For setting a proxy in Firefox, see `Firefox Connection Settings`_.
@@ -54,12 +54,12 @@ You can run the following command:
 
 .. code-block:: bash
 
-    docker-compose exec bmo.test rsync -avz --exclude .git --exclude local /mnt/sync/ /app/
+    docker compose exec bmo.test rsync -avz --exclude .git --exclude local /mnt/sync/ /app/
 
 The Mojolicious morbo development server, used by the web container, will notice any code changes and
 restart itself.
 
-If you are using Visual Studio Code, these ``docker-compose`` commands will come in handy as the
+If you are using Visual Studio Code, these ``docker compose`` commands will come in handy as the
 editor's `tasks`_ that can be found under the Terminal menu. The update command is assigned to the
 default build task so it can be executed by simply hitting Ctrl+Shift+B on Windows/Linux or
 Command+Shift+B on macOS. An `extension bundle`_ for VS Code is also available.
@@ -324,19 +324,19 @@ Basic sanity tests
 
 .. code-block:: bash
 
-  docker build -t bmo . ; docker-compose -f docker-compose.test.yml run -e CI=1 bmo.test test_sanity
+  docker build -t bmo . && docker compose -f docker-compose.test.yml run -e CI=1 bmo.test test_sanity
 
 Webservices API tests
 
 .. code-block:: bash
 
-  docker build -t bmo . ; docker-compose -f docker-compose.test.yml run bmo.test test_webservices
+  docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_webservices
 
 Selenium Web UI tests
 
 .. code-block:: bash
 
-  docker build -t bmo . ; docker-compose -f docker-compose.test.yml run bmo.test test_selenium
+  docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_selenium
 
 Testing Emails
 --------------
@@ -347,7 +347,7 @@ and changing the mail_delivery_method to 'Test'. With this option, all mail will
 
 .. code-block:: bash
 
-  docker-compose run bmo.test cat /app/data/mailer.testfile
+  docker compose run bmo.test cat /app/data/mailer.testfile
 
 Technical Details
 -----------------
