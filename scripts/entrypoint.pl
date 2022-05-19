@@ -297,7 +297,6 @@ sub fix_path {
 sub run {
   my (@cmd) = @_;
   say "+ @cmd";
-  use Capture::Tiny qw(capture);
   my ($out, $err) = capture {
     eval { system(@cmd) };
   };
