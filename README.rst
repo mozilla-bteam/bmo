@@ -324,19 +324,19 @@ Basic sanity tests
 
 .. code-block:: bash
 
-  docker build -t bmo . && docker compose -f docker-compose.test.yml run -e CI=1 --no-deps bmo.test test_sanity
+  docker compose -f docker-compose.test.yml down && docker build -t bmo . && docker compose -f docker-compose.test.yml run -e CI=1 --no-deps bmo.test test_sanity
 
 Webservices API tests
 
 .. code-block:: bash
 
-  docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_webservices
+  docker compose -f docker-compose.test.yml down && docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_webservices
 
 Selenium Web UI tests
 
 .. code-block:: bash
 
-  docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_selenium
+  docker compose -f docker-compose.test.yml down && docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_selenium
 
 Testing Emails
 --------------
