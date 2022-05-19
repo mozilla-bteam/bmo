@@ -15,6 +15,7 @@ use Bugzilla::DaemonControl qw(
   on_finish on_exception
 );
 
+use Capture::Tiny qw(capture);
 use DBI;
 use Data::Dumper;
 use English qw(-no_match_vars $EUID);
@@ -134,26 +135,21 @@ sub cmd_checksetup {
 
 sub cmd_load_test_data {
   wait_for_db();
-  use Capture::Tiny qw(capture_merged);
 
-  say 'Loading test data...';
+  die 'BZ_ANSWERS_FILE is not set' unless $ENV{BZ_ANSWERS_FILE};
+  run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_ANSWERS_FILE});
 
-  my $output = capture_merged {
-    die 'BZ_ANSWERS_FILE is not set' unless $ENV{BZ_ANSWERS_FILE};
-    run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_ANSWERS_FILE});
+  run(
+    'perl',        'scripts/generate_bmo_data.pl',
+    '--param',     'use_mailer_queue=0'
+  );
 
-    run(
-      'perl',        'scripts/generate_bmo_data.pl',
-      '--param',     'use_mailer_queue=0'
-    );
-
-    if ($ENV{BZ_QA_CONFIG}) {
-      chdir '/app/qa/config';
-      say 'chdir(/app/qa/config)';
-      run('perl', 'generate_test_data.pl');
-      chdir '/app';
-    }
-  };
+  if ($ENV{BZ_QA_CONFIG}) {
+    chdir '/app/qa/config';
+    say 'chdir(/app/qa/config)';
+    run('perl', 'generate_test_data.pl');
+    chdir '/app';
+  }
 }
 
 sub cmd_push_data {
@@ -301,8 +297,9 @@ sub fix_path {
 sub run {
   my (@cmd) = @_;
   say "+ @cmd";
-  my $rv = system @cmd;
-  if ($rv != 0) {
-    exit 1;
-  }
+  use Capture::Tiny qw(capture);
+  my ($out, $err) = capture {
+    eval { system(@cmd) };
+  };
+  die "Error: $err\n" if $err;
 }
