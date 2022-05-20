@@ -8,10 +8,14 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(. lib local/lib/perl5);
+use lib qw(. lib local/lib/perl5 t);
+
+use Support::Files;
 use Test::More;
+
+my @testitems = (@Support::Files::testitems, @Support::Files::test_files);
 
 my $ok = eval { require Test::Perl::Critic::Progressive };
 plan skip_all => 'T::P::C::Progressive required for this test' unless $ok;
 
-Test::Perl::Critic::Progressive::progressive_critic_ok();
+Test::Perl::Critic::Progressive::progressive_critic_ok(@testitems);
