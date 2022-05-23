@@ -13,7 +13,10 @@ use lib qw(. lib local/lib/perl5 t);
 use Support::Files;
 use Test::More;
 
-my @testitems = (@Support::Files::testitems, @Support::Files::test_files);
+my @testitems = (
+  @Support::Files::testitems, @Support::Files::test_files,
+  @Support::Files::scripts
+);
 
 my $ok = eval { require Test::Perl::Critic::Progressive };
 plan skip_all => 'T::P::C::Progressive required for this test' unless $ok;
