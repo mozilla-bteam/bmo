@@ -270,12 +270,12 @@ sub update {
   # IAM usernames are stored separately from normal profiles
   # data so we update them here instead
   if (exists $self->{new_iam_username}) {
-    my $new_iam_username = delete $self->{new_iam_username};
-    my $old_iam_username = $self->iam_username;
+    my $new_iam_username = delete $self->{new_iam_username} || '';
+    my $old_iam_username = $self->iam_username || '';
 
     $dbh->bz_start_transaction();
 
-    if (!defined $old_iam_username && $new_iam_username) {
+    if (!$old_iam_username && $new_iam_username) {
       $dbh->do('INSERT INTO profiles_iam (user_id, iam_username) VALUES (?, ?)',
         undef, $self->id, $new_iam_username);
       $changes->{iam_username} = ['', $new_iam_username];
@@ -498,15 +498,17 @@ sub set_nick {
 
 sub set_password {
   my ($self, $password) = @_;
+
   # Reactivate account if user was disabled due to inactivity
-  if ($self->password_change_reason eq 'Inactive Account') {
+  if ( $self->password_change_reason
+    && $self->password_change_reason eq 'Inactive Account')
+  {
     $self->set_disabledtext('');
     $self->set_disable_mail(0);
   }
   $self->set('cryptpassword',            $password);
   $self->set('password_change_required', 0);
   $self->set('password_change_reason',   '');
-
 }
 
 sub set_disabledtext {

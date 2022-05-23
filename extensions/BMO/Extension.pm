@@ -1092,7 +1092,7 @@ sub attachment_process_data {
   my $attributes = $args->{attributes};
 
   # must be a text attachment
-  return unless $attributes->{mimetype} eq 'text/plain';
+  return if !$attributes->{mimetype} || $attributes->{mimetype} ne 'text/plain';
 
   # check the attachment size, and get attachment content if it isn't too large
   my $data = $attributes->{data};

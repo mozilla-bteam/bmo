@@ -21,10 +21,10 @@ use QA::Util qw(get_config);
 use Test::Mojo;
 use Test::More;
 
-my $config           = get_config();
-my $admin_api_key    = $config->{admin_user_api_key};
-my $editbugs_api_key = $config->{editbugs_user_api_key};
-my $url              = Bugzilla->localconfig->urlbase;
+my $config            = get_config();
+my $admin_api_key     = $config->{admin_user_api_key};
+my $non_admin_api_key = $config->{unprivileged_user_api_key};
+my $url               = Bugzilla->localconfig->urlbase;
 
 my $t = Test::Mojo->new();
 
@@ -67,7 +67,7 @@ ok($class->{id},
 
 # ... and non-admins.
 $t->get_ok(
-  $url . 'rest/classification/1' => {'X-Bugzilla-API-Key' => $editbugs_api_key})
+  $url . 'rest/classification/1' => {'X-Bugzilla-API-Key' => $non_admin_api_key})
   ->status_is(200)->json_has('/classifications');
 $class = $t->tx->res->json->{classifications}->[0];
 ok($class->{id}, 'Non-admins can access classification ' . $class->{name});
