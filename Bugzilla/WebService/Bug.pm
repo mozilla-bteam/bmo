@@ -450,7 +450,7 @@ sub get {
 
   # Cache permissions for bugs. This highly reduces the number of calls to the DB.
   # visible_bugs() is only able to handle bug IDs, so we have to skip aliases.
-  my @int = grep { $_ =~ /^\d+$/ } @$ids;
+  my @int = grep { defined $_ && $_ =~ /^\d+$/ } @$ids;
   Bugzilla->user->visible_bugs(\@int);
 
   foreach my $bug_id (@$ids) {

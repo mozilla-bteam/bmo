@@ -125,7 +125,8 @@ sub _user_review_count {
 }
 
 sub _user_reviews_blocked {
-  return $_[0]->settings->{block_reviews}->{value} eq 'on';
+  return $_[0]->settings->{block_reviews}
+    && $_[0]->settings->{block_reviews}->{value} eq 'on';
 }
 
 #

@@ -62,4 +62,4 @@ services:
     image: selenium/standalone-firefox:3.141.59
     shm_size: '512m'
     ports:
-      - "5900:5900"
+      - "59000:5900"

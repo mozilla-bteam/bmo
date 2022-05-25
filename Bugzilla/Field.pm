@@ -1479,7 +1479,8 @@ sub get_legal_field_values {
     );
   }
   catch {
-    WARN("Unable to retrieve legal field values: $_");
+    WARN("Unable to retrieve legal field values: $_")
+      unless Bugzilla->usage_mode == USAGE_MODE_CMDLINE;
   };
   return $results;
 }

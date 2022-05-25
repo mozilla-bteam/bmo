@@ -26,7 +26,6 @@ my $bug_1 = Bugzilla::Bug->create({
   short_desc => 'A test bug',
   product    => 'Firefox',
   component  => 'General',
-  ,
   bug_type     => 'defect',
   bug_severity => 'normal',
   groups       => [],

@@ -80,6 +80,7 @@ sub DB_COLUMNS {
     'profiles.extern_id',
     'profiles.is_enabled',
     $dbh->sql_date_format('last_seen_date', '%Y-%m-%d') . ' AS last_seen_date',
+    'profiles.last_activity_ts AS last_activity_time',
     'profiles.password_change_required',
     'profiles.password_change_reason',
     'profiles.mfa',
@@ -269,12 +270,12 @@ sub update {
   # IAM usernames are stored separately from normal profiles
   # data so we update them here instead
   if (exists $self->{new_iam_username}) {
-    my $new_iam_username = delete $self->{new_iam_username};
-    my $old_iam_username = $self->iam_username;
+    my $new_iam_username = delete $self->{new_iam_username} || '';
+    my $old_iam_username = $self->iam_username || '';
 
     $dbh->bz_start_transaction();
 
-    if (!defined $old_iam_username && $new_iam_username) {
+    if (!$old_iam_username && $new_iam_username) {
       $dbh->do('INSERT INTO profiles_iam (user_id, iam_username) VALUES (?, ?)',
         undef, $self->id, $new_iam_username);
       $changes->{iam_username} = ['', $new_iam_username];
@@ -497,15 +498,17 @@ sub set_nick {
 
 sub set_password {
   my ($self, $password) = @_;
+
   # Reactivate account if user was disabled due to inactivity
-  if ($self->password_change_reason eq 'Inactive Account') {
+  if ( $self->password_change_reason
+    && $self->password_change_reason eq 'Inactive Account')
+  {
     $self->set_disabledtext('');
     $self->set_disable_mail(0);
   }
   $self->set('cryptpassword',            $password);
   $self->set('password_change_required', 0);
   $self->set('password_change_reason',   '');
-
 }
 
 sub set_disabledtext {
@@ -666,6 +669,7 @@ sub showmybugslink { $_[0]->{showmybugslink}; }
 sub email_disabled { $_[0]->{disable_mail} || !$_[0]->{is_enabled}; }
 sub email_enabled  { !$_[0]->email_disabled; }
 sub last_seen_date { $_[0]->{last_seen_date}; }
+sub last_activity_time       { $_[0]->{last_activity_time}; }
 sub password_change_required { $_[0]->{password_change_required}; }
 sub password_change_reason   { $_[0]->{password_change_reason}; }
 

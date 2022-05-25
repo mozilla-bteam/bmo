@@ -25,6 +25,7 @@ use Bugzilla::Util qw(datetime_from);
 use Bugzilla::Constants;
 use Bugzilla::Hook;
 BEGIN { Bugzilla->extensions }
+use Capture::Tiny qw(capture_merged);
 use Test2::V0;
 use Test2::Tools::Mock qw(mock mock_accessor);
 use Test2::Tools::Exception qw(dies lives);
@@ -42,20 +43,22 @@ my $User = mock 'Bugzilla::User' => (
   override => [ timezone => sub { $UTC } ]
 );
 
-my $user = create_user('reportuser@invalid.tld', '*');
-Bugzilla->set_user($user);
+my $output = capture_merged {
+  my $user = create_user('reportuser@invalid.tld', '*');
+  Bugzilla->set_user($user);
 
-my %time;
-for (1..250) {
-  my $bug = create_bug(
-    short_desc  => "test bug $_",
-    comment     => "Hello, world: $_",
-    provided $_ % 3 == 0, keywords => ['regression'],
-    assigned_to => 'reportuser@invalid.tld',
-    bug_type    => 'defect'
-  );
-  $time{ $bug->id } = datetime_from($bug->delta_ts)->epoch;
-}
+  my %time;
+  for (1..250) {
+    my $bug = create_bug(
+      short_desc  => "test bug $_",
+      comment     => "Hello, world: $_",
+      provided $_ % 3 == 0, keywords => ['regression'],
+      assigned_to => 'reportuser@invalid.tld',
+      bug_type    => 'defect'
+    );
+    $time{ $bug->id } = datetime_from($bug->delta_ts)->epoch;
+  }
+};
 
 my $report = Bugzilla::Report::Ping::Simple->new(
   base_url => 'http://localhost',

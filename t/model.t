@@ -22,6 +22,7 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Hook;
 BEGIN { Bugzilla->extensions }
+use Capture::Tiny qw(capture_merged);
 use Test2::V0;
 use Test2::Tools::Mock qw(mock mock_accessor);
 use Test2::Tools::Exception qw(dies lives);
@@ -30,17 +31,19 @@ use PerlX::Maybe qw(provided);
 Bugzilla->dbh->model->resultset('Keyword')
   ->create({name => 'regression', description => 'the regression keyword'});
 
-my $user = create_user('reportuser@invalid.tld', '*');
-$user->{groups} = [Bugzilla::Group->get_all];
-Bugzilla->set_user($user);
+my $output = capture_merged {
+  my $user = create_user('reportuser@invalid.tld', '*');
+  $user->{groups} = [Bugzilla::Group->get_all];
+  Bugzilla->set_user($user);
 
-create_bug(
-  short_desc  => "test bug $_",
-  comment     => "Hello, world: $_",
-  provided $_ % 3 == 0, keywords => ['regression'],
-  assigned_to => 'reportuser@invalid.tld',
-  bug_type    => 'defect'
-) for (1..10);
+  create_bug(
+    short_desc  => "test bug $_",
+    comment     => "Hello, world: $_",
+    provided $_ % 3 == 0, keywords => ['regression'],
+    assigned_to => 'reportuser@invalid.tld',
+    bug_type    => 'defect'
+  ) for (1..10);
+};
 
 my $model = Bugzilla->dbh->model;
 my $bug3 = $model->resultset('Bug')->find(3);
