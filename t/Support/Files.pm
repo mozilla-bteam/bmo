@@ -36,6 +36,8 @@ foreach my $extension (@extensions) {
 
 our @test_files = glob('t/*.t xt/*/*.t');
 
+our @scripts = glob('scripts/*.pl');
+
 foreach my $extension (@extensions) {
 
   # Skip disabled extensions
