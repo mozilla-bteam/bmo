@@ -20,16 +20,18 @@ use Support::Files;
 use Test::More;
 
 BEGIN {
-  if ($ENV{CI}) {
-    plan skip_all => 'Not running compile tests in CI.';
-    exit;
-  }
   plan tests => @Support::Files::testitems + @Support::Files::test_files;
 
   use_ok('Bugzilla::Constants');
   use_ok('Bugzilla::Install::Requirements');
   use_ok('Bugzilla');
+
+  unlink('data/db/model_test') if -f 'data/db/model_test';
+  $ENV{test_db_name} = 'model_test';
 }
+
+use Bugzilla::Test::MockDB;
+
 Bugzilla->usage_mode(USAGE_MODE_TEST);
 
 sub compile_file {
@@ -40,20 +42,25 @@ sub compile_file {
   # Bugzilla::Install::CPAN.)
   local @INC = @INC;
 
-  if ($file =~ /extensions/) {
+  if ($file =~ /^extensions/) {
     skip "$file: extensions not tested", 1;
     return;
   }
 
-  if ($file =~ s/\.pm$//) {
+  if ($file =~ m{^t/}) {
+    skip "$file: test scripts not tested", 1;
+    return;
+  }
+
+  if ($file =~ s/[.]pm$//) {
     $file =~ s{/}{::}g;
     use_ok($file);
     return;
   }
 
-  open(my $fh, $file);
+  open my $fh, '<', $file || die $!;
   my $bang = <$fh>;
-  close $fh;
+  close $fh || die $!;
 
   my $T = "";
   if ($bang =~ m/#!\S*perl\s+-.*T/) {
@@ -66,7 +73,7 @@ sub compile_file {
   }
   my $perl   = qq{"$^X"};
   my $output = `$perl $libs -c$T -MSupport::Systemexec $file 2>&1`;
-  chomp($output);
+  chomp $output;
   my $return_val = $?;
   $output =~ s/^\Q$file\E syntax OK$//ms;
   diag($output) if $output;
@@ -89,13 +96,13 @@ SKIP: {
       skip 'mod_perl.pl cannot be compiled from the command line', 1;
     }
     my $feature = $file_features->{$file};
-    if ($feature and !Bugzilla->feature($feature)) {
+    if ($feature && !Bugzilla->feature($feature)) {
       skip "$file: $feature not enabled", 1;
     }
 
     # Check that we have a DBI module to support the DB, if this
     # is a database module (but not Schema)
-    if ($file =~ m{Bugzilla/DB/([^/]+)\.pm$} and $file ne "Bugzilla/DB/Schema.pm") {
+    if ($file =~ m{Bugzilla/DB/([^/]+)[.]pm$} and $file ne "Bugzilla/DB/Schema.pm") {
       my $module = lc($1);
       Bugzilla->feature($module) or skip "$file: Driver for $module not installed", 1;
     }

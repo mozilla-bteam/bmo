@@ -25,6 +25,21 @@ use constant PUBLIC_METHODS => qw(
   get
 );
 
+sub rest_resources {
+  return [
+    qr{^/classification/([^/]+)$},
+    {
+      GET => {
+        method => 'get',
+        params => sub {
+          my $param = $_[0] =~ /^\d+$/ ? 'ids' : 'names';
+          return {$param => [$_[0]]};
+        }
+      }
+    }
+  ];
+}
+
 sub get {
   my ($self, $params) = validate(@_, 'names', 'ids');
 

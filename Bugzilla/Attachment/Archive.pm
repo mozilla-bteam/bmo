@@ -80,7 +80,7 @@ sub _build_input_fh {
     croak "I will not read and write a file at the same time";
   }
   my $file = $self->file;
-  return IO::File->new($self->file, '<:bytes') or die "cannot read $file: $!";
+  return IO::File->new($self->file, '<:bytes') || die "cannot read $file: $!";
 }
 
 sub _build_output_fh {

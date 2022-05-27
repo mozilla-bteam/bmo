@@ -43,6 +43,39 @@ use constant FIELD_MAP =>
 
 BEGIN { *get_products = \&get }
 
+sub rest_resources {
+  return [
+    qr{^/product_accessible$},
+    {GET => {method => 'get_accessible_products'}},
+    qr{^/product_enterable$},
+    {GET => {method => 'get_enterable_products'}},
+    qr{^/product_selectable$},
+    {GET => {method => 'get_selectable_products'}},
+    qr{^/product$},
+    {
+      GET  => {method => 'get'},
+      POST => {method => 'create', success_code => STATUS_CREATED}
+    },
+    qr{^/product/([^/]+)$},
+    {
+      GET => {
+        method => 'get',
+        params => sub {
+          my $param = $_[0] =~ /^\d+$/ ? 'ids' : 'names';
+          return {$param => [$_[0]]};
+        }
+      },
+      PUT => {
+        method => 'update',
+        params => sub {
+          my $param = $_[0] =~ /^\d+$/ ? 'ids' : 'names';
+          return {$param => [$_[0]]};
+        }
+      }
+    },
+  ];
+}
+
 # Get the ids of the products the user can search
 sub get_selectable_products {
   Bugzilla->switch_to_shadow_db();

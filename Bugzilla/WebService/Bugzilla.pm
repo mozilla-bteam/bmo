@@ -40,6 +40,16 @@ use constant PUBLIC_METHODS => qw(
   jobqueue_status
 );
 
+sub rest_resources {
+  return [
+    qr{^/version$},         {GET => {method => 'version'}},
+    qr{^/extensions$},      {GET => {method => 'extensions'}},
+    qr{^/timezone$},        {GET => {method => 'timezone'}},
+    qr{^/time$},            {GET => {method => 'time'}},
+    qr{^/jobqueue_status$}, {GET => {method => 'jobqueue_status'}},
+  ];
+}
+
 sub version {
   my $self = shift;
   return {version => $self->type('string', BUGZILLA_VERSION)};

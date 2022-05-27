@@ -22,13 +22,13 @@ use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util qw(taint_data fix_credentials);
 
 # Load resource modules
-use Bugzilla::WebService::Server::REST::Resources::Bug;
-use Bugzilla::WebService::Server::REST::Resources::Bugzilla;
-use Bugzilla::WebService::Server::REST::Resources::Classification;
-use Bugzilla::WebService::Server::REST::Resources::Group;
-use Bugzilla::WebService::Server::REST::Resources::Product;
-use Bugzilla::WebService::Server::REST::Resources::User;
-use Bugzilla::WebService::Server::REST::Resources::BugUserLastVisit;
+use Bugzilla::WebService::Bug;
+use Bugzilla::WebService::Bugzilla;
+use Bugzilla::WebService::Classification;
+use Bugzilla::WebService::Group;
+use Bugzilla::WebService::Product;
+use Bugzilla::WebService::User;
+use Bugzilla::WebService::BugUserLastVisit;
 
 use List::MoreUtils qw(uniq);
 use Scalar::Util qw(blessed reftype);
