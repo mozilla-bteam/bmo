@@ -27,7 +27,7 @@ BEGIN {
   use_ok('Bugzilla');
 
   if (-f 'data/db/model_test') {
-    unlink 'data/db/model_test' || die $!;
+    unlink 'data/db/model_test' or die $!;
   }
   $ENV{test_db_name} = 'model_test';
 }
@@ -55,9 +55,9 @@ sub compile_file {
     return;
   }
 
-  open my $fh, '<', $file || die $!;
+  open my $fh, '<', $file or die $!;
   my $bang = <$fh>;
-  close $fh || die $!;
+  close $fh or die $!;
 
   my $T = '';
   if ($bang =~ m/#!\S*perl\s+-.*T/) {
