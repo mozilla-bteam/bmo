@@ -815,6 +815,10 @@ sub iprepd_report {
   my $ip      = remote_ip();
   my $ua      = mojo_user_agent({request_timeout => 5});
   my $payload = {object => $ip, type => "ip", violation => $name};
+
+  # We should also audit this so it is recorded in the logs
+  Bugzilla->audit(sprintf 'iprepd: violation %s from ip address %s', $name, $ip);
+
   try {
     my $tx = $ua->put(
       $params->{iprepd_base_url} . '/violations/type/ip/' . $ip,
