@@ -16,7 +16,7 @@ use Data::Dumper;
 use DateTime;
 use QA::Util;
 use QA::Tests qw(bug_tests PRIVATE_BUG_USER);
-use Test::More tests => 1096;
+use Test::More tests => 1087;
 my ($config, @clients) = get_rpc_clients();
 
 my $xmlrpc = $clients[0];
@@ -128,7 +128,7 @@ sub post_success {
   }
 
   # See also to a private bug should not display for the public bug
-  if (!$is_private_bug && !$is_private_user) {
+  if (!$is_private_bug && !$is_privileged_user) {
     ok(
       !exists $bug->{see_also} || !@{$bug->{see_also}},
       'See also to a private bug should not display for the public bug and normal user'
