@@ -109,6 +109,14 @@ else {
 
 Bugzilla::Bug->preload(\@bugs);
 
+# Audit when a non-public bug is viewed including the groups the bug belongs to
+foreach my $bug (@bugs) {
+  my $groups_in = $bug->groups_in;
+  next if !@$groups_in;
+  Bugzilla->audit(sprintf 'web: %s viewed non-public bug %d belonging to groups %s',
+    $user->login, $bug->id, join ', ', map { $_->name } @$groups_in);
+}
+
 $vars->{'bugs'}  = \@bugs;
 $vars->{'marks'} = \%marks;
 

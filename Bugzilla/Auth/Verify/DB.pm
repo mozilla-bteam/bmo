@@ -43,12 +43,20 @@ sub check_credentials {
   my $entered_password_crypted = bz_crypt($password, $real_password_crypted);
 
   if ($entered_password_crypted ne $real_password_crypted) {
+    # Audit the invalid attempt at login with bad password
+    Bugzilla->audit(sprintf 'login: invalid password was entered for account %s',
+      $user->login);
 
     # Record the login failure
     $user->note_login_failure();
 
     # Immediately check if we are locked out
     if ($user->account_is_locked_out) {
+      # Audit that the account was locked out for too many failed attempts
+      Bugzilla->audit(
+        sprintf 'login: account %s was locked after too many failed attempts',
+        $user->login);
+
       return {failure => AUTH_LOCKOUT, user => $user, just_locked_out => 1};
     }
 
