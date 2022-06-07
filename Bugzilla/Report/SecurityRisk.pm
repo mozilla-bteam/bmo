@@ -17,13 +17,6 @@ use Bugzilla::Teams qw(get_team_info);
 use Bugzilla::Util qw(datetime_from diff_arrays);
 use Bugzilla;
 
-use Chart::Clicker;
-use Chart::Clicker::Axis::DateTime;
-use Chart::Clicker::Data::Series;
-use Chart::Clicker::Data::DataSet;
-use Chart::Clicker::Renderer::Point;
-use Chart::Clicker::Renderer::StackedArea;
-
 use DateTime;
 use JSON::PP::Boolean;
 use List::Util qw(any first sum uniq);
@@ -107,15 +100,6 @@ has 'deltas' => (
     by_sec_keyword =>
       HashRef [Dict [added => ArrayRef [Int], closed => ArrayRef [Int],],],
     by_team => HashRef [Dict [added => ArrayRef [Int], closed => ArrayRef [Int],],],
-  ],
-);
-
-has 'graphs' => (
-  is  => 'lazy',
-  isa => Dict [
-    bugs_by_sec_keyword_count => Object,
-    bugs_by_sec_keyword_age   => Object,
-    bugs_by_team_age          => Object,
   ],
 );
 
@@ -336,114 +320,6 @@ sub _build_results {
   }
 
   return [reverse @results];
-}
-
-sub _build_graphs {
-  my ($self) = @_;
-  my $graphs = {};
-  my $data   = [
-    {
-      id    => 'bugs_by_sec_keyword_count',
-      title => sprintf(
-        'Open security bugs by severity (%s to %s)',
-        $self->start_date->ymd,
-        $self->end_date->ymd
-      ),
-      range_label => 'Open Bugs Count',
-      datasets    => [
-        map {
-          my $keyword = $_;
-          {
-            name   => $_,
-            keys   => [map { $_->{date}->epoch } @{$self->results}],
-            values => [
-              map { scalar @{$_->{bugs_by_sec_keyword}->{$keyword}->{open}} }
-                @{$self->results}
-            ],
-          }
-        } @{$self->sec_keywords}
-      ],
-      renderer   => Chart::Clicker::Renderer::StackedArea->new(opacity => .6),
-      image_file => tempfile(SUFFIX => '.png'),
-    },
-    {
-      id    => 'bugs_by_sec_keyword_age',
-      title => sprintf(
-        '# of open security bugs older than 45 days by severity (%s to %s)',
-        $self->start_date->ymd,
-        $self->end_date->ymd
-      ),
-      range_label => 'Bug Count',
-      datasets    => [
-        map {
-          my $keyword = $_;
-          {
-            name   => $_,
-            keys   => [map { $_->{date}->epoch } @{$self->results}],
-            values => [
-              map {
-                scalar @{$_->{bugs_by_sec_keyword}->{$keyword}->{very_old_bugs}}
-              } @{$self->results}
-            ],
-          }
-        } @{$self->sec_keywords}
-      ],
-      image_file => tempfile(SUFFIX => '.png'),
-    },
-    {
-      id    => 'bugs_by_team_age',
-      title => sprintf(
-        '# of open security bugs older than 45 days by team (%s to %s)',
-        $self->start_date->ymd,
-        $self->end_date->ymd
-      ),
-      range_label => 'Bug Count',
-      datasets    => [
-        map {
-          my $team = $_;
-          {
-            name => $_,
-            keys => [map { $_->{date}->epoch } @{$self->results}],
-            values => [
-              map {
-                scalar @{$_->{bugs_by_team}->{$team}->{very_old_bugs}}
-              }@{$self->results}
-            ],
-          }
-        } @{$self->teams}
-      ],
-      image_file => tempfile(SUFFIX => '.png'),
-    },
-  ];
-
-  foreach my $datum (@$data) {
-    my $cc = Chart::Clicker->new;
-    $cc->title->text($datum->{title});
-    $cc->title->font->size(14);
-    $cc->title->padding->bottom(5);
-    $cc->title->padding->top(5);
-    foreach my $dataset (@{$datum->{datasets}}) {
-      my $series = Chart::Clicker::Data::Series->new(
-        name   => $dataset->{name},
-        values => $dataset->{values},
-        keys   => $dataset->{keys},
-      );
-      my $ds = Chart::Clicker::Data::DataSet->new(series => [$series]);
-      $cc->add_to_datasets($ds);
-    }
-    my $ctx = $cc->get_context('default');
-    $ctx->renderer($datum->{renderer}) if exists $datum->{renderer};
-    $ctx->range_axis->label($datum->{range_label});
-    $ctx->domain_axis(Chart::Clicker::Axis::DateTime->new(
-      position    => 'bottom',
-      orientation => 'horizontal',
-      format      => "%m/%d",
-    ));
-    $cc->write_output($datum->{image_file});
-    $graphs->{$datum->{id}} = $datum->{image_file};
-  }
-
-  return $graphs;
 }
 
 sub _build_deltas {
