@@ -47,7 +47,7 @@ name                      string   The name of the component.
 description               string   A description of the component, which may contain HTML.
 is_active                 boolean  A boolean indicating if the component is active.
 default_bug_type          string   The default type for bugs filed under this component.
-default_assignee       string   The login of the default assignee for the component.
+default_assignee          string   The login of the default assignee for the component.
 default_qa_contact        string   The login of the default assignee for the component.
 triage_owner              string   The login of the default assignee for the component.
 team_name                 string   The team name the component belongs to.
@@ -82,7 +82,7 @@ name                      string  The name of the component.
 description               string  A description of the component, which may contain HTML.
 default_bug_type          string  The default type for bugs filed under this component.
                                   If empty, then product's default bug type is used. (optional).
-default_assignee       string  The login of the default assignee for the component.
+default_assignee          string  The login of the default assignee for the component.
 default_qa_contact        string  The login of the default qa contact for the component (optional).
 triage_owner              string  The login of the triage owner for the component (optional).
 team_name                 string  The team name the component belongs to.
@@ -106,7 +106,7 @@ bug_description_template  string  The string included in the comment field of a 
      "triage_owner": ""
    }
 
-A component object :ref:`_rest_component_object` is returned.
+A component object `rest_component_object`_ is returned.
 
 .. _rest_component_update:
 
@@ -134,7 +134,7 @@ name                      type     description
 name                      string   The name of this component.
 description               string   A description for this component. Allows some simple
                                    HTML.
-default_assignee       string   The login of the default assignee for the component.
+default_assignee          string   The login of the default assignee for the component.
 default_qa_contact        string   The login of the default qa contact for the component.
 default_bug_type          string   The default type for bugs filed under this component.
                                    If empty, then product's default bug type is used.
@@ -172,7 +172,7 @@ bug_description_template  string   The string included in the comment field of a
      }
    }
 
-A component object :ref:`_rest_component_object` is returned.
+A component object `rest_component_object`_ is returned.
 
 The following fields are added to the object:
 
