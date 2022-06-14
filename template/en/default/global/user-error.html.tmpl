@@ -1212,6 +1212,9 @@
   [% ELSIF error == "rest_invalid_resource" %]
     A REST API resource was not found for '[% method FILTER html +%] [%+ path FILTER html %]'.
 
+  [% ELSIF error == "rest_malformed_json" %]
+    The JSON data used for the request was malformed. Please update your request and try again.
+
   [% ELSIF error == "get_products_invalid_type" %]
     The product type '[% type FILTER html %]' is invalid. Valid choices
     are 'accessible', 'selectable', and 'enterable'.
