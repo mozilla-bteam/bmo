@@ -1,7 +1,7 @@
 Components
 ==========
 
-This part of the Bugzilla API look at individual components and update their information.
+This part of the Bugzilla API looks at individual components and also allows updating their information.
 
 .. _rest_get_component:
 
@@ -38,9 +38,9 @@ To get information about the General component under the Firefox product:
 
 Component Object
 
-========================  =======  =======================================================
+========================  =======  ========================================================
 name                      type     description
-========================  =======  =======================================================
+========================  =======  ========================================================
 id                        int      An integer ID uniquely identifying the component in
                                    this installation only.
 name                      string   The name of the component.
@@ -48,12 +48,12 @@ description               string   A description of the component, which may con
 is_active                 boolean  A boolean indicating if the component is active.
 default_bug_type          string   The default type for bugs filed under this component.
 default_assignee          string   The login of the default assignee for the component.
-default_qa_contact        string   The login of the default assignee for the component.
-triage_owner              string   The login of the default assignee for the component.
+default_qa_contact        string   The login of the default qa contact for the component.
+triage_owner              string   The login of the default triage owner for the component.
 team_name                 string   The team name the component belongs to.
 bug_description_template  string   The string included in the comment field of a new bug
                                    when the component is selected.
-========================  =======  =======================================================
+========================  =======  ========================================================
 
 .. _rest_component_create:
 
