@@ -59,7 +59,7 @@
 
  #welcome {
    text-align: center;
-   margin: 0 0 0.8em 0;
+   margin: 0 0 8px 0;
    padding: 0;
  }
 
@@ -148,4 +148,38 @@
 
  ul.additional_links li.bz_default_hidden {
    display: none;
+ }
+
+ ul.exits {
+   background-color: var(--secondary-region-background-color);
+   border: 1px solid var(--secondary-region-border-color);
+   display: flex;
+   flex-direction: column;
+   list-style-type: none;
+   margin-top: 3em;
+   padding: 10px;
+   text-align: left;
+   width: 600px;
+ }
+
+ ul.exits li {
+   display: flex;
+   margin-bottom: 12px;
+ }
+
+ ul.exits .icon {
+   margin-right: 1em;
+ }
+
+ ul.exits .link:not(.last) {
+   border-bottom: 1px solid var(--secondary-region-border-color);
+   padding-bottom: 8px;
+ }
+
+ ul.exits .link a {
+   font-size: var(--font-size-h4);
+ }
+
+ ul.exits p {
+   margin: 2px;
  }
