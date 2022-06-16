@@ -18,5 +18,5 @@
     "search.exclude": {
         "**/local": true
     },
-    "restructuredtext.confPath": "${workspaceFolder}/docs/en/rst/conf.py"
+    "esbonio.sphinx.confDir": "${workspaceFolder}/docs/en/rst/conf.py"
 }
