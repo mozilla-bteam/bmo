@@ -661,8 +661,14 @@ if ($order) {
     "Last Updated" =>
       ["changeddate", "bug_status", "priority", "assigned_to", "bug_id"],
   );
-  if ($order_types{$order}) {
-    @order_columns = @{$order_types{$order}};
+  my $order_field = $order;
+  $order_field =~ s/\s+(DESC|ASC)$//i;
+  my $order_by = $1;
+  if ($order_types{$order_field}) {
+    @order_columns = @{$order_types{$order_field}};
+    if ($order_by) {
+      $order_columns[0] = $order_columns[0] . " $order_by";
+    }
   }
   else {
     @order_columns = split(/\s*,\s*/, $order);
