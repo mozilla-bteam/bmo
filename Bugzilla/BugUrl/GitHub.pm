@@ -27,7 +27,7 @@ sub should_handle {
 # Github security advisories have the form of:
 #  https://github.com/USER_OR_TEAM_OR_ORGANIZATION_NAME/REPOSITORY_NAME/security/advisories/GHSA-XXXX-XXXX-XXXX
 # Github projects have the form of:
-#  https://gUSER_OR_TEAM_OR_ORGANIZATION_NAME/REPOSITORY_NAME/projects/111
+#  https://github.com/USER_OR_TEAM_OR_ORGANIZATION_NAME/REPOSITORY_NAME/projects/111
   if (lc($uri->authority) eq 'github.com') {
     if ( $uri->path =~ m{^/[^/]+/[^/]+/(?:issues|pull)/\d+$}
       || $uri->path =~ m{^/[^/]+/[^/]+/security/advisories/GHSA-.*$}
