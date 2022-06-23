@@ -149,8 +149,26 @@
     [% PROCESS bug_modal/navigate.html.tmpl %]
   [% END %]
   <div role="group" class="buttons">
-    <button type="button" id="copy-summary" class="secondary"
-      title="Copy [% terms.bug %] number and summary to your clipboard">Copy Summary</button>
+    <button type="button" id="copy-summary" class="secondary separate-dropdown-button-main"
+      title="Copy [% terms.bug %] number and summary to your clipboard">Copy Summary</button
+    ><div id="copy-menu-dropdown" class="dropdown"><button type="button" id="copy-menu-btn" aria-haspopup="true" aria-label="View"
+      aria-expanded="false" aria-controls="copy-menu" class="dropdown-button secondary separate-dropdown-button-arrow"
+      title="More options for copy">&#9662;</button>
+      <ul class="dropdown-content left" id="copy-menu" role="menu" style="display:none;">
+        <li role="presentation">
+          <a id="copy-markdown-summary" role="menuitem" tabindex="-1">Markdown</a>
+        </li>
+        <li role="presentation">
+          <a id="copy-markdown-bug-number" role="menuitem" tabindex="-1">Markdown (bug number)</a>
+        </li>
+        <li role="presentation">
+          <a id="copy-text-summary" role="menuitem" tabindex="-1">Plain Text</a>
+        </li>
+        <li role="presentation">
+          <a id="copy-html-summary" role="menuitem" tabindex="-1">HTML</a>
+        </li>
+      </ul>
+    </div>
     <div id="clip-container" style="display:none"><input type="text" id="clip"></div>
     [% IF user.id %]
       <button type="button" class="secondary" id="cc-btn" data-is-cced="[% is_cced ? 1 : 0 %]">
