@@ -385,32 +385,68 @@ $(function() {
         }
 
         if (hasExecCopy) {
-            const url = BUGZILLA.bug_url;
-            const text = `Bug ${BUGZILLA.bug_id} - ${BUGZILLA.bug_summary}`;
-            const html = `<a href="${url}">${text.htmlEncode()}</a>`;
+            function copy(text, name) {
+                const captalizedName = name[0].toUpperCase() + name.slice(1);
+                // execCommand("copy") only works on selected text
+                $('#clip-container').show();
+                $('#clip').val(text).select();
+                $('#floating-message-text')
+                  .text(document.execCommand("copy") ? `${captalizedName} copied!` : `Couldn’t copy ${name}`);
+                $('#floating-message').fadeIn(250).delay(2500).fadeOut();
+                $('#clip-container').hide();
+            }
 
-            document.addEventListener('copy', event => {
-                if (event.target.nodeType === 1 && event.target.matches('#clip')) {
-                    event.clipboardData.setData('text/uri-list', url);
-                    event.clipboardData.setData('text/plain', text);
-                    event.clipboardData.setData('text/html', html);
-                    event.preventDefault();
+            const url = BUGZILLA.bug_url;
+
+            const bugNumberText = `bug ${BUGZILLA.bug_id}`;
+            const summaryText = `Bug ${BUGZILLA.bug_id} - ${BUGZILLA.bug_summary}`;
+
+            const bugNumberHTML = `<a href="${url}">${bugNumberText.htmlEncode()}</a>`;
+            const summaryHTML = `<a href="${url}">${summaryText.htmlEncode()}</a>`;
+
+            $('#copy-summary').click(() => {
+                function onCopy(event) {
+                    if (event.target.nodeType === 1 && event.target.matches('#clip')) {
+                        event.clipboardData.setData('text/uri-list', url);
+                        event.clipboardData.setData('text/plain', summaryText);
+                        event.clipboardData.setData('text/html', summaryHTML);
+                        event.preventDefault();
+                        document.removeEventListener('copy', onCopy);
+                    }
                 }
+
+                document.addEventListener('copy', onCopy);
+                copy(summaryText, "bug summary");
             });
 
-            $('#copy-summary')
-                .click(function() {
-                    // execCommand("copy") only works on selected text
-                    $('#clip-container').show();
-                    $('#clip').val(text).select();
-                    $('#floating-message-text')
-                        .text(document.execCommand("copy") ? 'Bug summary copied!' : 'Couldn’t copy bug summary');
-                    $('#floating-message').fadeIn(250).delay(2500).fadeOut();
-                    $('#clip-container').hide();
-                });
+            $('#copy-markdown-summary').click(() => {
+                copy(`[${summaryText}](${url})`, "markdown link with bug summary");
+            });
+            $('#copy-markdown-bug-number').click(() => {
+                copy(`[${bugNumberText}](${url})`, "markdown link with bug number");
+            });
+
+            $('#copy-text-summary').click(() => {
+                copy(summaryText, "bug summary");
+            });
+
+            $('#copy-html-summary').click(() => {
+                function onCopy(event) {
+                    if (event.target.nodeType === 1 && event.target.matches('#clip')) {
+                        event.clipboardData.setData('text/plain', summaryHTML);
+                        event.clipboardData.setData('text/html', summaryHTML);
+                        event.preventDefault();
+                        document.removeEventListener('copy', onCopy);
+                    }
+                }
+
+                document.addEventListener('copy', onCopy);
+                copy(summaryHTML, "HTML link with bug summary");
+            });
         }
         else {
             $('#copy-summary').hide();
+            $('#copy-menu-dropdown').hide();
         }
     }
 
