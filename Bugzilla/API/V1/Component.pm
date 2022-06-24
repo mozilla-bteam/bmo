@@ -45,10 +45,10 @@ sub create {
   foreach my $field (qw(default_assignee default_qa_contact triage_owner)) {
     my $value = trim($params->{$field});
     next if !$value;
-    my $user = Bugzilla::User->check({name => $value});
+    my $field_user = Bugzilla::User->check({name => $value});
 
     # Triage owner value needs to be in the form of user id, not login
-    $params->{$field} = $user->id if $field eq 'triage_owner';
+    $params->{$field} = $field_user->id if $field eq 'triage_owner';
   }
 
   my $create = {
