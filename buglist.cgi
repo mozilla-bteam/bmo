@@ -663,7 +663,10 @@ if ($order) {
   );
   my $order_field = $order;
   $order_field =~ s/\s+(DESC|ASC)$//i;
-  my $order_by = $1;
+  my $order_by;
+  if ($1) {
+    $order_by = $1;
+  }
   if ($order_types{$order_field}) {
     @order_columns = @{$order_types{$order_field}};
     if ($order_by) {
