@@ -801,9 +801,9 @@ To update the fields of a current bug.
    }
 
 The params to include in the PUT body as well as the returned data format,
-are the same as below. You can specify the ID or alias of the bug to update
-either in the URL path and/or in the ``ids`` param. You can use both and they
-will be combined so you can edit more than one bug at a time.
+are the same as below. You must specify an ID or alias of a bug to update
+in the URL path. You can also specify the ``ids`` param and they will be
+combined so you can edit more than one bug at a time.
 
 ===============  =====  =========================================================
 name             type   description
