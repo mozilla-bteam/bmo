@@ -117,7 +117,7 @@ sub _add_value {
     if (!Bugzilla::Milestone->new({product => $product, name => $full_milestone})) {
       # Figure the proper sort key from the last version and add 10
       my $old_value = $value - 1;
-      my $last_milestone = Bugzilla::Milestone->new({product => $product, name => "Firefox $old_value"});
+      my $last_milestone = Bugzilla::Milestone->new({product => $product, name => "$old_value Branch"});
       my $sortkey = $last_milestone ? $last_milestone->sortkey + 10 : 0;
 
       # Need to add 10 to the current default milestone '---' so it is placed right above the new milestone
@@ -138,7 +138,7 @@ sub _add_value {
 
   # Versions are simple in that they do not use sortkeys yet
   if ($type eq 'version') {
-    my $full_version = "$value Branch";
+    my $full_version = "Firefox $value";
 
     if (!Bugzilla::Version->new({product => $product, name => $full_version})) {
       Bugzilla::Version->create({product => $product, value => $full_version});
