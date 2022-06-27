@@ -17,7 +17,7 @@ my ($sel, $config) = get_selenium();
 
 log_in($sel, $config, 'admin');
 
-# Add the milestone "Firefox 100" with sortkey 100 to Firefox product
+# Add the milestone "100 Branch" with sortkey 100 to Firefox product
 
 edit_product($sel, 'Firefox', 'Client Software');
 $sel->click_ok('link=Edit milestones:', undef,
@@ -27,12 +27,12 @@ $sel->title_is("Select milestone of product 'Firefox'", 'Display milestones');
 $sel->click_ok('link=Add', undef, 'Go add a new milestone');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Add Milestone to Product 'Firefox'", 'Enter new milestone');
-$sel->type_ok('milestone', 'Firefox 100', 'Set its name to Firefox 100');
+$sel->type_ok('milestone', '100 Branch', 'Set its name to 100 Branch');
 $sel->type_ok('sortkey',   '100',         'Set its sortkey to 100');
 $sel->click_ok('create', undef, 'Submit data');
 $sel->wait_for_page_to_load(WAIT_TIME);
 
-# Add the version "100 Branch" to Firefox product
+# Add the version "Firefox 100" to Firefox product
 
 edit_product($sel, 'Firefox', 'Client Software');
 $sel->click_ok('link=Edit versions:', undef, 'Go to the Edit versions page');
@@ -41,7 +41,7 @@ $sel->title_is("Select version of product 'Firefox'", 'Display versions');
 $sel->click_ok('link=Add', undef, 'Go add a new version');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Add Version to Product 'Firefox'", 'Enter new version');
-$sel->type_ok('version', '100 Branch', 'Set its name to 100 Branch');
+$sel->type_ok('version', 'Firefox 100', 'Set its name to Firefox 100');
 $sel->click_ok('create', undef, 'Submit data');
 $sel->wait_for_page_to_load(WAIT_TIME);
 
@@ -63,15 +63,15 @@ $sel->click_ok('link=Edit milestones:', undef,
   'Go to the Edit milestones page');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Select milestone of product 'Firefox'", 'Display milestones');
-$sel->is_text_present_ok('Firefox 101', 'New milestone exists');
-$sel->click_ok('link=Firefox 101', undef, 'Go edit version');
-$sel->title_is("Edit Milestone 'Firefox 101' of product 'Firefox'", 'Edit milestone');
+$sel->is_text_present_ok('101 Branch', 'New milestone exists');
+$sel->click_ok('link=101 Branch', undef, 'Go edit version');
+$sel->title_is("Edit Milestone '101 Branch' of product 'Firefox'", 'Edit milestone');
 $sel->value_is('sortkey', '110');
 
 edit_product($sel, 'Firefox', 'Client Software');
 $sel->click_ok('link=Edit versions:', undef, 'Go to the Edit versions page');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("Select version of product 'Firefox'", 'Display versions');
-$sel->is_text_present_ok('101 Branch', 'New version exists');
+$sel->is_text_present_ok('Firefox 101', 'New version exists');
 
 logout($sel);
