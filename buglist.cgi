@@ -725,9 +725,13 @@ do {
   local $SIG{__DIE__}  = undef;
   local $SIG{__WARN__} = undef;
   ($data, $extra_data) = eval { $search->data };
-  # If the search query failed in any way, log the error and return an empty
-  # list of bugs
-  ERROR 'buglist.cgi?' . $cgi->query_string . " $@" if $@;
+  # If the search query failed, handle Throw*Error correctly, or for all other
+  # failures log it and return an empty list of bugs.
+  if (my $search_err = $@) {
+    return if ref $search_err eq 'ARRAY' && $search_err->[0] eq "EXIT\n";
+    use Data::Dumper;
+    ERROR 'buglist.cgi?' . $cgi->query_string . " " . Dumper($search_err);
+  }
 };
 
 $vars->{'search_description'} = $search->search_description;
