@@ -308,6 +308,8 @@ if ($cloned_bug_id) {
   # BMO Allow mentors to be cloned as well
   $vars->{'bug_mentors'} = join(', ', map { $_->login } @{$cloned_bug->mentors});
 
+  # Cloned bugs should never inherit the 'triaged' keyword
+  $vars->{'keywords'} = join(', ', grep { $_ ne 'triaged' } split(/,\s*/, $vars->{keywords}));
 }    # end of cloned bug entry form
 
 else {

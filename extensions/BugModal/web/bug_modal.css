@@ -22,10 +22,10 @@
   padding: 1px 0;
 }
 
-.inline {
-  display: table-cell !important;
-  width: auto !important;
-  vertical-align: middle !important;
+.module .field .inline {
+  display: table-cell;
+  width: auto;
+  vertical-align: middle;
 }
 
 .offscreen {
@@ -285,6 +285,14 @@ input[type="number"] {
 }
 
 #field-status_summary .bug-status-label[data-status="closed"] {
+  background-color: var(--bug-status-color-closed);
+}
+
+#field-status_summary .bug-status-label[data-status="untriaged"] {
+  background-color: var(--bug-status-color-untriaged);
+}
+
+#field-status_summary .bug-status-label {
   background-color: var(--bug-status-color-closed);
 }
 
@@ -1067,9 +1075,10 @@ h3.change-name a {
 }
 
 #floating-message {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  margin: 4px;
+  top: 50px;
+  z-index: 100;
 }
 
 #floating-message-text {

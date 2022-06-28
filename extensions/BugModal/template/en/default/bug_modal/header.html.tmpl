@@ -93,6 +93,7 @@
     is_insider: [% user.is_insider ? "true" : "false" %],
     is_timetracker: [% user.is_timetracker ? "true" : "false" %],
     can_tag: [% user.can_tag_comments ? "true" : "false" %],
+    can_triage: [% user.can_triage ? "true" : "false" %],
     timezone: '[% user.timezone.name FILTER js %]',
     settings: {
       quote_replies: '[% user.settings.quote_replies.value FILTER js %]',

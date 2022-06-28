@@ -450,6 +450,13 @@ my @groups = (
     all_products => 0,
     bug_group    => 1,
   },
+  {
+    name => 'can_triage_bugs',
+    description  => 'Can triage bugs (via the "triaged" keyword)',
+    no_admin     => 0,
+    all_products => 0,
+    bug_group    => 0,
+  },
 );
 
 print "creating groups...\n";
@@ -825,7 +832,11 @@ my @keywords = (
   },
   {
     name        => 'crash',
-    description => ' A Critical Severity bug which causes a crash.'
+    description => 'A Critical Severity bug which causes a crash.'
+  },
+  {
+    name        => 'triaged',
+    description => 'Bugs that have been triaged.'
   },
 );
 

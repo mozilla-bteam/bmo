@@ -725,6 +725,25 @@ $(function() {
             event.preventDefault();
             if (document.changeform.checkValidity && !document.changeform.checkValidity())
                 return;
+
+            // unfortunately native html form validation doesn't support
+            // patterns on selects, so we have to check for valid severities
+            // manaully.
+            if (
+                BUGZILLA.user.can_triage
+                && getKeywords().includes('triaged')
+                && !hasGoodSeverity()
+            ) {
+                $('#bug_severity').addClass('attention');
+                $('#floating-message-text')
+                    .text("Severity of S1-S4 is required to mark a bug as triaged.");
+                $('#floating-message')
+                    .fadeIn(250)
+                    .delay(2500)
+                    .fadeOut();
+                return;
+            }
+
             $('.save-btn').attr('disabled', true);
             this.form.submit();
 
@@ -1187,6 +1206,65 @@ $(function() {
             $('#top-save-btn').show();
             $('#add-cc').focus();
         });
+
+    // 'mark as triaged' button
+    function getKeywords(value) {
+        if (value == undefined) value = document.getElementById('keywords').value;
+        return value
+            .split(',')
+            .map((v) => v.trim())
+            .filter((v) => v !== '');
+    }
+
+    function setKeywords(keywords) {
+        document.getElementById('keywords').value = keywords.join(', ');
+        $('#keywords').blur();
+    }
+
+    // Track if this bug initially has the triaged keyword.  This allows the
+    // severity to be cleared without requiring the triaged keyword to be
+    // removed, because we know the bug has been triaged at least once.
+    // We use BUGZILLA.bug_keywords instead of the keywords form element as
+    // we need the value from the database, not one that might have been
+    // restored by the browser
+    const initiallyTriaged = getKeywords(BUGZILLA.bug_keywords).includes('triaged');
+
+    function hasGoodSeverity() {
+        if (initiallyTriaged) return true;
+
+        // check the severity is S{digit}
+        const $severity = document.querySelector('#bug_severity');
+        const severity = $severity ? $severity.value : BUGZILLA.bug_severity;
+        return /^S\d+$/.test(severity);
+    }
+
+    $('#mark-as-triaged-btn')
+        .click(function(event) {
+            event.preventDefault();
+            let keywords = getKeywords();
+            if (!keywords.includes('triaged')) {
+                keywords.push('triaged');
+                setKeywords(keywords);
+            }
+        });
+    $('#keywords, #bug_severity')
+        .blur(function() {
+            if (!BUGZILLA.user.can_triage) return;
+            const has_triaged = getKeywords().includes('triaged');
+            // disable "mark as triaged" button if the triaged keyword is present
+            $('#mark-as-triaged-btn').prop('disabled', has_triaged);
+            // hide/show 'untriaged' status badge in summary module
+            $('.bug-status-label[data-status="untriaged"]').toggle(!has_triaged);
+            // draw attention to the severity field if required
+            if ($("#bug_severity").length) {
+                if (has_triaged && !hasGoodSeverity()) {
+                    $('#bug_severity').addClass('attention');
+                } else {
+                    $('#bug_severity').removeClass('attention');
+                }
+            }
+        });
+    $('#keywords').blur();
 
     // Add user to cc list if they mark the bug as security sensitive
     $('.restrict_sensitive')

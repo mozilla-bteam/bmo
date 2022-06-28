@@ -20,7 +20,8 @@ our @EXPORT = qw( $cf_visible_in_products
   %group_auto_cc
   %create_bug_formats
   @default_named_queries
-  %autodetect_attach_urls );
+  %autodetect_attach_urls
+  @triage_keyword_products );
 
 # Creating an attachment whose contents is a URL matching one of these regexes
 # will result in the user being redirected to that URL when viewing the
@@ -165,6 +166,27 @@ tie(
     "Toolkit"                             => [],
     "WebExtensions"                       => [],
   },
+);
+
+# Products that use the triage keyword.
+our @triage_keyword_products = (
+    'Conduit',
+    'Core',
+    'DevTools',
+    'External Software Affecting Firefox',
+    'Fenix',
+    'Firefox Build System',
+    'Firefox for Android',
+    'Firefox for iOS',
+    'Firefox',
+    'GeckoView',
+    'JSS',
+    'NSPR',
+    'NSS',
+    'Remote Protocol',
+    'Testing',
+    'Toolkit',
+    'WebExtensions',
 );
 
 # Who to CC on particular bugmails when certain groups are added or removed.

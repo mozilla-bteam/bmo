@@ -2794,6 +2794,7 @@ pre.comment-text {
 :root {
   --bug-status-color-open: #188716;
   --bug-status-color-closed: #1B6AB8;
+  --bug-status-color-untriaged: #1B9BB8;
   --bug-type-color-defect: #EA3C3D;
   --bug-type-color-enhancement: #2ABA27;
   --bug-type-color-task: #2886C9;
