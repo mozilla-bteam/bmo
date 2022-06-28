@@ -20,8 +20,8 @@ use Bugzilla::Util qw(fetch_product_versions trim);
 use Scalar::Util qw(blessed);
 
 use constant TEMPLATES => {
-  milestones => {'_default' => '%%% Branch'},
-  versions   => {
+  milestone => {'_default' => '%%% Branch'},
+  version   => {
     'Calendar'      => 'Thunderbird %%%',
     'Chat Core'     => 'Thunderbird %%%',
     'MailNews Core' => 'Thunderbird %%%',
@@ -47,7 +47,7 @@ sub new_release {
     {group => 'editcomponents', action => 'edit', object => 'milestones'});
 
   # Display the initial form
-  if ($self->req->method ne 'POST') {
+  if ($self->req->method eq 'GET') {
     my $versions          = fetch_product_versions('firefox');
     my $latest_nightly    = $versions->{FIREFOX_NIGHTLY};
     my ($current_nightly) = $latest_nightly =~ /^(\d+)/;
@@ -89,11 +89,11 @@ sub new_release {
   # Process milestones
   my @results;
   foreach my $product (@{$self->every_param('milestone_products')}) {
-    my $success = _add_value('milestone', $product, $new_milestone);
+    my $success = _add_value($product, $new_milestone, 'milestone');
     my $result  = {
       type    => 'milestone',
       product => $product,
-      value   => "Firefox $new_milestone",
+      value   => _get_formatted_value($product, $new_milestone, 'milestone'),
       success => $success
     };
     push @results, $result;
@@ -101,11 +101,11 @@ sub new_release {
 
   # Process versions
   foreach my $product (@{$self->every_param('version_products')}) {
-    my $success = _add_value('version', $product, $new_version);
+    my $success = _add_value($product, $new_version, 'version');
     my $result  = {
       type    => 'version',
       product => $product,
-      value   => "$new_version Branch",
+      value   => _get_formatted_value($product, $new_version, 'version'),
       success => $success
     };
     push @results, $result;
@@ -116,33 +116,26 @@ sub new_release {
 }
 
 sub _add_value {
-  my ($type, $product, $value) = @_;
+  my ($product, $value, $type) = @_;
   $product
     = blessed $product
     ? $product
     : Bugzilla::Product->new({name => $product, cache => 1});
 
   if ($type eq 'milestone') {
-    my $milestone_template
-      = exists TEMPLATES->{milestones}->{$product->name}
-      ? TEMPLATES->{milestones}->{$product->name}
-      : TEMPLATES->{milestones}->{_default};
-
-    my $new_milestone = $milestone_template;
-    $new_milestone =~ s/%%%/$value/;
-    my $old_milestone = $milestone_template;
-    my $old_value     = $value - 1;
-    $old_milestone =~ s/%%%/$old_value/;
+    my $new_milestone = _get_formatted_value($product->name, $value, 'milestone');
+    my $old_milestone
+      = _get_formatted_value($product->name, $value - 1, 'milestone');
 
     if (!Bugzilla::Milestone->new({product => $product, name => $new_milestone})) {
 
-      # Figure the proper sort key from the last version and add 10
-      my $old_value = $value - 1;
+      # Figure out the proper sort key from the last version and add 10
       my $last_milestone
         = Bugzilla::Milestone->new({product => $product, name => $old_milestone});
       my $sortkey = $last_milestone ? $last_milestone->sortkey + 10 : 0;
 
-# Need to add 10 to the current default milestone '---' so it is placed right above the new milestone
+      # Need to add 10 to the current default milestone '---'
+      # so it is placed right above the new milestone
       my $default_milestone
         = Bugzilla::Milestone->new({product => $product, name => '---'});
       if ($default_milestone) {
@@ -162,13 +155,7 @@ sub _add_value {
 
   # Versions are simple in that they do not use sortkeys yet
   if ($type eq 'version') {
-    my $version_template
-      = exists TEMPLATES->{versions}->{$product->name}
-      ? TEMPLATES->{versions}->{$product->name}
-      : TEMPLATES->{versions}->{_default};
-    my $new_version = $version_template;
-    $new_version =~ s/%%%/$value/;
-
+    my $new_version = _get_formatted_value($product->name, $value, 'version');
     if (!Bugzilla::Version->new({product => $product, name => $new_version})) {
       Bugzilla::Version->create({product => $product, value => $new_version});
       return $new_version;
@@ -177,6 +164,20 @@ sub _add_value {
       return 0;
     }
   }
+}
+
+# Helper function to return a fully formatted version or milestone
+sub _get_formatted_value {
+  my ($product, $value, $type) = @_;
+  use Bugzilla::Logging;
+  DEBUG("product: $product");
+  my $template
+    = exists TEMPLATES->{$type}->{$product}
+    ? TEMPLATES->{$type}->{$product}
+    : TEMPLATES->{$type}->{_default};
+  my $formatted_value = $template;
+  $formatted_value =~ s/%%%/$value/;
+  return $formatted_value;
 }
 
 1;
