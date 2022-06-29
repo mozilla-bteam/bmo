@@ -15,5 +15,8 @@ ELSIF panel.name == "bugfields";
   panel.param_descs.defaultplatform = "This parameter is ignored on BMO, use per-product defaults instead.";
   panel.param_descs.defaultopsys = "This parameter is ignored on BMO, use per-product defaults instead.";
 
+ELSIF panel.name == "bugchange";
+  panel.param_descs.enable_triaged_keyword = 'Enforce usage of the "triaged" keyword on selected products.';
+
 END;
 %]

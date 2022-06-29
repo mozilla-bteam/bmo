@@ -895,6 +895,7 @@ sub _bug_is_unassigned {
 
 sub _bug_uses_triaged_keyword {
   my ($self) = @_;
+  return 0 if !Bugzilla->params->{enable_triaged_keyword};
   my $product = $self->product;
   return any { $_ eq $product } @triage_keyword_products;
 }
@@ -2564,6 +2565,11 @@ sub config_modify_panels {
     choices => \&get_all_group_names,
     default => 'admin',
     checker => \&check_group
+    };
+  push @{$args->{panels}->{bugchange}->{params}},
+    {
+    name    => 'enable_triaged_keyword',
+    type    => 'b',
     };
 }
 
