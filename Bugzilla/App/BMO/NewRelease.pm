@@ -169,8 +169,6 @@ sub _add_value {
 # Helper function to return a fully formatted version or milestone
 sub _get_formatted_value {
   my ($product, $value, $type) = @_;
-  use Bugzilla::Logging;
-  DEBUG("product: $product");
   my $template
     = exists TEMPLATES->{$type}->{$product}
     ? TEMPLATES->{$type}->{$product}
