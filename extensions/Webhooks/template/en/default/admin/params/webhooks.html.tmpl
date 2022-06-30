@@ -14,6 +14,10 @@
 [%
    param_descs = {
      webhooks_enabled => "Enable or disable the webhooks feature.",
-     webhooks_group => "The name of the group of users who can create webhooks."
+     webhooks_group => "The name of the group of users who can create webhooks.",
+     webhooks_error_limit => "The number of errors that can occur before a webhooks is disabled. " _
+       "An email will be sent to the webhook author.",
+     webhooks_error_exempt_group => "The group where a large amount of errors will be ignored and " _
+       "the webhook will not be disabled.",
    }
 %]
