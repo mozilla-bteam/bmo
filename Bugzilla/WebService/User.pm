@@ -298,16 +298,18 @@ sub get {
   foreach my $user (@$in_group) {
     my $user_info = filter $params,
       {
-      id           => $self->type('int',     $user->id),
-      real_name    => $self->type('string',  $user->name),
-      nick         => $self->type('string',  $user->nick),
-      name         => $self->type('email',   $user->login),
-      email        => $self->type('email',   $user->email),
-      can_login    => $self->type('boolean', $user->is_enabled ? 1 : 0),
-      iam_username => $self->type('string',  $user->iam_username),
+      id                 => $self->type('int',      $user->id),
+      real_name          => $self->type('string',   $user->name),
+      nick               => $self->type('string',   $user->nick),
+      name               => $self->type('email',    $user->login),
+      email              => $self->type('email',    $user->email),
+      can_login          => $self->type('boolean',  $user->is_enabled ? 1 : 0),
+      iam_username       => $self->type('string',   $user->iam_username),
+      last_seen_date     => $self->type('dateTime', $user->last_seen_date),
+      last_activity_time => $self->type('dateTime', $user->last_activity_time),
       };
 
-    if (Bugzilla->user->in_group('editusers')) {
+    if (Bugzilla->user->in_group('disableusers')) {
       $user_info->{email_enabled}     = $self->type('boolean', $user->email_enabled);
       $user_info->{login_denied_text} = $self->type('string',  $user->disabledtext);
     }
@@ -320,7 +322,9 @@ sub get {
     }
 
     if (filter_wants($params, 'groups')) {
-      if (Bugzilla->user->id == $user->id || Bugzilla->user->in_group('editusers')) {
+      if ( Bugzilla->user->id == $user->id
+        || Bugzilla->user->in_group('mozilla-employee-confidential'))
+      {
         $user_info->{groups} = [map { $self->_group_to_hash($_) } @{$user->groups}];
       }
       else {

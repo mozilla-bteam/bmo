@@ -21,6 +21,8 @@ use Bugzilla::User;
 use Bugzilla::Util qw(detaint_natural);
 use Bugzilla::Token;
 
+use Bugzilla::Extension::Voting::Vote;
+
 use List::Util qw(min sum);
 
 use constant VERSION               => BUGZILLA_VERSION;
@@ -59,6 +61,7 @@ sub db_schema_abstract_schema {
   my ($self, $args) = @_;
   $args->{'schema'}->{'votes'} = {
     FIELDS => [
+      id  => {TYPE => 'SMALLSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
       who => {
         TYPE       => 'INT3',
         NOTNULL    => 1,
@@ -109,6 +112,9 @@ sub install_update_db {
     $dbh->bz_alter_column('products', 'maxvotesperbug',
       {TYPE => 'INT2', NOTNULL => 1, DEFAULT => DEFAULT_VOTES_PER_BUG});
   }
+
+  $dbh->bz_add_column('votes', 'id',
+    {TYPE => 'INTSERIAL', NOTNULL => 1, PRIMARYKEY => 1});
 }
 
 ###########
@@ -438,16 +444,11 @@ sub _page_user {
 
     # Make sure there is an entry for this bug
     # in the vote table, just so that things display right.
-    my $has_votes = $dbh->selectrow_array(
-      'SELECT vote_count FROM votes
-                                               WHERE bug_id = ? AND who = ?', undef,
-      ($bug->id, $who->id)
-    );
-    if (!$has_votes) {
-      $dbh->do(
-        'INSERT INTO votes (who, bug_id, vote_count)
-                      VALUES (?, ?, 0)', undef, ($who->id, $bug->id)
-      );
+    my $vote_obj = Bugzilla::Extension::Voting::Vote->new(
+      {condition => 'bug_id = ? AND who = ?', values => [$bug->id, $who->id]});
+    if (!$vote_obj) {
+      Bugzilla::Extension::Voting::Vote->create(
+        {who => $who->id, bug_id => $bug->id, vote_count => 0});
     }
   }
 
@@ -500,7 +501,11 @@ sub _page_user {
   }
 
   if ($canedit && $bug) {
-    $dbh->do('DELETE FROM votes WHERE vote_count = 0 AND who = ?', undef, $who->id);
+    my $vote_objs = Bugzilla::Extension::Voting::Vote->match(
+      {who => $who->id, vote_count => 0});
+    foreach my $vote_obj (@{$vote_objs}) {
+      $vote_obj->remove_from_db();
+    }
   }
   $dbh->bz_commit_transaction();
 
@@ -608,23 +613,10 @@ sub _update_votes {
   # Update the user's votes in the database.
   $dbh->bz_start_transaction();
 
-  my $old_list = $dbh->selectall_arrayref(
-    'SELECT bug_id, vote_count FROM votes
-                                             WHERE who = ?', undef, $who
-  );
-
-  my %old_votes = map { $_->[0] => $_->[1] } @$old_list;
-
-  my $sth_insertVotes = $dbh->prepare(
-    'INSERT INTO votes (who, bug_id, vote_count)
-                                         VALUES (?, ?, ?)'
-  );
-  my $sth_updateVotes = $dbh->prepare(
-    'UPDATE votes SET vote_count = ?
-                                         WHERE bug_id = ? AND who = ?'
-  );
-
-  my %affected = map { $_ => 1 } (@buglist, keys %old_votes);
+  my $vote_objs    = Bugzilla::Extension::Voting::Vote->match({who => $who});
+  my %vote_obj_map = map { $_->bug_id => $_ } @{$vote_objs};
+  my %old_votes    = map { $_->bug_id => $_->vote_count } @{$vote_objs};
+  my %affected     = map { $_ => 1 } (@buglist, keys %old_votes);
   my @deleted_votes;
 
   foreach my $id (keys %affected) {
@@ -639,19 +631,19 @@ sub _update_votes {
 
     # We use 'defined' in case 0 was accidentally stored in the DB.
     if (defined $old_votes{$id}) {
-      $sth_updateVotes->execute($votes{$id}, $id, $who);
+      $vote_obj_map{$id}->set_vote_count($votes{$id});
+      $vote_obj_map{$id}->update();
     }
     else {
-      $sth_insertVotes->execute($who, $id, $votes{$id});
+      Bugzilla::Extension::Voting::Vote->create(
+        {who => $who, bug_id => $id, vote_count => $votes{$id}});
     }
   }
 
   if (@deleted_votes) {
-    $dbh->do(
-      'DELETE FROM votes WHERE who = ? AND '
-        . $dbh->sql_in('bug_id', \@deleted_votes),
-      undef, $who
-    );
+    foreach my $id (@deleted_votes) {
+      $vote_obj_map{$id}->remove_from_db();
+    }
   }
 
   # Update the cached values in the bugs table
@@ -662,7 +654,7 @@ sub _update_votes {
                                       WHERE bug_id = ?"
   );
 
-  $sth_updateVotes = $dbh->prepare('UPDATE bugs SET votes = ? WHERE bug_id = ?');
+  my $sth_updateVotes = $dbh->prepare('UPDATE bugs SET votes = ? WHERE bug_id = ?');
 
   foreach my $id (keys %affected) {
     $sth_getVotes->execute($id);

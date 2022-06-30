@@ -46,7 +46,7 @@ sub db_schema_abstract_schema {
       event      => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
       product_id => {
         TYPE       => 'INT2',
-        NOTNULL    => 1,
+        NOTNULL    => 0,
         REFERENCES => {TABLE => 'products', COLUMN => 'id', DELETE => 'CASCADE',}
       },
       component_id => {
@@ -67,6 +67,15 @@ sub install_update_db {
   my $dbh = Bugzilla->dbh;
   $dbh->bz_add_column('webhooks', 'api_key_header', {TYPE => 'VARCHAR(64)'});
   $dbh->bz_add_column('webhooks', 'api_key_value',  {TYPE => 'VARCHAR(64)'});
+  $dbh->bz_alter_column(
+    'webhooks',
+    'product_id',
+    {
+      TYPE       => 'INT2',
+      NOTNULL    => 0,
+      REFERENCES => {TABLE => 'products', COLUMN => 'id', DELETE => 'CASCADE',}
+    }
+  );
 }
 
 sub db_sanitize {
@@ -127,16 +136,28 @@ sub user_preferences {
         ThrowUserError('webhooks_select_event');
       }
 
-      my $product_name = $input->{add_product};
-      my $product = Bugzilla::Product->check({name => $product_name, cache => 1});
-      $params->{product_id} = $product->id;
+      my $product_name = $input->{product};
 
-      if (my $component_name = $input->{add_component}) {
-        my $component
-          = Bugzilla::Component->check({
-          name => $component_name, product => $product, cache => 1
-          });
-        $params->{component_id} = $component->id;
+      # Selecting product equal to 'any' requires special group membership
+      if (!$product_name || $product_name eq 'Any') {
+        if (!$user->in_group(Bugzilla->params->{webhooks_any_product_group})) {
+          ThrowUserError('webhooks_any_product_not_allowed');
+        }
+        $params->{product_id}   = undef;
+        $params->{component_id} = undef;
+      }
+      else {
+        my $product = Bugzilla::Product->check({name => $product_name, cache => 1});
+        $params->{product_id} = $product->id;
+
+        my $component_name = $input->{component};
+        if ($component_name && $component_name ne 'Any') {
+          my $component
+            = Bugzilla::Component->check({
+            name => $component_name, product => $product, cache => 1
+            });
+          $params->{component_id} = $component->id;
+        }
       }
 
       if ($input->{api_key_header}) {

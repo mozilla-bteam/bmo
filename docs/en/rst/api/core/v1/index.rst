@@ -3,15 +3,16 @@ Core API v1
 
 .. toctree::
 
-   general
    attachment
    bug
    bug-user-last-visit
-   flag-activity
    bugzilla
    classification
    comment
+   component
    field
+   flag-activity
+   general
    group
    product
    user

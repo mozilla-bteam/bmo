@@ -1,0 +1,99 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% INCLUDE global/header.html.tmpl
+  title = "New Firefox Release"
+%]
+
+<h1>New Firefox Release</h1>
+
+[% IF results %]
+  [% FOREACH type = ['milestone', 'version'] %]
+    <p><h4>[% type FILTER ucfirst FILTER html %]s Added</h4>
+    [% FOREACH result = results %]
+      [% NEXT IF result.type != type %]
+      [% IF result.success %]
+        [% type FILTER ucfirst FILTER html %] <strong>[% result.value FILTER html %]</strong>
+        added to product <strong>[% result.product FILTER html %]</strong>.<br>
+      [% ELSE %]
+        <span style="color:red;">[% type FILTER ucfirst FILTER html %] <strong>[% result.value FILTER html %]</strong>
+        was not added to product <strong>[% result.product FILTER html %]</strong>.</span><br>
+      [% END %]
+    [% END %]
+    </p>
+  [% END %]
+
+  [% INCLUDE global/footer.html.tmpl %]
+  [% RETURN %]
+[% END %]
+
+<p>This page is useful for adding a new milestone and version to a select
+  list of products whenever a new release of Firefox comes out.</p>
+
+<form id="new_release" name="new_release" action="[% basepath FILTER none %]admin/new_release" method="POST">
+  <input type="hidden" name="id" value="new_release.html">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+
+  <h4>Select Products for New Milestone</h4>
+
+  <table class="standard">
+  <tr>
+    <td valign="top">Products</td>
+    <td>
+      <select name="milestone_products" id="milestone_products" multiple="multiple" size="8">
+        [% FOREACH p = selectable_products %]
+          <option value="[% p.name FILTER html %]"
+            [% " selected" IF default_milestone_products.contains(p.name) %]>
+            [% p.name FILTER html %]
+          </option>
+        [% END %]
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <td>New Milestone</td>
+    <td>
+      <input type="text" name="new_milestone" id="new_milestone" required="true"
+             size="12" value="[% next_release FILTER html %]">
+      Milestone will be added in the format of "XXX Branch"
+    </td>
+  </tr>
+  </table>
+
+  <h4>Select Products for New Version</h4>
+
+  <table class="standard">
+  <tr>
+    <td valign="top">Products</td>
+    <td>
+      <select name="version_products" id="version_products" multiple="multiple" size="8">
+        [% FOREACH p = selectable_products %]
+          <option value="[% p.name FILTER html %]"
+            [% " selected" IF default_version_products.contains(p.name) %]>
+            [% p.name FILTER html %]
+          </option>
+        [% END %]
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <td>New Version</td>
+    <td>
+      <input type="text" name="new_version" id="new_version" required="true"
+             size="10" value="[% next_release FILTER html %]">
+      Version will be added in the format of "Firefox XXX"
+    </td>
+  </tr>
+  </table>
+  <br>
+  <input type="submit" id="submit" value="Submit">
+</form>
+
+[% INCLUDE global/footer.html.tmpl %]

@@ -46,7 +46,7 @@ my $JOBQUEUE_BIN  = catfile($BUGZILLA_DIR, 'jobqueue.pl');
 my $CEREAL_BIN    = catfile($BUGZILLA_DIR, 'scripts', 'cereal.pl');
 my $BUGZILLA_BIN  = catfile($BUGZILLA_DIR, 'bugzilla.pl');
 my $HYPNOTOAD_BIN = catfile($BUGZILLA_DIR, 'local', 'bin', 'hypnotoad');
-my $MORBO_BIN     = catfile($BUGZILLA_DIR, 'scripts', 'start_morbo');
+my $MORBO_BIN     = catfile($BUGZILLA_DIR, 'scripts', 'start_morbo.pl');
 my @PERL5LIB      = (
   $BUGZILLA_DIR,
   catdir($BUGZILLA_DIR, 'lib'),

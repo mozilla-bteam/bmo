@@ -58,8 +58,8 @@
         </a>
       </td>
       <td>[% webhook.event FILTER html %]</td>
-      <td>[% webhook.product.name FILTER html %]</td>
-      <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
+      <td>[% webhook.product_name FILTER html %]</td>
+      <td>[% webhook.component_name FILTER html %]</td>
     </tr>
   [% END %]
   </tbody>

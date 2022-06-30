@@ -271,6 +271,10 @@
     An error occurred completing the login process using the single signon provider.
     Contact an administrator explaining the problem.
 
+  [% ELSIF error == "oauth2_invalid_redirect_uri" %]
+    [% title = 'Invalid Redirect URI' %]
+    The redirect uri provided is not allowed for the OAuth2 client.
+
   [% ELSIF error == "attachment_deletion_disabled" %]
     [% title = "Attachment Deletion Disabled" %]
     Attachment deletion is disabled on this installation.
@@ -507,7 +511,7 @@
 
   [% ELSIF error == "dependency_loop_single" %]
     [% title = "Dependency Loop Detected" %]
-    You can’t make [% terms.abug %] block itself, depend on itself, regress
+    You can't make [% terms.abug %] block itself, depend on itself, regress
     itself, or regressed by itself.
 
   [% ELSIF error == "dupe_id_required" %]
@@ -1207,6 +1211,9 @@
 
   [% ELSIF error == "rest_invalid_resource" %]
     A REST API resource was not found for '[% method FILTER html +%] [%+ path FILTER html %]'.
+
+  [% ELSIF error == "rest_malformed_json" %]
+    The JSON data used for the request was malformed. Please update your request and try again.
 
   [% ELSIF error == "get_products_invalid_type" %]
     The product type '[% type FILTER html %]' is invalid. Valid choices

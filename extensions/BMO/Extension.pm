@@ -88,8 +88,11 @@ BEGIN {
   *Bugzilla::Bug::last_closed_date               = \&_last_closed_date;
   *Bugzilla::Bug::reporters_hw_os                = \&_bug_reporters_hw_os;
   *Bugzilla::Bug::is_unassigned                  = \&_bug_is_unassigned;
+  *Bugzilla::Bug::is_untriaged                   = \&_bug_is_untriaged;
+  *Bugzilla::Bug::uses_triaged_keyword           = \&_bug_uses_triaged_keyword;
   *Bugzilla::Bug::has_current_patch              = \&_bug_has_current_patch;
   *Bugzilla::Bug::missing_sec_approval           = \&_bug_missing_sec_approval;
+  *Bugzilla::User::can_triage                    = \&_user_can_triage;
   *Bugzilla::Product::default_security_group     = \&_default_security_group;
   *Bugzilla::Product::default_security_group_obj = \&_default_security_group_obj;
   *Bugzilla::Product::group_always_settable      = \&_group_always_settable;
@@ -890,6 +893,21 @@ sub _bug_is_unassigned {
   return $assignee eq 'nobody@mozilla.org' || $assignee =~ /@(?!invalid).+\.bugs$/;
 }
 
+sub _bug_uses_triaged_keyword {
+  my ($self) = @_;
+  return 0 if !Bugzilla->params->{enable_triaged_keyword};
+  my $product = $self->product;
+  return any { $_ eq $product } @triage_keyword_products;
+}
+
+sub _bug_is_untriaged {
+  # Bugs of type 'task' are never flagged as untriaged.
+  my ($self) = @_;
+  return $self->uses_triaged_keyword
+    && $self->bug_type ne 'task'
+    && !$self->has_keyword('triaged');
+}
+
 sub _bug_has_current_patch {
   my ($self) = @_;
   foreach my $attachment (@{$self->attachments}) {
@@ -950,6 +968,8 @@ sub _bug_missing_sec_approval {
   # sec-approval is required if no tracking flags are set
   return $set == 0;
 }
+
+sub _user_can_triage { $_[0]->in_group('can_triage_bugs') }
 
 sub _product_default_platform_id { $_[0]->{default_platform_id} }
 sub _product_default_op_sys_id   { $_[0]->{default_op_sys_id} }
@@ -1025,6 +1045,77 @@ sub bug_end_of_create {
       "INSERT INTO bug_user_agent (bug_id, user_agent) VALUES (?, ?)",
       undef, $bug->id, $ua);
   }
+
+  # require severity if the triage keyword is present
+  if (
+    $bug->uses_triaged_keyword
+    && $bug->has_keyword('triaged')
+    && $bug->bug_type ne 'task'
+    && $bug->bug_severity !~ /^S\d+$/
+  ) {
+    ThrowUserError('triage_severity_required');
+  }
+}
+
+sub bug_start_of_update {
+  my ($self, $args) = @_;
+  my $old_bug = $args->{old_bug};
+  my $new_bug = $args->{bug};
+
+  # silently drop changes to the triaged keyword from users without permissions
+  # to triage
+  if (!Bugzilla->user->can_triage) {
+
+    # note: $args->{changes}->{keywords} is generated after this hook is called
+    if (
+      !$old_bug->has_keyword('triaged')
+      && $new_bug->has_keyword('triaged')
+    ) {
+      $new_bug->del_keyword('triaged');
+
+    } elsif (
+      $old_bug->has_keyword('triaged')
+      && !$new_bug->has_keyword('triaged')
+    ) {
+      $new_bug->add_keyword('triaged');
+    }
+  }
+
+  # remove the triaged keyword when a bug is moved to a component owned by a
+  # different team
+  my $o = $old_bug->component_obj->team_name;
+  my $n = $new_bug->component_obj->team_name;
+  if (
+    $new_bug->component_obj->team_name ne $old_bug->component_obj->team_name
+  ) {
+    $new_bug->del_keyword('triaged');
+  }
+}
+
+sub bug_end_of_update {
+  my ($self, $args) = @_;
+  my $bug = $args->{bug};
+
+  # require severity if the triaged keyword is present
+  if (
+    $bug->uses_triaged_keyword
+    && $bug->has_keyword('triaged')
+    && $bug->bug_type ne 'task'
+    && $bug->bug_severity !~ /^S\d+$/
+  ) {
+    ThrowUserError('triage_severity_required');
+  }
+}
+
+sub bug_end_of_create_validators {
+  my ($self, $args) = @_;
+  my $params = $args->{params};
+
+  # silently drop changes to the triaged keyword from users without permissions
+  # to triage
+  return if Bugzilla->user->can_triage;
+  return unless exists $params->{keywords};
+  $params->{keywords} =  [grep { $_->name ne 'triaged' } @{$params->{keywords}}];
 }
 
 sub sanitycheck_check {
@@ -1092,7 +1183,7 @@ sub attachment_process_data {
   my $attributes = $args->{attributes};
 
   # must be a text attachment
-  return unless $attributes->{mimetype} eq 'text/plain';
+  return if !$attributes->{mimetype} || $attributes->{mimetype} ne 'text/plain';
 
   # check the attachment size, and get attachment content if it isn't too large
   my $data = $attributes->{data};
@@ -1452,6 +1543,15 @@ sub install_update_db {
         }
       }
     }
+  }
+
+  # Add triaged field to expose it as a field for search.
+  if (!Bugzilla::Field->new({name => 'is_triaged'})) {
+    Bugzilla::Field->create({
+      name        => 'is_triaged',
+      description => 'Is Triaged',
+      type        => FIELD_TYPE_BOOLEAN,
+    });
   }
 }
 
@@ -2185,18 +2285,41 @@ sub buglist_columns {
     # `0` otherwise
     name  => 'COALESCE(MAX(attachments.ispatch OR ' .
       'attachments.mimetype LIKE "text/x-%-request"), 0)',
-  }
+  };
+
+  $columns->{'is_triaged'} = {
+    name => '(CASE WHEN map_triaged_keywords.keywordid IS NULL ' .
+      "THEN 'No' ELSE 'Yes' END)",
+  };
 }
 
 sub buglist_column_joins {
   my ($self, $args) = @_;
   my $column_joins = $args->{column_joins};
+
   $column_joins->{'attachments.ispatch'} = {
     as    => 'attachments',
     from  => 'bug_id',
     to    => 'bug_id',
     table => 'attachments',
     join  => 'LEFT',
+  };
+
+  state $triaged_keyword_id = -1;
+  if ($triaged_keyword_id == -1) {
+    my $keyword_obj = Bugzilla::Keyword->new({name => 'triaged'});
+    $triaged_keyword_id = $keyword_obj ? $keyword_obj->id : 0;
+  }
+
+  $column_joins->{'is_triaged'} = {
+    table   => 'keywords',
+    then_to => {
+      from  => 'bug_id',
+      to    => 'bug_id',
+      as    => 'map_triaged_keywords',
+      table => 'keywords',
+      extra => ["map_triaged_keywords.keywordid = $triaged_keyword_id"],
+    },
   };
 }
 
@@ -2443,6 +2566,11 @@ sub config_modify_panels {
     default => 'admin',
     checker => \&check_group
     };
+  push @{$args->{panels}->{bugchange}->{params}},
+    {
+    name    => 'enable_triaged_keyword',
+    type    => 'b',
+    };
 }
 
 sub comment_after_add_tag {
@@ -2566,6 +2694,40 @@ sub search_params_to_data_structure {
       $params->{$key} = $canonical;
     }
   }
+
+  # Map `is_triaged` to a keyword search
+  # We support is[not]empty and [not]equals yes|no|true|false
+  my $i = 0;
+  while (1) {
+    $i++;
+    last unless exists $params->{"f$i"};
+    next unless $params->{"f$i"} eq 'is_triaged';
+    my $op = $params->{"o$i"} // next;
+    my $value = lc($params->{"v$i"} // '');
+
+    $params->{"f$i"} = 'keywords';
+    $params->{"v$i"} = 'triaged';
+    $value = 'true' if $value eq 'yes';
+    $value = 'false' if $value eq 'no';
+    if (
+      $op eq 'isempty'
+      || ($op eq 'equals' && $value eq 'false')
+      || ($op eq 'notequals' && $value eq 'true')
+    ) {
+      $params->{"o$i"} = 'notsubstring';
+    }
+    elsif (
+      $op eq 'isnotempty'
+      || ($op eq 'equals' && $value eq 'true')
+      || ($op eq 'notequals' && $value eq 'false')
+    ) {
+      $params->{"o$i"} = 'substring';
+    }
+    else {
+      ThrowUserError('search_field_operator_invalid',
+        {field => 'is_triaged', operator => $op});
+    }
+  }
 }
 
 # Allow to use Firefox release date pronouns, including `%LAST_MERGE_DATE%`,
@@ -2591,8 +2753,9 @@ sub tf_buglist_columns {
     foreach my $product (keys %{PRODUCT_CHANNELS()}) {
       foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
         my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
+        next unless $canonical || $alias;
 
-        if ($columns->{$canonical} && $canonical) {
+        if ($canonical && $columns->{$canonical}) {
           $columns->{$alias}->{name} = $columns->{$canonical}->{name};
         } else {
           delete $columns->{$alias};
@@ -2611,6 +2774,7 @@ sub tf_buglist_column_joins {
     foreach my $product (keys %{PRODUCT_CHANNELS()}) {
       foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
         my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
+        next unless $canonical || $alias;
 
         if ($column_joins->{$canonical} && $canonical) {
           $column_joins->{$alias} = $column_joins->{$canonical};
@@ -2631,6 +2795,7 @@ sub tf_search_operator_field_override {
     foreach my $product (keys %{PRODUCT_CHANNELS()}) {
       foreach my $channel (keys %{PRODUCT_CHANNELS->{$product}}) {
         my ($canonical, $alias) = _get_search_param_name($type, $product, $channel);
+        next unless $canonical || $alias;
 
         if ($operators->{$canonical} && $canonical) {
           $operators->{$alias} = $operators->{$canonical};

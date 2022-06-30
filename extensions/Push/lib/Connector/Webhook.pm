@@ -62,8 +62,8 @@ sub should_send {
 
   my $webhook = Bugzilla::Extension::Webhooks::Webhook->new($self->{webhook_id});
   my $event   = $webhook->event;
-  my $product = $webhook->product_name;
-  my $component = $webhook->component_name ? $webhook->component_name : 'any';
+  my $product   = $webhook->product_name;
+  my $component = $webhook->component_name;
 
   my $payload  = $message->payload_decoded;
   my $target   = $payload->{event}->{target};
@@ -72,8 +72,8 @@ sub should_send {
 
   my $bug = Bugzilla::Bug->new({id => $bug_data->{id}, cache => 1});
 
-  if ($product eq $bug->product
-    && ($component eq $bug->component || $component eq 'any'))
+  if (($product eq $bug->product || $product eq 'Any')
+    && ($component eq $bug->component || $component eq 'Any'))
   {
     if ( ($event =~ /create/ && $message->routing_key eq 'bug.create')
       || ($event =~ /change/ && $message->routing_key =~ /^bug\.modify/)

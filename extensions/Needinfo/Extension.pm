@@ -25,7 +25,8 @@ BEGIN {
 }
 
 sub _user_needinfo_blocked {
-  return $_[0]->settings->{block_needinfo}->{value} eq 'on';
+  return $_[0]->settings->{block_needinfo}
+    && $_[0]->settings->{block_needinfo}->{value} eq 'on';
 }
 
 sub install_update_db {

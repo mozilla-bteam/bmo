@@ -236,7 +236,11 @@ sub mailer_before_send {
   my $changer_login  = $email->header('X-Bugzilla-Who');
   my $changed_fields = $email->header('X-Bugzilla-Changed-Fields');
 
-  if ($bug_id && $changer_login && $changed_fields =~ /attachments.created/) {
+  if ( $bug_id
+    && $changer_login
+    && $changed_fields
+    && $changed_fields =~ /attachments.created/)
+  {
     my $changer = Bugzilla::User->new({name => $changer_login});
     if ( $changer
       && $changer->first_patch_bug_id

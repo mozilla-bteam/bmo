@@ -55,8 +55,8 @@ sub new {
       }
     }
     catch {
-      WARN("Database not yet available: $_");
-
+      WARN("Database not yet available: $_")
+        unless Bugzilla->usage_mode == USAGE_MODE_CMDLINE;
       # Load defaults if database is unavailable
       my $defs = $self->_load_param_defs();
       foreach my $key (keys %{$defs}) {
@@ -119,7 +119,8 @@ sub update {
     $self->{params} = $params;
   }
   catch {
-    WARN("Database not yet available: $_");
+    WARN("Database not yet available: $_")
+      unless Bugzilla->usage_mode == USAGE_MODE_CMDLINE;
   };
 }
 
@@ -263,7 +264,7 @@ sub migrate_params {
         $param->{$name} = $new_val unless $checker->($new_val, $item);
       }
       elsif ($error) {
-        warn "Invalid parameter: $name\n";
+        WARN("Invalid parameter: $name");
       }
     }
   }

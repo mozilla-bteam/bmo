@@ -15,6 +15,7 @@ use IO::Async::Loop;
 use IO::Async::Signal;
 use Try::Tiny;
 
+use Bugzilla::Constants;
 use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Util qw(with_writable_database);
@@ -98,6 +99,8 @@ sub start {
 sub cis_update_query {
   my ($self) = @_;
   my $dbh = Bugzilla->dbh;
+
+  Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
   local Bugzilla::Logging->fields->{type} = 'PERSON_API';
 

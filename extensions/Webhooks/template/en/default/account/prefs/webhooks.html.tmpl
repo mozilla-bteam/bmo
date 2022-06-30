@@ -16,7 +16,12 @@ var useclassification = false;
 var first_load = true;
 var last_sel = [];
 var cpts = new Array();
-[% n = 0 %]
+[% IF user.in_group(Param('webhooks_any_product_group')) %]
+  cpts['0'] = ['Any'];
+  [% n = 1 %]
+[% ELSE %]
+  [% n = 0 %]
+[% END %]
 [% FOREACH prod = selectable_products %]
   cpts['[% n %]'] = [
     [%- FOREACH comp = prod.components %]'[% comp.name FILTER js %]'[% ", " UNLESS loop.last %] [%- END -%] ];
@@ -33,10 +38,10 @@ function onSelectProduct() {
   // selectProduct only supports Any on both elements
   // we only want it on component, so add it back in
   try {
-    component.add(new Option('Any', ''), component.options[0]);
+    component.add(new Option('Any', 'Any'), component.options[0]);
   } catch(e) {
     // support IE
-    component.add(new Option('Any', ''), 0);
+    component.add(new Option('Any', 'Any'), 0);
   }
   document.getElementById('component').options[0].selected = true;
 }
@@ -84,9 +89,13 @@ window.onload = function() {
 <tr>
   <th align="right">Product:</th>
   <td>
-    <select name="add_product" id="product" onChange="onSelectProduct()">
+    <select name="product" id="product" onChange="onSelectProduct()">
+    [% IF user.in_group(Param('webhooks_any_product_group')) %]
+      <option value="Any">Any</option>
+    [% END %]
     [% FOREACH product IN selectable_products %]
-      <option>[% product.name FILTER html %]</option>
+      <option value="[% product.name FILTER html %]">
+        [% product.name FILTER html %]</option>
     [% END %]
     </select>
   </td>
@@ -94,11 +103,12 @@ window.onload = function() {
 <tr>
   <th align="right">Component:</th>
   <td>
-    <select name="api_key" id="api_key">
-      <option value="">Any</option>
+    <select name="component" id="component">
+      <option value="Any">Any</option>
     [% FOREACH product IN selectable_products %]
       [% FOREACH component IN product.components %]
-        <option>[% component.name FILTER html %]</option>
+        <option value="[% component.name FILTER html %]">
+          [% component.name FILTER html %]</option>
       [% END %]
     [% END %]
     </select>
@@ -171,8 +181,8 @@ window.onload = function() {
         </a>
       </td>
       <td>[% webhook.event FILTER html %]</td>
-      <td>[% webhook.product.name FILTER html %]</td>
-      <td>[% webhook.component ? webhook.component.name : 'Any' FILTER html %]</td>
+      <td>[% webhook.product_name FILTER html %]</td>
+      <td>[% webhook.component_name FILTER html %]</td>
       <td>[% webhook.api_key_value FILTER html %]</td>
       <td>
         [% config = connector.config %]

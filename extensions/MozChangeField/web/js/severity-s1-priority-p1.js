@@ -31,6 +31,7 @@ Bugzilla.SeverityS1PriorityP1 = class SeverityS1PriorityP1 {
    * Called when severity select is changed. Updated priority field options appropriately
    */
   severity_onselect() {
+    if (!(this.priority && this.severity)) return;
     const s1_selected = this.severity.value === 'S1';
     const options = this.priority.querySelectorAll("option");
     options.forEach(opt => opt.disabled = s1_selected);

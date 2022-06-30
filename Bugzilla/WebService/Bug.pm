@@ -436,8 +436,9 @@ sub _translate_comment {
 
 sub get {
   my ($self, $params) = validate(@_, 'ids');
+  my $user = Bugzilla->user;
 
-  unless (Bugzilla->user->id) {
+  unless ($user->id) {
     Bugzilla->check_rate_limit("get_bug", remote_ip());
   }
   Bugzilla->switch_to_shadow_db() unless Bugzilla->user->id;
@@ -450,8 +451,8 @@ sub get {
 
   # Cache permissions for bugs. This highly reduces the number of calls to the DB.
   # visible_bugs() is only able to handle bug IDs, so we have to skip aliases.
-  my @int = grep { $_ =~ /^\d+$/ } @$ids;
-  Bugzilla->user->visible_bugs(\@int);
+  my @int = grep { defined $_ && $_ =~ /^\d+$/ } @$ids;
+  $user->visible_bugs(\@int);
 
   foreach my $bug_id (@$ids) {
     my $bug;
@@ -478,11 +479,18 @@ sub get {
 
   $self->_add_update_tokens($params, \@bugs, \@hashes);
 
-  if (Bugzilla->user->id) {
+  if ($user->id) {
     foreach my $bug (@bugs) {
       Bugzilla->log_user_request($bug->id, undef, 'bug-get');
+
+      # Audit when a non-public bug is viewed including the groups the bug belongs to
+      my $groups_in = $bug->groups_in;
+      next if !@$groups_in;
+      Bugzilla->audit(sprintf 'api: %s viewed non-public bug %d belonging to groups %s',
+        $user->login, $bug->id, join ', ', map { $_->name } @$groups_in);
     }
   }
+
   return {bugs => \@hashes, faults => \@faults};
 }
 

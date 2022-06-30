@@ -873,7 +873,7 @@ sub create {
     $comment->update();
   }
 
-  # BMO - add the stash param from bug_start_of_create
+  # BMO - add the stash param from bug_before_create
   Bugzilla::Hook::process('bug_end_of_create',
     {bug => $bug, timestamp => $timestamp, stash => $stash,});
 
@@ -2943,7 +2943,11 @@ sub _set_product {
     my $verified = $params->{product_change_confirmed};
 
     # BMO - if everything is ok then we can skip the verfication page when using bug_modal
-    if (($params->{format} eq 'modal' || !$verified) && $component_ok && $version_ok && $milestone_ok) {
+    if ( (($params->{format} && $params->{format} eq 'modal') || !$verified)
+      && $component_ok
+      && $version_ok
+      && $milestone_ok)
+    {
       $invalid_groups
         = $self->get_invalid_groups({bug_ids => \@idlist, product => $product});
       my $has_invalid_group = 0;
@@ -3900,6 +3904,29 @@ sub has_keyword {
   my ($self, $keyword) = @_;
   $keyword = lc($keyword);
   return any { lc($_->name) eq $keyword } @{$self->keyword_objects};
+}
+
+sub add_keyword {
+  my ($self, $keyword) = @_;
+  return if $self->has_keyword($keyword);
+  push @{$self->{'keyword_objects'}}, Bugzilla::Keyword->check({name => $keyword});
+}
+
+sub del_keyword {
+  my ($self, $keyword) = @_;
+  $keyword = lc($keyword);
+  my $index = -1;
+  my $i = 0;
+  foreach my $keyword_obj (@{$self->{'keyword_objects'}}) {
+    if (lc($keyword_obj->name) eq $keyword) {
+      $index = $i;
+      last;
+    }
+    $i++;
+  }
+  if ($index != -1) {
+    splice @{$self->{'keyword_objects'}}, $index, 1;
+  }
 }
 
 sub comments {

@@ -661,8 +661,17 @@ if ($order) {
     "Last Updated" =>
       ["changeddate", "bug_status", "priority", "assigned_to", "bug_id"],
   );
-  if ($order_types{$order}) {
-    @order_columns = @{$order_types{$order}};
+  my $order_field = $order;
+  $order_field =~ s/\s+(DESC|ASC)$//i;
+  my $order_by;
+  if ($1) {
+    $order_by = $1;
+  }
+  if ($order_types{$order_field}) {
+    @order_columns = @{$order_types{$order_field}};
+    if ($order_by) {
+      $order_columns[0] = $order_columns[0] . " $order_by";
+    }
   }
   else {
     @order_columns = split(/\s*,\s*/, $order);
@@ -716,9 +725,13 @@ do {
   local $SIG{__DIE__}  = undef;
   local $SIG{__WARN__} = undef;
   ($data, $extra_data) = eval { $search->data };
-  # If the search query failed in any way, log the error and return an empty
-  # list of bugs
-  ERROR 'buglist.cgi?' . $cgi->query_string . " $@" if $@;
+  # If the search query failed, handle Throw*Error correctly, or for all other
+  # failures log it and return an empty list of bugs.
+  if (my $search_err = $@) {
+    return if ref $search_err eq 'ARRAY' && $search_err->[0] eq "EXIT\n";
+    use Data::Dumper;
+    ERROR 'buglist.cgi?' . $cgi->query_string . " " . Dumper($search_err);
+  }
 };
 
 $vars->{'search_description'} = $search->search_description;

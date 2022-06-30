@@ -102,6 +102,7 @@
     /** Button */
     --button-border-radius: 4px;
     --button-padding: 6px 12px;
+    --button-center-padding: 6px;
   }
 }
 
@@ -986,7 +987,7 @@ input[type="radio"]:checked {
     height: 48px;
     position: fixed;
     width: 100%;
-    z-index: 5;
+    z-index: 11;
   }
 
   #bugzilla-body {
@@ -2215,6 +2216,19 @@ table.tabs .clickable_area {
   line-height: 100% !important;
 }
 
+.separate-dropdown-button-main {
+  border-start-end-radius: 0px;
+  border-end-end-radius: 0px;
+  padding-inline-end: var(--button-center-padding);
+  border-inline-end: none;
+}
+
+.separate-dropdown-button-arrow {
+  border-start-start-radius: 0px;
+  border-end-start-radius: 0px;
+  padding-inline-start: var(--button-center-padding);
+}
+
 /**
  * Comments
  */
@@ -2780,6 +2794,7 @@ pre.comment-text {
 :root {
   --bug-status-color-open: #188716;
   --bug-status-color-closed: #1B6AB8;
+  --bug-status-color-untriaged: #1B9BB8;
   --bug-type-color-defect: #EA3C3D;
   --bug-type-color-enhancement: #2ABA27;
   --bug-type-color-task: #2886C9;

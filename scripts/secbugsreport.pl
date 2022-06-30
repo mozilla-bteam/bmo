@@ -141,21 +141,7 @@ my @parts_crit_high = (
       encoding     => 'quoted-printable',
     },
     body_str => $html_crit_high,
-  ),
-  map {
-    Email::MIME->create(
-      header_str => ['Content-ID' => "<$_.png>",],
-      attributes => {
-        filename     => "$_.png",
-        charset      => 'UTF-8',
-        content_type => 'image/png',
-        disposition  => 'inline',
-        name         => "$_.png",
-        encoding     => 'base64',
-      },
-      body => $report_crit_high->graphs->{$_}->slurp,
-    )
-  } sort { $a cmp $b } keys %{$report_crit_high->graphs}
+  )
 );
 
 my @recipients = split /[\s,]+/, Bugzilla->params->{report_secbugs_emails};

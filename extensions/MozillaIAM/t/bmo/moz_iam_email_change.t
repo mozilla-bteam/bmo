@@ -59,7 +59,7 @@ undef $user;
 $user = Bugzilla::User->new({name => $new_bmo_email});
 
 ok(
-  $user->iam_username ne $iam_username,
+  !$user->iam_username || $user->iam_username ne $iam_username,
   "User iam_username is not $iam_username"
 );
 ok(!$user->in_group('mozilla-employee-confidential'),

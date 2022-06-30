@@ -18,9 +18,15 @@ sub get_param_list {
 
   my @param_list = (
     {name => 'webhooks_enabled', type => 'b', default => '0',},
-
     {
       name    => 'webhooks_group',
+      type    => 's',
+      choices => \&get_all_group_names,
+      default => 'admin',
+      checker => \&check_group
+    },
+    {
+      name    => 'webhooks_any_product_group',
       type    => 's',
       choices => \&get_all_group_names,
       default => 'admin',

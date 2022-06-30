@@ -17,7 +17,7 @@ use FileHandle;    # this is for compat back to 5.10
 use Bugzilla          ();
 use Bugzilla::BugMail ();
 use Bugzilla::CGI     ();
-use Bugzilla::Constants qw(bz_locations MAX_STS_AGE);
+use Bugzilla::Constants;
 use Bugzilla::Extension             ();
 use Bugzilla::Install::Requirements ();
 use Bugzilla::Logging;
@@ -28,6 +28,7 @@ use Bugzilla::App::Main;
 use Bugzilla::App::OAuth2::Provider::Clients;
 use Bugzilla::App::SES;
 use Bugzilla::App::Static;
+use Bugzilla::App::BMO::NewRelease;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
@@ -83,6 +84,10 @@ sub startup {
       catch {
         ERROR($_);
       };
+
+      # Set usage mode and store controller for Error.pm exception handling
+      Bugzilla->usage_mode(USAGE_MODE_MOJO);
+      Bugzilla->request_cache->{mojo_controller} = $c;
     }
   );
 
@@ -206,6 +211,7 @@ sub setup_routes {
   Bugzilla::App::Main->setup_routes($r);
   Bugzilla::App::OAuth2::Provider::Clients->setup_routes($r);
   Bugzilla::App::SES->setup_routes($r);
+  Bugzilla::App::BMO::NewRelease->setup_routes($r);
 
   $r->static_file('/__lbheartbeat__');
   $r->static_file(

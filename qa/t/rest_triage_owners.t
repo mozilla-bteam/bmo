@@ -30,9 +30,6 @@ $t->get_ok(
   ->json_is('/Firefox/Installer/triage_owner', 'nobody@mozilla.org');
 
 my $data = $t->tx->res->json;
-use Bugzilla::Logging;
-use Mojo::Util qw(dumper);
-DEBUG(dumper $data);
 
 # Get the triage owner for Firefox for only General component
 $t->get_ok($url
