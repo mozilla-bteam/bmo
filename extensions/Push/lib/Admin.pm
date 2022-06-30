@@ -140,7 +140,7 @@ sub admin_webhooks {
     $dbh->bz_start_transaction();
     foreach my $connector ($push->connectors->list) {
       if ($connector->name =~ /\QWebhook\E/) {
-        _update_webhook_status($connector->name, $connector->config);
+        _update_webhook_status($connector);
       }
     }
     $push->set_config_last_modified();
@@ -154,10 +154,25 @@ sub admin_webhooks {
 }
 
 sub _update_webhook_status {
-  my ($name, $config) = @_;
-  my $input = Bugzilla->input_params;
-  $config->{enabled} = trim($input->{$name . ".enabled"});
+  my ($connector) = @_;
+  my $input        = Bugzilla->input_params;
+  my $config       = $connector->config;
+  my $was_disabled = $connector->enabled ? 0 : 1;
+  my $status       = trim($input->{$connector->name . ".enabled"});
+
+  # Save the new status of the webhook to the database
+  $config->{enabled} = $status;
   $config->update();
+
+  # This might have been disabled due to large number of errors.
+  # In that case we want to reset the attempts to 0 if we are
+  # re-enabling the webhook
+  if ($was_disabled && $status eq 'Enabled') {
+    $connector->backlog->reset_backoff;
+    my $message = $connector->backlog->oldest;
+    $message->{attempts} = 0;
+    $message->update;
+  }
 }
 
 1;
