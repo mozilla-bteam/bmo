@@ -20,7 +20,8 @@ sub evaluate_change {
 
   # Bugs in the Graveyard classification require editbugs to make any change.
   if (
-    !$editbugs
+    $bug->id
+    && !$editbugs
     && $bug->product_obj->classification->name eq 'Graveyard'
   ) {
     return {
