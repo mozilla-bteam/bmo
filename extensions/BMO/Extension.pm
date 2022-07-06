@@ -901,10 +901,10 @@ sub _bug_uses_triaged_keyword {
 }
 
 sub _bug_is_untriaged {
-  # Bugs of type 'task' are never flagged as untriaged.
+  # Only 'defects' are flagged as untriaged.
   my ($self) = @_;
   return $self->uses_triaged_keyword
-    && $self->bug_type ne 'task'
+    && $self->bug_type eq 'defect'
     && !$self->has_keyword('triaged');
 }
 
@@ -1050,7 +1050,7 @@ sub bug_end_of_create {
   if (
     $bug->uses_triaged_keyword
     && $bug->has_keyword('triaged')
-    && $bug->bug_type ne 'task'
+    && $bug->bug_type eq 'defect'
     && $bug->bug_severity !~ /^S\d+$/
   ) {
     ThrowUserError('triage_severity_required');
@@ -1095,12 +1095,22 @@ sub bug_start_of_update {
 sub bug_end_of_update {
   my ($self, $args) = @_;
   my $bug = $args->{bug};
+  my $old_bug = $args->{old_bug};
+
+  return unless $bug->uses_triaged_keyword;
+
+  # if the bug already has the triaged keyword, allow any severity.
+  # this allows bugs still using the old severity values to be updated, and
+  # also allows for the N/A severity to be used on defects after an initial
+  # triage run.
+  if ($old_bug->has_keyword('triaged')) {
+    return;
+  }
 
   # require severity if the triaged keyword is present
   if (
-    $bug->uses_triaged_keyword
-    && $bug->has_keyword('triaged')
-    && $bug->bug_type ne 'task'
+    $bug->has_keyword('triaged')
+    && $bug->bug_type eq 'defect'
     && $bug->bug_severity !~ /^S\d+$/
   ) {
     ThrowUserError('triage_severity_required');
