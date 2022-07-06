@@ -457,6 +457,13 @@ my @groups = (
     all_products => 0,
     bug_group    => 0,
   },
+  {
+    name => 'edittrackingflags',
+    description  => 'Edit Tracking Flags Group',
+    no_admin     => 0,
+    all_products => 0,
+    bug_group    => 0,
+  },
 );
 
 print "creating groups...\n";
