@@ -21,6 +21,7 @@ use constant USE_MEMCACHED => 0;
 use Bugzilla;
 use Bugzilla::Error;
 use Bugzilla::Extension::Push::Util;
+use Bugzilla::Hook;
 use Bugzilla::Util;
 use Encode;
 
@@ -112,6 +113,8 @@ sub inc_attempts {
   $self->{attempts}   = $self->{attempts} + 1;
   $self->{last_error} = $error;
   $self->update;
+
+  Bugzilla::Hook::process('connector_check_error_limit', {object => $self});
 }
 
 #

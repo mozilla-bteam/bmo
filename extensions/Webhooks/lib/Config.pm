@@ -32,6 +32,19 @@ sub get_param_list {
       default => 'admin',
       checker => \&check_group
     },
+    {
+      name    => 'webhooks_error_limit',
+      type    => 't',
+      default => '100',
+      checker => \&check_numeric
+    },
+    {
+      name    => 'webhooks_error_exempt_group',
+      type    => 's',
+      choices => \&get_all_group_names,
+      default => 'admin',
+      checker => \&check_group
+    },
   );
   return @param_list;
 }

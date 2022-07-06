@@ -1,0 +1,28 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+From: [% Param('mailfrom') %]
+To: [% webhook.user.login %]
+Subject: [[% terms.Bugzilla %]] Webhook [% webhook.name %] was automatically disabled due to large number of errors
+X-Bugzilla-Type: admin
+
+Your webhook named [% webhook.name %] has been temporarily disabled due to
+a large number of errors during operation.
+
+Last error:
+
+[% error %]
+
+Attempts: [% attempts %]
+
+Please visit the webhooks configuration page to see more information and to
+reactivate the webhook once the problem is resolved.
+
+[% urlbase %]userprefs.cgi?tab=webhooks
