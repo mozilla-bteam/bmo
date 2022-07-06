@@ -42,9 +42,9 @@ sub new_release {
   Bugzilla->usage_mode(USAGE_MODE_MOJO);
   my $user = $self->bugzilla->login(LOGIN_REQUIRED) || return undef;
 
-  $user->in_group('editcomponents')
+  $user->in_group('edittrackingflags')
     || return $self->user_error('auth_failure',
-    {group => 'editcomponents', action => 'edit', object => 'milestones'});
+    {group => 'edittrackingflags', action => 'edit', object => 'milestones'});
 
   # Display the initial form
   if ($self->req->method eq 'GET') {
