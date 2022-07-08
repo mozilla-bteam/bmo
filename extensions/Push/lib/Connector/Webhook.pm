@@ -97,8 +97,12 @@ sub send {
     $payload->{webhook_name} = $webhook->name;
     $payload->{webhook_id}   = $webhook->id;
 
-    my $target            = $payload->{event}->{target};
-    my $target_is_private = $payload->{$target}->{is_private};
+    my $target = $payload->{event}->{target};
+
+    # If comment or attachment is NOT private but bug IS private
+    # then entire target is private
+    my $target_is_private = ($payload->{$target}->{is_private}
+        || $payload->{$target}->{bug}->{is_private}) ? 1 : 0;
 
     my $bug_data;
     if ($target_is_private && ($target eq 'attachment' || $target eq 'comment')) {
