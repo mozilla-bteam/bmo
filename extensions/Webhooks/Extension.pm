@@ -19,6 +19,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::User;
 use Bugzilla::Logging;
+use Bugzilla::Mailer qw(MessageToMTA);
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Util;
 use Bugzilla::Token qw(check_hash_token);
@@ -195,10 +196,20 @@ sub user_preferences {
         = Bugzilla::Extension::Webhooks::Webhook->match({user_id => $user->id});
       $dbh->bz_start_transaction;
       foreach my $webhook (@$webhooks) {
-        my $connector = $push->connectors->by_name('Webhook_' . $webhook->id);
-        my $config    = $connector->config;
-        my $status    = trim($input->{$connector->name . ".enabled"});
+        my $connector    = $push->connectors->by_name('Webhook_' . $webhook->id);
+        my $config       = $connector->config;
+        my $was_disabled = $connector->enabled ? 0 : 1;
+        my $status       = trim($input->{$connector->name . ".enabled"});
         if ($status eq 'Enabled' || $status eq 'Disabled') {
+          # This might have been disabled due to large number of errors.
+          # In that case we want to reset the attempts to 0 if we are
+          # re-enabling the webhook
+          if ($was_disabled && $status eq 'Enabled') {
+            $connector->backlog->reset_backoff;
+            my $message = $connector->backlog->oldest;
+            $message->{attempts} = 0;
+            $message->update;
+          }
           $config->{enabled} = $status;
           $config->update();
         }
@@ -328,6 +339,52 @@ sub webhooks_queues {
       || ThrowUserError('push_error', {error_message => 'Invalid message ID'});
     $message->remove_from_db();
     $vars->{message} = 'push_message_deleted';
+  }
+}
+
+#
+# Hooks
+#
+
+sub connector_check_error_limit {
+  my ($self, $args) = @_;
+  my $object = $args->{object};
+  my $connector_name = $object->{connector};
+
+  # Disregard if this connector is not a webhook
+  return if $connector_name !~ /^Webhook_/;
+
+  # Disregard if we have error limits turned off
+  my $error_limit = Bugzilla->params->{webhooks_error_limit};
+  return if $error_limit == 0;
+
+  # Disregard if in the error exempt group
+  return
+   if Bugzilla->user->in_group(Bugzilla->params->{webhooks_error_exempt_group});
+
+  # Disable the webhook and send email to author
+  if ($args->{object}->{attempts} >= $error_limit) {
+    WARN(
+      "WEBHOOK: Disabling connector $connector_name due to large number of errors");
+
+    # Set the connector to be disabled to block new executions
+    my $connector = Bugzilla->push_ext->connectors->by_name($connector_name);
+    $connector->config->{enabled} = 'Disabled';
+    $connector->config->update;
+
+    # Send email notification to author for them to reactivate
+    my $webhook
+      = Bugzilla::Extension::Webhooks::Webhook->new($connector->{webhook_id});
+    my $template = Bugzilla->template_inner($webhook->user->setting('lang'));
+    my $vars     = {
+      webhook  => $webhook,
+      error    => $object->last_error,
+      attempts => $object->attempts
+    };
+    my $message;
+    $template->process('email/webhook_disabled.txt.tmpl', $vars, \$message)
+      || ThrowTemplateError($template->error);
+    MessageToMTA($message);
   }
 }
 

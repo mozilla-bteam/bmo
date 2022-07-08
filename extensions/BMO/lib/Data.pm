@@ -20,7 +20,8 @@ our @EXPORT = qw( $cf_visible_in_products
   %group_auto_cc
   %create_bug_formats
   @default_named_queries
-  %autodetect_attach_urls );
+  %autodetect_attach_urls
+  @triage_keyword_products );
 
 # Creating an attachment whose contents is a URL matching one of these regexes
 # will result in the user being redirected to that URL when viewing the
@@ -145,26 +146,6 @@ tie(
     "Tech Evangelism"     => [],
     "Toolkit"             => [],
   },
-  qr/^cf_has_regression_range$/ => {
-    "Core Graveyard"                      => [],
-    "Core"                                => [],
-    "DevTools Graveyard"                  => [],
-    "DevTools"                            => [],
-    "External Software Affecting Firefox" => [],
-    "Firefox Build System"                => [],
-    "Firefox for Android Graveyard"       => [],
-    "Firefox for Android"                 => [],
-    "Firefox for iOS"                     => [],
-    "Firefox Graveyard"                   => [],
-    "Firefox"                             => [],
-    "GeckoView"                           => [],
-    "NSS"                                 => [],
-    "Tech Evangelism Graveyard"           => [],
-    "Tech Evangelism"                     => [],
-    "Toolkit Graveyard"                   => [],
-    "Toolkit"                             => [],
-    "WebExtensions"                       => [],
-  },
   qr/^cf_has_str$/ => {
     "Core Graveyard"                      => [],
     "Core"                                => [],
@@ -185,6 +166,27 @@ tie(
     "Toolkit"                             => [],
     "WebExtensions"                       => [],
   },
+);
+
+# Products that use the triage keyword.
+our @triage_keyword_products = (
+    'Conduit',
+    'Core',
+    'DevTools',
+    'External Software Affecting Firefox',
+    'Fenix',
+    'Firefox Build System',
+    'Firefox for Android',
+    'Firefox for iOS',
+    'Firefox',
+    'GeckoView',
+    'JSS',
+    'NSPR',
+    'NSS',
+    'Remote Protocol',
+    'Testing',
+    'Toolkit',
+    'WebExtensions',
 );
 
 # Who to CC on particular bugmails when certain groups are added or removed.

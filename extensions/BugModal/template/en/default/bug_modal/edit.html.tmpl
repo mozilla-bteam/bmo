@@ -149,8 +149,26 @@
     [% PROCESS bug_modal/navigate.html.tmpl %]
   [% END %]
   <div role="group" class="buttons">
-    <button type="button" id="copy-summary" class="secondary"
-      title="Copy [% terms.bug %] number and summary to your clipboard">Copy Summary</button>
+    <button type="button" id="copy-summary" class="secondary separate-dropdown-button-main"
+      title="Copy [% terms.bug %] number and summary to your clipboard">Copy Summary</button
+    ><div id="copy-menu-dropdown" class="dropdown"><button type="button" id="copy-menu-btn" aria-haspopup="true" aria-label="View"
+      aria-expanded="false" aria-controls="copy-menu" class="dropdown-button secondary separate-dropdown-button-arrow"
+      title="More options for copy">&#9662;</button>
+      <ul class="dropdown-content left" id="copy-menu" role="menu" style="display:none;">
+        <li role="presentation">
+          <a id="copy-markdown-summary" role="menuitem" tabindex="-1">Markdown</a>
+        </li>
+        <li role="presentation">
+          <a id="copy-markdown-bug-number" role="menuitem" tabindex="-1">Markdown (bug number)</a>
+        </li>
+        <li role="presentation">
+          <a id="copy-text-summary" role="menuitem" tabindex="-1">Plain Text</a>
+        </li>
+        <li role="presentation">
+          <a id="copy-html-summary" role="menuitem" tabindex="-1">HTML</a>
+        </li>
+      </ul>
+    </div>
     <div id="clip-container" style="display:none"><input type="text" id="clip"></div>
     [% IF user.id %]
       <button type="button" class="secondary" id="cc-btn" data-is-cced="[% is_cced ? 1 : 0 %]">
@@ -267,6 +285,9 @@
       <span class="bug-status-label text" data-status="[% bug.isopened ? 'open' : 'closed' %]">
         [%~ bug.isopened ? 'Open' : 'Closed' ~%]
       </span>
+      [% IF bug.is_untriaged %]
+        <span class="bug-status-label text" data-status="untriaged">Untriaged</span>
+      [% END %]
       <span id="field-value-bug_id">
         <a href="[% basepath _ "show_bug.cgi?id=" _ bug.id FILTER html %]">
           [%~ terms.Bug _ " " _ bug.id FILTER none ~%]
@@ -325,6 +346,13 @@
   sub.push(bug.product _ " :: " _ bug.component);
   sub.push(bug.bug_type);
   sub.push(bug.priority) IF bug.priority != "--";
+  IF bug.uses_triaged_keyword;
+    IF bug.has_keyword("triaged");
+      sub.push("triaged");
+    ELSIF bug.is_untriaged;
+      sub.push("untriaged");
+    END;
+  END;
 %]
 [% WRAPPER bug_modal/module.html.tmpl
   title = "Categories"
@@ -463,8 +491,9 @@
           inline = 1
       %]
       [% WRAPPER bug_modal/field.html.tmpl
+          no_label = 1
+          no_indent = 1
           container = 1
-          inline = 1
       %]
         [% Hook.process("after_op_sys", 'bug/edit.html.tmpl') %]
       [% END %]
@@ -526,6 +555,18 @@
             hide_on_edit = !user.in_group('rank-setters')
             help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#rank"
         %]
+      [% END %]
+    [% END %]
+
+    [% IF bug.is_untriaged && user.can_triage %]
+      [% WRAPPER bug_modal/field.html.tmpl
+          label = ""
+          hide_on_view =1
+          container = 1
+      %]
+        <button type="button" class="secondary" id="mark-as-triaged-btn">
+          Mark as Triaged
+        </button>
       [% END %]
     [% END %]
 

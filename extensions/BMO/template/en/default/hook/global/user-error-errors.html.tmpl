@@ -56,4 +56,8 @@
   The pronoun for the merge date and release date cannot be used at this time.
   Please try again later or use actual dates instead.
 
+[% ELSIF error == "triage_severity_required" %]
+  [% title = "Missing Bug Severity" %]
+  Severity of S1-S4 is required to mark a [% terms.bug %] as triaged.
+
 [% END %]

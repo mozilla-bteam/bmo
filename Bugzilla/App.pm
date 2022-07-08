@@ -28,6 +28,7 @@ use Bugzilla::App::Main;
 use Bugzilla::App::OAuth2::Provider::Clients;
 use Bugzilla::App::SES;
 use Bugzilla::App::Static;
+use Bugzilla::App::BMO::NewRelease;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
@@ -210,6 +211,7 @@ sub setup_routes {
   Bugzilla::App::Main->setup_routes($r);
   Bugzilla::App::OAuth2::Provider::Clients->setup_routes($r);
   Bugzilla::App::SES->setup_routes($r);
+  Bugzilla::App::BMO::NewRelease->setup_routes($r);
 
   $r->static_file('/__lbheartbeat__');
   $r->static_file(

@@ -21,12 +21,12 @@
 %]
 
 [% FOREACH connector = push.connectors.list %]
-  [% NEXT UNLESS connector.enabled %]
-  [% NEXT IF !connector.backlog.count && connector.webhook_id %]
+  [% NEXT IF !connector.backlog.count %]
   [% PROCESS show_queue
              queue = connector.backlog
              title = connector.name _ ' Backlog'
            pending = 0
+          disabled = !connector.enabled
   %]
 [% END %]
 
@@ -39,6 +39,7 @@
   [% count = queue.count %]
   <tr>
     <th colspan="2">
+      [% IF disabled %]<strong>DISABLED:</strong> [% END %]
       [% title FILTER html %] Queue ([% count FILTER html %])
     </th>
     [% IF queue.backoff && count %]
@@ -52,21 +53,19 @@
   </thead>
   <tbody>
 
-  [% IF count %]
-    <tr class="report-subheader">
-      <th nowrap>Timestamp</th>
-      <th nowrap>Change Set</th>
-      [% IF pending %]
-        <th nowrap colspan="4">Routing Key</th>
-      [% ELSE %]
-        <th nowrap>Routing Key</th>
-        <th nowrap>Last Attempt</th>
-        <th nowrap>Attempts</th>
-        <th nowrap>Last Error</th>
-      [% END %]
-      <th>&nbsp;</th>
-    </tr>
-  [% END %]
+  <tr class="report-subheader">
+    <th nowrap>Timestamp</th>
+    <th nowrap>Change Set</th>
+    [% IF pending %]
+      <th nowrap colspan="4">Routing Key</th>
+    [% ELSE %]
+      <th nowrap>Routing Key</th>
+      <th nowrap>Last Attempt</th>
+      <th nowrap>Attempts</th>
+      <th nowrap>Last Error</th>
+    [% END %]
+    <th>&nbsp;</th>
+  </tr>
 
   [% FOREACH message = queue.list('limit', 10) %]
     <tr class="row [% loop.count % 2 == 1 ? "report_row_odd" : "report_row_even" %]">

@@ -51,7 +51,8 @@ sub register {
       }
 
       # Try cookies first if we are using the web UI
-      if (Bugzilla->usage_mode != USAGE_MODE_REST) {
+      my $usage_mode = Bugzilla->usage_mode;
+      if ($usage_mode == USAGE_MODE_BROWSER || $usage_mode == USAGE_MODE_MOJO) {
         my $login_cookie  = $c->cookie("Bugzilla_logincookie");
         my $login_user_id = $c->cookie("Bugzilla_login");
 
@@ -75,8 +76,8 @@ sub register {
         }
       }
 
-      # Next check for an API key in the header
-      if (Bugzilla->usage_mode == USAGE_MODE_REST) {
+      # For api requests, we check for the api key in the header
+      if ($usage_mode == USAGE_MODE_REST || $usage_mode == USAGE_MODE_MOJO_REST) {
         if (my $api_key_text = $headers->header('x-bugzilla-api-key')) {
           if (my $api_key = Bugzilla::User::APIKey->new({name => $api_key_text})) {
             my $remote_ip = $c->tx->remote_address;
@@ -119,7 +120,13 @@ sub register {
         return $user;
       }
 
-      return $c->bugzilla->login_redirect_if_required($type);
+      # Redirect to login page if we are a web page
+      if ($usage_mode == USAGE_MODE_BROWSER || $usage_mode == USAGE_MODE_MOJO) {
+        return $c->bugzilla->login_redirect_if_required($type);
+      }
+
+      # Return default user (non-authenticated)
+      return Bugzilla->user;
     }
   );
 }

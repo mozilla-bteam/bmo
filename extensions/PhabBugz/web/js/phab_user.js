@@ -35,7 +35,11 @@ PhabUser.getUser = async () => {
 
         var userLink = document.createElement("a");
         userLink.setAttribute("href", user.userURL);
-        userLink.textContent = `${user.userName} (${user.realName})`;
+        if (user.realName) {
+            userLink.textContent = `${user.userName} (${user.realName})`;
+        } else {
+            userLink.textContent = user.userName;
+        }
         userCell.textContent = "";
         userCell.appendChild(userLink);
 
