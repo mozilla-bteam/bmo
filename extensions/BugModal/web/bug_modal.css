@@ -22,6 +22,7 @@
   padding: 1px 0;
 }
 
+.inline,
 .module .field .inline {
   display: table-cell;
   width: auto;
