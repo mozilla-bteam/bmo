@@ -24,6 +24,19 @@ sub evaluate_change {
     && !$editbugs
     && $bug->product_obj->classification->name eq 'Graveyard'
   ) {
+    # Bugs in the 'Invalid Bugs' product _are_ allowed to be edited by the
+    # reporter.  This allows them to move the bug should it be incorrectly
+    # classified as invalid.
+    # This carve-out also allows bugs to be created in the 'Invalid Bugs'
+    # product by anyone.
+    my $field = $args->{'field'};
+    if (
+      $bug->reporter->id == Bugzilla->user->id
+      && $bug->product_obj->name eq 'Invalid Bugs'
+    ) {
+      return undef;
+    }
+
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
       reason => 'You require "editbugs" permission to modify archived bugs.',
