@@ -885,11 +885,13 @@ $(function() {
             other.val(val);
             if (val == "RESOLVED" || val == "VERIFIED") {
                 $('#resolution, #bottom-resolution').change().show();
+                $('#duplicate-actions').hide();
             }
             else {
                 $('#resolution, #bottom-resolution').hide();
                 $('#duplicate-container, #bottom-duplicate-container').hide();
                 $('#mark-as-dup-btn, #bottom-mark-as-dup-btn').show();
+                $('#duplicate-actions').show();
             }
         })
         .change();
