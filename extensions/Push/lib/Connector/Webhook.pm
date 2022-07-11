@@ -70,7 +70,33 @@ sub should_send {
   my $bug_data = $target eq 'bug' ? $payload->{bug} : $payload->{$target}->{bug};
   $bug_data || return 0;
 
+  use Bugzilla::Logging;
+  use Mojo::Util qw(dumper);
+  DEBUG(dumper $payload);
+
   my $bug = Bugzilla::Bug->new({id => $bug_data->{id}, cache => 1});
+
+  # Do not send if webhook owner cannot see the bug or the product the bug is filed under.
+  # Although do want to send if the bug went from public to private in the latest change.
+  my $owner = $webhook->user;
+  if (!$owner->can_see_bug($bug->id) || !$owner->can_see_product($bug->product)) {
+    my $allowed = 0;
+    if ($message->routing_key =~ /^bug[.]modify:/) {
+      foreach my $change (@{$payload->{event}->{changes}}) {
+        next if $change->{field} ne 'groups';
+        $allowed = 1 if !$change->{removed};
+      }
+    }
+    return 0 if !$allowed;
+  }
+
+  # If target is a comment or attachment, do not send if the webhook owner is
+  # not in the insiders group used for private comments/attachments.
+  if ($target eq 'comment' || $target eq 'attachment') {
+    if ($payload->{$target}->{is_private} && !$owner->is_insider) {
+      return 0;
+    }
+  }
 
   if (($product eq $bug->product || $product eq 'Any')
     && ($component eq $bug->component || $component eq 'Any'))
