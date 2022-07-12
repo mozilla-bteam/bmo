@@ -29,7 +29,6 @@ sub evaluate_change {
     # classified as invalid.
     # This carve-out also allows bugs to be created in the 'Invalid Bugs'
     # product by anyone.
-    my $field = $args->{'field'};
     if (
       $bug->reporter->id == Bugzilla->user->id
       && $bug->product_obj->name eq 'Invalid Bugs'
