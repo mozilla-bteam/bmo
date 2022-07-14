@@ -347,7 +347,7 @@
 [% END %]
 
 [% BLOCK bug_url_link %]
-  [% IF bug_url.isa('Bugzilla::BugUrl::Bugzilla::Local') %]
+  [% IF bug_url.isa('Bugzilla::BugUrl::Local') %]
     [% bug_url.target_bug_id FILTER bug_link(bug_url.target_bug_id, use_alias => 1) FILTER none %]
   [% ELSE %]
     <a href="[% bug_url.name FILTER html %]">
