@@ -164,7 +164,8 @@ sub push {
         $result = PUSH_RESULT_TRANSIENT;
         $data   = $@;
       }
-      $message->inc_attempts($result == PUSH_RESULT_OK ? '' : $data);
+      $message->inc_attempts(
+        ($result == PUSH_RESULT_OK || $result == PUSH_RESULT_BLOCKED) ? '' : $data);
       if (!$result) {
         $logger->error($connector->name . " failed to return a result code");
         $result = PUSH_RESULT_UNKNOWN;
