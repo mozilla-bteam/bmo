@@ -249,13 +249,24 @@ foreach my $field (@enter_bug_fields) {
 $default{'classification'} = $product->classification->name;
 $default{'product'}        = $product->name;
 
+# Bug priority and severity may require special permissions
+# to set from the new bug form. Also we do not allow cloning of
+# the values from another bug so the new bug can be triaged properly.
+my $fake_bug = Bugzilla::Extension::BMO::FakeBug->new;
+$default{'priority'}
+  = $fake_bug->check_can_change_field('priority', 0, 1)->{allowed}
+  ? formvalue('priority', Bugzilla->params->{'defaultpriority'})
+  : Bugzilla->params->{'defaultpriority'};
+$default{'bug_severity'}
+  = $fake_bug->check_can_change_field('bug_severity', 0, 1)->{allowed}
+  ? formvalue('bug_severity', Bugzilla->params->{'defaultseverity'})
+  : Bugzilla->params->{'defaultseverity'};
+
 if ($cloned_bug_id) {
 
   # BMO: allow form value component to override the cloned bug component
   $default{'component_'}   = formvalue('component') || $cloned_bug->component;
   $default{'bug_type'}     = $cloned_bug->bug_type;
-  $default{'priority'}     = $cloned_bug->priority;
-  $default{'bug_severity'} = $cloned_bug->bug_severity;
   $default{'rep_platform'} = $cloned_bug->rep_platform;
   $default{'op_sys'}       = $cloned_bug->op_sys;
 
@@ -315,11 +326,8 @@ else {
   $default{'bug_type'}
     = defined $cgi->param('regressed_by')
     ? 'defect'
-    : formvalue('bug_type', Bugzilla->params->{'default_bug_type'});
-  $default{'priority'}
-    = formvalue('priority', Bugzilla->params->{'defaultpriority'});
-  $default{'bug_severity'}
-    = formvalue('bug_severity', Bugzilla->params->{'defaultseverity'});
+    : formvalue('bug_type',
+    ($product->default_bug_type || Bugzilla->params->{'default_bug_type'}));
 
   # BMO - use per-product default hw/os
   $default{'rep_platform'}
