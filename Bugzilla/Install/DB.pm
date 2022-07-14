@@ -829,6 +829,9 @@ sub update_table_definitions {
   $dbh->bz_add_column('oauth2_client', 'hostname',
     {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "''"});
 
+  # Bug 577847 - dkl@mozilla.com
+  _update_see_also_any_url();
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
@@ -4387,6 +4390,22 @@ sub _populate_attachment_storage_class {
   if (!$count) {
     $dbh->do(
       "INSERT INTO attachment_storage_class (id, storage_class) SELECT attachments.attach_id, 'database' FROM attachments ORDER BY attachments.attach_id"
+    );
+  }
+}
+
+sub _update_see_also_any_url {
+  my $dbh = Bugzilla->dbh;
+  my $count
+    = $dbh->selectrow_array(
+    "SELECT COUNT(id) FROM bug_see_also WHERE class NOT IN ('Bugzilla::BugUrl::Local', 'Bugzilla::BugUrl::External')"
+    );
+  if ($count) {
+    $dbh->do(
+      "UPDATE bug_see_also SET class = 'Bugzilla::BugUrl::External' WHERE class != 'Bugzilla::BugUrl::Bugzilla::Local'"
+    );
+    $dbh->do(
+      "UPDATE bug_see_also SET class = 'Bugzilla::BugUrl::Local' WHERE class = 'Bugzilla::BugUrl::Bugzilla::Local'"
     );
   }
 }
