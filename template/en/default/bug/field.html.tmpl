@@ -161,7 +161,9 @@
             [% IF field.name.match("^cf_blocking_") OR
                   field.name.match("^cf_status_") OR
                   field.name.match("^cf_tracking_") OR
-                  field.name == "resolution" %]
+                  field.name == "resolution" OR
+                  field.name == "bug_severity" OR
+                  field.name == "priority" %]
               [% NEXT UNLESS bug.check_can_change_field(field.name, '---', legal_value.name).allowed OR
                              selected %]
             [% END %]
