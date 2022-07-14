@@ -320,32 +320,7 @@
     [% ELSIF reason == 'path_only' %]
       You must specify a full URL.
     [% ELSIF reason == 'show_bug' %]
-      [%+ field_descs.see_also FILTER html %] URLs should point to one of:
-      <ul>
-        <li><code>show_bug.cgi</code> in a [% terms.Bugzilla %]
-          installation.</li>
-        <li>A b[% %]ug on launchpad.net.</li>
-        <li>An issue on code.google.com.</li>
-        <li>An issue on b[% %]ugs.chromium.org.</li>
-        <li>An issue on developer.microsoft.com.</li>
-        <li>An issue on wpdev.uservoice.com/forums</li>
-        <li>A b[% %]ug on b[% %]ugs.debian.org.</li>
-        <li>An issue in a JIRA installation.</li>
-        <li>A ticket in a Trac installation.</li>
-        <li>A b[% %]ug in a MantisBT installation.</li>
-        <li>A b[% %]ug on sourceforge.net.</li>
-        <li>An issue, pull request, or security advisory on github.com.</li>
-        <li>An issue/merge request on a GitLab system.</li>
-        <li>A question on support.mozilla.org.</li>
-        <li>An Aha feature on aha.io.</li>
-        <li>An issue on webcompat.com.</li>
-        <li>A request on ServiceNow.</li>
-        <li>A ticket on hellosplat.com.</li>
-        <li>A revision, support ticket, or task in Phabricator.</li>
-        <li>A Mozilla Sentry issue.</li>
-        <li>An idea or discussion topic on connect.mozilla.org</li>
-        <li>A discussion topic on www.reddit.com</li>
-      </ul>
+      Improper external URL.
     [% ELSIF reason == 'id' %]
       There is no valid [% terms.bug %] id in that URL.
     [% END %]
