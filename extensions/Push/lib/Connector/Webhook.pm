@@ -199,10 +199,11 @@ sub _owner_can_see {
 
   # If target is a comment or attachment, do not send if the webhook owner is
   # not in the insiders group used for private comments/attachments.
-  if ($target eq 'comment' || $target eq 'attachment') {
-    if ($payload->{$target}->{is_private} && !$owner->is_insider) {
-      return 0;
-    }
+  if ( ($target eq 'comment' || $target eq 'attachment')
+    && $payload->{$target}->{is_private}
+    && !$owner->is_insider)
+  {
+    return 0;
   }
 
   return 1;
