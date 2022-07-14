@@ -30,7 +30,7 @@ BEGIN {
       # This is the XML-RPC implementation,  see the README in Bugzilla/WebService/.
       # Our "base" implementation is in Bugzilla::WebService::Server.
       $value = Bugzilla::WebService::Server->datetime_format_outbound($value);
-      $value =~ s/-//g;
+      $value =~ s/-//g if $value;
     }
     elsif ($type eq 'email') {
       $type = 'string';
