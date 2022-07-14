@@ -22,7 +22,16 @@ use Bugzilla::Error;
 
 sub should_handle {
   my ($class, $uri) = @_;
-  return ($uri->scheme eq 'http' || $uri->scheme eq 'https') ? 1 : 0;
+
+  # We will handle this if it is an external URI and not the
+  # same hostname as this Bugzilla instance
+  my $canonical_local = URI->new($class->local_uri)->canonical;
+  if (($uri->scheme eq 'http' || $uri->scheme eq 'https')
+    && $uri->canonical->authority ne $canonical_local->authority)
+  {
+    return 1;
+  }
+  return 0;
 }
 
 sub _check_value {
