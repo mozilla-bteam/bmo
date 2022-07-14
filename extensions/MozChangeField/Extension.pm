@@ -33,6 +33,7 @@ use Bugzilla::Extension::MozChangeField::Post::SeverityS1PriorityP1;
 use Bugzilla::Extension::MozChangeField::Post::ClearTrackingPriorityS1;
 #use Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity;
 use Bugzilla::Extension::MozChangeField::Post::SetTrackingSeverityS1;
+use Bugzilla::Extension::MozChangeField::Post::TypePriSevEditbugs;
 
 my @post_instances = (
   Bugzilla::Extension::MozChangeField::Post::CrashKeywordSetSeverity->new,
@@ -40,6 +41,7 @@ my @post_instances = (
   Bugzilla::Extension::MozChangeField::Post::ClearTrackingPriorityS1->new,
   #Bugzilla::Extension::MozChangeField::Post::CommentOnSeverity->new,
   Bugzilla::Extension::MozChangeField::Post::SetTrackingSeverityS1->new,
+  Bugzilla::Extension::MozChangeField::Post::TypePriSevEditbugs->new,
 );
 
 our $VERSION = '0.1';

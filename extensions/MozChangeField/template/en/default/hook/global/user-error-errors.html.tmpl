@@ -9,4 +9,9 @@
 [% IF error == "mozchangefield_severity_comment_required" %]
   [% title = "Comment Required" %]
   A <b>comment</b> is required when changing the severity field.
+
+[% ELSIF error == "mozchangefield_field_needs_editbugs" %]
+  [% title = "Invalid Change" %]
+  You need "editbugs" permissions to alter the '[% field FILTER html %]' field.
+
 [% END %]
