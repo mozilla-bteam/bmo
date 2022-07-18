@@ -26,10 +26,13 @@ use List::MoreUtils qw(any);
 use constant MAX_NUMBER_BUGS => 4000;
 
 use constant DEFAULT_OWNER_PRODUCTS => (
-  'Core', 'DevTools', 'External Software Affecting Firefox',
-  'Firefox', 'Firefox for Android', 'Firefox Build System',
-  'GeckoView', 'NSPR', 'NSS', 'Remote Protocol', 'Testing',
-  'Toolkit', 'WebExtensions',
+  'Core',                 'Developer Infrastructure',
+  'DevTools',             'External Software Affecting Firefox',
+  'Firefox Build System', 'Firefox for Android',
+  'Firefox',              'GeckoView',
+  'NSPR',                 'NSS',
+  'Remote Protocol',      'Testing',
+  'Toolkit',              'WebExtensions',
 );
 
 sub unconfirmed {
