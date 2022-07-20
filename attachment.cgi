@@ -864,9 +864,9 @@ sub delete_attachment {
   my $dbh  = Bugzilla->dbh;
   my $C    = Bugzilla->request_cache->{mojo_controller};
 
-  $user->in_group('admin')
+  $user->in_group('can_delete_attachments')
     || ThrowUserError('auth_failure',
-    {group => 'admin', action => 'delete', object => 'attachment'});
+    {group => 'can_delete_attachments', action => 'delete', object => 'attachment'});
 
   Bugzilla->params->{'allow_attachment_deletion'}
     || ThrowUserError('attachment_deletion_disabled');
