@@ -54,9 +54,9 @@ sub new_release {
 
     my $selectable_products = $user->get_selectable_products || [];
     my $default_milestone_products
-      = Bugzilla->params->{default_milestone_products} || [];
+      = [ split /\n/, Bugzilla->params->{default_milestone_products} ];
     my $default_version_products
-      = Bugzilla->params->{default_version_products} || [];
+      = [ split /\n/, Bugzilla->params->{default_version_products} ];
     my $token = issue_session_token('new_release');
 
     my $vars = {
