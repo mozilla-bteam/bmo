@@ -169,6 +169,7 @@ sub import {
           . '(<a href="https://wiki.mozilla.org/Modules/All#Firefox">more info</a>)',
         versions =>
           ['34 Branch', '35 Branch', '36 Branch', '37 Branch', 'Trunk', 'unspecified'],
+        default_version  => 'unspecified',
         milestones =>
           ['Firefox 36', '---', 'Firefox 37', 'Firefox 38', 'Firefox 39', 'Future'],
         defaultmilestone => '---',
@@ -188,6 +189,7 @@ sub import {
         description    => 'For issues relating to the bugzilla.mozilla.org website, '
           . 'also known as <a href="https://wiki.mozilla.org/BMO">BMO</a>.',
         versions         => ['Development/Staging', 'Production'],
+        default_version  => 'Production',
         milestones       => ['---'],
         defaultmilestone => '---',
         components       => [{
@@ -231,6 +233,9 @@ sub import {
 
         $dbh->do('INSERT INTO milestones (product_id, value) VALUES (?, ?)',
           undef, ($new_product->id, $product->{defaultmilestone}));
+
+        $dbh->do('INSERT INTO versions (product_id, value) VALUES (?, ?)',
+          undef, ($new_product->id, $product->{default_version}));
 
         # Now clear the internal list of accessible products.
         delete Bugzilla->user->{selectable_products};

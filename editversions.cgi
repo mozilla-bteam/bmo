@@ -131,6 +131,12 @@ if ($action eq 'del') {
     = Bugzilla::Version->check({product => $product, name => $version_name});
   $vars->{'version'} = $version;
   $vars->{'product'} = $product;
+
+  # The default version cannot be deleted.
+  if ($product->default_version eq $version->name) {
+    ThrowUserError("version_is_default", {version => $version});
+  }
+
   $vars->{'token'}   = issue_session_token('delete_version');
   $template->process("admin/versions/confirm-delete.html.tmpl", $vars)
     || ThrowTemplateError($template->error());
