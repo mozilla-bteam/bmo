@@ -231,6 +231,7 @@
 
     /** Grid */
     --grid-background-color: var(--primary-region-background-color);
+    --grid-background-hover-color: var(--selected-control-background-color);
     --grid-border-color: var(--control-border-color);
     --grid-header-background-color: rgb(230, 231, 232);
     --grid-subheader-background-color: rgb(210, 211, 212);

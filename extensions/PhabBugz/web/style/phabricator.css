@@ -41,6 +41,10 @@
   border-collapse: collapse;
 }
 
+.phabricator-revisions tr:hover {
+  background-color: var(--grid-background-hover-color);
+}
+
 .phabricator-revisions th {
   padding: 2px;
 }
