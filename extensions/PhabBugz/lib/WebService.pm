@@ -146,6 +146,8 @@ sub bug_revisions {
   my $error = $SearchResult->validate($response);
   ThrowCodeError('phabricator_api_error', {reason => $error}) if defined $error;
 
+  my $children_map = $self->_get_children_map($response);
+
   my $revision_status_map = {
     'abandoned'       => 'Abandoned',
     'accepted'        => 'Accepted',
@@ -170,9 +172,10 @@ sub bug_revisions {
     next if $revision->{fields}->{'bugzilla.bug-id'} ne $bug->id;
 
     my $revision_obj  = Bugzilla::Extension::PhabBugz::Revision->new($revision);
+    my $id = $revision_obj->id;
     my $revision_data = {
-      id          => 'D' . $revision_obj->id,
-      sortkey     => $revision_obj->id,
+      id          => 'D' . $id,
+      sortkey     => $id,
       status      => $revision_obj->status,
       long_status => $revision_status_map->{$revision_obj->status}
         || $revision_obj->status
@@ -196,6 +199,8 @@ sub bug_revisions {
       $revision_data->{title} = $revision_obj->title;
     }
 
+    $revision_data->{children} = [map { "D$_" } @{$children_map->{$id}}];
+
     push @revisions, $revision_data;
   }
 
@@ -203,6 +208,52 @@ sub bug_revisions {
   @revisions = sort { $a->{sortkey} <=> $b->{sortkey} } @revisions;
 
   return {revisions => \@revisions};
+}
+
+sub _get_children_map {
+  my ($self, $revisions_response) = @_;
+
+  my @revision_phids;
+  foreach my $revision (@{$revisions_response->{result}{data}}) {
+    push @revision_phids, $revision->{phid};
+  }
+
+  my $edge_response = request(
+    'edge.search',
+    {
+      sourcePHIDs => \@revision_phids,
+      types       => ["revision.child"],
+    }
+  );
+
+  my $rev_phid_to_id = {};
+  my $children_map = {};
+  foreach my $revision (@{$revisions_response->{result}{data}}) {
+    my $id = $revision->{id};
+    my $phid = $revision->{phid};
+    $rev_phid_to_id->{$phid} = $id;
+    $children_map->{$id} = [];
+  }
+
+  foreach my $edge (@{$edge_response->{result}{data}}) {
+    if (!exists($rev_phid_to_id->{$edge->{sourcePHID}})) {
+      next;
+    }
+    if (!exists($rev_phid_to_id->{$edge->{destinationPHID}})) {
+      next;
+    }
+
+    my $from = $rev_phid_to_id->{$edge->{sourcePHID}};
+    my $to = $rev_phid_to_id->{$edge->{destinationPHID}};
+
+    if (!exists($children_map->{$from})) {
+      next;
+    }
+
+    push @{$children_map->{$from}}, $to;
+  }
+
+  return $children_map;
 }
 
 sub user {
