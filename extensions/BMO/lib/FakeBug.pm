@@ -13,7 +13,7 @@ our $AUTOLOAD;
 
 sub new {
   my $class = shift;
-  my $self  = shift;
+  my $self  = shift || {};
   bless $self, $class;
   return $self;
 }

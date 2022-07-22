@@ -43,16 +43,20 @@ Phabricator.getBugRevisions = async () => {
         spanRevisionStatus.addClass('revision-status-box-' + revision.status);
         tdRevisionStatus.append(spanRevisionStatus);
 
-        var i = 0, l = revision.reviews.length;
+        var reviews = revision.reviews.slice().sort((a, b) => {
+          return a.user < b.user ? -1 : 1;
+        });
+
+        var i = 0, l = reviews.length;
         for (; i < l; i++) {
             var trReview             = tr.clone();
             var tdReviewStatus       = td.clone();
             var tdReviewer           = td.clone();
             var spanReviewStatusIcon = span.clone();
-            trReview.prop('title', revision.reviews[i].long_status);
-            spanReviewStatusIcon.addClass('review-status-icon-' + revision.reviews[i].status);
+            trReview.prop('title', reviews[i].long_status);
+            spanReviewStatusIcon.addClass('review-status-icon-' + reviews[i].status);
             tdReviewStatus.append(spanReviewStatusIcon);
-            tdReviewer.text(revision.reviews[i].user);
+            tdReviewer.text(reviews[i].user);
             tdReviewer.addClass('review-reviewer');
             trReview.append(tdReviewStatus, tdReviewer);
             tableReviews.append(trReview);

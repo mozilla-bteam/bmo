@@ -53,7 +53,6 @@ logout($sel);
 
 log_in($sel, $config, 'QA_Selenium_TEST');
 file_bug_in_product($sel, 'TestProduct');
-$sel->select_ok("bug_severity", "label=critical");
 $sel->type_ok("short_desc", "Test bug editing");
 $sel->type_ok("comment",    "ploc");
 $sel->click_ok("commit");
@@ -343,7 +342,6 @@ logout($sel);
 
 log_in($sel, $config, 'QA_Selenium_TEST');
 file_bug_in_product($sel, 'TestProduct');
-$sel->select_ok("bug_severity", "label=blocker");
 $sel->type_ok("short_desc", "New bug from me");
 
 # We turned on the CANEDIT bit for TestProduct.
@@ -429,9 +427,8 @@ $sel->click_ok('action-history',  'Show bug history');
 my $windows = $sel->driver->get_window_handles;
 $sel->driver->switch_to_window($windows->[1]);
 check_page_load($sel, qq{http://HOSTNAME/show_activity.cgi?id=$bug1_id});
-$sel->title_is("Changes made to bug $bug1_id");
 $sel->is_text_present_ok("URL foo.cgi?action=bar");
-$sel->is_text_present_ok("Severity critical blocker");
+$sel->is_text_present_ok("Severity -- blocker");
 $sel->is_text_present_ok(
   "Whiteboard [Selenium was here] [Selenium was here][admin too]");
 $sel->is_text_present_ok("Product QA-Selenium-TEST TestProduct");

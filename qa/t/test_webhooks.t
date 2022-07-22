@@ -97,6 +97,7 @@ $sel->check_ok('attachment_event');
 $sel->select_ok('product', 'value=Any');
 $sel->select_ok('component', 'value=Any');
 $sel->click_ok('add_webhook');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('Webhook Any Product');
 $sel->is_text_present_ok('create,attachment');
 logout($sel);
@@ -108,10 +109,10 @@ my $bug_summary = 'Test bug for webhooks';
 $sel->select_ok('component', 'value=General');
 $sel->type_ok('short_desc', $bug_summary);
 $sel->type_ok('comment',    $bug_summary);
-my $bug_id = create_bug($sel, $bug_summary);
+my $public_bug_id = create_bug($sel, $bug_summary);
 
 # Add a new comment so the second webhook should execute
-go_to_bug($sel, $bug_id);
+go_to_bug($sel, $public_bug_id);
 $sel->type_ok('comment', 'This is a new comment');
 $sel->click_ok('bottom-save-btn');
 logout($sel);
@@ -123,12 +124,42 @@ Bugzilla->push_ext->push();
 log_in($sel, $config, 'admin');
 go_to_admin($sel);
 $sel->click_ok('link=Log');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is('Push Administration: Logs', 'Push logs');
 $sel->is_text_present_ok('Webhook_1', 'First webhook executed');
 $sel->is_text_present_ok('Webhook_2', 'Second webhook executed');
 $sel->is_text_present_ok('Webhook_3', 'Third webhook executed');
 ok(!$sel->is_text_present('ERROR'), 'ERROR message not present');
 
+# Remove the admin webhook for any product
+$sel->click_ok('header-account-menu-button');
+$sel->click_ok('link=Preferences');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is('User Preferences', 'User preferences');
+$sel->click_ok('link=Webhooks');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->check_ok('//input[@value="3"]');
+$sel->click_ok('save_changes');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+ok(!$sel->is_text_present('Webhook Any Product'), 'Webhook any product is not present');
+
+# File a private bug as admin making sure that the editbugs user
+# does not get a webhook notification
+file_bug_in_product($sel, 'Firefox');
+$bug_summary = 'Private test bug for webhooks';
+$sel->select_ok('component', 'value=General');
+$sel->type_ok('short_desc', $bug_summary);
+$sel->type_ok('comment',    $bug_summary);
+$sel->check_ok('//input[@name="groups" and @value="Master"]');
+my $private_bug_id = create_bug($sel, $bug_summary);
+
+go_to_admin($sel);
+$sel->click_ok('link=Queues');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+ok(!$sel->is_text_present('bug.create'), 'bug.create webhook not queued');
+ok(!$sel->is_text_present('bug.comment'), 'bug.comment webhook not queued');
+
+# Turn off webhooks
 set_parameters($sel, {'Webhooks' => {'webhooks_enabled-off' => undef,}});
 logout($sel);
 
