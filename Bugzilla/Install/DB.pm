@@ -4369,7 +4369,6 @@ sub _add_oauth2_jwt_support {
     {TYPE => 'INT4', NOTNULL => 1});
 }
 
-<<<<<<< HEAD
 sub _populate_api_keys_creation_ts {
   my $dbh = Bugzilla->dbh;
 
@@ -4384,7 +4383,8 @@ sub _populate_api_keys_creation_ts {
 
   $dbh->bz_alter_column('user_api_keys', 'creation_ts',
     {TYPE => 'DATETIME', NOTNULL => 1});
-=======
+}
+
 sub _add_products_default_version {
   my $dbh = Bugzilla->dbh;
 
@@ -4404,7 +4404,6 @@ sub _add_products_default_version {
     $dbh->do('UPDATE products SET default_version = ? WHERE id = ?', undef,
       ($version, $product_id));
   }
->>>>>>> Bug 1512484 - Allow to specify default version per product
 }
 
 sub _populate_attachment_storage_class {
@@ -4418,7 +4417,6 @@ sub _populate_attachment_storage_class {
     );
   }
 }
-
 
 sub _update_see_also_any_url {
   my $dbh = Bugzilla->dbh;
