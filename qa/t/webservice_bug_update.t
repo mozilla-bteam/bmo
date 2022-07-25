@@ -12,7 +12,7 @@ use Data::Dumper;
 use QA::Util;
 use QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
 use Storable qw(dclone);
-use Test::More tests => 921;
+use Test::More tests => 923;
 
 use constant NONEXISTANT_BUG => 12_000_000;
 
@@ -254,6 +254,12 @@ sub valid_values {
     ],
 
     see_also => [
+      {
+        value   => {add => ['https://bugzilla-dev.allizom.org']},
+        added   => 'https://bugzilla-dev.allizom.org',
+        removed => '',
+        test    => 'Adding an external URI works'
+      },
       {
         value   => {add => [$bug_uri . $second_id]},
         added   => $bug_uri . $second_id,
@@ -675,11 +681,6 @@ sub invalid_values {
         value => {add => [random_string(20)]},
         error => 'It does not seem like bug number nor an alias to a bug.',
         test  => 'random string fails in see_also'
-      },
-      {
-        value => {add => ['https://bugzilla-dev.allizom.org/']},
-        error => 'See Also URLs should point to one of',
-        test  => 'no show_bug.cgi in see_also URI'
       },
     ],
 
