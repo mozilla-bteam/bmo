@@ -68,8 +68,11 @@ $t->post_ok($url
 
 ### Section 2: Make updates to the component
 
-my $update = {triage_owner => 'admin@mozilla.test',
-  description => 'Updated description'};
+my $update = {
+  triage_owner     => 'admin@mozilla.test',
+  description      => 'Updated description',
+  default_assignee => 'permanent_user@mozilla.test'
+};
 
 # Unauthenticated update should fail
 $t->put_ok($url . 'rest/component/Firefox/TestComponent' => json => $update)
@@ -81,7 +84,9 @@ $t->put_ok($url . 'rest/component/Firefox/TestComponent' => json => $update)
 $t->put_ok($url
     . 'rest/component/Firefox/TestComponent' =>
     {'X-Bugzilla-API-Key' => $api_key}       => json => $update)->status_is(200)
-  ->json_is('/triage_owner' => 'admin@mozilla.test');
+  ->json_is('/triage_owner'     => 'admin@mozilla.test')
+  ->json_is('/description'      => 'Updated description')
+  ->json_is('/default_assignee' => 'permanent_user@mozilla.test');
 
 # Retrieve the new component and verify
 $t->get_ok($url
