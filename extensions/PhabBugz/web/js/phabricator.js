@@ -220,9 +220,9 @@ Phabricator.getBugRevisions = async () => {
 
         trRevision.append(
             tdId,
-            tdTitle,
             tdRevisionStatus,
-            tdReviewers
+            tdReviewers,
+            tdTitle
         );
 
         return trRevision;
