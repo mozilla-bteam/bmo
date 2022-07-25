@@ -829,6 +829,9 @@ sub update_table_definitions {
   $dbh->bz_add_column('oauth2_client', 'hostname',
     {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "''"});
 
+  # Bug 1512484 - kohei.yoshino@gmail.com
+  _add_products_default_version();
+  
   # Bug 577847 - dkl@mozilla.com
   _update_see_also_any_url();
 
@@ -4380,6 +4383,27 @@ sub _populate_api_keys_creation_ts {
 
   $dbh->bz_alter_column('user_api_keys', 'creation_ts',
     {TYPE => 'DATETIME', NOTNULL => 1});
+}
+
+sub _add_products_default_version {
+  my $dbh = Bugzilla->dbh;
+
+  return if $dbh->bz_column_info('products', 'default_version');
+
+  $dbh->bz_add_column('products', 'default_version',
+    {TYPE => 'varchar(20)', NOTNULL => 1, DEFAULT => "'unspecified'"});
+
+  # Import the alphabetically last version for each product as the product's
+  # default version, just like the Enter Bug page selecting the last one by
+  # default before this migration.
+  my $sth = $dbh->prepare('SELECT product_id, MAX(value) AS version
+    FROM versions GROUP BY product_id HAVING version != "unspecified"');
+  $sth->execute();
+
+  while (my ($product_id, $version) = $sth->fetchrow_array()) {
+    $dbh->do('UPDATE products SET default_version = ? WHERE id = ?', undef,
+      ($version, $product_id));
+  }
 }
 
 sub _populate_attachment_storage_class {
