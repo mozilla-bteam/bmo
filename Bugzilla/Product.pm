@@ -452,10 +452,10 @@ sub _check_default_version {
   if (ref $invocant) {
 
     # The default version must be one of the existing versions.
-    my $mil_obj
-      = new Bugzilla::Version({name => $version, product => $invocant});
+    my $ver_obj
+      = Bugzilla::Version->new({name => $version, product => $invocant});
 
-    $mil_obj || ThrowUserError('product_must_define_default_version',
+    $ver_obj || ThrowUserError('product_must_define_default_version',
       {product => $invocant->name, version => $version});
   }
   else {

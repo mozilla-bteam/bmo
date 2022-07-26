@@ -113,13 +113,12 @@ sub bug_count {
   return $self->{'bug_count'};
 }
 
-# Copied from Milestone::update()
 sub update {
   my $self = shift;
   my $dbh  = Bugzilla->dbh;
 
   $dbh->bz_start_transaction();
-  my $changes = $self->SUPER::update(@_);
+  my ($changes, $old_self) = $self->SUPER::update(@_);
 
   if (exists $changes->{value}) {
 
@@ -127,14 +126,14 @@ sub update {
     $dbh->do(
       'UPDATE bugs SET version = ?
                   WHERE version = ? AND product_id = ?', undef,
-      ($self->name, $changes->{value}->[0], $self->product_id)
+      ($self->name, $old_self->name, $self->product_id)
     );
 
     # The default value also stores the value instead of the ID.
     $dbh->do(
       'UPDATE products SET default_version = ?
                   WHERE id = ? AND default_version = ?', undef,
-      ($self->name, $self->product_id, $changes->{value}->[0])
+      ($self->name, $old_self->product_id, $old_self->name)
     );
     Bugzilla->memcached->clear({table => 'products', id => $self->product_id});
   }
@@ -144,7 +143,6 @@ sub update {
   return $changes;
 }
 
-# Copied from Milestone::remove_from_db()
 sub remove_from_db {
   my $self = shift;
   my $dbh  = Bugzilla->dbh;
