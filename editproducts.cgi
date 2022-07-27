@@ -160,8 +160,8 @@ if ($action eq 'new') {
     classification     => $classification_name,
     name               => $product_name,
     description        => scalar $cgi->param('description'),
-    version            => scalar $cgi->param('version'),
     defaultmilestone   => scalar $cgi->param('defaultmilestone'),
+    default_version    => scalar $cgi->param('default_version'),
     isactive           => scalar $cgi->param('is_active'),
     create_series      => scalar $cgi->param('createseries'),
     allows_unconfirmed => scalar $cgi->param('allows_unconfirmed'),
@@ -285,6 +285,7 @@ if ($action eq 'update') {
     is_active          => scalar $cgi->param('is_active'),
     allows_unconfirmed => scalar $cgi->param('allows_unconfirmed'),
     default_milestone  => scalar $cgi->param('defaultmilestone'),
+    default_version    => scalar $cgi->param('default_version'),
     bug_description_template => scalar $cgi->param('bug_description_template'),
     default_bug_type   => scalar $cgi->param('default_bug_type'),
   });

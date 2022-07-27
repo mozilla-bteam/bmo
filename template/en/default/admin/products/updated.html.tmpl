@@ -83,6 +83,13 @@
   </p>
 [% END %]
 
+[% IF changes.default_version.defined %]
+  <p>
+  Updated default version from '[% changes.default_version.0 FILTER html %]' to
+  '[% product.default_version FILTER html %]'.
+  </p>
+[% END %]
+
 [% IF changes.allows_unconfirmed.defined %]
   <p>
   [% IF product.allows_unconfirmed %]

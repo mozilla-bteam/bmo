@@ -415,7 +415,7 @@ sub _create_field_values {
     description        => 'Created by t/search.t',
     defaultmilestone   => $milestone,
     classification     => $classification,
-    version            => $version,
+    default_version    => $version,
     allows_unconfirmed => 1,
   });
   foreach my $item ($group, $self->nobody) {
