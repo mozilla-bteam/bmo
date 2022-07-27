@@ -700,7 +700,7 @@ sub _create_one_bug {
       $resolution, $bug->id
     );
     $dbh->do('INSERT INTO bug_see_also (bug_id, value, class) VALUES (?,?,?)',
-      undef, $bug->id, $see_also, 'Bugzilla::BugUrl::Bugzilla');
+      undef, $bug->id, $see_also, 'Bugzilla::BugUrl::Local');
     $extra_values->{see_also} = $bug->see_also;
 
     # All the tags must be created as the admin user, so that the

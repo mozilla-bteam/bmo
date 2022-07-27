@@ -363,7 +363,7 @@ END;
     internal_links = [];
     external_links = [];
     FOREACH value IN values;
-      IF value.isa('Bugzilla::BugUrl::Bugzilla::Local');
+      IF value.isa('Bugzilla::BugUrl::Local');
         internal_links.push(value);
       ELSE;
         external_links.push(value);

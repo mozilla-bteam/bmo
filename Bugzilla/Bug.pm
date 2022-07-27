@@ -3421,7 +3421,7 @@ sub add_see_also {
     # ref bug id for sending changes email.
     if (my $ref_bug = delete $field_values->{ref_bug}) {
       my $ref_can_change = $ref_bug->check_can_change_field('see_also', '', $self->id);
-      if (  $class->isa('Bugzilla::BugUrl::Bugzilla::Local')
+      if (  $class->isa('Bugzilla::BugUrl::Local')
         and !$skip_recursion
         and Bugzilla->user->can_see_bug($ref_bug->id)
         and $ref_can_change->{allowed})
@@ -3464,7 +3464,7 @@ sub remove_see_also {
   $removed_bug_url = $removed_bug_url->[0];
   if ( !$skip_recursion
     and $removed_bug_url
-    and $removed_bug_url->isa('Bugzilla::BugUrl::Bugzilla::Local')
+    and $removed_bug_url->isa('Bugzilla::BugUrl::Local')
     and Bugzilla->user->can_see_bug($removed_bug_url->ref_bug_url->bug_id)
     and $removed_bug_url->ref_bug_url)
   {
@@ -4109,7 +4109,7 @@ sub see_also {
     # Filter local bugs by visibility
     my @links = ();
     foreach my $link (@{$bug_urls}) {
-      if (!$link->isa('Bugzilla::BugUrl::Bugzilla::Local')
+      if (!$link->isa('Bugzilla::BugUrl::Local')
         || Bugzilla->user->can_see_bug($link->bug->id))
       {
         push @links, $link;
