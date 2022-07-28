@@ -204,8 +204,8 @@ sub bug_revisions {
     push @revisions, $revision_data;
   }
 
-  # sort by revision id
-  @revisions = sort { $a->{sortkey} <=> $b->{sortkey} } @revisions;
+  # sort by newest to oldest revision id
+  @revisions = sort { $b->{sortkey} <=> $a->{sortkey} } @revisions;
 
   return {revisions => \@revisions};
 }
