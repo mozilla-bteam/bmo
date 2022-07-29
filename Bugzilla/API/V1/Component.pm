@@ -21,9 +21,20 @@ sub setup_routes {
   my ($class, $r) = @_;
   my $comp_routes = $r->under(
     '/component' => sub { Bugzilla->usage_mode(USAGE_MODE_MOJO_REST); });
-  $comp_routes->post('/:product')->to('V1::Component#create');
-  $comp_routes->put('/:product/:component')->to('V1::Component#update');
-  $comp_routes->get('/:product/:component')->to('V1::Component#get');
+  # /*product allows product names containing a /
+  $comp_routes->post('/*product')->to('V1::Component#create');
+  $comp_routes->post('/')->to('V1::Component#create');
+
+  # /*component allows component names containing a /
+  # Unfortunately when specifying a product and component together,
+  # the product name cannot contain a / so you have to instead use
+  # named parameters as described below.
+  $comp_routes->put('/:product/*component')->to('V1::Component#update');
+  $comp_routes->get('/:product/*component')->to('V1::Component#get');
+  # Allow fallback route for use if product name contains a /
+  # Must use named parameters such as ?product=Firefox&component=General
+  $comp_routes->put('/')->to('V1::Component#update');
+  $comp_routes->get('/')->to('V1::Component#get');
 }
 
 sub create {

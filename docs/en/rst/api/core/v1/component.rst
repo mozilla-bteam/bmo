@@ -18,6 +18,12 @@ To get information about the General component under the Firefox product:
 
    GET /rest/component/Firefox/General
 
+To get information about a component where the product name contains a slash (/) character.
+
+.. code-block:: text
+
+   GET /rest/component?product=Firefox%20%2F%20Bugs&component=General
+
 **Response**
 
 .. code-block:: js
@@ -120,6 +126,14 @@ This allows you to update an existing component in Bugzilla.
 .. code-block:: text
 
    PUT /rest/component/Firefox/General
+
+To update information about a component where the product name contains a slash (/) character.
+
+.. code-block:: text
+
+   PUT /rest/component?product=Firefox%20%2F%20Bugs&component=General
+
+The body of the request should look similar to below.
 
 .. code-block:: js
 
