@@ -260,6 +260,19 @@ const Phabricator = {
     }
   },
 
+  // Show/hide abandoned revisions.
+  updateVisibility() {
+    for (const rev of this.revisions) {
+      const tr = this.trs.get(rev.id);
+
+      if (rev.status !== "abandoned") {
+        continue;
+      }
+
+      tr.classList.toggle("bz_default_hidden", !this.showAbandoned);
+    }
+  },
+
   async onLoad() {
     const showAbandonedCheckbox = document.querySelector("#phabricator-show-abandoned");
     this.showAbandoned = showAbandonedCheckbox.checked;
@@ -289,15 +302,7 @@ const Phabricator = {
 
     showAbandonedCheckbox.addEventListener("click", event => {
       this.showAbandoned = showAbandonedCheckbox.checked;
-      for (const rev of this.revisions) {
-        const tr = this.trs.get(rev.id);
-
-        if (rev.status !== "abandoned") {
-          continue;
-        }
-
-        tr.classList.toggle("bz_default_hidden", !this.showAbandoned);
-      }
+      this.updateVisibility();
     });
   },
 };
