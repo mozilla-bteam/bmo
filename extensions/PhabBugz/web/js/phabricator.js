@@ -155,7 +155,7 @@ function sortRevisions(revs) {
 }
 
 const Phabricator = {
-  async getBugRevisions() {
+  async onLoad() {
     var phabUrl = document.querySelector(".phabricator-revisions").getAttribute("data-phabricator-base-uri");
 
     function revisionRow(revision) {
@@ -243,22 +243,22 @@ const Phabricator = {
     }
 
     tbody.querySelector(".phabricator-loading-row").classList.add("bz_default_hidden");
+
+    document.querySelector("#phabricator-show-abandoned").addEventListener("click", event => {
+      for (const row of document.querySelectorAll("tbody.phabricator-revision > tr")) {
+        if (row.getAttribute("data-status") === "abandoned") {
+          if (document.querySelector("#phabricator-show-abandoned").checked) {
+            row.classList.remove("bz_default_hidden");
+          }
+          else {
+            row.classList.add("bz_default_hidden");
+          }
+        }
+      }
+    });
   },
 };
 
 window.addEventListener("DOMContentLoaded", function() {
-  Phabricator.getBugRevisions();
-
-  document.querySelector("#phabricator-show-abandoned").addEventListener("click", event => {
-    for (const row of document.querySelectorAll("tbody.phabricator-revision > tr")) {
-      if (row.getAttribute("data-status") === "abandoned") {
-        if (document.querySelector("#phabricator-show-abandoned").checked) {
-          row.classList.remove("bz_default_hidden");
-        }
-        else {
-          row.classList.add("bz_default_hidden");
-        }
-      }
-    }
-  });
+  Phabricator.onLoad();
 });
