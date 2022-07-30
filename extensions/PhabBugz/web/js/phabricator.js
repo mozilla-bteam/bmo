@@ -155,6 +155,12 @@ function sortRevisions(revs) {
 }
 
 const Phabricator = {
+  // A map from revision ID to table row.
+  trs: new Map(),
+
+  // True if abandoned revisions should be shown.
+  showAbandoned: false,
+
   createTable() {
     var phabUrl = document.querySelector(".phabricator-revisions").getAttribute("data-phabricator-base-uri");
 
@@ -162,6 +168,8 @@ const Phabricator = {
 
     for (const rev of this.revisions) {
       var trRevision = document.createElement("tr");
+      this.trs.set(rev.id, trRevision);
+
       var tdId = document.createElement("td");
       var tdTitle = document.createElement("td");
       var tdRevisionStatus = document.createElement("td");
@@ -208,9 +216,10 @@ const Phabricator = {
       tableReviews.classList.add("phabricator-reviewers");
       tdReviewers.append(tableReviews);
 
-      trRevision.setAttribute("data-status", rev.status);
       if (rev.status === "abandoned") {
-        trRevision.classList.add("bz_default_hidden");
+        if (!this.showAbandoned) {
+          trRevision.classList.add("bz_default_hidden");
+        }
         document.querySelector("tbody.phabricator-show-abandoned").classList.remove("bz_default_hidden");
       }
 
@@ -226,6 +235,9 @@ const Phabricator = {
   },
 
   async onLoad() {
+    const showAbandonedCheckbox = document.querySelector("#phabricator-show-abandoned");
+    this.showAbandoned = showAbandonedCheckbox.checked;
+
     var tbody = document.querySelector("tbody.phabricator-revision");
 
     function displayLoadError(errStr) {
@@ -249,16 +261,16 @@ const Phabricator = {
 
     tbody.querySelector(".phabricator-loading-row").classList.add("bz_default_hidden");
 
-    document.querySelector("#phabricator-show-abandoned").addEventListener("click", event => {
-      for (const row of document.querySelectorAll("tbody.phabricator-revision > tr")) {
-        if (row.getAttribute("data-status") === "abandoned") {
-          if (document.querySelector("#phabricator-show-abandoned").checked) {
-            row.classList.remove("bz_default_hidden");
-          }
-          else {
-            row.classList.add("bz_default_hidden");
-          }
+    showAbandonedCheckbox.addEventListener("click", event => {
+      this.showAbandoned = showAbandonedCheckbox.checked;
+      for (const rev of this.revisions) {
+        const tr = this.trs.get(rev.id);
+
+        if (rev.status !== "abandoned") {
+          continue;
         }
+
+        tr.classList.toggle("bz_default_hidden", !this.showAbandoned);
       }
     });
   },
