@@ -161,14 +161,14 @@ const Phabricator = {
     var tbody = document.querySelector("tbody.phabricator-revision");
 
     for (const rev of this.revisions) {
-      var trRevision     = document.createElement("tr");
-      var tdId           = document.createElement("td");
-      var tdTitle        = document.createElement("td");
-      var tdRevisionStatus       = document.createElement("td");
-      var tdReviewers    = document.createElement("td");
-      var tableReviews   = document.createElement("table");
+      var trRevision = document.createElement("tr");
+      var tdId = document.createElement("td");
+      var tdTitle = document.createElement("td");
+      var tdRevisionStatus = document.createElement("td");
+      var tdReviewers = document.createElement("td");
+      var tableReviews = document.createElement("table");
 
-      var spanRevisionStatus     = document.createElement("span");
+      var spanRevisionStatus = document.createElement("span");
       var spanRevisionStatusIcon = document.createElement("span");
       var spanRevisionStatusText = document.createElement("span");
 
@@ -193,9 +193,9 @@ const Phabricator = {
 
       var i = 0, l = reviews.length;
       for (; i < l; i++) {
-        var trReview             = document.createElement("tr");
-        var tdReviewStatus       = document.createElement("td");
-        var tdReviewer           = document.createElement("td");
+        var trReview = document.createElement("tr");
+        var tdReviewStatus = document.createElement("td");
+        var tdReviewer = document.createElement("td");
         var spanReviewStatusIcon = document.createElement("span");
         trReview.title = reviews[i].long_status;
         spanReviewStatusIcon.classList.add("review-status-icon-" + reviews[i].status);
