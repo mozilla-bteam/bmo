@@ -157,38 +157,33 @@ function sortRevisions(revs) {
 }
 
 Phabricator.getBugRevisions = async () => {
-    var phabUrl = $('.phabricator-revisions').data('phabricator-base-uri');
-    var tr      = $('<tr/>');
-    var td      = $('<td/>');
-    var link    = $('<a/>');
-    var span    = $('<span/>');
-    var table   = $('<table/>');
+    var phabUrl = document.querySelector('.phabricator-revisions').getAttribute('data-phabricator-base-uri');
 
     function revisionRow(revision) {
-        var trRevision     = tr.clone();
-        var tdId           = td.clone();
-        var tdTitle        = td.clone();
-        var tdRevisionStatus       = td.clone();
-        var tdReviewers    = td.clone();
-        var tableReviews   = table.clone();
+        var trRevision     = document.createElement('tr');
+        var tdId           = document.createElement('td');
+        var tdTitle        = document.createElement('td');
+        var tdRevisionStatus       = document.createElement('td');
+        var tdReviewers    = document.createElement('td');
+        var tableReviews   = document.createElement('table');
 
-        var spanRevisionStatus     = span.clone();
-        var spanRevisionStatusIcon = span.clone();
-        var spanRevisionStatusText = span.clone();
+        var spanRevisionStatus     = document.createElement('span');
+        var spanRevisionStatusIcon = document.createElement('span');
+        var spanRevisionStatusText = document.createElement('span');
 
-        var revLink = link.clone();
-        revLink.attr('href', phabUrl + revision.id);
-        revLink.text(revision.id);
+        var revLink = document.createElement('a');
+        revLink.setAttribute('href', phabUrl + revision.id);
+        revLink.append(revision.id);
         tdId.append(revLink);
 
-        tdTitle.text(revision.title);
-        tdTitle.addClass('phabricator-title');
+        tdTitle.append(revision.title);
+        tdTitle.classList.add('phabricator-title');
 
-        spanRevisionStatusIcon.addClass('revision-status-icon-' + revision.status);
+        spanRevisionStatusIcon.classList.add('revision-status-icon-' + revision.status);
         spanRevisionStatus.append(spanRevisionStatusIcon);
-        spanRevisionStatusText.text(revision.long_status);
+        spanRevisionStatusText.append(revision.long_status);
         spanRevisionStatus.append(spanRevisionStatusText);
-        spanRevisionStatus.addClass('revision-status-box-' + revision.status);
+        spanRevisionStatus.classList.add('revision-status-box-' + revision.status);
         tdRevisionStatus.append(spanRevisionStatus);
 
         var reviews = revision.reviews.slice().sort((a, b) => {
@@ -197,25 +192,25 @@ Phabricator.getBugRevisions = async () => {
 
         var i = 0, l = reviews.length;
         for (; i < l; i++) {
-            var trReview             = tr.clone();
-            var tdReviewStatus       = td.clone();
-            var tdReviewer           = td.clone();
-            var spanReviewStatusIcon = span.clone();
-            trReview.prop('title', reviews[i].long_status);
-            spanReviewStatusIcon.addClass('review-status-icon-' + reviews[i].status);
+            var trReview             = document.createElement('tr');
+            var tdReviewStatus       = document.createElement('td');
+            var tdReviewer           = document.createElement('td');
+            var spanReviewStatusIcon = document.createElement('span');
+            trReview.title = reviews[i].long_status;
+            spanReviewStatusIcon.classList.add('review-status-icon-' + reviews[i].status);
             tdReviewStatus.append(spanReviewStatusIcon);
-            tdReviewer.text(reviews[i].user);
-            tdReviewer.addClass('review-reviewer');
+            tdReviewer.append(reviews[i].user);
+            tdReviewer.classList.add('review-reviewer');
             trReview.append(tdReviewStatus, tdReviewer);
             tableReviews.append(trReview);
         }
-        tableReviews.addClass('phabricator-reviewers');
+        tableReviews.classList.add('phabricator-reviewers');
         tdReviewers.append(tableReviews);
 
-        trRevision.attr('data-status', revision.status);
+        trRevision.setAttribute('data-status', revision.status);
         if (revision.status === 'abandoned') {
-            trRevision.addClass('bz_default_hidden');
-            $('tbody.phabricator-show-abandoned').removeClass('bz_default_hidden');
+            trRevision.classList.add('bz_default_hidden');
+            document.querySelector('tbody.phabricator-show-abandoned').classList.remove('bz_default_hidden');
         }
 
         trRevision.append(
@@ -228,12 +223,12 @@ Phabricator.getBugRevisions = async () => {
         return trRevision;
     }
 
-    var tbody = $('tbody.phabricator-revision');
+    var tbody = document.querySelector('tbody.phabricator-revision');
 
     function displayLoadError(errStr) {
-        var errRow = tbody.find('.phabricator-loading-error-row');
-        errRow.find('.phabricator-load-error-string').text(errStr);
-        errRow.removeClass('bz_default_hidden');
+        var errRow = tbody.querySelector('.phabricator-loading-error-row');
+        errRow.querySelector('.phabricator-load-error-string').replaceChildren(errStr);
+        errRow.classList.remove('bz_default_hidden');
     }
 
     try {
@@ -248,23 +243,22 @@ Phabricator.getBugRevisions = async () => {
         displayLoadError(message);
     }
 
-    tbody.find('.phabricator-loading-row').addClass('bz_default_hidden');
+    tbody.querySelector('.phabricator-loading-row').classList.add('bz_default_hidden');
 };
 
-$().ready(function() {
+window.addEventListener("DOMContentLoaded", function() {
     Phabricator.getBugRevisions();
 
-    $('#phabricator-show-abandoned').on('click', function (event) {
-        $('tbody.phabricator-revision > tr').each(function() {
-            var row = $(this);
-            if (row.attr('data-status') === 'abandoned') {
-                if ($('#phabricator-show-abandoned').prop('checked') == true) {
-                    row.removeClass('bz_default_hidden');
+    document.querySelector('#phabricator-show-abandoned').addEventListener('click', event => {
+        for (const row of document.querySelectorAll('tbody.phabricator-revision > tr')) {
+            if (row.getAttribute('data-status') === 'abandoned') {
+                if (document.querySelector('#phabricator-show-abandoned').checked) {
+                    row.classList.remove('bz_default_hidden');
                 }
                 else {
-                    row.addClass('bz_default_hidden');
+                    row.classList.add('bz_default_hidden');
                 }
             }
-        });
+        }
     });
 });
