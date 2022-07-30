@@ -110,56 +110,61 @@ function splitBranches(revisions, revMap, branchCount) {
   }
 }
 
-// Sort revisions based on the graph.
-function sortRevisions(revs) {
-  if (!revs.length) {
-    return revs;
-  }
-
-  const revisions = revs.slice();
-
-  const revMap = {};
-  for (const rev of revisions) {
-    // If the data is old, do nothing.
-    if (!rev.children) {
-      return revs;
-    }
-
-    revMap[rev.id] = rev;
-  }
-
-  const pseudoRoot = addPseudoRoot(revisions, revMap);
-
-  // Setup extra fields.
-  let branchCount = 0;
-  for (const rev of revisions) {
-    rev.rank = 1;
-    rev.hasBranch = rev.children.length > 1;
-    rev.isBranchHandled = false;
-
-    if (rev.hasBranch) {
-      branchCount++;
-    }
-  }
-
-  // Make the revisions partially ordered.
-  fixRank(pseudoRoot, revMap);
-  sortByRank(revisions);
-
-  if (branchCount < 8) {
-    // Perform only if the stack is simple enough.
-    splitBranches(revisions, revMap, branchCount);
-  }
-
-  return revisions.filter(rev => rev != pseudoRoot).reverse();
-}
-
 const Phabricator = {
   // A map from revision ID to table row.
   trs: new Map(),
 
   // True if abandoned revisions should be shown.
   showAbandoned: false,
+
+  // A list of revisions, sorted in the stack order, root to leaf.
+  revisions: null,
+
+  // Set revisions and sort them in the stack order.
+  setRevisions(revisions) {
+    this.revisions = revisions.slice();
+
+    if (!this.revisions.length) {
+      return;
+    }
+
+    revisions = this.revisions;
+
+    const revMap = {};
+    for (const rev of revisions) {
+      // If the data is old, do nothing.
+      if (!rev.children) {
+        return;
+      }
+
+      revMap[rev.id] = rev;
+    }
+
+    const pseudoRoot = addPseudoRoot(revisions, revMap);
+
+    // Setup extra fields.
+    let branchCount = 0;
+    for (const rev of revisions) {
+      rev.rank = 1;
+      rev.hasBranch = rev.children.length > 1;
+      rev.isBranchHandled = false;
+
+      if (rev.hasBranch) {
+        branchCount++;
+      }
+    }
+
+    // Make the revisions partially ordered.
+    fixRank(pseudoRoot, revMap);
+    sortByRank(revisions);
+
+    if (branchCount < 8) {
+      // Perform only if the stack is simple enough.
+      splitBranches(revisions, revMap, branchCount);
+    }
+
+    this.revisions = revisions.filter(rev => rev != pseudoRoot);
+  },
 
   createTable() {
     const phabUrl = document.querySelector(".phabricator-revisions").getAttribute("data-phabricator-base-uri");
@@ -168,7 +173,7 @@ const Phabricator = {
 
     let hasAbandonedRevisions = false;
 
-    for (const rev of this.revisions) {
+    for (const rev of this.revisions.slice().reverse()) {
       const trRevision = document.createElement("tr");
       this.trs.set(rev.id, trRevision);
 
@@ -271,7 +276,7 @@ const Phabricator = {
       const { revisions } = await Bugzilla.API.get(`phabbugz/bug_revisions/${BUGZILLA.bug_id}`);
 
       if (revisions.length) {
-        this.revisions = sortRevisions(revisions);
+        this.setRevisions(revisions);
         this.createTable();
       } else {
         displayLoadError("none returned from server");
