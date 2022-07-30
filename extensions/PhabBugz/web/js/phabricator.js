@@ -581,8 +581,9 @@ const Phabricator = {
       } else {
         displayLoadError("none returned from server");
       }
-    } catch ({ message }) {
-      displayLoadError(message);
+    } catch (e) {
+      console.error(e);
+      displayLoadError(e.message);
     }
 
     tbody.querySelector(".phabricator-loading-row").classList.add("bz_default_hidden");
