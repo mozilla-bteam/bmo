@@ -155,10 +155,12 @@ function sortRevisions(revs) {
 }
 
 const Phabricator = {
-  async onLoad() {
+  createTable() {
     var phabUrl = document.querySelector(".phabricator-revisions").getAttribute("data-phabricator-base-uri");
 
-    function revisionRow(revision) {
+    var tbody = document.querySelector("tbody.phabricator-revision");
+
+    for (const rev of this.revisions) {
       var trRevision     = document.createElement("tr");
       var tdId           = document.createElement("td");
       var tdTitle        = document.createElement("td");
@@ -171,21 +173,21 @@ const Phabricator = {
       var spanRevisionStatusText = document.createElement("span");
 
       var revLink = document.createElement("a");
-      revLink.setAttribute("href", phabUrl + revision.id);
-      revLink.append(revision.id);
+      revLink.setAttribute("href", phabUrl + rev.id);
+      revLink.append(rev.id);
       tdId.append(revLink);
 
-      tdTitle.append(revision.title);
+      tdTitle.append(rev.title);
       tdTitle.classList.add("phabricator-title");
 
-      spanRevisionStatusIcon.classList.add("revision-status-icon-" + revision.status);
+      spanRevisionStatusIcon.classList.add("revision-status-icon-" + rev.status);
       spanRevisionStatus.append(spanRevisionStatusIcon);
-      spanRevisionStatusText.append(revision.long_status);
+      spanRevisionStatusText.append(rev.long_status);
       spanRevisionStatus.append(spanRevisionStatusText);
-      spanRevisionStatus.classList.add("revision-status-box-" + revision.status);
+      spanRevisionStatus.classList.add("revision-status-box-" + rev.status);
       tdRevisionStatus.append(spanRevisionStatus);
 
-      var reviews = revision.reviews.slice().sort((a, b) => {
+      var reviews = rev.reviews.slice().sort((a, b) => {
         return a.user < b.user ? -1 : 1;
       });
 
@@ -206,8 +208,8 @@ const Phabricator = {
       tableReviews.classList.add("phabricator-reviewers");
       tdReviewers.append(tableReviews);
 
-      trRevision.setAttribute("data-status", revision.status);
-      if (revision.status === "abandoned") {
+      trRevision.setAttribute("data-status", rev.status);
+      if (rev.status === "abandoned") {
         trRevision.classList.add("bz_default_hidden");
         document.querySelector("tbody.phabricator-show-abandoned").classList.remove("bz_default_hidden");
       }
@@ -219,9 +221,11 @@ const Phabricator = {
         tdTitle
       );
 
-      return trRevision;
+      tbody.append(trRevision);
     }
+  },
 
+  async onLoad() {
     var tbody = document.querySelector("tbody.phabricator-revision");
 
     function displayLoadError(errStr) {
@@ -234,7 +238,8 @@ const Phabricator = {
       const { revisions } = await Bugzilla.API.get(`phabbugz/bug_revisions/${BUGZILLA.bug_id}`);
 
       if (revisions.length) {
-        sortRevisions(revisions).forEach(rev => tbody.append(revisionRow(rev)));
+        this.revisions = sortRevisions(revisions);
+        this.createTable();
       } else {
         displayLoadError("none returned from server");
       }
