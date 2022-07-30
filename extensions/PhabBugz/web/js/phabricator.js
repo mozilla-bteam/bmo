@@ -153,7 +153,7 @@ function sortRevisions(revs) {
     splitBranches(revisions, revMap, branchCount);
   }
 
-  return revisions.filter(rev => rev != pseudoRoot);
+  return revisions.filter(rev => rev != pseudoRoot).reverse();
 }
 
 Phabricator.getBugRevisions = async () => {
