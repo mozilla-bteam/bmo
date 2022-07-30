@@ -6,6 +6,8 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
+/* global Bugzilla, BUGZILLA */
+
 // Add pseudo root revision that has all root revisions as child.
 function addPseudoRoot(revisions, revMap) {
   for (const rev of revisions) {
