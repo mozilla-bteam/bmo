@@ -323,11 +323,13 @@ const Phabricator = {
           edges.delete(parentIndex);
           edges.set(newParentIndex, parentEdge);
 
-          // The edge for the remaining children.
-          graph.otherEdges.push({
-            from: parentIndex,
-            to: newParentIndex,
-          });
+          // Redirect the edge for the remaining children.
+          for (const edge of graph.otherEdges) {
+            if (edge.from === parentIndex) {
+              edge.to = newParentIndex;
+              break;
+            }
+          }
         }
       } else {
         // This node has no parent. Put it into a new index.
