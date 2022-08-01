@@ -245,7 +245,7 @@ const Phabricator = {
     // A map from edge's index to a set of remaining children.
     const edges = new Map();
 
-    let maxEdgeCount = 1;
+    let maxEdgeIndex = 0;
     for (const rev of revisions) {
       const visibleChildren = rev.children.filter(child => child in revMap);
 
@@ -341,14 +341,14 @@ const Phabricator = {
         });
       }
 
-      maxEdgeCount = Math.max(maxEdgeCount, edges.size);
+      maxEdgeIndex = Math.max(maxEdgeIndex, graph.index);
     }
 
-    this.maxEdgeCount = maxEdgeCount;
+    this.maxEdgeIndex = maxEdgeIndex;
   },
 
   svgWidth() {
-    return (this.maxEdgeCount + 1) * EdgeMargin;
+    return (this.maxEdgeIndex + 2) * EdgeMargin;
   },
 
   toNodeX(index) {
