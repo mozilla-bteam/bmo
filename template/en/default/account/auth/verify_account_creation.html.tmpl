@@ -31,32 +31,7 @@
     There are a few things to know about using this site.
   </strong>
   <ul>
-    <li>
-      Please read our
-      <a href="[% basepath FILTER none %]page.cgi?id=bug-writing.html" target="_blank" rel="noopener noreferrer">[% terms.Bug %] Writing Guidelines</a>.
-    </li>
-    <li>
-      [% terms.Bugzilla %] is a public place. Your comments and other activities
-      on [% terms.bugs %] will generally be publicly visible, and your email address will be
-      accessible through public APIs and will be visible to all logged-in users
-      of [% terms.Bugzilla %]. Some people use an
-      <a href="https://www.lifewire.com/top-free-email-services-1171481"
-      target="_blank">alternative email address</a> for this reason.
-      See Mozilla's <a href="https://www.mozilla.org/privacy/websites/"
-      target="_blank">Websites, Communications & Cookies Privacy Notice</a> for
-      more information on our privacy policies.
-    </li>
-    <li>
-      When using [% terms.Bugzilla %] to submit patches, comments, code, and any other content,
-      you agree to our policies on open source licensing and content submission. See Mozilla’s
-      <a href="https://www.mozilla.org/about/legal/terms/mozilla/" target="_blank">Websites
-      and Communications Terms of Use</a> for more information.
-    </li>
-    <li>
-      You understand that your conduct on this site is subject to both <a href="[% basepath FILTER none %]page.cgi?id=etiquette.html">[% terms.Bugzilla %] Etiquette</a>,
-      and the <a href="https://www.mozilla.org/about/governance/policies/participation/">Mozilla Community Participation Guidelines</a>.
-      By creating an account, you agree to abide by them.
-    </li>
+    [% INCLUDE "account/rules.html.tmpl" %]
   </ul>
 </div>
 
