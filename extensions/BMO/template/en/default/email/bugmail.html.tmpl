@@ -196,17 +196,17 @@
     <tr>
       <td class="c1" style="border-right: 1px solid #969696" nowrap>[% field_label FILTER html %]</td>
       <td class="c2" style="border-right: 1px solid #969696">
-        [% IF old_value %]
-          [% old_value FILTER html %]
+        [% IF change.field_name == "see_also" %]
+          <a href="[% old_value FILTER html %]">[% old_value FILTER html %]</a>
         [% ELSE %]
-          &nbsp;
+          [% old_value FILTER html %]
         [% END %]
       </td>
       <td>
-        [% IF new_value %]
-          [% new_value FILTER html %]
+        [% IF change.field_name == "see_also" %]
+          <a href="[% new_value FILTER html %]">[% new_value FILTER html %]</a>
         [% ELSE %]
-          &nbsp;
+          [% new_value FILTER html %]
         [% END %]
       </td>
     </tr>
