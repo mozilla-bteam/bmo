@@ -829,11 +829,11 @@ sub update_table_definitions {
   $dbh->bz_add_column('oauth2_client', 'hostname',
     {TYPE => 'varchar(255)', NOTNULL => 1, DEFAULT => "''"});
 
-  # Bug 577847 - dkl@mozilla.com
-  _update_see_also_any_url();
-
   # Bug 1512484 - kohei.yoshino@gmail.com
   _add_products_default_version();
+
+  # Bug 577847 - dkl@mozilla.com
+  _update_see_also_any_url();
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #

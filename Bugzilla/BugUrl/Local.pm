@@ -31,12 +31,12 @@ sub should_handle {
 
   # Check if it is a local Bugzilla uri
   my $canonical_local = URI->new($class->local_uri)->canonical;
-  if (  $canonical_local->authority eq $uri->canonical->authority
-    and $canonical_local->path eq $uri->canonical->path
-    and $uri->path =~ /show_bug\.cgi$/)
+  if (
+    $canonical_local->authority eq $uri->canonical->authority
+    && ( $canonical_local->path eq $uri->canonical->path
+      || $uri->canonical->path =~ /^\/?\d+$/)
+    )
   {
-    return ($uri->path =~ /show_bug\.cgi$/) ? 1 : 0;
-
     return 1;
   }
 
@@ -55,7 +55,14 @@ sub _check_value {
   else {
     # It's not a word, then we have to check
     # if it's a valid local Bugzilla URL.
-    my $bug_id = $uri->query_param('id');
+    my $bug_id;
+    if ($uri->path =~ /^\/?(\d+)$/) {
+      $uri->path('show_bug.cgi');
+      $bug_id = $1;
+    }
+    else {
+      $bug_id = $uri->query_param('id');
+    }
 
     detaint_natural($bug_id);
     if (!$bug_id) {
@@ -115,12 +122,6 @@ sub ref_bug_url {
       = Bugzilla::BugUrl::Local->new({bug_id => $ref_bug->id, value => $ref_value});
   }
   return $self->{ref_bug_url};
-}
-
-sub local_uri {
-  my ($self, $bug_id) = @_;
-  $bug_id ||= '';
-  return Bugzilla->localconfig->urlbase . "show_bug.cgi?id=$bug_id";
 }
 
 sub bug {

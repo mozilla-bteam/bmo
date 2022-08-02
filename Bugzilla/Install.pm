@@ -260,6 +260,10 @@ use constant SYSTEM_GROUPS => (
   {
     name        => 'edittriageowners',
     description => 'Can edit triage owners of components'
+  },
+  {
+    name        => 'can_delete_attachments',
+    description => 'Can delete attachments'
   }
 );
 

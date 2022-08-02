@@ -18,6 +18,13 @@ To get information about the General component under the Firefox product:
 
    GET /rest/component/Firefox/General
 
+To get information about a component where the product name contains a slash (/) character.
+Named parameters must be used instead of path based parameters.
+
+.. code-block:: text
+
+   GET /rest/component?product=Firefox%20%2F%20Bugs&component=General
+
 **Response**
 
 .. code-block:: js
@@ -121,6 +128,15 @@ This allows you to update an existing component in Bugzilla.
 
    PUT /rest/component/Firefox/General
 
+To update information about a component where the product name contains a slash (/) character.
+Named parameters must be used instead of path based parameters.
+
+.. code-block:: text
+
+   PUT /rest/component?product=Firefox%20%2F%20Bugs&component=General
+
+The body of the request should look similar to below.
+
 .. code-block:: js
 
    {
@@ -160,30 +176,6 @@ bug_description_template  string   The string included in the comment field of a
      "name": "General",
      "team_name": "Mozilla",
      "triage_owner": "nobody@mozilla.org",
-     "changes" : {
-       "default_assignee" : {
-         "removed" : "otheruser@mozilla.bugs",
-         "added" : "admin@mozilla.bugs"
-       },
-       "triage_owner" : {
-         "removed" : "",
-         "added" : "nobody@mozilla.org"
-       }
-     }
    }
 
 A component object `rest_component_object`_ is returned.
-
-The following fields are added to the object:
-
-=======  ======  ================================================================
-name     type    description
-=======  ======  ================================================================
-changes  object  The changes that were actually done on this component. The
-                 keys are the names of the fields that were changed, and the
-                 values are an object with two items:
-
-                 * added: (string) The value that this field was changed to.
-                 * removed: (string) The value that was previously set in this
-                   field.
-=======  ======  ================================================================

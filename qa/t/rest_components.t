@@ -41,7 +41,7 @@ $t->post_ok($url . 'rest/component/Firefox' => json => $new_component)
   ->json_is(
   '/message' => 'You must log in before using this part of Bugzilla.');
 
-# Now try as authenticated user using API key. But a required field is missing (initialowner).
+# Now try as authenticated user using API key. But a required field is missing (default_assignee).
 $t->post_ok($url
     . 'rest/component/Firefox' => {'X-Bugzilla-API-Key' => $api_key} => json =>
     $new_component)->status_is(400)
@@ -68,8 +68,11 @@ $t->post_ok($url
 
 ### Section 2: Make updates to the component
 
-my $update = {triage_owner => 'admin@mozilla.test',
-  description => 'Updated description'};
+my $update = {
+  triage_owner     => 'admin@mozilla.test',
+  description      => 'Updated description',
+  default_assignee => 'permanent_user@mozilla.test'
+};
 
 # Unauthenticated update should fail
 $t->put_ok($url . 'rest/component/Firefox/TestComponent' => json => $update)
@@ -81,7 +84,9 @@ $t->put_ok($url . 'rest/component/Firefox/TestComponent' => json => $update)
 $t->put_ok($url
     . 'rest/component/Firefox/TestComponent' =>
     {'X-Bugzilla-API-Key' => $api_key}       => json => $update)->status_is(200)
-  ->json_is('/triage_owner' => 'admin@mozilla.test');
+  ->json_is('/triage_owner'     => 'admin@mozilla.test')
+  ->json_is('/description'      => 'Updated description')
+  ->json_is('/default_assignee' => 'permanent_user@mozilla.test');
 
 # Retrieve the new component and verify
 $t->get_ok($url
@@ -89,5 +94,31 @@ $t->get_ok($url
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
   ->json_is('/triage_owner' => 'admin@mozilla.test')
   ->json_is('/description'  => 'Updated description');
+
+### Section 1: Create a new component with a slash (/) in the name
+
+$new_component = {
+  name        => 'Test / Component',
+  product     => 'Firefox',
+  description => 'This is a new test component with slash',
+  team_name   => 'Mozilla',
+  default_assignee => 'admin@mozilla.test'
+};
+
+$t->post_ok($url
+    . 'rest/component/Firefox' => {'X-Bugzilla-API-Key' => $api_key} => json =>
+    $new_component)->status_is(200)->json_is('/name' => 'Test / Component');
+
+# Retrieve the new component and verify
+$t->get_ok($url
+    . 'rest/component/Firefox/Test / Component' =>
+    {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
+  ->json_is('/name' => 'Test / Component');
+
+# Retrieve the component using named query parameters
+$t->get_ok($url
+    . 'rest/component?product=Firefox&component=Test / Component' =>
+    {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
+  ->json_is('/name' => 'Test / Component');
 
 done_testing();

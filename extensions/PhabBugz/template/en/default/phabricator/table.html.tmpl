@@ -10,24 +10,25 @@
        data-phabricator-base-uri="[% Param('phabricator_base_uri') FILTER html %]">
   <thead>
     <tr>
+      <th></th>
       <th>ID</th>
-      <th>Title</th>
       <th>Status</th>
       <th>Reviewers</th>
+      <th>Title</th>
     </tr>
   </thead>
   <tbody class="phabricator-revision">
     <tr class="phabricator-loading-row">
-      <td colspan="4">Loading...</td>
+      <td colspan="5">Loading...</td>
     </tr>
     <tr class="phabricator-loading-error-row bz_default_hidden">
-      <td colspan="4">Error loading Phabricator revisions:
+      <td colspan="5">Error loading Phabricator revisions:
         <span class="phabricator-load-error-string"></span></td>
     </tr>
   </tbody>
   <tbody class="phabricator-show-abandoned bz_default_hidden">
     <tr>
-      <td colspan="4">
+      <td colspan="5">
         <input id="phabricator-show-abandoned" type="checkbox">
         <label for="phabricator-show-abandoned">Show Abandoned Revisions</label>
       </td>

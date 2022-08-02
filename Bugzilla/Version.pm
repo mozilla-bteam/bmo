@@ -119,7 +119,7 @@ sub update {
   my $dbh  = Bugzilla->dbh;
 
   $dbh->bz_start_transaction();
-  my $changes = $self->SUPER::update(@_);
+  my ($changes, $old_self) = $self->SUPER::update(@_);
 
   if (exists $changes->{value}) {
 
@@ -134,7 +134,7 @@ sub update {
     $dbh->do(
       'UPDATE products SET default_version = ?
                   WHERE id = ? AND default_version = ?', undef,
-      ($self->name, $self->product_id, $changes->{value}->[0])
+      ($self->name, $old_self->product_id, $old_self->name)
     );
     Bugzilla->memcached->clear({table => 'products', id => $self->product_id});
   }
