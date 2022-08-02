@@ -130,13 +130,6 @@ function selectProduct(product, component, version, milestone, anyval) {
     if (product.length == (anyval != null ? 1 : 0))
         return;
 
-    // If this is the first load and nothing is selected, no need to
-    // merge and sort all lists; they are created sorted.
-    if ((first_load) && (product.selectedIndex == -1)) {
-        first_load = false;
-        return;
-    }
-
     // Turn first_load off. This is tricky, since it seems to be
     // redundant with the above clause. It's not: if when we first load
     // the page there is _one_ element selected, it won't fall into that
