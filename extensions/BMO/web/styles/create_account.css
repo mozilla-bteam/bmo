@@ -46,3 +46,7 @@
 #create-account-form tr:last-child {
   text-align: right;
 }
+
+#verify-auto-account-creation {
+  margin-bottom: 2em;
+}

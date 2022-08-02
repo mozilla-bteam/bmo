@@ -7,21 +7,32 @@
   #%]
 
 [% PROCESS global/header.html.tmpl
-   title = "Verify Account Creation" %]
+   title = "Verify Account Creation"
+   style_urls = [ 'extensions/BMO/web/styles/create_account.css' ]
+%]
 
 <h1>Verify Account Creation</h1>
 
-<p>An account for <em>[% login FILTER html %]
-  [% IF realname %]([% realname FILTER html %])[% END %]</em> was not
-  found already in the system. Please verify that you want a new account
-  to be created.</p>
+<div id="verify-auto-account-creation">
+  <p>An account for <em>[% login FILTER html %]
+    [% IF realname %]([% realname FILTER html %])[% END %]</em> was not
+    found already in the system. Please verify that you want a new account
+    to be created.</p>
 
-<div class="verify-auto-account-creation">
   <form method="POST" action="[% basepath FILTER none %]token.cgi">
     <input type="hidden" name="t" value="[% token FILTER html %]">
     <input type="hidden" name="a" value="verify_auto_account_creation">
     <input type="submit" name="verify" value="Verify">
   </form>
+</div>
+
+<div id="right-blurb">
+  <strong>
+    There are a few things to know about using this site.
+  </strong>
+  <ul>
+    [% INCLUDE "account/rules.html.tmpl" %]
+  </ul>
 </div>
 
 [% PROCESS global/footer.html.tmpl %]
