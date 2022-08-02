@@ -141,6 +141,8 @@
         <td class="c2">
           [% IF change.field_name == "bug_id" %]
             [% new_value FILTER bug_link(bug, full_url => 1) FILTER none %]
+          [% ELSIF change.field_name == "see_also" %]
+            <a href="[% new_value FILTER html %]">[% new_value FILTER html %]</a>
           [% ELSE %]
             [% new_value FILTER html %]
           [% END %]
