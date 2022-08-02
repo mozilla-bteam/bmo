@@ -19,6 +19,7 @@ To get information about the General component under the Firefox product:
    GET /rest/component/Firefox/General
 
 To get information about a component where the product name contains a slash (/) character.
+Named parameters must be used instead of path based parameters.
 
 .. code-block:: text
 
@@ -128,6 +129,7 @@ This allows you to update an existing component in Bugzilla.
    PUT /rest/component/Firefox/General
 
 To update information about a component where the product name contains a slash (/) character.
+Named parameters must be used instead of path based parameters.
 
 .. code-block:: text
 
