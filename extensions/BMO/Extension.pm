@@ -1062,6 +1062,8 @@ sub bug_start_of_update {
   my $old_bug = $args->{old_bug};
   my $new_bug = $args->{bug};
 
+  return unless $new_bug->uses_triaged_keyword;
+
   # silently drop changes to the triaged keyword from users without permissions
   # to triage
   if (!Bugzilla->user->can_triage) {
@@ -1083,8 +1085,6 @@ sub bug_start_of_update {
 
   # remove the triaged keyword when a bug is moved to a component owned by a
   # different team
-  my $o = $old_bug->component_obj->team_name;
-  my $n = $new_bug->component_obj->team_name;
   if (
     $new_bug->component_obj->team_name ne $old_bug->component_obj->team_name
   ) {
