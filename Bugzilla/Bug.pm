@@ -3918,7 +3918,7 @@ sub del_keyword {
   $keyword = lc($keyword);
   my $index = -1;
   my $i = 0;
-  foreach my $keyword_obj (@{$self->{'keyword_objects'}}) {
+  foreach my $keyword_obj (@{$self->keyword_objects}) {
     if (lc($keyword_obj->name) eq $keyword) {
       $index = $i;
       last;
