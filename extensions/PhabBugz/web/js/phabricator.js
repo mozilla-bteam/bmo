@@ -520,7 +520,10 @@ const Phabricator = {
 
       const tdTitle = document.createElement("td");
       tdTitle.classList.add("phabricator-title");
-      tdTitle.append(rev.title);
+      const titleLink = document.createElement("a");
+      titleLink.setAttribute("href", phabUrl + rev.id);
+      titleLink.append(rev.title);
+      tdTitle.append(titleLink);
 
       // Hide abandoned revisions
 
