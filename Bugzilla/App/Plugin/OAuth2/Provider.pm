@@ -404,7 +404,7 @@ sub _validate_redirect_uri {
 
 sub _display_confirm_scopes {
   my ($c, $params) = @_;
-  $c->stash(%{$parms});
+  $c->stash(%{$params});
   $c->render(template => 'account/auth/confirm_scopes', handler => 'bugzilla');
 }
 
