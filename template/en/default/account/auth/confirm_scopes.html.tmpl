@@ -10,6 +10,27 @@
    title = "Request for access to your account" %]
 
 <h1>[% title FILTER html %] </h1>
+
+[% IF error %]
+  <div class="throw_error">
+    [% IF error == "expired_token" %]
+      Your changes have been rejected because you exceeded the time limit
+      of [% constants.MAX_TOKEN_AGE FILTER html %] days before attempting to
+      allow access to your account. Your page may have been displayed
+      for too long, or the page was reloaded by accident.
+    [% ELSIF error == "missing_token" %]
+      It looks like you didn't come from the right page.
+      One reason could be that you entered the URL in the address bar of your
+      web browser directly, which should be safe. Another reason could be that
+      you clicked on a URL which redirected you here <b>without your consent</b>.
+    [% ELSIF error == "invalid_token" %]
+      You attempted to allow access to your account with an invalid token, which
+      may indicate that someone tried to abuse you, for instance by making you
+      click on a URL which redirected you here <b>without your consent</b>.
+    [% END %]
+  </div>
+[% END %]
+
 <p>
   A third-party website <em>[% client.description FILTER html %]</em> would like to have
   the following access to your [% terms.Bugzilla %] account.
@@ -31,7 +52,7 @@
 <div>
   <form action="/oauth/authorize" method="get">
     <input type="hidden" name="oauth_confirm_[% client.client_id FILTER html %]" value="1">
-    <input type="hidden" name="token" value="[% token FILTER html %]">
+    <input type="hidden" id="token" name="token" value="[% issue_hash_token(['oauth_confirm_scopes']) FILTER html %]">
     <input type="submit" name="submit" value="Allow">
     [% FOREACH field = c.req.params.names %]
       <input type="hidden" name="[% field FILTER html %]"

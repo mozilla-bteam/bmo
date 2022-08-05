@@ -13,7 +13,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::Util;
-use Bugzilla::Token;
+use Bugzilla::Token qw(delete_token issue_hash_token);
 use DateTime;
 use List::MoreUtils qw(any);
 use Mojo::URL;
@@ -94,28 +94,22 @@ sub _resource_owner_confirm_scopes {
     = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
     undef, $client_id);
 
+  my $scopes = $dbh->selectall_arrayref(
+    'SELECT * FROM oauth2_scope WHERE name IN ('
+      . join(',', map { $dbh->quote($_) } @{$scopes_ref}) . ')',
+    {Slice => {}}
+  );
+
   # if user hasn't yet allowed the client access, or if they denied
   # access last time, we check [again] with the user for access
   if (!$c->param("oauth_confirm_${client_id}")) {
-    my $scopes = $dbh->selectall_arrayref(
-      'SELECT * FROM oauth2_scope WHERE name IN ('
-        . join(',', map { $dbh->quote($_) } @{$scopes_ref}) . ')',
-      {Slice => {}}
-    );
 
     # Deny access if hostname of redirect_uri doesn't match
     # the hostname assigned to the client id
     _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
       || ThrowUserError('oauth2_invalid_redirect_uri');
 
-    my $vars = {
-      client => $client,
-      scopes => $scopes,
-      token  => scalar issue_session_token('oauth_confirm_scopes')
-    };
-    $c->stash(%{$vars});
-    $c->render(template => 'account/auth/confirm_scopes', handler => 'bugzilla');
-    return undef;
+    return _display_confirm_scopes({client => $client, scopes => $scopes});
   }
 
   # Deny access if hostname of redirect_uri doesn't match
@@ -123,8 +117,28 @@ sub _resource_owner_confirm_scopes {
   _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
     || ThrowUserError('oauth2_invalid_redirect_uri');
 
+  # Validate token to protect against CSRF. If token is invalid,
+  # display error and request confirmation again.
   my $token = $c->param('token');
-  check_token_data($token, 'oauth_confirm_scopes');
+  my ($time, $expected_token);
+
+  if ($token) {
+    ($time, undef) = split(/-/, $token);
+    $expected_token = issue_hash_token(['oauth_confirm_scopes'], $time);
+  }
+
+  if (!$token
+    || $expected_token ne $token
+    || time() - $time > MAX_TOKEN_AGE * 86400)
+  {
+    my $error
+      = !$token                     ? 'missing_token'
+      : ($expected_token ne $token) ? 'invalid_token'
+      :                               'expired_token';
+    return _display_confirm_scopes(
+      {client => $client, scopes => $scopes, error => $error});
+  }
+
   delete_token($token);
 
   return 1;
@@ -386,6 +400,12 @@ sub _validate_redirect_uri {
   my ($hostname, $redirect_uri) = @_;
   my $uri = Mojo::URL->new($redirect_uri);
   return ($uri->host && $uri->host ne $hostname) ? 0 : 1;
+}
+
+sub _display_confirm_scopes {
+  my ($c, $params) = @_;
+  $c->stash(%{$parms});
+  $c->render(template => 'account/auth/confirm_scopes', handler => 'bugzilla');
 }
 
 1;
