@@ -279,6 +279,10 @@ sub check_hash_token {
       = (!$token) ? 'missing_token'
       : ($expected_token ne $token) ? 'invalid_token'
       :                               'expired_token';
+
+    # We will display confirmation later if native Mojo.
+    return $vars if Bugzilla->usage_mode == USAGE_MODE_MOJO;
+
     print Bugzilla->cgi->header();
     $template->process('global/confirm-action.html.tmpl', $vars)
       || ThrowTemplateError($template->error());

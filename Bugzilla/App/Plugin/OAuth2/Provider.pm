@@ -90,28 +90,22 @@ sub _resource_owner_confirm_scopes {
     = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
     undef, $client_id);
 
+  my $scopes = $dbh->selectall_arrayref(
+    'SELECT * FROM oauth2_scope WHERE name IN ('
+      . join(',', map { $dbh->quote($_) } @{$scopes_ref}) . ')',
+    {Slice => {}}
+  );
+
   # if user hasn't yet allowed the client access, or if they denied
   # access last time, we check [again] with the user for access
   if (!$c->param("oauth_confirm_${client_id}")) {
-    my $scopes = $dbh->selectall_arrayref(
-      'SELECT * FROM oauth2_scope WHERE name IN ('
-        . join(',', map { $dbh->quote($_) } @{$scopes_ref}) . ')',
-      {Slice => {}}
-    );
 
     # Deny access if hostname of redirect_uri doesn't match
     # the hostname assigned to the client id
     _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
       || ThrowUserError('oauth2_invalid_redirect_uri');
 
-    my $vars = {
-      client => $client,
-      scopes => $scopes,
-      token  => scalar issue_session_token('oauth_confirm_scopes')
-    };
-    $c->stash(%{$vars});
-    $c->render(template => 'account/auth/confirm_scopes', handler => 'bugzilla');
-    return undef;
+    return _display_confirm_scopes($c, {client => $client, scopes => $scopes});
   }
 
   # Deny access if hostname of redirect_uri doesn't match
@@ -119,8 +113,15 @@ sub _resource_owner_confirm_scopes {
   _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
     || ThrowUserError('oauth2_invalid_redirect_uri');
 
-  my $token = $c->param('token');
-  check_token_data($token, 'oauth_confirm_scopes');
+  # Validate token to protect against CSRF. If token is invalid,
+  # display error and request confirmation again.
+  my $token        = $c->param('token');
+  my $token_result = check_hash_token($token, ['oauth_confirm_scopes']);
+  if (ref $token_result && $token_result->{reason}) {
+    return _display_confirm_scopes($c,
+      {client => $client, scopes => $scopes, error => $token_result->{reason}});
+  }
+
   delete_token($token);
 
   return 1;
@@ -382,6 +383,13 @@ sub _validate_redirect_uri {
   my ($hostname, $redirect_uri) = @_;
   my $uri = Mojo::URL->new($redirect_uri);
   return ($uri->host && $uri->host ne $hostname) ? 0 : 1;
+}
+
+sub _display_confirm_scopes {
+  my ($c, $params) = @_;
+  $c->stash(%{$params});
+  $c->render(template => 'account/auth/confirm_scopes', handler => 'bugzilla');
+  return undef;
 }
 
 1;
