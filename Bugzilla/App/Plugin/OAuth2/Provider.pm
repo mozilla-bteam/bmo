@@ -109,7 +109,7 @@ sub _resource_owner_confirm_scopes {
     _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
       || ThrowUserError('oauth2_invalid_redirect_uri');
 
-    return _display_confirm_scopes({client => $client, scopes => $scopes});
+    return _display_confirm_scopes($c, {client => $client, scopes => $scopes});
   }
 
   # Deny access if hostname of redirect_uri doesn't match
@@ -119,24 +119,11 @@ sub _resource_owner_confirm_scopes {
 
   # Validate token to protect against CSRF. If token is invalid,
   # display error and request confirmation again.
-  my $token = $c->param('token');
-  my ($time, $expected_token);
-
-  if ($token) {
-    ($time, undef) = split(/-/, $token);
-    $expected_token = issue_hash_token(['oauth_confirm_scopes'], $time);
-  }
-
-  if (!$token
-    || $expected_token ne $token
-    || time() - $time > MAX_TOKEN_AGE * 86400)
-  {
-    my $error
-      = !$token                     ? 'missing_token'
-      : ($expected_token ne $token) ? 'invalid_token'
-      :                               'expired_token';
-    return _display_confirm_scopes(
-      {client => $client, scopes => $scopes, error => $error});
+  my $token        = $c->param('token');
+  my $token_result = check_hash_token($token, ['oauth_confirm_scopes']);
+  if (ref $token_result && $token_result->{reason}) {
+    return _display_confirm_scopes($c,
+      {client => $client, scopes => $scopes, error => $token_result->{reason}});
   }
 
   delete_token($token);
@@ -406,6 +393,7 @@ sub _display_confirm_scopes {
   my ($c, $params) = @_;
   $c->stash(%{$params});
   $c->render(template => 'account/auth/confirm_scopes', handler => 'bugzilla');
+  return undef;
 }
 
 1;
