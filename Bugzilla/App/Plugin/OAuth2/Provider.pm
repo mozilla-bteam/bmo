@@ -13,7 +13,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::Util;
-use Bugzilla::Token qw(delete_token check_hash_token);
+use Bugzilla::Token;
 use DateTime;
 use List::MoreUtils qw(any);
 use Mojo::URL;
@@ -65,8 +65,6 @@ sub register {
 
 sub _resource_owner_logged_in {
   my (%args) = @_;
-  Bugzilla->usage_mode(USAGE_MODE_MOJO);
-
   my $c = $args{mojo_controller};
 
   $c->session->{override_login_target} = $c->url_for('current');
@@ -82,8 +80,6 @@ sub _resource_owner_logged_in {
 
 sub _resource_owner_confirm_scopes {
   my (%args) = @_;
-  Bugzilla->usage_mode(USAGE_MODE_MOJO);
-
   my ($c, $client_id, $scopes_ref)
     = @args{qw/ mojo_controller client_id scopes /};
   my $dbh = Bugzilla->dbh;
