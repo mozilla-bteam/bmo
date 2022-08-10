@@ -13,7 +13,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::Util;
-use Bugzilla::Token qw(delete_token issue_hash_token);
+use Bugzilla::Token qw(delete_token check_hash_token);
 use DateTime;
 use List::MoreUtils qw(any);
 use Mojo::URL;
