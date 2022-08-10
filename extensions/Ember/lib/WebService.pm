@@ -361,7 +361,7 @@ sub _get_fields {
     # Load custom fields
     my $cf_params = {product => $bug->product_obj};
     $cf_params->{component} = $bug->component_obj if $bug->can('component_obj');
-    $cf_params->{bug_id}    = $bug->id            if $bug->id;
+    $cf_params->{bug} = $bug if $bug;
     push(@field_objs, Bugzilla->active_custom_fields($cf_params));
   }
 

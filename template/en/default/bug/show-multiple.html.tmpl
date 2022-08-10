@@ -193,7 +193,7 @@
 
     [% USE Bugzilla %]
     [% field_counter = 0 %]
-    [% FOREACH field = Bugzilla.active_custom_fields(product=>bug.product_obj,component=>bug.component_obj,bug_id=>bug.id) %]
+    [% FOREACH field = Bugzilla.active_custom_fields(product=>bug.product_obj,component=>bug.component_obj,bug=>bug) %]
         [% field_counter = field_counter + 1 %]
         [%# Odd-numbered fields get an opening <tr> %]
         [% '<tr>' IF field_counter % 2 %]
