@@ -1444,7 +1444,7 @@
         [%
           IF bug.resolution == "";
             seen_header = 0;
-            FOREACH resolution IN ["FIXED", "INVALID", "DUPLICATE"];
+            FOREACH resolution IN ["FIXED", "INVALID", "WONTFIX", "WORKSFORME", "DUPLICATE"];
               NEXT UNLESS bug.choices.resolution.only("name", resolution).size;
               IF NOT seen_header;
                 seen_header = 1;

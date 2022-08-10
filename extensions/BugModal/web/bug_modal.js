@@ -905,7 +905,16 @@ $(function() {
             if ((bug_status == "RESOLVED" || bug_status == "VERIFIED") && val == "DUPLICATE") {
                 $('#duplicate-container, #bottom-duplicate-container').show();
                 $('#mark-as-dup-btn, #bottom-mark-as-dup-btn').hide();
-                $(that.attr('id') == 'resolution' ? '#dup_id' : '#bottom-dup_id').focus();
+                if (that.attr('id') == 'resolution') {
+                    if ($("#dup_id").is(":visible")) {
+                        $('#dup_id').focus();
+                    }
+                } else {
+                    if ($("#bottom-dup_id").is(":visible")) {
+                        $('#bottom-dup_id').focus();
+                        window.setTimeout(() => { window.scroll(0, $(document).height()) }, 0);
+                    }
+                }
             }
             else {
                 $('#duplicate-container, #bottom-duplicate-container').hide();
@@ -918,7 +927,16 @@ $(function() {
             event.preventDefault();
             $('#bug_status').val('RESOLVED').change();
             $('#resolution').val('DUPLICATE').change();
-            $($(this).attr('id') == 'mark-as-dup-btn' ? '#dup_id' : '#bottom-dup_id').focus();
+            if ($(this).attr('id') == 'mark-as-dup-btn') {
+                if ($("#dup_id").is(":visible")) {
+                    $('#dup_id').focus();
+                }
+            } else {
+                if ($("#bottom-dup_id").is(":visible")) {
+                    $('#bottom-dup_id').focus();
+                    window.setTimeout(() => { window.scroll(0, $(document).height()) }, 0);
+                }
+            }
         });
     $('#dup_id, #bottom-dup_id')
         .change(function(event) {
@@ -1070,7 +1088,10 @@ $(function() {
             $('#top-save-btn').show();
             $('#resolve-as').hide();
             $('#bottom-status').show();
-            $('#bottom-dup_id').focus();
+            if ($('#bottom-dup_id').is(":visible")) {
+                $('#bottom-dup_id').focus();
+                window.setTimeout(() => { window.scroll(0, $(document).height()) }, 0);
+            }
         });
     $('.status-btn')
         .click(function(event) {
@@ -1081,6 +1102,10 @@ $(function() {
             $('#top-save-btn').show();
             $('#resolve-as').hide();
             $('#bottom-status').show();
+            if ($('#bottom-dup_id').is(":visible")) {
+                $('#bottom-dup_id').focus();
+                window.setTimeout(() => { window.scroll(0, $(document).height()) }, 0);
+            }
         });
 
     // vote button
