@@ -2911,10 +2911,20 @@ sub _set_product {
     $tm_name = $self->target_milestone;
   }
 
-  if ($product_changed && Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
+  # We have three scenarios to deal with here
+  # 1. Product has changed and we are in the browser which means we
+  #    will need to verify with the user what the new values should be.
+  # 2. Product has changed and we are not in the browser, such as using
+  #    the REST API, and we do not verify. But we do use default values
+  #    for the new product when available.
+  # 3. The product has not been changed but we still need to set the
+  #    other values (component, version, and milestone) if they have
+  #    themselves changed.
 
+  if ($product_changed) {
     # Try to set each value with the new product.
     # Have to set error_mode because Throw*Error calls exit() otherwise.
+    # We will do this for both browser and non-browser clients.
     my $old_error_mode = Bugzilla->error_mode;
     Bugzilla->error_mode(ERROR_MODE_DIE);
     my $component_ok = eval { $self->set_component($comp_name); 1; };
@@ -2936,94 +2946,84 @@ sub _set_product {
     undef $@;
     Bugzilla->error_mode($old_error_mode);
 
-    my $invalid_groups;
-    my @idlist = ($self->id);
-    push(@idlist, map { $_->id } @{$params->{other_bugs}}) if $params->{other_bugs};
-    @idlist = uniq @idlist;
+    if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
+      my $invalid_groups;
+      my @idlist = ($self->id);
+      push(@idlist, map { $_->id } @{$params->{other_bugs}}) if $params->{other_bugs};
+      @idlist = uniq @idlist;
 
-    my $verified = $params->{product_change_confirmed};
+      my $verified = $params->{product_change_confirmed};
 
-    # BMO - if everything is ok then we can skip the verfication page when using bug_modal
-    if ( (($params->{format} && $params->{format} eq 'modal') || !$verified)
-      && $component_ok
-      && $version_ok
-      && $milestone_ok)
-    {
-      $invalid_groups
-        = $self->get_invalid_groups({bug_ids => \@idlist, product => $product});
-      my $has_invalid_group = 0;
-      foreach my $group (@$invalid_groups) {
-        if (any { $_ eq $group->name } @{$params->{groups}->{add}}) {
-          $has_invalid_group = 1;
-          last;
+      # BMO - if everything is ok then we can skip the verfication page when using bug_modal
+      if ( (($params->{format} && $params->{format} eq 'modal') || !$verified)
+        && $component_ok
+        && $version_ok
+        && $milestone_ok)
+      {
+        $invalid_groups
+          = $self->get_invalid_groups({bug_ids => \@idlist, product => $product});
+        my $has_invalid_group = 0;
+        foreach my $group (@$invalid_groups) {
+          if (any { $_ eq $group->name } @{$params->{groups}->{add}}) {
+            $has_invalid_group = 1;
+            last;
+          }
         }
+        $verified =
+
+          # always check for invalid groups
+          !$has_invalid_group
+
+          # never skip verification when changing multiple bugs
+          && scalar(@idlist) == 1
+
+          # ensure the user has seen the group ui for private bugs
+          && (!@{$self->groups_in} || Bugzilla->input_params->{group_verified});
       }
-      $verified =
 
-        # always check for invalid groups
-        !$has_invalid_group
+      my %vars;
+      if (!$verified || !$component_ok || !$version_ok || !$milestone_ok) {
+        $vars{defaults} = {
 
-        # never skip verification when changing multiple bugs
-        && scalar(@idlist) == 1
+          # Note that because of the eval { set } above, these are
+          # already set correctly if they're valid, otherwise they're
+          # set to some invalid value which the template will ignore.
+          component => $self->component,
+          version   => $version_ok ? $self->version : $product->default_version,
+          milestone => $milestone_ok
+          ? $self->target_milestone
+          : $product->default_milestone
+        };
+        $vars{components}
+          = [map { $_->name } grep($_->is_active, @{$product->components})];
+        $vars{milestones}
+          = [map { $_->name } grep($_->is_active, @{$product->milestones})];
+        $vars{versions} = [map { $_->name } grep($_->is_active, @{$product->versions})];
+      }
 
-        # ensure the user has seen the group ui for private bugs
-        && (!@{$self->groups_in} || Bugzilla->input_params->{group_verified});
-    }
+      if (!$verified) {
+        $vars{verify_bug_groups} = 1;
+        $vars{old_groups}        = $invalid_groups
+          || $self->get_invalid_groups({bug_ids => \@idlist, product => $product});
+      }
 
-    my %vars;
-    if (!$verified || !$component_ok || !$version_ok || !$milestone_ok) {
-      $vars{defaults} = {
-
-        # Note that because of the eval { set } above, these are
-        # already set correctly if they're valid, otherwise they're
-        # set to some invalid value which the template will ignore.
-        component => $self->component,
-        version   => $version_ok ? $self->version : $product->default_version,
-        milestone => $milestone_ok
-        ? $self->target_milestone
-        : $product->default_milestone
-      };
-      $vars{components}
-        = [map { $_->name } grep($_->is_active, @{$product->components})];
-      $vars{milestones}
-        = [map { $_->name } grep($_->is_active, @{$product->milestones})];
-      $vars{versions} = [map { $_->name } grep($_->is_active, @{$product->versions})];
-    }
-
-    if (!$verified) {
-      $vars{verify_bug_groups} = 1;
-      $vars{old_groups}        = $invalid_groups
-        || $self->get_invalid_groups({bug_ids => \@idlist, product => $product});
-    }
-
-    if (%vars) {
-      $vars{product} = $product;
-      $vars{bug}     = $self;
-      require Bugzilla::Error::Template;
-      die Bugzilla::Error::Template->new(
-        file => "bug/process/verify-new-product.html.tmpl",
-        vars => \%vars
-      );
-    }
-  }
-  else {
-    # When we're not in the browser (or we didn't change the product), we
-    # just die if any of these are invalid.
-    $self->set_component($comp_name);
-    $self->set_version($vers_name);
-    my $can_change = $self->check_can_change_field('target_milestone', 0, 1);
-    if ($product_changed
-      and !$can_change->{allowed})
-    {
-      # Have to set this directly to bypass the validators.
-      $self->{target_milestone} = $product->default_milestone;
+      if (%vars) {
+        $vars{product} = $product;
+        $vars{bug}     = $self;
+        require Bugzilla::Error::Template;
+        die Bugzilla::Error::Template->new(
+          file => "bug/process/verify-new-product.html.tmpl",
+          vars => \%vars
+        );
+      }
     }
     else {
-      $self->set_target_milestone($tm_name);
+      # If we are not in the browser, we just die if certain values are invalid.
+      $self->set_component($comp_name) if !$component_ok;
+      $self->set_target_milestone($tm_name) if !$milestone_ok;
+      # If version is not valid, then set to default version instead of dying.
+      $self->set_version($product->default_version) if !$version_ok;
     }
-  }
-
-  if ($product_changed) {
 
     # Remove groups that can't be set in the new product.
     # We copy this array because the original array is modified while we're
@@ -3038,6 +3038,15 @@ sub _set_product {
     # Make sure the bug is in all the mandatory groups for the new product.
     foreach my $group (@{$product->groups_mandatory}) {
       $self->add_group($group);
+    }
+  }
+  else {
+    # If we didn't change the product, we just die if any of these are invalid.
+    $self->set_component($comp_name);
+    $self->set_version($vers_name);
+    my $can_change = $self->check_can_change_field('target_milestone', 0, 1);
+    if ($can_change->{allowed}) {
+      $self->set_target_milestone($tm_name);
     }
   }
 
