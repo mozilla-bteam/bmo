@@ -133,13 +133,10 @@ if ($action eq 'reqpw') {
 my $password;
 if ($action eq 'chgpw') {
   $password = $cgi->param('password');
-  my $matchpassword = $cgi->param('matchpassword');
-  ThrowUserError("require_new_password")
-    unless defined $password && defined $matchpassword;
-
-  Bugzilla->assert_password_is_secure($password);
-  Bugzilla->assert_passwords_match($password, $matchpassword);
-
+  defined $password
+    && defined $cgi->param('matchpassword')
+    || ThrowUserError("require_new_password");
+  validate_password($password, $cgi->param('matchpassword'));
   # Make sure that these never show up in the UI under any circumstances.
   $cgi->delete('password', 'matchpassword');
 }
@@ -433,18 +430,16 @@ sub confirm_create_account {
   Bugzilla->user->check_account_creation_enabled;
   my (undef, undef, $login_name) = Bugzilla::Token::GetTokenData($token);
 
-  my $password1 = $cgi->param('passwd1');
-  my $password2 = $cgi->param('passwd2');
+  my $password = $cgi->param('passwd1') || '';
+  validate_password($password, $cgi->param('passwd2') || '');
 
   # Make sure that these never show up anywhere in the UI.
   $cgi->delete('passwd1', 'passwd2');
-  Bugzilla->assert_password_is_secure($password1);
-  Bugzilla->assert_passwords_match($password1, $password2);
 
   my $otheruser = Bugzilla::User->create({
     login_name    => $login_name,
     realname      => scalar $cgi->param('realname'),
-    cryptpassword => $password1
+    cryptpassword => $password
   });
 
   # Now delete this token.
@@ -456,7 +451,7 @@ sub confirm_create_account {
 
   # Log in the new user using credentials they just gave.
   $cgi->param('Bugzilla_login',    $otheruser->login);
-  $cgi->param('Bugzilla_password', $password1);
+  $cgi->param('Bugzilla_password', $password);
   $cgi->param('token_account_created', 1);
   Bugzilla->login(LOGIN_OPTIONAL);
 

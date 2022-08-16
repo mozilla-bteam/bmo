@@ -71,25 +71,25 @@ sub check_credentials {
   if ( Bugzilla->usage_mode == USAGE_MODE_BROWSER
     && Bugzilla->params->{password_check_on_login})
   {
-    my $pwqc = Bugzilla->passwdqc;
-    unless ($pwqc->validate_password($password)) {
-      my $reason     = $pwqc->reason;
-      my $old_reason = $user->password_change_reason;
-
-      Bugzilla->audit(sprintf "%s logged in with a weak password (reason: %s)",
-        $user->login, $reason);
-      $user->set_password_change_required(1);
-      $user->set_password_change_reason(
-        "You must change your password for the following reason: $reason");
-
-      # Remove disabled text if user was previously disabled due to inactivity
-      if ($old_reason eq 'Inactive Account') {
-        $user->set_disabledtext('');
-        $user->set_disable_mail(0);
-      }
-
-      $user->update();
+    my $check = validate_password_check($password);
+    if ($check) {
+      return {
+        failure    => AUTH_ERROR,
+        user_error => $check,
+        details    => {locked_user => $user}
+      };
     }
+  }
+
+  # Remove disabled text if user was previously disabled due to inactivity
+  if ( $user->password_change_reason
+    && $user->password_change_reason eq 'Inactive Account')
+  {
+    $user->set_disabledtext('');
+    $user->set_disable_mail(0);
+    $user->set_password_change_required(0);
+    $user->set_password_change_reason('');
+    $user->update();
   }
 
   # The user's credentials are okay, so delete any outstanding

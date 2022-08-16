@@ -127,10 +127,15 @@
             </td>
           </tr>
           <tr>
-          <td>&nbsp;</td>
-          <td>
-            [% Param('passwdqc_desc') FILTER html_light %]
-          </td>
+            <td>&nbsp;</td>
+            <td>
+            <ul>
+              <li>Password must be at least [% constants.USER_PASSWORD_MIN_LENGTH FILTER none %] characters long.</li>
+              [% IF password_complexity == "bmo" %]
+              <li>Password must contain at least one letter, a number and a special character.</li>
+              [% END %]
+              </ul>
+            </td>
           </tr>
           <tr>
             <th align="right">Confirm new password:</th>
@@ -172,7 +177,7 @@
           </td>
         </tr>
       [% END %]
-      
+
       <tr>
         <td></td>
         <td><hr></td>

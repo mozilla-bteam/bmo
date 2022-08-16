@@ -166,7 +166,8 @@ use constant WS_ERROR_CODE => {
   auth_invalid_email           => 302,
   extern_id_conflict           => -303,
   auth_failure                 => 304,
-  password_insecure            => 305,
+  password_too_short           => 305,
+  password_not_complex         => 305,
   api_key_not_valid            => 306,
   api_key_revoked              => 306,
   auth_invalid_token           => 307,
@@ -182,8 +183,8 @@ use constant WS_ERROR_CODE => {
   auth_cant_create_account    => 501,
   account_creation_disabled   => 501,
   account_creation_restricted => 501,
+  password_too_short          => 502,
 
-  # Error 502 password_too_short no longer exists.
   # Error 503 password_too_long no longer exists.
   invalid_username     => 504,
   iam_illegal_username => 504,

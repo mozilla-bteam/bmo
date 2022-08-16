@@ -738,7 +738,7 @@ sub bz_crypt {
 # by the number of characters you generate, and that gets you the equivalent
 # strength of the string in bits.
 sub generate_random_password {
-  my $size = shift || 10;    # default to 10 chars if nothing specified
+  my $size = shift || USER_PASSWORD_MIN_LENGTH;    # default to USER_PASSWORD_MIN_LENGTH if nothing specified
   return
     join("", map { ('0' .. '9', 'a' .. 'z', 'A' .. 'Z')[irand 62] } (1 .. $size));
 }

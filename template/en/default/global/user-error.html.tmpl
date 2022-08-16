@@ -1516,13 +1516,26 @@
     [% title = "Incorrect Password" %]
     You did not enter your password correctly.
 
-  [% ELSIF error == "password_insecure" %]
-    [% title = "Password Fails Requirements" %]
-    The password does not meet our security requirements
-    [% IF reason %]
-      for the following reason: [% reason FILTER html %]
+  [% ELSIF error == "password_too_short" %]
+    [% title = "Password Too Short" %]
+    The password must be at least
+    [%+ constants.USER_PASSWORD_MIN_LENGTH FILTER html %] characters long.
+    [% IF locked_user %]
+      You must <a href="token.cgi?a=reqpw&amp;loginname=[% locked_user.email FILTER uri %]&amp;token=[% issue_hash_token(['reqpw']) FILTER uri %]">
+      request a new password</a> in order to log in again.
     [% END %]
 
+  [% ELSIF error == "password_not_complex" %]
+    [% title = "Password Fails Requirements" %]
+    The password must be at least
+    [%+ constants.USER_PASSWORD_MIN_LENGTH FILTER html %]
+    characters long and meet three of the following requirements:
+    <ul>
+      <li>uppercase letters</li>
+      <li>lowercase letters</li>
+      <li>numbers</li>
+      <li>symbols</li>
+    </ul>
     [% IF locked_user %]
       You must <a href="[% basepath FILTER none %]token.cgi?a=reqpw&amp;loginname=[% locked_user.email FILTER uri %]&amp;token=[% issue_hash_token(['reqpw']) FILTER uri %]">
       request a new password</a> in order to log in again.

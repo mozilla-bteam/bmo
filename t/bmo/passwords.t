@@ -11,8 +11,8 @@ use QA::Util;
 use Test::More;
 
 my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
-my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'password01!';
-my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // 'she7Ka8t';
+my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'password012!';
+my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // '012!password';
 
 my @require_env = qw(
   BZ_BASE_URL
@@ -34,7 +34,7 @@ $sel->login_ok($ADMIN_LOGIN, $ADMIN_PW_OLD);
 $sel->change_password($ADMIN_PW_OLD . "x", "newpassword2", "newpassword2");
 $sel->title_is("Incorrect Old Password");
 
-$sel->change_password($ADMIN_PW_OLD, "password", "password");
+$sel->change_password($ADMIN_PW_OLD, "passwordpass", "passwordpass");
 $sel->title_is("Password Fails Requirements");
 
 $sel->change_password($ADMIN_PW_OLD, $ADMIN_PW_NEW, $ADMIN_PW_NEW);
@@ -65,7 +65,7 @@ $sel->click_and_type("old_password",  $ENV{BZ_TEST_NEWBIE_PASS});
 $sel->click_and_type("new_password1", "password");
 $sel->click_and_type("new_password2", "password");
 $sel->click_ok('//input[@id="submit"]');
-$sel->title_is('Password Fails Requirements');
+$sel->title_is('Password Too Short');
 
 $sel->go_back_ok();
 $sel->title_is('Password change required');
@@ -94,8 +94,8 @@ my $token = $sel->get_token();
 ok($token, "got a token from resetting password");
 $sel->get_ok("/token.cgi?t=$token&a=cfmpw");
 $sel->title_is('Change Password');
-$sel->click_and_type("password",      "nopandas");
-$sel->click_and_type("matchpassword", "nopandas");
+$sel->click_and_type("password",      "nopandas1234");
+$sel->click_and_type("matchpassword", "nopandas1234");
 $sel->click_ok('//input[@id="update"]');
 $sel->title_is('Password Fails Requirements');
 $sel->go_back_ok();
