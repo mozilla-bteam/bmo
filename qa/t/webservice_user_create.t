@@ -111,7 +111,7 @@ foreach my $rpc ($jsonrpc, $xmlrpc) {
         password  => PASSWORD_TOO_SHORT
       },
       error =>
-        'The password does not meet our security requirements for the following reason: too short',
+        'The password must be at least 12 characters long.',
       test => 'Password Too Short fails',
     },
     {
