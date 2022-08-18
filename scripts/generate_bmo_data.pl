@@ -331,12 +331,13 @@ for my $product (@products) {
     }
     $dbh->do(
       'INSERT INTO products (name, description, classification_id,
-                                        default_op_sys_id, default_platform_id)
-                  VALUES (?, ?, ?, ?, ?)',
+                             default_op_sys_id, default_platform_id, default_version)
+                  VALUES (?, ?, ?, ?, ?, ?)',
       undef,
       (
-        $product->{product_name}, $product->{description}, $class_id,
-        $default_op_sys_id,       $default_platform_id
+        $product->{product_name}, $product->{description},
+        $class_id,                $default_op_sys_id,
+        $default_platform_id,     $product->{default_version}
       )
     );
 
