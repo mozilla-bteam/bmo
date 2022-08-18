@@ -85,9 +85,11 @@ sub update {
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
-  $user->in_group('editcomponents')
-    || return $self->user_error('auth_failure',
-    {group => 'editcomponents', action => 'modify', object => 'components'});
+  if (!$user->in_group('editcomponents') && !$user->in_group('edittriageowners'))
+  {
+    return $self->user_error('auth_failure',
+      {group => 'editcomponents', action => 'modify', object => 'components'});
+  }
 
   my $product   = Bugzilla::Product->check({name => $self->param('product')});
   my $component = Bugzilla::Component->check(
@@ -95,6 +97,17 @@ sub update {
 
   my ($params, $error) = $self->_get_params();
   return $self->user_error($error) if $error;
+
+  # If the user is only able to edit triage owner and nothing else,
+  # then we only allow that field to be passed to set_all()
+  if (!$user->in_group('editcomponents')) {
+    if (exists $params->{triage_owner}) {
+      $params = {triage_owner => $params->{triage_owner}};
+    }
+    else {
+      $params = {};
+    }
+  }
 
   $component->set_all($params);
   $component->update();
