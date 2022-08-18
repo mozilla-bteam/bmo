@@ -303,6 +303,16 @@ sub get_next_event {
 while (my $event = get_next_event) {
 
   my $eventid = $event->{'eventid'};
+  my $author  = $event->{'author'};
+
+  # Do not send this whine if the authors account is disabled. The timer
+  # is already reset and if/when the account is reactivated, the next whine
+  # will execute.
+  if (!$author->is_enabled) {
+    Bugzilla->audit(sprintf 'whine: event id %d skipped since owner %s is disabled',
+      $eventid, $author->login);
+    next;
+  }
 
   # We loop for each target user because some of the queries will be using
   # subjective pronouns
