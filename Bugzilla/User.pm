@@ -2897,11 +2897,18 @@ sub validate_password_check {
   if ($complexity_level eq 'bmo') {
     my $features = 0;
 
-    $features++ if $password =~ /[a-z]/;
-    $features++ if $password =~ /[A-Z]/;
-    $features++ if $password =~ /[0-9]/;
-    $features++ if $password =~ /[^A-Za-z0-9]/;
-    $features++ if length($password) > 12;
+    # A password can be 3 (or more) or more 4 (or more) letter words
+    if ($password =~ /\W{4}\s+\W{4}\s+\W{4}/) {
+      $features = 3;
+    }
+    # Or have at least 3 of the following classes of characters.
+    else {
+      $features++ if $password =~ /[a-z]/;
+      $features++ if $password =~ /[A-Z]/;
+      $features++ if $password =~ /[0-9]/;
+      $features++ if $password =~ /[^A-Za-z0-9]/;
+      $features++ if length($password) > USER_PASSWORD_MIN_LENGTH;
+    }
 
     return 'password_not_complex' if $features < 3;
   }
