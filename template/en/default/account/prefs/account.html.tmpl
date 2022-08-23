@@ -129,12 +129,7 @@
           <tr>
             <td>&nbsp;</td>
             <td>
-            <ul>
-              <li>Password must be at least [% constants.USER_PASSWORD_MIN_LENGTH FILTER none %] characters long.</li>
-              [% IF password_complexity == "bmo" %]
-              <li>Password must contain at least one letter, a number and a special character.</li>
-              [% END %]
-              </ul>
+              [% INCLUDE "account/password_complexity.html.tmpl" %]
             </td>
           </tr>
           <tr>
