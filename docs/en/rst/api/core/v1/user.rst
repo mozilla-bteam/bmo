@@ -340,6 +340,9 @@ include_disabled  boolean  By default, when using the ``match`` parameter,
                            ``true`` will include disabled users in the returned
                            results even if their username doesn't fully match
                            the input string.
+permissive        boolean  When querying for users using names, do not fail the
+                           entire request if one or more errors occur. A `faults`
+                           list is included that contains the individual errors.
 ================  =======  ======================================================
 
 **Response**
