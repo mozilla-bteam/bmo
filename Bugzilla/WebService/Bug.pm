@@ -1571,6 +1571,10 @@ sub _bug_to_hash {
   if (filter_wants $params, 'last_change_time') {
     $item{'last_change_time'} = $self->type('dateTime', $bug->delta_ts);
   }
+  if (filter_wants $params, 'last_change_time_non_bot', ['extra']) {
+    $item{'last_change_time_non_bot'}
+      = $self->type('dateTime', $bug->delta_ts_non_bot);
+  }
   if (filter_wants $params, 'product') {
     $item{product} = $self->type('string', $bug->product);
   }

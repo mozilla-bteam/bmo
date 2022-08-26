@@ -82,7 +82,9 @@ sub get_param_list {
       checker => \&check_opsys
     },
 
-    {name => 'collapsed_comment_tags', type => 't', default => 'obsolete, spam',}
+    {name => 'collapsed_comment_tags', type => 't', default => 'obsolete, spam',},
+
+    {name => 'last_change_time_non_bot_skip_list', type => 't', default => ''}
   );
   return @param_list;
 }
