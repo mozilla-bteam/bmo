@@ -73,11 +73,22 @@ sub check_credentials {
   {
     my $check = validate_password_check($password);
     if ($check) {
-      return {
-        failure    => AUTH_ERROR,
-        user_error => $check,
-        details    => {locked_user => $user}
-      };
+      my $old_reason = $user->password_change_reason;
+
+      Bugzilla->audit(sprintf "%s logged in with a weak password (reason: %s)",
+        $user->login, $check);
+      $user->set_password_change_required(1);
+      $user->set_password_change_reason(
+        "You must change your password in order to meet the minimum requirements"
+      );
+
+      # Remove disabled text if user was previously disabled due to inactivity
+      if ($old_reason eq 'Inactive Account') {
+        $user->set_disabledtext('');
+        $user->set_disable_mail(0);
+      }
+
+      $user->update();
     }
   }
 
