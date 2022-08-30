@@ -535,9 +535,12 @@ foreach my $product (@products) {
         = lc($component->{name}) . '@' . lc($new_product->name) . '.bugs';
       $watch_user =~ s/\s+/\-/g;
 
+      # Pass in a larger than default value to generate_random_password
+      # so as to consistently pass the complexity check done on passwords
+      # provided when creating new users.
       Bugzilla::User->create({
         login_name    => $watch_user,
-        cryptpassword => generate_random_password(14), # Increase to pass password complexity
+        cryptpassword => generate_random_password(14),
         disable_mail  => 1,
       });
 
