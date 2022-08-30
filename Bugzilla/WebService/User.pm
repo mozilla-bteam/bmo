@@ -310,8 +310,12 @@ sub get {
       };
 
     if (Bugzilla->user->in_group('disableusers')) {
-      $user_info->{email_enabled}     = $self->type('boolean', $user->email_enabled);
-      $user_info->{login_denied_text} = $self->type('string',  $user->disabledtext);
+      if (filter_wants($params, 'email_enabled')) {
+        $user_info->{email_enabled} = $self->type('boolean', $user->email_enabled);
+      }
+      if (filter_wants($params, 'login_denied_text')) {
+        $user_info->{login_denied_text} = $self->type('string', $user->disabledtext);
+      }
     }
 
     if (Bugzilla->user->id == $user->id) {
@@ -335,8 +339,15 @@ sub get {
     push(@users, $user_info);
   }
 
-  Bugzilla::Hook::process('webservice_user_get',
-    {webservice => $self, params => $params, users => \@users});
+  Bugzilla::Hook::process(
+    'webservice_user_get',
+    {
+      webservice   => $self,
+      params       => $params,
+      user_data    => \@users,
+      user_objects => $in_group,
+    }
+  );
 
   return {users => \@users};
 }
