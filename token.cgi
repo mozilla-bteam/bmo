@@ -136,7 +136,7 @@ if ($action eq 'chgpw') {
   defined $password
     && defined $cgi->param('matchpassword')
     || ThrowUserError("require_new_password");
-  validate_password($password, $cgi->param('matchpassword'));
+  assert_valid_password($password, $cgi->param('matchpassword'));
   # Make sure that these never show up in the UI under any circumstances.
   $cgi->delete('password', 'matchpassword');
 }
@@ -431,7 +431,7 @@ sub confirm_create_account {
   my (undef, undef, $login_name) = Bugzilla::Token::GetTokenData($token);
 
   my $password = $cgi->param('passwd1') || '';
-  validate_password($password, $cgi->param('passwd2') || '');
+  assert_valid_password($password, $cgi->param('passwd2') || '');
 
   # Make sure that these never show up anywhere in the UI.
   $cgi->delete('passwd1', 'passwd2');

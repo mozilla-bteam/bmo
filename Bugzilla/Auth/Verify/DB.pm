@@ -18,6 +18,8 @@ use Bugzilla::Token;
 use Bugzilla::Util;
 use Bugzilla::User;
 
+use Try::Tiny;
+
 sub check_credentials {
   my ($self, $login_data) = @_;
   my $dbh = Bugzilla->dbh;
@@ -71,12 +73,14 @@ sub check_credentials {
   if ( Bugzilla->usage_mode == USAGE_MODE_BROWSER
     && Bugzilla->params->{password_check_on_login})
   {
-    my $check = validate_password_check($password);
-    if ($check) {
+    try {
+      assert_valid_password($password);
+    }
+    catch {
       my $old_reason = $user->password_change_reason;
 
       Bugzilla->audit(sprintf "%s logged in with a weak password (reason: %s)",
-        $user->login, $check);
+        $user->login, $_);
       $user->set_password_change_required(1);
       $user->set_password_change_reason(
         "You must change your password in order to meet the minimum requirements"
@@ -89,7 +93,7 @@ sub check_credentials {
       }
 
       $user->update();
-    }
+    };
   }
 
   # Remove disabled text if user was previously disabled due to inactivity

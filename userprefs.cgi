@@ -104,7 +104,7 @@ sub SaveAccount {
 
     if ($pwd1 ne "" || $pwd2 ne "") {
       $pwd1 || ThrowUserError("new_password_missing");
-      validate_password($pwd1, $pwd2);
+      assert_valid_password($pwd1, $pwd2);
 
       if ($oldpassword ne $pwd1) {
         if ($user->mfa) {
