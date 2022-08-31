@@ -26,6 +26,7 @@ use Bugzilla::Hook;
 
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 use List::Util qw(first);
+use Mojo::JSON qw(true);
 use Try::Tiny;
 
 # Don't need auth to login
@@ -217,9 +218,30 @@ sub get {
     || ThrowCodeError('params_required',
     {function => 'User.get', params => ['ids', 'names', 'match']});
 
-  my @user_objects;
-  @user_objects = map { Bugzilla::User->check($_) } @{$params->{names}}
-    if $params->{names};
+  my (@user_objects, @faults);
+  if ($params->{names}) {
+    foreach my $name (@{$params->{names}}) {
+      my $user;
+      # If permissive mode, then we do not kill the whole
+      # request if there is an error with user lookup.
+      # We store the errors in 'faults' array.
+      if ($params->{permissive}) {
+        my $old_error_mode = Bugzilla->error_mode;
+        Bugzilla->error_mode(ERROR_MODE_DIE);
+        eval { $user = Bugzilla::User->check({name => $name}); };
+        Bugzilla->error_mode($old_error_mode);
+        if ($@) {
+          push @faults, {name => $name, error => true, message => $@->message};
+          undef $@;
+          next;
+        }
+        push @user_objects, $user;
+      }
+      else {
+        push @user_objects, Bugzilla::User->check({name => $name});
+      }
+    }
+  }
 
   # start filtering to remove duplicate user ids
   my %unique_users = map { $_->id => $_ } @user_objects;
@@ -247,7 +269,7 @@ sub get {
         }
     } @$in_group;
 
-    return {users => \@users};
+    return {users => \@users, faults => \@faults};
   }
 
   my $obj_by_ids;
@@ -338,7 +360,7 @@ sub get {
   Bugzilla::Hook::process('webservice_user_get',
     {webservice => $self, params => $params, users => \@users});
 
-  return {users => \@users};
+  return {users => \@users, faults => \@faults};
 }
 
 ###############
