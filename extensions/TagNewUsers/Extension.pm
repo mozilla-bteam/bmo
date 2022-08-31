@@ -253,19 +253,14 @@ sub mailer_before_send {
 
 sub webservice_user_get {
   my ($self, $args) = @_;
-  my ($webservice, $params, $users) = @$args{qw(webservice params users)};
+  my ($webservice, $params, $user_data, $user_objects)
+    = @$args{qw(webservice params user_data user_objects)};
 
   return unless filter_wants($params, 'is_new');
 
-  foreach my $user (@$users) {
-
-    # Most of the time the hash values are XMLRPC::Data objects
-    my $email
-      = blessed $user->{'email'} ? $user->{'email'}->value : $user->{'email'};
-    if ($email) {
-      my $user_obj = Bugzilla::User->new({name => $email});
-      $user->{'is_new'} = $webservice->type('boolean', $user_obj->is_new ? 1 : 0);
-    }
+  for (my $i = 0; $i < @{$user_data}; $i++) {
+    $user_data->[$i]->{'is_new'}
+      = $webservice->type('boolean', $user_objects->[$i]->is_new ? 1 : 0);
   }
 }
 
