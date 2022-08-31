@@ -267,27 +267,28 @@ use constant MAX_LINE_LENGTH => 254;
 # of Bugzilla. (These are the field names that the WebService and email_in.pl
 # use.)
 use constant FIELD_MAP => {
-  blocks                => 'blocked',
-  commentprivacy        => 'comment_is_private',
-  creation_time         => 'creation_ts',
-  creator               => 'reporter',
-  description           => 'comment',
-  depends_on            => 'dependson',
-  dupe_of               => 'dup_id',
-  id                    => 'bug_id',
-  is_confirmed          => 'everconfirmed',
-  is_cc_accessible      => 'cclist_accessible',
-  is_creator_accessible => 'reporter_accessible',
-  last_change_time      => 'delta_ts',
-  comment_count         => 'longdescs.count',
-  platform              => 'rep_platform',
-  regressions           => 'regresses',
-  severity              => 'bug_severity',
-  status                => 'bug_status',
-  summary               => 'short_desc',
-  type                  => 'bug_type',
-  url                   => 'bug_file_loc',
-  whiteboard            => 'status_whiteboard',
+  blocks                   => 'blocked',
+  commentprivacy           => 'comment_is_private',
+  creation_time            => 'creation_ts',
+  creator                  => 'reporter',
+  description              => 'comment',
+  depends_on               => 'dependson',
+  dupe_of                  => 'dup_id',
+  id                       => 'bug_id',
+  is_confirmed             => 'everconfirmed',
+  is_cc_accessible         => 'cclist_accessible',
+  is_creator_accessible    => 'reporter_accessible',
+  last_change_time         => 'delta_ts',
+  last_change_time_non_bot => 'delta_ts_non_bot',
+  comment_count            => 'longdescs.count',
+  platform                 => 'rep_platform',
+  regressions              => 'regresses',
+  severity                 => 'bug_severity',
+  status                   => 'bug_status',
+  summary                  => 'short_desc',
+  type                     => 'bug_type',
+  url                      => 'bug_file_loc',
+  whiteboard               => 'status_whiteboard',
 };
 
 use constant REQUIRED_FIELD_MAP =>
@@ -4409,6 +4410,60 @@ sub bug_alias_to_id {
   my $dbh = Bugzilla->dbh;
   return $dbh->selectrow_array("SELECT bug_id FROM bugs WHERE alias = ?",
     undef, $alias);
+}
+
+# Last changed timestamp of a non-bot user
+sub delta_ts_non_bot {
+  my ($self) = @_;
+  return $self->{delta_ts_non_bot} if exists $self->{delta_ts_non_bot};
+
+  # If the skip list is empty, just always return the normal delta_ts
+  my $params = Bugzilla->params;
+  return $self->delta_ts if !$params->{last_change_time_non_bot_skip_list};
+
+  my $dbh = Bugzilla->dbh;
+
+  # Cache the bot account user ids for performance if we are
+  # fetching multiple bugs and their timestamps
+  my $cache = Bugzilla->request_cache;
+  if (!$cache->{bot_ids_string}) {
+    my $quoted_bot_names = join ',', map { $dbh->quote($_) } split /[\s,]+/,
+      $params->{last_change_time_non_bot_skip_list};
+    if ($quoted_bot_names) {
+      my $bot_ids = $dbh->selectcol_arrayref(
+        "SELECT userid FROM profiles
+                                     WHERE login_name IN ($quoted_bot_names)"
+      );
+      $cache->{bot_ids_string} = join ',', @{$bot_ids};
+    }
+  }
+
+  # Grab the latest timestamp for comments and bug changes that was not made by
+  # one of the accounts in the bot skip list. Return the greatest of the two values.
+  if (my $bot_ids_string = $cache->{bot_ids_string}) {
+    my %time_map;
+    my @result = $dbh->selectrow_array(
+      "SELECT bug_when, UNIX_TIMESTAMP(bug_when)
+         FROM bugs_activity
+        WHERE bug_id = ? AND who NOT IN ($bot_ids_string)
+        ORDER BY bug_when DESC LIMIT 1",
+      undef, $self->id
+    );
+    $time_map{$result[1]} = $result[0] if @result;
+    @result = $dbh->selectrow_array(
+      "SELECT bug_when, UNIX_TIMESTAMP(bug_when)
+         FROM longdescs
+        WHERE bug_id = ? AND who NOT IN ($bot_ids_string)
+        ORDER BY bug_when DESC LIMIT 1",
+      undef, $self->id
+    );
+    $time_map{$result[1]} = $result[0] if @result;
+
+    my $max_epoch = max keys %time_map;
+    $self->{delta_ts_non_bot} = $time_map{$max_epoch};
+  }
+
+  return $self->{delta_ts_non_bot};
 }
 
 #####################################################################
