@@ -267,28 +267,28 @@ use constant MAX_LINE_LENGTH => 254;
 # of Bugzilla. (These are the field names that the WebService and email_in.pl
 # use.)
 use constant FIELD_MAP => {
-  blocks                => 'blocked',
-  commentprivacy        => 'comment_is_private',
-  creation_time         => 'creation_ts',
-  creator               => 'reporter',
-  description           => 'comment',
-  depends_on            => 'dependson',
-  dupe_of               => 'dup_id',
-  id                    => 'bug_id',
-  is_confirmed          => 'everconfirmed',
-  is_cc_accessible      => 'cclist_accessible',
-  is_creator_accessible => 'reporter_accessible',
-  last_change_time      => 'delta_ts',
+  blocks                   => 'blocked',
+  commentprivacy           => 'comment_is_private',
+  creation_time            => 'creation_ts',
+  creator                  => 'reporter',
+  description              => 'comment',
+  depends_on               => 'dependson',
+  dupe_of                  => 'dup_id',
+  id                       => 'bug_id',
+  is_confirmed             => 'everconfirmed',
+  is_cc_accessible         => 'cclist_accessible',
+  is_creator_accessible    => 'reporter_accessible',
+  last_change_time         => 'delta_ts',
   last_change_time_non_bot => 'delta_ts_non_bot',
-  comment_count         => 'longdescs.count',
-  platform              => 'rep_platform',
-  regressions           => 'regresses',
-  severity              => 'bug_severity',
-  status                => 'bug_status',
-  summary               => 'short_desc',
-  type                  => 'bug_type',
-  url                   => 'bug_file_loc',
-  whiteboard            => 'status_whiteboard',
+  comment_count            => 'longdescs.count',
+  platform                 => 'rep_platform',
+  regressions              => 'regresses',
+  severity                 => 'bug_severity',
+  status                   => 'bug_status',
+  summary                  => 'short_desc',
+  type                     => 'bug_type',
+  url                      => 'bug_file_loc',
+  whiteboard               => 'status_whiteboard',
 };
 
 use constant REQUIRED_FIELD_MAP =>
@@ -4415,7 +4415,7 @@ sub bug_alias_to_id {
 # Last changed timestamp of a non-bot user
 sub delta_ts_non_bot {
   my ($self) = @_;
-  return $self->{delta_ts_non_bot} if exists $self->{delat_ts_non_bot};
+  return $self->{delta_ts_non_bot} if exists $self->{delta_ts_non_bot};
 
   # If the skip list is empty, just always return the normal delta_ts
   my $params = Bugzilla->params;
