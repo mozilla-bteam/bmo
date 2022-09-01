@@ -10,9 +10,11 @@ use Mojo::Base -strict;
 use QA::Util;
 use Test::More;
 
-my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
-my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'password012!';
-my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // '012!password';
+use constant PASSWORD_TOO_SHORT     => 'a';
+use constant PASSWORD_TOO_FEW_WORDS => 'bip bop boop';
+use constant PASSWORD_NOT_COMPLEX   => 'abcdefghijk1';
+use constant PASSWORD_GOOD_COMPLEX  => '012!password';
+use constant PASSWORD_GOOD_WORDS    => 'this is a good password with words';
 
 my @require_env = qw(
   BZ_BASE_URL
@@ -27,24 +29,39 @@ bail_out("Missing env: @missing_env") if @missing_env;
 
 my ($sel, $config) = get_selenium();
 
+my $ADMIN_LOGIN  = $config->{admin_user_login};
+my $ADMIN_PW_OLD = $config->{admin_user_passwd};
+
 $sel->set_implicit_wait_timeout(600);
 
 $sel->login_ok($ADMIN_LOGIN, $ADMIN_PW_OLD);
 
-$sel->change_password($ADMIN_PW_OLD . "x", "newpassword2", "newpassword2");
+# Incorrect old password
+$sel->change_password($ADMIN_PW_OLD . "x", PASSWORD_GOOD_COMPLEX, PASSWORD_GOOD_COMPLEX);
 $sel->title_is("Incorrect Old Password");
 
-$sel->change_password($ADMIN_PW_OLD, "passwordpass", "passwordpass");
+# Password not complex enough
+$sel->change_password($ADMIN_PW_OLD, PASSWORD_NOT_COMPLEX, PASSWORD_NOT_COMPLEX);
 $sel->title_is("Password Fails Requirements");
 
-$sel->change_password($ADMIN_PW_OLD, $ADMIN_PW_NEW, $ADMIN_PW_NEW);
-$sel->title_is("User Preferences");
-$sel->logout_ok();
+# Password too few words
+$sel->change_password($ADMIN_PW_OLD, PASSWORD_TOO_FEW_WORDS, PASSWORD_TOO_FEW_WORDS);
+$sel->title_is("Password Fails Requirements");
 
-$sel->login_ok($ADMIN_LOGIN, $ADMIN_PW_NEW);
+# Complex passwords should work
+$sel->change_password($ADMIN_PW_OLD, PASSWORD_GOOD_COMPLEX, PASSWORD_GOOD_COMPLEX);
+$sel->title_is("User Preferences");
+
+# Password that is a 4 word phrase should work
+$sel->change_password(PASSWORD_GOOD_COMPLEX, PASSWORD_GOOD_WORDS, PASSWORD_GOOD_WORDS);
+$sel->title_is("User Preferences");
 
 # we don't protect against password re-use
-$sel->change_password($ADMIN_PW_NEW, $ADMIN_PW_OLD, $ADMIN_PW_OLD);
+$sel->change_password(PASSWORD_GOOD_WORDS, PASSWORD_GOOD_WORDS, PASSWORD_GOOD_WORDS);
+$sel->title_is("User Preferences");
+
+# Set back to original password
+$sel->change_password(PASSWORD_GOOD_WORDS, $ADMIN_PW_OLD, $ADMIN_PW_OLD);
 $sel->title_is("User Preferences");
 $sel->logout_ok();
 
