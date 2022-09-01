@@ -265,16 +265,11 @@ sub webservice_user_get {
   my ($webservice, $params, $user_data, $user_objects)
     = @$args{qw(webservice params user_data user_objects)};
 
-  return unless filter_wants($params, 'last_activity');
-
-  my $dbh = Bugzilla->dbh;
-  my $sth
-    = $dbh->prepare("SELECT last_activity_ts FROM profiles WHERE userid = ?");
+  return unless filter_wants($params, 'last_activity_time');
 
   for (my $i = 0; $i < @{$user_data}; $i++) {
-    $sth->execute($user_objects->[$i]->id);
-    my ($timestamp) = $sth->fetchrow_array();
-    $user_data->[$i]->{last_activity} = $webservice->type('dateTime', $timestamp);
+    $user_data->[$i]->{last_activity_time}
+      = $webservice->type('dateTime', $user_objects->[0]->last_activity_ts);
   }
 }
 
