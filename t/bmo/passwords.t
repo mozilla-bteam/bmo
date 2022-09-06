@@ -10,11 +10,60 @@ use Mojo::Base -strict;
 use QA::Util;
 use Test::More;
 
-use constant PASSWORD_TOO_SHORT     => 'a';
-use constant PASSWORD_TOO_FEW_WORDS => 'bip bop boop';
-use constant PASSWORD_NOT_COMPLEX   => 'abcdefghijk1';
-use constant PASSWORD_GOOD_COMPLEX  => '012!password';
-use constant PASSWORD_GOOD_WORDS    => 'this is a good password with words';
+# Bad passwords
+use constant BAD_PASSWORDS => (
+  {desc => 'too short', error => 'Password Too Short', password => 'a'},
+  {
+    desc     => 'all lowercase',
+    error    => 'Password Fails Requirements',
+    password => 'abcdefghijkl'
+  },
+  {
+    desc     => 'all uppercase',
+    error    => 'Password Fails Requirements',
+    password => 'ABCDEFGHIJKL'
+  },
+  {
+    desc     => 'all numbers',
+    error    => 'Password Fails Requirements',
+    password => '012345678901'
+  },
+  {
+    desc     => 'too few words',
+    error    => 'Password Fails Requirements',
+    password => 'abc def ghij'
+  },
+  {
+    desc     => 'not complex enough',
+    error    => 'Password Fails Requirements',
+    password => 'abcdefghijk1'
+  }
+);
+
+# Good passwords
+use constant GOOD_PASSWORDS => (
+  {
+    desc     => 'complex password with numbers, lowercase letters, and special characters',
+    password => '012!password'
+  },
+  {
+    desc =>
+      'complex password with lowercase letters, uppercase letters, and longer than min length',
+    password => 'abcdefGHIJKLM'
+  },
+  {
+    desc     => 'complex password: letters, numbers, and longer than min length',
+    password => 'password12345'
+  },
+  {
+    desc     => 'phrase password with at least 4 words, each with at least 3 letters',
+    password => 'this is a good password with words'
+  },
+  {
+    desc     => 'phrase password containing a complex word',
+    password => 'abc def ghijklMNOP01'
+  }
+);
 
 my @require_env = qw(
   BZ_BASE_URL
@@ -37,31 +86,26 @@ $sel->set_implicit_wait_timeout(600);
 $sel->login_ok($ADMIN_LOGIN, $ADMIN_PW_OLD);
 
 # Incorrect old password
-$sel->change_password($ADMIN_PW_OLD . "x", PASSWORD_GOOD_COMPLEX, PASSWORD_GOOD_COMPLEX);
-$sel->title_is("Incorrect Old Password");
+$sel->change_password($ADMIN_PW_OLD . 'x', 'password', 'password');
+$sel->title_is('Incorrect Old Password');
 
-# Password not complex enough
-$sel->change_password($ADMIN_PW_OLD, PASSWORD_NOT_COMPLEX, PASSWORD_NOT_COMPLEX);
-$sel->title_is("Password Fails Requirements");
+# Run through each of the bad password tests
+foreach my $test (BAD_PASSWORDS) {
+  $sel->change_password($ADMIN_PW_OLD, $test->{password}, $test->{password});
+  $sel->title_is($test->{error}, $test->{desc});
+}
 
-# Password too few words
-$sel->change_password($ADMIN_PW_OLD, PASSWORD_TOO_FEW_WORDS, PASSWORD_TOO_FEW_WORDS);
-$sel->title_is("Password Fails Requirements");
-
-# Complex passwords should work
-$sel->change_password($ADMIN_PW_OLD, PASSWORD_GOOD_COMPLEX, PASSWORD_GOOD_COMPLEX);
-$sel->title_is("User Preferences");
-
-# Password that is a 4 word phrase should work
-$sel->change_password(PASSWORD_GOOD_COMPLEX, PASSWORD_GOOD_WORDS, PASSWORD_GOOD_WORDS);
-$sel->title_is("User Preferences");
-
-# we don't protect against password re-use
-$sel->change_password(PASSWORD_GOOD_WORDS, PASSWORD_GOOD_WORDS, PASSWORD_GOOD_WORDS);
-$sel->title_is("User Preferences");
+# Run through each of the good password tests
+my $last_password;
+foreach my $test (GOOD_PASSWORDS) {
+  $last_password ||= $ADMIN_PW_OLD;
+  $sel->change_password($last_password, $test->{password}, $test->{password});
+  $sel->title_is('User Preferences', $test->{desc});
+  $last_password = $test->{password};
+}
 
 # Set back to original password
-$sel->change_password(PASSWORD_GOOD_WORDS, $ADMIN_PW_OLD, $ADMIN_PW_OLD);
+$sel->change_password($last_password, $ADMIN_PW_OLD, $ADMIN_PW_OLD);
 $sel->title_is("User Preferences");
 $sel->logout_ok();
 

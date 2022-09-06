@@ -2889,23 +2889,31 @@ sub assert_valid_password  {
 
   my $complexity_level = Bugzilla->params->{password_complexity};
   if ($complexity_level eq 'bmo') {
-    my $features = 0;
-
-    # A password can be 4 (or more) or more 3 (or more) letter words
-    if ($password =~ /^\S{3,}(?:\s+\S{3,}){3,}/) {
-      $features = 3;
+    # A password can be at least four words of three characters or longer
+    my $good_words = 0;
+    foreach my $word (split /\s+/, $password ) {
+      # If a word is complex enough by itself then we are good
+      return if _password_is_complex($word);
+      $good_words++ unless length($word) < 3;
     }
+    return unless $good_words < 4;
+
     # Or have at least 3 of the following classes of characters.
-    else {
-      $features++ if $password =~ /[a-z]/;
-      $features++ if $password =~ /[A-Z]/;
-      $features++ if $password =~ /[0-9]/;
-      $features++ if $password =~ /[^A-Za-z0-9]/;
-      $features++ if length($password) > USER_PASSWORD_MIN_LENGTH;
-    }
+    return if _password_is_complex($password);
 
-    ThrowUserError('password_not_complex') if $features < 3;
+    ThrowUserError('password_not_complex');
   }
+}
+
+sub _password_is_complex {
+  my ($password) = @_;
+  my $features = 0;
+  $features++ if $password =~ /[a-z]/;
+  $features++ if $password =~ /[A-Z]/;
+  $features++ if $password =~ /[0-9]/;
+  $features++ if $password =~ /[^A-Za-z0-9]/;
+  $features++ if length($password) > USER_PASSWORD_MIN_LENGTH;
+  return $features < 3 ? 0 : 1;
 }
 
 1;
