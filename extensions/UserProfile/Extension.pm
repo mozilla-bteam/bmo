@@ -269,7 +269,7 @@ sub webservice_user_get {
 
   for (my $i = 0; $i < @{$user_data}; $i++) {
     $user_data->[$i]->{last_activity_time}
-      = $webservice->type('dateTime', $user_objects->[0]->last_activity_ts);
+      = $webservice->type('dateTime', $user_objects->[$i]->last_activity_ts);
   }
 }
 
