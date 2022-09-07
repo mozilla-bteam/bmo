@@ -153,7 +153,7 @@ sub suggest {
   return {users => []} if length($s) < 3;
 
   my $dbh    = Bugzilla->dbh;
-  my @select = ('userid AS id', 'realname AS real_name', 'login_name AS name');
+  my @select = ('userid AS id');
   my $order  = 'last_activity_ts DESC';
   my $where;
   state $have_mysql = $dbh->isa('Bugzilla::DB::Mysql');
@@ -183,23 +183,32 @@ sub suggest {
   }
   $where = "($where) AND is_enabled = 1";
 
-  my $sql
-    = 'SELECT '
-    . join(', ', @select)
-    . " FROM profiles WHERE $where ORDER BY $order LIMIT 25";
-  my $results = $dbh->selectall_arrayref($sql, {Slice => {}});
+  my $results = $dbh->selectall_arrayref(
+    "SELECT "
+      . join(', ', @select)
+      . " FROM profiles WHERE $where ORDER BY $order LIMIT 25",
+    {Slice => {}}
+  );
+  my $user_objects = Bugzilla::User->new_from_list([map { $_->{id} } @$results]);
 
-  my @users = map { {
-    id        => $self->type(int    => $_->{id}),
-    real_name => $self->type(string => $_->{real_name}),
-    nick      => $self->type(string => $_->{nick}),
-    name      => $self->type(email  => $_->{name}),
-  } } @$results;
+  my @user_data = map { {
+    id        => $self->type('int',    $_->id),
+    real_name => $self->type('string', $_->name),
+    nick      => $self->type('string', $_->nick),
+    name      => $self->type('email',  $_->login),
+  } } @$user_objects;
 
-  Bugzilla::Hook::process('webservice_user_suggest',
-    {webservice => $self, params => $params, users => \@users});
+  Bugzilla::Hook::process(
+    'webservice_user_get',
+    {
+      webservice   => $self,
+      params       => $params,
+      user_data    => \@user_data,
+      user_objects => $user_objects
+    }
+  );
 
-  return {users => \@users};
+  return {users => \@user_data};
 }
 
 # function to return user information by passing either user ids or

@@ -75,9 +75,4 @@ sub webservice_user_get {
   }
 }
 
-sub webservice_user_suggest {
-  my ($self, $args) = @_;
-  $self->webservice_user_get($args);
-}
-
 __PACKAGE__->NAME;
