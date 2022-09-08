@@ -34,6 +34,11 @@ use constant BAD_PASSWORDS => (
     password => 'abc def ghij'
   },
   {
+    desc     => 'all words not unique',
+    error    => 'Password Fails Requirements',
+    password => 'abc def ghi ghi'
+  },
+  {
     desc     => 'not complex enough',
     error    => 'Password Fails Requirements',
     password => 'abcdefghijk1'
@@ -56,12 +61,12 @@ use constant GOOD_PASSWORDS => (
     password => 'password12345'
   },
   {
-    desc     => 'phrase password with at least 4 words, each with at least 3 letters',
+    desc     => 'phrase password with at least 4 unique words, some with at least 3 letters',
     password => 'this is a good password with words'
   },
   {
-    desc     => 'phrase password containing a complex word',
-    password => 'abc def ghijklMNOP01'
+    desc     => 'phrase password with some duplicate words but still enough unique',
+    password => 'abc def ghi ghi jkl'
   }
 );
 
