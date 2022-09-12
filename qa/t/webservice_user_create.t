@@ -13,13 +13,17 @@ use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
 use QA::Util;
-use Test::More tests => 87;
+use Test::More tests => 99;
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 
 use constant NEW_PASSWORD => 'UiX1Shuuchid';
 use constant NEW_FULLNAME => 'WebService Created User';
 
-use constant PASSWORD_TOO_SHORT => 'a';
+use constant PASSWORD_TOO_SHORT     => 'a';
+use constant PASSWORD_TOO_FEW_WORDS => 'bip bop boop';
+use constant PASSWORD_NOT_COMPLEX   => 'abcdefghijk1';
+
+use Bugzilla::Constants qw(USER_PASSWORD_MIN_LENGTH);
 
 # These are the characters that are actually invalid per RFC.
 use constant INVALID_EMAIL => '()[]\;:,<>@webservice.test';
@@ -102,7 +106,6 @@ foreach my $rpc ($jsonrpc, $xmlrpc) {
       error => "There is already an account",
       test  => 'Trying to use an existing login name fails',
     },
-
     {
       user => 'admin',
       args => {
@@ -111,9 +114,31 @@ foreach my $rpc ($jsonrpc, $xmlrpc) {
         password  => PASSWORD_TOO_SHORT
       },
       error =>
-        'The password does not meet our security requirements for the following reason: too short',
-      test => 'Password Too Short fails',
+        'The password must be at least ' . USER_PASSWORD_MIN_LENGTH . ' characters long.',
+      test => 'Password is too short',
     },
+    {
+      user => 'admin',
+      args => {
+        email     => new_login(),
+        full_name => NEW_FULLNAME,
+        password  => PASSWORD_TOO_FEW_WORDS
+      },
+      error => 'Password must be at least ' . USER_PASSWORD_MIN_LENGTH
+        . ' characters long. And the password must also contain either of the following',
+      test => 'Password is phrase with too few words',
+    },
+      {
+      user => 'admin',
+      args => {
+        email     => new_login(),
+        full_name => NEW_FULLNAME,
+        password  => PASSWORD_NOT_COMPLEX
+      },
+      error => 'Password must be at least ' . USER_PASSWORD_MIN_LENGTH
+        . ' characters long. And the password must also contain either of the following',
+      test => 'Password not complex enough',
+      },
     {
       user => 'admin',
       args =>

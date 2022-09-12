@@ -10,9 +10,65 @@ use Mojo::Base -strict;
 use QA::Util;
 use Test::More;
 
-my $ADMIN_LOGIN  = $ENV{BZ_TEST_ADMIN} // 'admin@mozilla.bugs';
-my $ADMIN_PW_OLD = $ENV{BZ_TEST_ADMIN_PASS} // 'password01!';
-my $ADMIN_PW_NEW = $ENV{BZ_TEST_ADMIN_NEWPASS} // 'she7Ka8t';
+# Bad passwords
+use constant BAD_PASSWORDS => (
+  {desc => 'too short', error => 'Password Too Short', password => 'a'},
+  {
+    desc     => 'all lowercase',
+    error    => 'Password Fails Requirements',
+    password => 'abcdefghijkl'
+  },
+  {
+    desc     => 'all uppercase',
+    error    => 'Password Fails Requirements',
+    password => 'ABCDEFGHIJKL'
+  },
+  {
+    desc     => 'all numbers',
+    error    => 'Password Fails Requirements',
+    password => '012345678901'
+  },
+  {
+    desc     => 'too few words',
+    error    => 'Password Fails Requirements',
+    password => 'abc def ghij'
+  },
+  {
+    desc     => 'all words not unique',
+    error    => 'Password Fails Requirements',
+    password => 'abc def ghi ghi'
+  },
+  {
+    desc     => 'not complex enough',
+    error    => 'Password Fails Requirements',
+    password => 'abcdefghijk1'
+  }
+);
+
+# Good passwords
+use constant GOOD_PASSWORDS => (
+  {
+    desc     => 'complex password with numbers, lowercase letters, and special characters',
+    password => '012!password'
+  },
+  {
+    desc =>
+      'complex password with lowercase letters, uppercase letters, and longer than min length',
+    password => 'abcdefGHIJKLM'
+  },
+  {
+    desc     => 'complex password: letters, numbers, and longer than min length',
+    password => 'password12345'
+  },
+  {
+    desc     => 'phrase password with at least 4 unique words, some with at least 3 letters',
+    password => 'this is a good password with words'
+  },
+  {
+    desc     => 'phrase password with some duplicate words but still enough unique',
+    password => 'abc def ghi ghi jkl'
+  }
+);
 
 my @require_env = qw(
   BZ_BASE_URL
@@ -27,24 +83,34 @@ bail_out("Missing env: @missing_env") if @missing_env;
 
 my ($sel, $config) = get_selenium();
 
+my $ADMIN_LOGIN  = $config->{admin_user_login};
+my $ADMIN_PW_OLD = $config->{admin_user_passwd};
+
 $sel->set_implicit_wait_timeout(600);
 
 $sel->login_ok($ADMIN_LOGIN, $ADMIN_PW_OLD);
 
-$sel->change_password($ADMIN_PW_OLD . "x", "newpassword2", "newpassword2");
-$sel->title_is("Incorrect Old Password");
+# Incorrect old password
+$sel->change_password($ADMIN_PW_OLD . 'x', 'password', 'password');
+$sel->title_is('Incorrect Old Password');
 
-$sel->change_password($ADMIN_PW_OLD, "password", "password");
-$sel->title_is("Password Fails Requirements");
+# Run through each of the bad password tests
+foreach my $test (BAD_PASSWORDS) {
+  $sel->change_password($ADMIN_PW_OLD, $test->{password}, $test->{password});
+  $sel->title_is($test->{error}, $test->{desc});
+}
 
-$sel->change_password($ADMIN_PW_OLD, $ADMIN_PW_NEW, $ADMIN_PW_NEW);
-$sel->title_is("User Preferences");
-$sel->logout_ok();
+# Run through each of the good password tests
+my $last_password;
+foreach my $test (GOOD_PASSWORDS) {
+  $last_password ||= $ADMIN_PW_OLD;
+  $sel->change_password($last_password, $test->{password}, $test->{password});
+  $sel->title_is('User Preferences', $test->{desc});
+  $last_password = $test->{password};
+}
 
-$sel->login_ok($ADMIN_LOGIN, $ADMIN_PW_NEW);
-
-# we don't protect against password re-use
-$sel->change_password($ADMIN_PW_NEW, $ADMIN_PW_OLD, $ADMIN_PW_OLD);
+# Set back to original password
+$sel->change_password($last_password, $ADMIN_PW_OLD, $ADMIN_PW_OLD);
 $sel->title_is("User Preferences");
 $sel->logout_ok();
 
@@ -65,7 +131,7 @@ $sel->click_and_type("old_password",  $ENV{BZ_TEST_NEWBIE_PASS});
 $sel->click_and_type("new_password1", "password");
 $sel->click_and_type("new_password2", "password");
 $sel->click_ok('//input[@id="submit"]');
-$sel->title_is('Password Fails Requirements');
+$sel->title_is('Password Too Short');
 
 $sel->go_back_ok();
 $sel->title_is('Password change required');
@@ -94,8 +160,8 @@ my $token = $sel->get_token();
 ok($token, "got a token from resetting password");
 $sel->get_ok("/token.cgi?t=$token&a=cfmpw");
 $sel->title_is('Change Password');
-$sel->click_and_type("password",      "nopandas");
-$sel->click_and_type("matchpassword", "nopandas");
+$sel->click_and_type("password",      "nopandas1234");
+$sel->click_and_type("matchpassword", "nopandas1234");
 $sel->click_ok('//input[@id="update"]');
 $sel->title_is('Password Fails Requirements');
 $sel->go_back_ok();

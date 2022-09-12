@@ -30,6 +30,8 @@ use Bugzilla::User::Setting;
 use Bugzilla::Util qw(get_text);
 use Bugzilla::Version;
 
+use Try::Tiny;
+
 use constant STATUS_WORKFLOW => (
   [undef,         'UNCONFIRMED'],
   [undef,         'CONFIRMED'],
@@ -514,16 +516,13 @@ sub _prompt_for_password {
     print "\n", get_text('install_confirm_password'), ' ';
     my $pass2 = <STDIN>;
     chomp $pass2;
-    my $pwqc = Bugzilla->passwdqc;
-    my $ok   = $pwqc->validate_password($password);
-    if (!$ok) {
-      print "\n", $pwqc->reason, "\n";
-      undef $password;
+    try {
+      assert_valid_password($password, $pass2);
     }
-    elsif ($password ne $pass2) {
-      print "\n", "passwords do not match\n";
+    catch {
+      print "\n$_\n";
       undef $password;
-    }
+    };
     system("stty", "echo") unless ON_WINDOWS;
   }
   return $password;

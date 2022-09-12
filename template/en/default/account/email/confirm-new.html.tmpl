@@ -31,9 +31,6 @@
   Your email address and Real Name (if provided) will be shown with
   changes you make.
 </p>
-<p>
-  [% Param('passwdqc_desc') FILTER html_light %]
-</p>
 
 <form id="confirm_account_form" method="post" action="[% basepath FILTER none %]token.cgi">
   <input type="hidden" name="t" value="[% token FILTER html %]">
@@ -65,8 +62,9 @@
         </tr>
       </table>
     </div>
-
-    [% INCLUDE "global/password-features.html.tmpl" class="flex-right" password_page="confirm" %]
+    <div class="flex-right">
+      [% INCLUDE "account/password_complexity.html.tmpl" %]
+    </div>
   </div>
 </form>
 

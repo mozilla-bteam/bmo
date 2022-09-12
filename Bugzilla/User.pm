@@ -37,7 +37,7 @@ use base qw(Bugzilla::Object Exporter);
 with 'Bugzilla::Role::Storable', 'Bugzilla::Role::FlattenToHash';
 
 @Bugzilla::User::EXPORT = qw(is_available_username
-  login_to_id user_id_to_login
+  login_to_id user_id_to_login assert_valid_password
   USER_MATCH_MULTIPLE USER_MATCH_FAILED USER_MATCH_SUCCESS
   MATCH_SKIP_CONFIRM
 );
@@ -365,7 +365,7 @@ sub _check_password {
   # authentication.
   return $pass if $pass eq '*';
 
-  Bugzilla->assert_password_is_secure($pass);
+  assert_valid_password($pass);
   my $cryptpassword = bz_crypt($pass);
   return $cryptpassword;
 }
@@ -2875,6 +2875,42 @@ sub user_id_to_login {
   return $login || '';
 }
 
+sub assert_valid_password {
+  my ($password, $matchpassword) = @_;
+
+  if (length($password) < USER_PASSWORD_MIN_LENGTH) {
+    ThrowUserError('password_too_short');
+  }
+  elsif ((defined $matchpassword) && ($password ne $matchpassword)) {
+    ThrowUserError('password_mismatch');
+  }
+
+  if (Bugzilla->params->{password_complexity} eq 'bmo') {
+
+    # A password can be at least four unique words of three characters or longer
+    my %seen;
+    my $good_words = 0;
+    my @words = split /\s+/, $password;
+    foreach my $word (@words) {
+      next if $seen{$word};
+      $good_words++ if length($word) >= 3;
+      $seen{$word} = 1;
+    }
+    return if $good_words >= 4;
+
+    # Or have at least 3 of the following classes of characters.
+    my $features = 0;
+    $features++ if $password =~ /[[:lower:]]/;
+    $features++ if $password =~ /[[:upper:]]/;
+    $features++ if $password =~ /[[:digit:]]/;
+    $features++ if $password =~ /[[:punct:]]/;
+    $features++ if length($password) > USER_PASSWORD_MIN_LENGTH;
+    return if $features >= 3;
+
+    ThrowUserError('password_not_complex');
+  }
+}
+
 1;
 
 __END__
@@ -3500,6 +3536,15 @@ if you need more information about the user than just their ID.
 Returns the login name of the user account for the given user ID. If no
 valid user ID is given or the user has no entry in the profiles table,
 we return an empty string.
+
+=item C<assert_valid_password($passwd1, $passwd2)>
+
+Returns true if a password is valid (i.e. meets Bugzilla's
+requirements for length and content), else throws an error.
+Untaints C<$passwd1> if successful.
+
+If a second password is passed in, this function also verifies that
+the two passwords match.
 
 =item C<match_field($data, $fields, $behavior)>
 
