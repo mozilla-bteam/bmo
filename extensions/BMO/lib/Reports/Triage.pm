@@ -350,6 +350,22 @@ sub owners {
     }
     $bug_count_sth->execute($component_id);
 
+    # Show if current triage owner is in security group for current product.
+    # Check that the BMO extension is present and enabled by first checking
+    # if the product object has the default_security_group method.
+    # Also make sure the current user has permission to see this information
+    my $product_obj = Bugzilla::Product->new({name => $product_name, cache => 1});
+    if ( $product_obj->can('default_security_group')
+      && $product_obj->default_security_group
+      && $user->in_group('mozilla-employee-confidential'))
+    {
+      $data->{in_prod_security_group}
+        = $triage_owner
+        && $triage_owner->in_group($product_obj->default_security_group)
+        ? 'Yes'
+        : 'No';
+    }
+
     my $total = 0;
     while (my ($type, $count) = $bug_count_sth->fetchrow_array()) {
       $data->{bug_counts}->{$type} = $count;
