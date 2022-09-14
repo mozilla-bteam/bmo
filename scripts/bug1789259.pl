@@ -29,20 +29,33 @@ BEGIN { Bugzilla->extensions(); }
 #
 
 my @products = (
-  "Core",            "Developer Infrastructure",
-  "DevTools",        "External Software Affecting Firefox",
-  "Fenix",           "Firefox",
-  "Firefox for iOS", "Firefox Build System",
-  "GeckoView",       "JSS",
-  "NSPR",            "NSS",
-  "Remote Protocol", "Testing",
-  "Toolkit",         "Web Compatibility",
-  "WebExtensions"
+  'Calendar',
+  'Chat Core',
+  'Core',
+  'Developer Infrastructure',
+  'DevTools',
+  'External Software Affecting Firefox',
+  'Fenix',
+  'Firefox Build System',
+  'Firefox for iOS',
+  'Firefox',
+  'GeckoView',
+  'JSS',
+  'MailNews Core',
+  'NSPR',
+  'NSS',
+  'Remote Protocol',
+  'Testing',
+  'Thunderbird',
+  'Toolkit',
+  'Web Compatibility',
+  'WebExtensions',
 );
 
 my %severity_queries = (
   's2' => {
     product      => \@products,
+    resolution   => '---',
     bug_severity => ['major', 'critical', 'blocker'],
     j_top        => 'OR',
     f1           => 'cf_crash_signature',
@@ -54,8 +67,16 @@ my %severity_queries = (
     o3           => 'equals',
     v3           => 'Testing',
   },
-  's3' => {product => \@products, bug_severity => ['normal'],},
-  's4' => {product => \@products, bug_severity => ['minor', 'trivial'],}
+  's3' => {
+    product      => \@products,
+    resolution   => '---',
+    bug_severity => ['normal'],
+  },
+  's4' => {
+    product      => \@products,
+    resolution   => '---',
+    bug_severity => ['minor', 'trivial'],
+  }
 );
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
