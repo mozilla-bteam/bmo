@@ -65,29 +65,14 @@ sub install_before_final_checks {
 
 sub webservice_user_get {
   my ($self, $args) = @_;
-  my ($webservice, $params, $users) = @$args{qw(webservice params users)};
+  my ($webservice, $params, $user_data, $user_objects)
+    = @$args{qw(webservice params user_data user_objects)};
 
   return unless filter_wants($params, 'gravatar');
 
-  my $ids = [
-    map { blessed($_->{id}) ? $_->{id}->value : $_->{id} }
-    grep { exists $_->{id} }
-    @$users
-  ];
-
-  return unless @$ids;
-
-  my %user_map = map { $_->id => $_ } @{ Bugzilla::User->new_from_list($ids) };
-  foreach my $user (@$users) {
-    my $id = blessed($user->{id}) ? $user->{id}->value : $user->{id};
-    my $user_obj = $user_map{$id};
-    $user->{gravatar} = $user_obj->gravatar;
+  for (my $i = 0; $i < @{$user_data}; $i++) {
+    $user_data->[$i]->{gravatar} = $user_objects->[$i]->gravatar;
   }
-}
-
-sub webservice_user_suggest {
-  my ($self, $args) = @_;
-  $self->webservice_user_get($args);
 }
 
 __PACKAGE__->NAME;

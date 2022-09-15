@@ -280,6 +280,9 @@ collapsed_comment_tags
     A comma-separated list of tags which, when applied to comments, will
     cause them to be collapsed by default.
 
+last_change_time_non_bot_skip_list
+    List of user accounts to skip when calculating last changed by a person timestamp.
+
 .. _param-dependency-graphs:
 
 Graphs

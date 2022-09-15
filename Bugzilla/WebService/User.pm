@@ -26,6 +26,7 @@ use Bugzilla::Hook;
 
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 use List::Util qw(first);
+use Mojo::JSON qw(true);
 use Try::Tiny;
 
 # Don't need auth to login
@@ -152,7 +153,7 @@ sub suggest {
   return {users => []} if length($s) < 3;
 
   my $dbh    = Bugzilla->dbh;
-  my @select = ('userid AS id', 'realname AS real_name', 'login_name AS name');
+  my @select = ('userid AS id');
   my $order  = 'last_activity_ts DESC';
   my $where;
   state $have_mysql = $dbh->isa('Bugzilla::DB::Mysql');
@@ -182,23 +183,32 @@ sub suggest {
   }
   $where = "($where) AND is_enabled = 1";
 
-  my $sql
-    = 'SELECT '
-    . join(', ', @select)
-    . " FROM profiles WHERE $where ORDER BY $order LIMIT 25";
-  my $results = $dbh->selectall_arrayref($sql, {Slice => {}});
+  my $results = $dbh->selectall_arrayref(
+    "SELECT "
+      . join(', ', @select)
+      . " FROM profiles WHERE $where ORDER BY $order LIMIT 25",
+    {Slice => {}}
+  );
+  my $user_objects = Bugzilla::User->new_from_list([map { $_->{id} } @$results]);
 
-  my @users = map { {
-    id        => $self->type(int    => $_->{id}),
-    real_name => $self->type(string => $_->{real_name}),
-    nick      => $self->type(string => $_->{nick}),
-    name      => $self->type(email  => $_->{name}),
-  } } @$results;
+  my @user_data = map { {
+    id        => $self->type('int',    $_->id),
+    real_name => $self->type('string', $_->name),
+    nick      => $self->type('string', $_->nick),
+    name      => $self->type('email',  $_->login),
+  } } @$user_objects;
 
-  Bugzilla::Hook::process('webservice_user_suggest',
-    {webservice => $self, params => $params, users => \@users});
+  Bugzilla::Hook::process(
+    'webservice_user_get',
+    {
+      webservice   => $self,
+      params       => $params,
+      user_data    => \@user_data,
+      user_objects => $user_objects
+    }
+  );
 
-  return {users => \@users};
+  return {users => \@user_data};
 }
 
 # function to return user information by passing either user ids or
@@ -217,9 +227,30 @@ sub get {
     || ThrowCodeError('params_required',
     {function => 'User.get', params => ['ids', 'names', 'match']});
 
-  my @user_objects;
-  @user_objects = map { Bugzilla::User->check($_) } @{$params->{names}}
-    if $params->{names};
+  my (@user_objects, @faults);
+  if ($params->{names}) {
+    foreach my $name (@{$params->{names}}) {
+      my $user;
+      # If permissive mode, then we do not kill the whole
+      # request if there is an error with user lookup.
+      # We store the errors in 'faults' array.
+      if ($params->{permissive}) {
+        my $old_error_mode = Bugzilla->error_mode;
+        Bugzilla->error_mode(ERROR_MODE_DIE);
+        eval { $user = Bugzilla::User->check({name => $name}); };
+        Bugzilla->error_mode($old_error_mode);
+        if ($@) {
+          push @faults, {name => $name, error => true, message => $@->message};
+          undef $@;
+          next;
+        }
+        push @user_objects, $user;
+      }
+      else {
+        push @user_objects, Bugzilla::User->check({name => $name});
+      }
+    }
+  }
 
   # start filtering to remove duplicate user ids
   my %unique_users = map { $_->id => $_ } @user_objects;
@@ -247,7 +278,7 @@ sub get {
         }
     } @$in_group;
 
-    return {users => \@users};
+    return {users => \@users, faults => \@faults};
   }
 
   my $obj_by_ids;
@@ -306,12 +337,15 @@ sub get {
       can_login          => $self->type('boolean',  $user->is_enabled ? 1 : 0),
       iam_username       => $self->type('string',   $user->iam_username),
       last_seen_date     => $self->type('dateTime', $user->last_seen_date),
-      last_activity_time => $self->type('dateTime', $user->last_activity_time),
       };
 
     if (Bugzilla->user->in_group('disableusers')) {
-      $user_info->{email_enabled}     = $self->type('boolean', $user->email_enabled);
-      $user_info->{login_denied_text} = $self->type('string',  $user->disabledtext);
+      if (filter_wants($params, 'email_enabled')) {
+        $user_info->{email_enabled} = $self->type('boolean', $user->email_enabled);
+      }
+      if (filter_wants($params, 'login_denied_text')) {
+        $user_info->{login_denied_text} = $self->type('string', $user->disabledtext);
+      }
     }
 
     if (Bugzilla->user->id == $user->id) {
@@ -335,10 +369,17 @@ sub get {
     push(@users, $user_info);
   }
 
-  Bugzilla::Hook::process('webservice_user_get',
-    {webservice => $self, params => $params, users => \@users});
+  Bugzilla::Hook::process(
+    'webservice_user_get',
+    {
+      webservice   => $self,
+      params       => $params,
+      user_data    => \@users,
+      user_objects => $in_group,
+    }
+  );
 
-  return {users => \@users};
+  return {users => \@users, faults => \@faults};
 }
 
 ###############

@@ -249,31 +249,32 @@ Extra fields:
 These fields are returned only by specifying ``_extra`` or the field name in
 ``include_fields``.
 
-===================  ======  ====================================================
-name                 type    description
-===================  ======  ====================================================
-attachments          array   Each array item is an Attachment object. See
-                             :ref:`rest_attachments` for details of the object.
-comments             array   Each array item is a Comment object. See
-                             :ref:`rest_comments` for details of the object.
-counts               object  An object containing the numbers of the items in the
-                             following fields: ``attachments``, ``cc``,
-                             ``comments``, ``keywords``, ``blocks``,
-                             ``depends_on``, ``regressed_by``, ``regressions``
-                             and ``duplicates``.
-description          string  The description (initial comment) of the bug.
-filed_via            string  How the bug was filed, e.g. ``standard_form``.
-history              array   Each array item is a History object. See
-                             :ref:`rest_history` for details of the object.
-tags                 array   Each array item is a tag name. Note that tags are
-                             personal to the currently logged in user and are not
-                             the same as comment tags.
-triage_owner         string  The login name of the Triage Owner of the bug's
-                             component.
-triage_owner_detail  object  An object containing detailed user information for
-                             the ``triage_owner``. To see the keys included in
-                             the user detail object, see below.
-===================  ======  ====================================================
+========================  ========  ====================================================
+name                      type      description
+========================  ========  ====================================================
+attachments               array     Each array item is an Attachment object. See
+                                    :ref:`rest_attachments` for details of the object.
+comments                  array     Each array item is a Comment object. See
+                                    :ref:`rest_comments` for details of the object.
+counts                    object    An object containing the numbers of the items in the
+                                    following fields: ``attachments``, ``cc``,
+                                    ``comments``, ``keywords``, ``blocks``,
+                                    ``depends_on``, ``regressed_by``, ``regressions``
+                                    and ``duplicates``.
+description               string    The description (initial comment) of the bug.
+filed_via                 string    How the bug was filed, e.g. ``standard_form``.
+history                   array     Each array item is a History object. See
+                                    :ref:`rest_history` for details of the object.
+tags                      array     Each array item is a tag name. Note that tags are
+                                    personal to the currently logged in user and are not
+                                    the same as comment tags.
+triage_owner              string    The login name of the Triage Owner of the bug's
+                                    component.
+triage_owner_detail       object    An object containing detailed user information for
+                                    the ``triage_owner``. To see the keys included in
+                                    the user detail object, see below.
+last_change_time_non_bot  datetime  When the bug was last changed human and not a bot.
+========================  ========  ====================================================
 
 User object:
 

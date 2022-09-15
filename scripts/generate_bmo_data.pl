@@ -10,6 +10,7 @@ use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::User;
+use Bugzilla::User::APIKey;
 use Bugzilla::Install;
 use Bugzilla::Milestone;
 use Bugzilla::Product;
@@ -180,7 +181,12 @@ my @users = (
     realname => 'Nobody; OK to take it and work on it',
     password => '*'
   },
-  {login => 'automation@bmo.tld', realname => 'BMO Automation', password => '*'},
+  {
+    login    => 'automation@bmo.tld',
+    realname => 'BMO Automation',
+    password => '*',
+    api_key  => '4fut0aBEfW260ULXEP1pvOqj7lwnhHoSB16wfpLP'
+  },
   map { {login => $_, realname => (split(/@/, $_, 2))[0], password => '*',} }
     map {
     map {@$_}
@@ -191,13 +197,20 @@ my @users = (
 print "creating user accounts...\n";
 foreach my $user (@users) {
   if (is_available_username($user->{login})) {
-    Bugzilla::User->create({
+    my $new_user = Bugzilla::User->create({
       login_name    => $user->{login},
       realname      => $user->{realname},
       cryptpassword => $user->{password},
     });
     if ($user->{admin}) {
       Bugzilla::Install::make_admin($user->{login});
+    }
+    if (exists $user->{api_key}) {
+      Bugzilla::User::APIKey->create_special({
+        user_id     => $new_user->id,
+        description => 'API key for Test User',
+        api_key     => $user->{api_key}
+      });
     }
   }
 }
@@ -331,12 +344,13 @@ for my $product (@products) {
     }
     $dbh->do(
       'INSERT INTO products (name, description, classification_id,
-                                        default_op_sys_id, default_platform_id)
-                  VALUES (?, ?, ?, ?, ?)',
+                             default_op_sys_id, default_platform_id, default_version)
+                  VALUES (?, ?, ?, ?, ?, ?)',
       undef,
       (
-        $product->{product_name}, $product->{description}, $class_id,
-        $default_op_sys_id,       $default_platform_id
+        $product->{product_name}, $product->{description},
+        $class_id,                $default_op_sys_id,
+        $default_platform_id,     $product->{default_version}
       )
     );
 
@@ -576,6 +590,7 @@ my %set_params = (
   defaultseverity      => 'normal',
   edit_comments_group  => 'editbugs',
   insidergroup         => 'core-security-release',
+  last_change_time_non_bot_skip_list => 'automation@bmo.tld',
   last_visit_keep_days => '28',
   lxr_url              => 'http://mxr.mozilla.org/mozilla',
   lxr_root             => 'mozilla/',

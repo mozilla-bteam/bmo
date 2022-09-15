@@ -992,43 +992,31 @@ sub config_modify_panels {
 
 sub webservice_user_get {
   my ($self, $args) = @_;
-  my ($webservice, $params, $users) = @$args{qw(webservice params users)};
+  my ($webservice, $params, $user_data, $user_objects)
+    = @$args{qw(webservice params user_data user_objects)};
 
   return unless filter_wants($params, 'requests');
 
-  my $ids = [map { blessed($_->{id}) ? $_->{id}->value : $_->{id} }
-      grep { exists $_->{id} } @$users];
-
-  return unless @$ids;
-
-  my %user_map = map { $_->id => $_ } @{Bugzilla::User->new_from_list($ids)};
-
-  foreach my $user (@$users) {
-    my $id = blessed($user->{id}) ? $user->{id}->value : $user->{id};
-    my $user_obj = $user_map{$id};
-
-    $user->{requests} = {
+  for (my $i = 0; $i < @{$user_data}; $i++) {
+    $user_data->[$i]->{requests} = {
       review => {
-        blocked => $webservice->type('boolean', $user_obj->reviews_blocked),
-        pending => $webservice->type('int',     $user_obj->{review_request_count}),
+        blocked => $webservice->type('boolean', $user_objects->[$i]->reviews_blocked),
+        pending =>
+          $webservice->type('int', $user_objects->[$i]->{review_request_count}),
       },
       feedback => {
-
         # reviews_blocked includes feedback as well
-        blocked => $webservice->type('boolean', $user_obj->reviews_blocked),
-        pending => $webservice->type('int',     $user_obj->{feedback_request_count}),
+        blocked => $webservice->type('boolean', $user_objects->[$i]->reviews_blocked),
+        pending =>
+          $webservice->type('int', $user_objects->[$i]->{feedback_request_count}),
       },
       needinfo => {
-        blocked => $webservice->type('boolean', $user_obj->needinfo_blocked),
-        pending => $webservice->type('int',     $user_obj->{needinfo_request_count}),
+        blocked => $webservice->type('boolean', $user_objects->[$i]->needinfo_blocked),
+        pending =>
+          $webservice->type('int', $user_objects->[$i]->{needinfo_request_count}),
       },
     };
   }
-}
-
-sub webservice_user_suggest {
-  my ($self, $args) = @_;
-  $self->webservice_user_get($args);
 }
 
 __PACKAGE__->NAME;

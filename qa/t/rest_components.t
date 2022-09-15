@@ -95,6 +95,18 @@ $t->get_ok($url
   ->json_is('/triage_owner' => 'admin@mozilla.test')
   ->json_is('/description'  => 'Updated description');
 
+# Update an existing user and give edittriageowners permissions
+my $user_update = {groups => {add => ['edittriageowners']}};
+$t->put_ok($url
+    . 'rest/user/no-privs@mozilla.test' => {'X-Bugzilla-API-Key' => $api_key} =>
+    json                                => $user_update)->status_is(200);
+my $triage_api_key = $config->{unprivileged_user_api_key};
+$update = {triage_owner => 'nobody@mozilla.org'};
+$t->put_ok($url
+    . 'rest/component/Firefox/TestComponent' =>
+    {'X-Bugzilla-API-Key' => $api_key}       => json => $update)->status_is(200)
+  ->json_is('/triage_owner' => 'nobody@mozilla.org');
+
 ### Section 1: Create a new component with a slash (/) in the name
 
 $new_component = {

@@ -39,6 +39,7 @@
 .phabricator-revisions {
   border: none;
   border-collapse: collapse;
+  width: 100%;
 }
 
 .phabricator-revisions tr:hover {
@@ -52,6 +53,10 @@
 .phabricator-revisions td {
   padding: 2px;
   vertical-align: top;
+}
+
+.phabricator-revisions td.phabricator-title {
+  width: 100%;
 }
 
 .phabricator-revisions .phabricator-reviewers td {

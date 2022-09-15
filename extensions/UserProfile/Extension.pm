@@ -17,7 +17,9 @@ use Bugzilla::Constants;
 use Bugzilla::Extension::UserProfile::Util;
 use Bugzilla::Install::Filesystem;
 use Bugzilla::User;
+use Bugzilla::WebService::Util qw(filter_wants);
 use Bugzilla::Util qw(datetime_from time_ago);
+
 use Email::Address;
 use Scalar::Util qw(blessed);
 use List::MoreUtils qw(any);
@@ -259,22 +261,15 @@ sub merge_users_after {
 }
 
 sub webservice_user_get {
-  my ($self,    $args)  = @_;
-  my ($service, $users) = @$args{qw(webservice users)};
+  my ($self, $args) = @_;
+  my ($webservice, $params, $user_data, $user_objects)
+    = @$args{qw(webservice params user_data user_objects)};
 
-  my $dbh = Bugzilla->dbh;
-  my $ids = [map { blessed($_->{id}) ? $_->{id}->value : $_->{id} }
-      grep { exists $_->{id} } @$users];
-  return unless @$ids;
-  my $timestamps = $dbh->selectall_hashref(
-    "SELECT userid,last_activity_ts FROM profiles WHERE "
-      . $dbh->sql_in('userid', $ids),
-    'userid',
-  );
-  foreach my $user (@$users) {
-    my $id = blessed($user->{id}) ? $user->{id}->value : $user->{id};
-    $user->{last_activity}
-      = $service->type('dateTime', $timestamps->{$id}->{last_activity_ts});
+  return unless filter_wants($params, 'last_activity_time');
+
+  for (my $i = 0; $i < @{$user_data}; $i++) {
+    $user_data->[$i]->{last_activity_time}
+      = $webservice->type('dateTime', $user_objects->[$i]->last_activity_ts);
   }
 }
 
