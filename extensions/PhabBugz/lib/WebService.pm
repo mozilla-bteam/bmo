@@ -193,10 +193,12 @@ sub bug_revisions {
     $revision_data->{reviews} = \@reviews;
 
     if ($revision_obj->view_policy ne 'public') {
-      $revision_data->{title} = '(secured)';
+      $revision_data->{title}     = '(secured)';
+      $revision_data->{call_sign} = '(secured)';
     }
     else {
-      $revision_data->{title} = $revision_obj->title;
+      $revision_data->{title}     = $revision_obj->title;
+      $revision_data->{call_sign} = $revision_obj->repository->call_sign;
     }
 
     $revision_data->{children} = [map { "D$_" } @{$children_map->{$id}}];
