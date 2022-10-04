@@ -199,7 +199,7 @@ sub cmd_version { run('cat', '/app/version.json'); }
 
 sub cmd_test_bmo {
   my (@prove_args) = @_;
-  $ENV{HTTP_BACKEND} = 'simple';
+  $ENV{HTTP_BACKEND} = 'hypnotoad';
 
   cmd_load_test_data();
   check_data_dir();

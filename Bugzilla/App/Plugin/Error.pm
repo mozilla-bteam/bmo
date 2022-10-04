@@ -55,6 +55,7 @@ sub _render_error {
       my $e     = $class->new($error)->trace(2);
       $e->vars($vars) if $e->can('vars');
       $EXCEPTION_HELPER->($c, $e->inspect);
+      return 0;
     }
     else {
       $c->render(
@@ -65,6 +66,7 @@ sub _render_error {
         status   => 200,
         %{$vars}
       );
+      return 0;
     }
   }
 
@@ -91,6 +93,7 @@ sub _render_error {
     };
 
     $c->render(json => $error, status => $status_code);
+    return 0;
   }
 }
 
