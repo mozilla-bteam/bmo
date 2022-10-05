@@ -118,11 +118,12 @@ sub pull_request {
 sub verify_signature {
   my ($self)             = @_;
   my $payload            = $self->req->body;
-  DEBUG($payload);
+  DEBUG(substr($payload, 0, 50) . " [...] " . substr($payload, -50));
   my $secret             = Bugzilla->params->{github_pr_signature_secret};
   my $received_signature = $self->req->headers->header('X-Hub-Signature-256');
   my $expected_signature = 'sha256=' . hmac_sha256_hex($secret, $payload);
-  DEBUG("expected: $expected_signature, received: $received_signature");
+  DEBUG("expected: $expected_signature");
+  DEBUG("received: $received_signature");
   return secure_compare($expected_signature, $received_signature) ? 1 : 0;
 }
 
