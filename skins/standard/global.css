@@ -2683,8 +2683,9 @@ pre.comment-text {
 }
 
 .markdown-body table {
-  display: block;
-  width: 100%;
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
   overflow: auto;
   border-top: 1px solid var(--grid-border-color);
 }
