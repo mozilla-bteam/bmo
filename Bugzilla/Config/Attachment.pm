@@ -34,14 +34,15 @@ sub get_param_list {
       checker => \&check_storage
     },
     {
-      name => 'attachment_s3_minsize',
-      type => 't',
+      name    => 'attachment_s3_minsize',
+      type    => 't',
       default => '20000',
       checker => \&check_numeric
     },
-    {name => 's3_bucket',             type => 't', default => '',},
-    {name => 'aws_access_key_id',     type => 't', default => '',},
-    {name => 'aws_secret_access_key', type => 't', default => '',},
+    {name => 's3_bucket',                  type => 't', default => '',},
+    {name => 'aws_access_key_id',          type => 't', default => '',},
+    {name => 'aws_secret_access_key',      type => 't', default => '',},
+    {name => 'github_pr_signature_secret', type => 't', default => ''},
   );
   return @param_list;
 }
