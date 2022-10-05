@@ -270,7 +270,7 @@ workflows:
             - test_sanity
             - test_bmo
             - test_webservices
-            - test_selenium
+              # - test_selenium
       - test_sanity:
           filters: *main_filters
           requires:
