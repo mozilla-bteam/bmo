@@ -17,6 +17,7 @@ use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Token;
+use Bugzilla::User qw( assert_valid_password );
 use Bugzilla::Util qw( bz_crypt trim );
 use Data::Dumper;
 
@@ -65,9 +66,7 @@ if ($cgi->param('do_save')) {
   if ($old_password eq $password_1) {
     ThrowUserError('new_password_same');
   }
-
-  Bugzilla->assert_password_is_secure($password_1);
-  Bugzilla->assert_passwords_match($password_1, $password_2);
+  assert_valid_password($password_1, $password_2);
 
   # update
   $dbh->bz_start_transaction;

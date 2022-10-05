@@ -1,6 +1,6 @@
 $answer{'ADMIN_EMAIL'}          = 'admin@mozilla.bugs';
 $answer{'ADMIN_OK'}             = 'Y';
-$answer{'ADMIN_PASSWORD'}       = 'password01!';
+$answer{'ADMIN_PASSWORD'}       = 'password012!';
 $answer{'ADMIN_REALNAME'}       = 'Admin User';
 $answer{'bugzilla_version'}     = '1';
 $answer{'create_htaccess'}      = '1';
@@ -16,7 +16,6 @@ $answer{'insidergroup'}         = 'admin';
 $answer{'interdiffbin'}         = '/usr/bin/interdiff';
 $answer{'mail_delivery_method'} = 'Test';
 $answer{'NO_PAUSE'}             = 1;
-$answer{'passwdqc_min'}         = '8, 8, 8, 8, 8';
 $answer{'password_complexity'}  = 'bmo';
 $answer{'size_limit'}           = 750000;
 $answer{'skin'}                 = 'Mozilla';

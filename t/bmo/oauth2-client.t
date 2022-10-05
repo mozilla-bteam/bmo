@@ -52,4 +52,18 @@ $sel->click_ok('//a[contains(text(),"Connect")]',
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
 $sel->logout_ok();
 
+### Make sure provider admin UI is only accessible by admin user
+$sel->login($config->{admin_user_login}, $config->{admin_user_passwd});
+$sel->get_ok('/admin/oauth/provider/list', undef, 'Go to the provider admin page');
+$sel->title_is('Select OAuth2 Client', 'Select OAuth2 Client');
+$sel->logout_ok();
+
+$sel->login($ENV{BZ_TEST_OAUTH2_NORMAL_USER}, $ENV{BZ_TEST_OAUTH2_PASSWORD});
+$sel->click_ok('//a[contains(text(),"Connect")]',
+  'Click OAuth2 provider login');
+$sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
+$sel->get_ok('/admin/oauth/provider/list', undef, 'Go to the provider admin page');
+$sel->title_is('Authorization Required', 'Authorization Required');
+$sel->logout_ok();
+
 done_testing;

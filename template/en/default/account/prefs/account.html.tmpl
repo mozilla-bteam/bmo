@@ -127,15 +127,15 @@
             </td>
           </tr>
           <tr>
-          <td>&nbsp;</td>
-          <td>
-            [% Param('passwdqc_desc') FILTER html_light %]
-          </td>
-          </tr>
-          <tr>
             <th align="right">Confirm new password:</th>
             <td>
               <input autocomplete="new-password" type="password" name="new_password2" id="new_password2">
+            </td>
+          </tr>
+          <tr>
+            <td>&nbsp;</td>
+            <td>
+              [% INCLUDE "account/password_complexity.html.tmpl" %]
             </td>
           </tr>
         [% END %]
@@ -172,7 +172,7 @@
           </td>
         </tr>
       [% END %]
-      
+
       <tr>
         <td></td>
         <td><hr></td>
