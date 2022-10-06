@@ -41,14 +41,14 @@ sub pull_request {
 
   # Return early if not a pull_request event
   my $event = $self->req->headers->header('X-GitHub-Event');
-  return $self->render(json => {error => 'Not pull request'}, status => 400)
-    if (!$event || $event ne 'pull_request');
+  if (!$event || $event ne 'pull_request') {
+    return $self->code_error('github_pr_not_pull_request');
+  }
 
   # Verify that signature is correct based on shared secret
-  return $self->render(
-    json   => {error => 'Payload signatures did not match'},
-    status => 400
-  ) if !$self->verify_signature;
+  if (!$self->verify_signature) {
+    return $self->code_error('github_pr_mismatch_signatures');
+  }
 
   # Parse pull request title for bug ID
   my $payload = $self->req->json;
@@ -57,7 +57,7 @@ sub pull_request {
     || !$payload->{pull_request}->{html_url}
     || !$payload->{pull_request}->{title})
   {
-    return $self->render(json => {error => 'Invalid JSON data'}, status => 400);
+    return $self->code_error('github_pr_invalid_json');
   }
 
   my $html_url = $payload->{pull_request}->{html_url};
@@ -66,18 +66,14 @@ sub pull_request {
   my $bug_id = $2;
   my $bug    = Bugzilla::Bug->new($bug_id);
   if ($bug->{error}) {
-    return $self->render(json => {error => 'Valid bug ID was not found'},
-      status => 400);
+    return $self->code_error('github_pr_bug_not_found');
   }
 
   # Check if bug already has this pull request attached
   foreach my $attachment (@{$bug->attachments}) {
     next if $attachment->contenttype ne 'text/x-github-pull-request';
     if ($attachment->data eq $html_url) {
-      return $self->render(
-        json   => {error => 'Pull request already attached'},
-        status => 400
-      );
+      return $self->code_error('github_pr_attachment_exists');
     }
   }
 
