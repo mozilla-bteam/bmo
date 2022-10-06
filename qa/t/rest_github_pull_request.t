@@ -58,7 +58,7 @@ my $payload = {
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks
 my $github_signature
-  = 'sha256=' . hmac_sha256_hex($github_secret, encode_json($payload));
+  = 'sha256=' . hmac_sha256_hex(encode_json($payload), $github_secret);
 
 # Post the GitHub event to the rest/github/pull_request API endpoint
 
