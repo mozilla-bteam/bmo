@@ -28,7 +28,6 @@ my $github_secret = 'B1gS3cret!';
 my $t = Test::Mojo->new();
 
 # Create a new test bug for linking to PR
-
 my $new_bug = {
   product     => 'Firefox',
   component   => 'General',
@@ -45,11 +44,51 @@ $t->post_ok(
 
 my $bug_id = $t->tx->res->json->{id};
 
-# Create signature needed to be added to the GitHub header when
-# posting the PR update.
+# Not a pull request event
+$t->post_ok($url . 'rest/github/pull_request' => {'X-GitHub-Event' => 'foobar'})
+  ->status_is(400)
+  ->json_like(
+  '/message' => qr/The webhook event was not for a GitHub pull request/);
+
+# Mismatching signatures
+$t->post_ok($url
+    . 'rest/github/pull_request'                                         =>
+    {'X-Hub-Signature-256' => 'XXX', 'X-GitHub-Event' => 'pull_request'} =>
+    json => {})->status_is(400)
+  ->json_like('/message' =>
+    qr/The webhook signature in the header did not match the expected value/);
+
+# Invalid JSON
+my $bad_payload = {
+  pull_request => {
+    html_url => 'https://github.com/mozilla-bteam/bmo/pull/1'
+  }
+};
+my $bad_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
+$t->post_ok($url
+    . 'rest/github/pull_request' => {'X-Hub-Signature-256' => $bad_signature,
+    'X-GitHub-Event' => 'pull_request'} => json => $bad_payload)->status_is(400)
+  ->json_like('/message' =>
+    qr/The webhook did not contain valid JSON or expected data was missing/);
+
+# Invalid Bug ID
+$bad_payload = {
+  pull_request => {
+    html_url => 'https://github.com/mozilla-bteam/bmo/pull/1',
+    title    => 'Bug 1000 - Test GitHub PR Linking',
+  }
+};
+$bad_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
+$t->post_ok($url
+    . 'rest/github/pull_request' => {'X-Hub-Signature-256' => $bad_signature,
+    'X-GitHub-Event' => 'pull_request'} => json => $bad_payload)->status_is(400)
+  ->json_like(
+  '/message' => qr/The pull request title did not contain a valid bug ID/);
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads
-my $payload = {
+my $good_payload = {
   pull_request => {
     html_url => 'https://github.com/mozilla-bteam/bmo/pull/1',
     title    => "Bug $bug_id - Test GitHub PR Linking",
@@ -57,23 +96,21 @@ my $payload = {
 };
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks
-my $github_signature
-  = 'sha256=' . hmac_sha256_hex($github_secret, encode_json($payload));
+my $good_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
 
-# Post the GitHub event to the rest/github/pull_request API endpoint
-
+# Post the valid GitHub event to the rest/github/pull_request API endpoint
 $t->post_ok(
   $url
     . 'rest/github/pull_request' => {
-    'X-Hub-Signature-256' => $github_signature,
+    'X-Hub-Signature-256' => $good_signature,
     'X-GitHub-Event'      => 'pull_request'
-    } => json => $payload
+    } => json => $good_payload
 )->status_is(200)->json_has('/id');
 
 my $attach_id = $t->tx->res->json->{id};
 
 # Retrieve the attachment from the bug to make sure it was created correctly
-
 $t->get_ok(
   $url . "rest/bug/attachment/$attach_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/attachments/$attach_id/content_type",
@@ -83,5 +120,16 @@ $t->get_ok(
 my $attach_data = $t->tx->res->json->{attachments}->{$attach_id}->{data};
 $attach_data = decode_base64($attach_data);
 ok($attach_data eq 'https://github.com/mozilla-bteam/bmo/pull/1');
+
+# Bug already had the same github attachment so don't add twice
+$t->post_ok(
+  $url
+    . 'rest/github/pull_request' => {
+    'X-Hub-Signature-256' => $good_signature,
+    'X-GitHub-Event'      => 'pull_request'
+    } => json => $good_payload
+)->status_is(400)
+  ->json_like('/message' =>
+    qr/The pull request contained a bug ID that already has an attachment/);
 
 done_testing();
