@@ -12,7 +12,6 @@ use Mojo::Base qw( Mojolicious::Controller );
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Group;
-use Bugzilla::Logging;
 use Bugzilla::User;
 
 use Digest::SHA qw(hmac_sha256_hex);
@@ -66,13 +65,14 @@ sub pull_request {
   $title =~ BUG_RE;
   my $bug_id = $2;
   my $bug    = Bugzilla::Bug->new($bug_id);
-  return $self->render(json => {error => 'Valid bug ID was not found'},
-    status => 400)
-    if !$bug;
+  if ($bug->{error}) {
+    return $self->render(json => {error => 'Valid bug ID was not found'},
+      status => 400);
+  }
 
   # Check if bug already has this pull request attached
   foreach my $attachment (@{$bug->attachments}) {
-    next if $attachment->content_type ne 'text/x-github-pull-request';
+    next if $attachment->contenttype ne 'text/x-github-pull-request';
     if ($attachment->data eq $html_url) {
       return $self->render(
         json   => {error => 'Pull request already attached'},
@@ -118,12 +118,9 @@ sub pull_request {
 sub verify_signature {
   my ($self)             = @_;
   my $payload            = $self->req->body;
-  DEBUG(substr($payload, 0, 50) . " [...] " . substr($payload, -50));
   my $secret             = Bugzilla->params->{github_pr_signature_secret};
   my $received_signature = $self->req->headers->header('X-Hub-Signature-256');
-  my $expected_signature = 'sha256=' . hmac_sha256_hex($secret, $payload);
-  DEBUG("expected: $expected_signature");
-  DEBUG("received: $received_signature");
+  my $expected_signature = 'sha256=' . hmac_sha256_hex($payload, $secret);
   return secure_compare($expected_signature, $received_signature) ? 1 : 0;
 }
 
