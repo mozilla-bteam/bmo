@@ -12,7 +12,6 @@ use Mojo::Base qw( Mojolicious::Controller );
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Group;
-use Bugzilla::Logging;
 use Bugzilla::User;
 
 use Digest::SHA qw(hmac_sha256_hex);
@@ -42,14 +41,14 @@ sub pull_request {
 
   # Return early if not a pull_request event
   my $event = $self->req->headers->header('X-GitHub-Event');
-  return $self->render(json => {error => 'Not pull request'}, status => 400)
-    if (!$event || $event ne 'pull_request');
+  if (!$event || $event ne 'pull_request') {
+    return $self->code_error('github_pr_not_pull_request');
+  }
 
   # Verify that signature is correct based on shared secret
-  return $self->render(
-    json   => {error => 'Payload signatures did not match'},
-    status => 400
-  ) if !$self->verify_signature;
+  if (!$self->verify_signature) {
+    return $self->code_error('github_pr_mismatch_signatures');
+  }
 
   # Parse pull request title for bug ID
   my $payload = $self->req->json;
@@ -58,7 +57,7 @@ sub pull_request {
     || !$payload->{pull_request}->{html_url}
     || !$payload->{pull_request}->{title})
   {
-    return $self->render(json => {error => 'Invalid JSON data'}, status => 400);
+    return $self->code_error('github_pr_invalid_json');
   }
 
   my $html_url = $payload->{pull_request}->{html_url};
@@ -66,18 +65,15 @@ sub pull_request {
   $title =~ BUG_RE;
   my $bug_id = $2;
   my $bug    = Bugzilla::Bug->new($bug_id);
-  return $self->render(json => {error => 'Valid bug ID was not found'},
-    status => 400)
-    if !$bug;
+  if ($bug->{error}) {
+    return $self->code_error('github_pr_bug_not_found');
+  }
 
   # Check if bug already has this pull request attached
   foreach my $attachment (@{$bug->attachments}) {
-    next if $attachment->content_type ne 'text/x-github-pull-request';
+    next if $attachment->contenttype ne 'text/x-github-pull-request';
     if ($attachment->data eq $html_url) {
-      return $self->render(
-        json   => {error => 'Pull request already attached'},
-        status => 400
-      );
+      return $self->code_error('github_pr_attachment_exists');
     }
   }
 
@@ -120,7 +116,7 @@ sub verify_signature {
   my $payload            = $self->req->body;
   my $secret             = Bugzilla->params->{github_pr_signature_secret};
   my $received_signature = $self->req->headers->header('X-Hub-Signature-256');
-  my $expected_signature = 'sha256=' . hmac_sha256_hex($secret, $payload);
+  my $expected_signature = 'sha256=' . hmac_sha256_hex($payload, $secret);
   return secure_compare($expected_signature, $received_signature) ? 1 : 0;
 }
 
