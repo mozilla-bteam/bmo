@@ -9,6 +9,7 @@ package Bugzilla::API::V1::Github;
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
 
+use Bugzilla::Attachment;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Group;
@@ -55,13 +56,16 @@ sub pull_request {
   if ( !$payload
     || !$payload->{pull_request}
     || !$payload->{pull_request}->{html_url}
-    || !$payload->{pull_request}->{title})
+    || !$payload->{pull_request}->{title}
+    || !$payload->{pull_request}->{number})
   {
     return $self->code_error('github_pr_invalid_json');
   }
 
-  my $html_url = $payload->{pull_request}->{html_url};
-  my $title    = $payload->{pull_request}->{title};
+  my $html_url  = $payload->{pull_request}->{html_url};
+  my $title     = $payload->{pull_request}->{title};
+  my $pr_number = $payload->{pull_request}->{number};
+
   $title =~ BUG_RE;
   my $bug_id = $2;
   my $bug    = Bugzilla::Bug->new($bug_id);
@@ -90,7 +94,7 @@ sub pull_request {
     creation_ts => $timestamp,
     data        => $html_url,
     description => 'GitHub Pull Request',
-    filename    => 'file_' . $bug->id . '.txt',
+    filename    => "github-$pr_number-url.txt",
     ispatch     => 0,
     isprivate   => 0,
     mimetype    => 'text/x-github-pull-request',
@@ -106,6 +110,34 @@ sub pull_request {
     }
   );
   $bug->update($timestamp);
+
+  # fixup attachments with same github pull request but on different bugs
+  my %other_bugs;
+  my $other_attachments = Bugzilla::Attachment->match({
+    mimetype => 'text/x-github-pull-request',
+    filename => "github-$pr_number-url.txt",
+    WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
+  });
+  foreach my $attachment (@$other_attachments) {
+    $other_bugs{$attachment->bug_id}++;
+    my $moved_comment
+      = "GitHub pull request attachment was moved to bug "
+      . $bug->id
+      . ". Setting attachment "
+      . $attachment->id
+      . " to obsolete.";
+    $attachment->set_is_obsolete(1);
+    $attachment->bug->add_comment(
+      $moved_comment,
+      {
+        type        => CMT_ATTACHMENT_UPDATED,
+        extra_data  => $attachment->id,
+        is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
+      }
+    );
+    $attachment->bug->update($timestamp);
+    $attachment->update($timestamp);
+  }
 
   # Return success
   return $self->render(json => {id => $attachment->id});
