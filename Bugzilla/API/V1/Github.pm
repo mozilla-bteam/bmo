@@ -111,7 +111,7 @@ sub pull_request {
   );
   $bug->update($timestamp);
 
-  # fixup attachments with same github pull request but on different bugs
+  # Fixup attachments with same github pull request but on different bugs
   my %other_bugs;
   my $other_attachments = Bugzilla::Attachment->match({
     mimetype => 'text/x-github-pull-request',
@@ -139,7 +139,7 @@ sub pull_request {
     $attachment->update($timestamp);
   }
 
-  # Return success
+  # Return new attachment id when successful
   return $self->render(json => {id => $attachment->id});
 }
 
