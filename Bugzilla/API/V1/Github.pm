@@ -1,0 +1,155 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
+
+package Bugzilla::API::V1::Github;
+use 5.10.1;
+use Mojo::Base qw( Mojolicious::Controller );
+
+use Bugzilla::Attachment;
+use Bugzilla::Bug;
+use Bugzilla::Constants;
+use Bugzilla::Group;
+use Bugzilla::User;
+
+use Digest::SHA qw(hmac_sha256_hex);
+use Mojo::Util  qw(secure_compare);
+
+# Stolen from pylib/mozautomation/mozautomation/commitparser.py from
+# https://hg.mozilla.org/hgcustom/version-control-tools
+use constant BUG_RE => qr/
+  (
+    (?:
+      bug |
+      b= |
+      (?=\b\#?\d{5,}) |
+      ^(?=\d)
+    )
+    (?:\s*\#?)(\d+)(?=\b)
+  )/ix;
+
+sub setup_routes {
+  my ($class, $r) = @_;
+  $r->post('/github/pull_request')->to('V1::Github#pull_request');
+}
+
+sub pull_request {
+  my ($self) = @_;
+  Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+
+  # Return early if not a pull_request event
+  my $event = $self->req->headers->header('X-GitHub-Event');
+  if (!$event || $event ne 'pull_request') {
+    return $self->code_error('github_pr_not_pull_request');
+  }
+
+  # Verify that signature is correct based on shared secret
+  if (!$self->verify_signature) {
+    return $self->code_error('github_pr_mismatch_signatures');
+  }
+
+  # Parse pull request title for bug ID
+  my $payload = $self->req->json;
+  if ( !$payload
+    || !$payload->{pull_request}
+    || !$payload->{pull_request}->{html_url}
+    || !$payload->{pull_request}->{title}
+    || !$payload->{pull_request}->{number})
+  {
+    return $self->code_error('github_pr_invalid_json');
+  }
+
+  my $html_url  = $payload->{pull_request}->{html_url};
+  my $title     = $payload->{pull_request}->{title};
+  my $pr_number = $payload->{pull_request}->{number};
+
+  $title =~ BUG_RE;
+  my $bug_id = $2;
+  my $bug    = Bugzilla::Bug->new($bug_id);
+  if ($bug->{error}) {
+    return $self->code_error('github_pr_bug_not_found');
+  }
+
+  # Check if bug already has this pull request attached
+  foreach my $attachment (@{$bug->attachments}) {
+    next if $attachment->contenttype ne 'text/x-github-pull-request';
+    if ($attachment->data eq $html_url) {
+      return $self->code_error('github_pr_attachment_exists');
+    }
+  }
+
+  # Create new attachment using pull request URL as attachment content
+  my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+  $auto_user->{groups}       = [Bugzilla::Group->get_all];
+  $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
+  Bugzilla->set_user($auto_user);
+
+  my $timestamp = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+
+  my $attachment = Bugzilla::Attachment->create({
+    bug         => $bug,
+    creation_ts => $timestamp,
+    data        => $html_url,
+    description => 'GitHub Pull Request',
+    filename    => "github-$pr_number-url.txt",
+    ispatch     => 0,
+    isprivate   => 0,
+    mimetype    => 'text/x-github-pull-request',
+  });
+
+  # Insert a comment about the new attachment into the database.
+  $bug->add_comment(
+    '',
+    {
+      type        => CMT_ATTACHMENT_CREATED,
+      extra_data  => $attachment->id,
+      is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
+    }
+  );
+  $bug->update($timestamp);
+
+  # Fixup attachments with same github pull request but on different bugs
+  my %other_bugs;
+  my $other_attachments = Bugzilla::Attachment->match({
+    mimetype => 'text/x-github-pull-request',
+    filename => "github-$pr_number-url.txt",
+    WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
+  });
+  foreach my $attachment (@$other_attachments) {
+    $other_bugs{$attachment->bug_id}++;
+    my $moved_comment
+      = "GitHub pull request attachment was moved to bug "
+      . $bug->id
+      . ". Setting attachment "
+      . $attachment->id
+      . " to obsolete.";
+    $attachment->set_is_obsolete(1);
+    $attachment->bug->add_comment(
+      $moved_comment,
+      {
+        type        => CMT_ATTACHMENT_UPDATED,
+        extra_data  => $attachment->id,
+        is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
+      }
+    );
+    $attachment->bug->update($timestamp);
+    $attachment->update($timestamp);
+  }
+
+  # Return new attachment id when successful
+  return $self->render(json => {id => $attachment->id});
+}
+
+sub verify_signature {
+  my ($self)             = @_;
+  my $payload            = $self->req->body;
+  my $secret             = Bugzilla->params->{github_pr_signature_secret};
+  my $received_signature = $self->req->headers->header('X-Hub-Signature-256');
+  my $expected_signature = 'sha256=' . hmac_sha256_hex($payload, $secret);
+  return secure_compare($expected_signature, $received_signature) ? 1 : 0;
+}
+
+1;
