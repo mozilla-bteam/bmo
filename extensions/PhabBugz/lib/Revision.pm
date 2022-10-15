@@ -40,14 +40,14 @@ has creation_ts      => (is => 'ro',   isa => Str);
 has modification_ts  => (is => 'ro',   isa => Str);
 has author_phid      => (is => 'ro',   isa => Str);
 has diff_phid        => (is => 'ro',   isa => Str);
-has repository_phid  => (is => 'ro',   isa => Str);
+has repository_phid  => (is => 'ro',   isa => Maybe[Str]);
 has bug_id           => (is => 'ro',   isa => Str);
 has view_policy      => (is => 'ro',   isa => Str);
 has edit_policy      => (is => 'ro',   isa => Str);
 has subscriber_count => (is => 'ro',   isa => Int);
 has bug              => (is => 'lazy', isa => Object);
 has author           => (is => 'lazy', isa => Object);
-has repository       => (is => 'lazy', isa => PhabRepo);
+has repository       => (is => 'lazy', isa => Maybe[PhabRepo]);
 has reviews =>
   (is => 'lazy', isa => ArrayRef [Dict [user => PhabUser | PhabProject, status => Str]]);
 has subscribers => (is => 'lazy', isa => ArrayRef [PhabUser]);
@@ -362,14 +362,24 @@ sub _build_projects {
 
 sub _build_repository {
   my ($self) = @_;
+  return undef if !$self->repository_phid;
   return $self->{repository} if $self->{repository};
+
+  # Cache repository objects per page request in case of
+  # multiple revisions having the same repository
+  my $cache = Bugzilla->request_cache;
+  return $cache->{phab_repo_cache}->{$self->repository_phid}
+    if exists $cache->{phab_repo_cache}->{$self->repository_phid};
+
   my $repository
     = Bugzilla::Extension::PhabBugz::Repository->new_from_query({
     phids => [$self->repository_phid]
     });
   if ($repository) {
+    $cache->{phab_repo_cache}->{$self->repository_phid} = $repository;
     return $self->{repository} = $repository;
   }
+  return undef;
 }
 
 #########################
