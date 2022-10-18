@@ -516,6 +516,12 @@ const Phabricator = {
       }
       tdReviewers.append(tableReviews);
 
+      // Repository Call Sign
+
+      const tdRepo = document.createElement("td");
+      tdRepo.classList.add("phabricator-repo");
+      tdRepo.append(rev.call_sign);
+
       // Revision Title
 
       const tdTitle = document.createElement("td");
@@ -539,6 +545,7 @@ const Phabricator = {
         tdId,
         tdRevisionStatus,
         tdReviewers,
+        tdRepo,
         tdTitle
       );
 

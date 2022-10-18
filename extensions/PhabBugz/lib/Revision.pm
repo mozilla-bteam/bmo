@@ -20,8 +20,9 @@ use Bugzilla::Types qw(JSONBool);
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
 use Bugzilla::Extension::PhabBugz::Project;
-use Bugzilla::Extension::PhabBugz::User;
+use Bugzilla::Extension::PhabBugz::Repository;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
+use Bugzilla::Extension::PhabBugz::User;
 use Bugzilla::Extension::PhabBugz::Util qw(request);
 
 #########################
@@ -39,12 +40,14 @@ has creation_ts      => (is => 'ro',   isa => Str);
 has modification_ts  => (is => 'ro',   isa => Str);
 has author_phid      => (is => 'ro',   isa => Str);
 has diff_phid        => (is => 'ro',   isa => Str);
+has repository_phid  => (is => 'ro',   isa => Maybe[Str]);
 has bug_id           => (is => 'ro',   isa => Str);
 has view_policy      => (is => 'ro',   isa => Str);
 has edit_policy      => (is => 'ro',   isa => Str);
 has subscriber_count => (is => 'ro',   isa => Int);
 has bug              => (is => 'lazy', isa => Object);
 has author           => (is => 'lazy', isa => Object);
+has repository       => (is => 'lazy', isa => Maybe[PhabRepo]);
 has reviews =>
   (is => 'lazy', isa => ArrayRef [Dict [user => PhabUser | PhabProject, status => Str]]);
 has subscribers => (is => 'lazy', isa => ArrayRef [PhabUser]);
@@ -113,6 +116,7 @@ sub BUILDARGS {
   $params->{modification_ts} = $params->{fields}->{dateModified};
   $params->{author_phid}     = $params->{fields}->{authorPHID};
   $params->{diff_phid}       = $params->{fields}->{diffPHID};
+  $params->{repository_phid} = $params->{fields}->{repositoryPHID};
   $params->{bug_id}          = $params->{fields}->{'bugzilla.bug-id'};
   $params->{view_policy}     = $params->{fields}->{policy}->{view};
   $params->{edit_policy}     = $params->{fields}->{policy}->{edit};
@@ -354,6 +358,28 @@ sub _build_projects {
   }
 
   return $self->{projects} = \@projects;
+}
+
+sub _build_repository {
+  my ($self) = @_;
+  return undef if !$self->repository_phid;
+  return $self->{repository} if $self->{repository};
+
+  # Cache repository objects per page request in case of
+  # multiple revisions having the same repository
+  my $cache = Bugzilla->request_cache;
+  return $cache->{phab_repo_cache}->{$self->repository_phid}
+    if exists $cache->{phab_repo_cache}->{$self->repository_phid};
+
+  my $repository
+    = Bugzilla::Extension::PhabBugz::Repository->new_from_query({
+    phids => [$self->repository_phid]
+    });
+  if ($repository) {
+    $cache->{phab_repo_cache}->{$self->repository_phid} = $repository;
+    return $self->{repository} = $repository;
+  }
+  return undef;
 }
 
 #########################
