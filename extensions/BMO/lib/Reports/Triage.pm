@@ -295,6 +295,15 @@ sub owners {
     }
   }
 
+  # List of core security groups to be used later when determining if the triage
+  # owner is a member of core security groups needed to see private bugs
+  my @core_security_names;
+  foreach my $group (Bugzilla::Groups->get_all()) {
+    if ($group->name =~ /.*core-security$/) {
+      push @core_security_names, $group->name;
+    }
+  }
+
   my $sql
     = "SELECT products.name, components.name, components.id, components.triage_owner_id
                FROM components JOIN products ON components.product_id = products.id
@@ -359,11 +368,25 @@ sub owners {
       && $product_obj->default_security_group
       && $user->in_group('mozilla-employee-confidential'))
     {
-      $data->{in_prod_security_group}
-        = $triage_owner
-        && $triage_owner->in_group($product_obj->default_security_group)
-        ? 'Yes'
-        : 'No';
+      my $in_secure_group = $triage_owner
+          && $triage_owner->in_group($product_obj->default_security_group
+          ? 'Yes'
+          : 'No';
+
+      # core-security is different in that very limited people are actually
+      # in this group. Normally these are triaged by security team first and
+      # and then a more appropriate group is selected. So we will show yes
+      # if the triage owner is a member or one or more .*core-security groups.
+      if ($product_obj->default_security_group eq 'core-security') {
+        foreach my $group_name (@core_security_names) {
+          if ($triage_owner && $triage_owner->in_group($group_name) {
+            $in_secure_group = 'Yes';
+            last;
+          }
+        }
+      }
+
+      $data->{in_prod_security_group} = $in_secure_group;
     }
 
     my $total = 0;
