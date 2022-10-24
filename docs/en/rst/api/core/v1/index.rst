@@ -13,6 +13,7 @@ Core API v1
    field
    flag-activity
    general
+   github
    group
    product
    user
