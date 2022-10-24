@@ -14,6 +14,7 @@ use warnings;
 use Bugzilla::Component;
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Group;
 use Bugzilla::Product;
 use Bugzilla::User;
 use Bugzilla::Util qw(detaint_natural trim url_quote);
@@ -298,7 +299,7 @@ sub owners {
   # List of core security groups to be used later when determining if the triage
   # owner is a member of core security groups needed to see private bugs
   my @core_security_names;
-  foreach my $group (Bugzilla::Groups->get_all()) {
+  foreach my $group (Bugzilla::Group->get_all()) {
     if ($group->name =~ /.*core-security$/) {
       push @core_security_names, $group->name;
     }
@@ -364,14 +365,15 @@ sub owners {
     # if the product object has the default_security_group method.
     # Also make sure the current user has permission to see this information
     my $product_obj = Bugzilla::Product->new({name => $product_name, cache => 1});
-    if ( $product_obj->can('default_security_group')
-      && $product_obj->default_security_group
-      && $user->in_group('mozilla-employee-confidential'))
+    if ( $triage_owner
+      && $user->in_group('mozilla-employee-confidential')
+      && $product_obj->can('default_security_group')
+      && $product_obj->default_security_group)
     {
-      my $in_secure_group = $triage_owner
-          && $triage_owner->in_group($product_obj->default_security_group
-          ? 'Yes'
-          : 'No';
+      my $in_secure_group
+        = $triage_owner->in_group($product_obj->default_security_group)
+        ? 'Yes'
+        : 'No';
 
       # core-security is different in that very limited people are actually
       # in this group. Normally these are triaged by security team first and
@@ -379,8 +381,9 @@ sub owners {
       # if the triage owner is a member or one or more .*core-security groups.
       if ($product_obj->default_security_group eq 'core-security') {
         foreach my $group_name (@core_security_names) {
-          if ($triage_owner && $triage_owner->in_group($group_name) {
-            $in_secure_group = 'Yes';
+
+          if ($triage_owner->in_group($group_name)) {
+            $in_secure_group = "Yes (member of $group_name)";
             last;
           }
         }
