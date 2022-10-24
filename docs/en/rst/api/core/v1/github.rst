@@ -1,12 +1,14 @@
-Pull Request
+Github
 ============
 
-The API for creating attachments in a bug that are links to a Github pull request.
-This allows a bug viewer to click on the Github link and be automatically redirected
-to the pull request.
+Pull Requests
+-------------
 
-Github Setup Instructions
--------------------------
+This API endpoint is for creating attachments in a bug that are redirect links to a
+specific Github pull request. This allows a bug viewer to click on the Github link
+and be automatically redirected to the pull request.
+
+**Github Setup Instructions**
 
 * From the repository main page, click on the Settings tab.
 * Click on Webhooks from the left side menu.
@@ -25,9 +27,6 @@ get the link automatically when the pull request is first created.
 
 Additional Note: The API endpoint looks at the pull request title for the bug id so
 make sure the title is formatted correctly to allow the bug id to be determined.
-
-API Endpoint
-------------
 
 **Request**
 
