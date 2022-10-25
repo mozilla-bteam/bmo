@@ -40,15 +40,21 @@ sub pull_request {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
-  # Return early if not a pull_request event
+  # Return early if not a pull_request or ping event
   my $event = $self->req->headers->header('X-GitHub-Event');
-  if (!$event || $event ne 'pull_request') {
+  if (!$event || ($event ne 'pull_request' && $event ne 'ping')) {
     return $self->code_error('github_pr_not_pull_request');
   }
 
   # Verify that signature is correct based on shared secret
   if (!$self->verify_signature) {
     return $self->code_error('github_pr_mismatch_signatures');
+  }
+
+  # If event is a ping and we passed the signature check
+  # then return success
+  if ($event eq 'ping') {
+    return $self->render(json => {success => 1});
   }
 
   # Parse pull request title for bug ID
