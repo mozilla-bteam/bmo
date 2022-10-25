@@ -346,9 +346,9 @@
       END;
 
       IF change.buglist;
-        IF change.fieldname == 'has_dupe';
+        IF change.fieldname == 'duplicates';
           label = "Duplicate of this " _ terms.bug;
-        ELSIF change.fieldname == 'dupe_of';
+        ELSIF change.fieldname == 'dup_id';
           label = "Duplicate of " _ terms.bug;
         ELSE;
           label = field_descs.${change.fieldname};

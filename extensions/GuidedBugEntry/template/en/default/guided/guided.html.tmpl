@@ -157,13 +157,13 @@ tabbed browsing or the location bar)
       [% END %]
     [% END %]
   [% END %]
-    <li
+    <li>
+      <span class="product-item"
       [% IF onclick %]
       onclick="[% onclick FILTER html %]"
       [% ELSE %]
       onclick="product.select('[% name FILTER js %]')"
       [% END %]>
-      <span class="product-item">
       <img src="[% basepath FILTER none %]extensions/BMO/web/producticons/[% icon FILTER uri %]" class="product-icon">
       <a href="javascript:void(0)">[% caption FILTER html %]</a>
       <p>
@@ -174,6 +174,13 @@ tabbed browsing or the location bar)
         [% END %]
       </p>
       </span>
+      [% IF security_bug_link %]
+        <span class="product-item">
+          If you are reporting a security issue that puts users at risk,
+          <b><a href="[% security_bug_link FILTER none %]">use this form</a>
+          instead.</b>
+        </span>
+      [% END %]
     </li>
 [% END %]
 

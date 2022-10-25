@@ -1186,6 +1186,24 @@ sub update {
     $changes->{'flagtypes.name'} = [$removed, $added];
   }
 
+  # Check if we have to update the duplicates table and the other bug.
+  my ($old_dup, $cur_dup) = ($old_bug->dup_id || 0, $self->dup_id || 0);
+  if ($old_dup != $cur_dup) {
+    $dbh->do("DELETE FROM duplicates WHERE dupe = ?", undef, $self->id);
+    if ($cur_dup) {
+      $dbh->do('INSERT INTO duplicates (dupe, dupe_of) VALUES (?,?)',
+        undef, $self->id, $cur_dup);
+      if (my $update_dup = delete $self->{_dup_for_update}) {
+        $update_dup->update();
+        LogActivityEntry($cur_dup, "duplicates", '', $self->id, $user->id, $delta_ts);
+      }
+    }
+    if ($old_dup) {
+      LogActivityEntry($old_dup, "duplicates", $self->id, '', $user->id, $delta_ts);
+    }
+    $changes->{'dup_id'} = [$old_dup || undef, $cur_dup || undef];
+  }
+
   # BMO - allow extensions to alter what is logged into bugs_activity
   Bugzilla::Hook::process(
     'bug_update_before_logging',
@@ -1205,21 +1223,6 @@ sub update {
     my $from   = defined $change->[0] ? $change->[0] : '';
     my $to     = defined $change->[1] ? $change->[1] : '';
     LogActivityEntry($self->id, $field, $from, $to, $user->id, $delta_ts);
-  }
-
-  # Check if we have to update the duplicates table and the other bug.
-  my ($old_dup, $cur_dup) = ($old_bug->dup_id || 0, $self->dup_id || 0);
-  if ($old_dup != $cur_dup) {
-    $dbh->do("DELETE FROM duplicates WHERE dupe = ?", undef, $self->id);
-    if ($cur_dup) {
-      $dbh->do('INSERT INTO duplicates (dupe, dupe_of) VALUES (?,?)',
-        undef, $self->id, $cur_dup);
-      if (my $update_dup = delete $self->{_dup_for_update}) {
-        $update_dup->update();
-      }
-    }
-
-    $changes->{'dup_id'} = [$old_dup || undef, $cur_dup || undef];
   }
 
   Bugzilla::Hook::process(

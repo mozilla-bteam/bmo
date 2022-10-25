@@ -387,7 +387,12 @@ use constant DEFAULT_FIELDS => (
     type           => FIELD_TYPE_BUG_ID,
     buglist        => 1,
   },
-
+  {
+    name           => 'dup_id',
+    desc           => 'Duplicate of',
+    type           => FIELD_TYPE_BUG_ID,
+    buglist        => 1,
+  },
   {
     name    => 'assignee_last_login',
     desc    => 'Assignee Last Login Date',

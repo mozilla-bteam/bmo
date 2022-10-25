@@ -57,7 +57,6 @@ sub activity_stream {
     my $stream = [];
     _add_comments_to_stream($self, $stream);
     _add_activities_to_stream($self, $stream);
-    _add_duplicates_to_stream($self, $stream);
 
     my $base_time = date_str_to_time($self->creation_ts);
     foreach my $change_set (@$stream) {
@@ -272,7 +271,7 @@ sub _add_activities_to_stream {
       }
 
       # identify buglist changes
-      if ($change->{fieldname} =~ /^(?:dependson|blocked|regress(?:ed_by|es)|dupe)$/
+      if ($change->{fieldname} =~ /^(?:dependson|blocked|regress(?:ed_by|es)|dup_id|duplicates)$/
         || ($field_obj && $field_obj->type == FIELD_TYPE_BUG_ID))
       {
         $change->{buglist} = 1;
@@ -364,39 +363,6 @@ sub _add_activities_to_stream {
 sub _extract_flagtype {
   my ($value) = @_;
   return $value =~ /^(.+)[\?\-\+]/ ? $1 : undef;
-}
-
-# display 'duplicate of this bug' as an activity entry, not a comment
-sub _add_duplicates_to_stream {
-  my ($bug, $stream) = @_;
-  my $dbh = Bugzilla->dbh;
-
-  my $sth = $dbh->prepare("
-        SELECT longdescs.who,
-               UNIX_TIMESTAMP(bug_when), " . $dbh->sql_date_format('bug_when') . ",
-               type,
-               extra_data
-          FROM longdescs
-               INNER JOIN profiles ON profiles.userid = longdescs.who
-         WHERE bug_id = ? AND (type = ? OR type = ?)
-         ORDER BY bug_when
-    ");
-  $sth->execute($bug->id, CMT_HAS_DUPE, CMT_DUPE_OF);
-
-  while (my ($who, $time, $when, $type, $dupe_id) = $sth->fetchrow_array) {
-    _add_activity_to_stream(
-      $stream, $time, $who,
-      {
-        who     => Bugzilla::User->new({id => $who, cache => 1}),
-        when    => $when,
-        changes => [{
-          fieldname => ($type == CMT_HAS_DUPE ? 'has_dupe' : 'dupe_of'),
-          added     => $dupe_id,
-          buglist   => 1,
-        }],
-      }
-    );
-  }
 }
 
 1;

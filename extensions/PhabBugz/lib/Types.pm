@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use Type::Library -base,
-  -declare => qw( Revision LinkedPhabUser PhabProject PhabUser Policy Project );
+  -declare => qw( Revision LinkedPhabUser PhabProject PhabUser Policy Project PhabRepo );
 use Type::Utils -all;
 use Types::Standard -all;
 
@@ -21,7 +21,7 @@ class_type Policy,      {class => 'Bugzilla::Extension::PhabBugz::Policy'};
 class_type Project,     {class => 'Bugzilla::Extension::PhabBugz::Project'};
 class_type PhabProject, {class => 'Bugzilla::Extension::PhabBugz::Project'};
 class_type PhabUser,    {class => 'Bugzilla::Extension::PhabBugz::User'};
+class_type PhabRepo     {class => 'Bugzilla::Extension::PhabBugz::Repository'};
 declare LinkedPhabUser, as PhabUser, where { is_Int($_->bugzilla_id) };
-
 
 1;
