@@ -351,6 +351,13 @@ sub group_query {
   }
 }
 
+sub _is_uplift_request_form_change {
+  # Return `true` if the story text is an uplift request change.
+  my ($story_text) = @_;
+
+  return $story_text =~ /\s+uplift request field/;
+}
+
 sub process_revision_change {
   state $check = compile($Invocant, Revision, LinkedPhabUser, Str);
   my ($self, $revision, $changer, $story_text) = $check->(@_);
@@ -383,6 +390,41 @@ sub process_revision_change {
     $changer->name, $story_text
   );
   INFO($log_message);
+
+  # Change is a submission of the uplift request form.
+  if (_is_uplift_request_form_change($story_text)) {
+    my $revision_phid = $revision->phid;
+    INFO(
+      "Uplift request form submitted on $revision_phid, " .
+      "requesting `#release-managers` review."
+    );
+
+    # Get `#release-managers` review group.
+    my $release_managers_phid = Bugzilla::Extension::PhabBugz::Project
+      ->new_from_query({name => 'release-managers'})
+      ->phid;
+
+    # Request `#release-managers` review on each revision.
+    foreach my $stack_revision_phid (keys %{$revision->{stack_graph_raw}}) {
+      # Query Phabricator for each revision object related to the updated revision.
+      my $stack_revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+        {phids => [$stack_revision_phid]}
+      );
+
+      # Add `#release-managers!` review and set revision status.
+      $stack_revision->add_reviewer("blocking($release_managers_phid)");
+
+      if ($stack_revision->status ne 'needs-review') {
+        $stack_revision->set_status('request-review');
+      }
+
+      $stack_revision->update();
+
+      INFO("Requested relman review of $stack_revision_phid.");
+    }
+
+    return;
+  }
 
   # change to the phabricator user, which returns a guard that restores the previous user.
   my $restore_prev_user = set_phab_user();
