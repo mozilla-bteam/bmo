@@ -173,4 +173,15 @@ $t->get_ok(
   $url . "rest/bug/attachment/$attach_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/attachments/$attach_id/is_obsolete", true);
 
+# Test that ping events (when the webhook is first created) are successful
+# a valid signature is also provided
+# Post the valid GitHub event to the rest/github/pull_request API endpoint
+$good_payload = {hook => {type => 'Repository'}};
+$good_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
+$t->post_ok($url
+    . 'rest/github/pull_request'                                           =>
+    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'ping'} =>
+    json => $good_payload)->status_is(200)->json_has('/success');
+
 done_testing();
