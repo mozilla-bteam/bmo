@@ -401,8 +401,17 @@ sub process_revision_change {
 
     # Get `#release-managers` review group.
     my $release_managers_phid = Bugzilla::Extension::PhabBugz::Project
-      ->new_from_query({name => 'release-managers'})
-      ->phid;
+      ->new_from_query({name => 'release-managers'});
+
+    if (!$release_managers_group) {
+      WARN(
+        "Uplift request change detected but `#release-managers` was " .
+        "not found on Phabricator."
+      );
+      return;
+    }
+    
+    my $release_managers_phid = $release_managers_group->phid;
 
     # Request `#release-managers` review on each revision.
     foreach my $stack_revision_phid (keys %{$revision->stack_graph_raw}) {
