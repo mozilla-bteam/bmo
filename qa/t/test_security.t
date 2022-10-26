@@ -138,9 +138,9 @@ logout($sel);
 log_in($sel, $config, 'editbugs');
 go_to_bug($sel, $bug1_id);
 ok(!$sel->is_text_present("secret_qa_bug_$bug2_id"),
-  "The alias 'secret_qa_bug_$bug2_id' is not visible for unauthorized users");
-ok(!$sel->is_text_present($bug2_id),
-  "Even the bug ID is not visible for unauthorized users");
+  "The alias 'secret_qa_bug_$bug2_id' is not visible for editbugs users");
+ok($sel->is_text_present($bug2_id),
+  "But the bug ID is visible for editbugs users");
 logout($sel);
 
 go_to_bug($sel, $bug1_id, 1);
