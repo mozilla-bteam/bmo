@@ -420,7 +420,7 @@ sub process_revision_change {
 
       $stack_revision->update();
 
-      INFO("Requested relman review of $stack_revision_phid.");
+      INFO("Requested #release-managers review of $stack_revision_phid.");
     }
 
     return;
