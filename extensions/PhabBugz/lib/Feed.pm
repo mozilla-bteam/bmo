@@ -405,7 +405,7 @@ sub process_revision_change {
       ->phid;
 
     # Request `#release-managers` review on each revision.
-    foreach my $stack_revision_phid (keys %{$revision->{stack_graph_raw}}) {
+    foreach my $stack_revision_phid (keys %{$revision->stack_graph_raw}) {
       # Query Phabricator for each revision object related to the updated revision.
       my $stack_revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
         {phids => [$stack_revision_phid]}
