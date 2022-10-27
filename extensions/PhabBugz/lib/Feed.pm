@@ -400,7 +400,7 @@ sub process_revision_change {
     );
 
     # Get `#release-managers` review group.
-    my $release_managers_phid = Bugzilla::Extension::PhabBugz::Project
+    my $release_managers_group = Bugzilla::Extension::PhabBugz::Project
       ->new_from_query({name => 'release-managers'});
 
     if (!$release_managers_group) {
