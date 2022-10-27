@@ -11,7 +11,6 @@ use 5.10.1;
 use Moo;
 
 use Bugzilla::Constants;
-use Bugzilla::Logging;
 
 sub evaluate_change {
   my ($self, $args) = @_;
@@ -32,9 +31,6 @@ sub evaluate_change {
         || $bug->reporter->id eq $user->id
         || $bug->assigned_to->id eq $user->id
         || ($bug->qa_contact && $bug->qa_contact->id eq $user->id)) ? 1 : 0;
-
-    DEBUG("field: $field");
-    DEBUG("has_role: $has_role");
 
     return {result => PRIVILEGES_REQUIRED_NONE} if $has_role;
 
