@@ -422,11 +422,6 @@ sub process_revision_change {
 
       # Add `#release-managers!` review and set revision status.
       $stack_revision->add_reviewer("blocking($release_managers_phid)");
-
-      if ($stack_revision->status ne 'needs-review') {
-        $stack_revision->set_status('request-review');
-      }
-
       $stack_revision->update();
 
       INFO("Requested #release-managers review of $stack_revision_phid.");
