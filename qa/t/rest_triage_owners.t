@@ -41,8 +41,7 @@ $t->get_ok($url
 $t->get_ok($url
     . 'rest/bmo/triage_owners?product=bugzilla.mozilla.org' =>
     {'X-Bugzilla-API-Key' => $admin_user_api_key})->status_is(200)
-  ->json_is('/bugzilla.mozilla.org/General/triage_owner', 'admin@mozilla.bugs')
-  ->json_is('/bugzilla.mozilla.org/API/triage_owner', 'automation@bmo.tld');
+  ->json_is('/bugzilla.mozilla.org/General/triage_owner', 'admin@mozilla.bugs');
 
 # Get the triage owner for components owned by admin@mozilla.bugs
 $t->get_ok($url
