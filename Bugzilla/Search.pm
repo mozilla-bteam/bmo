@@ -22,6 +22,7 @@ use Bugzilla::Error;
 use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Keyword;
+use Bugzilla::Logging;
 use Bugzilla::Search::Clause;
 use Bugzilla::Search::ClauseGroup;
 use Bugzilla::Search::Condition qw(condition);
@@ -2336,7 +2337,9 @@ sub SqlifyDate {
 
   if ($str =~ /^(-|\+)?(\d+)([hdwmy])(s?)$/i) {    # relative date
     my ($sign, $amount, $unit, $startof, $date) = ($1, $2, lc $3, lc $4, time);
+    DEBUG("$sign, $amount, $unit, $startof, $date");
     my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime($date);
+    DEBUG("$sec, $min, $hour, $mday, $month, $year, $wday");
     if ($sign && $sign eq '+') { $amount = -$amount; }
     $startof = 1 if $amount == 0;
     if ($unit eq 'w') {                            # convert weeks to days
@@ -2371,6 +2374,19 @@ sub SqlifyDate {
         return sprintf("%4d-%02d-01 00:00:00", $year + 1900, $month + 1);
       }
       else {
+        # If day is 31 but month only has 30 days, then set day to 30
+        if (firstidx {$month + 1 == $_} 4, 6, 9, 11 && $mday == 31) {
+          $mday = 30;
+        }
+        # If month is February and day greater than 28, then set day to 28
+        if ($month + 1 == 2 && $mday > 28) {
+          $mday = 28;
+        }
+        DEBUG(sprintf(
+          "%4d-%02d-%02d %02d:%02d:%02d",
+          $year + 1900,
+          $month + 1, $mday, $hour, $min, $sec
+        ));
         return sprintf(
           "%4d-%02d-%02d %02d:%02d:%02d",
           $year + 1900,
