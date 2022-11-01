@@ -44,6 +44,12 @@ has repository_phid  => (is => 'ro',   isa => Maybe[Str]);
 has bug_id           => (is => 'ro',   isa => Str);
 has view_policy      => (is => 'ro',   isa => Str);
 has edit_policy      => (is => 'ro',   isa => Str);
+has stack_graph_raw  => (
+    is => 'ro',
+    isa => Dict [
+        slurpy Any
+    ],
+);
 has subscriber_count => (is => 'ro',   isa => Int);
 has bug              => (is => 'lazy', isa => Object);
 has author           => (is => 'lazy', isa => Object);
@@ -120,6 +126,7 @@ sub BUILDARGS {
   $params->{bug_id}          = $params->{fields}->{'bugzilla.bug-id'};
   $params->{view_policy}     = $params->{fields}->{policy}->{view};
   $params->{edit_policy}     = $params->{fields}->{policy}->{edit};
+  $params->{stack_graph_raw} = $params->{fields}->{stackGraph};
   $params->{reviewers_raw}   = $params->{attachments}->{reviewers}->{reviewers}
     // [];
   $params->{subscribers_raw} = $params->{attachments}->{subscribers};
@@ -142,6 +149,15 @@ sub BUILDARGS {
 #       "type": "DREV",
 #       "phid": "PHID-DREV-uozm3ggfp7e7uoqegmc3",
 #       "fields": {
+#         "stackGraph": {
+#           "PHID-DREV-tzccv6pxtghpdkeutys2": [
+#             "PHID-DREV-rqndonx3itqv3ykz7tn6"
+#           ],
+#           "PHID-DREV-rqndonx3itqv3ykz7tn6": [
+#             "PHID-DREV-5jxsanssnzmhdtgxa33x"
+#           ],
+#           "PHID-DREV-5jxsanssnzmhdtgxa33x": []
+#         },
 #         "title": "Added .arcconfig",
 #         "authorPHID": "PHID-USER-4wigy3sh5fc5t74vapwm",
 #         "dateCreated": 1507666113,

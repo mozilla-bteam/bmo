@@ -31,7 +31,8 @@ make sure the title is formatted correctly to allow the bug id to be determined.
 **Request**
 
 The endpoint will error for any requests that do not have `X-GitHub-Event` header with
-the value `pull_request`.
+either the value `pull_request` or `ping`. Ping events can happen when a webhook is
+first created. In that case, Bugzilla will return success if the signature checks out.
 
 .. code-block:: text
 
