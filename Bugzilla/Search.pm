@@ -1396,15 +1396,7 @@ sub _standard_joins {
       as    => 'security_cc',
       extra => ['security_cc.who = ' . $user->id],
     };
-    my $security_triage_join = {
-      table => 'components',
-      as    => 'security_triage',
-      from  => 'bugs.component_id',
-      to    => 'id',
-      join  => 'LEFT',
-      extra => ['security_triage.triage_owner_id = ' . $user->id],
-    };
-    push(@joins, $security_cc_join, $security_triage_join);
+    push @joins, $security_cc_join;
   }
 
   return @joins;
@@ -1486,7 +1478,6 @@ sub _standard_where {
         OR (bugs.reporter_accessible = 1 AND bugs.reporter = $userid)
         OR (bugs.cclist_accessible = 1 AND security_cc.who IS NOT NULL)
         OR bugs.assigned_to = $userid
-        OR security_triage.triage_owner_id IS NOT NULL
 END
     if (Bugzilla->params->{'useqacontact'}) {
       $security_term .= "        OR bugs.qa_contact = $userid";

@@ -13,6 +13,7 @@
   # gravatar_only : boolean, if true output just the Gravatar (not-simple only)
   # nick_only : boolean, if true, the nickname will be used instead of the full name
   # id : string, if provided the id of the vCard div
+  # user_addl_html : string, if provided will be rendered after user information inside the same <div>
   #%]
 
 [%
@@ -58,5 +59,6 @@ END;
         </a>
       [% END %]
     [% END %]
+    [% user_addl_html FILTER none %]
   [% END %]
 </div>
