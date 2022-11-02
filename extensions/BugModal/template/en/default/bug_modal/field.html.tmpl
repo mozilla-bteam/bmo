@@ -36,6 +36,7 @@
   #   class: (string) optional button class
   #   caption: (string) button caption
   #   hidden: (boolean) don't show the button (default: false)
+  # user_addl_html : string, if provided will be passed to user.html.tmpl.
   #%]
 
 [%
@@ -138,7 +139,7 @@ END;
 
           [% CASE constants.FIELD_TYPE_USER %]
             [%# users %]
-            [% INCLUDE bug_modal/user.html.tmpl u=value nick_only=1 gravatar_size=20 %]
+            [% INCLUDE bug_modal/user.html.tmpl u=value nick_only=1 gravatar_size=20 user_addl_html=user_addl_html %]
 
           [% CASE constants.FIELD_TYPE_BUG_URLS %]
             [%# see also %]

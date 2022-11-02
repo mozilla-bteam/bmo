@@ -36,6 +36,11 @@ sub _auth {
 sub enroll_api {
   my ($self) = @_;
 
+  # Block if currently enrolled
+  if ($self->property_get('secret')) {
+    ThrowUserError('mfa_already_enrolled');
+  }
+
   # create a new secret for the user
   # store it in secret.temp to avoid overwriting a valid secret
   $self->property_set('secret.temp', generate_random_password(16));
