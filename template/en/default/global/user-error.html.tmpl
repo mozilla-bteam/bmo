@@ -1241,6 +1241,11 @@
     [% title = "Change Denied" %]
     You do not have permission to disable MFA for other users.
 
+  [% ELSIF error == "mfa_already_enrolled" %]
+    [% title = "Already Enrolled in MFA" %]
+    You are already enrolled in two-factor authentication and cannot enroll
+    again. To generate a new enrollment, first remove the current one.
+
   [% ELSIF error == "migrate_config_created" %]
     The file <kbd>[% file FILTER html %]</kbd> contains configuration
     variables that must be set before continuing with the migration.
