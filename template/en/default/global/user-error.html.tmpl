@@ -541,6 +541,10 @@
     does not exist or you aren't authorized to
     enter [% terms.abug %] into it.
 
+  [% ELSIF error == "clone_bug_not_allowed" %]
+    [% title = "Bug Cloning Not Allowed" %]
+    Sorry, you need special permissions to clone this bug.
+
   [% ELSIF error == "extension_create_no_name" %]
     You must specify a name for your extension, as an argument to this script.
 
