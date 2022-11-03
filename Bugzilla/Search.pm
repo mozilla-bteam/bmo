@@ -30,8 +30,6 @@ use Bugzilla::User;
 use Bugzilla::Util;
 
 use Data::Dumper;
-use Date::Format;
-use Date::Parse;
 use DateTime;
 use List::MoreUtils qw(all any firstidx part uniq);
 use POSIX qw(INT_MAX);
@@ -2369,6 +2367,9 @@ sub SqlifyDate {
     }
     return undef;    # should not happen due to regexp at top
   }
+
+  # Some kind of date string was passed in so we need to validate it
+  $date = datetime_from($str);
   if (!defined($date)) {
     ThrowUserError("illegal_date", {date => $str});
   }
