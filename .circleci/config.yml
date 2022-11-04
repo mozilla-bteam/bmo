@@ -285,7 +285,7 @@ workflows:
           filters: *main_filters
           requires:
             - build
-      - test_selenium:
-          filters: *main_filters
-          requires:
-            - build
+      #- test_selenium:
+      #    filters: *main_filters
+      #    requires:
+      #      - build
