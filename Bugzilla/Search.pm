@@ -30,8 +30,7 @@ use Bugzilla::User;
 use Bugzilla::Util;
 
 use Data::Dumper;
-use Date::Format;
-use Date::Parse;
+use DateTime;
 use List::MoreUtils qw(all any firstidx part uniq);
 use POSIX qw(INT_MAX);
 use Scalar::Util qw(blessed);
@@ -1395,15 +1394,7 @@ sub _standard_joins {
       as    => 'security_cc',
       extra => ['security_cc.who = ' . $user->id],
     };
-    my $security_triage_join = {
-      table => 'components',
-      as    => 'security_triage',
-      from  => 'bugs.component_id',
-      to    => 'id',
-      join  => 'LEFT',
-      extra => ['security_triage.triage_owner_id = ' . $user->id],
-    };
-    push(@joins, $security_cc_join, $security_triage_join);
+    push @joins, $security_cc_join;
   }
 
   return @joins;
@@ -1485,7 +1476,6 @@ sub _standard_where {
         OR (bugs.reporter_accessible = 1 AND bugs.reporter = $userid)
         OR (bugs.cclist_accessible = 1 AND security_cc.who IS NOT NULL)
         OR bugs.assigned_to = $userid
-        OR security_triage.triage_owner_id IS NOT NULL
 END
     if (Bugzilla->params->{'useqacontact'}) {
       $security_term .= "        OR bugs.qa_contact = $userid";
@@ -2318,10 +2308,10 @@ sub _date_translate {
 sub SqlifyDate {
   my ($str) = @_;
   my $fmt = "%Y-%m-%d %H:%M:%S";
+  my $date = DateTime->now();
   $str = "" if (!defined $str || lc($str) eq 'now');
   if ($str eq "") {
-    my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime(time());
-    return sprintf("%4d-%02d-%02d 00:00:00", $year + 1900, $month + 1, $mday);
+    return $date->strftime('%Y-%m-%d 00:00:00');
   }
 
   # Allow to support custom date pronouns
@@ -2335,48 +2325,36 @@ sub SqlifyDate {
   }
 
   if ($str =~ /^(-|\+)?(\d+)([hdwmy])(s?)$/i) {    # relative date
-    my ($sign, $amount, $unit, $startof, $date) = ($1, $2, lc $3, lc $4, time);
-    my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime($date);
+    my ($sign, $amount, $unit, $startof) = ($1, $2, lc $3, lc $4);
     if ($sign && $sign eq '+') { $amount = -$amount; }
     $startof = 1 if $amount == 0;
     if ($unit eq 'w') {                            # convert weeks to days
       $amount = 7 * $amount;
-      $amount += $wday if $startof;
+      $amount += $date->wday if $startof;
       $unit = 'd';
     }
     if ($unit eq 'd') {
       if ($startof) {
         $fmt = "%Y-%m-%d 00:00:00";
-        $date -= $sec + 60 * $min + 3600 * $hour;
       }
-      $date -= 24 * 3600 * $amount;
-      return time2str($fmt, $date);
+      $date->subtract(days => $amount);
+      return $date->strftime($fmt);
     }
     elsif ($unit eq 'y') {
+      $date->subtract(years => $date->year + 1900 - $amount);
       if ($startof) {
-        return sprintf("%4d-01-01 00:00:00", $year + 1900 - $amount);
+        return $date->strftime('%Y-01-01 00:00:00');
       }
       else {
-        return sprintf(
-          "%4d-%02d-%02d %02d:%02d:%02d",
-          $year + 1900 - $amount,
-          $month + 1, $mday, $hour, $min, $sec
-        );
+        return $date->strftime($fmt);
       }
     }
     elsif ($unit eq 'm') {
-      $month -= $amount;
-      while ($month < 0) { $year--; $month += 12; }
+      $date->subtract(months => $amount);
       if ($startof) {
-        return sprintf("%4d-%02d-01 00:00:00", $year + 1900, $month + 1);
+        return $date->strftime('%Y-%m-01 00:00:00');
       }
-      else {
-        return sprintf(
-          "%4d-%02d-%02d %02d:%02d:%02d",
-          $year + 1900,
-          $month + 1, $mday, $hour, $min, $sec
-        );
-      }
+      return $date->strftime($fmt);
     }
     elsif ($unit eq 'h') {
 
@@ -2384,16 +2362,18 @@ sub SqlifyDate {
       if ($startof) {
         $fmt = "%Y-%m-%d %H:00:00";
       }
-      $date -= 3600 * $amount;
-      return time2str($fmt, $date);
+      $date->subtract(hours => $amount);
+      return $date->strftime($fmt);
     }
     return undef;    # should not happen due to regexp at top
   }
-  my $date = str2time($str);
+
+  # Some kind of date string was passed in so we need to validate it
+  $date = datetime_from($str);
   if (!defined($date)) {
     ThrowUserError("illegal_date", {date => $str});
   }
-  return time2str($fmt, $date);
+  return $date->strftime($fmt);
 }
 
 ######################################

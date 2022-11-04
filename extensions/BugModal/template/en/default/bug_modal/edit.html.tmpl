@@ -209,8 +209,10 @@
     </div>
     [% IF user.id %]
       <div class="dropdown">
-        <button type="button" id="new-bug-btn" aria-haspopup="true" aria-label="New/Clone [% terms.Bug %]"
-          aria-expanded="false" aria-controls="new-bug-menu" class="dropdown-button secondary">New/Clone &#9662;</button>
+        <button type="button" id="new-bug-btn" aria-haspopup="true"
+          aria-label="New[% IF !bug.restrict_comments || user.in_group('editbugs')%]/Clone[% END %] [% terms.Bug %]"
+          aria-expanded="false" aria-controls="new-bug-menu" class="dropdown-button secondary">
+          New[% IF !bug.restrict_comments || user.in_group('editbugs')%]/Clone[% END %] &#9662;</button>
         <ul class="dropdown-content left" id="new-bug-menu" role="menu" style="display:none;">
           <li role="presentation">
             <a href="[% basepath FILTER none %]enter_bug.cgi" role="menuitem" tabindex="-1" target="_blank">
@@ -240,16 +242,18 @@
                     [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
               role="menuitem" tabindex="-1" target="_blank">&#8230; that is regressed by this [% terms.bug %]</a>
           </li>
-          <li role="separator"></li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]
-                    [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
-              role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone of this [% terms.bug %]</a>
-          </li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]"
-              role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone, in a different product</a>
-          </li>
+          [% IF !bug.restrict_comments || user.in_group('editbugs') %]
+            <li role="separator"></li>
+            <li role="presentation">
+              <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]
+                      [%~%]&amp;product=[% bug.product FILTER uri %]&amp;component=[% bug.component FILTER uri %]"
+                role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone of this [% terms.bug %]</a>
+            </li>
+            <li role="presentation">
+              <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default__&amp;cloned_bug_id=[% bug.id FILTER uri %]"
+                role="menuitem" tabindex="-1" target="_blank">&#8230; as a clone, in a different product</a>
+            </li>
+          [% END %]
         </ul>
       </div>
       <button type="button" id="cancel-btn" class="secondary" aria-label="Cancel Editing" style="display:none">Cancel</button>
@@ -863,6 +867,14 @@
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#reporter"
     %]
 
+    [% IF NOT bug.component_obj.triage_owner.can_see_bug(bug.id) %]
+      [% triager_warning_html = BLOCK %]
+        <img src="[% basepath FILTER none %]extensions/BugModal/web/error.png"
+             width="16" height="16"
+             title="Triage owner not permitted to see this bug">
+      [% END %]
+   [% END %]
+
     [%# triage owner %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.triage_owner
@@ -871,6 +883,7 @@
         view_only = 1
         hide_on_view = bug.component_obj.triage_owner.login == ""
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#triage_owner"
+        user_addl_html = triager_warning_html
     %]
 
     [%# needinfo %]

@@ -198,6 +198,15 @@ if ($cloned_bug_id) {
   $cloned_bug_id = $cloned_bug->id;
 }
 
+# If cloned bug has comments restricted then do not
+# allow cloning if user is not in editbugs
+if ( $cloned_bug
+  && $cloned_bug->restrict_comments
+  && !$user->in_group('editbugs'))
+{
+  ThrowUserError('clone_bug_not_allowed');
+}
+
 # If there is only one active component, choose it
 my @active = grep { $_->is_active } @{$product->components};
 if (scalar(@active) == 1) {

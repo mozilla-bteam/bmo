@@ -313,17 +313,6 @@ my @products = (
       watch_user     => 'general@bugzilla.bugs',
       team_name      => 'Mozilla',
       triage_owner   => 'admin@mozilla.bugs',
-    },
-    {
-      name => 'API',
-      description =>
-        'Issues relating to integrating bugzilla.mozilla.org with external systems.',
-      initialowner   => 'nobody@mozilla.org',
-      initialqaowner => '',
-      initial_cc     => [],
-      watch_user     => 'api@bugzilla.bugs',
-      team_name      => 'Mozilla',
-      triage_owner   => 'automation@bmo.tld',
     }],
   },
 );
