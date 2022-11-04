@@ -177,7 +177,7 @@ jobs:
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
-              test_sanity t/*.t extensions/*/t/*.t | tee artifacts/$CIRCLE_JOB.txt
+              test_sanity t/*.t extensions/*/t/*.t
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -199,10 +199,11 @@ jobs:
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
           at: /app/build_info
-      - run: |
-          [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run bmo.test test_webservices | \
-            tee artifacts/$CIRCLE_JOB.txt
+      - run:
+          name: run webservice tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run bmo.test test_webservices
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -224,10 +225,11 @@ jobs:
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
           at: /app/build_info
-      - run: |
-          [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run bmo.test test_selenium | \
-            tee artifacts/$CIRCLE_JOB.txt
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run bmo.test test_selenium
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -254,7 +256,7 @@ jobs:
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run bmo.test test_bmo \
-              -q -f t/bmo/*.t extensions/*/t/bmo/*.t | tee artifacts/$CIRCLE_JOB.txt
+              -q -f t/bmo/*.t extensions/*/t/bmo/*.t
       - *store_log
 
 workflows:
