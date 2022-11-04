@@ -275,14 +275,14 @@ my $format = $template->get_format("reports/report", $formatparam,
 # If we get a template or CGI error, it comes out as HTML, which isn't valid
 # PNG data, and the browser just displays a "corrupt PNG" message. So, you can
 # set debug=1 to always get an HTML content-type, and view the error.
-$format->{'ctype'} = "text/html" if $cgi->param('debug');
+$format->{'ctype'} = "text/html" if $vars->{debug};
 
 $cgi->set_dated_content_disp("inline", "report", $format->{extension});
 print $cgi->header($format->{'ctype'});
 
 # Problems with this CGI are often due to malformed data. Setting debug=1
 # prints out both data structures.
-if ($cgi->param('debug')) {
+if ($vars->{debug}) {
   require Data::Dumper;
   print "<pre>data hash:\n";
   print html_quote(Data::Dumper::Dumper(%data)) . "\n\n";
