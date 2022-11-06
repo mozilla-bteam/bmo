@@ -152,7 +152,7 @@ sub _get_create_index_ddl {
 
   my ($self, $table_name, $index_name, $index_fields, $index_type) = @_;
   my $dbh = Bugzilla->dbh;
-  
+
   my $sql = "CREATE ";
   $sql .= "$index_type "
     if ($index_type eq 'UNIQUE' || $index_type eq 'FULLTEXT');

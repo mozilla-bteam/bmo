@@ -189,7 +189,8 @@ do {
                         "name": "Needs Review",
                         "closed": false,
                         "color.ansi": "magenta"
-                    }
+                    },
+                    "stackGraph": {}
                 },
                 "attachments": {
                     "reviewers": {

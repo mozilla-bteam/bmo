@@ -296,10 +296,8 @@ sub fix_path {
 sub run {
   my (@cmd) = @_;
   say "+ @cmd";
-  my $rv = eval { system @cmd };
-  if (defined $rv && $rv != 0) {
-    die $@;
-  }
+  my $rv = system @cmd;
+  exit $rv if $rv != 0;
 }
 
 sub run_quiet {

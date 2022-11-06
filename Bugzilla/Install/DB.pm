@@ -831,7 +831,7 @@ sub update_table_definitions {
 
   # Bug 1512484 - kohei.yoshino@gmail.com
   _add_products_default_version();
-  
+
   # Bug 577847 - dkl@mozilla.com
   _update_see_also_any_url();
 
