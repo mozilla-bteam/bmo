@@ -99,7 +99,7 @@ sub pull_request {
     bug         => $bug,
     creation_ts => $timestamp,
     data        => $html_url,
-    description => 'GitHub Pull Request',
+    description => $title,
     filename    => "github-$pr_number-url.txt",
     ispatch     => 0,
     isprivate   => 0,
