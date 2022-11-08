@@ -32,11 +32,8 @@ sub populate {
   # Load values from file, one per row
   my @values = split /\n/, path($file)->slurp;
 
-  use Bugzilla::Logging;
-
   # Put items in database
   foreach my $value (@values) {
-    DEBUG("value: $value");
     my $exists
       = $dbh->selectrow_array(
       'SELECT value FROM bloomfilter_values WHERE name = ? AND value = ?',
