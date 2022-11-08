@@ -99,6 +99,10 @@
         <dt id="new_release" class="[% class %]"><a href="[% basepath FILTER none %]admin/new_release">New Firefox Release</a></dt>
         <dd class="[% class %]">Add new version and milestone for a new release of Firefox</dd>
 
+        [% class = user.in_group('admin') ? "" : "forbidden" %]
+        <dt id="bloomfilter" class="[% class %]"><a href="[% basepath FILTER none %]page.cgi?id=edit_table.html&table=bloomfilter_values">Bloomfilter Values</a></dt>
+        <dd class="[% class %]">Add or remove values from the Bloomfilter table.</dd>
+
         [% Hook.process('end_links_left') %]
       </dl>
     </td>
