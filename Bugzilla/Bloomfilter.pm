@@ -57,7 +57,7 @@ sub lookup {
     # Read filter values from database
     my $values
       = Bugzilla->dbh->selectcol_arrayref(
-      "SELECT value FROM bloomfilter_values WHERE name = ?",
+      'SELECT value FROM bloomfilter_values WHERE name = ?',
       undef, $name);
     if (@$values) {
       my $filter = _new_bloom_filter(@$values + 0);

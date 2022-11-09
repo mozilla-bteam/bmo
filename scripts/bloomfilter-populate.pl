@@ -14,7 +14,7 @@ use Bugzilla::Bloomfilter;
 # set Bugzilla usage mode to USAGE_MODE_CMDLINE
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my $name = shift @ARGV or die "usage: $0 \$name\n";
-my $file = shift @ARGV or die "usage: $0 \$file\n";
+my ($name, $file) = @ARGV;
+($name && $file) || die "usage: bloomfilter-populate.pl [name] [file]\n";
 
 Bugzilla::Bloomfilter->populate($name, $file);
