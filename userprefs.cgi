@@ -177,12 +177,12 @@ sub SaveAccount {
 }
 
 sub MfaAccount {
-  my $cgi  = Bugzilla->cgi;
-  my $user = Bugzilla->user;
-  my $dbh  = Bugzilla->dbh;
+  my $mfa_token = shift;
+  my $user      = Bugzilla->user;
+  my $dbh       = Bugzilla->dbh;
   return unless $user->mfa;
 
-  my $event = $user->mfa_provider->verify_token($cgi->param('mfa_token'));
+  my $event = $user->mfa_provider->verify_token($mfa_token);
 
   foreach my $action (@{$event->{actions}}) {
     if ($action->{type} eq 'set_login') {
@@ -308,11 +308,11 @@ sub SaveSettings {
 }
 
 sub MfaSettings {
-  my $cgi  = Bugzilla->cgi;
-  my $user = Bugzilla->user;
+  my $mfa_token = shift;
+  my $user      = Bugzilla->user;
   return unless $user->mfa;
 
-  my $event = $user->mfa_provider->verify_token($cgi->param('mfa_token'));
+  my $event = $user->mfa_provider->verify_token($mfa_token);
 
   my $settings = $user->settings;
   if ($event->{reset}) {
@@ -764,14 +764,13 @@ sub SaveMFAupdate {
 }
 
 sub SaveMFAcallback {
-  my $cgi  = Bugzilla->cgi;
-  my $user = Bugzilla->user;
+  my $mfa_token = shift;
+  my $user      = Bugzilla->user;
 
-  my $mfa      = $cgi->param('mfa');
-  my $provider = Bugzilla::MFA->new_from($user, $mfa) // return;
-  my $event    = $provider->verify_token($cgi->param('mfa_token'));
+  my $provider = Bugzilla::MFA->new_from($user, $mfa_token) // return;
+  my $event    = $provider->verify_token($mfa_token);
 
-  SaveMFAupdate($event->{action}, $mfa);
+  SaveMFAupdate($event->{action}, $mfa_token);
 }
 
 sub DoMFA {
@@ -932,12 +931,12 @@ sub SaveApiKey {
 }
 
 sub MfaApiKey {
-  my $cgi  = Bugzilla->cgi;
-  my $user = Bugzilla->user;
-  my $dbh  = Bugzilla->dbh;
+  my $mfa_token = shift;
+  my $user      = Bugzilla->user;
+  my $dbh       = Bugzilla->dbh;
   return unless $user->mfa;
 
-  my $event = $user->mfa_provider->verify_token($cgi->param('mfa_token'));
+  my $event = $user->mfa_provider->verify_token($mfa_token);
 
   foreach my $action (@{$event->{actions}}) {
     if ($action->{type} eq 'create') {
@@ -999,9 +998,11 @@ if (!Bugzilla->user->id) {
 }
 Bugzilla->login(LOGIN_REQUIRED);
 
+my $mfa_token = $cgi->cookie('mfa_verification_token');
+$cgi->remove_cookie('mfa_verification_token');
+
 my $save_changes    = $cgi->param('dosave');
 my $disable_account = $cgi->param('account_disable');
-my $mfa_token       = $cgi->param('mfa_token');
 $vars->{'changes_saved'} = $save_changes || $mfa_token;
 
 my $current_tab_name = $cgi->param('tab') || "account";
@@ -1029,15 +1030,15 @@ SWITCH: for ($current_tab_name) {
   last SWITCH if $handled;
 
   /^account$/ && do {
-    MfaAccount()     if $mfa_token;
-    DisableAccount() if $disable_account;
-    SaveAccount()    if $save_changes;
+    MfaAccount($mfa_token) if $mfa_token;
+    DisableAccount()       if $disable_account;
+    SaveAccount()          if $save_changes;
     DoAccount();
     last SWITCH;
   };
   /^settings$/ && do {
-    MfaSettings()  if $mfa_token;
-    SaveSettings() if $save_changes;
+    MfaSettings($mfa_token) if $mfa_token;
+    SaveSettings()          if $save_changes;
     DoSettings();
     last SWITCH;
   };
@@ -1056,8 +1057,8 @@ SWITCH: for ($current_tab_name) {
     last SWITCH;
   };
   /^apikey$/ && do {
-    MfaApiKey()  if $mfa_token;
-    SaveApiKey() if $save_changes;
+    MfaApiKey($mfa_token) if $mfa_token;
+    SaveApiKey()          if $save_changes;
     DoApiKey();
     last SWITCH;
   };
@@ -1067,8 +1068,8 @@ SWITCH: for ($current_tab_name) {
     last SWITCH;
   };
   /^mfa$/ && do {
-    SaveMFAcallback() if $mfa_token;
-    SaveMFA()         if $save_changes;
+    SaveMFAcallback($mfa_token) if $mfa_token;
+    SaveMFA()                   if $save_changes;
     DoMFA();
     last SWITCH;
   };

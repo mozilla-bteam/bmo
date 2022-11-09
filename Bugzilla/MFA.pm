@@ -69,9 +69,7 @@ sub verify_prompt {
   set_token_extra_data($token, $event);
 
   # trigger provider verification
-  my $token_field = $event->{postback}->{token_field} // 'mfa_token';
-  $event->{postback}->{fields}->{$token_field} = $token;
-  $self->prompt($event);
+  $self->prompt($event, $token);
   exit;
 }
 
