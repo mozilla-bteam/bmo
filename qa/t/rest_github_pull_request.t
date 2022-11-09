@@ -116,8 +116,8 @@ my $attach_id = $t->tx->res->json->{id};
 $t->get_ok(
   $url . "rest/bug/attachment/$attach_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/attachments/$attach_id/content_type",
-  'text/x-github-pull-request')
-  ->json_is("/attachments/$attach_id/description", 'GitHub Pull Request');
+  'text/x-github-pull-request')->json_is("/attachments/$attach_id/description",
+  $good_payload->{pull_request}->{title});
 
 my $attach_data = $t->tx->res->json->{attachments}->{$attach_id}->{data};
 $attach_data = decode_base64($attach_data);
@@ -161,8 +161,10 @@ my $attach_id_2 = $t->tx->res->json->{id};
 $t->get_ok(
   $url . "rest/bug/attachment/$attach_id_2" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/attachments/$attach_id_2/content_type",
-  'text/x-github-pull-request')
-  ->json_is("/attachments/$attach_id_2/description", 'GitHub Pull Request');
+  'text/x-github-pull-request')->json_is(
+  "/attachments/$attach_id_2/description",
+  $good_payload->{pull_request}->{title}
+  );
 
 my $attach_data_2 = $t->tx->res->json->{attachments}->{$attach_id_2}->{data};
 $attach_data_2 = decode_base64($attach_data_2);
