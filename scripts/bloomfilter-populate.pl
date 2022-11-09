@@ -15,5 +15,6 @@ use Bugzilla::Bloomfilter;
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 my $name = shift @ARGV or die "usage: $0 \$name\n";
-Bugzilla::Bloomfilter->populate($name);
+my $file = shift @ARGV or die "usage: $0 \$file\n";
 
+Bugzilla::Bloomfilter->populate($name, $file);

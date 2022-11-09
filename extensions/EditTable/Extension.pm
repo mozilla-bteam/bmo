@@ -48,7 +48,17 @@ our $VERSION = '1';
 # },
 
 sub EDITABLE_TABLES {
-  my $tables = {};
+  my $tables = {
+    bloomfilter_values => {
+      id_field => 'id',
+      order_by => 'name',
+      blurb => 'List of Bloomfilter values used for features such as rate limiting.',
+      group => 'admin',
+      post_commit => sub {
+        Bugzilla->memcached->clear_bloomfilter();
+      }
+    }
+  };
   Bugzilla::Hook::process("editable_tables", {tables => $tables});
   return $tables;
 }
@@ -121,6 +131,9 @@ sub page_before_template {
           );
         }
       }
+
+      # Run any post commit action if defined
+      $table->{post_commit}->() if $table->{post_commit};
 
       $dbh->bz_commit_transaction;
       $vars->{updated} = 1;
