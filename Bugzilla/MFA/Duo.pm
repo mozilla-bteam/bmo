@@ -49,6 +49,7 @@ sub enroll {
 
 sub prompt {
   my ($self, $vars, $token) = @_;
+  my $cgi      = Bugzilla->cgi;
   my $template = Bugzilla->template;
 
   $vars->{sig_request} = Bugzilla::DuoWeb::sign_request(
@@ -63,7 +64,6 @@ sub prompt {
     -value    => $token,
     -httponly => 1,
   );
-
 
   print Bugzilla->cgi->header();
   $template->process('mfa/duo/verify.html.tmpl', $vars)
