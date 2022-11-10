@@ -62,19 +62,10 @@ sub enrolled {
 }
 
 sub prompt {
-  my ($self, $vars, $token) = @_;
+  my ($self, $vars) = @_;
   my $template = Bugzilla->template;
-  my $cgi      = Bugzilla->cgi;
 
-  # Set cookie with token to verify form submitted
-  # from Bugzilla and not a different domain.
-  $cgi->send_cookie(
-    -name     => 'mfa_verification_token',
-    -value    => $token,
-    -httponly => 1,
-  );
-
-  print $cgi->header();
+  print Bugzilla->cgi->header();
   $template->process('mfa/totp/verify.html.tmpl', $vars)
     || ThrowTemplateError($template->error());
 }

@@ -105,7 +105,7 @@ sub login {
       remember      => $params->{Bugzilla_remember},
       url           => $uri->as_string,
       postback =>
-        {action => 'token.cgi', fields => {a => 'mfa_l',},}
+        {action => 'token.cgi', token_field => 't', fields => {a => 'mfa_l',},}
     });
   }
 
