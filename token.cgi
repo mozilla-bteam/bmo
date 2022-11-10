@@ -180,10 +180,10 @@ elsif ($action eq 'cancel_new_account') {
   cancel_create_account($token);
 }
 elsif ($action eq 'mfa_l') {
-  verify_mfa_login($token);
+  verify_mfa_login();
 }
 elsif ($action eq 'mfa_p') {
-  verify_mfa_password($token);
+  verify_mfa_password();
 }
 elsif ($action eq 'verify_auto_account_creation') {
   verify_auto_account_creation($token);
@@ -248,7 +248,7 @@ sub changePassword {
       password => $password,
       token    => $token,
       postback =>
-        {action => 'token.cgi', token_field => 't', fields => {a => 'mfa_p',},},
+        {action => 'token.cgi', fields => {a => 'mfa_p',},},
     });
   }
   else {
@@ -257,7 +257,9 @@ sub changePassword {
 }
 
 sub verify_mfa_password {
-  my $token = shift;
+  my $cgi   = Bugzilla->cgi;
+  my $token = $cgi->cookie('mfa_verification_token');
+  $cgi->remove_cookie('mfa_verification_token');
   my ($user, $event) = mfa_event_from_token($token);
   set_user_password($event->{token}, $user, $event->{password});
 }
@@ -478,7 +480,9 @@ sub cancel_create_account {
 }
 
 sub verify_mfa_login {
-  my $token = shift;
+  my $cgi   = Bugzilla->cgi;
+  my $token = $cgi->cookie('mfa_verification_token');
+  $cgi->remove_cookie('mfa_verification_token');
   my ($user, $event) = mfa_event_from_token($token);
   $user->authorizer->auto_verified($user, $event);
 
