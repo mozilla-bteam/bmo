@@ -2341,7 +2341,7 @@ sub SqlifyDate {
       return $date->strftime($fmt);
     }
     elsif ($unit eq 'y') {
-      $date->subtract(years => $date->year + 1900 - $amount);
+      $date->subtract(years => $amount);
       if ($startof) {
         return $date->strftime('%Y-01-01 00:00:00');
       }

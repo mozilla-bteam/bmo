@@ -12,9 +12,9 @@ use strict;
 use warnings;
 
 use Bugzilla::Constants;
+
 use Algorithm::BloomFilter;
 use Mojo::File qw(path);
-use File::Spec::Functions qw(catfile);
 
 sub _new_bloom_filter {
   my ($n) = @_;
@@ -24,34 +24,47 @@ sub _new_bloom_filter {
   return Algorithm::BloomFilter->new($m, $k);
 }
 
-sub _file {
-  my ($name, $type) = @_;
-
-  my $datadir = bz_locations->{datadir};
-
-  return path(catfile($datadir, "$name.$type"));
-}
-
 sub populate {
-  my ($class, $name) = @_;
+  my ($class, $name, $file) = @_;
+  my $dbh       = Bugzilla->dbh;
   my $memcached = Bugzilla->memcached;
-  my @items     = split(/\n/, _file($name, 'list')->slurp);
-  my $filter    = _new_bloom_filter(@items + 0);
 
-  $filter->add($_) foreach @items;
-  _file($name, 'bloom')->spurt($filter->serialize);
+  # Load values from file, one per row
+  my @values = split /\n/, path($file)->slurp;
+
+  # Put items in database
+  foreach my $value (@values) {
+    my $exists
+      = $dbh->selectrow_array(
+      'SELECT value FROM bloomfilter_values WHERE name = ? AND value = ?',
+      undef, $name, $value);
+    if (!$exists) {
+      $dbh->do('INSERT INTO bloomfilter_values (name, value) VALUES (?, ?)',
+        undef, $name, $value);
+    }
+  }
+
   $memcached->clear_bloomfilter({name => $name});
 }
 
 sub lookup {
   my ($class, $name) = @_;
   my $memcached   = Bugzilla->memcached;
-  my $file        = _file($name, 'bloom');
   my $filter_data = $memcached->get_bloomfilter({name => $name});
 
-  if (!$filter_data && -f $file) {
-    $filter_data = $file->slurp;
-    $memcached->set_bloomfilter({name => $name, filter => $filter_data});
+  if (!$filter_data) {
+
+    # Read filter values from database
+    my $values
+      = Bugzilla->dbh->selectcol_arrayref(
+      'SELECT value FROM bloomfilter_values WHERE name = ?',
+      undef, $name);
+    if (@$values) {
+      my $filter = _new_bloom_filter(@$values + 0);
+      $filter->add($_) foreach @$values;
+      $filter_data = $filter->serialize;
+      $memcached->set_bloomfilter({name => $name, filter => $filter_data});
+    }
   }
 
   return Algorithm::BloomFilter->deserialize($filter_data) if $filter_data;

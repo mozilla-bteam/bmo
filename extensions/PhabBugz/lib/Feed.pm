@@ -410,7 +410,7 @@ sub process_revision_change {
       );
       return;
     }
-    
+
     my $release_managers_phid = $release_managers_group->phid;
 
     # Request `#release-managers` review on each revision.
