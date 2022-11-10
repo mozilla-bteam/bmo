@@ -48,13 +48,22 @@ sub enroll {
 }
 
 sub prompt {
-  my ($self, $vars) = @_;
+  my ($self, $vars, $token) = @_;
   my $template = Bugzilla->template;
 
   $vars->{sig_request} = Bugzilla::DuoWeb::sign_request(
     Bugzilla->params->{duo_ikey}, Bugzilla->params->{duo_skey},
     Bugzilla->params->{duo_akey}, $self->property_get('user'),
   );
+
+  # Set cookie with token to verify form submitted
+  # from Bugzilla and not a different domain.
+  $cgi->send_cookie(
+    -name     => 'mfa_verification_token',
+    -value    => $token,
+    -httponly => 1,
+  );
+
 
   print Bugzilla->cgi->header();
   $template->process('mfa/duo/verify.html.tmpl', $vars)
