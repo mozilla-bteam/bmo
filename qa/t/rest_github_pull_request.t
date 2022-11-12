@@ -78,6 +78,9 @@ $bad_payload = {
     html_url => 'https://github.com/mozilla-bteam/bmo/pull/1',
     title    => 'Bug 1000 - Test GitHub PR Linking',
     number   => 1,
+  },
+  repository => {
+    full_name => 'foo/bar'
   }
 };
 $bad_signature
@@ -94,12 +97,21 @@ my $good_payload = {
     html_url => 'https://github.com/mozilla-bteam/bmo/pull/1',
     title    => "Bug $bug_id - Test GitHub PR Linking",
     number   => 1
+  },
+  repository => {
+    full_name => 'foo/bar'
   }
 };
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks
 my $good_signature
   = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
+
+my $good_title
+  = '['
+  . $good_payload->{repository}->{full_name} . '] '
+  . $good_payload->{pull_request}->{title} . ' (#'
+  . $good_payload->{pull_request}->{number} . ')';
 
 # Post the valid GitHub event to the rest/github/pull_request API endpoint
 $t->post_ok(
@@ -116,8 +128,7 @@ my $attach_id = $t->tx->res->json->{id};
 $t->get_ok(
   $url . "rest/bug/attachment/$attach_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/attachments/$attach_id/content_type",
-  'text/x-github-pull-request')->json_is("/attachments/$attach_id/description",
-  $good_payload->{pull_request}->{title});
+  'text/x-github-pull-request')->json_is("/attachments/$attach_id/description", $good_title);
 
 my $attach_data = $t->tx->res->json->{attachments}->{$attach_id}->{data};
 $attach_data = decode_base64($attach_data);
@@ -147,6 +158,13 @@ my $bug_id_2 = $t->tx->res->json->{id};
 # Post the valid GitHub event to the rest/github/pull_request API endpoint
 $good_payload->{pull_request}->{title} = "Bug $bug_id_2 - Test GitHub PR Linking";
 $good_signature = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
+$good_title = $good_payload->{pull_request}->{title} . ' (#' . $good_payload->{pull_request}->{number} . ')';
+$good_title
+  = '['
+  . $good_payload->{repository}->{full_name} . '] '
+  . $good_payload->{pull_request}->{title} . ' (#'
+  . $good_payload->{pull_request}->{number} . ')';
+
 $t->post_ok(
   $url
     . 'rest/github/pull_request' => {
@@ -162,9 +180,7 @@ $t->get_ok(
   $url . "rest/bug/attachment/$attach_id_2" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/attachments/$attach_id_2/content_type",
   'text/x-github-pull-request')->json_is(
-  "/attachments/$attach_id_2/description",
-  $good_payload->{pull_request}->{title}
-  );
+  "/attachments/$attach_id_2/description", $good_title);
 
 my $attach_data_2 = $t->tx->res->json->{attachments}->{$attach_id_2}->{data};
 $attach_data_2 = decode_base64($attach_data_2);

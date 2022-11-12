@@ -63,14 +63,16 @@ sub pull_request {
     || !$payload->{pull_request}
     || !$payload->{pull_request}->{html_url}
     || !$payload->{pull_request}->{title}
-    || !$payload->{pull_request}->{number})
+    || !$payload->{pull_request}->{number}
+    || !$payload->{repository}->{full_name})
   {
     return $self->code_error('github_pr_invalid_json');
   }
 
-  my $html_url  = $payload->{pull_request}->{html_url};
-  my $title     = $payload->{pull_request}->{title};
-  my $pr_number = $payload->{pull_request}->{number};
+  my $html_url   = $payload->{pull_request}->{html_url};
+  my $title      = $payload->{pull_request}->{title};
+  my $pr_number  = $payload->{pull_request}->{number};
+  my $repository = $payload->{repository}->{full_name};
 
   $title =~ BUG_RE;
   my $bug_id = $2;
@@ -99,7 +101,7 @@ sub pull_request {
     bug         => $bug,
     creation_ts => $timestamp,
     data        => $html_url,
-    description => $title,
+    description => "[$repository] $title (#$pr_number)",
     filename    => "github-$pr_number-url.txt",
     ispatch     => 0,
     isprivate   => 0,
