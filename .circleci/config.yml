@@ -44,13 +44,6 @@ defaults:
       path: /app/bugzilla.log
       destination: bugzilla.log
 
-  main_filters: &main_filters
-    branches:
-      ignore:
-        - /^(?:release|test)-20\d\d\d\d\d\d\.\d+/
-        - /\//
-        - production
-
 jobs:
   build:
     parallelism: 1
@@ -263,29 +256,26 @@ workflows:
   version: 2
   main:
     jobs:
-      - build:
-          filters: *main_filters
+      - build
       - deploy:
-          filters: *main_filters
           requires:
             - build
             - test_sanity
             - test_bmo
             - test_webservices
-              # - test_selenium
+            # - test_selenium
       - test_sanity:
-          filters: *main_filters
           requires:
             - build
       - test_bmo:
-          filters: *main_filters
           requires:
             - build
       - test_webservices:
-          filters: *main_filters
           requires:
             - build
       #- test_selenium:
-      #    filters: *main_filters
       #    requires:
       #      - build
+      - test_selenium:
+          requires:
+            - build

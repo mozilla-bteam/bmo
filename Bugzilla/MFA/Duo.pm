@@ -65,7 +65,7 @@ sub prompt {
     -httponly => 1,
   );
 
-  print Bugzilla->cgi->header();
+  print $cgi->header();
   $template->process('mfa/duo/verify.html.tmpl', $vars)
     || ThrowTemplateError($template->error());
 }
