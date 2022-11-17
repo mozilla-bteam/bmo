@@ -766,11 +766,11 @@ sub SaveMFAupdate {
 sub SaveMFAcallback {
   my $mfa_token = shift;
   my $user      = Bugzilla->user;
+  my $mfa       = Bugzilla->cgi->param('mfa');
+  my $provider  = Bugzilla::MFA->new_from($user, $mfa) // return;
+  my $event     = $provider->verify_token($mfa_token);
 
-  my $provider = Bugzilla::MFA->new_from($user, $mfa_token) // return;
-  my $event    = $provider->verify_token($mfa_token);
-
-  SaveMFAupdate($event->{action}, $mfa_token);
+  SaveMFAupdate($event->{action}, $mfa);
 }
 
 sub DoMFA {
