@@ -40,6 +40,10 @@ sub pull_request {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
+  # Return early if linking is not allowed
+  return $self->code_error('github_pr_linking_disabled')
+    if !Bugzilla->params->{github_pr_linking_enabled};
+
   # Return early if not a pull_request or ping event
   my $event = $self->req->headers->header('X-GitHub-Event');
   if (!$event || ($event ne 'pull_request' && $event ne 'ping')) {
