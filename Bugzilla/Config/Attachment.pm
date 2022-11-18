@@ -42,6 +42,7 @@ sub get_param_list {
     {name => 's3_bucket',                  type => 't', default => '',},
     {name => 'aws_access_key_id',          type => 't', default => '',},
     {name => 'aws_secret_access_key',      type => 't', default => '',},
+    {name => 'github_pr_linking_enabled',  type => 'b', default => 0},
     {name => 'github_pr_signature_secret', type => 't', default => ''},
   );
   return @param_list;
