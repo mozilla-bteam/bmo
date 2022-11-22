@@ -64,6 +64,7 @@ sub pull_request {
   # Parse pull request title for bug ID
   my $payload = $self->req->json;
   if ( !$payload
+    || !$payload->{action}
     || !$payload->{pull_request}
     || !$payload->{pull_request}->{html_url}
     || !$payload->{pull_request}->{title}
@@ -71,6 +72,12 @@ sub pull_request {
     || !$payload->{repository}->{full_name})
   {
     return $self->code_error('github_pr_invalid_json');
+  }
+
+  # We are only interested in new pull request events
+  # and not changes to existing ones
+  if ($payload->{action} ne 'opened') {
+    return $self->code_error('github_pr_invalid_event');
   }
 
   my $html_url   = $payload->{pull_request}->{html_url};

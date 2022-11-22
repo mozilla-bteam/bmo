@@ -72,8 +72,29 @@ $t->post_ok($url
   ->json_like('/message' =>
     qr/The webhook did not contain valid JSON or expected data was missing/);
 
+# Invalid event type
+$bad_payload = {
+  action       => 'closed',
+  pull_request => {
+    html_url => 'https://github.com/mozilla-bteam/bmo/pull/1',
+    title    => "Bug $bug_id - Test GitHub PR Linking",
+    number   => 1,
+  },
+  repository => {
+    full_name => 'foo/bar'
+  }
+};
+$bad_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
+$t->post_ok($url
+    . 'rest/github/pull_request' => {'X-Hub-Signature-256' => $bad_signature,
+    'X-GitHub-Event' => 'pull_request'} => json => $bad_payload)->status_is(400)
+  ->json_like(
+  '/message' => qr/The webhook sent a pull request event that was not an/);
+
 # Invalid Bug ID
 $bad_payload = {
+  action       => 'opened',
   pull_request => {
     html_url => 'https://github.com/mozilla-bteam/bmo/pull/1',
     title    => 'Bug 1000 - Test GitHub PR Linking',
@@ -93,6 +114,7 @@ $t->post_ok($url
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads
 my $good_payload = {
+  action       => 'opened',
   pull_request => {
     html_url => 'https://github.com/mozilla-bteam/bmo/pull/1',
     title    => "Bug $bug_id - Test GitHub PR Linking",
@@ -180,7 +202,7 @@ $t->get_ok(
   $url . "rest/bug/attachment/$attach_id_2" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/attachments/$attach_id_2/content_type",
   'text/x-github-pull-request')->json_is(
-  "/attachments/$attach_id_2/description", $good_title);
+    "/attachments/$attach_id_2/description", $good_title);
 
 my $attach_data_2 = $t->tx->res->json->{attachments}->{$attach_id_2}->{data};
 $attach_data_2 = decode_base64($attach_data_2);

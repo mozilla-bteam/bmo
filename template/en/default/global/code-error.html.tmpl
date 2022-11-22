@@ -530,6 +530,10 @@
   [% ELSIF error == "github_pr_invalid_json" %]
     The webhook did not contain valid JSON or expected data was missing.
 
+  [% ELSIF error == "github_pr_invalid_event" %]
+    The webhook sent a pull request event that was not an 'opened' type
+    so is therefore being ignored.
+
   [% ELSIF error == "github_pr_bug_not_found" %]
     The pull request title did not contain a valid [% terms.bug %] ID.
 
