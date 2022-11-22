@@ -578,6 +578,7 @@ my %set_params = (
     . '&long_desc_type=substring',
   defaultseverity      => 'normal',
   edit_comments_group  => 'editbugs',
+  github_pr_linking_enabled => 1,
   github_pr_signature_secret => 'B1gS3cret!',
   insidergroup         => 'core-security-release',
   last_change_time_non_bot_skip_list => 'automation@bmo.tld',

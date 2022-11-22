@@ -518,6 +518,9 @@
     Please contact a system administrator with details of what you
     were doing when the error occurred.
 
+  [% ELSIF error == "github_pr_linking_disabled" %]
+    Github linking of pull requests to attachments is not enabled for this site.
+
   [% ELSIF error == "github_pr_not_pull_request" %]
     The webhook event was not for a GitHub pull request.
 
@@ -526,6 +529,10 @@
 
   [% ELSIF error == "github_pr_invalid_json" %]
     The webhook did not contain valid JSON or expected data was missing.
+
+  [% ELSIF error == "github_pr_invalid_event" %]
+    The webhook sent a pull request event that was not an 'opened' type
+    so is therefore being ignored.
 
   [% ELSIF error == "github_pr_bug_not_found" %]
     The pull request title did not contain a valid [% terms.bug %] ID.

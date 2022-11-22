@@ -40,6 +40,10 @@ sub pull_request {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
+  # Return early if linking is not allowed
+  return $self->code_error('github_pr_linking_disabled')
+    if !Bugzilla->params->{github_pr_linking_enabled};
+
   # Return early if not a pull_request or ping event
   my $event = $self->req->headers->header('X-GitHub-Event');
   if (!$event || ($event ne 'pull_request' && $event ne 'ping')) {
@@ -60,6 +64,7 @@ sub pull_request {
   # Parse pull request title for bug ID
   my $payload = $self->req->json;
   if ( !$payload
+    || !$payload->{action}
     || !$payload->{pull_request}
     || !$payload->{pull_request}->{html_url}
     || !$payload->{pull_request}->{title}
@@ -67,6 +72,12 @@ sub pull_request {
     || !$payload->{repository}->{full_name})
   {
     return $self->code_error('github_pr_invalid_json');
+  }
+
+  # We are only interested in new pull request events
+  # and not changes to existing ones
+  if ($payload->{action} ne 'opened') {
+    return $self->code_error('github_pr_invalid_event');
   }
 
   my $html_url   = $payload->{pull_request}->{html_url};
