@@ -40,6 +40,7 @@ BEGIN {
 # PREREQ_PM
 my %requires = (
   'Algorithm::BloomFilter'              => '0.02',
+  'Authen::SASL'                        => 0,
   'CGI'                                 => '4.31',
   'CGI::Compile'                        => 0,
   'CGI::Emulate::PSGI'                  => 0,
