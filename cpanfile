@@ -1,6 +1,7 @@
 requires 'Algorithm::BloomFilter', '0.02';
 requires 'Alien::libcmark_gfm', '3';
 requires 'Auth::GoogleAuth', '1.01';
+requires 'Authen::SASL';
 requires 'BSD::Resource';
 requires 'Bytes::Random::Secure';
 requires 'CGI', '4.31';
@@ -27,7 +28,6 @@ requires 'DBIx::Class';
 requires 'DBIx::Class::Helpers', '== 2.034002';
 requires 'DBIx::Connector';
 requires 'Daemon::Generic';
-requires 'Data::Password::passwdqc', '0.08';
 requires 'DataDog::DogStatsd', '0.05';
 requires 'Date::Format', '2.23';
 requires 'Date::Parse', '2.31';

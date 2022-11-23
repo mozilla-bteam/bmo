@@ -49,8 +49,7 @@ sub _build_validator {
     creation_ts      => joi->string->required,
   });
 
-  return JSON::Validator->new(
-    schema => Mojo::JSON::Pointer->new($schema->compile));
+  return JSON::Validator->new($schema->compile);
 }
 
 sub _build_resultset {
