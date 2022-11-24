@@ -37,7 +37,7 @@ my $expired = $dbh->selectall_arrayref(
   q{SELECT DISTINCT profiles.userid AS user_id,
             groups.id AS group_id
        FROM profiles JOIN user_group_map ON profiles.userid = user_group_map.user_id
-            JOIN groups ON user_group_map.group_id = groups.id
+            JOIN `groups` ON user_group_map.group_id = groups.id
       WHERE user_group_map.grant_type = ?
             AND profiles.login_name NOT LIKE '%bugs'
             AND profiles.login_name NOT LIKE '%.tld'
