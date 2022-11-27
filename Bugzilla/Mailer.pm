@@ -25,18 +25,14 @@ use Date::Format qw(time2str);
 use Email::Address;
 use Email::MIME;
 use Email::MIME::ContentType qw(parse_content_type);
+use Email::Sender::Simple qw(sendmail);
+use Email::Sender::Transport::SMTP::Persistent qw();
+use Email::Sender::Transport::Sendmail qw();
 use Encode qw(encode);
 use Encode::MIME::Header;
 use List::MoreUtils qw(none);
 use Try::Tiny;
 
-# Return::Value 1.666002 pollutes the error log with warnings about this
-# deprecated module. We have to set NO_CLUCK = 1 before loading Email::Send
-# to disable these warnings.
-BEGIN {
-  $Return::Value::NO_CLUCK = 1;
-}
-use Email::Send;
 use Sys::Hostname;
 use Bugzilla::Version qw(vers_cmp);
 
@@ -120,37 +116,17 @@ sub MessageToMTA {
 
   my $from = $email->header('From');
 
-  my ($hostname, @args);
-  my $mailer_class = $method;
-  if ($method eq "Sendmail") {
-    $mailer_class = 'Bugzilla::Send::Sendmail';
-    if (ON_WINDOWS) {
-      $Email::Send::Sendmail::SENDMAIL = SENDMAIL_EXE;
-    }
-    push @args, "-i";
+  # Sendmail will automatically append our hostname to the From
+  # address, but other mailers won't.
+  my $urlbase = Bugzilla->localconfig->urlbase;
+  $urlbase =~ m|//([^:/]+)[:/]?|;
+  $hostname = $1;
+  $from .= "\@$hostname" if $from !~ /@/;
+  $email->header_set('From', $from);
 
-    # We want to make sure that we pass *only* an email address.
-    if ($from) {
-      my ($email_obj) = Email::Address->parse($from);
-      if ($email_obj) {
-        my $from_email = $email_obj->address;
-        push(@args, "-f$from_email") if $from_email;
-      }
-    }
-  }
-  else {
-    # Sendmail will automatically append our hostname to the From
-    # address, but other mailers won't.
-    my $urlbase = Bugzilla->localconfig->urlbase;
-    $urlbase =~ m|//([^:/]+)[:/]?|;
-    $hostname = $1;
-    $from .= "\@$hostname" if $from !~ /@/;
-    $email->header_set('From', $from);
-
-    # Sendmail adds a Date: header also, but others may not.
-    if (!defined $email->header('Date')) {
-      $email->header_set('Date', time2str("%a, %d %b %Y %T %z", time()));
-    }
+  # Sendmail adds a Date: header also, but others may not.
+  if (!defined $email->header('Date')) {
+    $email->header_set('Date', time2str("%a, %d %b %Y %T %z", time()));
   }
 
   # For tracking/diagnostic purposes, add our hostname
@@ -160,17 +136,7 @@ sub MessageToMTA {
       'X-Generated-By' => $generated_by . '/' . hostname() . "($$)");
   }
 
-  if ($method eq "SMTP") {
-    push @args,
-      Host     => Bugzilla->params->{"smtpserver"},
-      username => Bugzilla->params->{"smtp_username"},
-      password => Bugzilla->params->{"smtp_password"},
-      Hello    => $hostname,
-      Debug    => Bugzilla->params->{'smtp_debug'};
-  }
-
-  Bugzilla::Hook::process('mailer_before_send',
-    {email => $email, mailer_args => \@args});
+  Bugzilla::Hook::process('mailer_before_send', {email => $email});
 
   try {
     my $to         = $email->header('to') or die qq{Unable to find "To:" address\n};
@@ -232,11 +198,26 @@ sub MessageToMTA {
     close TESTFILE;
   }
   else {
-    # This is useful for both Sendmail and Qmail, so we put it out here.
-    local $ENV{PATH} = SENDMAIL_PATH;
-    my $mailer = Email::Send->new({mailer => $mailer_class, mailer_args => \@args});
-    my $retval = $mailer->send($email);
-    ThrowCodeError('mail_send_error', {msg => $retval, mail => $email}) if !$retval;
+    my $transport;
+    if ($method eq 'Sendmail') {
+      $transport = Email::Sender::Transport::Sendmail->new();
+    }
+    elsif ($method eq 'SMTP') {
+      $transport = Email::Sender::Transport::SMTP::Persistent->new({
+        hosts         => [Bugzilla->params->{smtpserver}],
+        sasl_username => Bugzilla->params->{smtp_username},
+        sasl_password => Bugzilla->params->{smtp_password},
+        debug         => Bugzilla->params->{smtp_debug},
+        ssl           => 'starttls'
+      });
+    }
+
+    try {
+      sendmail($email, {from => $email->header('From'), transport => $transport});
+    }
+    catch {
+      ThrowCodeError('mail_send_error', {msg => $_, mail => $email});
+    };
   }
 
   # insert into email_rates
