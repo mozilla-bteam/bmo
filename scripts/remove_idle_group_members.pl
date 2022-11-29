@@ -37,14 +37,15 @@ my $expired = $dbh->selectall_arrayref(
   q{SELECT DISTINCT profiles.userid AS user_id,
             groups.id AS group_id
        FROM profiles JOIN user_group_map ON profiles.userid = user_group_map.user_id
-            JOIN groups ON user_group_map.group_id = groups.id
+            JOIN } . $dbh->quote_identifier('groups') .
+         q{ ON user_group_map.group_id = groups.id
       WHERE user_group_map.grant_type = ?
             AND profiles.login_name NOT LIKE '%bugs'
             AND profiles.login_name NOT LIKE '%.tld'
             AND groups.idle_member_removal > 0
             AND (profiles.last_seen_date IS NULL
-                 OR TO_DAYS(LOCALTIMESTAMP(0)) - TO_DAYS(profiles.last_seen_date) > groups.idle_member_removal)
-      ORDER BY profiles.login_name}, {Slice => {}}, GRANT_DIRECT
+                 OR TO_DAYS(LOCALTIMESTAMP(0)) - TO_DAYS(profiles.last_seen_date) > groups.idle_member_removal)},
+  {Slice => {}}, GRANT_DIRECT
 );
 
 exit(0) if !@$expired;

@@ -34,5 +34,36 @@
       "group": "none",
       "problemMatcher": []
     },
+    {
+      "label": "Podman: Start Web Server",
+      "type": "shell",
+      "command": "podman-compose down && podman-compose up --build",
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Podman: Update Web Server",
+      "type": "shell",
+      "command": "podman-compose exec bmo.test rsync -avz --exclude .git --exclude local --exclude .vscode --exclude .pls_cache --exclude .circleci /mnt/sync/ /app/",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Podman: Generate new cpanfile and cpanfile.snapshot",
+      "type": "shell",
+      "command": "podman build -t bmo-cpanfile -f Dockerfile.cpanfile . ; podman run -it -v $(pwd):/app/result bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result",
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Podman: Generate mozillabteam/bmo-perl-slim image",
+      "type": "shell",
+      "command": "podman build -t mozillabteam/bmo-perl-slim:$(date +%Y%m%d.1) -f Dockerfile.bmo-slim .",
+      "group": "none",
+      "problemMatcher": []
+    }
   ]
 }
