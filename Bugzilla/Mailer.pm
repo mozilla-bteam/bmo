@@ -26,8 +26,9 @@ use Email::Address;
 use Email::MIME;
 use Email::MIME::ContentType qw(parse_content_type);
 use Email::Sender::Simple qw(sendmail);
-use Email::Sender::Transport::SMTP::Persistent qw();
-use Email::Sender::Transport::Sendmail qw();
+use Email::Sender::Transport::Print;
+use Email::Sender::Transport::SMTP::Persistent;
+use Email::Sender::Transport::Sendmail;
 use Encode qw(encode);
 use Encode::MIME::Header;
 use List::MoreUtils qw(none);
@@ -187,38 +188,31 @@ sub MessageToMTA {
     }
   });
 
+  my $transport;
   if ($method eq "Test") {
     my $filename = bz_locations()->{'datadir'} . '/mailer.testfile';
-    open TESTFILE, '>>', $filename;
-
-    # From - <date> is required to be a valid mbox file.
-    print TESTFILE "\n\nFrom - "
-      . $email->header('Date') . "\n"
-      . $email->as_string;
-    close TESTFILE;
+    my $test_fh = IO::File->new($filename, 'a');
+    $transport = Email::Sender::Transport::Print->new({fh => $test_fh});
   }
-  else {
-    my $transport;
-    if ($method eq 'Sendmail') {
-      $transport = Email::Sender::Transport::Sendmail->new();
-    }
-    elsif ($method eq 'SMTP') {
-      $transport = Email::Sender::Transport::SMTP::Persistent->new({
-        hosts         => [Bugzilla->params->{smtpserver}],
-        sasl_username => Bugzilla->params->{smtp_username},
-        sasl_password => Bugzilla->params->{smtp_password},
-        debug         => Bugzilla->params->{smtp_debug},
-        ssl           => 'starttls'
-      });
-    }
-
-    try {
-      sendmail($email, {from => $email->header('From'), transport => $transport});
-    }
-    catch {
-      ThrowCodeError('mail_send_error', {msg => $_, mail => $email});
-    };
+  elsif ($method eq 'Sendmail') {
+    $transport = Email::Sender::Transport::Sendmail->new;
   }
+  elsif ($method eq 'SMTP') {
+    $transport = Email::Sender::Transport::SMTP::Persistent->new({
+      hosts         => [Bugzilla->params->{smtpserver}],
+      sasl_username => Bugzilla->params->{smtp_username},
+      sasl_password => Bugzilla->params->{smtp_password},
+      debug         => Bugzilla->params->{smtp_debug},
+      ssl           => 'starttls'
+    });
+  }
+
+  try {
+    sendmail($email, {from => $email->header('From'), transport => $transport});
+  }
+  catch {
+    ThrowCodeError('mail_send_error', {msg => $_, mail => $email});
+  };
 
   # insert into email_rates
   if (Bugzilla->get_param_with_override('use_mailer_queue')
