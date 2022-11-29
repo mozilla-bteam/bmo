@@ -40,7 +40,6 @@ BEGIN {
 # PREREQ_PM
 my %requires = (
   'Algorithm::BloomFilter'              => '0.02',
-  'Authen::SASL'                        => 0,
   'CGI'                                 => '4.31',
   'CGI::Compile'                        => 0,
   'CGI::Emulate::PSGI'                  => 0,
@@ -62,7 +61,7 @@ my %requires = (
   'EV'                                  => '4.0',
   'Email::MIME'                         => '1.904',
   'Email::MIME::ContentType'            => 0,
-  'Email::Send'                         => '1.911',
+  'Email::Sender'                       => 0,
   'FFI::Platypus'                       => 0,
   'Future'                              => '0.34',
   'HTML::Escape'                        => '1.10',
@@ -141,7 +140,8 @@ my %optional_features = (
   },
   smtp_auth => {
     description => 'SMTP Authentication',
-    prereqs     => {runtime => {requires => {'Authen::SASL' => 0}}},
+    prereqs     => {
+      runtime => {requires => {'Authen::SASL' => 0, 'Net::SMTP::TLS' => 0}}},
   },
   detect_charset => {
     description => 'Automatic charset detection for text attachments',
@@ -439,7 +439,6 @@ sub is_bmo_feature {
           | sqlite
           | auth_ldap
           | auth_radius
-          | smtp_auth
           | updates)
         $
     }mxs;

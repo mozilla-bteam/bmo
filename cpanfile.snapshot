@@ -2639,29 +2639,62 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       strict 0
       warnings 0
-  Email-Send-2.201
-    pathname: R/RJ/RJBS/Email-Send-2.201.tar.gz
+  Email-Sender-2.600
+    pathname: R/RJ/RJBS/Email-Sender-2.600.tar.gz
     provides:
-      Email::Send 2.201
-      Email::Send::NNTP 2.201
-      Email::Send::Qmail 2.201
-      Email::Send::SMTP 2.201
-      Email::Send::Sendmail 2.201
-      Email::Send::Test 2.201
+      Email::Sender 2.600
+      Email::Sender::Failure 2.600
+      Email::Sender::Failure::Multi 2.600
+      Email::Sender::Failure::Permanent 2.600
+      Email::Sender::Failure::Temporary 2.600
+      Email::Sender::Manual 2.600
+      Email::Sender::Manual::QuickStart 2.600
+      Email::Sender::Role::CommonSending 2.600
+      Email::Sender::Role::HasMessage 2.600
+      Email::Sender::Simple 2.600
+      Email::Sender::Success 2.600
+      Email::Sender::Success::Partial 2.600
+      Email::Sender::Transport 2.600
+      Email::Sender::Transport::DevNull 2.600
+      Email::Sender::Transport::Failable 2.600
+      Email::Sender::Transport::Maildir 2.600
+      Email::Sender::Transport::Mbox 2.600
+      Email::Sender::Transport::Print 2.600
+      Email::Sender::Transport::SMTP 2.600
+      Email::Sender::Transport::SMTP::Persistent 2.600
+      Email::Sender::Transport::Sendmail 2.600
+      Email::Sender::Transport::Test 2.600
+      Email::Sender::Transport::Wrapper 2.600
+      Email::Sender::Util 2.600
     requirements:
-      Email::Abstract 0
-      Email::Address 1.80
-      Email::Simple 1.92
-      ExtUtils::MakeMaker 0
+      Carp 0
+      Email::Abstract 3.006
+      Email::Address::XS 0
+      Email::Simple 1.998
+      ExtUtils::MakeMaker 6.78
+      Fcntl 0
+      File::Basename 0
+      File::Path 2.06
       File::Spec 0
-      Module::Pluggable 2.97
-      Net::SMTP 0
-      Return::Value 0
-      Scalar::Util 1.02
-      Symbol 0
-      perl 5.006
+      IO::File 1.11
+      IO::Handle 0
+      List::Util 1.45
+      Module::Runtime 0
+      Moo 2.000000
+      Moo::Role 0
+      MooX::Types::MooseLike 0.15
+      MooX::Types::MooseLike::Base 0
+      Net::SMTP 3.07
+      Scalar::Util 0
+      Sub::Exporter 0
+      Sub::Exporter::Util 0
+      Sys::Hostname 0
+      Throwable::Error 0.200003
+      Try::Tiny 0
+      perl 5.012
       strict 0
-      vars 0
+      utf8 0
+      warnings 0
   Email-Simple-2.216
     pathname: R/RJ/RJBS/Email-Simple-2.216.tar.gz
     provides:
@@ -2945,7 +2978,6 @@ DISTRIBUTIONS
     requirements:
       AnyEvent 0
       Data::Structure::Util 0
-      ExtUtils::MakeMaker 0
       File::Slurp 0
       IO::Event 0.812
       Test::SharedFork 0
@@ -4367,8 +4399,8 @@ DISTRIBUTIONS
       Mojolicious 2
       Test::More 0.94
       perl 5.010001
-  Mojolicious-9.29
-    pathname: S/SR/SRI/Mojolicious-9.29.tar.gz
+  Mojolicious-9.30
+    pathname: S/SR/SRI/Mojolicious-9.30.tar.gz
     provides:
       Mojo undef
       Mojo::Asset undef
@@ -4436,7 +4468,7 @@ DISTRIBUTIONS
       Mojo::UserAgent::Transactor undef
       Mojo::Util undef
       Mojo::WebSocket undef
-      Mojolicious 9.29
+      Mojolicious 9.30
       Mojolicious::Command undef
       Mojolicious::Command::Author::cpanify undef
       Mojolicious::Command::Author::generate undef
@@ -5314,6 +5346,18 @@ DISTRIBUTIONS
       Try::Tiny 0.22
       Types::Standard 1.000005
       perl 5.010001
+  Net-SMTP-TLS-0.12
+    pathname: A/AW/AWESTHOLM/Net-SMTP-TLS-0.12.tar.gz
+    provides:
+      Net::SMTP::TLS 0.12
+    requirements:
+      Digest::HMAC_MD5 0
+      ExtUtils::MakeMaker 0
+      IO::Socket::INET 0
+      IO::Socket::SSL 0
+      MIME::Base64 0
+      Net::SSLeay 0
+      Test::More 0
   Net-SSLeay-1.92
     pathname: C/CH/CHRISN/Net-SSLeay-1.92.tar.gz
     provides:
@@ -6468,17 +6512,6 @@ DISTRIBUTIONS
       perl 5.010
       strict 0
       vars 0
-      warnings 0
-  Return-Value-1.666005
-    pathname: R/RJ/RJBS/Return-Value-1.666005.tar.gz
-    provides:
-      Return::Value 1.666005
-    requirements:
-      Carp 0
-      Exporter 5.57
-      ExtUtils::MakeMaker 0
-      overload 0
-      strict 0
       warnings 0
   Role-Tiny-2.002004
     pathname: H/HA/HAARG/Role-Tiny-2.002004.tar.gz
