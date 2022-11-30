@@ -467,6 +467,16 @@ use constant ABSTRACT_SCHEMA => {
     INDEXES => [longdescs_tags_activity_bug_id_idx => ['bug_id'],],
   },
 
+  longdescs_tags_url => {
+    FIELDS => [
+      id  => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      tag => {TYPE => 'varchar(64)',  NOTNULL => 1},
+      url => {TYPE => 'varchar(512)', NOTNULL => 1},
+    ],
+    INDEXES =>
+      [longdescs_tags_url_tag_url_idx => {FIELDS => [qw(tag url)], TYPE => 'UNIQUE'},],
+  },
+
   dependencies => {
     FIELDS => [
       blocked => {
