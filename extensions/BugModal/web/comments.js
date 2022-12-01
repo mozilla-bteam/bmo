@@ -269,48 +269,54 @@ $(function() {
         var comment = that.parents('.comment');
         var commentNo = comment.data('no');
         var commentID = comment.data('id');
-        var tag = that.parent('.comment-tag').contents().filter(function() {
-            return this.nodeType === 3;
-        }).text();
-        var container = that.parents('.comment-tags');
+        var tagNode = that.parent('.comment-tag');
+        var deleteTag = tagNode.data('tag');
 
         // update ui
-        that.parent('.comment-tag').remove();
-        renderTags(commentNo, tagsFromDom(container));
+        tagNode.remove();
         updateTagsMenu();
 
         // update Bugzilla
         try {
-            renderTags(commentNo, await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { remove: [tag] }));
+            var result = await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { remove: [deleteTag] });
+            renderTags(commentNo, result.tags, result.tag_urls);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);
         }
     }
-    $('.comment-tag a').click(deleteTag);
+    $('.comment-tag a.remove').click(deleteTag);
 
     function tagsFromDom(commentTagsDiv) {
         return commentTagsDiv
             .find('.comment-tag')
-            .contents()
-            .filter(function() { return this.nodeType === 3; })
-            .map(function() { return $(this).text(); })
+            .map(function() {return $(this).data('tag');})
             .toArray();
     }
 
-    function renderTags(commentNo, tags) {
+    function renderTags(commentNo, tags, tag_urls) {
         cancelRefresh();
         var root = $('#ctag-' + commentNo + ' .comment-tags');
         root.find('.comment-tag').remove();
         $.each(tags, function() {
-            var span = $('<span/>').addClass('comment-tag').text(this);
+            var span = $("<span/>")
+                .addClass("comment-tag")
+                .data("tag", this)
+                .text(this);
             if (BUGZILLA.user.can_tag) {
                 span.prepend($('<a role="button" aria-label="Remove" class="remove">×</a>').click(deleteTag));
+            }
+            if (tag_urls && tag_urls[this]) {
+                var infoLink = $('<a aria-label="More Information" target="_blank"></a>');
+                infoLink.attr('href', tag_urls[this].htmlEncode());
+                var img = $('<img width="16" height="16" title="Click for more information"/>');
+                img.attr('src', BUGZILLA.config.basepath + 'extensions/BugModal/web/images/help.png');
+                infoLink.append(img);
+                span.append(infoLink);
             }
             root.append(span);
         });
         $('#ctag-' + commentNo + ' .comment-tags').append($('#ctag-error'));
-        $(`.comment[data-no="${commentNo}"]`).attr('data-tags', tags.join(' '));
     }
 
     let abort_controller;
@@ -326,7 +332,7 @@ $(function() {
               include_fields: ['tags'],
             }, { signal });
 
-            renderTags(commentNo, comments[commentID].tags);
+            renderTags(commentNo, comments[commentID].tags, comments[commentID].tag_urls);
         } catch ({ name, message }) {
             if (name !== 'AbortError') {
                 taggingError(commentNo, message);
@@ -350,8 +356,7 @@ $(function() {
         const $comment = $('#ctag').parents('.comment');
         const commentNo = $comment.data('no');
         const commentID = $comment.data('id');
-        const tags = $comment.data('tags').split(/[ ,]/);
-        const newTags = $('#ctag-add').val().trim().split(/[ ,]/).filter(tag => !tags.includes(tag));
+        const newTags = $('#ctag-add').val().trim().split(/[ ,]/);
         const { min_comment_tag_length: min, max_comment_tag_length: max } = BUGZILLA.constant;
 
         if (!newTags.length) {
@@ -373,14 +378,10 @@ $(function() {
             return;
         }
 
-        // update ui
-        tags.push(...newTags);
-        tags.sort();
-        renderTags(commentNo, tags);
-
         // update Bugzilla
         try {
-            renderTags(commentNo, await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { add: newTags }));
+            var result = await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { add: newTags });
+            renderTags(commentNo, result.tags, result.tag_urls);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);

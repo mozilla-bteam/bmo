@@ -192,8 +192,16 @@
       <tr id="ctag-[% comment.count FILTER none %]">
         <td colspan="2" class="comment-tags">
           [% FOREACH tag IN comment.tags ~%]
-            <span class="comment-tag">
-              [%~ '<a role="button" aria-label="Remove" class="remove">×</a>' IF user.can_tag_comments %][% tag FILTER html ~%]
+            <span class="comment-tag" data-tag="[% tag FILTER html %]">
+              [%~ '<a role="button" aria-label="Remove" class="remove">×</a>' IF user.can_tag_comments %]
+              [% tag FILTER html ~%]
+              [% IF comment.tag_url(tag) %]
+                <a aria-label="More Information" target="_blank"
+                   href="[% comment.tag_url(tag) FILTER html %]">
+                  <img src="[% basepath FILTER none %]extensions/BugModal/web/images/help.png"
+                       width="16" height="16" title="Click for more information"/>
+                </a>
+              [% END %]
             </span>
           [%~ END %]
         </td>

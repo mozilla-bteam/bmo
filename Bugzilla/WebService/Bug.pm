@@ -429,6 +429,11 @@ sub _translate_comment {
   # Don't load comment tags unless enabled
   if (Bugzilla->params->{'comment_taggers_group'}) {
     $comment_hash->{tags} = [map { $self->type('string', $_) } @{$comment->tags}];
+    $comment_hash->{tag_urls} = {};
+    foreach my $tag (@{$comment->tags}) {
+      my $url = $comment->tag_url($tag);
+      $comment_hash->{tag_urls}->{$tag} = $url if $url;
+    }
   }
 
   return filter($filters, $comment_hash, $types, $prefix);
@@ -1403,7 +1408,13 @@ sub update_comment_tags {
   $comment->update();
   $dbh->bz_commit_transaction();
 
-  return $comment->tags;
+  my $tag_urls = {};
+  foreach my $tag (@{$comment->tags}) {
+    my $url = $comment->tag_url($tag);
+    $tag_urls->{$tag} = $url if $url;
+  }
+
+  return {tags => $comment->tags, tag_urls => $tag_urls};
 }
 
 sub search_comment_tags {
