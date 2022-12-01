@@ -835,6 +835,9 @@ sub update_table_definitions {
   # Bug 577847 - dkl@mozilla.com
   _update_see_also_any_url();
 
+  # Bug 1803658 - dkl@mozilla.com
+  $dbh->bz_alter_column('ts_error', 'message', {TYPE => 'TEXT', NOTNULL => 1});
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
