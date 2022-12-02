@@ -203,7 +203,7 @@ sub MessageToMTA {
       sasl_username => Bugzilla->params->{smtp_username},
       sasl_password => Bugzilla->params->{smtp_password},
       debug         => Bugzilla->params->{smtp_debug},
-      ssl           => 'starttls'
+      ssl           => 'maybestarttls'
     });
   }
 
