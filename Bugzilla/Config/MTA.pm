@@ -69,9 +69,11 @@ sub get_param_list {
       default => '',
       checker => \&check_smtp_auth
     },
-    {name => 'smtp_password', type => 'p', default => ''},
-    {name => 'smtp_debug',    type => 'b', default => 0},
-    {name => 'whinedays', type => 't', default => 7, checker => \&check_numeric},
+    {name => 'smtp_password',  type => 'p', default => ''},
+    {name => 'smtp_use_tls',   type => 'b', default => 0},
+    {name => 'smtp_port',      type => 't', default => 0, checker => \&check_numeric},
+    {name => 'smtp_debug',     type => 'b', default => 0},
+    {name => 'whinedays',      type => 't', default => 7, checker => \&check_numeric},
     {name => 'globalwatchers', type => 't', default => '',},
     {name => 'silent_users',   type => 't', default => '',},
   );
