@@ -198,13 +198,19 @@ sub MessageToMTA {
     $transport = Email::Sender::Transport::Sendmail->new;
   }
   elsif ($method eq 'SMTP') {
-    $transport = Email::Sender::Transport::SMTP::Persistent->new({
+    my $smtp_options = {
       hosts         => [Bugzilla->params->{smtpserver}],
       sasl_username => Bugzilla->params->{smtp_username},
       sasl_password => Bugzilla->params->{smtp_password},
       debug         => Bugzilla->params->{smtp_debug},
-      ssl           => 'starttls'
-    });
+    };
+    if (Bugzilla->params->{smtp_use_tls}) {
+      $smtp_options->{ssl} = 'starttls';
+    }
+    if (Bugzilla->params->{smtp_port}) {
+      $smtp_options->{port} = Bugzilla->params->{smtp_port};
+    }
+    $transport = Email::Sender::Transport::SMTP::Persistent->new($smtp_options);
   }
 
   try {

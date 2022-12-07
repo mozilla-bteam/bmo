@@ -63,6 +63,10 @@
   smtp_password => "The password to pass to the SMTP server for SMTP authentication. " _
                    "This field has no effect if the smtp_username parameter is left empty.",
 
+  smtp_use_tls => "Use TLS for connection to SMTP server.",
+
+  smtp_port => "Port number used for connection to SMTP server. Leave as 0 to use default ports.",
+
   smtp_debug => "If enabled, this will print detailed information to your" _
                 " web server's error log about the communication between" _
                 " $terms.Bugzilla and your SMTP server. You can use this to" _
