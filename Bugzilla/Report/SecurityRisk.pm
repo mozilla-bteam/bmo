@@ -198,20 +198,19 @@ sub _build_events {
   my $start_date = $self->start_date->strftime('%Y-%m-%d %H:%M:%S');
   my $query      = qq{
         SELECT
-            bug_id,
-            bug_when,
-            field.name AS field_name,
-            CONCAT(removed) AS removed,
-            CONCAT(added) AS added
+            bugs_activity.bug_id,
+            bugs_activity.bug_when,
+            field.name,
+            bugs_activity.removed,
+            bugs_activity.added
         FROM
             bugs_activity
-            JOIN fielddefs AS field ON fieldid = field.id
-            JOIN bugs AS bug USING (bug_id)
+            JOIN fielddefs ON bugs_activity.fieldid = field.id
+            JOIN bugs USING (bug_id)
         WHERE
-            bug_id IN ($bug_ids)
+            bugs_activity.bug_id IN ($bug_ids)
             AND field.name IN ('keywords' , 'bug_status')
-            AND bug_when >= '$start_date'
-        GROUP BY bug_id , bug_when , field.name
+            AND bugs_activity.bug_when >= '$start_date'
     };
   # Don't use selectall_hashref as it only gets the latest event each bug.
   my $result = Bugzilla->dbh->selectall_arrayref($query);

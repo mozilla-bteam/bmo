@@ -119,7 +119,7 @@ foreach my $revision (@revisions) {
 }
 say $blog_fh '</ul></p>';
 say $blog_fh
-  q{Discuss these changes in the <a href="https://discourse.mozilla.org/c/firefox-tooling-announcements/521" target="_blank">Firefox Tooling Discourse</a>.};
+  q{Discuss these changes in the <a href="https://matrix.to/#/#bmo:mozilla.org" target="_blank">bugzilla.mozilla.org Matrix Room</a>.};
 close $blog_fh;
 
 say 'write email.push.txt';
