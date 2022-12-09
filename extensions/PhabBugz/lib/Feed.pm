@@ -358,6 +358,79 @@ sub _is_uplift_request_form_change {
   return $story_text =~ /\s+uplift request field/;
 }
 
+sub process_uplift_request_form_change {
+    # Process an uplift request form change for the passed revision object.
+    my ($revision) = @_;
+
+    # Take no action if the form is empty.
+    # TODO test
+    if ($revision->uplift_form->is_empty) {
+        INFO("Uplift request form field cleared, ignoring.");
+        return;
+    }
+
+    my $revision_phid = $revision->phid;
+    INFO(
+      "Uplift request form submitted on $revision_phid, " .
+      "requesting `#release-managers` review."
+    );
+
+    # Get `#release-managers` review group.
+    my $release_managers_group = Bugzilla::Extension::PhabBugz::Project
+      ->new_from_query({name => 'release-managers'});
+
+    if (!$release_managers_group) {
+      WARN(
+        "Uplift request change detected but `#release-managers` was " .
+        "not found on Phabricator."
+      );
+      return;
+    }
+
+    my $release_managers_phid = $release_managers_group->phid;
+
+    # Request `#release-managers` review on each revision.
+    foreach my $stack_revision_phid (keys %{$revision->stack_graph_raw}) {
+      # Query Phabricator for each revision object related to the updated revision.
+      my $stack_revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+        {phids => [$stack_revision_phid]}
+      );
+
+      # Add `#release-managers!` review and set revision status.
+      $stack_revision->add_reviewer("blocking($release_managers_phid)");
+      $stack_revision->update();
+
+      INFO("Requested #release-managers review of $stack_revision_phid.");
+    }
+
+    # Comment the uplift form rendered on Bugzilla
+    # TODO add rendered form to storage on Phabricator side.
+    # TODO test
+    my $comment_data = {
+        'bug_id' => $revision->bug->id,
+        'is_markdown' => 1,
+    };
+    my $comment = Bugzilla::Comment->insert_create_data($comment_data);
+
+    # If manual QE is required, set the Bugzilla flag
+    # TODO test
+    if ($revision->uplift_form->{"Needs manual QE test"}) {
+        # TODO how to set bug flags?
+        # TODO set the `qe-verify` flag to `?` here.
+        my $new_flags = {
+            type_id  => $flagtype->id,
+            status   => '?',
+            setter   => $setter,
+            flagtype => $flagtype,
+        };
+
+        $revision->bug->set_flags($revision->bug->flags, $new_flags);
+        $revision->bug->update();
+    }
+    
+    # TODO commit here?
+}
+
 sub process_revision_change {
   state $check = compile($Invocant, Revision, LinkedPhabUser, Str);
   my ($self, $revision, $changer, $story_text) = $check->(@_);
@@ -393,40 +466,7 @@ sub process_revision_change {
 
   # Change is a submission of the uplift request form.
   if (_is_uplift_request_form_change($story_text)) {
-    my $revision_phid = $revision->phid;
-    INFO(
-      "Uplift request form submitted on $revision_phid, " .
-      "requesting `#release-managers` review."
-    );
-
-    # Get `#release-managers` review group.
-    my $release_managers_group = Bugzilla::Extension::PhabBugz::Project
-      ->new_from_query({name => 'release-managers'});
-
-    if (!$release_managers_group) {
-      WARN(
-        "Uplift request change detected but `#release-managers` was " .
-        "not found on Phabricator."
-      );
-      return;
-    }
-
-    my $release_managers_phid = $release_managers_group->phid;
-
-    # Request `#release-managers` review on each revision.
-    foreach my $stack_revision_phid (keys %{$revision->stack_graph_raw}) {
-      # Query Phabricator for each revision object related to the updated revision.
-      my $stack_revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
-        {phids => [$stack_revision_phid]}
-      );
-
-      # Add `#release-managers!` review and set revision status.
-      $stack_revision->add_reviewer("blocking($release_managers_phid)");
-      $stack_revision->update();
-
-      INFO("Requested #release-managers review of $stack_revision_phid.");
-    }
-
+    process_uplift_request_form_change($revision);
     return;
   }
 

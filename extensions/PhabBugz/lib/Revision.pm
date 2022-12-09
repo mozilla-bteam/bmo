@@ -52,6 +52,7 @@ has stack_graph_raw  => (
 );
 has subscriber_count => (is => 'ro',   isa => Int);
 has bug              => (is => 'lazy', isa => Object);
+has uplift_request   => (is => 'ro',   isa => Dict [ slurpy Any ]);
 has author           => (is => 'lazy', isa => Object);
 has repository       => (is => 'lazy', isa => Maybe[PhabRepo]);
 has reviews =>
@@ -124,6 +125,7 @@ sub BUILDARGS {
   $params->{diff_phid}       = $params->{fields}->{diffPHID};
   $params->{repository_phid} = $params->{fields}->{repositoryPHID};
   $params->{bug_id}          = $params->{fields}->{'bugzilla.bug-id'};
+  $params->{uplift_request}  = $params->{fields}->{'uplift.request'};
   $params->{view_policy}     = $params->{fields}->{policy}->{view};
   $params->{edit_policy}     = $params->{fields}->{policy}->{edit};
   $params->{stack_graph_raw} = $params->{fields}->{stackGraph};
@@ -166,7 +168,18 @@ sub BUILDARGS {
 #           "view": "public",
 #           "edit": "admin"
 #         },
-#         "bugzilla.bug-id": "1154784"
+#         "bugzilla.bug-id": "1154784",
+#         "uplift.request": {
+#             "User impact if declined": "Some impact.",
+#             "Code covered by automated testing": true,
+#             "Fix verified in Nightly": true,
+#             "Needs manual QE test": false,
+#             "Steps to reproduce for manual QE testing": "none",
+#             "Risk associated with taking this patch": "low",
+#             "Explanation of risk level": "Affects only nondefault configurations.",
+#             "String changes made/needed": "none",
+#             "Is Android affected?": true
+#         }
 #       },
 #       "attachments": {
 #         "reviewers": {
