@@ -9,12 +9,11 @@
 [% FOREACH tag IN comment.tags ~%]
   <span class="comment-tag" data-tag="[% tag FILTER html %]">
     [%~ '<a role="button" aria-label="Remove" class="remove">×</a>' IF user.can_tag_comments %]
-    [% tag FILTER html ~%]
     [% IF comment.tag_url(tag) %]
-      <a aria-label="More Information" href="[% comment.tag_url(tag) FILTER html %]">
-        <img src="[% basepath FILTER none %]extensions/BugModal/web/images/help.png"
-              width="16" height="16" title="Click for more information"/>
-      </a>
+      <a class="comment-tag-url" aria-label="More Information about this tag"
+         href="[% comment.tag_url(tag) FILTER html %]">[% tag FILTER html %]</a>
+    [% ELSE %]
+      [% tag FILTER html %]
     [% END %]
   </span>
 [%~ END %]

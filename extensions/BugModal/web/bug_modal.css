@@ -844,6 +844,10 @@ h3.change-name a {
   vertical-align: top;
 }
 
+.comment-tag-url {
+  cursor: help;
+}
+
 #ctag {
   margin-bottom: 4px;
 }
