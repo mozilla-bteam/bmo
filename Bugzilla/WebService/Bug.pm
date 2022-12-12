@@ -434,6 +434,7 @@ sub _translate_comment {
       my $url = $comment->tag_url($tag);
       $comment_hash->{tag_urls}->{$tag} = $url if $url;
     }
+    $comment_hash->{comment_tag_html} = $self->_get_comment_tag_html($comment);
   }
 
   return filter($filters, $comment_hash, $types, $prefix);
@@ -1414,7 +1415,26 @@ sub update_comment_tags {
     $tag_urls->{$tag} = $url if $url;
   }
 
-  return {tags => $comment->tags, tag_urls => $tag_urls};
+  my $result = {tags => $comment->tags, tag_urls => $tag_urls};
+
+  if ($params->{comment_tag_html}) {
+    $result->{comment_tag_html} = $self->_get_comment_tag_html($comment, $user);
+  }
+
+  return $result;
+}
+
+sub _get_comment_tag_html {
+  my ($self, $comment, $user) = @_;
+  $user ||= Bugzilla->user;
+  my $html;
+  my $vars = {
+    comment  => $comment,
+    user     => $user,
+    basepath => Bugzilla->localconfig->basepath
+  };
+  Bugzilla->template->process('bug_modal/comment_tags.html.tmpl', $vars, \$html);
+  return $html;
 }
 
 sub search_comment_tags {

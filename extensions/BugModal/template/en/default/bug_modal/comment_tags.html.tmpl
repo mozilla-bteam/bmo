@@ -1,0 +1,20 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% FOREACH tag IN comment.tags ~%]
+  <span class="comment-tag" data-tag="[% tag FILTER html %]">
+    [%~ '<a role="button" aria-label="Remove" class="remove">×</a>' IF user.can_tag_comments %]
+    [% tag FILTER html ~%]
+    [% IF comment.tag_url(tag) %]
+      <a aria-label="More Information" href="[% comment.tag_url(tag) FILTER html %]">
+        <img src="[% basepath FILTER none %]extensions/BugModal/web/images/help.png"
+              width="16" height="16" title="Click for more information"/>
+      </a>
+    [% END %]
+  </span>
+[%~ END %]

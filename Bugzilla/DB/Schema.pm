@@ -473,8 +473,10 @@ use constant ABSTRACT_SCHEMA => {
       tag => {TYPE => 'varchar(64)',  NOTNULL => 1},
       url => {TYPE => 'varchar(512)', NOTNULL => 1},
     ],
-    INDEXES =>
-      [longdescs_tags_url_tag_url_idx => {FIELDS => [qw(tag url)], TYPE => 'UNIQUE'},],
+    INDEXES => [
+      longdescs_tags_url_tag_idx     => ['tag'],
+      longdescs_tags_url_tag_url_idx => {FIELDS => [qw(tag url)], TYPE => 'UNIQUE'},
+    ],
   },
 
   dependencies => {

@@ -278,8 +278,11 @@ $(function() {
 
         // update Bugzilla
         try {
-            var result = await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { remove: [deleteTag] });
-            renderTags(commentNo, result.tags, result.tag_urls);
+            var result = await Bugzilla.API.put(
+              `bug/comment/${commentID}/tags`,
+              { remove: [deleteTag], comment_tag_html: 1 }
+            );
+            renderTags(commentNo, result.comment_tag_html);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);
@@ -294,28 +297,12 @@ $(function() {
             .toArray();
     }
 
-    function renderTags(commentNo, tags, tag_urls) {
+    function renderTags(commentNo, html) {
         cancelRefresh();
         var root = $('#ctag-' + commentNo + ' .comment-tags');
         root.find('.comment-tag').remove();
-        $.each(tags, function() {
-            var span = $("<span/>")
-                .addClass("comment-tag")
-                .data("tag", this)
-                .text(this);
-            if (BUGZILLA.user.can_tag) {
-                span.prepend($('<a role="button" aria-label="Remove" class="remove">×</a>').click(deleteTag));
-            }
-            if (tag_urls && tag_urls[this]) {
-                var infoLink = $('<a aria-label="More Information" target="_blank"></a>');
-                infoLink.attr('href', tag_urls[this].htmlEncode());
-                var img = $('<img width="16" height="16" title="Click for more information"/>');
-                img.attr('src', BUGZILLA.config.basepath + 'extensions/BugModal/web/images/help.png');
-                infoLink.append(img);
-                span.append(infoLink);
-            }
-            root.append(span);
-        });
+        root.append($(html));
+        root.find('.comment-tag .remove').click(deleteTag);
         $('#ctag-' + commentNo + ' .comment-tags').append($('#ctag-error'));
     }
 
@@ -329,10 +316,10 @@ $(function() {
 
             const { signal } = abort_controller;
             const { comments } = await Bugzilla.API.get(`bug/comment/${commentID}`, {
-              include_fields: ['tags'],
+              include_fields: ['comment_tag_html'],
             }, { signal });
 
-            renderTags(commentNo, comments[commentID].tags, comments[commentID].tag_urls);
+            renderTags(commentNo, comments[commentID].comment_tag_html);
         } catch ({ name, message }) {
             if (name !== 'AbortError') {
                 taggingError(commentNo, message);
@@ -380,8 +367,11 @@ $(function() {
 
         // update Bugzilla
         try {
-            var result = await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { add: newTags });
-            renderTags(commentNo, result.tags, result.tag_urls);
+            var result = await Bugzilla.API.put(
+              `bug/comment/${commentID}/tags`,
+              { add: newTags, comment_tag_html: 1 }
+            );
+            renderTags(commentNo, result.comment_tag_html);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);
