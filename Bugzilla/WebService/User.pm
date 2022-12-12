@@ -337,6 +337,7 @@ sub get {
       can_login          => $self->type('boolean',  $user->is_enabled ? 1 : 0),
       iam_username       => $self->type('string',   $user->iam_username),
       last_seen_date     => $self->type('dateTime', $user->last_seen_date),
+      creation_time      => $self->type('dateTime', $user->creation_ts),
       };
 
     if (Bugzilla->user->in_group('disableusers')) {
