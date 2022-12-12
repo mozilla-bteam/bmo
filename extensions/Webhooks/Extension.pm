@@ -41,9 +41,9 @@ sub db_schema_abstract_schema {
         NOTNULL    => 1,
         REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',}
       },
-      name       => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
-      url        => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
-      event      => {TYPE => 'VARCHAR(64)', NOTNULL => 1,},
+      name       => {TYPE => 'VARCHAR(64)',  NOTNULL => 1,},
+      url        => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
+      event      => {TYPE => 'VARCHAR(64)',  NOTNULL => 1,},
       product_id => {
         TYPE       => 'INT2',
         NOTNULL    => 0,
@@ -76,6 +76,8 @@ sub install_update_db {
       REFERENCES => {TABLE => 'products', COLUMN => 'id', DELETE => 'CASCADE',}
     }
   );
+  $dbh->bz_alter_column('webhooks', 'url',
+    {TYPE => 'varchar(255)', NOTNULL => 1});
 }
 
 sub db_sanitize {
