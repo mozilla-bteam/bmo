@@ -385,6 +385,7 @@ saved_reports       array     User's saved reports, each having the following
                               Search object items described below.
 last_seen_date      datetime  The time when the user last loaded any page.
 last_activity_time  datetime  The time when the user last made a change to a bug.
+creation_time       datetime  The time when the user's account was created.
 ==================  ========  =====================================================
 
 Group object:
