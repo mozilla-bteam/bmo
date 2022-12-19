@@ -38,6 +38,7 @@ sub setup_routes {
 
 sub pull_request {
   my ($self) = @_;
+  my $template = Bugzilla->template;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
   # Return early if linking is not allowed
@@ -58,7 +59,7 @@ sub pull_request {
   # If event is a ping and we passed the signature check
   # then return success
   if ($event eq 'ping') {
-    return $self->render(json => {success => 1});
+    return $self->render(json => {error => 0});
   }
 
   # Parse pull request title for bug ID
@@ -75,9 +76,13 @@ sub pull_request {
   }
 
   # We are only interested in new pull request events
-  # and not changes to existing ones
+  # and not changes to existing ones (non-fatal).
+  my $message;
   if ($payload->{action} ne 'opened') {
-    return $self->code_error('github_pr_invalid_event');
+    $template->process('global/code-error.html.tmpl',
+      {error => 'github_pr_invalid_event'}, \$message)
+      || die $template->error();
+    return $self->render(json => {error => 1, message => $message});
   }
 
   my $html_url   = $payload->{pull_request}->{html_url};
@@ -85,18 +90,26 @@ sub pull_request {
   my $pr_number  = $payload->{pull_request}->{number};
   my $repository = $payload->{repository}->{full_name};
 
+  # Find bug ID in the title and see if bug exists and client
+  # can see it (non-fatal).
   $title =~ BUG_RE;
   my $bug_id = $2;
   my $bug    = Bugzilla::Bug->new($bug_id);
   if ($bug->{error}) {
-    return $self->code_error('github_pr_bug_not_found');
+    $template->process('global/code-error.html.tmpl',
+      {error => 'github_pr_bug_not_found'}, \$message)
+      || die $template->error();
+    return $self->render(json => {error => 1, message => $message});
   }
 
-  # Check if bug already has this pull request attached
+  # Check if bug already has this pull request attached (non-fatal)
   foreach my $attachment (@{$bug->attachments}) {
     next if $attachment->contenttype ne 'text/x-github-pull-request';
     if ($attachment->data eq $html_url) {
-      return $self->code_error('github_pr_attachment_exists');
+      $template->process('global/code-error.html.tmpl',
+        {error => 'github_pr_attachment_exists'}, \$message)
+        || die $template->error();
+      return $self->render(json => {error => 1, message => $message});
     }
   }
 
@@ -159,7 +172,7 @@ sub pull_request {
   }
 
   # Return new attachment id when successful
-  return $self->render(json => {id => $attachment->id});
+  return $self->render(json => {error => 0, id => $attachment->id});
 }
 
 sub verify_signature {
