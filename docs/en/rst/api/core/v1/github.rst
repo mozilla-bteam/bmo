@@ -65,14 +65,34 @@ name                       type     description
 
 **Response**
 
+Operation was completed successfully.
+
 .. code-block:: js
 
    {
+     "error": 0
      "id": 22
    }
 
-====  ====  ===================================================
-name  type  description
-====  ====  ===================================================
-id    int   ID of the pre-existing or newly-created attachment.
-====  ====  ===================================================
+=======  =======  ===================================================
+name     type     description
+=======  =======  ===================================================
+error    boolean  Whether the operation was successful or not.
+id       int      ID of the pre-existing or newly-created attachment.
+=======  =======  ===================================================
+
+An error condition occurred.
+
+.. code-block:: js
+
+   {
+     "error": 1
+     "message": "The pull request title did not contain a valid bug ID."
+   }
+
+=======  =======  ===================================================
+name     type     description
+=======  =======  ===================================================
+error    boolean  Whether the operation was successful or not.
+message  string   A message detailing what the error condition was.
+=======  =======  ===================================================
