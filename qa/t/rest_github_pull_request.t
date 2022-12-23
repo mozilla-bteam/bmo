@@ -88,7 +88,7 @@ $bad_signature
   = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
 $t->post_ok($url
     . 'rest/github/pull_request' => {'X-Hub-Signature-256' => $bad_signature,
-    'X-GitHub-Event' => 'pull_request'} => json => $bad_payload)->status_is(400)
+    'X-GitHub-Event' => 'pull_request'} => json => $bad_payload)->status_is(200)
   ->json_like(
   '/message' => qr/The webhook sent a pull request event that was not an/);
 
@@ -108,7 +108,8 @@ $bad_signature
   = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
 $t->post_ok($url
     . 'rest/github/pull_request' => {'X-Hub-Signature-256' => $bad_signature,
-    'X-GitHub-Event' => 'pull_request'} => json => $bad_payload)->status_is(400)
+    'X-GitHub-Event' => 'pull_request'} => json => $bad_payload)->status_is(200)
+  ->json_is('/error', 1)
   ->json_like(
   '/message' => qr/The pull request title did not contain a valid bug ID/);
 
@@ -163,7 +164,8 @@ $t->post_ok(
     'X-Hub-Signature-256' => $good_signature,
     'X-GitHub-Event'      => 'pull_request'
     } => json => $good_payload
-)->status_is(400)
+)->status_is(200)
+  ->json_is('/error', 1)
   ->json_like('/message' =>
     qr/The pull request contained a bug ID that already has an attachment/);
 
@@ -222,6 +224,6 @@ $good_signature
 $t->post_ok($url
     . 'rest/github/pull_request'                                           =>
     {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'ping'} =>
-    json => $good_payload)->status_is(200)->json_has('/success');
+    json => $good_payload)->status_is(200)->json_is('/error' => 0);
 
 done_testing();
