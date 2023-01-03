@@ -137,9 +137,11 @@ tie(
   qr/^cf_machine_state$/   => {"Release Engineering"     => ["Buildduty"],},
   qr/^cf_rank$/            => {
     "Core"                => [],
+    "Fenix"               => [],
     "Firefox for Android" => [],
     "Firefox for iOS"     => [],
     "Firefox"             => [],
+    "Focus"               => [],
     "GeckoView"           => [],
     "Hello (Loop)"        => [],
     "Cloud Services"      => [],
