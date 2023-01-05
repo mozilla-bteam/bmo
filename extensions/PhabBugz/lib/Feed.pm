@@ -360,7 +360,9 @@ sub _is_uplift_request_form_change {
 
 sub process_uplift_request_form_change {
   # Process an uplift request form change for the passed revision object.
-  my ($revision) = @_;
+  my ($revision, $changer) = @_;
+
+  my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
 
   # Take no action if the form is empty.
   # TODO test
@@ -403,32 +405,34 @@ sub process_uplift_request_form_change {
     INFO("Requested #release-managers review of $stack_revision_phid.");
   }
 
-  # Comment the uplift form rendered on Bugzilla
+  # Comment the uplift form rendered on Bugzilla.
   # TODO add rendered form to storage on Phabricator side.
   # TODO test
-  my $comment_data = {
-    'bug_id' => $revision->bug->id,
+  my $comment_content = $revision->uplift_form->{"markdown"};
+  my $comment_params = {
     'is_markdown' => 1,
+    'isprivate' => 0,
   };
-  my $comment = Bugzilla::Comment->insert_create_data($comment_data);
+  $revision->bug->add_comment($comment_content, $comment_params);
 
-  # If manual QE is required, set the Bugzilla flag
+  # If manual QE is required, set the Bugzilla flag.
   # TODO test
   if ($revision->uplift_form->{"Needs manual QE test"}) {
-    # TODO how to set bug flags?
-    # TODO set the `qe-verify` flag to `?` here.
-    my $new_flags = {
-      type_id  => $flagtype->id,
-      status   => '?',
-      setter   => $setter,
-      flagtype => $flagtype,
-    };
+    my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
+    # TODO what to do if !$qe_flag ?
+    if ($qe_flag) {
+      my $new_flags = {
+        type_id  => $qe_flag->id,
+        status   => '?',
+        setter   => $changer->bugzilla_user->id,
+        flagtype => $qe_flag,
+      };
 
-    $revision->bug->set_flags($revision->bug->flags, $new_flags);
-    $revision->bug->update();
+      $revision->bug->set_flags($revision->bug->flags, $new_flags);
+    }
   }
   
-  # TODO commit here?
+  $revision->bug->update($timestamp);
 }
 
 sub process_revision_change {
@@ -466,7 +470,7 @@ sub process_revision_change {
 
   # Change is a submission of the uplift request form.
   if (_is_uplift_request_form_change($story_text)) {
-    process_uplift_request_form_change($revision);
+    process_uplift_request_form_change($revision, $changer);
     return;
   }
 
