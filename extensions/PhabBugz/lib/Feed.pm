@@ -458,14 +458,14 @@ sub process_uplift_request_form_change {
       INFO("Found `qe-verify` flag to update.");
       $qe_verify_flag = $flag;
 
-      if ($qe_verify_flag->status ne '?') {
+      if ($qe_verify_flag->status ne '+') {
         # Set the flag to `?`.
         $bug->set_flags([{
           id     => $qe_verify_flag->id,
-          status => '?',
+          status => '+',
         }], []);
 
-        INFO("Set `qe-verify` flag to `?`.");
+        INFO("Set `qe-verify` flag to `+`.");
       }
 
       last;
