@@ -362,10 +362,12 @@ sub _is_uplift_request_form_change {
 sub format_uplift_request_as_markdown {
   my ($question_answers_mapping) = @_;
 
-  my $comment = "";
+  my $comment = "# Uplift Approval Request\n";
 
   while (my ($question, $answer) = each %{$question_answers_mapping}) {
-    $comment .= "- **$question** $answer\n";
+    my $answer_string = readable_answer($answer);
+
+    $comment .= "- **$question**: $answer_string\n";
   }
 
   return $comment;
