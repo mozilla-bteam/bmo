@@ -358,15 +358,28 @@ sub _is_uplift_request_form_change {
   return $story_text =~ /\s+uplift request field/;
 }
 
+# TODO test
+sub format_uplift_request_as_markdown {
+  my ($question_answers_mapping) = @_;
+
+  my $comment = "";
+
+  while (my ($question, $answer) = each %{$question_answers_mapping}) {
+    $comment .= "- **$question** $answer\n";
+  }
+
+  return $comment;
+}
+
 sub process_uplift_request_form_change {
   # Process an uplift request form change for the passed revision object.
-  my ($revision, $changer) = @_;
+  my ($revision, $bug) = @_;
 
   my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+  my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
 
   # Take no action if the form is empty.
-  # TODO test
-  if ($revision->uplift_form->is_empty) {
+  if (!$revision->uplift_request) {
     INFO("Uplift request form field cleared, ignoring.");
     return;
   }
@@ -405,34 +418,59 @@ sub process_uplift_request_form_change {
     INFO("Requested #release-managers review of $stack_revision_phid.");
   }
 
+  INFO("Commenting the uplift form on the bug.");
+
   # Comment the uplift form rendered on Bugzilla.
-  # TODO add rendered form to storage on Phabricator side.
   # TODO test
-  my $comment_content = $revision->uplift_form->{"markdown"};
+  my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
   my $comment_params = {
     'is_markdown' => 1,
     'isprivate' => 0,
   };
-  $revision->bug->add_comment($comment_content, $comment_params);
+  $bug->add_comment($comment_content, $comment_params);
 
   # If manual QE is required, set the Bugzilla flag.
   # TODO test
-  if ($revision->uplift_form->{"Needs manual QE test"}) {
-    my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
-    # TODO what to do if !$qe_flag ?
-    if ($qe_flag) {
-      my $new_flags = {
-        type_id  => $qe_flag->id,
-        status   => '?',
-        setter   => $changer->bugzilla_user->id,
-        flagtype => $qe_flag,
-      };
+  if ($revision->uplift_request->{"Needs manual QE test"}) {
+    # my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
+    #
+    # if (!$qe_flag) {
+    #   WARN("`qe-verify` flag not found?");
+    #   return;
+    # }
+    #
+    # my @new_flags = ({
+    #   type_id  => $qe_flag->id,
+    #   status   => '?',
+    #   setter   => $phab_bot_user,
+    #   # setter   => $phab_bot_user->id,
+    #   flagtype => $qe_flag,
+    # });
+    #
+    # # TODO is passing `[]` here okay?
+    # # TODO $bug->flags is a thing
+    # $bug->set_flags(\@new_flags, []);
 
-      $revision->bug->set_flags($revision->bug->flags, $new_flags);
+    foreach my $flag (@{$bug->flags}) {
+      # Ignore for all flags except `qe-verify`.
+      next if $flag->type->name ne 'qe-verify';
+
+      if ($flag->status ne '?') {
+        # Set the flag to `?`.
+        my @flags = ({
+          id     => $flag->id,
+          status => '?',
+        });
+        
+        $bug->set_flags(\@flags, []);
+      }
+
+      last;
     }
   }
   
-  $revision->bug->update($timestamp);
+  $bug->update($timestamp);
+  INFO("Finished processing uplift request form change for $revision_phid.");
 }
 
 sub process_revision_change {
@@ -468,15 +506,15 @@ sub process_revision_change {
   );
   INFO($log_message);
 
-  # Change is a submission of the uplift request form.
-  if (_is_uplift_request_form_change($story_text)) {
-    process_uplift_request_form_change($revision, $changer);
-    return;
-  }
-
   # change to the phabricator user, which returns a guard that restores the previous user.
   my $restore_prev_user = set_phab_user();
   my $bug               = $revision->bug;
+
+  # Change is a submission of the uplift request form.
+  if (_is_uplift_request_form_change($story_text)) {
+    process_uplift_request_form_change($revision, $bug);
+    return;
+  }
 
   # Check to make sure bug id is valid and author can see it
   if ($bug->{error}
