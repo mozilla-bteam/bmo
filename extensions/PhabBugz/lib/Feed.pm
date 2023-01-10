@@ -437,9 +437,6 @@ sub process_uplift_request_form_change {
   }
 
   INFO("Commenting the uplift form on the bug.");
-
-  # Comment the uplift form rendered on Bugzilla.
-  # TODO test
   my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
   my $comment_params = {
     'is_markdown' => 1,
@@ -450,37 +447,25 @@ sub process_uplift_request_form_change {
   # If manual QE is required, set the Bugzilla flag.
   # TODO test
   if ($revision->uplift_request->{"Needs manual QE test"}) {
-    # my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
-    #
-    # if (!$qe_flag) {
-    #   WARN("`qe-verify` flag not found?");
-    #   return;
-    # }
-    #
-    # my @new_flags = ({
-    #   type_id  => $qe_flag->id,
-    #   status   => '?',
-    #   setter   => $phab_bot_user,
-    #   # setter   => $phab_bot_user->id,
-    #   flagtype => $qe_flag,
-    # });
-    #
-    # # TODO is passing `[]` here okay?
-    # # TODO $bug->flags is a thing
-    # $bug->set_flags(\@new_flags, []);
+    INFO("Needs manual QE test is set.");
 
+    # Find the current `qe-verify` flag state.
+    my $qe_verify_flag;
     foreach my $flag (@{$bug->flags}) {
       # Ignore for all flags except `qe-verify`.
       next if $flag->type->name ne 'qe-verify';
 
-      if ($flag->status ne '?') {
+      INFO("Found `qe-verify` flag to update.");
+      $qe_verify_flag = $flag;
+
+      if ($qe_verify_flag->status ne '?') {
         # Set the flag to `?`.
-        my @flags = ({
-          id     => $flag->id,
+        $bug->set_flags([{
+          id     => $qe_verify_flag->id,
           status => '?',
-        });
-        
-        $bug->set_flags(\@flags, []);
+        }], []);
+
+        INFO("Set `qe-verify` flag to `?`.");
       }
 
       last;
