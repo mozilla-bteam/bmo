@@ -437,6 +437,7 @@ sub process_uplift_request_form_change {
   }
 
   INFO("Commenting the uplift form on the bug.");
+
   my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
   my $comment_params = {
     'is_markdown' => 1,
