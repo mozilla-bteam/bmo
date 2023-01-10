@@ -445,31 +445,48 @@ sub process_uplift_request_form_change {
   $bug->add_comment($comment_content, $comment_params);
 
   # If manual QE is required, set the Bugzilla flag.
-  # TODO test
   if ($revision->uplift_request->{"Needs manual QE test"}) {
     INFO("Needs manual QE test is set.");
 
-    # Find the current `qe-verify` flag state.
-    my $qe_verify_flag;
+    my @old_flags;
+    my @new_flags;
+
+    # Find the current `qe-verify` flag state if it exists.
     foreach my $flag (@{$bug->flags}) {
+      my $name = $flag->type->name;
+
       # Ignore for all flags except `qe-verify`.
       next if $flag->type->name ne 'qe-verify';
+      INFO("Found `qe-verify` flag.");
 
-      INFO("Found `qe-verify` flag to update.");
-      $qe_verify_flag = $flag;
+      if ($flag->status ne '+') {
+        INFO("Setting status to `+` for qe-verify.");
 
-      if ($qe_verify_flag->status ne '+') {
         # Set the flag to `?`.
-        $bug->set_flags([{
-          id     => $qe_verify_flag->id,
-          status => '+',
-        }], []);
+        push(@old_flags, {id => $flag->id, status => '+'});
 
         INFO("Set `qe-verify` flag to `+`.");
       }
 
       last;
     }
+
+    # If we didn't find an existing `qe-verify` flag to update, add it now.
+    if (!@old_flags) {
+      FATAL("CREATING NEW QE-VERIFY FLAG");
+      my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
+      if ($qe_flag) {
+        push(@new_flags, {
+          flagtype => $qe_flag,
+          setter => $phab_bot_user,
+          status => '+',
+          type_id => $qe_flag->id,
+        });
+      }
+    }
+
+    # Set the flags.
+    $bug->set_flags(\@old_flags, \@new_flags);
   }
   
   $bug->update($timestamp);
