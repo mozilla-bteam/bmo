@@ -358,7 +358,23 @@ sub _is_uplift_request_form_change {
   return $story_text =~ /\s+uplift request field/;
 }
 
-# TODO test
+sub readable_answer {
+  my ($answer) = @_;
+
+  # Return the value itself if it is not a number.
+  if ($answer ne '0' && $answer ne '1') {
+    return $answer;
+  }
+
+  # Return "yes" for `1`.
+  if ($answer) {
+    return "yes";
+  }
+
+  # Return "no" for `0`.
+  return "no";
+}
+
 sub format_uplift_request_as_markdown {
   my ($question_answers_mapping) = @_;
 
