@@ -6,14 +6,14 @@
     {
       "label": "Docker: Start Web Server",
       "type": "shell",
-      "command": "docker compose up --build",
+      "command": "docker-compose up --build",
       "group": "none",
       "problemMatcher": []
     },
     {
       "label": "Docker: Update Web Server",
       "type": "shell",
-      "command": "docker compose exec bmo.test rsync -avz --exclude .git --exclude local --exclude .vscode --exclude .pls_cache --exclude .circleci /mnt/sync/ /app/",
+      "command": "docker-compose exec bmo.test rsync -avz --exclude .git --exclude local --exclude .vscode --exclude .pls_cache --exclude .circleci /mnt/sync/ /app/",
       "group": {
         "kind": "build",
         "isDefault": true
