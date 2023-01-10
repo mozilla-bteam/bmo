@@ -52,7 +52,9 @@ has stack_graph_raw  => (
 );
 has subscriber_count => (is => 'ro',   isa => Int);
 has bug              => (is => 'lazy', isa => Object);
-has uplift_request   => (is => 'ro',   isa => Dict [ slurpy Any ]);
+# TODO the uplift request shouldn't be an `ArrayRef` - Phab should return `{}`
+# instead of `[]`. I think this is because PHP uses `array()` for both?
+has uplift_request   => (is => 'ro',   isa => ArrayRef | Dict [ slurpy Any ]);
 has author           => (is => 'lazy', isa => Object);
 has repository       => (is => 'lazy', isa => Maybe[PhabRepo]);
 has reviews =>
