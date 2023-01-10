@@ -515,8 +515,7 @@ sub process_revision_change {
 
   # Change is a submission of the uplift request form.
   if (_is_uplift_request_form_change($story_text)) {
-    process_uplift_request_form_change($revision, $bug);
-    return;
+    return process_uplift_request_form_change($revision, $bug);
   }
 
   # Check to make sure bug id is valid and author can see it
