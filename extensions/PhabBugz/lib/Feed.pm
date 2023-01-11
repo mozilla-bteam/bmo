@@ -441,7 +441,7 @@ sub process_uplift_request_form_change {
   my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
   my $comment_params = {
     'is_markdown' => 1,
-    'isprivate' => 0,
+    'isprivate'   => 0,
   };
   $bug->add_comment($comment_content, $comment_params);
 
@@ -478,9 +478,9 @@ sub process_uplift_request_form_change {
       if ($qe_flag) {
         push @new_flags, {
           flagtype => $qe_flag,
-          setter => $phab_bot_user,
-          status => '+',
-          type_id => $qe_flag->id,
+          setter   => $phab_bot_user,
+          status   => '+',
+          type_id  => $qe_flag->id,
         };
       }
     }
