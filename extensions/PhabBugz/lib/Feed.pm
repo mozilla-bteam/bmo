@@ -488,7 +488,7 @@ sub process_uplift_request_form_change {
     # Set the flags.
     $bug->set_flags(\@old_flags, \@new_flags);
   }
-  
+
   $bug->update($timestamp);
   INFO("Finished processing uplift request form change for $revision_phid.");
 }
