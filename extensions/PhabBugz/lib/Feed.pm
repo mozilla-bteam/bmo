@@ -464,7 +464,7 @@ sub process_uplift_request_form_change {
         INFO("Setting status to `+` for qe-verify.");
 
         # Set the flag to `?`.
-        push(@old_flags, {id => $flag->id, status => '+'});
+        push @old_flags, {id => $flag->id, status => '+'};
 
         INFO("Set `qe-verify` flag to `+`.");
       }
@@ -477,12 +477,12 @@ sub process_uplift_request_form_change {
       FATAL("CREATING NEW QE-VERIFY FLAG");
       my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
       if ($qe_flag) {
-        push(@new_flags, {
+        push @new_flags, {
           flagtype => $qe_flag,
           setter => $phab_bot_user,
           status => '+',
           type_id => $qe_flag->id,
-        });
+        };
       }
     }
 
