@@ -366,19 +366,19 @@ sub readable_answer {
     return $answer;
   }
 
-  # Return "yes" for `1`.
+  # Return 'yes' for `1`.
   if ($answer) {
-    return "yes";
+    return 'yes';
   }
 
-  # Return "no" for `0`.
-  return "no";
+  # Return 'no' for `0`.
+  return 'no';
 }
 
 sub format_uplift_request_as_markdown {
   my ($question_answers_mapping) = @_;
 
-  my $comment = "# Uplift Approval Request\n";
+  my $comment = '# Uplift Approval Request\n';
 
   while (my ($question, $answer) = each %{$question_answers_mapping}) {
     my $answer_string = readable_answer($answer);
@@ -393,19 +393,19 @@ sub process_uplift_request_form_change {
   # Process an uplift request form change for the passed revision object.
   my ($revision, $bug) = @_;
 
-  my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+  my ($timestamp) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
   my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
 
   # Take no action if the form is empty.
   if (!$revision->uplift_request) {
-    INFO("Uplift request form field cleared, ignoring.");
+    INFO('Uplift request form field cleared, ignoring.');
     return;
   }
 
   my $revision_phid = $revision->phid;
   INFO(
     "Uplift request form submitted on $revision_phid, " .
-    "requesting `#release-managers` review."
+    'requesting `#release-managers` review.'
   );
 
   # Get `#release-managers` review group.
@@ -414,8 +414,8 @@ sub process_uplift_request_form_change {
 
   if (!$release_managers_group) {
     WARN(
-      "Uplift request change detected but `#release-managers` was " .
-      "not found on Phabricator."
+      'Uplift request change detected but `#release-managers` was ' .
+      'not found on Phabricator.'
     );
     return;
   }
@@ -436,7 +436,7 @@ sub process_uplift_request_form_change {
     INFO("Requested #release-managers review of $stack_revision_phid.");
   }
 
-  INFO("Commenting the uplift form on the bug.");
+  INFO('Commenting the uplift form on the bug.');
 
   my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
   my $comment_params = {
@@ -446,8 +446,8 @@ sub process_uplift_request_form_change {
   $bug->add_comment($comment_content, $comment_params);
 
   # If manual QE is required, set the Bugzilla flag.
-  if ($revision->uplift_request->{"Needs manual QE test"}) {
-    INFO("Needs manual QE test is set.");
+  if ($revision->uplift_request->{'Needs manual QE test'}) {
+    INFO('Needs manual QE test is set.');
 
     my @old_flags;
     my @new_flags;
@@ -458,15 +458,15 @@ sub process_uplift_request_form_change {
 
       # Ignore for all flags except `qe-verify`.
       next if $flag->type->name ne 'qe-verify';
-      INFO("Found `qe-verify` flag.");
+      INFO('Found `qe-verify` flag.');
 
       if ($flag->status ne '+') {
-        INFO("Setting status to `+` for qe-verify.");
+        INFO('Setting status to `+` for qe-verify.');
 
         # Set the flag to `?`.
         push @old_flags, {id => $flag->id, status => '+'};
 
-        INFO("Set `qe-verify` flag to `+`.");
+        INFO('Set `qe-verify` flag to `+`.');
       }
 
       last;
@@ -474,7 +474,6 @@ sub process_uplift_request_form_change {
 
     # If we didn't find an existing `qe-verify` flag to update, add it now.
     if (!@old_flags) {
-      FATAL("CREATING NEW QE-VERIFY FLAG");
       my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
       if ($qe_flag) {
         push @new_flags, {
