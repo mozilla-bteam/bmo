@@ -380,7 +380,8 @@ sub format_uplift_request_as_markdown {
 
   my $comment = '# Uplift Approval Request\n';
 
-  while (my ($question, $answer) = each %{$question_answers_mapping}) {
+  foreach my $question (keys %{$question_answers_mapping}) {
+    my $answer = $question_answers_mapping->{$question};
     my $answer_string = readable_answer($answer);
 
     $comment .= "- **$question**: $answer_string\n";
