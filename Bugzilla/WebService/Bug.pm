@@ -429,12 +429,6 @@ sub _translate_comment {
   # Don't load comment tags unless enabled
   if (Bugzilla->params->{'comment_taggers_group'}) {
     $comment_hash->{tags} = [map { $self->type('string', $_) } @{$comment->tags}];
-    $comment_hash->{tag_urls} = {};
-    foreach my $tag (@{$comment->tags}) {
-      my $url = $comment->tag_url($tag);
-      $comment_hash->{tag_urls}->{$tag} = $url if $url;
-    }
-    $comment_hash->{comment_tag_html} = $self->_get_comment_tag_html($comment);
   }
 
   return filter($filters, $comment_hash, $types, $prefix);
@@ -1409,32 +1403,7 @@ sub update_comment_tags {
   $comment->update();
   $dbh->bz_commit_transaction();
 
-  my $tag_urls = {};
-  foreach my $tag (@{$comment->tags}) {
-    my $url = $comment->tag_url($tag);
-    $tag_urls->{$tag} = $url if $url;
-  }
-
-  my $result = {tags => $comment->tags, tag_urls => $tag_urls};
-
-  if ($params->{comment_tag_html}) {
-    $result->{comment_tag_html} = $self->_get_comment_tag_html($comment, $user);
-  }
-
-  return $result;
-}
-
-sub _get_comment_tag_html {
-  my ($self, $comment, $user) = @_;
-  $user ||= Bugzilla->user;
-  my $html;
-  my $vars = {
-    comment  => $comment,
-    user     => $user,
-    basepath => Bugzilla->localconfig->basepath
-  };
-  Bugzilla->template->process('bug_modal/comment_tags.html.tmpl', $vars, \$html);
-  return $html;
+  return $comment->tags;
 }
 
 sub search_comment_tags {

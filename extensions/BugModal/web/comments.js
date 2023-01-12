@@ -278,11 +278,11 @@ $(function() {
 
         // update Bugzilla
         try {
-            var result = await Bugzilla.API.put(
+            await Bugzilla.API.put(
               `bug/comment/${commentID}/tags`,
-              { remove: [deleteTag], comment_tag_html: 1 }
+              { remove: [deleteTag] }
             );
-            renderTags(commentNo, result.comment_tag_html);
+            refreshTags(commentNo, commentID);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);
@@ -297,15 +297,6 @@ $(function() {
             .toArray();
     }
 
-    function renderTags(commentNo, html) {
-        cancelRefresh();
-        var root = $('#ctag-' + commentNo + ' .comment-tags');
-        root.find('.comment-tag').remove();
-        root.append($(html));
-        root.find('.comment-tag .remove').click(deleteTag);
-        $('#ctag-' + commentNo + ' .comment-tags').append($('#ctag-error'));
-    }
-
     let abort_controller;
 
     const refreshTags = async (commentNo, commentID) => {
@@ -315,11 +306,13 @@ $(function() {
             abort_controller = new AbortController();
 
             const { signal } = abort_controller;
-            const { comments } = await Bugzilla.API.get(`bug/comment/${commentID}`, {
-              include_fields: ['comment_tag_html'],
-            }, { signal });
+            const { html } = await Bugzilla.API.get(`bug_modal/comment_tags/${commentID}`, {}, { signal });
 
-            renderTags(commentNo, comments[commentID].comment_tag_html);
+            var root = $('#ctag-' + commentNo + ' .comment-tags');
+            root.find('.comment-tag').remove();
+            root.append($(html));
+            root.find('.comment-tag .remove').click(deleteTag);
+            $('#ctag-' + commentNo + ' .comment-tags').append($('#ctag-error'));
         } catch ({ name, message }) {
             if (name !== 'AbortError') {
                 taggingError(commentNo, message);
@@ -367,11 +360,11 @@ $(function() {
 
         // update Bugzilla
         try {
-            var result = await Bugzilla.API.put(
+            await Bugzilla.API.put(
               `bug/comment/${commentID}/tags`,
-              { add: newTags, comment_tag_html: 1 }
+              { add: newTags }
             );
-            renderTags(commentNo, result.comment_tag_html);
+            refreshTags(commentNo, commentID);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);

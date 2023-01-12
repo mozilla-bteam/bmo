@@ -68,6 +68,18 @@ sub rest_resources {
       },
     },
 
+    # returns pre-formatted HTML representing the comment tags
+    qr{^/bug_modal/comment_tags/(\d+)$},
+    {
+      GET => {
+        method => 'comment_tags',
+        params => sub {
+          return {id => $_[0]};
+        },
+      },
+    },
+
+
     # returns fields that require touching when the product is changed
     qw{^/bug_modal/new_product/(\d+)$},
     {
@@ -190,6 +202,34 @@ sub cc {
 
   my $html = '';
   $template->process('bug_modal/cc_list.html.tmpl', $vars, \$html)
+    || ThrowTemplateError($template->error);
+  return {html => $html};
+}
+
+sub comment_tags {
+  my ($self, $params) = @_;
+  my $user     = Bugzilla->user;
+  my $template = Bugzilla->template;
+
+  my $id      = $params->{id};
+  my $comment = Bugzilla::Comment->new($id);
+  ThrowUserError('comment_id_invalid', {id => $id}) if !$comment;
+
+  # Now make sure that we can see the associated bug.
+  Bugzilla::Bug->check($comment->bug->id);
+
+  # Make sure user can see comment
+  if ($comment->is_private && !$user->is_insider) {
+    ThrowUserError('comment_is_private', {id => $comment->id});
+  }
+
+  my $html = '';
+  my $vars = {
+    comment  => $comment,
+    user     => $user,
+    basepath => Bugzilla->localconfig->basepath
+  };
+  $template->process('bug_modal/comment_tags.html.tmpl', $vars, \$html)
     || ThrowTemplateError($template->error);
   return {html => $html};
 }
