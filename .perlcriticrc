@@ -49,6 +49,7 @@ severity = 2
 [-ValuesAndExpressions::ProhibitNoisyQuotes]
 [-ValuesAndExpressions::ProhibitVersionStrings]
 [-ValuesAndExpressions::ProhibitImplicitNewlines]
+[-ValuesAndExpressions::RequireInterpolationOfMetachars]
 [-Variables::ProhibitLocalVars]
 [-Variables::ProhibitPackageVars]
 
