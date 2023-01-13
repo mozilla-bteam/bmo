@@ -378,7 +378,7 @@ sub readable_answer {
 sub format_uplift_request_as_markdown {
   my ($question_answers_mapping) = @_;
 
-  my $comment = '# Uplift Approval Request\n';
+  my $comment = "# Uplift Approval Request\n";
 
   foreach my $question (keys %{$question_answers_mapping}) {
     my $answer = $question_answers_mapping->{$question};
