@@ -176,11 +176,9 @@ Bugzilla::Bug->create({
 my @flagtypes = (
   {
     name => 'qe-verify',
-    desc =>
-      'qe-verify: ? ➜ request to assess whether the bug should be tested manually
-qe-verify: + ➜ request to verify the bug manually
+    desc => 'qe-verify: + ➜ request to verify the bug manually
 qe-verify: - ➜ the bug will not/can not be verified manually',
-    is_requestable   => 1,
+    is_requestable   => 0,
     is_requesteeble  => 0,
     is_multiplicable => 0,
     grant_group      => '',
@@ -266,6 +264,7 @@ set_params(
   password_check_on_login => 0,
   phabricator_base_uri    => 'http://phabricator.test/',
   phabricator_enabled     => 1,
+  use_markdown            => 1,
 );
 set_push_connector_options();
 
