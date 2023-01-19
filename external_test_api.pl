@@ -20,7 +20,7 @@ BEGIN {
 }
 use Mojolicious::Commands;
 
-$ENV{MOJO_LISTEN} ||= $ENV{PORT} ? "http://*:$ENV{PORT}" : "http://*:3001";
+$ENV{MOJO_LISTEN} ||= $ENV{PORT} ? "http://*:$ENV{PORT}" : "http://*:8000";
 
 # Start command line interface for application
 Mojolicious::Commands->start_app('External::Test::API');
