@@ -68,6 +68,28 @@ sub rest_resources {
       },
     },
 
+    # returns pre-formatted HTML representing the comment tags
+    qr{^/bug_modal/comment_tags/(\d+)$},
+    {
+      GET => {
+        method => 'comment_tags',
+        params => sub {
+          return {id => $_[0]};
+        },
+      },
+    },
+
+    # make changes to comment tags and return preformatted html
+    qr{^/bug_modal/update_comment_tags/(\d+)$},
+    {
+      PUT => {
+        method => 'update_comment_tags',
+        params => sub {
+          return {id => $_[0]};
+        },
+      },
+    },
+
     # returns fields that require touching when the product is changed
     qw{^/bug_modal/new_product/(\d+)$},
     {
@@ -192,6 +214,81 @@ sub cc {
   $template->process('bug_modal/cc_list.html.tmpl', $vars, \$html)
     || ThrowTemplateError($template->error);
   return {html => $html};
+}
+
+sub comment_tags {
+  my ($self, $params) = @_;
+  my $user     = Bugzilla->user;
+  my $template = Bugzilla->template;
+
+  my $id      = $params->{id};
+  my $comment = Bugzilla::Comment->new($id);
+  ThrowUserError('comment_id_invalid', {id => $id}) if !$comment;
+
+  # Now make sure that we can see the associated bug.
+  $comment->bug->check_is_visible();
+
+  # Make sure user can see comment
+  if ($comment->is_private && !$user->is_insider) {
+    ThrowUserError('comment_is_private', {id => $comment->id});
+  }
+
+  return {html => _render_comment_html($comment, $user)};
+}
+
+sub update_comment_tags {
+  my ($self, $params) = @_;
+  my $user = Bugzilla->login(LOGIN_REQUIRED);
+
+  Bugzilla->params->{'comment_taggers_group'}
+    || ThrowUserError('comment_tag_disabled');
+  $user->can_tag_comments || ThrowUserError(
+    'auth_failure',
+    {
+      group  => Bugzilla->params->{'comment_taggers_group'},
+      action => 'update',
+      object => 'comment_tags'
+    }
+  );
+
+  my $id      = $params->{id};
+  my $comment = Bugzilla::Comment->new($id);
+  ThrowUserError('comment_id_invalid', {id => $id}) if !$comment;
+
+  # Now make sure that we can see the associated bug.
+  $comment->bug->check_is_visible();
+
+  # Make sure user can see comment
+  if ($comment->is_private && !$user->is_insider) {
+    ThrowUserError('comment_is_private', {id => $id});
+  }
+
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_start_transaction();
+  foreach my $tag (@{$params->{add} || []}) {
+    $comment->add_tag($tag) if defined $tag;
+  }
+  foreach my $tag (@{$params->{remove} || []}) {
+    $comment->remove_tag($tag) if defined $tag;
+  }
+  $comment->update();
+  $dbh->bz_commit_transaction();
+
+  return {html => _render_comment_html($comment, $user)};
+}
+
+sub _render_comment_html {
+  my ($comment, $user) = @_;
+  my $template = Bugzilla->template;
+  my $html = '';
+  my $vars = {
+    comment  => $comment,
+    user     => $user,
+    basepath => Bugzilla->localconfig->basepath
+  };
+  $template->process('bug_modal/comment_tags.html.tmpl', $vars, \$html)
+    || ThrowTemplateError($template->error);
+  return $html;
 }
 
 sub new_product {

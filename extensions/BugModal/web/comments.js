@@ -279,10 +279,10 @@ $(function() {
         // update Bugzilla
         try {
             var result = await Bugzilla.API.put(
-                `bug/comment/${commentID}/tags`,
-                { remove: [deleteTag], comment_tag_html: 1 }
+              `bug_modal/update_comment_tags/${commentID}`,
+              { remove: [deleteTag] }
             );
-            renderTags(commentNo, result.comment_tag_html);
+            renderTags(commentNo, result.html);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);
@@ -315,11 +315,11 @@ $(function() {
             abort_controller = new AbortController();
 
             const { signal } = abort_controller;
-            const { comments } = await Bugzilla.API.get(`bug/comment/${commentID}`, {
-                include_fields: ['comment_tag_html'],
-            }, { signal });
-
-            renderTags(commentNo, comments[commentID].comment_tag_html);
+            var result = await Bugzilla.API.get(
+                `bug_modal/comment_tags/${commentID}`, 
+                {}, { signal }
+            );
+            renderTags(commentNo, result.html);
         } catch ({ name, message }) {
             if (name !== 'AbortError') {
                 taggingError(commentNo, message);
@@ -368,10 +368,10 @@ $(function() {
         // update Bugzilla
         try {
             var result = await Bugzilla.API.put(
-                `bug/comment/${commentID}/tags`,
-                { add: newTags, comment_tag_html: 1 }
+              `bug_modal/update_comment_tags/${commentID}`,
+              { add: newTags }
             );
-            renderTags(commentNo, result.comment_tag_html);
+            renderTags(commentNo, result.html);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);
