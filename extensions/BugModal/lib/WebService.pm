@@ -263,14 +263,15 @@ sub update_comment_tags {
     ThrowUserError('comment_is_private', {id => $id});
   }
 
-  my $dbh = Bugzilla->dbh;
-  $dbh->bz_start_transaction();
   foreach my $tag (@{$params->{add} || []}) {
     $comment->add_tag($tag) if defined $tag;
   }
   foreach my $tag (@{$params->{remove} || []}) {
     $comment->remove_tag($tag) if defined $tag;
   }
+
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_start_transaction();
   $comment->update();
   $dbh->bz_commit_transaction();
 
