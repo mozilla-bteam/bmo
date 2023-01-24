@@ -802,6 +802,9 @@ sub DEFAULT_CSP {
     push @{$policy{form_action}}, Bugzilla->params->{phabricator_base_uri};
   }
 
+  # This is for people.mozilla.org authentication (bug 1783044)
+  push @{$policy{form_action}}, 'https://people.mozilla.org';
+
   return %policy;
 }
 
