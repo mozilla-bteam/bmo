@@ -462,7 +462,7 @@ sub process_uplift_request_form_change {
       # Set the flag to `+`. If already '+', it will be non-change.
       INFO('Set `qe-verify` flag to `+`.');
       push @old_flags, {id => $flag->id, status => '+'};
-     last;
+      last;
     }
 
     # If we didn't find an existing `qe-verify` flag to update, add it now.
