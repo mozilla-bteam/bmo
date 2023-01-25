@@ -432,11 +432,19 @@ sub process_uplift_request_form_change {
       {phids => [$stack_revision_phid]}
     );
 
-    # Add `#release-managers!` review and set revision status.
-    $stack_revision->add_reviewer("blocking($release_managers_phid)");
-    $stack_revision->update();
-
-    INFO("Requested #release-managers review of $stack_revision_phid.");
+    # Add `#release-managers!` review if not already added.
+    my $release_manager_added = 0;
+    foreach my $reviewer (@{$stack_revision->reviewers_raw}) {
+      if ($reviewer->{reviewerPHID} eq $release_managers_phid) {
+        $release_manager_added = 1;
+        last;
+      }
+    }
+    if (!$release_manager_added) {
+      $stack_revision->add_reviewer("blocking($release_managers_phid)");
+      $stack_revision->update();
+      INFO("Requested #release-managers review of $stack_revision_phid.");
+    }
   }
 
   INFO('Commenting the uplift form on the bug.');
