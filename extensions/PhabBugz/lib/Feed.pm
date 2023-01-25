@@ -398,7 +398,9 @@ sub process_uplift_request_form_change {
   my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
 
   # Take no action if the form is empty.
-  if (!$revision->uplift_request) {
+  if (ref $revision->uplift_request ne 'HASH'
+    || !keys %{$revision->uplift_request})
+  {
     INFO('Uplift request form field cleared, ignoring.');
     return;
   }
@@ -455,21 +457,11 @@ sub process_uplift_request_form_change {
 
     # Find the current `qe-verify` flag state if it exists.
     foreach my $flag (@{$bug->flags}) {
-      my $name = $flag->type->name;
-
       # Ignore for all flags except `qe-verify`.
-      next if $flag->type->name ne 'qe-verify';
-      INFO('Found `qe-verify` flag.');
-
-      if ($flag->status ne '+') {
-        INFO('Setting status to `+` for qe-verify.');
-
-        # Set the flag to `?`.
-        push @old_flags, {id => $flag->id, status => '+'};
-
-        INFO('Set `qe-verify` flag to `+`.');
-      }
-
+      next if $flag->name ne 'qe-verify';
+      # Set the flag to `+`. If already '+', it will be non-change.
+      INFO('Set `qe-verify` flag to `+`.');
+      push @old_flags, {id => $flag->id, status => '+'};
       last;
     }
 
