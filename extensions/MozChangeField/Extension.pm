@@ -46,7 +46,6 @@ my @post_instances = (
   Bugzilla::Extension::MozChangeField::Post::SetTrackingSeverityS1->new,
   Bugzilla::Extension::MozChangeField::Post::TypePriSevEditbugs->new,
   Bugzilla::Extension::MozChangeField::Post::RegressedByTypeKeyword->new,
-
 );
 
 our $VERSION = '0.1';
