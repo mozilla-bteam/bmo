@@ -32,12 +32,12 @@ services:
       - HTTP_BACKEND=morbo
       - LOCALCONFIG_ENV=1
       - LOG4PERL_CONFIG_FILE=log4perl-docker.conf
-      - MOJO_LISTEN=http://*:80
-      - PORT=80
+      - MOJO_LISTEN=http://*:8000
+      - PORT=8000
     depends_on:
       - bmo.db
       - memcached
-      - tinyproxy
+      - proxy
 
   bmo.jobqueue:
     build: *bmo_build
@@ -128,12 +128,13 @@ services:
   memcached:
     image: memcached:latest
 
-  tinyproxy:
-    build:
-      context: docker/tinyproxy
-      dockerfile: ./Dockerfile
-    ports:
-      - "1080:1080"
+  proxy:                                                                                                                                                                                 
+    image: haproxytech/haproxy-alpine                                                                                                                                                    
+    volumes:                                                                                                                                                                             
+      - ./docker/proxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro                                                                                                                 
+    ports:                                                                                                                                                                               
+      - "1080:1080"                                                                                                                                                                      
+    restart: always 
 
 volumes:
   bmo-mysql-db:

@@ -41,7 +41,7 @@ services:
 
   externalapi.test:
     image: bmo
-    entrypoint: perl /app/external_test_api.pl daemon -l http://*:80
+    entrypoint: perl /app/external_test_api.pl daemon -l http://*:8000
 
   bmo.db:
     image: mysql:8

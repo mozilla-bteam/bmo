@@ -151,6 +151,7 @@ sub pull_request {
     WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
   });
   foreach my $attachment (@$other_attachments) {
+    next if $attachment->data ne $html_url; # same pr number but different repo so skip it
     $other_bugs{$attachment->bug_id}++;
     my $moved_comment
       = "GitHub pull request attachment was moved to bug "
