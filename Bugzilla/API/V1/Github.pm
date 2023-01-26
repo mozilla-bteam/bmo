@@ -18,19 +18,6 @@ use Bugzilla::User;
 use Digest::SHA qw(hmac_sha256_hex);
 use Mojo::Util  qw(secure_compare);
 
-# Stolen from pylib/mozautomation/mozautomation/commitparser.py from
-# https://hg.mozilla.org/hgcustom/version-control-tools
-use constant BUG_RE => qr/
-  (
-    (?:
-      bug |
-      b= |
-      (?=\b\#?\d{5,}) |
-      ^(?=\d)
-    )
-    (?:\s*\#?)(\d+)(?=\b)
-  )/ix;
-
 sub setup_routes {
   my ($class, $r) = @_;
   $r->post('/github/pull_request')->to('V1::Github#pull_request');
@@ -92,9 +79,8 @@ sub pull_request {
 
   # Find bug ID in the title and see if bug exists and client
   # can see it (non-fatal).
-  $title =~ BUG_RE;
-  my $bug_id = $2;
-  my $bug    = Bugzilla::Bug->new($bug_id);
+  my ($bug_id) = $title =~ /\b[Bb]ug[ -](\d+)\b/;
+  my $bug      = Bugzilla::Bug->new($bug_id);
   if ($bug->{error}) {
     $template->process('global/code-error.html.tmpl',
       {error => 'github_pr_bug_not_found'}, \$message)
@@ -151,7 +137,8 @@ sub pull_request {
     WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
   });
   foreach my $attachment (@$other_attachments) {
-    next if $attachment->data ne $html_url; # same pr number but different repo so skip it
+    # same pr number but different repo so skip it
+    next if $attachment->data ne $html_url;
     $other_bugs{$attachment->bug_id}++;
     my $moved_comment
       = "GitHub pull request attachment was moved to bug "
