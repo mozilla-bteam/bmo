@@ -18,7 +18,7 @@ sub evaluate_create {
   my $timestamp = $args->{timestamp};
   my $dbh       = Bugzilla->dbh;
 
-  return unless @{$bug->regressed_by};
+  return unless (@{$bug->regressed_by} || $bug->has_keyword('regression'));
 
   # When the new bug is created with a value for `regressed by`, we require
   # that the bug has the 'regression' keyword added.
@@ -47,9 +47,9 @@ sub evaluate_change {
   my $changes   = $args->{changes};
   my $dbh       = Bugzilla->dbh;
 
-  return unless (@{$bug->regressed_by} && exists $changes->{regressed_by});
+  return unless (@{$bug->regressed_by} || $bug->has_keyword('regression'));
 
-  # If the user has added a 'regressed by' value to the bug, we then require 
+  # If the user has added a 'regressed by' value to the bug, we then require
   # that the bug has the 'regression' keyword. If for some reason the user
   # also added the keyword, then we can skip this.
   if (!$bug->has_keyword('regression')
