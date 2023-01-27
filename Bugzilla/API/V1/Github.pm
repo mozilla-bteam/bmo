@@ -139,6 +139,7 @@ sub pull_request {
   foreach my $attachment (@$other_attachments) {
     # same pr number but different repo so skip it
     next if $attachment->data ne $html_url;
+
     $other_bugs{$attachment->bug_id}++;
     my $moved_comment
       = "GitHub pull request attachment was moved to bug "
