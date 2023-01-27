@@ -21,12 +21,12 @@ and be automatically redirected to the pull request.
 * Make sure at the bottom that "Active" is checked on.
 * Save the webhook.
 
-Note: Past pull requests will not automatically get a link created in the bug unless an
-edit event occurs on those older pull requests at some point. New pull requests should
-get the link automatically when the pull request is first created.
+Note: Past pull requests will not automatically get a link created in the bug. New pull
+requests should get the link automatically when the pull request is first created.
 
 Additional Note: The API endpoint looks at the pull request title for the bug id so
 make sure the title is formatted correctly to allow the bug id to be determined.
+Examples are, `Bug 1234:`, `Bug - 1234`, `bug 1234`, or `Bug 1234 - `.
 
 **Request**
 
