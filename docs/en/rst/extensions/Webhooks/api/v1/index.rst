@@ -1,5 +1,5 @@
-Core API v1
-===========
+Webhooks API v1
+===============
 
 .. toctree::
 
