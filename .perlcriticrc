@@ -35,6 +35,7 @@ severity = 2
 [-Documentation::RequirePodSections]
 [-ErrorHandling::RequireCarping]
 [-InputOutput::RequireBracedFileHandleWithPrint]
+[-Modules::RequireFilenameMatchesPackage]
 [-Modules::RequireVersionVar]
 [-References::ProhibitDoubleSigils]
 [-RegularExpressions::ProhibitComplexRegexes]
