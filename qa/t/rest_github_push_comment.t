@@ -107,10 +107,10 @@ my $good_signature
 $t->post_ok($url
     . 'rest/github/push_comment'                                           =>
     {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
-    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id/0/id");
+    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id/id");
 
 my $result = $t->tx->res->json;
-my $comment_id = $result->{bugs}->{$bug_id}->[0]->{id};
+my $comment_id = $result->{bugs}->{$bug_id}->{id};
 
 # Make sure comment text matches what is expected
 my $comment_text

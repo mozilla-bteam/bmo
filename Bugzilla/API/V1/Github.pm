@@ -205,10 +205,14 @@ sub push_comment {
 
   my $pusher = $payload->{pusher}->{name};
 
-  # Keep a list of bug ids that have comments added for sending email later
-  # Use a hash so we don't have duplicates. Also store the comment id to
+  # Keep a list of bug ids that need to have comments added. 
+  # We also use this for sending email later.
+  # Use a hash so we don't have duplicates. If multiple commits
+  # reference the same bug ID, then only one comment will be added
+  # with the text combined.
+  # When the comment is created, we will store the comment id to
   # return to the caller.
-  my %bugs_updated;
+  my %update_bugs;
 
   # Create a separate comment for each commit
   foreach my $commit (@{$payload->{commits}}) {
@@ -222,18 +226,35 @@ sub push_comment {
     # Find bug ID in the title and see if bug exists
     my ($bug_id) = $message =~ /\b[Bb]ug[ -](\d+)\b/;
     next if !$bug_id;
-    my $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
-    next if $bug->{error};
-
-    # Create new comment
-    my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
-    $auto_user->{groups}       = [Bugzilla::Group->get_all];
-    $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
-    Bugzilla->set_user($auto_user);
 
     my $comment_text = "Authored by https://github.com/$pusher\n$url\n$message";
 
-    # Append comment
+    $update_bugs{$bug_id} ||= [];
+    push @{$update_bugs{$bug_id}}, {text => $comment_text};
+  }
+
+  # If no bugs were found, then we return an error
+  if (!keys %update_bugs) {
+    return $self->code_error('github_push_comment_bug_not_found');
+  }
+
+  # Set current user to automation so we can add comments to private bugs
+  my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+  $auto_user->{groups}       = [Bugzilla::Group->get_all];
+  $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
+  Bugzilla->set_user($auto_user);
+
+  # Actually create the comments in this loop
+  foreach my $bug_id (keys %update_bugs) {
+    my $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
+    next if $bug->{error};
+
+    # Create a single comment if one or more commits reference the same bug
+    my $comment_text;
+    foreach my $comment (@{$update_bugs{$bug_id}}) {
+      $comment_text .= $comment->{text} . "\n\n";
+    }
+
     $bug->add_comment($comment_text);
 
     # Capture the call to bug->update (which creates the new comment) in
@@ -247,21 +268,14 @@ sub push_comment {
 
     $dbh->bz_commit_transaction();
 
-    $bugs_updated{$bug->id} ||= [];
-    push @{$bugs_updated{$bug->id}}, {id => $new_comment_id, text => $comment_text};
-  }
+    $update_bugs{$bug_id} = {id => $new_comment_id, text => $comment_text};
 
-  if (!keys %bugs_updated) {
-    return $self->code_error('github_push_comment_bug_not_found');
-  }
-
-  # Send mail.
-  foreach my $bug_id (keys %bugs_updated) {
+    # Send mail
     Bugzilla::BugMail::Send($bug_id, {changer => Bugzilla->user});
   }
 
   # Return comment id when successful
-  return $self->render(json => {error => 0, bugs => \%bugs_updated});
+  return $self->render(json => {error => 0, bugs => \%update_bugs});
 }
 
 sub verify_signature {
