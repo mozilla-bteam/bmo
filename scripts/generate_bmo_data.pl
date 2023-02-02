@@ -580,6 +580,7 @@ my %set_params = (
   edit_comments_group  => 'editbugs',
   github_pr_linking_enabled => 1,
   github_pr_signature_secret => 'B1gS3cret!',
+  github_push_comment_enabled => 1,
   insidergroup         => 'core-security-release',
   last_change_time_non_bot_skip_list => 'automation@bmo.tld',
   last_visit_keep_days => '28',

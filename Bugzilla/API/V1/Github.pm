@@ -11,6 +11,7 @@ use Mojo::Base qw( Mojolicious::Controller );
 
 use Bugzilla::Attachment;
 use Bugzilla::Bug;
+use Bugzilla::BugMail;
 use Bugzilla::Constants;
 use Bugzilla::Group;
 use Bugzilla::User;
@@ -21,6 +22,7 @@ use Mojo::Util  qw(secure_compare);
 sub setup_routes {
   my ($class, $r) = @_;
   $r->post('/github/pull_request')->to('V1::Github#pull_request');
+  $r->post('/github/push_comment')->to('V1::Github#push_comment');
 }
 
 sub pull_request {
@@ -162,6 +164,104 @@ sub pull_request {
 
   # Return new attachment id when successful
   return $self->render(json => {error => 0, id => $attachment->id});
+}
+
+sub push_comment {
+  my ($self) = @_;
+  my $template = Bugzilla->template;
+  Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+
+  # Return early if push commenting is not allowed
+  return $self->code_error('github_push_comment_disabled')
+    if !Bugzilla->params->{github_push_comment_enabled};
+
+  # Return early if not a push or ping event
+  my $event = $self->req->headers->header('X-GitHub-Event');
+  if (!$event || ($event ne 'push' && $event ne 'ping')) {
+    return $self->code_error('github_push_comment_not_push');
+  }
+
+  # Verify that signature is correct based on shared secret
+  if (!$self->verify_signature) {
+    return $self->code_error('github_push_comment_mismatch_signatures');
+  }
+
+  # If event is a ping and we passed the signature check
+  # then return success
+  if ($event eq 'ping') {
+    return $self->render(json => {error => 0});
+  }
+
+  # Parse push commit title for bug ID
+  my $payload = $self->req->json;
+  if ( !$payload
+    || !$payload->{pusher}
+    || !$payload->{pusher}->{name}
+    || !$payload->{commits}
+    || !@{$payload->{commits}})
+  {
+    return $self->code_error('github_push_comment_invalid_json');
+  }
+
+  my $pusher = $payload->{pusher}->{name};
+
+  # Keep a list of bug ids that have comments added for sending email later
+  # Use a hash so we don't have duplicates. Also store the comment id to
+  # return to the caller.
+  my %bugs_updated;
+
+  # Create a separate comment for each commit
+  foreach my $commit (@{$payload->{commits}}) {
+    my $message = $commit->{message};
+    my $url     = $commit->{url};
+
+    if (!$url || !$message) {
+      return $self->code_error('github_pr_invalid_json');
+    }
+
+    # Find bug ID in the title and see if bug exists
+    my ($bug_id) = $message =~ /\b[Bb]ug[ -](\d+)\b/;
+    next if !$bug_id;
+    my $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
+    next if $bug->{error};
+
+    # Create new comment
+    my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+    $auto_user->{groups}       = [Bugzilla::Group->get_all];
+    $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
+    Bugzilla->set_user($auto_user);
+
+    my $comment_text = "Authored by https://github.com/$pusher\n$url\n$message";
+
+    # Append comment
+    $bug->add_comment($comment_text);
+
+    # Capture the call to bug->update (which creates the new comment) in
+    # a transaction so we're sure to get the correct comment_id.
+    my $dbh = Bugzilla->dbh;
+    $dbh->bz_start_transaction();
+
+    $bug->update();
+
+    my $new_comment_id = $dbh->bz_last_key('longdescs', 'comment_id');
+
+    $dbh->bz_commit_transaction();
+
+    $bugs_updated{$bug->id} ||= [];
+    push @{$bugs_updated{$bug->id}}, {id => $new_comment_id, text => $comment_text};
+  }
+
+  if (!keys %bugs_updated) {
+    return $self->code_error('github_push_comment_bug_not_found');
+  }
+
+  # Send mail.
+  foreach my $bug_id (keys %bugs_updated) {
+    Bugzilla::BugMail::Send($bug_id, {changer => Bugzilla->user});
+  }
+
+  # Return comment id when successful
+  return $self->render(json => {error => 0, bugs => \%bugs_updated});
 }
 
 sub verify_signature {

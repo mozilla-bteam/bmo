@@ -541,6 +541,25 @@
     The pull request contained a [% terms.bug %] ID that already has an attachment
     with this pull request link.
 
+  [% ELSIF error == "github_push_comment_disabled" %]
+    Adding of comments for Github push commits is not enabled for this site.
+
+  [% ELSIF error == "github_push_comment_not_push" %]
+    The webhook event was not for a GitHub push commit.
+
+  [% ELSIF error == "github_push_comment_mismatch_signatures" %]
+    The webhook signature in the header did not match the expected value.
+
+  [% ELSIF error == "github_push_comment_invalid_json" %]
+    The webhook did not contain valid JSON or expected data was missing.
+
+  [% ELSIF error == "github_push_comment_invalid_event" %]
+    The webhook sent a push event that was not the right type
+    so is therefore being ignored.
+
+  [% ELSIF error == "github_push_comment_bug_not_found" %]
+    The push commit message did not contain a valid [% terms.bug %] ID.
+
   [% ELSE %]
     [%# Try to find hooked error messages %]
     [% error_message = Hook.process("errors") %]
