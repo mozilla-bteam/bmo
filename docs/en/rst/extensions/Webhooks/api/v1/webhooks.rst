@@ -22,8 +22,8 @@ Returns a list of your currently configured webhooks.
 
 .. code-block:: js
 
-   {
-      "webhooks": [
+  {
+    "webhooks": [
       {
         "component": "General",
         "creator": "admin@mozilla.bugs",
@@ -35,7 +35,7 @@ Returns a list of your currently configured webhooks.
         "product": "Firefox",
         "url": "http://server.example.com"
       }
-   ]
+    ]
   }
 
 =========  =======  =================================================
