@@ -8,7 +8,7 @@ Bugzilla can be added as a 'Custom Social Connection'.
 ====================  ===============================================   ======================================================
 Parameter             Example(s)                                        Notes
 ====================  ===============================================   ======================================================
-Name                  BMO=Stage                                         Whatever makes you happy
+Name                  BMO-Stage                                         Whatever makes you happy
 Client ID             aaaaaaaaaaaaaaaaaaaa                              Ask your Bugzilla admin to create one for you.
 Client Secret         aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa          Same as above.
 Authorization URL     https://bugzilla.allizom.org/oauth/authorize      Note the HTTP client must use the correct HOST header.
