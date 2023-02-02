@@ -14,6 +14,7 @@ BEGIN { Bugzilla->extensions }
 
 use QA::Util;
 use Test::More "no_plan";
+use Test::Mojo;
 
 my ($sel, $config) = get_selenium();
 
@@ -158,6 +159,15 @@ $sel->click_ok('link=Queues');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 ok(!$sel->is_text_present('bug.create'), 'bug.create webhook not queued');
 ok(!$sel->is_text_present('bug.comment'), 'bug.comment webhook not queued');
+
+# Test the REST API for Webhooks to make sure webhook retrieval is working properly
+my $t = Test::Mojo->new();
+my $url = Bugzilla->localconfig->urlbase;
+my $api_key = $config->{editbugs_user_api_key};
+my $login   = $config->{editbugs_user_login};
+$t->get_ok($url . 'rest/webhooks/list' => {'x-bugzilla-api-key' => $api_key})
+  ->status_is(200)->json_has('/webhooks')
+  ->json_is('/webhooks/0/creator', $login);
 
 # Turn off webhooks
 set_parameters($sel, {'Webhooks' => {'webhooks_enabled-off' => undef,}});
