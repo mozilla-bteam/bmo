@@ -126,4 +126,45 @@ $t->get_ok(
   ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
+# Multiple commits with the same bug id should create a single comment
+$good_payload = {
+  pusher  => {name => 'foobar'},
+  commits => [{
+    url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
+    message => "Bug $bug_id - First Test Github Push Comment",
+  },
+  {
+    url => 'https://github.com/mozilla-bteam/bmo/commit/zyxwvutsrqponmlkjihgfedcba',
+    message => "Bug $bug_id - Second Test Github Push Comment",
+  }]
+};
+
+$good_signature = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
+
+$t->post_ok($url
+    . 'rest/github/push_comment'                                           =>
+    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
+    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id/id");
+
+$result = $t->tx->res->json;
+$comment_id = $result->{bugs}->{$bug_id}->{id};
+
+# Make sure comment text matches what is expected
+$comment_text
+  = 'Authored by https://github.com/'
+  . $good_payload->{pusher}->{name} . "\n"
+  . $good_payload->{commits}->[0]->{url} . "\n"
+  . $good_payload->{commits}->[0]->{message} . "\n\n"
+  . 'Authored by https://github.com/'
+  . $good_payload->{pusher}->{name} . "\n"
+  . $good_payload->{commits}->[1]->{url} . "\n"
+  . $good_payload->{commits}->[1]->{message};
+
+# Retrieve the new comment from the bug to make sure it was created correctly
+$t->get_ok(
+  $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
+  ->status_is(200)
+  ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
+  ->json_is("/comments/$comment_id/text",    $comment_text);
+
 done_testing();
