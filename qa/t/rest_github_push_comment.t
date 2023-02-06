@@ -16,6 +16,7 @@ use Bugzilla::Logging;
 use Digest::SHA qw(hmac_sha256_hex);
 use Mojo::JSON  qw(encode_json true);
 use QA::Util    qw(get_config);
+use Mojo::Util  qw(dumper);
 use Test::Mojo;
 use Test::More;
 
@@ -125,6 +126,13 @@ $t->get_ok(
   ->status_is(200)
   ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
+
+# Bug should have been closed since it did not have the leave-open keyword
+$t->get_ok($url
+    . "rest/bug/$bug_id?include_fields=id,status,resolution" =>
+    {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
+  ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
+  ->json_is('/bugs/0/resolution', 'FIXED');
 
 # Multiple commits with the same bug id should create a single comment
 $good_payload = {

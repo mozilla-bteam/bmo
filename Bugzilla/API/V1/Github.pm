@@ -257,16 +257,24 @@ sub push_comment {
 
     $bug->add_comment($comment_text);
 
-    # Capture the call to bug->update (which creates the new comment) in
-    # a transaction so we're sure to get the correct comment_id.
+    # If the bug does not have the keywork 'leave-open',
+    # we can also close the bug as RESOLVED/FIXED.
+    if (!$bug->has_keyword('leave-open')
+      && $bug->status ne 'RESOLVED'
+      && $bug->status ne 'VERIFIED')
+    {
+      $bug->set_bug_status('RESOLVED', {resolution => 'FIXED'});
+    }
+
     my $dbh = Bugzilla->dbh;
-    $dbh->bz_start_transaction();
+    $dbh->bz_start_transaction;
 
     $bug->update();
 
-    my $new_comment_id = $dbh->bz_last_key('longdescs', 'comment_id');
+    my $comments = $bug->comments({order => 'newest_to_oldest'});
+    my $new_comment_id = $comments->[0]->id;
 
-    $dbh->bz_commit_transaction();
+    $dbh->bz_commit_transaction;
 
     $update_bugs{$bug_id} = {id => $new_comment_id, text => $comment_text};
 
