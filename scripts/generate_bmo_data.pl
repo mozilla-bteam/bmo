@@ -656,7 +656,19 @@ my @flagtypes = (
     target_type      => 'a',
     cc_list          => '',
     inclusions       => ['']
-  }
+  },
+  {
+    name => 'qe-verify',
+    desc => 'qe-verify: + ➜ request to verify the bug manually
+qe-verify: - ➜ the bug will not/can not be verified manually',
+    is_requestable   => 0,
+    is_requesteeble  => 0,
+    is_multiplicable => 0,
+    grant_group      => '',
+    target_type      => 'b',
+    cc_list          => '',
+    inclusions       => ['Firefox:']
+  },
 );
 
 print "creating flag types...\n";

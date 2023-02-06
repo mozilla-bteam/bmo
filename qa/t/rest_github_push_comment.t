@@ -129,10 +129,13 @@ $t->get_ok(
 
 # Bug should have been closed since it did not have the leave-open keyword
 $t->get_ok($url
-    . "rest/bug/$bug_id?include_fields=id,status,resolution" =>
+    . "rest/bug/$bug_id?include_fields=id,flags,status,resolution" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
-  ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
-  ->json_is('/bugs/0/resolution', 'FIXED');
+  ->json_is('/bugs/0/id', $bug_id)
+  ->json_is('/bugs/0/status', 'RESOLVED')
+  ->json_is('/bugs/0/resolution', 'FIXED')
+  ->json_is('/bugs/0/flags/0/name', 'qe-verify')
+  ->json_is('/bugs/0/flags/0/status', '+');
 
 # Multiple commits with the same bug id should create a single comment
 $good_payload = {
