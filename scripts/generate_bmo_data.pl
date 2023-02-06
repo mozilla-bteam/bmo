@@ -870,6 +870,10 @@ my @keywords = (
     name        => 'triaged',
     description => 'Bugs that have been triaged.'
   },
+  {
+    name        => 'leave-open',
+    description => 'Leave the bug open'
+  }
 );
 
 print "creating keywords...\n";

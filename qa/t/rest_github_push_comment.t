@@ -74,7 +74,7 @@ $t->post_ok($url
   ->json_like('/message' =>
     qr/The webhook did not contain valid JSON or expected data was missing/);
 
-# Missing bug IDs 
+# Missing bug IDs
 $bad_payload = {
   pusher  => {name => 'foobar'},
   commits => [{
@@ -85,9 +85,9 @@ $bad_payload = {
 $bad_signature
   = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
 $t->post_ok($url
-    . 'rest/github/push_comment' => {'X-Hub-Signature-256' => $bad_signature,
-    'X-GitHub-Event' => 'push'} => json => $bad_payload)->status_is(400)
-  ->json_is('/error', 1)
+    . 'rest/github/push_comment'                                          =>
+    {'X-Hub-Signature-256' => $bad_signature, 'X-GitHub-Event' => 'push'} =>
+    json => $bad_payload)->status_is(400)->json_is('/error', 1)
   ->json_like(
   '/message' => qr/The push commit message did not contain a valid bug ID/);
 
@@ -110,7 +110,7 @@ $t->post_ok($url
     {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
     json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id/id");
 
-my $result = $t->tx->res->json;
+my $result     = $t->tx->res->json;
 my $comment_id = $result->{bugs}->{$bug_id}->{id};
 
 # Make sure comment text matches what is expected
@@ -131,33 +131,35 @@ $t->get_ok(
 $t->get_ok($url
     . "rest/bug/$bug_id?include_fields=id,flags,status,resolution" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
-  ->json_is('/bugs/0/id', $bug_id)
-  ->json_is('/bugs/0/status', 'RESOLVED')
-  ->json_is('/bugs/0/resolution', 'FIXED')
-  ->json_is('/bugs/0/flags/0/name', 'qe-verify')
+  ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
+  ->json_is('/bugs/0/resolution',     'FIXED')
+  ->json_is('/bugs/0/flags/0/name',   'qe-verify')
   ->json_is('/bugs/0/flags/0/status', '+');
 
 # Multiple commits with the same bug id should create a single comment
 $good_payload = {
   pusher  => {name => 'foobar'},
-  commits => [{
-    url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
-    message => "Bug $bug_id - First Test Github Push Comment",
-  },
-  {
-    url => 'https://github.com/mozilla-bteam/bmo/commit/zyxwvutsrqponmlkjihgfedcba',
-    message => "Bug $bug_id - Second Test Github Push Comment",
-  }]
+  commits => [
+    {
+      url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
+      message => "Bug $bug_id - First Test Github Push Comment",
+    },
+    {
+      url => 'https://github.com/mozilla-bteam/bmo/commit/zyxwvutsrqponmlkjihgfedcba',
+      message => "Bug $bug_id - Second Test Github Push Comment",
+    }
+  ]
 };
 
-$good_signature = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
+$good_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
 
 $t->post_ok($url
     . 'rest/github/push_comment'                                           =>
     {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
     json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id/id");
 
-$result = $t->tx->res->json;
+$result     = $t->tx->res->json;
 $comment_id = $result->{bugs}->{$bug_id}->{id};
 
 # Make sure comment text matches what is expected
@@ -177,5 +179,63 @@ $t->get_ok(
   ->status_is(200)
   ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
+
+# Create a new bug that has the 'leave-open' keyword set to verify proper behavior
+$new_bug = {
+  product     => 'Firefox',
+  component   => 'General',
+  summary     => 'Test GitHub Push Commenting (leave-open)',
+  type        => 'defect',
+  version     => 'unspecified',
+  severity    => 'blocker',
+  description => 'This is a new test bug',
+  keywords    => ['leave-open'],
+};
+
+$t->post_ok(
+  $url . 'rest/bug' => {'X-Bugzilla-API-Key' => $api_key} => json => $new_bug)
+  ->status_is(200)->json_has('/id');
+
+my $bug_id_2 = $t->tx->res->json->{id};
+
+$good_payload = {
+  pusher  => {name => 'foobar'},
+  commits => [{
+    url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
+    message => "Bug $bug_id_2 - Test Github Push Comment (leave-open)",
+  }]
+};
+
+$good_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
+
+# Post the valid GitHub event to the rest/github/push_comment API endpoint
+$t->post_ok($url
+    . 'rest/github/push_comment'                                           =>
+    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
+    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id_2/id");
+
+$result     = $t->tx->res->json;
+$comment_id = $result->{bugs}->{$bug_id_2}->{id};
+
+# Make sure comment text matches what is expected
+$comment_text
+  = 'Authored by https://github.com/'
+  . $good_payload->{pusher}->{name} . "\n"
+  . $good_payload->{commits}->[0]->{url} . "\n"
+  . $good_payload->{commits}->[0]->{message};
+
+# Retrieve the new comment from the bug to make sure it was created correctly
+$t->get_ok(
+  $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
+  ->status_is(200)
+  ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
+  ->json_is("/comments/$comment_id/text",    $comment_text);
+
+# Bug should have stayed open since the leave-open keyword was set
+$t->get_ok($url
+    . "rest/bug/$bug_id_2?include_fields=id,flags,status,resolution" =>
+    {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
+  ->json_is('/bugs/0/id', $bug_id_2)->json_is('/bugs/0/status', 'CONFIRMED');
 
 done_testing();
