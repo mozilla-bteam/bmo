@@ -873,7 +873,7 @@ my @keywords = (
   {
     name        => 'leave-open',
     description => 'Leave the bug open'
-  }
+  },
 );
 
 print "creating keywords...\n";
