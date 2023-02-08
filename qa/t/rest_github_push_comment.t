@@ -60,9 +60,10 @@ $t->post_ok($url
 
 # Invalid JSON
 my $bad_payload = {
-  ref     => 'refs/heads/master',
-  pusher  => {name => 'foobar'},
-  commits => [{
+  ref        => 'refs/heads/master',
+  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  pusher     => {name      => 'foobar'},
+  commits    => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
   }]
 };
@@ -77,9 +78,10 @@ $t->post_ok($url
 
 # Missing bug IDs
 $bad_payload = {
-  ref     => 'refs/heads/master',
-  pusher  => {name => 'foobar'},
-  commits => [{
+  ref        => 'refs/heads/master',
+  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  pusher     => {name      => 'foobar'},
+  commits    => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => 'Test Github Push Comment',
   }]
@@ -95,9 +97,10 @@ $t->post_ok($url
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads
 my $good_payload = {
-  ref     => 'refs/heads/releases_v110',
-  pusher  => {name => 'foobar'},
-  commits => [{
+  ref        => 'refs/heads/releases_v110',
+  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  pusher     => {name      => 'foobar'},
+  commits    => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => "Bug $bug_id - Test Github Push Comment",
   }]
@@ -131,20 +134,23 @@ $t->get_ok(
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
 # Bug should have been closed since it did not have the leave-open keyword
+# and it should have the status-firefox110 flag set to fixed since it was 
+# under the releases_v110 branch.
 $t->get_ok($url
     . "rest/bug/$bug_id?include_fields=id,flags,status,resolution,_custom" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
   ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
-  ->json_is('/bugs/0/resolution',     'FIXED')
+  ->json_is('/bugs/0/resolution',           'FIXED')
   ->json_is('/bugs/0/cf_status_firefox110', 'fixed')
-  ->json_is('/bugs/0/flags/0/name',   'qe-verify')
-  ->json_is('/bugs/0/flags/0/status', '+');
+  ->json_is('/bugs/0/flags/0/name',         'qe-verify')
+  ->json_is('/bugs/0/flags/0/status',       '+');
 
 # Multiple commits with the same bug id should create a single comment
 $good_payload = {
-  ref     => 'refs/heads/master',
-  pusher  => {name => 'foobar'},
-  commits => [
+  ref        => 'refs/heads/master',
+  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  pusher     => {name      => 'foobar'},
+  commits    => [
     {
       url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
       message => "Bug $bug_id - First Test Github Push Comment",
@@ -204,9 +210,10 @@ $t->post_ok(
 my $bug_id_2 = $t->tx->res->json->{id};
 
 $good_payload = {
-  ref     => 'refs/heads/master',
-  pusher  => {name => 'foobar'},
-  commits => [{
+  ref        => 'refs/heads/master',
+  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  pusher     => {name      => 'foobar'},
+  commits    => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => "Bug $bug_id_2 - Test Github Push Comment (leave-open)",
   }]
@@ -243,5 +250,59 @@ $t->get_ok($url
     . "rest/bug/$bug_id_2?include_fields=id,flags,status,resolution" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
   ->json_is('/bugs/0/id', $bug_id_2)->json_is('/bugs/0/status', 'CONFIRMED');
+
+# Remove the leave-open keyword so we can run another test
+$t->put_ok(
+  $url . "rest/bug/$bug_id_2" => {'X-Bugzilla-API-Key' => $api_key} => json => {keywords => {remove => ['leave-open']}})
+  ->status_is(200)->json_has('/bugs/0/changes/keywords');
+
+# This time we will test with the master branch and
+# it should add status-firefox111 instead of 110
+$good_payload = {
+  ref        => 'refs/heads/master',
+  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  pusher     => {name      => 'foobar'},
+  commits    => [{
+    url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
+    message => "Bug $bug_id_2 - Test Github Push Comment (close bug)",
+  }]
+};
+
+$good_signature
+  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
+
+# Post the valid GitHub event to the rest/github/push_comment API endpoint
+$t->post_ok($url
+    . 'rest/github/push_comment'                                           =>
+    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
+    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id_2/id");
+
+$result     = $t->tx->res->json;
+$comment_id = $result->{bugs}->{$bug_id_2}->{id};
+
+# Make sure comment text matches what is expected
+$comment_text
+  = 'Authored by https://github.com/'
+  . $good_payload->{pusher}->{name} . "\n"
+  . $good_payload->{commits}->[0]->{url} . "\n"
+  . $good_payload->{commits}->[0]->{message};
+
+# Retrieve the new comment from the bug to make sure it was created correctly
+$t->get_ok(
+  $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
+  ->status_is(200)
+  ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
+  ->json_is("/comments/$comment_id/text",    $comment_text);
+
+# Bug should have been closed since it did not have the leave-open keyword
+# and it should also have the status-firefox111 flag set to fixed.
+$t->get_ok($url
+    . "rest/bug/$bug_id_2?include_fields=id,flags,status,resolution,_custom" =>
+    {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
+  ->json_is('/bugs/0/id', $bug_id_2)->json_is('/bugs/0/status', 'RESOLVED')
+  ->json_is('/bugs/0/resolution',           'FIXED')
+  ->json_is('/bugs/0/cf_status_firefox111', 'fixed')
+  ->json_is('/bugs/0/flags/0/name',         'qe-verify')
+  ->json_is('/bugs/0/flags/0/status',       '+');
 
 done_testing();
