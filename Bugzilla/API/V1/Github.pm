@@ -16,6 +16,9 @@ use Bugzilla::Constants;
 use Bugzilla::Group;
 use Bugzilla::User;
 
+use Bugzilla::Extension::TrackingFlags::Flag;
+use Bugzilla::Extension::TrackingFlags::Flag::Bug;
+
 use Digest::SHA qw(hmac_sha256_hex);
 use Mojo::Util  qw(secure_compare);
 
@@ -195,15 +198,22 @@ sub push_comment {
   # Parse push commit title for bug ID
   my $payload = $self->req->json;
   if ( !$payload
+    || !$payload->{ref}
     || !$payload->{pusher}
     || !$payload->{pusher}->{name}
-    || !$payload->{commits}
-    || !@{$payload->{commits}})
+    || !$payload->{commits})
   {
     return $self->code_error('github_push_comment_invalid_json');
   }
 
-  my $pusher = $payload->{pusher}->{name};
+  my $pusher  = $payload->{pusher}->{name};
+  my $ref     = $payload->{ref};
+  my $commits = $payload->{commits};
+
+  # Return success early if there are no commits or the ref is not a branch
+  if (!@{$commits} || $ref !~ /refs\/heads\//) {
+    return $self->render(json => {error => 0});
+  }
 
   # Keep a list of bug ids that need to have comments added. 
   # We also use this for sending email later.
@@ -215,7 +225,7 @@ sub push_comment {
   my %update_bugs;
 
   # Create a separate comment for each commit
-  foreach my $commit (@{$payload->{commits}}) {
+  foreach my $commit (@{$commits}) {
     my $message = $commit->{message};
     my $url     = $commit->{url};
 
@@ -243,6 +253,9 @@ sub push_comment {
   $auto_user->{groups}       = [Bugzilla::Group->get_all];
   $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
   Bugzilla->set_user($auto_user);
+
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_start_transaction;
 
   # Actually create the comments in this loop
   foreach my $bug_id (keys %update_bugs) {
@@ -290,10 +303,32 @@ sub push_comment {
           );
         }
       }
-    }
 
-    my $dbh = Bugzilla->dbh;
-    $dbh->bz_start_transaction;
+      # Update the status flag to 'fixed' if one exists for the current branch
+      # Currently tailored for mozilla-mobile/firefox-android
+      $ref =~ /refs\/heads\/releases_v(\d+)/;
+      if (my $version = $1) {
+        my $status_field = 'cf_status_firefox' . $version;
+        my $flag
+          = Bugzilla::Extension::TrackingFlags::Flag->new({name => $status_field});
+        if ($flag && $bug->$status_field ne 'fixed') {
+          foreach my $value (@{$flag->values}) {
+            next if $value->value ne 'fixed';
+            last if !$flag->can_set_value($value->value);
+
+            Bugzilla::Extension::TrackingFlags::Flag::Bug->create({
+              tracking_flag_id => $flag->flag_id,
+              bug_id           => $bug->id,
+              value            => $value->value,
+            });
+
+            # Add the name/value pair to the bug object
+            $bug->{$flag->name} = $value->value;
+            last;
+          }
+        }
+      }
+    }
 
     $bug->update();
 

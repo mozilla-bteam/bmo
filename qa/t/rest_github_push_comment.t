@@ -60,6 +60,7 @@ $t->post_ok($url
 
 # Invalid JSON
 my $bad_payload = {
+  ref     => 'refs/heads/master',
   pusher  => {name => 'foobar'},
   commits => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
@@ -76,6 +77,7 @@ $t->post_ok($url
 
 # Missing bug IDs
 $bad_payload = {
+  ref     => 'refs/heads/master',
   pusher  => {name => 'foobar'},
   commits => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
@@ -93,6 +95,7 @@ $t->post_ok($url
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads
 my $good_payload = {
+  ref     => 'refs/heads/releases_v110',
   pusher  => {name => 'foobar'},
   commits => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
@@ -129,15 +132,17 @@ $t->get_ok(
 
 # Bug should have been closed since it did not have the leave-open keyword
 $t->get_ok($url
-    . "rest/bug/$bug_id?include_fields=id,flags,status,resolution" =>
+    . "rest/bug/$bug_id?include_fields=id,flags,status,resolution,_custom" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
   ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
   ->json_is('/bugs/0/resolution',     'FIXED')
+  ->json_is('/bugs/0/cf_status_firefox110', 'fixed')
   ->json_is('/bugs/0/flags/0/name',   'qe-verify')
   ->json_is('/bugs/0/flags/0/status', '+');
 
 # Multiple commits with the same bug id should create a single comment
 $good_payload = {
+  ref     => 'refs/heads/master',
   pusher  => {name => 'foobar'},
   commits => [
     {
@@ -199,6 +204,7 @@ $t->post_ok(
 my $bug_id_2 = $t->tx->res->json->{id};
 
 $good_payload = {
+  ref     => 'refs/heads/master',
   pusher  => {name => 'foobar'},
   commits => [{
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',

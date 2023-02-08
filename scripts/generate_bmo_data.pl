@@ -22,6 +22,11 @@ use Bugzilla::Keyword;
 use Bugzilla::Config qw(:admin);
 use Bugzilla::User::Setting;
 use Bugzilla::Status;
+
+use Bugzilla::Extension::TrackingFlags::Flag;
+use Bugzilla::Extension::TrackingFlags::Flag::Value;
+use Bugzilla::Extension::TrackingFlags::Flag::Visibility;
+
 use Getopt::Long qw( :config gnu_getopt );
 
 BEGIN { Bugzilla->extensions }
@@ -880,6 +885,61 @@ print "creating keywords...\n";
 foreach my $kw (@keywords) {
   next if new Bugzilla::Keyword({name => $kw->{name}});
   Bugzilla::Keyword->create($kw);
+}
+
+
+###########################################################
+# Create Tracking Flags
+###########################################################
+
+print "creating tracking flags...\n";
+my @tracking_flags = (
+  {
+    name        => 'cf_status_firefox110',
+    description => 'status-firefox110',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+);
+
+my $setter_group = Bugzilla::Group->new({name => 'editbugs'});
+
+foreach my $flag_data (@tracking_flags) {
+  my $values   = delete $flag_data->{values};
+  my $products = delete $flag_data->{products};
+
+  my $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->create($flag_data);
+
+  # Add values for the new tracking flag
+  my $sortkey = 0;
+  foreach my $value (@{$values}) {
+    $sortkey += 1;
+
+    my $value_data = {
+      value           => $value,
+      setter_group_id => $setter_group->id,
+      is_active       => 1,
+      sortkey         => $sortkey,
+      comment          => '',
+      tracking_flag_id => $flag_obj->flag_id,
+    };
+
+    Bugzilla::Extension::TrackingFlags::Flag::Value->create($value_data);
+  }
+
+  # Make if visible to the products listed
+  foreach my $product (@{$products}) {
+    my $product_obj = Bugzilla::Product->new({name => $product});
+    Bugzilla::Extension::TrackingFlags::Flag::Visibility->create({
+      tracking_flag_id => $flag_obj->flag_id,
+      product_id       => $product_obj->id,
+      component_id     => undef,
+    });
+  }
 }
 
 print "installation and configuration complete!\n";
