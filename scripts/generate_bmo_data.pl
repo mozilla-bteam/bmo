@@ -904,6 +904,17 @@ my @tracking_flags = (
     values      => ['?', 'affected', 'unaffected', 'fixed', 'wontfix'],
     products    => ['Firefox'],
   },
+  {
+    name        => 'cf_status_firefox111',
+    description => 'status-firefox111',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+
 );
 
 my $setter_group = Bugzilla::Group->new({name => 'editbugs'});

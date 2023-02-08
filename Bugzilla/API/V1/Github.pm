@@ -15,6 +15,7 @@ use Bugzilla::BugMail;
 use Bugzilla::Constants;
 use Bugzilla::Group;
 use Bugzilla::User;
+use Bugzilla::Util qw(fetch_product_versions);
 
 use Bugzilla::Extension::TrackingFlags::Flag;
 use Bugzilla::Extension::TrackingFlags::Flag::Bug;
@@ -44,7 +45,7 @@ sub pull_request {
   }
 
   # Verify that signature is correct based on shared secret
-  if (!$self->verify_signature) {
+  if (!$self->_verify_signature) {
     return $self->code_error('github_pr_mismatch_signatures');
   }
 
@@ -85,7 +86,7 @@ sub pull_request {
   # Find bug ID in the title and see if bug exists and client
   # can see it (non-fatal).
   my ($bug_id) = $title =~ /\b[Bb]ug[ -](\d+)\b/;
-  my $bug      = Bugzilla::Bug->new($bug_id);
+  my $bug = Bugzilla::Bug->new($bug_id);
   if ($bug->{error}) {
     $template->process('global/code-error.html.tmpl',
       {error => 'github_pr_bug_not_found'}, \$message)
@@ -142,6 +143,7 @@ sub pull_request {
     WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
   });
   foreach my $attachment (@$other_attachments) {
+
     # same pr number but different repo so skip it
     next if $attachment->data ne $html_url;
 
@@ -185,7 +187,7 @@ sub push_comment {
   }
 
   # Verify that signature is correct based on shared secret
-  if (!$self->verify_signature) {
+  if (!$self->_verify_signature) {
     return $self->code_error('github_push_comment_mismatch_signatures');
   }
 
@@ -199,6 +201,8 @@ sub push_comment {
   my $payload = $self->req->json;
   if ( !$payload
     || !$payload->{ref}
+    || !$payload->{repository}
+    || !$payload->{repository}->{full_name}
     || !$payload->{pusher}
     || !$payload->{pusher}->{name}
     || !$payload->{commits})
@@ -206,16 +210,17 @@ sub push_comment {
     return $self->code_error('github_push_comment_invalid_json');
   }
 
-  my $pusher  = $payload->{pusher}->{name};
-  my $ref     = $payload->{ref};
-  my $commits = $payload->{commits};
+  my $ref        = $payload->{ref};
+  my $repository = $payload->{repository}->{full_name};
+  my $pusher     = $payload->{pusher}->{name};
+  my $commits    = $payload->{commits};
 
   # Return success early if there are no commits or the ref is not a branch
   if (!@{$commits} || $ref !~ /refs\/heads\//) {
     return $self->render(json => {error => 0});
   }
 
-  # Keep a list of bug ids that need to have comments added. 
+  # Keep a list of bug ids that need to have comments added.
   # We also use this for sending email later.
   # Use a hash so we don't have duplicates. If multiple commits
   # reference the same bug ID, then only one comment will be added
@@ -306,33 +311,12 @@ sub push_comment {
 
       # Update the status flag to 'fixed' if one exists for the current branch
       # Currently tailored for mozilla-mobile/firefox-android
-      $ref =~ /refs\/heads\/releases_v(\d+)/;
-      if (my $version = $1) {
-        my $status_field = 'cf_status_firefox' . $version;
-        my $flag
-          = Bugzilla::Extension::TrackingFlags::Flag->new({name => $status_field});
-        if ($flag && $bug->$status_field ne 'fixed') {
-          foreach my $value (@{$flag->values}) {
-            next if $value->value ne 'fixed';
-            last if !$flag->can_set_value($value->value);
-
-            Bugzilla::Extension::TrackingFlags::Flag::Bug->create({
-              tracking_flag_id => $flag->flag_id,
-              bug_id           => $bug->id,
-              value            => $value->value,
-            });
-
-            # Add the name/value pair to the bug object
-            $bug->{$flag->name} = $value->value;
-            last;
-          }
-        }
-      }
+      $self->_set_status_flag($bug, $ref) if $repository eq 'mozilla-mobile/firefox-android';
     }
 
     $bug->update();
 
-    my $comments = $bug->comments({order => 'newest_to_oldest'});
+    my $comments       = $bug->comments({order => 'newest_to_oldest'});
     my $new_comment_id = $comments->[0]->id;
 
     $dbh->bz_commit_transaction;
@@ -347,13 +331,58 @@ sub push_comment {
   return $self->render(json => {error => 0, bugs => \%update_bugs});
 }
 
-sub verify_signature {
+sub _verify_signature {
   my ($self)             = @_;
   my $payload            = $self->req->body;
   my $secret             = Bugzilla->params->{github_pr_signature_secret};
   my $received_signature = $self->req->headers->header('X-Hub-Signature-256');
   my $expected_signature = 'sha256=' . hmac_sha256_hex($payload, $secret);
   return secure_compare($expected_signature, $received_signature) ? 1 : 0;
+}
+
+sub _set_status_flag {
+  my ($self, $bug, $ref) = @_;
+
+  use Bugzilla::Logging;
+  DEBUG("ref: $ref");
+
+  my ($branch) = $ref =~ /refs\/heads\/(.*)$/;
+  return if !$branch;
+
+  DEBUG("branch: $branch");
+
+  my $version;
+  if ($branch eq 'main' || $branch eq 'master') {
+    my $versions  = fetch_product_versions('firefox');
+    return if (!%$versions || !exists $versions->{FIREFOX_NIGHTLY});
+    ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
+  }
+  else {
+    ($version) = $branch =~ /^releases_v(\d+)$/;
+  }
+  return if !$version;
+
+  DEBUG("version: $version");
+
+  my $status_field = 'cf_status_firefox' . $version;
+  my $flag = Bugzilla::Extension::TrackingFlags::Flag->new({name => $status_field});
+
+  return if (!$flag || $bug->$status_field eq 'fixed');
+
+  foreach my $value (@{$flag->values}) {
+    next if $value->value ne 'fixed';
+    last if !$flag->can_set_value($value->value);
+
+    Bugzilla::Extension::TrackingFlags::Flag::Bug->create({
+      tracking_flag_id => $flag->flag_id,
+      bug_id           => $bug->id,
+      value            => $value->value,
+    });
+
+    # Add the name/value pair to the bug object
+    $bug->{$flag->name} = $value->value;
+    last;
+  }
 }
 
 1;
