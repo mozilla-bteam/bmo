@@ -2,6 +2,7 @@
 BMO: bugzilla.mozilla.org
 =========================
 
+# TEST CHANGE
 
 BMO is Mozilla's highly customized version of Bugzilla.
 
