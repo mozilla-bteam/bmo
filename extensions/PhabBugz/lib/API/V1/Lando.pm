@@ -18,14 +18,46 @@ use Bugzilla::Group;
 
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::TrackingFlags::Flag;
-use Bugzilla::Extension::TrackingFlags::Flag::Bug;
 
 our %api_field_names = reverse %{Bugzilla::Bug::FIELD_MAP()};
 $api_field_names{'bug_group'} = 'groups';
 
 sub setup_routes {
   my ($class, $r) = @_;
+  $r->get('/lando/uplift/:id')->to('PhabBugz::API::V1::Lando#get');
   $r->put('/lando/uplift')->to('PhabBugz::API::V1::Lando#uplift');
+}
+
+sub get {
+  my ($self) = @_;
+  Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+
+  my $user = $self->bugzilla->login;
+  $user->id || return $self->user_error('login_required');
+
+  # Must be lando automation user to access this endpoint
+  ($user->login eq LANDO_AUTOMATION_USER)
+    || return $self->user_error('login_required');
+
+  # Upgrade Lando user permissions to make changes to any bug
+  $user->{groups}       = [Bugzilla::Group->get_all];
+  $user->{bless_groups} = [Bugzilla::Group->get_all];
+
+  my $id = $self->param('id');
+  defined $id || ThrowCodeError('param_required', {param => 'id'});
+
+  my $bug = Bugzilla::Bug->check($id);
+
+  my $result = {id => $bug->id, whiteboard => $bug->status_whiteboard,};
+
+  my $flags = Bugzilla::Extension::TrackingFlags::Flag->match(
+    {bug_id => $bug->id, is_active => 1});
+  foreach my $flag (@{$flags}) {
+    my $flag_name = $flag->name;
+    $result->{$flag_name} = $bug->$flag_name;
+  }
+
+  $self->render(json => $result);
 }
 
 sub uplift {
@@ -86,10 +118,8 @@ sub uplift {
       my $api_field = $api_field_names{$field} || $field;
       $change->[0] = '' if !defined $change->[0];
       $change->[1] = '' if !defined $change->[1];
-      $hash{changes}->{$api_field} = {
-        removed => $change->[0],
-        added   => $change->[1],
-      };
+      $hash{changes}->{$api_field}
+        = {removed => $change->[0], added => $change->[1],};
     }
     push @result, \%hash;
   }

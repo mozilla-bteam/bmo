@@ -43,10 +43,17 @@ $t->post_ok($url
 
 my $bug_id = $t->tx->res->json->{id};
 
-# Make sure Lando user cannot see bug
+# Make sure Lando user cannot see bug through the normal API
 $t->get_ok(
   $url . "rest/bug/$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
   ->status_is(401);
+
+# Make sure the Lando user can see a limit amount of bug data through the custom endpoint
+$t->get_ok(
+  $url . "rest/lando/uplift/$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
+  ->status_is(200)->json_is('/id', $bug_id)
+  ->json_is('/whiteboard',           $new_bug->{status_whiteboard})
+  ->json_is('/cf_status_firefox111', '---');
 
 # As Lando user, update the bug and clear checkin needed text from whiteboard and set the
 # status-firefox111 flag. This should work even if Lando cannot see the bug.
@@ -57,5 +64,10 @@ $t->put_ok($url
     $update)->status_is(200)->json_is('/bugs/0/id', $bug_id)
   ->json_is('/bugs/0/changes/cf_status_firefox111/added', 'fixed')
   ->json_is('/bugs/0/changes/whiteboard/added',           '');
+
+$t->get_ok(
+  $url . "rest/lando/uplift/$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
+  ->status_is(200)->json_is('/id', $bug_id)->json_is('/whiteboard', '')
+  ->json_is('/cf_status_firefox111', 'fixed');
 
 done_testing();
