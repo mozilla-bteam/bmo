@@ -48,13 +48,14 @@ sub get {
 
   my $bug = Bugzilla::Bug->check($id);
 
-  my $result = {id => $bug->id, whiteboard => $bug->status_whiteboard,};
+  my $result
+    = {bugs => [{id => $bug->id, whiteboard => $bug->status_whiteboard,},]};
 
   my $flags = Bugzilla::Extension::TrackingFlags::Flag->match(
     {bug_id => $bug->id, is_active => 1});
   foreach my $flag (@{$flags}) {
     my $flag_name = $flag->name;
-    $result->{$flag_name} = $bug->$flag_name;
+    $result->{bugs}->[0]->{$flag_name} = $bug->$flag_name;
   }
 
   $self->render(json => $result);
