@@ -48,27 +48,43 @@ $t->get_ok(
   $url . "rest/bug/$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
   ->status_is(401);
 
-# Make sure the Lando user can see a limit amount of bug data through the custom endpoint
+# Make sure the Lando user can see a limited amount of bug data through the custom endpoint
 $t->get_ok(
   $url . "rest/lando/uplift/$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
   ->status_is(200)->json_is('/bugs/0/id', $bug_id)
-  ->json_is('/bugs/0/whiteboard',           $new_bug->{status_whiteboard})
+  ->json_is('/bugs/0/whiteboard', $new_bug->{status_whiteboard})
   ->json_is('/bugs/0/cf_status_firefox111', '---');
 
 # As Lando user, update the bug and clear checkin needed text from whiteboard and set the
 # status-firefox111 flag. This should work even if Lando cannot see the bug.
-my $update
-  = {ids => [$bug_id], 'whiteboard' => '', 'cf_status_firefox111' => 'fixed'};
+
+# First try with too many parameters. Should fail.
+my $update = {
+  ids                    => [$bug_id],
+  'whiteboard'           => '',
+  'cf_status_firefox111' => 'fixed',
+  status                 => 'ASSIGNED'
+};
+$t->put_ok($url
+    . 'rest/lando/uplift' => {'X-Bugzilla-API-Key' => $lando_api_key} => json =>
+    $update)->status_is(400)
+  ->json_like('/message',
+  qr/More parameters were provided that what are allowed/);
+
+# This one should succeed since we only pass in what is allowed
+delete $update->{status};
 $t->put_ok($url
     . 'rest/lando/uplift' => {'X-Bugzilla-API-Key' => $lando_api_key} => json =>
     $update)->status_is(200)->json_is('/bugs/0/id', $bug_id)
   ->json_is('/bugs/0/changes/cf_status_firefox111/added', 'fixed')
-  ->json_is('/bugs/0/changes/whiteboard/added',           '');
+  ->json_is('/bugs/0/changes/whiteboard/added', '');
 
+# Retrieve the updated bug and verify that Lando can still see it. Also use the query params method
+# of specifying the bug id(s).
 $t->get_ok(
-  $url . "rest/lando/uplift/$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
+  $url . "rest/lando/uplift?id=$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
   ->status_is(200)->json_is('/bugs/0/id', $bug_id)
-  ->json_is('/bugs/0/whiteboard',           '')
+  ->json_is('/bugs/0/whiteboard', '')
   ->json_is('/bugs/0/cf_status_firefox111', 'fixed');
 
 done_testing();

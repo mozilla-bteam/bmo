@@ -24,8 +24,9 @@ $api_field_names{'bug_group'} = 'groups';
 
 sub setup_routes {
   my ($class, $r) = @_;
+  $r->get('/lando/uplift')->to('PhabBugz::API::V1::Lando#get');
   $r->get('/lando/uplift/:id')->to('PhabBugz::API::V1::Lando#get');
-  $r->put('/lando/uplift')->to('PhabBugz::API::V1::Lando#uplift');
+  $r->put('/lando/uplift')->to('PhabBugz::API::V1::Lando#update');
 }
 
 sub get {
@@ -43,25 +44,28 @@ sub get {
   $user->{groups}       = [Bugzilla::Group->get_all];
   $user->{bless_groups} = [Bugzilla::Group->get_all];
 
-  my $id = $self->param('id');
-  defined $id || ThrowCodeError('param_required', {param => 'id'});
+  my @ids = split /,/, $self->param('id');
+  @ids || ThrowCodeError('param_required', {param => 'id'});
 
-  my $bug = Bugzilla::Bug->check($id);
+  my @results;
+  foreach my $id (@ids) {
+    my $bug = Bugzilla::Bug->check($id);
 
-  my $result
-    = {bugs => [{id => $bug->id, whiteboard => $bug->status_whiteboard,},]};
+    my $result = {id => $bug->id, whiteboard => $bug->status_whiteboard};
 
-  my $flags = Bugzilla::Extension::TrackingFlags::Flag->match(
-    {bug_id => $bug->id, is_active => 1});
-  foreach my $flag (@{$flags}) {
-    my $flag_name = $flag->name;
-    $result->{bugs}->[0]->{$flag_name} = $bug->$flag_name;
+    my $flags = Bugzilla::Extension::TrackingFlags::Flag->match(
+      {bug_id => $bug->id, is_active => 1});
+    foreach my $flag (@{$flags}) {
+      my $flag_name = $flag->name;
+      $result->{$flag_name} = $bug->$flag_name;
+    }
+    push @results, $result;
   }
 
-  $self->render(json => $result);
+  $self->render(json => {bugs => \@results});
 }
 
-sub uplift {
+sub update {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
@@ -80,21 +84,28 @@ sub uplift {
   $params = Bugzilla::Bug::map_fields($params);
 
   my $ids = delete $params->{ids};
-  defined $ids || ThrowCodeError('param_required', {param => 'ids'});
+  defined $ids || return $self->code_error('param_required', {param => 'ids'});
 
   my @bugs = map { Bugzilla::Bug->check($_) } @$ids;
 
   # Strictly prohibit the lando user from changing any fields
   # other than whiteboard and status flags
+  my $allowed_params = {};
   foreach my $field (keys %{$params}) {
-    if ($field ne 'status_whiteboard' && $field !~ /^cf_status_firefox/) {
-      delete $params->{$field};
+    if ($field eq 'status_whiteboard' || $field =~ /^cf_status_firefox/) {
+      $allowed_params->{$field} = delete $params->{$field};
     }
+  }
+
+  # If any additional parameters were passed then we will throw an error
+  if (%{$params}) {
+    return $self->code_error('too_many_params',
+      {allowed_params => ['id', 'whiteboard', 'cf_status_firefox*']});
   }
 
   # Update each bug
   foreach my $bug (@bugs) {
-    $bug->set_all($params);
+    $bug->set_all($allowed_params);
   }
 
   my %all_changes;
