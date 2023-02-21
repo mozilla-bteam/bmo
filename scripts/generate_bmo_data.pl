@@ -187,6 +187,14 @@ my @users = (
     password => '*',
     api_key  => '4fut0aBEfW260ULXEP1pvOqj7lwnhHoSB16wfpLP'
   },
+  {
+    login    => 'lobot@bmo.tld',
+    realname => 'Lando Automation',
+    password => 'password123456789!',
+    api_key  => 'hqPlbNFAtbGhBC7O68DfMBNE5wu7e18Ssviatizl'
+  },
+
+
   map { {login => $_, realname => (split(/@/, $_, 2))[0], password => '*',} }
     map {
     map {@$_}
@@ -863,6 +871,71 @@ print "creating keywords...\n";
 foreach my $kw (@keywords) {
   next if new Bugzilla::Keyword({name => $kw->{name}});
   Bugzilla::Keyword->create($kw);
+}
+
+###########################################################
+# Create Tracking Flags
+###########################################################
+
+print "creating tracking flags...\n";
+my @tracking_flags = (
+  {
+    name        => 'cf_status_firefox110',
+    description => 'status-firefox110',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_status_firefox111',
+    description => 'status-firefox111',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+
+);
+
+my $setter_group = Bugzilla::Group->new({name => 'editbugs'});
+
+foreach my $flag_data (@tracking_flags) {
+  my $values   = delete $flag_data->{values};
+  my $products = delete $flag_data->{products};
+
+  my $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->create($flag_data);
+
+  # Add values for the new tracking flag
+  my $sortkey = 0;
+  foreach my $value (@{$values}) {
+    $sortkey += 1;
+
+    my $value_data = {
+      value           => $value,
+      setter_group_id => $setter_group->id,
+      is_active       => 1,
+      sortkey         => $sortkey,
+      comment          => '',
+      tracking_flag_id => $flag_obj->flag_id,
+    };
+
+    Bugzilla::Extension::TrackingFlags::Flag::Value->create($value_data);
+  }
+
+  # Make if visible to the products listed
+  foreach my $product (@{$products}) {
+    my $product_obj = Bugzilla::Product->new({name => $product});
+    Bugzilla::Extension::TrackingFlags::Flag::Visibility->create({
+      tracking_flag_id => $flag_obj->flag_id,
+      product_id       => $product_obj->id,
+      component_id     => undef,
+    });
+  }
 }
 
 print "installation and configuration complete!\n";
