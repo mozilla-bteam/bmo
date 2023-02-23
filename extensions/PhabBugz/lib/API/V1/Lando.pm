@@ -51,7 +51,11 @@ sub get {
   foreach my $id (@ids) {
     my $bug = Bugzilla::Bug->check($id);
 
-    my $result = {id => $bug->id, whiteboard => $bug->status_whiteboard};
+    my $result = {
+      id         => $bug->id,
+      whiteboard => $bug->status_whiteboard,
+      keywords   => [map { $_->name } @{$bug->keyword_objects}]
+    };
 
     my $flags = Bugzilla::Extension::TrackingFlags::Flag->match(
       {bug_id => $bug->id, is_active => 1});

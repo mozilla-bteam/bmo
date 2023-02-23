@@ -865,6 +865,10 @@ my @keywords = (
     name        => 'triaged',
     description => 'Bugs that have been triaged.'
   },
+  {
+    name        => 'leave-open',
+    description => 'Instructs merge tools to leave the bug open when the patches are merged to mozilla-central.'
+  }
 );
 
 print "creating keywords...\n";

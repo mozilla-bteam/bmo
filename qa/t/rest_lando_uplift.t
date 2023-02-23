@@ -35,6 +35,7 @@ my $new_bug = {
   description       => 'This is a new test bug',
   groups            => ['Master'],
   status_whiteboard => '[checkin-needed-mozilla-central]',
+  keywords          => ['leave-open'],
 };
 
 $t->post_ok($url
@@ -53,7 +54,8 @@ $t->get_ok(
   $url . "rest/lando/uplift/$bug_id" => {'X-Bugzilla-API-Key' => $lando_api_key})
   ->status_is(200)->json_is('/bugs/0/id', $bug_id)
   ->json_is('/bugs/0/whiteboard', $new_bug->{status_whiteboard})
-  ->json_is('/bugs/0/cf_status_firefox111', '---');
+  ->json_is('/bugs/0/cf_status_firefox111', '---')
+  ->json_is('/bugs/0/keywords/0', 'leave-open');
 
 # As Lando user, update the bug and clear checkin needed text from whiteboard and set the
 # status-firefox111 flag. This should work even if Lando cannot see the bug.
