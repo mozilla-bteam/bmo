@@ -27,6 +27,7 @@ sub setup_routes {
   $r->get('/lando/uplift')->to('PhabBugz::API::V1::Lando#get');
   $r->get('/lando/uplift/:id')->to('PhabBugz::API::V1::Lando#get');
   $r->put('/lando/uplift')->to('PhabBugz::API::V1::Lando#update');
+  $r->put('/lando/uplift/:id')->to('PhabBugz::API::V1::Lando#update');
 }
 
 sub get {
@@ -54,7 +55,7 @@ sub get {
     my $result = {
       id         => $bug->id,
       whiteboard => $bug->status_whiteboard,
-      keywords   => [map { $_->name } @{$bug->keyword_objects}]
+      keywords   => [map { $_->name } @{$bug->keyword_objects}],
     };
 
     my $flags = Bugzilla::Extension::TrackingFlags::Flag->match(
@@ -87,10 +88,12 @@ sub update {
   my $params = $self->req->json;
   $params = Bugzilla::Bug::map_fields($params);
 
-  my $ids = delete $params->{ids};
-  defined $ids || return $self->code_error('param_required', {param => 'ids'});
+  my @ids;
+  push @ids, $self->param('id') if $self->param('id');
+  push @ids, @{delete $params->{ids}} if $params->{ids};
+  @ids || return $self->code_error('param_required', {param => 'ids'});
 
-  my @bugs = map { Bugzilla::Bug->check($_) } @$ids;
+  my @bugs = map { Bugzilla::Bug->check($_) } @ids;
 
   # Strictly prohibit the lando user from changing any fields
   # other than whiteboard and status flags
@@ -104,7 +107,7 @@ sub update {
   # If any additional parameters were passed then we will throw an error
   if (%{$params}) {
     return $self->code_error('too_many_params',
-      {allowed_params => ['id', 'whiteboard', 'cf_status_firefox*']});
+      {allowed_params => ['ids', 'whiteboard', 'cf_status_firefox*']});
   }
 
   # Update each bug
