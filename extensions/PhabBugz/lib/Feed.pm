@@ -397,6 +397,16 @@ sub process_uplift_request_form_change {
   my ($timestamp) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
   my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
 
+  INFO('Commenting the uplift form on the bug.');
+
+  my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
+  my $comment_params = {
+    'is_markdown' => 1,
+    'isprivate'   => 0,
+  };
+  $bug->add_comment($comment_content, $comment_params);
+  $bug->update($timestamp);
+
   # Take no action if the form is empty.
   if (ref $revision->uplift_request ne 'HASH'
     || !keys %{$revision->uplift_request})
@@ -446,15 +456,6 @@ sub process_uplift_request_form_change {
       INFO("Requested #release-managers review of $stack_revision_phid.");
     }
   }
-
-  INFO('Commenting the uplift form on the bug.');
-
-  my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
-  my $comment_params = {
-    'is_markdown' => 1,
-    'isprivate'   => 0,
-  };
-  $bug->add_comment($comment_content, $comment_params);
 
   # If manual QE is required, set the Bugzilla flag.
   if ($revision->uplift_request->{'Needs manual QE test'}) {
