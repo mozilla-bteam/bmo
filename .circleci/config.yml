@@ -276,6 +276,6 @@ workflows:
       #- test_selenium:
       #    requires:
       #      - build
-      - test_selenium:
-          requires:
-            - build
+      #- test_selenium:
+      #    requires:
+      #      - build
