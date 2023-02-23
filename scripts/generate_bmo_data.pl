@@ -885,10 +885,6 @@ my @keywords = (
   },
   {
     name        => 'leave-open',
-    description => 'Leave the bug open'
-  },
-  {
-    name        => 'leave-open',
     description => 'Instructs merge tools to leave the bug open when the patches are merged to mozilla-central.',
   },
 );
