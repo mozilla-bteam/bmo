@@ -51,7 +51,11 @@ sub get {
   foreach my $id (@ids) {
     my $bug = Bugzilla::Bug->check($id);
 
-    my $result = {id => $bug->id, whiteboard => $bug->status_whiteboard};
+    my $result = {
+      id         => $bug->id,
+      whiteboard => $bug->status_whiteboard,
+      keywords   => [map { $_->name } @{$bug->keyword_objects}],
+    };
 
     my $flags = Bugzilla::Extension::TrackingFlags::Flag->match(
       {bug_id => $bug->id, is_active => 1});
@@ -86,7 +90,7 @@ sub update {
   my $ids = delete $params->{ids};
   defined $ids || return $self->code_error('param_required', {param => 'ids'});
 
-  my @bugs = map { Bugzilla::Bug->check($_) } @$ids;
+  my @bugs = map { Bugzilla::Bug->check($_) } @{$ids};
 
   # Strictly prohibit the lando user from changing any fields
   # other than whiteboard and status flags
@@ -100,7 +104,7 @@ sub update {
   # If any additional parameters were passed then we will throw an error
   if (%{$params}) {
     return $self->code_error('too_many_params',
-      {allowed_params => ['id', 'whiteboard', 'cf_status_firefox*']});
+      {allowed_params => ['ids', 'whiteboard', 'cf_status_firefox*']});
   }
 
   # Update each bug
