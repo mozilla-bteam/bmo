@@ -1,25 +1,9 @@
-[%# -*- mode: html -*- %]
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Terry Weissman <terry@mozilla.org>
-  #                 Jacob Steenhagen <jake@bugzilla.org>
-  #                 Vitaly Harisov  <vitaly@rathedg.com>
-  #                 Guy Pyrzak <guy.pyrzak@gmail.com>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [% PROCESS global/variables.none.tmpl %]
@@ -33,88 +17,142 @@
    og_image = "extensions/OpenGraph/web/moz-social-bw-rgb-1200x1200.png"
 %]
 
-<div id="page-index">
-  <table>
-    <tr>
-      <td>
-        <h1 id="welcome"> Welcome to [% terms.Bugzilla %]</h1>
-        <div class="intro">[% Hook.process('intro') %]</div>
-        <ul id="tiles">
-          [% IF Param('docs_urlbase') %]
-          <li id="tile-docs">
-            <a href="[% docs_urlbase FILTER html %]">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Documentation</span>
-            </a>
-          </li>
-          [% END %]
-          <li id="tile-search">
-            <a href="[% basepath FILTER none %]query.cgi?format=advanced">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Advanced Search</span>
-            </a>
-          </li>
-          <li id="tile-new-bug">
-            <a href="[% basepath FILTER none %]enter_bug.cgi">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">New [% terms.Bug %]</span>
-            </a>
-          </li>
-          [% IF user.id %]
-          <li id="tile-prefs">
-            <a href="[% basepath FILTER none %]userprefs.cgi">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Preferences</span>
-            </a>
-          </li>
-          [% ELSIF Param('createemailregexp') && user.authorizer.user_can_create_account %]
-          <li id="tile-new-account">
-            <a href="[% basepath FILTER none %]createaccount.cgi">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">New Account</span>
-            </a>
-          </li>
-          [% ELSE %]
-          <li id="tile-login">
-            <a href="?GoAheadAndLogIn=1">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Log In</span>
-            </a>
-          </li>
-          [% END %]
-        </ul>
-        <form id="quicksearchForm" name="quicksearchForm" action="[% basepath FILTER none %]buglist.cgi" data-no-csrf>
-          <div>
-            <input id="quicksearch_main" type="text" name="quicksearch" autofocus
-              placeholder="Enter [% terms.abug %] number or some search terms"
-              title="Quick Search">
-            <input id="find" type="submit" value="Quick Search">
-            <ul class="additional_links" id="quicksearch_links">
-              <li>
-                <a href="[% basepath FILTER none %]page.cgi?id=quicksearch.html">Quick Search help</a>
-              </li>
-              <li class="bz_default_hidden" id="quicksearch_plugin">
-                |
-                <a href="javascript:window.external.AddSearchProvider('[% basepath FILTER html %]search_plugin.cgi')">
-                 Install the Quick Search plugin
-                </a>
-              </li>
-            </ul>
-            <ul class="additional_links">
-              <li>
-                <a href="[% basepath FILTER none %]page.cgi?id=etiquette.html">[%- terms.Bugzilla %] Etiquette</a>
-              </li>
-              <li>
-                | <a href="[% basepath FILTER none %]page.cgi?id=bug-writing.html">[%- terms.Bug %] Writing Guidelines</a>
-              </li>
-              [% Hook.process('additional_links') %]
-            </ul>
+<div id="content">
+  <h1 id="welcome"> Welcome to [% terms.Bugzilla %]</h1>
+  <div>The issue tracker for Firefox and other Mozilla products.</div>
+
+  <div class="options">
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://support.mozilla.org/">
+          <img src="/images/index/support.svg">
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://support.mozilla.org/">I need technical support</a>
+        </div>
+        <div class="desc">
+          Technical support for Firefox and other Mozilla products.
+        </div>
+      </div>
+    </div>
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://webcompat.com/issues/new">
+          <img src="/images/index/webcompat.svg">
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://webcompat.com/issues/new">Report an issue with a website that I use</a>
+        </div>
+        <div class="desc">
+          File a web compatibility issue.
+        </div>
+      </div>
+    </div>
+
+    [% IF user.id %]
+      <div class="option">
+        <div class="icon">
+          <a href="/enter_bug.cgi">
+            <img src="/images/index/new-bug.svg">
+          </a>
+        </div>
+        <div class="desc-container">
+          <div class="title">
+            <a href="/enter_bug.cgi">Report a new [% terms.bug %] in a Mozilla product</a>
           </div>
-        </form>
-        <div class="outro">[% Hook.process('outro') %]</div>
-      </td>
-    </tr>
-  </table>
+          <div class="desc">
+            <a href="/page.cgi?id=etiquette.html">Bugzilla Etiquette</a>
+            |
+            <a href="https://support.mozilla.org/kb/contributors-guide-writing-good-bug">Tips for filing a [% terms.bug %]</a>
+          </div>
+        </div>
+      </div>
+    [% ELSE %]
+      <div class="option">
+        <div class="icon">
+          <a href="/createaccount.cgi">
+            <img src="/images/index/new-account.svg">
+          </a>
+        </div>
+        <div class="desc-container">
+          <div class="title">
+            <a href="/createaccount.cgi">Create a new [% terms.Bugzilla %] account</a>
+          </div>
+          <div class="desc">
+            Required before you can <b>report a [% terms.bug %] in Firefox or other Mozilla products</b>.<br>
+            You can also <a href="?GoAheadAndLogIn=1">log into an existing account</a>.
+          </div>
+        </div>
+      </div>
+    [% END %]
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://connect.mozilla.org/">
+          <img src="/images/index/mozilla-connect.svg">
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://connect.mozilla.org/">Provide feedback at Mozilla Connect</a>
+        </div>
+        <div class="desc">
+          Mozilla Connect is a collaborative space for ideas, feedback, and
+          discussions that will help shape future product releases.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="options">
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://www.mozilla.org/firefox/channel/desktop/#beta">
+          <img src="/images/index/firefox-beta.svg">
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://www.mozilla.org/firefox/channel/desktop/#beta">
+            Download Firefox Beta
+          </a>
+        </div>
+        <div class="desc">
+          Test about-to-be-released features in the most stable pre-release
+          build.
+        </div>
+      </div>
+    </div>
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly">
+          <img src="/images/index/firefox-nightly.svg">
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly">
+            Download Firefox Nightly
+          </a>
+        </div>
+        <div class="desc">
+          Get a sneak peek at our next generation web browser, and help us make
+          it the best browser it can be: try Firefox Nightly.
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
 
 [% PROCESS global/footer.html.tmpl %]
