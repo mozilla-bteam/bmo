@@ -250,6 +250,9 @@ sub push_comment {
     my ($bug_id) = $message =~ /\b[Bb]ug[ -](\d+)\b/;
     next if !$bug_id;
 
+    # Only include the first line of the commit message
+    $message = (split /\n/, $message)[0];
+
     my $comment_text = "Authored by https://github.com/$author\n$url\n$message";
 
     $update_bugs{$bug_id} ||= [];
