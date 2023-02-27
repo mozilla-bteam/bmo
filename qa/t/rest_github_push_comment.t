@@ -11,19 +11,16 @@ use 5.10.1;
 use lib qw(lib ../../lib ../../local/lib/perl5);
 
 use Bugzilla;
-use Bugzilla::Logging;
 
-use Digest::SHA qw(hmac_sha256_hex);
-use Mojo::JSON  qw(encode_json true);
-use QA::Util    qw(get_config);
-use Mojo::Util  qw(dumper);
+use Mojo::JSON qw(encode_json);
+use QA::Util qw(get_config generate_payload_signature);
 use Test::Mojo;
 use Test::More;
 
-my $config        = get_config();
-my $api_key       = $config->{admin_user_api_key};
-my $url           = Bugzilla->localconfig->urlbase;
-my $github_secret = 'B1gS3cret!';
+my $config  = get_config();
+my $api_key = $config->{admin_user_api_key};
+my $url     = Bugzilla->localconfig->urlbase;
+my $secret  = 'B1gS3cret!';
 
 my $t = Test::Mojo->new();
 
@@ -59,62 +56,63 @@ $t->post_ok($url
     qr/The webhook signature in the header did not match the expected value/);
 
 # Invalid JSON
-my $bad_payload = {
+my $payload = {
   ref        => 'refs/heads/master',
   repository => {full_name => 'mozilla-mobile/firefox-android'},
-  pusher     => {name      => 'foobar'},
   commits    => [{
+    author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
   }]
 };
-my $bad_signature
-  = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
-$t->post_ok($url
-    . 'rest/github/push_comment'                                          =>
-    {'X-Hub-Signature-256' => $bad_signature, 'X-GitHub-Event' => 'push'} =>
-    json => $bad_payload)->status_is(400)
+$t->post_ok(
+  $url
+    . 'rest/github/push_comment' => {
+    'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
+    'X-GitHub-Event'      => 'push'
+    } => json => $payload
+)->status_is(400)
   ->json_like('/message' =>
-    qr/The webhook did not contain valid JSON or expected data was missing/);
+    qr/The following errors occurred when validating input data/);
 
 # Missing bug IDs
-$bad_payload = {
+$payload = {
   ref        => 'refs/heads/master',
   repository => {full_name => 'mozilla-mobile/firefox-android'},
-  pusher     => {name      => 'foobar'},
   commits    => [{
+    author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => 'Test Github Push Comment',
   }]
 };
-$bad_signature
-  = 'sha256=' . hmac_sha256_hex(encode_json($bad_payload), $github_secret);
-$t->post_ok($url
-    . 'rest/github/push_comment'                                          =>
-    {'X-Hub-Signature-256' => $bad_signature, 'X-GitHub-Event' => 'push'} =>
-    json => $bad_payload)->status_is(400)->json_is('/error', 1)
+$t->post_ok(
+  $url
+    . 'rest/github/push_comment' => {
+    'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
+    'X-GitHub-Event'      => 'push'
+    } => json => $payload
+)->status_is(400)->json_is('/error', 1)
   ->json_like(
   '/message' => qr/The push commit message did not contain a valid bug ID/);
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads
-my $good_payload = {
+$payload = {
   ref        => 'refs/heads/releases_v110',
   repository => {full_name => 'mozilla-mobile/firefox-android'},
-  pusher     => {name      => 'foobar'},
   commits    => [{
+    author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => "Bug $bug_id - Test Github Push Comment",
   }]
 };
 
-# https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks
-my $good_signature
-  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
-
 # Post the valid GitHub event to the rest/github/push_comment API endpoint
-$t->post_ok($url
-    . 'rest/github/push_comment'                                           =>
-    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
-    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id/id");
+$t->post_ok(
+  $url
+    . 'rest/github/push_comment' => {
+    'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
+    'X-GitHub-Event'      => 'push'
+    } => json => $payload
+)->status_is(200)->json_has("/bugs/$bug_id/id");
 
 my $result     = $t->tx->res->json;
 my $comment_id = $result->{bugs}->{$bug_id}->{id};
@@ -122,9 +120,9 @@ my $comment_id = $result->{bugs}->{$bug_id}->{id};
 # Make sure comment text matches what is expected
 my $comment_text
   = 'Authored by https://github.com/'
-  . $good_payload->{pusher}->{name} . "\n"
-  . $good_payload->{commits}->[0]->{url} . "\n"
-  . $good_payload->{commits}->[0]->{message};
+  . $payload->{commits}->[0]->{author}->{username} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
 $t->get_ok(
@@ -134,7 +132,7 @@ $t->get_ok(
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
 # Bug should have been closed since it did not have the leave-open keyword
-# and it should have the status-firefox110 flag set to fixed since it was 
+# and it should have the status-firefox110 flag set to fixed since it was
 # under the releases_v110 branch.
 $t->get_ok($url
     . "rest/bug/$bug_id?include_fields=id,flags,status,resolution,_custom" =>
@@ -146,29 +144,30 @@ $t->get_ok($url
   ->json_is('/bugs/0/flags/0/status',       '+');
 
 # Multiple commits with the same bug id should create a single comment
-$good_payload = {
+$payload = {
   ref        => 'refs/heads/master',
   repository => {full_name => 'mozilla-mobile/firefox-android'},
-  pusher     => {name      => 'foobar'},
   commits    => [
     {
+      author => {username => 'foobar'},
       url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
       message => "Bug $bug_id - First Test Github Push Comment",
     },
     {
+      author => {username => 'foobar'},
       url => 'https://github.com/mozilla-bteam/bmo/commit/zyxwvutsrqponmlkjihgfedcba',
       message => "Bug $bug_id - Second Test Github Push Comment",
     }
   ]
 };
 
-$good_signature
-  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
-
-$t->post_ok($url
-    . 'rest/github/push_comment'                                           =>
-    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
-    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id/id");
+$t->post_ok(
+  $url
+    . 'rest/github/push_comment' => {
+    'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
+    'X-GitHub-Event'      => 'push'
+    } => json => $payload
+)->status_is(200)->json_has("/bugs/$bug_id/id");
 
 $result     = $t->tx->res->json;
 $comment_id = $result->{bugs}->{$bug_id}->{id};
@@ -176,13 +175,13 @@ $comment_id = $result->{bugs}->{$bug_id}->{id};
 # Make sure comment text matches what is expected
 $comment_text
   = 'Authored by https://github.com/'
-  . $good_payload->{pusher}->{name} . "\n"
-  . $good_payload->{commits}->[0]->{url} . "\n"
-  . $good_payload->{commits}->[0]->{message} . "\n\n"
+  . $payload->{commits}->[0]->{author}->{username} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{message} . "\n\n"
   . 'Authored by https://github.com/'
-  . $good_payload->{pusher}->{name} . "\n"
-  . $good_payload->{commits}->[1]->{url} . "\n"
-  . $good_payload->{commits}->[1]->{message};
+  . $payload->{commits}->[1]->{author}->{username} . "\n"
+  . $payload->{commits}->[1]->{url} . "\n"
+  . $payload->{commits}->[1]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
 $t->get_ok(
@@ -209,24 +208,24 @@ $t->post_ok(
 
 my $bug_id_2 = $t->tx->res->json->{id};
 
-$good_payload = {
+$payload = {
   ref        => 'refs/heads/master',
   repository => {full_name => 'mozilla-mobile/firefox-android'},
-  pusher     => {name      => 'foobar'},
   commits    => [{
+    author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => "Bug $bug_id_2 - Test Github Push Comment (leave-open)",
   }]
 };
 
-$good_signature
-  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
-
 # Post the valid GitHub event to the rest/github/push_comment API endpoint
-$t->post_ok($url
-    . 'rest/github/push_comment'                                           =>
-    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
-    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id_2/id");
+$t->post_ok(
+  $url
+    . 'rest/github/push_comment' => {
+    'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
+    'X-GitHub-Event'      => 'push'
+    } => json => $payload
+)->status_is(200)->json_has("/bugs/$bug_id_2/id");
 
 $result     = $t->tx->res->json;
 $comment_id = $result->{bugs}->{$bug_id_2}->{id};
@@ -234,9 +233,9 @@ $comment_id = $result->{bugs}->{$bug_id_2}->{id};
 # Make sure comment text matches what is expected
 $comment_text
   = 'Authored by https://github.com/'
-  . $good_payload->{pusher}->{name} . "\n"
-  . $good_payload->{commits}->[0]->{url} . "\n"
-  . $good_payload->{commits}->[0]->{message};
+  . $payload->{commits}->[0]->{author}{username} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
 $t->get_ok(
@@ -252,30 +251,31 @@ $t->get_ok($url
   ->json_is('/bugs/0/id', $bug_id_2)->json_is('/bugs/0/status', 'CONFIRMED');
 
 # Remove the leave-open keyword so we can run another test
-$t->put_ok(
-  $url . "rest/bug/$bug_id_2" => {'X-Bugzilla-API-Key' => $api_key} => json => {keywords => {remove => ['leave-open']}})
-  ->status_is(200)->json_has('/bugs/0/changes/keywords');
+$t->put_ok($url
+    . "rest/bug/$bug_id_2" => {'X-Bugzilla-API-Key' => $api_key} => json =>
+    {keywords => {remove => ['leave-open']}})->status_is(200)
+  ->json_has('/bugs/0/changes/keywords');
 
 # This time we will test with the master branch and
 # it should add status-firefox111 instead of 110
-$good_payload = {
+$payload = {
   ref        => 'refs/heads/master',
   repository => {full_name => 'mozilla-mobile/firefox-android'},
-  pusher     => {name      => 'foobar'},
   commits    => [{
+    author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => "Bug $bug_id_2 - Test Github Push Comment (close bug)",
   }]
 };
 
-$good_signature
-  = 'sha256=' . hmac_sha256_hex(encode_json($good_payload), $github_secret);
-
 # Post the valid GitHub event to the rest/github/push_comment API endpoint
-$t->post_ok($url
-    . 'rest/github/push_comment'                                           =>
-    {'X-Hub-Signature-256' => $good_signature, 'X-GitHub-Event' => 'push'} =>
-    json => $good_payload)->status_is(200)->json_has("/bugs/$bug_id_2/id");
+$t->post_ok(
+  $url
+    . 'rest/github/push_comment' => {
+    'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
+    'X-GitHub-Event'      => 'push'
+    } => json => $payload
+)->status_is(200)->json_has("/bugs/$bug_id_2/id");
 
 $result     = $t->tx->res->json;
 $comment_id = $result->{bugs}->{$bug_id_2}->{id};
@@ -283,9 +283,9 @@ $comment_id = $result->{bugs}->{$bug_id_2}->{id};
 # Make sure comment text matches what is expected
 $comment_text
   = 'Authored by https://github.com/'
-  . $good_payload->{pusher}->{name} . "\n"
-  . $good_payload->{commits}->[0]->{url} . "\n"
-  . $good_payload->{commits}->[0]->{message};
+  . $payload->{commits}->[0]->{author}->{username} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
 $t->get_ok(

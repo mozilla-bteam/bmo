@@ -21,6 +21,7 @@ use Bugzilla::Extension::TrackingFlags::Flag;
 use Bugzilla::Extension::TrackingFlags::Flag::Bug;
 
 use Digest::SHA qw(hmac_sha256_hex);
+use JSON::Validator::Joi qw(joi);
 use Mojo::Util  qw(secure_compare);
 
 sub setup_routes {
@@ -46,7 +47,7 @@ sub pull_request {
 
   # Verify that signature is correct based on shared secret
   if (!$self->_verify_signature) {
-    return $self->code_error('github_pr_mismatch_signatures');
+    return $self->code_error('github_mismatch_signatures');
   }
 
   # If event is a ping and we passed the signature check
@@ -55,18 +56,20 @@ sub pull_request {
     return $self->render(json => {error => 0});
   }
 
-  # Parse pull request title for bug ID
+  # Validate JSON input 
   my $payload = $self->req->json;
-  if ( !$payload
-    || !$payload->{action}
-    || !$payload->{pull_request}
-    || !$payload->{pull_request}->{html_url}
-    || !$payload->{pull_request}->{title}
-    || !$payload->{pull_request}->{number}
-    || !$payload->{repository}->{full_name})
-  {
-    return $self->code_error('github_pr_invalid_json');
-  }
+  my @errors  = joi->object->props(
+    action       => joi->string->required,
+    pull_request => joi->required->object->props({
+      html_url => joi->string->required,
+      title    => joi->string->required,
+      number   => joi->integer->required,
+    }),
+    repository =>
+      joi->required->object->props({full_name => joi->string->required,})
+  )->validate($payload);
+  return $self->user_error('api_input_schema_error', {errors => \@errors})
+    if @errors;
 
   # We are only interested in new pull request events
   # and not changes to existing ones (non-fatal).
@@ -188,7 +191,7 @@ sub push_comment {
 
   # Verify that signature is correct based on shared secret
   if (!$self->_verify_signature) {
-    return $self->code_error('github_push_comment_mismatch_signatures');
+    return $self->code_error('github_mismatch_signatures');
   }
 
   # If event is a ping and we passed the signature check
@@ -197,22 +200,26 @@ sub push_comment {
     return $self->render(json => {error => 0});
   }
 
-  # Parse push commit title for bug ID
+  # Validate JSON input 
   my $payload = $self->req->json;
-  if ( !$payload
-    || !$payload->{ref}
-    || !$payload->{repository}
-    || !$payload->{repository}->{full_name}
-    || !$payload->{pusher}
-    || !$payload->{pusher}->{name}
-    || !$payload->{commits})
-  {
-    return $self->code_error('github_push_comment_invalid_json');
-  }
+  my @errors  = joi->object->props(
+    ref => joi->string->required,
+    repository => joi->required->object->props({
+      full_name => joi->string->required,
+    }),
+    commits => joi->array->items(joi->object->strict->props({
+      message => joi->string->required,
+      url     => joi->string->required,
+      author  => joi->required->object->props({
+        username => joi->string->required,
+      }),
+    })),
+  )->validate($payload);
+  return $self->user_error('api_input_schema_error', {errors => \@errors})
+    if @errors;
 
   my $ref        = $payload->{ref};
   my $repository = $payload->{repository}->{full_name};
-  my $pusher     = $payload->{pusher}->{name};
   my $commits    = $payload->{commits};
 
   # Return success early if there are no commits or the ref is not a branch
@@ -233,6 +240,7 @@ sub push_comment {
   foreach my $commit (@{$commits}) {
     my $message = $commit->{message};
     my $url     = $commit->{url};
+    my $author  = $commit->{author}->{username};
 
     if (!$url || !$message) {
       return $self->code_error('github_pr_invalid_json');
@@ -242,7 +250,7 @@ sub push_comment {
     my ($bug_id) = $message =~ /\b[Bb]ug[ -](\d+)\b/;
     next if !$bug_id;
 
-    my $comment_text = "Authored by https://github.com/$pusher\n$url\n$message";
+    my $comment_text = "Authored by https://github.com/$author\n$url\n$message";
 
     $update_bugs{$bug_id} ||= [];
     push @{$update_bugs{$bug_id}}, {text => $comment_text};
@@ -265,6 +273,7 @@ sub push_comment {
   # Actually create the comments in this loop
   foreach my $bug_id (keys %update_bugs) {
     my $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
+    # Skip bug silently if it does not exist
     next if $bug->{error};
 
     # Create a single comment if one or more commits reference the same bug
@@ -275,7 +284,7 @@ sub push_comment {
 
     $bug->add_comment($comment_text);
 
-    # If the bug does not have the keywork 'leave-open',
+    # If the bug does not have the keyword 'leave-open',
     # we can also close the bug as RESOLVED/FIXED.
     if (!$bug->has_keyword('leave-open')
       && $bug->status ne 'RESOLVED'
@@ -340,30 +349,31 @@ sub _verify_signature {
   return secure_compare($expected_signature, $received_signature) ? 1 : 0;
 }
 
+# If the ref matches a certain branch pattern for the repo we are interested
+# in, then we also need to set the appropriate status flag to 'fixed'.
 sub _set_status_flag {
   my ($self, $bug, $ref) = @_;
-
-  use Bugzilla::Logging;
-  DEBUG("ref: $ref");
 
   my ($branch) = $ref =~ /refs\/heads\/(.*)$/;
   return if !$branch;
 
-  DEBUG("branch: $branch");
-
+  # In order to determine the appropriate status flag for the 'master/main' 
+  # branch, we have to find out what the current *nightly* Firefox version is.
+  # fetch_product_versions() calls an API endpoint maintained by rel-eng that 
+  # returns all of the current product versions so we can use that.
   my $version;
   if ($branch eq 'main' || $branch eq 'master') {
     my $versions  = fetch_product_versions('firefox');
     return if (!%$versions || !exists $versions->{FIREFOX_NIGHTLY});
     ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
   }
+  # Some branches already have the version number embedded in the name.
   else {
     ($version) = $branch =~ /^releases_v(\d+)$/;
   }
   return if !$version;
 
-  DEBUG("version: $version");
-
+  # Load the appropriate status flag.
   my $status_field = 'cf_status_firefox' . $version;
   my $flag = Bugzilla::Extension::TrackingFlags::Flag->new({name => $status_field});
 
