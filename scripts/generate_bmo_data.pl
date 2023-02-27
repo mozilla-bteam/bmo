@@ -908,7 +908,10 @@ foreach my $flag_data (@tracking_flags) {
   my $values   = delete $flag_data->{values};
   my $products = delete $flag_data->{products};
 
-  my $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->create($flag_data);
+  my $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->new({name => $flag_data->{name}});
+  next if $flag_obj;
+
+  $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->create($flag_data);
 
   # Add values for the new tracking flag
   my $sortkey = 0;

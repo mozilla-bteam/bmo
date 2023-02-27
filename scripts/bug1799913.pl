@@ -49,11 +49,11 @@ foreach my $rh_bug (@$bugs) {
 
   # update summary
   my $update_summary = $summary;
-  $update_summary =~ s/\[@ (.*)\(.*\)\]/\[@ $1\]/g;
+  $update_summary =~ s/\[@ (.*)[(].*[)]\]/\[@ $1\]/g;
 
   # update signature
   my $updated_signature = $signature;
-  $updated_signature =~ s/\[@ (.*)\(.*\)\]/\[@ $1\]/g;
+  $updated_signature =~ s/\[@ (.*)[(].*[)]\]/\[@ $1\]/g;
 
   next
     if is_same($signature, $updated_signature)
