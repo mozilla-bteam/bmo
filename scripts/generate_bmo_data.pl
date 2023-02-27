@@ -192,6 +192,14 @@ my @users = (
     password => '*',
     api_key  => '4fut0aBEfW260ULXEP1pvOqj7lwnhHoSB16wfpLP'
   },
+  {
+    login    => 'lobot@bmo.tld',
+    realname => 'Lando Automation',
+    password => 'password123456789!',
+    api_key  => 'hqPlbNFAtbGhBC7O68DfMBNE5wu7e18Ssviatizl'
+  },
+
+
   map { {login => $_, realname => (split(/@/, $_, 2))[0], password => '*',} }
     map {
     map {@$_}
@@ -877,7 +885,7 @@ my @keywords = (
   },
   {
     name        => 'leave-open',
-    description => 'Leave the bug open'
+    description => 'Instructs merge tools to leave the bug open when the patches are merged to mozilla-central.',
   },
 );
 
@@ -886,7 +894,6 @@ foreach my $kw (@keywords) {
   next if new Bugzilla::Keyword({name => $kw->{name}});
   Bugzilla::Keyword->create($kw);
 }
-
 
 ###########################################################
 # Create Tracking Flags

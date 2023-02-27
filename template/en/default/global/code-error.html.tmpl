@@ -391,6 +391,13 @@
     that you set one of the following parameters:
     <code>[% params.join(', ') FILTER html %]</code>
 
+  [% ELSIF error == "too_many_params" %]
+    [% title = "Too Many Parameters" %]
+    More parameters were provided that what are allowed.
+    [% IF allowed_params %]
+      Only the following parameters are allowed: [% allowed_params.join(', ') FILTER html %].
+    [% END %]
+
   [% ELSIF error == "product_empty_group_controls" %]
     [% title = "Missing Group Controls" %]
     New settings must be defined to edit group controls for
