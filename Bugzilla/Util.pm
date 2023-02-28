@@ -983,7 +983,8 @@ sub fetch_product_versions {
       $ua->proxy->http($proxy_url);
     }
 
-    my $response = $ua->get(PD_ENDPOINT . $key . '.json')->result;
+    my $product_endpoint = Bugzilla->params->{product_details_endpoint};
+    my $response = $ua->get($product_endpoint . "/$key" . '.json')->result;
     $versions = Bugzilla->request_cache->{$key}
       = $response->is_success ? decode_json($response->body) : {};
     Bugzilla->memcached->set_data({
