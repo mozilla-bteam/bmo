@@ -21,12 +21,14 @@ and be automatically redirected to the pull request.
 * Make sure at the bottom that "Active" is checked on.
 * Save the webhook.
 
-Note: Past pull requests will not automatically get a link created in the bug. New pull
-requests should get the link automatically when the pull request is first created.
+.. note::
+  Past pull requests will not automatically get a link created in the bug. New pull
+  requests should get the link automatically when the pull request is first created.
 
-Additional Note: The API endpoint looks at the pull request title for the bug id so
-make sure the title is formatted correctly to allow the bug id to be determined.
-Examples are: ``Bug 1234:``, ``Bug - 1234``, ``bug 1234``, or ``Bug 1234 -``.
+.. note:: 
+  The API endpoint looks at the pull request title for the bug id so
+  make sure the title is formatted correctly to allow the bug id to be determined.
+  Examples are: ``Bug 1234:``, ``Bug - 1234``, ``bug 1234``, or ``Bug 1234 -``.
 
 **Request**
 
@@ -120,9 +122,10 @@ repositories, a Firefox status flag may be set to FIXED.
 * Make sure at the bottom that "Active" is checked on.
 * Save the webhook.
 
-Additional Note: The API endpoint looks at the commit messages for the bug ID so
-make sure the message is formatted correctly to allow the bug ID to be determined.
-Examples are: ``Bug 1234:``, ``Bug - 1234``, ``bug 1234``, or ``Bug 1234 -``.
+.. note::
+  The API endpoint looks at the commit messages for the bug ID so
+  make sure the message is formatted correctly to allow the bug ID to be determined.
+  Examples are: ``Bug 1234:``, ``Bug - 1234``, ``bug 1234``, or ``Bug 1234 -``.
 
 **Request**
 
@@ -164,7 +167,7 @@ created. In that case, Bugzilla will return success if the signature checks out.
 The above example is only a small amount of the full data that is sent.
 
 .. note::
-    Only the first line of the commit message will be used on the bug comment.
+  Only the first line of the commit message will be used on the bug comment.
 
 Some params must be set, or an error will be thrown. The required params are
 marked in **bold**.
