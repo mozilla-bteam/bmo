@@ -104,7 +104,7 @@ This API endpoint is for adding comments to a bug when a push is made to a linke
 Github repository. The comment will be short and specially formatted using pieces
 of information from the full JSON sent to Bugzilla by the push event. If the bug
 does not have the keyword ``leave-open`` set, the bug will be resolved as FIXED.
-Also, the ``qe-verity`` flag will be set to `+` for the bug. For some specific 
+Also, the ``qe-verify`` flag will be set to `+` for the bug. For some specific 
 repositories, a Firefox status flag may be set to FIXED.
 
 **Github Setup Instructions**
