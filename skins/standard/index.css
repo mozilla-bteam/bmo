@@ -39,9 +39,14 @@
   gap: 20px;
 }
 
-.option .icon img {
+.option .icon img,
+.option .icon svg {
   width: 48px;
   height: 48px;
+}
+
+.option .icon svg path {
+  fill: var(--application-foreground-color);
 }
 
 .option .title {
