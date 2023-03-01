@@ -163,7 +163,8 @@ created. In that case, Bugzilla will return success if the signature checks out.
 
 The above example is only a small amount of the full data that is sent.
 
-Note: Only the first line of the commit message will be used on the bug comment.
+.. note::
+    Only the first line of the commit message will be used on the bug comment.
 
 Some params must be set, or an error will be thrown. The required params are
 marked in **bold**.
