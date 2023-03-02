@@ -48,23 +48,19 @@ foreach my $rh_bug (@$bugs) {
   my $signature = $rh_bug->{cf_crash_signature};
 
   # update summary
-  my $update_summary = $summary;
-  $update_summary =~ s/\[@ (.*)[(].*[)]\]/\[@ $1\]/g;
-
-  # update signature
-  my $updated_signature = $signature;
-  $updated_signature =~ s/\[@ (.*)[(].*[)]\]/\[@ $1\]/g;
+  my $updated_summary   = update_crash_signatures($summary);
+  my $updated_signature = update_crash_signatures($signature);
 
   next
     if is_same($signature, $updated_signature)
-    && is_same($summary,   $update_summary);
+    && is_same($summary,   $updated_summary);
 
   # update the bug, preventing bugmail
   print "Updating $bug_id\n";
   $dbh->bz_start_transaction;
   my $bug = Bugzilla::Bug->check($bug_id);
   $bug->set_all(
-    {summary => $update_summary, cf_crash_signature => $updated_signature});
+    {summary => $updated_summary, cf_crash_signature => $updated_signature});
   $bug->update();
   $dbh->do('UPDATE bugs SET lastdiffed = delta_ts WHERE bug_id = ?',
     undef, $bug_id);
@@ -81,4 +77,10 @@ sub is_same {
   $old =~ s/[\015\012]+/ /g;
   $new =~ s/[\015\012]+/ /g;
   return trim($old) eq trim($new);
+}
+
+sub update_crash_signatures {
+  my $text = shift;
+  $text =~ s/\[@ (.*?)\([^)]*\)\]/\[\@$1\]/igx;
+  return $text;
 }
