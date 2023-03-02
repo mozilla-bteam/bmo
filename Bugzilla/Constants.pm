@@ -208,8 +208,6 @@ use Memoize;
   JOB_QUEUE_VIEW_MAX_JOBS
 
   BOUNCE_COUNT_MAX
-
-  PD_ENDPOINT
 );
 
 @Bugzilla::Constants::EXPORT_OK = qw(contenttypes);
@@ -679,9 +677,6 @@ use constant JOB_QUEUE_VIEW_MAX_JOBS => 2500;
 # Maximum number of times an email can bounce for an account
 # before the account is completely disabled.
 use constant BOUNCE_COUNT_MAX => 5;
-
-# Endpoint used for getting version details of Mozilla products
-use constant PD_ENDPOINT => 'https://product-details.mozilla.org/1.0/';
 
 sub bz_locations {
 

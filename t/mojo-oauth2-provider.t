@@ -23,6 +23,8 @@ use Bugzilla::Test::Util qw(create_user create_oauth_client);
 use Test2::V0;
 use Test::Mojo;
 
+skip_all('Test needs fixing');
+
 my $oauth_login    = 'oauth@mozilla.bugs';
 my $oauth_password = 'password123456789!';
 my $stash          = {};

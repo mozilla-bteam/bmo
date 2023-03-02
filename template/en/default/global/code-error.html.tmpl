@@ -531,7 +531,7 @@
   [% ELSIF error == "github_pr_not_pull_request" %]
     The webhook event was not for a GitHub pull request.
 
-  [% ELSIF error == "github_pr_mismatch_signatures" %]
+  [% ELSIF error == "github_mismatch_signatures" %]
     The webhook signature in the header did not match the expected value.
 
   [% ELSIF error == "github_pr_invalid_json" %]

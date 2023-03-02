@@ -6,180 +6,60 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
- /* index page (begin) */
+#welcome-admin a {
+  font-weight: bold;
+}
 
- #page-index {
-   margin: 50px 0;
-   padding: 0.2em 0.2em 0.15em 0.2em;
-   max-width: none;
- }
+#welcome {
+  text-align: center;
+  margin: 0 0 8px 0;
+  padding: 0;
+}
 
- /* By default these contain nothing, but these CSS rules make things
-    easier on customizers. */
- .intro,
- .outro {
-   text-align: center;
- }
+#content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 14px;
+}
 
- #new_release {
-   margin: 1em;
-   border: 2px solid rgb(var(--accent-color-red-1));
-   padding: 0.5em 1em;
-   font-weight: bold;
- }
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 600px;
+  border-top: 1px solid var(--secondary-region-border-color);
+  border-bottom: 1px solid var(--secondary-region-border-color);
+  padding: 32px 0;
+  margin-top: 32px;
+}
 
- #new_release .notice {
-   font-size: var(--font-size-small);
-   font-weight: normal;
- }
+.option {
+  display: flex;
+  gap: 20px;
+}
 
- #welcome-admin a {
-   font-weight: bold;
- }
+.option .icon img,
+.option .icon svg {
+  width: 48px;
+  height: 48px;
+}
 
- #quicksearchForm {
-   clear: both;
-   text-align: center;
-   margin-bottom: 2em;
- }
+.option .icon svg path {
+  fill: var(--application-foreground-color);
+}
 
- #quicksearchForm #quicksearch_main {
-   width: 27em;
- }
+.option .title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
 
- #quicksearchForm {
-   margin: 20px 0 0;
-   padding: 0;
- }
+.option .title a,
+.option .title a:visited {
+  color: var(--application-foreground-color);
+}
 
- #page-index table {
-   border-collapse: collapse;
-   margin: auto;
- }
-
- #welcome {
-   text-align: center;
-   margin: 0 0 8px 0;
-   padding: 0;
- }
-
- #tiles {
-   display: flex;
-   margin: 32px 0;
-   padding: 0;
-   list-style-type: none;
- }
-
- #tiles li {
-   flex: none;
-   margin: 0;
-   padding: 0;
- }
-
- #tiles a {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   border-radius: 8px;
-   width: 160px;
-   height: 160px;
-   color: var(--secondary-label-color);
- }
-
- #tiles a:hover,
- #tiles a:focus,
- #tiles a:active {
-   color: var(--hovered-link-text-color);
-   text-decoration: none;
- }
-
- #tiles span {
-   display: block;
- }
-
- #tiles .icon {
-   width: 120px;
-   height: 120px;
-   font-size: 120px;
-   line-height: 120px;
-   font-family: "Material Icons";
-   color: inherit;
- }
-
- #tile-docs .icon::before {
-   content: "\E887";
- }
-
- #tile-search .icon::before {
-   content: "\E8A0";
- }
-
- #tile-new-bug .icon::before {
-   content: "\E89C";
- }
-
- #tile-prefs .icon::before {
-   content: "\E8B8";
- }
-
- #tile-new-account .icon::before,
- #tile-login .icon::before {
-   content: "\E853";
- }
-
- #tiles .label {
-   margin-top: 4px;
- }
-
- ul.additional_links {
-   list-style: none;
-   margin: 0;
-   padding: 0;
- }
-
- ul#quicksearch_links {
-   margin: 1em 0;
- }
-
- ul.additional_links li {
-   display: inline;
- }
-
- ul.additional_links li.bz_default_hidden {
-   display: none;
- }
-
- ul.exits {
-   background-color: var(--secondary-region-background-color);
-   border: 1px solid var(--secondary-region-border-color);
-   display: flex;
-   flex-direction: column;
-   list-style-type: none;
-   margin-top: 3em;
-   padding: 10px;
-   text-align: left;
-   width: 600px;
- }
-
- ul.exits li {
-   display: flex;
-   margin-bottom: 12px;
- }
-
- ul.exits .icon {
-   margin-right: 1em;
- }
-
- ul.exits .link:not(.last) {
-   border-bottom: 1px solid var(--secondary-region-border-color);
-   padding-bottom: 8px;
- }
-
- ul.exits .link a {
-   font-size: var(--font-size-h4);
- }
-
- ul.exits p {
-   margin: 2px;
- }
+.option .desc-container {
+  flex-grow: 1;
+}
