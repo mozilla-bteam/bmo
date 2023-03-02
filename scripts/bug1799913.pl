@@ -10,7 +10,7 @@
 use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
-$| = 1;
+local $| = 1;
 
 use constant BATCH_SIZE => 100;
 
