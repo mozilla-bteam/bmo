@@ -461,11 +461,14 @@ sub process_uplift_request_form_change {
   if ($revision->uplift_request->{'Needs manual QE test'}) {
     INFO('Needs manual QE test is set.');
 
+    # Reload the current bug object so we can call update again
+    my $reloaded_bug = Bugzilla::Bug->new($bug->id);
+
     my @old_flags;
     my @new_flags;
 
     # Find the current `qe-verify` flag state if it exists.
-    foreach my $flag (@{$bug->flags}) {
+    foreach my $flag (@{$reloaded_bug->flags}) {
       # Ignore for all flags except `qe-verify`.
       next if $flag->name ne 'qe-verify';
       # Set the flag to `+`. If already '+', it will be non-change.
@@ -488,10 +491,10 @@ sub process_uplift_request_form_change {
     }
 
     # Set the flags.
-    $bug->set_flags(\@old_flags, \@new_flags);
+    $reloaded_bug->set_flags(\@old_flags, \@new_flags);
+    $reloaded_bug->update($timestamp);
   }
 
-  $bug->update($timestamp);
   INFO("Finished processing uplift request form change for $revision_phid.");
 }
 
