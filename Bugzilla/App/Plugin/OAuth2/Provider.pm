@@ -60,6 +60,17 @@ sub register {
     }
   );
 
+  # Perform some pre-cleanup of the redirect_uri such as removal of newlines, etc.
+  $app->hook('before_dispatch' => sub {
+    my $c = shift;
+    my $path = $c->req->url->path;
+    if ($path->contains('/oauth')) {
+      my $redirect_uri = $c->param('redirect_uri');
+      $redirect_uri =~ s/[\r\n]+//g;
+      $c->param(redirect_uri => $redirect_uri);
+    }
+  });
+
   return $self->SUPER::register($app, $conf);
 }
 
@@ -86,9 +97,7 @@ sub _resource_owner_confirm_scopes {
 
   $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
 
-  my $client
-    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
-    undef, $client_id);
+  my $client = _get_client_data($client_id);
 
   my $scopes = $dbh->selectall_arrayref(
     'SELECT * FROM oauth2_scope WHERE name IN ('
@@ -99,19 +108,11 @@ sub _resource_owner_confirm_scopes {
   # if user hasn't yet allowed the client access, or if they denied
   # access last time, we check [again] with the user for access
   if (!$c->param("oauth_confirm_${client_id}")) {
-
-    # Deny access if hostname of redirect_uri doesn't match
-    # the hostname assigned to the client id
-    _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
-      || ThrowUserError('oauth2_invalid_redirect_uri');
-
+    _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'));
     return _display_confirm_scopes($c, {client => $client, scopes => $scopes});
   }
 
-  # Deny access if hostname of redirect_uri doesn't match
-  # the hostname assigned to the client id
-  _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'))
-    || ThrowUserError('oauth2_invalid_redirect_uri');
+  _validate_redirect_uri($client->{hostname}, $c->param('redirect_uri'));
 
   # Validate token to protect against CSRF. If token is invalid,
   # display error and request confirmation again.
@@ -133,57 +134,37 @@ sub _verify_client {
     = @args{qw/ mojo_controller client_id scopes redirect_uri /};
   my $dbh = Bugzilla->dbh;
 
+  my $client_data = _get_client_data($client_id);
+
+  _validate_redirect_uri($client_data->{hostname}, $redirect_uri);
+
   if (!@{$scopes_ref}) {
     INFO('Client did not provide scopes');
     return (0, 'invalid_scope');
   }
 
-  if (!$ENV{BUGZILLA_ALLOW_INSECURE_HTTP} && Mojo::URL->new($redirect_uri)->scheme ne 'https') {
-    INFO("invalid_redirect_uri: $redirect_uri");
-    return (0, 'invalid_redirect_uri');
+  my $client_scopes = $dbh->selectcol_arrayref(
+    'SELECT oauth2_scope.name FROM oauth2_scope
+            JOIN oauth2_client_scope ON oauth2_scope.id = oauth2_client_scope.scope_id
+      WHERE oauth2_client_scope.client_id = ?', undef, $client_data->{id}
+  );
+
+  foreach my $scope (@{$scopes_ref // []}) {
+    return (0, 'invalid_grant') if !_has_scope($scope, $client_scopes);
   }
 
-  if (
-    my $client_data = $dbh->selectrow_hashref(
-      'SELECT * FROM oauth2_client WHERE client_id = ?',
-      undef, $client_id
-    )
-    )
-  {
-    if (!$client_data->{active}) {
-      INFO("Client ($client_id) is not active");
-      return (0, 'unauthorized_client');
-    }
-
-    if ($scopes_ref) {
-      my $client_scopes = $dbh->selectcol_arrayref(
-        'SELECT oauth2_scope.name FROM oauth2_scope
-                JOIN oauth2_client_scope ON oauth2_scope.id = oauth2_client_scope.scope_id
-          WHERE oauth2_client_scope.client_id = ?', undef, $client_data->{id}
-      );
-
-      foreach my $scope (@{$scopes_ref // []}) {
-        return (0, 'invalid_grant') if !_has_scope($scope, $client_scopes);
-      }
-    }
-
-    return (1);
-  }
-
-  INFO("Client ($client_id) does not exist");
-  return (0, 'unauthorized_client');
+  return (1);
 }
 
 sub _verify_auth_code {
   my (%args) = @_;
-  my ($c, $client_id, $client_secret, $auth_code, $uri)
+  my ($c, $client_id, $client_secret, $auth_code, $redirect_uri)
     = @args{qw/ mojo_controller client_id client_secret auth_code redirect_uri /};
   my $dbh = Bugzilla->dbh;
 
-  my $client_data
-    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
-    undef, $client_id);
-  $client_data || return (0, 'unauthorized_client');
+  my $client_data = _get_client_data($client_id);
+
+  _validate_redirect_uri($client_data->{hostname}, $redirect_uri);
 
   my ($res, $jwt_claims) = _get_jwt_claims($auth_code, 'auth');
   return (0, 'invalid_jwt') unless $res;
@@ -194,7 +175,7 @@ sub _verify_auth_code {
   if (!$jwt_data
     or ($jwt_data->{type} ne TOKEN_TYPE_AUTH)
     or ($jwt_claims->{user_id} != $jwt_data->{user_id})
-    or ($uri ne $jwt_claims->{aud})
+    or ($redirect_uri ne $jwt_claims->{aud})
     or ($jwt_claims->{exp} <= time)
     or !secure_compare($client_secret, $client_data->{secret}))
   {
@@ -203,7 +184,7 @@ sub _verify_auth_code {
 
     if ($jwt_data) {
       INFO('Client redirect_uri does not match')
-        if ($uri && $jwt_claims->{aud} ne $uri);
+        if (!$redirect_uri || $jwt_claims->{aud} ne $redirect_uri);
       INFO('Auth code expired') if ($jwt_claims->{exp} <= time);
       $dbh->do('DELETE FROM oauth2_jwt WHERE client_id = ? AND user_id = ? AND type = ?',
           undef, $client_data->{id}, $jwt_claims->{user_id}, TOKEN_TYPE_AUTH);
@@ -220,14 +201,14 @@ sub _verify_auth_code {
 
 sub _store_auth_code {
   my (%args) = @_;
-  my ($c, $auth_code, $client_id, $expires_in, $uri, $scopes_ref)
+  my ($c, $auth_code, $client_id, $expires_in, $redirect_uri, $scopes_ref)
     = @args{
     qw/ mojo_controller auth_code client_id expires_in redirect_uri scopes /};
   my $dbh = Bugzilla->dbh;
 
-  my $client_data
-    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
-    undef, $client_id);
+  my $client_data = _get_client_data($client_id);
+
+  _validate_redirect_uri($client_data->{hostname}, $redirect_uri);
 
   my ($res, $jwt_claims) = _get_jwt_claims($auth_code, 'auth');
   return (0, 'invalid_jwt') unless $res;
@@ -254,9 +235,7 @@ sub _store_access_token {
     };
   my $dbh = Bugzilla->dbh;
 
-  my $client_data
-    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
-    undef, $client_id);
+  my $client_data = _get_client_data($client_id);
 
   my $user_id;
   if (!defined $auth_code && $old_refresh_token) {
@@ -382,7 +361,18 @@ sub _has_scope {
 sub _validate_redirect_uri {
   my ($hostname, $redirect_uri) = @_;
   my $uri = Mojo::URL->new($redirect_uri);
-  return (!$uri->host || $uri->host ne $hostname) ? 0 : 1;
+
+  # Make sure the redirect uri is https if required, that the host name is valid
+  # and also matches the one store for the current client id.
+  if ( (!$ENV{BUGZILLA_ALLOW_INSECURE_HTTP} && $uri->scheme ne 'https')
+    || !$uri->host
+    || $uri->host ne $hostname)
+  {
+    INFO("invalid_redirect_uri: $redirect_uri");
+    ThrowUserError('oauth2_invalid_redirect_uri');
+  }
+
+  return 1;
 }
 
 sub _display_confirm_scopes {
@@ -390,6 +380,24 @@ sub _display_confirm_scopes {
   $c->stash(%{$params});
   $c->render(template => 'account/auth/confirm_scopes', handler => 'bugzilla');
   return undef;
+}
+
+sub _get_client_data {
+  my $client_id = shift;
+  my $dbh = Bugzilla->dbh;
+
+  my $client_data
+    = $dbh->selectrow_hashref('SELECT * FROM oauth2_client WHERE client_id = ?',
+    undef, $client_id);
+
+  # Normally we would return 0, 'unauthorized_client' here but we are better
+  # off throwing an error instead in case the the redirect_url is malicious.
+  if (!$client_data || !$client_data->{active}) {
+    INFO("Client ($client_id) is not active or does not exist");
+    ThrowUserError('oauth2_unauthorized_client');
+  }
+
+  return $client_data;
 }
 
 1;
