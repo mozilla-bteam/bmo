@@ -382,7 +382,7 @@ sub _has_scope {
 sub _validate_redirect_uri {
   my ($hostname, $redirect_uri) = @_;
   my $uri = Mojo::URL->new($redirect_uri);
-  return ($uri->host && $uri->host ne $hostname) ? 0 : 1;
+  return (!$uri->host || $uri->host ne $hostname) ? 0 : 1;
 }
 
 sub _display_confirm_scopes {

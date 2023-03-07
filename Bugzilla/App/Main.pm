@@ -26,6 +26,7 @@ sub setup_routes {
 sub root {
   my ($c) = @_;
   $c->res->headers->cache_control('public, max-age=3600, immutable');
+  $c->stash('urlbase', Bugzilla->localconfig->urlbase);
   $c->render(handler => 'bugzilla');
 }
 

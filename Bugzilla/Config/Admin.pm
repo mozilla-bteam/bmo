@@ -59,6 +59,12 @@ sub get_param_list {
     {name => 'log_user_requests', type => 'b', default => 0},
 
     {name => 'block_user_agent', type => 't', default => ''},
+
+    {
+      name    => 'product_details_endpoint',
+      type    => 't',
+      default => 'https://product-details.mozilla.org/1.0',
+    },
   );
   return @param_list;
 }

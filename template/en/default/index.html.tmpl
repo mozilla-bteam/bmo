@@ -1,25 +1,9 @@
-[%# -*- mode: html -*- %]
-[%# The contents of this file are subject to the Mozilla Public
-  # License Version 1.1 (the "License"); you may not use this file
-  # except in compliance with the License. You may obtain a copy of
-  # the License at http://www.mozilla.org/MPL/
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
   #
-  # Software distributed under the License is distributed on an "AS
-  # IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-  # implied. See the License for the specific language governing
-  # rights and limitations under the License.
-  #
-  # The Original Code is the Bugzilla Bug Tracking System.
-  #
-  # The Initial Developer of the Original Code is Netscape Communications
-  # Corporation. Portions created by Netscape are
-  # Copyright (C) 1998 Netscape Communications Corporation. All
-  # Rights Reserved.
-  #
-  # Contributor(s): Terry Weissman <terry@mozilla.org>
-  #                 Jacob Steenhagen <jake@bugzilla.org>
-  #                 Vitaly Harisov  <vitaly@rathedg.com>
-  #                 Guy Pyrzak <guy.pyrzak@gmail.com>
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
   #%]
 
 [% PROCESS global/variables.none.tmpl %]
@@ -33,88 +17,147 @@
    og_image = "extensions/OpenGraph/web/moz-social-bw-rgb-1200x1200.png"
 %]
 
-<div id="page-index">
-  <table>
-    <tr>
-      <td>
-        <h1 id="welcome"> Welcome to [% terms.Bugzilla %]</h1>
-        <div class="intro">[% Hook.process('intro') %]</div>
-        <ul id="tiles">
-          [% IF Param('docs_urlbase') %]
-          <li id="tile-docs">
-            <a href="[% docs_urlbase FILTER html %]">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Documentation</span>
-            </a>
-          </li>
-          [% END %]
-          <li id="tile-search">
-            <a href="[% basepath FILTER none %]query.cgi?format=advanced">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Advanced Search</span>
-            </a>
-          </li>
-          <li id="tile-new-bug">
-            <a href="[% basepath FILTER none %]enter_bug.cgi">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">New [% terms.Bug %]</span>
-            </a>
-          </li>
-          [% IF user.id %]
-          <li id="tile-prefs">
-            <a href="[% basepath FILTER none %]userprefs.cgi">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Preferences</span>
-            </a>
-          </li>
-          [% ELSIF Param('createemailregexp') && user.authorizer.user_can_create_account %]
-          <li id="tile-new-account">
-            <a href="[% basepath FILTER none %]createaccount.cgi">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">New Account</span>
-            </a>
-          </li>
-          [% ELSE %]
-          <li id="tile-login">
-            <a href="?GoAheadAndLogIn=1">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">Log In</span>
-            </a>
-          </li>
-          [% END %]
-        </ul>
-        <form id="quicksearchForm" name="quicksearchForm" action="[% basepath FILTER none %]buglist.cgi" data-no-csrf>
-          <div>
-            <input id="quicksearch_main" type="text" name="quicksearch" autofocus
-              placeholder="Enter [% terms.abug %] number or some search terms"
-              title="Quick Search">
-            <input id="find" type="submit" value="Quick Search">
-            <ul class="additional_links" id="quicksearch_links">
-              <li>
-                <a href="[% basepath FILTER none %]page.cgi?id=quicksearch.html">Quick Search help</a>
-              </li>
-              <li class="bz_default_hidden" id="quicksearch_plugin">
-                |
-                <a href="javascript:window.external.AddSearchProvider('[% basepath FILTER html %]search_plugin.cgi')">
-                 Install the Quick Search plugin
-                </a>
-              </li>
-            </ul>
-            <ul class="additional_links">
-              <li>
-                <a href="[% basepath FILTER none %]page.cgi?id=etiquette.html">[%- terms.Bugzilla %] Etiquette</a>
-              </li>
-              <li>
-                | <a href="[% basepath FILTER none %]page.cgi?id=bug-writing.html">[%- terms.Bug %] Writing Guidelines</a>
-              </li>
-              [% Hook.process('additional_links') %]
-            </ul>
+<div id="content">
+  <h1 id="welcome"> Welcome to [% terms.Bugzilla %]</h1>
+  <div>The issue tracker for Firefox and other Mozilla products.</div>
+
+  <div class="options">
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://support.mozilla.org/">
+          <!-- Material Symbols: Contact Support -->
+          <svg xmlns="http://www.w3.org/2000/svg" height="48" width="48"><path d="m25.75 44-.5-5.5h-2q-7.15 0-12.2-5.05Q6 28.4 6 21.25q0-7.15 5.075-12.2Q16.15 4 23.35 4q3.55 0 6.575 1.275Q32.95 6.55 35.2 8.85q2.25 2.3 3.525 5.425T40 21.1q0 3.3-.975 6.6T36.2 34q-1.85 3-4.5 5.55T25.75 44Zm-2.4-11.15q.8 0 1.35-.55t.55-1.35q0-.8-.55-1.35t-1.35-.55q-.8 0-1.35.55t-.55 1.35q0 .8.55 1.35t1.35.55ZM22 26.05h2.5q0-1.25.425-2.075.425-.825 1.775-2.175 1.35-1.35 1.9-2.475.55-1.125.55-2.425 0-2.25-1.525-3.7-1.525-1.45-4.075-1.45-2.1 0-3.75 1.1t-2.45 3l2.3.95q.55-1.3 1.525-1.925.975-.625 2.225-.625 1.5 0 2.35.725.85.725.85 1.925 0 .95-.55 1.925-.55.975-1.95 2.425-1.35 1.4-1.725 2.25-.375.85-.375 2.55Z"/></svg>
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://support.mozilla.org/">I need technical support</a>
+        </div>
+        <div class="desc">
+          Technical support for Firefox and other Mozilla products.
+        </div>
+      </div>
+    </div>
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://webcompat.com/issues/new">
+          <!-- Material Symbols: Language -->
+          <svg xmlns="http://www.w3.org/2000/svg" height="48" width="48"><path d="M24 44q-4.2 0-7.85-1.575Q12.5 40.85 9.8 38.15q-2.7-2.7-4.25-6.375Q4 28.1 4 23.9t1.55-7.825Q7.1 12.45 9.8 9.75t6.35-4.225Q19.8 4 24 4q4.2 0 7.85 1.525Q35.5 7.05 38.2 9.75q2.7 2.7 4.25 6.325Q44 19.7 44 23.9t-1.55 7.875Q40.9 35.45 38.2 38.15t-6.35 4.275Q28.2 44 24 44Zm0-2.9q1.75-1.8 2.925-4.125Q28.1 34.65 28.85 31.45H19.2q.7 3 1.875 5.4Q22.25 39.25 24 41.1Zm-4.25-.6q-1.25-1.9-2.15-4.1-.9-2.2-1.5-4.95H8.6Q10.5 35 13 37.025q2.5 2.025 6.75 3.475Zm8.55-.05q3.6-1.15 6.475-3.45 2.875-2.3 4.625-5.55h-7.45q-.65 2.7-1.525 4.9-.875 2.2-2.125 4.1Zm-20.7-12h7.95q-.15-1.35-.175-2.425-.025-1.075-.025-2.125 0-1.25.05-2.225.05-.975.2-2.175h-8q-.35 1.2-.475 2.15T7 23.9q0 1.3.125 2.325.125 1.025.475 2.225Zm11.05 0H29.4q.2-1.55.25-2.525.05-.975.05-2.025 0-1-.05-1.925T29.4 19.5H18.65q-.2 1.55-.25 2.475-.05.925-.05 1.925 0 1.05.05 2.025.05.975.25 2.525Zm13.75 0h8q.35-1.2.475-2.225Q41 25.2 41 23.9q0-1.3-.125-2.25T40.4 19.5h-7.95q.15 1.75.2 2.675.05.925.05 1.725 0 1.1-.075 2.075-.075.975-.225 2.475Zm-.5-11.95h7.5q-1.65-3.45-4.525-5.75Q32 8.45 28.25 7.5q1.25 1.85 2.125 4t1.525 5Zm-12.7 0h9.7q-.55-2.65-1.85-5.125T24 7q-1.6 1.35-2.7 3.55-1.1 2.2-2.1 5.95Zm-10.6 0h7.55q.55-2.7 1.4-4.825.85-2.125 2.15-4.125-3.75.95-6.55 3.2T8.6 16.5Z"/></svg>
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://webcompat.com/issues/new">Report an issue with a website that I use</a>
+        </div>
+        <div class="desc">
+          File a web compatibility issue.
+        </div>
+      </div>
+    </div>
+
+    [% IF user.id %]
+      <div class="option">
+        <div class="icon">
+          <a href="/enter_bug.cgi">
+            <!-- Material Symbols: Note Add -->
+            <svg xmlns="http://www.w3.org/2000/svg" height="48" width="48"><path d="M22.5 36.7h3v-6.45H32v-3h-6.5v-6.5h-3v6.5H16v3h6.5Zm-11.05 8.55q-1.95 0-3.325-1.375Q6.75 42.5 6.75 40.55V7.45q0-1.95 1.375-3.35Q9.5 2.7 11.45 2.7H29.6l11.7 11.7v26.15q0 1.95-1.4 3.325-1.4 1.375-3.35 1.375Zm15.65-28.5h9.45l-9.45-9.3Z"/></svg>
+          </a>
+        </div>
+        <div class="desc-container">
+          <div class="title">
+            <a href="/enter_bug.cgi">Report a new [% terms.bug %] in a Mozilla product</a>
           </div>
-        </form>
-        <div class="outro">[% Hook.process('outro') %]</div>
-      </td>
-    </tr>
-  </table>
+          <div class="desc">
+            <a href="/page.cgi?id=etiquette.html">Bugzilla Etiquette</a>
+            |
+            <a href="https://support.mozilla.org/kb/contributors-guide-writing-good-bug">Tips for filing a [% terms.bug %]</a>
+          </div>
+        </div>
+      </div>
+    [% ELSE %]
+      <div class="option">
+        <div class="icon">
+          <a href="/createaccount.cgi">
+            <!-- Material Symbols: Account Circle -->
+            <svg xmlns="http://www.w3.org/2000/svg" height="48" width="48"><path d="M11.3 34.7q3.1-1.95 6.125-2.9T24 30.85q3.55 0 6.65 1 3.1 1 6.1 2.85 2.1-2.75 2.95-5.275.85-2.525.85-5.425 0-7-4.775-11.775T24 7.45q-7 0-11.775 4.775T7.45 24q0 2.9.85 5.4.85 2.5 3 5.3ZM24 25.85q-3.05 0-5.1-2.05t-2.05-5.1q0-3 2.05-5.075T24 11.55q3.05 0 5.1 2.075t2.05 5.125q0 3-2.05 5.05T24 25.85Zm0 19.4q-4.4 0-8.275-1.675T8.95 39q-2.9-2.9-4.55-6.75T2.75 24q0-4.4 1.675-8.275T9 8.975Q11.9 6.1 15.75 4.4q3.85-1.7 8.3-1.7 4.4 0 8.25 1.7 3.85 1.7 6.725 4.575 2.875 2.875 4.575 6.75Q45.3 19.6 45.3 24t-1.7 8.25Q41.9 36.1 39.025 39t-6.75 4.575Q28.4 45.25 24 45.25Z"/></svg>
+          </a>
+        </div>
+        <div class="desc-container">
+          <div class="title">
+            <a href="/createaccount.cgi">Create a new [% terms.Bugzilla %] account</a>
+          </div>
+          <div class="desc">
+            Required before you can <b>report a [% terms.bug %] in Firefox or other Mozilla products</b>.<br>
+            You can also <a href="?GoAheadAndLogIn=1">log into an existing account</a>.
+          </div>
+        </div>
+      </div>
+    [% END %]
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://connect.mozilla.org/">
+          <!-- Material Symbols: Lightbulb -->
+          <svg xmlns="http://www.w3.org/2000/svg" height="48" width="48"><path d="M24 44q-1.7 0-2.875-1.175T19.95 39.95h8.1q0 1.7-1.175 2.875T24 44Zm-8.1-7.15v-3h16.2v3Zm.25-6.05q-3.3-2.15-5.225-5.375Q9 22.2 9 18.15q0-6.1 4.45-10.55Q17.9 3.15 24 3.15q6.1 0 10.55 4.45Q39 12.05 39 18.15q0 4.05-1.9 7.275-1.9 3.225-5.25 5.375Z"/></svg>
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://connect.mozilla.org/">Provide feedback at Mozilla Connect</a>
+        </div>
+        <div class="desc">
+          Mozilla Connect is a collaborative space for ideas, feedback, and
+          discussions that will help shape future product releases.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="options">
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://www.mozilla.org/firefox/channel/desktop/#beta">
+          <img src="/images/index/firefox-beta.svg">
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://www.mozilla.org/firefox/channel/desktop/#beta">
+            Download Firefox Beta
+          </a>
+        </div>
+        <div class="desc">
+          Test about-to-be-released features in the most stable pre-release
+          build.
+        </div>
+      </div>
+    </div>
+
+    <div class="option">
+      <div class="icon">
+        <a href="https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly">
+          <img src="/images/index/firefox-nightly.svg">
+        </a>
+      </div>
+      <div class="desc-container">
+        <div class="title">
+          <a href="https://www.mozilla.org/en-US/firefox/channel/desktop/#nightly">
+            Download Firefox Nightly
+          </a>
+        </div>
+        <div class="desc">
+          Get a sneak peek at our next generation web browser, and help us make
+          it the best browser it can be: try Firefox Nightly.
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
 
 [% PROCESS global/footer.html.tmpl %]

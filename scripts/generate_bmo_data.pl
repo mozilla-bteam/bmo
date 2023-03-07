@@ -22,6 +22,11 @@ use Bugzilla::Keyword;
 use Bugzilla::Config qw(:admin);
 use Bugzilla::User::Setting;
 use Bugzilla::Status;
+
+use Bugzilla::Extension::TrackingFlags::Flag;
+use Bugzilla::Extension::TrackingFlags::Flag::Value;
+use Bugzilla::Extension::TrackingFlags::Flag::Visibility;
+
 use Getopt::Long qw( :config gnu_getopt );
 
 BEGIN { Bugzilla->extensions }
@@ -588,6 +593,7 @@ my %set_params = (
   edit_comments_group  => 'editbugs',
   github_pr_linking_enabled => 1,
   github_pr_signature_secret => 'B1gS3cret!',
+  github_push_comment_enabled => 1,
   insidergroup         => 'core-security-release',
   last_change_time_non_bot_skip_list => 'automation@bmo.tld',
   last_visit_keep_days => '28',
@@ -663,7 +669,19 @@ my @flagtypes = (
     target_type      => 'a',
     cc_list          => '',
     inclusions       => ['']
-  }
+  },
+  {
+    name => 'qe-verify',
+    desc => 'qe-verify: + ➜ request to verify the bug manually
+qe-verify: - ➜ the bug will not/can not be verified manually',
+    is_requestable   => 0,
+    is_requesteeble  => 0,
+    is_multiplicable => 0,
+    grant_group      => '',
+    target_type      => 'b',
+    cc_list          => '',
+    inclusions       => ['Firefox:']
+  },
 );
 
 print "creating flag types...\n";
@@ -865,6 +883,10 @@ my @keywords = (
     name        => 'triaged',
     description => 'Bugs that have been triaged.'
   },
+  {
+    name        => 'leave-open',
+    description => 'Instructs merge tools to leave the bug open when the patches are merged to mozilla-central.',
+  },
 );
 
 print "creating keywords...\n";
@@ -909,7 +931,7 @@ foreach my $flag_data (@tracking_flags) {
   my $products = delete $flag_data->{products};
 
   my $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->new({name => $flag_data->{name}});
-  next if $flag_obj;
+  next if $flag_obj; # Skip if already exists
 
   $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->create($flag_data);
 
