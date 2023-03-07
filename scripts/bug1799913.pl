@@ -81,6 +81,6 @@ sub is_same {
 
 sub update_crash_signatures {
   my $text = shift;
-  $text =~ s/\[@ (.*?)\([^)]*\)\]/\[\@$1\]/igx;
+  $text =~ s/\[@ (.+?)\([^)]*\)\]/[\@ $1]/g;
   return $text;
 }
