@@ -10,7 +10,7 @@
 use strict;
 use warnings;
 use lib qw(. lib local/lib/perl5);
-local $| = 1;
+$| = 1;
 
 use constant BATCH_SIZE => 100;
 
@@ -81,6 +81,6 @@ sub is_same {
 
 sub update_crash_signatures {
   my $text = shift;
-  $text =~ s/\[@ (.*?)\([^)]*\)\]/\[\@$1\]/igx;
+  $text =~ s/\[@ (.+?)\([^)]*\)\]/[\@ $1]/g;
   return $text;
 }
