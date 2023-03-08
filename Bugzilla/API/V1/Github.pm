@@ -207,7 +207,7 @@ sub push_comment {
     repository => joi->required->object->props({
       full_name => joi->string->required,
     }),
-    commits => joi->array->items(joi->object->strict->props({
+    commits => joi->array->items(joi->object->props({
       message => joi->string->required,
       url     => joi->string->required,
       author  => joi->required->object->props({
