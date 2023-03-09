@@ -972,28 +972,35 @@ sub extract_nicks {
 }
 
 sub fetch_product_versions {
-  my ($product)  = @_;
-  my $key      = "${product}_versions";
-  my $versions = Bugzilla->request_cache->{$key}
-    || Bugzilla->memcached->get_data({key => $key});
+  my ($product) = @_;
+  my $key = "${product}_versions";
+  my $versions
+    = Bugzilla->request_cache->{$key}
+    || Bugzilla->memcached->get_data({key => $key})
+    || {};
 
-  unless ($versions) {
-    my $ua = Mojo::UserAgent->new(request_timeout => 30, connect_timeout => 5);
-    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
-      $ua->proxy->http($proxy_url);
+  my $product_endpoint = Bugzilla->params->{product_details_endpoint};
+
+  if (!%{$versions} && $product_endpoint) {
+    try {
+      my $ua = Mojo::UserAgent->new(request_timeout => 30, connect_timeout => 5);
+      if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
+        $ua->proxy->http($proxy_url);
+      }
+      my $response = $ua->get($product_endpoint . "/$key" . '.json')->result;
+      $versions = Bugzilla->request_cache->{$key}
+        = $response->is_success ? decode_json($response->body) : {};
+      Bugzilla->memcached->set_data({
+        key   => $key,
+        value => $versions,
+
+        # Cache for 1 day if the data is available, otherwise retry in 5 min
+        expires_in => $response->is_success ? 86_400 : 300,
+      });
     }
-
-    my $product_endpoint = Bugzilla->params->{product_details_endpoint};
-    my $response = $ua->get($product_endpoint . "/$key" . '.json')->result;
-    $versions = Bugzilla->request_cache->{$key}
-      = $response->is_success ? decode_json($response->body) : {};
-    Bugzilla->memcached->set_data({
-      key   => $key,
-      value => $versions,
-
-      # Cache for 1 day if the data is available, otherwise retry in 5 min
-      expires_in => $response->is_success ? 86_400 : 300,
-    });
+    catch {
+      WARN("ERROR: Unable to retrieve product versions: $_");
+    };
   }
 
   return $versions;
