@@ -121,7 +121,7 @@ my $comment_id = $result->{bugs}->{$bug_id}->{id};
 my $comment_text
   = 'Authored by https://github.com/'
   . $payload->{commits}->[0]->{author}->{username} . "\n"
-  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n[releases_v110] "
   . $payload->{commits}->[0]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
@@ -176,11 +176,11 @@ $comment_id = $result->{bugs}->{$bug_id}->{id};
 $comment_text
   = 'Authored by https://github.com/'
   . $payload->{commits}->[0]->{author}->{username} . "\n"
-  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n[master] "
   . $payload->{commits}->[0]->{message} . "\n\n"
   . 'Authored by https://github.com/'
   . $payload->{commits}->[1]->{author}->{username} . "\n"
-  . $payload->{commits}->[1]->{url} . "\n"
+  . $payload->{commits}->[1]->{url} . "\n[master] "
   . $payload->{commits}->[1]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
@@ -234,7 +234,7 @@ $comment_id = $result->{bugs}->{$bug_id_2}->{id};
 $comment_text
   = 'Authored by https://github.com/'
   . $payload->{commits}->[0]->{author}{username} . "\n"
-  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n[master] "
   . $payload->{commits}->[0]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
@@ -284,7 +284,7 @@ $comment_id = $result->{bugs}->{$bug_id_2}->{id};
 $comment_text
   = 'Authored by https://github.com/'
   . $payload->{commits}->[0]->{author}->{username} . "\n"
-  . $payload->{commits}->[0]->{url} . "\n"
+  . $payload->{commits}->[0]->{url} . "\n[master] "
   . $payload->{commits}->[0]->{message};
 
 # Retrieve the new comment from the bug to make sure it was created correctly
