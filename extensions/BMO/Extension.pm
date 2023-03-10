@@ -2749,9 +2749,13 @@ sub search_date_pronoun {
   my $keys = ['LAST_MERGE_DATE', 'LAST_RELEASE_DATE', 'LAST_SOFTFREEZE_DATE'];
   return unless grep(/^$key$/, @$keys);
 
-  my $date = fetch_product_versions('firefox')->{$key};
-  ThrowUserError('product_date_pronouns_unavailable') unless $date;
-  $pronoun->{date} = $date;
+  my $versions = fetch_product_versions('firefox');
+  if (!%{$versions} || !$versions->{$key}) {
+    WARN("product_date_pronouns_unavailable");
+    ThrowUserError('product_date_pronouns_unavailable');
+  }
+
+  $pronoun->{date} = $versions->{$key};
 }
 
 sub tf_buglist_columns {
