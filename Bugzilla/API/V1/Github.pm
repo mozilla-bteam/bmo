@@ -222,8 +222,9 @@ sub push_comment {
   my $repository = $payload->{repository}->{full_name};
   my $commits    = $payload->{commits};
 
-  # Return success early if there are no commits or the ref is not a branch
-  if (!@{$commits} || $ref !~ /refs\/heads\//) {
+  # Return success early if there are no commits
+  # or the ref is not a branch of interest
+  if (!@{$commits} || $ref !~ /refs\/heads\/(main|master|releases_v\d+)/) {
     return $self->render(json => {error => 0});
   }
 
