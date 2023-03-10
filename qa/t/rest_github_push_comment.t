@@ -12,7 +12,7 @@ use lib qw(lib ../../lib ../../local/lib/perl5);
 
 use Bugzilla;
 
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON qw(encode_json false);
 use QA::Util qw(get_config generate_payload_signature);
 use Test::Mojo;
 use Test::More;
@@ -107,14 +107,21 @@ $payload = {
     full_name      => 'mozilla-mobile/firefox-android',
     default_branch => 'master',
   },
+  created    => false,
+  deleted    => false,
+  forced     => false,
   commits    => [{
-    author => {username => 'foobar'},
-    url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
-    message => "Bug $bug_id - Test Github Push Comment",
+    author   => {username => 'foobar'},
+    url      => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
+    message  => "Bug $bug_id - Test Github Push Comment",
+    added    => [],
+    removed  => [],
+    modified => [],
   }]
 };
 
-# Post the valid GitHub event to the rest/github/push_comment API endpoint
+# Post the valid GitHub event to the rest/github/push_comment API endpoint.
+# Any extra data should be ignored since we are not doing strict JSON validation.
 $t->post_ok(
   $url
     . 'rest/github/push_comment' => {
