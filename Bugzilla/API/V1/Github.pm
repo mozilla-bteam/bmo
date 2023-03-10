@@ -221,10 +221,11 @@ sub push_comment {
   my $ref        = $payload->{ref};
   my $repository = $payload->{repository}->{full_name};
   my $commits    = $payload->{commits};
+  my ($branch)   = $ref =~ /refs\/heads\/(.*)$/;
 
   # Return success early if there are no commits
-  # or the ref is not a branch of interest
-  if (!@{$commits} || $ref !~ /refs\/heads\/(main|master|releases_v\d+)/) {
+  # or the branch is not one we are interested in.
+  if (!@{$commits} || $branch !~ /^(?:main|master|releases_v\d+)$/) {
     return $self->render(json => {error => 0});
   }
 
