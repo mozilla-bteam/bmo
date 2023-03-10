@@ -205,7 +205,8 @@ sub push_comment {
   my @errors  = joi->object->props(
     ref => joi->string->required,
     repository => joi->required->object->props({
-      full_name => joi->string->required,
+      full_name      => joi->string->required,
+      default_branch => joi->string->required,
     }),
     commits => joi->array->items(joi->object->strict->props({
       message => joi->string->required,
@@ -218,14 +219,15 @@ sub push_comment {
   return $self->user_error('api_input_schema_error', {errors => \@errors})
     if @errors;
 
-  my $ref        = $payload->{ref};
-  my $repository = $payload->{repository}->{full_name};
-  my $commits    = $payload->{commits};
-  my ($branch)   = $ref =~ /refs\/heads\/(.*)$/;
+  my $ref            = $payload->{ref};
+  my $repository     = $payload->{repository}->{full_name};
+  my $default_branch = $payload->{repository}->{default_branch};
+  my $commits        = $payload->{commits};
+  my ($branch)       = $ref =~ /refs\/heads\/(.*)$/;
 
   # Return success early if there are no commits
   # or the branch is not one we are interested in.
-  if (!@{$commits} || $branch !~ /^(?:main|master|releases_v\d+)$/) {
+  if (!@{$commits} || $branch !~ /^(?:$default_branch|releases_v\d+)$/) {
     return $self->render(json => {error => 0});
   }
 

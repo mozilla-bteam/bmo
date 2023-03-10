@@ -57,8 +57,11 @@ $t->post_ok($url
 
 # Invalid JSON
 my $payload = {
-  ref        => 'refs/heads/master',
-  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  ref => 'refs/heads/master',
+  repository => {
+    full_name      => 'mozilla-mobile/firefox-android',
+    default_branch => 'master',
+  },
   commits    => [{
     author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
@@ -76,8 +79,11 @@ $t->post_ok(
 
 # Missing bug IDs
 $payload = {
-  ref        => 'refs/heads/master',
-  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  ref => 'refs/heads/master',
+  repository => {
+    full_name      => 'mozilla-mobile/firefox-android',
+    default_branch => 'master',
+  },
   commits    => [{
     author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
@@ -96,8 +102,11 @@ $t->post_ok(
 
 # https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads
 $payload = {
-  ref        => 'refs/heads/releases_v110',
-  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  ref => 'refs/heads/releases_v110',
+  repository => {
+    full_name      => 'mozilla-mobile/firefox-android',
+    default_branch => 'master',
+  },
   commits    => [{
     author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
@@ -145,8 +154,11 @@ $t->get_ok($url
 
 # Multiple commits with the same bug id should create a single comment
 $payload = {
-  ref        => 'refs/heads/master',
-  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  ref => 'refs/heads/master',
+  repository => {
+    full_name      => 'mozilla-mobile/firefox-android',
+    default_branch => 'master',
+  },
   commits    => [
     {
       author => {username => 'foobar'},
@@ -209,8 +221,11 @@ $t->post_ok(
 my $bug_id_2 = $t->tx->res->json->{id};
 
 $payload = {
-  ref        => 'refs/heads/master',
-  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  ref => 'refs/heads/master',
+  repository => {
+    full_name      => 'mozilla-mobile/firefox-android',
+    default_branch => 'master',
+  },
   commits    => [{
     author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
@@ -259,8 +274,11 @@ $t->put_ok($url
 # This time we will test with the master branch and
 # it should add status-firefox111 instead of 110
 $payload = {
-  ref        => 'refs/heads/master',
-  repository => {full_name => 'mozilla-mobile/firefox-android'},
+  ref => 'refs/heads/master',
+  repository => {
+    full_name      => 'mozilla-mobile/firefox-android',
+    default_branch => 'master',
+  },
   commits    => [{
     author => {username => 'foobar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
