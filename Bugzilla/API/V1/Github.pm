@@ -257,7 +257,7 @@ sub push_comment {
     # Only include the first line of the commit message
     $message = (split /\n/, $message)[0];
 
-    my $comment_text = "Authored by https://github.com/$author\n$url\n$message";
+    my $comment_text = "Authored by https://github.com/$author\n$url\n[$branch] $message";
 
     $update_bugs{$bug_id} ||= [];
     push @{$update_bugs{$bug_id}}, {text => $comment_text};
@@ -327,7 +327,7 @@ sub push_comment {
 
       # Update the status flag to 'fixed' if one exists for the current branch
       # Currently tailored for mozilla-mobile/firefox-android
-      $self->_set_status_flag($bug, $ref) if $repository eq 'mozilla-mobile/firefox-android';
+      $self->_set_status_flag($bug, $branch) if $repository eq 'mozilla-mobile/firefox-android';
     }
 
     $bug->update();
@@ -359,10 +359,7 @@ sub _verify_signature {
 # If the ref matches a certain branch pattern for the repo we are interested
 # in, then we also need to set the appropriate status flag to 'fixed'.
 sub _set_status_flag {
-  my ($self, $bug, $ref) = @_;
-
-  my ($branch) = $ref =~ /refs\/heads\/(.*)$/;
-  return if !$branch;
+  my ($self, $bug, $branch) = @_;
 
   # In order to determine the appropriate status flag for the 'master/main' 
   # branch, we have to find out what the current *nightly* Firefox version is.
