@@ -147,17 +147,14 @@ $t->get_ok(
   ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
-# Bug should have been closed since it did not have the leave-open keyword
-# and it should have the status-firefox110 flag set to fixed since it was
-# under the releases_v110 branch.
+# It should have the status-firefox110 flag set to fixed since it was under
+# the releases_v110 branch. Bug is left open as it was not a commit to the
+# master or main branch.
 $t->get_ok($url
     . "rest/bug/$bug_id?include_fields=id,flags,status,resolution,_custom" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
-  ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
-  ->json_is('/bugs/0/resolution',           'FIXED')
-  ->json_is('/bugs/0/cf_status_firefox110', 'fixed')
-  ->json_is('/bugs/0/flags/0/name',         'qe-verify')
-  ->json_is('/bugs/0/flags/0/status',       '+');
+  ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'CONFIRMED')
+  ->json_is('/bugs/0/cf_status_firefox110', 'fixed');
 
 # Multiple commits with the same bug id should create a single comment
 $payload = {
