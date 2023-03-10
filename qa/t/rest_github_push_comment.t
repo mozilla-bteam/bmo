@@ -63,7 +63,7 @@ my $payload = {
     default_branch => 'master',
   },
   commits    => [{
-    author => {username => 'foobar'},
+    author => {username => 'foobar', name => 'Foo Bar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
   }]
 };
@@ -85,7 +85,7 @@ $payload = {
     default_branch => 'master',
   },
   commits    => [{
-    author => {username => 'foobar'},
+    author => {username => 'foobar', name => 'Foo Bar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => 'Test Github Push Comment',
   }]
@@ -111,7 +111,7 @@ $payload = {
   deleted    => false,
   forced     => false,
   commits    => [{
-    author   => {username => 'foobar'},
+    author   => {name => 'Foo Bar'},
     url      => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message  => "Bug $bug_id - Test Github Push Comment",
     added    => [],
@@ -135,8 +135,8 @@ my $comment_id = $result->{bugs}->{$bug_id}->{id};
 
 # Make sure comment text matches what is expected
 my $comment_text
-  = 'Authored by https://github.com/'
-  . $payload->{commits}->[0]->{author}->{username} . "\n"
+  = 'Authored by '
+  . $payload->{commits}->[0]->{author}->{name} . "\n"
   . $payload->{commits}->[0]->{url} . "\n[releases_v110] "
   . $payload->{commits}->[0]->{message};
 
@@ -165,12 +165,12 @@ $payload = {
   },
   commits    => [
     {
-      author => {username => 'foobar'},
+      author => {username => 'foobar', name => 'Foo Bar'},
       url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
       message => "Bug $bug_id - First Test Github Push Comment",
     },
     {
-      author => {username => 'foobar'},
+      author => {username => 'foobar', name => 'Foo Bar'},
       url => 'https://github.com/mozilla-bteam/bmo/commit/zyxwvutsrqponmlkjihgfedcba',
       message => "Bug $bug_id - Second Test Github Push Comment",
     }
@@ -231,7 +231,7 @@ $payload = {
     default_branch => 'master',
   },
   commits    => [{
-    author => {username => 'foobar'},
+    author => {username => 'foobar', name => 'Foo Bar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => "Bug $bug_id_2 - Test Github Push Comment (leave-open)",
   }]
@@ -284,7 +284,7 @@ $payload = {
     default_branch => 'master',
   },
   commits    => [{
-    author => {username => 'foobar'},
+    author => {username => 'foobar', name => 'Foo Bar'},
     url => 'https://github.com/mozilla-bteam/bmo/commit/abcdefghijklmnopqrstuvwxyz',
     message => "Bug $bug_id_2 - Test Github Push Comment (close bug)",
   }]
