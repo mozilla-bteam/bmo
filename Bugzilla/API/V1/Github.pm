@@ -277,6 +277,8 @@ sub push_comment {
   my $dbh = Bugzilla->dbh;
   $dbh->bz_start_transaction;
 
+  my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+  
   # Actually create the comments in this loop
   foreach my $bug_id (keys %update_bugs) {
     my $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
@@ -327,10 +329,10 @@ sub push_comment {
 
       # Update the status flag to 'fixed' if one exists for the current branch
       # Currently tailored for mozilla-mobile/firefox-android
-      $self->_set_status_flag($bug, $branch) if $repository eq 'mozilla-mobile/firefox-android';
+      $self->_set_status_flag($bug, $branch, $timestamp) if $repository eq 'mozilla-mobile/firefox-android';
     }
 
-    $bug->update();
+    $bug->update($timestamp);
 
     my $comments       = $bug->comments({order => 'newest_to_oldest'});
     my $new_comment_id = $comments->[0]->id;
@@ -359,19 +361,19 @@ sub _verify_signature {
 # If the ref matches a certain branch pattern for the repo we are interested
 # in, then we also need to set the appropriate status flag to 'fixed'.
 sub _set_status_flag {
-  my ($self, $bug, $branch) = @_;
+  my ($self, $bug, $branch, $timestamp) = @_;
 
-  # In order to determine the appropriate status flag for the 'master/main' 
+  # In order to determine the appropriate status flag for the default
   # branch, we have to find out what the current *nightly* Firefox version is.
   # fetch_product_versions() calls an API endpoint maintained by rel-eng that 
   # returns all of the current product versions so we can use that.
   my $version;
   if ($branch eq 'main' || $branch eq 'master') {
-    my $versions  = fetch_product_versions('firefox');
+    my $versions = fetch_product_versions('firefox');
     return if (!%$versions || !exists $versions->{FIREFOX_NIGHTLY});
     ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
   }
-  # Some branches already have the version number embedded in the name.
+  # Release branches already have the version number embedded in the name.
   else {
     ($version) = $branch =~ /^releases_v(\d+)$/;
   }
@@ -381,19 +383,30 @@ sub _set_status_flag {
   my $status_field = 'cf_status_firefox' . $version;
   my $flag = Bugzilla::Extension::TrackingFlags::Flag->new({name => $status_field});
 
+  # Return if the flag doesn't exist for some reason or the value fixed is already set
   return if (!$flag || $bug->$status_field eq 'fixed');
 
   foreach my $value (@{$flag->values}) {
     next if $value->value ne 'fixed';
     last if !$flag->can_set_value($value->value);
 
-    Bugzilla::Extension::TrackingFlags::Flag::Bug->create({
-      tracking_flag_id => $flag->flag_id,
-      bug_id           => $bug->id,
-      value            => $value->value,
-    });
+    my $added   = $value->value;
+    my $removed = $bug->$status_field;
 
-    # Add the name/value pair to the bug object
+    if ($removed eq '---') {
+      Bugzilla::Extension::TrackingFlags::Flag::Bug->create({
+        tracking_flag_id => $flag->flag_id, bug_id => $bug->id, value => $added,
+      });
+    }
+    else {
+      $flag->bug_flag->set_value($added);
+      $flag->bug_flag->update($timestamp);
+    }
+
+    LogActivityEntry($bug->id, $flag->name, $removed, $added, Bugzilla->user->id,
+      $timestamp);
+
+    # Update the name/value pair in the bug object
     $bug->{$flag->name} = $value->value;
     last;
   }
