@@ -212,7 +212,8 @@ sub push_comment {
       message => joi->string->required,
       url     => joi->string->required,
       author  => joi->required->object->props({
-        username => joi->string->required,
+        name     => joi->string->required,
+        username => joi->string,
       }),
     })),
   )->validate($payload);
@@ -244,7 +245,17 @@ sub push_comment {
   foreach my $commit (@{$commits}) {
     my $message = $commit->{message};
     my $url     = $commit->{url};
-    my $author  = $commit->{author}->{username};
+
+    # author.username is not always available but author.name should be.
+    # We will format the author portion of the comment differently
+    # depending on which values we get.
+    my $author;
+    if ($commit->{author}->{username}) {
+      $author = 'https://github.com/' . $commit->{author}->{username};
+    }
+    else {
+      $author = $commit->{author}->{name};
+    }
 
     if (!$url || !$message) {
       return $self->code_error('github_pr_invalid_json');
@@ -257,7 +268,7 @@ sub push_comment {
     # Only include the first line of the commit message
     $message = (split /\n/, $message)[0];
 
-    my $comment_text = "Authored by https://github.com/$author\n$url\n[$branch] $message";
+    my $comment_text = "Authored by $author\n$url\n[$branch] $message";
 
     $update_bugs{$bug_id} ||= [];
     push @{$update_bugs{$bug_id}}, {text => $comment_text};
