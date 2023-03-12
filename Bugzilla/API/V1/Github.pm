@@ -14,6 +14,7 @@ use Bugzilla::Bug;
 use Bugzilla::BugMail;
 use Bugzilla::Constants;
 use Bugzilla::Group;
+use Bugzilla::Milestone;
 use Bugzilla::User;
 use Bugzilla::Util qw(fetch_product_versions);
 
@@ -337,6 +338,10 @@ sub push_comment {
           );
         }
       }
+
+      # Update the milestone to the nightly branch if closing the bug.
+      # Currently tailored for mozilla-mobile/firefox-android only
+      $self->_set_nightly_milestone($bug, $branch) if $repository eq 'mozilla-mobile/firefox-android';
     }
 
     # Update the status flag to 'fixed' if one exists for the current branch
@@ -421,6 +426,30 @@ sub _set_status_flag {
     $bug->{$flag->name} = $value->value;
     last;
   }
+}
+
+# If the bug is being closed, then we also need to set the appropriate
+# nightly milestone version.
+sub _set_nightly_milestone {
+  my ($self, $bug) = @_;
+
+  # In order to determine the appropriate status flag for the 'master/main'
+  # branch, we have to find out what the current *nightly* Firefox version is.
+  # fetch_product_versions() calls an API endpoint maintained by rel-eng that
+  # returns all of the current product versions so we can use that.
+  my $versions = fetch_product_versions('firefox');
+  return if (!%$versions || !exists $versions->{FIREFOX_NIGHTLY});
+  my ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
+  return if !$version;
+
+  # Load the appropriate milestone.
+  my $value = "$version Branch";
+  my $milestone
+    = Bugzilla::Milestone->new({product => $bug->product_obj, name => $value});
+  return if !$milestone;
+
+  # Update the milestone
+  $bug->set_target_milestone($milestone->name);
 }
 
 1;

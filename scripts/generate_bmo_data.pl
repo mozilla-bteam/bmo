@@ -281,8 +281,15 @@ my @products = (
     versions =>
       ['34 Branch', '35 Branch', '36 Branch', '37 Branch', 'Trunk', 'unspecified'],
     default_version  => 'unspecified',
-    milestones =>
-      ['Firefox 36', '---', 'Firefox 37', 'Firefox 38', 'Firefox 39', 'Future'],
+    milestones => [
+      'Firefox 36',
+      '---',
+      'Firefox 37',
+      'Firefox 38',
+      'Firefox 39',
+      '111 Branch',
+      'Future'
+    ],
     defaultmilestone => '---',
     components       => [{
       name        => 'General',
