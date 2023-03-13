@@ -319,11 +319,12 @@ $t->get_ok(
 # Bug should have been closed since it did not have the leave-open keyword
 # and it should also have the status-firefox111 flag set to fixed.
 $t->get_ok($url
-    . "rest/bug/$bug_id_2?include_fields=id,flags,status,resolution,_custom" =>
+    . "rest/bug/$bug_id_2?include_fields=id,flags,status,resolution,target_milestone,_custom" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
   ->json_is('/bugs/0/id', $bug_id_2)->json_is('/bugs/0/status', 'RESOLVED')
   ->json_is('/bugs/0/resolution',           'FIXED')
   ->json_is('/bugs/0/cf_status_firefox111', 'fixed')
+  ->json_is('/bugs/0/target_milestone',     '111 Branch')
   ->json_is('/bugs/0/flags/0/name',         'qe-verify')
   ->json_is('/bugs/0/flags/0/status',       '+');
 
