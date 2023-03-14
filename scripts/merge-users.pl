@@ -189,6 +189,9 @@ foreach my $table (keys %changes) {
     # The first column of the list is the one to update.
     my $col_to_update = shift @columns;
 
+    # Table names like groups need to be quoted
+    $table = $dbh->quote_identifier($table);
+
     # Will be used to migrate the old user account to the new one.
     my $sth_update = $dbh->prepare(
       "UPDATE $table
