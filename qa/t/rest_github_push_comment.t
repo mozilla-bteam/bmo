@@ -144,7 +144,7 @@ my $comment_text
 $t->get_ok(
   $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)
-  ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
+  ->json_is("/comments/$comment_id/creator", 'github-automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
 # It should have the status-firefox110 flag set to fixed since it was under
@@ -203,7 +203,7 @@ $comment_text
 $t->get_ok(
   $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)
-  ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
+  ->json_is("/comments/$comment_id/creator", 'github-automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
 # Create a new bug that has the 'leave-open' keyword set to verify proper behavior
@@ -260,7 +260,7 @@ $comment_text
 $t->get_ok(
   $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)
-  ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
+  ->json_is("/comments/$comment_id/creator", 'github-automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
 # Bug should have stayed open since the leave-open keyword was set
@@ -313,7 +313,7 @@ $comment_text
 $t->get_ok(
   $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)
-  ->json_is("/comments/$comment_id/creator", 'automation@bmo.tld')
+  ->json_is("/comments/$comment_id/creator", 'github-automation@bmo.tld')
   ->json_is("/comments/$comment_id/text",    $comment_text);
 
 # Bug should have been closed since it did not have the leave-open keyword

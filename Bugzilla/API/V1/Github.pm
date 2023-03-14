@@ -110,7 +110,7 @@ sub pull_request {
   }
 
   # Create new attachment using pull request URL as attachment content
-  my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+  my $auto_user = Bugzilla::User->check({name => 'github-automation@bmo.tld'});
   $auto_user->{groups}       = [Bugzilla::Group->get_all];
   $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
   Bugzilla->set_user($auto_user);
@@ -281,7 +281,7 @@ sub push_comment {
   }
 
   # Set current user to automation so we can add comments to private bugs
-  my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+  my $auto_user = Bugzilla::User->check({name => 'github-automation@bmo.tld'});
   $auto_user->{groups}       = [Bugzilla::Group->get_all];
   $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
   Bugzilla->set_user($auto_user);
