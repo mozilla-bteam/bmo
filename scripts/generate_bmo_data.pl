@@ -198,7 +198,11 @@ my @users = (
     password => 'password123456789!',
     api_key  => 'hqPlbNFAtbGhBC7O68DfMBNE5wu7e18Ssviatizl'
   },
-
+  {
+    login    => 'github-automation@bmo.tld',
+    realname => 'BMO Github Automation',
+    password => '*',
+  },
 
   map { {login => $_, realname => (split(/@/, $_, 2))[0], password => '*',} }
     map {
