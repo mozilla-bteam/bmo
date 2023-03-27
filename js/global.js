@@ -262,18 +262,6 @@ window.addEventListener('load', detect_blocked_gravatars, { once: true });
 window.addEventListener('load', adjust_scroll_onload, { once: true });
 window.addEventListener('hashchange', adjust_scroll_onload);
 
-// Focus the quicksearch field in the header when ALT+s (or OPT+s on macOS) is
-// pressed.
-window.addEventListener('keydown', (event) => {
-    if (event.altKey && String.fromCharCode(event.which) === 'S') {
-        const qsElement = document.querySelector('#quicksearch_top');
-        if (qsElement) {
-            event.preventDefault();
-            qsElement.focus();
-        }
-    }
-});
-
 window.addEventListener('DOMContentLoaded', () => {
   const announcement = document.getElementById('new_announcement');
   if (announcement) {
