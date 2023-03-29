@@ -14,7 +14,8 @@
   RETURN UNLESS tracking_flags_table.size;
   set_flags = 0;
   FOREACH row IN tracking_flags_table;
-    NEXT IF row.tracking.value == "---" && row.status.value == "---";
+    NEXT IF (!row.tracking || row.tracking.value == "---")
+      && (!row.status || row.status.value == "---");
     set_flags = 1;
   END;
 %]
