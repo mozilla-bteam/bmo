@@ -952,6 +952,26 @@ my @tracking_flags = (
     values      => ['---', '?', '+', '-', 'blocking'],
     products    => ['Firefox'],
   },
+  {
+    name        => 'cf_status_thunderbird_esr91',
+    description => 'status-thunderbird_esr91',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_status_thunderbird_esr102',
+    description => 'status-thunderbird_esr102',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
 );
 
 my $setter_group = Bugzilla::Group->new({name => 'editbugs'});
