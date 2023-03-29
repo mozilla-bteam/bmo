@@ -99,7 +99,8 @@ sub template_before_process {
   elsif ($file eq 'bug/edit.html.tmpl'
     || $file eq 'bug/show.xml.tmpl'
     || $file eq 'email/bugmail.html.tmpl'
-    || $file eq 'email/bugmail.txt.tmpl')
+    || $file eq 'email/bugmail.txt.tmpl'
+    || $file eq 'bug_modal/edit.html/tmpl')
   {
     # note: bug/edit.html.tmpl doesn't support multiple bugs
     my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'};
@@ -112,7 +113,6 @@ sub template_before_process {
         is_active => 1,
       });
 
-      $vars->{tracking_flags}      = $flags;
       $vars->{tracking_flags_json} = _flags_to_json($flags);
     }
 
@@ -129,15 +129,13 @@ sub template_before_process {
 sub _flags_to_json {
   my ($flags) = @_;
 
-  my $json = {flags => {}, types => [], comments => {},};
+  my $json = {types => [], comments => {}};
 
   my %type_map = map { $_->{name} => $_ } @{FLAG_TYPES()};
   foreach my $flag (@$flags) {
     my $flag_type = $flag->flag_type;
 
-    $json->{flags}->{$flag_type}->{$flag->name} = $flag->bug_flag->value;
-
-    if ($type_map{$flag_type}->{collapsed} && !grep { $_ eq $flag_type }
+    if ($type_map{$flag_type}->{collapsed} && none { $_ eq $flag_type }
       @{$json->{types}})
     {
       push @{$json->{types}}, $flag_type;

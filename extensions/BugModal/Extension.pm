@@ -201,6 +201,14 @@ sub template_before_process {
     file => 'bug/edit.html.tmpl', vars => $vars,
   });
 
+  my $tracking_flags = Bugzilla::Extension::TrackingFlags::Flag->match({
+    product   => $bug->product,
+    component => $bug->component,
+    bug_id    => $bug->id,
+    is_active => 1,
+  });
+  $vars->{tracking_flags} = $tracking_flags;
+
   if (any { $bug->product eq $_ } READABLE_BUG_STATUS_PRODUCTS) {
     my @flags = map { {name => $_->name, status => $_->status} } @{$bug->flags};
     $vars->{readable_bug_status_json} = encode_json({
@@ -212,7 +220,7 @@ sub template_before_process {
       status           => $bug->bug_status,
       flags            => \@flags,
       target_milestone => $bug->target_milestone,
-      map { $_->name => $_->bug_flag($bug->id)->value } @{$vars->{tracking_flags}},
+      map { $_->name => $_->bug_flag($bug->id)->value } @{$tracking_flags},
     });
 
     # HTML4 attributes cannot be longer than this, so just skip it in this case.
@@ -273,24 +281,46 @@ sub template_before_process {
 
   # group tracking flags by version to allow for a better tabular output
   my @tracking_table;
-  my $tracking_flags = $vars->{tracking_flags};
-  foreach my $flag (@$tracking_flags) {
-    my $flag_type = $flag->flag_type;
-    my $type      = 'status';
-    my $name      = $flag->description;
-    if ($flag_type eq 'tracking' && $name =~ /^(tracking|status)-(.+)/) {
-      ($type, $name) = ($1, $2);
+  foreach my $flag (@{$tracking_flags}) {
+    my $flag_type   = $flag->flag_type;
+    my $type        = 'status';
+    my $name        = $flag->name;
+    my $description = $flag->description;
+    my $value       = $flag->bug_flag($bug->id)->value;
+
+    # Use short version of tracking flag description for the UI description
+    if ($flag_type eq 'tracking' && $description =~ /^(tracking|status)-(.+)/) {
+      ($type, $description) = ($1, $2);
     }
 
+    # Only include values that are active and the current user can set
+    my @values = ();
+    foreach my $value (@{$flag->values}) {
+      next if !$value->is_active || !$flag->can_set_value($value->name);
+      push @values, {id => $value->id, name => $value->name};
+    }
+
+    # If we already have a similar description, then add this flag to the same row
+    # in the UI. Otherwise it will be on a different row.
     my ($existing)
-      = grep { $_->{type} eq $flag_type && $_->{name} eq $name } @tracking_table;
+      = grep { $_->{type} eq $flag_type && $_->{description} eq $description }
+      @tracking_table;
     if ($existing) {
-      $existing->{$type} = $flag;
+      $existing->{$type} = {name => $name, value => $value, values => \@values};
     }
     else {
-      push @tracking_table, {$type => $flag, name => $name, type => $flag_type,};
+      push @tracking_table,
+        {
+        $type       => {name => $name, value => $value, values => \@values},
+        description => $description,
+        type        => $flag_type,
+        };
     }
   }
+
+  # Sort by description
+  @tracking_table
+    = sort { $a->{description} cmp $b->{description} } @tracking_table;
   $vars->{tracking_flags_table} = \@tracking_table;
 
   # for the "View -> Hide Treeherder Comments" menu item

@@ -11,19 +11,16 @@
   #%]
 
 [%
-  flags = [];
-  set_flags = [];
-  FOREACH flag IN tracking_flags;
-    NEXT UNLESS flag.flag_type == type;
-    flags.push(flag);
-    NEXT IF flag.bug_flag(bug.id).value == "---";
-    set_flags.push(flag);
+  RETURN UNLESS tracking_flags_table.size;
+  set_flags = 0;
+  FOREACH row IN tracking_flags_table;
+    NEXT IF row.tracking.value == "---" && row.status.value == "---";
+    set_flags = 1;
   END;
-  RETURN UNLESS flags.size;
 %]
 
 [%# view %]
-[% IF set_flags.size %]
+[% IF set_flags %]
   <div class="flags edit-hide">
     <table class="layout-table tracking-flags">
       [% IF type == "tracking" %]
@@ -34,31 +31,30 @@
         </tr>
       [% END %]
       [% FOREACH row IN tracking_flags_table %]
-        [%
+        [%    
           NEXT UNLESS row.type == type;
-          tracking_value = row.tracking.bug_flag(bug_id).value || "---";
-          status_value = row.status.bug_flag(bug_id).value || "---";
-          NEXT IF tracking_value == "---" && status_value == "---";
+          NEXT IF (!row.tracking || row.tracking.value == "---")
+            && (!row.status || row.status.value == "---");
         %]
         <tr>
-          <td class="tracking-flag-name">[% row.name FILTER html %]</td>
+          <td class="tracking-flag-name">[% row.description FILTER html %]</td>
           [% IF type == "tracking" %]
             <td class="tracking-flag-tracking">
-              [% IF tracking_value != '---' %]
+              [% IF row.tracking.value != '---' %]
                 <a href="[% basepath FILTER none %]buglist.cgi?f1=[% row.tracking.name FILTER uri ~%]
-                  &amp;o1=equals&amp;v1=[% tracking_value FILTER uri %]">
+                  &amp;o1=equals&amp;v1=[% row.tracking.value FILTER uri %]">
               [% END %]
-              [%~ tracking_value FILTER html ~%]
-              [% '</a>' IF tracking_value != '---' %]
+              [%~ row.tracking.value FILTER html ~%]
+              [% '</a>' IF row.tracking.value != '---' %]
             </td>
           [% END %]
           <td class="tracking-flag-status">
-            [% IF status_value != '---' %]
+            [% IF row.status.value != '---' %]
               <a href="[% basepath FILTER none %]buglist.cgi?f1=[% row.status.name FILTER uri ~%]
-                &amp;o1=equals&amp;v1=[% status_value FILTER uri %]">
+                &amp;o1=equals&amp;v1=[% row.status.value FILTER uri %]">
             [% END %]
-            [%~ status_value FILTER html ~%]
-            [% '</a>' IF status_value != '---' %]
+            [%~ row.status.value FILTER html ~%]
+            [% '</a>' IF row.status.value != '---' %]
           </td>
         </tr>
       [% END %]
@@ -79,7 +75,7 @@
     [% FOREACH row IN tracking_flags_table %]
       [% NEXT UNLESS row.type == type %]
       <tr>
-        <td class="tracking-flag-name">[% row.name FILTER html %]</td>
+        <td class="tracking-flag-name">[% row.description FILTER html %]</td>
         [% IF type == "tracking" %]
           <td class="tracking-flag-tracking">[% INCLUDE tf_select flag=row.tracking %]</td>
         [% END %]
@@ -94,15 +90,11 @@
   <input type="hidden" id="[% flag.name FILTER html %]-dirty">
   <select id="[% flag.name FILTER html %]" name="[% flag.name FILTER html %]">
     [%
-      flag_bug_value = flag.bug_flag(bug_id).value;
       FOREACH value IN flag.values;
-        IF value.name != flag_bug_value;
-          NEXT IF !value.is_active || !flag.can_set_value(value.name);
-        END;
     %]
         <option value="[% value.name FILTER html %]"
           id="v[% value.id FILTER html %]_[% flag.name FILTER html %]"
-          [% " selected" IF flag_bug_value == value.name %]
+          [% " selected" IF flag.value == value.name %]
         >
           [% value.name FILTER html %]
         </option>
