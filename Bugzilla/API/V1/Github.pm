@@ -349,7 +349,7 @@ sub push_comment {
 
       # Update the milestone to the nightly branch if closing the bug.
       # Currently tailored for mozilla-mobile/firefox-android only
-      $self->_set_nightly_milestone($bug, $set_all, $branch) if $repository eq 'mozilla-mobile/firefox-android';
+      $self->_set_nightly_milestone($bug, $set_all) if $repository eq 'mozilla-mobile/firefox-android';
     }
 
     # Update the status flag to 'fixed' if one exists for the current branch
