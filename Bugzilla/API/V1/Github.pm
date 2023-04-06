@@ -308,8 +308,6 @@ sub push_comment {
       }
     };
 
-    # $bug->add_comment($comment_text);
-
     # If the commit is on the default branch and the bug does not have
     # the keyword 'leave-open', we can also close the bug as RESOLVED/FIXED.
     if ($ref =~ /refs\/heads\/$default_branch/ && !$bug->has_keyword('leave-open')
@@ -319,8 +317,6 @@ sub push_comment {
       # Set the bugs status to RESOLVED/FIXED
       $set_all->{bug_status} = 'RESOLVED';
       $set_all->{resolution} = 'FIXED';
-
-      #$bug->set_bug_status('RESOLVED', {resolution => 'FIXED'});
 
       # Update the qe-verify flag if not set and the bug was closed.
       my $found_flag;
