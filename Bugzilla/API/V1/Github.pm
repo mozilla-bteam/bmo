@@ -407,12 +407,7 @@ sub _set_status_flag {
   # Return if the flag doesn't exist for some reason or the value fixed is already set
   return if (!$flag || $bug->$status_field eq 'fixed');
 
-  foreach my $value (@{$flag->values}) {
-    next if $value->value ne 'fixed';
-    last if !$flag->can_set_value($value->value);
-    $set_all->{$flag->name} = $value->value;
-    last;
-  }
+  $set_all->{$status_field} = 'fixed';
 }
 
 # If the bug is being closed, then we also need to set the appropriate
