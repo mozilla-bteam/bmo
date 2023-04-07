@@ -305,9 +305,8 @@ sub push_comment {
 
     $bug->add_comment($comment_text);
 
-    # If the commit is on the default branch and the bug does not have
-    # the keyword 'leave-open', we can also close the bug as RESOLVED/FIXED.
-    if ($ref =~ /refs\/heads\/$default_branch/ && !$bug->has_keyword('leave-open')
+    # If the bug does not have the keyword 'leave-open', we close the bug as RESOLVED/FIXED.
+    if (!$bug->has_keyword('leave-open')
       && $bug->status ne 'RESOLVED'
       && $bug->status ne 'VERIFIED')
     {
@@ -339,14 +338,18 @@ sub push_comment {
         }
       }
 
-      # Update the milestone to the nightly branch if closing the bug.
+      # Update the milestone to the nightly branch if default branch
       # Currently tailored for mozilla-mobile/firefox-android only
-      $self->_set_nightly_milestone($bug, $branch) if $repository eq 'mozilla-mobile/firefox-android';
-    }
+      if ($ref =~ /refs\/heads\/$default_branch/) {
+        $self->_set_nightly_milestone($bug, $branch)
+          if $repository eq 'mozilla-mobile/firefox-android';
+      }
 
-    # Update the status flag to 'fixed' if one exists for the current branch
-    # Currently tailored for mozilla-mobile/firefox-android
-    $self->_set_status_flag($bug, $branch, $timestamp) if $repository eq 'mozilla-mobile/firefox-android';
+      # Update the status flag to 'fixed' if one exists for the current branch
+      # Currently tailored for mozilla-mobile/firefox-android
+      $self->_set_status_flag($bug, $branch, $timestamp)
+        if $repository eq 'mozilla-mobile/firefox-android';
+    }
 
     $bug->update($timestamp);
 
