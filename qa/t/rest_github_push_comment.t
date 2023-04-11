@@ -151,9 +151,13 @@ $t->get_ok(
 # the releases_v110 branch. Bug is left open as it was not a commit to the
 # master or main branch.
 $t->get_ok($url
-    . "rest/bug/$bug_id?include_fields=id,flags,status,resolution,_custom" =>
+    . "rest/bug/$bug_id?include_fields=id,flags,status,resolution,target_milestone,_custom" =>
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
-  ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'CONFIRMED')
+  ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
+  ->json_is('/bugs/0/resolution',           'FIXED')
+  ->json_is('/bugs/0/flags/0/name',         'qe-verify')
+  ->json_is('/bugs/0/flags/0/status',       '+')
+  ->json_is('/bugs/0/target_milestone',     '---')
   ->json_is('/bugs/0/cf_status_firefox110', 'fixed');
 
 # Multiple commits with the same bug id should create a single comment
