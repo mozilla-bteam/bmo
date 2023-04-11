@@ -960,12 +960,6 @@ $(function() {
             }
         });
 
-    // tracking flags
-    $('.tracking-flags select')
-        .change(function(event) {
-            tracking_flag_change(event.target);
-        });
-
     // take button
     $('.take-btn')
         .click(function(event) {

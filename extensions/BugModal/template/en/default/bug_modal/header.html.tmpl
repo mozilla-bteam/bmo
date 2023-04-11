@@ -69,13 +69,6 @@
 %]
 
 [% javascript = BLOCK %]
-  [%# add tracking flags JSON if available %]
-  [% IF tracking_flags %]
-    [% javascript_urls.push("extensions/TrackingFlags/web/js/flags.js") %]
-    var tracking_flags_str = "[% tracking_flags_json FILTER js %]";
-    var TrackingFlags = $.parseJSON(tracking_flags_str);
-  [% END %]
-
   [%# update last-visited %]
   [% IF user.id %]
     document.addEventListener('DOMContentLoaded', () => show_new_changes_indicator(), { once: true });
