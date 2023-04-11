@@ -338,17 +338,17 @@ sub push_comment {
         }
       }
 
-      # Update the milestone to the nightly branch if default branch
       # Currently tailored for mozilla-mobile/firefox-android only
-      if ($ref =~ /refs\/heads\/$default_branch/) {
-        $self->_set_nightly_milestone($bug, $branch)
-          if $repository eq 'mozilla-mobile/firefox-android';
-      }
+      if ($repository eq 'mozilla-mobile/firefox-android') {
 
-      # Update the status flag to 'fixed' if one exists for the current branch
-      # Currently tailored for mozilla-mobile/firefox-android
-      $self->_set_status_flag($bug, $branch, $timestamp)
-        if $repository eq 'mozilla-mobile/firefox-android';
+        # Update the milestone to the nightly branch if default branch
+        if ($ref =~ /refs\/heads\/$default_branch/) {
+          $self->_set_nightly_milestone($bug, $branch);
+        }
+
+        # Update the status flag to 'fixed' if one exists for the current branch
+        $self->_set_status_flag($bug, $branch, $timestamp);
+      }
     }
 
     $bug->update($timestamp);
