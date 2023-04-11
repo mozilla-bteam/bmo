@@ -289,8 +289,6 @@ sub push_comment {
   my $dbh = Bugzilla->dbh;
   $dbh->bz_start_transaction;
 
-  my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
-  
   # Actually create the comments in this loop
   foreach my $bug_id (keys %update_bugs) {
     my $bug = Bugzilla::Bug->new({id => $bug_id, cache => 1});
@@ -303,7 +301,12 @@ sub push_comment {
       $comment_text .= $comment->{text} . "\n\n";
     }
 
-    $bug->add_comment($comment_text);
+    # Set all parameters
+    my $set_all = {
+      comment => {
+        body => $comment_text
+      }
+    };
 
     # If the commit is on the default branch and the bug does not have
     # the keyword 'leave-open', we can also close the bug as RESOLVED/FIXED.
@@ -312,7 +315,8 @@ sub push_comment {
       && $bug->status ne 'VERIFIED')
     {
       # Set the bugs status to RESOLVED/FIXED
-      $bug->set_bug_status('RESOLVED', {resolution => 'FIXED'});
+      $set_all->{bug_status} = 'RESOLVED';
+      $set_all->{resolution} = 'FIXED';
 
       # Update the qe-verify flag if not set and the bug was closed.
       my $found_flag;
@@ -341,14 +345,15 @@ sub push_comment {
 
       # Update the milestone to the nightly branch if closing the bug.
       # Currently tailored for mozilla-mobile/firefox-android only
-      $self->_set_nightly_milestone($bug, $branch) if $repository eq 'mozilla-mobile/firefox-android';
+      $self->_set_nightly_milestone($bug, $set_all) if $repository eq 'mozilla-mobile/firefox-android';
     }
 
     # Update the status flag to 'fixed' if one exists for the current branch
     # Currently tailored for mozilla-mobile/firefox-android
-    $self->_set_status_flag($bug, $branch, $timestamp) if $repository eq 'mozilla-mobile/firefox-android';
+    $self->_set_status_flag($bug, $set_all, $branch) if $repository eq 'mozilla-mobile/firefox-android';
 
-    $bug->update($timestamp);
+    $bug->set_all($set_all);
+    $bug->update();
 
     my $comments       = $bug->comments({order => 'newest_to_oldest'});
     my $new_comment_id = $comments->[0]->id;
@@ -377,7 +382,7 @@ sub _verify_signature {
 # If the ref matches a certain branch pattern for the repo we are interested
 # in, then we also need to set the appropriate status flag to 'fixed'.
 sub _set_status_flag {
-  my ($self, $bug, $branch, $timestamp) = @_;
+  my ($self, $bug, $set_all, $branch) = @_;
 
   # In order to determine the appropriate status flag for the default
   # branch, we have to find out what the current *nightly* Firefox version is.
@@ -402,36 +407,13 @@ sub _set_status_flag {
   # Return if the flag doesn't exist for some reason or the value fixed is already set
   return if (!$flag || $bug->$status_field eq 'fixed');
 
-  foreach my $value (@{$flag->values}) {
-    next if $value->value ne 'fixed';
-    last if !$flag->can_set_value($value->value);
-
-    my $added   = $value->value;
-    my $removed = $bug->$status_field;
-
-    if ($removed eq '---') {
-      Bugzilla::Extension::TrackingFlags::Flag::Bug->create({
-        tracking_flag_id => $flag->flag_id, bug_id => $bug->id, value => $added,
-      });
-    }
-    else {
-      $flag->bug_flag->set_value($added);
-      $flag->bug_flag->update($timestamp);
-    }
-
-    LogActivityEntry($bug->id, $flag->name, $removed, $added, Bugzilla->user->id,
-      $timestamp);
-
-    # Update the name/value pair in the bug object
-    $bug->{$flag->name} = $value->value;
-    last;
-  }
+  $set_all->{$status_field} = 'fixed';
 }
 
 # If the bug is being closed, then we also need to set the appropriate
 # nightly milestone version.
 sub _set_nightly_milestone {
-  my ($self, $bug) = @_;
+  my ($self, $bug, $set_all) = @_;
 
   # In order to determine the appropriate status flag for the 'master/main'
   # branch, we have to find out what the current *nightly* Firefox version is.
@@ -449,7 +431,7 @@ sub _set_nightly_milestone {
   return if !$milestone;
 
   # Update the milestone
-  $bug->set_target_milestone($milestone->name);
+  $set_all->{target_milestone} = $milestone->name;
 }
 
 1;
