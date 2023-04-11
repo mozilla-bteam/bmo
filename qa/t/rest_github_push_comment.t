@@ -332,4 +332,33 @@ $t->get_ok($url
   ->json_is('/bugs/0/flags/0/name',         'qe-verify')
   ->json_is('/bugs/0/flags/0/status',       '+');
 
+# Change to make sure the flag change entry is recorded properly in the bug history
+$t->get_ok(
+  $url . "rest/bug/$bug_id_2/history" => {'X-Bugzilla-API-Key' => $api_key})
+  ->status_is(200)->json_is('/bugs/0/id', $bug_id_2);
+
+$result = $t->tx->res->json;
+
+my $history = $result->{bugs}->[0]->{history};
+
+my $found_status_flag_change = 0;
+foreach my $change_group (@{$history}) {
+  next if $change_group->{who} ne 'github-automation@bmo.tld';
+  foreach my $change (@{$change_group->{changes}}) {
+    if ( $change->{field_name} eq 'cf_status_firefox111'
+      && $change->{added} eq 'fixed')
+    {
+      $found_status_flag_change = 1;
+      next;
+    }
+    if ( $found_status_flag_change
+      && $change->{field_name} eq 'cf_status_firefox111')
+    {
+      ok(0, 'Found multiple changes for same flag');
+    }
+  }
+}
+
+ok($found_status_flag_change, 'Flag change found');
+
 done_testing();
