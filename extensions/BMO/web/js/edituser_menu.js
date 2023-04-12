@@ -5,7 +5,7 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-function show_usermenu(id, email, show_edit, hide_profile) {
+function show_usermenu(id, email, name, show_edit, hide_profile) {
     var items = [
         {
             name: "Activity",
@@ -23,6 +23,19 @@ function show_usermenu(id, email, show_edit, hide_profile) {
             }
         }
     ];
+    if (name) {
+        items.unshift({
+            name: "Copy Name",
+            callback: function () {
+                $('#clip-container').show();
+                $('#clip').val(name).select();
+                $('#floating-message-text')
+                  .text(document.execCommand('copy') ? 'Name has been copied' : 'Could not copy name');
+                $('#floating-message').fadeIn(250).delay(2500).fadeOut();
+                $('#clip-container').hide();
+            }
+        });
+    }
     if (!hide_profile) {
         items.unshift({
             name: "Profile",
@@ -51,6 +64,6 @@ function show_usermenu(id, email, show_edit, hide_profile) {
 $(function() {
   $('.show_usermenu').on("click", function (event) {
     var $this = $(this);
-    return show_usermenu($this.data('user-id'), $this.data('user-email'), $this.data('show-edit'), $this.data('hide-profile'));
+    return show_usermenu($this.data('user-id'), $this.data('user-email'), $this.data('user-name'), $this.data('show-edit'), $this.data('hide-profile'));
   });
 });

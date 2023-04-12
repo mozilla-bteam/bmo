@@ -45,6 +45,7 @@ END;
         <a class="email [%= "disabled" UNLESS u.is_enabled %] [% " show_usermenu" IF user.id %]"
           [% IF user.id %]
             href="mailto:[% u.email FILTER html %]"
+            data-user-name="[% u.name FILTER html %]"
             data-user-email="[% u.email FILTER html %]"
             data-user-id="[% u.id FILTER html %]"
             data-show-edit="[% user.in_group('editusers') || user.in_group('disableusers') || user.bless_groups.size > 0 ? 1 : 0 %]"
