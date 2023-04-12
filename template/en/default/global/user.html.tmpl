@@ -27,7 +27,7 @@
   [% FILTER collapse %]
     [% IF user.id %]
       <a class="email [%= "bz_inactive" UNLESS who.is_enabled %]" href="mailto:[% who.email FILTER html %]"
-         onclick="return show_usermenu([% who.id FILTER none %], '[% who.email FILTER js %]',
+         onclick="return show_usermenu([% who.id FILTER none %], '[% who.email FILTER js %]', '[% who.name FILTER js %]',
                   [% user.in_group('editusers') || user.in_group('disableusers') || user.bless_groups.size > 0 ? "true" : "false" %]);"
         title="[% who.identity FILTER html %]">
     [%- END -%]

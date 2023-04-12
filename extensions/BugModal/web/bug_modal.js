@@ -310,7 +310,7 @@ $(function() {
             );
             $('#cc-list .show_usermenu').click(function() {
                 const $this = $(this);
-                return show_usermenu($this.data('user-id'), $this.data('user-email'), $this.data('show-edit'),
+                return show_usermenu($this.data('user-id'), $this.data('user-email'), $this.data('user-name'), $this.data('show-edit'),
                     $this.data('hide-profile'));
             });
             $('#cc-list .cc-remove')
