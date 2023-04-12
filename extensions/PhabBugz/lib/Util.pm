@@ -41,6 +41,46 @@ our @EXPORT = qw(
   set_phab_user
 );
 
+# Set approval flags on Phabricator revision bug attachments.
+sub set_attachment_approval_flags {
+  my ($attachment, $revision, $user, $timestamp) = @_;
+
+  # The repo short name is the appropriate value that aligns with flag names.
+  my $repo_name = $revision->repository->short_name;
+  my $approval_flag_name = "approval-mozilla-$repo_name";
+  INFO("Setting $approval_flag_name flag on revision attachment.");
+
+  my @old_flags;
+  my @new_flags;
+
+  # Find the current approval flag state if it exists.
+  foreach my $flag (@{$attachment->flags}) {
+    # Ignore for all flags except the approval flag.
+    next if $flag->name ne $approval_flag_name;
+
+    # Set the flag to `?`. If already '?', it will be a non-change.
+    INFO("Set existing `$approval_flag_name` flag to `?`.");
+    push @old_flags, {id => $flag->id, status => '?'};
+    last;
+  }
+
+  # If we didn't find an existing approval flag to update, add it now.
+  if (!@old_flags) {
+    my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
+    if ($approval_flag) {
+      push @new_flags, {
+        flagtype => $approval_flag,
+        setter   => $user,
+        status   => '?',
+        type_id  => $approval_flag->id,
+      };
+    }
+  }
+
+  $attachment->set_flags(\@old_flags, \@new_flags);
+  $attachment->update($timestamp);
+}
+
 sub create_revision_attachment {
   state $check = compile(Bug, Revision, Str, User);
   my ($bug, $revision, $timestamp, $submitter) = $check->(@_);
@@ -57,6 +97,7 @@ sub create_revision_attachment {
     = grep { is_attachment_phab_revision($_) } @{$bug->attachments};
   my $attachment
     = first { trim($_->data) eq $revision_uri } @review_attachments;
+
 
   if (!defined $attachment) {
     # No attachment is present, so we can now create new one
@@ -79,6 +120,11 @@ sub create_revision_attachment {
       isprivate   => 0,
       mimetype    => PHAB_CONTENT_TYPE,
     });
+
+    # When the revision belongs to an uplift repo, set appropriate approval flags.
+    if ($revision->repository && $revision->repository->is_uplift_repo()) {
+      set_attachment_approval_flags($attachment, $revision, $submitter, $timestamp);
+    }
 
     # Insert a comment about the new attachment into the database.
     $bug->add_comment(
