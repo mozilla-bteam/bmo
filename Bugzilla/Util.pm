@@ -971,29 +971,51 @@ sub extract_nicks {
   return grep { defined $_ } @nicks;
 }
 
+# This routine is used to determine the latest versions for a
+# given product from an external system. We need to fail gracefully
+# if the external system is down for any reason. If the call fails, 
+# then return undefined and let the caller decide what to do.
 sub fetch_product_versions {
-  my ($product)  = @_;
-  my $key      = "${product}_versions";
+  my ($product) = @_;
+  my $key = "${product}_versions";
+
+  WARN($key);
+
+  # First check to see if the values are stored in cache. If not
+  # then we will call the end point to get the latest versions.
   my $versions = Bugzilla->request_cache->{$key}
     || Bugzilla->memcached->get_data({key => $key});
 
   unless ($versions) {
-    my $ua = Mojo::UserAgent->new(request_timeout => 30, connect_timeout => 5);
-    if (my $proxy_url = Bugzilla->params->{'proxy_url'}) {
-      $ua->proxy->http($proxy_url);
-    }
-
     my $product_endpoint = Bugzilla->params->{product_details_endpoint};
-    my $response = $ua->get($product_endpoint . "/$key" . '.json')->result;
-    $versions = Bugzilla->request_cache->{$key}
-      = $response->is_success ? decode_json($response->body) : {};
-    Bugzilla->memcached->set_data({
-      key   => $key,
-      value => $versions,
+    return undef if !$product_endpoint;
 
-      # Cache for 1 day if the data is available, otherwise retry in 5 min
-      expires_in => $response->is_success ? 86_400 : 300,
-    });
+    # Wrap the call in a try block so that we do not block the loading
+    # of a bug page if it does not succeed.
+    try {
+      my $ua = mojo_user_agent();
+      my $response
+        = mojo_user_agent()->get($product_endpoint . "/$key" . '.json')->result;
+      if ($response->is_success) {
+        $versions = decode_json($response->body);
+
+        # Cache the values if we need them again in the near term
+        # request_cache is on for a single page load but memcache
+        # will keep the data for a full day before reloading.
+        Bugzilla->request_cache->{$key} = $versions;
+        Bugzilla->memcached->set_data({
+          key => $key, value => $versions, expires_in => 86_400,
+        });
+      }
+      else {
+        die $response->code . ": " . $response->message;
+      }
+    }
+    catch {
+      # Log the failure and return undef
+      WARN("ERROR: Unable to retrieve product versions: $_");
+      $versions = undef;
+    };
   }
 
   return $versions;
