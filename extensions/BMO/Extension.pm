@@ -2656,7 +2656,7 @@ sub _split_crash_signature {
 sub _get_product_version {
   my ($product, $channel, $detail) = @_;
   my $versions = fetch_product_versions($product);
-  return 0 unless %$versions;
+  return 0 unless $versions;
 
   my $version = $versions->{PRODUCT_CHANNELS->{$product}->{$channel}->{json_key}};
   return $version if $detail;
@@ -2749,9 +2749,13 @@ sub search_date_pronoun {
   my $keys = ['LAST_MERGE_DATE', 'LAST_RELEASE_DATE', 'LAST_SOFTFREEZE_DATE'];
   return unless grep(/^$key$/, @$keys);
 
-  my $date = fetch_product_versions('firefox')->{$key};
-  ThrowUserError('product_date_pronouns_unavailable') unless $date;
-  $pronoun->{date} = $date;
+  my $versions = fetch_product_versions('firefox');
+  if (!$versions || !$versions->{$key}) {
+    WARN("product_date_pronouns_unavailable");
+    ThrowUserError('product_date_pronouns_unavailable');
+  }
+
+  $pronoun->{date} = $versions->{$key};
 }
 
 sub tf_buglist_columns {

@@ -386,7 +386,7 @@ sub _set_status_flag {
   my $version;
   if ($branch eq 'main' || $branch eq 'master') {
     my $versions = fetch_product_versions('firefox');
-    return if (!%$versions || !exists $versions->{FIREFOX_NIGHTLY});
+    return if (!$versions || !exists $versions->{FIREFOX_NIGHTLY});
     ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
   }
   # Release branches already have the version number embedded in the name.
@@ -438,7 +438,7 @@ sub _set_nightly_milestone {
   # fetch_product_versions() calls an API endpoint maintained by rel-eng that
   # returns all of the current product versions so we can use that.
   my $versions = fetch_product_versions('firefox');
-  return if (!%$versions || !exists $versions->{FIREFOX_NIGHTLY});
+  return if (!$versions || !exists $versions->{FIREFOX_NIGHTLY});
   my ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
   return if !$version;
 
