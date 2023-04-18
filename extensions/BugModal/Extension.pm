@@ -165,7 +165,7 @@ sub template_before_process {
   my $file = $args->{file};
   my $vars = $args->{vars};
 
-  return if $file ne 'bug_modal/edit.html.tmpl';
+  return if $file ne 'bug_modal/header.html.tmpl';
 
   if ($vars->{bug} && !$vars->{bugs}) {
     $vars->{bugs} = [$vars->{bug}];
