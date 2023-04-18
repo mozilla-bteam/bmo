@@ -979,8 +979,6 @@ sub fetch_product_versions {
   my ($product) = @_;
   my $key = "${product}_versions";
 
-  WARN($key);
-
   # First check to see if the values are stored in cache. If not
   # then we will call the end point to get the latest versions.
   my $versions = Bugzilla->request_cache->{$key}

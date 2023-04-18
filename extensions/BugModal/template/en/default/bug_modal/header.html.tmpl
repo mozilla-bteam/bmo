@@ -70,7 +70,7 @@
 
 [% javascript = BLOCK %]
   [%# add tracking flags JSON if available %]
-  [% IF tracking_flags %]
+  [% IF tracking_flags_json %]
     [% javascript_urls.push("extensions/TrackingFlags/web/js/flags.js") %]
     var tracking_flags_str = "[% tracking_flags_json FILTER js %]";
     var TrackingFlags = $.parseJSON(tracking_flags_str);
