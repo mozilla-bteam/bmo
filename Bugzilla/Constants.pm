@@ -208,8 +208,6 @@ use Memoize;
   JOB_QUEUE_VIEW_MAX_JOBS
 
   BOUNCE_COUNT_MAX
-
-  PD_ENDPOINT
 );
 
 @Bugzilla::Constants::EXPORT_OK = qw(contenttypes);
@@ -680,9 +678,6 @@ use constant JOB_QUEUE_VIEW_MAX_JOBS => 2500;
 # before the account is completely disabled.
 use constant BOUNCE_COUNT_MAX => 5;
 
-# Endpoint used for getting version details of Mozilla products
-use constant PD_ENDPOINT => 'https://product-details.mozilla.org/1.0/';
-
 sub bz_locations {
 
   # Force memoize() to re-compute data per project, to avoid
@@ -801,6 +796,9 @@ sub DEFAULT_CSP {
   if (Bugzilla->params->{phabricator_enabled}) {
     push @{$policy{form_action}}, Bugzilla->params->{phabricator_base_uri};
   }
+
+  # This is for people.mozilla.org authentication (bug 1783044)
+  push @{$policy{form_action}}, 'https://people.mozilla.org';
 
   return %policy;
 }

@@ -8,6 +8,7 @@
 
 [% RETURN UNLESS bug.user_story_visible.0 %]
 [% RETURN IF user.id == 0 && bug.cf_user_story == "" %]
+[% RETURN IF bugs.size > 1 %]
 [% can_edit_story = bug.check_can_change_field('cf_user_story', 0, 1).allowed %]
 
 <div class="user_story">

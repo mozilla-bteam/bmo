@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20221129.1';
+our $VERSION = '20230418.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -718,7 +718,9 @@ sub memcached {
   return request_cache->{memcached} ||= Bugzilla::Memcached->_new();
 }
 
-# Connector to the Datadog metrics collection daemon.
+# Connector to the `statsd` metrics collection daemon.
+# NOTE: we don't use Datadog any more, but this is still used to 
+# send metrics to `statsd`.
 sub datadog {
   my ($class, $namespace) = @_;
   my $host = $class->localconfig->datadog_host;

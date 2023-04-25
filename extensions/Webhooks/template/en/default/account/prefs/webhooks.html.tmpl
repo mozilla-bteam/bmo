@@ -59,11 +59,11 @@ window.onload = function() {
 <table border="0" cellpadding="3" cellspacing="0">
 <tr>
   <th align="right">Name:</th>
-  <td><input type="text" name="name" id="name" maxlength="64"></td>
+  <td><input type="text" name="name" id="name" size="64" maxlength="64"></td>
 </tr>
 <tr>
   <th align="right">URL:</th>
-  <td><input type="text" name="url" id="url" maxlength="64"></td>
+  <td><input type="text" name="url" id="url" size="64" maxlength="255"></td>
 </tr>
 </table>
 <h4>Events</h4>
@@ -123,22 +123,24 @@ window.onload = function() {
 <tr>
   <th align="right">API Key Header:</th>
   <td>
-    <td>
-      <input type="text" name="api_key_header" id="api_key_header" maxlength="64">
-      <br>
-      (Example: Authorization)
-    </td>
+    <input type="text" name="api_key_header"
+           id="api_key_header" size="64" maxlength="64">
   </td>
+</tr>
+<tr>
+  <td></td>
+  <td>(Example: Authorization)</td>
 </tr>
 <tr>
   <th align="right">API Key Value:</th>
   <td>
-    <td>
-      <input type="text" name="api_key_value" id="api_key_value" maxlength="64">
-      <br>
-      (Example: Token zQ5TSBzq7tTZMtKYq9K1ZqJMjifKx3cPL7pIGk9Q)
-    </td>
+    <input type="text" name="api_key_value"
+            id="api_key_value" size="64" maxlength="64">
   </td>
+</tr>
+<tr>
+  <td></td>
+  <td>(Example: Token zQ5TSBzq7tTZMtKYq9K1ZqJMjifKx3cPL7pIGk9Q)</td>
 </tr>
 </table>
 

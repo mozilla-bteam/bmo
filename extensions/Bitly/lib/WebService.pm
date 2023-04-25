@@ -18,7 +18,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Search;
 use Bugzilla::Search::Quicksearch;
-use Bugzilla::Util ();
+use Bugzilla::Util qw(mojo_user_agent);
 use Bugzilla::WebService::Util 'validate';
 use JSON;
 use LWP::UserAgent;
@@ -96,39 +96,18 @@ sub list {
 sub _bitly {
   my ($self, $uri) = @_;
 
-  # form request URL
-  # http://dev.bitly.com/links.html#v3_shorten
-  my $bitly_url = sprintf(
-    'https://api-ssl.bitly.com/v3/shorten?access_token=%s&longUrl=%s',
-    Bugzilla->params->{bitly_token},
-    uri_escape($uri->as_string)
-  );
-
-  # is Mozilla::CA isn't installed, skip certificate verification
-  eval { require Mozilla::CA };
-  $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = $@ ? 0 : 1;
-
-  # request
-  my $ua = LWP::UserAgent->new(agent => 'Bugzilla');
-  $ua->timeout(10);
-  $ua->protocols_allowed(['http', 'https']);
-  if (my $proxy_url = Bugzilla->params->{proxy_url}) {
-    $ua->proxy(['http', 'https'], $proxy_url);
-  }
-  else {
-    $ua->env_proxy();
-  }
-  my $response = $ua->get($bitly_url);
-  if ($response->is_error) {
+  # Make the request
+  my $ua = mojo_user_agent();
+  my $response
+    = $ua->post('https://api-ssl.bitly.com/v4/shorten' =>
+      {'Authorization' => 'Bearer ' . Bugzilla->params->{bitly_token}} => json =>
+      {long_url        => $uri->as_string})->result;
+  if (!$response->is_success) {
     ThrowUserError('bitly_failure', {message => $response->message});
-  }
-  my $result = decode_json($response->decoded_content);
-  if ($result->{status_code} != 200) {
-    ThrowUserError('bitly_failure', {message => $result->{status_txt}});
   }
 
   # return just the short URL
-  return {url => $result->{data}->{url}};
+  return {url => $response->json->{link}};
 }
 
 sub rest_resources {

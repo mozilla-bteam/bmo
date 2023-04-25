@@ -20,7 +20,7 @@ BEGIN {
 }
 use Mojolicious::Commands;
 
-$ENV{MOJO_LISTEN} ||= $ENV{PORT} ? "http://*:$ENV{PORT}" : "http://*:3001";
+$ENV{MOJO_LISTEN} ||= $ENV{PORT} ? "http://*:$ENV{PORT}" : "http://*:8000";
 
 # Start command line interface for application
 Mojolicious::Commands->start_app('External::Test::API');
@@ -124,6 +124,21 @@ sub startup {
   $r->get(
     '/person/test/v2/user/user_id/*id' => sub {
       shift->render(json => $person_data, status => 200);
+    }
+  );
+
+  # Endpoint used for getting version details of Mozilla products
+  my $product_details = {
+    'FIREFOX_DEVEDITION'                    => '111.0b2',
+    'FIREFOX_ESR'                           => '102.8.0esr',
+    'FIREFOX_NIGHTLY'                       => '111.0a1',
+    'LATEST_FIREFOX_DEVEL_VERSION'          => '110.0b2',
+    'LATEST_FIREFOX_RELEASED_DEVEL_VERSION' => '110.0b2',
+    'LATEST_FIREFOX_VERSION'                => '109.0',
+  };
+  $r->get(
+    '/product_details/firefox_versions.json' => sub {
+      shift->render(json => $product_details, status => 200);
     }
   );
 }

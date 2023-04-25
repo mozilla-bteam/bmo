@@ -194,6 +194,8 @@ function zoomEventHandler(event) {
 }
 
 var items = [];
+// NOTE: This end_date is *excluded* in the data that Socorro returns.
+// So we'll get back crash data for [start_date, end_date)
 var end_date = convertDate(new Date((new Date()).valueOf() - 1000 * 60 * 60 * 24 * 1));
 var start_date = convertDate(new Date((new Date()).valueOf() - 1000 * 60 * 60 * 24 * 180));
 var globals = {
@@ -303,8 +305,16 @@ function loadGraph(search, match = 'exact') {
   // Get all signatures from the Bugzilla page
   var signatures = getSignaturesFromURL(search, match);
   // Initialize chart data
+  // NOTE: Our Socorro query will request 179 days' worth of data: starting
+  // 180 calendar-days ago, ending at (**and not including**) yesterday.
+  // So the most recent calendar-day that we're considering is 2 days ago.
+  // Hence we start with i=2 here.
+  // TODO: Maybe we could request data for yesterday as well? But that
+  // might require improving our timezone-handling here, to avoid
+  // inadvertently asking Socorro for future data if we're in a timezone
+  // that's far ahead of UTC and we've just passed midnight...
   items = [];
-  for (var i = 1; i < 181; i++) {
+  for (var i = 2; i < 181; i++) {
     items.push({
       "date": convertDate(new Date((new Date()).valueOf() - 1000 * 60 * 60 * 24 * i)),
       "release": 0,
@@ -316,7 +326,9 @@ function loadGraph(search, match = 'exact') {
   }
 
   // Process the Socorro data
-  if (items.length >= 180) {
+  // TODO: This items.length check can probably be removed... The loop above
+  // should trivially make it succeed.
+  if (items.length >= 179) {
     var processed = [0, 0];
     var processed_groups = 0;
     $.each(signatures, function (i) {

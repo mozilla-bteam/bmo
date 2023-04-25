@@ -1765,11 +1765,11 @@ use constant ABSTRACT_SCHEMA => {
 
   ts_error => {
     FIELDS => [
-      error_time => {TYPE => 'INT4',         NOTNULL => 1},
-      jobid      => {TYPE => 'INT4',         NOTNULL => 1},
-      message    => {TYPE => 'varchar(255)', NOTNULL => 1},
-      funcid     => {TYPE => 'INT4',         NOTNULL => 1, DEFAULT => 0},
-    ],
+      error_time => {TYPE => 'INT4', NOTNULL => 1},
+      jobid      => {TYPE => 'INT4', NOTNULL => 1},
+      message    => {TYPE => 'TEXT', NOTNULL => 1},
+      funcid     => {TYPE => 'INT4', NOTNULL => 1, DEFAULT => 0},
+      ],
     INDEXES => [
       ts_error_funcid_idx     => [qw(funcid error_time)],
       ts_error_error_time_idx => ['error_time'],

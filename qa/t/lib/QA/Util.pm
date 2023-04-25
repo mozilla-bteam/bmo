@@ -13,6 +13,8 @@ use strict;
 use Data::Dumper;
 use Test::More;
 use Test::WWW::Selenium;
+use Digest::SHA qw(hmac_sha256_hex);
+use Mojo::JSON qw(encode_json); 
 use MIME::Base64 qw(decode_base64);
 use Sys::Hostname qw(hostname);
 use Socket qw(inet_ntoa);
@@ -36,6 +38,7 @@ use base qw(Exporter);
   trim
   url_quote
   random_string
+  generate_payload_signature
 
   log_in
   logout
@@ -93,6 +96,11 @@ sub url_quote {
   my ($toencode) = (@_);
   $toencode =~ s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
   return $toencode;
+}
+
+# https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks
+sub generate_payload_signature {
+  return 'sha256=' . hmac_sha256_hex(encode_json($_[1]), $_[0]);
 }
 
 ###################

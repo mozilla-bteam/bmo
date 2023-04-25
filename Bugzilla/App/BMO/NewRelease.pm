@@ -49,6 +49,8 @@ sub new_release {
   # Display the initial form
   if ($self->req->method eq 'GET') {
     my $versions          = fetch_product_versions('firefox');
+    return $self->code_error() if !$versions;
+
     my $latest_nightly    = $versions->{FIREFOX_NIGHTLY};
     my ($current_nightly) = $latest_nightly =~ /^(\d+)/;
 

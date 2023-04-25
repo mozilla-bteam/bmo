@@ -391,6 +391,13 @@
     that you set one of the following parameters:
     <code>[% params.join(', ') FILTER html %]</code>
 
+  [% ELSIF error == "too_many_params" %]
+    [% title = "Too Many Parameters" %]
+    More parameters were provided that what are allowed.
+    [% IF allowed_params %]
+      Only the following parameters are allowed: [% allowed_params.join(', ') FILTER html %].
+    [% END %]
+
   [% ELSIF error == "product_empty_group_controls" %]
     [% title = "Missing Group Controls" %]
     New settings must be defined to edit group controls for
@@ -524,7 +531,7 @@
   [% ELSIF error == "github_pr_not_pull_request" %]
     The webhook event was not for a GitHub pull request.
 
-  [% ELSIF error == "github_pr_mismatch_signatures" %]
+  [% ELSIF error == "github_mismatch_signatures" %]
     The webhook signature in the header did not match the expected value.
 
   [% ELSIF error == "github_pr_invalid_json" %]
@@ -540,6 +547,25 @@
   [% ELSIF error == "github_pr_attachment_exists" %]
     The pull request contained a [% terms.bug %] ID that already has an attachment
     with this pull request link.
+
+  [% ELSIF error == "github_push_comment_disabled" %]
+    Adding of comments for Github push commits is not enabled for this site.
+
+  [% ELSIF error == "github_push_comment_not_push" %]
+    The webhook event was not for a GitHub push commit.
+
+  [% ELSIF error == "github_push_comment_mismatch_signatures" %]
+    The webhook signature in the header did not match the expected value.
+
+  [% ELSIF error == "github_push_comment_invalid_json" %]
+    The webhook did not contain valid JSON or expected data was missing.
+
+  [% ELSIF error == "github_push_comment_invalid_event" %]
+    The webhook sent a push event that was not the right type
+    so is therefore being ignored.
+
+  [% ELSIF error == "github_push_comment_bug_not_found" %]
+    The push commit message did not contain a valid [% terms.bug %] ID.
 
   [% ELSE %]
     [%# Try to find hooked error messages %]

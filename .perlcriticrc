@@ -35,6 +35,7 @@ severity = 2
 [-Documentation::RequirePodSections]
 [-ErrorHandling::RequireCarping]
 [-InputOutput::RequireBracedFileHandleWithPrint]
+[-Modules::RequireFilenameMatchesPackage]
 [-Modules::RequireVersionVar]
 [-References::ProhibitDoubleSigils]
 [-RegularExpressions::ProhibitComplexRegexes]
@@ -49,6 +50,7 @@ severity = 2
 [-ValuesAndExpressions::ProhibitNoisyQuotes]
 [-ValuesAndExpressions::ProhibitVersionStrings]
 [-ValuesAndExpressions::ProhibitImplicitNewlines]
+[-ValuesAndExpressions::RequireInterpolationOfMetachars]
 [-Variables::ProhibitLocalVars]
 [-Variables::ProhibitPackageVars]
 

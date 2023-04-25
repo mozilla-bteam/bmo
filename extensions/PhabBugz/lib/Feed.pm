@@ -358,6 +358,146 @@ sub _is_uplift_request_form_change {
   return $story_text =~ /\s+uplift request field/;
 }
 
+sub readable_answer {
+  my ($answer) = @_;
+
+  # Return the value itself if it is not a number.
+  if ($answer ne '0' && $answer ne '1') {
+    return $answer;
+  }
+
+  # Return 'yes' for `1`.
+  if ($answer) {
+    return 'yes';
+  }
+
+  # Return 'no' for `0`.
+  return 'no';
+}
+
+sub format_uplift_request_as_markdown {
+  my ($question_answers_mapping) = @_;
+
+  my $comment = "# Uplift Approval Request\n";
+
+  foreach my $question (keys %{$question_answers_mapping}) {
+    my $answer = $question_answers_mapping->{$question};
+    my $answer_string = readable_answer($answer);
+
+    $comment .= "- **$question**: $answer_string\n";
+  }
+
+  return $comment;
+}
+
+sub process_uplift_request_form_change {
+  # Process an uplift request form change for the passed revision object.
+  my ($revision, $bug) = @_;
+
+  my ($timestamp) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
+  my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
+
+  INFO('Commenting the uplift form on the bug.');
+
+  my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
+  my $comment_params = {
+    'is_markdown' => 1,
+    'isprivate'   => 0,
+  };
+  $bug->add_comment($comment_content, $comment_params);
+  $bug->update($timestamp);
+
+  # Take no action if the form is empty.
+  if (ref $revision->uplift_request ne 'HASH'
+    || !keys %{$revision->uplift_request})
+  {
+    INFO('Uplift request form field cleared, ignoring.');
+    return;
+  }
+
+  my $revision_phid = $revision->phid;
+  INFO(
+    "Uplift request form submitted on $revision_phid, " .
+    'requesting `#release-managers` review.'
+  );
+
+  # Get `#release-managers` review group.
+  my $release_managers_group = Bugzilla::Extension::PhabBugz::Project
+    ->new_from_query({name => 'release-managers'});
+
+  if (!$release_managers_group) {
+    WARN(
+      'Uplift request change detected but `#release-managers` was ' .
+      'not found on Phabricator.'
+    );
+    return;
+  }
+
+  my $release_managers_phid = $release_managers_group->phid;
+
+  # Request `#release-managers` review on each revision.
+  foreach my $stack_revision_phid (keys %{$revision->stack_graph_raw}) {
+    # Query Phabricator for each revision object related to the updated revision.
+    my $stack_revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+      {phids => [$stack_revision_phid]}
+    );
+
+    # Add `#release-managers!` review if not already added.
+    my $release_manager_added = 0;
+    foreach my $reviewer (@{$stack_revision->reviewers_raw}) {
+      if ($reviewer->{reviewerPHID} eq $release_managers_phid) {
+        $release_manager_added = 1;
+        last;
+      }
+    }
+    if (!$release_manager_added) {
+      $stack_revision->add_reviewer("blocking($release_managers_phid)");
+      $stack_revision->update();
+      INFO("Requested #release-managers review of $stack_revision_phid.");
+    }
+  }
+
+  # If manual QE is required, set the Bugzilla flag.
+  if ($revision->uplift_request->{'Needs manual QE test'}) {
+    INFO('Needs manual QE test is set.');
+
+    # Reload the current bug object so we can call update again
+    my $reloaded_bug = Bugzilla::Bug->new($bug->id);
+
+    my @old_flags;
+    my @new_flags;
+
+    # Find the current `qe-verify` flag state if it exists.
+    foreach my $flag (@{$reloaded_bug->flags}) {
+      # Ignore for all flags except `qe-verify`.
+      next if $flag->name ne 'qe-verify';
+      # Set the flag to `+`. If already '+', it will be non-change.
+      INFO('Set `qe-verify` flag to `+`.');
+      push @old_flags, {id => $flag->id, status => '+'};
+      last;
+    }
+
+    # If we didn't find an existing `qe-verify` flag to update, add it now.
+    if (!@old_flags) {
+      my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
+      if ($qe_flag) {
+        push @new_flags, {
+          flagtype => $qe_flag,
+          setter   => $phab_bot_user,
+          status   => '+',
+          type_id  => $qe_flag->id,
+        };
+      }
+    }
+
+    # Set the flags.
+    $reloaded_bug->set_flags(\@old_flags, \@new_flags);
+    $reloaded_bug->update($timestamp);
+  }
+
+  INFO("Finished processing uplift request form change for $revision_phid.");
+}
+
 sub process_revision_change {
   state $check = compile($Invocant, Revision, LinkedPhabUser, Str);
   my ($self, $revision, $changer, $story_text) = $check->(@_);
@@ -391,48 +531,14 @@ sub process_revision_change {
   );
   INFO($log_message);
 
-  # Change is a submission of the uplift request form.
-  if (_is_uplift_request_form_change($story_text)) {
-    my $revision_phid = $revision->phid;
-    INFO(
-      "Uplift request form submitted on $revision_phid, " .
-      "requesting `#release-managers` review."
-    );
-
-    # Get `#release-managers` review group.
-    my $release_managers_group = Bugzilla::Extension::PhabBugz::Project
-      ->new_from_query({name => 'release-managers'});
-
-    if (!$release_managers_group) {
-      WARN(
-        "Uplift request change detected but `#release-managers` was " .
-        "not found on Phabricator."
-      );
-      return;
-    }
-
-    my $release_managers_phid = $release_managers_group->phid;
-
-    # Request `#release-managers` review on each revision.
-    foreach my $stack_revision_phid (keys %{$revision->stack_graph_raw}) {
-      # Query Phabricator for each revision object related to the updated revision.
-      my $stack_revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
-        {phids => [$stack_revision_phid]}
-      );
-
-      # Add `#release-managers!` review and set revision status.
-      $stack_revision->add_reviewer("blocking($release_managers_phid)");
-      $stack_revision->update();
-
-      INFO("Requested #release-managers review of $stack_revision_phid.");
-    }
-
-    return;
-  }
-
   # change to the phabricator user, which returns a guard that restores the previous user.
   my $restore_prev_user = set_phab_user();
   my $bug               = $revision->bug;
+
+  # Change is a submission of the uplift request form.
+  if (_is_uplift_request_form_change($story_text)) {
+    return process_uplift_request_form_change($revision, $bug);
+  }
 
   # Check to make sure bug id is valid and author can see it
   if ($bug->{error}

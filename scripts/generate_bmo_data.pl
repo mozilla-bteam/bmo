@@ -22,6 +22,11 @@ use Bugzilla::Keyword;
 use Bugzilla::Config qw(:admin);
 use Bugzilla::User::Setting;
 use Bugzilla::Status;
+
+use Bugzilla::Extension::TrackingFlags::Flag;
+use Bugzilla::Extension::TrackingFlags::Flag::Value;
+use Bugzilla::Extension::TrackingFlags::Flag::Visibility;
+
 use Getopt::Long qw( :config gnu_getopt );
 
 BEGIN { Bugzilla->extensions }
@@ -187,6 +192,18 @@ my @users = (
     password => '*',
     api_key  => '4fut0aBEfW260ULXEP1pvOqj7lwnhHoSB16wfpLP'
   },
+  {
+    login    => 'lobot@bmo.tld',
+    realname => 'Lando Automation',
+    password => 'password123456789!',
+    api_key  => 'hqPlbNFAtbGhBC7O68DfMBNE5wu7e18Ssviatizl'
+  },
+  {
+    login    => 'github-automation@bmo.tld',
+    realname => 'BMO Github Automation',
+    password => '*',
+  },
+
   map { {login => $_, realname => (split(/@/, $_, 2))[0], password => '*',} }
     map {
     map {@$_}
@@ -268,8 +285,15 @@ my @products = (
     versions =>
       ['34 Branch', '35 Branch', '36 Branch', '37 Branch', 'Trunk', 'unspecified'],
     default_version  => 'unspecified',
-    milestones =>
-      ['Firefox 36', '---', 'Firefox 37', 'Firefox 38', 'Firefox 39', 'Future'],
+    milestones => [
+      'Firefox 36',
+      '---',
+      'Firefox 37',
+      'Firefox 38',
+      'Firefox 39',
+      '111 Branch',
+      'Future'
+    ],
     defaultmilestone => '---',
     components       => [{
       name        => 'General',
@@ -580,6 +604,7 @@ my %set_params = (
   edit_comments_group  => 'editbugs',
   github_pr_linking_enabled => 1,
   github_pr_signature_secret => 'B1gS3cret!',
+  github_push_comment_enabled => 1,
   insidergroup         => 'core-security-release',
   last_change_time_non_bot_skip_list => 'automation@bmo.tld',
   last_visit_keep_days => '28',
@@ -655,7 +680,19 @@ my @flagtypes = (
     target_type      => 'a',
     cc_list          => '',
     inclusions       => ['']
-  }
+  },
+  {
+    name => 'qe-verify',
+    desc => 'qe-verify: + ➜ request to verify the bug manually
+qe-verify: - ➜ the bug will not/can not be verified manually',
+    is_requestable   => 0,
+    is_requesteeble  => 0,
+    is_multiplicable => 0,
+    grant_group      => '',
+    target_type      => 'b',
+    cc_list          => '',
+    inclusions       => ['Firefox:']
+  },
 );
 
 print "creating flag types...\n";
@@ -857,12 +894,123 @@ my @keywords = (
     name        => 'triaged',
     description => 'Bugs that have been triaged.'
   },
+  {
+    name        => 'leave-open',
+    description => 'Instructs merge tools to leave the bug open when the patches are merged to mozilla-central.',
+  },
 );
 
 print "creating keywords...\n";
 foreach my $kw (@keywords) {
   next if new Bugzilla::Keyword({name => $kw->{name}});
   Bugzilla::Keyword->create($kw);
+}
+
+###########################################################
+# Create Tracking Flags
+###########################################################
+
+print "creating tracking flags...\n";
+my @tracking_flags = (
+  {
+    name        => 'cf_status_firefox110',
+    description => 'status-firefox110',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_status_firefox111',
+    description => 'status-firefox111',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_tracking_firefox110',
+    description => 'tracking-firefox110',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', '+', '-', 'blocking'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_tracking_firefox111',
+    description => 'tracking-firefox111',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', '+', '-', 'blocking'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_status_thunderbird_esr91',
+    description => 'status-thunderbird_esr91',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_status_thunderbird_esr102',
+    description => 'status-thunderbird_esr102',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+);
+
+my $setter_group = Bugzilla::Group->new({name => 'editbugs'});
+
+foreach my $flag_data (@tracking_flags) {
+  my $values   = delete $flag_data->{values};
+  my $products = delete $flag_data->{products};
+
+  my $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->new({name => $flag_data->{name}});
+  next if $flag_obj; # Skip if already exists
+
+  $flag_obj = Bugzilla::Extension::TrackingFlags::Flag->create($flag_data);
+
+  # Add values for the new tracking flag
+  my $sortkey = 0;
+  foreach my $value (@{$values}) {
+    $sortkey += 1;
+
+    my $value_data = {
+      value           => $value,
+      setter_group_id => $setter_group->id,
+      is_active       => 1,
+      sortkey         => $sortkey,
+      comment          => '',
+      tracking_flag_id => $flag_obj->flag_id,
+    };
+
+    Bugzilla::Extension::TrackingFlags::Flag::Value->create($value_data);
+  }
+
+  # Make if visible to the products listed
+  foreach my $product (@{$products}) {
+    my $product_obj = Bugzilla::Product->new({name => $product});
+    Bugzilla::Extension::TrackingFlags::Flag::Visibility->create({
+      tracking_flag_id => $flag_obj->flag_id,
+      product_id       => $product_obj->id,
+      component_id     => undef,
+    });
+  }
 }
 
 print "installation and configuration complete!\n";

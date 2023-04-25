@@ -104,6 +104,24 @@ foreach my $revision (@revisions) {
 }
 close $bug_fh;
 
+say 'write markdown.push.txt';
+
+my $markdown
+  = "[Github Link]($tag_url)\n\nThe following changes have been pushed to [bugzilla.mozilla.org](https://bugzilla.mozilla.org):\n\n";
+$markdown .= "* No bugs!\n" if !@revisions;
+foreach my $revision (@revisions) {
+  $markdown
+    .= sprintf
+    "* [Bug %d](https://bugzilla.mozilla.org/show_bug.cgi?id=%d) - %s\n",
+    $revision->{bug_id}, $revision->{bug_id}, $revision->{summary};
+}
+$markdown
+  .= "\nDiscuss these changes in the [BMO Matrix Room](https://matrix.to/#/#bmo:mozilla.org)";
+
+open my $markdown_fh, '>', 'markdown.push.txt';
+say $markdown_fh $markdown;
+close $markdown_fh;
+
 say 'write blog.push.txt';
 
 open my $blog_fh, '>', 'blog.push.txt';
@@ -119,7 +137,7 @@ foreach my $revision (@revisions) {
 }
 say $blog_fh '</ul></p>';
 say $blog_fh
-  q{Discuss these changes in the <a href="https://discourse.mozilla.org/c/firefox-tooling-announcements/521" target="_blank">Firefox Tooling Discourse</a>.};
+  q{Discuss these changes in the <a href="https://matrix.to/#/#bmo:mozilla.org" target="_blank">bugzilla.mozilla.org Matrix Room</a>.};
 close $blog_fh;
 
 say 'write email.push.txt';
