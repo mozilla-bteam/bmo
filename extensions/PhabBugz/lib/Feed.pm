@@ -39,6 +39,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
   get_bug_role_phids
   is_attachment_phab_revision
   request
+  set_attachment_approval_flags
   set_phab_user
 );
 
@@ -632,6 +633,28 @@ sub process_revision_change {
     if ($revision->title ne $attachment->description) {
       INFO('Updating description on attachment ' . $attachment->id);
       $attachment->set_description($revision->title);
+    }
+
+    # Sync the `approval-mozilla-{repo}+` flags.
+    if (
+      $revision->repository &&
+      $revision->repository->is_uplift_repo()
+    ) {
+      my $revision_status_flag_map = {
+        'abandoned'       => '-',
+        'accepted'        => '+',
+        'changes-planned' => '?',
+        'needs-review'    => '?',
+        'needs-revision'  => '-',
+      };
+      my $approval_status = $revision_status_flag_map->{$revision->status};
+
+      set_attachment_approval_flags(
+        $attachment,
+        $revision,
+        $revision->author->bugzilla_user,
+        $approval_status
+      );
     }
 
     $attachment->update($timestamp);

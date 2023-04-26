@@ -38,12 +38,13 @@ our @EXPORT = qw(
   intersect
   is_attachment_phab_revision
   request
+  set_attachment_approval_flags
   set_phab_user
 );
 
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
-  my ($attachment, $revision, $user, $timestamp) = @_;
+  my ($attachment, $revision, $user, $status) = @_;
 
   # The repo short name is the appropriate value that aligns with flag names.
   my $repo_name = $revision->repository->short_name;
@@ -58,9 +59,10 @@ sub set_attachment_approval_flags {
     # Ignore for all flags except the approval flag.
     next if $flag->name ne $approval_flag_name;
 
-    # Set the flag to `?`. If already '?', it will be a non-change.
-    INFO("Set existing `$approval_flag_name` flag to `?`.");
-    push @old_flags, {id => $flag->id, status => '?'};
+    # Set the flag to it's new status. If it already has that status,
+    # it will be a non-change.
+    INFO("Set existing `$approval_flag_name` flag to `$status`.");
+    push @old_flags, {id => $flag->id, status => $status};
     last;
   }
 
@@ -70,14 +72,13 @@ sub set_attachment_approval_flags {
     if ($approval_flag) {
       push @new_flags, {
         setter   => $user,
-        status   => '?',
+        status   => $status,
         type_id  => $approval_flag->id,
       };
     }
   }
 
   $attachment->set_flags(\@old_flags, \@new_flags);
-  $attachment->update($timestamp);
 }
 
 sub create_revision_attachment {
@@ -120,9 +121,10 @@ sub create_revision_attachment {
       mimetype    => PHAB_CONTENT_TYPE,
     });
 
-    # When the revision belongs to an uplift repo, set appropriate approval flags.
+    # When the revision belongs to an uplift repo, set appropriate approval flags to `?`.
     if ($revision->repository && $revision->repository->is_uplift_repo()) {
-      set_attachment_approval_flags($attachment, $revision, $submitter, $timestamp);
+      set_attachment_approval_flags($attachment, $revision, $submitter, '?');
+      $attachment->update($timestamp);
     }
 
     # Insert a comment about the new attachment into the database.
