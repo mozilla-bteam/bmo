@@ -69,7 +69,6 @@ sub set_attachment_approval_flags {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
       push @new_flags, {
-        flagtype => $approval_flag,
         setter   => $user,
         status   => '?',
         type_id  => $approval_flag->id,
