@@ -13,7 +13,6 @@ use warnings;
 
 use base qw(Exporter);
 our @EXPORT = qw(
-  LANDO_AUTOMATION_USER
   PHAB_AUTOMATION_USER
   PHAB_ATTACHMENT_PATTERN
   PHAB_CONTENT_TYPE
@@ -21,9 +20,15 @@ our @EXPORT = qw(
   PHAB_USER_POLL_SECONDS
   PHAB_GROUP_POLL_SECONDS
   PHAB_TIMEOUT
+ 
+  LANDO_AUTOMATION_USER
+  LANDO_BUG_UPDATE_FIELDS
+ 
+  PULSEBOT_AUTOMATION_USER
+  PULSEBOT_UPLIFT_REPOS
+  PULSEBOT_BUG_UPDATE_FIELDS
 );
 
-use constant LANDO_AUTOMATION_USER   => 'lobot@bmo.tld';
 use constant PHAB_ATTACHMENT_PATTERN => qr/^phabricator-D(\d+)/;
 use constant PHAB_AUTOMATION_USER    => 'phab-bot@bmo.tld';
 use constant PHAB_CONTENT_TYPE       => 'text/x-phabricator-request';
@@ -31,5 +36,22 @@ use constant PHAB_FEED_POLL_SECONDS  => $ENV{PHAB_FEED_POLL} // 5;
 use constant PHAB_USER_POLL_SECONDS  => $ENV{PHAB_USER_POLL} // 60;
 use constant PHAB_GROUP_POLL_SECONDS => $ENV{PHAB_GROUP_POLL} // 300;
 use constant PHAB_TIMEOUT            => $ENV{PHAB_TIMEOUT} // 60;
+
+use constant LANDO_AUTOMATION_USER   => 'lobot@bmo.tld';
+use constant LANDO_BUG_UPDATE_FIELDS => qw(
+  cf_status_firefox
+  status_whiteboard
+);
+
+use constant PULSEBOT_AUTOMATION_USER   => 'pulsebot@bmo.tld';
+use constant PULSEBOT_UPLIFT_REPOS => qw(
+  integration/autoland
+);
+use constant PULSEBOT_BUG_UPDATE_FIELDS => qw(
+  bug_status
+  comment
+  keywords
+  resolution
+);
 
 1;

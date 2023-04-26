@@ -199,6 +199,12 @@ my @users = (
     api_key  => 'hqPlbNFAtbGhBC7O68DfMBNE5wu7e18Ssviatizl'
   },
   {
+    login    => 'pulsebot@bmo.tld',
+    realname => 'Pulsebot Automation',
+    password => 'password123456789!',
+    api_key  => 'p5vddyKNyvMYpfkmQgXXrutL3Nm2xhb1kBADqF0T'
+  },
+  {
     login    => 'github-automation@bmo.tld',
     realname => 'BMO Github Automation',
     password => '*',
@@ -897,6 +903,10 @@ my @keywords = (
   {
     name        => 'leave-open',
     description => 'Instructs merge tools to leave the bug open when the patches are merged to mozilla-central.',
+  },
+  {
+    name        => 'checkin-needed-tb',
+    description => 'Keyword searched on by the Thunderbird team to use to have your patch checked in, if you cant check it in yourself.'
   },
 );
 

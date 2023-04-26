@@ -65,7 +65,7 @@ my $update = {
   ids                    => [$bug_id],
   'whiteboard'           => '',
   'cf_status_firefox111' => 'fixed',
-  status                 => 'ASSIGNED'
+  platform               => 'All'
 };
 $t->put_ok($url
     . 'rest/lando/uplift' => {'X-Bugzilla-API-Key' => $lando_api_key} => json =>
@@ -74,7 +74,7 @@ $t->put_ok($url
   qr/More parameters were provided that what are allowed/);
 
 # This one should succeed since we only pass in what is allowed
-delete $update->{status};
+delete $update->{platform};
 $t->put_ok($url
     . 'rest/lando/uplift' => {'X-Bugzilla-API-Key' => $lando_api_key} => json =>
     $update)->status_is(200)->json_is('/bugs/0/id', $bug_id)
