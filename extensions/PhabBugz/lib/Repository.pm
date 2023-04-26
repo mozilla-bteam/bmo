@@ -12,6 +12,8 @@ use Moo;
 use Types::Standard -all;
 
 use Bugzilla::Util qw(trim);
+use Bugzilla::Extension::PhabBugz::Project;
+use Bugzilla::Extension::PhabBugz::Types qw(:types);
 use Bugzilla::Extension::PhabBugz::Util qw(request);
 
 #########################
@@ -33,12 +35,14 @@ has modification_ts => (is => 'ro',   isa => Str);
 has view_policy     => (is => 'ro',   isa => Str);
 has edit_policy     => (is => 'ro',   isa => Str);
 has push_policy     => (is => 'ro',   isa => Str);
+has projects_raw    => (is => 'ro',   isa => Dict [projectPHIDs => ArrayRef [Str]]);
+has projects        => (is => 'lazy', isa => ArrayRef [Project]);
 
 sub new_from_query {
   my ($class, $params) = @_;
 
   my $data
-    = {queryKey => 'all', constraints => $params};
+    = {queryKey => 'all', constraints => $params, attachments => {projects => 1}};
 
   my $result = request('diffusion.repository.search', $data);
 
@@ -47,6 +51,19 @@ sub new_from_query {
   }
 
   return undef;
+}
+
+sub is_uplift_repo {
+  # Return a boolean indicating if this repository is an uplift repo.
+  my ($self) = @_;
+
+  foreach my $project (@{$self->projects}) {
+    if ($project->name eq 'uplift') {
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 sub BUILDARGS {
@@ -64,6 +81,7 @@ sub BUILDARGS {
   $params->{view_policy}     = $params->{fields}->{policy}->{view};
   $params->{edit_policy}     = $params->{fields}->{policy}->{edit};
   $params->{push_policy}     = $params->{fields}->{policy}->{'diffusion.push'};
+  $params->{projects_raw}    = $params->{attachments}->{projects};
 
   delete $params->{attachments};
   delete $params->{fields};
@@ -103,7 +121,11 @@ sub BUILDARGS {
 #           "diffusion.push": "no-one"
 #         }
 #       },
-#       "attachments": {}
+#       "attachments": {
+#         "projectsPHIDs": [
+#           "PHID-PROJ-pioonhc34mzisujjvyvd"
+#         ]
+#       }
 #     }
 #   ],
 #   "maps": {},
@@ -117,5 +139,24 @@ sub BUILDARGS {
 #     "order": null
 #   }
 # }
+
+############
+# Builders #
+############
+
+sub _build_projects {
+  my ($self) = @_;
+
+  return $self->{projects} if $self->{projects};
+  return [] unless $self->projects_raw->{projectPHIDs};
+
+  my @projects;
+  foreach my $phid (@{$self->projects_raw->{projectPHIDs}}) {
+    push @projects,
+      Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$phid]});
+  }
+
+  return $self->{projects} = \@projects;
+}
 
 1;
