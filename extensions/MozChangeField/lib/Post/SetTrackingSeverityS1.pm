@@ -117,7 +117,7 @@ sub evaluate_change {
 
 sub _fetch_nightly_beta_versions {
   my $versions  = fetch_product_versions('firefox');
-  if (!%$versions
+  if (!$versions
     || !exists $versions->{FIREFOX_NIGHTLY}
     || !exists $versions->{LATEST_FIREFOX_RELEASED_DEVEL_VERSION}
   ) {

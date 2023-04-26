@@ -198,7 +198,11 @@ my @users = (
     password => 'password123456789!',
     api_key  => 'hqPlbNFAtbGhBC7O68DfMBNE5wu7e18Ssviatizl'
   },
-
+  {
+    login    => 'github-automation@bmo.tld',
+    realname => 'BMO Github Automation',
+    password => '*',
+  },
 
   map { {login => $_, realname => (split(/@/, $_, 2))[0], password => '*',} }
     map {
@@ -281,8 +285,15 @@ my @products = (
     versions =>
       ['34 Branch', '35 Branch', '36 Branch', '37 Branch', 'Trunk', 'unspecified'],
     default_version  => 'unspecified',
-    milestones =>
-      ['Firefox 36', '---', 'Firefox 37', 'Firefox 38', 'Firefox 39', 'Future'],
+    milestones => [
+      'Firefox 36',
+      '---',
+      'Firefox 37',
+      'Firefox 38',
+      'Firefox 39',
+      '111 Branch',
+      'Future'
+    ],
     defaultmilestone => '---',
     components       => [{
       name        => 'General',
@@ -908,7 +919,7 @@ my @tracking_flags = (
     type        => 'tracking',
     enter_bug   => 0,
     is_active   => 1,
-    values      => ['?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
     products    => ['Firefox'],
   },
   {
@@ -918,10 +929,49 @@ my @tracking_flags = (
     type        => 'tracking',
     enter_bug   => 0,
     is_active   => 1,
-    values      => ['?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
     products    => ['Firefox'],
   },
-
+  {
+    name        => 'cf_tracking_firefox110',
+    description => 'tracking-firefox110',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', '+', '-', 'blocking'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_tracking_firefox111',
+    description => 'tracking-firefox111',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', '+', '-', 'blocking'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_status_thunderbird_esr91',
+    description => 'status-thunderbird_esr91',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_status_thunderbird_esr102',
+    description => 'status-thunderbird_esr102',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 0,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    products    => ['Firefox'],
+  },
 );
 
 my $setter_group = Bugzilla::Group->new({name => 'editbugs'});

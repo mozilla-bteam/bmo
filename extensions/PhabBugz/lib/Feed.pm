@@ -717,7 +717,7 @@ sub process_new_user {
   # CHECK AND WARN FOR POSSIBLE USERNAME SQUATTING
   INFO("Checking for username squatters");
   my $dbh     = Bugzilla->dbh;
-  my $regexp  = $dbh->quote(":?:" . quotemeta($phab_user->name) . "[[:>:]]");
+  my $regexp  = $dbh->quote($dbh->WORD_START . ':?:' . quotemeta($phab_user->name) . $dbh->WORD_END);
   my $results = $dbh->selectall_arrayref("
         SELECT userid, login_name, realname
           FROM profiles

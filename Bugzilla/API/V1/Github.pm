@@ -14,6 +14,7 @@ use Bugzilla::Bug;
 use Bugzilla::BugMail;
 use Bugzilla::Constants;
 use Bugzilla::Group;
+use Bugzilla::Milestone;
 use Bugzilla::User;
 use Bugzilla::Util qw(fetch_product_versions);
 
@@ -109,7 +110,7 @@ sub pull_request {
   }
 
   # Create new attachment using pull request URL as attachment content
-  my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+  my $auto_user = Bugzilla::User->check({name => 'github-automation@bmo.tld'});
   $auto_user->{groups}       = [Bugzilla::Group->get_all];
   $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
   Bugzilla->set_user($auto_user);
@@ -205,25 +206,30 @@ sub push_comment {
   my @errors  = joi->object->props(
     ref => joi->string->required,
     repository => joi->required->object->props({
-      full_name => joi->string->required,
+      full_name      => joi->string->required,
+      default_branch => joi->string->required,
     }),
-    commits => joi->array->items(joi->object->strict->props({
+    commits => joi->array->items(joi->object->props({
       message => joi->string->required,
       url     => joi->string->required,
       author  => joi->required->object->props({
-        username => joi->string->required,
+        name     => joi->string->required,
+        username => joi->string,
       }),
     })),
   )->validate($payload);
   return $self->user_error('api_input_schema_error', {errors => \@errors})
     if @errors;
 
-  my $ref        = $payload->{ref};
-  my $repository = $payload->{repository}->{full_name};
-  my $commits    = $payload->{commits};
+  my $ref            = $payload->{ref};
+  my $repository     = $payload->{repository}->{full_name};
+  my $default_branch = $payload->{repository}->{default_branch};
+  my $commits        = $payload->{commits};
+  my ($branch)       = $ref =~ /refs\/heads\/(.*)$/;
 
-  # Return success early if there are no commits or the ref is not a branch
-  if (!@{$commits} || $ref !~ /refs\/heads\//) {
+  # Return success early if there are no commits
+  # or the branch is not one we are interested in.
+  if (!@{$commits} || $branch !~ /^(?:$default_branch|releases_v\d+)$/) {
     return $self->render(json => {error => 0});
   }
 
@@ -240,7 +246,17 @@ sub push_comment {
   foreach my $commit (@{$commits}) {
     my $message = $commit->{message};
     my $url     = $commit->{url};
-    my $author  = $commit->{author}->{username};
+
+    # author.username is not always available but author.name should be.
+    # We will format the author portion of the comment differently
+    # depending on which values we get.
+    my $author;
+    if ($commit->{author}->{username}) {
+      $author = 'https://github.com/' . $commit->{author}->{username};
+    }
+    else {
+      $author = $commit->{author}->{name};
+    }
 
     if (!$url || !$message) {
       return $self->code_error('github_pr_invalid_json');
@@ -253,7 +269,7 @@ sub push_comment {
     # Only include the first line of the commit message
     $message = (split /\n/, $message)[0];
 
-    my $comment_text = "Authored by https://github.com/$author\n$url\n$message";
+    my $comment_text = "Authored by $author\n$url\n[$branch] $message";
 
     $update_bugs{$bug_id} ||= [];
     push @{$update_bugs{$bug_id}}, {text => $comment_text};
@@ -265,7 +281,7 @@ sub push_comment {
   }
 
   # Set current user to automation so we can add comments to private bugs
-  my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+  my $auto_user = Bugzilla::User->check({name => 'github-automation@bmo.tld'});
   $auto_user->{groups}       = [Bugzilla::Group->get_all];
   $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
   Bugzilla->set_user($auto_user);
@@ -285,16 +301,21 @@ sub push_comment {
       $comment_text .= $comment->{text} . "\n\n";
     }
 
-    $bug->add_comment($comment_text);
+    # Set all parameters
+    my $set_all = {
+      comment => {
+        body => $comment_text
+      }
+    };
 
-    # If the bug does not have the keyword 'leave-open',
-    # we can also close the bug as RESOLVED/FIXED.
+    # If the bug does not have the keyword 'leave-open', we close the bug as RESOLVED/FIXED.
     if (!$bug->has_keyword('leave-open')
       && $bug->status ne 'RESOLVED'
       && $bug->status ne 'VERIFIED')
     {
       # Set the bugs status to RESOLVED/FIXED
-      $bug->set_bug_status('RESOLVED', {resolution => 'FIXED'});
+      $set_all->{bug_status} = 'RESOLVED';
+      $set_all->{resolution} = 'FIXED';
 
       # Update the qe-verify flag if not set and the bug was closed.
       my $found_flag;
@@ -321,11 +342,20 @@ sub push_comment {
         }
       }
 
-      # Update the status flag to 'fixed' if one exists for the current branch
-      # Currently tailored for mozilla-mobile/firefox-android
-      $self->_set_status_flag($bug, $ref) if $repository eq 'mozilla-mobile/firefox-android';
+      # Currently tailored for mozilla-mobile/firefox-android only
+      if ($repository eq 'mozilla-mobile/firefox-android') {
+
+        # Update the milestone to the nightly branch if default branch
+        if ($ref =~ /refs\/heads\/$default_branch/) {
+          $self->_set_nightly_milestone($bug, $set_all);
+        }
+
+        # Update the status flag to 'fixed' if one exists for the current branch
+        $self->_set_status_flag($bug, $set_all, $branch);
+      }
     }
 
+    $bug->set_all($set_all);
     $bug->update();
 
     my $comments       = $bug->comments({order => 'newest_to_oldest'});
@@ -355,22 +385,19 @@ sub _verify_signature {
 # If the ref matches a certain branch pattern for the repo we are interested
 # in, then we also need to set the appropriate status flag to 'fixed'.
 sub _set_status_flag {
-  my ($self, $bug, $ref) = @_;
+  my ($self, $bug, $set_all, $branch) = @_;
 
-  my ($branch) = $ref =~ /refs\/heads\/(.*)$/;
-  return if !$branch;
-
-  # In order to determine the appropriate status flag for the 'master/main' 
+  # In order to determine the appropriate status flag for the default
   # branch, we have to find out what the current *nightly* Firefox version is.
   # fetch_product_versions() calls an API endpoint maintained by rel-eng that 
   # returns all of the current product versions so we can use that.
   my $version;
   if ($branch eq 'main' || $branch eq 'master') {
-    my $versions  = fetch_product_versions('firefox');
-    return if (!%$versions || !exists $versions->{FIREFOX_NIGHTLY});
+    my $versions = fetch_product_versions('firefox');
+    return if (!$versions || !exists $versions->{FIREFOX_NIGHTLY});
     ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
   }
-  # Some branches already have the version number embedded in the name.
+  # Release branches already have the version number embedded in the name.
   else {
     ($version) = $branch =~ /^releases_v(\d+)$/;
   }
@@ -380,22 +407,34 @@ sub _set_status_flag {
   my $status_field = 'cf_status_firefox' . $version;
   my $flag = Bugzilla::Extension::TrackingFlags::Flag->new({name => $status_field});
 
+  # Return if the flag doesn't exist for some reason or the value fixed is already set
   return if (!$flag || $bug->$status_field eq 'fixed');
 
-  foreach my $value (@{$flag->values}) {
-    next if $value->value ne 'fixed';
-    last if !$flag->can_set_value($value->value);
+  $set_all->{$status_field} = 'fixed';
+}
 
-    Bugzilla::Extension::TrackingFlags::Flag::Bug->create({
-      tracking_flag_id => $flag->flag_id,
-      bug_id           => $bug->id,
-      value            => $value->value,
-    });
+# If the bug is being closed, then we also need to set the appropriate
+# nightly milestone version.
+sub _set_nightly_milestone {
+  my ($self, $bug, $set_all) = @_;
 
-    # Add the name/value pair to the bug object
-    $bug->{$flag->name} = $value->value;
-    last;
-  }
+  # In order to determine the appropriate status flag for the 'master/main'
+  # branch, we have to find out what the current *nightly* Firefox version is.
+  # fetch_product_versions() calls an API endpoint maintained by rel-eng that
+  # returns all of the current product versions so we can use that.
+  my $versions = fetch_product_versions('firefox');
+  return if (!$versions || !exists $versions->{FIREFOX_NIGHTLY});
+  my ($version) = split /[.]/, $versions->{FIREFOX_NIGHTLY};
+  return if !$version;
+
+  # Load the appropriate milestone.
+  my $value = "$version Branch";
+  my $milestone
+    = Bugzilla::Milestone->new({product => $bug->product_obj, name => $value});
+  return if !$milestone;
+
+  # Update the milestone
+  $set_all->{target_milestone} = $milestone->name;
 }
 
 1;

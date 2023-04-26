@@ -17,9 +17,10 @@ use Bugzilla::Extension::BugModal::ActivityStream;
 use Bugzilla::Extension::BugModal::MonkeyPatches;
 use Bugzilla::Extension::BugModal::Util qw(date_str_to_time);
 use Bugzilla::Constants;
+use Bugzilla::Logging;
 use Bugzilla::User::Setting;
 use Bugzilla::Util qw(datetime_from html_quote time_ago);
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any none);
 use Template::Stash;
 use JSON::XS qw(encode_json);
 
@@ -164,26 +165,7 @@ sub template_before_process {
   my $file = $args->{file};
   my $vars = $args->{vars};
 
-  if ( $file eq 'bug/process/header.html.tmpl'
-    || $file eq 'bug/create/created.html.tmpl'
-    || $file eq 'attachment/created.html.tmpl'
-    || $file eq 'attachment/updated.html.tmpl')
-  {
-    if (_alternative_show_bug_format() eq 'modal') {
-      $vars->{alt_ui_header} = 'bug_modal/header.html.tmpl';
-      $vars->{alt_ui_show}   = 'bug/show-modal.html.tmpl';
-      $vars->{alt_ui_edit}   = 'bug_modal/edit.html.tmpl';
-    }
-    return;
-  }
-
-  if ($file =~ m#^bug/show-([^\.]+)\.html\.tmpl$#) {
-    my $format = $1;
-    return unless _alternative_show_bug_format() eq $format;
-  }
-  elsif ($file ne 'bug_modal/edit.html.tmpl') {
-    return;
-  }
+  return if $file ne 'bug_modal/header.html.tmpl';
 
   if ($vars->{bug} && !$vars->{bugs}) {
     $vars->{bugs} = [$vars->{bug}];
@@ -270,6 +252,9 @@ sub template_before_process {
     ],
     resolution => \@resolutions,
   };
+
+  # Log tracking flags
+  _log_tracking_flags($bug, $vars->{tracking_flags});
 
   # group tracking flags by version to allow for a better tabular output
   my @tracking_table;
@@ -366,6 +351,55 @@ sub editable_tables {
     blurb =>
       'List of comment tags that have a URL associated with them for further information.',
     group => 'admin',
+  };
+}
+
+sub _log_tracking_flags {
+  my ($bug, $flags) = @_;
+  my $user = Bugzilla->user;
+
+  # Load my own copy of Bug from the DB cause I want to be sure
+  # it is untainted
+  my $bug_obj = Bugzilla::Bug->new($bug->id);
+
+  # If the bug currently does not have any flags set to fixed in 
+  # the DB, but yet the flag data has values set to fixed, then 
+  # we need to log detailed data. We will key off of the 
+  # cf_status_thunderbird_esr91 flags since it is consistently 
+  # included in the erroneous changes.
+  if (!$bug->can('cf_status_thunderbird_esr91')
+    || $bug->cf_status_thunderbird_esr91 ne '---')
+  {
+    return undef;
+  }
+
+  if (
+    none {
+      $_->name eq 'cf_status_thunderbird_esr91' && $_->bug_flag->value eq 'fixed'
+    } @{$flags}
+    )
+  {
+    return undef;
+  }
+
+  my $log_data = {
+    user  => {id => $user->id, login => $user->login,},
+    flags => [map { _flag_to_hash($_) } @{$flags}]
+  };
+
+  WARN(encode_json $log_data);
+}
+
+sub _flag_to_hash {
+  my $flag = shift;
+  return {
+    id          => $flag->flag_id,
+    name        => $flag->name,
+    description => $flag->description,
+    type        => $flag->flag_type,
+    values      => [map { $_->name } @{$flag->values}],
+    bug_flag    =>
+      {bug_id => $flag->bug_flag->bug_id, value => $flag->bug_flag->value,}
   };
 }
 
