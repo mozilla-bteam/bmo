@@ -55,8 +55,8 @@ my $public_bug = {
 };
 
 $t->post_ok($url
-  . 'rest/bug' => {'X-Bugzilla-API-Key' => $admin_api_key} => json =>
-  $public_bug)->status_is(200)->json_has('/id');
+    . 'rest/bug' => {'X-Bugzilla-API-Key' => $admin_api_key} => json =>
+    $public_bug)->status_is(200)->json_has('/id');
 
 my $public_bug_id = $t->tx->res->json->{id};
 
@@ -87,8 +87,8 @@ my $private_bug = {
 };
 
 $t->post_ok($url
-  . 'rest/bug' => {'X-Bugzilla-API-Key' => $admin_api_key} => json =>
-  $private_bug)->status_is(200)->json_has('/id');
+    . 'rest/bug' => {'X-Bugzilla-API-Key' => $admin_api_key} => json =>
+    $private_bug)->status_is(200)->json_has('/id');
 
 my $private_bug_id = $t->tx->res->json->{id};
 
@@ -120,7 +120,8 @@ my $update = {
     body => "Pushed by dwillcoxon\@mozilla.com:\n
 https://hg.mozilla.org/integration/autoland/rev/04c3a110f644\n
 Implement the weather suggestion result menu UI. r=dao,fluent-reviewers,flod a=dkl"
-  }
+  },
+  comment_tags => ['uplift']
 };
 
 $t->put_ok($url
@@ -149,57 +150,53 @@ $t->get_ok($url
 # Pulsebot should also be allowed to get comments from the private bug
 $t->get_ok($url
     . "rest/pulsebot/bug/$private_bug_id/comment" =>
-    {'X-Bugzilla-API-Key' => $pulsebot_api_key})->status_is(200)
-  ->json_like(
-  "/bugs/$private_bug_id/comments/1/text" => qr/Pushed by dwillcoxon/);
+    {'X-Bugzilla-API-Key' => $pulsebot_api_key})->status_is(200);
 
-# Bug not through the standard API
+# Make sure the uplift tag was properly added to the latest comment
+my $result   = $t->tx->res->json;
+my $comments = $result->{bugs}->{$private_bug_id}->{comments};
+$comments = [sort { $b->{id} <=> $a->{id} } @{$comments}];    # Sort comments newest to oldest
+
+ok($comments->[0]->{tags}->[0] eq 'uplift', 'Uplift comment tag found');
+
+# And comment text was added
+ok($comments->[0]->{text} =~ /Pushed by dwillcoxon/,
+  'Comment text added correctly');
+
+# But comment cannot be loaded through the standard API
 $t->get_ok($url
     . "rest/bug/$private_bug_id/comment" =>
     {'X-Bugzilla-API-Key' => $pulsebot_api_key})->status_is(401);
 
-# Make sure the uplift tag was properly added to the latest comment
-# We will need to check this using the admin user api key
-$t->get_ok($url
-    . "rest/bug/$private_bug_id/comment" =>
-    {'X-Bugzilla-API-Key' => $admin_api_key})->status_is(200);
-
-my $result = $t->tx->res->json;
-my $comments = $result->{bugs}->{$private_bug_id}->{comments};
-$comments = [ sort {$b->{id} <=> $a->{id}} @{$comments} ]; # Sort comments newest to oldest
-ok($comments->[0]->{tags}->[0] eq 'uplift', 'Uplift comment tag found');
-
 # If pulsebot only wants to add a comment and not update anything else then
-# it will call /rest/bug/{bugid}/comment. The custom API should allow it 
+# it will call /rest/bug/{bugid}/comment. The custom API should allow it
 # commenting on private bugs but not the standard API.
 my $comment_data = {
   comment => "Pushed by dwillcoxon\@mozilla.com:\n
 https://hg.mozilla.org/integration/autoland/rev/04c3a110f644\n
-Implement the weather suggestion result menu UI. r=dao,fluent-reviewers,flod a=dkl"
+Implement the weather suggestion result menu UI. r=dao,fluent-reviewers,flod a=dkl",
+  comment_tags => ['uplift']
 };
 
 $t->post_ok($url
-    . "rest/bug/$private_bug_id/comment"           =>
+    . "rest/bug/$private_bug_id/comment"        =>
     {'X-Bugzilla-API-Key' => $pulsebot_api_key} => json => $comment_data)
   ->status_is(401);
 
 $t->post_ok($url
-    . "rest/pulsebot/bug/$private_bug_id/comment"  =>
-    {'X-Bugzilla-API-Key' => $pulsebot_api_key} => json => $comment_data)
+    . "rest/pulsebot/bug/$private_bug_id/comment" =>
+    {'X-Bugzilla-API-Key' => $pulsebot_api_key}   => json => $comment_data)
   ->status_is(200)->json_has('/id');
 
 # Make sure the uplift tag was properly added to the latest comment
 # We will need to check this using the admin user api key
 $t->get_ok($url
-    . "rest/bug/$private_bug_id/comment" =>
-    {'X-Bugzilla-API-Key' => $admin_api_key})->status_is(200);
+    . "rest/pulsebot/bug/$private_bug_id/comment" =>
+    {'X-Bugzilla-API-Key' => $pulsebot_api_key})->status_is(200);
 
-$result = $t->tx->res->json;
+$result   = $t->tx->res->json;
 $comments = $result->{bugs}->{$private_bug_id}->{comments};
-$comments = [ sort {$b->{id} <=> $a->{id}} @{$comments} ]; # Sort comments newest to oldest
-
-use Mojo::Util qw(dumper);
-print STDERR dumper $comments;
+$comments = [sort { $b->{id} <=> $a->{id} } @{$comments}];    # Sort comments newest to oldest
 
 ok($comments->[0]->{tags}->[0] eq 'uplift', 'Uplift comment tag found');
 

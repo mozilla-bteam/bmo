@@ -114,10 +114,15 @@ sub get_comments {
 
   my $comments = $bug->comments({order => 'oldest_to_newest'});
 
+  # Only return the comment text and the comment tags
   my @result;
   foreach my $comment (@$comments) {
     next if $comment->is_private;
-    push @result, {text => $comment->body_full};
+    push @result, {
+      id   => $comment->id,
+      tags => $comment->tags,
+      text => $comment->body_full
+    };
   }
 
   $self->render(json => {bugs => {$bug->id => {comments => \@result}}});
@@ -152,9 +157,9 @@ sub add_comment {
   # Append comment
   $bug->add_comment($comment);
 
-  # Add uplift comment tag if an uplift revision comment
-  if ($comment =~ /\ba=\S+\b/) {
-    $bug->set_all({comment_tags => 'uplift'});
+  # Allow setting of comment tags such as an uplift revision comment
+  if ($json_params->{comment_tags}) {
+    $bug->set_all({comment_tags => $json_params->{comment_tags}});
   }
 
   my $dbh = Bugzilla->dbh;
@@ -223,14 +228,6 @@ sub update_bugs {
   if (%{$params}) {
     return $self->code_error('too_many_params',
       {allowed_params => \@allowed_fields});
-  }
-
-  # Add uplift comment tag if an uplift revision comment
-  if ( $user->login eq PULSEBOT_AUTOMATION_USER
-    && $allowed_params->{comment}
-    && $allowed_params->{comment}->{body} =~ /\ba=\S+\b/)
-  {
-    $allowed_params->{comment_tags} = 'uplift';
   }
 
   # Update each bug

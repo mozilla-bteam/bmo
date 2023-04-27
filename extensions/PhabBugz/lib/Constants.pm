@@ -50,6 +50,7 @@ use constant PULSEBOT_UPLIFT_REPOS => qw(
 use constant PULSEBOT_BUG_UPDATE_FIELDS => qw(
   bug_status
   comment
+  comment_tags
   keywords
   resolution
 );
