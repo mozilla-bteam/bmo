@@ -44,9 +44,6 @@ use constant LANDO_BUG_UPDATE_FIELDS => qw(
 );
 
 use constant PULSEBOT_AUTOMATION_USER   => 'pulsebot@bmo.tld';
-use constant PULSEBOT_UPLIFT_REPOS => qw(
-  integration/autoland
-);
 use constant PULSEBOT_BUG_UPDATE_FIELDS => qw(
   bug_status
   comment

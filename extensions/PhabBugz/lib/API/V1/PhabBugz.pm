@@ -49,14 +49,14 @@ sub get_bugs {
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
-  # Must be lando automation user to access this endpoint
+  # Must be permitted automation user to access this endpoint
   if ( $user->login ne LANDO_AUTOMATION_USER
     && $user->login ne PULSEBOT_AUTOMATION_USER)
   {
     return $self->user_error('login_required');
   }
 
-  # Upgrade Lando user permissions to make changes to any bug
+  # Upgrade user permissions to make changes to any bug
   $user->{groups}       = [Bugzilla::Group->get_all];
   $user->{bless_groups} = [Bugzilla::Group->get_all];
 
@@ -104,7 +104,7 @@ sub get_comments {
     return $self->user_error('login_required');
   }
 
-  # Upgrade user permissions to make changes to any bug
+  # Upgrade user permissions to retrieve comment for any bug
   $user->{groups}       = [Bugzilla::Group->get_all];
   $user->{bless_groups} = [Bugzilla::Group->get_all];
 
@@ -140,7 +140,7 @@ sub add_comment {
     return $self->user_error('login_required');
   }
 
-  # Upgrade user permissions to make changes to any bug
+  # Upgrade user permissions to add a comment to any bug
   $user->{groups}       = [Bugzilla::Group->get_all];
   $user->{bless_groups} = [Bugzilla::Group->get_all];
 
