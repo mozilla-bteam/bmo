@@ -832,7 +832,7 @@ h3.change-name a {
   font-size: var(--font-size-small);
 }
 
-.comment-tag a {
+.comment-tag a.remove {
   padding-right: 4px;
   cursor: pointer;
 }
@@ -842,6 +842,10 @@ h3.change-name a {
   font-size: 1.8em;
   line-height: .7em;
   vertical-align: top;
+}
+
+a.comment-tag-url {
+  cursor: help;
 }
 
 #ctag {

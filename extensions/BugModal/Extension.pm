@@ -340,6 +340,20 @@ sub install_before_final_checks {
   });
 }
 
+sub editable_tables {
+  my ($self, $args) = @_;
+  my $tables = $args->{tables};
+
+  # allow table to be edited with the EditTables extension
+  $tables->{longdescs_tags_url} = {
+    id_field => 'id',
+    order_by => 'tag',
+    blurb =>
+      'List of comment tags that have a URL associated with them for further information.',
+    group => 'admin',
+  };
+}
+
 sub _log_tracking_flags {
   my ($bug, $flags) = @_;
   my $user = Bugzilla->user;

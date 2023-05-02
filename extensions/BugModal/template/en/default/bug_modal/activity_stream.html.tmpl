@@ -191,11 +191,7 @@
 
       <tr id="ctag-[% comment.count FILTER none %]">
         <td colspan="2" class="comment-tags">
-          [% FOREACH tag IN comment.tags ~%]
-            <span class="comment-tag">
-              [%~ '<a role="button" aria-label="Remove" class="remove">×</a>' IF user.can_tag_comments %][% tag FILTER html ~%]
-            </span>
-          [%~ END %]
+          [% INCLUDE bug_modal/comment_tags.html.tmpl %]
         </td>
       </tr>
     </table>

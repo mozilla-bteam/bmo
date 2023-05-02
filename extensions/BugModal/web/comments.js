@@ -269,48 +269,41 @@ $(function() {
         var comment = that.parents('.comment');
         var commentNo = comment.data('no');
         var commentID = comment.data('id');
-        var tag = that.parent('.comment-tag').contents().filter(function() {
-            return this.nodeType === 3;
-        }).text();
-        var container = that.parents('.comment-tags');
+        var tagNode = that.parent('.comment-tag');
+        var deleteTag = tagNode.data('tag');
 
         // update ui
-        that.parent('.comment-tag').remove();
-        renderTags(commentNo, tagsFromDom(container));
+        tagNode.remove();
         updateTagsMenu();
 
         // update Bugzilla
         try {
-            renderTags(commentNo, await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { remove: [tag] }));
+            var result = await Bugzilla.API.put(
+              `bug_modal/update_comment_tags/${commentID}`,
+              { remove: [deleteTag] }
+            );
+            renderTags(commentNo, result.html);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);
         }
     }
-    $('.comment-tag a').click(deleteTag);
+    $('.comment-tag a.remove').click(deleteTag);
 
     function tagsFromDom(commentTagsDiv) {
         return commentTagsDiv
             .find('.comment-tag')
-            .contents()
-            .filter(function() { return this.nodeType === 3; })
-            .map(function() { return $(this).text(); })
+            .map(function() {return $(this).data('tag');})
             .toArray();
     }
 
-    function renderTags(commentNo, tags) {
+    function renderTags(commentNo, html) {
         cancelRefresh();
         var root = $('#ctag-' + commentNo + ' .comment-tags');
         root.find('.comment-tag').remove();
-        $.each(tags, function() {
-            var span = $('<span/>').addClass('comment-tag').text(this);
-            if (BUGZILLA.user.can_tag) {
-                span.prepend($('<a role="button" aria-label="Remove" class="remove">×</a>').click(deleteTag));
-            }
-            root.append(span);
-        });
+        root.append($(html));
+        root.find('.comment-tag .remove').click(deleteTag);
         $('#ctag-' + commentNo + ' .comment-tags').append($('#ctag-error'));
-        $(`.comment[data-no="${commentNo}"]`).attr('data-tags', tags.join(' '));
     }
 
     let abort_controller;
@@ -322,11 +315,11 @@ $(function() {
             abort_controller = new AbortController();
 
             const { signal } = abort_controller;
-            const { comments } = await Bugzilla.API.get(`bug/comment/${commentID}`, {
-              include_fields: ['tags'],
-            }, { signal });
-
-            renderTags(commentNo, comments[commentID].tags);
+            var result = await Bugzilla.API.get(
+                `bug_modal/comment_tags/${commentID}`, 
+                {}, { signal }
+            );
+            renderTags(commentNo, result.html);
         } catch ({ name, message }) {
             if (name !== 'AbortError') {
                 taggingError(commentNo, message);
@@ -350,8 +343,7 @@ $(function() {
         const $comment = $('#ctag').parents('.comment');
         const commentNo = $comment.data('no');
         const commentID = $comment.data('id');
-        const tags = $comment.data('tags').split(/[ ,]/);
-        const newTags = $('#ctag-add').val().trim().split(/[ ,]/).filter(tag => !tags.includes(tag));
+        const newTags = $('#ctag-add').val().trim().split(/[ ,]/);
         const { min_comment_tag_length: min, max_comment_tag_length: max } = BUGZILLA.constant;
 
         if (!newTags.length) {
@@ -373,14 +365,13 @@ $(function() {
             return;
         }
 
-        // update ui
-        tags.push(...newTags);
-        tags.sort();
-        renderTags(commentNo, tags);
-
         // update Bugzilla
         try {
-            renderTags(commentNo, await Bugzilla.API.put(`bug/comment/${commentID}/tags`, { add: newTags }));
+            var result = await Bugzilla.API.put(
+              `bug_modal/update_comment_tags/${commentID}`,
+              { add: newTags }
+            );
+            renderTags(commentNo, result.html);
             updateTagsMenu();
         } catch ({ message }) {
             taggingError(commentNo, message);

@@ -208,6 +208,18 @@ sub tags {
   return $self->{'tags'};
 }
 
+sub tag_url {
+  my ($self, $tag) = @_;
+  return undef if !$tag;
+  $self->{tag_url_cache} ||= {};
+  return $self->{tag_url_cache}->{$tag} if exists $self->{tag_url_cache}->{$tag};
+  $self->{tag_url_cache}->{$tag}
+    = Bugzilla->dbh->selectrow_array(
+    'SELECT url FROM longdescs_tags_url WHERE tag = ?',
+    undef, $tag);
+  return $self->{tag_url_cache}->{$tag};
+}
+
 sub collapsed {
   my ($self) = @_;
   return $self->{collapsed} if exists $self->{collapsed};
