@@ -46,8 +46,10 @@ has view_policy      => (is => 'ro',   isa => Str);
 has edit_policy      => (is => 'ro',   isa => Str);
 has stack_graph_raw  => (
     is => 'ro',
-    isa => Dict [
-        slurpy Any
+    isa => Maybe [
+      Dict [
+          slurpy Any
+      ]
     ],
 );
 has subscriber_count => (is => 'ro',   isa => Int);
