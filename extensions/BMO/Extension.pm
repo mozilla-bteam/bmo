@@ -2927,7 +2927,7 @@ sub app_startup {
   $r->any(
     '/:REWRITE_web_bounty' => [REWRITE_web_bounty => qr{form[\.:]web[\.:]bounty}])
     ->to(
-    'CGI#enter_bug_cgi' => {'format' => 'web-bounty', 'product' => 'mozilla.org'});
+    'CGI#enter_bug_cgi' => {'format' => 'web-bounty', 'product' => 'Websites'});
   $r->any(
     '/:REWRITE_blocklist_bug' => [REWRITE_blocklist_bug => qr{form[\.:]blocklist}])
     ->to(
