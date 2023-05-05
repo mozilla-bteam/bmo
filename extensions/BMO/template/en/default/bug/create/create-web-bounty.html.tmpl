@@ -66,6 +66,13 @@ function validateAndSubmit() {
 
 <h1>Web Bounty Form</h1>
 
+<div id="message">
+  We have migrated our web [% terms.bug %] bounty program to HackerOne. Please submit your report to one of 
+  our programs: <a href="https://hackerone.com/mozilla_critical_services">Mozilla Critical Services</a> and 
+  <a href="https://hackerone.com/mozilla_core_services">Mozilla Core Services</a>. If you do not prefer to 
+  use HackerOne, you can still submit the [% terms.bug %] using this form.
+</div>
+
 <form id="web_bounty_form" method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data"
       onSubmit="return validateAndSubmit();">
   <input type="hidden" name="filed_via" value="custom_form">
