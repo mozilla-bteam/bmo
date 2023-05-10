@@ -88,8 +88,12 @@ sub MessageToMTA {
 
   # We add this header to uniquely identify all email that we
   # send as coming from this Bugzilla installation.
-  #
   $email->header_set('X-Bugzilla-URL', Bugzilla->localconfig->urlbase);
+
+  # Support for AWS SES configuration sets
+  if ($ENV{'X-SES-CONFIGURATION-SET'}) {
+    $email->header_set('X-SES-CONFIGURATION-SET', $ENV{'X-SES-CONFIGURATION-SET'});
+  }
 
   # We add this header to mark the mail as "auto-generated" and
   # thus to hopefully avoid auto replies.
