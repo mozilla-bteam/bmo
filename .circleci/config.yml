@@ -202,31 +202,109 @@ jobs:
           path: /app/artifacts
       - *store_log
 
-  # test_selenium:
-  #   parallelism: 1
-  #   working_directory: /app
-  #   docker:
-  #     - *docker_image
-  #   steps:
-  #     - setup_remote_docker:
-  #         version: 19.03.13
-  #         docker_layer_caching: true
-  #     - checkout
-  #     - *install_docker_compose
-  #     - *docker_login
-  #     - *build_image
-  #     - run: |
-  #         [[ -d artifacts ]] || mkdir artifacts
-  #     - attach_workspace:
-  #         at: /app/build_info
-  #     - run:
-  #         name: run selenium tests
-  #         command: |
-  #           [[ -f build_info/only_version_changed.txt ]] && exit 0
-  #           docker-compose -f docker-compose.test.yml run bmo.test test_selenium
-  #     - store_artifacts:
-  #         path: /app/artifacts
-  #     - *store_log
+  test_selenium_1:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - *docker_image
+    steps:
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - checkout
+      - *install_docker_compose
+      - *docker_login
+      - *build_image
+      - run: |
+          [[ -d artifacts ]] || mkdir artifacts
+      - attach_workspace:
+          at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
+      - store_artifacts:
+          path: /app/artifacts
+      - *store_log
+
+  test_selenium_2:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - *docker_image
+    steps:
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - checkout
+      - *install_docker_compose
+      - *docker_login
+      - *build_image
+      - run: |
+          [[ -d artifacts ]] || mkdir artifacts
+      - attach_workspace:
+          at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium 2
+      - store_artifacts:
+          path: /app/artifacts
+      - *store_log
+
+  test_selenium_3:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - *docker_image
+    steps:
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - checkout
+      - *install_docker_compose
+      - *docker_login
+      - *build_image
+      - run: |
+          [[ -d artifacts ]] || mkdir artifacts
+      - attach_workspace:
+          at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium 3
+      - store_artifacts:
+          path: /app/artifacts
+      - *store_log
+
+  test_selenium_4:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - *docker_image
+    steps:
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - checkout
+      - *install_docker_compose
+      - *docker_login
+      - *build_image
+      - run: |
+          [[ -d artifacts ]] || mkdir artifacts
+      - attach_workspace:
+          at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium 4
+      - store_artifacts:
+          path: /app/artifacts
+      - *store_log
 
   test_bmo:
     parallelism: 1
@@ -274,9 +352,15 @@ workflows:
       - test_webservices:
           requires:
             - build
-      #- test_selenium:
-      #    requires:
-      #      - build
-      #- test_selenium:
-      #    requires:
-      #      - build
+      - test_selenium_1:
+          requires:
+            - build
+      - test_selenium_2:
+          requires:
+            - build
+      - test_selenium_3:
+          requires:
+            - build
+      - test_selenium_4:
+          requires:
+            - build
