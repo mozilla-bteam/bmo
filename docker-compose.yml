@@ -34,6 +34,7 @@ services:
       - LOG4PERL_CONFIG_FILE=log4perl-docker.conf
       - MOJO_LISTEN=http://*:8000
       - PORT=8000
+      - X_SES_CONFIGURATION_SET=ConfigSet
     depends_on:
       - bmo.db
       - memcached
