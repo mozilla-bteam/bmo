@@ -91,8 +91,8 @@ sub MessageToMTA {
   $email->header_set('X-Bugzilla-URL', Bugzilla->localconfig->urlbase);
 
   # Support for AWS SES configuration sets
-  if ($ENV{'X-SES-CONFIGURATION-SET'}) {
-    $email->header_set('X-SES-CONFIGURATION-SET', $ENV{'X-SES-CONFIGURATION-SET'});
+  if ($ENV{'X_SES_CONFIGURATION_SET'}) {
+    $email->header_set('X-SES-CONFIGURATION-SET', $ENV{'X_SES_CONFIGURATION_SET'});
   }
 
   # We add this header to mark the mail as "auto-generated" and
