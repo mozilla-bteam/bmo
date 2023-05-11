@@ -644,6 +644,7 @@ sub process_revision_change {
         'abandoned'       => '-',
         'accepted'        => '+',
         'changes-planned' => '?',
+        'draft'           => '?',
         'needs-review'    => '?',
         'needs-revision'  => '-',
       };
