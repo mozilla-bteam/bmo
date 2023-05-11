@@ -643,7 +643,8 @@ sub process_revision_change {
       my $revision_status_flag_map = {
         'abandoned'       => '-',
         'accepted'        => '+',
-        'changes-planned' => '?',
+        'changes-planned' => 'X',
+        'draft'           => 'X',
         'needs-review'    => '?',
         'needs-revision'  => '-',
       };

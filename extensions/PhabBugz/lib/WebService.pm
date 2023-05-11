@@ -152,6 +152,7 @@ sub bug_revisions {
     'abandoned'       => 'Abandoned',
     'accepted'        => 'Accepted',
     'changes-planned' => 'Changes Planned',
+    'draft'           => 'Draft',
     'needs-review'    => 'Needs Review',
     'needs-revision'  => 'Needs Revision',
   };

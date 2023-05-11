@@ -67,7 +67,7 @@ sub set_attachment_approval_flags {
   }
 
   # If we didn't find an existing approval flag to update, add it now.
-  if (!@old_flags) {
+  if (!@old_flags && $status ne 'X') {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
       push @new_flags, {
