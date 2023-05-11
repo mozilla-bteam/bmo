@@ -735,6 +735,11 @@ sub process_new_user {
 
   my $bug_user = $phab_user->bugzilla_user;
 
+  if (!$bug_user) {
+    WARN("SKIPPING: Bugzilla ID from Phabricator not found");
+    return;
+  }
+
   # Pre setup before querying DB
   my $restore_prev_user = set_phab_user();
 
