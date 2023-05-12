@@ -344,7 +344,7 @@ workflows:
             - test_webservices
             - test_selenium_1
             - test_selenium_2
-            #- test_selenium_3
+            - test_selenium_3
             - test_selenium_4
       - test_sanity:
           requires:
