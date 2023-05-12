@@ -165,7 +165,11 @@ sub cmd_test_webservices {
 }
 
 sub cmd_test_selenium {
-  cmd_test_qa('test_*.t');
+  my $file_pattern = '*test_*.t';
+  if ($ENV{SELENIUM_GROUP}) {
+    $file_pattern = $ENV{SELENIUM_GROUP} . '_test_*.t';
+  }
+  cmd_test_qa($file_pattern);
 }
 
 sub cmd_test_qa {

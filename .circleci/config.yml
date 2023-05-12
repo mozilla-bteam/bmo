@@ -171,7 +171,7 @@ jobs:
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
-              test_sanity t/*.t extensions/*/t/*.t | tee artifacts/$CIRCLE_JOB.txt
+              test_sanity t/*.t extensions/*/t/*.t
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -193,15 +193,16 @@ jobs:
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
           at: /app/build_info
-      - run: |
-          [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run bmo.test test_webservices | \
-            tee artifacts/$CIRCLE_JOB.txt
+      - run:
+          name: run webservice tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run bmo.test test_webservices
       - store_artifacts:
           path: /app/artifacts
       - *store_log
 
-  test_selenium:
+  test_selenium_1:
     parallelism: 1
     working_directory: /app
     docker:
@@ -218,10 +219,89 @@ jobs:
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
           at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
+      - store_artifacts:
+          path: /app/artifacts
+      - *store_log
+
+  test_selenium_2:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - *docker_image
+    steps:
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - checkout
+      - *install_docker_compose
+      - *docker_login
+      - *build_image
       - run: |
-          [[ -f build_info/only_version_changed.txt ]] && exit 0
-          docker-compose -f docker-compose.test.yml run bmo.test test_selenium | \
-            tee artifacts/$CIRCLE_JOB.txt
+          [[ -d artifacts ]] || mkdir artifacts
+      - attach_workspace:
+          at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium 2
+      - store_artifacts:
+          path: /app/artifacts
+      - *store_log
+
+  test_selenium_3:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - *docker_image
+    steps:
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - checkout
+      - *install_docker_compose
+      - *docker_login
+      - *build_image
+      - run: |
+          [[ -d artifacts ]] || mkdir artifacts
+      - attach_workspace:
+          at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium 3
+      - store_artifacts:
+          path: /app/artifacts
+      - *store_log
+
+  test_selenium_4:
+    parallelism: 1
+    working_directory: /app
+    docker:
+      - *docker_image
+    steps:
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+      - checkout
+      - *install_docker_compose
+      - *docker_login
+      - *build_image
+      - run: |
+          [[ -d artifacts ]] || mkdir artifacts
+      - attach_workspace:
+          at: /app/build_info
+      - run:
+          name: run selenium tests
+          command: |
+            [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium 4
       - store_artifacts:
           path: /app/artifacts
       - *store_log
@@ -248,7 +328,7 @@ jobs:
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run bmo.test test_bmo \
-              -q -f t/bmo/*.t extensions/*/t/bmo/*.t | tee artifacts/$CIRCLE_JOB.txt
+              -q -f t/bmo/*.t extensions/*/t/bmo/*.t
       - *store_log
 
 workflows:
@@ -262,7 +342,10 @@ workflows:
             - test_sanity
             - test_bmo
             - test_webservices
-            - test_selenium
+            - test_selenium_1
+            - test_selenium_2
+            - test_selenium_3
+            - test_selenium_4
       - test_sanity:
           requires:
             - build
@@ -272,6 +355,15 @@ workflows:
       - test_webservices:
           requires:
             - build
-      - test_selenium:
+      - test_selenium_1:
+          requires:
+            - build
+      - test_selenium_2:
+          requires:
+            - build
+      - test_selenium_3:
+          requires:
+            - build
+      - test_selenium_4:
           requires:
             - build
