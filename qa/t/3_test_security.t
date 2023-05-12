@@ -132,22 +132,25 @@ $sel->check_ok('//input[@name="groups" and @value="Master"]');
 my $bug2_id = create_bug($sel, $bug_summary2);
 
 go_to_bug($sel, $bug1_id);
-$sel->is_text_present_ok("secret_qa_bug_$bug2_id");
+$sel->is_element_present_ok("link=secret_qa_bug_$bug2_id");
 logout($sel);
 
 log_in($sel, $config, 'editbugs');
 go_to_bug($sel, $bug1_id);
-ok(!$sel->is_text_present("secret_qa_bug_$bug2_id"),
-  "The alias 'secret_qa_bug_$bug2_id' is not visible for editbugs users");
-ok($sel->is_text_present($bug2_id),
-  "But the bug ID is visible for editbugs users");
+ok(
+  !$sel->is_element_present("link=secret_qa_bug_$bug2_id"),
+  "The alias 'secret_qa_bug_$bug2_id' is not visible for editbugs users"
+);
+$sel->is_element_present_ok("link=$bug2_id");
 logout($sel);
 
 go_to_bug($sel, $bug1_id, 1);
-ok(!$sel->is_text_present("secret_qa_bug_$bug2_id"),
+ok(!$sel->is_element_present("link=secret_qa_bug_$bug2_id"),
   "The alias 'secret_qa_bug_$bug2_id' is not visible for logged out users");
-ok(!$sel->is_text_present($bug2_id),
-  "Even the bug ID is not visible for logged out users");
+ok(
+  !$sel->is_element_present("link=$bug2_id"),
+  "Even the bug ID is not visible for logged out users"
+);
 
 #######################################################################
 # Security bug 472206.
