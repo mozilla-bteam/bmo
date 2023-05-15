@@ -659,7 +659,7 @@ if ($order) {
     "Importance" => ["priority", "bug_severity"],
     "Assignee"   => ["assigned_to", "bug_status", "priority", "bug_id"],
     "Last Updated" =>
-      ["changeddate", "bug_status", "priority", "assigned_to", "bug_id"],
+      ["changeddate DESC", "bug_status", "priority", "assigned_to", "bug_id"],
   );
   my $order_field = $order;
   $order_field =~ s/\s+(DESC|ASC)$//i;
