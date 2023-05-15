@@ -27,7 +27,7 @@ BEGIN {
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 # User to make changes as automation@bmo.tld
-my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+my $auto_user = Bugzilla::User->new({name => 'automation@bmo.tld'});
 $auto_user || usage("Can't find user 'automation\@bmo.tld'\n");
 $auto_user->{groups}       = [Bugzilla::Group->get_all];
 $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
@@ -36,11 +36,9 @@ Bugzilla->set_user($auto_user);
 Bugzilla::Extension::TrackingFlags::Flag->get_all;    # preload
 
 # Load fields information (assumes already created)
-my $flag_field = Bugzilla::Extension::TrackingFlags::Flag->new(
+my $flag_field = Bugzilla::Extension::TrackingFlags::Flag->check(
   {name => 'cf_accessibility_severity'});
-$flag_field || die "Can't find field cf_accessibility_severity\n";
-my $whiteboard_field = Bugzilla::Field->new({name => 'status_whiteboard'});
-$whiteboard_field || usage("Can't find field status_whiteboard\n");
+my $whiteboard_field = Bugzilla::Field->check({name => 'status_whiteboard'});
 
 my $dbh = Bugzilla->dbh;
 
@@ -95,6 +93,9 @@ foreach my $row (@{$rows}) {
 
   $bug->set_all($set_all);
   $bug->update();
+
+  # Updated lastdiffed timestamp so the change is not included in email notifications
+  $dbh->do('UPDATE bugs SET lastdiffed = NOW() WHERE bug_id = ?', undef, $bug->id);
 }
 
 $dbh->bz_commit_transaction();
