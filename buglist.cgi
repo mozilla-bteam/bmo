@@ -653,13 +653,14 @@ my @order_columns;
 if ($order) {
 
   # Convert the value of the "order" form field into a list of columns
-  # by which to sort the results.
+  # by which to sort the results. For Last Updated, we sort by descending
+  # order instead of the default ascending. This makes more sense as you
+  # would want the latest updated bugs to appear at the top.
   my %order_types = (
-    "Bug Number" => ["bug_id"],
-    "Importance" => ["priority", "bug_severity"],
-    "Assignee"   => ["assigned_to", "bug_status", "priority", "bug_id"],
-    "Last Updated" =>
-      ["changeddate", "bug_status", "priority", "assigned_to", "bug_id"],
+    "Bug Number"   => ["bug_id"],
+    "Importance"   => ["priority", "bug_severity"],
+    "Assignee"     => ["assigned_to", "bug_status", "priority", "bug_id"],
+    "Last Updated" => ["changeddate DESC"],
   );
   my $order_field = $order;
   $order_field =~ s/\s+(DESC|ASC)$//i;
