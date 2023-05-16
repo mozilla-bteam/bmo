@@ -398,6 +398,14 @@ sub process_uplift_request_form_change {
   my ($timestamp) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
   my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
 
+  # Take no action if the form is empty.
+  if (ref $revision->uplift_request ne 'HASH'
+    || !keys %{$revision->uplift_request})
+  {
+    INFO('Uplift request form field cleared, ignoring.');
+    return;
+  }
+
   INFO('Commenting the uplift form on the bug.');
 
   my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
@@ -407,14 +415,6 @@ sub process_uplift_request_form_change {
   };
   $bug->add_comment($comment_content, $comment_params);
   $bug->update($timestamp);
-
-  # Take no action if the form is empty.
-  if (ref $revision->uplift_request ne 'HASH'
-    || !keys %{$revision->uplift_request})
-  {
-    INFO('Uplift request form field cleared, ignoring.');
-    return;
-  }
 
   my $revision_phid = $revision->phid;
   INFO(
