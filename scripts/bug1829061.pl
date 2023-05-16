@@ -27,8 +27,7 @@ BEGIN {
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
 # User to make changes as automation@bmo.tld
-my $auto_user = Bugzilla::User->new({name => 'automation@bmo.tld'});
-$auto_user || usage("Can't find user 'automation\@bmo.tld'\n");
+my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
 $auto_user->{groups}       = [Bugzilla::Group->get_all];
 $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
 Bugzilla->set_user($auto_user);
@@ -95,7 +94,7 @@ foreach my $row (@{$rows}) {
   $bug->update();
 
   # Updated lastdiffed timestamp so the change is not included in email notifications
-  $dbh->do('UPDATE bugs SET lastdiffed = NOW() WHERE bug_id = ?', undef, $bug->id);
+  $dbh->do('UPDATE bugs SET lastdiffed = delta_ts WHERE bug_id = ?', undef, $bug->id);
 }
 
 $dbh->bz_commit_transaction();
