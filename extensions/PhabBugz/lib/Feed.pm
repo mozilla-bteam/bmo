@@ -636,26 +636,8 @@ sub process_revision_change {
     }
 
     # Sync the `approval-mozilla-{repo}+` flags.
-    if (
-      $revision->repository &&
-      $revision->repository->is_uplift_repo()
-    ) {
-      my $revision_status_flag_map = {
-        'abandoned'       => '-',
-        'accepted'        => '+',
-        'changes-planned' => 'X',
-        'draft'           => 'X',
-        'needs-review'    => '?',
-        'needs-revision'  => '-',
-      };
-      my $approval_status = $revision_status_flag_map->{$revision->status};
-
-      set_attachment_approval_flags(
-        $attachment,
-        $revision,
-        $revision->author->bugzilla_user,
-        $approval_status
-      );
+    if ($revision->repository && $revision->repository->is_uplift_repo()) {
+      set_attachment_approval_flags($attachment, $revision);
     }
 
     $attachment->update($timestamp);
