@@ -155,12 +155,6 @@ sub create_revision_attachment {
       mimetype    => PHAB_CONTENT_TYPE,
     });
 
-    # When the revision belongs to an uplift repo, set appropriate approval flags to `?`.
-    if ($revision->repository && $revision->repository->is_uplift_repo()) {
-      set_attachment_approval_flags($attachment, $revision, $submitter, '?');
-      $attachment->update($timestamp);
-    }
-
     # Insert a comment about the new attachment into the database.
     $bug->add_comment(
       $revision->summary,
