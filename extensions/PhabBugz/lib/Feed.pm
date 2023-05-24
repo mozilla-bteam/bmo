@@ -161,7 +161,7 @@ sub feed_query {
     TRACE("STORY PHID: $story_phid");
     TRACE("AUTHOR PHID: $author_phid");
     TRACE("OBJECT PHID: $object_phid");
-    INFO("STORY TEXT: $story_text");
+    INFO("STORY: ($story_id) $story_text");
 
     # Only interested in changes to revisions for now.
     if ($object_phid !~ /^PHID-DREV/) {
