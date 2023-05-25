@@ -21,9 +21,11 @@
 [% PROCESS global/variables.none.tmpl %]
 
 From: [% Param('mailfrom') %]
-To: [% Param('maintainer') %]
+To: [% recipient %]
 Subject: [[% terms.Bugzilla %]] Account Lock-Out: [% locked_user.login %]
+[% IF admin %]
 X-Bugzilla-Type: admin
+[% END %]
 
 The following ip address(es) failed too many login attempts (
 [%- constants.MAX_LOGIN_ATTEMPTS +%]) for

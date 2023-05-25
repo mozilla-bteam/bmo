@@ -274,27 +274,42 @@ sub _handle_login_result {
       }
     }
 
-    # If we were *just* locked out, notify the maintainer about the
-    # lockout.
+    # If we were *just* locked out, notify the account owner and
+    # maintainer about the lockout.
     if ($result->{just_locked_out}) {
 
-      # We're sending to the maintainer, who may be not a Bugzilla
-      # account, but just an email address. So we use the
-      # installation's default language for sending the email.
-      my $default_settings = Bugzilla::User::Setting::get_defaults();
-      my $template
-        = Bugzilla->template_inner($default_settings->{lang}->{default_value});
-
+      # First notify the account owner.
       my $vars = {
+        recipient   => $user->login,
         locked_user => $user,
         attempts    => $attempts,
         addresses   => \%addresses,
         unlock_at   => $unlock_at,
       };
-      my $message;
-      $template->process('email/lockout.txt.tmpl', $vars, \$message)
+
+      my $template = Bugzilla->template_inner($user->setting('lang'));
+
+      my $user_message;
+      $template->process('email/lockout.txt.tmpl', $vars, \$user_message)
         || ThrowTemplateError($template->error);
-      MessageToMTA($message);
+      MessageToMTA($user_message);
+
+      # We are also sending one to the maintainer, who may be not
+      # a Bugzilla account, but just an email address. So we use the
+      # installation's default language for sending the email.
+      my $default_settings = Bugzilla::User::Setting::get_defaults();
+      $template
+        = Bugzilla->template_inner($default_settings->{lang}->{default_value});
+
+      $vars->{admin} = 1; # Add a special admin email header
+      $vars->{recipient} = Bugzilla->params->{maintainer};
+
+      my $admin_message;
+      $template->process('email/lockout.txt.tmpl', $vars, \$admin_message)
+        || ThrowTemplateError($template->error);
+      MessageToMTA($admin_message);
+
+      # Log the lockout details as well
       my $address_string = join ',', keys %addresses;
       Bugzilla->audit(sprintf(
         '%s triggered lockout of %s after %s attempts',
