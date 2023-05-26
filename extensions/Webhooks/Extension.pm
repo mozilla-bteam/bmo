@@ -208,9 +208,10 @@ sub user_preferences {
           # re-enabling the webhook
           if ($was_disabled && $status eq 'Enabled') {
             $connector->backlog->reset_backoff;
-            my $message = $connector->backlog->oldest;
-            $message->{attempts} = 0;
-            $message->update;
+            if (my $message = $connector->backlog->oldest) {
+              $message->{attempts} = 0;
+              $message->update;
+            }
           }
           $config->{enabled} = $status;
           $config->update();
