@@ -43,21 +43,20 @@ foreach my $line (@csv_data) {
 
   # Skip if not an url
   if ($url !~ /^https?:/) {
-    print "URL $url invalid...skipping\n";
+    print "URL '$url' invalid...skipping\n";
     next;
   }
 
   # Do not populate if already present
   my $exists
-    = $dbh->selectrow_array(
-    'SELECT 1 FROM longdescs_tags_url WHERE tag = ? AND url = ?',
-    undef, $tag, $url);
+    = $dbh->selectrow_array('SELECT 1 FROM longdescs_tags_url WHERE tag = ?',
+    undef, $tag);
   if ($exists) {
-    print "$tag, $url exists...skipping\n";
+    print "$tag => $url exists...skipping\n";
     next;
   }
 
-  print "Adding $tag, $url\n";
+  print "Adding $tag => $url\n";
   $insert_sth->execute($tag, $url);
 }
 
