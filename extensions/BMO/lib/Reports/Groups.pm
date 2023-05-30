@@ -185,9 +185,6 @@ sub members_report {
     ? map { lc($_->name) } Bugzilla::Group->get_all
     : _get_permitted_membership_groups();
 
-  my $include_disabled = $cgi->param('include_disabled') ? 1 : 0;
-  $vars->{'include_disabled'} = $include_disabled;
-
   # don't allow all groups, to avoid putting pain on the servers
   my @group_names
     = sort grep { !/^(?:bz_.+|canconfirm|editbugs|editbugs-team|everyone)$/ }
@@ -195,8 +192,15 @@ sub members_report {
   unshift(@group_names, '');
   $vars->{'groups'} = \@group_names;
 
+  my $include_disabled = $cgi->param('include_disabled') ? 1 : 0;
+  $vars->{'include_disabled'} = $include_disabled;
+
+  my $search_type = $cgi->param('search_type') || 'all';
+  $vars->{search_type} = $search_type;
+
   # load selected group
   my $group = lc(trim($cgi->param('group') || ''));
+
   $group = '' unless grep { $_ eq $group } @group_names;
   return if $group eq '';
   my $group_obj = Bugzilla::Group->new({name => $group});
@@ -206,7 +210,7 @@ sub members_report {
     if ($group_obj->owner && $group_obj->owner->id == $user->id);
 
   my @types;
-  my $members = $group_obj->members_complete();
+  my $members = $group_obj->members_complete($search_type);
   foreach my $name (sort keys %$members) {
     push @types,
       {
