@@ -80,7 +80,7 @@ sub cmd_demo {
       CONDUIT_USER_PASSWORD
       CONDUIT_USER_API_KEY
       ));
-  run('perl', 'scripts/generate_conduit_data.pl');
+  run_quiet('perl', 'scripts/generate_conduit_data.pl');
   cmd_httpd();
 }
 
@@ -115,8 +115,8 @@ sub cmd_selenium_dev {
 sub cmd_dev_httpd {
   assert_database->get();
 
-  run('perl', 'checksetup.pl', '--no-template', $ENV{BZ_ANSWERS_FILE});
-  run(
+  run_quiet('perl', 'checksetup.pl', '--no-template', $ENV{BZ_ANSWERS_FILE});
+  run_quiet(
     'perl', 'scripts/generate_bmo_data.pl',
     '--param' => 'use_mailer_queue=0',
     'admin@mozilla.bugs'
@@ -130,7 +130,7 @@ sub cmd_dev_httpd {
 sub cmd_checksetup {
   check_data_dir();
   wait_for_db();
-  run('perl', 'checksetup.pl', '--no-template', '--no-permissions');
+  run_quiet('perl', 'checksetup.pl', '--no-template', '--no-permissions');
 }
 
 sub cmd_load_test_data {
@@ -307,8 +307,10 @@ sub run {
 sub run_quiet {
   my (@cmd) = @_;
   say "+ @cmd";
-  my ($out, $err) = capture {
-    run(@cmd);
-  };
-  die "$out\n$err" if $err;
+  my ($output, $error, $rv) = capture { system @cmd; };
+  if ($rv != 0) {
+    say "$output\n$error";
+    exit $rv;
+  }
 }
+

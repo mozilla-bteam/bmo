@@ -161,7 +161,7 @@ sub feed_query {
     TRACE("STORY PHID: $story_phid");
     TRACE("AUTHOR PHID: $author_phid");
     TRACE("OBJECT PHID: $object_phid");
-    INFO("STORY TEXT: $story_text");
+    INFO("STORY: ($story_id) $story_text");
 
     # Only interested in changes to revisions for now.
     if ($object_phid !~ /^PHID-DREV/) {
@@ -398,6 +398,14 @@ sub process_uplift_request_form_change {
   my ($timestamp) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
   my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
 
+  # Take no action if the form is empty.
+  if (ref $revision->uplift_request ne 'HASH'
+    || !keys %{$revision->uplift_request})
+  {
+    INFO('Uplift request form field cleared, ignoring.');
+    return;
+  }
+
   INFO('Commenting the uplift form on the bug.');
 
   my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
@@ -407,14 +415,6 @@ sub process_uplift_request_form_change {
   };
   $bug->add_comment($comment_content, $comment_params);
   $bug->update($timestamp);
-
-  # Take no action if the form is empty.
-  if (ref $revision->uplift_request ne 'HASH'
-    || !keys %{$revision->uplift_request})
-  {
-    INFO('Uplift request form field cleared, ignoring.');
-    return;
-  }
 
   my $revision_phid = $revision->phid;
   INFO(
@@ -636,26 +636,8 @@ sub process_revision_change {
     }
 
     # Sync the `approval-mozilla-{repo}+` flags.
-    if (
-      $revision->repository &&
-      $revision->repository->is_uplift_repo()
-    ) {
-      my $revision_status_flag_map = {
-        'abandoned'       => '-',
-        'accepted'        => '+',
-        'changes-planned' => '?',
-        'draft'           => '?',
-        'needs-review'    => '?',
-        'needs-revision'  => '-',
-      };
-      my $approval_status = $revision_status_flag_map->{$revision->status};
-
-      set_attachment_approval_flags(
-        $attachment,
-        $revision,
-        $revision->author->bugzilla_user,
-        $approval_status
-      );
+    if ($revision->repository && $revision->repository->is_uplift_repo()) {
+      set_attachment_approval_flags($attachment, $revision);
     }
 
     $attachment->update($timestamp);
@@ -734,6 +716,11 @@ sub process_new_user {
   }
 
   my $bug_user = $phab_user->bugzilla_user;
+
+  if (!$bug_user) {
+    WARN("SKIPPING: Bugzilla ID from Phabricator not found");
+    return;
+  }
 
   # Pre setup before querying DB
   my $restore_prev_user = set_phab_user();

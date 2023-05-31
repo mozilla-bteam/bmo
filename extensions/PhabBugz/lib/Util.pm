@@ -44,37 +44,71 @@ our @EXPORT = qw(
 
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
-  my ($attachment, $revision, $user, $status) = @_;
+  my ($attachment, $revision) = @_;
+  my $submitter = $revision->author->bugzilla_user;
+
+  my $revision_status_flag_map = {
+    'abandoned'       => '-',
+    'accepted'        => '+',
+    'changes-planned' => 'X',
+    'draft'           => 'X',
+    'needs-review'    => '?',
+    'needs-revision'  => '-',
+  };
+
+  my $status = $revision_status_flag_map->{$revision->status};
+
+  if (!$status) {
+    INFO( "Approval flag status not found for revision status '"
+        . $revision->status
+        . "'");
+    return;
+  }
 
   # The repo short name is the appropriate value that aligns with flag names.
-  my $repo_name = $revision->repository->short_name;
+  my $repo_name          = $revision->repository->short_name;
   my $approval_flag_name = "approval-mozilla-$repo_name";
-  INFO("Setting $approval_flag_name flag on revision attachment.");
 
   my @old_flags;
   my @new_flags;
 
   # Find the current approval flag state if it exists.
   foreach my $flag (@{$attachment->flags}) {
+
     # Ignore for all flags except the approval flag.
     next if $flag->name ne $approval_flag_name;
 
     # Set the flag to it's new status. If it already has that status,
-    # it will be a non-change.
-    INFO("Set existing `$approval_flag_name` flag to `$status`.");
-    push @old_flags, {id => $flag->id, status => $status};
+    # it will be a non-change. We also need to check to make sure the
+    # flag change is allowed.
+    if ($submitter->can_change_flag($flag->type, $flag->status, $status)) {
+      INFO("Set existing `$approval_flag_name` flag to `$status`.");
+      push @old_flags, {id => $flag->id, status => $status};
+    }
+    else {
+      INFO(
+        "Unable to set existing `$approval_flag_name` flag to `$status` due to permissions."
+      );
+    }
+
     last;
   }
 
   # If we didn't find an existing approval flag to update, add it now.
-  if (!@old_flags) {
+  # Also check to make sure we have permission to create the flag.
+  if (!@old_flags && $status ne 'X') {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
-      push @new_flags, {
-        setter   => $user,
-        status   => $status,
-        type_id  => $approval_flag->id,
-      };
+      if ($submitter->can_change_flag($approval_flag, 'X', $status)) {
+        INFO("Creating new `$approval_flag_name` flag with status `$status`");
+        push @new_flags,
+          {setter => $submitter, status => $status, type_id => $approval_flag->id,};
+      }
+      else {
+        INFO(
+          "Unable to create new `$approval_flag_name` flag with status `$status` due to permissions."
+        );
+      }
     }
   }
 
@@ -120,12 +154,6 @@ sub create_revision_attachment {
       isprivate   => 0,
       mimetype    => PHAB_CONTENT_TYPE,
     });
-
-    # When the revision belongs to an uplift repo, set appropriate approval flags to `?`.
-    if ($revision->repository && $revision->repository->is_uplift_repo()) {
-      set_attachment_approval_flags($attachment, $revision, $submitter, '?');
-      $attachment->update($timestamp);
-    }
 
     # Insert a comment about the new attachment into the database.
     $bug->add_comment(
