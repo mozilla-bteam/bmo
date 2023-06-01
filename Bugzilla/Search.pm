@@ -1168,9 +1168,13 @@ sub _valid_order {
 }
 
 # The valid order with just the column names, and no ASC or DESC.
+# 'bug_list' is a special order clause, not a column
 sub _valid_order_columns {
   my ($self) = @_;
-  return map { (split_order_term($_))[0] } $self->_valid_order;
+  return
+    grep { $_ ne 'bug_list' }
+    map { (split_order_term($_))[0] }
+    $self->_valid_order;
 }
 
 sub _validate_order_column {
@@ -1179,6 +1183,16 @@ sub _validate_order_column {
   # Translate old column names
   my ($field, $direction) = split_order_term($order_item);
   $field = $self->_translate_old_column($field);
+
+  # The 'bug_list' order needs the 'bug_id' parameter, and each bug_id must be
+  # an integer (ie. aliases aren't supported)
+  if ($field eq 'bug_list') {
+    return unless exists $self->_params->{bug_id};
+    my @ids = split(/,\s*/, $self->_params->{bug_id});
+    return if any { $_ =~ /\D/ } @ids;
+    $self->{order_by_bug_list} = join(',', @ids);
+    return $field;
+  }
 
   # Only accept valid columns
   return if (!exists $self->COLUMNS->{$field});
@@ -1213,6 +1227,13 @@ sub _special_order {
 sub _sql_order_by {
   my ($self) = @_;
   if (!$self->{sql_order_by}) {
+    # Handle ordering by the list of bugs provided in the bug_id param
+    if ($self->{order_by_bug_list}) {
+      # order_by_bug_list is guaranteed at this point to only contain a comma
+      # separated list of integers
+      return ("FIELD(bugs.bug_id,$self->{order_by_bug_list})");
+    }
+    # Otherwise order by columns
     my @order_by
       = map { $self->_translate_order_by_column($_) } $self->_valid_order;
     $self->{sql_order_by} = \@order_by;
