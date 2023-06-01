@@ -198,7 +198,7 @@ sub members_report {
   $vars->{'include_disabled'} = $include_disabled;
 
   my $search_type = $cgi->param('search_type') || 'all';
-  if (none { $search_type eq $_ } ('all', 'direct', 'indirect', 'non-mozilla')) {
+  if (none { $search_type eq $_ } qw(all direct indirect non-mozilla)) {
     ThrowUserError('report_invalid_parameter', {name => 'search type'});
   }
   $vars->{search_type} = $search_type;
