@@ -16,7 +16,9 @@ use Bugzilla::Error;
 use Bugzilla::Group;
 use Bugzilla::User;
 use Bugzilla::Util qw(trim datetime_from);
+
 use JSON qw(encode_json);
+use List::MoreUtils qw(none);
 
 sub admins_report {
   my ($vars) = @_;
@@ -196,6 +198,9 @@ sub members_report {
   $vars->{'include_disabled'} = $include_disabled;
 
   my $search_type = $cgi->param('search_type') || 'all';
+  if (none { $search_type eq $_ } ('all', 'direct', 'indirect', 'non-mozilla')) {
+    ThrowUserError('report_invalid_parameter', {name => 'search type'});
+  }
   $vars->{search_type} = $search_type;
 
   # load selected group
