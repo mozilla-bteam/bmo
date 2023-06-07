@@ -454,7 +454,7 @@ if (Bugzilla->usage_mode != USAGE_MODE_EMAIL) {
     # show_bug.cgi which will prompt for a bug. This allows mass bug updates to still see
     # the result of what changed/emails sent.
     my $bug_id = $vars->{bug} ? $vars->{bug}->id : undef;
-    my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bug_id);
+    my $redirect_url = Bugzilla->localconfig->urlbase . "show_bug.cgi?id=$bug_id";
     $C->redirect_to($redirect_url);
     exit;
   }
