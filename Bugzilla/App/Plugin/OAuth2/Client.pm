@@ -28,7 +28,7 @@ sub register {
       my $params = Bugzilla->params;
 
       $args->{scope}        ||= $params->{oauth2_client_scopes};
-      $args->{redirect_uri} ||= $c->url_for->to_abs->to_string;
+      $args->{redirect_uri} ||= Bugzilla->localconfig->urlbase;
 
       my $authorize_url = Mojo::URL->new($params->{oauth2_client_authorize_url});
       $authorize_url->query->append(
@@ -57,7 +57,7 @@ sub register {
         client_secret => $params->{oauth2_client_secret},
         code          => scalar($c->param('code')),
         grant_type    => 'authorization_code',
-        redirect_uri  => $c->url_for->to_abs->to_string,
+        redirect_uri  => Bugzilla->localconfig->urlbase,
       };
 
       my $token_url = Mojo::URL->new($params->{oauth2_client_token_url});

@@ -78,7 +78,7 @@ sub _resource_owner_logged_in {
   my (%args) = @_;
   my $c = $args{mojo_controller};
 
-  $c->session->{override_login_target} = $c->url_for('current');
+  $c->session->{override_login_target} = '/oauth/authorize';
   $c->session->{cgi_params}            = $c->req->params->to_hash;
 
   $c->bugzilla->login(LOGIN_REQUIRED) || return undef;
