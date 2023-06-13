@@ -9,7 +9,7 @@ package Bugzilla::Extension::SearchAPI::API::V1::LastSeen;
 
 use Mojo::Base qw(Mojolicious::Controller);
 
-use Bugzilla::Extension::SearchAPI::Util qw(bug_to_hash named_params);
+use Bugzilla::Extension::SearchAPI::Util qw(named_params);
 
 use Bugzilla::Bug;
 use Bugzilla::Constants;
@@ -49,9 +49,15 @@ sub needinfo_last_seen {
   my $bugs = Bugzilla::Bug->new_from_list($ids);
   $bugs = $user->visible_bugs($bugs);
 
+  # Decide which extra fields we will return (default: flags)
+  my $fields = {flags => 1};
+  if (my $include = $self->param('include_fields')) {
+    $fields = {map {$_ => 1} split ',', $include};
+  }
+
   my $result = [];
   foreach my $bug (@{$bugs}) {
-    push @{$result}, bug_to_hash($bug, {flags => 1});
+    push @{$result}, $bug->to_hash($fields);
   }
 
   return $self->render(json => {result => $result});
@@ -82,9 +88,15 @@ sub assignee_last_seen {
   my $bugs = Bugzilla::Bug->new_from_list($ids);
   $bugs = $user->visible_bugs($bugs);
 
+  # Decide which extra fields we will return (default: assignee)
+  my $fields = {assignee => 1};
+  if (my $include = $self->param('include_fields')) {
+    $fields = {map {$_ => 1} split ',', $include};
+  }
+
   my $result = [];
   foreach my $bug (@{$bugs}) {
-    push @{$result}, bug_to_hash($bug, {assignee => 1});
+    push @{$result}, $bug->to_hash($fields);
   }
 
   return $self->render(json => {result => $result});

@@ -24,13 +24,6 @@ my $url            = Bugzilla->localconfig->urlbase;
 
 my $t = Test::Mojo->new;
 
-# Example search API simply returns a list of all possible bug statuses
-# or info on a single status is a status name is provided. Login is not required.
-$t->get_ok($url
-    . "rest/search/bug_statuses?value=NEW" =>
-    {'X-Bugzilla-API-Key' => $admin_api_key})->status_is(200)
-  ->json_is('/result/0/value', 'NEW');
-
 # The LastSeen API returns a list of bugs that have not been seen in X days by
 # the assignee or have needinfo set and the requestee has not been seen in X days
 
@@ -81,5 +74,20 @@ $t->get_ok($url
     . 'rest/search/assignee_last_seen?days=5' =>
     {'X-Bugzilla-API-Key' => $unpriv_api_key})->status_is(200)
   ->json_hasnt('/result/0/id');
+
+# Test getting all fields possible
+my $all_fields = 'assignee,blocks,classification,comments,component,cc,creation_time,'
+  . 'creator,depends_on,description,dupe_of,duplicates,groups,is_open,keywords,'
+  . 'last_change_time,last_change_time_non_bot,product,qa_contact,triage_owner,see_also,'
+  . 'flags,regressed_by,regressions,estimated_time,remaining_time,deadline,actual_time,'
+  . 'is_cc_accessible,is_creator_accessible,mentors';
+
+$t->get_ok($url
+    . "rest/search/assignee_last_seen?days=5&include_fields=$all_fields" =>
+    {'X-Bugzilla-API-Key' => $admin_api_key})->status_is(200)
+  ->json_has('/result/0/classification')
+  ->json_has('/result/0/component')
+  ->json_has('/result/0/product')
+  ->json_has('/result/0/description');
 
 done_testing();

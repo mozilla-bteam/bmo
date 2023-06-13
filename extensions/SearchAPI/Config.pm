@@ -12,7 +12,9 @@ use strict;
 use warnings;
 
 use constant NAME => 'SearchAPI';
-use constant REQUIRED_MODULES => [];
+use constant REQUIRED_MODULES => [
+  {package => 'SQL-Tokenizer', module => 'SQL::Tokenizer', version => 0},
+];
 use constant OPTIONAL_MODULES => [];
 
 __PACKAGE__->NAME;
