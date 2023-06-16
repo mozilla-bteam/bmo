@@ -299,9 +299,10 @@ sub _prevent_unsafe_response {
         (?: application/ (?: x(?: -javascript | ml (?: -dtd )? )
                            | (?: atom | rdf) \+ xml
                            | json )
-        # text/csv, text/calendar, text/plain, and text/html
+        # text/csv, text/calendar, text/plain, text/xml, and text/html
           | text/ (?: c (?: alendar | sv )
                     | plain
+                    | xml
                     | html )
         # used for HTTP push responses
           | multipart/x-mixed-replace)
