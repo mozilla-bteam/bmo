@@ -4469,6 +4469,172 @@ sub delta_ts_non_bot {
   return $self->{delta_ts_non_bot};
 }
 
+sub to_hash {
+  my ($self, $params) = @_;
+  my $user = Bugzilla->user;
+
+  my $hash = {
+    alias            => $self->alias,
+    id               => $self->bug_id,
+    is_confirmed     => $self->everconfirmed,
+    op_sys           => $self->op_sys,
+    platform         => $self->rep_platform,
+    priority         => $self->priority,
+    resolution       => $self->resolution,
+    severity         => $self->bug_severity,
+    status           => $self->bug_status,
+    summary          => $self->short_desc,
+    target_milestone => $self->target_milestone,
+    type             => $self->bug_type,
+    url              => $self->bug_file_loc,
+    version          => $self->version,
+    whiteboard       => $self->status_whiteboard,
+  };
+
+  if ($params->{assignee}) {
+    $hash->{assignee} = $self->assigned_to->to_hash;
+  }
+  if ($params->{blocks}) {
+    $hash->{blocks} =$self->blocked;
+  }
+  if ($params->{classification}) {
+    $hash->{classification} =$self->classification;
+  }
+  if ($params->{comments}) {
+    my @result;
+    my $comments =$self->comments(
+      {order => 'oldest_to_newest', after => $params->{new_since}});
+    foreach my $comment (@$comments) {
+      next if $comment->is_private && !$user->is_insider;
+      push @result, $comment->to_hash;
+    }
+    $hash->{comments} = \@result;
+  }
+  if ($params->{component}) {
+    $hash->{component} =$self->component;
+  }
+  if ($params->{cc}) {
+    $hash->{cc} = [map { $_->to_hash } @{$self->cc_users}];
+  }
+  if ($params->{creation_time}) {
+    $hash->{creation_time} =$self->creation_ts;
+  }
+  if ($params->{creator}) {
+    $hash->{creator} = $self->reporter->to_hash;
+  }
+  if ($params->{depends_on}) {
+    $hash->{depends_on} =$self->dependson;
+  }
+  if ($params->{description}) {
+    my $comment = Bugzilla::Comment->match({bug_id =>$self->id, LIMIT => 1})->[0];
+    $hash->{description}
+      = ($comment && (!$comment->is_private || Bugzilla->user->is_insider))
+      ? $comment->body
+      : '';
+  }
+  if ($params->{dupe_of}) {
+    $hash->{dupe_of} =$self->dup_id;
+  }
+  if ($params->{duplicates}) {
+    $hash->{duplicates} =$self->duplicates;
+  }
+  if ($params->{groups}) {
+    my @groups;
+    foreach my $group (@{$self->groups_in}) {
+      next if !$user->in_group($group);
+      push @groups, $group->to_hash;
+    }
+    $hash->{groups} = \@groups;
+  }
+  if ($params->{is_open}) {
+    $hash->{is_open} =$self->status->is_open ? 1 : 0;
+  }
+  if ($params->{keywords}) {
+    $hash->{keywords} = [map { $_->name } @{$self->keyword_objects}];
+  }
+  if ($params->{last_change_time}) {
+    $hash->{last_change_time} =$self->delta_ts;
+  }
+  if ($params->{last_change_time_non_bot}) {
+    $hash->{last_change_time_non_bot} =$self->delta_ts_non_bot;
+  }
+  if ($params->{product}) {
+    $hash->{product} =$self->product;
+  }
+  if ($params->{qa_contact}) {
+    if ($self->qa_contact) {
+      $hash->{qa_contact} = $self->qa_contact->to_hash;
+    }
+  }
+  if ($params->{triage_owner}) {
+    my $triage_owner =$self->component_obj->triage_owner;
+    if ($triage_owner->login) {
+      $hash->{triage_owner} = $triage_owner->to_hash;
+    }
+  }
+  if ($params->{see_also}) {
+    $hash->{see_also} = [map { $_->name } @{$self->see_also}];
+  }
+  if ($params->{flags}) {
+    $hash->{flags} = [map { $_->to_hash } @{$self->flags}];
+  }
+
+  # Regressions
+  if (Bugzilla->params->{use_regression_fields}) {
+    if ($params->{regressed_by}) {
+      $hash->{regressed_by} =$self->regressed_by;
+    }
+    if ($params->{regressions}) {
+      $hash->{regressions} =$self->regresses;
+    }
+  }
+
+  # Custom fields
+  my @custom_fields = Bugzilla->active_custom_fields(
+    {
+      product   =>$self->product_obj,
+      component =>$self->component_obj,
+      bug_id    =>$self->id
+    },
+  );
+  foreach my $field (@custom_fields) {
+    my $name = $field->name;
+    next if !$params->{$name};
+    $hash->{$name} =$self->$name;
+  }
+
+  # Timetracking fields
+  if ($user->is_timetracker) {
+    if ($params->{estimated_time}) {
+      $hash->{estimated_time} =$self->estimated_time;
+    }
+    if ($params->{remaining_time}) {
+      $hash->{remaining_time} =$self->remaining_time;
+    }
+    if ($params->{deadline}) {
+      $hash->{deadline} =$self->deadline;
+    }
+    if ($params->{actual_time}) {
+      $hash->{actual_time} =$self->actual_time;
+    }
+  }
+
+  # Bug accessibility
+  if ($params->{is_cc_accessible}) {
+    $hash->{is_cc_accessible} =$self->cclist_accessible ? 1 : 0;
+  }
+  if ($params->{is_creator_accessible}) {
+    $hash->{is_creator_accessible} =$self->reporter_accessible ? 1 : 0;
+  }
+
+  # Bug mentors
+  if ($params->{mentors}) {
+    $hash->{mentors} = [map { $_->to_hash } @{$self->mentors}];
+  }
+
+  return $hash;
+}
+
 #####################################################################
 # Subroutines
 #####################################################################

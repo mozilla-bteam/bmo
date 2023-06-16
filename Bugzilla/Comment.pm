@@ -298,6 +298,29 @@ sub body_full {
   return $body;
 }
 
+sub to_hash {
+  my $self = shift;
+
+  my $attach_id = $self->is_about_attachment ? $self->extra_data : undef;
+
+  my $hash = {
+    id            => $self->id,
+    bug_id        => $self->bug_id,
+    creator       => $self->author->to_hash,
+    creation_time => $self->creation_ts,
+    is_private    => $self->is_private,
+    text          => $self->body_full,
+    attachment_id => $attach_id,
+  };
+
+  # Don't load comment tags unless enabled
+  if (Bugzilla->params->{'comment_taggers_group'}) {
+    $hash->{tags} = $self->tags;
+  }
+
+  return $hash;
+}
+
 ############
 # Mutators #
 ############

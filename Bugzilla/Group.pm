@@ -217,6 +217,19 @@ sub owner {
   return $self->{owner} || undef;
 }
 
+sub to_hash {
+  my $self = shift;
+
+  my $hash = {
+    id          => $self->id,
+    name        => $self->name,
+    description => $self->description,
+    is_active   => $self->is_active,
+  };
+
+  return $hash;
+}
+
 ###############################
 ####        Methods        ####
 ###############################
