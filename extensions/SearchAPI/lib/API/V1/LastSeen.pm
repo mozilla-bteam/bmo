@@ -52,7 +52,7 @@ sub needinfo_last_seen {
   # Decide which extra fields we will return (default: flags)
   my $fields = {flags => 1};
   if (my $include = $self->param('include_fields')) {
-    $fields = {map {$_ => 1} split ',', $include};
+    $fields = {map {$_ => 1} split /,/, $include};
   }
 
   my $result = [];
@@ -91,7 +91,7 @@ sub assignee_last_seen {
   # Decide which extra fields we will return (default: assignee)
   my $fields = {assignee => 1};
   if (my $include = $self->param('include_fields')) {
-    $fields = {map {$_ => 1} split ',', $include};
+    $fields = {map {$_ => 1} split /,/, $include};
   }
 
   my $result = [];
