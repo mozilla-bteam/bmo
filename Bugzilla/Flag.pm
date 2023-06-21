@@ -219,6 +219,26 @@ sub bug {
   return $self->{'bug'} ||= new Bugzilla::Bug({id => $self->bug_id, cache => 1});
 }
 
+sub to_hash {
+  my $self = shift;
+
+  my $hash = {
+    id                => $self->id,
+    name              => $self->name,
+    type_id           => $self->type_id,
+    creation_date     => $self->creation_date,
+    modification_date => $self->modification_date,
+    status            => $self->status
+  };
+
+  foreach my $field (qw(setter requestee)) {
+    my $field_id = $field . "_id";
+    $hash->{$field} = $self->$field->to_hash if $self->$field_id;
+  }
+
+  return $hash;
+}
+
 ################################
 ## Searching/Retrieving Flags ##
 ################################

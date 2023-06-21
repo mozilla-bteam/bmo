@@ -284,7 +284,7 @@ foreach my $ref_bug_id (uniq @{$bug->{see_also_changes} || []}) {
 
 $C->flash(last_sent_changes => \@all_mail_results);
 
-my $redirect_url = $C->url_for('show_bugcgi')->query(id => $id);
+my $redirect_url = Bugzilla->localconfig->urlbase . "show_bug.cgi?id=$id";
 $C->redirect_to($redirect_url);
 
 1;

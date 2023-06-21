@@ -674,7 +674,7 @@ sub insert {
   };
   $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-  my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bugid);
+  my $redirect_url = Bugzilla->localconfig->urlbase . "show_bug.cgi?id=$bugid";
   $C->redirect_to($redirect_url);
 }
 
@@ -854,7 +854,7 @@ sub update {
   };
   $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-  my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bug->id);
+  my $redirect_url = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $bug->id;
   $C->redirect_to($redirect_url);
 }
 
@@ -926,7 +926,7 @@ sub delete_attachment {
     };
     $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-    my $redirect_url = $C->url_for('show_bugcgi')->query(id => $bug->id);
+    my $redirect_url = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $bug->id;
     $C->redirect_to($redirect_url);
   }
   else {

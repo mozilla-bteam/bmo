@@ -2762,6 +2762,23 @@ sub set_bounce_count {
   $self->{bounce_count} = $count;
 }
 
+sub to_hash {
+  my $self = shift;
+
+  my $hash = {
+    id => $self->id,
+    real_name => $self->name,
+    nick => $self->nick
+  };
+
+  # Only include if current user is logged in
+  if (Bugzilla->user->id) {
+    $hash->{name}  = $self->login;
+    $hash->{email} = $self->email;
+  }
+
+  return $hash;
+}
 
 ###############
 # Subroutines #
