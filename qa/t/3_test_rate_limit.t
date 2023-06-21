@@ -30,7 +30,7 @@ set_parameters(
       'rate_limit_rules'     => {
         type  => 'text',
         value =>
-          '{"get_attachments":[5,150],"get_comments":[5,150],"get_bug":[5,150],"show_bug":[5,150],"github":[5,150],"webpage_errors":[5,150], "token":[5,150], "api_key":[5,150], "username_password":[3,150]}'
+          '{"get_attachments":[5,100],"get_comments":[5,100],"get_bug":[5,100],"show_bug":[5,100],"github":[5,100],"webpage_errors":[5,100], "token":[5,100], "api_key":[5,100], "username_password":[3,100]}'
       },
       'iprepd_base_url'      => {type => 'text', value => 'http://externalapi.test:8000'},
       'iprepd_client_secret' => {type => 'text', value => 'iprepd_client_secret'},

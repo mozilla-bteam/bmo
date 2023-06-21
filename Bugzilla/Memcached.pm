@@ -302,6 +302,7 @@ sub should_rate_limit {
     my $cas    = $memcached->gets($key);
     $tokens->{$key} = $cas->[1]++;
     return 1 if sum(values %$tokens) >= $rate_max;
+    DEBUG("key: $key seconds: $rate_seconds cas: " . @$cas);
     return 0 if $memcached->cas($key, @$cas, $rate_seconds + 1);
     WARN("retry for $prefix (try $try of $tries)");
   }
