@@ -56,7 +56,7 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
 
   memcached:
-    image: memcached:latest
+    image: ghcr.io/ghcr-library/memcached:latest
 
   selenium:
     image: selenium/standalone-firefox:3.141.59
