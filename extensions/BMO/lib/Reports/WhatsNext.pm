@@ -32,7 +32,7 @@ use constant CLASSIFICATIONS => (
 );
 
 use constant SELECT =>
-  "SELECT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.short_desc, bugs.delta_ts";
+  'SELECT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.short_desc, bugs.delta_ts';
 
 # Wrap the sql execution in a try block so we can see any SQL errors in debug output
 sub get_bug_list {
@@ -209,8 +209,8 @@ sub important_needinfo_bugs {
               LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id
                 AND COALESCE(requestees_login_name.requestee_id, 0) = ?
         WHERE products.classification_id IN (SELECT id FROM classifications WHERE name IN ('
-    . join(', ', map { $dbh->quote($_) } CLASSIFICATIONS) . "))
-              AND bugs.bug_status IN ("
+    . join(', ', map { $dbh->quote($_) } CLASSIFICATIONS) . '))
+              AND bugs.bug_status IN ('
     . join(', ', map { $dbh->quote($_) } BUG_STATE_OPEN) . ")
               AND (COALESCE(tracking_flags_bugs_1.value, '---') IN ('+', 'blocking')
                     OR COALESCE(tracking_flags_bugs_2.value, '---') IN ('+', 'blocking')
