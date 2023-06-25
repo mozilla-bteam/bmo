@@ -257,6 +257,10 @@ sub page_before_template {
     require Bugzilla::Extension::BMO::Reports::ProductSecurity;
     Bugzilla::Extension::BMO::Reports::ProductSecurity::report($vars);
   }
+  elsif ($page eq 'whats_next.html') {
+    require Bugzilla::Extension::BMO::Reports::WhatsNext;
+    Bugzilla::Extension::BMO::Reports::WhatsNext::report($vars);
+  }
   elsif ($page eq 'fields.html') {
 
     # Recently global/field-descs.none.tmpl and bug/field-help.none.tmpl
