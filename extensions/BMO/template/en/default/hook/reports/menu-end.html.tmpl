@@ -79,7 +79,13 @@
         <a href="[% basepath FILTER none %]page.cgi?id=internship_dashboard.html">Internship Dashboard</a>
       </strong> - Dashboard for open intern requisitions.
     </li>
-
+  [% END %]
+  [% IF user.in_group('editbugs') %]
+    <li>
+      <strong>
+        <a href="[% basepath FILTER none %]page.cgi?id=whats_next.html">What should I work on next?</a>
+      </strong> - As a Firefox developer, what should I work on next?
+    </li>
   [% END %]
 </ul>
 
