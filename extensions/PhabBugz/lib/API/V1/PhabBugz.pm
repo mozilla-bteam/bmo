@@ -46,10 +46,12 @@ sub get_bugs {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
+  WARN('PHABBUGZ get_bugs');
+
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
-  WARN('PHABBUGZ Pulsebot/Lando User: ' . $user->id);
+  WARN('PHABBUGZ get_bugs user: ' . $user->id);
 
   # Must be permitted automation user to access this endpoint
   if ( $user->login ne LANDO_AUTOMATION_USER
@@ -98,10 +100,12 @@ sub get_comments {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
+  WARN('PHABBUGZ get_comments');
+
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
-  WARN('PHABBUGZ Pulsebot/Lando User: ' . $user->id);
+  WARN('PHABBUGZ get_comments user: ' . $user->id);
 
   # Must be permitted automation user to access this endpoint
   if ($user->login ne PULSEBOT_AUTOMATION_USER) {
@@ -136,8 +140,12 @@ sub add_comment {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
+  WARN('PHABBUGZ add_comment');
+
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
+
+  WARN('PHABBUGZ add_comment user: ' . $user->id);
 
   # Must be permitted automation user to access this endpoint
   if ($user->login ne PULSEBOT_AUTOMATION_USER) {
@@ -185,8 +193,12 @@ sub update_bugs {
   my ($self) = @_;
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
+  WARN('PHABBUGZ update_bugs');
+
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
+
+  WARN('PHABBUGZ update_bugs user: ' . $user->id);
 
   # Must be permitted automation user to access this endpoint
   if ( $user->login ne LANDO_AUTOMATION_USER
@@ -216,7 +228,7 @@ sub update_bugs {
   }
 
   # Strictly prohibit the user from changing any fields
-  # other than ones allowed for the user. 
+  # other than ones allowed for the user.
   my $allowed_params = {};
   foreach my $param (keys %{$params}) {
     foreach my $field (@allowed_fields) {
