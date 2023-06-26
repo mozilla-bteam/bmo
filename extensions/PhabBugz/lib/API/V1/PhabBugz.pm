@@ -49,7 +49,7 @@ sub get_bugs {
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
-  WARN("PHABBUGZ Pulsebot/Lando User: " . $user->id);
+  WARN('PHABBUGZ Pulsebot/Lando User: ' . $user->id);
 
   # Must be permitted automation user to access this endpoint
   if ( $user->login ne LANDO_AUTOMATION_USER
@@ -101,7 +101,7 @@ sub get_comments {
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
-  WARN("PHABBUGZ Pulsebot/Lando User: " . $user->id);
+  WARN('PHABBUGZ Pulsebot/Lando User: ' . $user->id);
 
   # Must be permitted automation user to access this endpoint
   if ($user->login ne PULSEBOT_AUTOMATION_USER) {
