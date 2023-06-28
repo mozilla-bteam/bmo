@@ -9,124 +9,87 @@
 [% INCLUDE global/header.html.tmpl
   title = "What should I work on next?"
   generate_api_token = 1
-  javascript_urls = [ "js/field.js" ]
+  javascript_urls = [ "js/field.js", "extensions/BMO/web/js/whats_next.js" ]
   style_urls = [ "extensions/BMO/web/styles/reports.css" ]
 %]
 
 [% PROCESS global/variables.none.tmpl %]
 
-<form id="whats_next_form" name="whats_next_form" action="[% basepath FILTER none %]page.cgi" method="get">
-<input type="hidden" name="id" value="whats_next.html">
-<input type="hidden" name="action" value="run">
-<table id="parameters">
-<tr>
-  <td>
-    <strong>Current User</strong>
+<div id="whats_next">
+  <h1>What should I work on next?</h1>
+
+  <div>
+  </div>
+
+  <form id="whats_next_form" name="whats_next_form" action="[% basepath FILTER none %]page.cgi" method="get">
+  <input type="hidden" name="id" value="whats_next.html">
+  <input type="hidden" name="action" value="run">
+  <table id="parameters">
+  <tr>
+    <td>
+      <strong>Current User</strong>
+    </td>
+    <td>
+      &nbsp;
+      [% INCLUDE global/userselect.html.tmpl
+         id = "who"
+         name = "who"
+         value = who
+         size = 40
+         emptyok = 0
+      %]
+      &nbsp;
+    </td>
+    <td>
+      <input type="submit" id="run" value="Change">
+    </td>
+  </tr>
+  <td colspan="2">
+    <label class="switch">
+      <input id="auto_refresh" type="checkbox" onchange="updateAutoRefresh();">
+      <span class="slider round"></span>
+    </label>
+    Auto-refresh every 10min
   </td>
-  <td>
-    &nbsp;
-    [% INCLUDE global/userselect.html.tmpl
-       id = "who"
-       name = "who"
-       value = who
-       size = 40
-       emptyok = 0
-    %]
-    &nbsp;
-  </td>
-  <td>
-    <input type="submit" id="run" value="Change">
-  </td>
-</tr>
-</table>
-</form>
+  </table>
+  </form>
 
-<h1>What should I work on next?</h1>
+  <h2>Highest Priority Tasks</h2>
 
-<p>We don’t always agree on top priority work. This can lead to us being inefficient
-  or missing simple tasks like replying to a critical problem for a release. So this
-  list takes steps to unify our definition of the highest levels of priority when it
-  comes to engineering work.</p>
+  <p>These are the things you should drop everything else for (they’re in no particular order):</p>
 
-<p>This list doesn’t attempt to prioritize normal work - it is just for the things
-  that are more important than the normal stuff. Also it’s about individual engineer
-  prioritization rather than team prioritization. It also doesn’t claim to include
-  all sources of high priority work (e.g. triage, responding to requests from HR, etc).</p>
+  <h3>S1 [% terms.bugs %] assigned to you</h3>
+  [% INCLUDE bug_table bugs = s1_bugs %]
 
-<p>So here are some rules of thumb about our priorities when it comes to [% terms.bug %] fixing.</p>
+  <h3>sec-crit [% terms.bugs %] assigned to you</h3>
+  (these should already be S1 [% terms.bugs %], but just in case…)
+  [% INCLUDE bug_table bugs = sec_crit_bugs %]
 
-<h2>Highest Priority Tasks</h2>
+  <h3>[% terms.Bugs %] that are needinfo? you and are marked as being tracked against or blocking the current nightly, beta, or release versions.</h3>
+  [% INCLUDE bug_table bugs = important_needinfo_bugs %]
 
-<p>These are the things you should drop everything else for (they’re in no particular order):</p>
+  <h2>High Priority Tasks</h2>
 
-<h3>S1 [% terms.bugs %] assigned to you</h3>
-[% INCLUDE bug_table bugs = s1_bugs %]
+  <p>High priority tasks are also “drop everything”, except that in this case
+    “everything” doesn’t include anything in the “Highest priority” list:</p>
 
-<h3>sec-crit [% terms.bugs %] assigned to you</h3>
-(these should already be S1 [% terms.bugs %], but just in case…)
-[% INCLUDE bug_table bugs = sec_crit_bugs %]
+  <h3>S2 [% terms.bugs %] assigned to you</h3>
+  (for things that are not disabled in the current release)
+  [% INCLUDE bug_table bugs = s2_bugs %]
 
-<h3>[% terms.Bugs %] that are needinfo? you and are marked as being tracked against or blocking the current nightly, beta, or release versions.</h3>
-[% INCLUDE bug_table bugs = important_needinfo_bugs %]
+  <p>Some teams have very long lists of S2 [% terms.bugs %] - see notes below on “Long High Priority task lists”</p>
 
-<h2>High Priority Tasks</h2>
+  <h3>sec-high [% terms.bugs %] assigned to you</h3>
+  (again, for things that are not disabled in the current release)
+  [% INCLUDE bug_table bugs = sec_high_bugs %]
 
-<p>High priority tasks are also “drop everything”, except that in this case
-  “everything” doesn’t include anything in the “Highest priority” list:</p>
+  <h3>Regressions</h3>
+  [% INCLUDE bug_table bugs = regression_bugs %]
 
-<h3>S2 [% terms.bugs %] assigned to you</h3>
-(for things that are not disabled in the current release)
-[% INCLUDE bug_table bugs = s2_bugs %]
-
-<p>Some teams have very long lists of S2 [% terms.bugs %] - see notes below on “Long High Priority task lists”</p>
-
-<h3>sec-high [% terms.bugs %] assigned to you</h3>
-(again, for things that are not disabled in the current release)
-[% INCLUDE bug_table bugs = sec_high_bugs %]
-
-<h3>Regressions</h3>
-[% INCLUDE bug_table bugs = regression_bugs %]
-
-<h3>Other needinfos</h3>
-(needinfos for me but not set by me)
-[% INCLUDE bug_table bugs = other_needinfo_bugs %]
-
-<h3>Notes:</h3>
-
-<ul>
-  <li>Long lists of High Priority tasks: For some people and teams, the list of
-    “High Priority” tasks is so long that you would never do normal work. If this
-    is you then you should schedule these tasks alongside normal work - However
-    making your task list manageable should still be a priority.</li>
-  <li>Severity is defined, but things get a bit hazy when it comes to how we define
-    severity for enhancements; this list is for serious [% terms.bugs %] only.</li>
-  <li>This list doesn’t include Review Requests as some engineers have a Review
-    Request load that would be impossible to manage with these strict rules.</li>
-  <li>There are indicators of severity not included here. To ensure traction with
-    engineers, ensure this priority is reflected in a [% terms.bugs %] severity.
-    Examples include:
-    <ul>
-      <li>Tracking Flags</li>
-      <li>access-s1/access-s2/access-s3</li>
-      <li>webcompat-p1</li>
-      <li>performance-p1</li>
-    </ul>
-  <li>You may have a long list of needinfos. Please don’t ignore them. If this list
-    is daunting, work with your manager to burn them down - for needinfos that are
-    older than 6 months you might consider declaring needinfo bankruptcy.</li>
-</ul>
-
-<h2>Everything Else</h2>
-
-<p>This list of things to work on deliberately doesn’t include “normal work”. That’s
-  because different teams and engineers at different levels will have very different
-  priorities. Over time we’d like to bring teams’ practices for prioritizing new work
-  more in line with each other, but that’s not the job of this note.</p>
-
-<p>If you find that most of your time is spent on high or highest priority tasks,
-  then it’s time to ask some questions to work out why - there’s likely to be a problem
-  behind this and it sounds like a recipe for burnout, and we should do everything we
-  can to even things out.</p>
+  <h3>Other needinfos</h3>
+  (needinfos for me but not set by me)
+  [% INCLUDE bug_table bugs = other_needinfo_bugs %]
+</div>
 
 [% INCLUDE global/footer.html.tmpl %]
 

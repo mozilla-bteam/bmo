@@ -354,17 +354,21 @@ sub report {
   my $user  = Bugzilla->user;
   my $input = Bugzilla->input_params;
 
-  $user->in_group('editbugs')
-    || ThrowUserError('auth_failure',
-    {group => 'editbugs', action => 'run', object => 'whats_next'});
+  $user->in_group('mozilla-employee-confidential') || ThrowUserError(
+    'auth_failure',
+    {
+      group  => 'mozilla-employee-confidential',
+      action => 'run',
+      object => 'whats_next'
+    }
+  );
 
   # If a username was not passed using the form, we default
   # to the current user.
   my $who
     = $input->{who} ? Bugzilla::User->check({name => $input->{who}}) : $user;
 
-  $vars->{who} = $who->login;
-
+  $vars->{who}                     = $who->login;
   $vars->{s1_bugs}                 = s1_bugs($who);
   $vars->{sec_crit_bugs}           = sec_crit_bugs($who);
   $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);

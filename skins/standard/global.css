@@ -1214,6 +1214,10 @@ input[type="radio"]:checked {
   content: '\E871';
 }
 
+#header .link-whats-next .icon::before {
+  content: '\E85D';
+}
+
 #header .dropdown {
   flex: none;
 }
