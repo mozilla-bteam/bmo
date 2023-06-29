@@ -16,7 +16,7 @@
 [% PROCESS global/variables.none.tmpl %]
 
 <div id="whats_next">
-  <h1>What should I work on next?</h1>
+  <h1>What Should I Work On Next?</h1>
 
   <div>
   </div>
@@ -58,14 +58,13 @@
 
   <p>These are the things you should drop everything else for (they’re in no particular order):</p>
 
-  <h3>S1 [% terms.bugs %] assigned to you</h3>
+  <h3>Your S1 [% terms.bugs %]</h3>
   [% INCLUDE bug_table bugs = s1_bugs %]
 
-  <h3>sec-crit [% terms.bugs %] assigned to you</h3>
-  (these should already be S1 [% terms.bugs %], but just in case…)
+  <h3>Your sec-crit [% terms.bugs %]</h3>
   [% INCLUDE bug_table bugs = sec_crit_bugs %]
 
-  <h3>[% terms.Bugs %] that are needinfo? you and are marked as being tracked against or blocking the current nightly, beta, or release versions.</h3>
+  <h3>Important needinfos</h3>
   [% INCLUDE bug_table bugs = important_needinfo_bugs %]
 
   <h2>High Priority Tasks</h2>
@@ -73,21 +72,16 @@
   <p>High priority tasks are also “drop everything”, except that in this case
     “everything” doesn’t include anything in the “Highest priority” list:</p>
 
-  <h3>S2 [% terms.bugs %] assigned to you</h3>
-  (for things that are not disabled in the current release)
+  <h3>Your S2 [% terms.bugs %]</h3>
   [% INCLUDE bug_table bugs = s2_bugs %]
 
-  <p>Some teams have very long lists of S2 [% terms.bugs %] - see notes below on “Long High Priority task lists”</p>
-
-  <h3>sec-high [% terms.bugs %] assigned to you</h3>
-  (again, for things that are not disabled in the current release)
+  <h3>Your sec-high [% terms.bugs %]</h3>
   [% INCLUDE bug_table bugs = sec_high_bugs %]
 
   <h3>Regressions</h3>
   [% INCLUDE bug_table bugs = regression_bugs %]
 
   <h3>Other needinfos</h3>
-  (needinfos for me but not set by me)
   [% INCLUDE bug_table bugs = other_needinfo_bugs %]
 </div>
 
