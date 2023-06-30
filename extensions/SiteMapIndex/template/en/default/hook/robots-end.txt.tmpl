@@ -1,5 +1,6 @@
+[% IF Param('sitemapindex_enabled') %]
 [%# comment lines are required to produce line breaks %]
 #
-Allow: /data/SiteMapIndex/sitemap*.xml.gz
 Sitemap: [% SITEMAP_URL %]
 #
+[% END %]
