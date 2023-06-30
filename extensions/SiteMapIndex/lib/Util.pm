@@ -44,7 +44,7 @@ use IO::Compress::Gzip qw(gzip $GzipError);
 
 sub too_young_date {
   my $hours_ago = DateTime->now(time_zone => Bugzilla->local_timezone);
-  $hours_ago->subtract(hours => 0); #SITEMAP_DELAY);
+  $hours_ago->subtract(hours => SITEMAP_DELAY);
   return $hours_ago;
 }
 
