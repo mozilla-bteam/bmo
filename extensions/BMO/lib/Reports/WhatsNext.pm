@@ -393,15 +393,6 @@ sub report {
   my $user  = Bugzilla->user;
   my $input = Bugzilla->input_params;
 
-  $user->in_group('mozilla-employee-confidential') || ThrowUserError(
-    'auth_failure',
-    {
-      group  => 'mozilla-employee-confidential',
-      action => 'run',
-      object => 'whats_next'
-    }
-  );
-
   # If a username was not passed using the form, we default
   # to the current user.
   my $who
@@ -413,21 +404,21 @@ sub report {
   my $dbh   = Bugzilla->dbh;
 
   # classifications
-  $cache->{classification_ids} = $dbh->selectcol_arrayref('
+  $cache->{classification_ids} ||= $dbh->selectcol_arrayref('
     SELECT id
       FROM classifications
      WHERE name IN (' . join(', ', map { $dbh->quote($_) } CLASSIFICATIONS) . ')');
 
   # needinfo flag
-  $cache->{needinfo_flag_id} = $dbh->selectrow_array("
+  $cache->{needinfo_flag_id} ||= $dbh->selectrow_array("
     SELECT id FROM flagtypes WHERE name = 'needinfo'");
 
   # keyword ids
-  $cache->{sec_critical_id} = $dbh->selectrow_array("
+  $cache->{sec_critical_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-critical'");
-  $cache->{sec_high_id} = $dbh->selectrow_array("
+  $cache->{sec_high_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-high'");
-  $cache->{regression_id} = $dbh->selectrow_array("
+  $cache->{regression_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'regression'");
 
   $vars->{who}                     = $who->login;
