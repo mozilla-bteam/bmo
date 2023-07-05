@@ -136,9 +136,11 @@ sub get_tracking_status_flags {
     = Bugzilla::Extension::TrackingFlags::Flag->new({name => $release_name});
   return {} if !$nightly_field && !$beta_field && !$release_field;
 
-  $flag_data->{status}
-    = {nightly => $nightly_field, beta => $beta_field, release => $release_field,
-    };
+  $flag_data->{status} = {
+    nightly => $nightly_field,
+    beta    => $beta_field,
+    release => $release_field,
+  };
 
   return $flag_data;
 }
@@ -149,7 +151,7 @@ sub s1_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->request_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{whats_next};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
 
@@ -175,7 +177,7 @@ sub sec_crit_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->request_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{whats_next};
   my $keyword_id = $cache->{sec_critical_id};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -205,7 +207,7 @@ sub important_needinfo_bugs {
   return [] if !exists $flags->{tracking};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->request_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{whats_next};
   my $needinfo_id     = $cache->{needinfo_flag_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -244,14 +246,14 @@ sub important_needinfo_bugs {
 
 # S2 defects assigned to you (for things that are not disabled in the current release)
 sub s2_bugs {
-  my $user  = shift;
-  my $dbh   = Bugzilla->dbh;
+  my $user = shift;
+  my $dbh  = Bugzilla->dbh;
 
   my $flags = get_tracking_status_flags();
   return [] if !exists $flags->{status};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->request_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{whats_next};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
   my $nightly_flag_id = $flags->{status}->{nightly}->flag_id;
@@ -287,14 +289,14 @@ sub s2_bugs {
 
 # sec-high bugs assigned to you (again, for things that are not disabled in the current release)
 sub sec_high_bugs {
-  my $user  = shift;
-  my $dbh   = Bugzilla->dbh;
+  my $user = shift;
+  my $dbh  = Bugzilla->dbh;
 
   my $flags = get_tracking_status_flags();
   return [] if !exists $flags->{status};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->request_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{whats_next};
   my $keyword_id      = $cache->{sec_high_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -336,7 +338,7 @@ sub regression_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->request_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{whats_next};
   my $keyword_id = $cache->{regression_id};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -363,7 +365,7 @@ sub other_needinfo_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Cached values for inserting into SQL
-  my $cache       = Bugzilla->request_cache->{whats_next};
+  my $cache       = Bugzilla->process_cache->{whats_next};
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
   my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -407,7 +409,7 @@ sub report {
 
   # Here we load some values into cache that will be used later
   # by the various queries.
-  my $cache = Bugzilla->request_cache->{whats_next} = {};
+  my $cache = Bugzilla->process_cache->{whats_next} = {};
   my $dbh   = Bugzilla->dbh;
 
   # classifications
@@ -425,7 +427,7 @@ sub report {
     SELECT id FROM keyworddefs WHERE name = 'sec-critical'");
   $cache->{sec_high_id} = $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-high'");
-   $cache->{regression_id} = $dbh->selectrow_array("
+  $cache->{regression_id} = $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'regression'");
 
   $vars->{who}                     = $who->login;
