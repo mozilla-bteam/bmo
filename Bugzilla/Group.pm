@@ -135,7 +135,7 @@ sub members_complete {
   }
 
   # If we want a list of users that are members but do not match the regexp
-  # if the current group, then we need to filter the user list.
+  # of the current group, then we need to filter the user list.
   # Regexp are normally used to automatically add users to a group such
   # as mozilla-employee-confidential, etc.
   if ($type eq 'non-mozilla' && $self->user_regexp) {
