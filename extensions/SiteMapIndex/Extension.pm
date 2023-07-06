@@ -1,24 +1,9 @@
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# The contents of this file are subject to the Mozilla Public
-# License Version 1.1 (the "License"); you may not use this file
-# except in compliance with the License. You may obtain a copy of
-# the License at http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS
-# IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# rights and limitations under the License.
-#
-# The Original Code is the Sitemap Bugzilla Extension.
-#
-# The Initial Developer of the Original Code is Everything Solved, Inc.
-# Portions created by the Initial Developer are Copyright (C) 2010 the
-# Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Max Kanat-Alexander <mkanat@bugzilla.org>
-#   Dave Lawrence <dkl@mozilla.com>
+# This Source Code Form is "Incompatible With Secondary Licenses", as
+# defined by the Mozilla Public License, v. 2.0.
 
 package Bugzilla::Extension::SiteMapIndex;
 
@@ -28,18 +13,9 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
-our $VERSION = '1.0';
+use Bugzilla::Extension::SiteMapIndex::Util qw(bug_is_ok_to_index);
 
-use Bugzilla::Constants qw(bz_locations ON_WINDOWS);
-use Bugzilla::Util qw(get_text);
-use Bugzilla::Install::Filesystem;
-
-use Bugzilla::Extension::SiteMapIndex::Constants;
-use Bugzilla::Extension::SiteMapIndex::Util;
-
-use DateTime;
-use IO::File;
-use POSIX;
+our $VERSION = '2.0';
 
 #########
 # Pages #
@@ -62,57 +38,26 @@ sub template_before_process {
   }
 }
 
-sub page_before_template {
+#################
+# Configuration #
+#################
+
+sub config_add_panels {
   my ($self, $args) = @_;
-  my $page = $args->{page_id};
-
-  if ($page =~ m{^sitemap/sitemap\.}) {
-    my $map = generate_sitemap(__PACKAGE__->NAME);
-    print Bugzilla->cgi->header('text/xml');
-    print $map;
-    exit;
-  }
-}
-
-################
-# Installation #
-################
-
-sub install_filesystem {
-  my ($self, $args) = @_;
-  my $create_dirs  = $args->{'create_dirs'};
-  my $recurse_dirs = $args->{'recurse_dirs'};
-  my $htaccess     = $args->{'htaccess'};
-
-  # Create the sitemap directory to store the index and sitemap files
-  my $sitemap_path = bz_locations->{'datadir'} . "/" . __PACKAGE__->NAME;
-
-  $create_dirs->{$sitemap_path} = Bugzilla::Install::Filesystem::DIR_CGI_WRITE
-    | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE;
-
-  $recurse_dirs->{$sitemap_path} = {
-    files => Bugzilla::Install::Filesystem::CGI_WRITE
-      | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE,
-    dirs => Bugzilla::Install::Filesystem::DIR_CGI_WRITE
-      | Bugzilla::Install::Filesystem::DIR_ALSO_WS_SERVE
-  };
-
-  # Create a htaccess file that allows the sitemap files to be served out
-  $htaccess->{"$sitemap_path/.htaccess"} = {
-    perms    => Bugzilla::Install::Filesystem::WS_SERVE,
-    contents => <<EOT
-# Allow access to sitemap files created by the SiteMapIndex extension
-<FilesMatch ^sitemap.*\\.xml(.gz)?\$>
-  Allow from all
-</FilesMatch>
-Deny from all
-EOT
-  };
+  my $modules = $args->{panel_modules};
+  $modules->{SiteMapIndex} = "Bugzilla::Extension::SiteMapIndex::Config";
 }
 
 sub before_robots_txt {
   my ($self, $args) = @_;
-  $args->{vars}{SITEMAP_URL} = Bugzilla->localconfig->urlbase . SITEMAP_URL;
+
+  return if !Bugzilla->params->{sitemapindex_enabled};
+
+  my $sitemap_url
+      = 'https://s3.us-west-2.amazonaws.com/'
+      . Bugzilla->params->{sitemapindex_s3_bucket}
+    . '/sitemap_index.xml';
+  $args->{vars}{SITEMAP_URL} = $sitemap_url;
 }
 
 __PACKAGE__->NAME;

@@ -3,7 +3,6 @@ Disallow: [% basepath FILTER none %]
 Crawl-delay: 30
 
 [% USE Bugzilla %]
-[% IF Bugzilla.localconfig.urlbase == "https://bugzilla.mozilla.org/" %]
 
 Allow: [% basepath FILTER none %]$
 Allow: [% basepath FILTER none %]index.cgi
@@ -24,6 +23,4 @@ Disallow: [% basepath FILTER none %]banmyipforever.cgi
 
 [% FILTER remove('#.*') %]
 [% Hook.process("end") %]
-[% END %]
-
 [% END %]

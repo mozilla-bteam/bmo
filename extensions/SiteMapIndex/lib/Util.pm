@@ -20,6 +20,7 @@
 #   Max Kanat-Alexander <mkanat@bugzilla.org>
 #   Dave Lawrence <dkl@mozilla.com>
 
+
 package Bugzilla::Extension::SiteMapIndex::Util;
 
 use 5.10.1;
@@ -27,17 +28,18 @@ use strict;
 use warnings;
 
 use base qw(Exporter);
-our @EXPORT = qw(
-  generate_sitemap
+our @EXPORT_OK = qw(
   bug_is_ok_to_index
+  generate_sitemap
 );
+
+use Bugzilla;
+use Bugzilla::S3;
+use Bugzilla::Util qw(datetime_from url_quote);
 
 use Bugzilla::Extension::SiteMapIndex::Constants;
 
-use Bugzilla::Util qw(datetime_from url_quote);
-use Bugzilla::Constants qw(bz_locations);
-
-use Scalar::Util qw(blessed);
+use Scalar::Util       qw(blessed);
 use IO::Compress::Gzip qw(gzip $GzipError);
 
 sub too_young_date {
@@ -53,32 +55,9 @@ sub bug_is_ok_to_index {
   return ($creation_ts && $creation_ts lt too_young_date()) ? 1 : 0;
 }
 
-# We put two things in the Sitemap: a list of Browse links for products,
-# and links to bugs.
+# We put two things in the Sitemap: a list of Browse links for products and links to bugs.
 sub generate_sitemap {
-  my ($extension_name) = @_;
-
-  # If file is less than SITEMAP_AGE hours old, then read in and send to caller.
-  # If greater, then regenerate and send the new version.
-  my $index_file
-    = bz_locations->{'datadir'} . "/$extension_name/sitemap_index.xml";
-  if (-e $index_file) {
-    my $index_mtime = (stat($index_file))[9];
-    my $index_hours = sprintf("%d", (time() - $index_mtime) / 60 / 60);    # in hours
-    if ($index_hours < SITEMAP_AGE) {
-      my $index_fh = new IO::File($index_file, 'r');
-      $index_fh || die "Could not open current sitemap index: $!";
-      my $index_xml;
-      { local $/; $index_xml = <$index_fh> }
-      $index_fh->close() || die "Could not close current sitemap index: $!";
-
-      return $index_xml;
-    }
-  }
-
-  # Set the atime and mtime of the index file to the current time
-  # in case another request is made before we finish.
-  utime(undef, undef, $index_file);
+  my $index_file = 'sitemap_index.xml';
 
   # Sitemaps must never contain private data.
   Bugzilla->logout_request();
@@ -122,19 +101,18 @@ sub generate_sitemap {
     # We only need the product links in the first sitemap file
     $products = [] if $filecount > 1;
 
-    push(@$filelist,
-      _generate_sitemap_file($extension_name, $filecount, $products, $bugs));
+    push @$filelist, _generate_sitemap_file($filecount, $products, $bugs);
 
     $filecount++;
     $offset += $num_bugs;
   }
 
   # Generate index file
-  return _generate_sitemap_index($extension_name, $filelist);
+  return _generate_sitemap_index($filelist);
 }
 
 sub _generate_sitemap_index {
-  my ($extension_name, $filelist) = @_;
+  my ($filelist) = @_;
 
   my $dbh       = Bugzilla->dbh;
   my $timestamp = $dbh->selectrow_array(
@@ -145,11 +123,15 @@ sub _generate_sitemap_index {
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 END
 
+  my $sitemap_url
+    = 'https://'
+    . Bugzilla->params->{sitemapindex_s3_bucket}
+    . '.s3-us-west-2.amazonaws.com';
+
   foreach my $filename (@$filelist) {
     $index_xml .= "
   <sitemap>
-    <loc>"
-      . Bugzilla->localconfig->urlbase . "data/$extension_name/$filename</loc>
+    <loc>$sitemap_url/$filename</loc>
     <lastmod>$timestamp</lastmod>
   </sitemap>
 ";
@@ -159,18 +141,14 @@ END
 </sitemapindex>
 END
 
-  my $index_file
-    = bz_locations->{'datadir'} . "/$extension_name/sitemap_index.xml";
-  my $index_fh = new IO::File($index_file, 'w');
-  $index_fh || die "Could not open new sitemap index: $!";
-  print $index_fh $index_xml;
-  $index_fh->close() || die "Could not close new sitemap index: $!";
+  # Upload index file to s3
+  _upload_s3('sitemap_index.xml', $index_xml);
 
-  return $index_xml;
+  return 1;
 }
 
 sub _generate_sitemap_file {
-  my ($extension_name, $filecount, $products, $bugs) = @_;
+  my ($filecount, $products, $bugs) = @_;
 
   my $bug_url = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=';
   my $product_url
@@ -204,13 +182,27 @@ END
 </urlset>
 END
 
-  # Write the compressed sitemap data to a file in the cgi root so that they can
-  # be accessed by the search engines.
+  # Write the compressed sitemap data to a variable and then upload to s3
+  my $gzipped_data;
+  gzip \$sitemap_xml => \$gzipped_data || die "gzip failed: $GzipError\n";
+
   my $filename = "sitemap$filecount.xml.gz";
-  gzip \$sitemap_xml => bz_locations->{'datadir'} . "/$extension_name/$filename"
-    || die "gzip failed: $GzipError\n";
+  _upload_s3($filename, $gzipped_data);
 
   return $filename;
+}
+
+sub _upload_s3 {
+  my ($filename, $data) = @_;
+  my $s3 = Bugzilla::S3->new({
+    aws_access_key_id     => Bugzilla->params->{sitemapindex_aws_client_id},
+    aws_secret_access_key => Bugzilla->params->{sitemapindex_aws_client_secret},
+    secure                => 1,
+    retry                 => 1,
+  });
+  my $bucket = $s3->bucket(Bugzilla->params->{sitemapindex_s3_bucket});
+  $bucket->delete_key($filename) || die $bucket->errstr;
+  $bucket->add_key($filename, $data) || die $bucket->errstr;
 }
 
 1;
