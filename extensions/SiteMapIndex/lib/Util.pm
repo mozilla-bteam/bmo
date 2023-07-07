@@ -198,7 +198,6 @@ END
 
 sub _upload_s3 {
   my ($filename, $data) = @_;
-  return;
   my $s3 = Bugzilla::S3->new({
     aws_access_key_id     => Bugzilla->params->{sitemapindex_aws_client_id},
     aws_secret_access_key => Bugzilla->params->{sitemapindex_aws_client_secret},
