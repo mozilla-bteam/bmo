@@ -21,6 +21,7 @@ sub get_param_list {
   my @params = (
     {name => 'sitemapindex_enabled',           type => 'b', default => 0,},
     {name => 'sitemapindex_s3_bucket',         type => 't', default => '',},
+    {name => 'sitemapindex_aws_region',        type => 't', default => 'us-west-2'},
     {name => 'sitemapindex_aws_client_id',     type => 't', default => '',},
     {name => 'sitemapindex_aws_client_secret', type => 't', default => '',},
   );
