@@ -125,8 +125,12 @@ END
 
   my $sitemap_url
     = 'https://'
-    . Bugzilla->params->{sitemapindex_s3_bucket}
-    . '.s3-us-west-2.amazonaws.com';
+    . Bugzilla->params->{sitemapindex_s3_bucket} . '.s3-'
+    . Bugzilla->params->{sitemapindex_aws_region}
+    . '.amazonaws.com';
+
+  use Bugzilla::Logging;
+  DEBUG($sitemap_url);
 
   foreach my $filename (@$filelist) {
     $index_xml .= "
@@ -194,6 +198,7 @@ END
 
 sub _upload_s3 {
   my ($filename, $data) = @_;
+  return;
   my $s3 = Bugzilla::S3->new({
     aws_access_key_id     => Bugzilla->params->{sitemapindex_aws_client_id},
     aws_secret_access_key => Bugzilla->params->{sitemapindex_aws_client_secret},
