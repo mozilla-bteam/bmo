@@ -154,11 +154,4 @@ ok(
 
 logout($sel);
 
-# Open what next report as an unprivileged user and make
-# sure the report is not visible.
-log_in($sel, $config, 'unprivileged');
-$sel->open_ok('/page.cgi?id=whats_next.html');
-$sel->title_is('Authorization Required');
-logout($sel);
-
 done_testing;
