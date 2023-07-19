@@ -38,6 +38,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
   create_revision_attachment
   get_bug_role_phids
   is_attachment_phab_revision
+  is_bug_assigned
   request
   set_attachment_approval_flags
   set_phab_user
@@ -611,37 +612,29 @@ sub process_revision_change {
 
   my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
 
+  # Create new or retrieve current attachment
   INFO('Checking for revision attachment');
-  my $rev_attachment = create_revision_attachment($bug, $revision, $timestamp,
-  $revision->author->bugzilla_user);
-  INFO('Attachment ' . $rev_attachment->id . ' created or already exists.');
+  my $attachment = create_revision_attachment($bug, $revision, $timestamp,
+    $revision->author->bugzilla_user);
 
-  # ATTACHMENT OBSOLETES
+  # Attachment obsoletes and desscription
+  my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
+  INFO('Updating obsolete status on attachmment ' . $attachment->id . " to $make_obsolete");
+  $attachment->set_is_obsolete($make_obsolete);
 
-  # fixup attachments on current bug
-  my @attachments
-    = grep { is_attachment_phab_revision($_) } @{$bug->attachments()};
-
-  foreach my $attachment (@attachments) {
-    my ($attach_revision_id) = ($attachment->filename =~ PHAB_ATTACHMENT_PATTERN);
-    next if $attach_revision_id != $revision->id;
-
-    my $make_obsolete = $revision->status eq 'abandoned' ? 1 : 0;
-    INFO('Updating obsolete status on attachmment ' . $attachment->id);
-    $attachment->set_is_obsolete($make_obsolete);
-
-    if ($revision->title ne $attachment->description) {
-      INFO('Updating description on attachment ' . $attachment->id);
-      $attachment->set_description($revision->title);
-    }
-
-    # Sync the `approval-mozilla-{repo}+` flags.
-    if ($revision->repository && $revision->repository->is_uplift_repo()) {
-      set_attachment_approval_flags($attachment, $revision);
-    }
-
-    $attachment->update($timestamp);
+  if ($revision->title ne $attachment->description) {
+    INFO('Updating description on attachment ' . $attachment->id);
+    $attachment->set_description($revision->title);
   }
+
+  # Sync the `approval-mozilla-{repo}+` flags.
+  INFO('If uplift repository we may need to set approval flags');
+  if ($revision->repository && $revision->repository->is_uplift_repo()) {
+    INFO('Uplift repository detected. Setting attachment approval flags');
+    set_attachment_approval_flags($attachment, $revision);
+  }
+
+  $attachment->update($timestamp);
 
   # fixup attachments with same revision id but on different bugs
   my %other_bugs;
@@ -689,8 +682,26 @@ sub process_revision_change {
     $revision->set_status('request-review');
   }
 
-  # FINISH UP
+  # Assign the bug to the submitter if it isn't already owned and
+  # the revision has reviewers assigned to it.
+  # Skip this change if 'leave-open' and 'intermittent-failure'
+  # keywords are set (bug 1673348).
+  if (
+    !is_bug_assigned($bug)
+    && $revision->status ne 'abandoned'
+    && @{$revision->reviews}
+    && !($bug->has_keyword('leave-open') && $bug->has_keyword('intermittent-failure'))
+  ) {
+    my $submitter = $revision->author->bugzilla_user;
+    INFO('Assigning bug ' . $bug->id . ' to ' . $submitter->email);
+    $bug->set_assigned_to($submitter);
+    if (any { $bug->status->name eq $_ } 'NEW', 'UNCONFIRMED') {
+      INFO('Setting bug ' . $bug->id . ' to ASSIGNED');
+      $bug->set_bug_status('ASSIGNED');
+    }
+  }
 
+  # Finish up
   $bug->update($timestamp);
   $revision->update();
 

@@ -37,6 +37,7 @@ our @EXPORT = qw(
   get_bug_role_phids
   intersect
   is_attachment_phab_revision
+  is_bug_assigned
   request
   set_attachment_approval_flags
   set_phab_user
@@ -71,6 +72,14 @@ sub set_attachment_approval_flags {
 
   my @old_flags;
   my @new_flags;
+
+  INFO( 'Setting revision D'
+      . $revision->id
+      . ' with '
+      . $revision->status
+      . ' status to '
+      . $approval_flag_name
+      . $status);
 
   # Find the current approval flag state if it exists.
   foreach my $flag (@{$attachment->flags}) {
@@ -109,6 +118,9 @@ sub set_attachment_approval_flags {
           "Unable to create new `$approval_flag_name` flag with status `$status` due to permissions."
         );
       }
+    }
+    else {
+      INFO("Approval flag $approval_flag_name type not found");
     }
   }
 
@@ -164,25 +176,11 @@ sub create_revision_attachment {
         is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
       }
     );
-    delete $bug->{attachments};
-  }
 
-  # Assign the bug to the submitter if it isn't already owned and
-  # the revision has reviewers assigned to it.
-  # Skip this change if 'leave-open' and 'intermittent-failure'
-  # keywords are set (bug 1673348).
-  if (
-    !is_bug_assigned($bug)
-    && $revision->status ne 'abandoned'
-    && @{$revision->reviews}
-    && !($bug->has_keyword('leave-open') && $bug->has_keyword('intermittent-failure'))
-  ) {
-    INFO('Assigning bug ' . $bug->id . ' to ' . $submitter->email);
-    $bug->set_assigned_to($submitter);
-    if (any { $bug->status->name eq $_ } 'NEW', 'UNCONFIRMED') {
-      INFO('Setting bug ' . $bug->id . ' to ASSIGNED');
-      $bug->set_bug_status('ASSIGNED');
-    }
+    INFO('New attachment ' . $attachment->id . ' created');
+  }
+  else {
+    INFO('Existing attachment ' . $attachment->id . ' found');
   }
 
   return $attachment;
