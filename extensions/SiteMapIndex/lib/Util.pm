@@ -125,8 +125,9 @@ END
 
   my $sitemap_url
     = 'https://'
-    . Bugzilla->params->{sitemapindex_s3_bucket}
-    . '.s3-us-west-2.amazonaws.com';
+    . Bugzilla->params->{sitemapindex_s3_bucket} . '.s3-'
+    . Bugzilla->params->{sitemapindex_aws_region}
+    . '.amazonaws.com';
 
   foreach my $filename (@$filelist) {
     $index_xml .= "

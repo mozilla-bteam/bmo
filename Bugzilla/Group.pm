@@ -110,7 +110,7 @@ sub members_non_inherited {
 # returns all possible members of groups, keyed by the group name or _direct
 # a user present in multiple groups will be returned multiple times
 sub members_complete {
-  my ($self) = @_;
+  my ($self, $type) = @_;
   my $dbh = Bugzilla->dbh;
   require Bugzilla::User;
 
@@ -119,13 +119,36 @@ sub members_complete {
     "SELECT DISTINCT user_id FROM user_group_map WHERE isbless = 0 AND group_id = ?"
     );
 
-  my $result = {_direct => $self->members_direct()};
+  my $result = {};
+
+  if ($type eq 'all' || $type eq 'direct' || $type eq 'non-mozilla') {
+    $result->{_direct} = $self->members_direct();
+    # Return early if we only want direct users
+    return $result if $type eq 'direct';
+  }
+
   foreach my $group_id (@{$self->flatten_group_membership($self->id)}) {
     next if $group_id == $self->id;
     my $group_name = Bugzilla::Group->new({id => $group_id, cache => 1})->name;
     my $user_ids = $dbh->selectcol_arrayref($sth, undef, $group_id);
     $result->{$group_name} = Bugzilla::User->new_from_list($user_ids);
   }
+
+  # If we want a list of users that are members but do not match the regexp
+  # of the current group, then we need to filter the user list.
+  # Regexp are normally used to automatically add users to a group such
+  # as mozilla-employee-confidential, etc.
+  if ($type eq 'non-mozilla' && $self->user_regexp) {
+    my $regexp = $self->user_regexp;
+    foreach my $type (keys %{$result}) {
+      my @filtered;
+      foreach my $user (@{$result->{$type}}) {
+        push @filtered, $user if $user->login !~ m/$regexp/i;
+      }
+      $result->{$type} = \@filtered;
+    }
+  }
+
   return $result;
 }
 

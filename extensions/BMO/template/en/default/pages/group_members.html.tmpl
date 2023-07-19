@@ -18,19 +18,39 @@
   <tr>
     <th>Group</th>
     <td>
-      <select name="group">
+      <select name="group" id="group">
         [% FOREACH group_name = groups %]
           <option value="[% group_name FILTER html %]"
                   [% "selected" IF group_name == group.name %]>
             [% group_name FILTER html %]</option>
         [% END %]
       </select>
+    </td>
+  </tr><tr>
+    <th>
+      Search
+    </th>
+    <td>
+      <select name="search_type" id="search_type">
+        <option value="all" [% "selected" IF !search_type OR search_type == "all" %]>All</option>
+        <option value="direct" [% "selected" IF search_type == "direct" %]>Direct Membership</option>
+        <option value="indirect" [% "selected" IF search_type == "indirect" %]>Indirect Membership (inherited)</option>
+        <option value="non-mozilla" [% "selected" IF search_type == "non-mozilla" %]>Non-Mozilla Accounts</option>
+      </select>
+    </td>
+  </tr><tr>
+    <td></td>
+    <td>
       <input type="checkbox" name="include_disabled" id="include_disabled"
              value="1" [% "checked" IF include_disabled %]>
       <label for="include_disabled">
         Include disabled users
       </label>
-      <input type="submit" value="Generate">
+    </td>
+  </tr><tr>
+    <td></td>
+    <td>
+      <input type="submit" value="Generate" id="generate">
     </td>
   </tr>
   </table>
