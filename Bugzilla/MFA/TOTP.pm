@@ -73,6 +73,7 @@ sub prompt {
     -value    => $token,
     -httponly => 1,
   );
+  $vars->{token} = $token;
 
   print $cgi->header();
   $template->process('mfa/totp/verify.html.tmpl', $vars)

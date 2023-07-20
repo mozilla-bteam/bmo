@@ -18,6 +18,7 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
 use Bugzilla::Logging;
+use Bugzilla::Token;
 use Bugzilla::User;
 use Bugzilla::Util qw(trim detaint_natural mojo_user_agent);
 use Bugzilla::WebService::Util qw(filter filter_wants validate
@@ -540,6 +541,36 @@ sub mfa_enroll {
   $user->set_mfa($provider_name);
   my $provider = $user->mfa_provider // die "Unknown MFA provider\n";
   return $provider->enroll_api();
+}
+
+# Pre-validate the users TOTP code using the mfa_verification_token 
+# obtained from the cookie set when loading the verfication form.
+sub mfa_verify_totp_code {
+  my ($self, $params) = @_;
+  my $token = $params->{mfa_token};
+
+  # create user from token
+  my ($user_id) = Bugzilla::Token::GetTokenData($token);
+  if (!$user_id) {
+    return {error => 1, message => 'invalid verification token'};
+  }
+
+  my $user = Bugzilla::User->new({id => $user_id});
+
+  # sanity check
+  if (!$user->mfa) {
+    return {error => 1, message => 'mfa not enabled'};
+  }
+
+  # verify
+  try {
+    $user->mfa_provider->verify_check({code => $params->{mfa_code}});
+  }
+  catch {
+    return {error => 1, message => 'invalid verification code'};
+  };
+
+  return {error => 0};
 }
 
 sub whoami {
