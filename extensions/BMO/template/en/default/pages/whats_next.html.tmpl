@@ -94,6 +94,7 @@
       <tr>
         <th>[% terms.Bug %] ID</th>
         <th>Priority</th>
+        <th>Severity</th>
         <th>Status</th>
         <th>Summary</th>
         <th>Last Updated</th>
@@ -105,6 +106,7 @@
         <tr class="report_item [% count % 2 == 1 ? "report_row_odd" : "report_row_even" %]">
           <td><a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.id FILTER html %]</a></td>
           <td>[% bug.priority FILTER html %]</td>
+          <td>[% bug.severity FILTER html %]</td>
           <td>[% bug.status FILTER html %]</td>
           <td nowrap><a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.summary FILTER html %]</a></td>
           <td>
