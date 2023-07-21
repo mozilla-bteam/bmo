@@ -99,7 +99,7 @@ $user->in_group(Bugzilla->params->{"chartgroup"}) || ThrowUserError(
 );
 
 # Only admins may create public queries
-$user->in_group('admin') || $cgi->delete('public');
+$user->in_group(Bugzilla->params->{chartpublicgroup}) || $cgi->delete('public');
 
 # All these actions relate to chart construction.
 if ($action =~ /^(assemble|add|remove|sum|subscribe|unsubscribe)$/) {
