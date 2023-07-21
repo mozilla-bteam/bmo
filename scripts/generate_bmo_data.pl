@@ -908,6 +908,16 @@ my @keywords = (
     name        => 'checkin-needed-tb',
     description => 'Keyword searched on by the Thunderbird team to use to have your patch checked in, if you cant check it in yourself.'
   },
+  {
+    name        => 'sec-critical',
+    description => 'Exploitable vulnerabilities which can lead to the widespread compromise of many users.',
+  },
+  {
+    name        => 'sec-high',
+    description => 'Obtain confidential data from other sites the user is visiting or the local machine, or '
+    . 'inject data or code into those sites, requiring no more than normal browsing actions. Exploitable web '
+    . 'vulnerabilities that can lead to the targeted compromise of a small number of users.',
+  },
 );
 
 print "creating keywords...\n";
@@ -923,13 +933,23 @@ foreach my $kw (@keywords) {
 print "creating tracking flags...\n";
 my @tracking_flags = (
   {
+    name        => 'cf_status_firefox109',
+    description => 'status-firefox109',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 1,
+    is_active   => 1,
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix', 'disabled'],
+    products    => ['Firefox'],
+  },
+  {
     name        => 'cf_status_firefox110',
     description => 'status-firefox110',
     sortkey     => 0,
     type        => 'tracking',
-    enter_bug   => 0,
+    enter_bug   => 1,
     is_active   => 1,
-    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix', 'disabled'],
     products    => ['Firefox'],
   },
   {
@@ -937,9 +957,19 @@ my @tracking_flags = (
     description => 'status-firefox111',
     sortkey     => 0,
     type        => 'tracking',
-    enter_bug   => 0,
+    enter_bug   => 1,
     is_active   => 1,
-    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
+    values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix', 'disabled'],
+    products    => ['Firefox'],
+  },
+  {
+    name        => 'cf_tracking_firefox109',
+    description => 'tracking-firefox109',
+    sortkey     => 0,
+    type        => 'tracking',
+    enter_bug   => 1,
+    is_active   => 1,
+    values      => ['---', '?', '+', '-', 'blocking'],
     products    => ['Firefox'],
   },
   {
@@ -947,7 +977,7 @@ my @tracking_flags = (
     description => 'tracking-firefox110',
     sortkey     => 0,
     type        => 'tracking',
-    enter_bug   => 0,
+    enter_bug   => 1,
     is_active   => 1,
     values      => ['---', '?', '+', '-', 'blocking'],
     products    => ['Firefox'],
@@ -957,7 +987,7 @@ my @tracking_flags = (
     description => 'tracking-firefox111',
     sortkey     => 0,
     type        => 'tracking',
-    enter_bug   => 0,
+    enter_bug   => 1,
     is_active   => 1,
     values      => ['---', '?', '+', '-', 'blocking'],
     products    => ['Firefox'],
@@ -967,7 +997,7 @@ my @tracking_flags = (
     description => 'status-thunderbird_esr91',
     sortkey     => 0,
     type        => 'tracking',
-    enter_bug   => 0,
+    enter_bug   => 1,
     is_active   => 1,
     values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
     products    => ['Firefox'],
@@ -977,7 +1007,7 @@ my @tracking_flags = (
     description => 'status-thunderbird_esr102',
     sortkey     => 0,
     type        => 'tracking',
-    enter_bug   => 0,
+    enter_bug   => 1,
     is_active   => 1,
     values      => ['---', '?', 'affected', 'unaffected', 'fixed', 'wontfix'],
     products    => ['Firefox'],

@@ -655,6 +655,14 @@ foreach my $user_group (@users_groups) {
   eval { $sth_add_mapping->execute($user->id, $group->id, 0, GRANT_DIRECT); };
 }
 
+# BMO: Add a couple of test users to the mozilla employee group for mozilla specific tests
+foreach my $name (qw(admin QA-Selenium-Test)) {
+  my $full_name = $name . '@mozilla.test';
+  my $user = Bugzilla::User->new({name => $full_name});
+  $user->set_groups({add => ['mozilla-employee-confidential']});
+  $user->update();
+}
+
 ##########################################################################
 # Associate Products with groups
 ##########################################################################

@@ -331,6 +331,15 @@
           [% END %]
         </ul>
       </div>
+      [% IF user.login && user.in_group('mozilla-employee-confidential') %]
+        <ul class="links">
+          <li class="link-whats-next">
+            <a href="[% basepath FILTER none %]page.cgi?id=whats_next.html" title="What Should I Work On Next?">
+              <span class="icon" aria-hidden="true"></span>
+            </a>
+          </li>
+        </ul>
+      [% END %]
     </nav>
     [% Hook.process("badge") %]
     [% IF user.id %]

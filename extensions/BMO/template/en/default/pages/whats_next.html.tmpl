@@ -1,0 +1,123 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% INCLUDE global/header.html.tmpl
+  title = "What should I work on next?"
+  generate_api_token = 1
+  javascript_urls = [ "js/field.js", "extensions/BMO/web/js/whats_next.js" ]
+  style_urls = [ "extensions/BMO/web/styles/reports.css" ]
+%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+<div id="whats_next">
+  <h1>What Should I Work On Next?</h1>
+
+  <div>
+  </div>
+
+  <form id="whats_next_form" name="whats_next_form" action="[% basepath FILTER none %]page.cgi" method="get">
+  <input type="hidden" name="id" value="whats_next.html">
+  <input type="hidden" name="action" value="run">
+  <table id="parameters">
+  <tr>
+    <td>
+      <strong>Current User</strong>
+    </td>
+    <td>
+      &nbsp;
+      [% INCLUDE global/userselect.html.tmpl
+         id = "who"
+         name = "who"
+         value = who
+         size = 40
+         emptyok = 0
+      %]
+      &nbsp;
+    </td>
+    <td>
+      <input type="submit" id="run" value="Change">
+    </td>
+  </tr>
+  <td colspan="2">
+    <label class="switch">
+      <input id="auto_refresh" type="checkbox" onchange="updateAutoRefresh();">
+      <span class="slider round"></span>
+    </label>
+    Auto-refresh every 10min
+  </td>
+  </table>
+  </form>
+
+  <h2>Highest Priority Tasks</h2>
+
+  <p>These are the things you should drop everything else for (they’re in no particular order):</p>
+
+  <h3>Your S1 [% terms.bugs %]</h3>
+  [% INCLUDE bug_table bugs = s1_bugs %]
+
+  <h3>Your sec-crit [% terms.bugs %]</h3>
+  [% INCLUDE bug_table bugs = sec_crit_bugs %]
+
+  <h3>Important needinfos</h3>
+  [% INCLUDE bug_table bugs = important_needinfo_bugs %]
+
+  <h2>High Priority Tasks</h2>
+
+  <p>High priority tasks are also “drop everything”, except that in this case
+    “everything” doesn’t include anything in the “Highest priority” list:</p>
+
+  <h3>Your S2 [% terms.bugs %]</h3>
+  [% INCLUDE bug_table bugs = s2_bugs %]
+
+  <h3>Your sec-high [% terms.bugs %]</h3>
+  [% INCLUDE bug_table bugs = sec_high_bugs %]
+
+  <h3>Regressions</h3>
+  [% INCLUDE bug_table bugs = regression_bugs %]
+
+  <h3>Other needinfos</h3>
+  [% INCLUDE bug_table bugs = other_needinfo_bugs %]
+</div>
+
+[% INCLUDE global/footer.html.tmpl %]
+
+[% BLOCK bug_table %]
+  [% IF bugs && bugs.size > 0 %]
+    <table id="report" class="standard">
+    <thead>
+      <tr>
+        <th>[% terms.Bug %] ID</th>
+        <th>Priority</th>
+        <th>Severity</th>
+        <th>Status</th>
+        <th>Summary</th>
+        <th>Last Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      [% FOREACH bug = bugs %]
+        [% count = loop.count() %]
+        <tr class="report_item [% count % 2 == 1 ? "report_row_odd" : "report_row_even" %]">
+          <td><a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.id FILTER html %]</a></td>
+          <td>[% bug.priority FILTER html %]</td>
+          <td>[% bug.severity FILTER html %]</td>
+          <td>[% bug.status FILTER html %]</td>
+          <td nowrap><a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.summary FILTER html %]</a></td>
+          <td>
+            <span title="[% bug.changeddate FILTER time FILTER html %]">[% bug.changeddate_fancy FILTER html %]</span>
+          </td>
+        </tr>
+      [% END %]
+    </tbody>
+    </table>
+  [% ELSE %]
+    <p>No [% terms.bugs %] found.</p>
+  [% END %]
+  [% SET bugs = [] %]
+[% END %]
