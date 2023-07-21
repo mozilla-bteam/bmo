@@ -31,6 +31,14 @@ sub get_param_list {
     },
 
     {
+      name    => 'chartpublicgroup',
+      type    => 's',
+      choices => \&get_all_group_names,
+      default => 'admin',
+      checker => \&check_group
+    },
+
+    {
       name    => 'insidergroup',
       type    => 's',
       choices => \&get_all_group_names,
