@@ -8,6 +8,7 @@
 
 [% INCLUDE global/header.html.tmpl
   title = "Account Verification"
+  javascript_urls = ["js/mfa_totp.js","js/util.js"]
   allow_mobile = 1
 %]
 
@@ -19,14 +20,18 @@
   may use one of your pre-generated recovery codes.
 </p>
 <div class="verify-totp">
-  <form method="POST" action="[% postback.action FILTER none %]">
-    [% FOREACH field IN postback.fields.keys %]
-      <input type="hidden" name="[% field FILTER html %]" value="[% postback.fields.item(field) FILTER html %]">
-    [% END %]
-    <input type="text" name="code" id="code"
-           placeholder="123456" maxlength="9" pattern="\d{6,9}" size="10"
-           autocomplete="off" inputmode="numeric" required autofocus><br>
-    <br>
+  <form id="verify-totp-form" method="POST" action="[% postback.action FILTER none %]">
+    <div>
+      <span id="verify-totp-input">
+        [% FOREACH field IN postback.fields.keys %]
+          <input type="hidden" name="[% field FILTER html %]" value="[% postback.fields.item(field) FILTER html %]">
+        [% END %]
+        <input type="text" name="code" id="code" data-token="[% token FILTER html %]"
+               placeholder="123456" maxlength="9" pattern="\d{6,9}" size="10"
+               autocomplete="off" inputmode="numeric" required autofocus>
+      </span>
+      <span id="verify-totp-error" class="bz_default_hidden"></span>
+    </div>
     <input type="submit" value="Submit">
   </form>
 </div>

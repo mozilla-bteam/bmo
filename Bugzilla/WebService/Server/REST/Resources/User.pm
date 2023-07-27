@@ -59,6 +59,12 @@ sub _rest_resources {
         }
       },
     },
+    qr{^/user/mfa/verify_totp_code$},
+    {
+      POST => {
+        method => 'mfa_verify_totp_code',
+      }
+    },
     qr{^/whoami$},
     {GET => {method => 'whoami'}}
   ];
