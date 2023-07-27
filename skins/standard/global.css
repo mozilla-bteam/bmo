@@ -2853,6 +2853,17 @@ div.oauth2-login {
   margin: 0;
 }
 
+/* TOTP Verification */
+#verify-totp-form div {
+  margin-bottom: 15px;
+}
+
+#verify-totp-error {
+  padding: 5px;
+  color: var(--error-message-foreground-color);
+  background-color: var(--error-message-background-color);
+}
+
 /**
  * Print media
  */
