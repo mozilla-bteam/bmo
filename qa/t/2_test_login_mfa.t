@@ -72,7 +72,7 @@ $sel->title_is('Account Verification');
 # Enter an inccorrect TOTP code
 $sel->type_ok('code', '123456');
 $sel->click_ok('//input[@value="Submit"]');
-my $error = $sel->get_text('verify_totp_error');
+my $error = $sel->get_text('verify-totp-error');
 ok($error eq 'Invalid verification code.', 'Correct error generated for invalid code');
 
 # Now enter the correct code

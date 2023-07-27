@@ -2850,11 +2850,11 @@ div.oauth2-login {
 }
 
 /* TOTP Verification */
-#verify_totp_form div {
+#verify-totp-form div {
   margin-bottom: 15px;
 }
 
-#verify_totp_error {
+#verify-totp-error {
   padding: 5px;
   color: var(--error-message-foreground-color);
   background-color: var(--error-message-background-color);

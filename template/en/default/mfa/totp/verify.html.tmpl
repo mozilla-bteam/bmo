@@ -19,10 +19,10 @@
   Please enter your verification code from your TOTP application. If your device has been lost or stolen, you
   may use one of your pre-generated recovery codes.
 </p>
-<div class="verify_totp">
-  <form id="verify_totp_form" method="POST" action="[% postback.action FILTER none %]">
+<div class="verify-totp">
+  <form id="verify-totp-form" method="POST" action="[% postback.action FILTER none %]">
     <div>
-      <span id="verify_totp_input">
+      <span id="verify-totp-input">
         [% FOREACH field IN postback.fields.keys %]
           <input type="hidden" name="[% field FILTER html %]" value="[% postback.fields.item(field) FILTER html %]">
         [% END %]
@@ -30,7 +30,7 @@
                placeholder="123456" maxlength="9" pattern="\d{6,9}" size="10"
                autocomplete="off" inputmode="numeric" required autofocus>
       </span>
-      <span id="verify_totp_error" class="bz_default_hidden"></span>
+      <span id="verify-totp-error" class="bz_default_hidden"></span>
     </div>
     <input type="submit" value="Submit">
   </form>
