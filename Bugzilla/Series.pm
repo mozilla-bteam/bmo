@@ -160,11 +160,12 @@ sub initFromCGI {
     "query_format"
   );
 
-  $self->{'public'} = $cgi->param('public') ? 1 : 0;
-
-  # Change 'admin' here and in series.html.tmpl, or remove the check
-  # completely, if you want to change who can make series public.
-  $self->{'public'} = 0 unless Bugzilla->user->in_group('admin');
+  if (Bugzilla->user->in_group(Bugzilla->params->{chartpublicgroup})) {
+    $self->{'public'} = $cgi->param('public') ? 1 : 0;
+  }
+  else {
+    $self->{'public'} = 0;
+  }
 }
 
 sub writeToDatabase {
