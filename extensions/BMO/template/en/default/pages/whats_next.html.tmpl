@@ -10,27 +10,24 @@
   title = "What should I work on next?"
   generate_api_token = 1
   javascript_urls = [ "js/field.js", "extensions/BMO/web/js/whats_next.js" ]
-  style_urls = [ "extensions/BMO/web/styles/reports.css" ]
+  style_urls = [ "extensions/BMO/web/styles/whats_next.css" ]
 %]
 
 [% PROCESS global/variables.none.tmpl %]
 
+<img src="extensions/BMO/web/images/bugzilla.png" id="favicon-base" class="hidden">
+<div id="total-bug-count" class="hidden">[% total_bug_count FILTER none %]</div>
+
 <div id="whats_next">
   <h1>What Should I Work On Next?</h1>
-
-  <div>
-  </div>
 
   <form id="whats_next_form" name="whats_next_form" action="[% basepath FILTER none %]page.cgi" method="get">
   <input type="hidden" name="id" value="whats_next.html">
   <input type="hidden" name="action" value="run">
   <table id="parameters">
   <tr>
+    <th>Current User</th>
     <td>
-      <strong>Current User</strong>
-    </td>
-    <td>
-      &nbsp;
       [% INCLUDE global/userselect.html.tmpl
          id = "who"
          name = "who"
@@ -38,58 +35,66 @@
          size = 40
          emptyok = 0
       %]
-      &nbsp;
     </td>
     <td>
       <input type="submit" id="run" value="Change">
     </td>
   </tr>
-  <td colspan="2">
+  </table>
+  </form>
+
+  <div id="auto_refresh-container">
     <label class="switch">
       <input id="auto_refresh" type="checkbox" onchange="updateAutoRefresh();">
       <span class="slider round"></span>
     </label>
     Auto-refresh every 10min
-  </td>
-  </table>
-  </form>
+  </div>
 
   <h2>Highest Priority Tasks</h2>
+  <div class="task-desc">
+    These are the things you should drop everything else for (they’re in no particular order).
+  </div>
 
-  <p>These are the things you should drop everything else for (they’re in no particular order):</p>
-
-  <h3>Your S1 [% terms.bugs %]</h3>
-  [% INCLUDE bug_table bugs = s1_bugs %]
-
-  <h3>Your sec-crit [% terms.bugs %]</h3>
-  [% INCLUDE bug_table bugs = sec_crit_bugs %]
-
-  <h3>Important needinfos</h3>
-  [% INCLUDE bug_table bugs = important_needinfo_bugs %]
+  [% INCLUDE bug_table title="S1 bugs" bugs=s1_bugs %]
+  [% INCLUDE bug_table title="sec-critical bugs" bugs=sec_crit_bugs %]
+  [% INCLUDE bug_table title="Important NEEDINFOs" bugs=important_needinfo_bugs %]
 
   <h2>High Priority Tasks</h2>
+  <div class="task-desc">
+    High priority tasks are also “drop everything”, except that in this case
+    “everything” doesn’t include anything in the “Highest priority” list.
+  </div>
 
-  <p>High priority tasks are also “drop everything”, except that in this case
-    “everything” doesn’t include anything in the “Highest priority” list:</p>
-
-  <h3>Your S2 [% terms.bugs %]</h3>
-  [% INCLUDE bug_table bugs = s2_bugs %]
-
-  <h3>Your sec-high [% terms.bugs %]</h3>
-  [% INCLUDE bug_table bugs = sec_high_bugs %]
-
-  <h3>Regressions</h3>
-  [% INCLUDE bug_table bugs = regression_bugs %]
-
-  <h3>Other needinfos</h3>
-  [% INCLUDE bug_table bugs = other_needinfo_bugs %]
+  [% INCLUDE bug_table title="S2 bugs" bugs=s2_bugs %]
+  [% INCLUDE bug_table title="sec-high bugs" bugs=sec_high_bugs %]
+  [% INCLUDE bug_table title="Regressions" bugs=regression_bugs %]
+  [% INCLUDE bug_table title="Other NEEDINFOs" bugs=other_needinfo_bugs %]
 </div>
 
 [% INCLUDE global/footer.html.tmpl %]
 
 [% BLOCK bug_table %]
-  [% IF bugs && bugs.size > 0 %]
-    <table id="report" class="standard">
+  <div class="bug-list-header">
+    <div class="bug-list-title">[% title FILTER html %]</div>
+    <div class="bug-list-count">
+      [% bugs.size %]&nbsp;
+      [% bugs.size == 1 ? terms.bug : terms.bugs %]
+    </div>
+    [% IF bugs.size > 0 %]
+      [%
+        ids = [];
+        FOREACH bug = bugs;
+          ids.push(bug.id);
+        END;
+      %]
+      <div class="bug-list-link">
+        <a href="buglist.cgi?bug_id=[% ids.join(",") FILTER none %]">[% terms.Bug %] List</a>
+      </div>
+    [% END %]
+  </div>
+  [% IF bugs.size > 0 %]
+    <table class="standard bug-list">
     <thead>
       <tr>
         <th>[% terms.Bug %] ID</th>
@@ -97,27 +102,26 @@
         <th>Severity</th>
         <th>Status</th>
         <th>Summary</th>
-        <th>Last Updated</th>
+        <th class="sort-col order-a">Last Updated</th>
       </tr>
     </thead>
     <tbody>
       [% FOREACH bug = bugs %]
-        [% count = loop.count() %]
-        <tr class="report_item [% count % 2 == 1 ? "report_row_odd" : "report_row_even" %]">
-          <td><a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.id FILTER html %]</a></td>
-          <td>[% bug.priority FILTER html %]</td>
-          <td>[% bug.severity FILTER html %]</td>
-          <td>[% bug.status FILTER html %]</td>
-          <td nowrap><a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.summary FILTER html %]</a></td>
-          <td>
+        <tr class="bug-row">
+          <td class="id" data-value="[% bug.id FILTER none %]">
+            <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.id FILTER html %]</a>
+          </td>
+          <td class="priority">[% bug.priority FILTER html %]</td>
+          <td class="severity">[% bug.severity FILTER html %]</td>
+          <td class="status">[% bug.status FILTER html %]</td>
+          <td class="summary"><a href="[% basepath FILTER none %]show_bug.cgi?id=[% bug.id FILTER html %]">[% bug.summary FILTER html %]</a></td>
+          <td class="timestamp" data-value="[% bug.changeddate_epoch FILTER none %]">
             <span title="[% bug.changeddate FILTER time FILTER html %]">[% bug.changeddate_fancy FILTER html %]</span>
           </td>
         </tr>
       [% END %]
     </tbody>
     </table>
-  [% ELSE %]
-    <p>No [% terms.bugs %] found.</p>
   [% END %]
   [% SET bugs = [] %]
 [% END %]
