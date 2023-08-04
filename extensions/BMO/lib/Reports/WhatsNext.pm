@@ -64,6 +64,7 @@ sub format_bug_list {
     my $datetime = datetime_from($bug->{changeddate});
     $datetime->set_time_zone($user->timezone);
     $bug->{changeddate}       = $datetime->strftime('%Y-%m-%d %T %Z');
+    $bug->{changeddate_epoch} = $datetime->epoch;
     $bug->{changeddate_fancy} = time_ago($datetime, $datetime_now);
     push @formatted_bugs, $bug;
   }
@@ -398,6 +399,7 @@ sub report {
   # to the current user.
   my $who
     = $input->{who} ? Bugzilla::User->check({name => $input->{who}}) : $user;
+  $vars->{who} = $who->login;
 
   # Here we load some values into cache that will be used later
   # by the various queries.
@@ -422,7 +424,7 @@ sub report {
   $cache->{regression_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'regression'");
 
-  $vars->{who}                     = $who->login;
+  # build bug lists
   $vars->{s1_bugs}                 = s1_bugs($who);
   $vars->{sec_crit_bugs}           = sec_crit_bugs($who);
   $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);
@@ -430,6 +432,18 @@ sub report {
   $vars->{sec_high_bugs}           = sec_high_bugs($who);
   $vars->{regression_bugs}         = regression_bugs($who);
   $vars->{other_needinfo_bugs}     = other_needinfo_bugs($who);
+
+  # count number of unique bugs
+  my %bug_ids;
+  foreach my $name (qw(
+    s1_bugs sec_crit_bugs important_needinfo_bugs s2_bugs sec_high_bugs
+    regression_bugs other_needinfo_bugs
+  )) {
+    foreach my $bug (@{$vars->{$name}}) {
+      $bug_ids{$bug->{id}} = 1;
+    }
+  }
+  $vars->{total_bug_count} = scalar(keys %bug_ids);
 }
 
 1;
