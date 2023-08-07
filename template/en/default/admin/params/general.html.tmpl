@@ -26,8 +26,13 @@
 
 [% param_descs = {
   maintainer =>
-    "The email address of the person who maintains this installation "
-    _ " of ${terms.Bugzilla}.",
+    "The email address of the person who maintains this installation"
+    _ " of ${terms.Bugzilla}. This email will be used as a point of"
+    _ " contact for users.",
+
+  maintainer_notices =>
+    "Email address that should receive system generated notifications,"
+    _ " such as account lockout and SES issues.",
 
   docs_urlbase =>
     "The URL that is the common initial leading part of all"

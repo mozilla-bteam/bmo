@@ -9,7 +9,7 @@
 [% PROCESS global/variables.none.tmpl %]
 
 From: [% Param('mailfrom') %]
-To: [% Param('maintainer') %]
+To: [% Param('maintainer_notices') %]
 Subject: [[% terms.Bugzilla %]] Unable to set Phabricator enabled status for [% user.login FILTER none %]
 X-Bugzilla-Type: admin
 

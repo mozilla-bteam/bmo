@@ -619,6 +619,7 @@ my %set_params = (
   mail_delivery_method => 'Test',
   mailfrom             => '"Bugzilla@Mozilla" <bugzilla-daemon@mozilla.org>',
   maintainer           => 'bugzilla-admin@mozilla.org',
+  maintainer_notices   => 'bugzilla-admin@mozilla.org',
   maxattachmentsize    => '4096',
   maxusermatches       => '100',
   mostfreqthreshold    => '5',
