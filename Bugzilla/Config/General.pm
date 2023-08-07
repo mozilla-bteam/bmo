@@ -23,6 +23,13 @@ use constant get_param_list => (
     default  => '',
     checker  => \&check_email
   },
+  {
+    name     => 'maintainer_notices',
+    type     => 't',
+    no_reset => '1',
+    default  => '',
+    checker  => \&check_email
+  },
 
   {
     name    => 'docs_urlbase',
