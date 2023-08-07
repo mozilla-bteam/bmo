@@ -302,7 +302,7 @@ sub _handle_login_result {
         = Bugzilla->template_inner($default_settings->{lang}->{default_value});
 
       $vars->{admin} = 1; # Add a special admin email header
-      $vars->{recipient} = Bugzilla->params->{maintainer};
+      $vars->{recipient} = Bugzilla->params->{'maintainer_notices'};
 
       my $admin_message;
       $template->process('email/lockout.txt.tmpl', $vars, \$admin_message)
