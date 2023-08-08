@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build the Docker image
-        run: docker build . -f Dockerfile -t bmo 
+        run: docker build . -f Dockerfile -t bmo
       - name: Create directory for artifacts
         run: |
           [[ -d build_info ]] || mkdir build_info
@@ -31,3 +31,4 @@ jobs:
           docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
           docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
           docker rm push_data
+
