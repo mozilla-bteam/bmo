@@ -10,28 +10,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag mozillabteam/bmo:$(date +%s)
-    - name: Create directory for artifacts
-      run: |
-        [[ -d build_info ]] || mkdir build_info
-    - name: build version.json
-      run: |
-        docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
-        docker cp version_json:/app/version.json build_info/version.json
-        docker rm version_json
-    - name: build push data
-      run: |
-        docker-compose -f docker-compose.test.yml run --name push_data bmo.test push_data
-        docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
-        docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
-        docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
-        docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
-        docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
-        docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
-        docker rm push_data
-    
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag mozillabteam/bmo:$(date +%s)
+      - name: Create directory for artifacts
+        run: |
+          [[ -d build_info ]] || mkdir build_info
+      - name: build version.json
+        run: |
+          docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
+          docker cp version_json:/app/version.json build_info/version.json
+          docker rm version_json
+      - name: build push data
+        run: |
+          docker-compose -f docker-compose.test.yml run --name push_data bmo.test push_data
+          docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
+          docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
+          docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
+          docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
+          docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
+          docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
+          docker rm push_data
+
   deploy:
     needs: [build, test_sanity, test_webservices, test_selenium_1, test_selenium_2, test_selenium_3, test_selenium_4]
     runs-on: ubuntu-latest
@@ -47,11 +47,11 @@ jobs:
   test_selenium_1:
     needs: build
     runs_on: ubuntu-latest
-  
+
   test_selenium_2:
     needs: build
     runs_on: ubuntu-latest
-  
+
   test_selenium_3:
     needs: build
     runs_on: ubuntu-latest
