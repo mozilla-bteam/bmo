@@ -129,7 +129,7 @@ sub SaveAccount {
     && Bugzilla->params->{"allowemailchange"}
     && $new_login_name)
   {
-    if ($user->login ne $new_login_name) {
+    if (lc($user->login) ne lc($new_login_name)) {
       $oldpassword || ThrowUserError("old_password_required");
 
       # Block multiple email changes for the same user.
