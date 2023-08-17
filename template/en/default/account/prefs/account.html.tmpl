@@ -96,7 +96,7 @@
             <tr>
               <th align="right">New email address:</th>
               <td>
-                <input size="35" name="new_login_name" id="new_login_name">
+                <input size="35" name="new_login_name" id="new_login_name" autocomplete="off">
                 [% INCLUDE "mfa/protected.html.tmpl" %]
               </td>
             </tr>
@@ -107,7 +107,7 @@
           <th align="right">Current password:</th>
           <td>
             <input type="hidden" name="old_login" value="[% user.login FILTER html %]">
-            <input autocomplete="current-password" type="password" name="old_password" id="old_password">
+            <input autocomplete="off" type="password" name="old_password" id="old_password">
             <a href="#" id="forgot-password">I forgot my password</a>
           </td>
         </tr>
