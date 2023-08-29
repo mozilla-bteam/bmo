@@ -109,7 +109,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor {
                   aria-controls="comment-${this.comment_id}-tabpanel-preview">${this.str.preview}</button>
         </div>
         <div role="tabpanel" id="comment-${this.comment_id}-tabpanel-edit">
-          <textarea disabled>${this.$body.textContent}</textarea>
+          <textarea disabled>${this.$body.textContent.htmlEncode()}</textarea>
         </div>
         <div role="tabpanel" id="comment-${this.comment_id}-tabpanel-preview" hidden>
           <${preview_tag} tabindex="-1" class="comment-text ${this.is_markdown ? 'markdown-body' : ''}"></${preview_tag}>

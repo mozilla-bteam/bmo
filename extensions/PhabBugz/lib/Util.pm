@@ -52,7 +52,7 @@ sub set_attachment_approval_flags {
     'abandoned'       => '-',
     'accepted'        => '+',
     'changes-planned' => 'X',
-    'draft'           => 'X',
+    'draft'           => '?',
     'needs-review'    => '?',
     'needs-revision'  => '-',
   };
