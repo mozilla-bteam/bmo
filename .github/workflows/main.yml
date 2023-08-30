@@ -10,16 +10,15 @@ jobs:
       - name: Build the Docker image
         run: docker build -t bmo .
       - name: Create directory for artifacts
-        run: |
-          [[ -d build_info ]] || mkdir build_info
+        run: mkdir build_info
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
-      - name: build version.json
+      - name: Build version.json
         run: |
           docker-compose -f docker-compose.test.yml run --no-deps --name version_json --entrypoint true bmo.test
           docker cp version_json:/app/version.json build_info/version.json
           docker rm version_json
-      - name: build push data
+      - name: Build push data
         run: |
           docker-compose -f docker-compose.test.yml run --no-deps --name push_data bmo.test push_data
           docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
@@ -42,18 +41,10 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build the Docker image
         run: docker build -t bmo .
-      - name: Create directory for artifacts
-        run: |
-          [[ -d build_info ]] || mkdir build_info
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run sanity tests
         run: docker-compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity t/*.t extensions/*/t/*.t
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: Build Info
-          path: build_info
 
   test_webservices:
     runs-on: ubuntu-latest
@@ -76,7 +67,7 @@ jobs:
         run: docker build -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
-      - name: Run selenium tests (1)
+      - name: Run Selenium tests (1)
         run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
 
   test_selenium_2:
@@ -88,7 +79,7 @@ jobs:
         run: docker build -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
-      - name: Run selenium tests (2)
+      - name: Run Selenium tests (2)
         run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium
 
   test_selenium_3:
@@ -100,7 +91,7 @@ jobs:
         run: docker build -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
-      - name: Run selenium tests (3)
+      - name: Run Selenium tests (3)
         run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium
 
   test_selenium_4:
@@ -112,7 +103,7 @@ jobs:
         run: docker build -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
-      - name: Run selenium tests (4)
+      - name: Run Selenium tests (4)
         run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium
 
   deploy:
@@ -129,7 +120,4 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build the docker image
         run: docker build -t bmo .
-      - name: Install docker-compose
-        run: sudo apt update && sudo apt install -y docker-compose
-
 
