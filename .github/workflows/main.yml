@@ -1,0 +1,143 @@
+name: BMO CI/CD
+
+on: [push, pull_request]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mozillabteam/bmo
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Create directory for artifacts
+        run: mkdir build_info
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Build version.json
+        run: |
+          docker-compose -f docker-compose.test.yml run --no-deps --name version_json --entrypoint true bmo.test
+          docker cp version_json:/app/version.json build_info/version.json
+          docker rm version_json
+      - name: Build push data
+        run: |
+          docker-compose -f docker-compose.test.yml run --no-deps --name push_data bmo.test push_data
+          docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
+          docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
+          docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
+          docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
+          docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
+          docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
+          docker rm push_data
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Build Info
+          path: build_info
+
+  test_sanity:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Run sanity tests
+        run: docker-compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity t/*.t extensions/*/t/*.t
+
+  test_webservices:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Run webservice tests
+        run: docker-compose -f docker-compose.test.yml run bmo.test test_webservices
+
+  test_selenium_1:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Run Selenium tests (1)
+        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
+
+  test_selenium_2:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Run Selenium tests (2)
+        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium
+
+  test_selenium_3:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Run Selenium tests (3)
+        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium
+
+  test_selenium_4:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Run Selenium tests (4)
+        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs:
+      - build
+      - test_sanity
+      - test_webservices
+      - test_selenium_1
+      - test_selenium_2
+      - test_selenium_3
+      - test_selenium_4
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@master
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.PUBLISH_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@master
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@master
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
