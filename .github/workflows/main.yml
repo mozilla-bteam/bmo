@@ -2,6 +2,10 @@ name: BMO CI/CD
 
 on: [push, pull_request]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mozillabteam/bmo
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -108,6 +112,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs:
       - build
       - test_sanity
@@ -118,6 +123,21 @@ jobs:
       - test_selenium_4
     steps:
       - uses: actions/checkout@v3
-      - name: Build the docker image
-        run: docker build -t bmo .
-
+      - name: Log in to the Container registry
+        uses: docker/login-action@master
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.PUBLISH_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@master
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@master
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
