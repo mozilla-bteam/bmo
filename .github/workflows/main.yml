@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: mozillabteam/bmo
+  IMAGE_NAME: mozilla-bteam/bmo
 
 jobs:
   build:
