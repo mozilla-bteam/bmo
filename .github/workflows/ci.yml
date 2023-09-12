@@ -26,6 +26,17 @@ jobs:
       - name: Run webservice tests
         run: docker-compose -f docker-compose.test.yml run bmo.test test_webservices
 
+  test_bmo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: docker build -t bmo .
+      - name: Install docker-compose
+        run: sudo apt update && sudo apt install -y docker-compose
+      - name: Run bmo specific tests
+        run: docker-compose -f docker-compose.test.yml run bmo.test test_bmo -q -f t/bmo/*.t extensions/*/t/bmo/*.t
+
   test_selenium_1:
     runs-on: ubuntu-latest
     steps:
