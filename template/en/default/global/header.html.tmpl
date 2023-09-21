@@ -323,8 +323,12 @@
               <a href="[% basepath FILTER none %]admin.cgi" role="menuitem" tabindex="-1">Administration</a>
             </li>
           [% END %]
+          <li role="separator"></li>
+          <li role="presentation">
+            <a href="[% basepath FILTER html %]page.cgi?id=quicksearch.html" role="menuitem" tabindex="-1">
+              Quick Search Help</a>
+          </li>
           [% IF Param('docs_urlbase') %]
-            <li role="separator"></li>
             <li role="presentation">
               <a href="[% docs_urlbase FILTER html %]" role="menuitem" tabindex="-1">Documentation</a>
             </li>
