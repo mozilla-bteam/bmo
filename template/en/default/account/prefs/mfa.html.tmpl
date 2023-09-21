@@ -60,23 +60,16 @@
     </p>
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
-    [% IF user.iam_username %]
-      <p class="mfa-disable-blurb">
-        Since your account uses Mozilla IAM for authentication, you are currently
-        not able to disable Two-Factor Authentication.
-      </p>
-    [% ELSE %]
-      <div class="mfa-buttons">
-        <div>
-          <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
-          [% INCLUDE "mfa/protected.html.tmpl" %]
-        </div>
-        <div>
-          <button type="button" id="mfa-recovery">Generate Printable Recovery Codes</button>
-          [% INCLUDE "mfa/protected.html.tmpl" %]
-        </div>
+    <div class="mfa-buttons">
+      <div>
+        <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
+        [% INCLUDE "mfa/protected.html.tmpl" %]
       </div>
-    [% END %]
+      <div>
+        <button type="button" id="mfa-recovery">Generate Printable Recovery Codes</button>
+        [% INCLUDE "mfa/protected.html.tmpl" %]
+      </div>
+    </div>
 
     <p class="mfa-api-blurb">
       [% IF user.settings.api_key_only.value == 'on' %]
@@ -95,14 +88,12 @@
       [% END %]
     </p>
 
-    [% IF user.mfa && !user.iam_username %]
-      <p class="mfa-disable-blurb">
-        You will need to disable your two-factor authentication in order to change to a different method.
-        There will be a small amount of time when your account will not be as secure, so you may use the
-        <a href="[% basepath FILTER none %]userprefs.cgi?tab=sessions">sessions</a> page to log out all other sessions other
-        than the current one after setting up the new method.
-      </p>
-    [% END %]
+    <p class="mfa-disable-blurb">
+      You will need to disable your two-factor authentication in order to change to a different method.
+      There will be a small amount of time when your account will not be as secure, so you may use the
+      <a href="[% basepath FILTER none %]userprefs.cgi?tab=sessions">sessions</a> page to log out all other sessions other
+      than the current one after setting up the new method.
+    </p>
 
     <div id="mfa-recovery-container" style="display:none">
       <p>
