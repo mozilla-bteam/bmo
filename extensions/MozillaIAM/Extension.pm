@@ -14,7 +14,9 @@ use warnings;
 use base qw(Bugzilla::Extension);
 
 sub install_update_db {
-  Bugzilla->dbh->bz_drop_table('profiles_iam');
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_drop_table('profiles_iam');
+  $dbh->bz_drop_table('mozilla_iam_updates');
 }
 
 __PACKAGE__->NAME;
