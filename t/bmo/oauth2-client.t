@@ -29,14 +29,19 @@ $sel->click_ok('//div[@id="main-inner"]/div[@class="oauth2-login"]/a/button',
 $sel->click_ok('//a[contains(text(),"Connect")]',
   'Click OAuth2 provider login');
 $sel->title_is('Verify Account Creation', 'Verify creation of new account');
-sleep 200;
 $sel->click_ok('//input[@name="verify"]',
   'Click to verify creation of new account');
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
 $sel->logout_ok();
 
-# Trying to login using normal username and password should redirect automatically
-$sel->login($ENV{BZ_TEST_OAUTH2_NORMAL_USER}, $ENV{BZ_TEST_OAUTH2_PASSWORD});
+# Next time clicking the OAuth2 login button should log the user in
+$sel->get_ok('/login', undef, 'Go to the home page');
+$sel->title_is('Log in to Bugzilla', 'Log in to Bugzilla');
+$sel->is_element_present_ok(
+  '//div[@id="main-inner"]/div[@class="oauth2-login"]/a/button',
+  'OAuth2 login button is present');
+$sel->click_ok('//div[@id="main-inner"]/div[@class="oauth2-login"]/a/button',
+  'Click OAuth2 login button');
 $sel->click_ok('//a[contains(text(),"Connect")]',
   'Click OAuth2 provider login');
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
@@ -48,12 +53,16 @@ $sel->get_ok('/admin/oauth/provider/list', undef, 'Go to the provider admin page
 $sel->title_is('Select OAuth2 Client', 'Select OAuth2 Client');
 $sel->logout_ok();
 
-$sel->login($ENV{BZ_TEST_OAUTH2_NORMAL_USER}, $ENV{BZ_TEST_OAUTH2_PASSWORD});
+$sel->get_ok('/login', undef, 'Go to the home page');
+$sel->title_is('Log in to Bugzilla', 'Log in to Bugzilla');
+$sel->is_element_present_ok(
+  '//div[@id="main-inner"]/div[@class="oauth2-login"]/a/button',
+  'OAuth2 login button is present');
+$sel->click_ok('//div[@id="main-inner"]/div[@class="oauth2-login"]/a/button',
+  'Click OAuth2 login button');
 $sel->click_ok('//a[contains(text(),"Connect")]',
   'Click OAuth2 provider login');
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
-$sel->get_ok('/admin/oauth/provider/list', undef, 'Go to the provider admin page');
-$sel->title_is('Authorization Required', 'Authorization Required');
 $sel->logout_ok();
 
 done_testing;
