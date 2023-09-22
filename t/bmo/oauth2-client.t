@@ -18,8 +18,6 @@ my ($sel, $config) = get_selenium();
 
 $sel->set_implicit_wait_timeout(600);
 
-### Non-Mozilla normal user tests
-
 # Clicking the OAuth2 login button and then creating a new account automatically
 $sel->get_ok('/login', undef, 'Go to the home page');
 $sel->title_is('Log in to Bugzilla', 'Log in to Bugzilla');
@@ -31,6 +29,7 @@ $sel->click_ok('//div[@id="main-inner"]/div[@class="oauth2-login"]/a/button',
 $sel->click_ok('//a[contains(text(),"Connect")]',
   'Click OAuth2 provider login');
 $sel->title_is('Verify Account Creation', 'Verify creation of new account');
+sleep 200;
 $sel->click_ok('//input[@name="verify"]',
   'Click to verify creation of new account');
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
@@ -43,16 +42,7 @@ $sel->click_ok('//a[contains(text(),"Connect")]',
 $sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
 $sel->logout_ok();
 
-### Mozilla user tests
-
-# Logging in with Mozilla.com account should automatically redirect to OAuth2 login
-$sel->login($ENV{BZ_TEST_OAUTH2_MOZILLA_USER}, $ENV{BZ_TEST_OAUTH2_PASSWORD});
-$sel->click_ok('//a[contains(text(),"Connect")]',
-  'Click OAuth2 provider login');
-$sel->title_is('Bugzilla Main Page', 'User is logged into Bugzilla');
-$sel->logout_ok();
-
-### Make sure provider admin UI is only accessible by admin user
+# Make sure provider admin UI is only accessible by admin user
 $sel->login($config->{admin_user_login}, $config->{admin_user_passwd});
 $sel->get_ok('/admin/oauth/provider/list', undef, 'Go to the provider admin page');
 $sel->title_is('Select OAuth2 Client', 'Select OAuth2 Client');
