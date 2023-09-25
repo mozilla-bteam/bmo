@@ -129,10 +129,6 @@ sub create {
     cryptpassword => trim($params->{password}) || '*',
   };
 
-  if (my $iam_username = trim($params->{iam_username})) {
-    $data->{iam_username} = $iam_username;
-  }
-
   my $user = Bugzilla::User->create($data);
 
   return {id => $self->type('int', $user->id)};
@@ -336,7 +332,6 @@ sub get {
       name               => $self->type('email',    $user->login),
       email              => $self->type('email',    $user->email),
       can_login          => $self->type('boolean',  $user->is_enabled ? 1 : 0),
-      iam_username       => $self->type('string',   $user->iam_username),
       last_seen_date     => $self->type('dateTime', $user->last_seen_date),
       creation_time      => $self->type('dateTime', $user->creation_ts),
       };
@@ -592,7 +587,6 @@ sub whoami {
       mfa_status   => $self->type('boolean', !!$user->mfa),
       groups       => [map { $_->name } @{$user->groups}],
       uuid         => $self->type('string',  'bmo-who:' . $uuid),
-      iam_username => $self->type('string',  $user->iam_username),
     }
   );
 }
@@ -889,9 +883,6 @@ exist in Bugzilla, but will not be allowed to log in using DB
 authentication until a password is set either by the user (through
 resetting their password) or by the administrator.
 
-=item C<iam_username> (string) B<optional> - The IAM username used
-to authenticate with using an external IAM system.
-
 =back
 
 =item B<Returns>
@@ -957,10 +948,6 @@ C<string> The email of the user. Note that email used to login to Bugzilla.
 Also note that you can only update one user at a time when changing the
 login name / email. (An error will be thrown if you try to update this field
 for multiple users at once.)
-
-=item C<iam_username>
-
-C<string> The IAM username used to authenticate with using an external IAM system.
 
 =item C<password>
 
