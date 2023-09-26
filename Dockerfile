@@ -1,4 +1,4 @@
-FROM ghcr.io/mozilla-bteam/bmo-perl-slim:20230926.1
+FROM mozillabteam/bmo-perl-slim:20230926.1
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -25,7 +25,7 @@ WORKDIR /app
 
 COPY . /app
 
-RUN chown -R app.app /app && \
+RUN chown -R app:app /app && \
     perl -I/app -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
     perl -c /app/scripts/entrypoint.pl
 
