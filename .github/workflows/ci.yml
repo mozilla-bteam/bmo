@@ -3,6 +3,10 @@ name: BMO Test Suite
 on:
   pull_request
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mozilla-bteam/bmo
+
 jobs:
   test_sanity:
     runs-on: ubuntu-latest
