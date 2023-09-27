@@ -110,6 +110,9 @@ eval {
   delete_user_request_log();
   Bugzilla::Hook::process('db_sanitize');
   disable_email_delivery() unless $enable_email;
+  delete_system_parameters();
+  delete_oauth_providers();
+  delete_bloomfilter();
   print "All done!\n";
   $dbh->bz_rollback_transaction() if $dry_run;
 };
@@ -279,6 +282,21 @@ sub disable_email_delivery {
   # Also clear out the default flag cc as well since they do not
   # have to be in the profiles table
   $dbh->do("UPDATE flagtypes SET cc_list = NULL");
+}
+
+sub delete_system_parameters {
+  print "Deleting system parameters...\n";
+  $dbh->do('DELETE FROM params');
+}
+
+sub delete_oauth_providers {
+  print "Deleting OAuth2 providers...\n";
+  $dbh->do('DELETE FROM oauth2_client');
+}
+
+sub delete_bloomfilter {
+  print "Deleting bloomfilter values...\n";
+  $dbh->do('DELETE FROM bloomfilter_values');
 }
 
 =head1 NAME

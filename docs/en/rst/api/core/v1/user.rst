@@ -148,8 +148,6 @@ password      string  The password for the new user account, in plain text. It
                       using DB authentication until a password is set either
                       by the user (through resetting their password) or by the
                       administrator.
-iam_username  string  (optional) The IAM username used to authenticate with using
-                      an external IAM system
 ============  ======  =============================================================
 
 **Response**
@@ -217,8 +215,6 @@ groups             object   These specify the groups that this user is directly
 bless_groups       object   This is the same as groups but affects what groups
                             a user has direct membership to bless that group.
                             It takes the same inputs as groups.
-iam_username       string   (optional) The IAM username used to authenticate with using
-                            an external IAM system
 =================  =======  =====================================================
 
 Groups and bless groups update object:
