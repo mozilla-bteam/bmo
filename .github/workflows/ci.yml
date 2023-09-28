@@ -18,7 +18,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: docker -f Dockerfile.ghcr build -t bmo .
+        run: docker build -f Dockerfile.ghcr -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run sanity tests
@@ -35,7 +35,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: docker -f Dockerfile.ghcr build -t bmo .
+        run: docker build -f Dockerfile.ghcr -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run webservice tests
@@ -52,7 +52,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: docker -f Dockerfile.ghcr build -t bmo .
+        run: docker build -f Dockerfile.ghcr -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run bmo specific tests
@@ -69,7 +69,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: docker -f Dockerfile.ghcr build -t bmo .
+        run: docker build -f Dockerfile.ghcr -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (1)
@@ -86,7 +86,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: docker -f Dockerfile.ghcr build -t bmo .
+        run: docker build -f Dockerfile.ghcr -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (2)
@@ -103,7 +103,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: docker -f Dockerfile.ghcr build -t bmo .
+        run: docker build -f Dockerfile.ghcr -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (3)
@@ -120,7 +120,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: docker -f Dockerfile.ghcr build -t bmo .
+        run: docker build -f Dockerfile.ghcr -t bmo .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (4)
