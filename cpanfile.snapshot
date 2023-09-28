@@ -3186,26 +3186,24 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       ExtUtils::PkgConfig 0
       Math::Trig 0
-  GD-Barcode-2.00
-    pathname: M/MI/MICHIELB/GD-Barcode-2.00.tar.gz
+  GD-Barcode-1.15
+    pathname: K/KW/KWITKNR/GD-Barcode-1.15.tar.gz
     provides:
-      GD::Barcode 2.00
-      GD::Barcode::COOP2of5 2.00
-      GD::Barcode::Code39 2.00
-      GD::Barcode::EAN13 2.00
-      GD::Barcode::EAN8 2.00
-      GD::Barcode::IATA2of5 2.00
-      GD::Barcode::ITF 2.00
-      GD::Barcode::Industrial2of5 2.00
-      GD::Barcode::Matrix2of5 2.00
-      GD::Barcode::NW7 2.00
-      GD::Barcode::QRcode 2.00
-      GD::Barcode::UPCA 2.00
-      GD::Barcode::UPCE 2.00
+      GD::Barcode 1.15
+      GD::Barcode::COOP2of5 0.01
+      GD::Barcode::Code39 1.1
+      GD::Barcode::EAN13 1.1
+      GD::Barcode::EAN8 1.1
+      GD::Barcode::IATA2of5 0.01
+      GD::Barcode::ITF 0.01
+      GD::Barcode::Industrial2of5 0.01
+      GD::Barcode::Matrix2of5 0.01
+      GD::Barcode::NW7 1.1
+      GD::Barcode::QRcode 0.01
+      GD::Barcode::UPCA 1.1
+      GD::Barcode::UPCE 1.1
     requirements:
-      Exporter 0
       ExtUtils::MakeMaker 0
-      parent 0
   GDGraph-1.56
     pathname: B/BP/BPS/GDGraph-1.56.tar.gz
     provides:
@@ -3513,19 +3511,19 @@ DISTRIBUTIONS
       HTTP::Date 0
       Module::Build::Tiny 0.035
       perl 5.008001
-  HTTP-Message-6.44
-    pathname: O/OA/OALDERS/HTTP-Message-6.44.tar.gz
+  HTTP-Message-6.45
+    pathname: O/OA/OALDERS/HTTP-Message-6.45.tar.gz
     provides:
-      HTTP::Config 6.44
-      HTTP::Headers 6.44
-      HTTP::Headers::Auth 6.44
-      HTTP::Headers::ETag 6.44
-      HTTP::Headers::Util 6.44
-      HTTP::Message 6.44
-      HTTP::Request 6.44
-      HTTP::Request::Common 6.44
-      HTTP::Response 6.44
-      HTTP::Status 6.44
+      HTTP::Config 6.45
+      HTTP::Headers 6.45
+      HTTP::Headers::Auth 6.45
+      HTTP::Headers::ETag 6.45
+      HTTP::Headers::Util 6.45
+      HTTP::Message 6.45
+      HTTP::Request 6.45
+      HTTP::Request::Common 6.45
+      HTTP::Response 6.45
+      HTTP::Status 6.45
     requirements:
       Carp 0
       Clone 0.46
@@ -4344,10 +4342,10 @@ DISTRIBUTIONS
       Test::Requires 0
       parent 0
       perl 5.008001
-  Module-Build-Tiny-0.046
-    pathname: L/LE/LEONT/Module-Build-Tiny-0.046.tar.gz
+  Module-Build-Tiny-0.047
+    pathname: L/LE/LEONT/Module-Build-Tiny-0.047.tar.gz
     provides:
-      Module::Build::Tiny 0.046
+      Module::Build::Tiny 0.047
     requirements:
       CPAN::Meta 0
       DynaLoader 0

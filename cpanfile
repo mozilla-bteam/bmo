@@ -51,7 +51,7 @@ requires 'File::MimeInfo::Magic';
 requires 'File::Which';
 requires 'Future', '0.34';
 requires 'GD', '1.20';
-requires 'GD::Barcode::QRcode';
+requires 'GD::Barcode', '== 1.15';
 requires 'GD::Graph';
 requires 'GD::Text';
 requires 'HTML::Escape', '1.10';

@@ -275,7 +275,7 @@ my %optional_features = (
     prereqs     => {
       runtime => {
         requires =>
-          {'Auth::GoogleAuth' => '1.01', 'GD::Barcode::QRcode' => '0',},
+          {'Auth::GoogleAuth' => '1.01', 'GD::Barcode' => '==1.15',},
       }
     },
   },
