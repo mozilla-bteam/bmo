@@ -3,6 +3,9 @@ name: BMO Test Suite
 on:
   pull_request
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   test_sanity:
     runs-on: ubuntu-latest
