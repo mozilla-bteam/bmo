@@ -30,12 +30,6 @@ $answer{'usetargetmilestone'}   = 1;
 $answer{'utf8'}                 = 'utf8mb4';
 $answer{'webdotbase'}           = '/usr/bin/dot';
 
-$answer{'mozilla_iam_enabled'}                  = 1;
-$answer{'mozilla_iam_person_api_uri'}           = 'http://externalapi.test:8000/person/test';
-$answer{'mozilla_iam_person_api_client_id'}     = 'client_id';
-$answer{'mozilla_iam_person_api_client_secret'} = 'client_secret';
-$answer{'mozilla_iam_mandatory_domains'}        = 'mozilla.com';
-
 $answer{'oauth2_client_authorize_url'} = 'http://externalapi.test:8000/oauth/test/authorize';
 $answer{'oauth2_client_enabled'}       = 1;
 $answer{'oauth2_client_id'}            = 'client_id';

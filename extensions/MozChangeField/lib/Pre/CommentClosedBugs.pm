@@ -32,6 +32,18 @@ sub evaluate_change {
         || $bug->assigned_to->id eq $user->id
         || ($bug->qa_contact && $bug->qa_contact->id eq $user->id)) ? 1 : 0;
 
+    # If the current user has a needinfo flag requested of them,
+    # then allow commenting
+    foreach my $flag (@{$bug->flags}) {
+      next if $flag->type->name ne 'needinfo';
+      if ( $flag->status eq '?'
+        && $flag->requestee
+        && $flag->requestee->id == $user->id)
+      {
+        $has_role = 1;
+      }
+    }
+
     return {result => PRIVILEGES_REQUIRED_NONE} if $has_role;
 
     return {
