@@ -435,21 +435,28 @@
     [%+ ELSIF fld == "z" %]the multiple tables/images
     [%+ ELSE %]a report axis[% END %] field.
 
-  [% ELSIF error == "s3_add_failed" %]
-    Failed to add attachment ID [% attach_id FILTER html %] to S3:
+  [% ELSIF error == "net_storage_invalid_key" %]
+    Net storage key was invalid or missing.
+
+  [% ELSIF error == "net_storage_add_failed" %]
+    Failed to add key [% key FILTER html %] to network storage:
     [%+ reason FILTER html %]
 
-  [% ELSIF error == "s3_get_failed" %]
-    Failed to fetch attachment ID [% attach_id FILTER html %] from S3:
+  [% ELSIF error == "net_storage_get_failed" %]
+    Failed to fetch key [% key FILTER html %] from network storage:
     [%+ reason FILTER html %]
 
-  [% ELSIF error == "s3_mining_add_failed" %]
-    Failed to add mining data for product [% product FILTER html %] to S3:
+  [% ELSIF error == "net_mining_add_failed" %]
+    Failed to add mining data for product [% product FILTER html %] to network storage:
     [%+ reason FILTER html %]
 
-  [% ELSIF error == "s3_mining_get_failed" %]
-    Failed to fetch mining data for product [% product FILTER html %] from S3:
+  [% ELSIF error == "net_mining_get_failed" %]
+    Failed to fetch mining data for product [% product FILTER html %] from network storage:
     [%+ reason FILTER html %]
+
+  [% ELSIF error == "google_access_token_failure" %]
+    Failed to obtain access token from Google Cloud Storage:
+    [%+ error FILTER html %]
 
   [% ELSIF error == "search_cp_without_op" %]
     Search argument f[% id FILTER html %] is "CP" but there is no

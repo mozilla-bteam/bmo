@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-version: '3.4'
+version: "3.4"
 
 services:
   bmo.test:
@@ -17,7 +17,7 @@ services:
       - /tmp
       - /run
     environment: &bmo_env
-      - 'BMO_inbound_proxies=*'
+      - "BMO_inbound_proxies=*"
       - BMO_db_host=bmo.db
       - BMO_db_name=bugs
       - BMO_db_pass=bugs
@@ -39,6 +39,8 @@ services:
       - bmo.db
       - memcached
       - proxy
+      - s3
+      - gcs
 
   bmo.jobqueue:
     build: *bmo_build
@@ -60,8 +62,8 @@ services:
       - perl
       - extensions/PhabBugz/bin/phabbugz_feed.pl
       - start
-      - '-d'
-      - '-f'
+      - "-d"
+      - "-f"
     volumes:
       - bmo-data-dir:/app/data
     tmpfs:
@@ -79,8 +81,8 @@ services:
       - perl
       - extensions/Push/bin/bugzilla-pushd.pl
       - start
-      - '-d'
-      - '-f'
+      - "-d"
+      - "-f"
     volumes:
       - bmo-data-dir:/app/data
     tmpfs:
@@ -98,8 +100,8 @@ services:
       - perl
       - extensions/MozillaIAM/bin/person_update.pl
       - start
-      - '-d'
-      - '-f'
+      - "-d"
+      - "-f"
     volumes:
       - bmo-data-dir:/app/data
     tmpfs:
@@ -129,14 +131,27 @@ services:
   memcached:
     image: memcached:latest
 
-  proxy:                                                                                                                                                                                 
-    image: haproxytech/haproxy-alpine                                                                                                                                                    
-    volumes:                                                                                                                                                                             
-      - ./docker/proxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro                                                                                                                 
-    ports:                                                                                                                                                                               
-      - "1080:1080"                                                                                                                                                                      
-    restart: always 
+  s3:
+    image: scireum/s3-ninja
+    volumes:
+      - "bmo-s3-data:/home/sirius/data"
+
+  gcs:
+    image: fsouza/fake-gcs-server
+    command: "-scheme http"
+    volumes:
+      - bmo-gcs-data:/data/attachments
+
+  proxy:
+    image: haproxytech/haproxy-alpine
+    volumes:
+      - ./docker/proxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "1080:1080"
+    restart: always
 
 volumes:
   bmo-mysql-db:
   bmo-data-dir:
+  bmo-s3-data:
+  bmo-gcs-data:

@@ -29,7 +29,7 @@ sub get_param_list {
     {
       name    => 'attachment_storage',
       type    => 's',
-      choices => ['database', 'filesystem', 's3'],
+      choices => ['database', 'filesystem', 's3', 'google'],
       default => 'database',
       checker => \&check_storage
     },
@@ -39,9 +39,19 @@ sub get_param_list {
       default => '20000',
       checker => \&check_numeric
     },
-    {name => 's3_bucket',                  type => 't', default => '',},
-    {name => 'aws_access_key_id',          type => 't', default => '',},
-    {name => 'aws_secret_access_key',      type => 't', default => '',},
+    {name => 's3_bucket',                      type => 't', default => '',},
+    {name => 'aws_host',                       type => 't', default => '',},
+    {name => 'aws_access_key_id',              type => 't', default => '',},
+    {name => 'aws_secret_access_key',          type => 't', default => '',},
+    {name => 'google_storage_host',            type => 't', default => '',},
+    {name => 'google_storage_bucket',          type => 't', default => '',},
+    {name => 'google_storage_service_account', type => 't', default => '',},
+    {
+      name    => 'attachment_google_minsize',
+      type    => 't',
+      default => '20000',
+      checker => \&check_numeric
+    },
     {name => 'github_pr_linking_enabled',  type => 'b', default => 0},
     {name => 'github_pr_signature_secret', type => 't', default => ''},
   );
@@ -50,20 +60,33 @@ sub get_param_list {
 
 sub check_params {
   my ($class, $params) = @_;
-  return '' unless $params->{attachment_storage} eq 's3';
 
-  if ( $params->{s3_bucket} eq ''
-    || $params->{aws_access_key_id} eq ''
-    || $params->{aws_secret_access_key} eq '')
+  if (
+    $params->{attachment_storage} eq 's3'
+    && ( $params->{s3_bucket} eq ''
+      || $params->{aws_access_key_id} eq ''
+      || $params->{aws_secret_access_key} eq '')
+    )
   {
     return
-      "You must set s3_bucket, aws_access_key_id, and aws_secret_access_key when attachment_storage is set to S3";
+      'You must set s3_bucket, aws_access_key_id, and aws_secret_access_key when attachment_storage is set to S3';
   }
+
+  if (
+    $params->{attachment_storage} eq 'google'
+    && ( $params->{google_storage_bucket} eq ''
+      || $params->{google_storage_host} eq '')
+    )
+  {
+    return
+      'You must set google_bucket, google_client_id, and google_client_secret when attachment_storage is set to google';
+  }
+
   return '';
 }
 
 sub check_storage {
-  my ($value, $param) = (@_);
+  my ($value, $param) = @_;
   my $check_multi = check_multi($value, $param);
   return $check_multi if $check_multi;
 

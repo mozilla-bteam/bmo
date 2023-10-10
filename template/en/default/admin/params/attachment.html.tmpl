@@ -50,6 +50,32 @@
   attachment_s3_minsize =>
     "When attachment_storage is set to S3, only attachments larger than this " _
     "value will be uploaded to S3 for performance reasons. Smaller attachments " _
-    "will be stored in the database."
+    "will be stored in the database.",
+
+  attachment_google_minsize =>
+    "When attachment_storage is set to google, only attachments larger than this " _
+    "value will be uploaded to google for performance reasons. Smaller attachments " _
+    "will be stored in the database.",
+
+  s3_bucket =>
+    "Name of AWS S3 bucket for storing attachments.",
+
+  aws_host =>
+    "AWS hostname to use for accessing AWS services.",
+
+  aws_access_key_id =>
+    "AWS access key ID for accessing AWS services.",
+
+  aws_secret_access_key =>
+    "AWS secret for accessing AWS services."
+
+  google_storage_host =>
+    "Google Cloud Storage hostname",
+
+  google_storage_bucket =>
+    "Google Cloud Storage bucket name",
+
+  google_storage_service_account =>
+    "Google Cloud Storage Service Account",
   }
 %]

@@ -949,12 +949,12 @@ sub get_storage_by_name {
     require Bugzilla::Attachment::Storage::FileSystem;
     return Bugzilla::Attachment::Storage::FileSystem->new({attach_id => $self->id});
   }
-  elsif ($name eq 's3') {
-    require Bugzilla::Attachment::Storage::S3;
-    return Bugzilla::Attachment::Storage::S3->new({attach_id => $self->id, datasize => $self->datasize});
-  }
+
+  # anything will come from the network
   else {
-    return undef;
+    require Bugzilla::Attachment::Storage::Net;
+    return Bugzilla::Attachment::Storage::Net->new(
+      {name => $name, attach_id => $self->id, datasize => $self->datasize});
   }
 }
 
