@@ -13,6 +13,7 @@ use warnings;
 
 use Digest::HMAC_SHA1;
 use HTTP::Date;
+use List::Util qw(none);
 use MIME::Base64 qw(encode_base64);
 use Moo;
 use Types::Standard qw(Str);
@@ -34,81 +35,33 @@ has secret_key => (is => 'ro', required => 1, isa => Str);
 # Return type of net storage
 sub data_type { return 's3'; }
 
-# Add new data to net storage
-sub add_key {
-  my ($self, $key, $value) = @_;
-
-  ThrowCodeError('net_storage_invalid_key') unless $key && length $key;
-
-  my $headers = {};
-  $headers->{'Content-Length'} = length $value;
-
-  my $request  = $self->_make_request('PUT', $self->_uri($key), $value, $headers);
-  my $response = $self->_do_http($request);
-
-  return 1 if $response->code =~ /^2\d\d$/;
-
-  # anything else is a failure, and we save the parsed result
-  $self->_remember_errors($response);
-
-  return undef;
-}
-
-# Check if a key exists in net storage
-sub head_key {
-  my ($self, $key) = @_;
-
-  ThrowCodeError('net_storage_invalid_key') unless $key && length $key;
-
-  my $request  = $self->_make_request('HEAD', $self->_uri($key));
-  my $response = $self->_do_http($request);
-
-  return 1 if $response->code =~ /^2\d\d$/;
-
-  # anything else is a failure, and we save the parsed result
-  $self->_remember_errors($response);
-
-  return undef;
-}
-
-# Get data from net storage
-sub get_key {
-  my ($self, $key) = @_;
-
-  ThrowCodeError('net_storage_invalid_key') unless $key && length $key;
-
-  my $request  = $self->_make_request('GET', $self->_uri($key));
-  my $response = $self->_do_http($request);
-
-  if ($response->code =~ /^2\d\d$/) {
-    return $response->decoded_content;
-  }
-
-  # anything else is a failure, and we save the parsed result
-  $self->_remember_errors($response);
-
-  return undef;
-}
-
-sub delete_key {
-  my ($self, $key) = @_;
-
-  ThrowCodeError('net_storage_invalid_key') unless $key && length $key;
-
-  my $request  = $self->_make_request('DELETE', $self->_uri($key));
-  my $response = $self->_do_http($request);
-
-  return 1 if $response->code =~ /^2\d\d$/;
-
-  # anything else is a failure, and we save the parsed result
-  $self->_remember_errors($response);
-
-  return 0;
-}
-
 ###################
 # Private methods #
 ###################
+
+sub _get_method_path {
+  my ($self, $action, $key) = @_;
+  my $method;
+
+  if (none {$action eq $_} qw(add head get delete)) {
+    ThrowCodeError('net_storage_invalid_action', {action => $action});
+  }
+
+  if ($action eq 'add') {
+    $method = 'PUT';
+  }
+  elsif ($action eq 'head') {
+    $method = 'HEAD';
+  }
+  elsif ($action eq 'get') {
+    $method = 'GET';
+  }
+  elsif ($action eq 'delete') {
+    $method = 'DELETE';
+  }
+
+  return ($method, $self->_uri($key));
+}
 
 # EU buckets must be accessed via their DNS name. This routine figures out if
 # a given bucket name can be safely used as a DNS name.
@@ -205,19 +158,27 @@ sub _xpc_of_content {
   );
 }
 
-# returns 1 if errors were found
+# Example Error:
+# <?xml version="1.0" encoding="UTF-8"?>
+# <Error>
+#   <Code>NoSuchKey</Code>
+#   <Message>The resource you requested does not exist</Message>
+#   <Resource>/mybucket/myfoto.jpg</Resource>
+#   <RequestId>4442587FB7D0A2F9</RequestId>
+# </Error>
+
 sub _remember_errors {
   my ($self, $response) = @_;
-  my $src = $response->content;
+  my $content = $response->content;
 
-  unless (ref $src || $src =~ m/^[[:space:]]*</) {    # if not xml
-    (my $code = $src) =~ s/^[[:space:]]*\([0-9]*\).*$/$1/;
-    $self->error_code($code);
-    $self->error_string($src);
+  # If not XML then just return status and message
+  unless (ref $content || $content =~ m/^[[:space:]]*</) {    # if not xml
+    $self->error_code($response->code);
+    $self->error_string($response->message);
     return 1;
   }
 
-  my $r = ref $src ? $src : $self->_xpc_of_content($src);
+  my $r = ref $content ? $content : $self->_xpc_of_content($content);
 
   if ($r->{Error}) {
     $self->error_code($r->{Error}{Code});

@@ -438,6 +438,12 @@
   [% ELSIF error == "net_storage_invalid_key" %]
     Net storage key was invalid or missing.
 
+  [% ELSIF error == "net_storage_invalid_value" %]
+    Net storage value was invalid or missing.
+
+  [% ELSIF error == "net_storage_invalid_action" %]
+    Net storage action was invalid or missing.
+
   [% ELSIF error == "net_storage_add_failed" %]
     Failed to add key [% key FILTER html %] to network storage:
     [%+ reason FILTER html %]

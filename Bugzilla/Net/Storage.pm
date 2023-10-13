@@ -27,6 +27,54 @@ has error_code   => (is => 'rw',   isa      => Int | Str);
 has error_string => (is => 'rw',   isa      => Str);
 has port         => (is => 'ro',   isa      => Int);
 
+##################
+# Public Methods #
+##################
+
+# Add new data to net storage
+sub add_key {
+  my ($self, $key, $value) = @_;
+
+  ThrowCodeError('net_storage_invalid_key')   unless $key   && length $key;
+  ThrowCodeError('net_storage_invalid_value') unless $value && length $value;
+
+  my ($method, $path) = $self->_get_method_path('add', $key);
+
+  return $self->_send_request($method, $path, $value);
+}
+
+# Check if a key exists in net storage
+sub head_key {
+  my ($self, $key) = @_;
+
+  ThrowCodeError('net_storage_invalid_key') unless $key && length $key;
+
+  my ($method, $path) = $self->_get_method_path('head', $key);
+
+  return $self->_send_request($method, $path);
+}
+
+# Get data from net storage
+sub get_key {
+  my ($self, $key) = @_;
+
+  ThrowCodeError('net_storage_invalid_key') unless $key && length $key;
+
+  my ($method, $path) = $self->_get_method_path('get', $key);
+
+  return $self->_send_request($method, $path);
+}
+
+sub delete_key {
+  my ($self, $key) = @_;
+
+  ThrowCodeError('net_storage_invalid_key') unless $key && length $key;
+
+  my ($method, $path) = $self->_get_method_path('delete', $key);
+
+  return $self->_send_request($method, $path);
+}
+
 ###################
 # Private Methods #
 ###################
@@ -125,6 +173,28 @@ sub _do_http {
   $self->error_string('');
 
   return $self->ua->request($request);
+}
+
+# Send the request and return data if requested
+sub _send_request {
+  my ($self, $method, $path, $value) = @_;
+
+  my $request  = $self->_make_request($method, $path, $value);
+  my $response = $self->_do_http($request);
+
+  if ($response->code =~ /^2\d\d$/) {
+    if ($method eq 'GET') {
+      return $response->decoded_content;
+    }
+    else {
+      return 1;
+    }
+  }
+
+  # anything else is a failure, and we save the parsed result
+  $self->_remember_errors($response);
+
+  return 0;
 }
 
 1;

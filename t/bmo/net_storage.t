@@ -27,7 +27,7 @@ my $storage = Bugzilla::Net::S3->new(
   client_id  => 'AKIAIOSFODNN7EXAMPLE',
   secret_key => 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
   bucket     => 'attachments',
-  host       => 's3', # This will be converted to 'attachments.aws.s3'
+  host       => 's3',
 );
 
 # Is this S3 instance?
