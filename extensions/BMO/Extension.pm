@@ -2867,29 +2867,6 @@ sub app_startup {
   $r->any('/:REWRITE_mozpr' => [REWRITE_mozpr => qr{form[\.:]mozpr}])
     ->to('CGI#enter_bug_cgi' => {'product' => 'Mozilla PR', 'format' => 'mozpr'},
     );
-  $r->any('/:REWRITE_reps_mentorship' =>
-      [REWRITE_reps_mentorship => qr{form[\.:]reps[\.:]mentorship}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Mozilla Reps', 'format' => 'mozreps'},);
-  $r->any('/:REWRITE_reps_budget' =>
-      [REWRITE_reps_budget => qr{form[\.:]reps[\.:]budget}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Mozilla Reps', 'format' => 'remo-budget'}
-    );
-  $r->any(
-    '/:REWRITE_reps_swag' => [REWRITE_reps_swag => qr{form[\.:]reps[\.:]swag}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Mozilla Reps', 'format' => 'remo-swag'});
-  $r->any('/:REWRITE_reps_it' => [REWRITE_reps_it => qr{form[\.:]reps[\.:]it}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Mozilla Reps', 'format' => 'remo-it'});
-  $r->any('/:REWRITE_reps_payment' =>
-      [REWRITE_reps_payment => qr{form[\.:]reps[\.:]payment}])
-    ->to('CGI#page_cgi' => {'id' => 'remo-form-payment.html'});
-  $r->any('/:REWRITE_csa_discourse' =>
-      [REWRITE_csa_discourse => qr{form[\.:]csa[\.:]discourse}])
-    ->to('CGI#enter_bug_cgi' =>
-      {'product' => 'Infrastructure & Operations', 'format' => 'csa-discourse'});
   $r->any('/:REWRITE_employee_incident' =>
       [REWRITE_employee_incident => qr{form[\.:]employee[\.\-:]incident}])
     ->to('CGI#enter_bug_cgi' =>
