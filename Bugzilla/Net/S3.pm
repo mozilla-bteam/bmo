@@ -13,7 +13,7 @@ use warnings;
 
 use Digest::HMAC_SHA1;
 use HTTP::Date;
-use List::Util qw(none);
+use List::Util   qw(none);
 use MIME::Base64 qw(encode_base64);
 use Moo;
 use Types::Standard qw(Str);
@@ -25,8 +25,9 @@ use Bugzilla::Util qw(trim);
 
 extends 'Bugzilla::Net::Storage';
 
-has client_id  => (is => 'ro', required => 1, isa => Str);
-has secret_key => (is => 'ro', required => 1, isa => Str);
+has client_id    => (is => 'ro', required => 1, isa => Str);
+has secret_key   => (is => 'ro', required => 1, isa => Str);
+has min_datasize => (is => 'lazy');
 
 ##################
 # Public methods #
@@ -39,11 +40,17 @@ sub data_type { return 's3'; }
 # Private methods #
 ###################
 
+# Do not store data below a specific size on the network
+sub _build_min_datasize {
+  my ($self) = @_;
+  return Bugzilla->params->{attachment_google_minsize};
+}
+
 sub _get_method_path {
   my ($self, $action, $key) = @_;
   my $method;
 
-  if (none {$action eq $_} qw(add head get delete)) {
+  if (none { $action eq $_ } qw(add head get delete)) {
     ThrowCodeError('net_storage_invalid_action', {action => $action});
   }
 
@@ -73,7 +80,7 @@ sub _is_dns_bucket {
   }
 
   if (length $bucketname < 3) {
-    return undef;
+    return 0;
   }
 
   return 0 unless $bucketname =~ m{^[a-z0-9][a-z0-9.-]+$};
@@ -178,11 +185,12 @@ sub _remember_errors {
     return 1;
   }
 
-  my $r = ref $content ? $content : $self->_xpc_of_content($content);
+  my $decoded_content
+    = ref $content ? $content : $self->_xpc_of_content($content);
 
-  if ($r->{Error}) {
-    $self->error_code($r->{Error}{Code});
-    $self->error_string($r->{Error}{Message});
+  if ($decoded_content->{Error}) {
+    $self->error_code($decoded_content->{Error}{Code});
+    $self->error_string($decoded_content->{Error}{Message});
     return 1;
   }
 

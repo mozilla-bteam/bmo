@@ -21,6 +21,7 @@ use Try::Tiny;
 use Types::Standard qw(Int Str);
 use URI::Escape     qw(uri_escape_utf8);
 
+use Bugzilla;
 use Bugzilla::Error;
 
 extends 'Bugzilla::Net::Storage';
@@ -28,6 +29,7 @@ extends 'Bugzilla::Net::Storage';
 has access_token        => (is => 'rw', isa => Str,);
 has access_token_expiry => (is => 'rw', isa => Int,);
 has service_account     => (is => 'ro', isa => Str,);
+has min_datasize        => (is => 'lazy');
 
 my $PATH_BASE = 'storage/v1/b';
 
@@ -42,42 +44,40 @@ sub data_type { return 'google'; }
 # Private methods #
 ###################
 
+# Do not store data below a specific size on the network
+sub _build_min_datasize {
+  my ($self) = @_;
+  return Bugzilla->params->{attachment_google_minsize};
+}
+
 # Based on the type of action being performed, select the proper
 # method and the path needed for the Google API.
 sub _get_method_path {
   my ($self, $action, $key) = @_;
   my ($method, $format);
-  my @args = ($self->bucket);
 
   if (none { $action eq $_ } qw(add head get delete)) {
     ThrowCodeError('net_storage_invalid_action', {action => $action});
   }
 
   if ($action eq 'add') {
-    $format
-      = 'upload/'
-      . $PATH_BASE
-      . '/%s/o?uploadType=media&name='
-      . uri_escape_utf8($key);
+    $format = 'upload/' . $PATH_BASE . '/%s/o?uploadType=media&name=%s';
     $method = 'POST';
   }
   elsif ($action eq 'head') {
     $format = $PATH_BASE . '/%s/o/%s';
     $method = 'GET';
-    push @args, $key;
   }
   elsif ($action eq 'get') {
     $format = $PATH_BASE . '/%s/o/%s?alt=media';
     $method = 'GET';
-    push @args, $key;
   }
   elsif ($action eq 'delete') {
     $format = $PATH_BASE . '/%s/o/%s';
     $method = 'DELETE';
-    push @args, $key;
   }
 
-  my @escaped_args = map { uri_escape_utf8($_) } @args;
+  my @escaped_args = map { uri_escape_utf8($_) } ($self->bucket, $key);
   my $path         = sprintf $format, @escaped_args;
 
   return ($method, $path);
@@ -99,7 +99,7 @@ sub _add_auth_header {
   $headers->header(Authorization => 'Bearer ' . $self->access_token);
 }
 
-# Google Kubernetes allows for the user of Workload Identity. This allows
+# Google Kubernetes allows for the use of Workload Identity. This allows
 # us to link two serice accounts together and give special access for applications
 # running under Kubernetes. We use the special access to get an OAuth2 access_token
 # that can then be used for accessing the the Google API such as Cloud Storage.
@@ -107,7 +107,7 @@ sub _get_access_token {
   my ($self) = @_;
   my $url
     = sprintf
-    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
+    'https://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
     $self->service_account;
 
   my $http_headers = HTTP::Headers->new;
@@ -152,11 +152,11 @@ sub _remember_errors {
   my ($self, $response) = @_;
 
   try {
-    my $content = $response->decoded_content;
-    my $r       = ref $content ? $content : decode_json($content);
-    if ($r->{error}) {
-      $self->error_code($r->{error}{code});
-      $self->error_string($r->{error}{message});
+    my $content         = $response->decoded_content;
+    my $decoded_content = ref $content ? $content : decode_json($content);
+    if ($decoded_content->{error}) {
+      $self->error_code($decoded_content->{error}{code});
+      $self->error_string($decoded_content->{error}{message});
     }
   }
   catch {

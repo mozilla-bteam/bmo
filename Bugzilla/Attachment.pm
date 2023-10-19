@@ -950,7 +950,7 @@ sub get_storage_by_name {
     return Bugzilla::Attachment::Storage::FileSystem->new({attach_id => $self->id});
   }
 
-  # anything will come from the network
+  # Anything else will come from the network
   else {
     require Bugzilla::Attachment::Storage::Net;
     return Bugzilla::Attachment::Storage::Net->new(

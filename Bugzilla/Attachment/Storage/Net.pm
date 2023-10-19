@@ -57,15 +57,7 @@ sub set_data {
   my $attach_id = $self->attach_id;
 
   # Store that attachment data in the database if below mininum size
-  if (
-    (
-         $self->data_type eq 's3'
-      && $self->datasize < Bugzilla->params->{attachment_s3_minsize}
-    )
-    || ( $self->data_type eq 'google'
-      && $self->datasize < Bugzilla->params->{attachment_google_minsize})
-    )
-  {
+  if ($self->datasize < $self->driver->min_datasize) {
     require Bugzilla::Attachment::Storage::Database;
     return Bugzilla::Attachment::Storage::Database->new(
       {attach_id => $self->attach_id})->set_data($data);
