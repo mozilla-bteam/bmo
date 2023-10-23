@@ -42,8 +42,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -104,8 +103,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -137,8 +135,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -160,8 +157,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -182,8 +178,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -204,8 +199,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -226,8 +220,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -248,8 +241,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
@@ -270,8 +262,7 @@ jobs:
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
