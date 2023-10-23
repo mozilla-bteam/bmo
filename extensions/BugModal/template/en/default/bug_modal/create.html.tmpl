@@ -29,11 +29,7 @@
   ];
 
   # all custom fields
-  custom_fields = Bugzilla.active_custom_fields(
-    product => bug.product_obj,
-    component => bug.component_obj,
-    bug_id => bug.id
-  );
+  custom_fields = Bugzilla.active_custom_fields(product => bug.product_obj);
 
   # count set project/tracking/blocking flags
   tracking_flags_has = 0;
@@ -591,6 +587,7 @@
     [%# custom fields (except textarea) %]
     [%
       FOREACH field = custom_fields;
+        NEXT UNLESS field.enter_bug;
         NEXT IF field.type == constants.FIELD_TYPE_EXTENSION || field.type == constants.FIELD_TYPE_TEXTAREA;
         NEXT IF rendered_custom_fields.exists(field.name);
         NEXT IF cf_hidden_in_product(field.name, bug.product, bug.component, bug);
