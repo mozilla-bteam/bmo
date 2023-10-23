@@ -34,7 +34,7 @@ defaults:
 
   store_log: &store_log
     store_artifacts:
-      path: /app/bugzilla.log
+      path: bugzilla.log
       destination: bugzilla.log
 
 jobs:
@@ -50,23 +50,23 @@ jobs:
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: build version.json
           command: |
             docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
-            docker cp version_json:/app/version.json build_info/version.json
+            docker cp version_json:version.json build_info/version.json
             docker rm version_json
       - run:
           name: build push data
           command: |
             docker-compose -f docker-compose.test.yml run --name push_data bmo.test push_data
-            docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
-            docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
-            docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
-            docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
-            docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
-            docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
+            docker cp push_data:build_info/blog.push.txt build_info/blog.push.txt
+            docker cp push_data:build_info/markdown.push.txt build_info/markdown.push.txt
+            docker cp push_data:build_info/bug.push.txt build_info/bug.push.txt
+            docker cp push_data:build_info/email.push.txt build_info/email.push.txt
+            docker cp push_data:build_info/tag.txt build_info/tag.txt
+            docker cp push_data:build_info/wiki.push.txt build_info/wiki.push.txt
             docker rm push_data
       - run:
           name: only publish if tag exists
@@ -96,10 +96,10 @@ jobs:
             fi
             echo yes > build_info/only_version_changed.txt
       - persist_to_workspace:
-          root: /app/build_info
+          root: build_info
           paths: ["*.txt"]
       - store_artifacts:
-          path: /app/build_info
+          path: build_info
       - *store_log
 
   deploy:
@@ -112,7 +112,7 @@ jobs:
       - *docker_login
       - *build_image
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - deploy:
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
@@ -147,7 +147,7 @@ jobs:
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run sanity tests
           command: |
@@ -155,7 +155,7 @@ jobs:
             docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
               test_sanity t/*.t extensions/*/t/*.t
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_webservices:
@@ -170,14 +170,14 @@ jobs:
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run webservice tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run bmo.test test_webservices
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_1:
@@ -192,14 +192,14 @@ jobs:
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_2:
@@ -214,14 +214,14 @@ jobs:
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium 2
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_3:
@@ -236,14 +236,14 @@ jobs:
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium 3
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_4:
@@ -258,14 +258,14 @@ jobs:
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium 4
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_bmo:
@@ -280,7 +280,7 @@ jobs:
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run bmo specific tests
           command: |
