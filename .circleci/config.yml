@@ -59,12 +59,12 @@ jobs:
           name: build push data
           command: |
             docker-compose -f docker-compose.test.yml run --name push_data bmo.test push_data
-            docker cp push_data:build_info/blog.push.txt build_info/blog.push.txt
-            docker cp push_data:build_info/markdown.push.txt build_info/markdown.push.txt
-            docker cp push_data:build_info/bug.push.txt build_info/bug.push.txt
-            docker cp push_data:build_info/email.push.txt build_info/email.push.txt
-            docker cp push_data:build_info/tag.txt build_info/tag.txt
-            docker cp push_data:build_info/wiki.push.txt build_info/wiki.push.txt
+            docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
+            docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
+            docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
+            docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
+            docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
+            docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
             docker rm push_data
       - run:
           name: only publish if tag exists
