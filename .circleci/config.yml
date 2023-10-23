@@ -22,7 +22,7 @@ defaults:
       command: apk update && apk add docker-compose
 
   docker_image: &docker_image
-    image: docker:19.03.13-git
+    image: cimg/base:2023.10
     auth:
       username: $DOCKER_USER
       password: $DOCKER_PASS
@@ -52,7 +52,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
@@ -120,7 +120,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *docker_login
@@ -156,7 +156,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
@@ -183,7 +183,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
@@ -209,7 +209,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
@@ -235,7 +235,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
@@ -261,7 +261,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
@@ -287,7 +287,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
@@ -313,7 +313,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker:
-          version: 19.03.13
+          version: 24.0.6
           docker_layer_caching: true
       - checkout
       - *install_docker_compose
