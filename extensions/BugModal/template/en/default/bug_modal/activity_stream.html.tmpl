@@ -54,6 +54,11 @@
   FOREACH change_set IN bug.activity_stream;
     NEXT IF change_set.cc_only;
     extra_class = change_set.comment.collapsed ? " ca-" _ change_set.comment.author.id : "";
+
+    IF user.id == change_set.comment.author.id;
+      extra_class = extra_class _ ' yourself';
+    END;
+
     '<div class="change-set' _ extra_class _ '" id="' _ change_set.id _ '">';
 
     extra_class = "";
