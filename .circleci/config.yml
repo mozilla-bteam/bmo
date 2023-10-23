@@ -56,7 +56,6 @@ jobs:
           command: |
             docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
             docker cp version_json:version.json build_info/version.json
-            docker rm version_json
       - run:
           name: build push data
           command: |
