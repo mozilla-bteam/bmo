@@ -188,40 +188,45 @@ $(function() {
           <option value="needinfo_from" selected="true">Need more information from</option>
           <option value="redirect_to">Redirect needinfo request to</option>
         </select>
-        <select name="needinfo_role" id="needinfo_role" aria-label="Request info from">
-          <option value="other">other</option>
-          [% IF NOT bug.reporter.needinfo_blocked %]
-            <option
-                data-identity="[% bug.reporter.name_or_login FILTER html %]"
-                value="reporter">reporter</option>
-          [% END %]
-          [% IF NOT bug.assigned_to.needinfo_blocked %]
-            <option
-                data-identity="[% bug.assigned_to.name_or_login FILTER html %]"
-                value="assigned_to">assignee</option>
-          [% END %]
-          [% IF Param('useqacontact') && bug.qa_contact.login != "" && !bug.qa_contact.needinfo_blocked %]
-            <option
-                data-identity="[% bug.qa_contact.name_or_login FILTER html %]"
-                value="qa_contact">qa contact</option>
-          [% END %]
-          [% IF !is_redirect && NOT user.needinfo_blocked %]
-            <option
-                data-identity="[% user.name_or_login FILTER html %]"
-                value="user">myself</option>
-          [% END %]
-          [% FOREACH mentor = available_mentors %]
-            <option data-identity="[% mentor.name_or_login FILTER html %][% IF available_mentors.size > 1 %][% END %]"
-                value="[% mentor.login FILTER html %]">
-                [% available_mentors.size == 1 ? "mentor" : mentor.login FILTER html %][% " (mentor)" IF available_mentors.size > 1 %]
-            </option>
-          [% END %]
-          [% IF bug.component_obj.triage_owner_id %]
-             <option
-                data-identity="[% bug.component_obj.triage_owner.name_or_login FILTER html %]"
-                value="triage_owner">triage owner</option>
-           [% END %]
-        </select>
+        [% IF bug.id %]
+          <select name="needinfo_role" id="needinfo_role" aria-label="Request info from">
+            <option value="other">other</option>
+            [% IF NOT bug.reporter.needinfo_blocked %]
+              <option
+                  data-identity="[% bug.reporter.name_or_login FILTER html %]"
+                  value="reporter">reporter</option>
+            [% END %]
+            [% IF NOT bug.assigned_to.needinfo_blocked %]
+              <option
+                  data-identity="[% bug.assigned_to.name_or_login FILTER html %]"
+                  value="assigned_to">assignee</option>
+            [% END %]
+            [% IF Param('useqacontact') && bug.qa_contact.login != "" && !bug.qa_contact.needinfo_blocked %]
+              <option
+                  data-identity="[% bug.qa_contact.name_or_login FILTER html %]"
+                  value="qa_contact">qa contact</option>
+            [% END %]
+            [% IF !is_redirect && NOT user.needinfo_blocked %]
+              <option
+                  data-identity="[% user.name_or_login FILTER html %]"
+                  value="user">myself</option>
+            [% END %]
+            [% FOREACH mentor = available_mentors %]
+              <option data-identity="[% mentor.name_or_login FILTER html %][% IF available_mentors.size > 1 %][% END %]"
+                  value="[% mentor.login FILTER html %]">
+                  [% available_mentors.size == 1 ? "mentor" : mentor.login FILTER html %][% " (mentor)" IF available_mentors.size > 1 %]
+              </option>
+            [% END %]
+            [% IF bug.component_obj.triage_owner_id %]
+              <option
+                  data-identity="[% bug.component_obj.triage_owner.name_or_login FILTER html %]"
+                  value="triage_owner">triage owner</option>
+            [% END %]
+          </select>
+        [% ELSE %]
+          [%# Show only the user selector on the New Bug page %]
+          <input type="hidden" name="needinfo_role" id="needinfo_role" value="other">
+        [% END %]
         <span id="needinfo_from_container">
           [% INCLUDE global/userselect.html.tmpl
               id          => "needinfo_from"

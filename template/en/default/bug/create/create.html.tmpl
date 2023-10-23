@@ -779,40 +779,13 @@ TUI_hide_default('expert_fields');
 [% END %]
 
 <tbody class="expert_fields">
-  [%# BMO - exclude the default security from from the groups_available %]
-  [%# list, as it will be added by the BMO extension %]
-  [% groups_available = [] %]
-  [% FOREACH group = product.groups_available %]
-    [% NEXT IF group.name == product.default_security_group %]
-    [% groups_available.push(group) %]
-  [% END %]
-  [% IF groups_available.size %]
   <tr>
-    <th>&nbsp;</th>
+    <th>Security:</th>
     <td colspan="3">
-        <strong>
-          Only users in all of the selected groups can view this
-          [%+ terms.bug %]:
-        </strong>
-      <br>
-      <font size="-1">
-        (Leave all boxes unchecked to make this a public [% terms.bug %].)
-      </font>
-      <br>
-
-      <!-- Checkboxes -->
-      <input type="hidden" name="defined_groups" value="1">
-      [% FOREACH group = groups_available %]
-        <input type="checkbox" id="group_[% group.id FILTER html %]"
-               name="groups" value="[% group.name FILTER html %]"
-               [% ' checked="checked"' IF default.groups.contains(group.name)
-                                          OR group.is_default %]>
-        <label for="group_[% group.id FILTER html %]">
-          [%- group.description FILTER html_light %]</label><br>
-      [% END %]
+      [% Hook.process('security') %]
+      [% INCLUDE "bug/create/security.html.tmpl" %]
     </td>
   </tr>
-  [% END %]
 </tbody>
 
 <tbody>

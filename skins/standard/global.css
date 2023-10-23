@@ -1441,6 +1441,12 @@ input[type="radio"]:checked {
   color: var(--secondary-label-color);
 }
 
+#page-toolbar h2 {
+  flex: auto;
+  margin: 0;
+  font-size: 20px;
+}
+
 #page-toolbar .buttons {
   flex: none;
 }
@@ -2407,6 +2413,7 @@ pre#comment_preview_text {
 
 #bugzilla-etiquette,
 #comment-markdown-tip {
+  color: var(--secondary-label-color);
   font-size: var(--font-size-small);
 }
 

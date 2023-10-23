@@ -46,6 +46,15 @@ function toggleRequesteeField(flagField, no_focus)
   }
 }
 
+// Activate all the `<select class="flag_select">` elements on the bug form.
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.flag_select').forEach(($select) => {
+    $select.addEventListener('change', () => {
+      toggleRequesteeField($select);
+    });
+  });
+});
+
 // Hides requestee fields when the window is loaded since they shouldn't
 // be enabled until the user requests that flag type.
 function hideRequesteeFields()

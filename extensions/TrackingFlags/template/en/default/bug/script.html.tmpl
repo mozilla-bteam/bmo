@@ -1,0 +1,79 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+  RETURN UNLESS tracking_flag_components;
+
+  # A list of products that will automatically set cf_status_firefox to
+  # "affected" when filing bugs with nightly.  An empty component list
+  # denotes all components.
+  auto_affected = {
+    "Firefox"               = [],
+    "Firefox for Android"   = [],
+    "Core"                  = [],
+    "Toolkit"               = [],
+    "Firefox Health Report" = [ "Client: Desktop", "Client: Android" ],
+  };
+
+  # map product names to lowercase
+  FOREACH key IN auto_affected.keys;
+    key_lc = key.lower;
+    auto_affected.$key_lc = auto_affected.item(key);
+  END;
+%]
+
+<script [% script_nonce FILTER none %]>
+  $(function() {
+    var tracking_flag_components_str = "[% tracking_flag_components FILTER js %]";
+    var tracking_flag_components = $.parseJSON(tracking_flag_components_str);
+    var highest_status_firefox = '[% highest_status_firefox FILTER js %]';
+
+    $('#component')
+      .click(function() {
+        // First, we disable all flags.
+        $('table.tracking_flags select').attr('disabled', true);
+        // Now enable flags available for the selected component.
+        var component = $('#component').val();
+        if (!component || !tracking_flag_components[component])
+          return;
+        $.each(tracking_flag_components[component], function(i, v) {
+          $('#' + v).attr('disabled', false);
+        });
+      }).click();
+
+  [% IF highest_status_firefox && auto_affected.exists(product.name.lower) %]
+    $('#version, #bug_status, #component')
+      .change(function() {
+        var version = $('#version').val();
+        var component = $('#component').val() || '';
+        if ($('#bug_status').val() != 'UNCONFIRMED'
+            && (
+              version.toLowerCase() == 'trunk'
+              || version == highest_status_firefox + ' Branch'
+              || version == 'Firefox ' + highest_status_firefox
+            )
+            [% auto_components = auto_affected.item(product.name.lower) %]
+            [% IF auto_components.size %]
+              && (
+                [% FOREACH auto_component IN auto_components %]
+                  [% " || " UNLESS loop.first %]
+                  component.toLowerCase() === '[% auto_component.lower FILTER js %]'
+                [% END %]
+              )
+            [% END %]
+            )
+        {
+          $('#cf_status_firefox' + highest_status_firefox).val('affected');
+        }
+        else {
+          $('#cf_status_firefox' + highest_status_firefox).val('---');
+        }
+      }).change();
+  [% END %]
+  });
+</script>

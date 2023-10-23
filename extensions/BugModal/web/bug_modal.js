@@ -50,6 +50,61 @@ function init_module_visibility() {
     });
 }
 
+/**
+ * Initialize the Keyword field’s autocomplete functionality.
+ * @param {string[]} keywords Available keyword list.
+ */
+function initKeywordsAutocomplete(keywords) {
+    $('#keywords')
+        .devbridgeAutocomplete({
+            appendTo: $('#main-inner'),
+            forceFixPosition: true,
+            lookup: function(query, done) {
+                query = query.toLowerCase();
+                let that = document.querySelector('#keywords');
+                var activeValues = that.value.split(',');
+                activeValues.forEach((o,i,a) => a[i] = a[i].trim());
+                var matchStart =
+                    $.grep(keywords, function(keyword) {
+                        if(!(activeValues.includes(keyword)))
+                            return keyword.toLowerCase().substr(0, query.length) === query;
+                    });
+                var matchSub =
+                    $.grep(keywords, function(keyword) {
+                        if(!(activeValues.includes(keyword)))
+                            return keyword.toLowerCase().indexOf(query) !== -1 &&
+                                $.inArray(keyword, matchStart) === -1;
+                    });
+                var suggestions =
+                    $.map($.merge(matchStart, matchSub), function(suggestion) {
+                        return { value: suggestion };
+                    });
+                done({ suggestions });
+            },
+            tabDisabled: true,
+            delimiter: /,\s*/,
+            minChars: 0,
+            autoSelectFirst: false,
+            triggerSelectOnValidInput: false,
+            formatResult: function(suggestion, currentValue) {
+                // disable <b> wrapping of matched substring
+                return suggestion.value.htmlEncode();
+            },
+            onSearchStart: function(params) {
+                var that = $(this);
+                // adding spaces shouldn't initiate a new search
+                var parts = that.val().split(/,\s*/);
+                var query = parts[parts.length - 1];
+                return query === $.trim(query);
+            },
+            onSelect: function() {
+                this.value = this.value + ', ';
+                this.focus();
+            }
+        })
+        .addClass('bz_autocomplete');
+};
+
 $(function() {
     'use strict';
 
@@ -651,54 +706,7 @@ $(function() {
 
                 // keywords is a multi-value autocomplete
                 keywords = data.keywords;
-                $('#keywords')
-                    .devbridgeAutocomplete({
-                        appendTo: $('#main-inner'),
-                        forceFixPosition: true,
-                        lookup: function(query, done) {
-                            query = query.toLowerCase();
-                            let that = document.querySelector('#keywords');
-                            var activeValues = that.value.split(',');
-                            activeValues.forEach((o,i,a) => a[i] = a[i].trim());
-                            var matchStart =
-                                $.grep(keywords, function(keyword) {
-                                    if(!(activeValues.includes(keyword)))
-                                        return keyword.toLowerCase().substr(0, query.length) === query;
-                                });
-                            var matchSub =
-                                $.grep(keywords, function(keyword) {
-                                    if(!(activeValues.includes(keyword)))
-                                        return keyword.toLowerCase().indexOf(query) !== -1 &&
-                                            $.inArray(keyword, matchStart) === -1;
-                                });
-                            var suggestions =
-                                $.map($.merge(matchStart, matchSub), function(suggestion) {
-                                    return { value: suggestion };
-                                });
-                            done({ suggestions });
-                        },
-                        tabDisabled: true,
-                        delimiter: /,\s*/,
-                        minChars: 0,
-                        autoSelectFirst: false,
-                        triggerSelectOnValidInput: false,
-                        formatResult: function(suggestion, currentValue) {
-                            // disable <b> wrapping of matched substring
-                            return suggestion.value.htmlEncode();
-                        },
-                        onSearchStart: function(params) {
-                            var that = $(this);
-                            // adding spaces shouldn't initiate a new search
-                            var parts = that.val().split(/,\s*/);
-                            var query = parts[parts.length - 1];
-                            return query === $.trim(query);
-                        },
-                        onSelect: function() {
-                            this.value = this.value + ', ';
-                            this.focus();
-                        }
-                    })
-                    .addClass('bz_autocomplete');
+                initKeywordsAutocomplete(keywords);
 
                 $('#cancel-btn').prop('disabled', false);
                 $('#top-save-btn').show();
@@ -723,7 +731,43 @@ $(function() {
     $('.save-btn')
         .click(function(event) {
             event.preventDefault();
-            if (document.changeform.checkValidity && !document.changeform.checkValidity())
+
+            // Check if all the required fields are entered/selected.
+            // This replaces the legacy `validateEnterBug()` function.
+            const hasInvalidField = [...this.form.querySelectorAll('[aria-required="true"]')]
+                .map(($input) => {
+                    let invalid = false;
+
+                    if ($input.id === 'att-data') {
+                        invalid = !$input.value.trim()
+                            && !document.querySelector('#att-file').files.length;
+                        document.querySelector('#att-dropbox')?.classList
+                            .toggle('attention', invalid);
+                    } else if ($input.type === 'text') {
+                        invalid = !$input.value.trim();
+                    } else if ($input.type === 'select-one') {
+                        invalid = $input.selectedIndex === -1;
+                    } else if ($input.matches('[class="buttons toggle"]')) {
+                        invalid = !this.form[$input.id].value;
+                    }
+
+                    $input.setAttribute('aria-invalid', invalid);
+                    document.getElementById($input.getAttribute('aria-errormessage'))?.classList
+                        .toggle('bz_default_hidden', !invalid);
+
+                    return invalid ? $input : undefined;
+                })
+                .some(($input) => {
+                    // Focus on the first invalid field
+                    if ($input) {
+                        $input.scrollIntoView();
+                        $input.focus();
+                    }
+
+                    return !!$input;
+                });
+
+            if (hasInvalidField || !document.changeform.checkValidity())
                 return;
 
             // unfortunately native html form validation doesn't support
@@ -972,7 +1016,10 @@ $(function() {
             event.preventDefault();
             $('#field-status-view').hide();
             $('#field-status-edit').show();
-            if ($('#bug_status option').filter(function() { return $(this).val() == 'ASSIGNED'; }).length) {
+            if (
+                !!$('#bug_status option').filter(function() { return $(this).val() == 'ASSIGNED'; }).length
+                && $('#bug_status').val() !== 'ASSIGNED'
+            ) {
                 $('#assigned-container').show();
             }
             var field = $(this).data('field');
@@ -989,7 +1036,8 @@ $(function() {
     $('#mark-as-assigned-btn')
         .click(function(event) {
             event.preventDefault();
-            $('#bug_status').val('ASSIGNED').change();
+            $('#bug_status').val('ASSIGNED').change().focus();
+            $('#assigned-container').hide();
         });
 
     // reply button
@@ -1693,7 +1741,7 @@ async function show_new_changes_indicator() {
 // fix URL after bug creation/update
 if (history && history.replaceState) {
     var href = document.location.href;
-    if (!href.match(/show_bug\.cgi/)) {
+    if (!href.match(/(?:show|enter)_bug\.cgi/)) {
         history.replaceState(null, BUGZILLA.bug_title, `${BUGZILLA.config.basepath}show_bug.cgi?id=${BUGZILLA.bug_id}`);
         document.title = BUGZILLA.bug_title;
     }
