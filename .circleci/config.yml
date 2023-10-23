@@ -16,11 +16,6 @@ defaults:
           echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
         fi
 
-  install_docker_compose: &install_docker_compose
-    run:
-      name: install docker-compose
-      command: apk update && apk add docker-compose
-
   docker_image: &docker_image
     image: cimg/base:2023.10
     auth:
@@ -36,8 +31,6 @@ defaults:
           --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
           --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
           -t bmo .
-      environment:
-        DOCKER_BUILDKIT: 1
 
   store_log: &store_log
     store_artifacts:
@@ -46,15 +39,12 @@ defaults:
 
 jobs:
   build:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -113,8 +103,6 @@ jobs:
       - *store_log
 
   deploy:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
@@ -148,15 +136,12 @@ jobs:
             fi
 
   test_sanity:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -174,15 +159,12 @@ jobs:
       - *store_log
 
   test_webservices:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -199,15 +181,12 @@ jobs:
       - *store_log
 
   test_selenium_1:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -224,15 +203,12 @@ jobs:
       - *store_log
 
   test_selenium_2:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -249,15 +225,12 @@ jobs:
       - *store_log
 
   test_selenium_3:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -274,15 +247,12 @@ jobs:
       - *store_log
 
   test_selenium_4:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
@@ -299,15 +269,12 @@ jobs:
       - *store_log
 
   test_bmo:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
