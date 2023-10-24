@@ -248,7 +248,7 @@ my %optional_features = (
   },
   mysql => {
     description => 'MySQL database support',
-    prereqs     => {runtime => {requires => {'DBD::mysql' => '4.037', 'DateTime::Format::MySQL' => '0.06'}}}
+    prereqs     => {runtime => {requires => {'DBD::mysql' => '== 4.051', 'DateTime::Format::MySQL' => '0.06'}}}
   },
   jsonrpc => {
     description => 'JSON-RPC Interface',
@@ -275,7 +275,7 @@ my %optional_features = (
     prereqs     => {
       runtime => {
         requires =>
-          {'Auth::GoogleAuth' => '1.01', 'GD::Barcode::QRcode' => '0',},
+          {'Auth::GoogleAuth' => '1.01', 'GD::Barcode' => '== 1.15',},
       }
     },
   },
