@@ -1122,6 +1122,63 @@ This method can throw all the same errors as :ref:`rest_single_bug`, plus:
 * 604 (Summary Required)
   You did not specify a value for the "summary" argument.
 
+
+.. _rest_graph:
+
+Graph
+-----
+
+Return a graph of bug relationships.
+
+**Request**
+
+To return a simple json tree of the blocks/depends for a given bug.
+
+.. code-block:: text
+
+  GET /rest/bug/1156/graph?type=json_tree
+
+To return a simple json tree that includes bug data in a manner similar to the "get" API,
+use bug_tree
+
+.. code-block:: text
+
+  GET /rest/bug/1156/graph?type=bug_tree
+
+To feed the API to D3's force directed graph visualization:
+
+.. code-block:: text
+
+  GET /rest/bug/1156/graph?type=force_directed_graph
+
+Also supported, hierarchical edge bundling:
+
+.. code-block:: text
+
+  GET /rest/bug/1156/graph?type=hierarchical_edge_bundling
+
+
+The default relationship is the dependson to blocked relationship. To build the graph in the opposite direction:
+
+.. code-block:: text
+
+  GET /rest/bug/graph/1156?type=json_tree&relationship=dependencies:blocked,dependson
+
+============  ======  ================================================================
+name          type    description
+============  ======  ================================================================
+type          string  One of "text", "json_tree", "bug_tree", "force_directed_graph",
+                      or "hierarchical_edge_bundling"
+                      Required.
+depth         int     Limit the depth of the graph.
+                      Default: 3, max: 9
+relationship  string  One of "dependencies:dependson,blocked",
+                             "dependencies:blocked,dependson",
+                             "duplicates:dupe_of,dupe", or
+                             "duplicates:dupe,dupe_of".
+                      Default: "dependencies:dependson,blocked"
+============  ======  ================================================================
+
 .. _rest_possible_duplicates:
 
 Possible Duplicates
