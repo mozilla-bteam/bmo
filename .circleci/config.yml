@@ -16,13 +16,8 @@ defaults:
           echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
         fi
 
-  install_docker_compose: &install_docker_compose
-    run:
-      name: install docker-compose
-      command: apk update && apk add docker-compose
-
   docker_image: &docker_image
-    image: docker:19.03.13-git
+    image: cimg/base:2023.10
     auth:
       username: $DOCKER_USER
       password: $DOCKER_PASS
@@ -36,38 +31,29 @@ defaults:
           --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
           --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
           -t bmo .
-      environment:
-        DOCKER_BUILDKIT: 1
 
   store_log: &store_log
     store_artifacts:
-      path: /app/bugzilla.log
+      path: bugzilla.log
       destination: bugzilla.log
 
 jobs:
   build:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: build version.json
           command: |
-            docker-compose -f docker-compose.test.yml run --name version_json --entrypoint true bmo.test
-            docker cp version_json:/app/version.json build_info/version.json
-            docker rm version_json
+            docker-compose -f docker-compose.test.yml run bmo.test version | sed '1d' > build_info/version.json
       - run:
           name: build push data
           command: |
@@ -107,26 +93,22 @@ jobs:
             fi
             echo yes > build_info/only_version_changed.txt
       - persist_to_workspace:
-          root: /app/build_info
+          root: build_info
           paths: ["*.txt"]
       - store_artifacts:
-          path: /app/build_info
+          path: build_info
       - *store_log
 
   deploy:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
       - *docker_login
       - *build_image
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - deploy:
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
@@ -150,22 +132,17 @@ jobs:
             fi
 
   test_sanity:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run sanity tests
           command: |
@@ -173,156 +150,126 @@ jobs:
             docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
               test_sanity t/*.t extensions/*/t/*.t
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_webservices:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run webservice tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run bmo.test test_webservices
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_1:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_2:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium 2
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_3:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium 3
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_selenium_4:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium 4
       - store_artifacts:
-          path: /app/artifacts
+          path: artifacts
       - *store_log
 
   test_bmo:
-    parallelism: 1
-    working_directory: /app
     docker:
       - *docker_image
     steps:
-      - setup_remote_docker:
-          version: 19.03.13
-          docker_layer_caching: true
+      - setup_remote_docker
       - checkout
-      - *install_docker_compose
       - *docker_login
       - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
-          at: /app/build_info
+          at: build_info
       - run:
           name: run bmo specific tests
           command: |
