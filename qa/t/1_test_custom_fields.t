@@ -18,7 +18,7 @@ log_in($sel, $config, 'admin');
 
 # Create new bug to test custom fields
 
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 my $bug_summary = "What's your ID?";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment",
@@ -188,7 +188,7 @@ $sel->title_is("Edit Workflow");
 
 # Create new bug to test custom fields in bug creation page
 
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 $sel->is_text_present_ok("List$bug1_id:");
 $sel->is_element_present_ok("cf_qa_list_$bug1_id");
 $sel->is_text_present_ok("Reference$bug1_id:");

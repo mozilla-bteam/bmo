@@ -36,7 +36,7 @@ $sel->is_text_present_ok("Zarro Boogs found");
 # Now some real tests.
 
 log_in($sel, $config, 'canconfirm');
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 my $bug_summary = "Update this summary with this bug ID";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment",    "I'm supposed to appear in the coming buglist.");

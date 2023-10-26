@@ -19,7 +19,7 @@ my $admin_user = $config->{admin_user_login};
 # Let's create a bug and attachment to play with.
 
 log_in($sel, $config, 'admin');
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 my $bug_summary = "Security checks";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment",    "This bug will be used to test security fixes.");
@@ -122,7 +122,7 @@ logout($sel);
 #######################################################################
 
 log_in($sel, $config, 'admin');
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 $sel->type_ok("alias", "secret_qa_bug_" . ($bug1_id + 1));
 my $bug_summary2 = "Private QA Bug";
 $sel->type_ok("short_desc", $bug_summary2);

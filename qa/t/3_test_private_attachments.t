@@ -34,7 +34,7 @@ set_parameters(
 
 # First create a new bug with a private attachment.
 
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 $sel->type_ok("short_desc", "Some comments are private");
 $sel->type_ok("comment",    "and some attachments too, like this one.");
 $sel->click_ok('//input[@value="Add an attachment"]');

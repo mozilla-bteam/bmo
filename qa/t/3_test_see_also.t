@@ -18,7 +18,7 @@ my ($sel, $config) = get_selenium();
 log_in($sel, $config, 'editbugs');
 
 # Valid external URL
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 $sel->type_ok(
   'see_also',
   'https://bugzilla-dev.allizom.org',
@@ -32,7 +32,7 @@ $sel->is_text_present_ok('has been added to the database', 'Bug created');
 my $bug1_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 # Valid local bug id
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 $sel->type_ok('see_also', $bug1_id,
   'Set the see also field to an internal bug id');
 $sel->type_ok('short_desc', 'Test for See Also');

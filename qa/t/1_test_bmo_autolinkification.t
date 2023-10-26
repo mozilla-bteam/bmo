@@ -16,7 +16,7 @@ use QA::Util;
 my ($sel, $config) = get_selenium();
 
 log_in($sel, $config, 'unprivileged');
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 my $bug_summary = "linkification test bug";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment",    "linkification test");

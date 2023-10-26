@@ -61,7 +61,7 @@ $sel->title_is("User Preferences");
 
 # File a bug in the 'TestProduct' product. The form fields must follow user prefs.
 
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 $sel->value_is("cc", "");
 $sel->type_ok("short_desc", "First bug created");
 $sel->type_ok("comment",    "I'm not in the CC list.");
@@ -97,7 +97,7 @@ $sel->is_text_present_ok("One bug found");
 
 # File another bug in the 'TestProduct' product.
 
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 $sel->value_is("cc", "");
 $sel->type_ok("short_desc", "My second bug");
 $sel->type_ok("comment",    "Still not in the CC list");

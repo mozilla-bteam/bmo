@@ -52,7 +52,7 @@ logout($sel);
 # First create a bug.
 
 log_in($sel, $config, 'QA_Selenium_TEST');
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 $sel->type_ok("short_desc", "Test bug editing");
 $sel->type_ok("comment",    "ploc");
 $sel->click_ok("commit");
@@ -341,7 +341,7 @@ logout($sel);
 # using the saved search the admin just created.
 
 log_in($sel, $config, 'QA_Selenium_TEST');
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 $sel->type_ok("short_desc", "New bug from me");
 
 # We turned on the CANEDIT bit for TestProduct.
@@ -356,7 +356,7 @@ $sel->is_text_present_ok('has been added to the database',
 
 $sel->go_back_ok();
 check_page_load($sel,
-  q{http://HOSTNAME/enter_bug.cgi?product=TestProduct&format=__default__});
+  q{http://HOSTNAME/enter_bug.cgi?product=TestProduct&format=legacy});
 $sel->title_is("Enter Bug: TestProduct");
 $sel->click_ok("commit");
 check_page_load($sel, q{http://HOSTNAME/post_bug.cgi});

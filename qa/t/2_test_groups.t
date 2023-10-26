@@ -50,7 +50,7 @@ $sel->title_is("Update group access controls for TestProduct");
 
 # File a new bug in the TestProduct product, and restrict it to the bug group.
 
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 $sel->is_text_present_ok("Test group for Selenium");
 $sel->value_is("group_${group_id}", "off");    # Must be OFF (else that's a bug)
 $sel->check_ok("group_${group_id}");
@@ -111,7 +111,7 @@ $sel->is_text_present_ok("The group will no longer be used for bugs");
 
 # File another new bug, now visible as the bug group is disabled.
 
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 $sel->selected_label_is("component", "TestComponent");
 $sel->type_ok("short_desc", "bug restricted to the Selenium group");
 $sel->type_ok("comment",
@@ -205,7 +205,7 @@ $sel->is_element_present_ok("b$bug2_id", undef,
 
 # File a new bug, which must automatically be restricted to the bug group.
 
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 $sel->selected_label_is("component", "TestComponent");
 $sel->type_ok("short_desc", "Selenium-test group mandatory");
 $sel->type_ok("comment",    "group enabled");
@@ -253,7 +253,7 @@ $sel->is_text_present_ok("The group will no longer be used for bugs");
 
 # File a bug again. It should not be added to the bug group as this one is disabled.
 
-file_bug_in_product($sel, "TestProduct");
+file_bug_in_product($sel, "TestProduct", undef, "legacy");
 $sel->selected_label_is("component", "TestComponent");
 $sel->type_ok("short_desc", "bug restricted to the Selenium-test group");
 $sel->type_ok("comment",    "group disabled");

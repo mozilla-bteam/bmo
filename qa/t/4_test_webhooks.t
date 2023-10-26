@@ -105,7 +105,7 @@ logout($sel);
 
 # File a new bug in the Firefox product
 log_in($sel, $config, 'editbugs');
-file_bug_in_product($sel, 'Firefox');
+file_bug_in_product($sel, 'Firefox', undef, 'legacy');
 my $bug_summary = 'Test bug for webhooks';
 $sel->select_ok('component', 'value=General');
 $sel->type_ok('short_desc', $bug_summary);
@@ -146,7 +146,7 @@ ok(!$sel->is_text_present('Webhook Any Product'), 'Webhook any product is not pr
 
 # File a private bug as admin making sure that the editbugs user
 # does not get a webhook notification
-file_bug_in_product($sel, 'Firefox');
+file_bug_in_product($sel, 'Firefox', undef, 'legacy');
 $bug_summary = 'Private test bug for webhooks';
 $sel->select_ok('component', 'value=General');
 $sel->type_ok('short_desc', $bug_summary);

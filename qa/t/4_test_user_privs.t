@@ -28,7 +28,7 @@ ok(!$sel->is_element_present('commit'), "Button 'Commit' not available");
 # But as you don't have editbugs privs, you cannot edit everything.
 
 log_in($sel, $config, 'unprivileged');
-file_bug_in_product($sel, 'TestProduct');
+file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
 ok(!$sel->is_editable("assigned_to"), "The assignee field is not editable");
 $sel->type_ok("short_desc", "Greetings from a powerless user");
 $sel->type_ok("comment",    "File a bug with an empty CC list");
