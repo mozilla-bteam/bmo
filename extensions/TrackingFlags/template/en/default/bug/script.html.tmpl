@@ -49,7 +49,7 @@
   [% IF highest_status_firefox && auto_affected.exists(product.name.lower) %]
     $('#version, #bug_status, #component')
       .change(function() {
-        var version = $('#version').val();
+        var version = $('#version').val() || '';
         var component = $('#component').val() || '';
         if ($('#bug_status').val() != 'UNCONFIRMED'
             && (

@@ -76,7 +76,7 @@ window.addEventListener('DOMContentLoaded', () => {
       toggleAdvancedFields(advancedState, false);
     }
 
-    $toggleAdvanced.addEventListener('click', () => {
+    $toggleAdvanced?.addEventListener('click', () => {
       advancedState = !advancedState;
       toggleAdvancedFields(advancedState);
     });
@@ -180,12 +180,16 @@ window.addEventListener('DOMContentLoaded', () => {
       $form.comment.value = descriptionTemplate;
     }
 
-    if ([lastSelectedAssignee, defaultAssignee, ''].includes($form.assigned_to.value)) {
+    if (
+      $form.assigned_to &&
+      [lastSelectedAssignee, defaultAssignee, ''].includes($form.assigned_to.value)
+    ) {
       $form.assigned_to.value = lastSelectedAssignee = defaultAssignee;
     }
 
     if (
       useQaContact &&
+      $form.qa_contact &&
       [lastSelectedQaContact, defaultQaContact, ''].includes($form.qa_contact.value)
     ) {
       $form.qa_contact.value = lastSelectedQaContact = defaultQaContact;

@@ -25,7 +25,7 @@ sub evaluate_change {
 
   # If this bug is closed and the current user has no role on the bug, then do
   # not allow commenting on a bug that is not open.
-  if ($field =~ /^longdesc/ && !$bug->isopened && $new_value ne $old_value) {
+  if ($field =~ /^longdesc/ && $bug->id && !$bug->isopened && $new_value ne $old_value) {
     my $has_role
       = (  $editbugs
         || $bug->reporter->id eq $user->id

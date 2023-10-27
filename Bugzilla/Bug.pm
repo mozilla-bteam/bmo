@@ -5132,6 +5132,11 @@ sub check_can_change_field {
     return {allowed => 1};
   }
 
+  # Allow anyone to change the summary, component, bug type, comments and flags
+  if ($field =~ /^(?:short_desc|component|bug_type|longdesc.*|flagtypes\.name)$/) {
+    return {allowed => 1};
+  }
+
   my @priv_results;
   Bugzilla::Hook::process(
     'bug_check_can_change_field',
@@ -5152,11 +5157,6 @@ sub check_can_change_field {
   }
   my $allow_found = first { $_->{result} == 0 } @priv_results;
   if (defined $allow_found) {
-    return {allowed => 1};
-  }
-
-  # Allow anyone to change comments, or set flags
-  if ($field =~ /^longdesc/ || $field eq 'flagtypes.name') {
     return {allowed => 1};
   }
 

@@ -1284,7 +1284,7 @@ $(function() {
 
     // 'mark as triaged' button
     function getKeywords(value) {
-        if (value == undefined) value = document.getElementById('keywords').value;
+        if (value == undefined) value = document.getElementById('keywords')?.value || '';
         return value
             .split(',')
             .map((v) => v.trim())
