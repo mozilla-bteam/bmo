@@ -248,11 +248,16 @@ window.addEventListener('DOMContentLoaded', () => {
       );
     }
 
-    onComponentChange();
+    // Select the first component if there is only one
+    if ($form.component.options.length === 1) {
+      $form.component.selectedIndex = 0;
+    } else {
+      $form.component.addEventListener('change', () => {
+        onComponentChange();
+      });
+    }
 
-    $form.component.addEventListener('change', () => {
-      onComponentChange();
-    });
+    onComponentChange();
 
     document.querySelector('#use-my-platform').addEventListener('click', (event) => {
       setPlatform(event.target.dataset);
