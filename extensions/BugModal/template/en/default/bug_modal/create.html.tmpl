@@ -281,7 +281,7 @@
           label = "Severity"
           help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_severity"
       %]
-      [% UNLESS cf_hidden_in_product('cf_rank', bug.product, bug.component, bug) %]
+      [% UNLESS cf_hidden_in_product('cf_rank', bug.product) %]
         [% rendered_custom_fields.push('cf_rank') %]
         [% INCLUDE bug_modal/field.html.tmpl
             field = bug_fields.cf_rank
@@ -294,7 +294,7 @@
     [% END %]
 
     [%# points %]
-    [% UNLESS cf_hidden_in_product('cf_fx_points', bug.product, bug.component, bug) %]
+    [% UNLESS cf_hidden_in_product('cf_fx_points', bug.product) %]
       [% rendered_custom_fields.push('cf_fx_points') %]
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.cf_fx_points
@@ -352,7 +352,7 @@
     %]
 
     [%# iteration %]
-    [% UNLESS cf_hidden_in_product('cf_fx_iteration', bug.product, bug.component, bug) %]
+    [% UNLESS cf_hidden_in_product('cf_fx_iteration', bug.product) %]
       [% rendered_custom_fields.push('cf_fx_iteration') %]
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.cf_fx_iteration
@@ -362,12 +362,11 @@
     [% END %]
 
     [%# due date %]
-    [% UNLESS cf_hidden_in_product('cf_due_date', bug.product, bug.component, bug) %]
+    [% UNLESS cf_hidden_in_product('cf_due_date', bug.product) %]
       [% rendered_custom_fields.push('cf_due_date') %]
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.cf_due_date
           field_type = bug_fields.cf_due_date.type
-          values = bug_fields.cf_due_date.legal_values
       %]
     [% END %]
 
@@ -576,7 +575,7 @@
         field_type = constants.FIELD_TYPE_FREETEXT
         help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
     %]
-    [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product, bug.component, bug) %]
+    [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product) %]
       [% rendered_custom_fields.push('cf_qa_whiteboard') %]
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.cf_qa_whiteboard
@@ -590,7 +589,7 @@
         NEXT UNLESS field.enter_bug;
         NEXT IF field.type == constants.FIELD_TYPE_EXTENSION || field.type == constants.FIELD_TYPE_TEXTAREA;
         NEXT IF rendered_custom_fields.exists(field.name);
-        NEXT IF cf_hidden_in_product(field.name, bug.product, bug.component, bug);
+        NEXT IF cf_hidden_in_product(field.name, bug.product);
         INCLUDE bug_modal/field.html.tmpl
           field = field
           field_type = field.type
