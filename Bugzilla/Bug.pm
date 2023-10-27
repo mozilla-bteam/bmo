@@ -5132,8 +5132,8 @@ sub check_can_change_field {
     return {allowed => 1};
   }
 
-  # Allow anyone to change the summary, component, bug type, comments and flags
-  if ($field =~ /^(?:short_desc|component|bug_type|longdesc.*|flagtypes\.name)$/) {
+  # Allow anyone to change the summary, component, bug type, platform, comments and flags
+  if ($field =~ /^(?:short_desc|component|bug_type|rep_platform|op_sys|longdesc.*|flagtypes\.name)$/) {
     return {allowed => 1};
   }
 
