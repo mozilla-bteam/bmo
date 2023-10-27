@@ -145,9 +145,8 @@ my $aflagtype2_id = $1;
 # We are done with the admin tasks. Now play with flags in bugs.
 
 file_bug_in_product($sel, 'TestProduct');
-$sel->click_ok('//input[@value="Set bug flags"]');
 $sel->select_ok("flag_type-$flagtype1_id", "label=+");
-$sel->click_ok('//input[@value="Add an attachment"]');
+$sel->click_ok('attach-new-file');
 $sel->type_ok("short_desc",
   "The selenium flag should be kept on product change");
 $sel->type_ok("comment", "pom");
@@ -221,7 +220,6 @@ $sel->is_element_present_ok(
 file_bug_in_product($sel, 'Another Product');
 $sel->select_ok("component", "label=c2");
 $sel->type_ok("assigned_to", $config->{unprivileged_user_login});
-$sel->click_ok('//input[@value="Set bug flags"]');
 $sel->is_element_present_ok(
   qq{//select[\@id="flag_type-$flagtype1_id"][\@disabled]},
   "The selenium bug flag type is not editable");

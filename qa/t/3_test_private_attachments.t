@@ -37,7 +37,7 @@ set_parameters(
 file_bug_in_product($sel, "TestProduct");
 $sel->type_ok("short_desc", "Some comments are private");
 $sel->type_ok("comment",    "and some attachments too, like this one.");
-$sel->click_ok('//input[@value="Add an attachment"]');
+$sel->click_ok('attach-new-file');
 $sel->check_ok("comment_is_private");
 $sel->attach_file('//input[@name="data"]', $config->{attachment_file});
 $sel->type_ok('//input[@name="description"]', "private attachment, v1");
