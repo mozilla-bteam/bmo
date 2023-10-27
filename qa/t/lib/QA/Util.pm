@@ -225,7 +225,7 @@ sub logout {
 
 # Display the bug form to enter a bug in the given product.
 sub file_bug_in_product {
-  my ($sel, $product, $classification, $format) = @_;
+  my ($sel, $product, $classification) = @_;
   my $config = get_config();
 
   $sel->add_cookie('TUI',
@@ -233,8 +233,6 @@ sub file_bug_in_product {
   );
 
   $classification ||= "Unclassified";
-  $format ||= "__default__";
-
   $sel->click_ok('//*[@class="link-file"]//a', undef, "Go create a new bug");
   $sel->wait_for_page_to_load(WAIT_TIME);
 
@@ -259,7 +257,7 @@ sub file_bug_in_product {
   }
   if ($sel->is_text_present($product)) {
     ok(1, "Display the list of enterable products");
-    $sel->open_ok("/enter_bug.cgi?product=$product&format=$format",
+    $sel->open_ok("/enter_bug.cgi?product=$product&format=__default__",
       undef,
       "Choose product $product"
     );

@@ -67,7 +67,7 @@ ok(scalar @products == 1 && $products[0] eq 'TestProduct',
 
 # Create a new bug in this product/classification.
 
-file_bug_in_product($sel, 'TestProduct', 'cone', 'legacy');
+file_bug_in_product($sel, 'TestProduct', 'cone');
 $sel->type_ok("short_desc", "Bug in classification cone");
 $sel->type_ok("comment", "Created by Selenium with classifications turned on");
 $sel->click_ok("commit");

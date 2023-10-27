@@ -187,7 +187,7 @@ $sel->title_is("Milestone Created");
 
 # Now create an UNCONFIRMED bug and add it to the newly created product.
 
-file_bug_in_product($sel, "Kill me!", undef, "legacy");
+file_bug_in_product($sel, "Kill me!");
 $sel->select_ok("version",   "label=0.1a");
 $sel->select_ok("component", "label=first comp");
 
@@ -215,7 +215,7 @@ ok(
 );
 
 # File a second bug, and make sure users in the default CC list are added.
-file_bug_in_product($sel, "Kill me!", undef, "legacy");
+file_bug_in_product($sel, "Kill me!");
 $sel->select_ok("version",   "label=0.1a");
 $sel->select_ok("component", "label=second comp");
 $sel->type_ok("short_desc", "check default CC list");
@@ -422,7 +422,7 @@ ok(
 # Only one value for component, version and milestone available. They should
 # be selected by default.
 
-file_bug_in_product($sel, "Kill me nicely", undef, "legacy");
+file_bug_in_product($sel, "Kill me nicely");
 $sel->type_ok("short_desc", "bye bye everybody!");
 $sel->type_ok("comment",    "I'm dead :(");
 $sel->click_ok("commit");

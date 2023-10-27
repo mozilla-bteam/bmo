@@ -246,7 +246,7 @@ ok($sel->create_cookie('show_bugmail_recipients=1'),
   'Always show recipient list');
 
 # Create a test bug (bugmail to both normal user and admin)
-file_bug_in_product($sel, "Another Product", undef, "legacy");
+file_bug_in_product($sel, "Another Product");
 $sel->select_ok("component", "label=c1");
 $sel->type_ok(
   "short_desc",

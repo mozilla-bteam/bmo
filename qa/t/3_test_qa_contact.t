@@ -39,7 +39,7 @@ if ($sel->is_element_present(
 # bug if the QA contact field is enabled, else they loose this privilege.
 
 set_parameters($sel, {"Bug Fields" => {"useqacontact-on" => undef}});
-file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
+file_bug_in_product($sel, 'TestProduct');
 $sel->type_ok(
   "qa_contact",
   $config->{unprivileged_user_login},

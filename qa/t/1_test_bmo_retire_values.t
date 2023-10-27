@@ -30,7 +30,7 @@ set_parameters(
 
 # create a clean bug
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->select_ok("component", "label=TestComponent");
 $sel->type_ok("short_desc", "testing testComponent");
 $sel->type_ok("comment",    "testing");
@@ -80,7 +80,7 @@ $sel->title_is("Component Created");
 
 # create bug into TempComponent
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->select_ok("component", "label=TempComponent");
 $sel->type_ok("short_desc", "testing tempComponent");
 $sel->type_ok("comment",    "testing");
@@ -121,7 +121,7 @@ $sel->selected_label_is("component", 'TempComponent');
 
 # try creating new bug with TempComponent
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 ok(
   !$sel->is_element_present(
     q#//select[@id='component']/option[@value='TempComponent']#),
@@ -195,7 +195,7 @@ $sel->title_is("Version Created");
 
 # create bug with new version
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->select_ok("version", "label=TempVersion");
 $sel->type_ok("short_desc", "testing tempVersion");
 $sel->type_ok("comment",    "testing");
@@ -252,7 +252,7 @@ $sel->is_text_present_ok("Changes submitted for bug $bug_id");
 
 # try creating new bug with new version
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 ok(
   !$sel->is_element_present(
     q#//select[@id='version']/option[@value='TempVersion']#),
@@ -329,7 +329,7 @@ $sel->title_is("Milestone Created");
 
 # create bug with milestone
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->select_ok("target_milestone", "label=TempMilestone");
 $sel->type_ok("short_desc", "testing tempMilestone");
 $sel->type_ok("comment",    "testing");
@@ -380,7 +380,7 @@ $sel->selected_label_is("target_milestone", 'TempMilestone');
 
 # try creating new bug with milestone
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 ok(
   !$sel->is_element_present(
     q#//select[@id='target_milestone']/option[@value='TempMilestone']#),

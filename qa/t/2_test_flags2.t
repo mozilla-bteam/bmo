@@ -144,7 +144,7 @@ my $aflagtype2_id = $1;
 
 # We are done with the admin tasks. Now play with flags in bugs.
 
-file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
+file_bug_in_product($sel, 'TestProduct');
 $sel->click_ok('//input[@value="Set bug flags"]');
 $sel->select_ok("flag_type-$flagtype1_id", "label=+");
 $sel->click_ok('//input[@value="Add an attachment"]');
@@ -218,7 +218,7 @@ $sel->is_element_present_ok(
 # File a bug in 'Another Product / c2' and assign it
 # to a powerless user, so that they can move it later.
 
-file_bug_in_product($sel, 'Another Product', undef, 'legacy');
+file_bug_in_product($sel, 'Another Product');
 $sel->select_ok("component", "label=c2");
 $sel->type_ok("assigned_to", $config->{unprivileged_user_login});
 $sel->click_ok('//input[@value="Set bug flags"]');

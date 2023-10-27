@@ -23,7 +23,7 @@ my ($sel, $config) = get_selenium();
 
 foreach my $user (qw(admin unprivileged canconfirm)) {
   log_in($sel, $config, $user);
-  file_bug_in_product($sel, "TestProduct", undef, "legacy");
+  file_bug_in_product($sel, "TestProduct");
   $sel->type_ok("short_desc", "Bug created by Selenium", "Enter bug summary");
   $sel->type_ok(
     "comment",

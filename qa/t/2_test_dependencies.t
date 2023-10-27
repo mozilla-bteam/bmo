@@ -18,13 +18,13 @@ my ($sel, $config) = get_selenium();
 # Let's create a public and a private bug.
 
 log_in($sel, $config, 'admin');
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 my $bug_summary = "Dependency Checks";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment",    "This bug is public");
 my $bug1_id = create_bug($sel, $bug_summary);
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->type_ok("alias", "secret_qa_bug_$bug1_id+1");
 my $bug_summary2 = "Big Ben";
 $sel->type_ok("short_desc", $bug_summary2);

@@ -51,7 +51,7 @@ $sel->title_is("Milestone Created", "Milestone Created");
 
 # 3rd step: file a new bug, leaving the milestone alone (should fall back to the default one).
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->selected_label_is("component", "TestComponent",
   "Component already selected (no other component defined)");
 $sel->selected_label_is("target_milestone", "---",
@@ -98,7 +98,7 @@ $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
 
 # 5th step: create another bug.
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->select_ok("target_milestone", "label=2.0", "Set the milestone to 2.0");
 $sel->selected_label_is("component", "TestComponent",
   "Component already selected (no other component defined)");
@@ -189,7 +189,7 @@ $sel->is_text_present_ok('regexp:Target Milestone:\W+---',
 
 # 9th step: file another bug.
 
-file_bug_in_product($sel, "TestProduct", undef, "legacy");
+file_bug_in_product($sel, "TestProduct");
 $sel->selected_label_is("target_milestone", "---",
   "Default milestone selected");
 $sel->selected_label_is("component", "TestComponent");

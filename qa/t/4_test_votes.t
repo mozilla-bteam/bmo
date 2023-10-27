@@ -64,7 +64,7 @@ ok($text =~ qr/The component Pegasus has been created/,
 
 # Create a new bug with the CONFIRMED status.
 
-file_bug_in_product($sel, 'Eureka', undef, 'legacy');
+file_bug_in_product($sel, 'Eureka');
 
 # CONFIRMED must be the default bug status for users with editbugs privs.
 $sel->selected_label_is("bug_status", "CONFIRMED");
@@ -103,7 +103,7 @@ ok($full_text =~ /4 votes used out of 10 allowed/,
 
 # File a new bug, now as UNCONFIRMED. We will confirm it by popular votes.
 
-file_bug_in_product($sel, 'Eureka', undef, 'legacy');
+file_bug_in_product($sel, 'Eureka');
 $sel->select_ok("bug_status", "UNCONFIRMED");
 $sel->type_ok("short_desc", "Taurus");
 $sel->type_ok("comment",    "2nd constellation");
@@ -127,7 +127,7 @@ $sel->is_text_present_ok("Bug $bug2_id confirmed by number of votes");
 # File a third bug, again as UNCONFIRMED. We will confirm it
 # by decreasing the number required to confirm bugs by popular votes.
 
-file_bug_in_product($sel, 'Eureka', undef, 'legacy');
+file_bug_in_product($sel, 'Eureka');
 $sel->select_ok("bug_status", "UNCONFIRMED");
 $sel->type_ok("short_desc", "Gemini");
 $sel->type_ok("comment",    "3rd constellation");
@@ -252,7 +252,7 @@ ok($full_text =~ /The product no longer allows the UNCONFIRMED status/,
 
 # File a new bug. UNCONFIRMED must not be listed as a valid bug status.
 
-file_bug_in_product($sel, "Eureka", undef, "legacy");
+file_bug_in_product($sel, "Eureka");
 ok(!scalar(grep { $_ eq "UNCONFIRMED" } $sel->get_select_options("bug_status")),
   "UNCONFIRMED not listed");
 $sel->type_ok("short_desc", "Cancer");

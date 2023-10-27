@@ -18,7 +18,7 @@ my ($sel, $config) = get_selenium();
 log_in($sel, $config, 'admin');
 
 # S1 bugs assigned to you
-file_bug_in_product($sel, 'Firefox', undef, 'legacy');
+file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc', 'test bug for s1 bugs assigned to you');
 $sel->select_ok('component',    'General');
 $sel->select_ok('bug_severity', 'S1');
@@ -28,7 +28,7 @@ $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
 # sec-crit bugs assigned to you (private bug)
-file_bug_in_product($sel, 'Firefox', undef, 'legacy');
+file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc', 'test bug for sec-critical bugs assigned to you');
 $sel->select_ok('component', 'General');
 $sel->type_ok('keywords', 'sec-critical');
@@ -40,7 +40,7 @@ $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
 # Bugs that are needinfo? you and are marked as being tracked against
 # or blocking the current nightly, beta, or release versions.
-file_bug_in_product($sel, 'Firefox', undef, 'legacy');
+file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc',
   'test bug for needinfo you tracked against nightly beta release');
 $sel->select_ok('component', 'General');
@@ -51,7 +51,7 @@ $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
 # S2 bugs assigned to you
-file_bug_in_product($sel, 'Firefox', undef, 'legacy');
+file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc', 'test bug for s2 bugs assigned to you');
 $sel->select_ok('component',    'General');
 $sel->select_ok('bug_severity', 'S2');
@@ -61,7 +61,7 @@ $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
 # sec-high bugs assigned to you (private bug)
-file_bug_in_product($sel, 'Firefox', undef, 'legacy');
+file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc', 'test bug for sec-high bugs assigned to you');
 $sel->select_ok('component', 'General');
 $sel->type_ok('keywords', 'sec-high');
@@ -72,7 +72,7 @@ $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
 # Regressions
-file_bug_in_product($sel, 'Firefox', undef, 'legacy');
+file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc', 'test bug for regressions assigned to you');
 $sel->select_ok('component', 'General');
 $sel->type_ok('keywords', 'regression');
@@ -84,7 +84,7 @@ logout($sel);
 
 # Other needinfos (needinfos for me but not set by me)
 log_in($sel, $config, 'QA_Selenium_TEST');
-file_bug_in_product($sel, 'Firefox', undef, 'legacy');
+file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc', 'test bug for other needinfos not set by you');
 $sel->select_ok('component', 'General');
 $sel->type_ok('needinfo_from', $config->{admin_user_login});

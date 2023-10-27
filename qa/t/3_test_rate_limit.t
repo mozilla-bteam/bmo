@@ -37,7 +37,7 @@ set_parameters(
     }
   }
 );
-file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
+file_bug_in_product($sel, 'TestProduct');
 my $bug_summary = 'Test bug for rate limiting';
 $sel->type_ok('short_desc', $bug_summary);
 $sel->type_ok('comment',    $bug_summary);

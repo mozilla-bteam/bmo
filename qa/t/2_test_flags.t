@@ -231,7 +231,7 @@ my $aflagtype3_id = $1;
 
 # All flag types have been created. Now "real" tests can start.
 
-file_bug_in_product($sel, 'TestProduct', undef, 'legacy');
+file_bug_in_product($sel, 'TestProduct');
 $sel->type_ok("short_desc", "test flags");
 $sel->type_ok("comment",    "this bug is used by Selenium to test flags");
 
