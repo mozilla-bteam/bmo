@@ -48,7 +48,11 @@ window.addEventListener('DOMContentLoaded', () => {
   let descriptionEdited = !!$form.comment.value.match(/\S/);
 
   /** @type {boolean} */
-  let advancedState = (window.localStorage.getItem('create-form.advanced') || 'hide') === 'show';
+  let advancedState =
+    (window.localStorage.getItem('create-form.advanced') || 'hide') === 'show' ||
+    // Fallback to the TUI cookie used on the legacy form
+    document.cookie.split('; ').find((row) => row.startsWith('TUI='))?.substring(4).split('&')
+      .includes('expert_fields=1') ? 'show' : 'hide';
 
   /**
    * Show or hide the advanced fields.
