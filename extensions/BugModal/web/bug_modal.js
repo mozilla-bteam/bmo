@@ -996,11 +996,11 @@ $(function() {
             var target = $(event.target);
             var id = target.prop('id').replace(/^flag(_type)?-(\d+)/, "#requestee$1-$2");
             if (target.val() == '?') {
-                $(id + '-container').show();
+                $(id + '-container').show().removeClass('bz_default_hidden');
                 $(id).focus().select().prop('required', true);
             }
             else {
-                $(id + '-container').hide();
+                $(id + '-container').hide().addClass('bz_default_hidden');
                 $(id).prop('required', false);
             }
         });

@@ -5136,7 +5136,10 @@ sub check_can_change_field {
   # when filing a new bug, because some are required fields
   if (!$self->id) {
     if (
-         $field =~ /^(?:short_desc|component|rep_platform|op_sys)$/
+         $field eq 'short_desc'
+      || $field eq 'component'
+      || $field eq 'rep_platform'
+      || $field eq 'op_sys'
       || ($field eq 'bug_type' && Bugzilla->params->{'require_bug_type'})
     ) {
       return {allowed => 1};

@@ -523,9 +523,9 @@
     [%# importance %]
     [% WRAPPER bug_modal/field.html.tmpl
         name = "importance"
-        label = "Priority"
+        no_label = 1
+        no_indent = 1
         container = 1
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
     %]
       [% WRAPPER bug_modal/field.html.tmpl
           field = bug_fields.priority
@@ -533,6 +533,8 @@
           aria_label = bug_fields.priority.description
           no_indent = 1
           inline = 1
+          label = "Priority"
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
       %]
         [% IF bug.priority == "--" %]
           <em>Not set</em>
@@ -632,13 +634,15 @@
     [% END %]
 
     [%# milestone %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.target_milestone
-        field_type = constants.FIELD_TYPE_SINGLE_SELECT
-        label = "Milestone"
-        hide_on_view = bug.target_milestone == "---"
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#target_milestone"
-    %]
+    [% IF Param("usetargetmilestone") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.target_milestone
+          field_type = constants.FIELD_TYPE_SINGLE_SELECT
+          label = "Milestone"
+          hide_on_view = bug.target_milestone == "---"
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#target_milestone"
+      %]
+    [% END %]
 
     [%# iteration %]
     [% UNLESS cf_hidden_in_product('cf_fx_iteration', bug.product, bug.component, bug) %]
@@ -832,28 +836,30 @@
     [% END %]
 
     [%# qa contact %]
-    [% WRAPPER bug_modal/field.html.tmpl
-        field = bug_fields.qa_contact
-        field_type = constants.FIELD_TYPE_USER
-        hide_on_view = bug.qa_contact == ""
-        hide_on_edit = 1
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
-    %]
-      [% INCLUDE bug_modal/user.html.tmpl u=bug.qa_contact nick_only=1 gravatar_size=20 %]
-    [% END %]
-    [% WRAPPER bug_modal/field.html.tmpl
-        field = bug_fields.qa_contact
-        field_type = constants.FIELD_TYPE_USER
-        hide_on_view = 1
-        append_content = 1
-        default = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
-    %]
-      <div class="set-default-container" style="display:none">
-        <input type="checkbox" id="set-default-qa-contact" name="set_default_qa_contact" class="set-default"
-          value="1" data-for="qa_contact">
-        <label for="set-default-qa-contact">Reset QA Contact to default</label>
-      </div>
+    [% IF Param("useqacontact") %]
+      [% WRAPPER bug_modal/field.html.tmpl
+          field = bug_fields.qa_contact
+          field_type = constants.FIELD_TYPE_USER
+          hide_on_view = bug.qa_contact == ""
+          hide_on_edit = 1
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
+      %]
+        [% INCLUDE bug_modal/user.html.tmpl u=bug.qa_contact nick_only=1 gravatar_size=20 %]
+      [% END %]
+      [% WRAPPER bug_modal/field.html.tmpl
+          field = bug_fields.qa_contact
+          field_type = constants.FIELD_TYPE_USER
+          hide_on_view = 1
+          append_content = 1
+          default = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
+      %]
+        <div class="set-default-container" style="display:none">
+          <input type="checkbox" id="set-default-qa-contact" name="set_default_qa_contact" class="set-default"
+            value="1" data-for="qa_contact">
+          <label for="set-default-qa-contact">Reset QA Contact to default</label>
+        </div>
+      [% END %]
     [% END %]
 
   [% END %]
@@ -1066,13 +1072,15 @@
     [% END %]
 
     [%# see also %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.see_also
-        field_type = constants.FIELD_TYPE_BUG_URLS
-        values = bug.see_also
-        hide_on_view = bug.see_also.size == 0
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#see_also"
-    %]
+    [% IF Param("use_see_also") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.see_also
+          field_type = constants.FIELD_TYPE_BUG_URLS
+          values = bug.see_also
+          hide_on_view = bug.see_also.size == 0
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#see_also"
+      %]
+    [% END %]
 
   [% END %]
 [% END %]
@@ -1100,13 +1108,15 @@
   [% WRAPPER fields_lhs %]
 
     [%# alias %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.alias
-        field_type = constants.FIELD_TYPE_FREETEXT
-        hide_on_view = 1
-        short_width = 1
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#alias"
-    %]
+    [% IF Param("usebugaliases") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.alias
+          field_type = constants.FIELD_TYPE_FREETEXT
+          hide_on_view = 1
+          short_width = 1
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#alias"
+      %]
+    [% END %]
 
     [%# keywords %]
     [% WRAPPER bug_modal/field.html.tmpl
@@ -1126,21 +1136,23 @@
     [% END %]
 
     [%# whiteboards %]
-    [% WRAPPER bug_modal/field.html.tmpl
-        field = bug_fields.status_whiteboard
-        field_type = constants.FIELD_TYPE_FREETEXT
-        hide_on_view = bug.status_whiteboard == ""
-        help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
-    %]
-      [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
-    [% END %]
-    [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product, bug.component, bug) %]
-      [% rendered_custom_fields.push('cf_qa_whiteboard') %]
-      [% INCLUDE bug_modal/field.html.tmpl
-          field = bug_fields.cf_qa_whiteboard
-          field_type = bug_fields.cf_qa_whiteboard.type
-          hide_on_view = bug.cf_qa_whiteboard == ""
+    [% IF Param("usestatuswhiteboard") %]
+      [% WRAPPER bug_modal/field.html.tmpl
+          field = bug_fields.status_whiteboard
+          field_type = constants.FIELD_TYPE_FREETEXT
+          hide_on_view = bug.status_whiteboard == ""
+          help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
       %]
+        [% bug.status_whiteboard == "" ? "---" : bug.status_whiteboard FILTER html %]
+      [% END %]
+      [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product, bug.component, bug) %]
+        [% rendered_custom_fields.push('cf_qa_whiteboard') %]
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.cf_qa_whiteboard
+            field_type = bug_fields.cf_qa_whiteboard.type
+            hide_on_view = bug.cf_qa_whiteboard == ""
+        %]
+      [% END %]
     [% END %]
 
     [%# custom fields (except textarea) %]

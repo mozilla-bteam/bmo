@@ -261,10 +261,10 @@
     [%# importance %]
     [% WRAPPER bug_modal/field.html.tmpl
         name = "importance"
-        label = "Priority"
+        no_label = 1
+        no_indent = 1
         container = 1
         advanced = 1
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
     %]
       [% IF Param('letsubmitterchoosepriority') %]
         [% INCLUDE bug_modal/field.html.tmpl
@@ -274,6 +274,8 @@
             aria_label = bug_fields.priority.description
             no_indent = 1
             inline = 1
+            label = "Priority"
+            help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
         %]
       [% END %]
       [% INCLUDE bug_modal/field.html.tmpl
@@ -346,13 +348,15 @@
     [% END %]
 
     [%# milestone %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.target_milestone
-        field_type = constants.FIELD_TYPE_SINGLE_SELECT
-        values = ${bug_fields.target_milestone.name}
-        label = "Milestone"
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#target_milestone"
-    %]
+    [% IF Param("usetargetmilestone") && Param("letsubmitterchoosemilestone") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.target_milestone
+          field_type = constants.FIELD_TYPE_SINGLE_SELECT
+          values = ${bug_fields.target_milestone.name}
+          label = "Milestone"
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#target_milestone"
+      %]
+    [% END %]
 
     [%# iteration %]
     [% UNLESS cf_hidden_in_product('cf_fx_iteration', bug.product) %]
@@ -537,11 +541,13 @@
     %]
 
     [%# see also %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.see_also
-        field_type = constants.FIELD_TYPE_FREETEXT
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#see_also"
-    %]
+    [% IF Param("use_see_also") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.see_also
+          field_type = constants.FIELD_TYPE_FREETEXT
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#see_also"
+      %]
+    [% END %]
 
   [% END %]
 [% END %]
@@ -555,12 +561,14 @@
   [% WRAPPER fields_lhs %]
 
     [%# alias %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.alias
-        field_type = constants.FIELD_TYPE_FREETEXT
-        short_width = 1
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#alias"
-    %]
+    [% IF Param("usebugaliases") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.alias
+          field_type = constants.FIELD_TYPE_FREETEXT
+          short_width = 1
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#alias"
+      %]
+    [% END %]
 
     [%# keywords %]
     [% INCLUDE bug_modal/field.html.tmpl
@@ -570,17 +578,19 @@
     %]
 
     [%# whiteboards %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.status_whiteboard
-        field_type = constants.FIELD_TYPE_FREETEXT
-        help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
-    %]
-    [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product) %]
-      [% rendered_custom_fields.push('cf_qa_whiteboard') %]
+    [% IF Param("usestatuswhiteboard") %]
       [% INCLUDE bug_modal/field.html.tmpl
-          field = bug_fields.cf_qa_whiteboard
-          field_type = bug_fields.cf_qa_whiteboard.type
+          field = bug_fields.status_whiteboard
+          field_type = constants.FIELD_TYPE_FREETEXT
+          help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
       %]
+      [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product) %]
+        [% rendered_custom_fields.push('cf_qa_whiteboard') %]
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.cf_qa_whiteboard
+            field_type = bug_fields.cf_qa_whiteboard.type
+        %]
+      [% END %]
     [% END %]
 
     [%# custom fields (except textarea) %]

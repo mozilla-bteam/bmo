@@ -38,8 +38,8 @@ sub enter_bug_format {
   my $cgi  = Bugzilla->cgi;
 
   # Use the modal or custom format unless `format=legacy` is given as a URL param
-  my $format = $cgi->param('format');
-  $args->{format} = $format eq 'legacy' ? '' : $format || 'modal';
+  my $format = $cgi->param('format') || 'modal';
+  $args->{format} = $format eq 'legacy' ? '' : $format;
 }
 
 sub show_bug_format {
