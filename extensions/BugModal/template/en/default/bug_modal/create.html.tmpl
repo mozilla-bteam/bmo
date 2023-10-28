@@ -603,7 +603,7 @@
         INCLUDE bug_modal/field.html.tmpl
           field = field
           field_type = field.type
-          values = bug_fields.${field.name}.legal_values;
+          values = field.is_select ? bug_fields.${field.name}.legal_values : undef;
       END;
     %]
 
