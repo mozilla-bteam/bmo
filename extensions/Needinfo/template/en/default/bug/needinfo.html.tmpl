@@ -180,7 +180,9 @@ $(function() {
   [% IF needinfo_flags.size == 0 || needinfo_flagtype.is_multiplicable %]
     <tr>
       <td class="needinfo-cb-td">
-        <input type="checkbox" name="needinfo" id="needinfo" value="1">
+        [% IF bug.id %]
+          <input type="checkbox" name="needinfo" id="needinfo" value="1">
+        [% END %]
       </td>
       <td>
         <label for="needinfo" id="needinfo_from_label">Request information from</label>

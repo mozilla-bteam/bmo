@@ -75,9 +75,7 @@
   </div>
 
   <div id="after-comment-commit-button">
-    [% IF user.in_group('canconfirm') %]
-      [% Hook.process("after_comment_commit_button", 'bug/edit.html.tmpl') %]
-    [% END %]
+    [% Hook.process("after_comment_commit_button", 'bug/edit.html.tmpl') %]
 
     [%# this checkboxes are in tables to match the alignment of the
         added-by-extensions checkboxes (needinfo, restrict-comments) %]
