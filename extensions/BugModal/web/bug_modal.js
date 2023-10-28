@@ -740,6 +740,7 @@ $(function() {
 
                     if ($input.id === 'att-data') {
                         invalid = !$input.value.trim()
+                            && !document.querySelector('#att-textarea').value.trim()
                             && !document.querySelector('#att-file').files.length;
                         document.querySelector('#att-dropbox')?.classList
                             .toggle('attention', invalid);

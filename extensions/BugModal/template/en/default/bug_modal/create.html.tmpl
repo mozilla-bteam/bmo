@@ -266,14 +266,16 @@
         advanced = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
     %]
-      [% INCLUDE bug_modal/field.html.tmpl
-          field = bug_fields.priority
-          field_type = constants.FIELD_TYPE_SINGLE_SELECT
-          values = bug_fields.priority.legal_values
-          aria_label = bug_fields.priority.description
-          no_indent = 1
-          inline = 1
-      %]
+      [% IF Param('letsubmitterchoosepriority') %]
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.priority
+            field_type = constants.FIELD_TYPE_SINGLE_SELECT
+            values = bug_fields.priority.legal_values
+            aria_label = bug_fields.priority.description
+            no_indent = 1
+            inline = 1
+        %]
+      [% END %]
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.bug_severity
           field_type = constants.FIELD_TYPE_SINGLE_SELECT
@@ -472,7 +474,7 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.cc
         field_type = constants.FIELD_TYPE_USERS
-        name = "newcc"
+        name = "cc"
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#cc"
     %]
 

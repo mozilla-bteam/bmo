@@ -5132,9 +5132,15 @@ sub check_can_change_field {
     return {allowed => 1};
   }
 
-  # Allow anyone to change the summary, component, bug type, platform, comments and flags
-  if ($field =~ /^(?:short_desc|component|bug_type|rep_platform|op_sys|longdesc.*|flagtypes\.name)$/) {
-    return {allowed => 1};
+  # Allow anyone to enter/select the summary, component, bug type and platform
+  # when filing a new bug, because some are required fields
+  if (!$self->id) {
+    if (
+         $field =~ /^(?:short_desc|component|rep_platform|op_sys)$/
+      || ($field eq 'bug_type' && Bugzilla->params->{'require_bug_type'})
+    ) {
+      return {allowed => 1};
+    }
   }
 
   my @priv_results;
@@ -5157,6 +5163,11 @@ sub check_can_change_field {
   }
   my $allow_found = first { $_->{result} == 0 } @priv_results;
   if (defined $allow_found) {
+    return {allowed => 1};
+  }
+
+  # Allow anyone to change comments, or set flags
+  if ($field =~ /^longdesc/ || $field eq 'flagtypes.name') {
     return {allowed => 1};
   }
 
