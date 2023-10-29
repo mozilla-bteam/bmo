@@ -45,31 +45,17 @@ window.addEventListener('DOMContentLoaded', () => {
   // the `comment` URL param is passed, the user has cloned other b[%%]ug, or the page is loaded
   // during session restore or from BFCache.
   /** @type {boolean} */
-  let descriptionEdited = !!$form.comment.value.match(/\S/);
-
-  // Check the local storage or the TUI cookie used on the legacy form to see if the user wants to
-  // show advanced fields on the bug form.
-  /** @type {boolean} */
-  let advancedState = (() => {
-    try {
-      // This can throw in Selenium tests
-      return window.localStorage.getItem('create-form.advanced') === 'show'
-        || document.cookie.split('; ').find((row) => row.startsWith('TUI='))?.substring(4)
-          .split('&').includes('expert_fields=1');
-    } catch {
-      return false;
-    }
-  })();
+  let descriptionEdited = /\S/.test($form.comment.value);
 
   /**
    * Show or hide the advanced fields.
-   * @param {boolean} state Show or hide.
+   * @param {boolean} showAdvanced Whether to advanced fields.
    * @param {boolean} [cache] Whether to cache the state.
    */
-  const toggleAdvancedFields = (state, cache = true) => {
-    const advancedStateStr = advancedState ? 'show' : 'hide';
+  const toggleAdvancedFields = (showAdvanced, cache = true) => {
+    const advancedStateStr = showAdvanced ? 'show' : 'hide';
 
-    $form.classList.toggle('show-advanced-fields', state);
+    $form.classList.toggle('show-advanced-fields', showAdvanced);
     $toggleAdvanced.textContent = $toggleAdvanced.dataset[advancedStateStr];
 
     if (cache) {
@@ -83,14 +69,22 @@ window.addEventListener('DOMContentLoaded', () => {
   const initForm = () => {
     const $makeTemplate = document.querySelector('#make-template');
 
-    if (advancedState) {
-      toggleAdvancedFields(advancedState, false);
-    }
+    if ($toggleAdvanced) {
+      // Check the local storage or the TUI cookie used on the legacy form to see if the user wants
+      // to show advanced fields on the bug form.
+      let showAdvanced =
+        window.localStorage.getItem('create-form.advanced') === 'show'
+          || /\bTUI=\S*?expert_fields=1\b/.test(document.cookie);
 
-    $toggleAdvanced?.addEventListener('click', () => {
-      advancedState = !advancedState;
-      toggleAdvancedFields(advancedState);
-    });
+      if (showAdvanced) {
+        toggleAdvancedFields(showAdvanced, false);
+      }
+
+      $toggleAdvanced.addEventListener('click', () => {
+        showAdvanced = !showAdvanced;
+        toggleAdvancedFields(showAdvanced);
+      });
+    }
 
     document.querySelectorAll('.edit-hide').forEach(($show) => {
       $show.style.display = 'none';
