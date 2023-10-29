@@ -49,7 +49,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /**
    * Show or hide the advanced fields.
-   * @param {boolean} showAdvanced Whether to advanced fields.
+   * @param {boolean} showAdvanced Whether to show the advanced fields.
    * @param {boolean} [cache] Whether to cache the state.
    */
   const toggleAdvancedFields = (showAdvanced, cache = true) => {
