@@ -47,12 +47,19 @@ window.addEventListener('DOMContentLoaded', () => {
   /** @type {boolean} */
   let descriptionEdited = !!$form.comment.value.match(/\S/);
 
+  // Check the local storage or the TUI cookie used on the legacy form to see if the user wants to
+  // show advanced fields on the bug form.
   /** @type {boolean} */
-  let advancedState =
-    (window.localStorage.getItem('create-form.advanced') || 'hide') === 'show' ||
-    // Fallback to the TUI cookie used on the legacy form
-    document.cookie.split('; ').find((row) => row.startsWith('TUI='))?.substring(4).split('&')
-      .includes('expert_fields=1') ? 'show' : 'hide';
+  let advancedState = (() => {
+    try {
+      // This can throw in Selenium tests
+      return window.localStorage.getItem('create-form.advanced') === 'show'
+        || document.cookie.split('; ').find((row) => row.startsWith('TUI='))?.substring(4)
+          .split('&').includes('expert_fields=1');
+    } catch {
+      return false;
+    }
+  })();
 
   /**
    * Show or hide the advanced fields.
@@ -66,7 +73,7 @@ window.addEventListener('DOMContentLoaded', () => {
     $toggleAdvanced.textContent = $toggleAdvanced.dataset[advancedStateStr];
 
     if (cache) {
-      window.localStorage.getItem('create-form.advanced', advancedStateStr);
+      window.localStorage.setItem('create-form.advanced', advancedStateStr);
     }
   };
 
