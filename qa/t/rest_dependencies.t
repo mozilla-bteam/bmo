@@ -67,34 +67,4 @@ $t->get_ok($url
     => {'X-Bugzilla-API-Key' => $editbugs_user_api_key})->status_is(200)
   ->json_is('/tree/5/6/bug/summary', 'This is a public test bug');
 
-# {
-#   "tree" => {
-#     "5" => {
-#       "6" => {
-#         "bug" => {
-#           "assignee" => "QA_Selenium_TEST",
-#           "milestone" => "AnotherMS1",
-#           "resolution" => "",
-#           "status" => "CONFIRMED",
-#           "summary" => "This is a public test bug"
-#         }
-#       },
-#       "bug" => {
-#         "assignee" => "QA_Selenium_TEST",
-#         "milestone" => "AnotherMS1",
-#         "resolution" => "",
-#         "status" => "CONFIRMED",
-#         "summary" => "This is a public test bug"
-#       }
-#     },
-#     "bug" => {
-#       "assignee" => "QA_Selenium_TEST",
-#       "milestone" => "AnotherMS1",
-#       "resolution" => "",
-#       "status" => "CONFIRMED",
-#       "summary" => "This is a public test bug"
-#     }
-#   }
-# }
-
 done_testing();
