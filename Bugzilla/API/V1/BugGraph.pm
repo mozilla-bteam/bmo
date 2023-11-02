@@ -32,9 +32,9 @@ sub graph {
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
   my $bug_id        = $self->param('id');
-  my $relationship  = $self->param('relationship');
-  my $depth         = $self->param('depth');
-  my $type          = $self->param('type') || 'bug_tree';
+  my $relationship  = $self->param('relationship') || 'dependencies';
+  my $depth         = $self->param('depth')        || 3;
+  my $ids_only      = $self->param('ids_only')      ? 1 : 0;
   my $show_resolved = $self->param('show_resolved') ? 1 : 0;
 
   if ($bug_id !~ /^\d+$/) {
@@ -42,81 +42,56 @@ sub graph {
       {function => 'bug/<id>/graph', param => 'bug_id'});
   }
 
-  if (none { $type eq $_ } qw(bug_tree json_tree)) {
+  if ($depth !~ /^\d+$/ || ($depth > 9 || $depth < 1)) {
     ThrowCodeError('param_invalid',
-      {function => 'bug/<id>/graph', param => 'type'});
+      {function => 'bug/<id>/graph', param => 'depth'});
   }
 
-  if (defined $depth) {
-    if ($depth !~ /^\d+$/) {
-      ThrowCodeError('param_invalid',
-        {function => 'bug/<id>/graph', param => 'depth'});
-    }
+  my %relationships = (
+    dependencies => ['dependson,blocked',      'blocked,dependson'],
+    duplicates   => ['dupe,dupe_of',           'dupe_of,dupe'],
+    regressions  => ['regresses,regressed_by', 'regressed_by,regresses'],
+  );
 
-    if ($depth > 9 || $depth < 1) {
-      ThrowCodeError('param_invalid',
-        {function => 'bug/<id>/graph', param => 'depth'});
-    }
+  if (none { $relationship eq $_ } keys %relationships) {
+    ThrowCodeError('param_invalid',
+      {function => 'bug/<id>/graph ', param => 'relationship'});
   }
 
-  my ($table, $fields, $source, $sink);
-  if ($relationship) {
-    my %relationships = (
-      dependencies => ['dependson,blocked',      'blocked,dependson'],
-      duplicates   => ['dupe,dupe_of',           'dupe_of,dupe'],
-      regressions  => ['regresses,regressed_by', 'regressed_by,regresses'],
-    );
-
-    ($table, $fields) = split /:/, $relationship;
-
-    my $relationship_valid = 1;
-    if (none { $table eq $_ } keys %relationships) {
-      $relationship_valid = 0;
-    }
-    if (none { $fields eq $_ } @{$relationships{$table}}) {
-      $relationship_valid = 0;
-    }
-
-    if (!$relationship_valid) {
-      ThrowCodeError('param_invalid',
-        {function => 'bug/<id>/graph ', param => 'relationship'});
-    }
-
-    ($table, $source, $sink) = ($table, split /,/, $fields // '');
-  }
-
-  my $result;
+  my $result = {};
   try {
-    Bugzilla->switch_to_shadow_db();
-    my $report = Bugzilla::Report::Graph->new(
-      bug_id => $bug_id,
-      maybe
-        table => $table,
-      maybe
+    foreach my $fields (@{$relationships{$relationship}}) {
+      Bugzilla->switch_to_shadow_db();
+
+      my ($source, $sink) = split /,/, $fields;
+
+      my $report = Bugzilla::Report::Graph->new(
+        bug_id => $bug_id,
+        table  => $relationship,
         source => $source,
-      maybe
-        sink => $sink,
-      maybe depth => $depth,
-    );
+        sink   => $sink,
+        depth  => $depth,
+      );
 
-    # Remove any secure bugs that user cannot see
-    $report->prune_graph(sub { $user->visible_bugs($_[0]) });
+      # Remove any secure bugs that user cannot see
+      $report->prune_graph(sub { $user->visible_bugs($_[0]) });
 
-    # If we do not want resolved bugs (default) then filter those
-    # by passing in reference to the subroutine for filtering out
-    # resolved bugs
-    if (!$show_resolved) {
-      $report->prune_graph(sub { $self->_prune_resolved($_[0]) });
-    }
-
-    if ($type ne 'json_tree') {
-      my $bugs = Bugzilla::Bug->new_from_list([$report->graph->vertices]);
-      foreach my $bug (@$bugs) {
-        $report->graph->set_vertex_attributes($bug->id, $self->_bug_to_hash($bug));
+      # If we do not want resolved bugs (default) then filter those
+      # by passing in reference to the subroutine for filtering out
+      # resolved bugs
+      if (!$show_resolved) {
+        $report->prune_graph(sub { $self->_prune_resolved($_[0]) });
       }
-    }
 
-    $result = {tree => $report->tree};
+      if (!$ids_only) {
+        my $bugs = Bugzilla::Bug->new_from_list([$report->graph->vertices]);
+        foreach my $bug (@$bugs) {
+          $report->graph->set_vertex_attributes($bug->id, $self->_bug_to_hash($bug));
+        }
+      }
+
+      $result->{$source} = $report->tree;
+    }
   }
   catch {
     FATAL($_);

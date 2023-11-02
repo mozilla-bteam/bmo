@@ -14,14 +14,14 @@ use Bugzilla;
 use QA::Util  qw(get_config);
 use QA::Tests qw(create_bug_fields PRIVATE_BUG_USER);
 
-use Mojo::Util qw(dumper);
 use Test::Mojo;
 use Test::More;
-use Sys::Hostname;
 
-my $config                = get_config();
+my $config = get_config();
+my $url    = Bugzilla->localconfig->urlbase;
+
+# editbugs is needed to fill in dependencies on bug entry
 my $editbugs_user_api_key = $config->{editbugs_user_api_key};
-my $url                   = Bugzilla->localconfig->urlbase;
 
 my $t = Test::Mojo->new();
 
@@ -60,11 +60,22 @@ $t->post_ok($url
 
 my $bug3_id = $t->tx->res->json->{id};
 
-### Section 4: Load the dependency graph
+### Section 4: Load the dependency tree
 
 $t->get_ok($url
-    . "rest/bug/${bug1_id}/graph?type=bug_tree&relationship=dependencies:dependson,blocked"
+    . "rest/bug/${bug1_id}/graph?relationship=dependencies"
     => {'X-Bugzilla-API-Key' => $editbugs_user_api_key})->status_is(200)
-  ->json_is('/tree/5/6/bug/summary', 'This is a public test bug');
+  ->json_is("/dependson/$bug2_id/$bug3_id/bug/summary", 'This is a public test bug')
+  ->json_has('/blocked');
+
+### Section 5: Only display bug ids and not load extra bug data. This could be faster
+###            with really large relationship trees.
+
+$t->get_ok($url
+    . "rest/bug/${bug1_id}/graph?relationship=dependencies&ids_only=1"
+    => {'X-Bugzilla-API-Key' => $editbugs_user_api_key})->status_is(200)
+  ->json_has("/dependson/$bug2_id/$bug3_id")
+  ->json_hasnt("/dependson/$bug2_id/$bug3_id/bug")
+  ->json_has('/blocked');
 
 done_testing();
