@@ -1132,7 +1132,7 @@ Return a graph of bug relationships.
 
 **Request**
 
-To return a simple json tree of the blocks/depends for a given bug.
+To return a simple json tree of the relationships for a given bug.
 
 .. code-block:: text
 
@@ -1145,39 +1145,53 @@ use bug_tree
 
   GET /rest/bug/1156/graph?type=bug_tree
 
-To feed the API to D3's force directed graph visualization:
-
-.. code-block:: text
-
-  GET /rest/bug/1156/graph?type=force_directed_graph
-
-Also supported, hierarchical edge bundling:
-
-.. code-block:: text
-
-  GET /rest/bug/1156/graph?type=hierarchical_edge_bundling
-
-
 The default relationship is the dependson to blocked relationship. To build the graph in the opposite direction:
 
 .. code-block:: text
 
   GET /rest/bug/1156/graph?type=json_tree&relationship=dependencies:blocked,dependson
 
-============  ======  ================================================================
-name          type    description
-============  ======  ================================================================
-type          string  One of "text", "json_tree", "bug_tree", "force_directed_graph",
-                      or "hierarchical_edge_bundling"
-                      Required.
-depth         int     Limit the depth of the graph.
-                      Default: 3, max: 9
-relationship  string  One of "dependencies:dependson,blocked",
-                             "dependencies:blocked,dependson",
-                             "duplicates:dupe_of,dupe", or
-                             "duplicates:dupe,dupe_of".
-                      Default: "dependencies:dependson,blocked"
-============  ======  ================================================================
+**Response**
+
+.. code-block:: js
+
+   {
+     "tree" : [
+       {
+         "alias" : null,
+         "changes" : {
+           "keywords" : {
+             "added" : "funny, stupid",
+             "removed" : ""
+           },
+             "status" : {
+               "added" : "IN_PROGRESS",
+               "removed" : "CONFIRMED"
+           }
+         },
+         "id" : 35,
+         "last_change_time" : "2014-09-29T14:25:35Z"
+       }
+     ]
+   }
+
+============  =======  ================================================================
+name          type     description
+============  =======  ================================================================
+type          string   One of "json_tree" or "bug_tree".
+                       Default: "bug_tree"
+depth         int      Limit the depth of the graph.
+                       Default: 3, Max: 9
+show_resolved boolean  Enable if you want to also see RESOLVED bugs in the graph.
+                       Default: False
+relationship  string   One of "dependencies:dependson,blocked",
+                              "dependencies:blocked,dependson",
+                              "duplicates:dupe_of,dupe",
+                              "duplicates:dupe,dupe_of",
+                              "regressions:regresses,regressed_by", or
+                              "regressions:regressed_by,regresses".
+                       Default: "dependencies:dependson,blocked"
+============  =======  ================================================================
 
 .. _rest_possible_duplicates:
 
