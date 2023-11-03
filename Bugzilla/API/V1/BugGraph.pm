@@ -86,7 +86,7 @@ sub graph {
       if (!$ids_only) {
         my $bugs = Bugzilla::Bug->new_from_list([$report->graph->vertices]);
         foreach my $bug (@$bugs) {
-          $report->graph->set_vertex_attributes($bug->id, $self->_bug_to_hash($bug));
+          $report->graph->set_vertex_attributes($bug->id, $bug->to_hash);
         }
       }
 
@@ -99,18 +99,6 @@ sub graph {
   };
 
   return $self->render(json => $result);
-}
-
-# Adds extra data to the vertices of the graph.
-sub _bug_to_hash {
-  my ($self, $bug) = @_;
-  return {
-    summary    => $bug->short_desc,
-    status     => $bug->bug_status,
-    resolution => $bug->resolution,
-    milestone  => $bug->target_milestone,
-    assignee   => $bug->assigned_to->name,
-  };
 }
 
 # This method takes a set of bugs and using a single SQL statement,
