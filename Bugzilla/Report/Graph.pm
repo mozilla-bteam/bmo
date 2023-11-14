@@ -11,22 +11,25 @@ use Moo;
 
 use Graph::Directed;
 use Graph::Traversal::DFS;
-use Mojo::Util qw(dumper);
-use PerlX::Maybe;
+use PerlX::Maybe 'maybe';
 use Type::Utils     qw(class_type);
-use Types::Standard qw(Bool Int Str ArrayRef Maybe);
+use Types::Standard qw(Bool Enum Int Str ArrayRef);
 use Set::Object     qw(set);
 
 use Bugzilla;
 use Bugzilla::Logging;
 use Bugzilla::Types qw(DB);
 
-has bug_id => (is => 'ro',   isa => Int, required => 1);
-has table  => (is => 'ro',   isa => Str, default  => 'dependencies');
-has depth  => (is => 'ro',   isa => Int, default  => 3);
-has source => (is => 'ro',   isa => Str, default  => 'dependson');
-has sink   => (is => 'ro',   isa => Str, default  => 'blocked');
-has limit  => (is => 'ro',   isa => Maybe [Int], default => 10_000);
+our $valid_tables = [qw(dependencies duplicates regressions)];
+our $valid_fields = [qw(blocked dependson dupe dupe_of regresses regressed_by)];
+
+has bug_id => (is => 'ro', isa => Int, required => 1);
+has table =>
+  (is => 'ro', isa => Enum $valid_tables, default => 'dependencies',);
+has depth  => (is => 'ro', isa => Int, default => 3);
+has source => (is => 'ro', isa => Enum $valid_fields, default => 'dependson',);
+has sink   => (is => 'ro', isa => Enum $valid_fields, default => 'blocked',);
+has limit  => (is => 'ro', isa => Int, default => 10_000);
 has paths  => (is => 'lazy', isa => ArrayRef [ArrayRef]);
 has graph  => (is => 'lazy', isa => class_type({class => 'Graph'}));
 has query  => (is => 'lazy', isa => Str);
@@ -59,7 +62,7 @@ sub _build_query {
   my $depth  = $self->depth;
   my $source = $self->source;
   my $sink   = $self->sink;
-  my $limit  = defined $self->limit ? 'LIMIT ' . $self->limit : '';
+  my $limit  = $self->limit;
 
   # WITH RECURSIVE is available in MySQL 8.x and newer as
   # well as recent versions of PostgreSQL and SQLite.
@@ -67,7 +70,7 @@ sub _build_query {
     SELECT t.$source, t.$sink, 1 AS depth FROM $table t WHERE t.$source = ?
     UNION ALL
     SELECT t.$source, t.$sink, rt.depth + 1 AS depth FROM $table t
-      JOIN RelationshipTree rt ON t.$source = rt.$sink WHERE rt.depth <= $depth $limit)
+      JOIN RelationshipTree rt ON t.$source = rt.$sink WHERE rt.depth <= $depth LIMIT $limit)
     SELECT rt.$source, rt.$sink FROM RelationshipTree rt";
 
   return $query;
@@ -98,8 +101,8 @@ sub tree {
   my ($self) = @_;
   my $graph = $self->graph;
 
-  my %nodes
-    = map { $_ => {maybe bug => $graph->get_vertex_attributes($_)} } $graph->vertices;
+  my %nodes = map { $_ => {maybe bug => $graph->get_vertex_attributes($_)} }
+    $graph->vertices;
 
   my $search = Graph::Traversal::DFS->new(
     $graph,
