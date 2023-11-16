@@ -158,15 +158,19 @@ $(function() {
         $('#editing').val('');
     }
 
+    /**
+     * Local storage key to be used to cache the entered comment. Use `0` as the bug ID on the New Bug form.
+     */
+    const bugCommentCacheKey = `bug-modal-saved-comment-${BUGZILLA.bug_id ?? 0}`;
+
     function saveBugComment(text) {
         if (text.length < 1) return clearSavedBugComment();
         if (text.length >  65535) return;
-        let key = `bug-modal-saved-comment-${BUGZILLA.bug_id}`;
         let value = {
             text: text,
             savedAt: Date.now()
         };
-        localStorage.setItem(key, JSON.stringify(value));
+        localStorage.setItem(bugCommentCacheKey, JSON.stringify(value));
     }
 
     /**
@@ -179,16 +183,24 @@ $(function() {
         localStorage.removeItem(`bug-modal-saved-comment-${bug_id}`);
     };
 
-    const $change_summary = document.querySelector('.change-summary[data-type="bug"]');
+    /**
+     * Reference to an element showing the change summary on an created/updated bug page. It’s hidden by default.
+     */
+    const $changeSummary = document.querySelector('.change-summary.bug');
 
-    if ($change_summary) {
-        clearSavedBugComment(Number($change_summary.dataset.id));
+    if ($changeSummary) {
+        const { type, id } = $changeSummary.dataset;
+
+        if (type === 'created') {
+            clearSavedBugComment(0);
+        } else if (type === 'bug') {
+            clearSavedBugComment(Number(id));
+        }
     }
 
     function restoreSavedBugComment() {
         expireSavedComments();
-        let key = `bug-modal-saved-comment-${BUGZILLA.bug_id}`;
-        let value = JSON.parse(localStorage.getItem(key));
+        let value = JSON.parse(localStorage.getItem(bugCommentCacheKey));
         if (value){
             let commentBox = document.querySelector("textarea#comment");
             commentBox.value = value['text'];
