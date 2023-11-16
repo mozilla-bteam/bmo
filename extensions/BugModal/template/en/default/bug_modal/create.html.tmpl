@@ -521,11 +521,6 @@
     [%# regressions %]
     [% IF Param('use_regression_fields') %]
       [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.regresses
-        field_type = constants.FIELD_TYPE_FREETEXT
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#regresses"
-      %]
-      [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.regressed_by
         field_type = constants.FIELD_TYPE_FREETEXT
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#regressed_by"
