@@ -112,6 +112,9 @@
 <div role="toolbar" id="page-toolbar">
   <h2>File a New [% terms.Bug %]</h2>
   <div role="group" class="buttons">
+    <button type="button" id="add-comment-btn" class="secondary" aria-label="Add Comment">
+      Add Description &darr;
+    </button>
     [% IF user.in_group('canconfirm') %]
       <button type="button" id="toggle-advanced" class="secondary"
           data-show="Hide Advanced Fields" data-hide="Show Advanced Fields">
