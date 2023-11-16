@@ -368,7 +368,6 @@ input[type="number"] {
 
 #after-comment-commit-button {
   margin-bottom: 4px;
-  margin-left: -8px;
 }
 
 #needinfo_from_autocomplete {
@@ -1133,10 +1132,6 @@ a.comment-tag-url {
 
 #product-throbber {
   margin-left: 8px;
-}
-
-#commit {
-  margin: 5px;
 }
 
 #mode-container .button-row {
