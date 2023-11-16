@@ -538,7 +538,7 @@ sub mfa_enroll {
   return $provider->enroll_api();
 }
 
-# Pre-validate the users TOTP code using the mfa_verification_token 
+# Pre-validate the users TOTP code using the mfa_verification_token
 # obtained from the cookie set when loading the verfication form.
 sub mfa_verify_totp_code {
   my ($self, $params) = @_;
@@ -559,7 +559,11 @@ sub mfa_verify_totp_code {
 
   # verify
   try {
-    $user->mfa_provider->verify_check({code => $params->{mfa_code}});
+    # Pass no_delete=1 just in case user is using a recovery code
+    # Normally a recovery code is deleted once it is used and we
+    # do no want that to happen yet here.
+    $user->mfa_provider->verify_check(
+      {code => $params->{mfa_code}, no_delete => 1});
   }
   catch {
     return {error => 1, message => 'invalid verification code'};

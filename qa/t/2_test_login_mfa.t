@@ -51,6 +51,25 @@ $sel->type_ok('mfa-totp-enable-code', $auth->code);
 $sel->click_ok('update');
 $sel->title_is('User Preferences');
 
+#  Generate recovery codes to use in testing
+$sel->click_ok('mfa-recovery');
+$sel->type_ok('mfa-password', $config->{admin_user_passwd});
+$sel->type_ok('code',         $auth->code);
+$sel->click_ok('update');
+
+# Hack needed view contents of TOTP iframe and return the recovery codes
+my $recovery_string = $sel->driver->execute_script('
+  var iframe = document.getElementById("mfa-recovery-frame").contentWindow;
+  var codes = iframe.document.getElementById("codes");
+  return codes.innerText;
+');
+my @recovery_codes;
+foreach my $code (split /\n/, $recovery_string) {
+  $code =~ s/^\s+//;
+  $code =~ s/\s+$//;
+  push @recovery_codes, $code;
+}
+ok(scalar @recovery_codes == 10, 'Ten recovery codes generated properly');
 logout($sel);
 
 # Log back in but this time we are asked for a TOTP code
@@ -77,6 +96,52 @@ ok($error eq 'Invalid verification code.', 'Correct error generated for invalid 
 
 # Now enter the correct code
 $sel->type_ok('code', $auth->code);
+$sel->click_ok('//input[@value="Submit"]');
+$sel->title_is('Bugzilla Main Page');
+logout($sel);
+
+# Try to use one of the recovery codes as a MFA code
+$sel->open_ok('/login', undef, 'Go to the home page');
+$sel->title_is('Log in to Bugzilla');
+$sel->type_ok(
+  'Bugzilla_login',
+  $config->{admin_user_login},
+  'Enter admin login name'
+);
+$sel->type_ok(
+  'Bugzilla_password',
+  $config->{admin_user_passwd},
+  'Enter admin password'
+);
+$sel->click_ok('log_in', undef, 'Submit credentials');
+$sel->title_is('Account Verification');
+$sel->type_ok('code', $recovery_codes[0]);
+$sel->click_ok('//input[@value="Submit"]');
+$sel->title_is('Bugzilla Main Page');
+logout($sel);
+
+# Reusing the same recovery code a second time should fail
+$sel->open_ok('/login', undef, 'Go to the home page');
+$sel->title_is('Log in to Bugzilla');
+$sel->type_ok(
+  'Bugzilla_login',
+  $config->{admin_user_login},
+  'Enter admin login name'
+);
+$sel->type_ok(
+  'Bugzilla_password',
+  $config->{admin_user_passwd},
+  'Enter admin password'
+);
+$sel->click_ok('log_in', undef, 'Submit credentials');
+$sel->title_is('Account Verification');
+$sel->type_ok('code', $recovery_codes[0]);
+$sel->click_ok('//input[@value="Submit"]');
+$error = $sel->get_text('verify-totp-error');
+ok($error eq 'Invalid verification code.', 'Correct error generated for invalid code');
+
+# Now enter a different valid recovery code
+$sel->type_ok('code', $recovery_codes[1]);
 $sel->click_ok('//input[@value="Submit"]');
 $sel->title_is('Bugzilla Main Page');
 
