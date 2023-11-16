@@ -56,7 +56,7 @@
         title="Make comment visible only to members of the '[% Param('insidergroup') FILTER html %]' group"
       >
         <input type="checkbox" name="comment_is_private" id="add-comment-private-cb"
-               value="[% comment_is_private.defined ? comment_is_private : 1 %]" comment_id="[% comment.count FILTER none %]">
+               value="1" comment_id="[% comment.count FILTER none %]">
         <label for="add-comment-private-cb" aria-label="Mark as Private">Private</label>
       </div>
     [% END %]
