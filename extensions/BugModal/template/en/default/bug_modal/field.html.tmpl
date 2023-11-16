@@ -153,6 +153,8 @@ END;
       <div id="field-[% name FILTER html %]-error" class="input-error bz_default_hidden" aria-live="assertive">
         [% IF field_type == constants.FIELD_TYPE_SINGLE_SELECT %]
           You must select a
+        [% ELSIF field_type == constants.FIELD_TYPE_MULTI_SELECT %]
+          You must select one or more
         [% ELSE %]
           You must enter the
         [% END %]
