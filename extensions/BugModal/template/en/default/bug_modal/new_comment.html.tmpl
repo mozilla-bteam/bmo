@@ -56,14 +56,14 @@
         title="Make comment visible only to members of the '[% Param('insidergroup') FILTER html %]' group"
       >
         <input type="checkbox" name="comment_is_private" id="add-comment-private-cb"
-               value="1" comment_id="[% comment.count FILTER none %]">
+               value="[% comment_is_private.defined ? comment_is_private : 1 %]" comment_id="[% comment.count FILTER none %]">
         <label for="add-comment-private-cb" aria-label="Mark as Private">Private</label>
       </div>
     [% END %]
   </div>
 
   <div id="comment-edit-tabpanel" class="comment-tabpanel" role="tabpanel" aria-labelledby="comment-edit-tab">
-    <textarea rows="5" cols="80" name="comment" id="comment" aria-labelledby="comment-edit-tab"[% IF user.setting("ui_attach_long_paste") == "on" %] class="attach-long-paste"[% END %]></textarea>
+    <textarea rows="5" cols="80" name="comment" id="comment" aria-labelledby="comment-edit-tab"[% IF user.setting("ui_attach_long_paste") == "on" %] class="attach-long-paste"[% END %]>[% comment FILTER html %]</textarea>
   </div>
   <div id="comment-preview-tabpanel" class="comment-tabpanel" role="tabpanel" aria-labelledby="comment-preview-tab" style="display:none">
     [% IF Param('use_markdown') %]

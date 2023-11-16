@@ -140,6 +140,7 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.short_desc
         field_type = constants.FIELD_TYPE_FREETEXT
+        value = short_desc
         required = 1
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#short_desc"
     %]
@@ -450,6 +451,7 @@
         field = bug_fields.bug_mentor
         field_type = constants.FIELD_TYPE_USERS
         name = "bug_mentors"
+        value = bug_mentors
         label = "Mentors"
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_mentor"
     %]
@@ -480,6 +482,7 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.cc
         field_type = constants.FIELD_TYPE_USERS
+        value = cc
         name = "cc"
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#cc"
     %]
@@ -509,11 +512,13 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.dependson
         field_type = constants.FIELD_TYPE_FREETEXT
+        value = dependson
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#dependson"
     %]
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.blocked
         field_type = constants.FIELD_TYPE_FREETEXT
+        value = blocked
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#blocks"
     %]
 
@@ -522,6 +527,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.regressed_by
         field_type = constants.FIELD_TYPE_FREETEXT
+        value = regressed_by
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#regressed_by"
       %]
     [% END %]
@@ -533,6 +539,7 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.bug_file_loc
         field_type = constants.FIELD_TYPE_FREETEXT
+        value = bug_file_loc
         default = "https://"
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_file_loc"
     %]
@@ -542,6 +549,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.see_also
           field_type = constants.FIELD_TYPE_FREETEXT
+          value = see_also
           help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#see_also"
       %]
     [% END %]
@@ -562,6 +570,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.alias
           field_type = constants.FIELD_TYPE_FREETEXT
+          value = alias
           short_width = 1
           help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#alias"
       %]
@@ -571,6 +580,7 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.keywords
         field_type = constants.FIELD_TYPE_KEYWORDS
+        value = keywords
         help = basepath _ "describekeywords.cgi"
     %]
 
@@ -726,7 +736,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
          field = bug_fields.deadline
          field_type = constants.FIELD_TYPE_DATE
-         value = bug.deadline
+         value = deadline
          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#deadline"
       %]
       <div>
