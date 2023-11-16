@@ -1228,7 +1228,11 @@ $(function() {
             $('.set-default-container').show();
             $('#set-default-assignee').prop('checked', $('#assigned_to').val() == BUGZILLA.default_assignee).change();
             $('#set-default-qa-contact').prop('checked', $('#qa_contact').val() == BUGZILLA.default_qa_contact).change();
-            slide_module($('#module-people'), 'show');
+
+            // Show the People module only when the product/component is changed manually
+            if (!event.isTrigger) {
+                slide_module($('#module-people'), 'show');
+            }
         });
     $('.set-default')
         .change(function(event) {
