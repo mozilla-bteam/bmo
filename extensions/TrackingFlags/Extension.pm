@@ -83,7 +83,7 @@ sub template_before_process {
   my $file = $args->{'file'};
   my $vars = $args->{'vars'};
 
-  if ($file eq 'bug/create/create.html.tmpl') {
+  if ($file =~ /^bug\/create\/create[\.-]/) {
     my $flags
       = Bugzilla::Extension::TrackingFlags::Flag->match({
       product => $vars->{'product'}->name, enter_bug => 1, is_active => 1,
@@ -123,6 +123,30 @@ sub template_before_process {
       = Bugzilla::Extension::TrackingFlags::Flag->match({
       product => $vars->{'one_product'}->name, is_active => 1
       });
+  }
+
+  if ($vars->{tracking_flags}) {
+    # group tracking flags by version to allow for a better tabular output
+    my @tracking_table;
+    my $tracking_flags = $vars->{tracking_flags};
+    foreach my $flag (@$tracking_flags) {
+      my $flag_type = $flag->flag_type;
+      my $type      = 'status';
+      my $name      = $flag->description;
+      if ($flag_type eq 'tracking' && $name =~ /^(tracking|status)-(.+)/) {
+        ($type, $name) = ($1, $2);
+      }
+
+      my ($existing)
+        = grep { $_->{type} eq $flag_type && $_->{name} eq $name } @tracking_table;
+      if ($existing) {
+        $existing->{$type} = $flag;
+      }
+      else {
+        push @tracking_table, {$type => $flag, name => $name, type => $flag_type,};
+      }
+    }
+    $vars->{tracking_flags_table} = \@tracking_table;
   }
 }
 

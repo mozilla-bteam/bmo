@@ -5132,6 +5132,20 @@ sub check_can_change_field {
     return {allowed => 1};
   }
 
+  # Allow anyone to enter/select the summary, component, bug type and platform
+  # when filing a new bug, because some are required fields
+  if (!$self->id) {
+    if (
+         $field eq 'short_desc'
+      || $field eq 'component'
+      || $field eq 'rep_platform'
+      || $field eq 'op_sys'
+      || ($field eq 'bug_type' && Bugzilla->params->{'require_bug_type'})
+    ) {
+      return {allowed => 1};
+    }
+  }
+
   my @priv_results;
   Bugzilla::Hook::process(
     'bug_check_can_change_field',

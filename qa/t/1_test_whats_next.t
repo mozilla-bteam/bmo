@@ -44,7 +44,6 @@ file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc',
   'test bug for needinfo you tracked against nightly beta release');
 $sel->select_ok('component', 'General');
-$sel->click_ok('//input[@value="Set bug flags"]');
 $sel->select_ok('cf_tracking_firefox111', 'blocking');
 $sel->type_ok('needinfo_from', $config->{admin_user_login});
 $sel->click_ok('commit');

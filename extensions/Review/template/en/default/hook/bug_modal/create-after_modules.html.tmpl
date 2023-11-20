@@ -6,4 +6,11 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% INCLUDE "bug/create/bugzilla-admin.html.tmpl" %]
+<script [% script_nonce FILTER none %]>
+  $(function() {
+    [% IF product.reviewer_required %]
+      REVIEW.init_mandatory();
+    [% END %]
+    REVIEW.init_enter_bug();
+  });
+</script>

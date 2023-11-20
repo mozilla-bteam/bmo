@@ -33,6 +33,15 @@ use constant READABLE_BUG_STATUS_PRODUCTS => (
   'bugzilla.mozilla.org'
 );
 
+sub enter_bug_format {
+  my ($self, $args) = @_;
+  my $cgi  = Bugzilla->cgi;
+
+  # Use the modal or custom format unless `format=legacy` is given as a URL param
+  my $format = $cgi->param('format') || 'modal';
+  $args->{format} = $format eq 'legacy' ? '' : $format;
+}
+
 sub show_bug_format {
   my ($self, $args) = @_;
   $args->{format} = _alternative_show_bug_format();
@@ -255,28 +264,6 @@ sub template_before_process {
 
   # Log tracking flags
   _log_tracking_flags($bug, $vars->{tracking_flags});
-
-  # group tracking flags by version to allow for a better tabular output
-  my @tracking_table;
-  my $tracking_flags = $vars->{tracking_flags};
-  foreach my $flag (@$tracking_flags) {
-    my $flag_type = $flag->flag_type;
-    my $type      = 'status';
-    my $name      = $flag->description;
-    if ($flag_type eq 'tracking' && $name =~ /^(tracking|status)-(.+)/) {
-      ($type, $name) = ($1, $2);
-    }
-
-    my ($existing)
-      = grep { $_->{type} eq $flag_type && $_->{name} eq $name } @tracking_table;
-    if ($existing) {
-      $existing->{$type} = $flag;
-    }
-    else {
-      push @tracking_table, {$type => $flag, name => $name, type => $flag_type,};
-    }
-  }
-  $vars->{tracking_flags_table} = \@tracking_table;
 
   # for the "View -> Hide Treeherder Comments" menu item
   my @treeherder_ids = map { $_->id } @{Bugzilla->treeherder_users};

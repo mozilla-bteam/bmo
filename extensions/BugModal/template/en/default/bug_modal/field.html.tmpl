@@ -16,9 +16,13 @@
   # edit_only: (boolean) always render the edit ui
   # container: (boolean) output just a label and the content (e.g. for multiple fields next to one label)
   # name: (string) field name (default: field.name)
+  # id: (string) optional field id
+  # class: (string) optional field class
+  # advanced: (boolean) if true, hide unless "Show Advanced Fields" is selected (default false)
   # prefix: (string) string to prepend to 'name' and 'id' attributes (default: empty)
   # value: (string) visible value (default: bug.$name)
   # values: (array of string) list of value objects (FIELD_TYPE_SINGLE_SELECT and _BUG_URLS only) (default: lazy-load on edit)
+  # select_size: (integer) the size attribute for <select> (FIELD_TYPE_SINGLE_SELECT and FIELD_TYPE_MULTI_SELECT only)
   # inline: (boolean) output field as a table-cell instead of as a stand-alone div (default: false)
   # no_indent: (boolean) don't indent the field (left-padding) (default: false)
   # full_width: (boolean) the field takes up the complete page width (default: false)
@@ -87,6 +91,13 @@ ELSIF field_type == constants.FIELD_TYPE_MULTI_SELECT || field_type == constants
 ELSE;
   has_value = value != "";
 END;
+IF !select_size.defined;
+  IF field_type == constants.FIELD_TYPE_SINGLE_SELECT;
+    select_size = 0;
+  ELSE;
+    select_size = 5;
+  END;
+END;
 # switch to view mode if edit-only and the current user cannot edit
 IF !editable && edit_only;
   edit_only = 0;
@@ -97,17 +108,27 @@ END;
 %]
 
 <div class="field
+            [%= class FILTER html IF class %]
+            [%~ " expert_fields" IF advanced %]
             [%~ " indent" IF no_label && !no_indent %]
             [%~ " inline" IF inline %]
             [%~ " contains-buttons" IF use_buttons ~%]
             [%~ " bug-list" IF field_type == constants.FIELD_TYPE_BUG_LIST ~%]
             [%~ " edit-hide" IF hide_on_edit %]
             [%~ " edit-show" IF hide_on_view && !hide_on_edit %]"
-  [% IF name %] id="field-[% name FILTER html %]"[% END %]
+  [% IF id %]
+    id="[% id FILTER html %]"
+  [% ELSIF name %]
+    id="field-[% name FILTER html %]"
+  [% END %]
   [% IF hide_on_view %] style="display:none"[% END %]
 >
   [% IF label.defined && !no_label %]
     <div class="name">
+      [%~ IF required && !view_only %]
+        <span class="required_star" aria-label="Required Field">*</span>
+        [% " " %]
+      [% END %]
       [%~ IF help.defined %]
         <a href="[% help FILTER none %]" id="[% name FILTER html %]-help-link" class="help">
         [% aria_labelledby_id = "${name}-help-link" %]
@@ -122,6 +143,24 @@ END;
 
   [% IF !aria_labelledby_html && (aria_label.defined || label.defined) %]
     [% aria_labelledby_html = BLOCK %]aria-label="[% aria_label || label FILTER html %]"[% END %]
+  [% END %]
+
+  [% IF field.is_mandatory || required %]
+    [% aria_required = BLOCK %]
+      aria-required="true" aria-invalid="false" aria-errormessage="field-[% name FILTER html %]-error"
+    [% END %]
+    [% error_message = BLOCK %]
+      <div id="field-[% name FILTER html %]-error" class="input-error bz_default_hidden" aria-live="assertive">
+        [% IF field_type == constants.FIELD_TYPE_SINGLE_SELECT %]
+          You must select a
+        [% ELSIF field_type == constants.FIELD_TYPE_MULTI_SELECT %]
+          You must select one or more
+        [% ELSE %]
+          You must enter the
+        [% END %]
+        [%= label || name FILTER html FILTER lower %] for this [% terms.bug %].
+      </div>
+    [% END %]
   [% END %]
 
   [%# read-only HTML %]
@@ -192,8 +231,8 @@ END;
           [%# single value select %]
           <input type="hidden" id="[% name FILTER html %]-dirty">
           [% IF use_buttons %]
-          <div role="radiogroup" class="buttons toggle" id="[% name FILTER html %]"
-               [%= 'aria-required="true"' IF (field.is_mandatory || required) %] [%= aria_labelledby_html FILTER none %]>
+          <div role="radiogroup" class="buttons toggle" id="[% name FILTER html %]" tabindex="0"
+               [% aria_labelledby_html FILTER none %] [% aria_required FILTER none %]>
             [% IF values.defined %]
               [% FOREACH v IN values %]
                 [% NEXT IF NOT v.is_active AND NOT value.contains(v.name).size %]
@@ -230,7 +269,9 @@ END;
             [% END %]
           </div>
           [% ELSE %]
-          <select name="[% name FILTER html %]" id="[% name FILTER html %]" [% aria_labelledby_html FILTER none %]>
+          <select name="[% name FILTER html %]" id="[% name FILTER html %]"
+                  [% IF select_size > 1 %] size="[% select_size FILTER html %]"[% END %]
+                  [% aria_labelledby_html FILTER none %] [% aria_required FILTER none %]>
             [% IF values.defined %]
               [% FOREACH v IN values %]
                 [% NEXT IF NOT v.is_active AND NOT value.contains(v.name).size %]
@@ -249,7 +290,8 @@ END;
         [% CASE constants.FIELD_TYPE_MULTI_SELECT %]
           [%# multi value select %]
           <input type="hidden" id="[% name FILTER html %]-dirty">
-          <select name="[% name FILTER html %]" id="[% name FILTER html %]" multiple size="5" [% aria_labelledby_html FILTER none %]>
+          <select name="[% name FILTER html %]" id="[% name FILTER html %]" multiple
+                  size="[% select_size FILTER html %]" [% aria_labelledby_html FILTER none %]>
             [% IF values.defined %]
               [%# not implemented %]
             [% ELSE %]
@@ -262,8 +304,8 @@ END;
         [% CASE constants.FIELD_TYPE_FREETEXT %]
           [%# normal input field %]
           <input name="[% name FILTER html %]" id="[% name FILTER html %]" value="[% value FILTER html %]"
-                 [% IF default %] placeholder="[% default FILTER html %]"[% END %]
-                 [%+ aria_labelledby_html FILTER none +%] [% " required" IF required %]>
+                 [% IF default.defined %] placeholder="[% default FILTER html %]"[% END %]
+                 [% aria_labelledby_html FILTER none %] [% aria_required FILTER none %]>
         [% CASE constants.FIELD_TYPE_USER %]
           [% IF action && !action.hidden %]
             <button type="button" class="field-button minor [%= action.class FILTER html IF action.class %]"
@@ -348,6 +390,10 @@ END;
           [%# error %]
           ('[% name FILTER html %]' [[% field_type FILTER html %])] not supported)
 
+      [% END %]
+
+      [% IF error_message.defined %]
+        [% error_message FILTER none %]
       [% END %]
 
       [% IF append_content && content.defined %]

@@ -1,0 +1,815 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+  USE Bugzilla;
+
+  bug_modal = 1;
+
+  # use the placeholder bug
+  bug = default;
+
+  # reset variables to avoid unexpected inheritance
+  default = undef;
+  class = undef;
+
+  # define default args for the INCLUDEs and WRAPPERs below
+  view_only = 0
+  edit_only = 1
+
+  # custom fields that have custom rendering, or should not be rendered
+  rendered_custom_fields = [
+    'cf_user_story',
+    'cf_last_resolved',
+  ];
+
+  # all custom fields
+  custom_fields = Bugzilla.active_custom_fields(product => bug.product_obj);
+
+  # count set project/tracking/blocking flags
+  tracking_flags_has = 0;
+  project_flags_has = 0;
+  blocking_flags_has = 0;
+  FOREACH flag IN tracking_flags;
+    IF flag.flag_type == "tracking";
+      tracking_flags_has = 1;
+    END;
+    IF flag.flag_type == "project";
+      project_flags_has = 1;
+    END;
+    IF flag.flag_type == 'blocking';
+      blocking_flags_has = 1;
+    END;
+  END;
+
+  # expose all the values required in `create.js` through `data` attributes on the `<form>`
+  component_descriptions = [];
+  description_templates = [];
+  default_bug_types = [];
+  default_assignees = [];
+  default_qa_contacts = [];
+  default_ccs = [];
+  triage_owners = [];
+  flags = [];
+
+  FOREACH c = product.components;
+    NEXT IF NOT c.is_active;
+
+    component_descriptions.push(c.description);
+    default_bug_types.push(c.default_bug_type);
+    default_assignees.push(c.default_assignee.login);
+    default_ccs.push(c.initial_cc.login);
+    triage_owners.push(c.triage_owner.login);
+
+    description_template = c.bug_description_template || product.bug_description_template;
+    description_templates.push(description_template.replace('\\r', ''));
+
+    IF Param("useqacontact");
+      default_qa_contacts.push(c.default_qa_contact.login);
+    END;
+
+    flag_list = [];
+    FOREACH f = c.flag_types.bug;
+      flag_list.push(f.id);
+    END;
+    FOREACH f = c.flag_types.attachment;
+      flag_list.push(f.id);
+    END;
+    flags.push(flag_list);
+  END;
+
+  status_comment_required = {};
+  FOREACH status = bug_status;
+    status_comment_required.${status.name} = status.comment_required_on_change_from();
+  END;
+
+  filtered_product = product.name FILTER uri;
+%]
+
+<form name="changeform" id="create-form" class="enter_bug_form" method="post"
+      action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data"
+      data-component-descriptions="[% json_encode(component_descriptions) FILTER html %]"
+      data-description-templates="[% json_encode(description_templates) FILTER html %]"
+      data-default-bug-types="[% json_encode(default_bug_types) FILTER html %]"
+      data-default-assignees="[% json_encode(default_assignees) FILTER html %]"
+      data-default-qa-contacts="[% json_encode(default_qa_contacts) FILTER html %]"
+      data-default-ccs="[% json_encode(default_ccs) FILTER html %]"
+      data-triage-owners="[% json_encode(triage_owners) FILTER html %]"
+      data-flags="[% json_encode(flags) FILTER html %]"
+      data-keywords="[% json_encode(active_keywords.pluck('name')) FILTER html %]"
+      data-status-comment-required="[% json_encode(status_comment_required) FILTER html %]"
+>
+  <input type="hidden" name="filed_via" value="standard_form">
+  <input type="hidden" name="product" value="[% product.name FILTER html %]">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+  <input type="hidden" name="bug_ignored" value="[% bug_ignored ? "1" : "0" %]">
+
+<div role="toolbar" id="page-toolbar">
+  <h2>File a New [% terms.Bug %]</h2>
+  <div role="group" class="buttons">
+    <button type="button" id="add-comment-btn" class="secondary" aria-label="Add Comment">
+      Add Description &darr;
+    </button>
+    [% IF user.in_group('canconfirm') %]
+      <button type="button" id="toggle-advanced" class="secondary"
+          data-show="Hide Advanced Fields" data-hide="Show Advanced Fields">
+        Show Advanced Fields
+      </button>
+    [% END %]
+    <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% filtered_product FILTER none %]&amp;format=guided">
+      <button type="button" class="secondary">Use Guided Form</button>
+    </a>
+    <button type="button" id="use-legacy-form" class="secondary">Use Legacy Form</button>
+  </div>
+</div>
+
+[% Hook.process('before_modules') %]
+
+[%# === header === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = ""
+%]
+  <div id="summary-container">
+    [%# summary %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.short_desc
+        field_type = constants.FIELD_TYPE_FREETEXT
+        value = short_desc
+        required = 1
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#short_desc"
+    %]
+
+    [%# possible duplicates %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        container = 1
+        id = "possible_duplicates_container"
+        class = "bz_default_hidden"
+        label = "Possible Duplicates"
+    %]
+      <div id="possible_duplicates"></div>
+    [% END %]
+  </div>
+[% END %]
+
+[%# === categories === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Categories"
+%]
+  [% WRAPPER fields_lhs %]
+    [% filtered_component = bug.component_obj.name FILTER uri %]
+
+    [%# product %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.product
+        field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        required = 1
+        view_only = 1
+        help = basepath _ "describecomponents.cgi?product=$filtered_product"
+    %]
+
+    [%# component %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        container = 1
+        label = "Component"
+        required = 1
+        help = basepath _ "describecomponents.cgi?product=$filtered_product"
+    %]
+      <div id="component-selection">
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.component
+            field_type = constants.FIELD_TYPE_SINGLE_SELECT
+            values = product.components
+            value = bug.component_
+            select_size = 7
+            inline = 1
+            no_indent = 1
+            required = 1
+        %]
+        <div id="component-description"></div>
+      </div>
+      <div id="component-tip">
+        Not sure which component to choose? Use the
+        <a href="[% basepath FILTER none %]enter_bug.cgi?product=[% filtered_product FILTER none %]&amp;format=guided">
+          Guided [% terms.Bug %] Form
+        </a>
+        instead to report your issue.
+      </div>
+    [% END %]
+
+    [%# version %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.version
+        field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        values = version
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#version"
+        advanced = 1
+    %]
+
+    [%# platform %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        container = 1
+        name = "platform"
+        label = "Platform"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#rep_platform"
+        advanced = 1
+    %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.rep_platform
+          field_type = constants.FIELD_TYPE_SINGLE_SELECT
+          values = bug_fields.rep_platform.legal_values
+          aria_label = bug_fields.rep_platform.description
+          inline = 1
+          no_indent = 1
+        %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.op_sys
+          field_type = constants.FIELD_TYPE_SINGLE_SELECT
+          values = bug_fields.op_sys.legal_values
+          aria_label = bug_fields.op_sys.description
+          inline = 1
+        %]
+      <button type="button" id="use-my-platform" class="secondary inline"
+          aria-controls="rep_platform op_sys" aria-label="Use My Platform"
+          data-platform="[% rep_platform FILTER html %]"
+          data-system="[% rep_op_sys FILTER html %]">
+        My Platform
+      </button>
+      <button type="button" id="use-all-platforms" class="secondary inline"
+          aria-controls="rep_platform op_sys" aria-label="Use All Platforms"
+          data-platform="All" data-system="All">
+        All Platforms
+      </button>
+    [% END %]
+
+  [% END %]
+  [% WRAPPER fields_rhs %]
+
+    [%# type %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.bug_type
+        field_type = constants.FIELD_TYPE_SINGLE_SELECT
+        values = bug_fields.bug_type.legal_values
+        use_buttons = 1
+        required = Param('require_bug_type')
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_type"
+    %]
+
+    [%# importance %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        name = "importance"
+        no_label = 1
+        no_indent = 1
+        container = 1
+        advanced = 1
+    %]
+      [% IF Param('letsubmitterchoosepriority') %]
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.priority
+            field_type = constants.FIELD_TYPE_SINGLE_SELECT
+            values = bug_fields.priority.legal_values
+            aria_label = bug_fields.priority.description
+            no_indent = 1
+            inline = 1
+            label = "Priority"
+            help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#priority"
+        %]
+      [% END %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.bug_severity
+          field_type = constants.FIELD_TYPE_SINGLE_SELECT
+          values = bug_fields.bug_severity.legal_values
+          aria_label = bug_fields.bug_severity.description
+          inline = 1
+          label = "Severity"
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_severity"
+      %]
+      [% UNLESS cf_hidden_in_product('cf_rank', bug.product) %]
+        [% rendered_custom_fields.push('cf_rank') %]
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.cf_rank
+            field_type = constants.FIELD_TYPE_INTEGER
+            inline = 1
+            label = "Rank"
+            help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#rank"
+        %]
+      [% END %]
+    [% END %]
+
+    [%# points %]
+    [% UNLESS cf_hidden_in_product('cf_fx_points', bug.product) %]
+      [% rendered_custom_fields.push('cf_fx_points') %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.cf_fx_points
+          field_type = bug_fields.cf_fx_points.type
+          values = bug_fields.cf_fx_points.legal_values
+          hide_on_view = bug.cf_fx_points == "---"
+          advanced = 1
+      %]
+    [% END %]
+
+  [% END %]
+[% END %]
+
+[%# === tracking === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Tracking"
+    advanced = 1
+%]
+  [% WRAPPER fields_lhs %]
+
+    [%# status %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        container = 1
+        label = "Status"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugStatuses"
+    %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          prefix = prefix
+          field = bug_fields.bug_status
+          field_type = constants.FIELD_TYPE_SINGLE_SELECT
+          values = bug_status
+          aria_label = bug_fields.bug_status.description
+          inline = 1
+          no_indent = 1
+          edit_only = 1
+      %]
+      [% UNLESS prefix %]
+        <div id="assigned-container" style="display:none">
+          <button type="button" id="mark-as-assigned-btn" class="secondary">
+            Mark as Assigned
+          </button>
+        </div>
+      [% END %]
+    [% END %]
+
+    [%# milestone %]
+    [% IF Param("usetargetmilestone") && Param("letsubmitterchoosemilestone") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.target_milestone
+          field_type = constants.FIELD_TYPE_SINGLE_SELECT
+          values = ${bug_fields.target_milestone.name}
+          label = "Milestone"
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#target_milestone"
+      %]
+    [% END %]
+
+    [%# iteration %]
+    [% UNLESS cf_hidden_in_product('cf_fx_iteration', bug.product) %]
+      [% rendered_custom_fields.push('cf_fx_iteration') %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.cf_fx_iteration
+          field_type = bug_fields.cf_fx_iteration.type
+          values = bug_fields.cf_fx_iteration.legal_values
+      %]
+    [% END %]
+
+    [%# due date %]
+    [% UNLESS cf_hidden_in_product('cf_due_date', bug.product) %]
+      [% rendered_custom_fields.push('cf_due_date') %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.cf_due_date
+          field_type = bug_fields.cf_due_date.type
+      %]
+    [% END %]
+
+    [% IF project_flags_has %]
+      [%# project flags %]
+      [% WRAPPER bug_modal/field.html.tmpl
+          container = 1
+          label = "Project Flags"
+          help = "https://wiki.mozilla.org/BMO/UserGuide#Project_Flags"
+      %]
+        [% INCLUDE bug_modal/tracking_flags.html.tmpl
+            type = "project"
+        %]
+      [% END %]
+    [% END %]
+
+  [% END %]
+  [% WRAPPER fields_rhs %]
+
+    [% IF tracking_flags_has %]
+      [%# tracking flags %]
+      [% WRAPPER bug_modal/field.html.tmpl
+          container = 1
+          label = "Tracking Flags"
+          help = "https://wiki.mozilla.org/BMO/UserGuide#Tracking_Flags"
+      %]
+        [% INCLUDE bug_modal/tracking_flags.html.tmpl
+            type = "tracking"
+        %]
+      [% END %]
+    [% END %]
+
+    [% IF blocking_flags_has %]
+      [%# blocking flags %]
+      [% WRAPPER bug_modal/field.html.tmpl
+          container = 1
+          label = "Blocking Flags"
+          help = "https://wiki.mozilla.org/BMO/UserGuide#Blocking_Flags"
+      %]
+        [% INCLUDE bug_modal/tracking_flags.html.tmpl
+            type = "blocking"
+        %]
+      [% END %]
+    [% END %]
+
+  [% END %]
+[% END %]
+
+[%# === people === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "People"
+    advanced = 1
+%]
+  [% WRAPPER fields_lhs %]
+
+    [%# assignee %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        field = bug_fields.assigned_to
+        field_type = constants.FIELD_TYPE_USER
+        action = {
+          class = "take-btn"
+          caption = "Take"
+          hidden = bug.assigned_to.id == user.id || !user.in_group("editbugs")
+        }
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#assigned_to"
+    %]
+    [% END %]
+
+    [%# mentors %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.bug_mentor
+        field_type = constants.FIELD_TYPE_USERS
+        name = "bug_mentors"
+        value = bug_mentors
+        label = "Mentors"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_mentor"
+    %]
+
+    [%# qa contact %]
+    [% IF Param("useqacontact") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.qa_contact
+          field_type = constants.FIELD_TYPE_USER
+          default = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
+      %]
+    [% END %]
+
+  [% END %]
+  [% WRAPPER fields_rhs %]
+
+    [%# triage owner %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        container = 1
+        label = "Triage Owner"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#triage_owner"
+    %]
+      <div id="triage-owner"><em>None</em></div>
+    [% END %]
+
+    [%# cc %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.cc
+        field_type = constants.FIELD_TYPE_USERS
+        value = cc
+        name = "cc"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#cc"
+    %]
+
+    [%# default cc %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        container = 1
+        label = "Default CC"
+        name = "default-cc"
+        class = "bz_default_hidden"
+    %]
+      <em>None</em>
+    [% END %]
+
+  [% END %]
+[% END %]
+
+[%# === references === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "References"
+    advanced = 1
+%]
+  [% WRAPPER fields_lhs %]
+
+    [%# dependencies %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.dependson
+        field_type = constants.FIELD_TYPE_FREETEXT
+        value = dependson
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#dependson"
+    %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.blocked
+        field_type = constants.FIELD_TYPE_FREETEXT
+        value = blocked
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#blocks"
+    %]
+
+    [%# regressions %]
+    [% IF Param('use_regression_fields') %]
+      [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.regressed_by
+        field_type = constants.FIELD_TYPE_FREETEXT
+        value = regressed_by
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#regressed_by"
+      %]
+    [% END %]
+
+  [% END %]
+  [% WRAPPER fields_rhs %]
+
+    [%# url %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.bug_file_loc
+        field_type = constants.FIELD_TYPE_FREETEXT
+        value = bug_file_loc
+        default = "https://"
+        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_file_loc"
+    %]
+
+    [%# see also %]
+    [% IF Param("use_see_also") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.see_also
+          field_type = constants.FIELD_TYPE_FREETEXT
+          value = see_also
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#see_also"
+      %]
+    [% END %]
+
+  [% END %]
+[% END %]
+
+[%# === details === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Details"
+    advanced = 1
+%]
+  [% WRAPPER fields_lhs %]
+
+    [%# alias %]
+    [% IF Param("usebugaliases") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.alias
+          field_type = constants.FIELD_TYPE_FREETEXT
+          value = alias
+          short_width = 1
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#alias"
+      %]
+    [% END %]
+
+    [%# keywords %]
+    [% INCLUDE bug_modal/field.html.tmpl
+        field = bug_fields.keywords
+        field_type = constants.FIELD_TYPE_KEYWORDS
+        value = keywords
+        help = basepath _ "describekeywords.cgi"
+    %]
+
+    [%# whiteboards %]
+    [% IF Param("usestatuswhiteboard") %]
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.status_whiteboard
+          field_type = constants.FIELD_TYPE_FREETEXT
+          help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
+      %]
+      [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product) %]
+        [% rendered_custom_fields.push('cf_qa_whiteboard') %]
+        [% INCLUDE bug_modal/field.html.tmpl
+            field = bug_fields.cf_qa_whiteboard
+            field_type = bug_fields.cf_qa_whiteboard.type
+        %]
+      [% END %]
+    [% END %]
+
+    [%# custom fields (except textarea) %]
+    [%
+      FOREACH field = custom_fields;
+        NEXT UNLESS field.enter_bug;
+        NEXT IF field.type == constants.FIELD_TYPE_EXTENSION || field.type == constants.FIELD_TYPE_TEXTAREA;
+        NEXT IF rendered_custom_fields.exists(field.name);
+        NEXT IF cf_hidden_in_product(field.name, bug.product);
+        INCLUDE bug_modal/field.html.tmpl
+          field = field
+          field_type = field.type
+          values = field.is_select ? bug_fields.${field.name}.legal_values : undef;
+      END;
+    %]
+
+    [% Hook.process('details_lhs') %]
+  [% END %]
+  [% WRAPPER fields_rhs %]
+
+    [%# flags %]
+    [% WRAPPER bug_modal/field.html.tmpl
+        name = "bug_flags"
+        container = 1
+        label = terms.Bug _ " Flags"
+    %]
+      [% INCLUDE bug_modal/flags.html.tmpl
+          types = bug.flag_types.skip("name", "needinfo")
+      %]
+    [% END %]
+
+    [% Hook.process('details_rhs') %]
+  [% END %]
+
+  [%# custom fields (textarea) %]
+  [%
+    FOREACH field IN custom_fields;
+      NEXT IF field.type != constants.FIELD_TYPE_TEXTAREA;
+      NEXT IF field.name == "cf_crash_signature"; # Rendered below
+      Hook.process('custom_field-' _ field.name);
+      NEXT IF rendered_custom_fields.exists(field.name);
+      INCLUDE bug_modal/field.html.tmpl
+        field = field
+        field_type = field.type
+      ;
+    END;
+  %]
+[% END %]
+
+[%# === Crash === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Crash Data"
+    advanced = 1
+    collapsed = 1
+%]
+  [% Hook.process('custom_field-cf_crash_signature', 'bug_modal/edit.html.tmpl'); %]
+[% END %]
+
+[%# === groups === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Security"
+%]
+  [%# `bug_modal/groups.html.tmpl` cannot be used here because it assumes a filed bug’s `groups` %]
+  <div class="groups edit-show">
+    [% Hook.process('security') %]
+    [% INCLUDE "bug/create/security.html.tmpl" %]
+  </div>
+[% END %]
+
+[%# === user story === %]
+
+[% IF bug.user_story_visible.0 %]
+  [% WRAPPER bug_modal/module.html.tmpl
+      title = "User Story"
+      advanced = 1
+      collapsed = 1
+      no_collapse_persist = 1
+      subtitle = ""
+  %]
+    <textarea id="cf_user_story" name="cf_user_story" rows="10" cols="80"
+              aria-label="User Story">
+    </textarea>
+  [% END %]
+[% END %]
+
+[%# === timetracking === %]
+[% IF user.is_timetracker %]
+  [%
+    PROCESS bug/time.html.tmpl;
+  %]
+  [% WRAPPER bug_modal/module.html.tmpl
+      title     = "Time Tracking"
+      advanced = 1
+      collapsed = 1
+      no_collapse_persist = 1
+  %]
+    [% WRAPPER fields_lhs %]
+      [% estimated_time = PROCESS formattimeunit time_unit = bug.estimated_time %]
+      [% INCLUDE bug_modal/field.html.tmpl
+         field = bug_fields.estimated_time
+         field_type = constants.FIELD_TYPE_FREETEXT
+         value = estimated_time
+         short_width = 1
+         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#estimated_time"
+      %]
+      [% current_estimate = PROCESS formattimeunit time_unit = (bug.actual_time + bug.remaining_time) %]
+      [% INCLUDE bug_modal/field.html.tmpl
+         label = "Current Est"
+         value = current_estimate
+         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#current_estimate"
+      %]
+      [% hours_worked = PROCESS formattimeunit time_unit = bug.actual_time %]
+      [% WRAPPER bug_modal/field.html.tmpl
+         field_type = constants.FIELD_TYPE_FREETEXT
+         label = "Hours Worked"
+         name = "work_time"
+         value = '0.0'
+         short_width = 1
+         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#work_time"
+      %]
+        [% PROCESS formattimeunit time_unity = bug.actual_time %]
+      [% END %]
+      [% hours_left = PROCESS formattimeunit time_unit = bug.remaining_time %]
+      [% INCLUDE bug_modal/field.html.tmpl
+         field = bug_fields.remaining_time
+         field_type = constants.FIELD_TYPE_FREETEXT
+         value = hours_left
+         short_width = 1
+         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#remaining_time"
+      %]
+    [% END %]
+
+    [% WRAPPER fields_rhs %]
+      [% INCLUDE bug_modal/field.html.tmpl
+         field = bug_fields.deadline
+         field_type = constants.FIELD_TYPE_DATE
+         value = deadline
+         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#deadline"
+      %]
+      <div>
+        <a href="[% basepath FILTER none %]summarize_time.cgi?id=[% bug.bug_id FILTER none %]&amp;do_depends=1">
+          Summarize time (including time for [% terms.bugs %]
+          blocking this [% terms.bug %])</a>
+      </div>
+    [% END %]
+  [% END %]
+[% END %]
+
+[%# === extensions which are modules === %]
+
+[% Hook.process('module') %]
+
+[%# === attachments === %]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "Attachment"
+%]
+  <div id="attach-file-action-outer">
+    <button type="button" id="attach-new-file" class="secondary">Attach New File</button>
+  </div>
+  <div id="attach-file-content-outer" hidden>
+    <table class="attachment_entry">
+      [% PROCESS attachment/createformcontents.html.tmpl
+          flag_types = product.flag_types.attachment
+          any_flags_requesteeble = 1
+          flag_table_id ="attachment_flags" %]
+    </table>
+    <button type="button" id="attach-no-file" class="secondary">Don’t Attach File</button>
+  </div>
+[% END %]
+
+[%# === initialize module visibility === %]
+
+<script [% script_nonce FILTER none %]>
+  init_module_visibility();
+</script>
+
+[% Hook.process('after_modules') %]
+
+[%# === comments === %]
+
+[% INCLUDE bug_modal/new_comment.html.tmpl; %]
+
+<div id="new-comment-actions">
+  <button type="submit" id="commit" class="save-btn primary">Save Changes</button>
+</div>
+
+[%# === bottom actions === %]
+
+<div id="bottom-actions">
+  <div id="bottom-right-actions">
+    <button type="submit" name="maketemplate" id="make-template" class="secondary">
+      Remember values as bookmarkable template
+    </button>
+    <button type="button" id="top-btn" class="secondary" aria-label="Go to Page Top">Top &uarr;</button>
+  </div>
+</div>
+
+</form>
+
+[%# === individual bugs addition === %]
+
+[% PROCESS "bug/tagging.html.tmpl" %]
+
+[%# === blocks === %]
+
+[% BLOCK fields_lhs %]
+  <div class="fields-lhs">[% content FILTER none %]</div>
+[% END %]
+
+[% BLOCK fields_rhs %]
+  <div class="fields-rhs">[% content FILTER none %]</div>
+[% END %]

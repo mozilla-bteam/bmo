@@ -130,7 +130,6 @@
                 [% END %]
                 title="[% type.description FILTER html %]"
                 aria-label="[% type.name FILTER html %] Flag Value"
-                onchange="toggleRequesteeField(this);"
                 class="flag_select flag_type-[% type.id %]"
                 data-id="[% type.id %]" data-name="[% type.name FILTER html %]"
                 [% IF !can_edit_flag %] disabled="disabled"[% END %]>
