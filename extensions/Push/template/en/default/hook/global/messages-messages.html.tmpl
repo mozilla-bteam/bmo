@@ -13,4 +13,10 @@
 [% ELSIF message_tag == "push_message_deleted" %]
   The message has been deleted.
 
+[% ELSIF message_tag == "push_queue_depth" %]
+  [% count FILTER html %] push jobs in the queue.
+
+[% ELSIF message_tag == "push_queue_backlog_depth" %]
+  [% count FILTER html %] push jobs in the backlog queue.
+
 [% END %]

@@ -1128,56 +1128,129 @@ This method can throw all the same errors as :ref:`rest_single_bug`, plus:
 Graph
 -----
 
-Return a graph of bug relationships.
+Return a graph of bug relationships such as dependencies, regressions, and duplicates.
+By default, resolved bugs are not returned but can be if needed. The bug ID provided
+will be the root node of the graph.
 
 **Request**
 
-To return a simple json tree of the blocks/depends for a given bug.
+To return a graph of dependencies (default) for a given bug. Each bug in the tree will
+include basic information about the bug such as status, summary, etc.
 
 .. code-block:: text
 
-  GET /rest/bug/1156/graph?type=json_tree
+  GET /rest/bug/1156/graph
 
-To return a simple json tree that includes bug data in a manner similar to the "get" API,
-use bug_tree
-
-.. code-block:: text
-
-  GET /rest/bug/1156/graph?type=bug_tree
-
-To feed the API to D3's force directed graph visualization:
+To return a simple graph that only includes the bug IDs, then pass ``ids_only=1``.
+Note, this will be faster for very large graphs.
 
 .. code-block:: text
 
-  GET /rest/bug/1156/graph?type=force_directed_graph
+  GET /rest/bug/1156/graph?ids_only=1
 
-Also supported, hierarchical edge bundling:
-
-.. code-block:: text
-
-  GET /rest/bug/1156/graph?type=hierarchical_edge_bundling
-
-
-The default relationship is the dependson to blocked relationship. To build the graph in the opposite direction:
+The default is the dependencies graph. To return the graph for other types, pass the
+``relationship={dependencies,regressions,duplicates}`` parameter.
 
 .. code-block:: text
 
-  GET /rest/bug/graph/1156?type=json_tree&relationship=dependencies:blocked,dependson
+  GET /rest/bug/1156/graph?relationship=regressions
 
-============  ======  ================================================================
-name          type    description
-============  ======  ================================================================
-type          string  One of "text", "json_tree", "bug_tree", "force_directed_graph",
-                      or "hierarchical_edge_bundling"
-                      Required.
-depth         int     Limit the depth of the graph.
-                      Default: 3, max: 9
-relationship  string  One of "dependencies:dependson,blocked",
-                             "dependencies:blocked,dependson",
-                             "duplicates:dupe_of,dupe", or
-                             "duplicates:dupe,dupe_of".
-                      Default: "dependencies:dependson,blocked"
-============  ======  ================================================================
+============  =======  ================================================================
+name          type     description
+============  =======  ================================================================
+ids_only      boolean  Do not return simple bug data with each bug ID in the tree.
+                       Default: False
+depth         int      Limit the depth of the graph.
+                       Default: 3, Max: 9
+show_resolved boolean  Enable if you want to also see RESOLVED bugs in the graph.
+                       Default: False
+relationship  string   One of "dependencies", "duplicates", or "regressions".
+                       Default: "dependencies"
+============  =======  ================================================================
+
+**Response**
+
+The default return object will be an object with two trees based on the type of
+relationship selected. For dependencies, it will be ``blocked`` and ``dependson``.
+For regressions, it will be be ``regresses`` and ``regressed_by``. And for duplicates,
+it will be ``dupe_of`` and ``dupe``.
+
+.. code-block:: js
+
+   {
+     "blocked": {
+       "2": {
+         "3": {
+           "bug": {
+             "alias": null,
+             "id": 3,
+             "is_confirmed": 1,
+             "op_sys": "Unspecified",
+             "platform": "Unspecified",
+             "priority": "--",
+             "resolution": "",
+             "severity": "normal",
+             "status": "NEW",
+             "summary": "Another new test bug",
+             "target_milestone": "---",
+             "type": "defect",
+             "url": "",
+             "version": "unspecified",
+             "whiteboard": ""
+           }
+         },
+         "bug": {
+           "alias": null,
+           "id": 2,
+           "is_confirmed": 1,
+           "op_sys": "Unspecified",
+           "platform": "Unspecified",
+           "priority": "--",
+           "resolution": "",
+           "severity": "normal",
+           "status": "NEW",
+           "summary": "this is a new test bug",
+           "target_milestone": "---",
+           "type": "defect",
+           "url": "",
+           "version": "unspecified",
+           "whiteboard": ""
+         }
+       },
+       "bug": {
+         "alias": null,
+         "id": 1,
+         "is_confirmed": 1,
+         "op_sys": "Unspecified",
+         "platform": "Unspecified",
+         "priority": "--",
+         "resolution": "",
+         "severity": "normal",
+         "status": "NEW",
+         "summary": "This is a new test bug",
+         "target_milestone": "---",
+         "type": "defect",
+         "url": "",
+         "version": "unspecified",
+         "whiteboard": ""
+       }
+     },
+     "dependson": {}
+   }
+
+The following response, is what will happen if ``ids_only=1`` is passed.
+
+.. code-block:: js
+
+   {
+     "blocked": {
+       "2": {
+         "3": {}
+       }
+     },
+     "dependson": {}
+   }
+
 
 .. _rest_possible_duplicates:
 

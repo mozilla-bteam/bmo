@@ -10,9 +10,7 @@ package Bugzilla::API::V1::BugGraph;
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
 
-use Graph::D3;
-use List::Util qw(none);
-use Mojo::Util qw(dumper);
+use List::Util qw(any none);
 use PerlX::Maybe;
 use Try::Tiny;
 
@@ -29,89 +27,70 @@ sub setup_routes {
 
 sub graph {
   my ($self, $params) = @_;
+  my $user = $self->bugzilla->login;
 
   Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
-  my $user         = $self->bugzilla->login;
-  my $bug_id       = $self->param('id');
-  my $type         = $self->param('type') || 'json_tree';
-  my $relationship = $self->param('relationship');
-  my $depth        = $self->param('depth') || 3;
+  my $bug_id        = $self->param('id');
+  my $relationship  = $self->param('relationship') || 'dependencies';
+  my $depth         = $self->param('depth')        || 3;
+  my $ids_only      = $self->param('ids_only')      ? 1 : 0;
+  my $show_resolved = $self->param('show_resolved') ? 1 : 0;
 
   if ($bug_id !~ /^\d+$/) {
     ThrowCodeError('param_invalid',
       {function => 'bug/<id>/graph', param => 'bug_id'});
   }
 
-  if (defined $depth) {
-    if ($depth !~ /^\d+$/) {
-      ThrowCodeError('param_invalid',
-        {function => 'bug/<id>/graph', param => 'depth'});
-    }
-
-    if ($depth > 9 || $depth < 1) {
-      ThrowCodeError('param_invalid',
-        {function => 'bug/<id>/graph', param => 'depth'});
-    }
-  }
-
-  if (none { $type eq $_ }
-    qw(text json_tree bug_tree hierarchical_edge_bundling force_directed_graph))
-  {
+  if ($depth !~ /^\d+$/ || ($depth > 9 || $depth < 1)) {
     ThrowCodeError('param_invalid',
-      {function => 'bug/<id>/graph', param => 'type'});
+      {function => 'bug/<id>/graph', param => 'depth'});
   }
 
-  my ($table, $fields, $source, $sink);
-  if ($relationship) {
-    my %relationships = (
-      dependencies => ['dependson,blocked', 'blocked,dependson'],
-      duplicates   => ['dupe,dupe_of',      'dupe_of,dupe']
-    );
-    ($table, $fields) = split /:/, $relationship;
-    if ( none { $table eq $_ } keys %relationships
-      || none { $fields eq $_ } @{$relationships{$table}})
-    {
-      ThrowCodeError('param_invalid',
-        {function => 'bug/<id>/graph', param => 'relationship'});
-    }
-    ($table, $source, $sink) = ($table, split /,/, $fields // '');
+  my %relationships = (
+    dependencies => ['dependson,blocked',      'blocked,dependson'],
+    duplicates   => ['dupe,dupe_of',           'dupe_of,dupe'],
+    regressions  => ['regresses,regressed_by', 'regressed_by,regresses'],
+  );
+
+  if (none { $relationship eq $_ } keys %relationships) {
+    ThrowCodeError('param_invalid',
+      {function => 'bug/<id>/graph ', param => 'relationship'});
   }
 
-  my $result;
+  my $result = {};
   try {
-    Bugzilla->switch_to_shadow_db();
-    my $report = Bugzilla::Report::Graph->new(
-      dbh    => Bugzilla->dbh,
-      bug_id => $bug_id,
-      maybe
-        table => $table,
-      maybe
+    foreach my $fields (@{$relationships{$relationship}}) {
+      Bugzilla->switch_to_shadow_db();
+
+      my ($source, $sink) = split /,/, $fields;
+
+      my $report = Bugzilla::Report::Graph->new(
+        bug_id => $bug_id,
+        table  => $relationship,
         source => $source,
-      maybe
-        sink => $sink,
-      maybe depth => $depth,
-    );
+        sink   => $sink,
+        depth  => $depth,
+      );
 
-    # $report->prune_graph(sub { $user->visible_bugs($_[0]) });
+      # Remove any secure bugs that user cannot see
+      $report->prune_graph(sub { $user->visible_bugs($_[0]) });
 
-    if ($type eq 'text') {
-      $result = {text => $report->graph};
-    }
-    elsif ($type eq 'json_tree') {
-      my $tree = $report->tree;
-      $result = {tree => $tree};
-    }
-    elsif ($type eq 'bug_tree') {
-      my $bugs = Bugzilla::Bug->new_from_list([$report->graph->vertices]);
-      foreach my $bug (@$bugs) {
-        $report->graph->set_vertex_attributes($bug->id, $self->_bug_to_hash($bug));
+      # If we do not want resolved bugs (default) then filter those
+      # by passing in reference to the subroutine for filtering out
+      # resolved bugs
+      if (!$show_resolved) {
+        $report->prune_graph(sub { $self->_prune_resolved($_[0]) });
       }
-      $result = {tree => $report->tree};
-    }
-    elsif ($type eq 'force_directed_graph' || $type eq 'hierarchical_edge_bundling')
-    {
-      $result = Graph::D3->new(graph => $report->graph)->$type;
+
+      if (!$ids_only) {
+        my $bugs = Bugzilla::Bug->new_from_list([$report->graph->vertices]);
+        foreach my $bug (@$bugs) {
+          $report->graph->set_vertex_attributes($bug->id, $bug->to_hash);
+        }
+      }
+
+      $result->{$source} = $report->tree;
     }
   }
   catch {
@@ -122,12 +101,21 @@ sub graph {
   return $self->render(json => $result);
 }
 
-sub _bug_to_hash {
-  my ($self, $bug) = @_;
-  return {
-    summary => $bug->short_desc,
-    keyword => [map { $_->name } @{$bug->keyword_objects}],
-  };
+# This method takes a set of bugs and using a single SQL statement,
+# removes any bugs from the list which have a non-empty resolution (unresolved)
+sub _prune_resolved {
+  my ($self, $bugs) = @_;
+  my $dbh = Bugzilla->dbh;
+
+  return $bugs if !$bugs->size;
+
+  my $placeholders = join ',', split //, '?' x $bugs->size;
+  my $query
+    = "SELECT bug_id FROM bugs WHERE (resolution IS NULL OR resolution = '') AND bug_id IN ($placeholders)";
+  my $filtered_bugs
+    = Bugzilla->dbh->selectcol_arrayref($query, undef, $bugs->elements);
+
+  return $filtered_bugs;
 }
 
 1;

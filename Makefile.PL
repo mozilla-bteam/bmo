@@ -65,7 +65,6 @@ my %requires = (
   'FFI::Platypus'                       => 0,
   'Future'                              => '0.34',
   'Graph'                               => 0,
-  'Graph::D3'                           => 0,
   'HTML::Escape'                        => '1.10',
   'IO::Async'                           => '0.71',
   'IPC::System::Simple'                 => 0,
