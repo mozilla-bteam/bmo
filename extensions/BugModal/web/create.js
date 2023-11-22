@@ -3,7 +3,6 @@
 window.addEventListener('DOMContentLoaded', () => {
   const $form = document.querySelector('#create-form');
   const $toggleAdvanced = document.querySelector('#toggle-advanced');
-  const $useLegacyForm = document.querySelector('#use-legacy-form');
   const $componentDescription = document.querySelector('#component-description');
   const $defaultCcField = document.querySelector('#field-default-cc');
   const $defaultCcValue = document.querySelector('#field-value-default-cc');
@@ -84,23 +83,6 @@ window.addEventListener('DOMContentLoaded', () => {
       $toggleAdvanced.addEventListener('click', () => {
         showAdvanced = !showAdvanced;
         toggleAdvancedFields(showAdvanced);
-      });
-    }
-
-    if ($useLegacyForm) {
-      $useLegacyForm.addEventListener('click', () => {
-        // Copy the current form data while removing default/empty values
-        const params = new URLSearchParams(
-          [...new FormData($form).entries(), ['format', 'legacy']].filter(
-            ([key, value]) =>
-              key !== 'token' &&
-              typeof value === 'string' &&
-              value.trim() &&
-              !['--', '---', 'unspecified', 'Unspecified', 'X'].includes(value)
-          )
-        );
-
-        window.location.href = `?${params.toString()}`;
       });
     }
 
