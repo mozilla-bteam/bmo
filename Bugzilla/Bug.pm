@@ -5215,8 +5215,11 @@ sub check_can_change_field {
   if (!$self->{'error'}) {
 
     # Allow the assignee to change anything else.
-    if ( $self->{'assigned_to'} == $user->id
-      || $self->{'_old_assigned_to'} && $self->{'_old_assigned_to'} == $user->id)
+    if (
+      (defined $self->{'assigned_to'} && $self->{'assigned_to'} == $user->id)
+      || (defined $self->{'_old_assigned_to'}
+        && $self->{'_old_assigned_to'} == $user->id)
+      )
     {
       return {allowed => 1};
     }
@@ -5297,7 +5300,9 @@ sub check_can_change_field {
   }
 
   # The reporter is allowed to change anything else.
-  if (!$self->{'error'} && $self->{'reporter_id'} == $user->id) {
+  if (!$self->{'error'}
+    && (defined $self->{'reporter_id'} && $self->{'reporter_id'} == $user->id))
+  {
     return {allowed => 1};
   }
 

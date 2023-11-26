@@ -7,6 +7,7 @@
   #%]
 
 
+[% RETURN UNLESS template.name == 'bug/show-modal.html.tmpl' %]
 [% RETURN UNLESS user.in_group(Param('restrict_comments_enable_group')) %]
 
 [%# using a table to match alignment of the needinfo checkboxes %]

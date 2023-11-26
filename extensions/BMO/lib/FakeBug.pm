@@ -37,7 +37,7 @@ sub _changes_everconfirmed {
 
 sub everconfirmed {
   my $self = shift;
-  return ($self->{'status'} == 'UNCONFIRMED') ? 0 : 1;
+  return (!$self->{'status'} || $self->{'status'} == 'UNCONFIRMED') ? 0 : 1;
 }
 
 1;
