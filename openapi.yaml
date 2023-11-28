@@ -72,14 +72,20 @@ paths:
 
                 comments: {}
         default:
-          description: (Invalid Comment ID) You specified an id in the “comment_ids” argument that is invalid–either you specified something that wasn’t a number, or there is no comment with that id.
+          description: |
+            Various error responses, including:
+
+            * 100 (Invalid Bug Alias)
+              If you specified an alias and there is no bug with that alias.
+            * 101 (Invalid Bug ID)
+              The bug_id you specified doesn't exist in the database.
+            * 102 (Access Denied)
+              You do not have access to the bug_id you specified.
+
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-                properties:
-                  code:
-                    const: 111
 
   /bug/comment/{comment_id}:
     get:
@@ -123,14 +129,17 @@ paths:
                     id: 75
                 bugs: {}
         default:
-          description: (Comment Is Private) You specified the id of a private comment in the “comment_ids” argument, and you are not in the “insider group” that can see private comments.
+          description: |
+            Various error responses, including:
+
+            * 110 (Comment Is Private) 
+              You specified the id of a private comment in the “comment_ids” argument, and you are not in the “insider group” that can see private comments.
+            * 111 (Invalid Comment ID)
+              You specified an id in the “comment_ids” argument that is invalid–either you specified something that wasn’t a number, or there is no comment with that id.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-                properties:
-                  code:
-                    const: 110
 
   /bug/{id}/comment:
     post:
