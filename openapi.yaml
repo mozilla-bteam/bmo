@@ -219,6 +219,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /bug/comment/tags/{query}:
+    get:
+      tags: [Comments]
+      summary: Search for comment tags
+      description: Searches for tags which contain the provided substring.
+      parameters:
+        - name: query
+          in: path
+          description: Only tags containing this substring will be returned.
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: If provided, will return no more than "limit" tags. Defaults to "10".
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: An array of matching tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              example:
+                - "spam"
+        default:
+          description: |
+            Various error responses, including:
+
+            * 125 (Comment Tagging Disabled)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /bug/comment/{comment_id}/tags:
     put:
       tags: [Comments]
