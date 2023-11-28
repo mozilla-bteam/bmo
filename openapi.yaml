@@ -324,6 +324,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /bug/comment/render:
+    post:
+      tags: [Comments]
+      summary: Render comment as HTML
+      description: Returns the HTML rendering of the provided comment text.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  description: Comment text to render.
+                  type: string
+                id:
+                  description: The ID of the bug to render the comment against.
+                  type: integer
+              required:
+                - text
+              additionalProperties: false
+            example:
+              text: "This issue has been fixed in bug 1234."
+              id: 2345
+      responses:
+        200:
+          description: Text containing the HTML rendering
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  html:
+                    type: string
+              example:
+                html: 'This issue has been fixed in <a class="bz_bug_link bz_status_RESOLVED bz_closed" title="RESOLVED FIXED - some issue that was fixed" href="show_bug.cgi?id=1234">bug 1234</a>.'
+        default:
+          description: |
+            Various error responses, including those thrown by :ref:`rest_single_bug`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   schemas:
     Comment:
