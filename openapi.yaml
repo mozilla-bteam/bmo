@@ -210,6 +210,72 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /bug/comment/{comment_id}/tags:
+    put:
+      tags: [Comments]
+      summary: Update tags for a comment
+      description: Adds or removes tags from a comment.
+      parameters:
+        - name: comment_id
+          in: path
+          description: The ID of the comment to update.
+          required: true
+          schema:
+            type: integer
+          example: 75
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                add:
+                  description: The tags to attach to the comment.
+                  type: array
+                  items:
+                    type: string
+                remove:
+                  description: The tags to detach from the comment.
+                  type: array
+                  items:
+                    type: string
+              # QUESTION: should the parameter be in the body?
+              # https://bmo.readthedocs.io/en/latest/api/core/v1/comment.html#update-comment-tags
+              required:
+                - comment_id
+              additionalProperties: false
+            example:
+              # comment_id: 75
+              add:
+                - "spam"
+                - "bad"
+
+      responses:
+        200:
+          description: An array of strings containing the comment's updated tags.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              example:
+                - "bad"
+                - "spam"
+        default:
+          description: |
+            Various error responses, including:
+
+            * 125 (Comment Tagging Disabled)
+            * 126 (Invalid Comment Tag)
+            * 127 (Comment Tag Too Short)
+            * 128 (Comment Tag Too Long)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   schemas:
     Comment:
