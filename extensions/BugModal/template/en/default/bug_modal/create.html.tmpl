@@ -458,6 +458,8 @@
     [%# qa contact %]
     [% IF Param("useqacontact") %]
       [% INCLUDE bug_modal/field.html.tmpl
+          name = "qa_contact"
+          value = qa_contact
           field = bug_fields.qa_contact
           field_type = constants.FIELD_TYPE_USER
           default = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
@@ -783,14 +785,14 @@
 [% INCLUDE bug_modal/new_comment.html.tmpl; %]
 
 <div id="new-comment-actions">
-  <button type="submit" id="commit" class="save-btn primary">Save Changes</button>
+  <button type="submit" id="commit" class="save-btn primary">Submit [% terms.Bug %]</button>
 </div>
 
 [%# === bottom actions === %]
 
 <div id="bottom-actions">
   <div id="bottom-right-actions">
-    <button type="submit" name="maketemplate" id="make-template" class="secondary">
+    <button type="submit" name="maketemplate" id="make-template" class="secondary expert_fields">
       Remember values as bookmarkable template
     </button>
     <button type="button" id="top-btn" class="secondary" aria-label="Go to Page Top">Top &uarr;</button>
