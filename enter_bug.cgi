@@ -460,7 +460,7 @@ if ($cloned_bug) {
 $default{'groups'} = \@groups;
 
 $default{'flags'} = [];
-$default{'flag_types'} = \@{$product->flag_types->{bug}};
+$default{'flag_types'} = $product->flag_types->{bug};
 
 Bugzilla::Hook::process('enter_bug_entrydefaultvars', {vars => $vars, default => \%default});
 
