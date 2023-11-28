@@ -1,2 +1,285 @@
 openapi: 3.1.0
+info:
+  title: WebService API Reference
+  description: BMO is Mozilla's highly customized version of Bugzilla.
+  license:
+    name: MPL-2.0
+    url: https://github.com/mozilla-bteam/bmo/blob/master/LICENSE
+  version: 1.0.0
 
+servers:
+  - url: https://bugzilla.mozilla.org/rest
+    description: Production issue tracker for Firefox and other Mozilla products.
+  - url: https://bugzilla-dev.allizom.org/rest
+    description: Test instance for Bugzilla.
+
+paths:
+  /bug/{id_or_alias}/comment:
+    get:
+      tags: [Comments]
+      summary: Get all comments for a bug
+      description: This allows you to get all comments for a particular bug using the bug ID or alias.
+      parameters:
+        - name: id_or_alias
+          in: path
+          description: A single integer bug ID or alias.
+          required: true
+          schema:
+            type:
+              - string
+              - integer
+        - name: new_since
+          in: query
+          description: If specified, the method will only return comments newer than this time.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        200:
+          description: A list of Comments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bugs:
+                    description: |
+                      This is an object, where the keys are the numeric IDs of the bugs, and the value is a object with a single key, comments, which is an array of comments.
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        comments:
+                          type: array
+                          items:
+                            $ref: "#/components/schemas/Comment"
+                  comments:
+                    type: object
+              example:
+                bugs:
+                  35:
+                    comments:
+                      - time: "2000-07-25T13:50:04Z"
+                        text: "test bug to fix problem in removing from cc list."
+                        bug_id: 35
+                        count: 0
+                        attachment_id: null
+                        is_private: false
+                        tags: []
+                        creator: user@bugzilla.org
+                        creation_time: "2000-07-25T13:50:04Z"
+                        id: 75
+
+                comments: {}
+        default:
+          description: (Invalid Comment ID) You specified an id in the “comment_ids” argument that is invalid–either you specified something that wasn’t a number, or there is no comment with that id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                properties:
+                  code:
+                    const: 111
+
+  /bug/comment/{comment_id}:
+    get:
+      tags: [Comments]
+      summary: Get a specific comment
+      description: This allows you to get a specific comment based on the comment ID
+      parameters:
+        - name: comment_id
+          in: path
+          description: A single integer comment ID.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: A single Comment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    description: This is an object, where the keys are the numeric IDs of the bugs, and the value is a object with a single key, comments, which is an array of comments.
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/Comment"
+                  bugs:
+                    type: object
+              example:
+                comments:
+                  75:
+                    time: "2000-07-25T13:50:04Z"
+                    text: "test bug to fix problem in removing from cc list."
+                    bug_id: 35
+                    count: 0
+                    attachment_id: null
+                    is_private: false
+                    tags: []
+                    creator: user@bugzilla.org
+                    creation_time: "2000-07-25T13:50:04Z"
+                    id: 75
+                bugs: {}
+        default:
+          description: (Comment Is Private) You specified the id of a private comment in the “comment_ids” argument, and you are not in the “insider group” that can see private comments.          
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                properties:
+                  code:
+                    const: 110
+
+components:
+  schemas:
+    Comment:
+      type: object
+      properties:
+        id:
+          description: The globally unique ID for the comment.
+          type: integer
+        bug_id:
+          description: The ID of the bug that this comment is on.
+          type: integer
+        attachment_id:
+          description: If the comment was made on an attachment, this will be the ID of that attachment. Otherwise it will be null.
+          type:
+            - integer
+            - null
+        count:
+          description: The number of the comment local to the bug. The Description is 0, comments start with 1.
+          type: integer
+        text:
+          description: The body of the comment, including any special text (such as “this bug was marked as a duplicate of…”).
+          type: string
+        raw_text:
+          description: The body of the comment without any special additional text.
+          type: string
+        creator:
+          description: The login name of the comment’s author.
+          type: string
+        time:
+          description: The time (in Bugzilla’s timezone) that the comment was added.
+          type: string
+          format: date-time
+        creation_time:
+          description: |
+            This is exactly same as the ``time`` key. Use this
+            field instead of ``time`` for consistency with other
+            methods including :ref:`rest_single_bug` and
+            :ref:`rest_attachments`.
+
+            For compatibility, ``time`` is still usable. However,
+            please note that ``time`` may be deprecated and removed
+            in a future release.
+          type: string
+          format: date-time
+        is_private:
+          description: '``true`` if this comment is private (only visible to a certain group called the "insidergroup"), ``false`` otherwise.'
+          type: boolean
+        is_markdown:
+          description: '``true`` if this comment is private (only visible to a certain group called the "insidergroup"), ``false``'
+          type: boolean
+    Error:
+      type: object
+      properties:
+        error:
+          description: When an error occurs over REST, an object is returned with the key error set to true.
+          const: true
+        message:
+          type: string
+        code:
+          type: integer
+
+tags:
+  - name: Attachments
+    description: The Bugzilla API for creating, changing, and getting the details of attachments.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/attachment.html
+  - name: Bugs
+    description: This part of the Bugzilla REST API allows you to file new bugs in Bugzilla and to get information about existing bugs.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/bug.html
+  - name: Bug User Last Visited
+    description: Update the last-visited time for the specified bug and current user.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/bug-user-last-visit.html
+  - name: Bugzilla Information
+    description: These methods are used to get general configuration information about this Bugzilla instance.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/bugzilla.html
+  - name: Classifications
+    description: This part of the Bugzilla API allows you to deal with the available classifications. You will be able to get information about them as well as manipulate them.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/classification.html
+  - name: Comments
+    description: This allows you to get data about comments, given a bug ID or comment ID.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/comment.html
+  - name: Components
+    description: This part of the Bugzilla API looks at individual components and also allows updating their information.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/component.html
+  - name: Bug Fields
+    description: The Bugzilla API for getting details about bug fields.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/field.html
+  - name: Flag Activity
+    description: This API provides information about activity relating to bug and attachment flags.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/flag-activity.html
+  - name: General
+    description: This is the standard REST API for external programs that want to interact with Bugzilla. It provides a REST interface to various Bugzilla functions.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/general.html
+  - name: Github
+    description: |
+      This API endpoint is for creating attachments in a bug that are redirect links to a
+      specific Github pull request. This allows a bug viewer to click on the Github link
+      and be automatically redirected to the pull request.
+
+      **Github Setup Instructions**
+
+      * From the repository main page, click on the Settings tab.
+      * Click on Webhooks from the left side menu.
+      * Click on the Add Webhook button near the top right.
+      * For the payload url, enter ``https://bugzilla.mozilla.org/rest/github/pull_request``.
+      * Choose ``application/json`` for the content type.
+      * You will need to enter the signature secret obtained from a BMO admin (DO NOT SHARE).
+      * Make sure Enable SSL is turned on.
+      * Select "Let me select individual events" and only enable changes for "Pull Requests".
+      * Make sure at the bottom that "Active" is checked on.
+      * Save the webhook.
+
+      > **Note:**
+        Past pull requests will not automatically get a link created in the bug. New pull
+        requests should get the link automatically when the pull request is first created.
+
+      > **Note:** 
+        The API endpoint looks at the pull request title for the bug id so
+        make sure the title is formatted correctly to allow the bug id to be determined.
+        Examples are: ``Bug 1234:``, ``Bug - 1234``, ``bug 1234``, or ``Bug 1234 -``.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/github.html
+  - name: Groups
+    description: The API for creating, changing, and getting information about groups.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/group.html
+  - name: Products
+    description: This part of the Bugzilla API allows you to list the available products and get information about them.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/product.html
+  - name: Users
+    description: This part of the Bugzilla API allows you to create user accounts, get information about user accounts and to log in or out using an existing account.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/api/core/v1/user.html
+  - name: Webhooks
+    description: These methods are used to access information about and update your configured webhooks.
+    externalDocs:
+      url: https://bmo.readthedocs.io/en/latest/extensions/Webhooks/api/v1/webhooks.html#list
+
+externalDocs:
+  description: Sphinx WebService API Reference
+  url: https://bugzilla.readthedocs.io/en/latest/api/
