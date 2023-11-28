@@ -123,7 +123,7 @@ paths:
                     id: 75
                 bugs: {}
         default:
-          description: (Comment Is Private) You specified the id of a private comment in the “comment_ids” argument, and you are not in the “insider group” that can see private comments.          
+          description: (Comment Is Private) You specified the id of a private comment in the “comment_ids” argument, and you are not in the “insider group” that can see private comments.
           content:
             application/json:
               schema:
@@ -131,6 +131,84 @@ paths:
                 properties:
                   code:
                     const: 110
+
+  /bug/{id}/comment:
+    post:
+      tags: [Comments]
+      summary: Create a comment on a bug
+      description: This allows you to add a comment to a bug in Bugzilla. All comments created via the API will be considered Markdown (specifically GitHub Flavored Markdown).
+      parameters:
+        - name: id
+          in: path
+          description: The ID or alias of the bug to append a comment to.
+          required: true
+          schema:
+            type:
+              - string
+              - integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  description: List of integer bug IDs to add the comment to.
+                  type: array
+                  items:
+                    type: integer
+                comment:
+                  description: The comment to append to the bug. If this is empty or all whitespace, an error will be thrown.
+                  type: string
+                is_private:
+                  description: If set to true, the comment is private, otherwise it is assumed to be public.
+                  type: boolean
+                is_markdown:
+                  description: "If true, the comment will be rendered as markdown. (default: ``false``)"
+                  type: boolean
+                work_time:
+                  description: Adds this many hours to the "Hours Worked" on the bug. If you are not in the time tracking group, this value will be ignored.
+                  type: number
+              required:
+                - comment
+              additionalProperties: false
+            example:
+              ids:
+                - 123
+                - 456
+              comment: "This is an additional comment"
+              is_private: false
+              is_markdown: true
+              work_time: 2.5
+
+      responses:
+        200:
+          description: ID of the newly-created comment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+              example:
+                id: 789
+        default:
+          description: |
+            Various error responses, including:
+
+            * 54 (Hours Worked Too Large)
+            * 100 (Invalid Bug Alias)
+            * 101 (Invalid Bug ID)
+            * 109 (Bug Edit Denied)
+            * 113 (Can't Make Private Comments)
+            * 114 (Comment Too Long)
+            * 140 (Markdown Disabled)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   schemas:
