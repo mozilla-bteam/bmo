@@ -14,7 +14,7 @@ use lib qw(. lib local/lib/perl5);
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Product;
-use Bugzilla::Report::S3;
+use Bugzilla::Report::Net;
 
 use Pod::Usage;
 
@@ -48,7 +48,7 @@ Press <Ctrl-C> to stop or <Enter> to continue...
 EOF
 getc;
 
-my $s3 = Bugzilla::Report::S3->new;
+my $s3 = Bugzilla::Report::Net->new;
 
 my @product_names = map { $_->name } Bugzilla::Product->get_all();
 my $mining_dir = bz_locations()->{'datadir'} . '/mining';
