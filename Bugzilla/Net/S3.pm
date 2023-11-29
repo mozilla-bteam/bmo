@@ -197,4 +197,12 @@ sub _remember_errors {
   return 0;
 }
 
+# If we are running under a test environment, then override
+# the protocol and host to match the docker containers mocking
+# the api.
+sub _check_for_test_environment {
+  my ($self, $protocol, $host) = @_;
+  return ('http', 's3:9000') if $self->host eq 's3';
+}
+
 1;

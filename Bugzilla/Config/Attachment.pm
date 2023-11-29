@@ -75,11 +75,12 @@ sub check_params {
   if (
     $params->{attachment_storage} eq 'google'
     && ( $params->{google_storage_bucket} eq ''
-      || $params->{google_storage_host} eq '')
+      || $params->{google_storage_host} eq ''
+      || $params->{google_storage_service_account} eq '')
     )
   {
     return
-      'You must set google_bucket, google_client_id, and google_client_secret when attachment_storage is set to google';
+      'You must set google_storage_bucket, google_storage_host, and google_storage_service_account when attachment_storage is set to google';
   }
 
   return '';

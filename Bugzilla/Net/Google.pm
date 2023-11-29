@@ -54,31 +54,32 @@ sub _build_min_datasize {
 # method and the path needed for the Google API.
 sub _get_method_path {
   my ($self, $action, $key) = @_;
-  my ($method, $format);
+  my ($method, $path);
 
   if (none { $action eq $_ } qw(add head get delete)) {
     ThrowCodeError('net_storage_invalid_action', {action => $action});
   }
 
+  my $escaped_bucket = uri_escape_utf8($self->bucket);
+  my $escaped_key    = uri_escape_utf8($key);
+
   if ($action eq 'add') {
-    $format = 'upload/' . $PATH_BASE . '/%s/o?uploadType=media&name=%s';
+    $path
+      = "upload/${PATH_BASE}/${escaped_bucket}/o?uploadType=media&name=${escaped_key}";
     $method = 'POST';
   }
   elsif ($action eq 'head') {
-    $format = $PATH_BASE . '/%s/o/%s';
+    $path   = "${PATH_BASE}/${escaped_bucket}/o/${escaped_key}";
     $method = 'GET';
   }
   elsif ($action eq 'get') {
-    $format = $PATH_BASE . '/%s/o/%s?alt=media';
+    $path   = "${PATH_BASE}/${escaped_bucket}/o/${escaped_key}?alt=media";
     $method = 'GET';
   }
   elsif ($action eq 'delete') {
-    $format = $PATH_BASE . '/%s/o/%s';
+    $path   = "${PATH_BASE}/${escaped_bucket}/o/${escaped_key}";
     $method = 'DELETE';
   }
-
-  my @escaped_args = map { uri_escape_utf8($_) } ($self->bucket, $key);
-  my $path         = sprintf $format, @escaped_args;
 
   return ($method, $path);
 }
@@ -90,7 +91,7 @@ sub _add_auth_header {
   my ($self, $headers) = @_;
 
   # Do not add Authorization header if running CI tests
-  return undef if !$self->service_account;
+  return undef if $self->service_account eq 'test';
 
   if (!$self->access_token || time > $self->access_token_expiry) {
     $self->_get_access_token;
@@ -163,6 +164,14 @@ sub _remember_errors {
     $self->error_code($response->code);
     $self->error_string($response->message);
   };
+}
+
+# If we are running under a test environment, then override
+# the protocol and host to match the docker containers mocking
+# the api.
+sub _check_for_test_environment {
+  my ($self, $protocol, $host) = @_;
+  return ('http', 'gcs:4443') if $self->host eq 'gcs';
 }
 
 1;

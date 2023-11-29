@@ -46,6 +46,7 @@ $answer{'aws_access_key_id'}     = 'AKIAIOSFODNN7EXAMPLE';
 $answer{'aws_secret_access_key'} = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
 $answer{'attachment_s3_minsize'} = '10';
 
-$answer{'google_storage_host'}       = 'gcs';
-$answer{'google_storage_bucket'}     = 'attachments';
-$answer{'attachment_google_minsize'} = '10';
+$answer{'google_storage_host'}            = 'gcs';
+$answer{'google_storage_bucket'}          = 'attachments';
+$answer{'google_storage_service_account'} = 'test';
+$answer{'attachment_google_minsize'}      = '10';

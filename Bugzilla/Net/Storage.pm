@@ -65,6 +65,7 @@ sub get_key {
   return $self->_send_request($method, $path);
 }
 
+# Delete data from net storage
 sub delete_key {
   my ($self, $key) = @_;
 
@@ -129,15 +130,8 @@ sub _make_request {
   my $protocol = $self->secure ? 'https'                         : 'http';
   my $host     = $self->port   ? $self->host . ':' . $self->port : $self->host;
 
-  # Update some settings if we are running in a test environment
-  if ($self->host eq 's3') {
-    $protocol = 'http';
-    $host     = 's3:9000';
-  }
-  elsif ($self->host eq 'gcs') {
-    $protocol = 'http';
-    $host     = 'gcs:4443';
-  }
+  # Override protocol and host if we are running in a test environment
+  ($protocol, $host) = $self->_check_for_test_environment($protocol, $host);
 
   my $url = "$protocol://$host/$path";
 
