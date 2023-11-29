@@ -14,6 +14,129 @@ servers:
     description: Test instance for Bugzilla.
 
 paths:
+  # Bugs
+  /bug/{id_or_alias}:
+    get:
+      tags: [Bugs]
+      summary: Get information about a bug
+      description: Gets information about a particular bug using its ID or alias.
+      parameters:
+        - name: id_or_alias
+          in: path
+          description: An integer bug ID or a bug alias string.
+          required: true
+          schema:
+            type:
+              - string
+              - integer
+      responses:
+        200:
+          description: A list of Bugs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  faults:
+                    type: array
+                  bugs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Bug"
+              example:
+                faults: []
+                bugs:
+                  - assigned_to_detail:
+                      id: 2
+                      real_name: "Test User"
+                      nick: "user"
+                      name: "user@bugzilla.org"
+                      email: "user@bugzilla.org"
+                    flags:
+                      - type_id: 11
+                        modification_date: "2014-09-28T21:03:47Z"
+                        name: "blocker"
+                        status: "?"
+                        id: 2906
+                        setter: "user@bugzilla.org"
+                        creation_date: "2014-09-28T21:03:47Z"
+                    resolution: "INVALID"
+                    id: 35
+                    type: "defect"
+                    qa_contact: ""
+                    triage_owner: ""
+                    version: "1.0"
+                    status: "RESOLVED"
+                    creator: "user@bugzilla.org"
+                    cf_drop_down: "---"
+                    summary: "test bug"
+                    last_change_time: "2014-09-23T19:12:17Z"
+                    platform: "All"
+                    url: ""
+                    classification: "Unclassified"
+                    cc_detail:
+                      - id: 786
+                        real_name: "Foo Bar"
+                        nick: "foo"
+                        name: "foo@bar.com"
+                        email: "foo@bar.com"
+                    priority: "P1"
+                    is_confirmed: true
+                    creation_time: "2000-07-25T13:50:04Z"
+                    assigned_to: "user@bugzilla.org"
+                    alias: null
+                    cf_large_text: ""
+                    groups: []
+                    op_sys: "All"
+                    cf_bug_id: null
+                    depends_on: []
+                    is_cc_accessible: true
+                    is_open: false
+                    cf_qa_list_4: "---"
+                    keywords: []
+                    cc:
+                      - "foo@bar.com"
+                    see_also: []
+                    deadline: null
+                    is_creator_accessible: true
+                    whiteboard: ""
+                    dupe_of: null
+                    duplicates: []
+                    target_milestone: "---"
+                    cf_mulitple_select: []
+                    component: "SaltSprinkler"
+                    severity: "critical"
+                    cf_date: null
+                    product: "FoodReplicator"
+                    creator_detail:
+                      id: 28
+                      real_name: "hello"
+                      nick: "namachi"
+                      name: "user@bugzilla.org"
+                      email: "namachi@netscape.com"
+                    cf_free_text: ""
+                    blocks: []
+                    regressed_by: []
+                    regressions: []
+                    comment_count: 12
+
+        default:
+          description: |
+            Various error responses, including:
+
+            * 100 (Invalid Bug Alias)
+              If you specified an alias and there is no bug with that alias.
+            * 101 (Invalid Bug ID)
+              The bug_id you specified doesn't exist in the database.
+            * 102 (Access Denied)
+              You do not have access to the bug_id you specified.
+
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # Comments
   /bug/{id_or_alias}/comment:
     get:
       tags: [Comments]
@@ -370,6 +493,217 @@ paths:
 
 components:
   schemas:
+    Bug:
+      type: object
+      properties:
+        actual_time:
+          description: The total number of hours that this bug has taken so far.
+          type: number
+        alias:
+          description: The unique alias of this bug. A null value will be returned if this bug has no alias.
+          type: string
+        assigned_to:
+          description: The login name of the user to whom the bug is assigned.
+          type: string
+        assigned_to_detail:
+          $ref: "#/components/schemas/User"
+        blocks:
+          description: The IDs of bugs that are "blocked" by this bug.
+          type: array
+          items:
+            type: integer
+        cc:
+          description: The login names of users on the CC list of this bug.
+          type: array
+          items:
+            type: string
+        cc_detail:
+          description: Array of objects containing detailed user information for each of the cc list members.
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        classification:
+          description: The name of the current classification the bug is in.
+          type: string
+        component:
+          description: The name of the current component of this bug.
+          type: string
+        creation_time:
+          description: When the bug was created.
+          type: string
+          format: date-time
+        creator:
+          description: The login name of the person who filed this bug (the reporter).
+          type: string
+        creator_detail:
+          $ref: "#/components/schemas/User"
+        deadline:
+          description: The day that this bug is due to be completed, in the format YYYY-MM-DD.
+          type: string
+        depends_on:
+          description: The IDs of bugs that this bug "depends on".
+          type: array
+          items:
+            type: integer
+        dupe_of:
+          description: The bug ID of the bug that this bug is a duplicate of. If this bug isn't a duplicate of any bug, this will be null.
+          type: integer
+        duplicates:
+          description: The ids of bugs that are marked as duplicate of this bug.
+          type: array
+          items:
+            type: integer
+        estimated_time:
+          description: The number of hours that it was estimated that this bug would take.
+          type: number
+        flags:
+          description: An array of objects containing the information about flags currently set for the bug.
+          type: array
+          items:
+            $ref: "#/components/schemas/Flag"
+        groups:
+          description: The names of all the groups that this bug is in.
+          type: array
+          items:
+            type: string
+        id:
+          description: The unique numeric ID of this bug.
+          type: integer
+        is_cc_accessible:
+          description: If true, this bug can be accessed by members of the CC list, even if they are not in the groups the bug is restricted to.
+          type: boolean
+        is_confirmed:
+          description: true if the bug has been confirmed. Usually this means that the bug has at some point been moved out of the UNCONFIRMED status and into another open status.
+          type: boolean
+        is_creator_accessible:
+          description: If true, this bug can be accessed by the creator of the bug, even if they are not a member of the groups the bug is restricted to.
+          type: boolean
+        keywords:
+          description: Each keyword that is on this bug.
+          type: array
+          items:
+            type: string
+        last_change_time:
+          description: When the bug was last changed.
+          type: string
+          format: date-time
+        op_sys:
+          description: The name of the operating system that the bug was filed against.
+          type: string
+        platform:
+          description: The name of the platform (hardware) that the bug was filed against.
+          type: string
+        priority:
+          description: The priority of the bug.
+          type: string
+        product:
+          description: The name of the product this bug is in.
+          type: string
+        qa_contact:
+          description: The login name of the current QA Contact on the bug.
+          type: string
+        qa_contact_detail:
+          $ref: "#/components/schemas/User"
+        regressed_by:
+          description: The IDs of bugs that introduced this bug.
+          type: array
+          items:
+            type: integer
+        regressions:
+          description: The IDs of bugs that are introduced by this bug.
+          type: array
+          items:
+            type: integer
+        remaining_time:
+          description: The number of hours of work remaining until work on this bug is complete.
+          type: number
+        resolution:
+          description: The current resolution of the bug, or an empty string if the bug is open.
+          type: string
+        see_also:
+          description: The URLs in the See Also field on the bug.
+          type: array
+          items:
+            type: string
+        severity:
+          description: The current severity of the bug.
+          type: string
+        status:
+          description: The current status of the bug.
+          type: string
+        summary:
+          description: The summary of this bug.
+          type: string
+        target_milestone:
+          description: The milestone that this bug is supposed to be fixed by, or for closed bugs, the milestone that it was fixed for.
+          type: string
+        type:
+          description: The type of the bug.
+          type: string
+        update_token:
+          description: The token that you would have to pass to the process_bug.cgi page in order to update this bug. This changes every time the bug is updated. This field is not returned to logged-out users.
+          type: string
+        url:
+          description: A URL that demonstrates the problem described in the bug, or is somehow related to the bug report.
+          type: string
+        version:
+          description: The version the bug was reported against.
+          type: string
+        whiteboard:
+          description: The value of the "status whiteboard" field on the bug.
+          type: string
+        # Custom fields?
+        # Extra fields?
+
+    Flag:
+      type: object
+      properties:
+        id:
+          description: The ID of the flag.
+          type: integer
+        name:
+          description: The name of the flag.
+          type: string
+        type_id:
+          description: The type ID of the flag.
+          type: integer
+        creation_date:
+          description: The timestamp when this flag was originally created.
+          type: string
+          format: date-time
+        modification_date:
+          description: The timestamp when the flag was last modified.
+          type: string
+          format: date-time
+        status:
+          description: The current status of the flag.
+          type: string
+        setter:
+          description: The login name of the user who created or last modified the flag.
+          type: string
+        requestee:
+          description: The login name of the user this flag has been requested to be granted or denied. Note, this field is only returned if a requestee is set.
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          description: The user ID for this user.
+          type: integer
+        real_name:
+          description: The 'real' name for this user, if any.
+          type: string
+        nick:
+          description: The user's nickname. Currently, this is extracted from the real_name, name, or email field.
+          type: string
+        name:
+          description: The user's Bugzilla login.
+          type: string
+        email:
+          description: The user's email address. Currently, this is the same value as the name.
+          type: string
+
     Comment:
       type: object
       properties:
