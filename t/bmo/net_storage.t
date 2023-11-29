@@ -34,44 +34,59 @@ my $storage = Bugzilla::Net::S3->new(
 ok($storage->data_type eq 's3', 'Data type is S3');
 
 # Test adding of data to the bucket
-ok($storage->add_key('somekey', 'somedata'), 'Add data to attachments bucket successfully');
+ok(
+  $storage->add_key('somekey', 'somedata'),
+  'Add data to attachments bucket successfully'
+);
 
 # Check if the key exists
-ok($storage->head_key('somekey'), 'The key exists in the storage attachments bucket');
+ok($storage->head_key('somekey'),
+  'The key exists in the storage attachments bucket');
 
 # Test retrieving the data
 my $result = $storage->get_key('somekey');
-ok($result eq 'somedata', 'Retrieved data from attachments bucket successfully');
+ok($result eq 'somedata',
+  'Retrieved data from attachments bucket successfully');
 
 # Test deleting the data
-ok($storage->delete_key('somekey'), 'Deleted data in the attachments bucket successfully');
+ok($storage->delete_key('somekey'),
+  'Deleted data in the attachments bucket successfully');
 
 # Make sure the data is deleted
-ok(!$storage->head_key('somekey'), 'The key no longer exists in the attachments bucket');
+ok(!$storage->head_key('somekey'),
+  'The key no longer exists in the attachments bucket');
 
 # Create Google instance using fake-gcs-server
 $storage = Bugzilla::Net::Google->new(
-  bucket     => 'attachments',
-  host       => 'gcs',
+  bucket          => 'attachments',
+  host            => 'gcs',
+  service_account => 'test',
 );
 
 # Is this Google instance?
 ok($storage->data_type eq 'google', 'Data type is Google');
 
 # Test adding of data to the bucket
-ok($storage->add_key('somekey', 'somedata'), 'Add data to attachments bucket successfully');
+ok(
+  $storage->add_key('somekey', 'somedata'),
+  'Add data to attachments bucket successfully'
+);
 
 # Check if the key exists
-ok($storage->head_key('somekey'), 'The key exists in the storage attachments bucket');
+ok($storage->head_key('somekey'),
+  'The key exists in the storage attachments bucket');
 
 # Test retrieving the data
 $result = $storage->get_key('somekey');
-ok($result eq 'somedata', 'Retrieved data from attachments bucket successfully');
+ok($result eq 'somedata',
+  'Retrieved data from attachments bucket successfully');
 
 # Test deleting the data
-ok($storage->delete_key('somekey'), 'Deleted data in the attachments bucket successfully');
+ok($storage->delete_key('somekey'),
+  'Deleted data in the attachments bucket successfully');
 
 # Make sure the data is deleted
-ok(!$storage->head_key('somekey'), 'The key no longer exists in the attachments bucket');
+ok(!$storage->head_key('somekey'),
+  'The key no longer exists in the attachments bucket');
 
 done_testing;
