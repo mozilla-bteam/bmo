@@ -624,6 +624,16 @@ td.flag-requestee {
   white-space: nowrap;
 }
 
+.field.tracking-flags-wrapper > .name {
+  display: block;
+  padding: 0 0 10px;
+  text-align: left;
+}
+
+.field.tracking-flags-wrapper > .container {
+  display: block;
+}
+
 .tracking-flags td,
 .tracking-flags th {
   padding: 0 5px;
@@ -633,6 +643,10 @@ td.flag-requestee {
   color: var(--secondary-label-color);
   font-weight: normal;
   text-align: left;
+}
+
+.tracking-flags th:first-child {
+  min-width: 100px;
 }
 
 .tracking-flag-name,

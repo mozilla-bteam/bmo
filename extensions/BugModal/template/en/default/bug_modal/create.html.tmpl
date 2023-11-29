@@ -401,6 +401,7 @@
           container = 1
           label = "Tracking Flags"
           help = "https://wiki.mozilla.org/BMO/UserGuide#Tracking_Flags"
+          class = "tracking-flags-wrapper"
       %]
         [% INCLUDE bug_modal/tracking_flags.html.tmpl
             type = "tracking"
@@ -681,7 +682,7 @@
       subtitle = ""
   %]
     <textarea id="cf_user_story" name="cf_user_story" rows="10" cols="80"
-              aria-label="User Story">
+              aria-label="User Story">[%~~%]
     </textarea>
   [% END %]
 [% END %]
@@ -740,11 +741,6 @@
          value = deadline
          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#deadline"
       %]
-      <div>
-        <a href="[% basepath FILTER none %]summarize_time.cgi?id=[% bug.bug_id FILTER none %]&amp;do_depends=1">
-          Summarize time (including time for [% terms.bugs %]
-          blocking this [% terms.bug %])</a>
-      </div>
     [% END %]
   [% END %]
 [% END %]
