@@ -190,7 +190,221 @@ paths:
                             added: "blocker?"
                             removed: ""
         default:
-          $ref: "#/components/schemas/Error"
+          description: |
+            Same as Get Bug.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /bug:
+    get:
+      tags: [Bugs]
+      summary: Search for bugs based on particular criteria
+      description: |
+        Allows you to search for bugs based on specific criteria. Bugs are returned if they match the criteria specified. Criteria are joined in a logical AND, meaning bugs returned must match all of the specified criteria.
+      parameters:
+        - name: alias
+          in: query
+          description: The unique alias of this bug. A null value will be returned if this bug has no alias.
+          schema:
+            type: string
+        - name: assigned_to
+          in: query
+          description: The login name of a user that a bug is assigned to.
+          schema:
+            type: string
+        - name: component
+          in: query
+          description: The name of the Component that the bug is in.
+          schema:
+            type: string
+        - name: count_only
+          in: query
+          description: If set to true, an object with a single key called "bug_count" will be returned, which is the number of bugs that matched the search.
+          schema:
+            type: boolean
+        - name: creation_time
+          in: query
+          description: Searches for bugs that were created at this time or later. May not be an array.
+          schema:
+            type: string
+            format: date-time
+        - name: creator
+          in: query
+          description: The login name of the user who created the bug.
+          schema:
+            type: string
+        - name: description
+          in: query
+          description: The description (initial comment) of the bug.
+          schema:
+            type: string
+        - name: filed_via
+          in: query
+          description: Searches for bugs that were created with this method.
+          schema:
+            type: string
+        - name: id
+          in: query
+          description: The numeric ID of the bug.
+          schema:
+            type: integer
+        - name: last_change_time
+          in: query
+          description: Searches for bugs that were modified at this time or later. May not be an array.
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          description: Limit the number of results returned.
+          schema:
+            type: integer
+        - name: longdescs.count
+          in: query
+          description: The number of comments a bug has.
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: Used in conjunction with the limit argument, offset defines the starting position for the search.
+          schema:
+            type: integer
+        - name: op_sys
+          in: query
+          description: The "Operating System" field of a bug.
+          schema:
+            type: string
+        - name: platform
+          in: query
+          description: The Platform (sometimes called "Hardware") field of a bug.
+          schema:
+            type: string
+        - name: priority
+          in: query
+          description: The Priority field on a bug.
+          schema:
+            type: string
+        - name: product
+          in: query
+          description: The name of the Product that the bug is in.
+          schema:
+            type: string
+        - name: quicksearch
+          in: query
+          description: Search for bugs using quicksearch syntax.
+          schema:
+            type: string
+        - name: resolution
+          in: query
+          description: The current resolution--only set if a bug is closed.
+          schema:
+            type: string
+        - name: severity
+          in: query
+          description: The Severity field on a bug.
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: The current status of a bug (not including its resolution, if it has one, which is a separate field above).
+          schema:
+            type: string
+        - name: summary
+          in: query
+          description: Searches for substrings in the single-line Summary field on bugs.
+          schema:
+            type: string
+        - name: tags
+          in: query
+          description: Searches for a bug with the specified tag.
+          schema:
+            type: string
+        - name: target_milestone
+          in: query
+          description: The Target Milestone field of a bug.
+          schema:
+            type: string
+        - name: qa_contact
+          in: query
+          description: The login name of the bug's QA Contact.
+          schema:
+            type: string
+        - name: triage_owner
+          in: query
+          description: The login name of the Triage Owner of a bug's component.
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: The Type field on a bug.
+          schema:
+            type: string
+        - name: url
+          in: query
+          description: The "URL" field of a bug.
+          schema:
+            type: string
+        - name: version
+          in: query
+          description: The Version field of a bug.
+          schema:
+            type: string
+        - name: whiteboard
+          in: query
+          description: Search the "Status Whiteboard" field on bugs for a substring.
+          schema:
+            type: string
+      responses:
+        200:
+          description: A list of bugs matching the search criteria
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bugs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Bug"
+              example:
+                bugs:
+                  - id: 35
+                    alias: null
+                    assigned_to: "user@bugzilla.org"
+                    component: "Widgets"
+                    creation_time: "2014-09-23T19:12:17Z"
+                    creator: "user@bugzilla.org"
+                    description: "Bug description goes here."
+                    filed_via: "REST API"
+                    last_change_time: "2014-09-28T21:03:47Z"
+                    op_sys: "All"
+                    platform: "All"
+                    priority: "P1"
+                    product: "MyProduct"
+                    resolution: null
+                    severity: "critical"
+                    status: "NEW"
+                    summary: "Bug summary goes here."
+                    tags: null
+                    target_milestone: "---"
+                    qa_contact: null
+                    triage_owner: null
+                    type: "defect"
+                    url: null
+                    version: null
+                    whiteboard: null
+                    longdescs_count: 2
+        default:
+          description: |
+            If you specify an invalid value for a particular field, you just won’t get any results for that value.
+
+            * 1000 (Parameters Required) You may not search without any search terms.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   # Comments
   /bug/{id_or_alias}/comment:
