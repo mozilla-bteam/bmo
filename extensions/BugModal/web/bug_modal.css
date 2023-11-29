@@ -634,10 +634,6 @@ td.flag-requestee {
   display: block;
 }
 
-.field.tracking-flags-wrapper > .container {
-  display: block;
-}
-
 .tracking-flags td,
 .tracking-flags th {
   padding: 0 5px;
