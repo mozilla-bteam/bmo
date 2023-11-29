@@ -136,6 +136,62 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /bug/{id}/history:
+    get:
+      tags: [Bugs]
+      summary: Get the history of changes for a specific bug
+      description: |
+        Gets the history of changes for a particular bug in the database. You can specify a bug ID or alias and, optionally, a datetime timestamp to only show history since that date.
+      parameters:
+        - name: id
+          in: path
+          description: An integer bug ID or alias.
+          required: true
+          schema:
+            type:
+              - string
+              - integer
+        - name: new_since
+          in: query
+          description: A datetime timestamp to only show history since.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        200:
+          description: A list of bugs with their history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bugs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BugWithHistory"
+              example:
+                bugs:
+                  - id: 35
+                    alias: null
+                    history:
+                      - when: "2014-09-23T19:12:17Z"
+                        who: "user@bugzilla.org"
+                        changes:
+                          - field_name: "priority"
+                            added: "P1"
+                            removed: "P2"
+                          - field_name: "severity"
+                            added: "critical"
+                            removed: "blocker"
+                      - when: "2014-09-28T21:03:47Z"
+                        who: "user@bugzilla.org"
+                        changes:
+                          - field_name: "flagtypes.name"
+                            added: "blocker?"
+                            removed: ""
+        default:
+          $ref: "#/components/schemas/Error"
+
   # Comments
   /bug/{id_or_alias}/comment:
     get:
@@ -703,6 +759,54 @@ components:
         email:
           description: The user's email address. Currently, this is the same value as the name.
           type: string
+
+    BugWithHistory:
+      type: object
+      properties:
+        id:
+          description: The numeric ID of the bug.
+          type: integer
+        alias:
+          description: The unique alias of this bug. A null value will be returned if this bug has no alias.
+          type: string
+        history:
+          description: An array of History objects.
+          type: array
+          items:
+            $ref: "#/components/schemas/History"
+
+    History:
+      type: object
+      properties:
+        when:
+          description: The date the bug activity/change happened.
+          type: string
+          format: date-time
+        who:
+          description: The login name of the user who performed the bug change.
+          type: string
+        changes:
+          description: An array of Change objects.
+          type: array
+          items:
+            $ref: "#/components/schemas/Change"
+
+    Change:
+      type: object
+      properties:
+        field_name:
+          description: The name of the bug field that has changed.
+          type: string
+        removed:
+          description: The previous value of the bug field which has been deleted by the change.
+          type: string
+        added:
+          description: The new value of the bug field which has been added by the change.
+          type: string
+        attachment_id:
+          description: The ID of the attachment that was changed. This only appears if the change was to an attachment, otherwise `attachment_id` will not be present in this object.
+          type: integer
+          nullable: true
 
     Comment:
       type: object
