@@ -21,12 +21,12 @@ log_in($sel, $config, 'admin');
 set_parameters(
   $sel,
   {
-    'Attachments'    => {
+    'Attachments' => {
       'allow_attachment_display-on'  => undef,
       'allow_attachment_deletion-on' => undef,
-      'attachment_storage' => {type => 'select', value => 's3'},
-      'attachment_s3_minsize' => {type => 'text', value => '5'},
-      'attachment_google_minsize' => {type => 'text', value => '5'},
+      'attachment_storage'           => {type => 'select', value => 's3'},
+      'attachment_s3_minsize'        => {type => 'text',   value => '5'},
+      'attachment_google_minsize'    => {type => 'text',   value => '5'},
     }
   }
 );
@@ -36,7 +36,7 @@ set_parameters(
 # First create a new bug with an attachment.
 file_bug_in_product($sel, "TestProduct");
 $sel->type_ok("short_desc", "Attachment stored in S3");
-$sel->click_ok('//input[@value="Add an attachment"]');
+$sel->click_ok('attach-new-file');
 $sel->attach_file('//input[@name="data"]', $config->{attachment_file});
 $sel->type_ok('//input[@name="description"]', "new S3 attachment, v1");
 $sel->check_ok('//input[@name="ispatch"]');
@@ -100,16 +100,15 @@ $sel->is_text_present_ok(
 set_parameters(
   $sel,
   {
-    'Attachments'    => {
-      'attachment_storage' => {type => 'select', value => 'google'},
-    }
+    'Attachments' =>
+      {'attachment_storage' => {type => 'select', value => 'google'},}
   }
 );
 
 # First create a new bug with an attachment.
 file_bug_in_product($sel, "TestProduct");
 $sel->type_ok("short_desc", "Attachment stored in Google Cloud Storage");
-$sel->click_ok('//input[@value="Add an attachment"]');
+$sel->click_ok('attach-new-file');
 $sel->attach_file('//input[@name="data"]', $config->{attachment_file});
 $sel->type_ok('//input[@name="description"]', "new gcs attachment, v1");
 $sel->check_ok('//input[@name="ispatch"]');
@@ -174,9 +173,8 @@ $sel->is_text_present_ok(
 set_parameters(
   $sel,
   {
-    'Attachments'    => {
-      'attachment_storage' => {type => 'select', value => 'database'},
-    }
+    'Attachments' =>
+      {'attachment_storage' => {type => 'select', value => 'database'},}
   }
 );
 
