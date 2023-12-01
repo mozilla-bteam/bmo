@@ -202,7 +202,10 @@ sub _remember_errors {
 # the api.
 sub _check_for_test_environment {
   my ($self, $protocol, $host) = @_;
-  return ('http', 's3:9000') if $self->host eq 's3';
+  if ($self->host eq 's3') {
+    return ('http', 's3:9000');
+  }
+  return ($protocol, $host);
 }
 
 1;

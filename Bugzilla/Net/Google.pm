@@ -171,7 +171,10 @@ sub _remember_errors {
 # the api.
 sub _check_for_test_environment {
   my ($self, $protocol, $host) = @_;
-  return ('http', 'gcs:4443') if $self->host eq 'gcs';
+  if ($self->host eq 'gcs') {
+    return ('http', 'gcs:4443');
+  }
+  return ($protocol, $host);
 }
 
 1;
