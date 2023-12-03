@@ -135,9 +135,6 @@ sub _make_request {
 
   my $url = "$protocol://$host/$path";
 
-  Bugzilla->audit(sprintf 'attachment pre: type %s, method %s, url %s',
-    $self->data_type, $method, $url);
-
   if ( $self->host ne 's3'
     && $self->can('_is_dns_bucket')
     && $path =~ m{^([^/?]+)(.*)})
@@ -149,7 +146,7 @@ sub _make_request {
     }
   }
 
-  Bugzilla->audit(sprintf 'attachment post: type %s, method %s, url %s',
+  Bugzilla->audit(sprintf 'attachment: type %s, method %s, url %s',
     $self->data_type, $method, $url);
 
   my $request = HTTP::Request->new($method, $url, $http_headers);
