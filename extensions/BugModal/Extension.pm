@@ -33,13 +33,22 @@ use constant READABLE_BUG_STATUS_PRODUCTS => (
   'bugzilla.mozilla.org'
 );
 
+sub config_modify_panels {
+  my ($self, $args) = @_;
+  push @{$args->{panels}->{advanced}->{params}},
+    {name => 'use_modal_create', type => 'b', default => '1',};
+}
+
 sub enter_bug_format {
   my ($self, $args) = @_;
   my $cgi  = Bugzilla->cgi;
 
   # Use the modal or custom format unless `format=legacy` is given as a URL param
   my $format = $cgi->param('format') || 'modal';
-  $args->{format} = $format eq 'legacy' ? '' : $format;
+  $args->{format}
+    = $format eq 'legacy' || !Bugzilla->params->{use_modal_create}
+    ? ''
+    : $format;
 }
 
 sub show_bug_format {
