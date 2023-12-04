@@ -12,6 +12,94 @@ servers:
   - url: "https://bugzilla-dev.allizom.org/rest"
     description: Test instance for Bugzilla.
 paths:
+  "/bug/{bug_id}/attachment":
+    get:
+      summary: Get all attachments for a bug
+      description: This allows you to get all current attachments for a bug.
+      parameters:
+        - name: bug_id
+          in: path
+          description: Integer bug ID.
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: A list of Attachments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bugs:
+                    description: |
+                      This is an object that has integer bug IDs for keys and the values are arrays of objects as attachments.
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/Attachment"
+                  attachments:
+                    type: object
+                    const: {}
+              example:
+                bugs:
+                  "1345":
+                    - (attachment)
+                    - (attachment)
+                attachments: {}
+        default:
+          description: This method can throw all the same errors as [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      tags:
+        - Attachments
+  "/bug/attachment/{attachment_id}":
+    get:
+      summary: Get a specific attachment
+      description: This allows you to get a specific attachment based on the attachment ID.
+      parameters:
+        - name: attachment_id
+          in: path
+          description: Integer attachment ID.
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: A single Attachment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bugs:
+                    type: object
+                    const: {}
+                  attachments:
+                    description: |
+                      This is an object where the attachment ids point directly to objects describing the individual attachment.
+                    type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/Attachment"
+              example:
+                bugs: {}
+                attachments:
+                  "234": (attachment)
+        default:
+          description: |
+            This method can throw all the same errors as [Get Bug](#tag/Bugs/paths/~1bug~1{bug_id}/get). In addition, it can also throw the following error:
+
+            * 304 (Auth Failure, Attachment is Private)
+              You specified the id of a private attachment in the "attachment_ids" argument, and you are not in the "insider group" that can see private attachments.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      tags:
+        - Attachments
   "/bug/{id_or_alias}":
     get:
       summary: Get information about a bug
@@ -1222,6 +1310,60 @@ components:
           - string
           - integer
   schemas:
+    Attachment:
+      type: object
+      properties:
+        data:
+          description: The raw data of the attachment, encoded as Base64.
+          type: string
+          format: base64
+        size:
+          description: The length (in bytes) of the attachment.
+          type: integer
+        creation_time:
+          description: The time the attachment was created.
+          type: string
+          format: date-time
+        last_change_time:
+          description: The last time the attachment was modified.
+          type: string
+          format: date-time
+        id:
+          description: The numeric ID of the attachment.
+          type: integer
+        bug_id:
+          description: The numeric ID of the bug that the attachment is attached to.
+          type: integer
+        file_name:
+          description: The file name of the attachment.
+          type: string
+        summary:
+          description: A short string describing the attachment.
+          type: string
+        content_type:
+          description: The MIME type of the attachment.
+          type: string
+        is_private:
+          description: '``true`` if the attachment is private (only visible to a certain group called the "insidergroup"), ``false`` otherwise.'
+          type: boolean
+        is_obsolete:
+          description: "``true`` if the attachment is obsolete, ``false`` otherwise."
+          type: boolean
+        is_patch:
+          description: "``true`` if the attachment is a patch, ``false`` otherwise."
+          type: boolean
+        creator:
+          description: The login name of the user that created the attachment.
+          type: string
+        creator_detail:
+          description: An object containing detailed user information for the creator.
+          $ref: "#/components/schemas/User"
+        flags:
+          description: Array of objects, each containing the information about the flag currently set for each attachment.
+          type: array
+          items:
+            $ref: "#/components/schemas/Flag"
+
     Bug:
       type: object
       properties:
