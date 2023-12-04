@@ -1802,7 +1802,7 @@ components:
           type: string
         attachments:
           description: |
-            Each array item is an Attachment object. See :ref:`rest_attachments` for details of the object.
+            Each array item is an Attachment object. See [Get Attachment](#tag/Attachments/paths/~1bug~1attachment~1{attachment_id}/get) for details of the object.
 
             > **Note:**
               This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
@@ -1811,7 +1811,7 @@ components:
             $ref: "#/components/schemas/Attachment"
         comments:
           description: |
-            Each array item is a Comment object. See :ref:`rest_comments` for details of the object.
+            Each array item is a Comment object. See [Get Comment](#tag/Comments/paths/~1bug~1comment~1{comment_id}/get) for details of the object.
 
             > **Note:**
               This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
@@ -1869,7 +1869,7 @@ components:
           type: string
         history:
           description: |
-            Each array item is a History object. See :ref:`rest_history` for details of the object.
+            Each array item is a History object. See [Get History](#tag/Comments/paths/~1bug~1comment~1{comment_id}/get) for details of the object.
 
             > **Note:**
               This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
@@ -2067,7 +2067,7 @@ components:
           description: The status that this bug should start out as. Note that only certain statuses can be set on bug creation.
           type: string
         resolution:
-          description: "If you are filing a closed bug, then you will have to specify a resolution. You cannot currently specify a resolution of ``DUPLICATE``   for new bugs, though. That must be done with :ref:`rest_update_bug`."
+          description: "If you are filing a closed bug, then you will have to specify a resolution. You cannot currently specify a resolution of ``DUPLICATE``   for new bugs, though. That must be done with [Get History](#tag/Comments/paths/~1bug~1comment~1{comment_id}/get)."
           type: string
         target_milestone:
           description: A valid target milestone for this product.
@@ -2176,14 +2176,14 @@ components:
               description: The actual text of the comment.
               type: string
             comment:
-              description: "An alias for the comment body. (For compatibility with the parameters to :ref:`rest_add_comment`)"
+              description: "An alias for the comment body. (For compatibility with the parameters to [Create Comments](#tag/Comments/paths/~1bug~1{id}~1comment/post))"
               type: string
             is_private:
               description: "Whether the comment is private or not. If you try to make a comment private and you don't have the permission to, an error will be thrown."
               type: boolean
         comment_is_private:
           description: |
-            This is how you update the privacy of comments that are already on a bug. This is a object, where the keys are the ``int`` ID of comments (not their count on a bug, like #1, #2, #3, but their globally-unique ID, as returned by :ref:`rest_comments` and the value is a ``boolean`` which specifies whether that comment should become private (``true``) or public (``false``).
+            This is how you update the privacy of comments that are already on a bug. This is a object, where the keys are the ``int`` ID of comments (not their count on a bug, like #1, #2, #3, but their globally-unique ID, as returned by [Get Comment](#tag/Comments/paths/~1bug~1comment~1{comment_id}/get) and the value is a ``boolean`` which specifies whether that comment should become private (``true``) or public (``false``).
 
             The comment IDs must be valid for the bug being updated. Thus, it is not practical to use this while updating multiple bugs at once, as a single comment ID will never be valid on multiple bugs.
           type: object
@@ -2437,7 +2437,7 @@ components:
           deprecated: true
         creation_time:
           description: |
-            This is exactly same as the ``time`` key. Use this field instead of ``time`` for consistency with other methods including [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get) and :ref:`rest_attachments`.
+            This is exactly same as the ``time`` key. Use this field instead of ``time`` for consistency with other methods including [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get) and [Get Attachment](#tag/Attachments/paths/~1bug~1attachment~1{attachment_id}/get).
 
             For compatibility, ``time`` is still usable. However, please note that ``time`` may be deprecated and removed in a future release.
           type: string
