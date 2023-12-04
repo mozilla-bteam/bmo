@@ -33,15 +33,20 @@ use constant READABLE_BUG_STATUS_PRODUCTS => (
   'bugzilla.mozilla.org'
 );
 
+sub config_modify_panels {
+  my ($self, $args) = @_;
+  push @{$args->{panels}->{advanced}->{params}},
+    {name => 'use_modal_create', type => 'b', default => '1',};
+}
+
 sub enter_bug_format {
   my ($self, $args) = @_;
   my $cgi  = Bugzilla->cgi;
-  my $user = Bugzilla->user;
 
   # Use the modal or custom format unless `format=legacy` is given as a URL param
   my $format = $cgi->param('format') || 'modal';
   $args->{format}
-    = $format eq 'legacy' || $user->setting('ui_use_modal_create') eq 'off'
+    = $format eq 'legacy' || !Bugzilla->params->{use_modal_create}
     ? ''
     : $format;
 }
@@ -325,12 +330,6 @@ sub install_before_final_checks {
   });
   add_setting({
     name     => 'ui_attach_long_paste',
-    options  => ['on', 'off'],
-    default  => 'on',
-    category => 'User Interface',
-  });
-  add_setting({
-    name     => 'ui_use_modal_create',
     options  => ['on', 'off'],
     default  => 'on',
     category => 'User Interface',

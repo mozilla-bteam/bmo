@@ -6,8 +6,8 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[%
-  setting_descs.ui_remember_collapsed = "Remember visibility of header sections when viewing a bug"
-  setting_descs.ui_use_absolute_time = "Use absolute format instead of relative time when viewing a bug"
-  setting_descs.ui_attach_long_paste = "When pasting long text in bug comments, convert it into an attachment text file"
-%]
+[% IF panel.name == "advanced" %]
+  [% panel.param_descs.use_modal_create =
+    'When enabled, the new organized Enter Bug form is made available to all users.'
+  %]
+[% END -%]
