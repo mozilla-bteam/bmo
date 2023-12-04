@@ -17,14 +17,7 @@ paths:
       summary: Get information about a bug
       description: Gets information about a particular bug using its ID or alias.
       parameters:
-        - name: id_or_alias
-          in: path
-          description: An integer bug ID or a bug alias string.
-          required: true
-          schema:
-            type:
-              - string
-              - integer
+        - $ref: "#/components/parameters/BugIdOrAlias"
       responses:
         "200":
           description: A list of Bugs
@@ -136,11 +129,7 @@ paths:
       description: |
         Allows you to update the fields of a bug. Automatically sends emails out about the changes.
       parameters:
-        - name: id_or_alias
-          in: path
-          description: An integer bug ID or alias.
-          schema:
-            type: string
+        - $ref: "#/components/parameters/BugIdOrAlias"
       requestBody:
         content:
           application/json:
@@ -219,14 +208,7 @@ paths:
       description: |
         Gets the history of changes for a particular bug in the database. You can specify a bug ID or alias and, optionally, a datetime timestamp to only show history since that date.
       parameters:
-        - name: id
-          in: path
-          description: An integer bug ID or alias.
-          required: true
-          schema:
-            type:
-              - string
-              - integer
+        - $ref: "#/components/parameters/BugIdOrAlias"
         - name: new_since
           in: query
           description: A datetime timestamp to only show history since.
@@ -760,14 +742,7 @@ paths:
       summary: Get all comments for a bug
       description: This allows you to get all comments for a particular bug using the bug ID or alias.
       parameters:
-        - name: id_or_alias
-          in: path
-          description: A single integer bug ID or alias.
-          required: true
-          schema:
-            type:
-              - string
-              - integer
+        - $ref: "#/components/parameters/BugIdOrAlias"
         - name: new_since
           in: query
           description: "If specified, the method will only return comments newer than this time."
@@ -885,14 +860,7 @@ paths:
       summary: Create a comment on a bug
       description: This allows you to add a comment to a bug in Bugzilla. All comments created via the API will be considered Markdown (specifically GitHub Flavored Markdown).
       parameters:
-        - name: id
-          in: path
-          description: The ID or alias of the bug to append a comment to.
-          required: true
-          schema:
-            type:
-              - string
-              - integer
+        - $ref: "#/components/parameters/BugIdOrAlias"
       requestBody:
         required: true
         content:
@@ -1103,6 +1071,16 @@ paths:
       tags:
         - Comments
 components:
+  parameters:
+    BugIdOrAlias:
+      name: id_or_alias
+      in: path
+      description: A single integer bug ID or alias.
+      required: true
+      schema:
+        type:
+          - string
+          - integer
   schemas:
     Bug:
       type: object
