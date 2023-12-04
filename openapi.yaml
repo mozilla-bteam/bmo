@@ -843,12 +843,17 @@ paths:
                 bugs: {}
         default:
           description: |
-            Various error responses, including:
+            This method can throw all the same errors as [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get). In addition, it can also throw the following errors:
 
-            * 110 (Comment Is Private) 
-              You specified the id of a private comment in the “comment_ids” argument, and you are not in the “insider group” that can see private comments.
+            * 110 (Comment Is Private)
+              You specified the id of a private comment in the "comment_ids"
+              argument, and you are not in the "insider group" that can see
+              private comments.
             * 111 (Invalid Comment ID)
-              You specified an id in the “comment_ids” argument that is invalid–either you specified something that wasn’t a number, or there is no comment with that id.
+              You specified an id in the "comment_ids" argument that is invalid--either
+              you specified something that wasn't a number, or there is no comment with
+              that id.
+
           content:
             application/json:
               schema:
@@ -874,14 +879,15 @@ paths:
                   items:
                     type: integer
                 comment:
-                  description: "The comment to append to the bug. If this is empty or all whitespace, an error will be thrown."
+                  description: "The comment to append to the bug. If this is empty or all whitespace, an error will be thrown saying that you did not set the ``comment`` parameter."
                   type: string
                 is_private:
                   description: "If set to true, the comment is private, otherwise it is assumed to be public."
                   type: boolean
                 is_markdown:
-                  description: "If true, the comment will be rendered as markdown. (default: ``false``)"
+                  description: "If true, the comment will be rendered as markdown."
                   type: boolean
+                  default: false
                 work_time:
                   description: 'Adds this many hours to the "Hours Worked" on the bug. If you are not in the time tracking group, this value will be ignored.'
                   type: number
@@ -913,12 +919,22 @@ paths:
             Various error responses, including:
 
             * 54 (Hours Worked Too Large)
+              You specified a "work_time" larger than the maximum allowed value of
+              "99999.99".
             * 100 (Invalid Bug Alias)
+              If you specified an alias and there is no bug with that alias.
             * 101 (Invalid Bug ID)
+              The id you specified doesn't exist in the database.
             * 109 (Bug Edit Denied)
+              You did not have the necessary rights to edit the bug.
             * 113 (Can't Make Private Comments)
+              You tried to add a private comment, but don't have the necessary rights.
             * 114 (Comment Too Long)
+              You tried to add a comment longer than the maximum allowed length
+              (65,535 characters).
             * 140 (Markdown Disabled)
+              You tried to set the "is_markdown" flag to true but the Markdown feature
+              is not enabled.
           content:
             application/json:
               schema:
@@ -938,7 +954,7 @@ paths:
             type: string
         - name: limit
           in: query
-          description: 'If provided, will return no more than "limit" tags. Defaults to "10".'
+          description: "If provided, will return no more than `limit` tags."
           schema:
             type: integer
             default: 10
@@ -955,9 +971,10 @@ paths:
                 - spam
         default:
           description: |
-            Various error responses, including:
+            This method can throw all of the errors that [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get) throws, plus:
 
             * 125 (Comment Tagging Disabled)
+              Comment tagging support is not available or enabled.
           content:
             application/json:
               schema:
@@ -1014,12 +1031,16 @@ paths:
                 - spam
         default:
           description: |
-            Various error responses, including:
+            This method can throw all of the errors that [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get) throws, plus:
 
             * 125 (Comment Tagging Disabled)
+              Comment tagging support is not available or enabled.
             * 126 (Invalid Comment Tag)
+              The comment tag provided was not valid (e.g. contains invalid characters).
             * 127 (Comment Tag Too Short)
+              The comment tag provided is shorter than the minimum length.
             * 128 (Comment Tag Too Long)
+              The comment tag provided is longer than the maximum length.
           content:
             application/json:
               schema:
@@ -1047,8 +1068,8 @@ paths:
               required:
                 - text
             example:
-              text: This issue has been fixed in bug 1234.
               id: 2345
+              text: This issue has been fixed in bug 1234.
       responses:
         "200":
           description: Text containing the HTML rendering
@@ -1063,7 +1084,7 @@ paths:
                 html: This issue has been fixed in <a class="bz_bug_link bz_status_RESOLVED bz_closed" title="RESOLVED FIXED - some issue that was fixed" href="show_bug.cgi?id=1234">bug 1234</a>.
         default:
           description: |
-            Various error responses, including those thrown by :ref:`rest_single_bug`.
+            Various error responses, including those thrown by [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get).
           content:
             application/json:
               schema:
@@ -1782,17 +1803,13 @@ components:
         time:
           description: The time (in Bugzilla’s timezone) that the comment was added.
           type: string
+          deprecated: true
           format: date-time
         creation_time:
           description: |
-            This is exactly same as the ``time`` key. Use this
-            field instead of ``time`` for consistency with other
-            methods including :ref:`rest_single_bug` and
-            :ref:`rest_attachments`.
+            This is exactly same as the ``time`` key. Use this field instead of ``time`` for consistency with other methods including [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get) and :ref:`rest_attachments`.
 
-            For compatibility, ``time`` is still usable. However,
-            please note that ``time`` may be deprecated and removed
-            in a future release.
+            For compatibility, ``time`` is still usable. However, please note that ``time`` may be deprecated and removed in a future release.
           type: string
           format: date-time
         is_private:
