@@ -18,6 +18,16 @@ paths:
       description: Gets information about a particular bug using its ID or alias.
       parameters:
         - $ref: "#/components/parameters/BugIdOrAlias"
+        - name: include_fields
+          in: query
+          description: |
+            Specify the fields to be included in the return value. 
+
+            Custom fields are included by default, similar to normal bug fields. To include only custom fields, use `_custom` in include_fields. Extra fields can be retrieved by specifying `_extra` or the field name in include_fields.
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: A list of Bugs
@@ -169,12 +179,8 @@ paths:
                     last_change_time: "2014-09-29T14:25:35Z"
         default:
           description: |
-            Various error responses, including:
+            This method can throw all the same errors as [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get), plus:
 
-            * 100 (Invalid Bug ID)
-              The bug_id you specified doesn't exist in the database.
-            * 102 (Access Denied)
-              You do not have access to the bug_id you specified.
             * 129 (Flag Status Invalid)
               The flag status is invalid.
             * 130 (Flag Modification Denied)
@@ -249,7 +255,7 @@ paths:
                             removed: ""
         default:
           description: |
-            Same as Get Bug.
+            Same as [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get).
           content:
             application/json:
               schema:
@@ -266,22 +272,38 @@ paths:
           in: query
           description: The unique alias of this bug. A null value will be returned if this bug has no alias.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: assigned_to
           in: query
           description: The login name of a user that a bug is assigned to.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: component
           in: query
-          description: The name of the Component that the bug is in.
+          description: "The name of the Component that the bug is in. Note that if there are multiple Components with the same name, and you search for that name, bugs in *all* those Components will be returned. If you don't want this, be sure to also specify the ``product`` argument."
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: count_only
           in: query
           description: 'If set to true, an object with a single key called "bug_count" will be returned, which is the number of bugs that matched the search.'
           schema:
-            type: boolean
+            oneOf:
+              - type: boolean
+              - type: array
+                items:
+                  type: boolean
         - name: creation_time
           in: query
           description: Searches for bugs that were created at this time or later. May not be an array.
@@ -292,22 +314,48 @@ paths:
           in: query
           description: The login name of the user who created the bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: reporter
+          in: query
+          description: "The name of the user who reported the bug, for backwards compatibility with older Bugzillas."
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+          deprecated: true
         - name: description
           in: query
           description: The description (initial comment) of the bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: filed_via
           in: query
           description: Searches for bugs that were created with this method.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: id
           in: query
           description: The numeric ID of the bug.
           schema:
-            type: integer
+            oneOf:
+              - type: integer
+              - type: array
+                items:
+                  type: integer
         - name: last_change_time
           in: query
           description: Searches for bugs that were modified at this time or later. May not be an array.
@@ -316,104 +364,172 @@ paths:
             format: date-time
         - name: limit
           in: query
-          description: Limit the number of results returned.
+          description: "Limit the number of results returned. If the value is unset, zero or greater than the maximum value set by the administrator, which is 10,000 by default, then the maximum value will be used instead. This is a preventive measure against DoS-like attacks on Bugzilla. Use the ``offset`` argument described below to retrieve more results."
           schema:
             type: integer
         - name: longdescs.count
           in: query
-          description: The number of comments a bug has.
+          description: "The number of comments a bug has. The bug's description is the first comment. For example, to find bugs which someone has commented on after they have been filed, search on ``longdescs.count`` *greater than* 1."
           schema:
             type: integer
         - name: offset
           in: query
-          description: "Used in conjunction with the limit argument, offset defines the starting position for the search."
+          description: "Used in conjunction with the ``limit`` argument, ``offset`` defines the starting position for the search. For example, given a search that would return 100 bugs, setting ``limit`` to 10 and ``offset`` to 10 would return bugs 11 through 20 from the set of 100."
           schema:
             type: integer
         - name: op_sys
           in: query
           description: The "Operating System" field of a bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: platform
           in: query
           description: The Platform (sometimes called "Hardware") field of a bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: priority
           in: query
           description: The Priority field on a bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: product
           in: query
           description: The name of the Product that the bug is in.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: quicksearch
           in: query
           description: Search for bugs using quicksearch syntax.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: resolution
           in: query
-          description: The current resolution--only set if a bug is closed.
+          description: The current resolution--only set if a bug is closed. You can find open bugs by searching for bugs with an empty resolution.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: severity
           in: query
           description: The Severity field on a bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: status
           in: query
           description: "The current status of a bug (not including its resolution, if it has one, which is a separate field above)."
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: summary
           in: query
-          description: Searches for substrings in the single-line Summary field on bugs.
+          description: 'Searches for substrings in the single-line Summary field on bugs. If you specify an array, then bugs whose summaries match *any* of the passed substrings will be returned. Note that unlike searching in the Bugzilla UI, substrings are not split on spaces. So searching for ``foo bar`` will match "This is a foo bar" but not "This foo is a bar". ``[''foo'', ''bar'']``, would, however, match the second item.'
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: tags
           in: query
-          description: Searches for a bug with the specified tag.
+          description: "Searches for a bug with the specified tag. If you specify an array, then any bugs that match *any* of the tags will be returned. Note that tags are personal to the currently logged in user."
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: target_milestone
           in: query
-          description: The Target Milestone field of a bug.
+          description: 'The Target Milestone field of a bug. Note that even if this Bugzilla does not have the Target Milestone field enabled, you can still search for bugs by Target Milestone. However, it is likely that in tha case, most bugs will not have a Target Milestone set (it defaults to "---" when the field isn''t enabled).'
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: qa_contact
           in: query
-          description: The login name of the bug's QA Contact.
+          description: "he login name of the bug's QA Contact. Note that even if this Bugzilla does not have the QA Contact field enabled, you can still search for bugs by QA Contact (though it is likely that no bug will have a QA Contact set, if the field is disabled)."
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: triage_owner
           in: query
           description: The login name of the Triage Owner of a bug's component.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: type
           in: query
           description: The Type field on a bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: url
           in: query
           description: The "URL" field of a bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: version
           in: query
           description: The Version field of a bug.
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: whiteboard
           in: query
-          description: Search the "Status Whiteboard" field on bugs for a substring.
+          description: 'Search the "Status Whiteboard" field on bugs for a substring. Works the same as the ``summary`` field described above, but searches the Status Whiteboard field.'
           schema:
-            type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
       responses:
         "200":
           description: A list of bugs matching the search criteria
@@ -458,7 +574,8 @@ paths:
           description: |
             If you specify an invalid value for a particular field, you just won’t get any results for that value.
 
-            * 1000 (Parameters Required) You may not search without any search terms.
+            * 1000 (Parameters Required) 
+              You may not search without any search terms.
           content:
             application/json:
               schema:
@@ -468,16 +585,11 @@ paths:
     post:
       summary: Create a new bug
       description: |
-        This endpoint allows you to create a new bug in Bugzilla. If you specify any
-        invalid fields, an error will be thrown stating which field is invalid.
-        If you specify any fields you are not allowed to set, they will just be
-        set to their defaults or ignored.
+        This endpoint allows you to create a new bug in Bugzilla. If you specify any invalid fields, an error will be thrown stating which field is invalid. If you specify any fields you are not allowed to set, they will just be set to their defaults or ignored.
 
         You cannot currently set all the items here that you can set on enter_bug.cgi.
 
-        The WebService interface may allow you to set things other than those listed
-        here, but realize that anything undocumented here may likely change in the
-        future.
+        The WebService interface may allow you to set things other than those listed here, but realize that anything undocumented here may likely change in the future.
       requestBody:
         content:
           application/json:
@@ -540,7 +652,10 @@ paths:
               You didn't specify a type for the bug.
             * 504 (Invalid User)
               Either the QA Contact, Assignee, or CC lists have some invalid user in them. The error message will have more details.
-      deprecated: false
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
       tags:
         - Bugs
   "/bug/{bug_id}/graph":
@@ -575,7 +690,7 @@ paths:
             default: false
         - name: relationship
           in: query
-          description: 'One of "dependencies", "duplicates", or "regressions".'
+          description: "The default is the dependencies graph. To return the graph for other types, pass this parameter."
           schema:
             type: string
             default: dependencies
@@ -588,24 +703,27 @@ paths:
           description: |
             A graph of bug relationships
 
-            The default return object will be an object with two trees based on the type of relationship selected. For dependencies, it will be blocked and dependson. For regressions, it will be be regresses and regressed_by. And for duplicates, it will be dupe_of and dupe.
+            The default return object will be an object with two trees based on the type of relationship selected. For dependencies, it will be ``blocked`` and ``dependson`` For regressions, it will be be ``regresses`` and ``regressed_by``. And for duplicates, it will be ``dupe_of`` and ``dupe``.
           content:
             application/json:
               schema:
                 oneOf:
                   - type: object
+                    title: dependencies
                     properties:
                       blocked:
                         $ref: "#/components/schemas/BugNode"
                       dependson:
                         $ref: "#/components/schemas/BugNode"
                   - type: object
+                    title: regressions
                     properties:
                       regresses:
                         $ref: "#/components/schemas/BugNode"
                       regressed_by:
                         $ref: "#/components/schemas/BugNode"
                   - type: object
+                    title: duplicates
                     properties:
                       dupe_of:
                         $ref: "#/components/schemas/BugNode"
@@ -696,9 +814,7 @@ paths:
         - name: limit
           in: query
           description: |
-            Limit the number of results returned. If the value is unset, zero, or greater than
-            the maximum value set by the administrator (default: 10,000), the maximum value
-            will be used instead.
+            Limit the number of results returned. If the value is unset, zero, or greater than the maximum value set by the administrator (default: 10,000), the maximum value will be used instead. This is a preventive measure against DoS-like attacks on Bugzilla.
           schema:
             type: integer
       responses:
@@ -735,6 +851,10 @@ paths:
                               removed: ""
         default:
           description: Various error responses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
       tags:
         - Bugs
   "/bug/{id_or_alias}/comment":
@@ -853,7 +973,6 @@ paths:
               You specified an id in the "comment_ids" argument that is invalid--either
               you specified something that wasn't a number, or there is no comment with
               that id.
-
           content:
             application/json:
               schema:
@@ -1107,11 +1226,13 @@ components:
       type: object
       properties:
         actual_time:
-          description: The total number of hours that this bug has taken so far.
+          description: "The total number of hours that this bug has taken so far. If you are not in the time-tracking group, this field will not be included in the return value."
           type: number
         alias:
-          description: The unique alias of this bug. A null value will be returned if this bug has no alias.
-          type: string
+          description: The unique alias of this bug. A `null` value will be returned if this bug has no alias.
+          type:
+            - string
+            - null
         assigned_to:
           description: The login name of the user to whom the bug is assigned.
           type: string
@@ -1148,8 +1269,9 @@ components:
         creator_detail:
           $ref: "#/components/schemas/User"
         deadline:
-          description: "The day that this bug is due to be completed, in the format YYYY-MM-DD."
+          description: "The day that this bug is due to be completed, in the format `YYYY-MM-DD`."
           type: string
+          format: date
         depends_on:
           description: The IDs of bugs that this bug "depends on".
           type: array
@@ -1157,14 +1279,16 @@ components:
             type: integer
         dupe_of:
           description: "The bug ID of the bug that this bug is a duplicate of. If this bug isn't a duplicate of any bug, this will be null."
-          type: integer
+          type:
+            - integer
+            - null
         duplicates:
           description: The ids of bugs that are marked as duplicate of this bug.
           type: array
           items:
             type: integer
         estimated_time:
-          description: The number of hours that it was estimated that this bug would take.
+          description: "The number of hours that it was estimated that this bug would take. If you are not in the time-tracking group, this field will not be included in the return value."
           type: number
         flags:
           description: An array of objects containing the information about flags currently set for the bug.
@@ -1183,10 +1307,13 @@ components:
           description: "If true, this bug can be accessed by members of the CC list, even if they are not in the groups the bug is restricted to."
           type: boolean
         is_confirmed:
-          description: true if the bug has been confirmed. Usually this means that the bug has at some point been moved out of the UNCONFIRMED status and into another open status.
+          description: "``true`` if the bug has been confirmed. Usually this means that the bug has at some point been moved out of the ``UNCONFIRMED`` status and into another open status."
+          type: boolean
+        is_open:
+          description: "`true` if this bug is open, ``false`` if it is closed."
           type: boolean
         is_creator_accessible:
-          description: "If true, this bug can be accessed by the creator of the bug, even if they are not a member of the groups the bug is restricted to."
+          description: "If `true`, this bug can be accessed by the creator of the bug, even if they are not a member of the groups the bug is restricted to."
           type: boolean
         keywords:
           description: Each keyword that is on this bug.
@@ -1197,6 +1324,9 @@ components:
           description: When the bug was last changed.
           type: string
           format: date-time
+        comment_count:
+          description: Number of comments associated with the bug.
+          type: integer
         op_sys:
           description: The name of the operating system that the bug was filed against.
           type: string
@@ -1213,6 +1343,7 @@ components:
           description: The login name of the current QA Contact on the bug.
           type: string
         qa_contact_detail:
+          description: An object containing detailed user information for the qa_contact.
           $ref: "#/components/schemas/User"
         regressed_by:
           description: The IDs of bugs that introduced this bug.
@@ -1225,7 +1356,7 @@ components:
           items:
             type: integer
         remaining_time:
-          description: The number of hours of work remaining until work on this bug is complete.
+          description: "The number of hours of work remaining until work on this bug is complete. If you are not in the time-tracking group, this field will not be included in the return value."
           type: number
         resolution:
           description: "The current resolution of the bug, or an empty string if the bug is open."
@@ -1251,7 +1382,7 @@ components:
           description: The type of the bug.
           type: string
         update_token:
-          description: The token that you would have to pass to the process_bug.cgi page in order to update this bug. This changes every time the bug is updated. This field is not returned to logged-out users.
+          description: The token that you would have to pass to the ``process_bug.cgi`` page in order to update this bug. This changes every time the bug is updated. This field is not returned to logged-out users.
           type: string
         url:
           description: "A URL that demonstrates the problem described in the bug, or is somehow related to the bug report."
@@ -1262,6 +1393,118 @@ components:
         whiteboard:
           description: The value of the "status whiteboard" field on the bug.
           type: string
+        attachments:
+          description: |
+            Each array item is an Attachment object. See :ref:`rest_attachments` for details of the object.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: array
+          items:
+            $ref: "#/components/schemas/Attachment"
+        comments:
+          description: |
+            Each array item is a Comment object. See :ref:`rest_comments` for details of the object.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        counts:
+          description: |
+            An object containing the counts of various items.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: object
+          properties:
+            attachments:
+              description: The number of attachments.
+              type: integer
+            cc:
+              description: The number of carbon copies (CC).
+              type: integer
+            comments:
+              description: The number of comments.
+              type: integer
+            keywords:
+              description: The number of keywords.
+              type: integer
+            blocks:
+              description: The number of blocks.
+              type: integer
+            depends_on:
+              description: The number of dependencies.
+              type: integer
+            regressed_by:
+              description: The number of items causing regression.
+              type: integer
+            regressions:
+              description: The number of regressions.
+              type: integer
+            duplicates:
+              description: The number of duplicate items.
+              type: integer
+        description:
+          description: |
+            The description (initial comment) of the bug.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: string
+        filed_via:
+          description: |
+            How the bug was filed, e.g. `standard_form`.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: string
+        history:
+          description: |
+            Each array item is a History object. See :ref:`rest_history` for details of the object.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: array
+          items:
+            $ref: "#/components/schemas/History"
+        tags:
+          description: |
+            Each array item is a tag name. Note that tags are personal to the currently logged in user and are not the same as comment tags.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: array
+          items:
+            type: string
+        triage_owner:
+          description: |
+            The login name of the Triage Owner of the bug's component.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: string
+        triage_owner_detail:
+          description: |
+            An object containing detailed user information for the `triage_owner`. To see the keys included in the user detail object, see below.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: object
+        last_change_time_non_bot:
+          description: |
+            When the bug was last changed human and not a bot.
+
+            > **Note:**
+              This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
+          type: string
+          format: date-time
+      additionalProperties:
+        description: |
+          Every custom field in this installation will also be included in the return value. Most fields are returned as strings. However, some field types have different return values.
+
+          Normally custom fields are returned by default similar to normal bug fields or you can specify only custom fields by using ``_custom`` in ``include_fields``.
     Flag:
       type: object
       properties:
@@ -1316,14 +1559,16 @@ components:
           description: The numeric ID of the bug.
           type: integer
         alias:
-          description: The unique alias of this bug. A null value will be returned if this bug has no alias.
-          type: string
+          description: The unique alias of this bug. A `null` value will be returned if this bug has no alias.
+          type:
+            - string
+            - null
         history:
           description: An array of History objects.
           type: array
           items:
-            $ref: "#/components/schemas/History"
-    History:
+            $ref: "#/components/schemas/BugHistory"
+    BugHistory:
       type: object
       properties:
         when:
@@ -1334,11 +1579,11 @@ components:
           description: The login name of the user who performed the bug change.
           type: string
         changes:
-          description: An array of Change objects.
+          description: An array of Change objects which contain all the changes that happened to the bug at this time (as specified by ``when``).
           type: array
           items:
-            $ref: "#/components/schemas/Change"
-    Change:
+            $ref: "#/components/schemas/BugChange"
+    BugChange:
       type: object
       properties:
         field_name:
@@ -1353,7 +1598,6 @@ components:
         attachment_id:
           description: "The ID of the attachment that was changed. This only appears if the change was to an attachment, otherwise `attachment_id` will not be present in this object."
           type: integer
-          nullable: true
     NewBug:
       type: object
       properties:
@@ -1445,6 +1689,8 @@ components:
           type: array
           items:
             type: integer
+      additionalProperties:
+        description: "In addition to the above parameters, if your installation has any custom fields, you can set them just by passing in the name of the field and its value as a string."
       required:
         - product
         - component
@@ -1513,7 +1759,7 @@ components:
               items:
                 type: string
         is_cc_accessible:
-          description: Whether or not users in the CC list are allowed to access the bug.
+          description: "Whether or not users in the CC list are allowed to access the bug, even if they aren't in a group that can normally access the bug."
           type: boolean
         comment:
           description: A comment on the change.
@@ -1523,16 +1769,14 @@ components:
               description: The actual text of the comment.
               type: string
             comment:
-              description: An alias for the comment body. (For compatibility with the parameters to rest_add_comment)
+              description: "An alias for the comment body. (For compatibility with the parameters to :ref:`rest_add_comment`)"
               type: string
             is_private:
               description: "Whether the comment is private or not. If you try to make a comment private and you don't have the permission to, an error will be thrown."
               type: boolean
         comment_is_private:
           description: |
-            This is how you update the privacy of comments that are already on a bug.
-
-            This is a object, where the keys are the ID of comments.
+            This is how you update the privacy of comments that are already on a bug. This is a object, where the keys are the ``int`` ID of comments (not their count on a bug, like #1, #2, #3, but their globally-unique ID, as returned by :ref:`rest_comments` and the value is a ``boolean`` which specifies whether that comment should become private (``true``) or public (``false``).
 
             The comment IDs must be valid for the bug being updated. Thus, it is not practical to use this while updating multiple bugs at once, as a single comment ID will never be valid on multiple bugs.
           type: object
@@ -1543,17 +1787,14 @@ components:
           description: The Component the bug is in.
           type: string
         deadline:
-          description: The Deadline field is a date specifying when the bug must be completed by.
+          description: "The Deadline field is a date specifying when the bug must be completed by, in the format ``YYYY-MM-DD``."
           type: string
           format: date
         dupe_of:
-          description: |
-            The bug that this bug is a duplicate of.
-
-            If you want to mark a bug as a duplicate, the safest thing to do is to set this value and not set the status or resolution fields. They will automatically be set by Bugzilla to the appropriate values for duplicate bugs.
+          description: "The bug that this bug is a duplicate of. If you want to mark a bug as a duplicate, the safest thing to do is to set this value and *not* set the ``status`` or ``resolution`` fields. They will automatically be set by Bugzilla to the appropriate values for duplicate bugs."
           type: integer
         estimated_time:
-          description: "The total estimate of time required to fix the bug, in hours."
+          description: "The total estimate of time required to fix the bug, in hours. This is the *total* estimate, not the amount of time remaining to fix it."
           type: number
         flags:
           description: |
@@ -1562,7 +1803,7 @@ components:
             Of any item, at least the status and one of type_id, id, or name must be specified. If a type_id or name matches a single currently set flag, the flag will be updated unless new is specified.
           type: array
           items:
-            $ref: "#/components/schemas/FlagChange"
+            $ref: "#/components/schemas/FlagUpdate"
         groups:
           description: The groups a bug is in.
           type: object
@@ -1608,29 +1849,14 @@ components:
           type: string
         product:
           description: |
-            The name of the product that the bug is in. If
-            you change this, you will probably also want to
-            change ``target_milestone``, ``version``, and
-            ``component``, since those have different legal
-            values in every product.
+            The name of the product that the bug is in. If you change this, you will probably also want to change ``target_milestone``, ``version``, and ``component``, since those have different legal values in every product.
 
-            If you cannot change the ``target_milestone``
-            field, it will be reset to the default for the
-            product, when you move a bug to a new product.
+            If you cannot change the ``target_milestone`` field, it will be reset to the default for the product, when you move a bug to a new product.
 
-            You may also wish to add or remove groups, as
-            which groups are
-            valid on a bug depends on the product. Groups
-            that are not valid in the new product will be
-            automatically removed, and groups which are
-            mandatory in the new product will be
-            automatically added, but no other automatic group
-            changes will be done.
+            You may also wish to add or remove groups, as which groups are valid on a bug depends on the product. Groups that are not valid in the new product will be automatically removed, and groups which are mandatory in the new product will be automatically added, but no other automatic group changes will be done.
 
             > **Note:**
-               Users can only move a bug into a product if
-               they would normally have permission to file
-               new bugs in that product.
+               Users can only move a bug into a product if they would normally have permission to file new bugs in that product.
           type: string
         qa_contact:
           description: The full login name of the bug's QA Contact.
@@ -1639,18 +1865,13 @@ components:
           description: Whether or not the bug's reporter is allowed to access the bug.
           type: boolean
         remaining_time:
-          description: |
-            How much work time is remaining to fix the bug,
-            in hours. If you set ``work_time`` but don't
-            explicitly set ``remaining_time``, then the
-            ``work_time`` will be deducted from the bug's
-            ``remaining_time``.
+          description: "How much work time is remaining to fix the bug, in hours. If you set ``work_time`` but don't explicitly set ``remaining_time``, then the ``work_time`` will be deducted from the bug's ``remaining_time``."
           type: number
         reset_assigned_to:
           description: "If true, the `assigned_to` field will be reset to the default for the component that the bug is in. (If you have set the component at the same time as using this, then the component used will be the new component, not the old one.)"
           type: boolean
         reset_qa_contact:
-          description: "If true, the `qa_contact` field will be reset to the default for the component that the bug is in."
+          description: "If true, the ``qa_contact`` field will be reset to the default for the component that the bug is in. (If you have set the component at the same time as using this, then the component used will be the new component, not the old one.)"
           type: boolean
         resolution:
           description: |-
@@ -1698,6 +1919,8 @@ components:
         work_time:
           description: "The number of hours worked on this bug as part of this change. If you set ``work_time`` but don't explicitly set ``remaining_time``, then the ``work_time`` will be deducted from the bug's ``remaining_time``."
           type: number
+      additionalProperties:
+        description: "In addition to the above parameters, if your installation has any custom fields, you can set them just by passing in the name of the field and its value as a string."
       required:
         - ids
     BugRelationship:
@@ -1718,7 +1941,7 @@ components:
           type: array
           items:
             type: integer
-    FlagChange:
+    FlagUpdate:
       type: object
       properties:
         name:
@@ -1803,8 +2026,8 @@ components:
         time:
           description: The time (in Bugzilla’s timezone) that the comment was added.
           type: string
-          deprecated: true
           format: date-time
+          deprecated: true
         creation_time:
           description: |
             This is exactly same as the ``time`` key. Use this field instead of ``time`` for consistency with other methods including [Get Bug](#tag/Bugs/paths/~1bug~1{id_or_alias}/get) and :ref:`rest_attachments`.
