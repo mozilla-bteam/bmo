@@ -36,14 +36,10 @@ use constant READABLE_BUG_STATUS_PRODUCTS => (
 sub enter_bug_format {
   my ($self, $args) = @_;
   my $cgi  = Bugzilla->cgi;
-  my $user = Bugzilla->user;
 
   # Use the modal or custom format unless `format=legacy` is given as a URL param
   my $format = $cgi->param('format') || 'modal';
-  $args->{format}
-    = $format eq 'legacy' || $user->setting('ui_use_modal_create') eq 'off'
-    ? ''
-    : $format;
+  $args->{format} = $format eq 'legacy' ? '' : $format;
 }
 
 sub show_bug_format {
@@ -325,12 +321,6 @@ sub install_before_final_checks {
   });
   add_setting({
     name     => 'ui_attach_long_paste',
-    options  => ['on', 'off'],
-    default  => 'on',
-    category => 'User Interface',
-  });
-  add_setting({
-    name     => 'ui_use_modal_create',
     options  => ['on', 'off'],
     default  => 'on',
     category => 'User Interface',
