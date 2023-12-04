@@ -2458,6 +2458,33 @@ components:
           type: string
         code:
           type: integer
+  securitySchemes:
+    X-BUGZILLA-API-KEY:
+      type: apiKey
+      description: |
+        You can specify 'X-BUGZILLA-API-KEY' header with the API key as a value to any request, and you will be authenticated as that user if the key is correct and has not been revoked.
+
+        You can set up an API key by using the [API Keys tab](https://bmo.readthedocs.io/en/latest/using/preferences.html#api-keys) in the Preferences pages.
+      in: header
+      name: X-BUGZILLA-API-KEY
+    Bugzilla_api_key:
+      type: apiKey
+      description: |
+        You can specify an API key via the `Bugzilla_api_key` query parameter, and you will be authenticated as that user if the key is correct and has not been revoked.
+
+        > [!WARNING]
+        It should be noted that this authentication method is not recommended for use and it is likely to be deprecated in future versions of BMO, due to security concerns.
+      in: query
+      name: Bugzilla_api_key
+    api_key:
+      type: apiKey
+      description: |
+        You can specify an API key via the `api_key` query parameter, and you will be authenticated as that user if the key is correct and has not been revoked.
+
+        > [!WARNING]
+        It should be noted that this authentication method is not recommended for use and it is likely to be deprecated in future versions of BMO, due to security concerns.
+      in: query
+      name: api_key
 tags:
   - name: Attachments
     description: "The Bugzilla API for creating, changing, and getting the details of attachments."
