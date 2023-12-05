@@ -108,7 +108,7 @@ sub _get_access_token {
   my ($self) = @_;
   my $url
     = sprintf
-    'https://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
+    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
     $self->service_account;
 
   my $http_headers = HTTP::Headers->new;
