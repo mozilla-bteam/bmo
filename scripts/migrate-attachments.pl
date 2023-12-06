@@ -74,10 +74,13 @@ if ($options{migrate}) {
   }
   my ($source, $dest) = @{$options{migrate}};
 
-  # Do not migrate from database to s3 if minsize is set
+  # Do not migrate from database to net storage if data is less than minsize
   my $where;
   if ($source eq 'database' && $dest eq 's3' && Bugzilla->params->{attachment_s3_minsize}) {
     $where = 'WHERE attach_size > ' . int Bugzilla->params->{attachment_s3_minsize};
+  }
+  elsif ($source eq 'database' && $dest eq 'google' && Bugzilla->params->{attachment_google_minsize}) {
+    $where = 'WHERE attach_size > ' . int Bugzilla->params->{attachment_google_minsize};
   }
 
   my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments $where");

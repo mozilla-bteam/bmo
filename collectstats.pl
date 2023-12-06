@@ -23,7 +23,7 @@ use Bugzilla::Error;
 use Bugzilla::Field;
 use Bugzilla::Install::Filesystem qw(fix_dir_permissions);
 use Bugzilla::Product;
-use Bugzilla::Report::S3;
+use Bugzilla::Report::Net;
 use Bugzilla::Search;
 use Bugzilla::User;
 use Bugzilla::Util;
@@ -164,7 +164,7 @@ sub collect_stats {
   my $file = join '/', $dir, $file_product;
 
   # if the data exists, get the old status and resolution list for that product.
-  my $s3 = Bugzilla::Report::S3->new;
+  my $s3 = Bugzilla::Report::Net->new;
   my ($data, $recreate);
   if (($s3->is_enabled && $s3->data_exists($product)) || -f $file) {
     ($data, $recreate) = get_old_data($product);
@@ -247,11 +247,11 @@ sub get_old_data {
 
   # First try to get the data from S3 if enabled
   my $chart_data = '';
-  my $s3 = Bugzilla::Report::S3->new;
+  my $s3 = Bugzilla::Report::Net->new;
   if ($s3->is_enabled) {
     $chart_data = $s3->get_data($product) if $s3->data_exists($product);
     if (!$chart_data) {
-      ThrowCodeError('s3_mining_get_failed');
+      ThrowCodeError('net_mining_get_failed');
     }
   }
   else {
@@ -411,7 +411,7 @@ FIN
   }
 
   # First try to set the data in S3 if enabled
-  my $s3 = Bugzilla::Report::S3->new;
+  my $s3 = Bugzilla::Report::Net->new;
   if ($s3->is_enabled) {
     $s3->set_data($product, $chart_data);
   }

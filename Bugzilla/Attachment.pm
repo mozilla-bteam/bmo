@@ -45,9 +45,9 @@ use Bugzilla::Field;
 use Bugzilla::Hook;
 
 use File::Copy;
-use List::Util qw(max);
+use List::Util   qw(max);
 use Scalar::Util qw(weaken);
-use Storable qw(dclone);
+use Storable     qw(dclone);
 
 use base qw(Bugzilla::Object);
 
@@ -78,7 +78,7 @@ use constant DB_COLUMNS => qw(
   attach_size
 );
 
-use constant REQUIRED_FIELD_MAP => {bug_id => 'bug',};
+use constant REQUIRED_FIELD_MAP    => {bug_id => 'bug',};
 use constant EXTRA_REQUIRED_FIELDS => qw(data);
 
 use constant UPDATE_COLUMNS => qw(
@@ -551,9 +551,11 @@ sub get_attachments_by_bug {
     $and_restriction = 'AND (isprivate = 0 OR submitter_id = ?';
     push(@values, $user->id);
     if ($user->id == $bug->reporter->id) {
+
       # Keep these conditions in sync with _attachment_is_bounty_attachment
       # in extensions/BMO/Extension.pm
-      $and_restriction .= " OR (filename = 'bugbounty.data' AND mimetype = 'text/plain')";
+      $and_restriction
+        .= " OR (filename = 'bugbounty.data' AND mimetype = 'text/plain')";
     }
     $and_restriction .= ')';
   }
@@ -854,7 +856,7 @@ sub get_content_type {
   my $cgi = Bugzilla->cgi;
 
   return 'application/octet-stream' if ($cgi->param('hide_preview'));
-  return 'text/plain' if ($cgi->param('ispatch'));
+  return 'text/plain'               if ($cgi->param('ispatch'));
 
   my $content_type;
   my $method = $cgi->param('contenttypemethod');
@@ -902,7 +904,7 @@ sub get_content_type {
 
 sub current_storage {
   my ($self, $override_class) = @_;
-  my $dbh  = Bugzilla->dbh;
+  my $dbh = Bugzilla->dbh;
 
   # Sometimes we might want to copy attachment data from one
   # storage class to another. With this param, we can override
@@ -949,12 +951,12 @@ sub get_storage_by_name {
     require Bugzilla::Attachment::Storage::FileSystem;
     return Bugzilla::Attachment::Storage::FileSystem->new({attach_id => $self->id});
   }
-  elsif ($name eq 's3') {
-    require Bugzilla::Attachment::Storage::S3;
-    return Bugzilla::Attachment::Storage::S3->new({attach_id => $self->id, datasize => $self->datasize});
-  }
+
+  # Anything else will come from the network
   else {
-    return undef;
+    require Bugzilla::Attachment::Storage::Net;
+    return Bugzilla::Attachment::Storage::Net->new(
+      {name => $name, attach_id => $self->id, datasize => $self->datasize});
   }
 }
 
