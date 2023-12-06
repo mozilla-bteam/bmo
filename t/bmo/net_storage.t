@@ -90,3 +90,4 @@ ok(!$storage->head_key('somekey'),
   'The key no longer exists in the attachments bucket');
 
 done_testing;
+

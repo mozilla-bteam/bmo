@@ -111,8 +111,6 @@ sub _get_access_token {
     'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
     $self->service_account;
 
-  Bugzilla->audit(sprintf 'google access token: url %s', $url);
-
   my $http_headers = HTTP::Headers->new;
   $http_headers->header('Metadata-Flavor' => 'Google');
 
