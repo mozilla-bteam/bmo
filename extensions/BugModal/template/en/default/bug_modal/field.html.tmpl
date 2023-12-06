@@ -319,7 +319,7 @@ END;
           [% INCLUDE global/userselect.html.tmpl
               id = name
               name = name
-              value = value.login
+              value = value.login.defined ? value.login : value
               classes = [ "bz_userfield" ]
               placeholder = default
               aria_labelledby = aria_labelledby_id
