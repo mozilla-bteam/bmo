@@ -437,6 +437,7 @@
     [% WRAPPER bug_modal/field.html.tmpl
         field = bug_fields.assigned_to
         field_type = constants.FIELD_TYPE_USER
+        value = assigned_to
         action = {
           class = "take-btn"
           caption = "Take"
@@ -461,6 +462,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.qa_contact
           field_type = constants.FIELD_TYPE_USER
+          value = qa_contact
           default = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
           help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
       %]
