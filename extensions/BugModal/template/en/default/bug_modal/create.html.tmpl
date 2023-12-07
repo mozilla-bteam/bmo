@@ -682,7 +682,9 @@
       subtitle = ""
   %]
     <textarea id="cf_user_story" name="cf_user_story" rows="10" cols="80"
-              aria-label="User Story">[% default.cf_user_story %]</textarea>
+              aria-label="User Story">
+      [%~ default.cf_user_story FILTER html ~%]
+    </textarea>
   [% END %]
 [% END %]
 
