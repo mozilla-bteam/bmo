@@ -698,11 +698,11 @@
       no_collapse_persist = 1
   %]
     [% WRAPPER fields_lhs %]
-      [% estimated_time = PROCESS formattimeunit time_unit = bug.estimated_time %]
+      [% _estimated_time = PROCESS formattimeunit time_unit = estimated_time %]
       [% INCLUDE bug_modal/field.html.tmpl
          field = bug_fields.estimated_time
          field_type = constants.FIELD_TYPE_FREETEXT
-         value = estimated_time
+         value = _estimated_time
          short_width = 1
          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#estimated_time"
       %]
