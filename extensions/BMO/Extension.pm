@@ -1728,8 +1728,8 @@ sub _log_sent_email {
   $bug_id = $bug_id ? "bug-$bug_id" : '-';
 
   my $message_type;
-  my $type   = $email->header('X-Bugzilla-Type');
-  my $reason = $email->header('X-Bugzilla-Reason');
+  my $type   = $email->header('X-Bugzilla-Type')   || '';
+  my $reason = $email->header('X-Bugzilla-Reason') || '';
   if ($type eq 'whine' || $type eq 'request' || $type eq 'admin') {
     $message_type = $type;
   }

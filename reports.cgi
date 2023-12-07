@@ -15,7 +15,7 @@ use lib qw(. lib local/lib/perl5);
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Report::S3;
+use Bugzilla::Report::Net;
 use Bugzilla::Status;
 use Bugzilla::Util;
 
@@ -103,7 +103,7 @@ sub get_data {
   my $chart_data;
 
   # First try to get the data from S3 if enabled
-  my $s3 = Bugzilla::Report::S3->new;
+  my $s3 = Bugzilla::Report::Net->new;
   if ($s3->is_enabled) {
     $chart_data = $s3->get_data('-All-') if $s3->data_exists('-All-');
   }
@@ -142,7 +142,7 @@ sub generate_chart {
   my $chart_data;
 
   # First try to get the data from S3 if enabled
-  my $s3 = Bugzilla::Report::S3->new;
+  my $s3 = Bugzilla::Report::Net->new;
   if ($s3->is_enabled) {
     $chart_data = $s3->get_data($product) if $s3->data_exists($product);
   }

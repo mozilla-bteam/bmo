@@ -108,7 +108,7 @@ sub verify_check {
     foreach my $i (1 .. 10) {
       my $key = "recovery.$i";
       if (($self->property_get($key) // '') eq $code) {
-        $self->property_delete($key);
+        $self->property_delete($key) if !$params->{no_delete};
         return;
       }
     }

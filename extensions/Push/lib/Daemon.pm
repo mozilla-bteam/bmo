@@ -14,6 +14,8 @@ use warnings;
 use Bugzilla::Constants;
 use Bugzilla::Extension::Push::Push;
 use Bugzilla::Extension::Push::Logger;
+use Bugzilla::Util qw(get_text);
+
 use Carp qw(confess);
 use Daemon::Generic;
 use File::Basename;
@@ -93,6 +95,17 @@ sub gd_run {
   $push->logger->{debug} = $self->{debug};
   $push->is_daemon(1);
   $push->start();
+}
+
+sub gd_check {
+  my $self = shift;
+  my $dbh = Bugzilla->dbh;
+
+  # Get a count of all the push jobs currently in the queue.
+  my $push_count    = $dbh->selectrow_array('SELECT COUNT(*) FROM push');
+  my $backlog_count = $dbh->selectrow_array('SELECT COUNT(*) FROM push_backlog');
+  print get_text('push_queue_depth', {count => $push_count}) . "\n";
+  print get_text('push_queue_backlog_depth', {count => $backlog_count}) . "\n";
 }
 
 1;

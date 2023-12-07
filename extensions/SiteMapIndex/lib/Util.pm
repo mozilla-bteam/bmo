@@ -34,7 +34,7 @@ our @EXPORT_OK = qw(
 );
 
 use Bugzilla;
-use Bugzilla::S3;
+use Bugzilla::Net::S3;
 use Bugzilla::Util qw(datetime_from url_quote);
 
 use Bugzilla::Extension::SiteMapIndex::Constants;
@@ -129,9 +129,6 @@ END
     . Bugzilla->params->{sitemapindex_aws_region}
     . '.amazonaws.com';
 
-  use Bugzilla::Logging;
-  DEBUG($sitemap_url);
-
   foreach my $filename (@$filelist) {
     $index_xml .= "
   <sitemap>
@@ -198,15 +195,16 @@ END
 
 sub _upload_s3 {
   my ($filename, $data) = @_;
-  my $s3 = Bugzilla::S3->new({
-    aws_access_key_id     => Bugzilla->params->{sitemapindex_aws_client_id},
-    aws_secret_access_key => Bugzilla->params->{sitemapindex_aws_client_secret},
-    secure                => 1,
-    retry                 => 1,
+  my $s3 = Bugzilla::Net::S3->new({
+    client_id  => Bugzilla->params->{sitemapindex_aws_client_id},
+    secret_key => Bugzilla->params->{sitemapindex_aws_client_secret},
+    bucket     => Bugzilla->params->{sitemapindex_s3_bucket},
+    host       => Bugzilla->params->{aws_host},
+    secure     => 1,
+    retry      => 1,
   });
-  my $bucket = $s3->bucket(Bugzilla->params->{sitemapindex_s3_bucket});
-  $bucket->delete_key($filename) || die $bucket->errstr;
-  $bucket->add_key($filename, $data) || die $bucket->errstr;
+  $s3->delete_key($filename) || die $s3->error_string;
+  $s3->add_key($filename, $data) || die $s3->error_string;
 }
 
 1;

@@ -693,6 +693,13 @@ eval {
     CONTROLMAPMANDATORY, 0);
 };
 
+# Add QA-Selenium-TEST group also to Another Product
+my $another_product = Bugzilla::Product->new({name => 'Another Product'});
+eval {
+  $sth->execute($created_group->id, $another_product->id, 0, CONTROLMAPSHOWN,
+    CONTROLMAPNA, 0);
+};
+
 ##########################################################################
 # Create flag types
 ##########################################################################

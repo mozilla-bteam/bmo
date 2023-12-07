@@ -64,6 +64,7 @@ my %requires = (
   'Email::Sender'                       => 0,
   'FFI::Platypus'                       => 0,
   'Future'                              => '0.34',
+  'Graph'                               => 0,
   'HTML::Escape'                        => '1.10',
   'IO::Async'                           => '0.71',
   'IPC::System::Simple'                 => 0,
@@ -94,6 +95,7 @@ my %requires = (
   'Role::Tiny'                          => '2.000003',
   'Scope::Guard'                        => '0.21',
   'Sereal'                              => '4.004',
+  'Set::Object'                         => 0,
   'Sub::Quote'                          => '2.005000',
   'Template'                            => '2.24',
   'Text::CSV_XS'                        => '1.26',
@@ -248,7 +250,7 @@ my %optional_features = (
   },
   mysql => {
     description => 'MySQL database support',
-    prereqs     => {runtime => {requires => {'DBD::mysql' => '4.037', 'DateTime::Format::MySQL' => '0.06'}}}
+    prereqs     => {runtime => {requires => {'DBD::mysql' => '== 4.051', 'DateTime::Format::MySQL' => '0.06'}}}
   },
   jsonrpc => {
     description => 'JSON-RPC Interface',
@@ -275,7 +277,7 @@ my %optional_features = (
     prereqs     => {
       runtime => {
         requires =>
-          {'Auth::GoogleAuth' => '1.01', 'GD::Barcode::QRcode' => '0',},
+          {'Auth::GoogleAuth' => '1.01', 'GD::Barcode' => '== 1.15',},
       }
     },
   },

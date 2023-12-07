@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-version: '3'
+version: "3"
 
 services:
   bmo.test:
@@ -12,7 +12,7 @@ services:
       - /tmp
       - /run
     environment:
-      - 'BMO_inbound_proxies=*'
+      - "BMO_inbound_proxies=*"
       - BMO_db_host=bmo.db
       - BMO_db_name=bugs
       - BMO_db_pass=bugs
@@ -38,6 +38,8 @@ services:
       - bmo.db
       - memcached
       - selenium
+      - s3
+      - gcs
 
   externalapi.test:
     image: bmo
@@ -60,6 +62,15 @@ services:
 
   selenium:
     image: selenium/standalone-firefox:3.141.59
-    shm_size: '512m'
+    shm_size: "512m"
     ports:
       - "59000:5900"
+
+  s3:
+    image: scireum/s3-ninja
+
+  gcs:
+    image: fsouza/fake-gcs-server
+    command: "-scheme http"
+    volumes:
+      - ./docker/gcs/attachments:/data/attachments
