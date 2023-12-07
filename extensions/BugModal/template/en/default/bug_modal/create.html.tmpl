@@ -706,31 +706,6 @@
          short_width = 1
          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#estimated_time"
       %]
-      [% current_estimate = PROCESS formattimeunit time_unit = (bug.actual_time + bug.remaining_time) %]
-      [% INCLUDE bug_modal/field.html.tmpl
-         label = "Current Est"
-         value = current_estimate
-         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#current_estimate"
-      %]
-      [% hours_worked = PROCESS formattimeunit time_unit = bug.actual_time %]
-      [% WRAPPER bug_modal/field.html.tmpl
-         field_type = constants.FIELD_TYPE_FREETEXT
-         label = "Hours Worked"
-         name = "work_time"
-         value = '0.0'
-         short_width = 1
-         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#work_time"
-      %]
-        [% PROCESS formattimeunit time_unity = bug.actual_time %]
-      [% END %]
-      [% hours_left = PROCESS formattimeunit time_unit = bug.remaining_time %]
-      [% INCLUDE bug_modal/field.html.tmpl
-         field = bug_fields.remaining_time
-         field_type = constants.FIELD_TYPE_FREETEXT
-         value = hours_left
-         short_width = 1
-         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#remaining_time"
-      %]
     [% END %]
 
     [% WRAPPER fields_rhs %]
