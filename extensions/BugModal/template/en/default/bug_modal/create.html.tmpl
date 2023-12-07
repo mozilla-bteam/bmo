@@ -590,6 +590,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.status_whiteboard
           field_type = constants.FIELD_TYPE_FREETEXT
+          value = status_whiteboard
           help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
       %]
       [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product) %]
