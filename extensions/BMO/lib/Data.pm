@@ -99,6 +99,8 @@ tie(
     "Firefox for Metro Graveyard"                   => [],
     "Focus"                                         => [],
     "GeckoView"                                     => [],
+    "Infrastructure & Operations"                   => [],
+    "Infrastructure & Operations Graveyard"         => [],
     "JSS"                                           => [],
     "MailNews Core"                                 => [],
     "Mozilla Labs"                                  => [],
