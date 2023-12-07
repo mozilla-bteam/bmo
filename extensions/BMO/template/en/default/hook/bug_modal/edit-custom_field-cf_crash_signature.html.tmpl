@@ -34,5 +34,7 @@
     [% END %]
   [% ELSIF value %]
     <span class="multiline-value">[% value FILTER html FILTER html_line_break %]</span>
+  [% ELSE%]
+    <em>None</em>
   [% END %]
 [% END %]

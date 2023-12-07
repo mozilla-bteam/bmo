@@ -356,15 +356,21 @@ END;
 
         [% CASE constants.FIELD_TYPE_TEXTAREA %]
           [%# text area %]
-            <button type="button" class="secondary edit-textarea-btn [%= "edit-textarea-set-btn" IF value != "" %]"
-              id="[% name FILTER html %]-edit">Edit</button>
-            [% IF content.defined && !append_content %]
-              <span id="[% name FILTER html %]-view">[% content FILTER none %]</span>
-            [% ELSE %]
-              <span class="multiline-value" id="[% name FILTER html %]-view">[% value FILTER html FILTER html_line_break %]</span>
+            [% IF !edit_only || value == "" %]
+              [% IF content.defined && !append_content %]
+                <span id="[% name FILTER html %]-view">[% content FILTER none %]</span>
+              [% ELSE %]
+                <span class="multiline-value" id="[% name FILTER html %]-view">
+                  [%~ value FILTER html FILTER html_line_break ~%]
+                </span>
+              [% END %]
+              <button type="button"
+                      class="secondary edit-textarea-btn [%= "edit-textarea-set-btn" IF value != "" %]"
+                      id="[% name FILTER html %]-edit">Edit</button>
             [% END %]
-            <textarea id="[% name FILTER html %]" name="[% name FILTER html %]"
-              rows="10" cols="10" style="display:none" [% aria_labelledby_html FILTER none %]>[% value FILTER html %]</textarea>
+            <textarea id="[% name FILTER html %]" name="[% name FILTER html %]" rows="10" cols="10"
+                      [% IF !edit_only || value == "" %] style="display:none"[% END %]
+                      [% aria_labelledby_html FILTER none %]>[% value FILTER html %]</textarea>
 
         [% CASE constants.FIELD_TYPE_DATETIME %]
           [%# datetime %]
