@@ -352,6 +352,14 @@ sub get {
       }
     }
 
+    # If calling user is member of mozilla-employee-confidential,
+    # return ldap_email value as well
+    if (Bugzilla->user->in_group('mozilla-employee-confidential')
+      && $user->ldap_email)
+    {
+      $user_info->{ldap_email} = $user->ldap_email;
+    }
+
     if (filter_wants($params, 'groups')) {
       if ( Bugzilla->user->id == $user->id
         || Bugzilla->user->in_group('mozilla-employee-confidential'))

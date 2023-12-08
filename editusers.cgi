@@ -370,6 +370,18 @@ elsif ($action eq 'update') {
       )
     );
     Bugzilla->memcached->clear_config({key => "user_groups.$otherUserID"});
+
+    # Duo MFA requirements: If user was added/removed from the duo_required group,
+    # force a logout of the users account.
+    my $duo_required_group = Bugzilla->params->{duo_required_group};
+    if (
+      $duo_required_group
+      && ( any { $duo_required_group eq $_ } @groupsRemovedFrom
+        || any { $duo_required_group eq $_ } @groupsRemovedFrom)
+      )
+    {
+      Bugzilla->logout_user($otherUser);
+    }
   }
 
   # XXX: should create profiles_activity entries for blesser changes.
@@ -879,8 +891,7 @@ sub userDataToVars {
   # Find indirect bless permission.
   $query = 'SELECT groups.id
                 FROM '
-    . $dbh->quote_identifier('groups')
-    . ', group_group_map AS ggm
+    . $dbh->quote_identifier('groups') . ', group_group_map AS ggm
                 WHERE groups.id = ggm.grantor_id
                   AND ggm.member_id IN (' . $grouplist . ')
                   AND ggm.grant_type = ?

@@ -308,6 +308,20 @@ sub login {
       $authenticated_user->update();
     }
   }
+  
+  # Require Duo Security as MFA provider if user is in the duo_required_group
+  elsif (!i_am_webservice()
+    && Bugzilla->params->{duo_required_group}
+    && $authenticated_user->in_duo_required_group
+    && $authenticated_user->mfa ne 'duo')
+  {
+    my $on_mfa_page
+      = $script_name eq '/userprefs.cgi' && $cgi->param('tab') eq 'mfa';
+
+    if (!($on_mfa_page || $on_token_page || $do_logout)) {
+      $cgi->base_redirect('userprefs.cgi?tab=mfa');
+    }
+  }
 
   # We must now check to see if an sudo session is in progress.
   # For a session to be in progress, the following must be true:

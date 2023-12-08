@@ -680,6 +680,34 @@ sub in_mfa_group {
   return $self->{in_mfa_group} = ($mfa_group && $self->in_group($mfa_group));
 }
 
+sub in_duo_required_group {
+  my $self = shift;
+  return $self->{in_duo_required_group} if exists $self->{in_duo_required_group};
+
+  my $duo_required_group = Bugzilla->params->{duo_required_group};
+  my $duo_excluded_group = Bugzilla->params->{duo_required_excluded_group};
+  return $self->{in_duo_required_group} = (
+    $duo_required_group
+      && ($self->in_group($duo_required_group)
+      && !$self->in_group($duo_excluded_group))
+  );
+}
+
+sub ldap_email {
+  my $self = shift;
+  return $self->{ldap_email} if exists $self->{ldap_email};
+
+  # This only applies to MFA that is based on Duo. If Duo is used,
+  # then the value in profiles_mfa is the users ldap email.
+  if ($self->mfa eq 'Duo') {
+    my $ldap_email
+      = Bugzilla->dbh->selectrow_array(
+      'SELECT value FROM profile_mfa WHERE user_id = ?',
+      undef, $self->id);
+    return $self->{ldap_email} = $ldap_email;
+  }
+}
+
 sub name_or_login {
   my $self = shift;
 
