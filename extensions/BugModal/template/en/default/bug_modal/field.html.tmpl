@@ -31,7 +31,7 @@
   # hide_on_edit: (boolean) hide content when in edit mode (default: false)
   # append_content: (boolean) when called as a WRAPPER, the content will be appended to the
   #                 edit HTML instead of replacing it.  forces edit_only (default: false);
-  # default: (string) default value (e.g. used as a placeholder in user fields)
+  # default_value: (string) default value (e.g. used as a placeholder in user fields)
   # help: (string) optional URL that describes the field (requires a label to be defined and visible)
   # required: (boolean) if the field is required. (At present, only implemented for FIELD_TYPE_FREETEXT
   #           and FIELD_TYPE_SINGLE_SELECT)
@@ -304,7 +304,7 @@ END;
         [% CASE constants.FIELD_TYPE_FREETEXT %]
           [%# normal input field %]
           <input name="[% name FILTER html %]" id="[% name FILTER html %]" value="[% value FILTER html %]"
-                 [% IF default.defined %] placeholder="[% default FILTER html %]"[% END %]
+                 [% IF default_value.defined %] placeholder="[% default_value FILTER html %]"[% END %]
                  [% aria_labelledby_html FILTER none %] [% aria_required FILTER none %]>
         [% CASE constants.FIELD_TYPE_USER %]
           [% IF action && !action.hidden %]
@@ -321,7 +321,7 @@ END;
               name = name
               value = value.login.defined ? value.login : value
               classes = [ "bz_userfield" ]
-              placeholder = default
+              placeholder = default_value
               aria_labelledby = aria_labelledby_id
             %]
           [% IF action && !action.hidden %]
@@ -336,7 +336,7 @@ END;
               name = name
               value = value.join(", ")
               classes = [ "bz_userfield" ]
-              placeholder = default
+              placeholder = default_value
               multiple = 5
               aria_labelledby = aria_labelledby_id
             %]
@@ -356,15 +356,21 @@ END;
 
         [% CASE constants.FIELD_TYPE_TEXTAREA %]
           [%# text area %]
-            <button type="button" class="secondary edit-textarea-btn [%= "edit-textarea-set-btn" IF value != "" %]"
-              id="[% name FILTER html %]-edit">Edit</button>
-            [% IF content.defined && !append_content %]
-              <span id="[% name FILTER html %]-view">[% content FILTER none %]</span>
-            [% ELSE %]
-              <span class="multiline-value" id="[% name FILTER html %]-view">[% value FILTER html FILTER html_line_break %]</span>
+            [% IF !edit_only || value == "" %]
+              [% IF content.defined && !append_content %]
+                <span id="[% name FILTER html %]-view">[% content FILTER none %]</span>
+              [% ELSE %]
+                <span class="multiline-value" id="[% name FILTER html %]-view">
+                  [%~ value FILTER html FILTER html_line_break ~%]
+                </span>
+              [% END %]
+              <button type="button"
+                      class="secondary edit-textarea-btn [%= "edit-textarea-set-btn" IF value != "" %]"
+                      id="[% name FILTER html %]-edit">Edit</button>
             [% END %]
-            <textarea id="[% name FILTER html %]" name="[% name FILTER html %]"
-              rows="10" cols="10" style="display:none" [% aria_labelledby_html FILTER none %]>[% value FILTER html %]</textarea>
+            <textarea id="[% name FILTER html %]" name="[% name FILTER html %]" rows="10" cols="10"
+                      [% IF !edit_only || value == "" %] style="display:none"[% END %]
+                      [% aria_labelledby_html FILTER none %]>[% value FILTER html %]</textarea>
 
         [% CASE constants.FIELD_TYPE_DATETIME %]
           [%# datetime %]

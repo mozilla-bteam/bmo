@@ -11,11 +11,10 @@
 
   bug_modal = 1;
 
-  # use the placeholder bug
+  # use the placeholder bug as an alias of `bug`
   bug = default;
 
-  # reset variables to avoid unexpected inheritance
-  default = undef;
+  # reset variable to avoid unexpected inheritance to `field.html.tmpl`
   class = undef;
 
   # define default args for the INCLUDEs and WRAPPERs below
@@ -465,7 +464,7 @@
           field = bug_fields.qa_contact
           field_type = constants.FIELD_TYPE_USER
           value = qa_contact
-          default = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
+          default_value = (bug.component_obj.default_qa_contact.id ? bug.component_obj.default_qa_contact.login : '')
           help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#qa_contact"
       %]
     [% END %]
@@ -544,7 +543,7 @@
         field = bug_fields.bug_file_loc
         field_type = constants.FIELD_TYPE_FREETEXT
         value = bug_file_loc
-        default = "https://"
+        default_value = "https://"
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#bug_file_loc"
     %]
 
@@ -593,6 +592,7 @@
       [% INCLUDE bug_modal/field.html.tmpl
           field = bug_fields.status_whiteboard
           field_type = constants.FIELD_TYPE_FREETEXT
+          value = status_whiteboard
           help = "https://wiki.mozilla.org/BMO/UserGuide/Whiteboard"
       %]
       [% UNLESS cf_hidden_in_product('cf_qa_whiteboard', bug.product) %]
@@ -684,7 +684,8 @@
       subtitle = ""
   %]
     <textarea id="cf_user_story" name="cf_user_story" rows="10" cols="80"
-              aria-label="User Story">[%~~%]
+              aria-label="User Story">
+      [%~ default.cf_user_story FILTER html ~%]
     </textarea>
   [% END %]
 [% END %]
@@ -701,38 +702,13 @@
       no_collapse_persist = 1
   %]
     [% WRAPPER fields_lhs %]
-      [% estimated_time = PROCESS formattimeunit time_unit = bug.estimated_time %]
+      [% _estimated_time = PROCESS formattimeunit time_unit = estimated_time %]
       [% INCLUDE bug_modal/field.html.tmpl
          field = bug_fields.estimated_time
          field_type = constants.FIELD_TYPE_FREETEXT
-         value = estimated_time
+         value = _estimated_time
          short_width = 1
          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#estimated_time"
-      %]
-      [% current_estimate = PROCESS formattimeunit time_unit = (bug.actual_time + bug.remaining_time) %]
-      [% INCLUDE bug_modal/field.html.tmpl
-         label = "Current Est"
-         value = current_estimate
-         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#current_estimate"
-      %]
-      [% hours_worked = PROCESS formattimeunit time_unit = bug.actual_time %]
-      [% WRAPPER bug_modal/field.html.tmpl
-         field_type = constants.FIELD_TYPE_FREETEXT
-         label = "Hours Worked"
-         name = "work_time"
-         value = '0.0'
-         short_width = 1
-         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#work_time"
-      %]
-        [% PROCESS formattimeunit time_unity = bug.actual_time %]
-      [% END %]
-      [% hours_left = PROCESS formattimeunit time_unit = bug.remaining_time %]
-      [% INCLUDE bug_modal/field.html.tmpl
-         field = bug_fields.remaining_time
-         field_type = constants.FIELD_TYPE_FREETEXT
-         value = hours_left
-         short_width = 1
-         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#remaining_time"
       %]
     [% END %]
 

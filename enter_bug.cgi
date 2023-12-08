@@ -357,6 +357,7 @@ else {
   $vars->{'regressed_by'}   = formvalue('regressed_by');
   $vars->{'deadline'}       = formvalue('deadline');
   $vars->{'estimated_time'} = formvalue('estimated_time');
+  $vars->{'status_whiteboard'} = formvalue('status_whiteboard');
   $vars->{'bug_ignored'}    = formvalue('bug_ignored');
   $vars->{'see_also'}       = formvalue('see_also');
 
