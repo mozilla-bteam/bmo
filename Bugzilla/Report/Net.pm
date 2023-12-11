@@ -57,6 +57,9 @@ sub get_data {
     ThrowCodeError('net_mining_get_failed',
       {product => $product, reason => $self->driver->error_string});
   }
+  use Bugzilla::Logging;
+  use Mojo::Util qw(dumper);
+  INFO(dumper $response);
   return $response->{value};
 }
 
