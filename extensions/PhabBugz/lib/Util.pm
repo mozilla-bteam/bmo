@@ -45,8 +45,8 @@ our @EXPORT = qw(
 
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
-  my ($attachment, $revision) = @_;
-  my $submitter = $revision->author->bugzilla_user;
+  my ($attachment, $revision, $flag_setter) = @_;
+  my $flag_setter = $revision->author->bugzilla_user;
 
   my $revision_status_flag_map = {
     'abandoned'       => '-',
@@ -90,7 +90,7 @@ sub set_attachment_approval_flags {
     # Set the flag to it's new status. If it already has that status,
     # it will be a non-change. We also need to check to make sure the
     # flag change is allowed.
-    if ($submitter->can_change_flag($flag->type, $flag->status, $status)) {
+    if ($flag_setter->can_change_flag($flag->type, $flag->status, $status)) {
       INFO("Set existing `$approval_flag_name` flag to `$status`.");
       push @old_flags, {id => $flag->id, status => $status};
     }
@@ -108,10 +108,10 @@ sub set_attachment_approval_flags {
   if (!@old_flags && $status ne 'X') {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
-      if ($submitter->can_change_flag($approval_flag, 'X', $status)) {
+      if ($flag_setter->can_change_flag($approval_flag, 'X', $status)) {
         INFO("Creating new `$approval_flag_name` flag with status `$status`");
         push @new_flags,
-          {setter => $submitter, status => $status, type_id => $approval_flag->id,};
+          {setter => $flag_setter, status => $status, type_id => $approval_flag->id,};
       }
       else {
         INFO(
