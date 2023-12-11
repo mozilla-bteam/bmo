@@ -357,6 +357,7 @@ else {
   $vars->{'regressed_by'}   = formvalue('regressed_by');
   $vars->{'deadline'}       = formvalue('deadline');
   $vars->{'estimated_time'} = formvalue('estimated_time');
+  $vars->{'status_whiteboard'} = formvalue('status_whiteboard');
   $vars->{'bug_ignored'}    = formvalue('bug_ignored');
   $vars->{'see_also'}       = formvalue('see_also');
 
@@ -459,14 +460,23 @@ if ($cloned_bug) {
 }
 $default{'groups'} = \@groups;
 
-Bugzilla::Hook::process('enter_bug_entrydefaultvars', {vars => $vars});
+$default{'flags'} = [];
+$default{'flag_types'} = $product->flag_types->{bug};
+
+Bugzilla::Hook::process('enter_bug_entrydefaultvars', {vars => $vars, default => \%default});
 
 $vars->{'default'} = \%default;
 
+# BMO: add edit_bug_format for the modal UI, just like `show_bug.cgi`
+my $format_params = {
+  format => scalar $cgi->param('format'),
+  ctype  => scalar $cgi->param('ctype'),
+};
+Bugzilla::Hook::process('enter_bug_format', $format_params);
 my $format = $template->get_format(
   "bug/create/create",
-  scalar $cgi->param('format'),
-  scalar $cgi->param('ctype')
+  $format_params->{format},
+  $format_params->{ctype}
 );
 
 print $cgi->header($format->{'ctype'});

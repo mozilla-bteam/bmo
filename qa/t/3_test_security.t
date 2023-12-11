@@ -23,7 +23,7 @@ file_bug_in_product($sel, "TestProduct");
 my $bug_summary = "Security checks";
 $sel->type_ok("short_desc", $bug_summary);
 $sel->type_ok("comment",    "This bug will be used to test security fixes.");
-$sel->click_ok('//input[@value="Add an attachment"]');
+$sel->click_ok('attach-new-file');
 $sel->attach_file('//input[@name="data"]', $config->{attachment_file});
 $sel->type_ok('//input[@name="description"]', "simple patch, v1");
 my $bug1_id = create_bug($sel, $bug_summary);

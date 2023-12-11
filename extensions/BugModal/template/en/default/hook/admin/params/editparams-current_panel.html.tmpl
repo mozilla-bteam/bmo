@@ -6,4 +6,8 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% INCLUDE "bug/create/bugzilla-admin.html.tmpl" %]
+[% IF panel.name == "advanced" %]
+  [% panel.param_descs.use_modal_create =
+    'When enabled, the new organized Enter Bug form is made available to all users.'
+  %]
+[% END -%]

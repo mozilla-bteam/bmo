@@ -695,7 +695,7 @@ sub sqlify_criteria {
     my $is_active = $criteria->{is_active} ? "1" : "0";
     push(@criteria, "flagtypes.is_active = $is_active");
   }
-  if (exists($criteria->{active_or_has_flags})
+  if (defined $criteria->{active_or_has_flags}
     && $criteria->{active_or_has_flags} =~ /^\d+$/)
   {
     push(@$tables,

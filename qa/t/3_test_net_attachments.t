@@ -36,7 +36,7 @@ set_parameters(
 # First create a new bug with an attachment.
 file_bug_in_product($sel, "TestProduct");
 $sel->type_ok("short_desc", "Attachment stored in S3");
-$sel->click_ok('//input[@value="Add an attachment"]');
+$sel->click_ok('attach-new-file');
 $sel->attach_file('//input[@name="data"]', $config->{attachment_file});
 $sel->type_ok('//input[@name="description"]', "new S3 attachment, v1");
 $sel->check_ok('//input[@name="ispatch"]');
@@ -109,7 +109,7 @@ set_parameters(
 # First create a new bug with an attachment.
 file_bug_in_product($sel, "TestProduct");
 $sel->type_ok("short_desc", "Attachment stored in Google Cloud Storage");
-$sel->click_ok('//input[@value="Add an attachment"]');
+$sel->click_ok('attach-new-file');
 $sel->attach_file('//input[@name="data"]', $config->{attachment_file});
 $sel->type_ok('//input[@name="description"]', "new gcs attachment, v1");
 $sel->check_ok('//input[@name="ispatch"]');

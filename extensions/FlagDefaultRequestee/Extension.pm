@@ -50,7 +50,9 @@ sub template_before_process {
   return unless grep { $_ eq $file } FLAGTYPE_TEMPLATES;
 
   my $flag_types = [];
-  if (exists $vars->{bug} || exists $vars->{attachment}) {
+  # `bug` is always defined in the modal bug template; check the ID to prevent
+  # the following code from being processed unexpectedly on the New Bug page.
+  if ((exists $vars->{bug} && $vars->{bug}->id) || exists $vars->{attachment}) {
     my $bug;
     if (exists $vars->{bug}) {
       $bug = $vars->{'bug'};

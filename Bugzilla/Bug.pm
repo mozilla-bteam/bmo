@@ -5132,6 +5132,20 @@ sub check_can_change_field {
     return {allowed => 1};
   }
 
+  # Allow anyone to enter/select the summary, component, bug type and platform
+  # when filing a new bug, because some are required fields
+  if (!$self->id) {
+    if (
+         $field eq 'short_desc'
+      || $field eq 'component'
+      || $field eq 'rep_platform'
+      || $field eq 'op_sys'
+      || ($field eq 'bug_type' && Bugzilla->params->{'require_bug_type'})
+    ) {
+      return {allowed => 1};
+    }
+  }
+
   my @priv_results;
   Bugzilla::Hook::process(
     'bug_check_can_change_field',
@@ -5201,8 +5215,11 @@ sub check_can_change_field {
   if (!$self->{'error'}) {
 
     # Allow the assignee to change anything else.
-    if ( $self->{'assigned_to'} == $user->id
-      || $self->{'_old_assigned_to'} && $self->{'_old_assigned_to'} == $user->id)
+    if (
+      (defined $self->{'assigned_to'} && $self->{'assigned_to'} == $user->id)
+      || (defined $self->{'_old_assigned_to'}
+        && $self->{'_old_assigned_to'} == $user->id)
+      )
     {
       return {allowed => 1};
     }
@@ -5283,7 +5300,9 @@ sub check_can_change_field {
   }
 
   # The reporter is allowed to change anything else.
-  if (!$self->{'error'} && $self->{'reporter_id'} == $user->id) {
+  if (!$self->{'error'}
+    && (defined $self->{'reporter_id'} && $self->{'reporter_id'} == $user->id))
+  {
     return {allowed => 1};
   }
 

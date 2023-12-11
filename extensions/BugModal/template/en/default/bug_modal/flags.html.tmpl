@@ -59,12 +59,12 @@
     [%
       FOREACH type IN types;
         NEXT IF !type.is_active || type.flags.size;
-        INCLUDE edit_flag t=type;
+        INCLUDE edit_flag t=type f=undef;
       END;
 
       FOREACH type IN types;
         NEXT IF !type.is_active || !type.is_multiplicable;
-        INCLUDE edit_flag t=type;
+        INCLUDE edit_flag t=type f=undef;
       END;
     %]
     </tbody>

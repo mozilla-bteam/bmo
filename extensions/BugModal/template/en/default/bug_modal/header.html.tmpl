@@ -7,21 +7,29 @@
   #%]
 
 [%
+  DEFAULT mode = "show";
+%]
+
+[%
   PROCESS global/variables.none.tmpl;
   USE Bugzilla;
 
   # <title>
-  IF bugs.defined;
-    bug = bugs.0;
+  IF mode == "create";
+    title = "Enter " _ terms.Bug _ ": " _ product.name FILTER html;
+  ELSE;
+    IF bugs.defined;
+      bug = bugs.0;
+    END;
+    title = "$bug.bug_id - ";
+    IF bug.alias;
+      filtered_alias = bug.alias FILTER html;
+      title = title _ "($filtered_alias) ";
+    END;
+    unfiltered_title = title _ bug.short_desc;
+    filtered_desc = bug.short_desc FILTER html;
+    title = title _ filtered_desc;
   END;
-  title = "$bug.bug_id - ";
-  IF bug.alias;
-    filtered_alias = bug.alias FILTER html;
-    title = title _ "($filtered_alias) ";
-  END;
-  unfiltered_title = title _ bug.short_desc;
-  filtered_desc = bug.short_desc FILTER html;
-  title = title _ filtered_desc;
 
   generate_api_token = 1;
 
@@ -76,17 +84,23 @@
     var TrackingFlags = $.parseJSON(tracking_flags_str);
   [% END %]
 
-  [%# update last-visited %]
-  [% IF user.id %]
-    document.addEventListener('DOMContentLoaded', () => show_new_changes_indicator(), { once: true });
+  [%# expose useful data to js %]
+  [% IF mode == "show" %]
+    BUGZILLA.bug_id = [% bug.id FILTER none %];
+    BUGZILLA.bug_title = '[% unfiltered_title FILTER js %]';
+    BUGZILLA.bug_summary = '[% bug.short_desc FILTER js %]';
+    BUGZILLA.bug_url = '[% Bugzilla.localconfig.canonical_urlbase _ "show_bug.cgi?id=" _ bug.id FILTER js %]';
+    BUGZILLA.bug_keywords = '[% bug.keywords FILTER js %]',
+    BUGZILLA.bug_secure = [% bug.groups_in.size ? 'true' : 'false' %];
+    [% IF user.is_timetracker %]
+      BUGZILLA.remaining_time = [% bug.remaining_time FILTER js %]; // holds the original value
+    [% END %]
+    [%# update last-visited %]
+    [% IF user.id %]
+      document.addEventListener('DOMContentLoaded', () => show_new_changes_indicator(), { once: true });
+    [% END %]
   [% END %]
 
-  [%# expose useful data to js %]
-  BUGZILLA.bug_id = [% bug.id FILTER none %];
-  BUGZILLA.bug_title = '[% unfiltered_title FILTER js %]';
-  BUGZILLA.bug_summary = '[% bug.short_desc FILTER js %]';
-  BUGZILLA.bug_url = '[% Bugzilla.localconfig.canonical_urlbase _ "show_bug.cgi?id=" _ bug.id FILTER js %]';
-  BUGZILLA.bug_keywords = '[% bug.keywords FILTER js %]',
   BUGZILLA.user = {
     id: [% user.id FILTER none %],
     login: '[% user.login FILTER js %]',
@@ -109,11 +123,6 @@
     BUGZILLA.constant.min_comment_tag_length = [% constants.MIN_COMMENT_TAG_LENGTH FILTER none %];
     BUGZILLA.constant.max_comment_tag_length = [% constants.MAX_COMMENT_TAG_LENGTH FILTER none %];
   [% END %]
-
-  [% IF user.is_timetracker %]
-    BUGZILLA.remaining_time = [% bug.remaining_time FILTER js %]; // holds the original value
-  [% END %]
-  BUGZILLA.bug_secure = [% bug.groups_in.size ? 'true' : 'false' %];
 [% END %]
 
 [% Hook.process("end") %]

@@ -6,6 +6,9 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% IF template.name == "bug/create/create.html.tmpl" && tracking_flags.size %]
+[% RETURN UNLESS template.name == 'bug/create/create.html.tmpl'
+      || template.name == 'bug/create/create-modal.html.tmpl' %]
+
+[% IF tracking_flags.size %]
   [% javascript_urls.push('extensions/TrackingFlags/web/js/flags.js') %]
 [% END %]

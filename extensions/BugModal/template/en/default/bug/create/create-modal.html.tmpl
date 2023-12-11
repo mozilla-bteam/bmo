@@ -1,0 +1,28 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+[% IF !header_done %]
+  [% PROCESS bug_modal/header.html.tmpl
+    mode = "create"
+    javascript_urls = [
+      "js/bug.js", # Possible Duplicates table
+      "js/attachment.js",
+      "extensions/BugModal/web/create.js",
+    ]
+    style_urls = [
+      "skins/standard/attachment.css",
+      "skins/standard/create_bug.css",
+    ]
+  %]
+  [% PROCESS global/header.html.tmpl %]
+  [% header_done = 1 %]
+[% END %]
+
+[% INCLUDE bug_modal/create.html.tmpl %]
+[% PROCESS global/footer.html.tmpl %]

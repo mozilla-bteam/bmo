@@ -1,0 +1,43 @@
+[% IF user.in_group(product.default_security_group) %]
+  [% PROCESS group_checkbox
+            name = product.default_security_group
+            desc = "Restrict access to this " _ terms.bug _ " to members of " _
+                    "the \"" _ product.default_security_group_obj.description _ "\" group."
+  %]
+[% ELSE %]
+  [% PROCESS group_checkbox
+            name = product.default_security_group
+            desc = "Many users could be harmed by this security problem: " _
+                    "it should be kept hidden from the public until it is resolved."
+  %]
+[% END %]
+
+[% IF user.in_group('partner-confidential-visible') %]
+  [% PROCESS group_checkbox
+              name = 'partner-confidential'
+              desc = "Restrict the visibility of this " _ terms.bug _ " to " _
+                    "the assignee, QA contact, and CC list only."
+  %]
+[% END %]
+
+[% IF user.in_group('mozilla-employee-confidential-visible')
+      && !user.in_group('mozilla-employee-confidential') %]
+  [% PROCESS group_checkbox
+              name = 'mozilla-employee-confidential'
+              desc = "Restrict the visibility of this " _ terms.bug _ " to " _
+                    "Mozilla Employees and Contractors only."
+  %]
+[% END %]
+
+[% BLOCK group_checkbox %]
+  <input type="checkbox" name="groups"
+         value="[% name FILTER none %]" id="group_[% name FILTER html %]"
+    [% FOREACH group = product.groups_available %]
+      [% IF group.name == name %]
+        [% ' checked="checked"' IF default.groups.contains(group.name) OR group.is_default %]
+        [% LAST %]
+      [% END %]
+    [% END %]
+  >
+  <label for="group_[% name FILTER html %]">[% desc FILTER html %]</label><br>
+[% END %]

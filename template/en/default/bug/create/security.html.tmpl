@@ -1,0 +1,38 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%# BMO - exclude the default security from from the groups_available %]
+[%# list, as it will be added by the BMO extension %]
+[% groups_available = [] %]
+[% FOREACH group = product.groups_available %]
+  [% NEXT IF group.name == product.default_security_group %]
+  [% groups_available.push(group) %]
+[% END %]
+[% IF groups_available.size %]
+  <div class="expert_fields">
+    <div>
+      <strong>
+        Only users in all of the selected groups can view this [%+ terms.bug %]:
+      </strong>
+    </div>
+    <div>
+      (Leave all boxes unchecked to make this a public [% terms.bug %].)
+    </div>
+    <!-- Checkboxes -->
+    <input type="hidden" name="defined_groups" value="1">
+    [% FOREACH group = groups_available %]
+      <div>
+        <input type="checkbox" id="group_[% group.id FILTER html %]"
+                name="groups" value="[% group.name FILTER html %]"
+                [% ' checked="checked"' IF default.groups.contains(group.name) OR group.is_default %]>
+        <label for="group_[% group.id FILTER html %]">
+          [%- group.description FILTER html_light %]</label><br>
+      </div>
+    [% END %]
+  </div>
+[% END %]
