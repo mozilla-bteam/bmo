@@ -46,7 +46,6 @@ our @EXPORT = qw(
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
   my ($attachment, $revision, $flag_setter) = @_;
-  my $flag_setter = $revision->author->bugzilla_user;
 
   my $revision_status_flag_map = {
     'abandoned'       => '-',
