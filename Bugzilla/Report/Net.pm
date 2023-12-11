@@ -50,14 +50,14 @@ sub set_data {
 
 sub get_data {
   my ($self, $product) = @_;
-  my $response = $self->driver->get_key($product);
-  if (!$response) {
+  my $data = $self->driver->get_key($product);
+  if (!$data) {
     warn "Failed to retrieve data for product $product from S3: "
       . $self->driver->error_string . "\n";
     ThrowCodeError('net_mining_get_failed',
       {product => $product, reason => $self->driver->error_string});
   }
-  return $response->{value};
+  return $data;
 }
 
 sub remove_data {
