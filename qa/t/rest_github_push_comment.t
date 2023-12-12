@@ -155,8 +155,6 @@ $t->get_ok($url
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
   ->json_is('/bugs/0/id', $bug_id)->json_is('/bugs/0/status', 'RESOLVED')
   ->json_is('/bugs/0/resolution',           'FIXED')
-  ->json_is('/bugs/0/flags/0/name',         'qe-verify')
-  ->json_is('/bugs/0/flags/0/status',       '+')
   ->json_is('/bugs/0/target_milestone',     '---')
   ->json_is('/bugs/0/cf_status_firefox110', 'fixed');
 
@@ -328,9 +326,7 @@ $t->get_ok($url
   ->json_is('/bugs/0/id', $bug_id_2)->json_is('/bugs/0/status', 'RESOLVED')
   ->json_is('/bugs/0/resolution',           'FIXED')
   ->json_is('/bugs/0/cf_status_firefox111', 'fixed')
-  ->json_is('/bugs/0/target_milestone',     '111 Branch')
-  ->json_is('/bugs/0/flags/0/name',         'qe-verify')
-  ->json_is('/bugs/0/flags/0/status',       '+');
+  ->json_is('/bugs/0/target_milestone',     '111 Branch');
 
 # Change to make sure the flag change entry is recorded properly in the bug history
 $t->get_ok(

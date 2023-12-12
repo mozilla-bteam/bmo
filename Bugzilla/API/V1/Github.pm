@@ -317,31 +317,6 @@ sub push_comment {
       $set_all->{bug_status} = 'RESOLVED';
       $set_all->{resolution} = 'FIXED';
 
-      # Update the qe-verify flag if not set and the bug was closed.
-      my $found_flag;
-      foreach my $flag (@{$bug->flags}) {
-
-        # Ignore for all flags except `qe-verify`.
-        next if $flag->name ne 'qe-verify';
-        $found_flag = 1;
-        last;
-      }
-
-      if (!$found_flag) {
-        my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
-        if ($qe_flag) {
-          $bug->set_flags(
-            [],
-            [{
-              flagtype => $qe_flag,
-              setter   => Bugzilla->user,
-              status   => '+',
-              type_id  => $qe_flag->id,
-            }]
-          );
-        }
-      }
-
       # Currently tailored for mozilla-mobile/firefox-android only
       if ($repository eq 'mozilla-mobile/firefox-android') {
 
