@@ -459,8 +459,6 @@
     [%# qa contact %]
     [% IF Param("useqacontact") %]
       [% INCLUDE bug_modal/field.html.tmpl
-          name = "qa_contact"
-          value = qa_contact
           field = bug_fields.qa_contact
           field_type = constants.FIELD_TYPE_USER
           value = qa_contact
