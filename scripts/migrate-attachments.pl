@@ -16,13 +16,19 @@ $| = 1;
 use Bugzilla;
 use Bugzilla::Attachment;
 use Bugzilla::Install::Util qw(indicate_progress);
-use Getopt::Long qw(GetOptions);
+use Getopt::Long            qw(GetOptions);
+use Try::Tiny;
 
 my @storage_names = Bugzilla::Attachment->get_storage_names();
 
 my %options;
-GetOptions(\%options, 'migrate=s@{2}', 'mirror=s@{2}', 'copy=s@{2}', 'delete=s') or exit 1;
-unless ($options{migrate} || $options{mirror} || $options{copy} || $options{delete}) {
+GetOptions(\%options, 'migrate=s@{2}', 'mirror=s@{2}', 'copy=s@{2}', 'delete=s')
+  or exit 1;
+unless ($options{migrate}
+  || $options{mirror}
+  || $options{copy}
+  || $options{delete})
+{
   die <<EOF;
 Syntax:
     migrate-attachments.pl --migrate source destination
@@ -76,19 +82,26 @@ if ($options{migrate}) {
 
   # Do not migrate from database to net storage if data is less than minsize
   my $where;
-  if ($source eq 'database' && $dest eq 's3' && Bugzilla->params->{attachment_s3_minsize}) {
+  if ( $source eq 'database'
+    && $dest eq 's3'
+    && Bugzilla->params->{attachment_s3_minsize})
+  {
     $where = 'WHERE attach_size > ' . int Bugzilla->params->{attachment_s3_minsize};
   }
-  elsif ($source eq 'database' && $dest eq 'google' && Bugzilla->params->{attachment_google_minsize}) {
-    $where = 'WHERE attach_size > ' . int Bugzilla->params->{attachment_google_minsize};
+  elsif ($source eq 'database'
+    && $dest eq 'google'
+    && Bugzilla->params->{attachment_google_minsize})
+  {
+    $where
+      = 'WHERE attach_size > ' . int Bugzilla->params->{attachment_google_minsize};
   }
 
   my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments $where");
-  confirm(sprintf
-    'Migrate %s attachments from %s to %s?', $total, @{$options{migrate}});
+  confirm(sprintf 'Migrate %s attachments from %s to %s?',
+    $total, @{$options{migrate}});
 
-  my $sth
-    = $dbh->prepare("SELECT attach_id FROM attachments $where ORDER BY attach_id DESC");
+  my $sth = $dbh->prepare(
+    "SELECT attach_id FROM attachments $where ORDER BY attach_id DESC");
   $sth->execute();
   my ($count, $migrated) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
@@ -100,11 +113,16 @@ if ($options{migrate}) {
     next if $attachment->datasize == 0;
 
     # migrate the attachment
-    if (my $data = $attachment->current_storage($source)->get_data()) {
+
+    try {
+      my $data = $attachment->current_storage($source)->get_data();
       $attachment->current_storage($dest)->set_data($data)->set_class();
       $attachment->current_storage($source)->remove_data();
       $migrated++;
     }
+    catch {
+      warn "Attachment $attach_id not migrated: $_\n";
+    };
   }
   print "\n";
   print "Attachments migrated: $migrated\n";
@@ -117,8 +135,8 @@ if ($options{mirror}) {
   my ($source, $dest) = @{$options{mirror}};
 
   my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments");
-  confirm(sprintf
-    'Mirror %s attachments from %s to %s?', $total, @{$options{mirror}});
+  confirm(sprintf 'Mirror %s attachments from %s to %s?',
+    $total, @{$options{mirror}});
 
   my $sth
     = $dbh->prepare("SELECT attach_id FROM attachments ORDER BY attach_id DESC");
@@ -130,18 +148,25 @@ if ($options{mirror}) {
     my $attachment = Bugzilla::Attachment->new({id => $attach_id, cached => 1});
 
     # remove deleted attachments
-    if ($attachment->datasize == 0 && $attachment->current_storage($dest)->data_exists()) {
+    if ( $attachment->datasize == 0
+      && $attachment->current_storage($dest)->data_exists())
+    {
       $attachment->current_storage($dest)->remove_data();
       $deleted++;
     }
 
     # store attachments that don't already exist
-    elsif ($attachment->datasize != 0 && !$attachment->current_storage($dest)->data_exists())
+    elsif ($attachment->datasize != 0
+      && !$attachment->current_storage($dest)->data_exists())
     {
-      if (my $data = $attachment->current_storage($source)->get_data()) {
+      try {
+        my $data = $attachment->current_storage($source)->get_data();
         $attachment->current_storage($dest)->set_data($data);
         $stored++;
       }
+      catch {
+        warn "Attachment $attach_id not mirrored: $_";
+      };
     }
   }
   print "\n";
@@ -158,8 +183,8 @@ elsif ($options{copy}) {
   my ($total)
     = $dbh->selectrow_array(
     "SELECT COUNT(*) FROM attachments WHERE attach_size != 0");
-  confirm(sprintf
-    'Copy %s attachments from %s to %s?', $total, @{$options{copy}});
+  confirm(sprintf 'Copy %s attachments from %s to %s?', $total,
+    @{$options{copy}});
 
   my $sth
     = $dbh->prepare(
@@ -174,10 +199,14 @@ elsif ($options{copy}) {
 
     # store attachments that don't already exist
     if (!$attachment->current_storage($dest)->data_exists()) {
-      if (my $data = $attachment->current_storage($source)->get_data()) {
+      try {
+        my $data = $attachment->current_storage($source)->get_data();
         $attachment->current_storage($dest)->set_data($data);
         $stored++;
       }
+      catch {
+        warn "Attachment $attach_id not copied: $_";
+      };
     }
   }
   print "\n";
