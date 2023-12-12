@@ -119,7 +119,7 @@ sub _get_access_token {
   my $res = $self->ua->request($request);
 
   if (!$res->is_success) {
-    ThrowCodeError('google_access_token_failure', {error => $res->content});
+    ThrowCodeError('google_access_token_failure', {reason => $res->content});
   }
 
   my $result = decode_json($res->decoded_content);

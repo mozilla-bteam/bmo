@@ -462,7 +462,7 @@
 
   [% ELSIF error == "google_access_token_failure" %]
     Failed to obtain access token from Google Cloud Storage:
-    [%+ error FILTER html %]
+    [%+ reason FILTER html %]
 
   [% ELSIF error == "search_cp_without_op" %]
     Search argument f[% id FILTER html %] is "CP" but there is no
