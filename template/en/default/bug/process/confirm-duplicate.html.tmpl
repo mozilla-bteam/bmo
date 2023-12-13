@@ -63,8 +63,8 @@
     No, do not add the reporter to CC list on [% orig_bug FILTER none %]
 </p>
 <p>
-  [% "Throw away my changes, and revisit $terms.bug $duplicate_bug_id"
-     FILTER bug_link(duplicate_bug_id) FILTER none %]
+  Throw away my changes, and revisit
+  [% "$terms.bug $duplicate_bug_id" FILTER bug_link(duplicate_bug_id) FILTER none %]
 </p>
 <p>
   <input type="submit" id="process" value="Submit">
