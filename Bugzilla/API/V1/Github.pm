@@ -318,27 +318,30 @@ sub push_comment {
       $set_all->{resolution} = 'FIXED';
 
       # Update the qe-verify flag if not set and the bug was closed.
-      my $found_flag;
-      foreach my $flag (@{$bug->flags}) {
+      # Do not perform this change if Fenix or Focus product.
+      if ($bug->product ne 'Fenix' && $bug->product ne 'Focus') {
+        my $found_flag;
+        foreach my $flag (@{$bug->flags}) {
 
-        # Ignore for all flags except `qe-verify`.
-        next if $flag->name ne 'qe-verify';
-        $found_flag = 1;
-        last;
-      }
+          # Ignore for all flags except `qe-verify`.
+          next if $flag->name ne 'qe-verify';
+          $found_flag = 1;
+          last;
+        }
 
-      if (!$found_flag) {
-        my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
-        if ($qe_flag) {
-          $bug->set_flags(
-            [],
-            [{
-              flagtype => $qe_flag,
-              setter   => Bugzilla->user,
-              status   => '+',
-              type_id  => $qe_flag->id,
-            }]
-          );
+        if (!$found_flag) {
+          my $qe_flag = Bugzilla::FlagType->new({name => 'qe-verify'});
+          if ($qe_flag) {
+            $bug->set_flags(
+              [],
+              [{
+                flagtype => $qe_flag,
+                setter   => Bugzilla->user,
+                status   => '+',
+                type_id  => $qe_flag->id,
+              }]
+            );
+          }
         }
       }
 
