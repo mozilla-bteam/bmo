@@ -125,8 +125,10 @@ END;
 >
   [% IF label.defined && !no_label %]
     <div class="name">
-      [%~ IF required && !view_only %]
-        <span class="required_star" aria-label="Required Field">*</span>
+      [%# Single-select fields, such as Product or Type, are already selected on the show_bug page,
+        # so it doesn’t make sense to show an asterisk even if it’s a required field. %]
+      [%~ IF required && (mode != "show" || field_type != constants.FIELD_TYPE_SINGLE_SELECT) %]
+        <span class="required_star edit-show" style="display:none" aria-label="Required Field">*</span>
         [% " " %]
       [% END %]
       [%~ IF help.defined %]
