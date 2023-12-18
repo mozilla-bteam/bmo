@@ -878,16 +878,28 @@ sub process_new_user {
 sub new_stories {
   my ($self, $after) = @_;
   my $data = {view => 'text'};
-  $data->{after} = $after if $after;
+  $data->{after} = ($after ? $after : 0);
 
-  my $result = request('feed.query_id', $data);
+  foreach my $try (1 .. 5) {
+    my $result = request('feed.query_id', $data);
 
-  unless (ref $result->{result}{data} eq 'ARRAY' && @{$result->{result}{data}}) {
-    return [];
+    # If the data is valid, go ahead and return it
+    if (ref $result->{result}{data} eq 'ARRAY' && @{$result->{result}{data}}) {
+
+      # Guarantee that the data is in ascending ID order
+      return [sort { $a->{id} <=> $b->{id} } @{$result->{result}{data}}];
+    }
+
+    # If this is an invalid object error for the current id then loop
+    if ($data->{error_info} && $data->{error_code} =~ /does not identify a valid object in query/) {
+      $data->{after}++;
+    }
+    else {
+      last;
+    }
   }
 
-  # Guarantee that the data is in ascending ID order
-  return [sort { $a->{id} <=> $b->{id} } @{$result->{result}{data}}];
+  return [];
 }
 
 sub new_users {
