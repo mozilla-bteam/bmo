@@ -47,7 +47,6 @@
   END;
 
   # expose all the values required in `create.js` through `data` attributes on the `<form>`
-  component_descriptions = [];
   description_templates = [];
   default_bug_types = [];
   default_assignees = [];
@@ -59,7 +58,6 @@
   FOREACH c = product.components;
     NEXT IF NOT c.is_active;
 
-    component_descriptions.push(c.description);
     default_bug_types.push(c.default_bug_type);
     default_assignees.push(c.default_assignee.login);
     default_ccs.push(c.initial_cc.login);
@@ -92,7 +90,6 @@
 
 <form name="changeform" id="create-form" class="enter_bug_form" method="post"
       action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data"
-      data-component-descriptions="[% json_encode(component_descriptions) FILTER html %]"
       data-description-templates="[% json_encode(description_templates) FILTER html %]"
       data-default-bug-types="[% json_encode(default_bug_types) FILTER html %]"
       data-default-assignees="[% json_encode(default_assignees) FILTER html %]"
@@ -185,12 +182,10 @@
             field_type = constants.FIELD_TYPE_SINGLE_SELECT
             values = product.components
             value = bug.component_
-            select_size = 7
             inline = 1
             no_indent = 1
             required = 1
         %]
-        <div id="component-description"></div>
       </div>
       <div id="component-tip">
         Not sure which component to choose? Use the
