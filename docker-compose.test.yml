@@ -61,7 +61,7 @@ services:
     image: ghcr.io/ghcr-library/memcached:latest
 
   selenium:
-    image: selenium/standalone-firefox:3.141.59
+    image: selenium/standalone-firefox:latest
     shm_size: "512m"
     ports:
       - "59000:5900"
