@@ -62,7 +62,7 @@ services:
 
   selenium:
     image: selenium/standalone-firefox:102.0.1
-    shm_size: "512m"
+    shm_size: "2gb"
     ports:
       - "59000:5900"
 
