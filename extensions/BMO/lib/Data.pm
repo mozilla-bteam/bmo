@@ -83,6 +83,7 @@ tie(
     "addons.mozilla.org"                            => [],
     "Android Background Services"                   => [],
     "Calendar"                                      => [],
+    "Camino Graveyard"                              => [],
     "Composer"                                      => [],
     "Core"                                          => [],
     "Core Graveyard"                                => [],
