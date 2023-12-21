@@ -99,14 +99,14 @@ sub get_param_list {
     {name => 'duo_skey', type => 't', default => '',},
     {
       name    => 'duo_required_group',
-      type    => 't',
+      type    => 's',
       default => '',
       choices => \&get_all_group_names,
       checker => \&check_group,
     },
     {
-      name => 'duo_required_excluded_group',
-      type => 't',
+      name    => 'duo_required_excluded_group',
+      type    => 's',
       default => '',
       choices => \&get_all_group_names,
       checker => \&check_group,
