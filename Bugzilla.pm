@@ -301,14 +301,14 @@ sub login {
     }
     else {
       my $dbh = Bugzilla->dbh_main;
-      my $date = $dbh->sql_date_math('NOW()', '+', '?', 'DAY');
+      my $sql_date = $dbh->sql_date_math('NOW()', '+', '?', 'DAY');
       my ($mfa_required_date)
-        = $dbh->selectrow_array("SELECT $date", undef, $grace_period);
+        = $dbh->selectrow_array("SELECT $sql_date", undef, $grace_period);
       $authenticated_user->set_mfa_required_date($mfa_required_date);
       $authenticated_user->update();
     }
   }
-  
+
   # Require Duo Security as MFA provider if user is in the duo_required_group
   elsif (!i_am_webservice()
     && Bugzilla->params->{duo_required_group}
