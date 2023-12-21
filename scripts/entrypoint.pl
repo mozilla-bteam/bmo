@@ -11,7 +11,7 @@ use Bugzilla::Test::Util qw(create_user);
 use Bugzilla::DaemonControl qw(
   run_cereal_and_httpd
   run_cereal_and_jobqueue
-  assert_httpd assert_database assert_selenium
+  assert_httpd assert_database
   on_finish on_exception
 );
 
@@ -209,7 +209,6 @@ sub cmd_test_bmo {
   check_data_dir();
 
   assert_database()->get;
-  assert_selenium('selenium')->get;
 
   $ENV{BZ_TEST_NEWBIE}      = 'newbie@mozilla.example';
   $ENV{BZ_TEST_NEWBIE_PASS} = 'captain.space.bagel.ROBOT!';

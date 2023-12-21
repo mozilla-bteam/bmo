@@ -1,4 +1,4 @@
-FROM mozillabteam/bmo-perl-slim:20231024.1
+FROM mozillabteam/bmo-perl-slim:20231024.1 AS base
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -39,3 +39,16 @@ EXPOSE 8000
 
 ENTRYPOINT ["/app/scripts/entrypoint.pl"]
 CMD ["httpd"]
+
+FROM base AS TEST
+
+USER root
+
+RUN apt-get install -y curl firefox-esr lsof
+
+RUN curl -L https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz -o /tmp/geckodriver.tar.gz \
+  && cd /tmp \
+  && tar zxvf geckodriver.tar.gz \
+  && mv geckodriver /usr/bin/geckodriver
+
+USER app

@@ -128,13 +128,17 @@ sub get_config {
 sub get_selenium {
   my $chrome_mode = shift;
   my $config      = get_config();
-
+ 
   my $sel = Bugzilla::Test::Selenium->new({
     driver_args => {
-      base_url   => $ENV{BZ_BASE_URL} || $config->{browser_url},
-      browser    => 'firefox',
-      version    => '',
-      javascript => 1
+      browser_name => 'firefox',
+      base_url     => $ENV{BZ_BASE_URL} || $config->{browser_url},
+      javascript   => 1,
+      extra_capabilities => {
+        'moz:firefoxOptions' => {
+          'args' => ['-headless'],
+        }
+      }
     }
   });
 
