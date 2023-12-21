@@ -33,7 +33,7 @@ defaults:
           --target base \
           -t bmo .
 
-  build_image: &build_selenium_image
+  build_selenium_image: &build_selenium_image
     run:
       name: Build Selenium Image
       command: |
@@ -43,7 +43,6 @@ defaults:
           --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
           --target test \
           -t bmo .
-
 
   store_log: &store_log
     store_artifacts:
