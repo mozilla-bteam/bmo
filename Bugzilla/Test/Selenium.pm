@@ -194,7 +194,7 @@ sub get_text {
 sub selected_label_is {
   my ($self, $id, $label) = @_;
   TRACE("selected_label_is: $id, $label");
-  my $locator = qq{//*[self::select|self::bz-select][\@id="$id"]};
+  my $locator = qq{//*[local-name()="select" or local-name()="bz-select"][\@id="$id"]};
   my $element = $self->find_element($locator);
   if (!$element) {
     $locator =~ s/\@id/\@name/;
@@ -202,7 +202,7 @@ sub selected_label_is {
   }
   my @options;
   try {
-    @options = $self->driver->find_elements($locator . '/*[self::option|self::bz-option]');
+    @options = $self->driver->find_elements($locator . '/*[local-name()="option" or local-name()="bz-option"]');
   };
   foreach my $option (@options) {
     my $text = trim($option->get_text());
@@ -220,7 +220,7 @@ sub get_selected_labels {
   $locator = $self->_fix_locator($locator);
   my @elements;
   try {
-    @elements = $self->driver->find_elements($locator . '/*[self::option|self::bz-option]');
+    @elements = $self->driver->find_elements($locator . '/*[local-name()="option" or local-name()="bz-option"]');
   };
   if (@elements) {
     my @selected;
@@ -239,7 +239,7 @@ sub get_select_options {
   $locator = $self->_fix_locator($locator);
   my @elements;
   try {
-    @elements = $self->driver->find_elements($locator . '/*[self::option|self::bz-option]');
+    @elements = $self->driver->find_elements($locator . '/*[local-name()="option" or local-name()="bz-option"]');
   };
   if (@elements) {
     my @options;
@@ -302,7 +302,7 @@ sub select_ok {
   }
   my @options;
   try {
-    @options = $self->driver->find_elements($locator . '/*[self::option|self::bz-option]');
+    @options = $self->driver->find_elements($locator . '/*[local-name()="option" or local-name()="bz-option"]');
   };
   my ($is_label, $is_value);
   if ($label =~ /^label=(.*)$/) {
