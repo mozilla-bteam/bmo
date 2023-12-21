@@ -31,8 +31,6 @@ my @require_env = qw(
   BZ_BASE_URL
   BZ_TEST_NEWBIE
   BZ_TEST_NEWBIE_PASS
-  TWD_HOST
-  TWD_PORT
 );
 
 my @missing_env = grep { !exists $ENV{$_} } @require_env;
