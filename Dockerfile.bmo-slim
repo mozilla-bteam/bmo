@@ -6,7 +6,6 @@ RUN apt-get update \
     apt-file \
     build-essential \
     cmake \
-    curl \
     default-libmysqlclient-dev \
     git \
     libcairo-dev \
@@ -45,7 +44,6 @@ RUN cat /app/PACKAGES
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y \
-       curl \
        git \
        graphviz \
        libcap2-bin \

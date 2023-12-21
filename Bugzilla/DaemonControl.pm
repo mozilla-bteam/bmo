@@ -32,7 +32,7 @@ our @EXPORT_OK = qw(
   run_httpd run_cereal run_jobqueue
   run_cereal_and_httpd run_cereal_and_jobqueue
   catch_signal on_finish on_exception
-  assert_httpd assert_database assert_selenium
+  assert_httpd assert_database
 );
 
 our %EXPORT_TAGS = (
@@ -193,14 +193,6 @@ sub assert_httpd {
   return Future->wait_any($repeat, $timeout);
 }
 
-sub assert_selenium {
-  my ($host, $port) = @_;
-  $host //= 'localhost';
-  $port //= 4444;
-
-  return assert_connect($host, $port, 'assert_selenium');
-}
-
 sub assert_cereal {
   return assert_connect('localhost', $ENV{LOGGING_PORT} // 5880, 'assert_cereal');
 }
@@ -293,7 +285,7 @@ Bugzilla::DaemonControl - Utility functions for controlling daemons
 =head1 DESCRIPTION
 
 This module exports functions that either start daemons (L<run_httpd()>, L<run_cereal()>),
-check for running services (L<assert_httpd()>, L<assert_database()>, L<assert_selenium()>),
+check for running services (L<assert_httpd()>, L<assert_database()>,
 or help build more functions like the above (L<on_exception()>, L<on_finish()>).
 
 The C<run_> and C<assert_> functions return Futures, see L<Future> for details
