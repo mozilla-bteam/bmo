@@ -254,6 +254,8 @@ sub update {
   my $self    = shift;
   my $options = shift;
 
+  my $old_self = $self->new($self->id);
+
   my $group_changes = delete $self->{_group_changes};
 
   my $changes = $self->SUPER::update(@_);
@@ -278,13 +280,24 @@ sub update {
     $dbh->do("DELETE FROM profile_mfa WHERE user_id = ?", undef, $self->id);
   }
 
+  # Log out user if they have been added or removed from the duo security required group
+  my $duo_requirement_changed = 0;
+  if ( ($old_self->in_duo_required_group && !$self->in_duo_required_group)
+    || (!$old_self->in_duo_required_group && $self->in_duo_required_group))
+  {
+    $duo_requirement_changed = 1;
+  }
+
   # Logout the user if necessary.
   Bugzilla->logout_user($self)
     if (
-    !$options->{keep_session}
-    && ( exists $changes->{login_name}
-      || exists $changes->{disabledtext}
-      || exists $changes->{cryptpassword})
+    $duo_requirement_changed
+    || (
+      !$options->{keep_session}
+      && ( exists $changes->{login_name}
+        || exists $changes->{disabledtext}
+        || exists $changes->{cryptpassword})
+    )
     );
 
   # XXX Can update profiles_activity here as soon as it understands

@@ -249,6 +249,9 @@ elsif ($action eq 'update') {
   my $otherUser = check_user($otherUserID, $otherUserLogin);
   $otherUserID = $otherUser->id;
 
+  # Preload otherUser groups with old membership for Duo requirement check later
+  $otherUser->groups;
+
   # Lock tables during the check+update session.
   $dbh->bz_start_transaction();
 
@@ -371,14 +374,10 @@ elsif ($action eq 'update') {
     );
     Bugzilla->memcached->clear_config({key => "user_groups.$otherUserID"});
 
-    # Duo MFA requirements: If user was added/removed from the duo_required group,
-    # force a logout of the users account.
-    my $duo_required_group = Bugzilla->params->{duo_required_group};
-    if (
-      $duo_required_group
-      && ( any { $duo_required_group eq $_ } @groupsRemovedFrom
-        || any { $duo_required_group eq $_ } @groupsRemovedFrom)
-      )
+    # Log out user if they have been added or removed from the duo security required group
+    my $new_user = Bugzilla::User->new($otherUserID);
+    if ( ($otherUser->in_duo_required_group && !$new_user->in_duo_required_group)
+      || (!$otherUser->in_duo_required_group && $new_user->in_duo_required_group))
     {
       Bugzilla->logout_user($otherUser);
     }
