@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build the Docker image
-        run: docker build -t bmo .
+        run: docker build -t bmo --target base .
       - name: Create directory for artifacts
         run: mkdir build_info
       - name: Install docker-compose

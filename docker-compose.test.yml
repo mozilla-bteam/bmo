@@ -30,14 +30,10 @@ services:
       - LOG4PERL_CONFIG_FILE=log4perl-test.conf
       - LOGGING_PORT=5880
       - PORT=8000
-      - TWD_BROWSER=firefox
-      - TWD_HOST=selenium
-      - TWD_PORT=4444
     depends_on:
       - externalapi.test
       - bmo.db
       - memcached
-      - selenium
       - s3
       - gcs
 
@@ -59,12 +55,6 @@ services:
 
   memcached:
     image: ghcr.io/ghcr-library/memcached:latest
-
-  selenium:
-    image: selenium/standalone-firefox:3.141.59
-    shm_size: "512m"
-    ports:
-      - "59000:5900"
 
   s3:
     image: scireum/s3-ninja

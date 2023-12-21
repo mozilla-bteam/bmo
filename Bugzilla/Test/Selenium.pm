@@ -13,10 +13,10 @@ use Bugzilla::Util qw(trim);
 use Mojo::File;
 use Moo;
 use Test2::V0;
-use Test::Selenium::Remote::Driver;
+use Test::Selenium::Firefox;
 use Try::Tiny;
 
-has 'driver_class' => (is => 'ro', default => 'Test::Selenium::Remote::Driver');
+has 'driver_class' => (is => 'ro', default => 'Test::Selenium::Firefox');
 has 'driver_args' => (is => 'ro', required => 1,);
 has 'driver'      => (
   is      => 'lazy',
