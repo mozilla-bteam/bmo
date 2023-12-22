@@ -186,7 +186,7 @@ sub get_text {
   $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if ($element) {
-    return $element->get_property('textContent');
+    return trim($element->get_property('textContent'));
   }
   return '';
 }
@@ -228,7 +228,7 @@ sub get_selected_labels {
     my @selected;
     foreach my $element (@elements) {
       next if !$element->is_selected();
-      push @selected, $element->get_property('textContent');
+      push @selected, trim($element->get_property('textContent'));
     }
     return @selected;
   }
@@ -247,7 +247,7 @@ sub get_select_options {
   if (@elements) {
     my @options;
     foreach my $element (@elements) {
-      push @options, $element->get_property('textContent');
+      push @options, trim($element->get_property('textContent'));
     }
     return @options;
   }
@@ -330,11 +330,15 @@ sub select_ok {
         ok(1, "Set selected: $label");
       }
       else {
-        # Don’t use `$option->click()` here because it only works for visible
-        # elements, doesn’t work for custom elements
-        $self->driver->execute_script('arguments[0].click();', $option);
-        sleep(1);
-        ok($option->get_property('selected') ? 1 : 0, "Set selected: $label");
+        if ($option->get_tag_name() eq 'bz-option') {
+          # Don’t use `$option->click()` here because it only works for visible
+          # elements, doesn’t work for custom elements
+          $self->driver->execute_script('arguments[0].click();', $option);
+          sleep(1);
+          ok($option->get_property('selected'), "Set selected: $label");
+        } else {
+          ok($option->click(), "Set selected: $label");
+        }
       }
       return;
     }
