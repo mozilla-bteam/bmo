@@ -245,8 +245,8 @@ sub get_attachment_revisions {
 }
 
 sub request {
-  state $check = compile(Str, HashRef);
-  my ($method, $data) = $check->(@_);
+  state $check = compile(Str, HashRef, Optional[Bool]);
+  my ($method, $data, $no_die) = $check->(@_);
   my $request_cache = Bugzilla->request_cache;
   my $params        = Bugzilla->params;
   my $ua            = $request_cache->{phabricator_ua} ||= mojo_user_agent();
@@ -268,9 +268,11 @@ sub request {
   my $result = $response->json;
   ThrowCodeError('phabricator_api_error', {reason => 'JSON decode failure'})
     if !defined($result);
-  ThrowCodeError('phabricator_api_error',
-    {code => $result->{error_code}, reason => $result->{error_info}})
-    if $result->{error_code};
+
+  if ($result->{error_code} && !$no_die) {
+    ThrowCodeError('phabricator_api_error',
+      {code => $result->{error_code}, reason => $result->{error_info}});
+  }
 
   return $result;
 }
