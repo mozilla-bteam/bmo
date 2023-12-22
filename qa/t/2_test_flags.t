@@ -418,7 +418,7 @@ $sel->title_is("Create New Attachment for Bug #$bug1_id");
 $sel->attach_file('//input[@name="data"]', $config->{attachment_file});
 $sel->type_ok('//input[@name="description"]', "patch, v3");
 $sel->click_ok('//input[@name="contenttypemethod" and @value="list"]');
-$sel->select_ok('//bz-select[@name="contenttypeselection"]',
+$sel->select_ok('//select[@name="contenttypeselection"]',
   "label=plain text (text/plain)");
 $sel->select_ok("flag_type-$aflagtype1_id", "label=+");
 $sel->type_ok("comment", "one +, the other one blank");
@@ -485,7 +485,7 @@ $sel->click_ok(
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^Attachment $attachment2_id Details for Bug $bug1_id/);
 $sel->is_element_present_ok(
-  '//bz-select[@title="attachmentflag2"][@disabled]',
+  '//select[@title="attachmentflag2"][@disabled]',
   "Attachment flags are not editable by a powerless user"
 );
 
@@ -504,7 +504,7 @@ $sel->type_ok('//input[@name="description"]', "patch, v4");
 # canconfirm/editbugs privs are required to edit this flag.
 
 $sel->is_element_present_ok(
-  qq{//bz-select[\@id="flag_type-$aflagtype1_id"][\@disabled]},
+  qq{//select[\@id="flag_type-$aflagtype1_id"][\@disabled]},
   "Flag type non editable by powerless user");
 
 # No privs are required to edit this flag.
@@ -529,7 +529,7 @@ $sel->click_ok(
   "//a[contains(\@href,'/attachment.cgi?id=${attachment3_id}&action=edit')]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/^Attachment $attachment3_id Details for Bug $bug1_id/);
-$sel->select_ok('//bz-select[@title="attachmentflag1"]', "label=+");
+$sel->select_ok('//select[@title="attachmentflag1"]', "label=+");
 $sel->click_ok("update");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok(

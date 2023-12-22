@@ -186,7 +186,7 @@ sub get_text {
   $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if ($element) {
-    return trim($element->get_property('textContent'));
+    return trim($element->get_text() || $element->get_property('textContent'));
   }
   return '';
 }
@@ -206,7 +206,8 @@ sub selected_label_is {
       $locator . '/*[self::option|self::bz-option]');
   };
   foreach my $option (@options) {
-    my $text = trim($option->get_property('textContent'));
+    my $text
+      = trim($element->get_text() || $option->get_property('textContent'));
     if ($text eq $label && $option->get_property('selected')) {
       ok(1, "Selected label is: $label");
       return;
@@ -228,7 +229,8 @@ sub get_selected_labels {
     my @selected;
     foreach my $element (@elements) {
       next if !$element->is_selected();
-      push @selected, trim($element->get_property('textContent'));
+      push @selected,
+        trim($element->get_text() || $element->get_property('textContent'));
     }
     return @selected;
   }
@@ -247,7 +249,8 @@ sub get_select_options {
   if (@elements) {
     my @options;
     foreach my $element (@elements) {
-      push @options, trim($element->get_property('textContent'));
+      push @options,
+        trim($element->get_text() || $element->get_property('textContent'));
     }
     return @options;
   }
