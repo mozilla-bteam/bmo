@@ -884,32 +884,28 @@ sub new_stories {
   # before failing.
   my $result;
   foreach my $try (1 .. 5) {
-    $result = request('feed.query_id', $data, 1);
+    $result = request('feed.query_id', $data, 1);    # Do not throw exception yet
 
-    # If this is an invalid object error for the current id 
-    # then increment the object ID and loop around again
-    if ( $result->{error_info}
-      && $result->{error_info} =~ /does not identify a valid object in query/)
-    {
-      WARN( 'ERROR: Invalid feed id '
-          . $data->{after}
-          . ', incrementing: '
-          . $result->{error_info});
-      $data->{after}++;
-      next;
-    }
-    elsif ($result->{error_info}) {
-      ThrowCodeError('phabricator_api_error',
-        {code => $result->{error_code}, reason => $result->{error_info}});
-    }
+    # If this is not an invalid object error for the current id then
+    # stop now, otherwise increment the object ID and loop around again
+    last
+      if ($result->{error_info}
+      && $result->{error_info} !~ /does not identify a valid object in query/);
 
-    last;
+    WARN( 'ERROR: Invalid feed id '
+        . $data->{after}
+        . ", incrementing (try $try): "
+        . $result->{error_info});
+    $data->{after}++;
   }
 
-  if ( $result
-    && ref $result->{result}{data} eq 'ARRAY'
-    && @{$result->{result}{data}})
-  {
+  if ($result->{error_info}) {
+    ThrowCodeError('phabricator_api_error',
+      {code => $result->{error_code}, reason => $result->{error_info}});
+  }
+
+  if (ref $result->{result}{data} eq 'ARRAY' && @{$result->{result}{data}}) {
+
     # Guarantee that the data is in ascending ID order
     return [sort { $a->{id} <=> $b->{id} } @{$result->{result}{data}}];
   }
