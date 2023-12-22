@@ -333,16 +333,15 @@ sub select_ok {
       if ($option->get_property('selected')) {
         ok(1, "Set selected: $label");
       }
+      elsif ($option->get_tag_name() eq 'bz-option') {
+        # Don’t use `$option->click()` here because it only works for visible
+        # elements, doesn’t work for custom elements
+        $self->driver->execute_script('arguments[0].click();', $option);
+        sleep(1);
+        ok($option->get_property('selected'), "Set selected: $label");
+      }
       else {
-        if ($option->get_tag_name() eq 'bz-option') {
-          # Don’t use `$option->click()` here because it only works for visible
-          # elements, doesn’t work for custom elements
-          $self->driver->execute_script('arguments[0].click();', $option);
-          sleep(1);
-          ok($option->get_property('selected'), "Set selected: $label");
-        } else {
-          ok($option->click(), "Set selected: $label");
-        }
+        ok($option->click(), "Set selected: $label");
       }
       return;
     }
