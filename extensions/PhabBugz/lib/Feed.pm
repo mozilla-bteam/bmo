@@ -886,11 +886,16 @@ sub new_stories {
   foreach my $try (1 .. 5) {
     $result = request('feed.query_id', $data, 1);    # Do not throw exception yet
 
-    # If this is not an invalid object error for the current id then
-    # stop now, otherwise increment the object ID and loop around again
-    last
-      if ($result->{error_info}
-      && $result->{error_info} !~ /does not identify a valid object in query/);
+    # Skip if an error was not returned or the error is not an invalid object error
+    # for the current id. If it is, then increment the object ID and loop around again
+    if (
+      !$result->{error_info}
+      || ( $result->{error_info}
+        && $result->{error_info} !~ /does not identify a valid object in query/)
+      )
+    {
+      last;
+    }
 
     WARN( 'ERROR: Invalid feed id '
         . $data->{after}
