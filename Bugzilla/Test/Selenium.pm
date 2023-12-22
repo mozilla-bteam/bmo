@@ -186,7 +186,7 @@ sub get_text {
   $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if ($element) {
-    return $element->get_text();
+    return $element->get_property('textContent');
   }
   return '';
 }
@@ -205,7 +205,7 @@ sub selected_label_is {
     @options = $self->driver->find_elements($locator . '/*[self::option|self::bz-option]');
   };
   foreach my $option (@options) {
-    my $text = trim($option->get_text());
+    my $text = trim($option->get_property('textContent'));
     if ($text eq $label && $option->get_property('selected')) {
       ok(1, "Selected label is: $label");
       return;
@@ -226,7 +226,7 @@ sub get_selected_labels {
     my @selected;
     foreach my $element (@elements) {
       next if !$element->is_selected();
-      push @selected, $element->get_text();
+      push @selected, $element->get_property('textContent');
     }
     return @selected;
   }
@@ -244,7 +244,7 @@ sub get_select_options {
   if (@elements) {
     my @options;
     foreach my $element (@elements) {
-      push @options, $element->get_text();
+      push @options, $element->get_property('textContent');
     }
     return @options;
   }
@@ -314,23 +314,23 @@ sub select_ok {
     $is_value = 1;
   }
   foreach my $option (@options) {
-    my $value;
-    if ($is_label) {
-      $value = $option->get_text();
-    }
-    elsif ($is_value) {
-      $value = $option->get_value();
-    }
-    else {
-      $value = $option->get_text();
-    }
+    my $value
+      = $is_value
+      ? $option->get_value()
+      # Don’t use `$option->get_text()` here because it only works for visible
+      # element, doesn’t work for custom elements
+      : $option->get_property('textContent');
     $value = trim($value);
     if ($value eq $label) {
       if ($option->get_property('selected')) {
         ok(1, "Set selected: $label");
       }
       else {
-        ok($option->click(), "Set selected: $label");
+        # Don’t use `$option->click()` here because it only works for visible
+        # elements, doesn’t work for custom elements
+        $self->driver->execute_script('arguments[0].click();', $option);
+        sleep(1);
+        ok($option->get_property('selected') ? 1 : 0, "Set selected: $label");
       }
       return;
     }
