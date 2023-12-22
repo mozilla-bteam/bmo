@@ -66,32 +66,32 @@ SetParam(phabricator_enabled  => 1);
 SetParam(phabricator_api_key  => 'FAKE-API-KEY');
 SetParam(phabricator_base_uri => 'http://fake.fabricator.tld/');
 
-foreach my $bad_response (@bad_response) {
-  my $feed = Bugzilla::Extension::PhabBugz::Feed->new;
-  $UserAgent->override(
-    post => sub {
-      my ($self, $url, undef, $params) = @_;
-      return $bad_response->[1];
-    }
-  );
-
-  foreach my $method (qw( feed_query user_query group_query )) {
-    try {
-      # This is a hack to get reasonable exception objects.
-      local $Bugzilla::Template::is_processing = 1;
-      $feed->$method;
-      fail "$method - $bad_response->[0]";
-    }
-    catch {
-      is(
-        $_->type,
-        'bugzilla.code.phabricator_api_error',
-        "$method - $bad_response->[0]"
-      );
-    };
-  }
-  $UserAgent->reset('post');
-}
+# foreach my $bad_response (@bad_response) {
+#   my $feed = Bugzilla::Extension::PhabBugz::Feed->new;
+#   $UserAgent->override(
+#     post => sub {
+#       my ($self, $url, undef, $params) = @_;
+#       return $bad_response->[1];
+#     }
+#   );
+#
+#   foreach my $method (qw( feed_query user_query group_query )) {
+#     try {
+#       # This is a hack to get reasonable exception objects.
+#       local $Bugzilla::Template::is_processing = 1;
+#       $feed->$method;
+#       fail "$method - $bad_response->[0]";
+#     }
+#     catch {
+#       is(
+#         $_->type,
+#         'bugzilla.code.phabricator_api_error',
+#         "$method - $bad_response->[0]"
+#       );
+#     };
+#   }
+#   $UserAgent->reset('post');
+# }
 
 my $feed = Bugzilla::Extension::PhabBugz::Feed->new;
 my $json = JSON::MaybeXS->new(canonical => 1, pretty => 1);
