@@ -14,6 +14,7 @@ use Mojo::File;
 use Moo;
 use Test2::V0;
 use Test::Selenium::Firefox;
+use Time::HiRes;
 use Try::Tiny;
 
 has 'driver_class' => (is => 'ro', default => 'Test::Selenium::Firefox');
@@ -52,6 +53,7 @@ sub click_ok {
     TRACE("click_ok new locator: $locator");
   }
   $self->driver->click_element_ok($locator, 'xpath', $arg1, $desc);
+  Time::HiRes::sleep(0.5); # FIXME: Delay for slow page performance
 }
 
 sub open_ok {
@@ -337,7 +339,7 @@ sub select_ok {
         # Don’t use `$option->click()` here because it only works for visible
         # elements, doesn’t work for custom elements
         $self->driver->execute_script('arguments[0].click();', $option);
-        sleep(1);
+        Time::HiRes::sleep(0.5); # FIXME: Delay for slow page performance
         ok($option->get_property('selected'), "Set selected: $label");
       }
       else {
