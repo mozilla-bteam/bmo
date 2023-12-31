@@ -189,6 +189,10 @@ sub _update_groups {
   my $dbh           = Bugzilla->dbh;
   my $user          = Bugzilla->user;
 
+  # Before any group changes, lets record if the user is
+  # in the duo required status?
+  my $old_duo_required = $self->in_duo_required_group;
+
   # Update group settings.
   my $sth_add_mapping = $dbh->prepare(
     qq{INSERT INTO user_group_map (
@@ -245,6 +249,17 @@ sub _update_groups {
 
     Bugzilla->memcached->clear_config({key => 'user_groups.' . $self->id});
 
+    # Now that group changes have been made, lets see what the users duo
+    # required status is now. If it has changed, then we will need to logout
+    # the user later.
+    my $new_self = $self->new($self->id);
+    my $new_duo_required = $new_self->in_duo_required_group;
+    if ( ($old_duo_required && !$new_duo_required)
+      || (!$old_duo_required && $new_duo_required))
+    {
+      $self->{_duo_requirement_changed} = 1;
+    }
+
     my $type = $is_bless ? 'bless_groups' : 'groups';
     $changes->{$type} = [[map { $_->name } @$removed], [map { $_->name } @$added],];
   }
@@ -253,8 +268,6 @@ sub _update_groups {
 sub update {
   my $self    = shift;
   my $options = shift;
-
-  my $old_self = $self->new($self->id);
 
   my $group_changes = delete $self->{_group_changes};
 
@@ -280,18 +293,10 @@ sub update {
     $dbh->do("DELETE FROM profile_mfa WHERE user_id = ?", undef, $self->id);
   }
 
-  # Log out user if they have been added or removed from the duo security required group
-  my $duo_requirement_changed = 0;
-  if ( ($old_self->in_duo_required_group && !$self->in_duo_required_group)
-    || (!$old_self->in_duo_required_group && $self->in_duo_required_group))
-  {
-    $duo_requirement_changed = 1;
-  }
-
   # Logout the user if necessary.
   Bugzilla->logout_user($self)
     if (
-    $duo_requirement_changed
+    $self->{_duo_requirement_changed}
     || (
       !$options->{keep_session}
       && ( exists $changes->{login_name}
@@ -684,7 +689,6 @@ sub mfa_provider {
   return $self->{mfa_provider};
 }
 
-
 sub in_mfa_group {
   my $self = shift;
   return $self->{in_mfa_group} if exists $self->{in_mfa_group};
@@ -695,15 +699,15 @@ sub in_mfa_group {
 
 sub in_duo_required_group {
   my $self = shift;
-  return $self->{in_duo_required_group} if exists $self->{in_duo_required_group};
 
   my $duo_required_group = Bugzilla->params->{duo_required_group};
   my $duo_excluded_group = Bugzilla->params->{duo_required_excluded_group};
+
   return $self->{in_duo_required_group} = (
     $duo_required_group
       && ($self->in_group($duo_required_group)
       && !$self->in_group($duo_excluded_group))
-  );
+  ) ? 1 : 0;
 }
 
 sub ldap_email {

@@ -265,7 +265,6 @@ elsif ($action eq 'update') {
 
   # Update profiles table entry; silently skip doing this if the user
   # is not authorized.
-  my $changes = {};
   if ($editusers) {
     $otherUser->set_login($cgi->param('login'));
     $otherUser->set_password($cgi->param('password')) if $cgi->param('password');
@@ -291,30 +290,10 @@ elsif ($action eq 'update') {
     $otherUser->set_bounce_count(0) if $cgi->param('reset_bounce');
   }
 
-  $changes = $otherUser->update();
-
-  # Update group settings.
-  my $sth_add_mapping = $dbh->prepare(
-    qq{INSERT INTO user_group_map (
-                  user_id, group_id, isbless, grant_type
-                 ) VALUES (
-                  ?, ?, ?, ?
-                 )
-          }
-  );
-  my $sth_remove_mapping = $dbh->prepare(
-    qq{DELETE FROM user_group_map
-            WHERE user_id = ?
-              AND group_id = ?
-              AND isbless = ?
-              AND grant_type = ?
-          }
-  );
-
-  my @groupsAddedTo;
-  my @groupsRemovedFrom;
-  my @groupsGrantedRightsToBless;
-  my @groupsDeniedRightsToBless;
+  my @groups_added_to;
+  my @groups_removed_from;
+  my @groups_granted_rights_to_bless;
+  my @groups_denied_rights_to_bless;
 
   # Regard only groups the user is allowed to bless and skip all others
   # silently.
@@ -330,12 +309,10 @@ elsif ($action eq 'update') {
     my $groupid = $cgi->param("group_$id") || 0;
     if ($groupid != $permissions->{$id}->{'directmember'}) {
       if (!$groupid) {
-        $sth_remove_mapping->execute($otherUserID, $id, 0, GRANT_DIRECT);
-        push(@groupsRemovedFrom, $name);
+        push @groups_removed_from, $name;
       }
       else {
-        $sth_add_mapping->execute($otherUserID, $id, 0, GRANT_DIRECT);
-        push(@groupsAddedTo, $name);
+        push @groups_added_to, $name;
       }
     }
 
@@ -345,45 +322,31 @@ elsif ($action eq 'update') {
       my $groupid = $cgi->param("bless_$id") || 0;
       if ($groupid != $permissions->{$id}->{'directbless'}) {
         if (!$groupid) {
-          $sth_remove_mapping->execute($otherUserID, $id, 1, GRANT_DIRECT);
-          push(@groupsDeniedRightsToBless, $name);
+          push @groups_denied_rights_to_bless, $name;
         }
         else {
-          $sth_add_mapping->execute($otherUserID, $id, 1, GRANT_DIRECT);
-          push(@groupsGrantedRightsToBless, $name);
+          push @groups_granted_rights_to_bless, $name;
         }
       }
     }
   }
-  if (@groupsAddedTo || @groupsRemovedFrom) {
-    $dbh->do(
-      qq{INSERT INTO profiles_activity (
-                           userid, who,
-                           profiles_when, fieldid,
-                           oldvalue, newvalue
-                          ) VALUES (
-                           ?, ?, now(), ?, ?, ?
-                          )
-                   },
-      undef,
-      (
-        $otherUserID, $userid,
-        get_field_id('bug_group'), join(', ', @groupsRemovedFrom),
-        join(', ', @groupsAddedTo)
-      )
-    );
-    Bugzilla->memcached->clear_config({key => "user_groups.$otherUserID"});
 
-    # Log out user if they have been added or removed from the duo security required group
-    my $new_user = Bugzilla::User->new($otherUserID);
-    if ( ($otherUser->in_duo_required_group && !$new_user->in_duo_required_group)
-      || (!$otherUser->in_duo_required_group && $new_user->in_duo_required_group))
-    {
-      Bugzilla->logout_user($otherUser);
-    }
+  if (@groups_added_to || @groups_removed_from) {
+    $otherUser->set_groups({add => \@groups_added_to, remove => \@groups_removed_from});
   }
 
-  # XXX: should create profiles_activity entries for blesser changes.
+  if (@groups_granted_rights_to_bless || @groups_denied_rights_to_bless) {
+    $otherUser->set_bless_groups(
+      {
+        add    => \@groups_granted_rights_to_bless,
+        remove => \@groups_denied_rights_to_bless
+      }
+    );
+  }
+
+  my $changes = $otherUser->update();
+
+  Bugzilla->memcached->clear_config({key => "user_groups.$otherUserID"});
 
   $dbh->bz_commit_transaction();
 
@@ -391,15 +354,9 @@ elsif ($action eq 'update') {
   userDataToVars($otherUserID);
   delete_token($token);
 
-  $vars->{'message'}                        = 'account_updated';
-  $vars->{'changed_fields'}                 = [keys %$changes];
-  $vars->{'groups_added_to'}                = \@groupsAddedTo;
-  $vars->{'groups_removed_from'}            = \@groupsRemovedFrom;
-  $vars->{'groups_granted_rights_to_bless'} = \@groupsGrantedRightsToBless;
-  $vars->{'groups_denied_rights_to_bless'}  = \@groupsDeniedRightsToBless;
-
-  # We already display the updated page. We have to recreate a token now.
-  $vars->{'token'} = issue_session_token('edit_user');
+  $vars->{'message'} = 'account_updated';
+  $vars->{'changes'} = $changes;
+  $vars->{'token'}   = issue_session_token('edit_user');
 
   $template->process('admin/users/edit.html.tmpl', $vars)
     || ThrowTemplateError($template->error());
