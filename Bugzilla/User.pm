@@ -192,6 +192,7 @@ sub _update_groups {
   # Before any group changes, lets record if the user is
   # in the duo required status?
   my $old_duo_required = $self->in_duo_required_group;
+  my $old_duo_excluded = $self->in_duo_excluded_group;
 
   # Update group settings.
   my $sth_add_mapping = $dbh->prepare(
@@ -254,10 +255,16 @@ sub _update_groups {
     # the user later.
     my $new_self = $self->new($self->id);
     my $new_duo_required = $new_self->in_duo_required_group;
-    if ( ($old_duo_required && !$new_duo_required)
-      || (!$old_duo_required && $new_duo_required))
-    {
-      $self->{_duo_requirement_changed} = 1;
+    if ($old_duo_required && !$new_duo_required) {
+      $self->{_duo_requirement_removed} = 1;
+    }
+    elsif (!$old_duo_required && $new_duo_required) {
+      $self->{_duo_requirement_added} = 1;
+    }
+
+    # Only bot accounts should be added to the excluded group
+    if ($new_self->in_duo_excluded_group && $new_self->login !~ /[.](?:bugs|tld)$/) {
+      ThrowUserError('duo_exclude_only_bots');
     }
 
     my $type = $is_bless ? 'bless_groups' : 'groups';
@@ -293,16 +300,21 @@ sub update {
     $dbh->do("DELETE FROM profile_mfa WHERE user_id = ?", undef, $self->id);
   }
 
+  # Updated user based on their Duo MFA requirement changes
+  if ($self->{_duo_requirement_added}) {
+    Bugzilla->logout_user($self);
+  }
+  elsif ($self->{_duo_requirement_removed}) {
+    Bugzilla->logout_user($self);
+  }
+
   # Logout the user if necessary.
   Bugzilla->logout_user($self)
     if (
-    $self->{_duo_requirement_changed}
-    || (
       !$options->{keep_session}
       && ( exists $changes->{login_name}
         || exists $changes->{disabledtext}
         || exists $changes->{cryptpassword})
-    )
     );
 
   # XXX Can update profiles_activity here as soon as it understands
@@ -699,15 +711,18 @@ sub in_mfa_group {
 
 sub in_duo_required_group {
   my $self = shift;
+  return $self->{in_duo_required_group} if exists $self->{in_duo_required_group};
 
   my $duo_required_group = Bugzilla->params->{duo_required_group};
-  my $duo_excluded_group = Bugzilla->params->{duo_required_excluded_group};
+  return ($duo_required_group && $self->in_group($duo_required_group)) ? 1 : 0;
+}
 
-  return $self->{in_duo_required_group} = (
-    $duo_required_group
-      && ($self->in_group($duo_required_group)
-      && !$self->in_group($duo_excluded_group))
-  ) ? 1 : 0;
+sub in_duo_excluded_group {
+  my $self = shift;
+  return $self->{in_duo_excluded_group} if exists $self->{in_duo_excluded_group};
+
+  my $duo_excluded_group = Bugzilla->params->{duo_required_excluded_group};
+  return ($duo_excluded_group && $self->in_group($duo_excluded_group)) ? 1 : 0;
 }
 
 sub ldap_email {

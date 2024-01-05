@@ -214,13 +214,15 @@ sub suggest {
 #         names => ['testusera@redhat.com', 'testuserb@redhat.com'] });
 sub get {
   my ($self, $params)
-    = validate(@_, 'names', 'ids', 'match', 'group_ids', 'groups');
+    = validate(@_, 'names', 'ids', 'match', 'group_ids', 'groups', 'ldap_emails');
+  my $user = Bugzilla->user;
 
   Bugzilla->switch_to_shadow_db();
 
        defined($params->{names})
     || defined($params->{ids})
     || defined($params->{match})
+    || defined($params->{ldap_emails})
     || ThrowCodeError('params_required',
     {function => 'User.get', params => ['ids', 'names', 'match']});
 
@@ -249,6 +251,27 @@ sub get {
     }
   }
 
+  # Allow users in mozilla-employee-confidential to search by ldap_email
+  if ($user->in_group('mozilla-employee-confidential') && $params->{ldap_emails})
+  {
+    foreach my $email (@{$params->{ldap_emails}}) {
+      # There could be more than one match per ldap email if the user has multiple accounts
+      my $user_ids
+        = Bugzilla->dbh->selectcol_arrayref(
+        'SELECT user_id FROM profile_mfa WHERE name = \'user\' AND value = ?',
+        undef, $email);
+      next if !@{$user_ids};
+      foreach my $user_id (@{$user_ids}) {
+        my $user_obj = Bugzilla::User->new($user_id);
+        next if $user_obj->mfa ne 'Duo';
+        push @user_objects, $user_obj;
+      }
+    }
+  }
+  elsif ($params->{ldap_emails}) {
+    ThrowUserError('user_access_by_ldap_denied');
+  }
+
   # start filtering to remove duplicate user ids
   my %unique_users = map { $_->id => $_ } @user_objects;
   @user_objects = values %unique_users;
@@ -257,7 +280,7 @@ sub get {
 
   # If the user is not logged in: Return an error if they passed any user ids.
   # Otherwise, return a limited amount of information based on login names.
-  if (!Bugzilla->user->id) {
+  if (!$user->id) {
     if ($params->{ids}) {
       ThrowUserError("user_access_by_id_denied");
     }
@@ -284,7 +307,7 @@ sub get {
   # obj_by_ids are only visible to the user if they can see
   # the otheruser, for non visible otheruser throw an error
   foreach my $obj (@$obj_by_ids) {
-    if (Bugzilla->user->can_see_user($obj)) {
+    if ($user->can_see_user($obj)) {
       if (!$unique_users{$obj->id}) {
         push(@user_objects, $obj);
         $unique_users{$obj->id} = $obj;

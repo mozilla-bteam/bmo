@@ -180,8 +180,11 @@
       [% IF Param("duo_host")  %]
         <button type="button" id="mfa-select-duo">Duo Security</button><br>
         <blockquote>
-          Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">Duo Security</a>
-          account (required for Mozilla employees).
+          <p>Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">Duo Security</a>
+          account (required for Mozilla employees).</p>
+          <p>If this account is for automation and Duo 2FA is not appropriate, Please
+          <a href="[% basepath FILTER none %]enter_bug.cgi?product=bugzilla.mozilla.org&component=Administration">file a bug</a>
+          with details of your bot and requirements.</p>
         </blockquote>
       [% END %]
     </div>

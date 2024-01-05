@@ -12,12 +12,13 @@ use lib qw(lib ../.. ../../local/lib/perl5);
 use Bugzilla;
 use QA::Util;
 use Test::Mojo;
-use Test::More "no_plan";
+use Test::More 'no_plan';
 
 my ($sel, $config) = get_selenium();
 
 # Add new config variables for the duo user
 $config->{duo_user_login}  = 'duo@mozilla.test';
+$config->{duo_bot_user_login} = 'duo-bot@mozilla.tld';
 $config->{duo_user_passwd} = 'uChoopoh1che';
 
 # Create duo required group and excluded group
@@ -68,9 +69,9 @@ set_parameters(
   }
 );
 
-# Create new user that will be required to use duo mfa
+# Create new regular user that will be required to use duo mfa
 go_to_admin($sel);
-$sel->click_ok("link=Users");
+$sel->click_ok('link=Users');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is('Search users');
 $sel->click_ok('link=add a new user');
@@ -86,11 +87,30 @@ $sel->check_ok("//input[\@name='group_$required_group_id']");
 $sel->click_ok('update');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User $config->{duo_user_login} updated");
-$sel->is_text_present_ok(
-  'The account has been added to the duo_required_group');
+
+# Create new bot user that will be in the Duo required group but
+# will be excluded from having to use Duo
+go_to_admin($sel);
+$sel->click_ok('link=Users');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is('Search users');
+$sel->click_ok('link=add a new user');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is('Add user');
+$sel->type_ok('login',    $config->{duo_bot_user_login});
+$sel->type_ok('name',     'duo-user');
+$sel->type_ok('password', $config->{duo_user_passwd}, 'Enter password');
+$sel->click_ok('add');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("Edit user duo-user <$config->{duo_bot_user_login}>");
+$sel->check_ok("//input[\@name='group_$required_group_id']");
+$sel->check_ok("//input[\@name='group_$excluded_group_id']");
+$sel->click_ok('update');
+$sel->wait_for_page_to_load_ok(WAIT_TIME);
+$sel->title_is("User $config->{duo_bot_user_login} updated");
 logout($sel);
 
-# Login as new user and observe that user must enable duo mfa
+# Login as normal user and observe that user must enable duo mfa
 $sel->open_ok('/login', undef, 'Go to the home page');
 $sel->title_is('Log in to Bugzilla');
 $sel->type_ok(
@@ -106,9 +126,44 @@ $sel->type_ok(
 $sel->click_ok('log_in', undef, 'Submit credentials');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is('User Preferences', 'MFA user preferences is displayed');
+
+# Remove user from duo groups using REST API which should
+# trigger a logout of the user
+my $t = Test::Mojo->new;
+
+my $user_update = {
+  groups => {
+    remove => ['duo_required_group']
+  }
+};
+$t->put_ok(Bugzilla->localconfig->urlbase
+    . "rest/user/$config->{duo_user_login}"                 =>
+    {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}} => json =>
+    $user_update)->status_is(200)->json_has('/users');
+
+$sel->open_ok('/enter_bug.cgi', undef, 'Try to enter a new bug');
+$sel->title_is('Log in to Bugzilla', 'User should be logged out');
+
+# Login as bot user and observe that user does not need to enable duo mfa
+$sel->open_ok('/login', undef, 'Go to the home page');
+$sel->title_is('Log in to Bugzilla');
+$sel->type_ok(
+  'Bugzilla_login',
+  $config->{duo_bot_user_login},
+  "Enter $config->{duo_bot_user_login} login name"
+);
+$sel->type_ok(
+  'Bugzilla_password',
+  $config->{duo_user_passwd},
+  "Enter $config->{duo_bot_user_login} password"
+);
+$sel->click_ok('log_in', undef, 'Submit credentials');
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is('Bugzilla Main Page', 'User is logged in');
 logout($sel);
 
-# Add user to the duo duo excluded group which should allow user to login without duo mfa
+# Add the normal user to the duo excluded group and observe error
+# that user is not a bot account
 log_in($sel, $config, 'admin');
 go_to_admin($sel);
 $sel->click_ok('link=Users');
@@ -122,35 +177,8 @@ $sel->title_is("Edit user duo-user <$config->{duo_user_login}>");
 $sel->check_ok("//input[\@name='group_$excluded_group_id']");
 $sel->click_ok('update');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("User $config->{duo_user_login} updated");
-$sel->is_text_present_ok(
-  'The account has been added to the duo_required_excluded_group');
+$sel->title_is('Only Bot Accounts Excluded');
 logout($sel);
-
-# Login as user and observe that user no longer is required to use duo mfa
-log_in($sel, $config, 'duo');
-
-# Remove user from duo groups which should trigger a logout of the user
-my $t = Test::Mojo->new;
-
-my $user_update = {
-  groups => {
-    remove => ['duo_required_excluded_group']
-  }
-};
-$t->put_ok(Bugzilla->localconfig->urlbase
-    . "rest/user/$config->{duo_user_login}"                 =>
-    {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}} => json =>
-    $user_update)->status_is(200)->json_has('/users');
-
-$user_update->{groups}->{remove} = ['duo_required_group'];
-$t->put_ok(Bugzilla->localconfig->urlbase
-    . "rest/user/$config->{duo_user_login}"                 =>
-    {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}} => json =>
-    $user_update)->status_is(200)->json_has('/users');
-
-$sel->open_ok('/enter_bug.cgi', undef, 'Try to enter a new bug');
-$sel->title_is('Log in to Bugzilla', 'User should be logged out');
 
 # Turn off duo requirement
 log_in($sel, $config, 'admin');
