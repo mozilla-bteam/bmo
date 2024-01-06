@@ -315,7 +315,7 @@ sub login {
     && Bugzilla->params->{duo_required_group}
     && ($authenticated_user->in_duo_required_group
       && !$authenticated_user->in_duo_excluded_group)
-    && $authenticated_user->mfa ne 'duo'
+    && $authenticated_user->mfa ne 'Duo'
     )
   {
     my $on_mfa_page

@@ -302,10 +302,28 @@ sub update {
 
   # Updated user based on their Duo MFA requirement changes
   if ($self->{_duo_requirement_added}) {
-    Bugzilla->logout_user($self);
+
+    # When a user is added to the duo required group (during creation or modified)
+    # and they are using TOTP, force a logout by clearing all existing sessions,
+    # unless the user is a member of a "duo-required-excluded" group (ie. "bots").
+    Bugzilla->logout_user($self) if !$self->in_duo_excluded_group;
   }
   elsif ($self->{_duo_requirement_removed}) {
+
     Bugzilla->logout_user($self);
+
+    # When an account is removed from the duo required group and their current MFA is Duo,
+    # their MFA and saved password should be cleared and they should be forced into
+    # TOTP enrollment upon next login (after performing a password reset).
+    # Clearing their saved password ensures that the account won't be left unprotected by
+    # MFA at any time. This TOTP forcing needs to be immediate, rather than behind a grace period.
+    if ($self->mfa eq 'Duo') {
+      $self->set_mfa('');
+      $self->set_password('*');
+      my ($mfa_required_date) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
+      $self->set_mfa_required_date($mfa_required_date);
+      $self->SUPER::update();
+    }
   }
 
   # Logout the user if necessary.
