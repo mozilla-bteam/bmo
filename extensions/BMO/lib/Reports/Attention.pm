@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::BMO::Reports::WhatsNext;
+package Bugzilla::Extension::BMO::Reports::Attention;
 
 use 5.10.1;
 use strict;
@@ -153,7 +153,7 @@ sub s1_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{attention};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
 
@@ -179,7 +179,7 @@ sub sec_crit_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{attention};
   my $keyword_id = $cache->{sec_critical_id};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -209,7 +209,7 @@ sub important_needinfo_bugs {
   return [] if !exists $flags->{tracking};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{attention};
   my $needinfo_id     = $cache->{needinfo_flag_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -255,7 +255,7 @@ sub s2_bugs {
   return [] if !exists $flags->{status};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{attention};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
   my $nightly_flag_id = $flags->{status}->{nightly}->flag_id;
@@ -298,7 +298,7 @@ sub sec_high_bugs {
   return [] if !exists $flags->{status};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{attention};
   my $keyword_id      = $cache->{sec_high_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -340,7 +340,7 @@ sub regression_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{attention};
   my $keyword_id = $cache->{regression_id};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -367,7 +367,7 @@ sub other_needinfo_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Cached values for inserting into SQL
-  my $cache       = Bugzilla->process_cache->{whats_next};
+  my $cache       = Bugzilla->process_cache->{attention};
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
   my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -403,7 +403,7 @@ sub report {
 
   # Here we load some values into cache that will be used later
   # by the various queries.
-  my $cache = Bugzilla->process_cache->{whats_next} = {};
+  my $cache = Bugzilla->process_cache->{attention} = {};
   my $dbh   = Bugzilla->dbh;
 
   # classifications

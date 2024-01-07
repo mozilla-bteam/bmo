@@ -91,10 +91,10 @@ $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 logout($sel);
 
-# Open the whats next report as admin
+# Open the whats needs my attention report as admin
 log_in($sel, $config, 'admin');
-$sel->open_ok('/page.cgi?id=whats_next.html');
-$sel->title_is('What should I work on next?');
+$sel->open_ok('/page.cgi?id=attention.html');
+$sel->title_is('What Needs My Attention?');
 
 # Check for the existence of rows for each of the tables that we created bugs for
 $sel->is_text_present_ok(
@@ -132,11 +132,11 @@ logout($sel);
 # private bugs filed by admin user are not visible but
 # others are.
 log_in($sel, $config, 'QA_Selenium_TEST');
-$sel->open_ok('/page.cgi?id=whats_next.html');
-$sel->title_is('What should I work on next?');
+$sel->open_ok('/page.cgi?id=attention.html');
+$sel->title_is('What Needs My Attention?');
 $sel->type_ok('who', $config->{admin_user_login});
 $sel->click_ok('run');
-$sel->title_is('What should I work on next?');
+$sel->title_is('What Needs My Attention?');
 
 $sel->is_text_present_ok(
   'test bug for s1 bugs assigned to you',

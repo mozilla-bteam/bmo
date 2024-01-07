@@ -3,12 +3,12 @@ var auto_refresh_interval_id = null;
 function updateAutoRefresh() {
   let auto_refresh_element = document.querySelector("#auto_refresh");
   if (auto_refresh_element.checked) {
-    setCookie("whats_next_auto_refresh", 1);
+    setCookie("attention_auto_refresh", 1);
     auto_refresh_interval_id = setInterval(() => {
       window.location.reload();
     }, 600000);
   } else {
-    setCookie("whats_next_auto_refresh", 0);
+    setCookie("attention_auto_refresh", 0);
     clearInterval(auto_refresh_interval_id);
   }
 }
@@ -71,7 +71,7 @@ function updateFavIcon() {
 
 window.addEventListener("load", () => {
   let auto_refresh_element = document.querySelector("#auto_refresh");
-  if (getCookie("whats_next_auto_refresh") == 1) {
+  if (getCookie("attention_auto_refresh") == 1) {
     auto_refresh_element.checked = true;
   }
   updateAutoRefresh();
@@ -93,7 +93,7 @@ window.addEventListener("load", () => {
         ? v1 - v2
         : v1.toString().localeCompare(v2))(
       getCellValue(asc ? a : b, idx),
-      getCellValue(asc ? b : a, idx)
+      getCellValue(asc ? b : a, idx),
     );
 
   document.querySelectorAll("table.bug-list th").forEach((th) =>
@@ -114,6 +114,6 @@ window.addEventListener("load", () => {
       Array.from(table.querySelectorAll("tbody tr"))
         .sort(comparer(Array.from(th.parentNode.children).indexOf(th), asc))
         .forEach((tr) => table.querySelector("tbody").appendChild(tr));
-    })
+    }),
   );
 });

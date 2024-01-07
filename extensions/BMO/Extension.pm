@@ -257,9 +257,9 @@ sub page_before_template {
     require Bugzilla::Extension::BMO::Reports::ProductSecurity;
     Bugzilla::Extension::BMO::Reports::ProductSecurity::report($vars);
   }
-  elsif ($page eq 'whats_next.html') {
-    require Bugzilla::Extension::BMO::Reports::WhatsNext;
-    Bugzilla::Extension::BMO::Reports::WhatsNext::report($vars);
+  elsif ($page eq 'attention.html') {
+    require Bugzilla::Extension::BMO::Reports::Attention;
+    Bugzilla::Extension::BMO::Reports::Attention::report($vars);
   }
   elsif ($page eq 'fields.html') {
 
@@ -2961,6 +2961,12 @@ sub app_startup {
     => sub { my $c = shift; $c->redirect_to('https://mzl.la/devevents'); });
   $r->any( '/:REWRITE_ipc' => [ REWRITE_ipc => qr{form[\.:](?:ipc|IPC)} ]
     => sub { my $c = shift; $c->redirect_to('https://mzl.la/snippet-submit-form'); });
+
+  # What needs my attention report
+  $r->any('/:REWRITE_attention' => [REWRITE_attention => qr{attention}])
+    ->to('CGI#page_cgi' => {'id' => 'attention.html'});
+  $r->any('/page.cgi?id=whats_next.html')
+    ->to('CGI#page_cgi' => {'id' => 'attention.html'});
 }
 
 __PACKAGE__->NAME;

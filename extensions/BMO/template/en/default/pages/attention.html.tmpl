@@ -7,10 +7,10 @@
   #%]
 
 [% INCLUDE global/header.html.tmpl
-  title = "What should I work on next?"
+  title = "What Needs My Attention?"
   generate_api_token = 1
-  javascript_urls = [ "js/field.js", "extensions/BMO/web/js/whats_next.js" ]
-  style_urls = [ "extensions/BMO/web/styles/whats_next.css" ]
+  javascript_urls = [ "js/field.js", "extensions/BMO/web/js/attention.js" ]
+  style_urls = [ "extensions/BMO/web/styles/attention.css" ]
 %]
 
 [% PROCESS global/variables.none.tmpl %]
@@ -18,11 +18,11 @@
 <img src="extensions/BMO/web/images/bugzilla.png" id="favicon-base" class="hidden">
 <div id="total-bug-count" class="hidden">[% total_bug_count FILTER none %]</div>
 
-<div id="whats_next">
-  <h1>What Should I Work On Next?</h1>
+<div id="attention">
+  <h1>What Needs My Attention?</h1>
 
-  <form id="whats_next_form" name="whats_next_form" action="[% basepath FILTER none %]page.cgi" method="get">
-  <input type="hidden" name="id" value="whats_next.html">
+  <form id="attention_form" name="attention_form" action="[% basepath FILTER none %]page.cgi" method="get">
+  <input type="hidden" name="id" value="attention.html">
   <input type="hidden" name="action" value="run">
   <table id="parameters">
   <tr>
