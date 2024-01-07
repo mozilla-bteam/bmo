@@ -201,7 +201,7 @@ sub sec_crit_bugs {
 }
 
 # Bugs that are needinfo? you and are marked as being tracked against or blocking the current nightly/beta/release
-sub important_needinfo_bugs {
+sub critical_needinfo_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
 
@@ -334,34 +334,36 @@ sub sec_high_bugs {
   return $filtered_bugs;
 }
 
-# Regressions
-sub regression_bugs {
+# Important needinfos (needinfos for me but not set by me)
+sub important_needinfo_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
 
-  # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{attention};
-  my $keyword_id = $cache->{regression_id};
-  my $class_ids  = join ',', @{$cache->{classification_ids}};
-  my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
+  # Cached values for inserting into SQL
+  my $cache       = Bugzilla->process_cache->{attention};
+  my $needinfo_id = $cache->{needinfo_flag_id};
+  my $class_ids   = join ',', @{$cache->{classification_ids}};
+  my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
 
   my $query = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
-              JOIN keywords ON bugs.bug_id = keywords.bug_id
+              LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id
+                AND COALESCE(requestees_login_name.requestee_id, 0) = ?
+                AND COALESCE(requestees_login_name.setter_id, 0) != ?
         WHERE products.classification_id IN ($class_ids)
-              AND keywords.keywordid = $keyword_id
               AND bugs.bug_status IN ($bug_states)
-              AND bugs.assigned_to = ?
-     ORDER BY bugs.delta_ts, bugs.bug_id";
+              AND (requestees_login_name.bug_id IS NOT NULL
+                    AND requestees_login_name.type_id = $needinfo_id)
+        ORDER BY bugs.delta_ts, bugs.bug_id";
 
-  my $bugs           = get_bug_list($query, $user->id);
+  my $bugs           = get_bug_list($query, $user->id, $user->id);
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
   return $filtered_bugs;
 }
 
-# Other needinfos (needinfos for me but not set by me)
+# Other needinfos
 sub other_needinfo_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
@@ -427,17 +429,17 @@ sub report {
   # build bug lists
   $vars->{s1_bugs}                 = s1_bugs($who);
   $vars->{sec_crit_bugs}           = sec_crit_bugs($who);
-  $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);
+  $vars->{critical_needinfo_bugs}  = critical_needinfo_bugs($who);
   $vars->{s2_bugs}                 = s2_bugs($who);
   $vars->{sec_high_bugs}           = sec_high_bugs($who);
-  $vars->{regression_bugs}         = regression_bugs($who);
+  $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);
   $vars->{other_needinfo_bugs}     = other_needinfo_bugs($who);
 
   # count number of unique bugs
   my %bug_ids;
   foreach my $name (qw(
-    s1_bugs sec_crit_bugs important_needinfo_bugs s2_bugs sec_high_bugs
-    regression_bugs other_needinfo_bugs
+    s1_bugs sec_crit_bugs critical_needinfo_bugs s2_bugs
+    sec_high_bugs important_needinfo_bugs other_needinfo_bugs
   )) {
     foreach my $bug (@{$vars->{$name}}) {
       $bug_ids{$bug->{id}} = 1;

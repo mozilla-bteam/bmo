@@ -69,16 +69,6 @@ $sel->type_ok('assigned_to', $config->{admin_user_login});
 $sel->check_ok('//input[@name="groups" and @value="Master"]');
 $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
-
-# Regressions
-file_bug_in_product($sel, 'Firefox');
-$sel->type_ok('short_desc', 'test bug for regressions assigned to you');
-$sel->select_ok('component', 'General');
-$sel->type_ok('keywords', 'regression');
-$sel->select_ok('bug_status', 'ASSIGNED');
-$sel->type_ok('assigned_to', $config->{admin_user_login});
-$sel->click_ok('commit');
-$sel->is_text_present_ok('has been added to the database', 'Bug created');
 logout($sel);
 
 # Other needinfos (needinfos for me but not set by me)
@@ -116,10 +106,6 @@ $sel->is_text_present_ok(
 $sel->is_text_present_ok(
   'test bug for sec-high bugs assigned to you',
   'test bug for sec-high bugs assigned to you'
-);
-$sel->is_text_present_ok(
-  'test bug for regressions assigned to you',
-  'test bug for regressions assigned to you'
 );
 $sel->is_text_present_ok(
   'test bug for other needinfos not set by you',
