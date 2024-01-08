@@ -21,12 +21,12 @@ log_in($sel, $config, 'admin');
 set_parameters(
   $sel,
   {
-    'Attachments' => {
+    'Attachments'    => {
       'allow_attachment_display-on'  => undef,
       'allow_attachment_deletion-on' => undef,
-      'attachment_storage'           => {type => 'select', value => 's3'},
-      'attachment_s3_minsize'        => {type => 'text',   value => '5'},
-      'attachment_google_minsize'    => {type => 'text',   value => '5'},
+      'attachment_storage' => {type => 'select', value => 's3'},
+      'attachment_s3_minsize' => {type => 'text', value => '5'},
+      'attachment_google_minsize' => {type => 'text', value => '5'},
     }
   }
 );
@@ -100,8 +100,9 @@ $sel->is_text_present_ok(
 set_parameters(
   $sel,
   {
-    'Attachments' =>
-      {'attachment_storage' => {type => 'select', value => 'google'},}
+    'Attachments'    => {
+      'attachment_storage' => {type => 'select', value => 'google'},
+    }
   }
 );
 
@@ -173,8 +174,9 @@ $sel->is_text_present_ok(
 set_parameters(
   $sel,
   {
-    'Attachments' =>
-      {'attachment_storage' => {type => 'select', value => 'database'},}
+    'Attachments'    => {
+      'attachment_storage' => {type => 'select', value => 'database'},
+    }
   }
 );
 

@@ -248,8 +248,8 @@ $sel->is_text_present_ok('has been added to the database',
 go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("SeleniumBugFlag1Test");
 
-# We specify //select or //input, just to be sure. This is not required, though.
-$sel->is_element_present_ok("//select[\@id='flag_type-$flagtype1_id']");
+# We specify //bz-select or //input, just to be sure. This is not required, though.
+$sel->is_element_present_ok("//bz-select[\@id='flag_type-$flagtype1_id']");
 $sel->is_element_present_ok("//input[\@id='requestee_type-$flagtype1_id']");
 
 # If fields are of the correct type above, we assume this is still true below.
@@ -283,17 +283,17 @@ go_to_bug($sel, $bug1_id);
 $sel->is_element_present_ok(
   qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="SeleniumBugFlag1Test"]}
 );
-my $flag1_1_id = $sel->get_attribute('//select[@title="bugflag1"]@id');
+my $flag1_1_id = $sel->get_attribute('//bz-select[@title="bugflag1"]@id');
 $flag1_1_id =~ s/flag-//;
 $sel->is_element_present_ok(
   qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="SeleniumBugFlag2Test"]}
 );
-my $flag2_1_id = $sel->get_attribute('//select[@title="bugflag2"]@id');
+my $flag2_1_id = $sel->get_attribute('//bz-select[@title="bugflag2"]@id');
 $flag2_1_id =~ s/flag-//;
 $sel->is_element_present_ok(
   qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/a[normalize-space(text())="SeleniumBugFlag3Test"]}
 );
-my $flag3_1_id = $sel->get_attribute('//select[@title="bugflag3"]@id');
+my $flag3_1_id = $sel->get_attribute('//bz-select[@title="bugflag3"]@id');
 $flag3_1_id =~ s/flag-//;
 
 $sel->is_text_present_ok("addl. SeleniumBugFlag1Test");
