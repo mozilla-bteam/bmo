@@ -236,6 +236,8 @@ $vars->{'cc_disabled'}          = 0;
 $vars->{'qa_contact'}          = formvalue('qa_contact');
 $vars->{'qa_contact_disabled'} = !$has_editbugs;
 
+$vars->{'needinfo_from'} = formvalue('needinfo_from');
+
 $vars->{'cloned_bug_id'} = $cloned_bug_id;
 
 $vars->{'token'} = issue_session_token('create_bug');
