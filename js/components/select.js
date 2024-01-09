@@ -356,6 +356,10 @@ class BzSelectElement extends HTMLElement {
           pointer-events: none;
         }
 
+        :host(.attention) [role="combobox"] {
+          border-color: var(--invalid-control-border-color);
+        }
+
         [role="combobox"] {
           display: flex;
           align-items: center;
