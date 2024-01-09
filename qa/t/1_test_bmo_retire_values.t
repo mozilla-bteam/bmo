@@ -124,7 +124,7 @@ $sel->selected_label_is("component", 'TempComponent');
 file_bug_in_product($sel, "TestProduct");
 ok(
   !$sel->is_element_present(
-    q#//select[@id='component']/option[@value='TempComponent']#),
+    q#//bz-select[@id='component']/bz-option[@value='TempComponent']#),
   'TempComponent is missing from create'
 );
 
@@ -133,7 +133,7 @@ ok(
 go_to_bug($sel, $clean_bug_id);
 ok(
   !$sel->is_element_present(
-    q#//select[@id='component']/option[@value='TempComponent']#),
+    q#//bz-select[@id='component']/bz-option[@value='TempComponent']#),
   'TempComponent is missing from update'
 );
 
@@ -255,7 +255,7 @@ $sel->is_text_present_ok("Changes submitted for bug $bug_id");
 file_bug_in_product($sel, "TestProduct");
 ok(
   !$sel->is_element_present(
-    q#//select[@id='version']/option[@value='TempVersion']#),
+    q#//bz-select[@id='version']/bz-option[@value='TempVersion']#),
   'TempVersion is missing from create'
 );
 
@@ -264,7 +264,7 @@ ok(
 go_to_bug($sel, $clean_bug_id);
 ok(
   !$sel->is_element_present(
-    q#//select[@id='version']/option[@value='TempVersion']#),
+    q#//bz-select[@id='version']/bz-option[@value='TempVersion']#),
   'TempVersion is missing from update'
 );
 
@@ -383,7 +383,7 @@ $sel->selected_label_is("target_milestone", 'TempMilestone');
 file_bug_in_product($sel, "TestProduct");
 ok(
   !$sel->is_element_present(
-    q#//select[@id='target_milestone']/option[@value='TempMilestone']#),
+    q#//bz-select[@id='target_milestone']/bz-option[@value='TempMilestone']#),
   'TempMilestone is missing from create'
 );
 
@@ -392,7 +392,7 @@ ok(
 go_to_bug($sel, $clean_bug_id);
 ok(
   !$sel->is_element_present(
-    q#//select[@id='target_milestone']/option[@value='TempMilestone']#),
+    q#//bz-select[@id='target_milestone']/bz-option[@value='TempMilestone']#),
   'TempMilestone is missing from update'
 );
 

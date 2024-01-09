@@ -3,14 +3,11 @@
 window.addEventListener('DOMContentLoaded', () => {
   const $form = document.querySelector('#create-form');
   const $toggleAdvanced = document.querySelector('#toggle-advanced');
-  const $componentDescription = document.querySelector('#component-description');
   const $defaultCcField = document.querySelector('#field-default-cc');
   const $defaultCcValue = document.querySelector('#field-value-default-cc');
   const $triageOwner = document.querySelector('#triage-owner');
   const $flagRows = document.querySelectorAll('#bug-flags tr, #attachment_flags .bz_flag_type');
 
-  /** @type {string[]} */
-  const componentDescriptions = JSON.parse($form.dataset.componentDescriptions);
   /** @type {string[]} */
   const descriptionTemplates = JSON.parse($form.dataset.descriptionTemplates);
   /** @type {string[]} */
@@ -204,15 +201,11 @@ window.addEventListener('DOMContentLoaded', () => {
     $defaultCcValue.innerHTML = defaultCcs[index] || '<em>None</em>';
     $triageOwner.innerHTML = triageOwners[index] || '<em>None</em>';
 
-    $componentDescription.innerHTML = componentDescriptions[index];
-    $form.component.querySelector('[aria-describedby]')?.removeAttribute('aria-describedby');
-    $form.component.options[index].setAttribute('aria-describedby', 'component-description');
-
     // We show or hide the available flags depending on the selected component.
     $flagRows.forEach(($row) => {
       // Each flag table row should have one flag form select element
       // We get the flag type id from the id attribute of the select.
-      const $select = $row.querySelector('select');
+      const $select = $row.querySelector('select, bz-select');
       const canShow = availableFlags.includes(Number($select.id.split('-')[1]));
       const canSet = $select.options.length > 1;
 
@@ -306,7 +299,7 @@ window.addEventListener('DOMContentLoaded', () => {
       $form.contenttypemethod.checked = true;
       $form.contenttypeselection.selectedIndex = 0;
       $form.contenttypeentry.value = '';
-      document.querySelectorAll('#attachment_flags select').forEach(($select) => {
+      document.querySelectorAll('#attachment_flags :is(select, bz-select)').forEach(($select) => {
         $select.selectedIndex = 0;
       });
       updatedRequiredFields(false);
