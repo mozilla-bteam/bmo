@@ -172,7 +172,7 @@ $sel->is_element_present_ok(
   qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="selenium"]}
 );
 my $flag1_id = $sel->get_attribute(
-  '//select[@title="Available in TestProduct and Another Product/c1"]@id');
+  '//bz-select[@title="Available in TestProduct and Another Product/c1"]@id');
 $flag1_id =~ s/flag-//;
 $sel->selected_label_is("flag-$flag1_id", "+");
 $sel->is_element_present_ok(
@@ -221,11 +221,11 @@ file_bug_in_product($sel, 'Another Product');
 $sel->select_ok("component", "label=c2");
 $sel->type_ok("assigned_to", $config->{unprivileged_user_login});
 $sel->is_element_present_ok(
-  qq{//select[\@id="flag_type-$flagtype1_id"][\@disabled]},
+  qq{//bz-select[\@id="flag_type-$flagtype1_id"][\@disabled]},
   "The selenium bug flag type is not editable");
 $sel->select_ok("component", "label=c1");
 $sel->is_element_present_ok(
-  qq{//select[\@id="flag_type-$flagtype1_id"][not(\@disabled)]},
+  qq{//bz-select[\@id="flag_type-$flagtype1_id"][not(\@disabled)]},
   "The selenium bug flag type is now editable");
 $sel->select_ok("flag_type-$flagtype1_id", "label=?");
 $sel->type_ok("requestee_type-$flagtype1_id", $config->{admin_user_login});
@@ -243,7 +243,7 @@ $sel->is_element_present_ok(
   qq{//div[\@id="bug-flags"]/table/tbody/tr/td[\@class="flag-setter"]/div/a[\@data-user-email="$config->{admin_user_login}"]/../../../td[\@class="flag-name"]/*[text()="selenium"]}
 );
 my $flag2_id = $sel->get_attribute(
-  '//select[@title="Available in TestProduct and Another Product/c1"]@id');
+  '//bz-select[@title="Available in TestProduct and Another Product/c1"]@id');
 $flag2_id =~ s/flag-//;
 $sel->selected_label_is("flag-$flag2_id", '?');
 
@@ -325,7 +325,7 @@ $sel->is_text_present_ok("Changes submitted for bug $bug2_id");
 go_to_bug($sel, $bug2_id);
 ok(!$sel->is_element_present("flag-$flag2_id"), "Flag $flag2_id deleted");
 $sel->is_element_present_ok(
-  qq{//select[\@id="flag_type-$flagtype1_id"][\@disabled]},
+  qq{//bz-select[\@id="flag_type-$flagtype1_id"][\@disabled]},
   "Flag type 'selenium' not editable by powerless users"
 );
 ok(!$sel->is_element_present("flag_type-$flagtype2_id"),

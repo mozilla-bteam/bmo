@@ -619,7 +619,7 @@ $(function() {
     //
 
     // dirty field tracking
-    $('#changeform select').each(function() {
+    $('#changeform bz-select').each(function() {
         var that = $(this);
         var dirty = $('#' + that.attr('id') + '-dirty');
         if (!dirty) return;
@@ -627,15 +627,15 @@ $(function() {
 
         // store the option that had the selected attribute when we
         // initially loaded
-        var value = that.find('option[selected]').map(function() { return this.value; }).toArray();
+        var value = that.find('bz-option[selected]').map(function() { return this.value; }).toArray();
         if (value.length === 0 && !that.attr('multiple'))
-            value = that.find('option:first').map(function() { return this.value; }).toArray();
+            value = that.find('bz-option:first').map(function() { return this.value; }).toArray();
         that.data('preselected', value);
 
         // if the user hasn't touched a field, override the browser's choice
         // with Bugzilla's
         if (!dirty.val())
-            that.val(value);
+            that.val(value[0]);
     });
 
     // edit/save mode button
@@ -702,7 +702,7 @@ $(function() {
                             `);
                         } else {
                             $select.insertAdjacentHTML('beforeend', `
-                              <option value="${name}" ${name === selected ? 'selected' : ''}>${name}</option>
+                              <bz-option value="${name}" ${name === selected ? 'selected' : ''}>${name}</bz-option>
                             `);
                         }
                     }
@@ -1002,7 +1002,7 @@ $(function() {
             other.val(that.val());
         });
 
-    // bug flag value <select>
+    // bug flag value <bz-select>
     $('.bug-flag')
         .change(function(event) {
             var target = $(event.target);
@@ -1018,7 +1018,7 @@ $(function() {
         });
 
     // tracking flags
-    $('.tracking-flags select')
+    $('.tracking-flags bz-select')
         .change(function(event) {
             tracking_flag_change(event.target);
         });
@@ -1133,7 +1133,7 @@ $(function() {
         });
 
     // show "save changes" button if there are any immediately editable elements
-    if ($('.module select:visible').length || $('.module input:visible').length) {
+    if ($('.module bz-select:visible').length || $('.module input:visible').length) {
         $('#top-save-btn').show();
     }
 
@@ -1400,7 +1400,7 @@ $(function() {
                     el.empty();
                     var selected = el.data('preselect');
                     $(value).each(function(i, v) {
-                        el.append($('<option>', { value: v.name, text: v.name }));
+                        el.append($('<bz-option>', { value: v.name, text: v.name }));
                         if (typeof selected === 'undefined' && v.selected)
                             selected = v.name;
                     });
