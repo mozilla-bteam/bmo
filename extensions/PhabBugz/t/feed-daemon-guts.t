@@ -57,8 +57,17 @@ my @bad_response = (
   ['HTTP error',   mock_useragent_tx("doesn't matter", sub { $_->code(500) })],
   ['invalid JSON', mock_useragent_tx('<xml>foo</xml>')],
   [
-    'JSON containing error code',
-    mock_useragent_tx(encode_json({error_code => 1234}))
+    'JSON containing error code (non-object error)',
+    mock_useragent_tx(
+      encode_json({error_code => 1234, error_info => 'Some random error'})
+    )
+  ],
+  [
+    'JSON containing error code (error)',
+    mock_useragent_tx(encode_json({
+      error_code => 1234,
+      error_info => 'does not identify a valid object in query'
+    }))
   ],
 );
 
