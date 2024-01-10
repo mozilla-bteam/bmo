@@ -712,7 +712,7 @@ class BzSelectElement extends HTMLElement {
 
   /**
    * Called whenever the mouse is moved over the {@link #listbox}. Update the active state if the
-   * the target is an option.
+   * target is an option.
    * @param {MouseEvent} event `mouseover` event.
    */
   #onListboxMouseOver(event) {
