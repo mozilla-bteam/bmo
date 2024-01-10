@@ -66,6 +66,12 @@ class BzSelectElement extends HTMLElement {
   #dialog;
 
   /**
+   * A function to remove scroll event listener when hiding drop down.
+   * @type {function}
+   */
+  #removeScrollEventListener;
+
+  /**
    * A reference to the `<input>` element that serves as a searchbar.
    * @type {HTMLInputElement}
    */
@@ -775,7 +781,8 @@ class BzSelectElement extends HTMLElement {
           }
         }
 
-        const top = showAtTop ? 'auto' : `${intersectionRect.bottom}px`;
+        const rectBottom = intersectionRect.bottom;
+        const top = showAtTop ? 'auto' : `${rectBottom}px`;
         const right = 'auto';
         const bottom = showAtTop ? `${rootBounds.height - intersectionRect.top}px` : 'auto';
         const left = `${intersectionRect.left}px`;
@@ -785,13 +792,28 @@ class BzSelectElement extends HTMLElement {
         this.#dialog.style.opacity = 1;
 
         observer.disconnect();
+
+        if (!showAtTop) {
+          // Let the dialog follow the scroll position.
+          const scrollTop = document.documentElement.scrollTop;
+
+          const listener = () => {
+            const offset = document.documentElement.scrollTop - scrollTop;
+            const top = `${rectBottom - offset}px`;
+            this.#dialog.style.inset = [top, right, bottom, left].join(' ');
+          };
+
+          this.#removeScrollEventListener = () => {
+            window.removeEventListener("scroll", listener);
+          };
+          window.addEventListener("scroll", listener);
+        }
       });
     });
 
     this.#dialog.style.opacity = 0;
     this.#dialog.showModal();
     this.#combobox.setAttribute('aria-expanded', 'true');
-    document.body.style.setProperty('overflow', 'hidden');
 
     window.requestAnimationFrame(() => {
       observer.observe(this);
@@ -813,7 +835,11 @@ class BzSelectElement extends HTMLElement {
       this.#dialog.close();
     }
 
-    document.body.style.removeProperty('overflow');
+    if (this.#removeScrollEventListener) {
+      this.#removeScrollEventListener();
+      this.#removeScrollEventListener = null
+    }
+
     this.#dialog.style = '';
     this.#searchBar.value = '';
     this.#combobox.setAttribute('aria-expanded', 'false');
