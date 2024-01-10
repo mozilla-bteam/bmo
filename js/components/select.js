@@ -609,7 +609,9 @@ class BzSelectElement extends HTMLElement {
   }
 
   /**
-   * Called whenever the {@link #dialog} is clicked. Hide the dropdown list.
+   * Called whenever the {@link #dialog} is clicked. Hide the dropdown list, and select a new option
+   * if possible. Usually {@link #onListboxMouseUp} handles selection, but the code is needed to
+   * pass the Selenium tests using `click` events.
    * @param {MouseEvent} event `click` event.
    */
   #onDialogClick(event) {
@@ -617,6 +619,11 @@ class BzSelectElement extends HTMLElement {
 
     if (target === this) {
       this.#hideDropdown();
+    } else if (target.matches('bz-option:not([disabled])')) {
+      this.#hideDropdown();
+      this.#canDispatchEvent = true;
+      this.value = target.value;
+      this.#canDispatchEvent = false;
     }
   }
 
