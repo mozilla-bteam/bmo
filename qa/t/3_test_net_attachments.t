@@ -22,11 +22,8 @@ set_parameters(
   $sel,
   {
     'Attachments'    => {
-      'allow_attachment_display-on'  => undef,
-      'allow_attachment_deletion-on' => undef,
       'attachment_storage' => {type => 'select', value => 's3'},
       'attachment_s3_minsize' => {type => 'text', value => '5'},
-      'attachment_google_minsize' => {type => 'text', value => '5'},
     }
   }
 );
@@ -102,6 +99,7 @@ set_parameters(
   {
     'Attachments'    => {
       'attachment_storage' => {type => 'select', value => 'google'},
+      'attachment_google_minsize' => {type => 'text', value => '5'},
     }
   }
 );
@@ -179,6 +177,5 @@ set_parameters(
     }
   }
 );
-
 
 logout($sel);
