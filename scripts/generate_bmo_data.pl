@@ -594,6 +594,7 @@ my %set_params = (
   allowbugdeletion          => 1,
   allowuserdeletion         => 0,
   allow_attachment_deletion => 1,
+  allow_attachment_display  => 1,
   bonsai_url                => 'http://bonsai.mozilla.org',
   collapsed_comment_tags =>
     'obsolete,spam,typo,me-too,advocacy,off-topic,offtopic,abuse,abusive',
