@@ -61,10 +61,12 @@
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
     <div class="mfa-buttons">
-      <div>
-        <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
-        [% INCLUDE "mfa/protected.html.tmpl" %]
-      </div>
+      [% IF user.mfa != 'Duo' || (user.mfa == 'Duo' && !user.in_duo_required_group) %]
+        <div>
+          <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
+          [% INCLUDE "mfa/protected.html.tmpl" %]
+        </div>
+      [% END %]
       <div>
         <button type="button" id="mfa-recovery">Generate Printable Recovery Codes</button>
         [% INCLUDE "mfa/protected.html.tmpl" %]
@@ -162,22 +164,27 @@
     <input type="hidden" name="mfa" id="mfa">
 
     <div id="mfa-select" class="mfa-buttons">
-      <p>
-        Select the two-factor system you want to use:
-      </p>
+      [% IF !user.in_duo_required_group %]
+        <p>
+          Select the two-factor system you want to use:
+        </p>
 
-      <button type="button" id="mfa-select-totp">Time-based One-Time Password (TOTP)</button><br>
-      <blockquote>
-        Requires a smartphone and a TOTP app (such as
-        <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a>
-        or <a href="https://freeotp.github.io/" target="_blank" rel="noopener noreferrer">Red Hat FreeOTP</a>),
-      </blockquote>
+        <button type="button" id="mfa-select-totp">Time-based One-Time Password (TOTP)</button><br>
+        <blockquote>
+          Requires a smartphone and a TOTP app (such as
+          <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a>
+          or <a href="https://freeotp.github.io/" target="_blank" rel="noopener noreferrer">Red Hat FreeOTP</a>),
+        </blockquote>
+      [% END %]
 
       [% IF Param("duo_host")  %]
         <button type="button" id="mfa-select-duo">Duo Security</button><br>
         <blockquote>
-          Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">Duo Security</a>
-          account (recommended for Mozilla employees).
+          <p>Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">Duo Security</a>
+          account (required for Mozilla employees).</p>
+          <p>If this account is for automation and Duo 2FA is not appropriate, Please
+          <a href="[% basepath FILTER none %]enter_bug.cgi?product=bugzilla.mozilla.org&component=Administration">
+            file a [% terms.bug %]</a> with details of your bot and requirements.</p>
         </blockquote>
       [% END %]
     </div>

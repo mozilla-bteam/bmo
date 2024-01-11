@@ -97,6 +97,20 @@ sub get_param_list {
     {name => 'duo_akey', type => 't', default => '',},
     {name => 'duo_ikey', type => 't', default => '',},
     {name => 'duo_skey', type => 't', default => '',},
+    {
+      name    => 'duo_required_group',
+      type    => 's',
+      default => '',
+      choices => \&get_all_group_names,
+      checker => \&check_group,
+    },
+    {
+      name    => 'duo_required_excluded_group',
+      type    => 's',
+      default => '',
+      choices => \&get_all_group_names,
+      checker => \&check_group,
+    },
 
     {
       name    => 'mfa_group',
