@@ -278,6 +278,23 @@ sub login {
       $cgi->base_redirect($redir_url->as_string);
     }
   }
+  # Require Duo Security as MFA provider if user is in the duo_required_group
+  elsif (
+       !i_am_webservice()
+    && Bugzilla->params->{duo_required_group}
+    && ($authenticated_user->in_duo_required_group
+      && !$authenticated_user->in_duo_excluded_group)
+    && $authenticated_user->mfa ne 'Duo'
+    )
+  {
+    my $on_mfa_page
+      = $script_name eq '/userprefs.cgi' && $cgi->param('tab') eq 'mfa';
+
+    if (!($on_mfa_page || $on_token_page || $do_logout)) {
+      $cgi->base_redirect('userprefs.cgi?tab=mfa');
+    }
+  }
+  # Next require MFA if grace period has expired
   elsif (!i_am_webservice()
     && $authenticated_user->in_mfa_group
     && !$authenticated_user->mfa)
@@ -306,23 +323,6 @@ sub login {
         = $dbh->selectrow_array("SELECT $sql_date", undef, $grace_period);
       $authenticated_user->set_mfa_required_date($mfa_required_date);
       $authenticated_user->update();
-    }
-  }
-
-  # Require Duo Security as MFA provider if user is in the duo_required_group
-  elsif (
-       !i_am_webservice()
-    && Bugzilla->params->{duo_required_group}
-    && ($authenticated_user->in_duo_required_group
-      && !$authenticated_user->in_duo_excluded_group)
-    && $authenticated_user->mfa ne 'Duo'
-    )
-  {
-    my $on_mfa_page
-      = $script_name eq '/userprefs.cgi' && $cgi->param('tab') eq 'mfa';
-
-    if (!($on_mfa_page || $on_token_page || $do_logout)) {
-      $cgi->base_redirect('userprefs.cgi?tab=mfa');
     }
   }
 
