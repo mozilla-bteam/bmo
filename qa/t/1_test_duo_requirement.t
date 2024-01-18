@@ -17,9 +17,9 @@ use Test::More 'no_plan';
 my ($sel, $config) = get_selenium();
 
 # Add new config variables for the duo user
-$config->{duo_user_login}  = 'duo@mozilla.test';
+$config->{duo_user_login}     = 'duo@mozilla.test';
 $config->{duo_bot_user_login} = 'duo-bot@mozilla.tld';
-$config->{duo_user_passwd} = 'uChoopoh1che';
+$config->{duo_user_passwd}    = 'uChoopoh1che';
 
 # Create duo required group and excluded group
 log_in($sel, $config, 'admin');
@@ -127,15 +127,23 @@ $sel->click_ok('log_in', undef, 'Submit credentials');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is('User Preferences', 'MFA user preferences is displayed');
 
-# Remove user from duo groups using REST API which should
-# trigger a logout of the user
+# Next, lets's remove user from duo groups using REST API
+# which should trigger several changes to the user.
+# 1. Log out the users current session
+# 2. Clear the users password (set to '*')
+# 3. Require the user set up new MFA (redirect to user preferences)
+
 my $t = Test::Mojo->new;
 
-my $user_update = {
-  groups => {
-    remove => ['duo_required_group']
-  }
-};
+# Set the user mfa to Duo
+my $user_update = {mfa => 'Duo'};
+$t->put_ok(Bugzilla->localconfig->urlbase
+    . "rest/user/$config->{duo_user_login}"                 =>
+    {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}} => json =>
+    $user_update)->status_is(200)->json_has('/users');
+
+# Remove user from Duo requirement group
+$user_update = {groups => {remove => ['duo_required_group']}};
 $t->put_ok(Bugzilla->localconfig->urlbase
     . "rest/user/$config->{duo_user_login}"                 =>
     {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}} => json =>
@@ -143,6 +151,46 @@ $t->put_ok(Bugzilla->localconfig->urlbase
 
 $sel->open_ok('/enter_bug.cgi', undef, 'Try to enter a new bug');
 $sel->title_is('Log in to Bugzilla', 'User should be logged out');
+
+# Using old password should not work as it should have been cleared
+$sel->type_ok(
+  'Bugzilla_login',
+  $config->{duo_user_login},
+  "Enter $config->{duo_user_login} login name"
+);
+$sel->type_ok(
+  'Bugzilla_password',
+  $config->{duo_user_passwd},
+  "Enter $config->{duo_user_login} password"
+);
+$sel->click_ok('log_in', undef, 'Submit credentials');
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is('Invalid Username Or Password',
+  'Previous password should no longer work');
+
+# Reset password using API
+$user_update = {password => $config->{duo_user_passwd}};
+$t->put_ok(Bugzilla->localconfig->urlbase
+    . "rest/user/$config->{duo_user_login}"                 =>
+    {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}} => json =>
+    $user_update)->status_is(200)->json_has('/users');
+
+# User just removed from duo required must add MFA to theimyr
+# account once they have logged in
+$sel->type_ok(
+  'Bugzilla_login',
+  $config->{duo_user_login},
+  "Enter $config->{duo_user_login} login name"
+);
+$sel->type_ok(
+  'Bugzilla_password',
+  $config->{duo_user_passwd},
+  "Enter $config->{duo_user_login} password"
+);
+$sel->click_ok('log_in', undef, 'Submit credentials');
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is('User Preferences', 'MFA user preferences is displayed');
+logout($sel);
 
 # Login as bot user and observe that user does not need to enable duo mfa
 $sel->open_ok('/login', undef, 'Go to the home page');

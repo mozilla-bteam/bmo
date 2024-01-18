@@ -320,7 +320,9 @@ sub update {
     if ($self->mfa eq 'Duo') {
       $self->set_mfa('');
       $self->set_password('*');
-      my ($mfa_required_date) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
+      my ($mfa_required_date)
+        = $dbh->selectrow_array(
+        "SELECT " . $dbh->sql_date_math('NOW()', '-', '1', 'DAY'));
       $self->set_mfa_required_date($mfa_required_date);
       $self->SUPER::update();
     }
