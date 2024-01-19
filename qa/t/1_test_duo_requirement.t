@@ -175,8 +175,9 @@ $t->put_ok(Bugzilla->localconfig->urlbase
     {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}} => json =>
     $user_update)->status_is(200)->json_has('/users');
 
-# User just removed from duo required must add MFA to theimyr
-# account once they have logged in
+# User just removed from duo required must add MFA
+# to their account once they have logged in
+$sel->open_ok('/enter_bug.cgi', undef, 'Try to enter a new bug');
 $sel->type_ok(
   'Bugzilla_login',
   $config->{duo_user_login},
