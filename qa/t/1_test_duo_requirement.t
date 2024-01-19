@@ -234,8 +234,10 @@ log_in($sel, $config, 'admin');
 set_parameters(
   $sel,
   {
-    'User Authentication' =>
-      {'duo_required_group' => undef, 'duo_required_excluded_group' => undef,}
+    'User Authentication' => {
+      'duo_required_group'          => {type => 'select', value => ''},
+      'duo_required_excluded_group' => {type => 'select', value => ''},
+    }
   }
 );
 logout($sel);
