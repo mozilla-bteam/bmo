@@ -175,6 +175,8 @@
           <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a>
           or <a href="https://freeotp.github.io/" target="_blank" rel="noopener noreferrer">Red Hat FreeOTP</a>),
         </blockquote>
+      [% ELSE %]
+        <p>You are a member of a group that requires Duo Security to be used for your MFA</p>
       [% END %]
 
       [% IF Param("duo_host")  %]
