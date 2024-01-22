@@ -278,6 +278,7 @@ sub login {
       $cgi->base_redirect($redir_url->as_string);
     }
   }
+
   # Require Duo Security as MFA provider if user is in the duo_required_group
   elsif (
        !i_am_webservice()
@@ -294,10 +295,13 @@ sub login {
       $cgi->base_redirect('userprefs.cgi?tab=mfa');
     }
   }
+
   # Next require MFA if grace period has expired
-  elsif (!i_am_webservice()
-    && $authenticated_user->in_mfa_group
-    && !$authenticated_user->mfa)
+  elsif (
+       !i_am_webservice()
+    && ($authenticated_user->in_mfa_group || $authenticated_user->mfa_required_date('UTC'))
+    && !$authenticated_user->mfa
+    )
   {
 
     # decide if the user needs a warning or to be blocked.
