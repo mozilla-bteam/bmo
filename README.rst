@@ -9,7 +9,11 @@ BMO is Mozilla's highly customized version of Bugzilla.
 .. image:: https://circleci.com/gh/mozilla-bteam/bmo/tree/master.svg?style=svg
     :target: https://circleci.com/gh/mozilla-bteam/bmo/tree/master
 
-.. image:: https://github.com/mozilla-bteam/bmo/actions/workflows/main.yml/badge.svg
+.. image:: https://readthedocs.org/projects/bmo/badge/?version=latest
+    :target: https://bmo.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+.. image:: https://github.com/mozilla-bteam/bmo/actions/workflows/deploy.yml/badge.svg
     :target: https://github.com/mozilla-bteam/bmo/actions
 
 .. contents::

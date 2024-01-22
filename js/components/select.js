@@ -318,6 +318,15 @@ class BzSelectElement extends HTMLElement {
   }
 
   /**
+   * Whether to hide the {@link #searchbar}. We only show the searchbar when there are 10 or more
+   * options to choose from.
+   * @type {boolean}
+   */
+  get #searchBarHidden() {
+    return this.options.length < 10;
+  }
+
+  /**
    * Initialize a new `BzSelectElement` instance.
    */
   constructor() {
@@ -513,7 +522,7 @@ class BzSelectElement extends HTMLElement {
     this.#slot = this.shadowRoot.querySelector('slot');
     this.#noMatchMessage = this.shadowRoot.querySelector('.no-match');
 
-    this.#combobox.addEventListener('click', (event) => this.#onComboboxClick(event));
+    this.#combobox.addEventListener('mousedown', (event) => this.#onComboboxMouseDown(event));
     this.#combobox.addEventListener('keydown', (event) => this.#onComboboxKeyDown(event));
     this.#dialog.addEventListener('click', (event) => this.#onDialogClick(event));
     this.#dialog.addEventListener('keydown', (event) => this.#onDialogKeyDown(event));
@@ -521,6 +530,7 @@ class BzSelectElement extends HTMLElement {
     this.#searchBar.addEventListener('input', () => this.#onSearchbarInput(event));
     this.#clearButton.addEventListener('click', (event) => this.#onClearButtonClick(event));
     this.#listbox.addEventListener('mouseover', (event) => this.#onListboxMouseOver(event));
+    this.#listbox.addEventListener('mouseup', (event) => this.#onListboxMouseUp(event));
     this.#slot.addEventListener('slotchange', () => this.#onSlotChange());
 
     this.#setProps();
@@ -538,9 +548,12 @@ class BzSelectElement extends HTMLElement {
   }
 
   /**
-   * Called whenever the {@link #combobox} is clicked. Show the dropdown list.
+   * Called whenever a mouse button is pressed on the {@link #combobox}. Show the dropdown list.
+   * @param {MouseEvent} event `mousedown` event.
    */
-  #onComboboxClick() {
+  #onComboboxMouseDown(event) {
+    event.preventDefault();
+    this.#combobox.focus();
     this.#showDropdown();
   }
 
@@ -577,25 +590,7 @@ class BzSelectElement extends HTMLElement {
       }
     } else if (key.length === 1) {
       event.stopPropagation();
-
-      if (this.#typeAheadFindChars !== key) {
-        this.#typeAheadFindChars += key;
-      }
-
-      clearTimeout(this.#typeAheadFindTimer);
-
-      this.#typeAheadFindTimer = window.setTimeout(() => {
-        this.#typeAheadFindChars = '';
-      }, 1000);
-
-      const regex = new RegExp(`^${this.#typeAheadFindChars}`, 'i');
-      const startIndex = this.#selectedOption?.label.match(regex)
-        ? this.#enabledOptions.findIndex((option) => option === this.#selectedOption) + 1
-        : 0;
-
-      newOption = this.#enabledOptions.find(
-        (option, index) => index >= startIndex && option.label.match(regex),
-      );
+      newOption = this.#findOptionByKey(key);
     }
 
     if (newOption) {
@@ -607,7 +602,8 @@ class BzSelectElement extends HTMLElement {
 
   /**
    * Called whenever the {@link #dialog} is clicked. Hide the dropdown list, and select a new option
-   * if possible.
+   * if possible. Usually {@link #onListboxMouseUp} handles selection, but the code is needed to
+   * pass the Selenium tests using `click` events.
    * @param {MouseEvent} event `click` event.
    */
   #onDialogClick(event) {
@@ -656,6 +652,11 @@ class BzSelectElement extends HTMLElement {
         this.value = currentOption.value;
         this.#canDispatchEvent = false;
       }
+    }
+
+    if (key.length === 1 && this.#searchBarHidden) {
+      event.stopPropagation();
+      newActiveOption = this.#findOptionByKey(key);
     }
 
     this.#activeOption = newActiveOption;
@@ -707,12 +708,32 @@ class BzSelectElement extends HTMLElement {
   }
 
   /**
-   * Called whenever the mouse is moved over the {@link #listbox}. the active state if possible.
+   * Called whenever the mouse is moved over the {@link #listbox}. Update the active state if the
+   * target is an option.
    * @param {MouseEvent} event `mouseover` event.
    */
   #onListboxMouseOver(event) {
-    if (event.target.matches('bz-option:not([disabled])')) {
-      this.#activeOption = event.target;
+    const { target } = event;
+
+    if (target.matches('bz-option:not([disabled])')) {
+      this.#activeOption = target;
+    }
+  }
+
+  /**
+   * Called whenever a mouse button is released on the {@link #listbox}. Select a new option if the
+   * target is an option.
+   * @param {MouseEvent} event `mouseup` event.
+   */
+  #onListboxMouseUp(event) {
+    const { target } = event;
+
+    if (target.matches('bz-option:not([disabled])')) {
+      event.preventDefault();
+      this.#hideDropdown();
+      this.#canDispatchEvent = true;
+      this.value = target.value;
+      this.#canDispatchEvent = false;
     }
   }
 
@@ -721,7 +742,7 @@ class BzSelectElement extends HTMLElement {
    * the number of options.
    */
   #onSlotChange() {
-    this.#searchBar.setAttribute('aria-hidden', this.options.length < 10);
+    this.#searchBar.setAttribute('aria-hidden', this.#searchBarHidden);
   }
 
   /**
@@ -827,6 +848,38 @@ class BzSelectElement extends HTMLElement {
         option.removeAttribute('id');
       }
     });
+  }
+
+  /**
+   * Find an option with the specified key that matches the first letter of the label. If there are
+   * multiple matching options, return the next option after the currently selected/active one, or
+   * the first one. This mimics the keyboard support of the native `<select>` element.
+   * @param {string} key Typed keyboard key, like `a`.
+   * @returns {BzOptionElement | undefined} Found option.
+   */
+  #findOptionByKey(key) {
+    if (this.#typeAheadFindChars !== key) {
+      this.#typeAheadFindChars += key;
+    }
+
+    clearTimeout(this.#typeAheadFindTimer);
+
+    this.#typeAheadFindTimer = window.setTimeout(() => {
+      this.#typeAheadFindChars = '';
+    }, 1000);
+
+    const regex = new RegExp(`^${this.#typeAheadFindChars}`, 'i');
+    const matchingOptions = this.#enabledOptions.filter((option) => option.label.match(regex));
+
+    if (!matchingOptions.length) {
+      return undefined;
+    }
+
+    const currentIndex = matchingOptions.findIndex(
+      (option) => option.matches('.active') || option.selected,
+    );
+
+    return matchingOptions[currentIndex + 1] ?? matchingOptions[0];
   }
 }
 
