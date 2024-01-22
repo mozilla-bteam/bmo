@@ -32,7 +32,7 @@ use constant CLASSIFICATIONS => (
 );
 
 use constant SELECT =>
-  'SELECT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.bug_severity, bugs.short_desc, bugs.delta_ts';
+  'SELECT DISTINCT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.bug_severity, bugs.short_desc, bugs.delta_ts';
 
 # Wrap the sql execution in a try block so we can see any SQL errors in debug output
 sub get_bug_list {
