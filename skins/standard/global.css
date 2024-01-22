@@ -337,10 +337,6 @@
  * Global
  */
 
-html {
-  scrollbar-gutter: stable both-edges;
-}
-
 body {
   font-size: var(--font-size-medium);
   line-height: var(--line-height-default);
@@ -1218,8 +1214,8 @@ input[type="radio"]:checked {
   content: '\E871';
 }
 
-#header .link-whats-next .icon::before {
-  content: '\E85D';
+#header .link-attention .icon::before {
+  content: '\EA3D';
 }
 
 #header .dropdown {

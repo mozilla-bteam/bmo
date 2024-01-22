@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::BMO::Reports::WhatsNext;
+package Bugzilla::Extension::BMO::Reports::Attention;
 
 use 5.10.1;
 use strict;
@@ -153,7 +153,7 @@ sub s1_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{attention};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
 
@@ -179,7 +179,7 @@ sub sec_crit_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{whats_next};
+  my $cache      = Bugzilla->process_cache->{attention};
   my $keyword_id = $cache->{sec_critical_id};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -201,7 +201,7 @@ sub sec_crit_bugs {
 }
 
 # Bugs that are needinfo? you and are marked as being tracked against or blocking the current nightly/beta/release
-sub important_needinfo_bugs {
+sub critical_needinfo_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
 
@@ -209,7 +209,7 @@ sub important_needinfo_bugs {
   return [] if !exists $flags->{tracking};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{attention};
   my $needinfo_id     = $cache->{needinfo_flag_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -217,7 +217,7 @@ sub important_needinfo_bugs {
   my $beta_flag_id    = $flags->{tracking}->{beta}->flag_id;
   my $release_flag_id = $flags->{tracking}->{release}->flag_id;
 
-  my $query = SELECT . "
+  my $query1 = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
               LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_1
                 ON bugs.bug_id = tracking_flags_bugs_1.bug_id
@@ -236,11 +236,25 @@ sub important_needinfo_bugs {
                     OR COALESCE(tracking_flags_bugs_2.value, '---') IN ('+', 'blocking')
                     OR COALESCE(tracking_flags_bugs_3.value, '---') IN ('+', 'blocking'))
               AND (requestees_login_name.bug_id IS NOT NULL
-                    AND requestees_login_name.type_id = $needinfo_id)
-            ORDER BY bugs.delta_ts, bugs.bug_id";
+                    AND requestees_login_name.type_id = $needinfo_id)";
 
-  my $bugs           = get_bug_list($query, $user->id);
-  my $formatted_bugs = format_bug_list($bugs, $user);
+  my $query2 = SELECT . "
+         FROM bugs JOIN products ON bugs.product_id = products.id
+              LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
+              LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id AND COALESCE(requestees_login_name.requestee_id, 0) = ?
+              LEFT JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
+        WHERE products.classification_id IN ($class_ids)
+              AND keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%')
+              AND bugs.bug_status IN ($bug_states)
+              AND (requestees_login_name.bug_id IS NOT NULL AND requestees_login_name.type_id = $needinfo_id)
+              AND bug_group_map.group_id IN (" . (join ',', @{$cache->{sec_group_ids}}) . ')';
+
+  my $bugs1          = get_bug_list($query1, $user->id);
+  my $bugs2          = get_bug_list($query2, $user->id);
+
+  my %bugs_all = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2};
+
+  my $formatted_bugs = format_bug_list([values %bugs_all], $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
   return $filtered_bugs;
@@ -255,7 +269,7 @@ sub s2_bugs {
   return [] if !exists $flags->{status};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{attention};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
   my $nightly_flag_id = $flags->{status}->{nightly}->flag_id;
@@ -298,7 +312,7 @@ sub sec_high_bugs {
   return [] if !exists $flags->{status};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{whats_next};
+  my $cache           = Bugzilla->process_cache->{attention};
   my $keyword_id      = $cache->{sec_high_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -334,40 +348,13 @@ sub sec_high_bugs {
   return $filtered_bugs;
 }
 
-# Regressions
-sub regression_bugs {
-  my $user = shift;
-  my $dbh  = Bugzilla->dbh;
-
-  # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{whats_next};
-  my $keyword_id = $cache->{regression_id};
-  my $class_ids  = join ',', @{$cache->{classification_ids}};
-  my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
-
-  my $query = SELECT . "
-         FROM bugs JOIN products ON bugs.product_id = products.id
-              JOIN keywords ON bugs.bug_id = keywords.bug_id
-        WHERE products.classification_id IN ($class_ids)
-              AND keywords.keywordid = $keyword_id
-              AND bugs.bug_status IN ($bug_states)
-              AND bugs.assigned_to = ?
-     ORDER BY bugs.delta_ts, bugs.bug_id";
-
-  my $bugs           = get_bug_list($query, $user->id);
-  my $formatted_bugs = format_bug_list($bugs, $user);
-  my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
-
-  return $filtered_bugs;
-}
-
-# Other needinfos (needinfos for me but not set by me)
-sub other_needinfo_bugs {
+# Important needinfos (needinfos for me but not set by me)
+sub important_needinfo_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
 
   # Cached values for inserting into SQL
-  my $cache       = Bugzilla->process_cache->{whats_next};
+  my $cache       = Bugzilla->process_cache->{attention};
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
   my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -390,6 +377,47 @@ sub other_needinfo_bugs {
   return $filtered_bugs;
 }
 
+# Other needinfos
+# The requestee is the current user
+# The requester is not the current user
+# The bug's severity is not S1 or S2
+# The bug does not have a sec-critical or sec-high keyword
+# The bug is not in a group ending with -security
+sub other_needinfo_bugs {
+  my $user = shift;
+  my $dbh  = Bugzilla->dbh;
+
+  # Cached values for inserting into SQL
+  my $cache       = Bugzilla->process_cache->{attention};
+  my $needinfo_id = $cache->{needinfo_flag_id};
+  my $class_ids   = join ',', @{$cache->{classification_ids}};
+  my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
+
+  my $query = SELECT . "
+         FROM bugs JOIN products ON bugs.product_id = products.id
+              LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
+              LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id
+                AND COALESCE(requestees_login_name.requestee_id, 0) = ?
+                AND COALESCE(requestees_login_name.setter_id, 0) != ?
+              LEFT JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
+        WHERE products.classification_id IN ($class_ids)
+              AND bugs.bug_status IN ($bug_states)
+              AND (requestees_login_name.bug_id IS NOT NULL
+                    AND requestees_login_name.type_id = $needinfo_id)
+              AND bugs.bug_severity NOT IN ('S1','S2')
+              AND keywords.keywordid NOT IN (?, ?)
+              AND (bug_group_map.group_id IS NULL OR bug_group_map.group_id NOT IN (" . join ',',
+    @{$cache->{sec_group_ids}} . '))
+        ORDER BY bugs.delta_ts, bugs.bug_id';
+
+  my $bugs = get_bug_list($query, $user->id, $user->id, $cache->{sec_high_id},
+    $cache->{sec_critical_id});
+  my $formatted_bugs = format_bug_list($bugs, $user);
+  my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
+
+  return $filtered_bugs;
+}
+
 sub report {
   my $vars  = shift;
   my $user  = Bugzilla->user;
@@ -403,7 +431,7 @@ sub report {
 
   # Here we load some values into cache that will be used later
   # by the various queries.
-  my $cache = Bugzilla->process_cache->{whats_next} = {};
+  my $cache = Bugzilla->process_cache->{attention} = {};
   my $dbh   = Bugzilla->dbh;
 
   # classifications
@@ -424,20 +452,26 @@ sub report {
   $cache->{regression_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'regression'");
 
+  # Get a list of group ids that end in -security
+  $cache->{sec_group_ids}
+    ||= $dbh->selectcol_arrayref('SELECT id FROM '
+      . $dbh->quote_identifier('groups')
+      . ' WHERE name LIKE \'%-security\'');
+
   # build bug lists
   $vars->{s1_bugs}                 = s1_bugs($who);
   $vars->{sec_crit_bugs}           = sec_crit_bugs($who);
-  $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);
+  $vars->{critical_needinfo_bugs}  = critical_needinfo_bugs($who);
   $vars->{s2_bugs}                 = s2_bugs($who);
   $vars->{sec_high_bugs}           = sec_high_bugs($who);
-  $vars->{regression_bugs}         = regression_bugs($who);
+  $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);
   $vars->{other_needinfo_bugs}     = other_needinfo_bugs($who);
 
   # count number of unique bugs
   my %bug_ids;
   foreach my $name (qw(
-    s1_bugs sec_crit_bugs important_needinfo_bugs s2_bugs sec_high_bugs
-    regression_bugs other_needinfo_bugs
+    s1_bugs sec_crit_bugs critical_needinfo_bugs s2_bugs
+    sec_high_bugs important_needinfo_bugs other_needinfo_bugs
   )) {
     foreach my $bug (@{$vars->{$name}}) {
       $bug_ids{$bug->{id}} = 1;
