@@ -1215,7 +1215,7 @@ input[type="radio"]:checked {
 }
 
 #header .link-attention .icon::before {
-  content: '\E004';
+  content: '\EA3D';
 }
 
 #header .dropdown {
