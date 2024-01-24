@@ -181,7 +181,13 @@ sub _send_request {
 
   if ($response->code =~ /^2\d\d$/) {
     if ($method eq 'GET') {
-      return $response->decoded_content;
+      my $data = $response->decoded_content();
+
+      if (utf8::is_utf8($data)) {
+        utf8::encode($data);
+      }
+
+      return $data;
     }
     else {
       return 1;
