@@ -32,7 +32,7 @@ use constant CLASSIFICATIONS => (
 );
 
 use constant SELECT =>
-  'SELECT DISTINCT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.bug_severity, bugs.short_desc, bugs.delta_ts';
+  'SELECT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.bug_severity, bugs.short_desc, bugs.delta_ts';
 
 # Wrap the sql execution in a try block so we can see any SQL errors in debug output
 sub get_bug_list {
@@ -244,7 +244,7 @@ sub critical_needinfo_bugs {
               LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id AND COALESCE(requestees_login_name.requestee_id, 0) = ?
               LEFT JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
         WHERE products.classification_id IN ($class_ids)
-              AND keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%')
+              AND (keywords.keywordid IS NULL || keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%'))
               AND bugs.bug_status IN ($bug_states)
               AND (requestees_login_name.bug_id IS NOT NULL AND requestees_login_name.type_id = $needinfo_id)
               AND bug_group_map.group_id IN (" . (join ',', @{$cache->{sec_group_ids}}) . ')';
@@ -408,7 +408,7 @@ sub other_needinfo_bugs {
               AND (requestees_login_name.bug_id IS NOT NULL
                     AND requestees_login_name.type_id = $needinfo_id)
               AND bugs.bug_severity NOT IN ('S1','S2')
-              AND keywords.keywordid NOT IN (?, ?)
+              AND (keywords.keywordid IS NULL || keywords.keywordid NOT IN (?, ?))
               AND (bug_group_map.group_id IS NULL OR bug_group_map.group_id NOT IN (" . join ',',
     @{$cache->{sec_group_ids}} . '))
         ORDER BY bugs.delta_ts, bugs.bug_id';
