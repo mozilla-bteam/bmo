@@ -244,13 +244,13 @@ sub critical_needinfo_bugs {
               LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id AND COALESCE(requestees_login_name.requestee_id, 0) = ?
               LEFT JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
         WHERE products.classification_id IN ($class_ids)
-              AND keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%')
+              AND (keywords.keywordid IS NULL || keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%'))
               AND bugs.bug_status IN ($bug_states)
               AND (requestees_login_name.bug_id IS NOT NULL AND requestees_login_name.type_id = $needinfo_id)
               AND bug_group_map.group_id IN (" . (join ',', @{$cache->{sec_group_ids}}) . ')';
 
-  my $bugs1          = get_bug_list($query1, $user->id);
-  my $bugs2          = get_bug_list($query2, $user->id);
+  my $bugs1 = get_bug_list($query1, $user->id);
+  my $bugs2 = get_bug_list($query2, $user->id);
 
   my %bugs_all = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2};
 
@@ -358,13 +358,16 @@ sub important_needinfo_bugs {
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
   my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
+  my $keyword_id  = $cache->{sec_high_id};
 
   my $query = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
+              LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
               LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id
                 AND COALESCE(requestees_login_name.requestee_id, 0) = ?
                 AND COALESCE(requestees_login_name.setter_id, 0) != ?
         WHERE products.classification_id IN ($class_ids)
+              AND (bugs.bug_severity = 'S2' OR keywords.keywordid = $keyword_id)
               AND bugs.bug_status IN ($bug_states)
               AND (requestees_login_name.bug_id IS NOT NULL
                     AND requestees_login_name.type_id = $needinfo_id)
@@ -405,7 +408,7 @@ sub other_needinfo_bugs {
               AND (requestees_login_name.bug_id IS NOT NULL
                     AND requestees_login_name.type_id = $needinfo_id)
               AND bugs.bug_severity NOT IN ('S1','S2')
-              AND keywords.keywordid NOT IN (?, ?)
+              AND (keywords.keywordid IS NULL || keywords.keywordid NOT IN (?, ?))
               AND (bug_group_map.group_id IS NULL OR bug_group_map.group_id NOT IN (" . join ',',
     @{$cache->{sec_group_ids}} . '))
         ORDER BY bugs.delta_ts, bugs.bug_id';

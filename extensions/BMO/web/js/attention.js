@@ -33,7 +33,7 @@ function getCookie(name) {
 }
 
 function updateFavIcon() {
-  const count = Number(document.querySelector("#total-bug-count").textContent);
+  let count = Number(document.querySelector("#total-bug-count").textContent);
   if (count == 0) return;
 
   const linkEl = document.querySelector("link[rel*=icon]");

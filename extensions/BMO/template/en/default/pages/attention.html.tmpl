@@ -65,7 +65,7 @@
     you block others should be addressed as higher priority than non-blocking work.
   </div>
 
-  [% INCLUDE bug_table title="Critical NEEDINFOs" bugs=critical_needinfo_bugs %]
+  [% INCLUDE bug_table title="Critical NEEDINFOs" bugs=critical_needinfo_bugs is_requests=1 %]
   [% INCLUDE bug_table title="S1 bugs" bugs=s1_bugs %]
   [% INCLUDE bug_table title="Security-Critical bugs" bugs=sec_crit_bugs %]
  
@@ -77,10 +77,10 @@
     than non-blocking work.
   </div>
 
-  [% INCLUDE bug_table title="Important NEEDINFOs" bugs=important_needinfo_bugs %]
+  [% INCLUDE bug_table title="Important NEEDINFOs" bugs=important_needinfo_bugs is_requests=1 %]
   [% INCLUDE bug_table title="S2 bugs" bugs=s2_bugs %]
   [% INCLUDE bug_table title="Security-High bugs" bugs=sec_high_bugs %]
-  [% INCLUDE bug_table title="Other NEEDINFOs" bugs=other_needinfo_bugs %]
+  [% INCLUDE bug_table title="Other NEEDINFOs" bugs=other_needinfo_bugs is_requests=1 %]
 </div>
 
 [% INCLUDE global/footer.html.tmpl %]
@@ -90,7 +90,11 @@
     <div class="bug-list-title">[% title FILTER html %]</div>
     <div class="bug-list-count">
       [% bugs.size %]&nbsp;
-      [% bugs.size == 1 ? terms.bug : terms.bugs %]
+      [% IF bugs.size == 1 %]
+        [% is_requests ? "request" : terms.bug %]
+      [% ELSIF bugs.size == 0 || bugs.size > 1 %]
+        [% is_requests ? "requests" : terms.bugs %]
+      [% END %]
     </div>
     [% IF bugs.size > 0 %]
       [%

@@ -38,14 +38,24 @@ $sel->check_ok('//input[@name="groups" and @value="Master"]');
 $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
-# Bugs that are needinfo? you and are marked as being tracked against
-# or blocking the current nightly, beta, or release versions.
+# Critical needinfo bugs: Bugs that are needinfo? you and are marked as being 
+# tracked against or blocking the current nightly, beta, or release versions.
+# Also bugs in a group ending with -security but do not have a keyword starting with sec-
 file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc',
   'test bug for needinfo you tracked against nightly beta release');
 $sel->select_ok('component', 'General');
 $sel->select_ok('cf_tracking_firefox111', 'blocking');
 $sel->type_ok('needinfo_from', $config->{admin_user_login});
+$sel->click_ok('commit');
+$sel->is_text_present_ok('has been added to the database', 'Bug created');
+
+file_bug_in_product($sel, 'Firefox');
+$sel->type_ok('short_desc',
+  'test bug for needinfo in security group but does not have security keyword');
+$sel->select_ok('component', 'General');
+$sel->type_ok('needinfo_from', $config->{admin_user_login});
+$sel->check_ok('//input[@name="groups" and @value="core-security"]');
 $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
@@ -71,10 +81,27 @@ $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
 logout($sel);
 
-# Other needinfos (needinfos for me but not set by me)
-log_in($sel, $config, 'QA_Selenium_TEST');
+# Important needinfos (needinfos for me but not set by me)
+# bugs that are needinfo? you and are marked as Severity = S2 defects or 
+# with the “sec-high” keyword
+log_in($sel, $config, 'editbugs');
 file_bug_in_product($sel, 'Firefox');
-$sel->type_ok('short_desc', 'test bug for other needinfos not set by you');
+$sel->type_ok('short_desc', 'test bug for important needinfos with S2 or sec-high');
+$sel->select_ok('component', 'General');
+$sel->select_ok('bug_severity', 'S2');
+$sel->type_ok('keywords', 'sec-high');
+$sel->type_ok('needinfo_from', $config->{admin_user_login});
+$sel->click_ok('commit');
+$sel->is_text_present_ok('has been added to the database', 'Bug created');
+
+# Other needinfos (needinfos for me but not set by me)
+# The requestee is the current user
+# The requester is not the current user
+# The bug's severity is not S1 or S2
+# The bug does not have a sec-critical or sec-high keyword
+# The bug is not in a group ending with -security
+file_bug_in_product($sel, 'Firefox');
+$sel->type_ok('short_desc', 'test bug for other needinfos not set by you without S2');
 $sel->select_ok('component', 'General');
 $sel->type_ok('needinfo_from', $config->{admin_user_login});
 $sel->click_ok('commit');
@@ -100,6 +127,10 @@ $sel->is_text_present_ok(
   'test bug for needinfo you tracked against nightly beta release'
 );
 $sel->is_text_present_ok(
+  'test bug for needinfo in security group but does not have security keyword',
+  'test bug for needinfo in security group but does not have security keyword'
+);
+$sel->is_text_present_ok(
   'test bug for s2 bugs assigned to you',
   'test bug for s2 bugs assigned to you'
 );
@@ -108,8 +139,12 @@ $sel->is_text_present_ok(
   'test bug for sec-high bugs assigned to you'
 );
 $sel->is_text_present_ok(
-  'test bug for other needinfos not set by you',
-  'test bug for other needinfos not set by you'
+  'test bug for important needinfos with S2 or sec-high',
+  'test bug for important needinfos with S2 or sec-high'
+);
+$sel->is_text_present_ok(
+  'test bug for other needinfos not set by you without S2',
+  'test bug for other needinfos not set by you without S2'
 );
 
 logout($sel);
