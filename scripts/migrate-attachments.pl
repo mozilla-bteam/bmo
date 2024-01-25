@@ -91,38 +91,33 @@ if ($options{migrate}) {
   }
   my ($source, $dest) = @{$options{migrate}};
 
+  my $query = '
+    FROM  attachments 
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
+
   # Do not migrate from database to net storage if data is less than minsize
-  my $where = '';
   if ( $source eq 'database'
     && $dest eq 's3'
     && Bugzilla->params->{attachment_s3_minsize})
   {
-    $where .= ' AND attachments.attach_size > '
+    $query .= ' AND attachments.attach_size > '
       . int Bugzilla->params->{attachment_s3_minsize};
   }
   elsif ($source eq 'database'
     && $dest eq 'google'
     && Bugzilla->params->{attachment_google_minsize})
   {
-    $where .= ' AND attachments.attach_size > '
+    $query .= ' AND attachments.attach_size > '
       . int Bugzilla->params->{attachment_google_minsize};
   }
 
-  my ($total) = $dbh->selectrow_array('
-    SELECT COUNT(*) 
-      FROM attachments 
-           JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-     WHERE attachment_storage_class.storage_class = ? ' . $where, undef, $source);
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
 
   confirm(sprintf 'Migrate %s attachments from %s to %s?',
     $total, @{$options{migrate}});
 
-  my $sth = $dbh->prepare('
-      SELECT attach_id 
-        FROM attachments 
-             JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-       WHERE attachment_storage_class.storage_class = ? ' . $where
-      . ' ORDER BY attach_id DESC');
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
   $sth->execute($source);
   my ($count, $migrated) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
@@ -150,20 +145,17 @@ if ($options{class}) {
   }
   my ($source, $dest) = @{$options{class}};
 
-  my ($total) = $dbh->selectrow_array('
-    SELECT COUNT(*) 
-      FROM attachments 
-           JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-     WHERE attachment_storage_class.storage_class = ?', undef, $source);
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? ';
+
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
 
   confirm(sprintf 'Update %d attachments class from %s to %s?',
     $total, @{$options{class}});
 
-  my $sth = $dbh->prepare('
-      SELECT attach_id 
-        FROM attachments 
-             JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-       WHERE attachment_storage_class.storage_class = ? ORDER BY attach_id DESC');
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
   $sth->execute($source);
   my ($count, $updated) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
@@ -186,20 +178,17 @@ if ($options{mirror}) {
   }
   my ($source, $dest) = @{$options{mirror}};
 
-  my ($total) = $dbh->selectrow_array('
-    SELECT COUNT(*) 
-      FROM attachments 
-           JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-     WHERE attachment_storage_class.storage_class = ?', undef, $source);
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
+
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
 
   confirm(sprintf 'Mirror %s attachments from %s to %s?',
     $total, @{$options{mirror}});
 
-  my $sth = $dbh->prepare('
-      SELECT attach_id 
-        FROM attachments 
-             JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-       WHERE attachment_storage_class.storage_class = ? ORDER BY attach_id DESC');
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
   $sth->execute($source);
   my ($count, $deleted, $stored) = (0, 0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
@@ -236,20 +225,17 @@ elsif ($options{copy}) {
   }
   my ($source, $dest) = @{$options{copy}};
 
-  my ($total) = $dbh->selectrow_array('
-    SELECT COUNT(*) 
-      FROM attachments 
-           JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-     WHERE attachment_storage_class.storage_class = ?', undef, $source);
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
+
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
 
   confirm(sprintf 'Copy %s attachments from %s to %s?', $total,
     @{$options{copy}});
 
-  my $sth = $dbh->prepare('
-      SELECT attach_id 
-        FROM attachments 
-             JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-       WHERE attachment_storage_class.storage_class = ? ORDER BY attach_id DESC');
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
   $sth->execute($source);
   my ($count, $stored) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
@@ -272,21 +258,16 @@ elsif ($options{copy}) {
 elsif ($options{delete}) {
   my $source = $options{delete};
 
-  my ($total) = $dbh->selectrow_array('
-    SELECT COUNT(*) 
-      FROM attachments 
-           JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-     WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0',
-    undef, $source);
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
+
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
 
   confirm(sprintf 'DELETE %s attachments from %s?', $total, $options{delete});
 
-  my $sth = $dbh->prepare('
-      SELECT attach_id 
-        FROM attachments 
-             JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
-       WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ORDER BY attach_id DESC'
-  );
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
   $sth->execute($source);
   my ($count, $deleted) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
