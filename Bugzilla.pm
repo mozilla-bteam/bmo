@@ -278,9 +278,30 @@ sub login {
       $cgi->base_redirect($redir_url->as_string);
     }
   }
-  elsif (!i_am_webservice()
-    && $authenticated_user->in_mfa_group
-    && !$authenticated_user->mfa)
+
+  # Require Duo Security as MFA provider if user is in the duo_required_group
+  elsif (
+       !i_am_webservice()
+    && Bugzilla->params->{duo_required_group}
+    && ($authenticated_user->in_duo_required_group
+      && !$authenticated_user->in_duo_excluded_group)
+    && $authenticated_user->mfa ne 'Duo'
+    )
+  {
+    my $on_mfa_page
+      = $script_name eq '/userprefs.cgi' && $cgi->param('tab') eq 'mfa';
+
+    if (!($on_mfa_page || $on_token_page || $do_logout)) {
+      $cgi->base_redirect('userprefs.cgi?tab=mfa');
+    }
+  }
+
+  # Next require MFA if grace period has expired
+  elsif (
+       !i_am_webservice()
+    && ($authenticated_user->in_mfa_group || $authenticated_user->mfa_required_date('UTC'))
+    && !$authenticated_user->mfa
+    )
   {
 
     # decide if the user needs a warning or to be blocked.
@@ -300,10 +321,10 @@ sub login {
       }
     }
     else {
-      my $dbh = Bugzilla->dbh_main;
-      my $date = $dbh->sql_date_math('NOW()', '+', '?', 'DAY');
+      my $dbh      = Bugzilla->dbh_main;
+      my $sql_date = $dbh->sql_date_math('NOW()', '+', '?', 'DAY');
       my ($mfa_required_date)
-        = $dbh->selectrow_array("SELECT $date", undef, $grace_period);
+        = $dbh->selectrow_array("SELECT $sql_date", undef, $grace_period);
       $authenticated_user->set_mfa_required_date($mfa_required_date);
       $authenticated_user->update();
     }

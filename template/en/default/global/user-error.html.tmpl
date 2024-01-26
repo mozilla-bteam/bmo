@@ -1240,6 +1240,10 @@
     You are already enrolled in two-factor authentication and cannot enroll
     again. To generate a new enrollment, first remove the current one.
 
+  [% ELSIF error == "duo_exclude_only_bots" %]
+    [% title = "Only Bot Accounts Excluded" %]
+    Only Bot related accounts should be excluded from Duo MFA requirement.
+
   [% ELSIF error == "migrate_config_created" %]
     The file <kbd>[% file FILTER html %]</kbd> contains configuration
     variables that must be set before continuing with the migration.
@@ -1888,6 +1892,11 @@
     Logged-out users cannot use the "match" argument to this function
     to access any user information.
 
+  [% ELSIF error == "user_access_by_ldap_denied" %]
+    [% title = "Matching by LDAP email denied" %]
+    Logged-out users cannot use the "ldap_emails" argument to this function
+    to access any user information.
+  
   [% ELSIF error == "user_login_required" %]
     [% title = "Login Name Required" %]
     [% admindocslinks = {'useradmin.html' => 'User administration'} %]

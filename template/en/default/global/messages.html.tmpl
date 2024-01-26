@@ -43,14 +43,12 @@
     canceled.
 
   [% ELSIF message_tag == "account_updated" %]
-    [% IF changed_fields.size
-          + groups_added_to.size + groups_removed_from.size
-          + groups_granted_rights_to_bless.size + groups_denied_rights_to_bless.size %]
+    [% IF changes.keys.size %]
       [% title = "User $loginold updated" %]
       The following changes have been made to the user account
       [%+ loginold FILTER html %]:
       <ul>
-        [% FOREACH field = changed_fields %]
+        [% FOREACH field = changes.keys %]
           <li>
             [% IF    field == 'login_name' %]
               The login is now [% otheruser.login FILTER html %].
@@ -80,35 +78,29 @@
               The user [% otheruser.password_change_required ? "must" : "no longer needs to" %] update their password.
             [% ELSIF field == 'password_change_reason' %]
               The password change reason has been modified.
+            [% ELSIF field == 'groups' %]
+              [% IF changes.groups.0.size %]
+                The account has been removed from the
+                [%+ changes.groups.0.join(', ') FILTER html %]
+                group[% 's' IF changes.groups.0.size > 1 %].
+              [% END %]
+              [% IF changes.groups.1.size %]
+                The account has been added to the
+                [%+ changes.groups.1.join(', ') FILTER html %]
+                group[% 's' IF changes.groups.1.size > 1 %].
+              [% END %]
+            [% ELSIF field == 'bless_groups' %]
+              [% IF changes.bless_groups.0.size %]
+                The account has been denied rights to bless the
+                [%+ changes.bless_groups.0.join(', ') FILTER html %]
+                group[% 's' IF changes.bless_groups.0.size > 1 %].
+              [% END %]
+              [% IF changes.bless_groups.1.size %]
+                The account has been granted rights to bless the
+                [%+ changes.bless_groups.1.join(', ') FILTER html %]
+                group[% 's' IF changes.bless_groups.1.size > 1 %].
+              [% END %]
             [% END %]
-          </li>
-        [% END %]
-        [% IF groups_added_to.size %]
-          <li>
-            The account has been added to the
-            [%+ groups_added_to.join(', ') FILTER html %]
-            group[% 's' IF groups_added_to.size > 1 %].
-          </li>
-        [% END %]
-        [% IF groups_removed_from.size %]
-          <li>
-            The account has been removed from the
-            [%+ groups_removed_from.join(', ') FILTER html %]
-            group[% 's' IF groups_removed_from.size > 1 %].
-          </li>
-        [% END %]
-        [% IF groups_granted_rights_to_bless.size %]
-          <li>
-            The account has been granted rights to bless the
-            [%+ groups_granted_rights_to_bless.join(', ') FILTER html %]
-            group[% 's' IF groups_granted_rights_to_bless.size > 1 %].
-          </li>
-        [% END %]
-        [% IF groups_denied_rights_to_bless.size %]
-          <li>
-            The account has been denied rights to bless the
-            [%+ groups_denied_rights_to_bless.join(', ') FILTER html %]
-            group[% 's' IF groups_denied_rights_to_bless.size > 1 %].
           </li>
         [% END %]
       </ul>
