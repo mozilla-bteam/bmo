@@ -214,39 +214,62 @@ sub suggest {
 #         names => ['testusera@redhat.com', 'testuserb@redhat.com'] });
 sub get {
   my ($self, $params)
-    = validate(@_, 'names', 'ids', 'match', 'group_ids', 'groups');
+    = validate(@_, 'names', 'ids', 'match', 'group_ids', 'groups', 'ldap_emails');
+  my $api_user = Bugzilla->user;
 
   Bugzilla->switch_to_shadow_db();
 
        defined($params->{names})
     || defined($params->{ids})
     || defined($params->{match})
+    || defined($params->{ldap_emails})
     || ThrowCodeError('params_required',
     {function => 'User.get', params => ['ids', 'names', 'match']});
 
   my (@user_objects, @faults);
   if ($params->{names}) {
     foreach my $name (@{$params->{names}}) {
-      my $user;
+      my $user_obj;
       # If permissive mode, then we do not kill the whole
       # request if there is an error with user lookup.
       # We store the errors in 'faults' array.
       if ($params->{permissive}) {
         my $old_error_mode = Bugzilla->error_mode;
         Bugzilla->error_mode(ERROR_MODE_DIE);
-        eval { $user = Bugzilla::User->check({name => $name}); };
+        eval { $user_obj = Bugzilla::User->check({name => $name}); };
         Bugzilla->error_mode($old_error_mode);
         if ($@) {
           push @faults, {name => $name, error => true, message => $@->message};
           undef $@;
           next;
         }
-        push @user_objects, $user;
+        push @user_objects, $user_obj;
       }
       else {
         push @user_objects, Bugzilla::User->check({name => $name});
       }
     }
+  }
+
+  # Allow users in mozilla-employee-confidential to search by ldap_email
+  if ($api_user->in_group('mozilla-employee-confidential') && $params->{ldap_emails})
+  {
+    foreach my $email (@{$params->{ldap_emails}}) {
+      # There could be more than one match per ldap email if the user has multiple accounts
+      my $user_ids
+        = Bugzilla->dbh->selectcol_arrayref(
+        'SELECT user_id FROM profile_mfa WHERE name = \'user\' AND value = ?',
+        undef, $email);
+      next if !@{$user_ids};
+      foreach my $user_id (@{$user_ids}) {
+        my $user_obj = Bugzilla::User->new($user_id);
+        next if $user_obj->mfa ne 'Duo';
+        push @user_objects, $user_obj;
+      }
+    }
+  }
+  elsif ($params->{ldap_emails}) {
+    ThrowUserError('user_access_by_ldap_denied');
   }
 
   # start filtering to remove duplicate user ids
@@ -257,7 +280,7 @@ sub get {
 
   # If the user is not logged in: Return an error if they passed any user ids.
   # Otherwise, return a limited amount of information based on login names.
-  if (!Bugzilla->user->id) {
+  if (!$api_user->id) {
     if ($params->{ids}) {
       ThrowUserError("user_access_by_id_denied");
     }
@@ -284,7 +307,7 @@ sub get {
   # obj_by_ids are only visible to the user if they can see
   # the otheruser, for non visible otheruser throw an error
   foreach my $obj (@$obj_by_ids) {
-    if (Bugzilla->user->can_see_user($obj)) {
+    if ($api_user->can_see_user($obj)) {
       if (!$unique_users{$obj->id}) {
         push(@user_objects, $obj);
         $unique_users{$obj->id} = $obj;
@@ -314,52 +337,60 @@ sub get {
   my $exclude_disabled = $params->{'include_disabled'} ? 0 : 1;
   foreach my $match_string (@{$params->{'match'} || []}) {
     my $matched = Bugzilla::User::match($match_string, $limit, $exclude_disabled);
-    foreach my $user (@$matched) {
-      if (!$unique_users{$user->id}) {
-        push(@user_objects, $user);
-        $unique_users{$user->id} = $user;
+    foreach my $user_obj (@$matched) {
+      if (!$unique_users{$user_obj->id}) {
+        push @user_objects, $user_obj;
+        $unique_users{$user_obj->id} = $user_obj;
       }
     }
   }
 
   my $in_group = $self->_filter_users_by_group(\@user_objects, $params);
-  foreach my $user (@$in_group) {
+  foreach my $user_obj (@$in_group) {
     my $user_info = filter $params,
       {
-      id                 => $self->type('int',      $user->id),
-      real_name          => $self->type('string',   $user->name),
-      nick               => $self->type('string',   $user->nick),
-      name               => $self->type('email',    $user->login),
-      email              => $self->type('email',    $user->email),
-      can_login          => $self->type('boolean',  $user->is_enabled ? 1 : 0),
-      last_seen_date     => $self->type('dateTime', $user->last_seen_date),
-      creation_time      => $self->type('dateTime', $user->creation_ts),
+      id                 => $self->type('int',      $user_obj->id),
+      real_name          => $self->type('string',   $user_obj->name),
+      nick               => $self->type('string',   $user_obj->nick),
+      name               => $self->type('email',    $user_obj->login),
+      email              => $self->type('email',    $user_obj->email),
+      can_login          => $self->type('boolean',  $user_obj->is_enabled ? 1 : 0),
+      last_seen_date     => $self->type('dateTime', $user_obj->last_seen_date),
+      creation_time      => $self->type('dateTime', $user_obj->creation_ts),
       };
 
-    if (Bugzilla->user->in_group('disableusers')) {
+    if ($api_user->in_group('disableusers')) {
       if (filter_wants($params, 'email_enabled')) {
-        $user_info->{email_enabled} = $self->type('boolean', $user->email_enabled);
+        $user_info->{email_enabled} = $self->type('boolean', $user_obj->email_enabled);
       }
       if (filter_wants($params, 'login_denied_text')) {
-        $user_info->{login_denied_text} = $self->type('string', $user->disabledtext);
+        $user_info->{login_denied_text} = $self->type('string', $user_obj->disabledtext);
       }
     }
 
-    if (Bugzilla->user->id == $user->id) {
+    if ($api_user->id == $user_obj->id) {
       if (filter_wants($params, 'saved_searches')) {
         $user_info->{saved_searches}
-          = [map { $self->_query_to_hash($_) } @{$user->queries}];
+          = [map { $self->_query_to_hash($_) } @{$user_obj->queries}];
       }
+    }
+
+    # If calling user is member of mozilla-employee-confidential,
+    # return ldap_email value as well
+    if ($api_user->in_group('mozilla-employee-confidential')
+      && $user_obj->ldap_email)
+    {
+      $user_info->{ldap_email} = $user_obj->ldap_email;
     }
 
     if (filter_wants($params, 'groups')) {
-      if ( Bugzilla->user->id == $user->id
-        || Bugzilla->user->in_group('mozilla-employee-confidential'))
+      if ( $api_user->id == $user_obj->id
+        || $api_user->in_group('mozilla-employee-confidential'))
       {
-        $user_info->{groups} = [map { $self->_group_to_hash($_) } @{$user->groups}];
+        $user_info->{groups} = [map { $self->_group_to_hash($_) } @{$user_obj->groups}];
       }
       else {
-        $user_info->{groups} = $self->_filter_bless_groups($user->groups);
+        $user_info->{groups} = $self->_filter_bless_groups($user_obj->groups);
       }
     }
 

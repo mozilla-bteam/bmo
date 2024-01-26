@@ -189,6 +189,11 @@ sub _update_groups {
   my $dbh           = Bugzilla->dbh;
   my $user          = Bugzilla->user;
 
+  # Before any group changes, lets record if the user is
+  # in the duo required status?
+  my $old_duo_required = $self->in_duo_required_group;
+  my $old_duo_excluded = $self->in_duo_excluded_group;
+
   # Update group settings.
   my $sth_add_mapping = $dbh->prepare(
     qq{INSERT INTO user_group_map (
@@ -245,6 +250,23 @@ sub _update_groups {
 
     Bugzilla->memcached->clear_config({key => 'user_groups.' . $self->id});
 
+    # Now that group changes have been made, lets see what the users duo
+    # required status is now. If it has changed, then we will need to logout
+    # the user later.
+    my $new_self = $self->new($self->id);
+    my $new_duo_required = $new_self->in_duo_required_group;
+    if ($old_duo_required && !$new_duo_required) {
+      $self->{_duo_requirement_removed} = 1;
+    }
+    elsif (!$old_duo_required && $new_duo_required) {
+      $self->{_duo_requirement_added} = 1;
+    }
+
+    # Only bot accounts should be added to the excluded group
+    if ($new_self->in_duo_excluded_group && $new_self->login !~ /[.](?:bugs|tld)$/) {
+      ThrowUserError('duo_exclude_only_bots');
+    }
+
     my $type = $is_bless ? 'bless_groups' : 'groups';
     $changes->{$type} = [[map { $_->name } @$removed], [map { $_->name } @$added],];
   }
@@ -278,13 +300,41 @@ sub update {
     $dbh->do("DELETE FROM profile_mfa WHERE user_id = ?", undef, $self->id);
   }
 
+  # Updated user based on their Duo MFA requirement changes
+  if ($self->{_duo_requirement_added}) {
+
+    # When a user is added to the duo required group (during creation or modified)
+    # and they are using TOTP, force a logout by clearing all existing sessions,
+    # unless the user is a member of a "duo-required-excluded" group (ie. "bots").
+    Bugzilla->logout_user($self) if !$self->in_duo_excluded_group;
+  }
+  elsif ($self->{_duo_requirement_removed}) {
+
+    Bugzilla->logout_user($self);
+
+    # When an account is removed from the duo required group and their current MFA is Duo,
+    # their MFA and saved password should be cleared and they should be forced into
+    # TOTP enrollment upon next login (after performing a password reset).
+    # Clearing their saved password ensures that the account won't be left unprotected by
+    # MFA at any time. This TOTP forcing needs to be immediate, rather than behind a grace period.
+    if ($self->mfa eq 'Duo') {
+      $self->set_mfa('');
+      $self->set_password('*');
+      my ($mfa_required_date)
+        = $dbh->selectrow_array(
+        "SELECT " . $dbh->sql_date_math('NOW()', '-', '1', 'DAY'));
+      $self->set_mfa_required_date($mfa_required_date);
+      $self->SUPER::update();
+    }
+  }
+
   # Logout the user if necessary.
   Bugzilla->logout_user($self)
     if (
-    !$options->{keep_session}
-    && ( exists $changes->{login_name}
-      || exists $changes->{disabledtext}
-      || exists $changes->{cryptpassword})
+      !$options->{keep_session}
+      && ( exists $changes->{login_name}
+        || exists $changes->{disabledtext}
+        || exists $changes->{cryptpassword})
     );
 
   # XXX Can update profiles_activity here as soon as it understands
@@ -671,13 +721,43 @@ sub mfa_provider {
   return $self->{mfa_provider};
 }
 
-
 sub in_mfa_group {
   my $self = shift;
   return $self->{in_mfa_group} if exists $self->{in_mfa_group};
 
   my $mfa_group = Bugzilla->params->{mfa_group};
   return $self->{in_mfa_group} = ($mfa_group && $self->in_group($mfa_group));
+}
+
+sub in_duo_required_group {
+  my $self = shift;
+  return $self->{in_duo_required_group} if exists $self->{in_duo_required_group};
+
+  my $duo_required_group = Bugzilla->params->{duo_required_group};
+  return ($duo_required_group && $self->in_group($duo_required_group)) ? 1 : 0;
+}
+
+sub in_duo_excluded_group {
+  my $self = shift;
+  return $self->{in_duo_excluded_group} if exists $self->{in_duo_excluded_group};
+
+  my $duo_excluded_group = Bugzilla->params->{duo_required_excluded_group};
+  return ($duo_excluded_group && $self->in_group($duo_excluded_group)) ? 1 : 0;
+}
+
+sub ldap_email {
+  my $self = shift;
+  return $self->{ldap_email} if exists $self->{ldap_email};
+
+  # This only applies to MFA that is based on Duo. If Duo is used,
+  # then the value in profiles_mfa is the users ldap email.
+  if ($self->mfa eq 'Duo') {
+    my $ldap_email
+      = Bugzilla->dbh->selectrow_array(
+      'SELECT value FROM profile_mfa WHERE user_id = ?',
+      undef, $self->id);
+    return $self->{ldap_email} = $ldap_email;
+  }
 }
 
 sub name_or_login {
