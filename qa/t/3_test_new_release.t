@@ -52,9 +52,16 @@ $sel->click_ok('link=New Firefox Release');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->select_ok('milestone_products', 'label=Firefox');
 $sel->type_ok('new_milestone', '101');
+$sel->type_ok('old_milestone', '100');
 $sel->select_ok('version_products', 'label=Firefox');
 $sel->type_ok('new_version', '101');
+$sel->type_ok('old_version', '100');
 $sel->click_ok('submit', undef, 'Submit data');
+$sel->title_is('New Firefox Release');
+$sel->is_text_present_ok('Milestone 101 Branch was added to product Firefox.');
+$sel->is_text_present_ok('Milestone 100 Branch was disabled for product Firefox.');
+$sel->is_text_present_ok('Version Firefox 101 was added to product Firefox.');
+$sel->is_text_present_ok('Version Firefox 100 was disabled for product Firefox.');
 
 # Verify that the new milestone and version has been create and the proper sortkey is present
 

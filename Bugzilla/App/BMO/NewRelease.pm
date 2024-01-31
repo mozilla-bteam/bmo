@@ -63,6 +63,7 @@ sub new_release {
 
     my $vars = {
       next_release               => $current_nightly + 1,
+      old_release                => $current_nightly - 10,
       selectable_products        => $selectable_products,
       default_milestone_products => $default_milestone_products,
       default_version_products   => $default_version_products,
@@ -80,37 +81,72 @@ sub new_release {
 
   # Sanity check new values for milestone and version
   my $new_milestone = trim($self->param('new_milestone'));
+  my $old_milestone = trim($self->param('old_milestone'));
   my $new_version   = trim($self->param('new_version'));
+  my $old_version   = trim($self->param('old_version'));
+
   $new_milestone =~ /^\d+$/
-    || return $self->user_error("number_not_numeric",
-    {field => 'milestone', num => $new_milestone});
+    || return $self->user_error('number_not_numeric',
+    {field => 'new_milestone', num => $new_milestone});
   $new_version =~ /^\d+$/
-    || return $self->user_error("number_not_numeric",
-    {field => 'version', num => $new_version});
+    || return $self->user_error('number_not_numeric',
+    {field => 'new_version', num => $new_version});
+
+  if ($old_milestone && $old_milestone !~ /^\d+$/) {
+    return $self->user_error('number_not_numeric',
+      {field => 'old_milestone', num => $old_milestone});
+  }
+
+  if ($old_version && $old_version !~ /^\d+$/) {
+    return $self->user_error('number_not_numeric',
+      {field => 'old_version', num => $old_version});
+  }
 
   # Process milestones
   my @results;
   foreach my $product (@{$self->every_param('milestone_products')}) {
     my $success = _add_value($product, $new_milestone, 'milestone');
     my $result  = {
-      type    => 'milestone',
+      type    => 'new_milestone',
       product => $product,
       value   => _get_formatted_value($product, $new_milestone, 'milestone'),
       success => $success
     };
     push @results, $result;
+
+    if ($old_milestone) {
+      $success = _disable_value($product, $old_milestone, 'milestone');
+      $result = {
+        type    => 'old_milestone',
+        product => $product,
+        value   => _get_formatted_value($product, $old_milestone, 'milestone'),
+        success => $success
+      };
+      push @results, $result;
+    }
   }
 
   # Process versions
   foreach my $product (@{$self->every_param('version_products')}) {
     my $success = _add_value($product, $new_version, 'version');
     my $result  = {
-      type    => 'version',
+      type    => 'new_version',
       product => $product,
       value   => _get_formatted_value($product, $new_version, 'version'),
       success => $success
     };
     push @results, $result;
+
+    if ($old_version) {
+      $success = _disable_value($product, $old_version, 'version');
+      $result = {
+        type    => 'old_version',
+        product => $product,
+        value   => _get_formatted_value($product, $old_version, 'version'),
+        success => $success
+      };
+      push @results, $result;
+    }
   }
 
   $self->stash({results => \@results});
@@ -150,9 +186,6 @@ sub _add_value {
         {product => $product, value => $new_milestone, sortkey => $sortkey});
       return $new_milestone;
     }
-    else {
-      return 0;
-    }
   }
 
   # Versions are simple in that they do not use sortkeys yet
@@ -162,10 +195,43 @@ sub _add_value {
       Bugzilla::Version->create({product => $product, value => $new_version});
       return $new_version;
     }
-    else {
-      return 0;
+  }
+
+  return 0;
+}
+
+sub _disable_value {
+  my ($product, $value, $type) = @_;
+  $product
+    = blessed $product
+    ? $product
+    : Bugzilla::Product->new({name => $product, cache => 1});
+
+  if ($type eq 'milestone') {
+    my $old_milestone = _get_formatted_value($product->name, $value, 'milestone');
+
+    if (my $milestone_obj
+      = Bugzilla::Milestone->new({product => $product, name => $old_milestone}))
+    {
+      $milestone_obj->set_is_active(0);
+      $milestone_obj->update();
+      return 1;
     }
   }
+
+  # Versions are simple in that they do not use sortkeys yet
+  if ($type eq 'version') {
+    my $old_version = _get_formatted_value($product->name, $value, 'version');
+    if (my $version_obj
+      = Bugzilla::Version->new({product => $product, name => $old_version}))
+    {
+      $version_obj->set_is_active(0);
+      $version_obj->update();
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 # Helper function to return a fully formatted version or milestone
