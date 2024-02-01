@@ -1411,7 +1411,27 @@ a.lightbox-icon.markdown {
 
 #component {
   width: auto !important;
-  min-width: 160px;
+}
+
+#component-description {
+  overflow: auto;
+  overscroll-behavior: contain;
+  margin: 4px 0;
+  max-height: 150px;
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
+#component-description > :first-child {
+  margin-top: 0;
+}
+
+#component-description > :last-child {
+  margin-bottom: 0;
+}
+
+#component-description ul {
+  padding: 0 0 0 16px;
 }
 
 #component-tip {

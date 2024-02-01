@@ -92,7 +92,7 @@
 [% BLOCK tf_select %]
   [% RETURN UNLESS flag %]
   <input type="hidden" id="[% flag.name FILTER html %]-dirty">
-  <bz-select id="[% flag.name FILTER html %]" name="[% flag.name FILTER html %]">
+  <select id="[% flag.name FILTER html %]" name="[% flag.name FILTER html %]">
     [%
       flag_bug_value = flag.bug_flag(bug_id).value;
       FOREACH value IN flag.values;
@@ -100,12 +100,12 @@
           NEXT IF !value.is_active || !flag.can_set_value(value.name);
         END;
     %]
-        <bz-option value="[% value.name FILTER html %]"
+        <option value="[% value.name FILTER html %]"
           id="v[% value.id FILTER html %]_[% flag.name FILTER html %]"
           [% " selected" IF flag_bug_value == value.name %]
         >
           [% value.name FILTER html %]
-        </bz-option>
+        </option>
     [% END %]
-  </bz-select>
+  </select>
 [% END %]

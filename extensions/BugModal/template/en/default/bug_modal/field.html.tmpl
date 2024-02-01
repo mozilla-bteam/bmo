@@ -22,7 +22,7 @@
   # prefix: (string) string to prepend to 'name' and 'id' attributes (default: empty)
   # value: (string) visible value (default: bug.$name)
   # values: (array of string) list of value objects (FIELD_TYPE_SINGLE_SELECT and _BUG_URLS only) (default: lazy-load on edit)
-  # select_size: (integer) the size attribute for <select> (FIELD_TYPE_MULTI_SELECT only)
+  # select_size: (integer) the size attribute for <select> (FIELD_TYPE_SINGLE_SELECT and FIELD_TYPE_MULTI_SELECT only)
   # inline: (boolean) output field as a table-cell instead of as a stand-alone div (default: false)
   # no_indent: (boolean) don't indent the field (left-padding) (default: false)
   # full_width: (boolean) the field takes up the complete page width (default: false)
@@ -90,6 +90,13 @@ ELSIF field_type == constants.FIELD_TYPE_MULTI_SELECT || field_type == constants
   has_value = value.size > 0;
 ELSE;
   has_value = value != "";
+END;
+IF !select_size.defined;
+  IF field_type == constants.FIELD_TYPE_SINGLE_SELECT;
+    select_size = 0;
+  ELSE;
+    select_size = 5;
+  END;
 END;
 # switch to view mode if edit-only and the current user cannot edit
 IF !editable && edit_only;
@@ -264,30 +271,29 @@ END;
             [% END %]
           </div>
           [% ELSE %]
-          <bz-select name="[% name FILTER html %]" id="[% name FILTER html %]"
+          <select name="[% name FILTER html %]" id="[% name FILTER html %]"
+                  [% IF select_size > 1 %] size="[% select_size FILTER html %]"[% END %]
                   [% aria_labelledby_html FILTER none %] [% aria_required FILTER none %]>
             [% IF values.defined %]
               [% FOREACH v IN values %]
                 [% NEXT IF NOT v.is_active AND NOT value.contains(v.name).size %]
                 [% NEXT IF NOT bug.check_can_change_field(name, bug.${field_name}, v.name).allowed %]
-                <bz-option value="[% v.name FILTER html %]"
+                <option value="[% v.name FILTER html %]"
                         id="v[% v.id FILTER html %]_[% name FILTER html %]"
-                        aria-description="[% v.description || '' FILTER html %]"
-                        [% " selected" IF value.contains(v.name).size %]>
-                  [% v.name FILTER html %]
-                </bz-option>
+                        [% " selected" IF value.contains(v.name).size %]
+                >[% v.name FILTER html %]</option>
               [% END %]
             [% ELSE %]
-              <bz-option value="[% value FILTER html %]" selected>[% value FILTER html %]</bz-option>
+              <option value="[% value FILTER html %]" selected>[% value FILTER html %]</option>
             [% END %]
-          </bz-select>
+          </select>
           [% END %]
 
         [% CASE constants.FIELD_TYPE_MULTI_SELECT %]
           [%# multi value select %]
           <input type="hidden" id="[% name FILTER html %]-dirty">
           <select name="[% name FILTER html %]" id="[% name FILTER html %]" multiple
-                  size="[% select_size || 5 FILTER html %]" [% aria_labelledby_html FILTER none %]>
+                  size="[% select_size FILTER html %]" [% aria_labelledby_html FILTER none %]>
             [% IF values.defined %]
               [%# not implemented %]
             [% ELSE %]
