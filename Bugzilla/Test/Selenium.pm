@@ -14,7 +14,6 @@ use Mojo::File;
 use Moo;
 use Test2::V0;
 use Test::Selenium::Firefox;
-use Time::HiRes;
 use Try::Tiny;
 
 has 'driver_class' => (is => 'ro', default => 'Test::Selenium::Firefox');
@@ -53,7 +52,6 @@ sub click_ok {
     TRACE("click_ok new locator: $locator");
   }
   $self->driver->click_element_ok($locator, 'xpath', $arg1, $desc);
-  Time::HiRes::sleep(0.5); # FIXME: Delay for slow page performance
 }
 
 sub open_ok {
@@ -188,8 +186,7 @@ sub get_text {
   $locator = $self->_fix_locator($locator);
   my $element = $self->find_element($locator);
   if ($element) {
-    return trim($element->get_text())
-      || trim($element->get_property('textContent'));
+    return $element->get_text();
   }
   return '';
 }
@@ -197,7 +194,7 @@ sub get_text {
 sub selected_label_is {
   my ($self, $id, $label) = @_;
   TRACE("selected_label_is: $id, $label");
-  my $locator = qq{//*[self::select|self::bz-select][\@id="$id"]};
+  my $locator = qq{//select[\@id="$id"]};
   my $element = $self->find_element($locator);
   if (!$element) {
     $locator =~ s/\@id/\@name/;
@@ -205,12 +202,10 @@ sub selected_label_is {
   }
   my @options;
   try {
-    @options = $self->driver->find_elements(
-      $locator . '/*[self::option|self::bz-option]');
+    @options = $self->driver->find_elements($locator . '/option');
   };
   foreach my $option (@options) {
-    my $text = trim($option->get_text())
-      || trim($option->get_property('textContent'));
+    my $text = trim($option->get_text());
     if ($text eq $label && $option->get_property('selected')) {
       ok(1, "Selected label is: $label");
       return;
@@ -225,15 +220,13 @@ sub get_selected_labels {
   $locator = $self->_fix_locator($locator);
   my @elements;
   try {
-    @elements = $self->driver->find_elements(
-      $locator . '/*[self::option|self::bz-option]');
+    @elements = $self->driver->find_elements($locator . '/option');
   };
   if (@elements) {
     my @selected;
     foreach my $element (@elements) {
       next if !$element->is_selected();
-      push @selected, trim($element->get_text())
-        || trim($element->get_property('textContent'));
+      push @selected, $element->get_text();
     }
     return @selected;
   }
@@ -246,14 +239,12 @@ sub get_select_options {
   $locator = $self->_fix_locator($locator);
   my @elements;
   try {
-    @elements = $self->driver->find_elements(
-      $locator . '/*[self::option|self::bz-option]');
+    @elements = $self->driver->find_elements($locator . '/option');
   };
   if (@elements) {
     my @options;
     foreach my $element (@elements) {
-      push @options, trim($element->get_text())
-        || trim($element->get_property('textContent'));
+      push @options, $element->get_text();
     }
     return @options;
   }
@@ -311,8 +302,7 @@ sub select_ok {
   }
   my @options;
   try {
-    @options = $self->driver->find_elements(
-      $locator . '/*[self::option|self::bz-option]');
+    @options = $self->driver->find_elements($locator . '/option');
   };
   my ($is_label, $is_value);
   if ($label =~ /^label=(.*)$/) {
@@ -324,23 +314,20 @@ sub select_ok {
     $is_value = 1;
   }
   foreach my $option (@options) {
-    my $value
-      = $is_value
-      ? $option->get_value()
-      # Don’t use `$option->get_text()` here because it only works for visible
-      # element, doesn’t work for custom elements
-      : $option->get_property('textContent');
+    my $value;
+    if ($is_label) {
+      $value = $option->get_text();
+    }
+    elsif ($is_value) {
+      $value = $option->get_value();
+    }
+    else {
+      $value = $option->get_text();
+    }
     $value = trim($value);
     if ($value eq $label) {
       if ($option->get_property('selected')) {
         ok(1, "Set selected: $label");
-      }
-      elsif ($option->get_tag_name() eq 'bz-option') {
-        # Don’t use `$option->click()` here because it only works for visible
-        # elements, doesn’t work for custom elements
-        $self->driver->execute_script('arguments[0].click();', $option);
-        Time::HiRes::sleep(0.5); # FIXME: Delay for slow page performance
-        ok($option->get_property('selected'), "Set selected: $label");
       }
       else {
         ok($option->click(), "Set selected: $label");
