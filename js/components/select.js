@@ -318,15 +318,6 @@ class BzSelectElement extends HTMLElement {
   }
 
   /**
-   * Whether to hide the {@link #searchbar}. We only show the searchbar when there are 10 or more
-   * options to choose from.
-   * @type {boolean}
-   */
-  get #searchBarHidden() {
-    return this.options.length < 10;
-  }
-
-  /**
    * Initialize a new `BzSelectElement` instance.
    */
   constructor() {
@@ -553,7 +544,6 @@ class BzSelectElement extends HTMLElement {
    */
   #onComboboxMouseDown(event) {
     event.preventDefault();
-    this.#combobox.focus();
     this.#showDropdown();
   }
 
@@ -590,7 +580,25 @@ class BzSelectElement extends HTMLElement {
       }
     } else if (key.length === 1) {
       event.stopPropagation();
-      newOption = this.#findOptionByKey(key);
+
+      if (this.#typeAheadFindChars !== key) {
+        this.#typeAheadFindChars += key;
+      }
+
+      clearTimeout(this.#typeAheadFindTimer);
+
+      this.#typeAheadFindTimer = window.setTimeout(() => {
+        this.#typeAheadFindChars = '';
+      }, 1000);
+
+      const regex = new RegExp(`^${this.#typeAheadFindChars}`, 'i');
+      const startIndex = this.#selectedOption?.label.match(regex)
+        ? this.#enabledOptions.findIndex((option) => option === this.#selectedOption) + 1
+        : 0;
+
+      newOption = this.#enabledOptions.find(
+        (option, index) => index >= startIndex && option.label.match(regex),
+      );
     }
 
     if (newOption) {
@@ -652,11 +660,6 @@ class BzSelectElement extends HTMLElement {
         this.value = currentOption.value;
         this.#canDispatchEvent = false;
       }
-    }
-
-    if (key.length === 1 && this.#searchBarHidden) {
-      event.stopPropagation();
-      newActiveOption = this.#findOptionByKey(key);
     }
 
     this.#activeOption = newActiveOption;
@@ -742,7 +745,7 @@ class BzSelectElement extends HTMLElement {
    * the number of options.
    */
   #onSlotChange() {
-    this.#searchBar.setAttribute('aria-hidden', this.#searchBarHidden);
+    this.#searchBar.setAttribute('aria-hidden', this.options.length < 10);
   }
 
   /**
@@ -848,38 +851,6 @@ class BzSelectElement extends HTMLElement {
         option.removeAttribute('id');
       }
     });
-  }
-
-  /**
-   * Find an option with the specified key that matches the first letter of the label. If there are
-   * multiple matching options, return the next option after the currently selected/active one, or
-   * the first one. This mimics the keyboard support of the native `<select>` element.
-   * @param {string} key Typed keyboard key, like `a`.
-   * @returns {BzOptionElement | undefined} Found option.
-   */
-  #findOptionByKey(key) {
-    if (this.#typeAheadFindChars !== key) {
-      this.#typeAheadFindChars += key;
-    }
-
-    clearTimeout(this.#typeAheadFindTimer);
-
-    this.#typeAheadFindTimer = window.setTimeout(() => {
-      this.#typeAheadFindChars = '';
-    }, 1000);
-
-    const regex = new RegExp(`^${this.#typeAheadFindChars}`, 'i');
-    const matchingOptions = this.#enabledOptions.filter((option) => option.label.match(regex));
-
-    if (!matchingOptions.length) {
-      return undefined;
-    }
-
-    const currentIndex = matchingOptions.findIndex(
-      (option) => option.matches('.active') || option.selected,
-    );
-
-    return matchingOptions[currentIndex + 1] ?? matchingOptions[0];
   }
 }
 
