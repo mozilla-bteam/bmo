@@ -337,10 +337,6 @@
  * Global
  */
 
-html {
-  scrollbar-gutter: stable both-edges;
-}
-
 body {
   font-size: var(--font-size-medium);
   line-height: var(--line-height-default);
