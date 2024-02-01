@@ -513,7 +513,7 @@ class BzSelectElement extends HTMLElement {
     this.#slot = this.shadowRoot.querySelector('slot');
     this.#noMatchMessage = this.shadowRoot.querySelector('.no-match');
 
-    this.#combobox.addEventListener('mousedown', (event) => this.#onComboboxMouseDown(event));
+    this.#combobox.addEventListener('click', (event) => this.#onComboboxClick(event));
     this.#combobox.addEventListener('keydown', (event) => this.#onComboboxKeyDown(event));
     this.#dialog.addEventListener('click', (event) => this.#onDialogClick(event));
     this.#dialog.addEventListener('keydown', (event) => this.#onDialogKeyDown(event));
@@ -521,7 +521,6 @@ class BzSelectElement extends HTMLElement {
     this.#searchBar.addEventListener('input', () => this.#onSearchbarInput(event));
     this.#clearButton.addEventListener('click', (event) => this.#onClearButtonClick(event));
     this.#listbox.addEventListener('mouseover', (event) => this.#onListboxMouseOver(event));
-    this.#listbox.addEventListener('mouseup', (event) => this.#onListboxMouseUp(event));
     this.#slot.addEventListener('slotchange', () => this.#onSlotChange());
 
     this.#setProps();
@@ -539,11 +538,9 @@ class BzSelectElement extends HTMLElement {
   }
 
   /**
-   * Called whenever a mouse button is pressed on the {@link #combobox}. Show the dropdown list.
-   * @param {MouseEvent} event `mousedown` event.
+   * Called whenever the {@link #combobox} is clicked. Show the dropdown list.
    */
-  #onComboboxMouseDown(event) {
-    event.preventDefault();
+  #onComboboxClick() {
     this.#showDropdown();
   }
 
@@ -610,8 +607,7 @@ class BzSelectElement extends HTMLElement {
 
   /**
    * Called whenever the {@link #dialog} is clicked. Hide the dropdown list, and select a new option
-   * if possible. Usually {@link #onListboxMouseUp} handles selection, but the code is needed to
-   * pass the Selenium tests using `click` events.
+   * if possible.
    * @param {MouseEvent} event `click` event.
    */
   #onDialogClick(event) {
@@ -711,32 +707,12 @@ class BzSelectElement extends HTMLElement {
   }
 
   /**
-   * Called whenever the mouse is moved over the {@link #listbox}. Update the active state if the
-   * target is an option.
+   * Called whenever the mouse is moved over the {@link #listbox}. the active state if possible.
    * @param {MouseEvent} event `mouseover` event.
    */
   #onListboxMouseOver(event) {
-    const { target } = event;
-
-    if (target.matches('bz-option:not([disabled])')) {
-      this.#activeOption = target;
-    }
-  }
-
-  /**
-   * Called whenever a mouse button is released on the {@link #listbox}. Select a new option if the
-   * target is an option.
-   * @param {MouseEvent} event `mouseup` event.
-   */
-  #onListboxMouseUp(event) {
-    const { target } = event;
-
-    if (target.matches('bz-option:not([disabled])')) {
-      event.preventDefault();
-      this.#hideDropdown();
-      this.#canDispatchEvent = true;
-      this.value = target.value;
-      this.#canDispatchEvent = false;
+    if (event.target.matches('bz-option:not([disabled])')) {
+      this.#activeOption = event.target;
     }
   }
 
