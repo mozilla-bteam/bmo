@@ -1586,7 +1586,7 @@ $(function() {
     });
 
     // dirty field tracking
-    $('#changeform bz-select')
+    $('#changeform select')
         .change(function() {
             var that = $(this);
             var dirty = $('#' + that.attr('id') + '-dirty');
