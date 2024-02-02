@@ -31,17 +31,13 @@
     " [% IF attachment.isobsolete %]style="display:none"[% END %]>
       <td class="attach-desc-td">
         <div class="attach-desc">
-          [% IF attachment.is_image %]
-            <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]"
-              title="[% attachment.description FILTER html %]"
-              class="lightbox">
+          <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]"
+            [%= IF attachment.is_image %]data-overlay="lightbox"[% END %]>
+            [% IF attachment.is_image %]
               <img src="[% basepath FILTER none %]extensions/BugModal/web/image.png" width="16" height="16">
-              [%~ attachment.description FILTER html %]
+            [% END %]
+            [%= attachment.description FILTER html %]
             </a>
-          [% ELSE %]
-            <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]">
-              [%~ attachment.description FILTER html %]</a>
-          [% END %]
         </div>
         <div>
           [% activity_id = bug.find_activity_id_for_attachment(attachment) %]

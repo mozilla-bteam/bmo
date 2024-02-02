@@ -1442,6 +1442,12 @@
   </form>
 [% END %]
 
+[%# === attachments overlay === %]
+
+[% IF bug.attachments.size %]
+  [% INCLUDE bug_modal/attachments_overlay.html.tmpl %]
+[% END %]
+
 [%# === individual bugs addition === %]
 
 [% PROCESS "bug/tagging.html.tmpl" %]

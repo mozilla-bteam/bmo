@@ -7,7 +7,8 @@
   #%]
 
 [%# These forms are available only when updating an attachment %]
-[% RETURN UNLESS template.name == "attachment/edit.html.tmpl" %]
+[% RETURN UNLESS template.name == "attachment/edit.html.tmpl"
+      || template.name == "bug/show-modal.html.tmpl" %]
 
 <meta name="extra-patch-types" content="text/x-phabricator-request">
 

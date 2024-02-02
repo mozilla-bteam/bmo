@@ -370,6 +370,66 @@ function timeAgo(param) {
 }
 
 /**
+ * Format the given date as Bugzilla’s standard date format.
+ * @param {Date | string} date Date instance or parsable date string.
+ * @returns {string} Formatted date, e.g. `2023-04-05 06:07 PST`.
+ */
+const formatDate = (date) => {
+  /** @type {Intl.DateTimeFormatOptions} */
+  const options = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  };
+
+  const { year, month, day, hour, minute, timeZoneName } = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { ...options, hour12: false })
+      .formatToParts(new Date(date))
+      .filter(({ type }) => type in options)
+      .map(({ type, value }) => [type, type === 'hour' && value === '24' ? '00' : value]),
+  );
+
+  return `${year}-${month}-${day} ${hour}:${minute} ${timeZoneName}`;
+};
+
+/**
+ * Format the given file size as human-readable format.
+ * @param {number} size Numeric size.
+ * @returns {string} Formatted size, e.g. `1.23 MB`.
+ */
+const formatFileSize = (size) => {
+  if (size === 1) {
+    return `${size} byte`;
+  }
+
+  if (size < 1024) {
+    return `${size} bytes`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(2)} KB`;
+  }
+
+  if (size < 1024 * 1024 * 1024) {
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+/**
+ * Decode the given Base64 data.
+ * @param {string} data Encoded data.
+ * @returns {string} Decoded data.
+ * @see https://developer.mozilla.org/en-US/docs/Glossary/Base64#the_unicode_problem
+ */
+const decodeBase64 = (data) =>
+  new TextDecoder().decode(Uint8Array.from(atob(data), (m) => m.codePointAt(0)));
+
+/**
  * Reference or define the Bugzilla app namespace.
  * @namespace
  */

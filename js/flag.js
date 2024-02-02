@@ -48,9 +48,11 @@ function toggleRequesteeField(flagField, no_focus)
 
 // Activate all the `<select class="flag_select">` elements on the bug form.
 window.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.flag_select').forEach(($select) => {
-    $select.addEventListener('change', () => {
-      toggleRequesteeField($select);
+  document.querySelectorAll('.flag-table').forEach(($table) => {
+    $table.addEventListener('change', (event) => {
+      if (event.target.matches('.flag_select')) {
+        toggleRequesteeField(event.target);
+      }
     });
   });
 });

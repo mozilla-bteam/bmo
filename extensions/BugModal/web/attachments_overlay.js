@@ -1,0 +1,682 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+window.addEventListener('DOMContentLoaded', () => {
+  /** @type {HTMLDialogElement} */
+  const $overlay = document.querySelector('#att-overlay');
+  /** @type {HTMLFormElement} */
+  const $form = $overlay.querySelector('form');
+  /** @type {HTMLHeadingElement} */
+  const $title = $overlay.querySelector('.header .title');
+  /** @type {HTMLButtonElement} */
+  const $prevButton = $overlay.querySelector('button[data-action="prev"]');
+  /** @type {HTMLButtonElement} */
+  const $nextButton = $overlay.querySelector('button[data-action="next"]');
+  /** @type {HTMLButtonElement} */
+  const $toggleDetailsButton = $overlay.querySelector('button[data-action="toggle-details"]');
+  /** @type {HTMLButtonElement} */
+  const $closeButton = $overlay.querySelector('button[data-action="close"]');
+  /** @type {HTMLButtonElement} */
+  const $rawButton = $overlay.querySelector('button[data-action="raw"]');
+  /** @type {HTMLButtonElement | null} Available only when the patch viewer is used */
+  const $diffButton = $overlay.querySelector('button[data-action="diff"]');
+  /** @type {HTMLButtonElement | null} Available only when the Splinter extension is used */
+  const $reviewButton = $overlay.querySelector('button[data-action="review"]');
+  /** @type {HTMLButtonElement | null} Available only for admins */
+  const $deleteButton = $overlay.querySelector('button[data-action="delete"]');
+  /** @type {HTMLButtonElement | null} Available only for signed-in users */
+  const $saveButton = $overlay.querySelector('input[type="submit"]');
+  /** @type {HTMLElement | null} Available only for signed-in users */
+  const $status = $overlay.querySelector('.status');
+  /** @type {HTMLElement} */
+  const $preview = $overlay.querySelector('.preview');
+  /** @type {HTMLElement} */
+  const $subColumn = $overlay.querySelector('.sub-column');
+  /** @type {HTMLElement | null} Available only for signed-in users */
+  const $commentPane = $overlay.querySelector('.comment-pane');
+  /** @type {HTMLAnchorElement} */
+  const $creator = $overlay.querySelector('.creator .email');
+  /** @type {HTMLElement | null} Available only for signed-in users */
+  const $creatorName = $creator.querySelector('.fn');
+  /** @type {HTMLElement} */
+  const $createdDate = $form.querySelector('.created-date');
+  /** @type {HTMLElement} */
+  const $updatedDate = $form.querySelector('.updated-date');
+  /** @type {HTMLElement} */
+  const $fileSize = $form.querySelector('.file-size');
+
+  const {
+    bug_id: bugId,
+    config: { basepath },
+  } = /** @type {any} */ (BUGZILLA);
+  const tokens = $form.token
+    ? Object.fromEntries(JSON.parse($form.token.dataset.tokens))
+    : undefined;
+  const cgiPath = `${basepath}attachment.cgi`;
+  const previewDisabled = $preview.matches('.disabled');
+
+  const textTypeMap = {
+    'text/x-github-pull-request': 'GitHub Pull Request',
+    'text/x-phabricator-request': 'Phabricator Request',
+    'text/x-review-board-request': 'Review Board Request',
+    'text/x-google-doc': 'Google Doc',
+  };
+
+  let bugAttachments = [];
+  let bugAttachmentsIndex = 0;
+  let attachmentId = 0;
+  let currentAttachment = {};
+  let initialFormData = {};
+
+  /**
+   * Initialize the {@link $overlay} to handle some events.
+   */
+  const initOverlay = () => {
+    // Enable keyboard navigation using arrow keys
+    $overlay.addEventListener('keydown', (event) => {
+      const { target, key } = event;
+
+      if (/** @type {HTMLElement} */ (target).matches('input, select, textarea:not(:read-only)')) {
+        return;
+      }
+
+      if (key === 'ArrowLeft') {
+        event.preventDefault();
+        showPreviousAttachment();
+      }
+
+      if (key === 'ArrowRight') {
+        event.preventDefault();
+        showNextAttachment();
+      }
+    });
+
+    // Prevent the dialog from being closed with the Escape key if there are any changes
+    $overlay.addEventListener('cancel', (event) => {
+      if (getChanges()) {
+        event.preventDefault();
+      }
+    });
+
+    $overlay.addEventListener('close', () => {
+      document.body.style.removeProperty('overflow');
+    });
+  };
+
+  /**
+   * Initialize the action buttons on the header/footer.
+   */
+  const initActions = () => {
+    $prevButton.addEventListener('click', () => {
+      showPreviousAttachment();
+    });
+
+    $nextButton.addEventListener('click', () => {
+      showNextAttachment();
+    });
+
+    $toggleDetailsButton.addEventListener('click', () => {
+      toggleDetails();
+    });
+
+    $closeButton.addEventListener('click', () => {
+      $overlay.close();
+    });
+
+    $rawButton.addEventListener('click', () => {
+      window.location.href = `${currentAttachment.link}`;
+    });
+
+    $diffButton?.addEventListener('click', () => {
+      window.location.href = `${currentAttachment.link}&action=diff`;
+    });
+
+    $reviewButton?.addEventListener('click', () => {
+      window.location.href = `${$reviewButton.dataset.base}&bug=${bugId}&attachment=${attachmentId}`;
+    });
+
+    $deleteButton?.addEventListener('click', () => {
+      window.location.href = `${currentAttachment.link}&action=delete`;
+    });
+
+    $saveButton?.addEventListener('click', async (event) => {
+      event.preventDefault();
+
+      // Use the FlagTypeComment extension (`ftc.js`) to handle submission if needed
+      if ($overlay.querySelector('#approval-request-fieldset-wrapper section.approval-request')) {
+        $form.requestSubmit();
+      } else if (await saveChanges()) {
+        // It’s hard to dynamically update the Edit Bug page using the API after saving attachment
+        // changes, so just reload the page
+        location.reload();
+      }
+    });
+  };
+
+  /**
+   * Initialize attachment links on the Edit Bug page to show the {@link $overlay}, instead of
+   * navigating to the legacy, separate attachment page.
+   */
+  const initAttachmentLinks = () => {
+    document.body
+      .querySelectorAll('a[href*="attachment.cgi?id="]')
+      .forEach((/** @type {HTMLAnchorElement} */ $link) => {
+        const {
+          dataset: { overlay: mode },
+          search,
+        } = $link;
+        const params = new URLSearchParams(search);
+        const id = Number(params.get('id'));
+        const action = params.get('action');
+
+        if (action !== 'edit' && !mode) {
+          return;
+        }
+
+        $link.addEventListener('click', async (event) => {
+          event.preventDefault();
+          showOverlay();
+          loadAttachment(id, mode);
+        });
+      });
+  };
+
+  /**
+   * Initialize the detail pane.
+   */
+  const initDetails = () => {
+    if ($form.contenttypemethod) {
+      [...$form.contenttypemethod].forEach(($radio) => {
+        $radio.addEventListener('change', () => {
+          onContentTypeSelectorChange();
+        });
+      });
+    }
+
+    $form.contenttypeselection?.addEventListener('change', () => {
+      $form.contenttypeentry.value = $form.contenttypeselection.value;
+    });
+  };
+
+  /**
+   * Show the previous attachment on the bug if possible.
+   */
+  const showPreviousAttachment = () => {
+    if (bugAttachmentsIndex > 0) {
+      bugAttachmentsIndex -= 1;
+      loadAttachment(bugAttachments[bugAttachmentsIndex].id);
+    }
+  };
+
+  /**
+   * Show the next attachment on the bug if possible.
+   */
+  const showNextAttachment = () => {
+    if (bugAttachmentsIndex < bugAttachments.length - 1) {
+      bugAttachmentsIndex += 1;
+      loadAttachment(bugAttachments[bugAttachmentsIndex].id);
+    }
+  };
+
+  /**
+   * Show or hide the detail pane and and comment pane.
+   * @param {boolean} [force] `true` to show, `false` to hide, rather than toggling the state.
+   */
+  const toggleDetails = (force = undefined) => {
+    const hidden = force ?? !$subColumn.hidden;
+
+    $subColumn.hidden = hidden;
+
+    if ($commentPane) {
+      $commentPane.hidden = hidden;
+    }
+
+    if ($saveButton) {
+      $saveButton.disabled = hidden;
+    }
+
+    $toggleDetailsButton.textContent = hidden ? 'Show Details' : 'Hide Details';
+  };
+
+  /**
+   * Load the data for all the attachments on the current bug.
+   * @returns {Promise<object[]>} Attachments.
+   * @see https://bmo.readthedocs.io/en/latest/api/core/v1/attachment.html#get-attachment
+   */
+  const loadBugAttachments = async () => {
+    const { bugs } = await Bugzilla.API.get(`bug/${bugId}/attachment`, {
+      include_fields: ['_all'],
+      exclude_fields: ['data'],
+    });
+
+    return bugs[bugId];
+  };
+
+  /**
+   * Update the Content Type section when the selection method (radio buttons) is changed.
+   */
+  const onContentTypeSelectorChange = () => {
+    const { value } = $form.contenttypemethod;
+
+    $form.contenttypeselection.disabled = value !== 'list';
+    // Don’t use `disabled` because the property removes the field from form data
+    $form.contenttypeentry.readOnly = value !== 'manual';
+    $form.ispatch.value = value === 'patch' ? 1 : 0;
+
+    if (value === 'patch') {
+      $form.contenttypeselection.value = 'text/plain';
+      $form.contenttypeentry.value = 'text/plain';
+    }
+
+    if (value === 'binary') {
+      $form.contenttypeselection.value = 'application/octet-stream';
+      $form.contenttypeentry.value = 'application/octet-stream';
+    }
+  };
+
+  /**
+   * Open the Attachment overlay and prevent the background page from being scrolled.
+   */
+  const showOverlay = () => {
+    $overlay.showModal();
+    document.body.style.setProperty('overflow', 'hidden');
+  };
+
+  /**
+   * Load the attachment data.
+   * @param {number} id Attachment ID.
+   * @param {string} [mode] Display mode. Only `lightbox` is supported.
+   */
+  const loadAttachment = async (id, mode) => {
+    toggleDetails(mode === 'lightbox');
+
+    if (!bugAttachments.length) {
+      bugAttachments = await loadBugAttachments();
+    }
+
+    attachmentId = id;
+    bugAttachmentsIndex = bugAttachments.findIndex((att) => att.id === id);
+
+    const attachment = bugAttachments[bugAttachmentsIndex];
+    const { size, content_type, last_change_time } = attachment;
+
+    // Keep the snake_case property names from the API as is
+    currentAttachment = {
+      ...attachment,
+      // Additional properties
+      link: `${cgiPath}?id=${id}`,
+      deleted: size === 0,
+      is_binary: content_type === 'application/octet-stream',
+      is_common_type: [...($form.contenttypeselection?.options ?? [])].some(
+        (o) => o.value === content_type,
+      ),
+    };
+
+    // Update hidden form values required to update the attachment
+    if ($form.id) {
+      /** @type {any} */ ($form.id).value = String(attachmentId);
+      $form.delta_ts.value = last_change_time.replace('T', ' ').replace('Z', '');
+      $form.token.value = tokens[attachmentId];
+    }
+
+    updateActions();
+    updateDetails();
+    updatePreview();
+    updateComment();
+  };
+
+  /**
+   * Update the title and action buttons on the header/footer.
+   */
+  const updateActions = () => {
+    const { summary, deleted, is_patch, is_obsolete, is_private } = currentAttachment;
+
+    const title = [
+      is_private ? '[private]' : '',
+      is_obsolete ? '[obsolete]' : '',
+      deleted ? '[deleted]' : '',
+      is_patch ? '[patch]' : '',
+      summary,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    $title.textContent = `Attachment ${attachmentId}: ${title}`;
+    $title.classList.toggle('bz_private', is_private);
+
+    $prevButton.disabled = bugAttachmentsIndex === 0;
+    $nextButton.disabled = bugAttachmentsIndex === bugAttachments.length - 1;
+
+    if ($diffButton) {
+      $diffButton.disabled = deleted || !is_patch;
+    }
+
+    if ($reviewButton) {
+      $reviewButton.disabled = deleted || !is_patch;
+    }
+
+    if ($deleteButton) {
+      $deleteButton.disabled = deleted;
+    }
+  };
+
+  /**
+   * Update the detail pane.
+   */
+  const updateDetails = () => {
+    const {
+      summary,
+      file_name,
+      content_type,
+      is_obsolete,
+      is_private,
+      is_patch,
+      is_binary,
+      is_common_type,
+      size,
+      flags,
+      creation_time,
+      last_change_time,
+      creator_detail: { email: creatorEmail, real_name: creatorName, id: creatorId },
+    } = currentAttachment;
+
+    $creator.href = `mailto:${creatorEmail}`;
+    $creator.title = `${creatorName} <${creatorEmail}>`;
+    $creator.dataset.userName = creatorName;
+    $creator.dataset.userEmail = creatorEmail;
+    $creator.dataset.userId = creatorId;
+
+    if ($creatorName) {
+      $creatorName.textContent = creatorName;
+    }
+
+    $createdDate.textContent = formatDate(creation_time);
+    $updatedDate.textContent = formatDate(last_change_time);
+    $fileSize.textContent = size === 0 ? '0 bytes (deleted)' : formatFileSize(size);
+    $form.description.value = summary;
+    $form.filename.value = file_name;
+
+    if ($form.contenttypemethod) {
+      $form.contenttypemethod.value = is_patch
+        ? 'patch'
+        : is_binary
+        ? 'binary'
+        : is_common_type
+        ? 'list'
+        : 'manual';
+
+      onContentTypeSelectorChange();
+    }
+
+    if ($form.contenttypeselection) {
+      $form.contenttypeselection.value = is_common_type ? content_type : '';
+    }
+
+    $form.contenttypeentry.value = content_type;
+
+    if ($form.ispatch) {
+      $form.ispatch.value = is_patch;
+    }
+
+    if ($form.isobsolete) {
+      $form.isobsolete.checked = is_obsolete;
+    }
+
+    // Insider only
+    if ($form.isprivate) {
+      $form.isprivate.checked = is_private;
+    }
+
+    updateFlags();
+
+    // Cache the form data for later use
+    initialFormData = Object.fromEntries(new FormData($form).entries());
+  };
+
+  /**
+   * Update the flag list in the detail pane.
+   */
+  const updateFlags = () => {
+    const { flags } = currentAttachment;
+    let separatorFound = false;
+
+    $form
+      .querySelectorAll('.flag-table tbody')
+      .forEach((/** @type {HTMLElement} */ $row) => {
+        if ($row.matches('.separator')) {
+          separatorFound = true;
+        }
+
+        if ($row.matches('.cloned') || separatorFound) {
+          $row.remove();
+          return;
+        }
+
+        const typeId = Number($row.dataset.typeId);
+        const typeFlags = flags.filter((flag) => flag.type_id === typeId);
+
+        // Clone multi-requestable flags
+        if ($row.matches('[data-type-multi="1"]') && typeFlags.length > 0) {
+          typeFlags.forEach((flag) => {
+            const $_row = /** @type {HTMLElement} */ ($row.cloneNode(true));
+
+            $_row.classList.add('cloned');
+            $_row.dataset.flagId = flag.id;
+            $_row.querySelectorAll('[id]').forEach((element) => {
+              element.id = element.id
+                .replace(`flag_type-${flag.type_id}`, `flag-${flag.id}`)
+                .replace(`requestee_type-${flag.type_id}`, `requestee-${flag.id}`);
+            });
+            $_row.querySelectorAll('[name]').forEach((/** @type {HTMLInputElement} */ element) => {
+              element.name = element.name
+                .replace(`flag_type-${flag.type_id}`, `flag-${flag.id}`)
+                .replace(`requestee_type-${flag.type_id}`, `requestee-${flag.id}`);
+            });
+            $row.insertAdjacentElement('beforebegin', $_row);
+            updateFlagRow($_row, flag);
+          });
+
+          updateFlagRow($row, undefined, true);
+        } else {
+          updateFlagRow($row, typeFlags[0]);
+        }
+      });
+  };
+
+  /**
+   * Update a flag row.
+   * @param {HTMLElement} $_row `<tbody>` element.
+   * @param {object} flag Flag object from the API.
+   * @param {boolean} [additional] Whether to show a `addl.` label in the setter column. This only
+   * applies if the flag is multi-requestable, and there is one or more existing requestees.
+   */
+  const updateFlagRow = ($_row, flag, additional = false) => {
+    const $status = /** @type {HTMLSelectElement} */ ($_row.querySelector('td.value select'));
+    const $requestee = /** @type {HTMLInputElement} */ ($_row.querySelector('td.requestee input'));
+
+    $_row.querySelector('td.setter').textContent = flag?.setter
+      ? `${flag.setter.split('@')?.[0]}:`
+      : additional
+      ? 'addl.'
+      : '';
+
+    $status.value = flag?.status || 'X';
+
+    if ($requestee) {
+      $requestee.value = flag?.requestee || '';
+      $requestee.parentElement.classList.toggle('bz_default_hidden', !flag || !flag.requestee);
+    }
+  };
+
+  /**
+   * Update the preview pane.
+   */
+  const updatePreview = async () => {
+    const { link, deleted, file_name, content_type, data } = currentAttachment;
+
+    $preview.innerHTML = 'Loading…';
+
+    if (deleted) {
+      $preview.innerHTML = '<p>The content of this attachment has been deleted.</p>';
+
+      return;
+    }
+
+    /**
+     * Show fallback text and download link.
+     * @param {string} text Text to be displayed.
+     */
+    const fallback = (text) => {
+      $preview.innerHTML = `<div><p>${text}</p><p><a>Download</a></p></div>`;
+      $preview.querySelector('a').href = link;
+      $preview.querySelector('a').download = file_name;
+    };
+
+    if (previewDisabled) {
+      fallback('Preview is disabled by administrator.');
+
+      return;
+    }
+
+    if (content_type in textTypeMap) {
+      $preview.innerHTML = `<p><a href="${link}">View ${textTypeMap[content_type]}</a></p>`;
+
+      return;
+    }
+
+    if (content_type.startsWith('text/')) {
+      let _data = data;
+
+      if (!_data) {
+        const { attachments } = await Bugzilla.API.get(`bug/attachment/${attachmentId}`, {
+          include_fields: ['data'],
+        });
+
+        _data = attachments[attachmentId].data;
+        bugAttachments[bugAttachmentsIndex].data = _data;
+      }
+
+      const $textarea = document.createElement('textarea');
+
+      $textarea.readOnly = true;
+      $preview.innerHTML = '';
+      $preview.appendChild($textarea).value = decodeBase64(_data);
+
+      return;
+    }
+
+    if (content_type.startsWith('image/')) {
+      const $image = new Image();
+
+      $image.addEventListener('load', () => {
+        $preview.innerHTML = '';
+        $preview.appendChild($image);
+      });
+
+      $image.addEventListener('error', () => {
+        $preview.innerHTML = '<p>Failed to load the image.</p>';
+      });
+
+      $image.src = link;
+      $image.alt = '';
+
+      return;
+    }
+
+    fallback('No preview available for this type of attachment.');
+  };
+
+  /**
+   * Update the comment pane.
+   */
+  const updateComment = () => {
+    if ($commentPane) {
+      $form.comment.value = '';
+      $form.needinfo.checked = false;
+      $form.needinfo_role.value = 'other';
+      $form.needinfo_from.value = '';
+    }
+  };
+
+  /**
+   * Get the changes made on the form by comparing the initial values and current values.
+   * @returns {{ [key: string]: { removed: any, added: any } } | null} Changes.
+   */
+  const getChanges = () => {
+    if (!Object.keys(initialFormData).length) {
+      return null;
+    }
+
+    const currentFormData = Object.fromEntries(new FormData($form).entries());
+    const ignoredKeys = ['contenttypemethod', 'contenttypeselection'];
+    /** @type {{ [key: string]: { removed: any, added: any } }} */
+    const changes = {};
+
+    Object.entries(initialFormData).forEach(([key, initialValue]) => {
+      if (!ignoredKeys.includes(key) && initialValue !== currentFormData[key]) {
+        changes[key] = { removed: initialValue, added: currentFormData[key] };
+      }
+    });
+
+    Object.entries(currentFormData).forEach(([key, currentValue]) => {
+      if (!ignoredKeys.includes(key) && initialFormData[key] !== currentValue) {
+        changes[key] = { removed: initialFormData[key], added: currentValue };
+      }
+    });
+
+    if (!Object.keys(changes).length) {
+      return null;
+    }
+
+    return changes;
+  };
+
+  /**
+   * Save any changes to the current attachment. Submit the form data via XHR instead of the API,
+   * otherwise users may not be notified of the changes via email. This happened when `ftc.js` of
+   * the FlagTypeComment extension was developed.
+   * @returns {Promise<boolean>} Whether the changes have been saved.
+   */
+  const saveChanges = async () => {
+    // Just close the dialog if no changes have been made
+    if (!getChanges()) {
+      $overlay.close();
+
+      return false;
+    }
+
+    $status.textContent = 'Saving changes…';
+    $saveButton.disabled = true;
+
+    const request = new XMLHttpRequest();
+    const data = new FormData($form);
+
+    // Always use the `contenttypeentry` field for the content type
+    data.set('contenttypemethod', 'manual');
+
+    try {
+      await new Promise((resolve, reject) => {
+        request.open('POST', cgiPath);
+        request.addEventListener('load', () => resolve());
+        request.addEventListener('error', () => reject());
+        request.send(data);
+      });
+
+      return true;
+    } catch {
+      $status.textContent = 'Couldn’t save the changes';
+      $saveButton.disabled = false;
+    }
+
+    return false;
+  };
+
+  initOverlay();
+  initActions();
+  initDetails();
+  initAttachmentLinks();
+});

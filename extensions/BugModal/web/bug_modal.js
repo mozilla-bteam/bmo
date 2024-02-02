@@ -581,7 +581,7 @@ $(function() {
         .click(function(event) {
             event.preventDefault();
             // focus first to grow the textarea, so we scroll to the correct location
-            $('#comment').focus();
+            $('#comment', '#changeform').focus();
             $.scrollTo($('#bottom-save-btn'));
         });
 
@@ -930,7 +930,7 @@ $(function() {
     $('#needinfo-scroll')
         .click(function(event) {
             event.preventDefault();
-            $.scrollTo($('#needinfo_container'), function() { $('#needinfo_role').focus(); });
+            $.scrollTo($('#needinfo_container'), function() { $('#needinfo_role', '#needinfo_container').focus(); });
         });
 
     // knob
@@ -1084,16 +1084,16 @@ $(function() {
                 // remove embedded links to attachment details
                 reply_text = reply_text.replace(/(attachment\s+\d+)(\s+\[[^\[\n]+\])+/gi, '$1');
 
-                $.scrollTo($('#comment'), function() {
-                    if ($('#comment').val() != reply_text) {
-                        $('#comment').val($('#comment').val() + reply_text);
+                $.scrollTo($('#comment', '#changeform'), function() {
+                    if ($('#comment', '#changeform').val() != reply_text) {
+                        $('#comment', '#changeform').val($('#comment', '#changeform').val() + reply_text);
                     }
 
                     if (BUGZILLA.user.settings.autosize_comments) {
-                        autosize.update($('#comment'));
+                        autosize.update($('#comment', '#changeform'));
                     }
 
-                    $('#comment').trigger('input').focus();
+                    $('#comment', '#changeform').trigger('input').focus();
                 });
             }
 
@@ -1112,11 +1112,11 @@ $(function() {
         });
 
     if (BUGZILLA.user.settings.autosize_comments) {
-        $('#comment').addClass('autosized-comment');
-        autosize($('#comment'));
+        $('#comment', '#changeform').addClass('autosized-comment');
+        autosize($('#comment', '#changeform'));
     } else if (BUGZILLA.user.settings.zoom_textareas) {
         // add comment --> enlarge on focus
-        $('#comment').focus(function(event) {
+        $('#comment', '#changeform').focus(function(event) {
             $(event.target).attr('rows', 15);
         });
     }
@@ -1125,10 +1125,10 @@ $(function() {
     $('#add-comment-private-cb')
         .click(function(event) {
             if ($(event.target).prop('checked')) {
-                $('#comment').addClass('private-comment');
+                $('#comment', '#changeform').addClass('private-comment');
             }
             else {
-                $('#comment').removeClass('private-comment');
+                $('#comment', '#changeform').removeClass('private-comment');
             }
         });
 
@@ -1195,10 +1195,10 @@ $(function() {
         .click(function(event) {
             event.preventDefault();
             var text = "(Commenting on User Story)\n" + wrapReplyText($('#cf_user_story').val());
-            var current = $('#comment').val();
+            var current = $('#comment', '#changeform').val();
             if (current != text) {
-                $('#comment').val(current + text);
-                $('#comment').focus();
+                $('#comment', '#changeform').val(current + text);
+                $('#comment', '#changeform').focus();
                 $.scrollTo($('#bottom-save-btn'));
             }
         });
@@ -1514,35 +1514,37 @@ $(function() {
     var last_comment_text = '';
     $('#comment-tabs li').click(async event => {
         var that = $(event.target);
+        var context = that.closest('form');
+
         if (that.attr('aria-selected') === 'true')
             return;
 
         // ensure preview's height matches the comment
-        var comment = $('#comment');
-        var preview = $('#comment-preview');
+        var comment = $('#comment', context);
+        var preview = $('#comment-preview', context);
         var comment_height = comment[0].offsetHeight;
 
         // change tabs
-        $('#comment-tabs li').attr({ tabindex: -1, 'aria-selected': false });
-        $('.comment-tabpanel').hide();
+        $('#comment-tabs li', context).attr({ tabindex: -1, 'aria-selected': false });
+        $('.comment-tabpanel', context).hide();
         that.attr({ tabindex: 0, 'aria-selected': true });
-        var tabpanel = $('#' + that.attr('aria-controls')).show();
+        var tabpanel = $('#' + that.attr('aria-controls'), context).show();
         var focus = that.data('focus');
         if (focus !== '') {
-            $('#' + focus).focus();
+            $('#' + focus, context).focus();
         }
 
         // update preview
         preview.css('height', comment_height + 'px');
-        if (tabpanel.attr('id') != 'comment-preview-tabpanel' || last_comment_text == comment.val())
+        if (!tabpanel.attr('id').endsWith('-comment-preview-tabpanel') || last_comment_text == comment.val())
             return;
-        $('#preview-throbber').show();
+        $('#preview-throbber', context).show();
         preview.html('');
 
         try {
             const { html } = await Bugzilla.API.post('bug/comment/render', { text: comment.val() });
 
-            $('#preview-throbber').hide();
+            $('#preview-throbber', context).hide();
             preview.html(html);
 
             // Highlight code if possible
@@ -1550,7 +1552,7 @@ $(function() {
                 Prism.highlightAllUnder(preview.get(0));
             }
         } catch ({ message }) {
-            $('#preview-throbber').hide();
+            $('#preview-throbber', context).hide();
             var container = $('<div/>');
             container.addClass('preview-error');
             container.text(message);
@@ -1560,7 +1562,8 @@ $(function() {
         last_comment_text = comment.val();
     }).keydown(function(event) {
         var that = $(this);
-        var tabs = $('#comment-tabs li');
+        var context = that.closest('form');
+        var tabs = $('#comment-tabs li', context);
         var target;
 
         // enable keyboard navigation on tabs
@@ -1611,12 +1614,12 @@ $(function() {
         });
 
     // Save comments in progress
-    $('#comment')
+    $('#comment', '#changeform')
         .on('input', function(event) {
             saveBugComment(event.target.value);
         });
 
-    const comment = document.querySelector('#comment');
+    const comment = document.querySelector('#comment', '#add-comment');
     if (comment.classList.contains('attach-long-paste')) {
       // Convert long paste into an attachment
       comment.addEventListener('paste', async event => {

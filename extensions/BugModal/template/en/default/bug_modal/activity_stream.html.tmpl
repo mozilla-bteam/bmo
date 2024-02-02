@@ -285,7 +285,8 @@
           <meta itemprop="contentUrl" content="[% link FILTER html %]">
           <a class="link" href="[% link FILTER html %]&amp;action=diff">
         [% ELSE %]
-          <a class="link[% " lightbox" IF att.is_image %]" href="[% link FILTER html %]" itemprop="contentUrl">
+          <a class="link" href="[% link FILTER html %]" itemprop="contentUrl"
+             [%= IF att.is_image %]data-overlay="lightbox"[% END %]>
         [% END %]
         <span id="att-[% att.id FILTER none %]-description" itemprop="description">[% att.description FILTER html %]</span></a>
         [% " (obsolete)" IF att.isobsolete; " (deleted)" IF !att.datasize %]
