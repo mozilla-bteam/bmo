@@ -211,6 +211,7 @@ sub critical_needinfo_bugs {
   # Preselected values for inserting into SQL
   my $cache           = Bugzilla->process_cache->{attention};
   my $needinfo_id     = $cache->{needinfo_flag_id};
+  my $keyword_id      = $cache->{sec_critical_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
   my $nightly_flag_id = $flags->{tracking}->{nightly}->flag_id;
@@ -219,6 +220,7 @@ sub critical_needinfo_bugs {
 
   my $query1 = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
+              JOIN flags ON bugs.bug_id = flags.bug_id
               LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_1
                 ON bugs.bug_id = tracking_flags_bugs_1.bug_id
                 AND tracking_flags_bugs_1.tracking_flag_id = $nightly_flag_id
@@ -228,32 +230,43 @@ sub critical_needinfo_bugs {
               LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_3
                 ON bugs.bug_id = tracking_flags_bugs_3.bug_id
                 AND tracking_flags_bugs_3.tracking_flag_id = $release_flag_id
-              LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id
-                AND COALESCE(requestees_login_name.requestee_id, 0) = ?
         WHERE products.classification_id IN ($class_ids)
               AND bugs.bug_status IN ($bug_states)
               AND (COALESCE(tracking_flags_bugs_1.value, '---') IN ('+', 'blocking')
                     OR COALESCE(tracking_flags_bugs_2.value, '---') IN ('+', 'blocking')
                     OR COALESCE(tracking_flags_bugs_3.value, '---') IN ('+', 'blocking'))
-              AND (requestees_login_name.bug_id IS NOT NULL
-                    AND requestees_login_name.type_id = $needinfo_id)";
+              AND flags.type_id = $needinfo_id
+              AND flags.requestee_id = ?";
 
   my $query2 = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
-              LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
-              LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id AND COALESCE(requestees_login_name.requestee_id, 0) = ?
-              LEFT JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
-        WHERE products.classification_id IN ($class_ids)
-              AND (keywords.keywordid IS NULL || keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%'))
+              JOIN flags ON bugs.bug_id = flags.bug_id
+         LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
+       WHERE products.classification_id IN ($class_ids)
               AND bugs.bug_status IN ($bug_states)
-              AND (requestees_login_name.bug_id IS NOT NULL AND requestees_login_name.type_id = $needinfo_id)
-              AND bug_group_map.group_id IN (" . (join ',', @{$cache->{sec_group_ids}}) . ')';
+              AND (bugs.bug_severity = 'S1' OR keywords.keywordid = $keyword_id)
+              AND flags.type_id = $needinfo_id
+              AND flags.requestee_id = ?";
+
+  my $query3 = SELECT . "
+         FROM bugs JOIN products ON bugs.product_id = products.id
+              JOIN flags ON bugs.bug_id = flags.bug_id
+              JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
+              LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
+        WHERE products.classification_id IN ($class_ids)
+              AND (keywords.keywordid IS NULL 
+                   OR keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%'))
+              AND bugs.bug_status IN ($bug_states)
+              AND bug_group_map.group_id IN (" . (join ',', @{$cache->{sec_group_ids}}) . ")
+              AND flags.type_id = $needinfo_id
+              AND flags.requestee_id = ?";
 
   my $bugs1 = get_bug_list($query1, $user->id);
   my $bugs2 = get_bug_list($query2, $user->id);
+  my $bugs3 = get_bug_list($query3, $user->id);
 
-  my %bugs_all = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2};
-
+  # Remove any duplicates
+  my %bugs_all = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2}, @{$bugs3};
   my $formatted_bugs = format_bug_list([values %bugs_all], $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
@@ -333,7 +346,7 @@ sub sec_high_bugs {
                 ON bugs.bug_id = tracking_flags_bugs_3.bug_id
                 AND tracking_flags_bugs_3.tracking_flag_id = $release_flag_id
         WHERE products.classification_id IN ($class_ids)
-              AND keywords.keywordid = $keyword_id
+              AND (bugs.bug_severity = 'S2' || keywords.keywordid = $keyword_id)
               AND bugs.bug_status IN ($bug_states)
               AND bugs.assigned_to = ?
               AND COALESCE(tracking_flags_bugs_1.value, '---') != 'disabled'
@@ -362,15 +375,14 @@ sub important_needinfo_bugs {
 
   my $query = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
+              JOIN flags ON bugs.bug_id = flags.bug_id
               LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
-              LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id
-                AND COALESCE(requestees_login_name.requestee_id, 0) = ?
-                AND COALESCE(requestees_login_name.setter_id, 0) != ?
         WHERE products.classification_id IN ($class_ids)
               AND (bugs.bug_severity = 'S2' OR keywords.keywordid = $keyword_id)
               AND bugs.bug_status IN ($bug_states)
-              AND (requestees_login_name.bug_id IS NOT NULL
-                    AND requestees_login_name.type_id = $needinfo_id)
+              AND flags.type_id = $needinfo_id
+              AND flags.requestee_id = ?
+              AND flags.setter_id != ?
         ORDER BY bugs.delta_ts, bugs.bug_id";
 
   my $bugs           = get_bug_list($query, $user->id, $user->id);
@@ -398,17 +410,16 @@ sub other_needinfo_bugs {
 
   my $query = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
+              JOIN flags ON bugs.bug_id = flags.bug_id
               LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
-              LEFT JOIN flags AS requestees_login_name ON bugs.bug_id = requestees_login_name.bug_id
-                AND COALESCE(requestees_login_name.requestee_id, 0) = ?
-                AND COALESCE(requestees_login_name.setter_id, 0) != ?
               LEFT JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
         WHERE products.classification_id IN ($class_ids)
               AND bugs.bug_status IN ($bug_states)
-              AND (requestees_login_name.bug_id IS NOT NULL
-                    AND requestees_login_name.type_id = $needinfo_id)
+              AND flags.type_id = $needinfo_id
+              AND flags.requestee_id = ?
+              AND flags.setter_id != ?
               AND bugs.bug_severity NOT IN ('S1','S2')
-              AND (keywords.keywordid IS NULL || keywords.keywordid NOT IN (?, ?))
+              AND (keywords.keywordid IS NULL OR keywords.keywordid NOT IN (?, ?))
               AND (bug_group_map.group_id IS NULL OR bug_group_map.group_id NOT IN (" . join ',',
     @{$cache->{sec_group_ids}} . '))
         ORDER BY bugs.delta_ts, bugs.bug_id';

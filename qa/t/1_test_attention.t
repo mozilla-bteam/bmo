@@ -52,6 +52,15 @@ $sel->is_text_present_ok('has been added to the database', 'Bug created');
 
 file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc',
+  'test bug for needinfo you with severity of S1');
+$sel->select_ok('component', 'General');
+$sel->select_ok('bug_severity', 'S1');
+$sel->type_ok('needinfo_from', $config->{admin_user_login});
+$sel->click_ok('commit');
+$sel->is_text_present_ok('has been added to the database', 'Bug created');
+
+file_bug_in_product($sel, 'Firefox');
+$sel->type_ok('short_desc',
   'test bug for needinfo in security group but does not have security keyword');
 $sel->select_ok('component', 'General');
 $sel->type_ok('needinfo_from', $config->{admin_user_login});
@@ -125,6 +134,10 @@ $sel->is_text_present_ok(
 $sel->is_text_present_ok(
   'test bug for needinfo you tracked against nightly beta release',
   'test bug for needinfo you tracked against nightly beta release'
+);
+$sel->is_text_present_ok(
+  'test bug for needinfo you with severity of S1',
+  'test bug for needinfo you with severity of S1'
 );
 $sel->is_text_present_ok(
   'test bug for needinfo in security group but does not have security keyword',
