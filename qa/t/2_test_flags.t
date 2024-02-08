@@ -482,6 +482,8 @@ ok(grep($_ eq '?', @flag_states), "Flag state '?' available");
 
 $sel->click_ok(
   "//a[contains(\@href,'/attachment.cgi?id=$attachment2_id&action=edit')]");
+# Wait a sec before the attachment overlay is loaded
+sleep(1);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment2_id: patch, v2"]}
 );
@@ -528,6 +530,8 @@ log_in($sel, $config, 'admin');
 go_to_bug($sel, $bug1_id);
 $sel->click_ok(
   "//a[contains(\@href,'/attachment.cgi?id=${attachment3_id}&action=edit')]");
+# Wait a sec before the attachment overlay is loaded
+sleep(1);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment3_id: patch, v3"]}
 );
