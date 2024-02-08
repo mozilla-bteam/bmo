@@ -24,7 +24,7 @@
       Hook.process("row");
       NEXT IF attachment_rendered;
     %]
-    <tr class="
+    <tr data-attachment-id="[% attachment.id FILTER none %]" class="
         [%~ " bz_private" IF attachment.isprivate %]
         [%~ " attach-obsolete" IF attachment.isobsolete %]
         [%~ " attach-patch" IF attachment.can_review %]

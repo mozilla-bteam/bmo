@@ -74,9 +74,10 @@ go_to_bug($sel, $bug1_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment1_id
     . '&action=edit")]');
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^Attachment $attachment1_id Details for Bug $bug1_id/);
-$sel->click_ok("link=Delete");
+$sel->is_element_present_ok(
+  qq{//h2[normalize-space(text())="Attachment $attachment1_id: new S3 attachment, v1"]}
+);
+$sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="delete"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Delete Attachment $attachment1_id of Bug $bug1_id");
 $sel->is_text_present_ok("Do you really want to delete this attachment?");
@@ -148,9 +149,10 @@ go_to_bug($sel, $bug2_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^Attachment $attachment2_id Details for Bug $bug2_id/);
-$sel->click_ok("link=Delete");
+$sel->is_element_present_ok(
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: another gcs attachment, v2"]}
+);
+$sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="delete"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Delete Attachment $attachment2_id of Bug $bug2_id");
 $sel->is_text_present_ok("Do you really want to delete this attachment?");

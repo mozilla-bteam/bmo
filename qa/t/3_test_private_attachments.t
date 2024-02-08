@@ -106,15 +106,14 @@ foreach my $user (undef, 'unprivileged') {
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment1_id
     . '&action=edit")]');
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^Attachment $attachment1_id Details for Bug $bug1_id/);
+$sel->is_element_present_ok(
+  qq{//h2[normalize-space(text())="Attachment $attachment1_id: private attachment, v1"]}
+);
 $sel->is_text_present_ok("created by QA Admin");
-$sel->type_ok("comment", "This attachment is not mine.");
-$sel->click_ok("update");
+$sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
+  "This attachment is not mine.");
+$sel->click_ok('//dialog[@id="att-overlay"]//input[@type="submit"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok(
-  "Changes to attachment $attachment1_id of bug $bug1_id submitted");
-go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("This attachment is not mine");
 
 # Powerless users will always be able to view their own attachments, even
@@ -150,16 +149,14 @@ go_to_bug($sel, $bug1_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
+$sel->is_element_present_ok(
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: My patch, which I should see, always"]}
+);
+$sel->check_ok('//dialog[@id="att-overlay"]//input[@name="isprivate"]');
+$sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
+  "Making the powerless user's patch private.");
+$sel->click_ok('//dialog[@id="att-overlay"]//input[@type="submit"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^Attachment $attachment2_id Details for Bug $bug1_id/);
-$sel->click_ok('link=edit details', 'Edit attachment details');
-$sel->check_ok("isprivate");
-$sel->type_ok("comment", "Making the powerless user's patch private.");
-$sel->click_ok("update");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok(
-  "Changes to attachment $attachment2_id of bug $bug1_id submitted");
-go_to_bug($sel, $bug1_id);
 $sel->is_text_present_ok("My patch, which I should see, always");
 $sel->is_checked_ok(
   '//div[@class="comment" and @data-no="4"]//input[@class="is-private"]');
@@ -198,9 +195,10 @@ go_to_bug($sel, $bug1_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^Attachment $attachment2_id Details for Bug $bug1_id/);
-$sel->click_ok("link=Delete");
+$sel->is_element_present_ok(
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: My patch, which I should see, always"]}
+);
+$sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="delete"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Delete Attachment $attachment2_id of Bug $bug1_id");
 $sel->is_text_present_ok("Do you really want to delete this attachment?");

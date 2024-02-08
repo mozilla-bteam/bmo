@@ -15,7 +15,7 @@
 
 [%
   IF id_prefix.defined;
-    id_prefix = id_prefix _ '-' FILTER html;
+    id_prefix = id_prefix _ '-';
   END;
   IF !add_extras.defined;
     add_extras = 1;
@@ -38,7 +38,7 @@
   <div id="comment-header">
     <ul id="comment-tabs" role="tablist">
       <li id="comment-edit-tab" data-focus="comment" role="tab" tabindex="0" aria-selected="true"
-          aria-controls="[% id_prefix %]comment-edit-tabpanel">
+          aria-controls="[% id_prefix FILTER html %]comment-edit-tabpanel">
         [% IF mode == "create" %]
           Description
         [% ELSE %]
@@ -47,7 +47,7 @@
       </li>
       [%~ ~%]
       <li id="comment-preview-tab" role="tab" tabindex="-1" aria-selected="false"
-          aria-controls="[% id_prefix %]comment-preview-tabpanel">
+          aria-controls="[% id_prefix FILTER html %]comment-preview-tabpanel">
         Preview
         <img id="preview-throbber" src="[% basepath FILTER none %]extensions/BugModal/web/throbber.gif" width="16" height="11" style="display:none">
       </li>
@@ -75,11 +75,11 @@
     [% END %]
   </div>
 
-  <div id="[% id_prefix %]comment-edit-tabpanel" class="comment-tabpanel" role="tabpanel"
+  <div id="[% id_prefix FILTER html %]comment-edit-tabpanel" class="comment-tabpanel" role="tabpanel"
        aria-labelledby="comment-edit-tab">
     <textarea rows="5" cols="80" name="comment" id="comment" aria-labelledby="comment-edit-tab"[% IF user.setting("ui_attach_long_paste") == "on" %] class="attach-long-paste"[% END %]>[% comment FILTER html %]</textarea>
   </div>
-  <div id="[% id_prefix %]comment-preview-tabpanel" class="comment-tabpanel" role="tabpanel"
+  <div id="[% id_prefix FILTER html %]comment-preview-tabpanel" class="comment-tabpanel" role="tabpanel"
        aria-labelledby="comment-preview-tab" style="display:none">
     [% IF Param('use_markdown') %]
       [% comment_tag = 'div' %]

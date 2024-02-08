@@ -107,8 +107,8 @@
 [% BLOCK flag_row %]
   [% SET fid = flag ? "flag-$flag.id" : "flag_type-$type.id" %]
   [% can_edit_flag = (!read_only_flags || (flag && (flag.setter_id == user.id || (flag.requestee_id && flag.requestee_id == user.id)))) ? 1 : 0 %]
-  <tbody[% ' class="bz_flag_type"' IF !flag %] data-flag-id="[% "$flag.id" %]"
-      data-type-id="[% "$type.id" %]" data-type-multi="[% "$type.is_multiplicable" ? 1 : 0 %]">
+  <tbody[% ' class="bz_flag_type"' IF !flag %] data-flag-id="[% "$flag.id" FILTER html %]"
+      data-type-id="[% "$type.id" FILTER html %]" data-type-multi="[% "$type.is_multiplicable" ? 1 : 0 %]">
     <tr>
       <td class="setter">
         [% IF flag %]

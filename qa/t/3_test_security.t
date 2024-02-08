@@ -166,12 +166,16 @@ set_parameters($sel,
 # Attachments are not viewable.
 
 go_to_bug($sel, $bug1_id);
+$alink = $sel->get_attribute("link=Details");
+$alink =~ /id=(\d+)/;
+my $attachment1_id = $1;
 $sel->click_ok("link=Details");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/Attachment \d+ Details for Bug $bug1_id/);
+$sel->is_element_present_ok(
+  qq{//h2[normalize-space(text())="Attachment $attachment1_id: simple patch, v1"]}
+);
 $sel->is_text_present_ok(
   "The attachment is not viewable in your browser due to security restrictions");
-$sel->click_ok("link=View");
+$sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="raw"]');
 
 # Wait 1 second to give the browser a chance to display the attachment.
 # Do not use wait_for_page_to_load_ok() as the File Saver will never go away.

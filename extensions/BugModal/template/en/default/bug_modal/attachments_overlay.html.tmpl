@@ -25,8 +25,8 @@
         aria-labelledby="att-overlay-title" data-attachment-count="[% bug.attachments.size %]">
   <form method="dialog">
     [% IF user.id %]
-      <input type="hidden" name="bugid" value="[% bug.bug_id %]">
-      <input type="hidden" name="id" value="[% attachment.id %]">
+      <input type="hidden" name="bugid" value="[% bug.bug_id FILTER none %]">
+      <input type="hidden" name="id" value="[% attachment.id FILTER none %]">
       <input type="hidden" name="action" value="update">
       <input type="hidden" name="delta_ts" value="[% attachment.modification_time FILTER html %]">
       <input type="hidden" name="token" value="[% tokens.0 FILTER html %]"

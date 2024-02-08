@@ -528,16 +528,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Show fallback text and download link.
-     * @param {string} text Text to be displayed.
+     * @param {string} [text] Text to be displayed. If omitted, no text is replaced in the preview.
      */
     const fallback = (text) => {
-      $preview.innerHTML = `<div><p>${text}</p><p><a>Download</a></p></div>`;
-      $preview.querySelector('a').href = link;
-      $preview.querySelector('a').download = file_name;
+      if (text) {
+        $preview.innerHTML = `<div><p>${text}</p><p><a>Download</a></p></div>`;
+      }
+
+      const $downloadLink = $preview.querySelector('a');
+
+      if ($downloadLink) {
+        $downloadLink.href = link;
+        $downloadLink.download = file_name;
+      }
     };
 
     if (previewDisabled) {
-      fallback('Preview is disabled by administrator.');
+      // The preview already shows a message: “The attachment is not viewable in your browser due to
+      // security restrictions” with an anchor
+      fallback();
 
       return;
     }
