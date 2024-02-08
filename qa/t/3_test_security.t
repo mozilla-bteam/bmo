@@ -171,7 +171,7 @@ $alink =~ /id=(\d+)/;
 my $attachment1_id = $1;
 $sel->click_ok("link=Details");
 # Wait a sec before the attachment overlay is loaded
-sleep(1);
+sleep(2);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment1_id: simple patch, v1"]}
 );
