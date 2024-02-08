@@ -75,9 +75,9 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment1_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(3);
+sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment1_id: another S3 attachment, v2"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment1_id: [patch] another S3 attachment, v2"]}
 );
 $sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="delete"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -152,9 +152,9 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(3);
+sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment2_id: another gcs attachment, v2"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] another gcs attachment, v2"]}
 );
 $sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="delete"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);

@@ -107,9 +107,9 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment1_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(3);
+sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment1_id: public attachment, v2"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment1_id: [patch] public attachment, v2"]}
 );
 $sel->is_text_present_ok("created by QA Admin");
 $sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
@@ -152,9 +152,9 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(3);
+sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment2_id: My patch, which I should see, always"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] My patch, which I should see, always"]}
 );
 $sel->check_ok('//dialog[@id="att-overlay"]//input[@name="isprivate"]');
 $sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
@@ -200,9 +200,9 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(3);
+sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment2_id: My patch, which I should see, always"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] My patch, which I should see, always"]}
 );
 $sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="delete"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);

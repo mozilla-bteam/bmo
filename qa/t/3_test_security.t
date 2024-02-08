@@ -171,9 +171,9 @@ $alink =~ /id=(\d+)/;
 my $attachment1_id = $1;
 $sel->click_ok("link=Details");
 # Wait a sec before the attachment overlay is loaded
-sleep(3);
+sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment1_id: simple patch, v1"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment1_id: [patch] simple patch, v1"]}
 );
 $sel->is_text_present_ok(
   "The attachment is not viewable in your browser due to security restrictions");
