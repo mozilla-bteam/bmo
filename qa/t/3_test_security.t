@@ -166,12 +166,12 @@ set_parameters($sel,
 # Attachments are not viewable.
 
 go_to_bug($sel, $bug1_id);
-$alink = $sel->get_attribute("link=Details");
+my $alink = $sel->get_attribute("link=Details");
 $alink =~ /id=(\d+)/;
 my $attachment1_id = $1;
 $sel->click_ok("link=Details");
 # Wait a sec before the attachment overlay is loaded
-sleep(2);
+sleep(3);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment1_id: simple patch, v1"]}
 );

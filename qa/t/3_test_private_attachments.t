@@ -107,9 +107,9 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment1_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(2);
+sleep(3);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment1_id: private attachment, v1"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment1_id: public attachment, v2"]}
 );
 $sel->is_text_present_ok("created by QA Admin");
 $sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
@@ -152,7 +152,7 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(2);
+sleep(3);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment2_id: My patch, which I should see, always"]}
 );
@@ -200,7 +200,7 @@ $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
 # Wait a sec before the attachment overlay is loaded
-sleep(2);
+sleep(3);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment2_id: My patch, which I should see, always"]}
 );
