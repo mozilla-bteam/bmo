@@ -182,7 +182,7 @@
       [% END %]
       [% IF Param('splinter_base') %]
         <button type="button" class="secondary" disabled data-action="review"
-                data-base="[% Bugzilla.splinter_review_base FILTER html %]">Splinter Review</a>
+                data-base="[% Bugzilla.splinter_review_base FILTER html %]">Splinter Review</button>
       [% END %]
       [% IF Param("allow_attachment_deletion") && user.in_group('can_delete_attachments') %]
         <button type="button" class="secondary" disabled data-action="delete">Delete</button>
