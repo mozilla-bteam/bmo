@@ -126,6 +126,7 @@ $sel->type_ok(
 $sel->click_ok('log_in', undef, 'Submit credentials');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is('User Preferences', 'MFA user preferences is displayed');
+$sel->is_text_present_ok('You are a member of a group that requires Duo Security to be used for your MFA');
 
 # Next, lets's remove user from duo groups using REST API
 # which should trigger several changes to the user.

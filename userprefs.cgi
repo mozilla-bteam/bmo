@@ -739,7 +739,7 @@ sub SaveMFAupdate {
     $settings->{api_key_only}->set('on');
     clear_settings_cache(Bugzilla->user->id);
 
-    $user->set_mfa_required_date(''); # Clear requirement date if set
+    $user->set_mfa_required_date(undef); # Clear requirement date if set
 
     $user->update({keep_session => 1, keep_tokens => 1});
     $dbh->bz_commit_transaction;

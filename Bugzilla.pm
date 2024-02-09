@@ -291,6 +291,9 @@ sub login {
     my $on_mfa_page
       = $script_name eq '/userprefs.cgi' && $cgi->param('tab') eq 'mfa';
 
+    Bugzilla->request_cache->{mfa_warning} = 1;
+    Bugzilla->request_cache->{mfa_grace_period_expired} = 1;
+
     if (!($on_mfa_page || $on_token_page || $do_logout)) {
       $cgi->base_redirect('userprefs.cgi?tab=mfa');
     }
