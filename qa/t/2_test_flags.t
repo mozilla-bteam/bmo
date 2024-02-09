@@ -487,8 +487,8 @@ sleep(1);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] patch, v2"]}
 );
-$sel->is_element_present_ok(
-  '//select[@title="attachmentflag2"][@disabled]',
+ok(
+  !$sel->is_element_present('//select[@title="attachmentflag2"]'),
   "Attachment flags are not editable by a powerless user"
 );
 
