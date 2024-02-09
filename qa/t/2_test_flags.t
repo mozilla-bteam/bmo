@@ -491,6 +491,7 @@ ok(
   !$sel->is_element_present('//select[@title="attachmentflag2"]'),
   "Attachment flags are not editable by a powerless user"
 );
+$sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="close"]');
 
 # Add an attachment and set flags on it.
 
@@ -537,6 +538,8 @@ $sel->is_element_present_ok(
 );
 $sel->select_ok('//select[@title="attachmentflag1"]', "label=+");
 $sel->click_ok('//dialog[@id="att-overlay"]//input[@type="submit"]');
+# Wait a sec before the attachment is updated.
+sleep(1);
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_element_present_ok(
   qq{//tr[\@data-attachment-id="$attachment3_id"]//a[normalize-space(text())="attachmentflag1+"]}

@@ -162,6 +162,8 @@ $sel->check_ok('//dialog[@id="att-overlay"]//input[@name="isprivate"]');
 $sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
   "Making the powerless user's patch private.");
 $sel->click_ok('//dialog[@id="att-overlay"]//input[@type="submit"]');
+# Wait a sec before the attachment is updated.
+sleep(1);
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("My patch, which I should see, always");
 $sel->is_checked_ok(
