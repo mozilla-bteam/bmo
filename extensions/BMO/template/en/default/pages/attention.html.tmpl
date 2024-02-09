@@ -83,6 +83,10 @@
   [% INCLUDE bug_table title="Other NEEDINFOs" bugs=other_needinfo_bugs is_requests=1 %]
 </div>
 
+[% IF debug_output %]
+  <pre>[% debug_output FILTER html %]</pre>
+[% END %]
+
 [% INCLUDE global/footer.html.tmpl %]
 
 [% BLOCK bug_table %]

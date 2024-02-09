@@ -34,6 +34,8 @@ use constant CLASSIFICATIONS => (
 use constant SELECT =>
   'SELECT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.bug_severity, bugs.short_desc, bugs.delta_ts';
 
+my $debug_output;
+
 # Wrap the sql execution in a try block so we can see any SQL errors in debug output
 sub get_bug_list {
   my ($query, @values) = @_;
@@ -241,7 +243,7 @@ sub critical_needinfo_bugs {
   my $query2 = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
               JOIN flags ON bugs.bug_id = flags.bug_id
-         LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
+              LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
        WHERE products.classification_id IN ($class_ids)
               AND bugs.bug_status IN ($bug_states)
               AND (bugs.bug_severity = 'S1' OR keywords.keywordid = $keyword_id)
@@ -261,9 +263,13 @@ sub critical_needinfo_bugs {
               AND flags.type_id = $needinfo_id
               AND flags.requestee_id = ?";
 
+  $debug_output .= $query1 . "\n\n" . $query2 . "\n\n" . $query3 . "\n";
+
   my $bugs1 = get_bug_list($query1, $user->id);
   my $bugs2 = get_bug_list($query2, $user->id);
   my $bugs3 = get_bug_list($query3, $user->id);
+
+  $debug_output .= dumper [$bugs1, $bugs2, $bugs3];
 
   # Remove any duplicates
   my %bugs_all = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2}, @{$bugs3};
@@ -354,7 +360,12 @@ sub sec_high_bugs {
               AND COALESCE(tracking_flags_bugs_3.value, '---') != 'disabled'
             ORDER BY bugs.delta_ts, bugs.bug_id";
 
+  $debug_output .= $query . "\n";
+
   my $bugs           = get_bug_list($query, $user->id);
+
+  $debug_output .= dumper $bugs;
+
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
@@ -385,7 +396,12 @@ sub important_needinfo_bugs {
               AND flags.setter_id != ?
         ORDER BY bugs.delta_ts, bugs.bug_id";
 
+  $debug_output .= $query . "\n";
+
   my $bugs           = get_bug_list($query, $user->id, $user->id);
+
+  $debug_output .= dumper $bugs;
+
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
@@ -492,6 +508,10 @@ sub report {
     }
   }
   $vars->{total_bug_count} = scalar(keys %bug_ids);
+
+  if ($debug_output && $input->{debug}) {
+    $vars->{debug_output} = $debug_output;
+  }
 }
 
 1;
