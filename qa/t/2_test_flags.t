@@ -542,7 +542,7 @@ $sel->click_ok('//dialog[@id="att-overlay"]//input[@type="submit"]');
 sleep(1);
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_element_present_ok(
-  qq{//tr[\@data-attachment-id="$attachment3_id"]//a[normalize-space(text())="attachmentflag1+"]}
+  qq{//tr[\@data-attachment-id="$attachment3_id"]//a[normalize-space(text())="SeleniumAttachmentFlag1Test+"]}
 );
 
 # It's time to delete all created flag types.
