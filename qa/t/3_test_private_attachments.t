@@ -106,15 +106,17 @@ foreach my $user (undef, 'unprivileged') {
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment1_id
     . '&action=edit")]');
-# Wait a sec before the attachment overlay is loaded
+# Wait a sec before the attachment overlay is loaded.
 sleep(1);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment1_id: [patch] public attachment, v2"]}
 );
-$sel->is_text_present_ok("created by QA Admin");
+$sel->is_text_present_ok("Creator: QA Admin");
 $sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
   "This attachment is not mine.");
 $sel->click_ok('//dialog[@id="att-overlay"]//input[@type="submit"]');
+# Wait a sec before the attachment is updated.
+sleep(1);
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok("This attachment is not mine");
 
@@ -151,10 +153,10 @@ go_to_bug($sel, $bug1_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
-# Wait a sec before the attachment overlay is loaded
+# Wait a sec before the attachment overlay is loaded.
 sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] My patch, which I should see, always"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: My patch, which I should see, always"]}
 );
 $sel->check_ok('//dialog[@id="att-overlay"]//input[@name="isprivate"]');
 $sel->type_ok('//dialog[@id="att-overlay"]//textarea[@id="comment"]',
@@ -199,10 +201,10 @@ go_to_bug($sel, $bug1_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
-# Wait a sec before the attachment overlay is loaded
+# Wait a sec before the attachment overlay is loaded.
 sleep(1);
 $sel->is_element_present_ok(
-  qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] My patch, which I should see, always"]}
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: [private] My patch, which I should see, always"]}
 );
 $sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="delete"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);

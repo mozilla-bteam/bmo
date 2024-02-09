@@ -74,7 +74,7 @@ go_to_bug($sel, $bug1_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment1_id
     . '&action=edit")]');
-# Wait a sec before the attachment overlay is loaded
+# Wait a sec before the attachment overlay is loaded.
 sleep(1);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment1_id: [patch] another S3 attachment, v2"]}
@@ -151,7 +151,7 @@ go_to_bug($sel, $bug2_id);
 $sel->click_ok('//a[contains(@href,"/attachment.cgi?id='
     . $attachment2_id
     . '&action=edit")]');
-# Wait a sec before the attachment overlay is loaded
+# Wait a sec before the attachment overlay is loaded.
 sleep(1);
 $sel->is_element_present_ok(
   qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] another gcs attachment, v2"]}
