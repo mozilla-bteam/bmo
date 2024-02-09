@@ -34,8 +34,6 @@ use constant CLASSIFICATIONS => (
 use constant SELECT =>
   'SELECT bugs.bug_id, bugs.bug_status, bugs.priority, bugs.bug_severity, bugs.short_desc, bugs.delta_ts';
 
-my $debug_output;
-
 # Wrap the sql execution in a try block so we can see any SQL errors in debug output
 sub get_bug_list {
   my ($query, @values) = @_;
@@ -140,11 +138,9 @@ sub get_tracking_status_flags {
     = Bugzilla::Extension::TrackingFlags::Flag->new({name => $release_name});
   return {} if !$nightly_field && !$beta_field && !$release_field;
 
-  $flag_data->{status} = {
-    nightly => $nightly_field,
-    beta    => $beta_field,
-    release => $release_field,
-  };
+  $flag_data->{status}
+    = {nightly => $nightly_field, beta => $beta_field, release => $release_field,
+    };
 
   return $flag_data;
 }
@@ -198,6 +194,9 @@ sub sec_crit_bugs {
   my $bugs           = get_bug_list($query, $user->id);
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
+
+  $cache->{debug_output} .= $query . "\n";
+  $cache->{debug_output} .= dumper $bugs;
 
   return $filtered_bugs;
 }
@@ -259,22 +258,22 @@ sub critical_needinfo_bugs {
               AND (keywords.keywordid IS NULL 
                    OR keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%'))
               AND bugs.bug_status IN ($bug_states)
-              AND bug_group_map.group_id IN (" . (join ',', @{$cache->{sec_group_ids}}) . ")
+              AND bug_group_map.group_id IN ("
+    . (join ',', @{$cache->{sec_group_ids}}) . ")
               AND flags.type_id = $needinfo_id
               AND flags.requestee_id = ?";
-
-  $debug_output .= $query1 . "\n\n" . $query2 . "\n\n" . $query3 . "\n";
 
   my $bugs1 = get_bug_list($query1, $user->id);
   my $bugs2 = get_bug_list($query2, $user->id);
   my $bugs3 = get_bug_list($query3, $user->id);
 
-  $debug_output .= dumper [$bugs1, $bugs2, $bugs3];
-
   # Remove any duplicates
-  my %bugs_all = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2}, @{$bugs3};
+  my %bugs_all       = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2}, @{$bugs3};
   my $formatted_bugs = format_bug_list([values %bugs_all], $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
+
+  $cache->{debug_output} .= $query1 . "\n" . $query2 . "\n" . $query3 . "\n";
+  $cache->{debug_output} .= dumper [$bugs1, $bugs2, $bugs3];
 
   return $filtered_bugs;
 }
@@ -319,6 +318,9 @@ sub s2_bugs {
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
+  $cache->{debug_output} .= $query . "\n";
+  $cache->{debug_output} .= dumper $bugs;
+
   return $filtered_bugs;
 }
 
@@ -360,14 +362,12 @@ sub sec_high_bugs {
               AND COALESCE(tracking_flags_bugs_3.value, '---') != 'disabled'
             ORDER BY bugs.delta_ts, bugs.bug_id";
 
-  $debug_output .= $query . "\n";
-
   my $bugs           = get_bug_list($query, $user->id);
-
-  $debug_output .= dumper $bugs;
-
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
+
+  $cache->{debug_output} .= $query . "\n";
+  $cache->{debug_output} .= dumper $bugs;
 
   return $filtered_bugs;
 }
@@ -396,14 +396,12 @@ sub important_needinfo_bugs {
               AND flags.setter_id != ?
         ORDER BY bugs.delta_ts, bugs.bug_id";
 
-  $debug_output .= $query . "\n";
-
   my $bugs           = get_bug_list($query, $user->id, $user->id);
-
-  $debug_output .= dumper $bugs;
-
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
+
+  $cache->{debug_output} .= $query . "\n";
+  $cache->{debug_output} .= dumper $bugs;
 
   return $filtered_bugs;
 }
@@ -436,14 +434,17 @@ sub other_needinfo_bugs {
               AND flags.setter_id != ?
               AND bugs.bug_severity NOT IN ('S1','S2')
               AND (keywords.keywordid IS NULL OR keywords.keywordid NOT IN (?, ?))
-              AND (bug_group_map.group_id IS NULL OR bug_group_map.group_id NOT IN (" . join ',',
-    @{$cache->{sec_group_ids}} . '))
+              AND (bug_group_map.group_id IS NULL OR bug_group_map.group_id NOT IN ("
+    . join ',', @{$cache->{sec_group_ids}} . '))
         ORDER BY bugs.delta_ts, bugs.bug_id';
 
   my $bugs = get_bug_list($query, $user->id, $user->id, $cache->{sec_high_id},
     $cache->{sec_critical_id});
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
+
+  $cache->{debug_output} .= $query . "\n";
+  $cache->{debug_output} .= dumper $bugs;
 
   return $filtered_bugs;
 }
@@ -502,15 +503,16 @@ sub report {
   foreach my $name (qw(
     s1_bugs sec_crit_bugs critical_needinfo_bugs s2_bugs
     sec_high_bugs important_needinfo_bugs other_needinfo_bugs
-  )) {
+  ))
+  {
     foreach my $bug (@{$vars->{$name}}) {
       $bug_ids{$bug->{id}} = 1;
     }
   }
-  $vars->{total_bug_count} = scalar(keys %bug_ids);
+  $vars->{total_bug_count} = scalar keys %bug_ids;
 
-  if ($debug_output && $input->{debug}) {
-    $vars->{debug_output} = $debug_output;
+  if ($cache->{debug_output} && $input->{debug}) {
+    $vars->{debug_output} = $cache->{debug_output};
   }
 }
 
