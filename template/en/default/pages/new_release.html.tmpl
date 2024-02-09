@@ -17,17 +17,30 @@
 [% IF results %]
   [% FOREACH type = ['milestone', 'version'] %]
     <p><h4>[% type FILTER ucfirst FILTER html %]s Added</h4>
+    [% new_type = "new_" _ type %]
     [% FOREACH result = results %]
-      [% NEXT IF result.type != type %]
+      [% NEXT IF result.type != new_type %]
       [% IF result.success %]
         [% type FILTER ucfirst FILTER html %] <strong>[% result.value FILTER html %]</strong>
-        added to product <strong>[% result.product FILTER html %]</strong>.<br>
+        was added to product <strong>[% result.product FILTER html %]</strong>.<br>
       [% ELSE %]
         <span style="color:red;">[% type FILTER ucfirst FILTER html %] <strong>[% result.value FILTER html %]</strong>
         was not added to product <strong>[% result.product FILTER html %]</strong>.</span><br>
       [% END %]
     [% END %]
     </p>
+    <p><h4>[% type FILTER ucfirst FILTER html %]s Disabled</h4>
+    [% old_type = "old_" _ type %]
+    [% FOREACH result = results %]
+      [% NEXT IF result.type != old_type %]
+      [% IF result.success %]
+        [% type FILTER ucfirst FILTER html %] <strong>[% result.value FILTER html %]</strong>
+        was disabled for product <strong>[% result.product FILTER html %]</strong>.<br>
+      [% ELSE %]
+        <span style="color:red;">[% type FILTER ucfirst FILTER html %] <strong>[% result.value FILTER html %]</strong>
+        was not disabled for product <strong>[% result.product FILTER html %]</strong>.</span><br>
+      [% END %]
+    [% END %]
   [% END %]
 
   [% INCLUDE global/footer.html.tmpl %]
@@ -65,6 +78,14 @@
       Milestone will be added in the format of "XXX Branch"
     </td>
   </tr>
+  <tr>
+    <td>Disable Old Milestone</td>
+    <td>
+      <input type="text" name="old_milestone" id="old_milestone" required="true"
+             size="12" value="[% old_release FILTER html %]">
+      Leave blank to not disable old milestone
+    </td>
+  </tr>
   </table>
 
   <h4>Select Products for New Version</h4>
@@ -89,6 +110,14 @@
       <input type="text" name="new_version" id="new_version" required="true"
              size="10" value="[% next_release FILTER html %]">
       Version will be added in the format of "Firefox XXX"
+    </td>
+  </tr>
+  <tr>
+    <td>Disable Old Version</td>
+    <td>
+      <input type="text" name="old_version" id="old_version" required="true"
+             size="10" value="[% old_release FILTER html %]">
+      Leave blank to not disable old version
     </td>
   </tr>
   </table>

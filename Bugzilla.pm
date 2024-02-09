@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20240110.1';
+our $VERSION = '20240201.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -321,7 +321,7 @@ sub login {
       }
     }
     else {
-      my $dbh = Bugzilla->dbh_main;
+      my $dbh      = Bugzilla->dbh_main;
       my $sql_date = $dbh->sql_date_math('NOW()', '+', '?', 'DAY');
       my ($mfa_required_date)
         = $dbh->selectrow_array("SELECT $sql_date", undef, $grace_period);

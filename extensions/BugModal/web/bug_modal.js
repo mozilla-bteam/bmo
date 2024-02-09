@@ -619,7 +619,7 @@ $(function() {
     //
 
     // dirty field tracking
-    $('#changeform bz-select').each(function() {
+    $('#changeform select').each(function() {
         var that = $(this);
         var dirty = $('#' + that.attr('id') + '-dirty');
         if (!dirty) return;
@@ -627,15 +627,15 @@ $(function() {
 
         // store the option that had the selected attribute when we
         // initially loaded
-        var value = that.find('bz-option[selected]').map(function() { return this.value; }).toArray();
+        var value = that.find('option[selected]').map(function() { return this.value; }).toArray();
         if (value.length === 0 && !that.attr('multiple'))
-            value = that.find('bz-option:first').map(function() { return this.value; }).toArray();
+            value = that.find('option:first').map(function() { return this.value; }).toArray();
         that.data('preselected', value);
 
         // if the user hasn't touched a field, override the browser's choice
         // with Bugzilla's
         if (!dirty.val())
-            that.val(value[0]);
+            that.val(value);
     });
 
     // edit/save mode button
@@ -702,7 +702,7 @@ $(function() {
                             `);
                         } else {
                             $select.insertAdjacentHTML('beforeend', `
-                              <bz-option value="${name}" ${name === selected ? 'selected' : ''}>${name}</bz-option>
+                              <option value="${name}" ${name === selected ? 'selected' : ''}>${name}</option>
                             `);
                         }
                     }
@@ -1002,7 +1002,7 @@ $(function() {
             other.val(that.val());
         });
 
-    // bug flag value <bz-select>
+    // bug flag value <select>
     $('.bug-flag')
         .change(function(event) {
             var target = $(event.target);
@@ -1018,7 +1018,7 @@ $(function() {
         });
 
     // tracking flags
-    $('.tracking-flags bz-select')
+    $('.tracking-flags select')
         .change(function(event) {
             tracking_flag_change(event.target);
         });
@@ -1133,7 +1133,7 @@ $(function() {
         });
 
     // show "save changes" button if there are any immediately editable elements
-    if ($('.module bz-select:visible').length || $('.module input:visible').length) {
+    if ($('.module select:visible').length || $('.module input:visible').length) {
         $('#top-save-btn').show();
     }
 
@@ -1265,7 +1265,7 @@ $(function() {
                     if (event.shiftKey)
                         return;
                     // don't conflict with text input shortcut
-                    if (document.activeElement.matches('input, textarea'))
+                    if (document.activeElement.nodeNode == 'INPUT' || document.activeElement.nodeName == 'TEXTAREA')
                         return;
                     if ($('#cancel-btn:visible').length === 0) {
                         event.preventDefault();
@@ -1400,7 +1400,7 @@ $(function() {
                     el.empty();
                     var selected = el.data('preselect');
                     $(value).each(function(i, v) {
-                        el.append($('<bz-option>', { value: v.name, text: v.name }));
+                        el.append($('<option>', { value: v.name, text: v.name }));
                         if (typeof selected === 'undefined' && v.selected)
                             selected = v.name;
                     });
@@ -1586,7 +1586,7 @@ $(function() {
     });
 
     // dirty field tracking
-    $('#changeform bz-select')
+    $('#changeform select')
         .change(function() {
             var that = $(this);
             var dirty = $('#' + that.attr('id') + '-dirty');
