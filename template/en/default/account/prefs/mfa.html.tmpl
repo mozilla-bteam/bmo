@@ -51,6 +51,17 @@
     </iframe>
 
   [% ELSIF user.mfa %]
+    [% IF user.mfa != 'Duo' && user.in_duo_required_group %]
+      <p class="mfa-warning-msg">
+        You are in a group requiring Duo Security for two-factor authentication. You must
+        first disabled your current two-factor authentication and then select Duo Security
+        before continuing to use [% terms.Bugzilla %].
+      </p>
+      <p>
+        <b>Need help setting up 2FA?</b>
+        You may want to <a href="[% MFA_HOWTO FILTER html %]">read these comprehensive instructions</a>.
+      </p>
+    [% END %]
     <p>
       Two-factor authentication is currently <b>enabled</b> using
       <b>[% SWITCH user.mfa %]
@@ -61,7 +72,12 @@
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
     <div class="mfa-buttons">
-      [% IF user.mfa != 'Duo' || (user.mfa == 'Duo' && !user.in_duo_required_group) %]
+      [% IF user.mfa == 'Duo' && user.in_duo_required_group %]
+        <p class="mfa-warning-msg">
+          You are in a group requiring Duo Security for two-factor authentication and 
+          therefore it cannot be disabled. Talk to an admin on Slack (#bmo) if you need assistance.
+        </p>
+      [% ELSIF user.mfa != 'Duo' || (user.mfa == 'Duo' && !user.in_duo_required_group) %]
         <div>
           <button type="button" id="mfa-disable">Disable Two-factor Authentication</button>
           [% INCLUDE "mfa/protected.html.tmpl" %]
@@ -179,7 +195,7 @@
         <p>You are a member of a group that requires Duo Security to be used for your MFA</p>
       [% END %]
 
-      [% IF Param("duo_host")  %]
+       [% IF Param("duo_host")  %]
         <button type="button" id="mfa-select-duo">Duo Security</button><br>
         <blockquote>
           <p>Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">Duo Security</a>
