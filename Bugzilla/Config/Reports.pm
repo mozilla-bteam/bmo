@@ -18,40 +18,17 @@ our $sortkey = 1100;
 sub get_param_list {
   my $class      = shift;
   my @param_list = (
-    {
-      name    => 'report_secbugs_active',
-      type    => 'b',
-      default => 1,
-    },
+    {name => 'report_secbugs_active', type => 'b', default => 1,},
     {
       name    => 'report_secbugs_emails',
       type    => 't',
       default => 'bugzilla-admin@mozilla.org'
     },
-    {
-      name    => 'report_secbugs_teams',
-      type    => 'l',
-      default => '{}',
-    },
-    {
-      name    => 's3_mining_enabled',
-      type    => 'b',
-      default => 0,
-    },
-    {
-      name    => 's3_mining_access_key_id',
-      type    => 't',
-      default => '',
-    },
-    {
-      name    => 's3_mining_secret_access_key',
-      type    => 't',
-      default => '',
-    },
-    {
-      name    => 's3_mining_bucket',
-      type    => 't',
-      default => '',
-    }
+    {name => 'report_secbugs_teams',          type => 'l', default => '{}',},
+    {name => 'mining_enabled',                type => 'b', default => 0,},
+    {name => 'mining_google_bucket',          type => 't', default => '',},
+    {name => 'mining_google_host',            type => 't', default => '',},
+    {name => 'mining_google_service_account', type => 't', default => '',},
+
   );
 }

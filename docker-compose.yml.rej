@@ -1,0 +1,14 @@
+--- docker-compose.yml
++++ docker-compose.yml
+@@ -38,10 +38,9 @@ services:
+     depends_on:
+       - bmo.db
+       - memcached
++      - proxy
+       - s3
+       - gcs
+-    ports:
+-      - 8000:8000
+ 
+   bmo.jobqueue:
+     build: *bmo_build
