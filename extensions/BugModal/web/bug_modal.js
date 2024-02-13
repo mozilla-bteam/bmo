@@ -1265,7 +1265,7 @@ $(function() {
                     if (event.shiftKey)
                         return;
                     // don't conflict with text input shortcut
-                    if (document.activeElement.nodeNode == 'INPUT' || document.activeElement.nodeName == 'TEXTAREA')
+                    if (document.activeElement.nodeName == 'INPUT' || document.activeElement.nodeName == 'TEXTAREA')
                         return;
                     if ($('#cancel-btn:visible').length === 0) {
                         event.preventDefault();
