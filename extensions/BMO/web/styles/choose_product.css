@@ -101,3 +101,26 @@
     width: 100%;
   }
 }
+
+@media screen and (max-width: 799px) {
+  #product-list .tiles .product {
+    padding-left: 64px;
+  }
+
+  #product-list .tiles .product img {
+    margin-left: -64px;
+    width: 48px;
+    height: 48px;
+  }
+
+  #product-list table.responsive tr {
+    border-top: 1px solid var(--grid-border-color);
+    padding: 8px 0;
+  }
+
+  #product-list table.responsive th {
+    font-size: var(--font-size-x-large);
+    font-weight: bold;
+    text-align: left;
+  }
+}

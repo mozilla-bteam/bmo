@@ -23,6 +23,7 @@
 [% PROCESS global/header.html.tmpl
   title = "Simple Search"
   style_urls = [ "skins/standard/search_form.css" ]
+  responsive = 1
 %]
 
 [% WRAPPER search/tabs.html.tmpl %]
@@ -43,7 +44,7 @@ for "crash secure SSL flash".
 <input type="hidden" name="query_format" value="specific">
 <input type="hidden" name="order" value="relevance desc">
 
-<table summary="Search fields" class="bz_simple_search_form">
+<table summary="Search fields" class="bz_simple_search_form responsive">
   <tr>
     <th>
       <label for="bug_status">[% field_descs.bug_status FILTER html %]:</label>
@@ -103,7 +104,7 @@ for "crash secure SSL flash".
     </td>
   </tr>
   <tr>
-    <td>&nbsp;</td>
+    <td></td>
     <td>
       <input type="hidden" name="comments" value="0">
       <input type="checkbox" id="comments" name="comments"

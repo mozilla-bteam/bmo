@@ -538,3 +538,17 @@ textarea#viewFrame {
     margin: 16px 0 0 0;
   }
 }
+
+@media screen and (max-width: 799px) {
+  #att-dropbox,
+  #att-error-message,
+  #att-description {
+    width: 100%;
+  }
+
+  table.attachment_entry > tbody > tr > th {
+    width: auto !important;
+    margin: 8px 0 4px;
+    text-align: left;
+  }
+}
