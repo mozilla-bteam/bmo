@@ -38,9 +38,11 @@ services:
     depends_on:
       - bmo.db
       - memcached
-      - proxy
       - s3
       - gcs
+      - externalapi.test
+    ports:
+      - 8000:8000
 
   bmo.jobqueue:
     build: *bmo_build
@@ -109,6 +111,10 @@ services:
       - MYSQL_PASSWORD=bugs
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
 
+  externalapi.test:
+    image: bmo
+    entrypoint: perl /app/external_test_api.pl daemon -l http://*:8000
+
   memcached:
     image: memcached:latest
 
@@ -121,7 +127,9 @@ services:
     image: fsouza/fake-gcs-server
     command: "-scheme http"
     volumes:
-      - bmo-gcs-data:/data/attachments
+      - bmo-gcs-attachments:/data/attachments
+      - bmo-gcs-sitemapindex:/data/sitemapindex
+      - bmo-gcs-mining:/data/mining
 
   proxy:
     image: haproxytech/haproxy-alpine
@@ -135,4 +143,6 @@ volumes:
   bmo-mysql-db:
   bmo-data-dir:
   bmo-s3-data:
-  bmo-gcs-data:
+  bmo-gcs-attachments:
+  bmo-gcs-sitemapindex:
+  bmo-gcs-mining:
