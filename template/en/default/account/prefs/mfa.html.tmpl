@@ -75,7 +75,7 @@
       [% IF user.mfa == 'Duo' && user.in_duo_required_group %]
         <p class="mfa-warning-msg">
           You are in a group requiring Duo Security for two-factor authentication and 
-          therefore it cannot be disabled. Talk to admin if you need assistance.
+          therefore it cannot be disabled. Talk to an admin on Slack (#bmo) if you need assistance.
         </p>
       [% ELSIF user.mfa != 'Duo' || (user.mfa == 'Duo' && !user.in_duo_required_group) %]
         <div>
