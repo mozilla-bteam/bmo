@@ -261,6 +261,20 @@ sub isobsolete {
 
 =over
 
+=item C<isspam>
+
+whether or not the comment for the attachment is marked as spam
+
+=back
+
+=cut
+
+sub isspam {
+  return $_[0]->{isspam};
+}
+
+=over
+
 =item C<isprivate>
 
 whether or not the attachment is private
@@ -572,6 +586,15 @@ sub get_attachments_by_bug {
   );
 
   my $attachments = Bugzilla::Attachment->new_from_list($attach_ids);
+
+  my $spam_map = $bug->spam_attachment_id_map;
+  foreach my $attachment (@$attachments) {
+    if ($spam_map->{$attachment->id}) {
+      $attachment->{isspam} = 1;
+    } else {
+      $attachment->{isspam} = 0;
+    }
+  }
 
   # To avoid $attachment->flags to run SQL queries itself for each
   # attachment listed here, we collect all the data at once and
