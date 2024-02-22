@@ -93,7 +93,6 @@ my %set_params = (
   defaultseverity            => '--',          # BMO CHANGE
   timetrackinggroup          => 'editbugs',    # BMO CHANGE
   letsubmitterchoosepriority => 1,             # BMO CHANGE
-  createemailregexp          => '.*',          # BMO CHANGE
 );
 
 my $params_modified;

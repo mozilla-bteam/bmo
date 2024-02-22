@@ -96,7 +96,7 @@
   # their password, assuming that our auth method allows that.
   #%]
 
-  [% IF Param("createemailregexp") && user.authorizer.user_can_create_account %]
+  [% IF Param("allow_account_creation") && user.authorizer.user_can_create_account %]
     <hr>
 
     <p>

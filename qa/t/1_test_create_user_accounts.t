@@ -15,22 +15,11 @@ use QA::Util;
 
 my ($sel, $config) = get_selenium();
 
-# Set the email regexp for new Bugzilla accounts to end with @bugzilla.test.
-
-log_in($sel, $config, 'admin');
-set_parameters(
-  $sel,
-  {
-    "User Authentication" =>
-      {"createemailregexp" => {type => "text", value => '[^@]+@bugzilla\.test$'}}
-  }
-);
-logout($sel);
-
 # Create a valid account. We need to randomize the login address, because a request
 # expires after 3 days only and this test can be executed several times per day.
 my $valid_account = 'selenium-' . random_string(10) . '@bugzilla.test';
 
+$sel->get_ok('/home', 'Go to the home page');
 $sel->is_text_present_ok("New Account");
 $sel->click_ok("link=New Account");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -59,23 +48,8 @@ my $error_msg = trim($sel->get_text("error_msg"));
 ok($error_msg =~ /Please wait a while and try again/,
   "Too soon for this account");
 
-# These accounts do not pass the regexp.
-my @accounts
-  = ('test@yahoo.com', 'test@bugzilla.net', 'test@bugzilla.test.com');
-foreach my $account (@accounts) {
-  $sel->click_ok("link=New Account");
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Create a new Bugzilla account");
-  $sel->type_ok("login", $account);
-  $sel->check_ok("etiquette", "Agree to abide by code of conduct");
-  $sel->click_ok('//input[@value="Create Account"]');
-  $sel->wait_for_page_to_load_ok(WAIT_TIME);
-  $sel->title_is("Account Creation Restricted");
-  $sel->is_text_present_ok("User account creation has been restricted.");
-}
-
 # These accounts are illegal and should cause a JavaScript alert.
-@accounts = qw(
+my @accounts = qw(
   test\bugzilla@bugzilla.test
   testbugzilla.test
   test@bugzilla
@@ -138,12 +112,8 @@ ok(
 
 # Turn off user account creation.
 log_in($sel, $config, 'admin');
-set_parameters(
-  $sel,
-  {
-    "User Authentication" => {"createemailregexp" => {type => "text", value => ''}}
-  }
-);
+set_parameters($sel,
+  {'User Authentication' => {'allow_account_creation-off' => undef}});
 logout($sel);
 
 # Make sure that links pointing to createaccount.cgi are all deactivated.
@@ -166,13 +136,8 @@ ok(
 # Re-enable user account creation.
 
 log_in($sel, $config, 'admin');
-set_parameters(
-  $sel,
-  {
-    "User Authentication" =>
-      {"createemailregexp" => {type => "text", value => '.*'}}
-  }
-);
+set_parameters($sel,
+  {'User Authentication' => {'allow_account_creation-on' => undef}});
 
 # Make sure selenium-<random_string>@bugzilla.test has not be added to the DB yet.
 go_to_admin($sel);
