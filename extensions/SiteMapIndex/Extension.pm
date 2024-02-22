@@ -58,7 +58,7 @@ sub before_robots_txt {
     . Bugzilla->params->{sitemapindex_google_host}
     . '/storage/v1/b/'
     . Bugzilla->params->{sitemapindex_google_bucket} . '/o/'
-    . 'sitemap_index.xml&alt=media';
+    . 'sitemap_index.xml?alt=media';
 
   $args->{vars}{SITEMAP_URL} = $sitemap_url;
 }
