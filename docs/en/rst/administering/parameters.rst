@@ -79,6 +79,9 @@ whether to require users to login to browse bugs, the management
 of authentication cookies, and the regular expression used to
 validate email addresses. Some parameters are highlighted below.
 
+allow_account_creation
+    Allow new accounts to be created. If off, only administrators can create accounts.
+
 auth_env_id
     Environment variable used by external authentication system to store a unique identifier for each user. Leave it blank if there isn't one or if this method of authentication is not being used.
 
@@ -126,9 +129,6 @@ emailregexpdesc
 
 emailsuffix
     This is a string to append to any email addresses when actually sending mail to that address. It is useful if you have changed the :param:`emailregexp` param to only allow local usernames, but you want the mail to be delivered to username\@my.local.hostname.
-
-createemailregexp
-    This defines the (case-insensitive) regexp to use for email addresses that are permitted to self-register. The default (:paramval:`.*`) permits any account matching the emailregexp to be created. If this parameter is left blank, no users will be permitted to create their own accounts and all accounts will have to be created by an administrator.
 
 password_complexity
     Set the complexity required for passwords. In all cases must the passwords be at least 6 characters long.

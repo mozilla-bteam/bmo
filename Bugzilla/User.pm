@@ -2830,24 +2830,18 @@ sub is_available_username {
 sub check_account_creation_enabled {
   my $self = shift;
 
+  Bugzilla->params->{allow_account_creation}
+    || ThrowUserError('account_creation_disabled');
+
   # If we're using e.g. LDAP for login, then we can't create a new account.
   $self->authorizer->user_can_create_account
     || ThrowUserError('auth_cant_create_account');
-
-  Bugzilla->params->{'createemailregexp'}
-    || ThrowUserError('account_creation_disabled');
 }
 
 sub check_and_send_account_creation_confirmation {
   my ($self, $login) = @_;
 
   $login = $self->check_login_name_for_creation($login);
-  my $creation_regexp = Bugzilla->params->{'createemailregexp'};
-
-  if ($login !~ /$creation_regexp/i) {
-    ThrowUserError('account_creation_restricted');
-  }
-
   # BMO - add a hook to allow extra validation prior to account creation.
   Bugzilla::Hook::process("user_verify_login", {login => $login});
 
