@@ -34,7 +34,7 @@ our @EXPORT_OK = qw(
 );
 
 use Bugzilla;
-use Bugzilla::Net::S3;
+use Bugzilla::Net::Google;
 use Bugzilla::Util qw(datetime_from url_quote);
 
 use Bugzilla::Extension::SiteMapIndex::Constants;
@@ -125,9 +125,8 @@ END
 
   my $sitemap_url
     = 'https://'
-    . Bugzilla->params->{sitemapindex_s3_bucket} . '.s3-'
-    . Bugzilla->params->{sitemapindex_aws_region}
-    . '.amazonaws.com';
+    . Bugzilla->params->{sitemapindex_google_host} . '/storage/v1/b/'
+    . Bugzilla->params->{sitemapindex_google_bucket} . '/o/';
 
   foreach my $filename (@$filelist) {
     $index_xml .= "
@@ -142,8 +141,8 @@ END
 </sitemapindex>
 END
 
-  # Upload index file to s3
-  _upload_s3('sitemap_index.xml', $index_xml);
+  # Upload index file to net storage
+  _upload_net('sitemap_index.xml', $index_xml);
 
   return 1;
 }
@@ -183,28 +182,29 @@ END
 </urlset>
 END
 
-  # Write the compressed sitemap data to a variable and then upload to s3
+  # Write the compressed sitemap data to a variable and then upload to net storage
   my $gzipped_data;
   gzip \$sitemap_xml => \$gzipped_data || die "gzip failed: $GzipError\n";
 
   my $filename = "sitemap$filecount.xml.gz";
-  _upload_s3($filename, $gzipped_data);
+  _upload_net($filename, $gzipped_data);
 
   return $filename;
 }
 
-sub _upload_s3 {
+sub _upload_net {
   my ($filename, $data) = @_;
-  my $s3 = Bugzilla::Net::S3->new({
-    client_id  => Bugzilla->params->{sitemapindex_aws_client_id},
-    secret_key => Bugzilla->params->{sitemapindex_aws_client_secret},
-    bucket     => Bugzilla->params->{sitemapindex_s3_bucket},
-    host       => Bugzilla->params->{aws_host},
-    secure     => 1,
-    retry      => 1,
+  my $driver = Bugzilla::Net::Google->new({
+    bucket          => Bugzilla->params->{sitemapindex_google_bucket},
+    host            => Bugzilla->params->{sitemapindex_google_host},
+    service_account => Bugzilla->params->{sitemapindex_google_service_account},
+    secure          => 1,
+    retry           => 1,
   });
-  $s3->delete_key($filename) || die $s3->error_string;
-  $s3->add_key($filename, $data) || die $s3->error_string;
+  if ($driver->head_key($filename)) {
+    $driver->delete_key($filename) || die $driver->error_string;
+  }
+  $driver->add_key($filename, $data) || die $driver->error_string;
 }
 
 1;
