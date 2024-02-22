@@ -131,7 +131,7 @@ END
   foreach my $filename (@$filelist) {
     $index_xml .= "
   <sitemap>
-    <loc>$sitemap_url/$filename</loc>
+    <loc>$sitemap_url/$filename?alt=media</loc>
     <lastmod>$timestamp</lastmod>
   </sitemap>
 ";
