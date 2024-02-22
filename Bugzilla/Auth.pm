@@ -490,7 +490,7 @@ Returns:     C<true> if users can log themselves out, C<false> otherwise.
 
 Description: Tells you whether or not users are allowed to manually create
              their own accounts, based on the current login system in use.
-             Note that this doesn't check the C<createemailregexp>
+             Note that this doesn't check the C<allow_account_creation>
              parameter--you have to do that by yourself in your code.
 Params:      None
 Returns:     C<true> if users are allowed to create new Bugzilla accounts,
