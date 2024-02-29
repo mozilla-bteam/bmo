@@ -26,7 +26,7 @@ services:
       - BMO_memcached_servers=memcached:11211
       - BMO_ses_username=ses@mozilla.bugs
       - BMO_ses_password=password123456789!
-      - BMO_urlbase=http://bmo.test/
+      - BMO_urlbase=http://localhost:8000/
       - BUGZILLA_ALLOW_INSECURE_HTTP=1
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
       - HTTP_BACKEND=morbo
@@ -130,14 +130,6 @@ services:
       - bmo-gcs-attachments:/data/attachments
       - bmo-gcs-sitemapindex:/data/sitemapindex
       - bmo-gcs-mining:/data/mining
-
-  proxy:
-    image: haproxytech/haproxy-alpine
-    volumes:
-      - ./docker/proxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-    ports:
-      - "1080:1080"
-    restart: always
 
 volumes:
   bmo-mysql-db:

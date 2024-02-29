@@ -600,7 +600,7 @@ sub bug_format_comment {
         my $args  = shift;
         my $match = html_quote($args->{matches}->[0]);
         return
-          qq{<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=$match">$match</a>};
+          qq{<a href="https://www.cve.org/CVERecord?id=$match">$match</a>};
       }
     }
   );

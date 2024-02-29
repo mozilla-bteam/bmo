@@ -18,6 +18,8 @@ our $sortkey = 300;
 sub get_param_list {
   my $class      = shift;
   my @param_list = (
+    {name => 'allow_account_creation', type => 'b', default => '1',},
+
     {name => 'auth_env_id', type => 't', default => '',},
 
     {name => 'auth_env_email', type => 't', default => '',},
@@ -75,13 +77,6 @@ sub get_param_list {
     },
 
     {name => 'emailsuffix', type => 't', default => ''},
-
-    {
-      name    => 'createemailregexp',
-      type    => 't',
-      default => q:.*:,
-      checker => \&check_regexp
-    },
 
     {
       name    => 'password_complexity',

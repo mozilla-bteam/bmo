@@ -65,7 +65,7 @@ The procedure should be similar for other browsers.
 
 .. _`Firefox Connection Settings`: https://support.mozilla.org/en-US/kb/connection-settings-firefox
 
-After that, you should be able to visit http://bmo.test/ from your browser.
+After that, you should be able to visit http://localhost:8000/ from your browser.
 You can login as admin@mozilla.bugs with the password "password012!" (without
 quotes).
 
@@ -361,7 +361,7 @@ Selenium Web UI tests
 Testing Emails
 --------------
 
-Configure your MTA setting you want to use by going to http://bmo.test/editparams.cgi?section=mta
+Configure your MTA setting you want to use by going to http://localhost:8000/editparams.cgi?section=mta
 and changing the mail_delivery_method to 'Test'. With this option, all mail will be appended to a
 ``data/mailer.testfile``. To see the emails being sent:
 
