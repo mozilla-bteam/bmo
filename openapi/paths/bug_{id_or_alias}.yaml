@@ -1,6 +1,7 @@
 get:
   summary: Get information about a bug
   description: Gets information about a particular bug using its ID or alias.
+  operationId: get_bug
   parameters:
     - $ref: ../components/parameters/BugIdOrAlias.yaml
     - name: include_fields
@@ -128,6 +129,7 @@ put:
   description: >
     Allows you to update the fields of a bug. Automatically sends emails out
     about the changes.
+  operationId: update_bug
   parameters:
     - $ref: ../components/parameters/BugIdOrAlias.yaml
   requestBody:

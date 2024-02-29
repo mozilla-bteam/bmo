@@ -3,6 +3,7 @@ get:
   description: >-
     This allows you to get all comments for a particular bug using the bug ID or
     alias.
+  operationId: get_bug_comments
   parameters:
     - $ref: ../components/parameters/BugIdOrAlias.yaml
     - name: new_since

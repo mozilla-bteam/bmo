@@ -1,6 +1,7 @@
 get:
   summary: Get a specific attachment
   description: This allows you to get a specific attachment based on the attachment ID.
+  operationId: get_attachment
   parameters:
     - name: attachment_id
       in: path
@@ -48,6 +49,7 @@ get:
 put:
   summary: Update attachment metadata
   description: This allows you to update attachment metadata in Bugzilla.
+  operationId: update_attachment
   parameters:
     - name: attachment_id
       in: path

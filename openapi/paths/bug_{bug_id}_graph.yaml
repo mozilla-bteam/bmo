@@ -4,6 +4,7 @@ get:
     Return a graph of bug relationships such as dependencies, regressions, and
     duplicates. By default, resolved bugs are not returned but can be if needed.
     The bug ID provided will be the root node of the graph.
+  operationId: bug_graph
   parameters:
     - name: bug_id
       in: path

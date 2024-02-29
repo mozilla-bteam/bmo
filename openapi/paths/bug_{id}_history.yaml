@@ -4,6 +4,7 @@ get:
     Gets the history of changes for a particular bug in the database. You can
     specify a bug ID or alias and, optionally, a datetime timestamp to only show
     history since that date.
+  operationId: get_bug_history
   parameters:
     - $ref: ../components/parameters/BugIdOrAlias.yaml
     - name: new_since

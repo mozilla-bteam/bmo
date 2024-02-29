@@ -4,6 +4,7 @@ post:
     This allows you to add a comment to a bug in Bugzilla. All comments created
     via the API will be considered Markdown (specifically GitHub Flavored
     Markdown).
+  operationId: create_bug_comment
   parameters:
     - $ref: ../components/parameters/BugIdOrAlias.yaml
   requestBody:

@@ -1,6 +1,7 @@
 get:
   summary: Search for comment tags
   description: Searches for tags which contain the provided substring.
+  operationId: search_comment_tags
   parameters:
     - name: query
       in: path

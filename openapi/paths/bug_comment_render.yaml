@@ -1,6 +1,7 @@
 post:
   summary: Render comment as HTML
   description: Returns the HTML rendering of the provided comment text.
+  operationId: render_comment
   requestBody:
     required: true
     content:

@@ -1,6 +1,7 @@
 get:
   summary: Get all attachments for a bug
   description: This allows you to get all current attachments for a bug.
+  operationId: get_bug_attachments
   parameters:
     - name: bug_id
       in: path
@@ -47,6 +48,7 @@ get:
 post:
   summary: Create attachment on a bug
   description: This allows you to add an attachment to a bug in Bugzilla.
+  operationId: create_bug_attachment
   parameters:
     - $ref: '#/components/parameters/BugId'
   requestBody:

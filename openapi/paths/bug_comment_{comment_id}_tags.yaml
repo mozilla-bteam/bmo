@@ -1,6 +1,7 @@
 put:
   summary: Update tags for a comment
   description: Adds or removes tags from a comment.
+  operationId: update_comment_tags
   parameters:
     - name: comment_id
       in: path

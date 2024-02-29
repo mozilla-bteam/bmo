@@ -4,6 +4,7 @@ get:
     Allows you to search for bugs based on specific criteria. Bugs are returned
     if they match the criteria specified. Criteria are joined in a logical AND,
     meaning bugs returned must match all of the specified criteria.
+  operationId: search_bugs
   parameters:
     - name: alias
       in: query
@@ -388,6 +389,7 @@ post:
     The WebService interface may allow you to set things other than those listed
     here, but realize that anything undocumented here may likely change in the
     future.
+  operationId: create_bug
   requestBody:
     content:
       application/json:

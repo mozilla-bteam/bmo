@@ -1,6 +1,7 @@
 get:
   summary: Get a specific comment
   description: This allows you to get a specific comment based on the comment ID
+  operationId: get_comment
   parameters:
     - name: comment_id
       in: path
