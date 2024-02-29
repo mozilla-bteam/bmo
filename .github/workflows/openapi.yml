@@ -25,3 +25,23 @@ jobs:
 
       - name: run vacuum lint
         run: vacuum lint openapi/bundled.yaml
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bundle OpenAPI spec
+        uses: ./.github/actions/redocly-bundle
+        with:
+          apis: openapi/openapi.yaml
+          output: openapi/bundled.yaml
+
+      - name: Generate Python Client
+        uses: openapi-generators/openapitools-generator-action@v1.5.0
+        with:
+          generator: python
+          openapi-file: openapi/bundled.yaml
+          command-args: --skip-validate-spec
+          # config-file: python-generator-config.yml
