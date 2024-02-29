@@ -40,7 +40,7 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/\d+ \S $bug_summary/, "cve added");
 go_to_bug($sel, $bug_id);
 attribute_is($sel, 'CVE-2010-2884',
-  'https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2010-2884');
+  'https://www.cve.org/CVERecord?id=CVE-2010-2884');
 
 $sel->type_ok("comment", "r12345");
 $sel->click_ok("bottom-save-btn");
