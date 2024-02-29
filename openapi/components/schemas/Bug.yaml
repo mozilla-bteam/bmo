@@ -283,7 +283,7 @@ properties:
         This field its only returned by specifying `_extra` or the field name in the `include_fields` parameter.
     type: array
     items:
-      $ref: '#/components/schemas/History'
+      $ref: ./BugHistory.yaml
   tags:
     description: >
       Each array item is a tag name. Note that tags are personal to the
