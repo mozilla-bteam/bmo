@@ -98,17 +98,24 @@ sub set_param {
 sub update {
   my ($self, $params) = @_;
   $params ||= $self->{params};
+  my %changes;
 
   try {
     my $dbh = Bugzilla->dbh;
     foreach my $key (keys %{$params}) {
       my $new_value = $params->{$key} || '';
-      if ($dbh->selectrow_array('SELECT 1 FROM params WHERE name = ?', undef, $key)) {
-        $dbh->do('UPDATE params SET value = ? WHERE name = ?', undef, $new_value, $key);
+      if (my ($id, $old_value)
+        = $dbh->selectrow_array('SELECT id, value FROM params WHERE name = ?', undef, $key))
+      {
+        if ($old_value ne $new_value) {
+          $dbh->do('UPDATE params SET value = ? WHERE name = ?', undef, $new_value, $key);
+          $changes{"$id:$key"} = [$old_value, $new_value];
+        }
       }
       else {
         $dbh->do('INSERT INTO params (name, value) VALUES (?, ?)',
           undef, $key, $new_value);
+        $changes{"$id:$key"} = ['', $new_value];
       }
     }
 
@@ -117,11 +124,26 @@ sub update {
     delete Bugzilla->request_cache->{params};
     delete Bugzilla->request_cache->{params_obj};
     $self->{params} = $params;
+
+    # We want log any param changes in the audit_log table
+    # But Bugzilla::Object->audit_log assumes each instance of
+    # a class has its own unique ID. Such as if Bugzilla::Config 
+    # had a separate instance for each param separatly. This is 
+    # not the case here so we assign the 'id' variable each interation
+    # to make audit_log think each is a separate instance of
+    # Bugzilla::Config and each change is a separate transaction.
+    foreach my $item (keys %changes) {
+      my ($id, $key) = split /:/, $item;
+      $self->{id} = $id;
+      $self->audit_log({$key => [$changes{$item}->[0], $changes{$item}->[1]]});
+    }
   }
   catch {
     WARN("Database not yet available: $_")
       unless Bugzilla->usage_mode == USAGE_MODE_CMDLINE;
   };
+
+  return \%changes;
 }
 
 sub migrate_params {

@@ -1,0 +1,35 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% PROCESS global/header.html.tmpl
+   title = "Anti Spam Parameters"
+   message = message
+   style_urls = ['skins/standard/params.css']
+   javascript_urls = ['js/params.js']
+   doc_section = "parameters.html"
+%]
+
+[% FOREACH panel = panels %]
+  [% PROCESS "admin/params/${panel.name}.html.tmpl"
+             params = panel.param_list %]
+  [% panel.param_descs = param_descs %]
+[% END %]
+
+<h1>Anti Spam Parameters</h1>
+
+<form id="antispam" name="antispam" action="[% basepath FILTER none %]admin/antispam" method="POST">
+  <input type="hidden" name="token" value="[% token FILTER html %]">
+  [% FOREACH panel = panels %]
+    [% PROCESS admin/params/common.html.tmpl panel = panel %]
+  [% END %]
+  <input type="submit" id="submit" value="Submit">
+</form>
+
+[% INCLUDE global/footer.html.tmpl %]
