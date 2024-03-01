@@ -165,12 +165,14 @@ sub list_frequent_components {
 
   my $dbh = Bugzilla->switch_to_shadow_db();
   my $sql = q{
-    SELECT products.name AS product, components.name AS component FROM bugs
-    INNER JOIN products ON bugs.product_id = products.id
-    INNER JOIN components ON bugs.component_id = components.id
-    WHERE bugs.reporter = ? AND bugs.creation_ts > ?
-      AND products.isactive = 1 AND components.isactive = 1
-    GROUP BY components.id ORDER BY count(bugs.bug_id) DESC LIMIT 10;
+    SELECT count(bugs.bug_id) AS bug_count, products.name AS product, components.name AS component 
+      FROM bugs
+           INNER JOIN products ON bugs.product_id = products.id
+           INNER JOIN components ON bugs.component_id = components.id
+     WHERE bugs.reporter = ? AND bugs.creation_ts > ?
+           AND products.isactive = 1 AND components.isactive = 1
+     GROUP BY products.name, components.name 
+     ORDER BY count(bugs.bug_id) DESC LIMIT 10
   };
   my $results = $dbh->selectall_arrayref($sql, {Slice => {}}, $user->id, $date);
 
