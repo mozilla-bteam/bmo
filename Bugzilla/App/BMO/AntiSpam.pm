@@ -65,74 +65,16 @@ sub antispam {
     my $token = $self->param('token');
     check_token_data($token, 'edit_antispam_params');
 
-    my @changes     = ();
-    my $any_changed = 0;
+    my $post_params = $self->req->body_params;
 
-    foreach my $panel (@panels) {
-      foreach my $param (@{$panel->{param_list}}) {
-        my $name  = $param->{name};
-        my $value = $self->param($name);
+    my $config = Bugzilla::Config->new;
+    my $changes = $config->process_params(\@panels, $post_params->to_hash);
 
-        if (defined $self->param("reset-$name") && !$param->{no_reset}) {
-          $value = $param->{default};
-        }
-        else {
-          if ($param->{type} eq 'm') {
-
-            # This simplifies the code below
-            $value = [$self->param($name)];
-          }
-          else {
-            # Get rid of windows/mac-style line endings.
-            $value =~ s/\r\n?/\n/g;
-
-            # assume single linefeed is an empty string
-            $value =~ s/^\n$//;
-          }
-        }
-
-        my $changed;
-        if ($param->{type} eq 'm') {
-          my @old = sort @{Bugzilla->params->{$name}};
-          my @new = sort @$value;
-          if (scalar @old != scalar @new) {
-            $changed = 1;
-          }
-          else {
-            $changed = 0;    # Assume not changed...
-            my $total_items = scalar @old;
-            my $count = 0;
-            while ($count < $total_items) {
-              if ($old[$count] ne $new[$count]) {
-                # entry is different, therefore changed
-                $changed = 1;
-                last;
-              }
-              $count++;
-            }
-          }
-        }
-        else {
-          $changed = ($value eq Bugzilla->params->{$name}) ? 0 : 1;
-        }
-
-        if ($changed) {
-          if (exists $param->{'checker'}) {
-            my $ok = $param->{'checker'}->($value, $param);
-            return $self->user_error('invalid_parameter', {name => $name, err => $ok}) if $ok ne '';
-          }
-          push @changes, $name;
-          SetParam($name, $value);
-          $any_changed = 1;
-        }
-      }
-    }
+    $config->update();
+    delete_token($token);
 
     $vars->{'message'}       = 'parameters_updated';
-    $vars->{'param_changed'} = \@changes;
-
-    write_params();
-    delete_token($token);
+    $vars->{'param_changed'} = $changes;
   }
 
   $vars->{'token'} = issue_session_token('edit_antispam_params');

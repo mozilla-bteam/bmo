@@ -332,6 +332,89 @@ sub migrate_params {
   return %oldparams;
 }
 
+sub process_params {
+  my ($self, $panels, $new_params) = @_;
+  my @changes;
+
+  foreach my $panel (@{$panels}) {
+    foreach my $param (@{$panel->{param_list}}) {
+      my $name  = $param->{name};
+      my $value = $new_params->{$name};
+
+      if (defined $new_params->{"reset-$name"} && !$param->{no_reset}) {
+        $value = $param->{default};
+      }
+      else {
+        if ($param->{type} eq 'm') {
+
+          # This simplifies the code below
+          $value = [$new_params->{$name}];
+        }
+        else {
+          # Get rid of windows/mac-style line endings.
+          $value =~ s/\r\n?/\n/g;
+
+          # assume single linefeed is an empty string
+          $value =~ s/^\n$//;
+        }
+
+        # Stop complaining if the URL has no trailing slash.
+        # XXX - This hack can go away once bug 303662 is implemented.
+        if ($name =~ /(?<!webdot)base$/) {
+          $value = "$value/" if ($value && $value !~ m#/$#);
+        }
+      }
+
+      my $changed;
+      if ($param->{type} eq 'm') {
+        my @old = sort @{Bugzilla->params->{$name}};
+        my @new = sort @$value;
+        if (scalar @old != scalar @new) {
+          $changed = 1;
+        }
+        else {
+          $changed = 0;    # Assume not changed...
+          my $total_items = scalar @old;
+          my $count = 0;
+          while ($count < $total_items) {
+            if ($old[$count] ne $new[$count]) {
+              # entry is different, therefore changed
+              $changed = 1;
+              last;
+            }
+            $count++;
+          }
+        }
+      }
+      else {
+        $changed = ($value eq Bugzilla->params->{$name}) ? 0 : 1;
+      }
+
+      if ($changed) {
+        if (exists $param->{'checker'}) {
+          my $ok = $param->{'checker'}->($value, $param);
+          return $self->user_error('invalid_parameter', {name => $name, err => $ok}) if $ok ne '';
+        }
+        elsif ($name eq 'globalwatchers') {
+
+          # can't check this as others, as Bugzilla::Config::Common
+          # can not use Bugzilla::User
+          foreach my $watcher (split(/[,\s]+/, $value)) {
+            ThrowUserError('invalid_parameter',
+              {name => $name, err => "no such user $watcher"})
+              unless login_to_id($watcher);
+          }
+        }
+
+        push @changes, $name;
+        $self->set_param($name, $value);
+      }
+    }
+  }
+
+  return \@changes;
+}
+
 ###############################
 ####      Accessors        ####
 ###############################
