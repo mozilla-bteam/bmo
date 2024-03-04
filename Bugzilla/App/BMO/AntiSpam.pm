@@ -34,7 +34,7 @@ sub antispam {
 
   my $current_module = '';
   my $param_panels   = Bugzilla::Config::param_panels();
-  my @panels         = ();
+  my $param_defs     = [];
   my $vars           = {};
 
   foreach my $panel (keys %{$param_panels}) {
@@ -52,26 +52,22 @@ sub antispam {
         = first { $_->{name} eq 'allow_account_creation' } @module_param_list;
     }
 
-    my $item
-      = {name => lc $panel, param_list => \@module_param_list, module => $module,};
-    push @panels, $item;
+    push @{$param_defs}, @module_param_list;
   }
 
-  $vars->{panels} = \@panels;
+  $vars->{panels} = [{name => 'antispam', param_list => $param_defs}];
 
   if ($self->req->method eq 'POST') {
 
-    # Check token data
+    # Check token data for CSRF protection
     my $token = $self->param('token');
     check_token_data($token, 'edit_antispam_params');
-
-    my $post_params = $self->req->body_params;
-
-    my $config = Bugzilla::Config->new;
-    my $changes = $config->process_params(\@panels, $post_params->to_hash);
-
-    $config->update();
     delete_token($token);
+
+    my $config     = Bugzilla::Config->new;
+    my $new_params = $self->req->body_params->to_hash;
+    my $changes    = $config->process_params($param_defs, $new_params);
+    $config->update();
 
     $vars->{'message'}       = 'parameters_updated';
     $vars->{'param_changed'} = $changes;

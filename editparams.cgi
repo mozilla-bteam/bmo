@@ -72,16 +72,19 @@ Bugzilla::Hook::process('config_modify_panels', {panels => \%hook_panels});
 $vars->{panels} = \@panels;
 
 if ($action eq 'save' && $current_module) {
+  # Check token data for CSRF protection
   check_token_data($token, 'edit_parameters');
+  delete_token($token);
 
-  my @changes
-    = Bugzilla::Config->new->process_params([$hook_panels{$current_panel}],
-    $cgi->Vars);
+  my $config = Bugzilla::Config->new;
+  my $param_defs = $hook_panels{$current_panel}->{params};
+  my $new_params = $cgi->Vars; # Convert query parameters to a hash
+  my $changes = $config->process_params($param_defs, $new_params);
 
   # allow panels to check inter-dependent params
-  if (@changes) {
+  if (@{$changes}) {
     foreach my $panel (@panels) {
-      next unless $panel->{name} eq lc($current_module);
+      next unless $panel->{name} eq lc $current_module;
       my $module = $panel->{module};
       next unless $module->can('check_params');
       my $err = $module->check_params(Bugzilla->params);
@@ -92,11 +95,10 @@ if ($action eq 'save' && $current_module) {
     }
   }
 
-  $vars->{'message'}       = 'parameters_updated';
-  $vars->{'param_changed'} = \@changes;
+  $config->update();
 
-  write_params();
-  delete_token($token);
+  $vars->{'message'}       = 'parameters_updated';
+  $vars->{'param_changed'} = $changes;
 }
 
 $vars->{'token'} = issue_session_token('edit_parameters');
