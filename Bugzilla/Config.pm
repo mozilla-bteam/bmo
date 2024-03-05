@@ -128,7 +128,7 @@ sub update {
     # We want log any param changes in the audit_log table
     # But Bugzilla::Object->audit_log assumes each instance of
     # a class has its own unique ID. Such as if Bugzilla::Config 
-    # had a separate instance for each param separatly. This is 
+    # had a separate instance for each param separately. This is
     # not the case here so we assign the 'id' variable each interation
     # to make audit_log think each is a separate instance of
     # Bugzilla::Config and each change is a separate transaction.
