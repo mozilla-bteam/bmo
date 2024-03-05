@@ -103,6 +103,10 @@
         <dt id="bloomfilter" class="[% class %]"><a href="[% basepath FILTER none %]page.cgi?id=edit_table.html&table=bloomfilter_values">Bloomfilter Values</a></dt>
         <dd class="[% class %]">Add or remove values from the Bloomfilter table.</dd>
 
+        [% class = user.in_group('can_configure_antispam') ? "" : "forbidden" %]
+        <dt id="bloomfilter" class="[% class %]"><a href="[% basepath FILTER none %]admin/antispam">AntiSpam Parameters</a></dt>
+        <dd class="[% class %]">Update Anti Spam parameters such as disabling new account creation, comment tags, etc.</dd>
+
         [% Hook.process('end_links_left') %]
       </dl>
     </td>

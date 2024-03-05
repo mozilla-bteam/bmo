@@ -98,17 +98,24 @@ sub set_param {
 sub update {
   my ($self, $params) = @_;
   $params ||= $self->{params};
+  my %changes;
 
   try {
     my $dbh = Bugzilla->dbh;
     foreach my $key (keys %{$params}) {
       my $new_value = $params->{$key} || '';
-      if ($dbh->selectrow_array('SELECT 1 FROM params WHERE name = ?', undef, $key)) {
-        $dbh->do('UPDATE params SET value = ? WHERE name = ?', undef, $new_value, $key);
+      if (my ($id, $old_value)
+        = $dbh->selectrow_array('SELECT id, value FROM params WHERE name = ?', undef, $key))
+      {
+        if ($old_value ne $new_value) {
+          $dbh->do('UPDATE params SET value = ? WHERE name = ?', undef, $new_value, $key);
+          $changes{"$id:$key"} = [$old_value, $new_value];
+        }
       }
       else {
         $dbh->do('INSERT INTO params (name, value) VALUES (?, ?)',
           undef, $key, $new_value);
+        $changes{"$id:$key"} = ['', $new_value];
       }
     }
 
@@ -117,11 +124,26 @@ sub update {
     delete Bugzilla->request_cache->{params};
     delete Bugzilla->request_cache->{params_obj};
     $self->{params} = $params;
+
+    # We want log any param changes in the audit_log table
+    # But Bugzilla::Object->audit_log assumes each instance of
+    # a class has its own unique ID. Such as if Bugzilla::Config 
+    # had a separate instance for each param separately. This is
+    # not the case here so we assign the 'id' variable each interation
+    # to make audit_log think each is a separate instance of
+    # Bugzilla::Config and each change is a separate transaction.
+    foreach my $item (keys %changes) {
+      my ($id, $key) = split /:/, $item;
+      $self->{id} = $id;
+      $self->audit_log({$key => [$changes{$item}->[0], $changes{$item}->[1]]});
+    }
   }
   catch {
     WARN("Database not yet available: $_")
       unless Bugzilla->usage_mode == USAGE_MODE_CMDLINE;
   };
+
+  return \%changes;
 }
 
 sub migrate_params {
@@ -308,6 +330,89 @@ sub migrate_params {
   $self->update($param);
 
   return %oldparams;
+}
+
+sub process_params {
+  my ($self, $param_defs, $new_params) = @_;
+  my @changes;
+
+  foreach my $param_def (@{$param_defs}) {
+    my $name  = $param_def->{name};
+    my $value = $new_params->{$name};
+
+    if (defined $new_params->{"reset-$name"} && !$param_def->{no_reset}) {
+      $value = $param_def->{default};
+    }
+    else {
+      if ($param_def->{type} eq 'm') {
+
+        # This simplifies the code below
+        $value = [$new_params->{$name}];
+      }
+      else {
+        # Get rid of windows/mac-style line endings.
+        $value =~ s/\r\n?/\n/g;
+
+        # assume single linefeed is an empty string
+        $value =~ s/^\n$//;
+      }
+
+      # Stop complaining if the URL has no trailing slash.
+      # XXX - This hack can go away once bug 303662 is implemented.
+      if ($name =~ /(?<!webdot)base$/) {
+        $value = "$value/" if ($value && $value !~ m{/$});
+      }
+    }
+
+    my $changed;
+    if ($param_def->{type} eq 'm') {
+      my @old = sort @{Bugzilla->params->{$name}};
+      my @new = sort @$value;
+      if (scalar @old != scalar @new) {
+        $changed = 1;
+      }
+      else {
+        $changed = 0;    # Assume not changed...
+        my $total_items = scalar @old;
+        my $count       = 0;
+        while ($count < $total_items) {
+          if ($old[$count] ne $new[$count]) {
+
+            # entry is different, therefore changed
+            $changed = 1;
+            last;
+          }
+          $count++;
+        }
+      }
+    }
+    else {
+      $changed = ($value eq Bugzilla->params->{$name}) ? 0 : 1;
+    }
+
+    if ($changed) {
+      if (exists $param_def->{'checker'}) {
+        my $ok = $param_def->{'checker'}->($value, $param_def);
+        return $self->user_error('invalid_parameter', {name => $name, err => $ok})
+          if $ok ne '';
+      }
+      elsif ($name eq 'globalwatchers') {
+
+        # can't check this as others, as Bugzilla::Config::Common
+        # can not use Bugzilla::User
+        foreach my $watcher (split /[,\s]+/, $value) {
+          ThrowUserError('invalid_parameter',
+            {name => $name, err => "no such user $watcher"})
+            unless login_to_id($watcher);
+        }
+      }
+
+      push @changes, $name;
+      $self->set_param($name, $value);
+    }
+  }
+
+  return \@changes;
 }
 
 ###############################
