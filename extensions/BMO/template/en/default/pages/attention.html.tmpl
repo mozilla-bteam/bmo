@@ -66,8 +66,7 @@
   </div>
 
   [% INCLUDE bug_table title="Critical NEEDINFOs" bugs=critical_needinfo_bugs is_requests=1 %]
-  [% INCLUDE bug_table title="S1 bugs" bugs=s1_bugs %]
-  [% INCLUDE bug_table title="Security-Critical bugs" bugs=sec_crit_bugs %]
+  [% INCLUDE bug_table title="Critical bugs assigned to you" bugs=critical_assigned_bugs %]
  
   <h2>High Priority Tasks</h2>
   <div class="task-desc">
@@ -78,8 +77,7 @@
   </div>
 
   [% INCLUDE bug_table title="Important NEEDINFOs" bugs=important_needinfo_bugs is_requests=1 %]
-  [% INCLUDE bug_table title="S2 bugs" bugs=s2_bugs %]
-  [% INCLUDE bug_table title="Security-High bugs" bugs=sec_high_bugs %]
+  [% INCLUDE bug_table title="Important bugs assigned to you" bugs=important_assigned_bugs %]
   [% INCLUDE bug_table title="Other NEEDINFOs" bugs=other_needinfo_bugs is_requests=1 %]
 </div>
 

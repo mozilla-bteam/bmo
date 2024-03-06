@@ -145,34 +145,8 @@ sub get_tracking_status_flags {
   return $flag_data;
 }
 
-# S1 defects assigned to you
-sub s1_bugs {
-  my $user = shift;
-  my $dbh  = Bugzilla->dbh;
-
-  # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{attention};
-  my $class_ids  = join ',', @{$cache->{classification_ids}};
-  my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
-
-  my $query = SELECT . "
-         FROM bugs JOIN products ON bugs.product_id = products.id
-        WHERE products.classification_id IN ($class_ids)
-              AND bugs.bug_severity = 'S1'
-              AND bugs.bug_type = 'defect'
-              AND bugs.bug_status IN ($bug_states)
-              AND bugs.assigned_to = ?
-     ORDER BY bugs.delta_ts, bugs.bug_id";
-
-  my $bugs           = get_bug_list($query, $user->id);
-  my $formatted_bugs = format_bug_list($bugs, $user);
-  my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
-
-  return $filtered_bugs;
-}
-
-# sec-crit bugs assigned to you (these should already be S1 defects, but just in case…)
-sub sec_crit_bugs {
+# Critical bugs assigned to you
+sub critical_assigned_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
 
@@ -182,7 +156,16 @@ sub sec_crit_bugs {
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
 
-  my $query = SELECT . "
+  my $query1 = SELECT . "
+         FROM bugs JOIN products ON bugs.product_id = products.id
+        WHERE products.classification_id IN ($class_ids)
+              AND bugs.bug_severity = 'S1'
+              AND bugs.bug_type = 'defect'
+              AND bugs.bug_status IN ($bug_states)
+              AND bugs.assigned_to = ?
+     ORDER BY bugs.delta_ts, bugs.bug_id";
+
+  my $query2 = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
               JOIN keywords ON bugs.bug_id = keywords.bug_id
         WHERE products.classification_id IN ($class_ids)
@@ -191,12 +174,16 @@ sub sec_crit_bugs {
               AND bugs.assigned_to = ?
      ORDER BY bugs.delta_ts, bugs.bug_id";
 
-  my $bugs           = get_bug_list($query, $user->id);
-  my $formatted_bugs = format_bug_list($bugs, $user);
+  my $bugs1 = get_bug_list($query1, $user->id);
+  my $bugs2 = get_bug_list($query2, $user->id);
+
+  # Remove any duplicates
+  my %bugs_all       = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2};
+  my $formatted_bugs = format_bug_list([values %bugs_all], $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
-  $cache->{debug_output} .= $query . "\n";
-  $cache->{debug_output} .= dumper $bugs;
+  $cache->{debug_output} .= $query1 . "\n" . $query2 . "\n";
+  $cache->{debug_output} .= dumper [$bugs1, $bugs2];
 
   return $filtered_bugs;
 }
@@ -214,7 +201,6 @@ sub critical_needinfo_bugs {
   my $needinfo_id     = $cache->{needinfo_flag_id};
   my $keyword_id      = $cache->{sec_critical_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
-  my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
   my $nightly_flag_id = $flags->{tracking}->{nightly}->flag_id;
   my $beta_flag_id    = $flags->{tracking}->{beta}->flag_id;
   my $release_flag_id = $flags->{tracking}->{release}->flag_id;
@@ -232,7 +218,6 @@ sub critical_needinfo_bugs {
                 ON bugs.bug_id = tracking_flags_bugs_3.bug_id
                 AND tracking_flags_bugs_3.tracking_flag_id = $release_flag_id
         WHERE products.classification_id IN ($class_ids)
-              AND bugs.bug_status IN ($bug_states)
               AND (COALESCE(tracking_flags_bugs_1.value, '---') IN ('+', 'blocking')
                     OR COALESCE(tracking_flags_bugs_2.value, '---') IN ('+', 'blocking')
                     OR COALESCE(tracking_flags_bugs_3.value, '---') IN ('+', 'blocking'))
@@ -244,7 +229,6 @@ sub critical_needinfo_bugs {
               JOIN flags ON bugs.bug_id = flags.bug_id
               LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
        WHERE products.classification_id IN ($class_ids)
-              AND bugs.bug_status IN ($bug_states)
               AND (bugs.bug_severity = 'S1' OR keywords.keywordid = $keyword_id)
               AND flags.type_id = $needinfo_id
               AND flags.requestee_id = ?";
@@ -257,7 +241,6 @@ sub critical_needinfo_bugs {
         WHERE products.classification_id IN ($class_ids)
               AND (keywords.keywordid IS NULL 
                    OR keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%'))
-              AND bugs.bug_status IN ($bug_states)
               AND bug_group_map.group_id IN ("
     . (join ',', @{$cache->{sec_group_ids}}) . ")
               AND flags.type_id = $needinfo_id
@@ -278,8 +261,8 @@ sub critical_needinfo_bugs {
   return $filtered_bugs;
 }
 
-# S2 defects assigned to you (for things that are not disabled in the current release)
-sub s2_bugs {
+# Important bugs assigned to you
+sub important_assigned_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
 
@@ -293,74 +276,28 @@ sub s2_bugs {
   my $nightly_flag_id = $flags->{status}->{nightly}->flag_id;
   my $beta_flag_id    = $flags->{status}->{beta}->flag_id;
   my $release_flag_id = $flags->{status}->{release}->flag_id;
-
-  my $query = SELECT . "
-         FROM bugs JOIN products ON bugs.product_id = products.id
-              LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_1
-                ON bugs.bug_id = tracking_flags_bugs_1.bug_id
-                AND tracking_flags_bugs_1.tracking_flag_id = $nightly_flag_id
-              LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_2
-                ON bugs.bug_id = tracking_flags_bugs_2.bug_id
-                AND tracking_flags_bugs_2.tracking_flag_id = $beta_flag_id
-              LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_3
-                ON bugs.bug_id = tracking_flags_bugs_3.bug_id
-                AND tracking_flags_bugs_3.tracking_flag_id = $release_flag_id
-        WHERE products.classification_id IN ($class_ids)
-              AND bugs.bug_severity = 'S2'
-              AND bugs.bug_status IN ($bug_states)
-              AND bugs.assigned_to = ?
-              AND COALESCE(tracking_flags_bugs_1.value, '---') != 'disabled'
-              AND COALESCE(tracking_flags_bugs_2.value, '---') != 'disabled'
-              AND COALESCE(tracking_flags_bugs_3.value, '---') != 'disabled'
-            ORDER BY bugs.delta_ts, bugs.bug_id";
-
-  my $bugs           = get_bug_list($query, $user->id);
-  my $formatted_bugs = format_bug_list($bugs, $user);
-  my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
-
-  $cache->{debug_output} .= $query . "\n";
-  $cache->{debug_output} .= dumper $bugs;
-
-  return $filtered_bugs;
-}
-
-# sec-high bugs assigned to you (again, for things that are not disabled in the current release)
-sub sec_high_bugs {
-  my $user = shift;
-  my $dbh  = Bugzilla->dbh;
-
-  my $flags = get_tracking_status_flags();
-  return [] if !exists $flags->{status};
-
-  # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{attention};
   my $keyword_id      = $cache->{sec_high_id};
-  my $class_ids       = join ',', @{$cache->{classification_ids}};
-  my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
-  my $nightly_flag_id = $flags->{status}->{nightly}->flag_id;
-  my $beta_flag_id    = $flags->{status}->{beta}->flag_id;
-  my $release_flag_id = $flags->{status}->{release}->flag_id;
 
   my $query = SELECT . "
-         FROM bugs JOIN products ON bugs.product_id = products.id
-              JOIN keywords ON bugs.bug_id = keywords.bug_id
-              LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_1
-                ON bugs.bug_id = tracking_flags_bugs_1.bug_id
-                AND tracking_flags_bugs_1.tracking_flag_id = $nightly_flag_id
-              LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_2
-                ON bugs.bug_id = tracking_flags_bugs_2.bug_id
-                AND tracking_flags_bugs_2.tracking_flag_id = $beta_flag_id
-              LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_3
-                ON bugs.bug_id = tracking_flags_bugs_3.bug_id
-                AND tracking_flags_bugs_3.tracking_flag_id = $release_flag_id
-        WHERE products.classification_id IN ($class_ids)
-              AND (bugs.bug_severity = 'S2' || keywords.keywordid = $keyword_id)
-              AND bugs.bug_status IN ($bug_states)
-              AND bugs.assigned_to = ?
-              AND COALESCE(tracking_flags_bugs_1.value, '---') != 'disabled'
-              AND COALESCE(tracking_flags_bugs_2.value, '---') != 'disabled'
-              AND COALESCE(tracking_flags_bugs_3.value, '---') != 'disabled'
-            ORDER BY bugs.delta_ts, bugs.bug_id";
+       FROM bugs JOIN products ON bugs.product_id = products.id
+            LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
+            LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_1
+              ON bugs.bug_id = tracking_flags_bugs_1.bug_id
+              AND tracking_flags_bugs_1.tracking_flag_id = $nightly_flag_id
+            LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_2
+              ON bugs.bug_id = tracking_flags_bugs_2.bug_id
+              AND tracking_flags_bugs_2.tracking_flag_id = $beta_flag_id
+            LEFT JOIN tracking_flags_bugs AS tracking_flags_bugs_3
+              ON bugs.bug_id = tracking_flags_bugs_3.bug_id
+              AND tracking_flags_bugs_3.tracking_flag_id = $release_flag_id
+      WHERE products.classification_id IN ($class_ids)
+            AND (bugs.bug_severity = 'S2' || keywords.keywordid = $keyword_id)
+            AND bugs.bug_status IN ($bug_states)
+            AND bugs.assigned_to = ?
+            AND COALESCE(tracking_flags_bugs_1.value, '---') != 'disabled'
+            AND COALESCE(tracking_flags_bugs_2.value, '---') != 'disabled'
+            AND COALESCE(tracking_flags_bugs_3.value, '---') != 'disabled'
+          ORDER BY bugs.delta_ts, bugs.bug_id";
 
   my $bugs           = get_bug_list($query, $user->id);
   my $formatted_bugs = format_bug_list($bugs, $user);
@@ -381,7 +318,6 @@ sub important_needinfo_bugs {
   my $cache       = Bugzilla->process_cache->{attention};
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
-  my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
   my $keyword_id  = $cache->{sec_high_id};
 
   my $query = SELECT . "
@@ -390,7 +326,6 @@ sub important_needinfo_bugs {
               LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
         WHERE products.classification_id IN ($class_ids)
               AND (bugs.bug_severity = 'S2' OR keywords.keywordid = $keyword_id)
-              AND bugs.bug_status IN ($bug_states)
               AND flags.type_id = $needinfo_id
               AND flags.requestee_id = ?
               AND flags.setter_id != ?
@@ -420,7 +355,6 @@ sub other_needinfo_bugs {
   my $cache       = Bugzilla->process_cache->{attention};
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
-  my $bug_states  = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
 
   my $query = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
@@ -428,7 +362,6 @@ sub other_needinfo_bugs {
               LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
               LEFT JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
         WHERE products.classification_id IN ($class_ids)
-              AND bugs.bug_status IN ($bug_states)
               AND flags.type_id = $needinfo_id
               AND flags.requestee_id = ?
               AND flags.setter_id != ?
@@ -490,11 +423,9 @@ sub report {
       . ' WHERE name LIKE \'%-security\'');
 
   # build bug lists
-  $vars->{s1_bugs}                 = s1_bugs($who);
-  $vars->{sec_crit_bugs}           = sec_crit_bugs($who);
+  $vars->{critical_assigned_bugs}  = critical_assigned_bugs($who);
   $vars->{critical_needinfo_bugs}  = critical_needinfo_bugs($who);
-  $vars->{s2_bugs}                 = s2_bugs($who);
-  $vars->{sec_high_bugs}           = sec_high_bugs($who);
+  $vars->{important_assigned_bugs} = important_assigned_bugs($who);
   $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);
   $vars->{other_needinfo_bugs}     = other_needinfo_bugs($who);
 
