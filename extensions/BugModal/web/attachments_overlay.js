@@ -151,8 +151,10 @@ window.addEventListener('DOMContentLoaded', () => {
         $form.requestSubmit();
       } else if (await saveChanges()) {
         // It’s hard to dynamically update the Edit Bug page using the API after saving attachment
-        // changes, so just reload the page
-        location.reload();
+        // changes, so just reload the page. Note that `location.reload()` may cause the form
+        // resubmission warning dialog to appear if the user has just logged into the bug page. Use
+        // an alternative method to avoid the problem.
+        location.replace(`${basepath}show_bug.cgi?id=${bugId}`);
       }
     });
   };
