@@ -394,8 +394,15 @@ window.addEventListener('DOMContentLoaded', () => {
       $creatorName.textContent = creatorName;
     }
 
-    $createdDate.textContent = formatDate(creation_time);
-    $updatedDate.textContent = formatDate(last_change_time);
+    const createdDate = new Date(creation_time);
+    const updatedDate = new Date(last_change_time);
+
+    $createdDate.textContent = timeAgo(createdDate);
+    $createdDate.title = formatDate(createdDate);
+    $createdDate.dataset.time = String(createdDate.valueOf() / 1000);
+    $updatedDate.textContent = timeAgo(updatedDate);
+    $updatedDate.title = formatDate(updatedDate);
+    $updatedDate.dataset.time = String(updatedDate.valueOf() / 1000);
     $fileSize.textContent = size === 0 ? '0 bytes (deleted)' : formatFileSize(size);
     $form.description.value = summary;
     $form.filename.value = file_name;
