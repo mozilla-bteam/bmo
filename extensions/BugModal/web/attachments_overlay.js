@@ -517,6 +517,8 @@ window.addEventListener('DOMContentLoaded', () => {
    * @param {string} [text] Text to be displayed. If omitted, no text is replaced in the preview.
    */
   const showPreviewFallback = (text) => {
+    const { link, file_name } = currentAttachment;
+
     if (text) {
       $preview.innerHTML = `<div><p>${text}</p><p><a>Download</a></p></div>`;
     }
