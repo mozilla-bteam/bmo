@@ -20,8 +20,8 @@ paths:
     $ref: paths/bug_attachment_{attachment_id}.yaml
   /bug/{id_or_alias}:
     $ref: paths/bug_{id_or_alias}.yaml
-  /bug/{id}/history:
-    $ref: paths/bug_{id}_history.yaml
+  /bug/{id_or_alias}/history:
+    $ref: paths/bug_{id_or_alias}_history.yaml
   /bug:
     $ref: paths/bug.yaml
   /bug/{bug_id}/graph:
@@ -32,8 +32,6 @@ paths:
     $ref: paths/bug_{id_or_alias}_comment.yaml
   /bug/comment/{comment_id}:
     $ref: paths/bug_comment_{comment_id}.yaml
-  /bug/{id}/comment:
-    $ref: paths/bug_{id}_comment.yaml
   /bug/comment/tags/{query}:
     $ref: paths/bug_comment_tags_{query}.yaml
   /bug/comment/{comment_id}/tags:
