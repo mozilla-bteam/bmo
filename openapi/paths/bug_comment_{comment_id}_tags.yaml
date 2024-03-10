@@ -17,6 +17,10 @@ put:
         schema:
           type: object
           properties:
+            comment_id:
+              description: The ID of the comment to update.
+              type: integer
+              required: true
             add:
               description: The tags to attach to the comment.
               type: array
