@@ -1,0 +1,199 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+  # Use the first attachment to render some parts that cannot be easily rendered with API data
+  attachment = bug.attachments.0
+  can_edit = attachment.validate_can_edit
+  can_preview = Param("allow_attachment_display")
+  tokens = [];
+
+  # Prepare CSRF tokens for all the attachments
+  IF user.id;
+    FOREACH att = bug.attachments;
+      tokens.push([att.id, issue_hash_token([att.id, att.modification_time])]);
+    END;
+  END;
+%]
+
+<dialog id="att-overlay" [% IF !user.id %]class="readonly"[% END %]
+        aria-labelledby="att-overlay-title" data-attachment-count="[% bug.attachments.size %]">
+  <form method="dialog">
+    [% IF user.id %]
+      <input type="hidden" name="bugid" value="[% bug.bug_id FILTER none %]">
+      <input type="hidden" name="id" value="[% attachment.id FILTER none %]">
+      <input type="hidden" name="action" value="update">
+      <input type="hidden" name="delta_ts" value="[% attachment.modification_time FILTER html %]">
+      <input type="hidden" name="token" value="[% tokens.0 FILTER html %]"
+             data-tokens="[% json_encode(tokens) FILTER html %]">
+    [% END %]
+    <div class="header">
+      <h2 id="att-overlay-title" class="title">Attachment</h2>
+      <div class="spacer"></div>
+      <button type="button" class="secondary iconic" hidden disabled data-action="prev"
+              aria-label="Previous Attachment" aria-keyshortcuts="ArrowLeft">
+        <span class="icon" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary iconic" hidden disabled data-action="next"
+              aria-label="Next Attachment" aria-keyshortcuts="ArrowRight">
+        <span class="icon" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary" data-action="toggle-details">Hide Details</button>
+      <button type="button" class="secondary iconic" data-action="close" aria-label="Close">
+        <span class="icon" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div class="body">
+      <div class="sub-column">
+        <div class="detail-pane">
+          <section class="cols">
+            <h3>General</h3>
+            <div class="creator">
+              Creator:
+              [%= INCLUDE bug_modal/user.html.tmpl u = attachment.attacher %]
+            </div>
+            <div>Created: <span class="created-date"></span></div>
+            <div>Updated: <span class="updated-date"></span></div>
+            <div>Size: <span class="file-size"></span></div>
+          </section>
+          <section class="cols">
+            <h3>
+              <label for="att-overlay-description">Description</label>
+            </h3>
+            <div>
+              <input type="text" name="description" [% 'disabled' IF !user.id %]
+                     id="att-overlay-description" class="flex">
+            </div>
+          </section>
+          <section class="cols">
+            <h3>
+              <label for="att-overlay-file-name">File Name</label>
+            </h3>
+            <div>
+              <input type="text" name="filename" [% 'disabled' IF !user.id %]
+                     id="att-overlay-file-name" class="flex">
+            </div>
+          </section>
+          <section class="cols">
+            <h3>
+              <label for="att-overlay-content-type">Content Type</label>
+            </h3>
+            [% IF user.id %]
+              <div>
+                <label>
+                  <input type="radio" name="contenttypemethod" value="patch">
+                  <input type="hidden" name="ispatch">
+                  Patch
+                </label>
+              </div>
+              <div>
+                <label>
+                  <input type="radio" name="contenttypemethod" value="binary">
+                  Binary (don’t show preview)
+                </label>
+              </div>
+              <div>
+                <label>
+                  <input type="radio" name="contenttypemethod" value="list">
+                  Select common type:
+                </label>
+                <select name="contenttypeselection" class="flex" aria-label="Select Content Type">
+                  [% PROCESS "attachment/content-types.html.tmpl" %]
+                </select>
+              </div>
+              <div>
+                <label>
+                  <input type="radio" name="contenttypemethod" value="manual">
+                  Enter manually:
+                </label>
+                <input type="text" name="contenttypeentry" id="att-overlay-content-type"
+                       class="flex">
+              </div>
+            [% ELSE %]
+              <div>
+                <input type="text" name="contenttypeentry" disabled id="att-overlay-content-type"
+                       class="flex">
+              </div>
+            [% END %]
+          </section>
+          [%# Hide other things from signed-out users; flags cannot be rendered dynamically %]
+          [% IF user.id %]
+            <section class="cols">
+              <h3>More Info</h3>
+              <div>
+                <label>
+                  <input type="checkbox" name="isobsolete" [% 'disabled' IF !user.id %]>
+                  Obsolete
+                </label>
+              </div>
+              [% IF user.is_insider %]
+                <div>
+                  <label>
+                    <input type="checkbox" name="isprivate">
+                    Private (only visible to <strong>[% Param('insidergroup') FILTER html %]</strong>)
+                  </label>
+                </div>
+              [% END %]
+            </section>
+            <section>
+              <h3>Flags</h3>
+              [% IF attachment.flag_types.size > 0 %]
+                [% PROCESS "flag/list.html.tmpl"
+                  flag_table_id = "att-overlay-flags"
+                  flag_types = attachment.flag_types
+                  read_only_flags = !can_edit
+                  any_flags_requesteeble = 1
+                %]
+              [% END %]
+            </section>
+          [% END %]
+        </div>
+      </div>
+      <div class="main-column">
+        <div class="preview-pane">
+          <div class="preview [% 'disabled' IF !can_preview %]">
+            [% IF !can_preview %]
+              <p>
+                The attachment is not viewable in your browser due to security restrictions enabled
+                by your [% terms.Bugzilla %] administrator. You can <a>download</a> it instead.
+              </p>
+            [% END %]
+          </div>
+        </div>
+        [% IF user.id %]
+          <div class="comment-pane">
+            <section class="comment-wrapper">
+              <h3>Comment (on the [% terms.bug %])</h3>
+              [% INCLUDE bug_modal/new_comment.html.tmpl id_prefix = "att-overlay" add_extras = 0 %]
+            </section>
+          </div>
+        [% END %]
+      </div>
+    </div>
+    <div class="footer">
+      <button type="button" class="secondary" data-action="raw">Raw</button>
+      [% IF feature_enabled('patch_viewer') %]
+        <button type="button" class="secondary" disabled data-action="diff">Diff</button>
+      [% END %]
+      [% IF Param('splinter_base') %]
+        <button type="button" class="secondary" disabled data-action="review"
+                data-base="[% Bugzilla.splinter_review_base FILTER html %]">Splinter Review</button>
+      [% END %]
+      [% IF Param("allow_attachment_deletion") && user.in_group('can_delete_attachments') %]
+        <button type="button" class="secondary" disabled data-action="delete">Delete</button>
+      [% END %]
+      <div class="spacer"></div>
+      [% IF user.id %]
+        <div class="status" role="status"></div>
+        <input type="submit" class="primary" value="Save">
+      [% END %]
+    </div>
+  </form>
+</dialog>
+
+[% Hook.process("end") %]

@@ -42,8 +42,11 @@ sub FLAGTYPE_COMMENT_TEMPLATES {
     push @result, ("bug/comments.html.tmpl");
   }
   if (FLAGTYPE_COMMENT_ATTACHMENT_FLAGS) {
-    push @result,
-      ("attachment/edit.html.tmpl", "attachment/createformcontents.html.tmpl",);
+    push @result, (
+      "attachment/edit.html.tmpl",
+      "attachment/createformcontents.html.tmpl",
+      "bug_modal/attachments_overlay.html.tmpl",
+    );
   }
   return @result;
 }

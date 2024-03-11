@@ -610,7 +610,6 @@ $(function() {
     }
 
     var options_user = {
-        appendTo: $('#main-inner'),
         forceFixPosition: true,
         paramName: 'match',
         deferRequestBy: 250,
@@ -694,7 +693,7 @@ $(function() {
         .each(function() {
             const $input = this;
             const is_multiple = !!$input.getAttribute('data-multiple');
-            const options = Object.assign({}, options_user);
+            const options = { ...options_user, appendTo: this.closest('dialog, #main-inner') };
 
             options.delimiter = is_multiple ? /,\s*/ : undefined;
             // Override `this` in the relevant functions

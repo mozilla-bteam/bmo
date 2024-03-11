@@ -19,25 +19,32 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
    * Initialize a new FlagTypeComment instance.
    */
   constructor() {
+    const root = document.querySelector('#att-overlay') ?? document;
+
     this.templates = [...document.querySelectorAll('template.approval-request')];
-    this.$flags = document.querySelector('#flags');
-    this.$comment = document.querySelector('#comment');
+    this.$flags = root.querySelector('.flag-table');
+    this.$comment = root.querySelector('#comment');
 
     if (this.$flags && this.$comment) {
-      const $extra_patch_types = document.querySelector('meta[name="extra-patch-types"]');
+      const $extra_patch_types = root.querySelector('meta[name="extra-patch-types"]');
+      const $wrapper_parent = root.querySelector('.comment-pane') ?? this.$flags.parentElement;
 
       /** @type {HTMLFormElement} */
       this.$form = this.$comment.form;
 
       this.bug_id = Number(this.$form.bugid.value);
-      this.attachment_id = Number(this.$form.id.value);
       this.extra_patch_types = $extra_patch_types ? $extra_patch_types.content.split(' ') : [];
       this.selects = [...this.$flags.querySelectorAll('.flag_select')];
-      this.$fieldset_wrapper = this.$flags.parentElement.appendChild(document.createElement('div'));
+      this.$fieldset_wrapper = $wrapper_parent.appendChild(document.createElement('div'));
       this.$fieldset_wrapper.id = 'approval-request-fieldset-wrapper';
-      this.$comment_wrapper = document.querySelector('#smallCommentFrame') || this.$comment.parentElement;
+      this.$comment_wrapper =
+        root.querySelector('.comment-wrapper') ??
+        root.querySelector('#smallCommentFrame') ??
+        this.$comment.parentElement;
       this.$submit = this.$form.querySelector('input[type="submit"]');
-      this.$status = this.$form.querySelector('#update_container [role="status"]');
+      this.$status =
+        this.$form.querySelector('.footer [role="status"]') ??
+        this.$form.querySelector('#update_container [role="status"]');
 
       this.$form.addEventListener('submit', event => this.form_onsubmit(event));
       this.selects.forEach($select => $select.addEventListener('change', () => this.flag_onselect($select)));
@@ -199,7 +206,8 @@ Bugzilla.FlagTypeComment = class FlagTypeComment {
             include_fields: ['id', 'summary', 'content_type', 'is_patch', 'is_obsolete'],
           });
           const attachments = bugs ? bugs[this.bug_id] : [];
-          const others = attachments.filter(att => att.id !== this.attachment_id && !att.is_obsolete &&
+          const attachment_id = Number(this.$form.id.value); // Updated dynamically on overlay
+          const others = attachments.filter(att => att.id !== attachment_id && !att.is_obsolete &&
             (att.is_patch || this.extra_patch_types.includes(att.content_type)));
 
           if (others.length) {

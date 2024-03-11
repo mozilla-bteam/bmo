@@ -482,12 +482,16 @@ ok(grep($_ eq '?', @flag_states), "Flag state '?' available");
 
 $sel->click_ok(
   "//a[contains(\@href,'/attachment.cgi?id=$attachment2_id&action=edit')]");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^Attachment $attachment2_id Details for Bug $bug1_id/);
+# Wait a sec before the attachment overlay is loaded.
+sleep(1);
 $sel->is_element_present_ok(
-  '//select[@title="attachmentflag2"][@disabled]',
+  qq{//h2[normalize-space(text())="Attachment $attachment2_id: [patch] patch, v2"]}
+);
+ok(
+  !$sel->is_element_present('//select[@title="attachmentflag2"]'),
   "Attachment flags are not editable by a powerless user"
 );
+$sel->click_ok('//dialog[@id="att-overlay"]//button[@data-action="close"]');
 
 # Add an attachment and set flags on it.
 
@@ -527,13 +531,19 @@ log_in($sel, $config, 'admin');
 go_to_bug($sel, $bug1_id);
 $sel->click_ok(
   "//a[contains(\@href,'/attachment.cgi?id=${attachment3_id}&action=edit')]");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_like(qr/^Attachment $attachment3_id Details for Bug $bug1_id/);
+# Wait a sec before the attachment overlay is loaded.
+sleep(1);
+$sel->is_element_present_ok(
+  qq{//h2[normalize-space(text())="Attachment $attachment3_id: [patch] patch, v3"]}
+);
 $sel->select_ok('//select[@title="attachmentflag1"]', "label=+");
-$sel->click_ok("update");
+$sel->click_ok('//dialog[@id="att-overlay"]//input[@type="submit"]');
+# Wait a sec before the attachment is updated.
+sleep(1);
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok(
-  "Changes to attachment $attachment3_id of bug $bug1_id submitted");
+$sel->is_element_present_ok(
+  qq{//tr[\@data-attachment-id="$attachment3_id"]//a[normalize-space(text())="SeleniumAttachmentFlag1Test+"]}
+);
 
 # It's time to delete all created flag types.
 
