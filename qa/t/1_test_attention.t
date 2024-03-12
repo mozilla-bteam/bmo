@@ -37,15 +37,26 @@ $sel->type_ok('assigned_to', $config->{admin_user_login});
 $sel->check_ok('//input[@name="groups" and @value="Master"]');
 $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
+logout($sel);
 
 # Critical needinfo bugs: Bugs that are needinfo? you and are marked as being 
 # tracked against or blocking the current nightly, beta, or release versions.
 # Also bugs in a group ending with -security but do not have a keyword starting with sec-
+log_in($sel, $config, 'editbugs');
 file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc',
   'test bug for needinfo you tracked against nightly beta release');
 $sel->select_ok('component', 'General');
 $sel->select_ok('cf_tracking_firefox111', 'blocking');
+$sel->type_ok('needinfo_from', $config->{admin_user_login});
+$sel->click_ok('commit');
+$sel->is_text_present_ok('has been added to the database', 'Bug created');
+
+file_bug_in_product($sel, 'Firefox');
+$sel->type_ok('short_desc',
+  'test bug for needinfo you with severity of S1');
+$sel->select_ok('component', 'General');
+$sel->select_ok('bug_severity', 'S1');
 $sel->type_ok('needinfo_from', $config->{admin_user_login});
 $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
@@ -79,12 +90,10 @@ $sel->type_ok('assigned_to', $config->{admin_user_login});
 $sel->check_ok('//input[@name="groups" and @value="Master"]');
 $sel->click_ok('commit');
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
-logout($sel);
 
 # Important needinfos (needinfos for me but not set by me)
 # bugs that are needinfo? you and are marked as Severity = S2 defects or 
 # with the “sec-high” keyword
-log_in($sel, $config, 'editbugs');
 file_bug_in_product($sel, 'Firefox');
 $sel->type_ok('short_desc', 'test bug for important needinfos with S2 or sec-high');
 $sel->select_ok('component', 'General');
@@ -125,6 +134,10 @@ $sel->is_text_present_ok(
 $sel->is_text_present_ok(
   'test bug for needinfo you tracked against nightly beta release',
   'test bug for needinfo you tracked against nightly beta release'
+);
+$sel->is_text_present_ok(
+  'test bug for needinfo you with severity of S1',
+  'test bug for needinfo you with severity of S1'
 );
 $sel->is_text_present_ok(
   'test bug for needinfo in security group but does not have security keyword',
