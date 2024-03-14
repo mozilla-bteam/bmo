@@ -39,12 +39,12 @@
           user_story_exclude_components.push('[% comp FILTER js %]');
         [% END %]
         function toggleUserStory() {
-          if (YAHOO.util.Dom.get('user_story').value != '') {
+          if (document.getElementById('user_story').value != '') {
             hideUserStoryEdit();
           }
           if (user_story_exclude_components.length == 0) {
-            YAHOO.util.Dom.removeClass('cf_user_story_container', 'bz_default_hidden');
-            YAHOO.util.Dom.get('user_story').disabled = false;
+            document.getElementById('cf_user_story_container').classList.remove('bz_default_hidden');
+            document.getElementById('user_story').disabled = false;
             return;
           }
           var index = -1;
@@ -58,26 +58,26 @@
           if (index != -1) {
             for (var i = 0, l = user_story_exclude_components.length; i < l; i++) {
               if (user_story_exclude_components[i] == components[index]) {
-                YAHOO.util.Dom.addClass('cf_user_story_container', 'bz_default_hidden');
-                YAHOO.util.Dom.get('user_story').disabled = true;
+                document.getElementById('cf_user_story_container').classList.add('bz_default_hidden');
+                document.getElementById('user_story').disabled = true;
                 return;
               }
               else {
-                YAHOO.util.Dom.removeClass('cf_user_story_container', 'bz_default_hidden');
-                YAHOO.util.Dom.get('user_story').disabled = false;
+                document.getElementById('cf_user_story_container').classList.remove('bz_default_hidden');
+                document.getElementById('user_story').disabled = false;
               }
             }
           }
         }
         function hideUserStoryEdit() {
-          YAHOO.util.Dom.addClass('user_story_edit', 'bz_default_hidden');
-          YAHOO.util.Dom.addClass('user_story_readonly', 'bz_default_hidden');
-          YAHOO.util.Dom.removeClass('user_story_edit_container', 'bz_default_hidden');
+          document.getElementById('user_story_edit').classList.add('bz_default_hidden');
+          document.getElementById('user_story_readonly')?.classList.add('bz_default_hidden');
+          document.getElementById('user_story_edit_container').classList.remove('bz_default_hidden');
         }
-        YAHOO.util.Event.addListener('component', 'change', toggleUserStory);
-        YAHOO.util.Event.addListener('user_story_edit_action', 'click', function() {
+        document.getElementById('component').addEventListener('change', toggleUserStory);
+        document.getElementById('user_story_edit_action').addEventListener('click', () => {
           hideUserStoryEdit();
-          YAHOO.util.Dom.get('user_story').focus();
+          document.getElementById('user_story').focus();
         });
         toggleUserStory();
       </script>

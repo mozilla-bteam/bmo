@@ -33,7 +33,7 @@
 [% IF Param('comment_taggers_group') %]
   [% IF user.can_tag_comments %]
     <div id="bz_ctag_div" class="bz_default_hidden">
-      <a href="javascript:void(0)" onclick="YAHOO.bugzilla.commentTagging.hideInput()">x</a>
+      <a href="javascript:void(0)" onclick="Bugzilla.CommentTagging.hideInput()">x</a>
       <span>
         <input id="bz_ctag_add" size="10" placeholder="add tag"
               maxlength="[% constants.MAX_COMMENT_TAG_LENGTH FILTER html %]">
@@ -44,20 +44,20 @@
       &nbsp;
     </div>
     <div id="bz_ctag_error" class="bz_default_hidden">
-      <a href="javascript:void(0)" onclick="YAHOO.bugzilla.commentTagging.hideError()">x</a>
+      <a href="javascript:void(0)" onclick="Bugzilla.CommentTagging.hideError()">x</a>
       <span id="bz_ctag_error_msg"></span>
     </div>
   [% END %]
   [% IF user.id %]
     <script [% script_nonce FILTER none %]>
-      YAHOO.bugzilla.commentTagging.init([% user.can_tag_comments ? 'true' : 'false' %]);
-      YAHOO.bugzilla.commentTagging.min_len = [% constants.MIN_COMMENT_TAG_LENGTH FILTER js %];
-      YAHOO.bugzilla.commentTagging.max_len = [% constants.MAX_COMMENT_TAG_LENGTH FILTER js %];
-      YAHOO.bugzilla.commentTagging.label = 'Comment Tags:';
-      YAHOO.bugzilla.commentTagging.min_len_error =
+      Bugzilla.CommentTagging.init([% user.can_tag_comments ? 'true' : 'false' %]);
+      Bugzilla.CommentTagging.min_len = [% constants.MIN_COMMENT_TAG_LENGTH FILTER js %];
+      Bugzilla.CommentTagging.max_len = [% constants.MAX_COMMENT_TAG_LENGTH FILTER js %];
+      Bugzilla.CommentTagging.label = 'Comment Tags:';
+      Bugzilla.CommentTagging.min_len_error =
         'Comment tags must be at least
         [%~ " " _ constants.MIN_COMMENT_TAG_LENGTH FILTER js %] characters.';
-      YAHOO.bugzilla.commentTagging.max_len_error =
+      Bugzilla.CommentTagging.max_len_error =
         'Comment tags cannot be longer than
         [%~ " " _ constants.MAX_COMMENT_TAG_LENGTH FILTER js %] characters.';
     </script>
@@ -1039,18 +1039,17 @@
             (<a href="#" id="bz_flags_more_action">[% IF !bug_flags_set %]set[% ELSE %]more[% END %] flags</a>)
           </span>
           <script [% script_nonce FILTER none %]>
-            YAHOO.util.Dom.removeClass('bz_flags_more_container', 'bz_default_hidden');
-            var table = YAHOO.util.Dom.get("flags");
-            var rows = YAHOO.util.Dom.getElementsByClassName('bz_flag_type', 'tbody', table);
-            for (var i = 0; i < rows.length; i++) {
-                YAHOO.util.Dom.addClass(rows[i], 'bz_default_hidden');
-            }
-            YAHOO.util.Event.addListener('bz_flags_more_action', 'click', function (e) {
-                YAHOO.util.Dom.addClass('bz_flags_more_container', 'bz_default_hidden');
-                for (var i = 0; i < rows.length; i++) {
-                    YAHOO.util.Dom.removeClass(rows[i], 'bz_default_hidden');
-                }
-                YAHOO.util.Event.preventDefault(e);
+            document.getElementById('bz_flags_more_container').classList.remove('bz_default_hidden');
+            const rows = [...document.querySelectorAll('#flags tbody.bz_flag_type')];
+            rows.forEach(($row) => {
+                $row.classList.add('bz_default_hidden');
+            });
+            document.getElementById('bz_flags_more_action').addEventListener('click', (event) => {
+                document.getElementById('bz_flags_more_container').classList.add('bz_default_hidden');
+                rows.forEach(($row) => {
+                    $row.classList.remove('bz_default_hidden');
+                });
+                event.preventDefault();
             });
           </script>
         [% END %]

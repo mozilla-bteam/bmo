@@ -38,7 +38,7 @@ function updateCommentPrivacy(checkbox, id) {
 
 function toggle_comment_display(link, comment_id) {
     var comment = document.getElementById('comment_text_' + comment_id);
-    if (YAHOO.util.Dom.hasClass(comment, 'collapsed')) {
+    if (comment.matches('.collapsed')) {
         expand_comment(link, comment, comment_id);
     } else {
         collapse_comment(link, comment, comment_id);
@@ -50,14 +50,10 @@ function toggle_all_comments(action) {
     // there are no more comments, but that the comment is private and
     // the user is not allowed to view it.
 
-    var comments = YAHOO.util.Dom.getElementsByClassName('bz_comment_text');
-    for (var i = 0; i < comments.length; i++) {
-        var comment = comments[i];
-        if (!comment)
-            continue;
+    document.querySelectorAll('.bz_comment_text').forEach((comment) => {
         var id = comment.id.match(/^comment_text_(\d*)$/);
         if (!id)
-            continue;
+            return;
         id = id[1];
         var link = document.getElementById('comment_link_' + id);
         if (action == 'collapse') {
@@ -65,21 +61,21 @@ function toggle_all_comments(action) {
         } else {
             expand_comment(link, comment, id);
         }
-    }
+    });
 }
 
 function collapse_comment(link, comment, comment_id) {
     link.innerHTML = "[+]";
-    YAHOO.util.Dom.addClass(comment, 'collapsed');
-    YAHOO.util.Dom.addClass('comment_tag_' + comment_id, 'collapsed');
+    comment.classList.add('collapsed');
+    document.getElementById(`comment_tag_${comment_id}`).classList.add('collapsed');
 }
 
 function expand_comment(link, comment, comment_id) {
     link.innerHTML = "[-]";
-    YAHOO.util.Dom.addClass('cr' + comment_id, 'collapsed');
-    YAHOO.util.Dom.removeClass('c' + comment_id, 'bz_default_collapsed');
-    YAHOO.util.Dom.removeClass(comment, 'collapsed');
-    YAHOO.util.Dom.removeClass('comment_tag_' + comment_id, 'collapsed');
+    document.getElementById(`cr${comment_id}`)?.classList.add('collapsed');
+    document.getElementById(`c${comment_id}`).classList.remove('bz_default_collapsed');
+    comment.classList.remove('collapsed');
+    document.getElementById(`comment_tag_${comment_id}`).classList.remove('collapsed');
 }
 
 function wrapReplyText(text) {

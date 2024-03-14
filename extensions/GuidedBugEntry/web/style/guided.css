@@ -21,15 +21,6 @@
   display: none;
 }
 
-#yui-history-iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 1px;
-  visibility: hidden;
-}
-
 #steps {
   margin-left: auto;
   margin-right: auto;
@@ -255,10 +246,12 @@ ul.product-list > li > .product-item {
 }
 
 .help {
-  position: absolute;
+  position: fixed;
+  z-index: 9999;
   border: 1px solid var(--menu-border-color);
   border-radius: var(--menu-border-radius);
   padding: 8px;
+  width: 320px;
   background: var(--menu-background-color);
   box-shadow: var(--menu-box-shadow);
   cursor: default;

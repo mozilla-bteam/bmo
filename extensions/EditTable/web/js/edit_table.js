@@ -6,8 +6,8 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 
-function EditTable(parent_el, table_data) {
-    this.parent_el = YAHOO.util.Dom.get(parent_el);
+function EditTable(parent_id, table_data) {
+    this.parent_el = document.getElementById(parent_id);
     this.table_data = table_data;
     this.field_count = table_data.fields.length;
 
@@ -42,8 +42,12 @@ function EditTable(parent_el, table_data) {
                 if (this.table_data.fields[j] != this.table_data.id_field) {
                     td.className = 'editable';
                     td.contentEditable = true;
-                    YAHOO.util.Event.addListener(td, 'keydown', this._edit_keydown, this);
-                    YAHOO.util.Event.addListener(td, 'blur', this._save, this);
+                    td.addEventListener('keydown', (event) => {
+                        this._edit_keydown(event, this);
+                    });
+                    td.addEventListener('blur', (event) => {
+                        this._save(event, this);
+                    });
                     d = td;
                 }
             }
@@ -51,7 +55,9 @@ function EditTable(parent_el, table_data) {
             var a = document.createElement('a');
             a.href = '#';
             a.innerHTML = 'x';
-            YAHOO.util.Event.addListener(a, 'click', this._remove_row, this);
+            a.addEventListener('click', (event) => {
+                this._remove_row(event, this);
+            });
             td.appendChild(a);
             td.className = 'action';
             tr.appendChild(td);
@@ -62,12 +68,14 @@ function EditTable(parent_el, table_data) {
 
         var add_btn = document.createElement('button');
         add_btn.innerHTML = 'Add';
-        YAHOO.util.Event.addListener(add_btn, 'click', this._add_row, this);
+        add_btn.addEventListener('click', (event) => {
+            this._add_row(event, this);
+        });
         this.parent_el.appendChild(add_btn);
     },
 
-    this.to_json = function(target) {
-        YAHOO.util.Dom.get(target).value = JSON.stringify(this.table_data);
+    this.to_json = function(target_id) {
+        document.getElementById(target_id).value = JSON.stringify(this.table_data);
     },
 
     this._add_row = function(event, obj) {
@@ -77,7 +85,7 @@ function EditTable(parent_el, table_data) {
         }
         obj.table_data.data.push(row);
         obj.render();
-        YAHOO.util.Dom.removeClass('commit_btn', 'bz_default_hidden');
+        document.getElementById('commit_btn').classList.remove('bz_default_hidden');
         event.preventDefault();
     },
 
@@ -93,7 +101,7 @@ function EditTable(parent_el, table_data) {
             obj.table_data.data[row][0] = -obj.table_data.data[row][0];
         }
         obj.render();
-        YAHOO.util.Dom.removeClass('commit_btn', 'bz_default_hidden');
+        document.getElementById('commit_btn').classList.remove('bz_default_hidden');
         event.preventDefault();
     },
 
@@ -103,7 +111,7 @@ function EditTable(parent_el, table_data) {
         var value = event.target.textContent;
         if (obj.table_data.data[row][col] != event.target.textContent) {
             obj.table_data.data[row][col] = event.target.textContent;
-            YAHOO.util.Dom.removeClass('commit_btn', 'bz_default_hidden');
+            document.getElementById('commit_btn').classList.remove('bz_default_hidden');
         }
     },
 

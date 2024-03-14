@@ -12,7 +12,7 @@
   title = "Instant Search"
   generate_api_token = 1
   javascript_urls = [ 'extensions/GuidedBugEntry/web/js/products.js',
-                      'js/instant-search.js', ]
+                      'js/data-table.js', 'js/instant-search.js' ]
 %]
 
 [% UNLESS default.exists('product') && default.product.size %]
@@ -20,7 +20,7 @@
 [% END %]
 
 <script [% script_nonce FILTER none %]>
-YAHOO.bugzilla.instantSearch.setLabels( {
+Bugzilla.InstantSearch.setLabels( {
   id: "[% field_descs.bug_id FILTER js %]",
   summary: "[% field_descs.short_desc FILTER js %]",
   component: "[% field_descs.component FILTER js %]",

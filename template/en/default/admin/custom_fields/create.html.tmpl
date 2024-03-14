@@ -32,7 +32,9 @@
 
 [%# set initial editability of fields such as Reverse Relationship Description %]
 <script [% script_nonce FILTER none %]>
-YAHOO.util.Event.onDOMReady(function() {onChangeType(document.getElementById('type'))});
+window.addEventListener('DOMContentLoaded', () => {
+  onChangeType(document.getElementById('type'));
+});
 </script>
 
 <p>

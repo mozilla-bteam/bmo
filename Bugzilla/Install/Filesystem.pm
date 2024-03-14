@@ -291,37 +291,6 @@ sub FILESYSTEM {
     $confdir            => DIR_CGI_READ,
   );
 
-  my $yui_all_css = sub {
-    return join(
-      "\n",
-      map {
-        my $css = path($_)->slurp;
-        _css_url_fix($css, $_, "skins/yui.css.list")
-      } split(/\n/, path("skins/yui.css.list")->slurp)
-    );
-  };
-
-  my $yui_all_js = sub {
-    return
-      join("\n",
-      map { path($_)->slurp } split(/\n/, path("js/yui.js.list")->slurp));
-  };
-
-  my $yui3_all_css = sub {
-    return join(
-      "\n",
-      map {
-        my $css = path($_)->slurp;
-        _css_url_fix($css, $_, "skins/yui3.css.list")
-      } split(/\n/, path("skins/yui3.css.list")->slurp)
-    );
-  };
-
-  my $yui3_all_js = sub {
-    return join("\n",
-      map { path($_)->slurp } split(/\n/, path('js/yui3.js.list')->slurp));
-  };
-
   # The name of each file, pointing at its default permissions and
   # default contents.
   my %create_files = (
@@ -332,12 +301,6 @@ sub FILESYSTEM {
     # owned by itself, which can cause problems if jobqueue.pl
     # or something else is not running as the webserver or root.
     "$datadir/mailer.testfile" => {perms => CGI_WRITE, contents => ''},
-    "js/yui.js" => {perms => CGI_READ, overwrite => 1, contents => $yui_all_js},
-    "skins/yui.css" =>
-      {perms => CGI_READ, overwrite => 1, contents => $yui_all_css},
-    "js/yui3.js" => {perms => CGI_READ, overwrite => 1, contents => $yui3_all_js},
-    "skins/yui3.css" =>
-      {perms => CGI_READ, overwrite => 1, contents => $yui3_all_css},
   );
 
   Bugzilla::Hook::process(

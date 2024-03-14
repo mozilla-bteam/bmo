@@ -5,9 +5,13 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-var Dom = YAHOO.util.Dom;
+/**
+ * Reference or define the Bugzilla app namespace.
+ * @namespace
+ */
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 
-YAHOO.bugzilla.commentTagging = {
+Bugzilla.CommentTagging = {
     ctag_div  : false,
     ctag_add  : false,
     counter   : 0,
@@ -26,11 +30,11 @@ YAHOO.bugzilla.commentTagging = {
 
     init : function(can_edit) {
         this.can_edit = can_edit;
-        this.ctag_div = Dom.get('bz_ctag_div');
-        this.ctag_add = Dom.get('bz_ctag_add');
-        YAHOO.util.Event.on(this.ctag_add, 'keypress', this.onKeyPress);
-        YAHOO.util.Event.onDOMReady(function() {
-            YAHOO.bugzilla.commentTagging.updateCollapseControls();
+        this.ctag_div = document.getElementById('bz_ctag_div');
+        this.ctag_add = document.getElementById('bz_ctag_add');
+        this.ctag_add.addEventListener('keypress', this.onKeyPress);
+        window.addEventListener('DOMContentLoaded', () => {
+            Bugzilla.CommentTagging.updateCollapseControls();
         });
         if (!can_edit) return;
 
@@ -52,13 +56,13 @@ YAHOO.bugzilla.commentTagging = {
 
     toggle : function(comment_id, comment_no) {
         if (!this.ctag_div) return;
-        var tags_container = Dom.get('ct_' + comment_no);
+        var tags_container = document.getElementById(`ct_${comment_no}`);
 
         if (this.current_id == comment_id) {
             // hide
             this.current_id = 0;
             this.current_no = -1;
-            Dom.addClass(this.ctag_div, 'bz_default_hidden');
+            this.ctag_div.classList.add('bz_default_hidden');
             this.hideError();
             window.focus();
 
@@ -68,16 +72,16 @@ YAHOO.bugzilla.commentTagging = {
             this.current_id = comment_id;
             this.current_no = comment_no;
             this.ctag_add.value = '';
-            tags_container.parentNode.insertBefore(this.ctag_div, tags_container);
-            Dom.removeClass(this.ctag_div, 'bz_default_hidden');
-            Dom.removeClass(tags_container.parentNode, 'bz_default_hidden');
-            var comment = Dom.get('comment_text_' + comment_no);
-            if (Dom.hasClass(comment, 'collapsed')) {
-                var link = Dom.get('comment_link_' + comment_no);
+            tags_container.parentElement.insertBefore(this.ctag_div, tags_container);
+            this.ctag_div.classList.remove('bz_default_hidden');
+            tags_container.parentElement.classList.remove('bz_default_hidden');
+            var comment = document.getElementById(`comment_text_${comment_no}`);
+            if (comment.matches('.collapsed')) {
+                var link = document.getElementById(`comment_link_${comment_no}`);
                 expand_comment(link, comment, comment_no);
             }
             window.setTimeout(function() {
-                YAHOO.bugzilla.commentTagging.ctag_add.focus();
+                Bugzilla.CommentTagging.ctag_add.focus();
             }, 50);
         }
     },
@@ -92,21 +96,21 @@ YAHOO.bugzilla.commentTagging = {
     },
 
     hideEmpty : function(comment_no) {
-        if (Dom.get('ct_' + comment_no).children.length == 0) {
-            Dom.addClass('comment_tag_' + comment_no, 'bz_default_hidden');
+        if (document.getElementById(`ct_${comment_no}`).children.length == 0) {
+            document.getElementById(`comment_tag_${comment_no}`).classList.add('bz_default_hidden');
         }
     },
 
     showError : function(comment_id, comment_no, error) {
-        var bz_ctag_error = Dom.get('bz_ctag_error');
-        var tags_container = Dom.get('ct_' + comment_no);
-        tags_container.parentNode.appendChild(bz_ctag_error, tags_container);
-        Dom.get('bz_ctag_error_msg').innerHTML = error.htmlEncode();
-        Dom.removeClass(bz_ctag_error, 'bz_default_hidden');
+        var bz_ctag_error = document.getElementById('bz_ctag_error');
+        var tags_container = document.getElementById(`ct_${comment_no}`);
+        tags_container.parentNode.appendChild(bz_ctag_error);
+        document.getElementById('bz_ctag_error_msg').innerHTML = error.htmlEncode();
+        bz_ctag_error.classList.remove('bz_default_hidden');
     },
 
     hideError : function() {
-        Dom.addClass('bz_ctag_error', 'bz_default_hidden');
+        document.getElementById('bz_ctag_error').classList.add('bz_default_hidden');
     },
 
     onKeyPress : function(evt) {
@@ -114,27 +118,27 @@ YAHOO.bugzilla.commentTagging = {
         var charCode = evt.charCode || evt.keyCode;
         if (evt.keyCode == 27) {
             // escape
-            YAHOO.bugzilla.commentTagging.hideInput();
-            YAHOO.util.Event.stopEvent(evt);
-
+            evt.preventDefault();
+            evt.stopPropagation();
+            Bugzilla.CommentTagging.hideInput();
         } else if (evt.keyCode == 13) {
             // return
-            YAHOO.util.Event.stopEvent(evt);
-            var tags = YAHOO.bugzilla.commentTagging.ctag_add.value.split(/[ ,]/);
-            var comment_id = YAHOO.bugzilla.commentTagging.current_id;
-            var comment_no = YAHOO.bugzilla.commentTagging.current_no;
+            evt.preventDefault();
+            evt.stopPropagation();
+            var tags = Bugzilla.CommentTagging.ctag_add.value.split(/[ ,]/);
+            var { current_id: comment_id, current_no: comment_no } = Bugzilla.CommentTagging;
             try {
-                YAHOO.bugzilla.commentTagging.add(comment_id, comment_no, tags);
-                YAHOO.bugzilla.commentTagging.hideInput();
+                Bugzilla.CommentTagging.add(comment_id, comment_no, tags);
+                Bugzilla.CommentTagging.hideInput();
             } catch(e) {
-                YAHOO.bugzilla.commentTagging.showError(comment_id, comment_no, e.message);
+                Bugzilla.CommentTagging.showError(comment_id, comment_no, e.message);
             }
         }
     },
 
     showTags : function(comment_id, comment_no, tags) {
         // remove existing tags
-        var tags_container = Dom.get('ct_' + comment_no);
+        var tags_container = document.getElementById(`ct_${comment_no}`);
         while (tags_container.hasChildNodes()) {
             tags_container.removeChild(tags_container.lastChild);
         }
@@ -153,7 +157,7 @@ YAHOO.bugzilla.commentTagging = {
     },
 
     updateCollapseControls : function() {
-        var container = Dom.get('comment_tags_collapse_expand_container');
+        var container = document.getElementById('comment_tags_collapse_expand_container');
         if (!container) return;
         // build list of tags
         this.nos_by_tag = {};
@@ -181,20 +185,20 @@ YAHOO.bugzilla.commentTagging = {
             var ul = document.createElement('ul');
             ul.id = 'comment_tags_collapse_expand';
             div.appendChild(ul);
-            for (var i = 0, l = tags.length; i < l; i++) {
-                var tag = tags[i];
+            tags.forEach((tag) => {
                 var li = document.createElement('li');
                 ul.appendChild(li);
                 var a = document.createElement('a');
                 li.appendChild(a);
-                Dom.setAttribute(a, 'href', '#');
-                YAHOO.util.Event.addListener(a, 'click', function(evt, tag) {
-                    YAHOO.bugzilla.commentTagging.toggleCollapse(tag);
-                    YAHOO.util.Event.stopEvent(evt);
-                }, tag);
+                a.setAttribute('href', '#');
+                a.addEventListener('click', (event) => {
+                    Bugzilla.CommentTagging.toggleCollapse(tag);
+                    event.preventDefault();
+                    event.stopPropagation();
+                });
                 li.appendChild(document.createTextNode(' (' + this.nos_by_tag[tag].length + ')'));
                 a.innerHTML = tag;
-            }
+            });
             while (container.hasChildNodes()) {
                 container.removeChild(container.lastChild);
             }
@@ -212,23 +216,24 @@ YAHOO.bugzilla.commentTagging = {
         toggle_all_comments('collapse');
         for (var i = 0, l = nos.length; i < l; i++) {
             var comment_no = nos[i].match(/\d+$/)[0];
-            var comment = Dom.get('comment_text_' + comment_no);
-            var link = Dom.get('comment_link_' + comment_no);
+            var comment = document.getElementById(`comment_text_${comment_no}`);
+            var link = document.getElementById(`comment_link_${comment_no}`);
             expand_comment(link, comment, comment_no);
         }
     },
 
     buildTagHtml : function(comment_id, comment_no, tag) {
         var el = document.createElement('span');
-        Dom.setAttribute(el, 'id', 'ct_' + comment_no + '_' + tag);
-        Dom.addClass(el, 'bz_comment_tag');
+        el.setAttribute('id', `ct_${comment_no}_${tag}`);
+        el.classList.add('bz_comment_tag');
         if (this.can_edit) {
             var a = document.createElement('a');
-            Dom.setAttribute(a, 'href', '#');
-            YAHOO.util.Event.addListener(a, 'click', function(evt, args) {
-                YAHOO.bugzilla.commentTagging.remove(args[0], args[1], args[2])
-                YAHOO.util.Event.stopEvent(evt);
-            }, [comment_id, comment_no, tag]);
+            a.setAttribute('href', '#');
+            a.addEventListener('click', (event) => {
+                Bugzilla.CommentTagging.remove(comment_id, comment_no, tag);
+                event.preventDefault();
+                event.stopPropagation();
+            });
             a.appendChild(document.createTextNode('x'));
             el.appendChild(a);
             el.appendChild(document.createTextNode("\u00a0"));
@@ -239,11 +244,8 @@ YAHOO.bugzilla.commentTagging = {
 
     add : function(comment_id, comment_no, add_tags) {
         // build list of current tags from HTML
-        var tags = new Array();
-        var spans = Dom.getElementsByClassName('bz_comment_tag', undefined, 'ct_' + comment_no);
-        for (var i = 0, l = spans.length; i < l; i++) {
-            tags.push(spans[i].textContent.substr(2));
-        }
+        var tags = [...document.querySelectorAll(`#ct_${comment_no} .bz_comment_tag`)]
+            .map((span) => span.textContent.substr(2));
         // add new tags
         var new_tags = new Array();
         for (var i = 0, l = add_tags.length; i < l; i++) {
@@ -251,9 +253,9 @@ YAHOO.bugzilla.commentTagging = {
             // validation
             if (tag == '')
                 continue;
-            if (tag.length < YAHOO.bugzilla.commentTagging.min_len)
+            if (tag.length < Bugzilla.CommentTagging.min_len)
                 throw new Error(this.min_len_error)
-            if (tag.length > YAHOO.bugzilla.commentTagging.max_len)
+            if (tag.length > Bugzilla.CommentTagging.max_len)
                 throw new Error(this.max_len_error)
             // append new tag
             if (bz_isValueInArrayIgnoreCase(tags, tag))
@@ -268,7 +270,7 @@ YAHOO.bugzilla.commentTagging = {
     },
 
     remove : function(comment_id, comment_no, tag) {
-        var el = Dom.get('ct_' + comment_no + '_' + tag);
+        var el = document.getElementById(`ct_${comment_no}_${tag}`);
         if (el) {
             el.parentNode.removeChild(el);
             this.fetchUpdate(comment_id, comment_no, undefined, [ tag ]);
@@ -297,7 +299,7 @@ YAHOO.bugzilla.commentTagging = {
     },
 
     fetchRefresh : async (comment_id, comment_no, noRefreshOnError) => {
-        const self = YAHOO.bugzilla.commentTagging;
+        const self = Bugzilla.CommentTagging;
 
         self.incPending(comment_id);
 
@@ -316,7 +318,7 @@ YAHOO.bugzilla.commentTagging = {
     },
 
     fetchUpdate : async (comment_id, comment_no, add, remove) => {
-        const self = YAHOO.bugzilla.commentTagging;
+        const self = Bugzilla.CommentTagging;
 
         self.incPending(comment_id);
 
@@ -333,7 +335,7 @@ YAHOO.bugzilla.commentTagging = {
     },
 
     handleFetchError : (comment_id, comment_no, message, noRefreshOnError) => {
-        const self = YAHOO.bugzilla.commentTagging;
+        const self = Bugzilla.CommentTagging;
 
         self.showError(comment_id, comment_no, message);
 

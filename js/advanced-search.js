@@ -29,13 +29,6 @@ Bugzilla.AdvancedSearch.HistoryFilter = class HistoryFilter {
 
     this.$chfieldfrom.addEventListener('change', event => this.on_date_change(event));
     this.$chfieldto.addEventListener('change', event => this.on_date_change(event));
-
-    // Use on-event handler because `field.js` will update it
-    this.$chfieldfrom_button.onclick = () => showCalendar('chfieldfrom');
-    this.$chfieldto_button.onclick = () => showCalendar('chfieldto');
-
-    createCalendar('chfieldfrom');
-    createCalendar('chfieldto');
   }
 
   /**
@@ -43,11 +36,6 @@ Bugzilla.AdvancedSearch.HistoryFilter = class HistoryFilter {
    * @param {Event} event `change` event fired on date fields.
    */
   on_date_change(event) {
-    // Update the calendar when the user enters a date manually
-    if (event.isTrusted) {
-      updateCalendarFromField(event.target);
-    }
-
     // Mark `<select>` required if the value is not empty
     this.$chfield.required = !!this.$chfieldfrom.value.trim() || !!this.$chfieldto.value.trim();
   }
@@ -725,4 +713,25 @@ Bugzilla.CustomSearch.DropTarget = class CustomSearchDropTarget {
 window.addEventListener('DOMContentLoaded', () => {
   new Bugzilla.AdvancedSearch.HistoryFilter();
   new Bugzilla.CustomSearch();
+
+  // Initialize date fields that accept relative dates
+  document.querySelectorAll('.calendar_button.relative').forEach(($button) => {
+    const $input = document.getElementById($button.getAttribute('aria-controls'));
+
+    $button.addEventListener('click', () => {
+      if ($input.type === 'date') {
+        $input.type = 'text';
+      } else {
+        $input.type = 'date';
+        $input.showPicker();
+      }
+
+      $input.focus();
+      $input.select();
+    });
+
+    $input.addEventListener('blur', () => {
+      $input.type = 'text';
+    });
+  });
 }, { once: true });

@@ -11,14 +11,12 @@
 [% PROCESS global/header.html.tmpl
   title = "My Dashboard"
   generate_api_token = 1
-  style_urls = [ "skins/yui3.css",
-                 "extensions/MyDashboard/web/styles/mydashboard.css",
+  style_urls = [ "extensions/MyDashboard/web/styles/mydashboard.css",
                  "extensions/ProdCompSearch/web/styles/prod_comp_search.css" ]
-  javascript_urls = [ "js/yui3.js",
-                      "extensions/MyDashboard/web/js/query.js",
+  javascript_urls = [ "extensions/MyDashboard/web/js/query.js",
                       "extensions/MyDashboard/web/js/flags.js",
                       "extensions/ProdCompSearch/web/js/prod_comp_search.js",
-                      "js/bug.js" ]
+                      "js/data-table.js", "js/bug.js" ]
 %]
 
 [% standard_queries = [] %]
@@ -27,52 +25,6 @@
   [% standard_queries.push(q) IF !q.saved %]
   [% saved_queries.push(q) IF q.saved %]
 [% END %]
-
-<script id="last-changes-stub" type="text/x-handlebars-template">
-  <div id="last_changes_stub_{{bug_id}}">Loading...</div>
-</script>
-<script id="last-changes-template" type="text/x-handlebars-template">
-  <div id="last_changes_{{bug_id}}">
-    {{#if email}}
-      <div id="last_changes_header">
-        Last Changes :: {{email}} :: {{when}}
-      </div>
-      {{#if activity}}
-        <table id="activity">
-        {{#each activity}}
-          <tr>
-            <td class="field_label">{{field_desc}}:</td>
-            <td class="field_data">
-              {{#if removed}}
-                {{#unless added}}
-                  Removed:
-                {{/unless}}
-                {{removed}}
-              {{/if}}
-              {{#if added}}
-                {{#if removed}}
-                  &rarr;
-                {{/if}}
-              {{/if}}
-              {{#if added}}
-                {{#unless removed}}
-                  Added:
-                {{/unless}}
-                {{added}}
-              {{/if}}
-            </td>
-          </tr>
-        {{/each}}
-        </table>
-      {{/if}}
-      {{#if comment}}
-        <pre class='bz_comment_text'>{{comment}}</pre>
-      {{/if}}
-    {{else}}
-      This is a new [% terms.bug %] and no changes have been made yet.
-    {{/if}}
-  </div>
-</script>
 
 <script [% script_nonce FILTER none %]>
   [% IF Param('splinter_base') %]
@@ -89,7 +41,7 @@
     Auto-refresh every 10min
   </div>
 
-  <div class="yui3-skin-sam">
+  <div>
     <div id="left">
       <div id="query_list_container">
         Choose query:
@@ -113,7 +65,6 @@
       <div id="query_container">
         <h2 class="query_heading"></h2>
         <div class="query_description"></div>
-        <span id="query_loading" class="items_found">Loading...</span>
         <span id="query_count_refresh" class="bz_default_hidden">
           <span class="items_found" id="query_bugs_found">0 [% terms.bugs %] found</span>
           | <a class="refresh"     href="javascript:void(0);" id="query_refresh">Refresh</a>
@@ -144,7 +95,6 @@
       [% BLOCK requests_table %]
         <div id="[% name FILTER html %]_container" class="requests">
           <h2 class="query_heading">[% title FILTER html_light %]</h2>
-          <span id="[% name FILTER html %]_loading" class="items_found">Loading...</span>
           <span id="[% name FILTER html %]_count_refresh" class="bz_default_hidden">
           <span class="items_found" id="[% name FILTER html %]_flags_found">0 requests found</span>
           | <a class="refresh" href="javascript:void(0);" id="[% name FILTER html %]_refresh">Refresh</a>

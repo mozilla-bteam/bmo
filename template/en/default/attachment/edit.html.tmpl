@@ -330,7 +330,7 @@
 [% IF can_edit %]
   <script [% script_nonce FILTER none %]>
     <!--
-      YAHOO.util.Dom.removeClass( document.body, "no_javascript" );
+      document.body.classList.remove('no_javascript');
       toggle_attachment_details_visibility( );
     -->
   </script>

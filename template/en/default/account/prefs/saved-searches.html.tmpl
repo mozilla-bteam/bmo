@@ -31,9 +31,9 @@
       var checkbox = document.getElementById(group.name.replace(/share_(\d+)/, "force_$1"));
 
       if (bz_isValueInArray(bless_groups, group.value)) {
-        YAHOO.util.Dom.removeClass(checkbox.parentNode, "bz_default_hidden");
+        checkbox.parentElement.classList.remove('bz_default_hidden');
       } else {
-        YAHOO.util.Dom.addClass(checkbox.parentNode, "bz_default_hidden");
+        checkbox.parentElement.classList.add('bz_default_hidden');
         checkbox.checked = false;
       }
     } //-->

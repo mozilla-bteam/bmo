@@ -7,10 +7,6 @@
 
 // global
 
-var Dom = YAHOO.util.Dom;
-var Event = YAHOO.util.Event;
-var History = YAHOO.util.History;
-
 var guided = {
   _currentStep: '',
   _defaultStep: 'product',
@@ -47,17 +43,40 @@ var guided = {
 
     // change visibility of _step div
     if (this._currentStep)
-      Dom.addClass(this._currentStep + '_step', 'hidden');
+      document.getElementById(`${this._currentStep}_step`).classList.add('hidden');
     this._currentStep = newStep;
-    Dom.removeClass(this._currentStep + '_step', 'hidden');
+    document.getElementById(`${this._currentStep}_step`).classList.remove('hidden');
 
     // scroll to top of page to mimic real navigation
     scroll(0,0);
 
     // update history
-    if (History && !noSetHistory) {
-      History.navigate('h', newStep + '|' + product.getName() +
-                            (product.getPreselectedComponent() ? '|' + product.getPreselectedComponent() : '')
+    if (!noSetHistory) {
+      const params = new URLSearchParams(window.location.search);
+      const isDefaultStep = newStep === this._defaultStep;
+      const _product = isDefaultStep ? '' : product.getName();
+      const _component = isDefaultStep ? '' : product.getPreselectedComponent();
+
+      if (_product) {
+        params.set('product', _product);
+      } else {
+        params.delete('product');
+      }
+
+      if (_component) {
+        params.set('component', _component);
+      } else {
+        params.delete('component');
+      }
+
+      window.history.pushState(
+        {
+          step: newStep,
+          product: _product,
+          component: _component,
+        },
+        '',
+        `${window.location.pathname}?${params.toString()}`
       );
     }
   },
@@ -68,36 +87,64 @@ var guided = {
       this._defaultStep = 'webdev';
       this.webdev = true;
     }
-    try {
-      History.register('h', History.getBookmarkedState('h') || this._defaultStep, this._onStateChange);
-      History.initialize("yui-history-field", "yui-history-iframe");
-      History.onReady(function () {
-        guided._onStateChange(History.getCurrentState('h'), true);
-      });
-    } catch(err) {
-      History = false;
-    }
 
     // init steps
     webdev.onInit();
     product.onInit();
     dupes.onInit();
     bugForm.onInit();
+    bugForm.initHelp();
+
+    const noSetHistory = !window.history.state;
+
+    if (!window.history.state) {
+      const params = new URLSearchParams(window.location.search);
+      // Support for the legacy, hash-based YUI history state handler
+      const [_step = '', _product = '', _component = '']
+        = window.location.hash.replace('#h=', '').split('|').map(str => decodeURIComponent(str));
+
+      if (_product) {
+        params.set('product', _product);
+      }
+
+      if (_component) {
+        params.set('component', _component);
+      }
+
+      const _params = Object.fromEntries(params);
+
+      window.history.replaceState(
+        {
+          step: _step || (_params.product ? 'dupes' : this._defaultStep),
+          product: _params.product || '',
+          component: _params.component || '',
+        },
+        '',
+        `${window.location.pathname}?${params.toString()}`
+      );
+    }
+
+    this._onStateChange(noSetHistory);
+
+    window.addEventListener('popstate', () => {
+      this._onStateChange(true);
+    });
   },
 
-  _onStateChange: function(state, noSetHistory) {
-    state = state.split('|');
-    product.setName(state[1] || '');
-    product.setPreselectedComponent(state[2] || '');
-    guided.setStep(state[0], noSetHistory);
+  _onStateChange: function(noSetHistory) {
+    const state = window.history.state ?? {};
+
+    product.setName(state.product ?? '');
+    product.setPreselectedComponent(state.component ?? '');
+    guided.setStep(state.step, noSetHistory);
   },
 
   setAdvancedLink: function() {
     var href = `${BUGZILLA.config.basepath}enter_bug.cgi?format=__default__` +
                `&product=${encodeURIComponent(product.getName())}` +
                `&short_desc=${encodeURIComponent(dupes.getSummary())}`;
-    Dom.get('advanced_img').href = href;
-    Dom.get('advanced_link').href = href;
+    document.getElementById('advanced_img').href = href;
+    document.getElementById('advanced_link').href = href;
   }
 };
 
@@ -121,7 +168,7 @@ var product = {
   onInit: function() { },
 
   onShow: function() {
-    Dom.removeClass('advanced', 'hidden');
+    document.getElementById('advanced').classList.remove('hidden');
   },
 
   select: function(productName, componentName) {
@@ -129,7 +176,6 @@ var product = {
 
     // called when a product is selected
     if (componentName) {
-      this.setPreselectedComponent(componentName);
       if (prod && prod.defaultComponent) {
         prod.originalDefaultComponent = prod.originalDefaultComponent || prod.defaultComponent;
         prod.defaultComponent = componentName;
@@ -140,13 +186,14 @@ var product = {
         prod.defaultComponent = prod.originalDefaultComponent;
       }
     }
+    this.setPreselectedComponent(prod?.defaultComponent || '');
     this.setName(productName);
     dupes.reset();
     guided.setStep('dupes');
   },
 
   getName: function() {
-    return Dom.get('product').value;
+    return document.getElementById('product').value;
   },
 
   getPreselectedComponent: function() {
@@ -177,35 +224,32 @@ var product = {
       return;
 
     // display the product name
-    Dom.get('product').value = productName;
-    Dom.get('product_label').innerHTML = productName.htmlEncode();
-    Dom.get('dupes_product_name').innerHTML = productName.htmlEncode();
-    Dom.get('list_comp').href = `${BUGZILLA.config.basepath}describecomponents.cgi?` +
-                                `product=${encodeURIComponent(productName)}`;
+    document.getElementById('product').value = productName;
+    document.getElementById('product_label').innerHTML = productName.htmlEncode();
+    document.getElementById('dupes_product_name').innerHTML = productName.htmlEncode();
+    document.getElementById('list_comp').href
+      = `${BUGZILLA.config.basepath}describecomponents.cgi?product=${encodeURIComponent(productName)}`;
     guided.setAdvancedLink();
 
     if (productName == '') {
-      Dom.addClass("product_support", "hidden");
+      document.getElementById('product_support').classList.add('hidden');
       return;
     }
 
     // show support message
     if (products[productName] && products[productName].support) {
-      Dom.get("product_support_message").innerHTML = products[productName].support;
-      Dom.removeClass("product_support", "hidden");
+      document.getElementById('product_support_message').innerHTML = products[productName].support;
+      document.getElementById('product_support').classList.remove('hidden');
     } else {
-      Dom.addClass("product_support", "hidden");
+      document.getElementById('product_support').classList.add('hidden');
     }
 
     // show/hide component selection row
+    const $row = document.getElementById('componentTR');
     if (products[productName] && products[productName].noComponentSelection || guided.webdev) {
-      if (!Dom.hasClass('componentTR', 'hidden')) {
-        Dom.addClass('componentTR', 'hidden');
-      }
+      $row.classList.add('hidden');
     } else {
-      if (Dom.hasClass('componentTR', 'hidden')) {
-        Dom.removeClass('componentTR', 'hidden');
-      }
+      $row.classList.remove('hidden');
     }
 
     if (this._loaded == productName)
@@ -242,7 +286,7 @@ var otherProducts = {
   onInit: function() { },
 
   onShow: function() {
-    Dom.removeClass('advanced', 'hidden');
+    document.getElementById('advanced').classList.remove('hidden');
   }
 };
 
@@ -257,103 +301,79 @@ var dupes = {
   _currentSearchQuery: '',
 
   onInit: function() {
-    this._elSummary = Dom.get('dupes_summary');
-    this._elSearch = Dom.get('dupes_search');
-    this._elList = Dom.get('dupes_list');
+    this._elSummary = document.getElementById('dupes_summary');
+    this._elSearch = document.getElementById('dupes_search');
+    this._elList = document.getElementById('dupes_list');
 
-    Event.onBlur(this._elSummary, this._onSummaryBlur);
-    Event.addListener(this._elSummary, 'input', this._onSummaryBlur);
-    Event.addListener(this._elSummary, 'keydown', this._onSummaryKeyDown);
-    Event.addListener(this._elSummary, 'keyup', this._onSummaryKeyUp);
-    Event.addListener(this._elSearch, 'click', this._doSearch);
+    this._elSummary.addEventListener('blur', this._onSummaryBlur);
+    this._elSummary.addEventListener('input', this._onSummaryBlur);
+    this._elSummary.addEventListener('keydown', this._onSummaryKeyDown);
+    this._elSummary.addEventListener('keyup', this._onSummaryKeyUp);
+    this._elSearch.addEventListener('click', this._doSearch);
   },
 
   setLabels: function(labels) {
     this._dataTableColumns = [
-      { key: "id", label: labels.id, formatter: this._formatId },
-      { key: "summary", label: labels.summary, formatter: "text" },
-      { key: "component", label: labels.component, formatter: "text" },
+      { key: "id", label: labels.id, formatter: this._formatId, allowHTML: true },
+      { key: "summary", label: labels.summary },
+      { key: "component", label: labels.component },
       { key: "status", label: labels.status, formatter: this._formatStatus },
-      { key: "update_token", label: '', formatter: this._formatCc }
+      { key: "update_token", label: '', formatter: this._formatCc, allowHTML: true, sortable: false }
     ];
   },
 
   _initDataTable: function() {
-    this._dataTable = new YAHOO.widget.DataTable(
-      'dupes_list',
-      this._dataTableColumns,
-      new YAHOO.util.LocalDataSource([]), // Dummy data source
-      {
-        initialLoad: false,
-        MSG_EMPTY: 'No similar issues found.',
-        MSG_ERROR: 'An error occurred while searching for similar issues,' +
-          ' please try again.'
+    this._dataTable = new Bugzilla.DataTable({
+      container: '#dupes_list',
+      columns: this._dataTableColumns,
+      strings: {
+        EMPTY: 'No similar issues found.',
+        ERROR: 'An error occurred while searching for similar issues, please try again.'
       }
-    );
+    });
   },
 
-  _formatId: function(el, oRecord, oColumn, oData) {
-    el.innerHTML = `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${oData}" target="_blank">${oData}</a>`;
+  _formatId: function({ value }) {
+    return `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${value}" target="_blank">${value}</a>`;
   },
 
-  _formatStatus: function(el, oRecord, oColumn, oData) {
-    var resolution = oRecord.getData('resolution');
-    var bug_status = display_value('bug_status', oData);
-    if (resolution) {
-      el.innerHTML = bug_status + ' ' +
-        display_value('resolution', resolution);
-    } else {
-      el.innerHTML = bug_status;
-    }
+  _formatStatus: function({ value, data: { resolution } }) {
+    const status = display_value('bug_status', value);
+    return resolution ? `${status} ${display_value('resolution', resolution)}` : status;
   },
 
-  _formatCc: function(el, oRecord, oColumn, oData) {
-   var cc = oRecord.getData('cc');
-    var isCCed = false;
-    for (var i = 0, n = cc.length; i < n; i++) {
-      if (cc[i] == guided.currentUser) {
-        isCCed = true;
-        break;
-      }
-    }
-    dupes._buildCcHTML(el, oRecord.getData('id'), oRecord.getData('status'),
-      isCCed);
+  _formatCc: function({ data: { id, status, cc } }) {
+    return dupes._buildCcHTML(id, status, cc.some((email) => email === guided.currentUser));
   },
 
-  _buildCcHTML: function(el, id, bugStatus, isCCed) {
-    while (el.childNodes.length > 0)
-      el.removeChild(el.firstChild);
-
-    var isOpen = false;
-    for (var i = 0, n = guided.openStates.length; i < n; i++) {
-      if (guided.openStates[i] == bugStatus) {
-        isOpen = true;
-        break;
-      }
-    }
+  _buildCcHTML: function(id, bugStatus, isCCed, button) {
+    const isOpen = guided.openStates.includes(bugStatus);
 
     if (!isOpen && !isCCed) {
       // you can't cc yourself to a closed bug here
-      return;
+      return '';
     }
 
-    var button = document.createElement('button');
-    button.setAttribute('type', 'button');
+    button ||= document.createElement('button');
+    button.type = 'button';
+    button.disabled = false;
+
     if (isCCed) {
       button.innerHTML = 'Stop&nbsp;following';
-      button.onclick = function() {
-        dupes.updateFollowing(el, id, bugStatus, button, false); return false;
+      button.onclick = () => {
+        dupes.updateFollowing(id, bugStatus, false, button); return false;
       };
     } else {
       button.innerHTML = 'Follow&nbsp;bug';
-      button.onclick = function() {
-        dupes.updateFollowing(el, id, bugStatus, button, true); return false;
+      button.onclick = () => {
+        dupes.updateFollowing(id, bugStatus, true, button); return false;
       };
     }
-    el.appendChild(button);
+
+    return button;
   },
 
-  updateFollowing: async function(el, bugID, bugStatus, button, follow) {
+  updateFollowing: async function(bugID, bugStatus, follow, button) {
     button.disabled = true;
     button.innerHTML = 'Updating...';
 
@@ -366,17 +386,17 @@ var dupes = {
 
     try {
       await Bugzilla.API.put(`bug/${bugID}`, { ids: [bugID], cc: ccObject });
-      dupes._buildCcHTML(el, bugID, bugStatus, follow);
+      return dupes._buildCcHTML(bugID, bugStatus, follow, button);
     } catch ({ message }) {
-      dupes._buildCcHTML(el, bugID, bugStatus, !follow);
       alert(`Update failed:\n\n${message}`);
+      return dupes._buildCcHTML(bugID, bugStatus, !follow, button);
     }
   },
 
   reset: function() {
     this._elSummary.value = '';
-    Dom.addClass(this._elList, 'hidden');
-    Dom.addClass('dupes_continue', 'hidden');
+    this._elList.classList.add('hidden');
+    document.getElementById('dupes_continue').classList.add('hidden');
     this._elList.innerHTML = '';
     this._showProductSupport();
     this._currentSearchQuery = '';
@@ -384,16 +404,10 @@ var dupes = {
   },
 
   _showProductSupport: function() {
-    var elSupport = Dom.get('product_support_' +
-      product.getName().replace(' ', '_').toLowerCase());
-    var supportElements = Dom.getElementsByClassName('product_support');
-    for (var i = 0, n = supportElements.length; i < n; i++) {
-      if (supportElements[i] == elSupport) {
-        Dom.removeClass(elSupport, 'hidden');
-      } else {
-        Dom.addClass(supportElements[i], 'hidden');
-      }
-    }
+    const elSupportId = `product_support_${product.getName().replace(' ', '_').toLowerCase()}`;
+    document.querySelectorAll('.product_support').forEach(($element) => {
+      $element.classList.toggle('hidden', $element.id !== elSupportId);
+    });
   },
 
   onShow: function() {
@@ -402,18 +416,18 @@ var dupes = {
 
     // hide the advanced form and top continue button entry until
     // a search has happened
-    Dom.addClass('advanced', 'hidden');
-    Dom.addClass('dupes_continue_button_top', 'hidden');
+    document.getElementById('advanced').classList.add('hidden');
+    document.getElementById('dupes_continue_button_top').classList.add('hidden');
     var prod = product.getName();
     if (products[prod] && products[prod].l10n) {
-      Dom.removeClass('l10n_message', 'hidden');
-      Dom.get('l10n_product').textContent = product.getName();
-      Dom.get('l10n_link').onclick = function () {
+      document.getElementById('l10n_message').classList.remove('hidden');
+      document.getElementById('l10n_product').textContent = product.getName();
+      document.getElementById('l10n_link').onclick = function () {
         product.select('Mozilla Localizations');
       };
     }
     else {
-      Dom.addClass('l10n_message', 'hidden');
+      document.getElementById('l10n_message').classList.add('hidden');
     }
 
     if (!this._elSearch.disabled && this.getSummary().length >= 4) {
@@ -435,7 +449,7 @@ var dupes = {
     // map <enter> to doSearch()
     if (e && (e.keyCode == 13)) {
       dupes._doSearch();
-      Event.stopPropagation(e);
+      e.stopPropagation();
     }
   },
 
@@ -461,18 +475,18 @@ var dupes = {
 
     try {
       // run the search
-      Dom.removeClass(dupes._elList, 'hidden');
+      dupes._elList.classList.remove('hidden');
 
-      dupes._dataTable.showTableMessage(
+      dupes._dataTable.render([]);
+      dupes._dataTable.setMessage(
         'Searching for similar issues...&nbsp;&nbsp;&nbsp;' +
         `<img src="${BUGZILLA.config.basepath}extensions/GuidedBugEntry/web/images/throbber.gif"` +
-        ' width="16" height="11">',
-        YAHOO.widget.DataTable.CLASS_LOADING
+        ' width="16" height="11">'
       );
 
-      Dom.get('dupes_continue_button_top').disabled = true;
-      Dom.get('dupes_continue_button_bottom').disabled = true;
-      Dom.removeClass('dupes_continue', 'hidden');
+      document.getElementById('dupes_continue_button_top').disabled = true;
+      document.getElementById('dupes_continue_button_bottom').disabled = true;
+      document.getElementById('dupes_continue').classList.remove('hidden');
 
       let data;
 
@@ -490,11 +504,11 @@ var dupes = {
         data = { error: true };
       }
 
-      Dom.removeClass('advanced', 'hidden');
-      Dom.removeClass('dupes_continue_button_top', 'hidden');
-      Dom.get('dupes_continue_button_top').disabled = false;
-      Dom.get('dupes_continue_button_bottom').disabled = false;
-      dupes._dataTable.onDataReturnInitializeTable('', data);
+      document.getElementById('advanced').classList.remove('hidden');
+      document.getElementById('dupes_continue_button_top').classList.remove('hidden');
+      document.getElementById('dupes_continue_button_top').disabled = false;
+      document.getElementById('dupes_continue_button_bottom').disabled = false;
+      dupes._dataTable.update(data);
     } catch(err) {
       if (console)
         console.error(err.message);
@@ -523,10 +537,33 @@ var bugForm = {
 
   onInit: function() {
     var user_agent = navigator.userAgent;
-    Dom.get('user_agent').value = navigator.userAgent;
-    Event.addListener(Dom.get('short_desc'), 'blur', function() {
-      Dom.get('dupes_summary').value = Dom.get('short_desc').value;
+    document.getElementById('user_agent').value = navigator.userAgent;
+    document.getElementById('short_desc').addEventListener('blur', () => {
+      document.getElementById('dupes_summary').value = document.getElementById('short_desc').value;
       guided.setAdvancedLink();
+    });
+  },
+
+  initHelp: function() {
+    document.querySelectorAll('.help_icon').forEach(($icon) => {
+      const $tooltip = document.getElementById($icon.getAttribute('aria-describedby'));
+
+      $icon.addEventListener('mouseover', () => {
+        if (this._visibleHelpPanel) {
+          this._visibleHelpPanel.hidden = true;
+        }
+
+        const { top, left } = $icon.getBoundingClientRect();
+
+        $tooltip.style.inset = `${top}px auto auto ${left + 24}px`;
+        $tooltip.hidden = false;
+        this._visibleHelpPanel = $tooltip;
+      });
+
+      $icon.addEventListener('mouseout', () => {
+        $tooltip.hidden = true;
+        this._visibleHelpPanel = null;
+      });
     });
   },
 
@@ -535,7 +572,7 @@ var bugForm = {
     var productName = product.getName();
     var visibleCount = 0;
     if (products[productName] && products[productName].format) {
-        Dom.addClass('advanced', 'hidden');
+        document.getElementById('advanced').classList.add('hidden');
         document.location.href = `${BUGZILLA.config.basepath}enter_bug.cgi?` +
                                  `format=${encodeURIComponent(products[productName].format)}` +
                                  `&product=${encodeURIComponent(productName)}` +
@@ -543,61 +580,60 @@ var bugForm = {
         guided.updateStep = false;
         return;
     }
-    Dom.removeClass('advanced', 'hidden');
+    document.getElementById('advanced').classList.remove('hidden');
     // default the summary to the dupes query
-    Dom.get('short_desc').value = dupes.getSummary();
+    document.getElementById('short_desc').value = dupes.getSummary();
     this.resetSubmitButton();
-    if (Dom.get('component_select').length == 0)
+    if (document.getElementById('component_select').length == 0)
       this.onProductUpdated();
     this.onFileChange();
-    for (var i = 0, n = this._mandatoryFields.length; i < n; i++) {
-      Dom.removeClass(this._mandatoryFields[i], 'missing');
-    }
+    this._mandatoryFields.forEach((id) => {
+      document.getElementById(id).classList.remove('missing');
+    });
 
     this._conditionalDetails.forEach(function (cond) {
       if (cond.check()) {
         visibleCount++;
-        Dom.removeClass(cond.id, 'hidden');
+        document.getElementById(cond.id).classList.remove('hidden');
       }
       else {
-        Dom.addClass(cond.id, 'hidden');
+        document.getElementById(cond.id).classList.add('hidden');
       }
     });
     if (visibleCount > 0) {
-      Dom.removeClass('details', 'hidden');
-      Dom.removeClass('submitTR', 'even');
+      document.getElementById('details').classList.remove('hidden');
+      document.getElementById('submitTR').classList.remove('even');
     }
     else {
-      Dom.addClass('details', 'hidden');
-      Dom.addClass('submitTR', 'even');
+      document.getElementById('details').classList.add('hidden');
+      document.getElementById('submitTR').classList.add('even');
     }
   },
 
   resetSubmitButton: function() {
-    Dom.get('submit').disabled = false;
-    Dom.get('submit').value = 'Submit Bug';
+    document.getElementById('submit').disabled = false;
+    document.getElementById('submit').value = 'Submit Bug';
   },
 
   onProductUpdated: function() {
     var productName = product.getName();
 
     // init
-    var elComponents = Dom.get('component_select');
-    Dom.addClass('component_description', 'hidden');
+    var elComponents = document.getElementById('component_select');
+    document.getElementById('component_description').classList.add('hidden');
     elComponents.options.length = 0;
 
-    var elVersions = Dom.get('version_select');
+    var elVersions = document.getElementById('version_select');
     elVersions.length = 0;
 
     // product not loaded yet, bail out
     if (!product.details) {
-      Dom.addClass('versionTH', 'hidden');
-      Dom.addClass('versionTD', 'hidden');
-      Dom.get('productTD').colSpan = 2;
-      Dom.get('submit').disabled = true;
+      document.getElementById('versionTD').classList.add('hidden');
+      document.getElementById('productTD').colSpan = 2;
+      document.getElementById('submit').disabled = true;
       return;
     }
-    Dom.get('submit').disabled = false;
+    document.getElementById('submit').disabled = false;
 
     // filter components
     if (products[productName] && products[productName].componentFilter) {
@@ -606,7 +642,7 @@ var bugForm = {
 
     // build components
 
-    var elComponent = Dom.get('component');
+    var elComponent = document.getElementById('component');
     if (products[productName] && products[productName].noComponentSelection || guided.webdev) {
       elComponent.value = products[productName].defaultComponent;
       bugForm._mandatoryFields = [ 'short_desc', 'version_select' ];
@@ -668,7 +704,7 @@ var bugForm = {
 
     // build versions
     var defaultVersion = '';
-    var currentVersion = Dom.get('version').value;
+    var currentVersion = document.getElementById('version').value;
     for (i = 0, n = product.details.versions.length; i < n; i++) {
       var version = product.details.versions[i];
       if (version.is_active == '1') {
@@ -695,15 +731,13 @@ var bugForm = {
 
     if (elVersions.length > 1) {
       // more than one version, show select
-      Dom.get('productTD').colSpan = 1;
-      Dom.removeClass('versionTH', 'hidden');
-      Dom.removeClass('versionTD', 'hidden');
+      document.getElementById('productTD').colSpan = 1;
+      document.getElementById('versionTD').classList.remove('hidden');
 
     } else {
       // if there's only one version, we don't need to ask the user
-      Dom.addClass('versionTH', 'hidden');
-      Dom.addClass('versionTD', 'hidden');
-      Dom.get('productTD').colSpan = 2;
+      document.getElementById('versionTD').classList.add('hidden');
+      document.getElementById('productTD').colSpan = 2;
       defaultVersion = elVersions.options[0].value;
     }
 
@@ -743,8 +777,8 @@ var bugForm = {
 
   onComponentChange: function(componentName) {
     // show the component description
-    Dom.get('component').value = componentName;
-    var elComponentDesc = Dom.get('component_description');
+    document.getElementById('component').value = componentName;
+    var elComponentDesc = document.getElementById('component_description');
     elComponentDesc.innerHTML = '';
     for (var i = 0, n = product.details.components.length; i < n; i++) {
       var component = product.details.components[i];
@@ -753,42 +787,34 @@ var bugForm = {
         break;
       }
     }
-    Dom.removeClass(elComponentDesc, 'hidden');
+    elComponentDesc.classList.remove('hidden');
   },
 
   onVersionChange: function(version) {
-    Dom.get('version').value = version;
+    document.getElementById('version').value = version;
   },
 
   onFileChange: function() {
     // toggle ui enabled when a file is uploaded or cleared
-    var elFile = Dom.get('data');
-    var elReset = Dom.get('reset_data');
-    var elDescription = Dom.get('data_description');
+    var elFile = document.getElementById('data');
+    var elReset = document.getElementById('reset_data');
+    var elDescription = document.getElementById('data_description');
     var filename = bugForm._getFilename();
-    if (filename) {
-      elReset.disabled = false;
-      elDescription.value = filename;
-      elDescription.disabled = false;
-      Dom.removeClass('reset_data', 'hidden');
-      Dom.removeClass('data_description_tr', 'hidden');
-    } else {
-      elReset.disabled = true;
-      elDescription.value = '';
-      elDescription.disabled = true;
-      Dom.addClass('reset_data', 'hidden');
-      Dom.addClass('data_description_tr', 'hidden');
-    }
+    elReset.disabled = !filename;
+    elDescription.value = filename || '';
+    elDescription.disabled = !filename;
+    document.getElementById('reset_data').classList.toggle('hidden', !filename);
+    document.getElementById('data_description_tr').classList.toggle('hidden', !filename);
   },
 
   onFileClear: function() {
-    Dom.get('data').value = '';
+    document.getElementById('data').value = '';
     this.onFileChange();
     return false;
   },
 
   _getFilename: function() {
-    var filename = Dom.get('data').value;
+    var filename = document.getElementById('data').value;
     if (!filename)
       return '';
     filename = filename.replace(/^.+[\\\/]/, '');
@@ -799,7 +825,7 @@ var bugForm = {
     var result = new Array();
     for (var i = 0, n = this._mandatoryFields.length; i < n; i++ ) {
       var id = this._mandatoryFields[i];
-      var el = Dom.get(id);
+      var el = document.getElementById(id);
       var value;
 
       if (el.type.toString() == "checkbox") {
@@ -810,10 +836,10 @@ var bugForm = {
       }
 
       if (value == '') {
-        Dom.addClass(id, 'missing');
+        document.getElementById(id).classList.add('missing');
         result.push(id);
       } else {
-        Dom.removeClass(id, 'missing');
+        document.getElementById(id).classList.remove('missing');
       }
     }
     return result;
@@ -837,50 +863,14 @@ var bugForm = {
       return false;
     }
 
-    if (Dom.get('data').value && !Dom.get('data_description').value)
-      Dom.get('data_description').value = bugForm._getFilename();
+    if (document.getElementById('data').value && !document.getElementById('data_description').value)
+      document.getElementById('data_description').value = bugForm._getFilename();
 
-    Dom.get('submit').disabled = true;
-    Dom.get('submit').value = 'Submitting Bug...';
+    document.getElementById('submit').disabled = true;
+    document.getElementById('submit').value = 'Submitting Bug...';
 
     return true;
   },
-
-  _initHelp: function(el) {
-    var help_id = el.getAttribute('helpid');
-    if (!el.panel) {
-      if (!el.id)
-        el.id = help_id + '_parent';
-      el.panel = new YAHOO.widget.Panel(
-        help_id,
-        {
-          width: "320px",
-          visible: false,
-          close: false,
-          context: [el.id, 'tl', 'tr', null, [5, 0]]
-        }
-      );
-      el.panel.render();
-      Dom.removeClass(help_id, 'hidden');
-    }
-  },
-
-  showHelp: function(el) {
-    this._initHelp(el);
-    if (this._visibleHelpPanel)
-      this._visibleHelpPanel.hide();
-    el.panel.show();
-    this._visibleHelpPanel = el.panel;
-  },
-
-  hideHelp: function(el) {
-    if (!el.panel)
-      return;
-    if (this._visibleHelpPanel)
-      this._visibleHelpPanel.hide();
-    el.panel.hide();
-    this._visibleHelpPanel = null;
-  }
 };
 
 function quoteMeta(value) {
