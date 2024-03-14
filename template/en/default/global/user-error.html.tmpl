@@ -1981,6 +1981,10 @@
       [% e.message FILTER html %] => [% e.path FILTER html %][% ", " UNLESS loop.last() %]
     [% END %]
 
+  [% ELSIF error == "duo_user_error" %]
+    [% title = "Duo Security Error" %]
+    [% reason FILTER html %]
+
   [% ELSE %]
 
     [%# Try to find hooked error messages %]

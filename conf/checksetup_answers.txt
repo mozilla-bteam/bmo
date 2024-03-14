@@ -20,7 +20,7 @@ $answer{'password_complexity'}  = 'bmo';
 $answer{'size_limit'}           = 750000;
 $answer{'skin'}                 = 'Mozilla';
 $answer{'upgrade_notification'} = 'disabled';
-$answer{'urlbase'}              = 'http://bmo.test/';
+$answer{'urlbase'}              = 'http://localhost:8000/';
 $answer{'usebugaliases'}        = 1;
 $answer{'useclassification'}    = 1;
 $answer{'user_info_class'}      = 'GitHubAuth,CGI';
@@ -50,3 +50,7 @@ $answer{'google_storage_host'}            = 'gcs';
 $answer{'google_storage_bucket'}          = 'attachments';
 $answer{'google_storage_service_account'} = 'test';
 $answer{'attachment_google_minsize'}      = '10';
+
+$answer{'duo_host'} = 'localhost:8001';
+$answer{'duo_client_id'} = '6rZ3KnrL04uyGjLd8foO';
+$answer{'duo_client_secret'} = '3vg6cm0Gj0DpC6ZJACXdZ1NrVRi1AhkwjfXnlFaJ';
