@@ -69,11 +69,11 @@ $sel->select_ok("op_sys",       "label=Other");
 
 # QA_Selenium_TEST does not have editbugs so we make sure
 # the following fields are not editable
-ok(!$sel->is_element_present('//bz-select[@name="priority"]'),
+ok(!$sel->is_element_present('//select[@name="priority"]'),
   'Priority field not editable');
-ok(!$sel->is_element_present('//bz-select[@name="bug_type"]'),
+ok(!$sel->is_element_present('//select[@name="bug_type"]'),
   'Bug type field not editable');
-ok(!$sel->is_element_present('//bz-select[@name="bug_severity"]'),
+ok(!$sel->is_element_present('//select[@name="bug_severity"]'),
   'Severity field not editable');
 
 $sel->type_ok("bug_file_loc",      "foo.cgi?action=bar");
@@ -230,17 +230,17 @@ log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
 $sel->type_ok("comment",
   "I have no privs, I can only comment (and remove myself from the CC list)");
-ok(!$sel->is_element_present('//bz-select[@name="product"]'),
+ok(!$sel->is_element_present('//select[@name="product"]'),
   "Product field not editable");
-ok(!$sel->is_element_present('//bz-select[@name="bug_type"]'),
+ok(!$sel->is_element_present('//select[@name="bug_type"]'),
   "Type field not editable");
-ok(!$sel->is_element_present('//bz-select[@name="bug_severity"]'),
+ok(!$sel->is_element_present('//select[@name="bug_severity"]'),
   "Severity field not editable");
-ok(!$sel->is_element_present('//bz-select[@name="priority"]'),
+ok(!$sel->is_element_present('//select[@name="priority"]'),
   "Priority field not editable");
-ok(!$sel->is_element_present('//bz-select[@name="op_sys"]'),
+ok(!$sel->is_element_present('//select[@name="op_sys"]'),
   "OS field not editable");
-ok(!$sel->is_element_present('//bz-select[@name="rep_platform"]'),
+ok(!$sel->is_element_present('//select[@name="rep_platform"]'),
   "Hardware field not editable");
 $sel->click_ok("cc-summary");
 

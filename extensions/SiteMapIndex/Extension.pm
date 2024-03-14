@@ -54,9 +54,12 @@ sub before_robots_txt {
   return if !Bugzilla->params->{sitemapindex_enabled};
 
   my $sitemap_url
-      = 'https://s3.us-west-2.amazonaws.com/'
-      . Bugzilla->params->{sitemapindex_s3_bucket}
-    . '/sitemap_index.xml';
+    = 'https://'
+    . Bugzilla->params->{sitemapindex_google_host}
+    . '/storage/v1/b/'
+    . Bugzilla->params->{sitemapindex_google_bucket} . '/o/'
+    . 'sitemap_index.xml?alt=media';
+
   $args->{vars}{SITEMAP_URL} = $sitemap_url;
 }
 

@@ -25,6 +25,9 @@
 %]
 
 [% param_descs = {
+  allow_account_creation => "Allow new accounts to be created. " _
+                            "If off, only administrators can create accounts.",
+
   auth_env_id => "Environment variable used by external authentication system " _
                  "to store a unique identifier for each user. Leave it blank " _
                  "if there isn't one or if this method of authentication " _
@@ -125,13 +128,6 @@
                  "sending mail to that address. It is useful if you have changed " _
                  "the <tt>emailregexp</tt> param to only allow local usernames, " _
                  "but you want the mail to be delivered to username@my.local.hostname.",
-
-  createemailregexp => "This defines the (case-insensitive) regexp to use for email addresses that are " _
-                       "permitted to self-register using a 'New Account' feature. The " _
-                       "default (.*) permits any account matching the emailregexp " _
-                       "to be created. If this parameter is left blank, no users " _
-                       "will be permitted to create their own accounts and all accounts " _
-                       "will have to be created by an administrator.",
 
   password_complexity =>
     "Set the complexity required for passwords. In all cases must the passwords " _

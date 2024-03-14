@@ -40,7 +40,7 @@ again by going to:
 
 [%+ urlbase %]createaccount.cgi
 
-[% IF Param('createemailregexp') == '.*' && Param('emailsuffix') == '' %]
+[% IF Param('allow_account_creation') && Param('emailsuffix') == '' %]
 PRIVACY NOTICE: [% terms.Bugzilla %] is an open [% terms.bug %] tracking system. Activity on most
 [%+ terms.bugs %], including email addresses, will be visible to the public. We recommend
 using a secondary account or free web email service (such as Gmail, Yahoo,

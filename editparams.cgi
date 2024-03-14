@@ -72,92 +72,19 @@ Bugzilla::Hook::process('config_modify_panels', {panels => \%hook_panels});
 $vars->{panels} = \@panels;
 
 if ($action eq 'save' && $current_module) {
+  # Check token data for CSRF protection
   check_token_data($token, 'edit_parameters');
-  my @changes           = ();
-  my @module_param_list = @{$hook_panels{lc($current_module)}->{params}};
+  delete_token($token);
 
-  my $any_changed = 0;
-  foreach my $i (@module_param_list) {
-    my $name  = $i->{'name'};
-    my $value = $cgi->param($name);
-
-    if (defined $cgi->param("reset-$name") && !$i->{'no_reset'}) {
-      $value = $i->{'default'};
-    }
-    else {
-      if ($i->{'type'} eq 'm') {
-
-        # This simplifies the code below
-        $value = [$cgi->param($name)];
-      }
-      else {
-        # Get rid of windows/mac-style line endings.
-        $value =~ s/\r\n?/\n/g;
-
-        # assume single linefeed is an empty string
-        $value =~ s/^\n$//;
-      }
-
-      # Stop complaining if the URL has no trailing slash.
-      # XXX - This hack can go away once bug 303662 is implemented.
-      if ($name =~ /(?<!webdot)base$/) {
-        $value = "$value/" if ($value && $value !~ m#/$#);
-      }
-    }
-
-    my $changed;
-    if ($i->{'type'} eq 'm') {
-      my @old = sort @{Bugzilla->params->{$name}};
-      my @new = sort @$value;
-      if (scalar(@old) != scalar(@new)) {
-        $changed = 1;
-      }
-      else {
-        $changed = 0;    # Assume not changed...
-        for (my $cnt = 0; $cnt < scalar(@old); ++$cnt) {
-          if ($old[$cnt] ne $new[$cnt]) {
-
-            # entry is different, therefore changed
-            $changed = 1;
-            last;
-          }
-        }
-      }
-    }
-    else {
-      $changed = ($value eq Bugzilla->params->{$name}) ? 0 : 1;
-    }
-
-    if ($changed) {
-      if (exists $i->{'checker'}) {
-        my $ok = $i->{'checker'}->($value, $i);
-        if ($ok ne "") {
-          ThrowUserError('invalid_parameter', {name => $name, err => $ok});
-        }
-      }
-      elsif ($name eq 'globalwatchers') {
-
-        # can't check this as others, as Bugzilla::Config::Common
-        # can not use Bugzilla::User
-        foreach my $watcher (split(/[,\s]+/, $value)) {
-          ThrowUserError('invalid_parameter',
-            {name => $name, err => "no such user $watcher"})
-            unless login_to_id($watcher);
-        }
-      }
-      push(@changes, $name);
-      SetParam($name, $value);
-      if ($name eq 'duplicate_or_move_bug_status') {
-        Bugzilla::Status::add_missing_bug_status_transitions($value);
-      }
-      $any_changed = 1;
-    }
-  }
+  my $config = Bugzilla::Config->new;
+  my $param_defs = $hook_panels{$current_panel}->{params};
+  my $new_params = $cgi->Vars; # Convert query parameters to a hash
+  my $changes = $config->process_params($param_defs, $new_params);
 
   # allow panels to check inter-dependent params
-  if ($any_changed) {
+  if (@{$changes}) {
     foreach my $panel (@panels) {
-      next unless $panel->{name} eq lc($current_module);
+      next unless $panel->{name} eq lc $current_module;
       my $module = $panel->{module};
       next unless $module->can('check_params');
       my $err = $module->check_params(Bugzilla->params);
@@ -168,11 +95,10 @@ if ($action eq 'save' && $current_module) {
     }
   }
 
-  $vars->{'message'}       = 'parameters_updated';
-  $vars->{'param_changed'} = \@changes;
+  $config->update();
 
-  write_params();
-  delete_token($token);
+  $vars->{'message'}       = 'parameters_updated';
+  $vars->{'param_changed'} = $changes;
 }
 
 $vars->{'token'} = issue_session_token('edit_parameters');

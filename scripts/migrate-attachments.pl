@@ -16,16 +16,25 @@ $| = 1;
 use Bugzilla;
 use Bugzilla::Attachment;
 use Bugzilla::Install::Util qw(indicate_progress);
-use Getopt::Long qw(GetOptions);
+use Getopt::Long            qw(GetOptions);
 
 my @storage_names = Bugzilla::Attachment->get_storage_names();
 
 my %options;
-GetOptions(\%options, 'migrate=s@{2}', 'mirror=s@{2}', 'copy=s@{2}', 'delete=s') or exit 1;
-unless ($options{migrate} || $options{mirror} || $options{copy} || $options{delete}) {
+GetOptions(
+  \%options,    'migrate=s@{2}', 'class=s@{2}', 'mirror=s@{2}',
+  'copy=s@{2}', 'delete=s'
+) or exit 1;
+unless ($options{migrate}
+  || $options{class}
+  || $options{mirror}
+  || $options{copy}
+  || $options{delete})
+{
   die <<EOF;
 Syntax:
     migrate-attachments.pl --migrate source destination
+    migrate-attachments.pl --class source destination
     migrate-attachments.pl --mirror source destination
     migrate-attachments.pl --copy source destination
     migrate-attachments.pl --delete source
@@ -37,6 +46,14 @@ Syntax:
     new destination.
 
     e.g. migrate-attachments.pl --migrate database s3
+
+'class'
+    Only update the class value stored in the attachment_storage_class
+    from the source value to the destination value. This is useful for
+    when the data has been migrated using other means and you want the
+    data to be loaded from the new location instead of the old.
+
+    e.g. migrate-attachments.pl --class s3 google
 
 'mirror'
     Copies all attachments from the specified source to the destination.
@@ -74,22 +91,34 @@ if ($options{migrate}) {
   }
   my ($source, $dest) = @{$options{migrate}};
 
+  my $query = '
+    FROM  attachments 
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
+
   # Do not migrate from database to net storage if data is less than minsize
-  my $where;
-  if ($source eq 'database' && $dest eq 's3' && Bugzilla->params->{attachment_s3_minsize}) {
-    $where = 'WHERE attach_size > ' . int Bugzilla->params->{attachment_s3_minsize};
+  if ( $source eq 'database'
+    && $dest eq 's3'
+    && Bugzilla->params->{attachment_s3_minsize})
+  {
+    $query .= ' AND attachments.attach_size > '
+      . int Bugzilla->params->{attachment_s3_minsize};
   }
-  elsif ($source eq 'database' && $dest eq 'google' && Bugzilla->params->{attachment_google_minsize}) {
-    $where = 'WHERE attach_size > ' . int Bugzilla->params->{attachment_google_minsize};
+  elsif ($source eq 'database'
+    && $dest eq 'google'
+    && Bugzilla->params->{attachment_google_minsize})
+  {
+    $query .= ' AND attachments.attach_size > '
+      . int Bugzilla->params->{attachment_google_minsize};
   }
 
-  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments $where");
-  confirm(sprintf
-    'Migrate %s attachments from %s to %s?', $total, @{$options{migrate}});
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
 
-  my $sth
-    = $dbh->prepare("SELECT attach_id FROM attachments $where ORDER BY attach_id DESC");
-  $sth->execute();
+  confirm(sprintf 'Migrate %s attachments from %s to %s?',
+    $total, @{$options{migrate}});
+
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
+  $sth->execute($source);
   my ($count, $migrated) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
     indicate_progress({total => $total, current => ++$count});
@@ -110,19 +139,57 @@ if ($options{migrate}) {
   print "Attachments migrated: $migrated\n";
 }
 
+if ($options{class}) {
+  if ($options{class}->[0] eq $options{class}->[1]) {
+    die "Source and destination must be different\n";
+  }
+  my ($source, $dest) = @{$options{class}};
+
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? ';
+
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
+
+  confirm(sprintf 'Update %d attachments class from %s to %s?',
+    $total, @{$options{class}});
+
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
+  $sth->execute($source);
+  my ($count, $updated) = (0, 0);
+  while (my ($attach_id) = $sth->fetchrow_array()) {
+    indicate_progress({total => $total, current => ++$count});
+
+    my $attachment = Bugzilla::Attachment->new({id => $attach_id, cached => 1});
+
+    # Update the class of the attachment
+    $attachment->current_storage($dest)->set_class();
+
+    $updated++;
+  }
+  print "\n";
+  print "Attachments updated: $updated\n";
+}
+
 if ($options{mirror}) {
   if ($options{mirror}->[0] eq $options{mirror}->[1]) {
     die "Source and destination must be different\n";
   }
   my ($source, $dest) = @{$options{mirror}};
 
-  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) FROM attachments");
-  confirm(sprintf
-    'Mirror %s attachments from %s to %s?', $total, @{$options{mirror}});
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
 
-  my $sth
-    = $dbh->prepare("SELECT attach_id FROM attachments ORDER BY attach_id DESC");
-  $sth->execute();
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
+
+  confirm(sprintf 'Mirror %s attachments from %s to %s?',
+    $total, @{$options{mirror}});
+
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
+  $sth->execute($source);
   my ($count, $deleted, $stored) = (0, 0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
     indicate_progress({total => $total, current => ++$count});
@@ -130,13 +197,16 @@ if ($options{mirror}) {
     my $attachment = Bugzilla::Attachment->new({id => $attach_id, cached => 1});
 
     # remove deleted attachments
-    if ($attachment->datasize == 0 && $attachment->current_storage($dest)->data_exists()) {
+    if ( $attachment->datasize == 0
+      && $attachment->current_storage($dest)->data_exists())
+    {
       $attachment->current_storage($dest)->remove_data();
       $deleted++;
     }
 
     # store attachments that don't already exist
-    elsif ($attachment->datasize != 0 && !$attachment->current_storage($dest)->data_exists())
+    elsif ($attachment->datasize != 0
+      && !$attachment->current_storage($dest)->data_exists())
     {
       if (my $data = $attachment->current_storage($source)->get_data()) {
         $attachment->current_storage($dest)->set_data($data);
@@ -155,17 +225,18 @@ elsif ($options{copy}) {
   }
   my ($source, $dest) = @{$options{copy}};
 
-  my ($total)
-    = $dbh->selectrow_array(
-    "SELECT COUNT(*) FROM attachments WHERE attach_size != 0");
-  confirm(sprintf
-    'Copy %s attachments from %s to %s?', $total, @{$options{copy}});
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
 
-  my $sth
-    = $dbh->prepare(
-    "SELECT attach_id FROM attachments WHERE attach_size != 0 ORDER BY attach_id DESC"
-    );
-  $sth->execute();
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
+
+  confirm(sprintf 'Copy %s attachments from %s to %s?', $total,
+    @{$options{copy}});
+
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
+  $sth->execute($source);
   my ($count, $stored) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
     indicate_progress({total => $total, current => ++$count});
@@ -185,25 +256,27 @@ elsif ($options{copy}) {
 }
 
 elsif ($options{delete}) {
-  my $storage = $options{delete};
-  my ($total)
-    = $dbh->selectrow_array(
-    "SELECT COUNT(*) FROM attachments WHERE attach_size != 0");
+  my $source = $options{delete};
+
+  my $query = '
+    FROM  attachments
+          JOIN attachment_storage_class ON attachments.attach_id = attachment_storage_class.id 
+    WHERE attachment_storage_class.storage_class = ? AND attachments.attach_size != 0 ';
+
+  my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $query", undef, $source);
+
   confirm(sprintf 'DELETE %s attachments from %s?', $total, $options{delete});
 
-  my $sth
-    = $dbh->prepare(
-    "SELECT attach_id FROM attachments WHERE attach_size != 0 ORDER BY attach_id DESC"
-    );
-  $sth->execute();
+  my $sth = $dbh->prepare("SELECT attach_id $query ORDER BY attach_id");
+  $sth->execute($source);
   my ($count, $deleted) = (0, 0);
   while (my ($attach_id) = $sth->fetchrow_array()) {
     indicate_progress({total => $total, current => ++$count});
 
     my $attachment = Bugzilla::Attachment->new({id => $attach_id, cached => 1});
 
-    if ($attachment->current_storage($storage)->data_exists()) {
-      $attachment->current_storage($storage)->remove_data();
+    if ($attachment->current_storage($source)->data_exists()) {
+      $attachment->current_storage($source)->remove_data();
       $deleted++;
     }
   }

@@ -171,10 +171,8 @@ Self-Registration
 By default, users can create their own user accounts by clicking the
 ``New Account`` link at the bottom of each page (assuming
 they aren't logged in as someone else already). If you want to disable
-this self-registration, or if you want to restrict who can create their
-own user account, you have to edit the :param:`createemailregexp`
-parameter in the ``Configuration`` page; see
-:ref:`parameters`.
+this self-registration, you have to edit the :param:`allow_account_creation`
+parameter in the ``Configuration`` page; see :ref:`parameters`.
 
 .. _user-account-creation:
 

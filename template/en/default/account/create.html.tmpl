@@ -50,7 +50,7 @@
   at <a href="mailto:[% Param("maintainer") %]">[% Param("maintainer") %]</a>.
 </p>
 
-[% IF Param('createemailregexp') == '.*' && Param('emailsuffix') == '' %]
+[% IF Param('allow_account_creation') && Param('emailsuffix') == '' %]
 <p>
   <b>PRIVACY NOTICE:</b> [% terms.Bugzilla %] is an open [% terms.bug %]
   tracking system. Activity on most [% terms.bugs %], including email

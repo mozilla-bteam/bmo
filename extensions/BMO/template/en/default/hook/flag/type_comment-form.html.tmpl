@@ -188,7 +188,10 @@
         </td>
       </tr>
       <tr>
-        <th id="_ar_sec_i3_label">Which older supported branches are affected by this flaw?</th>
+        <th id="_ar_sec_i3_label">
+          Which branches (beta, release, and/or ESR) are affected by this flaw, and do 
+          the release status flags reflect this affected/unaffected state correctly?
+        </th>
         <td><input type="text" aria-labelledby="_ar_sec_i3_label"></td>
       </tr>
       <tr>
@@ -213,12 +216,21 @@
         <td><textarea aria-labelledby="_ar_sec_i7_label"></textarea></td>
       </tr>
       <tr>
-        <th id="_ar_beta_i8_label">Is Android affected?</th>
+        <th id="_ar_sec_i8_label">Is the patch ready to land after security approval is given?</th>
         <td>
-          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_beta_i8_label">
-            <div class="item"><input id="_ar_beta_i8_r1" type="radio" name="_ar_beta_i8_radio" value="Yes"><label for="_ar_beta_i8_r1">Yes</label></div>
-            <div class="item"><input id="_ar_beta_i8_r2" type="radio" name="_ar_beta_i8_radio" value="No"><label for="_ar_beta_i8_r2">No</label></div>
-            <div class="item"><input id="_ar_beta_i8_r3" type="radio" name="_ar_beta_i8_radio" value="Unknown"><label for="_ar_beta_i8_r3">Unknown</label></div>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_sec_i8_label">
+            <div class="item"><input id="_ar_sec_i8_r1" type="radio" name="_ar_sec_i8_radio" value="Yes"><label for="_ar_sec_i8_r1">Yes</label></div>
+            <div class="item"><input id="_ar_sec_i8_r2" type="radio" name="_ar_sec_i8_radio" value="No"><label for="_ar_sec_i8_r2">No</label></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i9_label">Is Android affected?</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_sec_i9_label">
+            <div class="item"><input id="_ar_sec_i9_r1" type="radio" name="_ar_sec_i9_radio" value="Yes"><label for="_ar_sec_i9_r1">Yes</label></div>
+            <div class="item"><input id="_ar_sec_i9_r2" type="radio" name="_ar_sec_i9_radio" value="No"><label for="_ar_sec_i9_r2">No</label></div>
+            <div class="item"><input id="_ar_sec_i9_r3" type="radio" name="_ar_sec_i9_radio" value="Unknown"><label for="_ar_sec_i9_r3">Unknown</label></div>
           </div>
         </td>
       </tr>

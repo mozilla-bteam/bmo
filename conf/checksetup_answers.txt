@@ -51,6 +51,16 @@ $answer{'google_storage_bucket'}          = 'attachments';
 $answer{'google_storage_service_account'} = 'test';
 $answer{'attachment_google_minsize'}      = '10';
 
+$answer{'mining_enabled'}                 = 1;
+$answer{'mining_google_host'}            = 'gcs';
+$answer{'mining_google_bucket'}          = 'mining';
+$answer{'mining_google_service_account'} = 'test';
+
+$answer{'sitemapindex_enabled'}                = 1;
+$answer{'sitemapindex_google_host'}            = 'gcs';
+$answer{'sitemapindex_google_bucket'}          = 'sitemapindex';
+$answer{'sitemapindex_google_service_account'} = 'test';
+
 $answer{'duo_host'} = 'localhost:8001';
 $answer{'duo_client_id'} = '6rZ3KnrL04uyGjLd8foO';
 $answer{'duo_client_secret'} = '3vg6cm0Gj0DpC6ZJACXdZ1NrVRi1AhkwjfXnlFaJ';

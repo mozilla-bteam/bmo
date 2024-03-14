@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20240110.1';
+our $VERSION = '20240305.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -290,6 +290,9 @@ sub login {
   {
     my $on_mfa_page
       = $script_name eq '/userprefs.cgi' && $cgi->param('tab') eq 'mfa';
+
+    Bugzilla->request_cache->{mfa_warning} = 1;
+    Bugzilla->request_cache->{mfa_grace_period_expired} = 1;
 
     if (!($on_mfa_page || $on_token_page || $do_logout)) {
       $cgi->base_redirect('userprefs.cgi?tab=mfa');

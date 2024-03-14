@@ -66,3 +66,5 @@ services:
     command: "-scheme http"
     volumes:
       - ./docker/gcs/attachments:/data/attachments
+      - ./docker/gcs/sitemapindex:/data/sitemapindex
+      - ./docker/gcs/mining:/data/mining
