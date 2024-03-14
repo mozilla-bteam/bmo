@@ -580,6 +580,10 @@
   [% ELSIF error == "github_push_comment_bug_not_found" %]
     The push commit message did not contain a valid [% terms.bug %] ID.
 
+  [% ELSIF error == "duo_client_error" %]
+    Duo Security Error: [% reason FILTER html %]
+    Contact an administrator with the exact steps taken.
+
   [% ELSE %]
     [%# Try to find hooked error messages %]
     [% error_message = Hook.process("errors") %]

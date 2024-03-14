@@ -74,7 +74,7 @@ sub verify_prompt {
 }
 
 sub verify_token {
-  my ($self, $token) = @_;
+  my ($self, $token, $options) = @_;
 
   # check token
   my ($user_id) = Bugzilla::Token::GetTokenData($token);
@@ -85,16 +85,20 @@ sub verify_token {
 
   # return event data
   my $event = get_token_extra_data($token);
-  delete_token($token);
 
-  # Delete other previous mfa related tokens for this user as well
-  Bugzilla->dbh->do(
-    "DELETE FROM tokens WHERE tokentype = ? AND userid = ? AND eventdata = 'mfa'",
-    undef, 'session.short', $user->id);
+  unless ($options->{no_delete}) {
+    delete_token($token);
 
-  if (!$event) {
+    # Delete other previous mfa related tokens for this user as well
+    Bugzilla->dbh->do(
+      "DELETE FROM tokens WHERE tokentype = ? AND userid = ? AND eventdata = 'mfa'",
+      undef, 'session.short', $user->id);
+  }
+
+  if (!$event && !$options->{no_redirect}) {
     Bugzilla->cgi->base_redirect();
   }
+
   return $event;
 }
 

@@ -30,15 +30,15 @@ $answer{'usetargetmilestone'}   = 1;
 $answer{'utf8'}                 = 'utf8mb4';
 $answer{'webdotbase'}           = '/usr/bin/dot';
 
-$answer{'oauth2_client_authorize_url'} = 'http://externalapi.test:8000/oauth/test/authorize';
+$answer{'oauth2_client_authorize_url'} = 'http://externalapi.test:8001/oauth/test/authorize';
 $answer{'oauth2_client_enabled'}       = 1;
 $answer{'oauth2_client_id'}            = 'client_id';
 $answer{'oauth2_client_scopes'}        = 'openid profile email';
 $answer{'oauth2_client_secret'}        = 'client_secret';
-$answer{'oauth2_client_token_url'}     = 'http://externalapi.test:8000/oauth/test/token';
-$answer{'oauth2_client_userinfo_url'}  = 'http://externalapi.test:8000/oauth/test/userinfo';
+$answer{'oauth2_client_token_url'}     = 'http://externalapi.test:8001/oauth/test/token';
+$answer{'oauth2_client_userinfo_url'}  = 'http://externalapi.test:8001/oauth/test/userinfo';
 
-$answer{'product_details_endpoint'} = 'http://externalapi.test:8000/product_details';
+$answer{'product_details_endpoint'} = 'http://externalapi.test:8001/product_details';
 
 $answer{'s3_bucket'}             = 'attachments';
 $answer{'aws_host'}              = 's3';
@@ -60,3 +60,7 @@ $answer{'sitemapindex_enabled'}                = 1;
 $answer{'sitemapindex_google_host'}            = 'gcs';
 $answer{'sitemapindex_google_bucket'}          = 'sitemapindex';
 $answer{'sitemapindex_google_service_account'} = 'test';
+
+$answer{'duo_host'} = 'localhost:8001';
+$answer{'duo_client_id'} = '6rZ3KnrL04uyGjLd8foO';
+$answer{'duo_client_secret'} = '3vg6cm0Gj0DpC6ZJACXdZ1NrVRi1AhkwjfXnlFaJ';

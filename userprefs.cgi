@@ -772,6 +772,11 @@ sub SaveMFAcallback {
   my $provider  = Bugzilla::MFA->new_from($user, $mfa) // return;
   my $event     = $provider->verify_token($mfa_token);
 
+  # Must have passed the Duo verification to proceed to update
+  if ($mfa eq 'Duo' && !$event->{duo_verified}) {
+    ThrowUserError('duo_user_error', {reason => 'Invalid Duo Security MFA Code'});
+  }
+
   SaveMFAupdate($event->{action}, $mfa);
 }
 
