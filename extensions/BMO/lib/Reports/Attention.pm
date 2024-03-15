@@ -189,6 +189,7 @@ sub critical_assigned_bugs {
 }
 
 # Bugs that are needinfo? you and are marked as being tracked against or blocking the current nightly/beta/release
+# Neesdinfo should not be set by me
 sub critical_needinfo_bugs {
   my $user = shift;
   my $dbh  = Bugzilla->dbh;
@@ -222,7 +223,8 @@ sub critical_needinfo_bugs {
                     OR COALESCE(tracking_flags_bugs_2.value, '---') IN ('+', 'blocking')
                     OR COALESCE(tracking_flags_bugs_3.value, '---') IN ('+', 'blocking'))
               AND flags.type_id = $needinfo_id
-              AND flags.requestee_id = ?";
+              AND flags.requestee_id = ?
+              AND flags.setter_id != ?";
 
   my $query2 = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
@@ -231,7 +233,8 @@ sub critical_needinfo_bugs {
        WHERE products.classification_id IN ($class_ids)
               AND (bugs.bug_severity = 'S1' OR keywords.keywordid = $keyword_id)
               AND flags.type_id = $needinfo_id
-              AND flags.requestee_id = ?";
+              AND flags.requestee_id = ?
+              AND flags.setter_id != ?";
 
   my $query3 = SELECT . "
          FROM bugs JOIN products ON bugs.product_id = products.id
@@ -244,11 +247,12 @@ sub critical_needinfo_bugs {
               AND bug_group_map.group_id IN ("
     . (join ',', @{$cache->{sec_group_ids}}) . ")
               AND flags.type_id = $needinfo_id
-              AND flags.requestee_id = ?";
+              AND flags.requestee_id = ?
+              AND flags.setter_id != ?";
 
-  my $bugs1 = get_bug_list($query1, $user->id);
-  my $bugs2 = get_bug_list($query2, $user->id);
-  my $bugs3 = get_bug_list($query3, $user->id);
+  my $bugs1 = get_bug_list($query1, $user->id, $user->id);
+  my $bugs2 = get_bug_list($query2, $user->id, $user->id);
+  my $bugs3 = get_bug_list($query3, $user->id, $user->id);
 
   # Remove any duplicates
   my %bugs_all       = map { $_->{bug_id} => $_ } @{$bugs1}, @{$bugs2}, @{$bugs3};
