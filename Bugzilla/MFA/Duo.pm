@@ -36,7 +36,7 @@ sub prompt {
   );
 
   # Make sure Duo Security service is available
-  $duo->health_check();
+  # $duo->health_check();
 
   # Set cookie with token to verify form submitted
   # from Bugzilla and not a different domain.
