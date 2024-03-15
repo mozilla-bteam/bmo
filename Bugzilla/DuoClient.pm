@@ -251,7 +251,7 @@ sub exchange_authorization_code_for_2fa_result {
     'client_assertion'      => $client_assertion,
   };
 
-  DEBUG(dumper $all_args);
+  WARN(dumper $all_args);
 
   my $ua = mojo_user_agent();
   my $result;
@@ -259,8 +259,7 @@ sub exchange_authorization_code_for_2fa_result {
     $result = mojo_user_agent()->post($token_uri, json => $all_args)->result;
   }
   catch {
-    my $error = $_;
-    WARN("duo_client_error: $error");
+    WARN("duo_client_error: $_ " . $result->message);
     ThrowCodeError('duo_client_error', {reason => ERR_TOKEN_ERROR});
   };
 
