@@ -128,7 +128,7 @@ sub health_check {
 
   try {
     my $result
-      = mojo_user_agent()->post($health_check_uri, json => $all_args)->result;
+      = mojo_user_agent()->post($health_check_uri, form => $all_args)->result;
     die $result->message if !$result->is_success;
 
     my $data = $result->json;
@@ -256,7 +256,7 @@ sub exchange_authorization_code_for_2fa_result {
   my $ua = mojo_user_agent();
   my $result;
   try {
-    $result = mojo_user_agent()->post($token_uri, json => $all_args)->result;
+    $result = mojo_user_agent()->post($token_uri, form => $all_args)->result;
   }
   catch {
     WARN("duo_client_error: $_ " . $result->message);
