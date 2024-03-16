@@ -169,8 +169,7 @@ sub startup {
     '/oauth/v1/token' => sub {
       my $c = shift;
 
-      my $params    = decode_json($c->req->body);
-      my $duo_uname = $cache->{$params->{code}};
+      my $duo_uname = $cache->{$c->param('code')};
 
       # Load selenium config file to get the client secret, etc.
       my $conf_file = '/app/qa/config/selenium_test.conf';
