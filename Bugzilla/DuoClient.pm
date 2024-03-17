@@ -18,7 +18,6 @@ use Bugzilla::Util qw(generate_random_password mojo_user_agent);
 
 use Mojo::JWT;
 use Mojo::URL;
-use Mojo::Util qw(dumper);
 use Try::Tiny;
 use Types::Standard -types;
 
@@ -59,6 +58,7 @@ has redirect_uri => (
 #    Private Methods    #
 #########################
 
+# Standard JWT args to include with all JWT tokens
 sub _create_jwt_args {
   my ($self, $endpoint) = @_;
 
@@ -73,6 +73,7 @@ sub _create_jwt_args {
   return $jwt_args;
 }
 
+# Help for creating a URL object with default parameters
 sub _create_api_uri {
   my ($self, $path) = @_;
 
@@ -124,16 +125,12 @@ sub health_check {
   my $all_args
     = {'client_assertion' => $client_assertion, 'client_id' => $self->client_id};
 
-  DEBUG(dumper $all_args);
-
   try {
     my $result
-      = mojo_user_agent()->post($health_check_uri, json => $all_args)->result;
+      = mojo_user_agent()->post($health_check_uri, form => $all_args)->result;
     die $result->message if !$result->is_success;
 
     my $data = $result->json;
-
-    DEBUG(dumper $data);
 
     if ($data->{stat} ne 'OK') {
       die $data->{stat};
@@ -150,13 +147,11 @@ sub health_check {
 # Generate uri to Duo's prompt
 #
 # Arguments:
-#
 # username -- username trying to authenticate with Duo
 # state    -- Randomly generated character string of at least 22
 #             chars returned to the integration by Duo after 2FA
 #
 # Returns:
-#
 # Authorization uri to redirect to for the Duo prompt
 sub create_auth_url {
   my ($self, $username, $state) = @_;
@@ -208,17 +203,14 @@ sub create_auth_url {
 # if the auth was successful.
 #
 # Argument:
-#
 # duoCode  -- Authentication session transaction id
 #             returned by Duo
 # username -- Name of the user authenticating with Duo
 #
 # Return:
-#
 # A token with meta-data about the auth
 #
 # Raises:
-#
 # DuoException on error for invalid duo_codes, invalid credentials,
 # or problems connecting to Duo
 sub exchange_authorization_code_for_2fa_result {
@@ -251,16 +243,13 @@ sub exchange_authorization_code_for_2fa_result {
     'client_assertion'      => $client_assertion,
   };
 
-  DEBUG(dumper $all_args);
-
   my $ua = mojo_user_agent();
   my $result;
   try {
-    $result = mojo_user_agent()->post($token_uri, json => $all_args)->result;
+    $result = mojo_user_agent()->post($token_uri, form => $all_args)->result;
   }
   catch {
-    my $error = $_;
-    WARN("duo_client_error: $error");
+    WARN("duo_client_error: $_ " . $result->message);
     ThrowCodeError('duo_client_error', {reason => ERR_TOKEN_ERROR});
   };
 
