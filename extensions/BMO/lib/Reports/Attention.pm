@@ -182,9 +182,6 @@ sub critical_assigned_bugs {
   my $formatted_bugs = format_bug_list([values %bugs_all], $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
-  $cache->{debug_output} .= $query1 . "\n" . $query2 . "\n";
-  $cache->{debug_output} .= dumper [$bugs1, $bugs2];
-
   return $filtered_bugs;
 }
 
@@ -259,9 +256,6 @@ sub critical_needinfo_bugs {
   my $formatted_bugs = format_bug_list([values %bugs_all], $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
-  $cache->{debug_output} .= $query1 . "\n" . $query2 . "\n" . $query3 . "\n";
-  $cache->{debug_output} .= dumper [$bugs1, $bugs2, $bugs3];
-
   return $filtered_bugs;
 }
 
@@ -307,9 +301,6 @@ sub important_assigned_bugs {
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
 
-  $cache->{debug_output} .= $query . "\n";
-  $cache->{debug_output} .= dumper $bugs;
-
   return $filtered_bugs;
 }
 
@@ -338,9 +329,6 @@ sub important_needinfo_bugs {
   my $bugs           = get_bug_list($query, $user->id, $user->id);
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
-
-  $cache->{debug_output} .= $query . "\n";
-  $cache->{debug_output} .= dumper $bugs;
 
   return $filtered_bugs;
 }
@@ -379,9 +367,6 @@ sub other_needinfo_bugs {
     $cache->{sec_critical_id});
   my $formatted_bugs = format_bug_list($bugs, $user);
   my $filtered_bugs  = filter_secure_bugs($formatted_bugs);
-
-  $cache->{debug_output} .= $query . "\n";
-  $cache->{debug_output} .= dumper $bugs;
 
   return $filtered_bugs;
 }
@@ -445,10 +430,6 @@ sub report {
     }
   }
   $vars->{total_bug_count} = scalar keys %bug_ids;
-
-  if ($cache->{debug_output} && $input->{debug}) {
-    $vars->{debug_output} = $cache->{debug_output};
-  }
 }
 
 1;
