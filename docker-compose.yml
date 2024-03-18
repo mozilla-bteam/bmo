@@ -112,7 +112,7 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
 
   externalapi.test:
-    image: bmo
+    build: *bmo_build
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:8000
 
   memcached:
