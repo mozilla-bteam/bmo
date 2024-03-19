@@ -90,11 +90,10 @@ sub should_send {
     my $removed_component = "";
     if (exists $bug_data->{'changes'}) {
       foreach my $change ($bug_data->{'changes'}) {
-        if ($change->{'field'} eq 'product' && $change->{'removed'} eq $product) {
+        if ($change->{'field'} eq 'product') {
           $removed_product = $change->{'removed'};
         }
-        if ($change->{'field'} eq 'component'
-            && ($change->{'removed'} eq $component || $component eq 'any'))
+        if ($change->{'field'} eq 'component')
         {
           $removed_component = $change->{'removed'};
         }
