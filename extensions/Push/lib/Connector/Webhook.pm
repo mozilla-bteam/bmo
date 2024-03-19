@@ -93,8 +93,7 @@ sub should_send {
         if ($change->{'field'} eq 'product') {
           $removed_product = $change->{'removed'};
         }
-        if ($change->{'field'} eq 'component')
-        {
+        if ($change->{'field'} eq 'component') {
           $removed_component = $change->{'removed'};
         }
       }
