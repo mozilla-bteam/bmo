@@ -46,7 +46,7 @@ USAGE
 
 my ($login_name) = @ARGV;
 
-# Load nobody user and set as current
+# Load automation user and set as current
 my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
 Bugzilla->set_user($auto_user);
 
