@@ -84,6 +84,34 @@ sub should_send {
     }
   }
 
+  # check if the bug was removed from a product/component we care about
+  if ($event =~ /change/ && $message->routing_key =~ /\Qbug.modify\E/) {
+    my $removed_product = "";
+    my $removed_component = "";
+    if (exists $bug_data->{'changes'}) {
+      foreach my $change ($bug_data->{'changes'}) {
+        if ($change->{'field'} eq 'product' && $change->{'removed'} eq $product) {
+          $removed_product = $change->{'removed'};
+        }
+        if ($change->{'field'} eq 'component'
+            && ($change->{'removed'} eq $component || $component eq 'any'))
+        {
+          $removed_component = $change->{'removed'};
+        }
+      }
+    }
+    if ($removed_product || $removed_component) {
+      if ($removed_product eq '') {
+        $removed_product eq $bug->product;
+      }
+      if ($product eq $removed_product
+          && ($component eq $removed_component || $component eq 'any'))
+      {
+        return 1;
+      }
+    }
+  }
+
   return 0;
 }
 
