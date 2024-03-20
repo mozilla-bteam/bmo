@@ -146,6 +146,19 @@ window.addEventListener('DOMContentLoaded', () => {
     $saveButton?.addEventListener('click', async (event) => {
       event.preventDefault();
 
+      if (!$form.checkValidity()) {
+        const errorFields = /** @type {HTMLElement[]} */ ([...$form.querySelectorAll(':invalid')]);
+        const message =
+          errorFields.length === 1
+            ? 'There is an error in the form. Please fix it before continuing.'
+            : 'There are errors in the form. Please fix them before continuing.';
+
+        window.alert(message);
+        errorFields[0].focus();
+
+        return;
+      }
+
       // Use the FlagTypeComment extension (`ftc.js`) to handle submission if needed
       if ($overlay.querySelector('#approval-request-fieldset-wrapper section.approval-request')) {
         $form.requestSubmit();
