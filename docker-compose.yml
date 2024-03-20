@@ -29,6 +29,7 @@ services:
       - BMO_urlbase=http://localhost:8000/
       - BUGZILLA_ALLOW_INSECURE_HTTP=1
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
+      - BZ_DUO_BACKEND_HOST=externalapi.test:8001
       - HTTP_BACKEND=morbo
       - LOCALCONFIG_ENV=1
       - LOG4PERL_CONFIG_FILE=log4perl-docker.conf

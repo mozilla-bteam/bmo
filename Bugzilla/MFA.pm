@@ -27,7 +27,7 @@ sub new_from {
     require Bugzilla::MFA::TOTP;
     return Bugzilla::MFA::TOTP->new($user);
   }
-  elsif ($mfa eq 'Duo' && Bugzilla->params->{duo_host}) {
+  elsif ($mfa eq 'Duo' && Bugzilla->params->{duo_uri}) {
     require Bugzilla::MFA::Duo;
     return Bugzilla::MFA::Duo->new($user);
   }
