@@ -295,9 +295,12 @@ sub Send {
       }
 
       # Make sure the user isn't in the nomail list, and the dep check passed.
-      # BMO: never send emails to bugs or .tld addresses.  this check needs to
-      # happen after the bugmail_recipients hook.
-      if ($user->email_enabled && $dep_ok && ($user->login !~ /\.(?:bugs|tld)$/)) {
+      # BMO: never send emails to nobody@mozilla.org, .bugs, or .tld addresses.
+      # This check needs to happen after the bugmail_recipients hook.
+      if ( $user->email_enabled
+        && $dep_ok
+        && !is_fake_recipient_address($user->email))
+      {
 
         # Don't show summaries for bugs the user can't access, and
         # provide a hook for extensions such as SecureMail to filter

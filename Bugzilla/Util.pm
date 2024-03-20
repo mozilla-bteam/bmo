@@ -28,7 +28,8 @@ use base qw(Exporter);
   validate_email_syntax clean_text
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
-  round extract_nicks fetch_product_versions mojo_user_agent);
+  round extract_nicks fetch_product_versions mojo_user_agent
+  is_fake_recipient_address);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -1041,6 +1042,14 @@ sub mojo_user_agent {
   $ua->transactor->name('Bugzilla');
 
   return $ua;
+}
+
+sub is_fake_recipient_address {
+  my ($recipient) = @_;
+  if ($recipient =~ /\.(?:bugs|tld)$/ || $recipient eq 'nobody@mozilla.org') {
+    return 1;
+  }
+  return 0;
 }
 
 1;
