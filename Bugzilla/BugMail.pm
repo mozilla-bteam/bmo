@@ -299,7 +299,7 @@ sub Send {
       # this check needs to happen after the bugmail_recipients hook.
       if ( $user->email_enabled
         && $dep_ok
-        && ($user->login !~ /\.(?:bugs|tld)$/ && $user->login ne 'nobody@mozilla.org'))
+        && !is_fake_recipient_address($user->email)
       {
 
         # Don't show summaries for bugs the user can't access, and

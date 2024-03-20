@@ -154,9 +154,7 @@ sub MessageToMTA {
       WARN("Attempted to send email to address in badhosts: $to");
       $email->header_set(to => '');
     }
-    elsif ($recipient->host =~ /\.(?:bugs|tld)$/
-      || $recipient->address eq 'nobody@mozilla.org')
-    {
+    elsif (is_fake_recipient_address($recipient->address)) {
       WARN("Attempted to send email to non-deliverable address: $to");
       $email->header_set(to => '');
     }
