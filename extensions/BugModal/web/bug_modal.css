@@ -594,6 +594,211 @@ input[type="number"] {
   white-space: nowrap;
 }
 
+#att-overlay[open] {
+  display: flex;
+  flex-direction: column;
+  width: calc(100dvw - 64px);
+  max-width: 100dvw;
+  height: calc(100dvh - 64px);
+  max-height: 100dvh;
+  border: 0;
+  border-radius: var(--button-border-radius);
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 0 8px #000;
+  color: var(--application-foreground-color);
+  background-color: var(--application-background-color);
+}
+
+#att-overlay::backdrop {
+  background-color: #000c;
+  opacity: 1;
+}
+
+#att-overlay form {
+  display: contents;
+}
+
+#att-overlay button {
+  white-space: nowrap;
+}
+
+#att-overlay button.iconic {
+  padding: 0 !important;
+  width: 28px;
+  aspect-ratio: 1;
+}
+
+#att-overlay button.iconic .icon::before {
+  font-family: 'Material Icons';
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+#att-overlay button[data-action="close"] .icon::before {
+  content: '\e5cd'
+}
+
+#att-overlay button[data-action="prev"] .icon::before {
+  content: '\e5c4'
+}
+
+#att-overlay button[data-action="next"] .icon::before {
+  content: '\e5c8'
+}
+
+#att-overlay :is(.header, .footer) {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 40px;
+  background: var(--primary-region-header-background-color);
+}
+
+#att-overlay :is(.header, .footer) .spacer {
+  flex: auto;
+}
+
+#att-overlay .header .title {
+  flex: auto;
+  margin: 0 8px;
+  overflow: hidden;
+  font-size: var(--font-size-h4);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#att-overlay .body {
+  flex: auto;
+  display: flex;
+  overflow: hidden;
+  border-width: 1px 0;
+  border-style: solid;
+  border-color: var(--control-border-color);
+}
+
+#att-overlay .body .main-column {
+  display: flex;
+  flex-direction: column;
+  flex: auto;
+  overflow: hidden;
+}
+
+#att-overlay .body .preview-pane {
+  flex: auto;
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#att-overlay .body .preview-pane .preview {
+  position: absolute;
+  inset: 16px 64px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+#att-overlay .body .preview-pane button {
+  position: absolute;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+#att-overlay .body .preview-pane .preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#att-overlay .body .preview-pane .preview textarea {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  font-size: var(--font-size-small);
+  font-size-adjust: .5;
+  font-family: var(--font-family-monospace);
+  resize: none;
+}
+
+#att-overlay .body .comment-pane {
+  border-top: 1px solid var(--control-border-color);
+  padding: 16px;
+  max-height: 50%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#att-overlay .body .sub-column:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  overflow: hidden;
+  border-right: 1px solid var(--control-border-color);
+  width: 480px;
+}
+
+#att-overlay .body .detail-pane {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#att-overlay .body .detail-pane section {
+  margin: 16px;
+}
+
+#att-overlay .body h3 {
+  font-size: inherit;
+  margin: 0;
+}
+
+#att-overlay .body .detail-pane div:not(:first-of-type) {
+  margin-top: 4px;
+}
+
+#att-overlay .body .detail-pane section.cols {
+  display: flow-root;
+}
+
+#att-overlay .body .detail-pane section.cols h3 {
+  float: left;
+  margin-top: 4px;
+  width: 120px;
+}
+
+#att-overlay.readonly .body .detail-pane section.cols h3 {
+  margin-top: 0;
+}
+
+#att-overlay .body .detail-pane section.cols h3 ~ div {
+  margin-left: 120px;
+}
+
+#att-overlay.readonly .body .detail-pane input[type="text"]:disabled {
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background-color: transparent;
+}
+
+#att-overlay .body .detail-pane input[readonly] {
+  color: var(--disabled-control-foreground-color);
+  pointer-events: none;
+}
+
+#att-overlay .body .detail-pane .flex {
+  width: 100%;
+}
+
+#att-overlay .body .detail-pane .vcard {
+  display: inline-block;
+}
+
 /**
  * flags
  */

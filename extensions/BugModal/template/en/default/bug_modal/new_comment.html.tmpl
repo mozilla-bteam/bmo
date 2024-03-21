@@ -9,7 +9,18 @@
 [%#
   # comment: comment object
   # bug: bug object
+  # id_prefix: (string) prefix for some element IDs (default: empty)
+  # add_extras: (boolean) whether to show extra controls (default: true)
   #%]
+
+[%
+  IF id_prefix.defined;
+    id_prefix = id_prefix _ '-';
+  END;
+  IF !add_extras.defined;
+    add_extras = 1;
+  END;
+%]
 
 <div id="add-comment">
   [% can_comment = bug.check_can_change_field('longdesc', 0, 1) %]
@@ -26,7 +37,8 @@
 
   <div id="comment-header">
     <ul id="comment-tabs" role="tablist">
-      <li id="comment-edit-tab" data-focus="comment" role="tab" tabindex="0" aria-controls="comment-edit-tabpanel" aria-selected="true">
+      <li id="comment-edit-tab" data-focus="comment" role="tab" tabindex="0" aria-selected="true"
+          aria-controls="[% id_prefix FILTER html %]comment-edit-tabpanel">
         [% IF mode == "create" %]
           Description
         [% ELSE %]
@@ -34,7 +46,8 @@
         [% END %]
       </li>
       [%~ ~%]
-      <li id="comment-preview-tab" role="tab" tabindex="-1" aria-controls="comment-preview-tabpanel" aria-selected="false">
+      <li id="comment-preview-tab" role="tab" tabindex="-1" aria-selected="false"
+          aria-controls="[% id_prefix FILTER html %]comment-preview-tabpanel">
         Preview
         <img id="preview-throbber" src="[% basepath FILTER none %]extensions/BugModal/web/throbber.gif" width="16" height="11" style="display:none">
       </li>
@@ -51,7 +64,7 @@
         <a href="page.cgi?id=bug-writing.html" target="_blank">[% terms.Bug %] Writing Guidelines</a>
       </span>
     </div>
-    [% IF user.is_insider %]
+    [% IF user.is_insider && add_extras %]
       <div id="add-comment-private"
         title="Make comment visible only to members of the '[% Param('insidergroup') FILTER html %]' group"
       >
@@ -62,10 +75,12 @@
     [% END %]
   </div>
 
-  <div id="comment-edit-tabpanel" class="comment-tabpanel" role="tabpanel" aria-labelledby="comment-edit-tab">
+  <div id="[% id_prefix FILTER html %]comment-edit-tabpanel" class="comment-tabpanel" role="tabpanel"
+       aria-labelledby="comment-edit-tab">
     <textarea rows="5" cols="80" name="comment" id="comment" aria-labelledby="comment-edit-tab"[% IF user.setting("ui_attach_long_paste") == "on" %] class="attach-long-paste"[% END %]>[% comment FILTER html %]</textarea>
   </div>
-  <div id="comment-preview-tabpanel" class="comment-tabpanel" role="tabpanel" aria-labelledby="comment-preview-tab" style="display:none">
+  <div id="[% id_prefix FILTER html %]comment-preview-tabpanel" class="comment-tabpanel" role="tabpanel"
+       aria-labelledby="comment-preview-tab" style="display:none">
     [% IF Param('use_markdown') %]
       [% comment_tag = 'div' %]
     [% ELSE %]
@@ -97,7 +112,7 @@
         check_add_self = 0;
       END;
     %]
-    [% IF bug.id %]
+    [% IF bug.id && add_extras %]
       <table id="add-self-cc-container" [%= 'style="display:none"' IF hide_add_self %]>
         <tr>
           <td>

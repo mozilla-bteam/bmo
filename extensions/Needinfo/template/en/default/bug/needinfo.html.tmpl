@@ -67,46 +67,49 @@ $(function() {
 [% END %]
 
 [% IF needinfo_flags.size == 0 || needinfo_flagtype.is_multiplicable %]
+(() => {
+  let container;
+
   function needinfo_init() {
-    $('#needinfo')
+    $('.needinfo', container)
       .on('change', new_needinfo_changed)
-    $('.needinfo-override')
+    $('.needinfo-override', container)
       .on('change', existing_needinfo_changed)
       .change();
-    $('#needinfo_role, #needinfo_redirect_role')
+    $('#needinfo_role, #needinfo_redirect_role', container)
       .on('change', needinfo_role_changed);
     needinfo_visibility('needinfo');
 
     [% FOREACH flag = needinfo_flags %]
       $('#requestee-[% flag.id FILTER none %]')
         .blur(function() {
-          $('#needinfo_override_[% flag.id FILTER none %]')
+          $('#[% id_prefix FILTER html %]needinfo_override_[% flag.id FILTER none %]', container)
             .prop('checked', $(this).val() === '[% flag.requestee.login FILTER js %]')
         });
     [% END %]
   }
 
   function needinfo_visibility() {
-    var role = $('#needinfo_role').val();
+    var role = $('#needinfo_role', container).val();
     if (role == 'other') {
-      $('#needinfo_from_container').removeClass('bz_default_hidden');
-      $('#needinfo_from').prop('disabled', false);
-      $('#needinfo_role_identity').text('');
+      $('#needinfo_from_container', container).removeClass('bz_default_hidden');
+      $('#needinfo_from', container).prop('disabled', false);
+      $('#needinfo_role_identity', container).text('');
     } else {
-      $('#needinfo_from_container').addClass('bz_default_hidden');
-      $('#needinfo_from').prop('disabled', true);
-      var identity = $("#needinfo_role :selected").data("identity");
-      $('#needinfo_role_identity').text(identity);
+      $('#needinfo_from_container', container).addClass('bz_default_hidden');
+      $('#needinfo_from', container).prop('disabled', true);
+      var identity = $("#needinfo_role :selected", container).data("identity");
+      $('#needinfo_role_identity', container).text(identity);
     }
   }
 
   function new_needinfo_changed(event) {
-    if ($('#needinfo').is(':checked') && $('#needinfo_role').val() === 'other') {
-      $('#needinfo_from').prop('required', true);
-      $('#needinfo_from').focus().select();
+    if ($('.needinfo', container).is(':checked') && $('#needinfo_role', container).val() === 'other') {
+      $('#needinfo_from', container).prop('required', true);
+      $('#needinfo_from', container).focus().select();
     }
     else {
-      $('#needinfo_from').prop('required', false);
+      $('#needinfo_from', container).prop('required', false);
     }
   }
 
@@ -114,56 +117,58 @@ $(function() {
     var $target = $(event.target);
     var is_redirect = !$target.is(':checked') && $target.data('is-self');
     if (is_redirect) {
-      $('#needinfo_from_label').hide();
-      $('#needinfo_type').show();
-      $('#needinfo_type').val('redirect_to');
+      $('#needinfo_from_label', container).hide();
+      $('#needinfo_type', container).show();
+      $('#needinfo_type', container).val('redirect_to');
     } else {
-      $('#needinfo_from_label').show();
-      $('#needinfo_type').hide();
-      $('#needinfo_type').val('needinfo_from');
+      $('#needinfo_from_label', container).show();
+      $('#needinfo_type', container).hide();
+      $('#needinfo_type', container).val('needinfo_from');
     }
   }
 
   function needinfo_role_changed() {
-    $('#needinfo').prop('checked', true);
+    $('.needinfo', container).prop('checked', true);
     needinfo_visibility();
-    $('#needinfo').change();
+    $('.needinfo', container).change();
   }
 
   $(function() {
+    container = $('#[% id_prefix FILTER html %]needinfo_container');
     needinfo_init();
-    $(".needinfo_from_changed").on("change", function (event) {
-        $("#needinfo").prop("checked", $("#needinfo_from").val() !== '');
+    $(".needinfo_from_changed", container).on("change", function (event) {
+        $(".needinfo", container).prop("checked", $("#needinfo_from", container).val() !== '');
     });
   });
+})();
 [% END %]
 </script>
 
-<div id="needinfo_container">
+<div id="[% id_prefix FILTER html %]needinfo_container">
   <table>
   [% FOREACH flag = needinfo_flags %]
     <tr>
       [% IF !flag.requestee || flag.requestee.id == user.id%]
         [%# needinfo from anyone or the current user %]
         <td align="center">
-          <input type="checkbox" id="needinfo_override_[% flag.id FILTER html %]"
+          <input type="checkbox" id="[% id_prefix FILTER html %]needinfo_override_[% flag.id FILTER html %]"
             name="needinfo_override_[% flag.id FILTER html %]" value="1" class="needinfo-override"
             [% 'data-is-self="1"' IF flag.requestee %]
             [% " checked" IF flag.requestee.id == user.id || user.in_group("canconfirm") %]>
         </td>
         <td>
-          <label for="needinfo_override_[% flag.id FILTER html %]">
+          <label for="[% id_prefix FILTER html %]needinfo_override_[% flag.id FILTER html %]">
             Clear the needinfo request for <em>[% flag.requestee ? flag.requestee.login : "anyone" FILTER html %]</em>.
           </label>
         </td>
       [% ELSIF user.in_group("canconfirm") || flag.setter_id == user.id %]
         [%# needinfo targeted at someone else, but the user can clear %]
         <td align="center">
-          <input type="checkbox" id="needinfo_override_[% flag.id FILTER html %]"
+          <input type="checkbox" id="[% id_prefix FILTER html %]needinfo_override_[% flag.id FILTER html %]"
                   name="needinfo_override_[% flag.id FILTER html %]" value="1">
         </td>
         <td>
-          <label for="needinfo_override_[% flag.id FILTER html %]">
+          <label for="[% id_prefix FILTER html %]needinfo_override_[% flag.id FILTER html %]">
             I am providing the requested information for <em>[% flag.requestee.login FILTER html %]</em>
             (clears the needinfo request).
           </label>
@@ -181,11 +186,11 @@ $(function() {
     <tr>
       <td class="needinfo-cb-td">
         [% IF bug.id %]
-          <input type="checkbox" name="needinfo" id="needinfo" value="1">
+          <input type="checkbox" name="needinfo" id="[% id_prefix FILTER html %]needinfo" value="1">
         [% END %]
       </td>
       <td>
-        <label for="needinfo" id="needinfo_from_label">Request information from</label>
+        <label for="[% id_prefix FILTER html %]needinfo" id="needinfo_from_label">Request information from</label>
         <select name="needinfo_type" id="needinfo_type" style="display:none;" aria-label="Request info actions">
           <option value="needinfo_from" selected="true">Need more information from</option>
           <option value="redirect_to">Redirect needinfo request to</option>

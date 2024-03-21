@@ -5,7 +5,18 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-function show_usermenu(id, email, name, show_edit, hide_profile) {
+/**
+ * @param {HTMLElement} vcard
+ */
+function show_usermenu(vcard) {
+    const {
+      userId: id,
+      userEmail: email,
+      userName: name,
+      showEdit: show_edit,
+      hideProfile: hide_profile,
+    } = vcard.dataset;
+
     var items = [
         {
             name: "Activity",
@@ -54,16 +65,31 @@ function show_usermenu(id, email, name, show_edit, hide_profile) {
             }
         });
     }
+
+    /** @type {HTMLDialogElement | HTMLBodyElement} */
+    const appendTo = vcard.closest('dialog, body');
+
     $.contextMenu({
-        selector: ".vcard_" + id,
+        selector: `${appendTo.matches('dialog') ? 'dialog' : 'body'} .vcard_${id}`,
+        appendTo,
+        position: appendTo.matches('dialog') ? ({ $menu }, x, y) => {
+            $menu.css({ top: y - appendTo.offsetTop, left: x - appendTo.offsetLeft });
+        } : undefined,
         trigger: "left",
-        items: items
+        items,
+        events: {
+            hide: () => {
+                window.setTimeout(() => {
+                    // Remove the base layer because it won’t get updated when `appendTo` changes
+                    document.querySelector('#context-menu-layer')?.remove();
+                }, 500)
+            },
+        },
     });
 }
 
 $(function() {
   $('.show_usermenu').on("click", function (event) {
-    var $this = $(this);
-    return show_usermenu($this.data('user-id'), $this.data('user-email'), $this.data('user-name'), $this.data('show-edit'), $this.data('hide-profile'));
+    return show_usermenu($(this)[0]);
   });
 });

@@ -112,7 +112,7 @@ sub _set_ftc_states {
     }
 
     my $flag_types = Bugzilla::FlagType::match({
-      'target_type'         => ($file =~ /^bug/ ? 'bug' : 'attachment'),
+      'target_type'         => ($file =~ /attachment/ ? 'attachment' : 'bug'),
       'product_id'          => $bug->product_id,
       'component_id'        => $bug->component_id,
       'bug_id'              => $bug->id,
