@@ -26,7 +26,7 @@ BEGIN {
 my $params = Bugzilla->params;
 
 my $full_args = {
-  host          => 'duo',
+  uri           => 'http://duo',
   client_id     => 'xxxxxxxxxxxxxxxxxxxx',
   client_secret => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
   redirect_uri  => 'http://localhost:8000/mfa/duo/callback',
@@ -47,18 +47,18 @@ my $fail_ok = sub {
 
 # no arguments
 $fail_ok->(
-  'Missing required arguments: client_id, client_secret, host',
+  'Missing required arguments: client_id, client_secret, uri',
   sub {
     my $duo = Bugzilla::DuoClient->new();
   }
 );
 
-# missing host
+# missing uri
 $fail_ok->(
-  'Missing required arguments: host',
+  'Missing required arguments: uri',
   sub {
     my $args = dclone($full_args);
-    delete $args->{host};
+    delete $args->{uri};
     my $duo = Bugzilla::DuoClient->new($args);
   }
 );

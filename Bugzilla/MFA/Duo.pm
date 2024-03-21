@@ -30,7 +30,7 @@ sub prompt {
   my $params = Bugzilla->params;
 
   my $duo = Bugzilla::DuoClient->new(
-    host          => $params->{duo_host},
+    uri           => $params->{duo_uri},
     client_id     => $params->{duo_client_id},
     client_secret => $params->{duo_client_secret},
   );
@@ -50,12 +50,6 @@ sub prompt {
   my $redirect_uri = $duo->create_auth_url($username, $token);
 
   print $cgi->redirect($redirect_uri);
-}
-
-# Always return 0 (failure) in case check() for Duo called just to be safe
-# This should now happen.
-sub check {
-  return 0;
 }
 
 1;

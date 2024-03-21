@@ -22,7 +22,7 @@ set_parameters(
   $sel,
   {
     'User Authentication' =>
-      {'duo_host' => {type => 'text', value => 'externalapi.test:8001'},}
+      {'duo_uri' => {type => 'text', value => 'http://externalapi.test:8001'},}
   }
 );
 

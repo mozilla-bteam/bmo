@@ -88,7 +88,7 @@ sub get_param_list {
 
     {name => 'password_check_on_login', type => 'b', default => '1'},
 
-    {name => 'duo_host',          type => 't', default => '',},
+    {name => 'duo_uri',          type => 't', default => '',},
     {name => 'duo_client_id',     type => 't', default => '',},
     {name => 'duo_client_secret', type => 't', default => '',},
     {

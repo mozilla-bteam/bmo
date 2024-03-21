@@ -22,15 +22,16 @@ use Mojo::Util qw(dumper);
 use Try::Tiny;
 use Types::Standard -types;
 
-use constant JTI_LENGTH              => 36;
-use constant MINIMUM_STATE_LENGTH    => 22;
-use constant MAXIMUM_STATE_LENGTH    => 1024;
-use constant FIVE_MINUTES_IN_SECONDS => 300;
+use constant JTI_LENGTH             => 36;
+use constant MINIMUM_STATE_LENGTH   => 22;
+use constant MAXIMUM_STATE_LENGTH   => 1024;
+use constant JWT_DEFAULT_EXPIRATION => 300;
 
 use constant ERR_USERNAME     => 'The Duo username was invalid.';
 use constant ERR_CODE         => 'The Duo authorization code was missing.';
 use constant ERR_HEALTH_CHECK => 'The Duo service health check failed.';
-use constant ERR_TOKEN_ERROR  => 'The Duo service had an error obtaining authorization token.';
+use constant ERR_TOKEN_ERROR =>
+  'The Duo service had an error obtaining authorization token.';
 use constant ERR_STATE_LEN => 'The Duo state must be at least '
   . MINIMUM_STATE_LENGTH
   . ' characters long and no longer than '
@@ -47,7 +48,7 @@ use constant CLIENT_ASSERT_TYPE =>
 #    Initialization     #
 #########################
 
-has host          => (is => 'ro', required => 1, isa => Str);
+has uri           => (is => 'ro', required => 1, isa => Str);
 has client_id     => (is => 'ro', required => 1, isa => Str);
 has client_secret => (is => 'ro', required => 1, isa => Str);
 has redirect_uri => (
@@ -66,29 +67,11 @@ sub _create_jwt_args {
     'iss' => $self->client_id,
     'sub' => $self->client_id,
     'aud' => $endpoint,
-    'exp' => time() + FIVE_MINUTES_IN_SECONDS,
+    'exp' => time() + JWT_DEFAULT_EXPIRATION,
     'jti' => generate_random_password(JTI_LENGTH)
   };
 
   return $jwt_args;
-}
-
-sub _create_api_uri {
-  my ($self, $path) = @_;
-
-  my $uri = Mojo::URL->new;
-  $uri->host($self->host);
-  $uri->path($path);
-
-  # If we are running tests, then use http
-  if ($self->host =~ /(externalapi|localhost)/) {
-    $uri->scheme('http');
-  }
-  else {
-    $uri->scheme('https');
-  }
-
-  return $uri;
 }
 
 #########################
@@ -105,15 +88,15 @@ sub _create_api_uri {
 sub health_check {
   my ($self) = @_;
 
-  my $health_check_uri = $self->_create_api_uri(OAUTH_V1_HEALTH_CHECK_ENDPOINT);
-  my $jwt_args         = $self->_create_jwt_args($health_check_uri->to_string);
+  my $health_check_uri
+    = Mojo::URL->new($self->uri)->path(OAUTH_V1_HEALTH_CHECK_ENDPOINT);
+  my $jwt_args = $self->_create_jwt_args($health_check_uri->to_string);
 
-  # Test environment only
-  if ($health_check_uri->host eq 'localhost:8001') {
-    $health_check_uri->host('externalapi.test:8001');
+  # If we are running in a local environment, the backend 
+  # host needs to be different than the redirect host
+  if ($ENV{BZ_DUO_BACKEND_HOST}) {
+    $health_check_uri->host($ENV{BZ_DUO_BACKEND_HOST});
   }
-
-  DEBUG($health_check_uri->to_string);
 
   my $client_assertion = Mojo::JWT->new(
     claims    => $jwt_args,
@@ -176,8 +159,8 @@ sub create_auth_url {
     'redirect_uri'           => $self->redirect_uri,
     'client_id'              => $self->client_id,
     'iss'                    => $self->client_id,
-    'aud'                    => 'https://' . $self->host,
-    'exp'                    => time() + FIVE_MINUTES_IN_SECONDS,
+    'aud'                    => $self->uri,
+    'exp'                    => time() + JWT_DEFAULT_EXPIRATION,
     'state'                  => $state,
     'response_type'          => 'code',
     'duo_uname'              => $username,
@@ -196,10 +179,9 @@ sub create_auth_url {
     'request'       => $request_jwt,
   };
 
-  my $authorization_uri = $self->_create_api_uri(OAUTH_V1_AUTHORIZE_ENDPOINT);
-  $authorization_uri->query($all_args);
-
-  DEBUG($authorization_uri->to_string);
+  my $authorization_uri
+    = Mojo::URL->new($self->uri)->path(OAUTH_V1_AUTHORIZE_ENDPOINT)
+    ->query($all_args);
 
   return $authorization_uri->to_string;
 }
@@ -228,12 +210,13 @@ sub exchange_authorization_code_for_2fa_result {
     ThrowCodeError('duo_client_error', {reason => ERR_CODE});
   }
 
-  my $token_uri = $self->_create_api_uri(OAUTH_V1_TOKEN_ENDPOINT);
+  my $token_uri = Mojo::URL->new($self->uri)->path(OAUTH_V1_TOKEN_ENDPOINT);
   my $jwt_args  = $self->_create_jwt_args($token_uri->to_string);
 
-  # Test environment only
-  if ($token_uri->host eq 'localhost:8001') {
-    $token_uri->host('externalapi.test:8001');
+  # If we are running in a local environment, the backend
+  # host needs to be different than the redirect host
+  if ($ENV{BZ_DUO_BACKEND_HOST}) {
+    $token_uri->host($ENV{BZ_DUO_BACKEND_HOST});
   }
 
   my $client_assertion = Mojo::JWT->new(
