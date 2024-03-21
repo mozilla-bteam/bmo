@@ -1,0 +1,12 @@
+--- extensions/BugModal/web/bug_modal.css
++++ extensions/BugModal/web/bug_modal.css
+@@ -651,8 +651,7 @@ input[type="number"] {
+   flex: none;
+   display: flex;
+   align-items: center;
+-  gap: 8px;
+-  ;
++  gap: 4px;
+   padding: 0 8px;
+   height: 40px;
+   background: var(--primary-region-header-background-color);

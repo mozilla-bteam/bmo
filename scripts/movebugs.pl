@@ -70,8 +70,8 @@ my $component_field_id
 $component_field_id or die "Can't find field ID for 'component' field\n";
 
 my $user_id = $dbh->selectrow_array(
-  "SELECT userid FROM profiles WHERE login_name='nobody\@mozilla.org'");
-$user_id or die "Can't find user ID for 'nobody\@mozilla.org'\n";
+  "SELECT userid FROM profiles WHERE login_name='automation\@bmo.tld'");
+$user_id or die "Can't find user ID for 'automation\@bmo.tld'\n";
 
 $dbh->bz_start_transaction();
 

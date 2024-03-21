@@ -261,6 +261,9 @@ sub page_before_template {
     require Bugzilla::Extension::BMO::Reports::Attention;
     Bugzilla::Extension::BMO::Reports::Attention::report($vars);
   }
+  elsif ($page eq 'whats_next.html') {
+    Bugzilla->cgi->base_redirect('page.cgi?id=attention.html');
+  }
   elsif ($page eq 'fields.html') {
 
     # Recently global/field-descs.none.tmpl and bug/field-help.none.tmpl
@@ -2964,8 +2967,6 @@ sub app_startup {
 
   # What needs my attention report
   $r->any('/:REWRITE_attention' => [REWRITE_attention => qr{attention}])
-    ->to('CGI#page_cgi' => {'id' => 'attention.html'});
-  $r->any('/page.cgi?id=whats_next.html')
     ->to('CGI#page_cgi' => {'id' => 'attention.html'});
 }
 

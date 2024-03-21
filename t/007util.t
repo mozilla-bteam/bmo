@@ -15,7 +15,7 @@ use warnings;
 
 use lib qw(. lib local/lib/perl5 t);
 use Support::Files;
-use Test::More tests => 17;
+use Test::More tests => 20;
 use DateTime;
 
 BEGIN {
@@ -94,6 +94,11 @@ ok(validate_email_syntax($ascii_email),
   'correctly formatted ASCII-only email address is valid');
 ok(!validate_email_syntax($utf8_email),
   'correctly formatted email address with non-ASCII characters is rejected');
+
+# is_fake_recipient_address
+ok(!is_fake_recipient_address('foo@example.com'), 'Non-fake email address is accepted');
+ok(is_fake_recipient_address('foo@example.tld'), 'Fake email address is denied');
+ok(is_fake_recipient_address('nobody@mozilla.org'), 'Fake default assignee for BMO is denied');
 
 # diff_arrays():
 my @old_array = qw(alpha beta alpha gamma gamma beta alpha delta epsilon gamma);
