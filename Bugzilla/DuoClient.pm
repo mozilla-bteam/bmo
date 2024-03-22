@@ -21,10 +21,10 @@ use Mojo::URL;
 use Try::Tiny;
 use Types::Standard -types;
 
-use constant JTI_LENGTH             => 36;
-use constant MINIMUM_STATE_LENGTH   => 22;
-use constant MAXIMUM_STATE_LENGTH   => 1024;
-use constant JWT_DEFAULT_EXPIRATION => 300;
+use constant JTI_LENGTH                     => 36;
+use constant MINIMUM_STATE_LENGTH           => 22;
+use constant MAXIMUM_STATE_LENGTH           => 1024;
+use constant JWT_DEFAULT_EXPIRATION_SECONDS => 300;
 
 use constant ERR_USERNAME     => 'The Duo username was invalid.';
 use constant ERR_CODE         => 'The Duo authorization code was missing.';
@@ -67,7 +67,7 @@ sub _create_jwt_args {
     'iss' => $self->client_id,
     'sub' => $self->client_id,
     'aud' => $endpoint,
-    'exp' => time() + JWT_DEFAULT_EXPIRATION,
+    'exp' => time() + JWT_DEFAULT_EXPIRATION_SECONDS,
     'jti' => generate_random_password(JTI_LENGTH)
   };
 
@@ -148,18 +148,17 @@ sub create_auth_url {
     ThrowCodeError('duo_client_error', {reason => ERR_USERNAME});
   }
 
-  my $jwt_args = {
-    'scope'                  => 'openid',
-    'redirect_uri'           => $self->redirect_uri,
-    'client_id'              => $self->client_id,
-    'iss'                    => $self->client_id,
-    'aud'                    => $self->uri,
-    'exp'                    => time() + JWT_DEFAULT_EXPIRATION,
-    'state'                  => $state,
-    'response_type'          => 'code',
-    'duo_uname'              => $username,
-    'use_duo_code_attribute' => 1
-  };
+  my $authorization_uri = Mojo::URL->new($self->uri)->path(OAUTH_V1_AUTHORIZE_ENDPOINT);
+  my $jwt_args = $self->_create_jwt_args($authorization_uri->to_string);
+
+  # Add additional key/value pairs to the standard token needed for authorization
+  $jwt_args->{scope}                  = 'openid';
+  $jwt_args->{redirect_uri}           = $self->redirect_uri;
+  $jwt_args->{client_id}              = $self->client_id;
+  $jwt_args->{state}                  = $state;
+  $jwt_args->{response_type}          = 'code';
+  $jwt_args->{duo_uname}              = $username;
+  $jwt_args->{use_duo_code_attribute} = 1;
 
   my $request_jwt = Mojo::JWT->new(
     claims    => $jwt_args,
@@ -173,9 +172,7 @@ sub create_auth_url {
     'request'       => $request_jwt,
   };
 
-  my $authorization_uri
-    = Mojo::URL->new($self->uri)->path(OAUTH_V1_AUTHORIZE_ENDPOINT)
-    ->query($all_args);
+  $authorization_uri->query($all_args);
 
   return $authorization_uri->to_string;
 }
