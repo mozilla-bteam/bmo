@@ -232,9 +232,10 @@ sub file_bug_in_product {
   my ($sel, $product, $classification) = @_;
   my $config = get_config();
 
-  $sel->add_cookie('TUI',
-    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
-  );
+  # Set a local storage item that controls the visibility of UI elements
+  $sel->driver->execute_script('localStorage.setItem("TUI", "{\"expert_fields\":1,\"history_query\"'
+    . ':1,\"people_query\":1,\"information_query\":1,\"custom_search_query\":1}");');
+  sleep(1);
 
   $classification ||= "Unclassified";
   $sel->click_ok('//*[@class="link-file"]//a', undef, "Go create a new bug");
@@ -386,9 +387,11 @@ sub add_product {
 sub open_advanced_search_page {
   my $sel = shift;
 
-  $sel->add_cookie('TUI',
-    'expert_fields=1&history_query=1&people_query=1&information_query=1&custom_search_query=1'
-  );
+  # Set a local storage item that controls the visibility of UI elements
+  $sel->driver->execute_script('localStorage.setItem("TUI", "{\"expert_fields\":1,\"history_query\"'
+    . ':1,\"people_query\":1,\"information_query\":1,\"custom_search_query\":1}");');
+  sleep(1);
+
   $sel->click_ok('//*[@class="link-search"]//a');
   $sel->wait_for_page_to_load(WAIT_TIME);
   my $title = $sel->get_title();
