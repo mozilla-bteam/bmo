@@ -13,10 +13,7 @@ use warnings;
 
 use base 'Bugzilla::MFA';
 
-use Bugzilla::DuoAPI;
-use Bugzilla::DuoWeb;
-use Bugzilla::Error;
-use Bugzilla::Util qw(remote_ip);
+use Bugzilla::DuoClient;
 
 sub can_verify_inline {
   return 0;
@@ -24,38 +21,22 @@ sub can_verify_inline {
 
 sub enroll {
   my ($self, $params) = @_;
-
-  # verify that the user is enrolled with duo
-  my $client = Bugzilla::DuoAPI->new(
-    Bugzilla->params->{duo_ikey},
-    Bugzilla->params->{duo_skey},
-    Bugzilla->params->{duo_host}
-  );
-  my $response = $client->json_api_call('POST', '/auth/v2/preauth',
-    {username => $params->{username}});
-
-  # not enrolled - show a nice error page instead of just throwing
-  unless ($response->{result} eq 'auth' || $response->{result} eq 'allow') {
-    print Bugzilla->cgi->header();
-    my $template = Bugzilla->template;
-    $template->process('mfa/duo/not_enrolled.html.tmpl',
-      {email => $params->{username}})
-      || ThrowTemplateError($template->error());
-    exit;
-  }
-
   $self->property_set('user', $params->{username});
 }
 
 sub prompt {
   my ($self, $vars, $token) = @_;
-  my $cgi      = Bugzilla->cgi;
-  my $template = Bugzilla->template;
+  my $cgi    = Bugzilla->cgi;
+  my $params = Bugzilla->params;
 
-  $vars->{sig_request} = Bugzilla::DuoWeb::sign_request(
-    Bugzilla->params->{duo_ikey}, Bugzilla->params->{duo_skey},
-    Bugzilla->params->{duo_akey}, $self->property_get('user'),
+  my $duo = Bugzilla::DuoClient->new(
+    uri           => $params->{duo_uri},
+    client_id     => $params->{duo_client_id},
+    client_secret => $params->{duo_client_secret},
   );
+
+  # Make sure Duo Security service is available
+  $duo->health_check();
 
   # Set cookie with token to verify form submitted
   # from Bugzilla and not a different domain.
@@ -65,23 +46,10 @@ sub prompt {
     -httponly => 1,
   );
 
-  print $cgi->header();
-  $template->process('mfa/duo/verify.html.tmpl', $vars)
-    || ThrowTemplateError($template->error());
-}
+  my $username     = $self->property_get('user');
+  my $redirect_uri = $duo->create_auth_url($username, $token);
 
-sub check {
-  my ($self, $params) = @_;
-
-  return
-    if Bugzilla::DuoWeb::verify_response(
-    Bugzilla->params->{duo_ikey}, Bugzilla->params->{duo_skey},
-    Bugzilla->params->{duo_akey}, $params->{sig_response}
-    );
-
-  Bugzilla->iprepd_report('bmo.mfa_mismatch', remote_ip());
-  Bugzilla->check_rate_limit('mfa_mismatch', $self->{user}->id);
-  ThrowUserError('mfa_bad_code');
+  print $cgi->redirect($redirect_uri);
 }
 
 1;

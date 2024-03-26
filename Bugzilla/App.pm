@@ -30,6 +30,7 @@ use Bugzilla::App::SES;
 use Bugzilla::App::Static;
 use Bugzilla::App::BMO::AntiSpam;
 use Bugzilla::App::BMO::NewRelease;
+use Bugzilla::App::MFA::Duo;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
@@ -214,6 +215,7 @@ sub setup_routes {
   Bugzilla::App::SES->setup_routes($r);
   Bugzilla::App::BMO::AntiSpam->setup_routes($r);
   Bugzilla::App::BMO::NewRelease->setup_routes($r);
+  Bugzilla::App::MFA::Duo->setup_routes($r);
 
   $r->static_file('/__lbheartbeat__');
   $r->static_file(

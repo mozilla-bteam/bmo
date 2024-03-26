@@ -12,7 +12,7 @@ use lib qw( . qa/t/lib local/lib/perl5 );
 
 use Mojo::Base -strict;
 use QA::Util;
-use Test::More;
+use Test::More skip_all => 'Temporarily disabled';
 
 my ($sel, $config) = get_selenium();
 

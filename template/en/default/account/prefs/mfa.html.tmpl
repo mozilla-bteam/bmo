@@ -195,7 +195,7 @@
         <p>You are a member of a group that requires Duo Security to be used for your MFA</p>
       [% END %]
 
-       [% IF Param("duo_host")  %]
+       [% IF Param("duo_uri")  %]
         <button type="button" id="mfa-select-duo">Duo Security</button><br>
         <blockquote>
           <p>Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">Duo Security</a>
@@ -262,7 +262,7 @@
 
     </div>
 
-    [% IF Param("duo_host") %]
+    [% IF Param("duo_uri") %]
       [%# enable - duo %]
       <div id="mfa-enable-duo" style="display:none">
 

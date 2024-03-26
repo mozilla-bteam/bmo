@@ -29,6 +29,7 @@ services:
       - BMO_urlbase=http://localhost:8000/
       - BUGZILLA_ALLOW_INSECURE_HTTP=1
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
+      - BZ_DUO_BACKEND_HOST=externalapi.test:8001
       - HTTP_BACKEND=morbo
       - LOCALCONFIG_ENV=1
       - LOG4PERL_CONFIG_FILE=log4perl-docker.conf
@@ -130,6 +131,12 @@ services:
       - bmo-gcs-attachments:/data/attachments
       - bmo-gcs-sitemapindex:/data/sitemapindex
       - bmo-gcs-mining:/data/mining
+
+  externalapi.test:
+    image: bmo
+    entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
+    ports:
+      - 8001:8001
 
 volumes:
   bmo-mysql-db:

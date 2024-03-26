@@ -16,11 +16,6 @@ use File::Find;
 
 our @additional_files = ();
 
-use constant IGNORE => qw(
-  Bugzilla/DuoAPI.pm
-  Bugzilla/DuoWeb.pm
-);
-
 our @files = glob('*');
 find(sub { push(@files, $File::Find::name) if $_ =~ /\.pm$/; },
   qw(Bugzilla docs));
@@ -49,10 +44,6 @@ foreach my $extension (@extensions) {
 sub isTestingFile {
   my ($file) = @_;
   my $exclude;
-
-  foreach my $ignore (IGNORE) {
-    return undef if $ignore eq $file;
-  }
 
   if ($file =~ /\.psgi$|\.cgi$|\.pl$|\.pm$/) {
     return 1;

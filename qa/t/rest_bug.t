@@ -11,6 +11,7 @@ use 5.10.1;
 use lib qw(lib ../../lib ../../local/lib/perl5);
 
 use Bugzilla;
+use Bugzilla::Util qw(generate_random_password);
 use QA::Util qw(get_config);
 
 use MIME::Base64 qw(encode_base64 decode_base64);
@@ -82,8 +83,8 @@ $t->get_ok($url . "rest/bug/$bug_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->json_is('/bugs/0/status'   => $update->{status});
 
 ### Section 3: Add a comment to the bug
-
-$update = {comment => 'This is a new test comment',};
+my $comment_text = generate_random_password();
+$update = {comment => $comment_text};
 
 # Unauthenticated update should fail
 $t->post_ok($url . "rest/bug/$bug_id/comment" => json => $update)

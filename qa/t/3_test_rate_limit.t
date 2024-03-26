@@ -32,7 +32,7 @@ set_parameters(
         value =>
           '{"get_attachments":[5,100],"get_comments":[5,100],"get_bug":[5,100],"show_bug":[5,100],"github":[5,100],"webpage_errors":[5,100], "token":[5,100], "api_key":[5,100], "username_password":[3,100]}'
       },
-      'iprepd_base_url'      => {type => 'text', value => 'http://externalapi.test:8000'},
+      'iprepd_base_url'      => {type => 'text', value => 'http://externalapi.test:8001'},
       'iprepd_client_secret' => {type => 'text', value => 'iprepd_client_secret'},
     }
   }
@@ -111,7 +111,7 @@ $sel->title_is('Invalid Username Or Password',
   'Username or password error page displayed');
 
 # Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8000/violations/last')->status_is(200)
+$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
   ->json_is('/violation' => 'bmo.username_password_mismatch')
   ->json_has('/object')->json_is('/type', 'ip');
 
@@ -124,7 +124,7 @@ $t->post_ok($config->{browser_url}
   ->json_like('/message', qr/The API key you specified is invalid/);
 
 # Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8000/violations/last')->status_is(200)
+$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
   ->json_is('/violation' => 'bmo.api_key_mismatch')->json_has('/object')
   ->json_is('/type', 'ip');
 
@@ -136,7 +136,7 @@ $t->get_ok(
   ->status_is(200)->content_like(qr/Token Does Not Exist/);
 
 # Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8000/violations/last')->status_is(200)
+$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
   ->json_is('/violation' => 'bmo.token_mismatch')->json_has('/object')
   ->json_is('/type', 'ip');
 
@@ -149,7 +149,7 @@ $sel->title_like(qr/Request for new user account/,
   'Request for new account sent');
 
 # Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8000/violations/last')->status_is(200)
+$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
   ->json_is('/violation' => 'bmo.create_account')->json_has('/object')
   ->json_is('/type', 'ip');
 
@@ -165,7 +165,7 @@ $sel->click_ok('forgot_button_top', 'Submit');
 $sel->title_is('Request to Change Password', 'Request for password reset sent');
 
 # Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8000/violations/last')->status_is(200)
+$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
   ->json_is('/violation' => 'bmo.password_reset')->json_has('/object')
   ->json_is('/type', 'ip');
 
@@ -190,7 +190,7 @@ $sel->click_ok('update');
 logout($sel);
 
 # Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8000/violations/last')->status_is(200)
+$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
   ->json_is('/violation' => 'bmo.email_change')->json_has('/object')
   ->json_is('/type', 'ip');
 
