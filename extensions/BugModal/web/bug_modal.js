@@ -1536,7 +1536,7 @@ $(function() {
 
         // update preview
         preview.css('height', comment_height + 'px');
-        if (!tabpanel.attr('id').endsWith('-comment-preview-tabpanel') || last_comment_text == comment.val())
+        if (!tabpanel.attr('id').endsWith('comment-preview-tabpanel') || last_comment_text == comment.val())
             return;
         $('#preview-throbber', context).show();
         preview.html('');
