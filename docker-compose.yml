@@ -112,10 +112,6 @@ services:
       - MYSQL_PASSWORD=bugs
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
 
-  externalapi.test:
-    build: *bmo_build
-    entrypoint: perl /app/external_test_api.pl daemon -l http://*:8000
-
   memcached:
     image: memcached:latest
 
@@ -133,7 +129,7 @@ services:
       - bmo-gcs-mining:/data/mining
 
   externalapi.test:
-    image: bmo
+    build: *bmo_build
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
     ports:
       - 8001:8001
