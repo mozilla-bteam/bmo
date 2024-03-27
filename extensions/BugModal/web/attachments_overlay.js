@@ -476,7 +476,7 @@ window.addEventListener('DOMContentLoaded', () => {
         separatorFound = true;
       }
 
-      if ($row.matches('.cloned') || foundTypeIds.includes(typeId) || separatorFound) {
+      if (foundTypeIds.includes(typeId) || separatorFound) {
         $row.remove();
         return;
       }
@@ -495,11 +495,11 @@ window.addEventListener('DOMContentLoaded', () => {
         typeFlags.forEach((flag) => {
           const $_row = /** @type {HTMLElement} */ ($row.cloneNode(true));
 
-          updateFlagRow($_row, flag);
           $row.insertAdjacentElement('beforebegin', $_row);
+          updateFlagRow($_row, flag, { cloned: true });
         });
 
-        updateFlagRow($row, undefined, true);
+        updateFlagRow($row, undefined, { additional: true });
       } else {
         updateFlagRow($row, typeFlags[0]);
       }
@@ -542,10 +542,14 @@ window.addEventListener('DOMContentLoaded', () => {
    * Update a flag row.
    * @param {HTMLElement} $row `<tbody>` element.
    * @param {object} flag Flag object from the API.
-   * @param {boolean} [additional] Whether to show a `addl.` label in the setter column. This only
-   * applies if the flag is multi-requestable, and there is one or more existing requestees.
+   * @param {object} [options] Options.
+   * @param {object} [options.cloned] Whether the row is cloned. We need to reactivate user
+   * autocomplete for the requestee field because the event listener is not cloned.
+   * @param {boolean} [options.additional] Whether to show an `addl.` label in the setter column.
+   * This only applies if the flag is multi-requestable, and there is one or more existing
+   * requestees.
    */
-  const updateFlagRow = ($row, flag, additional = false) => {
+  const updateFlagRow = ($row, flag, { cloned = false, additional = false } = {}) => {
     const $setter = $row.querySelector('td.setter');
     const $status = /** @type {HTMLSelectElement} */ ($row.querySelector('td.value select'));
     const $requestee = /** @type {HTMLInputElement} */ ($row.querySelector('td.requestee input'));
@@ -553,7 +557,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (flag && !additional) {
       $row.dataset.flagId = flag.id;
       $row.classList.remove('bz_flag_type');
-      $row.classList.add('cloned');
       $row.querySelectorAll('[id]').forEach((element) => {
         element.id = element.id
           .replace(`flag_type-${flag.type_id}`, `flag-${flag.id}`)
@@ -576,6 +579,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if ($requestee) {
       $requestee.value = flag?.requestee || '';
       $requestee.parentElement.classList.toggle('bz_default_hidden', !flag || !flag.requestee);
+
+      if (cloned) {
+        Bugzilla.Field.activateUserAutocomplete($requestee);
+      }
     }
   };
 
