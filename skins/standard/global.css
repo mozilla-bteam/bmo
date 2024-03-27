@@ -1007,7 +1007,6 @@ input[type="radio"]:checked {
 
   #private-bug-banner {
     position: fixed;
-    z-index: 2;
     margin-top: 48px;
     width: 100%;
   }
@@ -1399,6 +1398,7 @@ input[type="radio"]:checked {
  */
 
 #private-bug-banner {
+  z-index: 2;
   background-color: var(--confidential-bug-background-color);
   color: #111;
   height: 18px;
@@ -1477,7 +1477,6 @@ input[type="radio"]:checked {
   #private-bug-banner {
     position: sticky;
     top: 0;
-    z-index: 10000;
   }
 
   input.requestee {
