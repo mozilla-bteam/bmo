@@ -155,6 +155,7 @@ a.activity-ref {
 
 .module-spinner[aria-expanded="true"] ~ .module-subtitle {
   opacity: 0;
+  white-space: nowrap;
 }
 
 .module .fields-lhs,
@@ -270,7 +271,6 @@ input[type="number"] {
 }
 
 #field-value-bug_id {
-  margin-left: 8px;
   font-size: var(--font-size-large);
 }
 
@@ -287,6 +287,14 @@ input[type="number"] {
   padding-top: 4px;
   padding-bottom: 8px;
   color: var(--secondary-label-color);
+}
+
+#field-value-status_summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 #field-status_summary .bug-status-label {
@@ -312,8 +320,13 @@ input[type="number"] {
   background-color: var(--bug-status-color-closed);
 }
 
+#field-status_summary .bug-time-labels {
+  display: inline-flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 #field-status_summary .bug-time-label {
-  margin-left: 8px;
   color: var(--secondary-label-color);
 }
 
@@ -337,6 +350,7 @@ input[type="number"] {
 #duplicate-container {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   vertical-align: top;
   white-space: nowrap;
 }
@@ -362,8 +376,11 @@ input[type="number"] {
 
 #resolve-as,
 #bottom-status {
-  display: inline;
-  vertical-align: top;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 #after-comment-commit-button {
@@ -657,13 +674,17 @@ input[type="number"] {
   background: var(--primary-region-header-background-color);
 }
 
+#att-overlay :is(.header, .footer) > * {
+  flex: none;
+}
+
 #att-overlay :is(.header, .footer) .spacer {
   flex: auto;
 }
 
 #att-overlay .header .title {
   flex: auto;
-  margin: 0 8px;
+  margin: 4px 8px;
   overflow: hidden;
   font-size: var(--font-size-h4);
   white-space: nowrap;
@@ -695,7 +716,7 @@ input[type="number"] {
 
 #att-overlay .body .preview-pane .preview {
   position: absolute;
-  inset: 16px 64px;
+  inset: 16px;
   z-index: 1;
   display: flex;
   align-items: center;
@@ -718,6 +739,7 @@ input[type="number"] {
 #att-overlay .body .preview-pane .preview textarea {
   width: 100%;
   height: 100%;
+  min-height: 10em;
   border: 0;
   font-size: var(--font-size-small);
   font-size-adjust: .5;
@@ -738,8 +760,11 @@ input[type="number"] {
   flex-direction: column;
   flex: none;
   overflow: hidden;
-  border-right: 1px solid var(--control-border-color);
+  border-width: 0 1px 0 0;
+  border-style: solid;
+  border-color: var(--control-border-color);
   width: 480px;
+  max-width: 50%;
 }
 
 #att-overlay .body .detail-pane {
@@ -797,6 +822,11 @@ input[type="number"] {
 
 #att-overlay .body .detail-pane .vcard {
   display: inline-block;
+}
+
+#att-overlay .footer .status {
+  flex: auto;
+  min-width: 20%;
 }
 
 /**
@@ -1265,6 +1295,7 @@ a.comment-tag-url {
 #comment-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 #comment-tips {
@@ -1364,7 +1395,6 @@ a.comment-tag-url {
 #main-inner {
   margin: 8px auto;
   max-width: 1024px;
-  min-width: 800px;
 }
 
 .vcard {
@@ -1668,20 +1698,183 @@ a.lightbox-icon.markdown {
  * even narrower displays
  */
 
+@media screen and (max-width: 1023px) {
+  #main-inner {
+    margin: 8px;
+  }
+}
+
 @media screen and (max-width: 900px) {
   #wrapper {
-    position: initial !important;
+    position: relative !important;
   }
 
   #header .inner {
     width: auto !important;
   }
 
-  #main-inner {
+  .spin-latch {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 799px) {
+  .module .fields-lhs,
+  .module .fields-rhs {
+    width: 100%;
     min-width: auto;
   }
 
-  .spin-latch {
+  #product,
+  #pcs {
+    width: 160px;
+  }
+
+  #component-selection {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  #component {
+    width: 100% !important;
+  }
+
+  #field-value-platform {
+    flex-wrap: wrap;
+  }
+
+  #field-value-importance .field.inline {
+    display: block;
+  }
+
+  #field-value-importance .field.inline .name {
+    padding: 0 10px 0 0;
+    width: 100px;
+  }
+
+  #field-value-status-edit {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0 4px;
+  }
+
+  #duplicate-actions {
+    padding: 0;
+  }
+
+  .tracking-flag-status select {
+    max-width: 100px;
+  }
+
+  #module-crash-data .field .name,
+  #module-crash-data .field .value {
+    display: block;
+    text-align: left;
+  }
+
+  #cf_user_story {
+    width: 100%;
+    height: 100px;
+  }
+
+  #attachments td:not(:last-child) {
+    border-width: 0;
+  }
+
+  #attachments td:empty {
     display: none;
+  }
+
+  #attachments .attach-actions {
+    text-align: right;
+  }
+
+  #attach-file-content-outer:not([hidden]) {
+    display: block;
+  }
+
+  #comment-tips {
+    order: 5;
+    margin: 8px;
+    width: 100%;
+    text-align: left;
+  }
+
+  #add-comment-private {
+    margin: 0 0 0 auto;
+    white-space: nowrap;
+  }
+
+  #new-comment-actions {
+    float: none;
+  }
+
+  #resolve-as,
+  #bottom-status,
+  #bottom-actions {
+    display: flex;
+    margin: 16px 0 0;
+  }
+
+  #bottom-right-actions {
+    float: none;
+    margin: 0;
+  }
+
+  .comment .comment-actions > [role="group"] {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 4px 0;
+    width: 150px;
+  }
+
+  .comment .comment-actions > [role="group"] .comment-private {
+    width: 100%;
+    text-align: center;
+  }
+
+  #att-overlay[open] {
+    width: calc(100dvw - 16px);
+    height: calc(100dvh - 16px);
+  }
+
+  #att-overlay :is(.header, .footer) {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    height: auto;
+  }
+
+  #att-overlay .header .title {
+    order: 10;
+    width: 100%;
+  }
+
+  #att-overlay .body,
+  #att-overlay .body .main-column,
+  #att-overlay .body .sub-column:not([hidden]) {
+    display: block;
+    overflow: auto;
+  }
+
+  #att-overlay .body .sub-column:not([hidden]) {
+    border-width: 0 0 1px 0;
+    width: auto;
+    max-width: none;
+  }
+
+  #att-overlay .body .comment-pane {
+    max-height: none;
+  }
+
+  #att-overlay .body .preview-pane .preview {
+    display: block;
+    position: static;
+    margin: 8px;
+  }
+
+  #att-overlay .body .preview-pane button {
+    position: static;
   }
 }

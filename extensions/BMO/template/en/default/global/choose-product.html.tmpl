@@ -40,6 +40,9 @@
     "extensions/ProdCompSearch/web/js/prod_comp_search.js",
   ];
 
+  # use responsive design for the Enter Bug page
+  responsive = !is_describe;
+
   cgi = Bugzilla.cgi;
   classification = cgi.param('classification');
 
@@ -155,7 +158,7 @@
 
 [% ELSE %]
 
-  <table>
+  <table class="[% 'responsive' IF responsive %]">
     [% FOREACH cls = classifications %]
       [% IF cls.object %]
         <tr>

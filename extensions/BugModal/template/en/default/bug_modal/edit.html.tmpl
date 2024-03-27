@@ -300,7 +300,7 @@
           <span class="edit-hide">([% bug.alias FILTER html %])</span>
         [% END %]
       </span>
-      <span>
+      <span class="bug-time-labels">
         <span class="bug-time-label">Opened [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.creation_ts %]</span>
         [% IF !bug.isopened %]
           <span class="bug-time-label">Closed [% INCLUDE bug_modal/rel_time.html.tmpl ts=bug.cf_last_resolved %]</span>

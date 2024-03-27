@@ -40,6 +40,7 @@
   # allow_mobile: allow special CSS and viewport for detected mobile user agents
   # use_login_page: display a link to the full login page, rather than an inline login.
   # robots: index / noindex (default: index)
+  # responsive: (boolean) if true, use responsive design for the current page (default: false)
   #%]
 
 [% IF message %]
@@ -56,6 +57,7 @@
   jquery_css = []
   generate_api_token = 1
   robots = 'index'
+  responsive = 0
 %]
 
 [%# These are JS URLs that are *always* on the page and come before
@@ -146,7 +148,7 @@
        END;
     %]
 
-    <meta name="viewport" content="width=1024">
+    <meta name="viewport" content="[% responsive ? 'width=device-width, initial-scale=1' : 'width=1024' %]">
     <meta name="color-scheme" content="dark light">
     <meta name="generator" content="[% terms.Bugzilla _ " " _ constants.BUGZILLA_VERSION FILTER html %]">
     <meta name="bugzilla-global" content="dummy"

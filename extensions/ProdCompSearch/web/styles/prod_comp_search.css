@@ -11,6 +11,10 @@
 }
 
 #prod_comp_search_main {
-  width: 400px;
+  max-width: 400px;
   margin: 0 auto;
+}
+
+#prod_comp_search_main input[type="text"] {
+  width: 100%;
 }

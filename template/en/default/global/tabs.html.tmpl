@@ -26,12 +26,14 @@
   #   link: string. relative URL to the tab's resource on this installation.
   #   label: string. text displayed in the tab.
   # current_tab_name: string. name of the currently selected tab
+  # responsive: (boolean) if true, use responsive design (default: false)
   #%]
 
 <div class="tabbed">
-  <table class="tabs" cellspacing="0" cellpadding="10" border="0" width="100%">
+  <table class="tabs [% 'responsive' IF responsive %]"
+         cellspacing="0" cellpadding="10" border="0" width="100%">
     <tr>
-      <td class="spacer">&nbsp;</td>
+      <td class="spacer"></td>
 
       [% FOREACH tab = tabs %]
         [% IF tab.name == current_tab_name %]
@@ -45,7 +47,7 @@
         [% END %]
       [% END %]
 
-      <td class="spacer">&nbsp;</td>
+      <td class="spacer"></td>
     </tr>
   </table>
 

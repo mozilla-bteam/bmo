@@ -9,7 +9,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 4px !important;
   width: 32px;
   height: 32px;
 }

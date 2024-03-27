@@ -431,6 +431,18 @@ hr {
   background-color: var(--selected-text-background-color);
 }
 
+@media screen and (max-width: 799px) {
+  /* Use the child combinators (>) to avoid matching nested tables */
+  table.responsive,
+  table.responsive > :is(thead, tbody, tfoot),
+  table.responsive > :is(thead, tbody, tfoot) > tr,
+  table.responsive > :is(thead, tbody, tfoot) > tr > :is(th, td) {
+    display: block flow-root;
+    box-sizing: border-box;
+    width: 100%;
+  }
+}
+
 /**
  * Native Form Widgets
  */
@@ -498,6 +510,7 @@ input,
 button,
 select,
 textarea {
+  max-width: 100%;
   vertical-align: middle;
 }
 
@@ -748,6 +761,7 @@ input[type="radio"]:checked {
   padding: var(--button-padding);
   min-width: 1em;
   min-height: 1em;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -978,7 +992,7 @@ input[type="radio"]:checked {
   #wrapper {
     width: 100%;
   }
-  
+
   html {
     /* Ensure that shift-tab and other ways of scrolling up take the fixed header into account. */
     scroll-padding-top: 48px;
@@ -989,6 +1003,12 @@ input[type="radio"]:checked {
     position: fixed;
     width: 100%;
     z-index: 11;
+  }
+
+  #private-bug-banner {
+    position: fixed;
+    margin-top: 48px;
+    width: 100%;
   }
 
   #bugzilla-body {
@@ -1088,6 +1108,10 @@ input[type="radio"]:checked {
   outline: 0; /* Hide outline on Chrome & Safari */
 }
 
+#header button {
+  padding: 0 !important;
+}
+
 #header button * {
   pointer-events: none; /* Make sure button is clickable on Chrome & Safari */
 }
@@ -1095,16 +1119,17 @@ input[type="radio"]:checked {
 #header .inner {
   display: flex;
   align-items: center;
+  gap: 8px;
   position: relative;
+  box-sizing: border-box;
   margin: 0 auto;
-  padding: 8px 0;
+  padding: 8px;
   width: 1024px;
-  height: 32px;
+  height: 48px;
 }
 
 #header .inner > * {
   flex: none;
-  margin: 0 8px;
 }
 
 #header .icon {
@@ -1373,16 +1398,13 @@ input[type="radio"]:checked {
  */
 
 #private-bug-banner {
+  z-index: 2;
   background-color: var(--confidential-bug-background-color);
   color: #111;
   height: 18px;
-  margin-top: 48px;
   padding: 4px;
-  position: fixed;
   text-align: center;
   user-select: none;
-  width: 100%;
-  z-index: 2;
 }
 
 #private-bug-banner .icon {
@@ -1430,6 +1452,38 @@ input[type="radio"]:checked {
   }
 }
 
+@media screen and (max-width: 799px) {
+  #message-container .inner,
+  #header .inner {
+    margin: 0;
+    width: 100%;
+  }
+
+  #header .inner {
+    flex-wrap: wrap;
+    height: auto;
+  }
+
+  #header form.quicksearch {
+    flex: auto;
+    width: min-content;
+    min-width: 220px;
+  }
+
+  #header .searchbox-outer {
+    width: 100%;
+  }
+
+  #private-bug-banner {
+    position: sticky;
+    top: 0;
+  }
+
+  input.requestee {
+    max-width: 12em;
+  }
+}
+
 /**
  * Page toolbar
  */
@@ -1438,6 +1492,8 @@ input[type="radio"]:checked {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
   color: var(--secondary-label-color);
 }
 
@@ -1448,7 +1504,10 @@ input[type="radio"]:checked {
 }
 
 #page-toolbar .buttons {
-  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 /**
@@ -1914,6 +1973,11 @@ table.tabs td {
   font-size: var(--font-size-x-large);
 }
 
+table.tabs td.spacer {
+  padding: 0;
+  width: 10%;
+}
+
 table.tabs td.selected {
   position: relative;
   border-color: var(--selected-tab-border-color);
@@ -1956,6 +2020,23 @@ table.tabs .clickable_area {
   padding: 1em 2em;
   background-color: var(--primary-region-background-color);
   box-shadow: var(--primary-region-box-shadow);
+}
+
+@media screen and (max-width: 799px) {
+  table.tabs.responsive tr {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  table.tabs.responsive td {
+    flex: auto;
+    font-size: var(--font-size-medium);
+  }
+
+  .tabbody {
+    padding: 15px;
+  }
 }
 
 /**
@@ -2232,6 +2313,10 @@ table.tabs .clickable_area {
   border-end-end-radius: 0px;
   padding-inline-end: var(--button-center-padding);
   border-inline-end: none;
+}
+
+.separate-dropdown-button-main + .dropdown {
+  margin-left: -4px;
 }
 
 .separate-dropdown-button-arrow {
