@@ -543,7 +543,7 @@ window.addEventListener('DOMContentLoaded', () => {
    * @param {HTMLElement} $row `<tbody>` element.
    * @param {object} flag Flag object from the API.
    * @param {object} [options] Options.
-   * @param {object} [options.cloned] Whether the row is cloned. We need to reactivate user
+   * @param {boolean} [options.cloned] Whether the row is cloned. We need to reactivate user
    * autocomplete for the requestee field because the event listener is not cloned.
    * @param {boolean} [options.additional] Whether to show an `addl.` label in the setter column.
    * This only applies if the flag is multi-requestable, and there is one or more existing
