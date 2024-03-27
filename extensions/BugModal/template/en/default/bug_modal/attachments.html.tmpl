@@ -13,7 +13,7 @@
   #%]
 
 [% IF active_attachments || obsolete_attachments %]
-<table role="table" class="layout-table" id="attachments">
+<table role="table" class="responsive" id="attachments">
   [% FOREACH attachment IN bug.attachments %]
     [%
       NEXT IF attachment.isprivate
@@ -59,7 +59,7 @@
         </div>
       </td>
       <td>
-        [% FOREACH flag IN attachment.flags %]
+        [%~ FOREACH flag IN attachment.flags %]
           <div class="attach-flag">
             [% INCLUDE bug_modal/user.html.tmpl u=flag.setter simple=1 %]:
             [% activity_id = bug.find_activity_id_for_flag(flag) %]
@@ -83,7 +83,7 @@
               [%+ INCLUDE bug_modal/user.html.tmpl u=flag.requestee simple=1 %]
             [% END %]
           </div>
-        [% END %]
+        [% END ~%]
       </td>
       <td class="attach-actions">
         <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]&amp;action=edit">Details</a>

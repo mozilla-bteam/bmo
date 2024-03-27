@@ -1005,6 +1005,13 @@ input[type="radio"]:checked {
     z-index: 11;
   }
 
+  #private-bug-banner {
+    position: fixed;
+    z-index: 2;
+    margin-top: 48px;
+    width: 100%;
+  }
+
   #bugzilla-body {
     margin-top: 48px;
   }
@@ -1395,13 +1402,9 @@ input[type="radio"]:checked {
   background-color: var(--confidential-bug-background-color);
   color: #111;
   height: 18px;
-  margin-top: 48px;
   padding: 4px;
-  position: fixed;
   text-align: center;
   user-select: none;
-  width: 100%;
-  z-index: 2;
 }
 
 #private-bug-banner .icon {
@@ -1469,6 +1472,16 @@ input[type="radio"]:checked {
 
   #header .searchbox-outer {
     width: 100%;
+  }
+
+  #private-bug-banner {
+    position: sticky;
+    top: 0;
+    z-index: 10000;
+  }
+
+  input.requestee {
+    max-width: 12em;
   }
 }
 
