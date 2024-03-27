@@ -20,9 +20,16 @@ function initChangeColumns() {
     window.onunload = unload;
     var av_select = document.getElementById("available_columns");
     var sel_select = document.getElementById("selected_columns");
-    YAHOO.util.Dom.removeClass(
-        ['avail_header', av_select, 'select_button',
-         'deselect_button', 'up_button', 'down_button'], 'bz_default_hidden');
+    [
+      "avail_header",
+      "available_columns",
+      "select_button",
+      "deselect_button",
+      "up_button",
+      "down_button",
+    ].forEach((id) => {
+      document.getElementById(id).classList.remove("bz_default_hidden");
+    });
     switch_options(sel_select, av_select, false);
     sel_select.selectedIndex = -1;
     updateView();

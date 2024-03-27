@@ -474,8 +474,12 @@
 
   <script [% script_nonce FILTER none %]>
   var close_status_array = new Array("[% closed_status_array.join('", "') FILTER none %]");
-    YAHOO.util.Event.addListener('bug_status', "change", showHideStatusItems, '[% "is_duplicate" IF bug.dup_id %]');
-    YAHOO.util.Event.onDOMReady( showHideStatusItems );
+    document.getElementById('bug_status').addEventListener('change', (event) => {
+      showHideStatusItems(event, '[% "is_duplicate" IF bug.dup_id %]');
+    });
+    window.addEventListener('DOMContentLoaded', (event) => {
+      showHideStatusItems(event);
+    });
   </script>
 
 [% END %]

@@ -118,8 +118,8 @@ function init_mini_login_form( suffix ) {
     // If the login and password are blank when the page loads, we display
     // "login" and "password" in the boxes by default.
     if (mini_login.value == "" && mini_password.value == "") {
-        YAHOO.util.Dom.addClass(mini_password, 'bz_default_hidden');
-        YAHOO.util.Dom.removeClass(mini_dummy, 'bz_default_hidden');
+        mini_password.classList.add('bz_default_hidden');
+        mini_dummy.classList.remove('bz_default_hidden');
     }
     else {
         show_mini_login_form(suffix);

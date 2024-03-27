@@ -66,5 +66,5 @@
   [% END %]
 [% END %]
 [% IF field.name == 'classification' %]
-  YAHOO.util.Event.on('product', 'change', setClassification);
+  document.getElementById('product').addEventListener('change', setClassification);
 [% END %]

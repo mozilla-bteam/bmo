@@ -45,16 +45,6 @@ sub enter_bug_start {
   }
 
   if ($format eq 'guided' || ($format eq '' && !$user->in_group('editbugs'))) {
-
-    # skip the first step if a product is provided
-    if ($cgi->param('product')) {
-      $cgi->base_redirect('enter_bug.cgi?format=guided'
-          . ($cgi->param('format_forced') ? '&format_forced=1' : '')
-          . '#h=dupes' . '|'
-          . url_quote($cgi->param('product')) . '|'
-          . url_quote($cgi->param('component') || ''));
-    }
-
     # Do not redirect to product forms if we came from there already
     $vars->{'format_forced'} = 1 if $cgi->param('format_forced');
 

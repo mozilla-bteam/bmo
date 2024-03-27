@@ -219,18 +219,12 @@ function switchToMode(mode, patchviewerinstalled)
 
 function hideElementById(id)
 {
-  var elm = document.getElementById(id);
-  if (elm) {
-    YAHOO.util.Dom.addClass(elm, 'bz_default_hidden');
-  }
+  document.getElementById(id)?.classList.add('bz_default_hidden');
 }
 
 function showElementById(id)
 {
-  var elm = document.getElementById(id);
-  if (elm) {
-    YAHOO.util.Dom.removeClass(elm, 'bz_default_hidden');
-  }
+  document.getElementById(id)?.classList.remove('bz_default_hidden');
 }
 
 function normalizeComments()
@@ -240,12 +234,10 @@ function normalizeComments()
 
   var small = document.getElementById('smallCommentFrame');
   var big = document.getElementById('editFrame');
-  if ( (small) && YAHOO.util.Dom.hasClass(small, 'bz_default_hidden') )
-  {
+  if (small?.matches('.bz_default_hidden')) {
     small.parentNode.removeChild(small);
   }
-  if ( (big) && YAHOO.util.Dom.hasClass(big, 'bz_default_hidden') )
-  {
+  if (big?.matches('.bz_default_hidden')) {
     big.parentNode.removeChild(big);
   }
 }
@@ -254,10 +246,10 @@ function toggle_attachment_details_visibility ( )
 {
     // show hide classes
     var container = document.getElementById('attachment_info');
-    if( YAHOO.util.Dom.hasClass(container, 'read') ){
-        YAHOO.util.Dom.replaceClass(container, 'read', 'edit');
-    }else{
-        YAHOO.util.Dom.replaceClass(container, 'edit', 'read');
+    if (container.matches('.read')) {
+      container.classList.replace('read', 'edit');
+    } else {
+      container.classList.replace('edit', 'read');
     }
 }
 

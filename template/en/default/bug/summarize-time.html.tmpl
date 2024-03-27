@@ -282,24 +282,10 @@
   <b><label accesskey="s"
              for="start_date">Period <u>s</u>tarting</label></b>:
 </td><td colspan="3">
-  <input type="text" id="start_date" name="start_date" size="11" autofocus
-         align="right" value="[% start_date FILTER html %]" maxlength="10"
-         onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button"
-    id="button_calendar_start_date"
-    onclick="showCalendar('start_date')"><span>Calendar</span>
-  </button>
-  <div id="con_calendar_start_date"></div>
+  <input type="date" name="start_date" id="start_date" value="[% start_date FILTER html %]" autofocus>
   &nbsp;
   <b>and <label accesskey="e" for="end_date"><u>e</u>nding</label></b>:
-  <input type="text" name="end_date" size="11" id="end_date"
-         align="right" value ="[% end_date FILTER html %]" maxlength="10"
-         onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button"
-    id="button_calendar_end_date"
-    onclick="showCalendar('end_date')"><span>Calendar</span>
-  </button>
-  <div id="con_calendar_end_date"></div>
+  <input type="date" name="end_date" id="end_date" value="[% end_date FILTER html %]">
 </td><td align="right">
   <input type="submit" id="summarize" value="Summarize">
 </td></tr>
@@ -341,10 +327,5 @@
 </tr></table>
 
 </form>
-<script [% script_nonce FILTER none %]>
-<!--
-  createCalendar('start_date');
-  createCalendar('end_date');
-//--></script>
 <hr noshade size=1>
 [% END %]

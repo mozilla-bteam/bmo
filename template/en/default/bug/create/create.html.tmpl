@@ -36,7 +36,7 @@
                  'skins/standard/create_bug.css' ]
   javascript_urls = [ "js/attachment.js",
                       "js/field.js", "js/TUI.js", "js/bug.js",
-                      "js/create_bug.js" ]
+                      "js/create_bug.js", "js/data-table.js" ]
   onload = "init();"
 %]
 
@@ -73,7 +73,7 @@ function initCrashSignatureField() {
   var el = document.getElementById('cf_crash_signature');
   if (!el) return;
   [% IF cf_crash_signature.length %]
-    YAHOO.util.Dom.addClass('cf_crash_signature_container', 'bz_default_hidden');
+    document.getElementById('cf_crash_signature_container').classList.add('bz_default_hidden');
   [% ELSE %]
     hideEditableField('cf_crash_signature_container','cf_crash_signature_input',
                       'cf_crash_signature_action', 'cf_crash_signature');
@@ -187,13 +187,10 @@ function set_assign_to() {
         [% END %]
 
         // We show or hide the available flags depending on the selected component.
-        var flag_rows = YAHOO.util.Dom.getElementsByClassName('bz_flag_type', 'tbody');
-        for (var i = 0; i < flag_rows.length; i++) {
+        document.querySelectorAll('tbody.bz_flag_type').forEach(($row) => {
             // Each flag table row should have one flag form select element
             // We get the flag type id from the id attribute of the select.
-            var flag_select = YAHOO.util.Dom.getElementsByClassName('flag_select',
-                                                                    'select',
-                                                                    flag_rows[i])[0];
+            var flag_select = $row.querySelector('select.flag_select');
             var type_id = flag_select.id.split('-')[1];
             var can_set = flag_select.options.length > 1 ? 1 : 0;
             var show = 0;
@@ -207,12 +204,12 @@ function set_assign_to() {
             }
             if (show && can_set) {
                 flag_select.disabled = false;
-                YAHOO.util.Dom.removeClass(flag_rows[i], 'bz_default_hidden');
+                $row.classList.remove('bz_default_hidden');
             } else {
                 flag_select.disabled = true;
-                YAHOO.util.Dom.addClass(flag_rows[i], 'bz_default_hidden');
+                $row.classList.add('bz_default_hidden');
             }
-        }
+        });
     }
 }
 
@@ -254,8 +251,7 @@ TUI_hide_default('expert_fields');
              value="Hide Advanced Fields" onClick="toggleAdvancedFields()">
       [%# Show the link if the browser supports JS %]
       <script [% script_nonce FILTER none %]>
-        YAHOO.util.Dom.removeClass('expert_fields_controller',
-                                   'bz_default_hidden');
+        document.getElementById('expert_fields_controller').classList.remove('bz_default_hidden');
       </script>
     </td>
     <td colspan="2">&nbsp;</td>
@@ -536,28 +532,40 @@ TUI_hide_default('expert_fields');
         <div id="possible_duplicates"></div>
         <script [% script_nonce FILTER none %]>
           var dt_columns = [
-              { key: "id", label: "[% field_descs.bug_id FILTER js %]",
-                formatter: YAHOO.bugzilla.dupTable.formatBugLink },
-              { key: "summary",
-                label: "[% field_descs.short_desc FILTER js %]",
-                formatter: "text" },
-              { key: "status",
-                label: "[% field_descs.bug_status FILTER js %]",
-                formatter: YAHOO.bugzilla.dupTable.formatStatus },
-              { key: "update_token", label: '',
-                formatter: YAHOO.bugzilla.dupTable.formatCcButton }
-          ];
-          YAHOO.bugzilla.dupTable.addCcMessage = "Add Me to the CC List";
-          YAHOO.bugzilla.dupTable.init({
-            container: 'possible_duplicates',
-            columns: dt_columns,
-            product_name: '[% product.name FILTER js %]',
-            summary_field: 'short_desc',
-            options: {
-              MSG_LOADING: 'Searching for possible duplicates...',
-              MSG_EMPTY:   'No possible duplicates found.',
-              SUMMARY:     'Possible Duplicates'
+            {
+              key: 'id',
+              label: '[% field_descs.bug_id FILTER js %]',
+              formatter: Bugzilla.DupTable.formatBugLink,
+              allowHTML: true,
+            },
+            {
+              key: 'summary',
+              label: '[% field_descs.short_desc FILTER js %]',
+              allowHTML: true,
+            },
+            {
+              key: 'status',
+              label: '[% field_descs.bug_status FILTER js %]',
+              formatter: Bugzilla.DupTable.formatStatus,
+            },
+            {
+              key: 'update_token',
+              label: '',
+              formatter: Bugzilla.DupTable.formatCcButton,
+              allowHTML: true,
+              sortable: false,
             }
+          ];
+          Bugzilla.DupTable.init({
+            container: '#possible_duplicates',
+            columns: dt_columns,
+            strings: {
+              TITLE: 'Possible Duplicates',
+              LOADING: 'Searching for possible duplicates...',
+              EMPTY: 'No possible duplicates found.',
+            },
+            summary_field: 'short_desc',
+            product_name: '[% product.name FILTER js %]',
           });
         </script>
       </td>

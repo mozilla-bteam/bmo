@@ -34,9 +34,6 @@
 #newsletter_form .form_section {
   margin-bottom: 10px;
 }
-.yui-calcontainer {
-  z-index: 2;
-}
 [% END %]
 
 [% inline_javascript = BLOCK %]
@@ -47,7 +44,7 @@ function validateAndSubmit() {
   if (!isFilledOut('time_required')) alert_text += 'Please enter a value for time required.\n';
   if (!isFilledOut('primary_contact')) alert_text += 'Please enter a value for contact email.\n';
   if (!isFilledOut('timeframe')) alert_text += 'Please select a value for timeframe.\n';
-  if (YAHOO.util.Dom.get('area_other').checked == true
+  if (document.getElementById('area_other').checked
       && !isFilledOut('area_other_text'))
   {
     alert_text += 'Please enter a value for other type of functional area.\n';
@@ -59,13 +56,8 @@ function validateAndSubmit() {
   return true;
 }
 function toggleAreaOther() {
-  var area_other_cb = document.getElementById('area_other');
-  if (area_other_cb.checked == true) {
-    YAHOO.util.Dom.removeClass('area_other_text', 'bz_default_hidden');
-  }
-  else {
-    YAHOO.util.Dom.addClass('area_other_text', 'bz_default_hidden');
-  }
+  document.getElementById('area_other_text').classList
+    .toggle('bz_default_hidden', !document.getElementById('area_other').checked);
 }
 [% END %]
 

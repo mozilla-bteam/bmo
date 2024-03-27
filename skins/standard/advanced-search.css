@@ -154,6 +154,18 @@
   content: '\E145';
 }
 
+.calendar_button {
+  border: 0;
+  width: 20px;
+  height: 20px;
+  background: transparent url('global/calendar.png') no-repeat;
+  vertical-align: middle;
+}
+
+.calendar_button span {
+  display: none;
+}
+
 @media screen and (max-width: 1023px) {
   #custom-search .condition.row select,
   #custom-search .condition.row input[type="text"] {

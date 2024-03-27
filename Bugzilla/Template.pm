@@ -389,21 +389,17 @@ sub version_filter {
 
 # Set up the skin CSS cascade:
 #
-#  1. YUI CSS
-#  2. standard/global.css
-#  3. Standard Bugzilla stylesheet set
-#  4. Third-party "skin" stylesheet set, per user prefs
-#  5. Inline CSS passed to global/header.html.tmpl
-#  6. Custom Bugzilla stylesheet set
+#  1. standard/global.css
+#  2. Standard Bugzilla stylesheet set
+#  3. Third-party "skin" stylesheet set, per user prefs
+#  4. Inline CSS passed to global/header.html.tmpl
+#  5. Custom Bugzilla stylesheet set
 
 sub css_files {
-  my ($style_urls, $no_yui) = @_;
+  my ($style_urls) = @_;
 
   # global.css belongs on every page
   my @requested_css = ('skins/standard/global.css', @$style_urls);
-
-  unshift @requested_css, "skins/yui.css" unless $no_yui;
-
   my @css_sets = map { _css_link_set($_) } @requested_css;
 
   my %by_type = (standard => [], skin => [], custom => []);
@@ -441,21 +437,6 @@ sub _css_link_set {
   }
 
   return \%set;
-}
-
-# YUI dependency resolution
-sub yui_resolve_deps {
-  my ($yui, $yui_deps) = @_;
-
-  my @yui_resolved;
-  foreach my $yui_name (@$yui) {
-    my $deps = $yui_deps->{$yui_name} || [];
-    foreach my $dep (reverse @$deps) {
-      push(@yui_resolved, $dep) if !grep { $_ eq $dep } @yui_resolved;
-    }
-    push(@yui_resolved, $yui_name) if !grep { $_ eq $yui_name } @yui_resolved;
-  }
-  return \@yui_resolved;
 }
 
 ###############################################################################
@@ -1050,8 +1031,7 @@ sub create {
         return $cache;
       },
 
-      'css_files'      => \&css_files,
-      yui_resolve_deps => \&yui_resolve_deps,
+      'css_files' => \&css_files,
 
       # Whether or not keywords are enabled, in this Bugzilla.
       'use_keywords' => sub { return Bugzilla::Keyword->any_exist; },

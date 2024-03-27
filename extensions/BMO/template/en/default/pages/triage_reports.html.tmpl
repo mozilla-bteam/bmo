@@ -107,13 +107,7 @@ Show UNCONFIRMED [% terms.bugs %] with:
       <option value="is" [% 'selected' IF input.last == 'is' %]>the date</option>
     </select>
     <span id="last_is_span" class="[% 'hidden' IF input.last != 'is' %]">
-      <input type="text" id="last_is" name="last_is" size="11" maxlength="10"
-             value="[% input.last_is FILTER html %]"
-             onChange="updateCalendarLastIs(this)">
-      <button type="button" class="calendar_button" id="button_calendar_last_is"
-              onClick="showCalendar('last_is')"><span>Calendar</span>
-      </button>
-      <div id="con_calendar_last_is"></div>
+      <input type="date" name="last_is" id="last_is" value="[% input.last_is FILTER html %]">
     </span>
     <br>
   </td>
@@ -137,9 +131,6 @@ Show UNCONFIRMED [% terms.bugs %] with:
 </table>
 
 </form>
-<script [% script_nonce FILTER none %]>
-  createCalendar('last_is');
-</script>
 
 [% IF input.action == 'run' %]
 <hr>

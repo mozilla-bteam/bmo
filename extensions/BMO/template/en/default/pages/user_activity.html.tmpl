@@ -47,21 +47,9 @@
     Period:
   </th>
   <td>
-    <input type="text" id="from" name="from" size="11"
-      align="right" value="[% from FILTER html %]" maxlength="10"
-      onchange="updateCalendarFromField(this)">
-    <button type="button" class="calendar_button" id="button_calendar_from"
-      onclick="showCalendar('from')"><span>Calendar</span>
-    </button>
-    <div id="con_calendar_from"></div>
+    <input type="date" name="from" id="from" value="[% from FILTER html %]">
     to
-    <input type="text" name="to" size="11" id="to"
-      align="right" value ="[% to FILTER html %]" maxlength="10"
-      onchange="updateCalendarFromField(this)">
-    <button type="button" class="calendar_button" id="button_calendar_to"
-      onclick="showCalendar('to')"><span>Calendar</span>
-    </button>
-    <div id="con_calendar_to"></div>
+    <input type="date" name="to" id="to" value="[% to FILTER html %]">
   </td>
   <th>
     Group by:
@@ -82,11 +70,6 @@
   <input type="hidden" name="debug" value="1">
 [% END %]
 </form>
-
-<script [% script_nonce FILTER none %]>
-  createCalendar('from');
-  createCalendar('to');
-</script>
 
 [% IF action == 'run' %]
 

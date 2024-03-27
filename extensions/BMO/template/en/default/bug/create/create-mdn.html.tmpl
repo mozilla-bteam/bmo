@@ -13,14 +13,6 @@ strong.required:before {
   content: "* ";
   color: var(--required-label-color);
 }
-#yui-history-iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 1px;
-  visibility: hidden;
-}
 #standard {
   margin-top: 2em;
 }
@@ -32,9 +24,6 @@ strong.required:before {
 }
 [% END %]
 [% inline_javascript = BLOCK %]
-  var Dom = YAHOO.util.Dom;
-  var Event = YAHOO.util.Event;
-  var History = YAHOO.util.History;
   var mdn = {
     _initial_state: 'initial',
     _current_state: 'initial',
@@ -63,32 +52,31 @@ strong.required:before {
       if (state == 'detail') {
         request_type = request_type || this._getRadioValueByClass('request_type');
         if (request_type == 'bug') {
-          Dom.get('detail_header').innerHTML = '<h2>[% terms.Bug %] Report</h2>';
-          Dom.get('secure_type').innerHTML = 'report';
+          document.getElementById('detail_header').innerHTML = '<h2>[% terms.Bug %] Report</h2>';
+          document.getElementById('secure_type').innerHTML = 'report';
         }
         if (request_type == 'feature') {
-          Dom.get('detail_header').innerHTML = '<h2>Feature Request</h2>';
-          Dom.get('secure_type').innerHTML = 'request';
-          Dom.removeClass('detail_feature_other_forms', 'bz_default_hidden');
+          document.getElementById('detail_header').innerHTML = '<h2>Feature Request</h2>';
+          document.getElementById('secure_type').innerHTML = 'request';
+          document.getElementById('detail_feature_other_forms').classList.remove('bz_default_hidden');
         }
         if (request_type == 'change') {
-          Dom.get('detail_header').innerHTML = '<h2>Change Request</h2>';
-          Dom.get('secure_type').innerHTML = 'request';
+          document.getElementById('detail_header').innerHTML = '<h2>Change Request</h2>';
+          document.getElementById('secure_type').innerHTML = 'request';
         }
-        Dom.addClass('detail_' + this._current_type, 'bz_default_hidden');
-        Dom.removeClass('detail_' + request_type, 'bz_default_hidden');
+        document.getElementById(`detail_${this._current_type}`).classList.add('bz_default_hidden');
+        document.getElementById(`detail_${request_type}`).classList.remove('bz_default_hidden');
         if (request_type != 'feature') {
-          Dom.addClass('detail_feature_other_forms', 'bz_default_hidden');
+          document.getElementById('detail_feature_other_forms').classList.add('bz_default_hidden');
         }
         this._current_type = request_type;
 
       }
-      Dom.addClass(this._current_state + '_form', 'bz_default_hidden');
-      Dom.removeClass(state + '_form', 'bz_default_hidden');
+      document.getElementById(`${this._current_state}_form`).classList.add('bz_default_hidden');
+      document.getElementById(`${state}_form`).classList.remove('bz_default_hidden');
       this._current_state = state;
-      if (History && !no_set_history) {
-        History.navigate('h', state +
-                         (request_type ? '|' + request_type : ''));
+      if (!no_set_history) {
+        window.history.pushState({ state, request_type }, '', window.location.href);
       }
       return true;
     },
@@ -129,39 +117,36 @@ strong.required:before {
         alert(alert_text);
         return false;
       }
-      var whiteboard = Dom.get('status_whiteboard');
+      var whiteboard = document.getElementById('status_whiteboard');
       whiteboard.value = "[specification][type:" + request_type.toLowerCase() + "]";
       document.querySelector('[name="bug_type"]').value = request_type == 'bug' ? 'defect' : 'enhancement';
       return true;
     },
     _getRadioValueByClass: function(class_name) {
-      var elements = Dom.getElementsByClassName(class_name);
-      for (var i = 0,  l = elements.length; i < l; i++) {
-        if (elements[i].checked) return elements[i].value;
-      }
+      return document.querySelector(`.${class_name}:checked`)?.value;
     },
     init: function() {
-      var bookmarked_state = History.getBookmarkedState('h');
-      this._initial_state = bookmarked_state || 'initial';
-      try {
-        History.register('h', this._initial_state, mdn.onStateChange);
-        History.initialize('yui-history-field', 'yui-history-iframe');
-        History.onReady(function () {
-          mdn.onStateChange(History.getCurrentState('h'), true);
-        });
+      const noSetHistory = !window.history.state;
+      this._initial_state = window.history.state?.state ?? 'initial';
+      if (!window.history.state) {
+        window.history.replaceState({ state: this._initial_state }, '', window.location.href);
       }
-      catch(e) {
-        console.log('error initializing history: ' + e);
-        History = false;
-      }
+      this.onStateChange(noSetHistory);
+      window.addEventListener('popstate', () => {
+        this.onStateChange(true);
+      });
     },
-    onStateChange: function(state, no_set_history) {
-      var state_data = state.split('|');
-      mdn.setState(state_data[0], state_data[1], no_set_history);
+    onStateChange: function(no_set_history) {
+      const { state, request_type = '' } = window.history.state ?? {};
+      mdn.setState(state, request_type, no_set_history);
     }
   };
-  Event.onDOMReady(mdn.init);
-  Event.on('show_detail', 'click', function() { mdn.setState('detail'); });
+  window.addEventListener('DOMContentLoaded', () => {
+    mdn.init();
+    document.getElementById('show_detail').addEventListener('click', () => {
+       mdn.setState('detail');
+    });
+  });
 [% END %]
 
 [% PROCESS global/header.html.tmpl
@@ -170,9 +155,6 @@ strong.required:before {
    javascript = inline_javascript
    javascript_urls = [ 'extensions/BMO/web/js/form_validate.js' ]
 %]
-
-<iframe id="yui-history-iframe" src="[% basepath FILTER none %]extensions/BMO/web/yui-history-iframe.txt"></iframe>
-<input id="yui-history-field" type="hidden">
 
 <h1>MDN Web Docs Feedback</h1>
 

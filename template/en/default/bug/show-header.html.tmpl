@@ -64,7 +64,7 @@
         history.replaceState(null, "[% unfiltered_title FILTER js %]", href);
       }
     }
-    YAHOO.util.Event.onDOMReady(function() {
+    window.addEventListener('DOMContentLoaded', () => {
       initDirtyFieldTracking();
 
       [% IF user.id %]

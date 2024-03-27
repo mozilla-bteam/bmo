@@ -7,181 +7,152 @@
  */
 
 // Flag tables
-$(function () {
-    YUI({
-        base: 'js/yui3/',
-        combine: false
-    }).use('node', 'datatable', 'datatable-sort', 'escape', 'cookie', function(Y) {
-        // Common
-        var dataTable = {
-            requestee: null,
-            requester: null
-        };
+window.addEventListener('DOMContentLoaded', () => {
+  // Common
+  const dataTable = {
+    requestee: null,
+    requester: null,
+  };
 
-        var button_state = false,
-            refresh_interval = null;
+  let button_state = false;
+  let refresh_interval = null;
 
-        // Grab last used auto-refresh configuration from cookie or use default
-        var autorefresh_cookie = Y.Cookie.get("my_dashboard_autorefresh");
-        if (autorefresh_cookie) {
-            if ("true" == autorefresh_cookie) {
-                button_state = true;
-            }
-        }
+  // Grab last used auto-refresh configuration from storage or use default
+  if (Bugzilla.Storage.get('my_dashboard')?.autoRefresh) {
+    button_state = true;
+  }
 
-        var updateFlagTable = async type => {
-            if (!type) return;
+  const updateFlagTable = async (type) => {
+    if (!type) return;
 
-            Y.one('#' + type + '_loading').removeClass('bz_default_hidden');
-            Y.one('#' + type + '_count_refresh').addClass('bz_default_hidden');
+    const $count_refresh = document.querySelector(`#${type}_count_refresh`);
 
-            dataTable[type].set('data', []);
-            dataTable[type].render("#" + type + "_table");
-            dataTable[type].showMessage('loadingMessage');
+    $count_refresh.classList.add('bz_default_hidden');
+    dataTable[type].render([]);
+    dataTable[type].setMessage('LOADING');
 
-            try {
-                const { result } = await Bugzilla.API.get('mydashboard/run_flag_query', { type });
-                const results = result[type];
+    try {
+      const { result } = await Bugzilla.API.get('mydashboard/run_flag_query', { type });
+      const results = result[type];
 
-                Y.one(`#${type}_loading`).addClass('bz_default_hidden');
-                Y.one(`#${type}_count_refresh`).removeClass('bz_default_hidden');
-                Y.one(`#${type}_flags_found`)
-                    .setHTML(`${results.length} ${(results.length === 1 ? 'request' : 'requests')} found`);
+      $count_refresh.classList.remove('bz_default_hidden');
+      document.querySelector(`#${type}_flags_found`).textContent = `${results.length} ${
+        results.length === 1 ? 'request' : 'requests'
+      } found`;
+      dataTable[type].render(results);
+    } catch {
+      $count_refresh.classList.remove('bz_default_hidden');
+      dataTable[type].setMessage(`Failed to load requests.`);
+    }
+  };
 
-                dataTable[type].set('data', results);
-                dataTable[type].render(`#${type}_table`);
-            } catch ({ message }) {
-                Y.one(`#${type}_loading`).addClass('bz_default_hidden');
-                Y.one(`#${type}_count_refresh`).removeClass('bz_default_hidden');
+  const loadBugList = (type) => {
+    if (!type) return;
 
-                dataTable[type].showMessage(`Failed to load requests.`);
-            }
-        };
+    const ids = dataTable[type].data.map(({ data }) => data.bug_id);
+    const url = `${BUGZILLA.config.basepath}buglist.cgi?bug_id=${ids.join('%2C')}`;
 
-        var loadBugList = function(type) {
-            if (!type) return;
-            var data = dataTable[type].data;
-            var ids = [];
-            for (var i = 0, l = data.size(); i < l; i++) {
-                ids.push(data.item(i).get('bug_id'));
-            }
-            var url = `${BUGZILLA.config.basepath}buglist.cgi?bug_id=${ids.join('%2C')}`;
-            window.open(url, '_blank');
-        };
+    window.open(url, '_blank');
+  };
 
-        var bugLinkFormatter = function(o) {
-            if (!o.data.bug_id) {
-                return '-';
-            }
-            var bug_closed = "";
-            if (o.data.bug_status == 'RESOLVED' || o.data.bug_status == 'VERIFIED') {
-                bug_closed = "bz_closed";
-            }
-            return `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${encodeURIComponent(o.data.bug_id)}" ` +
-                   `target="_blank" title="${o.data.bug_status.htmlEncode()} - ${o.data.bug_summary.htmlEncode()}" ` +
-                   `class="${bug_closed}">${o.data.bug_id}</a>`;
-        };
+  const bugLinkFormatter = ({ data: { bug_id, bug_status, bug_summary } }) => {
+    if (!bug_id) {
+      return '-';
+    }
 
-        var updatedFormatter = function(o) {
-            return '<span title="' + o.value.htmlEncode() + '">' +
-                o.data.updated_fancy.htmlEncode() + '</span>';
-        };
+    let bug_closed = '';
 
-        var requesteeFormatter = function(o) {
-            return o.value.htmlEncode();
-        };
+    if (bug_status === 'RESOLVED' || bug_status === 'VERIFIED') {
+      bug_closed = 'bz_closed';
+    }
 
-        var flagNameFormatter = function(o) {
-            if (parseInt(o.data.attach_id)
-                && parseInt(o.data.is_patch)
-                && MyDashboard.splinter_base)
-            {
-                return '<a href="' + MyDashboard.splinter_base +
-                    (MyDashboard.splinter_base.indexOf('?') == -1 ? '?' : '&') +
-                    'bug=' + encodeURIComponent(o.data.bug_id) +
-                    '&attachment=' + encodeURIComponent(o.data.attach_id) +
-                    '" target="_blank" title="Review this patch">' +
-                    o.value.htmlEncode() + '</a>';
-            }
-            else {
-                return o.value.htmlEncode();
-            }
-        };
+    return (
+      `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${encodeURIComponent(bug_id)}" ` +
+      `target="_blank" title="${bug_status.htmlEncode()} - ${bug_summary.htmlEncode()}" ` +
+      `class="${bug_closed}">${bug_id}</a>`
+    );
+  };
 
-        var auto_updateFlagTable = function(o) {
-            if (button_state == true) {
-                refresh_interval = setInterval(function(e) {
-                    updateFlagTable('requestee');
-                    updateFlagTable('requester');
-                }, 1000*60*10);
-            } else {
-                clearInterval(refresh_interval);
-            }
-        };
+  const updatedFormatter = ({ value, data: { updated_fancy } }) =>
+    `<span title="${value.htmlEncode()}">${updated_fancy.htmlEncode()}</span>`;
 
-        // Requestee
-        dataTable.requestee = new Y.DataTable({
-            columns: [
-                { key: "requester", label: "Requester", sortable: true },
-                { key: "type", label: "Type", sortable: true,
-                formatter: flagNameFormatter, allowHTML: true },
-                { key: "bug_id", label: "Bug", sortable: true,
-                formatter: bugLinkFormatter, allowHTML: true },
-                { key: "updated", label: "Updated", sortable: true,
-                formatter: updatedFormatter, allowHTML: true }
-            ],
-            strings: {
-                emptyMessage: 'No requests found.',
-            }
-        });
+  const requesteeFormatter = ({ value }) => value.htmlEncode();
 
-        dataTable.requestee.plug(Y.Plugin.DataTableSort);
+  const flagNameFormatter = ({ value, data: { bug_id, attach_id, is_patch } }) => {
+    if (parseInt(attach_id) && parseInt(is_patch) && MyDashboard.splinter_base) {
+      const url = new URL(MyDashboard.splinter_base);
 
-        Y.one('#requestee_refresh').on('click', function(e) {
-            updateFlagTable('requestee');
-        });
-        Y.one('#requestee_buglist').on('click', function(e) {
-            loadBugList('requestee');
-        });
+      url.searchParams.set('bug', bug_id);
+      url.searchParams.set('attachment', attach_id);
 
-        // Requester
-        dataTable.requester = new Y.DataTable({
-            columns: [
-                { key:"requestee", label:"Requestee", sortable:true,
-                formatter: requesteeFormatter, allowHTML: true },
-                { key:"type", label:"Type", sortable:true,
-                formatter: flagNameFormatter, allowHTML: true },
-                { key:"bug_id", label:"Bug", sortable:true,
-                formatter: bugLinkFormatter, allowHTML: true },
-                { key: "updated", label: "Updated", sortable: true,
-                formatter: updatedFormatter, allowHTML: true }
-            ],
-            strings: {
-                emptyMessage: 'No requests found.',
-            }
-        });
+      return `<a href="${url.toString()}" target="_blank" title="Review this patch">${value.htmlEncode()}</a>`;
+    } else {
+      return value.htmlEncode();
+    }
+  };
 
-        dataTable.requester.plug(Y.Plugin.DataTableSort);
+  const autoUpdateFlagTable = () => {
+    if (button_state === true) {
+      refresh_interval = setInterval(() => {
+        updateFlagTable('requestee');
+        updateFlagTable('requester');
+      }, 1000 * 60 * 10);
+    } else {
+      clearInterval(refresh_interval);
+    }
+  };
 
-        Y.one('#requester_refresh').on('click', function(e) {
-            updateFlagTable('requester');
-        });
-        Y.one('#requester_buglist').on('click', function(e) {
-            loadBugList('requester');
-        });
+  // Requestee
+  dataTable.requestee = new Bugzilla.DataTable({
+    container: '#requestee_table',
+    columns: [
+      { key: 'requester', label: 'Requester' },
+      { key: 'type', label: 'Type', formatter: flagNameFormatter, allowHTML: true },
+      { key: 'bug_id', label: 'Bug', formatter: bugLinkFormatter, allowHTML: true },
+      { key: 'updated', label: 'Updated', formatter: updatedFormatter, allowHTML: true },
+    ],
+    strings: {
+      EMPTY: 'No requests found.',
+    },
+  });
 
-        Y.one('#auto_refresh').on('click', function(e) {
-            button_state = auto_refresh.checked;
-            auto_updateFlagTable();
-        });
+  document.querySelector('#requestee_refresh').addEventListener('click', () => {
+    updateFlagTable('requestee');
+  });
 
-        // Initial load
-        Y.on("contentready", function (e) {
-            updateFlagTable("requestee");
-            auto_updateFlagTable();
-        }, "#requestee_table");
-        Y.on("contentready", function (e) {
-            updateFlagTable("requester");
-        }, "#requester_table");
-    });
+  document.querySelector('#requestee_buglist').addEventListener('click', () => {
+    loadBugList('requestee');
+  });
+
+  // Requester
+  dataTable.requester = new Bugzilla.DataTable({
+    container: '#requester_table',
+    columns: [
+      { key: 'requestee', label: 'Requestee', formatter: requesteeFormatter, allowHTML: true },
+      { key: 'type', label: 'Type', formatter: flagNameFormatter, allowHTML: true },
+      { key: 'bug_id', label: 'Bug', formatter: bugLinkFormatter, allowHTML: true },
+      { key: 'updated', label: 'Updated', formatter: updatedFormatter, allowHTML: true },
+    ],
+    strings: {
+      EMPTY: 'No requests found.',
+    },
+  });
+
+  document.querySelector('#requester_refresh').addEventListener('click', () => {
+    updateFlagTable('requester');
+  });
+
+  document.querySelector('#requester_buglist').addEventListener('click', () => {
+    loadBugList('requester');
+  });
+
+  document.querySelector('#auto_refresh').addEventListener('click', (e) => {
+    button_state = e.target.checked;
+    autoUpdateFlagTable();
+  });
+
+  // Initial load
+  updateFlagTable('requestee');
+  updateFlagTable('requester');
+  autoUpdateFlagTable();
 });

@@ -9,26 +9,21 @@
   min-width: 900px;
 }
 
-#mydashboard .yui3-skin-sam .yui3-datatable-table {
-  width: 100%;
-}
-
-.yui3-datatable-col-bug_type {
+.data-table td[data-key="bug_type"] {
   text-align: center;
 }
 
-.yui3-datatable-col-changeddate,
-.yui3-datatable-col-created {
+.data-table td[data-key="changeddate"] {
   white-space: nowrap;
 }
 
-.yui3-datatable-col-short_desc a {
+.data-table td[data-key="short_desc"] a {
   color: inherit !important;
   font-size: var(--font-size-large) !important;
 }
 
-.yui3-datatable-col-short_desc a:hover,
-.yui3-datatable-col-short_desc a:focus {
+.data-table td[data-key="short_desc"] a:hover,
+.data-table td[data-key="short_desc"] a:focus {
   color: var(--hovered-link-text-color) !important;
 }
 

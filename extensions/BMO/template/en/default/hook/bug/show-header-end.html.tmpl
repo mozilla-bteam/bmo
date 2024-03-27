@@ -11,7 +11,6 @@
 [% javascript_urls.push("extensions/BMO/web/js/firefox-crash-table.js") %]
 [% IF user.in_group('bounty-team') %]
   [% javascript_urls.push('extensions/BMO/web/js/attachment_bounty_form.js') %]
-  [% yui.push('selector') %]
 [% END %]
 [% title = "$bug.bug_id &ndash; " %]
 [% IF bug.alias != '' %]
@@ -25,7 +24,7 @@
 [% js_bug_id = bug.bug_id FILTER js %]
 [% IF user.in_group("bounty-team") %]
   [% javascript = javascript _
-                  "YAHOO.util.Event.onDOMReady(function () { " _
+                  "window.addEventListener('DOMContentLoaded', () => { " _
                   "add_bounty_attachment('$js_bug_id'); });"
   %]
 [% END %]

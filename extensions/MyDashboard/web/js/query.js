@@ -6,222 +6,239 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-if (typeof(MyDashboard) == 'undefined') {
-    var MyDashboard = {};
+if (typeof MyDashboard === 'undefined') {
+  var MyDashboard = {};
 }
 
-// Main query code
-$(function() {
-    YUI({
-        base: 'js/yui3/',
-        combine: false,
-        groups: {
-            gallery: {
-                combine: false,
-                base: 'js/yui3/',
-                patterns: { 'gallery-': {} }
-            }
-        }
-    }).use("node", "datatable", "datatable-sort", "datatable-message", "cookie",
-        "gallery-datatable-row-expansion-bmo", "handlebars", function(Y) {
-        var bugQueryTable    = null,
-            lastChangesCache = {},
-            default_query    = "assignedbugs";
-            refresh_interval = null;
+(() => {
+  // Migrate legacy cookies set with YUI
+  if (!Bugzilla.Storage.get('my_dashboard')) {
+    const autoRefreshCookie = document.cookie.match(/\bmy_dashboard_autorefresh=(.+?)\b/);
+    const queryCookie = document.cookie.match(/\bmy_dashboard_query=(.+?)\b/);
 
-        // Grab last used query name from cookie or use default
-        var query_cookie = Y.Cookie.get("my_dashboard_query");
-        if (query_cookie) {
-            var cookie_value_found = 0;
-            Y.one("#query").get("options").each( function() {
-                if (this.get("value") == query_cookie) {
-                    this.set('selected', true);
-                    default_query = query_cookie;
-                    cookie_value_found = 1;
-                }
-            });
-            if (!cookie_value_found) {
-                Y.Cookie.set("my_dashboard_query", "");
-            }
-        }
-
-        // Grab last used auto-refresh configuration from cookie or use default
-        var autorefresh_cookie = Y.Cookie.get("my_dashboard_autorefresh");
-        if (autorefresh_cookie) {
-            if (autorefresh_cookie == 'true') {
-                Y.one("#auto_refresh").set('checked', true);
-            } else {
-                Y.Cookie.set("my_dashboard_autorefresh", "false");
-            }
-        }
-
-        var updateQueryTable = async query_name => {
-            if (!query_name) return;
-
-            lastChangesCache = {};
-
-            Y.one('#query_loading').removeClass('bz_default_hidden');
-            Y.one('#query_count_refresh').addClass('bz_default_hidden');
-            bugQueryTable.set('data', []);
-            bugQueryTable.render("#query_table");
-            bugQueryTable.showMessage('loadingMessage');
-
-            try {
-                const { result } = await Bugzilla.API.get('mydashboard/run_bug_query', { query: query_name });
-                const { buffer, bugs, description, heading, mark_read } = result;
-
-                Y.one('#query_loading').addClass('bz_default_hidden');
-                Y.one('#query_count_refresh').removeClass('bz_default_hidden');
-                Y.one("#query_container .query_description").setHTML(description);
-                Y.one("#query_container .query_heading").setHTML(heading);
-                Y.one("#query_bugs_found").setHTML(`<a href="${BUGZILLA.config.basepath}buglist.cgi?${buffer}" ` +
-                    `target="_blank">${bugs.length} bugs found</a>`);
-
-                bugQueryTable.set('data', bugs);
-                bugQueryTable.render("#query_table");
-
-                if (mark_read) {
-                    Y.one('#query_markread').setHTML(mark_read);
-                    Y.one('#bar_markread').removeClass('bz_default_hidden');
-                    Y.one('#query_markread_text').setHTML(mark_read);
-                    Y.one('#query_markread').removeClass('bz_default_hidden');
-                } else {
-                    Y.one('#bar_markread').addClass('bz_default_hidden');
-                    Y.one('#query_markread').addClass('bz_default_hidden');
-                }
-
-                Y.one('#query_markread_text').addClass('bz_default_hidden');
-            } catch ({ message }) {
-                Y.one('#query_loading').addClass('bz_default_hidden');
-                Y.one('#query_count_refresh').removeClass('bz_default_hidden');
-
-                bugQueryTable.showMessage(`Failed to load bug list.`);
-            }
-        };
-
-        var updatedFormatter = function(o) {
-            return '<span title="' + o.value.htmlEncode() + '">' +
-                o.data.changeddate_fancy.htmlEncode() + '</span>';
-        };
-
-        const link_formatter = ({ data, value }) =>
-          `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${data.bug_id}" target="_blank">
-          ${isNaN(value) ? value.htmlEncode().wbr() : value}</a>`;
-
-        bugQueryTable = new Y.DataTable({
-            columns: [
-                { key: Y.Plugin.DataTableRowExpansion.column_key, label: ' ', sortable: false },
-                { key: "bug_type", label: "T", allowHTML: true, sortable: true,
-                formatter: '<span class="bug-type-label iconic" title="{value}" aria-label="{value}" ' +
-                           'data-type="{value}"><span class="icon" aria-hidden="true"></span></span>' },
-                { key: "bug_id", label: "Bug", sortable: true, allowHTML: true, formatter: link_formatter },
-                { key: "changeddate", label: "Updated", formatter: updatedFormatter,
-                allowHTML: true, sortable: true },
-                { key: "priority", label: "Pri", sortable: true, allowHTML: true},
-                { key: "bug_status", label: "Status", sortable: true },
-                { key: "short_desc", label: "Summary", sortable: true, allowHTML: true, formatter: link_formatter },
-            ],
-            strings: {
-                emptyMessage: 'Zarro Boogs found'
-            }
-        });
-
-        var last_changes_source   = Y.one('#last-changes-template').getHTML(),
-            last_changes_template = Y.Handlebars.compile(last_changes_source);
-
-        var stub_source           = Y.one('#last-changes-stub').getHTML(),
-            stub_template         = Y.Handlebars.compile(stub_source);
-
-
-        bugQueryTable.plug(Y.Plugin.DataTableRowExpansion, {
-            uniqueIdKey: 'bug_id',
-            template: ({ bug_id, changeddate_api }) => {
-                bugQueryTable.hideMessage();
-
-                // Note: `async` doesn't work for this `template` function, so use an inner `async` function instead
-                if (!lastChangesCache[bug_id]) {
-                    try {
-                        (async () => {
-                            const { results } =
-                                await Bugzilla.API.get('mydashboard/run_last_changes', { bug_id, changeddate_api });
-                            const { last_changes } = results[0];
-
-                            last_changes['bug_id'] = bug_id;
-                            lastChangesCache[bug_id] = last_changes;
-                            Y.one('#last_changes_stub_' + bug_id).setHTML(last_changes_template(last_changes));
-                        })();
-                    } catch ({ message }) {
-                        bugQueryTable.showMessage(`Failed to load last changes.`);
-                    }
-
-                    return stub_template({bug_id: bug_id});
-                }
-                else {
-                    return last_changes_template(lastChangesCache[bug_id]);
-                }
-
-            }
-        });
-
-        bugQueryTable.plug(Y.Plugin.DataTableSort);
-
-        var auto_updateQueryTable = function(o) {
-            if (auto_refresh.checked == true) {
-                refresh_interval = setInterval(function(e) {
-                    updateQueryTable(default_query);
-                }, 1000*60*10);
-            } else {
-                clearInterval(refresh_interval);
-            }
-        };
-
-        // Initial load
-        Y.on("contentready", function (e) {
-            updateQueryTable(default_query);
-            auto_updateQueryTable();
-        }, "#query_table");
-
-        Y.one('#query').on('change', function(e) {
-            var index = e.target.get('selectedIndex');
-            var selected_value = e.target.get("options").item(index).getAttribute('value');
-            updateQueryTable(selected_value);
-            Y.Cookie.set("my_dashboard_query", selected_value, { expires: new Date("January 12, 2025") });
-        });
-
-        Y.one('#query_refresh').on('click', function(e) {
-            var query_select = Y.one('#query');
-            var index = query_select.get('selectedIndex');
-            var selected_value = query_select.get("options").item(index).getAttribute('value');
-            updateQueryTable(selected_value);
-        });
-
-        Y.one('#auto_refresh').on('click', function(e) {
-            auto_updateQueryTable();
-            Y.Cookie.set("my_dashboard_autorefresh", auto_refresh.checked, { expires: new Date("January 12, 2030") });
-        });
-
-        Y.one('#query_markread').on('click', function(e) {
-            var data = bugQueryTable.data;
-            var bug_ids = [];
-
-            Y.one('#query_markread').addClass('bz_default_hidden');
-            Y.one('#query_markread_text').removeClass('bz_default_hidden');
-
-            for (var i = 0, l = data.size(); i < l; i++) {
-                bug_ids.push(data.item(i).get('bug_id'));
-            }
-            Bugzilla.API.post('bug_user_last_visit', { ids: bug_ids });
-            Bugzilla.API.put('mydashboard/bug_interest_unmark', { bug_ids });
-        });
-
-        Y.one('#query_buglist').on('click', function(e) {
-            var data = bugQueryTable.data;
-            var ids = [];
-            for (var i = 0, l = data.size(); i < l; i++) {
-                ids.push(data.item(i).get('bug_id'));
-            }
-            var url = `${BUGZILLA.config.basepath}buglist.cgi?bug_id=${ids.join('%2C')}`;
-            window.open(url, '_blank');
-        });
+    Bugzilla.Storage.set('my_dashboard', {
+      autoRefresh: autoRefreshCookie?.[1] === 'true',
+      query: queryCookie?.[1] ?? '',
     });
+  }
+})();
+
+// Main query code
+window.addEventListener('DOMContentLoaded', () => {
+  let lastChangesCache = {};
+  let bugQueryTable = null;
+  let default_query = 'assignedbugs';
+  let refresh_interval = null;
+
+  // Grab last used query name from storage or use default
+  const { query, autoRefresh } = Bugzilla.Storage.get('my_dashboard', true);
+
+  if (query) {
+    const $option = document.querySelector(`#query option[value="${query}"]`);
+
+    if ($option) {
+      $option.selected = true;
+      default_query = query;
+    } else {
+      Bugzilla.Storage.update('my_dashboard', { query: '' });
+    }
+  }
+
+  // Grab last used auto-refresh configuration from storage or use default
+  if (autoRefresh) {
+    document.querySelector('#auto_refresh').checked = true;
+  } else {
+    Bugzilla.Storage.update('my_dashboard', { autoRefresh: false });
+  }
+
+  const updateQueryTable = async (query_name) => {
+    if (!query_name) return;
+
+    lastChangesCache = {};
+
+    document.querySelector('#query_count_refresh').classList.add('bz_default_hidden');
+    bugQueryTable.render([]);
+    bugQueryTable.setMessage('LOADING');
+
+    try {
+      const { result } = await Bugzilla.API.get('mydashboard/run_bug_query', { query: query_name });
+      const { buffer, bugs, description, heading, mark_read } = result;
+
+      document.querySelector('#query_count_refresh').classList.remove('bz_default_hidden');
+      document.querySelector('#query_container .query_description').innerHTML = description;
+      document.querySelector('#query_container .query_heading').innerHTML = heading;
+      document.querySelector('#query_bugs_found').innerHTML =
+        `<a href="${BUGZILLA.config.basepath}buglist.cgi?${buffer}" ` +
+        `target="_blank">${bugs.length} bugs found</a>`;
+      bugQueryTable.render(bugs);
+
+      if (mark_read) {
+        document.querySelector('#query_markread').innerHTML = mark_read;
+        document.querySelector('#bar_markread').classList.remove('bz_default_hidden');
+        document.querySelector('#query_markread_text').innerHTML = mark_read;
+        document.querySelector('#query_markread').classList.remove('bz_default_hidden');
+      } else {
+        document.querySelector('#bar_markread').classList.add('bz_default_hidden');
+        document.querySelector('#query_markread').classList.add('bz_default_hidden');
+      }
+
+      document.querySelector('#query_markread_text').classList.add('bz_default_hidden');
+    } catch {
+      document.querySelector('#query_count_refresh').classList.remove('bz_default_hidden');
+      bugQueryTable.setMessage(`Failed to load bug list.`);
+    }
+  };
+
+  const updatedFormatter = ({ value, data: { changeddate_fancy } }) =>
+    `<span title="${value.htmlEncode()}">${changeddate_fancy.htmlEncode()}</span>`;
+
+  const link_formatter = ({ data, value }) =>
+    `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${data.bug_id}" target="_blank">
+      ${isNaN(value) ? value.htmlEncode().wbr() : value}</a>`;
+
+  /**
+   * Show the last changes when the expander on a row is clicked.
+   * @param {object} row Row data.
+   */
+  const expandRow = async ({ data, $extraContent }) => {
+    bugQueryTable.setMessage('');
+
+    const { bug_id, changeddate_api } = data;
+    const $target = $extraContent;
+
+    $target.textContent = 'Loading...';
+
+    if (!lastChangesCache[bug_id]) {
+      try {
+        const {
+          results: [{ last_changes: lastChanges }],
+        } = await Bugzilla.API.get('mydashboard/run_last_changes', { bug_id, changeddate_api });
+
+        lastChangesCache[bug_id] = lastChanges;
+      } catch {
+        $target.textContent = 'Failed to load last changes.';
+      }
+    }
+
+    if (lastChangesCache[bug_id]) {
+      const { email, when, activity, comment } = lastChangesCache[bug_id];
+
+      $target.innerHTML = `
+        <div id="last_changes_${bug_id}">
+          ${
+            email
+              ? `
+                <div id="last_changes_header">
+                  Last Changes :: ${email.htmlEncode()} :: ${when.htmlEncode()}
+                </div>
+                ${
+                  activity
+                    ? `
+                      <table id="activity">
+                      ${activity
+                        .map(
+                          ({ field_desc, added, removed }) => `
+                            <tr>
+                              <td class="field_label">${field_desc.htmlEncode()}:</td>
+                              <td class="field_data">
+                              ${
+                                removed && !added
+                                  ? `Removed: ${removed.htmlEncode()}`
+                                  : !removed && added
+                                  ? `Added: ${added.htmlEncode()}`
+                                  : `${removed.htmlEncode()} &rarr; ${added.htmlEncode()}`
+                              }
+                              </td>
+                            </tr>
+                          `,
+                        )
+                        .join('')}
+                      </table>
+                    `
+                    : ``
+                }
+                ${comment ? `<pre class='bz_comment_text'>${comment.htmlEncode()}</pre>` : ``}
+              `
+              : `This is a new ${BUGZILLA.string.bug} and no changes have been made yet.`
+          }
+        </div>
+      `;
+    }
+  };
+
+  bugQueryTable = new Bugzilla.DataTable({
+    container: '#query_table',
+    columns: [
+      { key: '_expander', label: ' ', sortable: false },
+      {
+        key: 'bug_type',
+        label: 'T',
+        allowHTML: true,
+        formatter:
+          '<span class="bug-type-label iconic" title="{value}" aria-label="{value}" ' +
+          'data-type="{value}"><span class="icon" aria-hidden="true"></span></span>',
+      },
+      { key: 'bug_id', label: 'Bug', allowHTML: true, formatter: link_formatter },
+      { key: 'changeddate', label: 'Updated', formatter: updatedFormatter, allowHTML: true },
+      { key: 'priority', label: 'Pri', allowHTML: true },
+      { key: 'bug_status', label: 'Status' },
+      { key: 'short_desc', label: 'Summary', allowHTML: true, formatter: link_formatter },
+    ],
+    strings: {
+      EMPTY: 'Zarro Boogs found',
+    },
+    options: {
+      expandRow,
+    },
+  });
+
+  const auto_updateQueryTable = () => {
+    if (document.querySelector('#auto_refresh').checked) {
+      refresh_interval = setInterval(() => {
+        updateQueryTable(default_query);
+      }, 1000 * 60 * 10);
+    } else {
+      clearInterval(refresh_interval);
+    }
+  };
+
+  // Initial load
+  updateQueryTable(default_query);
+  auto_updateQueryTable();
+
+  document.querySelector('#query').addEventListener('change', (e) => {
+    const selected_value = e.target.value;
+
+    updateQueryTable(selected_value);
+    Bugzilla.Storage.update('my_dashboard', { query: selected_value });
+  });
+
+  document.querySelector('#query_refresh').addEventListener('click', () => {
+    const query_select = document.querySelector('#query');
+    const selected_value = query_select.value;
+
+    updateQueryTable(selected_value);
+  });
+
+  document.querySelector('#auto_refresh').addEventListener('click', (e) => {
+    auto_updateQueryTable();
+    Bugzilla.Storage.update('my_dashboard', { autoRefresh: e.target.checked });
+  });
+
+  document.querySelector('#query_markread').addEventListener('click', () => {
+    const ids = bugQueryTable.data.map(({ bug_id }) => bug_id);
+
+    document.querySelector('#query_markread').classList.add('bz_default_hidden');
+    document.querySelector('#query_markread_text').classList.remove('bz_default_hidden');
+
+    Bugzilla.API.post('bug_user_last_visit', { ids });
+    Bugzilla.API.put('mydashboard/bug_interest_unmark', { bug_ids: ids });
+  });
+
+  document.querySelector('#query_buglist').addEventListener('click', () => {
+    const ids = bugQueryTable.data.map(({ bug_id }) => bug_id);
+    const url = `${BUGZILLA.config.basepath}buglist.cgi?bug_id=${ids.join('%2C')}`;
+
+    window.open(url, '_blank');
+  });
 });

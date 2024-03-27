@@ -11,25 +11,23 @@ var inline_history = {
   _hasBugFlags: false,
 
   init: function() {
-    Dom = YAHOO.util.Dom;
-
     var reDuplicate = /^\*\*\* \S+ \d+ has been marked as a duplicate of this/;
     var reBugId = /show_bug\.cgi\?id=(\d+)/;
     var reHours = /Additional hours worked: \d+\.\d+/;
 
-    var comments = Dom.getElementsByClassName("bz_comment", 'div', 'comments');
+    var comments = [...document.querySelectorAll('#comments div.bz_comment')];
     for (var i = 1, il = comments.length; i < il; i++) {
       // remove 'has been marked as a duplicate of this bug' comments
-      var textDiv = Dom.getElementsByClassName('bz_comment_text', 'pre', comments[i]);
+      var textDiv = comments[i].querySelector('pre.bz_comment_text');
       if (textDiv) {
-        var match = reDuplicate.exec(textDiv[0].textContent || textDiv[0].innerText);
+        var match = reDuplicate.exec(textDiv.textContent || textDiv.innerText);
         if (match) {
           // grab the comment and bug number from the element
           var comment = comments[i];
           var number = comment.id.substr(1);
-          var time = this.trim(Dom.getElementsByClassName('bz_comment_time', 'span', comment)[0].innerHTML);
+          var time = this.trim(comment.querySelector('span.bz_comment_time').innerHTML);
           var dupeId = 0;
-          match = reBugId.exec(Dom.get('comment_text_' + number).innerHTML);
+          match = reBugId.exec(document.getElementById(`comment_text_${number}`).innerHTML);
           if (match)
             dupeId = match[1];
           // remove the element
@@ -81,7 +79,7 @@ var inline_history = {
     var lastCommentDiv = comments[comments.length - 1];
 
     // insert activity into the correct location
-    var commentTimes = Dom.getElementsByClassName('bz_comment_time', 'span', 'comments');
+    var commentTimes = [...document.querySelectorAll('#comments span.bz_comment_time')];
     for (var i = 0, il = ih_activity.length; i < il; i++) {
       var item = ih_activity[i];
       // item[0] : who
@@ -98,7 +96,7 @@ var inline_history = {
       var start_index = (ih_activity_sort_order == 'newest_to_oldest_desc_first' && commentTimes.length > 1) ? 1 : 0;
       for (var j = start_index, jl = commentTimes.length; j < jl; j++) {
         var commentHead = commentTimes[j].parentNode;
-        var mainUser = Dom.getElementsByClassName('email', 'a', commentHead)[0].href.substr(7);
+        var mainUser = commentHead.querySelector('a.email').href.substr(7);
         var text = commentTimes[j].textContent || commentTimes[j].innerText;
         var mainTime = this.trim(text);
 
@@ -124,8 +122,10 @@ var inline_history = {
           // assume that the change was made by the same user
           commentHead.parentNode.appendChild(currentDiv);
           currentDiv.innerHTML = item[2];
-          Dom.addClass(currentDiv, 'ih_inlinehistory');
-          Dom.addClass(currentDiv, containerClass);
+          currentDiv.classList.add('ih_inlinehistory');
+          if (containerClass) {
+            currentDiv.classList.add(containerClass);
+          }
           if (item[6])
             this.setFlagChangeID(item, commentHead.parentNode.id);
 
@@ -172,24 +172,16 @@ var inline_history = {
     }
 
     // find comment blocks which only contain cc changes, shift the ih_cc
-    var historyDivs = Dom.getElementsByClassName('ih_history', 'div', 'comments');
-    for (var i = 0, il = historyDivs.length; i < il; i++) {
-      var historyDiv = historyDivs[i];
-      var itemDivs = Dom.getElementsByClassName('ih_history_item', 'div', historyDiv);
-      var ccOnly = true;
-      for (var j = 0, jl = itemDivs.length; j < jl; j++) {
-        if (!Dom.hasClass(itemDivs[j], 'ih_cc')) {
-          ccOnly = false;
-          break;
-        }
-      }
+    document.querySelectorAll('#comments div.ih_history').forEach(($historyDiv) => {
+      var itemDivs = [...$historyDiv.querySelectorAll('div.ih_history_item')];
+      var ccOnly = !$historyDiv.querySelector('div.ih_history_item:not(.ih_cc)');
       if (ccOnly) {
-        for (var j = 0, jl = itemDivs.length; j < jl; j++) {
-          Dom.removeClass(itemDivs[j], 'ih_cc');
-        }
-        Dom.addClass(historyDiv, 'ih_cc');
+        itemDivs.forEach(($itemDiv) => {
+          $itemDiv.classList.remove('ih_cc');
+        });
+        $historyDiv.classList.add('ih_cc');
       }
-    }
+    });
 
     if (this._hasAttachmentFlags)
       this.linkAttachmentFlags();
@@ -199,9 +191,11 @@ var inline_history = {
     ih_activity = undefined;
     ih_activity_flags = undefined;
 
-    this._ccDivs = Dom.getElementsByClassName('ih_cc', '', 'comments');
+    this._ccDivs = [...document.querySelectorAll('#comments .ih_cc')];
     this.hideCC();
-    YAHOO.util.Event.onDOMReady(this.addCCtoggler);
+    window.addEventListener('DOMContentLoaded', () => {
+      this.addCCtoggler();
+    });
   },
 
   setFlagChangeID: function(changeItem, id) {
@@ -232,17 +226,13 @@ var inline_history = {
   },
 
   linkAttachmentFlags: function() {
-    var rows = Dom.get('attachment_table').getElementsByTagName('tr');
-    for (var i = 0, il = rows.length; i < il; i++) {
-
+    document.querySelectorAll('#attachment_table tr').forEach((tr) => {
       // deal with attachments with flags only
-      var tr = rows[i];
       if (!tr.id || tr.id == 'a0')
-        continue;
-      var attachFlagTd = Dom.getElementsByClassName('bz_attach_flags', 'td', tr);
-      if (attachFlagTd.length == 0)
-        continue;
-      attachFlagTd = attachFlagTd[0];
+        return;
+      const attachFlagTd = tr.querySelector('td.bz_attach_flags');
+      if (!attachFlagTd)
+        return;
 
       // get the attachment id
       var attachId = 0;
@@ -255,7 +245,7 @@ var inline_history = {
         }
       }
       if (!attachId)
-        continue;
+        return;
 
       var html = '';
 
@@ -308,11 +298,11 @@ var inline_history = {
 
       if (html)
         attachFlagTd.innerHTML = html;
-    }
+    });
   },
 
   linkBugFlags: function() {
-    var flags = Dom.get('flags');
+    var flags = document.getElementById('flags');
     if (!flags) return;
     var rows = flags.getElementsByTagName('tr');
     for (var i = 0, il = rows.length; i < il; i++) {
@@ -348,23 +338,26 @@ var inline_history = {
   },
 
   hideCC: function() {
-    Dom.addClass(this._ccDivs, 'ih_hidden');
+    this._ccDivs.forEach(($div) => {
+      $div.classList.add('ih_hidden');
+    });
   },
 
   showCC: function() {
-    Dom.removeClass(this._ccDivs, 'ih_hidden');
+    this._ccDivs.forEach(($div) => {
+      $div.classList.remove('ih_hidden');
+    });
   },
 
   addCCtoggler: function() {
-    var ul = Dom.getElementsByClassName('bz_collapse_expand_comments');
-    if (ul.length == 0)
+    var ul = document.querySelector('.bz_collapse_expand_comments');
+    if (!ul)
       return;
-    ul = ul[0];
     var a = document.createElement('a');
     a.href = 'javascript:void(0)';
     a.id = 'ih_toggle_cc';
-    YAHOO.util.Event.addListener(a, 'click', function(e) {
-      if (Dom.get('ih_toggle_cc').innerHTML == 'Show CC Changes') {
+    a.addEventListener('click', () => {
+      if (document.getElementById('ih_toggle_cc').innerHTML == 'Show CC Changes') {
         a.innerHTML = 'Hide CC Changes';
         inline_history.showCC();
       } else {

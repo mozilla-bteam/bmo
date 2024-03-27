@@ -5,23 +5,16 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-var Dom = YAHOO.util.Dom;
-
 function toggle_options(visible, name) {
-  var rows = Dom.getElementsByClassName(name + '_tr');
-  for (var i = 0, l = rows.length; i < l; i++) {
-    if (visible) {
-      Dom.removeClass(rows[i], 'hidden');
-    } else {
-      Dom.addClass(rows[i], 'hidden');
-    }
-  }
+  document.querySelectorAll(`.${name}_tr`).forEach(($row) => {
+    $row.classList.toggle('hidden', !visible);
+  });
 }
 
 function reset_to_defaults() {
   if (!push_defaults) return;
   for (var id in push_defaults) {
-    var el = Dom.get(id);
+    var el = document.getElementById(id);
     if (!el) continue;
     if (el.nodeName == 'INPUT') {
       el.value = push_defaults[id];

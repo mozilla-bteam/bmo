@@ -17,17 +17,20 @@
  * Contributor(s): Max Kanat-Alexander <mkanat@bugzilla.org>
  */
 
-/* This library assumes that the needed YUI libraries have been loaded
-   already. */
+/**
+ * Reference or define the Bugzilla app namespace.
+ * @namespace
+ */
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
 
-YAHOO.bugzilla.dupTable = {
+Bugzilla.DupTable = {
     updateTable: async (dataTable, product_name, summary_field) => {
         if (summary_field.value.length < 4) return;
 
-        dataTable.showTableMessage(dataTable.get("MSG_LOADING"),
-                                   YAHOO.widget.DataTable.CLASS_LOADING);
-        YAHOO.util.Dom.removeClass('possible_duplicates_container',
-                                   'bz_default_hidden');
+        dataTable.render([]);
+        dataTable.setMessage('LOADING');
+        document.getElementById('possible_duplicates_container')
+            .classList.remove('bz_default_hidden');
 
         let data = {};
 
@@ -44,7 +47,7 @@ YAHOO.bugzilla.dupTable = {
             data = { error: true };
         }
 
-        dataTable.onDataReturnInitializeTable('', data);
+        dataTable.update(data);
     },
     // This is the keyup event handler. It calls updateTable with a relatively
     // long delay, to allow additional input. However, the delay is short
@@ -60,42 +63,30 @@ YAHOO.bugzilla.dupTable = {
 
         var dt = args[0];
         var product_name = args[1];
-        var summary = YAHOO.util.Event.getTarget(e);
-        clearTimeout(YAHOO.bugzilla.dupTable.lastTimeout);
-        YAHOO.bugzilla.dupTable.lastTimeout = setTimeout(function() {
-            YAHOO.bugzilla.dupTable.updateTable(dt, product_name, summary) },
+        var summary = e.target;
+        clearTimeout(Bugzilla.DupTable.lastTimeout);
+        Bugzilla.DupTable.lastTimeout = setTimeout(function() {
+            Bugzilla.DupTable.updateTable(dt, product_name, summary) },
             600);
     },
-    formatBugLink: function(el, oRecord, oColumn, oData) {
-        el.innerHTML = `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${oData}">${oData}</a>`;
+    formatBugLink({ value }) {
+        return `<a href="${BUGZILLA.config.basepath}show_bug.cgi?id=${value}">${value}</a>`;
     },
-    formatStatus: function(el, oRecord, oColumn, oData) {
-        var resolution = oRecord.getData('resolution');
-        var bug_status = display_value('bug_status', oData);
-        if (resolution) {
-            el.innerHTML = bug_status + ' '
-                           + display_value('resolution', resolution);
-        }
-        else {
-            el.innerHTML = bug_status;
-        }
+    formatStatus({ value, data: { resolution }}) {
+        const status = display_value('bug_status', value);
+        return resolution ? `${status} ${display_value('resolution', resolution)}` : status;
     },
-    formatCcButton: function(el, oRecord, oColumn, oData) {
+    formatCcButton({ value, data }) {
         var url = `${BUGZILLA.config.basepath}process_bug.cgi?` +
-                  `id=${oRecord.getData('id')}&addselfcc=1&token=${escape(oData)}`;
-        var button = document.createElement('a');
-        button.setAttribute('href',  url);
-        button.innerHTML = `<input type="button" value="${YAHOO.bugzilla.dupTable.addCcMessage.htmlEncode()}">`;
-        el.appendChild(button);
-        new YAHOO.widget.Button(button);
+                  `id=${data.id}&addselfcc=1&token=${escape(value)}`;
+        return `<a href="${url}"><input type="button" value="Follow"></a>`;
     },
-    init: function(data) {
-        data.options.initialLoad = false;
+    init(data) {
+        const { container, columns, strings, summary_field, product_name } = data;
+        const dt = new Bugzilla.DataTable({ container, columns, strings });
 
-        const ds = new YAHOO.util.LocalDataSource([]); // Dummy data source
-        const dt = new YAHOO.widget.DataTable(data.container, data.columns, ds, data.options);
-
-        YAHOO.util.Event.on(data.summary_field, 'input', this.doUpdateTable,
-                            [dt, data.product_name]);
+        document.getElementById(summary_field).addEventListener('input', (event) => {
+            this.doUpdateTable(event, [dt, product_name]);
+        });
     }
 };

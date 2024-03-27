@@ -5,9 +5,12 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-YAHOO.util.Event.onDOMReady(function() {
-    YAHOO.util.Event.addListener('defer-until', 'change', function() {
-        YAHOO.util.Dom.get('defer-date').innerHTML = 'until ' + this.value;
-    });
-    bz_fireEvent(YAHOO.util.Dom.get('defer-until'), 'change');
+window.addEventListener('DOMContentLoaded', () => {
+  const $until = document.getElementById('defer-until');
+
+  $until.addEventListener('change', () => {
+    document.getElementById('defer-date').innerHTML = `until ${$until.value}`;
+  });
+
+  bz_fireEvent($until, 'change');
 });

@@ -1,7 +1,6 @@
 function toggleAdvancedFields() {
   TUI_toggle_class('expert_fields');
-  var elements = YAHOO.util.Dom.getElementsByClassName('expert_fields');
-  if (YAHOO.util.Dom.hasClass(elements[0], TUI_HIDDEN_CLASS)) {
+  if (document.querySelector('.expert_fields').classList.contains(TUI_HIDDEN_CLASS)) {
     handleWantsBugFlags(false);
   }
 }
@@ -39,7 +38,7 @@ function clearBugFlagFields() {
   }
 }
 
-YAHOO.util.Event.onDOMReady(function() {
+window.addEventListener('DOMContentLoaded', () => {
   function set_width(id, width) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -95,7 +94,7 @@ YAHOO.util.Event.onDOMReady(function() {
 });
 
 function take_bug(user) {
-  var el = Dom.get('assigned_to');
+  var el = document.getElementById('assigned_to');
   el.value = user;
   el.focus();
   el.select();
@@ -104,13 +103,14 @@ function take_bug(user) {
 }
 
 function assignee_change(user) {
-  var el = Dom.get('take_bug');
+  var el = document.getElementById('take_bug');
   if (!el) return;
-  el.style.display = Dom.get('assigned_to').value == user ? 'none' : '';
+  el.style.display = document.getElementById('assigned_to').value == user ? 'none' : '';
 }
 
 function init_take_handler(user) {
-  YAHOO.util.Event.addListener(
-    'assigned_to', 'change', function() { assignee_change(user); });
+  document.getElementById('assigned_to').addEventListener('change', () => {
+    assignee_change(user);
+  });
   assignee_change(user);
 }

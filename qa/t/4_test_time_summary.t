@@ -81,13 +81,6 @@ $sel->is_text_present_ok("2009-01-01 to 2009-01-31");
 $sel->is_text_present_ok("2009-02-01 to 2009-02-28");
 $sel->is_text_present_ok("2009-04-01 to 2009-04-30");
 
-$sel->type_ok("end_date", "2009-04-as");
-$sel->click_ok("summarize");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("Illegal Date");
-$error_msg = trim($sel->get_text("error_msg"));
-ok($error_msg =~ /'2009-04-as' is not a legal date/, "Illegal end date");
-
 # Now display one bug only. We cannot do careful checks, because
 # the page sums up contributions made by the same user during the same
 # month, and so running this script several times per month would

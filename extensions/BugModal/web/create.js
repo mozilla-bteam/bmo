@@ -111,41 +111,41 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /**
    * Activate the Possible Duplicates table.
-   * @todo Remove the YUI dependency.
    */
   const initSummarySection = () => {
-    YAHOO.bugzilla.dupTable.addCcMessage = 'Follow';
-    YAHOO.bugzilla.dupTable.init({
-      container: 'possible_duplicates',
+    Bugzilla.DupTable.init({
+      container: '#possible_duplicates',
       columns: [
         {
           key: 'id',
           label: 'ID',
-          formatter: YAHOO.bugzilla.dupTable.formatBugLink,
+          formatter: Bugzilla.DupTable.formatBugLink,
+          allowHTML: true,
         },
         {
           key: 'summary',
           label: 'Summary',
-          formatter: 'text',
         },
         {
           key: 'status',
           label: 'Status/Resolution',
-          formatter: YAHOO.bugzilla.dupTable.formatStatus,
+          formatter: Bugzilla.DupTable.formatStatus,
         },
         {
           key: 'update_token',
           label: '',
-          formatter: YAHOO.bugzilla.dupTable.formatCcButton,
+          formatter: Bugzilla.DupTable.formatCcButton,
+          allowHTML: true,
+          sortable: false,
         },
       ],
-      product_name: document.querySelector('input[name="product"]').value,
-      summary_field: 'short_desc',
-      options: {
-        MSG_LOADING: 'Searching for possible duplicates...',
-        MSG_EMPTY: 'No possible duplicates found.',
-        SUMMARY: 'Possible Duplicates',
+      strings: {
+        LOADING: 'Searching for possible duplicates...',
+        EMPTY: 'No possible duplicates found.',
+        TITLE: 'Possible Duplicates',
       },
+      summary_field: 'short_desc',
+      product_name: document.querySelector('input[name="product"]').value,
     });
   };
 

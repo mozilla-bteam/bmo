@@ -25,15 +25,34 @@
  *
  * TUI stands for Tweak UI.
  *
- * Requires js/util.js and the YUI Dom and Cookie libraries.
+ * Requires js/util.js.
  *
  * See template/en/default/bug/create/create.html.tmpl for a usage example.
  */
 
 var TUI_HIDDEN_CLASS = 'bz_tui_hidden';
-var TUI_COOKIE_NAME  = 'TUI';
+var TUI_STORAGE_KEY  = 'TUI';
 
 var TUI_alternates = new Array();
+
+/**
+ * Migrate the legacy cookie to local storage.
+ */
+const _TUI_migrate_cookie = () => {
+    const cookie = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith(`${TUI_STORAGE_KEY}=`))
+        ?.substring(TUI_STORAGE_KEY.length + 1);
+
+    const prefs = cookie ? Object.fromEntries(
+        cookie.split('&').map((p) => {
+            const [key, value] = p.split('=');
+            return [key, Number(value)];
+        })
+    ) : {};
+
+    Bugzilla.Storage.set(TUI_STORAGE_KEY, prefs);
+};
 
 /**
  * Hides a particular class of elements if they are shown,
@@ -43,7 +62,7 @@ var TUI_alternates = new Array();
  * @param className   The name of the CSS class to hide.
  */
 function TUI_toggle_class(className) {
-    var elements = YAHOO.util.Dom.getElementsByClassName(className);
+    var elements = [...document.querySelectorAll(`.${className}`)];
     for (var i = 0; i < elements.length; i++) {
         bz_toggleClass(elements[i], TUI_HIDDEN_CLASS);
     }
@@ -59,11 +78,28 @@ function TUI_toggle_class(className) {
  * @param className   The class to hide by default.
  */
 function TUI_hide_default(className) {
-    YAHOO.util.Event.onDOMReady(function () {
-        if (!YAHOO.util.Cookie.getSub('TUI', className)) {
-            TUI_toggle_class(className);
+    const _hide = () => {
+        if (!Bugzilla.Storage.get(TUI_STORAGE_KEY)?.[className]) {
+            let restored = false;
+            document.querySelectorAll(`.${className}`).forEach(($item) => {
+                if (!$item.classList.contains(TUI_HIDDEN_CLASS)) {
+                    $item.classList.add(TUI_HIDDEN_CLASS);
+                    restored = true;
+                }
+            });
+            if (restored) {
+                _TUI_toggle_control_link(className);
+            }
         }
-    });
+    };
+
+    if (document.readyState === 'complete') {
+        _hide();
+    } else {
+        window.addEventListener('DOMContentLoaded', () => {
+            _hide();
+        });
+    }
 }
 
 function _TUI_toggle_control_link(className) {
@@ -83,33 +119,23 @@ function _TUI_toggle_control_link(className) {
 function _TUI_save_class_state(elements, aClass) {
     // We just check the first element to see if it's hidden or not, and
     // consider that all elements are the same.
-    if (YAHOO.util.Dom.hasClass(elements[0], TUI_HIDDEN_CLASS)) {
-        _TUI_store(aClass, 0);
-    }
-    else {
-        _TUI_store(aClass, 1);
-    }
+    _TUI_store(aClass, elements[0].classList.contains(TUI_HIDDEN_CLASS) ? 0 : 1);
 }
 
 function _TUI_store(aClass, state) {
-    YAHOO.util.Cookie.setSub(TUI_COOKIE_NAME, aClass, state,
-    {
-        expires: new Date('January 1, 2038'),
-        path: BUGZILLA.param.cookie_path
-    });
+    Bugzilla.Storage.update(TUI_STORAGE_KEY, { [aClass]: state });
 }
 
 function _TUI_restore() {
-    var yui_classes = YAHOO.util.Cookie.getSubs(TUI_COOKIE_NAME);
-    for (yui_item in yui_classes) {
-        if (yui_classes[yui_item] == 0) {
-            var elements = YAHOO.util.Dom.getElementsByClassName(yui_item);
-            for (var i = 0; i < elements.length; i++) {
-                YAHOO.util.Dom.addClass(elements[i], 'bz_tui_hidden');
-            }
-            _TUI_toggle_control_link(yui_item);
-        }
-    }
+    Object.entries(Bugzilla.Storage.get(TUI_STORAGE_KEY, true)).forEach(([className]) => {
+        TUI_hide_default(className);
+    });
 }
 
-YAHOO.util.Event.onDOMReady(_TUI_restore);
+window.addEventListener('DOMContentLoaded', () => {
+    if (!Bugzilla.Storage.get(TUI_STORAGE_KEY)) {
+        _TUI_migrate_cookie();
+    }
+
+    _TUI_restore();
+});

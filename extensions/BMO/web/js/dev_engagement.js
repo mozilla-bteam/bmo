@@ -61,7 +61,7 @@ var DE = {
                             'bz_default_hidden');
       }
     }
-    YAHOO.util.Dom.get('commit').disabled = commit_disabled;
+    document.getElementById('commit').disabled = commit_disabled;
   },
   focusOther: function (id, other_id) {
     var cb = document.getElementById(id);
@@ -158,7 +158,8 @@ var DE = {
     }
     if (alert_text != '') {
       alert(alert_text);
-      YAHOO.util.Event.stopEvent(ev);
+      ev.preventDefault();
+      ev.stopPropagation();
     }
 
     // Whiteboard value
@@ -237,11 +238,11 @@ var DE = {
     document.getElementById('cf_due_date').value = document.getElementById('start_date').value;
   },
   long_start_date: function () {
-    var ymd = document.getElementById('start_date').value.split('-');
+    const date = document.getElementById('start_date').value;
+    const ymd = date.split('-');
     if (ymd.length != 3)
       return '';
-    var month = YAHOO.bugzilla.calendar_start_date.cfg.getProperty('MONTHS_LONG')[ymd[1] - 1];
-    return month + ' ' + ymd[0];
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
   },
   hasClass: function (element, class_name) {
     return element.className.match(new RegExp('(\\s|^)' + class_name + '(\\s|$)'));
@@ -257,11 +258,11 @@ var DE = {
     }
   },
   init: function() {
-    YAHOO.util.Event.on('dev_form', 'submit', DE.onSubmit);
-    YAHOO.util.Event.on('product_other', 'change', function () {
+    document.getElementById('dev_form').addEventListener('submit', DE.onSubmit);
+    document.getElementById('product_other').addEventListener('change', () => {
       DE.focusOther('product_other', 'product_other_text');
     });
-    YAHOO.util.Event.on('request_other', 'change', function () {
+    document.getElementById('request_other').addEventListener('change', () => {
       DE.focusOther('request_other', 'request_other_text');
     });
     var select_inputs = [
@@ -272,12 +273,13 @@ var DE = {
       'speaker_needed',
       'previous_event'
     ];
-    for (var i = 0, l = select_inputs.length; i < l; i++) {
-      YAHOO.util.Event.on(select_inputs[i], 'change', DE.formUpdate);
-    }
+    select_inputs.forEach((id) => {
+      document.getElementById(id).addEventListener('change', DE.formUpdate);
+    });
     DE.formUpdate();
-    createCalendar('start_date');
-    createCalendar('end_date');
   }
 };
-YAHOO.util.Event.onDOMReady(DE.init);
+
+window.addEventListener('DOMContentLoaded', () => {
+  DE.init();
+});

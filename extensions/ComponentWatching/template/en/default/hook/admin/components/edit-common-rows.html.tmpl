@@ -37,11 +37,12 @@ function sanitize_name(name) {
 }
 
 function update_watch_user() {
-  var Dom = YAHOO.util.Dom;
-  if (Dom.get('watch_user_auto').checked) {
-    Dom.addClass('watch_user', 'bz_default_hidden');
+  const $watch_user = document.getElementById('watch_user');
+  const $watch_user_suggestion = document.getElementById('watch_user_suggestion');
 
-    var component = Dom.get('component').value;
+  if (document.getElementById('watch_user_auto').checked) {
+    $watch_user.classList.add('bz_default_hidden');
+    var component = document.getElementById('component').value;
     var watch = '';
     if (component == '') {
       watch = '(no component name)';
@@ -50,21 +51,21 @@ function update_watch_user() {
       watch = sanitize_name(component) +
               '@' + sanitize_name('[% product.name FILTER js %]') + '.bugs';
     }
-    Dom.get('watch_user_suggestion').innerHTML = ' : <b>' + watch + '</b>';
-    Dom.get('watch_user').value = watch;
+    $watch_user_suggestion.innerHTML = ' : <b>' + watch + '</b>';
+    $watch_user.value = watch;
   }
   else {
-    Dom.removeClass('watch_user', 'bz_default_hidden');
-    Dom.get('watch_user_suggestion').innerHTML = '';
-    if (Dom.get('watch_user').value == '(no component name)')
-      Dom.get('watch_user').value = '';
+    $watch_user.classList.remove('bz_default_hidden');
+    $watch_user_suggestion.innerHTML = '';
+    if ($watch_user.value == '(no component name)')
+      $watch_user.value = '';
   }
 }
 
-YAHOO.util.Event.onDOMReady(function() {
+window.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('watch_user_auto')) {
-    YAHOO.util.Event.addListener('component', 'keyup', update_watch_user);
-    YAHOO.util.Event.addListener('watch_user_auto', 'click', update_watch_user);
+    document.getElementById('component').addEventListener('keyup', update_watch_user);
+    document.getElementById('watch_user_auto').addEventListener('click', update_watch_user);
     update_watch_user();
   }
 });

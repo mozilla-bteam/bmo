@@ -43,7 +43,6 @@
 
 [% inline_javascript = BLOCK %]
 function validateAndSubmit() {
-  var Dom = YAHOO.util.Dom;
   var alert_text = '';
 
   if (!isFilledOut('requester_name'))
@@ -55,7 +54,7 @@ function validateAndSubmit() {
   if (!isFilledOut('responsible')) {
     alert_text += "Please provide your Mozillian Profile\n";
   } else {
-    if (Dom.get('responsible').value == 'No' && !isFilledOut('responsible_other')) {
+    if (document.getElementById('responsible').value == 'No' && !isFilledOut('responsible_other')) {
       alert_text += "Please provide the person responsible for the costume\n";
     }
   }
@@ -86,9 +85,9 @@ function validateAndSubmit() {
   if (!isFilledOut('ship_email'))
     alert_text += "Please enter the shipping Email address\n";
 
-  if (isFilledOut('requester_email') && !isValidEmail(Dom.get('requester_email').value))
+  if (isFilledOut('requester_email') && !isValidEmail(document.getElementById('requester_email').value))
     alert_text += "Please enter a valid Email address.\n";
-  if (isFilledOut('ship_email') && !isValidEmail(Dom.get('ship_email').value))
+  if (isFilledOut('ship_email') && !isValidEmail(document.getElementById('ship_email').value))
     alert_text += "Please enter a valid shipping Email address.\n";
 
   if (alert_text != '') {
@@ -96,21 +95,21 @@ function validateAndSubmit() {
     return false;
   }
 
-  Dom.get('short_desc').value = 'Firefox Costume Request - ' + YAHOO.util.Dom.get('requester_name').value;
+  document.getElementById('short_desc').value
+    = `Firefox Costume Request - ${document.getElementById('requester_name').value}`;
   return true;
 }
 
 function on_responsible_change() {
-  if (YAHOO.util.Dom.get('responsible').value == 'No') {
-    YAHOO.util.Dom.removeClass('responsible_who', 'bz_default_hidden');
-  }
-  else {
-    YAHOO.util.Dom.addClass('responsible_who', 'bz_default_hidden');
-  }
+  document.getElementById('responsible_who').classList
+    .toggle('bz_default_hidden', document.getElementById('responsible').value !== 'No');
 }
 
-YAHOO.util.Event.onDOMReady(function() {
-  YAHOO.util.Event.addListener('responsible', 'change', on_responsible_change);
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('responsible').addEventListener('change', () => {
+    on_responsible_change();
+  });
+
   on_responsible_change();
 });
 [% END %]

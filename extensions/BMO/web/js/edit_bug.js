@@ -33,14 +33,14 @@ function show_clone_menu(el, bug_id, product, component) {
 
 // -- make attachment table, comments, new comment textarea equal widths
 
-YAHOO.util.Event.onDOMReady(function() {
-  var comment_tables = Dom.getElementsByClassName('bz_comment_table', 'table', 'comments');
-  if (comment_tables.length) {
-    var comment_width = comment_tables[0].getElementsByTagName('td')[0].clientWidth + 'px';
-    var attachment_table = Dom.get('attachment_table');
+window.addEventListener('DOMContentLoaded', () => {
+  var $comment_table = document.querySelector('#comments table.bz_comment_table');
+  if ($comment_table) {
+    var comment_width = $comment_table.querySelector('td').clientWidth + 'px';
+    var attachment_table = document.getElementById('attachment_table');
     if (attachment_table)
       attachment_table.style.width = comment_width;
-    var new_comment = Dom.get('comment');
+    var new_comment = document.getElementById('comment');
     if (new_comment)
       new_comment.style.width = comment_width;
   }

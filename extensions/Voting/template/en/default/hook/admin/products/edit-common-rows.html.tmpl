@@ -51,9 +51,9 @@
     <br>(Setting this to 0 disables auto-confirming [% terms.bugs %]
     by vote.)
     <script [% script_nonce FILTER none %]>
-        YAHOO.util.Event.addListener('allows_unconfirmed', 'change',
-            function() { bz_toggleClass('votes_to_confirm_container',
-                                        'bz_default_hidden'); });
+        document.getElementById('allows_unconfirmed').addEventListener('change', () => {
+            bz_toggleClass('votes_to_confirm_container', 'bz_default_hidden');
+        });
     </script>
   </td>
 </tr>

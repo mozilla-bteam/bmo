@@ -24,7 +24,6 @@
 </style>
 
 <script [% script_nonce FILTER none %]>
-var Dom = YAHOO.util.Dom;
 var useclassification = false;
 var first_load = true;
 var last_sel = [];
@@ -49,66 +48,66 @@ var watch_users = new Array();
 
 <script [% script_nonce FILTER none %]>
 function onSelectProduct() {
-  var component = Dom.get('component');
-  selectProduct(Dom.get('product'), component);
+  const $product = document.getElementById('product');
+  const $component = document.getElementById('component');
+  selectProduct($product, $component);
   // selectProduct only supports __Any__ on both elements
   // we only want it on component, so add it back in
   try {
-    component.add(new Option('__Any__', ''), component.options[0]);
+    $component.add(new Option('__Any__', ''), $component.options[0]);
   } catch(e) {
     // support IE
-    component.add(new Option('__Any__', ''), 0);
+    $component.add(new Option('__Any__', ''), 0);
   }
   if ('[% add_component FILTER js %]' != ''
-      && bz_valueSelected(Dom.get('product'), '[% add_product FILTER js %]')
+      && bz_valueSelected($product, '[% add_product FILTER js %]')
   ) {
-    var index = bz_optionIndex(Dom.get('component'), '[% add_component FILTER js %]');
+    var index = bz_optionIndex($component, '[% add_component FILTER js %]');
     if (index != -1)
-      Dom.get('component').options[index].selected = true;
+      $component.options[index].selected = true;
   }
   onSelectComponent();
 }
 
 function onSelectComponent() {
-  var product_select = Dom.get('product');
-  var product = product_select.options[product_select.selectedIndex].value;
-  var component = Dom.get('component').value;
+  const $product = document.getElementById('product');
+  const $component = document.getElementById('component');
+  const product = $product.value;
+  const component = $component.value;
   if (component && watch_users[product] && watch_users[product][component]) {
-    Dom.get('watch-user-email').innerHTML = watch_users[product][component];
-    Dom.get('watch-user-div').style.display = '';
+    document.getElementById('watch-user-email').innerHTML = watch_users[product][component];
+    document.getElementById('watch-user-div').style.display = '';
   } else {
-    Dom.get('watch-user-div').style.display = 'none';
+    document.getElementById('watch-user-div').style.display = 'none';
   }
-  Dom.get('add').disabled = Dom.get('component').selectedIndex == -1;
+  document.getElementById('add').disabled = $component.selectedIndex == -1;
 }
 
 function onStartingWith(el) {
   var value = el.value.replace(/(^\s*|\s*$)/g, '');
   if (value == '') {
-    Dom.get('component').disabled = false;
+    document.getElementById('component').disabled = false;
     onSelectProduct();
   } else {
-    Dom.get('component').selectedIndex = -1;
-    Dom.get('watch-user-div').style.display = 'none';
-    Dom.get('component').disabled = true;
-    Dom.get('add').disabled = false;
+    document.getElementById('component').selectedIndex = -1;
+    document.getElementById('watch-user-div').style.display = 'none';
+    document.getElementById('component').disabled = true;
+    document.getElementById('add').disabled = false;
   }
 }
-
-YAHOO.util.Event.onDOMReady(onSelectProduct);
 
 function onRemoveChange() {
-  var cbs = Dom.get('remove_table').getElementsByTagName('input');
-  for (var i = 0, l = cbs.length; i < l; i++) {
-    if (cbs[i].checked) {
-      Dom.get('remove').disabled = false;
-      return;
-    }
+  const $remove = document.getElementById('remove');
+
+  if ($remove) {
+    $remove.disabled = !document.querySelector('#remove_table input:checked');
   }
-  Dom.get('remove').disabled = true;
 }
 
-YAHOO.util.Event.onDOMReady(onRemoveChange);
+window.addEventListener('DOMContentLoaded', () => {
+  onSelectProduct();
+  onRemoveChange();
+});
 
 </script>
 
