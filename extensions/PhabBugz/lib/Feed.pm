@@ -378,11 +378,25 @@ sub readable_answer {
 }
 
 sub format_uplift_request_as_markdown {
-  my ($question_answers_mapping) = @_;
+  my ($repo_short_name, $question_answers_mapping) = @_;
 
-  my $comment = "# Uplift Approval Request\n";
+  # Form content will come across a JSON object. Ensure the question/response pairs
+  # are added to the markdown output in the correct order.
+  my @uplift_questions_order = (
+    "User impact if declined",
+    "Code covered by automated testing",
+    "Fix verified in Nightly",
+    "Needs manual QE test",
+    "Steps to reproduce for manual QE testing",
+    "Risk associated with taking this patch",
+    "Explanation of risk level",
+    "String changes made/needed",
+    "Is Android affected?",
+  );
 
-  foreach my $question (keys %{$question_answers_mapping}) {
+  my $comment = "### $repo_short_name Uplift Approval Request\n";
+
+  foreach my $question (@uplift_questions_order) {
     my $answer = $question_answers_mapping->{$question};
     my $answer_string = readable_answer($answer);
 
@@ -409,7 +423,9 @@ sub process_uplift_request_form_change {
 
   INFO('Commenting the uplift form on the bug.');
 
-  my $comment_content = format_uplift_request_as_markdown($revision->uplift_request);
+  my $comment_content = format_uplift_request_as_markdown(
+    $revision->repository->short_name, $revision->uplift_request
+  );
   my $comment_params = {
     'is_markdown' => 1,
     'isprivate'   => 0,
