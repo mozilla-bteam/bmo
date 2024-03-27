@@ -19,6 +19,18 @@
  *                 Reed Loden <reed@reedloden.com>
  */
 
+/**
+ * Reference or define the Bugzilla app namespace.
+ * @namespace
+ */
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
+
+/**
+ * Reference or define the Field namespace.
+ * @namespace
+ */
+Bugzilla.Field = Bugzilla.Field || {};
+
 /* This library assumes that the needed YUI libraries have been loaded
    already. */
 
@@ -688,21 +700,28 @@ $(function() {
         onSearchError: searchComplete
     };
 
+    /**
+     * Activate user autocomplete on the given input field.
+     * @param {HTMLInputElement} $input `<input class="bz_autocomplete_user">`.
+     */
+    Bugzilla.Field.activateUserAutocomplete = ($input) => {
+        const is_multiple = !!$input.getAttribute('data-multiple');
+        const options = { ...options_user, appendTo: $input.closest('dialog, #main-inner') };
+
+        options.delimiter = is_multiple ? /,\s*/ : undefined;
+        // Override `this` in the relevant functions
+        options.formatResult = options.formatResult.bind($input);
+        options.onSelect = options.onSelect.bind($input);
+
+        $input.dataset.counter = 0;
+        $input.classList.add('bz_autocomplete');
+        $($input).devbridgeAutocomplete(options);
+    };
+
     // init user autocomplete fields
     $('.bz_autocomplete_user')
         .each(function() {
-            const $input = this;
-            const is_multiple = !!$input.getAttribute('data-multiple');
-            const options = { ...options_user, appendTo: this.closest('dialog, #main-inner') };
-
-            options.delimiter = is_multiple ? /,\s*/ : undefined;
-            // Override `this` in the relevant functions
-            options.formatResult = options.formatResult.bind($input);
-            options.onSelect = options.onSelect.bind($input);
-
-            $input.dataset.counter = 0;
-            $input.classList.add('bz_autocomplete');
-            $(this).devbridgeAutocomplete(options);
+            Bugzilla.Field.activateUserAutocomplete(this);
         });
 
     // init autocomplete fields with array of values
