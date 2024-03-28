@@ -47,7 +47,7 @@ function show_usermenu(vcard) {
             }
         });
     }
-    if (!hide_profile) {
+    if (hide_profile == 0) {
         items.unshift({
             name: "Profile",
             callback: function () {
