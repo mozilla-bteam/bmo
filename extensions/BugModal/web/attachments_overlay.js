@@ -8,6 +8,12 @@
 window.addEventListener('DOMContentLoaded', () => {
   /** @type {HTMLDialogElement} */
   const $overlay = document.querySelector('#att-overlay');
+
+  // The overlay is available only on bugs with any attachment
+  if (!$overlay) {
+    return;
+  }
+
   /** @type {HTMLFormElement} */
   const $form = $overlay.querySelector('form');
   /** @type {HTMLHeadingElement} */
