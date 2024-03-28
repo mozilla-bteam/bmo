@@ -56,8 +56,7 @@
 
   [% ELSIF error == "bad_page_cgi_id" %]
     [% title = "Invalid Page ID" %]
-    The ID <code>[% page_id FILTER html %]</code> is not a
-    valid page identifier.
+    The page ID provided is not a valid page identifier.
 
   [% ELSIF error == "bad_arg" %]
     Bad argument <code>[% argument FILTER html %]</code> sent to
