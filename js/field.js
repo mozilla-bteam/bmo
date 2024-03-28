@@ -623,6 +623,7 @@ $(function() {
 
     var options_user = {
         forceFixPosition: true,
+        orientation: 'auto',
         paramName: 'match',
         deferRequestBy: 250,
         minChars: 2,
