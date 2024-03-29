@@ -200,9 +200,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
         $link.addEventListener('click', async (event) => {
           event.preventDefault();
-          showOverlay();
-          loadAttachment(id, mode);
+
+          if (event.ctrlKey || event.metaKey) {
+            // Open the bug page, not the legacy attachment page, in a new tab with Ctrl/Cmd+click.
+            // The `attachment_id` URL param works as an overlay trigger. (See below)
+            window.open(`${basepath}show_bug.cgi?id=${bugId}&attachment_id=${id}`);
+          } else {
+            showOverlay();
+            loadAttachment(id, mode);
+          }
         });
+
+        // When an attachment link is opened in a new tab, retrieve the ID from the URL param, show
+        // the overlay, and load the attachment immediately
+        if (Number(new URLSearchParams(window.location.search).get('attachment_id')) === id) {
+          showOverlay()
+          loadAttachment(id);
+          // Remove the URL param
+          history.replaceState(null, '', `${basepath}show_bug.cgi?id=${bugId}`)
+        }
       });
   };
 
