@@ -48,7 +48,7 @@ sub get_bug_list {
 
 sub format_bug_list {
   my ($bugs, $user) = @_;
- 
+
   my $cache = Bugzilla->process_cache->{attention};
   $cache->{global_seen} ||= {};
 
@@ -57,6 +57,7 @@ sub format_bug_list {
   my @formatted_bugs;
   my %local_seen;
   foreach my $row (@{$bugs}) {
+
     # Skip if we have already seen this bug locally or globally
     next if $local_seen{$row->{bug_id}};
     next if $cache->{global_seen}->{$row->{bug_id}};
@@ -75,7 +76,7 @@ sub format_bug_list {
     $bug->{changeddate}       = $datetime->strftime('%Y-%m-%d %T %Z');
     $bug->{changeddate_epoch} = $datetime->epoch;
     $bug->{changeddate_fancy} = time_ago($datetime, $datetime_now);
-    
+
     # We only want to see a bug id once per page load so mark them seen
     $local_seen{$bug->{id}} = 1;
     $cache->{global_seen}->{$bug->{id}} = 1;
