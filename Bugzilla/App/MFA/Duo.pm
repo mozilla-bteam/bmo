@@ -86,7 +86,7 @@ sub callback {
   }
 
   # If we got this far, we have successfully authenticated with Duo
-  # MFA code later on will look for the duo_verified flag and will fail                                                                                              
+  # MFA code later on will look for the duo_verified flag and will fail
   # if not present
   $event->{duo_verified} = 1;
   set_token_extra_data($mfa_cookie, $event);
@@ -95,6 +95,8 @@ sub callback {
   $redirect_uri->path($event->{postback}->{action});
   $redirect_uri->query->append(%{$event->{postback}->{fields}});
 
+  # Redirect back to original place the user was when MFA
+  # verfication was invoked
   $self->redirect_to($redirect_uri);
 }
 

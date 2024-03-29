@@ -96,7 +96,8 @@
 [%############################################################################%]
 
 [% tableheader = BLOCK %]
-  <table class="bz_buglist sortable" cellspacing="0" cellpadding="4" width="100%">
+  <table class="bz_buglist sortable [% 'responsive' IF responsive %]"
+         cellspacing="0" cellpadding="4" width="100%">
     <thead>
     <tr class="bz_buglist_header bz_first_buglist_header">
       [% IF dotweak %]
@@ -209,7 +210,7 @@
       <input type="checkbox" name="id_[% bug.bug_id %]">
     </td>
     [% END %]
-    <td class="first-child bz_id_column">
+    <td class="first-child bz_id_column" data-column-label="ID">
       [% bug.bug_id FILTER bug_link(bug.bug_id) FILTER none %]
       <span style="display: none">[%+ '[SEC]' IF bug.secure_mode %]</span>
     </td>
@@ -228,6 +229,8 @@
             [% SET sortkey = columns_sortkey.$column.${bug.$column} %]
             sorttable_customkey="[% sortkey FILTER html %]"
         [% END %]
+        data-column-label="
+          [%- col_abbrev.title || field_descs.$column || columns.$column.title FILTER html %]"
     >
       [% IF col_abbrev.maxlength %]
         <span title="[%- display_value(column, bug.$column) FILTER html %]">

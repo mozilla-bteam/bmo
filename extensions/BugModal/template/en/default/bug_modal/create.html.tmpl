@@ -734,7 +734,7 @@
     <button type="button" id="attach-new-file" class="secondary">Attach New File</button>
   </div>
   <div id="attach-file-content-outer" hidden>
-    <table class="attachment_entry">
+    <table class="attachment_entry responsive">
       [% PROCESS attachment/createformcontents.html.tmpl
           flag_types = product.flag_types.attachment
           any_flags_requesteeble = 1

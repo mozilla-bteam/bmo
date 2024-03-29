@@ -8,6 +8,12 @@
 window.addEventListener('DOMContentLoaded', () => {
   /** @type {HTMLDialogElement} */
   const $overlay = document.querySelector('#att-overlay');
+
+  // The overlay is available only on bugs with any attachment
+  if (!$overlay) {
+    return;
+  }
+
   /** @type {HTMLFormElement} */
   const $form = $overlay.querySelector('form');
   /** @type {HTMLHeadingElement} */
@@ -146,6 +152,19 @@ window.addEventListener('DOMContentLoaded', () => {
     $saveButton?.addEventListener('click', async (event) => {
       event.preventDefault();
 
+      if (!$form.checkValidity()) {
+        const errorFields = /** @type {HTMLElement[]} */ ([...$form.querySelectorAll(':invalid')]);
+        const message =
+          errorFields.length === 1
+            ? 'There is an error in the form. Please fix it before continuing.'
+            : 'There are errors in the form. Please fix them before continuing.';
+
+        window.alert(message);
+        errorFields[0].focus();
+
+        return;
+      }
+
       // Use the FlagTypeComment extension (`ftc.js`) to handle submission if needed
       if ($overlay.querySelector('#approval-request-fieldset-wrapper section.approval-request')) {
         $form.requestSubmit();
@@ -181,9 +200,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
         $link.addEventListener('click', async (event) => {
           event.preventDefault();
-          showOverlay();
-          loadAttachment(id, mode);
+
+          if (event.ctrlKey || event.metaKey) {
+            // Open the bug page, not the legacy attachment page, in a new tab with Ctrl/Cmd+click.
+            // The `attachment_id` URL param works as an overlay trigger. (See below)
+            window.open(`${basepath}show_bug.cgi?id=${bugId}&attachment_id=${id}`);
+          } else {
+            showOverlay();
+            loadAttachment(id, mode);
+          }
         });
+
+        // When an attachment link is opened in a new tab, retrieve the ID from the URL param, show
+        // the overlay, and load the attachment immediately
+        if (Number(new URLSearchParams(window.location.search).get('attachment_id')) === id) {
+          showOverlay()
+          loadAttachment(id);
+          // Remove the URL param
+          history.replaceState(null, '', `${basepath}show_bug.cgi?id=${bugId}`)
+        }
       });
   };
 
@@ -451,73 +486,125 @@ window.addEventListener('DOMContentLoaded', () => {
    */
   const updateFlags = () => {
     const { flags } = currentAttachment;
+    const foundTypeIds = [];
     let separatorFound = false;
 
-    $form
-      .querySelectorAll('.flag-table tbody')
-      .forEach((/** @type {HTMLElement} */ $row) => {
-        if ($row.matches('.separator')) {
-          separatorFound = true;
-        }
+    // Reset all the rows first
+    $form.querySelectorAll('.flag-table tbody').forEach((/** @type {HTMLElement} */ $row) => {
+      const typeId = Number($row.dataset.typeId);
+      const flagId = Number($row.dataset.flagId);
 
-        if ($row.matches('.cloned') || separatorFound) {
-          $row.remove();
-          return;
-        }
+      if ($row.matches('.separator')) {
+        separatorFound = true;
+      }
 
-        const typeId = Number($row.dataset.typeId);
-        const typeFlags = flags.filter((flag) => flag.type_id === typeId);
+      if (foundTypeIds.includes(typeId) || separatorFound) {
+        $row.remove();
+        return;
+      }
 
-        // Clone multi-requestable flags
-        if ($row.matches('[data-type-multi="1"]') && typeFlags.length > 0) {
-          typeFlags.forEach((flag) => {
-            const $_row = /** @type {HTMLElement} */ ($row.cloneNode(true));
+      resetFlagRow($row, typeId, flagId);
+      foundTypeIds.push(typeId);
+    });
 
-            $_row.classList.add('cloned');
-            $_row.dataset.flagId = flag.id;
-            $_row.querySelectorAll('[id]').forEach((element) => {
-              element.id = element.id
-                .replace(`flag_type-${flag.type_id}`, `flag-${flag.id}`)
-                .replace(`requestee_type-${flag.type_id}`, `requestee-${flag.id}`);
-            });
-            $_row.querySelectorAll('[name]').forEach((/** @type {HTMLInputElement} */ element) => {
-              element.name = element.name
-                .replace(`flag_type-${flag.type_id}`, `flag-${flag.id}`)
-                .replace(`requestee_type-${flag.type_id}`, `requestee-${flag.id}`);
-            });
-            $row.insertAdjacentElement('beforebegin', $_row);
-            updateFlagRow($_row, flag);
-          });
+    // Then populate the flags for the current attachment
+    $form.querySelectorAll('.flag-table tbody').forEach((/** @type {HTMLElement} */ $row) => {
+      const typeId = Number($row.dataset.typeId);
+      const typeFlags = flags.filter((flag) => flag.type_id === typeId);
 
-          updateFlagRow($row, undefined, true);
-        } else {
-          updateFlagRow($row, typeFlags[0]);
-        }
-      });
+      // Clone multi-requestable flags
+      if ($row.matches('[data-type-multi="1"]') && typeFlags.length > 0) {
+        typeFlags.forEach((flag) => {
+          const $_row = /** @type {HTMLElement} */ ($row.cloneNode(true));
+
+          $row.insertAdjacentElement('beforebegin', $_row);
+          updateFlagRow($_row, flag, { cloned: true });
+        });
+
+        updateFlagRow($row, undefined, { additional: true });
+      } else {
+        updateFlagRow($row, typeFlags[0]);
+      }
+    });
+  };
+
+  /**
+   * Reset a flag row.
+   * @param {HTMLElement} $row `<tbody>` element.
+   * @param {number} typeId Flag type ID.
+   * @param {number} flagId Flag ID.
+   */
+  const resetFlagRow = ($row, typeId, flagId) => {
+    const $setter = $row.querySelector('td.setter');
+    const $status = /** @type {HTMLSelectElement} */ ($row.querySelector('td.value select'));
+    const $requestee = /** @type {HTMLInputElement} */ ($row.querySelector('td.requestee input'));
+
+    $row.dataset.flagId = '';
+    $row.classList.add('bz_flag_type');
+    $row.querySelectorAll('[id]').forEach((element) => {
+      element.id = element.id
+        .replace(`flag-${flagId}`, `flag_type-${typeId}`)
+        .replace(`requestee-${flagId}`, `requestee_type-${typeId}`);
+    });
+    $row.querySelectorAll('[name]').forEach((/** @type {HTMLInputElement} */ element) => {
+      element.name = element.name
+        .replace(`flag-${flagId}`, `flag_type-${typeId}`)
+        .replace(`requestee-${flagId}`, `requestee_type-${typeId}`);
+    });
+    $setter.textContent = '';
+    $status.value = 'X';
+
+    if ($requestee) {
+      $requestee.value = '';
+      $requestee.parentElement.classList.add('bz_default_hidden');
+    }
   };
 
   /**
    * Update a flag row.
-   * @param {HTMLElement} $_row `<tbody>` element.
+   * @param {HTMLElement} $row `<tbody>` element.
    * @param {object} flag Flag object from the API.
-   * @param {boolean} [additional] Whether to show a `addl.` label in the setter column. This only
-   * applies if the flag is multi-requestable, and there is one or more existing requestees.
+   * @param {object} [options] Options.
+   * @param {boolean} [options.cloned] Whether the row is cloned. We need to reactivate user
+   * autocomplete for the requestee field because the event listener is not cloned.
+   * @param {boolean} [options.additional] Whether to show an `addl.` label in the setter column.
+   * This only applies if the flag is multi-requestable, and there is one or more existing
+   * requestees.
    */
-  const updateFlagRow = ($_row, flag, additional = false) => {
-    const $status = /** @type {HTMLSelectElement} */ ($_row.querySelector('td.value select'));
-    const $requestee = /** @type {HTMLInputElement} */ ($_row.querySelector('td.requestee input'));
+  const updateFlagRow = ($row, flag, { cloned = false, additional = false } = {}) => {
+    const $setter = $row.querySelector('td.setter');
+    const $status = /** @type {HTMLSelectElement} */ ($row.querySelector('td.value select'));
+    const $requestee = /** @type {HTMLInputElement} */ ($row.querySelector('td.requestee input'));
 
-    $_row.querySelector('td.setter').textContent = flag?.setter
+    if (flag && !additional) {
+      $row.dataset.flagId = flag.id;
+      $row.classList.remove('bz_flag_type');
+      $row.querySelectorAll('[id]').forEach((element) => {
+        element.id = element.id
+          .replace(`flag_type-${flag.type_id}`, `flag-${flag.id}`)
+          .replace(`requestee_type-${flag.type_id}`, `requestee-${flag.id}`);
+      });
+      $row.querySelectorAll('[name]').forEach((/** @type {HTMLInputElement} */ element) => {
+        element.name = element.name
+          .replace(`flag_type-${flag.type_id}`, `flag-${flag.id}`)
+          .replace(`requestee_type-${flag.type_id}`, `requestee-${flag.id}`);
+      });
+    }
+
+    $setter.textContent = flag?.setter
       ? `${flag.setter.split('@')?.[0]}:`
       : additional
       ? 'addl.'
       : '';
-
     $status.value = flag?.status || 'X';
 
     if ($requestee) {
       $requestee.value = flag?.requestee || '';
       $requestee.parentElement.classList.toggle('bz_default_hidden', !flag || !flag.requestee);
+
+      if (cloned) {
+        Bugzilla.Field.activateUserAutocomplete($requestee);
+      }
     }
   };
 

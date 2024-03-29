@@ -201,7 +201,6 @@ PROCESS "bug/create/cost-centers.none.tmpl";
 [% END %]
 
 [% inline_javascript = BLOCK %]
-var Dom = YAHOO.util.Dom;
 var needed = {
 [% FOREACH item = items %]
   [% NEXT UNLESS item.id %]
@@ -254,11 +253,9 @@ var fields = [
 
 function initFields() {
   [%# find fields in the form, and update the fields array #%]
-  var rows = Dom.get('gear_form').getElementsByTagName('TR');
-  for (var i = 0, l = rows.length; i < l; i++) {
-    var row = rows[i];
+  document.querySelectorAll('#gear_form tr').forEach((row) => {
     var field = firstChild(row, 'INPUT') || firstChild(row, 'SELECT') || firstChild(row, 'TEXTAREA');
-    if (!field || field.type == 'submit') continue;
+    if (!field || field.type == 'submit') return;
     var id = field.id;
     var label = firstChild(row, 'TH');
     for (var j = 0, m = fields.length; j < m; j++) {
@@ -269,8 +266,7 @@ function initFields() {
         break;
       }
     }
-  }
-  createCalendar('date_required');
+  });
 }
 
 function tagMandatoryFields() {
@@ -296,9 +292,9 @@ function validateAndSubmit() {
         alert_text += 'Please enter the ' + f.caption + ".\n";
       }
   }
-  if (isFilledOut('email') && !isValidEmail(Dom.get('email').value))
+  if (isFilledOut('email') && !isValidEmail(document.getElementById('email').value))
     alert_text += "Please enter a valid Email Address.\n";
-  if (isFilledOut('shiptoemail') && !isValidEmail(Dom.get('shiptoemail').value))
+  if (isFilledOut('shiptoemail') && !isValidEmail(document.getElementById('shiptoemail').value))
     alert_text += "Please enter a valid Shipping Email Address.\n";
 
   if (alert_text != '') {
@@ -306,50 +302,52 @@ function validateAndSubmit() {
     return false;
   }
 
-  Dom.get('short_desc').value = 'Mozilla Gear - ' + Dom.get('firstname').value + ' ' + Dom.get('lastname').value;
+  const firstName = document.getElementById('firstname').value;
+  const lastName = document.getElementById('lastname').value;
+  document.getElementById('short_desc').value = `Mozilla Gear - ${firstName} ${lastName}`;
   return true;
 }
 
 function onPurposeChange() {
-  var value = Dom.get('purpose').value;
-  var other = Dom.get('purpose_other');
+  var value = document.getElementById('purpose').value;
+  var other = document.getElementById('purpose_other');
 
   if (value == 'Event') {
     getField('purpose_other').mandatory = true;
     other.placeholder = 'link to wiki'
-    Dom.removeClass('purpose_other_row', 'bz_default_hidden');
-    Dom.addClass('recognition_row', 'bz_default_hidden');
+    document.getElementById('purpose_other_row').classList.remove('bz_default_hidden');
+    document.getElementById('recognition_row').classList.add('bz_default_hidden');
 
   } else if (value == 'Gear Space Stock') {
     getField('purpose_other').mandatory = true;
     other.placeholder = 'indicate space'
-    Dom.removeClass('purpose_other_row', 'bz_default_hidden');
-    Dom.addClass('recognition_row', 'bz_default_hidden');
+    document.getElementById('purpose_other_row').classList.remove('bz_default_hidden');
+    document.getElementById('recognition_row').classList.add('bz_default_hidden');
 
   } else if (value == 'Other') {
     getField('purpose_other').mandatory = true;
     other.placeholder = 'more information';
-    Dom.removeClass('purpose_other_row', 'bz_default_hidden');
-    Dom.addClass('recognition_row', 'bz_default_hidden');
+    document.getElementById('purpose_other_row').classList.remove('bz_default_hidden');
+    document.getElementById('recognition_row').classList.add('bz_default_hidden');
 
   } else if (value == 'Mozillian Recognition') {
     getField('purpose_other').mandatory = false;
-    Dom.addClass('purpose_other_row', 'bz_default_hidden');
-    Dom.removeClass('recognition_row', 'bz_default_hidden');
+    document.getElementById('purpose_other_row').classList.add('bz_default_hidden');
+    document.getElementById('recognition_row').classList.remove('bz_default_hidden');
     onRecognitionChange();
 
   } else {
     getField('purpose_other').mandatory = false;
-    Dom.addClass('purpose_other_row', 'bz_default_hidden');
-    Dom.addClass('recognition_row', 'bz_default_hidden');
+    document.getElementById('purpose_other_row').classList.add('bz_default_hidden');
+    document.getElementById('recognition_row').classList.add('bz_default_hidden');
   }
 
   onRecognitionChange();
 }
 
 function onRecognitionChange() {
-  var mandatory = Dom.get('purpose').value != 'Mozillian Recognition'
-                  || !Dom.get('recognition_shipping').checked;
+  var mandatory = document.getElementById('purpose').value != 'Mozillian Recognition'
+                  || !document.getElementById('recognition_shipping').checked;
   getField('shiptoaddress1').mandatory = mandatory;
   getField('shiptocity').mandatory = mandatory;
   getField('shiptostate').mandatory = mandatory;
@@ -360,18 +358,15 @@ function onRecognitionChange() {
 }
 
 function onMozSpaceChange() {
-  if (Dom.get('mozspace').value) {
-    Dom.removeClass('shipto_mozspace_container', 'bz_default_hidden');
-  } else {
-    Dom.addClass('shipto_mozspace_container', 'bz_default_hidden');
-  }
+  document.getElementById('shipto_mozspace_container').classList
+    .toggle('bz_default_hidden', !document.getElementById('mozspace').value);
   onShipToMozSpaceClick();
 }
 
 function onShipToMozSpaceClick() {
   var address1 = address2 = city = state = country = postcode = '';
-  if (Dom.get('shipto_mozspace').checked) {
-    var space = Dom.get('mozspace').value;
+  if (document.getElementById('shipto_mozspace').checked) {
+    var space = document.getElementById('mozspace').value;
     address1 = mozspaces[space].address1;
     address2 = mozspaces[space].address2;
     city = mozspaces[space].city;
@@ -379,33 +374,33 @@ function onShipToMozSpaceClick() {
     country = mozspaces[space].country;
     postcode = mozspaces[space].postcode;
   }
-  Dom.get('shiptoaddress1').value = address1;
-  Dom.get('shiptoaddress2').value = address2;
-  Dom.get('shiptocity').value = city;
-  Dom.get('shiptostate').value = state;
-  Dom.get('shiptocountry').value = country;
-  Dom.get('shiptopostcode').value = postcode;
-  Dom.get('shiptophone').value = '';
-  Dom.get('shiptoidrut').value = '';
+  document.getElementById('shiptoaddress1').value = address1;
+  document.getElementById('shiptoaddress2').value = address2;
+  document.getElementById('shiptocity').value = city;
+  document.getElementById('shiptostate').value = state;
+  document.getElementById('shiptocountry').value = country;
+  document.getElementById('shiptopostcode').value = postcode;
+  document.getElementById('shiptophone').value = '';
+  document.getElementById('shiptoidrut').value = '';
   onRecognitionChange();
 }
 
 function onAddGearChange(focusInput) {
-  var add_gear = Dom.get('add_gear').value;
+  var add_gear = document.getElementById('add_gear').value;
   var isFreeform = add_gear == 'custom' || add_gear == 'other';
   if (isFreeform) {
-    Dom.addClass('quantity', 'bz_default_hidden');
+    document.getElementById('quantity').classList.add('bz_default_hidden');
     resetFreeform();
-    Dom.get('freeform_quantity').value = Dom.get('quantity').value;
-    Dom.removeClass('freeform_quantity', 'bz_default_hidden');
-    Dom.removeClass('add_freeform', 'bz_default_hidden');
+    document.getElementById('freeform_quantity').value = document.getElementById('quantity').value;
+    document.getElementById('freeform_quantity').classList.remove('bz_default_hidden');
+    document.getElementById('add_freeform').classList.remove('bz_default_hidden');
     if (focusInput)
-      Dom.get('freeform_add').focus();
+      document.getElementById('freeform_add').focus();
   } else {
-    Dom.get('quantity').value = Dom.get('freeform_quantity').value;
-    Dom.removeClass('quantity', 'bz_default_hidden');
-    Dom.addClass('freeform_quantity', 'bz_default_hidden');
-    Dom.addClass('add_freeform', 'bz_default_hidden');
+    document.getElementById('quantity').value = document.getElementById('freeform_quantity').value;
+    document.getElementById('quantity').classList.remove('bz_default_hidden');
+    document.getElementById('freeform_quantity').classList.add('bz_default_hidden');
+    document.getElementById('add_freeform').classList.add('bz_default_hidden');
   }
 }
 
@@ -423,17 +418,17 @@ function getField(id) {
 }
 
 function addGear() {
-  var id = Dom.get('add_gear').value;
+  var id = document.getElementById('add_gear').value;
   if (id == 'custom' || id == 'other') {
-    var quantity = parseInt(Dom.get('freeform_quantity').value, 10);
-    var name = Dom.get('freeform_add').value;
+    var quantity = parseInt(document.getElementById('freeform_quantity').value, 10);
+    var name = document.getElementById('freeform_add').value;
     if (!quantity || !name) return;
     needed_freeform.push({ 'type': id, 'quantity': quantity, 'name': name });
-    Dom.get('add_gear').value = '';
+    document.getElementById('add_gear').value = '';
     resetFreeform();
     onAddGearChange();
   } else {
-    var quantity = parseInt(Dom.get('quantity').value, 10);
+    var quantity = parseInt(document.getElementById('quantity').value, 10);
     if (!quantity || !id) return;
     needed[id] += quantity;
   }
@@ -441,8 +436,8 @@ function addGear() {
 }
 
 function resetFreeform() {
-  Dom.get('freeform_quantity').value = '1';
-  Dom.get('freeform_add').value = '';
+  document.getElementById('freeform_quantity').value = '1';
+  document.getElementById('freeform_add').value = '';
 }
 
 function removeGear(id) {
@@ -486,8 +481,8 @@ function showGear() {
   if (!count)
     html += '<tr><td><i>No gear selected.</i></td></tr>';
   html += '</table>';
-  Dom.get('gear_container').innerHTML = html;
-  Dom.get('items').value = text;
+  document.getElementById('gear_container').innerHTML = html;
+  document.getElementById('items').value = text;
 }
 
 [% END %]
@@ -593,11 +588,7 @@ function showGear() {
 <tr>
   <th>Date Required</th>
   <td>
-    <input name="date_required" id="date_required" size="25"
-           onchange="updateCalendarFromField(this)">
-    <button type="button" class="calendar_button" id="button_calendar_date_required"
-            onclick="showCalendar('date_required')"><span>cal</span></button>
-    <div id="con_calendar_date_required"></div>
+    <input type="date" name="date_required" id="date_required">
   </td>
 </tr>
 

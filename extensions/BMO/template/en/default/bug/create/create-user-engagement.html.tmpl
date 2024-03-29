@@ -34,9 +34,6 @@
 #engagement_form .form_section {
   margin-bottom: 10px;
 }
-.yui-calcontainer {
-  z-index: 2;
-}
 [% END %]
 
 [% inline_javascript = BLOCK %]
@@ -55,15 +52,6 @@ function validateAndSubmit() {
     return false;
   }
   return true;
-}
-function toggleGoalOther() {
-  var goal_select = YAHOO.util.Dom.get('goal');
-  if (goal_select.options[goal_select.selectedIndex].value == 'Other') {
-    YAHOO.util.Dom.removeClass('goal_other','bz_default_hidden');
-  }
-  else {
-    YAHOO.util.Dom.addClass('goal_other','bz_default_hidden');
-  }
 }
 [% END %]
 
@@ -152,17 +140,7 @@ function toggleGoalOther() {
     is determined at least 6 weeks in advance (to accommodate localization, etc.)
     so the more notice we have, the better we’ll be able to help you meet your goals.
   </div>
-  <input name="timing_date" size="20" id="timing_date" value=""
-         onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button"
-          id="button_calendar_timing_date"
-          onclick="showCalendar('timing_date')">
-    <span>Calendar</span>
-  </button>
-  <div id="con_calendar_timing_date"></div>
-  <script [% script_nonce FILTER none %]>
-    createCalendar('timing_date')
-  </script>
+  <input type="date" name="timing_date" id="timing_date">
 </div>
 
 <div class="form_section">

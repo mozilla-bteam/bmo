@@ -202,3 +202,38 @@ td.bz_total {
 #request_form #filtering th {
   padding-left: 0.5em;
 }
+
+@media screen and (max-width: 799px) {
+  .bz_buglist.responsive thead {
+    display: none;
+  }
+
+  .bz_buglist.responsive tbody tr {
+    padding: 8px 12px;
+  }
+
+  .bz_buglist.responsive tbody td {
+    display: flex;
+    gap: 4px;
+    padding: 2px 0 !important;
+    width: auto;
+    text-align: left;
+  }
+
+  .bz_buglist.responsive tbody td::before {
+    display: block;
+    min-width: 80px;
+    color: var(--secondary-label-color);
+    font-size: var(--font-size-small);
+    content: attr(data-column-label) ':';
+  }
+
+  .footer-nav.responsive td {
+    margin: 8px 0;
+    padding: 0;
+  }
+
+  .footer-nav.responsive td:empty {
+    display: none;
+  }
+}

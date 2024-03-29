@@ -38,7 +38,7 @@
 [% END %]
 
 [% qorder = order FILTER uri IF order %]
-
+[% responsive = !dotweak %]
 
 [%############################################################################%]
 [%# Page Header                                                              #%]
@@ -53,6 +53,7 @@
   javascript_urls = [ "js/field.js", "js/buglist.js" ]
   style_urls = [ "skins/standard/buglist.css" ]
   doc_section = "query.html#list"
+  responsive = responsive
 %]
 
 <div class="bz_query_head">
@@ -180,7 +181,7 @@
 [%# Navigation Bar                                                           #%]
 [%############################################################################%]
 
-<table>
+<table class="footer-nav [% 'responsive' IF responsive %]">
   <tr>
     [% IF bugs.size > 0 %]
       <td valign="middle" class="bz_query_buttons">
@@ -216,7 +217,7 @@
         [% END %]
       </td>
 
-      <td>&nbsp;</td>
+      <td></td>
     [% END %]
 
     <td valign="middle" class="bz_query_links">
@@ -259,7 +260,7 @@
           Forget&nbsp;Search&nbsp;'[% searchname FILTER html %]'</a>
       </td>
     [% ELSE %]
-      <td>&nbsp;</td>
+      <td></td>
 
       <td valign="middle" class="bz_query_remember">
         <form method="get" action="[% basepath FILTER none %]buglist.cgi">

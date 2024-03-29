@@ -85,17 +85,15 @@
 #custom-search .condition.row {
   display: flex;
   align-items: center;
+  gap: 8px;
+  position: relative;
   margin: 4px 0;
   border-radius: 4px;
   padding: 8px;
   background-color: var(--secondary-region-background-color);
 }
 
-#custom-search .condition.row > * {
-  margin: 0 4px;
-}
-
-#custom-search .condition.row > input[type="text"] {
+#custom-search .condition.row input[type="text"] {
   flex: auto;
   min-width: 200px;
 }
@@ -154,4 +152,41 @@
 #custom-search [data-action^="add-"] .icon::before {
   margin-right: 2px;
   content: '\E145';
+}
+
+.calendar_button {
+  border: 0;
+  width: 20px;
+  height: 20px;
+  background: transparent url('global/calendar.png') no-repeat;
+  vertical-align: middle;
+}
+
+.calendar_button span {
+  display: none;
+}
+
+@media screen and (max-width: 1023px) {
+  #custom-search .condition.row select,
+  #custom-search .condition.row input[type="text"] {
+    width: 180px;
+    min-width: auto;
+  }
+}
+
+@media screen and (max-width: 799px) {
+  #custom-search .condition.row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  #custom-search .condition.row select,
+  #custom-search .condition.row input[type="text"] {
+    width: 100%;
+  }
+
+  #custom-search [data-action="remove"] {
+    position: absolute;
+    inset: 8px 4px auto auto;
+  }
 }

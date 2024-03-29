@@ -19,10 +19,6 @@
   margin-bottom: 2px;
 }
 
-#pr_form .calendar {
-  width: 100px;
-}
-
 #pr_form .user {
   width: 300px;
 }
@@ -48,10 +44,6 @@
 #pr_form label.normal {
   font-weight: normal;
   display: inline;
-}
-
-#pr_form .calendar_button {
-  margin-top: 0.5em;
 }
 
 #pr_form .desc {
@@ -103,7 +95,7 @@
 var pr_inited = false;
 
 function init_listener(id, event, fn) {
-  YAHOO.util.Event.addListener(id, event, fn);
+  document.getElementById(id).addEventListener(event, fn);
   bz_fireEvent(document.getElementById(id), event);
 }
 
@@ -112,15 +104,15 @@ function toggle_linked(id, value, suffix) {
   var show = el.type == 'checkbox' ? el.checked : el.value == value;
   if (show) {
     var linked = document.getElementById(id + suffix);
-    YAHOO.util.Dom.addClass(linked, 'linked');
-    YAHOO.util.Dom.removeClass(linked, 'bz_default_hidden');
+    linked.classList.add('linked');
+    linked.classList.remove('bz_default_hidden');
     if (pr_inited && linked.nodeName == "INPUT") {
       linked.focus();
       linked.select();
     }
   }
   else {
-    YAHOO.util.Dom.addClass(id + suffix, 'bz_default_hidden');
+    document.getElementById(`${id}${suffix}`).classList.add('bz_default_hidden');
   }
 }
 
@@ -130,7 +122,7 @@ function init_other(id) {
   });
 }
 
-YAHOO.util.Event.onDOMReady(function() {
+window.addEventListener('DOMContentLoaded', () => {
   init_listener('metrica', 'change', function(o) {
     toggle_linked('metrica', 'Yes', '_extra');
   });
@@ -181,12 +173,9 @@ function validate_other(id, value, suffix) {
 }
 
 function validate_form() {
-  var Dom = YAHOO.util.Dom;
-
-  var old_missing = Dom.getElementsByClassName('missing');
-  for (var i = 0, il = old_missing.length; i < il; i++) {
-    Dom.removeClass(old_missing[i], 'missing');
-  }
+  document.querySelectorAll('.missing').forEach(($missing) => {
+    $missing.classList.remove('missing');
+  });
 
   var missing = [];
   if (!isFilledOut('short_desc'))     missing.push(['short_desc', 'Project Title']);
@@ -217,19 +206,19 @@ function validate_form() {
   if (!validate_other('audience'))    missing.push(['audience', 'Audience - Other']);
   if (!isFilledOut('key_messages'))   missing.push(['key_messages', 'Key Messages']);
 
-  if (Dom.get('proj_mat_online').checked) {
+  if (document.getElementById('proj_mat_online').checked) {
     if (!isFilledOut('proj_mat_online_desc')) missing.push(['proj_mat_online_desc', 'Project Materials - Online Description']);
     if (!isFilledOut('proj_mat_online_link')) missing.push(['proj_mat_online_link', 'Project Materials - Online Link']);
   }
-  if (Dom.get('proj_mat_file').checked) {
+  if (document.getElementById('proj_mat_file').checked) {
     if (!isFilledOut('proj_mat_file_desc'))   missing.push(['proj_mat_file_desc', 'Project Materials - Upload Description']);
     if (!isFilledOut('proj_mat_file_attach')) missing.push(['proj_mat_file_attach', 'Project Materials - Upload File']);
   }
-  if (Dom.get('pr_mat_online').checked) {
+  if (document.getElementById('pr_mat_online').checked) {
     if (!isFilledOut('pr_mat_online_desc')) missing.push(['pr_mat_online_desc', 'PR Project Materials - Online Description']);
     if (!isFilledOut('pr_mat_online_link')) missing.push(['pr_mat_online_link', 'PR Project Materials - Online Link']);
   }
-  if (Dom.get('pr_mat_file').checked) {
+  if (document.getElementById('pr_mat_file').checked) {
     if (!isFilledOut('pr_mat_file_desc'))   missing.push(['pr_mat_file_desc', 'PR Project Materials - Upload Description']);
     if (!isFilledOut('pr_mat_file_attach')) missing.push(['pr_mat_file_attach', 'PR Project Materials - Upload File']);
   }
@@ -245,7 +234,7 @@ function validate_form() {
   if (missing.length) {
     var missing_text = [];
     for (var i = 0, il = missing.length; i < il; i++) {
-      Dom.addClass(missing[i][0], 'missing');
+      document.getElementById(missing[i][0]).classList.add('missing');
       missing_text.push(missing[i][1]);
     }
     if (missing_text.length == 1) {
@@ -315,44 +304,17 @@ function validate_form() {
 
 <div class="field">
   <label for="start_date" class="required">Start Date</label>
-  <input name="start_date" id="start_date" value="" class="calendar"
-    onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button" id="button_calendar_start_date"
-    onclick="showCalendar('start_date')">
-    <span>Calendar</span>
-  </button>
-  <div id="con_calendar_start_date"></div>
-  <script [% script_nonce FILTER none %]>
-    createCalendar('start_date')
-  </script>
+  <input type="date" name="start_date" id="start_date">
 </div>
 
 <div class="field">
   <label for="announce_date" class="required">Announcement Date</label>
-  <input name="announce_date" id="announce_date" value="" class="calendar"
-    onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button" id="button_calendar_announce_date"
-    onclick="showCalendar('announce_date')">
-    <span>Calendar</span>
-  </button>
-  <div id="con_calendar_announce_date"></div>
-  <script [% script_nonce FILTER none %]>
-    createCalendar('announce_date')
-  </script>
+  <input type="date" name="announce_date" id="announce_date">
 </div>
 
 <div class="field">
   <label for="cf_due_date" class="required">Internal Deadline</label>
-  <input name="cf_due_date" id="cf_due_date" value="" class="calendar"
-    onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button" id="button_calendar_cf_due_date"
-    onclick="showCalendar('cf_due_date')">
-    <span>Calendar</span>
-  </button>
-  <div id="con_calendar_cf_due_date"></div>
-  <script [% script_nonce FILTER none %]>
-    createCalendar('cf_due_date')
-  </script>
+  <input type="date" name="cf_due_date" id="cf_due_date">
 </div>
 
 <div class="head">

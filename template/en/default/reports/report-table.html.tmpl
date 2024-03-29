@@ -37,6 +37,10 @@
 [% col_field_disp = field_descs.$col_field || col_field %]
 [% row_field_disp = field_descs.$row_field || row_field %]
 
+[%# Fix an empty table name that can cause issues on CSS selectors, etc. %]
+[% IF tbl == " " %]
+  [% tbl = "" %]
+[% END %]
 [% urlbase = BLOCK %][% basepath FILTER none %]buglist.cgi?[% buglistbase FILTER html %][% END %]
 [% IF tbl == "-total-" %]
   [% IF tbl_vals %]
@@ -48,6 +52,10 @@
 
 <script [% script_nonce FILTER none %]>
 function bz_encode (str, decode) {
+  if (typeof str !== 'string') {
+    str = String(str);
+  }
+
   // First decode HTML entities, if requested.
   if (decode)
     str = str.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
@@ -57,96 +65,107 @@ function bz_encode (str, decode) {
   return encodeURIComponent(str).replace(/'/g, escape);
 };
 
-YAHOO.util.Event.addListener(window, "load", function() {
-  this.Linkify = function(elLiner, oRecord, oColumn, oData) {
-    if (oData == 0)
-      elLiner.innerHTML = ".";
-    else if (oRecord.getData("row_title") == "Total")
-      elLiner.innerHTML = '<a href="[% urlbase FILTER js %]&amp;[% col_field FILTER uri FILTER js %]='
-                          + bz_encode(oColumn.field)
-                          + '[% "&amp;" _ row_vals IF row_vals %]">' + oData + '</a>';
-    else
-      elLiner.innerHTML = '<a href="[% urlbase FILTER js %]&amp;[% row_field FILTER uri FILTER js %]='
-                          + bz_encode(oRecord.getData("row_title"), 1)
-                          + '&amp;[% col_field FILTER uri FILTER js %]='
-                          + bz_encode(oColumn.field) + '">' + oData + '</a>';
-  };
-
-  this.LinkifyTotal = function(elLiner, oRecord, oColumn, oData) {
-    if (oData == 0)
-      elLiner.innerHTML = ".";
-    else if (oRecord.getData("row_title") == "Total")
-      elLiner.innerHTML = '<a href="[% urlbase FILTER js %][% "&amp;" _ row_vals IF row_vals %]
-                          [%~ "&amp;" _ col_vals IF col_vals %]">'
-                          + oData + '</a>';
-    else
-      elLiner.innerHTML = '<a href="[% urlbase FILTER js %]&amp;[% row_field FILTER uri FILTER js %]='
-                          + bz_encode(oRecord.getData("row_title"), 1)
-                          + '[% "&amp;" _ col_vals IF col_vals %]">' + oData + '</a>';
-
-    YAHOO.util.Dom.addClass(elLiner.parentNode, "ttotal");
-  };
-
-  var totalRowFormatter = function( elTr, oRecord ) {
-      if ( oRecord.getData('row_title') == "Total" ) {
-          YAHOO.util.Dom.addClass( elTr, 'ttotal' );
-      }
-      return true;
-  };
-
-  var totalNumberSorter = function( a, b, desc, field ){
-    var a_value = a.getData(field);
-    var b_value = b.getData(field);
-    var a_total_test = a.getData("row_title");
-    var b_total_test = b.getData("row_title");
-    var comp_result = YAHOO.util.Sort.compare(a_value, b_value, desc);
-    if( a_total_test == "Total" ){
-      comp_result = 1;
-    }else if( b_total_test == "Total" ){
-      comp_result = -1;
+window.addEventListener('DOMContentLoaded', () => {
+  const linkify = ({ value, data }) => {
+    if (value === '.') {
+      return '.';
     }
-    return comp_result;
+
+    if (data.row_title === 'Total') {
+      return '<a href="[% urlbase FILTER js %]&amp;[% col_field FILTER uri FILTER js %]='
+        + bz_encode(data.field) + '[% "&amp;" _ row_vals IF row_vals %]">' + value + '</a>';
+    }
+
+    return '<a href="[% urlbase FILTER js %]&amp;[% row_field FILTER uri FILTER js %]='
+      + bz_encode(data.row_title, 1) + '&amp;[% col_field FILTER uri FILTER js %]='
+      + bz_encode(data.field) + '">' + value + '</a>';
   };
 
+  const linkifyTotal = ({ value, data }) => {
+    if (value === '.') {
+      return '.';
+    }
 
-  var myColumnDefs = [
-        {key:"row_title", label:"", sortable:true, sortOptions: { sortFunction:totalNumberSorter }},
-        [% FOREACH col = col_names %]
-          {key:"[% col FILTER js %]", label:"[% display_value(col_field, col) FILTER html FILTER js %]", sortable:true,
-           formatter:this.Linkify, sortOptions: { defaultDir: YAHOO.widget.DataTable.CLASS_DESC, sortFunction:totalNumberSorter }},
-        [% END %]
-        {key:"total", label:"Total", sortable:true, formatter:this.LinkifyTotal,
-         sortOptions: { defaultDir: YAHOO.widget.DataTable.CLASS_DESC, sortFunction:totalNumberSorter }}
-      ];
-  this.parseString = function(str) {
-    return str.trim();
+    if (data.row_title === 'Total') {
+      return '<a href="[% urlbase FILTER js %][% "&amp;" _ row_vals IF row_vals %]
+        [%~ "&amp;" _ col_vals IF col_vals %]">' + value + '</a>';
+    }
+
+    return '<a href="[% urlbase FILTER js %]&amp;[% row_field FILTER uri FILTER js %]='
+      + bz_encode(data.row_title, 1) + '[% "&amp;" _ col_vals IF col_vals %]">' + value + '</a>';
   };
 
-  this.parseNumber = function(str) {
-    if (str.match(/^\s*\.\s*$/m))
-      return 0;
-
-    // Do not use <\/a>$. For some reason, IE6 doesn't understand it.
-    // We use [^\d]+$ instead.
-    var res = str.match(/>(\d+)[^\d]+$/m);
-    if (res && res[1])
-      return parseFloat(res[1]);
+  const totalRowFormatter = ({ $row, data }) => {
+    if (data.row_title === 'Total') {
+      $row.classList.add('ttotal');
+    }
   };
 
-  this.myDataSource = new YAHOO.util.DataSource(YAHOO.util.Dom.get("tabular_report"));
-  this.myDataSource.responseType = YAHOO.util.DataSource.TYPE_HTMLTABLE;
-  this.myDataSource.responseSchema = {
-    fields: [
-      {key:"row_title", parser:this.parseString},
-      [% FOREACH col = col_names %]
-        {key:"[% col FILTER js %]", parser:this.parseNumber},
-      [% END %]
-      {key:"total", parser:this.parseNumber}
-    ]
+  const totalNumberSorter = ({ a, b, desc, key }) => {
+    if (a.row_title === 'Total') {
+      return 1;
+    }
+
+    if (b.row_title === 'Total') {
+      return -1;
+    }
+
+    if (desc) {
+      [a, b] = [b, a];
+    }
+
+    if (typeof a[key] === 'number') {
+      return a[key] - b[key];
+    }
+
+    return String(a[key]).localeCompare(String(b[key]));
   };
-  this.myDataTable = new YAHOO.widget.DataTable("tabular_report_container_
-                         [% tbl FILTER js %]", myColumnDefs, this.myDataSource,
-                         {formatRow: totalRowFormatter});
+
+  const columns = [
+    {
+      key: 'row_title',
+      label: '',
+      sortable: true,
+      sortOptions: { sortFunction: totalNumberSorter }
+    },
+    [% FOREACH col = col_names %]
+      {
+        key: '[% col FILTER js %]',
+        label: '[% display_value(col_field, col) FILTER html FILTER js %]',
+        sortable: true,
+        allowHTML: true,
+        formatter: linkify,
+        sortOptions: { defaultDir: 'descending', sortFunction: totalNumberSorter }
+      },
+    [% END %]
+    {
+      key: 'total',
+      label: 'Total',
+      sortable:true,
+      allowHTML: true,
+      formatter: linkifyTotal,
+      className: 'ttotal',
+      sortOptions: { defaultDir: 'descending', sortFunction: totalNumberSorter }
+    },
+  ];
+
+  const rows = [...document.querySelectorAll('#tabular_report tbody tr')];
+
+  const data = rows.map(($tr) => Object.fromEntries(
+    [...$tr.querySelectorAll('td')].map(($td, index) => {
+      const value = $td.textContent.trim();
+      return [columns[index].key, isNaN(value) ? value : Number(value)];
+    })
+  ));
+
+  document.querySelector('#tabular_report').remove();
+
+  new Bugzilla.DataTable({
+    container: '#tabular_report_container_[% tbl FILTER js %]',
+    columns,
+    data,
+    options: { formatRow: totalRowFormatter },
+  });
 });
 </script>
 

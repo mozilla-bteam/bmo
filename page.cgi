@@ -67,7 +67,7 @@ if ($id) {
   if (!$2) {
 
     # if this regexp fails to match completely, something bad came in
-    ThrowCodeError("bad_page_cgi_id", {"page_id" => $id});
+    ThrowCodeError("bad_page_cgi_id");
   }
 
   my %vars = (quicksearch_field_names => \&quicksearch_field_names,);

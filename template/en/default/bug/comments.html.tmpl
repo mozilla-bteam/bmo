@@ -180,7 +180,7 @@
             [% IF bug.check_can_change_field('longdesc', 1, 0).allowed %]
               [% IF user.can_tag_comments %]
                 [<a href="#"
-                    onclick="YAHOO.bugzilla.commentTagging.toggle([% comment.id %], [% comment.count %]);return false">tag</a>]
+                    onclick="Bugzilla.CommentTagging.toggle([% comment.id %], [% comment.count %]);return false">tag</a>]
               [% END %]
               [<a class="bz_reply_link" href="#add_comment"
                 [% IF user.settings.quote_replies.value != 'off' %]
@@ -271,7 +271,7 @@
           <span id="ct_[% comment.count %]">
             [% IF comment.tags.size %]
               <script [% script_nonce FILTER none %]>
-                YAHOO.bugzilla.commentTagging.showTags([% comment.id FILTER none %],
+                Bugzilla.CommentTagging.showTags([% comment.id FILTER none %],
                   [% comment.count FILTER none %], [
                 [% FOREACH tag = comment.tags %]
                   [%~%]'[% tag FILTER js %]'[% "," UNLESS loop.last %]

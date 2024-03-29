@@ -47,9 +47,6 @@
     jquery = [];
   END;
 
-  # right now we need yui for tracking flags and needinfo extensions
-  no_yui = 0;
-
   # add body classes for sec-groups, etc
   FOREACH group IN bug.groups_in;
     bodyclasses.push("bz_group_$group.name");
@@ -75,6 +72,9 @@
     "extensions/BugModal/web/bug_modal.css",
     "js/jquery/plugins/contextMenu/contextMenu.css"
   );
+
+  # use responsive design for the Enter Bug and Show Bug pages
+  responsive = 1
 %]
 
 [% javascript = BLOCK %]

@@ -68,7 +68,7 @@
     }
   }
 
-  YAHOO.util.Event.onDOMReady(function() {
+  window.addEventListener('DOMContentLoaded', () => {
     var comps = document.getElementsByName('component');
     for (var i = 0, l = comps.length; i < l; i++) {
       if (comps[i].checked) {

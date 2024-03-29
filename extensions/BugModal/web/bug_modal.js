@@ -376,9 +376,7 @@ $(function() {
                 }
             );
             $('#cc-list .show_usermenu').click(function() {
-                const $this = $(this);
-                return show_usermenu($this.data('user-id'), $this.data('user-email'), $this.data('user-name'), $this.data('show-edit'),
-                    $this.data('hide-profile'));
+                return show_usermenu($(this)[0]);
             });
             $('#cc-list .cc-remove')
                 .click(function(event) {
@@ -1536,7 +1534,7 @@ $(function() {
 
         // update preview
         preview.css('height', comment_height + 'px');
-        if (!tabpanel.attr('id').endsWith('-comment-preview-tabpanel') || last_comment_text == comment.val())
+        if (!tabpanel.attr('id').endsWith('comment-preview-tabpanel') || last_comment_text == comment.val())
             return;
         $('#preview-throbber', context).show();
         preview.html('');

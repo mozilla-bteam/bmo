@@ -63,11 +63,11 @@
                 defaultcontent = bug.cf_user_story %]
     </div>
     <script [% script_nonce FILTER none %]>
-      YAHOO.util.Event.addListener('user_story_edit_action', 'click', function() {
-        YAHOO.util.Dom.addClass('user_story_edit', 'bz_default_hidden');
-        YAHOO.util.Dom.addClass('user_story_readonly', 'bz_default_hidden');
-        YAHOO.util.Dom.removeClass('user_story_edit_container', 'bz_default_hidden');
-        YAHOO.util.Dom.get('user_story').focus();
+      document.getElementById('user_story_edit_action').addEventListener('click', () => {
+        document.getElementById('user_story_edit').classList.add('bz_default_hidden');
+        document.getElementById('user_story_readonly').classList.add('bz_default_hidden');
+        document.getElementById('user_story_edit_container').classList.remove('bz_default_hidden');
+        document.getElementById('user_story').focus();
       });
     </script>
   [% END %]

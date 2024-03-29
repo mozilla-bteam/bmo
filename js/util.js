@@ -328,18 +328,15 @@ function bz_fireEvent(anElement, anEvent) {
  * Adds a CSS class to an element if it doesn't have it. Removes the
  * CSS class from the element if the element does have the class.
  *
- * Requires YUI's Dom library.
- *
  * @param anElement  The element to toggle the class on
  * @param aClass     The name of the CSS class to toggle.
  */
 function bz_toggleClass(anElement, aClass) {
-    if (YAHOO.util.Dom.hasClass(anElement, aClass)) {
-        YAHOO.util.Dom.removeClass(anElement, aClass);
+    if (typeof anElement === 'string') {
+        anElement = document.getElementById(anElement);
     }
-    else {
-        YAHOO.util.Dom.addClass(anElement, aClass);
-    }
+
+    anElement?.classList.toggle(aClass);
 }
 
 /* Returns a string representation of a duration.
@@ -709,3 +706,62 @@ Bugzilla.Error = class CustomError extends Error {
     return `${this.name}: "${this.message}" (code: ${this.code}${this.detail ? `, detail: ${this.detail}` : ''})`;
   }
 };
+
+/**
+ * A simple Web Storage API wrapper handling JSON parse/stringify.
+ */
+Bugzilla.Storage = class LocalStorage {
+  /**
+   * Get a value.
+   * @param {string} key A storage key.
+   * @param {any} [fallback] Whether to return `{}` instead of `null` when the value is unavailable.
+   * @returns {object | null} A storage value.
+   */
+  static get(key, fallback = false) {
+    const cache = window.localStorage.getItem(key);
+    const fallbackValue = fallback ? {} : null;
+
+    if (cache === null) {
+      return fallbackValue;
+    }
+
+    try {
+      return JSON.parse(cache);
+    } catch {
+      return fallbackValue;
+    }
+  }
+
+  /**
+   * Set a value.
+   * @param {string} key A storage key.
+   * @param {object} value A storage value.
+   */
+  static set(key, value) {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  /**
+   * Merge an existing value with a new value.
+   * @param {string} key A storage key.
+   * @param {object} value A storage value.
+   */
+  static update(key, value) {
+    this.set(key, { ...this.get(key, true), ...value });
+  }
+
+  /**
+   * Delete a value.
+   * @param {string} key A storage key.
+   */
+  static delete(key) {
+    window.localStorage.removeItem(key);
+  }
+
+  /**
+   * Clear the storage.
+   */
+  static clear() {
+    window.localStorage.clear();
+  }
+}

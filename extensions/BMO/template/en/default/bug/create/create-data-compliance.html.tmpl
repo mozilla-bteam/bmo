@@ -32,15 +32,12 @@
   margin-bottom: 1em;
   padding-left: 2em;
 }
-.yui-calcontainer {
-  z-index: 2;
-}
 [% END %]
 
 [% inline_javascript = BLOCK %]
   function validateAndSubmit() {
     var alert_text = '';
-    var required_labels = YAHOO.util.Selector.query('label.required');
+    var required_labels = [...document.querySelectorAll('label.required')];
     if (required_labels.length) {
       required_labels.forEach(function (label) {
         var id = label.getAttribute('for');

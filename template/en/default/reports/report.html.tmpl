@@ -69,6 +69,7 @@
 [% time = time FILTER time('%Y-%m-%d %H:%M:%S') FILTER html %]
 
 [% PROCESS global/header.html.tmpl
+  javascript_urls = [ 'js/data-table.js' ]
   style = "
     .t1     { background-color: #ffffff } /* white       */
     .t2     { background-color: #dfefff } /* light blue  */
