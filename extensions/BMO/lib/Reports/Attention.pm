@@ -48,22 +48,20 @@ sub get_bug_list {
 
 sub format_bug_list {
   my ($bugs, $user) = @_;
-
-  my $cache = Bugzilla->process_cache->{attention};
-  $cache->{global_seen} ||= {};
-
-  my $datetime_now = DateTime->now(time_zone => $user->timezone);
+  my $global_seen   = Bugzilla->request_cache->{attention}->{global_seen};
+  my $datetime_now  = DateTime->now(time_zone => $user->timezone);
 
   my @formatted_bugs;
   my %local_seen;
   foreach my $row (@{$bugs}) {
 
     # Skip if we have already seen this bug locally or globally
-    next if $local_seen{$row->{bug_id}};
-    next if $cache->{global_seen}->{$row->{bug_id}};
+    my $bug_id = $row->{bug_id};
+    next if $local_seen{$bug_id};
+    next if $global_seen->{$bug_id};
 
     my $bug = {
-      id          => $row->{bug_id},
+      id          => $bug_id,
       status      => $row->{bug_status},
       priority    => $row->{priority},
       severity    => $row->{bug_severity},
@@ -78,8 +76,8 @@ sub format_bug_list {
     $bug->{changeddate_fancy} = time_ago($datetime, $datetime_now);
 
     # We only want to see a bug id once per page load so mark them seen
-    $local_seen{$bug->{id}} = 1;
-    $cache->{global_seen}->{$bug->{id}} = 1;
+    $local_seen{$bug_id}  = 1;
+    $global_seen->{$bug_id} = 1;
 
     push @formatted_bugs, $bug;
   }
@@ -396,6 +394,12 @@ sub report {
   my $who
     = $input->{who} ? Bugzilla::User->check({name => $input->{who}}) : $user;
   $vars->{who} = $who->login;
+
+  # Create a global seen list of bugs (if not yet exists) to make sure 
+  # we do not show a bug more than once across all lists.
+  my $cache = Bugzilla->request_cache;
+  $cache->{attention} = {};
+  $cache->{attention}->{global_seen} = {};
 
   # Here we load some values into cache that will be used later
   # by the various queries.
