@@ -27,14 +27,13 @@ function toggle_display(link) {
     var hide_obsolete_url_parameter = "&hide_obsolete=1";
     // Store current height for scrolling later
     var originalHeight = table.offsetHeight;
-    var rows = YAHOO.util.Dom.getElementsByClassName(
-        'bz_tr_obsolete', 'tr', table);
+    var rows = [...table.querySelectorAll('tr.bz_tr_obsolete')];
 
     for (var i = 0; i < rows.length; i++) {
         bz_toggleClass(rows[i], 'bz_default_hidden');
     }
 
-    if (YAHOO.util.Dom.hasClass(rows[0], 'bz_default_hidden')) {
+    if (rows[0].matches('.bz_default_hidden')) {
         link.innerHTML = "Show Obsolete";
         view_all.href = view_all.href + hide_obsolete_url_parameter
     }

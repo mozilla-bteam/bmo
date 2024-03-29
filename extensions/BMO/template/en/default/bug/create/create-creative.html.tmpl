@@ -37,9 +37,6 @@
 #creative_form input[disabled] {
   background: transparent;
 }
-.yui-calcontainer {
-  z-index: 2;
-}
 [% END %]
 
 [% inline_javascript = BLOCK %]
@@ -51,17 +48,17 @@ function validateAndSubmit() {
   if (!isFilledOut('cta_design')) alert_text += 'Please enter a value for CTA Design.\n';
   if (!isFilledOut('launch_date')) alert_text += 'Please enter a value for the expected launch date.\n';
   if (!isFilledOut('goal')) alert_text += 'Please select a value for Mozilla Goal.\n';
-  if (YAHOO.util.Dom.get('goal').value == 'Other') {
+  if (document.getElementById('goal').value == 'Other') {
     if (!isFilledOut('goal_other')) alert_text += 'Please select a value for Mozilla Goal Other.\n';
   }
-  if (YAHOO.util.Dom.get('type_copy').checked == false
-      && YAHOO.util.Dom.get('type_design').checked == false
-      && YAHOO.util.Dom.get('type_video').checked == false
-      && YAHOO.util.Dom.get('type_other').checked == false)
+  if (!document.getElementById('type_copy').checked
+      && !document.getElementById('type_design').checked
+      && !document.getElementById('type_video').checked
+      && !document.getElementById('type_other').checked)
   {
      alert_text += 'Please select at least one type of help needed.\n';
   }
-  if (YAHOO.util.Dom.get('type_other').checked == true) {
+  if (document.getElementById('type_other').checked) {
     if (!isFilledOut('type_other_text')) alert_text += 'Please enter a value for other type of help needed.\n';
   }
   if (alert_text != '') {
@@ -80,16 +77,11 @@ function validateAndSubmit() {
   return true;
 }
 function toggleGoalOther() {
-  var goal_select = YAHOO.util.Dom.get('goal');
-  if (goal_select.options[goal_select.selectedIndex].value == 'Other') {
-    YAHOO.util.Dom.removeClass('goal_other','bz_default_hidden');
-  }
-  else {
-    YAHOO.util.Dom.addClass('goal_other','bz_default_hidden');
-  }
+  document.getElementById('goal_other').classList
+    .toggle('bz_default_hidden', document.getElementById('goal').value !== 'Other');
 }
 function toggleTypeOther(element) {
-  var other_text = YAHOO.util.Dom.get('type_other_text');
+  var other_text = document.getElementById('type_other_text');
   if (element.checked == true) {
     other_text.disabled = false;
     other_text.focus();
@@ -195,17 +187,7 @@ function toggleTypeOther(element) {
     When do you anticipate your project launching? We will determine a creative
     due date with you based on this to ensure that it works for everyone.
   </div>
-  <input name="launch_date" size="20" id="launch_date" value=""
-         onchange="updateCalendarFromField(this)">
-  <button type="button" class="calendar_button"
-          id="button_calendar_launch_date"
-          onclick="showCalendar('launch_date')">
-    <span>Calendar</span>
-  </button>
-  <div id="con_calendar_launch_date"></div>
-  <script [% script_nonce FILTER none %]>
-    createCalendar('launch_date')
-  </script>
+  <input type="date" name="launch_date" id="launch_date">
 </div>
 
 <div class="form_section">

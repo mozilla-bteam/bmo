@@ -8,11 +8,10 @@
 
 [% PROCESS global/variables.none.tmpl %]
 
-[% js_urls = [ 'js/yui3/yui/yui-min.js',
-               'extensions/GuidedBugEntry/web/js/products.js',
+[% js_urls = [ 'extensions/GuidedBugEntry/web/js/products.js',
                'extensions/GuidedBugEntry/web/js/guided.js',
                'extensions/ProdCompSearch/web/js/prod_comp_search.js',
-               'js/field.js', 'js/TUI.js', 'js/bug.js' ] %]
+               'js/field.js', 'js/TUI.js', 'js/data-table.js', 'js/bug.js' ] %]
 
 [% PROCESS global/header.html.tmpl
    title = "Enter A Bug"
@@ -20,9 +19,6 @@
    javascript_urls = js_urls
    style_urls = [ 'extensions/GuidedBugEntry/web/style/guided.css' ]
 %]
-
-<iframe id="yui-history-iframe" src="[% basepath FILTER none %]extensions/GuidedBugEntry/web/yui-history-iframe.txt"></iframe>
-<input id="yui-history-field" type="hidden">
 
 <noscript>
 You require JavaScript to use this [% terms.bug %] entry form.<br><br>
@@ -33,7 +29,7 @@ Please use the <a href="[% basepath FILTER none %]enter_bug.cgi?format=__default
 Please wait...
 </div>
 <script [% script_nonce FILTER none %]>
-YAHOO.util.Dom.removeClass('loading', 'hidden');
+document.getElementById('loading').classList.remove('hidden');
 </script>
 
 <div id="steps">
@@ -51,7 +47,7 @@ YAHOO.util.Dom.removeClass('loading', 'hidden');
 </div>
 
 <script [% script_nonce FILTER none %]>
-YAHOO.util.Dom.addClass('loading', 'hidden');
+document.getElementById('loading').classList.add('hidden');
 guided.init({ webdev: [% webdev ? "true" : "false" %] });
 guided.currentUser = '[% user.login FILTER js %]';
 guided.openStates = [
@@ -367,7 +363,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   </td>
   <td valign="top">
     [% PROCESS help id="summary_help" %]
-    <div id="summary_help" class="hidden help">
+    <div id="summary_help" class="help" role="tooltip" hidden>
     A sentence which summarizes the problem. Please be descriptive and use lots of keywords.<br>
     <br>
     <span class="help-bad">Bad example</span>: mail crashed<br>
@@ -389,7 +385,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   </td>
   <td valign="top">
     [% PROCESS help id="product_help" %]
-    <div id="product_help" class="hidden help">
+    <div id="product_help" class="help" role="tooltip" hidden>
     The Product and Version you are reporting the issue with.
     </div>
 </tr>
@@ -410,7 +406,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   </td>
   <td valign="top">
     [% PROCESS help id="component_help" %]
-    <div id="component_help" class="hidden help">
+    <div id="component_help" class="help" role="tooltip" hidden>
     The area where the problem occurs.<br>
     <br>
     If you are unsure which component to use, select a 'General' component.
@@ -421,7 +417,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   <td class="label" colspan="3">What did you do? (steps to reproduce)</td>
   <td valign="top">
   [% PROCESS help id="steps_help" %]
-  <div id="steps_help" class="hidden help">
+  <div id="steps_help" class="help" role="tooltip" hidden>
   Please be as specific as possible about what you did
   to cause the problem.  Providing step-by-step instructions
   would be ideal.<br>
@@ -444,7 +440,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   <td class="label" colspan="3">What happened? (actual results)</td>
   <td valign="top">
   [% PROCESS help id="actual_help" %]
-  <div id="actual_help" class="hidden help">
+  <div id="actual_help" class="help" role="tooltip" hidden>
   What happened after you performed the steps above?
   </div>
 </tr>
@@ -457,7 +453,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   <td class="label" colspan="3">What should have happened? (expected results)</td>
   <td valign="top">
   [% PROCESS help id="expected_help" %]
-  <div id="expected_help" class="hidden help">
+  <div id="expected_help" class="help" role="tooltip" hidden>
   What should the software have done instead?
   </div>
 </tr>
@@ -491,7 +487,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   </td>
   <td valign="top">
   [% PROCESS help id="file_help" %]
-  <div id="file_help" class="hidden help">
+  <div id="file_help" class="help" role="tooltip" hidden>
   If a file helps explain the issue better, such as a screenshot, please
   attach one here.
   </div>
@@ -519,7 +515,7 @@ explain how to write effective [% terms.bug %] reports.</li>
   </td>
   <td>
     [% PROCESS help id="type_help" %]
-    <div id="type_help" class="hidden help">
+    <div id="type_help" class="help" role="tooltip" hidden>
       Please select what kind of [% terms.bug %] you’re about to submit.
     </div>
   </td>
@@ -582,7 +578,6 @@ explain how to write effective [% terms.bug %] reports.</li>
 [%############################################################################%]
 
 [% BLOCK help %]
-<img src="[% basepath FILTER none %]extensions/GuidedBugEntry/web/images/help.png" width="16" height="16" class="help_image"
- helpid="[% id FILTER html %]" onMouseOver="bugForm.showHelp(this)" onMouseOut="bugForm.hideHelp(this)"
- >
+<img src="[% basepath FILTER none %]extensions/GuidedBugEntry/web/images/help.png" width="16" height="16"
+  alt="" class="help_icon" aria-label="Help" aria-describedby="[% id FILTER html %]">
 [% END %]

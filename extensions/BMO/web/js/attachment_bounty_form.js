@@ -6,8 +6,8 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 function add_bounty_attachment(bug_id) {
-    var nodes = YAHOO.util.Selector.query('#attachment_table tr.bz_attach_footer td');
-    if (nodes) {
+    var nodes = [...document.querySelectorAll('#attachment_table tr.bz_attach_footer td')];
+    if (nodes.length) {
         var existing = document.getElementById('bounty_attachment');
         var td = nodes[0];
         var a  = document.createElement('a');

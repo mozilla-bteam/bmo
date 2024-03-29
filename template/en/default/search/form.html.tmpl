@@ -392,12 +392,12 @@ TUI_hide_default('custom_search_query');
   <li>
     <label for="chfieldfrom">between:</label>
     <input name="chfieldfrom" id="chfieldfrom" size="10" value="[% default.chfieldfrom.0 FILTER html %]">
-    <button type="button" class="calendar_button" id="button_calendar_chfieldfrom"><span>Calendar</span></button>
+    <button type="button" class="calendar_button relative"
+            aria-controls="chfieldfrom"><span>Calendar</span></button>
     and
-    <div id="con_calendar_chfieldfrom"></div>
     <input name="chfieldto" size="10" id="chfieldto" value="[% default.chfieldto.0 FILTER html %]" placeholder="Now">
-    <button type="button" class="calendar_button" id="button_calendar_chfieldto"><span>Calendar</span></button>
-    <div id="con_calendar_chfieldto"></div>
+    <button type="button" class="calendar_button relative"
+            aria-controls="chfieldto"><span>Calendar</span></button>
     <small class="field_help">(YYYY-MM-DD or <a href="[% docs_urlbase FILTER html %]using/finding.html#relative-dates">relative dates</a>)</small>
   </li>
 </ul>
