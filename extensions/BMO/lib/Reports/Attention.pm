@@ -433,10 +433,10 @@ sub report {
       . ' WHERE name LIKE \'%-security\'');
 
   # build bug lists
-  $vars->{critical_assigned_bugs}  = critical_assigned_bugs($who);
   $vars->{critical_needinfo_bugs}  = critical_needinfo_bugs($who);
-  $vars->{important_assigned_bugs} = important_assigned_bugs($who);
+  $vars->{critical_assigned_bugs}  = critical_assigned_bugs($who);
   $vars->{important_needinfo_bugs} = important_needinfo_bugs($who);
+  $vars->{important_assigned_bugs} = important_assigned_bugs($who);
   $vars->{other_needinfo_bugs}     = other_needinfo_bugs($who);
 
   # count number of unique bugs
