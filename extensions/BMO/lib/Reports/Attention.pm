@@ -48,8 +48,8 @@ sub get_bug_list {
 
 sub format_bug_list {
   my ($bugs, $user) = @_;
-  my $global_seen   = Bugzilla->request_cache->{attention}->{global_seen};
-  my $datetime_now  = DateTime->now(time_zone => $user->timezone);
+  my $global_seen  = Bugzilla->request_cache->{attention}->{global_seen};
+  my $datetime_now = DateTime->now(time_zone => $user->timezone);
 
   my @formatted_bugs;
   my %local_seen;
@@ -76,7 +76,7 @@ sub format_bug_list {
     $bug->{changeddate_fancy} = time_ago($datetime, $datetime_now);
 
     # We only want to see a bug id once per page load so mark them seen
-    $local_seen{$bug_id}  = 1;
+    $local_seen{$bug_id} = 1;
     $global_seen->{$bug_id} = 1;
 
     push @formatted_bugs, $bug;
@@ -395,37 +395,39 @@ sub report {
     = $input->{who} ? Bugzilla::User->check({name => $input->{who}}) : $user;
   $vars->{who} = $who->login;
 
-  # Create a global seen list of bugs (if not yet exists) to make sure 
-  # we do not show a bug more than once across all lists.
-  my $cache = Bugzilla->request_cache;
-  $cache->{attention} = {};
-  $cache->{attention}->{global_seen} = {};
+  # Create a global seen list of bugs (if not yet exists) to make sure
+  # we do not show a bug more than once across all lists. Request cache
+  # lasts for only this request.
+  my $request_cache = Bugzilla->request_cache;
+  $request_cache->{attention} = {};
+  $request_cache->{attention}->{global_seen} = {};
+
+  my $dbh = Bugzilla->dbh;
 
   # Here we load some values into cache that will be used later
-  # by the various queries.
-  my $cache = Bugzilla->process_cache->{attention} = {};
-  my $dbh   = Bugzilla->dbh;
+  # by the various queries. Process cache lasts til server restart.
+  my $process_cache = Bugzilla->process_cache->{attention} = {};
 
   # classifications
-  $cache->{classification_ids} ||= $dbh->selectcol_arrayref('
+  $process_cache->{classification_ids} ||= $dbh->selectcol_arrayref('
     SELECT id
       FROM classifications
      WHERE name IN (' . join(', ', map { $dbh->quote($_) } CLASSIFICATIONS) . ')');
 
   # needinfo flag
-  $cache->{needinfo_flag_id} ||= $dbh->selectrow_array("
+  $process_cache->{needinfo_flag_id} ||= $dbh->selectrow_array("
     SELECT id FROM flagtypes WHERE name = 'needinfo'");
 
   # keyword ids
-  $cache->{sec_critical_id} ||= $dbh->selectrow_array("
+  $process_cache->{sec_critical_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-critical'");
-  $cache->{sec_high_id} ||= $dbh->selectrow_array("
+  $process_cache->{sec_high_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-high'");
-  $cache->{regression_id} ||= $dbh->selectrow_array("
+  $process_cache->{regression_id} ||= $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'regression'");
 
   # Get a list of group ids that end in -security
-  $cache->{sec_group_ids}
+  $process_cache->{sec_group_ids}
     ||= $dbh->selectcol_arrayref('SELECT id FROM '
       . $dbh->quote_identifier('groups')
       . ' WHERE name LIKE \'%-security\'');
