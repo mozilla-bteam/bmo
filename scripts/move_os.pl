@@ -42,7 +42,7 @@ my $bug_ids
   = $dbh->selectcol_arrayref(q{SELECT bug_id FROM bugs WHERE bugs.op_sys = ?},
   undef, $from_os);
 my $field = Bugzilla::Field->check({name => 'op_sys', cache => 1});
-my $nobody = Bugzilla::User->check({name => 'nobody@mozilla.org', cache => 1});
+my $automation = Bugzilla::User->check({name => 'automation@bmo.tld', cache => 1});
 
 my $bug_count = @$bug_ids;
 if ($bug_count == 0) {
@@ -63,7 +63,7 @@ foreach my $bug_id (@$bug_ids) {
 
   $dbh->do(
     q{INSERT INTO bugs_activity(bug_id, who, bug_when, fieldid, removed, added)
-               VALUES (?, ?, ?, ?, ?, ?)}, undef, $bug_id, $nobody->id, $timestamp,
+               VALUES (?, ?, ?, ?, ?, ?)}, undef, $bug_id, $automation->id, $timestamp,
     $field->id, $from_os, $to_os
   );
   $dbh->do(

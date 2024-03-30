@@ -63,7 +63,7 @@ sub new_release {
 
     my $vars = {
       next_release               => $current_nightly + 1,
-      old_release                => $current_nightly - 10,
+      old_release                => $current_nightly - 15,
       selectable_products        => $selectable_products,
       default_milestone_products => $default_milestone_products,
       default_version_products   => $default_version_products,
