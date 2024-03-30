@@ -100,7 +100,7 @@ sub should_send {
     }
     if ($removed_product || $removed_component) {
       if ($removed_product eq '') {
-        $removed_product eq $bug_data->{'product'};
+        $removed_product = $bug_data->{'product'};
       }
       if ($product eq $removed_product
           && ($component eq $removed_component || $component eq 'any'))
