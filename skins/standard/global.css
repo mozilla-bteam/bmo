@@ -1124,6 +1124,7 @@ input[type="radio"]:checked {
 #header .links {
   flex: none;
   display: flex;
+  justify-content: flex-end;
   font-size: 14px;
 }
 
@@ -1265,13 +1266,18 @@ input[type="radio"]:checked {
   color: var(--tertiary-label-color);
 }
 
+#header-login {
+  position: relative;
+}
+
 #header-login .mini-popup {
   position: absolute;
-  top: 48px;
-  right: 0;
+  top: calc(100% + 8px);
+  right: -8px;
   z-index: 100;
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 8px;
   background-color: var(--primary-region-background-color);
   box-shadow: var(--primary-region-box-shadow);
@@ -1280,10 +1286,22 @@ input[type="radio"]:checked {
 #header-login .mini-popup form {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
-#header-login .mini-popup input {
-  margin: 0 4px;
+#header-login .mini-popup a {
+  padding: 0 !important;
+}
+
+#header-login .mini-popup :is(a, form) button {
+  padding: var(--button-padding) !important;
+}
+
+#header-login .mini-popup .remember-outer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 #header-login .mini-popup .close-button {
@@ -1295,6 +1313,42 @@ input[type="radio"]:checked {
 
 #header-login .mini-popup .close-button .icon::before {
   content: '\E5CD';
+}
+
+@media screen and (min-width: 800px) and (max-width: 1023px) {
+  #header-login .mini-popup:has(.oauth2-login) {
+    flex-wrap: wrap-reverse;
+  }
+}
+
+@media screen and (max-width: 799px) {
+  #header-login {
+    flex: auto !important;
+  }
+
+  #header-login .mini-popup {
+    flex-direction: column;
+    gap: 16px;
+    width: 240px;
+    padding-top: 40px;
+  }
+
+  #header-login .mini-popup > * {
+    width: 100%;
+  }
+
+  #header-login .mini-popup form {
+    flex-direction: column;
+  }
+
+  #header-login .mini-popup :is(button, input:not([type="checkbox"])) {
+    width: 100%;
+  }
+
+  #header-login .mini-popup .close-button {
+    position: absolute;
+    inset: 4px 4px auto auto;
+  }
 }
 
 /**
@@ -2211,6 +2265,12 @@ table.tabs .clickable_area {
   border-start-start-radius: 0px;
   border-end-start-radius: 0px;
   padding-inline-start: var(--button-center-padding);
+}
+
+@media screen and (max-width: 799px) {
+  .dropdown-panel {
+    max-width: 320px !important;
+  }
 }
 
 /**
