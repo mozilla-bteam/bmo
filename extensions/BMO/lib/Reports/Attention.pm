@@ -52,12 +52,10 @@ sub format_bug_list {
   my $datetime_now = DateTime->now(time_zone => $user->timezone);
 
   my @formatted_bugs;
-  my %local_seen;
   foreach my $row (@{$bugs}) {
 
-    # Skip if we have already seen this bug locally or globally
+    # Skip if we have already seen this bug globally
     my $bug_id = $row->{bug_id};
-    next if $local_seen{$bug_id};
     next if $global_seen->{$bug_id};
 
     my $bug = {
@@ -75,8 +73,7 @@ sub format_bug_list {
     $bug->{changeddate_epoch} = $datetime->epoch;
     $bug->{changeddate_fancy} = time_ago($datetime, $datetime_now);
 
-    # We only want to see a bug id once per page load so mark them seen
-    $local_seen{$bug_id} = 1;
+    # We only want to see a bug id once per page load so mark it as seen
     $global_seen->{$bug_id} = 1;
 
     push @formatted_bugs, $bug;
