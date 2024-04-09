@@ -47,7 +47,7 @@ function show_usermenu(vcard) {
             }
         });
     }
-    if (hide_profile == 0) {
+    if (hide_profile === "0") {
         items.unshift({
             name: "Profile",
             callback: function () {
@@ -56,7 +56,7 @@ function show_usermenu(vcard) {
             }
         });
     }
-    if (show_edit) {
+    if (show_edit === "1") {
         items.push({
             name: "Edit",
             callback: function () {
