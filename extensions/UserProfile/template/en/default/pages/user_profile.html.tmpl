@@ -238,6 +238,18 @@
 </tr>
 <tr>
   <td>&nbsp;</td>
+  <th>Assigned to and fixed</th>
+  <td class="numeric">
+    [% IF user.id %]
+      <a href="[% basepath FILTER none %]buglist.cgi?query_format=advanced&amp;emailtype1=exact&amp;emailassigned_to1=1&amp;resolution=FIXED&amp;email1=[% target.login FILTER uri %]"
+        target="_blank">
+    [% END %]
+    [% stats.assigned_and_fixed || 0 FILTER html %]
+    [% "</a>" IF user.id %]
+  </td>
+</tr>
+<tr>
+  <td>&nbsp;</td>
   <th>Commented on</th>
   <td class="numeric">
     [% IF user.id %]
