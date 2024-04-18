@@ -205,9 +205,10 @@
     [% INCLUDE bug_modal/field.html.tmpl
         field = bug_fields.version
         field_type = constants.FIELD_TYPE_SINGLE_SELECT
-        values = version
+        values = product.versions
+        value = bug.version
         help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#version"
-        advanced = 1
+        required = 1
     %]
 
     [%# platform %]
