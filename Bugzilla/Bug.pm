@@ -5138,6 +5138,7 @@ sub check_can_change_field {
     if (
          $field eq 'short_desc'
       || $field eq 'component'
+      || $field eq 'version'
       || $field eq 'rep_platform'
       || $field eq 'op_sys'
       || ($field eq 'bug_type' && Bugzilla->params->{'require_bug_type'})
