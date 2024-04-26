@@ -29,6 +29,8 @@ sub setup_routes {
     $class->load_one($name, $file);
     $r->any("/$file")->to("CGI#$name");
   }
+
+  $r->any('/')->to('CGI#index_cgi');
   $r->any('/home')->to('CGI#index_cgi');
 
   $r->any('/bug/<id:num>')->to('CGI#show_bug_cgi');
@@ -48,6 +50,20 @@ sub setup_routes {
     $c->res->code(301);
     $c->redirect_to(Bugzilla->localconfig->basepath . 'enter_bug.cgi');
   });
+
+  $r->get('/testagent.cgi' => sub { shift->render(text => 'OK Mojolicious')});
+
+  $r->add_type('hex32' => qr/[[:xdigit:]]{32}/);
+  $r->post('/announcement/hide/<checksum:hex32>')->to('CGI#announcement_hide');
+}
+
+sub announcement_hide {
+  my ($self) = @_;
+  my $checksum = $self->param('checksum');
+  if ($checksum && $checksum =~ /^[[:xdigit:]]{32}$/) {
+    $self->session->{announcement_checksum} = $checksum;
+  }
+  $self->render(json => {});
 }
 
 sub load_one {

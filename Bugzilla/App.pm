@@ -24,7 +24,6 @@ use Bugzilla::Logging;
 use Bugzilla::App::API;
 use Bugzilla::App::BouncedEmails;
 use Bugzilla::App::CGI;
-use Bugzilla::App::Main;
 use Bugzilla::App::OAuth2::Provider::Clients;
 use Bugzilla::App::SES;
 use Bugzilla::App::Static;
@@ -210,7 +209,6 @@ sub setup_routes {
   Bugzilla::App::API->setup_routes($r);
   Bugzilla::App::BouncedEmails->setup_routes($r);
   Bugzilla::App::CGI->setup_routes($r);
-  Bugzilla::App::Main->setup_routes($r);
   Bugzilla::App::OAuth2::Provider::Clients->setup_routes($r);
   Bugzilla::App::SES->setup_routes($r);
   Bugzilla::App::BMO::AntiSpam->setup_routes($r);
