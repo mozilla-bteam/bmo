@@ -37,10 +37,6 @@
 [% col_field_disp = field_descs.$col_field || col_field %]
 [% row_field_disp = field_descs.$row_field || row_field %]
 
-[%# Fix an empty table name that can cause issues on CSS selectors, etc. %]
-[% IF tbl == " " %]
-  [% tbl = "" %]
-[% END %]
 [% urlbase = BLOCK %][% basepath FILTER none %]buglist.cgi?[% buglistbase FILTER html %][% END %]
 [% IF tbl == "-total-" %]
   [% IF tbl_vals %]

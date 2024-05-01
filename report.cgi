@@ -337,15 +337,12 @@ sub check_value {
   my ($field, $result) = @_;
 
   my $value;
-  if (!defined $field) {
+  if (!defined $field || $field eq '') {
     $value = '';
-  }
-  elsif ($field eq '') {
-    $value = ' ';
   }
   else {
     $value = shift @$result;
-    $value = ' ' if (!defined $value || $value eq '');
+    $value = '' if (!defined $value || $value eq '');
     $value = '---' if ($field eq 'resolution' && $value eq ' ');
   }
   return $value;
