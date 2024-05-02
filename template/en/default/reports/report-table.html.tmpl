@@ -37,10 +37,8 @@
 [% col_field_disp = field_descs.$col_field || col_field %]
 [% row_field_disp = field_descs.$row_field || row_field %]
 
-[%# Table names need to have spaces replaced. %]
-[%
-  tbl_id = tbl.replace('\s+', '_');
-%]
+[%# Class and ID names need to have whitespace removed. %]
+[% tbl_id = tbl FILTER css_class_quote %]
 
 [% urlbase = BLOCK %][% basepath FILTER none %]buglist.cgi?[% buglistbase FILTER html %][% END %]
 [% IF tbl == "-total-" %]
