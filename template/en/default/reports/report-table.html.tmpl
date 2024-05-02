@@ -39,8 +39,7 @@
 
 [%# Table names need to have spaces replaced. %]
 [%
-  tbl_id = tbl; 
-  tbl_id.replace('\s+', '_');
+  tbl_id = tbl.replace('\s+', '_');
 %]
 
 [% urlbase = BLOCK %][% basepath FILTER none %]buglist.cgi?[% buglistbase FILTER html %][% END %]
