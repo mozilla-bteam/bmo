@@ -145,7 +145,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   ];
 
-  const rows = [...document.querySelectorAll('#tabular_report tbody tr')];
+  const rows = [...document.querySelectorAll('#tabular_report_[% tbl FILTER js %] tbody tr')];
 
   const data = rows.map(($tr) => Object.fromEntries(
     [...$tr.querySelectorAll('td')].map(($td, index) => {
@@ -154,7 +154,7 @@ window.addEventListener('DOMContentLoaded', () => {
     })
   ));
 
-  document.querySelector('#tabular_report').remove();
+  document.querySelector('#tabular_report_[% tbl FILTER js %]').remove();
 
   new Bugzilla.DataTable({
     container: '#tabular_report_container_[% tbl FILTER js %]',
@@ -190,7 +190,7 @@ window.addEventListener('DOMContentLoaded', () => {
 [% row_idx = 0 %]
 [% grand_total = 0 %]
 <div id="tabular_report_container_[% tbl FILTER html %]">
-<table id="tabular_report" border="1">
+<table id="tabular_report_[% tbl FILTER html %]" border="1">
   [% IF col_field %]
     <thead>
     <tr>
