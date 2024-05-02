@@ -102,6 +102,14 @@ EOF
      WHERE assigned_to = ?
 EOF
 
+  # assigned to and fixed
+  _update_statistics($statistics, 'assigned_and_fixed', [$user_id], <<EOF);
+    SELECT COUNT(*)
+      FROM bugs
+     WHERE assigned_to = ?
+           AND resolution = 'FIXED'
+EOF
+
   # qa contact
   _update_statistics($statistics, 'qa_contact', [$user_id], <<EOF);
     SELECT COUNT(*)

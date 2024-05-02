@@ -73,10 +73,12 @@
     [% IF Param('rememberlogin') == 'defaulton' ||
           Param('rememberlogin') == 'defaultoff'
     %]
-      <input type="checkbox" id="Bugzilla_remember[% qs_suffix %]"
-             name="Bugzilla_remember" value="on" class="bz_remember"
-                 [%+ "checked" IF Param('rememberlogin') == "defaulton" %]>
-      <label for="Bugzilla_remember[% qs_suffix %]">Remember</label>
+      <span class="remember-outer">
+        <input type="checkbox" id="Bugzilla_remember[% qs_suffix %]"
+               name="Bugzilla_remember" value="on" class="bz_remember"
+               [%+ "checked" IF Param('rememberlogin') == "defaulton" %]>
+        <label for="Bugzilla_remember[% qs_suffix %]">Remember</label>
+      </span>
     [% END %]
     <input type="hidden" name="Bugzilla_login_token"
            value="[% get_login_request_token() FILTER html %]">

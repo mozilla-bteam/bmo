@@ -382,6 +382,8 @@ saved_reports       array     User's saved reports, each having the following
 last_seen_date      datetime  The time when the user last loaded any page.
 last_activity_time  datetime  The time when the user last made a change to a bug.
 creation_time       datetime  The time when the user's account was created.
+ldap_email          string    The LDAP email address attached to the account based
+                              on Duo Security (special permissions needed).
 ==================  ========  =====================================================
 
 Group object:

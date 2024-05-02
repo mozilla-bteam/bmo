@@ -15,6 +15,11 @@
   </form>
 [% END %]
 
+[%# Do not show Duo options unless required or user is a Mozilla employee %]
+[% IF Param("duo_uri") && (user.in_duo_required_group || user.in_group('mozilla-employee-confidential')) %]
+  [% duo_allowed = 1 %]
+[% END %]
+
 [% IF NOT Bugzilla.feature('mfa') %]
   <input type="hidden" name="mfa_action" id="mfa-action" value="">
   <p>
@@ -195,10 +200,11 @@
         <p>You are a member of a group that requires Duo Security to be used for your MFA</p>
       [% END %]
 
-       [% IF Param("duo_uri")  %]
+       [% IF duo_allowed %]
         <button type="button" id="mfa-select-duo">Duo Security</button><br>
         <blockquote>
-          <p>Requires a <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">Duo Security</a>
+          <p>Requires a <a href="https://mozilla-hub.atlassian.net/wiki/spaces/SD/pages/26739600/DuoSecurity+Overviewi" 
+                           target="_blank" rel="noopener noreferrer">Duo Security</a>
           account (required for Mozilla employees).</p>
           <p>If this account is for automation and Duo 2FA is not appropriate, Please
           <a href="[% basepath FILTER none %]enter_bug.cgi?product=bugzilla.mozilla.org&component=Administration">
@@ -262,7 +268,7 @@
 
     </div>
 
-    [% IF Param("duo_uri") %]
+    [% IF duo_allowed %]
       [%# enable - duo %]
       <div id="mfa-enable-duo" style="display:none">
 
@@ -275,7 +281,8 @@
           <img src="[% basepath FILTER none %]images/duo.png" id="duo-logo" width="32" height="32">
           Verification with Duo Security will be performed before your account is updated.<br>
 
-          You must be <a href="https://mana.mozilla.org/wiki/display/SD/DuoSecurity" target="_blank" rel="noopener noreferrer">
+          You must be <a href="https://mozilla-hub.atlassian.net/wiki/spaces/SD/pages/26739600/DuoSecurity+Overview" 
+                         target="_blank" rel="noopener noreferrer">
           enrolled with Duo Security via login.mozilla.com</a> before you can use Duo 2FA.
         </p>
 
