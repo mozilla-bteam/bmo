@@ -490,6 +490,18 @@ sub product {
   return $self->{'product'};
 }
 
+# Return the count of open bugs for this component
+sub open_bug_count {
+  my ($self) = @_;
+  return $self->{open_bug_count} if $self->{open_bug_count};
+  my $dbh = Bugzilla->dbh;
+  $self->{open_bug_count}
+    = $dbh->selectrow_array(
+    'SELECT count(*) FROM bugs WHERE component_id = ? AND resolution = \'---\'',
+    undef, $self->id);
+  return $self->{open_bug_count};
+}
+
 ###############################
 ####      Accessors        ####
 ###############################

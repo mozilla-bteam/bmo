@@ -29,6 +29,7 @@ use Bugzilla::App::OAuth2::Provider::Clients;
 use Bugzilla::App::SES;
 use Bugzilla::App::Static;
 use Bugzilla::App::BMO::AntiSpam;
+use Bugzilla::App::BMO::ComponentGraveyard;
 use Bugzilla::App::BMO::NewRelease;
 use Bugzilla::App::MFA::Duo;
 use Mojo::Loader qw( find_modules );
@@ -214,6 +215,7 @@ sub setup_routes {
   Bugzilla::App::OAuth2::Provider::Clients->setup_routes($r);
   Bugzilla::App::SES->setup_routes($r);
   Bugzilla::App::BMO::AntiSpam->setup_routes($r);
+  Bugzilla::App::BMO::ComponentGraveyard->setup_routes($r);
   Bugzilla::App::BMO::NewRelease->setup_routes($r);
   Bugzilla::App::MFA::Duo->setup_routes($r);
 

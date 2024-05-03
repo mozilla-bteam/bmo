@@ -1985,6 +1985,15 @@
     [% title = "Duo Security Error" %]
     [% reason FILTER html %]
 
+  [% ELSIF error == "component_graveyard_open_bugs" %]
+    [% title = "Component Graveyard Open Bugs" %]
+    There are currently still 
+    <a href="[% basepath FILTER none %]buglist.cgi?product=[% product FILTER uri %]&component=[% component FILTER uri %]&resolution=---">
+      [% count FILTER html %] open [% terms.bugs %]</a> 
+    for the product  '[% product FILTER html %]' and component 
+    '[% component FILTER html %]'  that will need be resolved 
+    before moving to graveyard. 
+
   [% ELSE %]
 
     [%# Try to find hooked error messages %]
