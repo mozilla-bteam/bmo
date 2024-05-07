@@ -201,16 +201,11 @@ sub setup_routes {
   # Load controller modules and their routes
   foreach my $module (find_modules('Bugzilla::App::Controller', {recursive => 1}))
   {
-    try {
-      require_module($module);
-      my $controller = $module->new;
-      if ($controller->can('setup_routes')) {
-        $controller->setup_routes($r);
-      }
+    require_module($module);
+    my $controller = $module->new;
+    if ($controller->can('setup_routes')) {
+      $controller->setup_routes($r);
     }
-    catch {
-      WARN("$module could not be loaded: $_");
-    };
   }
 
   $r->static_file('/__lbheartbeat__');
