@@ -99,7 +99,7 @@ sub register {
       if (%add_params || !$stash->{Bugzilla_csp}) {
         my %params = DEFAULT_CSP();
         delete $params{report_only} if %add_params && !$add_params{report_only};
-        delete $params{report_only} if !$c->isa('Bugzilla::App::CGI');
+        delete $params{report_only} if !$c->isa('Bugzilla::App::Controller::CGI');
         foreach my $key (keys %add_params) {
           if (defined $add_params{$key}) {
             $params{$key} = $add_params{$key};
