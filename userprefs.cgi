@@ -19,6 +19,7 @@ use Bugzilla::Mailer;
 use Bugzilla::Search;
 use Bugzilla::Util;
 use Bugzilla::Error;
+use Bugzilla::Reminder;
 use Bugzilla::User;
 use Bugzilla::User::Setting qw(clear_settings_cache);
 use Bugzilla::User::Session;
@@ -961,6 +962,46 @@ sub MfaApiKey {
   }
 }
 
+sub DoReminders {
+  my $input = Bugzilla->input_params;
+  my $user  = Bugzilla->user;
+  $vars->{reminders} = Bugzilla::Reminder->match({user_id => $user->id,});
+  $vars->{bug_id}    = $input->{bug_id} if $input->{bug_id};
+}
+
+sub SaveReminders {
+  my $input = Bugzilla->input_params;
+  my $user  = Bugzilla->user;
+  my $dbh   = Bugzilla->dbh;
+
+  # remove reminder(s)
+  my $ids = ref($input->{remove}) ? $input->{remove} : [$input->{remove}];
+
+  my $reminders = Bugzilla::Reminder->match({id => $ids, user_id => $user->id});
+
+  $dbh->bz_start_transaction;
+  foreach my $reminder (@$reminders) {
+    $reminder->remove_from_db();
+  } 
+  $dbh->bz_commit_transaction();
+
+  if ($input->{'add_reminder'}) {
+    my $bug_id = trim($input->{bug_id});
+    my $note   = trim($input->{note});
+    my $when   = trim($input->{when});
+
+    ($bug_id =~ /^\d+$/) || ThrowUserError('reminders_invalid_bug_id');
+    $when                || ThrowUserError('reminders_invalid_when');
+
+    Bugzilla::Reminder->create({
+      user_id     => $user->id,
+      bug_id      => $bug_id,
+      remind_when => $when,
+      note        => $note,
+    });
+  }
+}
+
 sub _create_api_key {
   my ($description) = @_;
   my $user = Bugzilla->user;
@@ -1078,6 +1119,11 @@ SWITCH: for ($current_tab_name) {
     SaveMFAcallback($mfa_token) if $mfa_token;
     SaveMFA()                   if $save_changes;
     DoMFA();
+    last SWITCH;
+  };
+  /^reminders$/ && do {
+    SaveReminders() if $save_changes;
+    DoReminders();
     last SWITCH;
   };
 

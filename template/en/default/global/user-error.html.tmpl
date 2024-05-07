@@ -1985,6 +1985,15 @@
     [% title = "Duo Security Error" %]
     [% reason FILTER html %]
 
+  [% ELSIF error == "reminders_invalid_bug_id" %]
+    [% title = "Reminders Error" %]
+    The [% terms.bug %] ID entered is either invalid or you do 
+    not have permission to view it.
+
+  [% ELSIF error == "reminders_invalid_date" %]
+    [% title = "Reminders Error" %]
+    The reminder date entered is missing or the wrong format (YYYY-MM-DD).
+
   [% ELSE %]
 
     [%# Try to find hooked error messages %]

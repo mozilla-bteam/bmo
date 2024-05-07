@@ -1965,7 +1965,36 @@ use constant ABSTRACT_SCHEMA => {
       name  => {TYPE => 'VARCHAR(64)',   NOTNULL => 1},
       value => {TYPE => 'VARCHAR(255)', NOTNULL => 1},
     ],
-  }
+  },
+
+  # Reminders Table
+  # ---------------
+
+  reminders => {
+    FIELDS => [
+      id      => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      user_id => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {
+          TABLE  => 'profiles',
+          COLUMN => 'userid',
+          DELETE => 'CASCADE',
+        },
+      },
+      remind_when => {TYPE => 'DATETIME', NOTNULL => 1},
+      bug_id      => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {
+          TABLE  => 'bugs',
+          COLUMN => 'bug_id',
+          DELETE => 'CASCADE',
+        },
+      },
+      note => {TYPE => 'VARCHAR(255)'},
+    ],
+  },
 };
 
 # Foreign Keys are added in Bugzilla::DB::bz_add_field_tables

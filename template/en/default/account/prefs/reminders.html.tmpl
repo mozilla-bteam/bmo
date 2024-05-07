@@ -1,0 +1,83 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is  |  "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% SET dont_show_button = 1 %]
+
+[% PROCESS global/variables.none.tmpl %]
+[% PROCESS 'global/field-descs.none.tmpl' %]
+
+<table border="0" cellpadding="3" cellspacing="0">
+<tr>
+  <th align="right">[% terms.Bug %] ID:</th>
+  <td>
+    <input type="text" name="bug_id" id="bug_id" size="32" value="[% bug_id FILTER html %]">
+  </td>
+</tr>
+<tr>
+  <th align="right">Note:</th>
+  <td>
+    <input type="text" name="note" id="note" size="64" maxlength="255">
+  </td>
+</tr>
+<tr>
+  <th align="right">When:</th>
+  <td>
+    <input type="date" name="when" id="when" size="32">
+  </td>
+</tr>
+</table>
+
+<p><input type="submit" id="add_reminder" name="add_reminder" value="Add Reminder"></p>
+
+<hr>
+
+[% IF reminders.size %]
+
+  <h3>
+    Your Current Reminders
+  </h3>
+
+  <table id="reminder_table" class="standard">
+  <thead>
+    <tr>
+      <th>Remove</th>
+      <th>[% terms.Bug %] ID</th>
+      <th>[% terms.Bug %] Summary</th>
+      <th>Note</th>
+      <th>When</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  [% FOREACH reminder IN reminders %]
+    <tr>
+      <td>
+        <input type="checkbox" name="remove" i
+               value="[% reminder.id FILTER none %]">
+      </td>
+      <td>
+        [% reminder.bug_id FILTER bug_link(reminder.bug_id) FILTER none %]
+      </td>
+      <td>[% reminder.bug.short_desc FILTER html %]</td>
+      <td>[% reminder.note FILTER html %]</td>
+      <td>[% reminder.when FILTER html %]</td>
+      <td>[% IF reminder.expired %]Expired[% END %]</td>
+    </tr>
+  [% END %]
+  </tbody>
+  </table>
+
+  <p><input id="save_changes" type="submit" value="Save Changes"></p>
+
+[% ELSE %]
+
+  <p>
+    <i>You do not have any reminders.</i>
+  </p>
+
+[% END %]

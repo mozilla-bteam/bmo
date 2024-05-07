@@ -97,7 +97,14 @@
       link        => "userprefs.cgi?tab=permissions",
       saveable    => "0"
     },
+    {
+      name        => "reminders",
+      label       => "Bug Reminders",
+      link        => "userprefs.cgi?tab=reminders",
+      saveable    => "1",
+    }   
   ];
+
   Hook.process('tabs');
 
   FOREACH tab IN tabs;
