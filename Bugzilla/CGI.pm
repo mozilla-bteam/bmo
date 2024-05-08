@@ -411,7 +411,7 @@ sub header {
   $self->{_header_done} = 1;
 
   my $headers = $self->SUPER::header(%headers) || '';
-  if ($self->server_software eq 'Bugzilla::App::CGI') {
+  if ($self->server_software eq 'Bugzilla::App::Controller::CGI') {
     my $C = Bugzilla->request_cache->{mojo_controller};
     $C->res->headers->parse($headers);
     my $status = $C->res->headers->status;
@@ -428,7 +428,7 @@ sub header {
   }
   else {
     LOGDIE(
-      "Bugzilla::CGI->header() should only be called from inside Bugzilla::App::CGI!"
+      "Bugzilla::CGI->header() should only be called from inside Bugzilla::App::Controller::CGI!"
     );
   }
 }

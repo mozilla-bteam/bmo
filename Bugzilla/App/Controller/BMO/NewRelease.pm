@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::App::BMO::NewRelease;
+package Bugzilla::App::Controller::BMO::NewRelease;
 
 use 5.10.1;
 use Mojo::Base 'Mojolicious::Controller';
