@@ -206,6 +206,9 @@ sub setup_routes {
     if ($controller->can('setup_routes')) {
       $controller->setup_routes($r);
     }
+    else {
+      WARN("Could not execute setup_routes() for module: $module");
+    }
   }
 
   $r->static_file('/__lbheartbeat__');
