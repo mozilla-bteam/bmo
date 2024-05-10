@@ -965,6 +965,11 @@ sub MfaApiKey {
 sub DoReminders {
   my $input = Bugzilla->input_params;
   my $user  = Bugzilla->user;
+
+  return
+    unless Bugzilla->params->{reminders_enabled}
+    && $user->in_group(Bugzilla->params->{reminders_group});
+
   $vars->{reminders} = Bugzilla::Reminder->match({user_id => $user->id,});
   $vars->{bug_id}    = $input->{bug_id} if $input->{bug_id};
 }
@@ -974,6 +979,10 @@ sub SaveReminders {
   my $user  = Bugzilla->user;
   my $dbh   = Bugzilla->dbh;
 
+  return
+    unless Bugzilla->params->{reminders_enabled}
+    && $user->in_group(Bugzilla->params->{reminders_group});
+
   # remove reminder(s)
   my $ids = ref($input->{remove}) ? $input->{remove} : [$input->{remove}];
 
@@ -982,16 +991,13 @@ sub SaveReminders {
   $dbh->bz_start_transaction;
   foreach my $reminder (@$reminders) {
     $reminder->remove_from_db();
-  } 
+  }
   $dbh->bz_commit_transaction();
 
   if ($input->{'add_reminder'}) {
     my $bug_id = trim($input->{bug_id});
-    my $note   = trim($input->{note});
+    my $note   = trim($input->{note} || '');
     my $when   = trim($input->{when});
-
-    ($bug_id =~ /^\d+$/) || ThrowUserError('reminders_invalid_bug_id');
-    $when                || ThrowUserError('reminders_invalid_when');
 
     Bugzilla::Reminder->create({
       user_id     => $user->id,

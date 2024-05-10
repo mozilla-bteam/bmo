@@ -907,6 +907,19 @@ $(function() {
             }
         });
 
+    // bug reminder button
+    $('#reminder-btn')
+        .click(async event => {
+            event.preventDefault();
+            var is_reminded = $(event.target).data('is-reminded') == '1';
+            if (is_reminded) {
+                window.location.replace(`${BUGZILLA.config.basepath}userprefs.cgi?tab=reminders`);
+            }
+            else {
+                window.location.replace(`${BUGZILLA.config.basepath}userprefs.cgi?tab=reminders&bug_id=${BUGZILLA.bug_id}`);
+            }
+        });
+
     // cancel button, reset the ui back to read-only state
     // for now, do this with a redirect to self
     // ideally this should revert all field back to their initially loaded
