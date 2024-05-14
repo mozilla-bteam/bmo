@@ -13,6 +13,8 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::App::Controller::CGI;
+
 use Bugzilla::Extension::BzAPI::Constants;
 use Bugzilla::Extension::BzAPI::Util qw(fix_credentials filter_wants_nocache);
 
@@ -286,7 +288,7 @@ sub app_startup {
   my $app = $args->{app};
   my $r   = $app->routes;
 
-  Bugzilla::App::CGI->load_one('bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi');
+  Bugzilla::App::Controller::CGI->load_one('bzapi_cgi', 'extensions/BzAPI/bin/rest.cgi');
   $r->any('/extensions/BzAPI/bin/rest.cgi/*PATH_INFO')->to('CGI#bzapi_cgi');
   $r->any('/latest/*PATH_INFO')->to('CGI#bzapi_cgi');
   $r->any('/bzapi/*PATH_INFO')->to('CGI#bzapi_cgi');
