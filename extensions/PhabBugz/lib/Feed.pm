@@ -648,25 +648,12 @@ sub process_revision_change {
   if ($revision->repository && $revision->repository->is_uplift_repo()) {
     INFO('Uplift repository detected. Setting attachment approval flags');
 
-    # Make sure Phabricator user is a member of the release-managers project
-    my $is_member = 0;
-    my $release_manager_project
-      = Bugzilla::Extension::PhabBugz::Project->new_from_query({name => 'release-managers'});
-    foreach my $member (@$release_manager_project->members) {
-      if ($member->phid eq $changer->phid) {
-        $is_member = 1;
-        last;
-      }
-    }
+    # set the approval flags. This ensures that users who create revisions will
+    # set the flag to `?`, and only approvals from `mozilla-next-drivers` group
+    # members will set the flag to `+` or `-`.
+    my $flag_setter = $changer->bugzilla_user;
 
-    if ($is_member) {
-      # set the approval flags. This ensures that users who create revisions will
-      # set the flag to `?`, and only approvals from `mozilla-next-drivers` group
-      # members will set the flag to `+` or `-`.
-      my $flag_setter = $changer->bugzilla_user;
-
-      set_attachment_approval_flags($attachment, $revision, $flag_setter);
-    }
+    set_attachment_approval_flags($attachment, $revision, $flag_setter);
   }
 
   $attachment->update($timestamp);

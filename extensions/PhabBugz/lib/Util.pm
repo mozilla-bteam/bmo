@@ -45,7 +45,7 @@ our @EXPORT = qw(
 
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
-  my ($attachment, $revision, $flag_setter) = @_;
+  my ($attachment, $revision, $flag_setter, $phab_user) = @_;
 
   my $revision_status_flag_map = {
     'abandoned'       => '-',
@@ -80,6 +80,21 @@ sub set_attachment_approval_flags {
       . $approval_flag_name
       . $status);
 
+  # If we are setting to + or -, we need to make sure
+  # Phabricator user is a member of the release-managers project
+  my $is_release_manager = 0;
+  my $release_manager_project
+    = Bugzilla::Extension::PhabBugz::Project->new_from_query(
+    {name => 'release-managers'});
+  if ($release_manager_project) {
+    foreach my $member (@$release_manager_project->members) {
+      if ($member->phid eq $phab_user->phid) {
+        $is_release_manager = 1;
+        last;
+      }
+    }
+  }
+
   # Find the current approval flag state if it exists.
   foreach my $flag (@{$attachment->flags}) {
 
@@ -90,8 +105,17 @@ sub set_attachment_approval_flags {
     # it will be a non-change. We also need to check to make sure the
     # flag change is allowed.
     if ($flag_setter->can_change_flag($flag->type, $flag->status, $status)) {
-      INFO("Set existing `$approval_flag_name` flag to `$status`.");
-      push @old_flags, {id => $flag->id, status => $status};
+
+      # If setting to + or - then user needs to be a release manager in Phab
+      if (($status eq '+' || $status eq '-') && !$is_release_manager) {
+        INFO(
+          "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
+        );
+      }
+      else {
+        INFO("Set existing `$approval_flag_name` flag to `$status`.");
+        push @old_flags, {id => $flag->id, status => $status};
+      }
     }
     else {
       INFO(
