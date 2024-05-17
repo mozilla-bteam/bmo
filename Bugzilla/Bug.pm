@@ -30,7 +30,6 @@ use Bugzilla::Status;
 use Bugzilla::Comment;
 use Bugzilla::BugUrl;
 use Bugzilla::BugUserLastVisit;
-use Bugzilla::Reminder;
 
 use List::MoreUtils qw(firstidx uniq part any);
 use List::Util qw(min max first);
@@ -4641,9 +4640,10 @@ sub to_hash {
 sub is_reminded {
   my ($self, $user) = @_;
   return $self->{is_reminded} if exists $self->{is_reminded};
-  
+
   $user ||= Bugzilla->user;
-  
+
+  require Bugzilla::Reminder;
   my $reminders
     = Bugzilla::Reminder->match({bug_id => $self->id, user_id => $user->id});
   if (@{$reminders}) {

@@ -1976,23 +1976,17 @@ use constant ABSTRACT_SCHEMA => {
       user_id => {
         TYPE       => 'INT3',
         NOTNULL    => 1,
-        REFERENCES => {
-          TABLE  => 'profiles',
-          COLUMN => 'userid',
-          DELETE => 'CASCADE',
-        },
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE',},
       },
-      remind_when => {TYPE => 'DATETIME', NOTNULL => 1},
+      creation_ts => {TYPE => 'DATETIME', NOTNULL => 1},
+      reminder_ts => {TYPE => 'DATETIME', NOTNULL => 1},
       bug_id      => {
         TYPE       => 'INT3',
         NOTNULL    => 1,
-        REFERENCES => {
-          TABLE  => 'bugs',
-          COLUMN => 'bug_id',
-          DELETE => 'CASCADE',
-        },
+        REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE',},
       },
       note => {TYPE => 'VARCHAR(255)'},
+      sent => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'},
     ],
   },
 };

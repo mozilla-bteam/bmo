@@ -27,17 +27,22 @@ use constant DB_COLUMNS => qw(
   user_id
   bug_id
   note
-  remind_when
+  creation_ts
+  reminder_ts
+  sent
 );
 
 use constant LIST_ORDER => 'id';
 
-use constant UPDATE_COLUMNS => ();
+use constant UPDATE_COLUMNS => qw(
+  sent
+);
 
 use constant VALIDATORS => {
   user_id     => \&_check_user_id,
   bug_id      => \&_check_bug_id,
-  remind_when => \&_check_remind_when,
+  creation_ts => \&_check_creation_ts,
+  reminder_ts => \&_check_reminder_ts,
 };
 
 use constant AUDIT_CREATES => 1;
@@ -57,20 +62,23 @@ sub bug {
   return Bugzilla::Bug->new({id => $self->{bug_id}, cache => 1});
 }
 
-sub expired {
+sub reminder_ts {
   my ($self) = @_;
-  return $self->remind_when < DateTime->now;
+  return $self->{reminder_ts} ? datetime_from($self->{reminder_ts}) : undef;
 }
 
-sub remind_when {
+sub creation_ts {
   my ($self) = @_;
-  return $self->{remind_when}
-    ? datetime_from($self->{remind_when})
-    : undef;
+  return $self->{creation_ts} ? datetime_from($self->{creation_ts}) : undef;
 }
 
 sub id   { return $_[0]->{id}; }
 sub note { return $_[0]->{note}; }
+sub sent { return $_[0]->{sent}; }
+
+# setters
+
+sub set_sent { $_[0]->set('sent', $_[1]); }
 
 # validators
 
@@ -88,15 +96,20 @@ sub _check_bug_id {
   return Bugzilla::Bug->check({id => $bug_id, cache => 1})->id;
 }
 
-sub _check_remind_when {
-  my ($class, $when) = @_;
-  $when = trim($when);
-  return undef if !$when;
+sub _check_reminder_ts {
+  my ($class, $reminder_ts) = @_;
+  $reminder_ts = trim($reminder_ts);
+  return undef if !$reminder_ts;
 
 # check that the date is valid and the correct format
-  validate_date($when)
-    || ThrowUserError('illegal_date', {date => $when, format => 'YYYY-MM-DD'});
-  return $when;
+  validate_date($reminder_ts)
+    || ThrowUserError('illegal_date',
+    {date => $reminder_ts, format => 'YYYY-MM-DD'});
+  return $reminder_ts;
+}
+
+sub _check_creation_ts {
+  return Bugzilla->dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 }
 
 1;

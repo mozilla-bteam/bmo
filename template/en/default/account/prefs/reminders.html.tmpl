@@ -50,7 +50,8 @@
       <th>[% terms.Bug %] Summary</th>
       <th>Note</th>
       <th>When</th>
-      <th></th>
+      <th>Created</th>
+      <th>Sent</th>
     </tr>
   </thead>
   <tbody>
@@ -65,8 +66,9 @@
       </td>
       <td>[% reminder.bug.short_desc FILTER html %]</td>
       <td>[% reminder.note FILTER html %]</td>
-      <td>[% reminder.remind_when FILTER html %]</td>
-      <td>[% IF reminder.expired %]Expired[% END %]</td>
+      <td>[% reminder.reminder_ts FILTER time('%Y-%m-%d') FILTER html %]</td>
+      <td>[% reminder.creation_ts FILTER time('%Y-%m-%d') FILTER html %]</td>
+      <td>[% IF reminder.sent %]Yes[% ELSE %]No[% END %]</td>
     </tr>
   [% END %]
   </tbody>

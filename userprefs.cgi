@@ -1002,7 +1002,7 @@ sub SaveReminders {
     Bugzilla::Reminder->create({
       user_id     => $user->id,
       bug_id      => $bug_id,
-      remind_when => $when,
+      reminder_ts => $when,
       note        => $note,
     });
   }
