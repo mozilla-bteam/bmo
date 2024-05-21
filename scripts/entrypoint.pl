@@ -174,7 +174,6 @@ sub cmd_test_selenium {
 
 sub cmd_test_qa {
   my $test_files = shift;
-  $ENV{HTTP_BACKEND} = 'simple';
 
   cmd_load_test_data();
   check_data_dir();

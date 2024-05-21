@@ -64,7 +64,7 @@ $sel->select_ok('component', 'General');
 $sel->click_ok('confirm_move', 'Confirm the move');
 $sel->is_text_present_ok(
   'The component \'General\' will be moved from source product \'Firefox\' '
-  . 'to graveyard product \'Firefox Graveyard\'.');
+  . 'to destination product \'Firefox Graveyard\'.');
 
 # Test for open bugs
 file_bug_in_product($sel, 'Firefox');
@@ -102,13 +102,13 @@ $sel->click_ok('confirm_move');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok(
   'The component \'General\' will be moved from source product \'Firefox\' '
-  . 'to graveyard product \'Firefox Graveyard\'.');
+  . 'to destination product \'Firefox Graveyard\'.');
 
 # Finally move the component
 $sel->click_ok('do_the_move', 'Do the move');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('Component \'General\' successfully moved from source '
-  . 'product \'Firefox\' to graveyard product \'Firefox Graveyard\'.');
+  . 'product \'Firefox\' to destination product \'Firefox Graveyard\'.');
 
 # Verify the component is no longer in the Firefox product
 $sel->open_ok('/describecomponents.cgi?product=Firefox');
