@@ -33,12 +33,16 @@
 
   # extract needinfo flags
   needinfo = [];
+  has_needinfo_from = "";
   FOREACH flag_type IN bug.flag_types;
     IF flag_type.name == 'needinfo';
     needinfo_flag_type = flag_type;
       FOREACH flag IN flag_type.flags;
         IF flag.status == '?';
           needinfo.push(flag);
+        END;
+        IF flag.requestee_id == user.id;
+          has_needinfo_from = flag.setter.login;
         END;
       END;
     END;
@@ -175,8 +179,10 @@
         [%~ is_cced ? "Stop Following" : "Follow" ~%]
       </button>
       [% IF Param('reminders_enabled') AND user.in_group(Param('reminders_group')) %]
-        <button type="button" class="secondary" id="reminder-btn" data-is-reminded="[% bug.is_reminded ? 1 : 0 %]">
-          [%~ bug.is_reminded ? "Remove Reminder" : "Set Reminder" ~%]
+        <button type="button" class="secondary" id="reminder-btn" 
+                data-is-reminded="[% bug.is_reminded ? 1 : 0 %]" 
+                data-has-needinfo-from="[% has_needinfo_from ? has_needinfo_from : "" FILTER html %]">
+          [%~ bug.is_reminded ? "Remove Reminder" : "Add Reminder" ~%]
         </button>
       [% END %]
     [% END %]

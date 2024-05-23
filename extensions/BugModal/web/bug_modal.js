@@ -911,13 +911,16 @@ $(function() {
     $('#reminder-btn')
         .click(async event => {
             event.preventDefault();
-            var is_reminded = $(event.target).data('is-reminded') == '1';
-            if (is_reminded) {
-                window.location.replace(`${BUGZILLA.config.basepath}userprefs.cgi?tab=reminders`);
+            const is_reminded = $(event.target).data('is-reminded') == '1';
+            const has_needinfo_from = $(event.target).data('has-needinfo-from');
+            let query_string = "tab=reminders"; 
+            if (!is_reminded) {
+                query_string += `&bug_id=${BUGZILLA.bug_id}`;
             }
-            else {
-                window.location.replace(`${BUGZILLA.config.basepath}userprefs.cgi?tab=reminders&bug_id=${BUGZILLA.bug_id}`);
+            if (has_needinfo_from) {
+                query_string += "&note=Neeinfo from " + encodeURIComponent(has_needinfo_from);
             }
+            window.location.replace(`${BUGZILLA.config.basepath}userprefs.cgi?` + query_string);
         });
 
     // cancel button, reset the ui back to read-only state

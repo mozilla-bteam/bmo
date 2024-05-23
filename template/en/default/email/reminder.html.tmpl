@@ -17,8 +17,14 @@
     <h3>[[% terms.BugzillaTitle %]] [% terms.Bug %] Reminder</h3>
     <p>
       This email is a reminder you set on 
-      <b>[% reminder.creation_ts FILTER time('%Y-%m-%d') FILTER html %]</b> 
-      to be sent to you today about the following [% terms.bug %]:
+      <b>[% reminder.creation_ts FILTER time('%Y-%m-%d') FILTER html %]</b>
+      with the following note:
+    </p>
+    <p>
+      [% reminder.note FILTER html %]
+    </p>
+    </p>
+      The reminder was about the following [% terms.bug %]:
     </p>
     <p>
       [%+ terms.Bug +%] [%+ reminder.bug.id FILTER html %] 

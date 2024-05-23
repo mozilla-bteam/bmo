@@ -10,8 +10,11 @@
 
 [[% terms.BugzillaTitle %]] [% terms.Bug %] Reminder
 
-This email is a reminder you set on [% reminder.creation_ts FILTER time('%Y-%m-%d') %] 
-to be sent to you today about the following [% terms.bug %]:
+This email is a reminder you set on [% reminder.creation_ts FILTER time('%Y-%m-%d') %] with the following note:
+
+[% reminder.note %]
+
+The reminder was about the following [% terms.bug %]:
 
 [%+ terms.Bug +%] [%+ reminder.bug.id %] Summary: [% reminder.bug.short_desc %]
 [%+ urlbase %]show_bug.cgi?id=[% reminder.bug.id %]

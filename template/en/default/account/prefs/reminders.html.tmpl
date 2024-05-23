@@ -11,6 +11,17 @@
 [% PROCESS global/variables.none.tmpl %]
 [% PROCESS 'global/field-descs.none.tmpl' %]
 
+<script [% script_nonce FILTER none%]>
+  window.addEventListener("DOMContentLoaded", () => {
+    const type_list = ["days", "months", "date"];
+    for (const type of type_list) {
+      document.getElementById("remind_" + type).addEventListener("keydown", () => {
+        document.getElementById("radio_remind_" + type).checked = true;
+      });
+    }
+  });
+</script>
+
 <table border="0" cellpadding="3" cellspacing="0">
 <tr>
   <th align="right">[% terms.Bug %] ID:</th>
@@ -21,13 +32,18 @@
 <tr>
   <th align="right">Note:</th>
   <td>
-    <input type="text" name="note" id="note" size="64" maxlength="255">
+    <input type="text" name="note" id="note" size="64" maxlength="255" value="[% note FILTER html %]">
   </td>
 </tr>
 <tr>
-  <th align="right">When:</th>
+  <th align="right" valign="top">When:</th>
   <td>
-    <input type="date" name="when" id="when" size="32">
+    <input type="radio" name="remind_type" id="radio_remind_days" value="days">In 
+    <input type="text" name="remind_days" id="remind_days"> days<br>
+    <input type="radio" name="remind_type" id="radio_remind_months" value="months">In 
+    <input type="text" name="remind_months" id="remind_months"> months<br>
+    <input type="radio" name="remind_type" id="radio_remind_date" value="date" checked="checked">On 
+    <input type="date" name="remind_date" id="remind_date" size="32">
   </td>
 </tr>
 </table>

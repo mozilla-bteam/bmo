@@ -99,7 +99,6 @@ sub _check_bug_id {
 sub _check_reminder_ts {
   my ($class, $reminder_ts) = @_;
   $reminder_ts = trim($reminder_ts);
-  return undef if !$reminder_ts;
 
 # check that the date is valid and the correct format
   validate_date($reminder_ts)
