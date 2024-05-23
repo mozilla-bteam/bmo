@@ -653,7 +653,7 @@ sub process_revision_change {
     # members will set the flag to `+` or `-`.
     my $flag_setter = $changer->bugzilla_user;
 
-    set_attachment_approval_flags($attachment, $revision, $flag_setter);
+    set_attachment_approval_flags($attachment, $revision, $flag_setter, $changer);
   }
 
   $attachment->update($timestamp);

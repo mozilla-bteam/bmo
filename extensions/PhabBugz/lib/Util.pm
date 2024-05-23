@@ -87,7 +87,8 @@ sub set_attachment_approval_flags {
     = Bugzilla::Extension::PhabBugz::Project->new_from_query(
     {name => 'release-managers'});
   if ($release_manager_project) {
-    foreach my $member (@$release_manager_project->members) {
+    my $members = $release_manager_project->members || [];
+    foreach my $member (@{$members}) {
       if ($member->phid eq $phab_user->phid) {
         $is_release_manager = 1;
         last;
