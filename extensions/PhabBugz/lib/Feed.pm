@@ -648,7 +648,6 @@ sub process_revision_change {
   if ($revision->repository && $revision->repository->is_uplift_repo()) {
     INFO('Uplift repository detected. Setting attachment approval flags');
 
-    # The Bugzilla user for the user who initiated the change should be used to
     # set the approval flags. This ensures that users who create revisions will
     # set the flag to `?`, and only approvals from `mozilla-next-drivers` group
     # members will set the flag to `+` or `-`.
