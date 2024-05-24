@@ -45,7 +45,7 @@ our @EXPORT = qw(
 
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
-  my ($attachment, $revision, $flag_setter) = @_;
+  my ($attachment, $revision, $flag_setter, $phab_user) = @_;
 
   my $revision_status_flag_map = {
     'abandoned'       => '-',
@@ -90,8 +90,17 @@ sub set_attachment_approval_flags {
     # it will be a non-change. We also need to check to make sure the
     # flag change is allowed.
     if ($flag_setter->can_change_flag($flag->type, $flag->status, $status)) {
-      INFO("Set existing `$approval_flag_name` flag to `$status`.");
-      push @old_flags, {id => $flag->id, status => $status};
+
+      # If setting to + or - then user needs to be a release manager in Phab
+      if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
+        INFO(
+          "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
+        );
+      }
+      else {
+        INFO("Set existing `$approval_flag_name` flag to `$status`.");
+        push @old_flags, {id => $flag->id, status => $status};
+      }
     }
     else {
       INFO(
