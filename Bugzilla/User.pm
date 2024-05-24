@@ -752,12 +752,16 @@ sub ldap_email {
   # This only applies to MFA that is based on Duo. If Duo is used,
   # then the value in profiles_mfa is the users ldap email.
   if ($self->mfa eq 'Duo') {
-    my $ldap_email
+    $self->{ldap_email}
       = Bugzilla->dbh->selectrow_array(
-      'SELECT value FROM profile_mfa WHERE user_id = ?',
+      'SELECT value FROM profile_mfa WHERE name = \'user\' AND user_id = ?',
       undef, $self->id);
-    return $self->{ldap_email} = $ldap_email;
   }
+  else {
+    $self->{ldap_email} = '';
+  }
+
+  return $self->{ldap_email};
 }
 
 sub name_or_login {

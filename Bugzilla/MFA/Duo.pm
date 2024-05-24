@@ -14,6 +14,7 @@ use warnings;
 use base 'Bugzilla::MFA';
 
 use Bugzilla::DuoClient;
+use Bugzilla::Error;
 
 sub can_verify_inline {
   return 0;
@@ -21,6 +22,16 @@ sub can_verify_inline {
 
 sub enroll {
   my ($self, $params) = @_;
+
+  # Do not allow Duo enrollment unless required or user is a Mozilla employee
+  my $user = Bugzilla->user;
+  unless ($user->in_duo_required_group
+    || $user->in_group('mozilla-employee-confidential'))
+  {
+    ThrowUserError('duo_user_error',
+      {reason => 'You are not permitted to enroll Duo Security for this account.'});
+  }
+
   $self->property_set('user', $params->{username});
 }
 

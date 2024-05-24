@@ -341,12 +341,12 @@ sub check_value {
     $value = '';
   }
   elsif ($field eq '') {
-    $value = ' ';
+    $value = 'single';
   }
   else {
     $value = shift @$result;
-    $value = ' ' if (!defined $value || $value eq '');
-    $value = '---' if ($field eq 'resolution' && $value eq ' ');
+    $value = 'single' if (!defined $value || $value eq '');
+    $value = '---' if ($field eq 'resolution' && $value eq 'single');
   }
   return $value;
 }

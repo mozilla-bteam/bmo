@@ -521,7 +521,7 @@ sub process {
   my ($self, $input, $vars, $output) = @_;
   $vars //= {};
 
-  if (($ENV{SERVER_SOFTWARE} // '') eq 'Bugzilla::App::CGI') {
+  if (($ENV{SERVER_SOFTWARE} // '') eq 'Bugzilla::App::Controller::CGI') {
     $vars->{self} = $vars->{c} = Bugzilla->request_cache->{mojo_controller};
   }
 

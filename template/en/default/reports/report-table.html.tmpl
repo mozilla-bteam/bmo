@@ -37,10 +37,9 @@
 [% col_field_disp = field_descs.$col_field || col_field %]
 [% row_field_disp = field_descs.$row_field || row_field %]
 
-[%# Fix an empty table name that can cause issues on CSS selectors, etc. %]
-[% IF tbl == " " %]
-  [% tbl = "" %]
-[% END %]
+[%# Class and ID names need to have whitespace removed. %]
+[% tbl_id = tbl FILTER css_class_quote %]
+
 [% urlbase = BLOCK %][% basepath FILTER none %]buglist.cgi?[% buglistbase FILTER html %][% END %]
 [% IF tbl == "-total-" %]
   [% IF tbl_vals %]
@@ -51,34 +50,33 @@
 [% END %]
 
 <script [% script_nonce FILTER none %]>
-function bz_encode (str, decode) {
+function bz_encode (str) {
   if (typeof str !== 'string') {
     str = String(str);
   }
 
-  // First decode HTML entities, if requested.
-  if (decode)
-    str = str.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
-             .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+$/,"");
+  // First decode HTML entities.
+  str = str.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
+           .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+$/,"");
 
   // encodeURIComponent() doesn't escape single quotes.
   return encodeURIComponent(str).replace(/'/g, escape);
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-  const linkify = ({ value, data }) => {
+  const linkify = ({ $column, value, data }) => {
     if (value === '.') {
       return '.';
     }
 
     if (data.row_title === 'Total') {
       return '<a href="[% urlbase FILTER js %]&amp;[% col_field FILTER uri FILTER js %]='
-        + bz_encode(data.field) + '[% "&amp;" _ row_vals IF row_vals %]">' + value + '</a>';
+        + bz_encode($column.dataset.key) + '[% "&amp;" _ row_vals IF row_vals %]">' + encodeURIComponent(value) + '</a>';
     }
 
     return '<a href="[% urlbase FILTER js %]&amp;[% row_field FILTER uri FILTER js %]='
-      + bz_encode(data.row_title, 1) + '&amp;[% col_field FILTER uri FILTER js %]='
-      + bz_encode(data.field) + '">' + value + '</a>';
+      + bz_encode(data.row_title) + '&amp;[% col_field FILTER uri FILTER js %]='
+      + bz_encode($column.dataset.key) + '">' + encodeURIComponent(value) + '</a>';
   };
 
   const linkifyTotal = ({ value, data }) => {
@@ -92,7 +90,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     return '<a href="[% urlbase FILTER js %]&amp;[% row_field FILTER uri FILTER js %]='
-      + bz_encode(data.row_title, 1) + '[% "&amp;" _ col_vals IF col_vals %]">' + value + '</a>';
+      + bz_encode(data.row_title) + '[% "&amp;" _ col_vals IF col_vals %]">' + encodeURIComponent(value) + '</a>';
   };
 
   const totalRowFormatter = ({ $row, data }) => {
@@ -149,7 +147,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   ];
 
-  const rows = [...document.querySelectorAll('#tabular_report tbody tr')];
+  const rows = [...document.querySelectorAll('#tabular_report_[% tbl_id FILTER js %] tbody tr')];
 
   const data = rows.map(($tr) => Object.fromEntries(
     [...$tr.querySelectorAll('td')].map(($td, index) => {
@@ -158,10 +156,10 @@ window.addEventListener('DOMContentLoaded', () => {
     })
   ));
 
-  document.querySelector('#tabular_report').remove();
+  document.querySelector('#tabular_report_[% tbl_id FILTER js %]').remove();
 
   new Bugzilla.DataTable({
-    container: '#tabular_report_container_[% tbl FILTER js %]',
+    container: '#tabular_report_container_[% tbl_id FILTER js %]',
     columns,
     data,
     options: { formatRow: totalRowFormatter },
@@ -193,8 +191,8 @@ window.addEventListener('DOMContentLoaded', () => {
 [% col_idx = 0 %]
 [% row_idx = 0 %]
 [% grand_total = 0 %]
-<div id="tabular_report_container_[% tbl FILTER html %]">
-<table id="tabular_report" border="1">
+<div id="tabular_report_container_[% tbl_id FILTER html %]">
+<table id="tabular_report_[% tbl_id FILTER html %]" border="1">
   [% IF col_field %]
     <thead>
     <tr>

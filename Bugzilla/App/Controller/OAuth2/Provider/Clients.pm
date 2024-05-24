@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::App::OAuth2::Provider::Clients;
+package Bugzilla::App::Controller::OAuth2::Provider::Clients;
 use 5.10.1;
 use Mojo::Base 'Mojolicious::Controller';
 

@@ -21,17 +21,7 @@ use Bugzilla::Constants;
 use Bugzilla::Extension             ();
 use Bugzilla::Install::Requirements ();
 use Bugzilla::Logging;
-use Bugzilla::App::API;
-use Bugzilla::App::BouncedEmails;
-use Bugzilla::App::CGI;
-use Bugzilla::App::Main;
-use Bugzilla::App::OAuth2::Provider::Clients;
-use Bugzilla::App::SES;
 use Bugzilla::App::Static;
-use Bugzilla::App::BMO::AntiSpam;
-use Bugzilla::App::BMO::ComponentGraveyard;
-use Bugzilla::App::BMO::NewRelease;
-use Bugzilla::App::MFA::Duo;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
 use Bugzilla::Util ();
@@ -206,18 +196,20 @@ sub startup {
 
 sub setup_routes {
   my ($self) = @_;
-
   my $r = $self->routes;
-  Bugzilla::App::API->setup_routes($r);
-  Bugzilla::App::BouncedEmails->setup_routes($r);
-  Bugzilla::App::CGI->setup_routes($r);
-  Bugzilla::App::Main->setup_routes($r);
-  Bugzilla::App::OAuth2::Provider::Clients->setup_routes($r);
-  Bugzilla::App::SES->setup_routes($r);
-  Bugzilla::App::BMO::AntiSpam->setup_routes($r);
-  Bugzilla::App::BMO::ComponentGraveyard->setup_routes($r);
-  Bugzilla::App::BMO::NewRelease->setup_routes($r);
-  Bugzilla::App::MFA::Duo->setup_routes($r);
+
+  # Load controller modules and their routes
+  foreach my $module (find_modules('Bugzilla::App::Controller', {recursive => 1}))
+  {
+    require_module($module);
+    my $controller = $module->new;
+    if ($controller->can('setup_routes')) {
+      $controller->setup_routes($r);
+    }
+    else {
+      WARN("Could not execute setup_routes() for module: $module");
+    }
+  }
 
   $r->static_file('/__lbheartbeat__');
   $r->static_file(

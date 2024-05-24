@@ -68,11 +68,15 @@ sub bug_update_before_logging {
   my ($self, $args) = @_;
   my $changes = $args->{changes};
   return unless exists $changes->{cf_user_story};
-  my $diff = diff(
-    \$changes->{cf_user_story}->[0],
-    \$changes->{cf_user_story}->[1],
-    {CONTEXT => 0,},
-  );
+
+  my $old_value = $changes->{cf_user_story}->[0];
+  my $new_value = $changes->{cf_user_story}->[1];
+
+  # Add back newline to get rid of "No newline at end of file" error
+  $old_value .= "\n" if $old_value !~ /(?:\n|\r\n)$/;
+  $new_value .= "\n" if $new_value !~ /(?:\n|\r\n)$/;
+
+  my $diff = diff(\$old_value, \$new_value);
   $changes->{cf_user_story} = ['', $diff];
 }
 
