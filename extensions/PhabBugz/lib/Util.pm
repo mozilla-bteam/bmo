@@ -80,22 +80,6 @@ sub set_attachment_approval_flags {
       . $approval_flag_name
       . $status);
 
-  # If we are setting to + or -, we need to make sure
-  # Phabricator user is a member of the release-managers project
-  my $is_release_manager = 0;
-  my $release_manager_project
-    = Bugzilla::Extension::PhabBugz::Project->new_from_query(
-    {name => 'release-managers'});
-  if ($release_manager_project) {
-    my $members = $release_manager_project->members || [];
-    foreach my $member (@{$members}) {
-      if ($member->phid eq $phab_user->phid) {
-        $is_release_manager = 1;
-        last;
-      }
-    }
-  }
-
   # Find the current approval flag state if it exists.
   foreach my $flag (@{$attachment->flags}) {
 
@@ -108,7 +92,7 @@ sub set_attachment_approval_flags {
     if ($flag_setter->can_change_flag($flag->type, $flag->status, $status)) {
 
       # If setting to + or - then user needs to be a release manager in Phab
-      if (($status eq '+' || $status eq '-') && !$is_release_manager) {
+      if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
         INFO(
           "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
         );
