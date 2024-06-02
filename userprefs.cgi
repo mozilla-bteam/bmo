@@ -19,6 +19,7 @@ use Bugzilla::Mailer;
 use Bugzilla::Search;
 use Bugzilla::Util;
 use Bugzilla::Error;
+use Bugzilla::Reminder;
 use Bugzilla::User;
 use Bugzilla::User::Setting qw(clear_settings_cache);
 use Bugzilla::User::Session;
@@ -961,6 +962,71 @@ sub MfaApiKey {
   }
 }
 
+sub DoReminders {
+  my $input = Bugzilla->input_params;
+  my $user  = Bugzilla->user;
+
+  return
+    unless Bugzilla->params->{reminders_enabled}
+    && $user->in_group(Bugzilla->params->{reminders_group});
+
+  # Sort by soonest first. Also do not display reminders that have been sent already
+  my $reminders = Bugzilla::Reminder->match({user_id => $user->id, sent => 0});
+  $reminders = [reverse sort { $a->reminder_ts <=> $b->reminder_ts } @{$reminders}];
+
+  $vars->{reminders} = $reminders;
+  $vars->{bug_id}    = $input->{bug_id} if $input->{bug_id};
+  $vars->{note}      = $input->{note}   if $input->{note};
+}
+
+sub SaveReminders {
+  my $input = Bugzilla->input_params;
+  my $user  = Bugzilla->user;
+  my $dbh   = Bugzilla->dbh;
+
+  return
+    unless Bugzilla->params->{reminders_enabled}
+    && $user->in_group(Bugzilla->params->{reminders_group});
+
+  # remove reminder(s)
+  my $ids = ref($input->{remove}) ? $input->{remove} : [$input->{remove}];
+
+  my $reminders = Bugzilla::Reminder->match({id => $ids, user_id => $user->id});
+
+  $dbh->bz_start_transaction;
+  foreach my $reminder (@$reminders) {
+    $reminder->remove_from_db();
+  }
+  $dbh->bz_commit_transaction();
+
+  # Add a new reminder
+  if ($input->{'add_reminder'}) {
+    my $bug_id        = trim(delete $input->{bug_id});
+    my $note          = trim(delete $input->{note} || '');
+    my $remind_type   = trim(delete $input->{remind_type});
+    my $remind_days   = trim(delete $input->{remind_days});
+    my $remind_months = trim(delete $input->{remind_months});
+    my $remind_date   = trim(delete $input->{remind_date});
+
+    my $date_now = DateTime->now;
+    if ($remind_type eq 'days') {
+      $remind_date
+        = $date_now->add(days => $remind_days)->strftime('%Y-%m-%d');
+    }
+    elsif ($remind_type eq 'months') {
+      $remind_date
+        = $date_now->add(months => $remind_months)->strftime('%Y-%m-%d');
+    }
+
+    Bugzilla::Reminder->create({
+      user_id     => $user->id,
+      bug_id      => $bug_id,
+      reminder_ts => $remind_date,
+      note        => $note,
+    });
+  }
+}
+
 sub _create_api_key {
   my ($description) = @_;
   my $user = Bugzilla->user;
@@ -1078,6 +1144,11 @@ SWITCH: for ($current_tab_name) {
     SaveMFAcallback($mfa_token) if $mfa_token;
     SaveMFA()                   if $save_changes;
     DoMFA();
+    last SWITCH;
+  };
+  /^reminders$/ && do {
+    SaveReminders() if $save_changes;
+    DoReminders();
     last SWITCH;
   };
 

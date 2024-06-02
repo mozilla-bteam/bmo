@@ -1,0 +1,47 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+<!doctype html>
+<html>
+  <head>
+    <title>[[% terms.BugzillaTitle %]] [% terms.Bug %] Reminder</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <h3>[[% terms.BugzillaTitle %]] [% terms.Bug %] Reminder</h3>
+    <p>
+      This email is a reminder you set on 
+      <b>[% reminder.creation_ts FILTER time('%Y-%m-%d') FILTER html %]</b>
+      with the following note:
+    </p>
+    <p>
+      [% reminder.note FILTER html %]
+    </p>
+    </p>
+      The reminder was about the following [% terms.bug %]:
+    </p>
+    <p>
+      [%+ terms.Bug +%] [%+ reminder.bug.id FILTER html %] 
+      Summary: [% reminder.bug.short_desc FILTER html %]<br>
+      [%+ urlbase FILTER none %]show_bug.cgi?id=[% reminder.bug.id FILTER uri %]
+    </p>
+    <p>
+      Thank you for using [%terms.Bug %] Reminders!<br>
+      <a href=[% urlbase FILTER none %]userprefs.cgi?tab=reminders">Update Reminders</a>
+    </p>
+    <div style="font-size: 90%; color: #666666">
+      <hr style="border: 1px dashed #969696">
+      <b>You are receiving this mail because:</b>
+      <ul>
+        <li>you set a [% terms.bug %] reminder.</li>
+      </ul>
+    </div>
+    @@body-headers@@
+  </body>
+</html>

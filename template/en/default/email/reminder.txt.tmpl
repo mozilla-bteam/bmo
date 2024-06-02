@@ -1,0 +1,28 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[[% terms.BugzillaTitle %]] [% terms.Bug %] Reminder
+
+This email is a reminder you set on [% reminder.creation_ts FILTER time('%Y-%m-%d') %] with the following note:
+
+[% reminder.note %]
+
+The reminder was about the following [% terms.bug %]:
+
+[%+ terms.Bug +%] [%+ reminder.bug.id %] Summary: [% reminder.bug.short_desc %]
+[%+ urlbase %]show_bug.cgi?id=[% reminder.bug.id %]
+
+Thank you for using [%terms.Bug %] Reminders!
+Update Reminders: [% urlbase %]userprefs.cgi?tab=reminders
+
+--
+You are receiving this mail because: you set a [% terms.bug %] reminder.
+
+@@body-headers@@
