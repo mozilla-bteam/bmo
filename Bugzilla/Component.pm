@@ -14,6 +14,7 @@ use warnings;
 use base qw(Bugzilla::Field::ChoiceInterface Bugzilla::Object);
 
 use Bugzilla::Constants;
+use Bugzilla::Field qw(get_field_id);
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::User;
@@ -175,6 +176,156 @@ sub remove_from_db {
   $dbh->do('DELETE FROM components WHERE id = ?',               undef, $self->id);
 
   $dbh->bz_commit_transaction();
+}
+
+# Move this component to a graveyard product
+sub move_to_graveyard_product {
+  my ($self, $dest_product) = @_;
+  my @move_list         = ();
+  my $component_name    = $self->name;
+  my $src_product       = $self->product;
+  my $src_product_name  = $self->product->name;
+  my $dest_product_name = $dest_product->name;
+
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_start_transaction();
+
+  # Syncing of milestones and versions
+  $dbh->do('
+    INSERT INTO milestones(value, sortkey, isactive, product_id)
+      SELECT m1.value, m1.sortkey, m1.isactive, ?
+        FROM milestones m1
+             LEFT JOIN milestones m2 ON m1.value = m2.value
+             AND m2.product_id = ?
+       WHERE m1.product_id = ? AND m2.value IS NULL', undef, $dest_product->id,
+    $dest_product->id, $src_product->id);
+
+  push @move_list,
+    "Milestones syncronized from source product '$src_product_name' to "
+    . "destination product '$dest_product_name'.";
+
+  $dbh->do('
+    INSERT INTO versions(value, isactive, product_id)
+      SELECT v1.value, v1.isactive, ?
+        FROM versions v1
+             LEFT JOIN versions v2 ON v1.value = v2.value AND v2.product_id = ?
+       WHERE v1.product_id = ? AND v2.value IS NULL', undef, $dest_product->id,
+    $dest_product->id, $src_product->id);
+
+  push @move_list, "Versions syncronized from source product '$src_product_name' to "
+    . "destination product '$dest_product_name'.";
+
+  $dbh->do('
+    INSERT INTO group_control_map (group_id, product_id, entry, membercontrol,
+           othercontrol, canedit, editcomponents,
+           editbugs, canconfirm)
+      SELECT g1.group_id, ?, g1.entry, g1.membercontrol, g1.othercontrol,
+             g1.canedit, g1.editcomponents, g1.editbugs, g1.canconfirm
+        FROM group_control_map g1
+             LEFT JOIN group_control_map g2 ON g1.product_id = ?
+             AND g2.product_id = ? AND g1.group_id = g2.group_id
+       WHERE g1.product_id = ? AND g2.group_id IS NULL', undef, $dest_product->id,
+    $src_product->id, $dest_product->id, $src_product->id);
+
+  push @move_list,
+    "Security groups syncronized from source product '$src_product_name' to "
+    . "destination product '$dest_product_name'.";
+
+  # Sync normal flags such as bug flags and attachment flags
+  $dbh->do('
+    INSERT INTO flaginclusions(component_id, type_id, product_id)
+      SELECT fi1.component_id, fi1.type_id, ? FROM flaginclusions fi1
+             LEFT JOIN flaginclusions fi2
+             ON fi1.type_id = fi2.type_id
+             AND fi2.product_id = ?
+       WHERE fi1.product_id = ? AND fi2.type_id IS NULL', undef, $dest_product->id,
+    $dest_product->id, $src_product->id);
+
+  push @move_list,
+    "Regular flags syncronized from source product '$src_product_name' to "
+    . "destination product '$dest_product_name'.";
+
+  # Sync tracking type flags
+  $dbh->do('
+    INSERT INTO tracking_flags_visibility (tracking_flag_id, product_id, component_id)
+      SELECT tf1.tracking_flag_id, ?, tf1.component_id FROM tracking_flags_visibility tf1
+             LEFT JOIN tracking_flags_visibility tf2
+             ON tf1.tracking_flag_id = tf2.tracking_flag_id
+             AND tf2.product_id = ?
+       WHERE tf1.product_id = ? AND tf2.tracking_flag_id IS NULL', undef,
+    $dest_product->id, $dest_product->id, $src_product->id);
+
+  push @move_list,
+    "Tracking flags syncronized from source product '$src_product_name' to "
+    . "destination product '$dest_product_name'.";
+
+  # Grab list of bug ids that will be affected
+  my $ra_ids
+    = $dbh->selectcol_arrayref(
+    'SELECT bug_id FROM bugs WHERE product_id = ? AND component_id = ?',
+    undef, $src_product->id, $self->id);
+
+  # Update the bugs table
+  $dbh->do('UPDATE bugs SET product_id = ? WHERE component_id = ?',
+    undef, $dest_product->id, $self->id);
+
+  # Update the flags tables
+  foreach my $table (qw(flaginclusions flagexclusions)) {
+    my $type_ids
+      = $dbh->selectcol_arrayref(
+      "SELECT DISTINCT type_id FROM $table WHERE component_id = ?",
+      undef, $self->id);
+    $dbh->do("DELETE FROM $table WHERE component_id = ?", undef, $self->id);
+    foreach my $type_id (@{$type_ids}) {
+      $dbh->do(
+        "INSERT INTO $table (type_id, product_id, component_id) VALUES (?, ?, ?)",
+        undef, ($type_id, $dest_product->id, $self->id));
+    }
+  }
+
+  # Update the components table
+  $dbh->do('UPDATE components SET product_id = ? WHERE id = ?',
+    undef, $dest_product->id, $self->id);
+
+  Bugzilla::Hook::process(
+    'reorg_move_component',
+    {
+      old_product => $src_product,
+      new_product => $dest_product,
+      component   => $self,
+    }
+  );
+
+  # Mark bugs as touched
+  $dbh->do('UPDATE bugs SET delta_ts = NOW() WHERE component_id = ?',
+    undef, $self->id);
+  $dbh->do('UPDATE bugs SET lastdiffed = NOW() WHERE component_id = ?',
+    undef, $self->id);
+
+  # Update bugs_activity
+  my $auto_user = Bugzilla::User->check({name => 'automation@bmo.tld'});
+  Bugzilla->set_user($auto_user);
+
+  $dbh->do('
+    INSERT INTO bugs_activity(bug_id, who, bug_when, fieldid, removed, added)
+      SELECT bug_id, ?, delta_ts, ?, ?, ?
+        FROM bugs WHERE component_id = ?', undef, $auto_user->id,
+    get_field_id('product'), $src_product_name, $dest_product_name, $self->id);
+
+  Bugzilla::Hook::process('reorg_move_bugs', {bug_ids => $ra_ids});
+
+  $dbh->bz_commit_transaction();
+
+  # It's complex to determine which items now need to be flushed from memcached.
+  # As this is expected to be a rare event, we just flush the entire cache.
+  Bugzilla->memcached->clear_all();
+
+  # Now that we know the component and product, display a list of
+  # changes that will be made or errors that need to be addressed.
+  push @move_list, "Component '$component_name' successfully moved from source "
+    . "product '$src_product_name' to destination product '$dest_product_name'.";
+
+  return @move_list;
 }
 
 ################################
@@ -488,6 +639,18 @@ sub product {
   $self->{'product'}
     ||= Bugzilla::Product->new({id => $self->product_id, cache => 1});
   return $self->{'product'};
+}
+
+# Return the count of open bugs for this component
+sub open_bug_count {
+  my ($self) = @_;
+  return $self->{open_bug_count} if $self->{open_bug_count};
+  my $dbh = Bugzilla->dbh;
+  $self->{open_bug_count}
+    = $dbh->selectrow_array(
+    'SELECT count(*) FROM bugs WHERE component_id = ? AND resolution = \'---\'',
+    undef, $self->id);
+  return $self->{open_bug_count};
 }
 
 ###############################

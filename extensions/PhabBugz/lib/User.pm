@@ -13,6 +13,7 @@ use Moo;
 use Bugzilla::User;
 use Bugzilla::Types qw(:types);
 use Bugzilla::Extension::PhabBugz::Util qw(request);
+use Bugzilla::Extension::PhabBugz::User;
 
 use List::Util qw(first);
 use Mojo::JSON qw(false true);
@@ -198,6 +199,28 @@ sub get_phab_bugzilla_ids {
   }
 
   return \@results;
+}
+
+# Check if user is a member of the release-managers project
+sub is_release_manager {
+  my ($self) = @_;
+
+  return $self->{is_release_manager} if exists $self->{is_release_manager};
+
+  my $release_manager_project
+    = Bugzilla::Extension::PhabBugz::Project->new_from_query(
+    {name => 'release-managers'});
+
+  if ($release_manager_project) {
+    my $members = $release_manager_project->members || [];
+    foreach my $member (@{$members}) {
+      if ($member->phid eq $self->phid) {
+        return $self->{is_release_manager} = 1;
+      }
+    }
+  }
+
+  return $self->{is_release_manager} = 0;
 }
 
 #################

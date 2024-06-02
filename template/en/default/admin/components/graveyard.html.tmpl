@@ -1,0 +1,138 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% js_data = BLOCK %]
+let products = new Array();
+let selected_component = '[% selected_component FILTER js %]';
+[% FOREACH prod = editable_products %]
+  products['[% prod.name FILTER js %]'] = [
+    [%- FOREACH comp = prod.components %]'[% comp.name FILTER js %]'[% ", " UNLESS loop.last %] [%- END -%] ];
+[% END %]
+
+function onSelectProduct() {
+  const product = document.getElementById('product');
+  const component = document.getElementById('component');
+
+  if (product.options[product.selectedIndex].text == '') {
+    removeOptions(component);
+    return;
+  }
+
+  if (!products) {
+    return;
+  }
+
+  removeOptions(component);
+  component.append(new Option('-- Select --', ''));
+
+  for (const prod_name in products) {
+    if (prod_name != product.options[product.selectedIndex].text) {
+      continue;
+    }
+    const components = products[prod_name];
+    for (let i = 0; i < components.length; i++) {
+      const selected = (components[i] === selected_component ? true : false);
+      component.append(new Option(components[i], components[i], selected, selected));
+    }
+  }
+}
+
+const removeOptions = (selectElement) => {
+   let i = selectElement.options.length - 1;
+   for(; i >= 0; i--) {
+      selectElement.remove(i);
+   }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('product').addEventListener('change', () => {
+    onSelectProduct();
+  });
+  onSelectProduct();
+});
+[% END %]
+
+[% INCLUDE global/header.html.tmpl
+  title = "Component Graveyard"
+  javascript = js_data
+  javascript_urls = [ "js/field.js", "js/productform.js" ]
+%]
+
+<h2>Component Graveyard</h2>
+
+<form action="[% basepath FILTER none %]admin/component/graveyard" method="POST">
+<input type="hidden" name="token" value="[% token FILTER html %]">
+<table>
+<tr>
+  <th>Product:</th>
+  <td>
+    <select name="product" id="product">
+      <option value="">-- Select --</option>
+      [% FOREACH p = editable_products %]
+        <option value="[% p.name FILTER html %]"
+          [% " selected" IF selected_product == p.name %]>
+          [% p.name FILTER html %]
+        </option>
+      [% END %]
+    </select>
+  </td>
+  <th>Component:</th>
+  <td>
+    <select name="component" id="component"></select>
+  </td>
+  <td>&nbsp;</td>
+  <td>
+    <input type="submit" name="confirm_move" value="Confirm Move">
+  </td>
+</tr>
+</table>
+</form>
+
+[% IF error_list %]
+  <div id="error_list">
+    <p><b>The following fatal errors were found:</b></p>
+    <ul>
+    [% FOREACH error = error_list %]
+      <li>[% error FILTER html %]    
+    [% END %]
+    </ul>
+  </div>
+[% END %]
+
+[% IF confirm_list %]
+  <div id="confirm_list">
+    <p><b>The following actions will be executed:</b></p>
+    <ul>
+    [% FOREACH confirm = confirm_list %]
+      <li>[% confirm FILTER html %]    
+    [% END %]
+    </ul>
+  </div>
+
+  <form action="[% basepath FILTER none %]admin/component/graveyard" method="POST">
+    <input type="hidden" name="token" value="[% token FILTER html %]">
+    <input type="hidden" name="product" value="[% selected_product FILTER html %]">
+    <input type="hidden" name="component" value="[% selected_component FILTER html %]">
+    <input type="submit" name="do_the_move" value="Do the move">
+  </form>
+[% END %]
+
+[% IF move_list %]
+  <div id="move_list">
+    <p><b>The following actions were executed:</b></p>
+    <ul>
+    [% FOREACH move = move_list %]
+      <li>[% move FILTER html %]    
+    [% END %]
+    </ul>
+  </div>
+[% END %]
+
+[% INCLUDE global/footer.html.tmpl %]
