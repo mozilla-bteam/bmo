@@ -1024,6 +1024,9 @@ sub SaveReminders {
       reminder_ts => $remind_date,
       note        => $note,
     });
+
+    # Reset reminder count
+    delete $user->{reminder_count};
   }
 }
 
