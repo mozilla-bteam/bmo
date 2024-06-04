@@ -40,7 +40,7 @@ $sel->is_text_present_ok('has been added to the database',
 $sel->click_ok('reminder-btn', 'Add Reminder');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is('User Preferences');
-$sel->type_ok('note', 'Remind me about this bug');
+$sel->type_ok('note',        'Remind me about this bug');
 $sel->type_ok('remind_days', '10');
 $sel->click_ok('add_reminder', 'Add the new reminder');
 $sel->wait_for_page_to_load(WAIT_TIME);
@@ -58,6 +58,31 @@ $sel->title_is('User Preferences');
 $sel->check_ok('//input[@name="remove" and @value="1"]');
 $sel->click_ok('save_changes');
 $sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is('User Preferences');
+ok(!$sel->is_text_present('Remind me about this bug', 'Bug reminder removed'));
+
+# Add a new reminder with todays date
+my $today = DateTime->now()->strftime('%Y-%m-%d');
+go_to_bug($sel, $bug1_id);
+$sel->is_text_present_ok('Add Reminder', 'Add reminder button visible');
+$sel->click_ok('reminder-btn', 'Add Reminder');
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is('User Preferences');
+$sel->type_ok('note',        'Remind me about this bug');
+$sel->type_ok('remind_date', $today);
+$sel->click_ok('add_reminder', 'Add the new reminder');
+$sel->wait_for_page_to_load(WAIT_TIME);
+$sel->title_is('User Preferences');
+$sel->is_text_present_ok('Remind me about this bug', 'Bug reminder created');
+$sel->is_text_present_ok($today,                     'Correct date displayed');
+
+# Run the script that generates the email reminder which should also remove
+# the reminder from the user preferences page.
+my $rv = system '/app/scripts/reminders.pl';
+ok($rv == 0, 'Reminders script exited without error');
+ok($sel->search_mailer_testfile(qr{Bug $bug1_id Summary: Test bug for reminders}),
+  'Email reminder found');
+$sel->open_ok('/userprefs.cgi?tab=reminders');
 $sel->title_is('User Preferences');
 ok(!$sel->is_text_present('Remind me about this bug', 'Bug reminder removed'));
 logout($sel);
