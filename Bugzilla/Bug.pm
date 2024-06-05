@@ -4635,6 +4635,24 @@ sub to_hash {
   return $hash;
 }
 
+# True if the current user is being reminded of 
+# this bug on a specific date.
+sub is_reminded {
+  my ($self, $user) = @_;
+  return $self->{is_reminded} if exists $self->{is_reminded};
+
+  $user ||= Bugzilla->user;
+
+  require Bugzilla::Reminder;
+  my $reminders
+    = Bugzilla::Reminder->match({bug_id => $self->id, user_id => $user->id});
+  if (@{$reminders}) {
+    return $self->{is_reminded} = 1;
+  }
+
+  return $self->{is_reminded} = 0;
+}
+
 #####################################################################
 # Subroutines
 #####################################################################

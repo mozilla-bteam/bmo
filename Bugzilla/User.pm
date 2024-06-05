@@ -672,6 +672,26 @@ sub last_seen_date { $_[0]->{last_seen_date}; }
 sub password_change_required { $_[0]->{password_change_required}; }
 sub password_change_reason   { $_[0]->{password_change_reason}; }
 
+sub reminder_count {
+  my $self = shift;
+
+  return $self->{reminder_count} if exists $self->{reminder_count};
+
+  # Always return 0 if reminders feature is off or the user is not in
+  # the correct permission group
+  my $params = Bugzilla->params;
+  if (!$params->{reminders_enabled}
+    || ($params->{reminders_group} && !$self->in_group($params->{reminders_group})))
+  {
+    return $self->{reminder_count} = 0;
+  }
+
+  return $self->{reminder_count}
+    = Bugzilla->dbh->selectrow_array(
+    'SELECT COUNT(*) FROM reminders WHERE user_id = ? AND NOT sent',
+    undef, $self->id);
+}
+
 sub cryptpassword {
   my $self = shift;
 

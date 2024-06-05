@@ -98,6 +98,16 @@
       saveable    => "0"
     },
   ];
+
+  IF Param('reminders_enabled') AND user.in_group(Param('reminders_group'));
+    tabs.push({
+      name        => "reminders",
+      label       => "Bug Reminders",
+      link        => "userprefs.cgi?tab=reminders",
+      saveable    => "1",
+    });
+  END;
+
   Hook.process('tabs');
 
   FOREACH tab IN tabs;

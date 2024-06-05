@@ -907,6 +907,22 @@ $(function() {
             }
         });
 
+    // bug reminder button
+    $('#reminder-btn')
+        .click(async event => {
+            event.preventDefault();
+            const is_reminded = $(event.target).data('is-reminded') == '1';
+            const has_needinfo_from = $(event.target).data('has-needinfo-from');
+            let query_string = "tab=reminders"; 
+            if (!is_reminded) {
+                query_string += `&bug_id=${BUGZILLA.bug_id}`;
+            }
+            if (has_needinfo_from) {
+                query_string += "&note=Needinfo requested by " + encodeURIComponent(has_needinfo_from);
+            }
+            window.location.replace(`${BUGZILLA.config.basepath}userprefs.cgi?` + query_string);
+        });
+
     // cancel button, reset the ui back to read-only state
     // for now, do this with a redirect to self
     // ideally this should revert all field back to their initially loaded

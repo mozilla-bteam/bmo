@@ -35,6 +35,11 @@
         <div><a href="[% basepath FILTER none %]request.cgi?action=queue&amp;requestee=[% user.login FILTER uri %]&amp;group=type"
                 role="menuitem" tabindex="-1">See All</a></div>
       </footer>
+      [% IF user.reminder_count %]
+      <header>
+        <h2><a href="[% basepath FILTER none %]userprefs.cgi?tab=reminders">[% user.reminder_count FILTER html %] Reminder(s) Set</a></h2>
+      </header>
+      [% END %]
     </section>
   </div>
 [% END %]
