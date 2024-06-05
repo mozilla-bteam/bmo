@@ -28,7 +28,13 @@
     </p>
     <p>
       [%+ terms.Bug +%] [%+ reminder.bug.id FILTER html %] 
-      Summary: [% reminder.bug.short_desc FILTER html %]<br>
+      Summary: 
+      [% IF reminder.bug.groups_in.size %]
+        (secure bug)
+      [% ELSE %]
+        [% reminder.bug.short_desc FILTER html %]
+      [% END %]
+      <br>
       [%+ urlbase FILTER none %]show_bug.cgi?id=[% reminder.bug.id FILTER uri %]
     </p>
     <p>
@@ -42,6 +48,5 @@
         <li>you set a [% terms.bug %] reminder.</li>
       </ul>
     </div>
-    @@body-headers@@
   </body>
 </html>
