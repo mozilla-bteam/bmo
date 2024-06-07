@@ -72,9 +72,10 @@ sub creation_ts {
   return $self->{creation_ts} ? datetime_from($self->{creation_ts}) : undef;
 }
 
-sub id   { return $_[0]->{id}; }
-sub note { return $_[0]->{note}; }
-sub sent { return $_[0]->{sent}; }
+sub id     { return $_[0]->{id}; }
+sub bug_id { return $_[0]->{bug_id}; }
+sub note   { return $_[0]->{note}; }
+sub sent   { return $_[0]->{sent}; }
 
 # setters
 
