@@ -29,6 +29,29 @@ This allows you to retrieve information about a specific reminder.
     "sent": false
   }
 
+To get all reminders for your account:
+
+.. code-block:: text
+
+   GET /rest/reminder
+
+**Response**
+
+.. code-block:: js
+
+  {
+    "reminders": [
+      {
+        "id": 123,
+        "bug_id": 456,
+        "note": "This is a reminder note",
+        "reminder_ts": "2024-06-08",
+        "creation_ts": "2024-06-07",
+        "sent": false
+      }
+    ]
+  }
+
 .. _rest_reminder_object:
 
 Reminder Object
