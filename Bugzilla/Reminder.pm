@@ -48,7 +48,7 @@ use constant VALIDATORS => {
 use constant AUDIT_CREATES => 1;
 use constant AUDIT_UPDATES => 1;
 use constant AUDIT_REMOVES => 1;
-use constant USE_MEMCACHED => 1;
+use constant USE_MEMCACHED => 0;
 
 # getters
 
