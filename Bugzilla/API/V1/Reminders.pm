@@ -9,7 +9,7 @@ package Bugzilla::API::V1::Reminders;
 
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
-use Mojo::JSON qw( decode_json false true);
+use Mojo::JSON qw( decode_json );
 
 use Bugzilla::Constants;
 use Bugzilla::Reminder;
@@ -18,6 +18,10 @@ use Try::Tiny;
 
 sub setup_routes {
   my ($class, $r) = @_;
+
+  # Do not add routes for reminders if feature is not enabled
+  return unless Bugzilla->params->{reminders_enabled};
+
   $r->get('/reminder')->to('V1::Reminders#list');
   $r->get('/reminder/:id')->to('V1::Reminders#list');
   $r->post('/reminder')->to('V1::Reminders#add');
@@ -37,13 +41,13 @@ sub list {
   my $reminders = Bugzilla::Reminder->match($params);
 
   # Requested single reminder
-  if ($self->param('id')) {
-    return $self->render(json => $self->_reminder_to_hash($reminders->[0]));
+  if ($self->param('id') && @{$reminders}) {
+    return $self->render(json => $reminders->[0]->to_hash);
   }
 
   my $results = [];
   foreach my $reminder (@{$reminders}) {
-    push @{$results}, $self->_reminder_to_hash($reminder);
+    push @{$results}, $reminder->to_hash;
   }
 
   return $self->render(json => {reminders => $results});
@@ -55,11 +59,9 @@ sub add {
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
-  # Do not allow adding of reminders if feature is not enabled
-  # or user does not have permission to do so
+  # Do not allow adding of reminders if user does not have permission to do so
   return $self->render(json => {})
-    unless Bugzilla->params->{reminders_enabled}
-    && $user->in_group(Bugzilla->params->{reminders_group});
+    if !$user->in_group(Bugzilla->params->{reminders_group});
 
   my $params = {};
   try {
@@ -80,7 +82,7 @@ sub add {
     note        => $note,
   });
 
-  return $self->render(json => $self->_reminder_to_hash($reminder));
+  return $self->render(json => $reminder->to_hash);
 }
 
 sub remove {
@@ -95,23 +97,16 @@ sub remove {
 
   my $success = 0;
   if ($reminder) {
-    $reminder->remove_from_db();
-    $success = 1;
+    try {
+      $reminder->remove_from_db();
+      $success = 1;
+    }
+    catch {
+      WARN('ERROR: Could not remove reminder: ' . $_);
+    };
   }
 
   return $self->render(json => {success => $success});
-}
-
-sub _reminder_to_hash {
-  my ($self, $reminder) = @_;
-  return {
-    id          => $reminder->id,
-    bug_id      => $reminder->bug_id,
-    note        => $reminder->note,
-    reminder_ts => $reminder->reminder_ts,
-    creation_ts => $reminder->creation_ts,
-    sent        => ($reminder->sent ? true : false),
-  };
 }
 
 1;
