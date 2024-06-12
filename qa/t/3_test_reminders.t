@@ -15,11 +15,6 @@ use QA::Util;
 
 my ($sel, $config) = get_selenium();
 
-# Enable reminders
-log_in($sel, $config, 'admin');
-set_parameters($sel, {'Bug Reminders' => {'reminders_enabled-on' => undef},});
-logout($sel);
-
 # Create new bug that you want to set a reminder for
 log_in($sel, $config, 'editbugs');
 file_bug_in_product($sel, 'TestProduct');
@@ -87,7 +82,4 @@ $sel->title_is('User Preferences');
 ok(!$sel->is_text_present('Remind me about this bug', 'Bug reminder removed'));
 logout($sel);
 
-# Disable reminders
-log_in($sel, $config, 'admin');
-set_parameters($sel, {'Bug Reminders' => {'reminders_enabled-off' => undef},});
-logout($sel);
+done_testing();

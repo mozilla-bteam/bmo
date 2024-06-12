@@ -17,3 +17,4 @@ Core API v1
    group
    product
    user
+   reminders
