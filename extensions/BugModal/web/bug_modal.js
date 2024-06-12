@@ -920,7 +920,7 @@ $(function() {
             if (has_needinfo_from) {
                 query_string += "&note=Needinfo+requested+by+" + encodeURIComponent(has_needinfo_from);
             }
-            window.location = `${BUGZILLA.config.basepath}userprefs.cgi?` + query_string;
+            window.location = `${BUGZILLA.config.basepath}userprefs.cgi?${query_string}`;
         });
 
     // cancel button, reset the ui back to read-only state
