@@ -918,9 +918,9 @@ $(function() {
                 query_string += `&bug_id=${BUGZILLA.bug_id}`;
             }
             if (has_needinfo_from) {
-                query_string += "&note=Needinfo requested by " + encodeURIComponent(has_needinfo_from);
+                query_string += "&note=Needinfo+requested+by+" + encodeURIComponent(has_needinfo_from);
             }
-            window.location.replace(`${BUGZILLA.config.basepath}userprefs.cgi?` + query_string);
+            window.location.assign(`${BUGZILLA.config.basepath}userprefs.cgi?` + query_string);
         });
 
     // cancel button, reset the ui back to read-only state
