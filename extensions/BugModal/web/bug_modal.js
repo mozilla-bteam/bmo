@@ -909,7 +909,7 @@ $(function() {
 
     // bug reminder button
     $('#reminder-btn')
-        .click(async event => {
+        .click(event => {
             event.preventDefault();
             const is_reminded = $(event.target).data('is-reminded') == '1';
             const has_needinfo_from = $(event.target).data('has-needinfo-from');
