@@ -249,8 +249,12 @@ sub critical_needinfo_bugs {
               JOIN bug_group_map ON bugs.bug_id = bug_group_map.bug_id
               LEFT JOIN keywords ON bugs.bug_id = keywords.bug_id
         WHERE products.classification_id IN ($class_ids)
-              AND (keywords.keywordid IS NULL 
-                   OR keywords.keywordid NOT IN (SELECT id FROM keyworddefs WHERE name like 'sec-%'))
+          AND (
+            SELECT COUNT(*)
+              FROM keywords
+             WHERE keywords.bug_id = bugs.bug_id
+                   AND keywords.keywordid IN (SELECT id FROM keyworddefs WHERE name like 'sec-%')
+              ) = 0
               AND bug_group_map.group_id IN ("
     . (join ',', @{$cache->{sec_group_ids}}) . ")
               AND flags.type_id = $needinfo_id
