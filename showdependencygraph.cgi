@@ -17,11 +17,12 @@ use MIME::Base64 qw(encode_base64);
 
 use Bugzilla;
 use Bugzilla::Constants;
-use Bugzilla::Install::Filesystem;
+use Bugzilla::Install::Filesystem qw(fix_dir_permissions);
 use Bugzilla::Util;
 use Bugzilla::Error;
 use Bugzilla::Bug;
 use Bugzilla::Status;
+use Bugzilla::Logging;
 
 Bugzilla->login(LOGIN_REQUIRED);
 
@@ -113,12 +114,20 @@ if (!grep { $_ eq $rankdir } @valid_rankdirs) {
 my $display = $cgi->param('display') || 'tree';
 my $webdotdir = bz_locations()->{'webdotdir'};
 
+# Create webdotdir if doesnt exist
+if (!-d $webdotdir) {
+  mkdir $webdotdir or WARN("Failed to create $webdotdir");
+  fix_dir_permissions($webdotdir);
+}
+
 my ($fh, $filename) = File::Temp::tempfile(
   "XXXXXXXXXX",
   SUFFIX => '.dot',
   DIR    => $webdotdir,
   UNLINK => 1
 );
+
+INFO("temp dot file created: $filename");
 
 chmod Bugzilla::Install::Filesystem::CGI_WRITE, $filename
   or warn install_string('chmod_failed', {path => $filename, error => $!});
@@ -276,6 +285,8 @@ else {
   }
   close $pipe || ThrowCodeError('webdot_error');
 
+  INFO('created image_data');
+
   $vars->{'image_data'} = encode_base64($image_data);
 
   # Then, generate a imagemap datafile that contains the corner data
@@ -288,6 +299,8 @@ else {
   chmod Bugzilla::Install::Filesystem::WS_SERVE, $mapfilename
     or warn install_string('chmod_failed', {path => $mapfilename, error => $!});
 
+  INFO("dot map file create: $mapfilename");
+
   binmode $mapfh;
   open(DOT, '-|', "\"$webdotbase\" -Tismap $filename");
   binmode DOT;
@@ -296,6 +309,8 @@ else {
   close $mapfh;
 
   $vars->{'image_map'} = $CreateImagemap->($mapfilename);
+
+  INFO('created image map');
 }
 
 # Cleanup any old .dot files created from previous runs.
