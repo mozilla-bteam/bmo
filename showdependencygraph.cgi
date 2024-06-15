@@ -127,7 +127,7 @@ my ($fh, $filename) = File::Temp::tempfile(
   UNLINK => 1
 );
 
-INFO("temp dot file created: $filename");
+Bugzilla->audit("temp dot file created: $filename");
 
 chmod Bugzilla::Install::Filesystem::CGI_WRITE, $filename
   or warn install_string('chmod_failed', {path => $filename, error => $!});
@@ -285,7 +285,7 @@ else {
   }
   close $pipe || ThrowCodeError('webdot_error');
 
-  INFO('created image_data');
+  Bugzilla->audit('created image_data');
 
   $vars->{'image_data'} = encode_base64($image_data);
 
@@ -299,7 +299,7 @@ else {
   chmod Bugzilla::Install::Filesystem::WS_SERVE, $mapfilename
     or warn install_string('chmod_failed', {path => $mapfilename, error => $!});
 
-  INFO("dot map file create: $mapfilename");
+  Bugzilla->audit("dot map file create: $mapfilename");
 
   binmode $mapfh;
   open(DOT, '-|', "\"$webdotbase\" -Tismap $filename");
@@ -310,7 +310,7 @@ else {
 
   $vars->{'image_map'} = $CreateImagemap->($mapfilename);
 
-  INFO('created image map');
+  Bugzilla->audit('created image map');
 }
 
 # Cleanup any old .dot files created from previous runs.
