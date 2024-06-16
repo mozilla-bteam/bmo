@@ -34,6 +34,8 @@ my $vars     = {};
 # performance.
 my $dbh = Bugzilla->switch_to_shadow_db();
 
+Bugzilla->audit('Switched to shadow database: ' . Bugzilla->params->{shadowdbhost});
+
 my (%seen, %edgesdone, %bugtitles);
 my $bug_count = 0;
 
@@ -100,6 +102,8 @@ my $AddLink = sub {
 
 ThrowCodeError("missing_bug_id") if !defined $cgi->param('id');
 
+Bugzilla->audit('Show dependency graph for bug ' . $cgi->param('id'));
+
 # The list of valid directions. Some are not proposed in the dropdrown
 # menu despite the fact that they are valid.
 my @valid_rankdirs = ('LR', 'RL', 'TB', 'BT');
@@ -119,6 +123,8 @@ if (!-d $webdotdir) {
   mkdir $webdotdir or WARN("Failed to create $webdotdir");
   fix_dir_permissions($webdotdir);
 }
+
+Bugzilla->audit("Show dependency webdot dir set to $webdotdir");
 
 my ($fh, $filename) = File::Temp::tempfile(
   "XXXXXXXXXX",
