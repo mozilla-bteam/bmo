@@ -30,6 +30,8 @@ my $cgi      = Bugzilla->cgi;
 my $template = Bugzilla->template;
 my $vars     = {};
 
+ Bugzilla->audit('Switching to shadowdb');
+
 # Connect to the shadow database if this installation is using one to improve
 # performance.
 my $dbh = Bugzilla->switch_to_shadow_db();
@@ -275,49 +277,49 @@ if ($bug_count > MAX_WEBDOT_BUGS) {
 
 my $webdotbase = Bugzilla->params->{'webdotbase'};
 
-if ($webdotbase =~ /^https?:/) {
-  $webdotbase =~ s/%(?:sslbase|urlbase)%/Bugzilla->localconfig->urlbase/eg;
-  my $url = $webdotbase . $filename;
-  $vars->{'image_url'} = $url . ".gif";
-  $vars->{'map_url'}   = $url . ".map";
-}
-else {
-  # Local dot installation
-  my $image_data;
-  open(my $pipe, '-|', $webdotbase, '-Tpng', $filename) || ThrowCodeError('webdot_error');
-  binmode $pipe;
-  while (my $dot_data = <$pipe>) {
-    $image_data .= $dot_data;
-  }
-  close $pipe || ThrowCodeError('webdot_error');
-
-  Bugzilla->audit('created image_data');
-
-  $vars->{'image_data'} = encode_base64($image_data);
-
-  # Then, generate a imagemap datafile that contains the corner data
-  # for drawn bug objects. Pass it on to $CreateImagemap that
-  # turns this monster into HTML.
-
-  my ($mapfh, $mapfilename)
-    = File::Temp::tempfile("XXXXXXXXXX", SUFFIX => '.map', DIR => $webdotdir);
-
-  chmod Bugzilla::Install::Filesystem::WS_SERVE, $mapfilename
-    or warn install_string('chmod_failed', {path => $mapfilename, error => $!});
-
-  Bugzilla->audit("dot map file create: $mapfilename");
-
-  binmode $mapfh;
-  open(DOT, '-|', "\"$webdotbase\" -Tismap $filename");
-  binmode DOT;
-  print $mapfh $_ while <DOT>;
-  close DOT;
-  close $mapfh;
-
-  $vars->{'image_map'} = $CreateImagemap->($mapfilename);
-
-  Bugzilla->audit('created image map');
-}
+# if ($webdotbase =~ /^https?:/) {
+#   $webdotbase =~ s/%(?:sslbase|urlbase)%/Bugzilla->localconfig->urlbase/eg;
+#   my $url = $webdotbase . $filename;
+#   $vars->{'image_url'} = $url . ".gif";
+#   $vars->{'map_url'}   = $url . ".map";
+# }
+# else {
+#   # Local dot installation
+#   my $image_data;
+#   open(my $pipe, '-|', $webdotbase, '-Tpng', $filename) || ThrowCodeError('webdot_error');
+#   binmode $pipe;
+#   while (my $dot_data = <$pipe>) {
+#     $image_data .= $dot_data;
+#   }
+#   close $pipe || ThrowCodeError('webdot_error');
+#
+#   Bugzilla->audit('created image_data');
+#
+#   $vars->{'image_data'} = encode_base64($image_data);
+#
+#   # Then, generate a imagemap datafile that contains the corner data
+#   # for drawn bug objects. Pass it on to $CreateImagemap that
+#   # turns this monster into HTML.
+#
+#   my ($mapfh, $mapfilename)
+#     = File::Temp::tempfile("XXXXXXXXXX", SUFFIX => '.map', DIR => $webdotdir);
+#
+#   chmod Bugzilla::Install::Filesystem::WS_SERVE, $mapfilename
+#     or warn install_string('chmod_failed', {path => $mapfilename, error => $!});
+#
+#   Bugzilla->audit("dot map file create: $mapfilename");
+#
+#   binmode $mapfh;
+#   open(DOT, '-|', "\"$webdotbase\" -Tismap $filename");
+#   binmode DOT;
+#   print $mapfh $_ while <DOT>;
+#   close DOT;
+#   close $mapfh;
+#
+#   $vars->{'image_map'} = $CreateImagemap->($mapfilename);
+#
+#   Bugzilla->audit('created image map');
+# }
 
 # Cleanup any old .dot files created from previous runs.
 my $since = time() - 24 * 60 * 60;
