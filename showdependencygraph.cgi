@@ -197,6 +197,7 @@ $vars->{'multiple_bugs'} = ($cgi->param('id') =~ /[ ,]/);
 $vars->{'display'}       = $display;
 $vars->{'rankdir'}       = $rankdir;
 $vars->{'showsummary'}   = $cgi->param('showsummary');
+$vars->{'debug'}         = ($cgi->param('debug') ? 1 : 0);
 
 # Generate and return the UI (HTML page) from the appropriate template.
 print $cgi->header();
