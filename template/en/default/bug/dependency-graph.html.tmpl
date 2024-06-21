@@ -24,16 +24,13 @@
   # showsummary: boolean. True if we are showing bug summaries.
   # rankdir: string. "TB" if we are ranking top-to-bottom,
                      "LR" if left-to-right.
-  # image_url: string. The URL of the graphic showing the dependencies.
-  # map_url: string. The URL of the map file for the image.  (Optional)
-  # image_map: string. The image map for the graphic showing the
-                       dependencies. (Optional)
   #%]
 
 [% PROCESS global/variables.none.tmpl %]
 
 [% title = "Dependency Graph"
    header = title
+   javascript_urls = [ 'js/lib/mermaid.min.js' ]
  %]
 
 [% IF NOT multiple_bugs %]
@@ -46,21 +43,17 @@
 
 [% PROCESS global/header.html.tmpl %]
 
-[% image_map %]
-
 <p>
   Green circles represent open [% terms.bugs %].
 </p>
 
-[% IF image_map %]
-  <img src="data:image/png;base64,[% image_data FILTER none %]" alt="Dependency graph" usemap="#imagemap">
-[% ELSE %]
-  <a href="[% map_url %]">
-    <img src="[% image_url %]" alt="Dependency graph" ismap="ismap">
-  </a>
-[% END %]
+<pre class="mermaid">
+  [% graph_data FILTER none %]
+</pre>
 
-<hr>
+<script [% script_nonce FILTER none %]>
+  mermaid.initialize({ startOnLoad: true });
+</script>
 
 <form action="[% basepath FILTER none %]showdependencygraph.cgi" method="GET">
   <table>
@@ -97,6 +90,7 @@
       </td>
     </tr>
   </table>
+  <br>
   <input type="submit" id="change" value="Change Parameters">
 </form>
 
