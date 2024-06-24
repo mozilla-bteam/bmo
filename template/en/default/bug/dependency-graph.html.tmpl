@@ -43,49 +43,29 @@
 
 [% PROCESS global/header.html.tmpl %]
 
-<p>
-  Green circles represent open [% terms.bugs %].
-</p>
-
-[% IF debug %]
-  <pre>
-    [% graph_data FILTER html %]
-  </pre>
-[% END %]
-
-<pre class="mermaid">
-  [% graph_data FILTER html %]
-</pre>
-
-<script [% script_nonce FILTER none %]>
-  mermaid.initialize({ startOnLoad: true });
-</script>
-
 <form action="[% basepath FILTER none %]showdependencygraph.cgi" method="GET">
   <table>
     <tr>
-      <th align="left"><label for="id">[% terms.Bug %] numbers</label>:</th>
+      <th align="left"><label for="id">[% terms.Bugs %]</label></th>
       <td><input id="id" name="id" value="[% bug_id %]"></td>
       <td>
         <input type="checkbox" id="showsummary" name="showsummary" [% " checked" IF showsummary %]>
         <label for="showsummary">Show the summaries of all displayed [% terms.bugs %]</label>
       </td>
     </tr>
-
     <tr>
-      <th align="left"><label for="display">Display:</label></th>
+      <th align="left"><label for="display">Display</label></th>
       <td colspan="2">
         <select id="display" name="display">
-          <option value="tree"[% 'selected="selected"' IF (!display || display == "tree") %]>
+          <option value="tree" [% 'selected="selected"' IF (!display || display == "tree") %]>
             Restrict to [% terms.bugs %] having a direct relationship with entered [% terms.bugs %]</option>
           <option value="web" [% 'selected="selected"' IF display == "web" %]>
             Show all [% terms.bugs %] having any relationship with entered [% terms.bugs %]</option>
         </select>
       </td>
     </tr>
-
     <tr>
-      <th align="left"><label for="rankdir">Orientation:</label></th>
+      <th align="left"><label for="rankdir">Orientation</label></th>
       <td colspan="2">
         <select id="rankdir" name="rankdir">
           <option value="TB"[% " selected" IF rankdir == "TB" %]>Top to bottom</option>
@@ -97,7 +77,24 @@
     </tr>
   </table>
   <br>
-  <input type="submit" id="change" value="Change Parameters">
+  <input type="hidden" name="debug" value="[% IF debug %]1[% ELSE %]0[% END %]">
+  <input type="submit" id="update" value="Update">
 </form>
+
+<hr>
+
+<pre class="mermaid">
+  [% graph_data FILTER html %]
+</pre>
+
+<script [% script_nonce FILTER none %]>
+  mermaid.initialize({ startOnLoad: true });
+</script>
+
+[% IF debug %]
+  <pre>
+    [% graph_data FILTER html %]
+  </pre>
+[% END %]
 
 [% PROCESS global/footer.html.tmpl %]
