@@ -29,7 +29,7 @@ use base qw(Exporter);
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
   round extract_nicks fetch_product_versions mojo_user_agent
-  is_fake_recipient_address);
+  is_fake_recipient_address mermaid_quote);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -1050,6 +1050,16 @@ sub is_fake_recipient_address {
     return 1;
   }
   return 0;
+}
+
+# We need to escape ([ and ]) characters for the mermaid summaries
+sub mermaid_quote {
+  my $text = shift;
+  $text =~ s/[(]/#40;/g;
+  $text =~ s/[)]/#41;/g;
+  $text =~ s/\[/#91;/g;
+  $text =~ s/\]/#93;/g;
+  return $text;
 }
 
 1;
