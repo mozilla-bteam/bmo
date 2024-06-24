@@ -16,7 +16,7 @@ use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Util qw(detaint_natural);
+use Bugzilla::Util qw(detaint_natural mermaid_quote);
 
 use List::Util qw(none);
 
@@ -79,6 +79,7 @@ my $add_link = sub {
     $link_text .= "$dependson";
 
     if ($show_summary && $user->can_see_bug($dependson)) {
+      $dependson_summary = mermaid_quote($dependson_summary);
       $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
     }
 
@@ -91,6 +92,7 @@ my $add_link = sub {
     $link_text .= "$blocked";
 
     if ($show_summary && $user->can_see_bug($blocked)) {
+      $blocked_summary = mermaid_quote($blocked_summary);
       $link_text .= "<br>$blocked_status $blocked_resolution $blocked_summary";
     }
 
