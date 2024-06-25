@@ -497,12 +497,7 @@ $Template::Stash::SCALAR_OPS->{0} = sub {
 # that truncates a string to a certain length.
 $Template::Stash::SCALAR_OPS->{truncate} = sub {
   my ($string, $length, $ellipsis) = @_;
-  return $string if !$length || length($string) <= $length;
-
-  $ellipsis ||= '';
-  my $strlen = $length - length($ellipsis);
-  my $newstr = substr($string, 0, $strlen) . $ellipsis;
-  return $newstr;
+  return truncate_string($string, $length, $ellipsis);
 };
 
 # Override the built in .lower() vmethod
