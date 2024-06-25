@@ -29,7 +29,7 @@ use base qw(Exporter);
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
   round extract_nicks fetch_product_versions mojo_user_agent
-  is_fake_recipient_address mermaid_quote);
+  is_fake_recipient_address mermaid_quote truncate_string);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -1061,6 +1061,17 @@ sub mermaid_quote {
   $text =~ s/\]/#93;/g;
   $text =~ s/"/#34;/g;
   return $text;
+}
+
+# Return a truncated version of the string provided
+sub truncate_string {
+  my ($string, $length, $ellipsis) = @_;
+  return $string if !$length || length $string <= $length;
+
+  $ellipsis ||= '';
+  my $strlen = $length - length $ellipsis;
+  my $newstr = substr($string, 0, $strlen) . $ellipsis;
+  return $newstr;
 }
 
 1;

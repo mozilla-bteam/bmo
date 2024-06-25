@@ -16,7 +16,7 @@ use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Util qw(detaint_natural mermaid_quote);
+use Bugzilla::Util qw(detaint_natural mermaid_quote truncate_string);
 
 use List::Util qw(none);
 
@@ -78,6 +78,7 @@ my $add_link = sub {
       $link_text .= "$dependson";
 
       if ($show_summary && $user->can_see_bug($dependson)) {
+        $dependson_summary = truncate_string($dependson_summary, 80, '...');
         $dependson_summary = mermaid_quote($dependson_summary);
         $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
       }
@@ -95,6 +96,7 @@ my $add_link = sub {
     $link_text .= "$blocked";
 
     if ($show_summary && $user->can_see_bug($blocked)) {
+      $blocked_summary = truncate_string($blocked_summary, 80, '...');
       $blocked_summary = mermaid_quote($blocked_summary);
       $link_text .= "<br>$blocked_status $blocked_resolution $blocked_summary";
     }
@@ -115,6 +117,14 @@ my $add_link = sub {
       ? "class $blocked resolved\n"
       : "class $blocked open\n";
 
+    # Display additional styling if this is the base bug id
+    if ($blocked == $bug->id) {
+      $link_text .= "class $blocked base\n";
+    }
+    elsif ($dependson == $bug->id) {
+      $link_text .= "class $dependson base\n";
+    }
+
     $bug_count++;
     $edgesdone{$key}  = 1;
     $seen{$blocked}   = 1;
@@ -127,7 +137,8 @@ my $add_link = sub {
 # Start the graph
 my $graph = "graph $rankdir
 classDef resolved fill:#f96,stroke:#333,stroke-width:2px;
-classDef open fill:#9f6,stroke:#333,stroke-width:2px;\n";
+classDef open fill:#9f6,stroke:#333,stroke-width:2px;
+classDef base stroke-width:5px\n";
 
 my @stack = ($bug->id);
 
