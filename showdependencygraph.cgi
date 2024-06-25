@@ -32,8 +32,8 @@ my $vars     = {};
 my $dbh = Bugzilla->switch_to_shadow_db();
 
 # Initial sanity checks
-my $bug_id = $cgi->param('id');
-$bug_id || ThrowCodeError('missing_bug_id');
+$cgi->param('id') || ThrowCodeError('missing_bug_id');
+my $bug = Bugzilla::Bug->check($cgi->param('id'));
 
 # Make sure the submitted 'rankdir' value is valid.
 my @valid_rankdirs = qw(LR RL TB BT);
@@ -57,7 +57,9 @@ my $bug_count = 0;
 
 my $add_link = sub {
   my ($blocked, $dependson) = @_;
+  $dependson ||= 0;
   my $link_text = '';
+  my ($dependson_status, $dependson_resolution, $dependson_summary);
 
   state $sth = $dbh->prepare(
     q{SELECT bug_status, resolution, short_desc
@@ -67,25 +69,26 @@ my $add_link = sub {
 
   my $key = "$blocked,$dependson";
   if (!exists $edgesdone{$key}) {
+    if ($dependson) {
+      ($dependson_status, $dependson_resolution, $dependson_summary)
+        = $dbh->selectrow_array($sth, undef, $dependson);
 
-    my ($dependson_status, $dependson_resolution, $dependson_summary)
-      = $dbh->selectrow_array($sth, undef, $dependson);
+      $link_text .= $dependson;
+      $link_text .= ($dependson_status eq 'RESOLVED') ? '[' : '([';
+      $link_text .= "$dependson";
+
+      if ($show_summary && $user->can_see_bug($dependson)) {
+        $dependson_summary = mermaid_quote($dependson_summary);
+        $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
+      }
+
+      $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
+
+      $link_text .= ' --> ';
+    }
 
     my ($blocked_status, $blocked_resolution, $blocked_summary)
       = $dbh->selectrow_array($sth, undef, $blocked);
-
-    $link_text .= $dependson;
-    $link_text .= ($dependson_status eq 'RESOLVED') ? '[' : '([';
-    $link_text .= "$dependson";
-
-    if ($show_summary && $user->can_see_bug($dependson)) {
-      $dependson_summary = mermaid_quote($dependson_summary);
-      $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
-    }
-
-    $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
-
-    $link_text .= ' --> ';
 
     $link_text .= $blocked;
     $link_text .= ($blocked_status eq 'RESOLVED') ? '[' : '([';
@@ -100,10 +103,13 @@ my $add_link = sub {
 
     $link_text .= "\n";
 
-    $link_text
-      .= ($dependson_status eq 'RESOLVED')
-      ? "class $dependson resolved\n"
-      : "class $dependson open\n";
+    if ($dependson) {
+      $link_text
+        .= ($dependson_status eq 'RESOLVED')
+        ? "class $dependson resolved\n"
+        : "class $dependson open\n";
+    }
+
     $link_text
       .= ($blocked_status eq 'RESOLVED')
       ? "class $blocked resolved\n"
@@ -112,7 +118,7 @@ my $add_link = sub {
     $bug_count++;
     $edgesdone{$key}  = 1;
     $seen{$blocked}   = 1;
-    $seen{$dependson} = 1;
+    $seen{$dependson} = 1 if $dependson;
   }
 
   return $link_text;
@@ -123,13 +129,7 @@ my $graph = "graph $rankdir
 classDef resolved fill:#f96,stroke:#333,stroke-width:2px;
 classDef open fill:#9f6,stroke:#333,stroke-width:2px;\n";
 
-my %baselist;
-foreach my $i (split /[\s,]+/, $cgi->param('id')) {
-  my $bug = Bugzilla::Bug->check($i);
-  $baselist{$bug->id} = 1;
-}
-
-my @stack = keys %baselist;
+my @stack = ($bug->id);
 
 if ($display eq 'web') {
   my $sth = $dbh->prepare(
@@ -140,15 +140,22 @@ if ($display eq 'web') {
 
   foreach my $id (@stack) {
     my $dependencies = $dbh->selectall_arrayref($sth, undef, ($id, $id));
-    foreach my $dependency (@{$dependencies}) {
-      my ($blocked, $dependson) = @{$dependency};
-      if ($blocked != $id && !exists $seen{$blocked}) {
-        push @stack, $blocked;
+
+    # Show a single node if no dependencies instead of a blank graph
+    if (!@{$dependencies}) {
+      $graph .= $add_link->($id);
+    }
+    else {
+      foreach my $dependency (@{$dependencies}) {
+        my ($blocked, $dependson) = @{$dependency};
+        if ($blocked != $id && !exists $seen{$blocked}) {
+          push @stack, $blocked;
+        }
+        if ($dependson != $id && !exists $seen{$dependson}) {
+          push @stack, $dependson;
+        }
+        $graph .= $add_link->($blocked, $dependson);
       }
-      if ($dependson != $id && !exists $seen{$dependson}) {
-        push @stack, $dependson;
-      }
-      $graph .= $add_link->($blocked, $dependson);
     }
   }
 }
@@ -160,9 +167,16 @@ else {
     my $blocker_ids
       = Bugzilla::Bug::list_relationship('dependencies', 'blocked', 'dependson',
       $id);
-    foreach my $blocker_id (@{$blocker_ids}) {
-      push @blocker_stack, $blocker_id unless $seen{$blocker_id};
-      $graph .= $add_link->($id, $blocker_id);
+
+    # Show a single node if no dependencies instead of a blank graph
+    if (!@{$blocker_ids}) {
+      $graph .= $add_link->($id);
+    }
+    else {
+      foreach my $blocker_id (@{$blocker_ids}) {
+        push @blocker_stack, $blocker_id unless $seen{$blocker_id};
+        $graph .= $add_link->($id, $blocker_id);
+      }
     }
   }
   my @dependent_stack = @stack;
@@ -175,10 +189,6 @@ else {
       $graph .= $add_link->($dep_bug_id, $id);
     }
   }
-}
-
-foreach my $k (keys %baselist) {
-  $seen{$k} = 1;
 }
 
 my $urlbase = Bugzilla->localconfig->urlbase;
@@ -194,12 +204,11 @@ if ($bug_count > MAX_DEP_GRAPH_BUGS) {
 
 # Make sure we only include valid integers (protects us from XSS attacks).
 my @bugs = grep { detaint_natural($_) } split /[\s,]+/, $cgi->param('id');
-$vars->{'bug_id'}        = join ', ', @bugs;
-$vars->{'multiple_bugs'} = ($cgi->param('id') =~ /[ ,]/);
-$vars->{'display'}       = $display;
-$vars->{'rankdir'}       = $rankdir;
-$vars->{'showsummary'}   = $cgi->param('showsummary');
-$vars->{'debug'}         = ($cgi->param('debug') ? 1 : 0);
+$vars->{'bug_id'}      = join ', ', @bugs;
+$vars->{'display'}     = $display;
+$vars->{'rankdir'}     = $rankdir;
+$vars->{'showsummary'} = $cgi->param('showsummary');
+$vars->{'debug'}       = ($cgi->param('debug') ? 1 : 0);
 
 # Generate and return the UI (HTML page) from the appropriate template.
 print $cgi->header();
