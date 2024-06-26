@@ -89,25 +89,23 @@ sub set_attachment_approval_flags {
     # Set the flag to it's new status. If it already has that status,
     # it will be a non-change. We also need to check to make sure the
     # flag change is allowed.
-    if ($flag_setter->can_change_flag($flag->type, $flag->status, $status)) {
-
-      # If setting to + or - then user needs to be a release manager in Phab
-      if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
-        INFO(
-          "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
-        );
-      }
-      else {
-        INFO("Set existing `$approval_flag_name` flag to `$status`.");
-        push @old_flags, {id => $flag->id, status => $status};
-      }
-    }
-    else {
+    if (!$flag_setter->can_change_flag($flag->type, $flag->status, $status)) {
       INFO(
         "Unable to set existing `$approval_flag_name` flag to `$status` due to permissions."
       );
+      return;
     }
 
+    # If setting to + or - then user needs to be a release manager in Phab.
+    if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
+      INFO(
+        "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
+      );
+      return;
+    }
+
+    INFO("Set existing `$approval_flag_name` flag to `$status`.");
+    push @old_flags, {id => $flag->id, status => $status};
     last;
   }
 
