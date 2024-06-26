@@ -74,14 +74,10 @@ sub graph {
       );
 
       # Remove any secure bugs that user cannot see
-      $report->prune_graph(sub { $user->visible_bugs($_[0]) });
+      $report->prune_secure;
 
-      # If we do not want resolved bugs (default) then filter those
-      # by passing in reference to the subroutine for filtering out
-      # resolved bugs
-      if (!$show_resolved) {
-        $report->prune_graph(sub { $self->_prune_resolved($_[0]) });
-      }
+      # Filter out resolved bugs
+      $report->prune_resolved if !$show_resolved;
 
       if (!$ids_only) {
         my $bugs = Bugzilla::Bug->new_from_list([$report->graph->vertices]);
@@ -99,23 +95,6 @@ sub graph {
   };
 
   return $self->render(json => $result);
-}
-
-# This method takes a set of bugs and using a single SQL statement,
-# removes any bugs from the list which have a non-empty resolution (unresolved)
-sub _prune_resolved {
-  my ($self, $bugs) = @_;
-  my $dbh = Bugzilla->dbh;
-
-  return $bugs if !$bugs->size;
-
-  my $placeholders = join ',', split //, '?' x $bugs->size;
-  my $query
-    = "SELECT bug_id FROM bugs WHERE (resolution IS NULL OR resolution = '') AND bug_id IN ($placeholders)";
-  my $filtered_bugs
-    = Bugzilla->dbh->selectcol_arrayref($query, undef, $bugs->elements);
-
-  return $filtered_bugs;
 }
 
 1;
