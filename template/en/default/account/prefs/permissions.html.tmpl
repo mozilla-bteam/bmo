@@ -20,8 +20,8 @@
 
 [% PROCESS global/variables.none.tmpl %]
 
+[%# Do not show the can admin column unless we can bless something %]
 [%
-  # Do not show the can admin column unless we can bless something
   SET can_bless_any = 0;
   FOREACH g = groups;
     IF g.can_bless;
