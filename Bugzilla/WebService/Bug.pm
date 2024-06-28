@@ -1373,13 +1373,13 @@ sub update_comment_tags {
 
   my $user = Bugzilla->login(LOGIN_REQUIRED);
   Bugzilla->params->{'comment_taggers_group'}
-    || ThrowUserError("comment_tag_disabled");
+    || ThrowUserError('comment_tag_disabled');
   $user->can_tag_comments || ThrowUserError(
-    "auth_failure",
+    'auth_failure',
     {
       group  => Bugzilla->params->{'comment_taggers_group'},
-      action => "update",
-      object => "comment_tags"
+      action => 'update',
+      object => 'comment_tags'
     }
   );
 
@@ -1394,13 +1394,40 @@ sub update_comment_tags {
 
   my $dbh = Bugzilla->dbh;
   $dbh->bz_start_transaction();
+
+  my $spam_tag_added = 0;
   foreach my $tag (@{$params->{add} || []}) {
+    if ($tag eq 'spam') {
+      $spam_tag_added = 1;
+    }
     $comment->add_tag($tag) if defined $tag;
   }
   foreach my $tag (@{$params->{remove} || []}) {
     $comment->remove_tag($tag) if defined $tag;
   }
+
+  # If comment tag added was 'spam' and user can edit comment,
+  # delete comment text and add text 'Spam'. Original contents
+  # will be preserved in comment history
+  if ( $spam_tag_added
+    && $comment->is_editable_by($user)
+    && $comment->body ne 'spam')
+  {
+    # edit_comments_admins_group members can hide comment revisions
+    my $is_hidden = $user->is_edit_comments_admin ? 1 : 0;
+
+    my $timestamp = $dbh->selectrow_array('SELECT NOW()');
+
+    $comment->update_text({
+      text          => 'spam',
+      timestamp     => $timestamp,
+      is_hidden     => $is_hidden,
+      sync_fulltext => 1,
+    });
+  }
+
   $comment->update();
+
   $dbh->bz_commit_transaction();
 
   return $comment->tags;
