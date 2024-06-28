@@ -532,11 +532,6 @@
     Extensions cannot call <code>$[% terms.bug %]->update()</code>
     inside [% terms.Bug %] update hooks otherwise errors may occur.
 
-  [% ELSIF error == "webdot_error" %]
-    There was an error with the webdot binary processing your graph.
-    Please contact a system administrator with details of what you
-    were doing when the error occurred.
-
   [% ELSIF error == "github_pr_linking_disabled" %]
     Github linking of pull requests to attachments is not enabled for this site.
 

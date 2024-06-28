@@ -28,7 +28,6 @@ $answer{'user_verify_class'}    = 'GitHubAuth,DB';
 $answer{'usestatuswhiteboard'}  = 1;
 $answer{'usetargetmilestone'}   = 1;
 $answer{'utf8'}                 = 'utf8mb4';
-$answer{'webdotbase'}           = '/usr/bin/dot';
 
 $answer{'oauth2_client_authorize_url'} = 'http://externalapi.test:8001/oauth/test/authorize';
 $answer{'oauth2_client_enabled'}       = 1;

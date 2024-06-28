@@ -52,7 +52,6 @@ $answer{'usebugaliases'}        = 1;
 $answer{'upgrade_notification'} = 0;
 $answer{'usestatuswhiteboard'}  = 1;
 $answer{'usetargetmilestone'}   = 1;
-$answer{'webdotbase'}           = '/usr/bin/dot';
 $answer{'insidergroup'}         = 'admin';
 $answer{'default_bug_type'}     = '--';
 $answer{'defaultpriority'}      = '--';

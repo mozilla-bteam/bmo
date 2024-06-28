@@ -35,7 +35,6 @@ our @EXPORT = qw(
   check_cpan_requirements
   check_cpan_feature
   check_all_cpan_features
-  check_webdotbase
   check_font_file
   map_files_to_features
 );
@@ -202,26 +201,6 @@ sub _get_apachectl {
   return undef;
 }
 
-sub check_webdotbase {
-  my ($output) = @_;
-
-  my $webdotbase = Bugzilla->localconfig->webdotbase;
-  return 1 if $webdotbase =~ /^https?:/;
-
-  my $return;
-  $return = 1 if -x $webdotbase;
-
-  if ($output) {
-    _checking_for({package => 'GraphViz', ok => $return});
-  }
-
-  if (!$return) {
-    print install_string('bad_executable', {bin => $webdotbase}), "\n";
-  }
-
-  return $return;
-}
-
 sub check_font_file {
   my ($output) = @_;
 
@@ -256,8 +235,7 @@ sub _checking_for {
 
   # If we're actually checking versions (like for Perl modules), then
   # we have some rather complex logic to determine what we want to
-  # show. If we're not checking versions (like for GraphViz) we just
-  # show "ok" or "not found".
+  # show. If we're not checking versions, we just show "ok" or "not found".
   if (exists $params->{found}) {
     my $found_string;
 
@@ -437,16 +415,6 @@ C<result> is a hashref in the same format as the return value of C<check_cpan_re
 described previously.
 
 =back
-
-=item C<check_webdotbase($output)>
-
-Description: Checks if the graphviz binary specified in the
-  C<webdotbase> parameter is a valid binary, or a valid URL.
-
-Params:      C<$output> - C<$true> if you want the function to
-                 print out information about what it's doing.
-
-Returns:     C<1> if the check was successful, C<0> otherwise.
 
 =item C<check_font_file($output)>
 
