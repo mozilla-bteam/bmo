@@ -1918,10 +1918,10 @@
     Sorry, but you are not allowed to (un)mark comments or attachments
     as private.
 
-  [% ELSIF error == "webdot_too_large" %]
+  [% ELSIF error == "dep_graph_too_large" %]
     [% title = "Dependency Graph Too Large" %]
     The dependency graph contains too many [% terms.bugs %] to display (more
-    than [% constants.MAX_WEBDOT_BUGS FILTER html %] [%+ terms.bugs %]).
+    than [% constants.MAX_DEP_GRAPH_BUGS FILTER html %] [%+ terms.bugs %]).
 
   [% ELSIF error == "wrong_token_for_cancelling_email_change" %]
     [% title = "Wrong Token" %]
