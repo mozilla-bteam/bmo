@@ -51,9 +51,11 @@ if (none { $_ eq $display } @valid_displays) {
 
 my $show_summary = $cgi->param('showsummary');
 
-my %seen      = ();
-my %edgesdone = ();
-my $bug_count = 0;
+my $urlbase        = Bugzilla->localconfig->urlbase;
+my %seen           = ();
+my %edgesdone      = ();
+my $bug_count      = 0;
+my %bug_class_seen = ();
 
 my $add_link = sub {
   my ($blocked, $dependson) = @_;
@@ -105,24 +107,32 @@ my $add_link = sub {
 
     $link_text .= "\n";
 
-    if ($dependson) {
+    if ($dependson && !$seen{$dependson}) {
       $link_text
         .= ($dependson_status eq 'RESOLVED')
         ? "class $dependson resolved\n"
         : "class $dependson open\n";
+
+      # Display additional styling if this is the base bug id
+      if ($dependson == $bug->id) {
+        $link_text .= "class $dependson base\n";
+      }
+
+      $link_text .= qq{click $dependson "${urlbase}show_bug.cgi?id=$dependson"\n};
     }
 
-    $link_text
-      .= ($blocked_status eq 'RESOLVED')
-      ? "class $blocked resolved\n"
-      : "class $blocked open\n";
+    if (!$seen{$blocked}) {
+      $link_text
+        .= ($blocked_status eq 'RESOLVED')
+        ? "class $blocked resolved\n"
+        : "class $blocked open\n";
 
-    # Display additional styling if this is the base bug id
-    if ($blocked == $bug->id) {
-      $link_text .= "class $blocked base\n";
-    }
-    elsif ($dependson == $bug->id) {
-      $link_text .= "class $dependson base\n";
+      # Display additional styling if this is the base bug id
+      if ($blocked == $bug->id) {
+        $link_text .= "class $blocked base\n";
+      }
+
+      $link_text .= qq{click $blocked "${urlbase}show_bug.cgi?id=$blocked"\n};
     }
 
     $bug_count++;
@@ -200,11 +210,6 @@ else {
       $graph .= $add_link->($dep_bug_id, $id);
     }
   }
-}
-
-my $urlbase = Bugzilla->localconfig->urlbase;
-foreach my $k (keys %seen) {
-  $graph .= qq{click $k "${urlbase}show_bug.cgi?id=$k"\n};
 }
 
 $vars->{'graph_data'} = $graph;
