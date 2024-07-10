@@ -72,65 +72,65 @@ my $add_link = sub {
   my $key = "$blocked,$dependson";
   if (!exists $edgesdone{$key}) {
     if ($dependson) {
-      ($dependson_status, $dependson_resolution, $dependson_summary)
-        = $dbh->selectrow_array($sth, undef, $dependson);
+      # ($dependson_status, $dependson_resolution, $dependson_summary)
+      #   = $dbh->selectrow_array($sth, undef, $dependson);
 
       $link_text .= $dependson;
-      $link_text .= ($dependson_status eq 'RESOLVED') ? '[' : '([';
-      $link_text .= "$dependson";
+      # $link_text .= ($dependson_status eq 'RESOLVED') ? '[' : '([';
+      # $link_text .= "$dependson";
 
-      if ($show_summary && $user->can_see_bug($dependson)) {
-        $dependson_summary = truncate_string($dependson_summary, 80, '...');
-        $dependson_summary = mermaid_quote($dependson_summary);
-        $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
-      }
-
-      $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
+      # if ($show_summary && $user->can_see_bug($dependson)) {
+      #   $dependson_summary = truncate_string($dependson_summary, 80, '...');
+      #   $dependson_summary = mermaid_quote($dependson_summary);
+      #   $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
+      # }
+      #
+      # $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
 
       $link_text .= ' --> ';
     }
 
-    my ($blocked_status, $blocked_resolution, $blocked_summary)
-      = $dbh->selectrow_array($sth, undef, $blocked);
+    # my ($blocked_status, $blocked_resolution, $blocked_summary)
+    #   = $dbh->selectrow_array($sth, undef, $blocked);
 
     $link_text .= $blocked;
-    $link_text .= ($blocked_status eq 'RESOLVED') ? '[' : '([';
-    $link_text .= "$blocked";
-
-    if ($show_summary && $user->can_see_bug($blocked)) {
-      $blocked_summary = truncate_string($blocked_summary, 80, '...');
-      $blocked_summary = mermaid_quote($blocked_summary);
-      $link_text .= "<br>$blocked_status $blocked_resolution $blocked_summary";
-    }
-
-    $link_text .= ($blocked_status eq 'RESOLVED') ? ']' : '])';
+    # $link_text .= ($blocked_status eq 'RESOLVED') ? '[' : '([';
+    # $link_text .= "$blocked";
+    #
+    # if ($show_summary && $user->can_see_bug($blocked)) {
+    #   $blocked_summary = truncate_string($blocked_summary, 80, '...');
+    #   $blocked_summary = mermaid_quote($blocked_summary);
+    #   $link_text .= "<br>$blocked_status $blocked_resolution $blocked_summary";
+    # }
+    #
+    # $link_text .= ($blocked_status eq 'RESOLVED') ? ']' : '])';
 
     $link_text .= "\n";
 
     if ($dependson && !$seen{$dependson}) {
-      $link_text
-        .= ($dependson_status eq 'RESOLVED')
-        ? "class $dependson resolved\n"
-        : "class $dependson open\n";
-
-      # Display additional styling if this is the base bug id
-      if ($dependson == $bug->id) {
-        $link_text .= "class $dependson base\n";
-      }
+      # $link_text
+      #   .= ($dependson_status eq 'RESOLVED')
+      #   ? "class $dependson resolved\n"
+      #   : "class $dependson open\n";
+      #
+      # # Display additional styling if this is the base bug id
+      # if ($dependson == $bug->id) {
+      #   $link_text .= "class $dependson base\n";
+      # }
 
       $link_text .= qq{click $dependson "${urlbase}show_bug.cgi?id=$dependson"\n};
     }
 
     if (!$seen{$blocked}) {
-      $link_text
-        .= ($blocked_status eq 'RESOLVED')
-        ? "class $blocked resolved\n"
-        : "class $blocked open\n";
-
-      # Display additional styling if this is the base bug id
-      if ($blocked == $bug->id) {
-        $link_text .= "class $blocked base\n";
-      }
+      # $link_text
+      #   .= ($blocked_status eq 'RESOLVED')
+      #   ? "class $blocked resolved\n"
+      #   : "class $blocked open\n";
+      #
+      # # Display additional styling if this is the base bug id
+      # if ($blocked == $bug->id) {
+      #   $link_text .= "class $blocked base\n";
+      # }
 
       $link_text .= qq{click $blocked "${urlbase}show_bug.cgi?id=$blocked"\n};
     }
