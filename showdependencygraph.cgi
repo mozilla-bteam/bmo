@@ -61,7 +61,7 @@ my $add_link = sub {
   my ($blocked, $dependson) = @_;
   $dependson ||= 0;
   my $link_text = '';
-  my ($dependson_status, $dependson_resolution, $dependson_summary);
+  # my ($dependson_status, $dependson_resolution, $dependson_summary);
 
   state $sth = $dbh->prepare(
     q{SELECT bug_status, resolution, short_desc
