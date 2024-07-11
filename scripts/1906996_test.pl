@@ -26,7 +26,7 @@ my $sth = $dbh->prepare(
 );
 
 my %seen  = ();
-my @stack = (1733050);
+my @stack = ('1733050');
 
 foreach my $id (@stack) {
   my $dependencies = $dbh->selectall_arrayref($sth, undef, ($id, $id));
