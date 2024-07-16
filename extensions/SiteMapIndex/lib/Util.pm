@@ -126,7 +126,7 @@ END
   my $sitemap_url
     = 'https://'
     . Bugzilla->params->{sitemapindex_google_host} . '/storage/v1/b/'
-    . Bugzilla->params->{sitemapindex_google_bucket} . '/o/';
+    . Bugzilla->params->{sitemapindex_google_bucket} . '/o';
 
   foreach my $filename (@$filelist) {
     $index_xml .= "
