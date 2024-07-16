@@ -355,6 +355,12 @@
             </div>
           </li>
           <li role="separator"></li>
+          [% IF user.email_disabled %]
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]userprefs.cgi?tab=email" role="menuitem" tabindex="-1">[% terms.Bug %] Mail Disabled</a>
+          </li>
+          <li role="separator"></li>
+          [% END %]
           <li role="presentation">
             <a href="[% basepath FILTER none %]user_profile?user_id=[% user.id FILTER none %]" role="menuitem" tabindex="-1">My Profile</a>
           </li>
@@ -444,6 +450,15 @@
     <div id="new_announcement" class="new_announcement" data-checksum="[% checksum FILTER html %]">
       <div class="inner">
         [% announcehtml FILTER none %]
+      </div>
+    </div>
+  [% END %]
+  [% IF user.email_disabled %]
+    <div class="warning">
+      <div class="inner">
+        [% terms.Bug %] notification emails are currently disabled on your account.
+        Please contact <a href="mailto:[% Param("maintainer") %]">[% Param("maintainer") %]</a>
+        for instructions on how to have your email reactivated.
       </div>
     </div>
   [% END %]
