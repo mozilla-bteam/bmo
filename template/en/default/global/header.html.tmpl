@@ -355,12 +355,6 @@
             </div>
           </li>
           <li role="separator"></li>
-          [% IF user.email_disabled %]
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]userprefs.cgi?tab=email" role="menuitem" tabindex="-1">[% terms.Bug %] Mail Disabled</a>
-          </li>
-          <li role="separator"></li>
-          [% END %]
           <li role="presentation">
             <a href="[% basepath FILTER none %]user_profile?user_id=[% user.id FILTER none %]" role="menuitem" tabindex="-1">My Profile</a>
           </li>
