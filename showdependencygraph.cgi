@@ -51,9 +51,10 @@ if (none { $_ eq $display } @valid_displays) {
 
 my $show_summary = $cgi->param('showsummary');
 
-my %seen      = ();
-my %edgesdone = ();
-my $bug_count = 0;
+my $urlbase        = Bugzilla->localconfig->urlbase;
+my %seen           = ();
+my %edgesdone      = ();
+my %bug_class_seen = ();
 
 my $add_link = sub {
   my ($blocked, $dependson) = @_;
@@ -105,27 +106,34 @@ my $add_link = sub {
 
     $link_text .= "\n";
 
-    if ($dependson) {
+    if ($dependson && !$seen{$dependson}) {
       $link_text
         .= ($dependson_status eq 'RESOLVED')
         ? "class $dependson resolved\n"
         : "class $dependson open\n";
+
+      # Display additional styling if this is the base bug id
+      if ($dependson == $bug->id) {
+        $link_text .= "class $dependson base\n";
+      }
+
+      $link_text .= qq{click $dependson "${urlbase}show_bug.cgi?id=$dependson"\n};
     }
 
-    $link_text
-      .= ($blocked_status eq 'RESOLVED')
-      ? "class $blocked resolved\n"
-      : "class $blocked open\n";
+    if (!$seen{$blocked}) {
+      $link_text
+        .= ($blocked_status eq 'RESOLVED')
+        ? "class $blocked resolved\n"
+        : "class $blocked open\n";
 
-    # Display additional styling if this is the base bug id
-    if ($blocked == $bug->id) {
-      $link_text .= "class $blocked base\n";
-    }
-    elsif ($dependson == $bug->id) {
-      $link_text .= "class $dependson base\n";
+      # Display additional styling if this is the base bug id
+      if ($blocked == $bug->id) {
+        $link_text .= "class $blocked base\n";
+      }
+
+      $link_text .= qq{click $blocked "${urlbase}show_bug.cgi?id=$blocked"\n};
     }
 
-    $bug_count++;
     $edgesdone{$key}  = 1;
     $seen{$blocked}   = 1;
     $seen{$dependson} = 1 if $dependson;
@@ -159,10 +167,16 @@ if ($display eq 'web') {
     else {
       foreach my $dependency (@{$dependencies}) {
         my ($blocked, $dependson) = @{$dependency};
-        if ($blocked != $id && !exists $seen{$blocked}) {
+        if ( $blocked != $id
+          && !exists $seen{$blocked}
+          && scalar @stack < MAX_DEP_GRAPH_BUGS)
+        {
           push @stack, $blocked;
         }
-        if ($dependson != $id && !exists $seen{$dependson}) {
+        if ( $dependson != $id
+          && !exists $seen{$dependson}
+          && scalar @stack < MAX_DEP_GRAPH_BUGS)
+        {
           push @stack, $dependson;
         }
         $graph .= $add_link->($blocked, $dependson);
@@ -185,7 +199,9 @@ else {
     }
     else {
       foreach my $blocker_id (@{$blocker_ids}) {
-        push @blocker_stack, $blocker_id unless $seen{$blocker_id};
+        if (!exists $seen{$blocker_id} && scalar @blocker_stack < MAX_DEP_GRAPH_BUGS) {
+          push @blocker_stack, $blocker_id;
+        }
         $graph .= $add_link->($id, $blocker_id);
       }
     }
@@ -196,30 +212,27 @@ else {
       = Bugzilla::Bug::list_relationship('dependencies', 'dependson', 'blocked',
       $id);
     foreach my $dep_bug_id (@{$dep_bug_ids}) {
-      push @dependent_stack, $dep_bug_id unless $seen{$dep_bug_id};
+      if (!exists $seen{$dep_bug_id} && scalar @dependent_stack < MAX_DEP_GRAPH_BUGS)
+      {
+        push @dependent_stack, $dep_bug_id;
+      }
       $graph .= $add_link->($dep_bug_id, $id);
     }
   }
 }
 
-my $urlbase = Bugzilla->localconfig->urlbase;
-foreach my $k (keys %seen) {
-  $graph .= qq{click $k "${urlbase}show_bug.cgi?id=$k"\n};
-}
-
-$vars->{'graph_data'} = $graph;
-
-if ($bug_count > MAX_DEP_GRAPH_BUGS) {
-  ThrowUserError('dep_graph_too_large');
-}
-
-# Make sure we only include valid integers (protects us from XSS attacks).
-my @bugs = grep { detaint_natural($_) } split /[\s,]+/, $cgi->param('id');
-$vars->{'bug_id'}      = join ', ', @bugs;
+$vars->{'graph_data'}  = $graph;
+$vars->{'bug_id'}      = $bug->id;
 $vars->{'display'}     = $display;
 $vars->{'rankdir'}     = $rankdir;
 $vars->{'showsummary'} = $cgi->param('showsummary');
 $vars->{'debug'}       = ($cgi->param('debug') ? 1 : 0);
+$vars->{'graph_size'}  = length $graph;
+$vars->{'graph_edges'} = scalar keys %edgesdone;
+
+if (scalar keys %seen > MAX_DEP_GRAPH_BUGS) {
+  $vars->{'graph_too_large'} = 1;
+}
 
 # Generate and return the UI (HTML page) from the appropriate template.
 print $cgi->header();

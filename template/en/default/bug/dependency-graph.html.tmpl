@@ -73,18 +73,26 @@
 
 <hr>
 
-<pre class="mermaid">
+[% IF graph_too_large %]
+  <p>Due to large number of dependencies, some [% terms.bugs %] were not included</p> 
+[% END %]
+
+<pre id="graph_data" [% IF !debug %]style="display:none;"[% END %]>
   [% graph_data FILTER html %]
 </pre>
 
-<script [% script_nonce FILTER none %]>
-  mermaid.initialize({ startOnLoad: true });
-</script>
+[% IF !debug %]
+  <pre id="graph_image">Loading...</pre>
 
-[% IF debug %]
-  <pre>
-    [% graph_data FILTER html %]
-  </pre>
+  <script [% script_nonce FILTER none %]>
+    mermaid.initialize({ startOnLoad: false, maxTextSize: [% graph_size FILTER json %] + 1000, maxEdges: [% graph_edges FILTER json %] + 100});                                               
+    const drawGraph = async function () {
+      const graph_data = document.querySelector("#graph_data").innerText;
+      const { svg } = await mermaid.render('graph', graph_data);
+      document.querySelector("#graph_image").innerHTML = svg;
+    };
+    drawGraph();
+  </script>
 [% END %]
 
 [% PROCESS global/footer.html.tmpl %]
