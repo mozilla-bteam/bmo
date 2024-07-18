@@ -160,6 +160,9 @@ if ($display eq 'web') {
   );
 
   foreach my $id (@stack) {
+    # Cap stack size at 10000
+    last if scalar @stack > 10000;
+
     my $dependencies = $dbh->selectall_arrayref($sth, undef, ($id, $id));
 
     # Show a single node if no dependencies instead of a blank graph
