@@ -236,6 +236,7 @@ $vars->{'display'}     = $display;
 $vars->{'rankdir'}     = $rankdir;
 $vars->{'showsummary'} = $cgi->param('showsummary');
 $vars->{'debug'}       = ($cgi->param('debug') ? 1 : 0);
+$vars->{'graph_size'}  = (length $graph) + 1000;
 
 if (scalar keys %seen > MAX_DEP_GRAPH_BUGS) {
   $vars->{'graph_too_large'} = 1;
