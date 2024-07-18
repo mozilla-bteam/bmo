@@ -85,7 +85,7 @@
   <pre id="graph_image"></pre>
 
   <script [% script_nonce FILTER none %]>
-    mermaid.initialize({ startOnLoad: false, maxTextSize: [% graph_size FILTER json %]});
+    mermaid.initialize({ startOnLoad: false, maxTextSize: [% graph_size FILTER json %] + 1000, maxEdges: [% graph_edges FILTER json %] + 100});
     const drawGraph = async function () {
       const graph_data = document.querySelector("#graph_data").innerText;
       const { svg } = await mermaid.render('graph', graph_data);
