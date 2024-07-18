@@ -61,6 +61,7 @@ my $add_link = sub {
   my ($blocked, $dependson) = @_;
   $dependson ||= 0;
   my $link_text = '';
+
   # my ($dependson_status, $dependson_resolution, $dependson_summary);
 
   state $sth = $dbh->prepare(
@@ -72,20 +73,22 @@ my $add_link = sub {
   my $key = "$blocked,$dependson";
   if (!exists $edgesdone{$key}) {
     if ($dependson) {
+
       # ($dependson_status, $dependson_resolution, $dependson_summary)
       #   = $dbh->selectrow_array($sth, undef, $dependson);
 
       $link_text .= $dependson;
+
       # $link_text .= ($dependson_status eq 'RESOLVED') ? '[' : '([';
       # $link_text .= "$dependson";
 
-      # if ($show_summary && $user->can_see_bug($dependson)) {
-      #   $dependson_summary = truncate_string($dependson_summary, 80, '...');
-      #   $dependson_summary = mermaid_quote($dependson_summary);
-      #   $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
-      # }
-      #
-      # $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
+   # if ($show_summary && $user->can_see_bug($dependson)) {
+   #   $dependson_summary = truncate_string($dependson_summary, 80, '...');
+   #   $dependson_summary = mermaid_quote($dependson_summary);
+   #   $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
+   # }
+   #
+   # $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
 
       $link_text .= ' --> ';
     }
@@ -94,6 +97,7 @@ my $add_link = sub {
     #   = $dbh->selectrow_array($sth, undef, $blocked);
 
     $link_text .= $blocked;
+
     # $link_text .= ($blocked_status eq 'RESOLVED') ? '[' : '([';
     # $link_text .= "$blocked";
     #
@@ -108,6 +112,7 @@ my $add_link = sub {
     $link_text .= "\n";
 
     if ($dependson && !$seen{$dependson}) {
+
       # $link_text
       #   .= ($dependson_status eq 'RESOLVED')
       #   ? "class $dependson resolved\n"
@@ -122,6 +127,7 @@ my $add_link = sub {
     }
 
     if (!$seen{$blocked}) {
+
       # $link_text
       #   .= ($blocked_status eq 'RESOLVED')
       #   ? "class $blocked resolved\n"
@@ -160,9 +166,6 @@ if ($display eq 'web') {
   );
 
   foreach my $id (@stack) {
-    # Cap stack size at 10000
-    last if scalar @stack > 10000;
-
     my $dependencies = $dbh->selectall_arrayref($sth, undef, ($id, $id));
 
     # Show a single node if no dependencies instead of a blank graph
@@ -172,10 +175,16 @@ if ($display eq 'web') {
     else {
       foreach my $dependency (@{$dependencies}) {
         my ($blocked, $dependson) = @{$dependency};
-        if ($blocked != $id && !exists $seen{$blocked}) {
+        if ( $blocked != $id
+          && !exists $seen{$blocked}
+          && scalar @stack < MAX_DEP_GRAPH_BUGS)
+        {
           push @stack, $blocked;
         }
-        if ($dependson != $id && !exists $seen{$dependson}) {
+        if ( $dependson != $id
+          && !exists $seen{$dependson}
+          && scalar @stack < MAX_DEP_GRAPH_BUGS)
+        {
           push @stack, $dependson;
         }
         $graph .= $add_link->($blocked, $dependson);
@@ -198,7 +207,9 @@ else {
     }
     else {
       foreach my $blocker_id (@{$blocker_ids}) {
-        push @blocker_stack, $blocker_id unless $seen{$blocker_id};
+        if (!exists $seen{$blocker_id} && scalar @blocker_stack < MAX_DEP_GRAPH_BUGS) {
+          push @blocker_stack, $blocker_id;
+        }
         $graph .= $add_link->($id, $blocker_id);
       }
     }
@@ -209,7 +220,10 @@ else {
       = Bugzilla::Bug::list_relationship('dependencies', 'dependson', 'blocked',
       $id);
     foreach my $dep_bug_id (@{$dep_bug_ids}) {
-      push @dependent_stack, $dep_bug_id unless $seen{$dep_bug_id};
+      if (!exists $seen{$dep_bug_id} && scalar @dependent_stack < MAX_DEP_GRAPH_BUGS)
+      {
+        push @dependent_stack, $dep_bug_id;
+      }
       $graph .= $add_link->($dep_bug_id, $id);
     }
   }
