@@ -10,10 +10,10 @@ use 5.10.1;
 use Moo;
 
 use Graph::Directed;
-use Graph::Traversal::DFS;
+use Graph::Traversal::BFS;
 use PerlX::Maybe 'maybe';
 use Type::Utils     qw(class_type);
-use Types::Standard qw(Bool Enum Int Str ArrayRef);
+use Types::Standard qw(Bool Enum Int Str ArrayRef Object);
 use Set::Object     qw(set);
 
 use Bugzilla;
@@ -104,7 +104,7 @@ sub tree {
   my %nodes = map { $_ => {maybe bug => $graph->get_vertex_attributes($_)} }
     $graph->vertices;
 
-  my $search = Graph::Traversal::DFS->new(
+  my $search = Graph::Traversal::BFS->new(
     $graph,
     start     => $self->bug_id,
     tree_edge => sub {
@@ -112,9 +112,43 @@ sub tree {
       $nodes{$u}{$v} = $nodes{$v};
     }
   );
-  $search->dfs;
+  $search->bfs;
 
   return $nodes{$self->bug_id} || {};
+}
+
+# Remove any secure bugs that user cannot see
+sub prune_secure {
+  my ($self, $bugs, $user) = @_;
+  $user ||= Bugzilla->user;
+
+  $self->prune_graph(sub {
+    $user->visible_bugs($_[0]);
+  });
+
+  return $self;
+}
+
+# This method takes a set of bugs and using a single SQL statement,
+# removes any bugs from the list which have a non-empty resolution (unresolved)
+sub prune_resolved {
+  my ($self, $bugs) = @_;
+
+  $self->prune_graph(sub {
+    my $bugs = $_[0];
+
+    return $bugs if !$bugs->size;
+
+    my $placeholders = join ',', split //, '?' x $bugs->size;
+    my $query
+      = "SELECT bug_id FROM bugs WHERE (resolution IS NULL OR resolution = '') AND bug_id IN ($placeholders)";
+    my $filtered_bugs
+      = Bugzilla->dbh->selectcol_arrayref($query, undef, $bugs->elements);
+
+    return $filtered_bugs;
+  });
+
+  return $self;
 }
 
 1;

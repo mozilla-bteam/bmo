@@ -4644,8 +4644,8 @@ sub is_reminded {
   $user ||= Bugzilla->user;
 
   require Bugzilla::Reminder;
-  my $reminders
-    = Bugzilla::Reminder->match({bug_id => $self->id, user_id => $user->id});
+  my $reminders = Bugzilla::Reminder->match(
+    {bug_id => $self->id, user_id => $user->id, sent => 0});
   if (@{$reminders}) {
     return $self->{is_reminded} = 1;
   }
