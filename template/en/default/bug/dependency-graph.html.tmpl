@@ -73,6 +73,10 @@
 
 <hr>
 
+[% IF graph_too_large %]
+  <p>Due to large number of dependencies, some [% terms.bugs %] were not included</p> 
+[% END %]
+
 <pre id="graph_data" [% IF !debug %]style="display:none;"[% END %]>
   [% graph_data FILTER html %]
 </pre>

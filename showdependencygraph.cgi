@@ -54,7 +54,6 @@ my $show_summary = $cgi->param('showsummary');
 my $urlbase        = Bugzilla->localconfig->urlbase;
 my %seen           = ();
 my %edgesdone      = ();
-my $bug_count      = 0;
 my %bug_class_seen = ();
 
 my $add_link = sub {
@@ -141,7 +140,6 @@ my $add_link = sub {
       $link_text .= qq{click $blocked "${urlbase}show_bug.cgi?id=$blocked"\n};
     }
 
-    $bug_count++;
     $edgesdone{$key}  = 1;
     $seen{$blocked}   = 1;
     $seen{$dependson} = 1 if $dependson;
@@ -231,10 +229,6 @@ else {
 
 $vars->{'graph_data'} = $graph;
 
-if ($bug_count > MAX_DEP_GRAPH_BUGS) {
-  ThrowUserError('dep_graph_too_large');
-}
-
 # Make sure we only include valid integers (protects us from XSS attacks).
 my @bugs = grep { detaint_natural($_) } split /[\s,]+/, $cgi->param('id');
 $vars->{'bug_id'}      = join ', ', @bugs;
@@ -242,6 +236,10 @@ $vars->{'display'}     = $display;
 $vars->{'rankdir'}     = $rankdir;
 $vars->{'showsummary'} = $cgi->param('showsummary');
 $vars->{'debug'}       = ($cgi->param('debug') ? 1 : 0);
+
+if (scalar keys %seen > MAX_DEP_GRAPH_BUGS) {
+  $vars->{'graph_too_large'} = 1;
+}
 
 # Generate and return the UI (HTML page) from the appropriate template.
 print $cgi->header();
