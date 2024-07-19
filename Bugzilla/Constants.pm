@@ -630,7 +630,7 @@ use constant MAX_BUG_URL_LENGTH => 255;
 use constant MAX_POSSIBLE_DUPLICATES => 25;
 
 # Maximum number of bugs to display in a dependency graph
-use constant MAX_DEP_GRAPH_BUGS => 500;
+use constant MAX_DEP_GRAPH_BUGS => 200;
 
 # This is the name of the algorithm used to hash passwords before storing
 # them in the database. This can be any string that is valid to pass to
