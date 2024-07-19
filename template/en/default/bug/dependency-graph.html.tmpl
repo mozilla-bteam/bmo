@@ -75,22 +75,18 @@
 
 <hr>
 
-<pre id="graph_data" [% IF !debug %]style="display:none;"[% END %]>
+<pre class="mermaid">
   [% graph_data FILTER html %]
 </pre>
 
-[% IF !debug %]
-  <pre id="graph_image"></pre>
+<script [% script_nonce FILTER none %]>
+  mermaid.initialize({ startOnLoad: true });
+</script>
 
-  <script [% script_nonce FILTER none %]>
-    mermaid.initialize({ startOnLoad: false });
-    const drawGraph = async function () {
-      const graph_data = document.querySelector("#graph_data").innerText;
-      const { svg } = await mermaid.render('graph', graph_data);
-      document.querySelector("#graph_image").innerHTML = svg;
-    };
-    drawGraph();
-  </script>
+[% IF debug %]
+  <pre>
+    [% graph_data FILTER html %]
+  </pre>
 [% END %]
 
 [% PROCESS global/footer.html.tmpl %]
