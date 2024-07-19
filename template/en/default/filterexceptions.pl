@@ -125,7 +125,10 @@
 
   'bug/comments.html.tmpl' => ['comment.id', 'comment.count', 'bug.bug_id',],
 
-  'bug/dependency-graph.html.tmpl' => [ 'bug_id',],
+  'bug/dependency-graph.html.tmpl' => [
+    'image_map',    # We need to continue to make sure this is safe in the CGI
+    'image_url', 'map_url', 'bug_id',
+  ],
 
   'bug/dependency-tree.html.tmpl' => [
     'bugid', 'maxdepth', 'hide_resolved', 'ids.join(",")', 'maxdepth + 1',

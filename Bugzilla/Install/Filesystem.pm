@@ -127,6 +127,7 @@ sub FILESYSTEM {
   my $confdir        = bz_locations()->{'confdir'};
   my $attachdir      = bz_locations()->{'attachdir'};
   my $extensionsdir  = bz_locations()->{'extensionsdir'};
+  my $webdotdir      = bz_locations()->{'webdotdir'};
   my $templatedir    = bz_locations()->{'templatedir'};
   my $libdir         = bz_locations()->{'libpath'};
   my $extlib         = bz_locations()->{'ext_libpath'};
@@ -216,6 +217,7 @@ sub FILESYSTEM {
     # Writeable directories
     $template_cache => {files => CGI_READ,  dirs => DIR_CGI_OVERWRITE},
     $attachdir      => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
+    $webdotdir => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
     "$datadir/db" => {files => CGI_WRITE, dirs => DIR_CGI_WRITE},
     $logsdir => {files => CGI_WRITE, dirs => DIR_CGI_WRITE | DIR_ALSO_WS_STICKY},
     $assetsdir =>
@@ -278,6 +280,7 @@ sub FILESYSTEM {
     # Directories that cgi scripts can write to.
     "$datadir/db"   => DIR_CGI_WRITE,
     $attachdir      => DIR_CGI_WRITE,
+    $webdotdir      => DIR_CGI_WRITE,
     $assetsdir      => DIR_CGI_WRITE | DIR_ALSO_WS_SERVE,
     $template_cache => DIR_CGI_WRITE,
     $logsdir        => DIR_CGI_WRITE | DIR_ALSO_WS_STICKY,

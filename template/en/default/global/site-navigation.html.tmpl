@@ -41,10 +41,13 @@
   [% IF bug %]
     <link rel="Show" title="Dependency Tree"
           href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bug.bug_id %]&amp;hide_resolved=1">
-    <link rel="Show" title="Dependency Graph"
-          href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id %]">
-    <link rel="Show" title="[% terms.Bug %] Activity"
-          href="[% basepath FILTER none %]show_activity.cgi?id=[% bug.bug_id %]">
+    [% IF Param('webdotbase') %]
+      <link rel="Show" title="Dependency Graph"
+            href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id %]">
+    [% END %]
+
+      <link rel="Show" title="[% terms.Bug %] Activity"
+            href="[% basepath FILTER none %]show_activity.cgi?id=[% bug.bug_id %]">
   [% END %]
 
 
