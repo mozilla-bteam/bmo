@@ -67,9 +67,7 @@
   </table>
   <br>
   <input type="hidden" name="id" value="[% bug_id %]">
-  [% IF debug %]
-    <input type="hidden" name="debug" value="1">
-  [% END %]
+  <input type="hidden" name="debug" value="[% IF debug %]1[% ELSE %]0[% END %]">
   <input type="submit" id="update" value="Update">
 </form>
 
