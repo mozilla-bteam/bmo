@@ -31,12 +31,14 @@
    title = "Dependency graph for $terms.bug $bug_id"
    header = "Dependency graph for $terms.bug <a href=\"${basepath}show_bug.cgi?id=$bug_id\">$bug_id</a>"
    javascript_urls = [ 'js/lib/mermaid.min.js' ]
-   style = "
-   .mermaid svg {
-     height: auto;
-     width: auto;
-   }"
 %]
+
+<style>
+.mermaid svg { 
+  max-width: 100%; 
+  height: auto;
+}
+</style>
 
 <form action="[% basepath FILTER none %]showdependencygraph.cgi" method="GET">
   <table>
