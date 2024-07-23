@@ -452,8 +452,11 @@ sub confirm_create_account {
   $vars->{'otheruser'} = $otheruser;
 
   # Log in the new user using credentials they just gave.
-  $cgi->param('Bugzilla_login',    $otheruser->login);
-  $cgi->param('Bugzilla_password', $password);
+  my $cookie = Bugzilla->cgi->cookie('Bugzilla_login_request_cookie');
+  $cgi->param('Bugzilla_login_token',
+    issue_hash_token(['login_request', $cookie]));
+  $cgi->param('Bugzilla_login',        $otheruser->login);
+  $cgi->param('Bugzilla_password',     $password);
   $cgi->param('token_account_created', 1);
   Bugzilla->login(LOGIN_OPTIONAL);
 
