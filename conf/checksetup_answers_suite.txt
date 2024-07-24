@@ -28,5 +28,6 @@ $answer{'user_verify_class'}    = 'GitHubAuth,DB';
 $answer{'usestatuswhiteboard'}  = 1;
 $answer{'usetargetmilestone'}   = 1;
 $answer{'utf8'}                 = 'utf8mb4';
+$answer{'webdotbase'}           = '/usr/bin/dot';
 $answer{'oauth2_client_enabled'} = 0;
 $answer{'product_details_endpoint'} = 'https://product-details.mozilla.org/1.0';

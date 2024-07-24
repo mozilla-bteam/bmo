@@ -713,7 +713,10 @@
 
     <td colspan="2" align="left" id="show_dependency_tree_or_graph">
       Show dependency <a href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bug.bug_id %]&amp;hide_resolved=1">tree</a>
-      /&nbsp;<a href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id %]">graph</a>
+
+      [% IF Param('webdotbase') %]
+        /&nbsp;<a href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id %]">graph</a>
+      [% END %]
     </td>
   </tr>
 [% END %]

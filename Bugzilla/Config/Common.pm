@@ -26,7 +26,7 @@ use base qw(Exporter);
 @Bugzilla::Config::Common::EXPORT = qw(
   check_multi check_numeric check_regexp check_url check_group
   check_bug_type check_priority check_severity check_platform
-  check_opsys check_shadowdb check_urlbase
+  check_opsys check_shadowdb check_urlbase check_webdotbase
   check_user_verify_class
   check_mail_delivery_method check_notification check_utf8
   check_bug_status check_smtp_auth check_theschwartz_available
@@ -213,6 +213,21 @@ sub check_url {
     return 'must be a legal URL, absolute or relative, ending with a slash.';
   }
   return '';
+}
+
+sub check_webdotbase {
+  my ($value) = (@_);
+  $value = trim($value);
+  if ($value eq "") {
+    return "";
+  }
+  if ($value !~ /^https?:/) {
+    if (!-x $value) {
+      return
+        "The file path \"$value\" is not a valid executable.  Please specify the complete file path to 'dot' if you intend to generate graphs locally.";
+    }
+  }
+  return "";
 }
 
 sub check_user_verify_class {
