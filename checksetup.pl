@@ -237,14 +237,6 @@ Bugzilla::Template::precompile_templates(!$silent)
 fix_all_file_permissions(!$silent) unless $switch{'no-permissions'};
 
 ###########################################################################
-# Check GraphViz setup
-###########################################################################
-
-# If we are using a local 'dot' binary, verify the specified binary exists
-# and that the generated images are accessible.
-check_webdotbase(!$silent) if $lc_hash->{'webdotbase'};
-
-###########################################################################
 # Check font file setup
 ###########################################################################
 

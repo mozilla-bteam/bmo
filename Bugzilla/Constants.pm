@@ -186,7 +186,7 @@ use Memoize;
   MAX_FREETEXT_LENGTH
   MAX_BUG_URL_LENGTH
   MAX_POSSIBLE_DUPLICATES
-  MAX_WEBDOT_BUGS
+  MAX_DEP_GRAPH_BUGS
 
   PASSWORD_DIGEST_ALGORITHM
   PASSWORD_SALT_LENGTH
@@ -630,7 +630,7 @@ use constant MAX_BUG_URL_LENGTH => 255;
 use constant MAX_POSSIBLE_DUPLICATES => 25;
 
 # Maximum number of bugs to display in a dependency graph
-use constant MAX_WEBDOT_BUGS => 2000;
+use constant MAX_DEP_GRAPH_BUGS => 500;
 
 # This is the name of the algorithm used to hash passwords before storing
 # them in the database. This can be any string that is valid to pass to
@@ -734,18 +734,10 @@ sub _bz_locations {
     'datadir'        => $datadir,
     'attachdir'      => "$datadir/attachments",
     'skinsdir'       => "$libpath/skins",
-
-    # $webdotdir must be in the web server's tree somewhere. Even if you use a
-    # local dot, we output images to there. Also, if $webdotdir is
-    # not relative to the Bugzilla root directory, you'll need to
-    # change showdependencygraph.cgi to set image_url to the correct
-    # location.
-    # The script should really generate these graphs directly...
-    'webdotdir'     => "$datadir/webdot",
-    'extensionsdir' => "$libpath/extensions",
-    'logsdir'       => "$libpath/logs",
-    'assetsdir'     => "$datadir/assets",
-    'confdir'       => $confdir,
+    'extensionsdir'  => "$libpath/extensions",
+    'logsdir'        => "$libpath/logs",
+    'assetsdir'      => "$datadir/assets",
+    'confdir'        => $confdir,
   };
 }
 
