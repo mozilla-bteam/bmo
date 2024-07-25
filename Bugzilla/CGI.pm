@@ -667,13 +667,13 @@ sub set_dated_content_disp {
 }
 
 # If a cookie is requested that has been set but not yet stored in the browser,
-# then we can return it here
+# then we can return it here. 'X' means the cookie is being removed
 sub cookie {
   my ($self, @params) = @_;
   if (scalar @params == 1 && scalar @{$self->{Bugzilla_cookie_list}}) {
     foreach my $cookie (@{$self->{Bugzilla_cookie_list}}) {
-      return $cookie->value if $cookie->name eq $params[0];
-    };
+      return $cookie->value if $cookie->name eq $params[0] && $cookie->value ne 'X';
+    }
   }
   return $self->SUPER::cookie(@params);
 }
