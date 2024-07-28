@@ -76,16 +76,16 @@ my $add_link = sub {
 
       $link_text .= $dependson;
       $link_text .= ($dependson_status eq 'RESOLVED') ? '[' : '([';
-      $link_text .= "$dependson";
 
+      my $dependson_text = $dependson;
       if ($show_summary && $user->can_see_bug($dependson)) {
         $dependson_summary = truncate_string($dependson_summary, 80, '...');
         $dependson_summary = mermaid_quote($dependson_summary);
-        $link_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
+        $dependson_text .= "<br>$dependson_status $dependson_resolution $dependson_summary";
       }
 
+      $link_text .= qq{"$dependson_text"};
       $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
-
       $link_text .= ' --> ';
     }
 
@@ -94,16 +94,16 @@ my $add_link = sub {
 
     $link_text .= $blocked;
     $link_text .= ($blocked_status eq 'RESOLVED') ? '[' : '([';
-    $link_text .= "$blocked";
 
+    my $blocked_text = $blocked;
     if ($show_summary && $user->can_see_bug($blocked)) {
       $blocked_summary = truncate_string($blocked_summary, 80, '...');
       $blocked_summary = mermaid_quote($blocked_summary);
-      $link_text .= "<br>$blocked_status $blocked_resolution $blocked_summary";
+      $blocked_text .= "<br>$blocked_status $blocked_resolution $blocked_summary";
     }
 
+    $link_text .= qq{"$blocked_text"};
     $link_text .= ($blocked_status eq 'RESOLVED') ? ']' : '])';
-
     $link_text .= "\n";
 
     if ($dependson && !$seen{$dependson}) {
