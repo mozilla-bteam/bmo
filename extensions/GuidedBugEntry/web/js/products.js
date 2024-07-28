@@ -111,7 +111,12 @@ var products = {
             components.splice(index, 1);
         }
         return components;
-    }
+    },
+    support:
+      'If you are new to Thunderbird or Bugzilla, please consider checking ' +
+      '<a href="https://support.mozilla.org/en-US/products/thunderbird">' +
+      `<img src="${BUGZILLA.config.basepath}extensions/GuidedBugEntry/web/images/sumo.png" width="16" height="16" align="absmiddle">` +
+      ' <b>Thunderbird Help</b></a> instead of creating a bug.'
   },
 
   "Penelope": {

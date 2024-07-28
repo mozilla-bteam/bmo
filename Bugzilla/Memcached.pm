@@ -42,7 +42,7 @@ sub _new {
       servers         => [_parse_memcached_server_list($servers)],
       namespace       => $self->{namespace},
       max_size        => 1024 * 1024 * 4,
-      max_failures    => 1,
+      max_failures    => 3,
       failure_timeout => 60,
       io_timeout      => 0.2,
       connect_timeout => 0.2,
