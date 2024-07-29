@@ -20,6 +20,9 @@
     to be created.</p>
 
   <form method="POST" action="[% basepath FILTER none %]token.cgi">
+    <p>
+      Real Name <input type="text" name="realname" id="realname" value="[% realname FILTER html %]">
+    </p>
     <input type="hidden" name="t" value="[% token FILTER html %]">
     <input type="hidden" name="a" value="verify_auto_account_creation">
     <input type="submit" name="verify" value="Verify">
