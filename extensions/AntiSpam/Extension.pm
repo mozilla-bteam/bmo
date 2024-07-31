@@ -291,6 +291,14 @@ sub config_add_panels {
   $modules->{AntiSpam} = "Bugzilla::Extension::AntiSpam::Config";
 }
 
+sub db_sanitize {
+  my $dbh = Bugzilla->dbh;
+  print "Deleting antispam settings...\n";
+  $dbh->do('TRUNCATE TABLE antispam_domain_blocklist');
+  $dbh->do('TRUNCATE TABLE antispam_comment_blocklist');
+  $dbh->do('TRUNCATE TABLE antispam_ip_blocklist');
+}
+
 #
 # installation
 #
