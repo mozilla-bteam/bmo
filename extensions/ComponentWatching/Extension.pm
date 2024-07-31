@@ -702,6 +702,12 @@ sub sanitycheck_repair {
   }
 }
 
+sub db_sanitize {
+  my $dbh = Bugzilla->dbh;
+  print "Deleting component watchers...\n";
+  $dbh->do('TRUNCATE TABLE component_watch');
+}
+
 #
 # webservice
 #

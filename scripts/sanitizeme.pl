@@ -257,6 +257,34 @@ sub delete_sensitive_user_data {
   $dbh->do("DELETE FROM ts_funcmap");
   $dbh->do("DELETE FROM ts_job");
   $dbh->do("DELETE FROM ts_note");
+
+  # Reminders
+  $dbh->do('TRUNCATE TABLE reminders');
+
+  # Whine events
+  $dbh->do('DELETE FROM whine_events');
+
+  # Watched users by other users
+  $dbh->do('TRUNCATE TABLE watch');
+
+  # Series data (charts)
+  $dbh->do('DELETE FROM series_categories');
+
+  # Email rate limiting
+  $dbh->do('TRUNCATE TABLE email_rates');
+
+  # Clear MFA for all users
+  $dbh->do("UPDATE profiles SET mfa = ''");
+
+  # Ignored bugs
+  $dbh->do('TRUNCATE TABLE email_bug_ignore');
+
+  # secbugs_* tables no longer used by any code
+  # but may contain sensitive info on older bugs
+  $dbh->do('TRUNCATE TABLE secbugs_Bugs');
+  $dbh->do('TRUNCATE TABLE secbugs_BugHistory');
+  $dbh->do('TRUNCATE TABLE secbugs_Details');
+  $dbh->do('TRUNCATE TABLE secbugs_Stats');
 }
 
 sub delete_attachment_data {
