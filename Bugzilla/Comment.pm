@@ -89,6 +89,7 @@ our %SUPPORTED_REACTIONS;
 
 # Hardcode reactions because these are unlikely to change over time. Maintain
 # the order or reactions appeared on the UI.
+## no critic (tie)
 tie(
   %SUPPORTED_REACTIONS,
   'Tie::IxHash',
@@ -99,6 +100,7 @@ tie(
   'sad'   => { emoji => '🙁', label => 'sad' },
   'heart' => { emoji => '❤️', label => 'heart' },
 );
+## use critic
 
 #########################
 # Database Manipulation #
