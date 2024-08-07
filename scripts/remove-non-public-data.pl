@@ -125,6 +125,11 @@ my %whitelist = (
       extra_data
       )
   ],
+  longdescs_reactions => [
+    qw(
+      id comment_id user_id
+      )
+  ],
   longdescs_tags => [
     qw(
       id comment_id tag

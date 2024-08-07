@@ -114,6 +114,10 @@ use constant WS_ERROR_CODE => {
   comment_too_long          => 114,
   comment_invalid_isprivate => 117,
 
+  # Comment reactions
+  comment_reaction_disabled => 136,
+  comment_reaction_invalid  => 137,
+
   # Comment tagging
   comment_tag_disabled  => 125,
   comment_tag_invalid   => 126,

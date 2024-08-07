@@ -69,6 +69,24 @@ sub _rest_resources {
         }
       }
     },
+    qr{^/bug/comment/([^/]+)/reactions$},
+    {
+      GET => {
+        method => 'get_comment_reactions',
+        params => sub {
+          return {comment_id => $_[0]};
+        },
+      },
+    },
+    qr{^/bug/comment/([^/]+)/reactions$},
+    {
+      PUT => {
+        method => 'update_comment_reactions',
+        params => sub {
+          return {comment_id => $_[0]};
+        },
+      },
+    },
     qr{^/bug/comment/tags/([^/]+)$},
     {
       GET => {

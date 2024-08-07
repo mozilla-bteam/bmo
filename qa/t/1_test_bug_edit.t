@@ -83,9 +83,82 @@ $sel->select_ok("bug_status", "label=RESOLVED");
 $sel->click_ok('bottom-save-btn', 'Save changes');
 check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+logout($sel);
+
+# Test emoji comment reactions.
+
+my $reactions_base_path = '//div[@class="comment-reactions"]';
+my $reactions_trigger_path = $reactions_base_path . '/button[@class="trigger"]';
+my $reactions_picker_path = $reactions_base_path . '/div[@class="picker"]';
+my $reactions_sums_path = $reactions_base_path . '/div[@class="sums"]';
+my $reactions_btn1_path = '/button[@data-reaction-name="+1"]';
+my $reactions_btn2_path = '/button[@data-reaction-name="smile"]';
+
+# Disable reactions
+log_in($sel, $config, 'admin');
+set_parameters($sel, {"Advanced" => {"use_comment_reactions-off" => undef}});
+logout($sel);
+
+# Reactions are now hidden
+go_to_bug($sel, $bug1_id);
+ok(!$sel->is_element_present($reactions_base_path));
+
+# Enable reactions
+log_in($sel, $config, 'admin');
+set_parameters($sel, {"Advanced" => {"use_comment_reactions-on" => undef}});
+logout($sel);
+
+# Reactions are now visible
+log_in($sel, $config, 'QA_Selenium_TEST');
+go_to_bug($sel, $bug1_id);
+$sel->is_element_present_ok($reactions_base_path);
+$sel->click_ok($reactions_trigger_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="true"]');
+$sel->click_ok($reactions_trigger_path);
+$sel->is_element_present_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="true"]');
+$sel->click_ok($reactions_picker_path . $reactions_btn2_path
+  . '[@aria-pressed="false"]');
+$sel->click_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="true"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="0"][@aria-pressed="false"]');
+logout($sel);
+
+# Choose comment reactions by a different user. No privilege required to react
+log_in($sel, $config, 'unprivileged');
+go_to_bug($sel, $bug1_id);
+$sel->click_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="2"][@aria-pressed="true"]');
+$sel->click_ok($reactions_trigger_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="true"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"]');
+$sel->click_ok($reactions_trigger_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn2_path
+  . '[@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="true"]');
+logout($sel);
+
+# A logged out user cannot react but can see reactions of other users
+go_to_bug($sel, $bug1_id);
+ok(!$sel->is_element_present($reactions_trigger_path));
+ok(!$sel->is_element_present($reactions_picker_path));
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
 
 # Now move the bug into another product, which has a mandatory group.
 
+log_in($sel, $config, 'QA_Selenium_TEST');
 go_to_bug($sel, $bug1_id);
 $sel->select_ok("product",   "label=QA-Selenium-TEST");
 $sel->select_ok("component", "label=QA-Selenium-TEST");
