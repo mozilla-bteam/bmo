@@ -1,0 +1,68 @@
+get:
+  summary: Get all comments for a bug
+  description: >-
+    This allows you to get all comments for a particular bug using the bug ID or
+    alias.
+  operationId: get_bug_comments
+  parameters:
+    - $ref: ../components/parameters/BugIdOrAlias.yaml
+    - name: new_since
+      in: query
+      description: If specified, the method will only return comments newer than this time.
+      schema:
+        type: string
+        format: date-time
+  responses:
+    '200':
+      description: A list of Comments
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              bugs:
+                description: >
+                  This is an object, where the keys are the numeric IDs of the
+                  bugs, and the value is a object with a single key, comments,
+                  which is an array of comments.
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    comments:
+                      type: array
+                      items:
+                        $ref: ../components/schemas/Comment.yaml
+              comments:
+                type: object
+          example:
+            bugs:
+              '35':
+                comments:
+                  - time: '2000-07-25T13:50:04Z'
+                    text: test bug to fix problem in removing from cc list.
+                    bug_id: 35
+                    count: 0
+                    attachment_id: null
+                    is_private: false
+                    tags: []
+                    creator: user@bugzilla.org
+                    creation_time: '2000-07-25T13:50:04Z'
+                    id: 75
+            comments: {}
+    default:
+      description: |
+        Various error responses, including:
+
+        * 100 (Invalid Bug Alias)
+          If you specified an alias and there is no bug with that alias.
+        * 101 (Invalid Bug ID)
+          The bug_id you specified doesn't exist in the database.
+        * 102 (Access Denied)
+          You do not have access to the bug_id you specified.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+  tags:
+    - Comments
