@@ -210,52 +210,6 @@ id    int   ID of the newly-created comment.
   You tried to set the "is_markdown" flag to true but the Markdown feature
   is not enabled.
 
-.. _rest_search_comment_tags:
-
-Search Comment Tags
--------------------
-
-Searches for tags which contain the provided substring.
-
-**Request**
-
-To search for comment tags:
-
-.. code-block:: text
-
-   GET /rest/bug/comment/tags/(query)
-
-Example:
-
-.. code-block:: text
-
-   GET /rest/bug/comment/tags/spa
-
-=========  ======  =====================================================
-name       type    description
-=========  ======  =====================================================
-**query**  string  Only tags containing this substring will be returned.
-limit      int     If provided will return no more than ``limit`` tags.
-                   Defaults to ``10``.
-=========  ======  =====================================================
-
-**Response**
-
-.. code-block:: js
-
-   [
-     "spam"
-   ]
-
-An array of matching tags.
-
-**Errors**
-
-This method can throw all of the errors that :ref:`rest_single_bug` throws, plus:
-
-* 125 (Comment Tagging Disabled)
-  Comment tagging support is not available or enabled.
-
 .. _rest_get_comment_reactions:
 
 Get Comment Reactions
@@ -350,6 +304,52 @@ This method can throw all of the errors that :ref:`rest_comments` throws, plus:
 
 * 137 (Invalid Comment Reaction)
   The comment reaction provided is not supported.
+
+.. _rest_search_comment_tags:
+
+Search Comment Tags
+-------------------
+
+Searches for tags which contain the provided substring.
+
+**Request**
+
+To search for comment tags:
+
+.. code-block:: text
+
+   GET /rest/bug/comment/tags/(query)
+
+Example:
+
+.. code-block:: text
+
+   GET /rest/bug/comment/tags/spa
+
+=========  ======  =====================================================
+name       type    description
+=========  ======  =====================================================
+**query**  string  Only tags containing this substring will be returned.
+limit      int     If provided will return no more than ``limit`` tags.
+                   Defaults to ``10``.
+=========  ======  =====================================================
+
+**Response**
+
+.. code-block:: js
+
+   [
+     "spam"
+   ]
+
+An array of matching tags.
+
+**Errors**
+
+This method can throw all of the errors that :ref:`rest_single_bug` throws, plus:
+
+* 125 (Comment Tagging Disabled)
+  Comment tagging support is not available or enabled.
 
 .. _rest_update_comment_tags:
 
