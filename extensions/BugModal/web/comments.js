@@ -561,6 +561,16 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
       this.$picker.addEventListener('toggle', (/** @type {ToggleEvent} */ { newState }) => {
         this.$picker.inert = newState === 'closed';
       });
+
+      // Work around Safari issues
+      document.addEventListener('click', (event) => {
+        if (event.target === this.$trigger) {
+          event.stopPropagation();
+          this.$picker.inert = !this.$picker.inert;
+        } else if (this.isPickerOpen) {
+          this.isPickerOpen = false;
+        }
+      });
     } else {
       this.$picker.id = `c${this.commentId}-reactions-picker`;
       this.$trigger.setAttribute('aria-haspopup', 'dialog');
