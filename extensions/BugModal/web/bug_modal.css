@@ -1272,6 +1272,7 @@ a.comment-tag-url {
   position: relative;
   padding: 0 12px 12px;
   background: var(--primary-text-background-color);
+  anchor-name: --comment-reactions;
 }
 
 .comment-reactions .emoji {
@@ -1327,6 +1328,9 @@ a.comment-tag-url {
   gap: 4px;
   position: absolute;
   inset: unset;
+  top: anchor(top);
+  left: calc(anchor(left) + 12px);
+  margin: 0;
   border: 1px solid var(--menu-border-color);
   border-radius: var(--menu-border-radius);
   padding: 4px;
@@ -1337,6 +1341,7 @@ a.comment-tag-url {
   transform-origin: bottom left;
   transition: all 100ms;
   pointer-events: none;
+  position-anchor: --comment-reactions;
 }
 
 .comment-reactions .picker:popover-open {
