@@ -53,6 +53,11 @@ new_since        datetime  If specified, the method will only return comments
              "tags": [],
              "creator": "user@bugzilla.org",
              "creation_time": "2000-07-25T13:50:04Z",
+             "reactions": {
+              "+1": 3,
+              "heart": 2,
+              "tada": 1
+             },
              "id": 75
            }
          ]
@@ -107,6 +112,9 @@ is_private     boolean   ``true`` if this comment is private (only visible to a
                          otherwise.
 is_markdown    boolean   ``true`` if this comment is markdown. ``false`` if this
                          comment is plaintext.
+reactions      object    An object containing reacted emoji names and
+                         corresponding counts. To retrieve reacted users, use
+                         :ref:`rest_get_comment_reactions`.
 =============  ========  ========================================================
 
 **Errors**
@@ -201,6 +209,101 @@ id    int   ID of the newly-created comment.
 * 140 (Markdown Disabled)
   You tried to set the "is_markdown" flag to true but the Markdown feature
   is not enabled.
+
+.. _rest_get_comment_reactions:
+
+Get Comment Reactions
+---------------------
+
+Gets reactions left on a comment with reacted users’ details.
+
+**Request**
+
+To get the reactions attached to a comment:
+
+.. code-block:: text
+
+   GET /rest/bug/comment/(comment_id)/reactions
+
+==============  ====  ============================
+name            type  description
+==============  ====  ============================
+**comment_id**  int   A single integer comment ID.
+==============  ====  ============================
+
+**Response**
+
+.. code-block:: js
+
+   {
+     "+1": [
+       {
+         "id": 2,
+         "real_name": "Test User",
+         "nick": "user",
+         "name": "user@bugzilla.org",
+         "email": "user@bugzilla.org"
+       }
+     ]
+   }
+
+An object containing the comment's reactions, where the key is a reacted emoji
+name, and the value is an array of reacted users, which are the same as user
+objects returned by :ref:`rest_single_bug`.
+
+**Errors**
+
+This method can throw all of the errors that :ref:`rest_comments` throws, plus:
+
+* 136 (Comment Reactions Disabled)
+  Comment reactions are not enabled on this Bugzilla instance.
+
+.. _rest_update_comment_reactions:
+
+Update Comment Reactions
+------------------------
+
+Adds or removes reactions from a comment.
+
+**Request**
+
+To update the reactions attached to a comment:
+
+.. code-block:: text
+
+   PUT /rest/bug/comment/(comment_id)/reactions
+
+Example:
+
+.. code-block:: js
+
+   {
+     "add" : ["+1", "smile"]
+   }
+
+==============  =====  =========================================
+name            type   description
+==============  =====  =========================================
+**comment_id**  int    The ID of the comment to update.
+add             array  The reactions to attach to the comment.
+remove          array  The reactions to detach from the comment.
+==============  =====  =========================================
+
+Supported reactions: ``+1``, ``-1``, ``tada``, ``smile``, ``sad`` and ``heart``.
+
+**Response**
+
+Same as :ref:`rest_get_comment_reactions`.
+
+**Errors**
+
+This method can throw all of the errors that :ref:`rest_comments` throws, plus:
+
+* 136 (Comment Reactions Disabled)
+  Comment reactions are not enabled on this Bugzilla instance.
+
+* 137 (Invalid Comment Reaction)
+  The comment reaction provided is not supported.
 
 .. _rest_search_comment_tags:
 

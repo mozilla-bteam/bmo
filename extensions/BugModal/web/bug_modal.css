@@ -1263,6 +1263,119 @@ a.comment-tag-url {
 }
 
 /**
+ * comment reactions
+ */
+
+.comment-reactions {
+  display: flex;
+  gap: 4px;
+  position: relative;
+  padding: 0 12px 12px;
+  background: var(--primary-text-background-color);
+  anchor-name: --comment-reactions;
+}
+
+.comment-reactions .emoji {
+  font-size: 14px;
+  font-family: Emoji;
+}
+
+.comment-reactions .anchor,
+.comment-reactions .sums button {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px;
+  padding: 0 6px !important;
+  min-width: 24px;
+  height: 24px;
+  font-size: 12px;
+  line-height: 0;
+}
+
+.comment-reactions button:disabled {
+  color: var(--secondary-button-foreground-color) !important;
+}
+
+.comment-reactions button[aria-pressed="true"] {
+  background-color: var(--selected-text-background-color) !important;
+}
+
+.comment-reactions button[hidden] {
+  display: none;
+}
+
+.comment-reactions .anchor {
+  padding: 0 !important;
+  width: 24px;
+}
+
+.comment-reactions .anchor .icon::before {
+  font-size: 16px;
+  font-family: 'Material Icons';
+  vertical-align: middle;
+  content: '\e813';
+}
+
+.comment-reactions .sums {
+  display: flex;
+  gap: 4px;
+}
+
+.comment-reactions .picker {
+  display: flex;
+  gap: 4px;
+  position: absolute;
+  inset: unset;
+  top: anchor(top);
+  left: calc(anchor(left) + 12px);
+  margin: 0;
+  border: 1px solid var(--menu-border-color);
+  border-radius: var(--menu-border-radius);
+  padding: 4px;
+  background-color: var(--control-background-color);
+  opacity: 0;
+  box-shadow: var(--menu-box-shadow);
+  transform: translate(-4px, -40px) scale(90%);
+  transform-origin: bottom left;
+  transition: all 100ms;
+  pointer-events: none;
+  position-anchor: --comment-reactions;
+}
+
+.comment-reactions .picker:popover-open {
+  opacity: 1;
+  transform: translate(-4px, -48px) scale(100%);
+  pointer-events: auto;
+}
+
+/* Do not combine this with `.picker:popover-open` above because it will be
+ * ignored by older browsers, including Firefox 115 ESR, due to the unknown
+ * pseudo-class. */
+.comment-reactions .picker:not([inert]) {
+  opacity: 1;
+  transform: translate(-4px, -48px) scale(100%);
+  pointer-events: auto;
+}
+
+.comment-reactions .picker button {
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  line-height: 1;
+}
+
+.comment-reactions .picker button:not(:hover):not(:focus):not(:active) {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.comment-reactions .picker .emoji {
+  font-size: 20px;
+}
+
+/**
  * add comment
  */
 

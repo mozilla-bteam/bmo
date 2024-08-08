@@ -94,6 +94,8 @@ use constant PUBLIC_METHODS => qw(
   search_comment_tags
   update
   update_attachment
+  get_comment_reactions
+  update_comment_reactions
   update_comment_tags
   update_see_also
 );
@@ -425,6 +427,14 @@ sub _translate_comment {
     attachment_id => $self->type('int',      $attach_id),
     count         => $self->type('int',      $comment->count),
   };
+
+  if (Bugzilla->params->{use_comment_reactions}) {
+    $comment_hash->{reactions} = {};
+
+    foreach my $key (keys %{$comment->reactions}) {
+      $comment_hash->{reactions}->{$key} = $self->type('int', $comment->reactions->{$key});
+    }
+  }
 
   # Don't load comment tags unless enabled
   if (Bugzilla->params->{'comment_taggers_group'}) {
@@ -1366,6 +1376,67 @@ sub flag_types {
   }
 
   return $flag_types;
+}
+
+sub _get_comment_reactions_with_users {
+  my ($self, $comment) = @_;
+  my $reactions_with_users = $comment->reactions_with_users();
+
+  foreach my $reaction (keys %$reactions_with_users) {
+    $reactions_with_users->{$reaction}
+      = [map { $self->_user_to_hash($_) } @{$reactions_with_users->{$reaction}}];
+  }
+
+  return $reactions_with_users;
+}
+
+sub get_comment_reactions {
+  if (!Bugzilla->params->{use_comment_reactions}) {
+    ThrowUserError('comment_reaction_disabled');
+  }
+
+  my ($self, $params) = @_;
+  my $user = Bugzilla->user;
+  my $comment_id = $params->{comment_id} // ThrowCodeError('param_required',
+    {function => 'Bug.get_comment_reactions', param => 'comment_id'});
+  my $comment = Bugzilla::Comment->new($comment_id) || return [];
+
+  $comment->bug->check_is_visible();
+  if ($comment->is_private && !$user->is_insider) {
+    ThrowUserError('comment_is_private', {id => $comment_id});
+  }
+
+  return $self->_get_comment_reactions_with_users($comment);
+}
+
+sub update_comment_reactions {
+  if (!Bugzilla->params->{use_comment_reactions}) {
+    ThrowUserError('comment_reaction_disabled');
+  }
+
+  my ($self, $params) = @_;
+  my $user = Bugzilla->login(LOGIN_REQUIRED);
+  my $comment_id = $params->{comment_id} // ThrowCodeError('param_required',
+    {function => 'Bug.update_comment_reactions', param => 'comment_id'});
+  my $comment = Bugzilla::Comment->new($comment_id) || return [];
+
+  $comment->bug->check_is_visible();
+  if ($comment->is_private && !$user->is_insider) {
+    ThrowUserError('comment_is_private', {id => $comment_id});
+  }
+
+  my $dbh = Bugzilla->dbh;
+  $dbh->bz_start_transaction();
+  foreach my $reaction (@{$params->{add} || []}) {
+    $comment->add_reaction($reaction);
+  }
+  foreach my $reaction (@{$params->{remove} || []}) {
+    $comment->remove_reaction($reaction);
+  }
+  $comment->update();
+  $dbh->bz_commit_transaction();
+
+  return $self->_get_comment_reactions_with_users($comment);
 }
 
 sub update_comment_tags {

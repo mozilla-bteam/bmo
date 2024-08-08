@@ -65,6 +65,21 @@
   src: url('fonts/MaterialIcons-Regular.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'Emoji';
+  font-style: normal;
+  font-weight: normal;
+  src:
+    local('Apple Color Emoji'),
+    local('Noto Color Emoji'),
+    local('Android Emoji'),
+    local('Segoe UI'),
+    local(EmojiSymbols),
+    local(Symbola),
+    /* Fall back to FxEmojis https://github.com/mozilla/fxemoji */
+    url('fonts/FirefoxEmoji.ttf') format('truetype');
+}
+
 /**
  * Variables
  */

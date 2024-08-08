@@ -418,6 +418,32 @@ use constant ABSTRACT_SCHEMA => {
     ],
   },
 
+  longdescs_reactions => {
+    FIELDS => [
+      id         => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      comment_id => {
+        TYPE       => 'INT4',
+        REFERENCES =>
+          {TABLE => 'longdescs', COLUMN => 'comment_id', DELETE => 'CASCADE'}
+      },
+      user_id    => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid'}
+      },
+      reaction   => {TYPE => 'varchar(24)', NOTNULL => 1},
+    ],
+    INDEXES => [
+      longdescs_reactions_reaction_idx => {
+        FIELDS => ['comment_id', 'reaction'],
+      },
+      longdescs_reactions_user_idx => {
+        FIELDS => ['comment_id', 'user_id', 'reaction'],
+        TYPE => 'UNIQUE',
+      },
+    ],
+  },
+
   longdescs_tags => {
     FIELDS => [
       id         => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
