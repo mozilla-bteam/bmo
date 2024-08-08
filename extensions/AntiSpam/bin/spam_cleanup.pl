@@ -56,9 +56,10 @@ foreach my $comment_id (@{$comment_ids}) {
       && $flag->modification_date eq $comment->creation_ts;
     push @clear_flags, {id => $flag->id, status => 'X'};
   }
-  $bug->set_flags(\@clear_flags, []) if @clear_flags;
-
-  $bug->update;
+  if (@clear_flags) {
+    $bug->set_flags(\@clear_flags, []);
+    $bug->update;
+  }
 
   # Lastly we need to remove the entry from the cleanup queue
   $dbh->do('DELETE FROM antispam_comment_cleanup WHERE comment_id = ?',
