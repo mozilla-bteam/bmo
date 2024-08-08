@@ -1280,7 +1280,7 @@ a.comment-tag-url {
   font-family: Emoji;
 }
 
-.comment-reactions button.trigger,
+.comment-reactions .anchor,
 .comment-reactions .sums button {
   display: flex;
   gap: 4px;
@@ -1306,12 +1306,12 @@ a.comment-tag-url {
   display: none;
 }
 
-.comment-reactions .trigger {
+.comment-reactions .anchor {
   padding: 0 !important;
   width: 24px;
 }
 
-.comment-reactions .trigger .icon::before {
+.comment-reactions .anchor .icon::before {
   font-size: 16px;
   font-family: 'Material Icons';
   vertical-align: middle;

@@ -88,7 +88,7 @@ logout($sel);
 # Test emoji comment reactions.
 
 my $reactions_base_path = '//div[@class="comment-reactions"]';
-my $reactions_trigger_path = $reactions_base_path . '/button[@class="trigger"]';
+my $reactions_anchor_path = $reactions_base_path . '/button[@class="anchor"]';
 my $reactions_picker_path = $reactions_base_path . '/div[@class="picker"]';
 my $reactions_sums_path = $reactions_base_path . '/div[@class="sums"]';
 my $reactions_btn1_path = '/button[@data-reaction-name="+1"]';
@@ -112,12 +112,12 @@ logout($sel);
 log_in($sel, $config, 'QA_Selenium_TEST');
 go_to_bug($sel, $bug1_id);
 $sel->is_element_present_ok($reactions_base_path);
-$sel->click_ok($reactions_trigger_path);
+$sel->click_ok($reactions_anchor_path);
 $sel->click_ok($reactions_picker_path . $reactions_btn1_path
   . '[@aria-pressed="false"]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="1"][@aria-pressed="true"]');
-$sel->click_ok($reactions_trigger_path);
+$sel->click_ok($reactions_anchor_path);
 $sel->is_element_present_ok($reactions_picker_path . $reactions_btn1_path
   . '[@aria-pressed="true"]');
 $sel->click_ok($reactions_picker_path . $reactions_btn2_path
@@ -135,12 +135,12 @@ $sel->click_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="1"][@aria-pressed="false"]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="2"][@aria-pressed="true"]');
-$sel->click_ok($reactions_trigger_path);
+$sel->click_ok($reactions_anchor_path);
 $sel->click_ok($reactions_picker_path . $reactions_btn1_path
   . '[@aria-pressed="true"]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="1"][@aria-pressed="false"]');
-$sel->click_ok($reactions_trigger_path);
+$sel->click_ok($reactions_anchor_path);
 $sel->click_ok($reactions_picker_path . $reactions_btn2_path
   . '[@aria-pressed="false"]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
@@ -149,7 +149,7 @@ logout($sel);
 
 # A logged out user cannot react but can see reactions of other users
 go_to_bug($sel, $bug1_id);
-ok(!$sel->is_element_present($reactions_trigger_path));
+ok(!$sel->is_element_present($reactions_anchor_path));
 ok(!$sel->is_element_present($reactions_picker_path));
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');

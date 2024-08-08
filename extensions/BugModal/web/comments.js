@@ -547,15 +547,15 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
     /** @type {HTMLElement} */
     this.$wrapper = $wrapper;
     /** @type {HTMLElement & { popoverTargetElement?: HTMLElement, popoverTargetAction?: string }} */
-    this.$trigger = $wrapper.querySelector('.trigger');
+    this.$anchor = $wrapper.querySelector('.anchor');
     /** @type {HTMLElement} */
     this.$picker = $wrapper.querySelector('.picker');
     /** @type {Number} */
     this.commentId = Number(/** @type {HTMLElement} */ ($wrapper.parentElement.querySelector('.comment')).dataset.id);
 
     if (this.canUsePopover) {
-      this.$trigger.popoverTargetElement = this.$picker;
-      this.$trigger.popoverTargetAction = 'toggle';
+      this.$anchor.popoverTargetElement = this.$picker;
+      this.$anchor.popoverTargetAction = 'toggle';
       this.$picker.popover = 'auto';
 
       this.$picker.addEventListener('toggle', (/** @type {ToggleEvent} */ { newState }) => {
@@ -564,7 +564,7 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
 
       // Work around Safari issues
       document.addEventListener('click', (event) => {
-        if (event.target === this.$trigger) {
+        if (event.target === this.$anchor) {
           event.stopPropagation();
           this.$picker.inert = !this.$picker.inert;
         } else if (this.isPickerOpen) {
@@ -573,11 +573,11 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
       });
     } else {
       this.$picker.id = `c${this.commentId}-reactions-picker`;
-      this.$trigger.setAttribute('aria-haspopup', 'dialog');
-      this.$trigger.setAttribute('aria-expanded', 'false');
-      this.$trigger.setAttribute('aria-controls', this.$picker.id);
+      this.$anchor.setAttribute('aria-haspopup', 'dialog');
+      this.$anchor.setAttribute('aria-expanded', 'false');
+      this.$anchor.setAttribute('aria-controls', this.$picker.id);
 
-      this.$trigger.addEventListener('click', (event) => {
+      this.$anchor.addEventListener('click', (event) => {
         event.stopPropagation();
         this.isPickerOpen = !this.isPickerOpen;
       });
@@ -645,10 +645,10 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
       }
     } else {
       if (!open && this.$picker.contains(document.activeElement)) {
-        this.$trigger.focus();
+        this.$anchor.focus();
       }
 
-      this.$trigger.setAttribute('aria-expanded', String(open));
+      this.$anchor.setAttribute('aria-expanded', String(open));
     }
 
     this.$picker.inert = !open;
