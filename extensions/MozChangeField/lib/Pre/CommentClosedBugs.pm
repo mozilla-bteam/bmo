@@ -24,8 +24,12 @@ sub evaluate_change {
 
 
   # If this bug is closed and the current user has no role on the bug, then do
-  # not allow commenting on a bug that is not open.
-  if ($field =~ /^longdesc/ && $bug->id && !$bug->isopened && $new_value ne $old_value) {
+  # not allow commenting on or changing a resolution on a bug that is not open.
+  if ( ($field =~ /^longdesc/ || $field eq 'resolution')
+    && $bug->id
+    && !$bug->isopened
+    && $new_value ne $old_value)
+  {
     my $has_role
       = (  $editbugs
         || $bug->reporter->id eq $user->id
@@ -48,7 +52,7 @@ sub evaluate_change {
 
     return {
       result => PRIVILEGES_REQUIRED_EMPOWERED,
-      reason => 'You need permission to comment on this closed bug.',
+      reason => 'You need permission to modify this closed bug.',
     };
   }
 
