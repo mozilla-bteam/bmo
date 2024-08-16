@@ -98,6 +98,7 @@ tie(
     "Firefox for Android"                           => [],
     "Firefox for Android Graveyard"                 => [],
     "Firefox for Metro Graveyard"                   => [],
+    "Firefox OS Graveyard"                          => [],
     "Focus"                                         => [],
     "GeckoView"                                     => [],
     "Infrastructure & Operations"                   => [],
