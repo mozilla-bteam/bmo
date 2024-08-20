@@ -202,9 +202,15 @@ window.addEventListener('DOMContentLoaded', () => {
           event.preventDefault();
 
           if (event.ctrlKey || event.metaKey) {
-            // Open the bug page, not the legacy attachment page, in a new tab with Ctrl/Cmd+click.
-            // The `attachment_id` URL param works as an overlay trigger. (See below)
-            window.open(`${basepath}show_bug.cgi?id=${bugId}&attachment_id=${id}`);
+            if ($link.dataset.details) {
+              // Details link
+              // Open the bug page, not the legacy attachment page, in a new tab with Ctrl/Cmd+click.
+              // The `attachment_id` URL param works as an overlay trigger. (See below)
+              window.open(`${basepath}show_bug.cgi?id=${bugId}&attachment_id=${id}`);
+            } else {
+              // Open the attachment directly
+              window.open($link.href);
+            }
           } else {
             showOverlay();
             loadAttachment(id, mode);
