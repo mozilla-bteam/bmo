@@ -15,19 +15,23 @@ use Bugzilla::Constants;
 sub evaluate_change {
   my ($self, $args) = @_;
 
-  my $bug       = $args->{'bug'};
-  my $field     = $args->{'field'};
-  my $new_value = $args->{'new_value'};
-  my $old_value = $args->{'old_value'};
-  my $editbugs  = $args->{'editbugs'};
-  my $user      = Bugzilla->user;
+  my $bug        = $args->{'bug'};
+  my $field      = $args->{'field'};
+  my $new_value  = $args->{'new_value'};
+  my $old_value  = $args->{'old_value'};
+  my $canconfirm = $args->{'canconfirm'};
+  my $user       = Bugzilla->user;
 
 
   # If this bug is closed and the current user has no role on the bug, then do
   # not allow commenting on a bug that is not open.
-  if ($field =~ /^longdesc/ && $bug->id && !$bug->isopened && $new_value ne $old_value) {
+  if ( $field =~ /^longdesc/
+    && $bug->id
+    && !$bug->isopened
+    && $new_value ne $old_value)
+  {
     my $has_role
-      = (  $editbugs
+      = (  $canconfirm
         || $bug->reporter->id eq $user->id
         || $bug->assigned_to->id eq $user->id
         || ($bug->qa_contact && $bug->qa_contact->id eq $user->id)) ? 1 : 0;
