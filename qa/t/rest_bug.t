@@ -19,6 +19,7 @@ use Test::Mojo;
 use Test::More;
 
 my $config  = get_config();
+my $login   = $config->{admin_user_login};
 my $api_key = $config->{admin_user_api_key};
 my $url     = Bugzilla->localconfig->urlbase;
 
@@ -104,7 +105,57 @@ $t->get_ok(
   $url . "rest/bug/comment/$comment_id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is("/comments/$comment_id/text" => $update->{comment});
 
-### Section 4: Attach a file to the bug
+### Section 4: Choose emoji comment reactions
+
+# Add reaction
+$t->put_ok($url . "rest/bug/comment/$comment_id/reactions" =>
+    {'X-Bugzilla-API-Key' => $api_key} => json => {add => ['+1', 'tada']})
+  ->status_is(200)
+  ->json_is('/+1/0/name' => $login)
+  ->json_is('/tada/0/name' => $login);
+$t->get_ok($url . "rest/bug/comment/$comment_id/reactions")
+  ->status_is(200)
+  ->json_is('/+1/0/name' => $login)
+  ->json_is('/tada/0/name' => $login);
+$t->get_ok($url . "rest/bug/comment/$comment_id")
+  ->status_is(200)
+  ->json_is("/comments/$comment_id/reactions" => {'+1' => 1, 'tada' => 1});
+
+# Multiple attempts are simply ignored
+$t->put_ok($url . "rest/bug/comment/$comment_id/reactions" =>
+    {'X-Bugzilla-API-Key' => $api_key} => json => {add => ['+1', 'tada']})
+  ->status_is(200)
+  ->json_is('/+1/0/name' => $login)
+  ->json_is('/tada/0/name' => $login);
+
+# Unauthenticated update should fail
+$t->put_ok(
+  $url . "rest/bug/comment/$comment_id/reactions" => json => {add => ['+1']})
+  ->status_is(401)
+  ->json_is(
+  '/message' => 'You must log in before using this part of Bugzilla.');
+
+# Unsupported reaction should also fail
+$t->put_ok($url . "rest/bug/comment/$comment_id/reactions" =>
+    {'X-Bugzilla-API-Key' => $api_key} => json => {add => ['happy']})
+  ->status_is(400)
+  ->json_is('/message' => 'The comment reaction "happy" is not supported.');
+
+# Remove reaction
+$t->put_ok($url . "rest/bug/comment/$comment_id/reactions" =>
+    {'X-Bugzilla-API-Key' => $api_key} => json => {remove => ['+1']})
+  ->status_is(200)
+  ->json_hasnt('/+1')
+  ->json_is('/tada/0/name' => $login);
+$t->get_ok($url . "rest/bug/comment/$comment_id/reactions")
+  ->status_is(200)
+  ->json_hasnt('/+1')
+  ->json_is('/tada/0/name' => $login);
+$t->get_ok($url . "rest/bug/comment/$comment_id")
+  ->status_is(200)
+  ->json_is("/comments/$comment_id/reactions" => {'tada' => 1});
+
+### Section 5: Attach a file to the bug
 
 my $attach_data = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 
@@ -140,7 +191,7 @@ $t->get_ok(
 my $got_data = decode_base64($t->tx->res->json->{attachments}->{$attach_id}->{data});
 ok($attach_data eq $got_data, 'Attachment data received is correct');
 
-### Section 5: Finally close out the bug
+### Section 6: Finally close out the bug
 
 $update = {status => 'RESOLVED', resolution => 'FIXED',};
 
