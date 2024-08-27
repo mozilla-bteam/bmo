@@ -59,12 +59,20 @@ sub get_param_list {
 
 sub default_rate_limit_rules {
   return encode_json({
-    get_bug         => [75, 60],
-    show_bug        => [75, 60],
-    github          => [10, 60],
-    get_attachments => [75, 60],
-    get_comments    => [75, 60],
-    webpage_errors  => [75, 60],
+    get_bug          => [75, 60],
+    show_bug         => [75, 60],
+    github           => [10, 60],
+    get_attachments  => [75, 60],
+    get_comments     => [75, 60],
+    webpage_errors   => [75, 60],
+    token_mismatch   => [5,  60],
+    github           => [5,  60],
+    create_account   => [5,  60],
+    email_change     => [5,  60],
+    password_reset   => [5,  60],
+    cancel_token     => [5,  60],
+    api_key_mismatch => [5,  60],
+    mfa_mismatch     => [5,  60],
   });
 }
 

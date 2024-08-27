@@ -30,7 +30,7 @@ set_parameters(
       'rate_limit_rules'     => {
         type  => 'text',
         value =>
-          '{"get_attachments":[5,100],"get_comments":[5,100],"get_bug":[5,100],"show_bug":[5,100],"github":[5,100],"webpage_errors":[5,100], "token":[5,100], "api_key":[5,100], "username_password":[3,100]}'
+          '{"get_attachments":[5,100],"get_comments":[5,100],"get_bug":[5,100],"show_bug":[5,100],"github":[5,100],"webpage_errors":[5,100]}'
       }
     }
   }
