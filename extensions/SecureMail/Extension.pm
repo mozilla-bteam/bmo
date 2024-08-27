@@ -705,4 +705,10 @@ sub _filter_bug_links {
   });
 }
 
+sub db_sanitize {
+  my $dbh = Bugzilla->dbh;
+  print "Clearing public keys from profiles...\n";
+  $dbh->do("UPDATE profiles SET public_key = ''");
+}
+
 __PACKAGE__->NAME;

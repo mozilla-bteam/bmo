@@ -545,10 +545,13 @@ sub verify_auto_account_creation {
   # create user from token data
   my $event = get_token_extra_data($token);
 
+  my $realname = Bugzilla->cgi->param('realname');
+  $realname ||= $event->{realname};
+
   my $user = Bugzilla::User->create({
     login_name    => $event->{login},
     cryptpassword => '*',
-    realname      => $event->{realname}
+    realname      => $realname,
   });
 
   $user->authorizer->auto_verified($user, $event);

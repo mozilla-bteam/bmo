@@ -86,7 +86,7 @@
         [% END ~%]
       </td>
       <td class="attach-actions">
-        <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]&amp;action=edit">Details</a>
+        <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]&amp;action=edit" data-details="1">Details</a>
         [% IF attachment.ispatch %]
           | <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]&amp;action=diff">Diff</a>
         [% END %]
