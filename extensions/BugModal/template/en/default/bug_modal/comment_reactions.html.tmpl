@@ -6,7 +6,8 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<div class="comment-reactions">
+<div id="cre-[% comment.count FILTER none %]" class="comment-reactions"
+     [% IF comment.collapsed +%] style="display:none"[% END %]>
   [% IF user.id %]
     <button type="button" class="anchor">
       <span class="icon" aria-label="Toggle Reaction Picker"></span>

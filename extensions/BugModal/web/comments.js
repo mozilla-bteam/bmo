@@ -71,12 +71,11 @@ $(function() {
                 $('#ch-' + id).hide();
                 $('#cc-' + id).show();
             }
-            $('#ct-' + id).hide();
+            $(`#ct-${id}, #cr-${id}, #cre-${id}`).hide();
             if (BUGZILLA.user.id !== 0)
                 $('#ctag-' + id).hide();
             $('#c' + id).find('.activity, .attachment, .comment-tags').hide();
             $('#c' + id).find('.gravatar').css('width', '16px').css('height', '16px');
-            $('#cr-' + id).hide();
             update_spinner(realSpinner, false);
         }
         else if (forced == 'show') {
@@ -84,18 +83,16 @@ $(function() {
                 $('#cc-' + id).hide();
                 $('#ch-' + id).show();
             }
-            $('#ct-' + id).show();
+            $(`#ct-${id}, #cr-${id}, #cre-${id}`).show();
             if (BUGZILLA.user.id !== 0)
                 $('#ctag-' + id).show();
             $('#c' + id).find('.activity, .attachment, .comment-tags').show();
             $('#c' + id).find('.gravatar').css('width', '32px').css('height', '32px');
-            $('#cr-' + id).show();
             update_spinner(realSpinner, true);
         }
         else {
-            $('#ct-' + id).slideToggle('fast', function() {
+            $(`#ct-${id}, #cre-${id}, #c${id} .attachment`).slideToggle('fast').promise().done(() => {
                 $('#c' + id).find('.activity').toggle();
-                $('#c' + id).find('.attachment').slideToggle();
                 if ($('#ct-' + id + ':visible').length) {
                     $('#c' + id).find('.comment-tags').show();
                     update_spinner(realSpinner, true);
