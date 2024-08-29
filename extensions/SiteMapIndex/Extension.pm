@@ -58,8 +58,7 @@ sub before_robots_txt {
   # because the sitemap specification requires the sitemap hosts to
   # be ones we own locally and not external sites.
   my $sitemap_url
-    = 'https://'
-    . Bugzilla->localconfig->urlbase
+    = Bugzilla->localconfig->urlbase
     . 'sitemap/storage/v1/b/'
     . Bugzilla->params->{sitemapindex_google_bucket} . '/o/'
     . 'sitemap_index.xml?alt=media';
