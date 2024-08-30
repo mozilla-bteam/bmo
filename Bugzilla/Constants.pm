@@ -753,7 +753,7 @@ sub DEFAULT_CSP {
   my %policy = (
     default_src => ['self'],
     script_src =>
-      ['self', 'nonce', 'unsafe-inline', 'https://www.google-analytics.com'],
+      ['self', 'nonce', 'unsafe-inline'],
     frame_src   => [
       # This is for extensions/BMO/web/js/firefox-crash-table.js
       'https://crash-stop-addon.herokuapp.com',
@@ -767,9 +767,6 @@ sub DEFAULT_CSP {
 
       # This is for extensions/BMO/web/js/firefox-crash-table.js
       'https://product-details.mozilla.org',
-
-      # This is for extensions/GoogleAnalytics using beacon or XHR
-      'https://www.google-analytics.com',
 
       # This is from extensions/OrangeFactor/web/js/orange_factor.js
       'https://treeherder.mozilla.org/api/failurecount/',
@@ -813,7 +810,6 @@ sub SHOW_BUG_MODAL_CSP {
     script_src => [
       'self',          'nonce',
       'unsafe-inline', 'unsafe-eval',
-      'https://www.google-analytics.com'
     ],
     img_src     => ['self', 'data:', 'https://secure.gravatar.com'],
     media_src   => ['self'],
@@ -822,9 +818,6 @@ sub SHOW_BUG_MODAL_CSP {
 
       # This is for extensions/BMO/web/js/firefox-crash-table.js
       'https://product-details.mozilla.org',
-
-      # This is for extensions/GoogleAnalytics using beacon or XHR
-      'https://www.google-analytics.com',
 
       # This is from extensions/OrangeFactor/web/js/orange_factor.js
       'https://treeherder.mozilla.org/api/failurecount/',

@@ -85,6 +85,10 @@
 [% javascript_urls.push('js/lib/prism.js') %]
 [% style_urls.push('skins/lib/prism.css') %]
 
+[%# Enable Mozilla Consent Banner %]
+[% javascript_urls.push('js/consent.js', 'js/cookie-helper.js') %]
+[% style_urls.push('skins/standard/consent.css') %]
+
 [%# We should be able to set the default value of the header variable
   # to the value of the title variable using the DEFAULT directive,
   # but that doesn't work if a caller sets header to the empty string
