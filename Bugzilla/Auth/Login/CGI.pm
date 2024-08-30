@@ -53,7 +53,7 @@ sub get_login_info {
   # If the web browser doesn't accept cookies, we have no way to 
   # make sure that the authentication request comes from the user.
   elsif ($login && $password) {
-    Bugzilla->iprepd_report('bmo.token_mismatch');
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError('auth_untrusted_request', {login => $login});
   }
 

@@ -53,44 +53,44 @@ if ($token) {
       WHERE token = ?', undef, $token
   );
   unless (defined $db_token && $db_token eq $token) {
-    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError("token_does_not_exist");
   }
 
   # Make sure the token is the correct type for the action being taken.
   if (grep($action eq $_, qw(cfmpw cxlpw chgpw)) && $tokentype ne 'password') {
     Bugzilla::Token::Cancel($token, "wrong_token_for_changing_passwd");
-    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError("wrong_token_for_changing_passwd");
   }
   if ( ($action eq 'cxlem')
     && (($tokentype ne 'emailold') && ($tokentype ne 'emailnew')))
   {
     Bugzilla::Token::Cancel($token, "wrong_token_for_cancelling_email_change");
-    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError("wrong_token_for_cancelling_email_change");
   }
   if (grep($action eq $_, qw(cfmem chgem)) && ($tokentype ne 'emailnew')) {
     Bugzilla::Token::Cancel($token, "wrong_token_for_confirming_email_change");
-    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError("wrong_token_for_confirming_email_change");
   }
   if ( ($action =~ /^(request|confirm|cancel)_new_account$/)
     && ($tokentype ne 'account'))
   {
     Bugzilla::Token::Cancel($token, 'wrong_token_for_creating_account');
-    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError('wrong_token_for_creating_account');
   }
   if (substr($action, 0, 4) eq 'mfa_' && $tokentype ne 'session.short') {
     Bugzilla::Token::Cancel($token, 'wrong_token_for_mfa');
-    Bugzilla->iprepd_report('bmo.token_mismatch', remote_ip());
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError('wrong_token_for_mfa');
   }
   if ($action eq 'verify_auto_account_creation'
     && $tokentype ne 'account_create')
   {
-    Bugzilla->iprepd_report('token', remote_ip());
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError('wrong_token_for_account_creation');
   }
 }

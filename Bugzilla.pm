@@ -767,6 +767,7 @@ sub datadog {
 
 sub check_rate_limit {
   my ($class, $name, $identifier, $throw_error) = @_;
+  $identifier  ||= remote_ip();
   $throw_error //= sub { ThrowUserError("rate_limit") };
   my $params = Bugzilla->params;
   if ($params->{rate_limit_active}) {
@@ -792,36 +793,6 @@ sub check_rate_limit {
       }
     }
   }
-
-  return 1;
-}
-
-sub iprepd_report {
-  my ($class, $name) = @_;
-  my $params = Bugzilla->params;
-
-  return 0 if !$params->{iprepd_base_url} || !$params->{iprepd_client_secret};
-
-  # Send information about this event to the iprepd API if active
-  my $ip      = remote_ip();
-  my $ua      = mojo_user_agent({request_timeout => 5});
-  my $payload = {object => $ip, type => "ip", violation => $name};
-
-  # We should also audit this so it is recorded in the logs
-  Bugzilla->audit(sprintf 'iprepd: violation %s from ip address %s', $name, $ip);
-
-  try {
-    my $tx = $ua->put(
-      $params->{iprepd_base_url} . '/violations/type/ip/' . $ip,
-      {'Authorization' => 'APIKey ' . $params->{iprepd_client_secret}} => json =>
-        $payload
-    );
-    my $res = $tx->result;
-    die $res->message . ' ' . $res->body unless $res->is_success;
-  }
-  catch {
-    WARN("IPREPD ERROR: $_");
-  };
 
   return 1;
 }

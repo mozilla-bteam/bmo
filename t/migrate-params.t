@@ -54,6 +54,5 @@ __DATA__
            'bitly_token' => 'BITLY_TOKEN',
            'github_client_id' => 'GITHUB_CLIENT_ID',
            'honeypot_api_key' => 'HONEYPOT_API_KEY',
-           'iprepd_client_secret' => 'IPREPD_CLIENT_SECRET',
            'phabricator_api_key' => 'PHABRICATOR_API_KEY',
          );
