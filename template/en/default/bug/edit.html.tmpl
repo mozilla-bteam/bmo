@@ -1231,7 +1231,9 @@
       <!-- This table keeps the submit button aligned with the box. -->
       <table><tr><td>
         [% IF bug.check_can_change_field('longdesc', 0, 1).allowed %]
-          [% INCLUDE bug/comment.html.tmpl
+          [% INCLUDE global/textarea.html.tmpl
+                     name      = 'comment'
+                     id        = 'comment'
                      minrows   = 5
                      maxrows   = 15
                      cols      = constants.COMMENT_COLS

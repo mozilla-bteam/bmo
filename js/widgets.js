@@ -5,7 +5,7 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-$(function() {
+$(() => {
     'use strict';
 
     $(window).click(function(e) {
@@ -202,3 +202,96 @@ $(function() {
         }
     }
 });
+
+/**
+ * Reference or define the Bugzilla app namespace.
+ * @namespace
+ */
+var Bugzilla = Bugzilla || {}; // eslint-disable-line no-var
+
+/**
+ * Implement a simple tabbed UI widget.
+ */
+Bugzilla.Tabs = class Tabs {
+  /**
+   * Initialize a new `Tabs` instance.
+   * @param {HTMLElement} $tabList Element with the `tablist` ARIA role.
+   */
+  constructor($tabList) {
+    this.$tabList = $tabList;
+
+    this.$tabList.addEventListener('click', (event) => this.tabListOnClick(event));
+
+    Bugzilla.Event.activateKeyShortcuts(this.$tabList, {
+      Home: { handler: (event) => this.tabListOnKeyDown(event) },
+      End: { handler: (event) => this.tabListOnKeyDown(event) },
+      ArrowLeft: { handler: (event) => this.tabListOnKeyDown(event) },
+      ArrowRight: { handler: (event) => this.tabListOnKeyDown(event) },
+    });
+  }
+
+  /**
+   * Get the currently selected tab.
+   * @type {HTMLButtonElement}
+   */
+  get $selected() {
+    return this.$tabList.querySelector('[role="tab"][aria-selected="true"]');
+  }
+
+  /**
+   * Called whenever the tablist is clicked. Switch the tabs if needed.
+   * @param {MouseEvent} event `click` event.
+   */
+  tabListOnClick(event) {
+    if (
+      /** @type {HTMLElement} */ (event.target).matches(
+        '[role="tab"]:not([aria-selected="true"]):not([aria-disabled="true"])',
+      )
+    ) {
+      this.selectTab(/** @type {HTMLButtonElement} */ (event.target), event);
+    }
+  }
+
+  /**
+   * Called whenever a key is pressed on the tablist. Switch the tabs if needed.
+   * @param {KeyboardEvent} event `keydown` event.
+   */
+  tabListOnKeyDown(event) {
+    const tabs = [...this.$tabList.querySelectorAll('[role="tab"]:not([aria-disabled="true"])')];
+    const $newTab = {
+      Home: tabs[0],
+      End: tabs[tabs.length - 1],
+      ArrowLeft: this.$selected ? tabs[tabs.indexOf(this.$selected) - 1] : undefined,
+      ArrowRight: this.$selected ? tabs[tabs.indexOf(this.$selected) + 1] : undefined,
+    }[event.key];
+
+    if ($newTab) {
+      this.selectTab($newTab, event);
+    }
+  }
+
+  /**
+   * Select a new tab.
+   * @param {HTMLButtonElement} $newTab Tab to be selected.
+   * @param {MouseEvent | KeyboardEvent} originalEvent `click` or `keydown` event.
+   */
+  selectTab($newTab, originalEvent) {
+    const $currentTab = this.$selected;
+
+    if ($currentTab) {
+      $currentTab.tabIndex = -1;
+      $currentTab.setAttribute('aria-selected', 'false');
+      document.getElementById($currentTab.getAttribute('aria-controls')).hidden = true;
+    }
+
+    $newTab.tabIndex = 0;
+    $newTab.setAttribute('aria-selected', 'true');
+    $newTab.focus();
+
+    document.getElementById($newTab.getAttribute('aria-controls')).hidden = false;
+
+    this.$tabList.dispatchEvent(
+      new CustomEvent('Select', { detail: { originalEvent, $currentTab, $newTab } }),
+    );
+  }
+};

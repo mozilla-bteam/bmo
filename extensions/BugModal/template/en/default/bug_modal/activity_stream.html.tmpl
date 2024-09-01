@@ -159,18 +159,18 @@
           [% Hook.process('comment_action', 'bug_modal/activity_stream.html.tmpl') %]
           [% IF user.id %]
             [% IF user.can_tag_comments %]
-              <button type="button" class="tag-btn minor iconic" aria-label="Tag"
+              <button type="button" class="tag-btn ghost iconic" aria-label="Tag"
                       data-id="[% comment.id FILTER none %]" data-no="[% comment.count FILTER none %]">
                 <span class="icon" aria-hidden="true"></span>
               </button>
             [% END %]
-            <button type="button" class="reply-btn minor iconic" aria-label="Reply" [% 'disabled' IF !comment.body %]
+            <button type="button" class="reply-btn ghost iconic" aria-label="Reply" [% 'disabled' IF !comment.body %]
                     data-id="[% comment.id FILTER none %]" data-no="[% comment.count FILTER none %]"
                     data-reply-name="[% comment.author.name || comment.author.nick FILTER html %]">
               <span class="icon" aria-hidden="true"></span>
             </button>
           [% END %]
-          <button type="button" class="change-spinner minor iconic" id="cs-[% comment.count FILTER none %]"
+          <button type="button" class="change-spinner ghost iconic" id="cs-[% comment.count FILTER none %]"
                   aria-label="Collapse" aria-expanded="true"
                   data-strings='{ "collapse_label": "Collapse", "expand_label": "Expanded" }'>
             <span class="icon" aria-hidden="true"></span>
@@ -301,17 +301,11 @@
       </div>
     </div>
   [% END %]
-  [% IF comment.is_markdown AND Param('use_markdown') %]
-    [% comment_tag = 'div' %]
-  [% ELSE %]
-    [% comment_tag = 'pre' %]
-  [% END %]
 
-  <[% comment_tag FILTER none %]
+  <div
       class="comment-text [%= "markdown-body" IF comment.is_markdown %] [%= "bz_private" IF comment.is_private %]
             [% "empty" IF comment.body == "" %]"
       id="ct-[% comment.count FILTER none %]" data-comment-id="[% comment.id FILTER none %]"
-      [% IF comment.is_markdown +%] data-ismarkdown="true" [% END ~%]
       [% IF comment.collapsed +%] style="display:none"[% END ~%]>
     [%~ IF comment.body != "" ~%]
       [%~ comment.body_full({ exclude_attachment => 1 }) FILTER renderMarkdown(bug, comment) ~%]
@@ -319,7 +313,8 @@
       [%# Description (Comment 0) can be empty %]
       <em>No description provided.</em>
     [%~ END ~%]
-  </[% comment_tag FILTER none %]>
+  </div>
+
   [% IF Param('use_comment_reactions') %]
     [% INCLUDE bug_modal/comment_reactions.html.tmpl %]
   [% END %]

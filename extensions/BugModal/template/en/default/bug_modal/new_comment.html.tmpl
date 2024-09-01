@@ -35,61 +35,22 @@
     [% RETURN %]
   [% END %]
 
-  <div id="comment-header">
-    <ul id="comment-tabs" role="tablist">
-      <li id="comment-edit-tab" data-focus="comment" role="tab" tabindex="0" aria-selected="true"
-          aria-controls="[% id_prefix FILTER html %]comment-edit-tabpanel">
-        [% IF mode == "create" %]
-          Description
-        [% ELSE %]
-          Add Comment
-        [% END %]
-      </li>
-      [%~ ~%]
-      <li id="comment-preview-tab" role="tab" tabindex="-1" aria-selected="false"
-          aria-controls="[% id_prefix FILTER html %]comment-preview-tabpanel">
-        Preview
-        <img id="preview-throbber" src="[% basepath FILTER none %]extensions/BugModal/web/throbber.gif" width="16" height="11" style="display:none">
-      </li>
-    </ul>
-    <div id="comment-tips">
-      [% IF Param('use_markdown') %]
-        <span id="comment-markdown-tip">
-          <a href="https://guides.github.com/features/mastering-markdown/" target="_blank">Markdown</a> supported
-        </span>
-        &middot;
-      [% END %]
-      <span id="bugzilla-etiquette">
-        Follow the <a href="page.cgi?id=etiquette.html" target="_blank" tabindex="-1">Etiquette</a> and
-        <a href="page.cgi?id=bug-writing.html" target="_blank">[% terms.Bug %] Writing Guidelines</a>
-      </span>
-    </div>
+  <textarea id="comment" name="comment" rows="5" cols="80"
+      aria-label="[% mode == 'create' ? 'Description' : 'Add Comment' %]"
+      [%~ IF user.setting('ui_attach_long_paste') == 'on' +%] class="attach-long-paste"[% END %]
+  ></textarea>
+
+  <div id="after-comment-commit-button">
     [% IF user.is_insider && add_extras %]
       <div id="add-comment-private"
         title="Make comment visible only to members of the '[% Param('insidergroup') FILTER html %]' group"
       >
         <input type="checkbox" name="comment_is_private" id="add-comment-private-cb"
                value="1" comment_id="[% comment.count FILTER none %]">
-        <label for="add-comment-private-cb" aria-label="Mark as Private">Private</label>
+        <label for="add-comment-private-cb" aria-label="Mark as Private">Make comment private</label>
       </div>
     [% END %]
-  </div>
 
-  <div id="[% id_prefix FILTER html %]comment-edit-tabpanel" class="comment-tabpanel" role="tabpanel"
-       aria-labelledby="comment-edit-tab">
-    <textarea rows="5" cols="80" name="comment" id="comment" aria-labelledby="comment-edit-tab"[% IF user.setting("ui_attach_long_paste") == "on" %] class="attach-long-paste"[% END %]>[% comment FILTER html %]</textarea>
-  </div>
-  <div id="[% id_prefix FILTER html %]comment-preview-tabpanel" class="comment-tabpanel" role="tabpanel"
-       aria-labelledby="comment-preview-tab" style="display:none">
-    [% IF Param('use_markdown') %]
-      [% comment_tag = 'div' %]
-    [% ELSE %]
-      [% comment_tag = 'pre' %]
-    [% END %]
-    <[% comment_tag FILTER none %] id="comment-preview" class="comment-text markdown-body"></[% comment_tag FILTER none %]>
-  </div>
-
-  <div id="after-comment-commit-button">
     [% Hook.process("after_comment_commit_button", 'bug/edit.html.tmpl') %]
 
     [%# this checkboxes are in tables to match the alignment of the
