@@ -85,12 +85,12 @@ sub check {
   my $code = $params->{code};
   return if $self->_auth()->verify($code, 1);
 
-  Bugzilla->iprepd_report('bmo.mfa_mismatch', remote_ip());
+  Bugzilla->check_rate_limit('mfa_mismatch', $self->{user}->id);
+
   if ($params->{mfa_action} && $params->{mfa_action} eq 'enable') {
     ThrowUserError('mfa_totp_bad_enrollment_code');
   }
   else {
-    Bugzilla->check_rate_limit('mfa_mismatch', $self->{user}->id);
     ThrowUserError('mfa_bad_code');
   }
 }

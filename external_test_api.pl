@@ -43,21 +43,6 @@ sub startup {
   my ($self) = @_;
   my $r = $self->routes;
 
-  # Mock the IPrepD API violations endpoint
-  $r->put(
-    '/violations/type/ip/*ip' => sub {
-      my $c = shift;
-      $c->app->defaults->{last_violation} = $c->req->json;
-      $c->render(text => 'OK ', status => 200);
-    }
-  );
-  $r->get(
-    '/violations/last' => sub {
-      my $c = shift;
-      $c->render(json => $c->app->defaults->{last_violation}, status => 200);
-    }
-  );
-
   # Webhook endpoints for testing
   $r->post(
     '/webhooks/test/noauth' => sub {

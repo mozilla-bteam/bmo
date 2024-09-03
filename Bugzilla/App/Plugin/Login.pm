@@ -90,7 +90,7 @@ sub register {
               || $api_key->revoked
               )
             {
-              Bugzilla->iprepd_report('bmo.api_key_mismatch');
+              Bugzilla->check_rate_limit('api_key_mismatch');
             }
             else {
               $api_key->update_last_used($remote_ip);
@@ -98,7 +98,7 @@ sub register {
             }
           }
           else {
-            Bugzilla->iprepd_report('bmo.api_key_mismatch');
+            Bugzilla->check_rate_limit('api_key_mismatch');
           }
         }
 
@@ -109,7 +109,7 @@ sub register {
             $user_id = $user->id;
           }
           else {
-            Bugzilla->iprepd_report('bmo.api_key_mismatch');
+            Bugzilla->check_rate_limit('api_key_mismatch');
           }
         }
       }
