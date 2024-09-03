@@ -53,10 +53,13 @@ sub before_robots_txt {
 
   return if !Bugzilla->params->{sitemapindex_enabled};
 
+  # We use urlbase instead of storage.googleapis.com since we have
+  # a rewrite rule in the nginx config to redirect for us. This is
+  # because the sitemap specification requires the sitemap hosts to
+  # be ones we own locally and not external sites.
   my $sitemap_url
-    = 'https://'
-    . Bugzilla->params->{sitemapindex_google_host}
-    . '/storage/v1/b/'
+    = Bugzilla->localconfig->urlbase
+    . 'sitemap/storage/v1/b/'
     . Bugzilla->params->{sitemapindex_google_bucket} . '/o/'
     . 'sitemap_index.xml?alt=media';
 
