@@ -34,3 +34,7 @@
 .inline-comment-editor .bottom-toolbar label {
   margin: 0 8px;
 }
+
+.inline-comment-editor + .comment-reactions {
+  display: none;
+}
