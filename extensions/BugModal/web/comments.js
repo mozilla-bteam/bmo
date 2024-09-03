@@ -71,12 +71,11 @@ $(function() {
                 $('#ch-' + id).hide();
                 $('#cc-' + id).show();
             }
-            $('#ct-' + id).hide();
+            $(`#ct-${id}, #cr-${id}, #cre-${id}`).hide();
             if (BUGZILLA.user.id !== 0)
                 $('#ctag-' + id).hide();
             $('#c' + id).find('.activity, .attachment, .comment-tags').hide();
             $('#c' + id).find('.gravatar').css('width', '16px').css('height', '16px');
-            $('#cr-' + id).hide();
             update_spinner(realSpinner, false);
         }
         else if (forced == 'show') {
@@ -84,18 +83,16 @@ $(function() {
                 $('#cc-' + id).hide();
                 $('#ch-' + id).show();
             }
-            $('#ct-' + id).show();
+            $(`#ct-${id}, #cr-${id}, #cre-${id}`).show();
             if (BUGZILLA.user.id !== 0)
                 $('#ctag-' + id).show();
             $('#c' + id).find('.activity, .attachment, .comment-tags').show();
             $('#c' + id).find('.gravatar').css('width', '32px').css('height', '32px');
-            $('#cr-' + id).show();
             update_spinner(realSpinner, true);
         }
         else {
-            $('#ct-' + id).slideToggle('fast', function() {
+            $(`#ct-${id}, #cre-${id}, #c${id} .attachment`).slideToggle('fast').promise().done(() => {
                 $('#c' + id).find('.activity').toggle();
-                $('#c' + id).find('.attachment').slideToggle();
                 if ($('#ct-' + id + ':visible').length) {
                     $('#c' + id).find('.comment-tags').show();
                     update_spinner(realSpinner, true);
@@ -383,6 +380,15 @@ $(function() {
         $('#ctag').hide().data('commentNo', '');
     };
 
+    /**
+     * Initialize emoji comment reactions.
+     */
+    const initReactions = () => {
+        document.querySelectorAll('.comment-reactions').forEach((/** @type {HTMLElement} */ $wrapper) => {
+            new Bugzilla.BugModal.CommentReactions($wrapper);
+        });
+    };
+
     $('#ctag-add')
         .devbridgeAutocomplete({
             appendTo: $('#main-inner'),
@@ -465,6 +471,7 @@ $(function() {
         });
 
     updateTagsMenu();
+    initReactions();
 });
 
 /**
@@ -512,6 +519,207 @@ Bugzilla.BugModal.Comments = class Comments {
         this.attachment = new Bugzilla.InlineAttachment($attachment);
       }
     });
+  }
+};
+
+/**
+ * Implement emoji comment reactions. Users can pick `+1`, `heart` and other emojis to react to a bug comment and see
+ * the names of reacted users with a tooltip on the emoji buttons. This functionality makes use of the relatively new
+ * Popover API with a WAI-ARIA-based fallback for older browsers, including Firefox 115 ESR.
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
+ */
+Bugzilla.BugModal.CommentReactions = class CommentReactions {
+  /** @type {Boolean} */
+  canUsePopover = 'popover' in HTMLElement.prototype;
+  /** @type {Record<string, object[]> | null} */
+  reactionCache = null;
+  /** @type {Intl.ListFormat} */
+  listFormatter = new Intl.ListFormat('en-US');
+
+  /**
+   * Initialize a new `CommentReactions` instance.
+   * @param {HTMLElement} $wrapper Wrapper element with `.comment-reactions`.
+   */
+  constructor($wrapper) {
+    /** @type {HTMLElement} */
+    this.$wrapper = $wrapper;
+    /** @type {HTMLElement & { popoverTargetElement?: HTMLElement, popoverTargetAction?: string }} */
+    this.$anchor = $wrapper.querySelector('.anchor');
+    /** @type {HTMLElement} */
+    this.$picker = $wrapper.querySelector('.picker');
+    /** @type {Number} */
+    this.commentId = Number(/** @type {HTMLElement} */ ($wrapper.parentElement.querySelector('.comment')).dataset.id);
+
+    if (this.canUsePopover) {
+      this.$anchor.popoverTargetElement = this.$picker;
+      this.$anchor.popoverTargetAction = 'toggle';
+      this.$picker.popover = 'auto';
+
+      this.$picker.addEventListener('toggle', (/** @type {ToggleEvent} */ { newState }) => {
+        this.$picker.inert = newState === 'closed';
+      });
+
+      // Work around Safari issues
+      document.addEventListener('click', (event) => {
+        if (event.target === this.$anchor) {
+          event.stopPropagation();
+          this.$picker.inert = !this.$picker.inert;
+        } else if (this.isPickerOpen) {
+          this.isPickerOpen = false;
+        }
+      });
+    } else {
+      this.$picker.id = `c${this.commentId}-reactions-picker`;
+      this.$anchor.setAttribute('aria-haspopup', 'dialog');
+      this.$anchor.setAttribute('aria-expanded', 'false');
+      this.$anchor.setAttribute('aria-controls', this.$picker.id);
+
+      this.$anchor.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.isPickerOpen = !this.isPickerOpen;
+      });
+
+      this.$picker.addEventListener('keydown', (event) => {
+        if (this.isPickerOpen && event.key === 'Escape') {
+          this.isPickerOpen = false;
+        }
+      });
+
+      document.addEventListener('click', () => {
+        if (this.isPickerOpen) {
+          this.isPickerOpen = false;
+        }
+      });
+    }
+
+    // Automatically close the popover when the focus moves out
+    document.addEventListener('focusin', () => {
+      if (this.isPickerOpen && !this.$picker.contains(document.activeElement)) {
+        this.isPickerOpen = false;
+      }
+    });
+
+    this.buttons.forEach(($button) => {
+      $button.addEventListener('click', async () => {
+        this.toggleReaction($button);
+      });
+
+      if ($button.matches('.sum')) {
+        $button.addEventListener('mouseenter', () => {
+          this.updateButtons();
+        });
+
+        $button.addEventListener('focus', () => {
+          this.updateButtons();
+        });
+      }
+    });
+  }
+
+  /**
+   * All the emoji buttons.
+   */
+  get buttons() {
+    return /** @type {HTMLButtonElement[]} */ ([...this.$wrapper.querySelectorAll('button[data-reaction-name]')]);
+  }
+
+  /**
+   * Whether the reaction picker is displayed.
+   */
+  get isPickerOpen() {
+    return !this.$picker.inert;
+  }
+
+  /**
+   * Open or close the reaction picker.
+   */
+  set isPickerOpen(open) {
+    if (this.canUsePopover) {
+      if (open) {
+        this.$picker.showPopover();
+      } else {
+        this.$picker.hidePopover();
+      }
+    } else {
+      if (!open && this.$picker.contains(document.activeElement)) {
+        this.$anchor.focus();
+      }
+
+      this.$anchor.setAttribute('aria-expanded', String(open));
+    }
+
+    this.$picker.inert = !open;
+  }
+
+  /**
+   * Retrieve the current reactions if a cache is not yet created, and update all the buttons, including the count and
+   * tooltip.
+   */
+  async updateButtons() {
+    this.reactionCache ??= await Bugzilla.API.get(`bug/comment/${this.commentId}/reactions`);
+
+    this.buttons.forEach(($button) => {
+      const { reactionName, reactionLabel } = $button.dataset;
+      /** @type {{ id: number, nick: string, real_name: string, name: string }[]} */
+      const reactedUsers = [...(this.reactionCache?.[reactionName] ?? [])];
+
+      const totalCount = reactedUsers.length;
+      const isMyReaction = reactedUsers.some((u) => u.id === BUGZILLA.user.id);
+      const userNames = reactedUsers.splice(0, 10).map((u) => u.nick || u.real_name || u.name);
+      const restCount = reactedUsers.length;
+
+      if (restCount) {
+        userNames.push(`${restCount} ${restCount > 1 ? 'others' : 'other'}`);
+      }
+
+      $button.dataset.reactionCount = String(totalCount);
+      $button.setAttribute('aria-pressed', String(isMyReaction));
+
+      if ($button.matches('.sum')) {
+        const $count = $button.querySelector('.count');
+
+        $button.title = totalCount ? `${this.listFormatter.format(userNames)} reacted with ${reactionLabel} emoji` : '';
+        $button.hidden = !totalCount;
+        $count.textContent = String(totalCount);
+        $count.setAttribute(
+          'aria-label',
+          `${totalCount} ${totalCount === 1 ? 'person' : 'people'} reacted with ${reactionLabel} emoji`,
+        );
+      }
+    });
+  }
+
+  /**
+   * Add or remove a reaction via the API.
+   * @param {HTMLButtonElement} $button Reaction button.
+   */
+  async toggleReaction($button) {
+    const { reactionName, reactionCount } = $button.dataset;
+    const action = $button.matches('[aria-pressed="true"]') ? 'remove' : 'add';
+    const newCount = Number(reactionCount) + (action === 'add' ? 1 : -1);
+
+    if (this.isPickerOpen) {
+      this.isPickerOpen = false;
+    }
+
+    // Update the UI immediately without waiting for API response
+    this.$wrapper
+      .querySelectorAll(`button[data-reaction-name="${CSS.escape(reactionName)}"]`)
+      .forEach((/** @type {HTMLButtonElement} */ $_button) => {
+        $_button.dataset.reactionCount = String(newCount);
+        $_button.setAttribute('aria-pressed', String(action === 'add'));
+
+        if ($_button.matches('.sum')) {
+          $_button.hidden = !newCount;
+          $_button.querySelector('.count').textContent = String(newCount);
+        }
+      });
+
+    this.reactionCache = await Bugzilla.API.put(`bug/comment/${this.commentId}/reactions`, {
+      [action]: [reactionName],
+    });
+
+    this.updateButtons();
   }
 };
 

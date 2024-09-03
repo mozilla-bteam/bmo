@@ -372,6 +372,14 @@
     Comments cannot be longer than
     [%+ constants.MAX_COMMENT_LENGTH FILTER html %] characters.
 
+  [% ELSIF error == "comment_reaction_disabled" %]
+    [% title = "Comment Reactions Disabled" %]
+    Comment reactions are not enabled.
+
+  [% ELSIF error == "comment_reaction_invalid" %]
+    [% title = "Invalid Comment Reaction" %]
+    The comment reaction "[% reaction FILTER html %]" is not supported.
+
   [% ELSIF error == "comment_tag_disabled" %]
     [% title = "Comment Tagging Disabled" %]
     The comment tagging is not enabled.

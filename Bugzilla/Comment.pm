@@ -9,6 +9,7 @@ package Bugzilla::Comment;
 
 use 5.10.1;
 use strict;
+use utf8;
 use warnings;
 
 use base qw(Bugzilla::Object);
@@ -24,6 +25,8 @@ use Bugzilla::Util;
 use List::Util qw(first);
 use Scalar::Util qw(blessed weaken isweak);
 use Role::Tiny::With;
+use Tie::IxHash;
+use Try::Tiny;
 
 ###############################
 ####    Initialization     ####
@@ -81,6 +84,23 @@ use constant VALIDATOR_DEPENDENCIES => {
   work_time  => ['who', 'bug_id'],
   isprivate  => ['who'],
 };
+
+our %SUPPORTED_REACTIONS;
+
+# Hardcode reactions because these are unlikely to change over time. Maintain
+# the order or reactions appeared on the UI.
+## no critic (tie)
+tie(
+  %SUPPORTED_REACTIONS,
+  'Tie::IxHash',
+  '+1'    => { emoji => '👍', label => 'thumbs up' },
+  '-1'    => { emoji => '👎', label => 'thumbs down' },
+  'tada'  => { emoji => '🎉', label => 'hooray' },
+  'smile' => { emoji => '😀', label => 'smile' },
+  'sad'   => { emoji => '🙁', label => 'sad' },
+  'heart' => { emoji => '❤️', label => 'heart' },
+);
+## use critic
 
 #########################
 # Database Manipulation #
@@ -145,10 +165,14 @@ sub update {
   return $changes;
 }
 
-# Speeds up displays of comment lists by loading all author objects and tags at
-# once for a whole list.
+# Speeds up displays of comment lists by loading all author objects, reactions
+# and tags at once for a whole list.
 sub preload {
   my ($class, $comments) = @_;
+  my $dbh  = Bugzilla->dbh;
+  my $user = Bugzilla->user;
+  my @comment_ids = map { $_->id } @$comments;
+  my %comment_map = map { $_->id => $_ } @$comments;
 
   # Author
   my %user_ids = map { $_->{who} => 1 } @$comments;
@@ -156,23 +180,38 @@ sub preload {
   my %user_map = map { $_->id => $_ } @$users;
   foreach my $comment (@$comments) {
     $comment->{author} = $user_map{$comment->{who}};
+    $comment->{reactions} = {};
+    $comment->{my_reactions} = [];
+    $comment->{tags} = [];
+  }
+
+  # Reactions
+  if (Bugzilla->params->{use_comment_reactions}) {
+    my $reaction_rows = $dbh->selectall_arrayref(
+      "SELECT comment_id, reaction, " . $dbh->sql_group_concat('user_id') . "
+              FROM longdescs_reactions
+              WHERE " . $dbh->sql_in('comment_id', \@comment_ids) . "
+              GROUP BY comment_id, reaction"
+    );
+    foreach my $row (@$reaction_rows) {
+      my ($comment_id, $reaction, $user_ids_str) = @$row;
+      my @user_ids = map { int($_) } split(/,/, $user_ids_str);
+      $comment_map{$comment_id}->{reactions}->{$reaction} = scalar(@user_ids);
+      if (grep($_ == $user->id, @user_ids)) {
+        push(@{$comment_map{$comment_id}->{my_reactions}}, $reaction);
+      }
+    }
   }
 
   # Tags
-  my $dbh         = Bugzilla->dbh;
-  my @comment_ids = map { $_->id } @$comments;
-  my %comment_map = map { $_->id => $_ } @$comments;
-  my $rows        = $dbh->selectall_arrayref(
+  my $tag_rows = $dbh->selectall_arrayref(
     "SELECT comment_id, " . $dbh->sql_group_concat('tag', "','") . "
             FROM longdescs_tags
             WHERE " . $dbh->sql_in('comment_id', \@comment_ids) . "
             GROUP BY comment_id"
   );
-  foreach my $row (@$rows) {
+  foreach my $row (@$tag_rows) {
     $comment_map{$row->[0]}->{tags} = [split(/,/, $row->[1])];
-  }
-  foreach my $comment (@$comments) {
-    $comment->{tags} //= [];
   }
 }
 
@@ -195,6 +234,70 @@ sub work_time {
 }
 sub type       { return $_[0]->{'type'}; }
 sub extra_data { return $_[0]->{'extra_data'} }
+
+sub supported_reactions { return \%SUPPORTED_REACTIONS; }
+
+sub reactions {
+  my ($self) = @_;
+
+  if (Bugzilla->params->{use_comment_reactions}
+    && !defined $self->{reactions})
+  {
+    my %reactions;
+    my $rows = Bugzilla->dbh->selectall_arrayref(
+      "SELECT reaction, COUNT(*) FROM longdescs_reactions
+              WHERE comment_id = ?
+              GROUP BY reaction", undef, $self->id);
+
+    foreach my $row (@$rows) {
+      my ($reaction, $count) = @$row;
+      $reactions{$reaction} = $count;
+    }
+
+    $self->{reactions} = \%reactions;
+  }
+
+  return $self->{reactions};
+}
+
+sub my_reactions {
+  my ($self) = @_;
+  my $user = Bugzilla->user;
+
+  if (Bugzilla->params->{use_comment_reactions}) {
+    $self->{my_reactions} ||= Bugzilla->dbh->selectcol_arrayref(
+      "SELECT reaction FROM longdescs_reactions
+              WHERE comment_id = ? AND user_id = ?", undef,
+      $self->id, $user->id);
+  }
+
+  return $self->{my_reactions};
+}
+
+sub reactions_with_users {
+  my ($self) = @_;
+
+  if (Bugzilla->params->{use_comment_reactions}
+    && !defined $self->{reactions_with_users})
+  {
+    my $rows = Bugzilla->dbh->selectall_arrayref(
+      "SELECT reaction, user_id FROM longdescs_reactions
+              WHERE comment_id = ?", undef, $self->id);
+
+    my %reactions_with_users;
+
+    foreach my $row (@$rows) {
+      my ($reaction, $user_id) = @$row;
+      $reactions_with_users{$reaction} //= [];
+      push(@{$reactions_with_users{$reaction}},
+        new Bugzilla::User({id => $user_id, cache => 1}));
+    }
+
+    $self->{reactions_with_users} = \%reactions_with_users;
+  }
+
+  return $self->{reactions_with_users};
+}
 
 sub tags {
   my ($self) = @_;
@@ -329,6 +432,34 @@ sub set_is_private { $_[0]->set('isprivate',  $_[1]); }
 sub set_type       { $_[0]->set('type',       $_[1]); }
 sub set_extra_data { $_[0]->set('extra_data', $_[1]); }
 sub set_is_markdown { $_[0]->set('is_markdown', $_[1]); }
+
+sub add_reaction {
+  my ($self, $reaction) = @_;
+  my $dbh  = Bugzilla->dbh;
+  my $user = Bugzilla->user;
+  $reaction = $self->_check_reaction($reaction);
+
+  # A user may not react with an emoji multiple times; ignore such attempts
+  try {
+    $dbh->do(
+      "INSERT INTO longdescs_reactions (comment_id, user_id, reaction)
+              VALUES (?, ?, ?)", undef, $self->id, $user->id, $reaction);
+    $self->{reactions} = undef;
+  };
+}
+
+sub remove_reaction {
+  my ($self, $reaction) = @_;
+  my $dbh  = Bugzilla->dbh;
+  my $user = Bugzilla->user;
+  $reaction = $self->_check_reaction($reaction);
+
+  $dbh->do(
+    "DELETE FROM longdescs_reactions
+            WHERE comment_id = ? AND user_id = ? AND reaction = ?", undef,
+    $self->id, $user->id, $reaction);
+  $self->{reactions} = undef;
+}
 
 sub add_tag {
   my ($self, $tag) = @_;
@@ -506,6 +637,20 @@ sub _check_isprivate {
     ThrowUserError('user_not_insider');
   }
   return $isprivate ? 1 : 0;
+}
+
+sub _check_reaction {
+  my ($invocant, $reaction) = @_;
+
+  if (!Bugzilla->params->{use_comment_reactions}) {
+    ThrowUserError('comment_reaction_disabled');
+  }
+
+  if (!$reaction || !$SUPPORTED_REACTIONS{$reaction}) {
+    ThrowUserError('comment_reaction_invalid', {reaction => $reaction});
+  }
+
+  return $reaction;
 }
 
 sub _check_tag {
