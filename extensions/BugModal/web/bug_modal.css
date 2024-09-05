@@ -1271,7 +1271,6 @@ a.comment-tag-url {
   min-width: 24px;
   height: 24px;
   font-size: 12px;
-  line-height: 0;
 }
 
 .comment-reactions button:disabled {
