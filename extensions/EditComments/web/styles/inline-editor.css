@@ -53,3 +53,7 @@
 .comment-editor .bottom-toolbar label {
   margin: 0 8px;
 }
+
+.comment-editor  + .comment-reactions {
+  display: none;
+}
