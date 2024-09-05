@@ -334,6 +334,12 @@ sub install_before_final_checks {
     default  => 'on',
     category => 'User Interface',
   });
+  add_setting({
+    name     => 'ui_show_comment_reactions',
+    options  => ['on', 'off'],
+    default  => 'on',
+    category => 'User Interface',
+  });
 }
 
 sub editable_tables {

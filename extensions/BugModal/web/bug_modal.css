@@ -1275,6 +1275,10 @@ a.comment-tag-url {
   anchor-name: --comment-reactions;
 }
 
+.comment-text.bz_private + .comment-reactions {
+  padding: 12px;
+}
+
 .comment-reactions .emoji {
   font-size: 14px;
   font-family: Emoji;
@@ -1291,7 +1295,6 @@ a.comment-tag-url {
   min-width: 24px;
   height: 24px;
   font-size: 12px;
-  line-height: 0;
 }
 
 .comment-reactions button:disabled {

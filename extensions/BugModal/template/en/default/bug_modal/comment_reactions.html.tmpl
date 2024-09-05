@@ -6,24 +6,32 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-<div id="cre-[% comment.count FILTER none %]" class="comment-reactions"
-     [% IF comment.collapsed +%] style="display:none"[% END %]>
-  [% IF user.id && !bug.is_closed_for({months => 3}) %]
-    <button type="button" class="anchor">
-      <span class="icon" aria-label="Toggle Reaction Picker"></span>
-    </button>
-    <div class="picker" role="dialog" aria-label="Reaction Picker" inert>
+[% total_count = 0 %]
+
+[% FOREACH key IN comment.supported_reactions.keys %]
+  [% total_count = total_count + (comment.reactions.$key || 0) %]
+[% END %]
+
+[% IF user.id || total_count %]
+  <div id="cre-[% comment.count FILTER none %]" class="comment-reactions"
+       [% IF comment.collapsed +%] style="display:none"[% END %]>
+    [% IF user.id && !bug.is_closed_for({months => 3}) %]
+      <button type="button" class="anchor">
+        <span class="icon" aria-label="Toggle Reaction Picker"></span>
+      </button>
+      <div class="picker" role="dialog" aria-label="Reaction Picker" inert>
+        [% FOREACH key IN comment.supported_reactions.keys %]
+          [% PROCESS emoji_button key = key sum = 0 %]
+        [% END %]
+      </div>
+    [% END %]
+    <div class="sums">
       [% FOREACH key IN comment.supported_reactions.keys %]
-        [% PROCESS emoji_button key = key sum = 0 %]
+        [% PROCESS emoji_button key = key sum = 1 %]
       [% END %]
     </div>
-  [% END %]
-  <div class="sums">
-    [% FOREACH key IN comment.supported_reactions.keys %]
-      [% PROCESS emoji_button key = key sum = 1 %]
-    [% END %]
   </div>
-</div>
+[% END %]
 
 [% BLOCK emoji_button %]
   [% count = comment.reactions.$key || 0 %]
