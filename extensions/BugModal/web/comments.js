@@ -550,6 +550,11 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
     /** @type {Number} */
     this.commentId = Number(/** @type {HTMLElement} */ ($wrapper.parentElement.querySelector('.comment')).dataset.id);
 
+    // Users cannot react on old bugs
+    if (!this.$anchor) {
+      return;
+    }
+
     if (this.canUsePopover) {
       this.$anchor.popoverTargetElement = this.$picker;
       this.$anchor.popoverTargetAction = 'toggle';

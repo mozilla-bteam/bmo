@@ -8,7 +8,7 @@
 
 <div id="cre-[% comment.count FILTER none %]" class="comment-reactions"
      [% IF comment.collapsed +%] style="display:none"[% END %]>
-  [% IF user.id %]
+  [% IF user.id && !bug.is_closed_for({months => 3}) %]
     <button type="button" class="anchor">
       <span class="icon" aria-label="Toggle Reaction Picker"></span>
     </button>

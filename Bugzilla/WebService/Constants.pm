@@ -117,6 +117,7 @@ use constant WS_ERROR_CODE => {
   # Comment reactions
   comment_reaction_disabled => 136,
   comment_reaction_invalid  => 137,
+  comment_reaction_closed   => 138,
 
   # Comment tagging
   comment_tag_disabled  => 125,
