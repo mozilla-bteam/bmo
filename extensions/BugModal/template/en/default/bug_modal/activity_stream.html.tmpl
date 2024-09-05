@@ -320,7 +320,7 @@
       <em>No description provided.</em>
     [%~ END ~%]
   </[% comment_tag FILTER none %]>
-  [% IF Param('use_comment_reactions') %]
+  [% IF Param('use_comment_reactions') AND user.setting('ui_show_comment_reactions') == 'on' %]
     [% INCLUDE bug_modal/comment_reactions.html.tmpl %]
   [% END %]
 [% END %]
