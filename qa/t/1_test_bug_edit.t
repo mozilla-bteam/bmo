@@ -147,12 +147,47 @@ $sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
   . '[@data-reaction-count="1"][@aria-pressed="true"]');
 logout($sel);
 
-# A logged out user cannot react but can see reactions of other users
+# Restrict comments on the bug to users in the editbugs group
+log_in($sel, $config, 'admin');
+go_to_bug($sel, $bug1_id);
+$sel->check_ok('restrict_comments');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+logout($sel);
+
+# An unprivileged user cannot react but can see reactions of other users
+log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
 ok(!$sel->is_element_present($reactions_anchor_path));
 ok(!$sel->is_element_present($reactions_picker_path));
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
+logout($sel);
+
+# An editbugs user can still react
+log_in($sel, $config, 'editbugs');
+go_to_bug($sel, $bug1_id);
+$sel->click_ok($reactions_anchor_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="2"][@aria-pressed="true"]');
+logout($sel);
+
+# Restore comment restriction
+log_in($sel, $config, 'admin');
+go_to_bug($sel, $bug1_id);
+$sel->uncheck_ok('restrict_comments');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+logout($sel);
+
+# A logged out user cannot react but can see reactions of other users
+go_to_bug($sel, $bug1_id);
+ok(!$sel->is_element_present($reactions_anchor_path));
+ok(!$sel->is_element_present($reactions_picker_path));
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="2"][@aria-pressed="false"][@disabled]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
   . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
 
