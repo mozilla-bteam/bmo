@@ -165,7 +165,7 @@ $t->put_ok($url . "rest/bug/$bug_id" =>
 $t->put_ok($url . "rest/bug/comment/$comment_id/reactions" =>
     {'X-Bugzilla-API-Key' => $unpriv_api_key} => json => {add => ['-1']})
   ->status_is(400)
-  ->json_is('/message' => 'You are not allowed to react on this bug.');
+  ->json_is('/message' => 'You are not allowed to react to comments on this bug.');
 $t->put_ok($url . "rest/bug/comment/$comment_id/reactions" =>
     {'X-Bugzilla-API-Key' => $editbugs_api_key} => json => {add => ['-1']})
   ->status_is(200)
