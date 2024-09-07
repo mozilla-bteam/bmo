@@ -154,7 +154,7 @@ $sel->check_ok('restrict_comments');
 $sel->click_ok('bottom-save-btn', 'Save changes');
 logout($sel);
 
-# An unprivileged user cannot react but can see reactions of other users
+# An unprivileged user cannot react but can see reactions
 log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
 ok(!$sel->is_element_present($reactions_anchor_path));
@@ -162,7 +162,7 @@ ok(!$sel->is_element_present($reactions_picker_path));
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
-  . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
+  . '[@data-reaction-count="1"][@aria-pressed="true"][@disabled]');
 logout($sel);
 
 # An editbugs user can still react
