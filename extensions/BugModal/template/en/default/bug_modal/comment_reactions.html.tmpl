@@ -12,11 +12,13 @@
   [% total_count = total_count + (comment.reactions.$key || 0) %]
 [% END %]
 
+[% reaction_disabled = !user.id || bug.is_closed_for({months => 3})
+    || (bug.restrict_comments && !user.in_group(Param('restrict_comments_group'))) %]
+
 [% IF user.id || total_count %]
   <div id="cre-[% comment.count FILTER none %]" class="comment-reactions"
        [% IF comment.collapsed +%] style="display:none"[% END %]>
-    [% IF user.id && !bug.is_closed_for({months => 3})
-          && (!bug.restrict_comments || user.in_group(Param('restrict_comments_group'))) %]
+    [% IF !reaction_disabled %]
       <button type="button" class="anchor">
         <span class="icon" aria-label="Toggle Reaction Picker"></span>
       </button>
@@ -42,7 +44,7 @@
   <button type="button"
           [%= IF sum %]class="sum"[% END =%]
           [%= IF sum && !count %]hidden[% END =%]
-          [%= IF !user.id %]disabled[% END =%]
+          [%= IF reaction_disabled %]disabled[% END =%]
           data-reaction-name="[% key FILTER html %]"
           data-reaction-label="[% label FILTER html %]"
           data-reaction-count="[% count FILTER html %]"
