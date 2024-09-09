@@ -17,7 +17,7 @@
     <input type="checkbox" name="restrict_comments" id="restrict_comments"
           [% " checked" IF bug.restrict_comments %]>
     <label for="restrict_comments">
-      Restrict commenting on this [% terms.bug %] to users in the
+      Restrict commenting and reactions on this [% terms.bug %] to users in the
       <b>[% Param('restrict_comments_group') FILTER html %]</b> group.
     </label>
     (<a href="[% basepath FILTER none %]page.cgi?id=restrict_comments_guidelines.html"
@@ -29,7 +29,8 @@
   <table class="edit-hide">
   <tr>
     <td>
-      <i>Commenting restricted to members of the <b>[% Param('restrict_comments_group') FILTER html %]</b> group.</i>
+      <i>Commenting and reactions restricted to members of the
+        <b>[% Param('restrict_comments_group') FILTER html %]</b> group.</i>
     </td>
   </tr>
   </table>

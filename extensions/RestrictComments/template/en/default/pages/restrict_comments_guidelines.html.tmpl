@@ -20,7 +20,7 @@
   comments provides the ability for users in the
   [%+ Param('restrict_comments_enable_group') FILTER html %] group to prevent
   users who are not in the [% Param('restrict_comments_group') FILTER html %]
-  from making additional comments.
+  group from making additional comments and reacting to existing comments.
 </p>
 
 <h3>Guidelines</h3>
@@ -48,8 +48,8 @@
 <ul>
   <li>
     Users who are not in the [% Param('restrict_comments_group') FILTER html %]
-    group will not be able to comment on the [% terms.bug %], nor will they be
-    able to change the value of any field.
+    group will not be able to leave comments and react to comments on the
+    [%+ terms.bug %], nor will they be able to change the value of any field.
   </li>
   <li>
     All users will still be able to CC themselves to the [% terms.bug %].
