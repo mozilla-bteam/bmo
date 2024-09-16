@@ -1,0 +1,109 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+.text-editor {
+  box-sizing: border-box;
+  width: 800px;
+}
+
+.text-editor header {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  border-width: 1px 1px 0;
+  border-style: solid;
+  border-color: var(--control-border-color);
+  border-radius: var(--control-border-radius) var(--control-border-radius) 0 0;
+  background-color: var(--primary-region-header-background-color);
+}
+
+.text-editor [role="tablist"] {
+  padding: 4px 4px 0;
+}
+
+.text-editor [role="tab"] {
+  border-radius: var(--control-border-radius) var(--control-border-radius) 0 0;
+}
+
+.text-editor .markdown-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+}
+
+.text-editor .markdown-toolbar [role="group"] {
+  display: flex;
+  align-items: center;
+}
+
+.text-editor [data-command="heading"] .icon::before {
+  content: '\F85F';
+}
+
+.text-editor [data-command="bold"] .icon::before {
+  content: '\E238';
+}
+
+.text-editor [data-command="italic"] .icon::before {
+  content: '\E23F';
+}
+
+.text-editor [data-command="quote"] .icon::before {
+  content: '\E244';
+}
+
+.text-editor [data-command="code"] .icon::before {
+  content: '\E86F';
+}
+
+.text-editor [data-command="link"] .icon::before {
+  content: '\E250';
+}
+
+.text-editor [data-command="bulleted-list"] .icon::before {
+  content: '\E241';
+}
+
+.text-editor [data-command="numbered-list"] .icon::before {
+  content: '\E242';
+}
+
+.text-editor textarea {
+  display: block;
+  border-radius: 0 0 var(--control-border-radius) var(--control-border-radius);
+  padding: 12px;
+  width: 100%;
+  min-height: 10em;
+  max-height: 40em;
+}
+
+.text-editor .comment-text {
+  box-sizing: border-box;
+  border: 1px solid var(--control-border-color);
+  max-height: 40em;
+}
+
+.text-editor .comment-text .error {
+  color: var(--secondary-label-color);
+  font-style: italic;
+}
+
+.text-editor footer:not([hidden]) {
+  padding: 8px 4px;
+  font-size: var(--font-size-small);
+  text-align: right;
+}
+
+.text-editor footer a {
+  white-space: nowrap;
+}
+
+@media screen and (max-width: 799px) {
+  .text-editor header {
+    flex-direction: column;
+  }
+}
