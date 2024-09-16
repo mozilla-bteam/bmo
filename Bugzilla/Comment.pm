@@ -282,7 +282,8 @@ sub reactions_with_users {
   {
     my $rows = Bugzilla->dbh->selectall_arrayref(
       "SELECT reaction, user_id FROM longdescs_reactions
-              WHERE comment_id = ?", undef, $self->id);
+              WHERE comment_id = ?
+              ORDER BY id", undef, $self->id);
 
     my %reactions_with_users;
 

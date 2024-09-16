@@ -380,6 +380,14 @@
     [% title = "Invalid Comment Reaction" %]
     The comment reaction "[% reaction FILTER html %]" is not supported.
 
+  [% ELSIF error == "comment_reaction_closed" %]
+    [% title = "Comment Reactions Closed" %]
+    This [% terms.bug %] no longer accepts comment reactions.
+
+  [% ELSIF error == "comment_reaction_restricted" %]
+    [% title = "Comment Reactions Restricted" %]
+    You are not allowed to react to comments on this [% terms.bug %].
+
   [% ELSIF error == "comment_tag_disabled" %]
     [% title = "Comment Tagging Disabled" %]
     The comment tagging is not enabled.

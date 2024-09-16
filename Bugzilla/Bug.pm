@@ -31,6 +31,8 @@ use Bugzilla::Comment;
 use Bugzilla::BugUrl;
 use Bugzilla::BugUserLastVisit;
 
+use Date::Parse;
+use DateTime;
 use List::MoreUtils qw(firstidx uniq part any);
 use List::Util qw(min max first);
 use Storable qw(dclone);
@@ -3893,6 +3895,22 @@ sub flags {
 sub isopened {
   my $self = shift;
   return is_open_state($self->{bug_status}) ? 1 : 0;
+}
+
+# Check if the bug is closed and the last resolved date is older than the given
+# duration. This method requires the LastResolved extension. To check if the bug
+# is closed for a month: `$self->is_closed_for({months => 1})`
+sub is_closed_for {
+  my ($self, $duration) = @_;
+
+  if ($self->isopened || !$self->cf_last_resolved) {
+    return 0;
+  }
+
+  my $past_time = DateTime->now()->subtract(%$duration)->epoch();
+  my $closed_time = str2time($self->cf_last_resolved);
+
+  return $past_time > $closed_time;
 }
 
 sub keywords {

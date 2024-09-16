@@ -1431,6 +1431,16 @@ sub update_comment_reactions {
     ThrowUserError('comment_is_private', {id => $comment_id});
   }
 
+  if ($comment->bug->is_closed_for({months => 3})) {
+    ThrowUserError('comment_reaction_closed');
+  }
+
+  if ($comment->bug->restrict_comments
+    && !$user->in_group(Bugzilla->params->{'restrict_comments_group'}))
+  {
+    ThrowUserError('comment_reaction_restricted');
+  }
+
   my $dbh = Bugzilla->dbh;
   $dbh->bz_start_transaction();
   foreach my $reaction (@{$params->{add} || []}) {

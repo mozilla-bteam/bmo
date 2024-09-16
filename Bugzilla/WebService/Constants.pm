@@ -115,8 +115,10 @@ use constant WS_ERROR_CODE => {
   comment_invalid_isprivate => 117,
 
   # Comment reactions
-  comment_reaction_disabled => 136,
-  comment_reaction_invalid  => 137,
+  comment_reaction_disabled   => 136,
+  comment_reaction_invalid    => 137,
+  comment_reaction_closed     => 138,
+  comment_reaction_restricted => 139,
 
   # Comment tagging
   comment_tag_disabled  => 125,
