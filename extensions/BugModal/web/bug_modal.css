@@ -522,6 +522,10 @@ input[type="number"] {
   margin: 4px 0;
 }
 
+#top-actions.clear {
+  display: flow-root;
+}
+
 #top-actions .save-btn,
 #bottom-right-actions,
 .edit-textarea-set-btn {

@@ -39,7 +39,7 @@ Bugzilla.TextEditor = class TextEditor {
   } = {}) {
     /** @type {string} */
     this.id = `text-editor-${Bugzilla.String.generateHash()}`;
-    /** @type {Record<string, string & { htmlEncode: () => string }>} */
+    /** @type {Record<string, any>} */
     this.str = BUGZILLA.string.TextEditor;
     /** @type {boolean} */
     this.useMarkdown = useMarkdown;
@@ -113,6 +113,20 @@ Bugzilla.TextEditor = class TextEditor {
     const accelPrefix = Bugzilla.UserAgent.isMac ? '\u2318' : 'Ctrl+';
     /** @param {string} key */
     const _ = (key) => this.str[key].htmlEncode();
+    /** @type {{ text: string, href: string }[]} */
+    const footerLinks = [];
+
+    if (this.useMarkdown && this.str.markdown_link) {
+      footerLinks.push(this.str.markdown_link);
+    }
+
+    if (this.str.etiquette_link) {
+      footerLinks.push(this.str.etiquette_link);
+    }
+
+    if (this.str.guidelines_link) {
+      footerLinks.push(this.str.guidelines_link);
+    }
 
     $placeholder.innerHTML = `
       <section role="group" id="${this.id}" class="text-editor"
@@ -180,17 +194,9 @@ Bugzilla.TextEditor = class TextEditor {
           <div class="comment-text ${this.useMarkdown ? 'markdown-body' : ''}"></div>
         </div>
         <footer class="comment-tips" hidden>
-          ${
-            this.useMarkdown
-              ? `
-                <a href="https://guides.github.com/features/mastering-markdown/"
-                    target="_blank" class="iconic">${_('markdown_supported')}</a>
-                &middot;
-              `
-              : ''
-          }
-          <a href="${BUGZILLA.config.basepath}page.cgi?id=etiquette.html"
-              target="_blank">${_('guidelines')}</a>
+          ${footerLinks
+            .map(({ href, text }) => `<a href="${href}" target="_blank">${text}</a>`)
+            .join(' · ')}
         </footer>
       </section>
     `;
