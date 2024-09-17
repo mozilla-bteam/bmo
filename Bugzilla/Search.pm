@@ -1773,7 +1773,7 @@ sub _special_parse_email {
     my $email = trim($params->{"email$id"});
     next if !$email;
     my $type = $params->{"emailtype$id"} || 'anyexact';
-    $type = "equals" if $type eq "exact";
+    $type = "anyexact" if $type eq "exact";
 
     my $or_clause = new Bugzilla::Search::Clause('OR');
     foreach my $field (qw(assigned_to reporter cc qa_contact bug_mentor)) {
