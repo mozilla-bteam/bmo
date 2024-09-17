@@ -29,8 +29,18 @@ js_BUGZILLA.string.TextEditor = {
   command_bulleted_list => 'Bulleted list',
   loading => 'Loading…',
   preview_error => 'Preview could not be loaded. Please try again later.',
-  markdown_supported => 'Markdown supported',
-  guidelines => 'Comment Guidelines',
+  markdown_link => {
+    text => 'Markdown supported',
+    href => 'https://guides.github.com/features/mastering-markdown/',
+  },
+  etiquette_link => {
+    text => 'Etiquette',
+    href => BUGZILLA.config.basepath _ "page.cgi?id=etiquette.html",
+  },
+  guidelines_link => {
+    text => "$terms.Bug Writing Guidelines",
+    href => BUGZILLA.config.basepath _ "page.cgi?id=bug-writing.html",
+  },
 };
 
 %]

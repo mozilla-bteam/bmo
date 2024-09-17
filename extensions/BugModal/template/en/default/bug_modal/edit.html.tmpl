@@ -1420,8 +1420,10 @@
 
 [%# === top (between modules and comments) actions === %]
 
+[% show_comment_box_above = user.settings.comment_box_position.value == 'before_comments' %]
+
 [% IF user.id %]
-  <div id="top-actions">
+  <div id="top-actions" [%= 'class="clear"' IF show_comment_box_above %]>
     [%+ Hook.process('top_actions') %]
     <button type="submit" class="save-btn primary" id="top-save-btn" style="display:none">Save Changes</button>
   </div>
@@ -1432,11 +1434,11 @@
 [%# === comments === %]
 
 [%
-  IF user.settings.comment_box_position.value == 'before_comments';
+  IF show_comment_box_above;
     INCLUDE new_comment;
   END;
   INCLUDE bug_modal/activity_stream.html.tmpl stream=bug.activity_stream;
-  IF user.settings.comment_box_position.value == 'after_comments';
+  IF !show_comment_box_above;
     INCLUDE new_comment;
   END;
 %]

@@ -303,8 +303,8 @@
   [% END %]
 
   <div
-      class="comment-text [%= "markdown-body" IF comment.is_markdown %] [%= "bz_private" IF comment.is_private %]
-            [% "empty" IF comment.body == "" %]"
+      class="comment-text [%= "markdown-body" IF Param('use_markdown') && comment.is_markdown %]
+            [%= "bz_private" IF comment.is_private %][%= "empty" IF comment.body == "" %]"
       id="ct-[% comment.count FILTER none %]" data-comment-id="[% comment.id FILTER none %]"
       [% IF comment.collapsed +%] style="display:none"[% END ~%]>
     [%~ IF comment.body != "" ~%]
