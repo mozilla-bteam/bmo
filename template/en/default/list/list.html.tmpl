@@ -48,6 +48,7 @@
 [% PROCESS global/header.html.tmpl
   title = title
   generate_api_token = dotweak
+  use_text_editor = dotweak
   style = style
   atomlink = basepath _ "buglist.cgi?$urlquerypart&title=$url_filtered_title&ctype=atom"
   javascript_urls = [ "js/field.js", "js/buglist.js" ]

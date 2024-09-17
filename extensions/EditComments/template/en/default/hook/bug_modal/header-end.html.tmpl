@@ -8,8 +8,8 @@
 
 [%
   # Always load CSS to style the "Edited" revision link
-  style_urls.push('extensions/EditComments/web/styles/inline-editor.css');
+  style_urls.push('extensions/EditComments/web/styles/inline-comment-editor.css');
 
   RETURN UNLESS user.can_edit_comments();
-  javascript_urls.push('extensions/EditComments/web/js/inline-editor.js');
+  javascript_urls.push('extensions/EditComments/web/js/inline-comment-editor.js');
 %]

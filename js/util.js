@@ -708,6 +708,79 @@ Bugzilla.Error = class CustomError extends Error {
 };
 
 /**
+ * Provide static utility methods related to event handlers.
+ */
+Bugzilla.Event = class Event {
+  /**
+   * Add keyboard shortcuts to an element.
+   * @param {EventTarget} $target Event target, such as an `HTMLElement`, `document` or `window`.
+   * @param {Record<string, { handler: (event: KeyboardEvent) => void, preventDefault?: boolean,
+   * stopPropagation?: boolean, setAriaAttr?: boolean }>} mapping Key binding mapping object where
+   * the key is a key combination and the value is a handler function and event options. In most
+   * cases, `Ctrl` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
+   * modifier that corresponds to both keys.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values
+   * @see https://w3c.github.io/aria/#aria-keyshortcuts
+   * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
+   */
+  static activateKeyShortcuts($target, mapping) {
+    const { isMac } = Bugzilla.UserAgent;
+    const modifiers = ['ctrlKey', 'metaKey', 'altKey', 'shiftKey'];
+    const shortcuts = [];
+
+    for (const [
+      combination,
+      { handler, preventDefault = true, stopPropagation = true, setAriaAttr = false },
+    ] of Object.entries(mapping)) {
+      const keys = new Set(combination.split('+'));
+      const accel = keys.delete('Accel');
+
+      shortcuts.push({
+        ctrlKey: keys.delete('Ctrl') || (!isMac && accel),
+        metaKey: keys.delete('Meta') || (isMac && accel),
+        altKey: keys.delete('Alt'),
+        shiftKey: keys.delete('Shift'),
+        code: keys.size ? [...keys][0] : undefined,
+        handler,
+        preventDefault,
+        stopPropagation,
+      });
+
+      if ($target instanceof HTMLElement && setAriaAttr) {
+        $target.setAttribute(
+          'aria-keyshortcuts',
+          combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Ctrl'),
+        );
+      }
+    }
+
+    $target.addEventListener('keydown', (/** @type {KeyboardEvent} */ event) => {
+      if (event.isComposing) {
+        return;
+      }
+
+      for (const shortcut of shortcuts) {
+        if (
+          modifiers.every((key) => event[key] === shortcut[key]) &&
+          event.code.replace(/^(?:Digit|Key)(.)$/, '$1').toLowerCase() ===
+            shortcut.code.toLowerCase()
+        ) {
+          if (shortcut.preventDefault) {
+            event.preventDefault();
+          }
+
+          if (shortcut.stopPropagation) {
+            event.stopPropagation();
+          }
+
+          shortcut.handler(event);
+        }
+      }
+    });
+  }
+};
+
+/**
  * A simple Web Storage API wrapper handling JSON parse/stringify.
  */
 Bugzilla.Storage = class LocalStorage {
@@ -765,3 +838,42 @@ Bugzilla.Storage = class LocalStorage {
     window.localStorage.clear();
   }
 }
+
+/**
+ * Provide static utility methods related to string parsing and manipulation.
+ */
+Bugzilla.String = class String {
+  /**
+   * Escape special characters in a string so it can be used for `new RegExp()`.
+   * @param {string} string Input string.
+   * @returns {string} Escaped string.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions#escaping
+   */
+  static escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Generate a random hash string like `57d627e` that can be used for DOM node IDs.
+   * @param {number} [length] Size of hash.
+   * @returns {string} Generated hash.
+   */
+  static generateHash(length = 7) {
+    return [...Array(length)]
+      .map(() => '0123456789abcdef'[Math.floor(Math.random() * 16)])
+      .join('');
+  }
+};
+
+/**
+ * Provide static utility methods related to the user’s browser and operating system.
+ */
+Bugzilla.UserAgent = class UserAgent {
+  /**
+   * Check if the user is on the macOS platform.
+   * @type {boolean}
+   */
+  static get isMac() {
+    return navigator.platform === 'MacIntel';
+  }
+};

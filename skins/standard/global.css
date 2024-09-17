@@ -59,10 +59,12 @@
 }
 
 @font-face {
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   font-style: normal;
   font-weight: normal;
-  src: url('fonts/MaterialIcons-Regular.woff2') format('woff2');
+  /* Source: https://github.com/google/material-design-icons/tree/master/variablefont */
+  src: url('fonts/MaterialSymbolsOutlined.woff2') format('woff2');
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 @font-face {
@@ -441,7 +443,6 @@ hr {
   background-color: var(--primary-region-border-color);
 }
 
-::-moz-selection,
 ::selection {
   background-color: var(--selected-text-background-color);
 }
@@ -638,6 +639,31 @@ input[type="submit"] {
   cursor: pointer;
 }
 
+button.iconic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  width: 32px;
+  aspect-ratio: 1;
+}
+
+button.iconic  {
+  font-size: 20px;
+  font-family: 'Material Symbols Outlined';
+  vertical-align: middle;
+}
+
+button.ghost {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+button.ghost:disabled {
+  border-color: transparent !important;
+  background-color: transparent !important;
+}
+
 button:hover,
 input[type="submit"]:hover,
 input[type="button"]:hover {
@@ -822,6 +848,7 @@ input[type="radio"]:checked {
 }
 
 [role="tab"] {
+  outline: 0;
   border-radius: 0;
   border-width: 0 0 4px;
   border-style: solid;
@@ -835,10 +862,12 @@ input[type="radio"]:checked {
   color: var(--selected-tab-foreground-color);
 }
 
+[role="tab"][aria-disabled="true"],
 [role="tab"][disabled] {
   border-color: transparent !important;
   color: var(--disabled-control-foreground-color) !important;
   background-color: transparent !important;
+  pointer-events: none;
 }
 
 /**
@@ -1056,7 +1085,7 @@ input[type="radio"]:checked {
   width: 24px;
   font-size: 20px;
   line-height: 1;
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   vertical-align: middle;
   pointer-events: none;
 }
@@ -1381,7 +1410,7 @@ input[type="radio"]:checked {
 }
 
 #private-bug-banner .icon {
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   vertical-align: text-bottom;
 }
 
@@ -1898,7 +1927,7 @@ input.validation_error_field {
 
 .autocomplete-suggestion [itemtype] .blocked .icon::before {
   font-size: 15px;
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   vertical-align: -3px;
   content: '\E033';
 }
@@ -2140,7 +2169,7 @@ table.tabs .clickable_area {
   content: '\E5CA';
   font-size: 18px;
   line-height: 1;
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   vertical-align: text-bottom;
   text-indent: -20px;
 }
@@ -2422,49 +2451,6 @@ div.bz_comment_text pre {
   font-weight: normal;
 }
 
-#comment_tabs {
-  margin: 4px 8px 0;
-  border-spacing: 0;
-  padding: 0 !important;
-}
-
-.comment_tab {
-  padding: 4px 8px;
-}
-
-#comment_preview_loading {
-  font-style: italic;
-}
-
-#comment_preview {
-  display: block;
-  clear: both;
-  overflow: auto;
-  border: 1px solid var(--control-border-color);
-  padding: 12px;
-  color: var(--primary-text-color);
-  background-color: var(--primary-text-background-color);
-  font-size: var(--font-size-x-large);
-  line-height: var(--line-height-comfortable);
-}
-
-pre#comment_preview_text {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-
-#comment {
-  padding: 12px;
-}
-
-#bugzilla-etiquette,
-#comment-markdown-tip {
-  color: var(--secondary-label-color);
-  font-size: var(--font-size-small);
-}
-
 .comment-text {
   overflow: auto;
   padding: 12px;
@@ -2474,8 +2460,10 @@ pre#comment_preview_text {
   line-height: var(--line-height-comfortable);
 }
 
-pre.comment-text {
+.comment-text:not(.markdown-body) {
   margin: 0;
+  font-size-adjust: .5;
+  font-family: var(--font-family-monospace);
   white-space: pre-wrap;
 }
 
@@ -2862,7 +2850,7 @@ pre.comment-text {
 }
 
 .bug-type-label .icon {
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   line-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -2958,7 +2946,7 @@ div.oauth2-login {
 
 .data-table-container thead th .icon::before {
   font-size: 15px;
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   vertical-align: -3px;
 }
 
@@ -2985,7 +2973,7 @@ div.oauth2-login {
 .data-table-container tbody .expander .icon::before {
   display: inline-block;
   font-size: 24px;
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   vertical-align: top;
   color: var(--disabled-button-foreground-color);
   content: 'arrow_right';
