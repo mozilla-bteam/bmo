@@ -1772,8 +1772,9 @@ sub _special_parse_email {
     my $id    = $1;
     my $email = trim($params->{"email$id"});
     next if !$email;
-    my $type = $params->{"emailtype$id"} || 'anyexact';
-    $type = "anyexact" if $type eq "exact";
+    my $type = $params->{"emailtype$id"} || 'equals';
+    # for backward compatibility
+    $type = "equals" if $type eq "exact";
 
     my $or_clause = new Bugzilla::Search::Clause('OR');
     foreach my $field (qw(assigned_to reporter cc qa_contact bug_mentor)) {
@@ -2682,7 +2683,7 @@ sub _long_desc_changedby {
 
   my $table = "longdescs_$chart_id";
   push(@$joins, {table => 'longdescs', as => $table});
-  my $user_id = i$self->_get_user_id($value);
+  my $user_id = $self->_get_user_id($value);
   $args->{term} = "$table.who = $user_id";
 }
 
