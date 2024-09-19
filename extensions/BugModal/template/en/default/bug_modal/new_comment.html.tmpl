@@ -38,7 +38,7 @@
   <textarea id="comment" name="comment" rows="5" cols="80"
       aria-label="[% mode == 'create' ? 'Description' : 'Add Comment' %]"
       [%~ IF user.setting('ui_attach_long_paste') == 'on' +%] class="attach-long-paste"[% END %]
-  ></textarea>
+  >[% comment FILTER html %]</textarea>
 
   <div id="after-comment-commit-button">
     [% IF user.is_insider && add_extras %]
