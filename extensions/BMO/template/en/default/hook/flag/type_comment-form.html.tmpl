@@ -238,3 +238,97 @@
     </table>
   </section>
 </template>
+
+<template class="approval-request" data-flags="data-review">
+  <section>
+    <header>
+      <h3>Data review request</h3>
+    </header>
+    <table>
+      <tr>
+        <th id="_ar_sec_i1_label">What questions will you answer with this data?</th>
+        <td><textarea aria-labelledby="_ar_sec_i1_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i2_label">Why does Mozilla need to answer these questions?  Are there benefits for users? Do we need this information to address product or business requirements?</th>
+        <td><textarea aria-labelledby="_ar_sec_i2_label">
+          Examples:
+* Establish baselines or measure changes in product or platform quality or performance.
+* Provide information essential for advancing a business objective such as supporting OKRs.
+* Determine whether a product or platform change has an effect on user or browser behavior.
+        </textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i3_label">What alternative methods did you consider to answer these questions? Why were they not sufficient?</th>
+        <td><textarea aria-labelledby="_ar_sec_i3_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i4_label">Can current instrumentation answer these questions?</th>
+        <td><textarea aria-labelledby="_ar_sec_i4_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i5_label">List all proposed measurements and indicate the category of data collection for each measurement, using the
+          <a href="https://wiki.mozilla.org/Data_Collection">Firefox data collection categories</a> found on the Mozilla wiki:</th>
+        <td>
+          <textarea aria-labelledby="_ar_sec_i5_label">
+For each measurements, please provide:
+* Measurement Description
+* Data Collection Category
+* Tracking Bug #
+          </textarea>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i6_label">Please provide a link to the documentation for this data collection which describes the ultimate data set in a public, complete, and accurate way</th>
+        <td><textarea aria-labelledby="_ar_sec_i6_label">
+* Often the Privacy Notice for your product will link to where the documentation is expected to be.
+* Common examples for Mozilla products/services:
+* If this collection is Telemetry you can state "This collection is documented in its definitions files Histograms.json, Scalars.yaml, and/or Events.yaml and in the Probe Dictionary at https://probes.telemetry.mozilla.org."
+* If this data is collected using the Glean SDK you can state “This collection is documented in the Glean Dictionary at https://dictionary.telemetry.mozilla.org/"
+* In some cases, documentation is included in the project’s repository.
+        </textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i7_label">How long will this data be collected?  Choose one of the following:</th>
+        <td><textarea aria-labelledby="_ar_sec_i7_label">
+          * This is scoped to a time-limited experiment/project until date MM-DD-YYYY.
+          * I want this data to be collected for 6 months initially (potentially renewable).
+          * I want to permanently monitor this data. (put someone’s name here)
+        </textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i8_label">What populations will you measure?</th>
+        <td><textarea aria-labelledby="_ar_sec_i8_label">
+* Which release channels?
+* Which countries?
+* Which locales?
+* Any other filters?  Please describe in detail.
+        </textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i9_label">If this data collection is default on, what is the opt-out mechanism for users?</th>
+        <td><textarea aria-labelledby="_ar_sec_i9_label">
+        </textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i10_label">Please provide a general description of how you will analyze this data.</th>
+        <td><textarea aria-labelledby="_ar_sec_i10_label">
+        </textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i11_label">Where do you intend to share the results of your analysis?</th>
+        <td><textarea aria-labelledby="_ar_sec_i11_label">
+        </textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_sec_i12_label">s there a third-party tool (i.e. not Glean or Telemetry) that you are proposing to use for this data collection? If so:</th>
+        <td><textarea aria-labelledby="_ar_sec_i12_label">
+* Are you using that on the Mozilla backend? Or going directly to the third-party?
+        </textarea></td>
+      </tr>
+    </table>
+    <footer>
+      <p>See the <a href="https://wiki.mozilla.org/Data_Collection" target="_blank">Data Collection</a> wiki page for more info.</p>
+    </footer>
+  </section>
+</template>
