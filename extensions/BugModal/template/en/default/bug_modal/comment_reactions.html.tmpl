@@ -15,7 +15,7 @@
 [% reaction_disabled = !user.id || bug.is_closed_for({months => 3})
     || (bug.restrict_comments && !user.in_group(Param('restrict_comments_group'))) %]
 
-[% IF user.id || total_count %]
+[% IF !reaction_disabled || total_count %]
   <div id="cre-[% comment.count FILTER none %]" class="comment-reactions"
        [% IF comment.collapsed +%] style="display:none"[% END %]>
     [% IF !reaction_disabled %]
