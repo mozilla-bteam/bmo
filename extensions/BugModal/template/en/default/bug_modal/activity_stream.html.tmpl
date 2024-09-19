@@ -214,7 +214,7 @@
             Comment hidden ([% comment.collapsed_reason FILTER html %])
         </td>
         <td class="comment-actions">
-          <button type="button" class="change-spinner minor iconic" id="ccs-[% comment.count FILTER none %]"
+          <button type="button" class="change-spinner ghost iconic" id="ccs-[% comment.count FILTER none %]"
                   aria-label="[% comment.collapsed ? 'Expand' : 'Collapse' %]"
                   aria-expanded="[% comment.collapsed ? 'false' : 'true' %]"
                   data-strings='{ "collapse_label": "Collapse", "expand_label": "Expanded" }'>
@@ -249,7 +249,7 @@
           [% Hook.process('user', 'bug/changes.html.tmpl') %]
         </td>
         <td rowspan="2" class="comment-actions"><div role="group">
-          <button type="button" class="change-spinner minor iconic" id="as-[% id FILTER none %]"
+          <button type="button" class="change-spinner ghost iconic" id="as-[% id FILTER none %]"
                   aria-label="Collapse" aria-expanded="true"
                   data-strings='{ "collapse_label": "Collapse", "expand_label": "Expanded" }'>
             <span class="icon" aria-hidden="true"></span>
