@@ -1,7 +1,7 @@
 // @ts-check
 
 window.addEventListener('DOMContentLoaded', () => {
-  const $form = document.querySelector('#create-form');
+  const $form = document.querySelector('#changeform');
   const $toggleAdvanced = document.querySelector('#toggle-advanced');
   const $componentDescription = document.querySelector('#component-description');
   const $defaultCcField = document.querySelector('#field-default-cc');

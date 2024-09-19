@@ -1666,7 +1666,7 @@ a.lightbox-icon.markdown {
  * Create form
  */
 
-#create-form:not(.show-advanced-fields) .expert_fields {
+#changeform:not(.show-advanced-fields) .expert_fields {
   display: none;
 }
 
@@ -1721,7 +1721,7 @@ a.lightbox-icon.markdown {
   font-size: var(--font-size-small);
 }
 
-#create-form.show-advanced-fields #component-tip {
+#changeform.show-advanced-fields #component-tip {
   display: none;
 }
 
