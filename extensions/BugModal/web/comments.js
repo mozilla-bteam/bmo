@@ -28,13 +28,11 @@ $(function() {
             var changeSet = spinner.parents('.change-set');
             if (forced == 'hide') {
                 changeSet.find('.activity').hide();
-                changeSet.find('.gravatar').css('width', '16px').css('height', '16px');
                 $('#ar-' + id).hide();
                 update_spinner(spinner, false);
             }
             else if (forced == 'show' || forced == 'reset') {
                 changeSet.find('.activity').show();
-                changeSet.find('.gravatar').css('width', '32px').css('height', '32px');
                 $('#ar-' + id).show();
                 update_spinner(spinner, true);
             }
@@ -42,11 +40,9 @@ $(function() {
                 changeSet.find('.activity').slideToggle('fast', function() {
                     $('#ar-' + id).toggle();
                     if (changeSet.find('.activity' + ':visible').length) {
-                        changeSet.find('.gravatar').css('width', '32px').css('height', '32px');
                         update_spinner(spinner, true);
                     }
                     else {
-                        changeSet.find('.gravatar').css('width', '16px').css('height', '16px');
                         update_spinner(spinner, false);
                     }
                 });
@@ -75,7 +71,6 @@ $(function() {
             if (BUGZILLA.user.id !== 0)
                 $('#ctag-' + id).hide();
             $('#c' + id).find('.activity, .attachment, .comment-tags').hide();
-            $('#c' + id).find('.gravatar').css('width', '16px').css('height', '16px');
             update_spinner(realSpinner, false);
         }
         else if (forced == 'show') {
@@ -87,7 +82,6 @@ $(function() {
             if (BUGZILLA.user.id !== 0)
                 $('#ctag-' + id).show();
             $('#c' + id).find('.activity, .attachment, .comment-tags').show();
-            $('#c' + id).find('.gravatar').css('width', '32px').css('height', '32px');
             update_spinner(realSpinner, true);
         }
         else {
@@ -99,7 +93,6 @@ $(function() {
                     $('#cr-' + id).show();
                     if (BUGZILLA.user.id !== 0)
                         $('#ctag-' + id).show();
-                    $('#c' + id).find('.gravatar').css('width', '32px').css('height', '32px');
                     if (defaultCollapsed) {
                         $('#cc-' + id).hide();
                         $('#ch-' + id).show();
@@ -111,7 +104,6 @@ $(function() {
                     $('#cr-' + id).hide();
                     if (BUGZILLA.user.id !== 0)
                         $('#ctag-' + id).hide();
-                    $('#c' + id).find('.gravatar').css('width', '16px').css('height', '16px');
                     if (defaultCollapsed) {
                         $('#ch-' + id).hide();
                         $('#cc-' + id).show();

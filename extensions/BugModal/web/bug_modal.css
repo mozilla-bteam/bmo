@@ -998,7 +998,7 @@ td.flag-requestee {
 
 .change-author {
   width: 100%;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .change-author .vcard {
@@ -1860,7 +1860,7 @@ a.lightbox-icon.markdown {
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 4px 0;
-    width: 150px;
+    width: 128px;
   }
 
   .comment .comment-actions > [role="group"] .comment-private {
