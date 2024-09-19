@@ -257,6 +257,32 @@ const scroll_element_into_view = ($target, complete) => {
     document.documentElement.scrollTop = $target.offsetTop - 20;
 }
 
+const openBanner = () => {
+  // Bind click event listeners for banner buttons
+  document
+    .getElementById("moz-consent-banner-button-accept")
+    .addEventListener("click", MozConsentBanner.onAcceptClick, false);
+  document
+    .getElementById("moz-consent-banner-button-reject")
+    .addEventListener("click", MozConsentBanner.onRejectClick, false);
+
+  // Show the banner
+  document.getElementById("moz-consent-banner").classList.add("is-visible");
+};
+
+const closeBanner = () => {
+  // Unbind click event listeners
+  document
+    .getElementById("moz-consent-banner-button-accept")
+    .removeEventListener("click", MozConsentBanner.onAcceptClick, false);
+  document
+    .getElementById("moz-consent-banner-button-reject")
+    .removeEventListener("click", MozConsentBanner.onRejectClick, false);
+
+  // Hide the banner
+  document.getElementById("moz-consent-banner").classList.remove("is-visible");
+};
+
 window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
 window.addEventListener('load', detect_blocked_gravatars, { once: true });
 window.addEventListener('load', adjust_scroll_onload, { once: true });
@@ -283,4 +309,16 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Mozilla Consent Banner
+  // Bind open and close events before calling init().                                                                                                                                                                                                          
+  window.addEventListener('mozConsentOpen', openBanner, false);                                                                                                                                                                                                 
+  window.addEventListener('mozConsentClose', closeBanner, false);                                                                                                                                                                                               
+  window.addEventListener('mozConsentStatus', (e) => {
+      console.log(e.detail); // eslint-disable-line no-console
+  });
+  MozConsentBanner.init({
+    helper: CookieHelper,
+  });
+
 }, { once: true });

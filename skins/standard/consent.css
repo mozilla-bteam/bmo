@@ -1,0 +1,151 @@
+@keyframes a-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.moz-consent-banner {
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  background: #ffffff;
+  color: #000000;
+  display: none;
+  font-family: Inter, sans-serif;
+  text-size-adjust: 100%;
+}
+.moz-consent-banner.is-visible {
+  display: block;
+}
+.moz-consent-banner .moz-consent-banner-content {
+  background: #ffffff;
+  margin: 0 auto;
+  max-width: 1152px;
+  padding: 16px 16px 0 16px;
+}
+.moz-consent-banner .moz-consent-banner-heading {
+  color: #000000;
+  font-family: Inter, sans-serif;
+  font-size: 1.5rem;
+  font-size: 24px;
+  margin: 0 0 16px;
+}
+.moz-consent-banner .moz-consent-banner-copy p {
+  font-size: 16px;
+  font-size: 1rem;
+  max-width: 60em;
+  line-height: 1.5;
+}
+.moz-consent-banner .moz-consent-banner-copy a:link,
+.moz-consent-banner .moz-consent-banner-copy a:visited {
+  color: #000000;
+  text-decoration: underline;
+}
+.moz-consent-banner .moz-consent-banner-copy a:hover,
+.moz-consent-banner .moz-consent-banner-copy a:active,
+.moz-consent-banner .moz-consent-banner-copy a:focus {
+  text-decoration: none;
+}
+.moz-consent-banner .moz-consent-banner-controls {
+  text-align: center;
+}
+.moz-consent-banner .moz-consent-banner-controls a {
+  display: inline-block;
+  font-size: 16px;
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+.moz-consent-banner .moz-consent-banner-button {
+  background-color: #000000;
+  border-radius: 4px;
+  border: 2px solid #000000;
+  box-sizing: border-box;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  padding: 6px 24px;
+  text-align: center;
+  transition: background-color 100ms, box-shadow 100ms, color 100ms;
+  width: 100%;
+}
+.moz-consent-banner .moz-consent-banner-button:focus {
+  border-color: #0060df;
+  box-shadow: 0 0 0 2px rgba(0, 144, 237, 0.5);
+  outline-offset: 1px;
+}
+.moz-consent-banner .moz-consent-banner-button:hover {
+  background-color: #ededf0;
+  border-color: #000000;
+  box-shadow: none;
+  color: #000000;
+}
+.moz-consent-banner .moz-consent-banner-button:active {
+  background-color: #ededf0;
+  border-color: #5e5e72;
+  color: #000000;
+}
+@media (min-width: 768px) {
+  .moz-consent-banner .moz-consent-banner-content {
+    padding: 24px 48px 0 48px;
+  }
+  .moz-consent-banner .moz-consent-banner-controls {
+    text-align: left;
+  }
+  [dir=rtl] .moz-consent-banner .moz-consent-banner-controls {
+    text-align: right;
+  }
+  .moz-consent-banner .moz-consent-banner-controls .moz-consent-banner-button,
+  .moz-consent-banner .moz-consent-banner-controls a {
+    display: inline-block;
+    margin-bottom: 24px;
+    margin-right: 16px;
+  }
+  [dir=rtl] .moz-consent-banner .moz-consent-banner-controls .moz-consent-banner-button,
+  [dir=rtl] .moz-consent-banner .moz-consent-banner-controls a {
+    margin-left: 16px;
+    margin-right: 0;
+  }
+  .moz-consent-banner .moz-consent-banner-controls .moz-consent-banner-button {
+    width: auto;
+  }
+}
+@media (min-height: 600px) {
+  .moz-consent-banner {
+    animation: a-slide-up 600ms ease 0ms both;
+    background: transparent;
+    bottom: 0;
+    left: 0;
+    padding: 8px;
+    position: fixed;
+    right: 0;
+    z-index: 1000;
+  }
+  .moz-consent-banner .moz-consent-banner-content {
+    border-radius: 16px;
+    box-shadow: 0 5px 16px 2px rgba(29, 17, 51, 0.25);
+  }
+}
+@media (min-height: 600px) and (min-width: 768px) {
+  .moz-consent-banner {
+    padding: 16px;
+  }
+}
+@media (min-height: 600px) and (min-width: 1024px) {
+  .moz-consent-banner {
+    padding: 24px;
+  }
+}
+@media (min-height: 600px) and (prefers-reduced-motion: reduce) {
+  .moz-consent-banner {
+    animation: none;
+  }
+}
