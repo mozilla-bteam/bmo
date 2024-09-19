@@ -67,10 +67,8 @@ $(function() {
                 $('#ch-' + id).hide();
                 $('#cc-' + id).show();
             }
-            $(`#ct-${id}, #cr-${id}, #cre-${id}`).hide();
-            if (BUGZILLA.user.id !== 0)
-                $('#ctag-' + id).hide();
-            $('#c' + id).find('.activity, .attachment, .comment-tags').hide();
+            $(`#ct-${id}, #cr-${id}, #cre-${id}, #ctag-${id}`).hide();
+            $(`#c${id}`).find('.activity, .attachment').hide();
             update_spinner(realSpinner, false);
         }
         else if (forced == 'show') {
@@ -78,32 +76,24 @@ $(function() {
                 $('#cc-' + id).hide();
                 $('#ch-' + id).show();
             }
-            $(`#ct-${id}, #cr-${id}, #cre-${id}`).show();
-            if (BUGZILLA.user.id !== 0)
-                $('#ctag-' + id).show();
-            $('#c' + id).find('.activity, .attachment, .comment-tags').show();
+            $(`#ct-${id}, #cr-${id}, #cre-${id}, #ctag-${id}`).show();
+            $(`#c${id}`).find('.activity, .attachment').show();
             update_spinner(realSpinner, true);
         }
         else {
             $(`#ct-${id}, #cre-${id}, #c${id} .attachment`).slideToggle('fast').promise().done(() => {
                 $('#c' + id).find('.activity').toggle();
                 if ($('#ct-' + id + ':visible').length) {
-                    $('#c' + id).find('.comment-tags').show();
+                    $(`#cr-${id}, #ctag-${id}`).show();
                     update_spinner(realSpinner, true);
-                    $('#cr-' + id).show();
-                    if (BUGZILLA.user.id !== 0)
-                        $('#ctag-' + id).show();
                     if (defaultCollapsed) {
                         $('#cc-' + id).hide();
                         $('#ch-' + id).show();
                     }
                 }
                 else {
-                    $('#c' + id).find('.comment-tags').hide();
+                    $(`#cr-${id}, #ctag-${id}`).hide();
                     update_spinner(realSpinner, false);
-                    $('#cr-' + id).hide();
-                    if (BUGZILLA.user.id !== 0)
-                        $('#ctag-' + id).hide();
                     if (defaultCollapsed) {
                         $('#ch-' + id).hide();
                         $('#cc-' + id).show();
@@ -305,7 +295,7 @@ $(function() {
 
             const { signal } = abort_controller;
             var result = await Bugzilla.API.get(
-                `bug_modal/comment_tags/${commentID}`, 
+                `bug_modal/comment_tags/${commentID}`,
                 {}, { signal }
             );
             renderTags(commentNo, result.html);
