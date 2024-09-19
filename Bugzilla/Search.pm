@@ -2477,11 +2477,11 @@ sub _contact_exact_group {
   my $from = $field;
 
   # These fields need an additional table.
-  if ($field =~ /^(commenter|cc)$/) {
+  if ($field eq 'commenter' || $field eq 'cc') {
     my $join_table = $field;
     $join_table = 'longdescs' if $field eq 'commenter';
     my $join_table_alias = "${field}_$chart_id";
-    push(@$joins, {table => $join_table, as => $join_table_alias});
+    push @$joins, {table => $join_table, as => $join_table_alias};
     $from = "$join_table_alias.who";
   }
 
@@ -3650,7 +3650,11 @@ sub _changedby {
     push(@{$join->{extra}}, "$table.fieldid = $field_id");
   }
 
-  my $user_id = $self->_get_user_id($value);
+  # We may have already converted to user id if use of pronoun so skip
+  my $user_id = $value;
+  if ($value !~ /^\d+$/) {
+    $user_id = $self->_get_user_id($value);
+  }
   push(@{$join->{extra}}, "$table.who = $user_id");
 
   $args->{term} = "$table.bug_when IS NOT NULL";
