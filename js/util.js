@@ -348,10 +348,12 @@ function bz_toggleClass(anElement, aClass) {
 function timeAgo(param) {
     var ss = param.constructor === Date ? Math.round((new Date() - param) / 1000) : param;
     var mm = Math.round(ss / 60),
-        hh = Math.round(mm / 60),
-        dd = Math.round(hh / 24),
-        mo = Math.round(dd / 30),
-        yy = Math.round(mo / 12);
+        hh = Math.round(ss / (60 * 60)),
+        dd = Math.round(ss / (60 * 60 * 24)),
+        // They are not the best definition of month and year,
+        // but they should be good enough to be used here.
+        mo = Math.round(ss / (60 * 60 * 24 * 30)),
+        yy = Math.round(ss / (60 * 60 * 24 * 365.2422));
     if (ss < 10) return 'Just now';
     if (ss < 45) return ss + ' seconds ago';
     if (ss < 90) return '1 minute ago';
