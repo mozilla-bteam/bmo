@@ -2522,6 +2522,8 @@ sub _triage_owner_pronoun {
 sub _get_user_id {
   my ($self, $value) = @_;
 
+  # If the user value is formatted as a pronoun
+  # then return the converted value for the user
   if ($value =~ /^%\w+%$/) {
     return pronoun($value, $self->_user);
   }
