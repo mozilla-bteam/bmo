@@ -650,10 +650,12 @@ sub time_ago {
   # DateTime object or seconds
   my $ss = ref($param) ? time() - $param->epoch : $param;
   my $mm = round($ss / 60);
-  my $hh = round($mm / 60);
-  my $dd = round($hh / 24);
-  my $mo = round($dd / 30);
-  my $yy = round($mo / 12);
+  my $hh = round($ss / (60 * 60));
+  my $dd = round($ss / (60 * 60 * 24));
+  # They are not the best definition of month and year,
+  # but they should be good enough to be used here.
+  my $mo = round($ss / (60 * 60 * 24 * 30));
+  my $yy = round($ss / (60 * 60 * 24 * 365.2422));
 
   return 'Just now'           if $ss < 10;
   return $ss . ' seconds ago' if $ss < 45;
