@@ -208,6 +208,10 @@ use Memoize;
   JOB_QUEUE_VIEW_MAX_JOBS
 
   BOUNCE_COUNT_MAX
+
+  CONSENT_COOKIE
+  ESSENTIAL_COOKIES
+  COOKIE_CONSENT_COUNTRIES
 );
 
 @Bugzilla::Constants::EXPORT_OK = qw(contenttypes);
@@ -677,6 +681,19 @@ use constant JOB_QUEUE_VIEW_MAX_JOBS => 2500;
 # Maximum number of times an email can bounce for an account
 # before the account is completely disabled.
 use constant BOUNCE_COUNT_MAX => 5;
+
+# Consent cookie name
+use constant CONSENT_COOKIE => 'moz-consent-pref';
+
+# List of essential cookies that cannot be opted out
+use constant ESSENTIAL_COOKIES =>
+  qw(bugzilla Bugzilla_login Bugzilla_logincookie Bugzilla_login_request_cookie
+     bugzilla github_state github_token sudo);
+
+# List of countries the require cookie consent
+use constant COOKIE_CONSENT_COUNTRIES => qw(
+  AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IS IT LV
+  LI LT LU MT NL NO PL PT RO SK SI ES SE CH GB );
 
 sub bz_locations {
 

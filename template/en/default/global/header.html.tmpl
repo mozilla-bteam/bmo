@@ -112,10 +112,14 @@
     [%- js_BUGZILLA = {
             config => {
                 basepath => basepath,
+                urlbase => urlbase,
+                cookie_consent_enabled => Param("cookie_consent_enabled")
+                essential_cookies => constants.ESSENTIAL_COOKIES,
             }
             user => {
                 # TODO: Move all properties form bug_modal/header.html.tmpl
-                login => user.login,
+                login          => user.login,
+                cookie_consent => Bugzilla.cgi.consent_cookie,
             },
             param => {
                 maxattachmentsize => Param('maxattachmentsize'),

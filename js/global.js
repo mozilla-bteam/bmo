@@ -297,12 +297,12 @@ window.addEventListener('DOMContentLoaded', () => {
       fetch(url, { method: "POST" }).then(
         response => announcement.style.display = "none"
       );
-      localStorage.setItem("announcement_checksum", checksum);
+      Bugzilla.Storage.set("announcement_checksum", checksum);
     }
     announcement.addEventListener('click', hide_announcement);
     window.addEventListener('visibilitychange', () => {
       if (!window.hidden) {
-        const hidden_checksum = localStorage.getItem("announcement_checksum");
+        const hidden_checksum = Bugzilla.Storage.get("announcement_checksum");
         if (hidden_checksum && hidden_checksum == announcement.dataset.checksum) {
           announcement.style.display = "none";
         }
@@ -311,14 +311,22 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Mozilla Consent Banner
-  // Bind open and close events before calling init().                                                                                                                                                                                                          
-  window.addEventListener('mozConsentOpen', openBanner, false);                                                                                                                                                                                                 
-  window.addEventListener('mozConsentClose', closeBanner, false);                                                                                                                                                                                               
-  window.addEventListener('mozConsentStatus', (e) => {
-      console.log(e.detail); // eslint-disable-line no-console
-  });
-  MozConsentBanner.init({
-    helper: CookieHelper,
-  });
+  // Bind open and close events before calling init().
+  if (BUGZILLA.config.cookie_consent_enabled) {
+    window.addEventListener('mozConsentOpen', openBanner, false);
+    window.addEventListener('mozConsentReset', openBanner, false);
+    window.addEventListener('mozConsentClose', closeBanner, false);
+    window.addEventListener('mozConsentStatus', (e) => {
+        console.log(e.detail); // eslint-disable-line no-console
+    });
+    MozConsentBanner.init({
+      helper: CookieHelper,
+    });
 
+    // Listen for click to reset cookie preference
+    let $reset_cookie_consent = document.getElementById('reset_cookie_consent');
+    if ($reset_cookie_consent) {
+      $reset_cookie_consent.addEventListener('click', MozConsentBanner.onClearClick);
+    }
+  }
 }, { once: true });

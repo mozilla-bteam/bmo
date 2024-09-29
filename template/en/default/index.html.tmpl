@@ -160,7 +160,11 @@
     </div>
   </div>
 
+  [% IF Param("cookie_consent_enabled") && Bugzilla.cgi.cookie(constants.CONSENT_COOKIE) %]
+    <div>
+      <a href="#" id="reset_cookie_consent">Reset Current Cookie Preferences</a>
+    </div>
+  [% END %]
 </div>
-
 
 [% PROCESS global/footer.html.tmpl %]

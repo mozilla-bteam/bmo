@@ -21,16 +21,24 @@ var options;
  * Sets cookie indicating consent choice.
  * @param {Object} data - consent settings.
  */
-MozConsentBanner.setConsentCookie = function (data) {
+MozConsentBanner.setConsentCookie = function (value) {
   try {
     var date = new Date();
     date.setDate(date.getDate() + options.cookieExpiryDays);
     var expires = date.toUTCString();
-    options.helper.setItem(options.cookieID, JSON.stringify(data), expires, '/', options.cookieDomain, false, 'lax');
+    options.helper.setItem(options.cookieID, (value ? 'yes' : 'no'),
+      expires, '/', options.cookieDomain, false, 'lax');
     return true;
   } catch (e) {
     return false;
   }
+};
+
+/**
+ * Removes cookie indicating consent choice.
+ */
+MozConsentBanner.clearConsentCookie = function () {
+  return  options.helper.removeItem(options.cookieID, '/', options.cookieDomain, false, 'lax');
 };
 
 /**
@@ -39,28 +47,10 @@ MozConsentBanner.setConsentCookie = function (data) {
  */
 MozConsentBanner.getConsentCookie = function () {
   try {
-    return options.helper.hasItem(options.cookieID) && JSON.parse(options.helper.getItem(options.cookieID));
+    return options.helper.hasItem(options.cookieID) && options.helper.getItem(options.cookieID);
   } catch (e) {
     return false;
   }
-};
-
-/**
- * Returns the domain to set for the consent cookie. When in production
- * we want to specify '.mozilla.org' instead of 'www.mozilla.org',
- * so that multiple Mozilla sub domains can use the same consent cookie.
- * @returns {domain} string or null.
- */
-MozConsentBanner.getHostName = function (hostname) {
-  var url = typeof hostname === 'string' ? hostname : window.location.hostname;
-  var domain = null;
-  if (url.indexOf('.allizom.org') !== -1) {
-    domain = '.allizom.org';
-  }
-  if (url.indexOf('.mozilla.org') !== -1) {
-    domain = '.mozilla.org';
-  }
-  return domain;
 };
 
 /**
@@ -95,12 +85,8 @@ MozConsentBanner.dispatchEvent = function (eventName, eventData) {
  * Event handler for accepting cookies.
  */
 MozConsentBanner.onAcceptClick = function () {
-  var preferences = {
-    analytics: true,
-    preference: true
-  };
-  MozConsentBanner.setConsentCookie(preferences);
-  MozConsentBanner.dispatchEvent(EVENT_NAME_STATUS, preferences);
+  MozConsentBanner.setConsentCookie(true);
+  MozConsentBanner.dispatchEvent(EVENT_NAME_STATUS, true);
   MozConsentBanner.dispatchEvent(EVENT_NAME_CLOSE, {});
 };
 
@@ -108,14 +94,16 @@ MozConsentBanner.onAcceptClick = function () {
  * Event handler for rejecting cookies.
  */
 MozConsentBanner.onRejectClick = function () {
-  var preferences = {
-    analytics: false,
-    preference: false
-  };
-  MozConsentBanner.setConsentCookie(preferences);
-  MozConsentBanner.dispatchEvent(EVENT_NAME_STATUS, preferences);
+  MozConsentBanner.setConsentCookie(false);
+  MozConsentBanner.dispatchEvent(EVENT_NAME_STATUS, false);
   MozConsentBanner.dispatchEvent(EVENT_NAME_CLOSE, {});
 };
+
+MozConsentBanner.onClearClick = function () {
+  MozConsentBanner.clearConsentCookie();
+  MozConsentBanner.dispatchEvent(EVENT_NAME_STATUS, false);
+  MozConsentBanner.dispatchEvent(EVENT_NAME_OPEN, {});
+}
 
 /**
  * Validates BannerOptions configuration object.
@@ -181,10 +169,11 @@ MozConsentBanner.init = function (config) {
 
   /**
    * If domain for consent cookie has not be supplied via config,
-   * set it via getHostName()
+   * set it via default BUGZILLA urlbase
    */
   if (!options.cookieDomain) {
-    options.cookieDomain = MozConsentBanner.getHostName();
+    const url = new URL(BUGZILLA.config.urlbase);
+    options.cookieDomain = url.hostname;
   }
 
   /**
@@ -213,10 +202,7 @@ MozConsentBanner.init = function (config) {
      * cookies and analytics are OK to load.
      */
     if (options.optOut) {
-      MozConsentBanner.dispatchEvent(EVENT_NAME_STATUS, {
-        preference: true,
-        analytics: true
-      });
+      MozConsentBanner.dispatchEvent(EVENT_NAME_STATUS, true);
     }
   }
   return true;

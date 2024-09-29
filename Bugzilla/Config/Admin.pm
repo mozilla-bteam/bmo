@@ -65,6 +65,12 @@ sub get_param_list {
       type    => 't',
       default => 'https://product-details.mozilla.org/1.0',
     },
+
+    {
+      name    => 'cookie_consent_enabled',
+      type    => 'b',
+      default => 0,
+    }
   );
   return @param_list;
 }
