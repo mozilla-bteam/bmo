@@ -764,8 +764,7 @@ Bugzilla.Event = class Event {
       for (const shortcut of shortcuts) {
         if (
           modifiers.every((key) => event[key] === shortcut[key]) &&
-          event.code.replace(/^(?:Digit|Key)(.)$/, '$1').toLowerCase() ===
-            shortcut.code.toLowerCase()
+          event.key === shortcut.code.toLowerCase()
         ) {
           if (shortcut.preventDefault) {
             event.preventDefault();
