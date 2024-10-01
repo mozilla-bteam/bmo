@@ -721,7 +721,7 @@ Bugzilla.Event = class Event {
    * the key is a key combination and the value is a handler function and event options. In most
    * cases, `Ctrl` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
    * modifier that corresponds to both keys.
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
    * @see https://w3c.github.io/aria/#aria-keyshortcuts
    * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
    */
@@ -764,8 +764,7 @@ Bugzilla.Event = class Event {
       for (const shortcut of shortcuts) {
         if (
           modifiers.every((key) => event[key] === shortcut[key]) &&
-          event.code.replace(/^(?:Digit|Key)(.)$/, '$1').toLowerCase() ===
-            shortcut.code.toLowerCase()
+          event.key === shortcut.code.toLowerCase()
         ) {
           if (shortcut.preventDefault) {
             event.preventDefault();
