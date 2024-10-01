@@ -190,10 +190,17 @@ window.addEventListener('DOMContentLoaded', () => {
           dataset: { overlay: mode },
           search,
         } = $link;
-        const params = new URLSearchParams(search);
-        const id = Number(params.get('id'));
-        const action = params.get('action');
+        const { id: idStr, action } = Object.fromEntries(new URLSearchParams(search));
+        const id = Number(idStr);
 
+        // The attachment overlay doesn’t work well if the linked attachment is on another bug. In
+        // such cases, just link to the legacy attachment page.
+        if (!Object.keys(tokens).includes(idStr)) {
+          return;
+        }
+
+        // Also, if the attachment `action` param is not `edit` and the lightbox display mode is not
+        // specified, open the link directly.
         if (action !== 'edit' && !mode) {
           return;
         }
