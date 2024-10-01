@@ -14,7 +14,7 @@ ENV LOG4PERL_CONFIG_FILE=log4perl-json.conf
 
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y rsync
+    && apt-get install -y rsync curl
 
 # we run a loopback logging server on this TCP port.
 ENV LOGGING_PORT=5880
@@ -37,14 +37,18 @@ RUN perl checksetup.pl --no-database --default-localconfig && \
 
 EXPOSE 8000
 
+HEALTHCHECK CMD curl -sfk http://localhost -o/dev/null
+
 ENTRYPOINT ["/app/scripts/entrypoint.pl"]
 CMD ["httpd"]
 
 FROM base AS TEST
 
+HEALTHCHECK NONE
+
 USER root
 
-RUN apt-get install -y curl firefox-esr lsof
+RUN apt-get install -y firefox-esr lsof
 
 RUN curl -L https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz -o /tmp/geckodriver.tar.gz \
   && cd /tmp \
