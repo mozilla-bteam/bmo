@@ -572,8 +572,8 @@ Bugzilla.TextEditor = class TextEditor {
         start: start + 1 + newMarker.length + 1,
       });
     } else {
-      this.updateText(`${beforeLines.join('\n')}`, {
-        start: start + 1,
+      this.updateText(`${beforeLines.join('\n')}${afterText}`, {
+        start: start - [...beforeText.split(/\n/).pop()].length,
       });
     }
   }
