@@ -39,7 +39,7 @@
 
 <div id="login-wrapper">
 
-<h1>Log in to [% "$terms.Bugzilla" %]</h1>
+<h1>Log in to [% "$terms.Bugzilla" FILTER html %]</h1>
 
 <div id="login-primary">
   [% IF Param('oauth2_client_enabled') %]

@@ -252,21 +252,6 @@
 <div id="wrapper">
 
 <header id="header" role="banner" aria-label="Global Header">
-  <dialog id="menu-drawer" inert aria-label="Site Menu">
-    <div class="drawer-inner" role="none">
-      <div class="header" role="none">
-        <button type="button" class="iconic ghost" id="close-menu-drawer"
-                aria-label="Close Site Menu">
-          <span class="icon" aria-hidden="true">close</span>
-        </button>
-      </div>
-      <ul role="menu" aria-label="Site Links">
-        [% INCLUDE primary_links %]
-        [% Hook.process('action-links') %]
-        [% INCLUDE secondary_links %]
-      </ul>
-    </div>
-  </dialog>
   <div class="inner" role="none">
     <button type="button" class="iconic ghost" id="open-menu-drawer" aria-label="Open Site Menu">
       <span class="icon" aria-hidden="true">menu</span>
@@ -376,6 +361,21 @@
       </ul>
     [% END %]
   </div>
+  <dialog id="menu-drawer" inert aria-label="Site Menu">
+    <div class="drawer-inner" role="none">
+      <div class="header" role="none">
+        <button type="button" class="iconic ghost" id="close-menu-drawer"
+                aria-label="Close Site Menu">
+          <span class="icon" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <ul role="menu" aria-label="Site Links">
+        [% INCLUDE primary_links %]
+        [% Hook.process('action-links') %]
+        [% INCLUDE secondary_links %]
+      </ul>
+    </div>
+  </dialog>
 </header> [%# header %]
 
 [%
