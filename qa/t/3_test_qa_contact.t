@@ -122,7 +122,7 @@ $sel->click_ok("//a[contains(text(),'log\n    in to an account')]",
   undef, "Log in");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Log in to Bugzilla");
-$sel->is_text_present_ok("I need an email address and password to continue.");
+$sel->is_text_present_ok("Log in to Bugzilla");
 $sel->type_ok(
   "Bugzilla_login",
   $config->{unprivileged_user_login},

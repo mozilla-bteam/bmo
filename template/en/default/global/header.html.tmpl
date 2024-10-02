@@ -37,7 +37,6 @@
   # atomlink: Atom link URL, May contain HTML
   # generate_api_token: generate a token which can be used to make authenticated webservice calls
   # no_body: if true the body element will not be generated
-  # allow_mobile: allow special CSS and viewport for detected mobile user agents
   # use_login_page: display a link to the full login page, rather than an inline login.
   # robots: index / noindex (default: index)
   # responsive: (boolean) if true, use responsive design for the current page (default: false)
@@ -78,10 +77,6 @@
 
 [%# Add our required jQuery plugins %]
 [% jquery.push("devbridgeAutocomplete") %]
-
-[% IF allow_mobile && is_mobile_browser %]
-  [% style_urls.push("skins/standard/mobile.css") %]
-[% END %]
 
 [%# Enable syntax highlighting with Prism.js %]
 [% javascript_urls.push('js/lib/prism.js') %]
@@ -150,7 +145,8 @@
     [%# This provides some strings; must go before `json_encode(js_BUGZILLA)` %]
     [% PROCESS 'global/text-editor-include.html.tmpl' IF use_text_editor %]
 
-    <meta name="viewport" content="[% responsive ? 'width=device-width, initial-scale=1' : 'width=1024' %]">
+    <meta name="viewport"
+          content="[% responsive ? 'width=device-width, initial-scale=1, maximum-scale=1' : 'width=1024' %]">
     <meta name="color-scheme" content="dark light">
     <meta name="generator" content="[% terms.Bugzilla _ " " _ constants.BUGZILLA_VERSION FILTER html %]">
     <meta name="bugzilla-global" content="dummy"
@@ -226,9 +222,6 @@
     [%# Required for the 'Auto-discovery' feature in Firefox 2 and IE 7. %]
     <link rel="search" type="application/opensearchdescription+xml"
                        title="[% terms.BugzillaTitle %]" href="[% basepath FILTER none %]search_plugin.cgi">
-    [% IF allow_mobile && is_mobile_browser %]
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-    [% END %]
     [% Hook.process("additional_header") %]
   </head>
 
@@ -258,142 +251,130 @@
 
 <div id="wrapper">
 
-<header id="header" role="banner">
-  <div class="inner">
-    <h1 id="header-title" class="title"><a href="[% urlbase _ 'home' FILTER none %]" title="Go to home page">[% terms.Bugzilla %]</a></h1>
-    <form role="search" id="header-search" class="quicksearch" action="[% basepath FILTER none %]buglist.cgi" data-no-csrf>
-      <h2 id="header-search-label">Quick Search</h2>
-      <section class="searchbox-outer dropdown" role="combobox" aria-expanded="false" aria-haspopup="listbox"
-               aria-labelledby="header-search-label" aria-owns="header-search-dropdown">
-        <span class="icon" aria-hidden="true"></span>
-        <input role="searchbox" id="quicksearch_top" class="dropdown-button" name="quicksearch" autocomplete="off"
-               value="[% quicksearch FILTER html %]" placeholder="Search [% terms.Bugs %]"
-               title="Enter a [% terms.bug %] number or some search terms" aria-controls="header-search-dropdown"
-               accesskey="s" aria-label="Quick Search">
+<header id="header" role="banner" aria-label="Global Header">
+  <dialog id="menu-drawer" inert aria-label="Site Menu">
+    <div class="drawer-inner" role="none">
+      <div class="header" role="none">
+        <button type="button" class="iconic ghost" id="close-menu-drawer"
+                aria-label="Close Site Menu">
+          <span class="icon" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <ul role="menu" aria-label="Site Links">
+        [% INCLUDE primary_links %]
+        [% Hook.process('action-links') %]
+        [% INCLUDE secondary_links %]
+      </ul>
+    </div>
+  </dialog>
+  <div class="inner" role="none">
+    <button type="button" class="iconic ghost" id="open-menu-drawer" aria-label="Open Site Menu">
+      <span class="icon" aria-hidden="true">menu</span>
+    </button>
+    [% Hook.process('external-links') %]
+    <h1 id="header-title" class="title" role="none">
+      <a class="header-button" href="[% urlbase _ 'home' FILTER none %]" title="Go to home page">
+        <span aria-label="Go to [% terms.Bugzilla %] Home Page">[% terms.Bugzilla %]</span>
+      </a>
+    </h1>
+    <form id="header-search" class="quicksearch" action="[% basepath FILTER none %]buglist.cgi"
+          data-no-csrf role="search" aria-label="Search [% terms.Bugs %]">
+      <button type="button" class="iconic ghost" id="show-searchbox"
+              aria-label="Search [% terms.Bugs %]">
+        <span class="icon" aria-hidden="true">search</span>
+      </button>
+      <div class="searchbox-outer dropdown" role="combobox" aria-label="Quick Search"
+           aria-haspopup="listbox" aria-owns="header-search-dropdown" aria-expanded="false">
+        <span class="icon" aria-hidden="true">search</span>
+        <input id="quicksearch_top" class="dropdown-button" name="quicksearch" autocomplete="off"
+               value="[% quicksearch FILTER html %]" accesskey="s"
+               placeholder="Search [% terms.Bugs %]"
+               title="Enter a [% terms.bug %] number or some search terms"
+               role="searchbox" aria-controls="header-search-dropdown" aria-label="Search Terms">
         [% PROCESS "global/header-search-dropdown.html.tmpl" %]
-      </section>
+      </div>
     </form>
-    <nav id="header-nav">
-      <ul class="links">
-        <li class="link-browse">
-          <a href="[% basepath FILTER none %]describecomponents.cgi" title="Browse [% terms.bugs %] by component">
-            <span class="icon" aria-hidden="true"></span>
-            <span class="label">Browse</span>
-          </a>
-        </li>
-        <li class="link-search">
-          <a href="[% basepath FILTER none %]query.cgi?format=advanced" title="Search [% terms.bugs %] using various criteria">
-            <span class="icon" aria-hidden="true"></span>
-            <span class="label">Advanced Search</span>
-          </a>
-        </li>
-        [% IF user.id %]
-          <li class="link-file">
-            <a href="[% basepath FILTER none %]enter_bug.cgi" title="File a new [% terms.bug %]">
-              <span class="icon" aria-hidden="true"></span>
-              <span class="label">New [% terms.Bug %]</span>
-            </a>
-          </li>
-        [% END %]
+    <nav id="header-nav" role="menubar" aria-label="Site Links">
+      <ul class="links" role="none">
+        [% INCLUDE primary_links %]
         [% Hook.process('action-links') %]
       </ul>
-      <div class="dropdown">
-        <button type="button" id="header-tools-menu-button" class="dropdown-button minor" title="More tools…"
-                aria-label="More tools…" aria-expanded="false" aria-haspopup="true" aria-controls="header-tools-menu">
-          <span class="icon" aria-hidden="true"></span>
+      <div class="dropdown" role="none">
+        <button type="button" id="header-tools-menu-button"
+                class="header-button dropdown-button minor" title="More tools…"
+                role="menuitem" aria-label="Show More Tools Menu" aria-expanded="false"
+                aria-haspopup="true" aria-controls="header-tools-menu">
+          <span class="icon" aria-hidden="true">more_horiz</span>
         </button>
-        <ul class="dropdown-content left" id="header-tools-menu" role="menu" style="display:none;">
-          [% IF user.id %]
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]request.cgi?requester=[% user.login FILTER uri %]&amp;requestee=[% user.login FILTER uri %]&amp;do_union=1&amp;group=type&amp;action=queue" role="menuitem" tabindex="-1">My Requests</a>
-            </li>
-          [% END %]
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]report.cgi" role="menuitem" tabindex="-1">Reports</a>
-          </li>
-          [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless || user.in_group('disableusers')
-                || (Param('useclassification') && user.in_group('editclassifications'))
-                || user.in_group('editcomponents') || user.in_group('edittriageowners')
-                || user.in_group('admin') || user.in_group('creategroups')
-                || user.in_group('editkeywords') || user.in_group('bz_canusewhines')
-                || user.get_products_by_permission("editcomponents").size %]
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]admin.cgi" role="menuitem" tabindex="-1">Administration</a>
-            </li>
-          [% END %]
-          <li role="separator"></li>
-          <li role="presentation">
-            <a href="[% basepath FILTER html %]page.cgi?id=quicksearch.html" role="menuitem" tabindex="-1">
-              Quick Search Help</a>
-          </li>
-          [% IF Param('docs_urlbase') %]
-            <li role="presentation">
-              <a href="[% docs_urlbase FILTER html %]" role="menuitem" tabindex="-1">Documentation</a>
-            </li>
-          [% END %]
+        <ul class="dropdown-content left" id="header-tools-menu" role="menu"
+            aria-label="More Tools Menu" style="display:none;">
+          [% INCLUDE secondary_links %]
         </ul>
       </div>
-      [% IF user.login && user.in_group('mozilla-employee-confidential') %]
-        <ul class="links">
-          <li class="link-attention">
-            <a href="[% basepath FILTER none %]page.cgi?id=attention.html" title="What Needs My Attention?">
-              <span class="icon" aria-hidden="true"></span>
-            </a>
-          </li>
-        </ul>
-      [% END %]
     </nav>
     [% Hook.process("badge") %]
     [% IF user.id %]
-      <div id="header-account" class="dropdown">
-        <button type="button" id="header-account-menu-button" class="dropdown-button minor" title="Account"
-                aria-label="Account" aria-expanded="false" aria-haspopup="true" aria-controls="header-account-menu">
+      <div id="header-account" class="dropdown" role="none">
+        <button type="button" id="header-account-menu-button" class="dropdown-button minor"
+                title="Account" aria-label="Show Account Menu" aria-expanded="false"
+                aria-haspopup="true" aria-controls="header-account-menu">
           [% IF user.gravatar %]
             <img src="[% user.gravatar FILTER html %]" width="32" height="32" alt="">
           [% ELSE %]
             <span class="icon" aria-hidden="true"></span>
           [% END %]
         </button>
-        <ul class="dropdown-content left" id="header-account-menu" role="menu" style="display:none;">
-          <li role="presentation">
-            <div class="account-label">
-              <div class="name">[% user.name FILTER html %]</div>
-              <div class="email">[% user.login FILTER html %]</div>
+        <ul class="dropdown-content left" id="header-account-menu" role="menu"
+            aria-label="Account Menu" style="display:none;">
+          <li role="none">
+            <div class="account-label" role="none">
+              <div class="name" role="none">[% user.name FILTER html %]</div>
+              <div class="email" role="none">[% user.login FILTER html %]</div>
             </div>
           </li>
           <li role="separator"></li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]user_profile?user_id=[% user.id FILTER none %]" role="menuitem" tabindex="-1">My Profile</a>
+          <li role="none">
+            <a href="[% basepath FILTER none %]user_profile?user_id=[% user.id FILTER none %]"
+               role="menuitem">
+              <span class="icon" aria-hidden="true">account_circle</span>
+              <span class="label" role="none">My Profile</span>
+            </a>
           </li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]page.cgi?id=user_activity.html&amp;action=run&amp;who=[% user.login FILTER uri %]" role="menuitem"
-               tabindex="-1">My Activity</a>
+          <li role="none">
+            <a href="[% basepath FILTER none %]page.cgi?id=user_activity.html&amp;action=run&amp;who=[% user.login FILTER uri %]"
+               role="menuitem">
+              <span class="icon" aria-hidden="true">timeline</span>
+              <span class="label" role="none">My Activity</span>
+            </a>
           </li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]userprefs.cgi" role="menuitem" tabindex="-1">Preferences</a>
+          <li role="none">
+            <a href="[% basepath FILTER none %]userprefs.cgi" role="menuitem">
+              <span class="icon" aria-hidden="true">settings</span>
+              <span class="label" role="none">Preferences</span>
+            </a>
           </li>
           <li role="separator"></li>
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]index.cgi?logout=1" role="menuitem" tabindex="-1">Log out</a>
+          <li role="none">
+            <a href="[% basepath FILTER none %]index.cgi?logout=1" role="menuitem">
+              <span class="icon" aria-hidden="true">logout</span>
+              <span class="label" role="none">Log out</span>
+            </a>
           </li>
           [% IF sudoer %]
-            <li role="presentation">
-              <a href="[% basepath FILTER none %]relogin.cgi?action=end-sudo" role="menuitem" tabindex="-1">End sudo session impersonating [% user.login FILTER html %]</a>
+            <li role="none">
+              <a href="[% basepath FILTER none %]relogin.cgi?action=end-sudo" role="menuitem">
+                <span class="icon" aria-hidden="true">person_cancel</span>
+                <span class="label" role="none">End sudo session impersonating [% user.login FILTER html %]</span>
+              </a>
             </li>
           [% END %]
         </ul>
       </div>
-    [% ELSE %]
-      <ul id="header-login" class="links">
-        [% IF Param('allow_account_creation') && user.authorizer.user_can_create_account %]
-          <li id="moz_new_account_container_top"><a href="[% basepath FILTER none %]createaccount.cgi">New Account</a></li>
-        [% END %]
-        [% IF user.authorizer.can_login %]
-          [% PROCESS "account/auth/login-small.html.tmpl" qs_suffix = "_top" %]
-        [% END %]
+    [% ELSIF user.authorizer.can_login %]
+      <ul id="header-login" class="links" role="none">
+        [% PROCESS "account/auth/login-small.html.tmpl" qs_suffix = "_top" %]
       </ul>
     [% END %]
-    [% Hook.process('external-links') %]
   </div>
 </header> [%# header %]
 
@@ -419,7 +400,7 @@
   </div>
 [% END %]
 
-<main id="bugzilla-body" tabindex="-1"[% ' class="has-banner"' IF has_banner %]>
+<main id="bugzilla-body" tabindex="-1">
 
 <aside id="message-container" role="complementary">
   <noscript>
@@ -484,6 +465,70 @@
 
 [% IF message %]
   <div id="message">[% message %]</div>
+[% END %]
+
+[% BLOCK primary_links %]
+  <li role="none" class="link-browse">
+    <a class="header-button" href="[% basepath FILTER none %]describecomponents.cgi"
+       title="Browse [% terms.bugs %] by component" role="menuitem">
+      <span class="icon" aria-hidden="true"></span>
+      <span class="label" role="none">Browse</span>
+    </a>
+  </li>
+  <li role="none" class="link-search">
+    <a class="header-button" href="[% basepath FILTER none %]query.cgi?format=advanced"
+       title="Search [% terms.bugs %] using various criteria" role="menuitem">
+      <span class="icon" aria-hidden="true"></span>
+      <span class="label" role="none">Advanced Search</span>
+    </a>
+  </li>
+  <li role="none" class="link-file">
+    <a class="header-button" href="[% basepath FILTER none %]enter_bug.cgi"
+       title="File a new [% terms.bug %]" role="menuitem">
+      <span class="icon" aria-hidden="true"></span>
+      <span class="label" role="none">New [% terms.Bug %]</span>
+    </a>
+  </li>
+[% END %]
+
+[% BLOCK secondary_links %]
+  [% IF user.id %]
+    <li role="none">
+      <a href="[% basepath FILTER none %]request.cgi?requester=[% user.login FILTER uri %]&amp;requestee=[% user.login FILTER uri %]&amp;do_union=1&amp;group=type&amp;action=queue"
+         role="menuitem">
+        <span class="icon" aria-hidden="true">inbox</span>
+        <span class="label" role="none">My Requests</span>
+      </a>
+    </li>
+  [% END %]
+  <li role="none">
+    <a href="[% basepath FILTER none %]report.cgi" role="menuitem">
+      <span class="icon" aria-hidden="true">analytics</span>
+      <span class="label" role="none">Reports</span>
+    </a>
+  </li>
+  [% IF user.in_group('tweakparams') || user.in_group('editusers') || user.can_bless || user.in_group('disableusers')
+      || (Param('useclassification') && user.in_group('editclassifications'))
+      || user.in_group('editcomponents') || user.in_group('edittriageowners')
+      || user.in_group('admin') || user.in_group('creategroups')
+      || user.in_group('editkeywords') || user.in_group('bz_canusewhines')
+      || user.get_products_by_permission("editcomponents").size %]
+    <li role="none">
+      <a href="[% basepath FILTER none %]admin.cgi" role="menuitem">
+        <span class="icon" aria-hidden="true">admin_panel_settings</span>
+        <span class="label" role="none">Administration</span>
+      </a>
+    </li>
+  [% END %]
+  [% IF Param('docs_urlbase') %]
+    <li role="separator"></li>
+    <li role="none">
+      <a href="[% docs_urlbase FILTER html %]" target="_blank" role="menuitem">
+        <span class="icon" aria-hidden="true">help</span>
+        <span class="label" role="none">Documentation</span>
+      </a>
+    </li>
+  [% END %]
 [% END %]
 
 [% BLOCK format_css_link %]

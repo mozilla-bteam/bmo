@@ -22,13 +22,15 @@
 
 [% PROCESS global/variables.none.tmpl %]
 
-<div id="header-search-dropdown" class="dropdown-content right" role="listbox" style="display: none;">
-  <div id="header-search-dropdown-wrapper">
+<div id="header-search-dropdown" class="dropdown-content dropdown-panel right" role="listbox"
+     style="display: none;">
+  <div id="header-search-dropdown-wrapper" role="none">
     [% IF user.showmybugslink OR user.queries.size OR user.queries_subscribed.size %]
-      <section id="header-search-dropdown-saved">
-        <header>
-          <h3>Saved Searches</h3>
-          <a href="[% basepath FILTER none %]userprefs.cgi?tab=saved-searches">Edit</a>
+      <section id="header-search-dropdown-saved" role="group" aria-label="Saved Searches">
+        <header role="none">
+          <h2 aria-hidden="true">Saved Searches</h2>
+          <a aria-label="Edit saved searches"
+             href="[% basepath FILTER none %]userprefs.cgi?tab=saved-searches">Edit</a>
         </header>
         <ul role="none">
           [% IF user.showmybugslink %][% filtered_username = user.login FILTER uri %]
@@ -47,5 +49,11 @@
         </ul>
       </section>
     [% END %]
+    <section id="header-search-dropdown-help" role="group" aria-label="Help">
+      <footer role="none">
+        <a href="[% basepath FILTER html %]page.cgi?id=quicksearch.html">Quick Search Tips</a>
+        <a href="[% basepath FILTER none %]query.cgi?format=advanced">Advanced Search</a>
+      </footer>
+    </section>
   </div>
 </div>

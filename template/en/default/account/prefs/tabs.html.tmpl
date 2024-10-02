@@ -14,7 +14,17 @@
   # current_tab_name: string. name of the currently selected tab
   #%]
 
-<div id="prefmain">
+[% IF specified_tab_name %]
+  <nav class="back">
+    <a href="[% basepath _ 'userprefs.cgi' FILTER html %]">
+      <span class="icon" aria-label="Back">arrow_back</span>
+    </a>
+  </nav>
+[% ELSE %]
+  <h2 class="index">User Preferences</h2>
+[% END %]
+
+<div id="prefmain" class="[% 'index' IF !specified_tab_name %]">
   <div id="prefnav">
     <ul>
       [% FOREACH tab = tabs %]

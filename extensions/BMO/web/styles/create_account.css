@@ -5,6 +5,14 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
+#create-account {
+  display: flex;
+}
+
+#create-account .col {
+  box-sizing: border-box;
+}
+
 #create-account h2 {
   margin: 0 0 16px;
 }
@@ -13,40 +21,78 @@
   margin: 0 0 4px;
 }
 
-#create-account-left {
-  border-right: 2px solid var(--primary-region-border-color);
-  padding: 16px 32px 16px 16px;
+#product-list {
+  margin-bottom: 24px;
 }
 
 #product-list td {
-  padding-top: 10px;
+  padding: 8px 0;
 }
 
 #product-list img {
-  padding-right: 10px;
-}
-
-#create-account-right {
-  padding: 16px 16px 16px 32px;
-}
-
-#left-blurb, #right-blurb {
-  font-size: var(--font-size-x-large);
-  line-height: var(--line-height-comfortable);
+  padding-right: 8px;
 }
 
 #right-blurb li {
-  padding-bottom: 1em;
+  margin: 1em 0;
 }
 
-#create-account #product-list {
-  margin-bottom: 25px;
+#create-account-form,
+#create-account-form :is(tr, td) {
+  display: block;
 }
 
-#create-account-form tr:last-child {
-  text-align: right;
+#create-account-form tbody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#create-account-form .label {
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+#create-account-form .consent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#create-account-form input {
+  flex: none;
 }
 
 #verify-auto-account-creation {
   margin-bottom: 2em;
+}
+
+@media screen and (768px <= width) {
+  #create-account .col {
+    padding: 32px;
+    width: 50%;
+  }
+
+  #create-account-left {
+    border-right: 2px solid var(--primary-region-border-color);
+  }
+}
+
+@media screen and (width < 768px) {
+  #create-account {
+    flex-direction: column;
+  }
+
+  #create-account .col {
+    padding: 0;
+    width: auto;
+  }
+
+  #create-account-left {
+    border: 0;
+  }
+
+  #create-account-form :is(input[type="email"], input[type="submit"]) {
+    width: 100%;
+  }
 }

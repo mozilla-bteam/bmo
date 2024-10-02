@@ -135,20 +135,6 @@ th.title {
   margin: 1em 0;
 }
 
-#prefnav {
-  width: 15em;
-  float: left;
-}
-
-#prefcontent {
-  margin-left: 16em;
-  border-radius: var(--primary-region-border-radius);
-  padding: 32px;
-  min-height: 30em;
-  background-color: var(--primary-region-background-color);
-  box-shadow: var(--primary-region-box-shadow);
-}
-
 #prefcontent #message {
   margin-bottom: 16px;
 }
@@ -157,27 +143,21 @@ th.title {
   margin: 0 0 16px;
 }
 
+#prefcontent .field.submit {
+  margin: 16px 0;
+  text-align: right;
+}
+
 #prefnav ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-#prefnav li {
-  padding: 8px 0 8px 8px;
-  border-left: 4px solid transparent;
-}
-
 #prefnav li a {
   display: block;
   color: inherit;
   text-decoration: none;
-}
-
-#prefnav li.selected {
-  border-color: var(--selected-tab-border-color);
-  color: var(--selected-tab-foreground-color);
-  font-weight: 500;
 }
 
 .category_header {
@@ -305,6 +285,113 @@ body.mfa-warning #mfa-select button {
 
 .flex-right {
   flex: 2;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  white-space: nowrap;
+}
+
+@media screen and (width < 1024px) {
+  table.collapsible,
+  table.collapsible :is(tbody, tr, th, td) {
+    display: block;
+    text-align: left;
+  }
+
+  table.collapsible tr {
+    margin: 16px 0;
+  }
+
+  table.collapsible th {
+    font-weight: 500 !important;
+  }
+
+  table.collapsible :is(th, td) {
+    margin: 4px 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+  }
+}
+
+@media screen and (768px <= width) {
+  h2.index,
+  nav.back {
+    display: none;
+  }
+
+  #prefnav {
+    float: left;
+    width: 15em;
+  }
+
+  #prefnav li {
+    border-left: 4px solid transparent;
+    padding: 8px 0 8px 8px;
+  }
+
+  #prefnav li.selected {
+    border-color: var(--selected-tab-border-color);
+    color: var(--selected-tab-foreground-color);
+    font-weight: 500;
+  }
+
+  #prefcontent {
+    margin-left: 16em;
+    border-radius: var(--primary-region-border-radius);
+    padding: 32px;
+    min-height: 30em;
+    background-color: var(--primary-region-background-color);
+    box-shadow: var(--primary-region-box-shadow);
+  }
+}
+
+@media screen and (width < 768px) {
+  nav.back {
+    margin: 8px 0;
+  }
+
+  nav.back a {
+    color: var(--secondary-label-color);
+    font-size: var(--icon-size-large);
+    font-family: var(--icon-font-family);
+    text-decoration: none;
+  }
+
+  #prefnav li {
+    margin: 4px 0;
+    padding: 8px 0;
+  }
+
+  #prefmain {
+    width: calc(100vw - 32px);
+  }
+
+  #prefmain.index #prefnav {
+    font-size: var(--font-size-x-large);
+  }
+
+  #prefmain.index #prefcontent,
+  #prefmain:not(.index) #prefnav {
+    display: none;
+  }
+
+  #prefcontent tr {
+    text-align: left;
+  }
+
+  #prefcontent .flex-left {
+    min-width: auto;
+  }
+
+  #prefcontent :is(input, select) {
+    max-width: 100%;
+  }
+
+  .setting_choice select {
+    width: 100%;
+  }
 }
 
 /**
