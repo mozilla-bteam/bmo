@@ -43,7 +43,7 @@ logout($sel);
 # * The other uses an API key header to authenticate
 log_in($sel, $config, 'editbugs');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('link=Preferences');
+$sel->click_ok('//a[@href="/userprefs.cgi"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is('User Preferences', 'User preferences');
 $sel->click_ok('link=Webhooks');
@@ -87,7 +87,7 @@ logout($sel);
 # Login as admin user and a webhook using Any product
 log_in($sel, $config, 'admin');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('link=Preferences');
+$sel->click_ok('//a[@href="/userprefs.cgi"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is('User Preferences', 'User preferences');
 $sel->click_ok('link=Webhooks');
@@ -134,7 +134,7 @@ ok(!$sel->is_text_present('ERROR'), 'ERROR message not present');
 
 # Remove the admin webhook for any product
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('link=Preferences');
+$sel->click_ok('//a[@href="/userprefs.cgi"]');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is('User Preferences', 'User preferences');
 $sel->click_ok('link=Webhooks');

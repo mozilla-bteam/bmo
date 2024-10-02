@@ -49,7 +49,7 @@
   [% END %]
 
   [% additional_methods = Hook.process('additional_methods') %]
-  [% additional_methods %]
+  [% additional_methods FILTER none %]
 
   [% IF Param('oauth2_client_enabled') || additional_methods %]
     <div class="method-separator">or</div>
