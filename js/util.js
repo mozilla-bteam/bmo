@@ -714,14 +714,33 @@ Bugzilla.Error = class CustomError extends Error {
  */
 Bugzilla.Event = class Event {
   /**
+   * Normalize the given keyboard shortcut key to the format of `event.key`.
+   * @param {string} key Alphanumeric or any other key value supported by `event.key`. `Space` is a
+   * special case; see the comment of {@link activateKeyShortcuts} below.
+   * @returns {string} Normalized key.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+   */
+  static normalizeKey(key) {
+    if (key === 'Space') {
+      return ' ';
+    }
+
+    if (key.match(/^[A-Z]$/)) {
+      return key.toLowerCase();
+    }
+
+    return key;
+  }
+
+  /**
    * Add keyboard shortcuts to an element.
    * @param {EventTarget} $target Event target, such as an `HTMLElement`, `document` or `window`.
    * @param {Record<string, { handler: (event: KeyboardEvent) => void, preventDefault?: boolean,
    * stopPropagation?: boolean, setAriaAttr?: boolean }>} mapping Key binding mapping object where
    * the key is a key combination and the value is a handler function and event options. In most
    * cases, `Ctrl` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
-   * modifier that corresponds to both keys.
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+   * modifier that corresponds to both keys. Also, the Space key should be written as `Space`,
+   * whereas `event.key` returns ` ` for that key; it will be converted in {@link normalizeKey}.
    * @see https://w3c.github.io/aria/#aria-keyshortcuts
    * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
    */
@@ -742,7 +761,7 @@ Bugzilla.Event = class Event {
         metaKey: keys.delete('Meta') || (isMac && accel),
         altKey: keys.delete('Alt'),
         shiftKey: keys.delete('Shift'),
-        code: keys.size ? [...keys][0] : undefined,
+        key: keys.size ? this.normalizeKey([...keys][0]) : undefined,
         handler,
         preventDefault,
         stopPropagation,
@@ -764,7 +783,7 @@ Bugzilla.Event = class Event {
       for (const shortcut of shortcuts) {
         if (
           modifiers.every((key) => event[key] === shortcut[key]) &&
-          event.key === shortcut.code.toLowerCase()
+          event.key === shortcut.key
         ) {
           if (shortcut.preventDefault) {
             event.preventDefault();

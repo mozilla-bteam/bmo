@@ -93,7 +93,7 @@ Bugzilla.TextEditor = class TextEditor {
         'Accel+I': { handler: () => this.execCommand('italic') },
         'Accel+E': { handler: () => this.execCommand('code') },
         'Accel+K': { handler: () => this.execCommand('link') },
-        'Accel+Shift+Period': { handler: () => this.execCommand('quote') },
+        'Accel+Shift+.': { handler: () => this.execCommand('quote') },
         'Accel+Shift+7': { handler: () => this.execCommand('numbered-list') },
         'Accel+Shift+8': { handler: () => this.execCommand('bulleted-list') },
       });
