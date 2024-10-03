@@ -717,16 +717,18 @@ Bugzilla.Event = class Event {
    * Normalize the given keyboard shortcut key to the format of `event.key`.
    * @param {string} key Alphanumeric or any other key value supported by `event.key`. `Space` is a
    * special case; see the comment of {@link activateKeyShortcuts} below.
+   * @param {boolean} shiftKey Whether the Shift key is pressed.
    * @returns {string} Normalized key.
    * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
    */
-  static normalizeKey(key) {
+  static normalizeKey(key, shiftKey) {
     if (key === 'Space') {
       return ' ';
     }
 
-    if (key.match(/^[A-Z]$/)) {
-      return key.toLowerCase();
+    // When the Shift key is pressed, alphabetical `event.key` will be uppercase
+    if (key.match(/^[A-Z]$/i)) {
+      return shiftKey ? key.toUpperCase() : key.toLowerCase();
     }
 
     return key;
@@ -746,7 +748,6 @@ Bugzilla.Event = class Event {
    */
   static activateKeyShortcuts($target, mapping) {
     const { isMac } = Bugzilla.UserAgent;
-    const modifiers = ['ctrlKey', 'metaKey', 'altKey', 'shiftKey'];
     const shortcuts = [];
 
     for (const [
@@ -756,15 +757,21 @@ Bugzilla.Event = class Event {
       const keys = new Set(combination.split('+'));
       const accel = keys.delete('Accel');
 
-      shortcuts.push({
+      const modifiers = {
         ctrlKey: keys.delete('Ctrl') || (!isMac && accel),
         metaKey: keys.delete('Meta') || (isMac && accel),
         altKey: keys.delete('Alt'),
         shiftKey: keys.delete('Shift'),
-        key: keys.size ? this.normalizeKey([...keys][0]) : undefined,
-        handler,
+      };
+
+      shortcuts.push({
+        keys: {
+          ...modifiers,
+          key: keys.size ? this.normalizeKey([...keys][0], modifiers.shiftKey) : undefined,
+        },
         preventDefault,
         stopPropagation,
+        handler,
       });
 
       if ($target instanceof HTMLElement && setAriaAttr) {
@@ -780,20 +787,17 @@ Bugzilla.Event = class Event {
         return;
       }
 
-      for (const shortcut of shortcuts) {
-        if (
-          modifiers.every((key) => event[key] === shortcut[key]) &&
-          event.key === shortcut.key
-        ) {
-          if (shortcut.preventDefault) {
+      for (const { keys, preventDefault, stopPropagation, handler } of shortcuts) {
+        if (Object.entries(keys).every(([key, state]) => event[key] === state)) {
+          if (preventDefault) {
             event.preventDefault();
           }
 
-          if (shortcut.stopPropagation) {
+          if (stopPropagation) {
             event.stopPropagation();
           }
 
-          shortcut.handler(event);
+          handler(event);
         }
       }
     });
