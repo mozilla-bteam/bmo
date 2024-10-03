@@ -98,10 +98,6 @@ Bugzilla.TextEditor = class TextEditor {
         'Accel+Shift+8': { handler: () => this.execCommand('bulleted-list') },
       });
     }
-
-    Bugzilla.Event.activateKeyShortcuts(window, {
-      'Control+Shift+P': { handler: (event) => this.switchTabs(event) },
-    });
   }
 
   /**
