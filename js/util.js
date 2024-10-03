@@ -719,65 +719,126 @@ Bugzilla.Event = class Event {
    * @param {Record<string, { handler: (event: KeyboardEvent) => void, preventDefault?: boolean,
    * stopPropagation?: boolean, setAriaAttr?: boolean }>} mapping Key binding mapping object where
    * the key is a key combination and the value is a handler function and event options. In most
-   * cases, `Ctrl` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
-   * modifier that corresponds to both keys.
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+   * cases, `Control` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
+   * modifier that corresponds to both keys. Also, the Space key should be written as `Space`,
+   * whereas `event.key` returns a single space character for that key.
    * @see https://w3c.github.io/aria/#aria-keyshortcuts
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
    * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
    */
   static activateKeyShortcuts($target, mapping) {
     const { isMac } = Bugzilla.UserAgent;
-    const modifiers = ['ctrlKey', 'metaKey', 'altKey', 'shiftKey'];
-    const shortcuts = [];
 
-    for (const [
-      combination,
-      { handler, preventDefault = true, stopPropagation = true, setAriaAttr = false },
-    ] of Object.entries(mapping)) {
+    const shortcuts = Object.entries(mapping).map(([combination, options]) => {
       const keys = new Set(combination.split('+'));
-      const accel = keys.delete('Accel');
+      const accelKey = keys.delete('Accel');
 
-      shortcuts.push({
-        ctrlKey: keys.delete('Ctrl') || (!isMac && accel),
-        metaKey: keys.delete('Meta') || (isMac && accel),
+      const keyConfig = {
+        ctrlKey: keys.delete('Control') || (!isMac && accelKey),
+        metaKey: keys.delete('Meta') || (isMac && accelKey),
         altKey: keys.delete('Alt'),
         shiftKey: keys.delete('Shift'),
-        code: keys.size ? [...keys][0] : undefined,
+      };
+
+      const key = keys.size ? [...keys][0] : undefined;
+
+      if (key) {
+        // While the keys should be written in the format of `KeyboardEvent` key values (with the
+        // exception of Accel and Space, as explained above), `event.key` itself cannot always be
+        // relied upon because it can change when the Shift key is pressed. For that reason, we
+        // primarily use `event.keyCode` instead.
+        const keyCode =
+          KeyboardEvent[`DOM_VK_${{ '.': 'PERIOD', Enter: 'RETURN' }[key] ?? key.toUpperCase()}`];
+
+        if (keyCode) {
+          Object.assign(keyConfig, { keyCode });
+        } else {
+          Object.assign(keyConfig, { key });
+        }
+      }
+
+      const {
+        preventDefault = true,
+        stopPropagation = true,
+        setAriaAttr = false,
         handler,
-        preventDefault,
-        stopPropagation,
-      });
+      } = options;
 
       if ($target instanceof HTMLElement && setAriaAttr) {
-        $target.setAttribute(
-          'aria-keyshortcuts',
-          combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Ctrl'),
-        );
+        $target.setAttribute('aria-keyshortcuts', this.formatKeyShortcut(combination, true));
       }
-    }
+
+      return {
+        keys: keyConfig,
+        preventDefault,
+        stopPropagation,
+        handler,
+      };
+    });
 
     $target.addEventListener('keydown', (/** @type {KeyboardEvent} */ event) => {
       if (event.isComposing) {
         return;
       }
 
-      for (const shortcut of shortcuts) {
-        if (
-          modifiers.every((key) => event[key] === shortcut[key]) &&
-          event.key === shortcut.code.toLowerCase()
-        ) {
-          if (shortcut.preventDefault) {
+      shortcuts.forEach(({ keys, preventDefault, stopPropagation, handler }) => {
+        if (Object.entries(keys).every(([key, value]) => event[key] === value)) {
+          if (preventDefault) {
             event.preventDefault();
           }
 
-          if (shortcut.stopPropagation) {
+          if (stopPropagation) {
             event.stopPropagation();
           }
 
-          shortcut.handler(event);
+          handler(event);
         }
-      }
+      });
     });
+  }
+
+  /**
+   * Format the given keyboard shortcut according to the user’s operating system.
+   * @param {string} combination Shortcut, e.g. `Accel+Shift+R`.
+   * @param {boolean} [forAria] Whether the formatted shortcut is used for the `aria-keyshortcuts`
+   * attribute.
+   * @returns {string} Formatted shortcut.
+   */
+  static formatKeyShortcut = (combination, forAria = false) => {
+    const { isMac } = Bugzilla.UserAgent;
+
+    if (forAria) {
+      return combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Control');
+    }
+
+    if (!isMac) {
+      return combination.replace(/\bAccel\b/, 'Ctrl');
+    }
+
+    const keys = new Set(combination.split('+'));
+    const keyArray = [];
+
+    if (keys.delete('Control')) {
+      keyArray.push('⌃');
+    }
+
+    if (keys.delete('Shift')) {
+      keyArray.push('⇧');
+    }
+
+    if (keys.delete('Alt')) {
+      keyArray.push('⌥');
+    }
+
+    if (keys.delete('Meta') || keys.delete('Accel')) {
+      keyArray.push('⌘');
+    }
+
+    if (keys.size) {
+      keyArray.push([...keys][0]);
+    }
+
+    return keyArray.join('');
   }
 };
 
