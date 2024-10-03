@@ -100,7 +100,7 @@ Bugzilla.TextEditor = class TextEditor {
     }
 
     Bugzilla.Event.activateKeyShortcuts(window, {
-      'Ctrl+Shift+P': { handler: (event) => this.switchTabs(event) },
+      'Control+Shift+P': { handler: (event) => this.switchTabs(event) },
     });
   }
 

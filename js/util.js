@@ -740,7 +740,7 @@ Bugzilla.Event = class Event {
    * @param {Record<string, { handler: (event: KeyboardEvent) => void, preventDefault?: boolean,
    * stopPropagation?: boolean, setAriaAttr?: boolean }>} mapping Key binding mapping object where
    * the key is a key combination and the value is a handler function and event options. In most
-   * cases, `Ctrl` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
+   * cases, `Control` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
    * modifier that corresponds to both keys. Also, the Space key should be written as `Space`,
    * whereas `event.key` returns ` ` for that key; it will be converted in {@link normalizeKey}.
    * @see https://w3c.github.io/aria/#aria-keyshortcuts
@@ -754,7 +754,7 @@ Bugzilla.Event = class Event {
       const accelKey = keys.delete('Accel');
 
       const modifiers = {
-        ctrlKey: keys.delete('Ctrl') || (!isMac && accelKey),
+        ctrlKey: keys.delete('Control') || (!isMac && accelKey),
         metaKey: keys.delete('Meta') || (isMac && accelKey),
         altKey: keys.delete('Alt'),
         shiftKey: keys.delete('Shift'),
@@ -770,7 +770,7 @@ Bugzilla.Event = class Event {
       if ($target instanceof HTMLElement && setAriaAttr) {
         $target.setAttribute(
           'aria-keyshortcuts',
-          combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Ctrl'),
+          combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Control'),
         );
       }
 
