@@ -717,7 +717,7 @@ Bugzilla.Event = class Event {
    * Normalize the given keyboard shortcut key to the format of `event.key`.
    * @param {string} key Alphanumeric or any other key value supported by `event.key`. `Space` is a
    * special case; see the comment of {@link activateKeyShortcuts} below.
-   * @param {boolean} shiftKey Whether the Shift key is pressed.
+   * @param {boolean} shiftKey Whether the Shift key is included in the keyboard shortcut.
    * @returns {string} Normalized key.
    * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
    */
@@ -742,7 +742,8 @@ Bugzilla.Event = class Event {
    * the key is a key combination and the value is a handler function and event options. In most
    * cases, `Control` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
    * modifier that corresponds to both keys. Also, the Space key should be written as `Space`,
-   * whereas `event.key` returns ` ` for that key; it will be converted in {@link normalizeKey}.
+   * whereas `event.key` returns a single space character for that key; it will be converted in
+   * {@link normalizeKey}.
    * @see https://w3c.github.io/aria/#aria-keyshortcuts
    * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
    */
