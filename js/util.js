@@ -765,10 +765,7 @@ Bugzilla.Event = class Event {
       } = options;
 
       if ($target instanceof HTMLElement && setAriaAttr) {
-        $target.setAttribute(
-          'aria-keyshortcuts',
-          combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Control'),
-        );
+        $target.setAttribute('aria-keyshortcuts', this.formatKeyShortcut(combination, true));
       }
 
       return {
@@ -798,6 +795,50 @@ Bugzilla.Event = class Event {
         }
       });
     });
+  }
+
+  /**
+   * Format the given keyboard shortcut according to the user’s operating system.
+   * @param {string} combination Shortcut, e.g. `Accel+Shift+R`.
+   * @param {boolean} [forAria] Whether the formatted shortcut is used for the `aria-keyshortcuts`
+   * attribute.
+   * @returns {string} Formatted shortcut.
+   */
+  static formatKeyShortcut = (combination, forAria = false) => {
+    const { isMac } = Bugzilla.UserAgent;
+
+    if (forAria) {
+      return combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Control');
+    }
+
+    if (!isMac) {
+      return combination.replace(/\bAccel\b/, 'Ctrl');
+    }
+
+    const keys = new Set(combination.split('+'));
+    const keyArray = [];
+
+    if (keys.delete('Control')) {
+      keyArray.push('⌃');
+    }
+
+    if (keys.delete('Shift')) {
+      keyArray.push('⇧');
+    }
+
+    if (keys.delete('Alt')) {
+      keyArray.push('⌥');
+    }
+
+    if (keys.delete('Meta') || keys.delete('Accel')) {
+      keyArray.push('⌘');
+    }
+
+    if (keys.size) {
+      keyArray.push([...keys][0]);
+    }
+
+    return keyArray.join('');
   }
 };
 

@@ -106,9 +106,10 @@ Bugzilla.TextEditor = class TextEditor {
    */
   createContainer() {
     const $placeholder = document.createElement('div');
-    const accelPrefix = Bugzilla.UserAgent.isMac ? '\u2318' : 'Ctrl+';
     /** @param {string} key */
     const _ = (key) => this.str[key].htmlEncode();
+    /** @param {string} shortcut */
+    const ks = (shortcut) => Bugzilla.Event.formatKeyShortcut(shortcut);
     /** @type {{ text: string, href: string }[]} */
     const footerLinks = [];
 
@@ -144,19 +145,19 @@ Bugzilla.TextEditor = class TextEditor {
                 <div role="toolbar" class="markdown-toolbar" aria-label="${_('toolbar_label')}">
                   <div role="group">
                     <button type="button" tabindex="0" class="ghost iconic"
-                        title="${_('command_bold')} (${accelPrefix}B)" data-command="bold">
+                        title="${_('command_bold')} (${ks('Accel+B')})" data-command="bold">
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                     <button type="button" tabindex="0" class="ghost iconic"
-                        title="${_('command_italic')} (${accelPrefix}I)" data-command="italic">
+                        title="${_('command_italic')} (${ks('Accel+I')})" data-command="italic">
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                     <button type="button" tabindex="0" class="ghost iconic"
-                        title="${_('command_code')} (${accelPrefix}E)" data-command="code">
+                        title="${_('command_code')} (${ks('Accel+E')})" data-command="code">
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                     <button type="button" tabindex="0" class="ghost iconic"
-                        title="${_('command_link')} (${accelPrefix}K)" data-command="link">
+                        title="${_('command_link')} (${ks('Accel+K')})" data-command="link">
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                   </div>
@@ -166,17 +167,19 @@ Bugzilla.TextEditor = class TextEditor {
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                     <button type="button" tabindex="0" class="ghost iconic"
-                        title="${_('command_quote')}" data-command="quote">
+                        title="${_('command_quote')} (${ks('Accel+Shift+.')})" data-command="quote">
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                   </div>
                   <div role="group">
                     <button type="button" tabindex="0" class="ghost iconic"
-                        title="${_('command_numbered_list')}" data-command="numbered-list">
+                        title="${_('command_numbered_list')} (${ks('Accel+Shift+7')})"
+                        data-command="numbered-list">
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                     <button type="button" tabindex="0" class="ghost iconic"
-                        title="${_('command_bulleted_list')}" data-command="bulleted-list">
+                        title="${_('command_bulleted_list')} (${ks('Accel+Shift+8')})"
+                        data-command="bulleted-list">
                       <span class="icon" aria-hidden="true"></span>
                     </button>
                   </div>
