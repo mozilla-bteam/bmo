@@ -748,31 +748,24 @@ Bugzilla.Event = class Event {
    */
   static activateKeyShortcuts($target, mapping) {
     const { isMac } = Bugzilla.UserAgent;
-    const shortcuts = [];
 
-    for (const [
-      combination,
-      { handler, preventDefault = true, stopPropagation = true, setAriaAttr = false },
-    ] of Object.entries(mapping)) {
+    const shortcuts = Object.entries(mapping).map(([combination, options]) => {
       const keys = new Set(combination.split('+'));
-      const accel = keys.delete('Accel');
+      const accelKey = keys.delete('Accel');
 
       const modifiers = {
-        ctrlKey: keys.delete('Ctrl') || (!isMac && accel),
-        metaKey: keys.delete('Meta') || (isMac && accel),
+        ctrlKey: keys.delete('Ctrl') || (!isMac && accelKey),
+        metaKey: keys.delete('Meta') || (isMac && accelKey),
         altKey: keys.delete('Alt'),
         shiftKey: keys.delete('Shift'),
       };
 
-      shortcuts.push({
-        keys: {
-          ...modifiers,
-          key: keys.size ? this.normalizeKey([...keys][0], modifiers.shiftKey) : undefined,
-        },
-        preventDefault,
-        stopPropagation,
+      const {
+        preventDefault = true,
+        stopPropagation = true,
+        setAriaAttr = false,
         handler,
-      });
+      } = options;
 
       if ($target instanceof HTMLElement && setAriaAttr) {
         $target.setAttribute(
@@ -780,15 +773,25 @@ Bugzilla.Event = class Event {
           combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Ctrl'),
         );
       }
-    }
+
+      return {
+        keys: {
+          ...modifiers,
+          key: keys.size ? this.normalizeKey([...keys][0], modifiers.shiftKey) : undefined,
+        },
+        preventDefault,
+        stopPropagation,
+        handler,
+      };
+    });
 
     $target.addEventListener('keydown', (/** @type {KeyboardEvent} */ event) => {
       if (event.isComposing) {
         return;
       }
 
-      for (const { keys, preventDefault, stopPropagation, handler } of shortcuts) {
-        if (Object.entries(keys).every(([key, state]) => event[key] === state)) {
+      shortcuts.forEach(({ keys, preventDefault, stopPropagation, handler }) => {
+        if (Object.entries(keys).every(([key, value]) => event[key] === value)) {
           if (preventDefault) {
             event.preventDefault();
           }
@@ -799,7 +802,7 @@ Bugzilla.Event = class Event {
 
           handler(event);
         }
-      }
+      });
     });
   }
 };
