@@ -714,27 +714,6 @@ Bugzilla.Error = class CustomError extends Error {
  */
 Bugzilla.Event = class Event {
   /**
-   * Normalize the given keyboard shortcut key to the format of `event.key`.
-   * @param {string} key Alphanumeric or any other key value supported by `event.key`. `Space` is a
-   * special case; see the comment of {@link activateKeyShortcuts} below.
-   * @param {boolean} shiftKey Whether the Shift key is included in the keyboard shortcut.
-   * @returns {string} Normalized key.
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
-   */
-  static normalizeKey(key, shiftKey) {
-    if (key === 'Space') {
-      return ' ';
-    }
-
-    // When the Shift key is pressed, alphabetical `event.key` will be uppercase
-    if (key.match(/^[A-Z]$/i)) {
-      return shiftKey ? key.toUpperCase() : key.toLowerCase();
-    }
-
-    return key;
-  }
-
-  /**
    * Add keyboard shortcuts to an element.
    * @param {EventTarget} $target Event target, such as an `HTMLElement`, `document` or `window`.
    * @param {Record<string, { handler: (event: KeyboardEvent) => void, preventDefault?: boolean,
@@ -742,9 +721,9 @@ Bugzilla.Event = class Event {
    * the key is a key combination and the value is a handler function and event options. In most
    * cases, `Control` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
    * modifier that corresponds to both keys. Also, the Space key should be written as `Space`,
-   * whereas `event.key` returns a single space character for that key; it will be converted in
-   * {@link normalizeKey}.
+   * whereas `event.key` returns a single space character for that key.
    * @see https://w3c.github.io/aria/#aria-keyshortcuts
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
    * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
    */
   static activateKeyShortcuts($target, mapping) {
@@ -754,12 +733,29 @@ Bugzilla.Event = class Event {
       const keys = new Set(combination.split('+'));
       const accelKey = keys.delete('Accel');
 
-      const modifiers = {
+      const keyConfig = {
         ctrlKey: keys.delete('Control') || (!isMac && accelKey),
         metaKey: keys.delete('Meta') || (isMac && accelKey),
         altKey: keys.delete('Alt'),
         shiftKey: keys.delete('Shift'),
       };
+
+      const key = keys.size ? [...keys][0] : undefined;
+
+      if (key) {
+        // While the keys should be written in the format of `KeyboardEvent` key values (with the
+        // exception of Accel and Space, as explained above), `event.key` itself cannot always be
+        // relied upon because it can change when the Shift key is pressed. For that reason, we
+        // primarily use `event.keyCode` instead.
+        const keyCode =
+          KeyboardEvent[`DOM_VK_${{ '.': 'PERIOD', Enter: 'RETURN' }[key] ?? key.toUpperCase()}`];
+
+        if (keyCode) {
+          Object.assign(keyConfig, { keyCode });
+        } else {
+          Object.assign(keyConfig, { key });
+        }
+      }
 
       const {
         preventDefault = true,
@@ -776,10 +772,7 @@ Bugzilla.Event = class Event {
       }
 
       return {
-        keys: {
-          ...modifiers,
-          key: keys.size ? this.normalizeKey([...keys][0], modifiers.shiftKey) : undefined,
-        },
+        keys: keyConfig,
         preventDefault,
         stopPropagation,
         handler,
