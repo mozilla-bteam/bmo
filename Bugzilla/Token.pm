@@ -371,17 +371,21 @@ sub Cancel {
   # is no entry in the 'profiles' table.
   my $user = new Bugzilla::User($userid);
 
-  $vars->{'emailaddress'}  = $userid ? $user->email : $eventdata;
-  $vars->{'remoteaddress'} = remote_ip();
-  $vars->{'token'}         = $token;
-  $vars->{'tokentype'}     = $tokentype;
-  $vars->{'issuedate'}     = $issuedate;
+  my $emailaddress        = $userid ? $user->email : $eventdata;
+  $vars->{'emailaddress'} = $emailaddress;
+  $vars->{'token'}        = $token;
+  $vars->{'tokentype'}    = $tokentype;
+  $vars->{'issuedate'}    = $issuedate;
 
   # The user is probably not logged in.
   # So we have to pass this information to the template.
   $vars->{'timezone'}     = $user->timezone;
-  $vars->{'eventdata'}    = $eventdata;
   $vars->{'cancelaction'} = $cancelaction;
+
+  # Audit the cancellation for later retrieval if needed
+  Bugzilla->audit(
+    sprintf 'Cancellation requested by %s <%s>: %s (token: %s type: %s date: %s eventdata: %s)',
+    $emailaddress, remote_ip(), $cancelaction, $token, $tokentype, $issuedate, $eventdata);
 
   # Notify the user via email about the cancellation.
   my $template = Bugzilla->template_inner($user->setting('lang'));
