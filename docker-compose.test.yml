@@ -2,11 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-version: "3"
-
 services:
   bmo.test:
     image: bmo
+    build: &bmo_build
+      context: .
+      dockerfile: Dockerfile
+      target: test
     command: dev_httpd
     tmpfs:
       - /tmp
@@ -38,7 +40,7 @@ services:
       - gcs
 
   externalapi.test:
-    image: bmo
+    build: *bmo_build
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
     ports:
       - 8001:8001
