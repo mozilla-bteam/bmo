@@ -1,6 +1,6 @@
 FROM mozillabteam/bmo-perl-slim:20240822.1 AS base
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 ARG CI
 ARG CIRCLE_SHA1
@@ -10,17 +10,15 @@ ENV CI=${CI}
 ENV CIRCLE_BUILD_URL=${CIRCLE_BUILD_URL}
 ENV CIRCLE_SHA1=${CIRCLE_SHA1}
 
+# we run a loopback logging server on this TCP port.
 ENV LOG4PERL_CONFIG_FILE=log4perl-json.conf
+ENV LOGGING_PORT=5880
+ENV LOCALCONFIG_ENV=1
 
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y rsync curl \
     && rm -rf /var/lib/apt/lists/*
-
-# we run a loopback logging server on this TCP port.
-ENV LOGGING_PORT=5880
-
-ENV LOCALCONFIG_ENV=1
 
 WORKDIR /app
 
@@ -43,7 +41,7 @@ HEALTHCHECK CMD curl -sfk http://localhost -o/dev/null
 ENTRYPOINT ["/app/scripts/entrypoint.pl"]
 CMD ["httpd"]
 
-FROM base AS TEST
+FROM base AS test
 
 HEALTHCHECK NONE
 
