@@ -284,3 +284,62 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 }, { once: true });
+
+// Global header
+window.addEventListener('DOMContentLoaded', () => {
+  /** @type {HTMLButtonElement} */
+  const $openDrawerButton = document.querySelector('#open-menu-drawer');
+  /** @type {HTMLButtonElement} */
+  const $closeDrawerButton = document.querySelector('#close-menu-drawer');
+  /** @type {HTMLDialogElement} */
+  const $drawer = document.querySelector('#menu-drawer');
+  /** @type {HTMLElement} */
+  const $headerWrapper = document.querySelector('#header');
+  /** @type {HTMLElement} */
+  const $searchBoxOuter = document.querySelector('#header-search .searchbox-outer');
+  /** @type {HTMLInputElement} */
+  const $searchBox = document.querySelector('#quicksearch_top');
+  /** @type {HTMLButtonElement} */
+  const $showSearchBoxButton = document.querySelector('#show-searchbox');
+  /** @type {HTMLElement} */
+  const $searchBoxDropdown = document.querySelector('#header-search-dropdown');
+
+  $openDrawerButton.addEventListener('click', () => {
+    $drawer.inert = false;
+    $drawer.showModal();
+  });
+
+  $closeDrawerButton.addEventListener('click', () => {
+    $drawer.close();
+    $drawer.inert = true;
+  });
+
+  $drawer.addEventListener('click', ({ clientX, clientY }) => {
+    // Close the drawer when the backdrop is clicked
+    if (document.elementFromPoint(clientX, clientY) === $drawer) {
+      $drawer.close();
+      $drawer.inert = true;
+    }
+  });
+
+  $searchBox.addEventListener('focusin', () => {
+    $headerWrapper.classList.add('searching');
+  });
+
+  $searchBoxOuter.addEventListener('focusout', () => {
+    if (!$searchBoxOuter.matches(':focus-within')) {
+      $searchBoxDropdown.style.display = 'none';
+      $headerWrapper.classList.remove('searching');
+    }
+  });
+
+  $showSearchBoxButton.addEventListener('click', () => {
+    $headerWrapper.classList.add('searching');
+    $searchBox.focus();
+
+    // Show the dropdown
+    window.requestAnimationFrame(() => {
+      $searchBox.click();
+    });
+  });
+}, { once: true });

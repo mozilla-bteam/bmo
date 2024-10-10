@@ -311,7 +311,7 @@ textarea#viewFrame {
 
 #att-selector .icon::before {
   line-height: 100%;
-  font-family: "Material Symbols Outlined";
+  font-family: var(--icon-font-family);
   font-style: normal;
 }
 

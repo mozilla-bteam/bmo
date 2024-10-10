@@ -32,6 +32,7 @@
 
 [% IF groups.size %]
   <p>You have the following permission bits set on your account:</p>
+  <div class="table-wrapper">
   <table id="report" class="standard">
     <tr>
       <th>Name</th>
@@ -60,6 +61,7 @@
       </tr>
     [% END %]
   </table>
+  </div>
 
   [% FOREACH privs = ["editcomponents", "canconfirm", "editbugs"] %]
     [% SET products = ${"product_$privs"} %]

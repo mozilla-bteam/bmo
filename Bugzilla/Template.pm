@@ -1062,11 +1062,6 @@ sub create {
       DB_MODULE            => \&Bugzilla::Constants::DB_MODULE,
       'default_authorizer' => sub { return Bugzilla::Auth->new() },
 
-# It is almost always better to do mobile feature detection, client side in js.
-# However, we need to set the meta[name=viewport] server-side or the behavior is
-# not as predictable. It is possible other parts of the frontend may use this feature too.
-      'is_mobile_browser' => sub { return Bugzilla->cgi->user_agent =~ /Mobi/ },
-
       'socorro_lens_url' => sub {
         my ($sigs) = @_;
 

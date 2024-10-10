@@ -46,8 +46,8 @@
 
 #custom-search .icon::before {
   display: inline-block;
-  font-size: 16px;
-  font-family: 'Material Symbols Outlined';
+  font-size: var(--icon-size-small);
+  font-family: var(--icon-font-family);
   vertical-align: top;
 }
 

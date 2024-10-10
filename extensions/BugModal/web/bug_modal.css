@@ -1295,8 +1295,8 @@ a.comment-tag-url {
 }
 
 .comment-reactions .anchor .icon::before {
-  font-size: 16px;
-  font-family: 'Material Symbols Outlined';
+  font-size: var(--icon-size-small);
+  font-family: var(--icon-font-family);
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   vertical-align: middle;
   content: '\e813';
@@ -1545,7 +1545,7 @@ a.lightbox-icon.markdown {
 }
 
 .name-info-popup header {
-  margin: 8px 16px;
+  margin: 8px 12px;
 }
 
 .name-info-popup header .title {
@@ -1751,14 +1751,6 @@ a.lightbox-icon.markdown {
 }
 
 @media screen and (max-width: 900px) {
-  #wrapper {
-    position: relative !important;
-  }
-
-  #header .inner {
-    width: auto !important;
-  }
-
   .spin-latch {
     display: none;
   }

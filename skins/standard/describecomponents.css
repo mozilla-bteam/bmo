@@ -22,7 +22,7 @@
 }
 
 .product > header p {
-  font-size: var(--font-size-x-large);
+  font-size: var(--font-size-large);
   line-height: var(--line-height-comfortable);
 }
 
@@ -45,8 +45,6 @@
 
 .component header {
   flex: none;
-  margin-right: 16px;
-  width: 280px;
 }
 
 .component h2 {
@@ -82,9 +80,26 @@
 
 .component footer {
   flex: none;
-  margin-left: 16px;
 }
 
 .component footer:empty {
   display: none;
+}
+
+@media screen and (768px <= width) {
+  .component {
+    flex-direction: row;
+    gap: 16px;
+  }
+
+  .component header {
+    width: 280px;
+  }
+}
+
+@media screen and (width < 768px) {
+  .component {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
