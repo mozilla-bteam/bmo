@@ -538,7 +538,6 @@ input[type="number"] {
 }
 
 #bottom-actions {
-  margin-bottom: 50px;
   max-width: 1024px;
 }
 
@@ -919,12 +918,9 @@ td.flag-requestee {
 
 .new-changes-link {
   position: sticky;
-  top: 48px;
-  left: 0;
-  right: 0;
+  top: calc(var(--global-header-height) + 8px);
   z-index: 10;
   overflow: hidden;
-  margin: 8px 0;
   border-radius: 4px;
   padding: 4px;
   color: var(--primary-button-foreground-color);
@@ -1443,7 +1439,8 @@ a.comment-tag-url {
  */
 
 #main-inner {
-  margin: 8px auto;
+  display: flow-root;
+  margin: 0 auto;
   max-width: 1024px;
 }
 
@@ -1666,6 +1663,11 @@ a.lightbox-icon.markdown {
  * Create form
  */
 
+#changeform {
+  display: flow-root;
+  margin: 8px 0 48px;
+}
+
 #changeform:not(.show-advanced-fields) .expert_fields {
   display: none;
 }
@@ -1746,7 +1748,7 @@ a.lightbox-icon.markdown {
 
 @media screen and (max-width: 1023px) {
   #main-inner {
-    margin: 8px;
+    margin: 0 8px;
   }
 }
 

@@ -19,7 +19,7 @@ my ($sel, $config) = get_selenium();
 
 log_in($sel, $config, 'QA_Selenium_TEST');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -61,7 +61,7 @@ $sel->title_is("Bug List: SavedSearchTEST1");
 # Remove the saved search from the Search Bar. It should no longer be displayed there.
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -108,7 +108,7 @@ ok(
 # to the "Preferences" page to edit it.
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");

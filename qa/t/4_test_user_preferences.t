@@ -39,7 +39,7 @@ $sel->title_is("Default Preferences");
 # Update own user preferences. Some of them should no longer be present.
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=General Preferences");
@@ -173,7 +173,7 @@ logout($sel);
 
 log_in($sel, $config, 'unprivileged');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=General Preferences");

@@ -93,7 +93,7 @@ ok(
 # they cannot access editusers.cgi (despite the sudoer can).
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Permissions");

@@ -254,7 +254,7 @@
 <header id="header" role="banner" aria-label="Global Header">
   <div class="inner" role="none">
     <button type="button" class="iconic ghost" id="open-menu-drawer" aria-label="Open Site Menu">
-      <span class="icon" aria-hidden="true">menu</span>
+      <span class="icon" aria-hidden="true" data-icon="menu"></span>
     </button>
     [% Hook.process('external-links') %]
     <h1 id="header-title" class="title" role="none">
@@ -266,11 +266,11 @@
           data-no-csrf role="search" aria-label="Search [% terms.Bugs %]">
       <button type="button" class="iconic ghost" id="show-searchbox"
               aria-label="Search [% terms.Bugs %]">
-        <span class="icon" aria-hidden="true">search</span>
+        <span class="icon" aria-hidden="true" data-icon="search"></span>
       </button>
       <div class="searchbox-outer dropdown" role="combobox" aria-label="Quick Search"
            aria-haspopup="listbox" aria-owns="header-search-dropdown" aria-expanded="false">
-        <span class="icon" aria-hidden="true">search</span>
+        <span class="icon" aria-hidden="true" data-icon="search"></span>
         <input id="quicksearch_top" class="dropdown-button" name="quicksearch" autocomplete="off"
                value="[% quicksearch FILTER html %]" accesskey="s"
                placeholder="Search [% terms.Bugs %]"
@@ -289,7 +289,7 @@
                 class="header-button dropdown-button minor" title="More tools…"
                 role="menuitem" aria-label="Show More Tools Menu" aria-expanded="false"
                 aria-haspopup="true" aria-controls="header-tools-menu">
-          <span class="icon" aria-hidden="true">more_horiz</span>
+          <span class="icon" aria-hidden="true" data-icon="more_horiz"></span>
         </button>
         <ul class="dropdown-content left" id="header-tools-menu" role="menu"
             aria-label="More Tools Menu" style="display:none;">
@@ -321,34 +321,34 @@
           <li role="none">
             <a href="[% basepath FILTER none %]user_profile?user_id=[% user.id FILTER none %]"
                role="menuitem">
-              <span class="icon" aria-hidden="true">account_circle</span>
+              <span class="icon" aria-hidden="true" data-icon="account_circle"></span>
               <span class="label" role="none">My Profile</span>
             </a>
           </li>
           <li role="none">
             <a href="[% basepath FILTER none %]page.cgi?id=user_activity.html&amp;action=run&amp;who=[% user.login FILTER uri %]"
                role="menuitem">
-              <span class="icon" aria-hidden="true">timeline</span>
+              <span class="icon" aria-hidden="true" data-icon="timeline"></span>
               <span class="label" role="none">My Activity</span>
             </a>
           </li>
           <li role="none">
             <a href="[% basepath FILTER none %]userprefs.cgi" role="menuitem">
-              <span class="icon" aria-hidden="true">settings</span>
+              <span class="icon" aria-hidden="true" data-icon="settings"></span>
               <span class="label" role="none">Preferences</span>
             </a>
           </li>
           <li role="separator"></li>
           <li role="none">
             <a href="[% basepath FILTER none %]index.cgi?logout=1" role="menuitem">
-              <span class="icon" aria-hidden="true">logout</span>
+              <span class="icon" aria-hidden="true" data-icon="logout"></span>
               <span class="label" role="none">Log out</span>
             </a>
           </li>
           [% IF sudoer %]
             <li role="none">
               <a href="[% basepath FILTER none %]relogin.cgi?action=end-sudo" role="menuitem">
-                <span class="icon" aria-hidden="true">person_cancel</span>
+                <span class="icon" aria-hidden="true" data-icon="person_cancel"></span>
                 <span class="label" role="none">End sudo session impersonating [% user.login FILTER html %]</span>
               </a>
             </li>
@@ -366,7 +366,7 @@
       <div class="header" role="none">
         <button type="button" class="iconic ghost" id="close-menu-drawer"
                 aria-label="Close Site Menu">
-          <span class="icon" aria-hidden="true">close</span>
+          <span class="icon" aria-hidden="true" data-icon="close"></span>
         </button>
       </div>
       <ul role="menu" aria-label="Site Links">
@@ -468,24 +468,24 @@
 [% END %]
 
 [% BLOCK primary_links %]
-  <li role="none" class="link-browse">
+  <li role="none">
     <a class="header-button" href="[% basepath FILTER none %]describecomponents.cgi"
        title="Browse [% terms.bugs %] by component" role="menuitem">
-      <span class="icon" aria-hidden="true"></span>
+      <span class="icon" aria-hidden="true" data-icon="category"></span>
       <span class="label" role="none">Browse</span>
     </a>
   </li>
-  <li role="none" class="link-search">
+  <li role="none">
     <a class="header-button" href="[% basepath FILTER none %]query.cgi?format=advanced"
        title="Search [% terms.bugs %] using various criteria" role="menuitem">
-      <span class="icon" aria-hidden="true"></span>
+      <span class="icon" aria-hidden="true" data-icon="pageview"></span>
       <span class="label" role="none">Advanced Search</span>
     </a>
   </li>
-  <li role="none" class="link-file">
+  <li role="none">
     <a class="header-button" href="[% basepath FILTER none %]enter_bug.cgi"
        title="File a new [% terms.bug %]" role="menuitem">
-      <span class="icon" aria-hidden="true"></span>
+      <span class="icon" aria-hidden="true" data-icon="add_box"></span>
       <span class="label" role="none">New [% terms.Bug %]</span>
     </a>
   </li>
@@ -496,14 +496,14 @@
     <li role="none">
       <a href="[% basepath FILTER none %]request.cgi?requester=[% user.login FILTER uri %]&amp;requestee=[% user.login FILTER uri %]&amp;do_union=1&amp;group=type&amp;action=queue"
          role="menuitem">
-        <span class="icon" aria-hidden="true">inbox</span>
+        <span class="icon" aria-hidden="true" data-icon="inbox"></span>
         <span class="label" role="none">My Requests</span>
       </a>
     </li>
   [% END %]
   <li role="none">
     <a href="[% basepath FILTER none %]report.cgi" role="menuitem">
-      <span class="icon" aria-hidden="true">analytics</span>
+      <span class="icon" aria-hidden="true" data-icon="analytics"></span>
       <span class="label" role="none">Reports</span>
     </a>
   </li>
@@ -515,7 +515,7 @@
       || user.get_products_by_permission("editcomponents").size %]
     <li role="none">
       <a href="[% basepath FILTER none %]admin.cgi" role="menuitem">
-        <span class="icon" aria-hidden="true">admin_panel_settings</span>
+        <span class="icon" aria-hidden="true" data-icon="admin_panel_settings"></span>
         <span class="label" role="none">Administration</span>
       </a>
     </li>
@@ -524,7 +524,7 @@
     <li role="separator"></li>
     <li role="none">
       <a href="[% docs_urlbase FILTER html %]" target="_blank" role="menuitem">
-        <span class="icon" aria-hidden="true">help</span>
+        <span class="icon" aria-hidden="true" data-icon="help"></span>
         <span class="label" role="none">Documentation</span>
       </a>
     </li>

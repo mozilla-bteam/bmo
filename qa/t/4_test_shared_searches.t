@@ -47,7 +47,7 @@ ok(
 # in the Search Bar by default.
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -87,7 +87,7 @@ ok(!$sel->is_text_present("Forget Search 'Shared Selenium buglist'"),
 # The name of the sharer must appear in the "Saved Searches" section.
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -131,7 +131,7 @@ ok(
 );
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -162,7 +162,7 @@ ok(
   "No 'helpwanted' shared search displayed"
 );
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -189,7 +189,7 @@ $sel->title_is("Bug List: helpwanted");
 # Remove the 'Shared Selenium buglist' query.
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -221,7 +221,7 @@ ok(
   "The 'helpwanted' query is not displayed in the Search Bar"
 );
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");
@@ -236,7 +236,7 @@ logout($sel);
 
 log_in($sel, $config, 'canconfirm');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Saved Searches");

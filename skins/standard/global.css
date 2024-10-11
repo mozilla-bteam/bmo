@@ -941,8 +941,8 @@ input[type="radio"]:checked {
 
 #bugzilla-body {
   flex: auto;
+  display: flow-root;
   position: relative;
-  overflow-x: auto;
   outline: none;
   width: 100dvw;
 }
@@ -1047,6 +1047,10 @@ input[type="radio"]:checked {
   font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
   vertical-align: middle;
   pointer-events: none;
+}
+
+#header .icon[data-icon]::before {
+  content: attr(data-icon);
 }
 
 #header [role="menuitem"]:has(.label) .icon {
@@ -1257,26 +1261,6 @@ input[type="radio"]:checked {
   display: flex;
   justify-content: flex-end;
   font-size: 14px;
-}
-
-#header .link-browse .icon::before {
-  content: '\E574';
-}
-
-#header .link-search .icon::before {
-  content: '\E8A0';
-}
-
-#header .link-file .icon::before {
-  content: '\E146';
-}
-
-#header .link-dashboard .icon::before {
-  content: '\E871';
-}
-
-#header .link-attention .icon::before {
-  content: '\EA3D';
 }
 
 #header-tools-menu-button {

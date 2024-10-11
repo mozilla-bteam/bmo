@@ -76,7 +76,7 @@ $sel->title_like(qr/^$bug1_id /);
 #######################################################################
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 my $admin_cookie = $sel->get_value("token");
@@ -84,7 +84,7 @@ logout($sel);
 
 log_in($sel, $config, 'editbugs');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('//a[@href="/userprefs.cgi"]');
+$sel->click_ok("link=Preferences");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 my $editbugs_cookie = $sel->get_value("token");
