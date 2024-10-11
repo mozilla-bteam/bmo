@@ -35,7 +35,7 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor extends Bugzilla.Commen
     this.commentId = Number($commentBody.dataset.commentId);
     /** @type {number} */
     this.commenterId = Number(
-      /** @type {HTMLElement} */ ($changeSet.querySelector('.email')).dataset.userId,
+      /** @type {HTMLElement} */ ($changeSet.querySelectorAll('.email')[0]).dataset.userId,
     );
     /** @type {boolean} */
     this.isEmpty = $commentBody.matches('.empty');
