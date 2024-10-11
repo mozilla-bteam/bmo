@@ -53,7 +53,7 @@ my @email_normal = ($config->{editbugs_user_login});
 # Set admin Email Prefs (via link in footer)
 log_in($sel, $config, 'admin');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok("link=Preferences");
+$sel->click_ok("//a[./span[contains(text(), 'Preferences')]]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Email Preferences");

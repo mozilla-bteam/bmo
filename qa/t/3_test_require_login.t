@@ -80,6 +80,6 @@ set_parameters($sel, {"User Authentication" => {"requirelogin-off" => undef}});
 logout($sel);
 
 # Make sure we can access random pages again.
-$sel->click_ok("link=Advanced Search");
+$sel->click_ok("//a[./span[contains(text(), 'Advanced Search')]]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_isnt("Log in to Bugzilla");

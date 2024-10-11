@@ -56,7 +56,7 @@ ok(
 # Don't call log_in() here. We explicitly want to use the "log in" link
 # in the addl. comment box.
 
-$sel->click_ok("link=log in");
+$sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Log in to Bugzilla");
 $sel->is_text_present_ok("Log in to Bugzilla");
