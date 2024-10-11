@@ -242,7 +242,7 @@ sub file_bug_in_product {
   sleep(1);
 
   $classification ||= "Unclassified";
-  $sel->click_ok("New Bug", undef, "Go create a new bug");
+  $sel->click_ok("link=New Bug", undef, "Go create a new bug");
   $sel->wait_for_page_to_load(WAIT_TIME);
 
   # Use normal bug form instead of helper
@@ -400,7 +400,7 @@ sub open_advanced_search_page {
   );
   sleep(1);
 
-  $sel->click_ok("Advanced Search");
+  $sel->click_ok("link=Advanced Search");
   $sel->wait_for_page_to_load(WAIT_TIME);
   my $title = $sel->get_title();
   if ($title eq "Simple Search") {
