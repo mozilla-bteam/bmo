@@ -1101,7 +1101,6 @@ input[type="radio"]:checked {
 
 #header-search {
   flex: auto !important;
-  max-width: 320px;
 }
 
 #header.searching #header-search {
@@ -1208,7 +1207,7 @@ input[type="radio"]:checked {
 
 @media screen and (768px <= width < 1024px) {
   #header-search {
-    width: 320px;
+    width: 240px;
   }
 }
 
@@ -1246,7 +1245,6 @@ input[type="radio"]:checked {
  */
 
 #header-nav {
-  flex: auto !important;
   display: flex;
   align-items: center;
   margin: 0 !important;
