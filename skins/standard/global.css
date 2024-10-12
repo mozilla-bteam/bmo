@@ -1045,7 +1045,7 @@ input[type="radio"]:checked {
 }
 
 #header [role="menuitem"]:has(.label) .icon {
-  margin-left: -4px;
+  margin-left: -2px;
 }
 
 #header .dropdown {
@@ -1273,9 +1273,10 @@ input[type="radio"]:checked {
   border-radius: 4px;
 }
 
-#header-account-menu-button .icon::before {
+#header-account-menu-button .icon {
+  width: 32px;
+  height: 32px;
   font-size: 32px;
-  content: '\E853';
 }
 
 #header .account-label * {

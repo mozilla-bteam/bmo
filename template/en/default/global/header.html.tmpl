@@ -306,7 +306,7 @@
           [% IF user.gravatar %]
             <img src="[% user.gravatar FILTER html %]" width="32" height="32" alt="">
           [% ELSE %]
-            <span class="icon" aria-hidden="true"></span>
+            <span class="icon" aria-hidden="true" data-icon="account_circle"></span>
           [% END %]
         </button>
         <ul class="dropdown-content left" id="header-account-menu" role="menu"
