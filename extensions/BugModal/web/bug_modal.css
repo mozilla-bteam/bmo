@@ -998,7 +998,7 @@ td.flag-requestee {
 
 .change-author {
   width: 100%;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .change-author .vcard {
@@ -1666,7 +1666,7 @@ a.lightbox-icon.markdown {
  * Create form
  */
 
-#create-form:not(.show-advanced-fields) .expert_fields {
+#changeform:not(.show-advanced-fields) .expert_fields {
   display: none;
 }
 
@@ -1721,7 +1721,7 @@ a.lightbox-icon.markdown {
   font-size: var(--font-size-small);
 }
 
-#create-form.show-advanced-fields #component-tip {
+#changeform.show-advanced-fields #component-tip {
   display: none;
 }
 
@@ -1860,7 +1860,7 @@ a.lightbox-icon.markdown {
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 4px 0;
-    width: 150px;
+    width: 128px;
   }
 
   .comment .comment-actions > [role="group"] .comment-private {

@@ -412,17 +412,17 @@ $sel->remove_all_selections_ok("bug_status");
 $sel->remove_all_selections_ok("resolution");
 screenshot_page($sel, '/app/artifacts/line264.png');
 $sel->is_checked_ok("emailassigned_to1");
-$sel->select_ok("emailtype1", "value=exact");
+$sel->select_ok("emailtype1", "value=equals");
 $sel->type_ok("email1", $config->{admin_user_login});
 $sel->check_ok("emailassigned_to2");
 $sel->check_ok("emailqa_contact2");
 $sel->check_ok("emailcc2");
-$sel->select_ok("emailtype2", "value=exact");
+$sel->select_ok("emailtype2", "value=equals");
 $sel->type_ok("email2", $config->{QA_Selenium_TEST_user_login});
 screenshot_page($sel, '/app/artifacts/line271.png');
 $sel->click_ok("Search");
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?emailreporter2=1&order=Importance&emailtype2=exact&list_id=__LIST_ID__&emailtype1=exact&emailcc2=1&emailassigned_to1=1&query_format=advanced&emailqa_contact2=1&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to2=1&email1=admin%40mozilla.test&product=TestProduct}
+  q{http://HOSTNAME/buglist.cgi?emailreporter2=1&order=Importance&emailtype2=equals&list_id=__LIST_ID__&emailtype1=equals&emailcc2=1&emailassigned_to1=1&query_format=advanced&emailqa_contact2=1&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to2=1&email1=admin%40mozilla.test&product=TestProduct}
 );
 $sel->title_is("Bug List");
 screenshot_page($sel, '/app/artifacts/line275.png');
@@ -507,7 +507,7 @@ $sel->is_text_present_ok("2 bugs found");
 screenshot_page($sel, '/app/artifacts/line350.png');
 $sel->click_ok('change-several');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
+  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=equals&emailtype2=equals&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");
@@ -639,7 +639,7 @@ $sel->title_is("Bug List: My bugs from QA_Selenium");
 $sel->is_text_present_ok("2 bugs found");
 $sel->click_ok('change-several', 'Change Several Bugs at Once');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
+  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=equals&emailtype2=equals&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");

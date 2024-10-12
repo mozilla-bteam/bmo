@@ -28,13 +28,11 @@ $(function() {
             var changeSet = spinner.parents('.change-set');
             if (forced == 'hide') {
                 changeSet.find('.activity').hide();
-                changeSet.find('.gravatar').css('width', '16px').css('height', '16px');
                 $('#ar-' + id).hide();
                 update_spinner(spinner, false);
             }
             else if (forced == 'show' || forced == 'reset') {
                 changeSet.find('.activity').show();
-                changeSet.find('.gravatar').css('width', '32px').css('height', '32px');
                 $('#ar-' + id).show();
                 update_spinner(spinner, true);
             }
@@ -42,11 +40,9 @@ $(function() {
                 changeSet.find('.activity').slideToggle('fast', function() {
                     $('#ar-' + id).toggle();
                     if (changeSet.find('.activity' + ':visible').length) {
-                        changeSet.find('.gravatar').css('width', '32px').css('height', '32px');
                         update_spinner(spinner, true);
                     }
                     else {
-                        changeSet.find('.gravatar').css('width', '16px').css('height', '16px');
                         update_spinner(spinner, false);
                     }
                 });
@@ -71,11 +67,8 @@ $(function() {
                 $('#ch-' + id).hide();
                 $('#cc-' + id).show();
             }
-            $(`#ct-${id}, #cr-${id}, #cre-${id}`).hide();
-            if (BUGZILLA.user.id !== 0)
-                $('#ctag-' + id).hide();
-            $('#c' + id).find('.activity, .attachment, .comment-tags').hide();
-            $('#c' + id).find('.gravatar').css('width', '16px').css('height', '16px');
+            $(`#ct-${id}, #cr-${id}, #cre-${id}, #ctag-${id}`).hide();
+            $(`#c${id}`).find('.activity, .attachment').hide();
             update_spinner(realSpinner, false);
         }
         else if (forced == 'show') {
@@ -83,35 +76,24 @@ $(function() {
                 $('#cc-' + id).hide();
                 $('#ch-' + id).show();
             }
-            $(`#ct-${id}, #cr-${id}, #cre-${id}`).show();
-            if (BUGZILLA.user.id !== 0)
-                $('#ctag-' + id).show();
-            $('#c' + id).find('.activity, .attachment, .comment-tags').show();
-            $('#c' + id).find('.gravatar').css('width', '32px').css('height', '32px');
+            $(`#ct-${id}, #cr-${id}, #cre-${id}, #ctag-${id}`).show();
+            $(`#c${id}`).find('.activity, .attachment').show();
             update_spinner(realSpinner, true);
         }
         else {
             $(`#ct-${id}, #cre-${id}, #c${id} .attachment`).slideToggle('fast').promise().done(() => {
                 $('#c' + id).find('.activity').toggle();
                 if ($('#ct-' + id + ':visible').length) {
-                    $('#c' + id).find('.comment-tags').show();
+                    $(`#cr-${id}, #ctag-${id}`).show();
                     update_spinner(realSpinner, true);
-                    $('#cr-' + id).show();
-                    if (BUGZILLA.user.id !== 0)
-                        $('#ctag-' + id).show();
-                    $('#c' + id).find('.gravatar').css('width', '32px').css('height', '32px');
                     if (defaultCollapsed) {
                         $('#cc-' + id).hide();
                         $('#ch-' + id).show();
                     }
                 }
                 else {
-                    $('#c' + id).find('.comment-tags').hide();
+                    $(`#cr-${id}, #ctag-${id}`).hide();
                     update_spinner(realSpinner, false);
-                    $('#cr-' + id).hide();
-                    if (BUGZILLA.user.id !== 0)
-                        $('#ctag-' + id).hide();
-                    $('#c' + id).find('.gravatar').css('width', '16px').css('height', '16px');
                     if (defaultCollapsed) {
                         $('#ch-' + id).hide();
                         $('#cc-' + id).show();
@@ -313,7 +295,7 @@ $(function() {
 
             const { signal } = abort_controller;
             var result = await Bugzilla.API.get(
-                `bug_modal/comment_tags/${commentID}`, 
+                `bug_modal/comment_tags/${commentID}`,
                 {}, { signal }
             );
             renderTags(commentNo, result.html);

@@ -213,6 +213,7 @@ my $bug2_id = create_bug($sel, $bug_summary2);
 go_to_bug($sel, $bug2_id);
 $sel->type_ok("cf_qa_freetext_$bug1_id", "bonsai");
 $sel->selected_label_is("cf_qa_list_$bug1_id", "---");
+$sel->click_ok('top-btn');
 $sel->select_ok("bug_status", "label=SUSPENDED");
 edit_bug($sel, $bug2_id);
 
@@ -222,6 +223,7 @@ $sel->select_ok("cf_qa_list_$bug1_id", "label=storage");
 
 # FIXME: The reverse description is not displaying properly on bug modal page
 #$sel->is_text_present_ok("IsRef$bug1_id: $bug2_id");
+$sel->click_ok('top-btn');
 $sel->select_ok("bug_status", "RESOLVED");
 $sel->select_ok("resolution", "UPSTREAM");
 edit_bug_and_return($sel, $bug1_id, $bug_summary);

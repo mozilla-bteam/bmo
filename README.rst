@@ -57,13 +57,7 @@ following command instead:
 
 .. code-block:: bash
 
-    docker-compose up --build bmo.test
-
-Then, you must configure your browser to use localhost and port 1080 as an HTTP proxy.
-For setting a proxy in Firefox, see `Firefox Connection Settings`_.
-The procedure should be similar for other browsers.
-
-.. _`Firefox Connection Settings`: https://support.mozilla.org/en-US/kb/connection-settings-firefox
+    docker compose up --build bmo.test
 
 After that, you should be able to visit http://localhost:8000/ from your browser.
 You can login as admin@mozilla.bugs with the password "password012!" (without
@@ -323,14 +317,6 @@ environmental variable.
 Logging configuration also controls which errors are sent to Sentry.
 
 
-Persistent Data Volume
-----------------------
-
-This container expects /app/data to be a persistent, shared, writable directory
-owned by uid 10001. This must be a shared (NFS/EFS/etc) volume between all
-nodes.
-
-
 Development Tips
 ================
 
@@ -344,19 +330,19 @@ Basic sanity tests
 
 .. code-block:: bash
 
-  docker compose -f docker-compose.test.yml down && docker build -t bmo . && docker compose -f docker-compose.test.yml run -e CI=1 --no-deps bmo.test test_sanity
+  docker compose -f docker-compose.test.yml down && docker compose -f docker-compose.test.yml run -e CI=1 --no-deps bmo.test test_sanity
 
 Webservices API tests
 
 .. code-block:: bash
 
-  docker compose -f docker-compose.test.yml down && docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_webservices
+  docker compose -f docker-compose.test.yml down && docker compose -f docker-compose.test.yml run bmo.test test_webservices
 
 Selenium Web UI tests
 
 .. code-block:: bash
 
-  docker compose -f docker-compose.test.yml down && docker build -t bmo . && docker compose -f docker-compose.test.yml run bmo.test test_selenium
+  docker compose -f docker-compose.test.yml down && docker compose -f docker-compose.test.yml run bmo.test test_selenium
 
 Testing Emails
 --------------

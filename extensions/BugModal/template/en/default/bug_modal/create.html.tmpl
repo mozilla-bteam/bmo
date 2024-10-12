@@ -90,7 +90,7 @@
   filtered_product = product.name FILTER uri;
 %]
 
-<form name="changeform" id="create-form" class="enter_bug_form" method="post"
+<form name="changeform" id="changeform" class="enter_bug_form" method="post"
       action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data"
       data-component-descriptions="[% json_encode(component_descriptions) FILTER html %]"
       data-description-templates="[% json_encode(description_templates) FILTER html %]"
