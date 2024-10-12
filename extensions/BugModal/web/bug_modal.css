@@ -917,13 +917,13 @@ td.flag-requestee {
 }
 
 .new-changes-link {
-  position: sticky;
-  top: 8px;
-  z-index: 10;
+  flex: none;
   overflow: hidden;
-  margin: 0 0 8px;
+  box-sizing: border-box;
+  margin: 8px auto 0;
   border-radius: 4px;
   padding: 4px;
+  width: 1024px;
   color: var(--primary-button-foreground-color);
   background: var(--primary-button-background-color);
   opacity: 1;
@@ -1747,8 +1747,13 @@ a.lightbox-icon.markdown {
  */
 
 @media screen and (max-width: 1023px) {
+  .new-changes-link {
+    margin: 8px 8px 0;
+    width: auto;
+  }
+
   #main-inner {
-    margin: 0 8px;
+    margin-inline: 8px;
   }
 }
 
