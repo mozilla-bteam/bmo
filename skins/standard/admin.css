@@ -389,7 +389,9 @@ body.mfa-warning #mfa-select button {
     max-width: 100%;
   }
 
-  .setting_choice select {
+  #prefcontent[data-tab="account"] input:is(:not([type]), [type="email"], [type="password"]),
+  #prefcontent[data-tab="settings"] select {
+    margin: 4px 0;
     width: 100%;
   }
 }

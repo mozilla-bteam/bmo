@@ -57,6 +57,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  line-height: var(--line-height-comfortable);
 }
 
 #create-account-form input {

@@ -60,7 +60,7 @@ button[type="submit"] {
 }
 
 .cookie-notify {
-  margin: 0;
+  margin-bottom: 0;
   color: var(--tertiary-label-color);
   font-size: var(--font-size-small);
 }
