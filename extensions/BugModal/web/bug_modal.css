@@ -918,9 +918,10 @@ td.flag-requestee {
 
 .new-changes-link {
   position: sticky;
-  top: calc(var(--global-header-height) + 8px);
+  top: 8px;
   z-index: 10;
   overflow: hidden;
+  margin: 0 0 8px;
   border-radius: 4px;
   padding: 4px;
   color: var(--primary-button-foreground-color);
@@ -1440,7 +1441,7 @@ a.comment-tag-url {
 
 #main-inner {
   display: flow-root;
-  margin: 8px auto;
+  margin: 8px auto 48px;
   max-width: 1024px;
 }
 
@@ -1665,7 +1666,6 @@ a.lightbox-icon.markdown {
 
 #changeform {
   display: flow-root;
-  margin: 8px 0 48px;
 }
 
 #changeform:not(.show-advanced-fields) .expert_fields {

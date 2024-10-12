@@ -370,21 +370,11 @@
  * Global
  */
 
-html {
-  /* Ensure that shift-tab and other ways of scrolling up take the fixed header into account. */
-  scroll-padding-top: calc(var(--global-header-height) + 8px);
-}
-
-html:has(#private-bug-banner) {
-  scroll-padding-top: calc(var(--global-header-height) + var(--bug-banner-height) + 8px);
-}
-
 body {
   margin: 0;
   font-size: var(--font-size-medium);
   line-height: var(--line-height-default);
   font-family: var(--font-family-sans-serif);
-  scrollbar-color: var(--scrollbar-color);
 }
 
 pre,
@@ -943,26 +933,31 @@ input[type="radio"]:checked {
   flex: auto;
   display: flow-root;
   position: relative;
+  overflow: auto;
   outline: none;
-  width: 100dvw;
+  scroll-padding-top: 8px;
 }
 
 @media screen {
   body {
-    position: absolute;
-    width: 100%;
-    height: 100%;
     color: var(--application-foreground-color);
     background-color: var(--application-background-color);
+    scrollbar-color: var(--scrollbar-color);
+  }
+
+  #wrapper {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
   }
 
   #main-inner {
     position: relative;
     margin: 16px;
-  }
-
-  #wrapper {
-    margin-top: var(--global-header-height);
   }
 }
 
@@ -972,10 +967,6 @@ input[type="radio"]:checked {
 
 #header {
   flex: none;
-  position: fixed;
-  inset: 0 0 auto;
-  z-index: 11;
-  width: 100%;
   height: var(--global-header-height);
   color: var(--application-header-foreground-color);
   background-color: var(--application-header-background-color);
@@ -1522,9 +1513,7 @@ input[type="radio"]:checked {
  */
 
 #private-bug-banner {
-  position: sticky;
-  top: var(--global-header-height);
-  z-index: 2;
+  flex: none;
   background-color: var(--confidential-bug-background-color);
   color: #111;
   box-sizing: border-box;
