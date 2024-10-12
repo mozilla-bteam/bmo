@@ -214,23 +214,9 @@ const detect_blocked_gravatars = () => {
 }
 
 /**
- * If the current URL contains a hash like `#c10`, adjust the scroll position to
- * make some room above the focused element.
- */
-const adjust_scroll_onload = () => {
-    if (location.hash) {
-        const $target = document.querySelector(CSS.escape(location.hash));
-
-        if ($target) {
-            window.setTimeout(() => scroll_element_into_view($target), 50);
-        }
-    }
-}
-
-/**
- * Bring an element into the visible area of the browser window. Unlike the
- * native `Element.scrollIntoView()` function, this adds some extra room above
- * the target element. Smooth scroll can be done using CSS.
+ * Bring an element into the visible area of the browser window. Smooth scroll
+ * can be done using CSS, and an extra space can also be added to the top using
+ * CSS `scroll-padding-top`.
  * @param {Element} $target - An element to be brought.
  * @param {Function} [complete] - An optional callback function to be executed
  *  once the scroll is complete.
@@ -254,13 +240,11 @@ const scroll_element_into_view = ($target, complete) => {
         document.documentElement.addEventListener('scroll', listener);
     }
 
-    document.documentElement.scrollTop = $target.offsetTop - 20;
+    $target.scrollIntoViewIfNeeded?.() ?? $target.scrollIntoView();
 }
 
 window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
 window.addEventListener('load', detect_blocked_gravatars, { once: true });
-window.addEventListener('load', adjust_scroll_onload, { once: true });
-window.addEventListener('hashchange', adjust_scroll_onload);
 
 window.addEventListener('DOMContentLoaded', () => {
   const announcement = document.getElementById('new_announcement');
