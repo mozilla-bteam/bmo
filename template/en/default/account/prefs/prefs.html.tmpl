@@ -42,6 +42,7 @@
     title              = "User Preferences"
     subheader          = filtered_login
     generate_api_token = 1
+    responsive         = 1
     style_urls         = ['skins/standard/admin.css']
     javascript_urls    = ['js/field.js', 'js/TUI.js', 'js/account.js']
     jquery             = ['bPopup'],
@@ -155,14 +156,9 @@
     <input type="hidden" name="dosave" value="1">
 
     [% UNLESS dont_show_button %]
-      <table>
-        <tr>
-          <td width="150">&nbsp;</td>
-          <td>
-            <input type="submit" id="update" value="Submit Changes">
-          </td>
-        </tr>
-      </table>
+      <div class="field submit">
+        <input type="submit" id="update" value="Submit Changes">
+      </div>
     [% END %]
   </form>
 [% END %]

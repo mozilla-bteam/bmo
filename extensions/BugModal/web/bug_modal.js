@@ -1657,7 +1657,7 @@ async function show_new_changes_indicator() {
             $link.remove();
             $.scrollTo($separator);
         }, { once: true });
-        document.querySelector('#changeform').insertAdjacentElement('beforebegin', $link);
+        document.querySelector('#bugzilla-body').insertAdjacentElement('beforebegin', $link);
 
         // Insert a separator
         $separator.className = 'new-changes-separator';

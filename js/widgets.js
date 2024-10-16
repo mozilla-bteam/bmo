@@ -39,7 +39,7 @@ $(() => {
                 if ($content.is(':visible')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    var $items = $content.find('[role="menuitem"], [role="option"]');
+                    var $items = $content.find('a, [role="menuitem"], [role="option"]');
                     // if none active select the first or last
                     var $link = $items.filter('.active');
                     if ($link.length == 0) {
@@ -180,7 +180,7 @@ $(() => {
         }
 
         // don't expand the dropdown if there's no item
-        var $items = $content.find('[role="menuitem"], [role="option"]');
+        var $items = $content.find('a, [role="menuitem"], [role="option"]');
         if (!$items.length) {
             return;
         }

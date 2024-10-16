@@ -93,7 +93,7 @@ ok(
 # they cannot access editusers.cgi (despite the sudoer can).
 
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok("link=Preferences");
+$sel->click_ok("//a[./span[contains(text(), 'Preferences')]]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=Permissions");
@@ -108,8 +108,8 @@ $error_msg = trim($sel->get_text("error_msg"));
 ok($error_msg =~ /^Sorry, you aren't a member of the 'editusers' group/,
   "Not a member of the editusers group");
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok(
-  "link=End sudo session impersonating " . $config->{unprivileged_user_login});
+$sel->click_ok("//a[./span[contains(text(), 'End sudo session impersonating "
+  . $config->{unprivileged_user_login} . "')]]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Sudo session complete");
 $sel->is_text_present_ok("The sudo session has been ended");

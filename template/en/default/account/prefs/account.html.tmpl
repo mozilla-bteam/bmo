@@ -29,7 +29,7 @@
 
 <div class="flex">
   <div class="flex-left">
-    <table>
+    <table class="collapsible">
       <tr>
         <th align="right" width="150">Your real name:</th>
         <td>
@@ -96,7 +96,7 @@
             <tr>
               <th align="right">New email address:</th>
               <td>
-                <input size="35" name="new_login_name" id="new_login_name" autocomplete="off">
+                <input size="35" name="new_login_name" type="email" id="new_login_name" autocomplete="off">
                 [% INCLUDE "mfa/protected.html.tmpl" %]
               </td>
             </tr>

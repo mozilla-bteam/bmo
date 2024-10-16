@@ -40,14 +40,12 @@
     "extensions/ProdCompSearch/web/js/prod_comp_search.js",
   ];
 
-  # use responsive design for the Enter Bug page
-  responsive = !is_describe;
-
   cgi = Bugzilla.cgi;
   classification = cgi.param('classification');
 
   PROCESS global/header.html.tmpl
-    generate_api_token = 1;
+    generate_api_token = 1
+    responsive         = 1;
 %]
 
 [% IF NOT is_describe %]

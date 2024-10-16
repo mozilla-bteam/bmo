@@ -14,11 +14,14 @@
    header = "Main Page"
    style_urls = [ 'skins/standard/index.css' ]
    og_image = "extensions/OpenGraph/web/moz-social-bw-rgb-1200x1200.png"
+   responsive = 1
 %]
 
 <div id="content">
-  <h1 id="welcome"> Welcome to [% terms.Bugzilla %]</h1>
-  <div>The issue tracker for Firefox and other Mozilla products.</div>
+  <header id="welcome">
+    <h1>Welcome to [% terms.Bugzilla %]</h1>
+    <p>The issue tracker for Firefox and other Mozilla products.</p>
+  </header>
 
   <div class="options">
 
@@ -93,7 +96,7 @@
           </div>
           <div class="desc">
             Required before you can <b>report a [% terms.bug %] in Firefox or other Mozilla products</b>.<br>
-            You can also <a href="?GoAheadAndLogIn=1">log into an existing account</a>.
+            You can also <a href="?GoAheadAndLogIn=1">log in to an existing account</a>.
           </div>
         </div>
       </div>

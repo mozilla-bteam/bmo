@@ -20,8 +20,8 @@ my ($sel, $config) = get_selenium();
 my $valid_account = 'selenium-' . random_string(10) . '@bugzilla.test';
 
 $sel->get_ok('/home', 'Go to the home page');
-$sel->is_text_present_ok("New Account");
-$sel->click_ok("link=New Account");
+$sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
+$sel->click_ok("link=Create an Account");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create a new Bugzilla account");
 $sel->type_ok("login", $valid_account);
@@ -35,8 +35,8 @@ $sel->is_text_present_ok("A confirmation email has been sent");
 $sel->click_ok('//*[@id="header-title"]//a');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bugzilla Main Page");
-$sel->is_text_present_ok("New Account");
-$sel->click_ok("link=New Account");
+$sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
+$sel->click_ok("link=Create an Account");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create a new Bugzilla account");
 $sel->type_ok("login", $valid_account);
@@ -60,7 +60,8 @@ my @accounts = qw(
 );
 
 foreach my $account (@accounts) {
-  $sel->click_ok("link=New Account");
+  $sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
+  $sel->click_ok("link=Create an Account");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Create a new Bugzilla account");
   $sel->type_ok("login", $account);
@@ -78,7 +79,8 @@ foreach my $account (@accounts) {
 # Logins larger than 127 characters must be rejected, for security reasons.
 push @accounts, 'selenium-' . random_string(110) . '@bugzilla.test';
 foreach my $account (@accounts) {
-  $sel->click_ok("link=New Account");
+  $sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
+  $sel->click_ok("link=Create an Account");
   $sel->wait_for_page_to_load_ok(WAIT_TIME);
   $sel->title_is("Create a new Bugzilla account");
   $sel->type_ok("login", $account);
@@ -95,7 +97,8 @@ foreach my $account (@accounts) {
 }
 
 # This account already exists.
-$sel->click_ok("link=New Account");
+$sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
+$sel->click_ok("link=Create an Account");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Create a new Bugzilla account");
 $sel->type_ok("login", $config->{admin_user_login});
@@ -117,13 +120,15 @@ set_parameters($sel,
 logout($sel);
 
 # Make sure that links pointing to createaccount.cgi are all deactivated.
-ok(!$sel->is_text_present("New Account"), "No link named 'New Account'");
+$sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
+ok(!$sel->is_text_present("Create an Account"), "No link named 'Create an Account'");
 $sel->click_ok('//*[@id="header-title"]//a');
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->refresh;
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Bugzilla Main Page");
-ok(!$sel->is_text_present("New Account"), "No link named 'New Account'");
+$sel->click_ok("//a[./span[contains(text(), 'Log In')]]");
+ok(!$sel->is_text_present("Create an Account"), "No link named 'Create an Account'");
 $sel->open_ok("/createaccount.cgi");
 $sel->title_is("Account Creation Disabled");
 $error_msg = trim($sel->get_text("error_msg"));

@@ -36,6 +36,7 @@
 [% PROCESS global/header.html.tmpl
    title = title
    style_urls = [ 'extensions/BMO/web/styles/create_account.css' ]
+   responsive = 1
 %]
 
 <script [% script_nonce FILTER none %]>
@@ -72,10 +73,9 @@ function onSubmit() {
 }
 </script>
 
-<table border="0" id="create-account">
-<tr>
+<div id="create-account">
 
-<td width="50%" id="create-account-left" valign="top">
+<div class="col" id="create-account-left">
 
   <h2 class="column-header">I need help using a Mozilla Product</h2>
 
@@ -107,9 +107,9 @@ function onSubmit() {
       directions on <a href="https://github.com/mozilla-bteam/bmo/">our project repository</a>.</p>
   </div>
 
-</td>
+</div>
 
-<td width="50%" id="create-account-right" valign="top">
+<div class="col" id="create-account-right">
 
   <h2 class="column-header">I want to help</h2>
 
@@ -138,7 +138,7 @@ function onSubmit() {
     </td>
     </tr>
     <tr>
-    <td colspan="2">
+    <td colspan="2" class="consent">
       <input type="checkbox" id="etiquette" value="agreed">
       <label for="etiquette">
       I have read <a href="[% basepath FILTER none %]page.cgi?id=etiquette.html">[% terms.Bugzilla %] Etiquette</a>
@@ -158,10 +158,9 @@ function onSubmit() {
 
   [% Hook.process('additional_methods') %]
 
-</td>
+</div>
 
-</tr>
-</table>
+</div>
 
 [% PROCESS global/footer.html.tmpl %]
 
