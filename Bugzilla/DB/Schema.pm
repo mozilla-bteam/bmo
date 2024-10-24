@@ -1002,12 +1002,14 @@ use constant ABSTRACT_SCHEMA => {
       mfa_required_date      => {TYPE => 'DATETIME'},
       forget_after_date      => {TYPE => 'DATETIME'},
       bounce_count           => {TYPE => 'INT1', NOTNULL => 1, DEFAULT => 0},
+      modification_ts        => {TYPE => 'DATETIME', NOTNULL => 1},
     ],
     INDEXES => [
-      profiles_login_name_idx  => {FIELDS => ['login_name'], TYPE => 'UNIQUE'},
-      profiles_extern_id_idx   => {FIELDS => ['extern_id'],  TYPE => 'UNIQUE'},
-      profiles_nickname_idx    => ['nickname'],
-      profiles_realname_ft_idx => {FIELDS => ['realname'], TYPE => 'FULLTEXT'},
+      profiles_login_name_idx      => {FIELDS => ['login_name'], TYPE => 'UNIQUE'},
+      profiles_extern_id_idx       => {FIELDS => ['extern_id'],  TYPE => 'UNIQUE'},
+      profiles_modification_ts_idx => ['modification_ts'],
+      profiles_nickname_idx        => ['nickname'],
+      profiles_realname_ft_idx     => {FIELDS => ['realname'], TYPE => 'FULLTEXT'},
     ],
   },
 
