@@ -82,6 +82,7 @@ tie(
     "Add-on SDK"                                    => [],
     "addons.mozilla.org"                            => [],
     "Android Background Services"                   => [],
+    "Application Services"                          => [],
     "Calendar"                                      => [],
     "Camino Graveyard"                              => [],
     "Composer"                                      => [],
