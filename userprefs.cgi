@@ -1119,8 +1119,10 @@ my $save_changes    = $cgi->param('dosave');
 my $disable_account = $cgi->param('account_disable');
 $vars->{'changes_saved'} = $save_changes || $mfa_token;
 
-my $current_tab_name = $cgi->param('tab') || "account";
+my $specified_tab_name = $cgi->param('tab');
+my $current_tab_name = $specified_tab_name || 'account';
 
+$vars->{'specified_tab_name'} = $specified_tab_name;
 $vars->{'current_tab_name'} = $current_tab_name;
 
 my $token = $cgi->param('token');

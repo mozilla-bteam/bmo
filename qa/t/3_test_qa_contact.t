@@ -122,7 +122,7 @@ $sel->click_ok("//a[contains(text(),'log\n    in to an account')]",
   undef, "Log in");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Log in to Bugzilla");
-$sel->is_text_present_ok("I need an email address and password to continue.");
+$sel->is_text_present_ok("Log in to Bugzilla");
 $sel->type_ok(
   "Bugzilla_login",
   $config->{unprivileged_user_login},
@@ -151,7 +151,7 @@ logout($sel);
 
 log_in($sel, $config, 'unprivileged');
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok("link=Preferences");
+$sel->click_ok("//a[./span[contains(text(), 'Preferences')]]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("User Preferences");
 $sel->click_ok("link=General Preferences");
