@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20241009.1';
+our $VERSION = '20241015.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -158,7 +158,8 @@ sub input_params {
 }
 
 sub localconfig {
-  return $_[0]->process_cache->{localconfig} ||= Bugzilla::Localconfig->new(read_localconfig());
+  return $_[0]->process_cache->{localconfig}
+    ||= Bugzilla::Localconfig->new(read_localconfig());
 }
 
 
@@ -291,7 +292,7 @@ sub login {
     my $on_mfa_page
       = $script_name eq '/userprefs.cgi' && $cgi->param('tab') eq 'mfa';
 
-    Bugzilla->request_cache->{mfa_warning} = 1;
+    Bugzilla->request_cache->{mfa_warning}              = 1;
     Bugzilla->request_cache->{mfa_grace_period_expired} = 1;
 
     if (!($on_mfa_page || $on_token_page || $do_logout)) {
@@ -301,8 +302,9 @@ sub login {
 
   # Next require MFA if grace period has expired
   elsif (
-       !i_am_webservice()
-    && ($authenticated_user->in_mfa_group || $authenticated_user->mfa_required_date('UTC'))
+    !i_am_webservice()
+    && ( $authenticated_user->in_mfa_group
+      || $authenticated_user->mfa_required_date('UTC'))
     && !$authenticated_user->mfa
     )
   {
@@ -386,7 +388,7 @@ sub login {
 
   # If Mojo native app is requesting login, we need to possibly redirect
   # If the user is creating account, we should wait until the process finishes.
-  my $C = Bugzilla->request_cache->{mojo_controller};
+  my $C       = Bugzilla->request_cache->{mojo_controller};
   my $session = $C->session;
   if (!$is_creatingaccount && $session->{override_login_target}) {
     my $override_login_target = delete $session->{override_login_target};
@@ -579,7 +581,7 @@ sub log_user_request {
   my $request_url = $cgi->request_uri    // '';
   my $method      = $cgi->request_method // 'GET';
   my $user_agent  = $cgi->user_agent     // '';
-  my $script_name = $cgi->script_name    // '';
+  my $script_name = $cgi->script_name;
   my $server      = "web";
 
   if ($script_name =~ /rest\.cgi/) {
@@ -641,7 +643,7 @@ sub fields {
   my $fields = $cache->{fields};
   my %requested;
   if (my $types = delete $criteria->{type}) {
-    $types = ref($types) ? $types : [$types];
+    $types     = ref($types) ? $types : [$types];
     %requested = map { %{$fields->{by_type}->{$_} || {}} } @$types;
   }
   else {
@@ -668,7 +670,7 @@ sub fields {
 
 sub active_custom_fields {
   my (undef, $params, $wants) = @_;
-  my $cache_id = 'active_custom_fields';
+  my $cache_id  = 'active_custom_fields';
   my $can_cache = !exists $params->{bug_id} && !$wants;
   if ($can_cache && $params) {
     $cache_id .= ($params->{product} ? '_p' . $params->{product}->id : '')
@@ -722,7 +724,7 @@ sub audit {
 sub clear_request_cache {
   my (undef, %option) = @_;
   my $request_cache = request_cache();
-  my @except = $option{except} ? @{$option{except}} : ();
+  my @except        = $option{except} ? @{$option{except}} : ();
 
   %{$request_cache} = map { $_ => $request_cache->{$_} } @except;
 }
@@ -743,7 +745,7 @@ sub memcached {
 }
 
 # Connector to the `statsd` metrics collection daemon.
-# NOTE: we don't use Datadog any more, but this is still used to 
+# NOTE: we don't use Datadog any more, but this is still used to
 # send metrics to `statsd`.
 sub datadog {
   my ($class, $namespace) = @_;
@@ -767,7 +769,7 @@ sub datadog {
 
 sub check_rate_limit {
   my ($class, $name, $identifier, $throw_error) = @_;
-  $identifier  ||= remote_ip();
+  $identifier ||= remote_ip();
   $throw_error //= sub { ThrowUserError("rate_limit") };
   my $params = Bugzilla->params;
   if ($params->{rate_limit_active}) {
@@ -778,7 +780,7 @@ sub check_rate_limit {
       return 0;
     }
     if (Bugzilla->memcached->should_rate_limit("$name:$identifier", @$limit)) {
-      my $ip = remote_ip();
+      my $ip     = remote_ip();
       my $action = 'block';
       my $filter = Bugzilla::Bloomfilter->lookup("rate_limit_whitelist");
       if ($filter && $filter->test($ip)) {
@@ -786,7 +788,8 @@ sub check_rate_limit {
       }
       my $full_limit = join("/", @$limit);
       Bugzilla->audit(
-        "[rate_limit] action=$action, ip=$ip, identifier=$identifier, limit=$full_limit, name=$name");
+        "[rate_limit] action=$action, ip=$ip, identifier=$identifier, limit=$full_limit, name=$name"
+      );
       if ($action eq 'block') {
         request_cache->{mojo_controller}->block_ip($ip);
         $throw_error->();
@@ -819,7 +822,7 @@ sub _cleanup {
   my $main   = Bugzilla->request_cache->{dbh_main};
   my $shadow = Bugzilla->request_cache->{dbh_shadow};
   foreach my $dbh ($main, $shadow) {
-    next if !$dbh;
+    next                            if !$dbh;
     $dbh->bz_rollback_transaction() if $dbh->bz_in_transaction;
   }
   clear_request_cache();
@@ -831,7 +834,7 @@ our ($caller_package, $caller_file) = caller;
 init_page()
   if $caller_package eq 'main'
   && $caller_package !~ /^Test/
-  && $caller_file =~ /\.t$/;
+  && $caller_file    =~ /\.t$/;
 
 END {
   cleanup() if $caller_package eq 'main';

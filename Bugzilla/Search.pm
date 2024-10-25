@@ -384,7 +384,7 @@ sub SPECIAL_PARSING {
     bug_interest_ts => \&_last_visit_datetime,
 
     # BMO - Add ability to use pronoun for bug mentors field
-    bug_mentor => \&_commenter_pronoun,
+    bug_mentor => \&_contact_pronoun,
 
     # BMO - add ability to use pronoun for triage owners
     triage_owner => \&_triage_owner_pronoun,
