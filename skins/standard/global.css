@@ -135,6 +135,14 @@
     --button-border-radius: 4px;
     --button-padding: 6px 12px;
     --button-center-padding: 6px;
+
+    /** App Header: Dark & Light */
+    --application-header-foreground-color: rgb(200, 201, 202);
+    --application-header-background-color: rgb(50, 51, 52);
+    --application-header-hovered-button-foreground-color: rgb(240, 241, 242);
+    --application-header-hovered-button-background-color: rgb(60, 61, 62);
+    --application-header-input-foreground-color: rgb(240, 241, 242);
+    --application-header-input-background-color: rgb(70, 71, 72);
   }
 }
 
@@ -163,11 +171,6 @@
     /** App */
     --application-foreground-color: rgb(40, 41, 42);
     --application-background-color: rgb(235, 236, 237);
-    --application-header-foreground-color: rgb(200, 201, 202);
-    --application-header-foreground-hover-color: rgb(240, 241, 242);
-    --application-header-background-color: rgb(50, 51, 52);
-    --secondary-application-header-foreground-color: rgb(240, 241, 242);
-    --secondary-application-header-background-color: rgb(70, 71, 72);
 
     /** Region */
     --primary-region-border-color: rgb(210, 211, 212);
@@ -1006,6 +1009,7 @@ input[type="radio"]:checked {
 
 #header button {
   padding: 0 !important;
+  color: inherit;
 }
 
 #header button * {
@@ -1022,16 +1026,17 @@ input[type="radio"]:checked {
   height: 32px;
 }
 
-#header .inner .header-button:hover,
-#header .inner .header-button:focus {
-  color: var(--hovered-menuitem-foreground-color) !important;
-  background-color: var(--hovered-menuitem-background-color);
+#header button.ghost:is(:hover, :focus-visible, :active),
+#header .inner .header-button:is(:hover, :focus-visible, :active) {
+  border-color: transparent;
+  color: var(--application-header-hovered-button-foreground-color);
+  background-color: var(--application-header-hovered-button-background-color);
 }
 
 #header .icon {
   display: inline-block;
   width: 24px;
-  color: var(--tertiary-label-color);
+  opacity: .75;
   font-size: var(--icon-size-medium);
   line-height: 1;
   font-family: var(--icon-font-family);
@@ -1166,12 +1171,17 @@ input[type="radio"]:checked {
   padding: 0 8px 0 32px;
   width: 100%;
   height: 100%;
-  color: var(--secondary-application-header-foreground-color);
-  background-color: var(--secondary-application-header-background-color);
+  color: var(--application-header-input-foreground-color);
+  background-color: var(--application-header-input-background-color);
   box-shadow: none;
   font-size: var(--font-size-large) !important;
   line-height: 32px;
   cursor: text;
+}
+
+#header #quicksearch_top::placeholder {
+  color: var(--application-header-foreground-color);
+  opacity: 1;
 }
 
 #header:not(.searching) #quicksearch_top {
@@ -1400,8 +1410,8 @@ input[type="radio"]:checked {
   height: auto;
 }
 
-#header-login .mini-popup .footer a:is(:hover, :focus, :active, .active) {
-  color: var(--application-header-foreground-hover-color);
+#header-login .mini-popup .footer a:is(:hover, :focus-visible, :active, .active) {
+  text-decoration: underline;
 }
 
 /**
@@ -1420,8 +1430,8 @@ input[type="radio"]:checked {
   max-width: 320px;
   height: 100dvh;
   max-height: 100dvh;
-  color: var(--application-foreground-color);
-  background-color: var(--application-background-color);
+  color: var(--menu-foreground-color);
+  background-color: var(--menu-background-color);
   box-shadow: var(--menu-box-shadow);
   opacity: 1;
   -webkit-user-select: none;
@@ -1447,6 +1457,11 @@ input[type="radio"]:checked {
 #menu-drawer .header {
   display: flex;
   justify-content: flex-end;
+}
+
+#menu-drawer button:is(:hover, :focus-visible, :active) {
+  color: var(--hovered-menuitem-foreground-color) !important;
+  background-color: var(--hovered-menuitem-background-color) !important;
 }
 
 #open-menu-drawer .icon,
@@ -2278,9 +2293,9 @@ table.tabs .clickable_area {
   font-size: var(--font-size-small);
 }
 
-.dropdown-panel :is(header, footer) a:is(:hover, :focus, :active, .active) {
-  color: var(--application-header-foreground-hover-color) !important;
+.dropdown-panel :is(header, footer) a:is(:hover, :focus-visible, :active, .active) {
   background-color: transparent !important;
+  text-decoration: underline !important;
 }
 
 .dropdown-panel ul {
@@ -2325,7 +2340,7 @@ table.tabs .clickable_area {
 }
 
 .dropdown-panel .notifications strong {
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .dropdown-panel .notifications time {
