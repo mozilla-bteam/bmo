@@ -311,6 +311,10 @@ sub new_product {
     # identical component in both products
     $component->{selected} = $true;
   }
+  elsif (scalar @{$components} == 1) {
+    # New product has one component so preselect it
+    $components->[0]->{selected} = $true;
+  }
   else {
     # default to a blank value
     unshift @$components, {name => '', selected => $true,};
