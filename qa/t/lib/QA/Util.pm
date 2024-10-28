@@ -242,7 +242,7 @@ sub file_bug_in_product {
   sleep(1);
 
   $classification ||= "Unclassified";
-  $sel->click_ok('//*[@class="link-file"]//a', undef, "Go create a new bug");
+  $sel->click_ok("//a[./span[contains(text(), 'New Bug')]]", undef, "Go create a new bug");
   $sel->wait_for_page_to_load(WAIT_TIME);
 
   # Use normal bug form instead of helper
@@ -400,14 +400,8 @@ sub open_advanced_search_page {
   );
   sleep(1);
 
-  $sel->click_ok('//*[@class="link-search"]//a');
+  $sel->click_ok("//a[./span[contains(text(), 'Advanced Search')]]");
   $sel->wait_for_page_to_load(WAIT_TIME);
-  my $title = $sel->get_title();
-  if ($title eq "Simple Search") {
-    ok(1, "Display the simple search form");
-    $sel->click_ok("link=Advanced Search");
-    $sel->wait_for_page_to_load(WAIT_TIME);
-  }
   $sel->remove_all_selections('classification');
   sleep(1); # FIXME: Delay for slow page performance
 }

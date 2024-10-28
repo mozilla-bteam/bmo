@@ -30,10 +30,14 @@
 
 [% login_target = basepath _ login_target %]
 
-<li id="mini_login_container[% qs_suffix %]">
+<li id="mini_login_container[% qs_suffix %]" role="none">
   [% script_url = basepath _ "index.cgi?GoAheadAndLogIn=1" %]
   <a id="login_link[% qs_suffix %]" href="[% script_url FILTER html %]"
-     class='show_mini_login_form' data-qs-suffix="[% qs_suffix FILTER html %]">Log In</a>
+     class='show_mini_login_form header-button' data-qs-suffix="[% qs_suffix FILTER html %]"
+     role="button">
+    <span class="icon" aria-hidden="true" data-icon="login"></span>
+    <span class="label" role="none">Log In</span>
+  </a>
 
   <div id="mini_login[% qs_suffix FILTER html %]" class="mini-popup mini_login bz_default_hidden">
 
@@ -43,7 +47,12 @@
     %]
   [% END %]
 
-  [% Hook.process('additional_methods') %]
+  [% additional_methods = Hook.process('additional_methods') %]
+  [% additional_methods FILTER none %]
+
+  [% IF Param('oauth2_client_enabled') || additional_methods %]
+    <div class="method-separator">or</div>
+  [% END %]
 
   <form action="[% login_target FILTER html %]" method="POST"
         data-qs-suffix="[% qs_suffix FILTER html %]">
@@ -77,25 +86,29 @@
         <input type="checkbox" id="Bugzilla_remember[% qs_suffix %]"
                name="Bugzilla_remember" value="on" class="bz_remember"
                [%+ "checked" IF Param('rememberlogin') == "defaulton" %]>
-        <label for="Bugzilla_remember[% qs_suffix %]">Remember</label>
+        <label for="Bugzilla_remember[% qs_suffix %]">Remember me</label>
       </span>
     [% END %]
     <input type="hidden" name="Bugzilla_login_token"
            value="[% get_login_request_token() FILTER html %]">
-    <input type="submit" name="GoAheadAndLogIn" value="Log in"
-           class="check_mini_login_fields"
-            id="log_in[% qs_suffix %]">
+    <input type="submit" name="GoAheadAndLogIn" value="Log In" id="log_in[% qs_suffix %]"
+           class="check_mini_login_fields" data-qs-suffix="[% qs_suffix FILTER html %]">
     <a href="#" id="hide_mini_login[% qs_suffix FILTER html %]" aria-label="Close"
        class="close-button hide_mini_login_form" data-qs-suffix="[% qs_suffix FILTER html %]">
       <span class="icon" aria-hidden="true"></span>
     </a>
   </form>
+  <div class="footer">
+    [% IF Param('allow_account_creation') && user.authorizer.user_can_create_account %]
+      <a href="[% basepath FILTER none %]createaccount.cgi">Create an Account</a>
+    [% END %]
+    &middot;
+    <a id="forgot_link[% qs_suffix %]" href="[% script_url FILTER html %]#forgot"
+       class='show_forgot_form'
+       data-qs-suffix="[% qs_suffix FILTER html %]">Forgot Password</a>
   </div>
-</li>
-<li id="forgot_container[% qs_suffix %]">
-  <a id="forgot_link[% qs_suffix %]" href="[% script_url FILTER html %]#forgot"
-     class='show_forgot_form'
-     data-qs-suffix="[% qs_suffix FILTER html %]">Forgot Password</a>
+  </div>
+
   <div id="forgot_form[% qs_suffix %]" class="mini-popup mini_forgot bz_default_hidden">
   <form action="[% basepath FILTER none %]token.cgi" method="post">
     <input type="email" name="loginname" size="20" placeholder="Email" aria-label="Email" required>

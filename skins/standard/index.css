@@ -10,28 +10,36 @@
   font-weight: bold;
 }
 
+#welcome,
+.options {
+  margin: 64px 0 0;
+}
+
 #welcome {
   text-align: center;
-  margin: 0 0 8px 0;
-  padding: 0;
+}
+
+#welcome h1 {
+  margin: 0;
+}
+
+#welcome p {
+  margin: 8px 0 0;
 }
 
 #content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 14px;
 }
 
 .options {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  width: 600px;
   border-top: 1px solid var(--secondary-region-border-color);
   border-bottom: 1px solid var(--secondary-region-border-color);
-  padding: 32px 0;
-  margin-top: 32px;
+  max-width: 600px;
 }
 
 .option {
@@ -62,4 +70,11 @@
 
 .option .desc-container {
   flex-grow: 1;
+}
+
+@media screen and (width < 768px) {
+  #welcome,
+  .options {
+    margin: 48px 0 0;
+  }
 }

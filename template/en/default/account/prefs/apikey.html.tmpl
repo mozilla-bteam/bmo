@@ -27,6 +27,7 @@
 <p>You can update the description, and revoke or unrevoke existing API keys
 here. Sticky keys may only be used from the last IP that used the API key, and cannot be unset.</p>
 
+<div class="table-wrapper">
 <table class="standard">
 <thead>
   <tr>
@@ -81,6 +82,7 @@ here. Sticky keys may only be used from the last IP that used the API key, and c
   [% END %]
 </tbody>
 </table>
+</div>
 
 [% IF any_revoked %]
   <a href="#" id="apikey-toggle-revoked">Show Revoked Keys</a>
