@@ -538,7 +538,6 @@ input[type="number"] {
 }
 
 #bottom-actions {
-  margin-bottom: 50px;
   max-width: 1024px;
 }
 
@@ -918,15 +917,13 @@ td.flag-requestee {
 }
 
 .new-changes-link {
-  position: sticky;
-  top: 48px;
-  left: 0;
-  right: 0;
-  z-index: 10;
+  flex: none;
   overflow: hidden;
-  margin: 8px 0;
+  box-sizing: border-box;
+  margin: 8px auto 0;
   border-radius: 4px;
   padding: 4px;
+  width: 1024px;
   color: var(--primary-button-foreground-color);
   background: var(--primary-button-background-color);
   opacity: 1;
@@ -1295,8 +1292,8 @@ a.comment-tag-url {
 }
 
 .comment-reactions .anchor .icon::before {
-  font-size: 16px;
-  font-family: 'Material Symbols Outlined';
+  font-size: var(--icon-size-small);
+  font-family: var(--icon-font-family);
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   vertical-align: middle;
   content: '\e813';
@@ -1443,7 +1440,8 @@ a.comment-tag-url {
  */
 
 #main-inner {
-  margin: 8px auto;
+  display: flow-root;
+  margin: 8px auto 48px;
   max-width: 1024px;
 }
 
@@ -1545,7 +1543,7 @@ a.lightbox-icon.markdown {
 }
 
 .name-info-popup header {
-  margin: 8px 16px;
+  margin: 8px 12px;
 }
 
 .name-info-popup header .title {
@@ -1666,6 +1664,10 @@ a.lightbox-icon.markdown {
  * Create form
  */
 
+#changeform {
+  display: flow-root;
+}
+
 #changeform:not(.show-advanced-fields) .expert_fields {
   display: none;
 }
@@ -1745,20 +1747,17 @@ a.lightbox-icon.markdown {
  */
 
 @media screen and (max-width: 1023px) {
+  .new-changes-link {
+    margin: 8px 8px 0;
+    width: auto;
+  }
+
   #main-inner {
-    margin: 8px;
+    margin-inline: 8px;
   }
 }
 
 @media screen and (max-width: 900px) {
-  #wrapper {
-    position: relative !important;
-  }
-
-  #header .inner {
-    width: auto !important;
-  }
-
   .spin-latch {
     display: none;
   }

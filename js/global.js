@@ -214,23 +214,9 @@ const detect_blocked_gravatars = () => {
 }
 
 /**
- * If the current URL contains a hash like `#c10`, adjust the scroll position to
- * make some room above the focused element.
- */
-const adjust_scroll_onload = () => {
-    if (location.hash) {
-        const $target = document.querySelector(CSS.escape(location.hash));
-
-        if ($target) {
-            window.setTimeout(() => scroll_element_into_view($target), 50);
-        }
-    }
-}
-
-/**
- * Bring an element into the visible area of the browser window. Unlike the
- * native `Element.scrollIntoView()` function, this adds some extra room above
- * the target element. Smooth scroll can be done using CSS.
+ * Bring an element into the visible area of the browser window. Smooth scroll
+ * can be done using CSS, and an extra space can also be added to the top using
+ * CSS `scroll-padding-top`.
  * @param {Element} $target - An element to be brought.
  * @param {Function} [complete] - An optional callback function to be executed
  *  once the scroll is complete.
@@ -254,13 +240,11 @@ const scroll_element_into_view = ($target, complete) => {
         document.documentElement.addEventListener('scroll', listener);
     }
 
-    document.documentElement.scrollTop = $target.offsetTop - 20;
+    $target.scrollIntoViewIfNeeded?.() ?? $target.scrollIntoView();
 }
 
 window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
 window.addEventListener('load', detect_blocked_gravatars, { once: true });
-window.addEventListener('load', adjust_scroll_onload, { once: true });
-window.addEventListener('hashchange', adjust_scroll_onload);
 
 window.addEventListener('DOMContentLoaded', () => {
   const announcement = document.getElementById('new_announcement');
@@ -283,4 +267,63 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+}, { once: true });
+
+// Global header
+window.addEventListener('DOMContentLoaded', () => {
+  /** @type {HTMLButtonElement} */
+  const $openDrawerButton = document.querySelector('#open-menu-drawer');
+  /** @type {HTMLButtonElement} */
+  const $closeDrawerButton = document.querySelector('#close-menu-drawer');
+  /** @type {HTMLDialogElement} */
+  const $drawer = document.querySelector('#menu-drawer');
+  /** @type {HTMLElement} */
+  const $headerWrapper = document.querySelector('#header');
+  /** @type {HTMLElement} */
+  const $searchBoxOuter = document.querySelector('#header-search .searchbox-outer');
+  /** @type {HTMLInputElement} */
+  const $searchBox = document.querySelector('#quicksearch_top');
+  /** @type {HTMLButtonElement} */
+  const $showSearchBoxButton = document.querySelector('#show-searchbox');
+  /** @type {HTMLElement} */
+  const $searchBoxDropdown = document.querySelector('#header-search-dropdown');
+
+  $openDrawerButton.addEventListener('click', () => {
+    $drawer.inert = false;
+    $drawer.showModal();
+  });
+
+  $closeDrawerButton.addEventListener('click', () => {
+    $drawer.close();
+    $drawer.inert = true;
+  });
+
+  $drawer.addEventListener('click', ({ clientX, clientY }) => {
+    // Close the drawer when the backdrop is clicked
+    if (document.elementFromPoint(clientX, clientY) === $drawer) {
+      $drawer.close();
+      $drawer.inert = true;
+    }
+  });
+
+  $searchBox.addEventListener('focusin', () => {
+    $headerWrapper.classList.add('searching');
+  });
+
+  $searchBoxOuter.addEventListener('focusout', () => {
+    if (!$searchBoxOuter.matches(':focus-within')) {
+      $searchBoxDropdown.style.display = 'none';
+      $headerWrapper.classList.remove('searching');
+    }
+  });
+
+  $showSearchBoxButton.addEventListener('click', () => {
+    $headerWrapper.classList.add('searching');
+    $searchBox.focus();
+
+    // Show the dropdown
+    window.requestAnimationFrame(() => {
+      $searchBox.click();
+    });
+  });
 }, { once: true });

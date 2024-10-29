@@ -8,22 +8,35 @@
 
 [% IF user.id %]
   [% request_count = user.review_request_count + user.feedback_request_count + user.needinfo_request_count %]
-  <div id="header-requests" class="dropdown">
+  <div id="header-requests" class="dropdown" role="none">
     <button type="button" id="header-requests-menu-button" class="dropdown-button minor"
-            title="Requests for you[%- IF request_count -%]:
+            title="Requests for You[%- IF request_count -%]:
               [%- " review (" _ user.review_request_count _ ")" IF user.review_request_count -%]
               [%- " feedback (" _ user.feedback_request_count _ ")" IF user.feedback_request_count -%]
               [%- " needinfo (" _ user.needinfo_request_count _ ")" IF user.needinfo_request_count -%][%- END -%]"
-            aria-label="Requests for you" aria-expanded="false" aria-haspopup="true" aria-controls="header-requests-menu">
+            aria-expanded="false" aria-haspopup="true" aria-controls="header-requests-menu"
+            aria-label="Show Requests for You">
       [%- IF request_count -%]
         <span class="badge">[% request_count FILTER html %]</span>
       [%- ELSE -%]
         <span class="icon" aria-hidden="true"></span>
       [%- END -%]
     </button>
-    <section class="dropdown-content dropdown-panel left" id="header-requests-menu" role="menu" style="display:none;">
-      <header>
-        <h2>Requests</h2>
+    <section class="dropdown-content dropdown-panel left" id="header-requests-menu" role="menu"
+             aria-label="Requests for You" style="display:none;">
+      <header role="none">
+        <h2 aria-hidden="true">Requests</h2>
+        [% IF user.reminder_count %]
+          <a href="[% basepath FILTER none %]userprefs.cgi?tab=reminders">
+            [%- IF user.reminder_count == 1 -%]
+              1 Reminder Set
+            [%- ELSE -%]
+              [% user.reminder_count FILTER html %] Reminders Set
+            [%- END -%]
+          </a>
+        [% END %]
+        <a href="[% basepath FILTER none %]request.cgi?action=queue&amp;requestee=[% user.login FILTER uri %]&amp;group=type"
+           class="see-all" aria-label="See All Requests">See All</a>
       </header>
       [%- IF request_count -%]
         <div class="loading">Loading…</div>
@@ -31,15 +44,6 @@
       [%- ELSE -%]
         <div class="empty">You’re all caught up!</div>
       [%- END -%]
-      <footer>
-        <div><a href="[% basepath FILTER none %]request.cgi?action=queue&amp;requestee=[% user.login FILTER uri %]&amp;group=type"
-                role="menuitem" tabindex="-1">See All</a></div>
-      </footer>
-      [% IF user.reminder_count %]
-      <header>
-        <h2><a href="[% basepath FILTER none %]userprefs.cgi?tab=reminders">[% user.reminder_count FILTER html %] Reminder(s) Set</a></h2>
-      </header>
-      [% END %]
     </section>
   </div>
 [% END %]

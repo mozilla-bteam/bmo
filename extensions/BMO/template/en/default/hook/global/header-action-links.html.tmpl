@@ -6,12 +6,12 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% IF user.login %]
+[% IF user.login && user.in_group('mozilla-employee-confidential') %]
   <li role="none">
-    <a class="header-button" href="[% basepath FILTER none %]page.cgi?id=mydashboard.html"
-       title="Show My Dashboard" role="menuitem">
-      <span class="icon" aria-hidden="true" data-icon="dashboard"></span>
-      <span class="label" role="none">My Dashboard</span>
+    <a class="header-button" href="[% basepath FILTER none %]page.cgi?id=attention.html"
+       title="What Needs My Attention?" role="menuitem">
+      <span class="icon" aria-hidden="true" data-icon="engineering"></span>
+      <span class="label" role="none">My Attention</span>
     </a>
   </li>
 [% END %]

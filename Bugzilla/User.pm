@@ -2671,6 +2671,9 @@ sub create {
   $params->{nickname}
     = _generate_nickname($params->{realname}, $params->{login_name}, 0);
 
+  my $modification_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+  $params->{modification_ts} = $modification_ts;
+
   my $user = $class->SUPER::create($params);
 
   # Turn on all email for the new user
@@ -2711,8 +2714,8 @@ sub create {
   $dbh->do(
     'INSERT INTO profiles_activity
                           (userid, who, profiles_when, fieldid, newvalue)
-                   VALUES (?, ?, NOW(), ?, NOW())', undef,
-    ($user->id, $who, $creation_date_fieldid)
+                   VALUES (?, ?, ?, ?, ?)', undef,
+    ($user->id, $who, $modification_ts, $creation_date_fieldid, $modification_ts)
   );
 
   $dbh->bz_commit_transaction();

@@ -4454,12 +4454,12 @@ sub _migrate_profiles_modification_ts {
     = $dbh->selectall_arrayref('SELECT userid FROM profiles ORDER BY userid');
   foreach my $user_id (@{$user_ids}) {
     my ($audit_log_when) = $dbh->selectrow_array(
-      'SELECT UNIX_TIMESTAMP(at_time) FROM audit_log 
+      'SELECT UNIX_TIMESTAMP(at_time) FROM audit_log
         WHERE class = \'Bugzilla::User\' AND object_id = ? ORDER BY at_time DESC '
         . $dbh->sql_limit(1), undef, $user_id
     );
     my ($profiles_act_when) = $dbh->selectrow_array(
-      'SELECT UNIX_TIMESTAMP(profiles_when) FROM profiles_activity 
+      'SELECT UNIX_TIMESTAMP(profiles_when) FROM profiles_activity
         WHERE userid = ? ORDER BY profiles_when DESC '
         . $dbh->sql_limit(1), undef, $user_id
     );
