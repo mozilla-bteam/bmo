@@ -4469,12 +4469,15 @@ sub _migrate_profiles_modification_ts {
       'SELECT UNIX_TIMESTAMP(at_time) FROM audit_log
         WHERE class = \'Bugzilla::User\' AND object_id = ? ORDER BY at_time DESC '
         . $dbh->sql_limit(1), undef, $user_id
-    ) || 0;
+    );
     my $profiles_act_when = $dbh->selectrow_array(
       'SELECT UNIX_TIMESTAMP(profiles_when) FROM profiles_activity
         WHERE userid = ? ORDER BY profiles_when DESC '
         . $dbh->sql_limit(1), undef, $user_id
-    ) || 0;
+    );
+
+    $audit_log_when    ||= 0;
+    $profiles_act_when ||= 0;
 
     my $creation_when = 0;
     if ($has_creation_ts) {
@@ -4491,9 +4494,13 @@ sub _migrate_profiles_modification_ts {
       $modification_ts = $now_when;
     }
     else {
-      # We used unix timestamps to make value comparison easier without using DateTime instance of each.
+# We used unix timestamps to make value comparison easier without using DateTime instance of each.
       $modification_ts = max($audit_log_when, $profiles_act_when, $creation_when);
     }
+
+    print
+      "$audit_log_when : $profiles_act_when : $creation_when => $modification_ts\n";
+
     $sth->execute($modification_ts, $user_id);
   }
 
