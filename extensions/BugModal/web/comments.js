@@ -536,7 +536,7 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
     /** @type {Number} */
     this.commentId = Number(/** @type {HTMLElement} */ ($wrapper.parentElement.querySelector('.comment')).dataset.id);
     /** @type {string} */
-    this.anchorName = `--comment-reactions-${this.commentId}`;
+    this.anchorName = `--comment-${this.commentId}-reactions`;
 
     // Users cannot react on old bugs
     if (!this.$anchor) {
