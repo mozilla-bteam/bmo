@@ -4447,12 +4447,20 @@ sub _migrate_profiles_modification_ts {
 
   $dbh->bz_add_column('profiles', 'modification_ts', {TYPE => 'DATETIME'});
 
+  my $has_creation_ts = $dbh->bz_column_info('profiles', 'creation_ts');
+
   my $sth = $dbh->prepare(
     'UPDATE profiles SET modification_ts = FROM_UNIXTIME(?) WHERE userid = ?');
 
   my $user_ids
     = $dbh->selectall_arrayref('SELECT userid FROM profiles ORDER BY userid');
+
+  my $count = 1;
+  my $total = scalar @{$user_ids};
+
   foreach my $user_id (@{$user_ids}) {
+    indicate_progress({total => $total, current => $count++, every => 25});
+
     my ($audit_log_when) = $dbh->selectrow_array(
       'SELECT UNIX_TIMESTAMP(at_time) FROM audit_log
         WHERE class = \'Bugzilla::User\' AND object_id = ? ORDER BY at_time DESC '
@@ -4464,8 +4472,16 @@ sub _migrate_profiles_modification_ts {
         . $dbh->sql_limit(1), undef, $user_id
     );
 
+    my $creation_when = 0;
+    if ($has_creation_ts) {
+      $creation_when
+        = $dbh->selectrow_array(
+        'SELECT UNIX_TIMESTAMP(creation_ts) FROM profiles WHERE userid = ?',
+        undef, $user_id);
+    }
+
     # We use unix timestamps to make value comparison easier
-    my $modification_ts = max($audit_log_when, $profiles_act_when);
+    my $modification_ts = max($audit_log_when, $profiles_act_when, $creation_when);
     $sth->execute($modification_ts, $user_id);
   }
 
