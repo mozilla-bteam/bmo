@@ -4452,6 +4452,10 @@ sub _migrate_profiles_modification_ts {
   my $sth = $dbh->prepare(
     'UPDATE profiles SET modification_ts = FROM_UNIXTIME(?) WHERE userid = ?');
 
+  # Todays timestamp
+  my $now_when
+    = $dbh->selectrow_array('SELECT UNIX_TIMESTAMP(LOCALTIMESTAMP(0))');
+
   my $user_ids
     = $dbh->selectall_arrayref('SELECT userid FROM profiles ORDER BY userid');
 
@@ -4461,16 +4465,16 @@ sub _migrate_profiles_modification_ts {
   foreach my $user_id (@{$user_ids}) {
     indicate_progress({total => $total, current => $count++, every => 25});
 
-    my ($audit_log_when) = $dbh->selectrow_array(
+    my $audit_log_when = $dbh->selectrow_array(
       'SELECT UNIX_TIMESTAMP(at_time) FROM audit_log
         WHERE class = \'Bugzilla::User\' AND object_id = ? ORDER BY at_time DESC '
         . $dbh->sql_limit(1), undef, $user_id
-    );
-    my ($profiles_act_when) = $dbh->selectrow_array(
+    ) || 0;
+    my $profiles_act_when = $dbh->selectrow_array(
       'SELECT UNIX_TIMESTAMP(profiles_when) FROM profiles_activity
         WHERE userid = ? ORDER BY profiles_when DESC '
         . $dbh->sql_limit(1), undef, $user_id
-    );
+    ) || 0;
 
     my $creation_when = 0;
     if ($has_creation_ts) {
@@ -4480,8 +4484,16 @@ sub _migrate_profiles_modification_ts {
         undef, $user_id);
     }
 
-    # We use unix timestamps to make value comparison easier
-    my $modification_ts = max($audit_log_when, $profiles_act_when, $creation_when);
+    my $modification_ts = 0;
+
+    # IF we could not find anything then use todays date
+    if (!$audit_log_when && !$profiles_act_when && !$creation_when) {
+      $modification_ts = $now_when;
+    }
+    else {
+      # We used unix timestamps to make value comparison easier without using DateTime instance of each.
+      $modification_ts = max($audit_log_when, $profiles_act_when, $creation_when);
+    }
     $sth->execute($modification_ts, $user_id);
   }
 
