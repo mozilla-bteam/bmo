@@ -1249,7 +1249,6 @@ a.comment-tag-url {
   position: relative;
   padding: 0 12px 12px;
   background: var(--primary-text-background-color);
-  anchor-name: --comment-reactions;
 }
 
 .comment-text.bz_private + .comment-reactions {
@@ -1322,7 +1321,6 @@ a.comment-tag-url {
   transform-origin: bottom left;
   transition: all 100ms;
   pointer-events: none;
-  position-anchor: --comment-reactions;
 }
 
 .comment-reactions .picker:popover-open {
