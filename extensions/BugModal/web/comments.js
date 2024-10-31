@@ -511,8 +511,12 @@ Bugzilla.BugModal.Comments = class Comments {
  * @see https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
  */
 Bugzilla.BugModal.CommentReactions = class CommentReactions {
-  /** @type {Boolean} */
-  canUsePopover = 'popover' in HTMLElement.prototype;
+  /**
+   * Check the availability of the Popover API. This also detects the CSS Anchor Positioning API, as positioning doesn’t
+   * work well without it, depending on how the page layout (fixed global header) is structured.
+   * @type {Boolean}
+   */
+  canUsePopover = 'popover' in HTMLElement.prototype && CSS.supports('anchor-name', '--comment-reactions');
   /** @type {Record<string, object[]> | null} */
   reactionCache = null;
   /** @type {Intl.ListFormat} */
@@ -531,6 +535,8 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
     this.$picker = $wrapper.querySelector('.picker');
     /** @type {Number} */
     this.commentId = Number(/** @type {HTMLElement} */ ($wrapper.parentElement.querySelector('.comment')).dataset.id);
+    /** @type {string} */
+    this.anchorName = `--comment-${this.commentId}-reactions`;
 
     // Users cannot react on old bugs
     if (!this.$anchor) {
@@ -538,6 +544,10 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
     }
 
     if (this.canUsePopover) {
+      // Set the anchor name dynamically
+      this.$wrapper.style.setProperty('anchor-name', this.anchorName);
+      this.$picker.style.setProperty('position-anchor', this.anchorName);
+
       this.$anchor.popoverTargetElement = this.$picker;
       this.$anchor.popoverTargetAction = 'toggle';
       this.$picker.popover = 'auto';
