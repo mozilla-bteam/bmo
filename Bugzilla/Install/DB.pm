@@ -4447,6 +4447,8 @@ sub _migrate_profiles_modification_ts {
 
   $dbh->bz_add_column('profiles', 'modification_ts', {TYPE => 'DATETIME'});
 
+  # A fresh DB will not have this column yet as it is added later by an extension
+  # so we will need to ignore it later in this case.
   my $has_creation_ts = $dbh->bz_column_info('profiles', 'creation_ts');
 
   my $sth = $dbh->prepare(
@@ -4457,7 +4459,7 @@ sub _migrate_profiles_modification_ts {
     = $dbh->selectrow_array('SELECT UNIX_TIMESTAMP(LOCALTIMESTAMP(0))');
 
   my $user_ids
-    = $dbh->selectall_arrayref('SELECT userid FROM profiles ORDER BY userid');
+    = $dbh->selectcol_arrayref('SELECT userid FROM profiles ORDER BY userid');
 
   my $count = 1;
   my $total = scalar @{$user_ids};
@@ -4485,21 +4487,18 @@ sub _migrate_profiles_modification_ts {
         = $dbh->selectrow_array(
         'SELECT UNIX_TIMESTAMP(creation_ts) FROM profiles WHERE userid = ?',
         undef, $user_id);
+      $creation_when ||= 0;
     }
 
     my $modification_ts = 0;
-
     # IF we could not find anything then use todays date
     if (!$audit_log_when && !$profiles_act_when && !$creation_when) {
       $modification_ts = $now_when;
     }
+    # We used unix timestamps to make value comparison easier without using DateTime instance of each.
     else {
-# We used unix timestamps to make value comparison easier without using DateTime instance of each.
       $modification_ts = max($audit_log_when, $profiles_act_when, $creation_when);
     }
-
-    print
-      "$audit_log_when : $profiles_act_when : $creation_when => $modification_ts\n";
 
     $sth->execute($modification_ts, $user_id);
   }
