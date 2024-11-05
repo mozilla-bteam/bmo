@@ -96,25 +96,18 @@ my ($attach_id) = keys %{$t->tx->res->json->{attachments}};
 ### Section 4: Export data to test files
 
 my @cmd
-  = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose', '--test');
+  = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose', '--test', '--snapshot-date', '2000-01-01');
 
 my ($output, $error, $rv) = capture { system @cmd; };
-ok(!$rv, 'Data exported to test files');
-if ($rv != 0) {
-  say "$output\n$error";
-  exit $rv;
-}
+ok(!$rv, 'Data exported to test files without error');
+ok(glob(bz_locations()->{'datadir'} . '/2000-01-01-bugs-*.json'), 'Export test files exist');
 
 ### Section 5: Export data to BigQuery test instance
 
-@cmd = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose');
+@cmd = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose', '--snapshot-date', '2000-01-01');
 
 ($output, $error, $rv) = capture { system @cmd; };
-ok(!$rv, 'Data exported to BigQuery test instance');
-if ($rv != 0) {
-  say "$output\n$error";
-  exit $rv;
-}
+ok(!$rv, 'Data exported to BigQuery test instance without error');
 
 ### Section 6: Retrieve data from BigQuery instance and verify
 
@@ -133,10 +126,11 @@ $t->post_ok(
   'http://bq:9050/bigquery/v2/projects/test/queries' => json =>
     $query)->status_is(200)->json_is('/rows/0/f/0/v' => $bug_id_1);
 
-### Section 7: If we run the script again with the same snapshot date, it should complain about duplicates
+### Section 7: Exporting again on the same day (with the same snapshot date) will cause the script to exit
+
+@cmd = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose', '--snapshot-date', '2000-01-01');
 
 ($output, $error, $rv) = capture { system @cmd; };
-ok($rv, 'Data export to BigQuery test instance failed due to duplicate data');
-say "$output\n$error";
+ok($rv, 'Duplicate data exported to BigQuery test instance should fail');
 
 done_testing;

@@ -24,14 +24,14 @@ use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
 use LWP::UserAgent::Determined;
 use Mojo::File qw(path);
 use Mojo::JSON qw(decode_json encode_json false true);
-use Mojo::Util qw(dumper getopt);
+use Mojo::Util qw(getopt);
 
 # BigQuery API cannot handle payloads larger than 10MB so
 # we will send data in blocks.
 use constant API_BLOCK_COUNT => 1000;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
-getopt 't|test' => \my $test, 'v|verbose' => \my $verbose;
+getopt 't|test' => \my $test, 'v|verbose' => \my $verbose, 's|snapshot-date=s' => \my $snapshot_date;
 
 # Sanity checks
 Bugzilla->params->{bmo_etl_enabled} || die "BMO ETL not enabled.\n";
@@ -44,6 +44,9 @@ $project_id || die "Invalid BigQuery product ID.\n";
 
 my $dataset_id = Bugzilla->params->{bmo_etl_dataset_id};
 $dataset_id || die "Invalid BigQuery dataset ID.\n";
+
+# Check to make sure another instance is not currently running
+check_and_set_lock();
 
 # Use replica if available
 my $dbh = Bugzilla->switch_to_shadow_db();
@@ -60,12 +63,14 @@ if (my $proxy = Bugzilla->params->{proxy_url}) {
 }
 
 # This date will be added to each object as it is being sent
-my $snapshot_date = $dbh->selectrow_array(
-  'SELECT ' . $dbh->sql_date_format('LOCALTIMESTAMP(0)', '%Y-%m-%d'));
+if (!$snapshot_date) {
+  $snapshot_date = $dbh->selectrow_array(
+    'SELECT ' . $dbh->sql_date_format('LOCALTIMESTAMP(0)', '%Y-%m-%d'));
+}
 
 # In order to avoid entering duplicate data, we will first query BigQuery
 # to make sure other entries with this date are not already present.
-check_for_duplicates($snapshot_date);
+check_for_duplicates();
 
 ### Bugs
 
@@ -522,6 +527,9 @@ while ($count < $total) {
   send_data($table_name, \@users, $count) if @users;
 }
 
+# Delete lock from bmo_etl_locked
+Bugzilla->dbh_main->do('DELETE FROM bmo_etl_locked');
+
 # Functions
 
 sub get_cache {
@@ -608,7 +616,7 @@ sub send_data {
 
   # Do not attempt to get access token if running in test environment
   if ($base_url !~ /^http:\/\/[^\/]+:9050/) {
-    my $access_token = get_access_token();
+    my $access_token = _get_access_token();
     $http_headers->header(Authorization => 'Bearer ' . $access_token);
   }
 
@@ -627,7 +635,7 @@ sub send_data {
   }
 }
 
-sub get_access_token {
+sub _get_access_token {
   state $access_token;    # We should only need to get this once
   state $token_expiry;
 
@@ -663,7 +671,20 @@ sub get_access_token {
   return $access_token;
 }
 
+sub check_and_set_lock {
+  return if $test; # No need if just dumping test files
+
+  my $dbh_main = Bugzilla->dbh_main;
+  my $locked = $dbh_main->selectrow_array('SELECT COUNT(*) FROM bmo_etl_locked');
+  if ($locked) {
+    die "Another process has set a lock. Exiting\n";
+  }
+  $dbh_main->do('INSERT INTO bmo_etl_locked VALUES (?)', undef, 'locked');
+}
+
 sub check_for_duplicates {
+  return if $test; # no need if just dumping test files
+
   print "Checking for duplicate data for snapshot date $snapshot_date\n"
     if $verbose;
 
@@ -671,7 +692,7 @@ sub check_for_duplicates {
 
   # Do not attempt to get access token if running in test environment
   if ($base_url !~ /^http:\/\/[^\/]+:9050/) {
-    my $access_token = get_access_token();
+    my $access_token = _get_access_token();
     $http_headers->header(Authorization => 'Bearer ' . $access_token);
   }
 
@@ -693,11 +714,12 @@ sub check_for_duplicates {
     die 'Google Big Query query failure: ' . $res->content;
   }
 
-  my $result = decode_json($res->decoded_content);
+  my $result = decode_json($res->content);
 
-  my $dupe_count = $result->{rows}->[0]->{f}->[0]->{v};
+  my $row_count = $result->{rows}->[0]->{f}->[0]->{v};
 
-  if ($dupe_count) {
+  # Do not export if we have any rows with this snapshot date.
+  if ($row_count) {
     die "Duplicate data found for snapshot date $snapshot_date\n";
   }
 }
